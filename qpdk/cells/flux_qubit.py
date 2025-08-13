@@ -6,6 +6,8 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 
+from qpdk.tech import LAYER
+
 
 @gf.cell_with_module_name
 def flux_qubit(
@@ -16,9 +18,9 @@ def flux_qubit(
     alpha_junction_width: float = 0.12,
     alpha_junction_height: float = 0.25,
     wire_width: float = 2.0,
-    layer_metal: LayerSpec = (1, 0),
-    layer_junction: LayerSpec = (2, 0),
-    layer_alpha_junction: LayerSpec = (3, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_junction: LayerSpec = LAYER.JJ_AREA,
+    layer_alpha_junction: LayerSpec = LAYER.JJ_MARK,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a flux qubit (persistent current qubit).
@@ -215,9 +217,9 @@ def flux_qubit_asymmetric(
     alpha_junction_height: float = 0.25,
     wire_width: float = 2.0,
     asymmetry_angle: float = 15.0,
-    layer_metal: LayerSpec = (1, 0),
-    layer_junction: LayerSpec = (2, 0),
-    layer_alpha_junction: LayerSpec = (3, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_junction: LayerSpec = LAYER.JJ_AREA,
+    layer_alpha_junction: LayerSpec = LAYER.JJ_MARK,
     port_type: str = "electrical",
 ) -> Component:
     """Creates an asymmetric flux qubit for reduced flux noise sensitivity.

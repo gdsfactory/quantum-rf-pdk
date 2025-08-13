@@ -6,6 +6,8 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 
+from qpdk.tech import LAYER
+
 
 @gf.cell_with_module_name
 def resonator_cpw(
@@ -16,8 +18,8 @@ def resonator_cpw(
     meander_width: float = 200.0,
     coupling_gap: float = 5.0,
     coupling_length: float = 100.0,
-    layer_metal: LayerSpec = (1, 0),
-    layer_gap: LayerSpec = (2, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_gap: LayerSpec = LAYER.M1_ETCH,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a coplanar waveguide (CPW) resonator.
@@ -164,7 +166,7 @@ def resonator_lumped(
     inductor_turns: int = 3,
     inductor_radius: float = 20.0,
     coupling_gap: float = 5.0,
-    layer_metal: LayerSpec = (1, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a lumped element resonator with interdigital capacitor and spiral inductor.
@@ -296,8 +298,8 @@ def resonator_quarter_wave(
     short_stub_length: float = 50.0,
     coupling_gap: float = 5.0,
     coupling_length: float = 100.0,
-    layer_metal: LayerSpec = (1, 0),
-    layer_gap: LayerSpec = (2, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_gap: LayerSpec = LAYER.M1_ETCH,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a quarter-wave coplanar waveguide resonator.

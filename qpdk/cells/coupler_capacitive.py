@@ -4,6 +4,8 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 
+from qpdk.tech import LAYER
+
 
 @gf.cell_with_module_name
 def coupler_capacitive(
@@ -12,7 +14,7 @@ def coupler_capacitive(
     gap: float = 2.0,
     feed_width: float = 10.0,
     feed_length: float = 30.0,
-    layer_metal: LayerSpec = (1, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a capacitive coupler for quantum circuits.
@@ -113,7 +115,7 @@ def coupler_interdigital(
     finger_gap_horizontal: float = 3.0,
     feed_width: float = 10.0,
     feed_length: float = 30.0,
-    layer_metal: LayerSpec = (1, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
     port_type: str = "electrical",
 ) -> Component:
     """Creates an interdigital capacitive coupler.
@@ -246,8 +248,8 @@ def coupler_tunable(
     tuning_gap: float = 1.0,
     feed_width: float = 10.0,
     feed_length: float = 30.0,
-    layer_metal: LayerSpec = (1, 0),
-    layer_tuning: LayerSpec = (3, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_tuning: LayerSpec = LAYER.M1_CUTOUT,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a tunable capacitive coupler with voltage control.

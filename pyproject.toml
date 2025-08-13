@@ -13,8 +13,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.12.2",
-  "gplugins[sax]>=1.4.0,<2",
+  "gdsfactory",
   "doroutes>=0.2.0"
 ]
 description = "CornerStone PDK"
@@ -92,7 +91,6 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"qpdk/cells/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/cells/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 
 [tool.ruff.pydocstyle]

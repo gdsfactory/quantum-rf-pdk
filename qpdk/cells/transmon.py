@@ -4,6 +4,8 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 
+from qpdk.tech import LAYER
+
 
 @gf.cell_with_module_name
 def transmon(
@@ -14,9 +16,9 @@ def transmon(
     junction_height: float = 0.3,
     island_width: float = 10.0,
     island_height: float = 4.0,
-    layer_metal: LayerSpec = (1, 0),
-    layer_junction: LayerSpec = (2, 0),
-    layer_island: LayerSpec = (1, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_junction: LayerSpec = LAYER.JJ_AREA,
+    layer_island: LayerSpec = LAYER.M1_DRAW,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a transmon qubit with Josephson junction.
@@ -128,9 +130,9 @@ def transmon_circular(
     junction_width: float = 0.15,
     junction_height: float = 0.3,
     island_radius: float = 5.0,
-    layer_metal: LayerSpec = (1, 0),
-    layer_junction: LayerSpec = (2, 0),
-    layer_island: LayerSpec = (1, 0),
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_junction: LayerSpec = LAYER.JJ_AREA,
+    layer_island: LayerSpec = LAYER.M1_DRAW,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a circular transmon qubit with Josephson junction.
