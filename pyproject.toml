@@ -13,10 +13,10 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory",
+  "gdsfactory~=9.12.2",
   "doroutes>=0.2.0"
 ]
-description = "CornerStone PDK"
+description = "Quantum-RF generic PDK"
 keywords = ["python"]
 license = {file = "LICENSE"}
 name = "qpdk"
