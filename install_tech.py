@@ -42,7 +42,7 @@ if __name__ == "__main__":
     dest_folder = home / klayout_folder / "tech"
     dest_folder.mkdir(exist_ok=True, parents=True)
 
-    src = cwd / "qpdk" / "si220" / "klayout"
-    dest = dest_folder / "qpdk_si220"
+    src = cwd / "qpdk" / "klayout"
+    dest = dest_folder / "qpdk"
     make_link(src=src, dest=dest)
 
