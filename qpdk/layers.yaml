@@ -1,0 +1,87 @@
+LayerViews:
+  M1_DRAW:
+    layer: [10, 0]
+    layer_in_name: true
+    width: 1
+    color: "#ff9d9d"
+    hatch_pattern: coarsely dotted
+  M1_ETCH:
+    layer: [11, 0]
+    layer_in_name: true
+    hatch_pattern: coarsely dotted
+    width: 1
+    color: "silver"
+  M1_CUTOUT:
+    layer: [12, 0]
+    layer_in_name: true
+    hatch_pattern: coarsely dotted
+    transparent: true
+    width: 1
+    color: "cyan"
+  AB_DRAW:
+    layer: [20, 0]
+    layer_in_name: true
+    hatch_pattern: coarsely dotted
+    transparent: true
+    width: 1
+    color: "blue"
+  AB_VIA:
+    layer: [21, 0]
+    layer_in_name: true
+    color: "#ebc634"
+    hatch_pattern: coarsely dotted
+  AB_ETCH:
+    layer: [22, 0]
+    layer_in_name: true
+    fill_color: "teal"
+    hatch_pattern: coarsely dotted
+  JJ_MARK:
+    layer: [40, 0]
+    layer_in_name: true
+    color: "orange"
+    hatch_pattern: coarsely dotted
+  JJ_AREA:
+    layer: [41, 0]
+    layer_in_name: true
+    fill_color: "teal"
+    hatch_pattern: coarsely dotted
+  TSV:
+    layer: [60, 0]
+    layer_in_name: true
+    color: "purple"
+    hatch_pattern: coarsely dotted
+  DICE:
+    layer: [70, 0]
+    layer_in_name: true
+    color: "red"
+    hatch_pattern: coarsely dotted
+  ALN_TOP:
+    layer: [80, 0]
+    layer_in_name: true
+    color: "yellow"
+    hatch_pattern: coarsely dotted
+  ALN_BOT:
+    layer: [81, 0]
+    layer_in_name: true
+    color: "magenta"
+    hatch_pattern: coarsely dotted
+  TEXT:
+    layer: [90, 0]
+    layer_in_name: true
+    color: "black"
+    hatch_pattern: coarsely dotted
+  SIM_ONLY:
+    layer: [99, 0]
+    layer_in_name: true
+    color: "green"
+    hatch_pattern: hollow
+  LABEL_SETTINGS:
+    layer: [100, 0]
+    layer_in_name: true
+    color: "cyan"
+    hatch_pattern: hollow
+  LABEL_INSTANCE:
+    layer: [101, 0]
+    layer_in_name: true
+    color: "cyan"
+    hatch_pattern: hollow
