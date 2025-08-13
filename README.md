@@ -8,8 +8,6 @@ Based on a combination of the most popular Open source Quantum PDK packages
 
 - **DeviceLayout.jl** (AWS CQC) targets GDS (for fabrication) and 3D models/meshes (for EM simulation, e.g., Palace). Teams version their “PDKs” as Julia packages/registries; a 17-qubit reference design and transmon/resonator examples are published.
 
-- **GDS basics**: Layers are `(layer, datatype)` integer pairs. Viewers/editors (like KLayout) need `.lyp` files for names and colors. A technology file can also carry mapping, stack, and connectivity definitions.
-
 ## Installation
 
 We recommend `uv`
