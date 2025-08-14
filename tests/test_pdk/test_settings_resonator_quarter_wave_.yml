@@ -1,0 +1,17 @@
+info:
+  frequency_estimate: 30
+  gap: 6
+  length: 2500
+  resonator_type: quarter_wave
+  width: 10
+name: resonator_quarter_wave__3d8cd0cb
+settings:
+  coupling_gap: 5
+  coupling_length: 100
+  gap: 6
+  layer_gap: M1_ETCH
+  layer_metal: M1_DRAW
+  length: 2500
+  port_type: electrical
+  short_stub_length: 50
+  width: 10

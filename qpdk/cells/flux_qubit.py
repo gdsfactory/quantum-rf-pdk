@@ -365,6 +365,9 @@ def flux_qubit_asymmetric(
 
 
 if __name__ == "__main__":
+    from qpdk import PDK
+
+    PDK.activate()
     c = flux_qubit()
     # c = flux_qubit_asymmetric()
     c.show()

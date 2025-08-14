@@ -231,6 +231,9 @@ def transmon_circular(
 
 
 if __name__ == "__main__":
+    from qpdk import PDK
+
+    PDK.activate()
     # c = transmon()
     c = transmon_circular()
     c.show()

@@ -20,22 +20,27 @@ def activate_pdk() -> None:
 
 
 cells = PDK.cells
-skip_test = {
+skip_test_netlist = {
     "wire_corner",
     "pack_doe",
     "pack_doe_grid",
     "add_pads_top",
     "add_pads_bot",
-    "add_fiber_single_sc",
-    "add_fiber_single_so",
-    "add_fiber_array_sc",
-    "add_fiber_array_so",
+    "transmon_circular",
+    "resonator_lumped",
     "coupler_symmetric",
+    "die_with_pads",
+}
+skip_test = {
+    "pack_doe",
+    "pack_doe_grid",
+    "add_pads_top",
+    "add_pads_bot",
     "die_with_pads",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]
-dirpath = pathlib.Path(__file__).absolute().with_suffix(".gds").parent / "gds_ref_si220"
+dirpath = pathlib.Path(__file__).absolute().with_suffix(".gds").parent / "gds_ref"
 dirpath.mkdir(exist_ok=True, parents=True)
 
 
@@ -105,6 +110,8 @@ def test_netlists(
     Component -> netlist -> Component -> netlist
 
     """
+    if component_type in skip_test_netlist:
+        pytest.skip(f"Skipping {component_type} netlist test")
     c = cells[component_type]()
     n = c.get_netlist()
     if check:

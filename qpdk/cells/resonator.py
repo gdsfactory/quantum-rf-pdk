@@ -384,7 +384,10 @@ def resonator_quarter_wave(
 
 
 if __name__ == "__main__":
-    c = resonator_cpw()
-    # c = resonator_lumped()
+    from qpdk import PDK
+
+    PDK.activate()
+    # c = resonator_cpw()
+    c = resonator_lumped()
     # c = resonator_quarter_wave()
     c.show()

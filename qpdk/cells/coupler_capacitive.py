@@ -10,7 +10,7 @@ from qpdk.tech import LAYER
 @gf.cell_with_module_name
 def coupler_capacitive(
     pad_width: float = 20.0,
-    pad_height: float = 50.0,
+    pad_height: float = 90.0,
     gap: float = 2.0,
     feed_width: float = 10.0,
     feed_length: float = 30.0,
@@ -420,6 +420,9 @@ def coupler_tunable(
 
 
 if __name__ == "__main__":
+    from qpdk import PDK
+
+    PDK.activate()
     c = coupler_capacitive()
     # c = coupler_interdigital()
     c.pprint_ports()

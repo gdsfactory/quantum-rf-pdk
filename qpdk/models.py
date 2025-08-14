@@ -6,7 +6,6 @@ import inspect
 from collections.abc import Callable
 from functools import partial
 
-import gplugins.sax.models as sm
 import jax.numpy as jnp
 import sax
 from numpy.typing import NDArray
@@ -15,20 +14,6 @@ nm = 1e-3
 
 FloatArray = NDArray[jnp.floating]
 Float = float | FloatArray
-
-################
-# Straights
-################
-
-straight_strip = partial(
-    sm.straight,
-    length=10.0,
-    loss=0.0,
-    wl0=1.55,
-    neff=2.38,
-    ng=4.30,
-)
-
 
 ################
 # Models Dict

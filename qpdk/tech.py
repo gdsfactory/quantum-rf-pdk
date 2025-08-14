@@ -32,7 +32,7 @@ from qpdk.config import PATH
 nm = 1e-3
 
 
-class LayerMapCornerstone(LayerMap):
+class LayerMapQPDK(LayerMap):
     """Layer map for Cornerstone technology."""
 
     M1_DRAW: Layer = (10, 0)  # CPW center + pads
@@ -65,7 +65,7 @@ class LayerMapCornerstone(LayerMap):
     LABEL_INSTANCE: Layer = (101, 0)  # type: ignore
 
 
-L = LAYER = LayerMapCornerstone
+L = LAYER = LayerMapQPDK
 
 
 def get_layer_stack(thickness_m1: float = 150e-9) -> LayerStack:
@@ -186,6 +186,20 @@ def strip(
     )
 
 
+@xsection
+def metal_routing(
+    width: float = 3,
+    layer: LayerSpec = "M1_DRAW",
+) -> CrossSection:
+    """Return metal cross_section."""
+    radius = width
+    return gf.cross_section.cross_section(
+        width=width,
+        layer=layer,
+        radius=radius,
+    )
+
+
 ############################
 # Routing functions
 ############################
@@ -252,7 +266,7 @@ if __name__ == "__main__":
     connectivity = cast(list[ConnectivitySpec], [("HEATER", "HEATER", "PAD")])
 
     t = KLayoutTechnology(
-        name="QPDK",
+        name="qpdk",
         layer_map=LAYER,
         layer_views=LAYER_VIEWS,
         layer_stack=LAYER_STACK,
