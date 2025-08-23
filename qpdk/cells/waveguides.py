@@ -2,7 +2,7 @@
 
 import gdsfactory as gf
 from gdsfactory.cross_section import port_names_electrical, port_types_electrical
-from gdsfactory.typings import CrossSectionSpec, LayerSpec, Size, Ints
+from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
 
 
 @gf.cell
@@ -34,7 +34,6 @@ def rectangle(
     return c
 
 
-
 @gf.cell
 def straight(
     length: float = 10,
@@ -53,6 +52,7 @@ def straight(
     return gf.c.straight(
         length=length, cross_section=cross_section, width=width, npoints=npoints
     )
+
 
 @gf.cell
 def bend_euler(
@@ -157,11 +157,12 @@ def wire_corner45(
         with_corner90_ports=with_corner90_ports,
     )
 
+
 if __name__ == "__main__":
     from qpdk import PDK
 
     PDK.activate()
 
-    c = bend_s_metal()
+    c = bend_s()
     c.pprint_ports()
     c.show()

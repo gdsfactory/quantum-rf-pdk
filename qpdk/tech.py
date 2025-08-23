@@ -8,23 +8,17 @@ import gdsfactory as gf
 from doroutes.bundles import add_bundle_astar
 from gdsfactory.cross_section import (
     CrossSection,
-    cross_section,
-    port_names_electrical,
-    port_types_electrical,
 )
 from gdsfactory.technology import (
     LayerLevel,
     LayerMap,
     LayerStack,
     LayerViews,
-    LogicalLayer,
 )
 from gdsfactory.typings import (
     ConnectivitySpec,
-    Floats,
     Layer,
     LayerSpec,
-    LayerSpecs,
 )
 
 from qpdk.config import PATH

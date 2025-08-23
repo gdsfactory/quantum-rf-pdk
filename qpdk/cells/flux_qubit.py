@@ -1,8 +1,9 @@
+"""Flux qubit components."""
+
 from __future__ import annotations
 
-import numpy as np
-
 import gdsfactory as gf
+import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 

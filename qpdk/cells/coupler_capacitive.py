@@ -1,3 +1,5 @@
+"""Capacitive coupler components."""
+
 from __future__ import annotations
 
 import gdsfactory as gf

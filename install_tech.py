@@ -45,4 +45,3 @@ if __name__ == "__main__":
     src = cwd / "qpdk" / "klayout"
     dest = dest_folder / "qpdk"
     make_link(src=src, dest=dest)
-

@@ -1,3 +1,5 @@
+"""Interdigital capacitor components."""
+
 from __future__ import annotations
 
 from itertools import chain
