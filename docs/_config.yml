@@ -47,6 +47,13 @@ sphinx:
       "LayerSpec": "LayerSpec"
       "SDict": "sax.SDict"
       "sax.SDict": "sax.SDict"
+      "gdsfactory.typings.CrossSectionSpec": "CrossSectionSpec"
+      "gdsfactory.typings.LayerSpec": "LayerSpec"
+      "gdsfactory.typings.ComponentSpec": "ComponentSpec"
+      "CrossSection | str | dict[str, Any] | Callable[[...], CrossSection] | SymmetricalCrossSection | DCrossSection": "CrossSectionSpec"
+    autodoc_typehints: "description"
+    autodoc_typehints_format: "short"
+    python_use_unqualified_type_names: True
     nb_execution_show_tb: True
     nb_execution_raise_on_error: true
     nb_custom_formats:
