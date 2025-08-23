@@ -7,7 +7,7 @@ import pathlib
 cwd = pathlib.Path.cwd()
 cwd_config = cwd / "config.yml"
 module = pathlib.Path(__file__).parent.absolute()
-repo = module.parent.parent.parent
+repo = module.parent
 
 
 class Path:

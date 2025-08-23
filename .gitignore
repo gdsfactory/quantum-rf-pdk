@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 Pipfile
 
+docs/cells.rst
 
 # C extensions
 *.so

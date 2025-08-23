@@ -2,7 +2,7 @@
 
 import inspect
 
-from qpdk import cells
+from qpdk import PDK
 from qpdk.config import PATH
 
 filepath = PATH.repo / "docs" / "cells.rst"
@@ -11,6 +11,9 @@ skip = {}
 
 skip_plot: tuple[str, ...] = ("",)
 skip_settings: tuple[str, ...] = ()
+
+PDK.activate()
+cells = PDK.cells
 
 
 with open(filepath, "w+") as f:
@@ -61,7 +64,7 @@ Cells QPDK
   from qpdk import cells, PDK
 
   PDK.activate()
-  c = cells.{name}({kwargs}).dup()
+  c = cells.{name}({kwargs}).copy()
   c.draw_ports()
   c.plot()
 
