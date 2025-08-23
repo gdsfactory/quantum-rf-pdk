@@ -22,7 +22,7 @@ license = {file = "LICENSE"}
 name = "qpdk"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-version = "0.0.1"
+version = "0.0.2"
 
 [project.optional-dependencies]
 dev = [
@@ -120,7 +120,7 @@ message_template = "Bump to {new_version}"
 tag_template = "v{new_version}"
 
 [tool.tbump.version]
-current = "0.0.1"
+current = "0.0.2"
 # Example of a semver regexp.
 # Make sure this matches current_version before
 # using tbump
