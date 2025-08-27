@@ -1,6 +1,5 @@
 # Book settings
 # Learn more at https://jupyterbook.org/customize/config.html
-
 title: Qpdk
 author: gdsfactory
 logo: logo.png
