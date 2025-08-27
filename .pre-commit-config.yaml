@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
         exclude: ^(conda\.recipe/meta\.yaml|conda_build/templates/.*\.yaml|docs/click/meta\.yaml|conda/meta\.yaml|conda/construct.yaml|.*\.pic\.yml|conda/constructor/Miniforge3/construct.yaml)
@@ -12,24 +12,24 @@ repos:
       - id: nbstripout
         files: ".ipynb"
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.11.0"
+    rev: "v0.12.10"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
       - id: ruff-format
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.14.0
+    rev: v2.15.0
     hooks:
       - id: pretty-format-toml
         args: [--autofix]
   - repo: https://github.com/aristanetworks/j2lint.git
-    rev: v1.1.0
+    rev: v1.2.0
     hooks:
       - id: j2lint
         types: [file]
@@ -37,12 +37,12 @@ repos:
         exclude: .github/.*
         # args: [--extensions, "j2,yml,yaml", --ignore, jinja-statements-delimiter, jinja-statements-indentation]
   - repo: https://github.com/google/yamlfmt
-    rev: v0.14.0
+    rev: v0.17.2
     hooks:
       - id: yamlfmt
         exclude: ".*.tests*|.*.pic.yml"
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.4
+    rev: v1.7.7
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
@@ -54,7 +54,7 @@ repos:
     #       args: [--strict, --ignore-missing-imports, --config-file=pyproject.toml]
 
     # uv version.
-    rev: 0.6.5
+    rev: 0.8.13
     hooks:
       # Update the uv lockfile
       - id: uv-lock
