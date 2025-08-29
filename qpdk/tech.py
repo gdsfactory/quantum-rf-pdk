@@ -16,7 +16,6 @@ from gdsfactory.technology import (
     LayerViews,
 )
 from gdsfactory.typings import (
-    ConnectivitySpec,
     Layer,
     LayerSpec,
 )
@@ -170,104 +169,92 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
 
 
 @xsection
-def strip(
-    width: float = 3,
-    layer: LayerSpec = "M1_DRAW",
+def coplanar_waveguide(
+    width: float = 10,
+    gap: float = 6,
+    layer: LayerSpec = "M1_ETCH",
 ) -> CrossSection:
-    """Return Strip cross_section."""
-    radius = width
+    """Return a coplanar waveguide cross_section.
+
+    The cross_section is considered negative (etched) on the physical layer.
+
+    Note:
+        Assuming a silicon substrate thickness of 500 µm and a metal thickness of 100 nm,
+        the default center conductor width and gap dimensions give a characteristic
+        impedance of approximately 50 Ω.
+    """
     return gf.cross_section.cross_section(
         width=width,
-        layer=layer,
-        radius=radius,
+        layer=LAYER.WG,
+        sections=(
+            gf.Section(
+                width=gap, offset=(gap + width) / 2, layer=layer, name="etch_offset_pos"
+            ),
+            gf.Section(
+                width=gap,
+                offset=-(gap + width) / 2,
+                layer=layer,
+                name="etch_offset_neg",
+            ),
+        ),
     )
+
+
+cpw = coplanar_waveguide
 
 
 @xsection
-def metal_routing(
-    width: float = 3,
+def microstrip(
+    width: float = 10,
     layer: LayerSpec = "M1_DRAW",
 ) -> CrossSection:
-    """Return metal cross_section."""
-    radius = width
+    """Return a microstrip cross_section.
+
+    The cross_section is considered additive (positive) on the layer.
+    """
     return gf.cross_section.cross_section(
         width=width,
         layer=layer,
-        radius=radius,
     )
 
+
+strip = strip_metal = microstrip
 
 ############################
 # Routing functions
 ############################
 
-route_single = partial(gf.routing.route_single, cross_section="strip")
-route_bundle = partial(gf.routing.route_bundle, cross_section="strip")
+route_single = partial(gf.routing.route_single, cross_section="coplanar_waveguide")
+route_bundle = partial(gf.routing.route_bundle, cross_section="coplanar_waveguide")
 
-
-route_bundle_rib = partial(
-    route_bundle,
-    cross_section="rib",
-)
-route_bundle_metal = partial(
-    route_bundle,
-    straight="straight_metal",
-    bend="bend_metal",
-    taper=None,
-    cross_section="metal_routing",
-    port_type="electrical",
-)
-route_bundle_metal_corner = partial(
-    route_bundle,
-    straight="straight_metal",
-    bend="wire_corner",
-    taper=None,
-    cross_section="metal_routing",
-    port_type="electrical",
-)
 
 route_astar = partial(
     add_bundle_astar,
-    layers=["WG"],
+    layers=["M1_ETCH"],
     bend="bend_euler",
     straight="straight",
     grid_unit=500,
     spacing=3,
 )
-
-route_astar_metal = partial(
-    add_bundle_astar,
-    layers=["PAD"],
-    bend="wire_corner",
-    straight="straight_metal",
-    grid_unit=500,
-    spacing=15,
-)
-
-
 routing_strategies = dict(
     route_bundle=route_bundle,
-    route_bundle_metal_corner=route_bundle_metal_corner,
     route_astar=route_astar,
-    route_astar_metal=route_astar_metal,
 )
 
 if __name__ == "__main__":
-    from typing import cast
-
     from gdsfactory.technology.klayout_tech import KLayoutTechnology
 
     LAYER_VIEWS = LayerViews(PATH.lyp_yaml)
     # LAYER_VIEWS.to_lyp(PATH.lyp)
 
-    connectivity = cast(list[ConnectivitySpec], [("HEATER", "HEATER", "PAD")])
+    # connectivity = cast(list[ConnectivitySpec], [("HEATER", "HEATER", "PAD")])
 
     t = KLayoutTechnology(
         name="qpdk",
         layer_map=LAYER,
         layer_views=LAYER_VIEWS,
         layer_stack=LAYER_STACK,
-        connectivity=connectivity,
+        # connectivity=connectivity,
     )
     t.write_tech(tech_dir=PATH.klayout)
     # print(DEFAULT_CROSS_SECTION_NAMES)
