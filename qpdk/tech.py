@@ -209,6 +209,18 @@ cpw = coplanar_waveguide
 
 
 @xsection
+def launcher_cross_section_big() -> gf.CrossSection:
+    """Return a large coplanar waveguide cross-section for a launcher.
+
+    This cross-section is designed for the wide end of the launcher,
+    providing a large area for probe pads and wirebonding.
+
+    The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
+    """
+    return coplanar_waveguide(width=200.0, gap=110.0, layer=LAYER.M1_ETCH)
+
+
+@xsection
 def microstrip(
     width: float = 10,
     layer: LayerSpec = "M1_DRAW",

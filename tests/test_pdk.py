@@ -31,12 +31,14 @@ skip_test_netlist = {
     "coupler_symmetric",
     "die_with_pads",
 }
+# Skip default gdsfactory cells
 skip_test = {
     "pack_doe",
     "pack_doe_grid",
     "add_pads_top",
     "add_pads_bot",
     "die_with_pads",
+    "taper_cross_section",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]

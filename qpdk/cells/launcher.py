@@ -16,13 +16,9 @@ from gdsfactory.components import straight
 from gdsfactory.components.tapers.taper_cross_section import taper_cross_section
 from gdsfactory.typings import CrossSectionSpec
 
-from qpdk.tech import LAYER, coplanar_waveguide
+from qpdk.tech import LAYER, coplanar_waveguide, launcher_cross_section_big
 
-# Default cross-section configurations for the launcher
-# Large end: 200µm width, 110µm gap - suitable for probe pads and wirebonding
-LAUNCHER_CROSS_SECTION_BIG = partial(
-    coplanar_waveguide, width=200.0, gap=110.0, layer=LAYER.M1_ETCH
-)
+LAUNCHER_CROSS_SECTION_BIG = launcher_cross_section_big
 LAUNCHER_CROSS_SECTION_SMALL = partial(coplanar_waveguide, layer=LAYER.M1_ETCH)
 
 
@@ -31,7 +27,7 @@ def launcher(
     straight_length: float = 200.0,
     taper_length: float = 100.0,
     cross_section_big: CrossSectionSpec = LAUNCHER_CROSS_SECTION_BIG,
-    cross_section_small: CrossSectionSpec = LAUNCHER_CROSS_SECTION_SMALL,
+    cross_section_small: CrossSectionSpec = "cpw",
 ) -> Component:
     """Generate an RF launcher pad for wirebonding or probe testing.
 
