@@ -99,6 +99,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "qpdk/cells/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
+"tests/**" = ["S101"]  # allow assert statements in test files
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
