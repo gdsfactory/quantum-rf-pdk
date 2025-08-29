@@ -172,7 +172,7 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
 def coplanar_waveguide(
     width: float = 10,
     gap: float = 6,
-    layer: LayerSpec = "M1_ETCH",
+    layer: LayerSpec = LAYER.M1_ETCH,
 ) -> CrossSection:
     """Return a coplanar waveguide cross_section.
 
