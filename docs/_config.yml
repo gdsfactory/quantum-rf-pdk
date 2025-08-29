@@ -22,10 +22,10 @@ html:
   use_edit_page_button: true
   use_repository_button: true
   use_issues_button: true
-  baseurl: https://github.com/gdsfactory/qpdk
+  baseurl: https://github.com/gdsfactory/quantum-rf-pdk
 # Information about where the book exists on the web
 repository:
-  url: https://github.com/gdsfactory/qpdk
+  url: https://github.com/gdsfactory/quantum-rf-pdk
   path_to_book: docs # Optional path to your book, relative to the repository root
   branch: main # Which branch of the repository should be used when creating links (optional)
 launch_buttons:
