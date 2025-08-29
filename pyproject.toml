@@ -5,17 +5,12 @@ build-backend = "flit_core.buildapi"
 requires = ["flit_core >=3.2,<4"]
 
 [project]
-authors = [
-  {name = "gdsfactory", email = "contact@gdsfactory.com"}
-]
+authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
 classifiers = [
   "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent"
 ]
-dependencies = [
-  "gdsfactory~=9.12.2",
-  "doroutes>=0.2.0"
-]
+dependencies = ["gdsfactory~=9.12.2", "doroutes>=0.2.0"]
 description = "Quantum-RF generic PDK"
 keywords = ["python"]
 license = {file = "LICENSE"}
@@ -33,11 +28,7 @@ dev = [
   "pytest_regressions",
   "pytest-github-actions-annotate-failures"
 ]
-docs = [
-  "jupytext",
-  "matplotlib",
-  "jupyter-book==1.0.4"
-]
+docs = ["jupytext", "matplotlib", "jupyter-book==1.0.4"]
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem"
@@ -113,7 +104,18 @@ select = [
 convention = "google"
 
 [tool.setuptools.package-data]
-"*" = ["*.csv", "*.yaml", "*.yml", "*.gds", "*.lyp", "*.oas", "*.lyt", "*.dat", "*.nc", "*.svg"]
+"*" = [
+  "*.csv",
+  "*.yaml",
+  "*.yml",
+  "*.gds",
+  "*.lyp",
+  "*.oas",
+  "*.lyt",
+  "*.dat",
+  "*.nc",
+  "*.svg"
+]
 
 [tool.setuptools.packages]
 find = {}
