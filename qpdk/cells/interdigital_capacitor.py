@@ -46,7 +46,8 @@ def interdigital_capacitor(
     """
     c = Component()
 
-    assert fingers >= 1, "Must have at least 1 finger"
+    if fingers < 1:
+        raise ValueError("Must have at least 1 finger")
 
     width = 2 * thickness + finger_length + finger_gap  # total length
     height = fingers * thickness + (fingers - 1) * finger_gap  # total height
