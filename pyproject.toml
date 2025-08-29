@@ -81,15 +81,29 @@ ignore = [
   "C408"  # C408 Unnecessary `dict` call (rewrite as a literal)
 ]
 select = [
-  "B",  # flake8-bugbear
-  "C",  # flake8-comprehensions
-  "D",  # pydocstyle
   "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
   "F",  # pyflakes
   "I",  # isort
-  "T10",  # flake8-debugger
+  "C",  # flake8-comprehensions
+  "B",  # flake8-bugbear
+  "D",  # pydocstyle
   "UP",  # pyupgrade
-  "W"  # pycodestyle warnings
+  "T10",  # flake8-debugger
+  "S",  # flake8-bandit
+  "PT",  # flake8-pytest-style
+  "SIM",  # flake8-simplify
+  "RET",  # flake8-return
+  "RSE",  # flake8-raise
+  "Q",  # flake8-quotes
+  "SLOT",  # flake8-slots
+  "ARG",  # flake8-unused-arguments
+  "PTH",  # flake8-use-pathlib
+  "PD",  # pandas-vet
+  "FLY",  # flynt
+  "NPY",  # numpy
+  "PERF",  # perflint
+  "RUF"  # ruff
 ]
 
 [tool.ruff.lint.per-file-ignores]
