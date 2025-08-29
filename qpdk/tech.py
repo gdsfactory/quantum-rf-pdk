@@ -108,7 +108,7 @@ def get_layer_stack(thickness_m1: float = 150e-9) -> LayerStack:
                 sidewall_angle=90.0,
                 mesh_order=4,
             ),
-            # SIM_ONLY is non-fab; keep thin so it won’t perturb EM
+            # SIM_ONLY is non-fab; keep thin so it won't perturb EM
             "sim_only": LayerLevel(
                 layer=L.SIM_ONLY,
                 thickness=1e-9,
