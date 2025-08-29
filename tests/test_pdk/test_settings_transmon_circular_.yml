@@ -3,7 +3,7 @@ info:
   pad_gap: 6
   pad_radius: 100
   qubit_type: transmon_circular
-name: transmon_circular_qpdkp_45c614e8
+name: transmon_circular_qpdkp_13738d6b
 settings:
   island_radius: 5
   junction_height: 0.3
@@ -13,4 +13,3 @@ settings:
   layer_metal: M1_DRAW
   pad_gap: 6
   pad_radius: 100
-  port_type: electrical
