@@ -101,7 +101,6 @@ def test_settings(component_name: str, data_regression: DataRegressionFixture) -
 def test_netlists(
     component_type: str,
     data_regression: DataRegressionFixture,
-    check: bool = True,
 ) -> None:
     """Write netlists for hierarchical circuits.
 
@@ -114,8 +113,7 @@ def test_netlists(
         pytest.skip(f"Skipping {component_type} netlist test")
     c = cells[component_type]()
     n = c.get_netlist()
-    if check:
-        data_regression.check(n)
+    data_regression.check(n)
 
     n.pop("connections", None)
     n.pop("warnings", None)
