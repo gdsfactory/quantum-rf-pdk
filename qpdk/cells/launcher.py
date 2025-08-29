@@ -8,6 +8,8 @@ cross-section for circuit integration.
 
 from __future__ import annotations
 
+from functools import partial
+
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.components import straight
@@ -18,9 +20,10 @@ from qpdk.tech import LAYER, coplanar_waveguide
 
 # Default cross-section configurations for the launcher
 # Large end: 200µm width, 110µm gap - suitable for probe pads and wirebonding
-LAUNCHER_CROSS_SECTION_BIG = coplanar_waveguide(
-    width=200.0, gap=110.0, layer=LAYER.M1_ETCH
+LAUNCHER_CROSS_SECTION_BIG = partial(
+    coplanar_waveguide, width=200.0, gap=110.0, layer=LAYER.M1_ETCH
 )
+LAUNCHER_CROSS_SECTION_SMALL = partial(coplanar_waveguide, layer=LAYER.M1_ETCH)
 
 
 @gf.cell
@@ -28,7 +31,7 @@ def launcher(
     straight_length: float = 200.0,
     taper_length: float = 100.0,
     cross_section_big: CrossSectionSpec = LAUNCHER_CROSS_SECTION_BIG,
-    cross_section_small: CrossSectionSpec = coplanar_waveguide,
+    cross_section_small: CrossSectionSpec = LAUNCHER_CROSS_SECTION_SMALL,
 ) -> Component:
     """Generate an RF launcher pad for wirebonding or probe testing.
 
