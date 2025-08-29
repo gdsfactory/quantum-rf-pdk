@@ -38,8 +38,8 @@ Then you need to restart Klayout to make sure the new technology installed appea
 Then you can install with:
 
 ```bash
-git clone https://github.com/gdsfactory/qpdk.git
-cd qpdk
+git clone https://github.com/gdsfactory/quantum-rf-pdk.git
+cd quantum-rf-pdk
 uv venv --python 3.12
 uv sync --extra docs --extra dev
 ```
