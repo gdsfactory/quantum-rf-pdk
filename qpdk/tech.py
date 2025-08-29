@@ -182,6 +182,11 @@ def coplanar_waveguide(
         Assuming a silicon substrate thickness of 500 µm and a metal thickness of 100 nm,
         the default center conductor width and gap dimensions give a characteristic
         impedance of approximately 50 Ω.
+
+    Args:
+        width: center conductor width in micrometers.
+        gap: gap between center conductor and ground in micrometers.
+        layer: for the etch (negative) region.
     """
     return gf.cross_section.cross_section(
         width=width,
