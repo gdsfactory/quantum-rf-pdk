@@ -1,6 +1,7 @@
 """Write docs."""
 
 import inspect
+import textwrap
 
 from qpdk import PDK
 from qpdk.config import PATH
@@ -70,3 +71,10 @@ Cells QPDK
 
 """
             )
+
+    f.write(
+        textwrap.dedent("""
+            .. bibliography::
+               :filter: docname in docnames
+               """)
+    )
