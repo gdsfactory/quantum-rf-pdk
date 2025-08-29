@@ -27,7 +27,7 @@ nm = 1e-3
 
 
 class LayerMapQPDK(LayerMap):
-    """Layer map for Cornerstone technology."""
+    """Layer map for QPDK technology."""
 
     M1_DRAW: Layer = (10, 0)  # CPW center + pads
     M1_ETCH: Layer = (11, 0)  # Subtractive etch / negative mask regions
@@ -57,6 +57,9 @@ class LayerMapQPDK(LayerMap):
     # labels for gdsfactory
     LABEL_SETTINGS: Layer = (100, 0)  # type: ignore
     LABEL_INSTANCE: Layer = (101, 0)  # type: ignore
+
+    # Marker layer for waveguides
+    WG: Layer = (1000, 0)
 
 
 L = LAYER = LayerMapQPDK
