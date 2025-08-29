@@ -1,7 +1,6 @@
 """Primitives."""
 
 import gdsfactory as gf
-from gdsfactory.cross_section import port_names_electrical, port_types_electrical
 from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
 
 
@@ -37,7 +36,7 @@ def rectangle(
 @gf.cell
 def straight(
     length: float = 10,
-    cross_section: CrossSectionSpec = "strip",
+    cross_section: CrossSectionSpec = "cpw",
     width: float | None = None,
     npoints: int = 2,
 ) -> gf.Component:
@@ -60,7 +59,7 @@ def bend_euler(
     angle: float = 90,
     p: float = 0.5,
     width: float | None = None,
-    cross_section: CrossSectionSpec = "strip",
+    cross_section: CrossSectionSpec = "cpw",
     allow_min_radius_violation: bool = False,
 ) -> gf.Component:
     """Regular degree euler bend.
@@ -89,7 +88,7 @@ def bend_euler(
 @gf.cell
 def bend_s(
     size: Size = (11, 1.8),
-    cross_section: CrossSectionSpec = "strip",
+    cross_section: CrossSectionSpec = "cpw",
     width: float | None = None,
     allow_min_radius_violation: bool = False,
 ) -> gf.Component:
@@ -110,51 +109,6 @@ def bend_s(
         npoints=99,
         allow_min_radius_violation=allow_min_radius_violation,
         width=width,
-    )
-
-
-@gf.cell
-def wire_corner(
-    cross_section: CrossSectionSpec = "metal_routing", width: float | None = None
-) -> gf.Component:
-    """Returns 45 degrees electrical corner wire.
-
-    Args:
-        cross_section: spec.
-        width: optional width. Defaults to cross_section width.
-    """
-    return gf.c.wire_corner(
-        cross_section=cross_section,
-        width=width,
-        port_names=port_names_electrical,
-        port_types=port_types_electrical,
-        radius=None,
-    )
-
-
-@gf.cell
-def wire_corner45(
-    cross_section: CrossSectionSpec = "metal_routing",
-    radius: float = 10,
-    width: float | None = None,
-    layer: LayerSpec | None = None,
-    with_corner90_ports: bool = True,
-) -> gf.Component:
-    """Returns 90 degrees electrical corner wire.
-
-    Args:
-        cross_section: spec.
-        radius: ignored.
-        width: optional width. Defaults to cross_section width.
-        layer: ignored.
-        with_corner90_ports: if True, adds ports at 90 degrees.
-    """
-    return gf.c.wire_corner45(
-        cross_section=cross_section,
-        radius=radius,
-        width=width,
-        layer=layer,
-        with_corner90_ports=with_corner90_ports,
     )
 
 
