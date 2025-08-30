@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  merge_group:
   workflow_dispatch:
 jobs:
   build-docs:
@@ -29,7 +30,7 @@ jobs:
           path: "./docs/_build/html/"
   deploy-docs:
     needs: build-docs
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     permissions:
       pages: write
       id-token: write
