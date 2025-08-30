@@ -1,6 +1,8 @@
 """Write docs."""
 
 import inspect
+import textwrap
+from pathlib import Path
 
 from qpdk import PDK
 from qpdk.config import PATH
@@ -16,7 +18,7 @@ PDK.activate()
 cells = PDK.cells
 
 
-with open(filepath, "w+") as f:
+with Path(filepath).open("w+") as f:
     f.write(
         """
 
@@ -32,7 +34,7 @@ Cells QPDK
         sig = inspect.signature(cells[name])
         kwargs = ", ".join(
             [
-                f"{p}={repr(sig.parameters[p].default)}"
+                f"{p}={sig.parameters[p].default!r}"
                 for p in sig.parameters
                 if isinstance(sig.parameters[p].default, int | float | str | tuple)
                 and p not in skip_settings
@@ -70,3 +72,10 @@ Cells QPDK
 
 """
             )
+
+    f.write(
+        textwrap.dedent("""
+            .. bibliography::
+               :filter: docname in docnames
+               """)
+    )

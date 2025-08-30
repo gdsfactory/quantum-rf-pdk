@@ -1,0 +1,7 @@
+info: {}
+name: launcher_SL200_TL100_CS_e4704c5b
+settings:
+  cross_section_big: launcher_cross_section_big
+  cross_section_small: cpw
+  straight_length: 200
+  taper_length: 100

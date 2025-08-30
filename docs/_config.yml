@@ -16,16 +16,17 @@ execute:
 latex:
   latex_engine: pdflatex # one of 'pdflatex', 'xelatex' (recommended for unicode), 'luatex', 'platex', 'uplatex'
   use_jupyterbook_latex: true # use sphinx-jupyterbook-latex for pdf builds as default
-# Add a bibtex file so that we can create citations
+bibtex_bibfiles:
+  - bibliography.bib
 html:
   home_page_in_navbar: true
   use_edit_page_button: true
   use_repository_button: true
   use_issues_button: true
-  baseurl: https://github.com/gdsfactory/qpdk
+  baseurl: https://github.com/gdsfactory/quantum-rf-pdk
 # Information about where the book exists on the web
 repository:
-  url: https://github.com/gdsfactory/qpdk
+  url: https://github.com/gdsfactory/quantum-rf-pdk
   path_to_book: docs # Optional path to your book, relative to the repository root
   branch: main # Which branch of the repository should be used when creating links (optional)
 launch_buttons:

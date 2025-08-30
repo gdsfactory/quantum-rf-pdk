@@ -31,12 +31,14 @@ skip_test_netlist = {
     "coupler_symmetric",
     "die_with_pads",
 }
+# Skip default gdsfactory cells
 skip_test = {
     "pack_doe",
     "pack_doe_grid",
     "add_pads_top",
     "add_pads_bot",
     "die_with_pads",
+    "taper_cross_section",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]
@@ -101,7 +103,6 @@ def test_settings(component_name: str, data_regression: DataRegressionFixture) -
 def test_netlists(
     component_type: str,
     data_regression: DataRegressionFixture,
-    check: bool = True,
 ) -> None:
     """Write netlists for hierarchical circuits.
 
@@ -114,8 +115,7 @@ def test_netlists(
         pytest.skip(f"Skipping {component_type} netlist test")
     c = cells[component_type]()
     n = c.get_netlist()
-    if check:
-        data_regression.check(n)
+    data_regression.check(n)
 
     n.pop("connections", None)
     n.pop("warnings", None)

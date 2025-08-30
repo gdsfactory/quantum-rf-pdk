@@ -1,18 +1,18 @@
 info:
-  dy: 3
-  length: 4.99
-  min_bend_radius: 2.118
-  radius: 3
-  route_info_length: 4.99
-  route_info_metal_routing_length: 4.99
-  route_info_min_bend_radius: 2.118
+  dy: 10
+  length: 16.637
+  min_bend_radius: 7.061
+  radius: 10
+  route_info_coplanar_waveguide_length: 16.637
+  route_info_length: 16.637
+  route_info_min_bend_radius: 7.061
   route_info_n_bend_90: 1
-  route_info_type: metal_routing
-  route_info_weight: 4.99
-  width: 3
-name: bend_euler_RNone_A90_P0_fbfa4d8c
+  route_info_type: coplanar_waveguide
+  route_info_weight: 16.637
+  width: 10
+name: bend_euler_RNone_A90_P0_4d7e261d
 settings:
   allow_min_radius_violation: false
   angle: 90
-  cross_section: strip
+  cross_section: cpw
   p: 0.5

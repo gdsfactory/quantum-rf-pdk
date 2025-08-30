@@ -5,17 +5,12 @@ build-backend = "flit_core.buildapi"
 requires = ["flit_core >=3.2,<4"]
 
 [project]
-authors = [
-  {name = "gdsfactory", email = "contact@gdsfactory.com"}
-]
+authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
 classifiers = [
   "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent"
 ]
-dependencies = [
-  "gdsfactory~=9.12.2",
-  "doroutes>=0.2.0"
-]
+dependencies = ["gdsfactory~=9.12.2", "doroutes>=0.2.0"]
 description = "Quantum-RF generic PDK"
 keywords = ["python"]
 license = {file = "LICENSE"}
@@ -33,11 +28,7 @@ dev = [
   "pytest_regressions",
   "pytest-github-actions-annotate-failures"
 ]
-docs = [
-  "jupytext",
-  "matplotlib",
-  "jupyter-book==1.0.4"
-]
+docs = ["jupytext", "matplotlib", "jupyter-book==1.0.4"]
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem"
@@ -81,25 +72,51 @@ ignore = [
   "C408"  # C408 Unnecessary `dict` call (rewrite as a literal)
 ]
 select = [
-  "B",  # flake8-bugbear
-  "C",  # flake8-comprehensions
-  "D",  # pydocstyle
   "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
   "F",  # pyflakes
   "I",  # isort
-  "T10",  # flake8-debugger
+  "C",  # flake8-comprehensions
+  "B",  # flake8-bugbear
+  "D",  # pydocstyle
   "UP",  # pyupgrade
-  "W"  # pycodestyle warnings
+  "T10",  # flake8-debugger
+  "S",  # flake8-bandit
+  "PT",  # flake8-pytest-style
+  "SIM",  # flake8-simplify
+  "RET",  # flake8-return
+  "RSE",  # flake8-raise
+  "Q",  # flake8-quotes
+  "SLOT",  # flake8-slots
+  "ARG",  # flake8-unused-arguments
+  "PTH",  # flake8-use-pathlib
+  "PD",  # pandas-vet
+  "FLY",  # flynt
+  "NPY",  # numpy
+  "PERF",  # perflint
+  "RUF"  # ruff
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "qpdk/cells/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
+"tests/**" = ["S101"]  # allow assert statements in test files
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.setuptools.package-data]
-"*" = ["*.csv", "*.yaml", "*.yml", "*.gds", "*.lyp", "*.oas", "*.lyt", "*.dat", "*.nc", "*.svg"]
+"*" = [
+  "*.csv",
+  "*.yaml",
+  "*.yml",
+  "*.gds",
+  "*.lyp",
+  "*.oas",
+  "*.lyt",
+  "*.dat",
+  "*.nc",
+  "*.svg"
+]
 
 [tool.setuptools.packages]
 find = {}

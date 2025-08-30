@@ -1,22 +1,25 @@
 """Symlink tech to klayout."""
 
 import os
-import pathlib
 import shutil
 import sys
+from pathlib import Path
 
 
-def remove_path_or_dir(dest: pathlib.Path):
+def remove_path_or_dir(dest: Path) -> None:
     """Remove a path or directory."""
+    if not dest.exists():
+        raise FileNotFoundError(f"Path does not exist: {dest}")
+
     if dest.is_dir():
-        os.unlink(dest)
+        dest.rmdir()
     else:
-        os.remove(dest)
+        dest.unlink()
 
 
-def make_link(src, dest, overwrite: bool = True) -> None:
+def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None:
     """Make a symbolic link from src to dest."""
-    dest = pathlib.Path(dest)
+    dest = Path(dest)
     if not src.exists():
         raise FileNotFoundError(f"{src} does not exist")
 
@@ -37,8 +40,8 @@ def make_link(src, dest, overwrite: bool = True) -> None:
 
 if __name__ == "__main__":
     klayout_folder = "KLayout" if sys.platform == "win32" else ".klayout"
-    cwd = pathlib.Path(__file__).resolve().parent
-    home = pathlib.Path.home()
+    cwd = Path(__file__).resolve().parent
+    home = Path.home()
     dest_folder = home / klayout_folder / "tech"
     dest_folder.mkdir(exist_ok=True, parents=True)
 

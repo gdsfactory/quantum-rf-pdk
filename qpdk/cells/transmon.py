@@ -135,7 +135,6 @@ def transmon_circular(
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_junction: LayerSpec = LAYER.JJ_AREA,
     layer_island: LayerSpec = LAYER.M1_DRAW,
-    port_type: str = "electrical",
 ) -> Component:
     """Creates a circular transmon qubit with Josephson junction.
 
