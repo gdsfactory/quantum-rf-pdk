@@ -74,7 +74,11 @@ def instances_without_info(net):
 def test_cell_in_pdk(name):
     """Test that cell is in the PDK."""
     c1 = gf.Component()
-    c1.add_ref(gf.get_component(name))
+    component = gf.get_component(name)
+    if isinstance(component, gf.Component):
+        c1.add_ref(gf.get_component(name))
+    elif isinstance(component, gf.ComponentAllAngle):
+        c1.create_vinst(component)
     net1 = get_minimal_netlist(c1)
 
     c2 = gf.read.from_yaml(net1)
