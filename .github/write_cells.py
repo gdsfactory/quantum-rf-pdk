@@ -4,6 +4,8 @@ import inspect
 import textwrap
 from pathlib import Path
 
+from gdsfactory.serialization import clean_value_json
+
 from qpdk import PDK
 from qpdk.config import PATH
 
@@ -34,7 +36,7 @@ Cells QPDK
         sig = inspect.signature(cells[name])
         kwargs = ", ".join(
             [
-                f"{p}={sig.parameters[p].default!r}"
+                f"{p}={clean_value_json(sig.parameters[p].default)!r}"
                 for p in sig.parameters
                 if isinstance(sig.parameters[p].default, int | float | str | tuple)
                 and p not in skip_settings

@@ -173,6 +173,7 @@ def coplanar_waveguide(
     width: float = 10,
     gap: float = 6,
     layer: LayerSpec = LAYER.M1_ETCH,
+    radius: float | None = None,
 ) -> CrossSection:
     """Return a coplanar waveguide cross_section.
 
@@ -187,10 +188,12 @@ def coplanar_waveguide(
         width: center conductor width in micrometers.
         gap: gap between center conductor and ground in micrometers.
         layer: for the etch (negative) region.
+        radius: bend radius (if applicable).
     """
     return gf.cross_section.cross_section(
         width=width,
         layer=LAYER.WG,
+        radius=radius or width + gap,
         sections=(
             gf.Section(
                 width=gap, offset=(gap + width) / 2, layer=layer, name="etch_offset_pos"
@@ -244,6 +247,13 @@ strip = strip_metal = microstrip
 route_single = partial(gf.routing.route_single, cross_section="coplanar_waveguide")
 route_bundle = partial(gf.routing.route_bundle, cross_section="coplanar_waveguide")
 
+route_bundle_all_angle = partial(
+    gf.routing.route_bundle_all_angle,
+    cross_section="coplanar_waveguide",
+    separation=3,
+    bend="bend_euler_all_angle",
+    straight="straight_all_angle",
+)
 
 route_astar = partial(
     add_bundle_astar,
