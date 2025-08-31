@@ -112,6 +112,73 @@ def bend_s(
     )
 
 
+@gf.vcell
+def straight_all_angle(
+    length: float = 10.0,
+    npoints: int = 2,
+    cross_section: CrossSectionSpec = "cpw",
+    width: float | None = None,
+) -> gf.ComponentAllAngle:
+    """Returns a Straight waveguide with offgrid ports.
+
+    Args:
+        length: straight length (um).
+        npoints: number of points.
+        cross_section: specification (CrossSection, string or dict).
+        width: width of the waveguide. If None, it will use the width of the cross_section.
+
+    .. code::
+
+        o1  ──────────────── o2
+                length
+    """
+    return gf.c.straight_all_angle(
+        length=length,
+        npoints=npoints,
+        cross_section=cross_section,
+        width=width,
+    )
+
+
+@gf.vcell
+def bend_euler_all_angle(
+    radius: float | None = None,
+    angle: float = 90.0,
+    p: float = 0.5,
+    with_arc_floorplan: bool = True,
+    npoints: int | None = None,
+    layer: gf.typings.LayerSpec | None = None,
+    width: float | None = None,
+    cross_section: CrossSectionSpec = "cpw",
+    allow_min_radius_violation: bool = False,
+) -> gf.ComponentAllAngle:
+    """Returns regular degree euler bend with arbitrary angle.
+
+    Args:
+        radius: in um. Defaults to cross_section_radius.
+        angle: total angle of the curve.
+        p: Proportion of the curve that is an Euler curve.
+        with_arc_floorplan: if True the size of the bend will be adjusted to match an arc bend with the specified radius. If False: `radius` is the minimum radius of curvature.
+        npoints: Number of points used per 360 degrees.
+        layer: layer to use. Defaults to cross_section.layer.
+        width: width to use. Defaults to cross_section.width.
+        cross_section: specification (CrossSection, string, CrossSectionFactory dict).
+        allow_min_radius_violation: if True allows radius to be smaller than cross_section radius.
+
+    """
+    return gf.c.bend_euler_all_angle(
+        radius=radius,
+        angle=angle,
+        p=p,
+        with_arc_floorplan=with_arc_floorplan,
+        npoints=npoints,
+        layer=layer,
+        width=width,
+        cross_section=cross_section,
+        allow_min_radius_violation=allow_min_radius_violation,
+    )
+
+
 if __name__ == "__main__":
     from qpdk import PDK
 
