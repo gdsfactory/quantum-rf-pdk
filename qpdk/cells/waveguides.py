@@ -60,7 +60,7 @@ def bend_euler(
     p: float = 0.5,
     width: float | None = None,
     cross_section: CrossSectionSpec = "cpw",
-    allow_min_radius_violation: bool = False,
+    allow_min_radius_violation: bool = True,
 ) -> gf.Component:
     """Regular degree euler bend.
 
@@ -90,7 +90,7 @@ def bend_s(
     size: Size = (11, 1.8),
     cross_section: CrossSectionSpec = "cpw",
     width: float | None = None,
-    allow_min_radius_violation: bool = False,
+    allow_min_radius_violation: bool = True,
 ) -> gf.Component:
     """Return S bend with bezier curve.
 
@@ -150,7 +150,7 @@ def bend_euler_all_angle(
     layer: gf.typings.LayerSpec | None = None,
     width: float | None = None,
     cross_section: CrossSectionSpec = "cpw",
-    allow_min_radius_violation: bool = False,
+    allow_min_radius_violation: bool = True,
 ) -> gf.ComponentAllAngle:
     """Returns regular degree euler bend with arbitrary angle.
 
@@ -184,6 +184,6 @@ if __name__ == "__main__":
 
     PDK.activate()
 
-    c = bend_s()
+    c = bend_euler()
     c.pprint_ports()
     c.show()
