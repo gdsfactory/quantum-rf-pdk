@@ -1,13 +1,13 @@
 info:
-  dy: 200
-  length: 314.159
-  radius: 200
-  route_info_coplanar_waveguide_length: 314.159
-  route_info_length: 314.159
-  route_info_min_bend_radius: 200
+  dy: 100
+  length: 157.08
+  radius: 100
+  route_info_coplanar_waveguide_length: 157.08
+  route_info_length: 157.08
+  route_info_min_bend_radius: 100
   route_info_n_bend_90: 1
   route_info_type: coplanar_waveguide
-  route_info_weight: 314.159
+  route_info_weight: 157.08
   width: 10
 name: bend_circular
 settings: {}

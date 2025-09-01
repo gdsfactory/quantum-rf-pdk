@@ -1,8 +1,10 @@
 info: {}
-name: interdigital_capacitor__93555c93
+name: interdigital_capacitor__4a6bca4a
 settings:
+  cross_section: cpw
+  etch_bbox_margin: 2
+  etch_layer: M1_ETCH
   finger_gap: 2
   finger_length: 20
   fingers: 4
-  layer: M1_DRAW
   thickness: 5
