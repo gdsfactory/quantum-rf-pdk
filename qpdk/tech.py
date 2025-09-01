@@ -244,21 +244,29 @@ strip = strip_metal = microstrip
 # Routing functions
 ############################
 
-route_single = partial(gf.routing.route_single, cross_section="coplanar_waveguide")
-route_bundle = partial(gf.routing.route_bundle, cross_section="coplanar_waveguide")
+route_single = partial(
+    gf.routing.route_single,
+    cross_section=cpw,
+    bend="bend_circular",
+)
+route_bundle = partial(
+    gf.routing.route_bundle,
+    cross_section=cpw,
+    bend="bend_circular",
+)
 
 route_bundle_all_angle = partial(
     gf.routing.route_bundle_all_angle,
-    cross_section="coplanar_waveguide",
+    cross_section=cpw,
     separation=3,
-    bend="bend_euler_all_angle",
+    bend="bend_circular_all_angle",
     straight="straight_all_angle",
 )
 
 route_astar = partial(
     add_bundle_astar,
     layers=["M1_ETCH"],
-    bend="bend_euler",
+    bend="bend_circular",
     straight="straight",
     grid_unit=500,
     spacing=3,
