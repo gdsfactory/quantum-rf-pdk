@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <technology>
- <name>QPDK</name>
+ <name>qpdk</name>
  <description/>
  <group/>
  <dbu>0.001</dbu>
@@ -119,6 +119,11 @@
    <merge>true</merge>
    <lib-paths/>
   </mag>
+  <maly>
+   <dbu>0.001</dbu>
+   <layer-map>layer_map()</layer-map>
+   <create-other-layers>true</create-other-layers>
+  </maly>
  </reader-options>
  <writer-options>
   <format>GDS2</format>
@@ -154,9 +159,5 @@
    <write-timestamp>true</write-timestamp>
   </mag>
  </writer-options>
- <connectivity>
-  <connection>HEATER,HEATER,PAD</connection>
-  <symbols>PAD='41/0'</symbols>
-  <symbols>HEATER='39/0'</symbols>
- </connectivity>
+ <connectivity/>
 </technology>
