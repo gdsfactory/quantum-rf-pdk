@@ -95,7 +95,7 @@ class BendCircularKwargs(TypedDict, total=False):
 
 
 _BEND_CIRCULAR_DEFAULTS = {
-    "radius": 200,
+    "radius": 100,
 }
 
 

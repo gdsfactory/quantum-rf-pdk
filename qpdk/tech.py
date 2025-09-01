@@ -173,7 +173,7 @@ def coplanar_waveguide(
     width: float = 10,
     gap: float = 6,
     layer: LayerSpec = LAYER.M1_ETCH,
-    radius: float | None = None,
+    radius: float | None = 100,
 ) -> CrossSection:
     """Return a coplanar waveguide cross_section.
 
@@ -193,7 +193,7 @@ def coplanar_waveguide(
     return gf.cross_section.cross_section(
         width=width,
         layer=LAYER.WG,
-        radius=radius or width + gap,
+        radius=radius,
         sections=(
             gf.Section(
                 width=gap, offset=(gap + width) / 2, layer=layer, name="etch_offset_pos"
