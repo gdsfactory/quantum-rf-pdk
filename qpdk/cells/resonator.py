@@ -5,8 +5,9 @@ from __future__ import annotations
 import gdsfactory as gf
 import numpy as np
 from gdsfactory.component import Component
-from gdsfactory.typings import LayerSpec
+from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 
+from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.tech import LAYER
 
 
@@ -293,93 +294,75 @@ def resonator_lumped(
 
 @gf.cell_with_module_name
 def resonator_quarter_wave(
-    length: float = 2500.0,
-    width: float = 10.0,
-    gap: float = 6.0,
-    short_stub_length: float = 50.0,
-    coupling_gap: float = 5.0,
-    coupling_length: float = 100.0,
-    layer_metal: LayerSpec = LAYER.M1_DRAW,
-    layer_gap: LayerSpec = LAYER.M1_ETCH,
-    port_type: str = "electrical",
+    length: float = 4000.0,
+    meanders: int = 6,
+    bend_spec: ComponentSpec = bend_circular,
+    cross_section: CrossSectionSpec = "cpw",
 ) -> Component:
     """Creates a quarter-wave coplanar waveguide resonator.
 
     A quarter-wave resonator is shorted at one end and has maximum electric field
     at the open end, making it suitable for capacitive coupling.
 
+    See :cite:`m.pozarMicrowaveEngineering2012` for details
+
     Args:
         length: Length of the quarter-wave resonator in μm.
-        width: Width of the center conductor in μm.
-        gap: Gap width on each side of the center conductor in μm.
-        short_stub_length: Length of the shorting stub in μm.
-        coupling_gap: Gap for capacitive coupling in μm.
-        coupling_length: Length of the coupling region in μm.
-        layer_metal: Layer for the metal conductor.
-        layer_gap: Layer for the gaps.
-        port_type: Type of port to add to the component.
+        meanders: Number of meander sections to fit the resonator in a compact area.
+        bend_spec: Specification for the bend component used in meanders.
+        cross_section: Cross-section specification for the resonator.
 
     Returns:
         Component: A gdsfactory component with the quarter-wave resonator geometry.
     """
     c = Component()
+    bend = gf.get_component(bend_spec, cross_section=cross_section, angle=180)
+    length_per_one_straight = (length - meanders * bend.info["length"]) / (meanders + 1)
 
-    # Create main resonator line
-    main_line = gf.components.rectangle(
-        size=(length, width),
-        layer=layer_metal,
-    )
-    c.add_ref(main_line)
+    if length_per_one_straight <= 0:
+        raise ValueError(
+            f"Resonator length {length} is too short for {meanders} meanders with current bend spec {bend}. "
+            f"Increase length, reduce meanders, or change the bend spec."
+        )
 
-    # Create shorting stub at one end
-    short_stub = gf.components.rectangle(
-        size=(short_stub_length, width + 2 * gap),
-        layer=layer_metal,
+    straight_comp = straight(
+        length=length_per_one_straight,
+        cross_section=cross_section,
     )
-    short_ref = c.add_ref(short_stub)
-    short_ref.move((length, -gap))
 
-    # Create ground planes
-    ground_top = gf.components.rectangle(
-        size=(length + short_stub_length + 2 * gap, gap),
-        layer=layer_metal,
-    )
-    ground_top_ref = c.add_ref(ground_top)
-    ground_top_ref.move((-gap, width))
+    # Route meandering quarter-wave resonator
+    previous_port = None
+    for i in range(meanders):
+        straight_ref = c.add_ref(straight_comp)
+        bend_ref = c.add_ref(bend)
 
-    ground_bottom = gf.components.rectangle(
-        size=(length + short_stub_length + 2 * gap, gap),
-        layer=layer_metal,
-    )
-    ground_bottom_ref = c.add_ref(ground_bottom)
-    ground_bottom_ref.move((-gap, -gap))
+        if i > 0:
+            straight_ref.connect("o1", previous_port)
 
-    # Create coupling region at open end
-    coupling_region = gf.components.rectangle(
-        size=(coupling_length, coupling_gap),
-        layer=layer_gap,
-    )
-    coupling_ref = c.add_ref(coupling_region)
-    coupling_ref.move((-coupling_length, width / 2 - coupling_gap / 2))
+        if i % 2 == 0:
+            bend_ref.mirror()
+            bend_ref.rotate(90)
 
-    # Add port for coupling
-    c.add_port(
-        name="coupling",
-        center=(-coupling_length / 2, width / 2),
-        width=coupling_gap,
-        orientation=180,
-        layer=layer_metal,
-        port_type=port_type,
+        bend_ref.connect("o1", straight_ref.ports["o2"])
+        previous_port = bend_ref.ports["o2"]
+
+    # Final straight section
+    final_straight = straight(
+        length=length_per_one_straight,
+        cross_section=cross_section,
     )
+    final_straight_ref = c.add_ref(final_straight)
+    final_straight_ref.connect("o1", previous_port)
+
+    # Etch at beginning
+    # TODO
 
     # Add metadata
-    c.info["resonator_type"] = "quarter_wave"
     c.info["length"] = length
-    c.info["width"] = width
-    c.info["gap"] = gap
-    c.info["frequency_estimate"] = (
-        3e8 / (4 * length * 1e-6) / 1e9
-    )  # GHz, rough estimate
+    c.info["resonator_type"] = "quarter_wave"
+    # c.info["frequency_estimate"] = (
+    #     3e8 / (4 * length * 1e-6) / 1e9
+    # )  # GHz, rough estimate
 
     return c
 
@@ -389,6 +372,6 @@ if __name__ == "__main__":
 
     PDK.activate()
     # c = resonator_cpw()
-    c = resonator_lumped()
-    # c = resonator_quarter_wave()
+    # c = resonator_lumped()
+    c = resonator_quarter_wave()
     c.show()
