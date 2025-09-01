@@ -12,13 +12,6 @@ from pytest_regressions.data_regression import DataRegressionFixture
 
 from qpdk import PDK
 
-
-@pytest.fixture(autouse=True)
-def activate_pdk() -> None:
-    """Activate PDK."""
-    PDK.activate()
-
-
 cells = PDK.cells
 skip_test_netlist = {
     "wire_corner",
