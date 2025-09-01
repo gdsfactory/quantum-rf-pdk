@@ -158,138 +158,138 @@ def resonator_cpw(
     return c
 
 
-@gf.cell_with_module_name
-def resonator_lumped(
-    capacitor_fingers: int = 4,
-    capacitor_finger_length: float = 20.0,
-    capacitor_finger_gap: float = 2.0,
-    capacitor_thickness: float = 5.0,
-    inductor_width: float = 2.0,
-    inductor_turns: int = 3,
-    inductor_radius: float = 20.0,
-    coupling_gap: float = 5.0,
-    layer_metal: LayerSpec = LAYER.M1_DRAW,
-    port_type: str = "electrical",
-) -> Component:
-    """Creates a lumped element resonator with interdigital capacitor and spiral inductor.
-
-    A lumped resonator consists of a capacitive element (interdigital capacitor)
-    and an inductive element (spiral inductor) forming an LC circuit.
-
-    Args:
-        capacitor_fingers: Number of fingers in the interdigital capacitor.
-        capacitor_finger_length: Length of each capacitor finger in μm.
-        capacitor_finger_gap: Gap between capacitor fingers in μm.
-        capacitor_thickness: Thickness of capacitor fingers in μm.
-        inductor_width: Width of the inductor wire in μm.
-        inductor_turns: Number of turns in the spiral inductor.
-        inductor_radius: Radius of the spiral inductor in μm.
-        coupling_gap: Gap for capacitive coupling in μm.
-        layer_metal: Layer for the metal structures.
-        port_type: Type of port to add to the component.
-
-    Returns:
-        Component: A gdsfactory component with the lumped resonator geometry.
-    """
-    c = Component()
-
-    # Create interdigital capacitor
-    capacitor = gf.get_component(
-        "interdigital_capacitor",
-        fingers=capacitor_fingers,
-        finger_length=capacitor_finger_length,
-        finger_gap=capacitor_finger_gap,
-        thickness=capacitor_thickness,
-        layer=layer_metal,
-    )
-    c.add_ref(capacitor)
-
-    # Create spiral inductor
-    # Create a cross section with the specified width
-    inductor_cross_section = gf.cross_section.strip(
-        width=inductor_width,
-        layer=layer_metal,
-    )
-    inductor = gf.components.spiral(
-        n_loops=inductor_turns,
-        cross_section=inductor_cross_section,
-    )
-    ind_ref = c.add_ref(inductor)
-
-    # Position inductor next to capacitor
-    cap_width = 2 * capacitor_thickness + capacitor_finger_length + capacitor_finger_gap
-    ind_ref.move((cap_width + 20.0, 0))
-
-    # Connect capacitor and inductor
-    connection = gf.components.rectangle(
-        size=(20.0, inductor_width),
-        layer=layer_metal,
-    )
-    conn_ref = c.add_ref(connection)
-    conn_ref.move((cap_width, -inductor_width / 2))
-
-    # Connect to inductor input
-    connection2 = gf.components.rectangle(
-        size=(inductor_width, 20.0),
-        layer=layer_metal,
-    )
-    conn2_ref = c.add_ref(connection2)
-    conn2_ref.move((cap_width + 20.0 - inductor_width / 2, -20.0))
-
-    # Add coupling elements for input/output
-    coupling_cap_in = gf.components.rectangle(
-        size=(capacitor_thickness, coupling_gap),
-        layer=layer_metal,
-    )
-    coupling_in_ref = c.add_ref(coupling_cap_in)
-    coupling_in_ref.move(
-        (
-            -coupling_gap - capacitor_thickness,
-            capacitor_fingers * capacitor_thickness / 2,
-        )
-    )
-
-    coupling_cap_out = gf.components.rectangle(
-        size=(capacitor_thickness, coupling_gap),
-        layer=layer_metal,
-    )
-    coupling_out_ref = c.add_ref(coupling_cap_out)
-    coupling_out_ref.move(
-        (cap_width + coupling_gap, capacitor_fingers * capacitor_thickness / 2)
-    )
-
-    # Add ports
-    c.add_port(
-        name="input",
-        center=(
-            -coupling_gap - capacitor_thickness / 2,
-            capacitor_fingers * capacitor_thickness / 2,
-        ),
-        width=coupling_gap,
-        orientation=180,
-        layer=layer_metal,
-        port_type=port_type,
-    )
-
-    c.add_port(
-        name="output",
-        center=(
-            cap_width + coupling_gap + capacitor_thickness / 2,
-            capacitor_fingers * capacitor_thickness / 2,
-        ),
-        width=coupling_gap,
-        orientation=0,
-        layer=layer_metal,
-        port_type=port_type,
-    )
-
-    # Add metadata
-    c.info["resonator_type"] = "lumped"
-    c.info["capacitor_fingers"] = capacitor_fingers
-    c.info["inductor_turns"] = inductor_turns
-    c.info["inductor_radius"] = inductor_radius
-
-    return c
+# @gf.cell_with_module_name
+# def resonator_lumped(
+#     capacitor_fingers: int = 4,
+#     capacitor_finger_length: float = 20.0,
+#     capacitor_finger_gap: float = 2.0,
+#     capacitor_thickness: float = 5.0,
+#     inductor_width: float = 2.0,
+#     inductor_turns: int = 3,
+#     inductor_radius: float = 20.0,
+#     coupling_gap: float = 5.0,
+#     layer_metal: LayerSpec = LAYER.M1_DRAW,
+#     port_type: str = "electrical",
+# ) -> Component:
+#     """Creates a lumped element resonator with interdigital capacitor and spiral inductor.
+#
+#     A lumped resonator consists of a capacitive element (interdigital capacitor)
+#     and an inductive element (spiral inductor) forming an LC circuit.
+#
+#     Args:
+#         capacitor_fingers: Number of fingers in the interdigital capacitor.
+#         capacitor_finger_length: Length of each capacitor finger in μm.
+#         capacitor_finger_gap: Gap between capacitor fingers in μm.
+#         capacitor_thickness: Thickness of capacitor fingers in μm.
+#         inductor_width: Width of the inductor wire in μm.
+#         inductor_turns: Number of turns in the spiral inductor.
+#         inductor_radius: Radius of the spiral inductor in μm.
+#         coupling_gap: Gap for capacitive coupling in μm.
+#         layer_metal: Layer for the metal structures.
+#         port_type: Type of port to add to the component.
+#
+#     Returns:
+#         Component: A gdsfactory component with the lumped resonator geometry.
+#     """
+#     c = Component()
+#
+#     # Create interdigital capacitor
+#     capacitor = gf.get_component(
+#         "interdigital_capacitor",
+#         fingers=capacitor_fingers,
+#         finger_length=capacitor_finger_length,
+#         finger_gap=capacitor_finger_gap,
+#         thickness=capacitor_thickness,
+#         layer=layer_metal,
+#     )
+#     c.add_ref(capacitor)
+#
+#     # Create spiral inductor
+#     # Create a cross section with the specified width
+#     inductor_cross_section = gf.cross_section.strip(
+#         width=inductor_width,
+#         layer=layer_metal,
+#     )
+#     inductor = gf.components.spiral(
+#         n_loops=inductor_turns,
+#         cross_section=inductor_cross_section,
+#     )
+#     ind_ref = c.add_ref(inductor)
+#
+#     # Position inductor next to capacitor
+#     cap_width = 2 * capacitor_thickness + capacitor_finger_length + capacitor_finger_gap
+#     ind_ref.move((cap_width + 20.0, 0))
+#
+#     # Connect capacitor and inductor
+#     connection = gf.components.rectangle(
+#         size=(20.0, inductor_width),
+#         layer=layer_metal,
+#     )
+#     conn_ref = c.add_ref(connection)
+#     conn_ref.move((cap_width, -inductor_width / 2))
+#
+#     # Connect to inductor input
+#     connection2 = gf.components.rectangle(
+#         size=(inductor_width, 20.0),
+#         layer=layer_metal,
+#     )
+#     conn2_ref = c.add_ref(connection2)
+#     conn2_ref.move((cap_width + 20.0 - inductor_width / 2, -20.0))
+#
+#     # Add coupling elements for input/output
+#     coupling_cap_in = gf.components.rectangle(
+#         size=(capacitor_thickness, coupling_gap),
+#         layer=layer_metal,
+#     )
+#     coupling_in_ref = c.add_ref(coupling_cap_in)
+#     coupling_in_ref.move(
+#         (
+#             -coupling_gap - capacitor_thickness,
+#             capacitor_fingers * capacitor_thickness / 2,
+#         )
+#     )
+#
+#     coupling_cap_out = gf.components.rectangle(
+#         size=(capacitor_thickness, coupling_gap),
+#         layer=layer_metal,
+#     )
+#     coupling_out_ref = c.add_ref(coupling_cap_out)
+#     coupling_out_ref.move(
+#         (cap_width + coupling_gap, capacitor_fingers * capacitor_thickness / 2)
+#     )
+#
+#     # Add ports
+#     c.add_port(
+#         name="input",
+#         center=(
+#             -coupling_gap - capacitor_thickness / 2,
+#             capacitor_fingers * capacitor_thickness / 2,
+#         ),
+#         width=coupling_gap,
+#         orientation=180,
+#         layer=layer_metal,
+#         port_type=port_type,
+#     )
+#
+#     c.add_port(
+#         name="output",
+#         center=(
+#             cap_width + coupling_gap + capacitor_thickness / 2,
+#             capacitor_fingers * capacitor_thickness / 2,
+#         ),
+#         width=coupling_gap,
+#         orientation=0,
+#         layer=layer_metal,
+#         port_type=port_type,
+#     )
+#
+#     # Add metadata
+#     c.info["resonator_type"] = "lumped"
+#     c.info["capacitor_fingers"] = capacitor_fingers
+#     c.info["inductor_turns"] = inductor_turns
+#     c.info["inductor_radius"] = inductor_radius
+#
+#     return c
 
 
 @gf.cell_with_module_name
