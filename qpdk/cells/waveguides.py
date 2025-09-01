@@ -9,6 +9,7 @@ from qpdk import tech
 
 _DEFAULT_CROSS_SECTION = tech.cpw
 _DEFAULT_KWARGS = {"cross_section": _DEFAULT_CROSS_SECTION}
+_DEFAULT_BEND_KWARGS = _DEFAULT_KWARGS | {"allow_min_radius_violation": True}
 
 
 @gf.cell
@@ -79,7 +80,7 @@ def bend_euler(**kwargs: Unpack[BendEulerKwargs]) -> gf.Component:
     Args:
         **kwargs: Arguments passed to gf.c.bend_euler.
     """
-    return gf.c.bend_euler(**(_DEFAULT_KWARGS | kwargs))
+    return gf.c.bend_euler(**(_DEFAULT_BEND_KWARGS | kwargs))
 
 
 class BendCircularKwargs(TypedDict, total=False):
@@ -106,7 +107,9 @@ def bend_circular(**kwargs: Unpack[BendCircularKwargs]) -> gf.Component:
     Args:
         **kwargs: Arguments passed to gf.c.bend_circular.
     """
-    return gf.c.bend_circular(**(_DEFAULT_KWARGS | _BEND_CIRCULAR_DEFAULTS | kwargs))
+    return gf.c.bend_circular(
+        **(_DEFAULT_BEND_KWARGS | _BEND_CIRCULAR_DEFAULTS | kwargs)
+    )
 
 
 class BendSKwargs(TypedDict, total=False):
@@ -133,7 +136,7 @@ def bend_s(**kwargs: Unpack[BendSKwargs]) -> gf.Component:
     Args:
         **kwargs: Arguments passed to gf.c.bend_s.
     """
-    return gf.c.bend_s(**(_DEFAULT_KWARGS | _BEND_S_DEFAULTS | kwargs))
+    return gf.c.bend_s(**(_DEFAULT_BEND_KWARGS | _BEND_S_DEFAULTS | kwargs))
 
 
 class StraightAllAngleKwargs(TypedDict, total=False):
@@ -185,7 +188,7 @@ def bend_euler_all_angle(
     Args:
         **kwargs: Arguments passed to gf.c.bend_euler_all_angle.
     """
-    return gf.c.bend_euler_all_angle(**(_DEFAULT_KWARGS | kwargs))
+    return gf.c.bend_euler_all_angle(**(_DEFAULT_BEND_KWARGS | kwargs))
 
 
 class BendCircularAllAngleKwargs(TypedDict, total=False):
@@ -210,7 +213,7 @@ def bend_circular_all_angle(
         **kwargs: Arguments passed to gf.c.bend_circular_all_angle.
     """
     return gf.c.bend_circular_all_angle(
-        **(_DEFAULT_KWARGS | _BEND_CIRCULAR_DEFAULTS | kwargs)
+        **(_DEFAULT_BEND_KWARGS | _BEND_CIRCULAR_DEFAULTS | kwargs)
     )
 
 
