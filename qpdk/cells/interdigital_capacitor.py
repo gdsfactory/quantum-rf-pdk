@@ -24,9 +24,7 @@ def interdigital_capacitor(
     a distributed capacitance. This component creates a planar capacitor with
     two sets of interleaved fingers extending from opposite ends.
 
-    See for example Zhu et al., `Accurate circuit model of interdigital
-    capacitor and its application to design of new quasi-lumped miniaturized
-    filters with suppression of harmonic resonance`, doi: 10.1109/22.826833.
+    See for example :cite:`leizhuAccurateCircuitModel2000`.
 
     Note:
         ``finger_length=0`` effectively provides a parallel plate capacitor.
