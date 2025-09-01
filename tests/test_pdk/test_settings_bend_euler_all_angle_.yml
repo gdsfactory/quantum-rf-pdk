@@ -10,10 +10,5 @@ info:
   route_info_type: coplanar_waveguide
   route_info_weight: 26.619
   width: 10
-name: bend_euler_all_angle_RN_f95f4de0
-settings:
-  allow_min_radius_violation: true
-  angle: 90
-  cross_section: cpw
-  p: 0.5
-  with_arc_floorplan: true
+name: bend_euler_all_angle
+settings: {}

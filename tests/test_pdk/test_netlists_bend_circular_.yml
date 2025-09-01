@@ -1,5 +1,5 @@
 instances: {}
-name: bend_s
+name: bend_circular
 nets: []
 placements: {}
 ports: {}
