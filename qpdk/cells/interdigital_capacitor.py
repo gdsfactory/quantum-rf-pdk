@@ -7,7 +7,10 @@ from math import ceil, floor
 
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.typings import LayerSpec
+from gdsfactory.typings import CrossSectionSpec, LayerSpec
+
+from qpdk.cells.waveguides import straight
+from qpdk.tech import LAYER
 
 
 @gf.cell
@@ -16,7 +19,9 @@ def interdigital_capacitor(
     finger_length: float | int = 20.0,
     finger_gap: float | int = 2.0,
     thickness: float | int = 5.0,
-    layer: LayerSpec = "M1_DRAW",
+    etch_layer: LayerSpec | None = "M1_ETCH",
+    etch_bbox_margin: float = 2.0,
+    cross_section: CrossSectionSpec = "cpw",
 ) -> Component:
     """Generate an interdigital capacitor component with ports on both ends.
 
@@ -24,9 +29,7 @@ def interdigital_capacitor(
     a distributed capacitance. This component creates a planar capacitor with
     two sets of interleaved fingers extending from opposite ends.
 
-    See for example Zhu et al., `Accurate circuit model of interdigital
-    capacitor and its application to design of new quasi-lumped miniaturized
-    filters with suppression of harmonic resonance`, doi: 10.1109/22.826833.
+    See for example :cite:`leizhuAccurateCircuitModel2000`.
 
     Note:
         ``finger_length=0`` effectively provides a parallel plate capacitor.
@@ -38,13 +41,18 @@ def interdigital_capacitor(
         finger_length: Length of each finger in μm.
         finger_gap: Gap between adjacent fingers in μm.
         thickness: Thickness of fingers and the base section in μm.
-        layer: Layer specification for the capacitor geometry.
+        layer: Layer to put capacitor geometry on.
+        etch_layer: Optional layer for etching around the capacitor.
+        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
+        cross_section: Cross-section for the short straight from the etch box capacitor.
 
     Returns:
         Component: A gdsfactory component with the interdigital capacitor geometry
         and two ports ('o1' and 'o2') on opposing sides.
     """
     c = Component()
+    # Used temporarily
+    layer = LAYER.M1_DRAW
 
     if fingers < 1:
         raise ValueError("Must have at least 1 finger")
@@ -107,20 +115,52 @@ def interdigital_capacitor(
 
     c.add_polygon(points_1, layer=layer)
     c.add_polygon(points_2, layer=layer)
-    c.add_port(
-        name="o1",
-        center=(0, height / 2),
-        width=thickness,
-        orientation=180,
-        layer=layer,
+
+    # Add etch layer bbox if specified
+    if etch_layer is not None:
+        etch_bbox = [
+            (-etch_bbox_margin, -etch_bbox_margin),
+            (width + etch_bbox_margin, -etch_bbox_margin),
+            (width + etch_bbox_margin, height + etch_bbox_margin),
+            (-etch_bbox_margin, height + etch_bbox_margin),
+        ]
+        c.add_polygon(etch_bbox, layer=etch_layer)
+
+    # Add small straights on the left and right sides of the capacitor
+    straight_cross_section = gf.get_cross_section(cross_section)
+    straight_out_of_etch = straight(
+        length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    c.add_port(
-        name="o2",
-        center=(width, height / 2),
-        width=thickness,
-        orientation=0,
-        layer=layer,
+    straight_left = c.add_ref(straight_out_of_etch).move(
+        (-etch_bbox_margin, height / 2)
     )
+    straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
+
+    # Add WG to additive metal
+    c_additive = gf.boolean(
+        A=c,
+        B=c,
+        operation="or",
+        layer=layer,
+        layer1=layer,
+        layer2=straight_cross_section.layer,
+    )
+
+    # Take boolean negative
+    c = gf.boolean(
+        A=c,
+        B=c_additive,
+        operation="A-B",
+        layer=etch_layer,
+        layer1=etch_layer,
+        layer2=layer,
+    )
+    for port_name, comp in (("o1", straight_left), ("o2", straight_right)):
+        c.add_port(name=port_name, port=comp[port_name])
+
+    # Center at (0,0)
+    c.move((-width / 2, -height / 2))
+
     return c
 
 

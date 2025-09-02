@@ -14,8 +14,8 @@
   <marked>false</marked>
   <xfill>false</xfill>
   <animation>0</animation>
-  <name>WG 3/0</name>
-  <source>3/0@1</source>
+  <name>M1_DRAW 10/0</name>
+  <source>10/0@1</source>
  </properties>
  <properties>
   <frame-color>#c0c0c0</frame-color>
@@ -31,8 +31,8 @@
   <marked>false</marked>
   <xfill>false</xfill>
   <animation>0</animation>
-  <name>SLAB 5/0</name>
-  <source>5/0@1</source>
+  <name>M1_ETCH 11/0</name>
+  <source>11/0@1</source>
  </properties>
  <properties>
   <frame-color>#00ffff</frame-color>
@@ -48,8 +48,8 @@
   <marked>false</marked>
   <xfill>false</xfill>
   <animation>0</animation>
-  <name>RIB 4/0</name>
-  <source>4/0@1</source>
+  <name>M1_CUTOUT 12/0</name>
+  <source>12/0@1</source>
  </properties>
  <properties>
   <frame-color>#0000ff</frame-color>
@@ -65,8 +65,8 @@
   <marked>false</marked>
   <xfill>false</xfill>
   <animation>0</animation>
-  <name>GRA 6/0</name>
-  <source>6/0@1</source>
+  <name>AB_DRAW 20/0</name>
+  <source>20/0@1</source>
  </properties>
  <properties>
   <frame-color>#ebc634</frame-color>
@@ -82,8 +82,8 @@
   <marked>false</marked>
   <xfill>false</xfill>
   <animation>0</animation>
-  <name>HEATER 39/0</name>
-  <source>39/0@1</source>
+  <name>AB_VIA 21/0</name>
+  <source>21/0@1</source>
  </properties>
  <properties>
   <frame-color/>
@@ -99,8 +99,127 @@
   <marked>false</marked>
   <xfill>false</xfill>
   <animation>0</animation>
-  <name>PAD 41/0</name>
+  <name>AB_ETCH 22/0</name>
+  <source>22/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#ffa500</frame-color>
+  <fill-color>#ffa500</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I3</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>JJ_MARK 40/0</name>
+  <source>40/0@1</source>
+ </properties>
+ <properties>
+  <frame-color/>
+  <fill-color>#008080</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I3</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>JJ_AREA 41/0</name>
   <source>41/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#800080</frame-color>
+  <fill-color>#800080</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I3</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>TSV 60/0</name>
+  <source>60/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#ff0000</frame-color>
+  <fill-color>#ff0000</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I3</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>DICE 70/0</name>
+  <source>70/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#ffff00</frame-color>
+  <fill-color>#ffff00</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I3</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>ALN_TOP 80/0</name>
+  <source>80/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#ff00ff</frame-color>
+  <fill-color>#ff00ff</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I3</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>ALN_BOT 81/0</name>
+  <source>81/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#000000</frame-color>
+  <fill-color>#000000</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I3</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>TEXT 90/0</name>
+  <source>90/0@1</source>
  </properties>
  <properties>
   <frame-color>#008000</frame-color>
@@ -116,7 +235,7 @@
   <marked>false</marked>
   <xfill>false</xfill>
   <animation>0</animation>
-  <name>FLOORPLAN 99/0</name>
+  <name>SIM_ONLY 99/0</name>
   <source>99/0@1</source>
  </properties>
  <properties>
@@ -152,5 +271,22 @@
   <animation>0</animation>
   <name>LABEL_INSTANCE 101/0</name>
   <source>101/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#800080</frame-color>
+  <fill-color>#800080</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I23</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>false</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>WG 1000/0</name>
+  <source>1000/0@1</source>
  </properties>
 </layer-properties>

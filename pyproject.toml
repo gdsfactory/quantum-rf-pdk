@@ -29,12 +29,14 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest_regressions",
-  "pytest-github-actions-annotate-failures"
+  "pytest-github-actions-annotate-failures",
+  "hypothesis"
 ]
 docs = ["jupytext", "matplotlib", "jupyter-book==1.0.4"]
 
 [tool.codespell]
-ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem"
+ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun"
+skip = 'bibliography.bib'
 
 [tool.gdsfactoryplus.drc]
 timeout = 300
@@ -102,7 +104,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "qpdk/cells/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
-"tests/**" = ["S101"]  # allow assert statements in test files
+"tests/**" = ["S101", "D103"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

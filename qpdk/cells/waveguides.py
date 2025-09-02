@@ -1,7 +1,15 @@
 """Primitives."""
 
+from typing import TypedDict, Unpack
+
 import gdsfactory as gf
 from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
+
+from qpdk import tech
+
+_DEFAULT_CROSS_SECTION = tech.cpw
+_DEFAULT_KWARGS = {"cross_section": _DEFAULT_CROSS_SECTION}
+_DEFAULT_BEND_KWARGS = _DEFAULT_KWARGS | {"allow_min_radius_violation": True}
 
 
 @gf.cell
@@ -33,149 +41,179 @@ def rectangle(
     return c
 
 
+class StraightKwargs(TypedDict, total=False):
+    """Type definition for straight keyword arguments."""
+
+    length: float
+    cross_section: CrossSectionSpec
+    width: float | None
+    npoints: int
+
+
 @gf.cell
-def straight(
-    length: float = 10,
-    cross_section: CrossSectionSpec = "cpw",
-    width: float | None = None,
-    npoints: int = 2,
-) -> gf.Component:
+def straight(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
     """Returns a Straight waveguide.
 
     Args:
-        length: straight length (um).
-        cross_section: specification (CrossSection, string or dict).
-        width: width of the waveguide. If None, it will use the width of the cross_section.
-        npoints: number of points.
+        **kwargs: Arguments passed to gf.c.straight.
     """
-    return gf.c.straight(
-        length=length, cross_section=cross_section, width=width, npoints=npoints
-    )
+    return gf.c.straight(**(_DEFAULT_KWARGS | kwargs))
+
+
+class BendEulerKwargs(TypedDict, total=False):
+    """Type definition for bend_euler keyword arguments."""
+
+    angle: float
+    p: float
+    with_arc_floorplan: bool
+    npoints: int
+    direction: str
+    with_cladding_box: bool
+    cross_section: gf.CrossSection
+    allow_min_radius_violation: bool
 
 
 @gf.cell
-def bend_euler(
-    radius: float | None = None,
-    angle: float = 90,
-    p: float = 0.5,
-    width: float | None = None,
-    cross_section: CrossSectionSpec = "cpw",
-    allow_min_radius_violation: bool = True,
-) -> gf.Component:
+def bend_euler(**kwargs: Unpack[BendEulerKwargs]) -> gf.Component:
     """Regular degree euler bend.
 
     Args:
-        radius: in um. Defaults to cross_section_radius.
-        angle: total angle of the curve.
-        p: Proportion of the curve that is an Euler curve.
-        width: width to use. Defaults to cross_section.width.
-        cross_section: specification (CrossSection, string, CrossSectionFactory dict).
-        allow_min_radius_violation: if True allows radius to be smaller than cross_section radius.
+        **kwargs: Arguments passed to gf.c.bend_euler.
     """
-    return gf.c.bend_euler(
-        radius=radius,
-        angle=angle,
-        p=p,
-        width=width,
-        cross_section=cross_section,
-        allow_min_radius_violation=allow_min_radius_violation,
-        with_arc_floorplan=True,
-        npoints=None,
-        layer=None,
-    )
+    return gf.c.bend_euler(**(_DEFAULT_BEND_KWARGS | kwargs))
+
+
+class BendCircularKwargs(TypedDict, total=False):
+    """Type definition for bend_circular keyword arguments."""
+
+    angle: float
+    npoints: int
+    with_arc_floorplan: bool
+    cross_section: gf.CrossSection
+    radius: float
+    direction: str
+    allow_min_radius_violation: bool
+
+
+_BEND_CIRCULAR_DEFAULTS = {
+    "radius": 100,
+}
 
 
 @gf.cell
-def bend_s(
-    size: Size = (11, 1.8),
-    cross_section: CrossSectionSpec = "cpw",
-    width: float | None = None,
-    allow_min_radius_violation: bool = True,
-) -> gf.Component:
+def bend_circular(**kwargs: Unpack[BendCircularKwargs]) -> gf.Component:
+    """Returns circular bend.
+
+    Args:
+        **kwargs: Arguments passed to gf.c.bend_circular.
+    """
+    return gf.c.bend_circular(
+        **(_DEFAULT_BEND_KWARGS | _BEND_CIRCULAR_DEFAULTS | kwargs)
+    )
+
+
+class BendSKwargs(TypedDict, total=False):
+    """Type definition for bend_s keyword arguments."""
+
+    size: Size
+    cross_section: CrossSectionSpec
+    width: float | None
+    allow_min_radius_violation: bool
+
+
+_BEND_S_DEFAULTS = {
+    "size": (20.0, 3.0),
+}
+
+
+@gf.cell
+def bend_s(**kwargs: Unpack[BendSKwargs]) -> gf.Component:
     """Return S bend with bezier curve.
 
     stores min_bend_radius property in self.info['min_bend_radius']
     min_bend_radius depends on height and length
 
     Args:
-        size: in x and y direction.
-        cross_section: spec.
-        width: width of the waveguide. If None, it will use the width of the cross_section.
-        allow_min_radius_violation: allows min radius violations.
+        **kwargs: Arguments passed to gf.c.bend_s.
     """
-    return gf.c.bend_s(
-        size=size,
-        cross_section=cross_section,
-        npoints=99,
-        allow_min_radius_violation=allow_min_radius_violation,
-        width=width,
-    )
+    return gf.c.bend_s(**(_DEFAULT_BEND_KWARGS | _BEND_S_DEFAULTS | kwargs))
+
+
+class StraightAllAngleKwargs(TypedDict, total=False):
+    """Type definition for straight_all_angle keyword arguments."""
+
+    length: float
+    npoints: int
+    cross_section: CrossSectionSpec
+    width: float | None
 
 
 @gf.vcell
 def straight_all_angle(
-    length: float = 10.0,
-    npoints: int = 2,
-    cross_section: CrossSectionSpec = "cpw",
-    width: float | None = None,
+    **kwargs: Unpack[StraightAllAngleKwargs],
 ) -> gf.ComponentAllAngle:
     """Returns a Straight waveguide with offgrid ports.
 
     Args:
-        length: straight length (um).
-        npoints: number of points.
-        cross_section: specification (CrossSection, string or dict).
-        width: width of the waveguide. If None, it will use the width of the cross_section.
+        **kwargs: Arguments passed to gf.c.straight_all_angle.
 
     .. code::
 
         o1  ──────────────── o2
                 length
     """
-    return gf.c.straight_all_angle(
-        length=length,
-        npoints=npoints,
-        cross_section=cross_section,
-        width=width,
-    )
+    return gf.c.straight_all_angle(**(_DEFAULT_KWARGS | kwargs))
+
+
+class BendEulerAllAngleKwargs(TypedDict, total=False):
+    """Type definition for bend_euler_all_angle keyword arguments."""
+
+    radius: float | None
+    angle: float
+    p: float
+    with_arc_floorplan: bool
+    npoints: int | None
+    layer: gf.typings.LayerSpec | None
+    width: float | None
+    cross_section: CrossSectionSpec
+    allow_min_radius_violation: bool
 
 
 @gf.vcell
 def bend_euler_all_angle(
-    radius: float | None = None,
-    angle: float = 90.0,
-    p: float = 0.5,
-    with_arc_floorplan: bool = True,
-    npoints: int | None = None,
-    layer: gf.typings.LayerSpec | None = None,
-    width: float | None = None,
-    cross_section: CrossSectionSpec = "cpw",
-    allow_min_radius_violation: bool = True,
+    **kwargs: Unpack[BendEulerAllAngleKwargs],
 ) -> gf.ComponentAllAngle:
     """Returns regular degree euler bend with arbitrary angle.
 
     Args:
-        radius: in um. Defaults to cross_section_radius.
-        angle: total angle of the curve.
-        p: Proportion of the curve that is an Euler curve.
-        with_arc_floorplan: if True the size of the bend will be adjusted to match an arc bend with the specified radius. If False: `radius` is the minimum radius of curvature.
-        npoints: Number of points used per 360 degrees.
-        layer: layer to use. Defaults to cross_section.layer.
-        width: width to use. Defaults to cross_section.width.
-        cross_section: specification (CrossSection, string, CrossSectionFactory dict).
-        allow_min_radius_violation: if True allows radius to be smaller than cross_section radius.
-
+        **kwargs: Arguments passed to gf.c.bend_euler_all_angle.
     """
-    return gf.c.bend_euler_all_angle(
-        radius=radius,
-        angle=angle,
-        p=p,
-        with_arc_floorplan=with_arc_floorplan,
-        npoints=npoints,
-        layer=layer,
-        width=width,
-        cross_section=cross_section,
-        allow_min_radius_violation=allow_min_radius_violation,
+    return gf.c.bend_euler_all_angle(**(_DEFAULT_BEND_KWARGS | kwargs))
+
+
+class BendCircularAllAngleKwargs(TypedDict, total=False):
+    """Type definition for bend_circular_all_angle keyword arguments."""
+
+    radius: float | None
+    angle: float
+    npoints: int | None
+    layer: gf.typings.LayerSpec | None
+    width: float | None
+    cross_section: CrossSectionSpec
+    allow_min_radius_violation: bool
+
+
+@gf.vcell
+def bend_circular_all_angle(
+    **kwargs: Unpack[BendCircularAllAngleKwargs],
+) -> gf.ComponentAllAngle:
+    """Returns circular bend with arbitrary angle.
+
+    Args:
+        **kwargs: Arguments passed to gf.c.bend_circular_all_angle.
+    """
+    return gf.c.bend_circular_all_angle(
+        **(_DEFAULT_BEND_KWARGS | _BEND_CIRCULAR_DEFAULTS | kwargs)
     )
 
 
@@ -184,6 +222,14 @@ if __name__ == "__main__":
 
     PDK.activate()
 
-    c = bend_euler()
-    c.pprint_ports()
-    c.show()
+    for c in [
+        # bend_euler(),
+        bend_circular(),
+        # bend_s(),
+        # straight(),
+        # straight_all_angle(),
+        # bend_euler_all_angle(angle=33),
+        # rectangle(),
+    ]:
+        c.pprint_ports()
+        c.show()

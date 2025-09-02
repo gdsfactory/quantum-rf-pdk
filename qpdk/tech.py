@@ -173,7 +173,7 @@ def coplanar_waveguide(
     width: float = 10,
     gap: float = 6,
     layer: LayerSpec = LAYER.M1_ETCH,
-    radius: float | None = None,
+    radius: float | None = 100,
 ) -> CrossSection:
     """Return a coplanar waveguide cross_section.
 
@@ -193,7 +193,7 @@ def coplanar_waveguide(
     return gf.cross_section.cross_section(
         width=width,
         layer=LAYER.WG,
-        radius=radius or width + gap,
+        radius=radius,
         sections=(
             gf.Section(
                 width=gap, offset=(gap + width) / 2, layer=layer, name="etch_offset_pos"
@@ -244,21 +244,29 @@ strip = strip_metal = microstrip
 # Routing functions
 ############################
 
-route_single = partial(gf.routing.route_single, cross_section="coplanar_waveguide")
-route_bundle = partial(gf.routing.route_bundle, cross_section="coplanar_waveguide")
+route_single = partial(
+    gf.routing.route_single,
+    cross_section=cpw,
+    bend="bend_circular",
+)
+route_bundle = partial(
+    gf.routing.route_bundle,
+    cross_section=cpw,
+    bend="bend_circular",
+)
 
 route_bundle_all_angle = partial(
     gf.routing.route_bundle_all_angle,
-    cross_section="coplanar_waveguide",
+    cross_section=cpw,
     separation=3,
-    bend="bend_euler_all_angle",
+    bend="bend_circular_all_angle",
     straight="straight_all_angle",
 )
 
 route_astar = partial(
     add_bundle_astar,
     layers=["M1_ETCH"],
-    bend="bend_euler",
+    bend="bend_circular",
     straight="straight",
     grid_unit=500,
     spacing=3,

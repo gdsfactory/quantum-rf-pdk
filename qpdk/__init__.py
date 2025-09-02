@@ -19,7 +19,7 @@ _cross_sections = get_cross_sections(tech)
 
 @lru_cache
 def get_pdk() -> Pdk:
-    """Return Cornerstone PDK."""
+    """Return Quantum PDK."""
     return Pdk(
         name="qpdk",
         cells=_cells,

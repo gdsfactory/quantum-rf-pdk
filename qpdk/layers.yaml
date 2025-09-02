@@ -86,7 +86,8 @@ LayerViews:
     color: "cyan"
     hatch_pattern: hollow
   WG:
-    layer: [100, 0]
+    layer: [1000, 0]
     layer_in_name: true
     color: "purple"
-    hatch_pattern: coarsely dotted
+    visible: false
+    hatch_pattern: 22.5 degree down

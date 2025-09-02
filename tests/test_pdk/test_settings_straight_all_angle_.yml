@@ -5,8 +5,5 @@ info:
   route_info_type: coplanar_waveguide
   route_info_weight: 10
   width: 10
-name: straight_all_angle_L10__75ebd456
-settings:
-  cross_section: cpw
-  length: 10
-  npoints: 2
+name: straight_all_angle
+settings: {}
