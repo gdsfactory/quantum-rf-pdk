@@ -13,7 +13,6 @@ from functools import partial
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.components import straight
-from gdsfactory.components.tapers.taper_cross_section import taper_cross_section
 from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.tech import LAYER, coplanar_waveguide, launcher_cross_section_big
@@ -58,7 +57,7 @@ def launcher(
     )
 
     # Add the tapered transition section
-    taper_ref = c << taper_cross_section(
+    taper_ref = c << gf.c.taper_cross_section(
         length=taper_length,
         cross_section1=cross_section_big,
         cross_section2=cross_section_small,

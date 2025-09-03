@@ -273,6 +273,7 @@ route_astar = partial(
 )
 routing_strategies = dict(
     route_bundle=route_bundle,
+    route_bundle_all_angle=route_bundle_all_angle,
     route_astar=route_astar,
 )
 
