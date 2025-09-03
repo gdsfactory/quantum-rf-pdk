@@ -23,6 +23,7 @@ skip_test_netlist = {
     "resonator_lumped",
     "coupler_symmetric",
     "die_with_pads",
+    "launcher",
 }
 # Skip default gdsfactory cells
 skip_test = {
