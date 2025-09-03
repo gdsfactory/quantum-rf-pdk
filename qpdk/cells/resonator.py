@@ -293,29 +293,34 @@ def resonator_cpw(
 
 
 @gf.cell_with_module_name
-def resonator_quarter_wave(
+def resonator(
     length: float = 4000.0,
     meanders: int = 6,
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    open_start: bool = False,
+    open_end: bool = False,
 ) -> Component:
-    """Creates a quarter-wave coplanar waveguide resonator.
+    """Creates a meandering coplanar waveguide resonator.
 
-    A quarter-wave resonator is shorted at one end and has maximum electric field
-    at the open end, making it suitable for capacitive coupling.
+    Setting open_end to False creates a shorted quarter-wave resonator.
 
     See :cite:`m.pozarMicrowaveEngineering2012` for details
 
     Args:
-        length: Length of the quarter-wave resonator in μm.
+        length: Length of the resonator in μm.
         meanders: Number of meander sections to fit the resonator in a compact area.
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator.
+        open_start: If True, adds an etch section at the start of the resonator.
+        open_end: If True, adds an etch section at the end of the resonator.
 
     Returns:
         Component: A gdsfactory component with the quarter-wave resonator geometry.
     """
     c = Component()
+    cross_section = gf.get_cross_section(cross_section)
     bend = gf.get_component(bend_spec, cross_section=cross_section, angle=180)
     length_per_one_straight = (length - meanders * bend.info["length"]) / (meanders + 1)
 
@@ -336,7 +341,9 @@ def resonator_quarter_wave(
         straight_ref = c.add_ref(straight_comp)
         bend_ref = c.add_ref(bend)
 
-        if i > 0:
+        if i == 0:
+            first_straight_ref = straight_ref
+        else:  # i > 0
             straight_ref.connect("o1", previous_port)
 
         if i % 2 == 0:
@@ -354,8 +361,43 @@ def resonator_quarter_wave(
     final_straight_ref = c.add_ref(final_straight)
     final_straight_ref.connect("o1", previous_port)
 
-    # Etch at beginning
-    # TODO
+    # Etch at the open end
+    if open_end or open_start:
+        cross_section_etch_section = next(
+            s
+            for s in gf.get_cross_section(cross_section).sections
+            if "etch_offset" in s.name
+        )
+        cross_section_only_etch = gf.cross_section.cross_section(
+            width=cross_section.width + 2 * cross_section_etch_section.width,
+            layer=cross_section_etch_section.layer,
+        )
+        open_etch_comp = straight(
+            length=cross_section_etch_section.width,
+            cross_section=cross_section_only_etch,
+        )
+
+        def _add_etch_at_port(port_name, ref_port, output_port):
+            """Helper function to add etch at a specific port."""
+            open_etch = c.add_ref(open_etch_comp)
+            open_etch.connect(
+                port_name,
+                ref_port,
+                allow_width_mismatch=True,
+                allow_layer_mismatch=True,
+            )
+            c.add_port(output_port, port=open_etch.ports[output_port])
+
+        if open_end:
+            _add_etch_at_port("o1", final_straight_ref.ports["o2"], "o2")
+        if open_start:
+            _add_etch_at_port("o2", first_straight_ref.ports["o1"], "o1")
+
+    if not open_end:
+        c.add_port("o2", port=final_straight_ref.ports["o2"])
+
+    if not open_start:
+        c.add_port("o1", port=first_straight_ref.ports["o1"])
 
     # Add metadata
     c.info["length"] = length
@@ -367,11 +409,32 @@ def resonator_quarter_wave(
     return c
 
 
+@gf.cell_with_module_name
+def resonator_quarter_wave(**kwargs) -> Component:
+    """Creates a quarter-wave coplanar waveguide resonator.
+
+    A quarter-wave resonator is shorted at one end and has maximum electric field
+    at the open end, making it suitable for capacitive coupling.
+
+    Note:
+        Refer to the :func:`~resonator` for all available parameters.
+
+    Returns:
+        Component: A gdsfactory component with the quarter-wave resonator geometry.
+    """
+    return resonator(
+        **kwargs,
+        open_end=True,
+    )
+
+
 if __name__ == "__main__":
     from qpdk import PDK
 
     PDK.activate()
     # c = resonator_cpw()
     # c = resonator_lumped()
-    c = resonator_quarter_wave()
+    # c = resonator_quarter_wave()
+    # c = resonator()
+    c = resonator(open_start=not True, open_end=not True)
     c.show()
