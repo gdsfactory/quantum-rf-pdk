@@ -38,8 +38,8 @@ def launcher(
     The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
 
     Args:
-        straight_length: Length of the straight, wirebond landing area, section in micrometers.
-        taper_length: Length of the taper section in micrometers.
+        straight_length: Length of the straight, wirebond landing area, section in µm.
+        taper_length: Length of the taper section in µm.
         cross_section_big: Cross-section specification for the large end
             of the launcher (probe/wirebond interface).
         cross_section_small: Cross-section specification for the small end

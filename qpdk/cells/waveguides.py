@@ -41,6 +41,9 @@ def rectangle(
     return c
 
 
+ring = gf.c.ring
+
+
 class StraightKwargs(TypedDict, total=False):
     """Type definition for straight keyword arguments."""
 

@@ -1,0 +1,87 @@
+instances:
+  ring_gdsfactorypcompone_7473cf03_0_0:
+    component: ring
+    info: {}
+    settings:
+      angle: 360
+      angle_resolution: 2.5
+      layer: M1_DRAW
+      radius: 50
+      width: 30
+  ring_gdsfactorypcompone_bdd3d775_0_0:
+    component: ring
+    info: {}
+    settings:
+      angle: 360
+      angle_resolution: 2.5
+      layer: M1_DRAW
+      radius: 110
+      width: 60
+  squid_junction_JSjoseph_f3d0f058_60000_m8132_A45:
+    component: squid_junction
+    info: {}
+    settings:
+      junction_spec: josephson_junction
+      loop_area: 4
+name: flipmon_IRR50_IRW30_ORR_d7588b62
+nets: []
+placements:
+  ring_gdsfactorypcompone_7473cf03_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  ring_gdsfactorypcompone_bdd3d775_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  squid_junction_JSjoseph_f3d0f058_60000_m8132_A45:
+    mirror: false
+    rotation: 45
+    x: 60
+    y: -8.132
+ports:
+  junction: squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,loop_center
+warnings:
+  optical:
+    orientation_mismatch:
+    - message: squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,loop_center was promoted
+        to junction but orientationsdo not match! Difference of 45.0 deg
+      ports:
+      - squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,loop_center
+      - junction
+      values:
+      - 45
+      - 90
+    unconnected_ports:
+    - message: 6 unconnected optical ports!
+      ports:
+      - squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,left_left_wide
+      - squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,left_right_wide
+      - squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,right_left_wide
+      - squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,right_right_wide
+      - squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,left_overlap
+      - squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,right_overlap
+      values:
+      - - 77.819
+        - -6.859
+      - - 61.273
+        - -6.859
+      - - 61.273
+        - 6.859
+      - - 77.819
+        - 6.859
+      - - 69.546
+        - 1.414
+      - - 69.546
+        - -1.414
+    width_mismatch:
+    - message: Widths of ports squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,loop_center
+        and junction not equal. Difference of 33.355999999999995 um
+      ports:
+      - squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,loop_center
+      - junction
+      values:
+      - 0.09
+      - 33.446
