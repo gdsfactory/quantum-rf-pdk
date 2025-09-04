@@ -11,7 +11,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.13.1",
+  "gdsfactory>=9.13.1,<9.15.0",
   "doroutes>=0.2.0"
 ]
 description = "Quantum-RF generic PDK"
