@@ -40,6 +40,7 @@ class LayerMapQPDK(LayerMap):
     # Junction (markers / optional area)
     JJ_MARK: Layer = (40, 0)  # EBL / SEM localization marker (non-fab geometry)
     JJ_AREA: Layer = (41, 0)  # Optional bridge/overlap definition
+    JJ_PATCH: Layer = (42, 0)
 
     # Packaging / backside / misc
     TSV: Layer = (60, 0)  # Throughs / vias / backside features
@@ -185,8 +186,8 @@ def coplanar_waveguide(
         impedance of approximately 50 Ω.
 
     Args:
-        width: center conductor width in micrometers.
-        gap: gap between center conductor and ground in micrometers.
+        width: center conductor width in µm.
+        gap: gap between center conductor and ground in µm.
         layer: for the etch (negative) region.
         radius: bend radius (if applicable).
     """
@@ -221,6 +222,30 @@ def launcher_cross_section_big() -> gf.CrossSection:
     The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
     """
     return coplanar_waveguide(width=200.0, gap=110.0, layer=LAYER.M1_ETCH)
+
+
+@xsection
+def josephson_junction_cross_section_wide() -> gf.CrossSection:
+    """Return cross-section for the wide end of a Josephson junction wire.
+
+    The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
+    """
+    return gf.cross_section.cross_section(
+        width=0.2,
+        layer=LAYER.JJ_AREA,
+    )
+
+
+@xsection
+def josephson_junction_cross_section_narrow() -> gf.CrossSection:
+    """Return cross-section for the narrow end of a Josephson junction wire.
+
+    The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
+    """
+    return gf.cross_section.cross_section(
+        width=0.09,
+        layer=LAYER.JJ_AREA,
+    )
 
 
 @xsection

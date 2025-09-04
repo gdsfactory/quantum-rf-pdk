@@ -1,0 +1,31 @@
+instances:
+  josephson_junction_JOD1p8_0_0:
+    component: josephson_junction
+    info: {}
+    settings:
+      junction_overlap_displacement: 1.8
+  josephson_junction_JOD1p8_25000_m2000_A180:
+    component: josephson_junction
+    info: {}
+    settings:
+      junction_overlap_displacement: 1.8
+name: squid_junction_JSjoseph_f3d0f058
+nets: []
+placements:
+  josephson_junction_JOD1p8_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  josephson_junction_JOD1p8_25000_m2000_A180:
+    mirror: false
+    rotation: 180
+    x: 25
+    y: -2
+ports:
+  left_left_wide: josephson_junction_JOD1p8_0_0,left_wide
+  left_overlap: josephson_junction_JOD1p8_0_0,overlap
+  left_right_wide: josephson_junction_JOD1p8_0_0,right_wide
+  right_left_wide: josephson_junction_JOD1p8_25000_m2000_A180,left_wide
+  right_overlap: josephson_junction_JOD1p8_25000_m2000_A180,overlap
+  right_right_wide: josephson_junction_JOD1p8_25000_m2000_A180,right_wide

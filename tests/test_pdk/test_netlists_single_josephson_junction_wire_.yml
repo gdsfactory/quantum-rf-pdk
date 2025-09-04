@@ -1,0 +1,103 @@
+instances:
+  rectangle_gdsfactorypco_4f32cade_m375_0:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: JJ_PATCH
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 1.5
+      - 1
+  straight_L0p5_CSjosephs_8a87dbad_13000_0:
+    component: straight
+    info:
+      length: 0.5
+      route_info_josephson_junction_cross_section_narrow_length: 0.5
+      route_info_length: 0.5
+      route_info_type: josephson_junction_cross_section_narrow
+      route_info_weight: 0.5
+      width: 0.09
+    settings:
+      cross_section: josephson_junction_cross_section_narrow
+      length: 0.5
+  straight_L8p3_CSjosephs_ef5e4753_0_0:
+    component: straight
+    info:
+      length: 8.3
+      route_info_josephson_junction_cross_section_wide_length: 8.3
+      route_info_length: 8.3
+      route_info_type: josephson_junction_cross_section_wide
+      route_info_weight: 8.3
+      width: 0.2
+    settings:
+      cross_section: josephson_junction_cross_section_wide
+      length: 8.3
+  taper_cross_section_gds_41aa5fb2_8300_0:
+    component: taper_cross_section
+    info:
+      route_info_josephson_junction_cross_section_wide_length: 4.7
+      route_info_josephson_junction_cross_section_wide_taper_length: 4.7
+      route_info_length: 4.7
+      route_info_type: josephson_junction_cross_section_wide
+      route_info_weight: 4.7
+    settings:
+      cross_section1: josephson_junction_cross_section_wide
+      cross_section2: josephson_junction_cross_section_narrow
+      length: 4.7
+      linear: true
+      npoints: 100
+      width_type: sine
+name: single_josephson_junction_wire
+nets:
+- p1: straight_L0p5_CSjosephs_8a87dbad_13000_0,o1
+  p2: taper_cross_section_gds_41aa5fb2_8300_0,o2
+- p1: straight_L8p3_CSjosephs_ef5e4753_0_0,o2
+  p2: taper_cross_section_gds_41aa5fb2_8300_0,o1
+placements:
+  rectangle_gdsfactorypco_4f32cade_m375_0:
+    mirror: false
+    rotation: 0
+    x: -0.375
+    y: 0
+  straight_L0p5_CSjosephs_8a87dbad_13000_0:
+    mirror: false
+    rotation: 0
+    x: 13
+    y: 0
+  straight_L8p3_CSjosephs_ef5e4753_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  taper_cross_section_gds_41aa5fb2_8300_0:
+    mirror: false
+    rotation: 0
+    x: 8.3
+    y: 0
+ports:
+  o1: straight_L8p3_CSjosephs_ef5e4753_0_0,o1
+  o2: straight_L0p5_CSjosephs_8a87dbad_13000_0,o2
+warnings:
+  electrical:
+    unconnected_ports:
+    - message: 4 unconnected electrical ports!
+      ports:
+      - rectangle_gdsfactorypco_4f32cade_m375_0,e1
+      - rectangle_gdsfactorypco_4f32cade_m375_0,e2
+      - rectangle_gdsfactorypco_4f32cade_m375_0,e3
+      - rectangle_gdsfactorypco_4f32cade_m375_0,e4
+      values:
+      - - -1.125
+        - 0
+      - - -0.375
+        - 0.5
+      - - 0.375
+        - 0
+      - - -0.375
+        - -0.5

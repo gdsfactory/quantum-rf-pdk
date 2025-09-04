@@ -1,0 +1,55 @@
+instances:
+  single_josephson_juncti_05ba299d_13500_m11700_A90:
+    component: single_josephson_junction_wire
+    info: {}
+    settings:
+      cross_section_narrow: josephson_junction_cross_section_narrow
+      cross_section_wide: josephson_junction_cross_section_wide
+      layer_patch: JJ_PATCH
+      narrow_straight_length: 0.5
+      size_patch:
+      - 1.5
+      - 1
+      taper_length: 4.7
+      wide_straight_length: 8.3
+  single_josephson_juncti_05ba299d_1800_0:
+    component: single_josephson_junction_wire
+    info: {}
+    settings:
+      cross_section_narrow: josephson_junction_cross_section_narrow
+      cross_section_wide: josephson_junction_cross_section_wide
+      layer_patch: JJ_PATCH
+      narrow_straight_length: 0.5
+      size_patch:
+      - 1.5
+      - 1
+      taper_length: 4.7
+      wide_straight_length: 8.3
+name: josephson_junction_JOD1p8
+nets: []
+placements:
+  single_josephson_juncti_05ba299d_13500_m11700_A90:
+    mirror: false
+    rotation: 90
+    x: 13.5
+    y: -11.7
+  single_josephson_juncti_05ba299d_1800_0:
+    mirror: false
+    rotation: 0
+    x: 1.8
+    y: 0
+ports:
+  left_wide: single_josephson_juncti_05ba299d_13500_m11700_A90,o1
+  right_wide: single_josephson_juncti_05ba299d_1800_0,o1
+warnings:
+  optical:
+    unconnected_ports:
+    - message: 2 unconnected optical ports!
+      ports:
+      - single_josephson_juncti_05ba299d_13500_m11700_A90,o2
+      - single_josephson_juncti_05ba299d_1800_0,o2
+      values:
+      - - 13.5
+        - 1.8
+      - - 15.3
+        - 0

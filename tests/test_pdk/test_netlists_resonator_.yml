@@ -95,19 +95,6 @@ instances:
     settings:
       angle: 180
       cross_section: coplanar_waveguide
-  rectangle_gdsfactorypco_2d316d18_305149_m1200000:
-    component: rectangle
-    info: {}
-    settings:
-      centered: true
-      layer: M1_ETCH
-      port_orientations:
-      - 0
-      - 180
-      port_type: optical
-      size:
-      - 6
-      - 22
   straight_L302p149428571_bc27b266_0_0:
     component: straight
     info:
@@ -192,7 +179,7 @@ instances:
     settings:
       cross_section: coplanar_waveguide
       length: 302.149
-name: resonator_qpdkpcellspre_0175ce49
+name: resonator_qpdkpcellspre_a108ba58
 nets:
 - p1: bend_circular_CScoplana_6847dd2d_0_m1000000_A180,o1
   p2: straight_L302p149428571_bc27b266_302149_m1000000_A180,o2
@@ -218,8 +205,6 @@ nets:
   p2: straight_L302p149428571_bc27b266_0_m800000,o2
 - p1: bend_circular_CScoplana_6847dd2d_302149_m800000_M,o2
   p2: straight_L302p149428571_bc27b266_302149_m1000000_A180,o1
-- p1: rectangle_gdsfactorypco_2d316d18_305149_m1200000,o1
-  p2: straight_L302p149428571_bc27b266_0_m1200000,o2
 placements:
   bend_circular_CScoplana_6847dd2d_0_m1000000_A180:
     mirror: false
@@ -251,11 +236,6 @@ placements:
     rotation: 0
     x: 302.149
     y: -800
-  rectangle_gdsfactorypco_2d316d18_305149_m1200000:
-    mirror: false
-    rotation: 0
-    x: 305.149
-    y: -1200
   straight_L302p149428571_bc27b266_0_0:
     mirror: false
     rotation: 0
@@ -293,16 +273,4 @@ placements:
     y: -600
 ports:
   o1: straight_L302p149428571_bc27b266_0_0,o1
-  o2: rectangle_gdsfactorypco_2d316d18_305149_m1200000,o2
-warnings:
-  optical:
-    width_mismatch:
-    - message: Widths of ports straight_L302p149428571_bc27b266_0_m1200000,o2 and
-        rectangle_gdsfactorypco_2d316d18_305149_m1200000,o1 not equal. Difference
-        of 12.0 um
-      ports:
-      - straight_L302p149428571_bc27b266_0_m1200000,o2
-      - rectangle_gdsfactorypco_2d316d18_305149_m1200000,o1
-      values:
-      - 10
-      - 22
+  o2: straight_L302p149428571_bc27b266_0_m1200000,o2
