@@ -19,8 +19,10 @@ from qpdk.cells.waveguides import bend_circular
 def test_resonator_meanders(
     length: float, meanders: int, open_start: bool, open_end: bool
 ) -> None:
-    # Ensure length for straights is positive
     bend_factory = partial(bend_circular, angle=180)
+
+    # Ensure total length is sufficient to accommodate all bends
+    # Each meander requires space for the bend sections
     assume(length > meanders * bend_factory().info["length"])
 
     c = resonator(
@@ -30,6 +32,9 @@ def test_resonator_meanders(
         open_end=open_end,
         bend_spec=bend_factory,
     )
-    assert c is not None
-    assert c.info["length"] == length
-    assert len(c.ports) == 2
+
+    assert c is not None, "Resonator component should be created successfully"
+    assert c.info["length"] == length, (
+        f"Expected length {length}, got {c.info['length']}"
+    )
+    assert len(c.ports) == 2, f"Expected 2 ports, got {len(c.ports)}"
