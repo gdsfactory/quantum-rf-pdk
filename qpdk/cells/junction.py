@@ -51,7 +51,7 @@ _single_josephson_junction_wire_defaults: SingleJosephsonJunctionWireParams = di
 )
 
 
-@gf.cell_with_module_name
+@gf.cell
 def single_josephson_junction_wire(
     **kwargs: Unpack[SingleJosephsonJunctionWireParams],
 ) -> Component:
@@ -132,7 +132,7 @@ def single_josephson_junction_wire(
     return c
 
 
-@gf.cell_with_module_name
+@gf.cell
 def josephson_junction(
     junction_overlap_displacement: float = 1.8,
     **kwargs: Unpack[SingleJosephsonJunctionWireParams],
@@ -201,6 +201,7 @@ def josephson_junction(
     return c
 
 
+@gf.cell
 def squid_junction(
     junction_spec: ComponentSpec = josephson_junction,
     loop_area: float = 4,
