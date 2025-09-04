@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import operator
+from functools import reduce
+
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
@@ -88,108 +91,104 @@ def double_pad_transmon(
     return c
 
 
-@gf.cell_with_module_name
-def transmon_circular(
-    pad_radius: float = 100.0,
-    pad_gap: float = 6.0,
-    junction_width: float = 0.15,
-    junction_height: float = 0.3,
-    island_radius: float = 5.0,
+@gf.cell(check_instances=False)
+def flipmon(
+    inner_ring_radius: float = 50,
+    inner_ring_width: float = 30,
+    outer_ring_radius: float = 110,
+    outer_ring_width: float = 60,
+    junction_spec: ComponentSpec = squid_junction,
+    junction_displacement: DCplxTrans | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
-    layer_junction: LayerSpec = LAYER.JJ_AREA,
-    layer_island: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
-    """Creates a circular transmon qubit with Josephson junction.
+    """Creates a circular transmon qubit with `flipmon` geometry.
 
-    A circular variant of the transmon qubit with circular capacitor pads.
+    A circular variant of the transmon qubit with another circle as the inner pad.
+
+    See :cite:`liVacuumgapTransmonQubits2021,liCosmicrayinducedCorrelatedErrors2025`
+    for details about the `flipmon` design.
 
     Args:
-        pad_radius: Radius of each circular capacitor pad in μm.
-        pad_gap: Gap between the two pads in μm.
-        junction_width: Width of the Josephson junction in μm.
-        junction_height: Height of the Josephson junction in μm.
-        island_radius: Radius of the central circular island in μm.
+        inner_ring_radius: Central radius of the inner circular capacitor pad in μm.
+        inner_ring_width: Width of the inner circular capacitor pad in μm.
+        outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
+        outer_ring_width: Width of the outer circular capacitor pad in μm.
+        junction_spec: Component specification for the Josephson junction component.
+        junction_displacement: Optional complex transformation to apply to the junction.
         layer_metal: Layer for the metal pads.
-        layer_junction: Layer for the Josephson junction.
-        layer_island: Layer for the central island.
-        port_type: Type of port to add to the component.
 
     Returns:
         Component: A gdsfactory component with the circular transmon geometry.
     """
     c = Component()
 
-    # Create left circular pad
-    left_pad = gf.components.circle(
-        radius=pad_radius,
-        layer=layer_metal,
-    )
-    left_pad_ref = c.add_ref(left_pad)
-    left_pad_ref.move((-pad_radius - pad_gap / 2, 0))
+    def create_circular_pad(radius: float, width: float) -> gf.ComponentReference:
+        pad = gf.c.ring(
+            radius=radius,
+            width=width,
+            layer=layer_metal,
+        )
+        return c.add_ref(pad)
 
-    # Create right circular pad
-    right_pad = gf.components.circle(
-        radius=pad_radius,
-        layer=layer_metal,
-    )
-    right_pad_ref = c.add_ref(right_pad)
-    right_pad_ref.move((pad_radius + pad_gap / 2, 0))
-
-    # Create central circular island
-    island = gf.components.circle(
-        radius=island_radius,
-        layer=layer_island,
-    )
-    c.add_ref(island)
+    create_circular_pad(inner_ring_radius, inner_ring_width)
+    create_circular_pad(outer_ring_radius, outer_ring_width)
 
     # Create Josephson junction
-    junction = gf.components.rectangle(
-        size=(junction_width, junction_height),
-        layer=layer_junction,
+    junction_ref = c.add_ref(gf.get_component(junction_spec))
+    # Center the junction between the pads
+    # junction_ref.rotate(45)
+    junction_ref.dcenter = c.dcenter  # move((-junction_height / 2, 0))
+    junction_ref.dcplx_trans *= reduce(
+        operator.mul,
+        (
+            DCplxTrans(
+                (
+                    inner_ring_radius
+                    + inner_ring_width / 2
+                    + outer_ring_radius
+                    - outer_ring_width / 2
+                )
+                / 2,
+                0,
+            ),
+            DCplxTrans(1, 45, False, 0, 0),
+            # DCplxTrans(1, 45, False, 0, 0),
+        ),
     )
-    junction_ref = c.add_ref(junction)
-    junction_ref.move((-junction_width / 2, -junction_height / 2))
+    junction_ref.y = 0
 
-    # Add connection lines from pads to island
-    # Only add connections if there is a gap between island and pads
-    connection_width = abs(pad_gap / 2 - island_radius)
-    if pad_gap / 2 > island_radius:
-        left_connection = gf.components.rectangle(
-            size=(connection_width, junction_height / 2),
-            layer=layer_metal,
-        )
-        left_conn_ref = c.add_ref(left_connection)
-        left_conn_ref.move((-pad_gap / 2, -junction_height / 4))
-
-        right_connection = gf.components.rectangle(
-            size=(connection_width, junction_height / 2),
-            layer=layer_metal,
-        )
-        right_conn_ref = c.add_ref(right_connection)
-        right_conn_ref.move((island_radius, -junction_height / 4))
+    if junction_displacement:
+        junction_ref.transform(junction_displacement)
 
     # Add ports for connections
     c.add_port(
-        name="left_pad",
-        center=(-2 * pad_radius - pad_gap / 2, 0),
-        width=2 * pad_radius,
-        orientation=180,
-        layer=layer_metal,
-    )
-
-    c.add_port(
-        name="right_pad",
-        center=(2 * pad_radius + pad_gap / 2, 0),
-        width=2 * pad_radius,
+        name="inner_ring_near_junction",
+        center=(inner_ring_radius + inner_ring_width / 2, 0),
+        width=inner_ring_width,
         orientation=0,
         layer=layer_metal,
     )
-
-    # Add metadata
-    c.info["qubit_type"] = "transmon_circular"
-    c.info["pad_radius"] = pad_radius
-    c.info["pad_gap"] = pad_gap
-    c.info["junction_area"] = junction_width * junction_height
+    c.add_port(
+        name="outer_ring_near_junction",
+        center=(outer_ring_radius - outer_ring_width / 2, 0),
+        width=outer_ring_width,
+        orientation=180,
+        layer=layer_metal,
+    )
+    c.add_port(
+        name="outer_ring_outside",
+        center=(outer_ring_radius + outer_ring_width / 2, 0),
+        width=outer_ring_width,
+        orientation=0,
+        layer=layer_metal,
+    )
+    c.add_port(
+        name="junction",
+        center=junction_ref.dcenter,
+        width=junction_ref.size_info.height,
+        orientation=90,
+        layer=LAYER.JJ_AREA,
+    )
 
     return c
 
@@ -199,6 +198,7 @@ if __name__ == "__main__":
 
     PDK.activate()
     c = gf.Component()
-    (c << double_pad_transmon()).move((0, 0))
-    (c << double_pad_transmon(junction_displacement=DCplxTrans(0, 150))).move((0, 600))
+    # (c << double_pad_transmon()).move((0, 0))
+    # (c << double_pad_transmon(junction_displacement=DCplxTrans(0, 150))).move((0, 600))
+    (c << flipmon()).move((0, 1200))
     c.show()

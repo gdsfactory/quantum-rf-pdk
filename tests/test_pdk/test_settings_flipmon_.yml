@@ -1,0 +1,9 @@
+info: {}
+name: flipmon_IRR50_IRW30_ORR_d7588b62
+settings:
+  inner_ring_radius: 50
+  inner_ring_width: 30
+  junction_spec: squid_junction
+  layer_metal: M1_DRAW
+  outer_ring_radius: 110
+  outer_ring_width: 60
