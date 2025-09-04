@@ -186,8 +186,8 @@ def coplanar_waveguide(
         impedance of approximately 50 Ω.
 
     Args:
-        width: center conductor width in micrometers.
-        gap: gap between center conductor and ground in micrometers.
+        width: center conductor width in µm.
+        gap: gap between center conductor and ground in µm.
         layer: for the etch (negative) region.
         radius: bend radius (if applicable).
     """
