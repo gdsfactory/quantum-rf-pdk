@@ -45,6 +45,11 @@ LayerViews:
     layer_in_name: true
     fill_color: "teal"
     hatch_pattern: coarsely dotted
+  JJ_PATCH:
+    layer: [42, 0]
+    layer_in_name: true
+    color: "orange"
+    hatch_pattern: coarsely dotted
   TSV:
     layer: [60, 0]
     layer_in_name: true
