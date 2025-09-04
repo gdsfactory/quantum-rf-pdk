@@ -1,11 +1,11 @@
 info:
   length: 4000
   resonator_type: quarter_wave
-name: resonator_qpdkpcellspre_0175ce49
+name: resonator_qpdkpcellspre_a108ba58
 settings:
   bend_spec: bend_circular
   cross_section: cpw
   length: 4000
   meanders: 6
-  open_end: true
+  open_end: false
   open_start: false
