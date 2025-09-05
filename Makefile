@@ -1,8 +1,6 @@
 install:
 	uv sync --extra docs --extra dev
 
-all: install docs
-
 clean:
 	rm -rf dist
 	rm -rf build
