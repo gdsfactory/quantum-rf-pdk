@@ -1,6 +1,11 @@
 install:
 	uv sync --extra docs --extra dev
 
+clean:
+	rm -rf dist
+	rm -rf build
+	rm -rf *.egg-info
+
 test:
 	uv run pytest -s tests/test_pdk.py
 
@@ -31,4 +36,4 @@ docs:
 	uv run python .github/write_cells.py
 	uv run jb build docs
 
-.PHONY: drc doc docs
+.PHONY: all clean install test test-force test-fail-fast update-pre git-rm-merged build jupytext notebooks docs
