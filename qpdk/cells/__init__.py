@@ -8,6 +8,7 @@ from qpdk.cells.junction import *
 from qpdk.cells.launcher import *
 from qpdk.cells.resonator import *
 from qpdk.cells.transmon import *
+from qpdk.cells.tsv import *
 from qpdk.cells.waveguides import *
 
 circle = gf.components.circle

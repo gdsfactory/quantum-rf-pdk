@@ -1,0 +1,17 @@
+instances:
+  circle_gdsfactorypcompo_df7542fa_0_0:
+    component: circle
+    info: {}
+    settings:
+      angle_resolution: 2.5
+      layer: TSV
+      radius: 7.5
+name: tsv_D15
+nets: []
+placements:
+  circle_gdsfactorypcompo_df7542fa_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+ports: {}
