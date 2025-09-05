@@ -1,27 +1,30 @@
 LayerViews:
   Metal:
-    hatch_pattern: lightly left-hatched
     group_members:
       M1_DRAW:
         layer: [1, 0]
         layer_in_name: true
         width: 1
-        color: "#00557F"
+        hatch_pattern: vertical sparse
+        color: "#ACF1EA"
       M1_ETCH:
         layer: [1, 1]
         layer_in_name: true
+        hatch_pattern: dotted
         width: 1
         color: "#4DCCBD"
       M2_DRAW:
         layer: [2, 0]
         layer_in_name: true
         width: 1
-        color: "#FE5F55"
+        hatch_pattern: vertical sparse
+        color: "#FFA9A4"
       M2_ETCH:
         layer: [2, 1]
         layer_in_name: true
+        hatch_pattern: dotted
         width: 1
-        color: "#B70D01"
+        color: "#FE5F55"
   Airbridge:
     hatch_pattern: lightly right-hatched
     group_members:
