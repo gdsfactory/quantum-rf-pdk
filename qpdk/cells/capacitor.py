@@ -245,7 +245,6 @@ def coupler_tunable(
     feed_width: float = 10.0,
     feed_length: float = 30.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
-    layer_tuning: LayerSpec = LAYER.M1_CUTOUT,
     port_type: str = "electrical",
 ) -> Component:
     """Creates a tunable capacitive coupler with voltage control.
@@ -264,7 +263,6 @@ def coupler_tunable(
         feed_width: Width of feed lines in μm.
         feed_length: Length of feed lines in μm.
         layer_metal: Layer for main metal structures.
-        layer_tuning: Layer for tuning electrodes.
         port_type: Type of port to add to the component.
 
     Returns:
@@ -315,14 +313,14 @@ def coupler_tunable(
     # Create tuning pads above and below
     top_tuning_pad = gf.components.rectangle(
         size=(tuning_pad_width, tuning_pad_height),
-        layer=layer_tuning,
+        layer=layer_metal,
     )
     top_tuning_ref = c.add_ref(top_tuning_pad)
     top_tuning_ref.move((-tuning_pad_width / 2, pad_height / 2 + tuning_gap))
 
     bottom_tuning_pad = gf.components.rectangle(
         size=(tuning_pad_width, tuning_pad_height),
-        layer=layer_tuning,
+        layer=layer_metal,
     )
     bottom_tuning_ref = c.add_ref(bottom_tuning_pad)
     bottom_tuning_ref.move(
@@ -347,7 +345,7 @@ def coupler_tunable(
     # Create tuning feed lines
     top_tuning_feed = gf.components.rectangle(
         size=(feed_width, feed_length),
-        layer=layer_tuning,
+        layer=layer_metal,
     )
     top_tuning_feed_ref = c.add_ref(top_tuning_feed)
     top_tuning_feed_ref.move(
@@ -356,7 +354,7 @@ def coupler_tunable(
 
     bottom_tuning_feed = gf.components.rectangle(
         size=(feed_width, feed_length),
-        layer=layer_tuning,
+        layer=layer_metal,
     )
     bottom_tuning_feed_ref = c.add_ref(bottom_tuning_feed)
     bottom_tuning_feed_ref.move(
@@ -390,7 +388,7 @@ def coupler_tunable(
         center=(0, pad_height / 2 + tuning_gap + tuning_pad_height + feed_length),
         width=feed_width,
         orientation=90,
-        layer=layer_tuning,
+        layer=layer_metal,
         port_type=port_type,
     )
 
@@ -399,7 +397,7 @@ def coupler_tunable(
         center=(0, -pad_height / 2 - tuning_gap - tuning_pad_height - feed_length),
         width=feed_width,
         orientation=270,
-        layer=layer_tuning,
+        layer=layer_metal,
         port_type=port_type,
     )
 
