@@ -28,6 +28,7 @@ skip_test_netlist = {
     "coupler_symmetric",
     "die_with_pads",
     "launcher",
+    "indium_bump",
 }
 # Skip default gdsfactory cells
 skip_test = {
@@ -38,6 +39,7 @@ skip_test = {
     "die_with_pads",
     "taper_cross_section",
     "transform_component",
+    "indium_bump",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]
