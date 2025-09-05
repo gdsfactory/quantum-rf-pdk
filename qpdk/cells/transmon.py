@@ -343,7 +343,7 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
     The design provides better control over the coupling to readout resonators
     and neighboring qubits through the individual arm geometries.
 
-    See :cite:`barends2013coherent` for details about the Xmon design.
+    See :cite:`barends2013coherent,kelly2015state` for details about the Xmon design.
 
     Args:
         **kwargs: :class:`~XmonTransmonParams` for the Xmon transmon qubit.
