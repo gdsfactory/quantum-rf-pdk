@@ -19,26 +19,4 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
-        run: |
-          make install
-
-      - name: Run pre-commit hooks
-        run: |
-          uv run pre-commit run --all-files
-
-      - name: Run tests
-        run: |
-          make test
-
-      - name: Verify build
-        run: |
-          make build
-
-      - name: Setup validation complete
-        run: |
-          echo "✅ Development environment setup complete!"
-          echo "✅ All pre-commit hooks passed"
-          echo "✅ All tests passed"
-          echo "✅ Build successful"
-          echo ""
-          echo "Your quantum-rf-pdk development environment is ready!"
+        run:  make install
