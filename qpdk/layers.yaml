@@ -6,7 +6,7 @@ LayerViews:
         layer: [1, 0]
         layer_in_name: true
         width: 1
-        color: "#123F3A"
+        color: "#00557F"
       M1_ETCH:
         layer: [1, 1]
         layer_in_name: true

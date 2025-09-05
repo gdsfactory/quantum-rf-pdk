@@ -17,8 +17,8 @@
   <name>Metal</name>
   <source>*/*@*</source>
   <group-members>
-   <frame-color>#123f3a</frame-color>
-   <fill-color>#123f3a</fill-color>
+   <frame-color>#00557f</frame-color>
+   <fill-color>#00557f</fill-color>
    <frame-brightness>0</frame-brightness>
    <fill-brightness>0</fill-brightness>
    <dither-pattern/>
