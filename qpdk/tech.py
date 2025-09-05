@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from functools import partial, wraps
-from typing import Any
+from typing import Any, cast
 
 import gdsfactory as gf
 from doroutes.bundles import add_bundle_astar
@@ -16,6 +16,7 @@ from gdsfactory.technology import (
     LayerViews,
 )
 from gdsfactory.typings import (
+    ConnectivitySpec,
     Layer,
     LayerSpec,
 )
@@ -29,35 +30,42 @@ nm = 1e-3
 class LayerMapQPDK(LayerMap):
     """Layer map for QPDK technology."""
 
-    M1_DRAW: Layer = (10, 0)  # CPW center + pads
-    M1_ETCH: Layer = (11, 0)  # Subtractive etch / negative mask regions
-    M1_CUTOUT: Layer = (12, 0)  # Keepouts/slotting/DRC voids
+    # Base metals
+    M1_DRAW: Layer = (1, 0)  # Additive metal / positive mask regions
+    M1_ETCH: Layer = (1, 1)  # Subtractive etch / negative mask regions
+    # flip-cihp equivalents
+    M2_DRAW: Layer = (2, 0)
+    M2_ETCH: Layer = (2, 1)
 
     # Airbridges
-    AB_DRAW: Layer = (20, 0)  # Bridge metal
-    AB_VIA: Layer = (21, 0)  # Landing pads / contacts
-    AB_ETCH: Layer = (22, 0)  # Sacrificial/undercut windows (if used)
+    AB_DRAW: Layer = (10, 0)  # Bridge metal
+    AB_VIA: Layer = (10, 1)  # Landing pads / contacts
 
-    # Junction (markers / optional area)
-    JJ_MARK: Layer = (40, 0)  # EBL / SEM localization marker (non-fab geometry)
-    JJ_AREA: Layer = (41, 0)  # Optional bridge/overlap definition
-    JJ_PATCH: Layer = (42, 0)
+    # Junctions
+    JJ_AREA: Layer = (20, 0)  # Optional bridge/overlap definition
+    JJ_PATCH: Layer = (20, 1)
 
-    # Packaging / backside / misc
-    TSV: Layer = (60, 0)  # Throughs / vias / backside features
+    # Packaging / 3D integration / backside / misc.
+    IND: Layer = (30, 0)
+    TSV: Layer = (31, 0)  # Throughs / vias / backside features
     DICE: Layer = (70, 0)  # Dicing lanes
 
     # Alignment / admin
     ALN_TOP: Layer = (80, 0)  # Frontside alignment
     ALN_BOT: Layer = (81, 0)  # Backside alignment
+
+    ###################
+    # Non-fabrication #
+    ###################
+
     TEXT: Layer = (90, 0)  # Mask text / version labels
+
+    # labels for gdsfactory
+    LABEL_SETTINGS: Layer = (100, 0)
+    LABEL_INSTANCE: Layer = (101, 0)
 
     # Simulation-only helpers (never sent to fab)
     SIM_ONLY: Layer = (99, 0)
-
-    # labels for gdsfactory
-    LABEL_SETTINGS: Layer = (100, 0)  # type: ignore
-    LABEL_INSTANCE: Layer = (101, 0)  # type: ignore
 
     # Marker layer for waveguides
     WG: Layer = (1000, 0)
@@ -314,14 +322,14 @@ if __name__ == "__main__":
         print(f"\t{yaml_layer_name}: Layer = {yaml_layer_tuple}")
     print("}")
 
-    # connectivity = cast(list[ConnectivitySpec], [("HEATER", "HEATER", "PAD")])
+    connectivity = cast(list[ConnectivitySpec], [("M1_DRAW", "TSV", "M2_DRAW")])
 
     t = KLayoutTechnology(
         name="qpdk",
         layer_map=LAYER,
         layer_views=LAYER_VIEWS,
         layer_stack=LAYER_STACK,
-        # connectivity=connectivity,
+        connectivity=connectivity,
     )
     t.write_tech(tech_dir=PATH.klayout)
     # print(DEFAULT_CROSS_SECTION_NAMES)

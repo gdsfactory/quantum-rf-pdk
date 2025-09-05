@@ -159,5 +159,9 @@
    <write-timestamp>true</write-timestamp>
   </mag>
  </writer-options>
- <connectivity/>
+ <connectivity>
+  <connection>M1_DRAW,TSV,M2_DRAW</connection>
+  <symbols>M2_DRAW='2/0'</symbols>
+  <symbols>TSV='31/0'</symbols>
+ </connectivity>
 </technology>
