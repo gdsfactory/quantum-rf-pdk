@@ -3,25 +3,48 @@
 from __future__ import annotations
 
 import operator
-from functools import reduce
+from functools import partial, reduce
+from typing import TypedDict, Unpack
 
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
 from klayout.db import DCplxTrans
 
+from qpdk.cells.helpers import transform_component
 from qpdk.cells.junction import squid_junction
 from qpdk.tech import LAYER
 
 
+class DoublePadTransmonParams(TypedDict):
+    """Parameters for double pad transmon qubit.
+
+    Keyword Args:
+        pad_size: (width, height) of each capacitor pad in μm.
+        pad_gap: Gap between the two capacitor pads in μm.
+        junction_spec: Component specification for the Josephson junction component.
+        junction_displacement: Optional complex transformation to apply to the junction.
+        layer_metal: Layer for the metal pads.
+    """
+
+    pad_size: tuple[float, float]
+    pad_gap: float
+    junction_spec: ComponentSpec
+    junction_displacement: DCplxTrans | None
+    layer_metal: LayerSpec
+
+
+_double_pad_transmon_default_params = DoublePadTransmonParams(
+    pad_size=(250.0, 400.0),
+    pad_gap=15.0,
+    junction_spec=squid_junction,
+    junction_displacement=None,
+    layer_metal=LAYER.M1_DRAW,
+)
+
+
 @gf.cell(check_instances=False)
-def double_pad_transmon(
-    pad_size: tuple[float, float] = (250.0, 400.0),
-    pad_gap: float = 15.0,
-    junction_spec: ComponentSpec = squid_junction,
-    junction_displacement: DCplxTrans | None = None,
-    layer_metal: LayerSpec = LAYER.M1_DRAW,
-) -> Component:
+def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction.
 
     A transmon qubit consists of two capacitor pads connected by a Josephson junction.
@@ -30,16 +53,24 @@ def double_pad_transmon(
     See :cite:`kochChargeinsensitiveQubitDesign2007a` for details.
 
     Args:
-        pad_size: (width, height) of each capacitor pad in μm.
-        pad_gap: Gap between the two capacitor pads in μm.
-        junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
-        layer_metal: Layer for the metal pads.
+        **kwargs: :class:`~DoublePadTransmonParams` for the transmon qubit.
 
     Returns:
         Component: A gdsfactory component with the transmon geometry.
     """
     c = Component()
+    params = _double_pad_transmon_default_params | kwargs
+    # Extract wire parameters using dictionary unpacking
+    pad_size, pad_gap, junction_spec, junction_displacement, layer_metal = (
+        params[key]
+        for key in [
+            "pad_size",
+            "pad_gap",
+            "junction_spec",
+            "junction_displacement",
+            "layer_metal",
+        ]
+    )
     pad_width, pad_height = pad_size
 
     def create_capacitor_pad(x_offset: float) -> gf.ComponentReference:
@@ -88,6 +119,59 @@ def double_pad_transmon(
     # Add metadata
     c.info["qubit_type"] = "transmon"
 
+    return c
+
+
+
+
+@gf.cell
+def double_pad_transmon_with_bbox(
+    bbox_extension: float = 200.0,
+    **kwargs: Unpack[DoublePadTransmonParams],
+) -> Component:
+    """Creates a double capacitor pad transmon qubit with Josephson junction and an etched bounding box.
+
+    See :func:`~double_pad_transmon` for more details.
+
+    Args:
+        bbox_extension: Extension size for the bounding box in μm.
+        **kwargs: :class:`~DoublePadTransmonParams` for the transmon qubit.
+
+    Returns:
+        Component: A gdsfactory component with the transmon geometry and etched box.
+    """
+    c = gf.Component()
+    double_pad_ref = c << double_pad_transmon(**kwargs)
+    double_pad_size = (double_pad_ref.size_info.width, double_pad_ref.size_info.height)
+    bbox_size = (
+        double_pad_size[0] + 2 * bbox_extension,
+        double_pad_size[1] + 2 * bbox_extension,
+    )
+
+    bbox = gf.container(
+        partial(
+            gf.components.rectangle,
+            size=bbox_size,
+            layer=LAYER.M1_ETCH,
+        ),
+        # Center the bbox around the double pad
+        partial(
+            transform_component, transform=DCplxTrans(*(-e / 2 for e in bbox_size))
+        ),
+    )
+    # Remove additive metal from etch
+    bbox = gf.boolean(
+        A=bbox,
+        B=c,
+        operation="-",
+        layer=LAYER.M1_ETCH,
+        layer1=LAYER.M1_ETCH,
+        layer2=LAYER.M1_DRAW,
+    )
+    bbox_ref = c.add_ref(bbox)
+    c.absorb(bbox_ref)
+
+    c.add_ports(double_pad_ref.ports)
     return c
 
 
@@ -198,7 +282,13 @@ if __name__ == "__main__":
 
     PDK.activate()
     c = gf.Component()
-    # (c << double_pad_transmon()).move((0, 0))
-    # (c << double_pad_transmon(junction_displacement=DCplxTrans(0, 150))).move((0, 600))
-    (c << flipmon()).move((0, 1200))
+    for i, component in enumerate(
+        (
+            double_pad_transmon(),
+            double_pad_transmon(junction_displacement=DCplxTrans(0, 150)),
+            double_pad_transmon_with_bbox(),
+            flipmon(),
+        )
+    ):
+        (c << component).move((0, i * 700))
     c.show()
