@@ -21,6 +21,7 @@ from gdsfactory.typings import (
 )
 
 from qpdk.config import PATH
+from qpdk.helper import denest_layerviews_to_layer_tuples
 
 nm = 1e-3
 
@@ -306,7 +307,12 @@ if __name__ == "__main__":
     from gdsfactory.technology.klayout_tech import KLayoutTechnology
 
     LAYER_VIEWS = LayerViews(PATH.lyp_yaml)
-    # LAYER_VIEWS.to_lyp(PATH.lyp)
+    # De-nest layers
+    LAYERS_ACCORDING_TO_YAML = denest_layerviews_to_layer_tuples(LAYER_VIEWS)
+    print("LAYERS_ACCORDING_TO_YAML = {")
+    for yaml_layer_name, yaml_layer_tuple in LAYERS_ACCORDING_TO_YAML.items():
+        print(f"\t{yaml_layer_name}: Layer = {yaml_layer_tuple}")
+    print("}")
 
     # connectivity = cast(list[ConnectivitySpec], [("HEATER", "HEATER", "PAD")])
 
