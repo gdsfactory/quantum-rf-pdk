@@ -1,0 +1,18 @@
+instances:
+  double_pad_transmon_0_0:
+    component: double_pad_transmon
+    info:
+      qubit_type: transmon
+    settings: {}
+name: double_pad_transmon_wit_1427c144
+nets: []
+placements:
+  double_pad_transmon_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+ports:
+  junction: double_pad_transmon_0_0,junction
+  left_pad: double_pad_transmon_0_0,left_pad
+  right_pad: double_pad_transmon_0_0,right_pad

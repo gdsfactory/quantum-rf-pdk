@@ -35,7 +35,7 @@ instances:
     settings:
       junction_spec: josephson_junction
       loop_area: 4
-name: double_pad_transmon_PS2_cc5ec781
+name: double_pad_transmon
 nets: []
 placements:
   rectangle_gdsfactorypco_5c1599ef_7500_m200000:

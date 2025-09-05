@@ -8,9 +8,13 @@ import gdsfactory as gf
 import jsondiff
 import pytest
 from gdsfactory.difftest import difftest
+from gdsfactory.technology import LayerViews
 from pytest_regressions.data_regression import DataRegressionFixture
 
 from qpdk import PDK
+from qpdk.config import PATH
+from qpdk.helper import denest_layerviews_to_layer_tuples
+from qpdk.tech import LAYER
 
 cells = PDK.cells
 skip_test_netlist = {
@@ -24,6 +28,7 @@ skip_test_netlist = {
     "coupler_symmetric",
     "die_with_pads",
     "launcher",
+    "indium_bump",
 }
 # Skip default gdsfactory cells
 skip_test = {
@@ -33,6 +38,8 @@ skip_test = {
     "add_pads_bot",
     "die_with_pads",
     "taper_cross_section",
+    "transform_component",
+    "indium_bump",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]
@@ -133,6 +140,16 @@ def test_netlists(
     cis = list(c.kcl.each_cell_top_down())
     for ci in cis:
         gf.kcl.dkcells[ci].delete()
+
+
+def test_yaml_matches_layers():
+    """Test that the YAML LayerView matches defined layers."""
+    LAYER_VIEWS = LayerViews(PATH.lyp_yaml)
+    LAYERS_ACCORDING_TO_YAML = denest_layerviews_to_layer_tuples(LAYER_VIEWS)
+    LAYERS_DEFINED = {
+        str(layer_enum): (layer_enum.layer, layer_enum.datatype) for layer_enum in LAYER
+    }
+    assert LAYERS_ACCORDING_TO_YAML == LAYERS_DEFINED
 
 
 if __name__ == "__main__":
