@@ -1,5 +1,10 @@
 # Sample Generic Quantum RF PDK 0.0.2
 
+[![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
+[![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test_code.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test_code.yml)
+[![MIT](https://img.shields.io/github/license/gdsfactory/quantum-rf-pdk)](https://choosealicense.com/licenses/mit/)
+
+
 Based on a combination of the most popular Open source Quantum PDK packages
 
 - **Qiskit Metal** keeps a layer stack as a dataframe/CSV (per-chip rows) with columns like `chip_name`, `layer`, `datatype`, `material`, `thickness`, `z_coord`, and `fill`. The `LayerStackHandler` enforces uniqueness of layer numbers across chips and is used by the renderers (HFSS/Gmsh).
