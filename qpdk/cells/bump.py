@@ -12,8 +12,10 @@ from qpdk.tech import LAYER
 def indium_bump(diameter: float = 15.0) -> Component:
     """Creates an indium bump component for 3D integration.
 
+    See :cite:`rosenberg3DIntegratedSuperconducting2017` for details.
+
     Args:
-        diameter: Diameter of the indium bump in micrometers.
+        diameter: Diameter of the indium bump in µm.
 
     Returns:
         A gdsfactory Component representing the indium bump.

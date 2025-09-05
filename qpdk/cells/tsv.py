@@ -12,6 +12,8 @@ from qpdk.tech import LAYER
 def tsv(diameter: float = 15.0) -> Component:
     """Creates a Through-silicon via (TSV) component for 3D integration.
 
+    See :cite:`yostSolidstateQubitsIntegrated2020`.
+
     Args:
         diameter: Diameter of the via in µm.
 
