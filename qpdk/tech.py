@@ -68,7 +68,7 @@ class LayerMapQPDK(LayerMap):
     SIM_ONLY: Layer = (99, 0)
 
     # Marker layer for waveguides
-    WG: Layer = (1000, 0)
+    WG: Layer = (102, 0)
 
 
 L = LAYER = LayerMapQPDK
