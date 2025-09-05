@@ -11,6 +11,7 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
 from klayout.db import DCplxTrans
 
+from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
 from qpdk.cells.junction import squid_junction
 from qpdk.tech import LAYER
@@ -122,8 +123,6 @@ def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
     return c
 
 
-
-
 @gf.cell
 def double_pad_transmon_with_bbox(
     bbox_extension: float = 200.0,
@@ -181,9 +180,11 @@ def flipmon(
     inner_ring_width: float = 30,
     outer_ring_radius: float = 110,
     outer_ring_width: float = 60,
+    top_circle_radius: float = 110,
     junction_spec: ComponentSpec = squid_junction,
     junction_displacement: DCplxTrans | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_metal_top: LayerSpec = LAYER.M2_DRAW,
 ) -> Component:
     """Creates a circular transmon qubit with `flipmon` geometry.
 
@@ -197,9 +198,12 @@ def flipmon(
         inner_ring_width: Width of the inner circular capacitor pad in μm.
         outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
         outer_ring_width: Width of the outer circular capacitor pad in μm.
+        top_circle_radius: Central radius of the top circular capacitor pad in μm.
+            There is no separate width as the filled circle is not a ring.
         junction_spec: Component specification for the Josephson junction component.
         junction_displacement: Optional complex transformation to apply to the junction.
         layer_metal: Layer for the metal pads.
+        layer_metal_top: Layer for the other metal layer pad for flip-chip.
 
     Returns:
         Component: A gdsfactory component with the circular transmon geometry.
@@ -243,6 +247,20 @@ def flipmon(
 
     if junction_displacement:
         junction_ref.transform(junction_displacement)
+
+    # Create top circular pad for flip-chip
+    top_circle = gf.components.circle(
+        radius=top_circle_radius,
+        layer=layer_metal_top,
+    )
+    top_circle_ref = c.add_ref(top_circle)
+    top_circle_ref.dcenter = c.dcenter
+
+    # Add indium bump to flip-chip
+    bump = gf.get_component(indium_bump)
+    bump_ref = c.add_ref(bump)
+    bump_ref.dcenter = c.dcenter
+    c.add_ports(bump_ref.ports)
 
     # Add ports for connections
     c.add_port(
