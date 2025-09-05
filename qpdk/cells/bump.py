@@ -8,6 +8,7 @@ from gdsfactory.component import Component
 from qpdk.tech import LAYER
 
 
+@gf.cell
 def indium_bump(diameter: float = 15.0) -> Component:
     """Creates an indium bump component for 3D integration.
 
@@ -21,8 +22,16 @@ def indium_bump(diameter: float = 15.0) -> Component:
     circle = gf.components.circle(radius=diameter / 2, layer=LAYER.IND)
     ref = c.add_ref(circle)
     ref.move((0, 0))
-    for name, layer in (("top", LAYER.M2_DRAW), ("bottom", LAYER.M1_DRAW)):
-        c.add_port(name=name, center=(0, 0), orientation=0, layer=layer, width=diameter)
+    c.add_port(
+        name="center",
+        center=(
+            0,
+            0,
+        ),
+        orientation=0,
+        layer=LAYER.IND,
+        width=diameter,
+    )
     return c
 
 
