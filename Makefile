@@ -36,4 +36,4 @@ docs:
 	uv run python .github/write_cells.py
 	uv run jb build docs
 
-.PHONY: clean install test test-force test-fail-fast update-pre git-rm-merged build jupytext notebooks docs
+.PHONY: all clean install test test-force test-fail-fast update-pre git-rm-merged build jupytext notebooks docs
