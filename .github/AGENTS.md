@@ -46,7 +46,7 @@ This is a Python-based superconducting microwave Process Design Kit (PDK) built 
 ## Testing Guidelines
 - **Component tests**: Each new component should be added to the cell registry with `@gf.cell`
 - **Netlist validation**: Components must generate valid netlists that can be round-tripped (component -> netlist -> component). This is tested by `test_netlists` in `tests/test_pdk.py`.
-- **Prefer using the `hypothesis` library**: Use the `hypothesis` library to generate tests with generic arguments with approriate types
+- **Prefer using the `hypothesis` library**: Use the `hypothesis` library to generate tests with generic arguments with appropriate types
 
 ## Creating New Components
 When adding new quantum device components:
