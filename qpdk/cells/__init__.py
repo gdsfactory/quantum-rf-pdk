@@ -1,5 +1,6 @@
 """Quantum PDK cells."""
 
+from qpdk.cells.bump import *
 from qpdk.cells.capacitor import *
 from qpdk.cells.junction import *
 from qpdk.cells.launcher import *
