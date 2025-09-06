@@ -400,6 +400,8 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
         )
         arm_ref = c.add_ref(arm)
         arm_ref.move(move_offset)
+        c.absorb(arm_ref)
+        c.flatten(merge=True)
 
     # Create etch by sizing drawn metal
     etch_region = gf.component.size(
