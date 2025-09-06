@@ -1,5 +1,5 @@
 instances:
-  rectangle_gdsfactorypco_56f9a496_0_0:
+  rectangle_gdsfactorypco_56f9a496_0_0_A90:
     component: rectangle
     info: {}
     settings:
@@ -14,7 +14,7 @@ instances:
       size:
       - 30
       - 8
-  rectangle_gdsfactorypco_8e7b1f7b_21000_0:
+  rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90:
     component: rectangle
     info: {}
     settings:
@@ -29,7 +29,7 @@ instances:
       size:
       - 12
       - 15
-  rectangle_gdsfactorypco_8e7b1f7b_m21000_0:
+  rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90:
     component: rectangle
     info: {}
     settings:
@@ -46,50 +46,50 @@ instances:
       - 15
 name: airbridge_BL30_BW8_PW15_d54314af
 nets:
-- p1: rectangle_gdsfactorypco_56f9a496_0_0,e1
-  p2: rectangle_gdsfactorypco_8e7b1f7b_m21000_0,e3
-- p1: rectangle_gdsfactorypco_56f9a496_0_0,e3
-  p2: rectangle_gdsfactorypco_8e7b1f7b_21000_0,e1
+- p1: rectangle_gdsfactorypco_56f9a496_0_0_A90,e1
+  p2: rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90,e3
+- p1: rectangle_gdsfactorypco_56f9a496_0_0_A90,e3
+  p2: rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90,e1
 placements:
-  rectangle_gdsfactorypco_56f9a496_0_0:
+  rectangle_gdsfactorypco_56f9a496_0_0_A90:
     mirror: false
-    rotation: 0
+    rotation: 90
     x: 0
     y: 0
-  rectangle_gdsfactorypco_8e7b1f7b_21000_0:
+  rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90:
     mirror: false
-    rotation: 0
-    x: 21
-    y: 0
-  rectangle_gdsfactorypco_8e7b1f7b_m21000_0:
+    rotation: 90
+    x: 0
+    y: 21
+  rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90:
     mirror: false
-    rotation: 0
-    x: -21
-    y: 0
+    rotation: 90
+    x: 0
+    y: -21
 ports:
-  o1: rectangle_gdsfactorypco_8e7b1f7b_m21000_0,e1
-  o2: rectangle_gdsfactorypco_8e7b1f7b_21000_0,e3
+  e1: rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90,e1
+  e2: rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90,e3
 warnings:
   electrical:
     unconnected_ports:
     - message: 6 unconnected electrical ports!
       ports:
-      - rectangle_gdsfactorypco_56f9a496_0_0,e2
-      - rectangle_gdsfactorypco_56f9a496_0_0,e4
-      - rectangle_gdsfactorypco_8e7b1f7b_m21000_0,e2
-      - rectangle_gdsfactorypco_8e7b1f7b_m21000_0,e4
-      - rectangle_gdsfactorypco_8e7b1f7b_21000_0,e2
-      - rectangle_gdsfactorypco_8e7b1f7b_21000_0,e4
+      - rectangle_gdsfactorypco_56f9a496_0_0_A90,e2
+      - rectangle_gdsfactorypco_56f9a496_0_0_A90,e4
+      - rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90,e2
+      - rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90,e4
+      - rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90,e2
+      - rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90,e4
       values:
-      - - 0
-        - 4
-      - - 0
-        - -4
-      - - -21
-        - 7.5
-      - - -21
-        - -7.5
-      - - 21
-        - 7.5
-      - - 21
-        - -7.5
+      - - -4
+        - 0
+      - - 4
+        - 0
+      - - -7.5
+        - -21
+      - - 7.5
+        - -21
+      - - -7.5
+        - 21
+      - - 7.5
+        - 21
