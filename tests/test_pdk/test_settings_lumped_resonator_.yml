@@ -1,0 +1,15 @@
+info:
+  capacitor_fingers: 6
+  frequency_estimate_note: f = 1/(2*π*√(LC))
+  inductor_length: 1500
+  resonator_type: lumped_element
+name: lumped_resonator_qpdkpc_e9c79fd4
+settings:
+  capacitor_finger_gap: 2
+  capacitor_finger_length: 30
+  capacitor_fingers: 6
+  capacitor_thickness: 5
+  cross_section_inductor: microstrip_narrow
+  inductor_length: 1500
+  inductor_meanders: 3
+  spacing: 50
