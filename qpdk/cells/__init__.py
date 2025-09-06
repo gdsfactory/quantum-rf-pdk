@@ -2,6 +2,7 @@
 
 import gdsfactory as gf
 
+from qpdk.cells.airbridge import *
 from qpdk.cells.bump import *
 from qpdk.cells.capacitor import *
 from qpdk.cells.junction import *

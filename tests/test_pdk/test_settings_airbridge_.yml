@@ -1,0 +1,9 @@
+info: {}
+name: airbridge_BL30_BW8_PW15_d54314af
+settings:
+  bridge_layer: AB_DRAW
+  bridge_length: 30
+  bridge_width: 8
+  pad_layer: AB_VIA
+  pad_length: 12
+  pad_width: 15
