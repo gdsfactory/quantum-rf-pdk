@@ -10,42 +10,34 @@ from qpdk import PDK, cells, tech
 
 if __name__ == "__main__":
     PDK.activate()
-    
+
     # Create a component to demonstrate routing with airbridges
     c = gf.Component()
-    
+
     # Create two launcher components for connection
     launcher1 = c << cells.launcher()
+    launcher1.move((-300, 0))
     launcher2 = c << cells.launcher()
-    
+    launcher2.rotate(270)
+
     # Position the second launcher in a simpler way
-    launcher2.move((400, 0))
-    
+    launcher2.move((1000, 1000))
+
     # Create CPW cross-section with airbridges
     cpw_with_bridges = cells.cpw_with_airbridges(
         airbridge_spacing=60.0,  # Airbridge every 60 µm
         airbridge_padding=20.0,  # 20 µm from start to first airbridge
     )
-    
+
     # Route between the launchers using the CPW with airbridges
     route = tech.route_bundle(
-        c, 
-        [launcher1.ports["o1"]], 
+        c,
+        [launcher1.ports["o1"]],
         [launcher2.ports["o1"]],
         cross_section=cpw_with_bridges,
+        waypoints=[(500, 0), (500, 800)],
     )
-    
-    # Show the component
-    # c.show() # Comment out show to avoid KLive issues in CI
-    
+
+    c.show()
+
     print("Routing with airbridges example created successfully!")
-    print(f"Route type: {type(route)}")
-    
-    # Also demonstrate a simple straight with airbridges
-    c2 = gf.Component()
-    straight_with_bridges = c2 << gf.components.straight(
-        length=200,
-        cross_section=cpw_with_bridges,
-    )
-    # c2.show() # Comment out show to avoid KLive issues in CI
-    print("Straight with airbridges created successfully!")
