@@ -9,7 +9,8 @@ from typing import TypedDict, Unpack
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
-from klayout.db import DCplxTrans
+from kfactory import kdb
+from klayout.db import DCplxTrans, Region
 
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
@@ -301,8 +302,9 @@ class XmonTransmonParams(TypedDict):
     Keyword Args:
         center_width: Width of the central cross intersection in μm.
         center_height: Height of the central cross intersection in μm.
-        arm_width: Width of each arm extending from center in μm.
+        arm_width: Tuple of (top, right, bottom, left) arm widths in μm.
         arm_lengths: Tuple of (top, right, bottom, left) arm lengths in μm.
+            Computed from center to end of each arm.
         gap_width: Width of the etched gap around arms in μm.
         junction_spec: Component specification for the Josephson junction component.
         junction_displacement: Optional complex transformation to apply to the junction.
@@ -312,7 +314,7 @@ class XmonTransmonParams(TypedDict):
 
     center_width: float
     center_height: float
-    arm_width: float
+    arm_width: tuple[float, float, float, float]  # top, right, bottom, left
     arm_lengths: tuple[float, float, float, float]  # top, right, bottom, left
     gap_width: float
     junction_spec: ComponentSpec
@@ -322,10 +324,8 @@ class XmonTransmonParams(TypedDict):
 
 
 _xmon_transmon_default_params = XmonTransmonParams(
-    center_width=50.0,
-    center_height=50.0,
-    arm_width=20.0,
-    arm_lengths=(80.0, 80.0, 80.0, 80.0),  # top, right, bottom, left
+    arm_width=(30.0, 20.0, 30.0, 20.0),  # top, right, bottom, left
+    arm_lengths=(160.0, 120.0, 160.0, 120.0),  # top, right, bottom, left
     gap_width=10.0,
     junction_spec=squid_junction,
     junction_displacement=None,
@@ -356,8 +356,6 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
 
     # Extract parameters
     (
-        center_width,
-        center_height,
         arm_width,
         arm_lengths,
         gap_width,
@@ -368,8 +366,6 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
     ) = (
         params[key]
         for key in [
-            "center_width",
-            "center_height",
             "arm_width",
             "arm_lengths",
             "gap_width",
@@ -379,113 +375,82 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
             "layer_etch",
         ]
     )
-
+    arm_width_top, arm_width_right, arm_width_bottom, arm_width_left = arm_width
     arm_length_top, arm_length_right, arm_length_bottom, arm_length_left = arm_lengths
 
-    # Create the central cross intersection
-    center_pad = gf.components.rectangle(
-        size=(center_width, center_height),
-        layer=layer_metal,
-    )
-    center_ref = c.add_ref(center_pad)
-    center_ref.dcenter = (0, 0)
+    # Define arm configurations: (size, move_offset)
+    arm_configs = [
+        ((arm_width_top, arm_length_top), (-arm_width_top / 2, arm_length_top * 0)),
+        (
+            (arm_length_right, arm_width_right),
+            (arm_length_right * 0, -arm_width_right / 2),
+        ),
+        (
+            (arm_width_bottom, arm_length_bottom),
+            (-arm_width_bottom / 2, -arm_length_bottom),
+        ),
+        ((arm_length_left, arm_width_left), (-arm_length_left, -arm_width_left / 2)),
+    ]
 
     # Create the four arms extending from the center
-    # Top arm
-    if arm_length_top > 0:
-        top_arm = gf.components.rectangle(
-            size=(arm_width, arm_length_top),
+    for size, move_offset in arm_configs:
+        arm = gf.components.rectangle(
+            size=size,
             layer=layer_metal,
         )
-        top_arm_ref = c.add_ref(top_arm)
-        top_arm_ref.move((-arm_width / 2, center_height / 2))
+        arm_ref = c.add_ref(arm)
+        arm_ref.move(move_offset)
 
-    # Right arm
-    if arm_length_right > 0:
-        right_arm = gf.components.rectangle(
-            size=(arm_length_right, arm_width),
-            layer=layer_metal,
-        )
-        right_arm_ref = c.add_ref(right_arm)
-        right_arm_ref.move((center_width / 2, -arm_width / 2))
-
-    # Bottom arm
-    if arm_length_bottom > 0:
-        bottom_arm = gf.components.rectangle(
-            size=(arm_width, arm_length_bottom),
-            layer=layer_metal,
-        )
-        bottom_arm_ref = c.add_ref(bottom_arm)
-        bottom_arm_ref.move((-arm_width / 2, -(center_height / 2 + arm_length_bottom)))
-
-    # Left arm
-    if arm_length_left > 0:
-        left_arm = gf.components.rectangle(
-            size=(arm_length_left, arm_width),
-            layer=layer_metal,
-        )
-        left_arm_ref = c.add_ref(left_arm)
-        left_arm_ref.move((-(center_width / 2 + arm_length_left), -arm_width / 2))
-
-    # Calculate total bounding box dimensions for the etch layer
-    # Include gaps around all arms
-    max_arm_right = max(arm_length_right, 0)
-    max_arm_left = max(arm_length_left, 0)
-    max_arm_top = max(arm_length_top, 0)
-    max_arm_bottom = max(arm_length_bottom, 0)
-
-    total_width = center_width + max_arm_left + max_arm_right + 2 * gap_width
-    total_height = center_height + max_arm_top + max_arm_bottom + 2 * gap_width
-
-    # Create the background etch layer
-    etch_background = gf.components.rectangle(
-        size=(total_width, total_height),
-        layer=layer_etch,
+    # Create etch by sizing drawn metal
+    etch_region = gf.component.size(
+        Region(
+            kdb.RecursiveShapeIterator(
+                c.kcl.layout,
+                c._base.kdb_cell,  # pyright: ignore[reportPrivateUsage]
+                layer_metal,
+            )
+        ),
+        gap_width,
     )
-    etch_ref = c.add_ref(etch_background)
-    etch_ref.dcenter = (0, 0)
+    etch_component = gf.Component()
+    etch_component.add_polygon(etch_region, layer=layer_etch)
 
-    # Create and place Josephson junction at the center
+    # Remove additive metal from etch
+    etch_component = gf.boolean(
+        A=etch_component,
+        B=c,
+        operation="-",
+        layer=LAYER.M1_ETCH,
+        layer1=LAYER.M1_ETCH,
+        layer2=LAYER.M1_DRAW,
+    )
+    etch_ref = c.add_ref(etch_component)
+    c.absorb(etch_ref)
+
+    # Create and place Josephson junction at the y-center of the gap
     junction_ref = c.add_ref(gf.get_component(junction_spec))
-    junction_ref.rotate(45)
-    junction_ref.dcenter = (0, 0)
+    junction_ref.rotate(-45)
+    junction_ref.dcenter = (0, c.ymin + gap_width / 2)
     if junction_displacement:
         junction_ref.transform(junction_displacement)
 
     # Add ports at the ends of each arm for connectivity
-    if arm_length_top > 0:
+    for name, width, center, orientation in zip(
+        ["top_arm", "right_arm", "bottom_arm", "left_arm"],
+        arm_width,
+        [
+            (0, arm_length_top),
+            (arm_length_right, 0),
+            (0, -arm_length_bottom),
+            (-arm_length_left, 0),
+        ],
+        [90, 0, 270, 180],
+    ):
         c.add_port(
-            name="top_arm",
-            center=(0, center_height / 2 + arm_length_top),
-            width=arm_width,
-            orientation=90,
-            layer=layer_metal,
-        )
-
-    if arm_length_right > 0:
-        c.add_port(
-            name="right_arm",
-            center=(center_width / 2 + arm_length_right, 0),
-            width=arm_width,
-            orientation=0,
-            layer=layer_metal,
-        )
-
-    if arm_length_bottom > 0:
-        c.add_port(
-            name="bottom_arm",
-            center=(0, -(center_height / 2 + arm_length_bottom)),
-            width=arm_width,
-            orientation=270,
-            layer=layer_metal,
-        )
-
-    if arm_length_left > 0:
-        c.add_port(
-            name="left_arm",
-            center=(-(center_width / 2 + arm_length_left), 0),
-            width=arm_width,
-            orientation=180,
+            name=name,
+            center=center,
+            width=width,
+            orientation=orientation,
             layer=layer_metal,
         )
 
@@ -499,63 +464,7 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
     )
 
     # Add metadata
-    c.info["qubit_type"] = "xmon_transmon"
-
-    return c
-
-
-@gf.cell
-def xmon_transmon_with_etch(**kwargs: Unpack[XmonTransmonParams]) -> Component:
-    """Creates an Xmon style transmon qubit with cross-shaped geometry and etched isolation.
-
-    This version includes properly etched gaps around the Xmon structure for isolation.
-    The etch layer is created by subtracting the metal regions from a background rectangle.
-
-    Args:
-        **kwargs: :class:`~XmonTransmonParams` for the Xmon transmon qubit.
-
-    Returns:
-        Component: A gdsfactory component with the Xmon transmon geometry and etch layer.
-    """
-    c = gf.Component()
-
-    # Create the basic Xmon structure
-    xmon_ref = c << xmon_transmon(**kwargs)
-
-    # Get parameters for etch calculation
-    params = _xmon_transmon_default_params | kwargs
-    gap_width = params["gap_width"]
-    layer_etch = params["layer_etch"]
-    layer_metal = params["layer_metal"]
-
-    # Calculate the etch bounding box
-    xmon_size = (xmon_ref.size_info.width, xmon_ref.size_info.height)
-    etch_size = (
-        xmon_size[0] + 2 * gap_width,
-        xmon_size[1] + 2 * gap_width,
-    )
-
-    # Create etch background
-    etch_background = gf.components.rectangle(
-        size=etch_size,
-        layer=layer_etch,
-    )
-
-    # Use boolean operation to subtract metal from etch
-    etch_final = gf.boolean(
-        A=etch_background,
-        B=c,
-        operation="A-B",
-        layer=layer_etch,
-        layer1=layer_etch,
-        layer2=layer_metal,
-    )
-
-    etch_ref = c.add_ref(etch_final)
-    etch_ref.dcenter = xmon_ref.dcenter
-
-    # Add ports from the xmon
-    c.add_ports(xmon_ref.ports)
+    c.info["qubit_type"] = "xmon"
 
     return c
 
@@ -572,7 +481,6 @@ if __name__ == "__main__":
             double_pad_transmon_with_bbox(),
             flipmon(),
             xmon_transmon(),
-            xmon_transmon_with_etch(),
         )
     ):
         (c << component).move((0, i * 700))
