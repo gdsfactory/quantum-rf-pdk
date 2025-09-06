@@ -61,7 +61,7 @@ def airbridge(
         layer=pad_layer,
         centered=True,
     )
-    left_pad.move((-bridge_length/2 - pad_length/2, 0))
+    left_pad.move((-bridge_length / 2 - pad_length / 2, 0))
 
     # Create right landing pad
     right_pad = c << gf.components.rectangle(
@@ -69,12 +69,12 @@ def airbridge(
         layer=pad_layer,
         centered=True,
     )
-    right_pad.move((bridge_length/2 + pad_length/2, 0))
+    right_pad.move((bridge_length / 2 + pad_length / 2, 0))
 
     # Add ports at the edges of the landing pads for connection
     c.add_port(
         name="o1",
-        center=(-bridge_length/2 - pad_length, 0),
+        center=(-bridge_length / 2 - pad_length, 0),
         width=pad_width,
         orientation=180,
         layer=pad_layer,
@@ -83,7 +83,7 @@ def airbridge(
 
     c.add_port(
         name="o2",
-        center=(bridge_length/2 + pad_length, 0),
+        center=(bridge_length / 2 + pad_length, 0),
         width=pad_width,
         orientation=0,
         layer=pad_layer,
@@ -128,43 +128,7 @@ def cpw_with_airbridges(
     )
 
     # Create a copy with airbridges using Pydantic model_copy
-    return base_xs.model_copy(
-        update={"components_along_path": (component_along_path,)}
-    )
-
-
-@gf.cell
-def airbridge_array(
-    bridge_component: Component | None = None,
-    count: int = 3,
-    spacing: float = 100.0,
-) -> Component:
-    """Create an array of airbridges.
-
-    Args:
-        bridge_component: Airbridge component to replicate. If None, uses default airbridge.
-        count: Number of airbridges in the array.
-        spacing: Spacing between airbridge centers in µm.
-
-    Returns:
-        Component containing the airbridge array.
-    """
-    c = gf.Component()
-
-    if bridge_component is None:
-        bridge_component = airbridge()
-
-    for i in range(count):
-        bridge_ref = c << bridge_component
-        bridge_ref.move((i * spacing, 0))
-
-        # Add ports for the first and last airbridges
-        if i == 0:
-            c.add_port(port=bridge_ref.ports["o1"], name="o1")
-        if i == count - 1:
-            c.add_port(port=bridge_ref.ports["o2"], name="o2")
-
-    return c
+    return base_xs.model_copy(update={"components_along_path": (component_along_path,)})
 
 
 if __name__ == "__main__":
@@ -176,7 +140,3 @@ if __name__ == "__main__":
     # Create and display a single airbridge
     bridge = airbridge()
     bridge.show()
-
-    # Create and display an array of airbridges
-    bridge_array = airbridge_array(count=5, spacing=80.0)
-    bridge_array.show()
