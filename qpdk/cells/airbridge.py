@@ -35,6 +35,10 @@ def airbridge(
     while the pad_layer (AB_VIA) represents the contact/landing pads that connect
     to the underlying circuit.
 
+    Note:
+        To be used with :class:`~gdsfactory.cross_section.ComponentAlongPath`
+        the unrotated version should be _oriented for placement on a horizontal line_.
+
     Args:
         bridge_length: Total length of the airbridge span in µm.
         bridge_width: Width of the suspended bridge in µm.
@@ -71,24 +75,45 @@ def airbridge(
     )
     right_pad.move((bridge_length / 2 + pad_length / 2, 0))
 
-    # Add ports at the edges of the landing pads for connection
-    c.add_port(
-        name="o1",
-        center=(-bridge_length / 2 - pad_length, 0),
-        width=pad_width,
-        orientation=180,
-        layer=pad_layer,
-        port_type="electrical",
-    )
+    # Port configuration data
+    port_configs = [
+        {
+            "name": "o1",
+            "center": (0, bridge_width / 2),
+            "width": bridge_width,
+            "orientation": 90,
+            "layer": bridge_layer,
+        },
+        {
+            "name": "o2",
+            "center": (0, -bridge_width / 2),
+            "width": bridge_width,
+            "orientation": 270,
+            "layer": bridge_layer,
+        },
+        {
+            "name": "e1",
+            "center": (-bridge_length / 2 - pad_length, 0),
+            "width": pad_width,
+            "orientation": 180,
+            "layer": pad_layer,
+            "port_type": "electrical",
+        },
+        {
+            "name": "e2",
+            "center": (bridge_length / 2 + pad_length, 0),
+            "width": pad_width,
+            "orientation": 0,
+            "layer": pad_layer,
+            "port_type": "electrical",
+        },
+    ]
 
-    c.add_port(
-        name="o2",
-        center=(bridge_length / 2 + pad_length, 0),
-        width=pad_width,
-        orientation=0,
-        layer=pad_layer,
-        port_type="electrical",
-    )
+    # Add all ports using the configuration data
+    for config in port_configs:
+        c.add_port(**config)
+
+    c.rotate(90)
 
     return c
 
