@@ -1,0 +1,59 @@
+instances:
+  squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315:
+    component: squid_junction
+    info: {}
+    settings:
+      junction_spec: josephson_junction
+      loop_area: 4
+name: xmon_transmon
+nets: []
+placements:
+  squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315:
+    mirror: false
+    rotation: 315
+    x: -8.132
+    y: -155.454
+ports:
+  junction: squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,loop_center
+warnings:
+  optical:
+    orientation_mismatch:
+    - message: squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,loop_center was
+        promoted to junction but orientationsdo not match! Difference of 225.0 deg
+      ports:
+      - squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,loop_center
+      - junction
+      values:
+      - 315
+      - 90
+    unconnected_ports:
+    - message: 6 unconnected optical ports!
+      ports:
+      - squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,left_left_wide
+      - squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,left_right_wide
+      - squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,right_left_wide
+      - squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,right_right_wide
+      - squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,left_overlap
+      - squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,right_overlap
+      values:
+      - - -6.859
+        - -173.273
+      - - -6.859
+        - -156.727
+      - - 6.859
+        - -156.727
+      - - 6.859
+        - -173.273
+      - - 1.414
+        - -165
+      - - -1.414
+        - -165
+    width_mismatch:
+    - message: Widths of ports squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,loop_center
+        and junction not equal. Difference of 33.355999999999995 um
+      ports:
+      - squid_junction_JSjoseph_f3d0f058_m8132_m155454_A315,loop_center
+      - junction
+      values:
+      - 0.09
+      - 33.446
