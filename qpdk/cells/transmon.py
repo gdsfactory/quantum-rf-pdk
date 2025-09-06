@@ -9,7 +9,8 @@ from typing import TypedDict, Unpack
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
-from klayout.db import DCplxTrans
+from kfactory import kdb
+from klayout.db import DCplxTrans, Region
 
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
@@ -295,6 +296,181 @@ def flipmon(
     return c
 
 
+class XmonTransmonParams(TypedDict):
+    """Parameters for Xmon style transmon qubit.
+
+    Keyword Args:
+        center_width: Width of the central cross intersection in μm.
+        center_height: Height of the central cross intersection in μm.
+        arm_width: Tuple of (top, right, bottom, left) arm widths in μm.
+        arm_lengths: Tuple of (top, right, bottom, left) arm lengths in μm.
+            Computed from center to end of each arm.
+        gap_width: Width of the etched gap around arms in μm.
+        junction_spec: Component specification for the Josephson junction component.
+        junction_displacement: Optional complex transformation to apply to the junction.
+        layer_metal: Layer for the metal pads.
+        layer_etch: Layer for the etched regions.
+    """
+
+    center_width: float
+    center_height: float
+    arm_width: tuple[float, float, float, float]  # top, right, bottom, left
+    arm_lengths: tuple[float, float, float, float]  # top, right, bottom, left
+    gap_width: float
+    junction_spec: ComponentSpec
+    junction_displacement: DCplxTrans | None
+    layer_metal: LayerSpec
+    layer_etch: LayerSpec
+
+
+_xmon_transmon_default_params = XmonTransmonParams(
+    arm_width=(30.0, 20.0, 30.0, 20.0),  # top, right, bottom, left
+    arm_lengths=(160.0, 120.0, 160.0, 120.0),  # top, right, bottom, left
+    gap_width=10.0,
+    junction_spec=squid_junction,
+    junction_displacement=None,
+    layer_metal=LAYER.M1_DRAW,
+    layer_etch=LAYER.M1_ETCH,
+)
+
+
+@gf.cell(check_instances=False)
+def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
+    """Creates an Xmon style transmon qubit with cross-shaped geometry.
+
+    An Xmon transmon consists of a cross-shaped capacitor pad with four arms
+    extending from a central region, connected by a Josephson junction at the center.
+    The design provides better control over the coupling to readout resonators
+    and neighboring qubits through the individual arm geometries.
+
+    See :cite:`barendsCoherentJosephsonQubit2013a` for details about the Xmon design.
+
+    Args:
+        **kwargs: :class:`~XmonTransmonParams` for the Xmon transmon qubit.
+
+    Returns:
+        Component: A gdsfactory component with the Xmon transmon geometry.
+    """
+    c = Component()
+    params = _xmon_transmon_default_params | kwargs
+
+    # Extract parameters
+    (
+        arm_width,
+        arm_lengths,
+        gap_width,
+        junction_spec,
+        junction_displacement,
+        layer_metal,
+        layer_etch,
+    ) = (
+        params[key]
+        for key in [
+            "arm_width",
+            "arm_lengths",
+            "gap_width",
+            "junction_spec",
+            "junction_displacement",
+            "layer_metal",
+            "layer_etch",
+        ]
+    )
+    arm_width_top, arm_width_right, arm_width_bottom, arm_width_left = arm_width
+    arm_length_top, arm_length_right, arm_length_bottom, arm_length_left = arm_lengths
+
+    # Define arm configurations: (size, move_offset)
+    arm_configs = [
+        ((arm_width_top, arm_length_top), (-arm_width_top / 2, arm_length_top * 0)),
+        (
+            (arm_length_right, arm_width_right),
+            (arm_length_right * 0, -arm_width_right / 2),
+        ),
+        (
+            (arm_width_bottom, arm_length_bottom),
+            (-arm_width_bottom / 2, -arm_length_bottom),
+        ),
+        ((arm_length_left, arm_width_left), (-arm_length_left, -arm_width_left / 2)),
+    ]
+
+    # Create the four arms extending from the center
+    for size, move_offset in arm_configs:
+        arm = gf.components.rectangle(
+            size=size,
+            layer=layer_metal,
+        )
+        arm_ref = c.add_ref(arm)
+        arm_ref.move(move_offset)
+        c.absorb(arm_ref)
+        c.flatten(merge=True)
+
+    # Create etch by sizing drawn metal
+    etch_region = gf.component.size(
+        Region(
+            kdb.RecursiveShapeIterator(
+                c.kcl.layout,
+                c._base.kdb_cell,  # pyright: ignore[reportPrivateUsage]
+                layer_metal,
+            )
+        ),
+        gap_width,
+    )
+    etch_component = gf.Component()
+    etch_component.add_polygon(etch_region, layer=layer_etch)
+
+    # Remove additive metal from etch
+    etch_component = gf.boolean(
+        A=etch_component,
+        B=c,
+        operation="-",
+        layer=LAYER.M1_ETCH,
+        layer1=LAYER.M1_ETCH,
+        layer2=LAYER.M1_DRAW,
+    )
+    etch_ref = c.add_ref(etch_component)
+    c.absorb(etch_ref)
+
+    # Create and place Josephson junction at the y-center of the gap
+    junction_ref = c.add_ref(gf.get_component(junction_spec))
+    junction_ref.rotate(-45)
+    junction_ref.dcenter = (0, c.ymin + gap_width / 2)
+    if junction_displacement:
+        junction_ref.transform(junction_displacement)
+
+    # Add ports at the ends of each arm for connectivity
+    for name, width, center, orientation in zip(
+        ["top_arm", "right_arm", "bottom_arm", "left_arm"],
+        arm_width,
+        [
+            (0, arm_length_top),
+            (arm_length_right, 0),
+            (0, -arm_length_bottom),
+            (-arm_length_left, 0),
+        ],
+        [90, 0, 270, 180],
+    ):
+        c.add_port(
+            name=name,
+            center=center,
+            width=width,
+            orientation=orientation,
+            layer=layer_metal,
+        )
+
+    # Add junction port
+    c.add_port(
+        name="junction",
+        center=junction_ref.dcenter,
+        width=junction_ref.size_info.height,
+        orientation=90,
+        layer=LAYER.JJ_AREA,
+    )
+
+    # Add metadata
+    c.info["qubit_type"] = "xmon"
+
+    return c
+
+
 if __name__ == "__main__":
     from qpdk import PDK
 
@@ -306,6 +482,7 @@ if __name__ == "__main__":
             double_pad_transmon(junction_displacement=DCplxTrans(0, 150)),
             double_pad_transmon_with_bbox(),
             flipmon(),
+            xmon_transmon(),
         )
     ):
         (c << component).move((0, i * 700))
