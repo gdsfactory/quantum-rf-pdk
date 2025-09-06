@@ -153,8 +153,3 @@ regex = '''
   \.
   (?P<patch>\d+)
   '''
-
-[dependency-groups]
-dev = [
-    "ruff>=0.12.12",
-]
