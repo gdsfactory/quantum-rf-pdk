@@ -272,6 +272,22 @@ def microstrip(
     )
 
 
+@xsection
+def microstrip_narrow(
+    width: float = 1.0,
+    layer: LayerSpec = "M1_DRAW",
+) -> CrossSection:
+    """Return a narrow microstrip cross_section for inductors.
+
+    The cross_section is considered additive (positive) on the layer.
+    Narrow width provides higher inductance per unit length.
+    """
+    return gf.cross_section.cross_section(
+        width=width,
+        layer=layer,
+    )
+
+
 strip = strip_metal = microstrip
 
 ############################

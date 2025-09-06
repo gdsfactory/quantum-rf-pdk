@@ -1,0 +1,68 @@
+instances:
+  inductor_qpdkpcellspres_f3f412fe_0_0:
+    component: inductor
+    info:
+      inductor_type: meandering
+      length: 1500
+      meanders: 3
+    settings:
+      bend_spec: bend_circular
+      cross_section: microstrip_narrow
+      length: 1500
+      meanders: 3
+      width: 50
+  interdigital_capacitor__7738becc_289881_0:
+    component: interdigital_capacitor
+    info: {}
+    settings:
+      finger_gap: 2
+      finger_length: 30
+      fingers: 6
+      thickness: 5
+  straight_L50_CSmicrostrip_narrow_m139381_m600000_A180:
+    component: straight
+    info:
+      length: 50
+      route_info_length: 50
+      route_info_microstrip_narrow_length: 50
+      route_info_type: microstrip_narrow
+      route_info_weight: 50
+      width: 1
+    settings:
+      cross_section: microstrip_narrow
+      length: 50
+name: lumped_resonator_qpdkpc_e9c79fd4
+nets:
+- p1: inductor_qpdkpcellspres_f3f412fe_0_0,o2
+  p2: straight_L50_CSmicrostrip_narrow_m139381_m600000_A180,o1
+placements:
+  inductor_qpdkpcellspres_f3f412fe_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  interdigital_capacitor__7738becc_289881_0:
+    mirror: false
+    rotation: 0
+    x: 289.881
+    y: 0
+  straight_L50_CSmicrostrip_narrow_m139381_m600000_A180:
+    mirror: false
+    rotation: 180
+    x: -139.381
+    y: -600
+ports:
+  capacitor_out: interdigital_capacitor__7738becc_289881_0,o2
+  inductor_in: inductor_qpdkpcellspres_f3f412fe_0_0,o1
+warnings:
+  optical:
+    unconnected_ports:
+    - message: 2 unconnected optical ports!
+      ports:
+      - interdigital_capacitor__7738becc_289881_0,o1
+      - straight_L50_CSmicrostrip_narrow_m139381_m600000_A180,o2
+      values:
+      - - 266.881
+        - 0
+      - - -189.381
+        - -600

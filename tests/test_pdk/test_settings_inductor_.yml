@@ -1,0 +1,11 @@
+info:
+  inductor_type: meandering
+  length: 2000
+  meanders: 4
+name: inductor_qpdkpcellspres_e5c5b6c5
+settings:
+  bend_spec: bend_circular
+  cross_section: microstrip_narrow
+  length: 2000
+  meanders: 4
+  width: 50
