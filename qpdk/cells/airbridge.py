@@ -1,0 +1,182 @@
+"""Airbridge components for superconducting quantum circuits.
+
+This module provides airbridge components for crossing transmission lines
+without electrical contact, essential for complex quantum circuit layouts.
+Airbridges are elevated metal structures that span over underlying circuits.
+"""
+
+from __future__ import annotations
+
+import gdsfactory as gf
+from gdsfactory.component import Component
+from gdsfactory.typings import LayerSpec
+
+import qpdk.tech as tech
+from qpdk.tech import LAYER
+
+
+@gf.cell
+def airbridge(
+    bridge_length: float = 30.0,
+    bridge_width: float = 8.0,
+    pad_width: float = 15.0,
+    pad_length: float = 12.0,
+    bridge_layer: LayerSpec = LAYER.AB_DRAW,
+    pad_layer: LayerSpec = LAYER.AB_VIA,
+) -> Component:
+    """Generate a superconducting airbridge component.
+
+    Creates an airbridge consisting of a suspended bridge span and landing pads
+    on either side. The bridge allows transmission lines to cross over each other
+    without electrical contact, which is essential for complex quantum circuit
+    routing without crosstalk.
+
+    The bridge_layer (AB_DRAW) represents the elevated metal bridge structure,
+    while the pad_layer (AB_VIA) represents the contact/landing pads that connect
+    to the underlying circuit.
+
+    Args:
+        bridge_length: Total length of the airbridge span in µm.
+        bridge_width: Width of the suspended bridge in µm.
+        pad_width: Width of the landing pads in µm.
+        pad_length: Length of each landing pad in µm.
+        bridge_layer: Layer for the suspended bridge metal (default: AB_DRAW).
+        pad_layer: Layer for the landing pads/contacts (default: AB_VIA).
+
+    Returns:
+        Component containing the airbridge geometry with appropriate ports.
+    """
+    c = gf.Component()
+
+    # Create the suspended bridge
+    c << gf.components.rectangle(
+        size=(bridge_length, bridge_width),
+        layer=bridge_layer,
+        centered=True,
+    )
+
+    # Create left landing pad
+    left_pad = c << gf.components.rectangle(
+        size=(pad_length, pad_width),
+        layer=pad_layer,
+        centered=True,
+    )
+    left_pad.move((-bridge_length/2 - pad_length/2, 0))
+
+    # Create right landing pad
+    right_pad = c << gf.components.rectangle(
+        size=(pad_length, pad_width),
+        layer=pad_layer,
+        centered=True,
+    )
+    right_pad.move((bridge_length/2 + pad_length/2, 0))
+
+    # Add ports at the edges of the landing pads for connection
+    c.add_port(
+        name="o1",
+        center=(-bridge_length/2 - pad_length, 0),
+        width=pad_width,
+        orientation=180,
+        layer=pad_layer,
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="o2",
+        center=(bridge_length/2 + pad_length, 0),
+        width=pad_width,
+        orientation=0,
+        layer=pad_layer,
+        port_type="electrical",
+    )
+
+    return c
+
+
+def cpw_with_airbridges(
+    airbridge_spacing: float = 100.0,
+    airbridge_padding: float = 10.0,
+    bridge_component: Component | None = None,
+    **cpw_kwargs,
+) -> gf.CrossSection:
+    """Create a coplanar waveguide cross-section with airbridges.
+
+    This function creates a CPW cross-section that includes airbridges placed
+    at regular intervals along the transmission line. This is useful for
+    preventing slot mode propagation and reducing crosstalk in quantum circuits.
+
+    Args:
+        airbridge_spacing: Distance between airbridge centers in µm.
+        airbridge_padding: Minimum distance from path start to first airbridge in µm.
+        bridge_component: Custom airbridge component. If None, uses default airbridge.
+        **cpw_kwargs: Additional arguments passed to the coplanar_waveguide function.
+
+    Returns:
+        CrossSection with airbridges for use in routing functions.
+    """
+    if bridge_component is None:
+        bridge_component = airbridge()
+
+    # Create base CPW cross-section
+    base_xs = tech.coplanar_waveguide(**cpw_kwargs)
+
+    # Create ComponentAlongPath for airbridges
+    component_along_path = gf.ComponentAlongPath(
+        component=bridge_component,
+        spacing=airbridge_spacing,
+        padding=airbridge_padding,
+    )
+
+    # Create a copy with airbridges using Pydantic model_copy
+    return base_xs.model_copy(
+        update={"components_along_path": (component_along_path,)}
+    )
+
+
+@gf.cell
+def airbridge_array(
+    bridge_component: Component | None = None,
+    count: int = 3,
+    spacing: float = 100.0,
+) -> Component:
+    """Create an array of airbridges.
+
+    Args:
+        bridge_component: Airbridge component to replicate. If None, uses default airbridge.
+        count: Number of airbridges in the array.
+        spacing: Spacing between airbridge centers in µm.
+
+    Returns:
+        Component containing the airbridge array.
+    """
+    c = gf.Component()
+
+    if bridge_component is None:
+        bridge_component = airbridge()
+
+    for i in range(count):
+        bridge_ref = c << bridge_component
+        bridge_ref.move((i * spacing, 0))
+
+        # Add ports for the first and last airbridges
+        if i == 0:
+            c.add_port(port=bridge_ref.ports["o1"], name="o1")
+        if i == count - 1:
+            c.add_port(port=bridge_ref.ports["o2"], name="o2")
+
+    return c
+
+
+if __name__ == "__main__":
+    # Example usage and testing
+    from qpdk import PDK
+
+    PDK.activate()
+
+    # Create and display a single airbridge
+    bridge = airbridge()
+    bridge.show()
+
+    # Create and display an array of airbridges
+    bridge_array = airbridge_array(count=5, spacing=80.0)
+    bridge_array.show()
