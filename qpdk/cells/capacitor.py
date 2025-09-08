@@ -210,8 +210,8 @@ def interdigital_capacitor(
 
     # Combine results
     c = gf.Component()
-    c << c_additive
-    c << c_negative
+    c.absorb(c << c_additive)
+    c.absorb(c << c_negative)
 
     ports_config = [
         ("o1", straight_left["o1"]),

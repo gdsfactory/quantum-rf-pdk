@@ -1,0 +1,12 @@
+info:
+  length: 5000
+  resonator_type: quarter_wave
+name: transmon_with_resonator_98758b1b
+settings:
+  coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_ST20_F18
+  resonator: Fresonator_Mqpdkpcellspresonator_SOSFalse_OETrue_L4000_M6
+  resonator_length: 5000
+  resonator_meander_start:
+  - -700
+  - -1300
+  transmon: double_pad_transmon_with_bbox

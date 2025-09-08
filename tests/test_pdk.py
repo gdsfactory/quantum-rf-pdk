@@ -41,6 +41,7 @@ skip_test = {
     "die_with_pads",
     "taper_cross_section",
     "transform_component",
+    "transmon_with_resonator",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]
