@@ -223,6 +223,7 @@ def interdigital_capacitor(
             name=port_name,
             width=port_ref.width,
             center=port_ref.center,
+            orientation=port_ref.orientation,
             layer=LAYER.M1_DRAW,
         )
 
