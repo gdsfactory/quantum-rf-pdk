@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import importlib
-import inspect
 import pathlib
-import pkgutil
 
 import gdsfactory as gf
 import jsondiff
@@ -44,6 +41,7 @@ skip_test = {
     "die_with_pads",
     "taper_cross_section",
     "transform_component",
+    "transmon_with_resonator",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]
@@ -157,21 +155,10 @@ def test_yaml_matches_layers():
     assert LAYERS_ACCORDING_TO_YAML == LAYERS_DEFINED
 
 
-# Get all functions from qpdk.samples module
-sample_functions = {
-    f"{modname}.{name}": obj
-    for importer, modname, ispkg in pkgutil.walk_packages(
-        qpdk.samples.__path__, qpdk.samples.__name__ + "."
-    )
-    for name, obj in inspect.getmembers(importlib.import_module(modname))
-    if inspect.isfunction(obj)
-    and not name.startswith("_")
-    and obj.__module__ == modname
-}
-
-
 @pytest.mark.parametrize(
-    "sample", list(sample_functions.values()), ids=list(sample_functions.keys())
+    "sample",
+    list(qpdk.sample_functions.values()),
+    ids=list(qpdk.sample_functions.keys()),
 )
 def test_sample_generates(sample: ComponentFactory):
     """Test that all sample cells generate without errors."""

@@ -10,10 +10,12 @@ from gdsfactory.cross_section import (
     CrossSection,
 )
 from gdsfactory.technology import (
+    DerivedLayer,
     LayerLevel,
     LayerMap,
     LayerStack,
     LayerViews,
+    LogicalLayer,
 )
 from gdsfactory.typings import (
     ConnectivitySpec,
@@ -74,54 +76,48 @@ class LayerMapQPDK(LayerMap):
 L = LAYER = LayerMapQPDK
 
 
-def get_layer_stack(thickness_m1: float = 150e-9) -> LayerStack:
-    """Returns LayerStack.
+def get_layer_stack() -> LayerStack:
+    """Returns a LayerStack corresponding to the PDK.
 
-    Args:
-        thickness_m1: thickness of base metal film in um.
+    The stack roughly corresponds to that of :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
     """
     return LayerStack(
         layers={
-            # Base metal film (e.g., Al 150 nm on sapphire)
-            "m1": LayerLevel(
-                layer=L.M1_DRAW,
-                thickness=thickness_m1,
+            # Base metal film (e.g., 200 nm of Nb)
+            "M1": LayerLevel(
+                layer=DerivedLayer(
+                    layer1=LogicalLayer(layer=L.M1_DRAW),
+                    layer2=LogicalLayer(layer=L.M1_ETCH),
+                    operation="-",
+                ),
+                derived_layer=LogicalLayer(layer=L.M1_DRAW),
+                thickness=200e-9,
                 zmin=0.0,  # top of substrate
-                material="Al",
+                material="Nb",
                 sidewall_angle=90.0,
                 mesh_order=1,
             ),
-            # Optional: alignment metal (Cr/Au) if you physically pattern it
-            "aln_top": LayerLevel(
-                layer=L.ALN_TOP,
-                thickness=50e-9,  # nominal
-                zmin=0.0,
-                material="CrAu",
-                sidewall_angle=90.0,
-                mesh_order=2,
-            ),
             # Airbridge metal sitting above M1 (example: +300 nm)
-            "ab_metal": LayerLevel(
+            "AB_METAL": LayerLevel(
                 layer=L.AB_DRAW,
                 thickness=300e-9,
-                zmin=150e-9,  # stacked above M1 for EM exports
-                material="Al",
+                zmin=200e-9,  # stacked above M1
+                material="Nb",
                 sidewall_angle=90.0,
                 mesh_order=3,
             ),
-            # (Optional) JJ_AREA can be exported as a thin film if you use it in EM
+            # JJ_AREA can be exported as a thin film if you use it in EM
             "jj_area": LayerLevel(
                 layer=L.JJ_AREA,
-                thickness=50e-9,
-                zmin=150e-9,
-                material="AlOx/Al",  # placeholder; use what your solver expects
+                thickness=70e-9,
+                zmin=0,
+                material="AlOx/Al",
                 sidewall_angle=90.0,
                 mesh_order=4,
             ),
-            # SIM_ONLY is non-fab; keep thin so it won't perturb EM
             "sim_only": LayerLevel(
                 layer=L.SIM_ONLY,
-                thickness=1e-9,
+                thickness=0e-9,
                 zmin=0.0,
                 material="vacuum",
                 sidewall_angle=90.0,
@@ -182,7 +178,8 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
 def coplanar_waveguide(
     width: float = 10,
     gap: float = 6,
-    layer: LayerSpec = LAYER.M1_ETCH,
+    waveguide_layer: LayerSpec = LAYER.M1_DRAW,
+    etch_layer: LayerSpec = LAYER.M1_ETCH,
     radius: float | None = 100,
 ) -> CrossSection:
     """Return a coplanar waveguide cross_section.
@@ -197,23 +194,28 @@ def coplanar_waveguide(
     Args:
         width: center conductor width in µm.
         gap: gap between center conductor and ground in µm.
-        layer: for the etch (negative) region.
+        waveguide_layer: for the center conductor (positive) region.
+        etch_layer: for the etch (negative) region.
         radius: bend radius (if applicable).
     """
     return gf.cross_section.cross_section(
         width=width,
-        layer=LAYER.WG,
+        layer=waveguide_layer,
         radius=radius,
         sections=(
             gf.Section(
-                width=gap, offset=(gap + width) / 2, layer=layer, name="etch_offset_pos"
+                width=gap,
+                offset=(gap + width) / 2,
+                layer=etch_layer,
+                name="etch_offset_pos",
             ),
             gf.Section(
                 width=gap,
                 offset=-(gap + width) / 2,
-                layer=layer,
+                layer=etch_layer,
                 name="etch_offset_neg",
             ),
+            gf.Section(width=width, layer=LAYER.WG, name="waveguide"),
         ),
     )
 
@@ -230,7 +232,7 @@ def launcher_cross_section_big() -> gf.CrossSection:
 
     The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
     """
-    return coplanar_waveguide(width=200.0, gap=110.0, layer=LAYER.M1_ETCH)
+    return coplanar_waveguide(width=200.0, gap=110.0, etch_layer=LAYER.M1_ETCH)
 
 
 @xsection
@@ -278,18 +280,18 @@ strip = strip_metal = microstrip
 # Routing functions
 ############################
 
-route_single = partial(
+route_single = route_single_cpw = partial(
     gf.routing.route_single,
     cross_section=cpw,
     bend="bend_circular",
 )
-route_bundle = partial(
+route_bundle = route_bundle_cpw = partial(
     gf.routing.route_bundle,
     cross_section=cpw,
     bend="bend_circular",
 )
 
-route_bundle_all_angle = partial(
+route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     gf.routing.route_bundle_all_angle,
     cross_section=cpw,
     separation=3,
@@ -297,7 +299,7 @@ route_bundle_all_angle = partial(
     straight="straight_all_angle",
 )
 
-route_astar = partial(
+route_astar = route_astar_cpw = partial(
     add_bundle_astar,
     layers=["M1_ETCH"],
     bend="bend_circular",
@@ -306,9 +308,14 @@ route_astar = partial(
     spacing=3,
 )
 routing_strategies = dict(
+    route_single=route_single,
+    route_single_cpw=route_single_cpw,
     route_bundle=route_bundle,
+    route_bundle_cpw=route_bundle_cpw,
     route_bundle_all_angle=route_bundle_all_angle,
+    route_bundle_all_angle_cpw=route_bundle_all_angle_cpw,
     route_astar=route_astar,
+    route_astar_cpw=route_astar_cpw,
 )
 
 if __name__ == "__main__":

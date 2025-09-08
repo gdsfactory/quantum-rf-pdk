@@ -1,0 +1,99 @@
+instances:
+  input_cap1:
+    component: interdigital_capacitor
+    settings: {}
+  input_cap2:
+    component: interdigital_capacitor
+    settings: {}
+  launcher1:
+    component: launcher
+    settings: {}
+  launcher2:
+    component: launcher
+    settings: {}
+  qubit1:
+    component: transmon_with_resonator
+    settings:
+      resonator_length: 5000
+  qubit2:
+    component: transmon_with_resonator
+    settings:
+      resonator_length: 4800
+  qubit3:
+    component: transmon_with_resonator
+    settings:
+      resonator_length: 4600
+  qubit4:
+    component: transmon_with_resonator
+    settings:
+      resonator_length: 4400
+connections: {}
+routes:
+  probeline_input:
+    links:
+      launcher1,o1: input_cap1,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      allow_width_mismatch: true
+      auto_taper: false
+  probeline_input_to_output:
+    links:
+      input_cap1,o2: input_cap2,o2
+    routing_strategy: route_bundle_cpw
+    settings:
+      allow_width_mismatch: true
+      auto_taper: false
+      steps:
+        - dx: 4000
+        - dy: -200
+  probeline_output:
+    links:
+      input_cap2,o1: launcher2,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+nets: []
+ports: {}
+placements:
+  input_cap1:
+    x: 0
+    'y': 0
+    dx: 800
+    dy: 400
+  input_cap2:
+    x: 0
+    'y': 0
+    dx: 800
+    dy: -400
+  launcher1:
+    x: 0
+    'y': 400
+  launcher2:
+    x: 0
+    'y': -400
+  qubit1:
+    x: 2000
+    'y': 0
+    dx: 171.527
+    dy: 1750
+    rotation: 0
+    mirror: false
+  qubit2:
+    x: 4000
+    'y': 0
+    dx: 171.527
+    dy: 1750
+    rotation: 0
+    mirror: false
+  qubit3:
+    x: 4000
+    'y': 0
+    dx: 171.527
+    dy: -1750
+    mirror: true
+  qubit4:
+    x: 2000
+    'y': 0
+    dx: 171.527
+    dy: -1750
+    mirror: true

@@ -11,4 +11,5 @@ parts:
   - caption: Reference
     chapters:
       - file: cells
+      - file: samples
       - file: changelog
