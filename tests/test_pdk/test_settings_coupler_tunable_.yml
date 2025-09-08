@@ -6,13 +6,12 @@ info:
   tuning_gap: 1
   tuning_pad_height: 20
   tuning_pad_width: 15
-name: coupler_tunable_qpdkpce_d8d7a99a
+name: coupler_tunable_qpdkpce_c0ca777c
 settings:
   feed_length: 30
   feed_width: 10
   gap: 3
   layer_metal: M1_DRAW
-  layer_tuning: M1_CUTOUT
   pad_height: 40
   pad_width: 30
   port_type: electrical

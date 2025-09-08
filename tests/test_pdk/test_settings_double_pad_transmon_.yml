@@ -1,10 +1,4 @@
 info:
   qubit_type: transmon
-name: double_pad_transmon_PS2_cc5ec781
-settings:
-  junction_spec: squid_junction
-  layer_metal: M1_DRAW
-  pad_gap: 15
-  pad_size:
-  - 250
-  - 400
+name: double_pad_transmon
+settings: {}

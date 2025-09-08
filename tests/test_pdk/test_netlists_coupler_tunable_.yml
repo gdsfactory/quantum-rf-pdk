@@ -29,12 +29,12 @@ instances:
       size:
       - 30
       - 10
-  rectangle_gdsfactorypco_5e0f3cd0_m7500_21000:
+  rectangle_gdsfactorypco_a3bd82cb_m7500_21000:
     component: rectangle
     info: {}
     settings:
       centered: false
-      layer: M1_CUTOUT
+      layer: M1_DRAW
       port_orientations:
       - 180
       - 90
@@ -44,12 +44,12 @@ instances:
       size:
       - 15
       - 20
-  rectangle_gdsfactorypco_5e0f3cd0_m7500_m41000:
+  rectangle_gdsfactorypco_a3bd82cb_m7500_m41000:
     component: rectangle
     info: {}
     settings:
       centered: false
-      layer: M1_CUTOUT
+      layer: M1_DRAW
       port_orientations:
       - 180
       - 90
@@ -59,36 +59,6 @@ instances:
       size:
       - 15
       - 20
-  rectangle_gdsfactorypco_c1cc4aec_m5000_41000:
-    component: rectangle
-    info: {}
-    settings:
-      centered: false
-      layer: M1_CUTOUT
-      port_orientations:
-      - 180
-      - 90
-      - 0
-      - -90
-      port_type: electrical
-      size:
-      - 10
-      - 30
-  rectangle_gdsfactorypco_c1cc4aec_m5000_m71000:
-    component: rectangle
-    info: {}
-    settings:
-      centered: false
-      layer: M1_CUTOUT
-      port_orientations:
-      - 180
-      - 90
-      - 0
-      - -90
-      port_type: electrical
-      size:
-      - 10
-      - 30
   rectangle_gdsfactorypco_d184fdd3_1500_m20000:
     component: rectangle
     info: {}
@@ -119,16 +89,46 @@ instances:
       size:
       - 30
       - 40
-name: coupler_tunable_qpdkpce_d8d7a99a
+  rectangle_gdsfactorypco_d18dac4d_m5000_41000:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 10
+      - 30
+  rectangle_gdsfactorypco_d18dac4d_m5000_m71000:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 10
+      - 30
+name: coupler_tunable_qpdkpce_c0ca777c
 nets:
 - p1: rectangle_gdsfactorypco_5525223e_31500_m5000,e1
   p2: rectangle_gdsfactorypco_d184fdd3_1500_m20000,e3
 - p1: rectangle_gdsfactorypco_5525223e_m61500_m5000,e3
   p2: rectangle_gdsfactorypco_d184fdd3_m31500_m20000,e1
-- p1: rectangle_gdsfactorypco_5e0f3cd0_m7500_21000,e2
-  p2: rectangle_gdsfactorypco_c1cc4aec_m5000_41000,e4
-- p1: rectangle_gdsfactorypco_5e0f3cd0_m7500_m41000,e4
-  p2: rectangle_gdsfactorypco_c1cc4aec_m5000_m71000,e2
+- p1: rectangle_gdsfactorypco_a3bd82cb_m7500_21000,e2
+  p2: rectangle_gdsfactorypco_d18dac4d_m5000_41000,e4
+- p1: rectangle_gdsfactorypco_a3bd82cb_m7500_m41000,e4
+  p2: rectangle_gdsfactorypco_d18dac4d_m5000_m71000,e2
 placements:
   rectangle_gdsfactorypco_5525223e_31500_m5000:
     mirror: false
@@ -140,26 +140,16 @@ placements:
     rotation: 0
     x: -61.5
     y: -5
-  rectangle_gdsfactorypco_5e0f3cd0_m7500_21000:
+  rectangle_gdsfactorypco_a3bd82cb_m7500_21000:
     mirror: false
     rotation: 0
     x: -7.5
     y: 21
-  rectangle_gdsfactorypco_5e0f3cd0_m7500_m41000:
+  rectangle_gdsfactorypco_a3bd82cb_m7500_m41000:
     mirror: false
     rotation: 0
     x: -7.5
     y: -41
-  rectangle_gdsfactorypco_c1cc4aec_m5000_41000:
-    mirror: false
-    rotation: 0
-    x: -5
-    y: 41
-  rectangle_gdsfactorypco_c1cc4aec_m5000_m71000:
-    mirror: false
-    rotation: 0
-    x: -5
-    y: -71
   rectangle_gdsfactorypco_d184fdd3_1500_m20000:
     mirror: false
     rotation: 0
@@ -170,11 +160,21 @@ placements:
     rotation: 0
     x: -31.5
     y: -20
+  rectangle_gdsfactorypco_d18dac4d_m5000_41000:
+    mirror: false
+    rotation: 0
+    x: -5
+    y: 41
+  rectangle_gdsfactorypco_d18dac4d_m5000_m71000:
+    mirror: false
+    rotation: 0
+    x: -5
+    y: -71
 ports:
   left: rectangle_gdsfactorypco_5525223e_m61500_m5000,e1
   right: rectangle_gdsfactorypco_5525223e_31500_m5000,e3
-  tuning_bottom: rectangle_gdsfactorypco_c1cc4aec_m5000_m71000,e4
-  tuning_top: rectangle_gdsfactorypco_c1cc4aec_m5000_41000,e2
+  tuning_bottom: rectangle_gdsfactorypco_d18dac4d_m5000_m71000,e4
+  tuning_top: rectangle_gdsfactorypco_d18dac4d_m5000_41000,e2
 warnings:
   electrical:
     unconnected_ports:
@@ -186,20 +186,20 @@ warnings:
       - rectangle_gdsfactorypco_d184fdd3_1500_m20000,e1
       - rectangle_gdsfactorypco_d184fdd3_1500_m20000,e2
       - rectangle_gdsfactorypco_d184fdd3_1500_m20000,e4
-      - rectangle_gdsfactorypco_5e0f3cd0_m7500_21000,e1
-      - rectangle_gdsfactorypco_5e0f3cd0_m7500_21000,e3
-      - rectangle_gdsfactorypco_5e0f3cd0_m7500_21000,e4
-      - rectangle_gdsfactorypco_5e0f3cd0_m7500_m41000,e1
-      - rectangle_gdsfactorypco_5e0f3cd0_m7500_m41000,e2
-      - rectangle_gdsfactorypco_5e0f3cd0_m7500_m41000,e3
+      - rectangle_gdsfactorypco_a3bd82cb_m7500_21000,e1
+      - rectangle_gdsfactorypco_a3bd82cb_m7500_21000,e3
+      - rectangle_gdsfactorypco_a3bd82cb_m7500_21000,e4
+      - rectangle_gdsfactorypco_a3bd82cb_m7500_m41000,e1
+      - rectangle_gdsfactorypco_a3bd82cb_m7500_m41000,e2
+      - rectangle_gdsfactorypco_a3bd82cb_m7500_m41000,e3
       - rectangle_gdsfactorypco_5525223e_m61500_m5000,e2
       - rectangle_gdsfactorypco_5525223e_m61500_m5000,e4
       - rectangle_gdsfactorypco_5525223e_31500_m5000,e2
       - rectangle_gdsfactorypco_5525223e_31500_m5000,e4
-      - rectangle_gdsfactorypco_c1cc4aec_m5000_41000,e1
-      - rectangle_gdsfactorypco_c1cc4aec_m5000_41000,e3
-      - rectangle_gdsfactorypco_c1cc4aec_m5000_m71000,e1
-      - rectangle_gdsfactorypco_c1cc4aec_m5000_m71000,e3
+      - rectangle_gdsfactorypco_d18dac4d_m5000_41000,e1
+      - rectangle_gdsfactorypco_d18dac4d_m5000_41000,e3
+      - rectangle_gdsfactorypco_d18dac4d_m5000_m71000,e1
+      - rectangle_gdsfactorypco_d18dac4d_m5000_m71000,e3
       values:
       - - -16.5
         - 20

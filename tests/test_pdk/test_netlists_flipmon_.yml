@@ -1,4 +1,16 @@
 instances:
+  circle_gdsfactorypcompo_5f36ace2_0_0:
+    component: circle
+    info: {}
+    settings:
+      angle_resolution: 2.5
+      layer: M2_DRAW
+      radius: 110
+  indium_bump_D15_0_0:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
   ring_gdsfactorypcompone_7473cf03_0_0:
     component: ring
     info: {}
@@ -23,9 +35,19 @@ instances:
     settings:
       junction_spec: josephson_junction
       loop_area: 4
-name: flipmon_IRR50_IRW30_ORR_d7588b62
+name: flipmon_IRR50_IRW30_ORR_adcc67b0
 nets: []
 placements:
+  circle_gdsfactorypcompo_5f36ace2_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  indium_bump_D15_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
   ring_gdsfactorypcompone_7473cf03_0_0:
     mirror: false
     rotation: 0
@@ -42,6 +64,7 @@ placements:
     x: 60
     y: -8.132
 ports:
+  center: indium_bump_D15_0_0,center
   junction: squid_junction_JSjoseph_f3d0f058_60000_m8132_A45,loop_center
 warnings:
   optical:
