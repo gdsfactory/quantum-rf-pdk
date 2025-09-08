@@ -84,7 +84,7 @@ def test_cell_in_pdk(name):
     if isinstance(component, gf.Component):
         c1.add_ref(gf.get_component(name))
     elif isinstance(component, gf.ComponentAllAngle):
-        c1.create_vinst(component)
+        c1.add_ref_off_grid(component)
     net1 = get_minimal_netlist(c1)
 
     c2 = gf.read.from_yaml(net1)

@@ -6,7 +6,6 @@ from typing import TypedDict, Unpack
 
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.components import taper_cross_section
 from gdsfactory.typings import ComponentSpec, LayerSpec
 from klayout.db import DCplxTrans
 
@@ -90,7 +89,7 @@ def single_josephson_junction_wire(
     )
 
     # Add the tapered transition section
-    taper_ref = c << taper_cross_section(
+    taper_ref = c << gf.c.taper_cross_section(
         length=taper_length,
         cross_section1=cross_section_wide,
         cross_section2=cross_section_narrow,
