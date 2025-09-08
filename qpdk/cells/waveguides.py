@@ -43,6 +43,8 @@ def rectangle(
 
 ring = gf.c.ring
 
+taper_cross_section = gf.c.taper_cross_section
+
 
 class StraightKwargs(TypedDict, total=False):
     """Type definition for straight keyword arguments."""
