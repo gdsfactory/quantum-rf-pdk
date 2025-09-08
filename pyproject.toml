@@ -27,6 +27,7 @@ dev = [
   "pre-commit",
   "jsondiff",
   "pytest",
+  "pytest-xdist",
   "pytest-cov",
   "pytest_regressions",
   "pytest-github-actions-annotate-failures",
