@@ -7,7 +7,7 @@ clean:
 	rm -rf *.egg-info
 
 test:
-	uv run pytest
+	uv run pytest -n $$(nproc)
 
 test-gds:
 	uv run pytest -s tests/test_pdk.py
