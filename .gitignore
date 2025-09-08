@@ -5,6 +5,7 @@ __pycache__/
 Pipfile
 
 docs/cells.rst
+docs/samples.rst
 
 # C extensions
 *.so
@@ -153,3 +154,4 @@ cython_debug/
 *.DS_Store
 .DS_Store
 *Thumbs.db
+

@@ -1,11 +1,23 @@
 """Quantum pdk."""
 
+import importlib
+import inspect
+import pathlib
+import pkgutil
 from functools import lru_cache
 
+import gdsfactory as gf
+import jsondiff
+import pytest
 from gdsfactory.cross_section import get_cross_sections
+from gdsfactory.difftest import difftest
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
+from gdsfactory.technology import LayerViews
+from gdsfactory.typings import ComponentFactory
+from pytest_regressions.data_regression import DataRegressionFixture
 
+import qpdk.samples
 from qpdk import cells, config, tech
 from qpdk.config import PATH
 
@@ -33,6 +45,18 @@ def get_pdk() -> Pdk:
 
 
 PDK = get_pdk()
+
+# Get all functions from qpdk.samples module
+sample_functions = {
+    f"{modname}.{name}": obj
+    for importer, modname, ispkg in pkgutil.walk_packages(
+        qpdk.samples.__path__, qpdk.samples.__name__ + "."
+    )
+    for name, obj in inspect.getmembers(importlib.import_module(modname))
+    if inspect.isfunction(obj)
+    and not name.startswith("_")
+    and obj.__module__ == modname
+}
 
 __all__ = [
     "LAYER",
