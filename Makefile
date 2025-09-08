@@ -7,12 +7,15 @@ clean:
 	rm -rf *.egg-info
 
 test:
+	uv run pytest -n $$(nproc)
+
+test-gds:
 	uv run pytest -s tests/test_pdk.py
 
-test-force:
+test-gds-force:
 	uv run pytest -s tests/test_pdk.py --force-regen
 
-test-fail-fast:
+test-gds-fail-fast:
 	uv run pytest -s tests/test_pdk.py -x
 
 update-pre:
