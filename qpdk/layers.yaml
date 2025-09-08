@@ -99,6 +99,6 @@ LayerViews:
       WG:
         layer: [102, 0]
         layer_in_name: true
-        color: "#333333"
+        color: "#535353"
         visible: false
         hatch_pattern: 22.5 degree down
