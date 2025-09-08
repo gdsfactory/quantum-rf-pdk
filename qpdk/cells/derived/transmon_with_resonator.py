@@ -20,7 +20,7 @@ def transmon_with_resonator(
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
-    coupler: ComponentSpec = partial(plate_capacitor_single, width=20, fingers=50),
+    coupler: ComponentSpec = partial(plate_capacitor_single, thickness=20, fingers=18),
 ) -> Component:
     """Returns a transmon qubit coupled to a quarter wave resonator.
 
