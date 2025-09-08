@@ -18,7 +18,7 @@ from gdsfactory.typings import CrossSectionSpec
 from qpdk.tech import LAYER, coplanar_waveguide, launcher_cross_section_big
 
 LAUNCHER_CROSS_SECTION_BIG = launcher_cross_section_big
-LAUNCHER_CROSS_SECTION_SMALL = partial(coplanar_waveguide, layer=LAYER.M1_ETCH)
+LAUNCHER_CROSS_SECTION_SMALL = partial(coplanar_waveguide, etch_layer=LAYER.M1_ETCH)
 
 
 @gf.cell
