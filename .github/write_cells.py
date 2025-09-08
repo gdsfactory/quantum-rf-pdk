@@ -6,8 +6,8 @@ from pathlib import Path
 
 from gdsfactory.serialization import clean_value_json
 
-from qpdk import PDK
 import qpdk
+from qpdk import PDK
 from qpdk.config import PATH
 
 filepath_cells = PATH.repo / "docs" / "cells.rst"

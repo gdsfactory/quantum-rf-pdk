@@ -2,20 +2,12 @@
 
 import importlib
 import inspect
-import pathlib
 import pkgutil
 from functools import lru_cache
 
-import gdsfactory as gf
-import jsondiff
-import pytest
 from gdsfactory.cross_section import get_cross_sections
-from gdsfactory.difftest import difftest
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
-from gdsfactory.technology import LayerViews
-from gdsfactory.typings import ComponentFactory
-from pytest_regressions.data_regression import DataRegressionFixture
 
 import qpdk.samples
 from qpdk import cells, config, tech
