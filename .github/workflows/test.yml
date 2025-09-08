@@ -1,4 +1,4 @@
-name: Test code
+name: Test
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
         with:
           python-version-file: 'pyproject.toml'
       - uses: pre-commit/action@v3.0.1
-  test_code:
+  test-code:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
