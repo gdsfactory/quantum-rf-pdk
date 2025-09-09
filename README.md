@@ -1,6 +1,7 @@
 # Sample Generic Quantum RF PDK 0.0.2
 
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD)
 [![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test_code.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test_code.yml)
 [![MIT](https://img.shields.io/github/license/gdsfactory/quantum-rf-pdk)](https://choosealicense.com/licenses/mit/)
 
