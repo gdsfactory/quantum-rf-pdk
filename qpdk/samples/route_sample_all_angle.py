@@ -1,9 +1,29 @@
-"""Example of routing between two components using all angle routing."""
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
 
+# %% [markdown]
+# # All-Angle Routing Example
+#
+# This sample demonstrates routing between two components using all-angle routing capabilities.
+
+# %%
 import gdsfactory as gf
 
 from qpdk import PDK, cells, tech
 
+# %% [markdown]
+# ## Main Example
+#
+# Creates two interdigital capacitors and routes between them using all-angle routing.
+
+# %%
 if __name__ == "__main__":
     PDK.activate()
     c = gf.Component()

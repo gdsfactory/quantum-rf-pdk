@@ -1,8 +1,28 @@
-"""Pack."""
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
 
+# %% [markdown]
+# # Cross-Section Sample
+#
+# This sample demonstrates creating custom cross-sections with multiple layers and offsets.
+
+# %%
 import gdsfactory as gf
 
+# %% [markdown]
+# ## Sample Function
+#
+# Creates a component with a path using a custom cross-section that includes multiple layers with different widths and offsets.
 
+
+# %%
 @gf.cell
 def sample6_cross_section():
     """Returns a component with a path made of different segments."""

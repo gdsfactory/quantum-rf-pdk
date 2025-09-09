@@ -1,8 +1,28 @@
-"""Pack."""
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
 
+# %% [markdown]
+# # Path Creation Sample
+#
+# This sample demonstrates creating complex curved paths using gdsfactory's path functionality.
+
+# %%
 import gdsfactory as gf
 
+# %% [markdown]
+# ## Sample Function
+#
+# Creates a component with a path made of different segments including arcs, straight lines, and euler bends.
 
+
+# %%
 @gf.cell
 def sample5_path():
     """Returns a component with a path made of different segments."""

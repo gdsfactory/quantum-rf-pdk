@@ -1,10 +1,30 @@
-"""Write GDS with sample connections."""
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
 
+# %% [markdown]
+# # Write GDS with Sample Connections
+#
+# This sample demonstrates how to connect waveguides sequentially to create a longer path.
+
+# %%
 import gdsfactory as gf
 
 from qpdk import cells
 
+# %% [markdown]
+# ## Sample Function
+#
+# Creates a component with three connected waveguides of increasing length.
 
+
+# %%
 @gf.cell
 def sample1_connect() -> gf.Component:
     """Returns a component with connected waveguides."""
