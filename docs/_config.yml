@@ -14,7 +14,7 @@ execute:
   # exclude_patterns:
   #   - '*notebooks/devsim/01_pin_waveguide*'
 latex:
-  latex_engine: pdflatex # one of 'pdflatex', 'xelatex' (recommended for unicode), 'luatex', 'platex', 'uplatex'
+  latex_engine: &latex_engine xeflatex
   use_jupyterbook_latex: true # use sphinx-jupyterbook-latex for pdf builds as default
 bibtex_bibfiles:
   - bibliography.bib
@@ -56,6 +56,17 @@ sphinx:
     python_use_unqualified_type_names: True
     nb_execution_show_tb: True
     nb_execution_raise_on_error: true
+    latex_show_pagerefs: true
+    latex_show_urls: footnote
+    latex_use_xindy: true
+    latex_engine: *latex_engine
+    latex_elements:
+      papersize: a4paper
+      pointsize: 10pt
+      fncychap: |
+        \usepackage[Bjornstrup]{fncychap}
+        \ChNumVar{\fontsize{50}{54}\usefont{OT1}{pzc}{m}{n}\selectfont}
+        \ChTitleVar{\raggedleft\Large\sffamily\bfseries}
     nb_custom_formats:
       .py:
         - jupytext.reads
