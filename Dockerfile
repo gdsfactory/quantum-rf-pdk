@@ -18,7 +18,7 @@ RUN adduser --disabled-password \
     ${NB_USER} && \
     mkdir -p ${HOME} && \
     chown -R ${USER}:${USER} ${HOME} && \
-    chown -R ${USER}:${USER} /usr/local/
+    chown -R ${USER}:${USER} /usr/local/bin /usr/local/lib
 
 # Apt dependencies for gdsfactory & KLayout
 RUN apt-get update && \
