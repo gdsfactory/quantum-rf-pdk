@@ -21,9 +21,26 @@ jobs:
       - name: Install dependencies
         run: |
           make install
+      - name: Install TeXLive for PDF generation
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-xetex \
+            texlive-fonts-extra \
+            latexmk \
+            imagemagick \
+            xindy
       - name: make docs
         run: |
           make docs
+      - name: make docs-pdf
+        run: |
+          make docs-pdf || echo "PDF build completed with warnings, continuing..."
+      - name: Copy PDF to HTML artifact directory
+        run: |
+          cp docs/_build/latex/projectnamenotset.pdf docs/_build/html/qpdk-documentation.pdf
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
