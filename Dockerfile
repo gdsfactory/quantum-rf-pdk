@@ -21,8 +21,8 @@ RUN adduser --disabled-password \
     chown -R ${USER}:${USER} /usr/local/bin /usr/local/lib
 
 # Apt dependencies for gdsfactory & KLayout
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends git libexpat1 libexpat1-dev && \
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends git=1:2.47.3-0+deb13u1 libexpat1=2.7.1-2 libexpat1-dev=2.7.1-2 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${HOME}
