@@ -20,19 +20,19 @@ RUN adduser --disabled-password \
     chown -R ${USER}:${USER} ${HOME} && \
     chown -R ${USER}:${USER} /usr/local/
 
-# For klayout
+# Apt dependencies for gdsfactory & KLayout
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libexpat1 libexpat1-dev && \
+    apt-get install -y --no-install-recommends git libexpat1 libexpat1-dev && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${HOME}
 USER ${USER}
 
-# Install dependencies with cache mount
+# First install only dependencies with cache mount
 RUN --mount=type=cache,uid=${NB_UID},gid=${NB_UID},target=${HOME}/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --no-install-project --all-extras && \
-    uv tool install jupyterlab
+    uv pip install jupyterlab
 
 # Copy source code and install project
 COPY --chown=${USER}:${USER} . ${HOME}
@@ -45,4 +45,5 @@ ENV PATH="${HOME}/.venv/bin:$PATH"
 # Expose Jupyter Lab port
 EXPOSE 8888
 
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--ServerApp.token=''", "--ServerApp.password=''"]
+SHELL ["/bin/bash", "-c"]
+CMD ["/usr/local/bin/uv", "run", "--with", "jupyter", "jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--ServerApp.token=''", "--ServerApp.password=''"]
