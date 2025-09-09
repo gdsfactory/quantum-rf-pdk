@@ -23,6 +23,7 @@ from qpdk import cells
 #
 # Creates a component with three connected waveguides of increasing length.
 
+
 # %%
 @gf.cell
 def sample1_connect() -> gf.Component:

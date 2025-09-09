@@ -21,6 +21,7 @@ import gdsfactory as gf
 #
 # Creates a component with a path using a custom cross-section that includes multiple layers with different widths and offsets.
 
+
 # %%
 @gf.cell
 def sample6_cross_section():

@@ -23,6 +23,7 @@ from qpdk import LAYER
 #
 # Creates a component with text and rectangles, then removes the etch layer to show layer manipulation.
 
+
 # %%
 @gf.cell
 def sample2_remove_layers() -> gf.Component:

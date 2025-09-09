@@ -25,6 +25,7 @@ from qpdk.tech import LAYER
 #
 # Creates a quarter wave resonator and fills it with magnetic vortex trapping rectangles.
 
+
 # %%
 @gf.cell
 def filled_quarter_wave_resonator():
@@ -49,6 +50,7 @@ def filled_quarter_wave_resonator():
             (LAYER.M1_ETCH, 20),
         ],
     )
+
 
 # %% [markdown]
 # ## Example Usage

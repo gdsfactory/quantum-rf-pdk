@@ -21,6 +21,7 @@ import gdsfactory as gf
 #
 # Creates a component with a path made of different segments including arcs, straight lines, and euler bends.
 
+
 # %%
 @gf.cell
 def sample5_path():

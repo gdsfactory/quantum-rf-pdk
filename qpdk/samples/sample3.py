@@ -21,6 +21,7 @@ import gdsfactory as gf
 #
 # Creates a component with numbered text elements arranged in a 2x3 grid.
 
+
 # %%
 @gf.cell
 def sample3_grid():

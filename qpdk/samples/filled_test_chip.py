@@ -29,6 +29,7 @@ from qpdk.cells.helpers import fill_magnetic_vortices
 #
 # Creates a qubit test chip from a YAML configuration and fills it with magnetic vortex trapping rectangles.
 
+
 # %%
 @gf.cell
 def filled_qubit_test_chip():
@@ -48,6 +49,7 @@ def filled_qubit_test_chip():
         exclude_layers=[(tech.LAYER.M1_ETCH, 80)],
     )
     return c
+
 
 # %% [markdown]
 # ## Example Usage
