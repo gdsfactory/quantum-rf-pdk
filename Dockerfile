@@ -3,8 +3,8 @@ FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 # Create user for binder
 ARG NB_USER=notebook-user
 ARG NB_UID=1000
-ENV USER ${NB_USER}
-ENV HOME /home/${NB_USER}
+ENV USER=${NB_USER}
+ENV HOME=/home/${NB_USER}
 
 RUN adduser --disabled-password \
     --gecos "Default user" \
