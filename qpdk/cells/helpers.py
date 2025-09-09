@@ -5,8 +5,7 @@ from collections.abc import Iterable
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
-from kfactory import kdb
-from klayout.db import DCplxTrans
+from klayout.db import DCplxTrans, Region
 
 from qpdk.tech import LAYER
 
@@ -23,7 +22,8 @@ def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Co
 def fill_magnetic_vortices(
     component: Component,
     rectangle_size: tuple[float, float] = (15.0, 15.0),
-    gap: float = 15.0,
+    gap: float | tuple[float, float] = 15.0,
+    stagger: float | tuple[float, float] = 3.0,
     exclude_layers: Iterable[tuple[LayerSpec, float]] | None = None,
     fill_layer: LayerSpec = LAYER.M1_ETCH,
 ) -> Component:
@@ -40,6 +40,9 @@ def fill_magnetic_vortices(
         component: The component to fill with vortex trapping rectangles.
         rectangle_size: Size of the fill rectangles in µm (width, height).
         gap: Gap between rectangles in µm.
+            A tuple (x_gap, y_gap) can be provided for different gaps in x and y directions.
+        stagger: Amount of staggering in µm to apply to pattern.
+            A tuple (x_stagger, y_stagger) can be provided for different staggering in x and y.
         exclude_layers: Layers to ignore. Tuples of layer and keepout in µm.
             Defaults to M1_ETCH, M1_DRAW, and WG layers with 80 µm keepout.
         fill_layer: Layer for the fill rectangles.
@@ -53,13 +56,14 @@ def fill_magnetic_vortices(
         >>> resonator = resonator_quarter_wave()
         >>> filled_resonator = fill_magnetic_vortices(resonator)
     """
+    c = gf.Component()
+    c.add_ref(component)
+
     exclude_layers = exclude_layers or [
         (LAYER.M1_ETCH, 80),
         (LAYER.M1_DRAW, 80),
         (LAYER.WG, 80),
     ]
-    c = gf.Component()
-    c.add_ref(component)
 
     # Create the fill rectangle cell
     fill_cell = gf.components.rectangle(
@@ -67,17 +71,22 @@ def fill_magnetic_vortices(
         layer=fill_layer,
     )
 
+    gap_x, gap_y = (gap, gap) if isinstance(gap, int | float) else gap
+    stagger_x, stagger_y = (
+        (stagger, stagger) if isinstance(stagger, int | float) else stagger
+    )
+
     c.fill(
         fill_cell=fill_cell,
         fill_regions=[
             (
-                kdb.Region(c.bbox().to_itype(dbu=c.kcl.dbu)),
+                Region(c.bbox().to_itype(dbu=c.kcl.dbu)),
                 0,
             )
         ],  # Fill the entire bounding box area
         exclude_layers=exclude_layers,
-        x_space=gap,
-        y_space=gap,
+        row_step=gf.kf.kdb.DVector(rectangle_size[0] + gap_x, stagger_y),
+        col_step=gf.kf.kdb.DVector(-stagger_x, rectangle_size[1] + gap_y),
     )
 
     return c
