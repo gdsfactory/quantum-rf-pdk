@@ -6,11 +6,11 @@ FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 ARG NB_USER=notebook-user
 ARG NB_UID=1001
 ENV USER=${NB_USER} \
-    HOME=/home/${NB_USER} \
-    UV_COMPILE_BYTECODE=1 \
+    HOME=/home/${NB_USER}
+ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_TOOL_BIN_DIR=/usr/local/bin
-ENV UV_CACHE_DIR=${HOME}/.cache/uv
+    UV_TOOL_BIN_DIR=/usr/local/bin \
+    UV_CACHE_DIR=${HOME}/.cache/uv
 
 RUN adduser --disabled-password \
     --gecos "Default user" \
@@ -19,6 +19,11 @@ RUN adduser --disabled-password \
     mkdir -p ${HOME} && \
     chown -R ${USER}:${USER} ${HOME} && \
     chown -R ${USER}:${USER} /usr/local/
+
+# For klayout
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libexpat1 libexpat1-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${HOME}
 USER ${USER}
