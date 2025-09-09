@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:python3.13-slim
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 
 # Create user for binder
 ARG NB_USER=notebook-user
