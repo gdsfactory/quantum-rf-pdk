@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../build/schemas/samples/qubit_test_chip.json
 instances:
   input_cap1:
     component: interdigital_capacitor
@@ -5,33 +6,73 @@ instances:
   input_cap2:
     component: interdigital_capacitor
     settings: {}
-  launcher1:
+  launcher_in:
     component: launcher
     settings: {}
-  launcher2:
+  launcher_out:
     component: launcher
     settings: {}
+  launcher_top:
+    component: launcher
+    settings: {}
+  launcher_bot:
+    component: launcher
+    settings: {}
+  tee_top:
+    component: tee
+    settings: {}
+  tee_top_straight_1:
+    component: straight
+    settings:
+      length: 40
+  tee_top_straight_2:
+    component: straight
+    settings:
+      length: 40
+  tee_bot:
+    component: tee
+    settings: {}
+  tee_bot_straight_1:
+    component: straight
+    settings:
+      length: 40
+  tee_bot_straight_2:
+    component: straight
+    settings:
+      length: 40
   qubit1:
     component: transmon_with_resonator
     settings:
       resonator_length: 5000
+      resonator_params:
+        meanders: 5
   qubit2:
     component: transmon_with_resonator
     settings:
       resonator_length: 4800
+      resonator_params:
+        meanders: 3
   qubit3:
     component: transmon_with_resonator
     settings:
       resonator_length: 4600
+      resonator_params:
+        meanders: 3
   qubit4:
     component: transmon_with_resonator
     settings:
       resonator_length: 4400
-connections: {}
+      resonator_params:
+        meanders: 5
+connections:
+  tee_top_straight_1,o1: tee_top,o1
+  tee_top_straight_2,o1: tee_top,o3
+  tee_bot_straight_1,o1: tee_bot,o1
+  tee_bot_straight_2,o1: tee_bot,o3
 routes:
   probeline_input:
     links:
-      launcher1,o1: input_cap1,o1
+      launcher_in,o1: input_cap1,o1
     routing_strategy: route_bundle_cpw
     settings:
       allow_width_mismatch: true
@@ -45,10 +86,18 @@ routes:
       auto_taper: false
       steps:
         - dx: 4000
+          dy: -100
         - dy: -200
   probeline_output:
     links:
-      input_cap2,o1: launcher2,o1
+      input_cap2,o1: launcher_out,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  generic_route:
+    links:
+      tee_top,o2: launcher_top,o1
+      tee_bot,o2: launcher_bot,o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
@@ -57,43 +106,50 @@ ports: {}
 placements:
   input_cap1:
     x: 0
-    'y': 0
+    y: 0
     dx: 800
     dy: 400
   input_cap2:
     x: 0
-    'y': 0
+    y: 0
     dx: 800
     dy: -400
-  launcher1:
+  launcher_in:
     x: 0
-    'y': 400
-  launcher2:
+    y: 400
+  launcher_out:
     x: 0
-    'y': -400
-  qubit1:
-    x: 2000
-    'y': 0
-    dx: 171.527
-    dy: 1750
+    y: -400
+  launcher_top:
+    x: 3000
+    y: 3000
+    rotation: -90
+  launcher_bot:
+    x: 3000
+    y: -3000
+    rotation: 90
+  tee_top:
+    x: 3000
+    y: 1775
     rotation: 0
+  tee_bot:
+    x: 3000
+    y: -1775
+    rotation: 180
+  qubit1:
+    x: 2200
+    y: 1750
     mirror: false
   qubit2:
-    x: 4000
-    'y': 0
-    dx: 171.527
-    dy: 1750
+    x: 3800
+    y: 1750
     rotation: 0
     mirror: false
   qubit3:
-    x: 4000
-    'y': 0
-    dx: 171.527
-    dy: -1750
+    x: 3800
+    y: -1750
     mirror: true
   qubit4:
-    x: 2000
-    'y': 0
-    dx: 171.527
-    dy: -1750
+    x: 2200
+    y: -1750
     mirror: true
