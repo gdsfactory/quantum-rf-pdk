@@ -102,6 +102,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
+"qpdk/samples/**/*.py" = ["D100"]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D103"]
 
 [tool.ruff.lint.pydocstyle]
