@@ -10,7 +10,7 @@ from gdsfactory.typings import ComponentSpec
 from klayout.db import DCplxTrans
 
 from qpdk.cells.capacitor import plate_capacitor_single
-from qpdk.cells.resonator import resonator_quarter_wave
+from qpdk.cells.resonator import ResonatorParams, resonator_quarter_wave
 from qpdk.tech import LAYER, route_single_cpw
 
 
@@ -20,6 +20,7 @@ def transmon_with_resonator(
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
+    resonator_params: ResonatorParams | None = None,
     coupler: ComponentSpec = partial(plate_capacitor_single, thickness=20, fingers=18),
 ) -> Component:
     """Returns a transmon qubit coupled to a quarter wave resonator.
@@ -29,9 +30,11 @@ def transmon_with_resonator(
         resonator: Resonator component.
         resonator_meander_start: (x, y) position of the start of the resonator meander.
         resonator_length: Length of the resonator in µm.
+        resonator_params: Parameters for the resonator component if it accepts any.
         coupler: Coupler component.
     """
     c = Component()
+    resonator_params = resonator_params or dict(meanders=5)
 
     transmon_ref = c << gf.get_component(transmon)
     transmon_ref.rotate(90)
@@ -60,7 +63,9 @@ def transmon_with_resonator(
         auto_taper=False,
     )
     resonator_ref = c << gf.get_component(
-        resonator, length=resonator_length - route.length * c.kcl.dbu
+        resonator,
+        length=resonator_length - route.length * c.kcl.dbu,
+        **resonator_params,
     )
     resonator_ref.rotate(180)
     resonator_ref.transform(resonator_input_port.dcplx_trans)

@@ -3,12 +3,24 @@
 from __future__ import annotations
 
 from functools import partial
+from typing import TypedDict
 
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
 from qpdk.cells.waveguides import bend_circular, straight
+
+
+class ResonatorParams(TypedDict):
+    """Parameters for the resonator component."""
+
+    length: float
+    meanders: int
+    bend_spec: ComponentSpec
+    cross_section: CrossSectionSpec
+    open_start: bool
+    open_end: bool
 
 
 @gf.cell_with_module_name
