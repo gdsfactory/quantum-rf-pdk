@@ -19,7 +19,6 @@ ENV UV_LINK_MODE=copy
 ENV UV_TOOL_BIN_DIR=/usr/local/bin
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --extra dev --extra docs && \
     uv pip install jupyterlab
