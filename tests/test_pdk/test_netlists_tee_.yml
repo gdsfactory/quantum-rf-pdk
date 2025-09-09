@@ -1,0 +1,124 @@
+instances:
+  nxn_N1_E1_S1_W1_m5000_m5000:
+    component: nxn
+    info: {}
+    settings:
+      east: 1
+      north: 1
+      south: 1
+      west: 1
+  rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_ETCH
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 6
+      - 10
+  straight_CScoplanar_waveguide_L6_0_5000_A90:
+    component: straight
+    info:
+      length: 6
+      route_info_coplanar_waveguide_length: 6
+      route_info_length: 6
+      route_info_type: coplanar_waveguide
+      route_info_weight: 6
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 6
+  straight_CScoplanar_waveguide_L6_5000_0:
+    component: straight
+    info:
+      length: 6
+      route_info_coplanar_waveguide_length: 6
+      route_info_length: 6
+      route_info_type: coplanar_waveguide
+      route_info_weight: 6
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 6
+  straight_CScoplanar_waveguide_L6_m5000_0_A180:
+    component: straight
+    info:
+      length: 6
+      route_info_coplanar_waveguide_length: 6
+      route_info_length: 6
+      route_info_type: coplanar_waveguide
+      route_info_weight: 6
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 6
+name: tee_CScpw
+nets:
+- p1: nxn_N1_E1_S1_W1_m5000_m5000,o1
+  p2: straight_CScoplanar_waveguide_L6_m5000_0_A180,o1
+- p1: nxn_N1_E1_S1_W1_m5000_m5000,o2
+  p2: straight_CScoplanar_waveguide_L6_0_5000_A90,o1
+- p1: nxn_N1_E1_S1_W1_m5000_m5000,o3
+  p2: straight_CScoplanar_waveguide_L6_5000_0,o1
+placements:
+  nxn_N1_E1_S1_W1_m5000_m5000:
+    mirror: false
+    rotation: 0
+    x: -5
+    y: -5
+  rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270:
+    mirror: false
+    rotation: 270
+    x: 0
+    y: -8
+  straight_CScoplanar_waveguide_L6_0_5000_A90:
+    mirror: false
+    rotation: 90
+    x: 0
+    y: 5
+  straight_CScoplanar_waveguide_L6_5000_0:
+    mirror: false
+    rotation: 0
+    x: 5
+    y: 0
+  straight_CScoplanar_waveguide_L6_m5000_0_A180:
+    mirror: false
+    rotation: 180
+    x: -5
+    y: 0
+ports:
+  o1: straight_CScoplanar_waveguide_L6_m5000_0_A180,o2
+  o2: straight_CScoplanar_waveguide_L6_0_5000_A90,o2
+  o3: straight_CScoplanar_waveguide_L6_5000_0,o2
+warnings:
+  electrical:
+    unconnected_ports:
+    - message: 4 unconnected electrical ports!
+      ports:
+      - rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270,e1
+      - rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270,e2
+      - rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270,e3
+      - rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270,e4
+      values:
+      - - 0
+        - -5
+      - - 5
+        - -8
+      - - 0
+        - -11
+      - - -5
+        - -8
+  optical:
+    unconnected_ports:
+    - message: 1 unconnected optical ports!
+      ports:
+      - nxn_N1_E1_S1_W1_m5000_m5000,o4
+      values:
+      - - 0
+        - -5
