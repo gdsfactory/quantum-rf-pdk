@@ -4,6 +4,7 @@ from typing import TypedDict, Unpack
 
 import gdsfactory as gf
 from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
+from klayout.db import DCplxTrans
 
 from qpdk import tech
 
@@ -63,6 +64,83 @@ def straight(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
         **kwargs: Arguments passed to gf.c.straight.
     """
     return gf.c.straight(**(_DEFAULT_KWARGS | kwargs))
+
+
+class NxnKwargs(TypedDict, total=False):
+    """Type definition for tee keyword arguments."""
+
+    xsize: float
+    ysize: float
+    wg_width: float
+    layer: LayerSpec
+    wg_margin: float
+    north: int
+    east: int
+    south: int
+    west: int
+
+
+_NXN_DEFAULTS = {
+    "xsize": 10.0,
+    "ysize": 10.0,
+    "wg_width": 10,
+    "layer": tech.LAYER.M1_DRAW,
+    "wg_margin": 0,
+    "north": 1,
+    "east": 1,
+    "south": 1,
+    "west": 1,
+}
+
+
+@gf.cell
+def nxn(**kwargs: Unpack[NxnKwargs]) -> gf.Component:
+    """Returns a tee waveguide.
+
+    Args:
+        **kwargs: Arguments passed to gf.c.nxn.
+    """
+    return gf.c.nxn(**(_DEFAULT_KWARGS | _NXN_DEFAULTS | kwargs))
+
+
+@gf.cell
+def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
+    """Returns a three-way tee waveguide.
+
+    Args:
+        cross_section: specification (CrossSection, string or dict).
+    """
+    c = gf.Component()
+    cross_section = gf.get_cross_section(cross_section)
+    etch_section = next(s for s in cross_section.sections if s.name.startswith("etch"))
+    nxn_ref = c << nxn(
+        **{
+            "north": 1,
+            "east": 1,
+            "south": 1,
+            "west": 1,
+        }
+    )
+    for port in list(nxn_ref.ports)[:-1]:
+        straight_ref = c << straight(
+            cross_section=cross_section, length=etch_section.width
+        )
+        straight_ref.connect("o1", port)
+
+        c.add_port(f"{port.name}", port=straight_ref.ports["o2"])
+    etch_ref = c << rectangle(
+        size=(etch_section.width, cross_section.width),
+        layer=etch_section.layer,
+        centered=True,
+    )
+    etch_ref.transform(
+        list(nxn_ref.ports)[-1].dcplx_trans * DCplxTrans(etch_section.width / 2, 0)
+    )
+
+    # center
+    c.center = (0, 0)
+
+    return c
 
 
 class BendEulerKwargs(TypedDict, total=False):
@@ -229,7 +307,8 @@ if __name__ == "__main__":
 
     for c in [
         # bend_euler(),
-        bend_circular(),
+        # bend_circular(),
+        tee(),
         # bend_s(),
         # straight(),
         # straight_all_angle(),

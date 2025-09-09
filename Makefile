@@ -1,42 +1,57 @@
-install:
+# Implementation from https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
+help: ##@ (Default) Print listing of key targets with their descriptions
+	@printf "\n\033[1;34mUsage:\033[0m \033[1;33mmake <command>\033[0m\n"
+	@grep -F -h "##@" $(MAKEFILE_LIST) | grep -F -v grep -F | sed -e 's/\\$$//' | awk 'BEGIN {FS = ":*[[:space:]]*##@[[:space:]]*"}; \
+	{ \
+		if($$2 == "") \
+			pass; \
+		else if($$0 ~ /^#/) \
+			printf "\n%s\n", $$2; \
+		else if($$1 == "") \
+			printf "     %-20s%s\n", "", $$2; \
+		else \
+			printf "\n    \033[34m%-20s\033[0m %s", $$1, $$2; \
+	}'
+
+
+install: ##@ Install the package and all development dependencies
 	uv sync --extra docs --extra dev
 
-clean:
+clean: ##@ Clean up all build, test, coverage and Python artifacts
 	rm -rf dist
 	rm -rf build
 	rm -rf *.egg-info
 
-test:
+test: ##@ Run the full test suite in parallel using pytest
 	uv run pytest -n $$(nproc)
 
-test-gds:
+test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
 	uv run pytest -s tests/test_pdk.py
 
-test-gds-force:
+test-gds-force: ##@ Run GDS regressions tests (tests/test_pdk.py) and regenerate
 	uv run pytest -s tests/test_pdk.py --force-regen
 
-test-gds-fail-fast:
+test-gds-fail-fast: ##@ Run GDS regressions tests (tests/test_pdk.py) and stop at first failure
 	uv run pytest -s tests/test_pdk.py -x
 
-update-pre:
+update-pre: ##@ Update pre-commit hooks to the latest revisions
 	pre-commit autoupdate --bleeding-edge
 
-git-rm-merged:
+git-rm-merged: ##@ Delete all local branches that have already been merged
 	git branch -D `git branch --merged | grep -v \* | xargs`
 
-build:
+build: ##@ Build the Python package (install build tool and create dist)
 	rm -rf dist
 	pip install build
 	python -m build
 
-jupytext:
-	jupytext docs/**/*.ipynb --to py
-
-notebooks:
-	jupytext docs/**/*.py --to ipynb
-
-docs:
+write-cells: ##@ Write cell outputs into documentation notebooks (used when building docs)
 	uv run .github/write_cells.py
+
+docs: write-cells ##@ Build the HTML documentation
 	uv run jb build docs
 
-.PHONY: all clean install test test-force test-fail-fast update-pre git-rm-merged build jupytext notebooks docs
+docs-pdf: write-cells ##@ Build PDF documentation (requires a TeXLive installation)
+	uv run jb build docs --builder pdflatex
+
+.PHONY: all clean install test test-force test-fail-fast update-pre git-rm-merged build docs docs-pdf write-cells help

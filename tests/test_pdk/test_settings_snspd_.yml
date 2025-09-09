@@ -1,0 +1,16 @@
+info:
+  area: 80
+  num_squares: 750
+  xsize: 10
+  ysize: 8
+name: snspd_gdsfactorypcompon_ad16ca0c
+settings:
+  layer: M1_DRAW
+  port_type: electrical
+  size:
+  - 10
+  - 8
+  terminals_same_side: false
+  turn_ratio: 4
+  wire_pitch: 0.6
+  wire_width: 0.2

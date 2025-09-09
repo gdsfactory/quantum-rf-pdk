@@ -9,6 +9,7 @@ from qpdk.cells.derived import *
 from qpdk.cells.junction import *
 from qpdk.cells.launcher import *
 from qpdk.cells.resonator import *
+from qpdk.cells.snspd import *
 from qpdk.cells.transmon import *
 from qpdk.cells.tsv import *
 from qpdk.cells.waveguides import *

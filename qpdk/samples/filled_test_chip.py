@@ -46,7 +46,7 @@ def filled_qubit_test_chip():
         component=test_chip,
         rectangle_size=(15.0, 15.0),
         gap=15.0,
-        exclude_layers=[(tech.LAYER.M1_ETCH, 80)],
+        stagger=5,
     )
     return c
 
