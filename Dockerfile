@@ -32,12 +32,13 @@ USER ${USER}
 RUN --mount=type=cache,uid=${NB_UID},gid=${NB_UID},target=${HOME}/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --no-install-project --all-extras && \
-    uv pip install jupyterlab
+    uv pip install jupyterlab jupytext
 
-# Copy source code and install project
+# Copy source code, install project and convert jupytext scripts to notebooks
 COPY --chown=${USER}:${USER} . ${HOME}
 RUN --mount=type=cache,uid=${NB_UID},gid=${NB_UID},target=${HOME}/.cache/uv \
-    uv sync --all-extras
+    uv sync --all-extras && \
+    uv run jupytext --to ipynb qpdk/samples/**/*.py
 
 # Set PATH to include virtual environment
 ENV PATH="${HOME}/.venv/bin:$PATH"
