@@ -1,13 +1,29 @@
-"""Example of routing with airbridges using route_bundle.
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
 
-This example demonstrates how to use airbridges in quantum circuit routing
-to prevent slot mode propagation and reduce crosstalk between transmission lines.
-"""
+# %% [markdown]
+# # Routing with Airbridges Example
+#
+# This example demonstrates how to use airbridges in quantum circuit routing to prevent slot mode propagation and reduce crosstalk between transmission lines.
 
+# %%
 import gdsfactory as gf
 
 from qpdk import PDK, cells, tech
 
+# %% [markdown]
+# ## Main Example
+#
+# Creates two launcher components and routes between them using coplanar waveguides with airbridges.
+
+# %%
 if __name__ == "__main__":
     PDK.activate()
 

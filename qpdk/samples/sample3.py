@@ -1,8 +1,27 @@
-"""Pack."""
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
 
+# %% [markdown]
+# # Grid Layout Sample
+#
+# This sample demonstrates how to arrange multiple components in a grid layout.
+
+# %%
 import gdsfactory as gf
 
+# %% [markdown]
+# ## Sample Function
+#
+# Creates a component with numbered text elements arranged in a 2x3 grid.
 
+# %%
 @gf.cell
 def sample3_grid():
     """Returns a component with a grid of text elements."""

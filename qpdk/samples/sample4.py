@@ -1,9 +1,28 @@
-"""Pack."""
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
 
+# %% [markdown]
+# # Packing Algorithm Sample
+#
+# This sample demonstrates the use of gdsfactory's packing algorithm to efficiently arrange shapes.
+
+# %%
 import gdsfactory as gf
 import numpy as np
 
+# %% [markdown]
+# ## Sample Function
+#
+# Creates a set of random ellipses and packs them efficiently into a rectangular area.
 
+# %%
 @gf.cell
 def sample4_pack():
     """Returns a component with a packed set of ellipses."""
