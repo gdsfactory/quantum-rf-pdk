@@ -36,7 +36,7 @@ jobs:
         with:
           texlive_version: latest
           os: debian
-          pre_compile: cd docs/_build/latex
+          pre_compile: "cd docs/_build/latex && apt-get update -y && apt-get install -y ghostscript"
           root_file: qpdk.tex
           compiler: latexmk
           continue_on_error: true
