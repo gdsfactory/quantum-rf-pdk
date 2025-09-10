@@ -34,8 +34,11 @@ jobs:
         continue-on-error: true
         uses: xu-cheng/latex-action@v4
         with:
+          texlive_version: latest
+          os: debian
           pre_compile: cd docs/_build/latex
           root_file: qpdk.tex
+          compiler: latexmk
           continue_on_error: true
           args: -f -pdf -interaction=nonstopmode -file-line-error
       - uses: actions/upload-artifact@v4
