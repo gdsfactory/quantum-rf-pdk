@@ -31,6 +31,7 @@ jobs:
       - name: Compile LaTeX document
         uses: xu-cheng/latex-action@v4
         with:
+          pre_compile: cd docs/_build/latex
           root_file: qpdk.tex
           continue_on_error: true
           latexmk_use_xelatex: true
