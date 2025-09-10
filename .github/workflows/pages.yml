@@ -45,15 +45,10 @@ jobs:
           continue_on_error: true
           latexmk_use_xelatex: true
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - name: DEBUG
-        run: |
-          ls -alh ./docs/_build/latex/
       - uses: actions/upload-artifact@v4
         with:
           name: pdf-docs
-          path: |
-            ./docs/_build/latex/qpdk.pdf
-            ./docs/_build/latex/qpdk.xdv
+          path: "./docs/_build/latex/qpdk.pdf"
   deploy-docs:
     runs-on: ubuntu-latest
     name: Deploy to GitHub Pages
