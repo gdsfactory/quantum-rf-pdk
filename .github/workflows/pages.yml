@@ -35,8 +35,7 @@ jobs:
           pre_compile: cd docs/_build/latex
           root_file: qpdk.tex
           continue_on_error: true
-          latexmk_use_xelatex: true
-          args: -pdf -interaction=nonstopmode -file-line-error
+          args: -f -pdf -interaction=nonstopmode -file-line-error
       - name: Copy PDF to HTML artifact directory
         run: |
           mkdir -p docs/_build/html

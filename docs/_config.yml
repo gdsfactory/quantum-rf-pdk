@@ -14,7 +14,7 @@ execute:
   # exclude_patterns:
   #   - '*notebooks/devsim/01_pin_waveguide*'
 latex:
-  latex_engine: &latex_engine xelatex
+  latex_engine: &latex_engine pdflatex
   use_jupyterbook_latex: true # use sphinx-jupyterbook-latex for pdf builds as default
   latex_documents:
     targetname: qpdk.tex
