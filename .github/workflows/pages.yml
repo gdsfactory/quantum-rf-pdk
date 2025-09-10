@@ -41,6 +41,9 @@ jobs:
           compiler: latexmk
           continue_on_error: true
           args: -f -pdf -interaction=nonstopmode -file-line-error
+      - name: DEBUG
+        run: |
+          ls -alh ./docs/_build/latex/
       - uses: actions/upload-artifact@v4
         with:
           name: pdf-docs
