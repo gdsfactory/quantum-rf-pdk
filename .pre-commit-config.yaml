@@ -48,18 +48,19 @@ repos:
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
-    # - repo: https://github.com/pre-commit/mirrors-mypy
-    #   rev: v1.13.0
-    #   hooks:
-    #     - id: mypy
-    #       stages: [pre-commit]
-    #       args: [--strict, --ignore-missing-imports, --config-file=pyproject.toml]
-
     # uv version.
     rev: 0.8.13
     hooks:
       # Update the uv lockfile
       - id: uv-lock
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright
+        entry: uv run pyright
+        language: system
+        types: [python]
+        files: ^qpdk/.*\.py$
   - repo: https://github.com/FlamingTempura/bibtex-tidy
     rev: v1.14.0
     hooks:

@@ -41,7 +41,7 @@ PDK = get_pdk()
 # Get all functions from qpdk.samples module
 sample_functions = {
     f"{modname}.{name}": obj
-    for importer, modname, ispkg in pkgutil.walk_packages(
+    for _, modname, _ in pkgutil.walk_packages(
         qpdk.samples.__path__, qpdk.samples.__name__ + "."
     )
     for name, obj in inspect.getmembers(importlib.import_module(modname))

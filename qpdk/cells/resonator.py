@@ -98,7 +98,7 @@ def resonator(
         cross_section_etch_section = next(
             s
             for s in gf.get_cross_section(cross_section).sections
-            if "etch_offset" in s.name
+            if s.name and "etch_offset" in s.name
         )
 
         open_etch_comp = gf.c.rectangle(

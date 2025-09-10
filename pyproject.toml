@@ -56,6 +56,40 @@ enabled = true
 live_mode = true
 strict = true
 
+[tool.pyright]
+# Pyright static type checker configuration
+include = ["qpdk"]
+exclude = ["**/__pycache__", ".venv"]
+pythonVersion = "3.11"
+pythonPlatform = "All"
+
+# Type checking rules
+typeCheckingMode = "standard"
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportImportCycles = false
+reportUnusedImport = true
+reportUnusedClass = true
+reportUnusedFunction = true
+reportUnusedVariable = true
+reportDuplicateImport = true
+
+# Disable problematic checks for gdsfactory integration
+reportArgumentType = false            # Many gdsfactory **kwargs patterns cause false positives
+reportCallIssue = false              # Component creation patterns with missing args are common
+reportAttributeAccessIssue = false   # Dynamic attribute access is common in gdsfactory
+reportOptionalMemberAccess = false   # Many optional patterns in gdsfactory
+reportPossiblyUnboundVariable = false # Common in conditional component creation
+reportReturnType = false             # Some helper functions have complex return patterns
+reportAssignmentType = false         # Common with parameter dict patterns
+reportUnusedExpression = false       # Component assembly patterns create unused expressions
+
+# Keep these enabled for actual bugs
+reportUndefinedVariable = true
+reportUnboundVariable = true
+reportInvalidStringEscapeSequence = true
+reportSelfClsParameterName = true
+
 [tool.pytest.ini_options]
 # addopts = --tb=no
 addopts = '--tb=short'
@@ -152,3 +186,8 @@ regex = '''
   \.
   (?P<patch>\d+)
   '''
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.405",
+]
