@@ -18,6 +18,13 @@ def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Co
     return component.transform(transform)
 
 
+_EXCLUDE_LAYERS_DEFAULT = [
+    (LAYER.M1_ETCH, 80),
+    (LAYER.M1_DRAW, 80),
+    (LAYER.WG, 80),
+]
+
+
 @gf.cell()
 def fill_magnetic_vortices(
     component: Component,
@@ -59,11 +66,7 @@ def fill_magnetic_vortices(
     c = gf.Component()
     c.add_ref(component)
 
-    exclude_layers = exclude_layers or [
-        (LAYER.M1_ETCH, 80),
-        (LAYER.M1_DRAW, 80),
-        (LAYER.WG, 80),
-    ]
+    exclude_layers = exclude_layers or _EXCLUDE_LAYERS_DEFAULT
 
     # Create the fill rectangle cell
     fill_cell = gf.components.rectangle(
