@@ -41,7 +41,7 @@ jobs:
           compiler: latexmk
           continue_on_error: true
           latexmk_use_xelatex: true
-          args: -f -pdf -interaction=nonstopmode -file-line-error
+          args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
       - name: DEBUG
         run: |
           ls -alh ./docs/_build/latex/

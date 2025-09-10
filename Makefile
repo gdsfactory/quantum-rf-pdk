@@ -64,6 +64,6 @@ docs-latex: write-cells ##@ Setup LaTeX for PDF documentation
 	uv run jb build docs --builder latex
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
-	cd "docs/_build/latex" && latexmk -f -pdf -interaction=nonstopmode -file-line-error
+	cd "docs/_build/latex" && latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
 
 .PHONY: all clean install test test-force test-fail-fast update-pre git-rm-merged build docs docs-latex docs-pdf write-cells help
