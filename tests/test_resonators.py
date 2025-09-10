@@ -85,8 +85,10 @@ def test_resonator_coupled(
     )
     # Should have 4 ports: 2 from resonator + 2 from coupling waveguide
     assert len(c.ports) == 4, f"Expected 4 ports, got {len(c.ports)}"
-    
+
     # Check that we have the expected port names
     port_names = [p.name for p in c.ports]
     expected_ports = {"resonator_o1", "resonator_o2", "coupling_o1", "coupling_o2"}
-    assert set(port_names) == expected_ports, f"Expected ports {expected_ports}, got {set(port_names)}"
+    assert set(port_names) == expected_ports, (
+        f"Expected ports {expected_ports}, got {set(port_names)}"
+    )
