@@ -137,6 +137,7 @@ def resonator(
     # Add metadata
     c.info["length"] = length
     c.info["resonator_type"] = "quarter_wave"
+    c.info["cross_section"] = cross_section.name
     # c.info["frequency_estimate"] = (
     #     3e8 / (4 * length * 1e-6) / 1e9
     # )  # GHz, rough estimate
@@ -150,11 +151,90 @@ resonator_quarter_wave = partial(resonator, open_start=False, open_end=True)
 # A half-wave resonator is open at both ends
 resonator_half_wave = partial(resonator, open_start=True, open_end=True)
 
+
+# Reuse the existing ResonatorParams TypedDict by inheriting from it.
+# This keeps common resonator fields defined in ResonatorParams and adds coupling-specific fields.
+class ResonatorCoupledParams(ResonatorParams):
+    """Parameters for the coupled resonator component.
+
+    Inherits all fields from :class:`~ResonatorParams` and adds:
+      - coupling_straight_length: float
+      - coupling_gap: float
+    """
+
+    coupling_straight_length: float
+    coupling_gap: float
+
+
+@gf.cell_with_module_name
+def resonator_coupled(
+    resonator_params: ResonatorParams | None = None,  # pyright: ignore[reportRedeclaration]
+    cross_section_non_resonator: CrossSectionSpec = "cpw",
+    coupling_straight_length: float = 200.0,
+    coupling_gap: float = 12.0,
+) -> Component:
+    """Creates a meandering coplanar waveguide resonator with a coupling waveguide.
+
+    This component combines a resonator with a parallel coupling waveguide placed
+    at a specified gap for proximity coupling. Similar to the design described in
+    :cite:`besedinQualityFactorTransmission2018a`.
+
+    Args:
+        resonator_params: Parameters for the resonator component. If None, defaults will be used.
+        cross_section_non_resonator: Cross-section specification for the coupling waveguide.
+        coupling_straight_length: Length of the coupling waveguide section in μm.
+        coupling_gap: Gap between the resonator and coupling waveguide in μm.
+            Measured from edges of the center conductors.
+
+    Returns:
+        Component: A gdsfactory component with meandering resonator and coupling waveguide.
+    """
+    c = Component()
+    resonator_params: ResonatorParams = resonator_params or {}
+
+    resonator_ref = c.add_ref(resonator(**resonator_params))
+
+    cross_section_obj = gf.get_cross_section(cross_section_non_resonator)
+
+    coupling_wg = straight(
+        length=coupling_straight_length,
+        cross_section=cross_section_obj,
+    )
+    coupling_ref = c.add_ref(coupling_wg)
+
+    # Position coupling waveguide parallel to resonator with specified gap
+    coupling_ref.movey(coupling_gap + cross_section_obj.width)
+
+    coupling_ref.xmin = resonator_ref["o1"].x  # Align left edges
+
+    for comp, prefix in ((resonator_ref, "resonator"), (coupling_ref, "coupling")):
+        for port in comp.ports:
+            c.add_port(f"{prefix}_{port.name}", port=port)
+
+    c.info += resonator_ref.cell.info
+    c.info["coupling_length"] = coupling_straight_length
+    c.info["coupling_gap"] = coupling_gap
+
+    return c
+
+
 if __name__ == "__main__":
     from qpdk import PDK
 
     PDK.activate()
-    c = resonator_quarter_wave()
-    # c = resonator()
-    # c = resonator(open_start=True, open_end=True)
+    c = gf.Component()
+    for i, component in enumerate(
+        (
+            resonator(),
+            resonator_quarter_wave(),
+            resonator_half_wave(),
+            resonator_coupled(),
+            resonator_coupled(
+                ResonatorParams(
+                    length=2000, meanders=4, open_start=False, open_end=True
+                )
+            ),
+        ),
+    ):
+        (c << component).move((i * 700, 0))
     c.show()
