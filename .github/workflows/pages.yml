@@ -28,8 +28,15 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - run: make install
+      - name: Cache ImageMagick
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-imagemagick
       - name: Install ImageMagick
-        run: sudo apt-get update -y && sudo apt-get install -y imagemagick
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y imagemagick
       - name: Generate LaTeX files
         run: make docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
