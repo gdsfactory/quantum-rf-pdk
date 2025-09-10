@@ -35,6 +35,9 @@ class LayerMapQPDK(LayerMap):
     # Base metals
     M1_DRAW: Layer = (1, 0)  # Additive metal / positive mask regions
     M1_ETCH: Layer = (1, 1)  # Subtractive etch / negative mask regions
+    # Additive wins over subtractive where they overlap
+    # i.e., you can draw metal over an etched region to "fill it back in"
+
     # flip-cihp equivalents
     M2_DRAW: Layer = (2, 0)
     M2_ETCH: Layer = (2, 1)
@@ -67,6 +70,7 @@ class LayerMapQPDK(LayerMap):
     LABEL_INSTANCE: Layer = (101, 0)
 
     # Simulation-only helpers (never sent to fab)
+    SIM_AREA: Layer = (98, 0)
     SIM_ONLY: Layer = (99, 0)
 
     # Marker layer for waveguides
