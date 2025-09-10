@@ -331,6 +331,11 @@ route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     bend="bend_circular_all_angle",
     straight="straight_all_angle",
 )
+route_bundle_sbend = route_bundle_sbend_cpw = partial(
+    gf.routing.route_bundle_sbend,
+    cross_section=cpw,
+    bend_s="bend_s",
+)
 
 route_astar = route_astar_cpw = partial(
     add_bundle_astar,
