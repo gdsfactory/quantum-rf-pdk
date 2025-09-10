@@ -1,15 +1,11 @@
 info:
-  coupling_gap: 10
+  coupling_gap: 12
   coupling_length: 200
-  resonator_length: 4000
-  resonator_type: coupled
-name: resonator_coupled_qpdkp_6ecdcfb3
-settings:
-  bend_spec: bend_circular
-  coupling_gap: 10
-  coupling_straight_length: 200
-  cross_section: cpw
+  cross_section: coplanar_waveguide
   length: 4000
-  meanders: 6
-  open_end: false
-  open_start: false
+  resonator_type: quarter_wave
+name: resonator_coupled_qpdkp_c14d1dfd
+settings:
+  coupling_gap: 12
+  coupling_straight_length: 200
+  cross_section_non_resonator: cpw

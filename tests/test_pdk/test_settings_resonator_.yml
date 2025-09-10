@@ -1,4 +1,5 @@
 info:
+  cross_section: coplanar_waveguide
   length: 4000
   resonator_type: quarter_wave
 name: resonator_qpdkpcellspre_a108ba58
