@@ -9,44 +9,41 @@ on:
 jobs:
   build-docs:
     runs-on: ubuntu-latest
-    name: Sphinx docs to gh-pages
+    name: Build HTML docs
     steps:
       - uses: actions/checkout@v5
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
       - name: Install uv
         uses: astral-sh/setup-uv@v6
-      - name: Install dependencies
-        run: |
-          make install
-      - name: Install TeXLive for PDF generation
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            texlive-latex-base \
-            texlive-latex-recommended \
-            texlive-xetex \
-            texlive-fonts-extra \
-            latexmk \
-            imagemagick \
-            xindy
-      - name: make docs
-        run: |
-          make docs
-      - name: make docs-pdf
-        run: |
-          make docs-pdf || echo "PDF build completed with warnings, continuing..."
+      - run: make install
+      - run: make docs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./docs/_build/html/"
+  build-docs-pdf:
+    runs-on: ubuntu-latest
+    name: Build PDF docs
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - run: make install
+      - run: make docs-latex || echo "LaTeX build completed with warnings, continuing…"
+      - name: Compile LaTeX document
+        uses: xu-cheng/latex-action@v4
+        with:
+          root_file: qpdk.tex
+          continue_on_error: true
+          latexmk_use_xelatex: true
       - name: Copy PDF to HTML artifact directory
         run: |
-          cp docs/_build/latex/projectnamenotset.pdf docs/_build/html/qpdk-documentation.pdf
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+          mkdir -p docs/_build/html
+          cp docs/_build/latex/qpdk.pdf docs/_build/html/qpdk.pdf
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: "./docs/_build/html/"
   deploy-docs:
-    needs: build-docs
+    name: Deploy to GitHub Pages
+    needs: [build-docs, build-docs-pdf]
     if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     permissions:
       pages: write
