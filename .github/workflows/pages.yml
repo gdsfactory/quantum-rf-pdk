@@ -40,6 +40,7 @@ jobs:
           root_file: qpdk.tex
           compiler: latexmk
           continue_on_error: true
+          latexmk_use_lualatex: true
           args: -f -pdf -interaction=nonstopmode -file-line-error
       - name: DEBUG
         run: |
