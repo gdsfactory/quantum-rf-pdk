@@ -69,3 +69,8 @@ repos:
     rev: v2.13.1
     hooks:
       - id: hadolint
+  - repo: https://github.com/checkmake/checkmake.git
+    rev: 0.2.2
+    hooks:
+      - id: checkmake
+        args: ['--config=.github/.checkmake.ini']
