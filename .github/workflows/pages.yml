@@ -27,7 +27,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - run: make install
-      - run: make docs-latex || echo "LaTeX build completed with warnings, continuing…"
+      - name: Generate LaTeX files
+        run: make docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
         continue-on-error: true
         uses: xu-cheng/latex-action@v4
