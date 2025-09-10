@@ -5,7 +5,7 @@ from functools import partial
 import hypothesis.strategies as st
 from hypothesis import assume, given, settings
 
-from qpdk.cells import resonator, resonator_coupled
+from qpdk.cells.resonator import ResonatorParams, resonator, resonator_coupled
 from qpdk.cells.waveguides import bend_circular
 
 
@@ -64,18 +64,20 @@ def test_resonator_coupled(
     assume(length > meanders * bend_factory().info["length"])
 
     c = resonator_coupled(
-        length=length,
-        meanders=meanders,
-        open_start=open_start,
-        open_end=open_end,
-        bend_spec=bend_factory,
+        ResonatorParams(
+            length=length,
+            meanders=meanders,
+            open_start=open_start,
+            open_end=open_end,
+            bend_spec=bend_factory,
+        ),
         coupling_straight_length=coupling_straight_length,
         coupling_gap=coupling_gap,
     )
 
     assert c is not None, "Coupled resonator component should be created successfully"
-    assert c.info["resonator_length"] == length, (
-        f"Expected resonator length {length}, got {c.info['resonator_length']}"
+    assert c.info["length"] == length, (
+        f"Expected length {length}, got {c.info['length']}"
     )
     assert c.info["coupling_length"] == coupling_straight_length, (
         f"Expected coupling length {coupling_straight_length}, got {c.info['coupling_length']}"
