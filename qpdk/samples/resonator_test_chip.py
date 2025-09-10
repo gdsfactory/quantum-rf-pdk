@@ -17,12 +17,17 @@
 
 # %%
 import gdsfactory as gf
+import numpy as np
 
 from qpdk.cells.helpers import fill_magnetic_vortices
 from qpdk.cells.launcher import launcher
 from qpdk.cells.resonator import resonator_coupled
 from qpdk.cells.waveguides import straight
-from qpdk.tech import coplanar_waveguide
+from qpdk.tech import (
+    coplanar_waveguide,
+    route_single_cpw,
+    route_single_sbend,
+)
 
 # %% [markdown]
 # ## Resonator Test Chip Function
@@ -33,11 +38,11 @@ from qpdk.tech import coplanar_waveguide
 # %%
 @gf.cell
 def resonator_test_chip(
-    probeline_length: float = 8000.0,
-    probeline_separation: float = 2000.0,
+    probeline_length: float = 9000.0,
+    probeline_separation: float = 1000.0,
     resonator_length: float = 4000.0,
-    coupling_length: float = 300.0,
-    coupling_gap: float = 12.0,
+    coupling_length: float = 200.0,
+    coupling_gap: float = 16.0,
 ) -> gf.Component:
     """Creates a resonator test chip with two probelines and 16 resonators.
 
@@ -60,39 +65,33 @@ def resonator_test_chip(
 
     # Create different cross-sections for resonators with systematic parameter variation
     # 8 different combinations of width and gap for each probeline
-    width_values = [8, 9, 10, 11, 12, 13, 14, 15]  # µm
-    gap_values = [4, 5, 6, 7, 8, 9, 10, 11]  # µm
+    width_values = np.linspace(8, 30, 8, dtype=int)
+    gap_values = np.linspace(6, 20, 8, dtype=int)
 
-    # Create cross-sections for resonators
-    resonator_cross_sections = []
-    for i in range(8):
-        xs = coplanar_waveguide(width=width_values[i], gap=gap_values[i])
-        resonator_cross_sections.append(xs)
+    n_resonators = len(width_values)
+    resonator_cross_sections = [
+        coplanar_waveguide(width=width_values[i], gap=gap_values[i])
+        for i in range(n_resonators)
+    ]
 
     # Standard cross-section for probelines
     probeline_xs = coplanar_waveguide(width=10, gap=6)
 
-    # Create probelines with launchers
     probeline_y_positions = [0, probeline_separation]
 
     for probeline_idx, y_pos in enumerate(probeline_y_positions):
-        # Create probeline
-        probeline = straight(length=probeline_length, cross_section=probeline_xs)
-        probeline_ref = c.add_ref(probeline)
-        probeline_ref.move((0, y_pos))
-
         # Add launchers at both ends
         launcher_west = c.add_ref(launcher())
-        launcher_east = c.add_ref(launcher())
-
-        # Connect launchers to probeline
-        launcher_west.connect("o1", probeline_ref.ports["o1"])
-        launcher_east.connect("o1", probeline_ref.ports["o2"])
+        launcher_west.move((0, y_pos))
+        launcher_east = c.add_ref(launcher())  # Create some probeline straight
+        launcher_east.mirror_x()
+        launcher_east.move((probeline_length, y_pos))
 
         # Add resonators along the probeline
         resonator_spacing = probeline_length / 9  # Space for 8 resonators
 
-        for res_idx in range(8):
+        previous_port = launcher_west.ports["o1"]
+        for res_idx in range(n_resonators):
             # Calculate resonator position along probeline
             x_position = (res_idx + 1) * resonator_spacing
 
@@ -101,8 +100,8 @@ def resonator_test_chip(
                 "length": resonator_length,
                 "meanders": 6,
                 "cross_section": resonator_cross_sections[res_idx],
-                "open_start": False,
-                "open_end": True,  # Quarter-wave resonator
+                "open_start": True,
+                "open_end": False,  # Quarter-wave resonator
             }
 
             coupled_resonator = resonator_coupled(
@@ -111,17 +110,49 @@ def resonator_test_chip(
                 coupling_straight_length=coupling_length,
                 coupling_gap=coupling_gap,
             )
-
             resonator_ref = c.add_ref(coupled_resonator)
+            # Position resonator above probeline
+            if probeline_idx != 0:
+                resonator_ref.mirror_y()
 
-            # Position resonator perpendicular to probeline
-            # Resonators on top probeline extend upward, bottom probeline extend downward
-            if probeline_idx == 0:  # Bottom probeline
-                # resonator_ref.rotate(90)
-                resonator_ref.move((x_position, y_pos))
-            else:  # Top probeline
-                resonator_ref.rotate(-180)
-                resonator_ref.move((x_position, y_pos))
+            resonator_ref.move((x_position - resonator_ref.size_info.width / 2, y_pos))
+            gf.logger.debug(f"Added resonator {res_idx} at x={x_position} µm")
+
+            if res_idx == 0:
+                # Add some straight before connecting the first resonator
+                first_straight_ref = c.add_ref(
+                    straight(length=200.0, cross_section=probeline_xs)
+                )
+                first_straight_ref.connect("o1", resonator_ref.ports["coupling_o1"])
+                route_single_sbend(
+                    c,
+                    port1=previous_port,
+                    port2=first_straight_ref.ports["o2"],
+                    cross_section=probeline_xs,
+                )
+            else:
+                route_single_cpw(
+                    c,
+                    port1=previous_port,
+                    port2=resonator_ref.ports["coupling_o1"],
+                    cross_section=probeline_xs,
+                )
+
+            previous_port = resonator_ref.ports["coupling_o2"]
+
+        # Add some straight before connecting to the final launcher
+        final_straight_ref = c.add_ref(
+            straight(length=400.0, cross_section=probeline_xs)
+        )
+        final_straight_ref.connect("o1", previous_port)
+
+        # Connect final launcher to probeline
+        route_single_sbend(
+            c,
+            port1=final_straight_ref.ports["o2"],
+            port2=launcher_east.ports["o1"],
+            cross_section=probeline_xs,
+        )
 
     return c
 
@@ -144,14 +175,7 @@ def filled_resonator_test_chip() -> gf.Component:
     Returns:
         Component: Test chip with ground plane fill patterns.
     """
-    chip = resonator_test_chip()
-
-    return fill_magnetic_vortices(
-        component=chip,
-        rectangle_size=(15.0, 15.0),
-        gap=15.0,
-        stagger=5.0,
-    )
+    return fill_magnetic_vortices(component=resonator_test_chip())
 
 
 if __name__ == "__main__":
