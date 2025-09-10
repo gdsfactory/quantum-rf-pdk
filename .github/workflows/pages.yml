@@ -54,20 +54,14 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download HTML artifact
-        uses: actions/download-artifact@v4
+      - name: Download HTML & PDF artifact
+        uses: actions/download-artifact@v5
         with:
-          name: html-docs
-          path: docs/_build/html
-      - name: Download PDF artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: pdf-docs
-          path: docs/_build/html
-      - name: Upload merged Pages artifact
+          pattern: "*-docs"
+          path: _site
+          merge-multiple: true
+      - name: Upload merged pages artifact
         uses: actions/upload-pages-artifact@v4
-        with:
-          path: "./docs/_build/html/"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
