@@ -35,20 +35,9 @@ jobs:
         uses: xu-cheng/latex-action@v4
         with:
           texlive_version: latest
-          os: debian
-          pre_compile: |
-            set -euo pipefail
-            apt-get update -y
-            apt-get install -y build-essential wget tar
-            LATEST_URL=$(wget -qO- https://api.github.com/repos/ArtifexSoftware/ghostpdl-downloads/releases/latest | grep "browser_download_url.*ghostscript-[0-9].*tar.gz" | cut -d '"' -f 4 | head -n 1)
-            wget "$LATEST_URL" -O ghostscript.tar.gz
-            tar xzf ghostscript.tar.gz
-            cd ghostscript-*
-            ./configure --prefix="$(pwd)/ghostscript-install"
-            make
-            make install
-            export PATH="$(pwd)/ghostscript-install/bin:$PATH"
-            cd ../docs/_build/latex
+          os: alpine
+          pre_compile: cd docs/_build/latex
+          extra_system_packages: "ghostscript"
           root_file: qpdk.tex
           compiler: latexmk
           continue_on_error: true
