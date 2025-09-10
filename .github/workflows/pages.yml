@@ -48,7 +48,7 @@ jobs:
             make
             make install
             export PATH="$(pwd)/ghostscript-install/bin:$PATH"
-            cd docs/_build/latex
+            cd ../docs/_build/latex
           root_file: qpdk.tex
           compiler: latexmk
           continue_on_error: true
