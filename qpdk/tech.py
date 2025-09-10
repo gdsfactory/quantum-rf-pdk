@@ -1,7 +1,7 @@
 """Technology definitions."""
 
 from collections.abc import Callable
-from functools import partial, wraps
+from functools import cache, partial, wraps
 from typing import Any, cast
 
 import gdsfactory as gf
@@ -80,6 +80,7 @@ class LayerMapQPDK(LayerMap):
 L = LAYER = LayerMapQPDK
 
 
+@cache
 def get_layer_stack() -> LayerStack:
     """Returns a LayerStack corresponding to the PDK.
 
@@ -89,17 +90,41 @@ def get_layer_stack() -> LayerStack:
         layers={
             # Base metal film (e.g., 200 nm of Nb)
             "M1": LayerLevel(
+                name="M1",
                 layer=DerivedLayer(
-                    layer1=LogicalLayer(layer=L.M1_DRAW),
-                    layer2=LogicalLayer(layer=L.M1_ETCH),
+                    layer1=LogicalLayer(layer=L.SIM_AREA),
+                    # Drawing goes over etch
+                    layer2=DerivedLayer(
+                        layer1=LogicalLayer(layer=L.M1_ETCH),
+                        layer2=LogicalLayer(layer=L.M1_DRAW),
+                        operation="-",
+                    ),
                     operation="-",
                 ),
                 derived_layer=LogicalLayer(layer=L.M1_DRAW),
-                thickness=200e-9,
+                thickness=200e-9 * 1e6,
                 zmin=0.0,  # top of substrate
                 material="Nb",
                 sidewall_angle=90.0,
                 mesh_order=1,
+            ),
+            "Silicon": LayerLevel(
+                name="Substrate",
+                layer=LogicalLayer(layer=L.SIM_AREA),
+                thickness=500e-6 * 1e6,  # 500 microns of silicon
+                zmin=-500e-6 * 1e6,  # below metal
+                material="Si",
+                sidewall_angle=90.0,
+                mesh_order=3,
+            ),
+            "vacuum": LayerLevel(
+                name="Vacuum",
+                layer=LogicalLayer(layer=L.SIM_AREA),
+                thickness=500e-6 * 1e6,  # 500 microns of vacuum above metal
+                zmin=200e-9 * 1e6,  # above metal
+                material="vacuum",
+                sidewall_angle=90.0,
+                mesh_order=3,
             ),
             # Airbridge metal sitting above M1 (example: +300 nm)
             "AB_METAL": LayerLevel(
