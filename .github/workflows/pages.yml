@@ -28,6 +28,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - run: make install
+      - name: Install ImageMagick
+        run: apt-get update -y && apt-get install -y imagemagick
       - name: Generate LaTeX files
         run: make docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
