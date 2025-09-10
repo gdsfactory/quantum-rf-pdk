@@ -17,10 +17,15 @@ help: ##@ (Default) Print listing of key targets with their descriptions
 install: ##@ Install the package and all development dependencies
 	uv sync --extra docs --extra dev
 
+CLEAN_DIRS := dist build *.egg-info docs/_build
 clean: ##@ Clean up all build, test, coverage and Python artifacts
-	rm -rf dist
-	rm -rf build
-	rm -rf *.egg-info
+	@# Use rip if available, otherwise fall back to rm -rf
+	@command -v rip >/dev/null 2>&1 && { echo "Using rip to remove artifacts"; rip -f $(CLEAN_DIRS) || true; } || { echo "rip not found, falling back to rm -rf"; rm -rf $(CLEAN_DIRS); }
+
+
+###########
+# Testing #
+###########
 
 test: ##@ Run the full test suite in parallel using pytest
 	uv run pytest -n $$(nproc)
@@ -45,13 +50,20 @@ build: ##@ Build the Python package (install build tool and create dist)
 	pip install build
 	python -m build
 
+#################
+# Documentation #
+#################
+
 write-cells: ##@ Write cell outputs into documentation notebooks (used when building docs)
 	uv run .github/write_cells.py
 
 docs: write-cells ##@ Build the HTML documentation
 	uv run jb build docs
 
-docs-pdf: write-cells ##@ Build PDF documentation (requires a TeXLive installation)
-	uv run jb build docs --builder pdflatex
+docs-latex: write-cells ##@ Setup LaTeX for PDF documentation
+	uv run jb build docs --builder latex
 
-.PHONY: all clean install test test-force test-fail-fast update-pre git-rm-merged build docs docs-pdf write-cells help
+docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
+	cd "docs/_build/latex" && latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
+
+.PHONY: all clean install test test-force test-fail-fast update-pre git-rm-merged build docs docs-latex docs-pdf write-cells help

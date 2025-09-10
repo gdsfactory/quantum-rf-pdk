@@ -9,27 +9,57 @@ on:
 jobs:
   build-docs:
     runs-on: ubuntu-latest
-    name: Sphinx docs to gh-pages
+    name: Build HTML docs
     steps:
       - uses: actions/checkout@v5
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
       - name: Install uv
         uses: astral-sh/setup-uv@v6
-      - name: Install dependencies
-        run: |
-          make install
-      - name: make docs
-        run: |
-          make docs
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - run: make install
+      - run: make docs
+      - uses: actions/upload-artifact@v4
         with:
+          name: html-docs
           path: "./docs/_build/html/"
+  build-docs-pdf:
+    runs-on: ubuntu-latest
+    name: Build PDF docs
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - run: make install
+      - name: Cache ImageMagick
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-imagemagick
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y imagemagick
+      - name: Generate LaTeX files
+        run: make docs-latex || echo "LaTeX build completed with warnings, continuing…"
+      - name: Compile LaTeX document
+        continue-on-error: true
+        uses: xu-cheng/latex-action@v4
+        with:
+          texlive_version: latest
+          os: alpine
+          pre_compile: cd docs/_build/latex
+          extra_system_packages: "ghostscript"
+          root_file: qpdk.tex
+          compiler: latexmk
+          continue_on_error: true
+          latexmk_use_xelatex: true
+          args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pdf-docs
+          path: "./docs/_build/latex/qpdk.pdf"
   deploy-docs:
-    needs: build-docs
+    runs-on: ubuntu-latest
+    name: Deploy to GitHub Pages
+    needs: [build-docs, build-docs-pdf]
     if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     permissions:
       pages: write
@@ -37,8 +67,15 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
+      - name: Download HTML & PDF artifact
+        uses: actions/download-artifact@v5
+        with:
+          pattern: "*-docs"
+          path: _site
+          merge-multiple: true
+      - name: Upload merged pages artifact
+        uses: actions/upload-pages-artifact@v4
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

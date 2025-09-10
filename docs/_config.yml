@@ -14,8 +14,10 @@ execute:
   # exclude_patterns:
   #   - '*notebooks/devsim/01_pin_waveguide*'
 latex:
-  latex_engine: pdflatex # one of 'pdflatex', 'xelatex' (recommended for unicode), 'luatex', 'platex', 'uplatex'
+  latex_engine: &latex_engine xelatex
   use_jupyterbook_latex: true # use sphinx-jupyterbook-latex for pdf builds as default
+  latex_documents:
+    targetname: qpdk.tex
 bibtex_bibfiles:
   - bibliography.bib
 html:
@@ -31,6 +33,7 @@ repository:
   branch: main # Which branch of the repository should be used when creating links (optional)
 launch_buttons:
   notebook_interface: jupyterlab
+  binderhub_url: "https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD"
   colab_url: "https://colab.research.google.com"
 sphinx:
   extra_extensions:
@@ -56,6 +59,17 @@ sphinx:
     python_use_unqualified_type_names: True
     nb_execution_show_tb: True
     nb_execution_raise_on_error: true
+    latex_show_pagerefs: true
+    latex_show_urls: footnote
+    latex_use_xindy: true
+    latex_engine: *latex_engine
+    latex_elements:
+      papersize: a4paper
+      pointsize: 10pt
+      fncychap: |
+        \usepackage[Bjornstrup]{fncychap}
+        \ChNumVar{\fontsize{50}{54}\usefont{OT1}{pzc}{m}{n}\selectfont}
+        \ChTitleVar{\raggedleft\Large\sffamily\bfseries}
     nb_custom_formats:
       .py:
         - jupytext.reads
