@@ -16,8 +16,9 @@ jobs:
         uses: astral-sh/setup-uv@v6
       - run: make install
       - run: make docs
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: html-docs
           path: "./docs/_build/html/"
   build-docs-pdf:
     runs-on: ubuntu-latest
@@ -37,14 +38,12 @@ jobs:
           root_file: qpdk.tex
           continue_on_error: true
           args: -f -pdf -interaction=nonstopmode -file-line-error
-      - name: Copy PDF to HTML artifact directory
-        run: |
-          mkdir -p docs/_build/html
-          cp docs/_build/latex/qpdk.pdf docs/_build/html/qpdk.pdf
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          path: "./docs/_build/html/"
+          name: pdf-docs
+          path: "./docs/_build/latex/qpdk.pdf"
   deploy-docs:
+    runs-on: ubuntu-latest
     name: Deploy to GitHub Pages
     needs: [build-docs, build-docs-pdf]
     if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
@@ -54,8 +53,21 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
+      - name: Download HTML artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: html-docs
+          path: docs/_build/html
+      - name: Download PDF artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pdf-docs
+          path: docs/_build/html
+      - name: Upload merged Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "./docs/_build/html/"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
