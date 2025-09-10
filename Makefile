@@ -17,10 +17,11 @@ help: ##@ (Default) Print listing of key targets with their descriptions
 install: ##@ Install the package and all development dependencies
 	uv sync --extra docs --extra dev
 
+CLEAN_DIRS := dist build *.egg-info docs/_build
 clean: ##@ Clean up all build, test, coverage and Python artifacts
-	rm -rf dist
-	rm -rf build
-	rm -rf *.egg-info
+	@# Use rip if available, otherwise fall back to rm -rf
+	@command -v rip >/dev/null 2>&1 && { echo "Using rip to remove artifacts"; rip -f $(CLEAN_DIRS) || true; } || { echo "rip not found, falling back to rm -rf"; rm -rf $(CLEAN_DIRS); }
+
 
 ###########
 # Testing #
