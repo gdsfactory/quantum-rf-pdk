@@ -38,6 +38,8 @@ jobs:
           os: debian
           pre_compile: |
             set -euo pipefail
+            apt-get update -y
+            apt-get install -y build-essential wget tar
             LATEST_URL=$(wget -qO- https://api.github.com/repos/ArtifexSoftware/ghostpdl-downloads/releases/latest | grep "browser_download_url.*ghostscript-[0-9].*tar.gz" | cut -d '"' -f 4 | head -n 1)
             wget "$LATEST_URL" -O ghostscript.tar.gz
             tar xzf ghostscript.tar.gz
