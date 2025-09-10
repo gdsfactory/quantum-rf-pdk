@@ -14,8 +14,10 @@ execute:
   # exclude_patterns:
   #   - '*notebooks/devsim/01_pin_waveguide*'
 latex:
-  latex_engine: &latex_engine xeflatex
+  latex_engine: &latex_engine xelatex
   use_jupyterbook_latex: true # use sphinx-jupyterbook-latex for pdf builds as default
+  latex_documents:
+    targetname: qpdk.tex
 bibtex_bibfiles:
   - bibliography.bib
 html:
@@ -31,6 +33,7 @@ repository:
   branch: main # Which branch of the repository should be used when creating links (optional)
 launch_buttons:
   notebook_interface: jupyterlab
+  binderhub_url: "https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD"
   colab_url: "https://colab.research.google.com"
 sphinx:
   extra_extensions:
