@@ -57,7 +57,6 @@ live_mode = true
 strict = true
 
 [tool.pyrefly]
-permissive-ignores = true
 project-excludes = [
   "**/__pycache__",
   "**/.*",
@@ -70,7 +69,6 @@ project-excludes = [
   "qpdk/samples/**/*.py"
 ]
 project-includes = ["**/*.py"]
-untyped-def-behavior = "skip-and-infer-return-any"
 
 [tool.pyrefly.errors]
 bad-argument-type = "ignore"

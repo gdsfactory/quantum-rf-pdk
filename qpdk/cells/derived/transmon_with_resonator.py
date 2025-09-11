@@ -34,7 +34,7 @@ def transmon_with_resonator(
         coupler: Coupler component.
     """
     c = Component()
-    resonator_params = resonator_params or dict(meanders=5)
+    resonator_params = resonator_params or ResonatorParams(meanders=5)
 
     transmon_ref = c << gf.get_component(transmon)
     transmon_ref.rotate(90)

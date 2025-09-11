@@ -15,7 +15,8 @@ def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Co
 
     For use with :func:`~gdsfactory.container`.
     """
-    return component.transform(transform)
+    component.transform(transform)
+    return component
 
 
 _EXCLUDE_LAYERS_DEFAULT = [

@@ -112,7 +112,11 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     """
     c = gf.Component()
     cross_section = gf.get_cross_section(cross_section)
-    etch_section = next(s for s in cross_section.sections if s.name.startswith("etch"))
+    etch_section = next(
+        s
+        for s in cross_section.sections
+        if s.name is not None and s.name.startswith("etch")
+    )
     nxn_ref = c << nxn(
         **{
             "north": 1,

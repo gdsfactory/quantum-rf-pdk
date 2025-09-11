@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import operator
 from functools import partial, reduce
+from operator import itemgetter
 from typing import TypedDict, Unpack
 
 import gdsfactory as gf
@@ -63,16 +64,10 @@ def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
     c = Component()
     params = _double_pad_transmon_default_params | kwargs
     # Extract wire parameters using dictionary unpacking
-    pad_size, pad_gap, junction_spec, junction_displacement, layer_metal = (
-        params[key]
-        for key in [
-            "pad_size",
-            "pad_gap",
-            "junction_spec",
-            "junction_displacement",
-            "layer_metal",
-        ]
-    )
+    pad_size, pad_gap, junction_spec, junction_displacement, layer_metal = itemgetter(
+        "pad_size", "pad_gap", "junction_spec", "junction_displacement", "layer_metal"
+    )(params)
+
     pad_width, pad_height = pad_size
 
     def create_capacitor_pad(x_offset: float) -> gf.ComponentReference:
@@ -363,18 +358,16 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
         junction_displacement,
         layer_metal,
         layer_etch,
-    ) = (
-        params[key]
-        for key in [
-            "arm_width",
-            "arm_lengths",
-            "gap_width",
-            "junction_spec",
-            "junction_displacement",
-            "layer_metal",
-            "layer_etch",
-        ]
-    )
+    ) = itemgetter(
+        "arm_width",
+        "arm_lengths",
+        "gap_width",
+        "junction_spec",
+        "junction_displacement",
+        "layer_metal",
+        "layer_etch",
+    )(params)
+
     arm_width_top, arm_width_right, arm_width_bottom, arm_width_left = arm_width
     arm_length_top, arm_length_right, arm_length_bottom, arm_length_left = arm_lengths
 

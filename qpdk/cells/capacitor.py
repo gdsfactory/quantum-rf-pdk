@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from itertools import chain
 from math import ceil, floor
+from operator import itemgetter
 from typing import TypedDict, Unpack
 
 import gdsfactory as gf
@@ -76,6 +77,7 @@ def interdigital_capacitor(
     """
     c = Component()
     params = _default_interdigital_capacitor_params | kwargs
+
     (
         fingers,
         finger_length,
@@ -85,19 +87,17 @@ def interdigital_capacitor(
         etch_bbox_margin,
         cross_section,
         half,
-    ) = (
-        params[key]
-        for key in [
-            "fingers",
-            "finger_length",
-            "finger_gap",
-            "thickness",
-            "etch_layer",
-            "etch_bbox_margin",
-            "cross_section",
-            "half",
-        ]
-    )
+    ) = itemgetter(
+        "fingers",
+        "finger_length",
+        "finger_gap",
+        "thickness",
+        "etch_layer",
+        "etch_bbox_margin",
+        "cross_section",
+        "half",
+    )(params)
+
     # Used temporarily
     layer = LAYER.M1_DRAW
 

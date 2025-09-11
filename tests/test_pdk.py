@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pathlib
+from typing import cast
 
 import gdsfactory as gf
 import jsondiff
@@ -10,6 +11,7 @@ import pytest
 from gdsfactory.difftest import difftest
 from gdsfactory.technology import LayerViews
 from gdsfactory.typings import ComponentFactory
+from kfactory import LayerEnum
 from pytest_regressions.data_regression import DataRegressionFixture
 
 import qpdk.samples
@@ -150,7 +152,8 @@ def test_yaml_matches_layers():
     LAYER_VIEWS = LayerViews(PATH.lyp_yaml)
     LAYERS_ACCORDING_TO_YAML = denest_layerviews_to_layer_tuples(LAYER_VIEWS)
     LAYERS_DEFINED = {
-        str(layer_enum): (layer_enum.layer, layer_enum.datatype) for layer_enum in LAYER
+        str(layer_enum): (layer_enum.layer, layer_enum.datatype)
+        for layer_enum in cast(LayerEnum, LAYER)
     }
     assert LAYERS_ACCORDING_TO_YAML == LAYERS_DEFINED
 
