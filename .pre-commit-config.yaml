@@ -36,7 +36,6 @@ repos:
         types: [file]
         files: \.(j2|yml|yaml)$
         exclude: .github/.*
-        # args: [--extensions, "j2,yml,yaml", --ignore, jinja-statements-delimiter, jinja-statements-indentation]
   - repo: https://github.com/google/yamlfmt
     rev: v0.17.2
     hooks:
@@ -48,17 +47,8 @@ repos:
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
-    # - repo: https://github.com/pre-commit/mirrors-mypy
-    #   rev: v1.13.0
-    #   hooks:
-    #     - id: mypy
-    #       stages: [pre-commit]
-    #       args: [--strict, --ignore-missing-imports, --config-file=pyproject.toml]
-
-    # uv version.
     rev: 0.8.13
     hooks:
-      # Update the uv lockfile
       - id: uv-lock
   - repo: local
     hooks:
