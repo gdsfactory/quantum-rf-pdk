@@ -1,5 +1,6 @@
 """Primitives."""
 
+from functools import partial
 from typing import TypedDict, Unpack
 
 import gdsfactory as gf
@@ -44,7 +45,9 @@ def rectangle(
 
 ring = gf.c.ring
 
-taper_cross_section = gf.c.taper_cross_section
+taper_cross_section = partial(
+    gf.c.taper_cross_section, cross_section1="cpw", cross_section2="cpw"
+)
 
 
 class StraightKwargs(TypedDict, total=False):
@@ -310,9 +313,10 @@ if __name__ == "__main__":
     PDK.activate()
 
     for c in [
+        taper_cross_section(),
         # bend_euler(),
         # bend_circular(),
-        tee(),
+        # tee(),
         # bend_s(),
         # straight(),
         # straight_all_angle(),

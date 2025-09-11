@@ -41,7 +41,6 @@ skip_test = {
     "add_pads_top",
     "add_pads_bot",
     "die_with_pads",
-    "taper_cross_section",
     "transform_component",
     "transmon_with_resonator",
 }
