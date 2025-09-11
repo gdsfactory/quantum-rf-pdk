@@ -1,7 +1,7 @@
 """Technology definitions."""
 
 from collections.abc import Callable
-from functools import partial, wraps
+from functools import cache, partial, wraps
 from typing import Any, cast
 
 import gdsfactory as gf
@@ -35,6 +35,9 @@ class LayerMapQPDK(LayerMap):
     # Base metals
     M1_DRAW: Layer = (1, 0)  # Additive metal / positive mask regions
     M1_ETCH: Layer = (1, 1)  # Subtractive etch / negative mask regions
+    # Additive wins over subtractive where they overlap
+    # i.e., you can draw metal over an etched region to "fill it back in"
+
     # flip-cihp equivalents
     M2_DRAW: Layer = (2, 0)
     M2_ETCH: Layer = (2, 1)
@@ -67,6 +70,7 @@ class LayerMapQPDK(LayerMap):
     LABEL_INSTANCE: Layer = (101, 0)
 
     # Simulation-only helpers (never sent to fab)
+    SIM_AREA: Layer = (98, 0)
     SIM_ONLY: Layer = (99, 0)
 
     # Marker layer for waveguides
@@ -76,6 +80,7 @@ class LayerMapQPDK(LayerMap):
 L = LAYER = LayerMapQPDK
 
 
+@cache
 def get_layer_stack() -> LayerStack:
     """Returns a LayerStack corresponding to the PDK.
 
@@ -85,52 +90,127 @@ def get_layer_stack() -> LayerStack:
         layers={
             # Base metal film (e.g., 200 nm of Nb)
             "M1": LayerLevel(
+                name="M1",
+                # Generate base metal by subtracting (modified) etch from sim. area
                 layer=DerivedLayer(
-                    layer1=LogicalLayer(layer=L.M1_DRAW),
-                    layer2=LogicalLayer(layer=L.M1_ETCH),
+                    layer1=LogicalLayer(layer=L.SIM_AREA),
+                    # additive wins over substractive etch
+                    layer2=DerivedLayer(
+                        layer1=LogicalLayer(layer=L.M1_ETCH),
+                        layer2=LogicalLayer(layer=L.M1_DRAW),
+                        operation="-",
+                    ),
                     operation="-",
                 ),
                 derived_layer=LogicalLayer(layer=L.M1_DRAW),
-                thickness=200e-9,
+                thickness=200e-9 * 1e6,
                 zmin=0.0,  # top of substrate
                 material="Nb",
                 sidewall_angle=90.0,
                 mesh_order=1,
             ),
+            "Substrate": LayerLevel(
+                name="Substrate",
+                layer=L.SIM_AREA,
+                thickness=500,  # 500 microns of silicon
+                zmin=-500,  # below metal
+                material="Si",
+                sidewall_angle=90.0,
+                mesh_order=4,
+            ),
+            "Vacuum": LayerLevel(
+                name="Vacuum",
+                layer=L.SIM_AREA,
+                thickness=500e-6 * 1e6,  # 500 microns of vacuum above metal
+                zmin=200e-9 * 1e6,  # above metal
+                material="vacuum",
+                sidewall_angle=90.0,
+                mesh_order=99,
+            ),
             # Airbridge metal sitting above M1 (example: +300 nm)
-            "AB_METAL": LayerLevel(
+            "Airbridge": LayerLevel(
+                name="Airbridge",
                 layer=L.AB_DRAW,
-                thickness=300e-9,
-                zmin=200e-9,  # stacked above M1
+                thickness=200e-9 * 1e6,
+                zmin=300e-9 * 1e6,  # stacked above via
                 material="Nb",
                 sidewall_angle=90.0,
-                mesh_order=3,
+            ),
+            "Airbridge_Via": LayerLevel(
+                name="Airbridge_Via",
+                layer=L.AB_VIA,
+                thickness=100e-9 * 1e6,
+                zmin=200e-9 * 1e6,  # stacked above M1
+                material="Nb",
+                sidewall_angle=90.0,
             ),
             # JJ_AREA can be exported as a thin film if you use it in EM
-            "jj_area": LayerLevel(
+            "JosephsonJunction": LayerLevel(
+                name="JosephsonJunction",
                 layer=L.JJ_AREA,
                 thickness=70e-9,
                 zmin=0,
                 material="AlOx/Al",
                 sidewall_angle=90.0,
-                mesh_order=4,
+                mesh_order=2,
             ),
-            "sim_only": LayerLevel(
-                layer=L.SIM_ONLY,
-                thickness=0e-9,
-                zmin=0.0,
-                material="vacuum",
+            "TSV": LayerLevel(
+                name="TSV",
+                layer=L.TSV,
+                thickness=500,  # full substrate thickness
+                zmin=-500,  # starting at bottom
+                material="TiN",
                 sidewall_angle=90.0,
-                mesh_order=9,
+                mesh_order=3,
             ),
-            # You can add TSV/backside as real films if you simulate them
-            # "tsv": LayerLevel(layer=L.TSV, thickness=... , zmin=... , material="Cu"),
+            "IndiumBump": LayerLevel(
+                name="IndiumBump",
+                layer=L.IND,
+                thickness=10,  # 10 microns
+                zmin=200e-9 * 1e6,  # stacked above M1
+                material="In",
+                sidewall_angle=90.0,
+                mesh_order=3,
+            ),
         }
     )
 
 
 LAYER_STACK = get_layer_stack()
 LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp_yaml)
+
+LAYER_STACK_FLIP_CHIP = LayerStack(
+    layers={
+        **LAYER_STACK.layers,
+        "M2": LayerLevel(
+            name="M2",
+            layer=DerivedLayer(
+                layer1=LogicalLayer(layer=L.SIM_AREA),
+                layer2=DerivedLayer(
+                    layer1=LogicalLayer(layer=L.M2_ETCH),
+                    layer2=LogicalLayer(layer=L.M2_DRAW),
+                    operation="-",
+                ),
+                operation="-",
+            ),
+            derived_layer=LogicalLayer(layer=L.M2_DRAW),
+            thickness=0.2,
+            zmin=10.0,
+            material="Nb",
+            sidewall_angle=90.0,
+            mesh_order=1,
+        ),
+        "Substrate_top": LayerLevel(
+            name="Substrate_top",
+            layer=L.SIM_AREA,
+            thickness=500,  # 500 microns of silicon
+            zmin=10.2,  # below metal
+            material="Si",
+            sidewall_angle=90.0,
+            mesh_order=4,
+        ),
+    }
+)
 
 
 class Tech:
@@ -301,6 +381,11 @@ route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     separation=3,
     bend="bend_circular_all_angle",
     straight="straight_all_angle",
+)
+route_bundle_sbend = route_bundle_sbend_cpw = partial(
+    gf.routing.route_bundle_sbend,
+    cross_section=cpw,
+    bend_s="bend_s",
 )
 
 route_astar = route_astar_cpw = partial(

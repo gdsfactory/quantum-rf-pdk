@@ -91,6 +91,11 @@ LayerViews:
         layer_in_name: true
         color: "cyan"
         hatch_pattern: hollow
+      SIM_AREA:
+        layer: [98, 0]
+        layer_in_name: true
+        color: "green"
+        hatch_pattern: hollow
       SIM_ONLY:
         layer: [99, 0]
         layer_in_name: true
