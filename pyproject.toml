@@ -4,6 +4,11 @@
 build-backend = "flit_core.buildapi"
 requires = ["flit_core >=3.2,<4"]
 
+[dependency-groups]
+dev = [
+  "pyrefly>=0.32.0"
+]
+
 [project]
 authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
 classifiers = [
@@ -55,6 +60,49 @@ strict = true
 enabled = true
 live_mode = true
 strict = true
+
+[tool.pyrefly]
+permissive-ignores = true
+project-excludes = [
+  "**/__pycache__",
+  "**/.*",
+  "docs/**",
+  "build/**",
+  "dist/**",
+  "*.egg-info/**",
+  ".venv/**",
+  # Exclude samples that may have experimental code
+  "qpdk/samples/**/*.py"
+]
+project-includes = ["qpdk/**/*.py", "tests/**/*.py"]
+# Configure Pyrefly static type checker
+python-version = "3.11.0"  # Match minimum supported version from project
+# Start with permissive settings for initial integration
+untyped-def-behavior = "skip-and-infer-return-any"
+
+# Configure specific error types - start permissive and tighten over time
+[tool.pyrefly.errors]
+annotation-mismatch = "ignore"
+bad-argument-count = "warn"
+bad-argument-type = "ignore"  # Many gdsfactory calls have complex typing
+# All other errors set to ignore for initial integration
+bad-assignment = "ignore"
+bad-return = "ignore"
+bad-unpacking = "ignore"
+import-error = "ignore"  # Many gdsfactory imports may not be fully typed
+invalid-annotation = "warn"
+missing-argument = "ignore"
+missing-attribute = "ignore"  # gdsfactory has dynamic attributes
+no-matching-overload = "ignore"
+not-a-type = "warn"
+read-only = "ignore"
+# Additional error types found during testing - set to ignore for now
+typed-dict-key-error = "ignore"
+# Core type errors - only catch the most serious ones
+unbound-name = "error"
+unexpected-keyword = "ignore"  # gdsfactory uses many **kwargs patterns
+unexpected-positional-argument = "warn"
+unsupported-operation = "ignore"
 
 [tool.pytest.ini_options]
 # addopts = --tb=no
@@ -130,52 +178,6 @@ find = {}
 [[tool.tbump.file]]
 src = "README.md"
 
-[tool.pyrefly]
-# Configure Pyrefly static type checker
-python-version = "3.11.0"  # Match minimum supported version from project
-project-includes = ["qpdk/**/*.py", "tests/**/*.py"]
-project-excludes = [
-  "**/__pycache__",
-  "**/.*",
-  "docs/**",
-  "build/**",
-  "dist/**",
-  "*.egg-info/**",
-  ".venv/**",
-  # Exclude samples that may have experimental code
-  "qpdk/samples/**/*.py"
-]
-
-# Start with permissive settings for initial integration
-untyped-def-behavior = "skip-and-infer-return-any"
-permissive-ignores = true
-
-# Configure specific error types - start permissive and tighten over time
-[tool.pyrefly.errors]
-# Core type errors - only catch the most serious ones
-unbound-name = "error"
-
-# All other errors set to ignore for initial integration
-bad-assignment = "ignore"
-bad-argument-type = "ignore"  # Many gdsfactory calls have complex typing
-bad-argument-count = "warn"
-unexpected-keyword = "ignore"  # gdsfactory uses many **kwargs patterns
-unexpected-positional-argument = "warn"
-import-error = "ignore"  # Many gdsfactory imports may not be fully typed
-missing-attribute = "ignore"  # gdsfactory has dynamic attributes
-invalid-annotation = "warn"
-not-a-type = "warn"
-
-# Additional error types found during testing - set to ignore for now
-typed-dict-key-error = "ignore"
-bad-unpacking = "ignore"
-bad-return = "ignore"
-no-matching-overload = "ignore"
-read-only = "ignore"
-missing-argument = "ignore"
-unsupported-operation = "ignore"
-annotation-mismatch = "ignore"
-
 [[tool.tbump.file]]
 src = "pyproject.toml"
 
@@ -198,8 +200,3 @@ regex = '''
   \.
   (?P<patch>\d+)
   '''
-
-[dependency-groups]
-dev = [
-    "pyrefly>=0.32.0",
-]
