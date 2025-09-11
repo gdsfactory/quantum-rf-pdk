@@ -56,6 +56,29 @@ enabled = true
 live_mode = true
 strict = true
 
+[tool.pyrefly]
+project-excludes = [
+  "**/__pycache__",
+  "**/.*",
+  "docs/**",
+  "build/**",
+  "dist/**",
+  "*.egg-info/**",
+  ".venv/**",
+  # Exclude samples that may have experimental code
+  "qpdk/samples/**/*.py"
+]
+project-includes = ["**/*.py"]
+
+[tool.pyrefly.errors]
+bad-argument-type = "ignore"
+# Configure specific error types - start permissive and tighten over time
+missing-argument = "ignore"
+# Not all gdsfactory overloads are seem to be properly typed
+no-matching-overload = "ignore"
+not-a-type = "warn"
+read-only = "ignore"
+
 [tool.pytest.ini_options]
 # addopts = --tb=no
 addopts = '--tb=short'
@@ -102,7 +125,9 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
-"qpdk/samples/**/*.py" = ["D100"]  # no public module docstring for sample scripts
+"qpdk/samples/**/*.py" = [
+  "D100"
+]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D103"]
 
 [tool.ruff.lint.pydocstyle]

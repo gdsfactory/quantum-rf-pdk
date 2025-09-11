@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from operator import itemgetter
 from typing import TypedDict, Unpack
 
 import gdsfactory as gf
@@ -39,7 +40,7 @@ class SingleJosephsonJunctionWireParams(TypedDict):
     size_patch: tuple[float, float]
 
 
-_single_josephson_junction_wire_defaults: SingleJosephsonJunctionWireParams = dict(
+_single_josephson_junction_wire_defaults = SingleJosephsonJunctionWireParams(
     wide_straight_length=8.3,
     narrow_straight_length=0.5,
     taper_length=4.7,
@@ -61,7 +62,6 @@ def single_josephson_junction_wire(
     """
     c = Component()
     wire_params = _single_josephson_junction_wire_defaults | kwargs
-    # Extract wire parameters using dictionary unpacking
     (
         wide_straight_length,
         narrow_straight_length,
@@ -70,18 +70,15 @@ def single_josephson_junction_wire(
         cross_section_narrow,
         layer_patch,
         size_patch,
-    ) = (
-        wire_params[key]
-        for key in [
-            "wide_straight_length",
-            "narrow_straight_length",
-            "taper_length",
-            "cross_section_wide",
-            "cross_section_narrow",
-            "layer_patch",
-            "size_patch",
-        ]
-    )
+    ) = itemgetter(
+        "wide_straight_length",
+        "narrow_straight_length",
+        "taper_length",
+        "cross_section_wide",
+        "cross_section_narrow",
+        "layer_patch",
+        "size_patch",
+    )(wire_params)
 
     # Widest straight section with patch
     wide_straight_ref = c << straight(

@@ -396,17 +396,17 @@ route_astar = route_astar_cpw = partial(
     grid_unit=500,
     spacing=3,
 )
-routing_strategies = dict(
-    route_single=route_single,
-    route_single_cpw=route_single_cpw,
-    route_single_sbend=route_single_sbend,
-    route_bundle=route_bundle,
-    route_bundle_cpw=route_bundle_cpw,
-    route_bundle_all_angle=route_bundle_all_angle,
-    route_bundle_all_angle_cpw=route_bundle_all_angle_cpw,
-    route_astar=route_astar,
-    route_astar_cpw=route_astar_cpw,
-)
+routing_strategies = {
+    "route_single": route_single,
+    "route_single_cpw": route_single_cpw,
+    "route_single_sbend": route_single_sbend,
+    "route_bundle": route_bundle,
+    "route_bundle_cpw": route_bundle_cpw,
+    "route_bundle_all_angle": route_bundle_all_angle,
+    "route_bundle_all_angle_cpw": route_bundle_all_angle_cpw,
+    "route_astar": route_astar,
+    "route_astar_cpw": route_astar_cpw,
+}
 
 if __name__ == "__main__":
     from gdsfactory.technology.klayout_tech import KLayoutTechnology

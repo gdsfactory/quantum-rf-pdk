@@ -19,7 +19,7 @@ def remove_path_or_dir(dest: Path) -> None:
 
 def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None:
     """Make a symbolic link from src to dest."""
-    dest = Path(dest)
+    src, dest = Path(src), Path(dest)
     if not src.exists():
         raise FileNotFoundError(f"{src} does not exist")
 
