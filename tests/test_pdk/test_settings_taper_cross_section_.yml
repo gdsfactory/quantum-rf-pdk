@@ -1,0 +1,14 @@
+info:
+  route_info_length: 10
+  route_info_microstrip_length: 10
+  route_info_microstrip_taper_length: 10
+  route_info_type: microstrip
+  route_info_weight: 10
+name: taper_cross_section_gds_588c0bc1
+settings:
+  cross_section1: strip
+  cross_section2: strip
+  length: 10
+  linear: false
+  npoints: 100
+  width_type: sine
