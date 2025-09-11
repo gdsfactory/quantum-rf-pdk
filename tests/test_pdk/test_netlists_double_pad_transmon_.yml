@@ -29,7 +29,7 @@ instances:
       size:
       - 250
       - 400
-  squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999:
+  squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45:
     component: squid_junction
     info: {}
     settings:
@@ -48,13 +48,13 @@ placements:
     rotation: 0
     x: -257.5
     y: -200
-  squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999:
+  squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45:
     mirror: false
-    rotation: 45.0
+    rotation: 45
     x: -9.546
     y: -8.132
 ports:
-  junction: squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,loop_center
+  junction: squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,loop_center
 warnings:
   electrical:
     unconnected_ports:
@@ -87,11 +87,10 @@ warnings:
         - -200
   optical:
     orientation_mismatch:
-    - message: squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,loop_center
-        was promoted to junction but orientationsdo not match! Difference of 45.00000000000001
-        deg
+    - message: squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,loop_center was promoted
+        to junction but orientationsdo not match! Difference of 45.0 deg
       ports:
-      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,loop_center
+      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,loop_center
       - junction
       values:
       - 45
@@ -99,12 +98,12 @@ warnings:
     unconnected_ports:
     - message: 6 unconnected optical ports!
       ports:
-      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,left_left_wide
-      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,left_right_wide
-      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,right_left_wide
-      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,right_right_wide
-      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,left_overlap
-      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,right_overlap
+      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,left_left_wide
+      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,left_right_wide
+      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,right_left_wide
+      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,right_right_wide
+      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,left_overlap
+      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,right_overlap
       values:
       - - 8.273
         - -6.859
@@ -119,10 +118,10 @@ warnings:
       - - 0
         - -1.414
     width_mismatch:
-    - message: Widths of ports squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,loop_center
+    - message: Widths of ports squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,loop_center
         and junction not equal. Difference of 33.355999999999995 um
       ports:
-      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A44p99999999999999,loop_center
+      - squid_junction_JSjoseph_f3d0f058_m9546_m8132_A45,loop_center
       - junction
       values:
       - 0.09
