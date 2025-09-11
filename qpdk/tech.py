@@ -91,9 +91,10 @@ def get_layer_stack() -> LayerStack:
             # Base metal film (e.g., 200 nm of Nb)
             "M1": LayerLevel(
                 name="M1",
+                # Generate base metal by subtracting (modified) etch from sim. area
                 layer=DerivedLayer(
                     layer1=LogicalLayer(layer=L.SIM_AREA),
-                    # Drawing goes over etch
+                    # additive wins over substractive etch
                     layer2=DerivedLayer(
                         layer1=LogicalLayer(layer=L.M1_ETCH),
                         layer2=LogicalLayer(layer=L.M1_DRAW),
@@ -108,58 +109,108 @@ def get_layer_stack() -> LayerStack:
                 sidewall_angle=90.0,
                 mesh_order=1,
             ),
-            "Silicon": LayerLevel(
+            "Substrate": LayerLevel(
                 name="Substrate",
-                layer=LogicalLayer(layer=L.SIM_AREA),
-                thickness=500e-6 * 1e6,  # 500 microns of silicon
-                zmin=-500e-6 * 1e6,  # below metal
+                layer=L.SIM_AREA,
+                thickness=500,  # 500 microns of silicon
+                zmin=-500,  # below metal
                 material="Si",
                 sidewall_angle=90.0,
-                mesh_order=3,
+                mesh_order=4,
             ),
-            "vacuum": LayerLevel(
+            "Vacuum": LayerLevel(
                 name="Vacuum",
-                layer=LogicalLayer(layer=L.SIM_AREA),
+                layer=L.SIM_AREA,
                 thickness=500e-6 * 1e6,  # 500 microns of vacuum above metal
                 zmin=200e-9 * 1e6,  # above metal
                 material="vacuum",
                 sidewall_angle=90.0,
-                mesh_order=3,
+                mesh_order=99,
             ),
             # Airbridge metal sitting above M1 (example: +300 nm)
-            "AB_METAL": LayerLevel(
+            "Airbridge": LayerLevel(
+                name="Airbridge",
                 layer=L.AB_DRAW,
-                thickness=300e-9,
-                zmin=200e-9,  # stacked above M1
+                thickness=200e-9 * 1e6,
+                zmin=300e-9 * 1e6,  # stacked above via
                 material="Nb",
                 sidewall_angle=90.0,
-                mesh_order=3,
+            ),
+            "Airbridge_Via": LayerLevel(
+                name="Airbridge_Via",
+                layer=L.AB_VIA,
+                thickness=100e-9 * 1e6,
+                zmin=200e-9 * 1e6,  # stacked above M1
+                material="Nb",
+                sidewall_angle=90.0,
             ),
             # JJ_AREA can be exported as a thin film if you use it in EM
-            "jj_area": LayerLevel(
+            "JosephsonJunction": LayerLevel(
+                name="JosephsonJunction",
                 layer=L.JJ_AREA,
                 thickness=70e-9,
                 zmin=0,
                 material="AlOx/Al",
                 sidewall_angle=90.0,
-                mesh_order=4,
+                mesh_order=2,
             ),
-            "sim_only": LayerLevel(
-                layer=L.SIM_ONLY,
-                thickness=0e-9,
-                zmin=0.0,
-                material="vacuum",
+            "TSV": LayerLevel(
+                name="TSV",
+                layer=L.TSV,
+                thickness=500,  # full substrate thickness
+                zmin=-500,  # starting at bottom
+                material="TiN",
                 sidewall_angle=90.0,
-                mesh_order=9,
+                mesh_order=3,
             ),
-            # You can add TSV/backside as real films if you simulate them
-            # "tsv": LayerLevel(layer=L.TSV, thickness=... , zmin=... , material="Cu"),
+            "IndiumBump": LayerLevel(
+                name="IndiumBump",
+                layer=L.IND,
+                thickness=10,  # 10 microns
+                zmin=200e-9 * 1e6,  # stacked above M1
+                material="In",
+                sidewall_angle=90.0,
+                mesh_order=3,
+            ),
         }
     )
 
 
 LAYER_STACK = get_layer_stack()
 LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp_yaml)
+
+LAYER_STACK_FLIP_CHIP = LayerStack(
+    layers={
+        **LAYER_STACK.layers,
+        "M2": LayerLevel(
+            name="M2",
+            layer=DerivedLayer(
+                layer1=LogicalLayer(layer=L.SIM_AREA),
+                layer2=DerivedLayer(
+                    layer1=LogicalLayer(layer=L.M2_ETCH),
+                    layer2=LogicalLayer(layer=L.M2_DRAW),
+                    operation="-",
+                ),
+                operation="-",
+            ),
+            derived_layer=LogicalLayer(layer=L.M2_DRAW),
+            thickness=0.2,
+            zmin=10.0,
+            material="Nb",
+            sidewall_angle=90.0,
+            mesh_order=1,
+        ),
+        "Substrate_top": LayerLevel(
+            name="Substrate_top",
+            layer=L.SIM_AREA,
+            thickness=500,  # 500 microns of silicon
+            zmin=10.2,  # below metal
+            material="Si",
+            sidewall_angle=90.0,
+            mesh_order=4,
+        ),
+    }
+)
 
 
 class Tech:
