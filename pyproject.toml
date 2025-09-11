@@ -4,11 +4,6 @@
 build-backend = "flit_core.buildapi"
 requires = ["flit_core >=3.2,<4"]
 
-[dependency-groups]
-dev = [
-  "pyrefly>=0.32.0"
-]
-
 [project]
 authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
 classifiers = [
@@ -74,33 +69,27 @@ project-excludes = [
   # Exclude samples that may have experimental code
   "qpdk/samples/**/*.py"
 ]
-project-includes = ["qpdk/**/*.py", "tests/**/*.py"]
-# Configure Pyrefly static type checker
-python-version = "3.11.0"  # Match minimum supported version from project
-# Start with permissive settings for initial integration
+project-includes = ["**/*.py"]
 untyped-def-behavior = "skip-and-infer-return-any"
 
-# Configure specific error types - start permissive and tighten over time
 [tool.pyrefly.errors]
+# Configure specific error types - start permissive and tighten over time
 annotation-mismatch = "ignore"
 bad-argument-count = "warn"
-bad-argument-type = "ignore"  # Many gdsfactory calls have complex typing
-# All other errors set to ignore for initial integration
+bad-argument-type = "ignore"
 bad-assignment = "ignore"
 bad-return = "ignore"
 bad-unpacking = "ignore"
-import-error = "ignore"  # Many gdsfactory imports may not be fully typed
+import-error = "ignore"
 invalid-annotation = "warn"
 missing-argument = "ignore"
-missing-attribute = "ignore"  # gdsfactory has dynamic attributes
+missing-attribute = "ignore"  # gdsfactory may have dynamic attributes
 no-matching-overload = "ignore"
 not-a-type = "warn"
 read-only = "ignore"
-# Additional error types found during testing - set to ignore for now
 typed-dict-key-error = "ignore"
-# Core type errors - only catch the most serious ones
 unbound-name = "error"
-unexpected-keyword = "ignore"  # gdsfactory uses many **kwargs patterns
+unexpected-keyword = "ignore"
 unexpected-positional-argument = "warn"
 unsupported-operation = "ignore"
 
@@ -150,7 +139,9 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
-"qpdk/samples/**/*.py" = ["D100"]  # no public module docstring for sample scripts
+"qpdk/samples/**/*.py" = [
+  "D100"
+]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D103"]
 
 [tool.ruff.lint.pydocstyle]
