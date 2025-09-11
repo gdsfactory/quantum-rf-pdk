@@ -252,20 +252,17 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
         junction_displacement,
         layer_metal,
         layer_metal_top,
-    ) = (
-        params[key]
-        for key in [
-            "inner_ring_radius",
-            "inner_ring_width",
-            "outer_ring_radius",
-            "outer_ring_width",
-            "top_circle_radius",
-            "junction_spec",
-            "junction_displacement",
-            "layer_metal",
-            "layer_metal_top",
-        ]
-    )
+    ) = itemgetter(
+        "inner_ring_radius",
+        "inner_ring_width",
+        "outer_ring_radius",
+        "outer_ring_width",
+        "top_circle_radius",
+        "junction_spec",
+        "junction_displacement",
+        "layer_metal",
+        "layer_metal_top",
+    )(params)
 
     def create_circular_pad(radius: float, width: float) -> gf.ComponentReference:
         pad = gf.c.ring(
