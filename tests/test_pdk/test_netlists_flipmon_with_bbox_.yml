@@ -1,0 +1,28 @@
+instances:
+  flipmon_IRR50_IRW30_ORR_adcc67b0_0_0:
+    component: flipmon
+    info: {}
+    settings:
+      inner_ring_radius: 50
+      inner_ring_width: 30
+      junction_displacement: null
+      junction_spec: squid_junction
+      layer_metal: M1_DRAW
+      layer_metal_top: M2_DRAW
+      outer_ring_radius: 110
+      outer_ring_width: 60
+      top_circle_radius: 110
+name: flipmon_with_bbox_FPNon_954c4b81
+nets: []
+placements:
+  flipmon_IRR50_IRW30_ORR_adcc67b0_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+ports:
+  center: flipmon_IRR50_IRW30_ORR_adcc67b0_0_0,center
+  inner_ring_near_junction: flipmon_IRR50_IRW30_ORR_adcc67b0_0_0,inner_ring_near_junction
+  junction: flipmon_IRR50_IRW30_ORR_adcc67b0_0_0,junction
+  outer_ring_near_junction: flipmon_IRR50_IRW30_ORR_adcc67b0_0_0,outer_ring_near_junction
+  outer_ring_outside: flipmon_IRR50_IRW30_ORR_adcc67b0_0_0,outer_ring_outside

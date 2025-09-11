@@ -9,6 +9,8 @@ from typing import TypedDict, Unpack
 
 import gdsfactory as gf
 from gdsfactory.component import Component
+from gdsfactory.components import rectangle
+from gdsfactory.export import to_stl
 from gdsfactory.typings import ComponentSpec, LayerSpec
 from kfactory import kdb
 from klayout.db import DCplxTrans, Region
@@ -16,7 +18,7 @@ from klayout.db import DCplxTrans, Region
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
 from qpdk.cells.junction import squid_junction
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, LAYER_STACK_FLIP_CHIP
 
 
 class DoublePadTransmonParams(TypedDict):
@@ -170,18 +172,48 @@ def double_pad_transmon_with_bbox(
     return c
 
 
+class FlipmonParams(TypedDict):
+    """Parameters for flipmon style transmon qubit.
+
+    Keyword Args:
+        inner_ring_radius: Central radius of the inner circular capacitor pad in μm.
+        inner_ring_width: Width of the inner circular capacitor pad in μm.
+        outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
+        outer_ring_width: Width of the outer circular capacitor pad in μm.
+        top_circle_radius: Central radius of the top circular capacitor pad in μm.
+            There is no separate width as the filled circle is not a ring.
+        junction_spec: Component specification for the Josephson junction component.
+        junction_displacement: Optional complex transformation to apply to the junction.
+        layer_metal: Layer for the metal pads.
+        layer_metal_top: Layer for the other metal layer pad for flip-chip.
+    """
+
+    inner_ring_radius: float
+    inner_ring_width: float
+    outer_ring_radius: float
+    outer_ring_width: float
+    top_circle_radius: float
+    junction_spec: ComponentSpec
+    junction_displacement: DCplxTrans | None
+    layer_metal: LayerSpec
+    layer_metal_top: LayerSpec
+
+
+_flipmon_default_params = FlipmonParams(
+    inner_ring_radius=50,
+    inner_ring_width=30,
+    outer_ring_radius=110,
+    outer_ring_width=60,
+    top_circle_radius=110,
+    junction_spec=squid_junction,
+    junction_displacement=None,
+    layer_metal=LAYER.M1_DRAW,
+    layer_metal_top=LAYER.M2_DRAW,
+)
+
+
 @gf.cell(check_instances=False)
-def flipmon(
-    inner_ring_radius: float = 50,
-    inner_ring_width: float = 30,
-    outer_ring_radius: float = 110,
-    outer_ring_width: float = 60,
-    top_circle_radius: float = 110,
-    junction_spec: ComponentSpec = squid_junction,
-    junction_displacement: DCplxTrans | None = None,
-    layer_metal: LayerSpec = LAYER.M1_DRAW,
-    layer_metal_top: LayerSpec = LAYER.M2_DRAW,
-) -> Component:
+def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
     """Creates a circular transmon qubit with `flipmon` geometry.
 
     A circular variant of the transmon qubit with another circle as the inner pad.
@@ -190,6 +222,9 @@ def flipmon(
     for details about the `flipmon` design.
 
     Args:
+        **kwargs: :class:`~FlipmonParams` for the flipmon qubit.
+
+    Keyword Args:
         inner_ring_radius: Central radius of the inner circular capacitor pad in μm.
         inner_ring_width: Width of the inner circular capacitor pad in μm.
         outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
@@ -205,6 +240,32 @@ def flipmon(
         Component: A gdsfactory component with the circular transmon geometry.
     """
     c = Component()
+    params = _flipmon_default_params | kwargs
+    # Extract wire parameters using dictionary unpacking
+    (
+        inner_ring_radius,
+        inner_ring_width,
+        outer_ring_radius,
+        outer_ring_width,
+        top_circle_radius,
+        junction_spec,
+        junction_displacement,
+        layer_metal,
+        layer_metal_top,
+    ) = (
+        params[key]
+        for key in [
+            "inner_ring_radius",
+            "inner_ring_width",
+            "outer_ring_radius",
+            "outer_ring_width",
+            "top_circle_radius",
+            "junction_spec",
+            "junction_displacement",
+            "layer_metal",
+            "layer_metal_top",
+        ]
+    )
 
     def create_circular_pad(radius: float, width: float) -> gf.ComponentReference:
         pad = gf.c.ring(
@@ -288,6 +349,55 @@ def flipmon(
         layer=LAYER.JJ_AREA,
     )
 
+    return c
+
+
+@gf.cell
+def flipmon_with_bbox(
+    flipmon_params: FlipmonParams | None = None,
+    m1_etch_extension_gap: float = 30.0,
+    m2_etch_extension_gap: float = 40.0,
+) -> Component:
+    """Creates a circular transmon qubit with `flipmon` geometry and a circular etched bounding box.
+
+    See :func:`~flipmon` for more details.
+
+    Args:
+        flipmon_params: :class:`~FlipmonParams` for the flipmon qubit.
+        m1_etch_extension_gap: Radius extension length for the M1 etch bounding box in μm.
+        m2_etch_extension_gap: Radius extension length for the M2 etch bounding box in μm.
+
+    Returns:
+        Component: A gdsfactory component with the flipmon geometry and etched box.
+    """
+    c = gf.Component()
+    flipmon_params = flipmon_params or _flipmon_default_params
+    flipmon_ref = c << flipmon(**flipmon_params)
+    m1_bbox_radius = (
+        flipmon_params["outer_ring_radius"]
+        + flipmon_params["outer_ring_width"] / 2
+        + m1_etch_extension_gap
+    )
+    m2_bbox_radius = flipmon_params["top_circle_radius"] + m2_etch_extension_gap
+
+    for etch_layer, draw_layer, bbox_radius in [
+        (LAYER.M1_ETCH, LAYER.M1_DRAW, m1_bbox_radius),
+        (LAYER.M2_ETCH, LAYER.M2_DRAW, m2_bbox_radius),
+    ]:
+        bbox_comp = gf.boolean(
+            A=gf.components.circle(
+                radius=bbox_radius,
+                layer=etch_layer,
+            ),
+            B=c,
+            operation="-",
+            layer=etch_layer,
+            layer1=etch_layer,
+            layer2=draw_layer,
+        )
+        c.absorb(c.add_ref(bbox_comp))
+
+    c.add_ports(flipmon_ref.ports)
     return c
 
 
@@ -475,8 +585,17 @@ if __name__ == "__main__":
             double_pad_transmon(junction_displacement=DCplxTrans(0, 150)),
             double_pad_transmon_with_bbox(),
             flipmon(),
+            flipmon_with_bbox(),
             xmon_transmon(),
         )
     ):
         (c << component).move((0, i * 700))
     c.show()
+
+    # Visualize flip-chip flipmon
+    c = gf.Component()
+    (c << flipmon_with_bbox()).move((0, 0))
+    c << rectangle(size=(500, 500), layer=LAYER.SIM_AREA, centered=True)
+    to_stl(c, "flipmon.stl", layer_stack=LAYER_STACK_FLIP_CHIP)
+    scene = c.to_3d(layer_stack=LAYER_STACK_FLIP_CHIP)
+    scene.show()
