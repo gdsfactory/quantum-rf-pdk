@@ -60,6 +60,16 @@ repos:
     hooks:
       # Update the uv lockfile
       - id: uv-lock
+  - repo: local
+    hooks:
+      - id: pyrefly
+        name: pyrefly
+        description: Run Pyrefly static type checker
+        entry: uv run pyrefly check
+        language: system
+        pass_filenames: false
+        types_or: [python, pyi]
+        require_serial: true
   - repo: https://github.com/FlamingTempura/bibtex-tidy
     rev: v1.14.0
     hooks:
