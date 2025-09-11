@@ -73,25 +73,13 @@ project-includes = ["**/*.py"]
 untyped-def-behavior = "skip-and-infer-return-any"
 
 [tool.pyrefly.errors]
-# Configure specific error types - start permissive and tighten over time
-annotation-mismatch = "ignore"
-bad-argument-count = "warn"
 bad-argument-type = "ignore"
-bad-assignment = "ignore"
-bad-return = "ignore"
-bad-unpacking = "ignore"
-import-error = "ignore"
-invalid-annotation = "warn"
+# Configure specific error types - start permissive and tighten over time
 missing-argument = "ignore"
-missing-attribute = "ignore"  # gdsfactory may have dynamic attributes
+# Not all gdsfactory overloads are seem to be properly typed
 no-matching-overload = "ignore"
 not-a-type = "warn"
 read-only = "ignore"
-typed-dict-key-error = "ignore"
-unbound-name = "error"
-unexpected-keyword = "ignore"
-unexpected-positional-argument = "warn"
-unsupported-operation = "ignore"
 
 [tool.pytest.ini_options]
 # addopts = --tb=no
