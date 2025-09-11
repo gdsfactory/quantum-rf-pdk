@@ -57,6 +57,8 @@ repos:
         name: Pyrefly
         pass_filenames: false
         additional_dependencies: ["pyrefly==0.32.0"]
+        # Pre-commit may not have access to all deps.
+        args: ["--warn", "import-error"]
   - repo: https://github.com/FlamingTempura/bibtex-tidy
     rev: v1.14.0
     hooks:
