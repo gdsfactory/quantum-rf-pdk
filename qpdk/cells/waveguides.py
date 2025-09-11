@@ -46,7 +46,7 @@ def rectangle(
 ring = gf.c.ring
 
 taper_cross_section = partial(
-    gf.c.taper_cross_section, cross_section1="strip", cross_section2="strip"
+    gf.c.taper_cross_section, cross_section1="cpw", cross_section2="cpw"
 )
 
 
