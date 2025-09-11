@@ -35,7 +35,7 @@ instances:
     settings:
       junction_spec: josephson_junction
       loop_area: 4
-name: flipmon_IRR50_IRW30_ORR_adcc67b0
+name: flipmon
 nets: []
 placements:
   circle_gdsfactorypcompo_5f36ace2_0_0:
