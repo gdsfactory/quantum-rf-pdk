@@ -50,6 +50,12 @@ cd quantum-rf-pdk
 uv sync --all-extras
 ```
 
+Check out the commands for testing and building documentation with:
+
+```bash
+make help
+```
+
 ## Documentation
 
 - [Quantum RF PDK documentation](https://gdsfactory.github.io/quantum-rf-pdk/)
