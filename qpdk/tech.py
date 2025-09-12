@@ -79,6 +79,12 @@ class LayerMapQPDK(LayerMap):
 
 L = LAYER = LayerMapQPDK
 
+material_properties = {
+    "vacuum": {"relative_permittivity": 1},
+    "Nb": {"relative_permittivity": float("inf")},
+    "Si": {"relative_permittivity": 11.45},
+}
+
 
 @cache
 def get_layer_stack() -> LayerStack:

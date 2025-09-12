@@ -12,4 +12,5 @@ parts:
     chapters:
       - file: cells
       - file: samples
+      - file: models
       - file: changelog

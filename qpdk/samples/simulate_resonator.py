@@ -39,11 +39,13 @@ from qpdk.tech import LAYER, route_bundle_sbend_cpw
 
 # %%
 @gf.cell
-def resonator_simulations() -> gf.Component:
+def resonator_simulation(coupling_gap: float = 12.0) -> gf.Component:
     """Create a resonator simulation layout with launchers and CPW routes."""
     c = gf.Component()
 
-    res_ref = c << resonator_coupled({"open_start": True}, coupling_straight_length=300)
+    res_ref = c << resonator_coupled(
+        {"open_start": True}, coupling_straight_length=300, coupling_gap=coupling_gap
+    )
     res_ref.movex(-res_ref.size_info.width / 4)
 
     launcher_left = c << launcher()
@@ -78,7 +80,7 @@ if __name__ == "__main__":
 
     # Create and display the filled version
     c = gf.Component("resonator_simulation")
-    res_ref = c << resonator_simulations()
+    res_ref = c << resonator_simulation()
     c.add_ports(res_ref.ports)
     c.plot(
         pixel_buffer_options=dict(width=1300, height=1000, oversampling=2, linewidth=3)
