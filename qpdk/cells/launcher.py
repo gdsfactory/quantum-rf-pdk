@@ -15,6 +15,7 @@ from gdsfactory.component import Component
 from gdsfactory.components import straight
 from gdsfactory.typings import CrossSectionSpec
 
+from qpdk.cells.waveguides import taper_cross_section
 from qpdk.tech import LAYER, coplanar_waveguide, launcher_cross_section_big
 
 LAUNCHER_CROSS_SECTION_BIG = launcher_cross_section_big
@@ -57,7 +58,7 @@ def launcher(
     )
 
     # Add the tapered transition section
-    taper_ref = c << gf.c.taper_cross_section(
+    taper_ref = c << taper_cross_section(
         length=taper_length,
         cross_section1=cross_section_big,
         cross_section2=cross_section_small,
@@ -69,6 +70,13 @@ def launcher(
 
     # Add output port at the small end for circuit connection
     c.add_port(port=taper_ref.ports["o2"], name="o1", cross_section=cross_section_small)
+
+    # Add a port at the large end for reference and simulation purposes
+    c.add_port(
+        port=straight_ref.ports["o1"],
+        name="waveport",
+        cross_section=cross_section_big,
+    )
 
     return c
 

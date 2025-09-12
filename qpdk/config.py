@@ -13,8 +13,10 @@ repo = module.parent
 class Path:
     module = module
     repo = repo
+    build = repo / "build"
     gds = module / "gds"
     klayout = module / "klayout"
+    simulation = build / "simulation"
 
     lyp = klayout / "tech" / "layers.lyp"
     lyt = klayout / "tech" / "tech.lyt"
