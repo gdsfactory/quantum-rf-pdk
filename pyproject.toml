@@ -31,7 +31,7 @@ dev = [
   "hypothesis"
 ]
 docs = ["jupytext", "matplotlib", "jupyter-book>=1.0.4,<2"]
-models = ["sax", "scikit-rf", "ray[tune]", "optuna"]
+models = ["sax", "scikit-rf", "ray[tune]", "optuna", "scqubits"]
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun, Ue"
