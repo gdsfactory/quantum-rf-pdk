@@ -1,7 +1,11 @@
 Models
-=============================
+======
 
 .. automodule:: qpdk.models
-   :members:
-   :undoc-members:
-   :show-inheritance:
+    :synopsis: Code for S-parameter and other modelling
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. bibliography::
+    :filter: docname in docnames
