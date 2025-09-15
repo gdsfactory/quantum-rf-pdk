@@ -9,7 +9,7 @@ instances:
     info: {}
     settings:
       junction_overlap_displacement: 1.8
-name: squid_junction_JSjoseph_f3d0f058
+name: squid_junction_JSjosephson_junction_LA4
 nets: []
 placements:
   josephson_junction_JOD1p8_0_0:

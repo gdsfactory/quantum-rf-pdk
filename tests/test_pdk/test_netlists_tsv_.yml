@@ -1,5 +1,5 @@
 instances:
-  circle_gdsfactorypcompo_df7542fa_0_0:
+  circle_gdsfactorypcomponentspshapespcircle_R7p5_AR2p5_LTSV_0_0:
     component: circle
     info: {}
     settings:
@@ -9,7 +9,7 @@ instances:
 name: tsv_D15
 nets: []
 placements:
-  circle_gdsfactorypcompo_df7542fa_0_0:
+  circle_gdsfactorypcomponentspshapespcircle_R7p5_AR2p5_LTSV_0_0:
     mirror: false
     rotation: 0
     x: 0

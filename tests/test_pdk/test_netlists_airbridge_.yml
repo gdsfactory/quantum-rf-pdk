@@ -1,5 +1,35 @@
 instances:
-  rectangle_gdsfactorypco_56f9a496_0_0_A90:
+  rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: AB_VIA
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 12
+      - 15
+  rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: AB_VIA
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 12
+      - 15
+  rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90:
     component: rectangle
     info: {}
     settings:
@@ -14,72 +44,42 @@ instances:
       size:
       - 30
       - 8
-  rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90:
-    component: rectangle
-    info: {}
-    settings:
-      centered: true
-      layer: AB_VIA
-      port_orientations:
-      - 180
-      - 90
-      - 0
-      - -90
-      port_type: electrical
-      size:
-      - 12
-      - 15
-  rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90:
-    component: rectangle
-    info: {}
-    settings:
-      centered: true
-      layer: AB_VIA
-      port_orientations:
-      - 180
-      - 90
-      - 0
-      - -90
-      port_type: electrical
-      size:
-      - 12
-      - 15
-name: airbridge_BL30_BW8_PW15_d54314af
+name: airbridge_BL30_BW8_PW15_PL12_BLAB_DRAW_PLAB_VIA
 nets:
-- p1: rectangle_gdsfactorypco_56f9a496_0_0_A90,e1
-  p2: rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90,e3
-- p1: rectangle_gdsfactorypco_56f9a496_0_0_A90,e3
-  p2: rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90,e1
+- p1: rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90,e1
+  p2: rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90,e3
+- p1: rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90,e3
+  p2: rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90,e1
 placements:
-  rectangle_gdsfactorypco_56f9a496_0_0_A90:
-    mirror: false
-    rotation: 90
-    x: 0
-    y: 0
-  rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90:
+  rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90:
     mirror: false
     rotation: 90
     x: 0
     y: 21
-  rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90:
+  rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90:
     mirror: false
     rotation: 90
     x: 0
     y: -21
+  rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90:
+    mirror: false
+    rotation: 90
+    x: 0
+    y: 0
 ports:
-  e1: rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90,e1
-  e2: rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90,e3
+  e1: rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90,e1
+  e2: rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90,e3
 warnings:
   electrical:
     unconnected_ports:
     - message: 6 unconnected electrical ports!
       ports:
-      - rectangle_gdsfactorypco_56f9a496_0_0_A90,e2
-      - rectangle_gdsfactorypco_56f9a496_0_0_A90,e4
-      - rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90,e2
-      - rectangle_gdsfactorypco_8e7b1f7b_0_m21000_A90,e4
-      - rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90,e2
-      - rectangle_gdsfactorypco_8e7b1f7b_0_21000_A90,e4
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90,e2
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90,e4
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90,e2
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90,e4
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90,e2
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90,e4
       values:
       - - -4
         - 0

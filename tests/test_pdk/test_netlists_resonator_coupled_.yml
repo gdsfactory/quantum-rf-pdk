@@ -1,5 +1,5 @@
 instances:
-  resonator_qpdkpcellspre_a108ba58_0_0:
+  resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a108ba58_0_0:
     component: resonator
     info:
       cross_section: coplanar_waveguide
@@ -12,7 +12,7 @@ instances:
       meanders: 6
       open_end: false
       open_start: false
-  straight_L200_CScoplana_292178d5_0_22000:
+  straight_L200_CScoplanar_waveguide_0_22000:
     component: straight
     info:
       length: 200
@@ -24,21 +24,21 @@ instances:
     settings:
       cross_section: coplanar_waveguide
       length: 200
-name: resonator_coupled_qpdkp_c14d1dfd
+name: resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_c14d1dfd
 nets: []
 placements:
-  resonator_qpdkpcellspre_a108ba58_0_0:
+  resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a108ba58_0_0:
     mirror: false
     rotation: 0
     x: 0
     y: 0
-  straight_L200_CScoplana_292178d5_0_22000:
+  straight_L200_CScoplanar_waveguide_0_22000:
     mirror: false
     rotation: 0
     x: 0
     y: 22
 ports:
-  coupling_o1: straight_L200_CScoplana_292178d5_0_22000,o1
-  coupling_o2: straight_L200_CScoplana_292178d5_0_22000,o2
-  resonator_o1: resonator_qpdkpcellspre_a108ba58_0_0,o1
-  resonator_o2: resonator_qpdkpcellspre_a108ba58_0_0,o2
+  coupling_o1: straight_L200_CScoplanar_waveguide_0_22000,o1
+  coupling_o2: straight_L200_CScoplanar_waveguide_0_22000,o2
+  resonator_o1: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a108ba58_0_0,o1
+  resonator_o2: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a108ba58_0_0,o2
