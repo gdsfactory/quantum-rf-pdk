@@ -15,7 +15,7 @@ help: ##@ (Default) Print listing of key targets with their descriptions
 
 
 install: ##@ Install the package and all development dependencies
-	uv sync --extra docs --extra dev
+	uv sync --all-extras
 
 CLEAN_DIRS := dist build *.egg-info docs/_build
 clean: ##@ Clean up all build, test, coverage and Python artifacts
