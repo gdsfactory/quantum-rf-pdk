@@ -14,6 +14,8 @@
 # This example demonstrates estimating resonance frequencies of superconducting microwave resonators using scikit-rf and Jax.
 
 # %%
+import math
+import os
 from functools import partial
 
 import jax.numpy as jnp
@@ -87,5 +89,76 @@ if __name__ == "__main__":
     print("Coupled resonance frequency:", actual_freq / 1e9, "GHz")
     _mark_resonance_frequency(actual_freq, "green", "Coupled resonance Frequency")
 
+    plt.legend()
+    # plt.show()
+
+
+# %% [markdown]
+# ## Optimizer for given resonance frequency
+#
+# Find the resonator length that gives a desired resonance frequency using an optimizer.
+
+
+# %%
+if __name__ == "__main__":
+    import ray
+    import ray.tune
+    import ray.tune.search.optuna
+
+    frequencies = jnp.linspace(0.5e9, 10e9, 1001)
+    TARGET_FREQUENCY = 6e9  # Target resonance frequency in Hz
+
+    def loss_fn(config: dict[str, float]) -> float:
+        """Loss function to minimize the difference between the actual and target resonance frequencies.
+
+        Args:
+            config: Dictionary containing the resonator length in micrometers.
+        """
+        length = config["length"]
+        # Setup model
+        S = circuit(f=frequencies, length=length)
+        # Get frequency at minimum S21
+        coupled_freq = frequencies[jnp.argmin(abs(S["in", "out"]))]
+        return {
+            "l1_loss_ghz": abs(float(coupled_freq) - TARGET_FREQUENCY) / 1e9,
+            "mse": (float(coupled_freq) - TARGET_FREQUENCY) ** 2,
+        }
+
+    # Test loss function
+    print(f"{loss_fn(dict(length=4000.0))=}")
+    print(f"{loss_fn(dict(length=5900.0))=}")
+
+    # Optimize length using Ray Tune
+    tuner = ray.tune.Tuner(
+        loss_fn,
+        param_space={
+            "length": ray.tune.uniform(1000.0, 9000.0),
+        },
+        tune_config=ray.tune.TuneConfig(
+            metric="mse",
+            mode="min",
+            num_samples=50,
+            max_concurrent_trials=math.ceil(os.cpu_count() / 4),
+            reuse_actors=True,
+            search_alg=ray.tune.search.optuna.OptunaSearch(),
+        ),
+    )
+    results = tuner.fit()
+    best_trial = results.get_best_result()
+    length = best_trial.config["length"]
+    print(f"Best trial config: {best_trial.config}")
+
+    # Initialize optimizer
+    print(f"Optimized Length: {length:.2f} µm")
+    optimal_S = circuit(f=frequencies, length=length)
+    optimal_freq = frequencies[jnp.argmin(abs(optimal_S["in", "out"]))]
+    print(f"Achieved Resonance Frequency: {optimal_freq / 1e9:.2f} GHz")
+
+    # Plot
+    plt.plot(frequencies / 1e9, abs(optimal_S["in", "out"]) ** 2)
+    plt.xlabel("f [GHz]")
+    plt.ylabel("$S_{21}$")
+    _mark_resonance_frequency(optimal_freq, "blue", "Optimized resonance Frequency")
+    _mark_resonance_frequency(TARGET_FREQUENCY, "orange", "Target resonance Frequency")
     plt.legend()
     plt.show()
