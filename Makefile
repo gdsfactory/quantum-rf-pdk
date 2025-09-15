@@ -20,7 +20,7 @@ install: ##@ Install the package and all development dependencies
 CLEAN_DIRS := dist build *.egg-info docs/_build
 clean: ##@ Clean up all build, test, coverage and Python artifacts
 	@# Use rip if available, otherwise fall back to rm -rf
-	@command -v rip >/dev/null 2>&1 && { echo "Using rip to remove artifacts"; rip -f $(CLEAN_DIRS) || true; } || { echo "rip not found, falling back to rm -rf"; rm -rf $(CLEAN_DIRS); }
+	rm -rf $(CLEAN_DIRS)
 
 
 ###########
