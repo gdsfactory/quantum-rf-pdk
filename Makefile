@@ -15,12 +15,12 @@ help: ##@ (Default) Print listing of key targets with their descriptions
 
 
 install: ##@ Install the package and all development dependencies
-	uv sync --extra docs --extra dev
+	uv sync --all-extras
 
 CLEAN_DIRS := dist build *.egg-info docs/_build
 clean: ##@ Clean up all build, test, coverage and Python artifacts
 	@# Use rip if available, otherwise fall back to rm -rf
-	@command -v rip >/dev/null 2>&1 && { echo "Using rip to remove artifacts"; rip -f $(CLEAN_DIRS) || true; } || { echo "rip not found, falling back to rm -rf"; rm -rf $(CLEAN_DIRS); }
+	rm -rf $(CLEAN_DIRS)
 
 
 ###########
@@ -57,10 +57,14 @@ build: ##@ Build the Python package (install build tool and create dist)
 write-cells: ##@ Write cell outputs into documentation notebooks (used when building docs)
 	uv run .github/write_cells.py
 
-docs: write-cells ##@ Build the HTML documentation
+copy-sample-notebooks: ##@ Copy all sample scripts to use as notebooks docs
+	mkdir -p docs/_build/notebooks
+	cp qpdk/samples/resonator_frequency_model.py docs/_build/notebooks/resonator_frequency_model.py
+
+docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs
 
-docs-latex: write-cells ##@ Setup LaTeX for PDF documentation
+docs-latex: write-cells copy-sample-notebooks ##@ Setup LaTeX for PDF documentation
 	uv run jb build docs --builder latex
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)

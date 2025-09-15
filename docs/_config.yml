@@ -35,6 +35,7 @@ launch_buttons:
   notebook_interface: jupyterlab
   binderhub_url: "https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD"
   colab_url: "https://colab.research.google.com"
+  thebe: true
 sphinx:
   extra_extensions:
     - "sphinx.ext.autodoc"
@@ -56,6 +57,7 @@ sphinx:
       "CrossSection | str | dict[str, Any] | Callable[[...], CrossSection] | SymmetricalCrossSection | DCrossSection": "CrossSectionSpec"
     autodoc_typehints: "description"
     autodoc_typehints_format: "short"
+    html_show_copyright: false
     python_use_unqualified_type_names: True
     nb_execution_show_tb: True
     nb_execution_raise_on_error: true

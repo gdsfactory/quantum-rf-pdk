@@ -31,9 +31,10 @@ dev = [
   "hypothesis"
 ]
 docs = ["jupytext", "matplotlib", "jupyter-book>=1.0.4,<2"]
+models = ["sax", "scikit-rf", "ray[tune]", "optuna"]
 
 [tool.codespell]
-ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun"
+ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun, Ue"
 skip = 'bibliography.bib'
 
 [tool.gdsfactoryplus.drc]

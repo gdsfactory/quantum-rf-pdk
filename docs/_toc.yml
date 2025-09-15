@@ -3,13 +3,12 @@
 format: jb-book
 root: index
 parts:
-  # - caption: Tutorial
-  #   chapters:
-  #     - file: tutorial
-  #       sections:
-  #         - file: notebooks/demo
   - caption: Reference
     chapters:
       - file: cells
       - file: samples
+      - file: models
       - file: changelog
+  - caption: Notebooks
+    chapters:
+      - file: _build/notebooks/resonator_frequency_model
