@@ -11,4 +11,4 @@ parts:
       - file: changelog
   - caption: Notebooks
     chapters:
-      - file: notebooks/resonator_frequency_model.py
+      - file: _build/notebooks/resonator_frequency_model

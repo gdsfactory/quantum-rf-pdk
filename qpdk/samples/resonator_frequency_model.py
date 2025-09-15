@@ -98,8 +98,10 @@ if __name__ == "__main__":
 #
 # Find the resonator length that gives a desired resonance frequency using an optimizer.
 
-
-# %%
+# %% [markdown]
+#
+# ```python
+#
 if __name__ == "__main__":
     import ray
     import ray.tune
@@ -137,7 +139,7 @@ if __name__ == "__main__":
         tune_config=ray.tune.TuneConfig(
             metric="mse",
             mode="min",
-            num_samples=50,
+            num_samples=10,
             max_concurrent_trials=math.ceil(os.cpu_count() / 4),
             reuse_actors=True,
             search_alg=ray.tune.search.optuna.OptunaSearch(),
@@ -162,3 +164,4 @@ if __name__ == "__main__":
     _mark_resonance_frequency(TARGET_FREQUENCY, "orange", "Target resonance Frequency")
     plt.legend()
     plt.show()
+# ```
