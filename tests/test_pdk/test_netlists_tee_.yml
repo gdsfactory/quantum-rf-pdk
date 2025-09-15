@@ -7,7 +7,7 @@ instances:
       north: 1
       south: 1
       west: 1
-  rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270:
+  rectangle_S6_10_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_0_m8000_A270:
     component: rectangle
     info: {}
     settings:
@@ -72,7 +72,7 @@ placements:
     rotation: 0
     x: -5
     y: -5
-  rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270:
+  rectangle_S6_10_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_0_m8000_A270:
     mirror: false
     rotation: 270
     x: 0
@@ -101,10 +101,10 @@ warnings:
     unconnected_ports:
     - message: 4 unconnected electrical ports!
       ports:
-      - rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270,e1
-      - rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270,e2
-      - rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270,e3
-      - rectangle_S6_10_LM1_ETC_d0b94861_0_m8000_A270,e4
+      - rectangle_S6_10_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_0_m8000_A270,e1
+      - rectangle_S6_10_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_0_m8000_A270,e2
+      - rectangle_S6_10_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_0_m8000_A270,e3
+      - rectangle_S6_10_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_0_m8000_A270,e4
       values:
       - - 0
         - -5

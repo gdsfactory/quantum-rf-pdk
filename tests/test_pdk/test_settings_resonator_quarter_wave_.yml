@@ -2,7 +2,7 @@ info:
   cross_section: coplanar_waveguide
   length: 4000
   resonator_type: quarter_wave
-name: resonator_qpdkpcellspre_0175ce49
+name: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_0175ce49
 settings:
   bend_spec: bend_circular
   cross_section: cpw

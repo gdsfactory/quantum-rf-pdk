@@ -10,7 +10,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent"
 ]
-dependencies = ["gdsfactory>=9.14.1,<9.15.0", "doroutes>=0.2.0"]
+dependencies = ["gdsfactory>=9.15.0,<9.16.0", "doroutes>=0.2.0"]
 description = "Quantum-RF generic PDK"
 keywords = ["python"]
 license = {file = "LICENSE"}
@@ -30,7 +30,7 @@ dev = [
   "pytest-github-actions-annotate-failures",
   "hypothesis"
 ]
-docs = ["jupytext", "matplotlib", "jupyter-book==1.0.4"]
+docs = ["jupytext", "matplotlib", "jupyter-book>=1.0.4,<2"]
 models = ["sax", "scikit-rf", "ray[tune]", "optuna"]
 
 [tool.codespell]

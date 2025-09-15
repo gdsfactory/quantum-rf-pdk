@@ -1,5 +1,5 @@
 instances:
-  rectangle_gdsfactorypco_01a42715_0_0:
+  rectangle_gdsfactorypcomponentspshapesprectangle_S10_10_01a42715_0_0:
     component: rectangle
     info: {}
     settings:
@@ -17,7 +17,7 @@ instances:
 name: nxn
 nets: []
 placements:
-  rectangle_gdsfactorypco_01a42715_0_0:
+  rectangle_gdsfactorypcomponentspshapesprectangle_S10_10_01a42715_0_0:
     mirror: false
     rotation: 0
     x: 0
@@ -28,10 +28,10 @@ warnings:
     unconnected_ports:
     - message: 4 unconnected electrical ports!
       ports:
-      - rectangle_gdsfactorypco_01a42715_0_0,e1
-      - rectangle_gdsfactorypco_01a42715_0_0,e2
-      - rectangle_gdsfactorypco_01a42715_0_0,e3
-      - rectangle_gdsfactorypco_01a42715_0_0,e4
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S10_10_01a42715_0_0,e1
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S10_10_01a42715_0_0,e2
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S10_10_01a42715_0_0,e3
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S10_10_01a42715_0_0,e4
       values:
       - - 0
         - 5
