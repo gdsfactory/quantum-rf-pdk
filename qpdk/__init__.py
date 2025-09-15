@@ -40,7 +40,7 @@ def get_pdk() -> Pdk:
 
 PDK = get_pdk()
 
-# Get all functions from qpdk.samples module
+# Get all functions from qpdk.samples module that are component generators
 sample_functions = {
     f"{modname}.{name}": obj
     for importer, modname, ispkg in pkgutil.walk_packages(
@@ -50,6 +50,15 @@ sample_functions = {
     if inspect.isfunction(obj)
     and not name.startswith("_")
     and obj.__module__ == modname
+    # Exclude optimization and utility functions that aren't component generators
+    and not any(excluded in name for excluded in [
+        "objective_function", 
+        "run_mock_capacitive_simulation",
+        "setup_palace_simulation", 
+        "create_optuna_study",
+        "demonstrate_mcp_workflow",
+        "mock_mcp_optimization_session"
+    ])
 }
 
 __all__ = [

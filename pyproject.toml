@@ -186,3 +186,8 @@ regex = '''
 
 [tool.uv.sources]
 gplugins = { git = "https://github.com/gdsfactory/gplugins" }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.13.0",
+]
