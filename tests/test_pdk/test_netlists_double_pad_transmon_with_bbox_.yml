@@ -4,7 +4,7 @@ instances:
     info:
       qubit_type: transmon
     settings: {}
-name: double_pad_transmon_wit_1427c144
+name: double_pad_transmon_with_bbox_BE200
 nets: []
 placements:
   double_pad_transmon_0_0:

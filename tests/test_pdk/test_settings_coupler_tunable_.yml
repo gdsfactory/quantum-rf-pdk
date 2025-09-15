@@ -6,7 +6,7 @@ info:
   tuning_gap: 1
   tuning_pad_height: 20
   tuning_pad_width: 15
-name: coupler_tunable_qpdkpce_c0ca777c
+name: coupler_tunable_qpdkpcellspcapacitor_PW30_PH40_G3_TPW15_c0ca777c
 settings:
   feed_length: 30
   feed_width: 10
