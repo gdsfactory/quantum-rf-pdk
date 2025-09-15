@@ -1,11 +1,18 @@
-from typing import Any, Callable
+"""Model definitions for qpdk."""
 
 import sax
 
+from .resonator import quarter_wave_resonator_coupled_to_probeline, resonator_frequency
+
 sax.set_port_naming_strategy("optical")
 
-models: dict[str, Callable[..., Any]] = {}
 
-from .resonator import quarter_wave_resonator
+models = {
+    "quarter_wave_resonator": quarter_wave_resonator_coupled_to_probeline,
+}
 
-models["quarter_wave_resonator"] = quarter_wave_resonator
+__all__ = [
+    "models",
+    "resonator_frequency",
+    *models.keys(),
+]
