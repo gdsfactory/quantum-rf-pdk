@@ -58,9 +58,9 @@ write-cells: ##@ Write cell outputs into documentation notebooks (used when buil
 	uv run .github/write_cells.py
 
 copy-sample-notebooks: ##@ Copy all sample scripts to use as notebooks docs
-	mkdir -p docs/_build/notebooks
-	cp qpdk/samples/resonator_frequency_model.py docs/_build/notebooks/resonator_frequency_model.py
-	cp qpdk/samples/scqubits_parameter_calculation.py docs/_build/notebooks/scqubits_parameter_calculation.py
+	mkdir -p docs/notebooks
+	cp qpdk/samples/resonator_frequency_model.py docs/notebooks/resonator_frequency_model.py
+	cp qpdk/samples/scqubits_parameter_calculation.py docs/notebooks/scqubits_parameter_calculation.py
 
 docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs
