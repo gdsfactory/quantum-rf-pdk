@@ -27,10 +27,12 @@ from qpdk.models.resonator import (
 )
 
 # %% [markdown]
-# ## Resonator Test Chip Function
+# ## Probelines weakly coupled to $\lambda/4$ resonator
 #
-# Creates a test chip with two probelines and multiple resonators for characterization.
+# Creates a probelines weakly coupled to a quarter-wave resonator.
+# The resonance frequency is first estimated using the `resonator_frequency` function and then compared to the frequency in the coupled case.
 
+# %%
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
@@ -82,6 +84,7 @@ if __name__ == "__main__":
 
     _mark_resonance_frequency(res_freq, "red", "Predicted resonance Frequency")
     actual_freq = frequencies[jnp.argmin(abs(S["in", "out"]))]
+    print("Coupled resonance frequency:", actual_freq / 1e9, "GHz")
     _mark_resonance_frequency(actual_freq, "green", "Coupled resonance Frequency")
 
     plt.legend()
