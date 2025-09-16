@@ -31,7 +31,13 @@ dev = [
   "hypothesis"
 ]
 docs = ["jupytext", "matplotlib", "jupyter-book>=1.0.4,<2"]
-models = ["sax", "scikit-rf", "ray[tune]", "optuna", "gplugins[meshwell]"]
+models = [
+  "sax",
+  "scikit-rf",
+  "ray[tune]",
+  "optuna",
+  "gplugins[meshwell] @ git+https://github.com/gdsfactory/gplugins.git@f9c834a0adf9a8f9f5f53556f41b99faf0b1acde"
+]
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun, Ue"
