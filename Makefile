@@ -17,7 +17,7 @@ help: ##@ (Default) Print listing of key targets with their descriptions
 install: ##@ Install the package and all development dependencies
 	uv sync --all-extras
 
-CLEAN_DIRS := dist build *.egg-info docs/_build
+CLEAN_DIRS := dist build *.egg-info docs/_build docs/notebooks
 clean: ##@ Clean up all build, test, coverage and Python artifacts
 	@# Use rip if available, otherwise fall back to rm -rf
 	rm -rf $(CLEAN_DIRS)
@@ -58,8 +58,8 @@ write-cells: ##@ Write cell outputs into documentation notebooks (used when buil
 	uv run .github/write_cells.py
 
 copy-sample-notebooks: ##@ Copy all sample scripts to use as notebooks docs
-	mkdir -p docs/_build/notebooks
-	cp qpdk/samples/resonator_frequency_model.py docs/_build/notebooks/resonator_frequency_model.py
+	mkdir -p docs/notebooks
+	cp qpdk/samples/resonator_frequency_model.py docs/notebooks/resonator_frequency_model.py
 
 docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs
