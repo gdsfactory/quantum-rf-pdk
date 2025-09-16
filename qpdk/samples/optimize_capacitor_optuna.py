@@ -118,7 +118,7 @@ def capacitor_simulation(
 
 
 # %%
-def run_mock_capacitive_simulation(
+def _run_mock_capacitive_simulation(
     component: gf.Component,  # noqa: ARG001
     finger_length: float,
     finger_gap: float,
@@ -186,7 +186,7 @@ def run_mock_capacitive_simulation(
 
 
 # %%
-def objective_function(trial) -> float:
+def _objective_function(trial) -> float:
     """Optuna objective function to optimize capacitor for target capacitance.
 
     Args:
@@ -212,7 +212,7 @@ def objective_function(trial) -> float:
         )
 
         # Run mock simulation (in practice, this would be Palace)
-        simulated_capacitance = run_mock_capacitive_simulation(
+        simulated_capacitance = _run_mock_capacitive_simulation(
             c, finger_length, finger_gap, thickness
         )
 
@@ -239,7 +239,7 @@ def objective_function(trial) -> float:
 
 
 # %%
-def setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
+def _setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
     """Setup configuration for Palace capacitive simulation.
 
     This function demonstrates how to configure a real Palace simulation
@@ -354,7 +354,7 @@ if __name__ == "__main__":
 
     # Run optimization
     n_trials = 50
-    study.optimize(objective_function, n_trials=n_trials)
+    study.optimize(_objective_function, n_trials=n_trials)
 
     # Print results
     print(f"\nOptimization completed after {n_trials} trials!")
