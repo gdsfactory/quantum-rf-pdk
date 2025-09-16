@@ -36,6 +36,7 @@ from qpdk.tech import LAYER
 # for capacitive simulation. This follows the same pattern as the resonator simulation
 # but is designed for extracting capacitance rather than S-parameters.
 
+
 # %%
 @gf.cell
 def capacitor_simulation(
@@ -44,12 +45,12 @@ def capacitor_simulation(
     thickness: float = 5.0,
 ) -> gf.Component:
     """Create a capacitor simulation layout with launchers and direct connections.
-    
+
     Args:
         finger_length: Length of each finger in μm.
         finger_gap: Gap between adjacent fingers in μm.
         thickness: Thickness of fingers and base section in μm.
-        
+
     Returns:
         Component with the simulation layout including ports.
     """
@@ -115,6 +116,7 @@ def capacitor_simulation(
 # we create a mock function that simulates the capacitance extraction process.
 # In a real implementation, this would call `run_capacitive_simulation_palace`.
 
+
 # %%
 def run_mock_capacitive_simulation(
     component: gf.Component,  # noqa: ARG001
@@ -123,17 +125,17 @@ def run_mock_capacitive_simulation(
     thickness: float,
 ) -> float:
     """Mock capacitive simulation that estimates capacitance based on geometry.
-    
+
     This function provides a realistic but simplified capacitance model for
     interdigital capacitors based on the geometric parameters. In practice,
     this would be replaced by Palace electromagnetic simulation.
-    
+
     Args:
         component: The gdsfactory component to simulate.
         finger_length: Length of capacitor fingers in μm.
         finger_gap: Gap between fingers in μm.
         thickness: Thickness of fingers in μm.
-        
+
     Returns:
         Estimated capacitance in fF (femtofarads).
     """
@@ -182,13 +184,14 @@ def run_mock_capacitive_simulation(
 # Define the objective function that Optuna will optimize. The goal is to minimize
 # the difference between the simulated capacitance and the target of 40 fF.
 
+
 # %%
 def objective_function(trial) -> float:
     """Optuna objective function to optimize capacitor for target capacitance.
-    
+
     Args:
         trial: Optuna trial object with parameter suggestions.
-        
+
     Returns:
         Objective value (difference from target capacitance).
     """
@@ -197,8 +200,8 @@ def objective_function(trial) -> float:
 
     # Define parameter search space
     finger_length = trial.suggest_float("finger_length", 5.0, 50.0)  # μm
-    finger_gap = trial.suggest_float("finger_gap", 1.0, 10.0)        # μm
-    thickness = trial.suggest_float("thickness", 2.0, 10.0)          # μm
+    finger_gap = trial.suggest_float("finger_gap", 1.0, 10.0)  # μm
+    thickness = trial.suggest_float("thickness", 2.0, 10.0)  # μm
 
     try:
         # Create the simulation layout
@@ -234,17 +237,18 @@ def objective_function(trial) -> float:
 # This section shows how the actual Palace simulation would be set up,
 # but is commented out since it requires system dependencies that may not be available.
 
+
 # %%
 def setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
     """Setup configuration for Palace capacitive simulation.
-    
+
     This function demonstrates how to configure a real Palace simulation
     for capacitance extraction. It's currently set up as a mock since
     Palace requires system dependencies that may not be available.
-    
+
     Args:
         component: The gdsfactory component to simulate.
-        
+
     Returns:
         Dictionary with simulation configuration.
     """
@@ -252,9 +256,11 @@ def setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
 
     # Material specifications for superconducting quantum devices
     material_spec = {
-        "Si": {"relative_permittivity": 11.45},     # Silicon substrate
-        "Nb": {"relative_permittivity": np.inf},    # Superconducting metal (perfect conductor)
-        "vacuum": {"relative_permittivity": 1},     # Air/vacuum gaps
+        "Si": {"relative_permittivity": 11.45},  # Silicon substrate
+        "Nb": {
+            "relative_permittivity": np.inf
+        },  # Superconducting metal (perfect conductor)
+        "vacuum": {"relative_permittivity": 1},  # Air/vacuum gaps
     }
 
     # Export 3D model for simulation
@@ -269,18 +275,18 @@ def setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
     )
 
     # Palace simulation configuration
-    simulation_config = {
+    return {
         "material_spec": material_spec,
         "simulation_folder": simulation_folder,
         "mesh_parameters": {
             "background_tag": "vacuum",
             "background_padding": (0,) * 5 + (200,),  # 200 μm padding in z
             "port_names": [port.name for port in component.ports],
-            "default_characteristic_length": 50,      # μm
+            "default_characteristic_length": 50,  # μm
             "resolutions": {
-                "M1": {"resolution": 5},               # Fine mesh on metal
-                "Silicon": {"resolution": 20},         # Coarser on substrate
-                "vacuum": {"resolution": 30},          # Coarsest in air
+                "M1": {"resolution": 5},  # Fine mesh on metal
+                "Silicon": {"resolution": 20},  # Coarser on substrate
+                "vacuum": {"resolution": 30},  # Coarsest in air
                 # Port-specific mesh refinement
                 **{
                     f"M1__{port.name}": {
@@ -295,8 +301,6 @@ def setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
             },
         },
     }
-
-    return simulation_config
 
 
 # Commented out real Palace simulation call:
@@ -366,8 +370,12 @@ if __name__ == "__main__":
             print(f"  {param}: {value:.3f} μm")
 
         if "simulated_capacitance" in study.best_trial.user_attrs:
-            print(f"\nSimulated capacitance: {study.best_trial.user_attrs['simulated_capacitance']:.3f} fF")
-            print(f"Target capacitance: {study.best_trial.user_attrs['target_capacitance']:.3f} fF")
+            print(
+                f"\nSimulated capacitance: {study.best_trial.user_attrs['simulated_capacitance']:.3f} fF"
+            )
+            print(
+                f"Target capacitance: {study.best_trial.user_attrs['target_capacitance']:.3f} fF"
+            )
 
         # Create and show the optimized component
         best_params = study.best_trial.params
@@ -383,8 +391,12 @@ if __name__ == "__main__":
         print(f"  - finger_gap: {best_params['finger_gap']:.3f} μm")
         print(f"  - thickness: {best_params['thickness']:.3f} μm")
     else:
-        print("No successful trials found. All trials resulted in component generation errors.")
-        print("This suggests there may be issues with the component geometry or routing.")
+        print(
+            "No successful trials found. All trials resulted in component generation errors."
+        )
+        print(
+            "This suggests there may be issues with the component geometry or routing."
+        )
         # Still try to create a component with default parameters for debugging
         print("\nTrying to create component with default parameters for debugging...")
         try:

@@ -96,7 +96,8 @@ ignore = [
   "B008",  # do not perform function calls in argument defaults
   "C901",  # too complex
   "B905",  # `zip()` without an explicit `strict=` parameter
-  "C408"  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "RUF003"  # ambiguous unicode characters (incl. lots of math)
 ]
 select = [
   "E",  # pycodestyle errors
