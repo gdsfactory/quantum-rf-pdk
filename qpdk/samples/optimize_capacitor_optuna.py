@@ -13,28 +13,27 @@
 #
 # This example demonstrates using Optuna to optimize an interdigital capacitor
 # to achieve a target capacitance of 40 fF. The optimization is constrained to
-# use exactly 5 interdigital fingers as specified in the requirements.
+# use exactly 5 interdigital fingers.
 
 # %%
 
-from pathlib import Path
 from typing import Any
 
 import gdsfactory as gf
-import numpy as np
-from gdsfactory.export import to_stl
+import optuna
+from meshwell.resolution import ConstantInField, ExponentialField
 
+from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
-from qpdk.cells.launcher import launcher
+from qpdk.cells.waveguides import straight
 from qpdk.config import PATH
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, material_properties
 
 # %% [markdown]
 # ## Simulation Layout Setup
 #
-# Create a simulation layout with an interdigital capacitor between two probe launchers
-# for capacitive simulation. This follows the same pattern as the resonator simulation
-# but is designed for extracting capacitance rather than S-parameters.
+# Create a simulation layout with an interdigital capacitor,
+# some extended straights and an etch for capacitive simulation.
 
 
 # %%
@@ -68,114 +67,26 @@ def capacitor_simulation(
         half=False,
     )
 
-    # Add launchers for probing
-    launcher_left = c << launcher()
-    launcher_right = c << launcher()
-    launcher_right.mirror()
+    # Add straights for larger area
+    straight_left = c << straight(length=20.0, cross_section="cpw")
+    straight_right = c << straight(length=20.0, cross_section="cpw")
+    straight_left.connect("o2", cap_ref.ports["o1"])
+    straight_right.connect("o1", cap_ref.ports["o2"])
 
-    # Position launchers with proper spacing from capacitor ports
-    # Capacitor ports are at ±width/2, launcher port is at (300, 0) from launcher origin
-    spacing = 300  # μm spacing between port and capacitor
-
-    # Left launcher: position so its o1 port is to the left of capacitor's o1 port
-    launcher_left.move((cap_ref["o1"].center[0] - spacing - 300, 0))
-
-    # Right launcher: position so its o1 port is to the right of capacitor's o2 port
-    launcher_right.move((cap_ref["o2"].center[0] + spacing, 0))
-
-    # Connect launchers directly to capacitor ports using straight routes
-    from qpdk.cells.waveguides import straight
-
-    # Left connection
-    left_length = abs(launcher_left["o1"].center[0] - cap_ref["o1"].center[0])
-    if left_length > 0:
-        left_connection = c << straight(length=left_length, cross_section="cpw")
-        left_connection.connect("o1", launcher_left["o1"])
-        # Note: In a real design we'd properly route these, but for simulation we keep it simple
-
-    # Right connection
-    right_length = abs(cap_ref["o2"].center[0] - launcher_right["o1"].center[0])
-    if right_length > 0:
-        right_connection = c << straight(length=right_length, cross_section="cpw")
-        right_connection.connect("o1", cap_ref["o2"])
+    # Add etched end at the straights
+    etch_left = c << straight(length=6.0, cross_section="etch")
+    etch_right = c << straight(length=6.0, cross_section="etch")
+    etch_left.connect("o2", straight_left.ports["o1"], allow_layer_mismatch=True)
+    etch_right.connect("o1", straight_right.ports["o2"], allow_layer_mismatch=True)
 
     # Add simulation area layer around the layout
     c.kdb_cell.shapes(LAYER.SIM_AREA).insert(c.bbox().enlarged(50, 50))
 
-    # Add ports for external connections
-    c.add_ports(launcher_left.ports, prefix="left_")
-    c.add_ports(launcher_right.ports, prefix="right_")
+    # Add ports for marking capacitor terminals
+    c.add_port(name="M1_left", port=straight_left.ports["o1"])
+    c.add_port(name="M1_right", port=straight_right.ports["o2"])
 
     return c
-
-
-# %% [markdown]
-# ## Mock Capacitive Simulation Function
-#
-# Since the actual Palace simulation may not run due to system dependencies,
-# we create a mock function that simulates the capacitance extraction process.
-# In a real implementation, this would call `run_capacitive_simulation_palace`.
-
-
-# %%
-def _run_mock_capacitive_simulation(
-    component: gf.Component,  # noqa: ARG001
-    finger_length: float,
-    finger_gap: float,
-    thickness: float,
-) -> float:
-    """Mock capacitive simulation that estimates capacitance based on geometry.
-
-    This function provides a realistic but simplified capacitance model for
-    interdigital capacitors based on the geometric parameters. In practice,
-    this would be replaced by Palace electromagnetic simulation.
-
-    Args:
-        component: The gdsfactory component to simulate.
-        finger_length: Length of capacitor fingers in μm.
-        finger_gap: Gap between fingers in μm.
-        thickness: Thickness of fingers in μm.
-
-    Returns:
-        Estimated capacitance in fF (femtofarads).
-    """
-    # Simple analytical model for interdigital capacitor capacitance
-    # Based on parallel plate and fringing field contributions
-
-    # Constants for the material stack (typical values for superconducting qubits)
-    epsilon_r = 11.45  # Silicon relative permittivity
-    epsilon_0 = 8.854e-12  # F/m, vacuum permittivity
-
-    # Number of fingers is fixed at 5
-    n_fingers = 5
-
-    # Convert from μm to m for calculations
-    length_m = finger_length * 1e-6
-    gap_m = finger_gap * 1e-6
-    thickness_m = thickness * 1e-6
-
-    # Parallel plate capacitance between adjacent fingers
-    # C = ε₀ × ε_r × A / d where A is the overlap area
-    overlap_area = length_m * thickness_m  # Area of one finger face
-    n_gaps = n_fingers - 1  # Number of gaps between fingers
-
-    parallel_plate_cap = epsilon_0 * epsilon_r * overlap_area * n_gaps / gap_m
-
-    # Fringing field correction (empirical formula)
-    # Adds ~20-50% depending on geometry
-    fringing_factor = 1 + 0.3 * np.log(1 + thickness_m / gap_m)
-
-    # Total capacitance in Farads
-    total_cap_f = parallel_plate_cap * fringing_factor
-
-    # Convert to femtofarads (fF)
-    total_cap_ff = total_cap_f * 1e15
-
-    # Add some realistic noise/variation
-    rng = np.random.default_rng()
-    noise_factor = 1 + 0.05 * (rng.random() - 0.5)  # ±2.5% variation
-
-    return total_cap_ff * noise_factor
 
 
 # %% [markdown]
@@ -186,7 +97,7 @@ def _run_mock_capacitive_simulation(
 
 
 # %%
-def _objective_function(trial) -> float:
+def _objective_function(trial: optuna.trial.Trial) -> float:
     """Optuna objective function to optimize capacitor for target capacitance.
 
     Args:
@@ -195,8 +106,7 @@ def _objective_function(trial) -> float:
     Returns:
         Objective value (difference from target capacitance).
     """
-    # Target capacitance in fF
-    target_capacitance = 40.0
+    target_capacitance = 40.0  # in fF
 
     # Define parameter search space
     finger_length = trial.suggest_float("finger_length", 5.0, 50.0)  # μm
@@ -204,20 +114,15 @@ def _objective_function(trial) -> float:
     thickness = trial.suggest_float("thickness", 2.0, 10.0)  # μm
 
     try:
-        # Create the simulation layout
         c = capacitor_simulation(
             finger_length=finger_length,
             finger_gap=finger_gap,
             thickness=thickness,
         )
+        simulated_capacitance = _run_capacitive_simulation(c)
 
-        # Run mock simulation (in practice, this would be Palace)
-        simulated_capacitance = _run_mock_capacitive_simulation(
-            c, finger_length, finger_gap, thickness
-        )
-
-        # Calculate objective: minimize absolute difference from target
-        objective_value = abs(simulated_capacitance - target_capacitance)
+        # Calculate objective: minimize mean squared error from target capacitance
+        objective_value = (simulated_capacitance - target_capacitance) ** 2
 
         # Store additional info for analysis
         trial.set_user_attr("simulated_capacitance", simulated_capacitance)
@@ -226,25 +131,25 @@ def _objective_function(trial) -> float:
         return objective_value
 
     except Exception as e:
-        # Return large penalty for invalid geometries
         print(f"Trial failed with error: {e}")
         return 1000.0  # Large penalty value
 
 
 # %% [markdown]
-# ## Real Palace Simulation Setup (commented)
+# ## Palace imulation settings
 #
-# This section shows how the actual Palace simulation would be set up,
-# but is commented out since it requires system dependencies that may not be available.
+# This section shows how the Palace simulation is set up.
 
 
 # %%
-def _setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
+def _setup_palace_simulation() -> dict[str, Any]:
     """Setup configuration for Palace capacitive simulation.
 
-    This function demonstrates how to configure a real Palace simulation
-    for capacitance extraction. It's currently set up as a mock since
-    Palace requires system dependencies that may not be available.
+    The mesh_parameters section is provided as keyword arguments
+    to :func:`~meshwell.mesh.mesh`.
+
+    The mesh parameters here are not optimized but serve as a reasonable
+    starting point while demonstrating how te set up the mesh in different ways.
 
     Args:
         component: The gdsfactory component to simulate.
@@ -252,78 +157,53 @@ def _setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
     Returns:
         Dictionary with simulation configuration.
     """
-    from qpdk import PDK
-
-    # Material specifications for superconducting quantum devices
-    material_spec = {
-        "Si": {"relative_permittivity": 11.45},  # Silicon substrate
-        "Nb": {
-            "relative_permittivity": np.inf
-        },  # Superconducting metal (perfect conductor)
-        "vacuum": {"relative_permittivity": 1},  # Air/vacuum gaps
-    }
-
-    # Export 3D model for simulation
-    simulation_folder = Path().cwd() / "capacitor_simulation"
+    simulation_folder = PATH.simulation / "capacitor_simulation"
     simulation_folder.mkdir(exist_ok=True)
-
-    to_stl(
-        component,
-        simulation_folder / "capacitor.stl",
-        layer_stack=PDK.layer_stack,
-        hull_invalid_polygons=True,
-    )
 
     # Palace simulation configuration
     return {
-        "material_spec": material_spec,
+        "layer_stack": PDK.layer_stack,
+        "material_spec": material_properties,
         "simulation_folder": simulation_folder,
         "mesh_parameters": {
-            "background_tag": "vacuum",
-            "background_padding": (0,) * 5 + (200,),  # 200 μm padding in z
-            "port_names": [port.name for port in component.ports],
-            "default_characteristic_length": 50,  # μm
-            "resolutions": {
-                "M1": {"resolution": 5},  # Fine mesh on metal
-                "Silicon": {"resolution": 20},  # Coarser on substrate
-                "vacuum": {"resolution": 30},  # Coarsest in air
-                # Port-specific mesh refinement
-                **{
-                    f"M1__{port.name}": {
-                        "resolution": 3,
-                        "DistMax": 15,
-                        "DistMin": 2,
-                        "SizeMax": 8,
-                        "SizeMin": 1,
-                    }
-                    for port in component.ports
-                },
+            "default_characteristic_length": 30,  # μm
+            "resolution_specs": {
+                "M1@M1_left": [
+                    ExponentialField(
+                        sizemin=0.3, lengthscale=2, growth_factor=2.0, apply_to="curves"
+                    ),
+                    ConstantInField(resolution=0.3, apply_to="surfaces"),
+                ],
+                "M1@M1_right": [
+                    ExponentialField(
+                        sizemin=0.3, lengthscale=2, growth_factor=2.0, apply_to="curves"
+                    ),
+                    ConstantInField(resolution=0.3, apply_to="surfaces"),
+                ],
+                "M1": [ConstantInField(resolution=8.0, apply_to="volumes")],
+                "Substrate": [
+                    ConstantInField(resolution=5.0, apply_to="curves"),
+                    ConstantInField(resolution=8.0, apply_to="surfaces"),
+                    ConstantInField(resolution=15.0, apply_to="volumes"),
+                ],
+                "Vacuum": [
+                    ConstantInField(resolution=5.0, apply_to="curves"),
+                    ConstantInField(resolution=15.0, apply_to="surfaces"),
+                    ConstantInField(resolution=25.0, apply_to="volumes"),
+                ],
             },
+            "verbosity": 10,
         },
     }
 
 
-# Commented out real Palace simulation call:
-# def run_real_capacitive_simulation(component: gf.Component) -> float:
-#     """Run actual Palace capacitive simulation (requires system dependencies)."""
-#     from gplugins.palace import run_capacitive_simulation_palace
-#     from qpdk import PDK
-#
-#     config = setup_palace_simulation(component)
-#
-#     results = run_capacitive_simulation_palace(
-#         component,
-#         layer_stack=PDK.layer_stack,
-#         material_spec=config["material_spec"],
-#         simulation_folder=config["simulation_folder"],
-#         mesh_parameters=config["mesh_parameters"],
-#     )
-#
-#     # Extract capacitance from simulation results
-#     # This would depend on the specific format of Palace results
-#     capacitance_ff = extract_capacitance_from_results(results)
-#
-#     return capacitance_ff
+def _run_capacitive_simulation(component: gf.Component) -> float:
+    """Run Palace capacitive simulation (requires system dependencies)."""
+    from gplugins.palace import run_capacitive_simulation_palace
+
+    config = _setup_palace_simulation()
+    results = run_capacitive_simulation_palace(component, n_processes=4, **config)
+    return results.capacitance_matrix[tuple(p.name for p in component.ports)] * 1e15
 
 
 # %% [markdown]
@@ -334,12 +214,15 @@ def _setup_palace_simulation(component: gf.Component) -> dict[str, Any]:
 
 # %%
 if __name__ == "__main__":
-    import optuna
-
     from qpdk import PDK
 
-    # Activate the PDK
     PDK.activate()
+
+    # First ensure a single simulation runs correctly
+    c = capacitor_simulation()
+    c.show()
+    simulated_capacitance = _run_capacitive_simulation(c)
+    print(f"Single simulation capacitance: {simulated_capacitance:.3f} fF")
 
     # Create an Optuna study for minimization
     study = optuna.create_study(
@@ -351,13 +234,7 @@ if __name__ == "__main__":
     print("Target: 40 fF capacitance with 5 fingers")
     print("Optimizing: finger_length, finger_gap, thickness")
     print()
-
-    # Run optimization
-    n_trials = 50
-    study.optimize(_objective_function, n_trials=n_trials)
-
-    # Print results
-    print(f"\nOptimization completed after {n_trials} trials!")
+    study.optimize(_objective_function, n_trials=5, n_jobs=1, show_progress_bar=True)
 
     # Check if we have any successful trials
     successful_trials = [t for t in study.trials if t.value < 1000.0]
@@ -415,6 +292,8 @@ if __name__ == "__main__":
         print("(Component display not available in this environment)")
 
     # Save optimization history for analysis
+    if not PATH.simulation.exists():
+        PATH.simulation.mkdir()
     results_file = PATH.simulation / "capacitor_optimization_results.csv"
     study.trials_dataframe().to_csv(results_file, index=False)
     print(f"\nOptimization results saved to: {results_file}")
