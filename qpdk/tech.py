@@ -300,6 +300,10 @@ def coplanar_waveguide(
 
 
 cpw = coplanar_waveguide
+etch = etch_only = partial(
+    coplanar_waveguide,
+    waveguide_layer=LAYER.M1_ETCH,
+)
 
 
 @xsection
