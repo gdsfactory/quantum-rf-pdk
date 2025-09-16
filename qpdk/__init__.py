@@ -50,15 +50,6 @@ sample_functions = {
     if inspect.isfunction(obj)
     and not name.startswith("_")
     and obj.__module__ == modname
-    # Exclude optimization and utility functions that aren't component generators
-    and not any(excluded in name for excluded in [
-        "objective_function", 
-        "run_mock_capacitive_simulation",
-        "setup_palace_simulation", 
-        "create_optuna_study",
-        "demonstrate_mcp_workflow",
-        "mock_mcp_optimization_session"
-    ])
 }
 
 __all__ = [
