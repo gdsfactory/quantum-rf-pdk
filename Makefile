@@ -60,6 +60,7 @@ write-cells: ##@ Write cell outputs into documentation notebooks (used when buil
 copy-sample-notebooks: ##@ Copy all sample scripts to use as notebooks docs
 	mkdir -p docs/notebooks
 	cp qpdk/samples/resonator_frequency_model.py docs/notebooks/resonator_frequency_model.py
+	cp qpdk/samples/optimize_capacitor_optuna.py docs/notebooks/optimize_capacitor_optuna.py
 
 docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs
