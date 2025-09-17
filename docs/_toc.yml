@@ -12,4 +12,5 @@ parts:
   - caption: Notebooks
     chapters:
       - file: notebooks/resonator_frequency_model
+      - file: notebooks/optimize_capacitor_optuna
       - file: notebooks/scqubits_parameter_calculation

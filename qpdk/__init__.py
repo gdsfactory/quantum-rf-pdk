@@ -40,7 +40,7 @@ def get_pdk() -> Pdk:
 
 PDK = get_pdk()
 
-# Get all functions from qpdk.samples module
+# Get all functions from qpdk.samples module that are component generators
 sample_functions = {
     f"{modname}.{name}": obj
     for importer, modname, ispkg in pkgutil.walk_packages(
