@@ -31,7 +31,13 @@ dev = [
   "hypothesis"
 ]
 docs = ["jupytext", "matplotlib", "jupyter-book>=1.0.4,<2"]
-models = ["sax", "scikit-rf", "ray[tune]", "optuna"]
+models = [
+  "sax",
+  "scikit-rf",
+  "ray[tune]",
+  "optuna",
+  "gplugins[meshwell] @ git+https://github.com/gdsfactory/gplugins.git@770d835bb130a8118aa7b78edfb1cf76d31fd7f6"
+]
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun, Ue"
@@ -96,7 +102,8 @@ ignore = [
   "B008",  # do not perform function calls in argument defaults
   "C901",  # too complex
   "B905",  # `zip()` without an explicit `strict=` parameter
-  "C408"  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "RUF003"  # ambiguous unicode characters (incl. lots of math)
 ]
 select = [
   "E",  # pycodestyle errors

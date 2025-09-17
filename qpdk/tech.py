@@ -83,6 +83,9 @@ material_properties = {
     "vacuum": {"relative_permittivity": 1},
     "Nb": {"relative_permittivity": float("inf")},
     "Si": {"relative_permittivity": 11.45},
+    "AlOx/Al": {"relative_permittivity": float("inf")},
+    "TiN": {"relative_permittivity": float("inf")},
+    "In": {"relative_permittivity": float("inf")},
 }
 
 
@@ -112,7 +115,6 @@ def get_layer_stack() -> LayerStack:
                 thickness=200e-9 * 1e6,
                 zmin=0.0,  # top of substrate
                 material="Nb",
-                sidewall_angle=90.0,
                 mesh_order=1,
             ),
             "Substrate": LayerLevel(
@@ -121,7 +123,6 @@ def get_layer_stack() -> LayerStack:
                 thickness=500,  # 500 microns of silicon
                 zmin=-500,  # below metal
                 material="Si",
-                sidewall_angle=90.0,
                 mesh_order=4,
             ),
             "Vacuum": LayerLevel(
@@ -130,7 +131,6 @@ def get_layer_stack() -> LayerStack:
                 thickness=500e-6 * 1e6,  # 500 microns of vacuum above metal
                 zmin=200e-9 * 1e6,  # above metal
                 material="vacuum",
-                sidewall_angle=90.0,
                 mesh_order=99,
             ),
             # Airbridge metal sitting above M1 (example: +300 nm)
@@ -140,7 +140,6 @@ def get_layer_stack() -> LayerStack:
                 thickness=200e-9 * 1e6,
                 zmin=300e-9 * 1e6,  # stacked above via
                 material="Nb",
-                sidewall_angle=90.0,
             ),
             "Airbridge_Via": LayerLevel(
                 name="Airbridge_Via",
@@ -148,7 +147,6 @@ def get_layer_stack() -> LayerStack:
                 thickness=100e-9 * 1e6,
                 zmin=200e-9 * 1e6,  # stacked above M1
                 material="Nb",
-                sidewall_angle=90.0,
             ),
             # JJ_AREA can be exported as a thin film if you use it in EM
             "JosephsonJunction": LayerLevel(
@@ -157,7 +155,6 @@ def get_layer_stack() -> LayerStack:
                 thickness=70e-9,
                 zmin=0,
                 material="AlOx/Al",
-                sidewall_angle=90.0,
                 mesh_order=2,
             ),
             "TSV": LayerLevel(
@@ -166,7 +163,6 @@ def get_layer_stack() -> LayerStack:
                 thickness=500,  # full substrate thickness
                 zmin=-500,  # starting at bottom
                 material="TiN",
-                sidewall_angle=90.0,
                 mesh_order=3,
             ),
             "IndiumBump": LayerLevel(
@@ -175,7 +171,6 @@ def get_layer_stack() -> LayerStack:
                 thickness=10,  # 10 microns
                 zmin=200e-9 * 1e6,  # stacked above M1
                 material="In",
-                sidewall_angle=90.0,
                 mesh_order=3,
             ),
         }
@@ -203,7 +198,6 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
             thickness=0.2,
             zmin=10.0,
             material="Nb",
-            sidewall_angle=90.0,
             mesh_order=1,
         ),
         "Substrate_top": LayerLevel(
@@ -212,7 +206,6 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
             thickness=500,  # 500 microns of silicon
             zmin=10.2,  # below metal
             material="Si",
-            sidewall_angle=90.0,
             mesh_order=4,
         ),
     }
@@ -307,6 +300,10 @@ def coplanar_waveguide(
 
 
 cpw = coplanar_waveguide
+etch = etch_only = partial(
+    coplanar_waveguide,
+    waveguide_layer=LAYER.M1_ETCH,
+)
 
 
 @xsection
