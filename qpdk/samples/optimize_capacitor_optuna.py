@@ -212,7 +212,13 @@ def _run_capacitive_simulation(component: gf.Component) -> float:
 # Run the optimization study using Optuna to find parameters that achieve
 # the target capacitance of 40 fF.
 
-# %%
+# %% [markdown]
+#
+# This section is not run in the documentation because Palace
+# requires an installation and the optimization may take time.
+#
+# ```python
+#
 if __name__ == "__main__":
     from qpdk import PDK
 
@@ -297,3 +303,5 @@ if __name__ == "__main__":
     results_file = PATH.simulation / "capacitor_optimization_results.csv"
     study.trials_dataframe().to_csv(results_file, index=False)
     print(f"\nOptimization results saved to: {results_file}")
+
+# ```
