@@ -39,6 +39,7 @@ sphinx:
     - "sphinx.ext.autosummary"
     - "sphinx.ext.napoleon"
     - "sphinx.ext.viewcode"
+    - "sphinxcontrib.katex"
     - "matplotlib.sphinxext.plot_directive"
   config:
     autodoc_type_aliases:

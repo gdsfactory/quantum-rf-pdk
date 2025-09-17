@@ -30,7 +30,7 @@ dev = [
   "pytest-github-actions-annotate-failures",
   "hypothesis"
 ]
-docs = ["jupytext", "matplotlib", "jupyter-book>=1.0.4,<2"]
+docs = ["jupytext", "matplotlib", "jupyter-book>=1.0.4,<2", "sphinxcontrib-katex"]
 models = [
   "sax",
   "scikit-rf",
