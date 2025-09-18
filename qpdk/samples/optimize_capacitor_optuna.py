@@ -15,7 +15,7 @@
 # to achieve a target capacitance of 40 fF. The optimization is constrained to
 # use exactly 5 interdigital fingers.
 
-# %%
+# %% tags=["hide-input", "hide-output"]
 
 from typing import Any
 

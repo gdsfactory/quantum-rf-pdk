@@ -13,7 +13,7 @@
 #
 # This example demonstrates estimating resonance frequencies of superconducting microwave resonators using scikit-rf and Jax.
 
-# %%
+# %% tags=["hide-input", "hide-output"]
 import math
 import os
 from functools import partial

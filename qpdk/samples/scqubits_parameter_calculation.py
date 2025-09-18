@@ -11,17 +11,21 @@
 # %% [markdown]
 # # Superconducting Qubit Parameter Calculations with scqubits
 #
-# This example demonstrates how to use [scqubits](https://scqubits.readthedocs.io/en/latest/) to calculate
+# This example demonstrates how to use [scqubits](https://scqubits.readthedocs.io/en/latest/) {cite:p}`groszkowskiScqubitsPythonPackage2021` to calculate
 # parameters for superconducting qubits and coupled resonators. The calculations help determine
 # physical parameters like capacitances and coupling strengths needed for component design.
 
-
-# %%
+# %% tags=["hide-input", "hide-output"]
 import numpy as np
 import pandas as pd
 import scipy
 import scqubits as scq
+import skrf
+import sympy as sp
 from IPython.display import Math, display
+from matplotlib import pyplot as plt
+
+from qpdk.models.resonator import cpw_media_skrf, resonator_frequency
 
 # %% [markdown]
 # ## TunableTransmon Qubit Parameters
@@ -73,18 +77,21 @@ display(
 """)
 )
 
-# Resonator (Oscillator) Parameters
-resonator = scq.Oscillator(
-    E_osc=6.5,  # Resonator frequency in GHz (typical range: 4–8 GHz)
-)
+# %% [markdown]
+# ## Parameter Sweep: Flux Dependence
+#
+# Demonstrate how the qubit frequency changes with external flux.
+#
+# For more details, see the [scqubits-examples repository](https://github.com/scqubits/scqubits-examples)
 
-display(
-    Math(rf"""
-\textbf{{Resonator Parameters:}} \\
-\text{{Frequency}}:\ \ {resonator.E_osc:.1f}\ \text{{GHz}} \\
-""")
+# %%
+# Sweep flux and calculate qubit frequency
+transmon.plot_evals_vs_paramvals(
+    "flux", np.linspace(-1.1, 1.1, 201), subtract_ground=True
 )
-
+plt.show()
+transmon.plot_wavefunction(esys=None, which=(0, 1, 2, 3, 8), mode="real")
+plt.show()
 
 # %% [markdown]
 # ## Coupled Qubit-Resonator System
@@ -102,7 +109,21 @@ display(
 # The coupling strength $g$ depends on the overlap between
 # the qubit and resonator modes and affects the system dynamics.
 
+
 # %%
+
+# Resonator (Oscillator) Parameters
+resonator = scq.Oscillator(
+    E_osc=6.5,  # Resonator frequency in GHz (typical range: 4–8 GHz)
+)
+
+display(
+    Math(rf"""
+\textbf{{Resonator Parameters:}} \\
+\text{{Frequency}}:\ \ {resonator.E_osc:.1f}\ \text{{GHz}} \\
+""")
+)
+
 # Create a coupled system using HilbertSpace
 hilbert_space = scq.HilbertSpace([transmon, resonator])
 
@@ -131,21 +152,20 @@ print(f"  Coupled system ground state: {coupled_eigenvals[0]:.3f} GHz")
 # From the quantum model, we can extract physical parameters relevant for PDK design.
 #
 # The coupling strength $g$ (in the dispersive limit $g\ll \omega_q, \omega_r$) can be related to a coupling capacitance $C_c$ via {cite:p}`Savola2023`:
-# ```{math}
+# ```{align}
 # :label: eq:coupling-capacitance
-# g \approx \frac{1}{2} \frac{C_\text{c}}{\sqrt{C_{\Sigma} \left( C_\text{r} - \frac{C_\text{qr}^2}{C_\text{q}} \right) }}  \sqrt{\omega_\text{q}\omega_\text{r}}
+# g &\approx \frac{1}{2} \frac{C_\text{c}}{\sqrt{C_{\Sigma} \left( C_\text{r} - \frac{C_\text{c}^2}{C_\text{q}} \right) }}  \sqrt{\omega_\text{q}\omega_\text{r}}
+# &\approx \frac{1}{2} \frac{C_\text{c}}{\sqrt{C_{\Sigma} C_\text{r}}}  \sqrt{\omega_\text{q}\omega_\text{r}}, \quad \text{for } C_\text{c} \ll C_\text{q}
 # ```
-# where $C_\Sigma$ is the total qubit capacitance, and $C_r$ is the resonator capacitance.
+# where $C_\Sigma$ is the total qubit capacitance, $C_{\text{q}}$ is the capacitance between the qubit pads, and $C_r$ is the total capacitance of the resonator.
 
 # %%
 # Calculate physical capacitance
-# The charging energy EC = e²/(2C_total), so C_total = e²/(2*EC)
-e_charge = scipy.constants.e  # Elementary charge
-h_planck = scipy.constants.h  # Planck's constant
-EC_joules = transmon.EC * 1e9 * h_planck  # Convert GHz to Joules
+# The charging energy EC = e²/(2C_total), so C_Σ = e²/(2*EC)
+EC_joules = transmon.EC * 1e9 * scipy.constants.h  # Convert GHz to Joules
 
 # Total capacitance of the transmon
-C_Σ = e_charge**2 / (2 * EC_joules)
+C_Σ = scipy.constants.e**2 / (2 * EC_joules)
 
 # Josephson inductance - use typical realistic value
 # For EJ ~ 40 GHz, typical LJ ~ 0.8-1.0 nH
@@ -153,61 +173,78 @@ C_Σ = e_charge**2 / (2 * EC_joules)
 LJ_typical = 1.0e-9 * (25.0 / transmon.EJmax)  # Typical scaling
 
 # Compute coupling capacitance from coupling strength
-C_coupling_typical = 5.0e-15  # TODO NOT ONLY ESTIMATE
-# C_coupling_typical = (g_coupling / f01) * C_total  # Rough estimate
+C_c_sym, C_Σ_sym, C_r_sym, omega_q_sym, omega_r_sym, g_sym = sp.symbols(
+    "C_c C_Σ C_r omega_q omega_r g", real=True, positive=True
+)
+equation = sp.Eq(
+    g_sym,
+    0.5 * (C_c_sym / sp.sqrt(C_Σ_sym * C_r_sym)) * sp.sqrt(omega_q_sym * omega_r_sym),
+)
+solution = sp.solve(equation, C_c_sym)
+C_c_sol = next(sol for sol in solution if sol.is_real and sol > 0)
+display(Math(f"C_\\text{{c}} = {sp.latex(C_c_sol)}"))
 
+
+# Use a typical value for resonator capacitance to ground
+resonator_media = cpw_media_skrf(width=10, gap=6)(
+    frequency=skrf.Frequency.from_f([5], unit="GHz")
+)
+
+
+def _objective(length: float) -> float:
+    """Find resonator length for target frequency using SciPy."""
+    freq = resonator_frequency(
+        length=length, media=resonator_media, is_quarter_wave=True
+    )
+    return (freq - resonator.E_osc * 1e9) ** 2  # MSE
+
+
+length_initial = 4000.0  # Initial guess in µm
+result = scipy.optimize.minimize(_objective, length_initial, bounds=[(1000, 20000)])
+length = result.x[0]
+print(
+    f"Optimization success: {result.success}, message: {result.message}, nfev: {result.nfev}"
+)
+display(
+    Math(
+        f"\\textrm{{Resonator length at width 10 µm and gap 6 µm}}\\,{resonator.E_osc:.1f}\\,\\mathrm{{GHz}}: {length:.1f}\\,\\mathrm{{µm}}"
+    )
+)
+
+# %% [markdown]
+#
+# The total capacitance of the resonator can be estimated from its characteristic impedance
+# $Z_0$ and phase velocity $v_p$ as {cite:p}`gopplCoplanarWaveguideResonators2008a`:
+# ```{math}
+# :label: eq:resonator-capacitance
+# C_r = \frac{l}{\mathrm{Re}(Z_0 v_p)}
+# ```
+# where $l$ is the resonator length.
+
+# %%
+# Get total capacitance to ground of the resonator (in isolation, we disregard effect of coupling to qubits)
+C_r = 1 / np.real(resonator_media.z0 * resonator_media.v_p).mean() * length * 1e-6  # F
+
+# Substitute and evaluate numerically
+C_c_num = C_c_sol.subs(
+    {
+        g_sym: g_coupling,
+        C_Σ_sym: C_Σ,
+        C_r_sym: C_r,
+        omega_q_sym: f01,
+        omega_r_sym: resonator.E_osc,
+    }
+).evalf()
 
 display(
     Math(rf"""
 \textbf{{Physical Parameters for PDK Design:}}\\
 \text{{Total qubit capacitance:}}~{C_Σ * 1e15:.1f}~\mathrm{{fF}}\\
 \text{{Josephson inductance:}}~{LJ_typical * 1e9:.2f}~\mathrm{{nH}}\\
-\text{{Estimated coupling capacitance:}}~{C_coupling_typical * 1e15:.1f}~\mathrm{{fF}}
+\text{{Estimated qubit–resonator coupling capacitance:}}~{C_c_num * 1e15:.1f}~\mathrm{{fF}}
 """)
 )
 
-# %% [markdown]
-# ## Parameter Sweep: Flux Dependence
-#
-# Demonstrate how the qubit frequency changes with external flux, which is crucial
-# for understanding tunable transmon behavior.
-
-# %%
-# Sweep flux and calculate qubit frequency
-flux_values = np.linspace(0, 0.5, 51)
-frequencies_01 = []
-frequencies_12 = []
-
-for flux in flux_values:
-    transmon.flux = flux
-    eigenvals = transmon.eigenvals(evals_count=3)
-    frequencies_01.append(eigenvals[1] - eigenvals[0])
-    frequencies_12.append(eigenvals[2] - eigenvals[1])
-
-# Reset flux to 0
-transmon.flux = 0.0
-
-# Plot the results
-# plt.figure(figsize=(10, 6))
-# plt.subplot(1, 2, 1)
-# plt.plot(flux_values, frequencies_01, "b-", linewidth=2, label="01 transition")
-# plt.plot(flux_values, frequencies_12, "r--", linewidth=2, label="12 transition")
-# plt.xlabel("External Flux (Φ₀)")
-# plt.ylabel("Transition Frequency (GHz)")
-# plt.title("Tunable Transmon Spectrum vs Flux")
-# plt.legend()
-# plt.grid(True, alpha=0.3)
-#
-# plt.subplot(1, 2, 2)
-# anharmonicity_vs_flux = np.array(frequencies_12) - np.array(frequencies_01)
-# plt.plot(flux_values, anharmonicity_vs_flux, "g-", linewidth=2)
-# plt.xlabel("External Flux (Φ₀)")
-# plt.ylabel("Anharmonicity (GHz)")
-# plt.title("Anharmonicity vs Flux")
-# plt.grid(True, alpha=0.3)
-#
-# plt.tight_layout()
-# plt.show()
 
 # %% [markdown]
 # ## Design Recommendations
@@ -228,15 +265,11 @@ pdk_df = pd.DataFrame(
         },
         {
             "Section": "Coupling Elements",
-            "Details": f"Target coupling strength: {g_coupling:.3f} GHz\nEstimated coupling capacitance: {C_coupling_typical * 1e15:.1f} fF (typical value)\nAdjust gap/overlap in coupling capacitor design",
+            "Details": f"Target coupling strength: {g_coupling:.3f} GHz\nEstimated coupling capacitance: {C_c_num * 1e15:.1f} fF (typical value)\nAdjust gap/overlap in coupling capacitor design",
         },
         {
             "Section": "Frequency Targets",
             "Details": f"Qubit frequency: {f01:.3f} GHz\nResonator frequency: {resonator.E_osc:.1f} GHz\nDetuning: {abs(f01 - resonator.E_osc):.3f} GHz",
-        },
-        {
-            "Section": "Tunability Range",
-            "Details": f"Frequency range: {min(frequencies_01):.3f} - {max(frequencies_01):.3f} GHz\nTuning range: {max(frequencies_01) - min(frequencies_01):.3f} GHz",
         },
     ]
 )
