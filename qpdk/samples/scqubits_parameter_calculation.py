@@ -254,3 +254,10 @@ print(f"   - Tuning range: {max(frequencies_01) - min(frequencies_01):.3f} GHz")
 #
 # The scqubits calculations provide the quantum mechanical foundation for
 # translating circuit parameters into physical geometries in the PDK.
+
+# %% [markdown]
+# ## References
+#
+# ```{bibliography}
+# :filter: docname in docnames
+# ```
