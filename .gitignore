@@ -6,7 +6,7 @@ Pipfile
 
 docs/cells.rst
 docs/samples.rst
-docs/notebooxs/*.py
+docs/notebooks/
 
 # C extensions
 *.so
