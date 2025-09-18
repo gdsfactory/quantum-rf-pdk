@@ -83,3 +83,17 @@ repos:
     rev: v1.0.0
     hooks:
       - id: sphinx-lint
+  - repo: https://github.com/igorshubovych/markdownlint-cli2
+    rev: v0.16.0
+    hooks:
+      - id: markdownlint-cli2
+        name: markdownlint
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.8.1
+    hooks:
+      - id: mdformat
+        args: [--wrap=120]
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-frontmatter
+          - mdformat-footnote
