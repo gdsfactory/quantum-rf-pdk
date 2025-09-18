@@ -1,22 +1,18 @@
 # Configuration for markdownlint-cli2
 # https://github.com/DavidAnson/markdownlint-cli2
-
 config:
   # Increase line length limit from default 80 to 120
   MD013:
     line_length: 120
     heading_line_length: 120
     code_block_line_length: 120
-  
   # Allow punctuation in headings (useful for project names with versions)
   MD026: false
-  
   # Disable first-line-h1 rule for docs files that use includes
   MD041: false
-
 # Ignore specific files or patterns
 ignores:
-  - "docs/index.md"    # Uses include directive
+  - "docs/index.md" # Uses include directive
   - "docs/changelog.md" # Uses include directive
   - ".venv/**"
   - "**/.venv/**"
