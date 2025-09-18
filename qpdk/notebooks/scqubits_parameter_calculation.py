@@ -17,7 +17,6 @@
 
 # %% tags=["hide-input", "hide-output"]
 import numpy as np
-import pandas as pd
 import scipy
 import scqubits as scq
 import skrf
@@ -241,52 +240,10 @@ display(
 \textbf{{Physical Parameters for PDK Design:}}\\
 \text{{Total qubit capacitance:}}~{C_Σ * 1e15:.1f}~\mathrm{{fF}}\\
 \text{{Josephson inductance:}}~{LJ_typical * 1e9:.2f}~\mathrm{{nH}}\\
-\text{{Estimated qubit–resonator coupling capacitance:}}~{C_c_num * 1e15:.1f}~\mathrm{{fF}}
+\text{{Estimated target qubit–resonator coupling capacitance:}}~{C_c_num * 1e15:.1f}~\mathrm{{fF}}
 """)
 )
 
-
-# %% [markdown]
-# ## Design Recommendations
-#
-# Based on the calculations above, here are parameter recommendations for PDK components:
-
-# %%
-
-pdk_df = pd.DataFrame(
-    [
-        {
-            "Section": "Transmon Pad Capacitance",
-            "Details": f"Target total capacitance: {C_Σ * 1e15:.1f} fF\nDetermines pad size and geometry",
-        },
-        {
-            "Section": "Junction Parameters",
-            "Details": f"Target EJmax: {transmon.EJmax:.1f} GHz\nJunction area scales with EJ\nAsymmetry parameter d = {transmon.d:.2f}",
-        },
-        {
-            "Section": "Coupling Elements",
-            "Details": f"Target coupling strength: {g_coupling:.3f} GHz\nEstimated coupling capacitance: {C_c_num * 1e15:.1f} fF (typical value)\nAdjust gap/overlap in coupling capacitor design",
-        },
-        {
-            "Section": "Frequency Targets",
-            "Details": f"Qubit frequency: {f01:.3f} GHz\nResonator frequency: {resonator.E_osc:.1f} GHz\nDetuning: {abs(f01 - resonator.E_osc):.3f} GHz",
-        },
-    ]
-)
-display(pdk_df.style.hide(axis="index"))
-
-# %% [markdown]
-# ## Connection to PDK Components
-#
-# These calculated parameters directly inform the design of PDK components:
-#
-# 1. **Double Pad Transmon**: The total capacitance determines pad dimensions
-# 2. **Junction Components**: EJmax determines junction area and critical current
-# 3. **Coupling Capacitors**: Coupling strength determines gap size and finger count
-# 4. **Resonator Design**: Frequency sets the resonator length and impedance
-#
-# The scqubits calculations provide the quantum mechanical foundation for
-# translating circuit parameters into physical geometries in the PDK.
 
 # %% [markdown]
 # ## References

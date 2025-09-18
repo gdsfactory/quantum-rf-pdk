@@ -30,14 +30,19 @@ dev = [
   "pytest-github-actions-annotate-failures",
   "hypothesis"
 ]
-docs = ["jupytext", "matplotlib", "jupyter-book>=1.0.4,<2", "sphinxcontrib-katex"]
+docs = [
+  "jupytext",
+  "matplotlib",
+  "jupyter-book>=1.0.4,<2",
+  "sphinxcontrib-katex"
+]
 models = [
   "gplugins[meshwell] @ git+https://github.com/gdsfactory/gplugins.git@770d835bb130a8118aa7b78edfb1cf76d31fd7f6",
   "optuna",
   "ray[tune]",
   "sax",
   "scikit-rf",
-  "scqubits[gui]",
+  "scqubits",
   "sympy"
 ]
 
@@ -75,7 +80,8 @@ project-excludes = [
   "*.egg-info/**",
   ".venv/**",
   # Exclude samples that may have experimental code
-  "qpdk/samples/**/*.py"
+  "qpdk/samples/**/*.py",
+  "qpdk/notebooks/**/*.py"
 ]
 project-includes = ["**/*.py"]
 
@@ -136,6 +142,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
+"qpdk/notebooks/**/*.py" = ["D100"]
 "qpdk/samples/**/*.py" = [
   "D100"
 ]  # no public module docstring for sample scripts
