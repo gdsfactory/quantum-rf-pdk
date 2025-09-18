@@ -17,8 +17,8 @@
 
 
 # %%
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scipy
 import scqubits as scq
 from IPython.display import Math, display
@@ -26,13 +26,15 @@ from IPython.display import Math, display
 # %% [markdown]
 # ## TunableTransmon Qubit Parameters
 #
-# A tunable transmon qubit has a SQUID junction that allows tuning the effective Josephson energy
+# A tunable transmon qubit {cite:p}`kochChargeinsensitiveQubitDesign2007a` has a SQUID junction that allows tuning the effective Josephson energy
 # through an external flux. Key parameters include:
 # - $E_{\text{J}_\text{max}}$: Maximum Josephson energy when flux = 0
 # - $E_\text{C}$: Charging energy, related to total capacitance as $E_\text{C} = \dfrac{e^2}{2C_\Sigma}$
 # - $d$: Asymmetry parameter between the two junctions in the SQUID
 # - $\phi$: External flux in units of flux quantum $\phi_0$
 # - $\alpha$: Anharmonicity, the difference between the $E_{1→2}$ and $E_{0→1}$ transition frequencies
+#
+# See the [scqubits documentation](https://scqubits.readthedocs.io/en/latest/guide/qubits/tunable_transmon.html) for more details.
 
 # %%
 # Create a tunable transmon with realistic parameters
@@ -88,7 +90,7 @@ display(
 # ## Coupled Qubit-Resonator System
 #
 # When a transmon is coupled to a resonator, the interaction can be described by
-# the Jaynes-Cummings model:
+# the Jaynes-Cummings model {cite:p}`shoreJaynesCummingsModel1993` :
 # ```{math}
 # :label: eq:jaynes-cummings
 # \mathcal{H} = \omega_r a^{\dagger} a + \frac{\omega_q}{2} \sigma_z + g (a^{\dagger} \sigma^- + a \sigma^+),
@@ -124,26 +126,26 @@ coupled_eigenvals = hilbert_space.eigenvals(evals_count=10)
 print(f"  Coupled system ground state: {coupled_eigenvals[0]:.3f} GHz")
 
 # %% [markdown]
-# ## Physical Parameter Extraction
+# ## Physical (Lumped-element) Parameter Extraction
 #
 # From the quantum model, we can extract physical parameters relevant for PDK design.
 #
-# The coupling strength $g$ (in the dispersive limit $g\ll \omega_q, \omega_r$) can be related to a coupling capacitance $C_c$ via :cite:`Savola2023`:
+# The coupling strength $g$ (in the dispersive limit $g\ll \omega_q, \omega_r$) can be related to a coupling capacitance $C_c$ via {cite:p}`Savola2023`:
 # ```{math}
 # :label: eq:coupling-capacitance
-# g &\approx \frac{1}{2} \frac{C_\text{c}}{\sqrt{C_{\Sigma} \left( C_\text{r} - \frac{C_\text{qr}^2}{C_\text{q}} \right) }}  \sqrt{\omega_\text{q}\omega_\text{r}}
+# g \approx \frac{1}{2} \frac{C_\text{c}}{\sqrt{C_{\Sigma} \left( C_\text{r} - \frac{C_\text{qr}^2}{C_\text{q}} \right) }}  \sqrt{\omega_\text{q}\omega_\text{r}}
 # ```
 # where $C_\Sigma$ is the total qubit capacitance, and $C_r$ is the resonator capacitance.
 
 # %%
-# Calculate physical capacitances
+# Calculate physical capacitance
 # The charging energy EC = e²/(2C_total), so C_total = e²/(2*EC)
 e_charge = scipy.constants.e  # Elementary charge
 h_planck = scipy.constants.h  # Planck's constant
 EC_joules = transmon.EC * 1e9 * h_planck  # Convert GHz to Joules
 
 # Total capacitance of the transmon
-C_total = e_charge**2 / (2 * EC_joules)
+C_Σ = e_charge**2 / (2 * EC_joules)
 
 # Josephson inductance - use typical realistic value
 # For EJ ~ 40 GHz, typical LJ ~ 0.8-1.0 nH
@@ -152,13 +154,13 @@ LJ_typical = 1.0e-9 * (25.0 / transmon.EJmax)  # Typical scaling
 
 # Compute coupling capacitance from coupling strength
 C_coupling_typical = 5.0e-15  # TODO NOT ONLY ESTIMATE
-C_coupling_typical = (g_coupling / f01) * C_total  # Rough estimate
+# C_coupling_typical = (g_coupling / f01) * C_total  # Rough estimate
 
 
 display(
     Math(rf"""
 \textbf{{Physical Parameters for PDK Design:}}\\
-\text{{Total qubit capacitance:}}~{C_total * 1e15:.1f}~\mathrm{{fF}}\\
+\text{{Total qubit capacitance:}}~{C_Σ * 1e15:.1f}~\mathrm{{fF}}\\
 \text{{Josephson inductance:}}~{LJ_typical * 1e9:.2f}~\mathrm{{nH}}\\
 \text{{Estimated coupling capacitance:}}~{C_coupling_typical * 1e15:.1f}~\mathrm{{fF}}
 """)
@@ -186,26 +188,26 @@ for flux in flux_values:
 transmon.flux = 0.0
 
 # Plot the results
-plt.figure(figsize=(10, 6))
-plt.subplot(1, 2, 1)
-plt.plot(flux_values, frequencies_01, "b-", linewidth=2, label="01 transition")
-plt.plot(flux_values, frequencies_12, "r--", linewidth=2, label="12 transition")
-plt.xlabel("External Flux (Φ₀)")
-plt.ylabel("Transition Frequency (GHz)")
-plt.title("Tunable Transmon Spectrum vs Flux")
-plt.legend()
-plt.grid(True, alpha=0.3)
-
-plt.subplot(1, 2, 2)
-anharmonicity_vs_flux = np.array(frequencies_12) - np.array(frequencies_01)
-plt.plot(flux_values, anharmonicity_vs_flux, "g-", linewidth=2)
-plt.xlabel("External Flux (Φ₀)")
-plt.ylabel("Anharmonicity (GHz)")
-plt.title("Anharmonicity vs Flux")
-plt.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+# plt.figure(figsize=(10, 6))
+# plt.subplot(1, 2, 1)
+# plt.plot(flux_values, frequencies_01, "b-", linewidth=2, label="01 transition")
+# plt.plot(flux_values, frequencies_12, "r--", linewidth=2, label="12 transition")
+# plt.xlabel("External Flux (Φ₀)")
+# plt.ylabel("Transition Frequency (GHz)")
+# plt.title("Tunable Transmon Spectrum vs Flux")
+# plt.legend()
+# plt.grid(True, alpha=0.3)
+#
+# plt.subplot(1, 2, 2)
+# anharmonicity_vs_flux = np.array(frequencies_12) - np.array(frequencies_01)
+# plt.plot(flux_values, anharmonicity_vs_flux, "g-", linewidth=2)
+# plt.xlabel("External Flux (Φ₀)")
+# plt.ylabel("Anharmonicity (GHz)")
+# plt.title("Anharmonicity vs Flux")
+# plt.grid(True, alpha=0.3)
+#
+# plt.tight_layout()
+# plt.show()
 
 # %% [markdown]
 # ## Design Recommendations
@@ -213,34 +215,32 @@ plt.show()
 # Based on the calculations above, here are parameter recommendations for PDK components:
 
 # %%
-print("PDK Design Recommendations:")
-print("=" * 50)
-print("1. Transmon Pad Capacitance:")
-print(f"   - Target total capacitance: {C_total * 1e15:.1f} fF")
-print("   - This determines pad size and geometry")
-print("")
-print("2. Junction Parameters:")
-print(f"   - Target EJmax: {transmon.EJmax:.1f} GHz")
-print("   - Junction area scales with EJ")
-print(f"   - Asymmetry parameter d = {transmon.d:.2f}")
-print("")
-print("3. Coupling Elements:")
-print(f"   - Target coupling strength: {g_coupling:.3f} GHz")
-print(
-    f"   - Estimated coupling capacitance: {C_coupling_typical * 1e15:.1f} fF (typical value)"
+
+pdk_df = pd.DataFrame(
+    [
+        {
+            "Section": "Transmon Pad Capacitance",
+            "Details": f"Target total capacitance: {C_Σ * 1e15:.1f} fF\nDetermines pad size and geometry",
+        },
+        {
+            "Section": "Junction Parameters",
+            "Details": f"Target EJmax: {transmon.EJmax:.1f} GHz\nJunction area scales with EJ\nAsymmetry parameter d = {transmon.d:.2f}",
+        },
+        {
+            "Section": "Coupling Elements",
+            "Details": f"Target coupling strength: {g_coupling:.3f} GHz\nEstimated coupling capacitance: {C_coupling_typical * 1e15:.1f} fF (typical value)\nAdjust gap/overlap in coupling capacitor design",
+        },
+        {
+            "Section": "Frequency Targets",
+            "Details": f"Qubit frequency: {f01:.3f} GHz\nResonator frequency: {resonator.E_osc:.1f} GHz\nDetuning: {abs(f01 - resonator.E_osc):.3f} GHz",
+        },
+        {
+            "Section": "Tunability Range",
+            "Details": f"Frequency range: {min(frequencies_01):.3f} - {max(frequencies_01):.3f} GHz\nTuning range: {max(frequencies_01) - min(frequencies_01):.3f} GHz",
+        },
+    ]
 )
-print("   - Adjust gap/overlap in coupling capacitor design")
-print("")
-print("4. Frequency Targets:")
-print(f"   - Qubit frequency: {f01:.3f} GHz")
-print(f"   - Resonator frequency: {resonator.E_osc:.1f} GHz")
-print(f"   - Detuning: {abs(f01 - resonator.E_osc):.3f} GHz")
-print("")
-print("5. Tunability Range:")
-print(
-    f"   - Frequency range: {min(frequencies_01):.3f} - {max(frequencies_01):.3f} GHz"
-)
-print(f"   - Tuning range: {max(frequencies_01) - min(frequencies_01):.3f} GHz")
+display(pdk_df.style.hide(axis="index"))
 
 # %% [markdown]
 # ## Connection to PDK Components
