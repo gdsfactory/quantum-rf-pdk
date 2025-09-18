@@ -28,7 +28,7 @@ with Path(filepath_cells).open("w+") as f:
         """
 
 Cells QPDK
-=============================
+==========
 """
     )
 
@@ -80,6 +80,9 @@ Cells QPDK
 
     f.write(
         textwrap.dedent("""
+            References
+            ==========
+
             .. bibliography::
                :filter: docname in docnames
                """)
@@ -89,7 +92,7 @@ with Path(filepath_samples).open("w+") as f:
     f.write(
         """
 Samples
-=============================
+=======
 """
     )
 
@@ -142,6 +145,9 @@ Samples
 
     f.write(
         textwrap.dedent("""
+            References
+            ==========
+
             .. bibliography::
                :filter: docname in docnames
                """)
