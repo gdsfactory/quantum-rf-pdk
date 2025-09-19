@@ -7,4 +7,5 @@ or converted to Jupyter Notebooks with:
 uvx jupytext --to ipynb <script>.py
 ```
 
-> [!IMPORTANT] Keep the scripts here out of the import scope of the package.
+> [!IMPORTANT]
+> Keep the scripts here out of the import scope of the package.

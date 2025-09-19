@@ -96,5 +96,7 @@ repos:
         args: [--wrap=120]
         additional_dependencies:
           - mdformat-gfm
+          - mdformat-gfm-alerts
+          - mdformat-tables
           - mdformat-frontmatter
           - mdformat-footnote
