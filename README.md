@@ -2,12 +2,13 @@
 
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
-[![HTML Docs](https://img.shields.io/badge/📄_HTML-Docs-blue?style=flat)](https://gdsfactory.github.io/quantum-rf-pdk/)
-[![PDF Docs](https://img.shields.io/badge/📄_PDF-Docs-blue?style=flat&logo=adobeacrobatreader)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
+[![HTML Docs](https://img.shields.io/badge/%F0%9F%93%84_HTML-Docs-blue?style=flat)](https://gdsfactory.github.io/quantum-rf-pdk/)
+[![PDF Docs](https://img.shields.io/badge/%F0%9F%93%84_PDF-Docs-blue?style=flat&logo=adobeacrobatreader)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD)
 [![MIT](https://img.shields.io/github/license/gdsfactory/quantum-rf-pdk)](https://choosealicense.com/licenses/mit/)
 
-A generic process design kit (PDK) for superconducting quantum RF applications based on [gdsfactory](https://gdsfactory.github.io/gdsfactory/).
+A generic process design kit (PDK) for superconducting quantum RF applications based on
+[gdsfactory](https://gdsfactory.github.io/gdsfactory/).
 
 ## Installation
 
