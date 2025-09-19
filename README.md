@@ -32,7 +32,8 @@ Install the package with:
 uv pip install qpdk
 ```
 
-> [!NOTE] After installation, restart KLayout to ensure the new technology appears.
+> [!NOTE]
+> After installation, restart KLayout to ensure the new technology appears.
 
 Optional dependencies for the models and simulation tools can be installed with:
 
