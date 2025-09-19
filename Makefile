@@ -47,8 +47,7 @@ git-rm-merged: ##@ Delete all local branches that have already been merged
 
 build: ##@ Build the Python package (install build tool and create dist)
 	rm -rf dist
-	pip install build
-	python -m build
+	uv build
 
 #################
 # Documentation #
