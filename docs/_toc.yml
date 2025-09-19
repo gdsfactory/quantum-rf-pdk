@@ -3,14 +3,12 @@
 format: jb-book
 root: index
 parts:
-  - caption: Reference
+  - caption: API
     chapters:
-      - file: cells
+      - file: api
+  - caption: Samples
+    chapters:
       - file: samples
-      - file: models
-      - file: changelog
   - caption: Notebooks
     chapters:
-      - file: notebooks/resonator_frequency_model
-      - file: notebooks/optimize_capacitor_optuna
-      - file: notebooks/scqubits_parameter_calculation
+      - file: notebooks
