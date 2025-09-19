@@ -1,55 +1,56 @@
-# Sample Generic Quantum RF PDK 0.0.2
+# Sample Generic Superconducting Quantum RF PDK 0.0.2
 
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
 [![HTML Docs](https://img.shields.io/badge/%F0%9F%93%84_HTML-Docs-blue?style=flat)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![PDF Docs](https://img.shields.io/badge/%F0%9F%93%84_PDF-Docs-blue?style=flat&logo=adobeacrobatreader)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD)
+![PyPI - Version](https://img.shields.io/pypi/v/qpdk?color=blue)
 [![MIT](https://img.shields.io/github/license/gdsfactory/quantum-rf-pdk)](https://choosealicense.com/licenses/mit/)
+
+______________________________________________________________________
 
 A generic process design kit (PDK) for superconducting quantum RF applications based on
 [gdsfactory](https://gdsfactory.github.io/gdsfactory/).
+
+## Examples
+
+- [PDK cells in the documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html): showcases available
+  geometries.
+- [`qpdk/samples/`](qpdk/samples): contains example layouts and simulations.
+- [`qpdk/notebooks/`](qpdk/notebooks): contains notebooks demonstrating design and simulation workflows.
 
 ## Installation
 
 We recommend using [`uv`](https://astral.sh/uv/) for package management.
 
-### Install `uv`
-
-#### On macOS and Linux
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-#### On Windows
-
-```bash
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
 ### Installation for Users
-
-- Use Python 3.11, 3.12, or 3.13.
-- We recommend [VSCode](https://code.visualstudio.com/) as your IDE.
 
 Install the package with:
 
 ```bash
-uv pip install qpdk --upgrade
+uv pip install qpdk
 ```
 
-> **Note:** After installation, restart KLayout to ensure the new technology appears.
+> [!NOTE] After installation, restart KLayout to ensure the new technology appears.
+
+Optional dependencies for the models and simulation tools can be installed with:
+
+```bash
+uv pip install qpdk[models]
+```
 
 ### Installation for Contributors
 
-Clone the repository and install all dependencies:
+Clone the repository and install at least the development dependencies:
 
 ```bash
 git clone https://github.com/gdsfactory/quantum-rf-pdk.git
 cd quantum-rf-pdk
-uv sync --all-extras
+uv sync --extra dev
 ```
+
+#### Testing and Building Documentation
 
 Check out the commands for testing and building documentation with:
 
@@ -59,6 +60,6 @@ make help
 
 ## Documentation
 
-- [Quantum RF PDK documentation](https://gdsfactory.github.io/quantum-rf-pdk/)
-- [Quantum RF PDK documentation as a PDF](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
+- [Quantum RF PDK documentation (HTML)](https://gdsfactory.github.io/quantum-rf-pdk/)
+- [Quantum RF PDK documentation (PDF)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 - [gdsfactory documentation](https://gdsfactory.github.io/gdsfactory/)
