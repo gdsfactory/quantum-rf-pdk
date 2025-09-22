@@ -1,0 +1,12 @@
+info:
+  length: 5000
+  resonator_type: quarter_wave
+name: flipmon_with_resonator_qpdkpcellspderivedptransmon_with_a03aeea5
+settings:
+  coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_ST20_F18
+  resonator: Fresonator_Mqpdkpcellspresonator_SOSFalse_OETrue_L4000_M6
+  resonator_length: 5000
+  resonator_meander_start:
+  - -700
+  - -1300
+  transmon: flipmon_with_bbox
