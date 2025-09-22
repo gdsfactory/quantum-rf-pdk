@@ -1,0 +1,68 @@
+instances:
+  double_pad_transmon_150000_0:
+    component: double_pad_transmon
+    info:
+      qubit_type: transmon
+    settings: {}
+  double_pad_transmon_m150000_0:
+    component: double_pad_transmon
+    info:
+      qubit_type: transmon
+    settings: {}
+  tunable_coupler_flux_SSsquid_junction_CPS50_100_CG10_FL_77fca741_0_0:
+    component: tunable_coupler_flux
+    info:
+      coupler_type: flux_tunable
+      coupling_gap: 10
+      coupling_pad_size:
+      - 50
+      - 100
+      flux_line_width: 5
+    settings:
+      coupling_gap: 10
+      coupling_pad_size:
+      - 50
+      - 100
+      flux_line_length: 100
+      flux_line_width: 5
+      layer_metal: M1_DRAW
+      port_type: electrical
+      squid_spec: squid_junction
+name: transmons_with_tunable_coupler_qpdkpcellspderivedptrans_fa6bad58
+nets: []
+placements:
+  double_pad_transmon_150000_0:
+    mirror: false
+    rotation: 0
+    x: 150
+    y: 0
+  double_pad_transmon_m150000_0:
+    mirror: false
+    rotation: 0
+    x: -150
+    y: 0
+  tunable_coupler_flux_SSsquid_junction_CPS50_100_CG10_FL_77fca741_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+ports:
+  coupler_flux_bias: tunable_coupler_flux_SSsquid_junction_CPS50_100_CG10_FL_77fca741_0_0,flux_bias
+  coupler_left: tunable_coupler_flux_SSsquid_junction_CPS50_100_CG10_FL_77fca741_0_0,left
+  coupler_right: tunable_coupler_flux_SSsquid_junction_CPS50_100_CG10_FL_77fca741_0_0,right
+  transmon1_left: double_pad_transmon_m150000_0,left_pad
+  transmon1_right: double_pad_transmon_m150000_0,right_pad
+  transmon2_left: double_pad_transmon_150000_0,left_pad
+  transmon2_right: double_pad_transmon_150000_0,right_pad
+warnings:
+  optical:
+    unconnected_ports:
+    - message: 2 unconnected optical ports!
+      ports:
+      - double_pad_transmon_m150000_0,junction
+      - double_pad_transmon_150000_0,junction
+      values:
+      - - -150
+        - 0
+      - - 150
+        - 0

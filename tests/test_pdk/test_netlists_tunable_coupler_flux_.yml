@@ -1,0 +1,138 @@
+instances:
+  rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_34325_m50000:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 50
+      - 100
+  rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_m59325_m50000:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 50
+      - 100
+  rectangle_gdsfactorypcomponentspshapesprectangle_S5_100_5cadcf3a_m2500_20825:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 5
+      - 100
+  squid_junction_JSjosephson_junction_LA4_0_0:
+    component: squid_junction
+    info: {}
+    settings:
+      junction_spec: josephson_junction
+      loop_area: 4
+name: tunable_coupler_flux_SSsquid_junction_CPS50_100_CG10_FL_77fca741
+nets: []
+placements:
+  rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_34325_m50000:
+    mirror: false
+    rotation: 0
+    x: 34.325
+    y: -50
+  rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_m59325_m50000:
+    mirror: false
+    rotation: 0
+    x: -59.325
+    y: -50
+  rectangle_gdsfactorypcomponentspshapesprectangle_S5_100_5cadcf3a_m2500_20825:
+    mirror: false
+    rotation: 0
+    x: -2.5
+    y: 20.825
+  squid_junction_JSjosephson_junction_LA4_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+ports:
+  flux_bias: rectangle_gdsfactorypcomponentspshapesprectangle_S5_100_5cadcf3a_m2500_20825,e2
+  left: rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_m59325_m50000,e1
+  right: rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_34325_m50000,e3
+warnings:
+  electrical:
+    unconnected_ports:
+    - message: 9 unconnected electrical ports!
+      ports:
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_m59325_m50000,e2
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_m59325_m50000,e3
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_m59325_m50000,e4
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_34325_m50000,e1
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_34325_m50000,e2
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S50_10_9af5eca7_34325_m50000,e4
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S5_100_5cadcf3a_m2500_20825,e1
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S5_100_5cadcf3a_m2500_20825,e3
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S5_100_5cadcf3a_m2500_20825,e4
+      values:
+      - - -34.325
+        - 50
+      - - -9.325
+        - 0
+      - - -34.325
+        - -50
+      - - 34.325
+        - 0
+      - - 59.325
+        - 50
+      - - 59.325
+        - -50
+      - - -2.5
+        - 70.825
+      - - 2.5
+        - 70.825
+      - - 0
+        - 20.825
+  optical:
+    unconnected_ports:
+    - message: 7 unconnected optical ports!
+      ports:
+      - squid_junction_JSjosephson_junction_LA4_0_0,left_left_wide
+      - squid_junction_JSjosephson_junction_LA4_0_0,left_right_wide
+      - squid_junction_JSjosephson_junction_LA4_0_0,right_left_wide
+      - squid_junction_JSjosephson_junction_LA4_0_0,right_right_wide
+      - squid_junction_JSjosephson_junction_LA4_0_0,left_overlap
+      - squid_junction_JSjosephson_junction_LA4_0_0,right_overlap
+      - squid_junction_JSjosephson_junction_LA4_0_0,loop_center
+      values:
+      - - 13.5
+        - -11.7
+      - - 1.8
+        - 0
+      - - 11.5
+        - 9.7
+      - - 23.2
+        - -2
+      - - 13.5
+        - 0
+      - - 11.5
+        - -2
+      - - 12.5
+        - -1

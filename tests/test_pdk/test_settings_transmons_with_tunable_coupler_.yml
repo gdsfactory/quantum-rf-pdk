@@ -1,0 +1,10 @@
+info:
+  coupler_offset_y: 0
+  system_type: two_qubit_tunable
+  transmon_separation: 300
+name: transmons_with_tunable_coupler_qpdkpcellspderivedptrans_fa6bad58
+settings:
+  coupler_offset_y: 0
+  coupler_spec: tunable_coupler_flux
+  transmon_separation: 300
+  transmon_spec: double_pad_transmon

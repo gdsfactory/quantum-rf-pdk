@@ -260,5 +260,124 @@ def squid_junction(
     return c
 
 
+@gf.cell
+def tunable_coupler_flux(
+    squid_spec: ComponentSpec = squid_junction,
+    coupling_pad_size: tuple[float, float] = (50.0, 100.0),
+    coupling_gap: float = 10.0,
+    flux_line_width: float = 5.0,
+    flux_line_length: float = 100.0,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    port_type: str = "electrical",
+) -> Component:
+    """Creates a flux-tunable coupler with Josephson junction.
+
+    A flux-tunable coupler uses a SQUID that can be magnetically flux-biased
+    to control the coupling strength between two quantum circuits. The coupling
+    strength varies as cos(πΦ/Φ₀) where Φ is the external flux and Φ₀ is the
+    flux quantum.
+
+    See :cite:`harrisSingleQuantumCoupler2007` for details.
+
+    Args:
+        squid_spec: Component specification for the SQUID junction.
+        coupling_pad_size: (width, height) of coupling pads in μm.
+        coupling_gap: Gap between coupling pads and SQUID in μm.
+        flux_line_width: Width of flux bias line in μm.
+        flux_line_length: Length of flux bias line in μm.
+        layer_metal: Layer for metal structures.
+        port_type: Type of port to add to the component.
+
+    Returns:
+        Component: A gdsfactory component with the flux-tunable coupler geometry.
+
+    .. code::
+
+                    flux_bias
+                        |
+                        |
+           pad1    ┌─────────┐    pad2
+        ───────────┤   SQUID   ├───────────
+                   └─────────┘
+    """
+    c = Component()
+
+    # Create the central SQUID
+    squid_ref = c << gf.get_component(squid_spec)
+    squid_ref.dcenter = c.dcenter
+
+    pad_width, pad_height = coupling_pad_size
+
+    # Create left coupling pad
+    left_pad = gf.components.rectangle(
+        size=coupling_pad_size,
+        layer=layer_metal,
+    )
+    left_pad_ref = c << left_pad
+    left_pad_ref.move((
+        squid_ref.xmin - coupling_gap - pad_width,
+        -pad_height / 2
+    ))
+
+    # Create right coupling pad
+    right_pad = gf.components.rectangle(
+        size=coupling_pad_size,
+        layer=layer_metal,
+    )
+    right_pad_ref = c << right_pad
+    right_pad_ref.move((
+        squid_ref.xmax + coupling_gap,
+        -pad_height / 2
+    ))
+
+    # Create flux bias line (vertical)
+    flux_line = gf.components.rectangle(
+        size=(flux_line_width, flux_line_length),
+        layer=layer_metal,
+    )
+    flux_line_ref = c << flux_line
+    flux_line_ref.move((
+        -flux_line_width / 2,
+        squid_ref.ymax + coupling_gap
+    ))
+
+    # Add ports for coupling
+    c.add_port(
+        name="left",
+        center=(left_pad_ref.xmin, 0),
+        width=pad_height,
+        orientation=180,
+        layer=layer_metal,
+        port_type=port_type,
+    )
+
+    c.add_port(
+        name="right",
+        center=(right_pad_ref.xmax, 0),
+        width=pad_height,
+        orientation=0,
+        layer=layer_metal,
+        port_type=port_type,
+    )
+
+    # Add port for flux bias
+    c.add_port(
+        name="flux_bias",
+        center=(0, flux_line_ref.ymax),
+        width=flux_line_width,
+        orientation=90,
+        layer=layer_metal,
+        port_type=port_type,
+    )
+
+    # Add metadata
+    c.info["coupler_type"] = "flux_tunable"
+    c.info["coupling_pad_size"] = coupling_pad_size
+    c.info["coupling_gap"] = coupling_gap
+    c.info["flux_line_width"] = flux_line_width
+
+    return c
+
+
 if __name__ == "__main__":
-    show_components(josephson_junction, squid_junction)
+    show_components(josephson_junction, squid_junction, tunable_coupler_flux)

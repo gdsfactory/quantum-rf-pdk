@@ -1,0 +1,18 @@
+info:
+  coupler_type: flux_tunable
+  coupling_gap: 10
+  coupling_pad_size:
+  - 50
+  - 100
+  flux_line_width: 5
+name: tunable_coupler_flux_SSsquid_junction_CPS50_100_CG10_FL_77fca741
+settings:
+  coupling_gap: 10
+  coupling_pad_size:
+  - 50
+  - 100
+  flux_line_length: 100
+  flux_line_width: 5
+  layer_metal: M1_DRAW
+  port_type: electrical
+  squid_spec: squid_junction
