@@ -42,7 +42,7 @@ test-gds-fail-fast: ##@ Run GDS regressions tests (tests/test_pdk.py) and stop a
 	uv run pytest -s tests/test_pdk.py -x
 
 update-pre: ##@ Update pre-commit hooks to the latest revisions
-	uvx pre-commit autoupdate
+	uvx pre-commit autoupdate -j $$(expr $$(nproc) / 2 + $$(expr $$(nproc) % 2))
 
 run-pre: ##@ Run all pre-commit hooks on all files
 	uvx pre-commit run --all-files

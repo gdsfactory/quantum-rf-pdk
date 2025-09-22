@@ -65,7 +65,7 @@ repos:
       - id: bibtex-tidy
         args: ['--align=1', '--curly', '--months', '--sort', '--duplicates', '--strip-enclosing-braces']
   - repo: https://github.com/AleksaC/hadolint-py
-    rev: v2.13.1
+    rev: v2.14.0
     hooks:
       - id: hadolint
   - repo: https://github.com/checkmake/checkmake.git
