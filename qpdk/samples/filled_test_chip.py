@@ -8,14 +8,7 @@
 #       jupytext_version: 1.17.3
 # ---
 
-# %% [markdown]
-# # Filled Qubit Test Chip Example
-#
-# This example demonstrates creating a qubit test chip filled with magnetic vortex trapping rectangles.
-#
-# The design roughly corresponds to the sample described in Tuokkola et al. "Methods to achieve near-millisecond coherence times in superconducting quantum circuits" (2025).
-
-# %%
+# %% tags=["hide-input", "hide-output"]
 from pathlib import Path
 
 import gdsfactory as gf
@@ -25,9 +18,28 @@ from qpdk import PDK, tech
 from qpdk.cells.helpers import fill_magnetic_vortices
 
 # %% [markdown]
+# # Filled Qubit Test Chip Example
+#
+# This example demonstrates creating a qubit test chip filled with magnetic vortex trapping rectangles.
+#
+# The design roughly corresponds to the sample described in Tuokkola et al. "Methods to achieve near-millisecond coherence times in superconducting quantum circuits" (2025).
+
+
+# %% [markdown]
 # ## Filled Qubit Test Chip Function
 #
 # Creates a qubit test chip from a YAML configuration and fills it with magnetic vortex trapping rectangles.
+#
+# See the YAML file for the original test chip layout.
+
+# %% [rst]
+#
+# .. note::
+#
+#    See the YAML file for the original test chip layout.
+#
+# .. include:: ./qubit_test_chip.pic.yml
+#
 
 
 # %%
@@ -45,28 +57,7 @@ def filled_qubit_test_chip():
     c << fill_magnetic_vortices(
         component=test_chip,
         rectangle_size=(15.0, 15.0),
-        gap=15.0,
-        stagger=5,
-    )
-    return c
-
-
-# %%
-@gf.cell
-def filled_flipmon_test_chip():
-    """Returns a flipmon test chip filled with magnetic vortex trapping rectangles.
-
-    Similar to filled_qubit_test_chip but uses flipmon qubits for flip-chip applications.
-    """
-    c = gf.Component()
-    test_chip = from_yaml(
-        Path(__file__).parent / "flipmon_test_chip.pic.yml",
-        routing_strategies=tech.routing_strategies,
-    )
-    c << fill_magnetic_vortices(
-        component=test_chip,
-        rectangle_size=(15.0, 15.0),
-        gap=15.0,
+        gap=20.0,
         stagger=5,
     )
     return c
@@ -95,7 +86,7 @@ def filled_flipmon_test_chip():
     c << fill_magnetic_vortices(
         component=test_chip,
         rectangle_size=(15.0, 15.0),
-        gap=15.0,
+        gap=20.0,
         stagger=5,
     )
     return c
@@ -112,6 +103,8 @@ if __name__ == "__main__":
 
     # Show original filled qubit test chip
     filled_qubit_test_chip().show()
+
+    # %%
 
     # Show new filled flipmon test chip
     filled_flipmon_test_chip().show()
