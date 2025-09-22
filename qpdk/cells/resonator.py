@@ -5,10 +5,10 @@ from __future__ import annotations
 from functools import partial
 from typing import TypedDict
 
+import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
-import gdsfactory as gf
 from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.helper import show_components
 
@@ -225,7 +225,8 @@ if __name__ == "__main__":
         resonator_quarter_wave,
         resonator_half_wave,
         resonator_coupled,
-        partial(resonator_coupled,
-            ResonatorParams(length=2000, meanders=4, open_start=False, open_end=True)
+        partial(
+            resonator_coupled,
+            ResonatorParams(length=2000, meanders=4, open_start=False, open_end=True),
         ),
     )

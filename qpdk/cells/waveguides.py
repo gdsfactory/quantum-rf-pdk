@@ -3,10 +3,10 @@
 from functools import partial
 from typing import TypedDict, Unpack
 
+import gdsfactory as gf
 from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
 from klayout.db import DCplxTrans
 
-import gdsfactory as gf
 from qpdk import tech
 from qpdk.helper import show_components
 

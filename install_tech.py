@@ -1,6 +1,5 @@
 """Symlink tech to klayout."""
 
-import os
 import shutil
 import sys
 from pathlib import Path
@@ -30,7 +29,7 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
         print(f"removing {dest} already installed")
         remove_path_or_dir(dest)
     try:
-        os.symlink(src, dest, target_is_directory=True)
+        Path.symlink_to(src, dest, target_is_directory=True)
     except OSError:
         shutil.copytree(src, dest)
     print("link made:")

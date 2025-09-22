@@ -7,6 +7,7 @@ from functools import partial, reduce
 from operator import itemgetter
 from typing import TypedDict, Unpack
 
+import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.components import rectangle
 from gdsfactory.export import to_stl
@@ -14,7 +15,6 @@ from gdsfactory.typings import ComponentSpec, LayerSpec
 from kfactory import kdb
 from klayout.db import DCplxTrans, Region
 
-import gdsfactory as gf
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
 from qpdk.cells.junction import squid_junction
@@ -575,7 +575,7 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
 if __name__ == "__main__":
     show_components(
         double_pad_transmon,
-        partial(double_pad_transmon,junction_displacement=DCplxTrans(0, 150)),
+        partial(double_pad_transmon, junction_displacement=DCplxTrans(0, 150)),
         double_pad_transmon_with_bbox,
         flipmon,
         flipmon_with_bbox,

@@ -8,10 +8,10 @@ from math import ceil, floor
 from operator import itemgetter
 from typing import TypedDict, Unpack
 
+import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
-import gdsfactory as gf
 from qpdk.cells.waveguides import straight
 from qpdk.helper import show_components
 from qpdk.tech import LAYER
@@ -467,8 +467,6 @@ def coupler_tunable(
 
 
 if __name__ == "__main__":
-
-
     show_components(
         plate_capacitor_single,
         plate_capacitor,

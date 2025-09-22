@@ -2,10 +2,9 @@
 
 from collections.abc import Sequence
 
+from gdsfactory import Component, ComponentAllAngle, get_component
 from gdsfactory.technology import LayerViews
 from gdsfactory.typings import ComponentAllAngleSpec, ComponentSpec
-
-from gdsfactory import Component, ComponentAllAngle, get_component
 
 
 def denest_layerviews_to_layer_tuples(

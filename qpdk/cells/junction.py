@@ -5,11 +5,11 @@ from __future__ import annotations
 from operator import itemgetter
 from typing import TypedDict, Unpack
 
+import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
 from klayout.db import DCplxTrans
 
-import gdsfactory as gf
 from qpdk.cells.waveguides import straight
 from qpdk.helper import show_components
 from qpdk.tech import (
