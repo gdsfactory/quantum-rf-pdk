@@ -110,7 +110,7 @@ if __name__ == "__main__":
     frequencies = jnp.linspace(0.5e9, 10e9, 1001)
     TARGET_FREQUENCY = 6e9  # Target resonance frequency in Hz
 
-    def loss_fn(config: dict[str, float]) -> float:
+    def loss_fn(config: dict[str, float]) -> dict[str, float]:
         """Loss function to minimize the difference between the actual and target resonance frequencies.
 
         Args:
@@ -140,7 +140,7 @@ if __name__ == "__main__":
             metric="mse",
             mode="min",
             num_samples=10,
-            max_concurrent_trials=math.ceil(os.cpu_count() / 4),
+            max_concurrent_trials=math.ceil((os.cpu_count() or 1) / 4),
             reuse_actors=True,
             search_alg=ray.tune.search.optuna.OptunaSearch(),
         ),

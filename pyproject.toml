@@ -90,6 +90,7 @@ project-includes = ["**/*.py"]
 bad-argument-type = "ignore"
 # Configure specific error types - start permissive and tighten over time
 missing-argument = "ignore"
+missing-module-attribute = "ignore"
 # Not all gdsfactory overloads are seem to be properly typed
 no-matching-overload = "ignore"
 not-a-type = "warn"

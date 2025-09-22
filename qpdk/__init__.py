@@ -10,7 +10,7 @@ from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
 
 import qpdk.samples
-from qpdk import cells, config, tech
+from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
 
 # from qpdk.models import get_models
@@ -59,6 +59,7 @@ __all__ = [
     "PATH",
     "cells",
     "config",
+    "helper",
     "tech",
 ]
 __version__ = "0.0.2"
