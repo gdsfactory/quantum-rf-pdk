@@ -1,6 +1,6 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
-change-template: '- $TITLE [#$NUMBER](https://github.com/gdsfactory/qpdk/pull/$NUMBER)'
+change-template: '- $TITLE [#$NUMBER](https://github.com/gdsfactory/quantum-rf-pdk/pull/$NUMBER)'
 template: |
   # What's Changed
 
@@ -14,14 +14,28 @@ categories:
     labels:
       - 'feature'
       - 'enhancement'
+  - title: 'Components'
+    label: 'components'
+  - title: 'Models'
+    label: 'models'
+  - title: 'Samples'
+    label: 'samples'
+  - title: 'Technology'
+    label: 'technology'
   - title: 'Bug Fixes'
     label: 'bug'
+  - title: 'Tests'
+    label: 'tests'
   - title: 'Maintenance'
     labels:
       - 'maintenance'
       - 'github_actions'
+      - 'ci'
+      - 'infrastructure'
   - title: 'Documentation'
-    label: 'documentation'
+    labels:
+      - 'documentation'
+      - 'notebooks'
   - title: 'Other changes'
   - title: 'Dependency Updates'
     label: 'dependencies'
@@ -36,6 +50,9 @@ version-resolver:
       - 'feature'
       - 'minor'
       - 'enhancement'
+      - 'components'
+      - 'models'
+      - 'technology'
   patch:
     labels:
       - 'bug'
@@ -44,23 +61,144 @@ version-resolver:
       - 'documentation'
       - 'dependencies'
       - 'security'
+      - 'tests'
+      - 'samples'
+      - 'notebooks'
+      - 'ci'
+      - 'infrastructure'
   default: patch
 exclude-labels:
   - 'skip-changelog'
 autolabeler:
+  # Documentation
   - label: 'documentation'
     files:
       - '*.md'
+      - 'docs/**/*'
     branch:
       - '/docs-.+/'
+  - label: 'notebooks'
+    files:
+      - 'qpdk/notebooks/**/*'
+      - '*.ipynb'
+      - '*.py.ipynb'
+  # Quantum RF PDK specific components
+  - label: 'components'
+    files:
+      - 'qpdk/cells/**/*'
+    branch:
+      - '/component-.+/'
+      - '/cell-.+/'
+    title:
+      - '/transmon/i'
+      - '/resonator/i'
+      - '/coupler/i'
+      - '/junction/i'
+      - '/airbridge/i'
+      - '/launcher/i'
+      - '/waveguide/i'
+      - '/component/i'
+  - label: 'models'
+    files:
+      - 'qpdk/models/**/*'
+    branch:
+      - '/model-.+/'
+      - '/simulation-.+/'
+    title:
+      - '/model/i'
+      - '/simulation/i'
+      - '/sax/i'
+  - label: 'samples'
+    files:
+      - 'qpdk/samples/**/*'
+    branch:
+      - '/sample-.+/'
+      - '/example-.+/'
+    title:
+      - '/sample/i'
+      - '/example/i'
+  - label: 'technology'
+    files:
+      - 'qpdk/tech.py'
+      - 'qpdk/layers.yaml'
+      - 'qpdk/klayout/**/*'
+    branch:
+      - '/tech-.+/'
+      - '/layer-.+/'
+      - '/pdk-.+/'
+    title:
+      - '/layer/i'
+      - '/tech/i'
+      - '/pdk/i'
+      - '/klayout/i'
+  # Testing
+  - label: 'tests'
+    files:
+      - 'tests/**/*'
+      - 'test_*.py'
+      - '*_test.py'
+    branch:
+      - '/test-.+/'
+    title:
+      - '/test/i'
+  # Infrastructure and CI
+  - label: 'ci'
+    files:
+      - '.github/workflows/**/*'
+      - '.github/**/*.yml'
+      - '.github/**/*.yaml'
+    branch:
+      - '/ci-.+/'
+      - '/workflow-.+/'
+    title:
+      - '/ci/i'
+      - '/workflow/i'
+      - '/github/i'
+  - label: 'infrastructure'
+    files:
+      - 'Dockerfile'
+      - 'Makefile'
+      - '.pre-commit-config.yaml'
+      - 'install_tech.py'
+    branch:
+      - '/infra-.+/'
+      - '/docker-.+/'
+      - '/make-.+/'
+    title:
+      - '/docker/i'
+      - '/makefile/i'
+      - '/infrastructure/i'
+  # Dependencies
+  - label: 'dependencies'
+    files:
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'requirements*.txt'
+    branch:
+      - '/deps-.+/'
+      - '/dep-.+/'
+      - '/update-.+/'
+    title:
+      - '/dependenc/i'
+      - '/requirement/i'
+      - '/update.*dep/i'
+      - '/bump.*version/i'
+  # Bug fixes
   - label: 'bug'
     branch:
       - '/fix-.+/'
+      - '/bug-.+/'
     title:
       - '/fix/i'
+      - '/bug/i'
+  # Enhancements and features
   - label: 'enhancement'
     branch:
       - '/feature-.+/'
       - '/add-.+/'
+      - '/improve-.+/'
+      - '/enhance-.+/'
     title:
       - '/^add\s/i'
+      - '/enhance/i'
+      - '/improve/i'
