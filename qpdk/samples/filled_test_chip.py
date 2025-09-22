@@ -75,8 +75,9 @@ def filled_flipmon_test_chip():
 # %% [markdown]
 # ## Filled Flipmon Test Chip Function
 #
-# Creates a flipmon test chip from a YAML configuration and fills it with magnetic vortex trapping rectangles.
+# Creates a flipmon test chip from a similar YAML configuration and fills it as well.
 # This version uses flipmon qubits for flip-chip applications.
+# See {cite:p}`liVacuumgapTransmonQubits2021` for more details.
 
 
 # %%

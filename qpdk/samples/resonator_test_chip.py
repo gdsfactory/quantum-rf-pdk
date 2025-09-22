@@ -13,7 +13,7 @@
 #
 # This example demonstrates creating a resonator test chip for characterizing superconducting microwave resonators.
 #
-# The design is inspired by Norris, G.J., Michaud, L., Pahl, D. et al. "Improved parameter targeting in 3D-integrated superconducting circuits through a polymer spacer process." EPJ Quantum Technol. 11, 5 (2024). https://doi.org/10.1140/epjqt/s40507-023-00213-x
+# The design is inspired by {cite:p}`norrisImprovedParameterTargeting2024`.
 
 # %%
 import gdsfactory as gf
