@@ -84,6 +84,12 @@ def show_components(
                 spacing[1] * i,
             )
         )
+        label_offset = (
+            spacing[0] * i + (component.size_info.width / 2),
+            spacing[1] * i + (component.size_info.height / 2),
+        )
+        label_text = component.name if hasattr(component, "name") else f"component_{i}"
+        c.add_label(text=label_text, position=label_offset, layer=PDK.layers.TEXT)
     c.show()
 
     return components
