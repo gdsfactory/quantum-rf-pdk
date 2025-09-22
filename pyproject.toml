@@ -196,8 +196,3 @@ regex = '''
   \.
   (?P<patch>\d+)
   '''
-
-[dependency-groups]
-dev = [
-    "pyyaml>=6.0.2",
-]
