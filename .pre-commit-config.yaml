@@ -74,7 +74,7 @@ repos:
       - id: checkmake
         args: ['--config=.github/.checkmake.ini']
   - repo: https://github.com/EbodShojaei/bake
-    rev: v1.4.0
+    rev: v1.4.1.pre
     hooks:
       - id: mbake-validate
       - id: mbake-format

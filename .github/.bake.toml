@@ -15,4 +15,4 @@ remove_trailing_whitespace = true
 space_after_colon = true
 space_around_assignment = true
 space_before_colon = false
-tab_width = 2
+tab_width = 4
