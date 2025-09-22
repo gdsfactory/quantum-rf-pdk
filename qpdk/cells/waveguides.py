@@ -261,7 +261,7 @@ def bend_s(**kwargs: Unpack[BendSKwargs]) -> gf.Component:
     min_bend_radius depends on height and length
 
     Args:
-        **kwargs: Arguments passed to gf.c.bend_s.
+        **kwargs: Arguments passed to :func:`~gf.c.bend_s`.
     """
     return gf.c.bend_s(**(_DEFAULT_BEND_KWARGS | _BEND_S_DEFAULTS | kwargs))
 
@@ -282,7 +282,7 @@ def straight_all_angle(
     """Returns a Straight waveguide with offgrid ports.
 
     Args:
-        **kwargs: Arguments passed to gf.c.straight_all_angle.
+        **kwargs: Arguments passed to :func:`~gf.c.straight_all_angle`.
 
     .. code::
 
@@ -290,6 +290,43 @@ def straight_all_angle(
                 length
     """
     return gf.c.straight_all_angle(**(_DEFAULT_KWARGS | kwargs))
+
+
+@gf.vcell
+def straight_open_all_angle(
+    **kwargs: Unpack[StraightAllAngleKwargs],
+) -> gf.ComponentAllAngle:
+    """Returns a straight waveguide with offgrid ports that has an etched gap at one end.
+
+    Args:
+        **kwargs: Arguments passed to :func:`~gf.c.straight_all_angle`.
+    """
+    params = _DEFAULT_KWARGS | kwargs
+    c = gf.ComponentAllAngle()
+    straight_ref = c << straight_all_angle(**params)
+    c.add_ports(straight_ref.ports)
+    add_etch_gap(c, c.ports["o2"], cross_section=params["cross_section"])
+    return c
+
+
+@gf.vcell
+def straight_double_open_all_angle(
+    **kwargs: Unpack[StraightAllAngleKwargs],
+) -> gf.ComponentAllAngle:
+    r"""Returns a straight waveguide with offgrid ports that has etched gaps at both ends.
+
+    Note:
+        This may be treated as a :math:`\lambda/2` as a straight resonator in some contexts.
+
+    Args:
+        **kwargs: Arguments passed to :func:`~gf.c.straight_all_angle`.
+    """
+    params = _DEFAULT_KWARGS | kwargs
+    c = gf.ComponentAllAngle()
+    straight_ref = c << straight_open_all_angle(**params)
+    c.add_ports(straight_ref.ports)
+    add_etch_gap(c, c.ports["o1"], cross_section=params["cross_section"])
+    return c
 
 
 class BendEulerAllAngleKwargs(TypedDict, total=False):
@@ -345,7 +382,9 @@ def bend_circular_all_angle(
 
 
 def add_etch_gap(
-    c: gf.Component, port: gf.Port, cross_section: CrossSectionSpec
+    c: gf.Component | gf.ComponentAllAngle,
+    port: gf.Port,
+    cross_section: CrossSectionSpec,
 ) -> gf.ComponentReference:
     """Adds an etch gap rectangle at the given port of the component.
 
@@ -381,6 +420,8 @@ if __name__ == "__main__":
         partial(straight_open, length=20),
         partial(straight_double_open, length=20),
         straight_all_angle,
+        partial(straight_open_all_angle, length=20),
+        partial(straight_double_open_all_angle, length=20),
         partial(bend_euler_all_angle, angle=33),
         rectangle,
     )
