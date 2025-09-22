@@ -33,7 +33,8 @@ skip_test_netlist = {
     "die_with_pads",
     "launcher",
     "indium_bump",
-    "flipmon_with_resonator",  # Skip due to complex routing causing netlist extraction issues
+    "transmon_with_resonator",
+    "flipmon_with_resonator",
 }
 # Skip default gdsfactory cells
 skip_test = {
@@ -43,7 +44,6 @@ skip_test = {
     "add_pads_bot",
     "die_with_pads",
     "transform_component",
-    "transmon_with_resonator",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]
