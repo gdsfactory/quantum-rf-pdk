@@ -7,7 +7,6 @@ from functools import partial, reduce
 from operator import itemgetter
 from typing import TypedDict, Unpack
 
-import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.components import rectangle
 from gdsfactory.export import to_stl
@@ -15,9 +14,11 @@ from gdsfactory.typings import ComponentSpec, LayerSpec
 from kfactory import kdb
 from klayout.db import DCplxTrans, Region
 
+import gdsfactory as gf
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
 from qpdk.cells.junction import squid_junction
+from qpdk.helper import show_components
 from qpdk.tech import LAYER, LAYER_STACK_FLIP_CHIP
 
 
@@ -572,22 +573,14 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
 
 
 if __name__ == "__main__":
-    from qpdk import PDK
-
-    PDK.activate()
-    c = gf.Component()
-    for i, component in enumerate(
-        (
-            double_pad_transmon(),
-            double_pad_transmon(junction_displacement=DCplxTrans(0, 150)),
-            double_pad_transmon_with_bbox(),
-            flipmon(),
-            flipmon_with_bbox(),
-            xmon_transmon(),
-        )
-    ):
-        (c << component).move((0, i * 700))
-    c.show()
+    show_components(
+        double_pad_transmon,
+        partial(double_pad_transmon,junction_displacement=DCplxTrans(0, 150)),
+        double_pad_transmon_with_bbox,
+        flipmon,
+        flipmon_with_bbox,
+        xmon_transmon,
+    )
 
     # Visualize flip-chip flipmon
     c = gf.Component()

@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+from functools import partial
 from itertools import chain
 from math import ceil, floor
 from operator import itemgetter
 from typing import TypedDict, Unpack
 
-import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
+import gdsfactory as gf
 from qpdk.cells.waveguides import straight
+from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
 
@@ -465,19 +467,12 @@ def coupler_tunable(
 
 
 if __name__ == "__main__":
-    from qpdk import PDK
 
-    PDK.activate()
-    c = gf.Component()
-    for i, component in enumerate(
-        (
-            plate_capacitor_single(),
-            plate_capacitor(),
-            coupler_tunable(),
-            interdigital_capacitor(),
-            interdigital_capacitor(half=True),
-        )
-    ):
-        (c << component).move((i * 200, 0))
-    c.pprint_ports()
-    c.show()
+
+    show_components(
+        plate_capacitor_single,
+        plate_capacitor,
+        coupler_tunable,
+        interdigital_capacitor,
+        partial(interdigital_capacitor, half=True),
+    )

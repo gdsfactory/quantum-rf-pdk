@@ -5,11 +5,12 @@ from __future__ import annotations
 from functools import partial
 from typing import TypedDict
 
-import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
+import gdsfactory as gf
 from qpdk.cells.waveguides import bend_circular, straight
+from qpdk.helper import show_components
 
 
 class ResonatorParams(TypedDict):
@@ -219,22 +220,12 @@ def resonator_coupled(
 
 
 if __name__ == "__main__":
-    from qpdk import PDK
-
-    PDK.activate()
-    c = gf.Component()
-    for i, component in enumerate(
-        (
-            resonator(),
-            resonator_quarter_wave(),
-            resonator_half_wave(),
-            resonator_coupled(),
-            resonator_coupled(
-                ResonatorParams(
-                    length=2000, meanders=4, open_start=False, open_end=True
-                )
-            ),
+    show_components(
+        resonator,
+        resonator_quarter_wave,
+        resonator_half_wave,
+        resonator_coupled,
+        partial(resonator_coupled,
+            ResonatorParams(length=2000, meanders=4, open_start=False, open_end=True)
         ),
-    ):
-        (c << component).move((i * 700, 0))
-    c.show()
+    )

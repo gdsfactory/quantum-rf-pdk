@@ -5,12 +5,13 @@ from __future__ import annotations
 from operator import itemgetter
 from typing import TypedDict, Unpack
 
-import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
 from klayout.db import DCplxTrans
 
+import gdsfactory as gf
 from qpdk.cells.waveguides import straight
+from qpdk.helper import show_components
 from qpdk.tech import (
     LAYER,
     josephson_junction_cross_section_narrow,
@@ -260,12 +261,4 @@ def squid_junction(
 
 
 if __name__ == "__main__":
-    from qpdk import PDK
-
-    PDK.activate()
-
-    # c = josephson_junction()
-    c = squid_junction()
-
-    c.pprint_ports()
-    c.show()
+    show_components(josephson_junction, squid_junction)

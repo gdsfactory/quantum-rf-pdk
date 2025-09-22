@@ -1,6 +1,11 @@
 """Helper functions for the qpdk package."""
 
+from collections.abc import Sequence
+
 from gdsfactory.technology import LayerViews
+from gdsfactory.typings import ComponentAllAngleSpec, ComponentSpec
+
+from gdsfactory import Component, ComponentAllAngle, get_component
 
 
 def denest_layerviews_to_layer_tuples(
@@ -40,3 +45,46 @@ def denest_layerviews_to_layer_tuples(
 
     # Start the recursive denesting process and return the result
     return _denest_recursive(layer_views.layer_views)
+
+
+def show_components(
+    *args: ComponentSpec | ComponentAllAngleSpec,
+) -> Sequence[Component]:
+    """Show sequence of components in a single layot in a line.
+
+    The components are spaced based on the maximum width and height of the components.
+
+    Args:
+        *args: Component specifications to show.
+
+    Returns:
+        Components after :func:`gdsfactory.get_component`.
+    """
+    from qpdk import PDK
+
+    PDK.activate()
+
+    components = [get_component(component_spec) for component_spec in args]
+    any_all_angle = any(
+        isinstance(component, ComponentAllAngle) for component in components
+    )
+
+    c = ComponentAllAngle() if any_all_angle else Component()
+
+    max_component_width = max(component.size_info.width for component in components)
+    max_component_height = max(component.size_info.height for component in components)
+    if max_component_width > max_component_height:
+        spacing = (0, max_component_height + 200)
+    else:
+        spacing = (max_component_width + 200, 0)
+
+    for i, component in enumerate(components):
+        (c << component).move(
+            (
+                spacing[0] * i,
+                spacing[1] * i,
+            )
+        )
+    c.show()
+
+    return components

@@ -3,11 +3,12 @@
 from functools import partial
 from typing import TypedDict, Unpack
 
-import gdsfactory as gf
 from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
 from klayout.db import DCplxTrans
 
+import gdsfactory as gf
 from qpdk import tech
+from qpdk.helper import show_components
 
 _DEFAULT_CROSS_SECTION = tech.cpw
 _DEFAULT_KWARGS = {"cross_section": _DEFAULT_CROSS_SECTION}
@@ -308,20 +309,14 @@ def bend_circular_all_angle(
 
 
 if __name__ == "__main__":
-    from qpdk import PDK
-
-    PDK.activate()
-
-    for c in [
-        taper_cross_section(),
-        # bend_euler(),
-        # bend_circular(),
-        # tee(),
-        # bend_s(),
-        # straight(),
-        # straight_all_angle(),
-        # bend_euler_all_angle(angle=33),
-        # rectangle(),
-    ]:
-        c.pprint_ports()
-        c.show()
+    show_components(
+        taper_cross_section,
+        bend_euler,
+        bend_circular,
+        tee,
+        bend_s,
+        straight,
+        straight_all_angle,
+        partial(bend_euler_all_angle, angle=33),
+        rectangle,
+    )
