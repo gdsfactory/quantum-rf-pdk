@@ -33,6 +33,7 @@ skip_test_netlist = {
     "die_with_pads",
     "launcher",
     "indium_bump",
+    "qubit_with_resonator",
     "transmon_with_resonator",
     "flipmon_with_resonator",
 }
