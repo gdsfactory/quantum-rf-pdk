@@ -1,4 +1,4 @@
-"""Primitives."""
+"""Waveguide primitives."""
 
 from functools import partial
 from typing import TypedDict, Unpack
@@ -424,4 +424,5 @@ if __name__ == "__main__":
         partial(straight_double_open_all_angle, length=20),
         partial(bend_euler_all_angle, angle=33),
         rectangle,
+        spacing=50,
     )

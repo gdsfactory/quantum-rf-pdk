@@ -48,13 +48,15 @@ def denest_layerviews_to_layer_tuples(
 
 def show_components(
     *args: ComponentSpec | ComponentAllAngleSpec,
+    spacing: int = 200,
 ) -> Sequence[Component]:
-    """Show sequence of components in a single layot in a line.
+    """Show sequence of components in a single layout in a line.
 
     The components are spaced based on the maximum width and height of the components.
 
     Args:
         *args: Component specifications to show.
+        spacing: Extra spacing between components.
 
     Returns:
         Components after :func:`gdsfactory.get_component`.
@@ -73,20 +75,20 @@ def show_components(
     max_component_width = max(component.size_info.width for component in components)
     max_component_height = max(component.size_info.height for component in components)
     if max_component_width > max_component_height:
-        spacing = (0, max_component_height + 200)
+        shift = (0, max_component_height + spacing)
     else:
-        spacing = (max_component_width + 200, 0)
+        shift = (max_component_width + spacing, 0)
 
     for i, component in enumerate(components):
         (c << component).move(
             (
-                spacing[0] * i,
-                spacing[1] * i,
+                shift[0] * i,
+                shift[1] * i,
             )
         )
         label_offset = (
-            spacing[0] * i + (component.size_info.width / 2),
-            spacing[1] * i + (component.size_info.height / 2),
+            shift[0] * i + (component.size_info.width / 2),
+            shift[1] * i + (component.size_info.height / 2),
         )
         label_text = component.name if hasattr(component, "name") else f"component_{i}"
         c.add_label(text=label_text, position=label_offset, layer=PDK.layers.TEXT)
