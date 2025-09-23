@@ -3,6 +3,8 @@
 __all__ = ["PATH"]
 
 import pathlib
+from dataclasses import dataclass
+from typing import final
 
 cwd = pathlib.Path.cwd()
 cwd_config = cwd / "config.yml"
@@ -10,7 +12,11 @@ module = pathlib.Path(__file__).parent.absolute()
 repo = module.parent
 
 
+@final
+@dataclass
 class Path:
+    """Creates object for referencing paths in repository."""
+
     module = module
     repo = repo
     build = repo / "build"
