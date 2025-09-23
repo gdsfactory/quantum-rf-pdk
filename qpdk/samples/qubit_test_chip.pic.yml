@@ -22,22 +22,22 @@ instances:
     component: tee
     settings: {}
   tee_top_straight_1:
-    component: straight
+    component: straight_open
     settings:
       length: 40
   tee_top_straight_2:
-    component: straight
+    component: straight_open
     settings:
       length: 40
   tee_bot:
     component: tee
     settings: {}
   tee_bot_straight_1:
-    component: straight
+    component: straight_open
     settings:
       length: 40
   tee_bot_straight_2:
-    component: straight
+    component: straight_open
     settings:
       length: 40
   qubit1:
