@@ -148,7 +148,7 @@ select = [
 "qpdk/samples/**/*.py" = [
   "D100"
 ]  # no public module docstring for sample scripts
-"tests/**" = ["S101", "D103"]
+"tests/**" = ["S101", "D102", "D103"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
