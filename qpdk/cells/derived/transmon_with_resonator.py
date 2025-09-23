@@ -17,7 +17,7 @@ from qpdk.tech import LAYER, route_single_cpw
 
 @gf.cell_with_module_name
 def qubit_with_resonator(
-    qubit: ComponentSpec,
+    qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
