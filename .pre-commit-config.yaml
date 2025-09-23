@@ -6,6 +6,7 @@ repos:
         exclude: ^(conda\.recipe/meta\.yaml|conda_build/templates/.*\.yaml|docs/click/meta\.yaml|conda/meta\.yaml|conda/construct.yaml|.*\.pic\.yml|conda/constructor/Miniforge3/construct.yaml)
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: detect-private-key
   - repo: https://github.com/kynan/nbstripout
     rev: 0.8.1
     hooks:
@@ -100,3 +101,9 @@ repos:
           - mdformat-tables
           - mdformat-frontmatter
           - mdformat-footnote
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: [--config=pyproject.toml]
+        pass_filenames: false
