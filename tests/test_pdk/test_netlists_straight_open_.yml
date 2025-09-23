@@ -1,0 +1,64 @@
+instances:
+  rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_13000_0:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_ETCH
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 6
+      - 22
+  straight_gdsfactorypcomponentspwaveguidespstraight_L10__704d011b_0_0:
+    component: straight
+    info:
+      length: 10
+      route_info_coplanar_waveguide_length: 10
+      route_info_length: 10
+      route_info_type: coplanar_waveguide
+      route_info_weight: 10
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 10
+      npoints: 2
+      width: null
+name: straight_open
+nets: []
+placements:
+  rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_13000_0:
+    mirror: false
+    rotation: 0
+    x: 13
+    y: 0
+  straight_gdsfactorypcomponentspwaveguidespstraight_L10__704d011b_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+ports:
+  o1: straight_gdsfactorypcomponentspwaveguidespstraight_L10__704d011b_0_0,o1
+  o2: straight_gdsfactorypcomponentspwaveguidespstraight_L10__704d011b_0_0,o2
+warnings:
+  electrical:
+    unconnected_ports:
+    - message: 4 unconnected electrical ports!
+      ports:
+      - rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_13000_0,e1
+      - rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_13000_0,e2
+      - rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_13000_0,e3
+      - rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_13000_0,e4
+      values:
+      - - 10
+        - 0
+      - - 13
+        - 11
+      - - 16
+        - 0
+      - - 13
+        - -11

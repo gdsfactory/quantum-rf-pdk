@@ -1,12 +1,11 @@
 instances:
-  flipmon_IRR50_IRW30_ORR110_ORW60_TCR110_JSsquid_junctio_adcc67b0_0_0:
+  flipmon_ICR60_ORR110_ORW60_TCR110_JSFsquid_junction_Mqp_b9a10a4c_0_0:
     component: flipmon
     info: {}
     settings:
-      inner_ring_radius: 50
-      inner_ring_width: 30
+      inner_circle_radius: 60
       junction_displacement: null
-      junction_spec: squid_junction
+      junction_spec: Fsquid_junction_Mqpdkpcellspjunction_SJSFjosephson_junction_Mqpdkpcellspjunction_SWSL12
       layer_metal: M1_DRAW
       layer_metal_top: M2_DRAW
       outer_ring_radius: 110
@@ -15,14 +14,14 @@ instances:
 name: flipmon_with_bbox_FPNone_MEEG30_MEEG40
 nets: []
 placements:
-  flipmon_IRR50_IRW30_ORR110_ORW60_TCR110_JSsquid_junctio_adcc67b0_0_0:
+  flipmon_ICR60_ORR110_ORW60_TCR110_JSFsquid_junction_Mqp_b9a10a4c_0_0:
     mirror: false
     rotation: 0
     x: 0
     y: 0
 ports:
-  center: flipmon_IRR50_IRW30_ORR110_ORW60_TCR110_JSsquid_junctio_adcc67b0_0_0,center
-  inner_ring_near_junction: flipmon_IRR50_IRW30_ORR110_ORW60_TCR110_JSsquid_junctio_adcc67b0_0_0,inner_ring_near_junction
-  junction: flipmon_IRR50_IRW30_ORR110_ORW60_TCR110_JSsquid_junctio_adcc67b0_0_0,junction
-  outer_ring_near_junction: flipmon_IRR50_IRW30_ORR110_ORW60_TCR110_JSsquid_junctio_adcc67b0_0_0,outer_ring_near_junction
-  outer_ring_outside: flipmon_IRR50_IRW30_ORR110_ORW60_TCR110_JSsquid_junctio_adcc67b0_0_0,outer_ring_outside
+  center: flipmon_ICR60_ORR110_ORW60_TCR110_JSFsquid_junction_Mqp_b9a10a4c_0_0,center
+  inner_ring_near_junction: flipmon_ICR60_ORR110_ORW60_TCR110_JSFsquid_junction_Mqp_b9a10a4c_0_0,inner_ring_near_junction
+  junction: flipmon_ICR60_ORR110_ORW60_TCR110_JSFsquid_junction_Mqp_b9a10a4c_0_0,junction
+  outer_ring_near_junction: flipmon_ICR60_ORR110_ORW60_TCR110_JSFsquid_junction_Mqp_b9a10a4c_0_0,outer_ring_near_junction
+  outer_ring_outside: flipmon_ICR60_ORR110_ORW60_TCR110_JSFsquid_junction_Mqp_b9a10a4c_0_0,outer_ring_outside

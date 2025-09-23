@@ -17,7 +17,7 @@ from klayout.db import DCplxTrans, Region
 
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
-from qpdk.cells.junction import squid_junction
+from qpdk.cells.junction import josephson_junction, squid_junction
 from qpdk.helper import show_components
 from qpdk.tech import LAYER, LAYER_STACK_FLIP_CHIP
 
@@ -177,8 +177,7 @@ class FlipmonParams(TypedDict):
     """Parameters for flipmon style transmon qubit.
 
     Keyword Args:
-        inner_ring_radius: Central radius of the inner circular capacitor pad in μm.
-        inner_ring_width: Width of the inner circular capacitor pad in μm.
+        inner_circle_radius: Central radius of the inner circular capacitor pad in μm.
         outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
         outer_ring_width: Width of the outer circular capacitor pad in μm.
         top_circle_radius: Central radius of the top circular capacitor pad in μm.
@@ -189,8 +188,7 @@ class FlipmonParams(TypedDict):
         layer_metal_top: Layer for the other metal layer pad for flip-chip.
     """
 
-    inner_ring_radius: float
-    inner_ring_width: float
+    inner_circle_radius: float
     outer_ring_radius: float
     outer_ring_width: float
     top_circle_radius: float
@@ -201,12 +199,14 @@ class FlipmonParams(TypedDict):
 
 
 _flipmon_default_params = FlipmonParams(
-    inner_ring_radius=50,
-    inner_ring_width=30,
+    inner_circle_radius=60,
     outer_ring_radius=110,
     outer_ring_width=60,
     top_circle_radius=110,
-    junction_spec=squid_junction,
+    junction_spec=partial(
+        squid_junction,
+        junction_spec=partial(josephson_junction, wide_straight_length=12),
+    ),
     junction_displacement=None,
     layer_metal=LAYER.M1_DRAW,
     layer_metal_top=LAYER.M2_DRAW,
@@ -226,8 +226,7 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
         **kwargs: :class:`~FlipmonParams` for the flipmon qubit.
 
     Keyword Args:
-        inner_ring_radius: Central radius of the inner circular capacitor pad in μm.
-        inner_ring_width: Width of the inner circular capacitor pad in μm.
+        inner_circle_radius: Central radius of the inner circular capacitor pad in μm.
         outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
         outer_ring_width: Width of the outer circular capacitor pad in μm.
         top_circle_radius: Central radius of the top circular capacitor pad in μm.
@@ -244,8 +243,7 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
     params = _flipmon_default_params | kwargs
     # Extract wire parameters using dictionary unpacking
     (
-        inner_ring_radius,
-        inner_ring_width,
+        inner_circle_radius,
         outer_ring_radius,
         outer_ring_width,
         top_circle_radius,
@@ -254,8 +252,7 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
         layer_metal,
         layer_metal_top,
     ) = itemgetter(
-        "inner_ring_radius",
-        "inner_ring_width",
+        "inner_circle_radius",
         "outer_ring_radius",
         "outer_ring_width",
         "top_circle_radius",
@@ -265,37 +262,30 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
         "layer_metal_top",
     )(params)
 
-    def create_circular_pad(radius: float, width: float) -> gf.ComponentReference:
-        pad = gf.c.ring(
-            radius=radius,
-            width=width,
-            layer=layer_metal,
-        )
-        return c.add_ref(pad)
+    c << gf.c.circle(
+        radius=inner_circle_radius,
+        layer=layer_metal,
+    )
 
-    create_circular_pad(inner_ring_radius, inner_ring_width)
-    create_circular_pad(outer_ring_radius, outer_ring_width)
+    c << gf.c.ring(
+        radius=outer_ring_radius,
+        width=outer_ring_width,
+        layer=layer_metal,
+    )
 
     # Create Josephson junction
     junction_ref = c.add_ref(gf.get_component(junction_spec))
     # Center the junction between the pads
-    # junction_ref.rotate(45)
     junction_ref.dcenter = c.dcenter  # move((-junction_height / 2, 0))
     junction_ref.dcplx_trans *= reduce(
         operator.mul,
         (
+            DCplxTrans(1, 45, False, 0, 0),
             DCplxTrans(
-                (
-                    inner_ring_radius
-                    + inner_ring_width / 2
-                    + outer_ring_radius
-                    - outer_ring_width / 2
-                )
-                / 2,
+                (inner_circle_radius + outer_ring_radius - outer_ring_width / 2) / 2,
                 0,
             ),
-            DCplxTrans(1, 45, False, 0, 0),
-            # DCplxTrans(1, 45, False, 0, 0),
+            DCplxTrans(0, -junction_ref.size_info.height),
         ),
     )
     junction_ref.y = 0
@@ -320,8 +310,8 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
     # Add ports for connections
     c.add_port(
         name="inner_ring_near_junction",
-        center=(inner_ring_radius + inner_ring_width / 2, 0),
-        width=inner_ring_width,
+        center=(inner_circle_radius / 2, 0),
+        width=outer_ring_width,
         orientation=0,
         layer=layer_metal,
     )

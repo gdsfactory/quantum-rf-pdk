@@ -6,7 +6,6 @@ from .resonator import quarter_wave_resonator_coupled_to_probeline, resonator_fr
 
 sax.set_port_naming_strategy("optical")
 
-
 models = {
     "quarter_wave_resonator": quarter_wave_resonator_coupled_to_probeline,
 }

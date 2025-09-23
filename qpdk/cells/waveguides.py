@@ -1,4 +1,4 @@
-"""Primitives."""
+"""Waveguide primitives."""
 
 from functools import partial
 from typing import TypedDict, Unpack
@@ -62,12 +62,48 @@ class StraightKwargs(TypedDict, total=False):
 
 @gf.cell
 def straight(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
-    """Returns a Straight waveguide.
+    """Returns a straight waveguide.
 
     Args:
-        **kwargs: Arguments passed to gf.c.straight.
+        **kwargs: Arguments passed to :func:`gf.c.straight`.
     """
     return gf.c.straight(**(_DEFAULT_KWARGS | kwargs))
+
+
+straight_shorted = straight
+
+
+@gf.cell
+def straight_open(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
+    """Returns a straight waveguide with etched gap at one end.
+
+    Args:
+        **kwargs: Arguments passed to :func:`gf.c.straight`.
+    """
+    params = _DEFAULT_KWARGS | kwargs
+    c = gf.Component()
+    straight_ref = c << gf.c.straight(**params)
+    c.add_ports(straight_ref.ports)
+    add_etch_gap(c, c.ports["o2"], cross_section=params["cross_section"])
+    return c
+
+
+@gf.cell
+def straight_double_open(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
+    r"""Returns a straight waveguide with etched gaps at both ends.
+
+    Note:
+        This may be treated as a :math:`\lambda/2` as a straight resonator in some contexts.
+
+    Args:
+        **kwargs: Arguments passed to :func:`gf.c.straight`.
+    """
+    params = _DEFAULT_KWARGS | kwargs
+    c = gf.Component()
+    straight_ref = c << straight_open(**params)
+    c.add_ports(straight_ref.ports)
+    add_etch_gap(c, c.ports["o1"], cross_section=params["cross_section"])
+    return c
 
 
 class NxnKwargs(TypedDict, total=False):
@@ -225,7 +261,7 @@ def bend_s(**kwargs: Unpack[BendSKwargs]) -> gf.Component:
     min_bend_radius depends on height and length
 
     Args:
-        **kwargs: Arguments passed to gf.c.bend_s.
+        **kwargs: Arguments passed to :func:`~gf.c.bend_s`.
     """
     return gf.c.bend_s(**(_DEFAULT_BEND_KWARGS | _BEND_S_DEFAULTS | kwargs))
 
@@ -246,7 +282,7 @@ def straight_all_angle(
     """Returns a Straight waveguide with offgrid ports.
 
     Args:
-        **kwargs: Arguments passed to gf.c.straight_all_angle.
+        **kwargs: Arguments passed to :func:`~gf.c.straight_all_angle`.
 
     .. code::
 
@@ -308,6 +344,34 @@ def bend_circular_all_angle(
     )
 
 
+def add_etch_gap(
+    c: gf.Component | gf.ComponentAllAngle,
+    port: gf.Port,
+    cross_section: CrossSectionSpec,
+) -> gf.ComponentReference:
+    """Adds an etch gap rectangle at the given port of the component.
+
+    Args:
+        c: Component to which the etch gap will be added.
+        port: Port where the etch gap will be added.
+        cross_section: Cross-section specification to determine etch dimensions.
+            The etch width is taken from a :class:`~Section` that includes "etch" in its name.
+    """
+    cross_section = gf.get_cross_section(cross_section)
+    etch_section = next(
+        s
+        for s in cross_section.sections
+        if s.name is not None and s.name.startswith("etch")
+    )
+    etch_ref = c << rectangle(
+        size=(etch_section.width, cross_section.width + 2 * etch_section.width),
+        layer=etch_section.layer,
+        centered=True,
+    )
+    etch_ref.transform(port.dcplx_trans * DCplxTrans(etch_section.width / 2, 0))
+    return etch_ref
+
+
 if __name__ == "__main__":
     show_components(
         taper_cross_section,
@@ -316,7 +380,10 @@ if __name__ == "__main__":
         tee,
         bend_s,
         straight,
+        partial(straight_open, length=20),
+        partial(straight_double_open, length=20),
         straight_all_angle,
         partial(bend_euler_all_angle, angle=33),
         rectangle,
+        spacing=50,
     )

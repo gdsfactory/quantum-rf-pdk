@@ -21,7 +21,7 @@
    <fill-color>#acf1ea</fill-color>
    <frame-brightness>0</frame-brightness>
    <fill-brightness>0</fill-brightness>
-   <dither-pattern>I35</dither-pattern>
+   <dither-pattern>I5</dither-pattern>
    <line-style/>
    <valid>true</valid>
    <visible>true</visible>
@@ -55,7 +55,7 @@
    <fill-color>#ffa9a4</fill-color>
    <frame-brightness>0</frame-brightness>
    <fill-brightness>0</fill-brightness>
-   <dither-pattern>I35</dither-pattern>
+   <dither-pattern>I5</dither-pattern>
    <line-style/>
    <valid>true</valid>
    <visible>true</visible>

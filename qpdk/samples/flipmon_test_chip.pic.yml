@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../build/schemas/samples/qubit_test_chip.json
+# yaml-language-server: $schema=../build/schemas/samples/flipmon_test_chip.json
 instances:
   input_cap1:
     component: interdigital_capacitor
@@ -41,25 +41,25 @@ instances:
     settings:
       length: 40
   qubit1:
-    component: transmon_with_resonator
+    component: flipmon_with_resonator
     settings:
       resonator_length: 5000
       resonator_params:
         meanders: 5
   qubit2:
-    component: transmon_with_resonator
+    component: flipmon_with_resonator
     settings:
       resonator_length: 4800
       resonator_params:
         meanders: 3
   qubit3:
-    component: transmon_with_resonator
+    component: flipmon_with_resonator
     settings:
       resonator_length: 4600
       resonator_params:
         meanders: 3
   qubit4:
-    component: transmon_with_resonator
+    component: flipmon_with_resonator
     settings:
       resonator_length: 4400
       resonator_params:

@@ -1,0 +1,17 @@
+info:
+  length: 5000
+  resonator_type: quarter_wave
+name: qubit_with_resonator_qpdkpcellspderivedptransmon_with_r_72ca2647
+settings:
+  coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_ST10_F5
+  coupler_offset:
+  - -10
+  - 0
+  coupler_port: outer_ring_outside
+  qubit: flipmon_with_bbox
+  qubit_rotation: -90
+  resonator: Fresonator_Mqpdkpcellspresonator_SOSFalse_OETrue_L4000_M6
+  resonator_length: 5000
+  resonator_meander_start:
+  - -700
+  - -1300
