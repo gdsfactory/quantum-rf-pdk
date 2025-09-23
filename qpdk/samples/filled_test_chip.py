@@ -9,13 +9,14 @@
 # ---
 
 # %% tags=["hide-input", "hide-output"]
+from functools import partial
 from pathlib import Path
 
 import gdsfactory as gf
 from gdsfactory.read import from_yaml
 
 from qpdk import PDK, tech
-from qpdk.cells.helpers import fill_magnetic_vortices
+from qpdk.cells.helpers import apply_additive_metals, fill_magnetic_vortices
 
 # %% [markdown]
 # # Filled Qubit Test Chip Example
@@ -44,23 +45,38 @@ from qpdk.cells.helpers import fill_magnetic_vortices
 
 # %%
 @gf.cell
-def filled_qubit_test_chip():
+def filled_qubit_test_chip(
+    yaml_path: str | Path = Path(__file__).parent / "qubit_test_chip.pic.yml",
+):
     """Returns a qubit test chip filled with magnetic vortex trapping rectangles.
 
     Rouhly corresponds to the sample in :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
     """
     c = gf.Component()
     test_chip = from_yaml(
-        Path(__file__).parent / "qubit_test_chip.pic.yml",
+        yaml_path,
         routing_strategies=tech.routing_strategies,
     )
     c << fill_magnetic_vortices(
         component=test_chip,
         rectangle_size=(15.0, 15.0),
-        gap=20.0,
-        stagger=5,
+        gap=40.0,
+        stagger=2,
     )
-    return c
+    # Flip-chip
+    c << fill_magnetic_vortices(
+        component=test_chip,
+        rectangle_size=(15.0, 15.0),
+        gap=40.0,
+        stagger=2,
+        exclude_layers=[
+            (tech.LAYER.M2_ETCH, 80),
+            (tech.LAYER.M2_DRAW, 80),
+        ],
+        fill_layer=tech.LAYER.M2_ETCH,
+    )
+    # Get final 'negative' layout
+    return apply_additive_metals(c)
 
 
 # %% [markdown]
@@ -72,30 +88,12 @@ def filled_qubit_test_chip():
 
 
 # %%
-@gf.cell
-def filled_flipmon_test_chip():
-    """Returns a flipmon test chip filled with magnetic vortex trapping rectangles.
-
-    Similar to filled_qubit_test_chip but uses flipmon qubits for flip-chip applications.
-    """
-    c = gf.Component()
-    test_chip = from_yaml(
-        Path(__file__).parent / "flipmon_test_chip.pic.yml",
-        routing_strategies=tech.routing_strategies,
-    )
-    c << fill_magnetic_vortices(
-        component=test_chip,
-        rectangle_size=(15.0, 15.0),
-        gap=20.0,
-        stagger=5,
-    )
-    return c
-
+filled_flipmon_test_chip = partial(
+    filled_qubit_test_chip, Path(__file__).parent / "flipmon_test_chip.pic.yml"
+)
 
 # %% [markdown]
-# ## Example Usage
-#
-# Demonstrates how to create and display the filled test chips.
+# ## Examples
 
 # %%
 if __name__ == "__main__":
