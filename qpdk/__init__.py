@@ -3,7 +3,7 @@
 import importlib
 import inspect
 import pkgutil
-from functools import lru_cache
+from functools import lru_cache, partial
 
 from gdsfactory import logger
 from gdsfactory.cross_section import get_cross_sections
@@ -53,9 +53,10 @@ sample_functions = {
         qpdk.samples.__path__, qpdk.samples.__name__ + "."
     )
     for name, obj in inspect.getmembers(importlib.import_module(modname))
-    if inspect.isfunction(obj)
+    if (inspect.isfunction(obj) or isinstance(obj, partial))
     and not name.startswith("_")
-    and obj.__module__ == modname
+    # Compare .func if exists (for partials), otherwise obj itself
+    and getattr(obj, "func", obj).__module__ == modname
 }
 
 __all__ = [
