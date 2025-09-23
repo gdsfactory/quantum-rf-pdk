@@ -108,8 +108,6 @@ flipmon_with_resonator = partial(
 )
 
 
-#
-
 if __name__ == "__main__":
     show_components(
         transmon_with_resonator,

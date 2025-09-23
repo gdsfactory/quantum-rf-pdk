@@ -292,43 +292,6 @@ def straight_all_angle(
     return gf.c.straight_all_angle(**(_DEFAULT_KWARGS | kwargs))
 
 
-@gf.vcell
-def straight_open_all_angle(
-    **kwargs: Unpack[StraightAllAngleKwargs],
-) -> gf.ComponentAllAngle:
-    """Returns a straight waveguide with offgrid ports that has an etched gap at one end.
-
-    Args:
-        **kwargs: Arguments passed to :func:`~gf.c.straight_all_angle`.
-    """
-    params = _DEFAULT_KWARGS | kwargs
-    c = gf.ComponentAllAngle()
-    straight_ref = c << straight_all_angle(**params)
-    c.add_ports(straight_ref.ports)
-    add_etch_gap(c, c.ports["o2"], cross_section=params["cross_section"])
-    return c
-
-
-@gf.vcell
-def straight_double_open_all_angle(
-    **kwargs: Unpack[StraightAllAngleKwargs],
-) -> gf.ComponentAllAngle:
-    r"""Returns a straight waveguide with offgrid ports that has etched gaps at both ends.
-
-    Note:
-        This may be treated as a :math:`\lambda/2` as a straight resonator in some contexts.
-
-    Args:
-        **kwargs: Arguments passed to :func:`~gf.c.straight_all_angle`.
-    """
-    params = _DEFAULT_KWARGS | kwargs
-    c = gf.ComponentAllAngle()
-    straight_ref = c << straight_open_all_angle(**params)
-    c.add_ports(straight_ref.ports)
-    add_etch_gap(c, c.ports["o1"], cross_section=params["cross_section"])
-    return c
-
-
 class BendEulerAllAngleKwargs(TypedDict, total=False):
     """Type definition for bend_euler_all_angle keyword arguments."""
 
@@ -420,8 +383,6 @@ if __name__ == "__main__":
         partial(straight_open, length=20),
         partial(straight_double_open, length=20),
         straight_all_angle,
-        partial(straight_open_all_angle, length=20),
-        partial(straight_double_open_all_angle, length=20),
         partial(bend_euler_all_angle, angle=33),
         rectangle,
         spacing=50,

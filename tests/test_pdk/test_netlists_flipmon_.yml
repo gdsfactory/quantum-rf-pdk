@@ -6,6 +6,13 @@ instances:
       angle_resolution: 2.5
       layer: M2_DRAW
       radius: 110
+  circle_gdsfactorypcomponentspshapespcircle_R60_AR2p5_LM1_DRAW_0_0:
+    component: circle
+    info: {}
+    settings:
+      angle_resolution: 2.5
+      layer: M1_DRAW
+      radius: 60
   indium_bump_D15_0_0:
     component: indium_bump
     info: {}
@@ -20,25 +27,21 @@ instances:
       layer: M1_DRAW
       radius: 110
       width: 60
-  ring_gdsfactorypcomponentspringspring_R50_W30_AR2p5_LM1_7473cf03_0_0:
-    component: ring
-    info: {}
-    settings:
-      angle: 360
-      angle_resolution: 2.5
-      layer: M1_DRAW
-      radius: 50
-      width: 30
-  squid_junction_JSjosephson_junction_LA4_60000_m8132_A45:
+  squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45:
     component: squid_junction
     info: {}
     settings:
-      junction_spec: josephson_junction
+      junction_spec: Fjosephson_junction_Mqpdkpcellspjunction_SWSL12
       loop_area: 4
 name: flipmon
 nets: []
 placements:
   circle_gdsfactorypcomponentspshapespcircle_R110_AR2p5_LM2_DRAW_0_0:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  circle_gdsfactorypcomponentspshapespcircle_R60_AR2p5_LM1_DRAW_0_0:
     mirror: false
     rotation: 0
     x: 0
@@ -53,59 +56,37 @@ placements:
     rotation: 0
     x: 0
     y: 0
-  ring_gdsfactorypcomponentspringspring_R50_W30_AR2p5_LM1_7473cf03_0_0:
-    mirror: false
-    rotation: 0
-    x: 0
-    y: 0
-  squid_junction_JSjosephson_junction_LA4_60000_m8132_A45:
+  squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45:
     mirror: false
     rotation: 45
-    x: 60
-    y: -8.132
+    x: 55.253
+    y: -10.748
 ports:
   center: indium_bump_D15_0_0,center
-  junction: squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,loop_center
 warnings:
   optical:
-    orientation_mismatch:
-    - message: squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,loop_center
-        was promoted to junction but orientationsdo not match! Difference of 45.0
-        deg
-      ports:
-      - squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,loop_center
-      - junction
-      values:
-      - 45
-      - 90
     unconnected_ports:
-    - message: 6 unconnected optical ports!
+    - message: 7 unconnected optical ports!
       ports:
-      - squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,left_left_wide
-      - squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,left_right_wide
-      - squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,right_left_wide
-      - squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,right_right_wide
-      - squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,left_overlap
-      - squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,right_overlap
+      - squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45,left_left_wide
+      - squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45,left_right_wide
+      - squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45,right_left_wide
+      - squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45,right_right_wide
+      - squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45,left_overlap
+      - squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45,right_overlap
+      - squid_junction_JSFjosephson_junction_Mqpdkpcellspjuncti_e0ccabb6_55253_m10748_A45,loop_center
       values:
-      - - 77.819
-        - -6.859
-      - - 61.273
-        - -6.859
-      - - 61.273
-        - 6.859
-      - - 77.819
-        - 6.859
-      - - 69.546
+      - - 78.305
+        - -9.475
+      - - 56.526
+        - -9.475
+      - - 56.526
+        - 9.475
+      - - 78.305
+        - 9.475
+      - - 67.415
         - 1.414
-      - - 69.546
+      - - 67.415
         - -1.414
-    width_mismatch:
-    - message: Widths of ports squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,loop_center
-        and junction not equal. Difference of 33.355999999999995 um
-      ports:
-      - squid_junction_JSjosephson_junction_LA4_60000_m8132_A45,loop_center
-      - junction
-      values:
-      - 0.09
-      - 33.446
+      - - 67.415
+        - 0

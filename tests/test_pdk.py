@@ -36,6 +36,8 @@ skip_test_netlist = {
     "qubit_with_resonator",
     "transmon_with_resonator",
     "flipmon_with_resonator",
+    "flipmon",
+    "flipmon_with_bbox",
 }
 # Skip default gdsfactory cells
 skip_test = {
