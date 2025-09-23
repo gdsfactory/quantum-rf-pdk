@@ -2,9 +2,9 @@
 
 from collections.abc import Sequence
 
-from gdsfactory import Component, ComponentAllAngle, get_component
+from gdsfactory import Component, ComponentAllAngle, LayerEnum, get_component
 from gdsfactory.technology import LayerViews
-from gdsfactory.typings import ComponentAllAngleSpec, ComponentSpec
+from gdsfactory.typings import ComponentAllAngleSpec, ComponentSpec, Layer
 
 
 def denest_layerviews_to_layer_tuples(
@@ -95,3 +95,12 @@ def show_components(
     c.show()
 
     return components
+
+
+def layerenum_to_tuple(layerenum: LayerEnum) -> Layer:
+    """Convert a LayerEnum object to a tuple containing layer and datatype values.
+
+    Args:
+        layerenum: The LayerEnum object to convert.
+    """
+    return layerenum.layer, layerenum.datatype
