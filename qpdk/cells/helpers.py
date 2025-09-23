@@ -26,7 +26,7 @@ _EXCLUDE_LAYERS_DEFAULT = [
 ]
 
 
-@gf.cell()
+@gf.cell
 def fill_magnetic_vortices(
     component: Component,
     rectangle_size: tuple[float, float] = (15.0, 15.0),
@@ -94,3 +94,29 @@ def fill_magnetic_vortices(
     )
 
     return c
+
+
+def apply_additive_metals(component: Component) -> Component:
+    """Apply additive metal layers and remove them.
+
+    Removes additive metal layers from etch layers, leading to a negative mask.
+
+    TODO: Implement without flattening. Maybe with a KLayout dataprep script?
+    """
+    for additive, etch in (
+        (LAYER.M1_DRAW, LAYER.M1_ETCH),
+        (LAYER.M2_DRAW, LAYER.M2_ETCH),
+    ):
+        component_etch_only = gf.boolean(
+            A=component,
+            B=component,
+            operation="-",
+            layer=etch,
+            layer1=etch,
+            layer2=additive,
+        )
+        component.flatten()
+        component.remove_layers([etch, additive])
+        component << component_etch_only
+
+    return component
