@@ -17,6 +17,7 @@ from gdsfactory.read import from_yaml
 
 from qpdk import PDK, tech
 from qpdk.cells.helpers import apply_additive_metals, fill_magnetic_vortices
+from qpdk.helper import layerenum_to_tuple
 
 # %% [markdown]
 # # Filled Qubit Test Chip Example
@@ -64,17 +65,21 @@ def filled_qubit_test_chip(
         stagger=2,
     )
     # Flip-chip
-    c << fill_magnetic_vortices(
-        component=test_chip,
-        rectangle_size=(15.0, 15.0),
-        gap=40.0,
-        stagger=2,
-        exclude_layers=[
-            (tech.LAYER.M2_ETCH, 80),
-            (tech.LAYER.M2_DRAW, 80),
-        ],
-        fill_layer=tech.LAYER.M2_ETCH,
-    )
+    if any(
+        layerenum_to_tuple(layer_enum) in c.layers
+        for layer_enum in (tech.LAYER.M2_DRAW, tech.LAYER.M2_ETCH)
+    ):
+        c << fill_magnetic_vortices(
+            component=test_chip,
+            rectangle_size=(15.0, 15.0),
+            gap=40.0,
+            stagger=2,
+            exclude_layers=[
+                (tech.LAYER.M2_ETCH, 80),
+                (tech.LAYER.M2_DRAW, 80),
+            ],
+            fill_layer=tech.LAYER.M2_ETCH,
+        )
     # Get final 'negative' layout
     return apply_additive_metals(c)
 
