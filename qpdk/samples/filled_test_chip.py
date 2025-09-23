@@ -17,6 +17,7 @@ from gdsfactory.read import from_yaml
 
 from qpdk import PDK, tech
 from qpdk.cells.helpers import apply_additive_metals, fill_magnetic_vortices
+from qpdk.cells.waveguides import chip_edge
 from qpdk.helper import layerenum_to_tuple
 
 # %% [markdown]
@@ -80,6 +81,18 @@ def filled_qubit_test_chip(
             ],
             fill_layer=tech.LAYER.M2_ETCH,
         )
+
+    # Add chip edge component
+    chip_edge_ref = c << chip_edge(
+        size=(test_chip.xsize, test_chip.ysize),
+        width=50.0,
+        layer=tech.LAYER.M1_ETCH,
+        add_text=True,
+        text_size=20.0,
+    )
+    # Position chip edge to align with test chip bounds
+    chip_edge_ref.move((test_chip.xmin, test_chip.ymin))
+
     # Get final 'negative' layout
     return apply_additive_metals(c)
 

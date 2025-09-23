@@ -372,6 +372,86 @@ def add_etch_gap(
     return etch_ref
 
 
+@gf.cell
+def chip_edge(
+    size: tuple[float, float] = (1000.0, 1000.0),
+    width: float = 50.0,
+    layer: LayerSpec = "M1_ETCH",
+    add_text: bool = False,
+    text_size: float = 10.0,
+) -> gf.Component:
+    """Returns a chip edge component with hollow rectangle frame.
+
+    Creates a rectangular frame (hollow rectangle) on an etched metal layer,
+    typically used to define chip edge regions for proper fabrication.
+
+    Args:
+        size: (tuple) Width and height of the chip edge area.
+        width: Width/thickness of the etched frame border.
+        layer: Layer to put the etched frame on.
+        add_text: Whether to add text labels at the four corners.
+        text_size: Size of the corner text labels.
+    """
+    c = gf.Component()
+
+    # Create the hollow rectangle frame using four rectangles
+    # Top edge
+    top_rect = c << rectangle(
+        size=(size[0], width),
+        layer=layer,
+        centered=False,
+        port_type=None,
+    )
+    top_rect.move((0, size[1] - width))
+
+    # Bottom edge
+    bottom_rect = c << rectangle(
+        size=(size[0], width),
+        layer=layer,
+        centered=False,
+        port_type=None,
+    )
+    bottom_rect.move((0, 0))
+
+    # Left edge
+    left_rect = c << rectangle(
+        size=(width, size[1]),
+        layer=layer,
+        centered=False,
+        port_type=None,
+    )
+    left_rect.move((0, 0))
+
+    # Right edge
+    right_rect = c << rectangle(
+        size=(width, size[1]),
+        layer=layer,
+        centered=False,
+        port_type=None,
+    )
+    right_rect.move((size[0] - width, 0))
+
+    # Add optional text at corners
+    if add_text:
+        # Top-left corner
+        tl_text = c << gf.components.text("TL", size=text_size, layer=layer)
+        tl_text.move((width + 5, size[1] - width - text_size - 5))
+
+        # Top-right corner
+        tr_text = c << gf.components.text("TR", size=text_size, layer=layer)
+        tr_text.move((size[0] - width - text_size * 2 - 5, size[1] - width - text_size - 5))
+
+        # Bottom-left corner
+        bl_text = c << gf.components.text("BL", size=text_size, layer=layer)
+        bl_text.move((width + 5, width + 5))
+
+        # Bottom-right corner
+        br_text = c << gf.components.text("BR", size=text_size, layer=layer)
+        br_text.move((size[0] - width - text_size * 2 - 5, width + 5))
+
+    return c
+
+
 if __name__ == "__main__":
     show_components(
         taper_cross_section,
@@ -385,5 +465,6 @@ if __name__ == "__main__":
         straight_all_angle,
         partial(bend_euler_all_angle, angle=33),
         rectangle,
+        chip_edge,
         spacing=50,
     )
