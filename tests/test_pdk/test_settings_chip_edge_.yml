@@ -1,0 +1,10 @@
+info: {}
+name: chip_edge_S1000_1000_W50_LM1_ETCH_ATFalse_TS10
+settings:
+  add_text: false
+  layer: M1_ETCH
+  size:
+  - 1000
+  - 1000
+  text_size: 10
+  width: 50
