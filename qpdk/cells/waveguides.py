@@ -439,7 +439,9 @@ def chip_edge(
 
         # Top-right corner
         tr_text = c << gf.components.text("TR", size=text_size, layer=layer)
-        tr_text.move((size[0] - width - text_size * 2 - 5, size[1] - width - text_size - 5))
+        tr_text.move(
+            (size[0] - width - text_size * 2 - 5, size[1] - width - text_size - 5)
+        )
 
         # Bottom-left corner
         bl_text = c << gf.components.text("BL", size=text_size, layer=layer)
