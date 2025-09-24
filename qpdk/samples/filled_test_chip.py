@@ -16,8 +16,8 @@ import gdsfactory as gf
 from gdsfactory.read import from_yaml
 
 from qpdk import PDK, tech
+from qpdk.cells.chip import chip_edge
 from qpdk.cells.helpers import apply_additive_metals, fill_magnetic_vortices
-from qpdk.cells.waveguides import chip_edge
 from qpdk.helper import layerenum_to_tuple
 
 # %% [markdown]
@@ -62,18 +62,33 @@ def filled_qubit_test_chip(
     c << fill_magnetic_vortices(
         component=test_chip,
         rectangle_size=(15.0, 15.0),
-        gap=40.0,
+        gap=70.0,
         stagger=2,
     )
+    # Add chip edge component
+    chip_edge_ref = c << chip_edge(
+        size=(test_chip.xsize + 230, test_chip.ysize + 200),
+        width=100.0,
+        layer=tech.LAYER.M1_ETCH,
+    )
+    # Position chip edge to align with test chip bounds
+    chip_edge_ref.move((test_chip.xmin - 100, test_chip.ymin - 100))
     # Flip-chip
     if any(
         layerenum_to_tuple(layer_enum) in c.layers
         for layer_enum in (tech.LAYER.M2_DRAW, tech.LAYER.M2_ETCH)
     ):
+        chip_edge_ref = c << chip_edge(
+            size=(test_chip.xsize + 230, test_chip.ysize + 200),
+            width=100.0,
+            layer=tech.LAYER.M2_ETCH,
+        )
+        # Position chip edge to align with test chip bounds
+        chip_edge_ref.move((test_chip.xmin - 100, test_chip.ymin - 100))
         c << fill_magnetic_vortices(
             component=test_chip,
             rectangle_size=(15.0, 15.0),
-            gap=40.0,
+            gap=70.0,
             stagger=2,
             exclude_layers=[
                 (tech.LAYER.M2_ETCH, 80),
@@ -81,17 +96,6 @@ def filled_qubit_test_chip(
             ],
             fill_layer=tech.LAYER.M2_ETCH,
         )
-
-    # Add chip edge component
-    chip_edge_ref = c << chip_edge(
-        size=(test_chip.xsize, test_chip.ysize),
-        width=50.0,
-        layer=tech.LAYER.M1_ETCH,
-        add_text=True,
-        text_size=20.0,
-    )
-    # Position chip edge to align with test chip bounds
-    chip_edge_ref.move((test_chip.xmin, test_chip.ymin))
 
     # Get final 'negative' layout
     return apply_additive_metals(c)
