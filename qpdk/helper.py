@@ -1,6 +1,7 @@
 """Helper functions for the qpdk package."""
 
 from collections.abc import Sequence
+from typing import cast
 
 from gdsfactory import Component, ComponentAllAngle, LayerEnum, get_component
 from gdsfactory.technology import LayerViews
@@ -91,7 +92,11 @@ def show_components(
             shift[1] * i + (component.size_info.height / 2),
         )
         label_text = component.name if hasattr(component, "name") else f"component_{i}"
-        c.add_label(text=label_text, position=label_offset, layer=PDK.layers.TEXT)
+        c.add_label(
+            text=label_text,
+            position=label_offset,
+            layer=cast(LayerEnum, PDK.layers).TEXT,
+        )
     c.show()
 
     return components

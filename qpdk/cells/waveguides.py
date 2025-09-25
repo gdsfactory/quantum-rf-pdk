@@ -5,6 +5,7 @@ from typing import TypedDict, Unpack
 
 import gdsfactory as gf
 from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
+from kfactory import VInstance
 from klayout.db import DCplxTrans
 
 from qpdk import tech
@@ -348,7 +349,7 @@ def add_etch_gap(
     c: gf.Component | gf.ComponentAllAngle,
     port: gf.Port,
     cross_section: CrossSectionSpec,
-) -> gf.ComponentReference:
+) -> gf.ComponentReference | VInstance:
     """Adds an etch gap rectangle at the given port of the component.
 
     Args:
