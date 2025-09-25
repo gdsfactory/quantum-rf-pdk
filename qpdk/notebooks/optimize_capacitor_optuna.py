@@ -158,7 +158,7 @@ def _setup_palace_simulation() -> dict[str, Any]:
         Dictionary with simulation configuration.
     """
     simulation_folder = PATH.simulation / "capacitor_simulation"
-    simulation_folder.mkdir(exist_ok=True)
+    simulation_folder.mkdir(exist_ok=True, parents=True)
 
     # Palace simulation configuration
     return {
