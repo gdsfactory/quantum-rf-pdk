@@ -180,22 +180,19 @@ def filled_resonator_test_chip() -> gf.Component:
     """
     c = gf.Component()
     test_chip = resonator_test_chip()
-    c << fill_magnetic_vortices(
-        component=test_chip,
+    c << test_chip
+    chip_edge_ref = c << chip_edge(
+        size=(test_chip.xsize + 200, test_chip.ysize + 800),
+        width=100.0,
+        layer=tech.LAYER.M1_ETCH,
+    )
+    chip_edge_ref.move((test_chip.xmin - 100, test_chip.ymin - 400))
+    return fill_magnetic_vortices(
+        component=c,
         rectangle_size=(15.0, 15.0),
         gap=70.0,
         stagger=2,
     )
-    # Add chip edge component with extra y-padding for resonators
-    chip_edge_ref = c << chip_edge(
-        size=(test_chip.xsize + 230, test_chip.ysize + 400),
-        width=100.0,
-        layer=tech.LAYER.M1_ETCH,
-    )
-    # Position chip edge to align with test chip bounds
-    chip_edge_ref.move((test_chip.xmin - 115, test_chip.ymin - 200))
-    
-    return c
 
 
 if __name__ == "__main__":
