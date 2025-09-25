@@ -17,6 +17,8 @@
 
 # %% tags=["hide-input", "hide-output"]
 
+import tempfile
+from pathlib import Path
 from typing import Any
 
 import gdsfactory as gf
@@ -142,7 +144,9 @@ def _objective_function(trial: optuna.trial.Trial) -> float:
 
 
 # %%
-def _setup_palace_simulation() -> dict[str, Any]:
+def _setup_palace_simulation(
+    simulation_folder: Path | None = None,
+) -> dict[str, Any]:
     """Setup configuration for Palace capacitive simulation.
 
     The mesh_parameters section is provided as keyword arguments
@@ -152,12 +156,13 @@ def _setup_palace_simulation() -> dict[str, Any]:
     starting point while demonstrating how te set up the mesh in different ways.
 
     Args:
-        component: The gdsfactory component to simulate.
+        simulation_folder: Folder to use for simulation files
 
     Returns:
         Dictionary with simulation configuration.
     """
-    simulation_folder = PATH.simulation / "capacitor_simulation"
+    if simulation_folder is None:
+        simulation_folder = Path(tempfile.mkdtemp(prefix="palace_"))
     simulation_folder.mkdir(exist_ok=True, parents=True)
 
     # Palace simulation configuration
@@ -165,6 +170,10 @@ def _setup_palace_simulation() -> dict[str, Any]:
         "layer_stack": PDK.layer_stack,
         "material_spec": material_properties,
         "simulation_folder": simulation_folder,
+        "solver_config": {
+            "Order": 1,  # FEM element order
+            "Device": "CPU",  # or "GPU"
+        },
         "mesh_parameters": {
             "default_characteristic_length": 30,  # μm
             "resolution_specs": {
@@ -197,11 +206,14 @@ def _setup_palace_simulation() -> dict[str, Any]:
     }
 
 
-def _run_capacitive_simulation(component: gf.Component) -> float:
+def _run_capacitive_simulation(
+    component: gf.Component,
+    simulation_folder: Path | None = None,
+) -> float:
     """Run Palace capacitive simulation (requires system dependencies)."""
     from gplugins.palace import run_capacitive_simulation_palace
 
-    config = _setup_palace_simulation()
+    config = _setup_palace_simulation(simulation_folder=simulation_folder)
     results = run_capacitive_simulation_palace(component, n_processes=4, **config)
     return results.capacitance_matrix[tuple(p.name for p in component.ports)] * 1e15
 
@@ -227,7 +239,9 @@ if __name__ == "__main__":
     # First ensure a single simulation runs correctly
     c = capacitor_simulation()
     c.show()
-    simulated_capacitance = _run_capacitive_simulation(c)
+    simulated_capacitance = _run_capacitive_simulation(
+        c, simulation_folder=PATH.simulation / "capacitor_simulation"
+    )
     print(f"Single simulation capacitance: {simulated_capacitance:.3f} fF")
 
     # Create an Optuna study for minimization
