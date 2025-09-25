@@ -175,7 +175,7 @@ def _setup_palace_simulation(
             "Device": "CPU",  # or "GPU"
         },
         "mesh_parameters": {
-            "default_characteristic_length": 30,  # μm
+            "default_characteristic_length": 20,  # μm
             "resolution_specs": {
                 "M1@M1_left": [
                     ExponentialField(
@@ -189,7 +189,15 @@ def _setup_palace_simulation(
                     ),
                     ConstantInField(resolution=0.3, apply_to="surfaces"),
                 ],
-                "M1": [ConstantInField(resolution=8.0, apply_to="volumes")],
+                "M1": [ConstantInField(resolution=4.0, apply_to="volumes")],
+                "M1___boundary": [
+                    ExponentialField(
+                        sizemin=0.3,
+                        lengthscale=2,
+                        growth_factor=2.0,
+                        apply_to="surfaces",
+                    ),
+                ],
                 "Substrate": [
                     ConstantInField(resolution=5.0, apply_to="curves"),
                     ConstantInField(resolution=8.0, apply_to="surfaces"),
