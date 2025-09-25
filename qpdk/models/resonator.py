@@ -2,10 +2,12 @@
 
 from collections.abc import Callable
 from functools import partial
+from typing import cast
 
 import jax.numpy as jnp
 import sax
 import skrf
+from jax._src.util import Array
 from numpy.typing import NDArray
 from skrf.media import CPW, Media
 
@@ -30,7 +32,7 @@ def cpw_media_skrf(width: float, gap: float) -> partial[CPW]:
         s=gap * 1e-6,
         h=LAYER_STACK.layers["Substrate"].thickness * 1e-6,
         t=LAYER_STACK.layers["M1"].thickness * 1e-6,
-        ep_r=material_properties[LAYER_STACK.layers["Substrate"].material][
+        ep_r=material_properties[cast(str, LAYER_STACK.layers["Substrate"].material)][
             "relative_permittivity"
         ],
         rho=1e-100,  # set to a very low value to avoid warnings
@@ -70,7 +72,7 @@ def resonator_frequency(
 
 def quarter_wave_resonator_coupled_to_probeline(
     media: Callable[[skrf.Frequency], Media],
-    f: NDArray | None = None,
+    f: skrf.NumberLike | Array | None = None,
     coupling_capacitance: float = 15e-15,
     length: float = 4000,
 ) -> sax.SDict:
@@ -86,7 +88,8 @@ def quarter_wave_resonator_coupled_to_probeline(
         sax.SDict: S-parameters dictionary
     """
     f = f if f is not None else jnp.array([1e9, 5e9])
-    media = media(frequency=skrf.Frequency.from_f(f, unit="Hz"))  # type: ignore
+    media: Media = media(frequency=skrf.Frequency.from_f(f, unit="Hz"))  # type: ignore
+
     transmission_line = media.line(d=length, unit="um")
     quarter_wave_resonator = transmission_line ** media.short()
     coupling_capacitor = media.capacitor(coupling_capacitance, name="C_coupling")

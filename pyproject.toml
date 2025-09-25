@@ -99,7 +99,9 @@ project-excludes = [
   "*.egg-info/**",
   ".venv/**",
   # Exclude samples that may have experimental code
+  "qpdk/samples/*.py",
   "qpdk/samples/**/*.py",
+  "qpdk/notebooks/*.py",
   "qpdk/notebooks/**/*.py"
 ]
 project-includes = ["**/*.py"]
