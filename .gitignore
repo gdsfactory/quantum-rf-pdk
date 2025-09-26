@@ -38,6 +38,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 *.ipynb
+!notebooks/*.ipynb
 MANIFEST
 
 # PyInstaller
