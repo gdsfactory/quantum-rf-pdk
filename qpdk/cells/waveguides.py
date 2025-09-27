@@ -267,6 +267,17 @@ def bend_s(**kwargs: Unpack[BendSKwargs]) -> gf.Component:
     return gf.c.bend_s(**(_DEFAULT_BEND_KWARGS | _BEND_S_DEFAULTS | kwargs))
 
 
+coupler_straight = partial(gf.c.coupler_straight, cross_section="cpw", gap=16)
+coupler_ring = partial(
+    gf.c.coupler_ring,
+    cross_section="cpw",
+    length_x=20,
+    bend=bend_circular,
+    straight=straight,
+    gap=16,
+)
+
+
 class StraightAllAngleKwargs(TypedDict, total=False):
     """Type definition for straight_all_angle keyword arguments."""
 
@@ -381,6 +392,8 @@ if __name__ == "__main__":
         tee,
         bend_s,
         straight,
+        coupler_ring,
+        coupler_straight,
         partial(straight_open, length=20),
         partial(straight_double_open, length=20),
         straight_all_angle,
