@@ -7,11 +7,6 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
 # ---
-"""Superconducting qubit parameter calculations with scqubits.
-
-This notebook demonstrates how to use scqubits to calculate parameters for
-superconducting qubits and coupled resonators.
-"""
 
 # %% [markdown]
 # # Superconducting Qubit Parameter Calculations with scqubits

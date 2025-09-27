@@ -107,6 +107,12 @@ repos:
           - mdformat-tables
           - mdformat-frontmatter
           - mdformat-footnote
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: [--config=pyproject.toml]
+        pass_filenames: false
   - repo: local
     hooks:
       - id: convert-notebooks
@@ -114,10 +120,4 @@ repos:
         entry: ./.github/convert-notebooks.sh
         language: script
         files: ^notebooks/src/.*\.py$
-        pass_filenames: false
-  - repo: https://github.com/econchick/interrogate
-    rev: 1.7.0
-    hooks:
-      - id: interrogate
-        args: [--config=pyproject.toml]
         pass_filenames: false
