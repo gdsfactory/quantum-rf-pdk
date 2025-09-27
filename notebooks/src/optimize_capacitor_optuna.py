@@ -7,6 +7,11 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
 # ---
+"""Optuna optimization of interdigital capacitor.
+
+This notebook demonstrates using Optuna to optimize an interdigital capacitor
+to achieve a target capacitance of 40 fF with exactly 5 interdigital fingers.
+"""
 
 # %% [markdown]
 # # Optuna Optimization of Interdigital Capacitor

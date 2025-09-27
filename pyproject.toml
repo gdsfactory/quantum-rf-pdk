@@ -67,7 +67,7 @@ docstring-style = "google"
 exclude = [
   "docs/_build/**/*",
   "qpdk/**/__init__.py",
-  "qpdk/notebooks/*.py",
+  "notebooks/**",
   "docs/notebooks/*",
   "qpdk/samples/*.py",
   "tests/**"
@@ -101,8 +101,8 @@ project-excludes = [
   # Exclude samples that may have experimental code
   "qpdk/samples/*.py",
   "qpdk/samples/**/*.py",
-  "qpdk/notebooks/*.py",
-  "qpdk/notebooks/**/*.py"
+  "notebooks/src/*.py",
+  "notebooks/src/**/*.py"
 ]
 project-includes = ["**/*.py"]
 

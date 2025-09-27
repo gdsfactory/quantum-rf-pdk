@@ -7,6 +7,11 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
 # ---
+"""Resonator frequency estimation models.
+
+This notebook demonstrates estimating resonance frequencies of superconducting
+microwave resonators using scikit-rf and Jax.
+"""
 
 # %% [markdown]
 # # Resonator frequency estimation models
