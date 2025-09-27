@@ -28,10 +28,10 @@ else
     NC=''
 fi
 
-if [ -d "notebooks/src" ] && [ "$(ls -A notebooks/src/*.py 2> /dev/null)" ]; then
-    echo -e "${CYAN}Converting jupytext notebooks from notebooks/src/ to notebooks/${NC}"
+if [ "$#" -gt 0 ]; then
+    echo -e "${CYAN}Converting jupytext notebooks for provided files to notebooks/${NC}"
     declare -a changed_files=()
-    for py_file in notebooks/src/*.py; do
+    for py_file in "$@"; do
         if [ -f "$py_file" ]; then
             basename=$(basename "$py_file" .py)
             ipynb_path="notebooks/${basename}.ipynb"
@@ -46,6 +46,18 @@ if [ -d "notebooks/src" ] && [ "$(ls -A notebooks/src/*.py 2> /dev/null)" ]; the
                 echo -e "${BLUE}Converting${NC} ${BOLD}$py_file${NC} ${BLUE}to${NC} ${BOLD}${ipynb_path}${NC}"
                 uvx jupytext --update --to ipynb "$py_file" --output "$ipynb_path" || jupytext --update --to ipynb "$py_file" --output "$ipynb_path"
 
+            else
+                # Ensure the notebook is tracked and has no unstaged changes
+                if ! git ls-files --error-unmatch -- "$ipynb_path" > /dev/null 2>&1; then
+                    echo -e "${RED}Error:${NC} ${BOLD}$ipynb_path${NC} is not tracked/staged in git."
+                    echo -e "${YELLOW}Please add it to the index before committing:${NC} git add \"$ipynb_path\""
+                    exit 1
+                fi
+                if git diff --name-only -- "$ipynb_path" | grep -q .; then
+                    echo -e "${RED}Error:${NC} ${BOLD}$ipynb_path${NC} has unstaged changes."
+                    echo -e "${YELLOW}Please stage or discard changes before committing.${NC}"
+                    exit 1
+                fi
             fi
         fi
     done
@@ -60,5 +72,5 @@ if [ -d "notebooks/src" ] && [ "$(ls -A notebooks/src/*.py 2> /dev/null)" ]; the
         echo -e "${GREEN}Conversion completed successfully${NC}"
     fi
 else
-    echo -e "${YELLOW}No Python files found in notebooks/src/ directory${NC}"
+    echo -e "${YELLOW}No Python files provided to convert${NC}"
 fi
