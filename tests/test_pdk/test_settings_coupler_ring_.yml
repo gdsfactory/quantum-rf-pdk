@@ -1,0 +1,8 @@
+info: {}
+name: coupler_ring_gdsfactorypcomponentspcouplerspcoupler_rin_11dc32cb
+settings:
+  bend: bend_circular
+  cross_section: cpw
+  gap: 16
+  length_x: 20
+  straight: straight
