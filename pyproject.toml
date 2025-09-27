@@ -67,7 +67,7 @@ docstring-style = "google"
 exclude = [
   "docs/_build/**/*",
   "qpdk/**/__init__.py",
-  "qpdk/notebooks/*.py",
+  "notebooks/**",
   "docs/notebooks/*",
   "qpdk/samples/*.py",
   "tests/**"
@@ -101,8 +101,8 @@ project-excludes = [
   # Exclude samples that may have experimental code
   "qpdk/samples/*.py",
   "qpdk/samples/**/*.py",
-  "qpdk/notebooks/*.py",
-  "qpdk/notebooks/**/*.py"
+  "notebooks/src/*.py",
+  "notebooks/src/**/*.py"
 ]
 project-includes = ["**/*.py"]
 
@@ -126,7 +126,11 @@ testpaths = ["qpdk/", "tests"]
 [tool.ruff]
 fix = true
 
+[tool.ruff.format]
+exclude = ["*.ipynb"]
+
 [tool.ruff.lint]
+exclude = ["*.ipynb"]
 ignore = [
   "E501",  # line too long, handled by black
   "B008",  # do not perform function calls in argument defaults
@@ -163,8 +167,8 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"notebooks/**/*.py" = ["D100"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
-"qpdk/notebooks/**/*.py" = ["D100"]
 "qpdk/samples/**/*.py" = [
   "D100"
 ]  # no public module docstring for sample scripts

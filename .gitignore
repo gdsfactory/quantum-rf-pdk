@@ -4,10 +4,6 @@ __pycache__/
 *$py.class
 Pipfile
 
-docs/cells.rst
-docs/samples.rst
-docs/notebooks/
-
 # C extensions
 *.so
 *.fsp
@@ -155,3 +151,10 @@ cython_debug/
 *.DS_Store
 .DS_Store
 *Thumbs.db
+
+
+# Documentation
+docs/cells.rst
+docs/samples.rst
+docs/notebooks/
+!notebooks/*.ipynb
