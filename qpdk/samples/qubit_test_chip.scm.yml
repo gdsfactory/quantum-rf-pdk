@@ -1,8 +1,8 @@
 exploded: ''
 camera_transform:
   translation:
-    x: 1528.5414
-    y: 1547.1411
+    x: 1321.469
+    y: 1261.9413
     z: 0.0
   rotation:
     x: 0.0
@@ -10,8 +10,8 @@ camera_transform:
     z: 0.0
     w: 1.0
   scale:
-    x: 3.2421749
-    y: 3.2421749
+    x: 2.9955432
+    y: 2.9955432
     z: 1.0
 transforms:
   input_cap1:
@@ -86,8 +86,8 @@ transforms:
       z: 1.0
   launcher_top:
     translation:
-      x: 1366.109
-      y: 2199.8503
+      x: 1377.9768
+      y: 2189.6777
       z: 1.0
     rotation:
       x: 0.0
@@ -312,10 +312,10 @@ fan_point_positions:
   - x: 1371.6542
     y: 885.3419
   flux_line_top:
-  - x: 1366.109
-    y: 2089.6138
   - x: 1375.8396
-    y: 1969.141
+    y: 1972.9556
+  - x: 1376.2816
+    y: 2028.155
   probeline_input:
   - x: 173.50366
     y: 1601.7128
