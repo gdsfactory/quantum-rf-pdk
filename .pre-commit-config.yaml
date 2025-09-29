@@ -113,3 +113,11 @@ repos:
       - id: interrogate
         args: [--config=pyproject.toml]
         pass_filenames: false
+  - repo: local
+    hooks:
+      - id: convert-notebooks
+        name: Convert jupytext notebooks
+        entry: ./.github/convert-notebooks.sh
+        language: script
+        files: ^notebooks/src/.*\.py$
+        pass_filenames: true

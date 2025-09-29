@@ -1,4 +1,4 @@
-.PHONY: all build clean docs docs-latex docs-pdf git-rm-merged help install test test-fail-fast test-force update-pre write-cells
+.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install test test-fail-fast test-force update-pre write-cells
 
 # Based on https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
 help: ##@ (Default) Print listing of key targets with their descriptions
@@ -20,7 +20,7 @@ else { \
 install: ##@ Install the package and all development dependencies
 	uv sync --all-extras
 
-CLEAN_DIRS := dist build *.egg-info docs/_build docs/notebooks
+CLEAN_DIRS := dist build *.egg-info docs/_build docs/notebooks notebooks/*.ipynb
 clean: ##@ Clean up all build, test, coverage and Python artifacts
 	@# Use rip if available, otherwise fall back to rm -rf
 	rm -rf $(CLEAN_DIRS)
@@ -61,9 +61,12 @@ build: ##@ Build the Python package (install build tool and create dist)
 write-cells: ##@ Write cell outputs into documentation notebooks (used when building docs)
 	uv run .github/write_cells.py
 
+convert-notebooks: ##@ Convert jupytext scripts from notebooks/src to ipynb format in notebooks
+	./.github/convert-notebooks.sh
+
 copy-sample-notebooks: ##@ Copy all sample scripts to use as notebooks docs
 	mkdir -p docs/notebooks
-	cp qpdk/notebooks/*.py docs/notebooks/
+	cp notebooks/src/*.py docs/notebooks/
 
 docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs
