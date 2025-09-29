@@ -36,7 +36,19 @@ if [ "$#" -gt 0 ]; then
             basename=$(basename "$py_file" .py)
             ipynb_path="notebooks/${basename}.ipynb"
 
-            show_changes_output=$( (uvx jupytext --update --to ipynb "$py_file" --output "$ipynb_path" --show-changes || jupytext --update --to ipynb "$py_file" --output "$ipynb_path" --show-changes) 2>&1)
+            # Handle missing commands (exit 127) explicitly
+            set +e
+            show_changes_output=$(uvx jupytext --update --to ipynb "$py_file" --output "$ipynb_path" --show-changes 2>&1)
+            uvx_status=$?
+            if [ $uvx_status -ne 0 ]; then
+                show_changes_output=$(jupytext --update --to ipynb "$py_file" --output "$ipynb_path" --show-changes 2>&1)
+                jupytext_status=$?
+                if [ $uvx_status -eq 127 ] && [ $jupytext_status -eq 127 ]; then
+                    echo -e "${RED}Error:${NC} You need to have ${BOLD}'uv'${NC} or ${BOLD}'jupytext'${NC} in your PATH" >&2
+                    exit 127
+                fi
+            fi
+            set -e
             echo -e "$show_changes_output"
 
             # Record file if jupytext reported changes (stdout does not include 'Unchanged')
