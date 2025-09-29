@@ -1,0 +1,333 @@
+exploded: ''
+camera_transform:
+  translation:
+    x: 1375.0515
+    y: 1443.0358
+    z: 0.0
+  rotation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  scale:
+    x: 2.4976795
+    y: 2.4976795
+    z: 1.0
+transforms:
+  input_cap1:
+    translation:
+      x: 583.8946
+      y: 1600.7871
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  input_cap2:
+    translation:
+      x: 552.90234
+      y: 1385.7863
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  launcher_bot:
+    translation:
+      x: 1384.9181
+      y: 715.62994
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: -0.7071067
+      w: -0.7071067
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  launcher_in:
+    translation:
+      x: 0.0
+      y: 1600.0
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  launcher_out:
+    translation:
+      x: 11.552277
+      y: 1377.3861
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  launcher_top:
+    translation:
+      x: 1366.109
+      y: 2199.8503
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: -0.70710677
+      w: 0.70710677
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  qubit1:
+    translation:
+      x: 968.84845
+      y: 1810.4034
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  qubit2:
+    translation:
+      x: 1872.4137
+      y: 1805.938
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  qubit3:
+    translation:
+      x: 1898.8032
+      y: 1158.6511
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  qubit4:
+    translation:
+      x: 876.46045
+      y: 1180.6343
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  tee_bot:
+    translation:
+      x: 1371.6542
+      y: 975.2459
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: -0.99999994
+      w: 0.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  tee_bot_straight_1:
+    translation:
+      x: 1665.3477
+      y: 1130.1846
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  tee_bot_straight_2:
+    translation:
+      x: 1146.1787
+      y: 1143.3328
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  tee_top:
+    translation:
+      x: 1375.8396
+      y: 1858.9045
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  tee_top_straight_1:
+    translation:
+      x: 1183.2004
+      y: 1836.0679
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  tee_top_straight_2:
+    translation:
+      x: 1644.9161
+      y: 1822.7427
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+sizes:
+  input_cap1:
+    width: 100
+    height: 100
+  input_cap2:
+    width: 100
+    height: 100
+  launcher_bot:
+    width: 100
+    height: 100
+  launcher_in:
+    width: 100
+    height: 100
+  launcher_out:
+    width: 100
+    height: 100
+  launcher_top:
+    width: 100
+    height: 100
+  qubit1:
+    width: 100
+    height: 100
+  qubit2:
+    width: 100
+    height: 100
+  qubit3:
+    width: 100
+    height: 100
+  qubit4:
+    width: 100
+    height: 100
+  tee_bot:
+    width: 100
+    height: 100
+  tee_bot_straight_1:
+    width: 100
+    height: 100
+  tee_bot_straight_2:
+    width: 100
+    height: 100
+  tee_top:
+    width: 100
+    height: 100
+  tee_top_straight_1:
+    width: 100
+    height: 100
+  tee_top_straight_2:
+    width: 100
+    height: 100
+link_paths: []
+layers:
+  input_cap1: 0
+  input_cap2: 0
+  launcher_bot: 0
+  launcher_in: 0
+  launcher_out: 0
+  launcher_top: 0
+  qubit1: 0
+  qubit2: 0
+  qubit3: 0
+  qubit4: 0
+  tee_bot: 0
+  tee_bot_straight_1: 0
+  tee_bot_straight_2: 0
+  tee_top: 0
+  tee_top_straight_1: 0
+  tee_top_straight_2: 0
+fan_point_positions:
+  flux_line_bot:
+  - x: 1384.9181
+    y: 805.53394
+  - x: 1371.6542
+    y: 885.3419
+  flux_line_top:
+  - x: 1366.109
+    y: 2089.6138
+  - x: 1375.8396
+    y: 1969.141
+  probeline_input:
+  - x: 173.50366
+    y: 1601.7128
+  - x: 388.63098
+    y: 1601.6346
+  probeline_input_to_output:
+  - x: 2268.226
+    y: 1595.7314
+  - x: 2269.036
+    y: 1381.492
+  probeline_output:
+  - x: 209.20804
+    y: 1375.5281
+  - x: 163.55762
+    y: 1381.0898
