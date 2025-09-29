@@ -1,7 +1,8 @@
 """Model definitions for qpdk."""
 
 import sax
-import skrf_duck_typing  # noqa: F401
+
+import qpdk.models.skrf_duck_typing  # noqa: F401
 
 from .bend_circular import bend_circular
 from .resonator import quarter_wave_resonator_coupled_to_probeline, resonator_frequency
