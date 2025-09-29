@@ -1,7 +1,6 @@
 """S-parameter model for a straight waveguide."""
 
 from functools import partial
-from pprint import pprint
 from typing import TypedDict
 
 import jax
@@ -50,28 +49,67 @@ def straight(
 
 
 if __name__ == "__main__":
+    import time
+
+    from tqdm import tqdm
+
     cpw = cpw_media_skrf(width=10, gap=6)
-    S = straight(media=cpw)
-    S = straight(f=jnp.linspace(0.5e9, 9e9, 201), media=cpw)
-    pprint(S)
 
-    # Move the S['o2','o1'] array to GPU and test that it works
+    def straight_no_jit(
+        f: ArrayLike = jnp.array([5e9]),
+        length: int | float = 1000,
+        media: MediaCallable = cpw_media_skrf(),
+    ) -> sax.SType:
+        """Version of straight without just-in-time compilation."""
+        skrf_media = media(frequency=Frequency.from_f(f, unit="Hz"))
+        transmission_line = skrf_media.line(d=length, unit="um")
+        sdict = {
+            ("o1", "o1"): jnp.array(transmission_line.s[:, 0, 0]),
+            ("o1", "o2"): jnp.array(transmission_line.s[:, 0, 1]),
+            ("o2", "o2"): jnp.array(transmission_line.s[:, 1, 1]),
+        }
+        return sax.reciprocal(sdict)
+
+    test_freq = jnp.linspace(0.5e9, 9e9, 200001)
+    test_length = 1000
+
+    print("Benchmarking jitted vs non-jitted performance…")
+
+    n_runs = 10
+
+    jit_times = []
+    for _ in tqdm(range(n_runs), desc="With jax.jit", ncols=80, unit="run"):
+        start_time = time.perf_counter()
+        S_jit = straight(f=test_freq, length=test_length, media=cpw)
+        _ = S_jit["o2", "o1"].block_until_ready()
+        end_time = time.perf_counter()
+        jit_times.append(end_time - start_time)
+
+    no_jit_times = []
+    for _ in tqdm(range(n_runs), desc="Without jax.jit", ncols=80, unit="run"):
+        start_time = time.perf_counter()
+        S_no_jit = straight_no_jit(f=test_freq, length=test_length, media=cpw)
+        _ = S_no_jit["o2", "o1"].block_until_ready()
+        end_time = time.perf_counter()
+        no_jit_times.append(end_time - start_time)
+
+    jit_times_steady = jit_times[1:]
+    avg_jit = sum(jit_times_steady) / len(jit_times_steady)
+    avg_no_jit = sum(no_jit_times) / len(no_jit_times)
+    speedup = avg_no_jit / avg_jit
+
+    print(f"Jitted: {avg_jit:.4f}s avg (excl. first), {jit_times[0]:.3f}s first run")
+    print(f"Non-jitted: {avg_no_jit:.4f}s avg")
+    print(f"Speedup: {speedup:.1f}x")
+
+    S_jit = straight(f=test_freq, length=test_length, media=cpw)
+    S_no_jit = straight_no_jit(f=test_freq, length=test_length, media=cpw)
+    max_diff = jnp.max(jnp.abs(S_jit["o2", "o1"] - S_no_jit["o2", "o1"]))
+    print(f"Max absolute difference in results: {max_diff:.2e}")
+
     try:
-        # Get the array
-        s21_array = S["o2", "o1"]
-        print(f"Original device: {s21_array.device}")
-
-        # Move to GPU
+        s21_array = S_jit["o2", "o1"]
         s21_gpu = jax.device_put(s21_array, jax.devices("gpu")[0])
-        print(f"GPU device: {s21_gpu.device}")
-
-        # Test that it works by doing a simple operation
-        result = jnp.abs(s21_gpu) ** 2
-        print(f"GPU computation result shape: {result.shape}")
-        print(f"GPU computation result device: {result.device}")
-
-    except Exception as e:
-        print(f"GPU test failed: {e}")
-        print("Falling back to CPU")
-        s21_array = S["o2", "o1"]
-        print(f"CPU device: {s21_array.device}")
+        print(f"GPU available: {s21_gpu.device}")
+    except Exception:
+        print("GPU not available, using CPU")
