@@ -48,8 +48,8 @@ models = [
 ]
 
 [tool.codespell]
-ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun, Ue"
-skip = 'bibliography.bib'
+ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun, Ue, inout"
+skip = "bibliography.bib"
 
 [tool.gdsfactoryplus.drc]
 timeout = 300
