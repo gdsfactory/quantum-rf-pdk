@@ -118,7 +118,8 @@ repos:
     hooks:
       - id: interrogate
         args: [--config=pyproject.toml]
-        pass_filenames: false
+        pass_filenames: true
+        exclude: '^(?:docs/_build/.*|qpdk(?:/.*)?/__init__[.]py|notebooks/.*|docs/notebooks/[^/]+|qpdk/samples/[^/]+[.]py|tests/.*)$'
   - repo: local
     hooks:
       - id: convert-notebooks
