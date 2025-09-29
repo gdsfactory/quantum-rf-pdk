@@ -61,24 +61,24 @@ if [ "$#" -gt 0 ]; then
             else
                 # Ensure the notebook is tracked and has no unstaged changes
                 if ! git ls-files --error-unmatch -- "$ipynb_path" > /dev/null 2>&1; then
-                    echo -e "${RED}Error:${NC} ${BOLD}$ipynb_path${NC} is not tracked/staged in git."
-                    echo -e "${YELLOW}Please add it to the index before committing:${NC} git add \"$ipynb_path\""
+                    echo -e "${RED}Error:${NC} ${BOLD}$ipynb_path${NC} is not tracked/staged in git." >&2
+                    echo -e "${YELLOW}Please add it to the index before committing:${NC} git add \"$ipynb_path\"" >&2
                     exit 1
                 fi
                 if git diff --name-only -- "$ipynb_path" | grep -q .; then
-                    echo -e "${RED}Error:${NC} ${BOLD}$ipynb_path${NC} has unstaged changes."
-                    echo -e "${YELLOW}Please stage or discard changes before committing.${NC}"
+                    echo -e "${RED}Error:${NC} ${BOLD}$ipynb_path${NC} has unstaged changes." >&2
+                    echo -e "${YELLOW}Please stage or discard changes before committing.${NC}" >&2
                     exit 1
                 fi
             fi
         fi
     done
     if [ "${#changed_files[@]}" -gt 0 ]; then
-        echo -e "${RED}Error:${NC} The following notebooks were modified by jupytext conversion:"
+        echo -e "${RED}Error:${NC} The following notebooks were modified by jupytext conversion:" >&2
         for f in "${changed_files[@]}"; do
-            echo -e "  - ${BOLD}$f${NC}"
+            echo -e "  - ${BOLD}$f${NC}" >&2
         done
-        echo -e "${YELLOW}Please add and commit these changes, then retry.${NC}"
+        echo -e "${YELLOW}Please add and commit these changes, then retry.${NC}" >&2
         exit 1
     else
         echo -e "${GREEN}Conversion completed successfully${NC}"
