@@ -44,11 +44,12 @@ models = [
   "sax",
   "scikit-rf",
   "scqubits",
-  "sympy"
+  "sympy",
+  "jaxellip"
 ]
 
 [tool.codespell]
-ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, schem, Commun, Ue, inout"
+ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
 skip = "bibliography.bib"
 
 [tool.gdsfactoryplus.drc]

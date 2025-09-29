@@ -1,6 +1,7 @@
 """Model definitions for qpdk."""
 
 import sax
+import skrf_duck_typing  # noqa: F401
 
 from .resonator import quarter_wave_resonator_coupled_to_probeline, resonator_frequency
 from .straight import straight
