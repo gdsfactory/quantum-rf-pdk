@@ -1,5 +1,6 @@
 """Resonator models."""
 
+import inspect
 from collections.abc import Callable
 from functools import partial
 from typing import cast
@@ -12,10 +13,15 @@ from numpy.typing import NDArray
 from skrf.media import CPW, Media
 
 from qpdk import LAYER_STACK
-from qpdk.tech import material_properties
+from qpdk.tech import coplanar_waveguide, material_properties
+
+_coplanar_waveguide_xsection_signature = inspect.signature(coplanar_waveguide)
 
 
-def cpw_media_skrf(width: float, gap: float) -> partial[CPW]:
+def cpw_media_skrf(
+    width: float = _coplanar_waveguide_xsection_signature.parameters["width"].default,
+    gap: float = _coplanar_waveguide_xsection_signature.parameters["gap"].default,
+) -> partial[CPW]:
     """Create a partial coplanar waveguide (CPW) media object using scikit-rf.
 
     Args:
