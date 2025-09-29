@@ -30,7 +30,7 @@ clean: ##@ Clean up all build, test, coverage and Python artifacts
 ###########
 
 test: ##@ Run the full test suite in parallel using pytest
-	uv run pytest -n $$(nproc)
+	uv run pytest -n auto
 
 test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
 	uv run pytest -s tests/test_pdk.py
