@@ -2,12 +2,13 @@
 
 from functools import partial
 from math import pi
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp
 import skrf
 from jaxellip import ellipk
-from skrf.media import CPW, parse_z0
+from skrf.media import CPW, get_z0_load, parse_z0
 from skrf.media.cpw import epsilon_0
 from skrf.network import renormalize_s
 
@@ -244,7 +245,7 @@ CPW.analyse_loss = _analyse_loss
 CPW.gamma = _gamma
 
 
-# @z0.setter
+@skrf.network.Network.z0.setter
 def z0(self, z0) -> None:
     """Modified version of :func:`skrf.network.Network.z0` such that jax.jit runs."""
     # cast any array like type (tuple, list) to a np.array
@@ -265,13 +266,12 @@ def z0(self, z0) -> None:
     #
     # if _z0 is a matrix, we check if the shape matches with _s
     # In any other case raise an Exception
-    self._z0 = jnp.empty(self.s.shape[:2], dtype=complex)
     if z0.ndim == 0:
-        self._z0[:] = z0
+        self._z0 = jnp.full(self.s.shape[:2], z0, dtype=complex)
     elif z0.ndim == 1 and z0.shape[0] == self.s.shape[0]:
-        self._z0[:] = z0[:, None]
+        self._z0 = jnp.broadcast_to(z0[:, None], self.s.shape[:2])
     elif z0.ndim == 1 and z0.shape[0] == self.s.shape[1]:
-        self._z0[:] = z0[None, :]
+        self._z0 = jnp.broadcast_to(z0[None, :], self.s.shape[:2])
     elif z0.shape == self.s.shape[:2]:
         self._z0 = z0
     else:
@@ -544,4 +544,23 @@ def _line(self, d, unit, z0=None, embed=False, **kwargs):  # noqa: ARG001
     return result
 
 
+def _splitter_s(z0):
+    """Modified version of :func:`skrf.media.splitter_s` such that jax.jit runs."""
+    nports = z0.shape[1]
+    s = (
+        2
+        * jnp.sqrt(jnp.einsum("ki,kj->kij", z0.real, z0.real))
+        / jnp.einsum("ki,kj->kij", z0, z0)
+    )
+    s /= jnp.sum(1.0 / z0, axis=1)[:, None, None]
+
+    ports_idx = jnp.arange(nports)
+    z0_load = jnp.array([get_z0_load(z0=z0, port_idx=i) for i in ports_idx]).T
+    # s[:, ports_idx, ports_idx] = (z0_load - z0.conj()) / (z0_load + z0)
+    s = s.at[:, ports_idx, ports_idx].set((z0_load - z0.conj()) / (z0_load + z0))
+
+    return s
+
+
 skrf.media.Media.line = _line
+skrf.media.splitter_s = _splitter_s
