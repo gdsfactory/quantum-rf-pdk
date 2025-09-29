@@ -94,9 +94,9 @@ routes:
       allow_width_mismatch: true
       auto_taper: false
       steps:
-      - dx: 4000
-        dy: -100
-      - dy: -200
+        - dx: 4000
+          dy: -100
+        - dy: -200
   probeline_output:
     links:
       input_cap2,o1: launcher_out,o1
