@@ -28,14 +28,18 @@ def straight(
 ) -> sax.SType:
     """S-parameter model for a straight waveguide.
 
+    See `scikit-rf <skrf>`_ for details on analytical formulæ.
+
     Args:
-        f: Tuple of frequency points in Hz
+        f: Array of frequency points in Hz
         length: Physical length in µm
         media: Function returning a scikit-rf :class:`~Media` object after called
             with ``frequency=f``. If None, uses default CPW media.
 
     Returns:
         sax.SType: S-parameters dictionary
+
+    .. _skrf: https://scikit-rf.org/
     """
     # Keep f as tuple for scikit-rf, convert to array only for final JAX operations
     skrf_media = media(frequency=Frequency.from_f(f, unit="Hz"))
