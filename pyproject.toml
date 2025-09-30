@@ -21,31 +21,31 @@ version = "0.0.2"
 
 [project.optional-dependencies]
 dev = [
-  "pre-commit",
+  "hypothesis",
   "jsondiff",
+  "pre-commit",
   "pytest",
-  "pytest-xdist",
   "pytest-cov",
-  "pytest_regressions",
   "pytest-github-actions-annotate-failures",
-  "hypothesis"
+  "pytest-xdist",
+  "pytest_regressions"
 ]
 docs = [
+  "jupyter-book>=1.0.4,<2",
   "jupytext",
   "matplotlib",
-  "jupyter-book>=1.0.4,<2",
-  "sphinxcontrib-katex",
-  "pydata-sphinx-theme"
+  "pydata-sphinx-theme",
+  "sphinxcontrib-katex"
 ]
 models = [
   "gplugins[meshwell] @ git+https://github.com/gdsfactory/gplugins.git@770d835bb130a8118aa7b78edfb1cf76d31fd7f6",
+  "jaxellip",
   "optuna",
   "ray[tune]",
   "sax",
   "scikit-rf",
   "scqubits",
-  "sympy",
-  "jaxellip"
+  "sympy"
 ]
 
 [tool.codespell]
