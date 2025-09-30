@@ -1,10 +1,13 @@
-# yaml-language-server: $schema=../build/schemas/samples/flipmon_test_chip.json
+# yaml-language-server: $schema=../../build/schemas/flipmon_test_chip.json
 instances:
   input_cap1:
     component: interdigital_capacitor
     settings: {}
   input_cap2:
     component: interdigital_capacitor
+    settings: {}
+  launcher_bot:
+    component: launcher
     settings: {}
   launcher_in:
     component: launcher
@@ -15,31 +18,7 @@ instances:
   launcher_top:
     component: launcher
     settings: {}
-  launcher_bot:
-    component: launcher
-    settings: {}
-  tee_top:
-    component: tee
-    settings: {}
-  tee_top_straight_1:
-    component: straight_open
-    settings:
-      length: 40
-  tee_top_straight_2:
-    component: straight_open
-    settings:
-      length: 40
-  tee_bot:
-    component: tee
-    settings: {}
-  tee_bot_straight_1:
-    component: straight_open
-    settings:
-      length: 40
-  tee_bot_straight_2:
-    component: straight_open
-    settings:
-      length: 40
+    virtual: true
   qubit1:
     component: flipmon_with_resonator
     settings:
@@ -64,12 +43,42 @@ instances:
       resonator_length: 4400
       resonator_params:
         meanders: 5
+  tee_bot:
+    component: tee
+    settings: {}
+  tee_bot_straight_1:
+    component: straight_open
+    settings: {}
+  tee_bot_straight_2:
+    component: straight_open
+    settings: {}
+  tee_top:
+    component: tee
+    settings: {}
+  tee_top_straight_1:
+    component: straight_open
+    settings: {}
+  tee_top_straight_2:
+    component: straight_open
+    settings: {}
 connections:
-  tee_top_straight_1,o1: tee_top,o1
-  tee_top_straight_2,o1: tee_top,o3
   tee_bot_straight_1,o1: tee_bot,o1
   tee_bot_straight_2,o1: tee_bot,o3
+  tee_top_straight_1,o1: tee_top,o1
+  tee_top_straight_2,o1: tee_top,o3
 routes:
+  flux_line_bot:
+    links:
+      launcher_bot,o1: tee_bot,o2
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  flux_line_top:
+    links:
+      launcher_top,o1: tee_top,o2
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
   probeline_input:
     links:
       launcher_in,o1: input_cap1,o1
@@ -94,13 +103,6 @@ routes:
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
-  generic_route:
-    links:
-      tee_top,o2: launcher_top,o1
-      tee_bot,o2: launcher_bot,o1
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
 nets: []
 ports: {}
 placements:
@@ -114,6 +116,10 @@ placements:
     y: 0
     dx: 800
     dy: -400
+  launcher_bot:
+    x: 3000
+    y: -3000
+    rotation: 90
   launcher_in:
     x: 0
     y: 400
@@ -124,18 +130,6 @@ placements:
     x: 3000
     y: 3000
     rotation: -90
-  launcher_bot:
-    x: 3000
-    y: -3000
-    rotation: 90
-  tee_top:
-    x: 3000
-    y: 1775
-    rotation: 0
-  tee_bot:
-    x: 3000
-    y: -1775
-    rotation: 180
   qubit1:
     x: 2200
     y: 1750
@@ -153,3 +147,11 @@ placements:
     x: 2200
     y: -1750
     mirror: true
+  tee_bot:
+    x: 3000
+    y: -1775
+    rotation: 180
+  tee_top:
+    x: 3000
+    y: 1775
+    rotation: 0

@@ -19,7 +19,7 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.13.1"
+    rev: "v0.13.2"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
@@ -42,13 +42,19 @@ repos:
     hooks:
       - id: yamlfmt
         args: [-conf, ".github/.yamlfmt.yaml"]
-        exclude: ".*.tests*|.*.pic.yml"
+        exclude: &regression_tests ".*.tests*"
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+        args: [--strict, "-c=.github/.yamllint.yaml"]
+        exclude: *regression_tests
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.7
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.19
+    rev: 0.8.22
     hooks:
       - id: uv-lock
   - repo: https://github.com/facebook/pyrefly-pre-commit
@@ -112,7 +118,8 @@ repos:
     hooks:
       - id: interrogate
         args: [--config=pyproject.toml]
-        pass_filenames: false
+        pass_filenames: true
+        exclude: '^(?:docs/_build/.*|qpdk(?:/.*)?/__init__[.]py|notebooks/.*|docs/notebooks/[^/]+|qpdk/samples/[^/]+[.]py|tests/.*)$'
   - repo: local
     hooks:
       - id: convert-notebooks

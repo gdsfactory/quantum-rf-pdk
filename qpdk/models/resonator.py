@@ -2,42 +2,15 @@
 
 from collections.abc import Callable
 from functools import partial
-from typing import cast
 
 import jax.numpy as jnp
 import sax
 import skrf
 from jax._src.util import Array
 from numpy.typing import NDArray
-from skrf.media import CPW, Media
+from skrf.media import Media
 
-from qpdk import LAYER_STACK
-from qpdk.tech import material_properties
-
-
-def cpw_media_skrf(width: float, gap: float) -> partial[CPW]:
-    """Create a partial coplanar waveguide (CPW) media object using scikit-rf.
-
-    Args:
-        width: Width of the center conductor in μm.
-        gap: Width of the gap between the center conductor and ground planes in μm.
-
-    Returns:
-        partial[skrf.media.CPW]: A CPW media object with specified dimensions.
-    """
-    # Convert μm to m for skrf
-    return partial(
-        CPW,
-        w=width * 1e-6,
-        s=gap * 1e-6,
-        h=LAYER_STACK.layers["Substrate"].thickness * 1e-6,
-        t=LAYER_STACK.layers["M1"].thickness * 1e-6,
-        ep_r=material_properties[cast(str, LAYER_STACK.layers["Substrate"].material)][
-            "relative_permittivity"
-        ],
-        rho=1e-100,  # set to a very low value to avoid warnings
-        tand=0,
-    )
+from qpdk.models.media import cpw_media_skrf
 
 
 def resonator_frequency(
