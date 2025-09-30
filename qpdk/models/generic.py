@@ -1,10 +1,14 @@
 """S-parameter models for generic components."""
 
+from functools import partial
+
+import jax
 import jax.numpy as jnp
 import sax
 from jax.typing import ArrayLike
 
 
+@partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def gamma_0_load(
     f: ArrayLike = jnp.array([5e9]),
     gamma_0: int | float | complex = 0,
@@ -63,6 +67,18 @@ def open(
         sax.SType: S-parameters dictionary where :math:`S = I_\text{n\_ports}`
     """
     return gamma_0_load(f=f, gamma_0=1, n_ports=n_ports)
+
+
+def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
+    r"""Ideal 3-port power divider/combiner (T-junction).
+
+    Args:
+        f: Array of frequency points in Hz
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return sax.models.splitters.splitter_ideal(wl=f)
 
 
 if __name__ == "__main__":

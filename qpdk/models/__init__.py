@@ -4,7 +4,7 @@ import sax
 
 import qpdk.models.skrf_duck_typing  # noqa: F401
 
-from .generic import gamma_0_load, open, short
+from .generic import gamma_0_load, open, short, tee
 from .resonator import quarter_wave_resonator_coupled_to_probeline, resonator_frequency
 from .waveguides import bend_circular, bend_euler, bend_s, straight
 
@@ -20,6 +20,7 @@ models = {
     "quarter_wave_resonator_coupled_to_probeline": quarter_wave_resonator_coupled_to_probeline,
     "short": short,
     "straight": straight,
+    "tee": tee,
 }
 
 __all__ = [
