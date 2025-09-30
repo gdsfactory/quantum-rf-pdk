@@ -22,7 +22,6 @@ install: ##@ Install the package and all development dependencies
 
 CLEAN_DIRS := dist build *.egg-info docs/_build docs/notebooks
 clean: ##@ Clean up all build, test, coverage and Python artifacts
-	@# Use rip if available, otherwise fall back to rm -rf
 	rm -rf $(CLEAN_DIRS)
 
 ###########
