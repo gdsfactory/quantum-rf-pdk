@@ -1,7 +1,7 @@
 """S-parameter model for a straight waveguide."""
 
 from functools import partial
-from typing import TypedDict
+from typing import TypedDict, Unpack
 
 import jax
 import jax.numpy as jnp
@@ -29,7 +29,7 @@ def straight(
     """S-parameter model for a straight waveguide.
 
     Args:
-        f: Tuple of frequency points in Hz (static for JIT)
+        f: Tuple of frequency points in Hz
         length: Physical length in µm
         media: Function returning a scikit-rf :class:`~Media` object after called
             with ``frequency=f``. If None, uses default CPW media.
@@ -46,6 +46,30 @@ def straight(
         ("o2", "o2"): jnp.array(transmission_line.s[:, 1, 1]),
     }
     return sax.reciprocal(sdict)
+
+
+def bend_circular(
+    *args: ArrayLike | int | float | MediaCallable,
+    **kwargs: Unpack[StraightModelKwargs],
+) -> sax.SType:
+    """S-parameter model for a circular bend, wrapped to to :func:`~straight`."""
+    return straight(*args, **kwargs)
+
+
+def bend_euler(
+    *args: ArrayLike | int | float | MediaCallable,
+    **kwargs: Unpack[StraightModelKwargs],
+) -> sax.SType:
+    """S-parameter model for an Euler bend, wrapped to to :func:`~straight`."""
+    return straight(*args, **kwargs)
+
+
+def bend_s(
+    *args: ArrayLike | int | float | MediaCallable,
+    **kwargs: Unpack[StraightModelKwargs],
+) -> sax.SType:
+    """S-parameter model for an S-bend, wrapped to to :func:`~straight`."""
+    return straight(*args, **kwargs)
 
 
 if __name__ == "__main__":
