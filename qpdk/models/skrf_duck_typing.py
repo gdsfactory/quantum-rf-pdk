@@ -1,5 +1,6 @@
 """Duck-typing for skrf to make JAX run."""
 
+from collections.abc import Sequence
 from functools import partial
 from math import pi
 
@@ -266,10 +267,13 @@ def z0(self, z0) -> None:
     # if _z0 is a matrix, we check if the shape matches with _s
     # In any other case raise an Exception
     if z0.ndim == 0:
+        # self._z0[:] = z0
         self._z0 = jnp.full(self.s.shape[:2], z0, dtype=complex)
     elif z0.ndim == 1 and z0.shape[0] == self.s.shape[0]:
+        # self._z0[:] = z0[:, None]
         self._z0 = jnp.broadcast_to(z0[:, None], self.s.shape[:2])
     elif z0.ndim == 1 and z0.shape[0] == self.s.shape[1]:
+        # self._z0[:] = z0[None, :]
         self._z0 = jnp.broadcast_to(z0[None, :], self.s.shape[:2])
     elif z0.shape == self.s.shape[:2]:
         self._z0 = z0
@@ -318,6 +322,36 @@ def _renormalize_s(s, z_old, z_new, s_def=skrf.S_DEF_DEFAULT, s_def_old=None):
         raise ValueError("s_def parameter should be one of:", skrf.S_DEFINITIONS)
     # that's a heck of a one-liner!
     return _z2s(_s2z(s, z0=z_old, s_def=s_def_old), z0=z_new, s_def=s_def)
+
+
+def _renumber(
+    self, from_ports: Sequence[int], to_ports: Sequence[int], only_z0: bool = False
+) -> None:
+    """Modified version of :func:`skrf.network.Network.renumber` such that jax.jit runs.
+
+    Note: This function uses JAX's functional array updates via .at[].set() to avoid
+    in-place modifications which are incompatible with jax.jit.
+    """
+    from_ports = jnp.array(from_ports)
+    to_ports = jnp.array(to_ports)
+    if len(jnp.unique(from_ports)) != len(from_ports):
+        raise ValueError("an index can appear at most once in from_ports or to_ports")
+    if any(jnp.unique(from_ports) != jnp.unique(to_ports)):
+        raise ValueError("from_ports and to_ports must have the same set of indices")
+
+    if not only_z0:
+        # Renumber rows
+        s_new = self.s.at[:, to_ports, :].set(self.s[:, from_ports, :])
+        # Renumber columns
+        self.s = s_new.at[:, :, to_ports].set(s_new[:, :, from_ports])
+
+    # Renumber z0
+    self.z0 = self.z0.at[:, to_ports].set(self.z0[:, from_ports])
+
+    if self.port_names is not None:
+        _port_names = jnp.array(self.port_names)
+        _port_names = _port_names.at[to_ports].set(_port_names[from_ports])
+        self.port_names = _port_names.tolist()
 
 
 def _fix_z0_shape(z0, nfreqs, nports):
@@ -461,6 +495,7 @@ def _s2z(s, z0=50, s_def=skrf.S_DEF_DEFAULT):
 
 skrf.network.Network.z0 = z0
 skrf.network.Network.renormalize = _renormalize
+skrf.network.Network.renumber = _renumber
 skrf.network.fix_z0_shape = _fix_z0_shape
 skrf.network.fix_param_shape = _fix_param_shape
 skrf.network.renormalize_s = _renormalize_s

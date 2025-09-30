@@ -90,7 +90,6 @@ if __name__ == "__main__":
     _mark_resonance_frequency(actual_freq, "green", "Coupled resonance Frequency")
 
     plt.legend()
-    # plt.show()
 
 
 # %% [markdown]
@@ -130,6 +129,9 @@ if __name__ == "__main__":
     print(f"{loss_fn(dict(length=4000.0))=}")
     print(f"{loss_fn(dict(length=5900.0))=}")
 
+    # Initialize Ray (possibly with cluster)
+    ray.init()
+
     # Optimize length using Ray Tune
     tuner = ray.tune.Tuner(
         loss_fn,
@@ -139,7 +141,7 @@ if __name__ == "__main__":
         tune_config=ray.tune.TuneConfig(
             metric="mse",
             mode="min",
-            num_samples=10,
+            num_samples=50,
             max_concurrent_trials=math.ceil((os.cpu_count() or 1) / 4),
             reuse_actors=True,
             search_alg=ray.tune.search.optuna.OptunaSearch(),
@@ -157,6 +159,7 @@ if __name__ == "__main__":
     print(f"Achieved Resonance Frequency: {optimal_freq / 1e9:.2f} GHz")
 
     # Plot
+    plt.close()
     plt.plot(frequencies / 1e9, abs(optimal_S["in", "out"]) ** 2)
     plt.xlabel("f [GHz]")
     plt.ylabel("$S_{21}$")
