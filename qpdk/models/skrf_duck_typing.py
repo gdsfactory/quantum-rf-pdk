@@ -2,7 +2,6 @@
 
 from functools import partial
 from math import pi
-from typing import Sequence
 
 import jax
 import jax.numpy as jnp
@@ -556,10 +555,7 @@ def _splitter_s(z0):
 
     ports_idx = jnp.arange(nports)
     z0_load = jnp.array([get_z0_load(z0=z0, port_idx=i) for i in ports_idx]).T
-    # s[:, ports_idx, ports_idx] = (z0_load - z0.conj()) / (z0_load + z0)
-    s = s.at[:, ports_idx, ports_idx].set((z0_load - z0.conj()) / (z0_load + z0))
-
-    return s
+    return s.at[:, ports_idx, ports_idx].set((z0_load - z0.conj()) / (z0_load + z0))
 
 
 skrf.media.Media.line = _line
