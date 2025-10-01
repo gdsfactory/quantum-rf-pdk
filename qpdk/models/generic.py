@@ -83,12 +83,37 @@ def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
 
 
 @partial(jax.jit, inline=True)
+def single_impedance_element(
+    z: int | float | complex = 50,
+    z0: int | float | complex = 50,
+) -> sax.SType:
+    r"""Single impedance element Sax model.
+
+    See :cite:`m.pozarMicrowaveEngineering2012` for details.
+
+    Args:
+        z: Impedance in Ω
+        z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
+            Media object using `z0 = media.z0`.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    sdict = {
+        ("o1", "o1"): z / (z + 2 * z0),
+        ("o1", "o2"): 2 * z0 / (2 * z0 + z),
+        ("o2", "o2"): z / (z + 2 * z0),
+    }
+    return sax.reciprocal(sdict)
+
+
+@partial(jax.jit, inline=True)
 def capacitor(
     f: ArrayLike = jnp.array([5e9]),
     capacitance: float = 1e-15,
     z0: int | float | complex = 50,
 ) -> sax.SType:
-    r"""Ideal capacitor Sax model.
+    r"""Ideal capacitor () Sax model.
 
     See :cite:`m.pozarMicrowaveEngineering2012` for details.
 
@@ -103,12 +128,31 @@ def capacitor(
     """
     ω = 2 * jnp.pi * jnp.asarray(f)
     Z𞁞 = 1 / (1j * ω * capacitance)
-    sdict = {
-        ("o1", "o1"): Z𞁞 / (Z𞁞 + 2 * z0),
-        ("o1", "o2"): 2 * z0 / (2 * z0 + Z𞁞),
-        ("o2", "o2"): Z𞁞 / (Z𞁞 + 2 * z0),
-    }
-    return sax.reciprocal(sdict)
+    return single_impedance_element(z=Z𞁞, z0=z0)
+
+
+@partial(jax.jit, inline=True)
+def inductor(
+    f: ArrayLike = jnp.array([5e9]),
+    inductance: float = 1e-12,
+    z0: int | float | complex = 50,
+) -> sax.SType:
+    r"""Ideal inductor (󱡌) Sax model.
+
+    See :cite:`m.pozarMicrowaveEngineering2012` for details.
+
+    Args:
+        f: Array of frequency points in Hz
+        inductance: Inductance in Henries
+        z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
+            Media object using `z0 = media.z0`.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    ω = 2 * jnp.pi * jnp.asarray(f)
+    Zᵢ = 1j * ω * inductance
+    return single_impedance_element(z=Zᵢ, z0=z0)
 
 
 if __name__ == "__main__":
@@ -161,5 +205,42 @@ if __name__ == "__main__":
     ax2.set_ylabel("Phase [rad]")
     ax2.legend(loc="upper right")
 
-    plt.title(f"$S$-parameters capacitor ($C={capacitance * 1e15}\\,$fF)")
+    plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
+    plt.show(block=False)
+
+    S_ind = inductor(f, inductance=(inductance := 1e-9))
+    pprint(S_ind)
+    plt.figure()
+    plt.subplot(121, projection="polar")
+    plt.plot(jnp.angle(S_ind[("o1", "o1")]), abs(S_ind[("o1", "o1")]), label="$S_{11}$")
+    plt.plot(jnp.angle(S_ind[("o1", "o2")]), abs(S_ind[("o2", "o1")]), label="$S_{21}$")
+    plt.title("S-parameters inductor")
+    plt.legend()
+    ax1 = plt.subplot(122)
+    ax1.plot(f / 1e9, abs(S_ind[("o1", "o1")]), label="|S11|", color="C0")
+    ax1.plot(f / 1e9, abs(S_ind[("o1", "o2")]), label="|S21|", color="C1")
+    ax1.set_xlabel("Frequency [GHz]")
+    ax1.set_ylabel("Magnitude [unitless]")
+    ax1.grid(True)
+    ax1.legend(loc="upper left")
+
+    ax2 = ax1.twinx()
+    ax2.plot(
+        f / 1e9,
+        jnp.angle(S_ind[("o1", "o1")]),
+        label="∠S11",
+        color="C0",
+        linestyle="--",
+    )
+    ax2.plot(
+        f / 1e9,
+        jnp.angle(S_ind[("o1", "o2")]),
+        label="∠S21",
+        color="C1",
+        linestyle="--",
+    )
+    ax2.set_ylabel("Phase [rad]")
+    ax2.legend(loc="upper right")
+
+    plt.title(f"Inductor $S$-parameters ($L={inductance * 1e9}\\,$nH)")
     plt.show()
