@@ -139,11 +139,11 @@ def test_sax_stype_functions_in_models_dict():
     models_names = set(qpdk.models.models.keys())
 
     assert sax_stype_functions == models_names, (
-        "There are functions with sax.SType return type are missing from models dictionary"
+        "There are functions with sax.SType return type that are missing from the qpdk.models.models dictionary"
     )
 
 
 if __name__ == "__main__":
     test_has_sax_stype_return()
     test_sax_stype_functions_in_models_dict()
-    print("Test passed!")
+    print("All tests passed!")

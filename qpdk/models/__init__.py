@@ -4,7 +4,15 @@ import sax
 
 import qpdk.models.skrf_duck_typing  # noqa: F401
 
-from .generic import gamma_0_load, open, short, tee
+from .generic import (
+    capacitor,
+    gamma_0_load,
+    inductor,
+    open,
+    short,
+    single_impedance_element,
+    tee,
+)
 from .resonator import quarter_wave_resonator_coupled_to_probeline, resonator_frequency
 from .waveguides import bend_circular, bend_euler, bend_s, straight
 
@@ -12,15 +20,21 @@ sax.set_port_naming_strategy("optical")
 
 
 models = {
-    "bend_circular": bend_circular,
-    "bend_euler": bend_euler,
-    "bend_s": bend_s,
-    "gamma_0_load": gamma_0_load,
-    "open": open,
-    "quarter_wave_resonator_coupled_to_probeline": quarter_wave_resonator_coupled_to_probeline,
-    "short": short,
-    "straight": straight,
-    "tee": tee,
+    func.__name__: func
+    for func in (
+        bend_circular,
+        bend_euler,
+        bend_s,
+        capacitor,
+        gamma_0_load,
+        inductor,
+        open,
+        quarter_wave_resonator_coupled_to_probeline,
+        short,
+        single_impedance_element,
+        straight,
+        tee,
+    )
 }
 
 __all__ = [
