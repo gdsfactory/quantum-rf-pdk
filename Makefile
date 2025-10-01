@@ -46,9 +46,6 @@ update-pre: ##@ Update pre-commit hooks to the latest revisions
 run-pre: ##@ Run all pre-commit hooks on all files
 	uvx pre-commit run --all-files
 
-git-rm-merged: ##@ Delete all local branches that have already been merged
-	git branch -D `git branch --merged | grep -v \* | xargs`
-
 build: ##@ Build the Python package (install build tool and create dist)
 	rm -rf dist
 	uv build
