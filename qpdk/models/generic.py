@@ -1,6 +1,7 @@
 """S-parameter models for generic components."""
 
 from functools import partial
+from pprint import pprint
 
 import jax
 import jax.numpy as jnp
@@ -81,17 +82,84 @@ def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
     return sax.models.splitters.splitter_ideal(wl=f)
 
 
+@partial(jax.jit, inline=True)
+def capacitor(
+    f: ArrayLike = jnp.array([5e9]),
+    capacitance: float = 1e-15,
+    z0: int | float | complex = 50,
+) -> sax.SType:
+    r"""Ideal capacitor Sax model.
+
+    See :cite:`m.pozarMicrowaveEngineering2012` for details.
+
+    Args:
+        f: Array of frequency points in Hz
+        capacitance: Capacitance in Farads
+        z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
+            Media object using `z0 = media.z0`.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    ω = 2 * jnp.pi * jnp.asarray(f)
+    Z𞁞 = 1 / (1j * ω * capacitance)
+    sdict = {
+        ("o1", "o1"): Z𞁞 / (Z𞁞 + 2 * z0),
+        ("o1", "o2"): 2 * z0 / (2 * z0 + Z𞁞),
+        ("o2", "o2"): Z𞁞 / (Z𞁞 + 2 * z0),
+    }
+    return sax.reciprocal(sdict)
+
+
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
 
-    f = jnp.linspace(1e9, 10e9, 201)
+    f = jnp.linspace(1e9, 25e9, 201)
     S = gamma_0_load(f=f, gamma_0=0.5 + 0.5j, n_ports=2)
-
     for key in S:
         plt.plot(f / 1e9, abs(S[key]) ** 2, label=key)
     plt.ylim(-0.05, 1.05)
     plt.xlabel("Frequency [GHz]")
-    plt.ylabel("Transmittance")
+    plt.ylabel("S")
     plt.grid(True)
     plt.legend()
+    plt.show(block=False)
+
+    S_cap = capacitor(f, capacitance=(capacitance := 100e-15))
+    pprint(S_cap)
+    plt.figure()
+    # Polar plot of S21 and S11
+    plt.subplot(121, projection="polar")
+    plt.plot(jnp.angle(S_cap[("o1", "o1")]), abs(S_cap[("o1", "o1")]), label="$S_{11}$")
+    plt.plot(jnp.angle(S_cap[("o1", "o2")]), abs(S_cap[("o2", "o1")]), label="$S_{21}$")
+    plt.title("S-parameters capacitor")
+    plt.legend()
+    # Magnitude and phase vs frequency
+    ax1 = plt.subplot(122)
+    ax1.plot(f / 1e9, abs(S_cap[("o1", "o1")]), label="|S11|", color="C0")
+    ax1.plot(f / 1e9, abs(S_cap[("o1", "o2")]), label="|S21|", color="C1")
+    ax1.set_xlabel("Frequency [GHz]")
+    ax1.set_ylabel("Magnitude [unitless]")
+    ax1.grid(True)
+    ax1.legend(loc="upper left")
+
+    ax2 = ax1.twinx()
+    ax2.plot(
+        f / 1e9,
+        jnp.angle(S_cap[("o1", "o1")]),
+        label="∠S11",
+        color="C0",
+        linestyle="--",
+    )
+    ax2.plot(
+        f / 1e9,
+        jnp.angle(S_cap[("o1", "o2")]),
+        label="∠S21",
+        color="C1",
+        linestyle="--",
+    )
+    ax2.set_ylabel("Phase [rad]")
+    ax2.legend(loc="upper right")
+
+    plt.title(f"$S$-parameters capacitor ($C={capacitance * 1e15}\\,$fF)")
     plt.show()
