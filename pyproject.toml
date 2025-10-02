@@ -45,7 +45,8 @@ models = [
   "sax",
   "scikit-rf",
   "scqubits",
-  "sympy"
+  "sympy",
+  "polars"
 ]
 
 [tool.codespell]
