@@ -10,6 +10,7 @@ from .generic import (
     inductor,
     open,
     short,
+    single_admittance_element,
     single_impedance_element,
     tee,
 )
@@ -31,6 +32,7 @@ models = {
         open,
         quarter_wave_resonator_coupled_to_probeline,
         short,
+        single_admittance_element,
         single_impedance_element,
         straight,
         tee,
