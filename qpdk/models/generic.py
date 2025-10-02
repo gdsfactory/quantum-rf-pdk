@@ -38,6 +38,7 @@ def gamma_0_load(
     return sax.reciprocal(sdict)
 
 
+@partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def short(
     f: ArrayLike = jnp.array([5e9]),
     n_ports: int = 1,
@@ -54,6 +55,7 @@ def short(
     return gamma_0_load(f=f, gamma_0=-1, n_ports=n_ports)
 
 
+@partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def open(
     f: ArrayLike = jnp.array([5e9]),
     n_ports: int = 1,
@@ -70,8 +72,9 @@ def open(
     return gamma_0_load(f=f, gamma_0=1, n_ports=n_ports)
 
 
+@partial(jax.jit, inline=True)
 def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
-    r"""Ideal 3-port power divider/combiner (T-junction).
+    """Ideal 3-port power divider/combiner (T-junction).
 
     Args:
         f: Array of frequency points in Hz
