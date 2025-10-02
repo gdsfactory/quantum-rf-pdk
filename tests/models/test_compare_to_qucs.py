@@ -73,7 +73,7 @@ class BaseCompareToQucs(ABC):
                 if isinstance(port, str) and port.startswith("o"):
                     port_numbers.add(int(port[1:]))
 
-        num_ports = max(port_numbers) if port_numbers else 2
+        num_ports = max(port_numbers, default=2)
 
         # Build dictionaries for S-parameters in Sij format
         # Only check first from diagonal and below diagonal (S11, S21, S31, S41, etc.)
