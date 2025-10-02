@@ -242,7 +242,7 @@ def plate_capacitor(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
     A capacitive coupler consists of two metal pads separated by a small gap,
     providing capacitive coupling between circuit elements like qubits and resonators.
 
-    .. code::
+    .. code-block::
                     ______               ______
           _________|      |             |      |________
          |                |             |               |
@@ -269,7 +269,7 @@ def plate_capacitor_single(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Com
 
     This is essentially half of a :func:`~plate capacitor`.
 
-    .. code::
+    .. code-block::
                     ______
           _________|      |
          |                |
