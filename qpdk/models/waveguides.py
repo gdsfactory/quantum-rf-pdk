@@ -1,6 +1,5 @@
 """S-parameter model for a straight waveguide."""
 
-from functools import partial
 from typing import TypedDict, Unpack
 
 import jax
@@ -58,7 +57,7 @@ def bend_circular(
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for a circular bend, wrapped to to :func:`~straight`."""
-    return straight(*args, **kwargs)
+    return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
 def bend_euler(
@@ -66,7 +65,7 @@ def bend_euler(
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for an Euler bend, wrapped to to :func:`~straight`."""
-    return straight(*args, **kwargs)
+    return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
 def bend_s(
@@ -74,7 +73,7 @@ def bend_s(
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for an S-bend, wrapped to to :func:`~straight`."""
-    return straight(*args, **kwargs)
+    return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
 if __name__ == "__main__":
