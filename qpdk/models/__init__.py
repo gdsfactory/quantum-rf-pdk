@@ -2,7 +2,7 @@
 
 import sax
 
-import qpdk.models.skrf_duck_typing  # noqa: F401
+# import qpdk.models.skrf_duck_typing  # noqa: F401
 
 from .generic import (
     capacitor,

@@ -20,7 +20,8 @@ class StraightModelKwargs(TypedDict, total=False):
     media: MediaCallable
 
 
-@partial(jax.jit, static_argnames=["media"])
+# JIT disabled for now due to scikit-rf internals not being JAX-compatible
+# @partial(jax.jit, static_argnames=["media"])
 def straight(
     f: ArrayLike = jnp.array([5e9]),
     length: int | float = 1000,
