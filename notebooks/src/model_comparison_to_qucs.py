@@ -21,14 +21,14 @@
 
 # %% tags=["hide-input", "hide-output"]
 import inspect
-
-# Add the tests directory to the path so we can import the test modules
 import sys
 
-from matplotlib import pyplot as plt
+import numpy as np
+from IPython.display import Markdown, display
 
 from qpdk.config import PATH as QPDKPath
 
+# Add the tests directory to the path so we can import the test modules
 test_module_path = QPDKPath.tests / "models"
 sys.path.insert(0, str(test_module_path.parent))
 
@@ -83,59 +83,27 @@ for suite in test_suites:
     print(f"  - {suite.__name__}")
 
 # %% [markdown]
-# ## Capacitor Model Comparison
+# ## Model Comparison
 #
-# Compare the capacitor S-parameter model against Qucs-S reference data.
-# The capacitor is modeled as a lumped element with a given capacitance value of $60\,\mathrm{fF}$.
+# Compare the S-parameter models against Qucs-S reference data.
 
 # %%
-# Find and plot the capacitor test suite
-capacitor_suite = next(
-    (suite for suite in test_suites if "Capacitor" in suite.__name__), None
-)
+# Find and plot all test suites
 
-if capacitor_suite:
-    plt.figure(figsize=(14, 6))
-    test_instance = capacitor_suite()
+for suite in test_suites:
+    test_instance = suite()
+    display(Markdown(f"### {test_instance.component_name}"))
+    display(
+        Markdown(
+            f"**Test Suite:** `{suite.__name__}` | "
+            f"**Parameter:** {test_instance.parameter_name} = "
+            f"{test_instance.parameter_value / test_instance.parameter_unit:.2f} "
+            f"× 10^{int(np.log10(test_instance.parameter_unit))} "
+            f"({test_instance.csv_filename})"
+        )
+    )
     test_instance.plot_comparison()
-else:
-    print("Capacitor test suite not found")
-
-# %% [markdown]
-# ## Inductor Model Comparison
-#
-# Compare the inductor S-parameter model against Qucs-S reference data.
-# The inductor is modeled as a lumped element with a given inductance value of $10\,\mathrm{nH}$.
-
-# %%
-# Find and plot the inductor test suite
-inductor_suite = next(
-    (suite for suite in test_suites if "Inductor" in suite.__name__), None
-)
-
-if inductor_suite:
-    plt.figure(figsize=(14, 6))
-    test_instance = inductor_suite()
-    test_instance.plot_comparison()
-else:
-    print("Inductor test suite not found")
-
-# %% [markdown]
-# ## Coplanar Waveguide (CPW) Model Comparison
-#
-# Compare the coplanar waveguide (CPW) transmission line model against Qucs-S reference data.
-# The CPW is modeled using scikit-rf media models with specified geometry parameters.
-
-# %%
-# Find and plot the CPW test suite
-cpw_suite = next((suite for suite in test_suites if "CPW" in suite.__name__), None)
-
-if cpw_suite:
-    plt.figure(figsize=(14, 6))
-    test_instance = cpw_suite()
-    test_instance.plot_comparison()
-else:
-    print("CPW test suite not found")
+    display(Markdown("---"))
 
 # %% [markdown]
 # ## Summary

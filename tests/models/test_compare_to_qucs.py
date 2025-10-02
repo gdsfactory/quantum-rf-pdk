@@ -271,6 +271,10 @@ class BaseCompareToQucs(ABC):
         )
         plt.show()
 
+    def __str__(self) -> str:
+        """String representation of the test suite instance."""
+        return f"{self.__class__.__name__}(component_name={self.component_name}, csv_filename={self.csv_filename})"
+
 
 @final
 class TestCapacitorCompareToQucs(BaseCompareToQucs):
