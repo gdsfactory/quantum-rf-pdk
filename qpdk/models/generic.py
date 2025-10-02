@@ -108,6 +108,28 @@ def single_impedance_element(
 
 
 @partial(jax.jit, inline=True)
+def single_admittance_element(
+    y: int | float | complex = 1 / 50,
+) -> sax.SType:
+    r"""Single admittance element Sax model.
+
+    See :cite:`m.pozarMicrowaveEngineering2012` for details.
+
+    Args:
+        y: Admittance
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    sdict = {
+        ("o1", "o1"): 1 / (1 + y),
+        ("o1", "o2"): y / (1 + y),
+        ("o2", "o2"): 1 / (1 + y),
+    }
+    return sax.reciprocal(sdict)
+
+
+@partial(jax.jit, inline=True)
 def capacitor(
     f: ArrayLike = jnp.array([5e9]),
     capacitance: float = 1e-15,
@@ -127,6 +149,8 @@ def capacitor(
         sax.SType: S-parameters dictionary
     """
     ω = 2 * jnp.pi * jnp.asarray(f)
+    # Y = 2 * (1j * ω * capacitance * z0)
+    # return single_admittance_element(y=Y)
     Z𞁞 = 1 / (1j * ω * capacitance)
     return single_impedance_element(z=Z𞁞, z0=z0)
 
