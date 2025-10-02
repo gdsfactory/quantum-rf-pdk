@@ -82,7 +82,14 @@ def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
     Returns:
         sax.SType: S-parameters dictionary
     """
-    return sax.models.splitters.splitter_ideal(wl=f)
+    sdict = {(f"o{i}", f"o{i}"): jnp.full(len(f), -1 / 3) for i in range(1, 4)}
+    sdict |= {
+        (f"o{i}", f"o{j}"): jnp.full(len(f), 2 / 3)
+        for i in range(1, 4)
+        for j in range(i + 1, 4)
+    }
+    return sax.reciprocal(sdict)
+    # return sax.models.splitters.splitter_ideal(wl=f)
 
 
 @partial(jax.jit, inline=True)
