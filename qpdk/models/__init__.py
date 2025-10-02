@@ -2,8 +2,7 @@
 
 import sax
 
-# import qpdk.models.skrf_duck_typing  # noqa: F401
-
+from .couplers import coupler_straight
 from .generic import (
     capacitor,
     gamma_0_load,
@@ -27,6 +26,7 @@ models = {
         bend_euler,
         bend_s,
         capacitor,
+        coupler_straight,
         gamma_0_load,
         inductor,
         open,
