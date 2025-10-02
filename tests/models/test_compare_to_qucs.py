@@ -1,8 +1,9 @@
 """Tests comparing S-parameter models results to Qucs-S results."""
 
 from abc import ABC, abstractmethod
+from functools import partial
 from pathlib import Path
-from typing import TypeAlias, final, override
+from typing import ClassVar, Literal, TypeAlias, final, override
 
 import jax.numpy as jnp
 import polars as pl
@@ -12,12 +13,14 @@ from matplotlib import pyplot as plt
 from numpy.testing import assert_allclose
 
 from qpdk.models.generic import capacitor, inductor
+from qpdk.models.media import cpw_media_skrf
+from qpdk.models.waveguides import straight
 
 TEST_DATA_PATH = Path(__file__).parent / "data"
 
 NUMERIC_TOLERANCES = {
-    "rtol": 1e-2,
-    "atol": 1e-3,
+    "rtol": 1 / 100,
+    "atol": 0.001,
 }
 
 
@@ -30,13 +33,14 @@ class BaseCompareToQucs(ABC):
     parameter_value: float = 0.0
     parameter_name: str = "parameter"
     parameter_unit: float = 1e-9
+    skip_values: ClassVar[list[Literal["S11", "S21"]]] = []
 
     SComparisonResults: TypeAlias = tuple[
         float, jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray
     ]
 
     @abstractmethod
-    def get_model_function(self) -> sax.SType:
+    def get_model_function(self) -> sax.SType | partial[sax.SType]:
         """Return the model function to use. Subclasses must override."""
         raise NotImplementedError("Subclasses must implement get_model_function")
 
@@ -78,8 +82,10 @@ class BaseCompareToQucs(ABC):
     def test_compare_to_qucs(self, results: SComparisonResults):
         """Test that S-parameters match Qucs-S results within tolerance."""
         _param_value, _f, S_21_sax, S_11_sax, S_21_qucs, S_11_qucs = results
-        assert_allclose(S_11_sax, S_11_qucs, **NUMERIC_TOLERANCES)
-        assert_allclose(S_21_sax, S_21_qucs, **NUMERIC_TOLERANCES)
+        if "S11" not in self.skip_values:
+            assert_allclose(S_11_sax, S_11_qucs, **NUMERIC_TOLERANCES)
+        if "S21" not in self.skip_values:
+            assert_allclose(S_21_sax, S_21_qucs, **NUMERIC_TOLERANCES)
 
     def plot_comparison(self):
         """Generate comparison plots between qpdk (sax) and Qucs-S models."""
@@ -109,7 +115,7 @@ class BaseCompareToQucs(ABC):
             """Helper function to plot magnitude with consistent styling."""
             ax.plot(
                 f / 1e9,
-                abs(s_qucs),
+                20 * jnp.log10(abs(s_qucs)),
                 "-",
                 linewidth=1.5,
                 color=color,
@@ -117,7 +123,7 @@ class BaseCompareToQucs(ABC):
             )
             ax.plot(
                 f / 1e9,
-                abs(s_sax),
+                20 * jnp.log10(abs(s_sax)),
                 "--",
                 linewidth=2.5,
                 color=color,
@@ -170,7 +176,7 @@ class BaseCompareToQucs(ABC):
         _plot_magnitude(ax1, f, S_11_qucs, S_11_sax, color4, "S_{11}")
 
         ax1.set_xlabel("Frequency [GHz]")
-        ax1.set_ylabel("Magnitude [unitless]")
+        ax1.set_ylabel("Magnitude [dB]")
         ax1.grid(True)
         ax1.legend(loc="upper left")
 
@@ -217,7 +223,31 @@ class TestInductorCompareToQucs(BaseCompareToQucs):
         return inductor
 
 
+@pytest.mark.skip(reason="S11 does not match at all and S22 has some discrepancies")
+@final
+class TestCPWCompareToQucs(BaseCompareToQucs):
+    """Test suite for comparing coplanar waveguide (CPW) S-parameter models to Qucs-S results."""
+
+    component_name = "Coplanar waveguide"
+    csv_filename = "cpw_w10_s_6_l10mm.csv"
+    parameter_value = 10000.0  # length in micrometers
+    parameter_name = "length"
+    parameter_unit = 1e-6  # micrometers
+    skip_values: ClassVar[list[Literal["S11", "S21"]]] = ["S11"]
+
+    @override
+    def get_model_function(self) -> partial[sax.SType]:
+        return partial(
+            straight,
+            media=cpw_media_skrf(),
+        )
+
+
 if __name__ == "__main__":
     # Run the plotting comparison when executed directly
-    for test_suite in (TestCapacitorCompareToQucs(), TestInductorCompareToQucs()):
+    for test_suite in (
+        TestCapacitorCompareToQucs(),
+        TestInductorCompareToQucs(),
+        TestCPWCompareToQucs(),
+    ):
         test_suite.plot_comparison()

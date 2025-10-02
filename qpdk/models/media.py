@@ -49,4 +49,5 @@ def cpw_media_skrf(
         # rho=1e-32,  # set to a very low value to avoid warnings
         rho=1e-100,  # set to a very low value to avoid warnings
         tand=0,  # No dielectric losses for now
+        has_metal_backside=False,
     )
