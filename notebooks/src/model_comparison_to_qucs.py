@@ -29,10 +29,9 @@ from IPython.display import Markdown, display
 from qpdk.config import PATH as QPDKPath
 
 # Add the tests directory to the path so we can import the test modules
-test_module_path = QPDKPath.tests / "models"
-sys.path.insert(0, str(test_module_path.parent))
+sys.path.insert(0, str(QPDKPath.tests))
 
-from models.test_compare_to_qucs import BaseCompareToQucs  # noqa: E402
+from models.test_compare_to_qucs import BaseCompareToQucs
 
 # %% [markdown]
 # ## Discover Test Suites
@@ -49,7 +48,7 @@ def discover_test_suites() -> list[type[BaseCompareToQucs]]:
     """Discover all test suite classes for Qucs-S comparison.
 
     Returns:
-        List of test suite classes that inherit from BaseCompareToQucs.
+        List of test suite classes that inherit from :class:`~BaseCompareToQucs`.
     """
     # Import the module to get all classes
     from models import test_compare_to_qucs
@@ -80,7 +79,7 @@ def discover_test_suites() -> list[type[BaseCompareToQucs]]:
 test_suites = discover_test_suites()
 print(f"Found {len(test_suites)} test suite(s):")
 for suite in test_suites:
-    print(f"  - {suite.__name__}")
+    print(f"\t· {suite.__name__}")
 
 # %% [markdown]
 # ## Model Comparison
@@ -93,17 +92,14 @@ for suite in test_suites:
 for suite in test_suites:
     test_instance = suite()
     display(Markdown(f"### {test_instance.component_name}"))
+    display(Markdown(f"**Test Suite:** `{suite.__name__}`"))
     display(
         Markdown(
-            f"**Test Suite:** `{suite.__name__}` | "
-            f"**Parameter:** {test_instance.parameter_name} = "
-            f"{test_instance.parameter_value / test_instance.parameter_unit:.2f} "
-            f"× 10^{int(np.log10(test_instance.parameter_unit))} "
-            f"({test_instance.csv_filename})"
+            f"**Parameter:** {test_instance.parameter_name} = {test_instance.parameter_value / test_instance.parameter_unit:.2f} × 10^{int(np.log10(test_instance.parameter_unit))}"
         )
     )
+    display(Markdown(f"**CSV:** `{test_instance.csv_filename}`"))
     test_instance.plot_comparison()
-    display(Markdown("---"))
 
 # %% [markdown]
 # ## Summary
