@@ -3,6 +3,10 @@
 title: Qpdk
 author: gdsfactory
 logo: logo.png
+# Exclude config files from being executed as notebooks
+exclude_patterns:
+  - ipython_config.py
+  - "*.mplstyle"
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
 execute:
