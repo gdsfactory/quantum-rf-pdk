@@ -1,6 +1,5 @@
 """S-parameter model for a straight waveguide."""
 
-from functools import partial
 from typing import TypedDict, Unpack
 
 import jax
@@ -20,7 +19,8 @@ class StraightModelKwargs(TypedDict, total=False):
     media: MediaCallable
 
 
-@partial(jax.jit, static_argnames=["length", "media"])
+# JIT disabled for now due to scikit-rf internals not being JAX-compatible
+# @partial(jax.jit, static_argnames=["media"])
 def straight(
     f: ArrayLike = jnp.array([5e9]),
     length: int | float = 1000,
@@ -28,14 +28,18 @@ def straight(
 ) -> sax.SType:
     """S-parameter model for a straight waveguide.
 
+    See `scikit-rf <skrf>`_ for details on analytical formulæ.
+
     Args:
-        f: Tuple of frequency points in Hz
+        f: Array of frequency points in Hz
         length: Physical length in µm
         media: Function returning a scikit-rf :class:`~Media` object after called
             with ``frequency=f``. If None, uses default CPW media.
 
     Returns:
         sax.SType: S-parameters dictionary
+
+    .. _skrf: https://scikit-rf.org/
     """
     # Keep f as tuple for scikit-rf, convert to array only for final JAX operations
     skrf_media = media(frequency=Frequency.from_f(f, unit="Hz"))
@@ -53,7 +57,7 @@ def bend_circular(
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for a circular bend, wrapped to to :func:`~straight`."""
-    return straight(*args, **kwargs)
+    return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
 def bend_euler(
@@ -61,7 +65,7 @@ def bend_euler(
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for an Euler bend, wrapped to to :func:`~straight`."""
-    return straight(*args, **kwargs)
+    return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
 def bend_s(
@@ -69,7 +73,7 @@ def bend_s(
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for an S-bend, wrapped to to :func:`~straight`."""
-    return straight(*args, **kwargs)
+    return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
 if __name__ == "__main__":

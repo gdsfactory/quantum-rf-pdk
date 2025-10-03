@@ -23,6 +23,7 @@ class Path:
     gds = module / "gds"
     klayout = module / "klayout"
     simulation = build / "simulation"
+    tests = repo / "tests"
 
     lyp = klayout / "tech" / "layers.lyp"
     lyt = klayout / "tech" / "tech.lyt"

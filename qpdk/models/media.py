@@ -1,7 +1,7 @@
 """Models for transmission line media."""
 
 import inspect
-from functools import partial
+from functools import cache, partial
 from typing import Protocol, cast
 
 import skrf
@@ -22,6 +22,7 @@ class MediaCallable(Protocol):
 _coplanar_waveguide_xsection_signature = inspect.signature(coplanar_waveguide)
 
 
+@cache
 def cpw_media_skrf(
     width: float = _coplanar_waveguide_xsection_signature.parameters["width"].default,
     gap: float = _coplanar_waveguide_xsection_signature.parameters["gap"].default,
@@ -45,6 +46,8 @@ def cpw_media_skrf(
         ep_r=material_properties[cast(str, LAYER_STACK.layers["Substrate"].material)][
             "relative_permittivity"
         ],
+        # rho=1e-32,  # set to a very low value to avoid warnings
         rho=1e-100,  # set to a very low value to avoid warnings
         tand=0,  # No dielectric losses for now
+        has_metal_backside=False,
     )

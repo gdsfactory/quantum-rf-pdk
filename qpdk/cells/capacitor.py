@@ -242,23 +242,24 @@ def plate_capacitor(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
     A capacitive coupler consists of two metal pads separated by a small gap,
     providing capacitive coupling between circuit elements like qubits and resonators.
 
-    .. code::
-                    ______               ______
-          _________|      |             |      |________
-         |                |             |               |
-         |  o1       pad1 | ====gap==== | pad2      o2  |
-         |                |             |               |
-         |_________       |             |      _________|
-                   |______|             |______|
+    .. code-block:: text
 
-    Note:
+                  ______               ______
+        _________|      |             |      |________
+       |                |             |               |
+       |  o1       pad1 | ====gap==== | pad2      o2  |
+       |                |             |               |
+       |_________       |             |      _________|
+                 |______|             |______|
+
+    .. note::
         This is a special case of the interdigital capacitor with zero finger length.
 
     Args:
         **kwargs: :class:`~InterdigitalCapacitorParams` for the interdigital
 
     Returns:
-        Component: A gdsfactory component with the plate capacitor geometry.
+        A gdsfactory component with the plate capacitor geometry.
     """
     return interdigital_capacitor(**(kwargs | {"finger_length": 0}))
 
@@ -267,22 +268,23 @@ def plate_capacitor(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
 def plate_capacitor_single(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
     """Creates a single plate capacitor for coupling.
 
-    This is essentially half of a :func:`~plate capacitor`.
+    This is essentially half of a :func:`~plate_capacitor`.
 
-    .. code::
-                    ______
-          _________|      |
-         |                |
-         |  o1       pad1 |
-         |                |
-         |_________       |
-                   |______|
+    .. code-block:: text
+
+                  ______
+        _________|      |
+       |                |
+       |  o1       pad1 |
+       |                |
+       |_________       |
+                 |______|
 
     Args:
         **kwargs: :class:`~InterdigitalCapacitorParams`
 
     Returns:
-        Component: A gdsfactory component with the plate capacitor geometry.
+        A gdsfactory component with the plate capacitor geometry.
     """
     return plate_capacitor(**(kwargs | {"half": True}))
 

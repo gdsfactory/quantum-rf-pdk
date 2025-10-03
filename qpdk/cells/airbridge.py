@@ -37,7 +37,7 @@ def airbridge(
 
     Note:
         To be used with :class:`~gdsfactory.cross_section.ComponentAlongPath`
-        the unrotated version should be _oriented for placement on a horizontal line_.
+        the unrotated version should be *oriented for placement on a horizontal line*.
 
     Args:
         bridge_length: Total length of the airbridge span in µm.

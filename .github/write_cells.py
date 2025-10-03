@@ -15,8 +15,8 @@ filepath_samples = PATH.repo / "docs" / "samples.rst"
 
 skip = {}
 
-skip_plot: tuple[str, ...] = ("",)
-skip_settings: tuple[str, ...] = ()
+skip_plot: set[str] = {"transform_component"}
+skip_settings: set[str] = set()
 
 PDK.activate()
 cells = PDK.cells

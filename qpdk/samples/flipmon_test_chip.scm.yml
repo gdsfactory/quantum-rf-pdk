@@ -1,8 +1,8 @@
 exploded: ''
 camera_transform:
   translation:
-    x: 1528.5414
-    y: 1547.1411
+    x: 1333.7335
+    y: 1662.412
     z: 0.0
   rotation:
     x: 0.0
@@ -10,8 +10,8 @@ camera_transform:
     z: 0.0
     w: 1.0
   scale:
-    x: 3.2421749
-    y: 3.2421749
+    x: 1.8535191
+    y: 1.8535191
     z: 1.0
 transforms:
   input_cap1:
@@ -50,8 +50,8 @@ transforms:
     rotation:
       x: 0.0
       y: 0.0
-      z: -0.7071067
-      w: -0.7071067
+      z: 0.0
+      w: 1.0
     scale:
       x: 1.0
       y: 1.0
@@ -92,8 +92,8 @@ transforms:
     rotation:
       x: 0.0
       y: 0.0
-      z: -0.70710677
-      w: 0.70710677
+      z: 0.0
+      w: 1.0
     scale:
       x: 1.0
       y: 1.0
@@ -156,14 +156,14 @@ transforms:
       z: 1.0
   tee_bot:
     translation:
-      x: 1371.6542
-      y: 975.2459
+      x: 1380.7828
+      y: 1141.388
       z: 1.0
     rotation:
       x: 0.0
       y: 0.0
-      z: -0.99999994
-      w: 0.0
+      z: 0.0
+      w: 1.0
     scale:
       x: 1.0
       y: 1.0
@@ -193,13 +193,13 @@ transforms:
       z: 0.0
       w: 1.0
     scale:
-      x: 1.0
+      x: -1.0
       y: 1.0
       z: 1.0
   tee_top:
     translation:
-      x: 1375.8396
-      y: 1858.9045
+      x: 1391.5497
+      y: 1822.2394
       z: 1.0
     rotation:
       x: 0.0
@@ -221,7 +221,7 @@ transforms:
       z: 0.0
       w: 1.0
     scale:
-      x: 1.0
+      x: -1.0
       y: 1.0
       z: 1.0
   tee_top_straight_2:
@@ -312,10 +312,10 @@ fan_point_positions:
   - x: 1371.6542
     y: 885.3419
   flux_line_top:
+  - x: 1391.5497
+    y: 1941.6421
   - x: 1366.109
-    y: 2089.6138
-  - x: 1375.8396
-    y: 1969.141
+    y: 2080.4475
   probeline_input:
   - x: 173.50366
     y: 1601.7128
