@@ -12,6 +12,7 @@ figure.figsize: 8, 6
 figure.dpi: 100
 figure.facecolor: white
 figure.edgecolor: white
+figure.autolayout: True
 
 # Axes settings for cleaner plots
 axes.labelsize: 11
@@ -19,6 +20,10 @@ axes.titlesize: 12
 axes.grid: True
 axes.spines.top: False
 axes.spines.right: False
+axes.prop_cycle: cycler('color', ['008fd5', 'fc4f30', '68dc9b', 'ffdf54', '8b8b8b', '810f7c'])
+axes.xmargin: 0
+axes.facecolor: white
+axes.linewidth: 1.2
 
 # Grid settings
 grid.alpha: 0.3
@@ -28,6 +33,10 @@ grid.linewidth: 0.5
 # Legend settings
 legend.frameon: False
 legend.fontsize: 10
+legend.loc: best
+legend.fancybox: True
+legend.shadow: False
+legend.borderpad: 0.25
 
 # Line settings
 lines.linewidth: 1.5

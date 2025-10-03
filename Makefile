@@ -69,10 +69,10 @@ setup-ipython-config: ##@ Setup IPython configuration for documentation build
 	cp docs/ipython_config.py ~/.ipython/profile_default/ipython_config.py
 	cp docs/qpdk.mplstyle ~/.ipython/profile_default/qpdk.mplstyle
 
-docs: write-cells copy-sample-notebooks setup-ipython-config ##@ Build the HTML documentation
+docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs
 
-docs-latex: write-cells copy-sample-notebooks setup-ipython-config ##@ Setup LaTeX for PDF documentation
+docs-latex: write-cells copy-sample-notebooks ##@ Setup LaTeX for PDF documentation
 	uv run jb build docs --builder latex
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
