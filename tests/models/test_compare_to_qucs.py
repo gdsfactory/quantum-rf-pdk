@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 from functools import partial
-from pathlib import Path
 from queue import Queue, SimpleQueue
 from typing import ClassVar, TypeAlias, final, override
 
@@ -13,12 +12,13 @@ import sax
 from matplotlib import pyplot as plt
 from numpy.testing import assert_allclose
 
+from qpdk.config import PATH
 from qpdk.models.couplers import coupler_straight
 from qpdk.models.generic import capacitor, inductor
 from qpdk.models.media import cpw_media_skrf
 from qpdk.models.waveguides import straight
 
-TEST_DATA_PATH = Path(__file__).parent / "data"
+TEST_DATA_PATH = PATH.tests / "models" / "data"
 
 NUMERIC_TOLERANCES = {
     "rtol": 1 / 100,
