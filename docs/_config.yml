@@ -70,6 +70,8 @@ sphinx:
         \usepackage[Bjornstrup]{fncychap}
         \ChNumVar{\fontsize{50}{54}\usefont{OT1}{pzc}{m}{n}\selectfont}
         \ChTitleVar{\raggedleft\Large\sffamily\bfseries}
+    suppress_warnings:
+      - "myst.xref_missing"
     nb_custom_formats:
       .py:
         - jupytext.reads
