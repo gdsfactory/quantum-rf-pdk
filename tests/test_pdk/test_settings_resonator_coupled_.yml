@@ -1,11 +1,11 @@
 info:
-  coupling_gap: 12
+  coupling_gap: 20
   coupling_length: 200
   cross_section: coplanar_waveguide
   length: 4000
   resonator_type: quarter_wave
-name: resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_c14d1dfd
+name: resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_13bbd093
 settings:
-  coupling_gap: 12
+  coupling_gap: 20
   coupling_straight_length: 200
   cross_section_non_resonator: cpw

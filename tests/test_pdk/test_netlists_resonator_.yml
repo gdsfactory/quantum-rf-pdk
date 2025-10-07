@@ -1,276 +1,282 @@
 instances:
-  bend_circular_CScoplanar_waveguide_A180_0_m1000000_A180:
+  bend_circular_CScoplanar_waveguide_A180_AS4_0_m1000000_A180:
     component: bend_circular
     info:
       dy: 0
-      length: 314.159
+      length: 314.095
       radius: 100
-      route_info_coplanar_waveguide_length: 314.159
-      route_info_length: 314.159
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
       route_info_min_bend_radius: 100
       route_info_n_bend_90: 2
       route_info_type: coplanar_waveguide
-      route_info_weight: 314.159
+      route_info_weight: 314.095
       width: 10
     settings:
       angle: 180
+      angular_step: 4
       cross_section: coplanar_waveguide
-  bend_circular_CScoplanar_waveguide_A180_0_m200000_A180:
+  bend_circular_CScoplanar_waveguide_A180_AS4_0_m200000_A180:
     component: bend_circular
     info:
       dy: 0
-      length: 314.159
+      length: 314.095
       radius: 100
-      route_info_coplanar_waveguide_length: 314.159
-      route_info_length: 314.159
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
       route_info_min_bend_radius: 100
       route_info_n_bend_90: 2
       route_info_type: coplanar_waveguide
-      route_info_weight: 314.159
+      route_info_weight: 314.095
       width: 10
     settings:
       angle: 180
+      angular_step: 4
       cross_section: coplanar_waveguide
-  bend_circular_CScoplanar_waveguide_A180_0_m600000_A180:
+  bend_circular_CScoplanar_waveguide_A180_AS4_0_m600000_A180:
     component: bend_circular
     info:
       dy: 0
-      length: 314.159
+      length: 314.095
       radius: 100
-      route_info_coplanar_waveguide_length: 314.159
-      route_info_length: 314.159
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
       route_info_min_bend_radius: 100
       route_info_n_bend_90: 2
       route_info_type: coplanar_waveguide
-      route_info_weight: 314.159
+      route_info_weight: 314.095
       width: 10
     settings:
       angle: 180
+      angular_step: 4
       cross_section: coplanar_waveguide
-  bend_circular_CScoplanar_waveguide_A180_302149_0_M:
+  bend_circular_CScoplanar_waveguide_A180_AS4_302204_0_M:
     component: bend_circular
     info:
       dy: 0
-      length: 314.159
+      length: 314.095
       radius: 100
-      route_info_coplanar_waveguide_length: 314.159
-      route_info_length: 314.159
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
       route_info_min_bend_radius: 100
       route_info_n_bend_90: 2
       route_info_type: coplanar_waveguide
-      route_info_weight: 314.159
+      route_info_weight: 314.095
       width: 10
     settings:
       angle: 180
+      angular_step: 4
       cross_section: coplanar_waveguide
-  bend_circular_CScoplanar_waveguide_A180_302149_m400000_M:
+  bend_circular_CScoplanar_waveguide_A180_AS4_302204_m400000_M:
     component: bend_circular
     info:
       dy: 0
-      length: 314.159
+      length: 314.095
       radius: 100
-      route_info_coplanar_waveguide_length: 314.159
-      route_info_length: 314.159
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
       route_info_min_bend_radius: 100
       route_info_n_bend_90: 2
       route_info_type: coplanar_waveguide
-      route_info_weight: 314.159
+      route_info_weight: 314.095
       width: 10
     settings:
       angle: 180
+      angular_step: 4
       cross_section: coplanar_waveguide
-  bend_circular_CScoplanar_waveguide_A180_302149_m800000_M:
+  bend_circular_CScoplanar_waveguide_A180_AS4_302204_m800000_M:
     component: bend_circular
     info:
       dy: 0
-      length: 314.159
+      length: 314.095
       radius: 100
-      route_info_coplanar_waveguide_length: 314.159
-      route_info_length: 314.159
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
       route_info_min_bend_radius: 100
       route_info_n_bend_90: 2
       route_info_type: coplanar_waveguide
-      route_info_weight: 314.159
+      route_info_weight: 314.095
       width: 10
     settings:
       angle: 180
+      angular_step: 4
       cross_section: coplanar_waveguide
-  straight_L302p1494285714286_CScoplanar_waveguide_0_0:
+  straight_L302p2042857142857_CScoplanar_waveguide_0_0:
     component: straight
     info:
-      length: 302.149
-      route_info_coplanar_waveguide_length: 302.149
-      route_info_length: 302.149
+      length: 302.204
+      route_info_coplanar_waveguide_length: 302.204
+      route_info_length: 302.204
       route_info_type: coplanar_waveguide
-      route_info_weight: 302.149
+      route_info_weight: 302.204
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 302.149
-  straight_L302p1494285714286_CScoplanar_waveguide_0_m1200000:
+      length: 302.204
+  straight_L302p2042857142857_CScoplanar_waveguide_0_m1200000:
     component: straight
     info:
-      length: 302.149
-      route_info_coplanar_waveguide_length: 302.149
-      route_info_length: 302.149
+      length: 302.204
+      route_info_coplanar_waveguide_length: 302.204
+      route_info_length: 302.204
       route_info_type: coplanar_waveguide
-      route_info_weight: 302.149
+      route_info_weight: 302.204
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 302.149
-  straight_L302p1494285714286_CScoplanar_waveguide_0_m400000:
+      length: 302.204
+  straight_L302p2042857142857_CScoplanar_waveguide_0_m400000:
     component: straight
     info:
-      length: 302.149
-      route_info_coplanar_waveguide_length: 302.149
-      route_info_length: 302.149
+      length: 302.204
+      route_info_coplanar_waveguide_length: 302.204
+      route_info_length: 302.204
       route_info_type: coplanar_waveguide
-      route_info_weight: 302.149
+      route_info_weight: 302.204
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 302.149
-  straight_L302p1494285714286_CScoplanar_waveguide_0_m800000:
+      length: 302.204
+  straight_L302p2042857142857_CScoplanar_waveguide_0_m800000:
     component: straight
     info:
-      length: 302.149
-      route_info_coplanar_waveguide_length: 302.149
-      route_info_length: 302.149
+      length: 302.204
+      route_info_coplanar_waveguide_length: 302.204
+      route_info_length: 302.204
       route_info_type: coplanar_waveguide
-      route_info_weight: 302.149
+      route_info_weight: 302.204
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 302.149
-  straight_L302p1494285714286_CScoplanar_waveguide_302149_m1000000_A180:
+      length: 302.204
+  straight_L302p2042857142857_CScoplanar_waveguide_302204_m1000000_A180:
     component: straight
     info:
-      length: 302.149
-      route_info_coplanar_waveguide_length: 302.149
-      route_info_length: 302.149
+      length: 302.204
+      route_info_coplanar_waveguide_length: 302.204
+      route_info_length: 302.204
       route_info_type: coplanar_waveguide
-      route_info_weight: 302.149
+      route_info_weight: 302.204
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 302.149
-  straight_L302p1494285714286_CScoplanar_waveguide_302149_m200000_A180:
+      length: 302.204
+  straight_L302p2042857142857_CScoplanar_waveguide_302204_m200000_A180:
     component: straight
     info:
-      length: 302.149
-      route_info_coplanar_waveguide_length: 302.149
-      route_info_length: 302.149
+      length: 302.204
+      route_info_coplanar_waveguide_length: 302.204
+      route_info_length: 302.204
       route_info_type: coplanar_waveguide
-      route_info_weight: 302.149
+      route_info_weight: 302.204
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 302.149
-  straight_L302p1494285714286_CScoplanar_waveguide_302149_m600000_A180:
+      length: 302.204
+  straight_L302p2042857142857_CScoplanar_waveguide_302204_m600000_A180:
     component: straight
     info:
-      length: 302.149
-      route_info_coplanar_waveguide_length: 302.149
-      route_info_length: 302.149
+      length: 302.204
+      route_info_coplanar_waveguide_length: 302.204
+      route_info_length: 302.204
       route_info_type: coplanar_waveguide
-      route_info_weight: 302.149
+      route_info_weight: 302.204
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 302.149
+      length: 302.204
 name: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a108ba58
 nets:
-- p1: bend_circular_CScoplanar_waveguide_A180_0_m1000000_A180,o1
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_302149_m1000000_A180,o2
-- p1: bend_circular_CScoplanar_waveguide_A180_0_m1000000_A180,o2
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_0_m1200000,o1
-- p1: bend_circular_CScoplanar_waveguide_A180_0_m200000_A180,o1
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_302149_m200000_A180,o2
-- p1: bend_circular_CScoplanar_waveguide_A180_0_m200000_A180,o2
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_0_m400000,o1
-- p1: bend_circular_CScoplanar_waveguide_A180_0_m600000_A180,o1
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_302149_m600000_A180,o2
-- p1: bend_circular_CScoplanar_waveguide_A180_0_m600000_A180,o2
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_0_m800000,o1
-- p1: bend_circular_CScoplanar_waveguide_A180_302149_0_M,o1
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_0_0,o2
-- p1: bend_circular_CScoplanar_waveguide_A180_302149_0_M,o2
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_302149_m200000_A180,o1
-- p1: bend_circular_CScoplanar_waveguide_A180_302149_m400000_M,o1
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_0_m400000,o2
-- p1: bend_circular_CScoplanar_waveguide_A180_302149_m400000_M,o2
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_302149_m600000_A180,o1
-- p1: bend_circular_CScoplanar_waveguide_A180_302149_m800000_M,o1
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_0_m800000,o2
-- p1: bend_circular_CScoplanar_waveguide_A180_302149_m800000_M,o2
-  p2: straight_L302p1494285714286_CScoplanar_waveguide_302149_m1000000_A180,o1
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_0_m1000000_A180,o1
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_302204_m1000000_A180,o2
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_0_m1000000_A180,o2
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_0_m1200000,o1
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_0_m200000_A180,o1
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_302204_m200000_A180,o2
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_0_m200000_A180,o2
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_0_m400000,o1
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_0_m600000_A180,o1
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_302204_m600000_A180,o2
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_0_m600000_A180,o2
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_0_m800000,o1
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_302204_0_M,o1
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_0_0,o2
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_302204_0_M,o2
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_302204_m200000_A180,o1
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_302204_m400000_M,o1
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_0_m400000,o2
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_302204_m400000_M,o2
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_302204_m600000_A180,o1
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_302204_m800000_M,o1
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_0_m800000,o2
+- p1: bend_circular_CScoplanar_waveguide_A180_AS4_302204_m800000_M,o2
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_302204_m1000000_A180,o1
 placements:
-  bend_circular_CScoplanar_waveguide_A180_0_m1000000_A180:
+  bend_circular_CScoplanar_waveguide_A180_AS4_0_m1000000_A180:
     mirror: false
     rotation: 180
     x: 0
     y: -1000
-  bend_circular_CScoplanar_waveguide_A180_0_m200000_A180:
+  bend_circular_CScoplanar_waveguide_A180_AS4_0_m200000_A180:
     mirror: false
     rotation: 180
     x: 0
     y: -200
-  bend_circular_CScoplanar_waveguide_A180_0_m600000_A180:
+  bend_circular_CScoplanar_waveguide_A180_AS4_0_m600000_A180:
     mirror: false
     rotation: 180
     x: 0
     y: -600
-  bend_circular_CScoplanar_waveguide_A180_302149_0_M:
+  bend_circular_CScoplanar_waveguide_A180_AS4_302204_0_M:
     mirror: true
     rotation: 0
-    x: 302.149
+    x: 302.204
     y: 0
-  bend_circular_CScoplanar_waveguide_A180_302149_m400000_M:
+  bend_circular_CScoplanar_waveguide_A180_AS4_302204_m400000_M:
     mirror: true
     rotation: 0
-    x: 302.149
+    x: 302.204
     y: -400
-  bend_circular_CScoplanar_waveguide_A180_302149_m800000_M:
+  bend_circular_CScoplanar_waveguide_A180_AS4_302204_m800000_M:
     mirror: true
     rotation: 0
-    x: 302.149
+    x: 302.204
     y: -800
-  straight_L302p1494285714286_CScoplanar_waveguide_0_0:
+  straight_L302p2042857142857_CScoplanar_waveguide_0_0:
     mirror: false
     rotation: 0
     x: 0
     y: 0
-  straight_L302p1494285714286_CScoplanar_waveguide_0_m1200000:
+  straight_L302p2042857142857_CScoplanar_waveguide_0_m1200000:
     mirror: false
     rotation: 0
     x: 0
     y: -1200
-  straight_L302p1494285714286_CScoplanar_waveguide_0_m400000:
+  straight_L302p2042857142857_CScoplanar_waveguide_0_m400000:
     mirror: false
     rotation: 0
     x: 0
     y: -400
-  straight_L302p1494285714286_CScoplanar_waveguide_0_m800000:
+  straight_L302p2042857142857_CScoplanar_waveguide_0_m800000:
     mirror: false
     rotation: 0
     x: 0
     y: -800
-  straight_L302p1494285714286_CScoplanar_waveguide_302149_m1000000_A180:
+  straight_L302p2042857142857_CScoplanar_waveguide_302204_m1000000_A180:
     mirror: false
     rotation: 180
-    x: 302.149
+    x: 302.204
     y: -1000
-  straight_L302p1494285714286_CScoplanar_waveguide_302149_m200000_A180:
+  straight_L302p2042857142857_CScoplanar_waveguide_302204_m200000_A180:
     mirror: false
     rotation: 180
-    x: 302.149
+    x: 302.204
     y: -200
-  straight_L302p1494285714286_CScoplanar_waveguide_302149_m600000_A180:
+  straight_L302p2042857142857_CScoplanar_waveguide_302204_m600000_A180:
     mirror: false
     rotation: 180
-    x: 302.149
+    x: 302.204
     y: -600
 ports:
-  o1: straight_L302p1494285714286_CScoplanar_waveguide_0_0,o1
-  o2: straight_L302p1494285714286_CScoplanar_waveguide_0_m1200000,o2
+  o1: straight_L302p2042857142857_CScoplanar_waveguide_0_0,o1
+  o2: straight_L302p2042857142857_CScoplanar_waveguide_0_m1200000,o2
