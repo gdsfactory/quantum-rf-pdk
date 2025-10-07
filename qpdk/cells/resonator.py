@@ -54,7 +54,9 @@ def resonator(
     """
     c = Component()
     cross_section = gf.get_cross_section(cross_section)
-    bend = gf.get_component(bend_spec, cross_section=cross_section, angle=180, angular_step=4)
+    bend = gf.get_component(
+        bend_spec, cross_section=cross_section, angle=180, angular_step=4
+    )
     length_per_one_straight = (length - meanders * bend.info["length"]) / (meanders + 1)
 
     if length_per_one_straight <= 0:
