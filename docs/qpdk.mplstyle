@@ -1,15 +1,10 @@
 # Quantum RF PDK Matplotlib Style
 # Custom style for quantum-rf-pdk documentation
 
-# Use a modern sans-serif font
-# DejaVu Sans is a good default that's widely available
-# You can change this to other fonts like 'Helvetica', 'Arial', 'Liberation Sans', etc.
 font.sans-serif: DejaVu Sans, Helvetica, Arial, Liberation Sans, sans-serif
 font.family: sans-serif
 
 # Figure settings for better documentation appearance
-figure.figsize: 8, 6
-figure.dpi: 100
 figure.facecolor: white
 figure.edgecolor: white
 figure.autolayout: True
@@ -18,9 +13,6 @@ figure.autolayout: True
 axes.labelsize: 11
 axes.titlesize: 12
 axes.grid: True
-axes.spines.top: False
-axes.spines.right: False
-axes.prop_cycle: cycler('color', ['008fd5', 'fc4f30', '68dc9b', 'ffdf54', '8b8b8b', '810f7c'])
 axes.xmargin: 0
 axes.facecolor: white
 axes.linewidth: 1.2

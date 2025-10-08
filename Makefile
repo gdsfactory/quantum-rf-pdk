@@ -67,7 +67,7 @@ copy-sample-notebooks: ##@ Copy all sample scripts to use as notebooks docs
 setup-ipython-config: ##@ Setup IPython configuration for documentation build
 	mkdir -p ~/.ipython/profile_default
 	cp docs/ipython_config.py ~/.ipython/profile_default/ipython_config.py
-	cp docs/qpdk.mplstyle ~/.ipython/profile_default/qpdk.mplstyle
+	cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
 docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs
