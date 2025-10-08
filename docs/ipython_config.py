@@ -1,9 +1,9 @@
+# pyrefly: ignore-errors
 """IPython configuration for documentation generation.
 
 This configuration file is used when building Jupyter Book documentation
 to ensure consistent, high-quality figures in the generated docs.
 """
-# pyrefly: ignore-errors
 
 # Configure inline backend for matplotlib
 # Export figures in multiple formats for flexibility
