@@ -1,4 +1,4 @@
-.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install test test-fail-fast test-force update-pre write-cells
+.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install setup-ipython-config test test-fail-fast test-force update-pre write-cells
 
 # Based on https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
 help: ##@ (Default) Print listing of key targets with their descriptions
@@ -63,6 +63,12 @@ convert-notebooks: ##@ Convert jupytext scripts from notebooks/src to ipynb form
 copy-sample-notebooks: ##@ Copy all sample scripts to use as notebooks docs
 	mkdir -p docs/notebooks
 	cp notebooks/src/*.py docs/notebooks/
+
+setup-ipython-config: ##@ Setup IPython configuration for documentation build
+	mkdir -p ~/.ipython/profile_default
+	cp docs/ipython_config.py ~/.ipython/profile_default/ipython_config.py
+	mkdir -p ~/.config/matplotlib/stylelib/
+	cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
 docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs

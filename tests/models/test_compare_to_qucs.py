@@ -217,6 +217,8 @@ class BaseCompareToQucs(ABC):
         if not s_params_to_plot:
             raise ValueError(f"No S-parameters to plot for {self.component_name}")
 
+        plt.figure(figsize=(12, 6))
+
         # Polar plot of S-parameters
         plt.subplot(121, projection="polar")
 
