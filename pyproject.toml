@@ -23,7 +23,7 @@ version = "0.0.2"
 dev = [
   "hypothesis",
   "jsondiff",
-  "pre-commit",
+  "prek",
   "pytest",
   "pytest-cov",
   "pytest-github-actions-annotate-failures",

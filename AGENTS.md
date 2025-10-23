@@ -8,7 +8,7 @@ these guidelines when contributing:
 
 ### Required Before Each Commit
 
-- **ALWAYS** run pre-commit hooks before committing any changes by using `pre-commit run --all-files`
+- **ALWAYS** run pre-commit hooks before committing any changes by using `prek run --all-files`
 - Pre-commit hooks will automatically run code formatting (ruff), linting, YAML formatting, and other quality checks
 - All pre-commit hooks must pass before any changes can be committed
 
