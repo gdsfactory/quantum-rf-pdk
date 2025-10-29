@@ -8,6 +8,7 @@ import sax
 from jax.typing import ArrayLike
 from skrf import Frequency
 
+from qpdk.models.generic import short_2_port
 from qpdk.models.media import MediaCallable, cpw_media_skrf
 
 
@@ -50,6 +51,43 @@ def straight(
         ("o2", "o2"): jnp.array(transmission_line.s[:, 1, 1]),
     }
     return sax.reciprocal(sdict)
+
+
+def straight_shorted(
+    **kwargs: Unpack[StraightModelKwargs],
+) -> sax.SType:
+    """S-parameter model for a straight waveguide with one shorted end.
+
+    This may be used to model a quarter-wave coplanar waveguide resonator.
+
+    Note:
+        The port ``o2`` is internally shorted and should not be used.
+        It seems to be a Sax limitation that we need to define at least two ports.
+    """
+    circuit, _ = sax.circuit(
+        netlist={
+            "instances": {
+                "straight": {
+                    "component": "straight",
+                    "settings": kwargs,
+                },
+                "short_2_port": "short_2_port",
+            },
+            "connections": {
+                "straight,o2": "short_2_port,o1",
+            },
+            "ports": {
+                "o1": "straight,o1",
+                # This port should never be used since it's shorted
+                "o2": "short_2_port,o2",
+            },
+        },
+        models={
+            "straight": straight,
+            "short_2_port": short_2_port,
+        },
+    )
+    return circuit(f=kwargs.get("f", jnp.array([5e9])))
 
 
 def bend_circular(

@@ -55,6 +55,11 @@ def short(
     return gamma_0_load(f=f, gamma_0=-1, n_ports=n_ports)
 
 
+def short_2_port(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
+    """Electrical short 2-port connection Sax model."""
+    return short(f=f, n_ports=2)
+
+
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def open(
     f: ArrayLike = jnp.array([5e9]),
