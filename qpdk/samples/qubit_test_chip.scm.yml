@@ -1,8 +1,8 @@
 exploded: ''
 camera_transform:
   translation:
-    x: 1321.469
-    y: 1261.9413
+    x: 1241.512
+    y: 1419.6499
     z: 0.0
   rotation:
     x: 0.0
@@ -10,8 +10,8 @@ camera_transform:
     z: 0.0
     w: 1.0
   scale:
-    x: 2.9955432
-    y: 2.9955432
+    x: 3.9323845
+    y: 3.9323845
     z: 1.0
 transforms:
   input_cap1:
@@ -44,14 +44,14 @@ transforms:
       z: 1.0
   launcher_bot:
     translation:
-      x: 1384.9181
-      y: 715.62994
+      x: 1372.1116
+      y: 641.6367
       z: 1.0
     rotation:
       x: 0.0
       y: 0.0
-      z: -0.7071067
-      w: -0.7071067
+      z: 0.0
+      w: 1.0
     scale:
       x: 1.0
       y: 1.0
@@ -92,8 +92,8 @@ transforms:
     rotation:
       x: 0.0
       y: 0.0
-      z: -0.70710677
-      w: 0.70710677
+      z: 0.0
+      w: 1.0
     scale:
       x: 1.0
       y: 1.0
@@ -162,8 +162,8 @@ transforms:
     rotation:
       x: 0.0
       y: 0.0
-      z: -0.99999994
-      w: 0.0
+      z: 0.0
+      w: 1.0
     scale:
       x: 1.0
       y: 1.0
@@ -307,10 +307,10 @@ layers:
   tee_top_straight_2: 0
 fan_point_positions:
   flux_line_bot:
-  - x: 1384.9181
-    y: 805.53394
+  - x: 1372.1116
+    y: 843.9535
   - x: 1371.6542
-    y: 885.3419
+    y: 768.6602
   flux_line_top:
   - x: 1375.8396
     y: 1972.9556
