@@ -51,6 +51,10 @@ cd quantum-rf-pdk
 uv sync --extra dev
 ```
 
+> [!NOTE]
+> [Git LFS](https://git-lfs.github.com/) must be installed to run all tests locally. Some test data files (e.g., CSV
+> files in `tests/models/data/`) are tracked with Git LFS and will not be properly downloaded without it.
+
 #### Testing and Building Documentation
 
 Check out the commands for testing and building documentation with:
