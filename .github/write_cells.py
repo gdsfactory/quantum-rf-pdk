@@ -1,10 +1,10 @@
 """Write docs."""
 
 import inspect
-import textwrap
 from pathlib import Path
 
 from gdsfactory.serialization import clean_value_json
+from jinja2 import Environment, FileSystemLoader
 
 import qpdk
 from qpdk import PDK
@@ -12,6 +12,7 @@ from qpdk.config import PATH
 
 filepath_cells = PATH.repo / "docs" / "cells.rst"
 filepath_samples = PATH.repo / "docs" / "samples.rst"
+template_dir = Path(__file__).parent / "templates"
 
 skip = {}
 
@@ -22,133 +23,51 @@ PDK.activate()
 cells = PDK.cells
 samples = qpdk.sample_functions
 
+# Set up Jinja2 environment
+env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
 
-with Path(filepath_cells).open("w+") as f:
-    f.write(
-        """
 
-PCells
-======
-"""
+def get_kwargs(sig: inspect.Signature) -> str:
+    """Extract kwargs from function signature."""
+    return ", ".join(
+        [
+            f"{p}={clean_value_json(sig.parameters[p].default)!r}"
+            for p in sig.parameters
+            if isinstance(sig.parameters[p].default, int | float | str | tuple)
+            and p not in skip_settings
+        ]
     )
 
-    for name in sorted(cells.keys()):
-        if name in skip or name.startswith("_"):
-            continue
-        print(name)
-        sig = inspect.signature(cells[name])
-        kwargs = ", ".join(
-            [
-                f"{p}={clean_value_json(sig.parameters[p].default)!r}"
-                for p in sig.parameters
-                if isinstance(sig.parameters[p].default, int | float | str | tuple)
-                and p not in skip_settings
-            ]
-        )
-        if name in skip_plot:
-            f.write(
-                f"""
 
-{name}
-----------------------------------------------------
+# Generate cells.rst
+cells_items = []
+for name in sorted(cells.keys()):
+    if name in skip or name.startswith("_"):
+        continue
+    print(name)
+    sig = inspect.signature(cells[name])
+    kwargs = get_kwargs(sig)
+    cells_items.append({"name": name, "kwargs": kwargs})
 
-.. autofunction:: qpdk.cells.{name}
+template = env.get_template("cells.rst.j2")
+rendered = template.render(items=cells_items, skip_plot=skip_plot)
 
-"""
-            )
-        else:
-            f.write(
-                f"""
+with Path(filepath_cells).open("w") as f:
+    f.write(rendered)
 
-{name}
-----------------------------------------------------
+# Generate samples.rst
+samples_items = []
+for name in sorted(samples.keys()):
+    if name in skip or name.startswith("_"):
+        continue
+    print(name)
+    sig = inspect.signature(samples[name])
+    kwargs = get_kwargs(sig)
+    import_path = name.rpartition(".")[0]
+    samples_items.append({"name": name, "kwargs": kwargs, "import_path": import_path})
 
-.. autofunction:: qpdk.cells.{name}
+template = env.get_template("samples.rst.j2")
+rendered = template.render(items=samples_items, skip_plot=skip_plot)
 
-.. plot::
-  :include-source:
-
-  from qpdk import cells, PDK
-
-  PDK.activate()
-  c = cells.{name}({kwargs}).copy()
-  c.draw_ports()
-  c.plot()
-
-"""
-            )
-
-    f.write(
-        textwrap.dedent("""
-            References
-            ==========
-
-            .. bibliography::
-               :filter: docname in docnames
-               """)
-    )
-
-with Path(filepath_samples).open("w+") as f:
-    f.write(
-        """
-Samples
-=======
-"""
-    )
-
-    for name in sorted(samples.keys()):
-        if name in skip or name.startswith("_"):
-            continue
-        print(name)
-        sig = inspect.signature(samples[name])
-        kwargs = ", ".join(
-            [
-                f"{p}={clean_value_json(sig.parameters[p].default)!r}"
-                for p in sig.parameters
-                if isinstance(sig.parameters[p].default, int | float | str | tuple)
-                and p not in skip_settings
-            ]
-        )
-        if name in skip_plot:
-            f.write(
-                f"""
-
-{name}
-----------------------------------------------------
-
-.. autofunction:: {name}
-
-"""
-            )
-        else:
-            f.write(
-                f"""
-
-{name}
-----------------------------------------------------
-
-.. autofunction:: {name}
-
-.. plot::
-  :include-source:
-
-  import {name.rpartition(".")[0]}
-  from qpdk import PDK
-
-  PDK.activate()
-  c = {name}({kwargs}).copy()
-  c.draw_ports()
-  c.plot()
-
-"""
-            )
-
-    f.write(
-        textwrap.dedent("""
-            References
-            ==========
-
-            .. bibliography::
-               :filter: docname in docnames
-               """)
-    )
+with Path(filepath_samples).open("w") as f:
+    f.write(rendered)
