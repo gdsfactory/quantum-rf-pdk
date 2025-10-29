@@ -1,0 +1,29 @@
+
+Samples
+=======
+{% for item in items %}
+
+{{ item.name }}
+----------------------------------------------------
+
+.. autofunction:: {{ item.name }}
+{% if item.name not in skip_plot %}
+
+.. plot::
+  :include-source:
+
+  import {{ item.import_path }}
+  from qpdk import PDK
+
+  PDK.activate()
+  c = {{ item.name }}({{ item.kwargs }}).copy()
+  c.draw_ports()
+  c.plot()
+{% endif %}
+{% endfor %}
+
+References
+==========
+
+.. bibliography::
+   :filter: docname in docnames
