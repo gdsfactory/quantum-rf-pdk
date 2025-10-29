@@ -24,7 +24,8 @@ cells = PDK.cells
 samples = qpdk.sample_functions
 
 # Set up Jinja2 environment
-env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
+# Note: autoescape is False because we're generating RST, not HTML
+env = Environment(loader=FileSystemLoader(template_dir), autoescape=False)
 
 
 def get_kwargs(sig: inspect.Signature) -> str:
