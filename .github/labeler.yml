@@ -1,0 +1,31 @@
+# Configuration for GitHub Actions PR Labeler
+# https://github.com/actions/labeler
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: '*.md'
+      - any-glob-to-any-file: 'docs/**/*'
+notebooks:
+  - changed-files:
+      - any-glob-to-any-file: '*.ipynb'
+      - any-glob-to-any-file: 'qpdk/notebooks/**/*'
+components:
+  - changed-files:
+      - any-glob-to-any-file: 'qpdk/cells/**/*'
+models:
+  - changed-files:
+      - any-glob-to-any-file: 'qpdk/models/**/*'
+technology:
+  - changed-files:
+      - any-glob-to-any-file: 'qpdk/tech.py'
+      - any-glob-to-any-file: 'qpdk/layers.yaml'
+      - any-glob-to-any-file: 'qpdk/klayout/**/*'
+tests:
+  - changed-files:
+      - any-glob-to-any-file: 'tests/**/*'
+      - any-glob-to-any-file: 'test_*.py'
+      - any-glob-to-any-file: '*_test.py'
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: 'pyproject.toml'
+      - any-glob-to-any-file: 'uv.lock'
+      - any-glob-to-any-file: 'requirements*.txt'
