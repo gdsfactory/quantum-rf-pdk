@@ -122,9 +122,9 @@ if __name__ == "__main__":
     # Configure plot
     ax.set_xlabel("Frequency [GHz]")
     ax.set_ylabel("$S$-parameter [dB]")
-    ax.set_title(r"$S$-parameters: $\mathtt{coupler\_straight}$$")
+    ax.set_title(r"$S$-parameters: $\mathtt{coupler\_straight}$")
     ax.grid(True, which="both")
     ax.legend()
 
     plt.tight_layout()
-    plt.show(block=False)
+    plt.show()
