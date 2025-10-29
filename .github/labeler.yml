@@ -29,9 +29,3 @@ dependencies:
       - any-glob-to-any-file: 'pyproject.toml'
       - any-glob-to-any-file: 'uv.lock'
       - any-glob-to-any-file: 'requirements*.txt'
-bug:
-  - head-branch: ['^fix/', 'fix']
-  - title: ['fix', 'bug']
-feature:
-  - head-branch: ['^feature/', 'feature']
-  - title: ['feature', 'add', 'enhance', 'improve']
