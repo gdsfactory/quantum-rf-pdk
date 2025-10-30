@@ -56,11 +56,11 @@ _single_josephson_junction_wire_defaults = SingleJosephsonJunctionWireParams(
 def single_josephson_junction_wire(
     **kwargs: Unpack[SingleJosephsonJunctionWireParams],
 ) -> Component:
-    """Creates a single wire to use in a Josephson junction.
+    r"""Creates a single wire to use in a Josephson junction.
 
     .. svgbob::
 
-        o1 ━━━━━━ ╲  ╱ ─── o2
+        o1 ━━━━━━ \  / ─── o2
                wide  narrow
 
     Args:
@@ -139,7 +139,7 @@ def josephson_junction(
     junction_overlap_displacement: float = 1.8,
     **kwargs: Unpack[SingleJosephsonJunctionWireParams],
 ) -> Component:
-    """Creates a single Josephson junction component.
+    r"""Creates a single Josephson junction component.
 
     A Josephson junction consists of two superconducting electrodes separated
     by a thin insulating barrier allowing tunnelling.
@@ -149,13 +149,13 @@ def josephson_junction(
              left_wide
                 │
                 ┴
-               ╱│╲
-              ╱ │ ╲
-             ╱  │  ╲
-        ────┴───┼───┴──── overlap
-             ╲  │  ╱
-              ╲ │ ╱
-               ╲│╱
+               /│\
+              / │ \
+             /  │  \
+        ────┴───X───┴──── overlap
+             \  │  /
+              \ │ /
+               \│/
                 ┬
                 │
             right_wide
@@ -233,9 +233,9 @@ def squid_junction(
              junction1_wide_left
                     │
             ┌───────┴───────┐
-            │       ╳       │
+            │       X       │
             │    junction1  │
-            │       ╳       │
+            │       X       │
      ┌──────┤               ├──────┐
      │      │               │      │
      │      └───────────────┘      │
@@ -244,9 +244,9 @@ def squid_junction(
      │                             │
      │      ┌───────────────┐      │
      │      │               │      │
-     └──────┤       ╳       ├──────┘
+     └──────┤       X       ├──────┘
             │    junction2  │
-            │       ╳       │
+            │       X       │
             └───────┬───────┘
                     │
              junction1_wide_right

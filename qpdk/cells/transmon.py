@@ -60,8 +60,8 @@ def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
 
         +---------+         +---------+
         |         |         |         |
-        |  pad1   |   ╳╳    |  pad2   |
-        |         |   ╳╳    |         |
+        |  pad1   |   XX    |  pad2   |
+        |         |   XX    |         |
         +---------+ junction +---------+
          left_pad             right_pad
 
