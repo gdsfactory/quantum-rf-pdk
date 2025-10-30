@@ -40,7 +40,7 @@ def all_cells(
     c = Component("all_cells")
 
     # Get all cell names, excluding all_cells itself to avoid recursion
-    cell_names = sorted([name for name in PDK.cells.keys() if name != "all_cells"])
+    cell_names = sorted([name for name in PDK.cells if name != "all_cells"])
 
     # Grid layout parameters
     x_pos = 0.0

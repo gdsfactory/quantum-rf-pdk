@@ -38,6 +38,7 @@ skip_test_netlist = {
     "flipmon_with_resonator",
     "flipmon",
     "flipmon_with_bbox",
+    "all_cells",  # Skip netlist test for all_cells (collection of all components)
 }
 # Skip default gdsfactory cells
 skip_test = {
