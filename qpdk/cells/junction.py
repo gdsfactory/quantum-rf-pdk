@@ -60,7 +60,9 @@ def single_josephson_junction_wire(
 
     .. svgbob::
 
-        o1 ━━━━━━ \  / ─── o2
+        ┌───┐                
+        │o1 │━━━━────╶╶╶╶╶ o2
+        └───┘                
                wide  narrow
 
     Args:
