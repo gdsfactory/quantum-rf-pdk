@@ -56,7 +56,14 @@ _single_josephson_junction_wire_defaults = SingleJosephsonJunctionWireParams(
 def single_josephson_junction_wire(
     **kwargs: Unpack[SingleJosephsonJunctionWireParams],
 ) -> Component:
-    """Creates a single wire to use in a Josephson junction.
+    r"""Creates a single wire to use in a Josephson junction.
+
+    .. svgbob::
+
+        ┌───┐
+        │o1 │━━━━────╶╶╶╶╶ o2
+        └───┘
+               wide  narrow
 
     Args:
         kwargs: :class:`~SingleJosephsonJunctionWireParams` parameters.
@@ -134,10 +141,25 @@ def josephson_junction(
     junction_overlap_displacement: float = 1.8,
     **kwargs: Unpack[SingleJosephsonJunctionWireParams],
 ) -> Component:
-    """Creates a single Josephson junction component.
+    r"""Creates a single Josephson junction component.
 
     A Josephson junction consists of two superconducting electrodes separated
     by a thin insulating barrier allowing tunnelling.
+
+    .. svgbob::
+
+         right_wide
+         ┌───┐          ╷ overlap
+         │   │━━━━────╶╶╷╶╶
+         └───┘          ╷
+                        │
+                        │
+                        ┃
+                        ┃
+                      ┌───┐
+                      │   │
+                      └───┘
+                      left_wide
 
     Args:
         junction_overlap_displacement: Displacement of the overlap region in µm.

@@ -56,6 +56,15 @@ def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
     A transmon qubit consists of two capacitor pads connected by a Josephson junction.
     The junction creates an anharmonic oscillator that can be used as a qubit.
 
+    .. svgbob::
+
+        +---------+         +---------+
+        |         |         |         |
+        |  pad1   |   XX    |  pad2   |
+        |         |   XX    |         |
+        +---------+ junct.  +---------+
+         left_pad             right_pad
+
     See :cite:`kochChargeinsensitiveQubitDesign2007a` for details.
 
     Args:
