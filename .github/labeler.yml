@@ -30,11 +30,11 @@ tests:
       - any-glob-to-any-file: 'tests/**/*'
       - any-glob-to-any-file: 'test_*.py'
       - any-glob-to-any-file: '*_test.py'
-      - any-glob-to-any-file: '.pre-commit-config.yaml'
 ci:
 - any:
   - changed-files:
       - any-glob-to-any-file: '.github/workflows/*'
+      - any-glob-to-any-file: '.pre-commit-config.yaml'
 dependencies:
 - any:
   - changed-files:
