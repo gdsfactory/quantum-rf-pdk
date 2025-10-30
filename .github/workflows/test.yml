@@ -79,6 +79,7 @@ jobs:
     needs: get-python-versions
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
