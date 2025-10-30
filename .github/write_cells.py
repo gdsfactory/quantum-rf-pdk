@@ -10,9 +10,9 @@ import qpdk
 from qpdk import PDK
 from qpdk.config import PATH
 
-filepath_cells = PATH.repo / "docs" / "cells.rst"
-filepath_samples = PATH.repo / "docs" / "samples.rst"
-template_dir = PATH.repo / "docs" / "templates"
+filepath_cells = PATH.docs / "cells.rst"
+filepath_samples = PATH.docs / "samples.rst"
+template_dir = PATH.docs / "templates"
 
 skip = {}
 
