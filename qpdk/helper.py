@@ -20,7 +20,7 @@ def denest_layerviews_to_layer_tuples(
         Dictionary mapping layer names to their corresponding (layer, datatype) tuples.
     """
 
-    def _denest_recursive(items: dict) -> dict:
+    def denest_layer_dict_recursive(items: dict) -> dict:
         """Recursively denest layer views to any depth.
 
         Args:
@@ -34,7 +34,7 @@ def denest_layerviews_to_layer_tuples(
         for key, value in items.items():
             if value.group_members:
                 # Recursively process nested group members and merge results
-                nested_layers = _denest_recursive(value.group_members)
+                nested_layers = denest_layer_dict_recursive(value.group_members)
                 layers.update(nested_layers)
             else:
                 # Base case: add the layer to our dictionary
@@ -44,7 +44,7 @@ def denest_layerviews_to_layer_tuples(
         return layers
 
     # Start the recursive denesting process and return the result
-    return _denest_recursive(layer_views.layer_views)
+    return denest_layer_dict_recursive(layer_views.layer_views)
 
 
 def show_components(
