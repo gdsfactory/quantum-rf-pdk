@@ -1,0 +1,427 @@
+# Schematic layout for resonator_test_chip
+# Defines visual positioning and transforms for schematic view
+exploded: ''
+camera_transform:
+  translation:
+    x: 4500
+    y: 500
+    z: 0.0
+  rotation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  scale:
+    x: 1.5
+    y: 1.5
+    z: 1.0
+transforms:
+  # Bottom probeline launchers
+  launcher_west_bot:
+    translation:
+      x: 200
+      y: 200
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  launcher_east_bot:
+    translation:
+      x: 8800
+      y: 200
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+      
+  # Bottom probeline resonators
+  resonator_bot_1:
+    translation:
+      x: 1000
+      y: 500
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_2:
+    translation:
+      x: 2000
+      y: 500
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_3:
+    translation:
+      x: 3000
+      y: 500
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_4:
+    translation:
+      x: 4000
+      y: 500
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_5:
+    translation:
+      x: 5000
+      y: 500
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_6:
+    translation:
+      x: 6000
+      y: 500
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_7:
+    translation:
+      x: 7000
+      y: 500
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_8:
+    translation:
+      x: 8000
+      y: 500
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+      
+  # Top probeline launchers
+  launcher_west_top:
+    translation:
+      x: 200
+      y: 800
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  launcher_east_top:
+    translation:
+      x: 8800
+      y: 800
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+      
+  # Top probeline resonators
+  resonator_top_1:
+    translation:
+      x: 1000
+      y: 600
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_2:
+    translation:
+      x: 2000
+      y: 600
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_3:
+    translation:
+      x: 3000
+      y: 600
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_4:
+    translation:
+      x: 4000
+      y: 600
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_5:
+    translation:
+      x: 5000
+      y: 600
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_6:
+    translation:
+      x: 6000
+      y: 600
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_7:
+    translation:
+      x: 7000
+      y: 600
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_8:
+    translation:
+      x: 8000
+      y: 600
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+sizes:
+  launcher_west_bot:
+    width: 100
+    height: 100
+  launcher_east_bot:
+    width: 100
+    height: 100
+  launcher_west_top:
+    width: 100
+    height: 100
+  launcher_east_top:
+    width: 100
+    height: 100
+  resonator_bot_1:
+    width: 100
+    height: 100
+  resonator_bot_2:
+    width: 100
+    height: 100
+  resonator_bot_3:
+    width: 100
+    height: 100
+  resonator_bot_4:
+    width: 100
+    height: 100
+  resonator_bot_5:
+    width: 100
+    height: 100
+  resonator_bot_6:
+    width: 100
+    height: 100
+  resonator_bot_7:
+    width: 100
+    height: 100
+  resonator_bot_8:
+    width: 100
+    height: 100
+  resonator_top_1:
+    width: 100
+    height: 100
+  resonator_top_2:
+    width: 100
+    height: 100
+  resonator_top_3:
+    width: 100
+    height: 100
+  resonator_top_4:
+    width: 100
+    height: 100
+  resonator_top_5:
+    width: 100
+    height: 100
+  resonator_top_6:
+    width: 100
+    height: 100
+  resonator_top_7:
+    width: 100
+    height: 100
+  resonator_top_8:
+    width: 100
+    height: 100
+link_paths: []
+layers:
+  launcher_west_bot: 0
+  launcher_east_bot: 0
+  launcher_west_top: 0
+  launcher_east_top: 0
+  resonator_bot_1: 0
+  resonator_bot_2: 0
+  resonator_bot_3: 0
+  resonator_bot_4: 0
+  resonator_bot_5: 0
+  resonator_bot_6: 0
+  resonator_bot_7: 0
+  resonator_bot_8: 0
+  resonator_top_1: 0
+  resonator_top_2: 0
+  resonator_top_3: 0
+  resonator_top_4: 0
+  resonator_top_5: 0
+  resonator_top_6: 0
+  resonator_top_7: 0
+  resonator_top_8: 0
+fan_point_positions:
+  probeline_bot:
+  - x: 600
+    y: 200
+  - x: 1500
+    y: 200
+  - x: 2500
+    y: 200
+  - x: 3500
+    y: 200
+  - x: 4500
+    y: 200
+  - x: 5500
+    y: 200
+  - x: 6500
+    y: 200
+  - x: 7500
+    y: 200
+  - x: 8400
+    y: 200
+  probeline_top:
+  - x: 600
+    y: 800
+  - x: 1500
+    y: 800
+  - x: 2500
+    y: 800
+  - x: 3500
+    y: 800
+  - x: 4500
+    y: 800
+  - x: 5500
+    y: 800
+  - x: 6500
+    y: 800
+  - x: 7500
+    y: 800
+  - x: 8400
+    y: 800
