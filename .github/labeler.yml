@@ -1,43 +1,43 @@
 # Configuration for GitHub Actions PR Labeler
 # https://github.com/actions/labeler
 documentation:
-- any:
-  - changed-files:
-      - any-glob-to-any-file: '*.md'
-      - any-glob-to-any-file: 'docs/**/*'
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: '*.md'
+          - any-glob-to-any-file: 'docs/**/*'
 notebooks:
-- any:
-  - changed-files:
-      - any-glob-to-any-file: '*.ipynb'
-      - any-glob-to-any-file: 'qpdk/notebooks/**/*'
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: '*.ipynb'
+          - any-glob-to-any-file: 'qpdk/notebooks/**/*'
 components:
-- any:
-  - changed-files:
-      - any-glob-to-any-file: 'qpdk/cells/**/*'
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'qpdk/cells/**/*'
 models:
-- any:
-  - changed-files:
-      - any-glob-to-any-file: 'qpdk/models/**/*'
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'qpdk/models/**/*'
 technology:
-- any:
-  - changed-files:
-      - any-glob-to-any-file: 'qpdk/tech.py'
-      - any-glob-to-any-file: 'qpdk/layers.yaml'
-      - any-glob-to-any-file: 'qpdk/klayout/**/*'
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'qpdk/tech.py'
+          - any-glob-to-any-file: 'qpdk/layers.yaml'
+          - any-glob-to-any-file: 'qpdk/klayout/**/*'
 tests:
-- any:
-  - changed-files:
-      - any-glob-to-any-file: 'tests/**/*'
-      - any-glob-to-any-file: 'test_*.py'
-      - any-glob-to-any-file: '*_test.py'
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'tests/**/*'
+          - any-glob-to-any-file: 'test_*.py'
+          - any-glob-to-any-file: '*_test.py'
 ci:
-- any:
-  - changed-files:
-      - any-glob-to-any-file: '.github/workflows/*'
-      - any-glob-to-any-file: '.pre-commit-config.yaml'
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: '.github/workflows/*'
+          - any-glob-to-any-file: '.pre-commit-config.yaml'
 dependencies:
-- any:
-  - changed-files:
-      - any-glob-to-any-file: 'pyproject.toml'
-      - any-glob-to-any-file: 'uv.lock'
-      - any-glob-to-any-file: 'requirements*.txt'
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'pyproject.toml'
+          - any-glob-to-any-file: 'uv.lock'
+          - any-glob-to-any-file: 'requirements*.txt'
