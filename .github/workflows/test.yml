@@ -14,12 +14,81 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - uses: j178/prek-action@v1
-  test-code:
+  get-python-versions:
     runs-on: ubuntu-latest
+    outputs:
+      python-versions: ${{ steps.get-versions.outputs.python-versions }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Get Python versions from pyproject.toml
+        id: get-versions
+        run: |
+          python3 << 'EOF'
+          import re
+          import json
+          import os
+
+          # Read pyproject.toml
+          with open("pyproject.toml", "r") as f:
+              content = f.read()
+
+          # Extract requires-python field using regex
+          match = re.search(r'requires-python\s*=\s*"([^"]+)"', content)
+          if not match:
+              raise ValueError("requires-python field not found in pyproject.toml")
+
+          requires_python = match.group(1)
+          print(f"requires-python: {requires_python}")
+
+          # Parse the version constraint
+          # Format: ">=3.11,<3.14" means 3.11, 3.12, 3.13
+          version_match = re.match(r">=(\d+\.\d+),<(\d+\.\d+)", requires_python)
+          if not version_match:
+              raise ValueError(f"Unsupported requires-python format: {requires_python}")
+
+          min_version = version_match.group(1)
+          max_version = version_match.group(2)
+
+          # Parse major.minor versions
+          min_major, min_minor = map(int, min_version.split('.'))
+          max_major, max_minor = map(int, max_version.split('.'))
+
+          versions = []
+          current_major, current_minor = min_major, min_minor
+
+          while (current_major < max_major) or (current_major == max_major and current_minor < max_minor):
+              versions.append(f"{current_major}.{current_minor}")
+              current_minor += 1
+              if current_minor >= 20:  # Safety check
+                  current_major += 1
+                  current_minor = 0
+
+          print(f"Supported versions: {versions}")
+
+          # Output as JSON for GitHub Actions
+          versions_json = json.dumps(versions)
+          print(f"python-versions={versions_json}")
+
+          # Write to GITHUB_OUTPUT
+          github_output = os.getenv("GITHUB_OUTPUT")
+          if github_output:
+              with open(github_output, "a") as f:
+                  f.write(f"python-versions={versions_json}\n")
+          EOF
+  test-code:
+    needs: get-python-versions
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
       - uses: actions/checkout@v5
         with:
           lfs: true
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - name: Install dependencies
