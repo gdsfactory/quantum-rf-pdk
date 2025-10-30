@@ -12,7 +12,7 @@ from qpdk.config import PATH
 
 filepath_cells = PATH.repo / "docs" / "cells.rst"
 filepath_samples = PATH.repo / "docs" / "samples.rst"
-template_dir = Path(__file__).parent / "templates"
+template_dir = PATH.repo / "docs" / "templates"
 
 skip = {}
 
