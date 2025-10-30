@@ -182,6 +182,7 @@ The repository uses extensive pre-commit hooks Including, but not limited to:
 - `nbstripout`: Jupyter notebook cleaning
 - `actionlint`: GitHub Actions validation
 - `uv-lock`: Lock file validation
+
 ## Common Pitfalls and Troubleshooting
 
 ### Git LFS Issues
