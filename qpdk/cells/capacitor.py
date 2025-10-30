@@ -73,6 +73,16 @@ def interdigital_capacitor(
        |     |____  ___  |  ___  |  ____ _|     |
        |__________|                |____________|
               finger_gap     finger_length
+    .. svgbob::
+
+          ┌─┐───────┐┌─┐   
+          │ │───────┘│ │   
+          │ │ ┌──────│ │   
+         ┌│ │ └──────│ │┐  
+       o1└│ │──────┐ │ │┘o2
+          │ │──────┘ │ │   
+          │ │ ┌──────│ │   
+          └─┘ └──────└─┘   
 
     See for example :cite:`leizhuAccurateCircuitModel2000`.
 
