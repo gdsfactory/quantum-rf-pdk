@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build HTML docs
     strategy:
+      fail-fast: false
       matrix:
         python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
