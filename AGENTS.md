@@ -182,16 +182,6 @@ The repository uses extensive pre-commit hooks Including, but not limited to:
 - `nbstripout`: Jupyter notebook cleaning
 - `actionlint`: GitHub Actions validation
 - `uv-lock`: Lock file validation
-
-## Docker and Containerization
-
-- **Dockerfile**: Provides a containerized environment for development and Binder
-- **Base image**: Uses `ghcr.io/astral-sh/uv:python3.13-trixie-slim` for efficient Python environment
-- **JupyterLab support**: Container runs JupyterLab by default for interactive development
-- **Binder**: Repository is configured for Binder deployment at <https://mybinder.org>
-- **Building**: Docker image installs all dependencies and converts jupytext notebooks to ipynb format
-- **Usage**: Useful for reproducible development environments and cloud-based notebooks
-
 ## Common Pitfalls and Troubleshooting
 
 ### Git LFS Issues
