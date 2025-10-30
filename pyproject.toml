@@ -7,7 +7,10 @@ requires = ["flit_core >=3.2,<4"]
 [project]
 authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
 classifiers = [
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Operating System :: OS Independent"
 ]
 dependencies = ["gdsfactory>=9.15.0,<9.21.0", "doroutes>=0.2.0"]
@@ -16,7 +19,7 @@ keywords = ["python"]
 license = {file = "LICENSE"}
 name = "qpdk"
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<3.15"
 version = "0.0.2"
 
 [project.optional-dependencies]
