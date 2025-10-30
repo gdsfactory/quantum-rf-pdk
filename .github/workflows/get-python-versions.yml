@@ -16,22 +16,26 @@ jobs:
       - uses: actions/checkout@v5
       - name: Get Python versions from pyproject.toml
         id: get-versions
+        shell: python
         run: |
-          python3 << 'EOF'
           import re
           import json
           import os
 
-          # Read pyproject.toml
-          with open("pyproject.toml", "r") as f:
-              content = f.read()
+          # Read pyproject.toml line by line to find requires-python
+          requires_python = None
+          pattern = re.compile(r'requires-python\s*=\s*"([^"]+)"')
 
-          # Extract requires-python field using regex
-          match = re.search(r'requires-python\s*=\s*"([^"]+)"', content)
-          if not match:
+          with open("pyproject.toml", "r") as f:
+              for line in f:
+                  match = pattern.search(line)
+                  if match:
+                      requires_python = match.group(1)
+                      break
+
+          if not requires_python:
               raise ValueError("requires-python field not found in pyproject.toml")
 
-          requires_python = match.group(1)
           print(f"requires-python: {requires_python}")
 
           # Parse the version constraint
@@ -46,6 +50,8 @@ jobs:
           # Parse major.minor versions
           min_major, min_minor = map(int, min_version.split('.'))
           max_major, max_minor = map(int, max_version.split('.'))
+          # Consider non-inclusive upper bound
+          max_minor -= 1
 
           versions = []
           current_major, current_minor = min_major, min_minor
@@ -68,4 +74,3 @@ jobs:
           if github_output:
               with open(github_output, "a") as f:
                   f.write(f"python-versions={versions_json}\n")
-          EOF
