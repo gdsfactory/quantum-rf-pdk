@@ -14,7 +14,7 @@ instances:
   launcher_east_bot:
     component: launcher
     settings: {}
-    
+
   # Launchers for top probeline (y=1000)
   launcher_west_top:
     component: launcher
@@ -22,7 +22,7 @@ instances:
   launcher_east_top:
     component: launcher
     settings: {}
-    
+
   # Bottom probeline resonators (8 resonators with varying length for frequency variation)
   resonator_bot_1:
     component: resonator_coupled
@@ -112,7 +112,7 @@ instances:
         open_end: false
       coupling_straight_length: 200
       coupling_gap: 16
-      
+
   # Top probeline resonators (8 resonators with varying length and coupling gap)
   resonator_top_1:
     component: resonator_coupled
@@ -221,7 +221,7 @@ routes:
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
-      
+
   # Top probeline routing
   probeline_top:
     links:
@@ -250,7 +250,7 @@ placements:
     x: 9000
     y: 0
     mirror: true
-    
+
   # Bottom resonators - evenly spaced along probeline
   resonator_bot_1:
     x: 1000
@@ -276,7 +276,7 @@ placements:
   resonator_bot_8:
     x: 8000
     y: 0
-    
+
   # Top probeline (y=1000)
   launcher_west_top:
     x: 0
@@ -285,7 +285,7 @@ placements:
     x: 9000
     y: 1000
     mirror: true
-    
+
   # Top resonators - evenly spaced along probeline, mirrored vertically
   resonator_top_1:
     x: 1000

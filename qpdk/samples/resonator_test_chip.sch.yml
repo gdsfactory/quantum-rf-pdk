@@ -45,7 +45,7 @@ transforms:
       x: 1.0
       y: 1.0
       z: 1.0
-      
+
   # Bottom probeline resonators
   resonator_bot_1:
     translation:
@@ -159,7 +159,7 @@ transforms:
       x: 1.0
       y: 1.0
       z: 1.0
-      
+
   # Top probeline launchers
   launcher_west_top:
     translation:
@@ -189,7 +189,7 @@ transforms:
       x: 1.0
       y: 1.0
       z: 1.0
-      
+
   # Top probeline resonators
   resonator_top_1:
     translation:
