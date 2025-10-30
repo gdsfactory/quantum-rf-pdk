@@ -37,7 +37,7 @@ def all_cells(
     """
     from qpdk import PDK
 
-    c = Component("all_cells")
+    c = Component()
 
     # Get all cell names, excluding all_cells itself to avoid recursion
     cell_names = sorted([name for name in PDK.cells if name != "all_cells"])
