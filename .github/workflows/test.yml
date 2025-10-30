@@ -35,3 +35,18 @@ jobs:
         run: make install
       - name: Test with pytest
         run: make test
+  test-code-result:
+    runs-on: ubuntu-latest
+    name: Test result
+    needs: test-code
+    if: always()
+    steps:
+      - name: Check test matrix results
+        run: |
+          if [[ "${{ needs.test-code.result }}" == "success" ]]; then
+            echo "All test jobs succeeded"
+            exit 0
+          else
+            echo "One or more test jobs failed"
+            exit 1
+          fi

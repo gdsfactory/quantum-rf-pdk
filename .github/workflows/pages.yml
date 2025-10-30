@@ -32,6 +32,21 @@ jobs:
         with:
           name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
+  build-docs-result:
+    runs-on: ubuntu-latest
+    name: Build docs result
+    needs: build-docs
+    if: always()
+    steps:
+      - name: Check build-docs matrix results
+        run: |
+          if [[ "${{ needs.build-docs.result }}" == "success" ]]; then
+            echo "All build-docs jobs succeeded"
+            exit 0
+          else
+            echo "One or more build-docs jobs failed"
+            exit 1
+          fi
   get-latest-python:
     needs: get-python-versions
     runs-on: ubuntu-latest
