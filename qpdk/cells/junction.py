@@ -58,6 +58,11 @@ def single_josephson_junction_wire(
 ) -> Component:
     """Creates a single wire to use in a Josephson junction.
 
+    .. svgbob::
+
+        o1 ━━━━━━ ╲  ╱ ─── o2
+               wide  narrow
+
     Args:
         kwargs: :class:`~SingleJosephsonJunctionWireParams` parameters.
     """
@@ -139,6 +144,22 @@ def josephson_junction(
     A Josephson junction consists of two superconducting electrodes separated
     by a thin insulating barrier allowing tunnelling.
 
+    .. svgbob::
+
+             left_wide
+                │
+                ┴
+               ╱│╲
+              ╱ │ ╲
+             ╱  │  ╲
+        ────┴───┼───┴──── overlap
+             ╲  │  ╱
+              ╲ │ ╱
+               ╲│╱
+                ┬
+                │
+            right_wide
+
     Args:
         junction_overlap_displacement: Displacement of the overlap region in µm.
             Measured from the centers of the junction ports
@@ -206,6 +227,29 @@ def squid_junction(
     """Creates a SQUID (Superconducting Quantum Interference Device) junction component.
 
     A SQUID consists of two Josephson junctions connected in parallel, forming a loop.
+
+    .. svgbob::
+
+             junction1_wide_left
+                    │
+            ┌───────┴───────┐
+            │       ╳       │
+            │    junction1  │
+            │       ╳       │
+     ┌──────┤               ├──────┐
+     │      │               │      │
+     │      └───────────────┘      │
+     │                             │
+     │  junction2_wide_left  junction2_wide_right
+     │                             │
+     │      ┌───────────────┐      │
+     │      │               │      │
+     └──────┤       ╳       ├──────┘
+            │    junction2  │
+            │       ╳       │
+            └───────┬───────┘
+                    │
+             junction1_wide_right
 
     See :cite:`clarkeSQUIDHandbook2004` for details.
 

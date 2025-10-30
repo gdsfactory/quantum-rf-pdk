@@ -39,6 +39,18 @@ def resonator(
     Changing `open_start` and `open_end` appropriately allows creating
     a shorted quarter-wave resonator or an open half-wave resonator.
 
+    .. svgbob::
+
+        o1 ─────┐
+                │
+        ┌───────┘
+        │
+        └───────┐
+                │
+        ┌───────┘
+        │
+        └────── o2
+
     See :cite:`m.pozarMicrowaveEngineering2012` for details
 
     Args:
