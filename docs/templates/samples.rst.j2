@@ -7,7 +7,7 @@ Samples
 ----------------------------------------------------
 
 .. autofunction:: {{ item.name }}
-{% if item.name not in skip_plot %}
+{%     if item.name not in skip_plot %}
 
 .. plot::
 
@@ -18,7 +18,7 @@ Samples
   c = {{ item.name }}({{ item.kwargs }}).copy()
   c.draw_ports()
   c.plot()
-{% endif %}
+{%     endif %}
 {% endfor %}
 
 References
