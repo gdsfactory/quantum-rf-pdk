@@ -148,19 +148,18 @@ def josephson_junction(
 
     .. svgbob::
 
-             left_wide
-                │
-                ┴
-               /│\
-              / │ \
-             /  │  \
-        ────┴───X───┴──── overlap
-             \  │  /
-              \ │ /
-               \│/
-                ┬
-                │
-            right_wide
+         right_wide                                             
+         ┌───┐          ╷ overlap                              
+         │   │━━━━────╶╶╷╶╶                                    
+         └───┘          ╷                                      
+                        │                                      
+                        │                                      
+                        ┃                                      
+                        ┃                                      
+                      ┌───┐                                    
+                      │   │                                    
+                      └───┘                                    
+                      left_wide                                
 
     Args:
         junction_overlap_displacement: Displacement of the overlap region in µm.
