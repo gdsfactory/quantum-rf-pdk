@@ -1,0 +1,19 @@
+
+{% block title %}{% endblock %}
+{% for item in items %}
+{{ item.name }}
+----------------------------------------------------
+
+.. autofunction:: {% block autofunction_path scoped -%}{%- endblock %}
+{%     if item.name not in skip_plot %}
+
+.. plot::
+{% block plot_section scoped %}{% endblock %}
+{%     endif %}
+{% endfor %}
+
+References
+==========
+
+.. bibliography::
+   :filter: docname in docnames

@@ -1,16 +1,15 @@
+{% extends "base_component.rst.j2" %}
 
+{% block title %}
 Samples
 =======
-{% for item in items %}
+{% endblock %}
 
+{% block autofunction_path scoped -%}
 {{ item.name }}
-----------------------------------------------------
+{%- endblock %}
 
-.. autofunction:: {{ item.name }}
-{%     if item.name not in skip_plot %}
-
-.. plot::
-
+{% block plot_section scoped %}
   import {{ item.import_path }}
   from qpdk import PDK
 
@@ -18,11 +17,4 @@ Samples
   c = {{ item.name }}({{ item.kwargs }}).copy()
   c.draw_ports()
   c.plot()
-{%     endif %}
-{% endfor %}
-
-References
-==========
-
-.. bibliography::
-   :filter: docname in docnames
+{% endblock %}

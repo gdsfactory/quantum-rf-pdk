@@ -1,27 +1,19 @@
+{% extends "base_component.rst.j2" %}
 
+{% block title %}
 PCells
 ======
-{% for item in items %}
+{% endblock %}
 
-{{ item.name }}
-----------------------------------------------------
+{% block autofunction_path scoped -%}
+qpdk.cells.{{ item.name }}
+{%- endblock %}
 
-.. autofunction:: qpdk.cells.{{ item.name }}
-{%     if item.name not in skip_plot %}
-
-.. plot::
-
+{% block plot_section scoped %}
   from qpdk import cells, PDK
 
   PDK.activate()
   c = cells.{{ item.name }}({{ item.kwargs }}).copy()
   c.draw_ports()
   c.plot()
-{%     endif %}
-{% endfor %}
-
-References
-==========
-
-.. bibliography::
-   :filter: docname in docnames
+{% endblock %}

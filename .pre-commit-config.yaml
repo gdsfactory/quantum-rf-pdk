@@ -37,6 +37,7 @@ repos:
         types: [file]
         files: \.(j2|yml|yaml)$
         exclude: .github/.*
+        args: [--ignore, jinja-statements-delimiter, single-statement-per-line, jinja-statements-indentation, --]
   - repo: https://github.com/google/yamlfmt
     rev: v0.17.2
     hooks:
