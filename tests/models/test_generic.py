@@ -2,7 +2,7 @@
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
-from hypothesis import assume, given, settings
+from hypothesis import given, settings
 
 from qpdk.models.generic import (
     capacitor,
@@ -258,9 +258,7 @@ class TestTee:
         for i in range(1, 4):
             sii = result[(f"o{i}", f"o{i}")][0]
             expected = -1 / 3
-            assert jnp.abs(sii - expected) < 1e-10, (
-                f"S{i}{i} should be -1/3, got {sii}"
-            )
+            assert jnp.abs(sii - expected) < 1e-10, f"S{i}{i} should be -1/3, got {sii}"
 
     def test_tee_off_diagonal_elements(self) -> None:
         """Test that off-diagonal elements equal 2/3."""
