@@ -62,7 +62,7 @@ def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
         |         |         |         |
         |  pad1   |   XX    |  pad2   |
         |         |   XX    |         |
-        +---------+ junction +---------+
+        +---------+ junct.  +---------+
          left_pad             right_pad
 
     See :cite:`kochChargeinsensitiveQubitDesign2007a` for details.
