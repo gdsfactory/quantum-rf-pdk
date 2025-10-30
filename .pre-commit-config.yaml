@@ -28,8 +28,8 @@ repos:
   - repo: https://github.com/tombi-toml/tombi-pre-commit
     rev: v0.6.39
     hooks:
-       - id: tombi-format
-       - id: tombi-lint
+      - id: tombi-format
+      - id: tombi-lint
   - repo: https://github.com/aristanetworks/j2lint.git
     rev: v1.2.0
     hooks:
