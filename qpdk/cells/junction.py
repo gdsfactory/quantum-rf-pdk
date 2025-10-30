@@ -60,9 +60,9 @@ def single_josephson_junction_wire(
 
     .. svgbob::
 
-        ┌───┐                
+        ┌───┐
         │o1 │━━━━────╶╶╶╶╶ o2
-        └───┘                
+        └───┘
                wide  narrow
 
     Args:
@@ -148,18 +148,18 @@ def josephson_junction(
 
     .. svgbob::
 
-         right_wide                                             
-         ┌───┐          ╷ overlap                              
-         │   │━━━━────╶╶╷╶╶                                    
-         └───┘          ╷                                      
-                        │                                      
-                        │                                      
-                        ┃                                      
-                        ┃                                      
-                      ┌───┐                                    
-                      │   │                                    
-                      └───┘                                    
-                      left_wide                                
+         right_wide
+         ┌───┐          ╷ overlap
+         │   │━━━━────╶╶╷╶╶
+         └───┘          ╷
+                        │
+                        │
+                        ┃
+                        ┃
+                      ┌───┐
+                      │   │
+                      └───┘
+                      left_wide
 
     Args:
         junction_overlap_displacement: Displacement of the overlap region in µm.
