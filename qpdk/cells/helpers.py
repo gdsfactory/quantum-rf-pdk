@@ -68,8 +68,8 @@ def fill_magnetic_vortices(
         >>> resonator = resonator_quarter_wave()
         >>> filled_resonator = fill_magnetic_vortices(resonator)
     """
-    c = gf.Component()
-    c.add_ref(component)
+    container = gf.Component()
+    container.add_ref(component)
 
     exclude_layers = exclude_layers or _EXCLUDE_LAYERS_DEFAULT_M1
 
@@ -84,11 +84,11 @@ def fill_magnetic_vortices(
         (stagger, stagger) if isinstance(stagger, int | float) else stagger
     )
 
-    c.fill(
+    container.fill(
         fill_cell=fill_cell,
         fill_regions=[
             (
-                Region(c.bbox().to_itype(dbu=c.kcl.dbu)),
+                Region(container.bbox().to_itype(dbu=container.kcl.dbu)),
                 0,
             )
         ],  # Fill the entire bounding box area
@@ -97,7 +97,7 @@ def fill_magnetic_vortices(
         col_step=gf.kf.kdb.DVector(-stagger_x, rectangle_size[1] + gap_y),
     )
 
-    return c
+    return container
 
 
 def apply_additive_metals(component: Component) -> Component:

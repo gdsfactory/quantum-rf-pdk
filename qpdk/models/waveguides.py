@@ -14,7 +14,7 @@ from qpdk.models.media import MediaCallable, cpw_media_skrf
 class StraightModelKwargs(TypedDict, total=False):
     """Type definition for straight S-parameter model keyword arguments."""
 
-    f: ArrayLike
+    frequency: ArrayLike
     length: int | float
     media: MediaCallable
 
@@ -22,7 +22,7 @@ class StraightModelKwargs(TypedDict, total=False):
 # JIT disabled for now due to scikit-rf internals not being JAX-compatible
 # @partial(jax.jit, static_argnames=["media"])
 def straight(
-    f: ArrayLike = jnp.array([5e9]),
+    frequency: ArrayLike = jnp.array([5e9]),
     length: int | float = 1000,
     media: MediaCallable = cpw_media_skrf(),
 ) -> sax.SType:
@@ -31,18 +31,18 @@ def straight(
     See `scikit-rf <skrf>`_ for details on analytical formulæ.
 
     Args:
-        f: Array of frequency points in Hz
+        frequency: Array of frequency points in Hz
         length: Physical length in µm
         media: Function returning a scikit-rf :class:`~Media` object after called
-            with ``frequency=f``. If None, uses default CPW media.
+            with ``frequency=frequency``. If None, uses default CPW media.
 
     Returns:
         sax.SType: S-parameters dictionary
 
     .. _skrf: https://scikit-rf.org/
     """
-    # Keep f as tuple for scikit-rf, convert to array only for final JAX operations
-    skrf_media = media(frequency=Frequency.from_f(f, unit="Hz"))
+    # Keep frequency as tuple for scikit-rf, convert to array only for final JAX operations
+    skrf_media = media(frequency=Frequency.from_f(frequency, unit="Hz"))
     transmission_line = skrf_media.line(d=length, unit="um")
     sdict = {
         ("o1", "o1"): jnp.array(transmission_line.s[:, 0, 0]),
@@ -84,12 +84,12 @@ if __name__ == "__main__":
     cpw = cpw_media_skrf(width=10, gap=6)
 
     def straight_no_jit(
-        f: ArrayLike = jnp.array([5e9]),
+        frequency: ArrayLike = jnp.array([5e9]),
         length: int | float = 1000,
         media: MediaCallable = cpw_media_skrf(),
     ) -> sax.SType:
         """Version of straight without just-in-time compilation."""
-        skrf_media = media(frequency=Frequency.from_f(f, unit="Hz"))
+        skrf_media = media(frequency=Frequency.from_f(frequency, unit="Hz"))
         transmission_line = skrf_media.line(d=length, unit="um")
         sdict = {
             ("o1", "o1"): jnp.array(transmission_line.s[:, 0, 0]),
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     jit_times = []
     for _ in tqdm(range(n_runs), desc="With jax.jit", ncols=80, unit="run"):
         start_time = time.perf_counter()
-        S_jit = straight(f=test_freq, length=test_length, media=cpw)
+        S_jit = straight(frequency=test_freq, length=test_length, media=cpw)
         _ = S_jit["o2", "o1"].block_until_ready()
         end_time = time.perf_counter()
         jit_times.append(end_time - start_time)
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     no_jit_times = []
     for _ in tqdm(range(n_runs), desc="Without jax.jit", ncols=80, unit="run"):
         start_time = time.perf_counter()
-        S_no_jit = straight_no_jit(f=test_freq, length=test_length, media=cpw)
+        S_no_jit = straight_no_jit(frequency=test_freq, length=test_length, media=cpw)
         _ = S_no_jit["o2", "o1"].block_until_ready()
         end_time = time.perf_counter()
         no_jit_times.append(end_time - start_time)
@@ -130,8 +130,8 @@ if __name__ == "__main__":
     print(f"Non-jitted: {avg_no_jit:.4f}s avg")
     print(f"Speedup: {speedup:.1f}x")
 
-    S_jit = straight(f=test_freq, length=test_length, media=cpw)
-    S_no_jit = straight_no_jit(f=test_freq, length=test_length, media=cpw)
+    S_jit = straight(frequency=test_freq, length=test_length, media=cpw)
+    S_no_jit = straight_no_jit(frequency=test_freq, length=test_length, media=cpw)
     max_diff = jnp.max(jnp.abs(S_jit["o2", "o1"] - S_no_jit["o2", "o1"]))
     print(f"Max absolute difference in results: {max_diff:.2e}")
 

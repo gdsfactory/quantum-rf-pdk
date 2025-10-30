@@ -11,7 +11,7 @@ from qpdk.models.waveguides import straight
 
 
 def coupler_straight(
-    f: ArrayLike = jnp.array([5e9]),
+    frequency: ArrayLike = jnp.array([5e9]),
     length: int | float = 20.0,
     gap: int | float = 0.27,  # noqa: ARG001
     media: MediaCallable = cpw_media_skrf(),
@@ -19,11 +19,11 @@ def coupler_straight(
     """S-parameter model for two coupled coplanar waveguides, :func:`~qpdk.cells.waveguides.coupler_straight`.
 
     Args:
-        f: Array of frequency points in Hz
+        frequency: Array of frequency points in Hz
         length: Physical length of coupling section in µm
         gap: Gap between the coupled waveguides in µm
         media: Function returning a scikit-rf :class:`~Media` object after called
-            with ``frequency=f``. If None, uses default CPW media.
+            with ``frequency=frequency``. If None, uses default CPW media.
 
     Returns:
         sax.SType: S-parameters dictionary
@@ -36,8 +36,8 @@ def coupler_straight(
     """
     straight_settings = {"length": length / 2, "media": media}
     capacitor_settings = {
-        "capacitance": 60e-15,  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
-        "z0": media(frequency=Frequency.from_f(f, unit="Hz")).z0,
+        "capacitance": 60e-15,  # gap * 1e-18 * frequency,  # TODO implement FEM simulation retrieval or use some paper
+        "z0": media(frequency=Frequency.from_f(frequency, unit="Hz")).z0,
     }
 
     # Create straight instances with shared settings
@@ -83,17 +83,17 @@ def coupler_straight(
         },
     )
 
-    return circuit(f=f)
+    return circuit(frequency=frequency)
 
 
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
 
     # Define frequency range from 1 GHz to 10 GHz with 201 points
-    f = jnp.linspace(1e9, 10e9, 201)
+    freq = jnp.linspace(1e9, 10e9, 201)
 
     # Calculate coupler S-parameters for a 20 um straight coupler with 0.27 um gap
-    coupler = coupler_straight(f=f, length=20, gap=0.27)
+    coupler = coupler_straight(frequency=freq, length=20, gap=0.27)
 
     # Create figure with single plot for comparison
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         color = default_color_cycler[idx % len(default_color_cycler)]
         # Plot both implementations with same color but different linestyles
         ax.plot(
-            f / 1e9,
+            freq / 1e9,
             20 * jnp.log10(jnp.abs(coupler[ports])),
             linestyle="-",
             color=color,

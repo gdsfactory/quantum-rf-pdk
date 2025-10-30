@@ -20,7 +20,7 @@ def denest_layerviews_to_layer_tuples(
         Dictionary mapping layer names to their corresponding (layer, datatype) tuples.
     """
 
-    def _denest_recursive(items: dict) -> dict:
+    def denest_layer_dict_recursive(items: dict) -> dict:
         """Recursively denest layer views to any depth.
 
         Args:
@@ -34,7 +34,7 @@ def denest_layerviews_to_layer_tuples(
         for key, value in items.items():
             if value.group_members:
                 # Recursively process nested group members and merge results
-                nested_layers = _denest_recursive(value.group_members)
+                nested_layers = denest_layer_dict_recursive(value.group_members)
                 layers.update(nested_layers)
             else:
                 # Base case: add the layer to our dictionary
@@ -44,7 +44,7 @@ def denest_layerviews_to_layer_tuples(
         return layers
 
     # Start the recursive denesting process and return the result
-    return _denest_recursive(layer_views.layer_views)
+    return denest_layer_dict_recursive(layer_views.layer_views)
 
 
 def show_components(
@@ -71,7 +71,7 @@ def show_components(
         isinstance(component, ComponentAllAngle) for component in components
     )
 
-    c = ComponentAllAngle() if any_all_angle else Component()
+    container = ComponentAllAngle() if any_all_angle else Component()
 
     max_component_width = max(component.size_info.width for component in components)
     max_component_height = max(component.size_info.height for component in components)
@@ -81,7 +81,7 @@ def show_components(
         shift = (max_component_width + spacing, 0)
 
     for i, component in enumerate(components):
-        (c << component).move(
+        (container << component).move(
             (
                 shift[0] * i,
                 shift[1] * i,
@@ -92,12 +92,12 @@ def show_components(
             shift[1] * i + (component.size_info.height / 2),
         )
         label_text = component.name if hasattr(component, "name") else f"component_{i}"
-        c.add_label(
+        container.add_label(
             text=label_text,
             position=label_offset,
             layer=cast(LayerEnum, PDK.layers).TEXT,
         )
-    c.show()
+    container.show()
 
     return components
 
