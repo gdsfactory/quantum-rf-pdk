@@ -20,6 +20,7 @@ class Path:
     module = module
     repo = repo
     build = repo / "build"
+    docs = repo / "docs"
     gds = module / "gds"
     klayout = module / "klayout"
     simulation = build / "simulation"

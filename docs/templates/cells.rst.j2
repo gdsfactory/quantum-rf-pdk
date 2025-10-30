@@ -1,0 +1,19 @@
+{% extends "base_component.rst.j2" %}
+
+{% block title %}
+PCells
+======
+{% endblock %}
+
+{% block autofunction_path scoped -%}
+qpdk.cells.{{ item.name }}
+{%- endblock %}
+
+{% block plot_section scoped %}
+  from qpdk import cells, PDK
+
+  PDK.activate()
+  c = cells.{{ item.name }}({{ item.kwargs }}).copy()
+  c.draw_ports()
+  c.plot()
+{% endblock %}

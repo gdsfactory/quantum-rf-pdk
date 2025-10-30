@@ -211,15 +211,6 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
     }
 )
 
-
-class Tech:
-    """Technology parameters."""
-
-    pass
-
-
-TECH = Tech()
-
 ############################
 # Cross-sections functions
 ############################
@@ -239,18 +230,18 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
         def strip(width=TECH.width_strip, radius=TECH.radius_strip):
             return gf.cross_section.cross_section(width=width, radius=radius)
     """
-    default_xs = func()
-    _cross_section_default_names[default_xs.name] = func.__name__
+    default_cross_section = func()
+    _cross_section_default_names[default_cross_section.name] = func.__name__
 
     @wraps(func)
-    def newfunc(**kwargs: Any) -> CrossSection:
-        xs = func(**kwargs)
-        if xs.name in _cross_section_default_names:
-            xs._name = _cross_section_default_names[xs.name]
-        return xs
+    def decorated_cross_section(**kwargs: Any) -> CrossSection:
+        cross_section = func(**kwargs)
+        if cross_section.name in _cross_section_default_names:
+            cross_section._name = _cross_section_default_names[cross_section.name]
+        return cross_section
 
-    cross_sections[func.__name__] = newfunc
-    return newfunc
+    cross_sections[func.__name__] = decorated_cross_section
+    return decorated_cross_section
 
 
 @xsection
@@ -424,14 +415,14 @@ if __name__ == "__main__":
 
     connectivity = cast(list[ConnectivitySpec], [("M1_DRAW", "TSV", "M2_DRAW")])
 
-    t = KLayoutTechnology(
+    klayout_tech = KLayoutTechnology(
         name="qpdk",
         layer_map=LAYER,
         layer_views=LAYER_VIEWS,
         layer_stack=LAYER_STACK,
         connectivity=connectivity,
     )
-    t.write_tech(tech_dir=PATH.klayout)
+    klayout_tech.write_tech(tech_dir=PATH.klayout)
     # print(DEFAULT_CROSS_SECTION_NAMES)
     # print(strip() is strip())
     # print(strip().name, strip().name)

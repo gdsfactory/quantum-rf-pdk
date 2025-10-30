@@ -1,0 +1,20 @@
+{% extends "base_component.rst.j2" %}
+
+{% block title %}
+Samples
+=======
+{% endblock %}
+
+{% block autofunction_path scoped -%}
+{{ item.name }}
+{%- endblock %}
+
+{% block plot_section scoped %}
+  import {{ item.import_path }}
+  from qpdk import PDK
+
+  PDK.activate()
+  c = {{ item.name }}({{ item.kwargs }}).copy()
+  c.draw_ports()
+  c.plot()
+{% endblock %}

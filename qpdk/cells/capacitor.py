@@ -63,6 +63,17 @@ def interdigital_capacitor(
     a distributed capacitance. This component creates a planar capacitor with
     two sets of interleaved fingers extending from opposite ends.
 
+    .. svgbob::
+
+          ┌─┐───────┐┌─┐
+          │ │───────┘│ │
+          │ │ ┌──────│ │
+         ┌│ │ └──────│ │┐
+       o1└│ │──────┐ │ │┘o2
+          │ │──────┘ │ │
+          │ │ ┌──────│ │
+          └─┘ └──────└─┘
+
     See for example :cite:`leizhuAccurateCircuitModel2000`.
 
     Note:
@@ -242,7 +253,7 @@ def plate_capacitor(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
     A capacitive coupler consists of two metal pads separated by a small gap,
     providing capacitive coupling between circuit elements like qubits and resonators.
 
-    .. code-block:: text
+    .. svgbob::
 
                   ______               ______
         _________|      |             |      |________
@@ -270,7 +281,7 @@ def plate_capacitor_single(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Com
 
     This is essentially half of a :func:`~plate_capacitor`.
 
-    .. code-block:: text
+    .. svgbob::
 
                   ______
         _________|      |

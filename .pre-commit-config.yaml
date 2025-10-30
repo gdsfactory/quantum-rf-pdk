@@ -25,11 +25,11 @@ repos:
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
       - id: ruff-format
         args: [--config=pyproject.toml]
-  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.15.0
+  - repo: https://github.com/tombi-toml/tombi-pre-commit
+    rev: v0.6.39
     hooks:
-      - id: pretty-format-toml
-        args: [--autofix]
+      - id: tombi-format
+      - id: tombi-lint
   - repo: https://github.com/aristanetworks/j2lint.git
     rev: v1.2.0
     hooks:
@@ -37,6 +37,7 @@ repos:
         types: [file]
         files: \.(j2|yml|yaml)$
         exclude: .github/.*
+        args: [--ignore, jinja-statements-delimiter, single-statement-per-line, jinja-statements-indentation, --]
   - repo: https://github.com/google/yamlfmt
     rev: v0.17.2
     hooks:
