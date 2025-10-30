@@ -338,8 +338,8 @@ class TestSingleImpedanceElement:
         assert ("o1", "o2") in result, "Should have S12 parameter"
 
     def test_single_impedance_element_matched_load(self) -> None:
-        """Test that matched impedance gives zero reflection."""
-        # When z = z0, S11 should be 0 and S21 should be 1
+        """Test single impedance element with matched load (z = z0)."""
+        # For this circuit topology: S11 = z/(z + 2*z0), S21 = 2*z0/(2*z0 + z)
         result = single_impedance_element(z=50, z0=50)
 
         s11 = result[("o1", "o1")]
