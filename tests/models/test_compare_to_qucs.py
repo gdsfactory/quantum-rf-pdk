@@ -54,17 +54,15 @@ class BaseCompareToQucs(ABC):
         Returns:
             Tuple containing:
             - parameter_value: The value of the component parameter used in the model.
-            - frequency: Frequency array in Hz.
+            - f: Frequency array in Hz.
             - S_sax: Dictionary of S-parameters from the qpdk model (e.g., {"S11": ..., "S21": ...}).
             - S_qucs: Dictionary of S-parameters from Qucs-S reference data.
         """
         S_qucs = pl.read_csv(TEST_DATA_PATH / self.csv_filename)
-        frequency = S_qucs["frequency"].to_jax()
+        f = S_qucs["frequency"].to_jax()
 
         model_func = self.get_model_function()
-        S_matrix = model_func(
-            frequency=frequency, **{self.parameter_name: self.parameter_value}
-        )
+        S_matrix = model_func(f=f, **{self.parameter_name: self.parameter_value})
 
         # Determine number of ports from the S-matrix
         # S-matrix keys are tuples like ("o1", "o1"), ("o2", "o1"), etc.
@@ -103,7 +101,7 @@ class BaseCompareToQucs(ABC):
 
         return (
             self.parameter_value,
-            frequency,
+            f,
             S_sax_dict,
             S_qucs_dict,
         )
@@ -121,7 +119,7 @@ class BaseCompareToQucs(ABC):
         Raises:
             AssertionError: If any S-parameter does not match within the specified tolerances.
         """
-        _param_value, _frequency, S_sax_dict, S_qucs_dict = results
+        _param_value, _f, S_sax_dict, S_qucs_dict = results
 
         for s_param_name in S_sax_dict:
             if s_param_name in self.skip_values:
@@ -137,7 +135,7 @@ class BaseCompareToQucs(ABC):
 
     def plot_comparison(self):
         """Generate comparison plots between qpdk (sax) and Qucs-S models."""
-        param_value, freq, S_sax_dict, S_qucs_dict = self.get_results()
+        param_value, f, S_sax_dict, S_qucs_dict = self.get_results()
 
         loosely_dashed = (1, 2)
 
@@ -162,10 +160,10 @@ class BaseCompareToQucs(ABC):
             )
             return color
 
-        def _plot_magnitude(ax, freq, s_qucs, s_sax, color, param_name):
+        def _plot_magnitude(ax, f, s_qucs, s_sax, color, param_name):
             """Helper function to plot magnitude with consistent styling."""
             ax.plot(
-                freq / 1e9,
+                f / 1e9,
                 20 * jnp.log10(abs(s_qucs)),
                 "-",
                 linewidth=1,
@@ -173,7 +171,7 @@ class BaseCompareToQucs(ABC):
                 label=rf"$\|{param_name}\|$ Qucs-S",
             )
             ax.plot(
-                freq / 1e9,
+                f / 1e9,
                 20 * jnp.log10(abs(s_sax)),
                 "--",
                 dashes=loosely_dashed,
@@ -182,10 +180,10 @@ class BaseCompareToQucs(ABC):
                 label=rf"$\|{param_name}\|$ qpdk (sax)",
             )
 
-        def _plot_phase(ax, freq, s_qucs, s_sax, color, param_name):
+        def _plot_phase(ax, f, s_qucs, s_sax, color, param_name):
             """Helper function to plot phase with consistent styling."""
             ax.plot(
-                freq / 1e9,
+                f / 1e9,
                 jnp.angle(s_qucs),
                 "-",
                 linewidth=1,
@@ -193,7 +191,7 @@ class BaseCompareToQucs(ABC):
                 label=f"∠${param_name}$ Qucs-S",
             )
             ax.plot(
-                freq / 1e9,
+                f / 1e9,
                 jnp.angle(s_sax),
                 "--",
                 dashes=loosely_dashed,
@@ -241,7 +239,7 @@ class BaseCompareToQucs(ABC):
             latex_name = f"S_{{{s_param[1:]}}}"
             _plot_magnitude(
                 ax1,
-                freq,
+                f,
                 S_qucs_dict[s_param],
                 S_sax_dict[s_param],
                 color_queue.get(),
@@ -260,7 +258,7 @@ class BaseCompareToQucs(ABC):
             latex_name = f"S_{{{s_param[1:]}}}"
             _plot_phase(
                 ax2,
-                freq,
+                f,
                 S_qucs_dict[s_param],
                 S_sax_dict[s_param],
                 color_queue.get(),

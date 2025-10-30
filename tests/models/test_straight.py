@@ -26,7 +26,7 @@ class TestStraightWaveguide:
     def test_straight_returns_stype(self) -> None:
         """Test that straight returns a valid sax.SType dictionary."""
         f = jnp.array([5e9, 6e9, 7e9])
-        result = straight(frequency=f, length=1000)
+        result = straight(f=f, length=1000)
 
         # Check it's a dictionary with the expected structure
         assert isinstance(result, dict), "Result should be a dictionary"
@@ -45,7 +45,7 @@ class TestStraightWaveguide:
         """Test that output array shapes match input frequency array length."""
         n_freq = 10
         f = jnp.linspace(4e9, 8e9, n_freq)
-        result = straight(frequency=f, length=2000)
+        result = straight(f=f, length=2000)
 
         # Check all S-parameter arrays have correct length
         for key, value in result.items():
@@ -56,7 +56,7 @@ class TestStraightWaveguide:
     def test_straight_reciprocity(self) -> None:
         """Test that S-parameters are reciprocal (S12 = S21)."""
         f = jnp.linspace(3e9, 7e9, 50)
-        result = straight(frequency=f, length=1500)
+        result = straight(f=f, length=1500)
 
         s12 = result[("o1", "o2")]
         s21 = result[("o2", "o1")]
@@ -68,7 +68,7 @@ class TestStraightWaveguide:
     def test_straight_single_frequency(self) -> None:
         """Test straight waveguide with a single frequency point."""
         f = jnp.array([5e9])
-        result = straight(frequency=f, length=1000)
+        result = straight(f=f, length=1000)
 
         assert isinstance(result, dict), "Result should be a dictionary"
         for key, value in result.items():
@@ -95,7 +95,7 @@ class TestStraightWaveguide:
         assume(f_max > f_min)
 
         f = jnp.linspace(f_min, f_max, n_freq)
-        result = straight(frequency=f, length=length)
+        result = straight(f=f, length=length)
 
         # Verify structure
         assert isinstance(result, dict), "Result should be a dictionary"
@@ -123,7 +123,7 @@ class TestStraightWaveguide:
         """
         # Use a small frequency range around the center
         f = jnp.linspace(f_center * 0.9, f_center * 1.1, 10)
-        result = straight(frequency=f, length=length)
+        result = straight(f=f, length=length)
 
         s11 = result[("o1", "o1")]
         s21 = result[("o2", "o1")]
@@ -155,8 +155,8 @@ class TestStraightWaveguide:
         # Use a typical superconducting frequency
         f = jnp.array([5e9])
 
-        result1 = straight(frequency=f, length=length1)
-        result2 = straight(frequency=f, length=length2)
+        result1 = straight(f=f, length=length1)
+        result2 = straight(f=f, length=length2)
 
         transmission1 = jnp.abs(result1[("o2", "o1")])[0]
         transmission2 = jnp.abs(result2[("o2", "o1")])[0]
@@ -176,7 +176,7 @@ class TestStraightWaveguide:
         f = jnp.linspace(0.5e9, 10e9, 100)
         length = 5000  # 5 mm
 
-        result = straight(frequency=f, length=length)
+        result = straight(f=f, length=length)
 
         # Basic sanity checks
         assert isinstance(result, dict), "Result should be a dictionary"
@@ -196,7 +196,7 @@ class TestStraightWaveguide:
         custom_media = cpw_media_skrf(width=20, gap=10)
 
         f = jnp.array([5e9, 6e9])
-        result = straight(frequency=f, length=1000, media=custom_media)
+        result = straight(f=f, length=1000, media=custom_media)
 
         assert isinstance(result, dict), "Result should be a dictionary"
         assert len(result[("o2", "o1")]) == 2, "Should have 2 frequency points"
@@ -210,7 +210,7 @@ class TestStraightWaveguide:
     def test_straight_zero_length(self) -> None:
         """Test straight waveguide with zero length (through connection)."""
         f = jnp.array([5e9])
-        result = straight(frequency=f, length=0)
+        result = straight(f=f, length=0)
 
         # Zero length should be nearly perfect transmission
         s21 = result[("o2", "o1")]

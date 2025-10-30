@@ -11,14 +11,14 @@ from jax.typing import ArrayLike
 
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def gamma_0_load(
-    frequency: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = jnp.array([5e9]),
     gamma_0: int | float | complex = 0,
     n_ports: int = 1,
 ) -> sax.SType:
     r"""Connection with given reflection coefficient.
 
     Args:
-        frequency: Array of frequency points in Hz
+        f: Array of frequency points in Hz
         gamma_0: Reflection coefficient Γ₀ of connection
         n_ports: Number of ports in component. The diagonal ports of the matrix
             are set to Γ₀ and the off-diagonal ports to 0.
@@ -28,11 +28,10 @@ def gamma_0_load(
 
     """
     sdict = {
-        (f"o{i}", f"o{i}"): jnp.full(len(frequency), gamma_0)
-        for i in range(1, n_ports + 1)
+        (f"o{i}", f"o{i}"): jnp.full(len(f), gamma_0) for i in range(1, n_ports + 1)
     }
     sdict |= {
-        (f"o{i}", f"o{j}"): jnp.zeros(len(frequency), dtype=complex)
+        (f"o{i}", f"o{j}"): jnp.zeros(len(f), dtype=complex)
         for i in range(1, n_ports + 1)
         for j in range(i + 1, n_ports + 1)
     }
@@ -41,56 +40,56 @@ def gamma_0_load(
 
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def short(
-    frequency: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = jnp.array([5e9]),
     n_ports: int = 1,
 ) -> sax.SType:
     r"""Electrical short connections Sax model.
 
     Args:
-        frequency: Array of frequency points in Hz
+        f: Array of frequency points in Hz
         n_ports: Number of ports to set as shorted
 
     Returns:
         sax.SType: S-parameters dictionary where :math:`S = -I_\text{n\_ports}`
     """
-    return gamma_0_load(frequency=frequency, gamma_0=-1, n_ports=n_ports)
+    return gamma_0_load(f=f, gamma_0=-1, n_ports=n_ports)
 
 
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def open(
-    frequency: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = jnp.array([5e9]),
     n_ports: int = 1,
 ) -> sax.SType:
     r"""Electrical open connection Sax model.
 
     Args:
-        frequency: Array of frequency points in Hz
+        f: Array of frequency points in Hz
         n_ports: Number of ports to set as opened
 
     Returns:
         sax.SType: S-parameters dictionary where :math:`S = I_\text{n\_ports}`
     """
-    return gamma_0_load(frequency=frequency, gamma_0=1, n_ports=n_ports)
+    return gamma_0_load(f=f, gamma_0=1, n_ports=n_ports)
 
 
 @partial(jax.jit, inline=True)
-def tee(frequency: ArrayLike = jnp.array([5e9])) -> sax.SType:
+def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
     """Ideal 3-port power divider/combiner (T-junction).
 
     Args:
-        frequency: Array of frequency points in Hz
+        f: Array of frequency points in Hz
 
     Returns:
         sax.SType: S-parameters dictionary
     """
-    sdict = {(f"o{i}", f"o{i}"): jnp.full(len(frequency), -1 / 3) for i in range(1, 4)}
+    sdict = {(f"o{i}", f"o{i}"): jnp.full(len(f), -1 / 3) for i in range(1, 4)}
     sdict |= {
-        (f"o{i}", f"o{j}"): jnp.full(len(frequency), 2 / 3)
+        (f"o{i}", f"o{j}"): jnp.full(len(f), 2 / 3)
         for i in range(1, 4)
         for j in range(i + 1, 4)
     }
     return sax.reciprocal(sdict)
-    # return sax.models.splitters.splitter_ideal(wl=frequency)
+    # return sax.models.splitters.splitter_ideal(wl=f)
 
 
 @partial(jax.jit, inline=True)
@@ -142,7 +141,7 @@ def single_admittance_element(
 
 @partial(jax.jit, inline=True)
 def capacitor(
-    frequency: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = jnp.array([5e9]),
     capacitance: float = 1e-15,
     z0: int | float | complex = 50,
 ) -> sax.SType:
@@ -151,7 +150,7 @@ def capacitor(
     See :cite:`m.pozarMicrowaveEngineering2012` for details.
 
     Args:
-        frequency: Array of frequency points in Hz
+        f: Array of frequency points in Hz
         capacitance: Capacitance in Farads
         z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
             Media object using `z0 = media.z0`.
@@ -159,7 +158,7 @@ def capacitor(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    ω = 2 * jnp.pi * jnp.asarray(frequency)
+    ω = 2 * jnp.pi * jnp.asarray(f)
     # Y = 2 * (1j * ω * capacitance * z0)
     # return single_admittance_element(y=Y)
     Z𞁞 = 1 / (1j * ω * capacitance)
@@ -168,7 +167,7 @@ def capacitor(
 
 @partial(jax.jit, inline=True)
 def inductor(
-    frequency: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = jnp.array([5e9]),
     inductance: float = 1e-12,
     z0: int | float | complex = 50,
 ) -> sax.SType:
@@ -177,7 +176,7 @@ def inductor(
     See :cite:`m.pozarMicrowaveEngineering2012` for details.
 
     Args:
-        frequency: Array of frequency points in Hz
+        f: Array of frequency points in Hz
         inductance: Inductance in Henries
         z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
             Media object using `z0 = media.z0`.
@@ -185,7 +184,7 @@ def inductor(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    ω = 2 * jnp.pi * jnp.asarray(frequency)
+    ω = 2 * jnp.pi * jnp.asarray(f)
     Zᵢ = 1j * ω * inductance
     return single_impedance_element(z=Zᵢ, z0=z0)
 
@@ -193,10 +192,10 @@ def inductor(
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
 
-    freq = jnp.linspace(1e9, 25e9, 201)
-    S = gamma_0_load(frequency=freq, gamma_0=0.5 + 0.5j, n_ports=2)
+    f = jnp.linspace(1e9, 25e9, 201)
+    S = gamma_0_load(f=f, gamma_0=0.5 + 0.5j, n_ports=2)
     for key in S:
-        plt.plot(freq / 1e9, abs(S[key]) ** 2, label=key)
+        plt.plot(f / 1e9, abs(S[key]) ** 2, label=key)
     plt.ylim(-0.05, 1.05)
     plt.xlabel("Frequency [GHz]")
     plt.ylabel("S")
@@ -204,7 +203,7 @@ if __name__ == "__main__":
     plt.legend()
     plt.show(block=False)
 
-    S_cap = capacitor(freq, capacitance=(capacitance := 100e-15))
+    S_cap = capacitor(f, capacitance=(capacitance := 100e-15))
     pprint(S_cap)
     plt.figure()
     # Polar plot of S21 and S11
@@ -215,8 +214,8 @@ if __name__ == "__main__":
     plt.legend()
     # Magnitude and phase vs frequency
     ax1 = plt.subplot(122)
-    ax1.plot(freq / 1e9, abs(S_cap[("o1", "o1")]), label="|S11|", color="C0")
-    ax1.plot(freq / 1e9, abs(S_cap[("o1", "o2")]), label="|S21|", color="C1")
+    ax1.plot(f / 1e9, abs(S_cap[("o1", "o1")]), label="|S11|", color="C0")
+    ax1.plot(f / 1e9, abs(S_cap[("o1", "o2")]), label="|S21|", color="C1")
     ax1.set_xlabel("Frequency [GHz]")
     ax1.set_ylabel("Magnitude [unitless]")
     ax1.grid(True)
@@ -224,14 +223,14 @@ if __name__ == "__main__":
 
     ax2 = ax1.twinx()
     ax2.plot(
-        freq / 1e9,
+        f / 1e9,
         jnp.angle(S_cap[("o1", "o1")]),
         label="∠S11",
         color="C0",
         linestyle="--",
     )
     ax2.plot(
-        freq / 1e9,
+        f / 1e9,
         jnp.angle(S_cap[("o1", "o2")]),
         label="∠S21",
         color="C1",
@@ -243,7 +242,7 @@ if __name__ == "__main__":
     plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
     plt.show(block=False)
 
-    S_ind = inductor(freq, inductance=(inductance := 1e-9))
+    S_ind = inductor(f, inductance=(inductance := 1e-9))
     pprint(S_ind)
     plt.figure()
     plt.subplot(121, projection="polar")
@@ -252,8 +251,8 @@ if __name__ == "__main__":
     plt.title("S-parameters inductor")
     plt.legend()
     ax1 = plt.subplot(122)
-    ax1.plot(freq / 1e9, abs(S_ind[("o1", "o1")]), label="|S11|", color="C0")
-    ax1.plot(freq / 1e9, abs(S_ind[("o1", "o2")]), label="|S21|", color="C1")
+    ax1.plot(f / 1e9, abs(S_ind[("o1", "o1")]), label="|S11|", color="C0")
+    ax1.plot(f / 1e9, abs(S_ind[("o1", "o2")]), label="|S21|", color="C1")
     ax1.set_xlabel("Frequency [GHz]")
     ax1.set_ylabel("Magnitude [unitless]")
     ax1.grid(True)
@@ -261,14 +260,14 @@ if __name__ == "__main__":
 
     ax2 = ax1.twinx()
     ax2.plot(
-        freq / 1e9,
+        f / 1e9,
         jnp.angle(S_ind[("o1", "o1")]),
         label="∠S11",
         color="C0",
         linestyle="--",
     )
     ax2.plot(
-        freq / 1e9,
+        f / 1e9,
         jnp.angle(S_ind[("o1", "o2")]),
         label="∠S21",
         color="C1",

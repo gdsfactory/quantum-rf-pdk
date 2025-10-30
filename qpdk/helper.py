@@ -71,7 +71,7 @@ def show_components(
         isinstance(component, ComponentAllAngle) for component in components
     )
 
-    container = ComponentAllAngle() if any_all_angle else Component()
+    c = ComponentAllAngle() if any_all_angle else Component()
 
     max_component_width = max(component.size_info.width for component in components)
     max_component_height = max(component.size_info.height for component in components)
@@ -81,7 +81,7 @@ def show_components(
         shift = (max_component_width + spacing, 0)
 
     for i, component in enumerate(components):
-        (container << component).move(
+        (c << component).move(
             (
                 shift[0] * i,
                 shift[1] * i,
@@ -92,12 +92,12 @@ def show_components(
             shift[1] * i + (component.size_info.height / 2),
         )
         label_text = component.name if hasattr(component, "name") else f"component_{i}"
-        container.add_label(
+        c.add_label(
             text=label_text,
             position=label_offset,
             layer=cast(LayerEnum, PDK.layers).TEXT,
         )
-    container.show()
+    c.show()
 
     return components
 
