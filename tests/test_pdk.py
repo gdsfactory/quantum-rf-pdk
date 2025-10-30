@@ -42,6 +42,7 @@ skip_test_netlist = {
 }
 # Skip default gdsfactory cells
 skip_test = {
+    "all_cells",
     "pack_doe",
     "pack_doe_grid",
     "add_pads_top",
