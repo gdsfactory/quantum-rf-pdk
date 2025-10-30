@@ -7,22 +7,43 @@ on:
   merge_group:
   workflow_dispatch:
 jobs:
+  get-python-versions:
+    uses: ./.github/workflows/get-python-versions.yml
   build-docs:
+    needs: get-python-versions
     runs-on: ubuntu-latest
     name: Build HTML docs
+    strategy:
+      matrix:
+        python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
       - uses: actions/checkout@v5
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python-version }}
       - run: make install
       - run: make setup-ipython-config
       - run: make docs
       - uses: actions/upload-artifact@v4
         with:
-          name: html-docs
+          name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
+  get-latest-python:
+    needs: get-python-versions
+    runs-on: ubuntu-latest
+    outputs:
+      latest-python: ${{ steps.get-latest.outputs.latest-python }}
+    steps:
+      - name: Get latest Python version
+        id: get-latest
+        run: |
+          versions='${{ needs.get-python-versions.outputs.python-versions }}'
+          latest=$(echo "$versions" | jq -r '.[-1]')
+          echo "latest-python=$latest" >> "$GITHUB_OUTPUT"
+          echo "Latest Python version: $latest"
   build-docs-pdf:
     runs-on: ubuntu-latest
     name: Build PDF docs
@@ -65,7 +86,7 @@ jobs:
   deploy-docs:
     runs-on: ubuntu-latest
     name: Deploy to GitHub Pages
-    needs: [build-docs, build-docs-pdf]
+    needs: [build-docs, build-docs-pdf, get-latest-python]
     if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     permissions:
       pages: write
@@ -74,12 +95,16 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download HTML & PDF artifact
+      - name: Download HTML artifact (latest Python)
         uses: actions/download-artifact@v5
         with:
-          pattern: "*-docs"
+          name: html-docs-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site
-          merge-multiple: true
+      - name: Download PDF artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: pdf-docs
+          path: _site
       - name: Upload merged pages artifact
         uses: actions/upload-pages-artifact@v4
       - name: Deploy to GitHub Pages
