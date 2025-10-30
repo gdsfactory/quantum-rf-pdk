@@ -50,8 +50,6 @@ jobs:
           # Parse major.minor versions
           min_major, min_minor = map(int, min_version.split('.'))
           max_major, max_minor = map(int, max_version.split('.'))
-          # Consider non-inclusive upper bound
-          max_minor -= 1
 
           versions = []
           current_major, current_minor = min_major, min_minor
