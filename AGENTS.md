@@ -259,5 +259,5 @@ match exactly.
 
 1. Review the specific error message
 1. Add type hints where missing
-1. Use `cast()` for type conversions when necessary
+1. Use `cast()` for type conversions only when absolutely necessary
 1. Check `pyproject.toml` for any type checking configuration that may be ignoring specific errors
