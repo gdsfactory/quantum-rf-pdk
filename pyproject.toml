@@ -1,19 +1,26 @@
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
 
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.2,<4"]
+
 [project]
-name = "qpdk"
-version = "0.0.2"
-description = "Quantum-RF generic PDK"
-readme = "README.md"
-requires-python = ">=3.11,<3.14"
-license = { file = "LICENSE" }
-authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
-keywords = ["python"]
+authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
 classifiers = [
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.12"
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Operating System :: OS Independent"
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory>=9.15.0,<9.21.0"]
+dependencies = ["gdsfactory>=9.15.0,<9.21.0", "doroutes>=0.2.0"]
+description = "Quantum-RF generic PDK"
+keywords = ["python"]
+license = {file = "LICENSE"}
+name = "qpdk"
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+version = "0.0.2"
 
 [project.optional-dependencies]
 dev = [
@@ -46,10 +53,6 @@ models = [
   "sympy",
   "polars"
 ]
-
-[build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
@@ -122,7 +125,7 @@ read-only = "ignore"
 
 [tool.pytest.ini_options]
 # addopts = --tb=no
-addopts = "--tb=short"
+addopts = '--tb=short'
 norecursedirs = ["extra/*.py"]
 python_files = ["qpdk/*.py", "notebooks/*.ipynb", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
@@ -142,7 +145,7 @@ ignore = [
   "B905",  # `zip()` without an explicit `strict=` parameter
   "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
   "RUF001",  # ambiguous unicode characters (incl. lots of math)
-  "RUF003",  # -||- but for comments
+  "RUF003"  # -||- but for comments
 ]
 select = [
   "E",  # pycodestyle errors
@@ -167,13 +170,11 @@ select = [
   "FLY",  # flynt
   "NPY",  # numpy
   "PERF",  # perflint
-  "RUF",  # ruff
+  "RUF"  # ruff
 ]
 
 [tool.ruff.lint.per-file-ignores]
-".github/write_cells.py" = [
-  "S701"
-]  # Jinja2 autoescape not needed for RST templates
+".github/write_cells.py" = ["S701"]  # Jinja2 autoescape not needed for RST templates
 "notebooks/**/*.py" = ["D100"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
@@ -199,9 +200,10 @@ convention = "google"
 ]
 
 [tool.setuptools.packages]
-find = {  }
+find = {}
 
 [tool.tbump]
+
 [[tool.tbump.file]]
 src = "README.md"
 
