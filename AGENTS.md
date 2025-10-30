@@ -194,6 +194,8 @@ The repository uses extensive pre-commit hooks Including, but not limited to:
 # Install Git LFS (varies by OS)
 # Ubuntu/Debian:
 sudo apt-get install git-lfs
+# RHEL/Rocky
+sudo dnf install git-lfs
 # macOS:
 brew install git-lfs
 
