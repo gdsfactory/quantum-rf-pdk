@@ -87,10 +87,6 @@ ignore-regex = ["^test_.*"]
 omit-covered-files = true
 verbose = 2
 
-[tool.mypy]
-python_version = "3.10"
-strict = true
-
 [tool.pylsp-mypy]
 enabled = true
 live_mode = true
