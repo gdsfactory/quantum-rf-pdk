@@ -211,15 +211,6 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
     }
 )
 
-
-class Tech:
-    """Technology parameters."""
-
-    pass
-
-
-TECH = Tech()
-
 ############################
 # Cross-sections functions
 ############################
