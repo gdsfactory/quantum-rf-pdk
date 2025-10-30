@@ -229,29 +229,6 @@ def squid_junction(
 
     A SQUID consists of two Josephson junctions connected in parallel, forming a loop.
 
-    .. svgbob::
-
-             junction1_wide_left
-                    │
-            ┌───────┴───────┐
-            │       X       │
-            │    junction1  │
-            │       X       │
-     ┌──────┤               ├──────┐
-     │      │               │      │
-     │      └───────────────┘      │
-     │                             │
-     │  junction2_wide_left  junction2_wide_right
-     │                             │
-     │      ┌───────────────┐      │
-     │      │               │      │
-     └──────┤       X       ├──────┘
-            │    junction2  │
-            │       X       │
-            └───────┬───────┘
-                    │
-             junction1_wide_right
-
     See :cite:`clarkeSQUIDHandbook2004` for details.
 
     Args:
