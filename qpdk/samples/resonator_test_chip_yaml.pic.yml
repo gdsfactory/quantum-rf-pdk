@@ -198,41 +198,47 @@ routes:
       auto_taper: false
   bundle10:
     links:
-      resonator_bot_2,coupling_o2: resonator_bot_3,coupling_o1
+      resonator_bot_1,coupling_o2: resonator_bot_2,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
   bundle11:
     links:
-      resonator_bot_3,resonator_o2: resonator_bot_4,coupling_o1
+      resonator_bot_2,coupling_o2: resonator_bot_3,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
   bundle12:
     links:
-      resonator_bot_4,resonator_o2: resonator_bot_5,coupling_o1
+      resonator_bot_3,coupling_o2: resonator_bot_4,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
   bundle13:
     links:
-      resonator_bot_5,resonator_o2: resonator_bot_6,coupling_o1
+      resonator_bot_4,coupling_o2: resonator_bot_5,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
   bundle14:
     links:
-      resonator_bot_6,coupling_o2: resonator_bot_7,coupling_o1
+      resonator_bot_5,coupling_o2: resonator_bot_6,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
   bundle15:
     links:
-      resonator_bot_7,coupling_o2: resonator_bot_8,coupling_o1
+      resonator_bot_6,coupling_o2: resonator_bot_7,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
   bundle16:
+    links:
+      resonator_bot_7,coupling_o2: resonator_bot_8,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle17:
     links:
       resonator_bot_8,coupling_o2: launcher_east_bot,o1
     routing_strategy: route_bundle_cpw
@@ -282,17 +288,11 @@ routes:
       auto_taper: false
   bundle9:
     links:
-      resonator_bot_1,coupling_o2: resonator_bot_2,coupling_o1
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
-  probeline_bot:
-    links:
       launcher_west_bot,o1: resonator_bot_1,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
-  probeline_top:
+  top:
     links:
       launcher_west_top,o1: resonator_top_1,coupling_o1
     routing_strategy: route_bundle_cpw
@@ -310,15 +310,19 @@ placements:
     y: 0
     mirror: true
   launcher_east_top:
-    x: 0.0
-    y: 1000.0
-    dy: 100.0
+    x: 0
+    y: 1000
+    dy: 100
   launcher_west_bot:
     x: 0
     y: 0
   launcher_west_top:
     x: 0
     y: 1000
+    dx: 16505.286
+    dy: 360.567
+    rotation: 180
+    mirror: false
   resonator_bot_1:
     x: 1000
     y: 0
