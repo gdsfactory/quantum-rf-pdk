@@ -398,6 +398,8 @@ routing_strategies = {
     "route_bundle_cpw": route_bundle_cpw,
     "route_bundle_all_angle": route_bundle_all_angle,
     "route_bundle_all_angle_cpw": route_bundle_all_angle_cpw,
+    "route_bundle_sbend": route_bundle_sbend,
+    "route_bundle_sbend_cpw": route_bundle_sbend_cpw,
     "route_astar": route_astar,
     "route_astar_cpw": route_astar_cpw,
 }
