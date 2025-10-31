@@ -11,7 +11,6 @@ authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
 keywords = ["python"]
 classifiers = [
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
@@ -61,13 +60,14 @@ skip = "bibliography.bib"
 [tool.gdsfactoryplus.drc]
 timeout = 300
 
+[tool.gdsfactoryplus.sim.wls]
+# units = "frequency"
+min = 30000
+max = 3000000
+num = 3000
+
 [tool.gdsfactoryplus.pdk]
 name = "qpdk"
-
-[tool.gdsfactoryplus.sim.wls]
-max = 1.6
-min = 1.5
-num = 1000
 
 [tool.interrogate]
 docstring-style = "google"

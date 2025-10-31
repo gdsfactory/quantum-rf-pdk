@@ -1,0 +1,35 @@
+instances:
+  resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_13bbd093_6000_m30000:
+    component: resonator_coupled
+    info:
+      coupling_gap: 20
+      coupling_length: 200
+      cross_section: coplanar_waveguide
+      length: 4000
+      resonator_type: quarter_wave
+    settings:
+      coupling_gap: 20
+      coupling_straight_length: 200
+      cross_section_non_resonator: cpw
+      resonator_params: null
+name: quarter_wave_resonator_coupled_RPNone_CSNRcpw_CSL200_CG20
+nets: []
+placements:
+  resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_13bbd093_6000_m30000:
+    mirror: false
+    rotation: 0
+    x: 6
+    y: -30
+ports:
+  coupling_o1: resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_13bbd093_6000_m30000,coupling_o1
+  coupling_o2: resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_13bbd093_6000_m30000,coupling_o2
+  resonator_o1: resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_13bbd093_6000_m30000,resonator_o1
+warnings:
+  optical:
+    unconnected_ports:
+    - message: 1 unconnected optical ports!
+      ports:
+      - resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_13bbd093_6000_m30000,resonator_o2
+      values:
+      - - 308.204
+        - -1230
