@@ -13,8 +13,15 @@ from .generic import (
     single_impedance_element,
     tee,
 )
-from .resonator import resonator_coupled, resonator_frequency
-from .waveguides import bend_circular, bend_euler, bend_s, straight
+from .resonator import quarter_wave_resonator_coupled, resonator_frequency
+from .waveguides import (
+    bend_circular,
+    bend_euler,
+    bend_s,
+    rectangle,
+    straight,
+    taper_cross_section,
+)
 
 sax.set_port_naming_strategy("optical")
 
@@ -30,11 +37,13 @@ models = {
         gamma_0_load,
         inductor,
         open,
-        resonator_coupled,
+        rectangle,
+        quarter_wave_resonator_coupled,
         short,
         single_admittance_element,
         single_impedance_element,
         straight,
+        taper_cross_section,
         tee,
     )
 }

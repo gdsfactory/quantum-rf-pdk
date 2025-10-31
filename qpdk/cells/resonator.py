@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TypedDict, Unpack
+from typing import TypedDict
 
 import gdsfactory as gf
 from gdsfactory.component import Component
@@ -236,7 +236,10 @@ def resonator_coupled(
 
 
 def quarter_wave_resonator_coupled(
-    **kwargs: Unpack[ResonatorCoupledParams],
+    resonator_params: ResonatorParams | None = None,  # pyright: ignore[reportRedeclaration]
+    cross_section_non_resonator: CrossSectionSpec = "cpw",
+    coupling_straight_length: float = 200.0,
+    coupling_gap: float = 20.0,
 ) -> Component:
     """Creates a quarter-wave resonator with a coupling waveguide.
 
@@ -245,7 +248,12 @@ def quarter_wave_resonator_coupled(
     """
     c = Component()
 
-    res_ref = c << resonator_coupled(**kwargs)
+    res_ref = c << resonator_coupled(
+        resonator_params=resonator_params,
+        cross_section_non_resonator=cross_section_non_resonator,
+        coupling_straight_length=coupling_straight_length,
+        coupling_gap=coupling_gap,
+    )
 
     for port in res_ref.ports:
         if port.name != "resonator_o2":  # Skip the shorted end port

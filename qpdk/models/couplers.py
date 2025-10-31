@@ -10,10 +10,50 @@ from qpdk.models.media import MediaCallable, cpw_media_skrf
 from qpdk.models.waveguides import straight
 
 
+def cpw_cpw_coupling_capacitance(
+    length: float,
+    gap: float,
+    media: MediaCallable,
+    f: ArrayLike = jnp.array([5e9]),
+) -> float:
+    """Calculate the coupling capacitance between two parallel CPWs.
+
+    TODO: this is a placeholder function and needs to be implemented properly.
+
+    Args:
+        length: The coupling length in µm.
+        gap: The gap between the two CPWs in µm.
+        media: A scikit-rf Media object callable, which contains the CPW parameters.
+               It's assumed to have attributes `w` (conductor width) and `s` (slot width)
+               in meters, and `ep_r` (substrate dielectric constant).
+        f: Frequency array in Hz.
+
+    Returns:
+        The total coupling capacitance in Farads.
+    """
+    # Create a media instance to extract parameters. Frequency doesn't matter for geometry.
+    media_instance = media(frequency=Frequency.from_f(f, unit="Hz"))
+    ep_r = media_instance.ep_r
+
+    # scikit-rf media objects use meters for dimensions.
+    # Default to typical 50 Ohm values on Si if not found.
+    w_m = getattr(media_instance, "w", 10e-6)
+    s_m = getattr(media_instance, "s", 6e-6)
+
+    # The arguments length and gap are in um. Convert to meters.
+    length_m = length * 1e-6
+    gap_m = gap * 1e-6
+
+    # TODO: Find a paper with some values
+
+    coupling_capacitance = 10e-15  # TODO hardcoded placeholder value
+    return coupling_capacitance
+
+
 def coupler_straight(
     f: ArrayLike = jnp.array([5e9]),
     length: int | float = 20.0,
-    gap: int | float = 0.27,  # noqa: ARG001
+    gap: int | float = 0.27,
     media: MediaCallable = cpw_media_skrf(),
 ) -> sax.SType:
     """S-parameter model for two coupled coplanar waveguides, :func:`~qpdk.cells.waveguides.coupler_straight`.
@@ -36,7 +76,9 @@ def coupler_straight(
     """
     straight_settings = {"length": length / 2, "media": media}
     capacitor_settings = {
-        "capacitance": 60e-15,  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
+        "capacitance": cpw_cpw_coupling_capacitance(
+            length, gap, media, f
+        ),  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
         "z0": media(frequency=Frequency.from_f(f, unit="Hz")).z0,
     }
 
@@ -128,3 +170,14 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.show()
+
+    # Example calculation of coupling capacitance
+    media = cpw_media_skrf(width=10, gap=6)
+    coupling_capacitance = cpw_cpw_coupling_capacitance(
+        length=20.0, gap=0.27, media=media
+    )
+    print(
+        "Coupling capacitance for 20 um length and 0.27 um gap:",
+        coupling_capacitance,
+        "F",
+    )
