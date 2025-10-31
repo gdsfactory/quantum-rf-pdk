@@ -238,18 +238,36 @@ routes:
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
-  bundle17:
-    links:
-      resonator_bot_8,coupling_o2: launcher_east_bot,o1
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
   bundle2:
     links:
       resonator_top_2,coupling_o2: resonator_top_3,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
+  bundle22:
+    links:
+      launcher_west_top,o1: resonator_top_1,coupling_o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      bend: bend_euler_s
+  bundle23:
+    links:
+      launcher_west_bot,o1: resonator_bot_1,coupling_o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      bend: bend_euler_s
+  bundle24:
+    links:
+      resonator_bot_8,coupling_o2: launcher_east_bot,o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      bend: bend_euler_s
+  bundle25:
+    links:
+      resonator_top_8,coupling_o2: launcher_east_top,o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      bend: bend_euler_s
   bundle3:
     links:
       resonator_top_3,coupling_o2: resonator_top_4,coupling_o1
@@ -280,24 +298,6 @@ routes:
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
-  bundle8:
-    links:
-      resonator_top_8,coupling_o2: launcher_east_top,o1
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
-  bundle9:
-    links:
-      launcher_west_bot,o1: resonator_bot_1,coupling_o1
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
-  top:
-    links:
-      launcher_west_top,o1: resonator_top_1,coupling_o1
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
 nets: []
 ports:
   o1: launcher_west_top,waveport
@@ -306,13 +306,13 @@ ports:
   o4: launcher_east_bot,waveport
 placements:
   launcher_east_bot:
-    x: 9000.0
-    y: 1000.0
-    mirror: true
+    x: 9000
+    y: 0
+    rotation: 180
   launcher_east_top:
-    x: 9000.0
-    y: 1000.0
-    mirror: true
+    x: 9000
+    y: 1000
+    rotation: 180
   launcher_west_bot:
     x: 0
     y: 0
