@@ -13,7 +13,7 @@ instances:
     component: launcher
     settings: {}
   resonator_bot_1:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -24,7 +24,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_2:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -35,7 +35,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_3:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -46,7 +46,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_4:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -57,7 +57,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_5:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -68,7 +68,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_6:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -79,7 +79,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_7:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -90,7 +90,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_8:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -101,7 +101,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_top_1:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -112,7 +112,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 12
   resonator_top_2:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -123,7 +123,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 14
   resonator_top_3:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -134,7 +134,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_top_4:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -145,7 +145,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 18
   resonator_top_5:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -156,7 +156,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 20
   resonator_top_6:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -167,7 +167,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 22
   resonator_top_7:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
@@ -178,7 +178,7 @@ instances:
       coupling_straight_length: 200
       coupling_gap: 24
   resonator_top_8:
-    component: resonator_coupled
+    component: quarter_wave_resonator_coupled
     settings:
       resonator_params:
         cross_section: cpw
