@@ -137,7 +137,6 @@ def taper_cross_section(
         n_points: Number of segments to divide the taper into for simulation.
     """
     # Ensure n_points is a concrete Python int
-    n_points = int(n_points)
 
     # Get media parameters at the start and end of the taper
     dummy_freq = Frequency.from_f(f, unit="Hz")
