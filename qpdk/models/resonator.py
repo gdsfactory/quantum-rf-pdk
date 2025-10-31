@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
     # Plot resonator_coupled example
     f = jnp.linspace(0.1e9, 9e9, 1001)
-    resonator = resonator_coupled(
+    resonator = quarter_wave_resonator_coupled(
         f=f,
         media=cpw_media_skrf(width=10, gap=6),
         coupling_gap=0.27,

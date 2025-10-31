@@ -33,21 +33,16 @@ def cpw_cpw_coupling_capacitance(
     """
     # Create a media instance to extract parameters. Frequency doesn't matter for geometry.
     media_instance = media(frequency=Frequency.from_f(f, unit="Hz"))
-    ep_r = media_instance.ep_r
-
-    # scikit-rf media objects use meters for dimensions.
-    # Default to typical 50 Ohm values on Si if not found.
-    w_m = getattr(media_instance, "w", 10e-6)
-    s_m = getattr(media_instance, "s", 6e-6)
-
-    # The arguments length and gap are in um. Convert to meters.
-    length_m = length * 1e-6
-    gap_m = gap * 1e-6
+    ep_r = media_instance.ep_r  # noqa: F841
+    w_m = getattr(media_instance, "w", 10e-6)  # noqa: F841
+    s_m = getattr(media_instance, "s", 6e-6)  # noqa: F841
+    length_m = length * 1e-6  # noqa: F841
+    gap_m = gap * 1e-6  # noqa: F841
 
     # TODO: Find a paper with some values
 
-    coupling_capacitance = 10e-15  # TODO hardcoded placeholder value
-    return coupling_capacitance
+    # TODO hardcoded placeholder value
+    return 10e-15
 
 
 def coupler_straight(
@@ -174,7 +169,7 @@ if __name__ == "__main__":
     # Example calculation of coupling capacitance
     media = cpw_media_skrf(width=10, gap=6)
     coupling_capacitance = cpw_cpw_coupling_capacitance(
-        length=20.0, gap=0.27, media=media
+        length=20.0, gap=0.27, media=media, f=f
     )
     print(
         "Coupling capacitance for 20 um length and 0.27 um gap:",
