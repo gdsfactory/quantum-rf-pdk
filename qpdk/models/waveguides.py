@@ -225,6 +225,7 @@ def launcher(
     """S-parameter model for a launcher, effectively a straight section followed by a taper.
 
     Args:
+        f: Array of frequency points in Hz
         straight_length: Length of the straight section in µm.
         taper_length: Length of the taper section in µm.
         media_big: Media callable for the wide section.
@@ -256,8 +257,8 @@ def launcher(
                 "straight,o2": "taper,o1",
             },
             "ports": {
-                "o1": "straight,o1",
-                "o2": "taper,o2",
+                "waveport": "straight,o1",
+                "o1": "taper,o2",
             },
         },
         models={
