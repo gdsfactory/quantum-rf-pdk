@@ -178,7 +178,7 @@ def get_layer_stack() -> LayerStack:
 
 
 LAYER_STACK = get_layer_stack()
-LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp_yaml)
+LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp)
 
 LAYER_STACK_FLIP_CHIP = LayerStack(
     layers={
