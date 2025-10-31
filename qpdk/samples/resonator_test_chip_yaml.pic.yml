@@ -1,257 +1,324 @@
-# yaml-language-server: $schema=../../build/schemas/resonator_test_chip.json
-# Resonator Test Chip - YAML Implementation
-# This is a YAML implementation of the resonator_test_chip design
-# Features two probelines with multiple coupled resonators for characterization
-# Note: In YAML format, we use default cross-sections since parametric cross-sections
-# are better defined in Python. The Python version (resonator_test_chip.py) provides
-# more flexibility with systematic parameter variations.
-
+# yaml-language-server: $schema=../../build/schemas/resonator_test_chip_yaml.json
 instances:
-  # Launchers for bottom probeline (y=0)
-  launcher_west_bot:
-    component: launcher
-    settings: {}
   launcher_east_bot:
-    component: launcher
-    settings: {}
-
-  # Launchers for top probeline (y=1000)
-  launcher_west_top:
     component: launcher
     settings: {}
   launcher_east_top:
     component: launcher
     settings: {}
-
-  # Bottom probeline resonators (8 resonators with varying length for frequency variation)
+  launcher_west_bot:
+    component: launcher
+    settings: {}
+  launcher_west_top:
+    component: launcher
+    settings: {}
   resonator_bot_1:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 3600
         meanders: 5
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_2:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 3800
         meanders: 5
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_3:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4000
         meanders: 6
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_4:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4200
         meanders: 6
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_5:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4400
         meanders: 6
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_6:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4600
         meanders: 7
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_7:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4800
         meanders: 7
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_8:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 5000
         meanders: 7
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
-
-  # Top probeline resonators (8 resonators with varying length and coupling gap)
   resonator_top_1:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 3600
         meanders: 5
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 12
   resonator_top_2:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 3800
         meanders: 5
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 14
   resonator_top_3:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4000
         meanders: 6
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_top_4:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4200
         meanders: 6
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 18
   resonator_top_5:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4400
         meanders: 6
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 20
   resonator_top_6:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4600
         meanders: 7
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 22
   resonator_top_7:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 4800
         meanders: 7
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 24
   resonator_top_8:
     component: resonator_coupled
     settings:
       resonator_params:
+        cross_section: cpw
         length: 5000
         meanders: 7
-        cross_section: cpw
-        open_start: true
         open_end: false
+        open_start: true
       coupling_straight_length: 200
       coupling_gap: 26
-
 connections: {}
-
 routes:
-  # Bottom probeline routing
-  probeline_bot:
+  bundle1:
     links:
-      launcher_west_bot,o1: resonator_bot_1,coupling_o1
-      resonator_bot_1,coupling_o2: resonator_bot_2,coupling_o1
+      resonator_top_1,coupling_o2: resonator_top_2,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle10:
+    links:
       resonator_bot_2,coupling_o2: resonator_bot_3,coupling_o1
-      resonator_bot_3,coupling_o2: resonator_bot_4,coupling_o1
-      resonator_bot_4,coupling_o2: resonator_bot_5,coupling_o1
-      resonator_bot_5,coupling_o2: resonator_bot_6,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle11:
+    links:
+      resonator_bot_3,resonator_o2: resonator_bot_4,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle12:
+    links:
+      resonator_bot_4,resonator_o2: resonator_bot_5,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle13:
+    links:
+      resonator_bot_5,resonator_o2: resonator_bot_6,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle14:
+    links:
       resonator_bot_6,coupling_o2: resonator_bot_7,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle15:
+    links:
       resonator_bot_7,coupling_o2: resonator_bot_8,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle16:
+    links:
       resonator_bot_8,coupling_o2: launcher_east_bot,o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
-
-  # Top probeline routing
-  probeline_top:
+  bundle2:
     links:
-      launcher_west_top,o1: resonator_top_1,coupling_o1
-      resonator_top_1,coupling_o2: resonator_top_2,coupling_o1
       resonator_top_2,coupling_o2: resonator_top_3,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle3:
+    links:
       resonator_top_3,coupling_o2: resonator_top_4,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle4:
+    links:
       resonator_top_4,coupling_o2: resonator_top_5,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle5:
+    links:
       resonator_top_5,coupling_o2: resonator_top_6,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle6:
+    links:
       resonator_top_6,coupling_o2: resonator_top_7,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle7:
+    links:
       resonator_top_7,coupling_o2: resonator_top_8,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle8:
+    links:
       resonator_top_8,coupling_o2: launcher_east_top,o1
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
-
+  bundle9:
+    links:
+      resonator_bot_1,coupling_o2: resonator_bot_2,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_bot:
+    links:
+      launcher_west_bot,o1: resonator_bot_1,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_top:
+    links:
+      launcher_west_top,o1: resonator_top_1,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
 nets: []
-ports: {}
-
+ports:
+  o1: launcher_west_top,waveport
+  o2: launcher_east_top,waveport
+  o3: launcher_west_bot,waveport
+  o4: launcher_east_bot,waveport
 placements:
-  # Bottom probeline (y=0)
-  launcher_west_bot:
-    x: 0
-    y: 0
   launcher_east_bot:
     x: 9000
     y: 0
     mirror: true
-
-  # Bottom resonators - evenly spaced along probeline
+  launcher_east_top:
+    x: 0.0
+    y: 1000.0
+    dy: 100.0
+  launcher_west_bot:
+    x: 0
+    y: 0
+  launcher_west_top:
+    x: 0
+    y: 1000
   resonator_bot_1:
     x: 1000
     y: 0
@@ -276,17 +343,6 @@ placements:
   resonator_bot_8:
     x: 8000
     y: 0
-
-  # Top probeline (y=1000)
-  launcher_west_top:
-    x: 0
-    y: 1000
-  launcher_east_top:
-    x: 9000
-    y: 1000
-    mirror: true
-
-  # Top resonators - evenly spaced along probeline, mirrored vertically
   resonator_top_1:
     x: 1000
     y: 1000
