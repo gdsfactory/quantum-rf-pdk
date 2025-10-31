@@ -235,6 +235,7 @@ def resonator_coupled(
     return c
 
 
+@gf.cell
 def quarter_wave_resonator_coupled(
     resonator_params: ResonatorParams | None = None,  # pyright: ignore[reportRedeclaration]
     cross_section_non_resonator: CrossSectionSpec = "cpw",
