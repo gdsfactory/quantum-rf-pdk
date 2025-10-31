@@ -42,7 +42,7 @@ def cpw_cpw_coupling_capacitance(
     # TODO: Find a paper with some values
 
     # TODO hardcoded placeholder value
-    return 10e-15
+    return 60e-15
 
 
 def coupler_straight(
