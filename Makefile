@@ -58,7 +58,7 @@ write-cells: ##@ Write cell outputs into documentation notebooks (used when buil
 	uv run .github/write_cells.py
 
 convert-notebooks: ##@ Convert jupytext scripts from notebooks/src to ipynb format in notebooks
-	./.github/convert-notebooks.sh
+	./.github/convert-notebooks.sh notebooks/src/*.py
 
 copy-sample-notebooks: ##@ Copy all sample scripts to use as notebooks docs
 	mkdir -p docs/notebooks
