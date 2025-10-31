@@ -9,6 +9,7 @@ from .generic import (
     inductor,
     open,
     short,
+    short_2_port,
     single_admittance_element,
     single_impedance_element,
     tee,
@@ -18,8 +19,10 @@ from .waveguides import (
     bend_circular,
     bend_euler,
     bend_s,
+    launcher,
     rectangle,
     straight,
+    straight_shorted,
     taper_cross_section,
 )
 
@@ -45,6 +48,9 @@ models = {
         straight,
         taper_cross_section,
         tee,
+        launcher,
+        short_2_port,
+        straight_shorted,
     )
 }
 
