@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 from qpdk.models.generic import capacitor, inductor, tee
 from qpdk.models.media import cpw_media_skrf
-from qpdk.models.resonator import resonator_coupled
+from qpdk.models.resonator import quarter_wave_resonator_coupled
 from qpdk.models.waveguides import straight, straight_shorted
 
 # %% [markdown]
@@ -94,7 +94,7 @@ plt.show()
 
 # %%
 # Simulate a coupled resonator
-res = resonator_coupled(
+res = quarter_wave_resonator_coupled(
     f=freq,
     media=media,
     coupling_gap=0.3,
