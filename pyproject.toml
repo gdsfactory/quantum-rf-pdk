@@ -16,7 +16,11 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory>=9.15.0,<9.21.0"]
+dependencies = [
+  "doroutes>=0.2.0",
+  "gdsfactory>=9.15.0,<9.21.0",
+  "gdsfactoryplus"
+]
 
 [project.optional-dependencies]
 dev = [
@@ -62,13 +66,14 @@ skip = "bibliography.bib"
 [tool.gdsfactoryplus.drc]
 timeout = 300
 
+[tool.gdsfactoryplus.sim.wls]
+# units = "frequency"
+min = 30000
+max = 3000000
+num = 3000
+
 [tool.gdsfactoryplus.pdk]
 name = "qpdk"
-
-[tool.gdsfactoryplus.sim.wls]
-max = 1.6
-min = 1.5
-num = 1000
 
 [tool.interrogate]
 docstring-style = "google"

@@ -248,26 +248,22 @@ routes:
     links:
       launcher_west_top,o1: resonator_top_1,coupling_o1
     routing_strategy: route_bundle_sbend_cpw
-    settings:
-      bend: bend_euler_s
+    settings: {}
   bundle23:
     links:
       launcher_west_bot,o1: resonator_bot_1,coupling_o1
     routing_strategy: route_bundle_sbend_cpw
-    settings:
-      bend: bend_euler_s
+    settings: {}
   bundle24:
     links:
       resonator_bot_8,coupling_o2: launcher_east_bot,o1
     routing_strategy: route_bundle_sbend_cpw
-    settings:
-      bend: bend_euler_s
+    settings: {}
   bundle25:
     links:
       resonator_top_8,coupling_o2: launcher_east_top,o1
     routing_strategy: route_bundle_sbend_cpw
-    settings:
-      bend: bend_euler_s
+    settings: {}
   bundle3:
     links:
       resonator_top_3,coupling_o2: resonator_top_4,coupling_o1
@@ -344,8 +340,8 @@ placements:
     x: 8000
     y: 0
   resonator_top_1:
-    x: 1000
-    y: 1000
+    x: 1000.0
+    y: 1000.0
     mirror: true
   resonator_top_2:
     x: 2000
@@ -360,8 +356,8 @@ placements:
     y: 1000
     mirror: true
   resonator_top_5:
-    x: 5000
-    y: 1000
+    x: 5000.0
+    y: 1000.0
     mirror: true
   resonator_top_6:
     x: 6000

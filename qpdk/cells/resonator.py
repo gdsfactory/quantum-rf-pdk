@@ -6,6 +6,7 @@ from functools import partial
 from typing import TypedDict
 
 import gdsfactory as gf
+import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
@@ -255,6 +256,8 @@ def quarter_wave_resonator_coupled(
         coupling_straight_length=coupling_straight_length,
         coupling_gap=coupling_gap,
     )
+    movement = np.array(res_ref.ports["coupling_o1"].center)
+    res_ref.move(tuple(-movement))
 
     for port in res_ref.ports:
         if port.name != "resonator_o2":  # Skip the shorted end port
