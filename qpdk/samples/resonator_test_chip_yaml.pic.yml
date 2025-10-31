@@ -306,23 +306,19 @@ ports:
   o4: launcher_east_bot,waveport
 placements:
   launcher_east_bot:
-    x: 9000
-    y: 0
+    x: 9000.0
+    y: 1000.0
     mirror: true
   launcher_east_top:
-    x: 0
-    y: 1000
-    dy: 100
+    x: 9000.0
+    y: 1000.0
+    mirror: true
   launcher_west_bot:
     x: 0
     y: 0
   launcher_west_top:
     x: 0
     y: 1000
-    dx: 16505.286
-    dy: 360.567
-    rotation: 180
-    mirror: false
   resonator_bot_1:
     x: 1000
     y: 0
