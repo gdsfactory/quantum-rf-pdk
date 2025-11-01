@@ -114,12 +114,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML artifact (latest Python)
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: html-docs-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site
       - name: Download PDF artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: pdf-docs
           path: _site
