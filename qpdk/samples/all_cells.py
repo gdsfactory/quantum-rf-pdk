@@ -92,8 +92,18 @@ def all_cells(
                 UserWarning,
                 stacklevel=2,
             )
+            # Skip cells that require arguments - these are helper functions
+            # not meant to be instantiated standalone
+            continue
 
     return c
 
 
 __all__ = ["all_cells"]
+
+if __name__ == "__main__":
+    from qpdk import PDK
+
+    PDK.activate()
+    c = all_cells()
+    c.show()

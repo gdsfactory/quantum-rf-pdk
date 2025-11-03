@@ -214,10 +214,9 @@ def bend_euler(
     p: float = 0.5,
     with_arc_floorplan: bool = True,
     npoints: int = 720,
-    direction: str = "ccw",
-    with_cladding_box: bool = True,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
     allow_min_radius_violation: bool = True,
+    **kwargs,
 ) -> gf.Component:
     """Regular degree euler bend.
 
@@ -226,52 +225,50 @@ def bend_euler(
         p: Fraction of the bend that is curved (0-1).
         with_arc_floorplan: Include arc floorplan.
         npoints: Number of points for the bend.
-        direction: Direction of the bend ('ccw' or 'cw').
-        with_cladding_box: Include cladding box.
         cross_section: Cross-section specification.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
+        **kwargs: Additional arguments passed to gf.c.bend_euler.
     """
     return gf.c.bend_euler(
         angle=angle,
         p=p,
         with_arc_floorplan=with_arc_floorplan,
         npoints=npoints,
-        direction=direction,
-        with_cladding_box=with_cladding_box,
         cross_section=cross_section,
         allow_min_radius_violation=allow_min_radius_violation,
+        **kwargs,
     )
 
 
 @gf.cell
 def bend_circular(
     angle: float = 90.0,
-    npoints: int = 720,
-    with_arc_floorplan: bool = True,
-    cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
     radius: float = 100.0,
-    direction: str = "ccw",
+    npoints: int | None = None,
+    cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
+    width: float | None = None,
     allow_min_radius_violation: bool = True,
+    **kwargs,
 ) -> gf.Component:
     """Returns circular bend.
 
     Args:
         angle: Angle of the bend in degrees.
-        npoints: Number of points for the bend.
-        with_arc_floorplan: Include arc floorplan.
-        cross_section: Cross-section specification.
         radius: Radius of the bend in μm.
-        direction: Direction of the bend ('ccw' or 'cw').
+        npoints: Number of points for the bend (optional, cannot be used with angular_step).
+        cross_section: Cross-section specification.
+        width: Optional width override in μm.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
+        **kwargs: Additional arguments passed to gf.c.bend_circular (e.g., angular_step).
     """
     return gf.c.bend_circular(
         angle=angle,
-        npoints=npoints,
-        with_arc_floorplan=with_arc_floorplan,
-        cross_section=cross_section,
         radius=radius,
-        direction=direction,
+        npoints=npoints,
+        cross_section=cross_section,
+        width=width,
         allow_min_radius_violation=allow_min_radius_violation,
+        **kwargs,
     )
 
 
@@ -281,6 +278,7 @@ def bend_s(
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
     width: float | None = None,
     allow_min_radius_violation: bool = True,
+    **kwargs,
 ) -> gf.Component:
     """Return S bend with bezier curve.
 
@@ -292,12 +290,14 @@ def bend_s(
         cross_section: Cross-section specification.
         width: Optional width override in μm.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
+        **kwargs: Additional arguments passed to gf.c.bend_s.
     """
     return gf.c.bend_s(
         size=size,
         cross_section=cross_section,
         width=width,
         allow_min_radius_violation=allow_min_radius_violation,
+        **kwargs,
     )
 
 
