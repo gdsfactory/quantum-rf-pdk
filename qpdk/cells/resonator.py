@@ -6,6 +6,7 @@ from functools import partial
 from typing import TypedDict
 
 import gdsfactory as gf
+import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
@@ -31,7 +32,7 @@ def resonator(
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
     *,
-    open_start: bool = False,
+    open_start: bool = True,
     open_end: bool = False,
 ) -> Component:
     """Creates a meandering coplanar waveguide resonator.
@@ -177,6 +178,8 @@ class ResonatorCoupledParams(ResonatorParams):
       - coupling_gap: float
     """
 
+    resonator_params: ResonatorParams
+    cross_section_non_resonator: CrossSectionSpec
     coupling_straight_length: float
     coupling_gap: float
 
@@ -229,6 +232,36 @@ def resonator_coupled(
     c.info += resonator_ref.cell.info
     c.info["coupling_length"] = coupling_straight_length
     c.info["coupling_gap"] = coupling_gap
+
+    return c
+
+
+@gf.cell
+def quarter_wave_resonator_coupled(
+    resonator_params: ResonatorParams | None = None,  # pyright: ignore[reportRedeclaration]
+    cross_section_non_resonator: CrossSectionSpec = "cpw",
+    coupling_straight_length: float = 200.0,
+    coupling_gap: float = 20.0,
+) -> Component:
+    """Creates a quarter-wave resonator with a coupling waveguide.
+
+    Uses :func:`~qpdk.cells.resonator.resonator_coupled` as the basis but
+    removes the shorted end port from the output ports.
+    """
+    c = Component()
+
+    res_ref = c << resonator_coupled(
+        resonator_params=resonator_params,
+        cross_section_non_resonator=cross_section_non_resonator,
+        coupling_straight_length=coupling_straight_length,
+        coupling_gap=coupling_gap,
+    )
+    movement = np.array(res_ref.ports["coupling_o1"].center)
+    res_ref.move(tuple(-movement))
+
+    for port in res_ref.ports:
+        if port.name != "resonator_o2":  # Skip the shorted end port
+            c.add_port(port=port)
 
     return c
 

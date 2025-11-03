@@ -101,6 +101,19 @@ instances:
       angle: 180
       angular_step: 4
       cross_section: coplanar_waveguide
+  rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_ETCH
+      port_orientations:
+      - 0
+      - 180
+      port_type: optical
+      size:
+      - 6
+      - 22
   straight_L302p2042857142857_CScoplanar_waveguide_0_0:
     component: straight
     info:
@@ -185,7 +198,7 @@ instances:
     settings:
       cross_section: coplanar_waveguide
       length: 302.204
-name: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a108ba58
+name: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a05716ae
 nets:
 - p1: bend_circular_CScoplanar_waveguide_A180_AS4_0_m1000000_A180,o1
   p2: straight_L302p2042857142857_CScoplanar_waveguide_302204_m1000000_A180,o2
@@ -211,6 +224,8 @@ nets:
   p2: straight_L302p2042857142857_CScoplanar_waveguide_0_m800000,o2
 - p1: bend_circular_CScoplanar_waveguide_A180_AS4_302204_m800000_M,o2
   p2: straight_L302p2042857142857_CScoplanar_waveguide_302204_m1000000_A180,o1
+- p1: rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0,o2
+  p2: straight_L302p2042857142857_CScoplanar_waveguide_0_0,o1
 placements:
   bend_circular_CScoplanar_waveguide_A180_AS4_0_m1000000_A180:
     mirror: false
@@ -242,6 +257,11 @@ placements:
     rotation: 0
     x: 302.204
     y: -800
+  rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0:
+    mirror: false
+    rotation: 0
+    x: -3
+    y: 0
   straight_L302p2042857142857_CScoplanar_waveguide_0_0:
     mirror: false
     rotation: 0
@@ -278,5 +298,17 @@ placements:
     x: 302.204
     y: -600
 ports:
-  o1: straight_L302p2042857142857_CScoplanar_waveguide_0_0,o1
+  o1: rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0,o1
   o2: straight_L302p2042857142857_CScoplanar_waveguide_0_m1200000,o2
+warnings:
+  optical:
+    width_mismatch:
+    - message: Widths of ports straight_L302p2042857142857_CScoplanar_waveguide_0_0,o1
+        and rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0,o2
+        not equal. Difference of 12.0 um
+      ports:
+      - straight_L302p2042857142857_CScoplanar_waveguide_0_0,o1
+      - rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0,o2
+      values:
+      - 10
+      - 22

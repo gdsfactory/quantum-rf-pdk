@@ -39,7 +39,7 @@ from qpdk.tech import (
 
 # %%
 @gf.cell
-def resonator_test_chip(
+def resonator_test_chip_python(
     probeline_length: float = 9000.0,
     probeline_separation: float = 1000.0,
     resonator_length: float = 4000.0,
@@ -179,7 +179,7 @@ def filled_resonator_test_chip() -> gf.Component:
         Component: Test chip with ground plane fill patterns and chip edges.
     """
     c = gf.Component()
-    test_chip = resonator_test_chip()
+    test_chip = resonator_test_chip_python()
     c << test_chip
     chip_edge_ref = c << chip_edge(
         size=(test_chip.xsize + 200, test_chip.ysize + 800),
