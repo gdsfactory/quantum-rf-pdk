@@ -19,14 +19,14 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.13.2"
+    rev: "v0.14.3"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
       - id: ruff-format
         args: [--config=pyproject.toml]
   - repo: https://github.com/tombi-toml/tombi-pre-commit
-    rev: v0.6.39
+    rev: v0.6.40
     hooks:
       - id: tombi-format
       - id: tombi-lint
@@ -39,7 +39,7 @@ repos:
         exclude: .github/.*
         args: [--ignore, jinja-statements-delimiter, single-statement-per-line, jinja-statements-indentation, --]
   - repo: https://github.com/google/yamlfmt
-    rev: v0.17.2
+    rev: v0.20.0
     hooks:
       - id: yamlfmt
         args: [-conf, ".github/.yamlfmt.yaml"]
@@ -51,11 +51,11 @@ repos:
         args: [--strict, "-c=.github/.yamllint.yaml"]
         exclude: *regression_tests
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.7
+    rev: v1.7.8
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.22
+    rev: 0.9.7
     hooks:
       - id: uv-lock
   - repo: https://github.com/facebook/pyrefly-pre-commit
@@ -82,7 +82,7 @@ repos:
       - id: checkmake
         args: ['--config=.github/.checkmake.ini']
   - repo: https://github.com/EbodShojaei/bake
-    rev: v1.4.1.pre
+    rev: v1.4.3
     hooks:
       - id: mbake-validate
       - id: mbake-format
