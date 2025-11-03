@@ -107,7 +107,7 @@ repos:
     rev: 0.7.22
     hooks:
       - id: mdformat
-        args: [--wrap=120]
+        args: [--wrap=120, --number]
         additional_dependencies:
           - mdformat-gfm
           - mdformat-gfm-alerts
