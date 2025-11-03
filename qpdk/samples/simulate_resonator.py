@@ -44,7 +44,7 @@ def resonator_simulation(coupling_gap: float = 12.0) -> gf.Component:
     c = gf.Component()
 
     res_ref = c << resonator_coupled(
-        {"open_start": True}, coupling_straight_length=300, coupling_gap=coupling_gap
+        open_start=True, coupling_straight_length=300, coupling_gap=coupling_gap
     )
     res_ref.movex(-res_ref.size_info.width / 4)
 

@@ -158,7 +158,12 @@ resonator_half_wave = partial(resonator, open_start=True, open_end=True)
 
 @gf.cell_with_module_name
 def resonator_coupled(
-    resonator_params: dict | None = None,
+    length: float = 4000.0,
+    meanders: int = 6,
+    bend_spec: ComponentSpec = bend_circular,
+    cross_section: CrossSectionSpec = "cpw",
+    open_start: bool = True,
+    open_end: bool = False,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
     coupling_straight_length: float = 200.0,
     coupling_gap: float = 20.0,
@@ -170,8 +175,12 @@ def resonator_coupled(
     :cite:`besedinQualityFactorTransmission2018a`.
 
     Args:
-        resonator_params: Dictionary of parameters for the resonator component. If None, defaults will be used.
-            Accepts keys: length, meanders, bend_spec, cross_section, open_start, open_end.
+        length: Length of the resonator in μm.
+        meanders: Number of meander sections to fit the resonator in a compact area.
+        bend_spec: Specification for the bend component used in meanders.
+        cross_section: Cross-section specification for the resonator.
+        open_start: If True, adds an etch section at the start of the resonator.
+        open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
         coupling_straight_length: Length of the coupling waveguide section in μm.
         coupling_gap: Gap between the resonator and coupling waveguide in μm.
@@ -181,9 +190,17 @@ def resonator_coupled(
         Component: A gdsfactory component with meandering resonator and coupling waveguide.
     """
     c = Component()
-    resonator_params = resonator_params or {}
 
-    resonator_ref = c.add_ref(resonator(**resonator_params))
+    resonator_ref = c.add_ref(
+        resonator(
+            length=length,
+            meanders=meanders,
+            bend_spec=bend_spec,
+            cross_section=cross_section,
+            open_start=open_start,
+            open_end=open_end,
+        )
+    )
 
     cross_section_obj = gf.get_cross_section(cross_section_non_resonator)
 
@@ -211,7 +228,12 @@ def resonator_coupled(
 
 @gf.cell
 def quarter_wave_resonator_coupled(
-    resonator_params: dict | None = None,
+    length: float = 4000.0,
+    meanders: int = 6,
+    bend_spec: ComponentSpec = bend_circular,
+    cross_section: CrossSectionSpec = "cpw",
+    open_start: bool = True,
+    open_end: bool = False,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
     coupling_straight_length: float = 200.0,
     coupling_gap: float = 20.0,
@@ -222,8 +244,12 @@ def quarter_wave_resonator_coupled(
     removes the shorted end port from the output ports.
 
     Args:
-        resonator_params: Dictionary of parameters for the resonator component. If None, defaults will be used.
-            Accepts keys: length, meanders, bend_spec, cross_section, open_start, open_end.
+        length: Length of the resonator in μm.
+        meanders: Number of meander sections to fit the resonator in a compact area.
+        bend_spec: Specification for the bend component used in meanders.
+        cross_section: Cross-section specification for the resonator.
+        open_start: If True, adds an etch section at the start of the resonator.
+        open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
         coupling_straight_length: Length of the coupling waveguide section in μm.
         coupling_gap: Gap between the resonator and coupling waveguide in μm.
@@ -231,7 +257,12 @@ def quarter_wave_resonator_coupled(
     c = Component()
 
     res_ref = c << resonator_coupled(
-        resonator_params=resonator_params,
+        length=length,
+        meanders=meanders,
+        bend_spec=bend_spec,
+        cross_section=cross_section,
+        open_start=open_start,
+        open_end=open_end,
         cross_section_non_resonator=cross_section_non_resonator,
         coupling_straight_length=coupling_straight_length,
         coupling_gap=coupling_gap,
@@ -254,6 +285,9 @@ if __name__ == "__main__":
         resonator_coupled,
         partial(
             resonator_coupled,
-            {"length": 2000, "meanders": 4, "open_start": False, "open_end": True},
+            length=2000,
+            meanders=4,
+            open_start=False,
+            open_end=True,
         ),
     )

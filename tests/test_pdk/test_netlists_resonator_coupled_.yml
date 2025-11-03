@@ -24,7 +24,7 @@ instances:
     settings:
       cross_section: coplanar_waveguide
       length: 200
-name: resonator_coupled_qpdkpcellspresonator_RPNone_CSNRcpw_C_13bbd093
+name: resonator_coupled_qpdkpcellspresonator_L4000_M6_BSbend__c9699185
 nets: []
 placements:
   resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a05716ae_0_0:

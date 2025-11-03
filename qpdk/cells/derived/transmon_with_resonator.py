@@ -6,7 +6,7 @@ from functools import partial
 
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.typings import ComponentSpec
+from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 from klayout.db import DCplxTrans
 
 from qpdk.cells.capacitor import plate_capacitor_single
@@ -21,7 +21,11 @@ def qubit_with_resonator(
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
-    resonator_params: dict | None = None,
+    resonator_meanders: int = 5,
+    resonator_bend_spec: ComponentSpec = "bend_circular",
+    resonator_cross_section: CrossSectionSpec = "cpw",
+    resonator_open_start: bool = False,
+    resonator_open_end: bool = True,
     coupler: ComponentSpec = partial(plate_capacitor_single, thickness=20, fingers=18),
     qubit_rotation: float = 90,
     coupler_port: str = "left_pad",
@@ -34,15 +38,17 @@ def qubit_with_resonator(
         resonator: Resonator component.
         resonator_meander_start: (x, y) position of the start of the resonator meander.
         resonator_length: Length of the resonator in µm.
-        resonator_params: Dictionary of parameters for the resonator component if it accepts any.
-            Accepts keys: length, meanders, bend_spec, cross_section, open_start, open_end.
+        resonator_meanders: Number of meander sections for the resonator.
+        resonator_bend_spec: Specification for the bend component used in meanders.
+        resonator_cross_section: Cross-section specification for the resonator.
+        resonator_open_start: If True, adds an etch section at the start of the resonator.
+        resonator_open_end: If True, adds an etch section at the end of the resonator.
         coupler: Coupler spec.
         qubit_rotation: Rotation angle for the qubit in degrees.
         coupler_port: Name of the qubit port to position the coupler relative to.
         coupler_offset: (x, y) offset for the coupler position.
     """
     c = Component()
-    resonator_params = resonator_params or {"meanders": 5}
 
     qubit_ref = c << gf.get_component(qubit)
     qubit_ref.rotate(qubit_rotation)
@@ -73,7 +79,11 @@ def qubit_with_resonator(
     resonator_ref = c << gf.get_component(
         resonator,
         length=resonator_length - route.length * c.kcl.dbu,
-        **resonator_params,
+        meanders=resonator_meanders,
+        bend_spec=resonator_bend_spec,
+        cross_section=resonator_cross_section,
+        open_start=resonator_open_start,
+        open_end=resonator_open_end,
     )
     resonator_ref.rotate(180)
     resonator_ref.transform(resonator_input_port.dcplx_trans)

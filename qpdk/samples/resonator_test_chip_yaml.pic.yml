@@ -15,177 +15,161 @@ instances:
   resonator_bot_1:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 3600
-        meanders: 5
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 3600
+      meanders: 5
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_2:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 3800
-        meanders: 5
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 3800
+      meanders: 5
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_3:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4000
-        meanders: 6
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4000
+      meanders: 6
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_4:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4200
-        meanders: 6
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4200
+      meanders: 6
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_5:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4400
-        meanders: 6
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4400
+      meanders: 6
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_6:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4600
-        meanders: 7
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4600
+      meanders: 7
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_7:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4800
-        meanders: 7
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4800
+      meanders: 7
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_bot_8:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 5000
-        meanders: 7
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 5000
+      meanders: 7
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_top_1:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 3600
-        meanders: 5
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 3600
+      meanders: 5
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 12
   resonator_top_2:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 3800
-        meanders: 5
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 3800
+      meanders: 5
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 14
   resonator_top_3:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4000
-        meanders: 6
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4000
+      meanders: 6
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 16
   resonator_top_4:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4200
-        meanders: 6
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4200
+      meanders: 6
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 18
   resonator_top_5:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4400
-        meanders: 6
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4400
+      meanders: 6
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 20
   resonator_top_6:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4600
-        meanders: 7
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4600
+      meanders: 7
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 22
   resonator_top_7:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 4800
-        meanders: 7
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 4800
+      meanders: 7
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 24
   resonator_top_8:
     component: quarter_wave_resonator_coupled
     settings:
-      resonator_params:
-        cross_section: cpw
-        length: 5000
-        meanders: 7
-        open_end: false
-        open_start: true
+      cross_section: cpw
+      length: 5000
+      meanders: 7
+      open_end: false
+      open_start: true
       coupling_straight_length: 200
       coupling_gap: 26
 connections: {}

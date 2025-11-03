@@ -1,6 +1,12 @@
 info: {}
-name: quarter_wave_resonator_coupled_RPNone_CSNRcpw_CSL200_CG20
+name: quarter_wave_resonator_coupled_L4000_M6_BSbend_circular_c606432b
 settings:
+  bend_spec: bend_circular
   coupling_gap: 20
   coupling_straight_length: 200
+  cross_section: cpw
   cross_section_non_resonator: cpw
+  length: 4000
+  meanders: 6
+  open_end: false
+  open_start: true

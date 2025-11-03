@@ -73,13 +73,11 @@ class TestResonators:
         assume(length > meanders * bend_factory().info["length"])
 
         c = resonator_coupled(
-            {
-                "length": length,
-                "meanders": meanders,
-                "open_start": open_start,
-                "open_end": open_end,
-                "bend_spec": bend_factory,
-            },
+            length=length,
+            meanders=meanders,
+            open_start=open_start,
+            open_end=open_end,
+            bend_spec=bend_factory,
             coupling_straight_length=coupling_straight_length,
             coupling_gap=coupling_gap,
         )
