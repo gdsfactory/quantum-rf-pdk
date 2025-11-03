@@ -24,7 +24,7 @@ import skrf
 
 from qpdk.models.resonator import (
     cpw_media_skrf,
-    quarter_wave_resonator_coupled_to_probeline,
+    quarter_wave_resonator_coupled,
     resonator_frequency,
 )
 
@@ -54,16 +54,15 @@ if __name__ == "__main__":
             },
             "connections": {},
             "ports": {
-                "in": "R1,o1",
-                "out": "R1,o2",
+                "in": "R1,coupling_o1",
+                "out": "R1,coupling_o2",
             },
         },
         models={
             "quarter_wave_resonator": partial(
-                quarter_wave_resonator_coupled_to_probeline,
+                quarter_wave_resonator_coupled,
                 media=cpw_media_skrf(width=10, gap=6),
                 length=4000,
-                coupling_capacitance=15e-15,
             )
         },
     )
