@@ -105,7 +105,11 @@ res = quarter_wave_resonator_coupled(
 # Plot S-parameters
 plt.figure()
 plt.title("Coupled Resonator S-parameters")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(res[("o1", "o3")])), label="$S_{21}$")
+plt.plot(
+    freq_ghz,
+    20 * jnp.log10(jnp.abs(res[("coupling_o1", "coupling_o2")])),
+    label="$S_{21}$",
+)
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
 plt.grid(True)
