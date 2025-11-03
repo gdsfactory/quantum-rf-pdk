@@ -17,7 +17,7 @@ When tasked with updating dependencies, you must:
    - Check for deprecated actions and suggest modern alternatives
    - Preserve existing workflow logic and structure
 
-1. **Python Dependencies** (`pyproject.toml`)
+2. **Python Dependencies** (`pyproject.toml`)
 
    - Update pinned versions in `dependencies` array
    - Update versions in `[project.optional-dependencies]` sections
@@ -26,7 +26,7 @@ When tasked with updating dependencies, you must:
    - Maintain compatibility with the project's minimum Python version
    - Consider dependency constraints and potential breaking changes
 
-1. **Pre-commit Hooks** (`.pre-commit-config.yaml`)
+3. **Pre-commit Hooks** (`.pre-commit-config.yaml`)
 
    - Update `rev` fields to latest stable tags/versions
    - Verify hook compatibility with current Python version
@@ -38,10 +38,10 @@ When tasked with updating dependencies, you must:
 For each update task:
 
 1. **Research**: Check the latest stable versions for each dependency
-1. **Compatibility**: Verify version compatibility with Python version and other dependencies
-1. **Changes**: Make atomic, logical commits for different types of updates
-1. **Testing**: Suggest running tests after updates to catch breaking changes
-1. **Documentation**: In PR descriptions, list all updated packages with version changes
+2. **Compatibility**: Verify version compatibility with Python version and other dependencies
+3. **Changes**: Make atomic, logical commits for different types of updates
+4. **Testing**: Suggest running tests after updates to catch breaking changes
+5. **Documentation**: In PR descriptions, list all updated packages with version changes
 
 ## Best Practices
 
