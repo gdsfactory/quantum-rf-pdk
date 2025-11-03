@@ -359,8 +359,6 @@ def flipmon_with_bbox(
 
 @gf.cell(check_instances=False)
 def xmon_transmon(
-    center_width: float = 30.0,
-    center_height: float = 30.0,
     arm_width: tuple[float, float, float, float] = (30.0, 20.0, 30.0, 20.0),
     arm_lengths: tuple[float, float, float, float] = (160.0, 120.0, 160.0, 120.0),
     gap_width: float = 10.0,
@@ -379,8 +377,6 @@ def xmon_transmon(
     See :cite:`barendsCoherentJosephsonQubit2013a` for details about the Xmon design.
 
     Args:
-        center_width: Width of the central cross intersection in μm.
-        center_height: Height of the central cross intersection in μm.
         arm_width: Tuple of (top, right, bottom, left) arm widths in μm.
         arm_lengths: Tuple of (top, right, bottom, left) arm lengths in μm.
             Computed from center to end of each arm.

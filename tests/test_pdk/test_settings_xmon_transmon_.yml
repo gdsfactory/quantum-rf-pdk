@@ -1,6 +1,6 @@
 info:
   qubit_type: xmon
-name: xmon_transmon_CW30_CH30_AW30_20_30_20_AL160_120_160_120_eb35ac3f
+name: xmon_transmon_AW30_20_30_20_AL160_120_160_120_GW10_JSsq_03ad55bf
 settings:
   arm_lengths:
   - 160
@@ -12,8 +12,6 @@ settings:
   - 20
   - 30
   - 20
-  center_height: 30
-  center_width: 30
   gap_width: 10
   junction_spec: squid_junction
   layer_etch: M1_ETCH
