@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from functools import partial
 from queue import Queue, SimpleQueue
-from typing import ClassVar, TypeAlias, final, override
+from typing import ClassVar, final, override
 
 import jax.numpy as jnp
 import polars as pl
@@ -27,7 +27,7 @@ NUMERIC_TOLERANCES = {
 
 
 # Type alias for S-parameter comparison results
-SComparisonResults: TypeAlias = tuple[
+type SComparisonResults = tuple[
     float, jnp.ndarray, dict[str, jnp.ndarray], dict[str, jnp.ndarray]
 ]
 

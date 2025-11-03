@@ -1,23 +1,21 @@
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
 
-[build-system]
-build-backend = "flit_core.buildapi"
-requires = ["flit_core >=3.2,<4"]
-
 [project]
-authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
-classifiers = [
-  "Programming Language :: Python :: 3.12",
-  "Operating System :: OS Independent"
-]
-dependencies = ["gdsfactory>=9.15.0,<9.21.0", "doroutes>=0.2.0"]
-description = "Quantum-RF generic PDK"
-keywords = ["python"]
-license = {file = "LICENSE"}
 name = "qpdk"
-readme = "README.md"
-requires-python = ">=3.11,<3.14"
 version = "0.0.2"
+description = "Quantum-RF generic PDK"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { file = "LICENSE" }
+authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
+keywords = ["python"]
+classifiers = [
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = ["doroutes>=0.2.0", "gdsfactory>=9.15.0,<9.21.7"]
 
 [project.optional-dependencies]
 dev = [
@@ -28,7 +26,7 @@ dev = [
   "pytest-cov",
   "pytest-github-actions-annotate-failures",
   "pytest-xdist",
-  "pytest_regressions"
+  "pytest_regressions",
 ]
 docs = [
   "jinja2",
@@ -37,7 +35,7 @@ docs = [
   "matplotlib",
   "pydata-sphinx-theme",
   "sphinxcontrib-katex",
-  "sphinxcontrib-svgbob"
+  "sphinxcontrib-svgbob",
 ]
 models = [
   "gplugins[meshwell] @ git+https://github.com/gdsfactory/gplugins.git@770d835bb130a8118aa7b78edfb1cf76d31fd7f6",
@@ -48,8 +46,12 @@ models = [
   "scikit-rf",
   "scqubits",
   "sympy",
-  "polars"
+  "polars",
 ]
+
+[build-system]
+requires = ["flit_core >=3.12.0,<4"]
+build-backend = "flit_core.buildapi"
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
@@ -58,13 +60,14 @@ skip = "bibliography.bib"
 [tool.gdsfactoryplus.drc]
 timeout = 300
 
+[tool.gdsfactoryplus.sim.wls]
+# units = "frequency"
+min = 30000
+max = 3000000
+num = 3000
+
 [tool.gdsfactoryplus.pdk]
 name = "qpdk"
-
-[tool.gdsfactoryplus.sim.wls]
-max = 1.6
-min = 1.5
-num = 1000
 
 [tool.interrogate]
 docstring-style = "google"
@@ -74,7 +77,7 @@ exclude = [
   "notebooks/**",
   "docs/notebooks/*",
   "qpdk/samples/*.py",
-  "tests/**"
+  "tests/**",
 ]
 ext = []
 fail-under = 100
@@ -83,10 +86,6 @@ ignore-nested-functions = true
 ignore-regex = ["^test_.*"]
 omit-covered-files = true
 verbose = 2
-
-[tool.mypy]
-python_version = "3.10"
-strict = true
 
 [tool.pylsp-mypy]
 enabled = true
@@ -106,7 +105,7 @@ project-excludes = [
   "qpdk/samples/*.py",
   "qpdk/samples/**/*.py",
   "notebooks/src/*.py",
-  "notebooks/src/**/*.py"
+  "notebooks/src/**/*.py",
 ]
 project-includes = ["**/*.py"]
 
@@ -122,7 +121,7 @@ read-only = "ignore"
 
 [tool.pytest.ini_options]
 # addopts = --tb=no
-addopts = '--tb=short'
+addopts = "--tb=short"
 norecursedirs = ["extra/*.py"]
 python_files = ["qpdk/*.py", "notebooks/*.ipynb", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
@@ -142,7 +141,7 @@ ignore = [
   "B905",  # `zip()` without an explicit `strict=` parameter
   "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
   "RUF001",  # ambiguous unicode characters (incl. lots of math)
-  "RUF003"  # -||- but for comments
+  "RUF003",  # -||- but for comments
 ]
 select = [
   "E",  # pycodestyle errors
@@ -167,15 +166,17 @@ select = [
   "FLY",  # flynt
   "NPY",  # numpy
   "PERF",  # perflint
-  "RUF"  # ruff
+  "RUF",  # ruff
 ]
 
 [tool.ruff.lint.per-file-ignores]
-".github/write_cells.py" = ["S701"]  # Jinja2 autoescape not needed for RST templates
+".github/write_cells.py" = [
+  "S701",
+]  # Jinja2 autoescape not needed for RST templates
 "notebooks/**/*.py" = ["D100"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
-  "D100"
+  "D100",
 ]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D102", "D103"]
 
@@ -193,14 +194,13 @@ convention = "google"
   "*.lyt",
   "*.dat",
   "*.nc",
-  "*.svg"
+  "*.svg",
 ]
 
 [tool.setuptools.packages]
-find = {}
+find = {  }
 
 [tool.tbump]
-
 [[tool.tbump.file]]
 src = "README.md"
 

@@ -12,17 +12,41 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
-      - uses: j178/prek-action@v1
+        uses: astral-sh/setup-uv@v7.1.2
+      - uses: j178/prek-action@v1.0.11
+  get-python-versions:
+    uses: ./.github/workflows/get-python-versions.yml
   test-code:
+    needs: get-python-versions
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
       - uses: actions/checkout@v5
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7.1.2
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: make install
       - name: Test with pytest
         run: make test
+  test-code-result:
+    runs-on: ubuntu-latest
+    name: Test result
+    needs: test-code
+    if: always()
+    steps:
+      - name: Check test matrix results
+        run: |
+          if [[ "${{ needs.test-code.result }}" == "success" ]]; then
+            echo "All test jobs succeeded"
+            exit 0
+          else
+            echo "One or more test jobs failed"
+            exit 1
+          fi
