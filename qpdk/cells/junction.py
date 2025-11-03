@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from operator import itemgetter
-from typing import TypedDict, Unpack
-
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
@@ -19,42 +16,15 @@ from qpdk.tech import (
 )
 
 
-class SingleJosephsonJunctionWireParams(TypedDict):
-    """Type definition for single Josephson junction wire parameters.
-
-    Args:
-        wide_straight_length: Length of the wide straight section in µm.
-        narrow_straight_length: Length of the narrow straight section in µm.
-        taper_length: Length of the taper section in µm.
-        cross_section_wide: Cross-section specification for the wide section.
-        cross_section_narrow: Cross-section specification for the narrow section.
-        layer_patch: Layer for the patch that creates the overlap region.
-        size_patch: Size of the patch that creates the overlap region.
-    """
-
-    wide_straight_length: float
-    narrow_straight_length: float
-    taper_length: float
-    cross_section_wide: LayerSpec
-    cross_section_narrow: LayerSpec
-    layer_patch: LayerSpec
-    size_patch: tuple[float, float]
-
-
-_single_josephson_junction_wire_defaults = SingleJosephsonJunctionWireParams(
-    wide_straight_length=8.3,
-    narrow_straight_length=0.5,
-    taper_length=4.7,
-    cross_section_wide=josephson_junction_cross_section_wide,
-    cross_section_narrow=josephson_junction_cross_section_narrow,
-    layer_patch=LAYER.JJ_PATCH,
-    size_patch=(1.5, 1.0),
-)
-
-
 @gf.cell
 def single_josephson_junction_wire(
-    **kwargs: Unpack[SingleJosephsonJunctionWireParams],
+    wide_straight_length: float = 8.3,
+    narrow_straight_length: float = 0.5,
+    taper_length: float = 4.7,
+    cross_section_wide: LayerSpec = josephson_junction_cross_section_wide,
+    cross_section_narrow: LayerSpec = josephson_junction_cross_section_narrow,
+    layer_patch: LayerSpec = LAYER.JJ_PATCH,
+    size_patch: tuple[float, float] = (1.5, 1.0),
 ) -> Component:
     r"""Creates a single wire to use in a Josephson junction.
 
@@ -66,27 +36,15 @@ def single_josephson_junction_wire(
                wide  narrow
 
     Args:
-        kwargs: :class:`~SingleJosephsonJunctionWireParams` parameters.
+        wide_straight_length: Length of the wide straight section in µm.
+        narrow_straight_length: Length of the narrow straight section in µm.
+        taper_length: Length of the taper section in µm.
+        cross_section_wide: Cross-section specification for the wide section.
+        cross_section_narrow: Cross-section specification for the narrow section.
+        layer_patch: Layer for the patch that creates the overlap region.
+        size_patch: Size of the patch that creates the overlap region.
     """
     c = Component()
-    wire_params = _single_josephson_junction_wire_defaults | kwargs
-    (
-        wide_straight_length,
-        narrow_straight_length,
-        taper_length,
-        cross_section_wide,
-        cross_section_narrow,
-        layer_patch,
-        size_patch,
-    ) = itemgetter(
-        "wide_straight_length",
-        "narrow_straight_length",
-        "taper_length",
-        "cross_section_wide",
-        "cross_section_narrow",
-        "layer_patch",
-        "size_patch",
-    )(wire_params)
 
     # Widest straight section with patch
     wide_straight_ref = c << straight(
@@ -139,7 +97,13 @@ def single_josephson_junction_wire(
 @gf.cell
 def josephson_junction(
     junction_overlap_displacement: float = 1.8,
-    **kwargs: Unpack[SingleJosephsonJunctionWireParams],
+    wide_straight_length: float = 8.3,
+    narrow_straight_length: float = 0.5,
+    taper_length: float = 4.7,
+    cross_section_wide: LayerSpec = josephson_junction_cross_section_wide,
+    cross_section_narrow: LayerSpec = josephson_junction_cross_section_narrow,
+    layer_patch: LayerSpec = LAYER.JJ_PATCH,
+    size_patch: tuple[float, float] = (1.5, 1.0),
 ) -> Component:
     r"""Creates a single Josephson junction component.
 
@@ -164,25 +128,39 @@ def josephson_junction(
     Args:
         junction_overlap_displacement: Displacement of the overlap region in µm.
             Measured from the centers of the junction ports
-        kwargs: :class:`~SingleJosephsonJunctionWireParams` for single wires.
+        wide_straight_length: Length of the wide straight section in µm.
+        narrow_straight_length: Length of the narrow straight section in µm.
+        taper_length: Length of the taper section in µm.
+        cross_section_wide: Cross-section specification for the wide section.
+        cross_section_narrow: Cross-section specification for the narrow section.
+        layer_patch: Layer for the patch that creates the overlap region.
+        size_patch: Size of the patch that creates the overlap region.
     """
     c = Component()
 
-    # Wire configuration parameters
-    wire_params = _single_josephson_junction_wire_defaults | kwargs
-
     # Left wire
-    left_wire = c << single_josephson_junction_wire(**wire_params)
+    left_wire = c << single_josephson_junction_wire(
+        wide_straight_length=wide_straight_length,
+        narrow_straight_length=narrow_straight_length,
+        taper_length=taper_length,
+        cross_section_wide=cross_section_wide,
+        cross_section_narrow=cross_section_narrow,
+        layer_patch=layer_patch,
+        size_patch=size_patch,
+    )
 
     # Right wire
-    right_wire = c << single_josephson_junction_wire(**wire_params)
-
-    total_length = sum(
-        map(  # pyright: ignore[reportArgumentType]
-            wire_params.get,
-            ("wide_straight_length", "narrow_straight_length", "taper_length"),
-        )
+    right_wire = c << single_josephson_junction_wire(
+        wide_straight_length=wide_straight_length,
+        narrow_straight_length=narrow_straight_length,
+        taper_length=taper_length,
+        cross_section_wide=cross_section_wide,
+        cross_section_narrow=cross_section_narrow,
+        layer_patch=layer_patch,
+        size_patch=size_patch,
     )
+
+    total_length = wide_straight_length + narrow_straight_length + taper_length
     # Position left wire on top of right wire with rotation
     left_wire.dcplx_trans = (
         right_wire.ports["o2"].dcplx_trans

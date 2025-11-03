@@ -5,7 +5,7 @@ instances:
     settings:
       junction_spec: josephson_junction
       loop_area: 4
-name: xmon_transmon
+name: xmon_transmon_CW30_CH30_AW30_20_30_20_AL160_120_160_120_eb35ac3f
 nets: []
 placements:
   squid_junction_JSjosephson_junction_LA4_m8132_m155454_A315:

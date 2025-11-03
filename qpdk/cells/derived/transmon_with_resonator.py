@@ -10,7 +10,7 @@ from gdsfactory.typings import ComponentSpec
 from klayout.db import DCplxTrans
 
 from qpdk.cells.capacitor import plate_capacitor_single
-from qpdk.cells.resonator import ResonatorParams, resonator_quarter_wave
+from qpdk.cells.resonator import resonator_quarter_wave
 from qpdk.helper import show_components
 from qpdk.tech import LAYER, route_single_cpw
 
@@ -21,7 +21,7 @@ def qubit_with_resonator(
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
-    resonator_params: ResonatorParams | None = None,
+    resonator_params: dict | None = None,
     coupler: ComponentSpec = partial(plate_capacitor_single, thickness=20, fingers=18),
     qubit_rotation: float = 90,
     coupler_port: str = "left_pad",
@@ -34,14 +34,15 @@ def qubit_with_resonator(
         resonator: Resonator component.
         resonator_meander_start: (x, y) position of the start of the resonator meander.
         resonator_length: Length of the resonator in µm.
-        resonator_params: Parameters for the resonator component if it accepts any.
+        resonator_params: Dictionary of parameters for the resonator component if it accepts any.
+            Accepts keys: length, meanders, bend_spec, cross_section, open_start, open_end.
         coupler: Coupler spec.
         qubit_rotation: Rotation angle for the qubit in degrees.
         coupler_port: Name of the qubit port to position the coupler relative to.
         coupler_offset: (x, y) offset for the coupler position.
     """
     c = Component()
-    resonator_params = resonator_params or ResonatorParams(meanders=5)
+    resonator_params = resonator_params or {"meanders": 5}
 
     qubit_ref = c << gf.get_component(qubit)
     qubit_ref.rotate(qubit_rotation)

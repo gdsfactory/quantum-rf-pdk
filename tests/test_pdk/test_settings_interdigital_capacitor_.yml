@@ -1,3 +1,11 @@
 info: {}
-name: interdigital_capacitor_qpdkpcellspcapacitor
-settings: {}
+name: interdigital_capacitor_qpdkpcellspcapacitor_F4_FL20_FG2_f0f84f26
+settings:
+  cross_section: cpw
+  etch_bbox_margin: 2
+  etch_layer: M1_ETCH
+  finger_gap: 2
+  finger_length: 20
+  fingers: 4
+  half: false
+  thickness: 5

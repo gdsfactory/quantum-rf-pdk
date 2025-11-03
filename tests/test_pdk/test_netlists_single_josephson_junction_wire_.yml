@@ -53,7 +53,7 @@ instances:
       linear: true
       npoints: 100
       width_type: sine
-name: single_josephson_junction_wire
+name: single_josephson_junction_wire_WSL8p3_NSL0p5_TL4p7_CSWj_05ba299d
 nets:
 - p1: straight_L0p5_CSjosephson_junction_cross_section_narrow_13000_0,o1
   p2: taper_cross_section_gdsfactorypcomponentsptapersptaper__41aa5fb2_8300_0,o2

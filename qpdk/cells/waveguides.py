@@ -1,7 +1,6 @@
 """Waveguide primitives."""
 
 from functools import partial
-from typing import TypedDict, Unpack
 
 import gdsfactory as gf
 from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
@@ -52,17 +51,8 @@ taper_cross_section = partial(
 )
 
 
-class StraightKwargs(TypedDict, total=False):
-    """Type definition for straight keyword arguments."""
-
-    length: float
-    cross_section: CrossSectionSpec
-    width: float | None
-    npoints: int
-
-
 @gf.cell
-def straight(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
+def straight(**kwargs) -> gf.Component:
     """Returns a straight waveguide.
 
     Args:
@@ -75,7 +65,7 @@ straight_shorted = straight
 
 
 @gf.cell
-def straight_open(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
+def straight_open(**kwargs) -> gf.Component:
     """Returns a straight waveguide with etched gap at one end.
 
     Args:
@@ -90,7 +80,7 @@ def straight_open(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
 
 
 @gf.cell
-def straight_double_open(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
+def straight_double_open(**kwargs) -> gf.Component:
     r"""Returns a straight waveguide with etched gaps at both ends.
 
     Note:
@@ -107,20 +97,6 @@ def straight_double_open(**kwargs: Unpack[StraightKwargs]) -> gf.Component:
     return c
 
 
-class NxnKwargs(TypedDict, total=False):
-    """Type definition for tee keyword arguments."""
-
-    xsize: float
-    ysize: float
-    wg_width: float
-    layer: LayerSpec
-    wg_margin: float
-    north: int
-    east: int
-    south: int
-    west: int
-
-
 _NXN_DEFAULTS = {
     "xsize": 10.0,
     "ysize": 10.0,
@@ -135,7 +111,7 @@ _NXN_DEFAULTS = {
 
 
 @gf.cell
-def nxn(**kwargs: Unpack[NxnKwargs]) -> gf.Component:
+def nxn(**kwargs) -> gf.Component:
     """Returns a tee waveguide.
 
     Args:
@@ -188,21 +164,8 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     return c
 
 
-class BendEulerKwargs(TypedDict, total=False):
-    """Type definition for bend_euler keyword arguments."""
-
-    angle: float
-    p: float
-    with_arc_floorplan: bool
-    npoints: int
-    direction: str
-    with_cladding_box: bool
-    cross_section: gf.CrossSection
-    allow_min_radius_violation: bool
-
-
 @gf.cell
-def bend_euler(**kwargs: Unpack[BendEulerKwargs]) -> gf.Component:
+def bend_euler(**kwargs) -> gf.Component:
     """Regular degree euler bend.
 
     Args:
@@ -211,25 +174,13 @@ def bend_euler(**kwargs: Unpack[BendEulerKwargs]) -> gf.Component:
     return gf.c.bend_euler(**(_DEFAULT_BEND_KWARGS | kwargs))
 
 
-class BendCircularKwargs(TypedDict, total=False):
-    """Type definition for bend_circular keyword arguments."""
-
-    angle: float
-    npoints: int
-    with_arc_floorplan: bool
-    cross_section: gf.CrossSection
-    radius: float
-    direction: str
-    allow_min_radius_violation: bool
-
-
 _BEND_CIRCULAR_DEFAULTS = {
     "radius": 100,
 }
 
 
 @gf.cell
-def bend_circular(**kwargs: Unpack[BendCircularKwargs]) -> gf.Component:
+def bend_circular(**kwargs) -> gf.Component:
     """Returns circular bend.
 
     Args:
@@ -240,22 +191,13 @@ def bend_circular(**kwargs: Unpack[BendCircularKwargs]) -> gf.Component:
     )
 
 
-class BendSKwargs(TypedDict, total=False):
-    """Type definition for bend_s keyword arguments."""
-
-    size: Size
-    cross_section: CrossSectionSpec
-    width: float | None
-    allow_min_radius_violation: bool
-
-
 _BEND_S_DEFAULTS = {
     "size": (20.0, 3.0),
 }
 
 
 @gf.cell
-def bend_s(**kwargs: Unpack[BendSKwargs]) -> gf.Component:
+def bend_s(**kwargs) -> gf.Component:
     """Return S bend with bezier curve.
 
     stores min_bend_radius property in self.info['min_bend_radius']
@@ -278,18 +220,9 @@ coupler_ring = partial(
 )
 
 
-class StraightAllAngleKwargs(TypedDict, total=False):
-    """Type definition for straight_all_angle keyword arguments."""
-
-    length: float
-    npoints: int
-    cross_section: CrossSectionSpec
-    width: float | None
-
-
 @gf.vcell
 def straight_all_angle(
-    **kwargs: Unpack[StraightAllAngleKwargs],
+    **kwargs,
 ) -> gf.ComponentAllAngle:
     """Returns a Straight waveguide with offgrid ports.
 
@@ -304,23 +237,9 @@ def straight_all_angle(
     return gf.c.straight_all_angle(**(_DEFAULT_KWARGS | kwargs))
 
 
-class BendEulerAllAngleKwargs(TypedDict, total=False):
-    """Type definition for bend_euler_all_angle keyword arguments."""
-
-    radius: float | None
-    angle: float
-    p: float
-    with_arc_floorplan: bool
-    npoints: int | None
-    layer: gf.typings.LayerSpec | None
-    width: float | None
-    cross_section: CrossSectionSpec
-    allow_min_radius_violation: bool
-
-
 @gf.vcell
 def bend_euler_all_angle(
-    **kwargs: Unpack[BendEulerAllAngleKwargs],
+    **kwargs,
 ) -> gf.ComponentAllAngle:
     """Returns regular degree euler bend with arbitrary angle.
 
@@ -330,21 +249,9 @@ def bend_euler_all_angle(
     return gf.c.bend_euler_all_angle(**(_DEFAULT_BEND_KWARGS | kwargs))
 
 
-class BendCircularAllAngleKwargs(TypedDict, total=False):
-    """Type definition for bend_circular_all_angle keyword arguments."""
-
-    radius: float | None
-    angle: float
-    npoints: int | None
-    layer: gf.typings.LayerSpec | None
-    width: float | None
-    cross_section: CrossSectionSpec
-    allow_min_radius_violation: bool
-
-
 @gf.vcell
 def bend_circular_all_angle(
-    **kwargs: Unpack[BendCircularAllAngleKwargs],
+    **kwargs,
 ) -> gf.ComponentAllAngle:
     """Returns circular bend with arbitrary angle.
 

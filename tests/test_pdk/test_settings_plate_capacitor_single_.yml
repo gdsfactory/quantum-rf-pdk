@@ -1,3 +1,11 @@
 info: {}
-name: plate_capacitor_single_qpdkpcellspcapacitor
-settings: {}
+name: plate_capacitor_single_qpdkpcellspcapacitor_F4_FL0_FG2__f80ad85a
+settings:
+  cross_section: cpw
+  etch_bbox_margin: 2
+  etch_layer: M1_ETCH
+  finger_gap: 2
+  finger_length: 0
+  fingers: 4
+  half: true
+  thickness: 5

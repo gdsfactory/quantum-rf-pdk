@@ -5,8 +5,6 @@ from __future__ import annotations
 from functools import partial
 from itertools import chain
 from math import ceil, floor
-from operator import itemgetter
-from typing import TypedDict, Unpack
 
 import gdsfactory as gf
 from gdsfactory.component import Component
@@ -17,45 +15,16 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
 
-class InterdigitalCapacitorParams(TypedDict):
-    """Parameters for interdigital capacitor.
-
-    Keyword Args:
-        fingers: Total number of fingers of the capacitor (must be >= 1).
-        finger_length: Length of each finger in μm.
-        finger_gap: Gap between adjacent fingers in μm.
-        thickness: Thickness of fingers and the base section in μm.
-        etch_layer: Optional layer for etching around the capacitor.
-        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
-        cross_section: Cross-section for the short straight from the etch box capacitor.
-        half: If True, creates a single-sided capacitor (half of the interdigital capacitor).
-    """
-
-    fingers: int
-    finger_length: float
-    finger_gap: float
-    thickness: float
-    etch_layer: LayerSpec | None
-    etch_bbox_margin: float
-    cross_section: CrossSectionSpec
-    half: bool
-
-
-_default_interdigital_capacitor_params = InterdigitalCapacitorParams(
-    fingers=4,
-    finger_length=20.0,
-    finger_gap=2.0,
-    thickness=5.0,
-    etch_layer="M1_ETCH",
-    etch_bbox_margin=2.0,
-    cross_section="cpw",
-    half=False,
-)
-
-
 @gf.cell_with_module_name
 def interdigital_capacitor(
-    **kwargs: Unpack[InterdigitalCapacitorParams],
+    fingers: int = 4,
+    finger_length: float = 20.0,
+    finger_gap: float = 2.0,
+    thickness: float = 5.0,
+    etch_layer: LayerSpec | None = "M1_ETCH",
+    etch_bbox_margin: float = 2.0,
+    cross_section: CrossSectionSpec = "cpw",
+    half: bool = False,
 ) -> Component:
     """Generate an interdigital capacitor component with ports on both ends.
 
@@ -82,34 +51,20 @@ def interdigital_capacitor(
         and finger length.
 
     Args:
-        kwargs: :class:`~InterdigitalCapacitorParams` for the interdigital capacitor.
+        fingers: Total number of fingers of the capacitor (must be >= 1).
+        finger_length: Length of each finger in μm.
+        finger_gap: Gap between adjacent fingers in μm.
+        thickness: Thickness of fingers and the base section in μm.
+        etch_layer: Optional layer for etching around the capacitor.
+        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
+        cross_section: Cross-section for the short straight from the etch box capacitor.
+        half: If True, creates a single-sided capacitor (half of the interdigital capacitor).
 
     Returns:
         Component: A gdsfactory component with the interdigital capacitor geometry
             and two ports ('o1' and 'o2') on opposing sides.
     """
     c = Component()
-    params = _default_interdigital_capacitor_params | kwargs
-
-    (
-        fingers,
-        finger_length,
-        finger_gap,
-        thickness,
-        etch_layer,
-        etch_bbox_margin,
-        cross_section,
-        half,
-    ) = itemgetter(
-        "fingers",
-        "finger_length",
-        "finger_gap",
-        "thickness",
-        "etch_layer",
-        "etch_bbox_margin",
-        "cross_section",
-        "half",
-    )(params)
 
     # Used temporarily
     layer = LAYER.M1_DRAW
@@ -247,7 +202,16 @@ def interdigital_capacitor(
 
 
 @gf.cell_with_module_name
-def plate_capacitor(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
+def plate_capacitor(
+    fingers: int = 4,
+    finger_length: float = 0,
+    finger_gap: float = 2.0,
+    thickness: float = 5.0,
+    etch_layer: LayerSpec | None = "M1_ETCH",
+    etch_bbox_margin: float = 2.0,
+    cross_section: CrossSectionSpec = "cpw",
+    half: bool = False,
+) -> Component:
     """Creates a plate capacitor.
 
     A capacitive coupler consists of two metal pads separated by a small gap,
@@ -267,16 +231,41 @@ def plate_capacitor(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
         This is a special case of the interdigital capacitor with zero finger length.
 
     Args:
-        **kwargs: :class:`~InterdigitalCapacitorParams` for the interdigital
+        fingers: Total number of fingers of the capacitor (must be >= 1).
+        finger_length: Length of each finger in μm (default 0 for plate capacitor).
+        finger_gap: Gap between adjacent fingers in μm.
+        thickness: Thickness of fingers and the base section in μm.
+        etch_layer: Optional layer for etching around the capacitor.
+        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
+        cross_section: Cross-section for the short straight from the etch box capacitor.
+        half: If True, creates a single-sided capacitor (half of the interdigital capacitor).
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
     """
-    return interdigital_capacitor(**(kwargs | {"finger_length": 0}))
+    return interdigital_capacitor(
+        fingers=fingers,
+        finger_length=finger_length,
+        finger_gap=finger_gap,
+        thickness=thickness,
+        etch_layer=etch_layer,
+        etch_bbox_margin=etch_bbox_margin,
+        cross_section=cross_section,
+        half=half,
+    )
 
 
 @gf.cell_with_module_name
-def plate_capacitor_single(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
+def plate_capacitor_single(
+    fingers: int = 4,
+    finger_length: float = 0,
+    finger_gap: float = 2.0,
+    thickness: float = 5.0,
+    etch_layer: LayerSpec | None = "M1_ETCH",
+    etch_bbox_margin: float = 2.0,
+    cross_section: CrossSectionSpec = "cpw",
+    half: bool = True,
+) -> Component:
     """Creates a single plate capacitor for coupling.
 
     This is essentially half of a :func:`~plate_capacitor`.
@@ -292,12 +281,28 @@ def plate_capacitor_single(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Com
                  |______|
 
     Args:
-        **kwargs: :class:`~InterdigitalCapacitorParams`
+        fingers: Total number of fingers of the capacitor (must be >= 1).
+        finger_length: Length of each finger in μm (default 0 for plate capacitor).
+        finger_gap: Gap between adjacent fingers in μm.
+        thickness: Thickness of fingers and the base section in μm.
+        etch_layer: Optional layer for etching around the capacitor.
+        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
+        cross_section: Cross-section for the short straight from the etch box capacitor.
+        half: If True, creates a single-sided capacitor (default True).
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
     """
-    return plate_capacitor(**(kwargs | {"half": True}))
+    return plate_capacitor(
+        fingers=fingers,
+        finger_length=finger_length,
+        finger_gap=finger_gap,
+        thickness=thickness,
+        etch_layer=etch_layer,
+        etch_bbox_margin=etch_bbox_margin,
+        cross_section=cross_section,
+        half=half,
+    )
 
 
 if __name__ == "__main__":

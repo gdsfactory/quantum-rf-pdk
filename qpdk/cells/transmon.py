@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import operator
 from functools import partial, reduce
-from operator import itemgetter
-from typing import TypedDict, Unpack
 
 import gdsfactory as gf
 from gdsfactory.component import Component
@@ -22,35 +20,14 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER, LAYER_STACK_FLIP_CHIP
 
 
-class DoublePadTransmonParams(TypedDict):
-    """Parameters for double pad transmon qubit.
-
-    Keyword Args:
-        pad_size: (width, height) of each capacitor pad in μm.
-        pad_gap: Gap between the two capacitor pads in μm.
-        junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
-        layer_metal: Layer for the metal pads.
-    """
-
-    pad_size: tuple[float, float]
-    pad_gap: float
-    junction_spec: ComponentSpec
-    junction_displacement: DCplxTrans | None
-    layer_metal: LayerSpec
-
-
-_double_pad_transmon_default_params = DoublePadTransmonParams(
-    pad_size=(250.0, 400.0),
-    pad_gap=15.0,
-    junction_spec=squid_junction,
-    junction_displacement=None,
-    layer_metal=LAYER.M1_DRAW,
-)
-
-
 @gf.cell(check_instances=False)
-def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
+def double_pad_transmon(
+    pad_size: tuple[float, float] = (250.0, 400.0),
+    pad_gap: float = 15.0,
+    junction_spec: ComponentSpec = squid_junction,
+    junction_displacement: DCplxTrans | None = None,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction.
 
     A transmon qubit consists of two capacitor pads connected by a Josephson junction.
@@ -68,17 +45,16 @@ def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
     See :cite:`kochChargeinsensitiveQubitDesign2007a` for details.
 
     Args:
-        **kwargs: :class:`~DoublePadTransmonParams` for the transmon qubit.
+        pad_size: (width, height) of each capacitor pad in μm.
+        pad_gap: Gap between the two capacitor pads in μm.
+        junction_spec: Component specification for the Josephson junction component.
+        junction_displacement: Optional complex transformation to apply to the junction.
+        layer_metal: Layer for the metal pads.
 
     Returns:
         Component: A gdsfactory component with the transmon geometry.
     """
     c = Component()
-    params = _double_pad_transmon_default_params | kwargs
-    # Extract wire parameters using dictionary unpacking
-    pad_size, pad_gap, junction_spec, junction_displacement, layer_metal = itemgetter(
-        "pad_size", "pad_gap", "junction_spec", "junction_displacement", "layer_metal"
-    )(params)
 
     pad_width, pad_height = pad_size
 
@@ -134,7 +110,11 @@ def double_pad_transmon(**kwargs: Unpack[DoublePadTransmonParams]) -> Component:
 @gf.cell
 def double_pad_transmon_with_bbox(
     bbox_extension: float = 200.0,
-    **kwargs: Unpack[DoublePadTransmonParams],
+    pad_size: tuple[float, float] = (250.0, 400.0),
+    pad_gap: float = 15.0,
+    junction_spec: ComponentSpec = squid_junction,
+    junction_displacement: DCplxTrans | None = None,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction and an etched bounding box.
 
@@ -142,13 +122,23 @@ def double_pad_transmon_with_bbox(
 
     Args:
         bbox_extension: Extension size for the bounding box in μm.
-        **kwargs: :class:`~DoublePadTransmonParams` for the transmon qubit.
+        pad_size: (width, height) of each capacitor pad in μm.
+        pad_gap: Gap between the two capacitor pads in μm.
+        junction_spec: Component specification for the Josephson junction component.
+        junction_displacement: Optional complex transformation to apply to the junction.
+        layer_metal: Layer for the metal pads.
 
     Returns:
         Component: A gdsfactory component with the transmon geometry and etched box.
     """
     c = gf.Component()
-    double_pad_ref = c << double_pad_transmon(**kwargs)
+    double_pad_ref = c << double_pad_transmon(
+        pad_size=pad_size,
+        pad_gap=pad_gap,
+        junction_spec=junction_spec,
+        junction_displacement=junction_displacement,
+        layer_metal=layer_metal,
+    )
     double_pad_size = (double_pad_ref.size_info.width, double_pad_ref.size_info.height)
     bbox_size = (
         double_pad_size[0] + 2 * bbox_extension,
@@ -182,48 +172,20 @@ def double_pad_transmon_with_bbox(
     return c
 
 
-class FlipmonParams(TypedDict):
-    """Parameters for flipmon style transmon qubit.
-
-    Keyword Args:
-        inner_circle_radius: Central radius of the inner circular capacitor pad in μm.
-        outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
-        outer_ring_width: Width of the outer circular capacitor pad in μm.
-        top_circle_radius: Central radius of the top circular capacitor pad in μm.
-            There is no separate width as the filled circle is not a ring.
-        junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
-        layer_metal: Layer for the metal pads.
-        layer_metal_top: Layer for the other metal layer pad for flip-chip.
-    """
-
-    inner_circle_radius: float
-    outer_ring_radius: float
-    outer_ring_width: float
-    top_circle_radius: float
-    junction_spec: ComponentSpec
-    junction_displacement: DCplxTrans | None
-    layer_metal: LayerSpec
-    layer_metal_top: LayerSpec
-
-
-_flipmon_default_params = FlipmonParams(
-    inner_circle_radius=60,
-    outer_ring_radius=110,
-    outer_ring_width=60,
-    top_circle_radius=110,
-    junction_spec=partial(
+@gf.cell(check_instances=False)
+def flipmon(
+    inner_circle_radius: float = 60,
+    outer_ring_radius: float = 110,
+    outer_ring_width: float = 60,
+    top_circle_radius: float = 110,
+    junction_spec: ComponentSpec = partial(
         squid_junction,
         junction_spec=partial(josephson_junction, wide_straight_length=12),
     ),
-    junction_displacement=None,
-    layer_metal=LAYER.M1_DRAW,
-    layer_metal_top=LAYER.M2_DRAW,
-)
-
-
-@gf.cell(check_instances=False)
-def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
+    junction_displacement: DCplxTrans | None = None,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_metal_top: LayerSpec = LAYER.M2_DRAW,
+) -> Component:
     """Creates a circular transmon qubit with `flipmon` geometry.
 
     A circular variant of the transmon qubit with another circle as the inner pad.
@@ -232,9 +194,6 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
     for details about the `flipmon` design.
 
     Args:
-        **kwargs: :class:`~FlipmonParams` for the flipmon qubit.
-
-    Keyword Args:
         inner_circle_radius: Central radius of the inner circular capacitor pad in μm.
         outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
         outer_ring_width: Width of the outer circular capacitor pad in μm.
@@ -249,27 +208,6 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
         Component: A gdsfactory component with the circular transmon geometry.
     """
     c = Component()
-    params = _flipmon_default_params | kwargs
-    # Extract wire parameters using dictionary unpacking
-    (
-        inner_circle_radius,
-        outer_ring_radius,
-        outer_ring_width,
-        top_circle_radius,
-        junction_spec,
-        junction_displacement,
-        layer_metal,
-        layer_metal_top,
-    ) = itemgetter(
-        "inner_circle_radius",
-        "outer_ring_radius",
-        "outer_ring_width",
-        "top_circle_radius",
-        "junction_spec",
-        "junction_displacement",
-        "layer_metal",
-        "layer_metal_top",
-    )(params)
 
     c << gf.c.circle(
         radius=inner_circle_radius,
@@ -351,7 +289,17 @@ def flipmon(**kwargs: Unpack[FlipmonParams]) -> Component:
 
 @gf.cell
 def flipmon_with_bbox(
-    flipmon_params: FlipmonParams | None = None,
+    inner_circle_radius: float = 60,
+    outer_ring_radius: float = 110,
+    outer_ring_width: float = 60,
+    top_circle_radius: float = 110,
+    junction_spec: ComponentSpec = partial(
+        squid_junction,
+        junction_spec=partial(josephson_junction, wide_straight_length=12),
+    ),
+    junction_displacement: DCplxTrans | None = None,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_metal_top: LayerSpec = LAYER.M2_DRAW,
     m1_etch_extension_gap: float = 30.0,
     m2_etch_extension_gap: float = 40.0,
 ) -> Component:
@@ -360,7 +308,14 @@ def flipmon_with_bbox(
     See :func:`~flipmon` for more details.
 
     Args:
-        flipmon_params: :class:`~FlipmonParams` for the flipmon qubit.
+        inner_circle_radius: Central radius of the inner circular capacitor pad in μm.
+        outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
+        outer_ring_width: Width of the outer circular capacitor pad in μm.
+        top_circle_radius: Central radius of the top circular capacitor pad in μm.
+        junction_spec: Component specification for the Josephson junction component.
+        junction_displacement: Optional complex transformation to apply to the junction.
+        layer_metal: Layer for the metal pads.
+        layer_metal_top: Layer for the other metal layer pad for flip-chip.
         m1_etch_extension_gap: Radius extension length for the M1 etch bounding box in μm.
         m2_etch_extension_gap: Radius extension length for the M2 etch bounding box in μm.
 
@@ -368,14 +323,18 @@ def flipmon_with_bbox(
         Component: A gdsfactory component with the flipmon geometry and etched box.
     """
     c = gf.Component()
-    flipmon_params = flipmon_params or _flipmon_default_params
-    flipmon_ref = c << flipmon(**flipmon_params)
-    m1_bbox_radius = (
-        flipmon_params["outer_ring_radius"]
-        + flipmon_params["outer_ring_width"] / 2
-        + m1_etch_extension_gap
+    flipmon_ref = c << flipmon(
+        inner_circle_radius=inner_circle_radius,
+        outer_ring_radius=outer_ring_radius,
+        outer_ring_width=outer_ring_width,
+        top_circle_radius=top_circle_radius,
+        junction_spec=junction_spec,
+        junction_displacement=junction_displacement,
+        layer_metal=layer_metal,
+        layer_metal_top=layer_metal_top,
     )
-    m2_bbox_radius = flipmon_params["top_circle_radius"] + m2_etch_extension_gap
+    m1_bbox_radius = outer_ring_radius + outer_ring_width / 2 + m1_etch_extension_gap
+    m2_bbox_radius = top_circle_radius + m2_etch_extension_gap
 
     for etch_layer, draw_layer, bbox_radius in [
         (LAYER.M1_ETCH, LAYER.M1_DRAW, m1_bbox_radius),
@@ -398,46 +357,18 @@ def flipmon_with_bbox(
     return c
 
 
-class XmonTransmonParams(TypedDict):
-    """Parameters for Xmon style transmon qubit.
-
-    Keyword Args:
-        center_width: Width of the central cross intersection in μm.
-        center_height: Height of the central cross intersection in μm.
-        arm_width: Tuple of (top, right, bottom, left) arm widths in μm.
-        arm_lengths: Tuple of (top, right, bottom, left) arm lengths in μm.
-            Computed from center to end of each arm.
-        gap_width: Width of the etched gap around arms in μm.
-        junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
-        layer_metal: Layer for the metal pads.
-        layer_etch: Layer for the etched regions.
-    """
-
-    center_width: float
-    center_height: float
-    arm_width: tuple[float, float, float, float]  # top, right, bottom, left
-    arm_lengths: tuple[float, float, float, float]  # top, right, bottom, left
-    gap_width: float
-    junction_spec: ComponentSpec
-    junction_displacement: DCplxTrans | None
-    layer_metal: LayerSpec
-    layer_etch: LayerSpec
-
-
-_xmon_transmon_default_params = XmonTransmonParams(
-    arm_width=(30.0, 20.0, 30.0, 20.0),  # top, right, bottom, left
-    arm_lengths=(160.0, 120.0, 160.0, 120.0),  # top, right, bottom, left
-    gap_width=10.0,
-    junction_spec=squid_junction,
-    junction_displacement=None,
-    layer_metal=LAYER.M1_DRAW,
-    layer_etch=LAYER.M1_ETCH,
-)
-
-
 @gf.cell(check_instances=False)
-def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
+def xmon_transmon(
+    center_width: float = 30.0,
+    center_height: float = 30.0,
+    arm_width: tuple[float, float, float, float] = (30.0, 20.0, 30.0, 20.0),
+    arm_lengths: tuple[float, float, float, float] = (160.0, 120.0, 160.0, 120.0),
+    gap_width: float = 10.0,
+    junction_spec: ComponentSpec = squid_junction,
+    junction_displacement: DCplxTrans | None = None,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_etch: LayerSpec = LAYER.M1_ETCH,
+) -> Component:
     """Creates an Xmon style transmon qubit with cross-shaped geometry.
 
     An Xmon transmon consists of a cross-shaped capacitor pad with four arms
@@ -448,32 +379,21 @@ def xmon_transmon(**kwargs: Unpack[XmonTransmonParams]) -> Component:
     See :cite:`barendsCoherentJosephsonQubit2013a` for details about the Xmon design.
 
     Args:
-        **kwargs: :class:`~XmonTransmonParams` for the Xmon transmon qubit.
+        center_width: Width of the central cross intersection in μm.
+        center_height: Height of the central cross intersection in μm.
+        arm_width: Tuple of (top, right, bottom, left) arm widths in μm.
+        arm_lengths: Tuple of (top, right, bottom, left) arm lengths in μm.
+            Computed from center to end of each arm.
+        gap_width: Width of the etched gap around arms in μm.
+        junction_spec: Component specification for the Josephson junction component.
+        junction_displacement: Optional complex transformation to apply to the junction.
+        layer_metal: Layer for the metal pads.
+        layer_etch: Layer for the etched regions.
 
     Returns:
         Component: A gdsfactory component with the Xmon transmon geometry.
     """
     c = Component()
-    params = _xmon_transmon_default_params | kwargs
-
-    # Extract parameters
-    (
-        arm_width,
-        arm_lengths,
-        gap_width,
-        junction_spec,
-        junction_displacement,
-        layer_metal,
-        layer_etch,
-    ) = itemgetter(
-        "arm_width",
-        "arm_lengths",
-        "gap_width",
-        "junction_spec",
-        "junction_displacement",
-        "layer_metal",
-        "layer_etch",
-    )(params)
 
     arm_width_top, arm_width_right, arm_width_bottom, arm_width_left = arm_width
     arm_length_top, arm_length_right, arm_length_bottom, arm_length_left = arm_lengths
