@@ -30,7 +30,7 @@ dev = [
 ]
 docs = [
   "jinja2",
-  "jupyter-book>=2.0.0,<3",
+  "jupyter-book>=1.0.4,<2",
   "jupytext",
   "matplotlib",
   "pydata-sphinx-theme",
