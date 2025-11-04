@@ -1,5 +1,5 @@
 instances: {}
-name: bend_circular
+name: bend_circular_A90_R100_NNone_CScoplanar_waveguide_WNone_AMRVTrue
 nets: []
 placements: {}
 ports: {}

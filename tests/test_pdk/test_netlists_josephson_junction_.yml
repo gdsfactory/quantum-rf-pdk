@@ -25,7 +25,7 @@ instances:
       - 1
       taper_length: 4.7
       wide_straight_length: 8.3
-name: josephson_junction_JOD1p8
+name: josephson_junction_JOD1p8_WSL8p3_NSL0p5_TL4p7_CSWjoseph_5d9a8aff
 nets: []
 placements:
   single_josephson_junction_wire_WSL8p3_NSL0p5_TL4p7_CSWj_05ba299d_13500_m11700_A90:

@@ -14,12 +14,15 @@ instances:
       size:
       - 6
       - 22
-  straight_open_CScoplanar_waveguide_0_0:
+  straight_open_L10_CScoplanar_waveguide_WNone_N2_0_0:
     component: straight_open
     info: {}
     settings:
       cross_section: coplanar_waveguide
-name: straight_double_open
+      length: 10
+      npoints: 2
+      width: null
+name: straight_double_open_L10_CScoplanar_waveguide_WNone_N2
 nets: []
 placements:
   rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_m3000_0_A180:
@@ -27,14 +30,14 @@ placements:
     rotation: 180
     x: -3
     y: 0
-  straight_open_CScoplanar_waveguide_0_0:
+  straight_open_L10_CScoplanar_waveguide_WNone_N2_0_0:
     mirror: false
     rotation: 0
     x: 0
     y: 0
 ports:
-  o1: straight_open_CScoplanar_waveguide_0_0,o1
-  o2: straight_open_CScoplanar_waveguide_0_0,o2
+  o1: straight_open_L10_CScoplanar_waveguide_WNone_N2_0_0,o1
+  o2: straight_open_L10_CScoplanar_waveguide_WNone_N2_0_0,o2
 warnings:
   electrical:
     unconnected_ports:

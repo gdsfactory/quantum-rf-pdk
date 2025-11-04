@@ -35,7 +35,7 @@ instances:
     settings:
       junction_spec: josephson_junction
       loop_area: 4
-name: double_pad_transmon
+name: double_pad_transmon_PS250_400_PG15_JSsquid_junction_JDN_cc5ec781
 nets: []
 placements:
   rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_7500_m200000:

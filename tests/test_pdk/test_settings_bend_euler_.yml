@@ -10,5 +10,11 @@ info:
   route_info_type: coplanar_waveguide
   route_info_weight: 166.369
   width: 10
-name: bend_euler
-settings: {}
+name: bend_euler_A90_P0p5_WAFTrue_N720_CScoplanar_waveguide_AMRVTrue
+settings:
+  allow_min_radius_violation: true
+  angle: 90
+  cross_section: coplanar_waveguide
+  npoints: 720
+  p: 0.5
+  with_arc_floorplan: true
