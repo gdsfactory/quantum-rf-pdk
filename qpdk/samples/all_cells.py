@@ -9,6 +9,8 @@ available in qpdk.PDK.cells. This is useful for:
 
 from __future__ import annotations
 
+import inspect
+
 import gdsfactory as gf
 from gdsfactory.component import Component
 
@@ -49,9 +51,30 @@ def all_cells(
     cells_in_current_row = 0
 
     for name in cell_names:
+        # Check if cell requires arguments before attempting instantiation
+        cell_func = PDK.cells[name]
+        sig = inspect.signature(cell_func)
+        required_params = [
+            p
+            for p in sig.parameters.values()
+            if p.default == inspect.Parameter.empty and p.name != "kwargs"
+        ]
+
+        if required_params:
+            # Skip cells that require arguments - these are helper functions
+            # not meant to be instantiated standalone
+            import warnings
+
+            warnings.warn(
+                f"Skipping cell '{name}': requires arguments {[p.name for p in required_params]}",
+                UserWarning,
+                stacklevel=2,
+            )
+            continue
+
         try:
             # Instantiate the cell
-            cell = PDK.cells[name]()
+            cell = cell_func()
 
             # Add reference based on cell type
             if isinstance(cell, gf.Component):
@@ -84,7 +107,7 @@ def all_cells(
                 x_pos += width + spacing
 
         except Exception as e:
-            # Log warning but continue with other cells
+            # Log warning for cells that fail to instantiate for other reasons
             import warnings
 
             warnings.warn(
@@ -92,9 +115,6 @@ def all_cells(
                 UserWarning,
                 stacklevel=2,
             )
-            # Skip cells that require arguments - these are helper functions
-            # not meant to be instantiated standalone
-            continue
 
     return c
 
