@@ -22,7 +22,7 @@ def qubit_with_resonator(
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
     resonator_params: ResonatorParams | None = None,
-    coupler: ComponentSpec = partial(plate_capacitor_single, thickness=20, fingers=18),
+    coupler: ComponentSpec = partial(plate_capacitor_single, length=20, width=394),
     qubit_rotation: float = 90,
     coupler_port: str = "left_pad",
     coupler_offset: tuple[float, float] = (-45, 0),
@@ -92,7 +92,7 @@ def qubit_with_resonator(
 transmon_with_resonator = partial(
     qubit_with_resonator,
     qubit="double_pad_transmon_with_bbox",
-    coupler=partial(plate_capacitor_single, thickness=20, fingers=18),
+    coupler=partial(plate_capacitor_single, length=20, width=394),
     qubit_rotation=90,
     coupler_port="left_pad",
     coupler_offset=(-45, 0),
@@ -101,7 +101,7 @@ transmon_with_resonator = partial(
 flipmon_with_resonator = partial(
     qubit_with_resonator,
     qubit="flipmon_with_bbox",
-    coupler=partial(plate_capacitor_single, thickness=10, fingers=5),
+    coupler=partial(plate_capacitor_single, length=10, width=58),
     qubit_rotation=-90,
     coupler_port="outer_ring_outside",
     coupler_offset=(-10, 0),

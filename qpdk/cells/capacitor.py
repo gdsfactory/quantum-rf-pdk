@@ -17,6 +17,26 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
 
+class PlateCapacitorSingleParams(TypedDict):
+    """Parameters for single plate capacitor.
+
+    Keyword Args:
+        length: Length of the capacitor plate along the port direction in μm.
+        width: Width of the capacitor plate perpendicular to the port direction in μm.
+        finger_gap: Gap between finger segments in μm (default: 2.0).
+        etch_layer: Optional layer for etching around the capacitor.
+        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
+        cross_section: Cross-section for the short straight from the etch box capacitor.
+    """
+
+    length: float
+    width: float
+    finger_gap: float
+    etch_layer: LayerSpec | None
+    etch_bbox_margin: float
+    cross_section: CrossSectionSpec
+
+
 class InterdigitalCapacitorParams(TypedDict):
     """Parameters for interdigital capacitor.
 
@@ -50,6 +70,15 @@ _default_interdigital_capacitor_params = InterdigitalCapacitorParams(
     etch_bbox_margin=2.0,
     cross_section="cpw",
     half=False,
+)
+
+_default_plate_capacitor_single_params = PlateCapacitorSingleParams(
+    length=5.0,
+    width=30.0,
+    finger_gap=2.0,
+    etch_layer="M1_ETCH",
+    etch_bbox_margin=2.0,
+    cross_section="cpw",
 )
 
 
@@ -276,10 +305,10 @@ def plate_capacitor(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
 
 
 @gf.cell_with_module_name
-def plate_capacitor_single(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Component:
+def plate_capacitor_single(**kwargs: Unpack[PlateCapacitorSingleParams]) -> Component:
     """Creates a single plate capacitor for coupling.
 
-    This is essentially half of a :func:`~plate_capacitor`.
+    This is essentially half of a :func:`~plate_capacitor` with simplified parameters.
 
     .. svgbob::
 
@@ -291,13 +320,57 @@ def plate_capacitor_single(**kwargs: Unpack[InterdigitalCapacitorParams]) -> Com
        |_________       |
                  |______|
 
-    Args:
-        **kwargs: :class:`~InterdigitalCapacitorParams`
+    Keyword Args:
+        length: Length of the capacitor plate along the port direction in μm (default: 5.0).
+        width: Width of the capacitor plate perpendicular to the port direction in μm (default: 30.0).
+        finger_gap: Gap between finger segments in μm (default: 2.0).
+        etch_layer: Optional layer for etching around the capacitor (default: "M1_ETCH").
+        etch_bbox_margin: Margin around the capacitor for the etch layer in μm (default: 2.0).
+        cross_section: Cross-section for the short straight from the etch box capacitor (default: "cpw").
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
+
+    Note:
+        Internally uses :func:`~plate_capacitor` with calculated `thickness` and `fingers`
+        parameters based on the desired `length` and `width`.
     """
-    return plate_capacitor(**(kwargs | {"half": True}))
+    params = _default_plate_capacitor_single_params | kwargs
+
+    (
+        length,
+        width,
+        finger_gap,
+        etch_layer,
+        etch_bbox_margin,
+        cross_section,
+    ) = itemgetter(
+        "length",
+        "width",
+        "finger_gap",
+        "etch_layer",
+        "etch_bbox_margin",
+        "cross_section",
+    )(params)
+
+    # Calculate thickness and fingers from length and width
+    # For plate capacitor: thickness = length (since finger_length=0)
+    thickness = length
+
+    # For the vertical dimension: width = fingers * thickness + (fingers - 1) * finger_gap
+    # Solving for fingers: width = fingers * (thickness + finger_gap) - finger_gap
+    # fingers = (width + finger_gap) / (thickness + finger_gap)
+    fingers = max(1, round((width + finger_gap) / (thickness + finger_gap)))
+
+    return plate_capacitor(
+        thickness=thickness,
+        fingers=fingers,
+        finger_gap=finger_gap,
+        etch_layer=etch_layer,
+        etch_bbox_margin=etch_bbox_margin,
+        cross_section=cross_section,
+        half=True,
+    )
 
 
 if __name__ == "__main__":
