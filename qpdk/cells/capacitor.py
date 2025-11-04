@@ -204,13 +204,11 @@ def interdigital_capacitor(
 @gf.cell_with_module_name
 def plate_capacitor(
     fingers: int = 4,
-    finger_length: float = 0,
     finger_gap: float = 2.0,
     thickness: float = 5.0,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
-    half: bool = False,
 ) -> Component:
     """Creates a plate capacitor.
 
@@ -232,39 +230,35 @@ def plate_capacitor(
 
     Args:
         fingers: Total number of fingers of the capacitor (must be >= 1).
-        finger_length: Length of each finger in μm (default 0 for plate capacitor).
         finger_gap: Gap between adjacent fingers in μm.
         thickness: Thickness of fingers and the base section in μm.
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
-        half: If True, creates a single-sided capacitor (half of the interdigital capacitor).
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
     """
     return interdigital_capacitor(
         fingers=fingers,
-        finger_length=finger_length,
+        finger_length=0.0,
         finger_gap=finger_gap,
         thickness=thickness,
         etch_layer=etch_layer,
         etch_bbox_margin=etch_bbox_margin,
         cross_section=cross_section,
-        half=half,
+        half=False,
     )
 
 
 @gf.cell_with_module_name
 def plate_capacitor_single(
     fingers: int = 4,
-    finger_length: float = 0,
     finger_gap: float = 2.0,
     thickness: float = 5.0,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
-    half: bool = True,
 ) -> Component:
     """Creates a single plate capacitor for coupling.
 
@@ -282,26 +276,24 @@ def plate_capacitor_single(
 
     Args:
         fingers: Total number of fingers of the capacitor (must be >= 1).
-        finger_length: Length of each finger in μm (default 0 for plate capacitor).
         finger_gap: Gap between adjacent fingers in μm.
         thickness: Thickness of fingers and the base section in μm.
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
-        half: If True, creates a single-sided capacitor (default True).
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
     """
-    return plate_capacitor(
+    return interdigital_capacitor(
         fingers=fingers,
-        finger_length=finger_length,
+        finger_length=0.0,
         finger_gap=finger_gap,
         thickness=thickness,
         etch_layer=etch_layer,
         etch_bbox_margin=etch_bbox_margin,
         cross_section=cross_section,
-        half=half,
+        half=True,
     )
 
 

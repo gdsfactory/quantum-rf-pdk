@@ -174,10 +174,10 @@ def double_pad_transmon_with_bbox(
 
 @gf.cell(check_instances=False)
 def flipmon(
-    inner_circle_radius: float = 60,
-    outer_ring_radius: float = 110,
-    outer_ring_width: float = 60,
-    top_circle_radius: float = 110,
+    inner_circle_radius: float = 60.0,
+    outer_ring_radius: float = 110.0,
+    outer_ring_width: float = 60.0,
+    top_circle_radius: float = 110.0,
     junction_spec: ComponentSpec = partial(
         squid_junction,
         junction_spec=partial(josephson_junction, wide_straight_length=12),
@@ -209,12 +209,12 @@ def flipmon(
     """
     c = Component()
 
-    c << gf.c.circle(
+    _ = c << gf.c.circle(
         radius=inner_circle_radius,
         layer=layer_metal,
     )
 
-    c << gf.c.ring(
+    _ = c << gf.c.ring(
         radius=outer_ring_radius,
         width=outer_ring_width,
         layer=layer_metal,
@@ -289,10 +289,10 @@ def flipmon(
 
 @gf.cell
 def flipmon_with_bbox(
-    inner_circle_radius: float = 60,
-    outer_ring_radius: float = 110,
-    outer_ring_width: float = 60,
-    top_circle_radius: float = 110,
+    inner_circle_radius: float = 60.0,
+    outer_ring_radius: float = 110.0,
+    outer_ring_width: float = 60.0,
+    top_circle_radius: float = 110.0,
     junction_spec: ComponentSpec = partial(
         squid_junction,
         junction_spec=partial(josephson_junction, wide_straight_length=12),

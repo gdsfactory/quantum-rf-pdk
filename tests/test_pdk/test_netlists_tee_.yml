@@ -1,12 +1,18 @@
 instances:
-  nxn_N1_E1_S1_W1_m5000_m5000:
+  nxn_X10_Y10_WW10_LM1_DRAW_WM0_N1_E1_S1_W1_CScoplanar_waveguide_m5000_m5000:
     component: nxn
     info: {}
     settings:
+      cross_section: coplanar_waveguide
       east: 1
+      layer: M1_DRAW
       north: 1
       south: 1
       west: 1
+      wg_margin: 0
+      wg_width: 10
+      xsize: 10
+      ysize: 10
   rectangle_S6_10_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_0_m8000_A270:
     component: rectangle
     info: {}
@@ -22,7 +28,7 @@ instances:
       size:
       - 6
       - 10
-  straight_CScoplanar_waveguide_L6_0_5000_A90:
+  straight_L6_CScoplanar_waveguide_WNone_N2_0_5000_A90:
     component: straight
     info:
       length: 6
@@ -34,7 +40,9 @@ instances:
     settings:
       cross_section: coplanar_waveguide
       length: 6
-  straight_CScoplanar_waveguide_L6_5000_0:
+      npoints: 2
+      width: null
+  straight_L6_CScoplanar_waveguide_WNone_N2_5000_0:
     component: straight
     info:
       length: 6
@@ -46,7 +54,9 @@ instances:
     settings:
       cross_section: coplanar_waveguide
       length: 6
-  straight_CScoplanar_waveguide_L6_m5000_0_A180:
+      npoints: 2
+      width: null
+  straight_L6_CScoplanar_waveguide_WNone_N2_m5000_0_A180:
     component: straight
     info:
       length: 6
@@ -58,16 +68,18 @@ instances:
     settings:
       cross_section: coplanar_waveguide
       length: 6
+      npoints: 2
+      width: null
 name: tee_CScpw
 nets:
-- p1: nxn_N1_E1_S1_W1_m5000_m5000,o1
-  p2: straight_CScoplanar_waveguide_L6_m5000_0_A180,o1
-- p1: nxn_N1_E1_S1_W1_m5000_m5000,o2
-  p2: straight_CScoplanar_waveguide_L6_0_5000_A90,o1
-- p1: nxn_N1_E1_S1_W1_m5000_m5000,o3
-  p2: straight_CScoplanar_waveguide_L6_5000_0,o1
+- p1: nxn_X10_Y10_WW10_LM1_DRAW_WM0_N1_E1_S1_W1_CScoplanar_waveguide_m5000_m5000,o1
+  p2: straight_L6_CScoplanar_waveguide_WNone_N2_m5000_0_A180,o1
+- p1: nxn_X10_Y10_WW10_LM1_DRAW_WM0_N1_E1_S1_W1_CScoplanar_waveguide_m5000_m5000,o2
+  p2: straight_L6_CScoplanar_waveguide_WNone_N2_0_5000_A90,o1
+- p1: nxn_X10_Y10_WW10_LM1_DRAW_WM0_N1_E1_S1_W1_CScoplanar_waveguide_m5000_m5000,o3
+  p2: straight_L6_CScoplanar_waveguide_WNone_N2_5000_0,o1
 placements:
-  nxn_N1_E1_S1_W1_m5000_m5000:
+  nxn_X10_Y10_WW10_LM1_DRAW_WM0_N1_E1_S1_W1_CScoplanar_waveguide_m5000_m5000:
     mirror: false
     rotation: 0
     x: -5
@@ -77,25 +89,25 @@ placements:
     rotation: 270
     x: 0
     y: -8
-  straight_CScoplanar_waveguide_L6_0_5000_A90:
+  straight_L6_CScoplanar_waveguide_WNone_N2_0_5000_A90:
     mirror: false
     rotation: 90
     x: 0
     y: 5
-  straight_CScoplanar_waveguide_L6_5000_0:
+  straight_L6_CScoplanar_waveguide_WNone_N2_5000_0:
     mirror: false
     rotation: 0
     x: 5
     y: 0
-  straight_CScoplanar_waveguide_L6_m5000_0_A180:
+  straight_L6_CScoplanar_waveguide_WNone_N2_m5000_0_A180:
     mirror: false
     rotation: 180
     x: -5
     y: 0
 ports:
-  o1: straight_CScoplanar_waveguide_L6_m5000_0_A180,o2
-  o2: straight_CScoplanar_waveguide_L6_0_5000_A90,o2
-  o3: straight_CScoplanar_waveguide_L6_5000_0,o2
+  o1: straight_L6_CScoplanar_waveguide_WNone_N2_m5000_0_A180,o2
+  o2: straight_L6_CScoplanar_waveguide_WNone_N2_0_5000_A90,o2
+  o3: straight_L6_CScoplanar_waveguide_WNone_N2_5000_0,o2
 warnings:
   electrical:
     unconnected_ports:
@@ -118,7 +130,7 @@ warnings:
     unconnected_ports:
     - message: 1 unconnected optical ports!
       ports:
-      - nxn_N1_E1_S1_W1_m5000_m5000,o4
+      - nxn_X10_Y10_WW10_LM1_DRAW_WM0_N1_E1_S1_W1_CScoplanar_waveguide_m5000_m5000,o4
       values:
       - - 0
         - -5

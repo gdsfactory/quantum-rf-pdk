@@ -127,7 +127,7 @@ def josephson_junction(
 
     Args:
         junction_overlap_displacement: Displacement of the overlap region in µm.
-            Measured from the centers of the junction ports
+            Measured from the centers of the junction ports.
         wide_straight_length: Length of the wide straight section in µm.
         narrow_straight_length: Length of the narrow straight section in µm.
         taper_length: Length of the taper section in µm.

@@ -9,5 +9,10 @@ info:
   route_info_type: coplanar_waveguide
   route_info_weight: 20.316
   start_angle: 0
-name: bend_s
-settings: {}
+name: bend_s_S20_3_CScoplanar_waveguide_WNone_AMRVTrue
+settings:
+  allow_min_radius_violation: true
+  cross_section: coplanar_waveguide
+  size:
+  - 20
+  - 3
