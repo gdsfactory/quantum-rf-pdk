@@ -14,7 +14,7 @@ instances:
       size:
       - 10
       - 10
-name: nxn
+name: nxn_X10_Y10_WW10_LM1_DRAW_WM0_N1_E1_S1_W1_CScoplanar_waveguide
 nets: []
 placements:
   rectangle_gdsfactorypcomponentspshapesprectangle_S10_10_01a42715_0_0:
