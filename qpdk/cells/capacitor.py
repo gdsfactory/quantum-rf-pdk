@@ -253,9 +253,9 @@ def plate_capacitor(
 
 @gf.cell_with_module_name
 def plate_capacitor_single(
-    fingers: int = 4,
+    length: float = 26.0,
+    width: float = 5.0,
     finger_gap: float = 2.0,
-    thickness: float = 5.0,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
@@ -275,9 +275,9 @@ def plate_capacitor_single(
                  |______|
 
     Args:
-        fingers: Total number of fingers of the capacitor (must be >= 1).
-        finger_gap: Gap between adjacent fingers in μm.
-        thickness: Thickness of fingers and the base section in μm.
+        length: Length (vertical extent) of the capacitor pad in μm.
+        width: Width (horizontal extent) of the capacitor pad in μm.
+        finger_gap: Gap between adjacent finger sections in μm (used internally).
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
@@ -285,6 +285,20 @@ def plate_capacitor_single(
     Returns:
         A gdsfactory component with the plate capacitor geometry.
     """
+    # Convert length and width to interdigital capacitor parameters
+    # For a single-sided capacitor (half=True) with finger_length=0:
+    # - thickness controls the horizontal width
+    # - height = fingers * thickness + (fingers - 1) * finger_gap
+    # We need to calculate fingers such that total height ≈ length
+    
+    thickness = width
+    
+    # Calculate number of fingers to achieve desired length
+    # length = fingers * thickness + (fingers - 1) * finger_gap
+    # length = fingers * (thickness + finger_gap) - finger_gap
+    # fingers = (length + finger_gap) / (thickness + finger_gap)
+    fingers = max(1, round((length + finger_gap) / (thickness + finger_gap)))
+    
     return interdigital_capacitor(
         fingers=fingers,
         finger_length=0.0,
