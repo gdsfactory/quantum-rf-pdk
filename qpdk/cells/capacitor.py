@@ -289,7 +289,12 @@ def plate_capacitor_single(
     # For a single-sided capacitor (half=True) with finger_length=0:
     # - thickness controls the horizontal width
     # - height = fingers * thickness + (fingers - 1) * finger_gap
-    # We need to calculate fingers such that total height ≈ length
+    # We calculate fingers to match the desired length exactly (after rounding)
+
+    if width <= 0:
+        raise ValueError(f"width must be positive, got {width}")
+    if length <= 0:
+        raise ValueError(f"length must be positive, got {length}")
 
     thickness = width
 
@@ -297,6 +302,10 @@ def plate_capacitor_single(
     # length = fingers * thickness + (fingers - 1) * finger_gap
     # length = fingers * (thickness + finger_gap) - finger_gap
     # fingers = (length + finger_gap) / (thickness + finger_gap)
+    if thickness + finger_gap <= 0:
+        raise ValueError(
+            f"width + finger_gap must be positive, got {thickness + finger_gap}"
+        )
     fingers = max(1, round((length + finger_gap) / (thickness + finger_gap)))
 
     return interdigital_capacitor(
