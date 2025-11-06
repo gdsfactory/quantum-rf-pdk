@@ -98,16 +98,12 @@ def resonator_test_chip_python(
             x_position = (res_idx + 1) * resonator_spacing
 
             # Create resonator with unique cross-section
-            resonator_params = {
-                "length": resonator_length,
-                "meanders": 6,
-                "cross_section": resonator_cross_sections[res_idx],
-                "open_start": True,
-                "open_end": False,  # Quarter-wave resonator
-            }
-
             coupled_resonator = resonator_coupled(
-                resonator_params=resonator_params,
+                length=resonator_length,
+                meanders=6,
+                cross_section=resonator_cross_sections[res_idx],
+                open_start=True,
+                open_end=False,  # Quarter-wave resonator
                 cross_section_non_resonator=probeline_xs,
                 coupling_straight_length=coupling_length,
                 coupling_gap=coupling_gap,

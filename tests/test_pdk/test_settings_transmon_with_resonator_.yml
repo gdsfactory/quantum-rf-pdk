@@ -1,7 +1,7 @@
 info:
   length: 5000
   resonator_type: quarter_wave
-name: qubit_with_resonator_qpdkpcellspderivedptransmon_with_r_b7365373
+name: qubit_with_resonator_qpdkpcellspderivedptransmon_with_r_69fa538e
 settings:
   coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_ST20_F18
   coupler_offset:
@@ -11,7 +11,12 @@ settings:
   qubit: double_pad_transmon_with_bbox
   qubit_rotation: 90
   resonator: Fresonator_Mqpdkpcellspresonator_SOSFalse_OETrue_L4000_M6
+  resonator_bend_spec: bend_circular
+  resonator_cross_section: cpw
   resonator_length: 5000
   resonator_meander_start:
   - -700
   - -1300
+  resonator_meanders: 5
+  resonator_open_end: true
+  resonator_open_start: false

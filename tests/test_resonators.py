@@ -9,7 +9,7 @@ from qpdk.cells.derived.transmon_with_resonator import (
     flipmon_with_resonator,
     transmon_with_resonator,
 )
-from qpdk.cells.resonator import ResonatorParams, resonator, resonator_coupled
+from qpdk.cells.resonator import resonator, resonator_coupled
 from qpdk.cells.waveguides import bend_circular
 
 MAX_EXAMPLES = 20
@@ -73,13 +73,11 @@ class TestResonators:
         assume(length > meanders * bend_factory().info["length"])
 
         c = resonator_coupled(
-            ResonatorParams(
-                length=length,
-                meanders=meanders,
-                open_start=open_start,
-                open_end=open_end,
-                bend_spec=bend_factory,
-            ),
+            length=length,
+            meanders=meanders,
+            open_start=open_start,
+            open_end=open_end,
+            bend_spec=bend_factory,
             coupling_straight_length=coupling_straight_length,
             coupling_gap=coupling_gap,
         )

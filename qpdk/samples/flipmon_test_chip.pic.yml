@@ -23,26 +23,22 @@ instances:
     component: flipmon_with_resonator
     settings:
       resonator_length: 5000
-      resonator_params:
-        meanders: 5
+      resonator_meanders: 5
   qubit2:
     component: flipmon_with_resonator
     settings:
       resonator_length: 4800
-      resonator_params:
-        meanders: 3
+      resonator_meanders: 3
   qubit3:
     component: flipmon_with_resonator
     settings:
       resonator_length: 4600
-      resonator_params:
-        meanders: 3
+      resonator_meanders: 3
   qubit4:
     component: flipmon_with_resonator
     settings:
       resonator_length: 4400
-      resonator_params:
-        meanders: 5
+      resonator_meanders: 5
   tee_bot:
     component: tee
     settings: {}
