@@ -5,7 +5,6 @@ from __future__ import annotations
 import gdsfactory as gf
 import numpy as np
 from gdsfactory.component import Component
-from gdsfactory.components.superconductors.optimal_hairpin import optimal_hairpin
 from gdsfactory.typings import LayerSpec, Port, Size
 
 
@@ -54,7 +53,7 @@ def snspd(
     num_meanders = int(np.ceil(ysize / wire_pitch))
 
     D = Component()
-    hairpin = optimal_hairpin(
+    hairpin = gf.c.optimal_hairpin(
         width=wire_width,
         pitch=wire_pitch,
         turn_ratio=turn_ratio,
