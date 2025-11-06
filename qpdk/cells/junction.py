@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.typings import ComponentSpec, LayerSpec
+from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
 from qpdk.cells.waveguides import straight
@@ -21,8 +21,8 @@ def single_josephson_junction_wire(
     wide_straight_length: float = 8.3,
     narrow_straight_length: float = 0.5,
     taper_length: float = 4.7,
-    cross_section_wide: LayerSpec = josephson_junction_cross_section_wide,
-    cross_section_narrow: LayerSpec = josephson_junction_cross_section_narrow,
+    cross_section_wide: CrossSectionSpec = josephson_junction_cross_section_wide,
+    cross_section_narrow: CrossSectionSpec = josephson_junction_cross_section_narrow,
     layer_patch: LayerSpec = LAYER.JJ_PATCH,
     size_patch: tuple[float, float] = (1.5, 1.0),
 ) -> Component:
@@ -100,8 +100,8 @@ def josephson_junction(
     wide_straight_length: float = 8.3,
     narrow_straight_length: float = 0.5,
     taper_length: float = 4.7,
-    cross_section_wide: LayerSpec = josephson_junction_cross_section_wide,
-    cross_section_narrow: LayerSpec = josephson_junction_cross_section_narrow,
+    cross_section_wide: CrossSectionSpec = josephson_junction_cross_section_wide,
+    cross_section_narrow: CrossSectionSpec = josephson_junction_cross_section_narrow,
     layer_patch: LayerSpec = LAYER.JJ_PATCH,
     size_patch: tuple[float, float] = (1.5, 1.0),
 ) -> Component:
