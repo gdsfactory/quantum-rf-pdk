@@ -290,15 +290,15 @@ def plate_capacitor_single(
     # - thickness controls the horizontal width
     # - height = fingers * thickness + (fingers - 1) * finger_gap
     # We need to calculate fingers such that total height ≈ length
-    
+
     thickness = width
-    
+
     # Calculate number of fingers to achieve desired length
     # length = fingers * thickness + (fingers - 1) * finger_gap
     # length = fingers * (thickness + finger_gap) - finger_gap
     # fingers = (length + finger_gap) / (thickness + finger_gap)
     fingers = max(1, round((length + finger_gap) / (thickness + finger_gap)))
-    
+
     return interdigital_capacitor(
         fingers=fingers,
         finger_length=0.0,
