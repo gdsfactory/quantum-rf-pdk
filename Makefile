@@ -28,17 +28,18 @@ clean: ##@ Clean up all build, test, coverage and Python artifacts
 # Testing #
 ###########
 
+PYTEST_COMMAND := uv run --extra dev pytest
 test: ##@ Run the full test suite in parallel using pytest
-	uv run pytest -n auto
+	$(PYTEST_COMMAND) -n auto
 
 test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
-	uv run pytest -s tests/test_pdk.py
+	$(PYTEST_COMMAND) -s tests/test_pdk.py
 
 test-gds-force: ##@ Run GDS regressions tests (tests/test_pdk.py) and regenerate
-	uv run pytest -s tests/test_pdk.py --force-regen
+	$(PYTEST_COMMAND) -s tests/test_pdk.py --force-regen
 
 test-gds-fail-fast: ##@ Run GDS regressions tests (tests/test_pdk.py) and stop at first failure
-	uv run pytest -s tests/test_pdk.py -x
+	$(PYTEST_COMMAND) -s tests/test_pdk.py -x
 
 update-pre: ##@ Update pre-commit hooks to the latest revisions
 	uvx prek autoupdate -j $$(expr $$(nproc) / 2 + $$(expr $$(nproc) % 2))
