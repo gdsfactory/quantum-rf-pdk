@@ -203,9 +203,9 @@ def interdigital_capacitor(
 
 @gf.cell_with_module_name
 def plate_capacitor(
-    fingers: int = 4,
-    finger_gap: float = 2.0,
-    thickness: float = 5.0,
+    length: float = 26.0,
+    width: float = 5.0,
+    gap: float = 7.0,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
@@ -225,13 +225,10 @@ def plate_capacitor(
        |_________       |             |      _________|
                  |______|             |______|
 
-    .. note::
-        This is a special case of the interdigital capacitor with zero finger length.
-
     Args:
-        fingers: Total number of fingers of the capacitor (must be >= 1).
-        finger_gap: Gap between adjacent fingers in μm.
-        thickness: Thickness of fingers and the base section in μm.
+        length: Length (vertical extent) of the capacitor pad in μm.
+        width: Width (horizontal extent) of the capacitor pad in μm.
+        gap: Gap between plates in μm.
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
@@ -239,23 +236,44 @@ def plate_capacitor(
     Returns:
         A gdsfactory component with the plate capacitor geometry.
     """
-    return interdigital_capacitor(
-        fingers=fingers,
-        finger_length=0.0,
-        finger_gap=finger_gap,
-        thickness=thickness,
+    if width <= 0:
+        raise ValueError(f"width must be positive, got {width}")
+    if length <= 0:
+        raise ValueError(f"length must be positive, got {length}")
+
+    c = Component()
+    single_capacitor = plate_capacitor_single(
+        length=length,
+        width=width,
         etch_layer=etch_layer,
         etch_bbox_margin=etch_bbox_margin,
         cross_section=cross_section,
-        half=False,
     )
+
+    c.add_ref(single_capacitor)
+    pad2 = c.add_ref(single_capacitor)
+    pad2.rotate(180)
+    pad2.move((width + gap, 0))
+    c.center = (0, 0)
+    # Ensure etch box between pads
+    if etch_layer is not None:
+        missing_width = gap - 2 * etch_bbox_margin
+        if missing_width > 0:
+            etch_bbox = [
+                (-missing_width / 2, -length / 2 - etch_bbox_margin),
+                (missing_width / 2, -length / 2 - etch_bbox_margin),
+                (missing_width / 2, length / 2 + etch_bbox_margin),
+                (-missing_width / 2, length / 2 + etch_bbox_margin),
+            ]
+            c.add_polygon(etch_bbox, layer=etch_layer)
+
+    return c
 
 
 @gf.cell_with_module_name
 def plate_capacitor_single(
     length: float = 26.0,
     width: float = 5.0,
-    finger_gap: float = 2.0,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
@@ -277,7 +295,6 @@ def plate_capacitor_single(
     Args:
         length: Length (vertical extent) of the capacitor pad in μm.
         width: Width (horizontal extent) of the capacitor pad in μm.
-        finger_gap: Gap between adjacent finger sections in μm (used internally).
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
@@ -285,39 +302,74 @@ def plate_capacitor_single(
     Returns:
         A gdsfactory component with the plate capacitor geometry.
     """
-    # Convert length and width to interdigital capacitor parameters
-    # For a single-sided capacitor (half=True) with finger_length=0:
-    # - thickness controls the horizontal width
-    # - height = fingers * thickness + (fingers - 1) * finger_gap
-    # We calculate fingers to match the desired length exactly (after rounding)
-
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
     if length <= 0:
         raise ValueError(f"length must be positive, got {length}")
 
-    thickness = width
+    c = Component()
 
-    # Calculate number of fingers to achieve desired length
-    # length = fingers * thickness + (fingers - 1) * finger_gap
-    # length = fingers * (thickness + finger_gap) - finger_gap
-    # fingers = (length + finger_gap) / (thickness + finger_gap)
-    if thickness + finger_gap <= 0:
-        raise ValueError(
-            f"width + finger_gap must be positive, got {thickness + finger_gap}"
-        )
-    fingers = max(1, round((length + finger_gap) / (thickness + finger_gap)))
-
-    return interdigital_capacitor(
-        fingers=fingers,
-        finger_length=0.0,
-        finger_gap=finger_gap,
-        thickness=thickness,
-        etch_layer=etch_layer,
-        etch_bbox_margin=etch_bbox_margin,
-        cross_section=cross_section,
-        half=True,
+    layer = LAYER.M1_DRAW
+    points = [
+        (0, 0),
+        (0, length),
+        (width, length),
+        (width, 0),
+    ]
+    c.add_polygon(points, layer=layer)
+    # Add etch layer bbox if specified
+    if etch_layer is not None:
+        etch_bbox = [
+            (-etch_bbox_margin, -etch_bbox_margin),
+            (width + etch_bbox_margin, -etch_bbox_margin),
+            (width + etch_bbox_margin, length + etch_bbox_margin),
+            (-etch_bbox_margin, length + etch_bbox_margin),
+        ]
+        c.add_polygon(etch_bbox, layer=etch_layer)
+    # Add small straight on the left side of the capacitor
+    straight_cross_section = gf.get_cross_section(cross_section)
+    straight_out_of_etch = straight(
+        length=etch_bbox_margin, cross_section=straight_cross_section
     )
+    straight_left = c.add_ref(straight_out_of_etch).move(
+        (-etch_bbox_margin, length / 2)
+    )
+    # Add WG to additive metal
+    c_additive = gf.boolean(
+        A=c,
+        B=c,
+        operation="or",
+        layer=layer,
+        layer1=layer,
+        layer2=straight_cross_section.layer,
+    )
+
+    # Take boolean negative
+    c_negative = gf.boolean(
+        A=c,
+        B=c_additive,
+        operation="A-B",
+        layer=etch_layer,
+        layer1=etch_layer,
+        layer2=layer,
+    )
+    # Combine results
+    c = gf.Component()
+    c.absorb(c << c_additive)
+    c.absorb(c << c_negative)
+
+    c.add_port(
+        name="o1",
+        width=straight_left["o1"].width,
+        center=straight_left["o1"].center,
+        orientation=straight_left["o1"].orientation,
+        layer=LAYER.M1_DRAW,
+    )
+
+    # Center at (0,0)
+    c.move((-width / 2, -length / 2))
+
+    return c
 
 
 if __name__ == "__main__":
