@@ -77,8 +77,8 @@ All PRs must pass:
 
 ### Release Process
 
-1. Update version in `pyproject.toml`, `qpdk/__init__.py`, and `README.md` using tbump
-1. Create and push a version tag: `git tag v0.0.X && git push origin v0.0.X`
+1. Bump the version with `uv version --bump patch` The version should be updated in `pyproject.toml`, `qpdk/__init__.py`, and `README.md`
+1. Create and push a version tag. For example: `git tag v0.0.X && git push origin v0.0.X`
 1. GitHub Actions automatically builds and publishes to PyPI
 1. Draft release is automatically published on GitHub
 
