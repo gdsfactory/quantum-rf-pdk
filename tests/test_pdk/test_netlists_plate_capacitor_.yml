@@ -1,5 +1,45 @@
-instances: {}
-name: plate_capacitor_qpdkpcellspcapacitor_F4_FG2_T5_ELM1_ETC_771efc26
+instances:
+  plate_capacitor_single_qpdkpcellspcapacitor_L26_W5_ELM1_0c330734_6000_0_A180:
+    component: plate_capacitor_single
+    info: {}
+    settings:
+      cross_section: cpw
+      etch_bbox_margin: 2
+      etch_layer: M1_ETCH
+      length: 26
+      width: 5
+  plate_capacitor_single_qpdkpcellspcapacitor_L26_W5_ELM1_0c330734_m6000_0:
+    component: plate_capacitor_single
+    info: {}
+    settings:
+      cross_section: cpw
+      etch_bbox_margin: 2
+      etch_layer: M1_ETCH
+      length: 26
+      width: 5
+name: plate_capacitor_qpdkpcellspcapacitor_L26_W5_G7_ELM1_ETC_7c625516
 nets: []
-placements: {}
+placements:
+  plate_capacitor_single_qpdkpcellspcapacitor_L26_W5_ELM1_0c330734_6000_0_A180:
+    mirror: false
+    rotation: 180
+    x: 6
+    y: 0
+  plate_capacitor_single_qpdkpcellspcapacitor_L26_W5_ELM1_0c330734_m6000_0:
+    mirror: false
+    rotation: 0
+    x: -6
+    y: 0
 ports: {}
+warnings:
+  optical:
+    unconnected_ports:
+    - message: 2 unconnected optical ports!
+      ports:
+      - plate_capacitor_single_qpdkpcellspcapacitor_L26_W5_ELM1_0c330734_m6000_0,o1
+      - plate_capacitor_single_qpdkpcellspcapacitor_L26_W5_ELM1_0c330734_6000_0_A180,o1
+      values:
+      - - -10.5
+        - 0
+      - - 10.5
+        - 0
