@@ -98,7 +98,7 @@ res = quarter_wave_resonator_coupled(
     f=freq,
     media=media,
     coupling_gap=0.3,
-    coupling_length=200,
+    coupling_straight_length=200,
     length=5000,
 )
 
