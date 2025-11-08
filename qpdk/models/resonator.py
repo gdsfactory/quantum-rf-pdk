@@ -112,9 +112,9 @@ def resonator_frequency(
 def quarter_wave_resonator_coupled(
     f: ArrayLike = jnp.array([5e9]),
     media: MediaCallable = cpw_media_skrf(),
-    coupling_gap: int | float = 0.27,
-    coupling_length: float = 20,
     length: float = 5000,
+    coupling_gap: int | float = 0.27,
+    coupling_straight_length: float = 20,
 ) -> sax.SDict:
     """Model for a quarter-wave coplanar waveguide resonator coupled to a probeline.
 
@@ -132,9 +132,9 @@ def quarter_wave_resonator_coupled(
     Args:
         media: skrf media object defining the CPW (or other) properties.
         f: Frequency in Hz at which to evaluate the S-parameters.
-        coupling_gap: Gap between the resonator and the probeline in μm.
-        coupling_length: Length of the coupling section in μm.
         length: Total length of the resonator in μm.
+        coupling_gap: Gap between the resonator and the probeline in μm.
+        coupling_straight_length: Length of the coupling section in μm.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -153,7 +153,7 @@ def quarter_wave_resonator_coupled(
     resonator_with_cap = skrf.connect(resonator_tee, 1, coupling_capacitor, 0)
     resonator_coupled = skrf.connect(resonator_with_cap, 1, quarter_wave_resonator, 0)
 
-    probeline_factory = partial(media.line, d=coupling_length / 2, unit="um")
+    probeline_factory = partial(media.line, d=coupling_straight_length / 2, unit="um")
     probeline = skrf.connect(
         skrf.connect(probeline_factory(), 1, media.tee(), 0), 2, probeline_factory(), 0
     )
