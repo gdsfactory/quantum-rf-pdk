@@ -17,7 +17,7 @@ if not make_path:
     raise FileNotFoundError(msg)
 
 # Run make help and capture output
-result = subprocess.run(
+result = subprocess.run(  # noqa: S603
     [make_path, "help"],
     cwd=PATH.repo,
     capture_output=True,
