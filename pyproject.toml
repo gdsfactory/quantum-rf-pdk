@@ -38,11 +38,11 @@ docs = [
   "sphinxcontrib-svgbob",
 ]
 models = [
+  "sax>=0.15.16",
   "gplugins[meshwell] @ git+https://github.com/gdsfactory/gplugins.git@770d835bb130a8118aa7b78edfb1cf76d31fd7f6",
   "jaxellip",
   "optuna",
   "ray[tune]",
-  "sax",
   "scikit-rf",
   "scqubits",
   "sympy",
@@ -135,49 +135,49 @@ exclude = ["*.ipynb"]
 [tool.ruff.lint]
 exclude = ["*.ipynb"]
 ignore = [
-  "E501",  # line too long, handled by black
-  "B008",  # do not perform function calls in argument defaults
-  "C901",  # too complex
-  "B905",  # `zip()` without an explicit `strict=` parameter
-  "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
-  "RUF001",  # ambiguous unicode characters (incl. lots of math)
-  "RUF003",  # -||- but for comments
+  "E501",   # line too long, handled by black
+  "B008",   # do not perform function calls in argument defaults
+  "C901",   # too complex
+  "B905",   # `zip()` without an explicit `strict=` parameter
+  "C408",   # C408 Unnecessary `dict` call (rewrite as a literal)
+  "RUF001", # ambiguous unicode characters (incl. lots of math)
+  "RUF003", # -||- but for comments
 ]
 select = [
-  "E",  # pycodestyle errors
-  "W",  # pycodestyle warnings
-  "F",  # pyflakes
-  "I",  # isort
-  "C",  # flake8-comprehensions
-  "B",  # flake8-bugbear
-  "D",  # pydocstyle
-  "UP",  # pyupgrade
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # isort
+  "C",    # flake8-comprehensions
+  "B",    # flake8-bugbear
+  "D",    # pydocstyle
+  "UP",   # pyupgrade
   "T10",  # flake8-debugger
-  "S",  # flake8-bandit
-  "PT",  # flake8-pytest-style
+  "S",    # flake8-bandit
+  "PT",   # flake8-pytest-style
   "SIM",  # flake8-simplify
   "RET",  # flake8-return
   "RSE",  # flake8-raise
-  "Q",  # flake8-quotes
-  "SLOT",  # flake8-slots
+  "Q",    # flake8-quotes
+  "SLOT", # flake8-slots
   "ARG",  # flake8-unused-arguments
   "PTH",  # flake8-use-pathlib
-  "PD",  # pandas-vet
+  "PD",   # pandas-vet
   "FLY",  # flynt
   "NPY",  # numpy
-  "PERF",  # perflint
+  "PERF", # perflint
   "RUF",  # ruff
 ]
 
 [tool.ruff.lint.per-file-ignores]
 ".github/write_cells.py" = [
   "S701",
-]  # Jinja2 autoescape not needed for RST templates
+] # Jinja2 autoescape not needed for RST templates
 "notebooks/**/*.py" = ["D100"]
-"qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
+"qpdk/**/__init__.py" = ["F403"] # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",
-]  # no public module docstring for sample scripts
+] # no public module docstring for sample scripts
 "tests/**" = ["S101", "D102", "D103"]
 
 [tool.ruff.lint.pydocstyle]
@@ -198,4 +198,4 @@ convention = "google"
 ]
 
 [tool.setuptools.packages]
-find = {  }
+find = {}
