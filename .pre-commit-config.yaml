@@ -19,14 +19,14 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.14.3"
+    rev: v0.14.4
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
       - id: ruff-format
         args: [--config=pyproject.toml]
   - repo: https://github.com/tombi-toml/tombi-pre-commit
-    rev: v0.6.40
+    rev: v0.6.42
     hooks:
       - id: tombi-format
       - id: tombi-lint
@@ -55,7 +55,7 @@ repos:
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.7
+    rev: 0.9.8
     hooks:
       - id: uv-lock
   - repo: https://github.com/facebook/pyrefly-pre-commit
@@ -94,7 +94,7 @@ repos:
         language_version: python3
         types: [rst]
   - repo: https://github.com/sphinx-contrib/sphinx-lint
-    rev: v1.0.0
+    rev: v1.0.1
     hooks:
       - id: sphinx-lint
   - repo: https://github.com/DavidAnson/markdownlint-cli2

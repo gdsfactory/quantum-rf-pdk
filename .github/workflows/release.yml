@@ -1,10 +1,48 @@
 name: Release
 on:
   push:
-    tags: "v*"
+    branches:
+      - main
 jobs:
+  check_and_tag:
+    name: Check for version bump and create tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get_version.outputs.tag }}
+      new_tag_created: ${{ steps.check_tag.outputs.new_tag }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(grep -m 1 '^version =' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Check if tag exists and create if not
+        id: check_tag
+        run: |
+          TAG=${{ steps.get_version.outputs.tag }}
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG"; then
+            echo "Tag $TAG already exists. No new release will be created."
+            echo "new_tag=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag $TAG does not exist. Creating and pushing tag."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release ${{ steps.get_version.outputs.version }}"
+            git push origin "$TAG"
+            echo "new_tag=true" >> "$GITHUB_OUTPUT"
+          fi
+  build:
+    needs: check_and_tag
+    if: needs.check_and_tag.outputs.new_tag_created == 'true'
+    uses: ./.github/workflows/build.yml
   release_environment:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    needs: check_and_tag
+    if: needs.check_and_tag.outputs.new_tag_created == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -12,14 +50,12 @@ jobs:
       - uses: actions/checkout@v5
       - name: Publish Latest Draft
         run: |
-          gh release edit ${{ github.ref_name }} --draft=false
+          gh release edit ${{ needs.check_and_tag.outputs.tag }} --draft=false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  build:
-    uses: ./.github/workflows/build.yml
   release_pypi:
-    needs: [build]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    needs: [check_and_tag, build]
+    if: needs.check_and_tag.outputs.new_tag_created == 'true'
     runs-on: ubuntu-latest
     environment:
       name: pypi
