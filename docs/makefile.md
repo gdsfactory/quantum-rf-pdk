@@ -4,6 +4,12 @@ The repository includes a `Makefile` with convenient commands for common develop
 
 ## Available Commands
 
+To see the list of available commands at any time, run:
+
+```bash
+make help
+```
+
 ```{literalinclude} makefile_help.txt
 :language: text
 ```
@@ -14,20 +20,4 @@ To run any of these commands, use:
 
 ```bash
 make <command>
-```
-
-For example:
-
-```bash
-make install  # Install dependencies
-make test     # Run tests
-make docs     # Build documentation
-```
-
-## Getting Help
-
-To see the list of available commands at any time, run:
-
-```bash
-make help
 ```
