@@ -5,7 +5,7 @@ root: index
 parts:
   - caption: Development
     chapters:
-      - file: makefile
+      - file: make_commands
   - caption: API
     chapters:
       - file: api
