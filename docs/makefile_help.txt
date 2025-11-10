@@ -1,0 +1,21 @@
+
+[1;34mUsage:[0m [1;33mmake <command>[0m
+
+    [34mhelp                [0m (Default) Print listing of key targets with their descriptions
+    [34minstall             [0m Install the package and all development dependencies
+    [34mclean               [0m Clean up all build, test, coverage and Python artifacts
+    [34mtest                [0m Run the full test suite in parallel using pytest
+    [34mtest-gds            [0m Run GDS regressions tests (tests/test_pdk.py)
+    [34mtest-gds-force      [0m Run GDS regressions tests (tests/test_pdk.py) and regenerate
+    [34mtest-gds-fail-fast  [0m Run GDS regressions tests (tests/test_pdk.py) and stop at first failure
+    [34mupdate-pre          [0m Update pre-commit hooks to the latest revisions
+    [34mrun-pre             [0m Run all pre-commit hooks on all files
+    [34mbuild               [0m Build the Python package (install build tool and create dist)
+    [34mwrite-cells         [0m Write cell outputs into documentation notebooks (used when building docs)
+    [34mwrite-makefile-help [0m Write Makefile help output to documentation
+    [34mconvert-notebooks   [0m Convert jupytext scripts from notebooks/src to ipynb format in notebooks
+    [34mcopy-sample-notebooks[0m Copy all sample scripts to use as notebooks docs
+    [34msetup-ipython-config[0m Setup IPython configuration for documentation build
+    [34mdocs                [0m Build the HTML documentation
+    [34mdocs-latex          [0m Setup LaTeX for PDF documentation
+    [34mdocs-pdf            [0m Build PDF documentation (requires a TeXLive installation)
