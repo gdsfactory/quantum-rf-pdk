@@ -14,5 +14,6 @@ config:
 ignores:
   - "docs/index.md" # Uses include directive
   - "docs/changelog.md" # Uses include directive
+  - "docs/make_commands.md" # Uses literalinclude directive
   - ".venv/**"
   - "**/.venv/**"

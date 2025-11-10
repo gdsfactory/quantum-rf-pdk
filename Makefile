@@ -1,4 +1,4 @@
-.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install run-pre setup-ipython-config test test-fail-fast test-force test-gds test-gds-fail-fast test-gds-force update-pre write-cells
+.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install run-pre setup-ipython-config test test-fail-fast test-force test-gds test-gds-fail-fast test-gds-force update-pre write-cells write-makefile-help
 
 # Based on https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
 help: ##@ (Default) Print listing of key targets with their descriptions
@@ -58,6 +58,9 @@ build: ##@ Build the Python package (install build tool and create dist)
 write-cells: ##@ Write cell outputs into documentation notebooks (used when building docs)
 	uv run .github/write_cells.py
 
+write-makefile-help: ##@ Write Makefile help output to documentation
+	uv run .github/write_makefile_help.py
+
 convert-notebooks: ##@ Convert jupytext scripts from notebooks/src to ipynb format in notebooks
 	./.github/convert-notebooks.sh notebooks/src/*.py
 
@@ -71,10 +74,10 @@ setup-ipython-config: ##@ Setup IPython configuration for documentation build
 	mkdir -p ~/.config/matplotlib/stylelib/
 	cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
-docs: write-cells copy-sample-notebooks ##@ Build the HTML documentation
+docs: write-cells write-makefile-help copy-sample-notebooks ##@ Build the HTML documentation
 	uv run jb build docs
 
-docs-latex: write-cells copy-sample-notebooks ##@ Setup LaTeX for PDF documentation
+docs-latex: write-cells write-makefile-help copy-sample-notebooks ##@ Setup LaTeX for PDF documentation
 	uv run jb build docs --builder latex
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
