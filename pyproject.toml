@@ -64,7 +64,7 @@ timeout = 300
 # units = "frequency"
 min = 30000
 max = 3000000
-num = 3000
+num = 1001
 
 [tool.gdsfactoryplus.pdk]
 name = "qpdk"
