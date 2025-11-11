@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from skrf.media import Media
 
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
+from qpdk.models.generic import capacitor, inductor
 from qpdk.models.media import MediaCallable, cpw_media_skrf
 
 
@@ -168,34 +169,180 @@ def quarter_wave_resonator_coupled(
     return sax.reciprocal(sdict)
 
 
-if __name__ == "__main__":
-    cpw = cpw_media_skrf(width=10, gap=6)(
-        frequency=skrf.Frequency(2, 9, 101, unit="GHz")
+def _lc_shunt_component(
+    f: ArrayLike = jnp.array([5e9]),
+    L: sax.FloatLike = 1e-9,
+    C: sax.FloatLike = 1e-12,
+    Z0: sax.FloatLike = 50,
+) -> sax.SDict:
+    """SAX component for a 1-port shunt LC resonator."""
+    omega_array = 2 * jnp.pi * f
+    Z_L_array = 1j * omega_array * L
+    Z_C_array = 1 / (1j * omega_array * C)
+    Y_res_array = 1 / Z_L_array + 1 / Z_C_array  # Admittance of parallel LC
+    Y0 = 1 / Z0
+    s11 = (Y0 - Y_res_array) / (Y0 + Y_res_array)
+    return sax.reciprocal({("o1", "o1"): s11})
+
+
+def lc_resonator(
+    f: ArrayLike = jnp.array([5e9]),
+    L: sax.FloatLike = 1e-9,
+    C: sax.FloatLike = 1e-12,
+    C_coupling: sax.FloatLike = 0.0,
+    L_coupling: sax.FloatLike = 0.0,
+    Z0: sax.FloatLike = 50.0,
+) -> sax.SDict:
+    """Model for a lumped element LC resonator with capacitive and inductive coupling.
+
+    Args:
+        f: Frequency in Hz at which to evaluate the S-parameters.
+        L: Inductance of the resonator in H.
+        C: Capacitance of the resonator in F.
+        C_coupling: Coupling capacitance in F. If 0, no capacitive coupling.
+        L_coupling: Coupling inductance in H. If 0, no inductive coupling.
+        Z0: Characteristic impedance of the ports in Ohm.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
+    """
+    models = {
+        "lc_shunt": _lc_shunt_component,
+        "series_cap": capacitor,
+        "series_ind": inductor,
+    }
+
+    instances = {}
+    connections = {}
+    ports = {}
+    if C_coupling > 0 and L_coupling > 0:
+        raise NotImplementedError(
+            "Cannot specify both capacitive and inductive coupling simultaneously."
+        )
+
+    # Case: No coupling
+    if C_coupling == 0 and L_coupling == 0:
+        omega = 2 * jnp.pi * f
+        Z_L = 1j * omega * L
+        Z_C = 1 / (1j * omega * C)
+        Y_res = 1 / Z_L + 1 / Z_C
+        Y0 = 1 / Z0
+        s11 = -Y_res / (2 * Y0 + Y_res)
+        s21 = 2 * Y0 / (2 * Y0 + Y_res)
+        return {
+            ("o1", "o1"): s11,
+            ("o2", "o2"): s11,
+            ("o1", "o2"): s21,
+            ("o2", "o1"): s21,
+        }
+
+    # Case: Capacitive coupling
+    if C_coupling > 0:
+        instances["C_in"] = {
+            "component": "series_cap",
+            "settings": {"C": C_coupling, "Z0": Z0},
+        }
+        instances["C_out"] = {
+            "component": "series_cap",
+            "settings": {"C": C_coupling, "Z0": Z0},
+        }
+        instances["resonator"] = {
+            "component": "lc_shunt",
+            "settings": {"L": L, "C": C, "Z0": Z0},
+        }
+        connections = {
+            "C_in,o2": "resonator,o1",
+            "C_out,o1": "resonator,o1",
+        }
+        ports = {
+            "o1": "C_in,o1",
+            "o2": "C_out,o2",
+        }
+
+    # Case: Inductive coupling
+    elif L_coupling > 0:
+        instances["L_in"] = {
+            "component": "series_ind",
+            "settings": {"L": L_coupling, "Z0": Z0},
+        }
+        instances["L_out"] = {
+            "component": "series_ind",
+            "settings": {"L": L_coupling, "Z0": Z0},
+        }
+        instances["resonator"] = {
+            "component": "lc_shunt",
+            "settings": {"L": L, "C": C, "Z0": Z0},
+        }
+        connections = {
+            "L_in,o2": "resonator,o1",
+            "L_out,o1": "resonator,o1",
+        }
+        ports = {
+            "o1": "L_in,o1",
+            "o2": "L_out,o2",
+        }
+
+    circuit, _ = sax.circuit(
+        netlist={
+            "instances": instances,
+            "connections": connections,
+            "ports": ports,
+        },
+        models=models,
     )
-    print(f"{cpw=!r}")
-    print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
 
-    res_freq = resonator_frequency(length=4000, media=cpw, is_quarter_wave=True)
-    print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")
+    return circuit(f=f)
 
-    # Plot resonator_coupled example
-    f = jnp.linspace(0.1e9, 9e9, 1001)
-    resonator = quarter_wave_resonator_coupled(
+
+if __name__ == "__main__":
+    # cpw = cpw_media_skrf(width=10, gap=6)(
+    #     frequency=skrf.Frequency(2, 9, 101, unit="GHz")
+    # )
+    # print(f"{cpw=!r}")
+    # print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
+    #
+    # res_freq = resonator_frequency(length=4000, media=cpw, is_quarter_wave=True)
+    # print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")
+    #
+    # # Plot resonator_coupled example
+    # f = jnp.linspace(0.1e9, 9e9, 1001)
+    # resonator = quarter_wave_resonator_coupled(
+    #     f=f,
+    #     media=cpw_media_skrf(width=10, gap=6),
+    #     coupling_gap=0.27,
+    #     length=4000,
+    # )
+    # from matplotlib import pyplot as plt
+    #
+    # fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    #
+    # for key in [("o2", "o3"), ("o1", "o2"), ("o1", "o3")]:
+    #     ax.plot(f / 1e9, 20 * jnp.log10(jnp.abs(resonator[key])), label=f"$S${key}")
+    # ax.set_xlabel("Frequency [GHz]")
+    # ax.set_ylabel("Magnitude [dB]")
+    # ax.set_title(r"$S$-parameters: $\mathtt{resonator\_coupled}$ (3-port)")
+    # ax.grid(True, which="both")
+    # ax.legend()
+    #
+    # plt.show()
+
+    # Example usage of lc_resonator
+    f = jnp.linspace(1e9, 10e9, 1001)
+    resonator = lc_resonator(
         f=f,
-        media=cpw_media_skrf(width=10, gap=6),
-        coupling_gap=0.27,
-        length=4000,
+        L=2e-9,
+        C=0.5e-12,
+        C_coupling=10e-15,
+        Z0=50.0,
     )
     from matplotlib import pyplot as plt
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-
-    for key in [("o2", "o3"), ("o1", "o2"), ("o1", "o3")]:
+    for key in [("o1", "o1"), ("o2", "o2"), ("o1", "o2")]:
         ax.plot(f / 1e9, 20 * jnp.log10(jnp.abs(resonator[key])), label=f"$S${key}")
     ax.set_xlabel("Frequency [GHz]")
     ax.set_ylabel("Magnitude [dB]")
-    ax.set_title(r"$S$-parameters: $\mathtt{resonator\_coupled}$ (3-port)")
+    ax.set_title(r"$S$-parameters: $\mathtt{lc\_resonator}$ (2-port)")
     ax.grid(True, which="both")
     ax.legend()
-
     plt.show()

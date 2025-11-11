@@ -14,7 +14,7 @@ from .generic import (
     single_impedance_element,
     tee,
 )
-from .resonator import quarter_wave_resonator_coupled, resonator_frequency
+from .resonator import lc_resonator, quarter_wave_resonator_coupled, resonator_frequency
 from .waveguides import (
     bend_circular,
     bend_euler,
@@ -39,6 +39,7 @@ models = {
         coupler_straight,
         gamma_0_load,
         inductor,
+        lc_resonator,
         open,
         rectangle,
         quarter_wave_resonator_coupled,
