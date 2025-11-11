@@ -99,6 +99,7 @@ def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
 
 @partial(jax.jit, inline=True)
 def single_impedance_element(
+    f: ArrayLike = jnp.array([5e9]),
     z: int | float | complex = 50,
     z0: int | float | complex = 50,
 ) -> sax.SType:
@@ -114,16 +115,18 @@ def single_impedance_element(
     Returns:
         sax.SType: S-parameters dictionary
     """
+    f = jnp.asarray(f)
     sdict = {
-        ("o1", "o1"): z / (z + 2 * z0),
-        ("o1", "o2"): 2 * z0 / (2 * z0 + z),
-        ("o2", "o2"): z / (z + 2 * z0),
+        ("o1", "o1"): jnp.full(f.shape, z / (z + 2 * z0)),
+        ("o1", "o2"): jnp.full(f.shape, 2 * z0 / (2 * z0 + z)),
+        ("o2", "o2"): jnp.full(f.shape, z / (z + 2 * z0)),
     }
     return sax.reciprocal(sdict)
 
 
 @partial(jax.jit, inline=True)
 def single_admittance_element(
+    f: ArrayLike = jnp.array([5e9]),
     y: int | float | complex = 1 / 50,
 ) -> sax.SType:
     r"""Single admittance element Sax model.
@@ -136,10 +139,11 @@ def single_admittance_element(
     Returns:
         sax.SType: S-parameters dictionary
     """
+    f = jnp.asarray(f)
     sdict = {
-        ("o1", "o1"): 1 / (1 + y),
-        ("o1", "o2"): y / (1 + y),
-        ("o2", "o2"): 1 / (1 + y),
+        ("o1", "o1"): jnp.full(f.shape, 1 / (1 + y)),
+        ("o1", "o2"): jnp.full(f.shape, y / (1 + y)),
+        ("o2", "o2"): jnp.full(f.shape, 1 / (1 + y)),
     }
     return sax.reciprocal(sdict)
 
@@ -167,7 +171,7 @@ def capacitor(
     # Y = 2 * (1j * ω * capacitance * z0)
     # return single_admittance_element(y=Y)
     Z𞁞 = 1 / (1j * ω * capacitance)
-    return single_impedance_element(z=Z𞁞, z0=z0)
+    return single_impedance_element(f=f, z=Z𞁞, z0=z0)
 
 
 @partial(jax.jit, inline=True)
@@ -191,7 +195,7 @@ def inductor(
     """
     ω = 2 * jnp.pi * jnp.asarray(f)
     Zᵢ = 1j * ω * inductance
-    return single_impedance_element(z=Zᵢ, z0=z0)
+    return single_impedance_element(f=f, z=Zᵢ, z0=z0)
 
 
 if __name__ == "__main__":
