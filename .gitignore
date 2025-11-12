@@ -158,4 +158,5 @@ cython_debug/
 docs/cells.rst
 docs/samples.rst
 docs/notebooks/
+docs/makefile_help.txt
 !notebooks/*.ipynb
