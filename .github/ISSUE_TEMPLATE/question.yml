@@ -1,0 +1,92 @@
+name: Question or Help
+description: Ask a question or get help using quantum-rf-pdk
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reaching out! Please provide details about your question.
+
+        **Note:** Before asking, please check:
+        - [Documentation](https://gdsfactory.github.io/quantum-rf-pdk/)
+        - [Existing issues](https://github.com/gdsfactory/quantum-rf-pdk/issues)
+        - [gdsfactory documentation](https://gdsfactory.github.io/gdsfactory/)
+  - type: dropdown
+    id: category
+    attributes:
+      label: Question Category
+      description: What is your question about?
+      options:
+        - Installation and setup
+        - Using quantum device components
+        - Routing and layout
+        - Simulation and modeling
+        - KLayout integration
+        - Testing and validation
+        - Contributing to the project
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: Please describe your question in detail...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to accomplish? What have you tried so far?
+      placeholder: |
+        I'm trying to...
+        I've attempted...
+        I've read...
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample (if applicable)
+      description: If relevant, provide code showing what you're trying to do
+      placeholder: |
+        ```python
+        import qpdk
+
+        # Your code here
+        ```
+      render: python
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment (if relevant)
+      description: If this is environment-specific, provide details
+      placeholder: |
+        - OS:
+        - Python version:
+        - qpdk version:
+        - gdsfactory version:
+      value: |
+        - OS:
+        - Python version:
+        - qpdk version:
+        - gdsfactory version:
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might help answer your question
+      placeholder: Any additional information...
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      description: Please confirm the following
+      options:
+        - label: I have checked the documentation and existing issues
+          required: true
+        - label: This is a question, not a bug report or feature request
+          required: true
