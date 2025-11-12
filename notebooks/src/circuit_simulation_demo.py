@@ -9,9 +9,9 @@ import sax
 from matplotlib import pyplot as plt
 
 from qpdk.models.generic import capacitor, inductor, tee
-from qpdk.models.media import cpw_media_skrf
 from qpdk.models.resonator import quarter_wave_resonator_coupled
 from qpdk.models.waveguides import straight, straight_shorted
+from qpdk.tech import coplanar_waveguide
 
 # %% [markdown]
 # ## Setup
@@ -24,7 +24,7 @@ freq = jnp.linspace(2e9, 8e9, 501)
 freq_ghz = freq / 1e9
 
 # Define CPW media
-media = cpw_media_skrf(width=10, gap=6)
+cross_section = coplanar_waveguide(width=10, gap=6)
 
 # %% [markdown]
 # ## Individual Component Models
@@ -36,7 +36,7 @@ media = cpw_media_skrf(width=10, gap=6)
 # Simulate a $1\,\textrm{mm}$ straight waveguide
 
 # %%
-straight_wg = straight(f=freq, length=1000, media=media)
+straight_wg = straight(f=freq, length=1000, cross_section=cross_section)
 
 # Plot S-parameters
 plt.figure()
@@ -96,7 +96,7 @@ plt.show()
 # Simulate a coupled resonator
 res = quarter_wave_resonator_coupled(
     f=freq,
-    media=media,
+    cross_section=cross_section,
     coupling_gap=0.3,
     coupling_straight_length=200,
     length=5000,
@@ -142,11 +142,11 @@ netlist = {
     "instances": {
         "feedline1": {
             "component": "straight",
-            "settings": {"length": feedline_segment_length, "media": media},
+            "settings": {"length": feedline_segment_length, "media": cross_section},
         },
         "feedline2": {
             "component": "straight",
-            "settings": {"length": feedline_segment_length, "media": media},
+            "settings": {"length": feedline_segment_length, "media": cross_section},
         },
         "cap": {
             "component": "capacitor",
@@ -154,7 +154,7 @@ netlist = {
         },
         "res": {
             "component": "straight_shorted",
-            "settings": {"length": resonator_length, "media": media},
+            "settings": {"length": resonator_length, "media": cross_section},
         },
         "tee": "tee",
     },

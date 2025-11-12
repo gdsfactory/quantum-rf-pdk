@@ -15,8 +15,8 @@ from numpy.testing import assert_allclose
 from qpdk.config import PATH
 from qpdk.models.couplers import coupler_straight
 from qpdk.models.generic import capacitor, inductor
-from qpdk.models.media import cpw_media_skrf
 from qpdk.models.waveguides import straight
+from qpdk.tech import coplanar_waveguide
 
 TEST_DATA_PATH = PATH.tests / "models" / "data"
 
@@ -324,7 +324,7 @@ class TestCPWCompareToQucs(BaseCompareToQucs):
     def get_model_function(self) -> partial[sax.SType]:
         return partial(
             straight,
-            media=cpw_media_skrf(),
+            cross_section=coplanar_waveguide(),
         )
 
 
@@ -343,7 +343,7 @@ class TestCouplerStraightCompareToQucs(BaseCompareToQucs):
     def get_model_function(self) -> partial[sax.SType]:
         return partial(
             coupler_straight,
-            media=cpw_media_skrf(),
+            cross_section=coplanar_waveguide(),
         )
 
 
