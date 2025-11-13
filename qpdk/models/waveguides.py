@@ -10,7 +10,7 @@ from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from skrf import Frequency
 
-from qpdk.models.generic import short_2_port
+from qpdk.models.generic import short_2_port, tee
 from qpdk.models.media import cpw_media_skrf, cross_section_to_media
 from qpdk.tech import coplanar_waveguide
 
@@ -270,6 +270,64 @@ def launcher(
             "taper_cross_section": taper_cross_section,
         },
     )
+    return circuit(f=f)
+
+
+def probeline_with_tee(
+    f: ArrayLike = jnp.array([5e9]),
+    length: int | float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a probe line connected to one port of a device under test.
+
+    Looking at :math:`S_{21}` of this model is a way to measure the transmission.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Total physical length of probeline in µm.
+            DUT is placed at the center of the probeline.
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    circuit, _ = sax.circuit(
+        netlist={
+            "instances": {
+                "straight_1": {
+                    "component": "straight",
+                    "settings": {
+                        "length": length / 2,
+                        "cross_section": cross_section,
+                    },
+                },
+                "straight_2": {
+                    "component": "straight",
+                    "settings": {
+                        "length": length / 2,
+                        "cross_section": cross_section,
+                    },
+                },
+                "tee": {
+                    "component": "tee",
+                },
+            },
+            "connections": {
+                "straight_1,o2": "tee,o1",
+                "straight_2,o1": "tee,o2",
+            },
+            "ports": {
+                "o1": "straight_1,o1",
+                "o2": "straight_2,o1",
+                "o3": "tee,o3",
+            },
+        },
+        models={
+            "straight": straight,
+            "tee": tee,
+        },
+    )
+
     return circuit(f=f)
 
 

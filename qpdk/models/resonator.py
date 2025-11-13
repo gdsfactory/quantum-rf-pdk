@@ -11,8 +11,9 @@ from numpy.typing import NDArray
 from skrf.media import Media
 
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
-from qpdk.models.generic import capacitor, inductor
+from qpdk.models.generic import capacitor, inductor, short, tee
 from qpdk.models.media import cross_section_to_media
+from qpdk.models.waveguides import probeline_with_tee
 
 
 def resonator_frequency(
@@ -174,124 +175,51 @@ def quarter_wave_resonator_coupled(
     return sax.reciprocal(sdict)
 
 
-def _lc_shunt_component(
+def lc_shunt_component(
     f: ArrayLike = jnp.array([5e9]),
     L: sax.FloatLike = 1e-9,
     C: sax.FloatLike = 1e-12,
     Z0: sax.FloatLike = 50,
-) -> sax.SDict:
-    """SAX component for a 1-port shunt LC resonator."""
-    omega_array = 2 * jnp.pi * f
-    Z_L_array = 1j * omega_array * L
-    Z_C_array = 1 / (1j * omega_array * C)
-    Y_res_array = 1 / Z_L_array + 1 / Z_C_array  # Admittance of parallel LC
-    Y0 = 1 / Z0
-    s11 = (Y0 - Y_res_array) / (Y0 + Y_res_array)
-    return sax.reciprocal({("o1", "o1"): s11})
-
-
-def lc_resonator(
-    f: ArrayLike = jnp.array([5e9]),
-    L: sax.FloatLike = 1e-9,
-    C: sax.FloatLike = 1e-12,
-    C_coupling: sax.FloatLike = 0.0,
-    L_coupling: sax.FloatLike = 0.0,
-    Z0: sax.FloatLike = 50.0,
-) -> sax.SDict:
-    """Model for a lumped element LC resonator with capacitive and inductive coupling.
-
-    Args:
-        f: Frequency in Hz at which to evaluate the S-parameters.
-        L: Inductance of the resonator in H.
-        C: Capacitance of the resonator in F.
-        C_coupling: Coupling capacitance in F. If 0, no capacitive coupling.
-        L_coupling: Coupling inductance in H. If 0, no inductive coupling.
-        Z0: Characteristic impedance of the ports in Ohm.
-
-    Returns:
-        sax.SDict: S-parameters dictionary.
-    """
+):
+    """SAX component for a 1-port shunted LC resonator."""
     models = {
-        "lc_shunt": _lc_shunt_component,
-        "series_cap": capacitor,
-        "series_ind": inductor,
+        "L": inductor,
+        "C": capacitor,
+        "short": short,
+        "tee": tee,
     }
-
-    instances = {}
-    connections = {}
-    ports = {}
-    if C_coupling > 0 and L_coupling > 0:
-        raise NotImplementedError(
-            "Cannot specify both capacitive and inductive coupling simultaneously."
-        )
-
-    # Case: No coupling
-    if C_coupling == 0 and L_coupling == 0:
-        omega = 2 * jnp.pi * f
-        Z_L = 1j * omega * L
-        Z_C = 1 / (1j * omega * C)
-        Y_res = 1 / Z_L + 1 / Z_C
-        Y0 = 1 / Z0
-        s11 = -Y_res / (2 * Y0 + Y_res)
-        s21 = 2 * Y0 / (2 * Y0 + Y_res)
-        return {
-            ("o1", "o1"): s11,
-            ("o2", "o2"): s11,
-            ("o1", "o2"): s21,
-            ("o2", "o1"): s21,
-        }
-
-    # Case: Capacitive coupling
-    if C_coupling > 0:
-        instances["C_in"] = {
-            "component": "series_cap",
-            "settings": {"C": C_coupling, "Z0": Z0},
-        }
-        instances["C_out"] = {
-            "component": "series_cap",
-            "settings": {"C": C_coupling, "Z0": Z0},
-        }
-        instances["resonator"] = {
-            "component": "lc_shunt",
-            "settings": {"L": L, "C": C, "Z0": Z0},
-        }
-        connections = {
-            "C_in,o2": "resonator,o1",
-            "C_out,o1": "resonator,o1",
-        }
-        ports = {
-            "o1": "C_in,o1",
-            "o2": "C_out,o2",
-        }
-
-    # Case: Inductive coupling
-    elif L_coupling > 0:
-        instances["L_in"] = {
-            "component": "series_ind",
-            "settings": {"L": L_coupling, "Z0": Z0},
-        }
-        instances["L_out"] = {
-            "component": "series_ind",
-            "settings": {"L": L_coupling, "Z0": Z0},
-        }
-        instances["resonator"] = {
-            "component": "lc_shunt",
-            "settings": {"L": L, "C": C, "Z0": Z0},
-        }
-        connections = {
-            "L_in,o2": "resonator,o1",
-            "L_out,o1": "resonator,o1",
-        }
-        ports = {
-            "o1": "L_in,o1",
-            "o2": "L_out,o2",
-        }
 
     circuit, _ = sax.circuit(
         netlist={
-            "instances": instances,
-            "connections": connections,
-            "ports": ports,
+            "instances": {
+                "L": {
+                    "component": "L",
+                    "settings": {"inductance": L, "z0": Z0},
+                },
+                "C": {
+                    "component": "C",
+                    "settings": {"capacitance": C, "z0": Z0},
+                },
+                "tee_1": {
+                    "component": "tee",
+                },
+                "tee_2": {
+                    "component": "tee",
+                },
+                "gnd": {
+                    "component": "short",
+                },
+            },
+            "connections": {
+                "L,o1": "tee_1,o1",
+                "C,o1": "tee_1,o2",
+                "L,o2": "tee_2,o1",
+                "C,o2": "tee_2,o2",
+                "gnd,o1": "tee_2,o3",
+            },
+            "ports": {
+                "o1": "tee_1,o3",
+            },
         },
         models=models,
     )
@@ -299,7 +227,162 @@ def lc_resonator(
     return circuit(f=f)
 
 
+def probeline_with_lc_shunt(
+    f: ArrayLike = jnp.array([5e9]),
+    L: sax.FloatLike = 1e-9,
+    C: sax.FloatLike = 1e-12,
+    C_coupling: sax.FloatLike = 10e-15,
+    Z0: sax.FloatLike = 50,
+):
+    """SAX component for a 2-port probeline with a shunted LC resonator."""
+    models = {
+        "lc_shunt": lc_shunt_component,
+        "probeline": probeline_with_tee,
+        "capacitor": capacitor,
+    }
+
+    circuit, _ = sax.circuit(
+        netlist={
+            "instances": {
+                "lc_shunt_resonator": {
+                    "component": "lc_shunt",
+                    "settings": {"L": L, "C": C, "Z0": Z0},
+                },
+                "probeline": {
+                    "component": "probeline",
+                },
+                "capacitive_coupler": {
+                    "component": "capacitor",
+                    "settings": {"capacitance": C_coupling, "z0": Z0},
+                },
+            },
+            "connections": {
+                "probeline,o3": "capacitive_coupler,o1",
+                "capacitive_coupler,o2": "lc_shunt_resonator,o1",
+            },
+            "ports": {
+                "o1": "probeline,o1",
+                "o2": "probeline,o2",
+            },
+        },
+        models=models,
+    )
+
+    return circuit(f=f)
+
+
+# def lc_resonator(
+#     f: ArrayLike = jnp.array([5e9]),
+#     L: sax.FloatLike = 1e-9,
+#     C: sax.FloatLike = 1e-12,
+#     C_coupling: sax.FloatLike = 0.0,
+#     L_coupling: sax.FloatLike = 0.0,
+#     Z0: sax.FloatLike = 50.0,
+# ) -> sax.SDict:
+#     """Model for a lumped element LC resonator with capacitive and inductive coupling.
+#
+#     Note that only one type of coupling can be specified at a time.
+#
+#     Args:
+#         f: Frequency in Hz at which to evaluate the S-parameters.
+#         L: Inductance of the resonator in H.
+#         C: Capacitance of the resonator in F.
+#         C_coupling: Coupling capacitance in F. If 0, no capacitive coupling.
+#         L_coupling: Coupling inductance in H. If 0, no inductive coupling.
+#         Z0: Characteristic impedance of the ports in Ohm.
+#
+#     Returns:
+#         sax.SDict: S-parameters dictionary.
+#     """
+#     if C_coupling > 0 and L_coupling > 0:
+#         raise NotImplementedError(
+#             "Cannot specify both capacitive and inductive coupling simultaneously."
+#         )
+#
+#     models = {
+#         "lc_shunt": lc_shunt_component,
+#         "series_cap": capacitor,
+#         "series_ind": inductor,
+#     }
+#
+#     instances = {}
+#     connections = {}
+#     ports = {}
+#
+#     # Case: No coupling
+#     if C_coupling == 0 and L_coupling == 0:
+#         instances["resonator"] = {
+#             "component": "lc_shunt",
+#             "settings": {"L": L, "C": C, "Z0": Z0},
+#         }
+#         ports = {
+#             "o1": "resonator,o1",
+#             "o2": "resonator,o1",
+#         }
+#
+#     # Case: Capacitive coupling
+#     elif C_coupling > 0:
+#         instances["C_in"] = {
+#             "component": "series_cap",
+#             "settings": {"capacitance": C_coupling, "z0": Z0},
+#         }
+#         instances["C_out"] = {
+#             "component": "series_cap",
+#             "settings": {"capacitance": C_coupling, "z0": Z0},
+#         }
+#         instances["resonator"] = {
+#             "component": "lc_shunt",
+#             "settings": {"L": L, "C": C, "Z0": Z0},
+#         }
+#         connections = {
+#             "C_in,o2": "resonator,o1",
+#             "C_out,o1": "resonator,o1",
+#         }
+#         ports = {
+#             "o1": "C_in,o1",
+#             "o2": "C_out,o2",
+#         }
+#
+#     # Case: Inductive coupling
+#     elif L_coupling > 0:
+#         instances["L_in"] = {
+#             "component": "series_ind",
+#             "settings": {"inductance": L_coupling, "z0": Z0},
+#         }
+#         instances["L_out"] = {
+#             "component": "series_ind",
+#             "settings": {"inductance": L_coupling, "z0": Z0},
+#         }
+#         instances["resonator"] = {
+#             "component": "lc_shunt",
+#             "settings": {"L": L, "C": C, "Z0": Z0},
+#         }
+#         connections = {
+#             "L_in,o2": "resonator,o1",
+#             "L_out,o1": "resonator,o1",
+#         }
+#         ports = {
+#             "o1": "L_in,o1",
+#             "o2": "L_out,o2",
+#         }
+#
+#     circuit, _ = sax.circuit(
+#         netlist={
+#             "instances": instances,
+#             "connections": connections,
+#             "ports": ports,
+#         },
+#         models=models,
+#     )
+#
+#     return circuit(f=f)
+#
+
 if __name__ == "__main__":
+    from qpdk import PDK
+
+    PDK.activate()
+
     # cpw = cpw_media_skrf(width=10, gap=6)(
     #     frequency=skrf.Frequency(2, 9, 101, unit="GHz")
     # )
@@ -331,9 +414,11 @@ if __name__ == "__main__":
     #
     # plt.show()
 
+    # Example usage of shunted LC
+
     # Example usage of lc_resonator
     f = jnp.linspace(1e9, 10e9, 1001)
-    resonator = lc_resonator(
+    resonator = probeline_with_lc_shunt(
         f=f,
         L=2e-9,
         C=0.5e-12,
