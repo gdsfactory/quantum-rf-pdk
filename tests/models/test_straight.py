@@ -4,8 +4,8 @@ import hypothesis.strategies as st
 import jax.numpy as jnp
 from hypothesis import assume, given, settings
 
-from qpdk.models.media import cpw_media_skrf
 from qpdk.models.waveguides import straight
+from qpdk.tech import coplanar_waveguide
 
 MAX_EXAMPLES = 20
 
@@ -190,13 +190,13 @@ class TestStraightWaveguide:
             "All |S21| values should be <= 1 (with numerical tolerance)"
         )
 
-    def test_straight_custom_media(self) -> None:
+    def test_straight_custom_cross_section(self) -> None:
         """Test straight waveguide with custom media parameters."""
-        # Create custom CPW media with different dimensions
-        custom_media = cpw_media_skrf(width=20, gap=10)
+        # Create custom CPW cross_section with different dimensions
+        custom_cross_section = coplanar_waveguide(width=20, gap=10)
 
         f = jnp.array([5e9, 6e9])
-        result = straight(f=f, length=1000, media=custom_media)
+        result = straight(f=f, length=1000, cross_section=custom_cross_section)
 
         assert isinstance(result, dict), "Result should be a dictionary"
         assert len(result[("o2", "o1")]) == 2, "Should have 2 frequency points"

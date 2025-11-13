@@ -5,13 +5,14 @@ from functools import partial
 import jax.numpy as jnp
 import sax
 import skrf
+from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from numpy.typing import NDArray
 from skrf.media import Media
 
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
 from qpdk.models.generic import capacitor, inductor
-from qpdk.models.media import MediaCallable, cpw_media_skrf
+from qpdk.models.media import cross_section_to_media
 
 
 def resonator_frequency(
@@ -48,7 +49,7 @@ def resonator_frequency(
 #
 # def resonator_coupled(
 #     f: ArrayLike = jnp.array([5e9]),
-#     media: MediaCallable = cpw_media_skrf(),
+#     cross_section: CrossSectionSpec = "cpw",
 #     coupling_gap: int | float = 0.27,
 #     coupling_length: float = 20,
 #     length: float = 5000,
@@ -61,7 +62,7 @@ def resonator_frequency(
 #     ```
 #
 #     Args:
-#         media: skrf media object defining the CPW (or other) properties.
+#         cross_section: The cross-section of the CPW.
 #         f: Frequency in Hz at which to evaluate the S-parameters.
 #         coupling_gap: Gap between the resonator and the probeline in μm.
 #         coupling_length: Length of the coupling section in μm.
@@ -79,7 +80,7 @@ def resonator_frequency(
 #                         "f": f,
 #                         "length": coupling_length,
 #                         "gap": coupling_gap,
-#                         "media": media,
+#                         "cross_section": cross_section,
 #                     },
 #                 },
 #                 "resonator": {
@@ -87,7 +88,7 @@ def resonator_frequency(
 #                     "settings": {
 #                         "f": f,
 #                         "length": length - coupling_length,
-#                         "media": media,
+#                         "cross_section": cross_section,
 #                     },
 #                 },
 #             },
@@ -112,7 +113,7 @@ def resonator_frequency(
 
 def quarter_wave_resonator_coupled(
     f: ArrayLike = jnp.array([5e9]),
-    media: MediaCallable = cpw_media_skrf(),
+    cross_section: CrossSectionSpec = "cpw",
     length: float = 5000,
     coupling_gap: int | float = 0.27,
     coupling_straight_length: float = 20,
@@ -131,7 +132,7 @@ def quarter_wave_resonator_coupled(
     ```
 
     Args:
-        media: skrf media object defining the CPW (or other) properties.
+        cross_section: The cross-section of the CPW.
         f: Frequency in Hz at which to evaluate the S-parameters.
         length: Total length of the resonator in μm.
         coupling_gap: Gap between the resonator and the probeline in μm.
@@ -141,8 +142,12 @@ def quarter_wave_resonator_coupled(
         sax.SDict: S-parameters dictionary
     """
     f = f if f is not None else jnp.array([1e9, 5e9])
-    coupling_capacitance = cpw_cpw_coupling_capacitance(length, coupling_gap, media, f)
-    media: Media = media(frequency=skrf.Frequency.from_f(f, unit="Hz"))  # type: ignore
+    coupling_capacitance = cpw_cpw_coupling_capacitance(
+        length, coupling_gap, cross_section, f
+    )
+    media: Media = cross_section_to_media(cross_section)(
+        frequency=skrf.Frequency.from_f(f, unit="Hz")
+    )  # type: ignore
 
     transmission_line = media.line(d=length, unit="um")
     quarter_wave_resonator = transmission_line ** media.short()

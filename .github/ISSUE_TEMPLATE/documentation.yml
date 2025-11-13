@@ -1,0 +1,81 @@
+name: Documentation Issue
+description: Report an issue with documentation or suggest improvements
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve our documentation!
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - Missing documentation
+        - Incorrect information
+        - Unclear explanation
+        - Typo or formatting issue
+        - Missing example
+        - Broken link
+        - API reference issue
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Where is the documentation issue? Provide a link or file path
+      placeholder: |
+        - URL: https://gdsfactory.github.io/quantum-rf-pdk/...
+        - Or file: docs/...
+        - Or section: "Getting Started", "Components", etc.
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: Describe what's wrong or what's missing
+      placeholder: Describe the documentation issue...
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Improvement
+      description: How should the documentation be improved?
+      placeholder: |
+        The documentation should...
+        - Include an example showing...
+        - Clarify that...
+        - Add a section about...
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example or Reference
+      description: If suggesting new content, provide an example or reference
+      placeholder: |
+        Example code, diagrams, or references that would help...
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context or screenshots about the documentation issue
+      placeholder: Any additional information...
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      description: Please confirm the following
+      options:
+        - label: I have checked that this documentation issue hasn't been reported before
+          required: true
+        - label: I have checked the latest documentation (not an outdated version)
+          required: false
+        - label: I am willing to submit a PR to fix this (if applicable)
+          required: false
