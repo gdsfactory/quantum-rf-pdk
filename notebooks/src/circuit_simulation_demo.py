@@ -8,10 +8,13 @@ import jax.numpy as jnp
 import sax
 from matplotlib import pyplot as plt
 
+from qpdk import PDK
 from qpdk.models.generic import capacitor, inductor, tee
 from qpdk.models.resonator import quarter_wave_resonator_coupled
 from qpdk.models.waveguides import straight, straight_shorted
 from qpdk.tech import coplanar_waveguide
+
+PDK.activate()
 
 # %% [markdown]
 # ## Setup

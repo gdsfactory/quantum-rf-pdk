@@ -22,11 +22,12 @@ import jax.numpy as jnp
 import sax
 import skrf
 
+from qpdk.models.media import cpw_media_skrf
 from qpdk.models.resonator import (
-    cpw_media_skrf,
     quarter_wave_resonator_coupled,
     resonator_frequency,
 )
+from qpdk.tech import coplanar_waveguide
 
 # %% [markdown]
 # ## Probelines weakly coupled to $\lambda/4$ resonator
@@ -61,7 +62,7 @@ if __name__ == "__main__":
         models={
             "quarter_wave_resonator": partial(
                 quarter_wave_resonator_coupled,
-                media=cpw_media_skrf(width=10, gap=6),
+                cross_section=coplanar_waveguide(width=10, gap=6),
                 length=4000,
             )
         },

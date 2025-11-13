@@ -26,12 +26,15 @@ import sys
 import numpy as np
 from IPython.display import Markdown, display
 
+from qpdk import PDK
 from qpdk.config import PATH as QPDKPath
 
 # Add the tests directory to the path so we can import the test modules
 sys.path.insert(0, str(QPDKPath.tests))
 
 from models.test_compare_to_qucs import BaseCompareToQucs
+
+PDK.activate()
 
 # %% [markdown]
 # ## Discover Test Suites
