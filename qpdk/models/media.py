@@ -4,7 +4,9 @@ import inspect
 from functools import cache, partial
 from typing import Protocol, cast
 
+import gdsfactory as gf
 import skrf
+from gdsfactory.typings import CrossSectionSpec
 from skrf.media import CPW, Media
 
 from qpdk import LAYER_STACK
@@ -51,3 +53,37 @@ def cpw_media_skrf(
         tand=0,  # No dielectric losses for now
         has_metal_backside=False,
     )
+
+
+def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
+    """Converts a layout :class:`~CrossSectionSpec` to model :class:`~MediaCallable`.
+
+    This function assumes the cross-section to have Sections similarly
+    to :func:`qpdk.tech.coplanar_waveguide`. Namely, the primary width corresponds
+    to CPW width and the gap is the width of a Section that includes
+    `etch_offset` in the name.
+
+    Args:
+        cross_section: A gdsfactory cross-section specification.
+
+    Returns:
+        MediaCallable: A callable that returns a skrf Media object for a given frequency.
+    """
+    xs = gf.get_cross_section(cross_section)
+    width = xs.width
+    gap = next(
+        section.width for section in xs.sections if "etch_offset" in section.name
+    )
+    return cpw_media_skrf(width=width, gap=gap)
+
+
+if __name__ == "__main__":
+    from qpdk import PDK
+
+    PDK.activate()
+
+    freq = skrf.Frequency(2, 8, 501, "GHz")
+    media = cross_section_to_media("cpw")
+    cpw = media(frequency=freq)
+
+    print(cpw)

@@ -2,18 +2,19 @@
 
 import jax.numpy as jnp
 import sax
+from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from skrf import Frequency
 
 from qpdk.models.generic import capacitor, tee
-from qpdk.models.media import MediaCallable, cpw_media_skrf
+from qpdk.models.media import cross_section_to_media
 from qpdk.models.waveguides import straight
 
 
 def cpw_cpw_coupling_capacitance(
     length: float,
     gap: float,
-    media: MediaCallable,
+    cross_section: CrossSectionSpec,
     f: ArrayLike = jnp.array([5e9]),
 ) -> float:
     """Calculate the coupling capacitance between two parallel CPWs.
@@ -23,15 +24,14 @@ def cpw_cpw_coupling_capacitance(
     Args:
         length: The coupling length in µm.
         gap: The gap between the two CPWs in µm.
-        media: A scikit-rf Media object callable, which contains the CPW parameters.
-               It's assumed to have attributes `w` (conductor width) and `s` (slot width)
-               in meters, and `ep_r` (substrate dielectric constant).
+        cross_section: The cross-section of the CPW.
         f: Frequency array in Hz.
 
     Returns:
         The total coupling capacitance in Farads.
     """
     # Create a media instance to extract parameters. Frequency doesn't matter for geometry.
+    media = cross_section_to_media(cross_section)
     media_instance = media(frequency=Frequency.from_f(f, unit="Hz"))
     ep_r = media_instance.ep_r  # noqa: F841
     w_m = getattr(media_instance, "w", 10e-6)  # noqa: F841
@@ -49,7 +49,7 @@ def coupler_straight(
     f: ArrayLike = jnp.array([5e9]),
     length: int | float = 20.0,
     gap: int | float = 0.27,
-    media: MediaCallable = cpw_media_skrf(),
+    cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """S-parameter model for two coupled coplanar waveguides, :func:`~qpdk.cells.waveguides.coupler_straight`.
 
@@ -57,8 +57,7 @@ def coupler_straight(
         f: Array of frequency points in Hz
         length: Physical length of coupling section in µm
         gap: Gap between the coupled waveguides in µm
-        media: Function returning a scikit-rf :class:`~Media` object after called
-            with ``frequency=f``. If None, uses default CPW media.
+        cross_section: The cross-section of the CPW.
 
     Returns:
         sax.SType: S-parameters dictionary
@@ -69,12 +68,14 @@ def coupler_straight(
                 │gap
         o1──────▼───────o4
     """
-    straight_settings = {"length": length / 2, "media": media}
+    straight_settings = {"length": length / 2, "cross_section": cross_section}
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(
-            length, gap, media, f
+            length, gap, cross_section, f
         ),  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
-        "z0": media(frequency=Frequency.from_f(f, unit="Hz")).z0,
+        "z0": cross_section_to_media(cross_section)(
+            frequency=Frequency.from_f(f, unit="Hz")
+        ).z0,
     }
 
     # Create straight instances with shared settings
@@ -167,9 +168,11 @@ if __name__ == "__main__":
     plt.show()
 
     # Example calculation of coupling capacitance
-    media = cpw_media_skrf(width=10, gap=6)
+    from qpdk.tech import coplanar_waveguide
+
+    cs = coplanar_waveguide(width=10, gap=6)
     coupling_capacitance = cpw_cpw_coupling_capacitance(
-        length=20.0, gap=0.27, media=media, f=f
+        length=20.0, gap=0.27, cross_section=cs, f=f
     )
     print(
         "Coupling capacitance for 20 um length and 0.27 um gap:",

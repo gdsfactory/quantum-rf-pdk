@@ -22,7 +22,7 @@ dev = [
   "hypothesis",
   "jsondiff",
   "prek",
-  "pytest",
+  "pytest>=9.0.0",
   "pytest-cov",
   "pytest-github-actions-annotate-failures",
   "pytest-xdist",
@@ -119,9 +119,8 @@ no-matching-overload = "ignore"
 not-a-type = "warn"
 read-only = "ignore"
 
-[tool.pytest.ini_options]
-# addopts = --tb=no
-addopts = "--tb=short"
+[tool.pytest]
+addopts = ["--tb=short"]
 norecursedirs = ["extra/*.py"]
 python_files = ["qpdk/*.py", "notebooks/*.ipynb", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
@@ -199,3 +198,6 @@ convention = "google"
 
 [tool.setuptools.packages]
 find = {  }
+
+[tool.tombi.schema]
+strict = false
