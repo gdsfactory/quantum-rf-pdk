@@ -199,3 +199,6 @@ convention = "google"
 
 [tool.setuptools.packages]
 find = {  }
+
+[tool.tombi.schema]
+strict = false
