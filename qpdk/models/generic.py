@@ -108,6 +108,7 @@ def single_impedance_element(
     See :cite:`m.pozarMicrowaveEngineering2012` for details.
 
     Args:
+        f: Array of frequency points in Hz
         z: Impedance in Ω
         z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
             Media object using `z0 = media.z0`.
@@ -134,6 +135,7 @@ def single_admittance_element(
     See :cite:`m.pozarMicrowaveEngineering2012` for details.
 
     Args:
+        f: Array of frequency points in Hz
         y: Admittance
 
     Returns:
