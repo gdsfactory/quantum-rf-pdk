@@ -18,25 +18,6 @@ classifiers = [
 dependencies = ["doroutes>=0.2.0", "gdsfactory>=9.15.0,<9.21.7"]
 
 [project.optional-dependencies]
-dev = [
-  "hypothesis",
-  "jsondiff",
-  "prek",
-  "pytest>=9.0.0",
-  "pytest-cov",
-  "pytest-github-actions-annotate-failures",
-  "pytest-xdist",
-  "pytest_regressions",
-]
-docs = [
-  "jinja2",
-  "jupyter-book>=1.0.4,<2",
-  "jupytext",
-  "matplotlib",
-  "pydata-sphinx-theme",
-  "sphinxcontrib-katex",
-  "sphinxcontrib-svgbob",
-]
 models = [
   "gplugins[meshwell]>=2.0.0",
   "jaxellip",
@@ -47,6 +28,28 @@ models = [
   "scqubits",
   "sympy",
   "polars",
+]
+
+[dependency-groups]
+dev = [{ include-group = "lint" }, { include-group = "test" }]
+docs = [
+  "jinja2",
+  "jupyter-book>=1.0.4,<2",
+  "jupytext",
+  "matplotlib",
+  "pydata-sphinx-theme",
+  "sphinxcontrib-katex",
+  "sphinxcontrib-svgbob",
+]
+lint = ["prek"]
+test = [
+  "hypothesis",
+  "jsondiff",
+  "pytest>=9.0.0",
+  "pytest-cov",
+  "pytest-github-actions-annotate-failures",
+  "pytest_regressions",
+  "pytest-xdist",
 ]
 
 [build-system]

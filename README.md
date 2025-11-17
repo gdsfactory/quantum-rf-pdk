@@ -48,7 +48,7 @@ Clone the repository and install at least the development dependencies:
 ```bash
 git clone https://github.com/gdsfactory/quantum-rf-pdk.git
 cd quantum-rf-pdk
-uv sync --extra dev
+uv sync --group dev
 ```
 
 > [!NOTE]
