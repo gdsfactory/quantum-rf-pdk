@@ -38,7 +38,7 @@ docs = [
   "sphinxcontrib-svgbob",
 ]
 models = [
-  "gplugins[meshwell]>=1.4.3",
+  "gplugins[meshwell]>=2.0.0",
   "jaxellip",
   "optuna",
   "ray[tune]",
