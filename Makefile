@@ -18,7 +18,7 @@ else { \
 	}'
 
 install: ##@ Install the package and all development dependencies
-	uv sync --all-extras
+	uv sync --all-extras --all-groups
 
 CLEAN_DIRS := dist build *.egg-info docs/_build docs/notebooks
 clean: ##@ Clean up all build, test, coverage and Python artifacts
@@ -28,7 +28,7 @@ clean: ##@ Clean up all build, test, coverage and Python artifacts
 # Testing #
 ###########
 
-PYTEST_COMMAND := uv run --extra dev pytest
+PYTEST_COMMAND := uv run --group dev pytest
 test: ##@ Run the full test suite in parallel using pytest
 	$(PYTEST_COMMAND) -n auto
 
@@ -56,10 +56,10 @@ build: ##@ Build the Python package (install build tool and create dist)
 #################
 
 write-cells: ##@ Write cell outputs into documentation notebooks (used when building docs)
-	uv run .github/write_cells.py
+	uv run --group docs .github/write_cells.py
 
 write-makefile-help: ##@ Write Makefile help output to documentation
-	uv run .github/write_makefile_help.py
+	uv run --group docs .github/write_makefile_help.py
 
 convert-notebooks: ##@ Convert jupytext scripts from notebooks/src to ipynb format in notebooks
 	./.github/convert-notebooks.sh notebooks/src/*.py
@@ -75,10 +75,10 @@ setup-ipython-config: ##@ Setup IPython configuration for documentation build
 	cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
 docs: write-cells write-makefile-help copy-sample-notebooks ##@ Build the HTML documentation
-	uv run jb build docs
+	uv run --group docs jb build docs
 
 docs-latex: write-cells write-makefile-help copy-sample-notebooks ##@ Setup LaTeX for PDF documentation
-	uv run jb build docs --builder latex
+	uv run --group docs jb build docs --builder latex
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
 	cd "docs/_build/latex" && latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
