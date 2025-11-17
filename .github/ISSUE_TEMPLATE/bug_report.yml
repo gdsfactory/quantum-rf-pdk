@@ -6,112 +6,44 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug! Please fill out the information below to help us diagnose and fix the issue.
+        Thanks for reporting a bug! Please provide the essential details to help us fix the issue.
   - type: textarea
     id: description
     attributes:
-      label: Description
-      description: A clear and concise description of what the bug is.
-      placeholder: Describe the bug...
+      label: What happened?
+      description: Describe the bug and what you expected vs. what actually happened
+      placeholder: |
+        When I tried to..., I expected... but instead...
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
-      label: Steps to Reproduce
-      description: Steps to reproduce the behavior
+      label: How to reproduce
+      description: Minimal steps or code to reproduce the issue
       placeholder: |
-        1. Import component '...'
-        2. Create layout with parameters '...'
-        3. Run command '...'
-        4. See error
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected Behavior
-      description: What you expected to happen
-      placeholder: Describe what should happen...
-    validations:
-      required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual Behavior
-      description: What actually happened
-      placeholder: Describe what actually happens...
-    validations:
-      required: true
-  - type: dropdown
-    id: component
-    attributes:
-      label: Affected Component
-      description: Which part of the PDK is affected?
-      options:
-        - Quantum device cells (transmon, resonator, etc.)
-        - Routing and waveguides
-        - Simulation models
-        - Documentation
-        - Tests
-        - Build/Installation
-        - KLayout integration
-        - Other
+        ```python
+        import qpdk
+        # Your code here
+        ```
+      render: python
     validations:
       required: true
   - type: textarea
     id: environment
     attributes:
       label: Environment
-      description: Please provide information about your environment
+      description: OS, Python version, qpdk version
       placeholder: |
-        - OS: [e.g., Ubuntu 22.04, macOS 14, Windows 11]
-        - Python version: [e.g., 3.12.1]
-        - qpdk version: [e.g., 0.1.1]
-        - gdsfactory version: [e.g., 9.15.0]
-        - Installation method: [e.g., uv pip install, from source]
-      value: |
-        - OS:
-        - Python version:
-        - qpdk version:
-        - gdsfactory version:
-        - Installation method:
+        - OS: Ubuntu 22.04
+        - Python: 3.12
+        - qpdk: 0.1.1
     validations:
-      required: true
-  - type: textarea
-    id: code
-    attributes:
-      label: Code Sample
-      description: If applicable, provide a minimal code sample that reproduces the issue
-      placeholder: |
-        ```python
-        import qpdk
-
-        # Your code here
-        ```
-      render: python
-  - type: textarea
-    id: traceback
-    attributes:
-      label: Error Messages / Traceback
-      description: If applicable, paste the full error message or traceback
-      placeholder: Paste error messages here...
-      render: text
-  - type: textarea
-    id: additional
-    attributes:
-      label: Additional Context
-      description: Add any other context about the problem here (screenshots, GDS files, etc.)
-      placeholder: Any additional information...
+      required: false
   - type: checkboxes
     id: checks
     attributes:
       label: Checks
-      description: Please confirm the following
       options:
-        - label: I have searched existing issues to ensure this hasn't been reported before
+        - label: I have searched existing issues
           required: true
-        - label: I have provided a minimal reproducible example
-          required: false
-        - label: I am using the latest version of qpdk
-          required: false
