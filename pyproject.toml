@@ -60,6 +60,9 @@ build-backend = "flit_core.buildapi"
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
 skip = "bibliography.bib"
 
+[tool.flit.sdist]
+exclude = ["tests", "docs"]
+
 [tool.gdsfactoryplus.drc]
 timeout = 300
 
