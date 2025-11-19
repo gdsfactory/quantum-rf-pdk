@@ -50,10 +50,12 @@ jobs:
       - uses: actions/checkout@v5
       - name: Create Release
         run: |
-          # Get the latest draft release body if it exists
-          DRAFT_BODY=$(gh release list --limit 1 --json isDraft,body,tagName --jq '.[] | select(.isDraft==true) | .body' || echo "")
+          # Get the latest draft release tag if it exists
+          DRAFT_TAG=$(gh release list --limit 1 --json isDraft,tagName --jq '.[] | select(.isDraft==true) | .tagName' || echo "")
 
-          if [ -n "$DRAFT_BODY" ]; then
+          if [ -n "$DRAFT_TAG" ]; then
+            # Get the body of the draft release
+            DRAFT_BODY=$(gh release view "$DRAFT_TAG" --json body --jq '.body' || echo "")
             # Create release with draft body
             gh release create ${{ needs.check_and_tag.outputs.tag }} \
               --title "${{ needs.check_and_tag.outputs.tag }}" \
