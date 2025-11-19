@@ -48,9 +48,22 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
-      - name: Publish Latest Draft
+      - name: Create Release
         run: |
-          gh release edit ${{ needs.check_and_tag.outputs.tag }} --draft=false
+          # Get the latest draft release body if it exists
+          DRAFT_BODY=$(gh release list --limit 1 --json isDraft,body,tagName --jq '.[] | select(.isDraft==true) | .body' || echo "")
+
+          if [ -n "$DRAFT_BODY" ]; then
+            # Create release with draft body
+            gh release create ${{ needs.check_and_tag.outputs.tag }} \
+              --title "${{ needs.check_and_tag.outputs.tag }}" \
+              --notes "$DRAFT_BODY"
+          else
+            # Create release with auto-generated notes
+            gh release create ${{ needs.check_and_tag.outputs.tag }} \
+              --title "${{ needs.check_and_tag.outputs.tag }}" \
+              --generate-notes
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release_pypi:
