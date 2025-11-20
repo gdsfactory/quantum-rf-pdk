@@ -2,16 +2,18 @@
 
 from functools import partial
 
+import jax
 import jax.numpy as jnp
 import sax
 import skrf
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from numpy.typing import NDArray
+from sax.models.rf import capacitor, inductor, tee
 from skrf.media import Media
 
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
-from qpdk.models.generic import capacitor, inductor, short, tee
+from qpdk.models.generic import short
 from qpdk.models.media import cross_section_to_media
 from qpdk.models.waveguides import probeline_with_tee
 
@@ -175,6 +177,7 @@ def quarter_wave_resonator_coupled(
     return sax.reciprocal(sdict)
 
 
+@partial(jax.jit, static_argnames=("L", "C", "Z0"))
 def lc_shunt_component(
     f: ArrayLike = jnp.array([5e9]),
     L: sax.FloatLike = 1e-9,
@@ -182,6 +185,7 @@ def lc_shunt_component(
     Z0: sax.FloatLike = 50,
 ):
     """SAX component for a 1-port shunted LC resonator."""
+    f = jnp.asarray(f)
     models = {
         "L": inductor,
         "C": capacitor,
@@ -235,6 +239,7 @@ def probeline_with_lc_shunt(
     Z0: sax.FloatLike = 50,
 ):
     """SAX component for a 2-port probeline with a shunted LC resonator."""
+    f = jnp.asarray(f)
     models = {
         "lc_shunt": lc_shunt_component,
         "probeline": probeline_with_tee,
