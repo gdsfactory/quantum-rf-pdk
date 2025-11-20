@@ -7,8 +7,6 @@ from functools import partial, reduce
 
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.components import rectangle
-from gdsfactory.export import to_stl
 from gdsfactory.typings import ComponentSpec, LayerSpec
 from kfactory import kdb
 from klayout.db import DCplxTrans, Region
@@ -17,7 +15,7 @@ from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
 from qpdk.cells.junction import josephson_junction, squid_junction
 from qpdk.helper import show_components
-from qpdk.tech import LAYER, LAYER_STACK_FLIP_CHIP
+from qpdk.tech import LAYER
 
 
 @gf.cell(check_instances=False)
@@ -78,28 +76,46 @@ def double_pad_transmon(
     if junction_displacement:
         junction_ref.transform(junction_displacement)
 
-    # Add ports for connections
-    c.add_port(
-        name="left_pad",
-        center=(-pad_width - pad_gap / 2, 0),
-        width=pad_height,
-        orientation=180,
-        layer=layer_metal,
-    )
-    c.add_port(
-        name="right_pad",
-        center=(pad_width + pad_gap / 2, 0),
-        width=pad_height,
-        orientation=0,
-        layer=layer_metal,
-    )
-    c.add_port(
-        name="junction",
-        center=junction_ref.dcenter,
-        width=junction_ref.size_info.height,
-        orientation=90,
-        layer=LAYER.JJ_AREA,
-    )
+    # Add ports for easy reference
+    ports_config = [
+        {
+            "name": "left_pad",
+            "center": (-pad_width - pad_gap / 2, 0),
+            "width": pad_height,
+            "orientation": 180,
+            "layer": layer_metal,
+        },
+        {
+            "name": "left_pad_inner",
+            "center": (-pad_gap / 2, 0),
+            "width": pad_height,
+            "orientation": 0,
+            "layer": layer_metal,
+        },
+        {
+            "name": "right_pad",
+            "center": (pad_width + pad_gap / 2, 0),
+            "width": pad_height,
+            "orientation": 0,
+            "layer": layer_metal,
+        },
+        {
+            "name": "right_pad_inner",
+            "center": (pad_gap / 2, 0),
+            "width": pad_height,
+            "orientation": 180,
+            "layer": layer_metal,
+        },
+        {
+            "name": "junction",
+            "center": junction_ref.dcenter,
+            "width": junction_ref.size_info.height,
+            "orientation": 90,
+            "layer": LAYER.JJ_AREA,
+        },
+    ]
+    for port_config in ports_config:
+        c.add_port(**port_config)
 
     # Add metadata
     c.info["qubit_type"] = "transmon"
@@ -498,9 +514,9 @@ if __name__ == "__main__":
     )
 
     # Visualize flip-chip flipmon
-    c = gf.Component()
-    (c << flipmon_with_bbox()).move((0, 0))
-    c << rectangle(size=(500, 500), layer=LAYER.SIM_AREA, centered=True)
-    to_stl(c, "flipmon.stl", layer_stack=LAYER_STACK_FLIP_CHIP)
-    scene = c.to_3d(layer_stack=LAYER_STACK_FLIP_CHIP)
-    scene.show()
+    # c = gf.Component()
+    # (c << flipmon_with_bbox()).move((0, 0))
+    # c << rectangle(size=(500, 500), layer=LAYER.SIM_AREA, centered=True)
+    # to_stl(c, "flipmon.stl", layer_stack=LAYER_STACK_FLIP_CHIP)
+    # scene = c.to_3d(layer_stack=LAYER_STACK_FLIP_CHIP)
+    # scene.show()
