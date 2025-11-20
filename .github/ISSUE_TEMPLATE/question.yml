@@ -1,0 +1,36 @@
+name: Question or Help
+description: Ask a question or get help using quantum-rf-pdk
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question? Please check the [documentation](https://gdsfactory.github.io/quantum-rf-pdk/) first!
+  - type: textarea
+    id: question
+    attributes:
+      label: What's your question?
+      description: What would you like to know? Include what you're trying to accomplish and what you've tried.
+      placeholder: |
+        I'm trying to... and I've tried...
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Code sample (optional)
+      description: If relevant, provide code showing what you're trying to do
+      placeholder: |
+        ```python
+        import qpdk
+        # Your code here
+        ```
+      render: python
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I have checked the documentation and existing issues
+          required: true

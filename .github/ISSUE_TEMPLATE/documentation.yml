@@ -1,0 +1,32 @@
+name: Documentation Issue
+description: Report an issue with documentation or suggest improvements
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve our documentation!
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Where is the documentation issue? (URL, file path, or section name)
+      placeholder: "https://gdsfactory.github.io/quantum-rf-pdk/... or docs/..."
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What's the issue?
+      description: Describe what's wrong, missing, or how it should be improved
+      placeholder: The documentation should...
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I have checked existing issues
+          required: true

@@ -1,0 +1,36 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for quantum-rf-pdk
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please describe what you'd like to see.
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature description
+      description: What feature would you like to see and why?
+      placeholder: |
+        I would like... because...
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example usage (optional)
+      description: Show how you envision using this feature
+      placeholder: |
+        ```python
+        import qpdk
+        # Example usage
+        ```
+      render: python
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I have searched existing issues
+          required: true

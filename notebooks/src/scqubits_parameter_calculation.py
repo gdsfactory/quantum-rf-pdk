@@ -24,7 +24,8 @@ import sympy as sp
 from IPython.display import Math, display
 from matplotlib import pyplot as plt
 
-from qpdk.models.resonator import cpw_media_skrf, resonator_frequency
+from qpdk.models.media import cpw_media_skrf
+from qpdk.models.resonator import resonator_frequency
 
 # %% [markdown]
 # ## TunableTransmon Qubit Parameters

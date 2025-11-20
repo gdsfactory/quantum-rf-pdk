@@ -1,17 +1,19 @@
 """S-parameter model for a straight waveguide."""
 
-from typing import TypedDict, Unpack
+from typing import Any, TypedDict, Unpack
 
 import jax
 import jax.numpy as jnp
 import jax.scipy.interpolate
 import sax
+from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from skrf import Frequency
 from sax.models.rf import capacitor, inductor, gamma_0_load, admittance, impedance, tee
 
 from qpdk.models.generic import short_2_port
-from qpdk.models.media import MediaCallable, cpw_media_skrf
+from qpdk.models.media import cpw_media_skrf, cross_section_to_media
+from qpdk.tech import coplanar_waveguide
 
 
 class StraightModelKwargs(TypedDict, total=False):
@@ -19,7 +21,7 @@ class StraightModelKwargs(TypedDict, total=False):
 
     f: ArrayLike
     length: int | float
-    media: MediaCallable
+    cross_section: CrossSectionSpec
 
 
 # JIT disabled for now due to scikit-rf internals not being JAX-compatible
@@ -27,7 +29,7 @@ class StraightModelKwargs(TypedDict, total=False):
 def straight(
     f: ArrayLike = jnp.array([5e9]),
     length: int | float = 1000,
-    media: MediaCallable = cpw_media_skrf(),
+    cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """S-parameter model for a straight waveguide.
 
@@ -36,8 +38,7 @@ def straight(
     Args:
         f: Array of frequency points in Hz
         length: Physical length in µm
-        media: Function returning a scikit-rf :class:`~Media` object after called
-            with ``frequency=f``. If None, uses default CPW media.
+        cross_section: The cross-section of the waveguide.
 
     Returns:
         sax.SType: S-parameters dictionary
@@ -45,6 +46,7 @@ def straight(
     .. _skrf: https://scikit-rf.org/
     """
     # Keep f as tuple for scikit-rf, convert to array only for final JAX operations
+    media = cross_section_to_media(cross_section)
     skrf_media = media(frequency=Frequency.from_f(f, unit="Hz"))
     transmission_line = skrf_media.line(d=length, unit="um")
     sdict = {
@@ -93,7 +95,7 @@ def straight_shorted(
 
 
 def bend_circular(
-    *args: ArrayLike | int | float | MediaCallable,
+    *args: Any,
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for a circular bend, wrapped to to :func:`~straight`."""
@@ -101,7 +103,7 @@ def bend_circular(
 
 
 def bend_euler(
-    *args: ArrayLike | int | float | MediaCallable,
+    *args: Any,
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for an Euler bend, wrapped to to :func:`~straight`."""
@@ -109,7 +111,7 @@ def bend_euler(
 
 
 def bend_s(
-    *args: ArrayLike | int | float | MediaCallable,
+    *args: Any,
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for an S-bend, wrapped to to :func:`~straight`."""
@@ -119,8 +121,8 @@ def bend_s(
 def taper_cross_section(
     f: ArrayLike = jnp.array([5e9]),
     length: int | float = 1000,
-    media_1: MediaCallable = cpw_media_skrf(),
-    media_2: MediaCallable = cpw_media_skrf(),
+    cross_section_1: CrossSectionSpec = "cpw",
+    cross_section_2: CrossSectionSpec = "cpw",
     n_points: int = 50,
 ) -> sax.SType:
     """S-parameter model for a cross-section taper using linear interpolation.
@@ -131,16 +133,16 @@ def taper_cross_section(
     Args:
         f: Array of frequency points in Hz
         length: Physical length in µm
-        media_1: Function returning a scikit-rf :class:`~Media` object after called
-            with ``frequency=f`` for the start of the taper.
-        media_2: Function returning a scikit-rf :class:`~Media` object after called
-            with ``frequency=f`` for the end of the taper.
+        cross_section_1: Cross-section for the start of the taper.
+        cross_section_2: Cross-section for the end of the taper.
         n_points: Number of segments to divide the taper into for simulation.
     """
     # Ensure n_points is a concrete Python int
 
     # Get media parameters at the start and end of the taper
     dummy_freq = Frequency.from_f(f, unit="Hz")
+    media_1 = cross_section_to_media(cross_section_1)
+    media_2 = cross_section_to_media(cross_section_2)
     media_1_obj = media_1(frequency=dummy_freq)
     media_2_obj = media_2(frequency=dummy_freq)
 
@@ -208,7 +210,7 @@ def taper_cross_section(
 
 
 def rectangle(
-    *args: ArrayLike | int | float | MediaCallable,
+    *args: Any,
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
     """S-parameter model for a rectangular section, wrapped to to :func:`~straight`."""
@@ -219,8 +221,8 @@ def launcher(
     f: ArrayLike = jnp.array([5e9]),
     straight_length: float = 200.0,
     taper_length: float = 100.0,
-    media_big: MediaCallable = cpw_media_skrf(width=200, gap=100),
-    media_small: MediaCallable = cpw_media_skrf(),
+    cross_section_big: CrossSectionSpec | None = None,
+    cross_section_small: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """S-parameter model for a launcher, effectively a straight section followed by a taper.
 
@@ -228,12 +230,15 @@ def launcher(
         f: Array of frequency points in Hz
         straight_length: Length of the straight section in µm.
         taper_length: Length of the taper section in µm.
-        media_big: Media callable for the wide section.
-        media_small: Media callable for the narrow section.
+        cross_section_big: Cross-section for the wide section.
+        cross_section_small: Cross-section for the narrow section.
 
     Returns:
         sax.SType: S-parameters dictionary
     """
+    if cross_section_big is None:
+        cross_section_big = coplanar_waveguide(width=200, gap=100)
+
     circuit, _ = sax.circuit(
         netlist={
             "instances": {
@@ -241,15 +246,15 @@ def launcher(
                     "component": "straight",
                     "settings": {
                         "length": straight_length,
-                        "media": media_big,
+                        "cross_section": cross_section_big,
                     },
                 },
                 "taper": {
                     "component": "taper_cross_section",
                     "settings": {
                         "length": taper_length,
-                        "media_1": media_big,
-                        "media_2": media_small,
+                        "cross_section_1": cross_section_big,
+                        "cross_section_2": cross_section_small,
                     },
                 },
             },
@@ -274,14 +279,15 @@ if __name__ == "__main__":
 
     from tqdm import tqdm
 
-    cpw = cpw_media_skrf(width=10, gap=6)
+    cpw_cs = coplanar_waveguide(width=10, gap=6)
 
     def straight_no_jit(
         f: ArrayLike = jnp.array([5e9]),
         length: int | float = 1000,
-        media: MediaCallable = cpw_media_skrf(),
+        cross_section: CrossSectionSpec = "cpw",
     ) -> sax.SType:
         """Version of straight without just-in-time compilation."""
+        media = cross_section_to_media(cross_section)
         skrf_media = media(frequency=Frequency.from_f(f, unit="Hz"))
         transmission_line = skrf_media.line(d=length, unit="um")
         sdict = {
@@ -301,7 +307,7 @@ if __name__ == "__main__":
     jit_times = []
     for _ in tqdm(range(n_runs), desc="With jax.jit", ncols=80, unit="run"):
         start_time = time.perf_counter()
-        S_jit = straight(f=test_freq, length=test_length, media=cpw)
+        S_jit = straight(f=test_freq, length=test_length, cross_section=cpw_cs)
         _ = S_jit["o2", "o1"].block_until_ready()
         end_time = time.perf_counter()
         jit_times.append(end_time - start_time)
@@ -309,7 +315,9 @@ if __name__ == "__main__":
     no_jit_times = []
     for _ in tqdm(range(n_runs), desc="Without jax.jit", ncols=80, unit="run"):
         start_time = time.perf_counter()
-        S_no_jit = straight_no_jit(f=test_freq, length=test_length, media=cpw)
+        S_no_jit = straight_no_jit(
+            f=test_freq, length=test_length, cross_section=cpw_cs
+        )
         _ = S_no_jit["o2", "o1"].block_until_ready()
         end_time = time.perf_counter()
         no_jit_times.append(end_time - start_time)
@@ -323,8 +331,8 @@ if __name__ == "__main__":
     print(f"Non-jitted: {avg_no_jit:.4f}s avg")
     print(f"Speedup: {speedup:.1f}x")
 
-    S_jit = straight(f=test_freq, length=test_length, media=cpw)
-    S_no_jit = straight_no_jit(f=test_freq, length=test_length, media=cpw)
+    S_jit = straight(f=test_freq, length=test_length, cross_section=cpw_cs)
+    S_no_jit = straight_no_jit(f=test_freq, length=test_length, cross_section=cpw_cs)
     max_diff = jnp.max(jnp.abs(S_jit["o2", "o1"] - S_no_jit["o2", "o1"]))
     print(f"Max absolute difference in results: {max_diff:.2e}")
 
@@ -334,3 +342,13 @@ if __name__ == "__main__":
         print(f"GPU available: {s21_gpu.device}")
     except Exception:
         print("GPU not available, using CPU")
+
+    # Test tapers
+    S = taper_cross_section(
+        f=test_freq,
+        length=1000,
+        cross_section_1=cpw_cs,
+        cross_section_2=coplanar_waveguide(width=12, gap=10),
+    )
+    print("Taper S-parameters computed successfully.")
+    print(f"S-parameter keys: {list(S.keys())}")

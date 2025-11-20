@@ -2,7 +2,7 @@
 
 [project]
 name = "qpdk"
-version = "0.1.1"
+version = "0.1.3"
 description = "Quantum-RF generic PDK"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
@@ -18,16 +18,20 @@ classifiers = [
 dependencies = ["doroutes>=0.2.0", "gdsfactory>=9.15.0,<9.21.7"]
 
 [project.optional-dependencies]
-dev = [
-  "hypothesis",
-  "jsondiff",
-  "prek",
-  "pytest",
-  "pytest-cov",
-  "pytest-github-actions-annotate-failures",
-  "pytest-xdist",
-  "pytest_regressions",
+models = [
+  "gplugins[meshwell]>=2.0.0",
+  "jaxellip",
+  "optuna",
+  "ray[tune]",
+  "sax>=0.15.16",
+  "scikit-rf",
+  "scqubits",
+  "sympy",
+  "polars",
 ]
+
+[dependency-groups]
+dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
   "jinja2",
   "jupyter-book>=1.0.4,<2",
@@ -37,16 +41,15 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-svgbob",
 ]
-models = [
-  "sax>=0.15.16",
-  "gplugins[meshwell] @ git+https://github.com/gdsfactory/gplugins.git@770d835bb130a8118aa7b78edfb1cf76d31fd7f6",
-  "jaxellip",
-  "optuna",
-  "ray[tune]",
-  "scikit-rf",
-  "scqubits",
-  "sympy",
-  "polars",
+lint = ["prek"]
+test = [
+  "hypothesis",
+  "jsondiff",
+  "pytest>=9.0.0",
+  "pytest-cov",
+  "pytest-github-actions-annotate-failures",
+  "pytest_regressions",
+  "pytest-xdist",
 ]
 
 [build-system]
@@ -56,6 +59,9 @@ build-backend = "flit_core.buildapi"
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
 skip = "bibliography.bib"
+
+[tool.flit.sdist]
+exclude = ["tests", "docs"]
 
 [tool.gdsfactoryplus.drc]
 timeout = 300
@@ -119,9 +125,8 @@ no-matching-overload = "ignore"
 not-a-type = "warn"
 read-only = "ignore"
 
-[tool.pytest.ini_options]
-# addopts = --tb=no
-addopts = "--tb=short"
+[tool.pytest]
+addopts = ["--tb=short"]
 norecursedirs = ["extra/*.py"]
 python_files = ["qpdk/*.py", "notebooks/*.ipynb", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
@@ -198,4 +203,7 @@ convention = "google"
 ]
 
 [tool.setuptools.packages]
-find = {}
+find = {  }
+
+[tool.tombi.schema]
+strict = false

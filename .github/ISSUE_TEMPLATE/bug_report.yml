@@ -1,0 +1,49 @@
+name: Bug Report
+description: Report a bug or issue with the quantum-rf-pdk
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please provide the essential details to help us fix the issue.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected vs. what actually happened
+      placeholder: |
+        When I tried to..., I expected... but instead...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce
+      description: Minimal steps or code to reproduce the issue
+      placeholder: |
+        ```python
+        import qpdk
+        # Your code here
+        ```
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, qpdk version
+      placeholder: |
+        - OS: Ubuntu 22.04
+        - Python: 3.12
+        - qpdk: 0.1.1
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I have searched existing issues
+          required: true
