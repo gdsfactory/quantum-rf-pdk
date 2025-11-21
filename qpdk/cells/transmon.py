@@ -390,7 +390,8 @@ def xmon_transmon(
     The design provides better control over the coupling to readout resonators
     and neighboring qubits through the individual arm geometries.
 
-    See :cite:`barendsCoherentJosephsonQubit2013a` for details about the Xmon design.
+    See :cite:`barendsCoherentJosephsonQubit2013a` for details about the Xmon design
+    and :cite:`liTunableCouplerRealizing2020` for an application in coupled qubit systems.
 
     Args:
         arm_width: Tuple of (top, right, bottom, left) arm widths in μm.
