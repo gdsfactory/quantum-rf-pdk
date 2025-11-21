@@ -116,7 +116,7 @@ if __name__ == "__main__":
     #     only_one_port=False,
     #     driven_settings={
     #         "MinFreq": 0.1,
-    #         "MaxFreq": 10,
+    #         "MaxFreq": 8,
     #         "FreqStep": 5,
     #     },
     #     n_processes=1,
