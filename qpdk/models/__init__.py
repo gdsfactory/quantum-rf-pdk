@@ -2,7 +2,7 @@
 
 import sax
 
-from .couplers import coupler_straight
+from .couplers import coupler_ring, coupler_straight
 from .generic import (
     capacitor,
     gamma_0_load,
@@ -16,6 +16,7 @@ from .generic import (
 )
 from .resonator import quarter_wave_resonator_coupled, resonator_frequency
 from .waveguides import (
+    airbridge,
     bend_circular,
     bend_euler,
     bend_s,
@@ -24,6 +25,7 @@ from .waveguides import (
     straight,
     straight_shorted,
     taper_cross_section,
+    tsv,
 )
 
 sax.set_port_naming_strategy("optical")
@@ -32,10 +34,12 @@ sax.set_port_naming_strategy("optical")
 models = {
     func.__name__: func
     for func in (
+        airbridge,
         bend_circular,
         bend_euler,
         bend_s,
         capacitor,
+        coupler_ring,
         coupler_straight,
         gamma_0_load,
         inductor,
@@ -48,6 +52,7 @@ models = {
         straight,
         taper_cross_section,
         tee,
+        tsv,
         launcher,
         short_2_port,
         straight_shorted,
