@@ -6,6 +6,7 @@ parts:
   - caption: Development
     chapters:
       - file: make_commands
+      - file: changelog
   - caption: API
     chapters:
       - file: api
