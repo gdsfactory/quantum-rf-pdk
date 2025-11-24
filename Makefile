@@ -81,4 +81,4 @@ docs-latex: write-cells write-makefile-help copy-sample-notebooks ##@ Setup LaTe
 	uv run --group docs jb build docs --builder latex
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
-	cd "docs/_build/latex" && latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
+	cd "docs/_build/latex" && XINDYOPTS="-M sphinx.xdy" latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
