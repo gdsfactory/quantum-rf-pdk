@@ -13,7 +13,7 @@ jobs:
     outputs:
       python-versions: ${{ steps.get-versions.outputs.python-versions }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Get Python versions from pyproject.toml
         id: get-versions
         shell: python

@@ -20,7 +20,7 @@ jobs:
       matrix:
         python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - name: Install uv
@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build PDF docs
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - name: Install uv
