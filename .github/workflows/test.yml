@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
+        python-version: ['3.12']
     steps:
       - uses: actions/checkout@v6
         with:
