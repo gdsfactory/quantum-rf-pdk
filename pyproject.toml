@@ -33,6 +33,7 @@ models = [
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
+  "gdsfactoryplus",
   "jinja2",
   "jupyter-book>=1.0.4,<2",
   "jupytext",
