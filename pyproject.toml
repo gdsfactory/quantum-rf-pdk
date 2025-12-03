@@ -128,18 +128,18 @@ read-only = "ignore"
 [tool.pytest]
 addopts = ["--tb=short"]
 norecursedirs = [
-  "extra/*.py",
   "*.egg",
   ".*",
+  "CVS",
   "_darcs",
   "build",
-  "CVS",
   "dist",
+  "extra/*.py",
   "node_modules",
   "venv",
   "{arch}"
 ]
-python_files = ["qpdk/*.py", "notebooks/*.ipynb", "tests/*.py"]
+python_files = ["notebooks/*.ipynb", "qpdk/*.py", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
 
 [tool.ruff]
