@@ -93,6 +93,36 @@ def straight_shorted(
     return circuit(f=kwargs.get("f", jnp.array([5e9])))
 
 
+def airbridge(
+    f: ArrayLike = jnp.array([5e9]),
+    bridge_length: float = 30.0,
+    bridge_width: float = 8.0,
+    pad_width: float = 15.0,
+) -> sax.SType:
+    """S-parameter model for an airbridge, wrapped to to :func:`~straight`.
+
+    TODO: add a constant loss channel for airbridge crossings.
+    """
+    return straight(
+        f=f,
+        length=bridge_length,
+        cross_section=coplanar_waveguide(
+            width=bridge_width,
+            gap=(pad_width - bridge_width) / 2,
+        ),
+    )
+
+
+def tsv(
+    f: ArrayLike = jnp.array([5e9]),
+) -> sax.SType:
+    """S-parameter model for a through-silicon via (TSV), wrapped to to :func:`~straight`.
+
+    TODO: add a constant loss channel for TSVs.
+    """
+    return straight(f=f, length=1000)  # pyrefly: ignore[bad-keyword-argument]
+
+
 def bend_circular(
     *args: Any,
     **kwargs: Unpack[StraightModelKwargs],

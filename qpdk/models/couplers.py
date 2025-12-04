@@ -124,6 +124,30 @@ def coupler_straight(
     return circuit(f=f)
 
 
+def coupler_ring(
+    f: ArrayLike = jnp.array([5e9]),
+    length: int | float = 20.0,
+    gap: int | float = 0.27,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for two coupled coplanar waveguides in a ring configuration.
+
+    The implementation is the same as straight coupler for now.
+
+    TODO: Fetch coupling capacitance from a curved simulation library.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length of coupling section in µm
+        gap: Gap between the coupled waveguides in µm
+        cross_section: The cross-section of the CPW.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return coupler_straight(f=f, length=length, gap=gap, cross_section=cross_section)
+
+
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
 
