@@ -1,5 +1,5 @@
 instances:
-  resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a05716ae_0_0:
+  resonator_L4000_M6_BSbend_circular_CScpw_OSTrue_OEFalse_0_0:
     component: resonator
     info:
       cross_section: coplanar_waveguide
@@ -26,10 +26,10 @@ instances:
       length: 200
       npoints: 2
       width: null
-name: resonator_coupled_qpdkpcellspresonator_L4000_M6_BSbend__c9699185
+name: resonator_coupled_L4000_M6_BSbend_circular_CScpw_OSTrue_20960d94
 nets: []
 placements:
-  resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a05716ae_0_0:
+  resonator_L4000_M6_BSbend_circular_CScpw_OSTrue_OEFalse_0_0:
     mirror: false
     rotation: 0
     x: 0
@@ -42,5 +42,5 @@ placements:
 ports:
   coupling_o1: straight_L200_CScoplanar_waveguide_WNone_N2_m6000_30000,o1
   coupling_o2: straight_L200_CScoplanar_waveguide_WNone_N2_m6000_30000,o2
-  resonator_o1: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a05716ae_0_0,o1
-  resonator_o2: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_a05716ae_0_0,o2
+  resonator_o1: resonator_L4000_M6_BSbend_circular_CScpw_OSTrue_OEFalse_0_0,o1
+  resonator_o2: resonator_L4000_M6_BSbend_circular_CScpw_OSTrue_OEFalse_0_0,o2
