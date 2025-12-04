@@ -29,8 +29,9 @@ clean: ##@ Clean up all build, test, coverage and Python artifacts
 ###########
 
 PYTEST_COMMAND := uv run --group dev pytest
+PYTEST_COMMAND_WITH_MODELS := uv run --extra models --group dev pytest
 test: ##@ Run the full test suite in parallel using pytest
-	$(PYTEST_COMMAND) -n auto
+	$(PYTEST_COMMAND_WITH_MODELS) -n auto
 
 test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
 	$(PYTEST_COMMAND) -s tests/test_pdk.py
@@ -75,10 +76,10 @@ setup-ipython-config: ##@ Setup IPython configuration for documentation build
 	cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
 docs: write-cells write-makefile-help copy-sample-notebooks ##@ Build the HTML documentation
-	uv run --group docs jb build docs
+	uv run --extra models --group docs jb build docs
 
 docs-latex: write-cells write-makefile-help copy-sample-notebooks ##@ Setup LaTeX for PDF documentation
-	uv run --group docs jb build docs --builder latex
+	uv run --extra models --group docs jb build docs --builder latex
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
 	cd "docs/_build/latex" && XINDYOPTS="-M sphinx.xdy" latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error || (test -f qpdk.pdf && echo "PDF generated despite warnings" && exit 0)
