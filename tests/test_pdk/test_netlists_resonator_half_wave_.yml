@@ -249,7 +249,7 @@ instances:
       length: 302.204
       npoints: 2
       width: null
-name: resonator_qpdkpcellspresonator_L4000_M6_BSbend_circular_30b4a8a7
+name: resonator_L4000_M6_BSbend_circular_CScpw_OSTrue_OETrue
 nets:
 - p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m1000000_A180,o1
   p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m1000000_A180,o2
