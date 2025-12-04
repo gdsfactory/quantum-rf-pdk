@@ -1,5 +1,5 @@
 info: {}
-name: plate_capacitor_single_qpdkpcellspcapacitor_L26_W5_ELM1_0c330734
+name: plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw
 settings:
   cross_section: cpw
   etch_bbox_margin: 2
