@@ -27,7 +27,6 @@ jobs:
         uses: astral-sh/setup-uv@v7.1.3
         with:
           python-version: ${{ matrix.python-version }}
-      - run: make install
       - run: make setup-ipython-config
       - run: make docs
       - uses: actions/upload-artifact@v5

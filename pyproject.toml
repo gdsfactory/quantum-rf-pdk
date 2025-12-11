@@ -41,6 +41,7 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-svgbob",
 ]
+gdsfactoryplus = ["gdsfactoryplus"]
 lint = ["prek"]
 test = [
   "hypothesis",
