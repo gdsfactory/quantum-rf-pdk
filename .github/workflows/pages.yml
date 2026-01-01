@@ -30,7 +30,7 @@ jobs:
       - run: make install
       - run: make setup-ipython-config
       - run: make docs
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
@@ -97,7 +97,7 @@ jobs:
           continue_on_error: true
           latexmk_use_xelatex: true
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
