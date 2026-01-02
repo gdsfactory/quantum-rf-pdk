@@ -63,9 +63,9 @@ repos:
     hooks:
       - id: pyrefly-check
         name: Pyrefly
-        pass_filenames: true
+        pass_filenames: false
         # Pre-commit may not have access to all deps.
-        args: ["--ignore", "import-error"]
+        args: ["--ignore", "missing-import"]
   - repo: https://github.com/FlamingTempura/bibtex-tidy
     rev: v1.14.0
     hooks:
