@@ -83,11 +83,18 @@ def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
 
     # Extract width and gap from the CrossSection
     width = xs.width
-    gap = next(
-        section.width
-        for section in xs.sections
-        if section.name and "etch_offset" in section.name
-    )
+    try:
+        gap = next(
+            section.width
+            for section in xs.sections
+            if section.name and "etch_offset" in section.name
+        )
+    except StopIteration as e:
+        msg = (
+            f"Cross-section does not have a section with 'etch_offset' in the name. "
+            f"Found sections: {[s.name for s in xs.sections]}"
+        )
+        raise ValueError(msg) from e
     return cpw_media_skrf(width=width, gap=gap)
 
 
