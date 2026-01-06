@@ -72,20 +72,23 @@ def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
     # Handle different types of cross-section inputs
     from gdsfactory.cross_section import CrossSection
 
+    # Convert input to CrossSection object
     xs: CrossSection
     if isinstance(cross_section, CrossSection):
         xs = cross_section
     elif callable(cross_section):
         # If it's a callable (like coplanar_waveguide), call it to get the CrossSection
-        result = cross_section
-        if not isinstance(result, CrossSection):
-            # It's a factory function, call it with no args
-            result = cross_section()
-        xs = result
+        result = (
+            cross_section()
+            if not isinstance(cross_section, CrossSection)
+            else cross_section
+        )
+        xs = cast(CrossSection, result)
     else:
         # It's a string name, requires active PDK
         xs = gf.get_cross_section(cross_section)
 
+    # Extract width and gap from the CrossSection
     width = xs.width
     gap = next(
         section.width
