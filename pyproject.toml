@@ -17,7 +17,6 @@ classifiers = [
 ]
 dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.29.1"]
 
-
 [project.optional-dependencies]
 models = [
   "gplugins[meshwell]>=2.0.0",
