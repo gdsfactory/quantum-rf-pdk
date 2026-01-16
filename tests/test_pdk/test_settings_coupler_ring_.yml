@@ -1,4 +1,5 @@
-info: {}
+info:
+  radius: 100
 name: coupler_ring_gdsfactorypcomponentspcouplerspcoupler_rin_11dc32cb
 settings:
   bend: bend_circular
