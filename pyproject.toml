@@ -15,7 +15,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory>=9.15.0,<9.31.1"]
+dependencies = ["doroutes>=0.2.0", "gdsfactory>=9.29.1,<9.31.1"]
 
 [project.optional-dependencies]
 models = [
@@ -66,10 +66,10 @@ exclude = ["tests", "docs"]
 [tool.gdsfactoryplus.drc]
 timeout = 300
 
-[tool.gdsfactoryplus.sim.wls]
-# units = "frequency"
-min = 30000
-max = 3000000
+[tool.gdsfactoryplus.sim.x]
+max = 20  # 20GHz
+min = 1  # 1GHz
+name = "f"
 num = 3000
 
 [tool.gdsfactoryplus.pdk]

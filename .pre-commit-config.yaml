@@ -88,7 +88,7 @@ repos:
       - id: mbake-format
         args: ['--config=.github/.bake.toml']
   - repo: https://github.com/LilSpazJoekp/docstrfmt
-    rev: v1.11.1
+    rev: v2.0.1
     hooks:
       - id: docstrfmt
         language_version: python3
