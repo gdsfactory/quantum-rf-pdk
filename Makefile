@@ -1,4 +1,4 @@
-.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install run-pre setup-ipython-config test test-fail-fast test-force test-gds test-gds-fail-fast test-gds-force update-pre write-cells write-makefile-help
+.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install rm-samples run-pre setup-ipython-config test test-fail-fast test-force test-gds test-gds-fail-fast test-gds-force update-pre write-cells write-makefile-help
 
 # Based on https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
 help: ##@ (Default) Print listing of key targets with their descriptions
@@ -19,6 +19,9 @@ else { \
 
 install: ##@ Install the package and all development dependencies
 	uv sync --all-extras --all-groups
+
+rm-samples: ##@ Remove samples folder
+	rm -rf qpdk/samples
 
 CLEAN_DIRS := dist build *.egg-info docs/_build docs/notebooks
 clean: ##@ Clean up all build, test, coverage and Python artifacts
