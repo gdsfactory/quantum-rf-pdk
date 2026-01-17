@@ -61,6 +61,9 @@ build: ##@ Build the Python package (install build tool and create dist)
 write-cells: ##@ Write cell outputs into documentation notebooks (used when building docs)
 	uv run --group docs .github/write_cells.py
 
+write-models: ##@ Write model outputs into documentation notebooks (used when building docs)
+	uv run --group docs .github/write_models.py
+
 write-makefile-help: ##@ Write Makefile help output to documentation
 	uv run --group docs .github/write_makefile_help.py
 
@@ -77,10 +80,10 @@ setup-ipython-config: ##@ Setup IPython configuration for documentation build
 	mkdir -p ~/.config/matplotlib/stylelib/
 	cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
-docs: write-cells write-makefile-help copy-sample-notebooks ##@ Build the HTML documentation
+docs: write-cells write-models write-makefile-help copy-sample-notebooks ##@ Build the HTML documentation
 	uv run --group docs jb build docs
 
-docs-latex: write-cells write-makefile-help copy-sample-notebooks ##@ Setup LaTeX for PDF documentation
+docs-latex: write-cells write-models write-makefile-help copy-sample-notebooks ##@ Setup LaTeX for PDF documentation
 	uv run --group docs jb build docs --builder latex
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
