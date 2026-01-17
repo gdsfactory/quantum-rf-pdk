@@ -8,6 +8,7 @@
 
 .. autofunction:: qpdk.models.{{ func_name }}
 
+{% if func_name not in items[0].skip_plots %}
 .. plot::
    :include-source:
 
@@ -18,14 +19,13 @@
 
    PDK.activate()
 
-   # Default frequency sweep
    freq = jnp.linspace(2e9, 8e9, 501)
    freq_ghz = freq / 1e9
    s_model = {{ func_name }}(f=freq)
 
-   # Plot S-parameters
    plt.figure()
    plt.title("{{ func_name }}", fontsize=14)
+
    for (pout, pin), sij in s_model.items():
     i = int(pout[-1])  # "o2" -> 2
     j = int(pin[-1])   # "o1" -> 1
@@ -41,12 +41,6 @@
    plt.grid(True)
    plt.legend()
    plt.show()
+{% endif %}
 
 {% endfor %}
-
-{{ items[1].title }}
-{{ "-" * items[1].title|length }}
-
-.. bibliography::
-    :filter: {{ items[1].bibliography_filter }}
-

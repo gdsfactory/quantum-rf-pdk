@@ -7,6 +7,15 @@ from qpdk.config import PATH
 filepath_models = PATH.docs / "models.rst"
 template_dir = PATH.docs / "templates"
 
+# Models that should NOT be plotted
+skip_plots = {
+    "gamma_0_load",
+    "launcher",
+    "resonator_frequency",
+    "single_admittance_element",
+    "single_impedance_element"
+}
+
 # Collect all public functions/classes in qpdk.models
 models = {
     name: obj
@@ -23,7 +32,8 @@ items = [
         "members": True,
         "undoc_members": True,
         "show_inheritance": True,
-        "functions": sorted(models.keys()),
+        "functions": sorted(models.keys()),  # preserves order
+        "skip_plots": skip_plots,
     },
     {
         "title": "References",
