@@ -1,0 +1,52 @@
+{{ items[0].title }}
+{{ "=" * items[0].title|length }}
+
+{% for func_name in items[0].functions %}
+
+{{ func_name }}
+{{ "-" * func_name|length }}
+
+.. autofunction:: qpdk.models.{{ func_name }}
+
+.. plot::
+   :include-source:
+
+   import jax.numpy as jnp
+   import matplotlib.pyplot as plt
+   from qpdk.models import {{ func_name }}
+   from qpdk import PDK
+
+   PDK.activate()
+
+   # Default frequency sweep
+   freq = jnp.linspace(2e9, 8e9, 501)
+   freq_ghz = freq / 1e9
+   s_model = {{ func_name }}(f=freq)
+
+   # Plot S-parameters
+   plt.figure()
+   plt.title("{{ func_name }}")
+   for (pout, pin), sij in s_model.items():
+    i = int(pout[1:])  # "o2" -> 2
+    j = int(pin[1:])   # "o1" -> 1
+
+    if i >= j:
+        plt.plot(
+            freq_ghz,
+            20 * jnp.log10(jnp.abs(sij)),
+            label = "$S_{" + str(i) + str(j) + "}$"
+        )
+   plt.xlabel("Frequency [GHz]")
+   plt.ylabel("Magnitude [dB]")
+   plt.grid(True)
+   plt.legend()
+   plt.show()
+
+{% endfor %}
+
+{{ items[1].title }}
+{{ "-" * items[1].title|length }}
+
+.. bibliography::
+    :filter: {{ items[1].bibliography_filter }}
+
