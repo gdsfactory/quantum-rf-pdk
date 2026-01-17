@@ -1,6 +1,7 @@
-import inspect
-from pathlib import Path
+"""Write model documentation."""
+
 from jinja2 import Environment, FileSystemLoader
+
 import qpdk
 from qpdk.config import PATH
 
@@ -13,7 +14,7 @@ skip_plots = {
     "launcher",
     "resonator_frequency",
     "single_admittance_element",
-    "single_impedance_element"
+    "single_impedance_element",
 }
 
 # Collect all public functions/classes in qpdk.models

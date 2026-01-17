@@ -1,10 +1,10 @@
 {{ items[0].title }}
-{{ "=" * items[0].title|length }}
+{{ "=" * items[0].title | length }}
 
 {% for func_name in items[0].functions %}
 
 {{ func_name }}
-{{ "-" * func_name|length }}
+{{ "-" * func_name | length }}
 
 .. autofunction:: qpdk.models.{{ func_name }}
 
