@@ -56,7 +56,14 @@ def short(
 
 
 def short_2_port(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
-    """Electrical short 2-port connection Sax model."""
+    """Electrical short 2-port connection Sax model.
+
+    Args:
+        f: Array of frequency points in Hz
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
     return short(f=f, n_ports=2)
 
 
