@@ -252,6 +252,9 @@ def bend_circular(
 ) -> gf.Component:
     """Returns circular bend.
 
+    Cross-sections have a minimum value of allowed bend radius, which is half their total width.
+    If the user-specified radius is smaller than this value, it is adjusted to the minimum acceptable one.
+
     Args:
         angle: Angle of the bend in degrees.
         radius: Radius of the bend in μm.
