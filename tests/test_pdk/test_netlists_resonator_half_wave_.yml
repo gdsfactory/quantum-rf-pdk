@@ -1,5 +1,5 @@
 instances:
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m1000000_A180:
+  bend_circular:
     component: bend_circular
     info:
       dy: 0
@@ -20,7 +20,7 @@ instances:
       npoints: null
       radius: 100
       width: null
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m200000_A180:
+  bend_circular2:
     component: bend_circular
     info:
       dy: 0
@@ -41,7 +41,7 @@ instances:
       npoints: null
       radius: 100
       width: null
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m600000_A180:
+  bend_circular3:
     component: bend_circular
     info:
       dy: 0
@@ -62,7 +62,7 @@ instances:
       npoints: null
       radius: 100
       width: null
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_0_M:
+  bend_circular4:
     component: bend_circular
     info:
       dy: 0
@@ -83,7 +83,7 @@ instances:
       npoints: null
       radius: 100
       width: null
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_m400000_M:
+  bend_circular5:
     component: bend_circular
     info:
       dy: 0
@@ -104,7 +104,7 @@ instances:
       npoints: null
       radius: 100
       width: null
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_m800000_M:
+  bend_circular6:
     component: bend_circular
     info:
       dy: 0
@@ -125,7 +125,7 @@ instances:
       npoints: null
       radius: 100
       width: null
-  rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_305204_m1200000:
+  rectangle:
     component: rectangle
     info: {}
     settings:
@@ -138,7 +138,7 @@ instances:
       size:
       - 6
       - 22
-  rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0:
+  rectangle2:
     component: rectangle
     info: {}
     settings:
@@ -151,7 +151,7 @@ instances:
       size:
       - 6
       - 22
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_0:
+  straight:
     component: straight
     info:
       length: 302.204
@@ -165,7 +165,7 @@ instances:
       length: 302.204
       npoints: 2
       width: null
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m1200000:
+  straight2:
     component: straight
     info:
       length: 302.204
@@ -179,7 +179,7 @@ instances:
       length: 302.204
       npoints: 2
       width: null
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m400000:
+  straight3:
     component: straight
     info:
       length: 302.204
@@ -193,7 +193,7 @@ instances:
       length: 302.204
       npoints: 2
       width: null
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m800000:
+  straight4:
     component: straight
     info:
       length: 302.204
@@ -207,7 +207,7 @@ instances:
       length: 302.204
       npoints: 2
       width: null
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m1000000_A180:
+  straight5:
     component: straight
     info:
       length: 302.204
@@ -221,7 +221,7 @@ instances:
       length: 302.204
       npoints: 2
       width: null
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m200000_A180:
+  straight6:
     component: straight
     info:
       length: 302.204
@@ -235,7 +235,7 @@ instances:
       length: 302.204
       npoints: 2
       width: null
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m600000_A180:
+  straight7:
     component: straight
     info:
       length: 302.204
@@ -249,133 +249,107 @@ instances:
       length: 302.204
       npoints: 2
       width: null
-name: resonator_L4000_M6_BSbend_circular_CScpw_OSTrue_OETrue
 nets:
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m1000000_A180,o1
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m1000000_A180,o2
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m1000000_A180,o2
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m1200000,o1
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m200000_A180,o1
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m200000_A180,o2
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m200000_A180,o2
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m400000,o1
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m600000_A180,o1
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m600000_A180,o2
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m600000_A180,o2
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m800000,o1
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_0_M,o1
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_0,o2
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_0_M,o2
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m200000_A180,o1
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_m400000_M,o1
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m400000,o2
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_m400000_M,o2
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m600000_A180,o1
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_m800000_M,o1
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m800000,o2
-- p1: bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_m800000_M,o2
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m1000000_A180,o1
-- p1: rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_305204_m1200000,o1
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m1200000,o2
-- p1: rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0,o2
-  p2: straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_0,o1
+- p1: bend_circular2,o1
+  p2: straight6,o2
+- p1: bend_circular2,o2
+  p2: straight2,o1
+- p1: bend_circular3,o1
+  p2: straight7,o2
+- p1: bend_circular3,o2
+  p2: straight3,o1
+- p1: bend_circular4,o1
+  p2: straight2,o2
+- p1: bend_circular4,o2
+  p2: straight7,o1
+- p1: bend_circular5,o1
+  p2: straight3,o2
+- p1: bend_circular5,o2
+  p2: straight5,o1
+- p1: bend_circular6,o1
+  p2: straight4,o2
+- p1: bend_circular6,o2
+  p2: straight6,o1
+- p1: bend_circular,o1
+  p2: straight5,o2
+- p1: bend_circular,o2
+  p2: straight,o1
 placements:
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m1000000_A180:
+  bend_circular:
     mirror: false
     rotation: 180
     x: 0
     y: -1000
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m200000_A180:
+  bend_circular2:
     mirror: false
     rotation: 180
     x: 0
     y: -200
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_0_m600000_A180:
+  bend_circular3:
     mirror: false
     rotation: 180
     x: 0
     y: -600
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_0_M:
-    mirror: true
-    rotation: 0
-    x: 302.204
-    y: 0
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_m400000_M:
+  bend_circular4:
     mirror: true
     rotation: 0
     x: 302.204
     y: -400
-  bend_circular_A180_R100_NNone_CScoplanar_waveguide_WNon_f5b64f4d_302204_m800000_M:
+  bend_circular5:
     mirror: true
     rotation: 0
     x: 302.204
     y: -800
-  rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_305204_m1200000:
-    mirror: false
+  bend_circular6:
+    mirror: true
     rotation: 0
-    x: 305.204
-    y: -1200
-  rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0:
+    x: 302.204
+    y: 0
+  rectangle:
     mirror: false
     rotation: 0
     x: -3
     y: 0
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_0:
+  rectangle2:
     mirror: false
     rotation: 0
-    x: 0
-    y: 0
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m1200000:
+    x: 305.204
+    y: -1200
+  straight:
     mirror: false
     rotation: 0
     x: 0
     y: -1200
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m400000:
+  straight2:
     mirror: false
     rotation: 0
     x: 0
     y: -400
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m800000:
+  straight3:
     mirror: false
     rotation: 0
     x: 0
     y: -800
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m1000000_A180:
+  straight4:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  straight5:
     mirror: false
     rotation: 180
     x: 302.204
     y: -1000
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m200000_A180:
+  straight6:
     mirror: false
     rotation: 180
     x: 302.204
     y: -200
-  straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_302204_m600000_A180:
+  straight7:
     mirror: false
     rotation: 180
     x: 302.204
     y: -600
 ports:
-  o1: rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0,o1
-  o2: rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_305204_m1200000,o2
-warnings:
-  optical:
-    width_mismatch:
-    - message: Widths of ports straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_0,o1
-        and rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0,o2
-        not equal. Difference of 12.0 um
-      ports:
-      - straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_0,o1
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_m3000_0,o2
-      values:
-      - 10
-      - 22
-    - message: Widths of ports straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m1200000,o2
-        and rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_305204_m1200000,o1
-        not equal. Difference of 12.0 um
-      ports:
-      - straight_L302p2042857142857_CScoplanar_waveguide_WNone_N2_0_m1200000,o2
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S6_22__2d316d18_305204_m1200000,o1
-      values:
-      - 10
-      - 22
+  o1: rectangle,o1
+  o2: rectangle2,o2

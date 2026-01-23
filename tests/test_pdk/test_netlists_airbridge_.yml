@@ -1,5 +1,5 @@
 instances:
-  rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90:
+  rectangle:
     component: rectangle
     info: {}
     settings:
@@ -14,7 +14,7 @@ instances:
       size:
       - 12
       - 15
-  rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90:
+  rectangle2:
     component: rectangle
     info: {}
     settings:
@@ -29,7 +29,7 @@ instances:
       size:
       - 12
       - 15
-  rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90:
+  rectangle3:
     component: rectangle
     info: {}
     settings:
@@ -44,52 +44,23 @@ instances:
       size:
       - 30
       - 8
-name: airbridge_BL30_BW8_PW15_PL12_BLAB_DRAW_PLAB_VIA
-nets:
-- p1: rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90,e1
-  p2: rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90,e3
-- p1: rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90,e3
-  p2: rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90,e1
+nets: []
 placements:
-  rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90:
-    mirror: false
-    rotation: 90
-    x: 0
-    y: 21
-  rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90:
+  rectangle:
     mirror: false
     rotation: 90
     x: 0
     y: -21
-  rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90:
+  rectangle2:
+    mirror: false
+    rotation: 90
+    x: 0
+    y: 21
+  rectangle3:
     mirror: false
     rotation: 90
     x: 0
     y: 0
 ports:
-  e1: rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90,e1
-  e2: rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90,e3
-warnings:
-  electrical:
-    unconnected_ports:
-    - message: 6 unconnected electrical ports!
-      ports:
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90,e2
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S30_8__56f9a496_0_0_A90,e4
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90,e2
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_m21000_A90,e4
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90,e2
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S12_15_8e7b1f7b_0_21000_A90,e4
-      values:
-      - - -4
-        - 0
-      - - 4
-        - 0
-      - - -7.5
-        - -21
-      - - 7.5
-        - -21
-      - - -7.5
-        - 21
-      - - 7.5
-        - 21
+  e1: rectangle,e1
+  e2: rectangle2,e3
