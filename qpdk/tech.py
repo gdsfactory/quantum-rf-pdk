@@ -287,6 +287,7 @@ def coplanar_waveguide(
             ),
             gf.Section(width=width, layer=LAYER.WG, name="waveguide"),
         ),
+        radius_min=(width + 2 * gap) / 2,
     )
 
 
