@@ -1,5 +1,5 @@
 instances:
-  plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw_6000_0_A180:
+  plate_capacitor_single:
     component: plate_capacitor_single
     info: {}
     settings:
@@ -8,7 +8,7 @@ instances:
       etch_layer: M1_ETCH
       length: 26
       width: 5
-  plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw_m6000_0:
+  plate_capacitor_single2:
     component: plate_capacitor_single
     info: {}
     settings:
@@ -17,29 +17,16 @@ instances:
       etch_layer: M1_ETCH
       length: 26
       width: 5
-name: plate_capacitor_L26_W5_G7_ELM1_ETCH_EBM2_CScpw
 nets: []
 placements:
-  plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw_6000_0_A180:
-    mirror: false
-    rotation: 180
-    x: 6
-    y: 0
-  plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw_m6000_0:
+  plate_capacitor_single:
     mirror: false
     rotation: 0
     x: -6
     y: 0
+  plate_capacitor_single2:
+    mirror: false
+    rotation: 180
+    x: 6
+    y: 0
 ports: {}
-warnings:
-  optical:
-    unconnected_ports:
-    - message: 2 unconnected optical ports!
-      ports:
-      - plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw_m6000_0,o1
-      - plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw_6000_0_A180,o1
-      values:
-      - - -10.5
-        - 0
-      - - 10.5
-        - 0
