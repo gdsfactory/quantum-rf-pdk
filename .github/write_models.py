@@ -1,6 +1,6 @@
 """Write model documentation."""
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import qpdk
 from qpdk.config import PATH
@@ -43,7 +43,7 @@ items = [
 ]
 
 # Setup Jinja2
-env = Environment(loader=FileSystemLoader(template_dir), autoescape=False)
+env = Environment(loader=FileSystemLoader(template_dir), autoescape=select_autoescape())
 template = env.get_template("models_static.rst.j2")
 
 rendered = template.render(items=items)
