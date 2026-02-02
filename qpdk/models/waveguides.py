@@ -68,8 +68,7 @@ def straight_shorted(
         It seems to be a Sax limitation that we need to define at least two ports.
 
     Args:
-        **kwargs
-            Keyword arguments forwarded to :func:`qpdk.models.straight`.
+        **kwargs: Keyword arguments forwarded to :func:`qpdk.models.straight`.
             See :class:`StraightModelKwargs` for the supported parameters.
 
     Returns:
