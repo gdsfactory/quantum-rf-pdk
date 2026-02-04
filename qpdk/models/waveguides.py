@@ -67,6 +67,13 @@ def straight_shorted(
     Note:
         The port ``o2`` is internally shorted and should not be used.
         It seems to be a Sax limitation that we need to define at least two ports.
+
+    Args:
+        **kwargs: Keyword arguments forwarded to :func:`qpdk.models.straight`.
+            See :class:`StraightModelKwargs` for the supported parameters.
+
+    Returns:
+        sax.SType: S-parameters dictionary
     """
     circuit, _ = sax.circuit(
         netlist={
@@ -98,7 +105,19 @@ def bend_circular(
     *args: Any,
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
-    """S-parameter model for a circular bend, wrapped to to :func:`~straight`."""
+    """S-parameter model for a circular bend, wrapped to to :func:`~straight`.
+
+    Args:
+        *args:
+            Positional arguments forwarded directly to :func:`straight`.
+
+        **kwargs:
+            Keyword arguments forwarded directly to :func:`straight`.
+            See :class:`StraightModelKwargs` for the supported parameters.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
     return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
@@ -106,7 +125,19 @@ def bend_euler(
     *args: Any,
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
-    """S-parameter model for an Euler bend, wrapped to to :func:`~straight`."""
+    """S-parameter model for an Euler bend, wrapped to to :func:`~straight`.
+
+    Args:
+        *args:
+            Positional arguments forwarded directly to :func:`straight`.
+
+        **kwargs:
+            Keyword arguments forwarded directly to :func:`straight`.
+            See :class:`StraightModelKwargs` for the supported parameters.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
     return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
@@ -114,7 +145,19 @@ def bend_s(
     *args: Any,
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
-    """S-parameter model for an S-bend, wrapped to to :func:`~straight`."""
+    """S-parameter model for an S-bend, wrapped to to :func:`~straight`.
+
+    Args:
+        *args:
+            Positional arguments forwarded directly to :func:`straight`.
+
+        **kwargs:
+            Keyword arguments forwarded directly to :func:`straight`.
+            See :class:`StraightModelKwargs` for the supported parameters.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
     return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 
@@ -136,6 +179,9 @@ def taper_cross_section(
         cross_section_1: Cross-section for the start of the taper.
         cross_section_2: Cross-section for the end of the taper.
         n_points: Number of segments to divide the taper into for simulation.
+
+    Returns:
+        sax.SType: S-parameters dictionary
     """
     # Ensure n_points is a concrete Python int
 
@@ -213,7 +259,19 @@ def rectangle(
     *args: Any,
     **kwargs: Unpack[StraightModelKwargs],
 ) -> sax.SType:
-    """S-parameter model for a rectangular section, wrapped to to :func:`~straight`."""
+    """S-parameter model for a rectangular section, wrapped to to :func:`~straight`.
+
+    Args:
+        *args:
+            Positional arguments forwarded directly to :func:`straight`.
+
+        **kwargs:
+            Keyword arguments forwarded directly to :func:`straight`.
+            See :class:`StraightModelKwargs` for the supported parameters.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
     return straight(*args, **kwargs)  # pyrefly: ignore[bad-keyword-argument]
 
 

@@ -1,5 +1,5 @@
 instances:
-  resonator_coupled_qpdkpcellspresonator_L4000_M6_BSbend__c9699185_6000_m30000:
+  resonator_coupled:
     component: resonator_coupled
     info:
       coupling_gap: 20
@@ -17,24 +17,14 @@ instances:
       meanders: 6
       open_end: false
       open_start: true
-name: quarter_wave_resonator_coupled_L4000_M6_BSbend_circular_c606432b
 nets: []
 placements:
-  resonator_coupled_qpdkpcellspresonator_L4000_M6_BSbend__c9699185_6000_m30000:
+  resonator_coupled:
     mirror: false
     rotation: 0
     x: 6
     y: -30
 ports:
-  coupling_o1: resonator_coupled_qpdkpcellspresonator_L4000_M6_BSbend__c9699185_6000_m30000,coupling_o1
-  coupling_o2: resonator_coupled_qpdkpcellspresonator_L4000_M6_BSbend__c9699185_6000_m30000,coupling_o2
-  resonator_o1: resonator_coupled_qpdkpcellspresonator_L4000_M6_BSbend__c9699185_6000_m30000,resonator_o1
-warnings:
-  optical:
-    unconnected_ports:
-    - message: 1 unconnected optical ports!
-      ports:
-      - resonator_coupled_qpdkpcellspresonator_L4000_M6_BSbend__c9699185_6000_m30000,resonator_o2
-      values:
-      - - 308.204
-        - -1230
+  coupling_o1: resonator_coupled,coupling_o1
+  coupling_o2: resonator_coupled,coupling_o2
+  resonator_o1: resonator_coupled,resonator_o1

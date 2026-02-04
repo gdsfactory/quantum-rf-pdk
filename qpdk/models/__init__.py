@@ -5,6 +5,10 @@ from sax.models.rf import capacitor, inductor, gamma_0_load, admittance, impedan
 
 from .couplers import coupler_straight
 from .generic import (
+    capacitor,
+    gamma_0_load,
+    inductor,
+    josephson_junction,
     open,
     short,
     short_2_port,
@@ -34,6 +38,7 @@ models = {
         coupler_straight,
         gamma_0_load,
         inductor,
+        josephson_junction,
         open,
         rectangle,
         quarter_wave_resonator_coupled,

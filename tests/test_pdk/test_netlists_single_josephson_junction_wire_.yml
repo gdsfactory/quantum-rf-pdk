@@ -1,5 +1,5 @@
 instances:
-  rectangle_gdsfactorypcomponentspshapesprectangle_S1p5_1_4f32cade_m375_0:
+  rectangle:
     component: rectangle
     info: {}
     settings:
@@ -14,7 +14,7 @@ instances:
       size:
       - 1.5
       - 1
-  straight_L0p5_CSjosephson_junction_cross_section_narrow_WNone_N2_13000_0:
+  straight:
     component: straight
     info:
       length: 0.5
@@ -28,7 +28,7 @@ instances:
       length: 0.5
       npoints: 2
       width: null
-  straight_L8p3_CSjosephson_junction_cross_section_wide_WNone_N2_0_0:
+  straight2:
     component: straight
     info:
       length: 8.3
@@ -42,7 +42,7 @@ instances:
       length: 8.3
       npoints: 2
       width: null
-  taper_cross_section_gdsfactorypcomponentsptapersptaper__41aa5fb2_8300_0:
+  taper_cross_section:
     component: taper_cross_section
     info:
       route_info_josephson_junction_cross_section_wide_length: 4.7
@@ -57,51 +57,32 @@ instances:
       linear: true
       npoints: 100
       width_type: sine
-name: single_josephson_junction_wire_WSL8p3_NSL0p5_TL4p7_CSWj_05ba299d
 nets:
-- p1: straight_L0p5_CSjosephson_junction_cross_section_narrow_WNone_N2_13000_0,o1
-  p2: taper_cross_section_gdsfactorypcomponentsptapersptaper__41aa5fb2_8300_0,o2
-- p1: straight_L8p3_CSjosephson_junction_cross_section_wide_WNone_N2_0_0,o2
-  p2: taper_cross_section_gdsfactorypcomponentsptapersptaper__41aa5fb2_8300_0,o1
+- p1: straight2,o2
+  p2: taper_cross_section,o1
+- p1: straight,o1
+  p2: taper_cross_section,o2
 placements:
-  rectangle_gdsfactorypcomponentspshapesprectangle_S1p5_1_4f32cade_m375_0:
+  rectangle:
     mirror: false
     rotation: 0
     x: -0.375
     y: 0
-  straight_L0p5_CSjosephson_junction_cross_section_narrow_WNone_N2_13000_0:
+  straight:
     mirror: false
     rotation: 0
     x: 13
     y: 0
-  straight_L8p3_CSjosephson_junction_cross_section_wide_WNone_N2_0_0:
+  straight2:
     mirror: false
     rotation: 0
     x: 0
     y: 0
-  taper_cross_section_gdsfactorypcomponentsptapersptaper__41aa5fb2_8300_0:
+  taper_cross_section:
     mirror: false
     rotation: 0
     x: 8.3
     y: 0
 ports:
-  o1: straight_L8p3_CSjosephson_junction_cross_section_wide_WNone_N2_0_0,o1
-  o2: straight_L0p5_CSjosephson_junction_cross_section_narrow_WNone_N2_13000_0,o2
-warnings:
-  electrical:
-    unconnected_ports:
-    - message: 4 unconnected electrical ports!
-      ports:
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S1p5_1_4f32cade_m375_0,e1
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S1p5_1_4f32cade_m375_0,e2
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S1p5_1_4f32cade_m375_0,e3
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S1p5_1_4f32cade_m375_0,e4
-      values:
-      - - -1.125
-        - 0
-      - - -0.375
-        - 0.5
-      - - 0.375
-        - 0
-      - - -0.375
-        - -0.5
+  o1: straight2,o1
+  o2: straight,o2
