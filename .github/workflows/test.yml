@@ -64,4 +64,4 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Test GDSFactory+
-        run: uv run --group gdsfactoryplus gfp test
+        run: uv run gfp test
