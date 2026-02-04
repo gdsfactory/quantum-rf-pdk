@@ -6,6 +6,7 @@ from typing import Protocol, cast
 
 import gdsfactory as gf
 import skrf
+from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
 from skrf.media import CPW, Media
 
@@ -69,11 +70,31 @@ def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
     Returns:
         MediaCallable: A callable that returns a skrf Media object for a given frequency.
     """
-    xs = gf.get_cross_section(cross_section)
+    # Convert input to CrossSection object
+    xs: CrossSection
+    if isinstance(cross_section, CrossSection):
+        xs = cross_section
+    elif callable(cross_section):
+        # If it's a callable (like a partial or factory function), call it to get the CrossSection
+        xs = cast(CrossSection, cross_section())
+    else:
+        # It's a string name, requires active PDK
+        xs = gf.get_cross_section(cross_section)
+
+    # Extract width and gap from the CrossSection
     width = xs.width
-    gap = next(
-        section.width for section in xs.sections if "etch_offset" in section.name
-    )
+    try:
+        gap = next(
+            section.width
+            for section in xs.sections
+            if section.name and "etch_offset" in section.name
+        )
+    except StopIteration as e:
+        msg = (
+            f"Cross-section does not have a section with 'etch_offset' in the name. "
+            f"Found sections: {[s.name for s in xs.sections]}"
+        )
+        raise ValueError(msg) from e
     return cpw_media_skrf(width=width, gap=gap)
 
 

@@ -1,7 +1,7 @@
 info:
   length: 5000
   resonator_type: quarter_wave
-name: qubit_with_resonator_qpdkpcellspderivedptransmon_with_r_3dd0712b
+name: qubit_with_resonator_Qdouble_pad_transmon_with_bbox_RFr_975f2e9b
 settings:
   coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_SW20_L394
   coupler_offset:

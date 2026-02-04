@@ -13,7 +13,7 @@ from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.helper import show_components
 
 
-@gf.cell_with_module_name
+@gf.cell
 def resonator(
     length: float = 4000.0,
     meanders: int = 6,
@@ -156,7 +156,7 @@ resonator_quarter_wave = partial(resonator, open_start=False, open_end=True)
 resonator_half_wave = partial(resonator, open_start=True, open_end=True)
 
 
-@gf.cell_with_module_name
+@gf.cell
 def resonator_coupled(
     length: float = 4000.0,
     meanders: int = 6,

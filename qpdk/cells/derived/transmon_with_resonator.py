@@ -15,7 +15,7 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER, route_single_cpw
 
 
-@gf.cell_with_module_name
+@gf.cell
 def qubit_with_resonator(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),

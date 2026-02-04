@@ -1,5 +1,5 @@
 instances:
-  rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_m3000_0_A180:
+  rectangle:
     component: rectangle
     info: {}
     settings:
@@ -14,7 +14,7 @@ instances:
       size:
       - 6
       - 22
-  straight_open_L10_CScoplanar_waveguide_WNone_N2_0_0:
+  straight_open:
     component: straight_open
     info: {}
     settings:
@@ -22,37 +22,18 @@ instances:
       length: 10
       npoints: 2
       width: null
-name: straight_double_open_L10_CScoplanar_waveguide_WNone_N2
 nets: []
 placements:
-  rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_m3000_0_A180:
+  rectangle:
     mirror: false
     rotation: 180
     x: -3
     y: 0
-  straight_open_L10_CScoplanar_waveguide_WNone_N2_0_0:
+  straight_open:
     mirror: false
     rotation: 0
     x: 0
     y: 0
 ports:
-  o1: straight_open_L10_CScoplanar_waveguide_WNone_N2_0_0,o1
-  o2: straight_open_L10_CScoplanar_waveguide_WNone_N2_0_0,o2
-warnings:
-  electrical:
-    unconnected_ports:
-    - message: 4 unconnected electrical ports!
-      ports:
-      - rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_m3000_0_A180,e1
-      - rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_m3000_0_A180,e2
-      - rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_m3000_0_A180,e3
-      - rectangle_S6_22_LM1_ETCH_CTrue_PTelectrical_PO180_90_0_m90_m3000_0_A180,e4
-      values:
-      - - 0
-        - 0
-      - - -3
-        - -11
-      - - -6
-        - 0
-      - - -3
-        - 11
+  o1: straight_open,o1
+  o2: straight_open,o2

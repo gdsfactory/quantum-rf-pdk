@@ -15,7 +15,7 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
 
-@gf.cell_with_module_name
+@gf.cell
 def interdigital_capacitor(
     fingers: int = 4,
     finger_length: float = 20.0,
@@ -201,7 +201,7 @@ def interdigital_capacitor(
     return c
 
 
-@gf.cell_with_module_name
+@gf.cell
 def plate_capacitor(
     length: float = 26.0,
     width: float = 5.0,
@@ -270,7 +270,7 @@ def plate_capacitor(
     return c
 
 
-@gf.cell_with_module_name
+@gf.cell
 def plate_capacitor_single(
     length: float = 26.0,
     width: float = 5.0,

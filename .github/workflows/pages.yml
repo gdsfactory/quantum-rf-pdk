@@ -29,7 +29,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: make setup-ipython-config
       - run: make docs
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
@@ -72,7 +72,7 @@ jobs:
         uses: astral-sh/setup-uv@v7.1.3
       - run: make install
       - name: Cache ImageMagick
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /var/cache/apt/archives
           key: ${{ runner.os }}-imagemagick
@@ -96,7 +96,7 @@ jobs:
           continue_on_error: true
           latexmk_use_xelatex: true
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
@@ -113,12 +113,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML artifact (latest Python)
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: html-docs-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site
       - name: Download PDF artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: pdf-docs
           path: _site
