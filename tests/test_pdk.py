@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import cast
+from typing import Any, cast
 
 import gdsfactory as gf
 import jsondiff
@@ -100,6 +100,21 @@ def test_cell_in_pdk(name):
     assert instances1 == instances2
 
 
+def normalize_numeric_types(data: Any) -> Any:
+    """Normalize numeric types in nested data structures.
+
+    Converts floats that are whole numbers to ints to ensure consistent
+    serialization across different platforms (e.g., macOS vs Linux).
+    """
+    if isinstance(data, dict):
+        return {k: normalize_numeric_types(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [normalize_numeric_types(item) for item in data]
+    if isinstance(data, float) and data.is_integer():
+        return int(data)
+    return data
+
+
 @pytest.mark.parametrize("component_name", cell_names)
 def test_gds(component_name: str) -> None:
     """Avoid regressions in GDS geometry shapes and layers."""
@@ -111,7 +126,8 @@ def test_gds(component_name: str) -> None:
 def test_settings(component_name: str, data_regression: DataRegressionFixture) -> None:
     """Avoid regressions when exporting settings."""
     component = cells[component_name]()
-    data_regression.check(component.to_dict())
+    settings = normalize_numeric_types(component.to_dict())
+    data_regression.check(settings)
 
 
 @pytest.mark.parametrize("component_type", cell_names)
@@ -130,6 +146,7 @@ def test_netlists(
         pytest.skip(f"Skipping {component_type} netlist test")
     c = cells[component_type]()
     n = c.get_netlist()
+    n = cast(dict, normalize_numeric_types(n))
     data_regression.check(n)
 
     n.pop("connections", None)
@@ -142,6 +159,7 @@ def test_netlists(
 
     c2 = gf.read.from_yaml(yaml_str)
     n2 = c2.get_netlist()
+    n2 = cast(dict, normalize_numeric_types(n2))
     d = jsondiff.diff(n, n2)
     d.pop("warnings", None)
     d.pop("ports", None)
