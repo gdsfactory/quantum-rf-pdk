@@ -18,10 +18,11 @@ jobs:
     uses: ./.github/workflows/get-python-versions.yml
   test-code:
     needs: get-python-versions
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest]
         python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
       - uses: actions/checkout@v6
