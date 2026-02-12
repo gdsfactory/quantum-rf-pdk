@@ -6,36 +6,8 @@ from pprint import pprint
 import jax
 import jax.numpy as jnp
 import sax
+from sax.models.rf import capacitor, inductor, gamma_0_load, admittance, impedance, tee
 from jax.typing import ArrayLike
-
-
-@partial(jax.jit, inline=True, static_argnames=("n_ports"))
-def gamma_0_load(
-    f: ArrayLike = jnp.array([5e9]),
-    gamma_0: int | float | complex = 0,
-    n_ports: int = 1,
-) -> sax.SType:
-    r"""Connection with given reflection coefficient.
-
-    Args:
-        f: Array of frequency points in Hz
-        gamma_0: Reflection coefficient Γ₀ of connection
-        n_ports: Number of ports in component. The diagonal ports of the matrix
-            are set to Γ₀ and the off-diagonal ports to 0.
-
-    Returns:
-        sax.SType: S-parameters dictionary where :math:`S = \Gamma_0I_\text{n\_ports}`
-
-    """
-    sdict = {
-        (f"o{i}", f"o{i}"): jnp.full(len(f), gamma_0) for i in range(1, n_ports + 1)
-    }
-    sdict |= {
-        (f"o{i}", f"o{j}"): jnp.zeros(len(f), dtype=complex)
-        for i in range(1, n_ports + 1)
-        for j in range(i + 1, n_ports + 1)
-    }
-    return sax.reciprocal(sdict)
 
 
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
