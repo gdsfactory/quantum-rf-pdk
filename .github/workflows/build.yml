@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.1
+      - name: Remove samples
+        run: make rm-samples
       - uses: astral-sh/setup-uv@v7.1.6
       - run: make build
       - uses: actions/upload-artifact@v6.0.0

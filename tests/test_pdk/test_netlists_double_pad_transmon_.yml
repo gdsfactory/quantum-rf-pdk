@@ -1,5 +1,5 @@
 instances:
-  rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_7500_m200000:
+  rectangle:
     component: rectangle
     info: {}
     settings:
@@ -14,7 +14,7 @@ instances:
       size:
       - 250
       - 400
-  rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_m257500_m200000:
+  rectangle2:
     component: rectangle
     info: {}
     settings:
@@ -29,101 +29,27 @@ instances:
       size:
       - 250
       - 400
-  squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45:
+  squid_junction:
     component: squid_junction
     info: {}
     settings:
       junction_spec: josephson_junction
       loop_area: 4
-name: double_pad_transmon_PS250_400_PG15_JSsquid_junction_JDN_cc5ec781
 nets: []
 placements:
-  rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_7500_m200000:
-    mirror: false
-    rotation: 0
-    x: 7.5
-    y: -200
-  rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_m257500_m200000:
+  rectangle:
     mirror: false
     rotation: 0
     x: -257.5
     y: -200
-  squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45:
+  rectangle2:
+    mirror: false
+    rotation: 0
+    x: 7.5
+    y: -200
+  squid_junction:
     mirror: false
     rotation: 45
     x: -9.546
     y: -8.132
-ports:
-  junction: squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,loop_center
-warnings:
-  electrical:
-    unconnected_ports:
-    - message: 8 unconnected electrical ports!
-      ports:
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_m257500_m200000,e1
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_m257500_m200000,e2
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_m257500_m200000,e3
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_m257500_m200000,e4
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_7500_m200000,e1
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_7500_m200000,e2
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_7500_m200000,e3
-      - rectangle_gdsfactorypcomponentspshapesprectangle_S250_4_5c1599ef_7500_m200000,e4
-      values:
-      - - -257.5
-        - 0
-      - - -132.5
-        - 200
-      - - -7.5
-        - 0
-      - - -132.5
-        - -200
-      - - 7.5
-        - 0
-      - - 132.5
-        - 200
-      - - 257.5
-        - 0
-      - - 132.5
-        - -200
-  optical:
-    orientation_mismatch:
-    - message: squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,loop_center
-        was promoted to junction but orientationsdo not match! Difference of 45.0
-        deg
-      ports:
-      - squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,loop_center
-      - junction
-      values:
-      - 45
-      - 90
-    unconnected_ports:
-    - message: 6 unconnected optical ports!
-      ports:
-      - squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,left_left_wide
-      - squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,left_right_wide
-      - squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,right_left_wide
-      - squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,right_right_wide
-      - squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,left_overlap
-      - squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,right_overlap
-      values:
-      - - 8.273
-        - -6.859
-      - - -8.273
-        - -6.859
-      - - -8.273
-        - 6.859
-      - - 8.273
-        - 6.859
-      - - 0
-        - 1.414
-      - - 0
-        - -1.414
-    width_mismatch:
-    - message: Widths of ports squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,loop_center
-        and junction not equal. Difference of 33.355999999999995 um
-      ports:
-      - squid_junction_JSjosephson_junction_LA4_m9546_m8132_A45,loop_center
-      - junction
-      values:
-      - 0.09
-      - 33.446
+ports: {}

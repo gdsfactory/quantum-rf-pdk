@@ -77,7 +77,7 @@ LayerViews:
   TEXT:
     layer: [90, 0]
     layer_in_name: true
-    color: "black"
+    color: "gray"
     hatch_pattern: checkerboard 2px
   gdsfactory:
     group_members:
