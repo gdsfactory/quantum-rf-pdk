@@ -32,8 +32,9 @@ clean: ##@ Clean up all build, test, coverage and Python artifacts
 ###########
 
 PYTEST_COMMAND := uv run --group dev pytest
+PYTEST_COMMAND_WITH_MODELS := uv run --extra models --group dev pytest
 test: ##@ Run the full test suite in parallel using pytest
-	$(PYTEST_COMMAND) -n auto
+	$(PYTEST_COMMAND_WITH_MODELS) -n auto
 
 test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
 	$(PYTEST_COMMAND) -s tests/test_pdk.py

@@ -6,6 +6,10 @@ on:
       - main
   merge_group:
   workflow_dispatch:
+permissions:
+  contents: read
+env:
+  GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -32,8 +36,6 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: make install
       - name: Test with pytest
         run: make test
   test-code-result:
@@ -51,3 +53,16 @@ jobs:
             echo "One or more test jobs failed"
             exit 1
           fi
+  test_gdsfactoryplus:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.1.3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Test GDSFactory+
+        run: uv run gfp test
