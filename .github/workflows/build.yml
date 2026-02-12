@@ -13,12 +13,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@v6
       - name: Remove samples
         run: make rm-samples
-      - uses: astral-sh/setup-uv@v7.1.6
+      - uses: astral-sh/setup-uv@v7
       - run: make build
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist
