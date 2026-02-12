@@ -153,6 +153,7 @@ def interdigital_capacitor(
     straight_left = c.add_ref(straight_out_of_etch).move(
         (-etch_bbox_margin, height / 2)
     )
+    straight_right = None
     if not half:
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
 
@@ -181,10 +182,11 @@ def interdigital_capacitor(
     c.absorb(c << c_additive)
     c.absorb(c << c_negative)
 
-    ports_config = [
+    ports_config: list[tuple[str, gf.Port] | None] = [
         ("o1", straight_left["o1"]),
-        ("o2", straight_right["o2"]) if not half else None,
     ]
+    if not half and straight_right is not None:
+        ports_config.append(("o2", straight_right["o2"]))
 
     for port_name, port_ref in filter(None, ports_config):
         c.add_port(

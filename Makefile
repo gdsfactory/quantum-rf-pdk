@@ -1,4 +1,4 @@
-.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install rm-samples run-pre setup-ipython-config test test-fail-fast test-force test-gds test-gds-fail-fast test-gds-force update-pre write-cells write-makefile-help write-models
+.PHONY: help install rm-samples clean test test-gds test-gds-force test-gds-fail-fast update-pre run-pre build write-cells write-models write-makefile-help convert-notebooks copy-sample-notebooks setup-ipython-config docs docs-latex docs-pdf all
 
 # Based on https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
 help: ##@ (Default) Print listing of key targets with their descriptions
