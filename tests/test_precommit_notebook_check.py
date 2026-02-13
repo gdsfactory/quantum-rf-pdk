@@ -44,8 +44,10 @@ def test_check_notebook_sources_fails_with_orphaned_notebook(repo_root: Path) ->
     test_notebook = repo_root / "notebooks" / "test_orphaned_temp.ipynb"
 
     try:
-        # Create minimal valid JSON notebook
-        test_notebook.write_text("{}")
+        # Create minimal valid Jupyter notebook
+        test_notebook.write_text(
+            '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}'
+        )
 
         result = subprocess.run(
             [str(script)],
