@@ -71,16 +71,16 @@ def coupler_straight(
 
     # Create straight instances with shared settings
     straight_instances = {
-        f"straight_{i}_{j}": straight(**straight_settings)
+        f"straight_{i}_{j}": straight(f=f, **straight_settings)
         for i in [1, 2]
         for j in [1, 2]
     }
-    tee_instances = {f"tee_{i}": tee() for i in [1, 2]}
+    tee_instances = {f"tee_{i}": tee(f=f) for i in [1, 2]}
 
     instances = {
         **straight_instances,
         **tee_instances,
-        "capacitor": capacitor(**capacitor_settings),
+        "capacitor": capacitor(f=f, **capacitor_settings),
     }
     connections = {
         "straight_1_1,o1": "tee_1,o1",
