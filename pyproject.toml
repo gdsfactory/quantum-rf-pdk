@@ -22,7 +22,7 @@ models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
   "optuna",
-  "ray[tune]",
+  "ray[tune]; sys_platform != 'win32'",
   "sax",
   "scikit-rf",
   "scqubits",
