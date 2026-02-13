@@ -129,3 +129,9 @@ repos:
         language: script
         files: ^notebooks/src/.*\.py$
         pass_filenames: true
+      - id: check-notebook-sources
+        name: Check notebooks have source files
+        entry: ./.github/check-notebook-sources.sh
+        language: script
+        files: ^notebooks/.*\.ipynb$
+        pass_filenames: false
