@@ -195,6 +195,7 @@ select = [
   "D100",
 ]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D102", "D103"]
+"qpdk/models/__init__.py" = ["E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

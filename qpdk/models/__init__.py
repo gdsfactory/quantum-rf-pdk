@@ -2,8 +2,16 @@
 
 import sax
 
-from .couplers import coupler_straight
-from .generic import (
+sax.set_port_naming_strategy("optical")
+
+from qpdk.models.constants import (
+    DEFAULT_FREQUENCY,
+)
+from qpdk.models.couplers import (
+    coupler_straight,
+    cpw_cpw_coupling_capacitance,
+)
+from qpdk.models.generic import (
     capacitor,
     gamma_0_load,
     inductor,
@@ -15,8 +23,16 @@ from .generic import (
     single_impedance_element,
     tee,
 )
-from .resonator import quarter_wave_resonator_coupled, resonator_frequency
-from .waveguides import (
+from qpdk.models.media import (
+    MediaCallable,
+    cpw_media_skrf,
+    cross_section_to_media,
+)
+from qpdk.models.resonator import (
+    quarter_wave_resonator_coupled,
+    resonator_frequency,
+)
+from qpdk.models.waveguides import (
     bend_circular,
     bend_euler,
     bend_s,
@@ -27,37 +43,38 @@ from .waveguides import (
     taper_cross_section,
 )
 
-sax.set_port_naming_strategy("optical")
-
-
 models = {
-    func.__name__: func
-    for func in (
-        bend_circular,
-        bend_euler,
-        bend_s,
-        capacitor,
-        coupler_straight,
-        gamma_0_load,
-        inductor,
-        josephson_junction,
-        open,
-        rectangle,
-        quarter_wave_resonator_coupled,
-        short,
-        single_admittance_element,
-        single_impedance_element,
-        straight,
-        taper_cross_section,
-        tee,
-        launcher,
-        short_2_port,
-        straight_shorted,
-    )
+    k: v
+    for k, v in ((k, sax.try_into[sax.Model](v)) for k, v in globals().items())
+    if v
 }
 
 __all__ = [
+    "DEFAULT_FREQUENCY",
+    "MediaCallable",
+    "bend_circular",
+    "bend_euler",
+    "bend_s",
+    "capacitor",
+    "coupler_straight",
+    "cpw_cpw_coupling_capacitance",
+    "cpw_media_skrf",
+    "cross_section_to_media",
+    "gamma_0_load",
+    "inductor",
+    "josephson_junction",
+    "launcher",
     "models",
+    "open",
+    "quarter_wave_resonator_coupled",
+    "rectangle",
     "resonator_frequency",
-    *models.keys(),
+    "short",
+    "short_2_port",
+    "single_admittance_element",
+    "single_impedance_element",
+    "straight",
+    "straight_shorted",
+    "taper_cross_section",
+    "tee",
 ]
