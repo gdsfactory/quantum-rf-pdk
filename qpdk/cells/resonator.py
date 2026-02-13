@@ -73,6 +73,7 @@ def resonator(
 
     # Route meandering quarter-wave resonator
     previous_port = None
+    first_straight_ref = None
     for i in range(meanders):
         straight_ref = c.add_ref(straight_comp)
         bend_ref = c.add_ref(bend)
@@ -95,7 +96,11 @@ def resonator(
         cross_section=cross_section,
     )
     final_straight_ref = c.add_ref(final_straight)
-    final_straight_ref.connect("o1", previous_port)
+    if previous_port:
+        final_straight_ref.connect("o1", previous_port)
+
+    if first_straight_ref is None:
+        first_straight_ref = final_straight_ref
 
     # Etch at the open end
     if open_end or open_start:
