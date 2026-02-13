@@ -21,6 +21,7 @@
 # %%
 import time
 
+import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import sax
@@ -31,6 +32,8 @@ from tqdm.notebook import tqdm
 from qpdk import PDK
 
 PDK.activate()
+
+# ruff: disable[E402]
 
 # %% [markdown]
 # ## Constants
@@ -400,7 +403,6 @@ resonator = quarter_wave_resonator_coupled(
     coupling_gap=0.27,
     length=4000,
 )
-from matplotlib import pyplot as plt
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
@@ -417,3 +419,4 @@ ax.grid(True, which="both")
 ax.legend()
 
 plt.show()
+# ruff: enable[E402]
