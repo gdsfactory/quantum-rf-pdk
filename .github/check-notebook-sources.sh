@@ -31,10 +31,10 @@ declare -a orphaned_notebooks=()
 while IFS= read -r -d '' ipynb_file; do
     # Get the basename without extension
     basename=$(basename "$ipynb_file" .ipynb)
-    
+
     # Check if corresponding .py file exists in notebooks/src/
     py_source="notebooks/src/${basename}.py"
-    
+
     if [ ! -f "$py_source" ]; then
         orphaned_notebooks+=("$ipynb_file")
     fi
