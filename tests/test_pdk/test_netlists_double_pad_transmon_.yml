@@ -49,7 +49,7 @@ placements:
     y: -200
   squid_junction:
     mirror: false
-    rotation: 45
+    rotation: 45.0
     x: -9.546
     y: -8.132
 ports: {}

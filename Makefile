@@ -41,7 +41,7 @@ test-ports: ##@ Run optical port position tests (tests/test_pdk.py::test_optical
 test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
 	$(PYTEST_COMMAND) -s tests/test_pdk.py
 
-test-gds-force: ##@ Run GDS regressions tests (tests/test_pdk.py) and regenerate
+test-force: ##@ Run GDS regressions tests (tests/test_pdk.py) and regenerate
 	$(PYTEST_COMMAND) -s tests/test_pdk.py --force-regen
 
 test-gds-fail-fast: ##@ Run GDS regressions tests (tests/test_pdk.py) and stop at first failure
