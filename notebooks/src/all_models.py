@@ -26,8 +26,9 @@ import matplotlib.pyplot as plt
 import sax
 import skrf
 from gdsfactory.typings import CrossSectionSpec
-from qpdk import PDK
 from tqdm.notebook import tqdm
+
+from qpdk import PDK
 
 PDK.activate()
 
@@ -39,9 +40,9 @@ from qpdk.models.constants import DEFAULT_FREQUENCY, TEST_FREQUENCY
 
 # %% [markdown]
 # ## Media
-
 # %%
 from qpdk.models.media import cross_section_to_media
+
 cross_section_to_media("cpw")
 
 # %% [markdown]
@@ -49,42 +50,52 @@ cross_section_to_media("cpw")
 
 # %%
 from qpdk.models.generic import gamma_0_load
+
 gamma_0_load(f=TEST_FREQUENCY, gamma_0=1, n_ports=2)
 
 # %%
 from qpdk.models.generic import short
+
 short(f=TEST_FREQUENCY, n_ports=2)
 
 # %%
 from qpdk.models.generic import short_2_port
+
 short_2_port(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.generic import open
+
 open(f=TEST_FREQUENCY, n_ports=2)
 
 # %%
 from qpdk.models.generic import tee
+
 tee(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.generic import single_impedance_element
+
 single_impedance_element(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.generic import single_admittance_element
+
 single_admittance_element()
 
 # %%
 from qpdk.models.generic import capacitor
+
 capacitor(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.generic import inductor
+
 inductor(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.generic import josephson_junction
+
 josephson_junction(f=TEST_FREQUENCY)
 
 # %%
@@ -100,7 +111,7 @@ plt.legend()
 plt.show(block=False)
 
 S_cap = capacitor(f=f, capacitance=(capacitance := 100e-15))
-#print(S_cap)
+# print(S_cap)
 plt.figure()
 # Polar plot of S21 and S11
 plt.subplot(121, projection="polar")
@@ -139,7 +150,7 @@ plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
 plt.show(block=False)
 
 S_ind = inductor(f=f, inductance=(inductance := 1e-9))
-#print(S_ind)
+# print(S_ind)
 plt.figure()
 plt.subplot(121, projection="polar")
 plt.plot(jnp.angle(S_ind[("o1", "o1")]), abs(S_ind[("o1", "o1")]), label="$S_{11}$")
@@ -180,39 +191,49 @@ plt.show()
 
 # %%
 from qpdk.models.waveguides import straight
+
 straight(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.waveguides import straight_shorted
+
 straight_shorted(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.waveguides import bend_circular
+
 bend_circular(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.waveguides import bend_euler
+
 bend_euler(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.waveguides import bend_s
+
 bend_s(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.waveguides import rectangle
+
 rectangle(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.waveguides import taper_cross_section
+
 taper_cross_section(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.waveguides import launcher
+
 launcher(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.tech import coplanar_waveguide
+
 cpw_cs = coplanar_waveguide(width=10, gap=6)
+
 
 def straight_no_jit(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
@@ -229,6 +250,7 @@ def straight_no_jit(
         ("o2", "o2"): jnp.array(transmission_line.s[:, 1, 1]),
     }
     return sax.reciprocal(sdict)
+
 
 test_freq = jnp.linspace(0.5e9, 9e9, 200001)
 test_length = 1000
@@ -248,9 +270,7 @@ for _ in tqdm(range(n_runs), desc="With jax.jit", ncols=80, unit="run"):
 no_jit_times = []
 for _ in tqdm(range(n_runs), desc="Without jax.jit", ncols=80, unit="run"):
     start_time = time.perf_counter()
-    S_no_jit = straight_no_jit(
-        f=test_freq, length=test_length, cross_section=cpw_cs
-    )
+    S_no_jit = straight_no_jit(f=test_freq, length=test_length, cross_section=cpw_cs)
     _ = S_no_jit["o2", "o1"].block_until_ready()
     end_time = time.perf_counter()
     no_jit_times.append(end_time - start_time)
@@ -291,10 +311,12 @@ print(f"S-parameter keys: {list(S.keys())}")
 
 # %%
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
+
 cpw_cpw_coupling_capacitance(TEST_FREQUENCY, 100, 100, "cpw")
 
 # %%
 from qpdk.models.couplers import coupler_straight
+
 coupler_straight(f=TEST_FREQUENCY)
 
 # %%
@@ -356,10 +378,12 @@ print(
 
 # %%
 from qpdk.models.resonator import quarter_wave_resonator_coupled
+
 quarter_wave_resonator_coupled(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.resonator import resonator_frequency
+
 cs = coplanar_waveguide(width=10, gap=6)
 cpw = cross_section_to_media(cs)(frequency=skrf.Frequency(2, 9, 101, unit="GHz"))
 print(f"{cpw=!r}")
@@ -380,7 +404,11 @@ from matplotlib import pyplot as plt
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
-for key in [("coupling_o2", "resonator_o1"), ("coupling_o1", "coupling_o2"), ("coupling_o1", "resonator_o1")]:
+for key in [
+    ("coupling_o2", "resonator_o1"),
+    ("coupling_o1", "coupling_o2"),
+    ("coupling_o1", "resonator_o1"),
+]:
     ax.plot(f / 1e9, 20 * jnp.log10(jnp.abs(resonator[key])), label=f"$S${key}")
 ax.set_xlabel("Frequency [GHz]")
 ax.set_ylabel("Magnitude [dB]")
