@@ -1,4 +1,4 @@
-.PHONY: help install rm-samples clean test test-gds test-gds-force test-gds-fail-fast update-pre run-pre build write-cells write-models write-makefile-help convert-notebooks copy-sample-notebooks setup-ipython-config docs docs-latex docs-pdf all
+.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install rm-samples run-pre setup-ipython-config test test-fail-fast test-force test-gds test-gds-fail-fast test-gds-force test-ports update-pre write-cells write-makefile-help write-models
 
 # Based on https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
 help: ##@ (Default) Print listing of key targets with their descriptions
@@ -35,10 +35,13 @@ PYTEST_COMMAND := uv run --group dev pytest
 test: ##@ Run the full test suite in parallel using pytest
 	$(PYTEST_COMMAND) -n auto
 
+test-ports: ##@ Run optical port position tests (tests/test_pdk.py::test_optical_port_positions)
+	$(PYTEST_COMMAND) -s tests/test_pdk.py::test_optical_port_positions
+
 test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
 	$(PYTEST_COMMAND) -s tests/test_pdk.py
 
-test-gds-force: ##@ Run GDS regressions tests (tests/test_pdk.py) and regenerate
+test-force: ##@ Run GDS regressions tests (tests/test_pdk.py) and regenerate
 	$(PYTEST_COMMAND) -s tests/test_pdk.py --force-regen
 
 test-gds-fail-fast: ##@ Run GDS regressions tests (tests/test_pdk.py) and stop at first failure
