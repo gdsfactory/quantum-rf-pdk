@@ -15,6 +15,10 @@ skip_plots = {
     "resonator_frequency",
     "single_admittance_element",
     "single_impedance_element",
+    "MediaCallable",
+    "cross_section_to_media",
+    "cpw_cpw_coupling_capacitance",
+    "cpw_media_skrf",
 }
 
 # Collect all public functions/classes in qpdk.models

@@ -6,9 +6,11 @@ import jax
 import jax.numpy as jnp
 import sax
 from matplotlib import pyplot as plt
-from sax.models.rf import capacitor, gamma_0_load, impedance, inductor
+from sax.models.rf import capacitor, gamma_0_load, impedance, inductor, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
+
+__all__ = ["josephson_junction", "open", "short", "short_2_port", "tee"]
 
 
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
@@ -83,7 +85,7 @@ def josephson_junction(
         ic: Critical current I_c in Amperes
         capacitance: Junction capacitance C in Farads
         resistance: Shunt resistance R in Ohms
-        ib: DC bias current I_b in Amperes (|ib| < ic)
+        ib: DC bias current I_b in Amperes (\|ib\| < ic)
         z0: Reference impedance in Ω
 
     Returns:
