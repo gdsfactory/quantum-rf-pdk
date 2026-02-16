@@ -22,7 +22,7 @@ models = [
   "gplugins[meshwell]>=2.0.0",
   "jaxellip",
   "optuna",
-  "ray[tune]",
+  "ray[tune]; sys_platform != 'win32'",
   "sax>=0.15.16",
   "scikit-rf",
   "scqubits",
@@ -188,13 +188,14 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 ".github/write_cells.py" = [
   "S701",
-] # Jinja2 autoescape not needed for RST templates
+]  # Jinja2 autoescape not needed for RST templates
 "notebooks/**/*.py" = ["D100"]
-"qpdk/**/__init__.py" = ["F403"] # allowing star imports to aggregate cells
+"qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",
-] # no public module docstring for sample scripts
+]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D102", "D103"]
+"qpdk/models/__init__.py" = ["E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

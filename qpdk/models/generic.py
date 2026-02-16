@@ -1,18 +1,21 @@
-"""S-parameter models for generic components."""
+"""Generic Models."""
 
 from functools import partial
-from pprint import pprint
 
 import jax
 import jax.numpy as jnp
 import sax
 from sax.models.rf import capacitor, inductor, gamma_0_load, admittance, impedance, tee
 from jax.typing import ArrayLike
+from matplotlib import pyplot as plt
+
+from qpdk.models.constants import DEFAULT_FREQUENCY
 
 
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def short(
-    f: ArrayLike = jnp.array([5e9]),
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     n_ports: int = 1,
 ) -> sax.SType:
     r"""Electrical short connections Sax model.
@@ -27,7 +30,8 @@ def short(
     return gamma_0_load(f=f, gamma_0=-1, n_ports=n_ports)
 
 
-def short_2_port(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
+@jax.jit
+def short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
     """Electrical short 2-port connection Sax model.
 
     Args:
@@ -41,7 +45,8 @@ def short_2_port(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
 
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
 def open(
-    f: ArrayLike = jnp.array([5e9]),
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     n_ports: int = 1,
 ) -> sax.SType:
     r"""Electrical open connection Sax model.
@@ -57,7 +62,7 @@ def open(
 
 
 @partial(jax.jit, inline=True)
-def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
+def tee(*, f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
     """Ideal 3-port power divider/combiner (T-junction).
 
     Args:
@@ -66,18 +71,21 @@ def tee(f: ArrayLike = jnp.array([5e9])) -> sax.SType:
     Returns:
         sax.SType: S-parameters dictionary
     """
-    sdict = {(f"o{i}", f"o{i}"): jnp.full(len(f), -1 / 3) for i in range(1, 4)}
+    f = jnp.asarray(f)
+    f_flat = f.ravel()
+    sdict = {(f"o{i}", f"o{i}"): jnp.full(f_flat.shape[0], -1 / 3) for i in range(1, 4)}
     sdict |= {
-        (f"o{i}", f"o{j}"): jnp.full(len(f), 2 / 3)
+        (f"o{i}", f"o{j}"): jnp.full(f_flat.shape[0], 2 / 3)
         for i in range(1, 4)
         for j in range(i + 1, 4)
     }
-    return sax.reciprocal(sdict)
-    # return sax.models.splitters.splitter_ideal(wl=f)
+    return sax.reciprocal({k: v.reshape(*f.shape) for k, v in sdict.items()})
 
 
 @partial(jax.jit, inline=True)
 def single_impedance_element(
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     z: int | float | complex = 50,
     z0: int | float | complex = 50,
 ) -> sax.SType:
@@ -86,6 +94,7 @@ def single_impedance_element(
     See :cite:`m.pozarMicrowaveEngineering2012` for details.
 
     Args:
+        f: Array of frequency points in Hz
         z: Impedance in Ω
         z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
             Media object using `z0 = media.z0`.
@@ -93,41 +102,47 @@ def single_impedance_element(
     Returns:
         sax.SType: S-parameters dictionary
     """
+    one = jnp.ones_like(jnp.asarray(f))
     sdict = {
-        ("o1", "o1"): z / (z + 2 * z0),
-        ("o1", "o2"): 2 * z0 / (2 * z0 + z),
-        ("o2", "o2"): z / (z + 2 * z0),
+        ("o1", "o1"): z / (z + 2 * z0) * one,
+        ("o1", "o2"): 2 * z0 / (2 * z0 + z) * one,
+        ("o2", "o2"): z / (z + 2 * z0) * one,
     }
     return sax.reciprocal(sdict)
 
 
 @partial(jax.jit, inline=True)
 def single_admittance_element(
-    y: int | float | complex = 1 / 50,
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    y: sax.Complex = 1 / 50,
 ) -> sax.SType:
     r"""Single admittance element Sax model.
 
     See :cite:`m.pozarMicrowaveEngineering2012` for details.
 
     Args:
+        f: frequency
         y: Admittance
 
     Returns:
         sax.SType: S-parameters dictionary
     """
+    one = jnp.ones_like(jnp.asarray(f))
     sdict = {
-        ("o1", "o1"): 1 / (1 + y),
-        ("o1", "o2"): y / (1 + y),
-        ("o2", "o2"): 1 / (1 + y),
+        ("o1", "o1"): 1 / (1 + y) * one,
+        ("o1", "o2"): y / (1 + y) * one,
+        ("o2", "o2"): 1 / (1 + y) * one,
     }
     return sax.reciprocal(sdict)
 
 
 @partial(jax.jit, inline=True)
 def capacitor(
-    f: ArrayLike = jnp.array([5e9]),
-    capacitance: float = 1e-15,
-    z0: int | float | complex = 50,
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: sax.Float = 1e-15,
+    z0: sax.Complex = 50.0,
 ) -> sax.SType:
     r"""Ideal capacitor () Sax model.
 
@@ -142,7 +157,8 @@ def capacitor(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    ω = 2 * jnp.pi * jnp.asarray(f)
+    f = jnp.asarray(f)
+    ω = 2 * jnp.pi * f
     # Y = 2 * (1j * ω * capacitance * z0)
     # return single_admittance_element(y=Y)
     Z𞁞 = 1 / (1j * ω * capacitance)
@@ -151,9 +167,10 @@ def capacitor(
 
 @partial(jax.jit, inline=True)
 def inductor(
-    f: ArrayLike = jnp.array([5e9]),
-    inductance: float = 1e-12,
-    z0: int | float | complex = 50,
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    inductance: sax.Float = 1e-12,
+    z0: sax.Complex = 50,
 ) -> sax.SType:
     r"""Ideal inductor (󱡌) Sax model.
 
@@ -175,12 +192,12 @@ def inductor(
 
 @partial(jax.jit, inline=True)
 def josephson_junction(
-    f: ArrayLike = jnp.array([5e9]),
-    ic: float = 1e-6,
-    capacitance: float = 50e-15,
-    resistance: float = 10e3,
-    ib: float = 0.0,
-    z0: int | float | complex = 50,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    ic: sax.Float = 1e-6,
+    capacitance: sax.Float = 50e-15,
+    resistance: sax.Float = 10e3,
+    ib: sax.Float = 0.0,
+    z0: sax.Complex = 50,
 ) -> sax.SType:
     r"""Josephson junction (RCSJ) small-signal Sax model.
 
@@ -225,8 +242,6 @@ def josephson_junction(
 
 
 if __name__ == "__main__":
-    from matplotlib import pyplot as plt
-
     f = jnp.linspace(1e9, 25e9, 201)
     S = gamma_0_load(f=f, gamma_0=0.5 + 0.5j, n_ports=2)
     for key in S:
@@ -238,8 +253,8 @@ if __name__ == "__main__":
     plt.legend()
     plt.show(block=False)
 
-    S_cap = capacitor(f, capacitance=(capacitance := 100e-15))
-    pprint(S_cap)
+    S_cap = capacitor(f=f, capacitance=(capacitance := 100e-15))
+    # print(S_cap)
     plt.figure()
     # Polar plot of S21 and S11
     plt.subplot(121, projection="polar")
@@ -277,8 +292,8 @@ if __name__ == "__main__":
     plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
     plt.show(block=False)
 
-    S_ind = inductor(f, inductance=(inductance := 1e-9))
-    pprint(S_ind)
+    S_ind = inductor(f=f, inductance=(inductance := 1e-9))
+    # print(S_ind)
     plt.figure()
     plt.subplot(121, projection="polar")
     plt.plot(jnp.angle(S_ind[("o1", "o1")]), abs(S_ind[("o1", "o1")]), label="$S_{11}$")

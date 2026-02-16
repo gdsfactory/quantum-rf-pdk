@@ -1,4 +1,4 @@
-.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install rm-samples run-pre setup-ipython-config test test-fail-fast test-force test-gds test-gds-fail-fast test-gds-force update-pre write-cells write-makefile-help write-models
+.PHONY: help install rm-samples clean check-lfs test test-gds test-gds-force test-gds-fail-fast update-pre run-pre build write-cells write-models write-makefile-help convert-notebooks copy-sample-notebooks setup-ipython-config docs docs-latex docs-pdf all
 
 # Based on https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
 help: ##@ (Default) Print listing of key targets with their descriptions
@@ -32,7 +32,29 @@ clean: ##@ Clean up all build, test, coverage and Python artifacts
 ###########
 
 PYTEST_COMMAND := uv run --group dev pytest
-test: ##@ Run the full test suite in parallel using pytest
+
+check-lfs: ##@ Check if Git LFS is available and pull LFS files
+	@echo "Checking for Git LFS..."
+	@if ! command -v git-lfs >/dev/null 2>&1; then \
+	echo ""; \
+	echo "Error: Git LFS is not installed!"; \
+	echo ""; \
+	echo "This repository uses Git LFS to store test data files."; \
+	echo "Please install Git LFS before running tests:"; \
+	echo ""; \
+	echo "  Ubuntu/Debian:  sudo apt-get install git-lfs"; \
+	echo "  RHEL/Rocky:     sudo dnf install git-lfs"; \
+	echo "  macOS:          brew install git-lfs"; \
+	echo "  Windows:        Download from https://git-lfs.github.com/"; \
+	echo ""; \
+	echo "After installing, run: git lfs install && git lfs pull"; \
+	echo ""; \
+	exit 1; \
+	fi
+	@echo "Git LFS is available. Pulling LFS files..."
+	@git lfs pull
+
+test: check-lfs ##@ Run the full test suite in parallel using pytest
 	$(PYTEST_COMMAND) -n auto
 
 test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
