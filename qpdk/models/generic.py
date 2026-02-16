@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import sax
 from matplotlib import pyplot as plt
-from sax.models.rf import capacitor, gamma_0_load, inductor
+from sax.models.rf import capacitor, gamma_0_load, impedance, inductor
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 
@@ -89,8 +89,6 @@ def josephson_junction(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    from sax.models.rf import impedance
-
     # Flux quantum [Wb]
     PHI0 = 2.067833848e-15
 
