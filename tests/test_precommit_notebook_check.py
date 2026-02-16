@@ -1,7 +1,6 @@
 """Tests for the check-notebook-sources.sh pre-commit hook."""
 
 import subprocess
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -11,7 +10,7 @@ import pytest
 def repo_root() -> Path:
     """Get the repository root directory."""
     result = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
+        ["git", "rev-parse", "--show-toplevel"],  # noqa: S607
         capture_output=True,
         text=True,
         check=True,
@@ -24,7 +23,7 @@ def test_check_notebook_sources_passes_with_valid_notebooks(repo_root: Path) -> 
     script = repo_root / ".github" / "check-notebook-sources.sh"
     assert script.exists(), f"Script not found at {script}"
 
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: S603
         [str(script)],
         capture_output=True,
         text=True,
@@ -49,7 +48,7 @@ def test_check_notebook_sources_fails_with_orphaned_notebook(repo_root: Path) ->
             '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}'
         )
 
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             [str(script)],
             capture_output=True,
             text=True,
