@@ -18,6 +18,7 @@ def repo_root() -> Path:
     return Path(result.stdout.strip())
 
 
+@pytest.mark.skip_windows
 def test_check_notebook_sources_passes_with_valid_notebooks(repo_root: Path) -> None:
     """Test that the check passes when all notebooks have source files."""
     script = repo_root / ".github" / "check-notebook-sources.sh"
@@ -34,6 +35,7 @@ def test_check_notebook_sources_passes_with_valid_notebooks(repo_root: Path) -> 
     assert "All notebooks have corresponding source files" in result.stdout
 
 
+@pytest.mark.skip_windows
 def test_check_notebook_sources_fails_with_orphaned_notebook(repo_root: Path) -> None:
     """Test that the check fails when a notebook is missing its source file."""
     script = repo_root / ".github" / "check-notebook-sources.sh"
