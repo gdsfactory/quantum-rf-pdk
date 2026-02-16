@@ -9,7 +9,6 @@ import skrf
 from gdsfactory.typings import CrossSectionSpec
 from numpy.typing import NDArray
 from skrf.media import Media
-from sax.models.rf import capacitor, inductor, gamma_0_load, admittance, impedance, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance

@@ -6,7 +6,6 @@ import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from skrf import Frequency
-from sax.models.rf import capacitor, inductor, gamma_0_load, admittance, impedance, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.generic import short_2_port
