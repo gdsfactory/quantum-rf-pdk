@@ -117,10 +117,19 @@ def test_sax_stype_functions_in_models_dict():
                 module = importlib.import_module(f"qpdk.models.{modname}")
 
                 for name, obj in inspect.getmembers(module, callable):
-                    # Skip private functions and functions defined in if __name__ == "__main__" blocks
-                    if name.startswith("_") or (
-                        hasattr(obj, "__module__") and obj.__module__ != module.__name__
-                    ):
+                    # Skip private functions
+                    if name.startswith("_"):
+                        continue
+
+                    # Only consider functions defined in this module OR specifically allowed sax models
+                    is_local = (
+                        hasattr(obj, "__module__") and obj.__module__ == module.__name__
+                    )
+                    is_sax_rf_model = (
+                        hasattr(obj, "__module__") and obj.__module__ == "sax.models.rf"
+                    )
+
+                    if not (is_local or is_sax_rf_model):
                         continue
 
                     # Check if function or its __wrapped__ version has sax.SType return type

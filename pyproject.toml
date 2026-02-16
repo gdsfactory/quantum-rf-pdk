@@ -151,37 +151,37 @@ exclude = ["*.ipynb"]
 [tool.ruff.lint]
 exclude = ["*.ipynb"]
 ignore = [
-  "E501",   # line too long, handled by black
-  "B008",   # do not perform function calls in argument defaults
-  "C901",   # too complex
-  "B905",   # `zip()` without an explicit `strict=` parameter
-  "C408",   # C408 Unnecessary `dict` call (rewrite as a literal)
-  "RUF001", # ambiguous unicode characters (incl. lots of math)
-  "RUF003", # -||- but for comments
+  "E501",  # line too long, handled by black
+  "B008",  # do not perform function calls in argument defaults
+  "C901",  # too complex
+  "B905",  # `zip()` without an explicit `strict=` parameter
+  "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "RUF001",  # ambiguous unicode characters (incl. lots of math)
+  "RUF003",  # -||- but for comments
 ]
 select = [
-  "E",    # pycodestyle errors
-  "W",    # pycodestyle warnings
-  "F",    # pyflakes
-  "I",    # isort
-  "C",    # flake8-comprehensions
-  "B",    # flake8-bugbear
-  "D",    # pydocstyle
-  "UP",   # pyupgrade
+  "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
+  "F",  # pyflakes
+  "I",  # isort
+  "C",  # flake8-comprehensions
+  "B",  # flake8-bugbear
+  "D",  # pydocstyle
+  "UP",  # pyupgrade
   "T10",  # flake8-debugger
-  "S",    # flake8-bandit
-  "PT",   # flake8-pytest-style
+  "S",  # flake8-bandit
+  "PT",  # flake8-pytest-style
   "SIM",  # flake8-simplify
   "RET",  # flake8-return
   "RSE",  # flake8-raise
-  "Q",    # flake8-quotes
-  "SLOT", # flake8-slots
+  "Q",  # flake8-quotes
+  "SLOT",  # flake8-slots
   "ARG",  # flake8-unused-arguments
   "PTH",  # flake8-use-pathlib
-  "PD",   # pandas-vet
+  "PD",  # pandas-vet
   "FLY",  # flynt
   "NPY",  # numpy
-  "PERF", # perflint
+  "PERF",  # perflint
   "RUF",  # ruff
 ]
 
