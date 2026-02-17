@@ -502,6 +502,7 @@ def xmon_transmon(
         width=junction_ref.size_info.height,
         orientation=90,
         layer=LAYER.JJ_AREA,
+        port_type="placement",
     )
 
     # Add metadata

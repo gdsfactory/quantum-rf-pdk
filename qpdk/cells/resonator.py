@@ -130,7 +130,9 @@ def resonator(
                 allow_width_mismatch=True,
                 allow_layer_mismatch=True,
             )
-            c.add_port(output_port, port=open_etch.ports[output_port])
+            c.add_port(
+                output_port, port=open_etch.ports[output_port], port_type="placement"
+            )
 
         if open_end:
             _add_etch_at_port("o1", final_straight_ref.ports["o2"], "o2")

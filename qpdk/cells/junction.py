@@ -242,8 +242,16 @@ def squid_junction(
             c.add_port(name=port_name, port=junction.ports[f"{port_side}_wide"])
 
     # Overlaps and their center
-    c.add_port(name="left_overlap", port=left_junction.ports["overlap"])
-    c.add_port(name="right_overlap", port=right_junction.ports["overlap"])
+    c.add_port(
+        name="left_overlap",
+        port=left_junction.ports["overlap"],
+        port_type="placement",
+    )
+    c.add_port(
+        name="right_overlap",
+        port=right_junction.ports["overlap"],
+        port_type="placement",
+    )
     c.add_port(
         name="loop_center",
         center=(
@@ -255,6 +263,7 @@ def squid_junction(
         ).to_p(),
         layer=left_junction.ports["overlap"].layer,
         width=left_junction.ports["overlap"].width,
+        port_type="placement",
     )
     return c
 
