@@ -43,12 +43,6 @@ from qpdk.models.waveguides import (
     taper_cross_section,
 )
 
-models = {
-    k: v
-    for k, v in ((k, sax.try_into[sax.Model](v)) for k, v in globals().items())
-    if v
-}
-
 __all__ = [
     "DEFAULT_FREQUENCY",
     "MediaCallable",
@@ -78,3 +72,28 @@ __all__ = [
     "taper_cross_section",
     "tee",
 ]
+
+
+def _is_sax_model(obj: object) -> bool:
+    """Check if an object is a SAX model function."""
+    if not callable(obj):
+        return False
+    # Check if return type is sax.SType or sax.SDict
+    for target in [obj, getattr(obj, "__wrapped__", None)]:
+        if target is None:
+            continue
+        if hasattr(target, "__annotations__") and "return" in target.__annotations__:
+            ret = target.__annotations__["return"]
+            if hasattr(ret, "__name__") and ret.__name__ in ["SType", "SDict"]:
+                return True
+            # Also check identity for standard cases
+            if ret in [sax.SType, sax.SDict]:
+                return True
+    return sax.try_into[sax.Model](obj) is not None
+
+
+models = {
+    k: v
+    for k, v in globals().items()
+    if k in __all__ and k != "models" and _is_sax_model(v)
+}
