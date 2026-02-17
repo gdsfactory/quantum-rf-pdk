@@ -32,10 +32,12 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install just
+        uses: extractions/setup-just@v2
       - name: Install dependencies
-        run: make install
+        run: just install
       - name: Test with pytest
-        run: make test
+        run: just test
   test-code-result:
     runs-on: ubuntu-latest
     name: Test result

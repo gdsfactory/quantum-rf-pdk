@@ -60,7 +60,7 @@ uv sync --group dev
 Check out the commands for testing and building documentation with:
 
 ```bash
-make help
+just --list
 ```
 
 ## Documentation
