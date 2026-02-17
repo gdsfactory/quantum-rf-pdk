@@ -23,7 +23,7 @@ models = [
   "jaxellip",
   "optuna",
   "ray[tune]; sys_platform != 'win32'",
-  "sax>=0.15.16",
+  "sax>=0.16.7",
   "scikit-rf",
   "scqubits",
   "sympy",
