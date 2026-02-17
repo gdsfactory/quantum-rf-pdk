@@ -33,10 +33,10 @@ def josephson_junction(
 
     Args:
         f: Array of frequency points in Hz
-        ic: Critical current I_c in Amperes
-        capacitance: Junction capacitance C in Farads
-        resistance: Shunt resistance R in Ohms
-        ib: DC bias current I_b in Amperes (\|ib\| < ic)
+        ic: Critical current :math:`I_c` in Amperes
+        capacitance: Junction capacitance :math:`C` in Farads
+        resistance: Shunt resistance :math:`R` in Ohms
+        ib: DC bias current :math:`I_b` in Amperes (:math:`\|I_b\| < I_c`)
         z0: Reference impedance in Ω
 
     Returns:
@@ -45,15 +45,15 @@ def josephson_junction(
     ω = 2 * jnp.pi * jnp.asarray(f)
 
     # Bias-dependent phase factor
-    cos_phi0 = jnp.sqrt(1.0 - (ib / ic) ** 2)
+    cos_Φ_0 = jnp.sqrt(1.0 - (ib / ic) ** 2)
 
     # Josephson inductance
-    LJ = Φ_0 / (2 * jnp.pi * ic * cos_phi0)
+    Lⱼ = Φ_0 / (2 * jnp.pi * ic * cos_Φ_0)
 
     # Admittances (parallel RCSJ)
     Y_R = 1 / resistance
     Y_C = 1j * ω * capacitance
-    Y_L = 1 / (1j * ω * LJ)
+    Y_L = 1 / (1j * ω * Lⱼ)
 
     # Total impedance
     Z_JJ = 1 / (Y_R + Y_C + Y_L)
