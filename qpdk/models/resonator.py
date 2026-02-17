@@ -27,13 +27,11 @@ def quarter_wave_resonator_coupled(
     TODO: implement with purely sax circuits instead of skrf components.
     Sax circuit version is commented out above but gives differing results.
 
-    ```{svgbob}
+    .. svgbob::
 
                         o1────────────────────o2  ┬
                                                   | coupling_gap
         short--resonator--────────────────────o3  ┴
-
-    ```
 
     Args:
         cross_section: The cross-section of the CPW.

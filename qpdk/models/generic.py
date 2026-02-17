@@ -6,41 +6,22 @@ import jax
 import jax.numpy as jnp
 import sax
 from matplotlib import pyplot as plt
+from sax.models.rf import admittance, capacitor, gamma_0_load, impedance, inductor, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 
-
-@partial(jax.jit, inline=True, static_argnames=("n_ports"))
-def gamma_0_load(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    gamma_0: sax.Complex = 0,
-    n_ports: int = 1,
-) -> sax.SType:
-    r"""Connection with given reflection coefficient.
-
-    Args:
-        f: Array of frequency points in Hz
-        gamma_0: Reflection coefficient Γ₀ of connection
-        n_ports: Number of ports in component. The diagonal ports of the matrix
-            are set to Γ₀ and the off-diagonal ports to 0.
-
-    Returns:
-        sax.SType: S-parameters dictionary where :math:`S = \Gamma_0I_\text{n\_ports}`
-
-    """
-    f = jnp.asarray(f)
-    f_flat = f.ravel()
-    sdict = {
-        (f"o{i}", f"o{i}"): jnp.full(f_flat.shape[0], gamma_0)
-        for i in range(1, n_ports + 1)
-    }
-    sdict |= {
-        (f"o{i}", f"o{j}"): jnp.zeros(f_flat.shape[0], dtype=complex)
-        for i in range(1, n_ports + 1)
-        for j in range(i + 1, n_ports + 1)
-    }
-    return sax.reciprocal({k: v.reshape(*f.shape) for k, v in sdict.items()})
+__all__ = [
+    "admittance",
+    "capacitor",
+    "gamma_0_load",
+    "impedance",
+    "inductor",
+    "josephson_junction",
+    "open",
+    "short",
+    "short_2_port",
+    "tee",
+]
 
 
 @partial(jax.jit, inline=True, static_argnames=("n_ports"))
@@ -93,135 +74,6 @@ def open(
 
 
 @partial(jax.jit, inline=True)
-def tee(*, f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
-    """Ideal 3-port power divider/combiner (T-junction).
-
-    Args:
-        f: Array of frequency points in Hz
-
-    Returns:
-        sax.SType: S-parameters dictionary
-    """
-    f = jnp.asarray(f)
-    f_flat = f.ravel()
-    sdict = {(f"o{i}", f"o{i}"): jnp.full(f_flat.shape[0], -1 / 3) for i in range(1, 4)}
-    sdict |= {
-        (f"o{i}", f"o{j}"): jnp.full(f_flat.shape[0], 2 / 3)
-        for i in range(1, 4)
-        for j in range(i + 1, 4)
-    }
-    return sax.reciprocal({k: v.reshape(*f.shape) for k, v in sdict.items()})
-
-
-@partial(jax.jit, inline=True)
-def single_impedance_element(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    z: int | float | complex = 50,
-    z0: int | float | complex = 50,
-) -> sax.SType:
-    r"""Single impedance element Sax model.
-
-    See :cite:`m.pozarMicrowaveEngineering2012` for details.
-
-    Args:
-        f: Array of frequency points in Hz
-        z: Impedance in Ω
-        z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
-            Media object using `z0 = media.z0`.
-
-    Returns:
-        sax.SType: S-parameters dictionary
-    """
-    one = jnp.ones_like(jnp.asarray(f))
-    sdict = {
-        ("o1", "o1"): z / (z + 2 * z0) * one,
-        ("o1", "o2"): 2 * z0 / (2 * z0 + z) * one,
-        ("o2", "o2"): z / (z + 2 * z0) * one,
-    }
-    return sax.reciprocal(sdict)
-
-
-@partial(jax.jit, inline=True)
-def single_admittance_element(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    y: sax.Complex = 1 / 50,
-) -> sax.SType:
-    r"""Single admittance element Sax model.
-
-    See :cite:`m.pozarMicrowaveEngineering2012` for details.
-
-    Args:
-        f: frequency
-        y: Admittance
-
-    Returns:
-        sax.SType: S-parameters dictionary
-    """
-    one = jnp.ones_like(jnp.asarray(f))
-    sdict = {
-        ("o1", "o1"): 1 / (1 + y) * one,
-        ("o1", "o2"): y / (1 + y) * one,
-        ("o2", "o2"): 1 / (1 + y) * one,
-    }
-    return sax.reciprocal(sdict)
-
-
-@partial(jax.jit, inline=True)
-def capacitor(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: sax.Float = 1e-15,
-    z0: sax.Complex = 50.0,
-) -> sax.SType:
-    r"""Ideal capacitor () Sax model.
-
-    See :cite:`m.pozarMicrowaveEngineering2012` for details.
-
-    Args:
-        f: Array of frequency points in Hz
-        capacitance: Capacitance in Farads
-        z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
-            Media object using `z0 = media.z0`.
-
-    Returns:
-        sax.SType: S-parameters dictionary
-    """
-    f = jnp.asarray(f)
-    ω = 2 * jnp.pi * f
-    # Y = 2 * (1j * ω * capacitance * z0)
-    # return single_admittance_element(y=Y)
-    Z𞁞 = 1 / (1j * ω * capacitance)
-    return single_impedance_element(z=Z𞁞, z0=z0)
-
-
-@partial(jax.jit, inline=True)
-def inductor(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    inductance: sax.Float = 1e-12,
-    z0: sax.Complex = 50,
-) -> sax.SType:
-    r"""Ideal inductor (󱡌) Sax model.
-
-    See :cite:`m.pozarMicrowaveEngineering2012` for details.
-
-    Args:
-        f: Array of frequency points in Hz
-        inductance: Inductance in Henries
-        z0: Reference impedance in Ω. This may be retrieved from a scikit-rf
-            Media object using `z0 = media.z0`.
-
-    Returns:
-        sax.SType: S-parameters dictionary
-    """
-    ω = 2 * jnp.pi * jnp.asarray(f)
-    Zᵢ = 1j * ω * inductance
-    return single_impedance_element(z=Zᵢ, z0=z0)
-
-
-@partial(jax.jit, inline=True)
 def josephson_junction(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     ic: sax.Float = 1e-6,
@@ -244,7 +96,7 @@ def josephson_junction(
         ic: Critical current I_c in Amperes
         capacitance: Junction capacitance C in Farads
         resistance: Shunt resistance R in Ohms
-        ib: DC bias current I_b in Amperes (|ib| < ic)
+        ib: DC bias current I_b in Amperes (\|ib\| < ic)
         z0: Reference impedance in Ω
 
     Returns:
@@ -269,7 +121,7 @@ def josephson_junction(
     # Total impedance
     Z_JJ = 1 / (Y_R + Y_C + Y_L)
 
-    return single_impedance_element(z=Z_JJ, z0=z0)
+    return impedance(f=f, z=Z_JJ, z0=z0)
 
 
 if __name__ == "__main__":
