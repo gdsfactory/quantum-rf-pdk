@@ -127,6 +127,7 @@ read-only = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]
+markers = ["skip_windows: skip test on Windows"]
 norecursedirs = [
   "*.egg",
   ".*",
