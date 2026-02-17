@@ -5,10 +5,9 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import sax
-import scipy.constants
 from sax.models.rf import impedance
 
-from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0
 
 
 @partial(jax.jit, inline=True)
@@ -49,9 +48,7 @@ def josephson_junction(
     cos_phi0 = jnp.sqrt(1.0 - (ib / ic) ** 2)
 
     # Josephson inductance
-    LJ = scipy.constants.physical_constants["mag. flux quantum"][0] / (
-        2 * jnp.pi * ic * cos_phi0
-    )
+    LJ = Φ_0 / (2 * jnp.pi * ic * cos_phi0)
 
     # Admittances (parallel RCSJ)
     Y_R = 1 / resistance
