@@ -6,6 +6,10 @@ default:
 install:
     uv sync --all-extras --all-groups
 
+# Install KLayout technology files for the PDK
+install-tech:
+    uv run --dev qpdk/install_tech.py
+
 # Remove samples folder
 rm-samples:
     rm -rf qpdk/samples
