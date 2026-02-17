@@ -9,10 +9,6 @@ parts:
   - caption: API
     chapters:
       - file: api
-        sections:
-          - file: cells
-          - file: models
-          - file: changelog
   - caption: Samples
     chapters:
       - file: samples
