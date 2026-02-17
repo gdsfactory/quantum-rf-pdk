@@ -1,48 +1,37 @@
 """Generic Models."""
 
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import sax
 from matplotlib import pyplot as plt
-from sax.models.rf import admittance, capacitor, gamma_0_load, impedance, inductor, tee
+from sax.models.rf import (
+    admittance,
+    capacitor,
+    electrical_open,
+    electrical_short,
+    gamma_0_load,
+    impedance,
+    inductor,
+    tee,
+)
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 
 __all__ = [
     "admittance",
     "capacitor",
+    "electrical_open",
+    "electrical_short",
+    "electrical_short_2_port",
     "gamma_0_load",
     "impedance",
     "inductor",
-    "open",
-    "short",
-    "short_2_port",
     "tee",
 ]
 
 
-@partial(jax.jit, inline=True, static_argnames=("n_ports"))
-def short(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    n_ports: int = 1,
-) -> sax.SType:
-    r"""Electrical short connections Sax model.
-
-    Args:
-        f: Array of frequency points in Hz
-        n_ports: Number of ports to set as shorted
-
-    Returns:
-        sax.SType: S-parameters dictionary where :math:`S = -I_\text{n\_ports}`
-    """
-    return gamma_0_load(f=f, gamma_0=-1, n_ports=n_ports)
-
-
 @jax.jit
-def short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
+def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
     """Electrical short 2-port connection Sax model.
 
     Args:
@@ -51,25 +40,7 @@ def short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
     Returns:
         sax.SType: S-parameters dictionary
     """
-    return short(f=f, n_ports=2)
-
-
-@partial(jax.jit, inline=True, static_argnames=("n_ports"))
-def open(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    n_ports: int = 1,
-) -> sax.SType:
-    r"""Electrical open connection Sax model.
-
-    Args:
-        f: Array of frequency points in Hz
-        n_ports: Number of ports to set as opened
-
-    Returns:
-        sax.SType: S-parameters dictionary where :math:`S = I_\text{n\_ports}`
-    """
-    return gamma_0_load(f=f, gamma_0=1, n_ports=n_ports)
+    return electrical_short(f=f, n_ports=2)
 
 
 if __name__ == "__main__":
