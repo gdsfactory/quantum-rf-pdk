@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+TEMP_NB = "test_orphaned_temp.ipynb"
+
 
 @pytest.fixture
 def repo_root() -> Path:
@@ -39,7 +41,7 @@ def test_check_notebook_sources_logic(repo_root: Path) -> None:
     assert "All notebooks have corresponding source files" in result.stdout
 
     # 2. Test that the check fails when a notebook is missing its source file
-    test_notebook = repo_root / "notebooks" / "test_orphaned_temp.ipynb"
+    test_notebook = repo_root / "notebooks" / TEMP_NB
 
     try:
         # Create minimal valid Jupyter notebook
@@ -56,8 +58,8 @@ def test_check_notebook_sources_logic(repo_root: Path) -> None:
 
         assert result.returncode == 1, "Check should fail with orphaned notebook"
         assert "Found 1 notebook(s) without corresponding source files" in result.stderr
-        assert "test_orphaned_temp.ipynb" in result.stderr
-        assert "notebooks/src/test_orphaned_temp.py" in result.stderr
+        assert TEMP_NB in result.stderr
+        assert f"notebooks/src/{Path(TEMP_NB).stem}.py" in result.stderr
 
     finally:
         # Clean up
@@ -72,9 +74,7 @@ def test_all_existing_notebooks_have_sources(repo_root: Path) -> None:
 
     # Find all .ipynb files in notebooks/ (not in subdirectories)
     # Skip temporary files if they exist due to parallel test execution
-    ipynb_files = [
-        f for f in notebooks_dir.glob("*.ipynb") if f.name != "test_orphaned_temp.ipynb"
-    ]
+    ipynb_files = [f for f in notebooks_dir.glob("*.ipynb") if f.name != TEMP_NB]
 
     for ipynb_file in ipynb_files:
         py_source = src_dir / f"{ipynb_file.stem}.py"

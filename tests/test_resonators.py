@@ -3,6 +3,7 @@
 from functools import partial
 
 import hypothesis.strategies as st
+import pytest
 from hypothesis import HealthCheck, assume, given, settings
 
 from qpdk.cells.derived.transmon_with_resonator import (
@@ -18,8 +19,14 @@ MAX_EXAMPLES = 20
 class TestResonators:
     """Test basic resonator functionality."""
 
+    @pytest.mark.parametrize("length", [0, 10, 100])
+    def test_resonator_too_short_raises_error(self, length: float) -> None:
+        """Verify that providing a length too short for the meanders raises ValueError."""
+        with pytest.raises(ValueError, match="too short"):
+            resonator(length=length, meanders=6)
+
     @given(
-        length=st.floats(min_value=1000, max_value=1000000),
+        length=st.floats(min_value=0, max_value=1000000),
         meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
@@ -36,7 +43,8 @@ class TestResonators:
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
-        assume(length > meanders * bend_factory().info["length"])
+        bend_length = bend_factory().info["length"]
+        assume(length > meanders * bend_length)
 
         c = resonator(
             length=length,
@@ -53,7 +61,7 @@ class TestResonators:
         assert len(c.ports) == 2, f"Expected 2 ports, got {len(c.ports)}"
 
     @given(
-        length=st.floats(min_value=1000, max_value=1000000),
+        length=st.floats(min_value=0, max_value=1000000),
         meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
@@ -78,7 +86,8 @@ class TestResonators:
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
-        assume(length > meanders * bend_factory().info["length"])
+        bend_length = bend_factory().info["length"]
+        assume(length > meanders * bend_length)
 
         c = resonator_coupled(
             length=length,
