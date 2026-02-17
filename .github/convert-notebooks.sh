@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to convert jupytext scripts from notebooks/src/ to ipynb format in notebooks/
-# This script is called by the pre-commit hook and by the Makefile
+# This script is called by the pre-commit hook and by the justfile
 
 set -euo pipefail
 
