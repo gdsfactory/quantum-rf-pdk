@@ -210,13 +210,12 @@ _skip_port_tests = {
     "tsv",
     "xmon_transmon",
 }
+port_test_cell_names = [name for name in cell_names if name not in _skip_port_tests]
 
 
-@pytest.mark.parametrize("component_name", cell_names)
+@pytest.mark.parametrize("component_name", port_test_cell_names)
 def test_optical_port_positions(component_name: str) -> None:
     """Ensure that optical ports are positioned correctly."""
-    if component_name in _skip_port_tests:
-        pytest.skip(f"Known port position issue for {component_name}")
     component = cells[component_name]()
     if isinstance(component, gf.ComponentAllAngle):
         new_component = gf.Component()
