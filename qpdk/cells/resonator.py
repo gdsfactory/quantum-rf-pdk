@@ -225,7 +225,7 @@ def resonator_coupled(
     for port in resonator_ref.ports:
         port_type = (
             "placement"
-            if any((port.name == "o1" and open_start, port.name == "o2" and open_end))
+            if ((port.name == "o1" and open_start) or (port.name == "o2" and open_end))
             else "optical"
         )
         c.add_port(f"resonator_{port.name}", port=port, port_type=port_type)
