@@ -63,7 +63,8 @@ update-pre:
     #!/usr/bin/env bash
     set -euo pipefail
     # Calculate number of jobs: (nproc / 2) rounded up
-    JOBS=$(($(nproc) / 2 + $(nproc) % 2))
+    NPROC=$(nproc)
+    JOBS=$(($NPROC / 2 + $NPROC % 2))
     uvx prek autoupdate -j "$JOBS"
 
 # Run all pre-commit hooks on all files
