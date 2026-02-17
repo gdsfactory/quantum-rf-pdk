@@ -2,6 +2,8 @@
 
 import sax
 
+from qpdk.models.junction import josephson_junction
+
 sax.set_port_naming_strategy("optical")
 
 from qpdk.models.constants import (
@@ -17,7 +19,6 @@ from qpdk.models.generic import (
     gamma_0_load,
     impedance,
     inductor,
-    josephson_junction,
     open,
     short,
     short_2_port,
