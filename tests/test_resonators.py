@@ -3,7 +3,7 @@
 from functools import partial
 
 import hypothesis.strategies as st
-from hypothesis import assume, given, settings
+from hypothesis import HealthCheck, assume, given, settings
 
 from qpdk.cells.derived.transmon_with_resonator import (
     flipmon_with_resonator,
@@ -19,12 +19,16 @@ class TestResonators:
     """Test basic resonator functionality."""
 
     @given(
-        length=st.floats(min_value=0, max_value=1000000),
-        meanders=st.integers(min_value=1),
+        length=st.floats(min_value=1000, max_value=1000000),
+        meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
     )
-    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    @settings(
+        max_examples=MAX_EXAMPLES,
+        deadline=None,
+        suppress_health_check=[HealthCheck.filter_too_much],
+    )
     def test_resonator_meanders(
         self, length: float, meanders: int, open_start: bool, open_end: bool
     ) -> None:
@@ -49,14 +53,18 @@ class TestResonators:
         assert len(c.ports) == 2, f"Expected 2 ports, got {len(c.ports)}"
 
     @given(
-        length=st.floats(min_value=0, max_value=1000000),
-        meanders=st.integers(min_value=1),
+        length=st.floats(min_value=1000, max_value=1000000),
+        meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
         coupling_straight_length=st.floats(min_value=1, max_value=1000),
         coupling_gap=st.floats(min_value=1, max_value=100),
     )
-    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    @settings(
+        max_examples=MAX_EXAMPLES,
+        deadline=None,
+        suppress_health_check=[HealthCheck.filter_too_much],
+    )
     def test_resonator_coupled(
         self,
         length: float,

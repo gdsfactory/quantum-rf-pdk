@@ -19,11 +19,15 @@ def repo_root() -> Path:
 
 
 @pytest.mark.skip_windows
-def test_check_notebook_sources_passes_with_valid_notebooks(repo_root: Path) -> None:
-    """Test that the check passes when all notebooks have source files."""
+def test_check_notebook_sources_logic(repo_root: Path) -> None:
+    """Test the notebook source check script logic (both pass and fail cases).
+
+    Combined into one test to avoid race conditions when running in parallel.
+    """
     script = repo_root / ".github" / "check-notebook-sources.sh"
     assert script.exists(), f"Script not found at {script}"
 
+    # 1. Test that the check passes when all notebooks have source files
     result = subprocess.run(  # noqa: S603
         [str(script)],
         capture_output=True,
@@ -31,17 +35,10 @@ def test_check_notebook_sources_passes_with_valid_notebooks(repo_root: Path) -> 
         cwd=repo_root,
     )
 
-    assert result.returncode == 0, f"Check failed: {result.stderr}"
+    assert result.returncode == 0, f"Check failed (pass case): {result.stderr}"
     assert "All notebooks have corresponding source files" in result.stdout
 
-
-@pytest.mark.skip_windows
-def test_check_notebook_sources_fails_with_orphaned_notebook(repo_root: Path) -> None:
-    """Test that the check fails when a notebook is missing its source file."""
-    script = repo_root / ".github" / "check-notebook-sources.sh"
-    assert script.exists(), f"Script not found at {script}"
-
-    # Create a temporary orphaned notebook
+    # 2. Test that the check fails when a notebook is missing its source file
     test_notebook = repo_root / "notebooks" / "test_orphaned_temp.ipynb"
 
     try:
@@ -74,7 +71,10 @@ def test_all_existing_notebooks_have_sources(repo_root: Path) -> None:
     src_dir = notebooks_dir / "src"
 
     # Find all .ipynb files in notebooks/ (not in subdirectories)
-    ipynb_files = list(notebooks_dir.glob("*.ipynb"))
+    # Skip temporary files if they exist due to parallel test execution
+    ipynb_files = [
+        f for f in notebooks_dir.glob("*.ipynb") if f.name != "test_orphaned_temp.ipynb"
+    ]
 
     for ipynb_file in ipynb_files:
         py_source = src_dir / f"{ipynb_file.stem}.py"

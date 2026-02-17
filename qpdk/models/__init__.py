@@ -1,7 +1,6 @@
 """Model definitions for qpdk."""
 
 import sax
-from sax.models.rf import admittance, capacitor, gamma_0_load, impedance, inductor, tee
 
 sax.set_port_naming_strategy("optical")
 
@@ -13,10 +12,16 @@ from qpdk.models.couplers import (
     cpw_cpw_coupling_capacitance,
 )
 from qpdk.models.generic import (
+    admittance,
+    capacitor,
+    gamma_0_load,
+    impedance,
+    inductor,
     josephson_junction,
     open,
     short,
     short_2_port,
+    tee,
 )
 from qpdk.models.media import (
     MediaCallable,

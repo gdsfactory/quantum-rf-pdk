@@ -13,8 +13,6 @@ skip_plots = {
     "gamma_0_load",
     "launcher",
     "resonator_frequency",
-    "single_admittance_element",
-    "single_impedance_element",
     "MediaCallable",
     "cross_section_to_media",
     "cpw_cpw_coupling_capacitance",

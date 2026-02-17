@@ -122,6 +122,7 @@ def test_sax_stype_functions_in_models_dict():
                         continue
 
                     # Only consider functions defined in this module OR specifically allowed sax models
+                    # sax.models.rf functions are allowed because we re-export them as part of our API
                     is_local = (
                         hasattr(obj, "__module__") and obj.__module__ == module.__name__
                     )
