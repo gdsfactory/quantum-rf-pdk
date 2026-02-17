@@ -40,7 +40,7 @@ jobs:
 
             Use `gh pr comment` for top-level feedback.
             Use `mcp__github_inline_comment__create_inline_comment` to highlight specific code issues.
-            Use `mcp__deepwiki__read_wiki_structure` and `mcp__deepwiki__read_wiki_contents` to understand imported libraries better if needed, and `mcp__deepwiki__ask_question` to ask for clarifications their codebase if necessary.
+            Use `mcp__deepwiki__read_wiki_structure` and `mcp__deepwiki__read_wiki_contents` to understand imported libraries better if needed, and `mcp__deepwiki__ask_question` to ask for clarifications about their codebase if necessary.
             Only post GitHub comments - don't submit review text as messages.
           claude_args: |
             --mcp-config '{"mcpServers": {"deepwiki": {"serverUrl": "https://mcp.deepwiki.com/mcp"}}}'
