@@ -34,7 +34,7 @@ jobs:
             Note: The PR branch is already checked out in the current working directory.
 
             Do not write positive feedback or general comments. Only provide constructive criticism and actionable feedback. If there are no issues, no need to comment.
-            Get familiar with the codebase by reading @AGENTS.md
+            Get familiar with the codebase by reading ./AGENTS.md in the repo root.
 
             Use `gh pr comment` for top-level feedback.
             Use `mcp__github_inline_comment__create_inline_comment` to highlight specific code issues.
