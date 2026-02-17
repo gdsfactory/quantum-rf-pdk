@@ -1,22 +1,31 @@
 """Generic Models."""
 
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import sax
 from matplotlib import pyplot as plt
-from sax.models.rf import admittance, capacitor, gamma_0_load, impedance, inductor, tee
+from sax.models.rf import (
+    admittance,
+    capacitor,
+    electrical_open,
+    electrical_short,
+    gamma_0_load,
+    impedance,
+    inductor,
+    tee,
+)
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 
 __all__ = [
     "admittance",
     "capacitor",
+    "electrical_open",
+    "electrical_short",
+    "electrical_short_2_port",
     "gamma_0_load",
     "impedance",
     "inductor",
-    "josephson_junction",
     "open",
     "short",
     "short_2_port",
@@ -24,26 +33,8 @@ __all__ = [
 ]
 
 
-@partial(jax.jit, inline=True, static_argnames=("n_ports"))
-def short(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    n_ports: int = 1,
-) -> sax.SType:
-    r"""Electrical short connections Sax model.
-
-    Args:
-        f: Array of frequency points in Hz
-        n_ports: Number of ports to set as shorted
-
-    Returns:
-        sax.SType: S-parameters dictionary where :math:`S = -I_\text{n\_ports}`
-    """
-    return gamma_0_load(f=f, gamma_0=-1, n_ports=n_ports)
-
-
 @jax.jit
-def short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
+def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
     """Electrical short 2-port connection Sax model.
 
     Args:
@@ -52,76 +43,12 @@ def short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
     Returns:
         sax.SType: S-parameters dictionary
     """
-    return short(f=f, n_ports=2)
+    return electrical_short(f=f, n_ports=2)
 
 
-@partial(jax.jit, inline=True, static_argnames=("n_ports"))
-def open(
-    *,
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    n_ports: int = 1,
-) -> sax.SType:
-    r"""Electrical open connection Sax model.
-
-    Args:
-        f: Array of frequency points in Hz
-        n_ports: Number of ports to set as opened
-
-    Returns:
-        sax.SType: S-parameters dictionary where :math:`S = I_\text{n\_ports}`
-    """
-    return gamma_0_load(f=f, gamma_0=1, n_ports=n_ports)
-
-
-@partial(jax.jit, inline=True)
-def josephson_junction(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    ic: sax.Float = 1e-6,
-    capacitance: sax.Float = 50e-15,
-    resistance: sax.Float = 10e3,
-    ib: sax.Float = 0.0,
-    z0: sax.Complex = 50,
-) -> sax.SType:
-    r"""Josephson junction (RCSJ) small-signal Sax model.
-
-    Linearized RCSJ model consisting of a bias-dependent Josephson inductance
-    in parallel with a capacitance and resistance.
-
-    Valid in the superconducting (zero-voltage) state and for small AC signals.
-
-    See :cite:`McCumber1968` for details.
-
-    Args:
-        f: Array of frequency points in Hz
-        ic: Critical current I_c in Amperes
-        capacitance: Junction capacitance C in Farads
-        resistance: Shunt resistance R in Ohms
-        ib: DC bias current I_b in Amperes (\|ib\| < ic)
-        z0: Reference impedance in Ω
-
-    Returns:
-        sax.SType: S-parameters dictionary
-    """
-    # Flux quantum [Wb]
-    PHI0 = 2.067833848e-15
-
-    ω = 2 * jnp.pi * jnp.asarray(f)
-
-    # Bias-dependent phase factor
-    cos_phi0 = jnp.sqrt(1.0 - (ib / ic) ** 2)
-
-    # Josephson inductance
-    LJ = PHI0 / (2 * jnp.pi * ic * cos_phi0)
-
-    # Admittances (parallel RCSJ)
-    Y_R = 1 / resistance
-    Y_C = 1j * ω * capacitance
-    Y_L = 1 / (1j * ω * LJ)
-
-    # Total impedance
-    Z_JJ = 1 / (Y_R + Y_C + Y_L)
-
-    return impedance(f=f, z=Z_JJ, z0=z0)
+short = electrical_short
+open = electrical_open
+short_2_port = electrical_short_2_port
 
 
 if __name__ == "__main__":

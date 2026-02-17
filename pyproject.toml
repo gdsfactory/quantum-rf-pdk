@@ -41,7 +41,8 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-svgbob",
 ]
-lint = ["prek"]
+lint = ["prek", { include-group = "stubs" }]
+stubs = ["scipy-stubs"]
 test = [
   "hypothesis",
   "jsondiff",
@@ -138,7 +139,7 @@ norecursedirs = [
   "extra/*.py",
   "node_modules",
   "venv",
-  "{arch}"
+  "{arch}",
 ]
 python_files = ["notebooks/*.ipynb", "qpdk/*.py", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
