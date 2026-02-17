@@ -60,7 +60,11 @@ test-gds-fail-fast:
 
 # Update pre-commit hooks to the latest revisions
 update-pre:
-    uvx prek autoupdate -j `expr \`nproc\` / 2 + \`expr \`nproc\` % 2\``
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Calculate number of jobs: (nproc / 2) rounded up
+    JOBS=$(($(nproc) / 2 + $(nproc) % 2))
+    uvx prek autoupdate -j "$JOBS"
 
 # Run all pre-commit hooks on all files
 run-pre:
@@ -113,4 +117,14 @@ docs-latex: write-cells write-models write-justfile-help copy-sample-notebooks
 
 # Build PDF documentation (requires a TeXLive installation)
 docs-pdf: docs-latex
-    cd "docs/_build/latex" && XINDYOPTS="-M sphinx.xdy" latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error || (test -f qpdk.pdf && echo "PDF generated despite warnings" && exit 0)
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "docs/_build/latex"
+    XINDYOPTS="-M sphinx.xdy" latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error || {
+        if [ -f qpdk.pdf ]; then
+            echo "PDF generated despite warnings"
+            exit 0
+        else
+            exit 1
+        fi
+    }
