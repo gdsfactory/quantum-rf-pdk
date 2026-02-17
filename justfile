@@ -60,7 +60,7 @@ test-gds-fail-fast:
 
 # Update pre-commit hooks to the latest revisions
 update-pre:
-    uvx prek autoupdate -j $(expr $(nproc) / 2 + $(expr $(nproc) % 2))
+    uvx prek autoupdate -j `expr $(nproc) / 2 + $(expr $(nproc) % 2)`
 
 # Run all pre-commit hooks on all files
 run-pre:

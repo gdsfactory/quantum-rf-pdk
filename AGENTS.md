@@ -88,7 +88,7 @@ All PRs must pass:
 1. **Follow quantum device design patterns**: This PDK is specifically for superconducting quantum circuits
 1. **Maintain layer stack consistency**: All layer definitions must match between `qpdk/layers.yaml` and `qpdk/tech.py`
 1. **Use regression testing**: New components should have regression tests for both settings and netlists, the files are
-   generated automatically with `just test-force`
+   generated automatically with `just test-gds-force`
 1. **Prefer Justfile commands**: Use `just` commands instead of direct tool invocation if possible
 1. **Write comprehensive tests**: Add tests for new functionality following existing patterns in `tests/`
 1. **Document quantum-specific behavior**: Include docstrings explaining the quantum physics and device characteristics,
