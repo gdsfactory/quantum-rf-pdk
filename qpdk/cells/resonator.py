@@ -220,9 +220,16 @@ def resonator_coupled(
 
     coupling_ref.xmin = resonator_ref["o1"].x  # Align left edges
 
-    for comp, prefix in ((resonator_ref, "resonator"), (coupling_ref, "coupling")):
-        for port in comp.ports:
-            c.add_port(f"{prefix}_{port.name}", port=port)
+    for port in resonator_ref.ports:
+        port_type = (
+            "placement"
+            if any((port.name == "o1" and open_start, port.name == "o2" and open_end))
+            else "optical"
+        )
+        c.add_port(f"resonator_{port.name}", port=port, port_type=port_type)
+
+    for port in coupling_ref.ports:
+        c.add_port(f"coupling_{port.name}", port=port)
 
     c.info += resonator_ref.cell.info
     c.info["coupling_length"] = coupling_straight_length
