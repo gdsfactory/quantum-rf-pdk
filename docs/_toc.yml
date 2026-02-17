@@ -9,9 +9,15 @@ parts:
   - caption: API
     chapters:
       - file: api
+        sections:
+          - file: cells
+          - file: models
+          - file: changelog
   - caption: Samples
     chapters:
       - file: samples
   - caption: Notebooks
     chapters:
       - file: notebooks
+        sections:
+          - glob: notebooks/*

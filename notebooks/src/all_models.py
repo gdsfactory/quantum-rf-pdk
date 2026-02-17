@@ -73,14 +73,14 @@ from qpdk.models.generic import tee
 tee(f=TEST_FREQUENCY)
 
 # %%
-from qpdk.models.generic import single_impedance_element
+from qpdk.models.generic import impedance
 
-single_impedance_element(f=TEST_FREQUENCY)
+impedance(f=TEST_FREQUENCY)
 
 # %%
-from qpdk.models.generic import single_admittance_element
+from qpdk.models.generic import admittance
 
-single_admittance_element()
+admittance()
 
 # %%
 from qpdk.models.generic import capacitor
