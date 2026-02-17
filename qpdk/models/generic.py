@@ -26,6 +26,9 @@ __all__ = [
     "gamma_0_load",
     "impedance",
     "inductor",
+    "open",
+    "short",
+    "short_2_port",
     "tee",
 ]
 
@@ -41,6 +44,11 @@ def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.ST
         sax.SType: S-parameters dictionary
     """
     return electrical_short(f=f, n_ports=2)
+
+
+short = electrical_short
+open = electrical_open
+short_2_port = electrical_short_2_port
 
 
 if __name__ == "__main__":
