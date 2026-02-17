@@ -2,6 +2,8 @@
 
 import sax
 
+from qpdk.models.junction import josephson_junction
+
 sax.set_port_naming_strategy("optical")
 
 from qpdk.models.constants import (
@@ -14,10 +16,12 @@ from qpdk.models.couplers import (
 from qpdk.models.generic import (
     admittance,
     capacitor,
+    electrical_open,
+    electrical_short,
+    electrical_short_2_port,
     gamma_0_load,
     impedance,
     inductor,
-    josephson_junction,
     open,
     short,
     short_2_port,
@@ -55,6 +59,9 @@ __all__ = [
     "cpw_cpw_coupling_capacitance",
     "cpw_media_skrf",
     "cross_section_to_media",
+    "electrical_open",
+    "electrical_short",
+    "electrical_short_2_port",
     "gamma_0_load",
     "impedance",
     "inductor",

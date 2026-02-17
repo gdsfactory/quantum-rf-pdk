@@ -93,7 +93,7 @@ from qpdk.models.generic import inductor
 inductor(f=TEST_FREQUENCY)
 
 # %%
-from qpdk.models.generic import josephson_junction
+from qpdk.models.junction import josephson_junction
 
 josephson_junction(f=TEST_FREQUENCY)
 
