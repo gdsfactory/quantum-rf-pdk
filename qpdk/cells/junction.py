@@ -191,9 +191,8 @@ def josephson_junction(
         width=left_wire.ports["o2"].width,
         orientation=left_wire.ports["o2"].orientation,
         layer=left_wire.ports["o2"].layer,
-        port_type=left_wire.ports["o2"].port_type,
+        port_type="placement",
     )
-    # breakpoint()
 
     return c
 
