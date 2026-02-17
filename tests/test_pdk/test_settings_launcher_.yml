@@ -1,7 +1,0 @@
-info: {}
-name: launcher_SL200_TL100_CSBlauncher_cross_section_big_CSScpw
-settings:
-  cross_section_big: launcher_cross_section_big
-  cross_section_small: cpw
-  straight_length: 200
-  taper_length: 100

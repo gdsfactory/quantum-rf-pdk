@@ -1,6 +1,0 @@
-info: {}
-name: straight_open_L10_CScoplanar_waveguide_WNone_N2
-settings:
-  cross_section: coplanar_waveguide
-  length: 10
-  npoints: 2

@@ -1,9 +1,0 @@
-info: {}
-name: plate_capacitor_L26_W5_G7_ELM1_ETCH_EBM2_CScpw
-settings:
-  cross_section: cpw
-  etch_bbox_margin: 2
-  etch_layer: M1_ETCH
-  gap: 7
-  length: 26
-  width: 5
