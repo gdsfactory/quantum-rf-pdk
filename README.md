@@ -22,7 +22,8 @@ A generic process design kit (PDK) for superconducting quantum RF applications b
 
 ## Installation
 
-We recommend using [`uv`](https://astral.sh/uv/) for package management.
+We recommend using [`uv`](https://astral.sh/uv/) for package management. [`just`](https://github.com/casey/just) is used
+for project-specific recipes.
 
 ### Installation for Users
 
