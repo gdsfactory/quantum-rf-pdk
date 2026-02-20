@@ -67,7 +67,7 @@ def coupler_straight(
         ),  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
         "z0": cross_section_to_media(cross_section)(
             frequency=Frequency.from_f(np.asarray(f_flat), unit="Hz")
-        ).z0,
+        ).z0.reshape(f.shape),
     }
 
     # Create straight instances with shared settings

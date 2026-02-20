@@ -15,15 +15,10 @@
 # ## Imports
 
 # %%
-import time
 
-import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-import sax
 import skrf
-from gdsfactory.typings import CrossSectionSpec
-from tqdm.notebook import tqdm
 
 from qpdk import PDK
 
@@ -35,7 +30,7 @@ PDK.activate()
 # ## Constants
 
 # %%
-from qpdk.models.constants import DEFAULT_FREQUENCY, TEST_FREQUENCY
+from qpdk.models.constants import TEST_FREQUENCY
 
 # %% [markdown]
 # ## Media
@@ -227,83 +222,6 @@ taper_cross_section(f=TEST_FREQUENCY)
 from qpdk.models.waveguides import launcher
 
 launcher(f=TEST_FREQUENCY)
-
-# %%
-from qpdk.tech import coplanar_waveguide
-
-cpw_cs = coplanar_waveguide(width=10, gap=6)
-
-
-def straight_no_jit(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: int | float = 1000,
-    cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
-    """Version of straight without just-in-time compilation."""
-    media = cross_section_to_media(cross_section)
-    skrf_media = media(frequency=skrf.Frequency.from_f(f, unit="Hz"))
-    transmission_line = skrf_media.line(d=length, unit="um")
-    sdict = {
-        ("o1", "o1"): jnp.array(transmission_line.s[:, 0, 0]),
-        ("o1", "o2"): jnp.array(transmission_line.s[:, 0, 1]),
-        ("o2", "o2"): jnp.array(transmission_line.s[:, 1, 1]),
-    }
-    return sax.reciprocal(sdict)
-
-
-test_freq = jnp.linspace(0.5e9, 9e9, 200001)
-test_length = 1000
-
-print("Benchmarking jitted vs non-jitted performance…")
-
-n_runs = 10
-
-jit_times = []
-for _ in tqdm(range(n_runs), desc="With jax.jit", ncols=80, unit="run"):
-    start_time = time.perf_counter()
-    S_jit = straight(f=test_freq, length=test_length, cross_section=cpw_cs)
-    _ = S_jit["o2", "o1"].block_until_ready()
-    end_time = time.perf_counter()
-    jit_times.append(end_time - start_time)
-
-no_jit_times = []
-for _ in tqdm(range(n_runs), desc="Without jax.jit", ncols=80, unit="run"):
-    start_time = time.perf_counter()
-    S_no_jit = straight_no_jit(f=test_freq, length=test_length, cross_section=cpw_cs)
-    _ = S_no_jit["o2", "o1"].block_until_ready()
-    end_time = time.perf_counter()
-    no_jit_times.append(end_time - start_time)
-
-jit_times_steady = jit_times[1:]
-avg_jit = sum(jit_times_steady) / len(jit_times_steady)
-avg_no_jit = sum(no_jit_times) / len(no_jit_times)
-speedup = avg_no_jit / avg_jit
-
-print(f"Jitted: {avg_jit:.4f}s avg (excl. first), {jit_times[0]:.3f}s first run")
-print(f"Non-jitted: {avg_no_jit:.4f}s avg")
-print(f"Speedup: {speedup:.1f}x")
-
-S_jit = straight(f=test_freq, length=test_length, cross_section=cpw_cs)
-S_no_jit = straight_no_jit(f=test_freq, length=test_length, cross_section=cpw_cs)
-max_diff = jnp.max(jnp.abs(S_jit["o2", "o1"] - S_no_jit["o2", "o1"]))
-print(f"Max absolute difference in results: {max_diff:.2e}")
-
-try:
-    s21_array = S_jit["o2", "o1"]
-    s21_gpu = jax.device_put(s21_array, jax.devices("gpu")[0])
-    print(f"GPU available: {s21_gpu.device}")
-except Exception:
-    print("GPU not available, using CPU")
-
-# Test tapers
-S = taper_cross_section(
-    f=test_freq,
-    length=1000,
-    cross_section_1=cpw_cs,
-    cross_section_2=coplanar_waveguide(width=12, gap=10),
-)
-print("Taper S-parameters computed successfully.")
-print(f"S-parameter keys: {list(S.keys())}")
 
 # %% [markdown]
 # ## Couplers
