@@ -47,8 +47,8 @@ check-lfs:
     @git lfs pull
 
 # Run the full test suite in parallel using pytest
-test: check-lfs
-    {{PYTEST_COMMAND}}
+test *args: check-lfs
+    {{PYTEST_COMMAND}} {{args}}
 
 # Run optical port position tests (tests/test_pdk.py::test_optical_port_positions)
 test-ports:
