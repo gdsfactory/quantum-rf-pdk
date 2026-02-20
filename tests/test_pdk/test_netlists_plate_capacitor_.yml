@@ -29,4 +29,6 @@ placements:
     rotation: 180
     x: 6
     y: 0
-ports: {}
+ports:
+  o1: plate_capacitor_single,o1
+  o2: plate_capacitor_single2,o1

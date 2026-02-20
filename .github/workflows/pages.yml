@@ -24,11 +24,14 @@ jobs:
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v7.1.3
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - run: make setup-ipython-config
-      - run: make docs
+      - name: Install just
+        uses: extractions/setup-just@v3
+      - run: just install
+      - run: just setup-ipython-config
+      - run: just docs
       - uses: actions/upload-artifact@v6
         with:
           name: html-docs-${{ matrix.python-version }}
@@ -69,8 +72,10 @@ jobs:
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v7.1.3
-      - run: make install
+        uses: astral-sh/setup-uv@v7
+      - name: Install just
+        uses: extractions/setup-just@v3
+      - run: just install
       - name: Cache ImageMagick
         uses: actions/cache@v5
         with:
@@ -80,9 +85,9 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y imagemagick
-      - run: make setup-ipython-config
+      - run: just setup-ipython-config
       - name: Generate LaTeX files
-        run: make docs-latex || echo "LaTeX build completed with warnings, continuing…"
+        run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
         continue-on-error: true
         uses: xu-cheng/latex-action@v4
@@ -126,4 +131,4 @@ jobs:
         uses: actions/upload-pages-artifact@v4
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4.0.5
+        uses: actions/deploy-pages@v4

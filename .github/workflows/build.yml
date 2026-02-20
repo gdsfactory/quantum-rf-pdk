@@ -14,10 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Install just
+        uses: extractions/setup-just@v3
       - name: Remove samples
-        run: make rm-samples
-      - uses: astral-sh/setup-uv@v7.1.3
-      - run: make build
+        run: just rm-samples
+      - uses: astral-sh/setup-uv@v7
+      - run: just build
       - uses: actions/upload-artifact@v6
         with:
           name: dist
