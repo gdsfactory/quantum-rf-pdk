@@ -93,8 +93,16 @@ def qubit_with_resonator(
     c.info["coupler_type"] = coupler_ref.cell.info.get("coupler_type")
     c.info["length"] = resonator_ref.cell.info.get("length") + route.length * c.kcl.dbu
 
-    c.add_ports([p for p in qubit_ref.ports if p.name == "junction"])
-    c.add_port(port=resonator_ref.ports["o1"], port_type="placement")
+    c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
+    c.add_port(
+        center=(res_port := resonator_ref.ports["o1"]).center,
+        cross_section=res_port.cross_section,
+        layer=res_port.layer,
+        name=res_port.name,
+        orientation=res_port.orientation,
+        port_type="placement",
+        width=res_port.width,
+    )
     return c
 
 
