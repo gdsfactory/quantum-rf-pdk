@@ -196,19 +196,8 @@ def test_sample_generates(sample: ComponentFactory):
 
 
 _skip_port_tests = {
-    "airbridge",
-    "double_pad_transmon",
-    "double_pad_transmon_with_bbox",
     "flipmon",
     "flipmon_with_bbox",
-    "flipmon_with_resonator",
-    "indium_bump",
-    "josephson_junction",
-    "qubit_with_resonator",
-    "squid_junction",
-    "transmon_with_resonator",
-    "tsv",
-    "xmon_transmon",
 }
 port_test_cell_names = [name for name in cell_names if name not in _skip_port_tests]
 
