@@ -59,14 +59,15 @@ def coupler_straight(
         o1──────▼───────o4
     """
     f = jnp.asarray(f)
+    f_flat = f.ravel()
     straight_settings = {"length": length / 2, "cross_section": cross_section}
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(
             f, length, gap, cross_section
         ),  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
         "z0": cross_section_to_media(cross_section)(
-            frequency=Frequency.from_f(np.array(f), unit="Hz")
-        ).z0,
+            frequency=Frequency.from_f(np.asarray(f_flat), unit="Hz")
+        ).z0.reshape(f.shape),
     }
 
     # Create straight instances with shared settings
@@ -98,3 +99,27 @@ def coupler_straight(
     }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
+def coupler_ring(
+    f: ArrayLike = DEFAULT_FREQUENCY,
+    length: int | float = 20.0,
+    gap: int | float = 0.27,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for two coupled coplanar waveguides in a ring configuration.
+
+    The implementation is the same as straight coupler for now.
+
+    TODO: Fetch coupling capacitance from a curved simulation library.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length of coupling section in µm
+        gap: Gap between the coupled waveguides in µm
+        cross_section: The cross-section of the CPW.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return coupler_straight(f=f, length=length, gap=gap, cross_section=cross_section)
