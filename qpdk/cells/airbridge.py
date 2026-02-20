@@ -83,6 +83,7 @@ def airbridge(
             "width": bridge_width,
             "orientation": 90,
             "layer": bridge_layer,
+            "port_type": "placement",
         },
         {
             "name": "o2",
@@ -90,6 +91,7 @@ def airbridge(
             "width": bridge_width,
             "orientation": 270,
             "layer": bridge_layer,
+            "port_type": "placement",
         },
         {
             "name": "e1",
