@@ -3,6 +3,10 @@
 import sax
 
 from qpdk.models.junction import josephson_junction
+from qpdk.models.qubit import (
+    lc_resonator_capacitive,
+    lc_resonator_inductive,
+)
 
 sax.set_port_naming_strategy("optical")
 
@@ -72,6 +76,8 @@ __all__ = [
     "inductor",
     "josephson_junction",
     "launcher",
+    "lc_resonator_capacitive",
+    "lc_resonator_inductive",
     "models",
     "open",
     "quarter_wave_resonator_coupled",
