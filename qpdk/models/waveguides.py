@@ -249,7 +249,7 @@ def taper_cross_section(
         sax.SType: S-parameters dictionary
     """
 
-    def get_w_g(cs: CrossSectionSpec) -> tuple[float, float]:
+    def get_width_gap(cs: CrossSectionSpec) -> tuple[float, float]:
         import gdsfactory as gf
 
         if isinstance(cs, gf.CrossSection):
@@ -268,8 +268,8 @@ def taper_cross_section(
         )
         return width, gap
 
-    w1, g1 = get_w_g(cross_section_1)
-    w2, g2 = get_w_g(cross_section_2)
+    w1, g1 = get_width_gap(cross_section_1)
+    w2, g2 = get_width_gap(cross_section_2)
 
     f = jnp.asarray(f)
     segment_length = length / n_points
