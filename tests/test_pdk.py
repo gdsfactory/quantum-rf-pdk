@@ -222,34 +222,33 @@ def test_optical_port_positions(component_name: str) -> None:
         kf.VInstance(component).insert_into_flat(new_component, levels=0)
         new_component.add_ports(component.ports)
         component = new_component
-    for port in component.ports:
-        if port.port_type == "optical":
-            port_layer = port.layer
-            port_width = port.width
-            port_position = port.center
-            port_angle = port.orientation
-            cs_region = kf.kdb.Region(component.begin_shapes_rec(port_layer))
-            optical_edges = cs_region.edges()
+    for port in component.ports.filter(port_type="optical"):
+        port_layer = port.layer
+        port_width = port.width
+        port_position = port.center
+        port_angle = port.orientation
+        cs_region = kf.kdb.Region(component.begin_shapes_rec(port_layer))
+        optical_edges = cs_region.edges()
 
-            tolerance = 0.001
-            poly = kf.kdb.DBox(-tolerance, -tolerance, tolerance, tolerance)
-            dbu_in_um = port.kcl.to_um(1)
-            port_marker = (
-                kf.kdb.DPolygon(poly).transformed(port.dcplx_trans).to_itype(dbu_in_um)
+        tolerance = 0.001
+        poly = kf.kdb.DBox(-tolerance, -tolerance, tolerance, tolerance)
+        dbu_in_um = port.kcl.to_um(1)
+        port_marker = (
+            kf.kdb.DPolygon(poly).transformed(port.dcplx_trans).to_itype(dbu_in_um)
+        )
+        port_marker_region = kf.kdb.Region(port_marker)
+
+        interacting_edges = optical_edges.interacting(port_marker_region)
+        if interacting_edges.is_empty():
+            raise AssertionError(
+                f"No optical edge found for port {port.name} at position {port_position} with width {port_width} and angle {port_angle}."
             )
-            port_marker_region = kf.kdb.Region(port_marker)
-
-            interacting_edges = optical_edges.interacting(port_marker_region)
-            if interacting_edges.is_empty():
-                raise AssertionError(
-                    f"No optical edge found for port {port.name} at position {port_position} with width {port_width} and angle {port_angle}."
-                )
-            port_edge = next(iter(interacting_edges.each()))
-            edge_length = port_edge.length() * 0.001
-            if not np.isclose(edge_length, port_width, atol=1e-3):
-                raise AssertionError(
-                    f"Port {port.name} has width {port_width}, but the optical edge length is {edge_length}."
-                )
+        port_edge = next(iter(interacting_edges.each()))
+        edge_length = port_edge.length() * 0.001
+        if not np.isclose(edge_length, port_width, atol=1e-3):
+            raise AssertionError(
+                f"Port {port.name} has width {port_width}, but the optical edge length is {edge_length}."
+            )
 
 
 if __name__ == "__main__":
