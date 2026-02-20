@@ -130,7 +130,9 @@ def resonator(
                 allow_width_mismatch=True,
                 allow_layer_mismatch=True,
             )
-            c.add_port(output_port, port=open_etch.ports[output_port])
+            c.add_port(
+                output_port, port=open_etch.ports[output_port], port_type="placement"
+            )
 
         if open_end:
             _add_etch_at_port("o1", final_straight_ref.ports["o2"], "o2")
@@ -220,9 +222,16 @@ def resonator_coupled(
 
     coupling_ref.xmin = resonator_ref["o1"].x  # Align left edges
 
-    for comp, prefix in ((resonator_ref, "resonator"), (coupling_ref, "coupling")):
-        for port in comp.ports:
-            c.add_port(f"{prefix}_{port.name}", port=port)
+    for port in resonator_ref.ports:
+        port_type = (
+            "placement"
+            if ((port.name == "o1" and open_start) or (port.name == "o2" and open_end))
+            else "optical"
+        )
+        c.add_port(f"resonator_{port.name}", port=port, port_type=port_type)
+
+    for port in coupling_ref.ports:
+        c.add_port(f"coupling_{port.name}", port=port)
 
     c.info += resonator_ref.cell.info
     c.info["coupling_length"] = coupling_straight_length

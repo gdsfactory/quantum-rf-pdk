@@ -22,7 +22,8 @@ A generic process design kit (PDK) for superconducting quantum RF applications b
 
 ## Installation
 
-We recommend using [`uv`](https://astral.sh/uv/) for package management.
+We recommend using [`uv`](https://astral.sh/uv/) for package management. [`just`](https://github.com/casey/just) is used
+for project-specific recipes.
 
 ### Installation for Users
 
@@ -32,14 +33,27 @@ Install the package with:
 uv pip install qpdk
 ```
 
-> [!NOTE]
-> After installation, restart KLayout to ensure the new technology appears.
-
 Optional dependencies for the models and simulation tools can be installed with:
 
 ```bash
 uv pip install qpdk[models]
 ```
+
+### KLayout Technology Installation
+
+To use the PDK in KLayout (for viewing GDS files with correct layers and technology settings), you should install the
+technology files:
+
+```bash
+# For contributors (from the repository root)
+just install-tech
+
+# For users (after installing qpdk)
+python -m qpdk.install_tech
+```
+
+> [!NOTE]
+> After installation, restart KLayout to ensure the new technology appears.
 
 ### Installation for Contributors
 
@@ -60,7 +74,7 @@ uv sync --group dev
 Check out the commands for testing and building documentation with:
 
 ```bash
-make help
+just --list
 ```
 
 ## Documentation

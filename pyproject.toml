@@ -2,7 +2,7 @@
 
 [project]
 name = "qpdk"
-version = "0.1.3"
+version = "0.2.0"
 description = "Quantum-RF generic PDK"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
@@ -23,7 +23,7 @@ models = [
   "jaxellip",
   "optuna",
   "ray[tune]; sys_platform != 'win32'",
-  "sax",
+  "sax>=0.16.7",
   "scikit-rf",
   "scqubits",
   "sympy",
@@ -41,7 +41,8 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-svgbob",
 ]
-lint = ["prek", "towncrier"]
+lint = ["prek", { include-group = "stubs" }]
+stubs = ["scipy-stubs"]
 test = [
   "hypothesis",
   "jsondiff",
@@ -127,6 +128,7 @@ read-only = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]
+markers = ["skip_windows: skip test on Windows"]
 norecursedirs = [
   "*.egg",
   ".*",
@@ -137,7 +139,7 @@ norecursedirs = [
   "extra/*.py",
   "node_modules",
   "venv",
-  "{arch}"
+  "{arch}",
 ]
 python_files = ["notebooks/*.ipynb", "qpdk/*.py", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
@@ -195,6 +197,7 @@ select = [
   "D100",
 ]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D102", "D103"]
+"qpdk/models/__init__.py" = ["E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -216,43 +219,5 @@ convention = "google"
 [tool.setuptools.packages]
 find = {  }
 
-[tool.tbump]
-[[tool.tbump.before_commit]]
-cmd = "towncrier build --yes --version {new_version}"
-name = "create & check changelog"
-
-[[tool.tbump.file]]
-src = "README.md"
-
-[[tool.tbump.file]]
-src = "pyproject.toml"
-
-[[tool.tbump.file]]
-src = "qpdk/__init__.py"
-
-[tool.tbump.git]
-message_template = "Bump to {new_version}"
-tag_template = "v{new_version}"
-
-[tool.tbump.version]
-current = "0.1.3"
-regex = '''
-  (?P<major>\d+)
-  \.
-  (?P<minor>\d+)
-  \.
-  (?P<patch>\d+)
-  '''
-
 [tool.tombi.schema]
 strict = false
-
-[tool.towncrier]
-directory = ".changelog.d"
-filename = "CHANGELOG.md"
-issue_format = "[#{issue}](https://github.com/gdsfactory/qpdk/issues/{issue})"
-package = "gdsfactory"
-start_string = "<!-- towncrier release notes start -->\n"
-template = ".changelog.d/changelog_template.jinja"
-title_format = "## [{version}](https://github.com/gdsfactory/qpdk/releases/tag/v{version}) - {project_date}"
-underlines = ["", "", ""]
