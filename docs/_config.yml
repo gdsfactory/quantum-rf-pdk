@@ -7,7 +7,7 @@ logo: logo.png
 exclude_patterns:
   - ipython_config.py
   - "*.mplstyle"
-  - makefile_help.txt
+  - justfile_help.txt
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
 execute:

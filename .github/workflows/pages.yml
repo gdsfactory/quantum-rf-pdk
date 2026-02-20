@@ -20,17 +20,19 @@ jobs:
       matrix:
         python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v7.1.3
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - run: make install
-      - run: make setup-ipython-config
-      - run: make docs
-      - uses: actions/upload-artifact@v5
+      - name: Install just
+        uses: extractions/setup-just@v3
+      - run: just install
+      - run: just setup-ipython-config
+      - run: just docs
+      - uses: actions/upload-artifact@v6
         with:
           name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
@@ -66,14 +68,16 @@ jobs:
     runs-on: ubuntu-latest
     name: Build PDF docs
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v7.1.3
-      - run: make install
+        uses: astral-sh/setup-uv@v7
+      - name: Install just
+        uses: extractions/setup-just@v3
+      - run: just install
       - name: Cache ImageMagick
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /var/cache/apt/archives
           key: ${{ runner.os }}-imagemagick
@@ -81,9 +85,9 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y imagemagick
-      - run: make setup-ipython-config
+      - run: just setup-ipython-config
       - name: Generate LaTeX files
-        run: make docs-latex || echo "LaTeX build completed with warnings, continuing…"
+        run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
         continue-on-error: true
         uses: xu-cheng/latex-action@v4
@@ -97,7 +101,7 @@ jobs:
           continue_on_error: true
           latexmk_use_xelatex: true
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
@@ -114,12 +118,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML artifact (latest Python)
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: html-docs-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site
       - name: Download PDF artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: pdf-docs
           path: _site
@@ -127,4 +131,4 @@ jobs:
         uses: actions/upload-pages-artifact@v4
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4.0.5
+        uses: actions/deploy-pages@v4

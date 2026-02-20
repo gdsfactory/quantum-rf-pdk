@@ -156,7 +156,9 @@ cython_debug/
 
 # Documentation
 docs/cells.rst
+docs/models.rst
 docs/samples.rst
 docs/notebooks/
 docs/makefile_help.txt
+docs/justfile_help.txt
 !notebooks/*.ipynb

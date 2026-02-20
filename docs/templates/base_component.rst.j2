@@ -2,7 +2,7 @@
 {% block title %}{% endblock %}
 {% for item in items %}
 {{ item.name }}
-----------------------------------------------------
+{{ '-' * (item.name | length) }}
 
 .. autofunction:: {% block autofunction_path scoped -%}{%- endblock %}
 {%     if item.name not in skip_plot %}
@@ -13,7 +13,7 @@
 {% endfor %}
 
 References
-==========
+----------
 
 .. bibliography::
    :filter: docname in docnames

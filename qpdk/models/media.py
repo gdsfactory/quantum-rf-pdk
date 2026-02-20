@@ -1,16 +1,16 @@
-"""Models for transmission line media."""
+"""Transmission media."""
 
-import inspect
 from functools import cache, partial
 from typing import Protocol, cast
 
 import gdsfactory as gf
 import skrf
+from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
 from skrf.media import CPW, Media
 
 from qpdk import LAYER_STACK
-from qpdk.tech import coplanar_waveguide, material_properties
+from qpdk.tech import material_properties
 
 
 class MediaCallable(Protocol):
@@ -21,14 +21,8 @@ class MediaCallable(Protocol):
         ...
 
 
-_coplanar_waveguide_xsection_signature = inspect.signature(coplanar_waveguide)
-
-
 @cache
-def cpw_media_skrf(
-    width: float = _coplanar_waveguide_xsection_signature.parameters["width"].default,
-    gap: float = _coplanar_waveguide_xsection_signature.parameters["gap"].default,
-) -> MediaCallable:
+def cpw_media_skrf(width: float, gap: float) -> MediaCallable:
     """Create a partial coplanar waveguide (CPW) media object using scikit-rf.
 
     Args:
@@ -38,21 +32,19 @@ def cpw_media_skrf(
     Returns:
         partial[skrf.media.CPW]: A CPW media object with specified dimensions.
     """
-    # Convert μm to m for skrf
-    return partial(
-        CPW,
-        w=width * 1e-6,
-        s=gap * 1e-6,
-        h=LAYER_STACK.layers["Substrate"].thickness * 1e-6,
-        t=LAYER_STACK.layers["M1"].thickness * 1e-6,
-        ep_r=material_properties[cast(str, LAYER_STACK.layers["Substrate"].material)][
-            "relative_permittivity"
-        ],
-        # rho=1e-32,  # set to a very low value to avoid warnings
-        rho=1e-100,  # set to a very low value to avoid warnings
-        tand=0,  # No dielectric losses for now
-        has_metal_backside=False,
-    )
+    kwargs = {
+        "w": width * 1e-6,
+        "s": gap * 1e-6,
+        "h": LAYER_STACK.layers["Substrate"].thickness * 1e-6,
+        "t": LAYER_STACK.layers["M1"].thickness * 1e-6,
+        "ep_r": material_properties[
+            cast(str, LAYER_STACK.layers["Substrate"].material)
+        ]["relative_permittivity"],
+        "rho": 1e-100,  # set to a very low value to avoid warnings
+        "tand": 0,  # No dielectric losses for now
+        "has_metal_backside": False,
+    }
+    return partial(CPW, **kwargs)
 
 
 def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
@@ -69,21 +61,29 @@ def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
     Returns:
         MediaCallable: A callable that returns a skrf Media object for a given frequency.
     """
-    xs = gf.get_cross_section(cross_section)
+    # Convert input to CrossSection object
+    xs: CrossSection
+    if isinstance(cross_section, CrossSection):
+        xs = cross_section
+    elif callable(cross_section):
+        # If it's a callable (like a partial or factory function), call it to get the CrossSection
+        xs = cast(CrossSection, cross_section())
+    else:
+        # It's a string name, requires active PDK
+        xs = gf.get_cross_section(cross_section)
+
+    # Extract width and gap from the CrossSection
     width = xs.width
-    gap = next(
-        section.width for section in xs.sections if "etch_offset" in section.name
-    )
+    try:
+        gap = next(
+            section.width
+            for section in xs.sections
+            if section.name and "etch_offset" in section.name
+        )
+    except StopIteration as e:
+        msg = (
+            f"Cross-section does not have a section with 'etch_offset' in the name. "
+            f"Found sections: {[s.name for s in xs.sections]}"
+        )
+        raise ValueError(msg) from e
     return cpw_media_skrf(width=width, gap=gap)
-
-
-if __name__ == "__main__":
-    from qpdk import PDK
-
-    PDK.activate()
-
-    freq = skrf.Frequency(2, 8, 501, "GHz")
-    media = cross_section_to_media("cpw")
-    cpw = media(frequency=freq)
-
-    print(cpw)

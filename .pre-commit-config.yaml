@@ -19,14 +19,14 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.5
+    rev: v0.15.1
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
       - id: ruff-format
         args: [--config=pyproject.toml]
   - repo: https://github.com/tombi-toml/tombi-pre-commit
-    rev: v0.6.42
+    rev: v0.7.14
     hooks:
       - id: tombi-format
       - id: tombi-lint
@@ -51,22 +51,21 @@ repos:
         args: [--strict, "-c=.github/.yamllint.yaml"]
         exclude: *regression_tests
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.8
+    rev: v1.7.10
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.9
+    rev: 0.9.21
     hooks:
       - id: uv-lock
   - repo: https://github.com/facebook/pyrefly-pre-commit
-    rev: 0.0.1
+    rev: 0.46.3
     hooks:
-      - id: pyrefly-typecheck-specific-version
+      - id: pyrefly-check
         name: Pyrefly
-        pass_filenames: true
-        additional_dependencies: ["pyrefly==0.34.0"]
+        pass_filenames: false
         # Pre-commit may not have access to all deps.
-        args: ["--ignore", "import-error"]
+        args: ["--ignore", "missing-import"]
   - repo: https://github.com/FlamingTempura/bibtex-tidy
     rev: v1.14.0
     hooks:
@@ -82,23 +81,23 @@ repos:
       - id: checkmake
         args: ['--config=.github/.checkmake.ini']
   - repo: https://github.com/EbodShojaei/bake
-    rev: v1.4.3
+    rev: v1.4.4
     hooks:
       - id: mbake-validate
       - id: mbake-format
         args: ['--config=.github/.bake.toml']
   - repo: https://github.com/LilSpazJoekp/docstrfmt
-    rev: v1.11.1
+    rev: v2.0.1
     hooks:
       - id: docstrfmt
         language_version: python3
         types: [rst]
   - repo: https://github.com/sphinx-contrib/sphinx-lint
-    rev: v1.0.1
+    rev: v1.0.2
     hooks:
       - id: sphinx-lint
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.18.1
+    rev: v0.20.0
     hooks:
       - id: markdownlint-cli2
         name: markdownlint
@@ -130,3 +129,9 @@ repos:
         language: script
         files: ^notebooks/src/.*\.py$
         pass_filenames: true
+      - id: check-notebook-sources
+        name: Check notebooks have source files
+        entry: ./.github/check-notebook-sources.sh
+        language: script
+        files: ^notebooks/.*\.ipynb$
+        pass_filenames: false

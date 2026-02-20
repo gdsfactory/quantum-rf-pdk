@@ -33,6 +33,7 @@ def indium_bump(diameter: float = 15.0) -> Component:
         orientation=0,
         layer=LAYER.IND,
         width=diameter,
+        port_type="placement",
     )
     return c
 

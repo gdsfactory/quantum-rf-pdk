@@ -2,7 +2,7 @@
 
 [project]
 name = "qpdk"
-version = "0.1.3"
+version = "0.2.0"
 description = "Quantum-RF generic PDK"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
@@ -15,15 +15,15 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory>=9.15.0,<9.22.1"]
+dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.34.1"]
 
 [project.optional-dependencies]
 models = [
-  "gplugins[meshwell]>=2.0.0",
+  "gplugins[meshwell]>=2.0.1",
   "jaxellip",
   "optuna",
-  "ray[tune]",
-  "sax",
+  "ray[tune]; sys_platform != 'win32'",
+  "sax>=0.16.7",
   "scikit-rf",
   "scqubits",
   "sympy",
@@ -41,7 +41,8 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-svgbob",
 ]
-lint = ["prek"]
+lint = ["prek", { include-group = "stubs" }]
+stubs = ["scipy-stubs"]
 test = [
   "hypothesis",
   "jsondiff",
@@ -66,10 +67,10 @@ exclude = ["tests", "docs"]
 [tool.gdsfactoryplus.drc]
 timeout = 300
 
-[tool.gdsfactoryplus.sim.wls]
-# units = "frequency"
-min = 30000
-max = 3000000
+[tool.gdsfactoryplus.sim.x]
+max = 20  # 20GHz
+min = 1  # 1GHz
+name = "f"
 num = 3000
 
 [tool.gdsfactoryplus.pdk]
@@ -127,8 +128,20 @@ read-only = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]
-norecursedirs = ["extra/*.py"]
-python_files = ["qpdk/*.py", "notebooks/*.ipynb", "tests/*.py"]
+markers = ["skip_windows: skip test on Windows"]
+norecursedirs = [
+  "*.egg",
+  ".*",
+  "CVS",
+  "_darcs",
+  "build",
+  "dist",
+  "extra/*.py",
+  "node_modules",
+  "venv",
+  "{arch}",
+]
+python_files = ["notebooks/*.ipynb", "qpdk/*.py", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
 
 [tool.ruff]
@@ -184,6 +197,7 @@ select = [
   "D100",
 ]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D102", "D103"]
+"qpdk/models/__init__.py" = ["E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

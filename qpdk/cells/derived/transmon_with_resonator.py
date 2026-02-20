@@ -15,7 +15,7 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER, route_single_cpw
 
 
-@gf.cell_with_module_name
+@gf.cell
 def qubit_with_resonator(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
@@ -93,9 +93,16 @@ def qubit_with_resonator(
     c.info["coupler_type"] = coupler_ref.cell.info.get("coupler_type")
     c.info["length"] = resonator_ref.cell.info.get("length") + route.length * c.kcl.dbu
 
-    c.add_ports([p for p in qubit_ref.ports if p.name == "junction"])
-    c.add_ports([p for p in resonator_ref.ports if p.name == "o1"])
-
+    c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
+    c.add_port(
+        center=(res_port := resonator_ref.ports["o1"]).center,
+        cross_section=res_port.cross_section,
+        layer=res_port.layer,
+        name=res_port.name,
+        orientation=res_port.orientation,
+        port_type="placement",
+        width=res_port.width,
+    )
     return c
 
 

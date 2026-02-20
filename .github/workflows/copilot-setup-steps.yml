@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           lfs: true
       - name: Set up Python
@@ -15,5 +15,7 @@ jobs:
           python-version-file: 'pyproject.toml'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
+      - name: Install just
+        uses: extractions/setup-just@v3
       - name: Install dependencies
-        run: make install
+        run: just install

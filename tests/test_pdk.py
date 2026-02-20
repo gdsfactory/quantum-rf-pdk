@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import pathlib
-from typing import cast
+from typing import Any, cast
 
 import gdsfactory as gf
 import jsondiff
+import kfactory as kf
+import numpy as np
 import pytest
 from gdsfactory.difftest import difftest
 from gdsfactory.technology import LayerViews
@@ -100,6 +102,21 @@ def test_cell_in_pdk(name):
     assert instances1 == instances2
 
 
+def normalize_numeric_types(data: Any) -> Any:
+    """Normalize numeric types in nested data structures.
+
+    Converts floats that are whole numbers to ints to ensure consistent
+    serialization across different platforms (e.g., macOS vs Linux).
+    """
+    if isinstance(data, dict):
+        return {k: normalize_numeric_types(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [normalize_numeric_types(item) for item in data]
+    if isinstance(data, float) and data.is_integer():
+        return int(data)
+    return data
+
+
 @pytest.mark.parametrize("component_name", cell_names)
 def test_gds(component_name: str) -> None:
     """Avoid regressions in GDS geometry shapes and layers."""
@@ -111,7 +128,8 @@ def test_gds(component_name: str) -> None:
 def test_settings(component_name: str, data_regression: DataRegressionFixture) -> None:
     """Avoid regressions when exporting settings."""
     component = cells[component_name]()
-    data_regression.check(component.to_dict())
+    settings = normalize_numeric_types(component.to_dict())
+    data_regression.check(settings)
 
 
 @pytest.mark.parametrize("component_type", cell_names)
@@ -130,6 +148,7 @@ def test_netlists(
         pytest.skip(f"Skipping {component_type} netlist test")
     c = cells[component_type]()
     n = c.get_netlist()
+    n = cast(dict, normalize_numeric_types(n))
     data_regression.check(n)
 
     n.pop("connections", None)
@@ -142,6 +161,7 @@ def test_netlists(
 
     c2 = gf.read.from_yaml(yaml_str)
     n2 = c2.get_netlist()
+    n2 = cast(dict, normalize_numeric_types(n2))
     d = jsondiff.diff(n, n2)
     d.pop("warnings", None)
     d.pop("ports", None)
@@ -173,6 +193,51 @@ def test_sample_generates(sample: ComponentFactory):
     result = gf.get_component(sample)
     assert result
     print(f"Successfully ran {sample!r}")
+
+
+_skip_port_tests = {
+    "flipmon",
+    "flipmon_with_bbox",
+}
+port_test_cell_names = [name for name in cell_names if name not in _skip_port_tests]
+
+
+@pytest.mark.parametrize("component_name", port_test_cell_names)
+def test_optical_port_positions(component_name: str) -> None:
+    """Ensure that optical ports are positioned correctly."""
+    component = cells[component_name]()
+    if isinstance(component, gf.ComponentAllAngle):
+        new_component = gf.Component()
+        kf.VInstance(component).insert_into_flat(new_component, levels=0)
+        new_component.add_ports(component.ports)
+        component = new_component
+    for port in component.ports.filter(port_type="optical"):
+        port_layer = port.layer
+        port_width = port.width
+        port_position = port.center
+        port_angle = port.orientation
+        cs_region = kf.kdb.Region(component.begin_shapes_rec(port_layer))
+        optical_edges = cs_region.edges()
+
+        tolerance = 0.001
+        poly = kf.kdb.DBox(-tolerance, -tolerance, tolerance, tolerance)
+        dbu_in_um = port.kcl.to_um(1)
+        port_marker = (
+            kf.kdb.DPolygon(poly).transformed(port.dcplx_trans).to_itype(dbu_in_um)
+        )
+        port_marker_region = kf.kdb.Region(port_marker)
+
+        interacting_edges = optical_edges.interacting(port_marker_region)
+        if interacting_edges.is_empty():
+            raise AssertionError(
+                f"No optical edge found for port {port.name} at position {port_position} with width {port_width} and angle {port_angle}."
+            )
+        port_edge = next(iter(interacting_edges.each()))
+        edge_length = port_edge.length() * 0.001
+        if not np.isclose(edge_length, port_width, atol=1e-3):
+            raise AssertionError(
+                f"Port {port.name} has width {port_width}, but the optical edge length is {edge_length}."
+            )
 
 
 if __name__ == "__main__":

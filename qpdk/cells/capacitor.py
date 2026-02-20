@@ -15,7 +15,7 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
 
-@gf.cell_with_module_name
+@gf.cell
 def interdigital_capacitor(
     fingers: int = 4,
     finger_length: float = 20.0,
@@ -153,6 +153,7 @@ def interdigital_capacitor(
     straight_left = c.add_ref(straight_out_of_etch).move(
         (-etch_bbox_margin, height / 2)
     )
+    straight_right = None
     if not half:
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
 
@@ -181,10 +182,11 @@ def interdigital_capacitor(
     c.absorb(c << c_additive)
     c.absorb(c << c_negative)
 
-    ports_config = [
+    ports_config: list[tuple[str, gf.Port] | None] = [
         ("o1", straight_left["o1"]),
-        ("o2", straight_right["o2"]) if not half else None,
     ]
+    if not half and straight_right is not None:
+        ports_config.append(("o2", straight_right["o2"]))
 
     for port_name, port_ref in filter(None, ports_config):
         c.add_port(
@@ -201,7 +203,7 @@ def interdigital_capacitor(
     return c
 
 
-@gf.cell_with_module_name
+@gf.cell
 def plate_capacitor(
     length: float = 26.0,
     width: float = 5.0,
@@ -234,7 +236,7 @@ def plate_capacitor(
         cross_section: Cross-section for the short straight from the etch box capacitor.
 
     Returns:
-        A gdsfactory component with the plate capacitor geometry.
+        A gdsfactory component with the plate capacitor geometry and two ports ('o1' and 'o2') on opposing sides.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
@@ -250,11 +252,16 @@ def plate_capacitor(
         cross_section=cross_section,
     )
 
-    c.add_ref(single_capacitor)
+    pad1 = c.add_ref(single_capacitor)
     pad2 = c.add_ref(single_capacitor)
     pad2.rotate(180)
     pad2.move((width + gap, 0))
     c.center = (0, 0)
+
+    # Add ports
+    c.add_port(name="o1", port=pad1.ports["o1"])
+    c.add_port(name="o2", port=pad2.ports["o1"])
+
     # Ensure etch box between pads
     if etch_layer is not None:
         missing_width = gap - 2 * etch_bbox_margin
@@ -270,7 +277,7 @@ def plate_capacitor(
     return c
 
 
-@gf.cell_with_module_name
+@gf.cell
 def plate_capacitor_single(
     length: float = 26.0,
     width: float = 5.0,
