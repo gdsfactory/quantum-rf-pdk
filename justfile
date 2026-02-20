@@ -22,7 +22,7 @@ clean:
 # Testing #
 ###########
 
-PYTEST_COMMAND := "uv run --group dev pytest"
+PYTEST_COMMAND := "uv run --group dev pytest -n auto"
 
 # Check if Git LFS is available and pull LFS files
 check-lfs:
@@ -48,7 +48,7 @@ check-lfs:
 
 # Run the full test suite in parallel using pytest
 test: check-lfs
-    {{PYTEST_COMMAND}} -n auto
+    {{PYTEST_COMMAND}}
 
 # Run optical port position tests (tests/test_pdk.py::test_optical_port_positions)
 test-ports:
