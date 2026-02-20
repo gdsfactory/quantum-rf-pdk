@@ -91,6 +91,7 @@ def double_pad_transmon(
             "width": pad_height,
             "orientation": 0,
             "layer": layer_metal,
+            "port_type": "placement",
         },
         {
             "name": "right_pad",
@@ -105,6 +106,7 @@ def double_pad_transmon(
             "width": pad_height,
             "orientation": 180,
             "layer": layer_metal,
+            "port_type": "placement",
         },
         {
             "name": "junction",
@@ -112,6 +114,7 @@ def double_pad_transmon(
             "width": junction_ref.size_info.height,
             "orientation": 90,
             "layer": LAYER.JJ_AREA,
+            "port_type": "placement",
         },
     ]
     for port_config in ports_config:
@@ -277,6 +280,7 @@ def flipmon(
         width=outer_ring_width,
         orientation=0,
         layer=layer_metal,
+        port_type="placement",
     )
     c.add_port(
         name="outer_ring_near_junction",
@@ -284,6 +288,7 @@ def flipmon(
         width=outer_ring_width,
         orientation=180,
         layer=layer_metal,
+        port_type="placement",
     )
     c.add_port(
         name="outer_ring_outside",
@@ -298,6 +303,7 @@ def flipmon(
         width=junction_ref.size_info.height,
         orientation=90,
         layer=LAYER.JJ_AREA,
+        port_type="placement",
     )
 
     return c
@@ -496,6 +502,7 @@ def xmon_transmon(
         width=junction_ref.size_info.height,
         orientation=90,
         layer=LAYER.JJ_AREA,
+        port_type="placement",
     )
 
     # Add metadata
