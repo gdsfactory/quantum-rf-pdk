@@ -281,7 +281,7 @@ def taper_cross_section(
         f"straight_{i}": straight(
             f=f,
             length=segment_length,
-            cross_section=coplanar_waveguide(width=float(ws[i]), gap=float(gs[i])),
+            cross_section=coplanar_waveguide(width=ws[i], gap=gs[i]),
         )
         for i in range(n_points)
     }

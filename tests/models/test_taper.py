@@ -7,7 +7,7 @@ from hypothesis import assume, given, settings
 from qpdk.models.waveguides import launcher, straight, taper_cross_section
 from qpdk.tech import coplanar_waveguide
 
-MAX_EXAMPLES = 20
+MAX_EXAMPLES = 50
 
 
 class TestTaperWaveguide:
