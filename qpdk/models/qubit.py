@@ -85,7 +85,7 @@ def lc_resonator_capacitive(
     # External ports
     ports = {
         "o1": "c_coupling,o1",
-        "o2": "l_res,o2",  # Grounded port (for reference)
+        "o2": "l_res,o2",  # LC resonator ground terminal
     }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
@@ -117,11 +117,11 @@ def lc_resonator_inductive(
     The mutual inductance :math:`M` provides inductive coupling between the
     coupling inductor :math:`L_c` and the resonator inductor :math:`L`.
 
-    The coupled inductance is approximated as:
+    In this simplified model, the effective resonator inductance is approximated as:
 
     .. math::
 
-        L_{eff} = L_c + L - 2M
+        L_{eff} = L - M
 
     Args:
         f: Array of frequency points in Hz
@@ -177,7 +177,7 @@ def lc_resonator_inductive(
     # External ports
     ports = {
         "o1": "l_coupling,o1",
-        "o2": "l_res,o2",  # Grounded port (for reference)
+        "o2": "l_res,o2",  # LC resonator ground terminal
     }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
