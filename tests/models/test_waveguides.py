@@ -1,4 +1,4 @@
-"""Tests for qpdk.models.waveguides.straight function."""
+"""Tests for qpdk.models.waveguides module."""
 
 import hypothesis.strategies as st
 import jax.numpy as jnp

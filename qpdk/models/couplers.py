@@ -59,13 +59,14 @@ def coupler_straight(
         o1──────▼───────o4
     """
     f = jnp.asarray(f)
+    f_flat = f.ravel()
     straight_settings = {"length": length / 2, "cross_section": cross_section}
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(
             f, length, gap, cross_section
         ),  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
         "z0": cross_section_to_media(cross_section)(
-            frequency=Frequency.from_f(np.array(f), unit="Hz")
+            frequency=Frequency.from_f(np.asarray(f_flat), unit="Hz")
         ).z0,
     }
 
@@ -101,7 +102,7 @@ def coupler_straight(
 
 
 def coupler_ring(
-    f: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = DEFAULT_FREQUENCY,
     length: int | float = 20.0,
     gap: int | float = 0.27,
     cross_section: CrossSectionSpec = "cpw",

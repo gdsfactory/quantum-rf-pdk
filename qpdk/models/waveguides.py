@@ -1,5 +1,7 @@
 """Waveguides."""
 
+from typing import cast
+
 import jax.numpy as jnp
 import numpy as np
 import sax
@@ -84,15 +86,29 @@ def straight_shorted(
 
 
 def airbridge(
-    f: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = DEFAULT_FREQUENCY,
     bridge_length: float = 30.0,
     bridge_width: float = 8.0,
     pad_width: float = 15.0,
 ) -> sax.SType:
-    """S-parameter model for an airbridge, wrapped to to :func:`~straight`.
+    """S-parameter model for an airbridge, wrapped to :func:`~straight`.
 
     TODO: add a constant loss channel for airbridge crossings.
+
+    Args:
+        f: Array of frequency points in Hz
+        bridge_length: Length of the airbridge in µm.
+        bridge_width: Width of the airbridge in µm.
+        pad_width: Width of the landing pads in µm.
+
+    Returns:
+        sax.SType: S-parameters dictionary
     """
+    if pad_width <= bridge_width:
+        raise ValueError(
+            f"pad_width ({pad_width}) must be greater than bridge_width ({bridge_width})"
+        )
+
     return straight(
         f=f,
         length=bridge_length,
@@ -104,13 +120,21 @@ def airbridge(
 
 
 def tsv(
-    f: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = DEFAULT_FREQUENCY,
+    via_height: float = 1000.0,
 ) -> sax.SType:
-    """S-parameter model for a through-silicon via (TSV), wrapped to to :func:`~straight`.
+    """S-parameter model for a through-silicon via (TSV), wrapped to :func:`~straight`.
 
     TODO: add a constant loss channel for TSVs.
+
+    Args:
+        f: Array of frequency points in Hz
+        via_height: Physical height (length) of the TSV in µm.
+
+    Returns:
+        sax.SType: S-parameters dictionary
     """
-    return straight(f=f, length=1000)  # pyrefly: ignore[bad-keyword-argument]
+    return straight(f=f, length=via_height)
 
 
 def bend_circular(
@@ -118,7 +142,7 @@ def bend_circular(
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
-    """S-parameter model for a circular bend, wrapped to to :func:`~straight`.
+    """S-parameter model for a circular bend, wrapped to :func:`~straight`.
 
     Args:
         f: Array of frequency points in Hz
@@ -141,7 +165,7 @@ def bend_euler(
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
-    """S-parameter model for an Euler bend, wrapped to to :func:`~straight`.
+    """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
 
     Args:
         f: Array of frequency points in Hz
@@ -164,7 +188,7 @@ def bend_s(
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
-    """S-parameter model for an S-bend, wrapped to to :func:`~straight`.
+    """S-parameter model for an S-bend, wrapped to :func:`~straight`.
 
     Args:
         f: Array of frequency points in Hz
@@ -187,7 +211,7 @@ def rectangle(
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
-    """S-parameter model for a rectangular section, wrapped to to :func:`~straight`.
+    """S-parameter model for a rectangular section, wrapped to :func:`~straight`.
 
     Args:
         f: Array of frequency points in Hz
@@ -208,14 +232,11 @@ def rectangle(
 def taper_cross_section(
     f: ArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
-    cross_section_1: CrossSectionSpec = "cpw",  # noqa: ARG001
-    cross_section_2: CrossSectionSpec = "cpw",  # noqa: ARG001
+    cross_section_1: CrossSectionSpec = "cpw",
+    cross_section_2: CrossSectionSpec = "cpw",
     n_points: int = 50,
 ) -> sax.SType:
     """S-parameter model for a cross-section taper using linear interpolation.
-
-    Uses jax.scipy.interpolate.RegularGridInterpolator to efficiently interpolate
-    media parameters (width and gap) along the taper length.
 
     Args:
         f: Array of frequency points in Hz
@@ -227,49 +248,44 @@ def taper_cross_section(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    # Ensure n_points is a concrete Python int
 
-    # Get media parameters at the start and end of the taper
+    def get_w_g(cs: CrossSectionSpec) -> tuple[float, float]:
+        import gdsfactory as gf
+
+        if isinstance(cs, gf.CrossSection):
+            xs = cs
+        elif callable(cs):
+            xs = cast(gf.CrossSection, cs())
+        else:
+            xs = gf.get_cross_section(cs)
+
+        width = xs.width
+        gap = next(
+            section.width
+            for section in xs.sections
+            if section.name and "etch_offset" in section.name
+        )
+        return width, gap
+
+    w1, g1 = get_w_g(cross_section_1)
+    w2, g2 = get_w_g(cross_section_2)
+
     f = jnp.asarray(f)
-    # dummy_freq = Frequency.from_f(np.asarray(f), unit="Hz")
-    # media_1 = cross_section_to_media(cross_section_1)
-    # media_2 = cross_section_to_media(cross_section_2)
-    # media_1_obj = media_1(frequency=dummy_freq)
-    # media_2_obj = media_2(frequency=dummy_freq)
-
-    # width_1 = getattr(media_1_obj, "w", 0.0)
-    # width_2 = getattr(media_2_obj, "w", 0.0)
-    # gap_1 = getattr(media_1_obj, "s", 0.0)
-    # gap_2 = getattr(media_2_obj, "s", 0.0)
-
-    # Create interpolation grid points using physical positions
-    # position_grid = jnp.array([0.0, length])
-    # width_values = jnp.array([width_1, width_2])
-    # gap_values = jnp.array([gap_1, gap_2])
-
-    # Create interpolators for width and gap
-    # width_interpolator = jax.scipy.interpolate.RegularGridInterpolator(
-    #     (position_grid,), width_values, method="linear"
-    # )
-    # gap_interpolator = jax.scipy.interpolate.RegularGridInterpolator(
-    #     (position_grid,), gap_values, method="linear"
-    # )
-
     segment_length = length / n_points
-    # Compute physical positions for each segment
-    # positions = jnp.linspace(0, length, num=n_points)
+
+    ws = jnp.linspace(w1, w2, n_points)
+    gs = jnp.linspace(g1, g2, n_points)
 
     instances = {
-        **{
-            f"straight_{i}": straight(
-                f=f,
-                length=segment_length,
-            )
-            for i in range(n_points)
-        }
+        f"straight_{i}": straight(
+            f=f,
+            length=segment_length,
+            cross_section=coplanar_waveguide(width=float(ws[i]), gap=float(gs[i])),
+        )
+        for i in range(n_points)
     }
     connections = {
-        **{f"straight_{i},o2": f"straight_{i + 1},o1" for i in range(n_points - 1)}
+        f"straight_{i},o2": f"straight_{i + 1},o1" for i in range(n_points - 1)
     }
     ports = {
         "o1": "straight_0,o1",
