@@ -261,11 +261,18 @@ def taper_cross_section(
 
         # Infer from first section with "etch_offset" in the name
         width = xs.width
-        gap = next(
-            section.width
-            for section in xs.sections
-            if section.name and "etch_offset" in section.name
-        )
+        try:
+            gap = next(
+                section.width
+                for section in xs.sections
+                if section.name and "etch_offset" in section.name
+            )
+        except StopIteration:
+            raise ValueError(
+                f"Cannot extract CPW gap from cross-section {cs!r}: "
+                "no section with 'etch_offset' in its name found. "
+                "Only coplanar_waveguide cross-sections are supported."
+            ) from None
         return width, gap
 
     w1, g1 = get_width_gap(cross_section_1)
