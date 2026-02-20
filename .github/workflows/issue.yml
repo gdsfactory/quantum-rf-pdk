@@ -1,5 +1,4 @@
 name: Auto-label PDK issues
-
 on:
   issues:
     types:
@@ -18,7 +17,6 @@ on:
       - transferred
       - milestoned
       - demilestoned
-
 jobs:
   add-label:
     runs-on: ubuntu-latest
