@@ -116,6 +116,7 @@ setup-ipython-config:
     mkdir -p ~/.config/matplotlib/stylelib/
     cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
+# Shared prerequisites for building documentation (runs in parallel)
 [parallel]
 docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
 
