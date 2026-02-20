@@ -8,8 +8,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-env:
-  GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -60,6 +58,8 @@ jobs:
   test-gdsfactoryplus:
     runs-on: ${{ matrix.os }}
     needs: get-python-versions
+    env:
+      GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
