@@ -259,6 +259,7 @@ def taper_cross_section(
         else:
             xs = gf.get_cross_section(cs)
 
+        # Infer from first section with "etch_offset" in the name
         width = xs.width
         gap = next(
             section.width
