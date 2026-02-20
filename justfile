@@ -116,12 +116,16 @@ setup-ipython-config:
     mkdir -p ~/.config/matplotlib/stylelib/
     cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
+# Shared prerequisites for building documentation (runs in parallel)
+[parallel]
+docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
+
 # Build the HTML documentation
-docs: write-cells write-models write-justfile-help copy-sample-notebooks
+docs: docs-prerequisites
     uv run --group docs jb build docs
 
 # Setup LaTeX for PDF documentation
-docs-latex: write-cells write-models write-justfile-help copy-sample-notebooks
+docs-latex: docs-prerequisites
     uv run --group docs jb build docs --builder latex
 
 # Build PDF documentation (requires a TeXLive installation)
