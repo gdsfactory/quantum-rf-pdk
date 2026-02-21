@@ -1,4 +1,32 @@
 info: {}
 name: tee_CScpw
+ports:
+  o1:
+    center:
+    - -11
+    - 0
+    layer: 1
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 0
+    - 11
+    layer: 1
+    name: o2
+    orientation: 90
+    port_type: optical
+    width: 10
+  o3:
+    center:
+    - 11
+    - 0
+    layer: 1
+    name: o3
+    orientation: 0
+    port_type: optical
+    width: 10
 settings:
   cross_section: cpw

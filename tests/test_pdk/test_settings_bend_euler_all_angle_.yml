@@ -11,6 +11,25 @@ info:
   route_info_weight: 166.369
   width: 10
 name: bend_euler_all_angle_RNone_A90_P0p5_WAFTrue_NNone_LNone_634625cb
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: 1
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 100
+    - 100
+    layer: 1
+    name: o2
+    orientation: 90
+    port_type: optical
+    width: 10
 settings:
   allow_min_radius_violation: true
   angle: 90

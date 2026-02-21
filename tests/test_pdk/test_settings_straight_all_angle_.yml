@@ -6,6 +6,25 @@ info:
   route_info_weight: 10
   width: 10
 name: straight_all_angle_L10_N2_CScoplanar_waveguide_WNone
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: 1
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 10
+    - 0
+    layer: 1
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
 settings:
   cross_section: coplanar_waveguide
   length: 10

@@ -2,6 +2,25 @@ info:
   length: 5000
   resonator_type: quarter_wave
 name: qubit_with_resonator_Qflipmon_with_bbox_RFresonator_Mqp_140fe0fe
+ports:
+  junction:
+    center:
+    - 0
+    - -67.416
+    layer: 13
+    name: junction
+    orientation: 0
+    port_type: optical
+    width: 43.912
+  o1:
+    center:
+    - -700
+    - -1300
+    layer: 1
+    name: o1
+    orientation: 0
+    port_type: optical
+    width: 10
 settings:
   coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_SW10_L58
   coupler_offset:

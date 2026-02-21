@@ -1,4 +1,14 @@
 info: {}
 name: tsv_D15
+ports:
+  center:
+    center:
+    - 0
+    - 0
+    layer: 53
+    name: center
+    orientation: 0
+    port_type: optical
+    width: 15
 settings:
   diameter: 15

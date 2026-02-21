@@ -1,5 +1,42 @@
 info: {}
 name: coupler_straight_gdsfactorypcomponentspcouplerspcoupler_87d12263
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: 1
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 0
+    - 26
+    layer: 1
+    name: o2
+    orientation: 180
+    port_type: optical
+    width: 10
+  o3:
+    center:
+    - 10
+    - 26
+    layer: 1
+    name: o3
+    orientation: 0
+    port_type: optical
+    width: 10
+  o4:
+    center:
+    - 10
+    - 0
+    layer: 1
+    name: o4
+    orientation: 0
+    port_type: optical
+    width: 10
 settings:
   cross_section: cpw
   gap: 16

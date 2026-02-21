@@ -1,4 +1,4 @@
-.PHONY: all build clean convert-notebooks copy-sample-notebooks docs docs-latex docs-pdf git-rm-merged help install rm-samples run-pre setup-ipython-config test test-fail-fast test-force test-gds test-gds-fail-fast test-gds-force test-ports update-pre write-cells write-makefile-help write-models
+.PHONY: help install all rm-samples clean test test-ports test-port-orientations test-gds test-force test-gds-fail-fast test-fail-fast test-gds-force update-pre run-pre build write-cells write-models write-makefile-help convert-notebooks copy-sample-notebooks setup-ipython-config docs docs-latex docs-pdf git-rm-merged
 
 # Based on https://gist.github.com/prwhite/8168133?permalink_comment_id=4718682#gistcomment-4718682
 help: ##@ (Default) Print listing of key targets with their descriptions
@@ -20,6 +20,9 @@ else { \
 install: ##@ Install the package and all development dependencies
 	uv sync --all-extras --all-groups
 
+all:
+	uv run python qpdk/samples/all_cells.py
+
 rm-samples: ##@ Remove samples folder
 	rm -rf qpdk/samples
 
@@ -38,14 +41,22 @@ test: ##@ Run the full test suite in parallel using pytest
 test-ports: ##@ Run optical port position tests (tests/test_pdk.py::test_optical_port_positions)
 	$(PYTEST_COMMAND) -s tests/test_pdk.py::test_optical_port_positions
 
+test-port-orientations: ##@ Run optical port orientation tests (tests/test_pdk.py::test_optical_port_orientations)
+	$(PYTEST_COMMAND) -s tests/test_pdk.py::test_optical_port_orientations
+
 test-gds: ##@ Run GDS regressions tests (tests/test_pdk.py)
 	$(PYTEST_COMMAND) -s tests/test_pdk.py
 
 test-force: ##@ Run GDS regressions tests (tests/test_pdk.py) and regenerate
-	$(PYTEST_COMMAND) -s tests/test_pdk.py --force-regen
+	$(PYTEST_COMMAND) -s tests/test_pdk.py --update-gds-refs --force-regen
 
 test-gds-fail-fast: ##@ Run GDS regressions tests (tests/test_pdk.py) and stop at first failure
 	$(PYTEST_COMMAND) -s tests/test_pdk.py -x
+
+test-fail-fast: ##@ Run the full test suite and stop at first failure
+	$(PYTEST_COMMAND) -x
+
+test-gds-force: test-force ##@ Alias for test-force
 
 update-pre: ##@ Update pre-commit hooks to the latest revisions
 	uvx prek autoupdate -j $$(expr $$(nproc) / 2 + $$(expr $$(nproc) % 2))
@@ -91,3 +102,6 @@ docs-latex: write-cells write-models write-makefile-help copy-sample-notebooks #
 
 docs-pdf: docs-latex ##@ Build PDF documentation (requires a TeXLive installation)
 	cd "docs/_build/latex" && XINDYOPTS="-M sphinx.xdy" latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error || (test -f qpdk.pdf && echo "PDF generated despite warnings" && exit 0)
+
+git-rm-merged: ##@ Delete local branches that have been merged into main
+	git branch --merged main | grep -v 'main' | xargs -r git branch -d

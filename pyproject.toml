@@ -15,14 +15,14 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.34.1"]
+dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.35.1"]
 
 [project.optional-dependencies]
 models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
   "optuna",
-  "ray[tune]",
+  "ray[tune]; sys_platform != 'win32'",
   "sax",
   "scikit-rf",
   "scqubits",

@@ -1,5 +1,33 @@
 info: {}
 name: quarter_wave_resonator_coupled_L4000_M6_BSbend_circular_c606432b
+ports:
+  coupling_o1:
+    center:
+    - 0
+    - 0
+    layer: 1
+    name: coupling_o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  coupling_o2:
+    center:
+    - 200
+    - 0
+    layer: 1
+    name: coupling_o2
+    orientation: 0
+    port_type: optical
+    width: 10
+  resonator_o1:
+    center:
+    - 0
+    - -30
+    layer: 47
+    name: resonator_o1
+    orientation: 180
+    port_type: optical
+    width: 22
 settings:
   bend_spec: bend_circular
   coupling_gap: 20

@@ -4,6 +4,25 @@ info:
   xsize: 10
   ysize: 8
 name: snspd_WW0p2_WP0p6_S10_8_NSNone_TR4_TSSFalse_LM1_DRAW_PT_329e2036
+ports:
+  e1:
+    center:
+    - -2.5
+    - 0
+    layer: 1
+    name: e1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  e2:
+    center:
+    - 7.5
+    - -8.4
+    layer: 1
+    name: e2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
 settings:
   layer: M1_DRAW
   port_type: electrical

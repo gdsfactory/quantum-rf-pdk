@@ -1,5 +1,51 @@
 info: {}
 name: double_pad_transmon_with_bbox_BE200_PS250_400_PG15_JSsq_14ec26ba
+ports:
+  junction:
+    center:
+    - 0
+    - 0
+    layer: 13
+    name: junction
+    orientation: 90
+    port_type: optical
+    width: 33.446
+  left_pad:
+    center:
+    - -257.5
+    - 0
+    layer: 1
+    name: left_pad
+    orientation: 180
+    port_type: optical
+    width: 400
+  left_pad_inner:
+    center:
+    - -7.5
+    - 0
+    layer: 1
+    name: left_pad_inner
+    orientation: 0
+    port_type: optical
+    width: 400
+  right_pad:
+    center:
+    - 257.5
+    - 0
+    layer: 1
+    name: right_pad
+    orientation: 0
+    port_type: optical
+    width: 400
+  right_pad_inner:
+    center:
+    - 7.5
+    - 0
+    layer: 1
+    name: right_pad_inner
+    orientation: 180
+    port_type: optical
+    width: 400
 settings:
   bbox_extension: 200
   junction_spec: squid_junction

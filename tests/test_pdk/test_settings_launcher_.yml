@@ -1,5 +1,24 @@
 info: {}
 name: launcher_SL200_TL100_CSBlauncher_cross_section_big_CSScpw
+ports:
+  o1:
+    center:
+    - 300
+    - 0
+    layer: 1
+    name: o1
+    orientation: 0
+    port_type: optical
+    width: 10
+  waveport:
+    center:
+    - 0
+    - 0
+    layer: 1
+    name: waveport
+    orientation: 180
+    port_type: optical
+    width: 200
 settings:
   cross_section_big: launcher_cross_section_big
   cross_section_small: cpw

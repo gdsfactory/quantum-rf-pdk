@@ -1,5 +1,42 @@
 info: {}
 name: nxn_X10_Y10_WW10_LM1_DRAW_WM0_N1_E1_S1_W1_CScoplanar_waveguide
+ports:
+  o1:
+    center:
+    - 0
+    - 5
+    layer: 1
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 5
+    - 10
+    layer: 1
+    name: o2
+    orientation: 90
+    port_type: optical
+    width: 10
+  o3:
+    center:
+    - 10
+    - 5
+    layer: 1
+    name: o3
+    orientation: 0
+    port_type: optical
+    width: 10
+  o4:
+    center:
+    - 5
+    - 0
+    layer: 1
+    name: o4
+    orientation: 270
+    port_type: optical
+    width: 10
 settings:
   cross_section: coplanar_waveguide
   east: 1

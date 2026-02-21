@@ -1,5 +1,15 @@
 info: {}
 name: plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw
+ports:
+  o1:
+    center:
+    - -4.5
+    - 0
+    layer: 1
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
 settings:
   cross_section: cpw
   etch_bbox_margin: 2

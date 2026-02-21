@@ -1,5 +1,42 @@
 info: {}
 name: rectangle_S4_2_LM1_DRAW_CFalse_PTelectrical_PO180_90_0_m90
+ports:
+  e1:
+    center:
+    - 0
+    - 1
+    layer: 1
+    name: e1
+    orientation: 180
+    port_type: electrical
+    width: 2
+  e2:
+    center:
+    - 2
+    - 2
+    layer: 1
+    name: e2
+    orientation: 90
+    port_type: electrical
+    width: 4
+  e3:
+    center:
+    - 4
+    - 1
+    layer: 1
+    name: e3
+    orientation: 0
+    port_type: electrical
+    width: 2
+  e4:
+    center:
+    - 2
+    - 0
+    layer: 1
+    name: e4
+    orientation: 270
+    port_type: electrical
+    width: 4
 settings:
   centered: false
   layer: M1_DRAW

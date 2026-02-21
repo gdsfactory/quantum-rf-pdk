@@ -10,6 +10,25 @@ info:
   route_info_weight: 20.316
   start_angle: 0
 name: bend_s_S20_3_CScoplanar_waveguide_WNone_AMRVTrue
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: 1
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 20
+    - 3
+    layer: 1
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
 settings:
   allow_min_radius_violation: true
   cross_section: coplanar_waveguide

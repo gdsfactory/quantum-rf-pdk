@@ -1,5 +1,51 @@
 info: {}
 name: flipmon_with_bbox_ICR60_ORR110_ORW60_TCR110_JSFsquid_ju_e0320342
+ports:
+  center:
+    center:
+    - 0
+    - 0
+    layer: 52
+    name: center
+    orientation: 0
+    port_type: optical
+    width: 15
+  inner_ring_near_junction:
+    center:
+    - 30
+    - 0
+    layer: 1
+    name: inner_ring_near_junction
+    orientation: 0
+    port_type: optical
+    width: 60
+  junction:
+    center:
+    - 67.416
+    - 0
+    layer: 13
+    name: junction
+    orientation: 90
+    port_type: optical
+    width: 43.912
+  outer_ring_near_junction:
+    center:
+    - 80
+    - 0
+    layer: 1
+    name: outer_ring_near_junction
+    orientation: 180
+    port_type: optical
+    width: 60
+  outer_ring_outside:
+    center:
+    - 140
+    - 0
+    layer: 1
+    name: outer_ring_outside
+    orientation: 0
+    port_type: optical
+    width: 60
 settings:
   inner_circle_radius: 60
   junction_spec: Fsquid_junction_Mqpdkpcellspjunction_SJSFjosephson_junction_Mqpdkpcellspjunction_SWSL12

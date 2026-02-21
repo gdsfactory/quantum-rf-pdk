@@ -1,5 +1,24 @@
 info: {}
 name: straight_double_open_L10_CScoplanar_waveguide_WNone_N2
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: 1
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 10
+    - 0
+    layer: 1
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
 settings:
   cross_section: coplanar_waveguide
   length: 10

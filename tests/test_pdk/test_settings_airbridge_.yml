@@ -1,5 +1,42 @@
 info: {}
 name: airbridge_BL30_BW8_PW15_PL12_BLAB_DRAW_PLAB_VIA
+ports:
+  e1:
+    center:
+    - 0
+    - -27
+    layer: 50
+    name: e1
+    orientation: 270
+    port_type: electrical
+    width: 15
+  e2:
+    center:
+    - 0
+    - 27
+    layer: 50
+    name: e2
+    orientation: 90
+    port_type: electrical
+    width: 15
+  o1:
+    center:
+    - -4
+    - 0
+    layer: 49
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 8
+  o2:
+    center:
+    - 4
+    - 0
+    layer: 49
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 8
 settings:
   bridge_layer: AB_DRAW
   bridge_length: 30

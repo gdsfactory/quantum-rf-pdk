@@ -3,6 +3,25 @@ info:
   length: 4000
   resonator_type: quarter_wave
 name: resonator_L4000_M6_BSbend_circular_CScpw_OSTrue_OETrue
+ports:
+  o1:
+    center:
+    - -6
+    - 0
+    layer: 47
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 22
+  o2:
+    center:
+    - 308.204
+    - -1200
+    layer: 47
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 22
 settings:
   bend_spec: bend_circular
   cross_section: cpw

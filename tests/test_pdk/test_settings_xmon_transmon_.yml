@@ -1,6 +1,52 @@
 info:
   qubit_type: xmon
 name: xmon_transmon_AW30_20_30_20_AL160_120_160_120_GW10_JSsq_03ad55bf
+ports:
+  bottom_arm:
+    center:
+    - 0
+    - -160
+    layer: 1
+    name: bottom_arm
+    orientation: 270
+    port_type: optical
+    width: 30
+  junction:
+    center:
+    - 0
+    - -165
+    layer: 13
+    name: junction
+    orientation: 90
+    port_type: optical
+    width: 33.446
+  left_arm:
+    center:
+    - -120
+    - 0
+    layer: 1
+    name: left_arm
+    orientation: 180
+    port_type: optical
+    width: 20
+  right_arm:
+    center:
+    - 120
+    - 0
+    layer: 1
+    name: right_arm
+    orientation: 0
+    port_type: optical
+    width: 20
+  top_arm:
+    center:
+    - 0
+    - 160
+    layer: 1
+    name: top_arm
+    orientation: 90
+    port_type: optical
+    width: 30
 settings:
   arm_lengths:
   - 160
