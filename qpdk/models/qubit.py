@@ -29,7 +29,7 @@ def lc_resonator_capacitive(
     .. svgbob::
 
                     ┌──────────┐
-        o1 ─────C_c─┤ L   ||  C ├─── GND
+        o1 ─────C_c─┤ L  ||  C ├─── GND
                     └──────────┘
 
     The resonance frequency is given by:
@@ -111,7 +111,7 @@ def lc_resonator_inductive(
     .. svgbob::
 
                     ┌──────────┐
-        o1 ───L_c~~~┤ L   ||  C ├─── GND
+        o1 ───L_c~~~┤ L  ||  C ├─── GND
                     └──────────┘
 
     The mutual inductance :math:`M` provides inductive coupling between the
