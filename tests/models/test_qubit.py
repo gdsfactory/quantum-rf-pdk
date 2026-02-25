@@ -2,7 +2,6 @@
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
-import pytest
 from hypothesis import given, settings
 
 from qpdk.models.qubit import lc_resonator_capacitive, lc_resonator_inductive
@@ -128,16 +127,16 @@ class TestLCResonatorCapacitive:
         # Calculate expected resonance frequency
         expected_f_r = 1.0 / (2 * jnp.pi * jnp.sqrt(inductance * capacitance))
         freq_array = jnp.linspace(0.5e9, 3e9, 200)
-        
+
         # The indices should correspond to frequencies within 20% of each other
         # (relaxed tolerance to account for coupling effects)
         f_max_s21 = freq_array[max_s21_idx]
         f_min_s11 = freq_array[min_s11_idx]
         freq_diff_pct = abs(f_max_s21 - f_min_s11) / expected_f_r
-        
+
         assert freq_diff_pct < 0.2, (
             f"S21 peak and S11 minimum should occur at similar frequencies "
-            f"(diff: {freq_diff_pct*100:.1f}% of expected resonance)"
+            f"(diff: {freq_diff_pct * 100:.1f}% of expected resonance)"
         )
 
     def test_lc_resonator_capacitive_single_frequency(self) -> None:

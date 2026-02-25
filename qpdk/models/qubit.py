@@ -29,7 +29,7 @@ def lc_resonator_capacitive(
     .. svgbob::
 
                     ┌──────────┐
-        o1 ─────C_c─┤ L  ||  C ├─── GND
+        o1 ─────C_c─┤ L  ||  C ├─── o2
                     └──────────┘
 
     The resonance frequency is given by:
@@ -65,27 +65,31 @@ def lc_resonator_capacitive(
     c_res = capacitor(f=f, capacitance=capacitance, z0=z0)
 
     # Build circuit using SAX
-    # Port naming: o1 is input, o2 is the LC resonator (grounded)
+    # Port naming: o1 is input, o2 is the LC resonator return
     instances = {
         "c_coupling": c_coupling,
-        "tee": tee(f=f),
+        "tee_in": tee(f=f),
         "l_res": l_res,
         "c_res": c_res,
+        "tee_out": tee(f=f),
     }
 
-    # Connect: input -> coupling cap -> tee (port 0)
-    #          tee port 1 -> inductor -> ground
-    #          tee port 2 -> capacitor -> ground
+    # Connect: input -> coupling cap -> tee_in
+    #          tee_in -> inductor -> tee_out
+    #          tee_in -> capacitor -> tee_out
+    #          tee_out -> external o2
     connections = {
-        "c_coupling,o2": "tee,o1",
-        "tee,o2": "l_res,o1",
-        "tee,o3": "c_res,o1",
+        "c_coupling,o2": "tee_in,o1",
+        "tee_in,o2": "l_res,o1",
+        "tee_in,o3": "c_res,o1",
+        "l_res,o2": "tee_out,o1",
+        "c_res,o2": "tee_out,o2",
     }
 
     # External ports
     ports = {
         "o1": "c_coupling,o1",
-        "o2": "l_res,o2",  # LC resonator ground terminal
+        "o2": "tee_out,o3",  # LC resonator return terminal
     }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
@@ -111,7 +115,7 @@ def lc_resonator_inductive(
     .. svgbob::
 
                     ┌──────────┐
-        o1 ───L_c~~~┤ L  ||  C ├─── GND
+        o1 ───L_c~~~┤ L  ||  C ├─── o2
                     └──────────┘
 
     The mutual inductance :math:`M` provides inductive coupling between the
@@ -158,26 +162,31 @@ def lc_resonator_inductive(
     c_res = capacitor(f=f, capacitance=capacitance, z0=z0)
 
     # Build circuit using SAX
+    # Port naming: o1 is input, o2 is the LC resonator return
     instances = {
         "l_coupling": l_coupling,
-        "tee": tee(f=f),
+        "tee_in": tee(f=f),
         "l_res": l_res,
         "c_res": c_res,
+        "tee_out": tee(f=f),
     }
 
-    # Connect: input -> coupling inductor -> tee (port 0)
-    #          tee port 1 -> resonator inductor -> ground
-    #          tee port 2 -> capacitor -> ground
+    # Connect: input -> coupling inductor -> tee_in
+    #          tee_in -> resonator inductor -> tee_out
+    #          tee_in -> capacitor -> tee_out
+    #          tee_out -> external o2
     connections = {
-        "l_coupling,o2": "tee,o1",
-        "tee,o2": "l_res,o1",
-        "tee,o3": "c_res,o1",
+        "l_coupling,o2": "tee_in,o1",
+        "tee_in,o2": "l_res,o1",
+        "tee_in,o3": "c_res,o1",
+        "l_res,o2": "tee_out,o1",
+        "c_res,o2": "tee_out,o2",
     }
 
     # External ports
     ports = {
         "o1": "l_coupling,o1",
-        "o2": "l_res,o2",  # LC resonator ground terminal
+        "o2": "tee_out,o3",  # LC resonator return terminal
     }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
