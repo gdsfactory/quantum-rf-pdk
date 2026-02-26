@@ -53,7 +53,7 @@ open = electrical_open
 short_2_port = electrical_short_2_port
 
 
-@jax.jit(static_argnames=["capacitance", "inductance", "grounded"])
+@jax.jit(static_argnames=["grounded"])
 def lc_resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
@@ -126,15 +126,7 @@ def lc_resonator(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
-@jax.jit(
-    static_argnames=[
-        "capacitance",
-        "inductance",
-        "grounded",
-        "coupling_capacitance",
-        "coupling_inductance",
-    ]
-)
+@jax.jit(static_argnames=["grounded", "coupling_capacitance", "coupling_inductance"])
 def lc_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
@@ -220,13 +212,15 @@ def lc_resonator_coupled(
     elif coupling_capacitance > 0.0:
         # Only coupling capacitor
         instances["coupling_cap"] = capacitor(f=f, capacitance=coupling_capacitance)
+        instances["open_end"] = electrical_open(f=f)
         connections["tee_coupling,o3"] = "coupling_cap,o1"
-        connections["coupling_cap,o2"] = "coupling_cap,o2"
+        connections["coupling_cap,o2"] = "open_end,o1"
     elif coupling_inductance > 0.0:
         # Only coupling inductor
         instances["coupling_ind"] = inductor(f=f, inductance=coupling_inductance)
+        instances["open_end"] = electrical_open(f=f)
         connections["tee_coupling,o3"] = "coupling_ind,o1"
-        connections["coupling_ind,o2"] = "coupling_ind,o2"
+        connections["coupling_ind,o2"] = "open_end,o1"
 
     ports = {
         "o1": "tee_coupling,o2",
