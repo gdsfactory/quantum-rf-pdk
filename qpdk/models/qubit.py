@@ -1,23 +1,19 @@
 """Qubit Models."""
 
-from functools import partial
-
-import jax
 import jax.numpy as jnp
 import sax
-from sax.models.rf import capacitor, inductor, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.generic import lc_resonator_coupled
 
 
-@partial(jax.jit, inline=True)
 def lc_resonator_capacitive(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     inductance: sax.Float = 1e-9,
     capacitance: sax.Float = 1e-15,
     coupling_capacitance: sax.Float = 10e-15,
-    z0: sax.Complex = 50,
+    grounded: bool = False,
 ) -> sax.SType:
     r"""Transmon qubit LC resonator model with capacitive coupling.
 
@@ -29,7 +25,7 @@ def lc_resonator_capacitive(
     .. svgbob::
 
                     ┌──────────┐
-        o1 ─────C_c─┤ L  ||  C ├─── o2
+        o1 ─────C_c─┤ L  ||  C ├─── o2 (or GND)
                     └──────────┘
 
     The resonance frequency is given by:
@@ -43,7 +39,7 @@ def lc_resonator_capacitive(
         inductance: Resonator inductance :math:`L` in Henries (default: 1 nH)
         capacitance: Resonator capacitance :math:`C` in Farads (default: 1 fF)
         coupling_capacitance: Coupling capacitance :math:`C_c` in Farads (default: 10 fF)
-        z0: Reference impedance in Ω (default: 50)
+        grounded: If True, the resonator o2 port is grounded (default: False)
 
     Returns:
         sax.SType: S-parameters dictionary with ports ("o1", "o2")
@@ -57,83 +53,49 @@ def lc_resonator_capacitive(
     References:
         See :cite:`kochChargeinsensitiveQubitDesign2007a` for transmon design details.
     """
-    # Create coupling capacitor
-    c_coupling = capacitor(f=f, capacitance=coupling_capacitance, z0=z0)
-
-    # Create parallel LC resonator components
-    l_res = inductor(f=f, inductance=inductance, z0=z0)
-    c_res = capacitor(f=f, capacitance=capacitance, z0=z0)
-
-    # Build circuit using SAX
-    # Port naming: o1 is input, o2 is the LC resonator return
-    instances = {
-        "c_coupling": c_coupling,
-        "tee_in": tee(f=f),
-        "l_res": l_res,
-        "c_res": c_res,
-        "tee_out": tee(f=f),
-    }
-
-    # Connect: input -> coupling cap -> tee_in
-    #          tee_in -> inductor -> tee_out
-    #          tee_in -> capacitor -> tee_out
-    #          tee_out -> external o2
-    connections = {
-        "c_coupling,o2": "tee_in,o1",
-        "tee_in,o2": "l_res,o1",
-        "tee_in,o3": "c_res,o1",
-        "l_res,o2": "tee_out,o1",
-        "c_res,o2": "tee_out,o2",
-    }
-
-    # External ports
-    ports = {
-        "o1": "c_coupling,o1",
-        "o2": "tee_out,o3",  # LC resonator return terminal
-    }
-
-    return sax.evaluate_circuit_fg((connections, ports), instances)
+    return lc_resonator_coupled(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+        grounded=grounded,
+        coupling_capacitance=coupling_capacitance,
+        coupling_inductance=0.0,
+    )
 
 
-@partial(jax.jit, inline=True)
 def lc_resonator_inductive(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     inductance: sax.Float = 1e-9,
     capacitance: sax.Float = 1e-15,
-    mutual_inductance: sax.Float = 0.1e-9,
     coupling_inductance: sax.Float = 1e-9,
-    z0: sax.Complex = 50,
+    grounded: bool = False,
 ) -> sax.SType:
     r"""Transmon qubit LC resonator model with inductive coupling.
 
     Models a parallel LC resonator representing a transmon qubit, coupled via
-    mutual inductance to an external inductor. The resonator consists of a parallel
+    an inductor to an external port. The resonator consists of a parallel
     combination of an inductor (representing the Josephson inductance) and a
     capacitor (representing the shunt capacitance).
 
     .. svgbob::
 
                     ┌──────────┐
-        o1 ───L_c~~~┤ L  ||  C ├─── o2
+        o1 ─────L_c─┤ L  ||  C ├─── o2 (or GND)
                     └──────────┘
 
-    The mutual inductance :math:`M` provides inductive coupling between the
-    coupling inductor :math:`L_c` and the resonator inductor :math:`L`.
-
-    In this simplified model, the effective resonator inductance is approximated as:
+    The resonance frequency is given by:
 
     .. math::
 
-        L_{eff} = L - M
+        f_r = \frac{1}{2\pi\sqrt{LC}}
 
     Args:
         f: Array of frequency points in Hz
         inductance: Resonator inductance :math:`L` in Henries (default: 1 nH)
         capacitance: Resonator capacitance :math:`C` in Farads (default: 1 fF)
-        mutual_inductance: Mutual inductance :math:`M` in Henries (default: 0.1 nH)
         coupling_inductance: Coupling inductor :math:`L_c` in Henries (default: 1 nH)
-        z0: Reference impedance in Ω (default: 50)
+        grounded: If True, the resonator o2 port is grounded (default: False)
 
     Returns:
         sax.SType: S-parameters dictionary with ports ("o1", "o2")
@@ -142,54 +104,19 @@ def lc_resonator_inductive(
         For a transmon qubit with inductive coupling, typical values are:
         - Inductance: 0.5-2 nH (set by junction critical current)
         - Capacitance: 50-100 fF (shunt capacitance to ground)
-        - Mutual inductance: 0.01-0.5 nH (controls coupling strength)
         - Coupling inductance: 0.5-2 nH
 
     References:
         See :cite:`kochChargeinsensitiveQubitDesign2007a` for transmon design details.
     """
-    # Create coupling inductor
-    l_coupling = inductor(f=f, inductance=coupling_inductance, z0=z0)
-
-    # Create effective inductance accounting for mutual coupling
-    # In a transformer model, the effective inductance seen is modified by mutual inductance
-    # For a simplified model, we reduce the total inductance by the mutual term
-    # This is an approximation; a full transformer model would be more complex
-    l_eff = jnp.maximum(inductance - mutual_inductance, 1e-12)  # Ensure positive
-    l_res = inductor(f=f, inductance=l_eff, z0=z0)
-
-    # Create resonator capacitor
-    c_res = capacitor(f=f, capacitance=capacitance, z0=z0)
-
-    # Build circuit using SAX
-    # Port naming: o1 is input, o2 is the LC resonator return
-    instances = {
-        "l_coupling": l_coupling,
-        "tee_in": tee(f=f),
-        "l_res": l_res,
-        "c_res": c_res,
-        "tee_out": tee(f=f),
-    }
-
-    # Connect: input -> coupling inductor -> tee_in
-    #          tee_in -> resonator inductor -> tee_out
-    #          tee_in -> capacitor -> tee_out
-    #          tee_out -> external o2
-    connections = {
-        "l_coupling,o2": "tee_in,o1",
-        "tee_in,o2": "l_res,o1",
-        "tee_in,o3": "c_res,o1",
-        "l_res,o2": "tee_out,o1",
-        "c_res,o2": "tee_out,o2",
-    }
-
-    # External ports
-    ports = {
-        "o1": "l_coupling,o1",
-        "o2": "tee_out,o3",  # LC resonator return terminal
-    }
-
-    return sax.evaluate_circuit_fg((connections, ports), instances)
+    return lc_resonator_coupled(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+        grounded=grounded,
+        coupling_capacitance=0.0,
+        coupling_inductance=coupling_inductance,
+    )
 
 
 if __name__ == "__main__":
@@ -220,7 +147,6 @@ if __name__ == "__main__":
         f=f,
         inductance=1e-9,
         capacitance=50e-15,
-        mutual_inductance=0.1e-9,
         coupling_inductance=1e-9,
     )
     plt.subplot(122)
