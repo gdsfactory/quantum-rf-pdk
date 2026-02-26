@@ -53,6 +53,7 @@ open = electrical_open
 short_2_port = electrical_short_2_port
 
 
+@jax.jit(static_argnames=["capacitance", "inductance", "grounded"])
 def lc_resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
@@ -125,6 +126,15 @@ def lc_resonator(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
+@jax.jit(
+    static_argnames=[
+        "capacitance",
+        "inductance",
+        "grounded",
+        "coupling_capacitance",
+        "coupling_inductance",
+    ]
+)
 def lc_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
