@@ -177,7 +177,9 @@ def lc_resonator_coupled(
     w = 2 * jnp.pi * f
     y_c = 1j * w * coupling_capacitance
     # Use jnp.where to handle zero inductance as an open circuit (zero admittance)
-    y_l = jnp.where(coupling_inductance > 0.0, 1 / (1j * w * coupling_inductance), 0.0)
+    # Pattern to avoid inf/NaN in gradients for masked branches
+    safe_l = jnp.where(coupling_inductance > 0.0, coupling_inductance, 1.0)
+    y_l = jnp.where(coupling_inductance > 0.0, 1 / (1j * w * safe_l), 0.0)
     y_shunt = y_c + y_l
 
     # Get the base LC resonator

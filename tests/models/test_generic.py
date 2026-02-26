@@ -72,7 +72,14 @@ class TestLCResonator:
         total_power = power_reflection + power_transmission
 
         assert jnp.all(total_power <= 1.0 + 1e-6), (
-            f"Passivity violated: max total power = {jnp.max(total_power)}"
+            f"Passivity violated (col 1): max total power = {jnp.max(total_power)}"
+        )
+
+        s12 = result[("o1", "o2")]
+        s22 = result[("o2", "o2")]
+        total_power_col2 = jnp.abs(s12) ** 2 + jnp.abs(s22) ** 2
+        assert jnp.all(total_power_col2 <= 1.0 + 1e-6), (
+            f"Passivity violated (col 2): max total power = {jnp.max(total_power_col2)}"
         )
 
     def test_lc_resonator_resonance_frequency(self) -> None:
@@ -251,7 +258,14 @@ class TestLCResonatorCoupled:
         total_power = power_reflection + power_transmission
 
         assert jnp.all(total_power <= 1.0 + 1e-6), (
-            f"Passivity violated: max total power = {jnp.max(total_power)}"
+            f"Passivity violated (col 1): max total power = {jnp.max(total_power)}"
+        )
+
+        s12 = result[("o1", "o2")]
+        s22 = result[("o2", "o2")]
+        total_power_col2 = jnp.abs(s12) ** 2 + jnp.abs(s22) ** 2
+        assert jnp.all(total_power_col2 <= 1.0 + 1e-6), (
+            f"Passivity violated (col 2): max total power = {jnp.max(total_power_col2)}"
         )
 
     def test_lc_resonator_coupled_with_capacitance_only(self) -> None:
@@ -370,4 +384,9 @@ class TestLCResonatorCoupled:
         s11 = result[("o1", "o1")]
         s21 = result[("o2", "o1")]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
-        assert jnp.all(total_power <= 1.0 + 1e-6), "Passivity should be satisfied"
+        assert jnp.all(total_power <= 1.0 + 1e-6), "Passivity violated (col 1)"
+
+        s12 = result[("o1", "o2")]
+        s22 = result[("o2", "o2")]
+        total_power_col2 = jnp.abs(s12) ** 2 + jnp.abs(s22) ** 2
+        assert jnp.all(total_power_col2 <= 1.0 + 1e-6), "Passivity violated (col 2)"
