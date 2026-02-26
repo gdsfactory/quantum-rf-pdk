@@ -257,6 +257,7 @@ class TestLCResonatorCoupled:
     def test_lc_resonator_coupled_with_capacitance_only(self) -> None:
         """Test coupled resonator with only coupling capacitance."""
         f = jnp.linspace(1e9, 30e9, 100)
+        result_no_coupling = lc_resonator(f=f)
         result = lc_resonator_coupled(
             f=f, coupling_capacitance=10e-15, coupling_inductance=0.0
         )
@@ -264,15 +265,28 @@ class TestLCResonatorCoupled:
         assert isinstance(result, dict), "Result should be a dictionary"
         assert len(result) == 4, "Should have 4 S-parameters"
 
+        # The coupling capacitor should change the S-parameters away from the basic resonator
+        for key in result_no_coupling:
+            assert not jnp.allclose(result_no_coupling[key], result[key], atol=1e-6), (
+                f"Coupling capacitor had no effect on {key}"
+            )
+
     def test_lc_resonator_coupled_with_inductance_only(self) -> None:
         """Test coupled resonator with only coupling inductance."""
         f = jnp.linspace(1e9, 30e9, 100)
+        result_no_coupling = lc_resonator(f=f)
         result = lc_resonator_coupled(
             f=f, coupling_capacitance=0.0, coupling_inductance=1e-9
         )
 
         assert isinstance(result, dict), "Result should be a dictionary"
         assert len(result) == 4, "Should have 4 S-parameters"
+
+        # The coupling inductor should change the S-parameters away from the basic resonator
+        for key in result_no_coupling:
+            assert not jnp.allclose(result_no_coupling[key], result[key], atol=1e-6), (
+                f"Coupling inductor had no effect on {key}"
+            )
 
     def test_lc_resonator_coupled_with_both_coupling_elements(self) -> None:
         """Test coupled resonator with both coupling capacitance and inductance."""

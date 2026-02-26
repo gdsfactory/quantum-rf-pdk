@@ -126,7 +126,7 @@ def lc_resonator(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
-@jax.jit(static_argnames=["grounded", "coupling_capacitance", "coupling_inductance"])
+@jax.jit(static_argnames=["grounded"])
 def lc_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
@@ -160,67 +160,42 @@ def lc_resonator_coupled(
 
     Where Lc and Cc are the coupling inductance and capacitance.
 
-    If either coupling_capacitance or coupling_inductance is zero, that
-    element is omitted from the coupling network.
-
     Args:
         f: Array of frequency points in Hz.
         capacitance: Capacitance of the main resonator in Farads (default: 100 fF).
         inductance: Inductance of the main resonator in Henries (default: 1 nH).
         grounded: If True, the resonator is grounded (default: False).
         coupling_capacitance: Coupling capacitance in Farads (default: 0).
-            If zero, no coupling capacitor is added.
         coupling_inductance: Coupling inductance in Henries (default: 0).
-            If zero, no coupling inductor is added.
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
     """
     f = jnp.asarray(f)
 
+    # Calculate shunt admittance for the coupling network
+    w = 2 * jnp.pi * f
+    y_c = 1j * w * coupling_capacitance
+    # Use jnp.where to handle zero inductance as an open circuit (zero admittance)
+    y_l = jnp.where(coupling_inductance > 0.0, 1 / (1j * w * coupling_inductance), 0.0)
+    y_shunt = y_c + y_l
+
     # Get the base LC resonator
     resonator = lc_resonator(
         f=f, capacitance=capacitance, inductance=inductance, grounded=grounded
     )
 
-    # If no coupling elements, just return the resonator
-    if coupling_capacitance == 0.0 and coupling_inductance == 0.0:
-        return resonator
-
-    # Build the coupling network with a tee and parallel coupling elements
+    # Build the coupling network with a tee and a shunt admittance
     instances: dict[str, sax.SType] = {
         "resonator": resonator,
         "tee_coupling": tee(f=f),
+        "shunt": admittance(f=f, y=y_shunt),
     }
 
-    # Start with connections from tee to resonator
     connections: dict[str, str] = {
         "tee_coupling,o1": "resonator,o1",
+        "tee_coupling,o3": "shunt,o1",
     }
-
-    # Add coupling elements based on what's provided
-    if coupling_capacitance > 0.0 and coupling_inductance > 0.0:
-        # Both coupling elements: connect in parallel via another tee
-        instances["coupling_tee_2"] = tee(f=f)
-        instances["coupling_cap"] = capacitor(f=f, capacitance=coupling_capacitance)
-        instances["coupling_ind"] = inductor(f=f, inductance=coupling_inductance)
-
-        connections["tee_coupling,o3"] = "coupling_tee_2,o1"
-        connections["coupling_tee_2,o2"] = "coupling_cap,o1"
-        connections["coupling_tee_2,o3"] = "coupling_ind,o1"
-        connections["coupling_cap,o2"] = "coupling_ind,o2"
-    elif coupling_capacitance > 0.0:
-        # Only coupling capacitor
-        instances["coupling_cap"] = capacitor(f=f, capacitance=coupling_capacitance)
-        instances["open_end"] = electrical_open(f=f)
-        connections["tee_coupling,o3"] = "coupling_cap,o1"
-        connections["coupling_cap,o2"] = "open_end,o1"
-    elif coupling_inductance > 0.0:
-        # Only coupling inductor
-        instances["coupling_ind"] = inductor(f=f, inductance=coupling_inductance)
-        instances["open_end"] = electrical_open(f=f)
-        connections["tee_coupling,o3"] = "coupling_ind,o1"
-        connections["coupling_ind,o2"] = "open_end,o1"
 
     ports = {
         "o1": "tee_coupling,o2",
