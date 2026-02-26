@@ -94,8 +94,8 @@ class TestLCResonator:
         # Check resonance frequency is within 1% of expected
         relative_error = abs(float(f_observed - f_r_expected) / f_r_expected)
         assert relative_error < 0.01, (
-            f"Resonance frequency {float(f_observed)/1e9:.3f} GHz differs from "
-            f"expected {f_r_expected/1e9:.3f} GHz by {relative_error*100:.2f}%"
+            f"Resonance frequency {float(f_observed) / 1e9:.3f} GHz differs from "
+            f"expected {f_r_expected / 1e9:.3f} GHz by {relative_error * 100:.2f}%"
         )
 
     def test_lc_resonator_at_resonance_s21_minimum(self) -> None:
@@ -154,9 +154,7 @@ class TestLCResonator:
         C=st.floats(min_value=10e-15, max_value=1000e-15),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_lc_resonator_resonance_with_hypothesis(
-        self, L: float, C: float
-    ) -> None:
+    def test_lc_resonator_resonance_with_hypothesis(self, L: float, C: float) -> None:
         """Test resonance frequency with random valid L and C values.
 
         Args:
@@ -177,8 +175,8 @@ class TestLCResonator:
 
         relative_error = abs(float(f_observed - f_r_expected) / f_r_expected)
         assert relative_error < 0.02, (
-            f"Resonance at {float(f_observed)/1e9:.3f} GHz differs from "
-            f"expected {f_r_expected/1e9:.3f} GHz by {relative_error*100:.2f}%"
+            f"Resonance at {float(f_observed) / 1e9:.3f} GHz differs from "
+            f"expected {f_r_expected / 1e9:.3f} GHz by {relative_error * 100:.2f}%"
         )
 
 
@@ -203,8 +201,11 @@ class TestLCResonatorCoupled:
 
         result_basic = lc_resonator(f=f, capacitance=C, inductance=L)
         result_coupled = lc_resonator_coupled(
-            f=f, capacitance=C, inductance=L,
-            coupling_capacitance=0.0, coupling_inductance=0.0
+            f=f,
+            capacitance=C,
+            inductance=L,
+            coupling_capacitance=0.0,
+            coupling_inductance=0.0,
         )
 
         for key in result_basic:
@@ -298,7 +299,9 @@ class TestLCResonatorCoupled:
         # With weak coupling, main resonance should be close to expected
         f = jnp.linspace(f_r_expected * 0.7, f_r_expected * 1.3, 1000)
         result = lc_resonator_coupled(
-            f=f, capacitance=C, inductance=L,
+            f=f,
+            capacitance=C,
+            inductance=L,
             coupling_capacitance=1e-15,  # weak coupling
         )
 
@@ -309,16 +312,14 @@ class TestLCResonatorCoupled:
         # With coupling, resonance may shift, allow 10% tolerance
         relative_error = abs(float(f_observed - f_r_expected) / f_r_expected)
         assert relative_error < 0.1, (
-            f"Main resonance at {float(f_observed)/1e9:.3f} GHz differs from "
-            f"expected {f_r_expected/1e9:.3f} GHz by {relative_error*100:.2f}%"
+            f"Main resonance at {float(f_observed) / 1e9:.3f} GHz differs from "
+            f"expected {f_r_expected / 1e9:.3f} GHz by {relative_error * 100:.2f}%"
         )
 
     def test_lc_resonator_coupled_grounded(self) -> None:
         """Test coupled resonator with grounded base resonator."""
         f = jnp.array([5e9, 10e9, 15e9])
-        result = lc_resonator_coupled(
-            f=f, grounded=True, coupling_capacitance=10e-15
-        )
+        result = lc_resonator_coupled(f=f, grounded=True, coupling_capacitance=10e-15)
 
         assert isinstance(result, dict), "Result should be a dictionary"
         expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
