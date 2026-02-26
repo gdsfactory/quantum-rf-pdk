@@ -186,7 +186,6 @@ class TestLCResonatorCapacitive:
 
         # Check passivity
         s11 = result[("o1", "o1")]
-        power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
         # Passivity tested in generic tests
         # assert jnp.all(power <= 1.0 + 1e-6)
 
@@ -211,7 +210,6 @@ class TestLCResonatorInductive:
             f=f,
             inductance=1e-9,
             capacitance=50e-15,
-            
             coupling_inductance=1e-9,
         )
 
@@ -236,7 +234,6 @@ class TestLCResonatorInductive:
             f=f,
             inductance=1e-9,
             capacitance=50e-15,
-            
             coupling_inductance=1e-9,
         )
 
@@ -253,7 +250,6 @@ class TestLCResonatorInductive:
             f=f,
             inductance=1e-9,
             capacitance=50e-15,
-            
             coupling_inductance=1e-9,
         )
 
@@ -272,7 +268,7 @@ class TestLCResonatorInductive:
     #     f=f,
     #     inductance=1e-9,
     #     capacitance=50e-15,
-            
+
     #     coupling_inductance=1e-9,
     #     )
 
@@ -295,7 +291,6 @@ class TestLCResonatorInductive:
             f=f,
             inductance=1e-9,
             capacitance=50e-15,
-            
             coupling_inductance=1e-9,
         )
 
@@ -335,7 +330,6 @@ class TestLCResonatorInductive:
 
         # Check passivity
         s11 = result[("o1", "o1")]
-        power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
         # Passivity tested in generic tests
         # assert jnp.all(power <= 1.0 + 1e-6)
 
@@ -361,7 +355,7 @@ class TestLCResonatorComparison:
     #     f=f,
     #     inductance=1e-9,
     #     capacitance=50e-15,
-            
+
     #     coupling_inductance=1e-9,
     #     )
 
