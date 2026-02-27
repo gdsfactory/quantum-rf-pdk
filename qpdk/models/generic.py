@@ -64,10 +64,6 @@ def lc_resonator(
 
     The resonance frequency is given by:
 
-    .. math::
-
-        f_r = \frac{1}{2 \pi \sqrt{LC}}
-
     .. svgbob::
 
         o1 ──┬──L──┬── o2
@@ -78,15 +74,22 @@ def lc_resonator(
 
     .. svgbob::
 
-        o1 ──┬──L──┬──|
-             │     │  | (2-port ground)
+        o1 ──┬──L──┬──.
+             │     │  | "2-port ground"
              └──C──┘  |
+                     "o2"
+
+    .. math::
+
+        f_r = \frac{1}{2 \pi \sqrt{LC}}
+
+    For theory and relation to superconductors, see :cite:`gaoPhysicsSuperconductingMicrowave2008`.
 
     Args:
         f: Array of frequency points in Hz.
-        capacitance: Capacitance of the resonator in Farads (default: 100 fF).
-        inductance: Inductance of the resonator in Henries (default: 1 nH).
-        grounded: If True, add a 2-port ground to the second port (default: False).
+        capacitance: Capacitance of the resonator in Farads.
+        inductance: Inductance of the resonator in Henries.
+        grounded: If True, add a 2-port ground to the second port.
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
@@ -151,36 +154,27 @@ def lc_resonator_coupled(
 
     .. svgbob::
 
-                     ┌──Lc──┬
-                     │      │
-        o1 ───┬──────┼──Cc──┼────┬──L──┬── (grounded or o2)
-              │      │      │    │     │
-              │      └──────┘    └──C──┘
-             tee (coupling)     (LC resonator)
 
-    Where Lc and Cc are the coupling inductance and capacitance.
+                 +──Lc──+
+        o1 ──────│      │─────+──L──+── o2 or grounded o2
+                 +──Cc──+     |     │
+                              +──C──+
+                           "LC resonator"
+
+    Where :math:`L_\text{c}` and :math:`C_\text{c}` are the coupling inductance and capacitance, respectively.
 
     Args:
         f: Array of frequency points in Hz.
-        capacitance: Capacitance of the main resonator in Farads (default: 100 fF).
-        inductance: Inductance of the main resonator in Henries (default: 1 nH).
-        grounded: If True, the resonator is grounded (default: False).
-        coupling_capacitance: Coupling capacitance in Farads (default: 0).
-        coupling_inductance: Coupling inductance in Henries (default: 0).
+        capacitance: Capacitance of the main resonator in Farads.
+        inductance: Inductance of the main resonator in Henries.
+        grounded: If True, the resonator is grounded.
+        coupling_capacitance: Coupling capacitance in Farads.
+        coupling_inductance: Coupling inductance in Henries.
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
     """
     f = jnp.asarray(f)
-
-    # Calculate shunt admittance for the coupling network
-    w = 2 * jnp.pi * f
-    y_c = 1j * w * coupling_capacitance
-    # Use jnp.where to handle zero inductance as an open circuit (zero admittance)
-    # Pattern to avoid inf/NaN in gradients for masked branches
-    safe_l = jnp.where(coupling_inductance > 0.0, coupling_inductance, 1.0)
-    y_l = jnp.where(coupling_inductance > 0.0, 1 / (1j * w * safe_l), 0.0)
-    y_shunt = y_c + y_l
 
     # Get the base LC resonator
     resonator = lc_resonator(
@@ -190,17 +184,22 @@ def lc_resonator_coupled(
     # Build the coupling network with a tee and a shunt admittance
     instances: dict[str, sax.SType] = {
         "resonator": resonator,
-        "tee_coupling": tee(f=f),
-        "shunt": admittance(f=f, y=y_shunt),
+        "tee_between": tee(f=f),
+        "tee_outer": tee(f=f),
+        "inductive_coupling": inductor(f=f, inductance=coupling_inductance),
+        "capacitive_coupling": capacitor(f=f, capacitance=coupling_capacitance),
     }
 
     connections: dict[str, str] = {
-        "tee_coupling,o1": "resonator,o1",
-        "tee_coupling,o3": "shunt,o1",
+        "tee_outer,o2": "inductive_coupling,o1",
+        "tee_outer,o3": "capacitive_coupling,o1",
+        "inductive_coupling,o2": "tee_between,o2",
+        "capacitive_coupling,o2": "tee_between,o3",
+        "tee_between,o1": "resonator,o1",
     }
 
     ports = {
-        "o1": "tee_coupling,o2",
+        "o1": "tee_outer,o1",
         "o2": "resonator,o2",
     }
 
