@@ -96,7 +96,6 @@ def lc_resonator(
     """
     f = jnp.asarray(f)
 
-    # Create component instances
     instances = {
         "capacitor": capacitor(f=f, capacitance=capacitance),
         "inductor": inductor(f=f, inductance=inductance),
@@ -104,7 +103,6 @@ def lc_resonator(
         "tee_2": tee(f=f),
     }
 
-    # Connect capacitor and inductor in parallel using two tees
     connections = {
         "tee_1,o2": "capacitor,o1",
         "tee_1,o3": "inductor,o1",
@@ -113,7 +111,6 @@ def lc_resonator(
     }
 
     if grounded:
-        # Add a 2-port short to the second port
         instances["ground"] = electrical_short(f=f, n_ports=2)
         connections["tee_2,o1"] = "ground,o1"
         ports = {
@@ -129,13 +126,13 @@ def lc_resonator(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
-@jax.jit(static_argnames=["grounded"])
+@jax.jit(static_argnames=["coupling_capacitance", "coupling_inductance", "grounded"])
 def lc_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 1e-9,
     grounded: bool = False,
-    coupling_capacitance: float = 0.0,
+    coupling_capacitance: float = 10e-15,
     coupling_inductance: float = 0.0,
 ) -> sax.SType:
     r"""Coupled LC resonator Sax model.
@@ -155,10 +152,9 @@ def lc_resonator_coupled(
     .. svgbob::
 
 
-                 +──Lc──+
-        o1 ──────│      │─────+──L──+── o2 or grounded o2
-                 +──Cc──+     |     │
-                              +──C──+
+                 +──Lc──+    +──L──+
+        o1 ──────│      │────|     │─── o2 or grounded o2
+                 +──Cc──+    +──C──+
                            "LC resonator"
 
     Where :math:`L_\text{c}` and :math:`C_\text{c}` are the coupling inductance and capacitance, respectively.
@@ -173,35 +169,76 @@ def lc_resonator_coupled(
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
-    """
-    f = jnp.asarray(f)
 
-    # Get the base LC resonator
+    Raises:
+        ValueError: If both coupling_capacitance and coupling_inductance are zero.
+    """
+    # Determine which coupling elements to include
+    has_inductive = coupling_inductance != 0.0
+    has_capacitive = coupling_capacitance != 0.0
+    if not (has_inductive or has_capacitive):
+        raise ValueError(
+            "At least one of coupling_capacitance or coupling_inductance must be non-zero. "
+            "Both cannot be zero simultaneously."
+        )
+
+    f = jnp.asarray(f)
     resonator = lc_resonator(
         f=f, capacitance=capacitance, inductance=inductance, grounded=grounded
     )
 
-    # Build the coupling network with a tee and a shunt admittance
     instances: dict[str, sax.SType] = {
         "resonator": resonator,
-        "tee_between": tee(f=f),
-        "tee_outer": tee(f=f),
-        "inductive_coupling": inductor(f=f, inductance=coupling_inductance),
-        "capacitive_coupling": capacitor(f=f, capacitance=coupling_capacitance),
     }
+    connections: dict[str, str] = {}
 
-    connections: dict[str, str] = {
-        "tee_outer,o2": "inductive_coupling,o1",
-        "tee_outer,o3": "capacitive_coupling,o1",
-        "inductive_coupling,o2": "tee_between,o2",
-        "capacitive_coupling,o2": "tee_between,o3",
-        "tee_between,o1": "resonator,o1",
-    }
+    if has_inductive and has_capacitive:
+        # Both coupling elements present - use tee junctions
+        instances["tee_between"] = tee(f=f)
+        instances["tee_outer"] = tee(f=f)
+        instances["inductive_coupling"] = inductor(f=f, inductance=coupling_inductance)
+        instances["capacitive_coupling"] = capacitor(
+            f=f, capacitance=coupling_capacitance
+        )
 
-    ports = {
-        "o1": "tee_outer,o1",
-        "o2": "resonator,o2",
-    }
+        connections = {
+            "tee_outer,o2": "inductive_coupling,o1",
+            "tee_outer,o3": "capacitive_coupling,o1",
+            "inductive_coupling,o2": "tee_between,o2",
+            "capacitive_coupling,o2": "tee_between,o3",
+            "tee_between,o1": "resonator,o1",
+        }
+
+        ports = {
+            "o1": "tee_outer,o1",
+            "o2": "resonator,o2",
+        }
+    elif has_inductive:
+        # Only inductive coupling - direct connection
+        instances["inductive_coupling"] = inductor(f=f, inductance=coupling_inductance)
+
+        connections = {
+            "inductive_coupling,o2": "resonator,o1",
+        }
+
+        ports = {
+            "o1": "inductive_coupling,o1",
+            "o2": "resonator,o2",
+        }
+    else:  # has_capacitive only
+        # Only capacitive coupling - direct connection
+        instances["capacitive_coupling"] = capacitor(
+            f=f, capacitance=coupling_capacitance
+        )
+
+        connections = {
+            "capacitive_coupling,o2": "resonator,o1",
+        }
+
+        ports = {
+            "o1": "capacitive_coupling,o1",
+            "o2": "resonator,o2",
+        }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
