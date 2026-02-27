@@ -23,8 +23,8 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import scipy.constants
 import sax
+import scipy.constants
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
@@ -62,7 +62,7 @@ def ec_to_capacitance(ec_ghz: float) -> float:
         Total capacitance in Farads.
 
     Example:
-        >>> C = ec_to_capacitance(0.2)  # 200 MHz charging energy
+        >>> C = ec_to_capacitance(0.2)  # 0.2 GHz (200 MHz) charging energy
         >>> print(f"{C * 1e15:.1f} fF")  # ~96 fF
     """
     ec_joules = ec_ghz * 1e9 * _h  # Convert GHz to Joules

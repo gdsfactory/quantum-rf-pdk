@@ -4,7 +4,7 @@ import hypothesis.strategies as st
 import jax.numpy as jnp
 import numpy as np
 import scipy.constants
-from hypothesis import assume, given, settings
+from hypothesis import given, settings
 
 from qpdk.models.qubit import (
     coupling_strength_to_capacitance,
@@ -166,7 +166,7 @@ class TestDoubleIslandTransmon:
         f = jnp.linspace(4e9, 8e9, n_freq)
         result = double_island_transmon(f=f)
 
-        for key, value in result.items():
+        for value in result.values():
             assert len(value) == n_freq
 
     def test_reciprocity(self) -> None:
@@ -203,6 +203,12 @@ class TestDoubleIslandTransmon:
         s22 = result[("o2", "o2")]
         assert not jnp.allclose(s22, -1.0, atol=1e-6), (
             "Double-island transmon should NOT be grounded"
+        )
+
+        # For an ungrounded parallel LC, S22 should equal S11 due to symmetry
+        s11 = result[("o1", "o1")]
+        assert jnp.allclose(s11, s22, atol=1e-10), (
+            "S11 and S22 should be equal for symmetric ungrounded LC resonator"
         )
 
     def test_resonance_frequency(self) -> None:
@@ -266,7 +272,7 @@ class TestShuntedTransmon:
         f = jnp.linspace(4e9, 8e9, n_freq)
         result = shunted_transmon(f=f)
 
-        for key, value in result.items():
+        for value in result.values():
             assert len(value) == n_freq
 
     @given(
@@ -300,7 +306,7 @@ class TestTransmonCoupled:
         f = jnp.linspace(4e9, 8e9, n_freq)
         result = transmon_coupled(f=f, coupling_capacitance=10e-15)
 
-        for key, value in result.items():
+        for value in result.values():
             assert len(value) == n_freq
 
     def test_reciprocity(self) -> None:
@@ -452,5 +458,5 @@ class TestIntegration:
         assert len(result) == 4
 
         # Verify all values are finite
-        for key, value in result.items():
+        for value in result.values():
             assert jnp.all(jnp.isfinite(value))
