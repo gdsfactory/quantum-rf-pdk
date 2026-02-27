@@ -11,6 +11,7 @@ from qpdk.models.qubit import (
     double_island_transmon,
     ec_to_capacitance,
     ej_to_inductance,
+    qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
 )
@@ -460,3 +461,136 @@ class TestIntegration:
         # Verify all values are finite
         for value in result.values():
             assert jnp.all(jnp.isfinite(value))
+
+
+class TestQubitWithResonator:
+    """Tests for qubit_with_resonator model."""
+
+    def test_default_parameters(self) -> None:
+        """Test qubit_with_resonator with default parameters."""
+        import qpdk
+
+        qpdk.PDK.activate()
+        result = qubit_with_resonator()
+
+        assert isinstance(result, dict), "Result should be a dictionary"
+        assert ("o1", "o1") in result, "Should have S11 parameter"
+        assert ("o1", "o2") in result, "Should have S12 parameter"
+
+    def test_returns_stype(self) -> None:
+        """Test that qubit_with_resonator returns a valid sax.SType dictionary."""
+        import qpdk
+
+        qpdk.PDK.activate()
+        f = jnp.array([5e9, 6e9, 7e9])
+        result = qubit_with_resonator(
+            f=f,
+            qubit_capacitance=100e-15,
+            qubit_inductance=1e-9,
+        )
+
+        assert isinstance(result, dict), "Result should be a dictionary"
+        expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
+        assert set(result.keys()) == expected_keys
+
+    def test_output_shape(self) -> None:
+        """Test that output array shapes match input frequency array length."""
+        import qpdk
+
+        qpdk.PDK.activate()
+        n_freq = 10
+        f = jnp.linspace(4e9, 8e9, n_freq)
+        result = qubit_with_resonator(f=f)
+
+        for value in result.values():
+            assert len(value) == n_freq
+
+    def test_reciprocity(self) -> None:
+        """Test that S-parameters are reciprocal (S12 = S21)."""
+        import qpdk
+
+        qpdk.PDK.activate()
+        f = jnp.linspace(3e9, 20e9, 50)
+        result = qubit_with_resonator(f=f)
+
+        s12 = result[("o1", "o2")]
+        s21 = result[("o2", "o1")]
+
+        max_diff = jnp.max(jnp.abs(s12 - s21))
+        assert max_diff < 1e-10
+
+    def test_passivity(self) -> None:
+        """Test that the model satisfies passivity (energy conservation)."""
+        import qpdk
+
+        qpdk.PDK.activate()
+        f = jnp.linspace(1e9, 30e9, 100)
+        result = qubit_with_resonator(f=f)
+
+        s11 = result[("o1", "o1")]
+        s21 = result[("o2", "o1")]
+
+        power_reflection = jnp.abs(s11) ** 2
+        power_transmission = jnp.abs(s21) ** 2
+        total_power = power_reflection + power_transmission
+
+        assert jnp.all(total_power <= 1.0 + 1e-6)
+
+    def test_with_converted_hamiltonian_parameters(self) -> None:
+        """Test qubit_with_resonator with Hamiltonian parameters."""
+        import qpdk
+
+        qpdk.PDK.activate()
+
+        # Typical transmon parameters
+        ec_ghz = 0.2  # Charging energy
+        ej_ghz = 20.0  # Josephson energy
+
+        C = ec_to_capacitance(ec_ghz)
+        L = ej_to_inductance(ej_ghz)
+
+        f = jnp.linspace(4e9, 8e9, 50)
+        result = qubit_with_resonator(
+            f=f,
+            qubit_capacitance=C,
+            qubit_inductance=L,
+            resonator_length=5000.0,
+            coupling_capacitance=5e-15,
+        )
+
+        assert isinstance(result, dict)
+        assert len(result) == 4
+
+        # Verify all values are finite
+        for value in result.values():
+            assert jnp.all(jnp.isfinite(value))
+
+    def test_grounded_qubit(self) -> None:
+        """Test qubit_with_resonator with grounded qubit."""
+        import qpdk
+
+        qpdk.PDK.activate()
+        f = jnp.array([5e9, 10e9, 15e9])
+        result = qubit_with_resonator(f=f, qubit_grounded=True)
+
+        assert isinstance(result, dict)
+        expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
+        assert set(result.keys()) == expected_keys
+
+    def test_different_resonator_lengths(self) -> None:
+        """Test that different resonator lengths affect S-parameters."""
+        import qpdk
+
+        qpdk.PDK.activate()
+        f = jnp.linspace(4e9, 8e9, 50)
+
+        result_short = qubit_with_resonator(f=f, resonator_length=3000.0)
+        result_long = qubit_with_resonator(f=f, resonator_length=6000.0)
+
+        # S-parameters should differ for different resonator lengths
+        s11_short = result_short[("o1", "o1")]
+        s11_long = result_long[("o1", "o1")]
+
+        assert not jnp.allclose(s11_short, s11_long, atol=1e-3), (
+            "Different resonator lengths should yield different S-parameters"
+        )

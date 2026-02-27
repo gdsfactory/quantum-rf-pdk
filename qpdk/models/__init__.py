@@ -40,6 +40,7 @@ from qpdk.models.qubit import (
     double_island_transmon,
     ec_to_capacitance,
     ej_to_inductance,
+    qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
 )
@@ -91,6 +92,7 @@ __all__ = [
     "models",
     "open",
     "quarter_wave_resonator_coupled",
+    "qubit_with_resonator",
     "rectangle",
     "resonator_frequency",
     "short",

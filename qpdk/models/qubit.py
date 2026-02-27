@@ -34,6 +34,7 @@ __all__ = [
     "double_island_transmon",
     "ec_to_capacitance",
     "ej_to_inductance",
+    "qubit_with_resonator",
     "shunted_transmon",
     "transmon_coupled",
 ]
@@ -326,3 +327,111 @@ def transmon_coupled(
         coupling_capacitance=coupling_capacitance,
         coupling_inductance=coupling_inductance,
     )
+
+
+def qubit_with_resonator(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    qubit_capacitance: float = 100e-15,
+    qubit_inductance: float = 1e-9,
+    qubit_grounded: bool = False,
+    resonator_length: float = 5000.0,
+    resonator_cross_section: str = "cpw",
+    coupling_capacitance: float = 10e-15,
+) -> sax.SDict:
+    r"""Model for a transmon qubit coupled to a quarter-wave resonator.
+
+    This model corresponds to the layout function
+    :func:`~qpdk.cells.derived.transmon_with_resonator.qubit_with_resonator`.
+
+    The model combines:
+    - A transmon qubit (LC resonator)
+    - A quarter-wave coplanar waveguide resonator
+    - A coupling capacitor connecting the qubit to the resonator
+
+    .. svgbob::
+
+                                     +──L──+
+        o1 ──────────────────────────|     │──.
+          "quarter-wave resonator"   +──C──+  | "qubit"
+              (shorted end)        "coupling" |
+                                             "o2"
+
+    The qubit can be either:
+    - A double-island transmon (``qubit_grounded=False``): both islands floating
+    - A shunted transmon (``qubit_grounded=True``): one island grounded
+
+    Use :func:`ec_to_capacitance` and :func:`ej_to_inductance` to convert
+    from qubit Hamiltonian parameters ($E_C$, $E_J$) to circuit parameters.
+
+    Args:
+        f: Array of frequency points in Hz.
+        qubit_capacitance: Total capacitance $C_\Sigma$ of the qubit in Farads.
+            Convert from charging energy using :func:`ec_to_capacitance`.
+        qubit_inductance: Josephson inductance $L_J$ in Henries.
+            Convert from Josephson energy using :func:`ej_to_inductance`.
+        qubit_grounded: If True, the qubit is a shunted transmon (grounded).
+            If False, it is a double-island transmon (ungrounded).
+        resonator_length: Length of the quarter-wave resonator in µm.
+        resonator_cross_section: Cross-section specification for the resonator.
+        coupling_capacitance: Coupling capacitance between qubit and resonator in
+            Farads. Use :func:`coupling_strength_to_capacitance` to convert from
+            qubit-resonator coupling strength $g$.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports ``o1`` (resonator input)
+            and ``o2`` (qubit ground or floating).
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> from qpdk.models import ec_to_capacitance, ej_to_inductance
+        >>> f = jnp.linspace(4e9, 8e9, 100)
+        >>> S = qubit_with_resonator(
+        ...     f=f,
+        ...     qubit_capacitance=ec_to_capacitance(0.2),  # E_C = 0.2 GHz
+        ...     qubit_inductance=ej_to_inductance(20.0),   # E_J = 20 GHz
+        ...     resonator_length=5000.0,
+        ...     coupling_capacitance=5e-15,
+        ... )
+    """
+    from sax.models.rf import capacitor, tee
+
+    from qpdk.models.waveguides import straight_shorted
+
+    f = jnp.asarray(f)
+
+    # Create instances for circuit composition
+    resonator = straight_shorted(
+        f=f,
+        length=resonator_length,
+        cross_section=resonator_cross_section,
+    )
+    qubit = lc_resonator(
+        f=f,
+        capacitance=qubit_capacitance,
+        inductance=qubit_inductance,
+        grounded=qubit_grounded,
+    )
+    coupling_cap = capacitor(f=f, capacitance=coupling_capacitance)
+    tee_junction = tee(f=f)
+
+    instances: dict[str, sax.SType] = {
+        "resonator": resonator,
+        "qubit": qubit,
+        "coupling_capacitor": coupling_cap,
+        "tee": tee_junction,
+    }
+
+    # Connect: resonator -- tee -- capacitor -- qubit
+    # The tee splits the resonator signal to the coupling capacitor
+    connections = {
+        "resonator,o1": "tee,o1",
+        "tee,o2": "coupling_capacitor,o1",
+        "coupling_capacitor,o2": "qubit,o1",
+    }
+
+    ports = {
+        "o1": "tee,o3",  # External port for resonator coupling
+        "o2": "qubit,o2",  # Qubit ground or floating port
+    }
+
+    return sax.evaluate_circuit_fg((connections, ports), instances)
