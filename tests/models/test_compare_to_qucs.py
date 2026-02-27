@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from functools import partial
-from queue import Queue, SimpleQueue
+from queue import SimpleQueue
 from typing import ClassVar, final, override
 
 import jax.numpy as jnp
@@ -10,6 +10,7 @@ import polars as pl
 import pytest
 import sax
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 from numpy.testing import assert_allclose
 
 from qpdk.config import PATH
@@ -133,13 +134,15 @@ class BaseCompareToQucs(ABC):
                     err_msg=f"{s_param_name} does not match",
                 )
 
-    def plot_comparison(self):
+    def plot_comparison(self) -> None:
         """Generate comparison plots between qpdk (sax) and Qucs-S models."""
         param_value, f, S_sax_dict, S_qucs_dict = self.get_results()
 
         loosely_dashed = (1, 2)
 
-        def _plot_s_parameter(s_qucs, s_sax, color, param_name):
+        def _plot_s_parameter(
+            s_qucs: jnp.ndarray, s_sax: jnp.ndarray, color: str, param_name: str
+        ) -> str:
             """Helper function to plot S-parameter data with consistent styling."""
             plt.plot(
                 jnp.angle(s_qucs),
@@ -160,7 +163,14 @@ class BaseCompareToQucs(ABC):
             )
             return color
 
-        def _plot_magnitude(ax, f, s_qucs, s_sax, color, param_name):
+        def _plot_magnitude(
+            ax: Axes,
+            f: jnp.ndarray,
+            s_qucs: jnp.ndarray,
+            s_sax: jnp.ndarray,
+            color: str,
+            param_name: str,
+        ) -> None:
             """Helper function to plot magnitude with consistent styling."""
             ax.plot(
                 f / 1e9,
@@ -180,7 +190,14 @@ class BaseCompareToQucs(ABC):
                 label=rf"$\|{param_name}\|$ qpdk (sax)",
             )
 
-        def _plot_phase(ax, f, s_qucs, s_sax, color, param_name):
+        def _plot_phase(
+            ax: Axes,
+            f: jnp.ndarray,
+            s_qucs: jnp.ndarray,
+            s_sax: jnp.ndarray,
+            color: str,
+            param_name: str,
+        ) -> None:
             """Helper function to plot phase with consistent styling."""
             ax.plot(
                 f / 1e9,
@@ -200,7 +217,7 @@ class BaseCompareToQucs(ABC):
                 label=f"∠${param_name}$ qpdk (sax)",
             )
 
-        def _reset_queue(q: Queue) -> None:
+        def _reset_queue(q: SimpleQueue[str]) -> None:
             """Reset a queue with colors, effectively dictate when colors reset in plots."""
             while not q.empty():
                 q.get()
@@ -208,7 +225,7 @@ class BaseCompareToQucs(ABC):
                 q.put(color)
 
         # Default color cycler
-        color_queue = SimpleQueue()
+        color_queue: SimpleQueue[str] = SimpleQueue()
         _reset_queue(color_queue)
 
         # Get list of S-parameters to plot (common to both sax and qucs)
