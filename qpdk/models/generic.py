@@ -127,50 +127,6 @@ def lc_resonator(
 
 
 @jax.jit(static_argnames=["grounded"])
-def _lc_resonator_coupled_impl(
-    f: sax.FloatArrayLike,
-    capacitance: float,
-    inductance: float,
-    grounded: bool,
-    coupling_capacitance: float,
-    coupling_inductance: float,
-) -> sax.SType:
-    """Internal JIT-compiled implementation of lc_resonator_coupled.
-
-    This function contains the actual circuit construction and should not
-    be called directly. Use lc_resonator_coupled instead.
-    """
-    f = jnp.asarray(f)
-    resonator = lc_resonator(
-        f=f, capacitance=capacitance, inductance=inductance, grounded=grounded
-    )
-
-    # Always use the full tee network topology for consistent behavior
-    # When an element has zero value, it naturally produces the correct S-parameters
-    instances: dict[str, sax.SType] = {
-        "resonator": resonator,
-        "tee_between": tee(f=f),
-        "tee_outer": tee(f=f),
-        "inductive_coupling": inductor(f=f, inductance=coupling_inductance),
-        "capacitive_coupling": capacitor(f=f, capacitance=coupling_capacitance),
-    }
-
-    connections = {
-        "tee_outer,o2": "inductive_coupling,o1",
-        "tee_outer,o3": "capacitive_coupling,o1",
-        "inductive_coupling,o2": "tee_between,o2",
-        "capacitive_coupling,o2": "tee_between,o3",
-        "tee_between,o1": "resonator,o1",
-    }
-
-    ports = {
-        "o1": "tee_outer,o1",
-        "o2": "resonator,o2",
-    }
-
-    return sax.evaluate_circuit_fg((connections, ports), instances)
-
-
 def lc_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
@@ -224,22 +180,35 @@ def lc_resonator_coupled(
     Raises:
         ValueError: If both coupling_capacitance and coupling_inductance are zero.
     """
-    # Validate that at least one coupling element is non-zero
-    # This validation is done outside the JIT boundary to avoid tracer issues
-    if coupling_inductance == 0.0 and coupling_capacitance == 0.0:
-        raise ValueError(
-            "At least one of coupling_capacitance or coupling_inductance must be non-zero. "
-            "Both cannot be zero simultaneously."
-        )
-
-    return _lc_resonator_coupled_impl(
-        f=f,
-        capacitance=capacitance,
-        inductance=inductance,
-        grounded=grounded,
-        coupling_capacitance=coupling_capacitance,
-        coupling_inductance=coupling_inductance,
+    f = jnp.asarray(f)
+    resonator = lc_resonator(
+        f=f, capacitance=capacitance, inductance=inductance, grounded=grounded
     )
+
+    # Always use the full tee network topology for consistent behavior
+    # When an element has zero value, it naturally produces the correct S-parameters
+    instances: dict[str, sax.SType] = {
+        "resonator": resonator,
+        "tee_between": tee(f=f),
+        "tee_outer": tee(f=f),
+        "inductive_coupling": inductor(f=f, inductance=coupling_inductance),
+        "capacitive_coupling": capacitor(f=f, capacitance=coupling_capacitance),
+    }
+
+    connections = {
+        "tee_outer,o2": "inductive_coupling,o1",
+        "tee_outer,o3": "capacitive_coupling,o1",
+        "inductive_coupling,o2": "tee_between,o2",
+        "capacitive_coupling,o2": "tee_between,o3",
+        "tee_between,o1": "resonator,o1",
+    }
+
+    ports = {
+        "o1": "tee_outer,o1",
+        "o2": "resonator,o2",
+    }
+
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 if __name__ == "__main__":

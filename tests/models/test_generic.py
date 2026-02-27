@@ -173,9 +173,6 @@ class TestLCResonator:
         # Skip if resonance frequency is outside reasonable range
         assume(1e9 <= f_r_expected <= 50e9)
 
-        # Skip if both L and C are 0
-        assume(L > 0 and C > 0)
-
         f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 500)
         result = lc_resonator(f=f, capacitance=C, inductance=L)
 
@@ -202,16 +199,6 @@ class TestLCResonatorCoupled:
         assert ("o1", "o2") in result, "Should have S12 parameter"
         assert ("o2", "o1") in result, "Should have S21 parameter"
         assert ("o2", "o2") in result, "Should have S22 parameter"
-
-    def test_lc_resonator_coupled_both_zero_raises_error(self) -> None:
-        """Test that lc_resonator_coupled raises ValueError if both coupling elements are zero."""
-        import pytest
-
-        with pytest.raises(
-            ValueError,
-            match="At least one of coupling_capacitance or coupling_inductance must be non-zero",
-        ):
-            lc_resonator_coupled(coupling_capacitance=0.0, coupling_inductance=0.0)
 
     def test_lc_resonator_coupled_output_shape(self) -> None:
         """Test that output array shapes match input frequency array length."""
