@@ -11,7 +11,6 @@ tests/gds_ref/*.oas
 tests/gds_ref/*.oas
 
 tests/gds_ref/*.oas
-uv.lock
 .vscode/
 
 # Distribution / packaging

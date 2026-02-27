@@ -69,4 +69,4 @@ __all__ = [
     "helper",
     "tech",
 ]
-__version__ = "0.0.2"
+__version__ = "0.2.1"
