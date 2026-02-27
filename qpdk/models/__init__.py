@@ -35,6 +35,14 @@ from qpdk.models.media import (
     cpw_media_skrf,
     cross_section_to_media,
 )
+from qpdk.models.qubit import (
+    coupling_strength_to_capacitance,
+    double_island_transmon,
+    ec_to_capacitance,
+    ej_to_inductance,
+    shunted_transmon,
+    transmon_coupled,
+)
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator_frequency,
@@ -63,9 +71,13 @@ __all__ = [
     "capacitor",
     "coupler_ring",
     "coupler_straight",
+    "coupling_strength_to_capacitance",
     "cpw_cpw_coupling_capacitance",
     "cpw_media_skrf",
     "cross_section_to_media",
+    "double_island_transmon",
+    "ec_to_capacitance",
+    "ej_to_inductance",
     "electrical_open",
     "electrical_short",
     "electrical_short_2_port",
@@ -83,10 +95,12 @@ __all__ = [
     "resonator_frequency",
     "short",
     "short_2_port",
+    "shunted_transmon",
     "straight",
     "straight_shorted",
     "taper_cross_section",
     "tee",
+    "transmon_coupled",
     "tsv",
 ]
 
