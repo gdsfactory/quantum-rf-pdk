@@ -14,7 +14,7 @@ from numpy.testing import assert_allclose
 
 from qpdk.config import PATH
 from qpdk.models.couplers import coupler_straight
-from qpdk.models.generic import capacitor, inductor
+from qpdk.models.generic import capacitor, inductor, lc_resonator
 from qpdk.models.waveguides import straight
 from qpdk.tech import coplanar_waveguide
 
@@ -347,6 +347,26 @@ class TestCouplerStraightCompareToQucs(BaseCompareToQucs):
         )
 
 
+@final
+class TestLCResonatorCompareToQucs(BaseCompareToQucs):
+    """Test suite for comparing LC resonator S-parameter models to Qucs-S results."""
+
+    component_name = "LC Resonator"
+    csv_filename = "lc_resonator_qucs.csv"
+    parameter_value = 10e-15
+    parameter_name = "capacitance"
+    parameter_unit = 1e-15  # femtofarads
+
+    @override
+    def get_model_function(self) -> partial[sax.SType]:
+        return partial(
+            lc_resonator,
+            capacitance=10e-15,
+            inductance=10e-9,
+            grounded=False,
+        )
+
+
 if __name__ == "__main__":
     # Run the plotting comparison when executed directly
     for test_suite in (
@@ -354,5 +374,6 @@ if __name__ == "__main__":
         TestInductorCompareToQucs(),
         TestCPWCompareToQucs(),
         TestCouplerStraightCompareToQucs(),
+        TestLCResonatorCompareToQucs(),
     ):
         test_suite.plot_comparison()
