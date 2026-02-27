@@ -88,6 +88,16 @@ from qpdk.models.generic import inductor
 inductor(f=TEST_FREQUENCY)
 
 # %%
+from qpdk.models.generic import lc_resonator
+
+lc_resonator(f=TEST_FREQUENCY)
+
+# %%
+from qpdk.models.generic import lc_resonator_coupled
+
+lc_resonator_coupled(f=TEST_FREQUENCY, coupling_capacitance=10e-15)
+
+# %%
 from qpdk.models.junction import josephson_junction
 
 josephson_junction(f=TEST_FREQUENCY)
@@ -100,6 +110,51 @@ for key in S:
 plt.ylim(-0.05, 1.05)
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("S")
+plt.grid(True)
+plt.legend()
+plt.show(block=False)
+
+L = 1e-9
+C = 100e-15
+f_r = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
+f_sweep = jnp.linspace(f_r * 0.5, f_r * 1.5, 1001)
+
+S_res = lc_resonator(f=f_sweep, inductance=L, capacitance=C)
+
+plt.figure(figsize=(10, 6))
+plt.plot(f_sweep / 1e9, 20 * jnp.log10(jnp.abs(S_res[("o1", "o2")])), label="$S_{21}$")
+plt.axvline(
+    float(f_r / 1e9),
+    color="r",
+    linestyle="--",
+    label=f"Theoretical $f_r$ ({float(f_r / 1e9):.2f} GHz)",
+)
+plt.xlabel("Frequency [GHz]")
+plt.ylabel("Magnitude [dB]")
+plt.title(f"LC Resonator ($L={L * 1e9}$ nH, $C={C * 1e15}$ fF)")
+plt.grid(True)
+plt.legend()
+plt.show(block=False)
+
+S_coupled = lc_resonator_coupled(
+    f=f_sweep, inductance=L, capacitance=C, coupling_capacitance=10e-15
+)
+
+plt.figure(figsize=(10, 6))
+plt.plot(
+    f_sweep / 1e9,
+    20 * jnp.log10(jnp.abs(S_coupled[("o1", "o2")])),
+    label="$S_{21}$ (coupled)",
+)
+plt.plot(
+    f_sweep / 1e9,
+    20 * jnp.log10(jnp.abs(S_res[("o1", "o2")])),
+    "--",
+    label="$S_{21}$ (bare)",
+)
+plt.xlabel("Frequency [GHz]")
+plt.ylabel("Magnitude [dB]")
+plt.title("Coupled vs Bare LC Resonator")
 plt.grid(True)
 plt.legend()
 plt.show(block=False)
