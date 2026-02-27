@@ -26,7 +26,7 @@ PYTEST_COMMAND := "uv run --group dev pytest -n auto"
 
 # Check if Git LFS is available and pull LFS files
 check-lfs:
-    @echo "Checking for Git LFS..."
+    @echo "Checking for Git LFS…"
     @if ! command -v git-lfs >/dev/null 2>&1; then \
     echo ""; \
     echo "Error: Git LFS is not installed!"; \
@@ -43,7 +43,7 @@ check-lfs:
     echo ""; \
     exit 1; \
     fi
-    @echo "Git LFS is available. Pulling LFS files..."
+    @echo "Git LFS is available. Pulling LFS files…"
     @git lfs pull
 
 # Run the full test suite in parallel using pytest
