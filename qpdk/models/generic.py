@@ -159,13 +159,6 @@ def lc_resonator_coupled(
 
     Where :math:`L_\text{c}` and :math:`C_\text{c}` are the coupling inductance and capacitance, respectively.
 
-    .. note::
-
-        The coupling parameters (coupling_capacitance and coupling_inductance) are
-        not static arguments, allowing them to be differentiated with JAX transforms
-        such as :func:`jax.grad`. This is important for circuit optimization workflows.
-        At least one of the coupling parameters must be non-zero.
-
     Args:
         f: Array of frequency points in Hz.
         capacitance: Capacitance of the main resonator in Farads.
@@ -176,9 +169,6 @@ def lc_resonator_coupled(
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
-
-    Raises:
-        ValueError: If both coupling_capacitance and coupling_inductance are zero.
     """
     f = jnp.asarray(f)
     resonator = lc_resonator(
