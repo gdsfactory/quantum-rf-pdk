@@ -203,6 +203,16 @@ class TestLCResonatorCoupled:
         assert ("o2", "o1") in result, "Should have S21 parameter"
         assert ("o2", "o2") in result, "Should have S22 parameter"
 
+    def test_lc_resonator_coupled_both_zero_raises_error(self) -> None:
+        """Test that lc_resonator_coupled raises ValueError if both coupling elements are zero."""
+        import pytest
+
+        with pytest.raises(
+            ValueError,
+            match="At least one of coupling_capacitance or coupling_inductance must be non-zero",
+        ):
+            lc_resonator_coupled(coupling_capacitance=0.0, coupling_inductance=0.0)
+
     def test_lc_resonator_coupled_output_shape(self) -> None:
         """Test that output array shapes match input frequency array length."""
         n_freq = 10
