@@ -42,7 +42,6 @@ import numpy as np
 #
 # We'll use QPDK's interdigital capacitor cell, which creates interleaved
 # metal fingers for distributed capacitance.
-
 # %%
 from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
@@ -88,7 +87,9 @@ thickness = 5.0e-6
 
 # Simplified estimate: C ≈ ε₀ * εᵣ_eff * (N-1) * L * (t/g)
 # where N = fingers, L = finger_length, t = thickness, g = gap
-C_estimate = epsilon_0 * epsilon_eff * (fingers - 1) * finger_length * (thickness / finger_gap)
+C_estimate = (
+    epsilon_0 * epsilon_eff * (fingers - 1) * finger_length * (thickness / finger_gap)
+)
 print(f"Estimated capacitance: {C_estimate * 1e15:.2f} fF")
 
 # %% [markdown]
@@ -225,7 +226,9 @@ if HFSS_AVAILABLE:
     # Subtract etch regions
     if etch_objects:
         hfss.modeler.subtract(ground_plane.name, etch_objects, keep_originals=False)
-        print(f"Created capacitor pattern by subtracting {len(etch_objects)} etch regions")
+        print(
+            f"Created capacitor pattern by subtracting {len(etch_objects)} etch regions"
+        )
 
     # Create air region
     air_region = hfss.modeler.create_box(
@@ -329,7 +332,9 @@ if HFSS_AVAILABLE:
 
     print("Driven modal setup configured:")
     print(f"  - Solution frequency: {DRIVEN_CONFIG['solution_frequency_ghz']} GHz")
-    print(f"  - Sweep range: {DRIVEN_CONFIG['sweep_start_ghz']} - {DRIVEN_CONFIG['sweep_stop_ghz']} GHz")
+    print(
+        f"  - Sweep range: {DRIVEN_CONFIG['sweep_start_ghz']} - {DRIVEN_CONFIG['sweep_stop_ghz']} GHz"
+    )
     print(f"  - Number of points: {DRIVEN_CONFIG['sweep_points']}")
 
 # %% [markdown]
@@ -419,18 +424,15 @@ if HFSS_AVAILABLE:
             break
 
     if s21_data is not None:
-        # Find frequency indices for analysis
-        freq_1ghz_idx = np.argmin(np.abs(frequencies - 1.0))
-        freq_5ghz_idx = np.argmin(np.abs(frequencies - 5.0))
-        freq_10ghz_idx = np.argmin(np.abs(frequencies - 10.0))
+        # Analysis frequencies in GHz
+        analysis_frequencies_ghz = [1.0, 5.0, 10.0]
 
         print("\n=== Capacitance Analysis ===")
         print("-" * 40)
 
         Z0 = 50  # Reference impedance (ohms)
-        for freq_idx, freq_label in [(freq_1ghz_idx, "1 GHz"),
-                                      (freq_5ghz_idx, "5 GHz"),
-                                      (freq_10ghz_idx, "10 GHz")]:
+        for freq_ghz in analysis_frequencies_ghz:
+            freq_idx = np.argmin(np.abs(frequencies - freq_ghz))
             freq_hz = frequencies[freq_idx] * 1e9
             s21_mag = np.abs(s21_data[freq_idx])
 
@@ -441,7 +443,9 @@ if HFSS_AVAILABLE:
                 # For capacitor: Z = 1/(ωC), so C = 1/(ω|Z|)
                 omega = 2 * np.pi * freq_hz
                 C_extracted = 1 / (omega * z_series)
-                print(f"At {freq_label}: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF")
+                print(
+                    f"At {freq_ghz} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
+                )
 
         print("-" * 40)
         print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")

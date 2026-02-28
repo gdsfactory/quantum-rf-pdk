@@ -30,7 +30,7 @@ from numpy.typing import NDArray
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss
     from gdsfactory.component import Component
-    from gdsfactory.technology import LayerStack
+    from gdsfactory.technology import LayerLevel, LayerStack
 
 
 # Default HFSS simulation parameters
@@ -216,7 +216,7 @@ def add_component_geometry_to_hfss(
     return created_objects
 
 
-def _get_layer_tuple_from_level(layer_level) -> tuple[int, int] | None:  # noqa: ANN001
+def _get_layer_tuple_from_level(layer_level: LayerLevel) -> tuple[int, int] | None:
     """Extract layer tuple from a LayerLevel's layer definition.
 
     Args:
@@ -515,7 +515,7 @@ def get_sparameter_results(
             # Extract magnitude in dB
             results["s_parameters"][trace] = {
                 "magnitude_db": 20 * np.log10(np.abs(solution.data_magnitude())),
-                "phase_deg": np.angle(solution.data_magnitude(), deg=True),
+                "phase_deg": np.degrees(np.angle(solution.data_magnitude())),
             }
 
     return results

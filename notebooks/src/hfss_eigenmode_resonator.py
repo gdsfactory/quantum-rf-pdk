@@ -39,7 +39,6 @@ from pathlib import Path
 # ## Create a CPW Resonator Component
 #
 # First, let's create a simple quarter-wave resonator using QPDK's component library.
-
 # %%
 from qpdk import PDK
 from qpdk.cells.resonator import resonator
@@ -147,8 +146,6 @@ except Exception as e:
 
 # %%
 if HFSS_AVAILABLE:
-    import numpy as np
-
     from qpdk.models.hfss import component_polygons_to_numpy
 
     # Get component bounds for geometry creation
@@ -318,7 +315,7 @@ if HFSS_AVAILABLE:
     if results["frequencies_ghz"]:
         actual_freq = results["frequencies_ghz"][0]
         error_percent = abs(actual_freq - expected_freq) / expected_freq * 100
-        print(f"\nComparison with analytical estimate:")
+        print("\nComparison with analytical estimate:")
         print(f"  Expected (λ/4): {expected_freq:.4f} GHz")
         print(f"  Simulated:      {actual_freq:.4f} GHz")
         print(f"  Difference:     {error_percent:.1f}%")
