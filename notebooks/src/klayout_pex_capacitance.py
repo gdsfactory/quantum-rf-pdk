@@ -259,9 +259,7 @@ def estimate_interdigital_capacitance(
     n_effective_gaps = fingers - 1
     length_m = finger_length * 1e-6  # Convert µm to m
 
-    capacitance = c_per_length * length_m * n_effective_gaps
-
-    return capacitance
+    return c_per_length * length_m * n_effective_gaps
 
 
 # Estimate capacitance for our example capacitors

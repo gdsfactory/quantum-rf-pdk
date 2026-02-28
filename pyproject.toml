@@ -194,13 +194,17 @@ select = [
 ".github/write_cells.py" = [
   "S701",
 ]  # Jinja2 autoescape not needed for RST templates
-"notebooks/**/*.py" = ["D100"]
+"notebooks/**/*.py" = ["D100", "E402"]  # notebooks have contextual imports
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",
 ]  # no public module docstring for sample scripts
 "tests/**" = ["S101", "D102", "D103"]
 "qpdk/models/__init__.py" = ["E402"]
+"qpdk/models/pex.py" = [
+  "S603",
+  "S607"
+]  # subprocess security checks for kpex tool
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

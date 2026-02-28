@@ -24,7 +24,6 @@ from qpdk import PDK
 
 PDK.activate()
 
-# ruff: disable[E402]
 
 # %% [markdown]
 # ## Constants
@@ -388,4 +387,3 @@ ax.grid(True, which="both")
 ax.legend()
 
 plt.show()
-# ruff: enable[E402]
