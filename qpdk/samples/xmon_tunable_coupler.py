@@ -112,15 +112,18 @@ def xmon_with_resonator(
     resonator_ref.rotate(180)
     resonator_ref.transform(resonator_input_port.dcplx_trans)
 
-    # Add ports from Xmon (top, right, bottom arms for coupling/flux)
+    # Add ports from Xmon (all arms except left which is used for resonator coupling)
     c.add_port(port=xmon_ref.ports["top_arm"], name="top_arm")
     c.add_port(port=xmon_ref.ports["right_arm"], name="right_arm")
     c.add_port(port=xmon_ref.ports["bottom_arm"], name="bottom_arm")
+    # Add left_arm as placement port (not for waveguide routing since it's near resonator)
+    c.add_port(port=xmon_ref.ports["left_arm"], name="left_arm", port_type="placement")
     c.add_ports(xmon_ref.ports.filter(regex=r"junction"))
 
     # Add resonator output port
+    res_port = resonator_ref.ports["o1"]
     c.add_port(
-        center=(res_port := resonator_ref.ports["o1"]).center,
+        center=res_port.center,
         cross_section=res_port.cross_section,
         layer=res_port.layer,
         name="resonator_o1",
@@ -200,6 +203,7 @@ def xmon_tunable_coupler_chip(
     coupler_ref = c << coupler
 
     # Create qubit Q2 with resonator (right side)
+    # Mirror Y so resonators of Q1 and Q2 are on opposite sides for symmetry
     q2 = xmon_with_resonator(
         arm_lengths=qubit_arm_lengths,
         resonator_length=resonator2_length,
@@ -207,13 +211,13 @@ def xmon_tunable_coupler_chip(
         resonator_meander_start=(-500, -600),
     )
     q2_ref = c << q2
-    q2_ref.mirror_y()  # Mirror for symmetry
+    q2_ref.mirror_y()  # Mirror along Y axis - left_arm now faces coupler
     q2_ref.move((qubit_spacing, 0))
 
     # Create coupling capacitors between qubits and coupler
     coupling_cap = partial(plate_capacitor_single, width=15, length=80)
 
-    # Q1 to Coupler coupling
+    # Q1 to Coupler coupling (Q1's right_arm faces coupler's left_arm)
     q1_coupler_cap_ref = c << coupling_cap()
     q1_coupler_cap_ref.rotate(90)
     q1_coupler_cap_ref.move(
@@ -223,12 +227,12 @@ def xmon_tunable_coupler_chip(
         )
     )
 
-    # Coupler to Q2 coupling
+    # Coupler to Q2 coupling (coupler's right_arm faces Q2's left_arm after mirror)
     coupler_q2_cap_ref = c << coupling_cap()
     coupler_q2_cap_ref.rotate(90)
     coupler_q2_cap_ref.move(
         (
-            (coupler_ref.ports["right_arm"].x + q2_ref.ports["right_arm"].x) / 2,
+            (coupler_ref.ports["right_arm"].x + q2_ref.ports["left_arm"].x) / 2,
             coupler_ref.ports["right_arm"].y,
         )
     )
@@ -243,7 +247,9 @@ def xmon_tunable_coupler_chip(
 
     # Add straight probeline section
     probeline_xs = "cpw"
-    probeline_straight = c << straight(length=probeline_length, cross_section=probeline_xs)
+    probeline_straight = c << straight(
+        length=probeline_length, cross_section=probeline_xs
+    )
     probeline_straight.move((-probeline_length / 2, -1000))
 
     # Connect launchers to probeline
