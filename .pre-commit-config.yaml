@@ -39,7 +39,7 @@ repos:
         exclude: .github/.*
         args: [--ignore, jinja-statements-delimiter, single-statement-per-line, jinja-statements-indentation, --]
   - repo: https://github.com/google/yamlfmt
-    rev: v1.1.1
+    rev: v0.21.0
     hooks:
       - id: yamlfmt
         args: [-conf, ".github/.yamlfmt.yaml"]
@@ -103,7 +103,7 @@ repos:
         name: markdownlint
         args: [--config, .github/.markdownlint-cli2.yaml]
   - repo: https://github.com/executablebooks/mdformat
-    rev: 1.0.0
+    rev: 0.7.22
     hooks:
       - id: mdformat
         args: [--wrap=120]
