@@ -66,20 +66,48 @@ def _check_pyaedt_available() -> None:
 
 def component_polygons_to_numpy(
     component: Component,
-    layer: tuple[int, int],
+    layer: tuple[int, int] | str | object,
 ) -> list[NDArray[np.floating]]:
     """Extract polygon coordinates from a gdsfactory component on a specific layer.
 
     Args:
         component: The gdsfactory component to extract polygons from.
-        layer: The layer tuple (layer_number, datatype) to extract.
+        layer: The layer tuple (layer_number, datatype), layer name string,
+            or a LayerMap enum (e.g., LAYER.M1_DRAW).
 
     Returns:
         List of numpy arrays, each containing polygon vertex coordinates
         with shape (N, 2) where N is the number of vertices.
     """
-    polygons = component.get_polygons(layers=[layer], by_spec=True)
-    return [np.array(poly) for poly in polygons.get(layer, [])]
+    # Convert layer to tuple based on its type
+    layer_tuple: tuple[int, int]
+    if isinstance(layer, tuple):
+        layer_tuple = layer
+    elif hasattr(layer, "layer") and hasattr(layer, "datatype"):
+        # It's a LayerMap enum with .layer and .datatype properties
+        layer_tuple = (layer.layer, layer.datatype)
+    elif isinstance(layer, str):
+        # It's a layer name string, need to resolve it through PDK
+        import gdsfactory as gf
+
+        layer_tuple = gf.get_layer(layer)
+    else:
+        msg = f"Unsupported layer type: {type(layer)}. Expected tuple, str, or LayerMap enum."
+        raise TypeError(msg)
+
+    # Get all polygons keyed by tuple
+    all_polygons = component.get_polygons(by="tuple")
+    klayout_polygons = all_polygons.get(layer_tuple, [])
+
+    # Convert klayout polygons to numpy arrays
+    result = []
+    for poly in klayout_polygons:
+        points = []
+        for pt in poly.each_point_hull():
+            points.append([float(pt.x), float(pt.y)])
+        if points:
+            result.append(np.array(points))
+    return result
 
 
 def create_hfss_project(
