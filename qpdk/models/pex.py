@@ -14,13 +14,11 @@ See Also:
 
 from __future__ import annotations
 
-import csv
 import logging
-import os
 import re
 import subprocess
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
@@ -31,9 +29,9 @@ from numpy.typing import NDArray
 __all__ = [
     "PEXEngine",
     "PEXResult",
-    "run_capacitance_extraction",
-    "parse_capacitance_matrix_from_log",
     "is_kpex_available",
+    "parse_capacitance_matrix_from_log",
+    "run_capacitance_extraction",
 ]
 
 logger = logging.getLogger(__name__)
@@ -116,7 +114,10 @@ class PEXResult:
 
         # Format matrix
         for i, net_i in enumerate(self.net_names):
-            row_vals = [f"{self.capacitance_matrix[i, j] * 1e15:.3f}" for j in range(len(self.net_names))]
+            row_vals = [
+                f"{self.capacitance_matrix[i, j] * 1e15:.3f}"
+                for j in range(len(self.net_names))
+            ]
             lines.append(f"  {net_i}: [{', '.join(row_vals)}]")
 
         lines.append("")
@@ -124,7 +125,9 @@ class PEXResult:
         for i in range(len(self.net_names)):
             for j in range(i + 1, len(self.net_names)):
                 c_mutual = -self.capacitance_matrix[i, j] * 1e15
-                lines.append(f"  {self.net_names[i]} <-> {self.net_names[j]}: {c_mutual:.3f} fF")
+                lines.append(
+                    f"  {self.net_names[i]} <-> {self.net_names[j]}: {c_mutual:.3f} fF"
+                )
 
         return "\n".join(lines)
 
@@ -148,7 +151,9 @@ def is_kpex_available() -> bool:
         return False
 
 
-def parse_capacitance_matrix_from_log(log_output: str) -> tuple[NDArray[np.float64], list[str]]:
+def parse_capacitance_matrix_from_log(
+    log_output: str,
+) -> tuple[NDArray[np.float64], list[str]]:
     """Parse capacitance matrix from KLayout-PEX log output.
 
     The FasterCap engine outputs the Maxwell capacitance matrix in the format::
@@ -243,7 +248,7 @@ def _parse_csv_capacitance(csv_content: str) -> tuple[NDArray[np.float64], list[
             cap_ff = float(parts[3])
             net_set.add(net1)
             net_set.add(net2)
-            capacitances.append((net1, net2, cap_ff * 1e-15))  # Convert fF to F
+            capacitances.append((net1, net2, cap_ff * 1e-15))  # fF -> F
 
     net_names = sorted(net_set)
     n = len(net_names)

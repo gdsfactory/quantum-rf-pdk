@@ -33,10 +33,7 @@
 # additional dependencies.
 
 # %% tags=["hide-input", "hide-output"]
-import tempfile
-from pathlib import Path
 
-import gdsfactory as gf
 import numpy as np
 from IPython.display import Math, display
 from matplotlib import pyplot as plt
@@ -49,7 +46,6 @@ from qpdk.models.pex import (
     parse_capacitance_matrix_from_log,
     run_capacitance_extraction,
 )
-from qpdk.tech import LAYER
 
 PDK.activate()
 
@@ -224,7 +220,7 @@ def estimate_interdigital_capacitance(
     finger_length: float,  # µm
     finger_gap: float,  # µm
     finger_width: float,  # µm
-    epsilon_r_substrate: float = 11.45,  # Silicon
+    epsilon_r_substrate: float = 11.45,  # High-resistivity silicon at cryogenic temperatures
 ) -> float:
     """Estimate interdigitated capacitor capacitance.
 
@@ -235,7 +231,7 @@ def estimate_interdigital_capacitance(
         finger_length: Length of each finger in µm.
         finger_gap: Gap between adjacent fingers in µm.
         finger_width: Width of each finger in µm.
-        epsilon_r_substrate: Relative permittivity of substrate.
+        epsilon_r_substrate: Relative permittivity of substrate (default: high-resistivity Si).
 
     Returns:
         Estimated capacitance in Farads.
@@ -273,9 +269,18 @@ print("Analytical Capacitance Estimates:")
 print("-" * 40)
 
 for name, params in [
-    ("4_fingers", {"fingers": 4, "finger_length": 20.0, "finger_gap": 2.0, "finger_width": 5.0}),
-    ("6_fingers", {"fingers": 6, "finger_length": 20.0, "finger_gap": 2.0, "finger_width": 5.0}),
-    ("8_fingers", {"fingers": 8, "finger_length": 20.0, "finger_gap": 2.0, "finger_width": 5.0}),
+    (
+        "4_fingers",
+        {"fingers": 4, "finger_length": 20.0, "finger_gap": 2.0, "finger_width": 5.0},
+    ),
+    (
+        "6_fingers",
+        {"fingers": 6, "finger_length": 20.0, "finger_gap": 2.0, "finger_width": 5.0},
+    ),
+    (
+        "8_fingers",
+        {"fingers": 8, "finger_length": 20.0, "finger_gap": 2.0, "finger_width": 5.0},
+    ),
 ]:
     c_est = estimate_interdigital_capacitance(**params)
     print(f"{name}: {c_est * 1e15:.2f} fF")
@@ -350,11 +355,7 @@ plt.tight_layout()
 plt.show()
 
 # Display the scaling relationship
-display(
-    Math(
-        r"C \propto (n - 1) \cdot l / g"
-    )
-)
+display(Math(r"C \propto (n - 1) \cdot l / g"))
 
 # %% [markdown]
 # ## Visualization: Capacitance vs. Finger Gap
