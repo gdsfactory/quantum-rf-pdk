@@ -35,6 +35,13 @@ from qpdk.models.media import (
     cpw_media_skrf,
     cross_section_to_media,
 )
+from qpdk.models.pex import (
+    PEXEngine,
+    PEXResult,
+    is_kpex_available,
+    parse_capacitance_matrix_from_log,
+    run_capacitance_extraction,
+)
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator_frequency,
@@ -55,6 +62,8 @@ from qpdk.models.waveguides import (
 __all__ = [
     "DEFAULT_FREQUENCY",
     "MediaCallable",
+    "PEXEngine",
+    "PEXResult",
     "admittance",
     "airbridge",
     "bend_circular",
@@ -72,15 +81,18 @@ __all__ = [
     "gamma_0_load",
     "impedance",
     "inductor",
+    "is_kpex_available",
     "josephson_junction",
     "launcher",
     "lc_resonator",
     "lc_resonator_coupled",
     "models",
     "open",
+    "parse_capacitance_matrix_from_log",
     "quarter_wave_resonator_coupled",
     "rectangle",
     "resonator_frequency",
+    "run_capacitance_extraction",
     "short",
     "short_2_port",
     "straight",

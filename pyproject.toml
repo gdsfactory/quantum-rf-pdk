@@ -29,6 +29,9 @@ models = [
   "sympy",
   "polars",
 ]
+pex = [
+  "klayout-pex",
+]
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
