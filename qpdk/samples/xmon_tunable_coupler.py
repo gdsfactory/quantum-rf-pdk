@@ -340,7 +340,7 @@ def xmon_tunable_coupler_chip(
 
     # Add chip info
     c.info["description"] = "Xmon tunable coupler chip"
-    c.info["reference"] = "10.1103/PhysRevApplied.14.024070"
+    c.info["reference"] = "liTunableCouplerRealizing2020"
 
     return c
 
