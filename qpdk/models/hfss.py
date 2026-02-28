@@ -51,6 +51,10 @@ DEFAULT_DRIVEN_PARAMS = {
     "percent_refinement": 30,
 }
 
+# Materials that should be treated as perfect conductors (PEC) in HFSS simulations.
+# Superconducting materials at cryogenic temperatures are well-approximated by PEC.
+SUPERCONDUCTING_MATERIALS = frozenset({"Nb", "Al", "TiN", "Ta", "NbN", "copper"})
+
 
 def _check_pyaedt_available() -> None:
     """Check if PyAEDT is available and raise helpful error if not."""
@@ -83,9 +87,14 @@ def component_polygons_to_numpy(
     layer_tuple: tuple[int, int]
     if isinstance(layer, tuple):
         layer_tuple = layer
-    elif hasattr(layer, "layer") and hasattr(layer, "datatype"):
-        # It's a LayerMap enum with .layer and .datatype properties
-        layer_tuple = (layer.layer, layer.datatype)
+    elif (
+        hasattr(layer, "layer")
+        and hasattr(layer, "datatype")
+        and hasattr(layer, "name")
+    ):
+        # It's a LayerMap enum with .layer, .datatype, and .name properties
+        # This pattern matches gdsfactory LayerMap enum members
+        layer_tuple = (int(layer.layer), int(layer.datatype))
     elif isinstance(layer, str):
         # It's a layer name string, need to resolve it through PDK
         import gdsfactory as gf
@@ -233,8 +242,8 @@ def add_component_geometry_to_hfss(
                 if thickness > 0:
                     hfss.modeler.thicken_sheet(polyline, thickness)
 
-                # Assign material (use PEC for metals in superconducting sims)
-                if material in ["Nb", "Al", "TiN", "copper"]:
+                # Assign material (use PEC for superconducting materials)
+                if material in SUPERCONDUCTING_MATERIALS:
                     hfss.assign_perfect_conductor(polyline.name)
                 else:
                     hfss.modeler.assign_material(polyline.name, material)
@@ -305,6 +314,10 @@ def add_air_region_to_hfss(
 ) -> str:
     """Add an air region (vacuum box) around the component for eigenmode analysis.
 
+    Creates a vacuum region surrounding the component and assigns PerfectE (PEC)
+    boundary conditions to all outer faces. This is appropriate for closed-box
+    eigenmode simulations where the structure is shielded.
+
     Args:
         hfss: The HFSS application instance.
         component: The component to create air region around.
@@ -326,7 +339,7 @@ def add_air_region_to_hfss(
         material="vacuum",
     )
 
-    # Assign radiation boundary (or PerfectE for eigenmode)
+    # Assign PerfectE (PEC) boundary for closed-box eigenmode analysis
     hfss.assign_perfect_conductor(
         assignment=[face.id for face in region.faces],
         name="PEC_Boundary",
@@ -540,10 +553,16 @@ def get_sparameter_results(
             if results["frequencies"] is None:
                 results["frequencies"] = np.array(solution.primary_sweep_values) / 1e9
 
-            # Extract magnitude in dB
+            # Get complex S-parameter data
+            # data_real and data_imag give the real and imaginary parts
+            real_data = np.array(solution.data_real())
+            imag_data = np.array(solution.data_imag())
+            complex_data = real_data + 1j * imag_data
+
+            # Extract magnitude in dB and phase in degrees
             results["s_parameters"][trace] = {
-                "magnitude_db": 20 * np.log10(np.abs(solution.data_magnitude())),
-                "phase_deg": np.degrees(np.angle(solution.data_magnitude())),
+                "magnitude_db": 20 * np.log10(np.abs(complex_data)),
+                "phase_deg": np.degrees(np.angle(complex_data)),
             }
 
     return results
