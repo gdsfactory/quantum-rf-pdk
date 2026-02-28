@@ -8,7 +8,7 @@ repos:
       - id: trailing-whitespace
       - id: detect-private-key
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.2
+    rev: 0.9.1
     hooks:
       - id: nbstripout
         files: ".ipynb"
@@ -19,14 +19,14 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.1
+    rev: v0.15.4
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
       - id: ruff-format
         args: [--config=pyproject.toml]
   - repo: https://github.com/tombi-toml/tombi-pre-commit
-    rev: v0.7.14
+    rev: v0.7.33
     hooks:
       - id: tombi-format
       - id: tombi-lint
@@ -39,13 +39,13 @@ repos:
         exclude: .github/.*
         args: [--ignore, jinja-statements-delimiter, single-statement-per-line, jinja-statements-indentation, --]
   - repo: https://github.com/google/yamlfmt
-    rev: v0.20.0
+    rev: v1.1.1
     hooks:
       - id: yamlfmt
         args: [-conf, ".github/.yamlfmt.yaml"]
         exclude: &regression_tests ".*.tests*"
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
         args: [--strict, "-c=.github/.yamllint.yaml"]
@@ -55,11 +55,11 @@ repos:
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.10.6
+    rev: 0.10.7
     hooks:
       - id: uv-lock
   - repo: https://github.com/facebook/pyrefly-pre-commit
-    rev: 0.46.3
+    rev: 0.54.0
     hooks:
       - id: pyrefly-check
         name: Pyrefly
@@ -87,7 +87,7 @@ repos:
       - id: mbake-format
         args: ['--config=.github/.bake.toml']
   - repo: https://github.com/LilSpazJoekp/docstrfmt
-    rev: v2.0.1
+    rev: v2.0.2
     hooks:
       - id: docstrfmt
         language_version: python3
@@ -103,7 +103,7 @@ repos:
         name: markdownlint
         args: [--config, .github/.markdownlint-cli2.yaml]
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.22
+    rev: 1.0.0
     hooks:
       - id: mdformat
         args: [--wrap=120]
