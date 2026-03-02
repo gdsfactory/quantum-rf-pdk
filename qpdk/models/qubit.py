@@ -109,22 +109,22 @@ def coupling_strength_to_capacitance(
     omega_q_ghz: float,
     omega_r_ghz: float,
 ) -> float:
-    r"""Convert coupling strength $g$ to coupling capacitance $C_c$.
+    r"""Convert coupling strength :math`g` to coupling capacitance :math:`C_c`.
 
-    In the dispersive limit ($g \ll \omega_q, \omega_r$), the coupling strength
+    In the dispersive limit (:math:`g \ll \omega_q, \omega_r`), the coupling strength
     can be related to a coupling capacitance via:
 
     .. math::
 
         g \approx \frac{1}{2} \frac{C_c}{\sqrt{C_\Sigma C_r}} \sqrt{\omega_q \omega_r}
 
-    Solving for $C_c$:
+    Solving for :math:`C_c`:
 
     .. math::
 
         C_c = \frac{2g}{\sqrt{\omega_q \omega_r}} \sqrt{C_\Sigma C_r}
 
-    See Savola et al. (2023) for details.
+    See :cite:`krantzQuantumEngineersGuide2019` for details.
 
     Args:
         g_ghz: Coupling strength in GHz.
@@ -187,8 +187,8 @@ def double_island_transmon(
 
     Args:
         f: Array of frequency points in Hz.
-        capacitance: Total capacitance $C_\Sigma$ of the qubit in Farads.
-        inductance: Josephson inductance $L_J$ in Henries.
+        capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
+        inductance: Josephson inductance :math:`L_J` in Henries.
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
@@ -241,8 +241,8 @@ def shunted_transmon(
 
     Args:
         f: Array of frequency points in Hz.
-        capacitance: Total capacitance $C_\Sigma$ of the qubit in Farads.
-        inductance: Josephson inductance $L_J$ in Henries.
+        capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
+        inductance: Josephson inductance :math:`L_J` in Henries.
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
@@ -294,16 +294,16 @@ def transmon_coupled(
         - Set ``coupling_capacitance=0.0`` (or small value)
 
     Use :func:`coupling_strength_to_capacitance` to convert from the
-    qubit-resonator coupling strength $g$ to the coupling capacitance.
+    qubit-resonator coupling strength :math:`g` to the coupling capacitance.
 
     Args:
         f: Array of frequency points in Hz.
-        capacitance: Total capacitance $C_\Sigma$ of the qubit in Farads.
-        inductance: Josephson inductance $L_J$ in Henries.
+        capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
+        inductance: Josephson inductance :math:`L_J` in Henries.
         grounded: If True, the qubit is a shunted transmon (grounded).
             If False, it is a double-island transmon (ungrounded).
-        coupling_capacitance: Coupling capacitance $C_c$ in Farads.
-        coupling_inductance: Coupling inductance $L_c$ in Henries.
+        coupling_capacitance: Coupling capacitance :math:`C_c` in Farads.
+        coupling_inductance: Coupling inductance :math:`L_c` in Henries.
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
@@ -361,13 +361,13 @@ def qubit_with_resonator(
     - A shunted transmon (``qubit_grounded=True``): one island grounded
 
     Use :func:`ec_to_capacitance` and :func:`ej_to_inductance` to convert
-    from qubit Hamiltonian parameters ($E_C$, $E_J$) to circuit parameters.
+    from qubit Hamiltonian parameters (:math:`E_C`, :math:`E_J`) to circuit parameters.
 
     Args:
         f: Array of frequency points in Hz.
-        qubit_capacitance: Total capacitance $C_\Sigma$ of the qubit in Farads.
+        qubit_capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
             Convert from charging energy using :func:`ec_to_capacitance`.
-        qubit_inductance: Josephson inductance $L_J$ in Henries.
+        qubit_inductance: Josephson inductance :math:`L_J` in Henries.
             Convert from Josephson energy using :func:`ej_to_inductance`.
         qubit_grounded: If True, the qubit is a shunted transmon (grounded).
             If False, it is a double-island transmon (ungrounded).
@@ -375,7 +375,7 @@ def qubit_with_resonator(
         resonator_cross_section: Cross-section specification for the resonator.
         coupling_capacitance: Coupling capacitance between qubit and resonator in
             Farads. Use :func:`coupling_strength_to_capacitance` to convert from
-            qubit-resonator coupling strength $g$.
+            qubit-resonator coupling strength :math:`g`.
 
     Returns:
         sax.SDict: S-parameters dictionary with ports ``o1`` (resonator input)
