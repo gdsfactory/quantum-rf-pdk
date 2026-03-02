@@ -50,16 +50,15 @@ def _interdigital_capacitor_capacitance_analytical(
     l_overlap = finger_length * 1e-6  # Overlap length in m
     w = thickness  # Finger width
     g = finger_gap  # Finger gap
-    eta = w / (w + g)  # Metallization ratio
+    η = w / (w + g)  # Metallization ratio
 
     # Elliptic integral moduli
-    k_i = jnp.sin(jnp.pi * eta / 2)
-    k_i_prime = jnp.cos(jnp.pi * eta / 2)
-    k_e = 2 * jnp.sqrt(eta) / (1 + eta)
-    k_e_prime = (1 - eta) / (1 + eta)
+    k_i = jnp.sin(jnp.pi * η / 2)
+    k_i_prime = jnp.cos(jnp.pi * η / 2)
+    k_e = 2 * jnp.sqrt(η) / (1 + η)
+    k_e_prime = (1 - η) / (1 + η)
 
     # Complete elliptic integrals of the first kind K(k)
-    # jaxellip.ellipk takes m = k**2 as argument, similar to scipy.special.ellipk
     ki_over_kip = jaxellip.ellipk(k_i**2) / jaxellip.ellipk(k_i_prime**2)
     ke_over_kep = jaxellip.ellipk(k_e**2) / jaxellip.ellipk(k_e_prime**2)
 
