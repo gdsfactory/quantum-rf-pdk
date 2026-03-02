@@ -14,21 +14,27 @@ See Also:
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import gdsfactory as gf
 import numpy as np
 from numpy.typing import NDArray
 
+if TYPE_CHECKING:
+    from gdsfactory.technology import LayerStack
+
 __all__ = [
     "PEXEngine",
     "PEXResult",
+    "generate_kpex_lvs_script",
+    "generate_kpex_tech_json",
     "is_kpex_available",
     "parse_capacitance_matrix_from_log",
     "run_capacitance_extraction",
@@ -280,11 +286,248 @@ def _parse_csv_capacitance(csv_content: str) -> tuple[NDArray[np.float64], list[
     return matrix, net_names
 
 
+def generate_kpex_tech_json(
+    layer_stack: LayerStack,
+    name: str = "qpdk",
+    substrate_permittivity: float = 11.45,
+) -> dict[str, Any]:
+    """Generate a KLayout-PEX technology JSON from a gdsfactory LayerStack.
+
+    This function creates the technology definition required by KLayout-PEX
+    to perform parasitic extraction. The generated JSON follows the KPEX
+    protobuf schema format.
+
+    Args:
+        layer_stack: gdsfactory LayerStack defining the process stack.
+        name: Technology name (e.g., "qpdk").
+        substrate_permittivity: Relative permittivity of substrate (default: Si at cryo).
+
+    Returns:
+        Dictionary representation of the KPEX technology JSON.
+
+    Example:
+        >>> from qpdk.tech import LAYER_STACK
+        >>> tech_json = generate_kpex_tech_json(LAYER_STACK)
+        >>> import json
+        >>> print(json.dumps(tech_json, indent=2))  # doctest: +SKIP
+    """
+    layers_info: list[dict[str, Any]] = []
+    process_layers: list[dict[str, Any]] = []
+
+    # Add substrate layer
+    process_layers.append(
+        {
+            "name": "substrate",
+            "layerType": "LAYER_TYPE_SUBSTRATE",
+            "substrateLayer": {
+                "height": -500.0,  # µm below surface
+                "thickness": 500.0,  # µm
+                "reference": "field_oxide",
+            },
+        }
+    )
+
+    # Add field oxide layer (dielectric above substrate)
+    process_layers.append(
+        {
+            "name": "field_oxide",
+            "layerType": "LAYER_TYPE_FIELD_OXIDE",
+            "fieldOxideLayer": {
+                "dielectricK": substrate_permittivity,
+            },
+        }
+    )
+
+    # Process metal layers from the layer stack
+    for layer_name, layer_level in layer_stack.layers.items():
+        # Skip non-metal layers for now
+        if layer_level.material in ["Si", "vacuum"]:
+            continue
+
+        # Get GDS layer info
+        layer_tuple = None
+
+        # First try derived_layer (for M1 which uses DerivedLayer)
+        if hasattr(layer_level, "derived_layer") and layer_level.derived_layer:
+            derived = layer_level.derived_layer
+            if hasattr(derived, "layer"):
+                inner = derived.layer
+                # Convert LayerMap enum to tuple
+                try:
+                    layer_tuple = tuple(inner)
+                except (TypeError, ValueError):
+                    pass
+
+        # Then try the main layer (for simple LogicalLayer)
+        if layer_tuple is None and hasattr(layer_level, "layer"):
+            layer_obj = layer_level.layer
+            if hasattr(layer_obj, "layer"):
+                inner = layer_obj.layer
+                # Convert LayerMap enum to tuple
+                try:
+                    layer_tuple = tuple(inner)
+                except (TypeError, ValueError):
+                    pass
+
+        if layer_tuple is None or len(layer_tuple) != 2:
+            continue
+
+        # Add to layers_info (GDS layer mapping)
+        layers_info.append(
+            {
+                "purpose": "PURPOSE_METAL",
+                "name": layer_name.lower(),
+                "description": f"{layer_name} metal layer",
+                "drwGdsPair": {
+                    "layer": layer_tuple[0],
+                    "datatype": layer_tuple[1],
+                },
+            }
+        )
+
+        # Add to process stack
+        z_um = layer_level.zmin if layer_level.zmin else 0.0
+        thickness_um = layer_level.thickness if layer_level.thickness else 0.2
+
+        process_layers.append(
+            {
+                "name": layer_name.lower(),
+                "layerType": "LAYER_TYPE_METAL",
+                "metalLayer": {
+                    "z": z_um,
+                    "thickness": thickness_um,
+                },
+            }
+        )
+
+    # Build the complete technology JSON
+    tech_json: dict[str, Any] = {
+        "name": name,
+        "layers": layers_info,
+        "lvsComputedLayers": [],
+        "processStack": {
+            "layers": process_layers,
+        },
+        "processParasitics": {},
+    }
+
+    return tech_json
+
+
+def generate_kpex_lvs_script(
+    layer_stack: LayerStack,
+    substrate_name: str = "VSUBS",
+) -> str:
+    """Generate a KLayout LVS script for KPEX from a gdsfactory LayerStack.
+
+    This function creates a simplified LVS script that defines layer
+    connectivity for KLayout-PEX parasitic extraction.
+
+    Args:
+        layer_stack: gdsfactory LayerStack defining the process stack.
+        substrate_name: Name for the substrate net.
+
+    Returns:
+        Ruby LVS script content as a string.
+    """
+    lines = [
+        "# Auto-generated KPEX LVS script for QPDK",
+        "# Generated from gdsfactory LayerStack",
+        "",
+        "deep",
+        "",
+        f'substrate_name = "{substrate_name}"',
+        "",
+        "# Define layers",
+    ]
+
+    layer_vars = []
+
+    for layer_name, layer_level in layer_stack.layers.items():
+        # Skip non-metal layers
+        if layer_level.material in ["Si", "vacuum"]:
+            continue
+
+        layer_tuple = None
+
+        # First try derived_layer (for M1 which uses DerivedLayer)
+        if hasattr(layer_level, "derived_layer") and layer_level.derived_layer:
+            derived = layer_level.derived_layer
+            if hasattr(derived, "layer"):
+                inner = derived.layer
+                try:
+                    layer_tuple = tuple(inner)
+                except (TypeError, ValueError):
+                    pass
+
+        # Then try the main layer (for simple LogicalLayer)
+        if layer_tuple is None and hasattr(layer_level, "layer"):
+            layer_obj = layer_level.layer
+            if hasattr(layer_obj, "layer"):
+                inner = layer_obj.layer
+                try:
+                    layer_tuple = tuple(inner)
+                except (TypeError, ValueError):
+                    pass
+
+        if layer_tuple is None or len(layer_tuple) != 2:
+            continue
+
+        var_name = layer_name.lower().replace("-", "_")
+        layer_vars.append(var_name)
+        lines.append(f"{var_name} = input({layer_tuple[0]}, {layer_tuple[1]})")
+        lines.append(f'name({var_name}, "{layer_name.lower()}")')
+        lines.append("")
+
+    # Add connectivity
+    lines.append("# Define connectivity")
+    for var in layer_vars:
+        lines.append(f"connect({var}, {var})")
+
+    lines.append("")
+    lines.append("# Report")
+    lines.append('report_lvs("#{source.cell_name}.lvsdb")')
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+def _write_kpex_tech_files(
+    layer_stack: LayerStack,
+    output_dir: Path,
+    tech_name: str = "qpdk",
+) -> tuple[Path, Path]:
+    """Write KPEX technology files to a directory.
+
+    Args:
+        layer_stack: gdsfactory LayerStack.
+        output_dir: Directory to write files to.
+        tech_name: Technology name.
+
+    Returns:
+        Tuple of (tech_json_path, lvs_script_path).
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate and write tech JSON
+    tech_json = generate_kpex_tech_json(layer_stack, name=tech_name)
+    tech_json_path = output_dir / f"{tech_name}_tech.pb.json"
+    tech_json_path.write_text(json.dumps(tech_json, indent=2))
+
+    # Generate and write LVS script
+    lvs_script = generate_kpex_lvs_script(layer_stack)
+    lvs_path = output_dir / f"{tech_name}.lvs"
+    lvs_path.write_text(lvs_script)
+
+    return tech_json_path, lvs_path
+
+
 def run_capacitance_extraction(
     component: gf.Component,
     engine: PEXEngine = "2.5D",
     output_dir: Path | str | None = None,
     cell_name: str | None = None,
+    layer_stack: LayerStack | None = None,
     blackbox_devices: bool = False,
     cleanup: bool = True,
     timeout: int = 300,
@@ -292,14 +535,9 @@ def run_capacitance_extraction(
 ) -> PEXResult:
     """Run capacitance extraction on a gdsfactory component using KLayout-PEX.
 
-    This function exports the component to GDS, runs the kpex command-line
-    tool, and parses the resulting capacitance matrix.
-
-    Note:
-        KLayout-PEX is not specific to any PDK, but it requires technology
-        definition files. For custom PDKs like QPDK, you may need to create
-        a technology definition. This function currently demonstrates the
-        workflow without full QPDK technology integration.
+    This function exports the component to GDS, generates KPEX technology
+    files from the LayerStack, runs the kpex command-line tool, and parses
+    the resulting capacitance matrix.
 
     Args:
         component: gdsfactory component to extract parasitics from.
@@ -309,6 +547,8 @@ def run_capacitance_extraction(
             - "magic": MAGIC wrapper (requires MAGIC installation)
         output_dir: Directory for output files. If None, uses a temp directory.
         cell_name: Cell name for extraction. Defaults to component name.
+        layer_stack: gdsfactory LayerStack for technology definition.
+            If None, uses qpdk.tech.LAYER_STACK.
         blackbox_devices: If True, blackbox devices like MIM/MOM caps.
         cleanup: If True, clean up temporary files after extraction.
         timeout: Timeout in seconds for the extraction process.
@@ -335,6 +575,12 @@ def run_capacitance_extraction(
             error_message="kpex command not found. Install with: pip install klayout-pex",
         )
 
+    # Get layer stack
+    if layer_stack is None:
+        from qpdk.tech import LAYER_STACK
+
+        layer_stack = LAYER_STACK
+
     # Create output directory
     if output_dir is None:
         temp_dir = tempfile.mkdtemp(prefix="kpex_")
@@ -346,6 +592,12 @@ def run_capacitance_extraction(
         should_cleanup = False
 
     try:
+        # Generate KPEX technology files
+        tech_dir = output_path / "tech"
+        tech_json_path, lvs_path = _write_kpex_tech_files(
+            layer_stack, tech_dir, tech_name="qpdk"
+        )
+
         # Export component to GDS
         gds_path = output_path / f"{component.name}.gds"
         component.write_gds(gds_path)
@@ -360,6 +612,10 @@ def run_capacitance_extraction(
             cell,
             "--out_dir",
             str(output_path),
+            "--tech",
+            str(tech_json_path),
+            "--lvs",
+            str(lvs_path),
         ]
 
         # Add engine flag

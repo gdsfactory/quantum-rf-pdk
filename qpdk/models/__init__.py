@@ -38,6 +38,8 @@ from qpdk.models.media import (
 from qpdk.models.pex import (
     PEXEngine,
     PEXResult,
+    generate_kpex_lvs_script,
+    generate_kpex_tech_json,
     is_kpex_available,
     parse_capacitance_matrix_from_log,
     run_capacitance_extraction,
@@ -79,6 +81,8 @@ __all__ = [
     "electrical_short",
     "electrical_short_2_port",
     "gamma_0_load",
+    "generate_kpex_lvs_script",
+    "generate_kpex_tech_json",
     "impedance",
     "inductor",
     "is_kpex_available",
