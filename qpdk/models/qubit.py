@@ -75,7 +75,7 @@ def ej_to_inductance(ej_ghz: float) -> float:
 
         L_J = \frac{\Phi_0}{2 \pi I_c}
 
-    where $I_c$ is the critical current and $\Phi_0$ is the magnetic flux quantum.
+    where :math:`I_c` is the critical current and :math:`\Phi_0` is the magnetic flux quantum.
 
     Args:
         ej_ghz: Josephson energy in GHz.
@@ -88,7 +88,6 @@ def ej_to_inductance(ej_ghz: float) -> float:
         >>> print(f"{L * 1e9:.2f} nH")  # ~1.0 nH
     """
     ej_joules = ej_ghz * 1e9 * h  # Convert GHz to Joules
-    # L_J = Φ_0² / (4π² E_J)
     return Φ_0**2 / (4 * jnp.pi**2 * ej_joules)
 
 
@@ -147,7 +146,7 @@ def coupling_strength_to_capacitance(
 def double_island_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
-    inductance: float = 1e-9,
+    inductance: float = 7e-9,
 ) -> sax.SType:
     r"""LC resonator model for a double-island transmon qubit.
 
@@ -187,7 +186,7 @@ def double_island_transmon(
     Example:
         >>> import jax.numpy as jnp
         >>> f = jnp.linspace(4e9, 8e9, 100)
-        >>> S = double_island_transmon(f=f, capacitance=80e-15, inductance=1.2e-9)
+        >>> S = double_island_transmon(f=f, capacitance=80e-15, inductance=7e-9)
     """
     return lc_resonator(
         f=f,
@@ -201,7 +200,7 @@ def double_island_transmon(
 def shunted_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
-    inductance: float = 1e-9,
+    inductance: float = 7e-9,
 ) -> sax.SType:
     r"""LC resonator model for a shunted transmon qubit.
 
@@ -241,7 +240,7 @@ def shunted_transmon(
     Example:
         >>> import jax.numpy as jnp
         >>> f = jnp.linspace(4e9, 8e9, 100)
-        >>> S = shunted_transmon(f=f, capacitance=80e-15, inductance=1.2e-9)
+        >>> S = shunted_transmon(f=f, capacitance=80e-15, inductance=7e-9)
     """
     return lc_resonator(
         f=f,

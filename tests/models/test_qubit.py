@@ -3,9 +3,9 @@
 import hypothesis.strategies as st
 import jax.numpy as jnp
 import numpy as np
-import scipy.constants
 from hypothesis import given, settings
 
+from qpdk.models.constants import Φ_0, e, h
 from qpdk.models.qubit import (
     coupling_strength_to_capacitance,
     double_island_transmon,
@@ -17,11 +17,6 @@ from qpdk.models.qubit import (
 )
 
 MAX_EXAMPLES = 20
-
-# Physical constants for reference
-_e = scipy.constants.e
-_h = scipy.constants.h
-_Φ_0 = scipy.constants.physical_constants["mag. flux quantum"][0]
 
 
 class TestEcToCapacitance:
@@ -35,7 +30,7 @@ class TestEcToCapacitance:
 
         # C_Σ = e² / (2 * E_C)
         # For E_C = 0.2 GHz, C_Σ ≈ 96 fF
-        expected_C = _e**2 / (2 * ec_ghz * 1e9 * _h)
+        expected_C = e**2 / (2 * ec_ghz * 1e9 * h)
         assert np.isclose(C, expected_C, rtol=1e-10)
         # Check reasonable range
         assert 50e-15 < C < 200e-15, f"Capacitance {C * 1e15:.1f} fF out of range"
@@ -64,7 +59,7 @@ class TestEjToInductance:
         L = ej_to_inductance(ej_ghz)
 
         # L_J = Φ_0² / (4π² E_J)
-        expected_L = _Φ_0**2 / (4 * np.pi**2 * ej_ghz * 1e9 * _h)
+        expected_L = Φ_0**2 / (4 * np.pi**2 * ej_ghz * 1e9 * h)
         assert np.isclose(L, expected_L, rtol=1e-10)
         # Check reasonable range (~ 1 nH for 20 GHz)
         assert 0.1e-9 < L < 10e-9, f"Inductance {L * 1e9:.2f} nH out of range"
