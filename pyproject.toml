@@ -65,6 +65,9 @@ skip = "bibliography.bib"
 [tool.flit.sdist]
 exclude = ["tests", "docs"]
 
+[tool.gdsfactoryplus]
+name = "qpdk"
+
 [tool.gdsfactoryplus.drc]
 timeout = 300
 
