@@ -73,7 +73,7 @@ def test_fill_magnetic_vortices_default_component():
     assert poly_count > 0, "Default component should have polygons"
 
     # Verify the component has expected size (100 µm length from default straight)
-    assert filled.xsize == 100.0, "Default component should have 100 µm width"
+    assert filled.xsize == 100.0, "Default component should have 100 µm length"
     assert filled.ysize > 0, "Default component should have non-zero height"
 
 
