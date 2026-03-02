@@ -1,15 +1,36 @@
 """Capacitor Models."""
 
+from functools import partial
+
+import jax
 import jax.numpy as jnp
+import jaxellip
 import numpy as np
 import sax
 import skrf
 from gdsfactory.typings import CrossSectionSpec
-from scipy.special import ellipk
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
 from qpdk.models.generic import capacitor
 from qpdk.models.media import cross_section_to_media
+
+
+@partial(jax.jit, inline=True)
+def _plate_capacitor_capacitance_analytical(
+    length: float,
+    width: float,
+    gap: float,
+    ep_r: float,
+) -> float:
+    """Analytical formula for plate capacitor capacitance."""
+    # Simple parallel plate capacitor model with fringing fields correction
+    A = length * width * 1e-12  # Area in m² (convert from μm²)
+    d = gap * 1e-6  # Separation in m (convert from μm)
+    c0 = ε_0 * ep_r * A / d  # Capacitance without fringing fields in F
+    fringing_factor = (
+        1 + (2 * gap) / width
+    )  # Empirical fringing fields correction factor
+    return c0 * fringing_factor
 
 
 def _get_plate_capacitor_extraction_results(
@@ -22,15 +43,52 @@ def _get_plate_capacitor_extraction_results(
     """Extract plate capacitor capacitance analytically."""
     media = cross_section_to_media(cross_section)
     frequency = skrf.Frequency.from_f(DEFAULT_FREQUENCY)
-    # Simple parallel plate capacitor model with fringing fields correction
     ep_r = media(frequency=frequency).ep_r  # Relative permittivity of the substrate
-    A = length * width * 1e-12  # Area in m² (convert from μm²)
-    d = gap * 1e-6  # Separation in m (convert from μm)
-    c0 = ε_0 * ep_r * A / d  # Capacitance without fringing fields in F
-    fringing_factor = (
-        1 + (2 * gap) / width
-    )  # Empirical fringing fields correction factor
-    return c0 * fringing_factor
+    return _plate_capacitor_capacitance_analytical(
+        length=length, width=width, gap=gap, ep_r=float(ep_r)
+    )
+
+
+@partial(jax.jit, inline=True)
+def _interdigital_capacitor_capacitance_analytical(
+    fingers: int,
+    finger_length: float,
+    finger_gap: float,
+    thickness: float,
+    ep_r: float,
+) -> float:
+    """Analytical formula for interdigital capacitor capacitance.
+
+    See :cite:`gonzalezDesignFabricationInterdigital2015`.
+    """
+    # Geometric parameters
+    n = fingers
+    l_overlap = finger_length * 1e-6  # Overlap length in m
+    w = thickness  # Finger width
+    g = finger_gap  # Finger gap
+    eta = w / (w + g)  # Metallization ratio
+
+    # Elliptic integral moduli
+    k_i = jnp.sin(jnp.pi * eta / 2)
+    k_i_prime = jnp.cos(jnp.pi * eta / 2)
+    k_e = 2 * jnp.sqrt(eta) / (1 + eta)
+    k_e_prime = (1 - eta) / (1 + eta)
+
+    # Complete elliptic integrals of the first kind K(k)
+    # jaxellip.ellipk takes m = k**2 as argument, similar to scipy.special.ellipk
+    ki_over_kip = jaxellip.ellipk(k_i**2) / jaxellip.ellipk(k_i_prime**2)
+    ke_over_kep = jaxellip.ellipk(k_e**2) / jaxellip.ellipk(k_e_prime**2)
+
+    # Capacitances per unit length (interior and exterior)
+    c_i = ε_0 * l_overlap * (ep_r + 1) * ki_over_kip
+    c_e = ε_0 * l_overlap * (ep_r + 1) * ke_over_kep
+
+    # Total mutual capacitance
+    return jnp.where(
+        n == 2,
+        c_e / 2,
+        (n - 3) * c_i / 2 + 2 * (c_i * c_e) / (c_i + c_e),
+    )
 
 
 def _get_interdigital_capacitor_extraction_results(
@@ -46,32 +104,13 @@ def _get_interdigital_capacitor_extraction_results(
     frequency = skrf.Frequency.from_f(DEFAULT_FREQUENCY)
     ep_r = media(frequency=frequency).ep_r
 
-    # Geometric parameters
-    n = fingers
-    l_overlap = finger_length * 1e-6  # Overlap length in m
-    w = thickness  # Finger width
-    g = finger_gap  # Finger gap
-    eta = w / (w + g)  # Metallization ratio
-
-    # Elliptic integral moduli
-    k_i = jnp.sin(jnp.pi * eta / 2)
-    k_i_prime = jnp.cos(jnp.pi * eta / 2)
-    k_e = 2 * jnp.sqrt(eta) / (1 + eta)
-    k_e_prime = (1 - eta) / (1 + eta)
-
-    # Complete elliptic integrals of the first kind K(k)
-    # SciPy's ellipk takes m = k**2 as argument
-    ki_over_kip = ellipk(float(k_i**2)) / ellipk(float(k_i_prime**2))
-    ke_over_kep = ellipk(float(k_e**2)) / ellipk(float(k_e_prime**2))
-
-    # Capacitances per unit length (interior and exterior)
-    c_i = ε_0 * l_overlap * (ep_r + 1) * ki_over_kip
-    c_e = ε_0 * l_overlap * (ep_r + 1) * ke_over_kep
-
-    # Total mutual capacitance
-    c_total = c_e / 2 if n == 2 else (n - 3) * c_i / 2 + 2 * (c_i * c_e) / (c_i + c_e)
-
-    return float(c_total)
+    return _interdigital_capacitor_capacitance_analytical(
+        fingers=fingers,
+        finger_length=finger_length,
+        finger_gap=finger_gap,
+        thickness=thickness,
+        ep_r=float(ep_r),
+    )
 
 
 def plate_capacitor(
