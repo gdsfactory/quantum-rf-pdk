@@ -9,14 +9,8 @@ the two islands are floating. For shunted transmon qubits, one island is
 grounded, so we use a grounded LC resonator.
 
 The helper functions convert between qubit Hamiltonian parameters (charging
-energy $E_C$, Josephson energy $E_J$, coupling strength $g$) and the
+energy :math:`E_C`, Josephson energy :math:`E_J`, coupling strength :math:`g`) and the
 corresponding circuit parameters (capacitance, inductance).
-
-References:
-    - Koch et al., "Charge-insensitive qubit design derived from the
-      Cooper pair box", Phys. Rev. A 76, 042319 (2007)
-    - Gao, "The physics of superconducting microwave resonators",
-      PhD thesis, Caltech (2008)
 """
 
 from functools import partial
@@ -24,9 +18,8 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import sax
-import scipy.constants
 
-from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
 
 __all__ = [
@@ -39,14 +32,10 @@ __all__ = [
     "transmon_coupled",
 ]
 
-# Physical constants
-_e = scipy.constants.e  # electron charge (C)
-_h = scipy.constants.h  # Planck constant (J·s)
-_Φ_0 = scipy.constants.physical_constants["mag. flux quantum"][0]  # flux quantum (Wb)
 
-
+@partial(jax.jit, inline=True)
 def ec_to_capacitance(ec_ghz: float) -> float:
-    r"""Convert charging energy $E_C$ to total capacitance $C_\Sigma$.
+    r"""Convert charging energy :math:`E_C` to total capacitance :math:`C_\Sigma`.
 
     The charging energy is related to capacitance by:
 
@@ -54,7 +43,7 @@ def ec_to_capacitance(ec_ghz: float) -> float:
 
         E_C = \frac{e^2}{2 C_\Sigma}
 
-    where $e$ is the electron charge.
+    where :math:`e` is the electron charge.
 
     Args:
         ec_ghz: Charging energy in GHz.
@@ -66,12 +55,13 @@ def ec_to_capacitance(ec_ghz: float) -> float:
         >>> C = ec_to_capacitance(0.2)  # 0.2 GHz (200 MHz) charging energy
         >>> print(f"{C * 1e15:.1f} fF")  # ~96 fF
     """
-    ec_joules = ec_ghz * 1e9 * _h  # Convert GHz to Joules
-    return _e**2 / (2 * ec_joules)
+    ec_joules = ec_ghz * 1e9 * h  # Convert GHz to Joules
+    return e**2 / (2 * ec_joules)
 
 
+@partial(jax.jit, inline=True)
 def ej_to_inductance(ej_ghz: float) -> float:
-    r"""Convert Josephson energy $E_J$ to Josephson inductance $L_J$.
+    r"""Convert Josephson energy :math:`E_J` to Josephson inductance :math:`L_J`.
 
     The Josephson energy is related to inductance by:
 
@@ -97,11 +87,12 @@ def ej_to_inductance(ej_ghz: float) -> float:
         >>> L = ej_to_inductance(20.0)  # 20 GHz Josephson energy
         >>> print(f"{L * 1e9:.2f} nH")  # ~1.0 nH
     """
-    ej_joules = ej_ghz * 1e9 * _h  # Convert GHz to Joules
+    ej_joules = ej_ghz * 1e9 * h  # Convert GHz to Joules
     # L_J = Φ_0² / (4π² E_J)
-    return _Φ_0**2 / (4 * jnp.pi**2 * ej_joules)
+    return Φ_0**2 / (4 * jnp.pi**2 * ej_joules)
 
 
+@partial(jax.jit, inline=True)
 def coupling_strength_to_capacitance(
     g_ghz: float,
     c_sigma: float,
@@ -109,7 +100,7 @@ def coupling_strength_to_capacitance(
     omega_q_ghz: float,
     omega_r_ghz: float,
 ) -> float:
-    r"""Convert coupling strength :math`g` to coupling capacitance :math:`C_c`.
+    r"""Convert coupling strength :math:`g` to coupling capacitance :math:`C_c`.
 
     In the dispersive limit (:math:`g \ll \omega_q, \omega_r`), the coupling strength
     can be related to a coupling capacitance via:

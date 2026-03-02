@@ -9,3 +9,5 @@ TEST_FREQUENCY: tuple[tuple[float, float, float], tuple[float, float, float]] = 
 )
 
 Φ_0 = scipy.constants.physical_constants["mag. flux quantum"][0]
+e = scipy.constants.e
+h = scipy.constants.h
