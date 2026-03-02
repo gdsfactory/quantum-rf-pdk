@@ -95,11 +95,6 @@ class TestLauncher(BaseModelTestSuite):
     model_function = launcher
     expected_ports: ClassVar[set[str]] = {"waveport", "o1"}
 
-    def get_frequency_array(self, n_points: int | None = None) -> jnp.ndarray:
-        """Generate a frequency array for testing."""
-        n = n_points if n_points is not None else self.n_freq_default
-        return jnp.linspace(*self.freq_range, n)
-
     def get_model_kwargs(self) -> dict:
         """Get model-specific keyword arguments."""
         return {"straight_length": 100, "taper_length": 100}

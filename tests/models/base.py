@@ -5,7 +5,6 @@ standard tests for S-parameter models like default parameters, output shape,
 reciprocity, and passivity checks.
 """
 
-from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import ClassVar
 
@@ -13,7 +12,7 @@ import jax.numpy as jnp
 import sax
 
 
-class BaseModelTestSuite(ABC):
+class BaseModelTestSuite:
     """Base class for testing S-parameter network models.
 
     This class provides a common test interface for validating S-parameter models
@@ -66,7 +65,6 @@ class BaseModelTestSuite(ABC):
         """
         return {}
 
-    @abstractmethod
     def get_frequency_array(self, n_points: int | None = None) -> jnp.ndarray:
         """Generate a frequency array for testing.
 
@@ -176,18 +174,6 @@ class TwoPortModelTestSuite(BaseModelTestSuite):
 
     expected_ports: ClassVar[set[str]] = {"o1", "o2"}
 
-    def get_frequency_array(self, n_points: int | None = None) -> jnp.ndarray:
-        """Generate a frequency array for testing.
-
-        Args:
-            n_points: Number of frequency points. Uses n_freq_default if None.
-
-        Returns:
-            JAX array of frequency values in Hz.
-        """
-        n = n_points if n_points is not None else self.n_freq_default
-        return jnp.linspace(*self.freq_range, n)
-
 
 class FourPortModelTestSuite(BaseModelTestSuite):
     """Base test suite for 4-port network models.
@@ -196,15 +182,3 @@ class FourPortModelTestSuite(BaseModelTestSuite):
     """
 
     expected_ports: ClassVar[set[str]] = {"o1", "o2", "o3", "o4"}
-
-    def get_frequency_array(self, n_points: int | None = None) -> jnp.ndarray:
-        """Generate a frequency array for testing.
-
-        Args:
-            n_points: Number of frequency points. Uses n_freq_default if None.
-
-        Returns:
-            JAX array of frequency values in Hz.
-        """
-        n = n_points if n_points is not None else self.n_freq_default
-        return jnp.linspace(*self.freq_range, n)
