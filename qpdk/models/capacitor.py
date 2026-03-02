@@ -33,22 +33,6 @@ def _plate_capacitor_capacitance_analytical(
     return c0 * fringing_factor
 
 
-def _get_plate_capacitor_extraction_results(
-    *,
-    length: float = 26.0,
-    width: float = 5.0,
-    gap: float = 7.0,
-    cross_section: CrossSectionSpec = "cpw",
-) -> float:
-    """Extract plate capacitor capacitance analytically."""
-    media = cross_section_to_media(cross_section)
-    frequency = skrf.Frequency.from_f(DEFAULT_FREQUENCY)
-    ep_r = media(frequency=frequency).ep_r  # Relative permittivity of the substrate
-    return _plate_capacitor_capacitance_analytical(
-        length=length, width=width, gap=gap, ep_r=float(ep_r)
-    )
-
-
 @partial(jax.jit, inline=True)
 def _interdigital_capacitor_capacitance_analytical(
     fingers: int,
@@ -59,7 +43,7 @@ def _interdigital_capacitor_capacitance_analytical(
 ) -> float:
     """Analytical formula for interdigital capacitor capacitance.
 
-    See :cite:`gonzalezDesignFabricationInterdigital2015`.
+    See :cite:`igrejaAnalyticalEvaluationInterdigital2004,gonzalezDesignFabricationInterdigital2015`.
     """
     # Geometric parameters
     n = fingers
@@ -91,28 +75,6 @@ def _interdigital_capacitor_capacitance_analytical(
     )
 
 
-def _get_interdigital_capacitor_extraction_results(
-    *,
-    fingers: int = 4,
-    finger_length: float = 20.0,
-    finger_gap: float = 2.0,
-    thickness: float = 5.0,
-    cross_section: CrossSectionSpec = "cpw",
-) -> float:
-    """Extract interdigital capacitor capacitance analytically."""
-    media = cross_section_to_media(cross_section)
-    frequency = skrf.Frequency.from_f(DEFAULT_FREQUENCY)
-    ep_r = media(frequency=frequency).ep_r
-
-    return _interdigital_capacitor_capacitance_analytical(
-        fingers=fingers,
-        finger_length=finger_length,
-        finger_gap=finger_gap,
-        thickness=thickness,
-        ep_r=float(ep_r),
-    )
-
-
 def plate_capacitor(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
@@ -135,9 +97,11 @@ def plate_capacitor(
     """
     f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
-    z0 = media(frequency=skrf.Frequency.from_f(np.asarray(f_arr))).z0
-    capacitance = _get_plate_capacitor_extraction_results(
-        length=length, width=width, gap=gap, cross_section=cross_section
+    media_instance = media(frequency=skrf.Frequency.from_f(np.asarray(f_arr)))
+    z0 = media_instance.z0
+    ep_r = float(media_instance.ep_r)
+    capacitance = _plate_capacitor_capacitance_analytical(
+        length=length, width=width, gap=gap, ep_r=ep_r
     )
     return capacitor(f=f_arr, capacitance=capacitance, z0=z0)
 
@@ -166,12 +130,14 @@ def interdigital_capacitor(
     """
     f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
-    z0 = media(frequency=skrf.Frequency.from_f(np.asarray(f_arr))).z0
-    capacitance = _get_interdigital_capacitor_extraction_results(
+    media_instance = media(frequency=skrf.Frequency.from_f(np.asarray(f_arr)))
+    z0 = media_instance.z0
+    ep_r = float(media_instance.ep_r)
+    capacitance = _interdigital_capacitor_capacitance_analytical(
         fingers=fingers,
         finger_length=finger_length,
         finger_gap=finger_gap,
         thickness=thickness,
-        cross_section=cross_section,
+        ep_r=ep_r,
     )
     return capacitor(f=f_arr, capacitance=capacitance, z0=z0)

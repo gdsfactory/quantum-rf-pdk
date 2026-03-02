@@ -42,11 +42,18 @@ def test_interdigital_capacitor() -> None:
 
 def test_interdigital_capacitor_scaling() -> None:
     """Test that interdigital_capacitor capacitance scales correctly."""
-    from qpdk.models.capacitor import _get_interdigital_capacitor_extraction_results
+    from qpdk.models.capacitor import _interdigital_capacitor_capacitance_analytical
 
-    c2 = _get_interdigital_capacitor_extraction_results(fingers=2)
-    c4 = _get_interdigital_capacitor_extraction_results(fingers=4)
-    c6 = _get_interdigital_capacitor_extraction_results(fingers=6)
+    kwargs = {
+        "finger_length": 20.0,
+        "finger_gap": 2.0,
+        "thickness": 5.0,
+        "ep_r": 10.0,
+    }
+
+    c2 = _interdigital_capacitor_capacitance_analytical(fingers=2, **kwargs)
+    c4 = _interdigital_capacitor_capacitance_analytical(fingers=4, **kwargs)
+    c6 = _interdigital_capacitor_capacitance_analytical(fingers=6, **kwargs)
 
     assert c2 > 0
     assert c4 > c2
@@ -56,7 +63,7 @@ def test_interdigital_capacitor_scaling() -> None:
     # C(N) = (N-3)CI/2 + const
     # C(6) - C(4) = (3CI/2 + const) - (CI/2 + const) = CI
     # C(8) - C(6) = CI
-    c8 = _get_interdigital_capacitor_extraction_results(fingers=8)
+    c8 = _interdigital_capacitor_capacitance_analytical(fingers=8, **kwargs)
     diff1 = c6 - c4
     diff2 = c8 - c6
     assert np.isclose(diff1, diff2, rtol=1e-10)
