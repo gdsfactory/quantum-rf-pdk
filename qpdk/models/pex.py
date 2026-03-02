@@ -14,6 +14,7 @@ See Also:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import re
@@ -353,10 +354,8 @@ def generate_kpex_tech_json(
             if hasattr(derived, "layer"):
                 inner = derived.layer
                 # Convert LayerMap enum to tuple
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     layer_tuple = tuple(inner)
-                except (TypeError, ValueError):
-                    pass
 
         # Then try the main layer (for simple LogicalLayer)
         if layer_tuple is None and hasattr(layer_level, "layer"):
@@ -364,10 +363,8 @@ def generate_kpex_tech_json(
             if hasattr(layer_obj, "layer"):
                 inner = layer_obj.layer
                 # Convert LayerMap enum to tuple
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     layer_tuple = tuple(inner)
-                except (TypeError, ValueError):
-                    pass
 
         if layer_tuple is None or len(layer_tuple) != 2:
             continue
@@ -455,20 +452,16 @@ def generate_kpex_lvs_script(
             derived = layer_level.derived_layer
             if hasattr(derived, "layer"):
                 inner = derived.layer
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     layer_tuple = tuple(inner)
-                except (TypeError, ValueError):
-                    pass
 
         # Then try the main layer (for simple LogicalLayer)
         if layer_tuple is None and hasattr(layer_level, "layer"):
             layer_obj = layer_level.layer
             if hasattr(layer_obj, "layer"):
                 inner = layer_obj.layer
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     layer_tuple = tuple(inner)
-                except (TypeError, ValueError):
-                    pass
 
         if layer_tuple is None or len(layer_tuple) != 2:
             continue
@@ -481,8 +474,7 @@ def generate_kpex_lvs_script(
 
     # Add connectivity
     lines.append("# Define connectivity")
-    for var in layer_vars:
-        lines.append(f"connect({var}, {var})")
+    lines.extend(f"connect({var}, {var})" for var in layer_vars)
 
     lines.append("")
     lines.append("# Report")
