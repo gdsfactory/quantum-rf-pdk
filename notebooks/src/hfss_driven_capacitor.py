@@ -45,7 +45,7 @@ import numpy as np
 # %%
 from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
-from qpdk.tech import LAYER, coplanar_waveguide
+from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
 
@@ -165,72 +165,35 @@ except Exception as e:
 # %% [markdown]
 # ## Build Interdigital Capacitor Geometry
 #
-# Convert the gdsfactory component geometry into HFSS 3D objects
-# and add lumped ports at both ends.
+# Import the gdsfactory component geometry into HFSS using native GDS import.
+# This uses `Hfss.import_gds_3d` which automatically handles 3D layer mapping.
 
 # %%
 if HFSS_AVAILABLE:
-    from qpdk.models.hfss import component_polygons_to_numpy
+    from qpdk.models.hfss import add_substrate_to_hfss, import_component_to_hfss
 
-    # Get component bounds
+    # Import the component geometry using native GDS import
+    # This automatically applies additive metals and maps layers to 3D
+    success = import_component_to_hfss(hfss, idc_component)
+    print(f"GDS import successful: {success}")
+
+    # Add substrate below the component
+    substrate_name = add_substrate_to_hfss(
+        hfss,
+        idc_component,
+        margin=50.0,
+        thickness=500.0,
+        material="silicon",
+    )
+    print(f"Created substrate: {substrate_name}")
+
+    # Create air region above
     bounds = idc_component.bbox
-    margin = 50  # µm margin around capacitor
-
-    # Extract polygons
-    metal_polygons = component_polygons_to_numpy(idc_component, LAYER.M1_DRAW)
-    etch_polygons = component_polygons_to_numpy(idc_component, LAYER.M1_ETCH)
-
-    print(f"Found {len(metal_polygons)} metal polygons")
-    print(f"Found {len(etch_polygons)} etch polygons")
-
-    # Geometry dimensions
-    substrate_thickness = 500  # µm
-    metal_thickness = 0.2  # µm (200nm)
+    margin = 50  # µm
     air_height = 200  # µm
-
     x_min, y_min = bounds[0] - margin
     x_max, y_max = bounds[1] + margin
 
-    # Create substrate
-    substrate = hfss.modeler.create_box(
-        origin=[x_min, y_min, -substrate_thickness],
-        sizes=[x_max - x_min, y_max - y_min, substrate_thickness],
-        name="Substrate",
-        material="silicon",
-    )
-    print(f"Created substrate: {substrate.name}")
-
-    # Create ground plane
-    ground_plane = hfss.modeler.create_box(
-        origin=[x_min, y_min, 0],
-        sizes=[x_max - x_min, y_max - y_min, metal_thickness],
-        name="GroundPlane",
-    )
-    hfss.assign_perfect_conductor(ground_plane.name, name="PEC_Ground")
-
-    # Create etch regions to form CPW gaps and capacitor pattern
-    etch_objects = []
-    for i, poly in enumerate(etch_polygons):
-        points = [[float(x), float(y), 0.0] for x, y in poly]
-        points.append(points[0])
-
-        etch_obj = hfss.modeler.create_polyline(
-            points=points,
-            cover_surface=True,
-            name=f"Etch_{i}",
-        )
-        if etch_obj:
-            hfss.modeler.thicken_sheet(etch_obj, metal_thickness * 2)
-            etch_objects.append(etch_obj.name)
-
-    # Subtract etch regions
-    if etch_objects:
-        hfss.modeler.subtract(ground_plane.name, etch_objects, keep_originals=False)
-        print(
-            f"Created capacitor pattern by subtracting {len(etch_objects)} etch regions"
-        )
-
-    # Create air region
     air_region = hfss.modeler.create_box(
         origin=[x_min, y_min, 0],
         sizes=[x_max - x_min, y_max - y_min, air_height],
@@ -247,9 +210,15 @@ if HFSS_AVAILABLE:
 #
 # Add lumped ports at both ends of the capacitor to measure S-parameters.
 # The ports are placed at the CPW feed locations.
+#
+# Note: Port creation is manual since it depends on specific port geometry
+# that isn't automatically derived from the GDS import.
 
 # %%
 if HFSS_AVAILABLE:
+    # Define metal thickness for port geometry
+    metal_thickness = 0.2  # µm (200nm Nb film)
+
     # Get port locations from component
     port_locations = {}
     for port_name, port in idc_component.ports.items():

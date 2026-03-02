@@ -4,33 +4,41 @@ This module provides helper functions for setting up HFSS simulations
 (eigenmode and driven modal) from gdsfactory components. It uses the
 PyAEDT library to interface with Ansys HFSS.
 
+The main workflow is:
+1. Prepare a component with :func:`prepare_component_for_hfss`
+2. Export to GDS and import into HFSS with :func:`import_component_to_hfss`
+3. Configure simulation setup with :func:`setup_eigenmode_simulation` or
+   :func:`setup_driven_simulation`
+4. Extract results with :func:`get_eigenmode_results` or :func:`get_sparameter_results`
+
 Note:
     This module requires the optional ``hfss`` dependency group.
     Install with: ``uv sync --extra hfss`` or ``pip install qpdk[hfss]``
 
 Example:
-    >>> from qpdk.models.hfss import create_hfss_from_component
+    >>> from qpdk.models.hfss import import_component_to_hfss, create_hfss_project
     >>> from qpdk.cells import resonator
     >>> comp = resonator(length=4000, meanders=4)
-    >>> hfss = create_hfss_from_component(comp, solution_type="Eigenmode")
+    >>> hfss = create_hfss_project("resonator_sim", solution_type="Eigenmode")
+    >>> import_component_to_hfss(hfss, comp)
 
 References:
     - PyAEDT documentation: https://aedt.docs.pyansys.com/
-    - HFSS Examples: https://examples.aedt.docs.pyansys.com/
+    - HFSS import_gds_3d: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.hfss.Hfss.import_gds_3d.html
 """
 
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss
     from gdsfactory.component import Component
-    from gdsfactory.technology import LayerLevel, LayerStack
+    from gdsfactory.technology import LayerStack
 
 
 # Default HFSS simulation parameters
@@ -68,55 +76,185 @@ def _check_pyaedt_available() -> None:
         raise ImportError(msg) from e
 
 
-def component_polygons_to_numpy(
-    component: Component,
-    layer: tuple[int, int] | str | object,
-) -> list[NDArray[np.floating]]:
-    """Extract polygon coordinates from a gdsfactory component on a specific layer.
+def layer_stack_to_gds_mapping(
+    layer_stack: LayerStack | None = None,
+) -> dict[int, tuple[float, float]]:
+    """Convert a LayerStack to HFSS GDS import mapping dictionary.
+
+    Creates a mapping from GDS layer numbers to (elevation, thickness) tuples
+    for use with :meth:`ansys.aedt.core.hfss.Hfss.import_gds_3d`.
 
     Args:
-        component: The gdsfactory component to extract polygons from.
-        layer: The layer tuple (layer_number, datatype), layer name string,
-            or a LayerMap enum (e.g., LAYER.M1_DRAW).
+        layer_stack: LayerStack defining layers with elevation and thickness.
+            If None, uses QPDK's default LAYER_STACK.
 
     Returns:
-        List of numpy arrays, each containing polygon vertex coordinates
-        with shape (N, 2) where N is the number of vertices.
+        Dictionary mapping GDS layer numbers to (elevation, thickness) tuples
+        in micrometers.
+
+    Example:
+        >>> from qpdk.models.hfss import layer_stack_to_gds_mapping
+        >>> mapping = layer_stack_to_gds_mapping()
+        >>> # Returns e.g. {1: (0.0, 0.0002), 10: (0.0003, 0.0002), ...}
     """
-    # Convert layer to tuple based on its type
-    layer_tuple: tuple[int, int]
-    if isinstance(layer, tuple):
-        layer_tuple = layer
-    elif (
-        hasattr(layer, "layer")
-        and hasattr(layer, "datatype")
-        and hasattr(layer, "name")
-    ):
-        # It's a LayerMap enum with .layer, .datatype, and .name properties
-        # This pattern matches gdsfactory LayerMap enum members
-        layer_tuple = (int(layer.layer), int(layer.datatype))
-    elif isinstance(layer, str):
-        # It's a layer name string, need to resolve it through PDK
-        import gdsfactory as gf
+    from qpdk import LAYER_STACK
 
-        layer_tuple = gf.get_layer(layer)
-    else:
-        msg = f"Unsupported layer type: {type(layer)}. Expected tuple, str, or LayerMap enum."
-        raise TypeError(msg)
+    if layer_stack is None:
+        layer_stack = LAYER_STACK
 
-    # Get all polygons keyed by tuple
-    all_polygons = component.get_polygons(by="tuple")
-    klayout_polygons = all_polygons.get(layer_tuple, [])
+    mapping: dict[int, tuple[float, float]] = {}
 
-    # Convert klayout polygons to numpy arrays
-    result = []
-    for poly in klayout_polygons:
-        points = []
-        for pt in poly.each_point_hull():
-            points.append([float(pt.x), float(pt.y)])
-        if points:
-            result.append(np.array(points))
-    return result
+    for layer_level in layer_stack.layers.values():
+        # Get the layer number from the layer definition
+        layer_number = _get_layer_number_from_level(layer_level)
+        if layer_number is None:
+            continue
+
+        # Get elevation (zmin) and thickness
+        elevation = layer_level.zmin if layer_level.zmin is not None else 0.0
+        thickness = layer_level.thickness if layer_level.thickness else 0.0
+
+        # Store mapping: layer_number -> (elevation, thickness)
+        mapping[layer_number] = (elevation, thickness)
+
+    return mapping
+
+
+def _get_layer_number_from_level(layer_level) -> int | None:
+    """Extract layer number from a LayerLevel's layer definition.
+
+    Handles various layer definition types:
+    - Direct tuple: (layer_number, datatype)
+    - LogicalLayer: wraps a LayerMap enum or tuple
+    - DerivedLayer: uses derived_layer attribute if available
+
+    Args:
+        layer_level: A gdsfactory LayerLevel object.
+
+    Returns:
+        Layer number (int) or None if not extractable.
+    """
+    # First check for derived_layer (for DerivedLayer types)
+    if hasattr(layer_level, "derived_layer") and layer_level.derived_layer is not None:
+        derived = layer_level.derived_layer
+        # derived_layer is typically a LogicalLayer
+        if hasattr(derived, "layer"):
+            inner = derived.layer
+            if hasattr(inner, "layer"):
+                return int(inner.layer)
+            if isinstance(inner, tuple) and len(inner) >= 1:
+                return int(inner[0])
+
+    layer = layer_level.layer
+    # Direct tuple
+    if isinstance(layer, tuple) and len(layer) >= 1:
+        return int(layer[0])
+    # LogicalLayer with .layer attribute that is a LayerMap enum
+    if hasattr(layer, "layer"):
+        inner = layer.layer
+        # Inner is a tuple
+        if isinstance(inner, tuple) and len(inner) >= 1:
+            return int(inner[0])
+        # Inner is a LayerMap enum with .layer attribute
+        if hasattr(inner, "layer"):
+            return int(inner.layer)
+    return None
+
+
+def prepare_component_for_hfss(
+    component: Component,
+    *,
+    apply_additive: bool = True,
+) -> Component:
+    """Prepare a component for HFSS simulation export.
+
+    This function prepares the component by optionally applying additive metal
+    operations to create the proper negative mask representation for simulation.
+
+    Args:
+        component: The gdsfactory component to prepare.
+        apply_additive: If True, applies :func:`~qpdk.cells.helpers.apply_additive_metals`
+            to properly handle additive vs subtractive mask operations.
+
+    Returns:
+        The prepared component (may be modified in-place).
+
+    Example:
+        >>> from qpdk.cells import resonator
+        >>> comp = resonator(length=4000)
+        >>> prepared = prepare_component_for_hfss(comp)
+    """
+    if apply_additive:
+        from qpdk.cells.helpers import apply_additive_metals
+
+        component = apply_additive_metals(component)
+
+    return component
+
+
+def import_component_to_hfss(
+    hfss: Hfss,
+    component: Component,
+    layer_stack: LayerStack | None = None,
+    *,
+    units: str = "um",
+    apply_additive: bool = True,
+    gds_path: str | Path | None = None,
+    import_method: int = 1,
+) -> bool:
+    """Import a gdsfactory component into HFSS using native GDS import.
+
+    Uses :meth:`ansys.aedt.core.hfss.Hfss.import_gds_3d` to import the component
+    geometry with proper 3D layer stack information. This is the recommended
+    approach for importing complex layouts.
+
+    Args:
+        hfss: The HFSS application instance.
+        component: The gdsfactory component to import.
+        layer_stack: LayerStack defining thickness and elevation for each layer.
+            If None, uses QPDK's default LAYER_STACK.
+        units: Length units for the geometry (default: "um" for micrometers).
+        apply_additive: If True, applies additive metal operations before export.
+            See :func:`prepare_component_for_hfss`.
+        gds_path: Optional path to write the GDS file. If None, uses a temporary file.
+        import_method: GDSII import method (0=script, 1=Parasolid). Default is 1.
+
+    Returns:
+        True if import was successful, False otherwise.
+
+    Example:
+        >>> from qpdk.cells import resonator
+        >>> comp = resonator(length=4000)
+        >>> hfss = create_hfss_project("resonator_sim", solution_type="Eigenmode")
+        >>> success = import_component_to_hfss(hfss, comp)
+    """
+    # Prepare component for export
+    prepared_component = prepare_component_for_hfss(
+        component, apply_additive=apply_additive
+    )
+
+    # Generate layer mapping from LayerStack
+    mapping_layers = layer_stack_to_gds_mapping(layer_stack)
+
+    # Export component to GDS
+    if gds_path is None:
+        # Use temporary file
+        temp_dir = tempfile.mkdtemp(prefix="qpdk_hfss_")
+        gds_path = Path(temp_dir) / "component.gds"
+
+    gds_path = Path(gds_path)
+    prepared_component.write_gds(str(gds_path))
+
+    # Set modeler units
+    hfss.modeler.model_units = units
+
+    # Import GDS with 3D layer mapping
+    return hfss.import_gds_3d(
+        input_file=str(gds_path),
+        mapping_layers=mapping_layers,
+        units=units,
+        import_method=import_method,
+    )
 
 
 def create_hfss_project(
@@ -169,106 +307,6 @@ def create_hfss_project(
         kwargs["version"] = aedt_version
 
     return Hfss(**kwargs)
-
-
-def add_component_geometry_to_hfss(
-    hfss: Hfss,
-    component: Component,
-    layer_stack: LayerStack | None = None,
-    *,
-    units: str = "um",
-) -> dict[str, list[str]]:
-    """Add a gdsfactory component's geometry to an HFSS project.
-
-    Extracts polygons from each layer in the component and creates
-    corresponding 3D objects in HFSS based on the layer stack definitions.
-
-    Args:
-        hfss: The HFSS application instance.
-        component: The gdsfactory component to add.
-        layer_stack: LayerStack defining thickness and materials for each layer.
-            If None, uses QPDK's default LAYER_STACK.
-        units: Length units for the geometry (default: "um" for micrometers).
-
-    Returns:
-        Dictionary mapping layer names to lists of created object names.
-
-    Example:
-        >>> from qpdk.cells import resonator
-        >>> comp = resonator(length=4000)
-        >>> objects = add_component_geometry_to_hfss(hfss, comp)
-    """
-    from qpdk import LAYER_STACK
-
-    if layer_stack is None:
-        layer_stack = LAYER_STACK
-
-    hfss.modeler.model_units = units
-
-    created_objects: dict[str, list[str]] = {}
-
-    # Map GDS layers to layer stack entries
-    for layer_name, layer_level in layer_stack.layers.items():
-        # Get the layer tuple for this layer level
-        layer_tuple = _get_layer_tuple_from_level(layer_level)
-        if layer_tuple is None:
-            continue
-
-        # Extract polygons from this layer
-        polygons = component_polygons_to_numpy(component, layer_tuple)
-        if not polygons:
-            continue
-
-        created_objects[layer_name] = []
-        material = layer_level.material if layer_level.material else "pec"
-        thickness = layer_level.thickness if layer_level.thickness else 0.2
-        zmin = layer_level.zmin if layer_level.zmin is not None else 0.0
-
-        for i, poly in enumerate(polygons):
-            obj_name = f"{layer_name}_{i}"
-            # Create polyline from polygon vertices
-            points = [[float(x), float(y), float(zmin)] for x, y in poly]
-            points.append(points[0])  # Close the polygon
-
-            # Create polyline and cover to make a 2D surface
-            polyline = hfss.modeler.create_polyline(
-                points=points,
-                cover_surface=True,
-                name=obj_name,
-            )
-
-            if polyline is not None:
-                # Thicken to 3D if thickness > 0
-                if thickness > 0:
-                    hfss.modeler.thicken_sheet(polyline, thickness)
-
-                # Assign material (use PEC for superconducting materials)
-                if material in SUPERCONDUCTING_MATERIALS:
-                    hfss.assign_perfect_conductor(polyline.name)
-                else:
-                    hfss.modeler.assign_material(polyline.name, material)
-
-                created_objects[layer_name].append(polyline.name)
-
-    return created_objects
-
-
-def _get_layer_tuple_from_level(layer_level: LayerLevel) -> tuple[int, int] | None:
-    """Extract layer tuple from a LayerLevel's layer definition.
-
-    Args:
-        layer_level: A gdsfactory LayerLevel object.
-
-    Returns:
-        Layer tuple (layer_number, datatype) or None if not extractable.
-    """
-    layer = layer_level.layer
-    if isinstance(layer, tuple) and len(layer) == 2:
-        return layer
-    # Handle LogicalLayer
-    if hasattr(layer, "layer") and isinstance(layer.layer, tuple):
-        return layer.layer
-    return None
 
 
 def add_substrate_to_hfss(

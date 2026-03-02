@@ -42,7 +42,7 @@ from pathlib import Path
 # %%
 from qpdk import PDK
 from qpdk.cells.resonator import resonator
-from qpdk.tech import LAYER, coplanar_waveguide
+from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
 
@@ -141,90 +141,42 @@ except Exception as e:
 # %% [markdown]
 # ## Build CPW Geometry in HFSS
 #
-# Convert the gdsfactory component geometry into HFSS 3D objects.
-# We create the CPW structure with proper material assignments.
+# Import the gdsfactory component geometry into HFSS using native GDS import.
+# This uses `Hfss.import_gds_3d` which automatically handles 3D layer mapping
+# based on the QPDK LayerStack.
 
 # %%
 if HFSS_AVAILABLE:
-    from qpdk.models.hfss import component_polygons_to_numpy
+    from qpdk.models.hfss import (
+        add_air_region_to_hfss,
+        add_substrate_to_hfss,
+        import_component_to_hfss,
+    )
 
-    # Get component bounds for geometry creation
-    bounds = res_component.bbox
-    margin = 100  # µm margin around resonator
+    # Import the component geometry using native GDS import
+    # This automatically applies additive metals and maps layers to 3D
+    success = import_component_to_hfss(hfss, res_component)
+    print(f"GDS import successful: {success}")
 
-    # Extract polygons from the metal draw layer (M1_DRAW)
-    metal_polygons = component_polygons_to_numpy(res_component, LAYER.M1_DRAW)
-    etch_polygons = component_polygons_to_numpy(res_component, LAYER.M1_ETCH)
-
-    print(f"Found {len(metal_polygons)} metal polygons")
-    print(f"Found {len(etch_polygons)} etch polygons")
-
-    # Create substrate
-    substrate_thickness = 500  # µm (typical silicon wafer)
-    x_min, y_min = bounds[0] - margin
-    x_max, y_max = bounds[1] + margin
-
-    substrate = hfss.modeler.create_box(
-        origin=[x_min, y_min, -substrate_thickness],
-        sizes=[x_max - x_min, y_max - y_min, substrate_thickness],
-        name="Substrate",
+    # Add substrate below the component
+    substrate_name = add_substrate_to_hfss(
+        hfss,
+        res_component,
+        margin=100.0,
+        thickness=500.0,
         material="silicon",
     )
-    print(f"Created substrate: {substrate.name}")
+    print(f"Created substrate: {substrate_name}")
 
-    # Create ground plane (metal layer covering substrate top)
-    metal_thickness = 0.2  # µm (200nm Nb film)
-    ground_plane = hfss.modeler.create_box(
-        origin=[x_min, y_min, 0],
-        sizes=[x_max - x_min, y_max - y_min, metal_thickness],
-        name="GroundPlane",
+    # Add air region with PEC boundary for eigenmode analysis
+    air_region_name = add_air_region_to_hfss(
+        hfss,
+        res_component,
+        margin=100.0,
+        height=500.0,
+        substrate_thickness=500.0,
     )
-    hfss.assign_perfect_conductor(ground_plane.name, name="PEC_Ground")
-    print(f"Created ground plane: {ground_plane.name}")
-
-    # Create etch regions (remove metal to form CPW gaps)
-    etch_objects = []
-    for i, poly in enumerate(etch_polygons):
-        points = [[float(x), float(y), 0.0] for x, y in poly]
-        points.append(points[0])  # Close polygon
-
-        etch_obj = hfss.modeler.create_polyline(
-            points=points,
-            cover_surface=True,
-            name=f"Etch_{i}",
-        )
-        if etch_obj:
-            hfss.modeler.thicken_sheet(etch_obj, metal_thickness * 2)
-            etch_objects.append(etch_obj.name)
-
-    # Subtract etch regions from ground plane
-    if etch_objects:
-        hfss.modeler.subtract(ground_plane.name, etch_objects, keep_originals=False)
-        print(f"Created CPW pattern by subtracting {len(etch_objects)} etch regions")
-
-    # Create air region above
-    air_height = 500  # µm
-    air_region = hfss.modeler.create_box(
-        origin=[x_min, y_min, 0],
-        sizes=[x_max - x_min, y_max - y_min, air_height],
-        name="AirRegion",
-        material="vacuum",
-    )
-
-    # Assign PerfectE boundary to outer faces for eigenmode
-    outer_faces = []
-    for face in air_region.faces:
-        outer_faces.append(face.id)
-    for face in substrate.faces:
-        # Bottom and side faces of substrate
-        if abs(face.center[2] - (-substrate_thickness)) < 1:
-            outer_faces.append(face.id)
-
-    hfss.assign_perfect_conductor(
-        assignment=outer_faces,
-        name="PEC_Boundary",
-    )
-    print("Assigned PEC boundary conditions")
+    print(f"Created air region with PEC boundary: {air_region_name}")
 
 # %% [markdown]
 # ## Configure Eigenmode Analysis
