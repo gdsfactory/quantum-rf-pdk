@@ -1,6 +1,6 @@
 name: Question or Help
 description: Ask a question or get help using quantum-rf-pdk
-title: "[Question]: "
+title: ""
 labels: ["question"]
 body:
   - type: markdown
