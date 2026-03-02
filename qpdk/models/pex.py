@@ -132,23 +132,35 @@ class PEXResult:
         return "\n".join(lines)
 
 
+def _get_kpex_prefix() -> list[str] | None:
+    """Try to find the kpex command prefix.
+
+    Returns:
+        List of command parts (e.g., ["kpex"] or ["uv", "run", "kpex"]) or None if not found.
+    """
+    for prefix in [["kpex"], ["uv", "run", "kpex"]]:
+        try:
+            result = subprocess.run(
+                [*prefix, "--version"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+            if result.returncode == 0:
+                return prefix
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            continue
+    return None
+
+
 def is_kpex_available() -> bool:
     """Check if the kpex command is available.
 
     Returns:
         True if kpex is installed and callable.
     """
-    try:
-        result = subprocess.run(
-            ["kpex", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
+    return _get_kpex_prefix() is not None
 
 
 def parse_capacitance_matrix_from_log(
@@ -314,7 +326,8 @@ def run_capacitance_extraction(
         >>> result = run_capacitance_extraction(cap, engine="2.5D")
         >>> print(result.summary())  # doctest: +SKIP
     """
-    if not is_kpex_available():
+    kpex_prefix = _get_kpex_prefix()
+    if kpex_prefix is None:
         return PEXResult(
             capacitance_matrix=np.array([]),
             net_names=[],
@@ -340,7 +353,7 @@ def run_capacitance_extraction(
         # Build kpex command
         cell = cell_name or component.name
         cmd = [
-            "kpex",
+            *kpex_prefix,
             "--gds",
             str(gds_path),
             "--cell",
