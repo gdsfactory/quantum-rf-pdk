@@ -32,7 +32,7 @@ _EXCLUDE_LAYERS_DEFAULT_M2 = [
 
 @gf.cell
 def fill_magnetic_vortices(
-    component: Component,
+    component: Component | None = None,
     rectangle_size: tuple[float, float] = (15.0, 15.0),
     gap: float | tuple[float, float] = 15.0,
     stagger: float | tuple[float, float] = 3.0,
@@ -50,6 +50,8 @@ def fill_magnetic_vortices(
 
     Args:
         component: The component to fill with vortex trapping rectangles.
+            If None, a default straight waveguide (:func:`gf.components.straight`)
+            with length 100 µm is used.
         rectangle_size: Size of the fill rectangles in µm (width, height).
         gap: Gap between rectangles in µm.
             A tuple (x_gap, y_gap) can be provided for different gaps in x and y directions.
@@ -67,7 +69,13 @@ def fill_magnetic_vortices(
         >>> from qpdk.cells.helpers import fill_magnetic_vortices
         >>> resonator = resonator_quarter_wave()
         >>> filled_resonator = fill_magnetic_vortices(resonator)
+        >>> # Or use with default component
+        >>> filled_default = fill_magnetic_vortices()
     """
+    # Use a default component if none is provided
+    if component is None:
+        component = gf.components.straight(length=100.0)
+
     c = gf.Component()
     c.add_ref(component)
 
