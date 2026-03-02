@@ -237,10 +237,13 @@ def import_component_to_hfss(
     mapping_layers = layer_stack_to_gds_mapping(layer_stack)
 
     # Export component to GDS
+    # Note: We use TemporaryDirectory to ensure cleanup, but need to keep it
+    # alive until import is complete, so we store the reference
+    temp_dir_obj = None
     if gds_path is None:
-        # Use temporary file
-        temp_dir = tempfile.mkdtemp(prefix="qpdk_hfss_")
-        gds_path = Path(temp_dir) / "component.gds"
+        # Use temporary directory that will be cleaned up when function returns
+        temp_dir_obj = tempfile.TemporaryDirectory(prefix="qpdk_hfss_")
+        gds_path = Path(temp_dir_obj.name) / "component.gds"
 
     gds_path = Path(gds_path)
     prepared_component.write_gds(str(gds_path))
@@ -249,12 +252,18 @@ def import_component_to_hfss(
     hfss.modeler.model_units = units
 
     # Import GDS with 3D layer mapping
-    return hfss.import_gds_3d(
+    result = hfss.import_gds_3d(
         input_file=str(gds_path),
         mapping_layers=mapping_layers,
         units=units,
         import_method=import_method,
     )
+
+    # Clean up temporary directory if we created one
+    if temp_dir_obj is not None:
+        temp_dir_obj.cleanup()
+
+    return result
 
 
 def create_hfss_project(
