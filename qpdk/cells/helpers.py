@@ -50,7 +50,8 @@ def fill_magnetic_vortices(
 
     Args:
         component: The component to fill with vortex trapping rectangles.
-            If None, a default straight waveguide with length 100 µm is used.
+            If None, a default straight waveguide (:func:`gf.components.straight`)
+            with length 100 µm is used.
         rectangle_size: Size of the fill rectangles in µm (width, height).
         gap: Gap between rectangles in µm.
             A tuple (x_gap, y_gap) can be provided for different gaps in x and y directions.
