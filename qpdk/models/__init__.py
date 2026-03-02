@@ -2,6 +2,10 @@
 
 import sax
 
+from qpdk.models.capacitor import (
+    interdigital_capacitor,
+    plate_capacitor,
+)
 from qpdk.models.junction import josephson_junction
 
 sax.set_port_naming_strategy("optical")
@@ -85,12 +89,14 @@ __all__ = [
     "gamma_0_load",
     "impedance",
     "inductor",
+    "interdigital_capacitor",
     "josephson_junction",
     "launcher",
     "lc_resonator",
     "lc_resonator_coupled",
     "models",
     "open",
+    "plate_capacitor",
     "quarter_wave_resonator_coupled",
     "qubit_with_resonator",
     "rectangle",

@@ -1,0 +1,11 @@
+x:
+  name: f
+  min: 14989.6229
+  max: 299792.458
+  num: 3000
+options:
+  recursive: true
+  ignore_impossible_connections: true
+  on_multi_connect: warn
+models:
+  bend_s: bend_s
