@@ -16,32 +16,75 @@ from qpdk.models.media import cross_section_to_media
 
 
 @partial(jax.jit, inline=True)
-def _plate_capacitor_capacitance_analytical(
+def plate_capacitor_capacitance_analytical(
     length: float,
     width: float,
     gap: float,
     ep_r: float,
 ) -> float:
-    """Analytical formula for plate capacitor capacitance."""
-    # Simple parallel plate capacitor model with fringing fields correction
-    A = length * width * 1e-12  # Area in m² (convert from μm²)
-    d = gap * 1e-6  # Separation in m (convert from μm)
-    c0 = ε_0 * ep_r * A / d  # Capacitance without fringing fields in F
-    fringing_factor = (
-        1 + (2 * gap) / width
-    )  # Empirical fringing fields correction factor
-    return c0 * fringing_factor
+    r"""Analytical formula for plate capacitor capacitance.
+
+    The model assumes two coplanar rectangular pads on a substrate.
+    The capacitance is calculated using conformal mapping:
+
+    .. math::
+
+        k &= \frac{s}{s + 2W} \\
+        k' &= \sqrt{1 - k^2} \\
+        \epsilon_{\text{eff}} &= \frac{\epsilon_r + 1}{2} \\
+        C &= \epsilon_0 \epsilon_{\text{eff}} L \frac{K(k')}{K(k)}
+
+    where :math:`s` is the gap, :math:`W` is the pad width, and :math:`L` is the pad length.
+
+    See :cite:`chenCompactInductorcapacitorResonators2023`.
+    """
+    # Conformal mapping for coplanar pads
+    k = gap / (gap + 2 * width)
+    k_sq = k**2
+    k_prime_sq = 1 - k_sq
+
+    # Complete elliptic integrals of the first kind K(k)
+    k_ratio = jaxellip.ellipk(k_prime_sq) / jaxellip.ellipk(k_sq)
+
+    # Effective permittivity for coplanar pads on a substrate
+    ep_eff = (ep_r + 1) / 2
+
+    # C = epsilon_0 * ep_eff * L * K(k') / K(k)
+    return ε_0 * ep_eff * (length * 1e-6) * k_ratio
 
 
 @partial(jax.jit, inline=True)
-def _interdigital_capacitor_capacitance_analytical(
+def interdigital_capacitor_capacitance_analytical(
     fingers: int,
     finger_length: float,
     finger_gap: float,
     thickness: float,
     ep_r: float,
 ) -> float:
-    """Analytical formula for interdigital capacitor capacitance.
+    r"""Analytical formula for interdigital capacitor capacitance.
+
+    The formula uses conformal mapping for the interior and exterior regions of
+    the interdigital structure:
+
+    .. math::
+
+        \eta &= \frac{w}{w + g} \\
+        k_i &= \sin\left(\frac{\pi \eta}{2}\right) \\
+        k_e &= \frac{2\sqrt{\eta}}{1 + \eta} \\
+        C_i &= \epsilon_0 L (\epsilon_r + 1) \frac{K(k_i)}{K(k_i')} \\
+        C_e &= \epsilon_0 L (\epsilon_r + 1) \frac{K(k_e)}{K(k_e')}
+
+    The total mutual capacitance for :math:`n` fingers is:
+
+    .. math::
+
+        C = \begin{cases}
+            C_e / 2 & \text{if } n=2 \\
+            (n - 3) \frac{C_i}{2} + 2 \frac{C_i C_e}{C_i + C_e} & \text{if } n > 2
+        \end{cases}
+
+    where :math:`w` is the finger thickness (width), :math:`g` is the finger gap, and
+    :math:`L` is the overlap length.
 
     See :cite:`igrejaAnalyticalEvaluationInterdigital2004,gonzalezDesignFabricationInterdigital2015`.
     """
@@ -67,6 +110,7 @@ def _interdigital_capacitor_capacitance_analytical(
     c_e = ε_0 * l_overlap * (ep_r + 1) * ke_over_kep
 
     # Total mutual capacitance
+    # Simplifies to c_e/2 for n=2
     return jnp.where(
         n == 2,
         c_e / 2,
@@ -96,10 +140,12 @@ def plate_capacitor(
     """
     f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
-    media_instance = media(frequency=skrf.Frequency.from_f(np.asarray(f_arr)))
+    media_instance = media(
+        frequency=skrf.Frequency.from_f(np.atleast_1d(np.asarray(f_arr)))
+    )
     z0 = media_instance.z0
     ep_r = float(media_instance.ep_r)
-    capacitance = _plate_capacitor_capacitance_analytical(
+    capacitance = plate_capacitor_capacitance_analytical(
         length=length, width=width, gap=gap, ep_r=ep_r
     )
     return capacitor(f=f_arr, capacitance=capacitance, z0=z0)
@@ -129,10 +175,12 @@ def interdigital_capacitor(
     """
     f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
-    media_instance = media(frequency=skrf.Frequency.from_f(np.asarray(f_arr)))
+    media_instance = media(
+        frequency=skrf.Frequency.from_f(np.atleast_1d(np.asarray(f_arr)))
+    )
     z0 = media_instance.z0
     ep_r = float(media_instance.ep_r)
-    capacitance = _interdigital_capacitor_capacitance_analytical(
+    capacitance = interdigital_capacitor_capacitance_analytical(
         fingers=fingers,
         finger_length=finger_length,
         finger_gap=finger_gap,
