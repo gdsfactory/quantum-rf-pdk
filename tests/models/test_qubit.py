@@ -1,10 +1,13 @@
 """Tests for qpdk.models.qubit module - Qubit LC resonator models."""
 
+from typing import TYPE_CHECKING, final
+
 import hypothesis.strategies as st
 import jax.numpy as jnp
 import numpy as np
 from hypothesis import given, settings
 
+import qpdk
 from qpdk.models.constants import Φ_0, e, h
 from qpdk.models.qubit import (
     coupling_strength_to_capacitance,
@@ -15,6 +18,13 @@ from qpdk.models.qubit import (
     shunted_transmon,
     transmon_coupled,
 )
+from tests.models.base import TwoPortModelTestSuite
+
+if TYPE_CHECKING:
+    pass
+
+# Ensure PDK is activated for tests that require it (e.g., qubit_with_resonator)
+qpdk.PDK.activate()
 
 MAX_EXAMPLES = 20
 
@@ -136,64 +146,16 @@ class TestCouplingStrengthToCapacitance:
         assert C_c > 0
 
 
-class TestDoubleIslandTransmon:
+@final
+class TestDoubleIslandTransmon(TwoPortModelTestSuite):
     """Tests for double_island_transmon model."""
 
-    def test_default_parameters(self) -> None:
-        """Test double_island_transmon with default parameters."""
-        result = double_island_transmon()
-
-        assert isinstance(result, dict), "Result should be a dictionary"
-        assert ("o1", "o1") in result, "Should have S11 parameter"
-        assert ("o1", "o2") in result, "Should have S12 parameter"
-
-    def test_returns_stype(self) -> None:
-        """Test that double_island_transmon returns a valid sax.SType dictionary."""
-        f = jnp.array([5e9, 6e9, 7e9])
-        result = double_island_transmon(f=f, capacitance=100e-15, inductance=1e-9)
-
-        assert isinstance(result, dict), "Result should be a dictionary"
-        expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
-        assert set(result.keys()) == expected_keys
-
-    def test_output_shape(self) -> None:
-        """Test that output array shapes match input frequency array length."""
-        n_freq = 10
-        f = jnp.linspace(4e9, 8e9, n_freq)
-        result = double_island_transmon(f=f)
-
-        for value in result.values():
-            assert len(value) == n_freq
-
-    def test_reciprocity(self) -> None:
-        """Test that S-parameters are reciprocal (S12 = S21)."""
-        f = jnp.linspace(3e9, 20e9, 50)
-        result = double_island_transmon(f=f)
-
-        s12 = result[("o1", "o2")]
-        s21 = result[("o2", "o1")]
-
-        max_diff = jnp.max(jnp.abs(s12 - s21))
-        assert max_diff < 1e-10
-
-    def test_passivity(self) -> None:
-        """Test that the model satisfies passivity (energy conservation)."""
-        f = jnp.linspace(1e9, 30e9, 100)
-        result = double_island_transmon(f=f)
-
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
-
-        power_reflection = jnp.abs(s11) ** 2
-        power_transmission = jnp.abs(s21) ** 2
-        total_power = power_reflection + power_transmission
-
-        assert jnp.all(total_power <= 1.0 + 1e-6)
+    model_function = staticmethod(double_island_transmon)
 
     def test_is_ungrounded(self) -> None:
         """Test that double-island transmon has ungrounded behavior."""
-        f = jnp.array([5e9, 10e9, 15e9])
-        result = double_island_transmon(f=f)
+        f = self.get_frequency_array(3)
+        result = self._call_model(f=f)
 
         # For ungrounded, S22 should NOT be -1 (which would indicate a short)
         s22 = result[("o2", "o2")]
@@ -215,7 +177,7 @@ class TestDoubleIslandTransmon:
 
         # Fine frequency sweep around resonance
         f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 1000)
-        result = double_island_transmon(f=f, capacitance=C, inductance=L)
+        result = self._call_model(f=f, capacitance=C, inductance=L)
 
         # At resonance, |S21| should be minimum (parallel LC has infinite impedance)
         s21 = result[("o2", "o1")]
@@ -227,30 +189,16 @@ class TestDoubleIslandTransmon:
         assert relative_error < 0.01
 
 
-class TestShuntedTransmon:
+@final
+class TestShuntedTransmon(TwoPortModelTestSuite):
     """Tests for shunted_transmon model."""
 
-    def test_default_parameters(self) -> None:
-        """Test shunted_transmon with default parameters."""
-        result = shunted_transmon()
-
-        assert isinstance(result, dict), "Result should be a dictionary"
-        assert ("o1", "o1") in result, "Should have S11 parameter"
-        assert ("o1", "o2") in result, "Should have S12 parameter"
-
-    def test_returns_stype(self) -> None:
-        """Test that shunted_transmon returns a valid sax.SType dictionary."""
-        f = jnp.array([5e9, 6e9, 7e9])
-        result = shunted_transmon(f=f, capacitance=100e-15, inductance=1e-9)
-
-        assert isinstance(result, dict), "Result should be a dictionary"
-        expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
-        assert set(result.keys()) == expected_keys
+    model_function = staticmethod(shunted_transmon)
 
     def test_is_grounded(self) -> None:
         """Test that shunted transmon has grounded behavior."""
-        f = jnp.array([5e9, 10e9, 15e9])
-        result = shunted_transmon(f=f)
+        f = self.get_frequency_array(3)
+        result = self._call_model(f=f)
 
         # For grounded, S22 should be -1 (short reflection)
         s22 = result[("o2", "o2")]
@@ -262,15 +210,6 @@ class TestShuntedTransmon:
         s21 = result[("o2", "o1")]
         assert jnp.allclose(s21, 0.0, atol=1e-10)
 
-    def test_output_shape(self) -> None:
-        """Test that output array shapes match input frequency array length."""
-        n_freq = 10
-        f = jnp.linspace(4e9, 8e9, n_freq)
-        result = shunted_transmon(f=f)
-
-        for value in result.values():
-            assert len(value) == n_freq
-
     @given(
         L=st.floats(min_value=0.1e-9, max_value=10e-9),
         C=st.floats(min_value=10e-15, max_value=1000e-15),
@@ -278,64 +217,23 @@ class TestShuntedTransmon:
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_with_hypothesis(self, L: float, C: float) -> None:
         """Test shunted transmon with random valid L and C values."""
-        f = jnp.linspace(1e9, 30e9, 50)
-        result = shunted_transmon(f=f, capacitance=C, inductance=L)
+        f = self.get_frequency_array(50)
+        result = self._call_model(f=f, capacitance=C, inductance=L)
 
         assert isinstance(result, dict)
         assert len(result) == 4
 
 
-class TestTransmonCoupled:
+@final
+class TestTransmonCoupled(TwoPortModelTestSuite):
     """Tests for transmon_coupled model."""
 
-    def test_default_parameters(self) -> None:
-        """Test transmon_coupled with default parameters."""
-        result = transmon_coupled()
-
-        assert isinstance(result, dict), "Result should be a dictionary"
-        assert ("o1", "o1") in result, "Should have S11 parameter"
-        assert ("o1", "o2") in result, "Should have S12 parameter"
-
-    def test_output_shape(self) -> None:
-        """Test that output array shapes match input frequency array length."""
-        n_freq = 10
-        f = jnp.linspace(4e9, 8e9, n_freq)
-        result = transmon_coupled(f=f, coupling_capacitance=10e-15)
-
-        for value in result.values():
-            assert len(value) == n_freq
-
-    def test_reciprocity(self) -> None:
-        """Test that S-parameters are reciprocal (S12 = S21)."""
-        f = jnp.linspace(3e9, 20e9, 50)
-        result = transmon_coupled(f=f, coupling_capacitance=10e-15)
-
-        s12 = result[("o1", "o2")]
-        s21 = result[("o2", "o1")]
-
-        max_diff = jnp.max(jnp.abs(s12 - s21))
-        assert max_diff < 1e-10
-
-    def test_passivity(self) -> None:
-        """Test that the coupled model satisfies passivity."""
-        f = jnp.linspace(1e9, 30e9, 100)
-        result = transmon_coupled(
-            f=f, coupling_capacitance=10e-15, coupling_inductance=1e-9
-        )
-
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
-
-        power_reflection = jnp.abs(s11) ** 2
-        power_transmission = jnp.abs(s21) ** 2
-        total_power = power_reflection + power_transmission
-
-        assert jnp.all(total_power <= 1.0 + 1e-6)
+    model_function = staticmethod(transmon_coupled)
 
     def test_capacitive_coupling(self) -> None:
         """Test coupled transmon with capacitive coupling only."""
-        f = jnp.linspace(1e9, 30e9, 100)
-        result = transmon_coupled(
+        f = self.get_frequency_array(100)
+        result = self._call_model(
             f=f, coupling_capacitance=10e-15, coupling_inductance=0.0
         )
 
@@ -350,8 +248,8 @@ class TestTransmonCoupled:
 
     def test_inductive_coupling(self) -> None:
         """Test coupled transmon with inductive coupling only."""
-        f = jnp.linspace(1e9, 30e9, 100)
-        result = transmon_coupled(
+        f = self.get_frequency_array(100)
+        result = self._call_model(
             f=f, coupling_capacitance=0.0, coupling_inductance=1e-9
         )
 
@@ -360,8 +258,8 @@ class TestTransmonCoupled:
 
     def test_grounded_coupling(self) -> None:
         """Test coupled transmon with grounded qubit."""
-        f = jnp.array([5e9, 10e9, 15e9])
-        result = transmon_coupled(f=f, grounded=True, coupling_capacitance=10e-15)
+        f = self.get_frequency_array(3)
+        result = self._call_model(f=f, grounded=True, coupling_capacitance=10e-15)
 
         assert isinstance(result, dict)
         expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
@@ -374,8 +272,8 @@ class TestTransmonCoupled:
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_with_hypothesis(self, coupling_C: float, coupling_L: float) -> None:
         """Test coupled transmon with random coupling values."""
-        f = jnp.linspace(1e9, 30e9, 50)
-        result = transmon_coupled(
+        f = self.get_frequency_array(50)
+        result = self._call_model(
             f=f,
             coupling_capacitance=coupling_C,
             coupling_inductance=coupling_L,
@@ -458,85 +356,14 @@ class TestIntegration:
             assert jnp.all(jnp.isfinite(value))
 
 
-class TestQubitWithResonator:
+@final
+class TestQubitWithResonator(TwoPortModelTestSuite):
     """Tests for qubit_with_resonator model."""
 
-    def test_default_parameters(self) -> None:
-        """Test qubit_with_resonator with default parameters."""
-        import qpdk
-
-        qpdk.PDK.activate()
-        result = qubit_with_resonator()
-
-        assert isinstance(result, dict), "Result should be a dictionary"
-        assert ("o1", "o1") in result, "Should have S11 parameter"
-        assert ("o1", "o2") in result, "Should have S12 parameter"
-
-    def test_returns_stype(self) -> None:
-        """Test that qubit_with_resonator returns a valid sax.SType dictionary."""
-        import qpdk
-
-        qpdk.PDK.activate()
-        f = jnp.array([5e9, 6e9, 7e9])
-        result = qubit_with_resonator(
-            f=f,
-            qubit_capacitance=100e-15,
-            qubit_inductance=1e-9,
-        )
-
-        assert isinstance(result, dict), "Result should be a dictionary"
-        expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
-        assert set(result.keys()) == expected_keys
-
-    def test_output_shape(self) -> None:
-        """Test that output array shapes match input frequency array length."""
-        import qpdk
-
-        qpdk.PDK.activate()
-        n_freq = 10
-        f = jnp.linspace(4e9, 8e9, n_freq)
-        result = qubit_with_resonator(f=f)
-
-        for value in result.values():
-            assert len(value) == n_freq
-
-    def test_reciprocity(self) -> None:
-        """Test that S-parameters are reciprocal (S12 = S21)."""
-        import qpdk
-
-        qpdk.PDK.activate()
-        f = jnp.linspace(3e9, 20e9, 50)
-        result = qubit_with_resonator(f=f)
-
-        s12 = result[("o1", "o2")]
-        s21 = result[("o2", "o1")]
-
-        max_diff = jnp.max(jnp.abs(s12 - s21))
-        assert max_diff < 1e-10
-
-    def test_passivity(self) -> None:
-        """Test that the model satisfies passivity (energy conservation)."""
-        import qpdk
-
-        qpdk.PDK.activate()
-        f = jnp.linspace(1e9, 30e9, 100)
-        result = qubit_with_resonator(f=f)
-
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
-
-        power_reflection = jnp.abs(s11) ** 2
-        power_transmission = jnp.abs(s21) ** 2
-        total_power = power_reflection + power_transmission
-
-        assert jnp.all(total_power <= 1.0 + 1e-6)
+    model_function = staticmethod(qubit_with_resonator)
 
     def test_with_converted_hamiltonian_parameters(self) -> None:
         """Test qubit_with_resonator with Hamiltonian parameters."""
-        import qpdk
-
-        qpdk.PDK.activate()
-
         # Typical transmon parameters
         ec_ghz = 0.2  # Charging energy
         ej_ghz = 20.0  # Josephson energy
@@ -544,8 +371,8 @@ class TestQubitWithResonator:
         C = ec_to_capacitance(ec_ghz)
         L = ej_to_inductance(ej_ghz)
 
-        f = jnp.linspace(4e9, 8e9, 50)
-        result = qubit_with_resonator(
+        f = self.get_frequency_array(50)
+        result = self._call_model(
             f=f,
             qubit_capacitance=C,
             qubit_inductance=L,
@@ -562,11 +389,8 @@ class TestQubitWithResonator:
 
     def test_grounded_qubit(self) -> None:
         """Test qubit_with_resonator with grounded qubit."""
-        import qpdk
-
-        qpdk.PDK.activate()
-        f = jnp.array([5e9, 10e9, 15e9])
-        result = qubit_with_resonator(f=f, qubit_grounded=True)
+        f = self.get_frequency_array(3)
+        result = self._call_model(f=f, qubit_grounded=True)
 
         assert isinstance(result, dict)
         expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
@@ -574,13 +398,10 @@ class TestQubitWithResonator:
 
     def test_different_resonator_lengths(self) -> None:
         """Test that different resonator lengths affect S-parameters."""
-        import qpdk
+        f = self.get_frequency_array(50)
 
-        qpdk.PDK.activate()
-        f = jnp.linspace(4e9, 8e9, 50)
-
-        result_short = qubit_with_resonator(f=f, resonator_length=3000.0)
-        result_long = qubit_with_resonator(f=f, resonator_length=6000.0)
+        result_short = self._call_model(f=f, resonator_length=3000.0)
+        result_long = self._call_model(f=f, resonator_length=6000.0)
 
         # S-parameters should differ for different resonator lengths
         s11_short = result_short[("o1", "o1")]
