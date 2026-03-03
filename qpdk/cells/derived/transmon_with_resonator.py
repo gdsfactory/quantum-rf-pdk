@@ -100,6 +100,7 @@ def qubit_with_resonator(
         layer=res_port.layer,
         name=res_port.name,
         orientation=res_port.orientation,
+        port_type="placement",
         width=res_port.width,
     )
     return c
