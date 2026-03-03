@@ -10,7 +10,8 @@ from qpdk.models.capacitor import (
     plate_capacitor,
     plate_capacitor_capacitance_analytical,
 )
-from tests.models.base import TwoPortModelTestSuite
+
+from .base import TwoPortModelTestSuite
 
 if TYPE_CHECKING:
     pass

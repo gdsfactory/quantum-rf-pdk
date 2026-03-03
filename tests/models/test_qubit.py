@@ -18,7 +18,8 @@ from qpdk.models.qubit import (
     shunted_transmon,
     transmon_coupled,
 )
-from tests.models.base import TwoPortModelTestSuite
+
+from .base import TwoPortModelTestSuite
 
 if TYPE_CHECKING:
     pass
@@ -393,7 +394,7 @@ class TestQubitWithResonator(TwoPortModelTestSuite):
         result = self._call_model(f=f, qubit_grounded=True)
 
         assert isinstance(result, dict)
-        expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
+        expected_keys = {("o1", "o1")}
         assert set(result.keys()) == expected_keys
 
     def test_different_resonator_lengths(self) -> None:

@@ -90,8 +90,8 @@ def resonator_frequency(
 
     .. math::
 
-        f &= \frac{v_p}{4L}  \text{ (quarter-wave resonator)} \\
-        f &= \frac{v_p}{2L}  \text{ (half-wave resonator)}
+        f &= \frac{v_p}{4L}  \mathtt{ (quarter-wave resonator)} \\
+        f &= \frac{v_p}{2L}  \mathtt{ (half-wave resonator)}
 
     There is some variation according to the frequency range specified for ``media`` due to how
     :math:`v_p` is calculated in skrf. The phase velocity is given by :math:`v_p = i \cdot \omega / \gamma`,

@@ -326,16 +326,12 @@ def qubit_with_resonator(
 
     .. svgbob::
 
-                                  "quarter-wave resonator"
-                                  (straight_shorted)
-                                  ┌──────────────────────┐
-                                  │  straight ── short   │
-                                  └──────────────────────┘
-                                         o1
-                                         │
-                   o1 (external) ── tee ─┤
-                                         │
-                                       tee,o2 ── Cc ── qubit ── o2
+                  "quarter-wave resonator"
+                  (straight_shorted)
+                         │
+              o1 ── tee ─┤
+                         │
+                         +── Cc ── qubit ── o2
 
     The qubit can be either:
     - A double-island transmon (``qubit_grounded=False``): both islands floating
@@ -374,17 +370,18 @@ def qubit_with_resonator(
         length=resonator_length,
         cross_section=resonator_cross_section,
     )
-    qubit = lc_resonator(
+    qubit_func = shunted_transmon if qubit_grounded else double_island_transmon
+    qubit = qubit_func(
         f=f,
         capacitance=qubit_capacitance,
         inductance=qubit_inductance,
-        grounded=qubit_grounded,
     )
     coupling_cap = capacitor(f=f, capacitance=coupling_capacitance)
     tee_junction = tee(f=f)
     # Use a 1-port short to terminate the internally shorted resonator end
     # to avoid dangling ports in the circuit evaluation.
-    terminator = electrical_short(f=f, n_ports=1)
+    # Also short the grounded qubit's o2 port
+    terminator = electrical_short(f=f, n_ports=2 if qubit_grounded else 1)
 
     instances: dict[str, sax.SType] = {
         "resonator": resonator,
@@ -405,7 +402,79 @@ def qubit_with_resonator(
 
     ports = {
         "o1": "tee,o3",  # External port for resonator coupling
-        "o2": "qubit,o2",  # Qubit ground or floating port
     }
+    ports["o2"] = "qubit,o2"  # Qubit floating port
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    from qpdk import PDK
+
+    PDK.activate()
+
+    f = jnp.linspace(1e9, 10e9, 2001)
+
+    # Calculate bare qubit resonance frequency
+    C_q = 100e-15
+    L_q = 7e-9
+    f_q_bare = 1 / (2 * jnp.pi * jnp.sqrt(L_q * C_q))
+
+    configs = [
+        {"label": "Shunted Transmon", "grounded": True, "linestyle": "-"},
+        {"label": "Double Island Transmon", "grounded": False, "linestyle": "--"},
+    ]
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+    for config in configs:
+        S_coupled = qubit_with_resonator(
+            f=f,
+            qubit_capacitance=C_q,
+            qubit_inductance=L_q,
+            qubit_grounded=config["grounded"],
+            resonator_length=5000.0,
+            resonator_cross_section="cpw",
+            coupling_capacitance=20e-15,
+        )
+
+        s11 = S_coupled["o1", "o1"]
+        s11_mag = 20 * jnp.log10(jnp.abs(s11))
+        s11_phase = jnp.unwrap(jnp.angle(s11))
+
+        # Plot S11 magnitude
+        ax1.plot(
+            f / 1e9,
+            s11_mag,
+            label=f"$|S_{{11}}|$ {config['label']}",
+            linestyle=config["linestyle"],
+        )
+
+        # Plot S11 phase
+        ax2.plot(
+            f / 1e9,
+            s11_phase,
+            label=f"$\\angle S_{{11}}$ {config['label']}",
+            linestyle=config["linestyle"],
+        )
+
+    for ax in (ax1, ax2):
+        ax.axvline(
+            f_q_bare / 1e9,
+            color="r",
+            linestyle=":",
+            label=rf"Bare Qubit ($f_q = {f_q_bare / 1e9:.3f}$ GHz)",
+        )
+        ax.grid(True)
+        ax.legend()
+
+    ax2.set_xlabel("Frequency (GHz)")
+    ax1.set_ylabel("Magnitude (dB)")
+    ax2.set_ylabel("Phase (rad)")
+    fig.suptitle(
+        rf"Qubit Coupled to Quarter-Wave Resonator ($C_q=${C_q * 1e15:.0f} fF, $L_q=${L_q * 1e9:.0f} nH)"
+    )
+    plt.tight_layout()
+    plt.show()
