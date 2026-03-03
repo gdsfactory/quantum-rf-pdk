@@ -173,7 +173,7 @@ def coupler_straight(
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(
             f, length, gap, cross_section
-        ),  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
+        ),
         "z0": cross_section_to_media(cross_section)(
             frequency=skrf.Frequency.from_f(
                 np.atleast_1d(np.asarray(f_flat)), unit="Hz"
