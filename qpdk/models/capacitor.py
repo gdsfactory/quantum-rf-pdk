@@ -206,7 +206,6 @@ if __name__ == "__main__":
     k_sq_plate = k_plate**2
     k_prime_sq_plate = 1 - k_sq_plate
     k_ratio_plate = jaxellip.ellipk(k_prime_sq_plate) / jaxellip.ellipk(k_sq_plate)
-    c_plate_pul = ε_0 * ((ep_r + 1) / 2) * k_ratio_plate
 
     # Broadcast to compute total capacitance for all lengths and gaps (shape: (5, 100))
     # length * 1e-6 happens in the analytical formula, here we replicate it
