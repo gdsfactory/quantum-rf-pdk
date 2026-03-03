@@ -1,6 +1,5 @@
 name: Feature Request
 description: Suggest a new feature or enhancement for quantum-rf-pdk
-title: ""
 type: "Feature"
 labels: ["enhancement"]
 body:
