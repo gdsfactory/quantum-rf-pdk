@@ -22,11 +22,11 @@ from qpdk.models.waveguides import straight
 
 @partial(jax.jit, inline=True)
 def cpw_cpw_coupling_capacitance_per_length_analytical(
-    gap: float,
-    width: float,
-    cpw_gap: float,
-    ep_r: float,
-) -> float:
+    gap: float | ArrayLike,
+    width: float | ArrayLike,
+    cpw_gap: float | ArrayLike,
+    ep_r: float | ArrayLike,
+) -> float | jax.Array:
     r"""Analytical formula for ECCPW mutual capacitance per unit length.
 
     The model follows the edge-coupled coplanar waveguide (ECCPW) formula
@@ -86,10 +86,10 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
 
 def cpw_cpw_coupling_capacitance(
     f: sax.FloatArrayLike,
-    length: float,
-    gap: float,
+    length: float | ArrayLike,
+    gap: float | ArrayLike,
     cross_section: CrossSectionSpec,
-) -> float:
+) -> float | jax.Array:
     r"""Calculate the coupling capacitance between two parallel CPWs.
 
     Args:
