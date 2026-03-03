@@ -11,16 +11,24 @@ grounded, so we use a grounded LC resonator.
 The helper functions convert between qubit Hamiltonian parameters (charging
 energy :math:`E_C`, Josephson energy :math:`E_J`, coupling strength :math:`g`) and the
 corresponding circuit parameters (capacitance, inductance).
+
+References:
+    - :cite:`kochChargeinsensitiveQubitDesign2007a`
+    - :cite:`gaoPhysicsSuperconductingMicrowave2008`
 """
 
+import math
 from functools import partial
 
 import jax
 import jax.numpy as jnp
 import sax
+from sax.models.rf import capacitor as sax_capacitor
+from sax.models.rf import electrical_short, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
+from qpdk.models.waveguides import straight_shorted
 
 __all__ = [
     "coupling_strength_to_capacitance",
@@ -88,7 +96,7 @@ def ej_to_inductance(ej_ghz: float) -> float:
         >>> print(f"{L * 1e9:.2f} nH")  # ~1.0 nH
     """
     ej_joules = ej_ghz * 1e9 * h  # Convert GHz to Joules
-    return Φ_0**2 / (4 * jnp.pi**2 * ej_joules)
+    return Φ_0**2 / (4 * math.pi**2 * ej_joules)
 
 
 @partial(jax.jit, inline=True)
@@ -96,32 +104,32 @@ def coupling_strength_to_capacitance(
     g_ghz: float,
     c_sigma: float,
     c_r: float,
-    omega_q_ghz: float,
-    omega_r_ghz: float,
+    f_q_ghz: float,
+    f_r_ghz: float,
 ) -> float:
     r"""Convert coupling strength :math:`g` to coupling capacitance :math:`C_c`.
 
-    In the dispersive limit (:math:`g \ll \omega_q, \omega_r`), the coupling strength
+    In the dispersive limit (:math:`g \ll f_q, f_r`), the coupling strength
     can be related to a coupling capacitance via:
 
     .. math::
 
-        g \approx \frac{1}{2} \frac{C_c}{\sqrt{C_\Sigma C_r}} \sqrt{\omega_q \omega_r}
+        g \approx \frac{1}{2} \frac{C_c}{\sqrt{C_\Sigma C_r}} \sqrt{f_q f_r}
 
     Solving for :math:`C_c`:
 
     .. math::
 
-        C_c = \frac{2g}{\sqrt{\omega_q \omega_r}} \sqrt{C_\Sigma C_r}
+        C_c = \frac{2g}{\sqrt{f_q f_r}} \sqrt{C_\Sigma C_r}
 
-    See :cite:`krantzQuantumEngineersGuide2019` for details.
+    See :cite:`Savola2023,krantzQuantumEngineersGuide2019` for details.
 
     Args:
         g_ghz: Coupling strength in GHz.
         c_sigma: Total qubit capacitance in Farads.
         c_r: Total resonator capacitance in Farads.
-        omega_q_ghz: Qubit frequency in GHz (angular frequency / 2π).
-        omega_r_ghz: Resonator frequency in GHz (angular frequency / 2π).
+        f_q_ghz: Qubit frequency in GHz.
+        f_r_ghz: Resonator frequency in GHz.
 
     Returns:
         Coupling capacitance in Farads.
@@ -131,15 +139,15 @@ def coupling_strength_to_capacitance(
         ...     g_ghz=0.1,
         ...     c_sigma=100e-15,  # 100 fF
         ...     c_r=50e-15,  # 50 fF
-        ...     omega_q_ghz=5.0,
-        ...     omega_r_ghz=7.0,
+        ...     f_q_ghz=5.0,
+        ...     f_r_ghz=7.0,
         ... )
         >>> print(f"{C_c * 1e15:.2f} fF")
     """
     # Use frequencies directly (already in GHz, ratio is dimensionless)
-    sqrt_omega = jnp.sqrt(omega_q_ghz * omega_r_ghz)
+    sqrt_freq = jnp.sqrt(f_q_ghz * f_r_ghz)
     sqrt_c = jnp.sqrt(c_sigma * c_r)
-    return 2 * g_ghz / sqrt_omega * sqrt_c
+    return 2 * g_ghz / sqrt_freq * sqrt_c
 
 
 @partial(jax.jit, inline=True)
@@ -340,11 +348,16 @@ def qubit_with_resonator(
 
     .. svgbob::
 
-                                     +──L──+
-        o1 ──────────────────────────|     │──.
-          "quarter-wave resonator"   +──C──+  | "qubit"
-              (shorted end)        "coupling" |
-                                             "o2"
+                                  "quarter-wave resonator"
+                                  (straight_shorted)
+                                  ┌──────────────────────┐
+                                  │  straight ── short   │
+                                  └──────────────────────┘
+                                         o1
+                                         │
+                   o1 (external) ── tee ─┤
+                                         │
+                                       tee,o2 ── Cc ── qubit ── o2
 
     The qubit can be either:
     - A double-island transmon (``qubit_grounded=False``): both islands floating
@@ -352,6 +365,10 @@ def qubit_with_resonator(
 
     Use :func:`ec_to_capacitance` and :func:`ej_to_inductance` to convert
     from qubit Hamiltonian parameters (:math:`E_C`, :math:`E_J`) to circuit parameters.
+
+    Note:
+        This function is not JIT-compiled because it depends on :func:`~straight_shorted`,
+        which internally uses scikit-rf for transmission line modeling.
 
     Args:
         f: Array of frequency points in Hz.
@@ -383,10 +400,6 @@ def qubit_with_resonator(
         ...     coupling_capacitance=5e-15,
         ... )
     """
-    from sax.models.rf import capacitor, tee
-
-    from qpdk.models.waveguides import straight_shorted
-
     f = jnp.asarray(f)
 
     # Create instances for circuit composition
@@ -401,20 +414,25 @@ def qubit_with_resonator(
         inductance=qubit_inductance,
         grounded=qubit_grounded,
     )
-    coupling_cap = capacitor(f=f, capacitance=coupling_capacitance)
+    coupling_cap = sax_capacitor(f=f, capacitance=coupling_capacitance)
     tee_junction = tee(f=f)
+    # Use a 1-port short to terminate the internally shorted resonator end
+    # to avoid dangling ports in the circuit evaluation.
+    terminator = electrical_short(f=f, n_ports=1)
 
     instances: dict[str, sax.SType] = {
         "resonator": resonator,
         "qubit": qubit,
         "coupling_capacitor": coupling_cap,
         "tee": tee_junction,
+        "terminator": terminator,
     }
 
     # Connect: resonator -- tee -- capacitor -- qubit
     # The tee splits the resonator signal to the coupling capacitor
     connections = {
         "resonator,o1": "tee,o1",
+        "resonator,o2": "terminator,o1",  # Explicitly terminate
         "tee,o2": "coupling_capacitor,o1",
         "coupling_capacitor,o2": "qubit,o1",
     }

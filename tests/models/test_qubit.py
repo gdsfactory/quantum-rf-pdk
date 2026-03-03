@@ -99,8 +99,8 @@ class TestCouplingStrengthToCapacitance:
             g_ghz=0.1,
             c_sigma=80e-15,
             c_r=50e-15,
-            omega_q_ghz=5.0,
-            omega_r_ghz=7.0,
+            f_q_ghz=5.0,
+            f_r_ghz=7.0,
         )
 
         # Should give a few fF coupling capacitance
@@ -114,15 +114,15 @@ class TestCouplingStrengthToCapacitance:
             g_ghz=0.05,
             c_sigma=80e-15,
             c_r=50e-15,
-            omega_q_ghz=5.0,
-            omega_r_ghz=7.0,
+            f_q_ghz=5.0,
+            f_r_ghz=7.0,
         )
         C_c_strong = coupling_strength_to_capacitance(
             g_ghz=0.2,
             c_sigma=80e-15,
             c_r=50e-15,
-            omega_q_ghz=5.0,
-            omega_r_ghz=7.0,
+            f_q_ghz=5.0,
+            f_r_ghz=7.0,
         )
         assert C_c_strong > C_c_weak
 
@@ -140,8 +140,8 @@ class TestCouplingStrengthToCapacitance:
             g_ghz=g_ghz,
             c_sigma=c_sigma,
             c_r=c_r,
-            omega_q_ghz=5.0,
-            omega_r_ghz=7.0,
+            f_q_ghz=5.0,
+            f_r_ghz=7.0,
         )
         assert C_c > 0
 
@@ -329,14 +329,14 @@ class TestIntegration:
 
         # Calculate qubit frequency (simplified)
         f_r = 1 / (2 * np.pi * np.sqrt(L * C))
-        omega_q_ghz = f_r / 1e9
+        f_q_ghz = f_r / 1e9
 
         C_c = coupling_strength_to_capacitance(
             g_ghz=g_ghz,
             c_sigma=C,
             c_r=C_r,
-            omega_q_ghz=omega_q_ghz,
-            omega_r_ghz=7.0,
+            f_q_ghz=f_q_ghz,
+            f_r_ghz=7.0,
         )
 
         # Create coupled model
