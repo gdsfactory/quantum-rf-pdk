@@ -68,6 +68,7 @@ def qubit_with_resonator(
         orientation=0,
         layer=LAYER.M1_DRAW,
         width=10.0,
+        kcl=c.kcl,
     )
     route = route_single_cpw(
         component=c,
@@ -96,11 +97,9 @@ def qubit_with_resonator(
     c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
     c.add_port(
         center=(res_port := resonator_ref.ports["o1"]).center,
-        cross_section=res_port.cross_section,
         layer=res_port.layer,
         name=res_port.name,
         orientation=res_port.orientation,
-        port_type="placement",
         width=res_port.width,
     )
     return c
