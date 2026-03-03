@@ -171,9 +171,7 @@ def coupler_straight(
     f_flat = f.ravel()
     straight_settings = {"length": length / 2, "cross_section": cross_section}
     capacitor_settings = {
-        "capacitance": cpw_cpw_coupling_capacitance(
-            f, length, gap, cross_section
-        ),
+        "capacitance": cpw_cpw_coupling_capacitance(f, length, gap, cross_section),
         "z0": cross_section_to_media(cross_section)(
             frequency=skrf.Frequency.from_f(
                 np.atleast_1d(np.asarray(f_flat)), unit="Hz"
