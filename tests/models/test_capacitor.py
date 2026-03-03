@@ -76,3 +76,44 @@ def test_interdigital_capacitor_scaling() -> None:
     diff1 = c6 - c4
     diff2 = c8 - c6
     assert np.isclose(diff1, diff2, rtol=1e-10)
+
+
+def test_plate_capacitor_capacitance_analytical_monotonicity() -> None:
+    """Test that plate_capacitor_capacitance_analytical behaves monotonically."""
+    from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
+
+    width = 5.0
+    gap = 7.0
+    ep_r = 10.0
+
+    # Monotonicity with length (increases)
+    c_len1 = plate_capacitor_capacitance_analytical(
+        length=10.0, width=width, gap=gap, ep_r=ep_r
+    )
+    c_len2 = plate_capacitor_capacitance_analytical(
+        length=20.0, width=width, gap=gap, ep_r=ep_r
+    )
+    assert c_len2 > c_len1
+
+    # Monotonicity with gap (decreases)
+    c_gap1 = plate_capacitor_capacitance_analytical(
+        length=10.0, width=width, gap=5.0, ep_r=ep_r
+    )
+    c_gap2 = plate_capacitor_capacitance_analytical(
+        length=10.0, width=width, gap=10.0, ep_r=ep_r
+    )
+    assert c_gap1 > c_gap2
+
+
+def test_plate_capacitor_capacitance_analytical_consistency() -> None:
+    """Test that plate_capacitor_capacitance_analytical yields expected physically-reasonable values."""
+    from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
+
+    # Parameters roughly from standard component designs
+    c = plate_capacitor_capacitance_analytical(
+        length=26.0, width=5.0, gap=7.0, ep_r=11.7
+    )
+
+    c_ff = float(c) * 1e15
+    # The expected capacitance for this geometry is ~2 fF.
+    assert np.isclose(c_ff, 2.0734, rtol=1e-3)
