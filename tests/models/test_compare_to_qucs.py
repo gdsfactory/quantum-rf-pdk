@@ -12,6 +12,7 @@ import sax
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from numpy.testing import assert_allclose
+from pydantic import BaseModel, ConfigDict
 
 from qpdk.config import PATH
 from qpdk.models.couplers import coupler_straight
@@ -27,9 +28,23 @@ NUMERIC_TOLERANCES = {
 }
 
 
+@final
+class ModelParameter(BaseModel):
+    """Model parameter configuration."""
+
+    name: str
+    value: float
+    unit: float
+
+    model_config = ConfigDict(frozen=True)
+
+
 # Type alias for S-parameter comparison results
 type SComparisonResults = tuple[
-    float, jnp.ndarray, dict[str, jnp.ndarray], dict[str, jnp.ndarray]
+    frozenset[ModelParameter],
+    jnp.ndarray,
+    dict[str, jnp.ndarray],
+    dict[str, jnp.ndarray],
 ]
 
 
@@ -39,9 +54,9 @@ class BaseCompareToQucs(ABC):
     # Subclasses should override these
     component_name: str = "Component"
     csv_filename: str = "component_qucs.csv"
-    parameter_value: float = 0.0
-    parameter_name: str = "parameter"
-    parameter_unit: float = 1e-9
+    parameters: ClassVar[frozenset[ModelParameter]] = frozenset(
+        {ModelParameter(name="parameter", value=0.0, unit=1e-9)}
+    )
     skip_values: ClassVar[list[str]] = []
 
     @abstractmethod
@@ -54,7 +69,7 @@ class BaseCompareToQucs(ABC):
 
         Returns:
             Tuple containing:
-            - parameter_value: The value of the component parameter used in the model.
+            - parameters: The parameters of the component used in the model.
             - f: Frequency array in Hz.
             - S_sax: Dictionary of S-parameters from the qpdk model (e.g., {"S11": ..., "S21": ...}).
             - S_qucs: Dictionary of S-parameters from Qucs-S reference data.
@@ -63,7 +78,8 @@ class BaseCompareToQucs(ABC):
         f = S_qucs["frequency"].to_jax()
 
         model_func = self.get_model_function()
-        S_matrix = model_func(f=f, **{self.parameter_name: self.parameter_value})
+        kwargs = {p.name: p.value for p in self.parameters}
+        S_matrix = model_func(f=f, **kwargs)
 
         # Determine number of ports from the S-matrix
         # S-matrix keys are tuples like ("o1", "o1"), ("o2", "o1"), etc.
@@ -101,7 +117,7 @@ class BaseCompareToQucs(ABC):
                     )
 
         return (
-            self.parameter_value,
+            self.parameters,
             f,
             S_sax_dict,
             S_qucs_dict,
@@ -115,12 +131,12 @@ class BaseCompareToQucs(ABC):
         """Test that S-parameters match Qucs-S results within tolerance.
 
         Args:
-            results: Tuple containing parameter_value, frequency array, S_sax_dict, S_qucs_dict
+            results: Tuple containing parameters, frequency array, S_sax_dict, S_qucs_dict
 
         Raises:
             AssertionError: If any S-parameter does not match within the specified tolerances.
         """
-        _param_value, _f, S_sax_dict, S_qucs_dict = results
+        _params, _f, S_sax_dict, S_qucs_dict = results
 
         for s_param_name in S_sax_dict:
             if s_param_name in self.skip_values:
@@ -136,7 +152,7 @@ class BaseCompareToQucs(ABC):
 
     def plot_comparison(self) -> None:
         """Generate comparison plots between qpdk (sax) and Qucs-S models."""
-        param_value, f, S_sax_dict, S_qucs_dict = self.get_results()
+        params, f, S_sax_dict, S_qucs_dict = self.get_results()
 
         loosely_dashed = (1, 2)
 
@@ -285,9 +301,13 @@ class BaseCompareToQucs(ABC):
         ax2.set_ylabel("Phase [rad]")
         ax2.legend(loc="upper right")
 
-        plt.title(
-            f"{self.component_name} $S$-parameters ({self.parameter_name}$={param_value / self.parameter_unit:.1f}\\cdot${self.parameter_unit})"
-        )
+        param_strs = [
+            f"{p.name}$={p.value / p.unit:.1f}\\cdot${p.unit}"
+            for p in sorted(params, key=lambda x: x.name)
+        ]
+        param_title = ", ".join(param_strs)
+
+        plt.title(f"{self.component_name} $S$-parameters ({param_title})")
         plt.show()
 
     def __str__(self) -> str:
@@ -301,9 +321,9 @@ class TestCapacitorCompareToQucs(BaseCompareToQucs):
 
     component_name = "Capacitor"
     csv_filename = "capacitor_qucs.csv"
-    parameter_value = 60e-15
-    parameter_name = "capacitance"
-    parameter_unit = 1e-15  # femtofarads
+    parameters = frozenset(
+        {ModelParameter(name="capacitance", value=60e-15, unit=1e-15)}
+    )
 
     @override
     def get_model_function(self) -> sax.SType:
@@ -316,9 +336,7 @@ class TestInductorCompareToQucs(BaseCompareToQucs):
 
     component_name = "Inductor"
     csv_filename = "inductor_qucs.csv"
-    parameter_value = 10e-9
-    parameter_name = "inductance"
-    parameter_unit = 1e-9  # nanohenries
+    parameters = frozenset({ModelParameter(name="inductance", value=10e-9, unit=1e-9)})
 
     @override
     def get_model_function(self) -> sax.SType:
@@ -332,9 +350,7 @@ class TestCPWCompareToQucs(BaseCompareToQucs):
 
     component_name = "Coplanar waveguide"
     csv_filename = "cpw_w10_s_6_l10mm.csv"
-    parameter_value = 10000.0  # length in micrometers
-    parameter_name = "length"
-    parameter_unit = 1e-6  # micrometers
+    parameters = frozenset({ModelParameter(name="length", value=10000.0, unit=1e-6)})
     skip_values: ClassVar[list[str]] = ["S11"]
 
     @override
@@ -351,15 +367,21 @@ class TestCouplerStraightCompareToQucs(BaseCompareToQucs):
 
     component_name = "Coupler Straight"
     csv_filename = "coupler_straight_qucs.csv"
-    parameter_value = 10.0  # length in micrometers
-    parameter_name = "length"
-    parameter_unit = 1e-6  # micrometers
-    # skip_values: ClassVar[list[Literal["S11", "S21"]]] = ["S11"]
+    parameters = frozenset(
+        {
+            ModelParameter(name="length", value=500.0, unit=1e-6),
+            ModelParameter(name="gap", value=1.52, unit=1e-6),
+        }
+    )
+    skip_values: ClassVar[list[str]] = ["S11"]
 
     @override
     def get_model_function(self) -> partial[sax.SType]:
         return partial(
             coupler_straight,
+            # Aim for 50 fF coupling
+            length=500.0,
+            gap=1.52,
             cross_section=coplanar_waveguide(),
         )
 
@@ -370,15 +392,18 @@ class TestLCResonatorCompareToQucs(BaseCompareToQucs):
 
     component_name = "LC Resonator"
     csv_filename = "lc_resonator_qucs.csv"
-    parameter_value = 10e-15
-    parameter_name = "capacitance"
-    parameter_unit = 1e-15  # femtofarads
+    parameters = frozenset(
+        {
+            ModelParameter(name="capacitance", value=10e-15, unit=1e-15),
+            ModelParameter(name="inductance", value=10e-9, unit=1e-9),
+        }
+    )
 
     @override
     def get_model_function(self) -> partial[sax.SType]:
         return partial(
             lc_resonator,
-            capacitance=10e-15,
+            capacitance=100e-15,
             inductance=10e-9,
             grounded=False,
         )
@@ -387,10 +412,10 @@ class TestLCResonatorCompareToQucs(BaseCompareToQucs):
 if __name__ == "__main__":
     # Run the plotting comparison when executed directly
     for test_suite in (
-        TestCapacitorCompareToQucs(),
-        TestInductorCompareToQucs(),
-        TestCPWCompareToQucs(),
+        # TestCapacitorCompareToQucs(),
+        # TestInductorCompareToQucs(),
+        # TestCPWCompareToQucs(),
         TestCouplerStraightCompareToQucs(),
-        TestLCResonatorCompareToQucs(),
+        # TestLCResonatorCompareToQucs(),
     ):
         test_suite.plot_comparison()

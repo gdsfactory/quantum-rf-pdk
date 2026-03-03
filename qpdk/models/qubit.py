@@ -23,8 +23,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import sax
-from sax.models.rf import capacitor as sax_capacitor
-from sax.models.rf import electrical_short, tee
+from sax.models.rf import capacitor, electrical_short, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
@@ -414,7 +413,7 @@ def qubit_with_resonator(
         inductance=qubit_inductance,
         grounded=qubit_grounded,
     )
-    coupling_cap = sax_capacitor(f=f, capacitance=coupling_capacitance)
+    coupling_cap = capacitor(f=f, capacitance=coupling_capacitance)
     tee_junction = tee(f=f)
     # Use a 1-port short to terminate the internally shorted resonator end
     # to avoid dangling ports in the circuit evaluation.

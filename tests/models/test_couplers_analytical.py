@@ -4,10 +4,9 @@ import jax.numpy as jnp
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from qpdk.models.couplers import cpw_cpw_coupling_capacitance_analytical
+from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
 
 # Bounds are set to physically reasonable values to avoid numerical issues
-lengths = st.floats(min_value=10.0, max_value=1000.0)
 permittivities = st.floats(min_value=1.0, max_value=20.0)
 
 
@@ -48,112 +47,84 @@ def valid_monotonic_geometries(draw: st.DrawFn) -> tuple[float, float, float, fl
 
 
 @given(
-    length=lengths,
     geometry=valid_cpw_geometry(),
     ep_r=permittivities,
 )
 def test_cpw_cpw_coupling_capacitance_positivity(
-    length: float, geometry: tuple[float, float, float], ep_r: float
+    geometry: tuple[float, float, float], ep_r: float
 ) -> None:
     """Verify the formula returns a positive value for all valid CPW geometries."""
     gap, width, cpw_gap = geometry
-    c_m = cpw_cpw_coupling_capacitance_analytical(
-        length=length, gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
     )
-    assert not jnp.isnan(c_m)
-    assert float(c_m) > 0
+    assert not jnp.isnan(c_pul)
+    assert float(c_pul) > 0
 
 
 @given(
-    length=lengths,
     geometries=valid_monotonic_geometries(),
     ep_r=permittivities,
 )
 def test_cpw_cpw_coupling_capacitance_monotonicity(
-    length: float, geometries: tuple[float, float, float, float], ep_r: float
+    geometries: tuple[float, float, float, float], ep_r: float
 ) -> None:
     """Verify coupling capacitance behavior as inter-CPW gap increases."""
     gap1, gap2, width, cpw_gap = geometries
 
-    c_m1 = cpw_cpw_coupling_capacitance_analytical(
-        length=length, gap=gap1, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    c_pul1 = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gap1, width=width, cpw_gap=cpw_gap, ep_r=ep_r
     )
-    c_m2 = cpw_cpw_coupling_capacitance_analytical(
-        length=length, gap=gap2, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    c_pul2 = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gap2, width=width, cpw_gap=cpw_gap, ep_r=ep_r
     )
 
-    # Note: The current analytical implementation yields increasing capacitance
-    # as the physical gap parameter increases.
-    assert float(c_m1) < float(c_m2)
+    # Capacitance per unit length decreases as the physical gap increases.
+    assert float(c_pul1) > float(c_pul2)
 
 
 def test_cpw_cpw_coupling_capacitance_consistency() -> None:
     """Check consistency with expected values for a known geometry.
 
-    For gap=0.27 µm, width=10 µm, cpw_gap=6 µm, ep_r=11.7, length=20 µm,
-    we expect a specific calculated output from the analytical model.
+    For gap=0.27 µm, width=10 µm, cpw_gap=6 µm, ep_r=11.7,
+    we expect a specific calculated output from the analytical model per unit length.
     """
-    length = 20.0
     gap = 0.27
     width = 10.0
     cpw_gap = 6.0
     ep_r = 11.7
 
-    c_m = cpw_cpw_coupling_capacitance_analytical(
-        length=length, gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
     )
 
-    # Convert to femtoFarads
-    c_m_ff = float(c_m) * 1e15
+    # Convert to femtoFarads per meter
+    c_pul_ff_m = float(c_pul) * 1e15
 
-    # Check that it falls within the range computed by the current model
-    assert 1e-7 < c_m_ff < 1e-5
+    # Check that it falls within the expected physical range (around 1.5e5 fF/m)
+    assert 1e4 < c_pul_ff_m < 1e6
 
 
 @given(
-    length=lengths,
-    geometry=valid_cpw_geometry(),
-    ep_r=permittivities,
-    scale=st.floats(min_value=0.1, max_value=10.0),
-)
-def test_cpw_cpw_coupling_capacitance_length_scaling(
-    length: float, geometry: tuple[float, float, float], ep_r: float, scale: float
-) -> None:
-    """Verify that capacitance scales linearly with length."""
-    gap, width, cpw_gap = geometry
-
-    c_m = cpw_cpw_coupling_capacitance_analytical(
-        length=length, gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
-    )
-    c_m_scaled = cpw_cpw_coupling_capacitance_analytical(
-        length=length * scale, gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
-    )
-
-    # Scale linearly
-    assert jnp.isclose(c_m_scaled, float(c_m) * scale, rtol=1e-5)
-
-
-@given(
-    length=lengths,
     geometry=valid_cpw_geometry(),
     ep_r=permittivities,
 )
 def test_cpw_cpw_coupling_capacitance_permittivity_scaling(
-    length: float, geometry: tuple[float, float, float], ep_r: float
+    geometry: tuple[float, float, float], ep_r: float
 ) -> None:
     """Verify that capacitance scales with effective permittivity (ep_r + 1)."""
     gap, width, cpw_gap = geometry
 
-    c_m = cpw_cpw_coupling_capacitance_analytical(
-        length=length, gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
     )
 
     # Reference with vacuum (ep_r = 1.0)
-    c_m_vacuum = cpw_cpw_coupling_capacitance_analytical(
-        length=length, gap=gap, width=width, cpw_gap=cpw_gap, ep_r=1.0
+    c_pul_vacuum = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gap, width=width, cpw_gap=cpw_gap, ep_r=1.0
     )
 
     # ep_eff = (ep_r + 1) / 2
     # c_m should be proportional to ep_eff
     ep_eff_ratio = ((ep_r + 1) / 2) / ((1.0 + 1) / 2)
-    assert jnp.isclose(c_m, float(c_m_vacuum) * ep_eff_ratio, rtol=1e-5)
+    assert jnp.isclose(c_pul, float(c_pul_vacuum) * ep_eff_ratio, rtol=1e-5)
