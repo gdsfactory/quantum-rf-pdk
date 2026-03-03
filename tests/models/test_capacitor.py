@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING, final
 import jax.numpy as jnp
 import numpy as np
 
-from qpdk.models.capacitor import interdigital_capacitor, plate_capacitor
+from qpdk.models.capacitor import (
+    interdigital_capacitor,
+    plate_capacitor,
+    plate_capacitor_capacitance_analytical,
+)
 from tests.models.base import TwoPortModelTestSuite
 
 if TYPE_CHECKING:
@@ -80,8 +84,6 @@ def test_interdigital_capacitor_scaling() -> None:
 
 def test_plate_capacitor_capacitance_analytical_monotonicity() -> None:
     """Test that plate_capacitor_capacitance_analytical behaves monotonically."""
-    from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
-
     width = 5.0
     gap = 7.0
     ep_r = 10.0
@@ -107,8 +109,6 @@ def test_plate_capacitor_capacitance_analytical_monotonicity() -> None:
 
 def test_plate_capacitor_capacitance_analytical_consistency() -> None:
     """Test that plate_capacitor_capacitance_analytical yields expected physically-reasonable values."""
-    from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
-
     # Parameters roughly from standard component designs
     c = plate_capacitor_capacitance_analytical(
         length=26.0, width=5.0, gap=7.0, ep_r=11.7
