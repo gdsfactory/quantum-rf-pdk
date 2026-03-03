@@ -302,7 +302,7 @@ class BaseCompareToQucs(ABC):
         ax2.legend(loc="upper right")
 
         param_strs = [
-            f"{p.name}$={p.value / p.unit:.1f}\\cdot${p.unit}"
+            f"$\\mathtt{{{p.name}}}={p.value / p.unit:.1f}\\cdot${p.unit}"
             for p in sorted(params, key=lambda x: x.name)
         ]
         param_title = ", ".join(param_strs)
