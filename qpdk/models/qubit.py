@@ -400,10 +400,14 @@ def qubit_with_resonator(
         "coupling_capacitor,o2": "qubit,o1",
     }
 
+    if qubit_grounded:
+        connections["qubit,o2"] = "terminator,o2"
+
     ports = {
         "o1": "tee,o3",  # External port for resonator coupling
     }
-    ports["o2"] = "qubit,o2"  # Qubit floating port
+    if not qubit_grounded:
+        ports["o2"] = "qubit,o2"  # Qubit floating port
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
