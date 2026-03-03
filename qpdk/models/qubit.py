@@ -189,11 +189,6 @@ def double_island_transmon(
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
-
-    Example:
-        >>> import jax.numpy as jnp
-        >>> f = jnp.linspace(4e9, 8e9, 100)
-        >>> S = double_island_transmon(f=f, capacitance=80e-15, inductance=7e-9)
     """
     return lc_resonator(
         f=f,
@@ -243,11 +238,6 @@ def shunted_transmon(
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
-
-    Example:
-        >>> import jax.numpy as jnp
-        >>> f = jnp.linspace(4e9, 8e9, 100)
-        >>> S = shunted_transmon(f=f, capacitance=80e-15, inductance=7e-9)
     """
     return lc_resonator(
         f=f,
@@ -304,17 +294,6 @@ def transmon_coupled(
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1 and o2.
-
-    Example:
-        >>> import jax.numpy as jnp
-        >>> f = jnp.linspace(4e9, 8e9, 100)
-        >>> # Capacitively coupled transmon
-        >>> S = transmon_coupled(
-        ...     f=f,
-        ...     capacitance=80e-15,
-        ...     inductance=1.2e-9,
-        ...     coupling_capacitance=5e-15,
-        ... )
     """
     return lc_resonator_coupled(
         f=f,
@@ -386,18 +365,6 @@ def qubit_with_resonator(
     Returns:
         sax.SDict: S-parameters dictionary with ports ``o1`` (resonator input)
             and ``o2`` (qubit ground or floating).
-
-    Example:
-        >>> import jax.numpy as jnp
-        >>> from qpdk.models import ec_to_capacitance, ej_to_inductance
-        >>> f = jnp.linspace(4e9, 8e9, 100)
-        >>> S = qubit_with_resonator(
-        ...     f=f,
-        ...     qubit_capacitance=ec_to_capacitance(0.2),  # E_C = 0.2 GHz
-        ...     qubit_inductance=ej_to_inductance(20.0),   # E_J = 20 GHz
-        ...     resonator_length=5000.0,
-        ...     coupling_capacitance=5e-15,
-        ... )
     """
     f = jnp.asarray(f)
 
