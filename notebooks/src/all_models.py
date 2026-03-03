@@ -345,6 +345,38 @@ print(
     "F",
 )
 
+# %%
+from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
+
+lengths = jnp.linspace(10, 100, 100)
+gaps = jnp.linspace(0.1, 5.0, 5)
+width = 10.0
+cpw_gap = 6.0
+ep_r = 11.7
+
+plt.figure(figsize=(10, 6))
+
+# Calculate capacitance per unit length for all gaps simultaneously (shape: (5,))
+c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+    gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+)
+
+# Broadcast to compute total capacitance for all lengths and gaps (shape: (5, 100))
+capacitances = c_pul[:, None] * lengths[None, :] * 1e-6 * 1e15  # Convert to fF
+
+for i, gap in enumerate(gaps):
+    plt.plot(lengths, capacitances[i], label=f"gap = {gap:.1f} µm")
+
+plt.xlabel("Coupling Length (µm)")
+plt.ylabel("Mutual Capacitance (fF)")
+plt.title(
+    rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}}=${width} µm, $\mathtt{{cpw\_gap}}=${cpw_gap} µm, $\epsilon_r={ep_r}$)"
+)
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
 # %% [markdown]
 # ## Resonators
 

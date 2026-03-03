@@ -21,14 +21,13 @@ from qpdk.models.waveguides import straight
 
 
 @partial(jax.jit, inline=True)
-def cpw_cpw_coupling_capacitance_analytical(
-    length: float,
+def cpw_cpw_coupling_capacitance_per_length_analytical(
     gap: float,
     width: float,
     cpw_gap: float,
     ep_r: float,
 ) -> float:
-    r"""Analytical formula for ECCPW mutual capacitance.
+    r"""Analytical formula for ECCPW mutual capacitance per unit length.
 
     The model follows the edge-coupled coplanar waveguide (ECCPW) formula
     using conformal mapping for even and odd modes:
@@ -38,11 +37,11 @@ def cpw_cpw_coupling_capacitance_analytical(
         x_1 &= s_c / 2 \\
         x_2 &= x_1 + W \\
         x_3 &= x_2 + G \\
-        k_e &= \frac{x_1}{x_2} \sqrt{\frac{x_3^2 - x_2^2}{x_3^2 - x_1^2}} \\
-        k_o &= \frac{x_1}{x_3} \sqrt{\frac{x_3^2 - x_2^2}{x_2^2 - x_1^2}} \\
+        k_e &= \sqrt{\frac{x_2^2 - x_1^2}{x_3^2 - x_1^2}} \\
+        k_o &= \frac{x_1}{x_2} \sqrt{\frac{x_3^2 - x_2^2}{x_3^2 - x_1^2}} \\
         C_{\text{even}} &= 2 \epsilon_0 \epsilon_{\text{eff}} \frac{K(k_e)}{K(k_e')} \\
-        C_{\text{odd}} &= 2 \epsilon_0 \epsilon_{\text{eff}} \frac{K(k_o)}{K(k_o')} \\
-        C_m &= L \frac{C_{\text{odd}} - C_{\text{even}}}{2}
+        C_{\text{odd}} &= 2 \epsilon_0 \epsilon_{\text{eff}} \frac{K(k_o')}{K(k_o)} \\
+        C_m &= \frac{C_{\text{odd}} - C_{\text{even}}}{2}
 
     where :math:`s_c` is the separation (gap) between inner edges, :math:`W` is the
     center conductor width, and :math:`G` is the gap to the ground plane.
@@ -50,16 +49,15 @@ def cpw_cpw_coupling_capacitance_analytical(
     See :cite:`simonsCoplanarWaveguideCircuits2001`.
 
     Args:
-        length: The coupling length in µm.
         gap: The gap (separation) between the two center conductors in µm.
         width: Center conductor width in µm.
         cpw_gap: Gap between center conductor and ground plane in µm.
         ep_r: Relative permittivity of the substrate.
 
     Returns:
-        The total coupling capacitance in Farads.
+        The mutual coupling capacitance per unit length in Farads/meter.
     """
-    ep_eff = (ep_r + 1) / 2
+    ε_eff = (ep_r + 1) / 2
 
     # Geometric parameters in m (convert from μm)
     s_c = gap * 1e-6
@@ -71,21 +69,19 @@ def cpw_cpw_coupling_capacitance_analytical(
     x3 = x2 + g_m
 
     # Even-mode modulus
-    ke_sq = (x1**2 / x2**2) * ((x3**2 - x2**2) / (x3**2 - x1**2))
+    ke_sq = (x2**2 - x1**2) / (x3**2 - x1**2)
     ke_prime_sq = 1 - ke_sq
 
     # Odd-mode modulus
-    ko_sq = (x1**2 / x3**2) * ((x3**2 - x2**2) / (x2**2 - x1**2))
+    ko_sq = (x1**2 / x2**2) * ((x3**2 - x2**2) / (x3**2 - x1**2))
     ko_prime_sq = 1 - ko_sq
 
     # Capacitances per unit length
-    c_even_pul = (
-        2 * ε_0 * ep_eff * jaxellip.ellipk(ke_sq) / jaxellip.ellipk(ke_prime_sq)
-    )
-    c_odd_pul = 2 * ε_0 * ep_eff * jaxellip.ellipk(ko_sq) / jaxellip.ellipk(ko_prime_sq)
+    c_even_pul = 2 * ε_0 * ε_eff * jaxellip.ellipk(ke_sq) / jaxellip.ellipk(ke_prime_sq)
+    c_odd_pul = 2 * ε_0 * ε_eff * jaxellip.ellipk(ko_prime_sq) / jaxellip.ellipk(ko_sq)
 
-    # Total mutual capacitance
-    return (length * 1e-6) * (c_odd_pul - c_even_pul) / 2
+    # Mutual capacitance per unit length
+    return (c_odd_pul - c_even_pul) / 2
 
 
 def cpw_cpw_coupling_capacitance(
@@ -135,13 +131,13 @@ def cpw_cpw_coupling_capacitance(
         )
         cpw_gap = 6.0
 
-    return cpw_cpw_coupling_capacitance_analytical(
-        length=length,
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
         gap=gap,
         width=width,
         cpw_gap=cpw_gap,
         ep_r=ep_r,
     )
+    return c_pul * length * 1e-6
 
 
 def coupler_straight(
@@ -232,3 +228,36 @@ def coupler_ring(
         sax.SType: S-parameters dictionary
     """
     return coupler_straight(f=f, length=length, gap=gap, cross_section=cross_section)
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    lengths = jnp.linspace(10, 1000, 10)
+    gaps = jnp.geomspace(0.1, 5.0, 6)
+    width = 10.0
+    cpw_gap = 6.0
+    ep_r = 11.7
+
+    plt.figure(figsize=(10, 6))
+
+    # Calculate capacitance per unit length for all gaps simultaneously (shape: (6,))
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    )
+
+    # Broadcast to compute total capacitance for all lengths and gaps (shape: (6, 1000))
+    capacitances = c_pul[:, None] * lengths[None, :] * 1e-6 * 1e15  # Convert to fF
+
+    for i, gap in enumerate(gaps):
+        plt.plot(lengths, capacitances[i], label=f"gap = {gap:.1f} µm")
+
+    plt.xlabel("Coupling Length (µm)")
+    plt.ylabel("Mutual Capacitance (fF)")
+    plt.title(
+        rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}}=${width} µm, $\mathtt{{cpw\_gap}}=${cpw_gap} µm, $\epsilon_r={ep_r}$)"
+    )
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
