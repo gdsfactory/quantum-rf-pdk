@@ -29,6 +29,7 @@ these guidelines when contributing:
 
 - `qpdk/`: Core Python package containing quantum device components and PDK configuration
 - `qpdk/cells/`: Device cell, or gdsfactory component, definitions (transmons, resonators, couplers, etc.)
+- `qpdk/models/`: S-parameter and circuit models for quantum RF components
 - `qpdk/klayout/`: KLayout technology files and layer definitions
 - `qpdk/tech.py`: Layer stack and main technology cross sections etc.
 - `tests/`: Test suite using pytest
@@ -92,17 +93,24 @@ All PRs must pass:
 1. **Prefer Justfile commands**: Use `just` commands instead of direct tool invocation if possible
 1. **Write comprehensive tests**: Add tests for new functionality following existing patterns in `tests/`
 1. **Document quantum-specific behavior**: Include docstrings explaining the quantum physics and device characteristics,
-   ideally with citations
+   ideally with citations. Use `:math:` notation for inline LaTeX math (avoid `$` or `$$`).
 1. **Expose new components to PDK**: Import new all components from new files with the form `from ... import *` in
    `qpdk/cells/__init__.py`
 1. **Use predefined layers**: Prefer predefined layers from the `LAYER` enumerable in `qpdk/tech.py`. An agent rarely
    needs to create a new layer.
+1. **Use centralized physical constants**: Prefer using physical constants (like `e`, `h`, `Φ_0`, `ε_0`) from
+   `qpdk/models/constants.py` instead of defining them locally.
+1. **Use JAX for analytical models**: When implementing analytical models for S-parameters, prefer using JAX-compatible
+   functions (e.g., `jnp` instead of `np`, `jaxellip` for elliptic integrals) and enable JIT compilation with
+   `@partial(jax.jit, inline=True)` for helper functions.
 
 ## Testing Guidelines
 
 - **Component tests**: Each new component should be added to the cell registry with `@gf.cell`
 - **Netlist validation**: Components must generate valid netlists that can be round-tripped (component -> netlist ->
   component). This is tested by `test_netlists` in `tests/test_pdk.py`.
+- **Model tests**: New models should have unit tests in `tests/models/` verifying their behavior, passivity, and
+  reciprocity.
 - **Prefer using the `hypothesis` library**: Use the `hypothesis` library to generate tests with generic arguments with
   appropriate types
 

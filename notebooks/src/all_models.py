@@ -235,6 +235,79 @@ ax2.legend(loc="upper right")
 plt.title(f"Inductor $S$-parameters ($L={inductance * 1e9}\\,$nH)")
 plt.show()
 
+# %%
+
+from qpdk.models.capacitor import (
+    interdigital_capacitor_capacitance_analytical,
+    plate_capacitor_capacitance_analytical,
+)
+
+# 1. Plot Plate Capacitor Capacitance vs. Length for different Gaps
+lengths_plate = jnp.linspace(10, 500, 100)
+gaps_plate = jnp.geomspace(1.0, 20.0, 5)
+width_plate = 10.0
+ep_r = 11.7
+
+plt.figure(figsize=(10, 6))
+
+# Broadcast to compute total capacitance for all lengths and gaps (shape: (5, 100))
+capacitances_plate = (
+    plate_capacitor_capacitance_analytical(
+        length=lengths_plate[None, :],
+        width=width_plate,
+        gap=gaps_plate[:, None],
+        ep_r=ep_r,
+    )
+    * 1e15
+)  # Convert to fF
+
+for i, gap in enumerate(gaps_plate):
+    plt.plot(lengths_plate, capacitances_plate[i], label=f"gap = {gap:.1f} µm")
+
+plt.xlabel("Pad Length (µm)")
+plt.ylabel("Capacitance (fF)")
+plt.title(
+    rf"Plate Capacitor Capacitance ($\mathtt{{width}}=${width_plate} µm, $\epsilon_r={ep_r}$)"
+)
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# %%
+# 2. Plot Interdigital Capacitor Capacitance vs. Finger Length for different Finger Counts
+finger_lengths = jnp.linspace(10, 100, 100)
+finger_counts = jnp.arange(2, 11, 2)  # [2, 4, 6, 8, 10]
+finger_gap = 2.0
+thickness = 5.0
+
+plt.figure(figsize=(10, 6))
+
+# Broadcast to compute total capacitance for all lengths and counts (shape: (5, 100))
+capacitances_idc = (
+    interdigital_capacitor_capacitance_analytical(
+        fingers=finger_counts[:, None],
+        finger_length=finger_lengths[None, :],
+        finger_gap=finger_gap,
+        thickness=thickness,
+        ep_r=ep_r,
+    )
+    * 1e15
+)  # Convert to fF
+
+for i, n in enumerate(finger_counts):
+    plt.plot(finger_lengths, capacitances_idc[i], label=f"n = {n} fingers")
+
+plt.xlabel("Overlap Length (µm)")
+plt.ylabel("Mutual Capacitance (fF)")
+plt.title(
+    rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}}=${finger_gap} µm, $\mathtt{{thickness}}=${thickness} µm, $\epsilon_r={ep_r}$)"
+)
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
 # %% [markdown]
 # ## Waveguides
 
@@ -344,6 +417,38 @@ print(
     coupling_capacitance,
     "F",
 )
+
+# %%
+from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
+
+lengths = jnp.linspace(10, 100, 100)
+gaps = jnp.linspace(0.1, 5.0, 5)
+width = 10.0
+cpw_gap = 6.0
+ep_r = 11.7
+
+plt.figure(figsize=(10, 6))
+
+# Calculate capacitance per unit length for all gaps simultaneously (shape: (5,))
+c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+    gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+)
+
+# Broadcast to compute total capacitance for all lengths and gaps (shape: (5, 100))
+capacitances = c_pul[:, None] * lengths[None, :] * 1e-6 * 1e15  # Convert to fF
+
+for i, gap in enumerate(gaps):
+    plt.plot(lengths, capacitances[i], label=f"gap = {gap:.1f} µm")
+
+plt.xlabel("Coupling Length (µm)")
+plt.ylabel("Mutual Capacitance (fF)")
+plt.title(
+    rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}}=${width} µm, $\mathtt{{cpw\_gap}}=${cpw_gap} µm, $\epsilon_r={ep_r}$)"
+)
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
 
 # %% [markdown]
 # ## Resonators
