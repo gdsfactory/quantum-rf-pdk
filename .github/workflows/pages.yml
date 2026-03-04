@@ -3,7 +3,9 @@ permissions:
   contents: read
 on:
   pull_request:
-  push:
+  workflow_run:
+    workflows: ["Test"]
+    types: [completed]
     branches:
       - main
   merge_group:
@@ -109,7 +111,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy to GitHub Pages
     needs: [build-docs, build-docs-pdf, get-latest-python]
-    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+
     permissions:
       pages: write
       id-token: write
@@ -128,13 +132,13 @@ jobs:
           name: pdf-docs
           path: _site
       - name: Download coverage report
-        uses: dawidd6/action-download-artifact@v16
+        uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          workflow: test.yml
-          commit: ${{ github.sha }}
           name: coverage-report-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site/reports/coverage
+          run-id: ${{ github.event.workflow_run.id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload merged pages artifact
         uses: actions/upload-pages-artifact@v4
       - name: Deploy to GitHub Pages
