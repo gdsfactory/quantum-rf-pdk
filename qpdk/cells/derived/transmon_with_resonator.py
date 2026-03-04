@@ -12,7 +12,7 @@ from klayout.db import DCplxTrans
 from qpdk.cells.capacitor import plate_capacitor_single
 from qpdk.cells.resonator import resonator_quarter_wave
 from qpdk.helper import show_components
-from qpdk.tech import LAYER, route_single_cpw
+from qpdk.tech import LAYER, route_bundle_cpw
 
 
 @gf.cell
@@ -70,13 +70,14 @@ def qubit_with_resonator(
         width=10.0,
         kcl=c.kcl,
     )
-    route = route_single_cpw(
+    routes = route_bundle_cpw(
         component=c,
-        port1=resonator_input_port,
-        port2=coupler_ref.ports["o1"],
+        ports1=[resonator_input_port],
+        ports2=[coupler_ref.ports["o1"]],
         steps=[{"x": coupler_ref.ports["o1"].x}],
         auto_taper=False,
     )
+    route = routes[0]
     resonator_ref = c << gf.get_component(
         resonator,
         length=resonator_length - route.length * c.kcl.dbu,
@@ -96,7 +97,8 @@ def qubit_with_resonator(
 
     c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
     c.add_port(
-        port=resonator_ref.ports["o1"], port_type="placement", cross_section=None
+        port=resonator_ref.ports["o1"],
+        port_type="placement",
     )
     return c
 
