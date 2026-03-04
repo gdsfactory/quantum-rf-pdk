@@ -39,6 +39,7 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-svgbob",
 ]
+github = ["coverage-badge"]
 lint = ["prek", { include-group = "stubs" }]
 stubs = ["scipy-stubs"]
 test = [
@@ -202,6 +203,9 @@ convention = "google"
 
 [tool.tombi.schema]
 strict = false
+
+[tool.uv]
+default-groups = ["dev", "docs", "lint", "stubs", "test"]
 
 [tool.uv.build-backend]
 module-root = ""
