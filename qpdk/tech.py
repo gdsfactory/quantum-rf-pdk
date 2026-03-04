@@ -38,7 +38,7 @@ class LayerMapQPDK(LayerMap):
     # Additive wins over subtractive where they overlap
     # i.e., you can draw metal over an etched region to "fill it back in"
 
-    # flip-cihp equivalents
+    # flip-chip equivalents
     M2_DRAW: Layer = (2, 0)
     M2_ETCH: Layer = (2, 1)
 
@@ -182,6 +182,7 @@ LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp)
 
 LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
     ("M1_DRAW", "TSV", "M2_DRAW"),
+    ("M1_DRAW", "IND", "M2_DRAW"),
     ("M1_DRAW", "AB_DRAW", "M1_DRAW"),
     ("M2_DRAW", "AB_DRAW", "M2_DRAW"),
 ]
