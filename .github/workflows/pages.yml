@@ -132,7 +132,7 @@ jobs:
         continue-on-error: true
         with:
           workflow: test.yml
-          branch: main
+          commit: ${{ github.sha }}
           name: coverage-report-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site/reports/coverage
       - name: Upload merged pages artifact

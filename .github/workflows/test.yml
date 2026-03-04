@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: just install
       - name: Test with pytest
-        run: just test --cov=qpdk --cov-report=html
+        run: just test ${{ (github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest') && '--cov=qpdk --cov-report=html' || '' }}
       - name: Generate coverage badge
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
         run: uv run --group dev --group github coverage-badge -o htmlcov/coverage.svg
