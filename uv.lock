@@ -2510,6 +2510,7 @@ docs = [
 ]
 github = [
     { name = "coverage-badge" },
+    { name = "setuptools" },
 ]
 lint = [
     { name = "prek" },
@@ -2565,7 +2566,10 @@ docs = [
     { name = "sphinxcontrib-katex" },
     { name = "sphinxcontrib-svgbob" },
 ]
-github = [{ name = "coverage-badge" }]
+github = [
+    { name = "coverage-badge" },
+    { name = "setuptools" },
+]
 lint = [
     { name = "prek" },
     { name = "scipy-stubs" },
