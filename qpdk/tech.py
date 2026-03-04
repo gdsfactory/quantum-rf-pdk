@@ -2,7 +2,7 @@
 
 from collections.abc import Callable, Sequence
 from functools import cache, partial, wraps
-from typing import Any, cast
+from typing import Any
 
 import gdsfactory as gf
 from doroutes.bundles import add_bundle_astar
@@ -410,14 +410,12 @@ if __name__ == "__main__":
         print(f"\t{yaml_layer_name}: Layer = {yaml_layer_tuple}")
     print("}")
 
-    connectivity = cast(list[ConnectivitySpec], [("M1_DRAW", "TSV", "M2_DRAW")])
-
     klayout_tech = KLayoutTechnology(
         name="qpdk",
         layer_map=LAYER,
         layer_views=LAYER_VIEWS,
         layer_stack=LAYER_STACK,
-        connectivity=connectivity,
+        connectivity=LAYER_CONNECTIVITY,
     )
     klayout_tech.write_tech(tech_dir=PATH.klayout)
     # print(DEFAULT_CROSS_SECTION_NAMES)
