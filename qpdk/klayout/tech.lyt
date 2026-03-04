@@ -132,11 +132,11 @@
    <write-cell-properties>false</write-cell-properties>
    <write-file-properties>false</write-file-properties>
    <no-zero-length-paths>false</no-zero-length-paths>
+   <default-text-size>-1</default-text-size>
    <multi-xy-records>false</multi-xy-records>
    <resolve-skew-arrays>false</resolve-skew-arrays>
    <max-vertex-count>8000</max-vertex-count>
    <max-cellname-length>32000</max-cellname-length>
-   <libname>LIB</libname>
   </gds2>
   <oasis>
    <compression-level>2</compression-level>
@@ -149,6 +149,11 @@
   <cif>
    <polygon-mode>0</polygon-mode>
   </cif>
+  <lstream>
+   <compression-level>2</compression-level>
+   <recompress>false</recompress>
+   <permissive>false</permissive>
+  </lstream>
   <cif>
    <dummy-calls>false</dummy-calls>
    <blank-separator>false</blank-separator>

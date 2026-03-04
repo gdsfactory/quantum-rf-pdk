@@ -1,6 +1,6 @@
 """Technology definitions."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import cache, partial, wraps
 from typing import Any, cast
 
@@ -179,6 +179,13 @@ def get_layer_stack() -> LayerStack:
 
 LAYER_STACK = get_layer_stack()
 LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp)
+
+LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
+    ("M1_DRAW", "TSV", "M2_DRAW"),
+    ("M1_DRAW", "AB_DRAW", "M1_DRAW"),
+    ("M2_DRAW", "AB_DRAW", "M2_DRAW"),
+]
+
 
 LAYER_STACK_FLIP_CHIP = LayerStack(
     layers={

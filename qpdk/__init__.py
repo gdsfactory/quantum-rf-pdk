@@ -13,7 +13,13 @@ from gdsfactory.pdk import Pdk
 import qpdk.samples
 from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
-from qpdk.tech import LAYER, LAYER_STACK, LAYER_VIEWS, routing_strategies
+from qpdk.tech import (
+    LAYER,
+    LAYER_CONNECTIVITY,
+    LAYER_STACK,
+    LAYER_VIEWS,
+    routing_strategies,
+)
 
 try:
     from .models import models as _models
@@ -41,6 +47,7 @@ def get_pdk() -> Pdk:
         layer_views=LAYER_VIEWS,
         models=_models,
         routing_strategies=routing_strategies,
+        connectivity=LAYER_CONNECTIVITY,
     )
 
 
