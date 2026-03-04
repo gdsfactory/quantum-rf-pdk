@@ -76,6 +76,9 @@ class LayerMapQPDK(LayerMap):
     # Marker layer for waveguides
     WG: Layer = (102, 0)
 
+    # Error marker layer (used by gdsfactory to highlight routing/DRC errors)
+    ERROR_PATH: Layer = (1000, 0)
+
 
 L = LAYER = LayerMapQPDK
 
