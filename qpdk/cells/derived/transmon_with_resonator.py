@@ -96,12 +96,7 @@ def qubit_with_resonator(
 
     c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
     c.add_port(
-        center=(res_port := resonator_ref.ports["o1"]).center,
-        layer=res_port.layer,
-        name=res_port.name,
-        orientation=res_port.orientation,
-        port_type="placement",
-        width=res_port.width,
+        port=resonator_ref.ports["o1"], port_type="placement", cross_section=None
     )
     return c
 
