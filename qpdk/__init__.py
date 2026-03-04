@@ -5,6 +5,7 @@ import inspect
 import pkgutil
 from functools import lru_cache, partial
 
+import gdsfactory as gf
 from gdsfactory import logger
 from gdsfactory.cross_section import get_cross_sections
 from gdsfactory.get_factories import get_cells
@@ -20,6 +21,8 @@ from qpdk.tech import (
     LAYER_VIEWS,
     routing_strategies,
 )
+
+gf.CONF.layer_error_path = LAYER.ERROR_PATH
 
 try:
     from .models import models as _models

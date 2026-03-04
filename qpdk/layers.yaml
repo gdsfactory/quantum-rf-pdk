@@ -107,3 +107,8 @@ LayerViews:
         color: "#535353"
         visible: false
         hatch_pattern: 22.5 degree down
+      ERROR_PATH:
+        layer: [1000, 0]
+        layer_in_name: true
+        color: "red"
+        hatch_pattern: coarsely dotted
