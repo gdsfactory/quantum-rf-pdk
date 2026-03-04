@@ -4,7 +4,7 @@ default:
 
 # Install the package and all development dependencies
 install:
-    uv sync --all-extras --all-groups
+    uv sync --all-extras
 
 # Install KLayout technology files for the PDK
 install-tech:

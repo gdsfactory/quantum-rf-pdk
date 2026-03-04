@@ -37,7 +37,16 @@ jobs:
       - name: Install dependencies
         run: just install
       - name: Test with pytest
-        run: just test
+        run: just test ${{ (github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest') && '--cov=qpdk --cov-report=html' || '' }}
+      - name: Generate coverage badge
+        if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
+        run: uv run --group dev --group github coverage-badge -o htmlcov/coverage.svg
+      - name: Upload coverage report
+        if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report-${{ matrix.python-version }}
+          path: htmlcov
   test-code-result:
     runs-on: ubuntu-latest
     name: Test result
