@@ -334,4 +334,3 @@ placements:
     y: -600
 ports:
   o1: straight4,o1
-  o2: rectangle,o2
