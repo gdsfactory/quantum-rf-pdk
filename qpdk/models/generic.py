@@ -66,17 +66,15 @@ def nxn(
 
     if n_ports <= 0:
         raise ValueError("Total number of ports must be positive.")
-
     if n_ports == 1:
         return electrical_open(f=f)
-
     if n_ports == 2:
         return electrical_short(f=f, n_ports=2)
 
     # For n_ports >= 3, chain (n_ports - 2) tees
     # Tee 1: (o1, o2, int1)
     # Tee 2: (int1, o3, int2)
-    # ...
+    #   ⋮
     # Tee n-2: (intn-3, o(n-1), on)
 
     instances = {f"tee_{i}": tee(f=f) for i in range(n_ports - 2)}
@@ -91,9 +89,9 @@ def nxn(
         # Actually:
         # tee_0: o1 -> ext_o1, o2 -> ext_o2, o3 -> int_1
         # tee_1: o1 -> int_1, o2 -> ext_o3, o3 -> int_2
-        # ...
+        #   ⋮
         # tee_k: o1 -> int_k, o2 -> ext_o(k+2), o3 -> int_(k+1)
-        # ...
+        #   ⋮
         # tee_(n-3): o1 -> int_(n-3), o2 -> ext_o(n-1), o3 -> ext_on
 
     # Re-writing ports assignment
