@@ -6,7 +6,7 @@ from qpdk.models.capacitor import (
     interdigital_capacitor,
     plate_capacitor,
 )
-from qpdk.models.junction import josephson_junction
+from qpdk.models.junction import josephson_junction, squid_junction
 
 sax.set_port_naming_strategy("optical")
 
@@ -136,6 +136,7 @@ __all__ = [
     "short",
     "short_2_port",
     "shunted_transmon",
+    "squid_junction",
     "straight",
     "straight_double_open",
     "straight_open",
