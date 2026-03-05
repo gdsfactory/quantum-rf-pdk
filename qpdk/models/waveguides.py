@@ -13,7 +13,7 @@ from sax.models.rf import electrical_open, electrical_short
 from skrf import Frequency
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
-from qpdk.models.generic import short_2_port
+from qpdk.models.generic import admittance, short_2_port
 from qpdk.models.media import cross_section_to_media
 from qpdk.tech import coplanar_waveguide
 
@@ -240,7 +240,7 @@ def nxn(
 
 
 @partial(jax.jit, inline=True)
-def _superconducting_airbridge_shunt(
+def airbridge(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     cpw_width: sax.Float = 10.0,
     bridge_width: sax.Float = 10.0,
@@ -248,47 +248,6 @@ def _superconducting_airbridge_shunt(
     loss_tangent: sax.Float = 1.2e-8,
     z0: sax.Complex = 50.0,
 ) -> sax.SType:
-    """S-parameter model for a superconducting CPW airbridge shunt admittance.
-
-    Modeled as a lossy shunt capacitor.
-    """
-    f = jnp.asarray(f)
-    ω = 2 * π * f
-
-    # Parallel plate capacitance
-    c_pp = (ε_0 * cpw_width * 1e-6 * bridge_width * 1e-6) / (airgap_height * 1e-6)
-
-    # Heuristics: fringing capacitance assumed to be 20% of the parallel plate for small bridges.
-    c_bridge = c_pp * 1.2
-
-    # 2. Admittance of the bridge (Conductance from dielectric loss + Susceptance)
-    Y_bridge = ω * c_bridge * (loss_tangent + 1j)
-
-    # Normalized admittance
-    y = Y_bridge * z0
-
-    # 3. S-parameters for a shunt element
-    denom = 2.0 + y
-    s11 = -y / denom
-    s21 = 2.0 / denom
-
-    return {
-        ("o1", "o1"): s11,
-        ("o1", "o2"): s21,
-        ("o2", "o1"): s21,
-        ("o2", "o2"): s11,
-    }
-
-
-def airbridge(
-    f: ArrayLike = DEFAULT_FREQUENCY,
-    bridge_length: float = 30.0,
-    bridge_width: float = 8.0,
-    pad_width: float = 15.0,
-    loss_tangent: float = 1.2e-8,
-    airgap_height: float = 3.0,
-    cross_section: CrossSectionSpec = "cpw",
-) -> sax.SDict:
     r"""S-parameter model for a superconducting CPW airbridge.
 
     The airbridge is modeled as a lumped lossy shunt admittance (accounting for
@@ -300,66 +259,28 @@ def airbridge(
 
     Args:
         f: Array of frequency points in Hz
-        bridge_length: Length of the airbridge in µm.
+        cpw_width: Width of the CPW center conductor in µm.
         bridge_width: Width of the airbridge in µm.
-        pad_width: Width of the landing pads in µm.
-        loss_tangent: Dielectric loss tangent of the supporting layer/residues.
         airgap_height: Height of the airgap in µm.
-        cross_section: The cross-section of the CPW under the bridge.
+        loss_tangent: Dielectric loss tangent of the supporting layer/residues.
+        z0: Reference impedance in Ω
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    import gdsfactory as gf
+    f = jnp.asarray(f)
+    ω = 2 * π * f
 
-    if pad_width <= bridge_width:
-        raise ValueError(
-            f"pad_width ({pad_width}) must be greater than bridge_width ({bridge_width})"
-        )
+    # Parallel plate capacitance
+    c_pp = (ε_0 * cpw_width * 1e-6 * bridge_width * 1e-6) / (airgap_height * 1e-6)
 
-    # Determine CPW trace width from the provided cross_section
-    if isinstance(cross_section, gf.CrossSection):
-        xs = cross_section
-    elif callable(cross_section):
-        xs = cast(gf.CrossSection, cross_section())
-    else:
-        xs = gf.get_cross_section(cross_section)
+    # Heuristics: fringing capacitance assumed to be 20% of the parallel plate for small bridges.
+    c_bridge = c_pp * 1.2
 
-    cpw_width = xs.width
+    # Admittance of the bridge (Conductance from dielectric loss + Susceptance)
+    Y_bridge = ω * c_bridge * (loss_tangent + 1j)
 
-    # Create the shunt component
-    shunt = _superconducting_airbridge_shunt(
-        f=f,
-        cpw_width=cpw_width,
-        bridge_width=bridge_width,
-        airgap_height=airgap_height,
-        loss_tangent=loss_tangent,
-    )
-
-    # Transmission line segments under the bridge
-    bridge_cross_section = coplanar_waveguide(
-        width=bridge_width,
-        gap=(pad_width - bridge_width) / 2,
-    )
-    half_length = bridge_length / 2
-
-    instances = {
-        "line1": straight(f=f, length=half_length, cross_section=bridge_cross_section),
-        "shunt": shunt,
-        "line2": straight(f=f, length=half_length, cross_section=bridge_cross_section),
-    }
-
-    connections = {
-        "line1,o2": "shunt,o1",
-        "shunt,o2": "line2,o1",
-    }
-
-    ports = {
-        "o1": "line1,o1",
-        "o2": "line2,o2",
-    }
-
-    return sax.evaluate_circuit_fg((connections, ports), instances)
+    return admittance(f=f, y=Y_bridge, z0=z0)
 
 
 def tsv(
