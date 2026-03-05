@@ -29,11 +29,9 @@ from qpdk.models.generic import (
     inductor,
     lc_resonator,
     lc_resonator_coupled,
-    nxn,
     open,
     short,
     short_2_port,
-    tee,
 )
 from qpdk.models.media import (
     MediaCallable,
@@ -56,10 +54,16 @@ from qpdk.models.qubit import (
     qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
+    transmon_with_resonator,
+    xmon_transmon,
 )
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
+    resonator,
+    resonator_coupled,
     resonator_frequency,
+    resonator_half_wave,
+    resonator_quarter_wave,
 )
 from qpdk.models.waveguides import (
     airbridge,
@@ -68,10 +72,14 @@ from qpdk.models.waveguides import (
     bend_s,
     indium_bump,
     launcher,
+    nxn,
     rectangle,
     straight,
+    straight_double_open,
+    straight_open,
     straight_shorted,
     taper_cross_section,
+    tee,
     tsv,
 )
 
@@ -120,16 +128,24 @@ __all__ = [
     "quarter_wave_resonator_coupled",
     "qubit_with_resonator",
     "rectangle",
+    "resonator",
+    "resonator_coupled",
     "resonator_frequency",
+    "resonator_half_wave",
+    "resonator_quarter_wave",
     "short",
     "short_2_port",
     "shunted_transmon",
     "straight",
+    "straight_double_open",
+    "straight_open",
     "straight_shorted",
     "taper_cross_section",
     "tee",
     "transmon_coupled",
+    "transmon_with_resonator",
     "tsv",
+    "xmon_transmon",
 ]
 
 

@@ -6,7 +6,7 @@ import hypothesis.strategies as st
 import jax.numpy as jnp
 from hypothesis import assume, given, settings
 
-from qpdk.models.waveguides import straight
+from qpdk.models.waveguides import nxn, straight
 from qpdk.tech import coplanar_waveguide
 
 from .base import TwoPortModelTestSuite
@@ -121,4 +121,86 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
 
         assert transmission > 0.99, (
             f"Zero length should have ~perfect transmission, got {transmission}"
+        )
+
+
+@final
+class TestNxN:
+    """Tests for nxn model."""
+
+    def test_n_ports_assignment(self) -> None:
+        """Test that nxn model has the correct number of ports."""
+        f = jnp.array([1e9])
+        for n in range(1, 6):
+            # Sum of ports = n
+            result = nxn(f=f, west=n, east=0, north=0, south=0)
+            assert isinstance(result, dict)
+            # An N-port model has N*N S-parameters
+            # Let's check the number of distinct port names in the keys
+            ports = set()
+            for p1, p2 in result:
+                ports.add(p1)
+                ports.add(p2)
+            assert len(ports) == n, f"Expected {n} ports, got {len(ports)}"
+
+    def test_passivity(self) -> None:
+        """Test that nxn model is passive."""
+        f = jnp.linspace(1e9, 10e9, 10)
+        n = 4
+        result = nxn(f=f, west=1, east=1, north=1, south=1)
+
+        for j in range(1, n + 1):
+            total_power = jnp.zeros_like(f)
+            for i in range(1, n + 1):
+                s_ij = result[(f"o{i}", f"o{j}")]
+                total_power += jnp.abs(s_ij) ** 2
+            assert jnp.all(total_power <= 1.0 + 1e-6), (
+                f"Passivity violated for port o{j}: max power = {jnp.max(total_power)}"
+            )
+
+    def test_reciprocity(self) -> None:
+        """Test that nxn model is reciprocal."""
+        f = jnp.array([1e9, 5e9, 10e9])
+        n = 3
+        result = nxn(f=f, west=1, east=1, north=1, south=0)
+
+        for i in range(1, n + 1):
+            for j in range(i + 1, n + 1):
+                s_ij = result[(f"o{i}", f"o{j}")]
+                s_ji = result[(f"o{j}", f"o{i}")]
+                assert jnp.allclose(s_ij, s_ji, atol=1e-10), (
+                    f"Reciprocity violated between o{i} and o{j}"
+                )
+
+    @given(
+        west=st.integers(min_value=0, max_value=5),
+        east=st.integers(min_value=0, max_value=5),
+        north=st.integers(min_value=0, max_value=5),
+        south=st.integers(min_value=0, max_value=5),
+    )
+    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    def test_with_hypothesis(
+        self, west: int, east: int, north: int, south: int
+    ) -> None:
+        """Test nxn model with random port counts using hypothesis."""
+        n = west + east + north + south
+        assume(n > 0)
+
+        f = jnp.array([1e9, 10e9])
+        result = nxn(f=f, west=west, east=east, north=north, south=south)
+
+        # Check port count by looking at unique port names in S-parameter keys
+        ports = set()
+        for p1, p2 in result:
+            ports.add(p1)
+            ports.add(p2)
+        assert len(ports) == n, f"Expected {n} ports, got {len(ports)} ({ports})"
+
+        # Verify passivity for the first port (o1)
+        total_power = jnp.zeros_like(f)
+        for i in range(1, n + 1):
+            s_i1 = result[(f"o{i}", "o1")]
+            total_power += jnp.abs(s_i1) ** 2
+        assert jnp.all(total_power <= 1.0 + 1e-6), (
+            f"Passivity violated for port o1 with N={n}: max power = {jnp.max(total_power)}"
         )

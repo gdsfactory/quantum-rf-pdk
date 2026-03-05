@@ -1,12 +1,15 @@
 """Waveguides."""
 
+from functools import partial
 from typing import cast
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
+from sax.models.rf import electrical_open, electrical_short
 from skrf import Frequency
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
@@ -83,6 +86,115 @@ def straight_shorted(
         "o2": "short_2_port,o2",  # don't use: shorted!
     }
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
+
+
+def straight_open(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a straight waveguide with one open end.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return straight(f=f, length=length, cross_section=cross_section)
+
+
+def straight_double_open(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a straight waveguide with open ends.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return straight(f=f, length=length, cross_section=cross_section)
+
+
+def tee(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    _cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a 3-port tee junction.
+
+    This wraps the generic tee model.
+
+    Args:
+        f: Array of frequency points in Hz.
+        _cross_section: The cross-section of the waveguide (ignored for ideal model).
+
+    Returns:
+        sax.SType: S-parameters dictionary.
+    """
+    from qpdk.models.generic import tee as _generic_tee
+
+    return _generic_tee(f=f)
+
+
+@partial(jax.jit, static_argnames=["west", "east", "north", "south"])
+def nxn(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    west: int = 1,
+    east: int = 1,
+    north: int = 1,
+    south: int = 1,
+    _cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """NxN junction model using tee components.
+
+    This model creates an N-port divider/combiner by chaining 3-port tee
+    junctions. All ports are connected to a single node.
+
+    Args:
+        f: Array of frequency points in Hz.
+        west: Number of ports on the west side.
+        east: Number of ports on the east side.
+        north: Number of ports on the north side.
+        south: Number of ports on the south side.
+        _cross_section: The cross-section of the waveguide (ignored for ideal model).
+
+    Returns:
+        sax.SType: S-parameters dictionary with ports o1, o2, ..., oN.
+    """
+    from qpdk.models.generic import tee as _generic_tee
+
+    f = jnp.asarray(f)
+    n_ports = west + east + north + south
+
+    if n_ports <= 0:
+        raise ValueError("Total number of ports must be positive.")
+    if n_ports == 1:
+        return electrical_open(f=f)
+    if n_ports == 2:
+        return electrical_short(f=f, n_ports=2)
+
+    instances = {f"tee_{i}": _generic_tee(f=f) for i in range(n_ports - 2)}
+    connections = {f"tee_{i},o3": f"tee_{i + 1},o1" for i in range(n_ports - 3)}
+
+    ports = {
+        "o1": "tee_0,o1",
+        "o2": "tee_0,o2",
+    }
+    for i in range(1, n_ports - 2):
+        ports[f"o{i + 2}"] = f"tee_{i},o2"
+
+    # Last tee's o3 is the last external port
+    ports[f"o{n_ports}"] = f"tee_{n_ports - 3},o3"
+
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 def airbridge(

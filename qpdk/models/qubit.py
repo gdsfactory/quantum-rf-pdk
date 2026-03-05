@@ -499,6 +499,47 @@ def double_island_transmon_with_resonator(
     )
 
 
+def transmon_with_resonator(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    qubit_capacitance: float = 100e-15,
+    qubit_inductance: float = 1e-9,
+    qubit_grounded: bool = False,
+    resonator_length: float = 5000.0,
+    resonator_cross_section: str = "cpw",
+    coupling_capacitance: float = 10e-15,
+) -> sax.SDict:
+    """Model for a transmon qubit coupled to a quarter-wave resonator.
+
+    This model is identical to :func:`qubit_with_resonator`.
+    """
+    return qubit_with_resonator(
+        f=f,
+        qubit_capacitance=qubit_capacitance,
+        qubit_inductance=qubit_inductance,
+        qubit_grounded=qubit_grounded,
+        resonator_length=resonator_length,
+        resonator_cross_section=resonator_cross_section,
+        coupling_capacitance=coupling_capacitance,
+    )
+
+
+@partial(jax.jit, inline=True)
+def xmon_transmon(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 7e-9,
+) -> sax.SType:
+    """LC resonator model for an Xmon style transmon qubit.
+
+    An Xmon transmon is typically shunted, so this model wraps :func:`shunted_transmon`.
+    """
+    return shunted_transmon(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+    )
+
+
 # Aliases for backward compatibility or to match cell naming
 double_pad_transmon = double_island_transmon
 double_pad_transmon_with_bbox = double_island_transmon_with_bbox

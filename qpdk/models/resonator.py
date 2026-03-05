@@ -13,6 +13,63 @@ from skrf.media import Media
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
 from qpdk.models.media import cross_section_to_media
+from qpdk.models.waveguides import straight, straight_shorted
+
+
+def resonator_coupled(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: float = 5000.0,
+    coupling_gap: float = 0.27,
+    coupling_straight_length: float = 20,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SDict:
+    """Model for a coplanar waveguide resonator coupled to a probeline.
+
+    Args:
+        cross_section: The cross-section of the CPW.
+        f: Frequency in Hz at which to evaluate the S-parameters.
+        length: Total length of the resonator in μm.
+        coupling_gap: Gap between the resonator and the probeline in μm.
+        coupling_straight_length: Length of the coupling section in μm.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with 4 ports.
+    """
+    f = jnp.asarray(f)
+    f_flat = f.ravel()
+    coupling_capacitance = cpw_cpw_coupling_capacitance(
+        f_flat, length, coupling_gap, cross_section
+    )
+    media: Media = cross_section_to_media(cross_section)(
+        frequency=skrf.Frequency.from_f(np.array(f_flat), unit="Hz")
+    )  # type: ignore
+
+    kwargs = {"d": length, "unit": "um"}
+    transmission_line = media.line(**kwargs)
+    kwargs = {"C": coupling_capacitance, "name": "C_coupling"}
+    coupling_capacitor = media.capacitor(**kwargs)
+
+    # Create tee junction for parallel capacitor connection
+    resonator_tee = media.tee()
+    # Connect capacitor to port 1 and resonator to port 2, leaving port 0 open
+    resonator_with_cap = skrf.connect(resonator_tee, 1, coupling_capacitor, 0)
+    # The transmission line is NOT shorted here
+    resonator_network = skrf.connect(resonator_with_cap, 1, transmission_line, 0)
+
+    kwargs = {"d": coupling_straight_length / 2, "unit": "um"}
+    probeline_factory = partial(media.line, **kwargs)
+    probeline = skrf.connect(
+        skrf.connect(probeline_factory(), 1, media.tee(), 0), 2, probeline_factory(), 0
+    )
+    all_network = skrf.connect(probeline, 1, resonator_network, 0)
+
+    ports = ["coupling_o1", "coupling_o2", "resonator_o1", "resonator_o2"]
+    sdict = {
+        (ports[i], ports[j]): jnp.array(all_network.s[:, i, j])
+        for i in range(len(ports))
+        for j in range(i, len(ports))
+    }
+    return sax.reciprocal({k: v.reshape(*f.shape) for k, v in sdict.items()})
 
 
 def quarter_wave_resonator_coupled(
@@ -111,3 +168,57 @@ def resonator_frequency(
     coefficient = 4 if is_quarter_wave else 2  # Quarter-wave resonator
     a = media.v_p / (coefficient * length * 1e-6)
     return a.mean().real
+
+
+def resonator(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a simple transmission line resonator.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return straight(f=f, length=length, cross_section=cross_section)
+
+
+def resonator_half_wave(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a half-wave resonator (open at both ends).
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return straight(f=f, length=length, cross_section=cross_section)
+
+
+def resonator_quarter_wave(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a quarter-wave resonator (shorted at one end).
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return straight_shorted(f=f, length=length, cross_section=cross_section)
