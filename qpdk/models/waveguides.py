@@ -168,7 +168,6 @@ def straight_double_open(
 
 def tee(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    _cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """S-parameter model for a 3-port tee junction.
 
@@ -176,7 +175,6 @@ def tee(
 
     Args:
         f: Array of frequency points in Hz.
-        _cross_section: The cross-section of the waveguide (ignored for ideal model).
 
     Returns:
         sax.SType: S-parameters dictionary.
@@ -193,7 +191,6 @@ def nxn(
     east: int = 1,
     north: int = 1,
     south: int = 1,
-    _cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """NxN junction model using tee components.
 
@@ -206,7 +203,6 @@ def nxn(
         east: Number of ports on the east side.
         north: Number of ports on the north side.
         south: Number of ports on the south side.
-        _cross_section: The cross-section of the waveguide (ignored for ideal model).
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1, o2, ..., oN.
