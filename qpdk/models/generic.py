@@ -84,21 +84,6 @@ def nxn(
         "o1": "tee_0,o1",
         "o2": "tee_0,o2",
     }
-    for i in range(n_ports - 3):
-        ports[f"o{i + 3}"] = f"tee_{i},o3"  # Wait, o3 is connected to next tee
-        # Actually:
-        # tee_0: o1 -> ext_o1, o2 -> ext_o2, o3 -> int_1
-        # tee_1: o1 -> int_1, o2 -> ext_o3, o3 -> int_2
-        #   ⋮
-        # tee_k: o1 -> int_k, o2 -> ext_o(k+2), o3 -> int_(k+1)
-        #   ⋮
-        # tee_(n-3): o1 -> int_(n-3), o2 -> ext_o(n-1), o3 -> ext_on
-
-    # Re-writing ports assignment
-    ports = {
-        "o1": "tee_0,o1",
-        "o2": "tee_0,o2",
-    }
     for i in range(1, n_ports - 2):
         ports[f"o{i + 2}"] = f"tee_{i},o2"
 
