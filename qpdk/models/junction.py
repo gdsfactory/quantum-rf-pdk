@@ -15,9 +15,10 @@ def _warn_if_overbiased(ib: float, ic: float) -> None:
     """Host callback to warn if bias current exceeds critical current."""
     if jnp.any(jnp.abs(ib) >= ic):
         warnings.warn(
-            "DC bias |I_b| >= I_c detected. Linearized RCSJ model is invalid in the voltage state.",
+            "DC bias |I_b| >= I_c detected. Linearized RCSJ model is invalid in the voltage state. "
+            "Please check your 'ib' and 'ic' ('ic_tot', 'flux', 'asymmetry') inputs.",
             RuntimeWarning,
-            stacklevel=2,
+            stacklevel=0,
         )
 
 
@@ -29,7 +30,6 @@ def josephson_junction(
     capacitance: sax.Float = 5e-15,
     resistance: sax.Float = 10e3,
     ib: sax.Float = 0.0,
-    z0: sax.Complex = 50,
 ) -> sax.SDict:
     r"""Josephson junction (RCSJ) small-signal Sax model.
 
@@ -48,7 +48,6 @@ def josephson_junction(
         capacitance: Junction capacitance :math:`C` in Farads
         resistance: Shunt resistance :math:`R` in Ohms
         ib: DC bias current :math:`I_b` in Amperes (:math:`\|I_b\| < I_c`)
-        z0: Reference impedance in Ω
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -72,7 +71,7 @@ def josephson_junction(
     # Total admittance
     Y_JJ = Y_R + Y_C + Y_L
 
-    return admittance(f=f, y=Y_JJ, z0=z0)
+    return admittance(f=f, y=Y_JJ)
 
 
 @partial(jax.jit, inline=True)
@@ -85,7 +84,6 @@ def squid_junction(
     resistance: sax.Float = 5e3,
     ib: sax.Float = 0.0,
     flux: sax.Float = 0.0,
-    z0: sax.Complex = 50,
 ) -> sax.SDict:
     r"""DC SQUID small-signal Sax model in the zero-screening limit.
 
@@ -103,7 +101,6 @@ def squid_junction(
         resistance: Total SQUID shunt resistance :math:`R_1 || R_2` in Ohms
         ib: DC bias current :math:`I_b` in Amperes
         flux: External magnetic flux :math:`\Phi_{ext}` in Webers
-        z0: Reference impedance in Ω
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -121,21 +118,25 @@ def squid_junction(
     jax.debug.callback(_warn_if_overbiased, ib, ic_squid)
 
     # Bias-dependent phase factor
-    # Note: Model is only valid when |I_b| < ic_squid. Clip to prevent NaNs if violated.
-    cos_Φ_0_eff = jnp.sqrt(jnp.clip(1.0 - (ib / ic_squid) ** 2, a_min=1e-10))
+    # Guard against ic_squid == 0 (e.g. symmetric SQUID at half-flux quantum)
+    ratio_sq = jnp.where(
+        ic_squid > 0, (ib / jnp.where(ic_squid > 0, ic_squid, 1.0)) ** 2, 0.0
+    )
+    cos_Φ_0_eff = jnp.sqrt(jnp.clip(1.0 - ratio_sq, a_min=1e-10))
 
-    # Effective Josephson inductance
-    Lⱼ_eff = Φ_0 / (2 * jnp.pi * ic_squid * cos_Φ_0_eff)
+    # Effective Josephson inductance (will go to inf when ic_squid == 0)
+    Lⱼ_eff = Φ_0 / (2 * jnp.pi * jnp.where(ic_squid > 0, ic_squid, 1e-20) * cos_Φ_0_eff)
 
     # Admittances (parallel RCSJ)
     Y_R = 1 / resistance
     Y_C = 1j * ω * capacitance
-    Y_L = 1 / (1j * ω * Lⱼ_eff)
+    # Guard against division by zero in Y_L if L_j_eff somehow goes to zero or Y_L -> 0 if L_j_eff is inf
+    Y_L = jnp.where(ic_squid > 0, 1 / (1j * ω * Lⱼ_eff), 0j)
 
     # Total SQUID admittance
     Y_SQUID = Y_R + Y_C + Y_L
 
-    return admittance(f=f, y=Y_SQUID, z0=z0)
+    return admittance(f=f, y=Y_SQUID)
 
 
 if __name__ == "__main__":

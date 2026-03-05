@@ -204,3 +204,28 @@ class TestNxN:
         assert jnp.all(total_power <= 1.0 + 1e-6), (
             f"Passivity violated for port o1 with N={n}: max power = {jnp.max(total_power)}"
         )
+
+
+@final
+class TestAirbridge:
+    """Tests for airbridge model."""
+
+    def test_airbridge_passive_shunt_admittance_scaling(self) -> None:
+        """Airbridge should behave like a passive shunt admittance with reasonable scaling."""
+        from qpdk.models.waveguides import _superconducting_airbridge_shunt
+
+        f = jnp.array([6e9])
+
+        ab_small = _superconducting_airbridge_shunt(f=f, bridge_width=2.0)
+        ab_large = _superconducting_airbridge_shunt(f=f, bridge_width=8.0)
+
+        # Transmission should decrease (reflection increase) as shunt admittance (width) increases
+        s21_small = jnp.abs(ab_small[("o2", "o1")])
+        s21_large = jnp.abs(ab_large[("o2", "o1")])
+
+        # Passive => S21 <= 1.0
+        assert jnp.all(s21_small <= 1.0 + 1e-6)
+        assert jnp.all(s21_large <= 1.0 + 1e-6)
+
+        # Wider bridge -> more capacitance -> more shunting -> lower transmission
+        assert jnp.all(s21_large < s21_small)

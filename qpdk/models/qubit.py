@@ -456,7 +456,7 @@ def qubit_with_resonator(
 def flipmon_with_resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     qubit_capacitance: float = 100e-15,
-    qubit_inductance: float = 7e-9,
+    qubit_inductance: float = 1e-9,
     resonator_length: float = 5000.0,
     resonator_cross_section: str = "cpw",
     coupling_capacitance: float = 10e-15,
@@ -479,7 +479,7 @@ def flipmon_with_resonator(
 def double_island_transmon_with_resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     qubit_capacitance: float = 100e-15,
-    qubit_inductance: float = 7e-9,
+    qubit_inductance: float = 1e-9,
     resonator_length: float = 5000.0,
     resonator_cross_section: str = "cpw",
     coupling_capacitance: float = 10e-15,
