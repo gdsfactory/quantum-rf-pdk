@@ -19,7 +19,7 @@ def josephson_junction(
     resistance: sax.Float = 10e3,
     ib: sax.Float = 0.0,
     z0: sax.Complex = 50,
-) -> sax.SType:
+) -> sax.SDict:
     r"""Josephson junction (RCSJ) small-signal Sax model.
 
     Linearized RCSJ model consisting of a bias-dependent Josephson inductance
@@ -40,7 +40,7 @@ def josephson_junction(
         z0: Reference impedance in Ω
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     ω = 2 * jnp.pi * jnp.asarray(f)
 

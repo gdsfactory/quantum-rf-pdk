@@ -4,7 +4,6 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import jaxellip
 import numpy as np
 import sax
 import skrf
@@ -12,6 +11,11 @@ from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
 from qpdk.models.generic import capacitor
+from qpdk.models.math import (
+    capacitance_per_length_conformal,
+    ellipk_ratio,
+    epsilon_eff,
+)
 from qpdk.models.media import cross_section_to_media
 
 
@@ -39,18 +43,13 @@ def plate_capacitor_capacitance_analytical(
     See :cite:`chenCompactInductorcapacitorResonators2023`.
     """
     # Conformal mapping for coplanar pads
-    k = gap / (gap + 2 * width)
-    k_sq = k**2
-    k_prime_sq = 1 - k_sq
+    k_sq = (gap / (gap + 2 * width)) ** 2
 
-    # Complete elliptic integrals of the first kind K(k)
-    k_ratio = jaxellip.ellipk(k_prime_sq) / jaxellip.ellipk(k_sq)
+    # C = ε_0 * ε_eff * L * K(k') / K(k)
+    # Uses K(1-m)/K(m) which is the inverse of ellipk_ratio(m)
+    c_pul = ε_0 * epsilon_eff(ep_r) / ellipk_ratio(k_sq)
 
-    # Effective permittivity for coplanar pads on a substrate
-    ep_eff = (ep_r + 1) / 2
-
-    # C = epsilon_0 * ep_eff * L * K(k') / K(k)
-    return ε_0 * ep_eff * (length * 1e-6) * k_ratio
+    return (length * 1e-6) * c_pul
 
 
 @partial(jax.jit, inline=True)
@@ -60,7 +59,7 @@ def interdigital_capacitor_capacitance_analytical(
     finger_gap: float,
     thickness: float,
     ep_r: float,
-) -> float:
+) -> jax.Array:
     r"""Analytical formula for interdigital capacitor capacitance.
 
     The formula uses conformal mapping for the interior and exterior regions of
@@ -95,23 +94,18 @@ def interdigital_capacitor_capacitance_analytical(
     g = finger_gap  # Finger gap
     η = w / (w + g)  # Metallization ratio
 
-    # Elliptic integral moduli
-    k_i = jnp.sin(jnp.pi * η / 2)
-    k_i_prime = jnp.cos(jnp.pi * η / 2)
-    k_e = 2 * jnp.sqrt(η) / (1 + η)
-    k_e_prime = (1 - η) / (1 + η)
-
-    # Complete elliptic integrals of the first kind K(k)
-    ki_over_kip = jaxellip.ellipk(k_i**2) / jaxellip.ellipk(k_i_prime**2)
-    ke_over_kep = jaxellip.ellipk(k_e**2) / jaxellip.ellipk(k_e_prime**2)
+    # Elliptic integral moduli squared
+    ki_sq = jnp.sin(jnp.pi * η / 2) ** 2
+    ke_sq = (2 * jnp.sqrt(η) / (1 + η)) ** 2
 
     # Capacitances per unit length (interior and exterior)
-    c_i = ε_0 * l_overlap * (ep_r + 1) * ki_over_kip
-    c_e = ε_0 * l_overlap * (ep_r + 1) * ke_over_kep
+    # Factor is 2.0 since interdigital formula uses (ep_r + 1) = 2 * ep_eff
+    c_i = l_overlap * 2.0 * capacitance_per_length_conformal(m=ki_sq, ep_r=ep_r)
+    c_e = l_overlap * 2.0 * capacitance_per_length_conformal(m=ke_sq, ep_r=ep_r)
 
     # Total mutual capacitance
     # Simplifies to c_e/2 for n=2
-    return jnp.where(
+    return jnp.where(  # pyrefly: ignore[bad-return]
         n == 2,
         c_e / 2,
         (n - 3) * c_i / 2 + 2 * (c_i * c_e) / (c_i + c_e),
@@ -125,7 +119,7 @@ def plate_capacitor(
     width: float = 5.0,
     gap: float = 7.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     r"""Plate capacitor Sax model.
 
     Args:
@@ -136,7 +130,7 @@ def plate_capacitor(
         cross_section: Cross-section specification
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
@@ -159,7 +153,7 @@ def interdigital_capacitor(
     finger_gap: float = 2.0,
     thickness: float = 5.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     r"""Interdigital capacitor Sax model.
 
     Args:
@@ -171,7 +165,7 @@ def interdigital_capacitor(
         cross_section: Cross-section specification
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
@@ -200,12 +194,6 @@ if __name__ == "__main__":
     ep_r = 11.7
 
     plt.figure(figsize=(10, 6))
-
-    # Vectorized over gaps (shape: (5,))
-    k_plate = gaps_plate / (gaps_plate + 2 * width_plate)
-    k_sq_plate = k_plate**2
-    k_prime_sq_plate = 1 - k_sq_plate
-    k_ratio_plate = jaxellip.ellipk(k_prime_sq_plate) / jaxellip.ellipk(k_sq_plate)
 
     # Broadcast to compute total capacitance for all lengths and gaps (shape: (5, 100))
     # length * 1e-6 happens in the analytical formula, here we replicate it

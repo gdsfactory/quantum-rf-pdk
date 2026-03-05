@@ -22,7 +22,7 @@ def straight(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a straight waveguide.
 
     See `scikit-rf <skrf>`_ for details on analytical formulæ.
@@ -33,7 +33,7 @@ def straight(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
 
     .. _skrf: https://scikit-rf.org/
     """
@@ -55,7 +55,7 @@ def straight_shorted(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a straight waveguide with one shorted end.
 
     This may be used to model a quarter-wave coplanar waveguide resonator.
@@ -70,7 +70,7 @@ def straight_shorted(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     kwargs = {
         "f": jnp.asarray(f),
@@ -202,7 +202,7 @@ def airbridge(
     bridge_length: float = 30.0,
     bridge_width: float = 8.0,
     pad_width: float = 15.0,
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for an airbridge, wrapped to :func:`~straight`.
 
     TODO: add a constant loss channel for airbridge crossings.
@@ -214,7 +214,7 @@ def airbridge(
         pad_width: Width of the landing pads in µm.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     if pad_width <= bridge_width:
         raise ValueError(
@@ -234,7 +234,7 @@ def airbridge(
 def tsv(
     f: ArrayLike = DEFAULT_FREQUENCY,
     via_height: float = 1000.0,
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a through-silicon via (TSV), wrapped to :func:`~straight`.
 
     TODO: add a constant loss channel for TSVs.
@@ -244,7 +244,7 @@ def tsv(
         via_height: Physical height (length) of the TSV in µm.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return straight(f=f, length=via_height)
 
@@ -271,7 +271,7 @@ def bend_circular(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a circular bend, wrapped to :func:`~straight`.
 
     Args:
@@ -280,7 +280,7 @@ def bend_circular(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     kwargs = {
         "f": jnp.asarray(f),
@@ -294,7 +294,7 @@ def bend_euler(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
 
     Args:
@@ -303,7 +303,7 @@ def bend_euler(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     kwargs = {
         "f": jnp.asarray(f),
@@ -317,7 +317,7 @@ def bend_s(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for an S-bend, wrapped to :func:`~straight`.
 
     Args:
@@ -326,7 +326,7 @@ def bend_s(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     kwargs = {
         "f": jnp.asarray(f),
@@ -340,7 +340,7 @@ def rectangle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a rectangular section, wrapped to :func:`~straight`.
 
     Args:
@@ -349,7 +349,7 @@ def rectangle(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     kwargs = {
         "f": jnp.asarray(f),
@@ -365,7 +365,7 @@ def taper_cross_section(
     cross_section_1: CrossSectionSpec = "cpw",
     cross_section_2: CrossSectionSpec = "cpw",
     n_points: int = 50,
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a cross-section taper using linear interpolation.
 
     Args:
@@ -376,7 +376,7 @@ def taper_cross_section(
         n_points: Number of segments to divide the taper into for simulation.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
 
     def get_width_gap(cs: CrossSectionSpec) -> tuple[float, float]:
@@ -438,7 +438,7 @@ def launcher(
     taper_length: sax.Float = 100.0,
     cross_section_big: CrossSectionSpec | None = None,
     cross_section_small: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a launcher, effectively a straight section followed by a taper.
 
     Args:
@@ -449,7 +449,7 @@ def launcher(
         cross_section_small: Cross-section for the narrow section.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     f = jnp.asarray(f)
     if cross_section_big is None:

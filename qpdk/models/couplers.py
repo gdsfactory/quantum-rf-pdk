@@ -6,7 +6,6 @@ from typing import cast
 import gdsfactory as gf
 import jax
 import jax.numpy as jnp
-import jaxellip
 import numpy as np
 import sax
 import skrf
@@ -16,6 +15,11 @@ from jax.typing import ArrayLike
 from sax.models.rf import capacitor, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
+from qpdk.models.math import (
+    capacitance_per_length_conformal,
+    ellipk_ratio,
+    epsilon_eff,
+)
 from qpdk.models.media import cross_section_to_media
 from qpdk.models.waveguides import straight
 
@@ -57,8 +61,6 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
     Returns:
         The mutual coupling capacitance per unit length in Farads/meter.
     """
-    ε_eff = (ep_r + 1) / 2
-
     # Geometric parameters in m (convert from μm)
     s_c = gap * 1e-6
     w_m = width * 1e-6
@@ -68,17 +70,17 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
     x2 = x1 + w_m
     x3 = x2 + g_m
 
-    # Even-mode modulus
+    # Even-mode modulus squared
     ke_sq = (x2**2 - x1**2) / (x3**2 - x1**2)
-    ke_prime_sq = 1 - ke_sq
 
-    # Odd-mode modulus
+    # Odd-mode modulus squared
     ko_sq = (x1**2 / x2**2) * ((x3**2 - x2**2) / (x3**2 - x1**2))
-    ko_prime_sq = 1 - ko_sq
 
     # Capacitances per unit length
-    c_even_pul = 2 * ε_0 * ε_eff * jaxellip.ellipk(ke_sq) / jaxellip.ellipk(ke_prime_sq)
-    c_odd_pul = 2 * ε_0 * ε_eff * jaxellip.ellipk(ko_prime_sq) / jaxellip.ellipk(ko_sq)
+    # Factor is 2.0 since ECCPW formula uses 2 * ε_0 * ε_eff
+    c_even_pul = 2.0 * capacitance_per_length_conformal(m=ke_sq, ep_r=ep_r)
+    # c_odd uses K(1-m)/K(m) which is the inverse of ellipk_ratio(m)
+    c_odd_pul = 2.0 * ε_0 * epsilon_eff(ep_r) / ellipk_ratio(ko_sq)
 
     # Mutual capacitance per unit length
     return (c_odd_pul - c_even_pul) / 2
@@ -145,7 +147,7 @@ def coupler_straight(
     length: int | float = 20.0,
     gap: int | float = 0.27,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides, :func:`~qpdk.cells.waveguides.coupler_straight`.
 
     Args:
@@ -155,7 +157,7 @@ def coupler_straight(
         cross_section: The cross-section of the CPW.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
 
     .. code::
 
@@ -211,7 +213,7 @@ def coupler_ring(
     length: int | float = 20.0,
     gap: int | float = 0.27,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides in a ring configuration.
 
     The implementation is the same as straight coupler for now.
@@ -225,7 +227,7 @@ def coupler_ring(
         cross_section: The cross-section of the CPW.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return coupler_straight(f=f, length=length, gap=gap, cross_section=cross_section)
 

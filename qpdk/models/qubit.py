@@ -95,7 +95,7 @@ def coupling_strength_to_capacitance(
     c_r: float,
     f_q_ghz: float,
     f_r_ghz: float,
-) -> float:
+) -> jax.Array:
     r"""Convert coupling strength :math:`g` to coupling capacitance :math:`C_c`.
 
     In the dispersive limit (:math:`g \ll f_q, f_r`), the coupling strength
@@ -144,7 +144,7 @@ def double_island_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 7e-9,
-) -> sax.SType:
+) -> sax.SDict:
     r"""LC resonator model for a double-island transmon qubit.
 
     A double-island transmon has two superconducting islands connected by
@@ -178,7 +178,7 @@ def double_island_transmon(
         inductance: Josephson inductance :math:`L_J` in Henries.
 
     Returns:
-        sax.SType: S-parameters dictionary with ports o1 and o2.
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
     """
     return lc_resonator(
         f=f,
@@ -244,7 +244,7 @@ def shunted_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 7e-9,
-) -> sax.SType:
+) -> sax.SDict:
     r"""LC resonator model for a shunted transmon qubit.
 
     A shunted transmon has one island grounded and the other island connected
@@ -278,7 +278,7 @@ def shunted_transmon(
         inductance: Josephson inductance :math:`L_J` in Henries.
 
     Returns:
-        sax.SType: S-parameters dictionary with ports o1 and o2.
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
     """
     return lc_resonator(
         f=f,
@@ -296,7 +296,7 @@ def transmon_coupled(
     grounded: bool = False,
     coupling_capacitance: float = 10e-15,
     coupling_inductance: float = 0.0,
-) -> sax.SType:
+) -> sax.SDict:
     r"""Coupled transmon qubit model.
 
     This model extends the basic transmon qubit by adding a coupling network
@@ -334,7 +334,7 @@ def transmon_coupled(
         coupling_inductance: Coupling inductance :math:`L_c` in Henries.
 
     Returns:
-        sax.SType: S-parameters dictionary with ports o1 and o2.
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
     """
     return lc_resonator_coupled(
         f=f,

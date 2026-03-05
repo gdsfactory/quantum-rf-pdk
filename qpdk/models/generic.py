@@ -36,14 +36,14 @@ __all__ = [
 
 
 @jax.jit
-def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
+def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SDict:
     """Electrical short 2-port connection Sax model.
 
     Args:
         f: Array of frequency points in Hz
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return electrical_short(f=f, n_ports=2)
 
@@ -59,7 +59,7 @@ def lc_resonator(
     capacitance: float = 100e-15,
     inductance: float = 1e-9,
     grounded: bool = False,
-) -> sax.SType:
+) -> sax.SDict:
     r"""LC resonator Sax model with capacitor and inductor in parallel.
 
     The resonance frequency is given by:
@@ -92,7 +92,7 @@ def lc_resonator(
         grounded: If True, add a 2-port ground to the second port.
 
     Returns:
-        sax.SType: S-parameters dictionary with ports o1 and o2.
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
     """
     f = jnp.asarray(f)
 
@@ -134,7 +134,7 @@ def lc_resonator_coupled(
     grounded: bool = False,
     coupling_capacitance: float = 10e-15,
     coupling_inductance: float = 0.0,
-) -> sax.SType:
+) -> sax.SDict:
     r"""Coupled LC resonator Sax model.
 
     This model extends the basic LC resonator by adding a coupling network
@@ -168,7 +168,7 @@ def lc_resonator_coupled(
         coupling_inductance: Coupling inductance in Henries.
 
     Returns:
-        sax.SType: S-parameters dictionary with ports o1 and o2.
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
     """
     f = jnp.asarray(f)
     resonator = lc_resonator(
