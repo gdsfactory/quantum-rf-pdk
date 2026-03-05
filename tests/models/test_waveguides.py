@@ -225,17 +225,17 @@ class TestAirbridge:
         airgap_height: float,
     ) -> None:
         """Airbridge should behave like a passive shunt admittance with reasonable scaling."""
-        from qpdk.models.waveguides import _superconducting_airbridge_shunt
+        from qpdk.models.waveguides import airbridge
 
         f = jnp.array([6e9])
 
-        ab_small = _superconducting_airbridge_shunt(
+        ab_small = airbridge(
             f=f,
             bridge_width=bridge_width_small,
             loss_tangent=loss_tangent,
             airgap_height=airgap_height,
         )
-        ab_large = _superconducting_airbridge_shunt(
+        ab_large = airbridge(
             f=f,
             bridge_width=bridge_width_large,
             loss_tangent=loss_tangent,
@@ -266,14 +266,14 @@ class TestAirbridge:
         bridge_width: float,
     ) -> None:
         """Higher dielectric loss should decrease transmission."""
-        from qpdk.models.waveguides import _superconducting_airbridge_shunt
+        from qpdk.models.waveguides import airbridge
 
         f = jnp.array([6e9])
 
-        ab_low_loss = _superconducting_airbridge_shunt(
+        ab_low_loss = airbridge(
             f=f, bridge_width=bridge_width, loss_tangent=loss_tangent_low
         )
-        ab_high_loss = _superconducting_airbridge_shunt(
+        ab_high_loss = airbridge(
             f=f, bridge_width=bridge_width, loss_tangent=loss_tangent_high
         )
 

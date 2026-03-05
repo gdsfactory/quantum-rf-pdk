@@ -242,7 +242,6 @@ def airbridge(
     bridge_width: sax.Float = 10.0,
     airgap_height: sax.Float = 3.0,
     loss_tangent: sax.Float = 1.2e-8,
-    z0: sax.Complex = 50.0,
 ) -> sax.SType:
     r"""S-parameter model for a superconducting CPW airbridge.
 
@@ -276,7 +275,7 @@ def airbridge(
     # Admittance of the bridge (Conductance from dielectric loss + Susceptance)
     Y_bridge = ω * c_bridge * (loss_tangent + 1j)
 
-    return admittance(f=f, y=Y_bridge, z0=z0)
+    return admittance(f=f, y=Y_bridge)
 
 
 def tsv(
