@@ -5,7 +5,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import sax
-from sax.models.rf import impedance
+from sax.models.rf import admittance
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0
 
@@ -55,10 +55,10 @@ def josephson_junction(
     Y_C = 1j * ω * capacitance
     Y_L = 1 / (1j * ω * Lⱼ)
 
-    # Total impedance
-    Z_JJ = 1 / (Y_R + Y_C + Y_L)
+    # Total admittance
+    Y_JJ = Y_R + Y_C + Y_L
 
-    return impedance(f=f, z=Z_JJ, z0=z0)
+    return admittance(f=f, y=Y_JJ, z0=z0)
 
 
 if __name__ == "__main__":
