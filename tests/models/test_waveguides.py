@@ -210,14 +210,37 @@ class TestNxN:
 class TestAirbridge:
     """Tests for airbridge model."""
 
-    def test_airbridge_passive_shunt_admittance_scaling(self) -> None:
+    @given(
+        bridge_width_small=st.floats(min_value=1.0, max_value=4.0),
+        bridge_width_large=st.floats(min_value=6.0, max_value=20.0),
+        loss_tangent=st.floats(min_value=1e-8, max_value=1e-2),
+        airgap_height=st.floats(min_value=1.0, max_value=5.0),
+    )
+    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    def test_airbridge_passive_shunt_admittance_scaling(
+        self,
+        bridge_width_small: float,
+        bridge_width_large: float,
+        loss_tangent: float,
+        airgap_height: float,
+    ) -> None:
         """Airbridge should behave like a passive shunt admittance with reasonable scaling."""
         from qpdk.models.waveguides import _superconducting_airbridge_shunt
 
         f = jnp.array([6e9])
 
-        ab_small = _superconducting_airbridge_shunt(f=f, bridge_width=2.0)
-        ab_large = _superconducting_airbridge_shunt(f=f, bridge_width=8.0)
+        ab_small = _superconducting_airbridge_shunt(
+            f=f,
+            bridge_width=bridge_width_small,
+            loss_tangent=loss_tangent,
+            airgap_height=airgap_height,
+        )
+        ab_large = _superconducting_airbridge_shunt(
+            f=f,
+            bridge_width=bridge_width_large,
+            loss_tangent=loss_tangent,
+            airgap_height=airgap_height,
+        )
 
         # Transmission should decrease (reflection increase) as shunt admittance (width) increases
         s21_small = jnp.abs(ab_small[("o2", "o1")])
@@ -229,3 +252,32 @@ class TestAirbridge:
 
         # Wider bridge -> more capacitance -> more shunting -> lower transmission
         assert jnp.all(s21_large < s21_small)
+
+    @given(
+        loss_tangent_low=st.floats(min_value=1e-9, max_value=1e-6),
+        loss_tangent_high=st.floats(min_value=1e-3, max_value=1e-1),
+        bridge_width=st.floats(min_value=2.0, max_value=15.0),
+    )
+    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    def test_airbridge_loss_scaling(
+        self,
+        loss_tangent_low: float,
+        loss_tangent_high: float,
+        bridge_width: float,
+    ) -> None:
+        """Higher dielectric loss should decrease transmission."""
+        from qpdk.models.waveguides import _superconducting_airbridge_shunt
+
+        f = jnp.array([6e9])
+
+        ab_low_loss = _superconducting_airbridge_shunt(
+            f=f, bridge_width=bridge_width, loss_tangent=loss_tangent_low
+        )
+        ab_high_loss = _superconducting_airbridge_shunt(
+            f=f, bridge_width=bridge_width, loss_tangent=loss_tangent_high
+        )
+
+        s21_low = jnp.abs(ab_low_loss[("o2", "o1")])
+        s21_high = jnp.abs(ab_high_loss[("o2", "o1")])
+
+        assert jnp.all(s21_high < s21_low)
