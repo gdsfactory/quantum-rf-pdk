@@ -33,6 +33,7 @@ def tsv(diameter: float = 15.0) -> Component:
         orientation=0,
         layer=LAYER.TSV,
         width=diameter,
+        port_type="placement",
     )
     return c
 

@@ -1,56 +1,153 @@
-"""S-parameter models for couplers."""
+"""Coupler models."""
 
+from functools import partial
+from typing import cast
+
+import gdsfactory as gf
+import jax
 import jax.numpy as jnp
+import numpy as np
 import sax
+import skrf
+from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
-from skrf import Frequency
+from sax.models.rf import capacitor, tee
 
-from qpdk.models.generic import capacitor, tee
+from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
+from qpdk.models.math import (
+    capacitance_per_length_conformal,
+    ellipk_ratio,
+    epsilon_eff,
+)
 from qpdk.models.media import cross_section_to_media
 from qpdk.models.waveguides import straight
 
 
-def cpw_cpw_coupling_capacitance(
-    length: float,
-    gap: float,
-    cross_section: CrossSectionSpec,
-    f: ArrayLike = jnp.array([5e9]),
-) -> float:
-    """Calculate the coupling capacitance between two parallel CPWs.
+@partial(jax.jit, inline=True)
+def cpw_cpw_coupling_capacitance_per_length_analytical(
+    gap: float | ArrayLike,
+    width: float | ArrayLike,
+    cpw_gap: float | ArrayLike,
+    ep_r: float | ArrayLike,
+) -> float | jax.Array:
+    r"""Analytical formula for ECCPW mutual capacitance per unit length.
 
-    TODO: this is a placeholder function and needs to be implemented properly.
+    The model follows the edge-coupled coplanar waveguide (ECCPW) formula
+    using conformal mapping for even and odd modes:
+
+    .. math::
+
+        x_1 &= s_c / 2 \\
+        x_2 &= x_1 + W \\
+        x_3 &= x_2 + G \\
+        k_e &= \sqrt{\frac{x_2^2 - x_1^2}{x_3^2 - x_1^2}} \\
+        k_o &= \frac{x_1}{x_2} \sqrt{\frac{x_3^2 - x_2^2}{x_3^2 - x_1^2}} \\
+        C_{\text{even}} &= 2 \epsilon_0 \epsilon_{\text{eff}} \frac{K(k_e)}{K(k_e')} \\
+        C_{\text{odd}} &= 2 \epsilon_0 \epsilon_{\text{eff}} \frac{K(k_o')}{K(k_o)} \\
+        C_m &= \frac{C_{\text{odd}} - C_{\text{even}}}{2}
+
+    where :math:`s_c` is the separation (gap) between inner edges, :math:`W` is the
+    center conductor width, and :math:`G` is the gap to the ground plane.
+
+    See :cite:`simonsCoplanarWaveguideCircuits2001`.
 
     Args:
-        length: The coupling length in µm.
-        gap: The gap between the two CPWs in µm.
-        cross_section: The cross-section of the CPW.
+        gap: The gap (separation) between the two center conductors in µm.
+        width: Center conductor width in µm.
+        cpw_gap: Gap between center conductor and ground plane in µm.
+        ep_r: Relative permittivity of the substrate.
+
+    Returns:
+        The mutual coupling capacitance per unit length in Farads/meter.
+    """
+    # Geometric parameters in m (convert from μm)
+    s_c = gap * 1e-6
+    w_m = width * 1e-6
+    g_m = cpw_gap * 1e-6
+
+    x1 = s_c / 2
+    x2 = x1 + w_m
+    x3 = x2 + g_m
+
+    # Even-mode modulus squared
+    ke_sq = (x2**2 - x1**2) / (x3**2 - x1**2)
+
+    # Odd-mode modulus squared
+    ko_sq = (x1**2 / x2**2) * ((x3**2 - x2**2) / (x3**2 - x1**2))
+
+    # Capacitances per unit length
+    # Factor is 2.0 since ECCPW formula uses 2 * ε_0 * ε_eff
+    c_even_pul = 2.0 * capacitance_per_length_conformal(m=ke_sq, ep_r=ep_r)
+    # c_odd uses K(1-m)/K(m) which is the inverse of ellipk_ratio(m)
+    c_odd_pul = 2.0 * ε_0 * epsilon_eff(ep_r) / ellipk_ratio(ko_sq)
+
+    # Mutual capacitance per unit length
+    return (c_odd_pul - c_even_pul) / 2
+
+
+def cpw_cpw_coupling_capacitance(
+    f: sax.FloatArrayLike,
+    length: float | ArrayLike,
+    gap: float | ArrayLike,
+    cross_section: CrossSectionSpec,
+) -> float | jax.Array:
+    r"""Calculate the coupling capacitance between two parallel CPWs.
+
+    Args:
         f: Frequency array in Hz.
+        length: The coupling length in µm.
+        gap: The gap between the two center conductors in µm.
+        cross_section: The cross-section of the CPW.
 
     Returns:
         The total coupling capacitance in Farads.
     """
-    # Create a media instance to extract parameters. Frequency doesn't matter for geometry.
+    f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
-    media_instance = media(frequency=Frequency.from_f(f, unit="Hz"))
-    ep_r = media_instance.ep_r  # noqa: F841
-    w_m = getattr(media_instance, "w", 10e-6)  # noqa: F841
-    s_m = getattr(media_instance, "s", 6e-6)  # noqa: F841
-    length_m = length * 1e-6  # noqa: F841
-    gap_m = gap * 1e-6  # noqa: F841
+    media_instance = media(
+        frequency=skrf.Frequency.from_f(np.atleast_1d(np.asarray(f_arr)))
+    )
+    ep_r = float(media_instance.ep_r)
 
-    # TODO: Find a paper with some values
+    # Extract CPW dimensions from cross-section
+    xs: CrossSection
+    if isinstance(cross_section, CrossSection):
+        xs = cross_section
+    elif callable(cross_section):
+        xs = cast(CrossSection, cross_section())
+    else:
+        xs = gf.get_cross_section(cross_section)
 
-    # TODO hardcoded placeholder value
-    return 60e-15
+    width = xs.width
+    try:
+        cpw_gap = next(
+            section.width
+            for section in xs.sections
+            if section.name and "etch_offset" in section.name
+        )
+    except StopIteration:
+        # Fallback to default CPW gap if not found in sections
+        gf.logger.warning(
+            "CPW gap not found in cross-section sections. Using default value of 6.0 µm."
+        )
+        cpw_gap = 6.0
+
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gap,
+        width=width,
+        cpw_gap=cpw_gap,
+        ep_r=ep_r,
+    )
+    return c_pul * length * 1e-6
 
 
 def coupler_straight(
-    f: ArrayLike = jnp.array([5e9]),
+    f: ArrayLike = DEFAULT_FREQUENCY,
     length: int | float = 20.0,
     gap: int | float = 0.27,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides, :func:`~qpdk.cells.waveguides.coupler_straight`.
 
     Args:
@@ -60,7 +157,7 @@ def coupler_straight(
         cross_section: The cross-section of the CPW.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
 
     .. code::
 
@@ -68,114 +165,101 @@ def coupler_straight(
                 │gap
         o1──────▼───────o4
     """
+    f = jnp.asarray(f)
+    f_flat = f.ravel()
     straight_settings = {"length": length / 2, "cross_section": cross_section}
     capacitor_settings = {
-        "capacitance": cpw_cpw_coupling_capacitance(
-            length, gap, cross_section, f
-        ),  # gap * 1e-18 * f,  # TODO implement FEM simulation retrieval or use some paper
+        "capacitance": cpw_cpw_coupling_capacitance(f, length, gap, cross_section),
         "z0": cross_section_to_media(cross_section)(
-            frequency=Frequency.from_f(f, unit="Hz")
-        ).z0,
+            frequency=skrf.Frequency.from_f(
+                np.atleast_1d(np.asarray(f_flat)), unit="Hz"
+            )
+        ).z0.reshape(f.shape),
     }
 
     # Create straight instances with shared settings
     straight_instances = {
-        f"straight_{i}_{j}": {
-            "component": "straight",
-            "settings": straight_settings,
-        }
+        f"straight_{i}_{j}": straight(f=f, **straight_settings)
         for i in [1, 2]
         for j in [1, 2]
     }
-    tee_instances = {f"tee_{i}": {"component": "tee"} for i in [1, 2]}
+    tee_instances = {f"tee_{i}": tee(f=f) for i in [1, 2]}
 
-    circuit, _ = sax.circuit(
-        netlist={
-            "instances": {
-                **straight_instances,
-                **tee_instances,
-                "capacitor": {
-                    "component": "capacitor",
-                    "settings": capacitor_settings,
-                },
-            },
-            "connections": {
-                "straight_1_1,o1": "tee_1,o1",
-                "straight_1_2,o1": "tee_1,o2",
-                "straight_2_1,o1": "tee_2,o1",
-                "straight_2_2,o1": "tee_2,o2",
-                "tee_1,o3": "capacitor,o1",
-                "tee_2,o3": "capacitor,o2",
-            },
-            "ports": {
-                "o2": "straight_1_1,o2",
-                "o3": "straight_1_2,o2",
-                "o1": "straight_2_1,o2",
-                "o4": "straight_2_2,o2",
-            },
-        },
-        models={
-            "straight": straight,
-            "capacitor": capacitor,
-            "tee": tee,
-        },
-    )
+    instances = {
+        **straight_instances,
+        **tee_instances,
+        "capacitor": capacitor(f=f, **capacitor_settings),
+    }
+    connections = {
+        "straight_1_1,o1": "tee_1,o1",
+        "straight_1_2,o1": "tee_1,o2",
+        "straight_2_1,o1": "tee_2,o1",
+        "straight_2_2,o1": "tee_2,o2",
+        "tee_1,o3": "capacitor,o1",
+        "tee_2,o3": "capacitor,o2",
+    }
+    ports = {
+        "o2": "straight_1_1,o2",
+        "o3": "straight_1_2,o2",
+        "o1": "straight_2_1,o2",
+        "o4": "straight_2_2,o2",
+    }
 
-    return circuit(f=f)
+    return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
+def coupler_ring(
+    f: ArrayLike = DEFAULT_FREQUENCY,
+    length: int | float = 20.0,
+    gap: int | float = 0.27,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SDict:
+    """S-parameter model for two coupled coplanar waveguides in a ring configuration.
+
+    The implementation is the same as straight coupler for now.
+
+    TODO: Fetch coupling capacitance from a curved simulation library.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length of coupling section in µm
+        gap: Gap between the coupled waveguides in µm
+        cross_section: The cross-section of the CPW.
+
+    Returns:
+        sax.SDict: S-parameters dictionary
+    """
+    return coupler_straight(f=f, length=length, gap=gap, cross_section=cross_section)
 
 
 if __name__ == "__main__":
-    from matplotlib import pyplot as plt
+    import matplotlib.pyplot as plt
 
-    # Define frequency range from 1 GHz to 10 GHz with 201 points
-    f = jnp.linspace(1e9, 10e9, 201)
+    lengths = jnp.linspace(10, 1000, 10)
+    gaps = jnp.geomspace(0.1, 5.0, 6)
+    width = 10.0
+    cpw_gap = 6.0
+    ep_r = 11.7
 
-    # Calculate coupler S-parameters for a 20 um straight coupler with 0.27 um gap
-    coupler = coupler_straight(f=f, length=20, gap=0.27)
+    plt.figure(figsize=(10, 6))
 
-    # Create figure with single plot for comparison
-    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    # Calculate capacitance per unit length for all gaps simultaneously (shape: (6,))
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    )
 
-    # Define S-parameters to plot
-    s_params = [
-        (("o1", "o1"), "$S_{11}$ Reflection"),
-        (("o1", "o2"), "$S_{12}$ Coupled branch 1"),
-        (("o1", "o3"), "$S_{13}$ Coupled branch 2"),
-        (("o1", "o4"), "$S_{14}$ Insertion loss (direct through)"),
-    ]
+    # Broadcast to compute total capacitance for all lengths and gaps (shape: (6, 1000))
+    capacitances = c_pul[:, None] * lengths[None, :] * 1e-6 * 1e15  # Convert to fF
 
-    # Plot each S-parameter for both coupler implementations
-    default_color_cycler = plt.cm.tab10.colors
-    for idx, (ports, label) in enumerate(s_params):
-        color = default_color_cycler[idx % len(default_color_cycler)]
-        # Plot both implementations with same color but different linestyles
-        ax.plot(
-            f / 1e9,
-            20 * jnp.log10(jnp.abs(coupler[ports])),
-            linestyle="-",
-            color=color,
-            label=f"{label} coupler_straight",
-        )
+    for i, gap in enumerate(gaps):
+        plt.plot(lengths, capacitances[i], label=f"gap = {gap:.1f} µm")
 
-    # Configure plot
-    ax.set_xlabel("Frequency [GHz]")
-    ax.set_ylabel("$S$-parameter [dB]")
-    ax.set_title(r"$S$-parameters: $\mathtt{coupler\_straight}$")
-    ax.grid(True, which="both")
-    ax.legend()
-
+    plt.xlabel("Coupling Length (µm)")
+    plt.ylabel("Mutual Capacitance (fF)")
+    plt.title(
+        rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}}=${width} µm, $\mathtt{{cpw\_gap}}=${cpw_gap} µm, $\epsilon_r={ep_r}$)"
+    )
+    plt.grid(True)
+    plt.legend()
     plt.tight_layout()
     plt.show()
-
-    # Example calculation of coupling capacitance
-    from qpdk.tech import coplanar_waveguide
-
-    cs = coplanar_waveguide(width=10, gap=6)
-    coupling_capacitance = cpw_cpw_coupling_capacitance(
-        length=20.0, gap=0.27, cross_section=cs, f=f
-    )
-    print(
-        "Coupling capacitance for 20 um length and 0.27 um gap:",
-        coupling_capacitance,
-        "F",
-    )

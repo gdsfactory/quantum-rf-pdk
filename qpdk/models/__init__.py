@@ -2,21 +2,58 @@
 
 import sax
 
-from .couplers import coupler_straight
-from .generic import (
+from qpdk.models.capacitor import (
+    interdigital_capacitor,
+    plate_capacitor,
+)
+from qpdk.models.junction import josephson_junction
+
+sax.set_port_naming_strategy("optical")
+
+from qpdk.models.constants import (
+    DEFAULT_FREQUENCY,
+)
+from qpdk.models.couplers import (
+    coupler_ring,
+    coupler_straight,
+    cpw_cpw_coupling_capacitance,
+)
+from qpdk.models.generic import (
+    admittance,
     capacitor,
+    electrical_open,
+    electrical_short,
+    electrical_short_2_port,
     gamma_0_load,
+    impedance,
     inductor,
-    josephson_junction,
+    lc_resonator,
+    lc_resonator_coupled,
     open,
     short,
     short_2_port,
-    single_admittance_element,
-    single_impedance_element,
     tee,
 )
-from .resonator import quarter_wave_resonator_coupled, resonator_frequency
-from .waveguides import (
+from qpdk.models.media import (
+    MediaCallable,
+    cpw_media_skrf,
+    cross_section_to_media,
+)
+from qpdk.models.qubit import (
+    coupling_strength_to_capacitance,
+    double_island_transmon,
+    ec_to_capacitance,
+    ej_to_inductance,
+    qubit_with_resonator,
+    shunted_transmon,
+    transmon_coupled,
+)
+from qpdk.models.resonator import (
+    quarter_wave_resonator_coupled,
+    resonator_frequency,
+)
+from qpdk.models.waveguides import (
+    airbridge,
     bend_circular,
     bend_euler,
     bend_s,
@@ -25,39 +62,77 @@ from .waveguides import (
     straight,
     straight_shorted,
     taper_cross_section,
+    tsv,
 )
 
-sax.set_port_naming_strategy("optical")
+__all__ = [
+    "DEFAULT_FREQUENCY",
+    "MediaCallable",
+    "admittance",
+    "airbridge",
+    "bend_circular",
+    "bend_euler",
+    "bend_s",
+    "capacitor",
+    "coupler_ring",
+    "coupler_straight",
+    "coupling_strength_to_capacitance",
+    "cpw_cpw_coupling_capacitance",
+    "cpw_media_skrf",
+    "cross_section_to_media",
+    "double_island_transmon",
+    "ec_to_capacitance",
+    "ej_to_inductance",
+    "electrical_open",
+    "electrical_short",
+    "electrical_short_2_port",
+    "gamma_0_load",
+    "impedance",
+    "inductor",
+    "interdigital_capacitor",
+    "josephson_junction",
+    "launcher",
+    "lc_resonator",
+    "lc_resonator_coupled",
+    "models",
+    "open",
+    "plate_capacitor",
+    "quarter_wave_resonator_coupled",
+    "qubit_with_resonator",
+    "rectangle",
+    "resonator_frequency",
+    "short",
+    "short_2_port",
+    "shunted_transmon",
+    "straight",
+    "straight_shorted",
+    "taper_cross_section",
+    "tee",
+    "transmon_coupled",
+    "tsv",
+]
+
+
+def _is_sax_model(obj: object) -> bool:
+    """Check if an object is a SAX model function."""
+    if not callable(obj):
+        return False
+    # Check if return type is sax.SType or sax.SDict
+    for target in [obj, getattr(obj, "__wrapped__", None)]:
+        if target is None:
+            continue
+        if hasattr(target, "__annotations__") and "return" in target.__annotations__:
+            ret = target.__annotations__["return"]
+            if hasattr(ret, "__name__") and ret.__name__ in ["SType", "SDict"]:
+                return True
+            # Also check identity for standard cases
+            if ret in [sax.SType, sax.SDict]:
+                return True
+    return sax.try_into[sax.Model](obj) is not None
 
 
 models = {
-    func.__name__: func
-    for func in (
-        bend_circular,
-        bend_euler,
-        bend_s,
-        capacitor,
-        coupler_straight,
-        gamma_0_load,
-        inductor,
-        josephson_junction,
-        open,
-        rectangle,
-        quarter_wave_resonator_coupled,
-        short,
-        single_admittance_element,
-        single_impedance_element,
-        straight,
-        taper_cross_section,
-        tee,
-        launcher,
-        short_2_port,
-        straight_shorted,
-    )
+    k: v
+    for k, v in globals().items()
+    if k in __all__ and k != "models" and _is_sax_model(v)
 }
-
-__all__ = [
-    "models",
-    "resonator_frequency",
-    *models.keys(),
-]

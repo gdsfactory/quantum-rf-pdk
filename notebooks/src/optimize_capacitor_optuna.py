@@ -138,7 +138,7 @@ def _objective_function(trial: optuna.trial.Trial) -> float:
 
 
 # %% [markdown]
-# ## Palace imulation settings
+# ## Palace simulation settings
 #
 # This section shows how the Palace simulation is set up.
 

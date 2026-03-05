@@ -91,7 +91,8 @@ def straight_open(
     straight_ref = c << gf.c.straight(
         length=length, cross_section=cross_section, width=width, npoints=npoints
     )
-    c.add_ports(straight_ref.ports)
+    c.add_port(port=straight_ref.ports["o1"])
+    c.add_port(port=straight_ref.ports["o2"], port_type="placement")
     add_etch_gap(c, c.ports["o2"], cross_section=cross_section)
     return c
 
@@ -118,7 +119,8 @@ def straight_double_open(
     straight_ref = c << straight_open(
         length=length, cross_section=cross_section, width=width, npoints=npoints
     )
-    c.add_ports(straight_ref.ports)
+    c.add_port(port=straight_ref.ports["o1"], port_type="placement")
+    c.add_port(port=straight_ref.ports["o2"], port_type="placement")
     add_etch_gap(c, c.ports["o1"], cross_section=cross_section)
     return c
 

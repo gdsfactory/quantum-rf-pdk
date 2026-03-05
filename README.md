@@ -2,6 +2,7 @@
 
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
+[![Coverage](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/coverage.svg)](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/)
 [![HTML Docs](https://img.shields.io/badge/%F0%9F%93%84_HTML-Docs-blue?style=flat)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![PDF Docs](https://img.shields.io/badge/%F0%9F%93%84_PDF-Docs-blue?style=flat&logo=adobeacrobatreader)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD)
@@ -19,10 +20,13 @@ A generic process design kit (PDK) for superconducting quantum RF applications b
   geometries.
 - [`qpdk/samples/`](qpdk/samples): contains example layouts and simulations.
 - [`notebooks/`](notebooks): contains notebooks demonstrating design and simulation workflows.
+- [gsim example notebooks](https://gdsfactory.github.io/gsim/): electromagnetic simulation examples using Palace and
+  Meep with gdsfactory.
 
 ## Installation
 
-We recommend using [`uv`](https://astral.sh/uv/) for package management.
+We recommend using [`uv`](https://astral.sh/uv/) for package management. [`just`](https://github.com/casey/just) is used
+for project-specific recipes.
 
 ### Installation for Users
 
@@ -32,14 +36,27 @@ Install the package with:
 uv pip install qpdk
 ```
 
-> [!NOTE]
-> After installation, restart KLayout to ensure the new technology appears.
-
 Optional dependencies for the models and simulation tools can be installed with:
 
 ```bash
 uv pip install qpdk[models]
 ```
+
+### KLayout Technology Installation
+
+To use the PDK in KLayout (for viewing GDS files with correct layers and technology settings), you should install the
+technology files:
+
+```bash
+# For contributors (from the repository root)
+just install-tech
+
+# For users (after installing qpdk)
+python -m qpdk.install_tech
+```
+
+> [!NOTE]
+> After installation, restart KLayout to ensure the new technology appears.
 
 ### Installation for Contributors
 
@@ -60,11 +77,12 @@ uv sync --group dev
 Check out the commands for testing and building documentation with:
 
 ```bash
-make help
+just --list
 ```
 
 ## Documentation
 
 - [Quantum RF PDK documentation (HTML)](https://gdsfactory.github.io/quantum-rf-pdk/)
 - [Quantum RF PDK documentation (PDF)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
+- [Quantum RF PDK test coverage report](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/)
 - [gdsfactory documentation](https://gdsfactory.github.io/gdsfactory/)

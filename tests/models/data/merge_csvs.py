@@ -1,3 +1,9 @@
+# /// script
+# dependencies = [
+#   "polars",
+# ]
+# ///
+
 """Merge any number of CSV files horizontally using Polars and save the result to a new CSV file."""
 
 import argparse

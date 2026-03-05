@@ -96,11 +96,14 @@ for suite in test_suites:
     test_instance = suite()
     display(Markdown(f"### {test_instance.component_name}"))
     display(Markdown(f"**Test Suite:** `{suite.__name__}`"))
-    display(
-        Markdown(
-            f"**Parameter:** {test_instance.parameter_name} = {test_instance.parameter_value / test_instance.parameter_unit:.2f} × 10^{int(np.log10(test_instance.parameter_unit))}"
-        )
-    )
+
+    param_strs = [
+        f"{p.name} = {p.value / p.unit:.2f} × 10^{int(np.log10(p.unit))}"
+        for p in sorted(test_instance.parameters, key=lambda x: x.name)
+    ]
+    param_text = "**Parameters:**\n" + "\n".join(f"- {p}" for p in param_strs)
+    display(Markdown(param_text))
+
     display(Markdown(f"**CSV:** `{test_instance.csv_filename}`"))
     test_instance.plot_comparison()
 

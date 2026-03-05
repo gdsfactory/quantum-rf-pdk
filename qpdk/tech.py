@@ -1,8 +1,8 @@
 """Technology definitions."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import cache, partial, wraps
-from typing import Any, cast
+from typing import Any
 
 import gdsfactory as gf
 from doroutes.bundles import add_bundle_astar
@@ -38,7 +38,7 @@ class LayerMapQPDK(LayerMap):
     # Additive wins over subtractive where they overlap
     # i.e., you can draw metal over an etched region to "fill it back in"
 
-    # flip-cihp equivalents
+    # flip-chip equivalents
     M2_DRAW: Layer = (2, 0)
     M2_ETCH: Layer = (2, 1)
 
@@ -75,6 +75,9 @@ class LayerMapQPDK(LayerMap):
 
     # Marker layer for waveguides
     WG: Layer = (102, 0)
+
+    # Error marker layer (used by gdsfactory to highlight routing/DRC errors)
+    ERROR_PATH: Layer = (1000, 0)
 
 
 L = LAYER = LayerMapQPDK
@@ -179,6 +182,14 @@ def get_layer_stack() -> LayerStack:
 
 LAYER_STACK = get_layer_stack()
 LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp)
+
+LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
+    ("M1_DRAW", "TSV", "M2_DRAW"),
+    ("M1_DRAW", "IND", "M2_DRAW"),
+    ("M1_DRAW", "AB_DRAW", "M1_DRAW"),
+    ("M2_DRAW", "AB_DRAW", "M2_DRAW"),
+]
+
 
 LAYER_STACK_FLIP_CHIP = LayerStack(
     layers={
@@ -355,20 +366,10 @@ strip = strip_metal = microstrip
 # Routing functions
 ############################
 
-route_single = route_single_cpw = partial(
-    gf.routing.route_single,
-    cross_section=cpw,
-    bend="bend_circular",
-)
 route_bundle = route_bundle_cpw = partial(
     gf.routing.route_bundle,
     cross_section=cpw,
     bend="bend_circular",
-)
-route_single_sbend = route_single_sbend_cpw = partial(
-    gf.routing.route_single_sbend,
-    cross_section=cpw,
-    bend_s="bend_s",
 )
 route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     gf.routing.route_bundle_all_angle,
@@ -392,9 +393,6 @@ route_astar = route_astar_cpw = partial(
     spacing=3,
 )
 routing_strategies = {
-    "route_single": route_single,
-    "route_single_cpw": route_single_cpw,
-    "route_single_sbend": route_single_sbend,
     "route_bundle": route_bundle,
     "route_bundle_cpw": route_bundle_cpw,
     "route_bundle_all_angle": route_bundle_all_angle,
@@ -416,14 +414,12 @@ if __name__ == "__main__":
         print(f"\t{yaml_layer_name}: Layer = {yaml_layer_tuple}")
     print("}")
 
-    connectivity = cast(list[ConnectivitySpec], [("M1_DRAW", "TSV", "M2_DRAW")])
-
     klayout_tech = KLayoutTechnology(
         name="qpdk",
         layer_map=LAYER,
         layer_views=LAYER_VIEWS,
         layer_stack=LAYER_STACK,
-        connectivity=connectivity,
+        connectivity=LAYER_CONNECTIVITY,
     )
     klayout_tech.write_tech(tech_dir=PATH.klayout)
     # print(DEFAULT_CROSS_SECTION_NAMES)

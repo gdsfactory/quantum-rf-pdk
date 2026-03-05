@@ -17,6 +17,13 @@
 
 # %% tags=["hide-input", "hide-output"]
 import numpy as np
+
+# Monkeypatch for NumPy 2.0 compatibility with scqubits
+if not hasattr(np, "complex_"):
+    np.complex_ = np.complex128  # noqa: NPY201
+if not hasattr(np, "float_"):
+    np.float_ = np.float64  # noqa: NPY201
+
 import scipy
 import scqubits as scq
 import skrf

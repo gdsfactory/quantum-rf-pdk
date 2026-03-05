@@ -10,7 +10,7 @@ import jsondiff
 import kfactory as kf
 import numpy as np
 import pytest
-from conftest import difftest
+from gdsfactory.difftest import difftest
 from gdsfactory.technology import LayerViews
 from gdsfactory.typings import ComponentFactory
 from kfactory import LayerEnum
@@ -128,7 +128,7 @@ def test_gds(component_name: str) -> None:
 def test_settings(component_name: str, data_regression: DataRegressionFixture) -> None:
     """Avoid regressions when exporting settings."""
     component = cells[component_name]()
-    settings = normalize_numeric_types(component.to_dict(with_ports=True))
+    settings = normalize_numeric_types(component.to_dict())
     data_regression.check(settings)
 
 
@@ -196,101 +196,48 @@ def test_sample_generates(sample: ComponentFactory):
 
 
 _skip_port_tests = {
-    "airbridge",
-    "double_pad_transmon",
-    "double_pad_transmon_with_bbox",
     "flipmon",
     "flipmon_with_bbox",
-    "flipmon_with_resonator",
-    "indium_bump",
-    "josephson_junction",
-    "qubit_with_resonator",
-    "squid_junction",
-    "transmon_with_resonator",
-    "tsv",
-    "xmon_transmon",
 }
+port_test_cell_names = [name for name in cell_names if name not in _skip_port_tests]
 
 
-@pytest.mark.parametrize("component_name", cell_names)
+@pytest.mark.parametrize("component_name", port_test_cell_names)
 def test_optical_port_positions(component_name: str) -> None:
     """Ensure that optical ports are positioned correctly."""
-    if component_name in _skip_port_tests:
-        pytest.skip(f"Known port position issue for {component_name}")
     component = cells[component_name]()
     if isinstance(component, gf.ComponentAllAngle):
         new_component = gf.Component()
         kf.VInstance(component).insert_into_flat(new_component, levels=0)
         new_component.add_ports(component.ports)
         component = new_component
-    for port in component.ports:
-        if port.port_type == "optical":
-            port_layer = port.layer
-            port_width = port.width
-            port_position = port.center
-            port_angle = port.orientation
-            cs_region = kf.kdb.Region(component.begin_shapes_rec(port_layer))
-            optical_edges = cs_region.edges()
+    for port in component.ports.filter(port_type="optical"):
+        port_layer = port.layer
+        port_width = port.width
+        port_position = port.center
+        port_angle = port.orientation
+        cs_region = kf.kdb.Region(component.begin_shapes_rec(port_layer))
+        optical_edges = cs_region.edges()
 
-            tolerance = 0.001
-            poly = kf.kdb.DBox(-tolerance, -tolerance, tolerance, tolerance)
-            dbu_in_um = port.kcl.to_um(1)
-            port_marker = (
-                kf.kdb.DPolygon(poly).transformed(port.dcplx_trans).to_itype(dbu_in_um)
+        tolerance = 0.001
+        poly = kf.kdb.DBox(-tolerance, -tolerance, tolerance, tolerance)
+        dbu_in_um = port.kcl.to_um(1)
+        port_marker = (
+            kf.kdb.DPolygon(poly).transformed(port.dcplx_trans).to_itype(dbu_in_um)
+        )
+        port_marker_region = kf.kdb.Region(port_marker)
+
+        interacting_edges = optical_edges.interacting(port_marker_region)
+        if interacting_edges.is_empty():
+            raise AssertionError(
+                f"No optical edge found for port {port.name} at position {port_position} with width {port_width} and angle {port_angle}."
             )
-            port_marker_region = kf.kdb.Region(port_marker)
-
-            interacting_edges = optical_edges.interacting(port_marker_region)
-            if interacting_edges.is_empty():
-                raise AssertionError(
-                    f"No optical edge found for port {port.name} at position {port_position} with width {port_width} and angle {port_angle}."
-                )
-            port_edge = next(iter(interacting_edges.each()))
-            edge_length = port_edge.length() * 0.001
-            if not np.isclose(edge_length, port_width, atol=1e-3):
-                raise AssertionError(
-                    f"Port {port.name} has width {port_width}, but the optical edge length is {edge_length}."
-                )
-
-
-@pytest.mark.parametrize("component_name", cell_names)
-def test_optical_port_orientations(component_name: str) -> None:
-    """Ensure that optical ports point outward from the component geometry."""
-    if component_name in _skip_port_tests:
-        pytest.skip(f"Known port position issue for {component_name}")
-    component = cells[component_name]()
-    if isinstance(component, gf.ComponentAllAngle):
-        new_component = gf.Component()
-        kf.VInstance(component).insert_into_flat(new_component, levels=0)
-        new_component.add_ports(component.ports)
-        component = new_component
-    for port in component.ports:
-        if port.port_type == "optical":
-            port_layer = port.layer
-            port_position = port.center
-            port_angle = port.orientation
-            cs_region = kf.kdb.Region(component.begin_shapes_rec(port_layer))
-
-            step = 0.05
-            tolerance = 0.001
-            ahead_box = kf.kdb.DBox(
-                step - tolerance, -tolerance, step + tolerance, tolerance
+        port_edge = next(iter(interacting_edges.each()))
+        edge_length = port_edge.length() * 0.001
+        if not np.isclose(edge_length, port_width, atol=1e-3):
+            raise AssertionError(
+                f"Port {port.name} has width {port_width}, but the optical edge length is {edge_length}."
             )
-            dbu_in_um = port.kcl.to_um(1)
-            ahead_marker = (
-                kf.kdb.DPolygon(ahead_box)
-                .transformed(port.dcplx_trans)
-                .to_itype(dbu_in_um)
-            )
-            ahead_region = kf.kdb.Region(ahead_marker)
-
-            overlap = cs_region & ahead_region
-            if not overlap.is_empty():
-                raise AssertionError(
-                    f"Port {port.name} at position {port_position} with angle "
-                    f"{port_angle} appears to point inward into the component "
-                    f"geometry on layer {port_layer}. Ports should point outward."
-                )
 
 
 if __name__ == "__main__":

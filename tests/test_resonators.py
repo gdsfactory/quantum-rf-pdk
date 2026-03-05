@@ -3,7 +3,8 @@
 from functools import partial
 
 import hypothesis.strategies as st
-from hypothesis import assume, given, settings
+import pytest
+from hypothesis import HealthCheck, assume, given, settings
 
 from qpdk.cells.derived.transmon_with_resonator import (
     flipmon_with_resonator,
@@ -18,13 +19,23 @@ MAX_EXAMPLES = 20
 class TestResonators:
     """Test basic resonator functionality."""
 
+    @pytest.mark.parametrize("length", [0, 10, 100])
+    def test_resonator_too_short_raises_error(self, length: float) -> None:
+        """Verify that providing a length too short for the meanders raises ValueError."""
+        with pytest.raises(ValueError, match="too short"):
+            resonator(length=length, meanders=6)
+
     @given(
         length=st.floats(min_value=0, max_value=1000000),
-        meanders=st.integers(min_value=1),
+        meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
     )
-    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    @settings(
+        max_examples=MAX_EXAMPLES,
+        deadline=None,
+        suppress_health_check=[HealthCheck.filter_too_much],
+    )
     def test_resonator_meanders(
         self, length: float, meanders: int, open_start: bool, open_end: bool
     ) -> None:
@@ -32,7 +43,8 @@ class TestResonators:
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
-        assume(length > meanders * bend_factory().info["length"])
+        bend_length = bend_factory().info["length"]
+        assume(length > meanders * bend_length)
 
         c = resonator(
             length=length,
@@ -50,13 +62,17 @@ class TestResonators:
 
     @given(
         length=st.floats(min_value=0, max_value=1000000),
-        meanders=st.integers(min_value=1),
+        meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
         coupling_straight_length=st.floats(min_value=1, max_value=1000),
         coupling_gap=st.floats(min_value=1, max_value=100),
     )
-    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    @settings(
+        max_examples=MAX_EXAMPLES,
+        deadline=None,
+        suppress_health_check=[HealthCheck.filter_too_much],
+    )
     def test_resonator_coupled(
         self,
         length: float,
@@ -70,7 +86,8 @@ class TestResonators:
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
-        assume(length > meanders * bend_factory().info["length"])
+        bend_length = bend_factory().info["length"]
+        assume(length > meanders * bend_length)
 
         c = resonator_coupled(
             length=length,

@@ -11,7 +11,7 @@ def remove_path_or_dir(dest: Path) -> None:
         raise FileNotFoundError(f"Path does not exist: {dest}")
 
     if dest.is_dir():
-        dest.rmdir()
+        shutil.rmtree(dest)
     else:
         dest.unlink()
 
@@ -39,11 +39,11 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
 
 if __name__ == "__main__":
     klayout_folder = "KLayout" if sys.platform == "win32" else ".klayout"
-    cwd = Path(__file__).resolve().parent
     home = Path.home()
     dest_folder = home / klayout_folder / "tech"
     dest_folder.mkdir(exist_ok=True, parents=True)
-
-    src = cwd / "qpdk" / "klayout"
+    cwd = Path(__file__).resolve().parent
+    repo_root = cwd.parent
+    src = repo_root / "qpdk" / "klayout"
     dest = dest_folder / "qpdk"
     make_link(src=src, dest=dest)
