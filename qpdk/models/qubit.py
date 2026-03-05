@@ -4,7 +4,7 @@ This module provides LC resonator models for superconducting transmon qubits
 and coupled qubit systems. The models are based on the standard LC resonator
 formulation with appropriate grounding configurations.
 
-For double-island transmon qubits, we use an ungrounded LC resonator since
+For double-pad transmon qubits, we use an ungrounded LC resonator since
 the two islands are floating. For shunted transmon qubits, one island is
 grounded, so we use a grounded LC resonator.
 
@@ -31,7 +31,7 @@ from qpdk.models.waveguides import straight_shorted
 
 __all__ = [
     "coupling_strength_to_capacitance",
-    "double_island_transmon",
+    "double_pad_transmon",
     "ec_to_capacitance",
     "ej_to_inductance",
     "qubit_with_resonator",
@@ -150,14 +150,14 @@ def coupling_strength_to_capacitance(
 
 
 @partial(jax.jit, inline=True)
-def double_island_transmon(
+def double_pad_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 7e-9,
 ) -> sax.SType:
-    r"""LC resonator model for a double-island transmon qubit.
+    r"""LC resonator model for a double-pad transmon qubit.
 
-    A double-island transmon has two superconducting islands connected by
+    A double-pad transmon has two superconducting islands connected by
     Josephson junctions, with both islands floating (not grounded). This is
     modeled as an ungrounded parallel LC resonator.
 
@@ -288,7 +288,7 @@ def transmon_coupled(
         capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
         inductance: Josephson inductance :math:`L_J` in Henries.
         grounded: If True, the qubit is a shunted transmon (grounded).
-            If False, it is a double-island transmon (ungrounded).
+            If False, it is a double-pad transmon (ungrounded).
         coupling_capacitance: Coupling capacitance :math:`C_c` in Farads.
         coupling_inductance: Coupling inductance :math:`L_c` in Henries.
 
@@ -334,7 +334,7 @@ def qubit_with_resonator(
                          +── Cc ── qubit ── o2
 
     The qubit can be either:
-    - A double-island transmon (``qubit_grounded=False``): both islands floating
+    - A double-pad transmon (``qubit_grounded=False``): both islands floating
     - A shunted transmon (``qubit_grounded=True``): one island grounded
 
     Use :func:`ec_to_capacitance` and :func:`ej_to_inductance` to convert
@@ -351,7 +351,7 @@ def qubit_with_resonator(
         qubit_inductance: Josephson inductance :math:`L_J` in Henries.
             Convert from Josephson energy using :func:`ej_to_inductance`.
         qubit_grounded: If True, the qubit is a shunted transmon (grounded).
-            If False, it is a double-island transmon (ungrounded).
+            If False, it is a double-pad transmon (ungrounded).
         resonator_length: Length of the quarter-wave resonator in µm.
         resonator_cross_section: Cross-section specification for the resonator.
         coupling_capacitance: Coupling capacitance between qubit and resonator in
@@ -370,7 +370,7 @@ def qubit_with_resonator(
         length=resonator_length,
         cross_section=resonator_cross_section,
     )
-    qubit_func = shunted_transmon if qubit_grounded else double_island_transmon
+    qubit_func = shunted_transmon if qubit_grounded else double_pad_transmon
     qubit = qubit_func(
         f=f,
         capacitance=qubit_capacitance,
