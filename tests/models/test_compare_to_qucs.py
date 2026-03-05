@@ -1,6 +1,7 @@
 """Tests comparing S-parameter models results to Qucs-S results."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from functools import partial
 from queue import SimpleQueue
 from typing import ClassVar, final, override
@@ -60,7 +61,7 @@ class BaseCompareToQucs(ABC):
     skip_values: ClassVar[list[str]] = []
 
     @abstractmethod
-    def get_model_function(self) -> sax.SType | partial[sax.SType]:
+    def get_model_function(self) -> Callable[..., sax.SType]:
         """Return the model function to use. Subclasses must override."""
         raise NotImplementedError("Subclasses must implement get_model_function")
 
@@ -80,6 +81,7 @@ class BaseCompareToQucs(ABC):
         model_func = self.get_model_function()
         kwargs = {p.name: p.value for p in self.parameters}
         S_matrix = model_func(f=f, **kwargs)
+        assert isinstance(S_matrix, dict), "Model function must return a dict"
 
         # Determine number of ports from the S-matrix
         # S-matrix keys are tuples like ("o1", "o1"), ("o2", "o1"), etc.
@@ -326,7 +328,7 @@ class TestCapacitorCompareToQucs(BaseCompareToQucs):
     )
 
     @override
-    def get_model_function(self) -> sax.SType:
+    def get_model_function(self) -> Callable[..., sax.SType]:
         return capacitor
 
 
@@ -339,7 +341,7 @@ class TestInductorCompareToQucs(BaseCompareToQucs):
     parameters = frozenset({ModelParameter(name="inductance", value=10e-9, unit=1e-9)})
 
     @override
-    def get_model_function(self) -> sax.SType:
+    def get_model_function(self) -> Callable[..., sax.SType]:
         return inductor
 
 
@@ -354,7 +356,7 @@ class TestCPWCompareToQucs(BaseCompareToQucs):
     skip_values: ClassVar[list[str]] = ["S11"]
 
     @override
-    def get_model_function(self) -> partial[sax.SType]:
+    def get_model_function(self) -> Callable[..., sax.SType]:
         return partial(
             straight,
             cross_section=coplanar_waveguide(),
@@ -376,7 +378,7 @@ class TestCouplerStraightCompareToQucs(BaseCompareToQucs):
     skip_values: ClassVar[list[str]] = ["S11"]
 
     @override
-    def get_model_function(self) -> partial[sax.SType]:
+    def get_model_function(self) -> Callable[..., sax.SType]:
         return partial(
             coupler_straight,
             # Aim for 50 fF coupling
@@ -400,7 +402,7 @@ class TestLCResonatorCompareToQucs(BaseCompareToQucs):
     )
 
     @override
-    def get_model_function(self) -> partial[sax.SType]:
+    def get_model_function(self) -> Callable[..., sax.SType]:
         return partial(
             lc_resonator,
             capacitance=100e-15,

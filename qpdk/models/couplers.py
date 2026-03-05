@@ -147,7 +147,7 @@ def coupler_straight(
     length: int | float = 20.0,
     gap: int | float = 0.27,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides, :func:`~qpdk.cells.waveguides.coupler_straight`.
 
     Args:
@@ -157,7 +157,7 @@ def coupler_straight(
         cross_section: The cross-section of the CPW.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
 
     .. code::
 
@@ -213,7 +213,7 @@ def coupler_ring(
     length: int | float = 20.0,
     gap: int | float = 0.27,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides in a ring configuration.
 
     The implementation is the same as straight coupler for now.
@@ -227,7 +227,7 @@ def coupler_ring(
         cross_section: The cross-section of the CPW.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return coupler_straight(f=f, length=length, gap=gap, cross_section=cross_section)
 

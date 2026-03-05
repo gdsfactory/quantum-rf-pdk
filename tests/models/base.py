@@ -5,8 +5,7 @@ standard tests for S-parameter models like default parameters, output shape,
 reciprocity, and passivity checks.
 """
 
-from collections.abc import Callable
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
 import jax.numpy as jnp
 import sax
@@ -38,8 +37,15 @@ class BaseModelTestSuite:
         ...         return {"length": 1000}
     """
 
-    # Class attributes to be set by subclasses
-    model_function: ClassVar[Callable[..., sax.SType]]
+    # Class attributes to be set by subclasses.
+    # ClassVar[Any] is intentional: subclasses assign plain functions or
+    # staticmethod-wrapped functions.  Both patterns are valid at runtime
+    # (accessed via ``type(self).model_function``), but neither is directly
+    # assignable to ClassVar[Callable[..., sax.SType]] in pyrefly because
+    # plain function descriptors gain a ``self`` parameter and staticmethod
+    # objects are not Callable.  Using Any avoids spurious bad-override errors
+    # while preserving the correct runtime behavior.
+    model_function: ClassVar[Any]
     expected_ports: ClassVar[set[str]]
     n_freq_default: ClassVar[int] = 10
     freq_range: ClassVar[tuple[float, float]] = (4e9, 8e9)
@@ -79,13 +85,15 @@ class BaseModelTestSuite:
         n = n_points if n_points is not None else self.n_freq_default
         return jnp.linspace(*self.freq_range, n)
 
-    def _call_model(self, **kwargs) -> sax.SType:
+    def _call_model(self, **kwargs) -> sax.SDict:
         """Call the model function with the given keyword arguments.
 
         This method ensures the model function is called correctly without
         passing `self` as the first argument.
         """
-        return type(self).model_function(**kwargs)
+        result = type(self).model_function(**kwargs)
+        assert isinstance(result, dict), "Model function must return a dict (sax.SDict)"
+        return cast(sax.SDict, result)
 
     def test_default_parameters(self) -> None:
         """Test that the model returns valid S-parameters with default parameters."""

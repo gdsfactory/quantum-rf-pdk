@@ -124,6 +124,9 @@ missing-module-attribute = "ignore"
 no-matching-overload = "ignore"
 not-a-type = "warn"
 read-only = "ignore"
+# The cast() calls are needed for pyrefly <0.55 compatibility (pre-commit hook uses 0.46.3).
+# TODO: remove this when the pre-commit hook is updated to pyrefly >=0.55.0.
+redundant-cast = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]

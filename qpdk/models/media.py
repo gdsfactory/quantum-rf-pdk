@@ -7,17 +7,17 @@ import gdsfactory as gf
 import skrf
 from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
-from skrf.media import CPW, Media
+from skrf.media import CPW
 
 from qpdk import LAYER_STACK
 from qpdk.tech import material_properties
 
 
 class MediaCallable(Protocol):
-    """Typing :class:`Protocol` for functions that accept a frequency keyword argument and return :class:`~Media`."""
+    """Typing :class:`Protocol` for functions that accept a frequency keyword argument and return :class:`~CPW`."""
 
-    def __call__(self, *, frequency: skrf.Frequency) -> Media:
-        """Call with frequency keyword argument and return Media object."""
+    def __call__(self, *, frequency: skrf.Frequency) -> CPW:
+        """Call with frequency keyword argument and return CPW media object."""
         ...
 
 
