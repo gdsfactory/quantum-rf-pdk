@@ -195,13 +195,6 @@ if __name__ == "__main__":
 
     plt.figure(figsize=(10, 6))
 
-    # Vectorized over gaps (shape: (5,))
-    k_plate = gaps_plate / (gaps_plate + 2 * width_plate)
-    k_sq_plate = k_plate**2
-    from qpdk.models.math import ellipk_ratio
-
-    k_ratio_plate = 1 / ellipk_ratio(k_sq_plate)
-
     # Broadcast to compute total capacitance for all lengths and gaps (shape: (5, 100))
     # length * 1e-6 happens in the analytical formula, here we replicate it
     capacitances_plate = (
