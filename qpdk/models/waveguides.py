@@ -9,10 +9,10 @@ import numpy as np
 import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
-from sax.models.rf import electrical_open, electrical_short
+from sax.models.rf import admittance, electrical_open, electrical_short
 from skrf import Frequency
 
-from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.generic import short_2_port
 from qpdk.models.media import cross_section_to_media
 from qpdk.tech import coplanar_waveguide
@@ -197,38 +197,48 @@ def nxn(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
+@partial(jax.jit, inline=True)
 def airbridge(
-    f: ArrayLike = DEFAULT_FREQUENCY,
-    bridge_length: float = 30.0,
-    bridge_width: float = 8.0,
-    pad_width: float = 15.0,
-) -> sax.SDict:
-    """S-parameter model for an airbridge, wrapped to :func:`~straight`.
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    cpw_width: sax.Float = 10.0,
+    bridge_width: sax.Float = 10.0,
+    airgap_height: sax.Float = 3.0,
+    loss_tangent: sax.Float = 1.2e-8,
+    z0: sax.Complex = 50.0,
+) -> sax.SType:
+    r"""S-parameter model for a superconducting CPW airbridge.
 
-    TODO: add a constant loss channel for airbridge crossings.
+    The airbridge is modeled as a lumped lossy shunt admittance (accounting for
+    dielectric loss and shunt capacitance) embedded between two sections of
+    transmission line that represent the physical footprint of the bridge.
+
+    Parallel plate capacitor model is as done in :cite:`chenFabricationCharacterizationAluminum2014`
+    The default value for the loss tangent :math:`\tan\,\delta` is also taken from there.
 
     Args:
         f: Array of frequency points in Hz
-        bridge_length: Length of the airbridge in µm.
+        cpw_width: Width of the CPW center conductor in µm.
         bridge_width: Width of the airbridge in µm.
-        pad_width: Width of the landing pads in µm.
+        airgap_height: Height of the airgap in µm.
+        loss_tangent: Dielectric loss tangent of the supporting layer/residues.
+        z0: Reference impedance in Ω
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    if pad_width <= bridge_width:
-        raise ValueError(
-            f"pad_width ({pad_width}) must be greater than bridge_width ({bridge_width})"
-        )
+    f = jnp.asarray(f)
+    ω = 2 * π * f
 
-    return straight(
-        f=f,
-        length=bridge_length,
-        cross_section=coplanar_waveguide(
-            width=bridge_width,
-            gap=(pad_width - bridge_width) / 2,
-        ),
-    )
+    # Parallel plate capacitance
+    c_pp = (ε_0 * cpw_width * 1e-6 * bridge_width * 1e-6) / (airgap_height * 1e-6)
+
+    # Heuristics: fringing capacitance assumed to be 20% of the parallel plate for small bridges.
+    c_bridge = c_pp * 1.2
+
+    # Admittance of the bridge (Conductance from dielectric loss + Susceptance)
+    Y_bridge = ω * c_bridge * (loss_tangent + 1j)
+
+    return admittance(f=f, y=Y_bridge, z0=z0)
 
 
 def tsv(

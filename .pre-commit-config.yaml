@@ -16,6 +16,7 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
+        exclude: ^docs/bibliography\.bib$
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
