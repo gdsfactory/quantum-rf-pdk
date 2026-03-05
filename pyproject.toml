@@ -39,7 +39,7 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-svgbob",
 ]
-github = ["coverage-badge", "setuptools"]
+github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
 stubs = ["scipy-stubs"]
 test = [
