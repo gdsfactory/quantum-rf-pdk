@@ -199,6 +199,23 @@ def double_pad_transmon(
 
 
 @partial(jax.jit, inline=True)
+def double_pad_transmon_with_bbox(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 7e-9,
+) -> sax.SType:
+    """LC resonator model for a double-pad transmon qubit with bounding box ports.
+
+    This model is the same as :func:`double_pad_transmon`.
+    """
+    return double_pad_transmon(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+    )
+
+
+@partial(jax.jit, inline=True)
 def shunted_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
