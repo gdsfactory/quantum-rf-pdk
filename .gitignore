@@ -9,6 +9,9 @@ Pipfile
 *.fsp
 tests/gds_ref/*.oas
 tests/gds_ref/*.oas
+tests/gds_run/*.gds
+tests/gds_run/*.oas
+
 
 tests/gds_ref/*.oas
 .vscode/
