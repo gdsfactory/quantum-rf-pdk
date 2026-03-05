@@ -137,6 +137,24 @@ def tsv(
     return straight(f=f, length=via_height)
 
 
+def indium_bump(
+    f: ArrayLike = DEFAULT_FREQUENCY,
+    bump_height: float = 10.0,
+) -> sax.SType:
+    """S-parameter model for an indium bump, wrapped to :func:`~straight`.
+
+    TODO: add a constant loss channel for indium bumps.
+
+    Args:
+        f: Array of frequency points in Hz
+        bump_height: Physical height (length) of the indium bump in µm.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return straight(f=f, length=bump_height)
+
+
 def bend_circular(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,

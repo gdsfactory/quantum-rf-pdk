@@ -1,5 +1,7 @@
 """Generic Models."""
 
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 import sax
@@ -28,11 +30,84 @@ __all__ = [
     "inductor",
     "lc_resonator",
     "lc_resonator_coupled",
+    "nxn",
     "open",
     "short",
     "short_2_port",
     "tee",
 ]
+
+
+@partial(jax.jit, static_argnames=["west", "east", "north", "south"])
+def nxn(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    west: int = 1,
+    east: int = 1,
+    north: int = 1,
+    south: int = 1,
+) -> sax.SType:
+    """NxN junction model using tee components.
+
+    This model creates an N-port divider/combiner by chaining 3-port tee
+    junctions. All ports are connected to a single node.
+
+    Args:
+        f: Array of frequency points in Hz.
+        west: Number of ports on the west side.
+        east: Number of ports on the east side.
+        north: Number of ports on the north side.
+        south: Number of ports on the south side.
+
+    Returns:
+        sax.SType: S-parameters dictionary with ports o1, o2, ..., oN.
+    """
+    f = jnp.asarray(f)
+    n_ports = west + east + north + south
+
+    if n_ports <= 0:
+        raise ValueError("Total number of ports must be positive.")
+
+    if n_ports == 1:
+        return electrical_open(f=f)
+
+    if n_ports == 2:
+        return electrical_short(f=f, n_ports=2)
+
+    # For n_ports >= 3, chain (n_ports - 2) tees
+    # Tee 1: (o1, o2, int1)
+    # Tee 2: (int1, o3, int2)
+    # ...
+    # Tee n-2: (intn-3, o(n-1), on)
+
+    instances = {f"tee_{i}": tee(f=f) for i in range(n_ports - 2)}
+    connections = {f"tee_{i},o3": f"tee_{i + 1},o1" for i in range(n_ports - 3)}
+
+    ports = {
+        "o1": "tee_0,o1",
+        "o2": "tee_0,o2",
+    }
+    for i in range(n_ports - 3):
+        ports[f"o{i + 3}"] = f"tee_{i},o3"  # Wait, o3 is connected to next tee
+        # Actually:
+        # tee_0: o1 -> ext_o1, o2 -> ext_o2, o3 -> int_1
+        # tee_1: o1 -> int_1, o2 -> ext_o3, o3 -> int_2
+        # ...
+        # tee_k: o1 -> int_k, o2 -> ext_o(k+2), o3 -> int_(k+1)
+        # ...
+        # tee_(n-3): o1 -> int_(n-3), o2 -> ext_o(n-1), o3 -> ext_on
+
+    # Re-writing ports assignment
+    ports = {
+        "o1": "tee_0,o1",
+        "o2": "tee_0,o2",
+    }
+    for i in range(1, n_ports - 2):
+        ports[f"o{i + 2}"] = f"tee_{i},o2"
+
+    # Last tee's o3 is the last external port
+    ports[f"o{n_ports}"] = f"tee_{n_ports - 3},o3"
+
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 @jax.jit
