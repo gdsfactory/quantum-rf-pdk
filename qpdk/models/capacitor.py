@@ -60,7 +60,7 @@ def interdigital_capacitor_capacitance_analytical(
     finger_gap: float,
     thickness: float,
     ep_r: float,
-) -> float:
+) -> jax.Array:
     r"""Analytical formula for interdigital capacitor capacitance.
 
     The formula uses conformal mapping for the interior and exterior regions of
@@ -111,7 +111,7 @@ def interdigital_capacitor_capacitance_analytical(
 
     # Total mutual capacitance
     # Simplifies to c_e/2 for n=2
-    return jnp.where(
+    return jnp.where(  # pyrefly: ignore[bad-return]
         n == 2,
         c_e / 2,
         (n - 3) * c_i / 2 + 2 * (c_i * c_e) / (c_i + c_e),
@@ -125,7 +125,7 @@ def plate_capacitor(
     width: float = 5.0,
     gap: float = 7.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     r"""Plate capacitor Sax model.
 
     Args:
@@ -136,7 +136,7 @@ def plate_capacitor(
         cross_section: Cross-section specification
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
@@ -159,7 +159,7 @@ def interdigital_capacitor(
     finger_gap: float = 2.0,
     thickness: float = 5.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     r"""Interdigital capacitor Sax model.
 
     Args:
@@ -171,7 +171,7 @@ def interdigital_capacitor(
         cross_section: Cross-section specification
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     f_arr = jnp.asarray(f)
     media = cross_section_to_media(cross_section)
