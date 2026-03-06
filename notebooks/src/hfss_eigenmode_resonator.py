@@ -109,13 +109,14 @@ EIGENMODE_CONFIG = {
 try:
     import os
     from pathlib import Path
-    
+
     # Ensure Ansys path is set so PyAEDT can find it
     ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
     if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
         os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
     from ansys.aedt.core import Hfss, settings
+
     settings.use_grpc_uds = False
 
     # Create temporary directory for project
@@ -165,7 +166,7 @@ if HFSS_AVAILABLE:
 
     # Import the component geometry using native GDS import
     # This automatically applies additive metals and maps layers to 3D
-    success = import_component_to_hfss(hfss, res_component, use_direct_draw=False, import_method=0)
+    success = import_component_to_hfss(hfss, res_component)
     print(f"GDS import successful: {success}")
 
     # Add substrate below the component

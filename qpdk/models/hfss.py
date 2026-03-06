@@ -33,7 +33,12 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import gdsfactory as gf
 import numpy as np
+from gdsfactory.technology.layer_stack import LayerLevel
+
+from qpdk import LAYER_STACK
+from qpdk.cells.helpers import apply_additive_metals
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss
@@ -61,7 +66,7 @@ DEFAULT_DRIVEN_PARAMS = {
 
 # Materials that should be treated as perfect conductors (PEC) in HFSS simulations.
 # Superconducting materials at cryogenic temperatures are well-approximated by PEC.
-SUPERCONDUCTING_MATERIALS = frozenset({"Nb", "Al", "TiN", "Ta", "NbN", "copper"})
+SUPERCONDUCTING_MATERIALS = frozenset({"Nb", "Al", "TiN", "Ta", "NbN"})
 
 
 def _check_pyaedt_available() -> None:
@@ -97,8 +102,6 @@ def layer_stack_to_gds_mapping(
         >>> mapping = layer_stack_to_gds_mapping()
         >>> # Returns e.g. {1: (0.0, 0.0002), 10: (0.0003, 0.0002), ...}
     """
-    from qpdk import LAYER_STACK
-
     if layer_stack is None:
         layer_stack = LAYER_STACK
 
@@ -120,7 +123,7 @@ def layer_stack_to_gds_mapping(
     return mapping
 
 
-def _get_layer_number_from_level(layer_level) -> int | None:
+def _get_layer_number_from_level(layer_level: LayerLevel) -> int | None:
     """Extract layer number from a LayerLevel's layer definition.
 
     Handles various layer definition types:
@@ -170,18 +173,14 @@ def _get_layer_number_from_level(layer_level) -> int | None:
 
 def prepare_component_for_hfss(
     component: Component,
-    *,
-    apply_additive: bool = True,
 ) -> Component:
     """Prepare a component for HFSS simulation export.
 
-    This function prepares the component by optionally applying additive metal
+    This function prepares the component by applying additive metal
     operations to create the proper negative mask representation for simulation.
 
     Args:
         component: The gdsfactory component to prepare.
-        apply_additive: If True, applies :func:`~qpdk.cells.helpers.apply_additive_metals`
-            to properly handle additive vs subtractive mask operations.
 
     Returns:
         The prepared component (may be modified in-place).
@@ -191,119 +190,9 @@ def prepare_component_for_hfss(
         >>> comp = resonator(length=4000)
         >>> prepared = prepare_component_for_hfss(comp)
     """
-    import gdsfactory as gf
-
     c = gf.Component(name=f"{component.name}_hfss")
-    c << component
-    component = c
-
-    if apply_additive:
-        from qpdk.cells.helpers import apply_additive_metals
-
-        component = apply_additive_metals(component)
-
-    return component
-
-
-def draw_component_in_hfss(
-    hfss: Hfss,
-    component: Component,
-    layer_stack: LayerStack | None = None,
-    *,
-    apply_additive: bool = True,
-) -> bool:
-    """Draw a gdsfactory component in HFSS by iterating over polygons.
-
-    This is an alternative to :func:`import_component_to_hfss` that avoids
-    native GDS import by manually drawing each polygon as a polyline and
-    thickening it. This approach is often more robust in non-graphical
-    environments or on Linux.
-
-    Args:
-        hfss: The HFSS application instance.
-        component: The gdsfactory component to draw.
-        layer_stack: LayerStack defining thickness and elevation for each layer.
-            If None, uses QPDK's default LAYER_STACK.
-        apply_additive: If True, applies additive metal operations before drawing.
-
-    Returns:
-        True if drawing was successful, False otherwise.
-    """
-    from qpdk import LAYER_STACK
-
-    if layer_stack is None:
-        layer_stack = LAYER_STACK
-
-    # Prepare component
-    prepared_component = prepare_component_for_hfss(
-        component, apply_additive=apply_additive
-    )
-
-    # Set modeler units to match gdsfactory (micrometers)
-    hfss.modeler.model_units = "um"
-
-    success = True
-    for layer_name, layer_level in layer_stack.layers.items():
-        # Get layer number
-        layer_number = _get_layer_number_from_level(layer_level)
-        if layer_number is None:
-            continue
-
-        # Get elevation and thickness
-        elevation = layer_level.zmin if layer_level.zmin is not None else 0.0
-        thickness = layer_level.thickness if layer_level.thickness else 0.0
-
-        if thickness == 0:
-            continue
-
-        # Get polygons for this layer
-        # Note: we assume (layer_number, 0) as is common in GDS
-        polys_dict = prepared_component.get_polygons(
-            layers=[(layer_number, 0)], by="tuple"
-        )
-        if (layer_number, 0) not in polys_dict:
-            continue
-
-        polys = polys_dict[(layer_number, 0)]
-        material = layer_level.material or "vacuum"
-        # Superconducting materials are PEC
-        if material in SUPERCONDUCTING_MATERIALS:
-            material = "pec"
-
-        for i, poly in enumerate(polys):
-            # Convert kfactory polygon to micrometer points
-            dpoly = poly.to_dtype(prepared_component.kcl.dbu)
-
-            # Handle hull
-            points = [[float(pt.x), float(pt.y), elevation] for pt in dpoly.each_point_hull()]
-            if points[0] != points[-1]:
-                points.append(points[0])
-
-            name = f"{layer_name}_{i}"
-            try:
-                sheet = hfss.modeler.create_polyline(
-                    points, cover_surface=True, name=name, material=material
-                )
-                if thickness != 0:
-                    hfss.modeler.thicken_sheet(sheet.name, thickness)
-                
-                # Handle holes if any
-                for j, hole in enumerate(dpoly.each_hole()):
-                    hole_points = [[float(pt.x), float(pt.y), elevation] for pt in hole.each_point()]
-                    if hole_points[0] != hole_points[-1]:
-                        hole_points.append(hole_points[0])
-                    
-                    hole_name = f"{name}_hole_{j}"
-                    hole_sheet = hfss.modeler.create_polyline(
-                        hole_points, cover_surface=True, name=hole_name
-                    )
-                    hfss.modeler.subtract(sheet.name, [hole_sheet.name])
-            except Exception as e:
-                import warnings
-                warnings.warn(f"Failed to draw polygon {i} on layer {layer_name}: {e}")
-                success = False
-
-    return success
+    c << component.copy()
+    return apply_additive_metals(c)
 
 
 def import_component_to_hfss(
@@ -312,10 +201,7 @@ def import_component_to_hfss(
     layer_stack: LayerStack | None = None,
     *,
     units: str = "um",
-    apply_additive: bool = True,
     gds_path: str | Path | None = None,
-    import_method: int = 1,
-    use_direct_draw: bool = True,
 ) -> bool:
     """Import a gdsfactory component into HFSS.
 
@@ -329,24 +215,13 @@ def import_component_to_hfss(
         layer_stack: LayerStack defining thickness and elevation for each layer.
             If None, uses QPDK's default LAYER_STACK.
         units: Length units for the geometry (default: "um" for micrometers).
-        apply_additive: If True, applies additive metal operations before export.
-            See :func:`prepare_component_for_hfss`.
         gds_path: Optional path to write the GDS file. If None, uses a temporary file.
-        import_method: GDSII import method (0=script, 1=Parasolid). Default is 1.
-        use_direct_draw: If True, use manual drawing instead of GDS import.
 
     Returns:
         True if import was successful, False otherwise.
     """
-    if use_direct_draw:
-        return draw_component_in_hfss(
-            hfss, component, layer_stack, apply_additive=apply_additive
-        )
-
     # Prepare component for export
-    prepared_component = prepare_component_for_hfss(
-        component, apply_additive=apply_additive
-    )
+    prepared_component = prepare_component_for_hfss(component)
 
     # Generate layer mapping from LayerStack
     mapping_layers = layer_stack_to_gds_mapping(layer_stack)
@@ -371,7 +246,7 @@ def import_component_to_hfss(
         input_file=str(gds_path),
         mapping_layers=mapping_layers,
         units=units,
-        import_method=import_method,
+        import_method=1,
     )
 
     # Clean up temporary directory if we created one
@@ -386,8 +261,7 @@ def create_hfss_project(
     design_name: str = "design1",
     solution_type: str = "Eigenmode",
     *,
-    non_graphical: bool = True,
-    aedt_version: str | None = None,
+    non_graphical: bool = False,
     new_desktop: bool = True,
     project_dir: str | Path | None = None,
 ) -> Hfss:
@@ -399,7 +273,6 @@ def create_hfss_project(
         solution_type: HFSS solution type. One of "Eigenmode", "DrivenModal",
             "DrivenTerminal", "Transient".
         non_graphical: If True, run HFSS without GUI. Set to False for debugging.
-        aedt_version: AEDT version string (e.g., "2025.1"). If None, uses default.
         new_desktop: If True, starts a new AEDT desktop session.
         project_dir: Directory to save the project. If None, uses temp directory.
 
@@ -415,7 +288,7 @@ def create_hfss_project(
     """
     _check_pyaedt_available()
     from ansys.aedt.core import Hfss, settings
-    
+
     # Disable UDS to avoid hangs on Linux
     settings.use_grpc_uds = False
 
@@ -430,8 +303,6 @@ def create_hfss_project(
         "non_graphical": non_graphical,
         "new_desktop": new_desktop,
     }
-    if aedt_version is not None:
-        kwargs["version"] = aedt_version
 
     return Hfss(**kwargs)
 
