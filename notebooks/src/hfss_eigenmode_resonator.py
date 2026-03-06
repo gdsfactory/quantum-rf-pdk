@@ -163,6 +163,7 @@ print(f"Solution type: {hfss.solution_type}")
 from qpdk.models.hfss import (  # noqa: E402
     add_air_region_to_hfss,
     add_substrate_to_hfss,
+    get_eigenmode_results,
     import_component_to_hfss,
     prepare_component_for_hfss,
 )
@@ -231,10 +232,16 @@ hfss.save_project()
 
 # Run the analysis
 start_time = time.time()
-hfss.analyze_setup("EigenmodeSetup", cores=4, use_auto_settings=True)
+print("Starting eigenmode analysis...")
+print("(This may take several minutes)")
+success = hfss.analyze_setup("EigenmodeSetup", cores=4)
 elapsed = time.time() - start_time
 
-print(f"Analysis completed in {elapsed:.1f} seconds")
+if not success:
+    print("\nERROR: HFSS simulation failed!")
+    # Try to get more info from HFSS logs if possible
+else:
+    print(f"Analysis completed in {elapsed:.1f} seconds")
 
 # %% [markdown]
 # ## Extract Results
@@ -242,33 +249,24 @@ print(f"Analysis completed in {elapsed:.1f} seconds")
 # Get the eigenmode frequencies and Q-factors from the simulation.
 
 # %%
-# Get eigenmode frequencies
-freq_names = hfss.post.available_report_quantities(quantities_category="Eigen Modes")
-q_names = hfss.post.available_report_quantities(quantities_category="Eigen Q")
+# Extract results using the helper function
+sim_results = get_eigenmode_results(hfss, "EigenmodeSetup")
 
 print("\n=== Eigenmode Results ===")
 print("-" * 40)
 
-results = {"frequencies_ghz": [], "q_factors": []}
+results = {
+    "frequencies_ghz": sim_results["frequencies"],
+    "q_factors": sim_results["q_factors"],
+}
 
-for i, (f_name, q_name) in enumerate(zip(freq_names, q_names), 1):
-    # Get frequency
-    f_solution = hfss.post.get_solution_data(
-        expressions=f_name, report_category="Eigenmode"
-    )
-    freq_hz = float(f_solution.data_real()[0])
-    freq_ghz = freq_hz / 1e9
-
-    # Get Q-factor
-    q_solution = hfss.post.get_solution_data(
-        expressions=q_name, report_category="Eigenmode"
-    )
-    q_factor = float(q_solution.data_real()[0])
-
-    results["frequencies_ghz"].append(freq_ghz)
-    results["q_factors"].append(q_factor)
-
-    print(f"Mode {i}: f = {freq_ghz:.4f} GHz, Q = {q_factor:.1f}")
+if not results["frequencies_ghz"]:
+    print("No eigenmodes found. Check simulation logs and geometry.")
+else:
+    for i, (freq_ghz, q_factor) in enumerate(
+        zip(results["frequencies_ghz"], results["q_factors"]), 1
+    ):
+        print(f"Mode {i}: f = {freq_ghz:.4f} GHz, Q = {q_factor:.1f}")
 
 print("-" * 40)
 

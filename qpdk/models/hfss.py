@@ -327,6 +327,8 @@ def add_substrate_to_hfss(
         name="Substrate",
         material=material,
     )
+    # Ensure substrate has higher priority than vacuum
+    substrate.mesh_order = 4
     return substrate.name
 
 
@@ -362,6 +364,9 @@ def add_air_region_to_hfss(
         name="AirRegion",
         material="vacuum",
     )
+
+    # Ensure vacuum has lowest priority if it overlaps with substrate
+    region.mesh_order = 99
 
     # Assign PerfectE (PEC) boundary for closed-box eigenmode analysis
     hfss.assign_perfect_e(
