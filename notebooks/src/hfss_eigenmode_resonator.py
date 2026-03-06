@@ -39,18 +39,39 @@ from pathlib import Path
 # ## Create a CPW Resonator Component
 #
 # First, let's create a simple quarter-wave resonator using QPDK's component library.
+# We will use the `resonator_frequency` helper to find the length needed for a 5 GHz resonance.
 # %%
+import numpy as np
+import skrf
+
 from qpdk import PDK
 from qpdk.cells.resonator import resonator
+from qpdk.models.media import cross_section_to_media
+from qpdk.models.resonator import resonator_frequency
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
 
 # Create a meandering quarter-wave resonator
-# With default CPW dimensions (10µm width, 6µm gap) and ~4mm length
+# With default CPW dimensions (10µm width, 6µm gap)
 cpw_cross_section = coplanar_waveguide(width=10, gap=6)
+
+# Calculate length for 5 GHz target
+target_f_hz = 5e9
+f_arr = np.linspace(4e9, 6e9, 100)
+freq = skrf.Frequency.from_f(f_arr, unit="Hz")
+cpw_media = cross_section_to_media(cpw_cross_section)(frequency=freq)
+
+# Simple fixed-point iteration to find the exact length
+current_length = 4000.0
+for _ in range(5):
+    f_res = resonator_frequency(
+        length=current_length, media=cpw_media, is_quarter_wave=True
+    )
+    current_length = current_length * f_res / target_f_hz
+
 res_component = resonator(
-    length=4000,  # 4mm total length
+    length=current_length,
     meanders=4,  # Number of meander turns
     cross_section=cpw_cross_section,
     open_start=True,  # Open end (voltage antinode)
@@ -60,7 +81,8 @@ res_component = resonator(
 # Visualize the component
 res_component.plot()
 print(f"Resonator bounding box: {res_component.bbox}")
-print(f"Expected quarter-wave frequency: ~{3e8 / (4 * 4000e-6) / 1e9:.2f} GHz")
+print(f"Expected quarter-wave frequency: ~{target_f_hz / 1e9:.2f} GHz")
+print(f"Calculated length: {current_length:.1f} µm")
 
 # %% [markdown]
 # ## Initialize HFSS Project
@@ -255,14 +277,14 @@ for i, (f_name, q_name) in enumerate(zip(freq_names, q_names), 1):
 print("-" * 40)
 
 # Compare with analytical estimate
-expected_freq = 3e8 / (4 * 4000e-6) / 1e9  # Simple quarter-wave estimate
+expected_freq = target_f_hz / 1e9  # Target frequency
 if results["frequencies_ghz"]:
     actual_freq = results["frequencies_ghz"][0]
     error_percent = abs(actual_freq - expected_freq) / expected_freq * 100
     print("\nComparison with analytical estimate:")
-    print(f"  Expected (λ/4): {expected_freq:.4f} GHz")
-    print(f"  Simulated:      {actual_freq:.4f} GHz")
-    print(f"  Difference:     {error_percent:.1f}%")
+    print(f"  Expected (target): {expected_freq:.4f} GHz")
+    print(f"  Simulated:         {actual_freq:.4f} GHz")
+    print(f"  Difference:        {error_percent:.1f}%")
 
 # %% [markdown]
 # ## Cleanup
