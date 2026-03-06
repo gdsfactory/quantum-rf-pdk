@@ -10,7 +10,7 @@ of a resonator coupled to a transmon qubit, which is the key quantity for
 dispersive readout of superconducting qubits
 :cite:`blaisCircuitQuantumElectrodynamics2021,kochChargeinsensitiveQubitDesign2007a`.
 
-The transmon–resonator Hamiltonian (without the rotating wave approximation)
+The transmon-resonator Hamiltonian (without the rotating wave approximation)
 is:
 
 .. math::
@@ -35,16 +35,14 @@ import sympy
 from sympy.physics.quantum import Dagger
 from sympy.physics.quantum.boson import BosonOp
 
-from qpdk.models.constants import h
 
-
-def transmon_resonator_hamiltonian() -> (
-    tuple[sympy.Expr, sympy.Expr, tuple[sympy.Symbol, ...]]
-):
-    r"""Build the symbolic transmon–resonator Hamiltonian.
+def transmon_resonator_hamiltonian() -> tuple[
+    sympy.Expr, sympy.Expr, tuple[sympy.Symbol, ...]
+]:
+    r"""Build the symbolic transmon-resonator Hamiltonian.
 
     Constructs the unperturbed (:math:`H_0`) and perturbation (:math:`H_p`)
-    parts of the transmon–resonator Hamiltonian using bosonic operators.
+    parts of the transmon-resonator Hamiltonian using bosonic operators.
 
     The Hamiltonian is split as :math:`H = H_0 + H_p` where:
 
@@ -113,7 +111,7 @@ def dispersive_shift_symbolic() -> tuple[sympy.Expr, tuple[sympy.Symbol, ...]]:
     from pymablock.number_ordered_form import NumberOperator
 
     H_0, H_p, syms = transmon_resonator_hamiltonian()
-    omega_t, omega_r, alpha, g = syms
+    *_, g = syms
 
     a_t = BosonOp("a_t")
     a_r = BosonOp("a_r")
@@ -155,22 +153,19 @@ def dispersive_shift(
 
     .. math::
 
-        \chi = \frac{-2g^2 \alpha}{(\omega_t - \omega_r)(\omega_t - \omega_r - \alpha)}
-             + \frac{2g^2}{\omega_t + \omega_r}
+        \chi = \frac{2g^2}{\Delta - \alpha}
+             - \frac{2g^2}{\Delta}
              - \frac{2g^2}{\omega_t + \omega_r + \alpha}
+             + \frac{2g^2}{\omega_t + \omega_r}
 
-    The first term is the standard dispersive shift in the rotating wave
-    approximation, and the last two terms are corrections from the
-    counter-rotating terms.
-
-    In the limit :math:`|\alpha| \ll |\omega_t - \omega_r|` (weak anharmonicity),
-    this simplifies to the well-known Jaynes–Cummings result:
+    where :math:`\Delta = \omega_t - \omega_r`.  The first two terms give
+    the rotating-wave-approximation (RWA) contribution
 
     .. math::
 
-        \chi \approx \frac{g^2}{\Delta}
+        \chi_\text{RWA} = \frac{2 \alpha g^2}{\Delta(\Delta - \alpha)}
 
-    where :math:`\Delta = \omega_t - \omega_r` is the detuning.
+    and the last two are corrections from the counter-rotating terms.
 
     All parameters are in GHz, and the returned value is also in GHz.
 
@@ -190,13 +185,12 @@ def dispersive_shift(
     delta = omega_t_ghz - omega_r_ghz
 
     # Full expression including counter-rotating terms
-    chi = (
+    return (
         2 * g_ghz**2 / (delta - alpha_ghz)
         - 2 * g_ghz**2 / delta
         - 2 * g_ghz**2 / (omega_t_ghz + omega_r_ghz + alpha_ghz)
         + 2 * g_ghz**2 / (omega_t_ghz + omega_r_ghz)
     )
-    return chi
 
 
 def dispersive_shift_to_coupling(
@@ -216,6 +210,15 @@ def dispersive_shift_to_coupling(
         g \approx \sqrt{\frac{-\chi\,\Delta\,(\Delta - \alpha)}{2\alpha}}
 
     where :math:`\Delta = \omega_t - \omega_r`.
+
+    Note:
+        The expression under the square root may be negative when the
+        sign of the target :math:`\chi` is inconsistent with the detuning
+        and anharmonicity (e.g., positive :math:`\chi` with
+        :math:`\Delta < 0`).  In that case the absolute value is taken
+        so that the returned coupling strength is always real and
+        non-negative, but the caller should verify self-consistency
+        via :func:`dispersive_shift`.
 
     Args:
         chi_ghz: Target dispersive shift in GHz (typically negative).
@@ -308,7 +311,7 @@ def anharmonicity_from_ec(ec_ghz: float) -> float:
 
     Example:
         >>> alpha = anharmonicity_from_ec(0.2)
-        >>> print(f"α = {alpha:.1f} GHz")  # 0.2 GHz = 200 MHz
+        >>> print(f"alpha = {alpha:.1f} GHz")  # 0.2 GHz = 200 MHz
     """
     return ec_ghz
 
@@ -330,7 +333,7 @@ def ej_ec_to_frequency_and_anharmonicity(
 
     Example:
         >>> omega_q, alpha = ej_ec_to_frequency_and_anharmonicity(20.0, 0.2)
-        >>> print(f"ω_q = {omega_q:.2f} GHz, α = {alpha:.1f} GHz")
+        >>> print(f"omega_q = {omega_q:.2f} GHz, alpha = {alpha:.1f} GHz")
     """
     return qubit_frequency_from_ej_ec(ej_ghz, ec_ghz), anharmonicity_from_ec(ec_ghz)
 

@@ -49,16 +49,17 @@ import skrf
 import sympy
 from IPython.display import Math, display
 from matplotlib import pyplot as plt
+from pymablock import block_diagonalize
+from pymablock.number_ordered_form import NumberOperator
+from sympy.physics.quantum.boson import BosonOp
 
 from qpdk.models.media import cpw_media_skrf
 from qpdk.models.perturbation import (
     dispersive_shift,
-    dispersive_shift_symbolic,
     dispersive_shift_to_coupling,
     ej_ec_to_frequency_and_anharmonicity,
     measurement_induced_dephasing,
     purcell_decay_rate,
-    qubit_frequency_from_ej_ec,
     resonator_linewidth_from_q,
     transmon_resonator_hamiltonian,
 )
@@ -68,7 +69,6 @@ from qpdk.models.qubit import (
     ej_to_inductance,
 )
 from qpdk.models.resonator import resonator_frequency
-
 
 # %% [markdown]
 # ## Building the Hamiltonian
@@ -104,10 +104,6 @@ display_eq("H_{p}", H_p)
 # $i$ transmon excitations and $j$ resonator excitations.
 
 # %%
-from pymablock import block_diagonalize
-from pymablock.number_ordered_form import NumberOperator
-from sympy.physics.quantum.boson import BosonOp
-
 H_tilde, U, U_adj = block_diagonalize(H_0 + H_p, symbols=[g])
 
 E_eff = H_tilde[0, 0, 2]
@@ -158,9 +154,7 @@ H_0_mat = (
     + omega_r * a_r_mat.adjoint() * a_r_mat
     + alpha * a_t_mat.adjoint() ** 2 * a_t_mat**2 / 2
 )
-H_p_mat = -g * (a_t_mat.adjoint() - a_t_mat) * (
-    a_r_mat.adjoint() - a_r_mat
-)
+H_p_mat = -g * (a_t_mat.adjoint() - a_t_mat) * (a_r_mat.adjoint() - a_r_mat)
 H_mat = H_0_mat + H_p_mat
 
 # Define subspaces: states |00⟩, |01⟩, |10⟩, |11⟩ each get their own block
@@ -172,8 +166,10 @@ H_tilde_mat, _U_mat, _U_adj_mat = block_diagonalize(
 )
 
 chi_sym_mat = (
-    H_tilde_mat[3, 3, 2] - H_tilde_mat[2, 2, 2]
-    - H_tilde_mat[1, 1, 2] + H_tilde_mat[0, 0, 2]
+    H_tilde_mat[3, 3, 2]
+    - H_tilde_mat[2, 2, 2]
+    - H_tilde_mat[1, 1, 2]
+    + H_tilde_mat[0, 0, 2]
 )[0, 0]
 
 display_eq(r"\chi^{(mat)}", chi_sym_mat)
@@ -340,21 +336,20 @@ resonator_media = cpw_media_skrf(width=10, gap=6)(
 
 
 def _resonator_objective(length: float) -> float:
-    """Minimise the squared frequency error."""
+    """Minimize the squared frequency error."""
     freq = resonator_frequency(
         length=length, media=resonator_media, is_quarter_wave=True
     )
     return (freq - omega_r_design * 1e9) ** 2
 
 
-result = scipy.optimize.minimize(
-    _resonator_objective, 4000.0, bounds=[(1000, 20000)]
-)
+result = scipy.optimize.minimize(_resonator_objective, 4000.0, bounds=[(1000, 20000)])
 resonator_length = result.x[0]
 
 # Total resonator capacitance from CPW impedance and phase velocity
 C_r = (
-    1 / np.real(resonator_media.z0 * resonator_media.v_p).mean()
+    1
+    / np.real(resonator_media.z0 * resonator_media.v_p).mean()
     * resonator_length
     * 1e-6
 )  # F
@@ -414,9 +409,7 @@ Q_ext = 10_000  # External quality factor
 kappa = resonator_linewidth_from_q(omega_r_design, Q_ext)
 
 # Purcell decay rate
-gamma_purcell = purcell_decay_rate(
-    g_design, omega_t_design, omega_r_design, kappa
-)
+gamma_purcell = purcell_decay_rate(g_design, omega_t_design, omega_r_design, kappa)
 T_purcell = 1 / (gamma_purcell * 1e9) if gamma_purcell > 0 else float("inf")
 
 # Measurement-induced dephasing
@@ -472,7 +465,7 @@ print(f"    C_c  = {C_c * 1e15:.2f} fF")
 print("-" * 65)
 print("  Layout Parameters:")
 print(f"    Resonator length:    {resonator_length:.0f} µm")
-print(f"    Resonator CPW:       w=10 µm, gap=6 µm")
+print("    Resonator CPW:       w=10 µm, gap=6 µm")
 print(f"    Resonator freq:      {f_resonator_achieved / 1e9:.3f} GHz")
 print("-" * 65)
 print("  Readout Parameters:")

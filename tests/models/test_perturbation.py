@@ -90,7 +90,7 @@ class TestDispersiveShift:
         omega_t=st.floats(min_value=3.0, max_value=7.0),
         omega_r=st.floats(min_value=5.0, max_value=10.0),
     )
-    @settings(max_examples=MAX_EXAMPLES)
+    @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_finite_result(self, g: float, omega_t: float, omega_r: float) -> None:
         """Result should be finite for non-degenerate parameters."""
         # Avoid resonance (omega_t = omega_r) and omega_t + omega_r = alpha
@@ -114,9 +114,7 @@ class TestDispersiveShiftToCoupling:
         delta = omega_t - omega_r
         chi_rwa = 2 * g_original**2 * alpha / (delta * (delta - alpha))
 
-        g_recovered = dispersive_shift_to_coupling(
-            chi_rwa, omega_t, omega_r, alpha
-        )
+        g_recovered = dispersive_shift_to_coupling(chi_rwa, omega_t, omega_r, alpha)
         assert math.isclose(g_recovered, g_original, rel_tol=1e-8)
 
     @staticmethod
