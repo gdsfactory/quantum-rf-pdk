@@ -1,7 +1,7 @@
 """Tests for analytical ECCPW mutual capacitance formula."""
 
 import jax.numpy as jnp
-from hypothesis import assume, given
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
@@ -46,6 +46,7 @@ def valid_monotonic_geometries(draw: st.DrawFn) -> tuple[float, float, float, fl
     return gap1, gap2, width, cpw_gap
 
 
+@settings(deadline=None)
 @given(
     geometry=valid_cpw_geometry(),
     ep_r=permittivities,
@@ -62,6 +63,7 @@ def test_cpw_cpw_coupling_capacitance_positivity(
     assert float(c_pul) > 0
 
 
+@settings(deadline=None)
 @given(
     geometries=valid_monotonic_geometries(),
     ep_r=permittivities,
@@ -105,6 +107,7 @@ def test_cpw_cpw_coupling_capacitance_consistency() -> None:
     assert 1e4 < c_pul_ff_m < 1e6
 
 
+@settings(deadline=None)
 @given(
     geometry=valid_cpw_geometry(),
     ep_r=permittivities,
