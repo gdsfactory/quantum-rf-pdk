@@ -241,6 +241,9 @@ def import_component_to_hfss(
     # Set modeler units
     hfss.modeler.model_units = units
 
+    # Record existing objects
+    existing_objects = set(hfss.modeler.object_names)
+
     # Import GDS with 3D layer mapping
     result = hfss.import_gds_3d(
         input_file=str(gds_path),
@@ -248,6 +251,12 @@ def import_component_to_hfss(
         units=units,
         import_method=1,
     )
+
+    if result:
+        # Set all newly imported objects to PEC
+        new_objects = list(set(hfss.modeler.object_names) - existing_objects)
+        if new_objects:
+            hfss.assign_material(new_objects, "pec")
 
     # Clean up temporary directory if we created one
     if temp_dir_obj is not None:

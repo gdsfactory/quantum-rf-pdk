@@ -101,53 +101,40 @@ EIGENMODE_CONFIG = {
 # This code requires Ansys HFSS to be installed. The example below shows
 # the structure of a complete simulation workflow.
 # ```
-
 # %%
 # Example HFSS eigenmode simulation workflow
 # This code block demonstrates the full workflow but requires HFSS license
 
-try:
-    import os
-    from pathlib import Path
+import os  # noqa: E402
 
-    # Ensure Ansys path is set so PyAEDT can find it
-    ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
-    if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
-        os.environ["ANSYSEM_ROOT252"] = ansys_default_path
+# Ensure Ansys path is set so PyAEDT can find it
+ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
+if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
+    os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-    from ansys.aedt.core import Hfss, settings
+from ansys.aedt.core import Hfss, settings  # noqa: E402
 
-    settings.use_grpc_uds = False
+settings.use_grpc_uds = False
 
-    # Create temporary directory for project
-    temp_dir = tempfile.TemporaryDirectory(suffix=".ansys_qpdk")
-    project_path = Path(temp_dir.name) / "resonator_eigenmode.aedt"
 
-    # Initialize HFSS with Eigenmode solution
-    hfss = Hfss(
-        project=str(project_path),
-        design="CPW_Resonator",
-        solution_type="Eigenmode",
-        non_graphical=HFSS_CONFIG["non_graphical"],
-        new_desktop=HFSS_CONFIG["new_desktop"],
-        version="2025.2",
-    )
-    hfss.modeler.model_units = "um"
+# Create temporary directory for project
+temp_dir = tempfile.TemporaryDirectory(suffix=".ansys_qpdk")
+project_path = Path(temp_dir.name) / "resonator_eigenmode.aedt"
 
-    print(f"HFSS project created: {hfss.project_file}")
-    print(f"Design name: {hfss.design_name}")
-    print(f"Solution type: {hfss.solution_type}")
+# Initialize HFSS with Eigenmode solution
+hfss = Hfss(
+    project=str(project_path),
+    design="CPW_Resonator",
+    solution_type="Eigenmode",
+    non_graphical=HFSS_CONFIG["non_graphical"],
+    new_desktop=HFSS_CONFIG["new_desktop"],
+    version="2025.2",
+)
+hfss.modeler.model_units = "um"
 
-    HFSS_AVAILABLE = True
-
-except ImportError:
-    print("PyAEDT not installed. Install with: pip install qpdk[hfss]")
-    print("Continuing with demonstration of the workflow structure...")
-    HFSS_AVAILABLE = False
-except Exception as e:
-    print(f"HFSS not available: {e}")
-    print("This is expected if Ansys HFSS is not installed.")
-    HFSS_AVAILABLE = False
+print(f"HFSS project created: {hfss.project_file}")
+print(f"Design name: {hfss.design_name}")
+print(f"Solution type: {hfss.solution_type}")
 
 # %% [markdown]
 # ## Build CPW Geometry in HFSS
@@ -157,37 +144,36 @@ except Exception as e:
 # based on the QPDK LayerStack.
 
 # %%
-if HFSS_AVAILABLE:
-    from qpdk.models.hfss import (
-        add_air_region_to_hfss,
-        add_substrate_to_hfss,
-        import_component_to_hfss,
-    )
+from qpdk.models.hfss import (  # noqa: E402
+    add_air_region_to_hfss,
+    add_substrate_to_hfss,
+    import_component_to_hfss,
+)
 
-    # Import the component geometry using native GDS import
-    # This automatically applies additive metals and maps layers to 3D
-    success = import_component_to_hfss(hfss, res_component)
-    print(f"GDS import successful: {success}")
+# Import the component geometry using native GDS import
+# This automatically applies additive metals and maps layers to 3D
+success = import_component_to_hfss(hfss, res_component)
+print(f"GDS import successful: {success}")
 
-    # Add substrate below the component
-    substrate_name = add_substrate_to_hfss(
-        hfss,
-        res_component,
-        margin=100.0,
-        thickness=500.0,
-        material="silicon",
-    )
-    print(f"Created substrate: {substrate_name}")
+# Add substrate below the component
+substrate_name = add_substrate_to_hfss(
+    hfss,
+    res_component,
+    margin=100.0,
+    thickness=500.0,
+    material="silicon",
+)
+print(f"Created substrate: {substrate_name}")
 
-    # Add air region with PEC boundary for eigenmode analysis
-    air_region_name = add_air_region_to_hfss(
-        hfss,
-        res_component,
-        margin=100.0,
-        height=500.0,
-        substrate_thickness=500.0,
-    )
-    print(f"Created air region with PEC boundary: {air_region_name}")
+# Add air region with PEC boundary for eigenmode analysis
+air_region_name = add_air_region_to_hfss(
+    hfss,
+    res_component,
+    margin=100.0,
+    height=500.0,
+    substrate_thickness=500.0,
+)
+print(f"Created air region with PEC boundary: {air_region_name}")
 
 # %% [markdown]
 # ## Configure Eigenmode Analysis
@@ -195,23 +181,22 @@ if HFSS_AVAILABLE:
 # Set up the eigenmode solver to find resonant frequencies starting from 3 GHz.
 
 # %%
-if HFSS_AVAILABLE:
-    # Create eigenmode setup
-    setup = hfss.create_setup(name="EigenmodeSetup")
+# Create eigenmode setup
+setup = hfss.create_setup(name="EigenmodeSetup")
 
-    setup.props["MinimumFrequency"] = f"{EIGENMODE_CONFIG['min_frequency_ghz']}GHz"
-    setup.props["NumModes"] = EIGENMODE_CONFIG["num_modes"]
-    setup.props["MaximumPasses"] = EIGENMODE_CONFIG["max_passes"]
-    setup.props["MinimumPasses"] = EIGENMODE_CONFIG["min_passes"]
-    setup.props["PercentRefinement"] = EIGENMODE_CONFIG["percent_refinement"]
-    setup.props["ConvergeOnRealFreq"] = True
-    setup.props["MaxDeltaFreq"] = 2  # 2% convergence criterion
+setup.props["MinimumFrequency"] = f"{EIGENMODE_CONFIG['min_frequency_ghz']}GHz"
+setup.props["NumModes"] = EIGENMODE_CONFIG["num_modes"]
+setup.props["MaximumPasses"] = EIGENMODE_CONFIG["max_passes"]
+setup.props["MinimumPasses"] = EIGENMODE_CONFIG["min_passes"]
+setup.props["PercentRefinement"] = EIGENMODE_CONFIG["percent_refinement"]
+setup.props["ConvergeOnRealFreq"] = True
+setup.props["MaxDeltaFreq"] = 2  # 2% convergence criterion
 
-    setup.update()
-    print("Eigenmode setup configured:")
-    print(f"  - Min frequency: {EIGENMODE_CONFIG['min_frequency_ghz']} GHz")
-    print(f"  - Number of modes: {EIGENMODE_CONFIG['num_modes']}")
-    print(f"  - Max passes: {EIGENMODE_CONFIG['max_passes']}")
+setup.update()
+print("Eigenmode setup configured:")
+print(f"  - Min frequency: {EIGENMODE_CONFIG['min_frequency_ghz']} GHz")
+print(f"  - Number of modes: {EIGENMODE_CONFIG['num_modes']}")
+print(f"  - Max passes: {EIGENMODE_CONFIG['max_passes']}")
 
 # %% [markdown]
 # ## Run Simulation
@@ -220,19 +205,18 @@ if HFSS_AVAILABLE:
 # on the mesh complexity and number of modes.
 
 # %%
-if HFSS_AVAILABLE:
-    print("Starting eigenmode analysis...")
-    print("(This may take several minutes)")
+print("Starting eigenmode analysis...")
+print("(This may take several minutes)")
 
-    # Save project before analysis
-    hfss.save_project()
+# Save project before analysis
+hfss.save_project()
 
-    # Run the analysis
-    start_time = time.time()
-    hfss.analyze_setup("EigenmodeSetup", cores=4, use_auto_settings=True)
-    elapsed = time.time() - start_time
+# Run the analysis
+start_time = time.time()
+hfss.analyze_setup("EigenmodeSetup", cores=4, use_auto_settings=True)
+elapsed = time.time() - start_time
 
-    print(f"Analysis completed in {elapsed:.1f} seconds")
+print(f"Analysis completed in {elapsed:.1f} seconds")
 
 # %% [markdown]
 # ## Extract Results
@@ -240,48 +224,45 @@ if HFSS_AVAILABLE:
 # Get the eigenmode frequencies and Q-factors from the simulation.
 
 # %%
-if HFSS_AVAILABLE:
-    # Get eigenmode frequencies
-    freq_names = hfss.post.available_report_quantities(
-        quantities_category="Eigen Modes"
+# Get eigenmode frequencies
+freq_names = hfss.post.available_report_quantities(quantities_category="Eigen Modes")
+q_names = hfss.post.available_report_quantities(quantities_category="Eigen Q")
+
+print("\n=== Eigenmode Results ===")
+print("-" * 40)
+
+results = {"frequencies_ghz": [], "q_factors": []}
+
+for i, (f_name, q_name) in enumerate(zip(freq_names, q_names), 1):
+    # Get frequency
+    f_solution = hfss.post.get_solution_data(
+        expressions=f_name, report_category="Eigenmode"
     )
-    q_names = hfss.post.available_report_quantities(quantities_category="Eigen Q")
+    freq_hz = float(f_solution.data_real()[0])
+    freq_ghz = freq_hz / 1e9
 
-    print("\n=== Eigenmode Results ===")
-    print("-" * 40)
+    # Get Q-factor
+    q_solution = hfss.post.get_solution_data(
+        expressions=q_name, report_category="Eigenmode"
+    )
+    q_factor = float(q_solution.data_real()[0])
 
-    results = {"frequencies_ghz": [], "q_factors": []}
+    results["frequencies_ghz"].append(freq_ghz)
+    results["q_factors"].append(q_factor)
 
-    for i, (f_name, q_name) in enumerate(zip(freq_names, q_names), 1):
-        # Get frequency
-        f_solution = hfss.post.get_solution_data(
-            expressions=f_name, report_category="Eigenmode"
-        )
-        freq_hz = float(f_solution.data_real()[0])
-        freq_ghz = freq_hz / 1e9
+    print(f"Mode {i}: f = {freq_ghz:.4f} GHz, Q = {q_factor:.1f}")
 
-        # Get Q-factor
-        q_solution = hfss.post.get_solution_data(
-            expressions=q_name, report_category="Eigenmode"
-        )
-        q_factor = float(q_solution.data_real()[0])
+print("-" * 40)
 
-        results["frequencies_ghz"].append(freq_ghz)
-        results["q_factors"].append(q_factor)
-
-        print(f"Mode {i}: f = {freq_ghz:.4f} GHz, Q = {q_factor:.1f}")
-
-    print("-" * 40)
-
-    # Compare with analytical estimate
-    expected_freq = 3e8 / (4 * 4000e-6) / 1e9  # Simple quarter-wave estimate
-    if results["frequencies_ghz"]:
-        actual_freq = results["frequencies_ghz"][0]
-        error_percent = abs(actual_freq - expected_freq) / expected_freq * 100
-        print("\nComparison with analytical estimate:")
-        print(f"  Expected (λ/4): {expected_freq:.4f} GHz")
-        print(f"  Simulated:      {actual_freq:.4f} GHz")
-        print(f"  Difference:     {error_percent:.1f}%")
+# Compare with analytical estimate
+expected_freq = 3e8 / (4 * 4000e-6) / 1e9  # Simple quarter-wave estimate
+if results["frequencies_ghz"]:
+    actual_freq = results["frequencies_ghz"][0]
+    error_percent = abs(actual_freq - expected_freq) / expected_freq * 100
+    print("\nComparison with analytical estimate:")
+    print(f"  Expected (λ/4): {expected_freq:.4f} GHz")
+    print(f"  Simulated:      {actual_freq:.4f} GHz")
+    print(f"  Difference:     {error_percent:.1f}%")
 
 # %% [markdown]
 # ## Cleanup
@@ -289,15 +270,14 @@ if HFSS_AVAILABLE:
 # Close HFSS and clean up temporary files.
 
 # %%
-if HFSS_AVAILABLE:
-    # Save and close
-    hfss.save_project()
-    hfss.release_desktop()
-    time.sleep(2)  # Allow HFSS to shut down
+# Save and close
+hfss.save_project()
+hfss.release_desktop()
+time.sleep(2)  # Allow HFSS to shut down
 
-    # Clean up temp directory
-    temp_dir.cleanup()
-    print("HFSS session closed and temporary files cleaned up")
+# Clean up temp directory
+temp_dir.cleanup()
+print("HFSS session closed and temporary files cleaned up")
 
 # %% [markdown]
 # ## Summary
