@@ -172,7 +172,7 @@ res_component = prepare_component_for_hfss(res_component, margin=100)
 
 # Import the component geometry using native GDS import
 # This automatically applies additive metals and maps layers to 3D
-success = import_component_to_hfss(hfss, res_component)
+success = import_component_to_hfss(hfss, res_component, import_as_sheets=True)
 print(f"GDS import successful: {success}")
 
 # Add substrate below the component
