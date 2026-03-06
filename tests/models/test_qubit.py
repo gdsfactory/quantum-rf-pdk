@@ -34,7 +34,8 @@ MAX_EXAMPLES = 20
 class TestEcToCapacitance:
     """Tests for ec_to_capacitance helper function."""
 
-    def test_typical_value(self) -> None:
+    @staticmethod
+    def test_typical_value() -> None:
         """Test with typical transmon charging energy."""
         # E_C = 0.2 GHz is typical for transmons
         ec_ghz = 0.2
@@ -47,7 +48,8 @@ class TestEcToCapacitance:
         # Check reasonable range
         assert 50e-15 < C < 200e-15, f"Capacitance {C * 1e15:.1f} fF out of range"
 
-    def test_inverse_relationship(self) -> None:
+    @staticmethod
+    def test_inverse_relationship() -> None:
         """Test that capacitance decreases as E_C increases."""
         C_low = ec_to_capacitance(0.1)  # Low E_C
         C_high = ec_to_capacitance(0.5)  # High E_C
@@ -64,7 +66,8 @@ class TestEcToCapacitance:
 class TestEjToInductance:
     """Tests for ej_to_inductance helper function."""
 
-    def test_typical_value(self) -> None:
+    @staticmethod
+    def test_typical_value() -> None:
         """Test with typical transmon Josephson energy."""
         # E_J = 20 GHz is typical for transmons
         ej_ghz = 20.0
@@ -76,7 +79,8 @@ class TestEjToInductance:
         # Check reasonable range (~ 1 nH for 20 GHz)
         assert 0.1e-9 < L < 10e-9, f"Inductance {L * 1e9:.2f} nH out of range"
 
-    def test_inverse_relationship(self) -> None:
+    @staticmethod
+    def test_inverse_relationship() -> None:
         """Test that inductance decreases as E_J increases."""
         L_low = ej_to_inductance(10.0)  # Low E_J
         L_high = ej_to_inductance(40.0)  # High E_J
@@ -93,7 +97,8 @@ class TestEjToInductance:
 class TestCouplingStrengthToCapacitance:
     """Tests for coupling_strength_to_capacitance helper function."""
 
-    def test_typical_value(self) -> None:
+    @staticmethod
+    def test_typical_value() -> None:
         """Test with typical qubit-resonator coupling parameters."""
         # Typical values:
         # g = 0.1 GHz, C_Σ = 80 fF, C_r = 50 fF, ω_q = 5 GHz, ω_r = 7 GHz
@@ -110,7 +115,8 @@ class TestCouplingStrengthToCapacitance:
             f"Coupling capacitance {C_c * 1e15:.2f} fF out of range"
         )
 
-    def test_coupling_increases_with_g(self) -> None:
+    @staticmethod
+    def test_coupling_increases_with_g() -> None:
         """Test that coupling capacitance increases with g."""
         C_c_weak = coupling_strength_to_capacitance(
             g_ghz=0.05,
@@ -128,6 +134,7 @@ class TestCouplingStrengthToCapacitance:
         )
         assert C_c_strong > C_c_weak
 
+    @staticmethod
     @given(
         g_ghz=st.floats(min_value=0.01, max_value=0.5),
         c_sigma=st.floats(min_value=10e-15, max_value=200e-15),
@@ -135,7 +142,7 @@ class TestCouplingStrengthToCapacitance:
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_positive_coupling_capacitance(
-        self, g_ghz: float, c_sigma: float, c_r: float
+        g_ghz: float, c_sigma: float, c_r: float
     ) -> None:
         """Test that coupling capacitance is always positive."""
         C_c = coupling_strength_to_capacitance(
@@ -300,7 +307,8 @@ class TestTransmonCoupled(TwoPortModelTestSuite):
 class TestIntegration:
     """Integration tests combining helper functions with qubit models."""
 
-    def test_ec_ej_to_qubit_model(self) -> None:
+    @staticmethod
+    def test_ec_ej_to_qubit_model() -> None:
         """Test that E_C and E_J can be converted to qubit model parameters."""
         # Typical transmon parameters
         ec_ghz = 0.2  # Charging energy
@@ -323,7 +331,8 @@ class TestIntegration:
         result_shunted = shunted_transmon(f=f, capacitance=C, inductance=L)
         assert isinstance(result_shunted, dict)
 
-    def test_coupled_qubit_with_converted_parameters(self) -> None:
+    @staticmethod
+    def test_coupled_qubit_with_converted_parameters() -> None:
         """Test coupled qubit with parameters converted from Hamiltonian."""
         # Typical transmon parameters
         ec_ghz = 0.2

@@ -24,7 +24,8 @@ class TestPlateCapacitor(TwoPortModelTestSuite):
 
     model_function = staticmethod(plate_capacitor)
 
-    def get_model_kwargs(self) -> dict:
+    @staticmethod
+    def get_model_kwargs() -> dict:
         return {"length": 26.0, "width": 5.0, "gap": 7.0}
 
 

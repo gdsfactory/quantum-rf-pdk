@@ -22,11 +22,13 @@ class TestLCResonator(TwoPortModelTestSuite):
     model_function = lc_resonator
     freq_range = (1e9, 30e9)
 
-    def get_model_kwargs(self) -> dict:
+    @staticmethod
+    def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
         return {"capacitance": 100e-15, "inductance": 1e-9}
 
-    def test_resonance_frequency(self) -> None:
+    @staticmethod
+    def test_resonance_frequency() -> None:
         """Test that the resonance frequency matches the expected value f_r = 1/(2*pi*sqrt(LC))."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
@@ -46,7 +48,8 @@ class TestLCResonator(TwoPortModelTestSuite):
             f"expected {f_r_expected / 1e9:.3f} GHz by {relative_error * 100:.2f}%"
         )
 
-    def test_at_resonance_s21_minimum(self) -> None:
+    @staticmethod
+    def test_at_resonance_s21_minimum() -> None:
         """Test that |S21| approaches zero at resonance for parallel LC."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
@@ -60,7 +63,8 @@ class TestLCResonator(TwoPortModelTestSuite):
             f"|S21| at resonance should be near zero, got {s21_at_resonance}"
         )
 
-    def test_at_resonance_s11_maximum(self) -> None:
+    @staticmethod
+    def test_at_resonance_s11_maximum() -> None:
         """Test that |S11| approaches 1 at resonance for parallel LC."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
@@ -74,7 +78,8 @@ class TestLCResonator(TwoPortModelTestSuite):
             f"|S11| at resonance should be near 1, got {s11_at_resonance}"
         )
 
-    def test_grounded(self) -> None:
+    @staticmethod
+    def test_grounded() -> None:
         """Test that grounded LC resonator has expected structure."""
         f = jnp.array([5e9, 10e9, 15e9])
         result = lc_resonator(f=f, grounded=True)
@@ -140,11 +145,13 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
     model_function = lc_resonator_coupled
     freq_range = (1e9, 30e9)
 
-    def get_model_kwargs(self) -> dict:
+    @staticmethod
+    def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
         return {"coupling_capacitance": 10e-15, "coupling_inductance": 1e-9}
 
-    def test_with_capacitance_only(self) -> None:
+    @staticmethod
+    def test_with_capacitance_only() -> None:
         """Test coupled resonator with only coupling capacitance.
 
         Note: When coupling_inductance=0, the inductor acts as a short (Z=0),
@@ -169,7 +176,8 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
             err_msg=f"Passivity violated (col 1): max total power = {jnp.max(total_power)}",
         )
 
-    def test_with_inductance_only(self) -> None:
+    @staticmethod
+    def test_with_inductance_only() -> None:
         """Test coupled resonator with only coupling inductance."""
         f = jnp.linspace(1e9, 30e9, 100)
         result_no_coupling = lc_resonator(f=f)
@@ -185,7 +193,8 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
                 f"Coupling inductor had no effect on {key}"
             )
 
-    def test_with_both_coupling_elements(self) -> None:
+    @staticmethod
+    def test_with_both_coupling_elements() -> None:
         """Test coupled resonator with both coupling capacitance and inductance."""
         f = jnp.linspace(1e9, 30e9, 100)
         result = lc_resonator_coupled(
@@ -198,7 +207,8 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
         for value in result.values():
             assert jnp.isfinite(value).all()
 
-    def test_resonance_frequency(self) -> None:
+    @staticmethod
+    def test_resonance_frequency() -> None:
         """Test that the main resonance frequency is still approximately f_r = 1/(2*pi*sqrt(LC))."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
@@ -222,7 +232,8 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
             f"expected {f_r_expected / 1e9:.3f} GHz by {relative_error * 100:.2f}%"
         )
 
-    def test_grounded(self) -> None:
+    @staticmethod
+    def test_grounded() -> None:
         """Test coupled resonator with grounded base resonator."""
         f = jnp.array([5e9, 10e9, 15e9])
         result = lc_resonator_coupled(f=f, grounded=True, coupling_capacitance=10e-15)
