@@ -141,7 +141,10 @@ def _get_layer_number_from_level(layer_level) -> int | None:
         if hasattr(derived, "layer"):
             inner = derived.layer
             if hasattr(inner, "layer"):
-                return int(inner.layer)
+                val = inner.layer
+                if isinstance(val, tuple) and len(val) >= 1:
+                    return int(val[0])
+                return int(val)
             if isinstance(inner, tuple) and len(inner) >= 1:
                 return int(inner[0])
 
@@ -157,7 +160,11 @@ def _get_layer_number_from_level(layer_level) -> int | None:
             return int(inner[0])
         # Inner is a LayerMap enum with .layer attribute
         if hasattr(inner, "layer"):
-            return int(inner.layer)
+            val = inner.layer
+            if isinstance(val, tuple) and len(val) >= 1:
+                return int(val[0])
+            return int(val)
+        return int(inner)
     return None
 
 
@@ -192,6 +199,107 @@ def prepare_component_for_hfss(
     return component
 
 
+def draw_component_in_hfss(
+    hfss: Hfss,
+    component: Component,
+    layer_stack: LayerStack | None = None,
+    *,
+    apply_additive: bool = True,
+) -> bool:
+    """Draw a gdsfactory component in HFSS by iterating over polygons.
+
+    This is an alternative to :func:`import_component_to_hfss` that avoids
+    native GDS import by manually drawing each polygon as a polyline and
+    thickening it. This approach is often more robust in non-graphical
+    environments or on Linux.
+
+    Args:
+        hfss: The HFSS application instance.
+        component: The gdsfactory component to draw.
+        layer_stack: LayerStack defining thickness and elevation for each layer.
+            If None, uses QPDK's default LAYER_STACK.
+        apply_additive: If True, applies additive metal operations before drawing.
+
+    Returns:
+        True if drawing was successful, False otherwise.
+    """
+    from qpdk import LAYER_STACK
+
+    if layer_stack is None:
+        layer_stack = LAYER_STACK
+
+    # Prepare component
+    prepared_component = prepare_component_for_hfss(
+        component, apply_additive=apply_additive
+    )
+
+    # Set modeler units to match gdsfactory (micrometers)
+    hfss.modeler.model_units = "um"
+
+    success = True
+    for layer_name, layer_level in layer_stack.layers.items():
+        # Get layer number
+        layer_number = _get_layer_number_from_level(layer_level)
+        if layer_number is None:
+            continue
+
+        # Get elevation and thickness
+        elevation = layer_level.zmin if layer_level.zmin is not None else 0.0
+        thickness = layer_level.thickness if layer_level.thickness else 0.0
+
+        if thickness == 0:
+            continue
+
+        # Get polygons for this layer
+        # Note: we assume (layer_number, 0) as is common in GDS
+        polys_dict = prepared_component.get_polygons(
+            layers=[(layer_number, 0)], by="tuple"
+        )
+        if (layer_number, 0) not in polys_dict:
+            continue
+
+        polys = polys_dict[(layer_number, 0)]
+        material = layer_level.material or "vacuum"
+        # Superconducting materials are PEC
+        if material in SUPERCONDUCTING_MATERIALS:
+            material = "pec"
+
+        for i, poly in enumerate(polys):
+            # Convert kfactory polygon to micrometer points
+            dpoly = poly.to_dtype(prepared_component.kcl.dbu)
+
+            # Handle hull
+            points = [[float(pt.x), float(pt.y), elevation] for pt in dpoly.each_point_hull()]
+            if points[0] != points[-1]:
+                points.append(points[0])
+
+            name = f"{layer_name}_{i}"
+            try:
+                sheet = hfss.modeler.create_polyline(
+                    points, cover_surface=True, name=name, material=material
+                )
+                if thickness != 0:
+                    hfss.modeler.thicken_sheet(sheet.name, thickness)
+                
+                # Handle holes if any
+                for j, hole in enumerate(dpoly.each_hole()):
+                    hole_points = [[float(pt.x), float(pt.y), elevation] for pt in hole.each_point()]
+                    if hole_points[0] != hole_points[-1]:
+                        hole_points.append(hole_points[0])
+                    
+                    hole_name = f"{name}_hole_{j}"
+                    hole_sheet = hfss.modeler.create_polyline(
+                        hole_points, cover_surface=True, name=hole_name
+                    )
+                    hfss.modeler.subtract(sheet.name, [hole_sheet.name])
+            except Exception as e:
+                import warnings
+                warnings.warn(f"Failed to draw polygon {i} on layer {layer_name}: {e}")
+                success = False
+
+    return success
+
+
 def import_component_to_hfss(
     hfss: Hfss,
     component: Component,
@@ -201,12 +309,13 @@ def import_component_to_hfss(
     apply_additive: bool = True,
     gds_path: str | Path | None = None,
     import_method: int = 1,
+    use_direct_draw: bool = True,
 ) -> bool:
-    """Import a gdsfactory component into HFSS using native GDS import.
+    """Import a gdsfactory component into HFSS.
 
-    Uses :meth:`ansys.aedt.core.hfss.Hfss.import_gds_3d` to import the component
-    geometry with proper 3D layer stack information. This is the recommended
-    approach for importing complex layouts.
+    By default, this uses :func:`draw_component_in_hfss` on Linux or if
+    ``use_direct_draw`` is True, as native GDS import can be unstable in
+    non-graphical environments.
 
     Args:
         hfss: The HFSS application instance.
@@ -218,16 +327,16 @@ def import_component_to_hfss(
             See :func:`prepare_component_for_hfss`.
         gds_path: Optional path to write the GDS file. If None, uses a temporary file.
         import_method: GDSII import method (0=script, 1=Parasolid). Default is 1.
+        use_direct_draw: If True, use manual drawing instead of GDS import.
 
     Returns:
         True if import was successful, False otherwise.
-
-    Example:
-        >>> from qpdk.cells import resonator
-        >>> comp = resonator(length=4000)
-        >>> hfss = create_hfss_project("resonator_sim", solution_type="Eigenmode")
-        >>> success = import_component_to_hfss(hfss, comp)
     """
+    if use_direct_draw:
+        return draw_component_in_hfss(
+            hfss, component, layer_stack, apply_additive=apply_additive
+        )
+
     # Prepare component for export
     prepared_component = prepare_component_for_hfss(
         component, apply_additive=apply_additive
@@ -299,7 +408,10 @@ def create_hfss_project(
         ... )
     """
     _check_pyaedt_available()
-    from ansys.aedt.core import Hfss
+    from ansys.aedt.core import Hfss, settings
+    
+    # Disable UDS to avoid hangs on Linux
+    settings.use_grpc_uds = False
 
     project_path = None
     if project_dir is not None:
@@ -338,9 +450,9 @@ def add_substrate_to_hfss(
     Returns:
         Name of the created substrate object.
     """
-    bounds = component.bbox
-    x_min, y_min = bounds[0] - margin
-    x_max, y_max = bounds[1] + margin
+    bounds = component.bbox()
+    x_min, y_min = bounds.p1.x - margin, bounds.p1.y - margin
+    x_max, y_max = bounds.p2.x + margin, bounds.p2.y + margin
 
     substrate = hfss.modeler.create_box(
         origin=[x_min, y_min, -thickness],
@@ -375,9 +487,9 @@ def add_air_region_to_hfss(
     Returns:
         Name of the created region object.
     """
-    bounds = component.bbox
-    x_min, y_min = bounds[0] - margin
-    x_max, y_max = bounds[1] + margin
+    bounds = component.bbox()
+    x_min, y_min = bounds.p1.x - margin, bounds.p1.y - margin
+    x_max, y_max = bounds.p2.x + margin, bounds.p2.y + margin
 
     region = hfss.modeler.create_box(
         origin=[x_min, y_min, -substrate_thickness],
@@ -387,7 +499,7 @@ def add_air_region_to_hfss(
     )
 
     # Assign PerfectE (PEC) boundary for closed-box eigenmode analysis
-    hfss.assign_perfect_conductor(
+    hfss.assign_perfect_e(
         assignment=[face.id for face in region.faces],
         name="PEC_Boundary",
     )

@@ -115,20 +115,24 @@ def apply_additive_metals(component: Component) -> Component:
 
     TODO: Implement without flattening. Maybe with a KLayout dataprep script?
     """
+    import uuid
+    c = gf.Component(f"{component.name}_additive_{uuid.uuid4().hex[:8]}")
+    c.add_ref(component)
+    c.flatten()
+
     for additive, etch in (
         (LAYER.M1_DRAW, LAYER.M1_ETCH),
         (LAYER.M2_DRAW, LAYER.M2_ETCH),
     ):
         component_etch_only = gf.boolean(
-            A=component,
-            B=component,
+            A=c,
+            B=c,
             operation="-",
             layer=etch,
             layer1=etch,
             layer2=additive,
         )
-        component.flatten()
-        component.remove_layers([etch, additive])
-        component << component_etch_only
+        c.remove_layers([etch, additive])
+        c << component_etch_only
 
-    return component
+    return c
