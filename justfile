@@ -66,6 +66,10 @@ test-gds-force:
 test-gds-fail-fast:
     {{PYTEST_COMMAND}} -s tests/test_pdk.py -x
 
+# Run HFSS simulation tests (requires HFSS to be installed)
+test-hfss *args: check-lfs
+    uv run --all-extras --group dev pytest -m hfss {{args}}
+
 # Update pre-commit hooks to the latest revisions
 update-pre:
     #!/usr/bin/env bash
