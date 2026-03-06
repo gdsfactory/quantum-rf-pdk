@@ -68,7 +68,7 @@ test-gds-fail-fast:
 
 # Run HFSS simulation tests (requires HFSS to be installed)
 test-hfss *args: check-lfs
-    uv run --all-extras --group dev pytest tests/test_hfss.py --run-hfss {{args}}
+    uv run --all-extras --group dev pytest -m hfss {{args}}
 
 # Update pre-commit hooks to the latest revisions
 update-pre:
