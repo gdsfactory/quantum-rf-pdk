@@ -12,11 +12,11 @@ from klayout.db import DCplxTrans
 from qpdk.cells.capacitor import plate_capacitor_single
 from qpdk.cells.resonator import resonator_quarter_wave
 from qpdk.helper import show_components
-from qpdk.tech import LAYER, route_single_cpw
+from qpdk.tech import LAYER, route_bundle_cpw
 
 
 @gf.cell
-def qubit_with_resonator(
+def transmon_with_resonator(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
@@ -31,7 +31,7 @@ def qubit_with_resonator(
     coupler_port: str = "left_pad",
     coupler_offset: tuple[float, float] = (-45, 0),
 ) -> Component:
-    """Returns a qubit coupled to a quarter wave resonator.
+    """Returns a transmon qubit coupled to a quarter wave resonator.
 
     Args:
         qubit: Qubit component.
@@ -68,14 +68,16 @@ def qubit_with_resonator(
         orientation=0,
         layer=LAYER.M1_DRAW,
         width=10.0,
+        kcl=c.kcl,
     )
-    route = route_single_cpw(
+    routes = route_bundle_cpw(
         component=c,
-        port1=resonator_input_port,
-        port2=coupler_ref.ports["o1"],
+        ports1=[resonator_input_port],
+        ports2=[coupler_ref.ports["o1"]],
         steps=[{"x": coupler_ref.ports["o1"].x}],
         auto_taper=False,
     )
+    route = routes[0]
     resonator_ref = c << gf.get_component(
         resonator,
         length=resonator_length - route.length * c.kcl.dbu,
@@ -95,20 +97,15 @@ def qubit_with_resonator(
 
     c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
     c.add_port(
-        center=(res_port := resonator_ref.ports["o1"]).center,
-        cross_section=res_port.cross_section,
-        layer=res_port.layer,
-        name=res_port.name,
-        orientation=res_port.orientation,
+        port=resonator_ref.ports["o1"],
         port_type="placement",
-        width=res_port.width,
     )
     return c
 
 
 # Create specific functions as partials of the general function
-transmon_with_resonator = partial(
-    qubit_with_resonator,
+double_pad_transmon_with_resonator = partial(
+    transmon_with_resonator,
     qubit="double_pad_transmon_with_bbox",
     coupler=partial(plate_capacitor_single, width=20, length=394),
     qubit_rotation=90,
@@ -117,7 +114,7 @@ transmon_with_resonator = partial(
 )
 
 flipmon_with_resonator = partial(
-    qubit_with_resonator,
+    transmon_with_resonator,
     qubit="flipmon_with_bbox",
     coupler=partial(plate_capacitor_single, width=10, length=58),
     qubit_rotation=-90,
@@ -126,8 +123,13 @@ flipmon_with_resonator = partial(
 )
 
 
+# Alias for backward compatibility
+qubit_with_resonator = transmon_with_resonator
+
+
 if __name__ == "__main__":
     show_components(
         transmon_with_resonator,
+        double_pad_transmon_with_resonator,
         flipmon_with_resonator,
     )

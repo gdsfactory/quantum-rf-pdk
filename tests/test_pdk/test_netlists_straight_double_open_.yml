@@ -35,5 +35,4 @@ placements:
     x: 0
     y: 0
 ports:
-  o1: straight_open,o1
   o2: straight_open,o2

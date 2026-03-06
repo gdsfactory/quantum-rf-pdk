@@ -58,7 +58,28 @@ def test_fill_magnetic_vortices_parameters():
     )
 
 
+def test_fill_magnetic_vortices_default_component():
+    """Test that fill_magnetic_vortices works with default component (no arguments)."""
+    PDK.activate()
+
+    # Call without any arguments - should use default component
+    filled = fill_magnetic_vortices()
+
+    # Should return a valid component
+    assert filled is not None
+
+    # Should have polygons (the default component plus fill rectangles)
+    poly_count = sum(len(polys) for polys in filled.get_polygons().values())
+    assert poly_count > 0, "Default component should have polygons"
+
+    # Verify the component has expected size (100 µm length from default straight)
+    # The fill is placed within the component bounds, so size should match the default
+    assert filled.xsize >= 100.0, "Default component should have at least 100 µm length"
+    assert filled.ysize > 0, "Default component should have non-zero height"
+
+
 if __name__ == "__main__":
     test_fill_magnetic_vortices()
     test_fill_magnetic_vortices_parameters()
+    test_fill_magnetic_vortices_default_component()
     print("All tests passed!")
