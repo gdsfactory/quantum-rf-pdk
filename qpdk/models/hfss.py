@@ -183,6 +183,9 @@ def prepare_component_for_hfss(
 ) -> Component:
     """Prepare a component for HFSS simulation export.
 
+    You should run this before exporting a component to HFSS, as it applies
+    the transformations you likely want.
+
     This function prepares the component by doing the following:
     1. Applying additive metal operations
     2. Inverting mask polarity to positive metals
@@ -221,7 +224,6 @@ def import_component_to_hfss(
     component: Component,
     layer_stack: LayerStack | None = None,
     *,
-    margin: float = 0.0,
     units: str = "um",
     gds_path: str | Path | None = None,
 ) -> bool:
@@ -236,16 +238,12 @@ def import_component_to_hfss(
         component: The gdsfactory component to import.
         layer_stack: LayerStack defining thickness and elevation for each layer.
             If None, uses QPDK's default LAYER_STACK.
-        margin: The margin to add to the bounding box in µm.
         units: Length units for the geometry (default: "um" for micrometers).
         gds_path: Optional path to write the GDS file. If None, uses a temporary file.
 
     Returns:
         True if import was successful, False otherwise.
     """
-    # Prepare component for export
-    prepared_component = prepare_component_for_hfss(component, margin=margin)
-
     # Generate layer mapping from LayerStack
     mapping_layers = layer_stack_to_gds_mapping(layer_stack)
 
@@ -259,7 +257,7 @@ def import_component_to_hfss(
         gds_path = Path(temp_dir_obj.name) / "component.gds"
 
     gds_path = Path(gds_path)
-    prepared_component.write_gds(str(gds_path))
+    component.write_gds(str(gds_path))
 
     # Set modeler units
     hfss.modeler.model_units = units

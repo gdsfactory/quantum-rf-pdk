@@ -164,11 +164,15 @@ from qpdk.models.hfss import (  # noqa: E402
     add_air_region_to_hfss,
     add_substrate_to_hfss,
     import_component_to_hfss,
+    prepare_component_for_hfss,
 )
+
+# Prepare component for export
+res_component = prepare_component_for_hfss(res_component, margin=100)
 
 # Import the component geometry using native GDS import
 # This automatically applies additive metals and maps layers to 3D
-success = import_component_to_hfss(hfss, res_component, margin=100)
+success = import_component_to_hfss(hfss, res_component)
 print(f"GDS import successful: {success}")
 
 # Add substrate below the component
