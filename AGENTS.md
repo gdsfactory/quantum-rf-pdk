@@ -112,7 +112,13 @@ All PRs must pass:
 - **Model tests**: New models should have unit tests in `tests/models/` verifying their behavior, passivity, and
   reciprocity.
 - **Prefer using the `hypothesis` library**: Use the `hypothesis` library to generate tests with generic arguments with
-  appropriate types
+  appropriate types. Note the following gotchas when using `hypothesis`:
+  - **Do NOT use `@staticmethod`**: When using the `@given` decorator from Hypothesis, do not add `@staticmethod` to the
+    test function. Hypothesis inspects the `__code__` attribute of the decorated function during test collection, which
+    causes `AttributeError` on staticmethod descriptors.
+  - **Handle JAX JIT compilation overhead**: When testing JAX JIT-compiled functions with Hypothesis, the first run
+    incurs a compilation overhead which often causes `DeadlineExceeded` errors. Add `@settings(deadline=None)` to
+    Hypothesis `@given` tests that call JIT-compiled code to prevent flaky tests.
 
 ## Creating New Components
 
