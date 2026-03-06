@@ -258,7 +258,6 @@ def airbridge(
         bridge_width: Width of the airbridge in µm.
         airgap_height: Height of the airgap in µm.
         loss_tangent: Dielectric loss tangent of the supporting layer/residues.
-        z0: Reference impedance in Ω
 
     Returns:
         sax.SDict: S-parameters dictionary
