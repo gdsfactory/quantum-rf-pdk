@@ -89,6 +89,7 @@ def _check_pyaedt_available() -> None:
 
 def layer_stack_to_gds_mapping(
     layer_stack: LayerStack | None = None,
+    thickness_override: float | None = None,
 ) -> dict[int, tuple[float, float]]:
     """Convert a LayerStack to HFSS GDS import mapping dictionary.
 
@@ -98,6 +99,8 @@ def layer_stack_to_gds_mapping(
     Args:
         layer_stack: LayerStack defining layers with elevation and thickness.
             If None, uses QPDK's default LAYER_STACK.
+        thickness_override: Optional thickness to use for all layers.
+            If None, uses the thickness from the LayerStack.
 
     Returns:
         Dictionary mapping GDS layer numbers to (elevation, thickness) tuples
@@ -121,7 +124,10 @@ def layer_stack_to_gds_mapping(
 
         # Get elevation (zmin) and thickness
         elevation = layer_level.zmin if layer_level.zmin is not None else 0.0
-        thickness = layer_level.thickness if layer_level.thickness else 0.0
+        if thickness_override is not None:
+            thickness = thickness_override
+        else:
+            thickness = layer_level.thickness if layer_level.thickness else 0.0
 
         # Store mapping: layer_number -> (elevation, thickness)
         mapping[layer_number] = (elevation, thickness)
@@ -224,20 +230,21 @@ def import_component_to_hfss(
     component: Component,
     layer_stack: LayerStack | None = None,
     *,
+    import_as_sheets: bool = False,
     units: str = "um",
     gds_path: str | Path | None = None,
 ) -> bool:
     """Import a gdsfactory component into HFSS.
-
-    By default, this uses :func:`draw_component_in_hfss` on Linux or if
-    ``use_direct_draw`` is True, as native GDS import can be unstable in
-    non-graphical environments.
 
     Args:
         hfss: The HFSS application instance.
         component: The gdsfactory component to import.
         layer_stack: LayerStack defining thickness and elevation for each layer.
             If None, uses QPDK's default LAYER_STACK.
+        import_as_sheets: If True, imports metals as 2D sheets (zero thickness)
+            and assigns PerfectE boundary to them. If False, imports as 3D
+            objects with thickness from layer_stack and assigns PerfectE
+            boundary to their surfaces.
         units: Length units for the geometry (default: "um" for micrometers).
         gds_path: Optional path to write the GDS file. If None, uses a temporary file.
 
@@ -245,7 +252,10 @@ def import_component_to_hfss(
         True if import was successful, False otherwise.
     """
     # Generate layer mapping from LayerStack
-    mapping_layers = layer_stack_to_gds_mapping(layer_stack)
+    thickness_override = 0.0 if import_as_sheets else None
+    mapping_layers = layer_stack_to_gds_mapping(
+        layer_stack, thickness_override=thickness_override
+    )
 
     # Export component to GDS
     # Note: We use TemporaryDirectory to ensure cleanup, but need to keep it
@@ -274,10 +284,13 @@ def import_component_to_hfss(
     )
 
     if result:
-        # Set all newly imported objects to PEC using assign_perfecte_to_sheets
+        # Set all newly imported objects to PEC
         new_objects = list(set(hfss.modeler.object_names) - existing_objects)
         if new_objects:
-            hfss.assign_perfecte_to_sheets(new_objects)
+            if import_as_sheets:
+                hfss.assign_perfecte_to_sheets(new_objects)
+            else:
+                hfss.assign_perfect_e(new_objects)
 
     # Clean up temporary directory if we created one
     if temp_dir_obj is not None:
