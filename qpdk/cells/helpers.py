@@ -184,3 +184,49 @@ def invert_mask_polarity(component: Component) -> Component:
                 c.shapes(layer_index).insert(other_region)
 
     return c
+
+
+@gf.cell
+def remove_metadata_layers(component: Component) -> Component:
+    """Remove metadata layers from a component.
+
+    Retains only physical and base layers:
+    M1_DRAW, M1_ETCH, M2_DRAW, M2_ETCH, AB_DRAW, AB_VIA,
+    JJ_AREA, JJ_PATCH, IND, TSV, DICE, ALN_TOP, ALN_BOT.
+
+    All other layers are stripped out.
+
+    Args:
+        component: The component to clean.
+
+    Returns:
+        A new component with metadata layers removed.
+    """
+    allowed_layers = {
+        LAYER.M1_DRAW,
+        LAYER.M1_ETCH,
+        LAYER.M2_DRAW,
+        LAYER.M2_ETCH,
+        LAYER.AB_DRAW,
+        LAYER.AB_VIA,
+        LAYER.JJ_AREA,
+        LAYER.JJ_PATCH,
+        LAYER.IND,
+        LAYER.TSV,
+        LAYER.DICE,
+        LAYER.ALN_TOP,
+        LAYER.ALN_BOT,
+    }
+
+    # Convert allowed layers into kcl layer indices
+    allowed_indices = {component.kcl.layer(*layer) for layer in allowed_layers}
+
+    c = gf.Component()
+
+    for layer_index in component.kcl.layer_indices():
+        if layer_index in allowed_indices:
+            other_region = Region(component.begin_shapes_rec(layer_index))
+            if not other_region.is_empty():
+                c.shapes(layer_index).insert(other_region)
+
+    return c

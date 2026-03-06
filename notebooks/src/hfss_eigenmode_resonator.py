@@ -181,7 +181,6 @@ print(f"GDS import successful: {success}")
 substrate_name = add_substrate_to_hfss(
     hfss,
     res_component,
-    margin=100.0,
     thickness=500.0,
     material="silicon",
 )
@@ -191,7 +190,6 @@ print(f"Created substrate: {substrate_name}")
 air_region_name = add_air_region_to_hfss(
     hfss,
     res_component,
-    margin=100.0,
     height=500.0,
     substrate_thickness=500.0,
 )

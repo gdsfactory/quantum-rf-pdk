@@ -38,7 +38,11 @@ import numpy as np
 from gdsfactory.technology.layer_stack import LayerLevel
 
 from qpdk import LAYER_STACK
-from qpdk.cells.helpers import apply_additive_metals, invert_mask_polarity
+from qpdk.cells.helpers import (
+    apply_additive_metals,
+    invert_mask_polarity,
+    remove_metadata_layers,
+)
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss
@@ -176,8 +180,10 @@ def prepare_component_for_hfss(
 ) -> Component:
     """Prepare a component for HFSS simulation export.
 
-    This function prepares the component by applying additive metal
-    operations to create the proper negative mask representation for simulation.
+    This function prepares the component by doing the following:
+    1. Applying additive metal operations
+    2. Inverting mask polarity to positive metals
+    3. Remove metadata-like layers
 
     Args:
         component: The gdsfactory component to prepare.
@@ -192,7 +198,9 @@ def prepare_component_for_hfss(
     """
     c = gf.Component(name=f"{component.name}_hfss")
     c << component.copy()
-    return invert_mask_polarity(apply_additive_metals(c))
+    c = apply_additive_metals(c)
+    c = invert_mask_polarity(c)
+    return remove_metadata_layers(c)
 
 
 def import_component_to_hfss(
