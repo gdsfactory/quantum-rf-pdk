@@ -21,7 +21,8 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
 
     model_function = taper_cross_section
 
-    def get_model_kwargs(self) -> dict:
+    @staticmethod
+    def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
         return {"length": 200}
 
@@ -52,7 +53,8 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
             err_msg=f"Passivity violated: max total power = {jnp.max(total_power)}",
         )
 
-    def test_identical_cross_sections(self) -> None:
+    @staticmethod
+    def test_identical_cross_sections() -> None:
         """Test that a taper with identical cross-sections behaves like a straight waveguide."""
         f = jnp.linspace(4e9, 6e9, 20)
         length = 500
@@ -73,7 +75,8 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
             err_msg="Taper with same start/end CS should match straight waveguide",
         )
 
-    def test_zero_length(self) -> None:
+    @staticmethod
+    def test_zero_length() -> None:
         """Test taper with zero length (should be a through connection)."""
         f = jnp.array([5e9])
         cs1 = coplanar_waveguide(width=10, gap=6)
@@ -102,7 +105,8 @@ class TestLauncher(BaseModelTestSuite):
     model_function = launcher
     expected_ports: ClassVar[set[str]] = {"waveport", "o1"}
 
-    def get_model_kwargs(self) -> dict:
+    @staticmethod
+    def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
         return {"straight_length": 100, "taper_length": 100}
 
@@ -131,7 +135,8 @@ class TestLauncher(BaseModelTestSuite):
             err_msg=f"Passivity violated: max total power = {jnp.max(total_power)}",
         )
 
-    def test_zero_length(self) -> None:
+    @staticmethod
+    def test_zero_length() -> None:
         """Test launcher with zero length (should be a through connection)."""
         f = jnp.array([5e9])
         cs_big = coplanar_waveguide(width=200, gap=100)

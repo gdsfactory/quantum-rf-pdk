@@ -47,6 +47,39 @@ def cpw_media_skrf(width: float, gap: float) -> MediaCallable:
     return partial(CPW, **kwargs)
 
 
+def get_cpw_dimensions(cross_section: CrossSectionSpec) -> tuple[float, float]:
+    """Extracts CPW width and gap from a cross-section specification.
+
+    Args:
+        cross_section: A gdsfactory cross-section specification.
+
+    Returns:
+        tuple[float, float]: Width and gap of the CPW.
+    """
+    xs: CrossSection
+    if isinstance(cross_section, CrossSection):
+        xs = cross_section
+    elif callable(cross_section):
+        xs = cast(CrossSection, cross_section())
+    else:
+        xs = gf.get_cross_section(cross_section)
+
+    width = xs.width
+    try:
+        gap = next(
+            section.width
+            for section in xs.sections
+            if section.name and "etch_offset" in section.name
+        )
+    except StopIteration as e:
+        msg = (
+            f"Cross-section does not have a section with 'etch_offset' in the name. "
+            f"Found sections: {[s.name for s in xs.sections]}"
+        )
+        raise ValueError(msg) from e
+    return width, gap
+
+
 def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
     """Converts a layout :class:`~CrossSectionSpec` to model :class:`~MediaCallable`.
 
@@ -61,29 +94,5 @@ def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
     Returns:
         MediaCallable: A callable that returns a skrf Media object for a given frequency.
     """
-    # Convert input to CrossSection object
-    xs: CrossSection
-    if isinstance(cross_section, CrossSection):
-        xs = cross_section
-    elif callable(cross_section):
-        # If it's a callable (like a partial or factory function), call it to get the CrossSection
-        xs = cast(CrossSection, cross_section())
-    else:
-        # It's a string name, requires active PDK
-        xs = gf.get_cross_section(cross_section)
-
-    # Extract width and gap from the CrossSection
-    width = xs.width
-    try:
-        gap = next(
-            section.width
-            for section in xs.sections
-            if section.name and "etch_offset" in section.name
-        )
-    except StopIteration as e:
-        msg = (
-            f"Cross-section does not have a section with 'etch_offset' in the name. "
-            f"Found sections: {[s.name for s in xs.sections]}"
-        )
-        raise ValueError(msg) from e
+    width, gap = get_cpw_dimensions(cross_section)
     return cpw_media_skrf(width=width, gap=gap)
