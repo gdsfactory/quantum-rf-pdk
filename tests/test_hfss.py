@@ -43,7 +43,7 @@ def test_layer_stack_to_gds_mapping():
 def test_prepare_component_for_hfss():
     """Test component preparation for HFSS."""
     comp = resonator()
-    prepared = prepare_component_for_hfss(comp, apply_additive=True)
+    prepared = prepare_component_for_hfss(comp)
 
     assert isinstance(prepared, Component)
     # The prepared component should be different if additive metals are applied
@@ -97,7 +97,6 @@ def test_hfss_import_and_draw():
         project_name=project_name,
         solution_type="Eigenmode",
         non_graphical=True,
-        aedt_version="2025.2",
     )
 
     try:
@@ -134,7 +133,6 @@ def test_hfss_eigenmode_setup():
         project_name=project_name,
         solution_type="Eigenmode",
         non_graphical=True,
-        aedt_version="2025.2",
     )
 
     try:

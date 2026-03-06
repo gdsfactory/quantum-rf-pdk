@@ -130,37 +130,25 @@ DRIVEN_CONFIG = {
 # ```
 
 # %%
-try:
-    from ansys.aedt.core import Hfss
+from ansys.aedt.core import Hfss  # noqa: E402
 
-    # Create temporary directory for project
-    temp_dir = tempfile.TemporaryDirectory(suffix=".ansys_qpdk")
-    project_path = Path(temp_dir.name) / "idc_driven.aedt"
+# Create temporary directory for project
+temp_dir = tempfile.TemporaryDirectory(suffix=".ansys_qpdk")
+project_path = Path(temp_dir.name) / "idc_driven.aedt"
 
-    # Initialize HFSS with Driven Modal solution
-    hfss = Hfss(
-        project=str(project_path),
-        design="InterdigitalCapacitor",
-        solution_type="DrivenModal",
-        non_graphical=HFSS_CONFIG["non_graphical"],
-        new_desktop=HFSS_CONFIG["new_desktop"],
-    )
-    hfss.modeler.model_units = "um"
+# Initialize HFSS with Driven Modal solution
+hfss = Hfss(
+    project=str(project_path),
+    design="InterdigitalCapacitor",
+    solution_type="DrivenModal",
+    non_graphical=HFSS_CONFIG["non_graphical"],
+    new_desktop=HFSS_CONFIG["new_desktop"],
+)
+hfss.modeler.model_units = "um"
 
-    print(f"HFSS project created: {hfss.project_file}")
-    print(f"Design name: {hfss.design_name}")
-    print(f"Solution type: {hfss.solution_type}")
-
-    HFSS_AVAILABLE = True
-
-except ImportError:
-    print("PyAEDT not installed. Install with: pip install qpdk[hfss]")
-    print("Continuing with demonstration of the workflow structure...")
-    HFSS_AVAILABLE = False
-except Exception as e:
-    print(f"HFSS not available: {e}")
-    print("This is expected if Ansys HFSS is not installed.")
-    HFSS_AVAILABLE = False
+print(f"HFSS project created: {hfss.project_file}")
+print(f"Design name: {hfss.design_name}")
+print(f"Solution type: {hfss.solution_type}")
 
 # %% [markdown]
 # ## Build Interdigital Capacitor Geometry
@@ -169,41 +157,43 @@ except Exception as e:
 # This uses `Hfss.import_gds_3d` which automatically handles 3D layer mapping.
 
 # %%
-if HFSS_AVAILABLE:
-    from qpdk.models.hfss import add_substrate_to_hfss, import_component_to_hfss
+from qpdk.models.hfss import (  # noqa: E402
+    add_substrate_to_hfss,
+    import_component_to_hfss,
+)
 
-    # Import the component geometry using native GDS import
-    # This automatically applies additive metals and maps layers to 3D
-    success = import_component_to_hfss(hfss, idc_component)
-    print(f"GDS import successful: {success}")
+# Import the component geometry using native GDS import
+# This automatically applies additive metals and maps layers to 3D
+success = import_component_to_hfss(hfss, idc_component)
+print(f"GDS import successful: {success}")
 
-    # Add substrate below the component
-    substrate_name = add_substrate_to_hfss(
-        hfss,
-        idc_component,
-        margin=50.0,
-        thickness=500.0,
-        material="silicon",
-    )
-    print(f"Created substrate: {substrate_name}")
+# Add substrate below the component
+substrate_name = add_substrate_to_hfss(
+    hfss,
+    idc_component,
+    margin=50.0,
+    thickness=500.0,
+    material="silicon",
+)
+print(f"Created substrate: {substrate_name}")
 
-    # Create air region above
-    bounds = idc_component.bbox
-    margin = 50  # µm
-    air_height = 200  # µm
-    x_min, y_min = bounds[0] - margin
-    x_max, y_max = bounds[1] + margin
+# Create air region above
+bounds = idc_component.bbox
+margin = 50  # µm
+air_height = 200  # µm
+x_min, y_min = bounds[0] - margin
+x_max, y_max = bounds[1] + margin
 
-    air_region = hfss.modeler.create_box(
-        origin=[x_min, y_min, 0],
-        sizes=[x_max - x_min, y_max - y_min, air_height],
-        name="AirRegion",
-        material="vacuum",
-    )
+air_region = hfss.modeler.create_box(
+    origin=[x_min, y_min, 0],
+    sizes=[x_max - x_min, y_max - y_min, air_height],
+    name="AirRegion",
+    material="vacuum",
+)
 
-    # Assign radiation boundary to outer faces
-    hfss.assign_radiation_boundary_to_objects(air_region)
-    print("Assigned radiation boundary")
+# Assign radiation boundary to outer faces
+hfss.assign_radiation_boundary_to_objects(air_region)
+print("Assigned radiation boundary")
 
 # %% [markdown]
 # ## Create Lumped Ports
@@ -215,58 +205,57 @@ if HFSS_AVAILABLE:
 # that isn't automatically derived from the GDS import.
 
 # %%
-if HFSS_AVAILABLE:
-    # Define metal thickness for port geometry
-    metal_thickness = 0.2  # µm (200nm Nb film)
+# Define metal thickness for port geometry
+metal_thickness = 0.2  # µm (200nm Nb film)
 
-    # Get port locations from component
-    port_locations = {}
-    for port_name, port in idc_component.ports.items():
-        port_locations[port_name] = {
-            "center": port.center,
-            "orientation": port.orientation,
-        }
+# Get port locations from component
+port_locations = {}
+for port_name, port in idc_component.ports.items():
+    port_locations[port_name] = {
+        "center": port.center,
+        "orientation": port.orientation,
+    }
 
-    print("Creating lumped ports at component port locations:")
-    port_objects = []
+print("Creating lumped ports at component port locations:")
+port_objects = []
 
-    for i, (_port_name, port_info) in enumerate(port_locations.items(), 1):
-        center = port_info["center"]
-        orientation = port_info["orientation"]
+for i, (_port_name, port_info) in enumerate(port_locations.items(), 1):
+    center = port_info["center"]
+    orientation = port_info["orientation"]
 
-        # Create a small rectangle for the port face
-        # Port spans across the CPW gap
-        cpw_width = 10  # µm
-        cpw_gap = 6  # µm
-        port_height = cpw_width + 2 * cpw_gap  # Total CPW cross-section
+    # Create a small rectangle for the port face
+    # Port spans across the CPW gap
+    cpw_width = 10  # µm
+    cpw_gap = 6  # µm
+    port_height = cpw_width + 2 * cpw_gap  # Total CPW cross-section
 
-        # Determine port orientation and create rectangle
-        if abs(orientation) < 45 or abs(orientation - 180) < 45:
-            # Port facing left or right
-            port_rect = hfss.modeler.create_rectangle(
-                origin=[center[0], center[1] - port_height / 2, 0],
-                sizes=[metal_thickness, port_height],
-                cs_plane="YZ",
-                name=f"PortFace_{i}",
-            )
-        else:
-            # Port facing up or down
-            port_rect = hfss.modeler.create_rectangle(
-                origin=[center[0] - port_height / 2, center[1], 0],
-                sizes=[port_height, metal_thickness],
-                cs_plane="XZ",
-                name=f"PortFace_{i}",
-            )
+    # Determine port orientation and create rectangle
+    if abs(orientation) < 45 or abs(orientation - 180) < 45:
+        # Port facing left or right
+        port_rect = hfss.modeler.create_rectangle(
+            origin=[center[0], center[1] - port_height / 2, 0],
+            sizes=[metal_thickness, port_height],
+            cs_plane="YZ",
+            name=f"PortFace_{i}",
+        )
+    else:
+        # Port facing up or down
+        port_rect = hfss.modeler.create_rectangle(
+            origin=[center[0] - port_height / 2, center[1], 0],
+            sizes=[port_height, metal_thickness],
+            cs_plane="XZ",
+            name=f"PortFace_{i}",
+        )
 
-        # Create lumped port
-        if port_rect:
-            port = hfss.lumped_port(
-                assignment=port_rect.name,
-                name=f"Port{i}",
-                impedance=50,
-            )
-            port_objects.append(port)
-            print(f"  Created Port{i} at {center}")
+    # Create lumped port
+    if port_rect:
+        port = hfss.lumped_port(
+            assignment=port_rect.name,
+            name=f"Port{i}",
+            impedance=50,
+        )
+        port_objects.append(port)
+        print(f"  Created Port{i} at {center}")
 
 # %% [markdown]
 # ## Configure Driven Modal Analysis
@@ -275,36 +264,35 @@ if HFSS_AVAILABLE:
 # across the desired frequency range.
 
 # %%
-if HFSS_AVAILABLE:
-    # Create driven modal setup
-    setup = hfss.create_setup(
-        name="DrivenSetup",
-        setup_type="HFSSDriven",
-        Frequency=f"{DRIVEN_CONFIG['solution_frequency_ghz']}GHz",
-    )
+# Create driven modal setup
+setup = hfss.create_setup(
+    name="DrivenSetup",
+    setup_type="HFSSDriven",
+    Frequency=f"{DRIVEN_CONFIG['solution_frequency_ghz']}GHz",
+)
 
-    setup.props["MaxDeltaS"] = DRIVEN_CONFIG["max_delta_s"]
-    setup.props["MaximumPasses"] = DRIVEN_CONFIG["max_passes"]
-    setup.props["MinimumPasses"] = 2
-    setup.props["PercentRefinement"] = 30
-    setup.update()
+setup.props["MaxDeltaS"] = DRIVEN_CONFIG["max_delta_s"]
+setup.props["MaximumPasses"] = DRIVEN_CONFIG["max_passes"]
+setup.props["MinimumPasses"] = 2
+setup.props["PercentRefinement"] = 30
+setup.update()
 
-    # Create frequency sweep
-    sweep = setup.create_frequency_sweep(
-        unit="GHz",
-        name="FrequencySweep",
-        start_frequency=DRIVEN_CONFIG["sweep_start_ghz"],
-        stop_frequency=DRIVEN_CONFIG["sweep_stop_ghz"],
-        sweep_type="Interpolating",
-        num_of_freq_points=DRIVEN_CONFIG["sweep_points"],
-    )
+# Create frequency sweep
+sweep = setup.create_frequency_sweep(
+    unit="GHz",
+    name="FrequencySweep",
+    start_frequency=DRIVEN_CONFIG["sweep_start_ghz"],
+    stop_frequency=DRIVEN_CONFIG["sweep_stop_ghz"],
+    sweep_type="Interpolating",
+    num_of_freq_points=DRIVEN_CONFIG["sweep_points"],
+)
 
-    print("Driven modal setup configured:")
-    print(f"  - Solution frequency: {DRIVEN_CONFIG['solution_frequency_ghz']} GHz")
-    print(
-        f"  - Sweep range: {DRIVEN_CONFIG['sweep_start_ghz']} - {DRIVEN_CONFIG['sweep_stop_ghz']} GHz"
-    )
-    print(f"  - Number of points: {DRIVEN_CONFIG['sweep_points']}")
+print("Driven modal setup configured:")
+print(f"  - Solution frequency: {DRIVEN_CONFIG['solution_frequency_ghz']} GHz")
+print(
+    f"  - Sweep range: {DRIVEN_CONFIG['sweep_start_ghz']} - {DRIVEN_CONFIG['sweep_stop_ghz']} GHz"
+)
+print(f"  - Number of points: {DRIVEN_CONFIG['sweep_points']}")
 
 # %% [markdown]
 # ## Run Simulation
@@ -312,19 +300,18 @@ if HFSS_AVAILABLE:
 # Execute the driven modal analysis with frequency sweep.
 
 # %%
-if HFSS_AVAILABLE:
-    print("Starting driven modal analysis...")
-    print("(This may take several minutes)")
+print("Starting driven modal analysis...")
+print("(This may take several minutes)")
 
-    # Save project before analysis
-    hfss.save_project()
+# Save project before analysis
+hfss.save_project()
 
-    # Run the analysis
-    start_time = time.time()
-    hfss.analyze_setup("DrivenSetup", cores=4)
-    elapsed = time.time() - start_time
+# Run the analysis
+start_time = time.time()
+hfss.analyze_setup("DrivenSetup", cores=4)
+elapsed = time.time() - start_time
 
-    print(f"Analysis completed in {elapsed:.1f} seconds")
+print(f"Analysis completed in {elapsed:.1f} seconds")
 
 # %% [markdown]
 # ## Extract and Plot S-Parameters
@@ -332,47 +319,46 @@ if HFSS_AVAILABLE:
 # Get the S-parameters from the simulation and visualize the results.
 
 # %%
-if HFSS_AVAILABLE:
-    import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402
 
-    # Get available S-parameter traces
-    traces = hfss.get_traces_for_plot()
-    print(f"Available traces: {traces}")
+# Get available S-parameter traces
+traces = hfss.get_traces_for_plot()
+print(f"Available traces: {traces}")
 
-    # Create report and get solution data
-    report = hfss.post.create_report(traces)
-    solution = report.get_solution_data()
+# Create report and get solution data
+report = hfss.post.create_report(traces)
+solution = report.get_solution_data()
 
-    # Extract frequency and S-parameters
-    frequencies = np.array(solution.primary_sweep_values) / 1e9  # Convert to GHz
+# Extract frequency and S-parameters
+frequencies = np.array(solution.primary_sweep_values) / 1e9  # Convert to GHz
 
-    # Plot S-parameters
-    fig, axes = plt.subplots(2, 1, figsize=(10, 8))
+# Plot S-parameters
+fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
-    # S11 (reflection) and S21 (transmission)
-    for expr in solution.expressions:
-        data = solution.data_magnitude(expression=expr)
-        data_db = 20 * np.log10(np.abs(data) + 1e-10)
+# S11 (reflection) and S21 (transmission)
+for expr in solution.expressions:
+    data = solution.data_magnitude(expression=expr)
+    data_db = 20 * np.log10(np.abs(data) + 1e-10)
 
-        if "S(1,1)" in expr or "S11" in expr.upper():
-            axes[0].plot(frequencies, data_db, label=expr)
-        elif "S(2,1)" in expr or "S21" in expr.upper():
-            axes[1].plot(frequencies, data_db, label=expr)
+    if "S(1,1)" in expr or "S11" in expr.upper():
+        axes[0].plot(frequencies, data_db, label=expr)
+    elif "S(2,1)" in expr or "S21" in expr.upper():
+        axes[1].plot(frequencies, data_db, label=expr)
 
-    axes[0].set_xlabel("Frequency (GHz)")
-    axes[0].set_ylabel("$|S_{11}|$ (dB)")
-    axes[0].set_title("Return Loss")
-    axes[0].grid(True)
-    axes[0].legend()
+axes[0].set_xlabel("Frequency (GHz)")
+axes[0].set_ylabel("$|S_{11}|$ (dB)")
+axes[0].set_title("Return Loss")
+axes[0].grid(True)
+axes[0].legend()
 
-    axes[1].set_xlabel("Frequency (GHz)")
-    axes[1].set_ylabel("$|S_{21}|$ (dB)")
-    axes[1].set_title("Insertion Loss")
-    axes[1].grid(True)
-    axes[1].legend()
+axes[1].set_xlabel("Frequency (GHz)")
+axes[1].set_ylabel("$|S_{21}|$ (dB)")
+axes[1].set_title("Insertion Loss")
+axes[1].grid(True)
+axes[1].legend()
 
-    plt.tight_layout()
-    plt.show()
+plt.tight_layout()
+plt.show()
 
 # %% [markdown]
 # ## Extract Capacitance from S-Parameters
@@ -381,43 +367,42 @@ if HFSS_AVAILABLE:
 # impedance calculated from S-parameters.
 
 # %%
-if HFSS_AVAILABLE:
-    # Extract capacitance from S21 at a specific frequency
-    # For a series capacitor: Z = 1/(jωC), so |S21| relates to capacitive reactance
+# Extract capacitance from S21 at a specific frequency
+# For a series capacitor: Z = 1/(jωC), so |S21| relates to capacitive reactance
 
-    # Get S21 data
-    s21_data = None
-    for expr in solution.expressions:
-        if "S(2,1)" in expr or "S21" in expr.upper():
-            s21_data = solution.data_magnitude(expression=expr)
-            break
+# Get S21 data
+s21_data = None
+for expr in solution.expressions:
+    if "S(2,1)" in expr or "S21" in expr.upper():
+        s21_data = solution.data_magnitude(expression=expr)
+        break
 
-    if s21_data is not None:
-        # Analysis frequencies in GHz
-        analysis_frequencies_ghz = [1.0, 5.0, 10.0]
+if s21_data is not None:
+    # Analysis frequencies in GHz
+    analysis_frequencies_ghz = [1.0, 5.0, 10.0]
 
-        print("\n=== Capacitance Analysis ===")
-        print("-" * 40)
+    print("\n=== Capacitance Analysis ===")
+    print("-" * 40)
 
-        Z0 = 50  # Reference impedance (ohms)
-        for freq_ghz in analysis_frequencies_ghz:
-            freq_idx = np.argmin(np.abs(frequencies - freq_ghz))
-            freq_hz = frequencies[freq_idx] * 1e9
-            s21_mag = np.abs(s21_data[freq_idx])
+    Z0 = 50  # Reference impedance (ohms)
+    for freq_ghz in analysis_frequencies_ghz:
+        freq_idx = np.argmin(np.abs(frequencies - freq_ghz))
+        freq_hz = frequencies[freq_idx] * 1e9
+        s21_mag = np.abs(s21_data[freq_idx])
 
-            # For series element: S21 = 2Z0 / (2Z0 + Z)
-            # Solving for |Z|: |Z| = 2Z0 * (1 - |S21|) / |S21|
-            if s21_mag > 0.01:
-                z_series = 2 * Z0 * (1 - s21_mag) / s21_mag
-                # For capacitor: Z = 1/(ωC), so C = 1/(ω|Z|)
-                omega = 2 * np.pi * freq_hz
-                C_extracted = 1 / (omega * z_series)
-                print(
-                    f"At {freq_ghz} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
-                )
+        # For series element: S21 = 2Z0 / (2Z0 + Z)
+        # Solving for |Z|: |Z| = 2Z0 * (1 - |S21|) / |S21|
+        if s21_mag > 0.01:
+            z_series = 2 * Z0 * (1 - s21_mag) / s21_mag
+            # For capacitor: Z = 1/(ωC), so C = 1/(ω|Z|)
+            omega = 2 * np.pi * freq_hz
+            C_extracted = 1 / (omega * z_series)
+            print(
+                f"At {freq_ghz} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
+            )
 
-        print("-" * 40)
-        print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
+    print("-" * 40)
+    print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
 
 # %% [markdown]
 # ## Cleanup
@@ -425,15 +410,14 @@ if HFSS_AVAILABLE:
 # Close HFSS and clean up temporary files.
 
 # %%
-if HFSS_AVAILABLE:
-    # Save and close
-    hfss.save_project()
-    hfss.release_desktop()
-    time.sleep(2)
+# Save and close
+hfss.save_project()
+hfss.release_desktop()
+time.sleep(2)
 
-    # Clean up temp directory
-    temp_dir.cleanup()
-    print("HFSS session closed and temporary files cleaned up")
+# Clean up temp directory
+temp_dir.cleanup()
+print("HFSS session closed and temporary files cleaned up")
 
 # %% [markdown]
 # ## Summary
