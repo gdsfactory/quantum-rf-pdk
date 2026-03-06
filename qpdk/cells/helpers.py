@@ -225,13 +225,17 @@ def add_margin_to_layer(
                 present_layer_indices.add(layer_index)
 
     # Add margins to the layers that are present in the component
+    bbox_itype = bbox.to_itype(component.kcl.dbu)
+    bbox_region = Region(bbox_itype)
+    
     for layer_index in present_layer_indices:
         margin = layer_indices_margins[layer_index]
+        margin_dbu = int(margin / component.kcl.dbu)
         new_bbox = kdb.Box(
-            int(bbox.left - margin * component.kcl.dbu**-1),
-            int(bbox.bottom - margin * component.kcl.dbu**-1),
-            int(bbox.right + margin * component.kcl.dbu**-1),
-            int(bbox.top + margin * component.kcl.dbu**-1),
+            bbox_itype.left - margin_dbu,
+            bbox_itype.bottom - margin_dbu,
+            bbox_itype.right + margin_dbu,
+            bbox_itype.top + margin_dbu,
         )
         new_bbox_region = Region(new_bbox)
         margin_region = new_bbox_region - bbox_region
@@ -268,3 +272,17 @@ def remove_metadata_layers(component: Component) -> Component:
                 c.shapes(layer_index).insert(other_region)
 
     return c
+
+
+if __name__ == "__main__":
+    from qpdk import PDK
+    from qpdk.cells.resonator import resonator
+
+    PDK.activate()
+    c = resonator(length=2000)
+    c = apply_additive_metals(c.copy())
+    c = invert_mask_polarity(c)
+    c = add_margin_to_layer(
+        c, layer_margins=[(LAYER.M1_DRAW, 50.0), (LAYER.M2_DRAW, 50.0)]
+    )
+    c.show()

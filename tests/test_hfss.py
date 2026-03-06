@@ -51,6 +51,25 @@ def test_prepare_component_for_hfss():
     assert prepared.name is not None
 
 
+def test_prepare_component_for_hfss_margin():
+    """Test component preparation for HFSS with margin."""
+    comp = resonator(length=3000)
+
+    # Original bbox
+    bbox_orig = comp.bbox()
+    prepared = prepare_component_for_hfss(comp, margin=200)
+
+    assert isinstance(prepared, Component)
+    assert prepared.name is not None
+
+    # Prepared bbox might be larger
+    bbox_new = prepared.bbox()
+    assert bbox_new.left <= bbox_orig.left
+    assert bbox_new.right >= bbox_orig.right
+    assert bbox_new.bottom <= bbox_orig.bottom
+    assert bbox_new.top >= bbox_orig.top
+
+
 def test_get_layer_number_from_level():
     """Test layer number extraction from various layer definitions."""
 
