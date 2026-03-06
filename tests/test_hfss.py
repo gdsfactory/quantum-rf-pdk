@@ -84,7 +84,6 @@ def test_hfss_import_and_draw():
     from qpdk import PDK
     from qpdk.cells.resonator import resonator
     from qpdk.models.hfss import (
-        close_hfss,
         create_hfss_project,
         import_component_to_hfss,
     )
@@ -104,7 +103,7 @@ def test_hfss_import_and_draw():
         success = import_component_to_hfss(hfss, comp)
         assert success, "Failed to draw component in HFSS"
     finally:
-        close_hfss(hfss, save_project=False)
+        hfss.release_desktop()
 
 
 @pytest.mark.hfss
@@ -119,10 +118,8 @@ def test_hfss_eigenmode_setup():
     from qpdk.models.hfss import (
         add_air_region_to_hfss,
         add_substrate_to_hfss,
-        close_hfss,
         create_hfss_project,
         import_component_to_hfss,
-        setup_eigenmode_simulation,
     )
 
     PDK.activate()
@@ -140,7 +137,16 @@ def test_hfss_eigenmode_setup():
         add_substrate_to_hfss(hfss, comp)
         add_air_region_to_hfss(hfss, comp)
 
-        setup = setup_eigenmode_simulation(hfss, num_modes=1, max_passes=2)
+        setup = hfss.create_setup(name="EigenmodeSetup")
+        setup.props["MinimumFrequency"] = "1.0GHz"
+        setup.props["NumModes"] = 1
+        setup.props["MaximumPasses"] = 2
+        setup.props["MinimumPasses"] = 2
+        setup.props["PercentRefinement"] = 30
+        setup.props["MaxDeltaFreq"] = 2.0
+        setup.props["ConvergeOnRealFreq"] = True
+        setup.update()
+
         assert setup is not None, "Failed to setup eigenmode simulation"
     finally:
-        close_hfss(hfss, save_project=False)
+        hfss.release_desktop()

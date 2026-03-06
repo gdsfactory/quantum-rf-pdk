@@ -1,13 +1,14 @@
 """Helper functions for QPDK cells."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 import gdsfactory as gf
+import klayout.db as kdb
 from gdsfactory.component import Component
-from gdsfactory.typings import LayerSpec
+from gdsfactory.typings import Layer, LayerSpec
 from klayout.db import DCplxTrans, Region
 
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, NON_METADATA_LAYERS
 
 
 def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Component:
@@ -187,6 +188,59 @@ def invert_mask_polarity(component: Component) -> Component:
 
 
 @gf.cell
+def add_margin_to_layer(
+    component: Component, layer_margins: Sequence[tuple[Layer, float]]
+) -> Component:
+    """Increase the component bounding box by adding a margin to given draw layers.
+
+    For each specified layer in the component, it is extended outwards
+    by the specified margin. This effectively increases the bounding box of the
+    component which can be useful to define the simulation area in HFSS.
+
+    Args:
+        component: The component to modify.
+        layer_margins: Sequence of tuples containing the layer to modify and the margin to add in µm.
+
+    Returns:
+        A new component with extended layers.
+    """
+    c = gf.Component()
+
+    bbox = component.bbox()
+
+    bbox_region = Region(bbox.to_itype(component.kcl.dbu))
+
+    # Identify layer indices for the specified margins
+    layer_indices_margins = {
+        component.kcl.layer(*layer): margin for layer, margin in layer_margins
+    }
+
+    # Copy existing shapes and track which specified layers are present
+    present_layer_indices = set()
+    for layer_index in component.kcl.layer_indices():
+        region = Region(component.begin_shapes_rec(layer_index))
+        if not region.is_empty():
+            c.shapes(layer_index).insert(region)
+            if layer_index in layer_indices_margins:
+                present_layer_indices.add(layer_index)
+
+    # Add margins to the layers that are present in the component
+    for layer_index in present_layer_indices:
+        margin = layer_indices_margins[layer_index]
+        new_bbox = kdb.Box(
+            int(bbox.left - margin * component.kcl.dbu**-1),
+            int(bbox.bottom - margin * component.kcl.dbu**-1),
+            int(bbox.right + margin * component.kcl.dbu**-1),
+            int(bbox.top + margin * component.kcl.dbu**-1),
+        )
+        new_bbox_region = Region(new_bbox)
+        margin_region = new_bbox_region - bbox_region
+        c.shapes(layer_index).insert(margin_region)
+
+    return c
+
+
+@gf.cell
 def remove_metadata_layers(component: Component) -> Component:
     """Remove metadata layers from a component.
 
@@ -202,24 +256,8 @@ def remove_metadata_layers(component: Component) -> Component:
     Returns:
         A new component with metadata layers removed.
     """
-    allowed_layers = {
-        LAYER.M1_DRAW,
-        LAYER.M1_ETCH,
-        LAYER.M2_DRAW,
-        LAYER.M2_ETCH,
-        LAYER.AB_DRAW,
-        LAYER.AB_VIA,
-        LAYER.JJ_AREA,
-        LAYER.JJ_PATCH,
-        LAYER.IND,
-        LAYER.TSV,
-        LAYER.DICE,
-        LAYER.ALN_TOP,
-        LAYER.ALN_BOT,
-    }
-
     # Convert allowed layers into kcl layer indices
-    allowed_indices = {component.kcl.layer(*layer) for layer in allowed_layers}
+    allowed_indices = {component.kcl.layer(*layer) for layer in NON_METADATA_LAYERS}
 
     c = gf.Component()
 

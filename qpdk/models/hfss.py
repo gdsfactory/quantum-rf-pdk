@@ -7,8 +7,7 @@ PyAEDT library to interface with Ansys HFSS.
 The main workflow is:
 1. Prepare a component with :func:`prepare_component_for_hfss`
 2. Export to GDS and import into HFSS with :func:`import_component_to_hfss`
-3. Configure simulation setup with :func:`setup_eigenmode_simulation` or
-   :func:`setup_driven_simulation`
+3. Configure simulation setup (e.g. Eigenmode or Driven) manually via PyAEDT
 4. Extract results with :func:`get_eigenmode_results` or :func:`get_sparameter_results`
 
 Note:
@@ -177,6 +176,7 @@ def _get_layer_number_from_level(layer_level: LayerLevel) -> int | None:
 
 def prepare_component_for_hfss(
     component: Component,
+    margin: float = 0.0,
 ) -> Component:
     """Prepare a component for HFSS simulation export.
 
@@ -184,9 +184,11 @@ def prepare_component_for_hfss(
     1. Applying additive metal operations
     2. Inverting mask polarity to positive metals
     3. Remove metadata-like layers
+    4. Optionally add a margin to the simulation bounding box by extending M1_DRAW and M2_DRAW
 
     Args:
         component: The gdsfactory component to prepare.
+        margin: The margin to add to the bounding box in µm.
 
     Returns:
         The prepared component (may be modified in-place).
@@ -196,10 +198,14 @@ def prepare_component_for_hfss(
         >>> comp = resonator(length=4000)
         >>> prepared = prepare_component_for_hfss(comp)
     """
+    from qpdk.cells.helpers import add_margin_to_layer
+
     c = gf.Component(name=f"{component.name}_hfss")
     c << component.copy()
     c = apply_additive_metals(c)
     c = invert_mask_polarity(c)
+    if margin > 0.0:
+        c = add_margin_to_layer(c, margin=margin)
     return remove_metadata_layers(c)
 
 
@@ -208,6 +214,7 @@ def import_component_to_hfss(
     component: Component,
     layer_stack: LayerStack | None = None,
     *,
+    margin: float = 0.0,
     units: str = "um",
     gds_path: str | Path | None = None,
 ) -> bool:
@@ -222,6 +229,7 @@ def import_component_to_hfss(
         component: The gdsfactory component to import.
         layer_stack: LayerStack defining thickness and elevation for each layer.
             If None, uses QPDK's default LAYER_STACK.
+        margin: The margin to add to the bounding box in µm.
         units: Length units for the geometry (default: "um" for micrometers).
         gds_path: Optional path to write the GDS file. If None, uses a temporary file.
 
@@ -229,7 +237,7 @@ def import_component_to_hfss(
         True if import was successful, False otherwise.
     """
     # Prepare component for export
-    prepared_component = prepare_component_for_hfss(component)
+    prepared_component = prepare_component_for_hfss(component, margin=margin)
 
     # Generate layer mapping from LayerStack
     mapping_layers = layer_stack_to_gds_mapping(layer_stack)
@@ -397,117 +405,6 @@ def add_air_region_to_hfss(
     return region.name
 
 
-def setup_eigenmode_simulation(
-    hfss: Hfss,
-    setup_name: str = "EigenmodeSetup",
-    *,
-    min_frequency_ghz: float = 1.0,
-    num_modes: int = 3,
-    max_passes: int = 15,
-    min_passes: int = 2,
-    percent_refinement: float = 30,
-    max_delta_freq: float = 2,
-) -> object:
-    """Configure an eigenmode simulation setup.
-
-    Args:
-        hfss: The HFSS application instance (must have solution_type="Eigenmode").
-        setup_name: Name for the simulation setup.
-        min_frequency_ghz: Minimum frequency for mode search in GHz.
-        num_modes: Number of eigenmodes to find.
-        max_passes: Maximum number of adaptive passes.
-        min_passes: Minimum number of adaptive passes.
-        percent_refinement: Percentage of mesh refinement per pass.
-        max_delta_freq: Maximum frequency change criterion (percentage).
-
-    Returns:
-        The created setup object.
-
-    Example:
-        >>> setup = setup_eigenmode_simulation(
-        ...     hfss,
-        ...     min_frequency_ghz=3.0,
-        ...     num_modes=5
-        ... )
-    """
-    setup = hfss.create_setup(name=setup_name)
-
-    setup.props["MinimumFrequency"] = f"{min_frequency_ghz}GHz"
-    setup.props["NumModes"] = num_modes
-    setup.props["MaximumPasses"] = max_passes
-    setup.props["MinimumPasses"] = min_passes
-    setup.props["PercentRefinement"] = percent_refinement
-    setup.props["MaxDeltaFreq"] = max_delta_freq
-    setup.props["ConvergeOnRealFreq"] = True
-
-    setup.update()
-    return setup
-
-
-def setup_driven_simulation(
-    hfss: Hfss,
-    setup_name: str = "DrivenSetup",
-    *,
-    frequency_ghz: float = 5.0,
-    max_delta_s: float = 0.02,
-    max_passes: int = 10,
-    min_passes: int = 2,
-    percent_refinement: float = 30,
-    sweep_start_ghz: float | None = None,
-    sweep_stop_ghz: float | None = None,
-    sweep_points: int = 201,
-) -> tuple[object, object | None]:
-    """Configure a driven modal simulation setup with optional frequency sweep.
-
-    Args:
-        hfss: The HFSS application instance.
-        setup_name: Name for the simulation setup.
-        frequency_ghz: Solution frequency in GHz.
-        max_delta_s: Maximum delta S convergence criterion.
-        max_passes: Maximum number of adaptive passes.
-        min_passes: Minimum number of adaptive passes.
-        percent_refinement: Percentage of mesh refinement per pass.
-        sweep_start_ghz: Start frequency for sweep. If None, no sweep is created.
-        sweep_stop_ghz: Stop frequency for sweep. If None, no sweep is created.
-        sweep_points: Number of frequency points in sweep.
-
-    Returns:
-        Tuple of (setup, sweep) where sweep may be None if not created.
-
-    Example:
-        >>> setup, sweep = setup_driven_simulation(
-        ...     hfss,
-        ...     frequency_ghz=5.0,
-        ...     sweep_start_ghz=1.0,
-        ...     sweep_stop_ghz=10.0
-        ... )
-    """
-    setup = hfss.create_setup(
-        name=setup_name,
-        setup_type="HFSSDriven",
-        Frequency=f"{frequency_ghz}GHz",
-    )
-
-    setup.props["MaxDeltaS"] = max_delta_s
-    setup.props["MaximumPasses"] = max_passes
-    setup.props["MinimumPasses"] = min_passes
-    setup.props["PercentRefinement"] = percent_refinement
-    setup.update()
-
-    sweep = None
-    if sweep_start_ghz is not None and sweep_stop_ghz is not None:
-        sweep = setup.create_frequency_sweep(
-            unit="GHz",
-            name="FrequencySweep",
-            start_frequency=sweep_start_ghz,
-            stop_frequency=sweep_stop_ghz,
-            sweep_type="Interpolating",
-            num_of_freq_points=sweep_points,
-        )
-
-    return setup, sweep
-
-
 def add_lumped_port(
     hfss: Hfss,
     port_face_id: int,
@@ -615,15 +512,3 @@ def get_sparameter_results(
             }
 
     return results
-
-
-def close_hfss(hfss: Hfss, *, save_project: bool = True) -> None:
-    """Close the HFSS project and release the desktop.
-
-    Args:
-        hfss: The HFSS application instance.
-        save_project: If True, saves the project before closing.
-    """
-    if save_project:
-        hfss.save_project()
-    hfss.release_desktop()
