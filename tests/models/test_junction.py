@@ -31,7 +31,7 @@ def test_squid_junction_flux_tunability_hypothesis(
 
     # They should have different responses since the effective inductance changes
     assert not jnp.allclose(s_zero[("o1", "o1")], s_half[("o1", "o1")])
-    assert jnp.all(jnp.isfinite(s_half[("o1", "o1")]))
+    assert jnp.isfinite(s_half[("o1", "o1")]).all()
 
     # Admittance should be strictly smaller at half flux -> S11 magnitude should be closer to 1 if it acts more like an open circuit
     # Wait, inductance increases at half flux. So L -> large, Y_L -> 0.
@@ -64,4 +64,4 @@ def test_squid_junction_overbias_warning_hypothesis(
     with pytest.warns(RuntimeWarning, match="DC bias"):
         y = jitted(phi_arr, ibias)
 
-    assert jnp.all(jnp.isfinite(y))
+    assert jnp.isfinite(y).all()

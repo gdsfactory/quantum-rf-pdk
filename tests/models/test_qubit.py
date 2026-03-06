@@ -6,6 +6,7 @@ import hypothesis.strategies as st
 import jax.numpy as jnp
 import numpy as np
 from hypothesis import given, settings
+from numpy.testing import assert_allclose, assert_array_less
 
 import qpdk
 from qpdk.models.constants import Φ_0, e, h
@@ -166,8 +167,11 @@ class TestDoubleIslandTransmon(TwoPortModelTestSuite):
 
         # For an ungrounded parallel LC, S22 should equal S11 due to symmetry
         s11 = result[("o1", "o1")]
-        assert jnp.allclose(s11, s22, atol=1e-10), (
-            "S11 and S22 should be equal for symmetric ungrounded LC resonator"
+        assert_allclose(
+            s11,
+            s22,
+            atol=1e-10,
+            err_msg="S11 and S22 should be equal for symmetric ungrounded LC resonator",
         )
 
     def test_resonance_frequency(self) -> None:
@@ -203,13 +207,16 @@ class TestShuntedTransmon(TwoPortModelTestSuite):
 
         # For grounded, S22 should be -1 (short reflection)
         s22 = result[("o2", "o2")]
-        assert jnp.allclose(s22, -1.0, atol=1e-10), (
-            f"S22 should be -1 for grounded port, got {s22}"
+        assert_allclose(
+            s22,
+            -1.0,
+            atol=1e-10,
+            err_msg=f"S22 should be -1 for grounded port, got {s22}",
         )
 
         # S21 should be zero (no transmission through ground)
         s21 = result[("o2", "o1")]
-        assert jnp.allclose(s21, 0.0, atol=1e-10)
+        assert_allclose(s21, 0.0, atol=1e-10)
 
     @given(
         L=st.floats(min_value=0.1e-9, max_value=10e-9),
@@ -245,7 +252,7 @@ class TestTransmonCoupled(TwoPortModelTestSuite):
         s11 = result[("o1", "o1")]
         s21 = result[("o2", "o1")]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
-        assert jnp.all(total_power <= 1.0 + 1e-6)
+        assert_array_less(total_power, 1.0 + 1e-6)
 
     def test_inductive_coupling(self) -> None:
         """Test coupled transmon with inductive coupling only."""
@@ -287,7 +294,7 @@ class TestTransmonCoupled(TwoPortModelTestSuite):
         s11 = result[("o1", "o1")]
         s21 = result[("o2", "o1")]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
-        assert jnp.all(total_power <= 1.0 + 1e-6)
+        assert_array_less(total_power, 1.0 + 1e-6)
 
 
 class TestIntegration:
@@ -354,7 +361,7 @@ class TestIntegration:
 
         # Verify all values are finite
         for value in result.values():
-            assert jnp.all(jnp.isfinite(value))
+            assert jnp.isfinite(value).all()
 
 
 @final
@@ -386,7 +393,7 @@ class TestQubitWithResonator(TwoPortModelTestSuite):
 
         # Verify all values are finite
         for value in result.values():
-            assert jnp.all(jnp.isfinite(value))
+            assert jnp.isfinite(value).all()
 
     def test_grounded_qubit(self) -> None:
         """Test qubit_with_resonator with grounded qubit."""

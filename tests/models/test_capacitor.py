@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, final
 
 import jax.numpy as jnp
 import numpy as np
+from numpy.testing import assert_array_less
 
 from qpdk.models.capacitor import (
     interdigital_capacitor,
@@ -51,7 +52,7 @@ class TestInterdigitalCapacitor(TwoPortModelTestSuite):
         s11_n4 = jnp.abs(result_n4[("o1", "o1")])
 
         # At 5GHz, N=4 should have more capacitance than N=2
-        assert jnp.all(s11_n4 <= s11_n2 + 1e-10)
+        assert_array_less(s11_n4, s11_n2 + 1e-10)
 
 
 def test_interdigital_capacitor_scaling() -> None:
