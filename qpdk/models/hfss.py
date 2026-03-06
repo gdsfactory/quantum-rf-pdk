@@ -38,7 +38,7 @@ import numpy as np
 from gdsfactory.technology.layer_stack import LayerLevel
 
 from qpdk import LAYER_STACK
-from qpdk.cells.helpers import apply_additive_metals
+from qpdk.cells.helpers import apply_additive_metals, invert_mask_polarity
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss
@@ -192,7 +192,7 @@ def prepare_component_for_hfss(
     """
     c = gf.Component(name=f"{component.name}_hfss")
     c << component.copy()
-    return apply_additive_metals(c)
+    return invert_mask_polarity(apply_additive_metals(c))
 
 
 def import_component_to_hfss(

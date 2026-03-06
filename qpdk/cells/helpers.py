@@ -132,3 +132,55 @@ def apply_additive_metals(component: Component) -> Component:
         component << component_etch_only
 
     return component
+
+
+@gf.cell
+def invert_mask_polarity(component: Component) -> Component:
+    """Invert mask polarity of a component.
+
+    Converts DRAW layers to ETCH layers by subtracting the DRAW layer from the
+    component's bounding box, and similarly converts ETCH layers to DRAW layers.
+    This is applied to M1 and M2 layers. All other layers are copied intact.
+
+    Args:
+        component: The component to invert.
+
+    Returns:
+        A new component with inverted mask polarity.
+    """
+    c = gf.Component()
+
+    # Bounding box of the component defines the outer boundary for inversion
+    bbox_region = Region(component.bbox().to_itype(component.kcl.dbu))
+
+    affected_layers = []
+
+    for additive, etch in (
+        (LAYER.M1_DRAW, LAYER.M1_ETCH),
+        (LAYER.M2_DRAW, LAYER.M2_ETCH),
+    ):
+        # Determine the layer indices in the layout object
+        add_layer_index = component.kcl.layer(*additive)
+        etch_layer_index = component.kcl.layer(*etch)
+        affected_layers.extend([add_layer_index, etch_layer_index])
+
+        # Extract the shapes of the old component on these layers as regions
+        add_region = Region(component.begin_shapes_rec(add_layer_index))
+        etch_region = Region(component.begin_shapes_rec(etch_layer_index))
+
+        # Invert the polarities using the bounding box
+        new_add_region = bbox_region - etch_region
+        new_etch_region = bbox_region - add_region
+
+        # Insert the inverted regions into the new component
+        c.shapes(add_layer_index).insert(new_add_region)
+        c.shapes(etch_layer_index).insert(new_etch_region)
+
+    # Copy all other layers intact
+    for layer_index in component.kcl.layer_indices():
+        if layer_index not in affected_layers:
+            other_region = Region(component.begin_shapes_rec(layer_index))
+            if not other_region.is_empty():
+                c.shapes(layer_index).insert(other_region)
+
+    return c
