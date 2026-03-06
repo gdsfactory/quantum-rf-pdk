@@ -16,7 +16,7 @@ classifiers = [
 dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.37.0"]
 
 [project.optional-dependencies]
-hfss = ["pyaedt>=0.15.0"]
+hfss = ["pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",

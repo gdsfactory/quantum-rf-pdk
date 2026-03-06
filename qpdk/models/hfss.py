@@ -191,6 +191,12 @@ def prepare_component_for_hfss(
         >>> comp = resonator(length=4000)
         >>> prepared = prepare_component_for_hfss(comp)
     """
+    import gdsfactory as gf
+
+    c = gf.Component(name=f"{component.name}_hfss")
+    c << component
+    component = c
+
     if apply_additive:
         from qpdk.cells.helpers import apply_additive_metals
 

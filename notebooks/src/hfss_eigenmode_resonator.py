@@ -74,7 +74,7 @@ print(f"Expected quarter-wave frequency: ~{3e8 / (4 * 4000e-6) / 1e9:.2f} GHz")
 # %%
 # Configuration for HFSS simulation
 HFSS_CONFIG = {
-    "non_graphical": True,  # Set to False to see the HFSS GUI
+    "non_graphical": False,  # Set to False to see the HFSS GUI
     "aedt_version": None,  # Use default version, or specify e.g., "2025.1"
     "new_desktop": True,
 }
@@ -107,7 +107,16 @@ EIGENMODE_CONFIG = {
 # This code block demonstrates the full workflow but requires HFSS license
 
 try:
-    from ansys.aedt.core import Hfss
+    import os
+    from pathlib import Path
+    
+    # Ensure Ansys path is set so PyAEDT can find it
+    ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
+    if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
+        os.environ["ANSYSEM_ROOT252"] = ansys_default_path
+
+    from ansys.aedt.core import Hfss, settings
+    settings.use_grpc_uds = False
 
     # Create temporary directory for project
     temp_dir = tempfile.TemporaryDirectory(suffix=".ansys_qpdk")
@@ -120,6 +129,7 @@ try:
         solution_type="Eigenmode",
         non_graphical=HFSS_CONFIG["non_graphical"],
         new_desktop=HFSS_CONFIG["new_desktop"],
+        version="2025.2",
     )
     hfss.modeler.model_units = "um"
 
@@ -155,7 +165,7 @@ if HFSS_AVAILABLE:
 
     # Import the component geometry using native GDS import
     # This automatically applies additive metals and maps layers to 3D
-    success = import_component_to_hfss(hfss, res_component)
+    success = import_component_to_hfss(hfss, res_component, use_direct_draw=False, import_method=0)
     print(f"GDS import successful: {success}")
 
     # Add substrate below the component
