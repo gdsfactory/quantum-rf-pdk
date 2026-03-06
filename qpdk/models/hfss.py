@@ -15,10 +15,11 @@ Note:
     Install with: ``uv sync --extra hfss`` or ``pip install qpdk[hfss]``
 
 Example:
-    >>> from qpdk.models.hfss import import_component_to_hfss, create_hfss_project
+    >>> from ansys.aedt.core import Hfss
+    >>> from qpdk.models.hfss import import_component_to_hfss
     >>> from qpdk.cells import resonator
     >>> comp = resonator(length=4000, meanders=4)
-    >>> hfss = create_hfss_project("resonator_sim", solution_type="Eigenmode")
+    >>> hfss = Hfss(project="resonator_sim", solution_type="Eigenmode")
     >>> import_component_to_hfss(hfss, comp)
 
 References:
@@ -275,10 +276,10 @@ def import_component_to_hfss(
     )
 
     if result:
-        # Set all newly imported objects to PEC
+        # Set all newly imported objects to PEC using assign_perfecte_to_sheets
         new_objects = list(set(hfss.modeler.object_names) - existing_objects)
         if new_objects:
-            hfss.assign_material(new_objects, "pec")
+            hfss.assign_perfecte_to_sheets(new_objects)
 
     # Clean up temporary directory if we created one
     if temp_dir_obj is not None:

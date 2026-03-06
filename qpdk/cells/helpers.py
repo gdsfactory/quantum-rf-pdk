@@ -227,7 +227,7 @@ def add_margin_to_layer(
     # Add margins to the layers that are present in the component
     bbox_itype = bbox.to_itype(component.kcl.dbu)
     bbox_region = Region(bbox_itype)
-    
+
     for layer_index in present_layer_indices:
         margin = layer_indices_margins[layer_index]
         margin_dbu = int(margin / component.kcl.dbu)
