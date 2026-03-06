@@ -286,57 +286,6 @@ def import_component_to_hfss(
     return result
 
 
-def create_hfss_project(
-    project_name: str = "qpdk_simulation",
-    design_name: str = "design1",
-    solution_type: str = "Eigenmode",
-    *,
-    non_graphical: bool = False,
-    new_desktop: bool = True,
-    project_dir: str | Path | None = None,
-) -> Hfss:
-    """Create a new HFSS project with the specified solution type.
-
-    Args:
-        project_name: Name of the HFSS project.
-        design_name: Name of the design within the project.
-        solution_type: HFSS solution type. One of "Eigenmode", "DrivenModal",
-            "DrivenTerminal", "Transient".
-        non_graphical: If True, run HFSS without GUI. Set to False for debugging.
-        new_desktop: If True, starts a new AEDT desktop session.
-        project_dir: Directory to save the project. If None, uses temp directory.
-
-    Returns:
-        An Hfss application instance.
-
-    Example:
-        >>> hfss = create_hfss_project(
-        ...     project_name="resonator_sim",
-        ...     solution_type="Eigenmode",
-        ...     non_graphical=True
-        ... )
-    """
-    _check_pyaedt_available()
-    from ansys.aedt.core import Hfss, settings
-
-    # Disable UDS to avoid hangs on Linux
-    settings.use_grpc_uds = False
-
-    project_path = None
-    if project_dir is not None:
-        project_path = str(Path(project_dir) / f"{project_name}.aedt")
-
-    kwargs = {
-        "project": project_path,
-        "design": design_name,
-        "solution_type": solution_type,
-        "non_graphical": non_graphical,
-        "new_desktop": new_desktop,
-    }
-
-    return Hfss(**kwargs)
-
-
 def add_substrate_to_hfss(
     hfss: Hfss,
     component: Component,

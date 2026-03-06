@@ -100,19 +100,20 @@ def test_hfss_import_and_draw():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS installation not found at {ansys_dir}")
 
+    from ansys.aedt.core import Hfss, settings
+
     from qpdk import PDK
     from qpdk.cells.resonator import resonator
-    from qpdk.models.hfss import (
-        create_hfss_project,
-        import_component_to_hfss,
-    )
+    from qpdk.models.hfss import import_component_to_hfss
+
+    settings.use_grpc_uds = False
 
     PDK.activate()
     comp = resonator(length=1000, meanders=1)
 
     project_name = f"test_draw_{int(time.time())}"
-    hfss = create_hfss_project(
-        project_name=project_name,
+    hfss = Hfss(
+        project=project_name,
         solution_type="Eigenmode",
         non_graphical=True,
     )
@@ -132,21 +133,24 @@ def test_hfss_eigenmode_setup():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS installation not found at {ansys_dir}")
 
+    from ansys.aedt.core import Hfss, settings
+
     from qpdk import PDK
     from qpdk.cells.resonator import resonator
     from qpdk.models.hfss import (
         add_air_region_to_hfss,
         add_substrate_to_hfss,
-        create_hfss_project,
         import_component_to_hfss,
     )
+
+    settings.use_grpc_uds = False
 
     PDK.activate()
     comp = resonator(length=1000, meanders=1)
 
     project_name = f"test_eigenmode_{int(time.time())}"
-    hfss = create_hfss_project(
-        project_name=project_name,
+    hfss = Hfss(
+        project=project_name,
         solution_type="Eigenmode",
         non_graphical=True,
     )
