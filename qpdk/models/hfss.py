@@ -38,10 +38,12 @@ from gdsfactory.technology.layer_stack import LayerLevel
 
 from qpdk import LAYER_STACK
 from qpdk.cells.helpers import (
+    add_margin_to_layer,
     apply_additive_metals,
     invert_mask_polarity,
     remove_metadata_layers,
 )
+from qpdk.tech import LAYER
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss
@@ -198,14 +200,18 @@ def prepare_component_for_hfss(
         >>> comp = resonator(length=4000)
         >>> prepared = prepare_component_for_hfss(comp)
     """
-    from qpdk.cells.helpers import add_margin_to_layer
-
     c = gf.Component(name=f"{component.name}_hfss")
     c << component.copy()
     c = apply_additive_metals(c)
     c = invert_mask_polarity(c)
     if margin > 0.0:
-        c = add_margin_to_layer(c, margin=margin)
+        c = add_margin_to_layer(
+            c,
+            layer_margins=[
+                (LAYER.M1_DRAW, margin),
+                (LAYER.M2_DRAW, margin),
+            ],
+        )
     return remove_metadata_layers(c)
 
 

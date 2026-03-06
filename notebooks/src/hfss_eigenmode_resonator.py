@@ -95,12 +95,6 @@ print(f"Calculated length: {current_length:.1f} µm")
 
 # %%
 # Configuration for HFSS simulation
-HFSS_CONFIG = {
-    "non_graphical": False,  # Set to False to see the HFSS GUI
-    "aedt_version": None,  # Use default version, or specify e.g., "2025.1"
-    "new_desktop": True,
-}
-
 EIGENMODE_CONFIG = {
     "min_frequency_ghz": 3.0,  # Start searching from 3 GHz
     "num_modes": 3,  # Find 3 eigenmodes
@@ -148,8 +142,8 @@ hfss = Hfss(
     project=str(project_path),
     design="CPW_Resonator",
     solution_type="Eigenmode",
-    non_graphical=HFSS_CONFIG["non_graphical"],
-    new_desktop=HFSS_CONFIG["new_desktop"],
+    non_graphical=False,
+    new_desktop=True,
     version="2025.2",
 )
 hfss.modeler.model_units = "um"
@@ -174,7 +168,7 @@ from qpdk.models.hfss import (  # noqa: E402
 
 # Import the component geometry using native GDS import
 # This automatically applies additive metals and maps layers to 3D
-success = import_component_to_hfss(hfss, res_component)
+success = import_component_to_hfss(hfss, res_component, margin=100)
 print(f"GDS import successful: {success}")
 
 # Add substrate below the component
@@ -292,7 +286,7 @@ if results["frequencies_ghz"]:
 # %%
 # Save and close
 hfss.save_project()
-hfss.release_desktop()
+# hfss.release_desktop()
 time.sleep(2)  # Allow HFSS to shut down
 
 # Clean up temp directory
