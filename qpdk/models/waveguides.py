@@ -13,7 +13,7 @@ from skrf import Frequency
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.generic import admittance, short_2_port
-from qpdk.models.media import cross_section_to_media
+from qpdk.models.media import cross_section_to_media, get_cpw_dimensions
 from qpdk.tech import coplanar_waveguide
 
 
@@ -391,8 +391,6 @@ def taper_cross_section(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    from qpdk.models.media import get_cpw_dimensions
-
     w1, g1 = get_cpw_dimensions(cross_section_1)
     w2, g2 = get_cpw_dimensions(cross_section_2)
 
