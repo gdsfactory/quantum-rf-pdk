@@ -1,7 +1,6 @@
 """Waveguides."""
 
 from functools import partial
-from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -72,12 +71,10 @@ def straight_shorted(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    kwargs = {
-        "f": jnp.asarray(f),
-        "length": jnp.asarray(length),
-        "cross_section": cross_section,
+    instances = {
+        "straight": straight(f=f, length=length, cross_section=cross_section),
+        "short": short_2_port(f=f),
     }
-    instances = {"straight": straight(**kwargs), "short": short_2_port(f=f)}
     connections = {
         "straight,o2": "short,o1",
     }
@@ -107,13 +104,8 @@ def straight_open(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    kwargs = {
-        "f": jnp.asarray(f),
-        "length": jnp.asarray(length),
-        "cross_section": cross_section,
-    }
     instances = {
-        "straight": straight(**kwargs),
+        "straight": straight(f=f, length=length, cross_section=cross_section),
         "open": electrical_open(f=f, n_ports=2),
     }
     connections = {
@@ -145,13 +137,8 @@ def straight_double_open(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    kwargs = {
-        "f": jnp.asarray(f),
-        "length": jnp.asarray(length),
-        "cross_section": cross_section,
-    }
     instances = {
-        "straight": straight(**kwargs),
+        "straight": straight(f=f, length=length, cross_section=cross_section),
         "open1": electrical_open(f=f, n_ports=2),
         "open2": electrical_open(f=f, n_ports=2),
     }
@@ -328,12 +315,7 @@ def bend_circular(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    kwargs = {
-        "f": jnp.asarray(f),
-        "length": jnp.asarray(length),
-        "cross_section": cross_section,
-    }
-    return straight(**kwargs)
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 def bend_euler(
@@ -351,12 +333,7 @@ def bend_euler(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    kwargs = {
-        "f": jnp.asarray(f),
-        "length": jnp.asarray(length),
-        "cross_section": cross_section,
-    }
-    return straight(**kwargs)
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 def bend_s(
@@ -374,12 +351,7 @@ def bend_s(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    kwargs = {
-        "f": jnp.asarray(f),
-        "length": jnp.asarray(length),
-        "cross_section": cross_section,
-    }
-    return straight(**kwargs)  # pyrefly: ignore[bad-keyword-argument]
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 def rectangle(
@@ -397,12 +369,7 @@ def rectangle(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    kwargs = {
-        "f": jnp.asarray(f),
-        "length": jnp.asarray(length),
-        "cross_section": cross_section,
-    }
-    return straight(**kwargs)  # pyrefly: ignore[bad-keyword-argument]
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 def taper_cross_section(
@@ -424,35 +391,10 @@ def taper_cross_section(
     Returns:
         sax.SDict: S-parameters dictionary
     """
+    from qpdk.models.media import get_cpw_dimensions
 
-    def get_width_gap(cs: CrossSectionSpec) -> tuple[float, float]:
-        import gdsfactory as gf
-
-        if isinstance(cs, gf.CrossSection):
-            xs = cs
-        elif callable(cs):
-            xs = cast(gf.CrossSection, cs())
-        else:
-            xs = gf.get_cross_section(cs)
-
-        # Infer from first section with "etch_offset" in the name
-        width = xs.width
-        try:
-            gap = next(
-                section.width
-                for section in xs.sections
-                if section.name and "etch_offset" in section.name
-            )
-        except StopIteration:
-            raise ValueError(
-                f"Cannot extract CPW gap from cross-section {cs!r}: "
-                "no section with 'etch_offset' in its name found. "
-                "Only coplanar_waveguide cross-sections are supported."
-            ) from None
-        return width, gap
-
-    w1, g1 = get_width_gap(cross_section_1)
-    w2, g2 = get_width_gap(cross_section_2)
+    w1, g1 = get_cpw_dimensions(cross_section_1)
+    w2, g2 = get_cpw_dimensions(cross_section_2)
 
     f = jnp.asarray(f)
     segment_length = length / n_points

@@ -110,27 +110,24 @@ def cpw_cpw_coupling_capacitance(
     )
     ep_r = float(media_instance.ep_r)
 
-    # Extract CPW dimensions from cross-section
-    xs: CrossSection
-    if isinstance(cross_section, CrossSection):
-        xs = cross_section
-    elif callable(cross_section):
-        xs = cast(CrossSection, cross_section())
-    else:
-        xs = gf.get_cross_section(cross_section)
+    from qpdk.models.media import get_cpw_dimensions
 
-    width = xs.width
     try:
-        cpw_gap = next(
-            section.width
-            for section in xs.sections
-            if section.name and "etch_offset" in section.name
-        )
-    except StopIteration:
-        # Fallback to default CPW gap if not found in sections
+        width, cpw_gap = get_cpw_dimensions(cross_section)
+    except ValueError:
+        # Fallback to default CPW width and gap if not found in sections
+        # Not sure if width needs fallback, but gap previously fell back to 6.0
         gf.logger.warning(
-            "CPW gap not found in cross-section sections. Using default value of 6.0 µm."
+            "CPW gap not found in cross-section sections. Using default gap of 6.0 µm."
         )
+        xs = (
+            gf.get_cross_section(cross_section)
+            if isinstance(cross_section, str)
+            else cross_section
+        )
+        if callable(xs):
+            xs = cast(CrossSection, xs())
+        width = xs.width
         cpw_gap = 6.0
 
     c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
