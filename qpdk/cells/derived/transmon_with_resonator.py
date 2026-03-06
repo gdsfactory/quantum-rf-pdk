@@ -16,7 +16,7 @@ from qpdk.tech import LAYER, route_bundle_cpw
 
 
 @gf.cell
-def qubit_with_resonator(
+def transmon_with_resonator(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
@@ -31,7 +31,7 @@ def qubit_with_resonator(
     coupler_port: str = "left_pad",
     coupler_offset: tuple[float, float] = (-45, 0),
 ) -> Component:
-    """Returns a qubit coupled to a quarter wave resonator.
+    """Returns a transmon qubit coupled to a quarter wave resonator.
 
     Args:
         qubit: Qubit component.
@@ -104,8 +104,8 @@ def qubit_with_resonator(
 
 
 # Create specific functions as partials of the general function
-transmon_with_resonator = partial(
-    qubit_with_resonator,
+double_pad_transmon_with_resonator = partial(
+    transmon_with_resonator,
     qubit="double_pad_transmon_with_bbox",
     coupler=partial(plate_capacitor_single, width=20, length=394),
     qubit_rotation=90,
@@ -114,7 +114,7 @@ transmon_with_resonator = partial(
 )
 
 flipmon_with_resonator = partial(
-    qubit_with_resonator,
+    transmon_with_resonator,
     qubit="flipmon_with_bbox",
     coupler=partial(plate_capacitor_single, width=10, length=58),
     qubit_rotation=-90,
@@ -123,8 +123,13 @@ flipmon_with_resonator = partial(
 )
 
 
+# Alias for backward compatibility
+qubit_with_resonator = transmon_with_resonator
+
+
 if __name__ == "__main__":
     show_components(
         transmon_with_resonator,
+        double_pad_transmon_with_resonator,
         flipmon_with_resonator,
     )

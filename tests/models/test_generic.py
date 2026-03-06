@@ -6,6 +6,7 @@ import hypothesis.strategies as st
 import jax.numpy as jnp
 import numpy as np
 from hypothesis import assume, given, settings
+from numpy.testing import assert_allclose, assert_array_less
 
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
 
@@ -86,14 +87,20 @@ class TestLCResonator(TwoPortModelTestSuite):
 
         # Second port is grounded, so S22 should be -1 (short reflection)
         s22 = result[("o2", "o2")]
-        assert jnp.allclose(s22, -1.0, atol=1e-10), (
-            f"S22 should be -1 for grounded port, got {s22}"
+        assert_allclose(
+            s22,
+            -1.0,
+            atol=1e-10,
+            err_msg=f"S22 should be -1 for grounded port, got {s22}",
         )
 
         # S21 should be zero (no transmission through ground)
         s21 = result[("o2", "o1")]
-        assert jnp.allclose(s21, 0.0, atol=1e-10), (
-            f"S21 should be 0 for grounded port, got {s21}"
+        assert_allclose(
+            s21,
+            0.0,
+            atol=1e-10,
+            err_msg=f"S21 should be 0 for grounded port, got {s21}",
         )
 
     @given(
@@ -156,8 +163,10 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
         s11 = result[("o1", "o1")]
         s21 = result[("o2", "o1")]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
-        assert jnp.all(total_power <= 1.0 + 1e-6), (
-            f"Passivity violated (col 1): max total power = {jnp.max(total_power)}"
+        assert_array_less(
+            total_power,
+            1.0 + 1e-6,
+            err_msg=f"Passivity violated (col 1): max total power = {jnp.max(total_power)}",
         )
 
     def test_with_inductance_only(self) -> None:
@@ -186,10 +195,8 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
         assert isinstance(result, dict), "Result should be a dictionary"
         assert len(result) == 4, "Should have 4 S-parameters"
 
-        for key, value in result.items():
-            assert jnp.all(jnp.isfinite(value)), (
-                f"All values for {key} should be finite"
-            )
+        for value in result.values():
+            assert jnp.isfinite(value).all()
 
     def test_resonance_frequency(self) -> None:
         """Test that the main resonance frequency is still approximately f_r = 1/(2*pi*sqrt(LC))."""
@@ -251,9 +258,17 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
         s11 = result[("o1", "o1")]
         s21 = result[("o2", "o1")]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
-        assert jnp.all(total_power <= 1.0 + 1e-6), "Passivity violated (col 1)"
+        assert_array_less(
+            total_power,
+            1.0 + 1e-6,
+            err_msg=f"Passivity violated (col 1): max total power = {jnp.max(total_power)}",
+        )
 
         s12 = result[("o1", "o2")]
         s22 = result[("o2", "o2")]
         total_power_col2 = jnp.abs(s12) ** 2 + jnp.abs(s22) ** 2
-        assert jnp.all(total_power_col2 <= 1.0 + 1e-6), "Passivity violated (col 2)"
+        assert_array_less(
+            total_power_col2,
+            1.0 + 1e-6,
+            err_msg=f"Passivity violated (col 2): max total power = {jnp.max(total_power_col2)}",
+        )

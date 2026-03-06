@@ -5,6 +5,7 @@ from typing import ClassVar, final
 import hypothesis.strategies as st
 import jax.numpy as jnp
 from hypothesis import given, settings
+from numpy.testing import assert_allclose, assert_array_less
 
 from qpdk.models.waveguides import launcher, straight, taper_cross_section
 from qpdk.tech import coplanar_waveguide
@@ -45,7 +46,11 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
         power_transmission = jnp.abs(s21) ** 2
         total_power = power_reflection + power_transmission
 
-        assert jnp.all(total_power <= 1.0 + 1e-6)
+        assert_array_less(
+            total_power,
+            1.0 + 1e-6,
+            err_msg=f"Passivity violated: max total power = {jnp.max(total_power)}",
+        )
 
     def test_identical_cross_sections(self) -> None:
         """Test that a taper with identical cross-sections behaves like a straight waveguide."""
@@ -61,9 +66,11 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
         s21_taper = taper_result[("o2", "o1")]
         s21_straight = straight_result[("o2", "o1")]
 
-        max_diff = jnp.max(jnp.abs(s21_taper - s21_straight))
-        assert max_diff < 1e-6, (
-            "Taper with same start/end CS should match straight waveguide"
+        assert_allclose(
+            s21_taper,
+            s21_straight,
+            atol=1e-6,
+            err_msg="Taper with same start/end CS should match straight waveguide",
         )
 
     def test_zero_length(self) -> None:
@@ -118,7 +125,11 @@ class TestLauncher(BaseModelTestSuite):
         power_reflection = jnp.abs(s11) ** 2
         power_transmission = jnp.abs(s21) ** 2
         total_power = power_reflection + power_transmission
-        assert jnp.all(total_power <= 1.0 + 1e-6)
+        assert_array_less(
+            total_power,
+            1.0 + 1e-6,
+            err_msg=f"Passivity violated: max total power = {jnp.max(total_power)}",
+        )
 
     def test_zero_length(self) -> None:
         """Test launcher with zero length (should be a through connection)."""

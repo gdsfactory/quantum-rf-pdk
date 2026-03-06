@@ -9,6 +9,7 @@ from typing import Any, ClassVar, cast
 
 import jax.numpy as jnp
 import sax
+from numpy.testing import assert_allclose, assert_array_less
 
 
 class BaseModelTestSuite:
@@ -146,10 +147,11 @@ class BaseModelTestSuite:
                 sji = result.get((port_j, port_i))
 
                 if sij is not None and sji is not None:
-                    max_diff = jnp.max(jnp.abs(sij - sji))
-                    assert max_diff < self.tolerance, (
-                        f"S[{port_i},{port_j}] and S[{port_j},{port_i}] should be equal, "
-                        f"max diff: {max_diff}"
+                    assert_allclose(
+                        sij,
+                        sji,
+                        atol=self.tolerance,
+                        err_msg=f"S[{port_i},{port_j}] and S[{port_j},{port_i}] should be equal",
                     )
 
     def test_passivity(self) -> None:
@@ -168,9 +170,10 @@ class BaseModelTestSuite:
             power_sum = sum(
                 jnp.abs(result.get((port_i, port_j), 0)) ** 2 for port_i in ports
             )
-            assert jnp.all(power_sum <= 1.0 + self.passivity_tolerance), (
-                f"Passivity violated for column {port_j}: "
-                f"max total power = {jnp.max(power_sum)}"
+            assert_array_less(
+                power_sum,
+                1.0 + self.passivity_tolerance,
+                err_msg=f"Passivity violated for column {port_j}: max total power = {jnp.max(power_sum)}",
             )
 
 

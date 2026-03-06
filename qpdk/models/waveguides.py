@@ -1,16 +1,19 @@
 """Waveguides."""
 
+from functools import partial
 from typing import cast
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
+from sax.models.rf import electrical_open, electrical_short
 from skrf import Frequency
 
-from qpdk.models.constants import DEFAULT_FREQUENCY
-from qpdk.models.generic import short_2_port
+from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
+from qpdk.models.generic import admittance, short_2_port
 from qpdk.models.media import cross_section_to_media
 from qpdk.tech import coplanar_waveguide
 
@@ -85,38 +88,193 @@ def straight_shorted(
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
 
 
-def airbridge(
-    f: ArrayLike = DEFAULT_FREQUENCY,
-    bridge_length: float = 30.0,
-    bridge_width: float = 8.0,
-    pad_width: float = 15.0,
-) -> sax.SDict:
-    """S-parameter model for an airbridge, wrapped to :func:`~straight`.
+def straight_open(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a straight waveguide with one open end.
 
-    TODO: add a constant loss channel for airbridge crossings.
+    Note:
+        The port ``o2`` is internally open-circuited and should not be used.
+        It is provided to match the number of ports in the layout component.
 
     Args:
         f: Array of frequency points in Hz
-        bridge_length: Length of the airbridge in µm.
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    kwargs = {
+        "f": jnp.asarray(f),
+        "length": jnp.asarray(length),
+        "cross_section": cross_section,
+    }
+    instances = {
+        "straight": straight(**kwargs),
+        "open": electrical_open(f=f, n_ports=2),
+    }
+    connections = {
+        "straight,o2": "open,o1",
+    }
+    ports = {
+        "o1": "straight,o1",
+        "o2": "open,o2",  # don't use: opened!
+    }
+    return sax.backends.evaluate_circuit_fg((connections, ports), instances)
+
+
+def straight_double_open(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SType:
+    """S-parameter model for a straight waveguide with open ends.
+
+    Note:
+        Ports ``o1`` and ``o2`` are internally open-circuited and should not be used.
+        They are provided to match the number of ports in the layout component.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    kwargs = {
+        "f": jnp.asarray(f),
+        "length": jnp.asarray(length),
+        "cross_section": cross_section,
+    }
+    instances = {
+        "straight": straight(**kwargs),
+        "open1": electrical_open(f=f, n_ports=2),
+        "open2": electrical_open(f=f, n_ports=2),
+    }
+    connections = {
+        "straight,o1": "open1,o1",
+        "straight,o2": "open2,o1",
+    }
+    ports = {
+        "o1": "open1,o2",  # don't use: opened!
+        "o2": "open2,o2",  # don't use: opened!
+    }
+    return sax.backends.evaluate_circuit_fg((connections, ports), instances)
+
+
+def tee(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+) -> sax.SType:
+    """S-parameter model for a 3-port tee junction.
+
+    This wraps the generic tee model.
+
+    Args:
+        f: Array of frequency points in Hz.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
+    """
+    from qpdk.models.generic import tee as _generic_tee
+
+    return _generic_tee(f=f)
+
+
+@partial(jax.jit, static_argnames=["west", "east", "north", "south"])
+def nxn(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    west: int = 1,
+    east: int = 1,
+    north: int = 1,
+    south: int = 1,
+) -> sax.SType:
+    """NxN junction model using tee components.
+
+    This model creates an N-port divider/combiner by chaining 3-port tee
+    junctions. All ports are connected to a single node.
+
+    Args:
+        f: Array of frequency points in Hz.
+        west: Number of ports on the west side.
+        east: Number of ports on the east side.
+        north: Number of ports on the north side.
+        south: Number of ports on the south side.
+
+    Returns:
+        sax.SType: S-parameters dictionary with ports o1, o2, ..., oN.
+    """
+    from qpdk.models.generic import tee as _generic_tee
+
+    f = jnp.asarray(f)
+    n_ports = west + east + north + south
+
+    if n_ports <= 0:
+        raise ValueError("Total number of ports must be positive.")
+    if n_ports == 1:
+        return electrical_open(f=f)
+    if n_ports == 2:
+        return electrical_short(f=f, n_ports=2)
+
+    instances = {f"tee_{i}": _generic_tee(f=f) for i in range(n_ports - 2)}
+    connections = {f"tee_{i},o3": f"tee_{i + 1},o1" for i in range(n_ports - 3)}
+
+    ports = {
+        "o1": "tee_0,o1",
+        "o2": "tee_0,o2",
+    }
+    for i in range(1, n_ports - 2):
+        ports[f"o{i + 2}"] = f"tee_{i},o2"
+
+    # Last tee's o3 is the last external port
+    ports[f"o{n_ports}"] = f"tee_{n_ports - 3},o3"
+
+    return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
+@partial(jax.jit, inline=True)
+def airbridge(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    cpw_width: sax.Float = 10.0,
+    bridge_width: sax.Float = 10.0,
+    airgap_height: sax.Float = 3.0,
+    loss_tangent: sax.Float = 1.2e-8,
+) -> sax.SType:
+    r"""S-parameter model for a superconducting CPW airbridge.
+
+    The airbridge is modeled as a lumped lossy shunt admittance (accounting for
+    dielectric loss and shunt capacitance) embedded between two sections of
+    transmission line that represent the physical footprint of the bridge.
+
+    Parallel plate capacitor model is as done in :cite:`chenFabricationCharacterizationAluminum2014`
+    The default value for the loss tangent :math:`\tan\,\delta` is also taken from there.
+
+    Args:
+        f: Array of frequency points in Hz
+        cpw_width: Width of the CPW center conductor in µm.
         bridge_width: Width of the airbridge in µm.
-        pad_width: Width of the landing pads in µm.
+        airgap_height: Height of the airgap in µm.
+        loss_tangent: Dielectric loss tangent of the supporting layer/residues.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    if pad_width <= bridge_width:
-        raise ValueError(
-            f"pad_width ({pad_width}) must be greater than bridge_width ({bridge_width})"
-        )
+    f = jnp.asarray(f)
+    ω = 2 * π * f
 
-    return straight(
-        f=f,
-        length=bridge_length,
-        cross_section=coplanar_waveguide(
-            width=bridge_width,
-            gap=(pad_width - bridge_width) / 2,
-        ),
-    )
+    # Parallel plate capacitance
+    c_pp = (ε_0 * cpw_width * 1e-6 * bridge_width * 1e-6) / (airgap_height * 1e-6)
+
+    # Heuristics: fringing capacitance assumed to be 20% of the parallel plate for small bridges.
+    c_bridge = c_pp * 1.2
+
+    # Admittance of the bridge (Conductance from dielectric loss + Susceptance)
+    Y_bridge = ω * c_bridge * (loss_tangent + 1j)
+
+    return admittance(f=f, y=Y_bridge)
 
 
 def tsv(
@@ -135,6 +293,24 @@ def tsv(
         sax.SDict: S-parameters dictionary
     """
     return straight(f=f, length=via_height)
+
+
+def indium_bump(
+    f: ArrayLike = DEFAULT_FREQUENCY,
+    bump_height: float = 10.0,
+) -> sax.SType:
+    """S-parameter model for an indium bump, wrapped to :func:`~straight`.
+
+    TODO: add a constant loss channel for indium bumps.
+
+    Args:
+        f: Array of frequency points in Hz
+        bump_height: Physical height (length) of the indium bump in µm.
+
+    Returns:
+        sax.SType: S-parameters dictionary
+    """
+    return straight(f=f, length=bump_height)
 
 
 def bend_circular(

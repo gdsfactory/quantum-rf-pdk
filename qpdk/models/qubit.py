@@ -4,7 +4,7 @@ This module provides LC resonator models for superconducting transmon qubits
 and coupled qubit systems. The models are based on the standard LC resonator
 formulation with appropriate grounding configurations.
 
-For double-island transmon qubits, we use an ungrounded LC resonator since
+For double-pad transmon qubits, we use an ungrounded LC resonator since
 the two islands are floating. For shunted transmon qubits, one island is
 grounded, so we use a grounded LC resonator.
 
@@ -28,16 +28,6 @@ from sax.models.rf import capacitor, electrical_short, tee
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
 from qpdk.models.waveguides import straight_shorted
-
-__all__ = [
-    "coupling_strength_to_capacitance",
-    "double_island_transmon",
-    "ec_to_capacitance",
-    "ej_to_inductance",
-    "qubit_with_resonator",
-    "shunted_transmon",
-    "transmon_coupled",
-]
 
 
 @partial(jax.jit, inline=True)
@@ -199,6 +189,57 @@ def double_island_transmon(
 
 
 @partial(jax.jit, inline=True)
+def double_island_transmon_with_bbox(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 7e-9,
+) -> sax.SType:
+    """LC resonator model for a double-island transmon qubit with bounding box ports.
+
+    This model is the same as :func:`double_island_transmon`.
+    """
+    return double_island_transmon(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+    )
+
+
+@partial(jax.jit, inline=True)
+def flipmon(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 7e-9,
+) -> sax.SType:
+    r"""LC resonator model for a flipmon qubit.
+
+    This model is identical to :func:`double_island_transmon`.
+    """
+    return double_island_transmon(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+    )
+
+
+@partial(jax.jit, inline=True)
+def flipmon_with_bbox(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 7e-9,
+) -> sax.SType:
+    """LC resonator model for a flipmon qubit with bounding box ports.
+
+    This model is the same as :func:`flipmon`.
+    """
+    return flipmon(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+    )
+
+
+@partial(jax.jit, inline=True)
 def shunted_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
@@ -288,7 +329,7 @@ def transmon_coupled(
         capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
         inductance: Josephson inductance :math:`L_J` in Henries.
         grounded: If True, the qubit is a shunted transmon (grounded).
-            If False, it is a double-island transmon (ungrounded).
+            If False, it is a double-pad transmon (ungrounded).
         coupling_capacitance: Coupling capacitance :math:`C_c` in Farads.
         coupling_inductance: Coupling inductance :math:`L_c` in Henries.
 
@@ -317,7 +358,7 @@ def qubit_with_resonator(
     r"""Model for a transmon qubit coupled to a quarter-wave resonator.
 
     This model corresponds to the layout function
-    :func:`~qpdk.cells.derived.transmon_with_resonator.qubit_with_resonator`.
+    :func:`~qpdk.cells.derived.transmon_with_resonator.transmon_with_resonator`.
 
     The model combines:
     - A transmon qubit (LC resonator)
@@ -410,6 +451,99 @@ def qubit_with_resonator(
         ports["o2"] = "qubit,o2"  # Qubit floating port
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
+def flipmon_with_resonator(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    qubit_capacitance: float = 100e-15,
+    qubit_inductance: float = 1e-9,
+    resonator_length: float = 5000.0,
+    resonator_cross_section: str = "cpw",
+    coupling_capacitance: float = 10e-15,
+) -> sax.SDict:
+    """Model for a flipmon qubit coupled to a quarter-wave resonator.
+
+    This model is identical to :func:`qubit_with_resonator` but the qubit is set to floating.
+    """
+    return qubit_with_resonator(
+        f=f,
+        qubit_capacitance=qubit_capacitance,
+        qubit_inductance=qubit_inductance,
+        qubit_grounded=False,  # Flipmon is ungrounded
+        resonator_length=resonator_length,
+        resonator_cross_section=resonator_cross_section,
+        coupling_capacitance=coupling_capacitance,
+    )
+
+
+def double_island_transmon_with_resonator(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    qubit_capacitance: float = 100e-15,
+    qubit_inductance: float = 1e-9,
+    resonator_length: float = 5000.0,
+    resonator_cross_section: str = "cpw",
+    coupling_capacitance: float = 10e-15,
+) -> sax.SDict:
+    """Model for a double-island transmon qubit coupled to a quarter-wave resonator.
+
+    This model is identical to :func:`qubit_with_resonator` but the qubit is set to floating.
+    """
+    return qubit_with_resonator(
+        f=f,
+        qubit_capacitance=qubit_capacitance,
+        qubit_inductance=qubit_inductance,
+        qubit_grounded=False,
+        resonator_length=resonator_length,
+        resonator_cross_section=resonator_cross_section,
+        coupling_capacitance=coupling_capacitance,
+    )
+
+
+def transmon_with_resonator(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    qubit_capacitance: float = 100e-15,
+    qubit_inductance: float = 1e-9,
+    qubit_grounded: bool = False,
+    resonator_length: float = 5000.0,
+    resonator_cross_section: str = "cpw",
+    coupling_capacitance: float = 10e-15,
+) -> sax.SDict:
+    """Model for a transmon qubit coupled to a quarter-wave resonator.
+
+    This model is identical to :func:`qubit_with_resonator`.
+    """
+    return qubit_with_resonator(
+        f=f,
+        qubit_capacitance=qubit_capacitance,
+        qubit_inductance=qubit_inductance,
+        qubit_grounded=qubit_grounded,
+        resonator_length=resonator_length,
+        resonator_cross_section=resonator_cross_section,
+        coupling_capacitance=coupling_capacitance,
+    )
+
+
+@partial(jax.jit, inline=True)
+def xmon_transmon(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 7e-9,
+) -> sax.SType:
+    """LC resonator model for an Xmon style transmon qubit.
+
+    An Xmon transmon is typically shunted, so this model wraps :func:`shunted_transmon`.
+    """
+    return shunted_transmon(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+    )
+
+
+# Aliases for backward compatibility or to match cell naming
+double_pad_transmon = double_island_transmon
+double_pad_transmon_with_bbox = double_island_transmon_with_bbox
+double_pad_transmon_with_resonator = double_island_transmon_with_resonator
 
 
 if __name__ == "__main__":

@@ -7,8 +7,8 @@ import pytest
 from hypothesis import HealthCheck, assume, given, settings
 
 from qpdk.cells.derived.transmon_with_resonator import (
+    double_pad_transmon_with_resonator,
     flipmon_with_resonator,
-    transmon_with_resonator,
 )
 from qpdk.cells.resonator import resonator, resonator_coupled
 from qpdk.cells.waveguides import bend_circular
@@ -127,7 +127,7 @@ class TestQubitWithResonator:
 
     def test_transmon_with_resonator_defaults(self) -> None:
         """Test transmon_with_resonator with default parameters."""
-        c = transmon_with_resonator()
+        c = double_pad_transmon_with_resonator()
 
         assert c is not None, (
             "Transmon-resonator component should be created successfully"
