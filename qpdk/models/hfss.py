@@ -320,7 +320,6 @@ def add_substrate_to_hfss(
     hfss: Hfss,
     component: Component,
     *,
-    margin: float = 50.0,
     thickness: float = 500.0,
     material: str = "silicon",
 ) -> str:
@@ -329,7 +328,6 @@ def add_substrate_to_hfss(
     Args:
         hfss: The HFSS application instance.
         component: The component to create substrate for (used for dimensions).
-        margin: Extra margin around the component bounds in micrometers.
         thickness: Substrate thickness in micrometers.
         material: Substrate material name.
 
@@ -337,8 +335,8 @@ def add_substrate_to_hfss(
         Name of the created substrate object.
     """
     bounds = component.bbox()
-    x_min, y_min = bounds.p1.x - margin, bounds.p1.y - margin
-    x_max, y_max = bounds.p2.x + margin, bounds.p2.y + margin
+    x_min, y_min = bounds.p1.x, bounds.p1.y
+    x_max, y_max = bounds.p2.x, bounds.p2.y
 
     substrate = hfss.modeler.create_box(
         origin=[x_min, y_min, -thickness],
@@ -353,7 +351,6 @@ def add_air_region_to_hfss(
     hfss: Hfss,
     component: Component,
     *,
-    margin: float = 100.0,
     height: float = 500.0,
     substrate_thickness: float = 500.0,
 ) -> str:
@@ -366,7 +363,6 @@ def add_air_region_to_hfss(
     Args:
         hfss: The HFSS application instance.
         component: The component to create air region around.
-        margin: Horizontal margin around the component in micrometers.
         height: Height above the component in micrometers.
         substrate_thickness: Depth below surface for the region.
 
@@ -374,8 +370,8 @@ def add_air_region_to_hfss(
         Name of the created region object.
     """
     bounds = component.bbox()
-    x_min, y_min = bounds.p1.x - margin, bounds.p1.y - margin
-    x_max, y_max = bounds.p2.x + margin, bounds.p2.y + margin
+    x_min, y_min = bounds.p1.x, bounds.p1.y
+    x_max, y_max = bounds.p2.x, bounds.p2.y
 
     region = hfss.modeler.create_box(
         origin=[x_min, y_min, -substrate_thickness],

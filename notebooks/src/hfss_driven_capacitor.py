@@ -230,7 +230,7 @@ if HFSS_AVAILABLE:
     print("Creating lumped ports at component port locations:")
     port_objects = []
 
-    for i, (port_name, port_info) in enumerate(port_locations.items(), 1):
+    for i, (_port_name, port_info) in enumerate(port_locations.items(), 1):
         center = port_info["center"]
         orientation = port_info["orientation"]
 
@@ -246,7 +246,7 @@ if HFSS_AVAILABLE:
             port_rect = hfss.modeler.create_rectangle(
                 origin=[center[0], center[1] - port_height / 2, 0],
                 sizes=[metal_thickness, port_height],
-                cs_plane="XZ" if abs(orientation) < 45 else "XZ",
+                cs_plane="YZ",
                 name=f"PortFace_{i}",
             )
         else:
@@ -254,7 +254,7 @@ if HFSS_AVAILABLE:
             port_rect = hfss.modeler.create_rectangle(
                 origin=[center[0] - port_height / 2, center[1], 0],
                 sizes=[port_height, metal_thickness],
-                cs_plane="YZ",
+                cs_plane="XZ",
                 name=f"PortFace_{i}",
             )
 
