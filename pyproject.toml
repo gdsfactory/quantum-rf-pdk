@@ -16,6 +16,7 @@ classifiers = [
 dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.37.0"]
 
 [project.optional-dependencies]
+gdsfactoryplus = ["gdsfactoryplus"]
 models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
@@ -59,6 +60,9 @@ build-backend = "uv_build"
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
 skip = "bibliography.bib"
+
+[tool.gdsfactoryplus]
+name = "qpdk"
 
 [tool.gdsfactoryplus]
 name = "qpdk"
