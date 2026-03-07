@@ -8,28 +8,28 @@ the functions compose freely with JAX transformations (``jit``, ``grad``,
 
 CPW Theory
 ----------
-The quasi‑static CPW analysis follows the conformal‑mapping approach
+The quasi-static CPW analysis follows the conformal-mapping approach
 described by Simons :cite:`simonsCoplanarWaveguideCircuits2001` (ch. 2) and
 Ghione & Naldi :cite:`ghioneAnalyticalFormulasCoplanar1984`.
-Conductor thickness corrections use the first‑order formulae of
+Conductor thickness corrections use the first-order formulae of
 Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
-(§7.5, Eqs. 7.98–7.100).
+(§7.5, Eqs. 7.98-7.100).
 
 Microstrip Theory
 -----------------
-The microstrip analysis uses the Hammerstad–Jensen
-:cite:`hammerstadAccurateModelsComputer1980` closed‑form expressions for
+The microstrip analysis uses the Hammerstad-Jensen
+:cite:`hammerstadAccurateModelsComputer1980` closed-form expressions for
 effective permittivity and characteristic impedance, as presented in
 Pozar :cite:`m.pozarMicrowaveEngineering2012` (ch. 3, §3.8).
 
 General
 -------
-The ABCD‑to‑S‑parameter conversion is the standard microwave‑network
+The ABCD-to-S-parameter conversion is the standard microwave-network
 relation from Pozar :cite:`m.pozarMicrowaveEngineering2012` (ch. 4).
 
-The implementation was cross‑checked against the Qucs‑S model
+The implementation was cross-checked against the Qucs-S model
 (see `Qucs technical documentation`_, §12.4 for CPW, §12.1 for microstrip)
-and the ``scikit‑rf`` :class:`~skrf.media.cpw.CPW` class.
+and the ``scikit-rf`` :class:`~skrf.media.cpw.CPW` class.
 
 .. _Qucs technical documentation:
    https://qucs.sourceforge.net/docs/technical/technical.pdf
@@ -62,7 +62,7 @@ r"""Impedance of free space :math:`\sqrt{\mu_0/\varepsilon_0}` (Ω)."""
 
 
 # ---------------------------------------------------------------------------
-# Low‑level helpers
+# Low-level helpers
 # ---------------------------------------------------------------------------
 
 
@@ -71,7 +71,7 @@ def _ellipk_ratio(m: ArrayLike) -> jax.Array:
     r"""Ratio of complete elliptic integrals :math:`K(m)/K(1-m)`.
 
     Args:
-        m: Elliptic‑integral parameter (squared modulus :math:`k^2`).
+        m: Elliptic-integral parameter (squared modulus :math:`k^2`).
     """
     return jaxellip.ellipk(m) / jaxellip.ellipk(1.0 - m)
 
@@ -88,10 +88,10 @@ def cpw_epsilon_eff(
     h: ArrayLike,
     ep_r: ArrayLike,
 ) -> jax.Array:
-    r"""Effective permittivity of a CPW on a finite‑height substrate.
+    r"""Effective permittivity of a CPW on a finite-height substrate.
 
     Uses conformal mapping
-    (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, Eq. 2.2.20–2.2.22;
+    (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, Eq. 2.2.20-2.2.22;
     Ghione & Naldi :cite:`ghioneAnalyticalFormulasCoplanar1984`):
 
     .. math::
@@ -108,7 +108,7 @@ def cpw_epsilon_eff(
     the *parameter* convention (:math:`m = k^2`).
 
     Args:
-        w: Centre‑conductor width (m).
+        w: Centre-conductor width (m).
         s: Gap to ground plane (m).
         h: Substrate height (m).
         ep_r: Relative permittivity of the substrate.
@@ -121,13 +121,11 @@ def cpw_epsilon_eff(
     h = jnp.asarray(h, dtype=float)
     ep_r = jnp.asarray(ep_r, dtype=float)
 
-    # Free‑space modulus
+    # Free-space modulus
     k0 = w / (w + 2.0 * s)
 
-    # Substrate‑corrected modulus
-    k1 = jnp.sinh(jnp.pi * w / (4.0 * h)) / jnp.sinh(
-        jnp.pi * (w + 2.0 * s) / (4.0 * h)
-    )
+    # Substrate-corrected modulus
+    k1 = jnp.sinh(jnp.pi * w / (4.0 * h)) / jnp.sinh(jnp.pi * (w + 2.0 * s) / (4.0 * h))
 
     # Filling factor q₁ = [K(k₁)/K(k₁')] / [K(k₀)/K(k₀')]
     q1 = _ellipk_ratio(k1**2) / _ellipk_ratio(k0**2)
@@ -152,7 +150,7 @@ def cpw_z0(
     (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, Eq. 2.2.14.)
 
     Args:
-        w: Centre‑conductor width (m).
+        w: Centre-conductor width (m).
         s: Gap to ground plane (m).
         ep_eff: Effective permittivity (see :func:`cpw_epsilon_eff`).
 
@@ -176,9 +174,9 @@ def cpw_thickness_correction(
 ) -> tuple[jax.Array, jax.Array]:
     r"""Apply conductor thickness correction to CPW ε_eff and Z₀.
 
-    First‑order correction from
+    First-order correction from
     Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
-    (§7.5, Eqs. 7.98–7.100):
+    (§7.5, Eqs. 7.98-7.100):
 
     .. math::
 
@@ -194,13 +192,13 @@ def cpw_thickness_correction(
                          K(k_e^2)/K(1-k_e^2)}
 
     Args:
-        w: Centre‑conductor width (m).
+        w: Centre-conductor width (m).
         s: Gap to ground plane (m).
         t: Conductor thickness (m).
         ep_eff: Uncorrected effective permittivity.
 
     Returns:
-        ``(ep_eff_t, z0_t)`` — thickness‑corrected effective permittivity
+        ``(ep_eff_t, z0_t)`` — thickness-corrected effective permittivity
         and characteristic impedance (Ω).
     """
     w = jnp.asarray(w, dtype=float)
@@ -240,9 +238,9 @@ def microstrip_epsilon_eff(
 ) -> jax.Array:
     r"""Effective permittivity of a microstrip line.
 
-    Uses the Hammerstad–Jensen
+    Uses the Hammerstad-Jensen
     :cite:`hammerstadAccurateModelsComputer1980` formula as given in
-    Pozar :cite:`m.pozarMicrowaveEngineering2012` (Eq. 3.195–3.196):
+    Pozar :cite:`m.pozarMicrowaveEngineering2012` (Eq. 3.195-3.196):
 
     .. math::
 
@@ -283,9 +281,9 @@ def microstrip_z0(
 ) -> jax.Array:
     r"""Characteristic impedance of a microstrip line.
 
-    Uses the Hammerstad–Jensen
+    Uses the Hammerstad-Jensen
     :cite:`hammerstadAccurateModelsComputer1980` approximation as given in
-    Pozar :cite:`m.pozarMicrowaveEngineering2012` (Eq. 3.197–3.198):
+    Pozar :cite:`m.pozarMicrowaveEngineering2012` (Eq. 3.197-3.198):
 
     .. math::
 
@@ -318,9 +316,7 @@ def microstrip_z0(
 
     # Wide strip (w/h >= 1)
     z_wide = (
-        120.0
-        * jnp.pi
-        / (jnp.sqrt(ep_eff) * (u + 1.393 + 0.667 * jnp.log(u + 1.444)))
+        120.0 * jnp.pi / (jnp.sqrt(ep_eff) * (u + 1.393 + 0.667 * jnp.log(u + 1.444)))
     )
 
     return jnp.where(u <= 1.0, z_narrow, z_wide)
@@ -336,7 +332,7 @@ def microstrip_thickness_correction(
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
     r"""Conductor thickness correction for a microstrip line.
 
-    Uses the widely‑adopted Schneider correction as presented in
+    Uses the widely-adopted Schneider correction as presented in
     Pozar :cite:`m.pozarMicrowaveEngineering2012` (§3.8) and
     Gupta et al. :cite:`guptaMicrostripLinesSlotlines1996` (§2.2.4):
 
@@ -361,7 +357,7 @@ def microstrip_thickness_correction(
 
     Returns:
         ``(w_eff, ep_eff_t, z0_t)`` — effective width (m),
-        thickness‑corrected effective permittivity,
+        thickness-corrected effective permittivity,
         and characteristic impedance (Ω).
     """
     w = jnp.asarray(w, dtype=float)
@@ -386,7 +382,7 @@ def microstrip_thickness_correction(
 
 
 # ===================================================================
-# Common: propagation & S‑parameters
+# Common: propagation & S-parameters
 # ===================================================================
 
 
@@ -397,7 +393,7 @@ def propagation_constant(
     tand: ArrayLike = 0.0,
     ep_r: ArrayLike = 1.0,
 ) -> jax.Array:
-    r"""Complex propagation constant of a quasi‑TEM transmission line.
+    r"""Complex propagation constant of a quasi-TEM transmission line.
 
     For the general lossy case
     (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, §2.2.4):
@@ -457,7 +453,7 @@ def propagation_constant(
     return alpha_d + 1j * beta
 
 
-# Keep backward‑compatible alias
+# Keep backward-compatible alias
 cpw_gamma = propagation_constant
 
 
@@ -468,7 +464,7 @@ def transmission_line_s_params(
     length: ArrayLike,
     z_ref: ArrayLike | None = None,
 ) -> tuple[jax.Array, jax.Array]:
-    r"""S‑parameters of a uniform transmission line (ABCD→S conversion).
+    r"""S-parameters of a uniform transmission line (ABCD→S conversion).
 
     The ABCD matrix of a line with characteristic impedance :math:`Z_0`,
     propagation constant :math:`\gamma`, and length :math:`\ell` is
@@ -481,7 +477,7 @@ def transmission_line_s_params(
             \sinh\theta / Z_0 & \cosh\theta
           \end{pmatrix}, \quad \theta = \gamma\,\ell.
 
-    Converting to S‑parameters referenced to :math:`Z_{\mathrm{ref}}`
+    Converting to S-parameters referenced to :math:`Z_{\mathrm{ref}}`
     (Pozar :cite:`m.pozarMicrowaveEngineering2012`, Table 4.2):
 
     .. math::
@@ -502,7 +498,7 @@ def transmission_line_s_params(
         z_ref: Reference (port) impedance (Ω).  Defaults to ``z0``.
 
     Returns:
-        ``(S11, S21)`` — complex S‑parameter arrays.
+        ``(S11, S21)`` — complex S-parameter arrays.
     """
     gamma = jnp.asarray(gamma, dtype=complex)
     z0 = jnp.asarray(z0, dtype=complex)

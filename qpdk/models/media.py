@@ -34,7 +34,7 @@ def cpw_media_skrf(width: float, gap: float) -> MediaCallable:
 
     .. deprecated::
         Prefer :func:`cpw_parameters` or the functions in
-        :mod:`qpdk.models.cpw` for JAX‑jittable analysis.
+        :mod:`qpdk.models.cpw` for JAX-jittable analysis.
 
     Args:
         width: Width of the center conductor in μm.
@@ -96,7 +96,7 @@ def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
 
     .. deprecated::
         Prefer :func:`cpw_parameters` or the functions in
-        :mod:`qpdk.models.cpw` for JAX‑jittable analysis.
+        :mod:`qpdk.models.cpw` for JAX-jittable analysis.
 
     This function assumes the cross-section to have Sections similarly
     to :func:`qpdk.tech.coplanar_waveguide`. Namely, the primary width corresponds
@@ -114,7 +114,7 @@ def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
 
 
 # ---------------------------------------------------------------------------
-# JAX‑native helpers (no scikit‑rf dependency)
+# JAX-native helpers (no scikit-rf dependency)
 # ---------------------------------------------------------------------------
 
 
@@ -128,9 +128,9 @@ def get_cpw_substrate_params() -> tuple[float, float, float]:
     """
     h = LAYER_STACK.layers["Substrate"].thickness  # µm
     t = LAYER_STACK.layers["M1"].thickness  # µm
-    ep_r = material_properties[
-        cast(str, LAYER_STACK.layers["Substrate"].material)
-    ]["relative_permittivity"]
+    ep_r = material_properties[cast(str, LAYER_STACK.layers["Substrate"].material)][
+        "relative_permittivity"
+    ]
     return float(h), float(t), float(ep_r)
 
 
@@ -141,16 +141,16 @@ def cpw_parameters(
 ) -> tuple[float, float]:
     r"""Compute effective permittivity and characteristic impedance for a CPW.
 
-    Uses the JAX‑jittable functions from :mod:`qpdk.models.cpw` with the
+    Uses the JAX-jittable functions from :mod:`qpdk.models.cpw` with the
     PDK layer stack (substrate height, conductor thickness, material
     permittivity).
 
     Conductor thickness corrections follow
     Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
-    (§7.5, Eqs. 7.98–7.100).
+    (§7.5, Eqs. 7.98-7.100).
 
     Args:
-        width: Centre‑conductor width in µm.
+        width: Centre-conductor width in µm.
         gap: Gap between centre conductor and ground plane in µm.
 
     Returns:
@@ -180,12 +180,12 @@ def cpw_z0_from_cross_section(
     cross_section: CrossSectionSpec,
     f: ArrayLike | None = None,
 ) -> jnp.ndarray:
-    """Characteristic impedance of a CPW defined by a layout cross‑section.
+    """Characteristic impedance of a CPW defined by a layout cross-section.
 
     Args:
-        cross_section: A gdsfactory cross‑section specification.
+        cross_section: A gdsfactory cross-section specification.
         f: Frequency array (Hz). Used only to determine the output shape;
-           the impedance is frequency‑independent in the quasi‑static model.
+           the impedance is frequency-independent in the quasi-static model.
 
     Returns:
         Characteristic impedance broadcast to the shape of *f* (Ω).
@@ -199,8 +199,10 @@ def cpw_z0_from_cross_section(
     return z0
 
 
-def cpw_ep_r_from_cross_section(cross_section: CrossSectionSpec) -> float:
-    """Substrate relative permittivity for a given cross‑section.
+def cpw_ep_r_from_cross_section(
+    cross_section: CrossSectionSpec,  # noqa: ARG001
+) -> float:
+    """Substrate relative permittivity for a given cross-section.
 
     Args:
         cross_section: A gdsfactory cross-section specification (unused,

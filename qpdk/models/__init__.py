@@ -18,6 +18,17 @@ from qpdk.models.couplers import (
     coupler_straight,
     cpw_cpw_coupling_capacitance,
 )
+from qpdk.models.cpw import (
+    cpw_epsilon_eff,
+    cpw_gamma,
+    cpw_thickness_correction,
+    cpw_z0,
+    microstrip_epsilon_eff,
+    microstrip_thickness_correction,
+    microstrip_z0,
+    propagation_constant,
+    transmission_line_s_params,
+)
 from qpdk.models.generic import (
     admittance,
     capacitor,
@@ -32,17 +43,6 @@ from qpdk.models.generic import (
     open,
     short,
     short_2_port,
-)
-from qpdk.models.cpw import (
-    cpw_epsilon_eff,
-    cpw_gamma,
-    cpw_thickness_correction,
-    cpw_z0,
-    microstrip_epsilon_eff,
-    microstrip_thickness_correction,
-    microstrip_z0,
-    propagation_constant,
-    transmission_line_s_params,
 )
 from qpdk.models.media import (
     MediaCallable,
@@ -89,6 +89,7 @@ from qpdk.models.waveguides import (
     rectangle,
     straight,
     straight_double_open,
+    straight_microstrip,
     straight_open,
     straight_shorted,
     taper_cross_section,
@@ -109,7 +110,6 @@ __all__ = [
     "coupler_straight",
     "coupling_strength_to_capacitance",
     "cpw_cpw_coupling_capacitance",
-    "cpw_effective_dimensions",
     "cpw_epsilon_eff",
     "cpw_gamma",
     "cpw_media_skrf",
@@ -163,12 +163,13 @@ __all__ = [
     "squid_junction",
     "straight",
     "straight_double_open",
+    "straight_microstrip",
     "straight_open",
     "straight_shorted",
     "taper_cross_section",
     "tee",
-    "transmon_coupled",
     "transmission_line_s_params",
+    "transmon_coupled",
     "transmon_with_resonator",
     "tsv",
     "xmon_transmon",

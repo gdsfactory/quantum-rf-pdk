@@ -105,7 +105,7 @@ def cpw_cpw_coupling_capacitance(
     Returns:
         The total coupling capacitance in Farads.
     """
-    f_arr = jnp.asarray(f)
+    f_arr = jnp.asarray(f)  # noqa: F841
     ep_r = cpw_ep_r_from_cross_section(cross_section)
 
     try:
@@ -159,7 +159,6 @@ def coupler_straight(
         o1──────▼───────o4
     """
     f = jnp.asarray(f)
-    f_flat = f.ravel()
     straight_settings = {"length": length / 2, "cross_section": cross_section}
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(f, length, gap, cross_section),

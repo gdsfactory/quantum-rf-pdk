@@ -6,8 +6,8 @@ from gdsfactory.typings import CrossSectionSpec
 from sax.models.rf import capacitor, electrical_open, electrical_short, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
-from qpdk.models.cpw import c_0
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
+from qpdk.models.cpw import c_0
 from qpdk.models.media import (
     cpw_parameters,
     cpw_z0_from_cross_section,
@@ -87,7 +87,6 @@ def resonator_coupled(
         sax.SDict: S-parameters dictionary with 4 ports.
     """
     f_arr = jnp.asarray(f)
-    f_flat = f_arr.ravel()
 
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(
@@ -169,7 +168,7 @@ def resonator_frequency(
         length: Length of the resonator in μm.
         epsilon_eff: Effective permittivity.  If ``None`` (default),
             computed from *cross_section* using :func:`~qpdk.models.media.cpw_parameters`.
-        cross_section: Cross‑section specification (used only when
+        cross_section: Cross-section specification (used only when
             *epsilon_eff* is not provided).
         is_quarter_wave: If True, calculates for a quarter-wave resonator; if False, for a half-wave resonator.
             default is True.
