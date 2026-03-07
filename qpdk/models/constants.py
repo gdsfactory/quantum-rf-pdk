@@ -9,6 +9,7 @@ TEST_FREQUENCY: tuple[tuple[float, float, float], tuple[float, float, float]] = 
 )
 
 Φ_0 = scipy.constants.physical_constants["mag. flux quantum"][0]
+c_0 = scipy.constants.speed_of_light
 e = scipy.constants.e
 h = scipy.constants.h
 ε_0 = scipy.constants.epsilon_0
