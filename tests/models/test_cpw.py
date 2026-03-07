@@ -399,9 +399,7 @@ class TestStraightMicrostrip(TwoPortModelTestSuite):
 
     def test_jit_compatible(self) -> None:
         """Microstrip straight model can be JIT-compiled."""
-        jitted = jax.jit(
-            lambda f, length: straight_microstrip(f=f, length=length)
-        )
+        jitted = jax.jit(lambda f, length: straight_microstrip(f=f, length=length))
         f = jnp.array([5e9])
         result = jitted(f, 1000.0)
         assert jnp.isfinite(result[("o1", "o2")])

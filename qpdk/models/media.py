@@ -202,11 +202,17 @@ def cpw_z0_from_cross_section(
 def cpw_ep_r_from_cross_section(
     cross_section: CrossSectionSpec,  # noqa: ARG001
 ) -> float:
-    """Substrate relative permittivity for a given cross-section.
+    r"""Substrate relative permittivity for a given cross-section.
+
+    .. note::
+        The substrate permittivity is determined by the PDK layer stack
+        (``LAYER_STACK["Substrate"]``), not by the cross-section geometry.
+        All CPW cross-sections on the same substrate share the same
+        :math:`\varepsilon_r`.  The *cross_section* parameter is accepted
+        for API symmetry with :func:`cpw_z0_from_cross_section`.
 
     Args:
-        cross_section: A gdsfactory cross-section specification (unused,
-            but kept for API symmetry).
+        cross_section: A gdsfactory cross-section specification.
 
     Returns:
         Relative permittivity of the substrate.

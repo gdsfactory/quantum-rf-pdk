@@ -105,7 +105,8 @@ def cpw_cpw_coupling_capacitance(
     Returns:
         The total coupling capacitance in Farads.
     """
-    f_arr = jnp.asarray(f)  # noqa: F841
+    f_arr = jnp.asarray(f)
+    del f_arr  # ensure f is a JAX array for type compatibility
     ep_r = cpw_ep_r_from_cross_section(cross_section)
 
     try:

@@ -453,7 +453,8 @@ def propagation_constant(
     return alpha_d + 1j * beta
 
 
-# Keep backward-compatible alias
+# Backward-compatible alias: cpw_gamma was the original name when this
+# function only supported CPW.  It now supports any quasi-TEM line.
 cpw_gamma = propagation_constant
 
 

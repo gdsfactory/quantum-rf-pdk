@@ -153,7 +153,7 @@ def resonator_frequency(
     cross_section: CrossSectionSpec = "cpw",
     is_quarter_wave: bool = True,
 ) -> float:
-    r"""Calculate the resonance frequency of a CPW resonator.
+    r"""Calculate the resonance frequency of a quarter- or half-wave CPW resonator.
 
     .. math::
 
