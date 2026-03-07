@@ -11,7 +11,6 @@ from gdsfactory.cross_section import get_cross_sections
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
 
-import qpdk.samples
 from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
 from qpdk.tech import (
@@ -56,18 +55,27 @@ def get_pdk() -> Pdk:
 
 PDK = get_pdk()
 
-# Get all functions from qpdk.samples module that are component generators
-sample_functions = {
-    f"{modname}.{name}": obj
-    for importer, modname, ispkg in pkgutil.walk_packages(
-        qpdk.samples.__path__, qpdk.samples.__name__ + "."
+try:
+    import qpdk.samples
+
+    # Get all functions from qpdk.samples module that are component generators
+    sample_functions = {
+        f"{modname}.{name}": obj
+        for importer, modname, ispkg in pkgutil.walk_packages(
+            qpdk.samples.__path__, qpdk.samples.__name__ + "."
+        )
+        for name, obj in inspect.getmembers(importlib.import_module(modname))
+        if (inspect.isfunction(obj) or isinstance(obj, partial))
+        and not name.startswith("_")
+        # Compare .func if exists (for partials), otherwise obj itself
+        and getattr(obj, "func", obj).__module__ == modname
+    }
+except ImportError as e:
+    logger.info(
+        "QPDK samples (qpdk.samples) not found. No sample functions will be available."
     )
-    for name, obj in inspect.getmembers(importlib.import_module(modname))
-    if (inspect.isfunction(obj) or isinstance(obj, partial))
-    and not name.startswith("_")
-    # Compare .func if exists (for partials), otherwise obj itself
-    and getattr(obj, "func", obj).__module__ == modname
-}
+    logger.debug(f"Reason for missing samples: {e!r}")
+    sample_functions = {}
 
 __all__ = [
     "LAYER",

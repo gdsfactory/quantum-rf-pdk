@@ -16,7 +16,7 @@ from gdsfactory.typings import ComponentFactory
 from kfactory import LayerEnum
 from pytest_regressions.data_regression import DataRegressionFixture
 
-import qpdk.samples
+import qpdk
 from qpdk import PDK
 from qpdk.config import PATH
 from qpdk.helper import denest_layerviews_to_layer_tuples
