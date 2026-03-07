@@ -80,7 +80,7 @@ circuit_fn, circuit_info = sax.circuit(
 # %% [markdown]
 # ## Simulate
 #
-# Evaluate the circuit over the 3–7 GHz band.  The four external ports
+# Evaluate the circuit over the 5–9 GHz band.  The four external ports
 # correspond to the four launchers:
 #
 # | Port | Launcher | Probeline |
@@ -95,7 +95,7 @@ circuit_fn, circuit_info = sax.circuit(
 # coupling gap of 16 µm.
 
 # %%
-freq = jnp.linspace(3e9, 7e9, 2001)
+freq = jnp.linspace(5e9, 9e9, 5001)
 s_params = circuit_fn(f=freq)
 
 freq_ghz = freq / 1e9
