@@ -4,9 +4,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import sax
-import skrf
 from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
@@ -16,7 +14,7 @@ from qpdk.models.math import (
     ellipk_ratio,
     epsilon_eff,
 )
-from qpdk.models.media import cross_section_to_media
+from qpdk.models.media import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
 
 
 @partial(jax.jit, inline=True)
@@ -133,12 +131,8 @@ def plate_capacitor(
         sax.SDict: S-parameters dictionary
     """
     f_arr = jnp.asarray(f)
-    media = cross_section_to_media(cross_section)
-    media_instance = media(
-        frequency=skrf.Frequency.from_f(np.atleast_1d(np.asarray(f_arr)))
-    )
-    z0 = media_instance.z0
-    ep_r = float(media_instance.ep_r)
+    z0 = cpw_z0_from_cross_section(cross_section, f_arr)
+    ep_r = cpw_ep_r_from_cross_section(cross_section)
     capacitance = plate_capacitor_capacitance_analytical(
         length=length, width=width, gap=gap, ep_r=ep_r
     )
@@ -168,12 +162,8 @@ def interdigital_capacitor(
         sax.SDict: S-parameters dictionary
     """
     f_arr = jnp.asarray(f)
-    media = cross_section_to_media(cross_section)
-    media_instance = media(
-        frequency=skrf.Frequency.from_f(np.atleast_1d(np.asarray(f_arr)))
-    )
-    z0 = media_instance.z0
-    ep_r = float(media_instance.ep_r)
+    z0 = cpw_z0_from_cross_section(cross_section, f_arr)
+    ep_r = cpw_ep_r_from_cross_section(cross_section)
     capacitance = interdigital_capacitor_capacitance_analytical(
         fingers=fingers,
         finger_length=finger_length,
