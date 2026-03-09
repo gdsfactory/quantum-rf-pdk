@@ -36,8 +36,8 @@ def straight(
     Computes S-parameters analytically using conformal-mapping CPW theory
     following Simons :cite:`simonsCoplanarWaveguideCircuits2001` (ch. 2)
     and the Qucs-S CPW model (`Qucs technical documentation`_, §12.4).
-    Conductor thickness corrections use
-    Heinrich :cite:`heinrichQuasiTEMDescriptionMMIC1993`.
+    Conductor thickness corrections use the first-order model of
+    Gupta, Garg, Bahl, and Bhartia :cite:`guptaMicrostripLinesSlotlines1996`.
 
     The propagation constant and characteristic impedance are evaluated
     with pure-JAX functions (see :mod:`qpdk.models.cpw`) so the model

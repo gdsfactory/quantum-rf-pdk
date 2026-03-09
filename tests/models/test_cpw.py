@@ -25,10 +25,6 @@ from qpdk.models.waveguides import straight, straight_microstrip
 
 from .base import TwoPortModelTestSuite
 
-# ---------------------------------------------------------------------------
-# ellipk_ratio tests
-# ---------------------------------------------------------------------------
-
 
 class TestEllipkRatio:
     """Tests for the elliptic integral ratio K(m)/K(1-m)."""
@@ -51,11 +47,6 @@ class TestEllipkRatio:
     def test_positive(self, m: float) -> None:
         """Ratio should always be positive for 0 < m < 1."""
         assert float(_ellipk_ratio(m)) > 0
-
-
-# ---------------------------------------------------------------------------
-# CPW ε_eff tests
-# ---------------------------------------------------------------------------
 
 
 class TestCPWEpsilonEff:
@@ -92,11 +83,6 @@ class TestCPWEpsilonEff:
         assert jnp.isfinite(result)
 
 
-# ---------------------------------------------------------------------------
-# CPW Z0 tests
-# ---------------------------------------------------------------------------
-
-
 class TestCPWZ0:
     """Tests for CPW characteristic impedance."""
 
@@ -125,11 +111,6 @@ class TestCPWZ0:
         assert jnp.isfinite(result)
 
 
-# ---------------------------------------------------------------------------
-# CPW thickness correction tests
-# ---------------------------------------------------------------------------
-
-
 class TestCPWThicknessCorrection:
     """Tests for GGBB96 conductor thickness correction."""
 
@@ -155,11 +136,6 @@ class TestCPWThicknessCorrection:
         ep_eff, z0 = cpw_parameters(10.0, 6.0)
         assert_allclose(z0, 49.28, rtol=0.002)  # ~0.2% tolerance
         assert_allclose(ep_eff, 6.065, rtol=0.001)
-
-
-# ---------------------------------------------------------------------------
-# Propagation constant tests
-# ---------------------------------------------------------------------------
 
 
 class TestPropagationConstant:
@@ -194,11 +170,6 @@ class TestPropagationConstant:
             2.0 * float(jnp.imag(g1)),
             rtol=1e-8,
         )
-
-
-# ---------------------------------------------------------------------------
-# Transmission line S-parameter tests
-# ---------------------------------------------------------------------------
 
 
 class TestTransmissionLineSParams:
@@ -237,11 +208,6 @@ class TestTransmissionLineSParams:
         _, s21 = transmission_line_s_params(gamma, 50.0, 0.02, z_ref=75.0)
         # S12 = S21 by construction in our implementation
         assert jnp.isfinite(s21[0])
-
-
-# ---------------------------------------------------------------------------
-# Microstrip tests
-# ---------------------------------------------------------------------------
 
 
 class TestMicrostripEpsilonEff:
@@ -318,11 +284,6 @@ class TestMicrostripThicknessCorrection:
         assert float(z0_t) < float(z0_0)
 
 
-# ---------------------------------------------------------------------------
-# Straight waveguide model (JIT compatibility)
-# ---------------------------------------------------------------------------
-
-
 class TestStraightJIT:
     """Tests for JIT compilation of the straight CPW model."""
 
@@ -346,11 +307,6 @@ class TestStraightJIT:
                 atol=1e-10,
                 err_msg=f"Mismatch for {key}",
             )
-
-
-# ---------------------------------------------------------------------------
-# Straight microstrip model tests
-# ---------------------------------------------------------------------------
 
 
 @final
