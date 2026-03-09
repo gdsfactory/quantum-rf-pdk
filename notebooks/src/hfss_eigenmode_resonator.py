@@ -209,7 +209,7 @@ setup.props["MaximumPasses"] = EIGENMODE_CONFIG["max_passes"]
 setup.props["MinimumPasses"] = EIGENMODE_CONFIG["min_passes"]
 setup.props["PercentRefinement"] = EIGENMODE_CONFIG["percent_refinement"]
 setup.props["ConvergeOnRealFreq"] = True
-setup.props["MaxDeltaFreq"] = 1  # 1% convergence criterion
+setup.props["MaxDeltaFreq"] = 0.01  # 0.01% convergence criterion
 
 setup.update()
 print("Eigenmode setup configured:")
