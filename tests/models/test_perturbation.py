@@ -21,7 +21,7 @@ MAX_EXAMPLES = 20
 
 
 class TestQubitFrequencyFromEjEc:
-    """Tests for qubit_frequency_from_ej_ec."""
+    """Tests for :func:`~qubit_frequency_from_ej_ec`."""
 
     @staticmethod
     def test_typical_value() -> None:
@@ -40,7 +40,7 @@ class TestQubitFrequencyFromEjEc:
 
 
 class TestAnharmonicityFromEc:
-    """Tests for anharmonicity_from_ec."""
+    """Tests for :func:`~anharmonicity_from_ec`."""
 
     @staticmethod
     def test_identity() -> None:
@@ -50,7 +50,7 @@ class TestAnharmonicityFromEc:
 
 
 class TestEjEcToFrequencyAndAnharmonicity:
-    """Tests for ej_ec_to_frequency_and_anharmonicity."""
+    """Tests for :func:`~ej_ec_to_frequency_and_anharmonicity`."""
 
     @staticmethod
     def test_returns_tuple() -> None:
@@ -60,7 +60,7 @@ class TestEjEcToFrequencyAndAnharmonicity:
 
 
 class TestDispersiveShift:
-    """Tests for dispersive_shift."""
+    """Tests for :func:`~dispersive_shift`."""
 
     @staticmethod
     def test_sign_for_negative_detuning() -> None:
@@ -101,7 +101,7 @@ class TestDispersiveShift:
 
 
 class TestDispersiveShiftToCoupling:
-    """Tests for dispersive_shift_to_coupling."""
+    """Tests for :func:`~dispersive_shift_to_coupling`."""
 
     @staticmethod
     def test_round_trip() -> None:
@@ -125,7 +125,7 @@ class TestDispersiveShiftToCoupling:
 
 
 class TestPurcellDecayRate:
-    """Tests for purcell_decay_rate."""
+    """Tests for :func:`purcell_decay_rate`."""
 
     @staticmethod
     def test_typical_value() -> None:
@@ -141,7 +141,7 @@ class TestPurcellDecayRate:
 
 
 class TestResonatorLinewidthFromQ:
-    """Tests for resonator_linewidth_from_q."""
+    """Tests for :func:`~resonator_linewidth_from_q`."""
 
     @staticmethod
     def test_typical_value() -> None:
@@ -150,7 +150,7 @@ class TestResonatorLinewidthFromQ:
 
 
 class TestChiToReadoutFrequencyShift:
-    """Tests for chi_to_readout_frequency_shift."""
+    """Tests for :func:`~chi_to_readout_frequency_shift`."""
 
     @staticmethod
     def test_conversion() -> None:
@@ -159,7 +159,7 @@ class TestChiToReadoutFrequencyShift:
 
 
 class TestMeasurementInducedDephasing:
-    """Tests for measurement_induced_dephasing."""
+    """Tests for :func:`~measurement_induced_dephasing`."""
 
     @staticmethod
     def test_formula() -> None:
