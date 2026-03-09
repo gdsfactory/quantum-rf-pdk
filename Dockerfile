@@ -1,5 +1,10 @@
 # Note, to download from ghcr.io you may need to authenticate with docker login, e.g.
 #     echo $(gh auth token) | docker login ghcr.io -u "$(gh api user | jq -r .login)" --password-stdin
+
+# Build latest just from source using cargo
+FROM rust:slim AS just-builder
+RUN cargo install just
+
 FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 
 # Create user for binder
@@ -25,6 +30,9 @@ RUN apt-get update -y && \
     apt-get install -y --no-install-recommends git=1:2.47.3-0+deb13u1 libexpat1=2.7.1-2 libexpat1-dev=2.7.1-2 && \
     rm -rf /var/lib/apt/lists/*
 
+# Copy just binary from builder stage
+COPY --from=just-builder /usr/local/cargo/bin/just /usr/local/bin/just
+
 WORKDIR ${HOME}
 USER ${USER}
 
@@ -37,7 +45,7 @@ RUN --mount=type=cache,uid=${NB_UID},gid=${NB_UID},target=${HOME}/.cache/uv \
 # Copy source code, install project and convert jupytext scripts to notebooks
 COPY --chown=${USER}:${USER} . ${HOME}
 RUN --mount=type=cache,uid=${NB_UID},gid=${NB_UID},target=${HOME}/.cache/uv \
-    uv sync --all-extras && \
+    just install && \
     uv run jupytext --to ipynb qpdk/samples/**/*.py
 
 # Set PATH to include virtual environment

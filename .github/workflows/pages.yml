@@ -32,7 +32,6 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v3
       - run: just install
-      - run: just setup-ipython-config
       - run: just docs
       - uses: actions/upload-artifact@v6
         with:
@@ -91,7 +90,6 @@ jobs:
           if [ -f /etc/ImageMagick-6/policy.xml ]; then
             sudo sed -i 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' /etc/ImageMagick-6/policy.xml
           fi
-      - run: just setup-ipython-config
       - name: Generate LaTeX files
         run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document

@@ -466,7 +466,7 @@ cpw = cross_section_to_media(cs)(frequency=skrf.Frequency(2, 9, 101, unit="GHz")
 print(f"{cpw=!r}")
 print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
 
-res_freq = resonator_frequency(length=4000, media=cpw, is_quarter_wave=True)
+res_freq = resonator_frequency(length=4000, cross_section=cs, is_quarter_wave=True)
 print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")
 
 # Plot resonator_coupled example

@@ -4,16 +4,24 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from sax.models.rf import electrical_open, electrical_short
-from skrf import Frequency
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
+from qpdk.models.cpw import (
+    microstrip_epsilon_eff,
+    microstrip_thickness_correction,
+    propagation_constant,
+    transmission_line_s_params,
+)
 from qpdk.models.generic import admittance, short_2_port
-from qpdk.models.media import cross_section_to_media, get_cpw_dimensions
+from qpdk.models.media import (
+    cpw_parameters,
+    get_cpw_dimensions,
+    get_cpw_substrate_params,
+)
 from qpdk.tech import coplanar_waveguide
 
 
@@ -22,9 +30,20 @@ def straight(
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
-    """S-parameter model for a straight waveguide.
+    r"""S-parameter model for a straight coplanar waveguide.
 
-    See `scikit-rf <skrf>`_ for details on analytical formulæ.
+    Computes S-parameters analytically using conformal-mapping CPW theory
+    following Simons :cite:`simonsCoplanarWaveguideCircuits2001` (ch. 2)
+    and the Qucs-S CPW model (`Qucs technical documentation`_, §12.4).
+    Conductor thickness corrections use the first-order model of
+    Gupta, Garg, Bahl, and Bhartia :cite:`guptaMicrostripLinesSlotlines1996`.
+
+    The propagation constant and characteristic impedance are evaluated
+    with pure-JAX functions (see :mod:`qpdk.models.cpw`) so the model
+    composes with ``jax.jit``, ``jax.grad``, and ``jax.vmap``.
+
+    .. _Qucs technical documentation:
+       https://qucs.sourceforge.net/docs/technical/technical.pdf
 
     Args:
         f: Array of frequency points in Hz
@@ -33,19 +52,87 @@ def straight(
 
     Returns:
         sax.SDict: S-parameters dictionary
-
-    .. _skrf: https://scikit-rf.org/
     """
     f = jnp.asarray(f)
     f_flat = f.ravel()
-    # Keep f as tuple for scikit-rf, convert to array only for final JAX operations
-    media = cross_section_to_media(cross_section)
-    skrf_media = media(frequency=Frequency.from_f(np.asarray(f_flat), unit="Hz"))
-    transmission_line = skrf_media.line(d=np.asarray(length), unit="um")
-    sdict = {
-        ("o1", "o1"): jnp.array(transmission_line.s[:, 0, 0]).reshape(*f.shape),
-        ("o1", "o2"): jnp.array(transmission_line.s[:, 0, 1]).reshape(*f.shape),
-        ("o2", "o2"): jnp.array(transmission_line.s[:, 1, 1]).reshape(*f.shape),
+
+    # Extract CPW parameters (not JAX-traceable, constant-folded)
+    width, gap = get_cpw_dimensions(cross_section)
+    ep_eff, z0_val = cpw_parameters(width, gap)
+    _h, _t, ep_r = get_cpw_substrate_params()
+
+    # JAX-traceable computation
+    gamma = propagation_constant(f_flat, ep_eff, tand=0.0, ep_r=ep_r)
+    length_m = jnp.asarray(length) * 1e-6
+    s11, s21 = transmission_line_s_params(gamma, z0_val, length_m)
+
+    sdict: sax.SDict = {
+        ("o1", "o1"): s11.reshape(f.shape),
+        ("o1", "o2"): s21.reshape(f.shape),
+        ("o2", "o2"): s11.reshape(f.shape),
+    }
+    return sax.reciprocal(sdict)
+
+
+def straight_microstrip(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    width: sax.Float = 10.0,
+    h: sax.Float = 500.0,
+    t: sax.Float = 0.2,
+    ep_r: sax.Float = 11.45,
+    tand: sax.Float = 0.0,
+) -> sax.SDict:
+    r"""S-parameter model for a straight microstrip transmission line.
+
+    Computes S-parameters analytically using the Hammerstad-Jensen
+    :cite:`hammerstadAccurateModelsMicrostrip1980` closed-form expressions
+    for effective permittivity and characteristic impedance, as described
+    in Pozar :cite:`m.pozarMicrowaveEngineering2012` (ch. 3, §3.8).
+    Conductor thickness corrections follow
+    Gupta et al. :cite:`guptaMicrostripLinesSlotlines1996` (§2.2.4).
+
+    All computation is done with pure-JAX functions
+    (see :mod:`qpdk.models.cpw`) so the model composes with ``jax.jit``,
+    ``jax.grad``, and ``jax.vmap``.
+
+    Args:
+        f: Array of frequency points in Hz.
+        length: Physical length in µm.
+        width: Strip width in µm.
+        h: Substrate height in µm.
+        t: Conductor thickness in µm (default 0.2 µm = 200 nm).
+        ep_r: Relative permittivity of the substrate (default 11.45 for Si).
+        tand: Dielectric loss tangent (default 0 — lossless).
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
+    """
+    f = jnp.asarray(f)
+    f_flat = f.ravel()
+
+    # Convert to SI (metres)
+    w_m = width * 1e-6
+    h_m = h * 1e-6
+    t_m = t * 1e-6
+    length_m = jnp.asarray(length) * 1e-6
+
+    # Effective permittivity (Hammerstad-Jensen)
+    ep_eff = microstrip_epsilon_eff(w_m, h_m, ep_r)
+
+    # Apply conductor thickness correction if t > 0
+    _w_eff, ep_eff_t, z0_val = microstrip_thickness_correction(
+        w_m, h_m, t_m, ep_r, ep_eff
+    )
+
+    # Propagation constant & S-parameters
+    gamma = propagation_constant(f_flat, ep_eff_t, tand=tand, ep_r=ep_r)
+    s11, s21 = transmission_line_s_params(gamma, z0_val, length_m)
+
+    sdict: sax.SDict = {
+        ("o1", "o1"): s11.reshape(f.shape),
+        ("o1", "o2"): s21.reshape(f.shape),
+        ("o2", "o2"): s11.reshape(f.shape),
     }
     return sax.reciprocal(sdict)
 
