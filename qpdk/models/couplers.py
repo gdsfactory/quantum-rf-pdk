@@ -89,7 +89,7 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
 
 
 def cpw_cpw_coupling_capacitance(
-    f: sax.FloatArrayLike,
+    f: sax.FloatArrayLike,  # noqa: ARG001
     length: float | ArrayLike,
     gap: float | ArrayLike,
     cross_section: CrossSectionSpec,
@@ -105,8 +105,6 @@ def cpw_cpw_coupling_capacitance(
     Returns:
         The total coupling capacitance in Farads.
     """
-    f_arr = jnp.asarray(f)
-    del f_arr  # ensure f is a JAX array for type compatibility
     ep_r = cpw_ep_r_from_cross_section(cross_section)
 
     try:

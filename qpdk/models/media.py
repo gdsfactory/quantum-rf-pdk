@@ -113,11 +113,6 @@ def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
     return cpw_media_skrf(width=width, gap=gap)
 
 
-# ---------------------------------------------------------------------------
-# JAX-native helpers (no scikit-rf dependency)
-# ---------------------------------------------------------------------------
-
-
 @cache
 def get_cpw_substrate_params() -> tuple[float, float, float]:
     """Extract substrate parameters from the PDK layer stack.

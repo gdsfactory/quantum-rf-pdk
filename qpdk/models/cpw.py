@@ -209,8 +209,11 @@ def cpw_thickness_correction(
     k0 = w / (w + 2.0 * s)
     q0 = _ellipk_ratio(k0**2)
 
+    # Avoid 0 * log(inf) -> NaN when t = 0
+    t_safe = jnp.where(t < 1e-15, 1e-15, t)
+
     # Effective width increase (GGBB96 Eq. 7.98)
-    delta = (1.25 * t / jnp.pi) * (1.0 + jnp.log(4.0 * jnp.pi * w / t))
+    delta = (1.25 * t / jnp.pi) * (1.0 + jnp.log(4.0 * jnp.pi * w / t_safe))
 
     # Modified modulus for Z₀ (GGBB96, between 7.99 and 7.100)
     ke = k0 + (1.0 - k0**2) * delta / (2.0 * s)
@@ -221,6 +224,10 @@ def cpw_thickness_correction(
 
     # Modified Z₀
     z0_t = 30.0 * jnp.pi / (jnp.sqrt(ep_eff_t) * _ellipk_ratio(ke**2))
+
+    # Disable thickness correction if t <= 0
+    ep_eff_t = jnp.where(t <= 0, ep_eff, ep_eff_t)
+    z0_t = jnp.where(t <= 0, cpw_z0(w, s, ep_eff), z0_t)
 
     return ep_eff_t, z0_t
 
@@ -370,13 +377,20 @@ def microstrip_thickness_correction(
 
     # Effective width (Schneider)
     term = jnp.sqrt((t / h) ** 2 + (t / (w * jnp.pi + 1.1 * t * jnp.pi)) ** 2)
-    w_eff = w + (t / jnp.pi) * jnp.log(4.0 * e / term)
+    # Avoid 0 * log(inf) -> NaN when t = 0
+    term_safe = jnp.where(term < 1e-15, 1.0, term)
+    w_eff = w + (t / jnp.pi) * jnp.log(4.0 * e / term_safe)
 
     # Corrected epsilon_eff
     ep_eff_t = ep_eff - (ep_r - 1.0) * t / h / (4.6 * jnp.sqrt(w / h))
 
     # Corrected Z0
     z0_t = microstrip_z0(w_eff, h, ep_eff_t)
+
+    # Disable thickness correction if t <= 0
+    w_eff = jnp.where(t <= 0, w, w_eff)
+    ep_eff_t = jnp.where(t <= 0, ep_eff, ep_eff_t)
+    z0_t = jnp.where(t <= 0, microstrip_z0(w, h, ep_eff), z0_t)
 
     return w_eff, ep_eff_t, z0_t
 
@@ -437,14 +451,12 @@ def propagation_constant(
 
     beta = 2.0 * jnp.pi * f * jnp.sqrt(ep_eff) / c_0
 
+    # Use safe denominator to prevent NaN gradients in JAX backward pass
+    denom = jnp.where(jnp.abs(ep_r - 1.0) < 1e-15, 1.0, ep_r - 1.0)
+
     # Dielectric attenuation constant (Simons Eq. 2.2.41)
     alpha_d = (
-        jnp.pi
-        * f
-        / c_0
-        * (ep_r / jnp.sqrt(ep_eff))
-        * ((ep_eff - 1.0) / (ep_r - 1.0))
-        * tand
+        jnp.pi * f / c_0 * (ep_r / jnp.sqrt(ep_eff)) * ((ep_eff - 1.0) / denom) * tand
     )
     # Guard against ep_r == 1 (vacuum) where division would be 0/0.
     # When ep_r == 1 there is no substrate, so alpha_d = 0 by definition.
