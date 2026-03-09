@@ -154,7 +154,7 @@ def invert_mask_polarity(component: Component) -> Component:
     # Bounding box of the component defines the outer boundary for inversion
     bbox_region = Region(component.bbox().to_itype(component.kcl.dbu))
 
-    affected_layers = []
+    affected_layers: set[int] = set()
 
     for additive, etch in (
         (LAYER.M1_DRAW, LAYER.M1_ETCH),
@@ -163,11 +163,21 @@ def invert_mask_polarity(component: Component) -> Component:
         # Determine the layer indices in the layout object
         add_layer_index = component.kcl.layer(*additive)
         etch_layer_index = component.kcl.layer(*etch)
-        affected_layers.extend([add_layer_index, etch_layer_index])
+        affected_layers.update([add_layer_index, etch_layer_index])
 
         # Extract the shapes of the old component on these layers as regions
         add_region = Region(component.begin_shapes_rec(add_layer_index))
         etch_region = Region(component.begin_shapes_rec(etch_layer_index))
+
+        # Skip if both regions are empty (no shapes on these layers)
+        if add_region.is_empty() and etch_region.is_empty():
+            gf.logger.debug(
+                "Skipping empty layers: %s, %s in component %s",
+                additive,
+                etch,
+                component.name,
+            )
+            continue
 
         # Invert the polarities using the bounding box
         new_add_region = bbox_region - etch_region
@@ -178,11 +188,10 @@ def invert_mask_polarity(component: Component) -> Component:
         c.shapes(etch_layer_index).insert(new_etch_region)
 
     # Copy all other layers intact
-    for layer_index in component.kcl.layer_indices():
-        if layer_index not in affected_layers:
-            other_region = Region(component.begin_shapes_rec(layer_index))
-            if not other_region.is_empty():
-                c.shapes(layer_index).insert(other_region)
+    for layer_index in set(component.kcl.layer_indices()) - affected_layers:
+        other_region = Region(component.begin_shapes_rec(layer_index))
+        if not other_region.is_empty():
+            c.shapes(layer_index).insert(other_region)
 
     return c
 
