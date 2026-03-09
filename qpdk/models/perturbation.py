@@ -31,12 +31,9 @@ References:
 
 from __future__ import annotations
 
-import pytest
 import sympy
 from sympy.physics.quantum import Dagger
 from sympy.physics.quantum.boson import BosonOp
-
-pytestmark = pytest.mark.hamiltonian
 
 
 def transmon_resonator_hamiltonian() -> tuple[
