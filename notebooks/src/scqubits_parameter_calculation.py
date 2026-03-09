@@ -202,7 +202,7 @@ def _objective(length: float) -> float:
     """Find resonator length for target frequency using SciPy."""
     freq = resonator_frequency(
         length=length,
-        epsilon_eff=float(resonator_media.ep_r.mean().real),
+        epsilon_eff=float(np.real(np.mean(resonator_media.ep_r))),
         is_quarter_wave=True,
     )
     return (freq - resonator.E_osc * 1e9) ** 2  # MSE

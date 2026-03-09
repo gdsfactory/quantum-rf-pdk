@@ -297,7 +297,7 @@ def _resonator_objective(length: float) -> float:
     """Minimize the squared frequency error."""
     freq = resonator_frequency(
         length=length,
-        epsilon_eff=float(resonator_media.ep_r.mean().real),
+        epsilon_eff=float(np.real(np.mean(resonator_media.ep_r))),
         is_quarter_wave=True,
     )
     return (freq - omega_r_design * 1e9) ** 2
@@ -343,7 +343,7 @@ C_c = {C_c * 1e15:.2f}\,\mathrm{{fF}}
 # %%
 f_resonator_achieved = resonator_frequency(
     length=resonator_length,
-    epsilon_eff=float(resonator_media.ep_r.mean().real),
+    epsilon_eff=float(np.real(np.mean(resonator_media.ep_r))),
     is_quarter_wave=True,
 )
 

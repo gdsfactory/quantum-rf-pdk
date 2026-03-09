@@ -185,7 +185,7 @@ def resonator_frequency(
             deprecated(
                 "The 'media' argument is deprecated. Use 'epsilon_eff' or 'cross_section' instead."
             )(lambda: None)()
-            epsilon_eff = float(media.ep_r.mean().real)
+            epsilon_eff = float(jnp.real(jnp.mean(media.ep_r)))
         else:
             width, gap = get_cpw_dimensions(cross_section)
             epsilon_eff, _z0 = cpw_parameters(width, gap)

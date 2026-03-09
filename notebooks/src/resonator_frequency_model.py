@@ -46,7 +46,9 @@ if __name__ == "__main__":
     print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
 
     res_freq = resonator_frequency(
-        length=4000, epsilon_eff=float(cpw.ep_r.mean().real), is_quarter_wave=True
+        length=4000,
+        epsilon_eff=float(jnp.real(jnp.mean(cpw.ep_r))),
+        is_quarter_wave=True,
     )
     print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")
 
