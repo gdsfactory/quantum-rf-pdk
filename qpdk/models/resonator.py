@@ -192,7 +192,7 @@ def resonator_frequency(
 
     v_p = c_0 / jnp.sqrt(epsilon_eff)
     coefficient = 4 if is_quarter_wave else 2
-    return float(v_p / (coefficient * length * 1e-6))
+    return float(jnp.squeeze(v_p / (coefficient * length * 1e-6)))
 
 
 def resonator(
