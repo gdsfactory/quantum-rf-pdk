@@ -187,7 +187,8 @@ hilbert_space.interaction_list = [interaction]
 
 # Diagonalize the full Hamiltonian
 evals, evecs = hilbert_space.eigensys(evals_count=12)
-evecs = np.array(evecs)
+# Stack into (evals_count, hilbert_dim) matrix where each row is an eigenvector
+evecs = np.array([np.array(v.full()).flatten() for v in evecs])
 
 dim_t = transmon.truncated_dim
 dim_r = resonator.truncated_dim
@@ -202,7 +203,7 @@ def bare_state_vec(qt_idx: int, res_idx: int) -> np.ndarray:
 
 def find_dressed_index(bare_vec: np.ndarray) -> int:
     """Return the dressed-state index with maximum overlap with bare_vec."""
-    return int(np.argmax(np.abs(evecs.T @ bare_vec) ** 2))
+    return int(np.argmax(np.abs(evecs @ bare_vec) ** 2))
 
 
 idx_00 = find_dressed_index(bare_state_vec(0, 0))
@@ -256,12 +257,13 @@ def chi_scqubits_at_g(g: float) -> float:
         )
     ]
     ev, evc = hs.eigensys(evals_count=12)
-    evc = np.array(evc)
+    # Stack into (evals_count, hilbert_dim) matrix where each row is an eigenvector
+    evc = np.array([np.array(v.full()).flatten() for v in evc])
 
     def di(qi: int, ri: int) -> int:
         v = np.zeros(dim_t * dim_r)
         v[qi * dim_r + ri] = 1.0
-        return int(np.argmax(np.abs(evc.T @ v) ** 2))
+        return int(np.argmax(np.abs(evc @ v) ** 2))
 
     i00, i10, i01, i11 = di(0, 0), di(1, 0), di(0, 1), di(1, 1)
     return float((ev[i11] - ev[i10]) - (ev[i01] - ev[i00]))
