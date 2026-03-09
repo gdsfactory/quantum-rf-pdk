@@ -201,7 +201,9 @@ resonator_media = cpw_media_skrf(width=10, gap=6)(
 def _objective(length: float) -> float:
     """Find resonator length for target frequency using SciPy."""
     freq = resonator_frequency(
-        length=length, media=resonator_media, is_quarter_wave=True
+        length=length,
+        epsilon_eff=float(resonator_media.ep_r.mean().real),
+        is_quarter_wave=True,
     )
     return (freq - resonator.E_osc * 1e9) ** 2  # MSE
 

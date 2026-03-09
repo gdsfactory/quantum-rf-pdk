@@ -2,9 +2,11 @@
 
 import jax.numpy as jnp
 import sax
+from typing import Any
 from gdsfactory.typings import CrossSectionSpec
 from sax.models.rf import capacitor, electrical_open, electrical_short, tee
 
+from qpdk.helper import deprecated
 from qpdk.models.constants import DEFAULT_FREQUENCY, c_0
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
 from qpdk.models.media import (
@@ -149,6 +151,7 @@ def resonator_frequency(
     *,
     length: float,
     epsilon_eff: float | None = None,
+    media: Any = None,
     cross_section: CrossSectionSpec = "cpw",
     is_quarter_wave: bool = True,
 ) -> float:
@@ -167,8 +170,9 @@ def resonator_frequency(
         length: Length of the resonator in μm.
         epsilon_eff: Effective permittivity.  If ``None`` (default),
             computed from *cross_section* using :func:`~qpdk.models.media.cpw_parameters`.
+        media: Deprecated. Use *epsilon_eff* or *cross_section* instead.
         cross_section: Cross-section specification (used only when
-            *epsilon_eff* is not provided).
+            *epsilon_eff* and *media* are not provided).
         is_quarter_wave: If True, calculates for a quarter-wave resonator; if False, for a half-wave resonator.
             default is True.
 
@@ -176,8 +180,15 @@ def resonator_frequency(
         float: Resonance frequency in Hz.
     """
     if epsilon_eff is None:
-        width, gap = get_cpw_dimensions(cross_section)
-        epsilon_eff, _z0 = cpw_parameters(width, gap)
+        if media is not None:
+            deprecated(
+                "The 'media' argument is deprecated. Use 'epsilon_eff' or 'cross_section' instead."
+            )(lambda: None)()
+            epsilon_eff = float(media.ep_r.mean().real)
+        else:
+            width, gap = get_cpw_dimensions(cross_section)
+            epsilon_eff, _z0 = cpw_parameters(width, gap)
+
     v_p = c_0 / jnp.sqrt(epsilon_eff)
     coefficient = 4 if is_quarter_wave else 2
     return float(v_p / (coefficient * length * 1e-6))

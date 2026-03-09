@@ -45,7 +45,9 @@ if __name__ == "__main__":
     print(f"{cpw=!r}")
     print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
 
-    res_freq = resonator_frequency(length=4000, media=cpw, is_quarter_wave=True)
+    res_freq = resonator_frequency(
+        length=4000, epsilon_eff=float(cpw.ep_r.mean().real), is_quarter_wave=True
+    )
     print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")
 
     circuit, info = sax.circuit(

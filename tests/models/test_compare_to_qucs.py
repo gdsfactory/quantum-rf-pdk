@@ -414,10 +414,10 @@ class TestLCResonatorCompareToQucs(BaseCompareToQucs):
 if __name__ == "__main__":
     # Run the plotting comparison when executed directly
     for test_suite in (
-        # TestCapacitorCompareToQucs(),
-        # TestInductorCompareToQucs(),
-        # TestCPWCompareToQucs(),
+        TestCapacitorCompareToQucs(),
+        TestInductorCompareToQucs(),
+        TestCPWCompareToQucs(),
         TestCouplerStraightCompareToQucs(),
-        # TestLCResonatorCompareToQucs(),
+        TestLCResonatorCompareToQucs(),
     ):
         test_suite.plot_comparison()
