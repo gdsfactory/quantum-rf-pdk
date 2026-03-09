@@ -86,7 +86,7 @@ def straight_microstrip(
     r"""S-parameter model for a straight microstrip transmission line.
 
     Computes S-parameters analytically using the Hammerstad-Jensen
-    :cite:`hammerstadAccurateModelsComputer1980` closed-form expressions
+    :cite:`hammerstadAccurateModelsMicrostrip1980` closed-form expressions
     for effective permittivity and characteristic impedance, as described
     in Pozar :cite:`m.pozarMicrowaveEngineering2012` (ch. 3, §3.8).
     Conductor thickness corrections follow
