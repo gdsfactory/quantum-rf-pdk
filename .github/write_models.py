@@ -29,6 +29,9 @@ if qpdk.models is not None:
 else:
     models = {}
 
+# SAX models (functions that return S-parameter dictionaries)
+sax_model_names = set(qpdk.models.models.keys())
+
 # Prepare items for the template
 items = [
     {
@@ -40,6 +43,7 @@ items = [
         "show_inheritance": True,
         "functions": sorted(models.keys()) if models else [],  # preserves order
         "skip_plots": skip_plots,
+        "sax_models": sax_model_names,
     },
     {
         "title": "References",
