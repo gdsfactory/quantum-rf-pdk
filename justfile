@@ -98,7 +98,7 @@ write-cells:
 
 # Write model outputs into documentation notebooks (used when building docs)
 write-models:
-    uv run --group docs .github/write_models.py
+    uv run --extra models --group docs .github/write_models.py
 
 # Write Justfile help output to documentation
 write-justfile-help:
@@ -113,24 +113,55 @@ copy-sample-notebooks:
     mkdir -p docs/notebooks
     cp notebooks/src/*.py docs/notebooks/
 
-# Setup IPython configuration for documentation build
-setup-ipython-config:
+# Temporarily setup IPython configuration for documentation build
+setup-ipython-config-temporary-before:
+    #!/usr/bin/env bash
+    set -euo pipefail
     mkdir -p ~/.ipython/profile_default
+    if [ -f ~/.ipython/profile_default/ipython_config.py ]; then
+        mv ~/.ipython/profile_default/ipython_config.py ~/.ipython/profile_default/ipython_config.py.bak
+    fi
     cp docs/ipython_config.py ~/.ipython/profile_default/ipython_config.py
+
     mkdir -p ~/.config/matplotlib/stylelib/
+    if [ -f ~/.config/matplotlib/stylelib/qpdk.mplstyle ]; then
+        mv ~/.config/matplotlib/stylelib/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle.bak
+    fi
     cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
+
+# Restore original IPython configuration
+setup-ipython-config-temporary-after:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -f ~/.ipython/profile_default/ipython_config.py.bak ]; then
+        mv ~/.ipython/profile_default/ipython_config.py.bak ~/.ipython/profile_default/ipython_config.py
+    else
+        rm -f ~/.ipython/profile_default/ipython_config.py
+    fi
+
+    if [ -f ~/.config/matplotlib/stylelib/qpdk.mplstyle.bak ]; then
+        mv ~/.config/matplotlib/stylelib/qpdk.mplstyle.bak ~/.config/matplotlib/stylelib/qpdk.mplstyle
+    else
+        rm -f ~/.config/matplotlib/stylelib/qpdk.mplstyle
+    fi
 
 # Shared prerequisites for building documentation (runs in parallel)
 [parallel]
 docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
 
 # Build the HTML documentation
-docs: docs-prerequisites
-    uv run --group docs jb build docs
+docs: docs-prerequisites setup-ipython-config-temporary-before
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trap 'just setup-ipython-config-temporary-after' EXIT INT TERM
+    uv run --all-extras --group docs jb build docs
 
 # Setup LaTeX for PDF documentation
-docs-latex: docs-prerequisites
-    uv run --group docs jb build docs --builder latex
+docs-latex: docs-prerequisites setup-ipython-config-temporary-before
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trap 'just setup-ipython-config-temporary-after' EXIT INT TERM
+    uv run --all-extras --group docs jb build docs --builder latex
 
 # Build PDF documentation (requires a TeXLive installation)
 docs-pdf: docs-latex

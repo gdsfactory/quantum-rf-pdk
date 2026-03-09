@@ -8,7 +8,7 @@
 
 .. autofunction:: qpdk.models.{{ func_name }}
 
-{% if func_name not in items[0].skip_plots %}
+{% if func_name in items[0].sax_models and func_name not in items[0].skip_plots %}
 .. plot::
    :include-source:
 

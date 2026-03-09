@@ -6,9 +6,7 @@ from typing import cast
 import gdsfactory as gf
 import jax
 import jax.numpy as jnp
-import numpy as np
 import sax
-import skrf
 from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
@@ -20,7 +18,11 @@ from qpdk.models.math import (
     ellipk_ratio,
     epsilon_eff,
 )
-from qpdk.models.media import cross_section_to_media
+from qpdk.models.media import (
+    cpw_ep_r_from_cross_section,
+    cpw_z0_from_cross_section,
+    get_cpw_dimensions,
+)
 from qpdk.models.waveguides import straight
 
 
@@ -87,7 +89,7 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
 
 
 def cpw_cpw_coupling_capacitance(
-    f: sax.FloatArrayLike,
+    f: sax.FloatArrayLike,  # noqa: ARG001
     length: float | ArrayLike,
     gap: float | ArrayLike,
     cross_section: CrossSectionSpec,
@@ -103,34 +105,24 @@ def cpw_cpw_coupling_capacitance(
     Returns:
         The total coupling capacitance in Farads.
     """
-    f_arr = jnp.asarray(f)
-    media = cross_section_to_media(cross_section)
-    media_instance = media(
-        frequency=skrf.Frequency.from_f(np.atleast_1d(np.asarray(f_arr)))
-    )
-    ep_r = float(media_instance.ep_r)
+    ep_r = cpw_ep_r_from_cross_section(cross_section)
 
-    # Extract CPW dimensions from cross-section
-    xs: CrossSection
-    if isinstance(cross_section, CrossSection):
-        xs = cross_section
-    elif callable(cross_section):
-        xs = cast(CrossSection, cross_section())
-    else:
-        xs = gf.get_cross_section(cross_section)
-
-    width = xs.width
     try:
-        cpw_gap = next(
-            section.width
-            for section in xs.sections
-            if section.name and "etch_offset" in section.name
-        )
-    except StopIteration:
-        # Fallback to default CPW gap if not found in sections
+        width, cpw_gap = get_cpw_dimensions(cross_section)
+    except ValueError:
+        # Fallback to default CPW width and gap if not found in sections
+        # Not sure if width needs fallback, but gap previously fell back to 6.0
         gf.logger.warning(
-            "CPW gap not found in cross-section sections. Using default value of 6.0 µm."
+            "CPW gap not found in cross-section sections. Using default gap of 6.0 µm."
         )
+        xs = (
+            gf.get_cross_section(cross_section)
+            if isinstance(cross_section, str)
+            else cross_section
+        )
+        if callable(xs):
+            xs = cast(CrossSection, xs())
+        width = xs.width
         cpw_gap = 6.0
 
     c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
@@ -166,15 +158,10 @@ def coupler_straight(
         o1──────▼───────o4
     """
     f = jnp.asarray(f)
-    f_flat = f.ravel()
     straight_settings = {"length": length / 2, "cross_section": cross_section}
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(f, length, gap, cross_section),
-        "z0": cross_section_to_media(cross_section)(
-            frequency=skrf.Frequency.from_f(
-                np.atleast_1d(np.asarray(f_flat)), unit="Hz"
-            )
-        ).z0.reshape(f.shape),
+        "z0": cpw_z0_from_cross_section(cross_section, f),
     }
 
     # Create straight instances with shared settings

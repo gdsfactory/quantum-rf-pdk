@@ -21,7 +21,8 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
 
     model_function = straight
 
-    def get_model_kwargs(self) -> dict:
+    @staticmethod
+    def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
         return {"length": 1000}
 
@@ -87,7 +88,8 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
                 ),
             )
 
-    def test_frequency_sweep(self) -> None:
+    @staticmethod
+    def test_frequency_sweep() -> None:
         """Test straight waveguide across typical superconducting RF frequency range."""
         f = jnp.linspace(0.5e9, 10e9, 100)
         length = 5000  # 5 mm
@@ -105,7 +107,8 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
             err_msg="All |S21| values should be <= 1 (with numerical tolerance)",
         )
 
-    def test_custom_cross_section(self) -> None:
+    @staticmethod
+    def test_custom_cross_section() -> None:
         """Test straight waveguide with custom media parameters."""
         custom_cross_section = coplanar_waveguide(width=20, gap=10)
 
@@ -120,7 +123,8 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         max_diff = jnp.max(jnp.abs(s12 - s21))
         assert max_diff < 1e-10, f"S12 and S21 should be equal, max diff: {max_diff}"
 
-    def test_zero_length(self) -> None:
+    @staticmethod
+    def test_zero_length() -> None:
         """Test straight waveguide with zero length (through connection)."""
         f = jnp.array([5e9])
         result = straight(f=f, length=0)
@@ -137,7 +141,8 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
 class TestNxN:
     """Tests for nxn model."""
 
-    def test_n_ports_assignment(self) -> None:
+    @staticmethod
+    def test_n_ports_assignment() -> None:
         """Test that nxn model has the correct number of ports."""
         f = jnp.array([1e9])
         for n in range(1, 6):
@@ -152,7 +157,8 @@ class TestNxN:
                 ports.add(p2)
             assert len(ports) == n, f"Expected {n} ports, got {len(ports)}"
 
-    def test_passivity(self) -> None:
+    @staticmethod
+    def test_passivity() -> None:
         """Test that nxn model is passive."""
         f = jnp.linspace(1e9, 10e9, 10)
         n = 4
@@ -169,7 +175,8 @@ class TestNxN:
                 err_msg=f"Passivity violated for port o{j}: max power = {jnp.max(total_power)}",
             )
 
-    def test_reciprocity(self) -> None:
+    @staticmethod
+    def test_reciprocity() -> None:
         """Test that nxn model is reciprocal."""
         f = jnp.array([1e9, 5e9, 10e9])
         n = 3
@@ -228,6 +235,7 @@ class TestAirbridge(TwoPortModelTestSuite):
 
     model_function = airbridge
 
-    def get_model_kwargs(self) -> dict:
+    @staticmethod
+    def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
         return {"cpw_width": 10.0, "bridge_width": 10.0, "airgap_height": 3.0}

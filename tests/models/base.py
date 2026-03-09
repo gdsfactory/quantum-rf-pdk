@@ -62,7 +62,8 @@ class BaseModelTestSuite:
         """
         return {(p1, p2) for p1 in cls.expected_ports for p2 in cls.expected_ports}
 
-    def get_model_kwargs(self) -> dict:
+    @staticmethod
+    def get_model_kwargs() -> dict:
         """Get additional keyword arguments to pass to the model function.
 
         Override this method to provide model-specific default arguments.
