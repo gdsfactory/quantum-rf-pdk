@@ -1,17 +1,20 @@
 """Resonators."""
 
-import jax.numpy as jnp
-import numpy as np
-import sax
-import skrf
-from gdsfactory.typings import CrossSectionSpec
-from numpy.typing import NDArray
-from sax.models.rf import capacitor, electrical_open, electrical_short, tee
-from skrf.media import Media
+from typing import Any
 
-from qpdk.models.constants import DEFAULT_FREQUENCY
+import jax.numpy as jnp
+import sax
+from gdsfactory.typings import CrossSectionSpec
+from sax.models.rf import capacitor, electrical_open, electrical_short, tee
+
+from qpdk.helper import deprecated
+from qpdk.models.constants import DEFAULT_FREQUENCY, c_0
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
-from qpdk.models.media import cross_section_to_media
+from qpdk.models.media import (
+    cpw_parameters,
+    cpw_z0_from_cross_section,
+    get_cpw_dimensions,
+)
 from qpdk.models.waveguides import straight, straight_shorted
 
 
@@ -86,17 +89,12 @@ def resonator_coupled(
         sax.SDict: S-parameters dictionary with 4 ports.
     """
     f_arr = jnp.asarray(f)
-    f_flat = f_arr.ravel()
 
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(
             f_arr, coupling_straight_length, coupling_gap, cross_section
         ),
-        "z0": cross_section_to_media(cross_section)(
-            frequency=skrf.Frequency.from_f(
-                np.atleast_1d(np.asarray(f_flat)), unit="Hz"
-            )
-        ).z0.reshape(f_arr.shape),
+        "z0": cpw_z0_from_cross_section(cross_section, f_arr),
     }
 
     instances = {
@@ -153,34 +151,48 @@ def resonator_coupled(
 def resonator_frequency(
     *,
     length: float,
-    media: Media,
+    epsilon_eff: float | None = None,
+    media: Any = None,
+    cross_section: CrossSectionSpec = "cpw",
     is_quarter_wave: bool = True,
-) -> NDArray:
-    r"""Calculate the resonance frequency of a quarter-wave resonator.
+) -> float:
+    r"""Calculate the resonance frequency of a quarter- or half-wave CPW resonator.
 
     .. math::
 
         f &= \frac{v_p}{4L}  \mathtt{ (quarter-wave resonator)} \\
         f &= \frac{v_p}{2L}  \mathtt{ (half-wave resonator)}
 
-    There is some variation according to the frequency range specified for ``media`` due to how
-    :math:`v_p` is calculated in skrf. The phase velocity is given by :math:`v_p = i \cdot \omega / \gamma`,
-    where :math:`\gamma` is the complex propagation constant and :math:`\omega` is the angular frequency.
+    The phase velocity is :math:`v_p = c_0 / \sqrt{\varepsilon_{\mathrm{eff}}}`.
 
     See :cite:`simonsCoplanarWaveguideCircuits2001,m.pozarMicrowaveEngineering2012` for details.
 
     Args:
         length: Length of the resonator in μm.
-        media: skrf media object defining the CPW (or other) properties.
+        epsilon_eff: Effective permittivity.  If ``None`` (default),
+            computed from *cross_section* using :func:`~qpdk.models.media.cpw_parameters`.
+        media: Deprecated. Use *epsilon_eff* or *cross_section* instead.
+        cross_section: Cross-section specification (used only when
+            *epsilon_eff* and *media* are not provided).
         is_quarter_wave: If True, calculates for a quarter-wave resonator; if False, for a half-wave resonator.
             default is True.
 
     Returns:
         float: Resonance frequency in Hz.
     """
-    coefficient = 4 if is_quarter_wave else 2  # Quarter-wave resonator
-    a = media.v_p / (coefficient * length * 1e-6)
-    return a.mean().real
+    if epsilon_eff is None:
+        if media is not None:
+            deprecated(
+                "The 'media' argument is deprecated. Use 'epsilon_eff' or 'cross_section' instead."
+            )(lambda: None)()
+            epsilon_eff = float(jnp.real(jnp.mean(media.ep_r)))
+        else:
+            width, gap = get_cpw_dimensions(cross_section)
+            epsilon_eff, _z0 = cpw_parameters(width, gap)
+
+    v_p = c_0 / jnp.sqrt(epsilon_eff)
+    coefficient = 4 if is_quarter_wave else 2
+    return float(jnp.squeeze(v_p / (coefficient * length * 1e-6)))
 
 
 def resonator(

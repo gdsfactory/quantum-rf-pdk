@@ -1,11 +1,39 @@
 """Helper functions for the qpdk package."""
 
-from collections.abc import Sequence
-from typing import cast
+import warnings
+from collections.abc import Callable, Sequence
+from functools import wraps
+from typing import Any, cast
 
 from gdsfactory import Component, ComponentAllAngle, LayerEnum, get_component
 from gdsfactory.technology import LayerViews
 from gdsfactory.typings import ComponentAllAngleSpec, ComponentSpec, Layer
+
+
+def deprecated(msg: str | Callable | None = None) -> Any:
+    """Decorator to mark functions as deprecated.
+
+    Can be used as @deprecated or @deprecated("custom message").
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            m = (
+                msg
+                if isinstance(msg, str)
+                else f"{func.__name__} is deprecated and will be removed in a future version."
+            )
+            warnings.warn(m, category=DeprecationWarning, stacklevel=2)
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    if callable(msg):
+        f = msg
+        msg = None
+        return decorator(f)
+    return decorator
 
 
 def denest_layerviews_to_layer_tuples(

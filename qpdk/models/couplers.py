@@ -6,9 +6,7 @@ from typing import cast
 import gdsfactory as gf
 import jax
 import jax.numpy as jnp
-import numpy as np
 import sax
-import skrf
 from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
@@ -20,7 +18,11 @@ from qpdk.models.math import (
     ellipk_ratio,
     epsilon_eff,
 )
-from qpdk.models.media import cross_section_to_media
+from qpdk.models.media import (
+    cpw_ep_r_from_cross_section,
+    cpw_z0_from_cross_section,
+    get_cpw_dimensions,
+)
 from qpdk.models.waveguides import straight
 
 
@@ -87,7 +89,7 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
 
 
 def cpw_cpw_coupling_capacitance(
-    f: sax.FloatArrayLike,
+    f: sax.FloatArrayLike,  # noqa: ARG001
     length: float | ArrayLike,
     gap: float | ArrayLike,
     cross_section: CrossSectionSpec,
@@ -103,14 +105,7 @@ def cpw_cpw_coupling_capacitance(
     Returns:
         The total coupling capacitance in Farads.
     """
-    f_arr = jnp.asarray(f)
-    media = cross_section_to_media(cross_section)
-    media_instance = media(
-        frequency=skrf.Frequency.from_f(np.atleast_1d(np.asarray(f_arr)))
-    )
-    ep_r = float(media_instance.ep_r)
-
-    from qpdk.models.media import get_cpw_dimensions
+    ep_r = cpw_ep_r_from_cross_section(cross_section)
 
     try:
         width, cpw_gap = get_cpw_dimensions(cross_section)
@@ -163,15 +158,10 @@ def coupler_straight(
         o1──────▼───────o4
     """
     f = jnp.asarray(f)
-    f_flat = f.ravel()
     straight_settings = {"length": length / 2, "cross_section": cross_section}
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(f, length, gap, cross_section),
-        "z0": cross_section_to_media(cross_section)(
-            frequency=skrf.Frequency.from_f(
-                np.atleast_1d(np.asarray(f_flat)), unit="Hz"
-            )
-        ).z0.reshape(f.shape),
+        "z0": cpw_z0_from_cross_section(cross_section, f),
     }
 
     # Create straight instances with shared settings
