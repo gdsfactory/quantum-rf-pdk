@@ -44,6 +44,7 @@
 
 # %% tags=["hide-input", "hide-output"]
 import numpy as np
+import polars as pl
 import scipy
 import skrf
 import sympy
@@ -78,20 +79,21 @@ from qpdk.models.resonator import resonator_frequency
 # `transmon_resonator_hamiltonian` returns the unperturbed part $H_0$ and the
 # perturbation $H_p$ together with the symbolic parameters.
 
-# %%
-H_0, H_p, (omega_t, omega_r, alpha, g) = transmon_resonator_hamiltonian()
 
-
+# %% tags=["hide-input", "hide-output"]
 def display_eq(title: str, expr: sympy.Basic) -> None:
     """Display a named symbolic expression."""
     display(sympy.Eq(sympy.Symbol(title), expr, evaluate=False))
 
 
+# %%
+H_0, H_p, (omega_t, omega_r, alpha, g) = transmon_resonator_hamiltonian()
+
 display_eq("H_{0}", H_0)
 display_eq("H_{p}", H_p)
 
 # %% [markdown]
-# ## Approach I — Second-Quantized Form
+# ## Effective Hamiltonian
 #
 # Using `block_diagonalize` on the full second-quantized Hamiltonian,
 # pymablock returns the effective Hamiltonian as a function of the
@@ -102,6 +104,9 @@ display_eq("H_{p}", H_p)
 # ```
 # where $E^{(2)}_{ij}$ is the second-order energy correction for
 # $i$ transmon excitations and $j$ resonator excitations.
+#
+# For details on pymablock and the block-diagonalization procedure, see
+# [pymablock documentation](https://pymablock.readthedocs.io/).
 
 # %%
 H_tilde, U, U_adj = block_diagonalize(H_0 + H_p, symbols=[g])
@@ -121,62 +126,15 @@ E_01 = E_eff.subs({N_a_t: 0, N_a_r: 1})
 E_10 = E_eff.subs({N_a_t: 1, N_a_r: 0})
 E_11 = E_eff.subs({N_a_t: 1, N_a_r: 1})
 
-chi_sym_sq = E_11 - E_10 - E_01 + E_00
+chi_sym = E_11 - E_10 - E_01 + E_00
 
 # Convert from pymablock's NumberOrderedForm to a standard sympy expression
-if hasattr(chi_sym_sq, "as_expr"):
-    chi_sym_sq = chi_sym_sq.as_expr()
+if hasattr(chi_sym, "as_expr"):
+    chi_sym = chi_sym.as_expr()
 
-display_eq(r"\chi^{(SQ)}", chi_sym_sq)
-
-# %% [markdown]
-# ## Approach II — Matrix Representation
-#
-# Alternatively we can truncate the bosonic Hilbert space and use a
-# finite-dimensional matrix.  Since the perturbation changes occupation
-# numbers by $\pm 1$, computing second-order corrections to states
-# with $n_t, n_r \in \{0, 1\}$ requires keeping up to 3 levels per mode
-# (we use 4 for safety).
-
-# %%
-N = 4  # Number of levels per mode
-
-# Build matrix representations of the bosonic operators
-a_mat = sympy.zeros(N, N)
-for i in range(N - 1):
-    a_mat[i, i + 1] = sympy.sqrt(i + 1)
-
-a_t_mat = sympy.KroneckerProduct(a_mat, sympy.eye(N))
-a_r_mat = sympy.KroneckerProduct(sympy.eye(N), a_mat)
-
-H_0_mat = (
-    -omega_t * a_t_mat.adjoint() * a_t_mat
-    + omega_r * a_r_mat.adjoint() * a_r_mat
-    + alpha * a_t_mat.adjoint() ** 2 * a_t_mat**2 / 2
-)
-H_p_mat = -g * (a_t_mat.adjoint() - a_t_mat) * (a_r_mat.adjoint() - a_r_mat)
-H_mat = H_0_mat + H_p_mat
-
-# Define subspaces: states |00⟩, |01⟩, |10⟩, |11⟩ each get their own block
-subspaces = {state: n for n, state in enumerate([0, 1, N, N + 1])}
-subspace_indices = [subspaces.get(state, 4) for state in range(N**2)]
-
-H_tilde_mat, _U_mat, _U_adj_mat = block_diagonalize(
-    H_mat, subspace_indices=subspace_indices, symbols=[g]
-)
-
-chi_sym_mat = (
-    H_tilde_mat[3, 3, 2]
-    - H_tilde_mat[2, 2, 2]
-    - H_tilde_mat[1, 1, 2]
-    + H_tilde_mat[0, 0, 2]
-)[0, 0]
-
-display_eq(r"\chi^{(mat)}", chi_sym_mat)
+display_eq(r"\chi", chi_sym)
 
 # %% [markdown]
-# Both approaches yield the same dispersive shift—confirming the
-# consistency of the second-quantized and matrix formulations.
 # The full expression (including counter-rotating terms) is:
 # ```{math}
 # :label: eq:dispersive-shift-full
@@ -232,7 +190,7 @@ display(
 
 # Verify against the symbolic expression
 chi_check = float(
-    chi_sym_sq.subs(
+    chi_sym.subs(
         {omega_t: omega_t_val, omega_r: omega_r_val, alpha: alpha_val, g: g_val}
     )
 )
@@ -255,7 +213,7 @@ chi_sweep = np.array(
 )
 
 fig, ax = plt.subplots(figsize=(8, 4))
-ax.plot(g_sweep * 1e3, chi_sweep * 1e3, "b-", linewidth=2)
+ax.plot(g_sweep * 1e3, chi_sweep * 1e3, "-", linewidth=2)
 ax.axhline(0, color="gray", linestyle="--", alpha=0.5)
 ax.set_xlabel("Coupling strength $g$ (MHz)")
 ax.set_ylabel(r"Dispersive shift $\chi$ (MHz)")
@@ -444,36 +402,37 @@ Q_\text{{ext}} = {Q_ext:,} \\
 # central design target.
 
 # %%
-print("=" * 65)
-print("  DESIGN PARAMETER SUMMARY")
-print("=" * 65)
-print(f"  Target dispersive shift χ:      {chi_target_mhz:.1f} MHz")
-print("-" * 65)
-print("  Hamiltonian Parameters:")
-print(f"    E_J  = {EJ_design:.1f} GHz")
-print(f"    E_C  = {EC_design:.1f} GHz")
-print(f"    ω_t  = {omega_t_design:.3f} GHz")
-print(f"    α    = {alpha_design:.1f} GHz")
-print(f"    ω_r  = {omega_r_design:.1f} GHz")
-print(f"    g    = {g_design * 1e3:.1f} MHz")
-print("-" * 65)
-print("  Circuit Parameters:")
-print(f"    C_Σ  = {C_sigma * 1e15:.1f} fF")
-print(f"    L_J  = {L_J * 1e9:.2f} nH")
-print(f"    C_r  = {C_r * 1e15:.1f} fF")
-print(f"    C_c  = {C_c * 1e15:.2f} fF")
-print("-" * 65)
-print("  Layout Parameters:")
-print(f"    Resonator length:    {resonator_length:.0f} µm")
-print("    Resonator CPW:       w=10 µm, gap=6 µm")
-print(f"    Resonator freq:      {f_resonator_achieved / 1e9:.3f} GHz")
-print("-" * 65)
-print("  Readout Parameters:")
-print(f"    Q_ext:               {Q_ext:,}")
-print(f"    κ:                   {kappa * 1e6:.1f} kHz")
-print(f"    T_Purcell:           {T_purcell * 1e6:.0f} µs")
-print(f"    |χ|/κ:               {chi_over_kappa:.1f}")
-print("=" * 65)
+data = [
+    ("Target", "Target dispersive shift χ", f"{chi_target_mhz:.1f}", "MHz"),
+    ("Hamiltonian", "E_J", f"{EJ_design:.1f}", "GHz"),
+    ("Hamiltonian", "E_C", f"{EC_design:.1f}", "GHz"),
+    ("Hamiltonian", "ω_t", f"{omega_t_design:.3f}", "GHz"),
+    ("Hamiltonian", "α", f"{alpha_design:.1f}", "GHz"),
+    ("Hamiltonian", "ω_r", f"{omega_r_design:.1f}", "GHz"),
+    ("Hamiltonian", "g", f"{g_design * 1e3:.1f}", "MHz"),
+    ("Circuit", "C_Σ", f"{C_sigma * 1e15:.1f}", "fF"),
+    ("Circuit", "L_J", f"{L_J * 1e9:.2f}", "nH"),
+    ("Circuit", "C_r", f"{C_r * 1e15:.1f}", "fF"),
+    ("Circuit", "C_c", f"{C_c * 1e15:.2f}", "fF"),
+    ("Layout", "Resonator length", f"{resonator_length:.0f}", "µm"),
+    ("Layout", "Resonator CPW width", "10", "µm"),
+    ("Layout", "Resonator CPW gap", "6", "µm"),
+    ("Layout", "Resonator freq", f"{f_resonator_achieved / 1e9:.3f}", "GHz"),
+    ("Readout", "Q_ext", f"{Q_ext:,}", ""),
+    ("Readout", "κ", f"{kappa * 1e6:.1f}", "kHz"),
+    ("Readout", "T_Purcell", f"{T_purcell * 1e6:.0f}", "µs"),
+    ("Readout", "|χ|/κ", f"{chi_over_kappa:.1f}", ""),
+]
+
+df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"])
+
+with pl.Config(
+    tbl_rows=30,
+    tbl_formatting="MARKDOWN",
+    tbl_hide_column_data_types=True,
+    tbl_hide_dataframe_shape=True,
+):
+    display(df)
 
 
 # %% [markdown]

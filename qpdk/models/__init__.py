@@ -39,14 +39,11 @@ from qpdk.models.media import (
     cross_section_to_media,
 )
 from qpdk.models.perturbation import (
-    anharmonicity_from_ec,
-    chi_to_readout_frequency_shift,
     dispersive_shift,
     dispersive_shift_to_coupling,
     ej_ec_to_frequency_and_anharmonicity,
     measurement_induced_dephasing,
     purcell_decay_rate,
-    qubit_frequency_from_ej_ec,
     resonator_linewidth_from_q,
 )
 from qpdk.models.qubit import (
@@ -99,12 +96,10 @@ __all__ = [
     "MediaCallable",
     "admittance",
     "airbridge",
-    "anharmonicity_from_ec",
     "bend_circular",
     "bend_euler",
     "bend_s",
     "capacitor",
-    "chi_to_readout_frequency_shift",
     "coupler_ring",
     "coupler_straight",
     "coupling_strength_to_capacitance",
@@ -144,7 +139,6 @@ __all__ = [
     "plate_capacitor",
     "purcell_decay_rate",
     "quarter_wave_resonator_coupled",
-    "qubit_frequency_from_ej_ec",
     "qubit_with_resonator",
     "rectangle",
     "resonator",

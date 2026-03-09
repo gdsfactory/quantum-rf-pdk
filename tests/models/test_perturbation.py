@@ -6,47 +6,15 @@ import hypothesis.strategies as st
 from hypothesis import given, settings
 
 from qpdk.models.perturbation import (
-    anharmonicity_from_ec,
-    chi_to_readout_frequency_shift,
     dispersive_shift,
     dispersive_shift_to_coupling,
     ej_ec_to_frequency_and_anharmonicity,
     measurement_induced_dephasing,
     purcell_decay_rate,
-    qubit_frequency_from_ej_ec,
     resonator_linewidth_from_q,
 )
 
 MAX_EXAMPLES = 20
-
-
-class TestQubitFrequencyFromEjEc:
-    """Tests for :func:`~qubit_frequency_from_ej_ec`."""
-
-    @staticmethod
-    def test_typical_value() -> None:
-        """Test with typical transmon parameters."""
-        f_q = qubit_frequency_from_ej_ec(20.0, 0.2)
-        # sqrt(8 * 20 * 0.2) - 0.2 = sqrt(32) - 0.2 ≈ 5.457
-        expected = math.sqrt(8 * 20.0 * 0.2) - 0.2
-        assert math.isclose(f_q, expected, rel_tol=1e-10)
-
-    @staticmethod
-    def test_frequency_increases_with_ej() -> None:
-        """Test that frequency increases with E_J."""
-        f_low = qubit_frequency_from_ej_ec(10.0, 0.2)
-        f_high = qubit_frequency_from_ej_ec(40.0, 0.2)
-        assert f_high > f_low
-
-
-class TestAnharmonicityFromEc:
-    """Tests for :func:`~anharmonicity_from_ec`."""
-
-    @staticmethod
-    def test_identity() -> None:
-        """Anharmonicity equals E_C in the transmon regime."""
-        assert anharmonicity_from_ec(0.2) == 0.2
-        assert anharmonicity_from_ec(0.3) == 0.3
 
 
 class TestEjEcToFrequencyAndAnharmonicity:
@@ -55,8 +23,16 @@ class TestEjEcToFrequencyAndAnharmonicity:
     @staticmethod
     def test_returns_tuple() -> None:
         omega_q, alpha = ej_ec_to_frequency_and_anharmonicity(20.0, 0.2)
-        assert math.isclose(omega_q, qubit_frequency_from_ej_ec(20.0, 0.2))
-        assert math.isclose(alpha, anharmonicity_from_ec(0.2))
+        expected_f_q = math.sqrt(8 * 20.0 * 0.2) - 0.2
+        assert math.isclose(omega_q, expected_f_q, rel_tol=1e-10)
+        assert math.isclose(alpha, 0.2)
+
+    @staticmethod
+    def test_frequency_increases_with_ej() -> None:
+        """Test that frequency increases with E_J."""
+        f_low, _ = ej_ec_to_frequency_and_anharmonicity(10.0, 0.2)
+        f_high, _ = ej_ec_to_frequency_and_anharmonicity(40.0, 0.2)
+        assert f_high > f_low
 
 
 class TestDispersiveShift:
@@ -147,15 +123,6 @@ class TestResonatorLinewidthFromQ:
     def test_typical_value() -> None:
         kappa = resonator_linewidth_from_q(7.0, 10_000)
         assert math.isclose(kappa, 7.0 / 10_000)
-
-
-class TestChiToReadoutFrequencyShift:
-    """Tests for :func:`~chi_to_readout_frequency_shift`."""
-
-    @staticmethod
-    def test_conversion() -> None:
-        shift = chi_to_readout_frequency_shift(-0.001)
-        assert math.isclose(shift, -2e6)
 
 
 class TestMeasurementInducedDephasing:
