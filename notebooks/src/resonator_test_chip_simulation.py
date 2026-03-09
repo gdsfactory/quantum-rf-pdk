@@ -23,14 +23,13 @@
 
 # %% tags=["hide-input", "hide-output"]
 import warnings
-from pathlib import Path
 
 import gdsfactory as gf
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import sax
 
-from qpdk import PDK
+from qpdk import PATH, PDK
 from qpdk.models import models
 
 PDK.activate()
@@ -43,9 +42,7 @@ PDK.activate()
 # (8 per probeline), four launchers, and CPW routing between all elements.
 
 # %%
-yaml_path = (
-    Path(gf.config.cwd) / "qpdk" / "samples" / "resonator_test_chip_yaml.pic.yml"
-)
+yaml_path = PATH.samples / "resonator_test_chip_yaml.pic.yml"
 chip = gf.read.from_yaml(yaml_path)
 chip.plot()
 
