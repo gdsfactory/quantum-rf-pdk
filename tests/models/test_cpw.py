@@ -195,11 +195,28 @@ class TestTransmissionLineSParams:
         assert_allclose(float(power[0]), 1.0, atol=1e-10)
 
     def test_reciprocal(self) -> None:
-        """S21 = S12 for a symmetric transmission line."""
-        # This is guaranteed by the symmetric ABCD matrix (A=D)
+        """S21 = S12 for a reciprocal 2-port network."""
         gamma = jnp.array([1j * 150.0])
-        _, s21 = transmission_line_s_params(gamma, 50.0, 0.02, z_ref=75.0)
-        # S12 = S21 by construction in our implementation
+        z0 = 50.0
+        length = 0.02
+        z_ref = 75.0
+        _s11, s21 = transmission_line_s_params(gamma, z0, length, z_ref=z_ref)
+
+        # In a reciprocal network, S21 = S12. Our implementation returns (S11, S21)
+        # assuming symmetry (S11=S22, S21=S12). We verify that the returned S21
+        # matches the general formula for S12 from a reciprocal ABCD matrix (AD-BC=1).
+        theta = gamma * length
+        a = jnp.cosh(theta)
+        b = z0 * jnp.sinh(theta)
+        c = jnp.sinh(theta) / z0
+        d = a  # symmetric
+
+        # General S12 formula from ABCD: S12 = 2(AD-BC) / (A + B/Zr + C*Zr + D)
+        # For a reciprocal network AD-BC = 1.
+        denom = a + b / z_ref + c * z_ref + d
+        s12_expected = 2.0 / denom
+
+        assert_allclose(s21, s12_expected, atol=1e-10)
         assert jnp.isfinite(s21[0])
 
 

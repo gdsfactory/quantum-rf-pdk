@@ -1,8 +1,9 @@
 """Resonators."""
 
+from typing import Any
+
 import jax.numpy as jnp
 import sax
-from typing import Any
 from gdsfactory.typings import CrossSectionSpec
 from sax.models.rf import capacitor, electrical_open, electrical_short, tee
 
