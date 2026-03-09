@@ -196,8 +196,9 @@ def prepare_component_for_hfss(
     This function prepares the component by doing the following:
     1. Applying additive metal operations
     2. Inverting mask polarity to positive metals
-    3. Remove metadata-like layers
-    4. Optionally add a margin to the simulation bounding box by extending M1_DRAW and M2_DRAW
+    3. Remove etch layers (e.g. M1_ETCH, M2_ETCH) that are not needed for HFSS geometry
+    4. Remove metadata-like layers
+    5. Optionally add a margin to the simulation bounding box by extending M1_DRAW and M2_DRAW
 
     Args:
         component: The gdsfactory component to prepare.
@@ -215,6 +216,7 @@ def prepare_component_for_hfss(
     c << component.copy()
     c = apply_additive_metals(c)
     c = invert_mask_polarity(c)
+    c = c.remove_layers(layer for layer in LAYER if str(layer).endswith("_ETCH"))
     if margin > 0.0:
         c = add_margin_to_layer(
             c,
