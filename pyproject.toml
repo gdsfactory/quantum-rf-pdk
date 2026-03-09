@@ -20,6 +20,7 @@ models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
   "optuna",
+  "pymablock @ git+https://gitlab.kwant-project.org/qt/pymablock.git@c441ef5d3d95b7823a08cf81da686876ae2e5231",
   "ray[tune]; sys_platform != 'win32'",
   "sax>=0.16.11",
   "scikit-rf",
@@ -161,6 +162,7 @@ ignore = [
   "B905",  # `zip()` without an explicit `strict=` parameter
   "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
   "RUF001",  # ambiguous unicode characters (incl. lots of math)
+  "RUF002",  # ambiguous unicode characters (incl. docstring greek letters)
   "RUF003",  # -||- but for comments
 ]
 select = [
