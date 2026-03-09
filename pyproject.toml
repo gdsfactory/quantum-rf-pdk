@@ -131,7 +131,10 @@ redundant-cast = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]
-markers = ["skip_windows: skip test on Windows"]
+markers = [
+  "hamiltonian: tests that require pymablock or scqubits",
+  "skip_windows: skip test on Windows",
+]
 norecursedirs = [
   "*.egg",
   ".*",
