@@ -29,6 +29,7 @@ References:
 
 from __future__ import annotations
 
+import re
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -251,11 +252,21 @@ def import_component_to_hfss(
     Returns:
         True if import was successful, False otherwise.
     """
+    if layer_stack is None:
+        layer_stack = LAYER_STACK
+
     # Generate layer mapping from LayerStack
     thickness_override = 0.0 if import_as_sheets else None
     mapping_layers = layer_stack_to_gds_mapping(
         layer_stack, thickness_override=thickness_override
     )
+
+    # Create reverse mapping from layer number to layer name for renaming
+    num_to_name = {}
+    for name, level in layer_stack.layers.items():
+        layer_num = _get_layer_number_from_level(level)
+        if layer_num is not None and layer_num not in num_to_name:
+            num_to_name[layer_num] = name
 
     # Export component to GDS
     # Note: We use TemporaryDirectory to ensure cleanup, but need to keep it
@@ -286,11 +297,28 @@ def import_component_to_hfss(
     if result:
         # Set all newly imported objects to PEC
         new_objects = list(set(hfss.modeler.object_names) - existing_objects)
-        if new_objects:
+
+        renamed_objects = []
+        for obj_name in new_objects:
+            match = re.match(r"^signal(\d+)(_.*)?$", obj_name)
+            new_name = obj_name
+            if match:
+                layer_num = int(match.group(1))
+                suffix = match.group(2) or ""
+                if layer_num in num_to_name:
+                    layer_name = num_to_name[layer_num]
+                    new_name = f"{layer_name}{suffix}"
+                    try:
+                        hfss.modeler[obj_name].name = new_name
+                    except Exception:
+                        new_name = obj_name  # Fallback if rename fails
+            renamed_objects.append(new_name)
+
+        if renamed_objects:
             if import_as_sheets:
-                hfss.assign_perfecte_to_sheets(new_objects, name="PEC_Sheets")
+                hfss.assign_perfecte_to_sheets(renamed_objects, name="PEC_Sheets")
             else:
-                hfss.assign_perfect_e(new_objects, name="PEC_3D")
+                hfss.assign_perfect_e(renamed_objects, name="PEC_3D")
 
     # Clean up temporary directory if we created one
     if temp_dir_obj is not None:
@@ -484,3 +512,27 @@ def get_sparameter_results(
             }
 
     return results
+
+
+if __name__ == "__main__":
+    from qpdk import PDK
+    from qpdk.cells.resonator import resonator
+
+    PDK.activate()
+
+    # Generate a resonator component
+    comp = resonator(length=4000)
+
+    # Run the preparation step that is typically done before import
+    prepared_comp = prepare_component_for_hfss(comp)
+
+    # Print the mapping layers
+    mapping = layer_stack_to_gds_mapping()
+    print("Mapping layers:")
+    comp_layers = {layer[0] for layer in prepared_comp.layers}
+    for layer_num, (elev, thick) in mapping.items():
+        if layer_num in comp_layers:
+            print(f"Layer {layer_num}: elevation={elev}, thickness={thick}")
+
+    # Show the component
+    prepared_comp.show()
