@@ -97,7 +97,7 @@ print(f"Calculated length: {current_length:.1f} µm")
 # Configuration for HFSS simulation
 EIGENMODE_CONFIG = {
     "min_frequency_ghz": 3.0,  # Start searching from 3 GHz
-    "num_modes": 3,  # Find 3 eigenmodes
+    "num_modes": 1,  # Find 3 eigenmodes
     "max_passes": 15,  # Maximum adaptive mesh passes
     "min_passes": 2,
     "percent_refinement": 30,
@@ -209,7 +209,7 @@ setup.props["MaximumPasses"] = EIGENMODE_CONFIG["max_passes"]
 setup.props["MinimumPasses"] = EIGENMODE_CONFIG["min_passes"]
 setup.props["PercentRefinement"] = EIGENMODE_CONFIG["percent_refinement"]
 setup.props["ConvergeOnRealFreq"] = True
-setup.props["MaxDeltaFreq"] = 2  # 2% convergence criterion
+setup.props["MaxDeltaFreq"] = 1  # 1% convergence criterion
 
 setup.update()
 print("Eigenmode setup configured:")
