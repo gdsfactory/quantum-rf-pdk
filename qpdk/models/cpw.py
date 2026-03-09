@@ -381,7 +381,7 @@ def propagation_constant(
     r"""Complex propagation constant of a quasi-TEM transmission line.
 
     For the general lossy case
-    (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, §2.2.4):
+    (Pozar :cite:`m.pozarMicrowaveEngineering2012`, §3.8):
 
     .. math::
 
