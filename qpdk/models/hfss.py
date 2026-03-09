@@ -288,9 +288,9 @@ def import_component_to_hfss(
         new_objects = list(set(hfss.modeler.object_names) - existing_objects)
         if new_objects:
             if import_as_sheets:
-                hfss.assign_perfecte_to_sheets(new_objects)
+                hfss.assign_perfecte_to_sheets(new_objects, name="PEC_Sheets")
             else:
-                hfss.assign_perfect_e(new_objects)
+                hfss.assign_perfect_e(new_objects, name="PEC_3D")
 
     # Clean up temporary directory if we created one
     if temp_dir_obj is not None:
