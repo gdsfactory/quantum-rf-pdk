@@ -22,7 +22,7 @@ RUN adduser --disabled-password \
 
 # Apt dependencies for gdsfactory & KLayout
 RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends git=1:2.47.3-0+deb13u1 libexpat1=2.7.1-2 libexpat1-dev=2.7.1-2 && \
+    apt-get install -y --no-install-recommends git=1:2.47.3-0+deb13u1 just=1.40.0-1+b1 libexpat1=2.7.1-2 libexpat1-dev=2.7.1-2 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${HOME}
@@ -37,7 +37,7 @@ RUN --mount=type=cache,uid=${NB_UID},gid=${NB_UID},target=${HOME}/.cache/uv \
 # Copy source code, install project and convert jupytext scripts to notebooks
 COPY --chown=${USER}:${USER} . ${HOME}
 RUN --mount=type=cache,uid=${NB_UID},gid=${NB_UID},target=${HOME}/.cache/uv \
-    uv sync --all-extras && \
+    just install && \
     uv run jupytext --to ipynb qpdk/samples/**/*.py
 
 # Set PATH to include virtual environment
