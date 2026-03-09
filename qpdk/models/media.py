@@ -12,12 +12,15 @@ from jax.typing import ArrayLike
 from skrf.media import CPW
 
 from qpdk import LAYER_STACK
+from qpdk.helper import deprecated
 from qpdk.models.cpw import (
     cpw_epsilon_eff,
     cpw_thickness_correction,
     cpw_z0,
 )
 from qpdk.tech import material_properties
+
+DEPRECATION_MSG = "Prefer cpw_parameters or the functions in qpdk.models.cpw for JAX-jittable analysis."
 
 
 class MediaCallable(Protocol):
@@ -29,6 +32,7 @@ class MediaCallable(Protocol):
 
 
 @cache
+@deprecated(DEPRECATION_MSG)
 def cpw_media_skrf(width: float, gap: float) -> MediaCallable:
     """Create a partial coplanar waveguide (CPW) media object using scikit-rf.
 
@@ -91,6 +95,7 @@ def get_cpw_dimensions(cross_section: CrossSectionSpec) -> tuple[float, float]:
     return width, gap
 
 
+@deprecated(DEPRECATION_MSG)
 def cross_section_to_media(cross_section: CrossSectionSpec) -> MediaCallable:
     """Converts a layout :class:`~CrossSectionSpec` to model :class:`~MediaCallable`.
 
@@ -142,7 +147,7 @@ def cpw_parameters(
 
     Conductor thickness corrections follow
     Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
-    (§7.5, Eqs. 7.98-7.100).
+    (§7.3, Eqs. 7.98-7.100).
 
     Args:
         width: Centre-conductor width in µm.

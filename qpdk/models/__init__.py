@@ -20,7 +20,6 @@ from qpdk.models.couplers import (
 )
 from qpdk.models.cpw import (
     cpw_epsilon_eff,
-    cpw_gamma,
     cpw_thickness_correction,
     cpw_z0,
     microstrip_epsilon_eff,
@@ -111,7 +110,6 @@ __all__ = [
     "coupling_strength_to_capacitance",
     "cpw_cpw_coupling_capacitance",
     "cpw_epsilon_eff",
-    "cpw_gamma",
     "cpw_media_skrf",
     "cpw_parameters",
     "cpw_thickness_correction",

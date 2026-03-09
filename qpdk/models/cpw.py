@@ -13,12 +13,12 @@ described by Simons :cite:`simonsCoplanarWaveguideCircuits2001` (ch. 2) and
 Ghione & Naldi :cite:`ghioneAnalyticalFormulasCoplanar1984`.
 Conductor thickness corrections use the first-order formulae of
 Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
-(§7.5, Eqs. 7.98-7.100).
+(§7.3, Eqs. 7.98-7.100).
 
 Microstrip Theory
 -----------------
 The microstrip analysis uses the Hammerstad-Jensen
-:cite:`hammerstadAccurateModelsComputer1980` closed-form expressions for
+:cite:`hammerstadAccurateModelsMicrostrip1980` closed-form expressions for
 effective permittivity and characteristic impedance, as presented in
 Pozar :cite:`m.pozarMicrowaveEngineering2012` (ch. 3, §3.8).
 
@@ -28,7 +28,7 @@ The ABCD-to-S-parameter conversion is the standard microwave-network
 relation from Pozar :cite:`m.pozarMicrowaveEngineering2012` (ch. 4).
 
 The implementation was cross-checked against the Qucs-S model
-(see `Qucs technical documentation`_, §12.4 for CPW, §12.1 for microstrip)
+(see `Qucs technical documentation`_, §12 for CPW, §11 for microstrip)
 and the ``scikit-rf`` :class:`~skrf.media.cpw.CPW` class.
 
 .. _Qucs technical documentation:
@@ -44,37 +44,10 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import jaxellip
-import scipy.constants
 from jax.typing import ArrayLike
 
-c_0: float = scipy.constants.speed_of_light
-"""Speed of light in vacuum (m/s)."""
-
-μ_0: float = scipy.constants.mu_0
-"""Permeability of free space (H/m)."""
-
-ε_0: float = scipy.constants.epsilon_0
-"""Permittivity of free space (F/m)."""
-
-Z_0_FREE: float = float(jnp.sqrt(μ_0 / ε_0))
-r"""Impedance of free space :math:`\sqrt{\mu_0/\varepsilon_0}` (Ω)."""
-
-
-# ---------------------------------------------------------------------------
-# Low-level helpers
-# ---------------------------------------------------------------------------
-
-
-@partial(jax.jit, inline=True)
-def _ellipk_ratio(m: ArrayLike) -> jax.Array:
-    r"""Ratio of complete elliptic integrals :math:`K(m)/K(1-m)`.
-
-    Args:
-        m: Elliptic-integral parameter (squared modulus :math:`k^2`).
-    """
-    return jaxellip.ellipk(m) / jaxellip.ellipk(1.0 - m)
-
+from qpdk.models.constants import c_0, π
+from qpdk.models.math import ellipk_ratio
 
 # ===================================================================
 # Coplanar Waveguide (CPW)
@@ -91,7 +64,7 @@ def cpw_epsilon_eff(
     r"""Effective permittivity of a CPW on a finite-height substrate.
 
     Uses conformal mapping
-    (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, Eq. 2.2.20-2.2.22;
+    (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, Eq. 2.37;
     Ghione & Naldi :cite:`ghioneAnalyticalFormulasCoplanar1984`):
 
     .. math::
@@ -119,18 +92,18 @@ def cpw_epsilon_eff(
     w = jnp.asarray(w, dtype=float)
     s = jnp.asarray(s, dtype=float)
     h = jnp.asarray(h, dtype=float)
-    ep_r = jnp.asarray(ep_r, dtype=float)
+    ε_r = jnp.asarray(ep_r, dtype=float)
 
     # Free-space modulus
     k0 = w / (w + 2.0 * s)
 
     # Substrate-corrected modulus
-    k1 = jnp.sinh(jnp.pi * w / (4.0 * h)) / jnp.sinh(jnp.pi * (w + 2.0 * s) / (4.0 * h))
+    k1 = jnp.sinh(π * w / (4.0 * h)) / jnp.sinh(π * (w + 2.0 * s) / (4.0 * h))
 
     # Filling factor q₁ = [K(k₁)/K(k₁')] / [K(k₀)/K(k₀')]
-    q1 = _ellipk_ratio(k1**2) / _ellipk_ratio(k0**2)
+    q1 = ellipk_ratio(k1**2) / ellipk_ratio(k0**2)
 
-    return 1.0 + q1 * (ep_r - 1.0) / 2.0
+    return 1.0 + q1 * (ε_r - 1.0) / 2.0
 
 
 @partial(jax.jit, inline=True)
@@ -147,7 +120,9 @@ def cpw_z0(
                     {\sqrt{\varepsilon_{\mathrm{eff}}}\;
                      K(k_0^2)\,/\,K(1 - k_0^2)}
 
-    (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, Eq. 2.2.14.)
+    (Simons :cite:`simonsCoplanarWaveguideCircuits2001`, Eq. 2.38.)
+
+    Note that our :math:`w` and :math:`s` correspond to Simons' :math:`s` and :math:`w`, respectively.
 
     Args:
         w: Centre-conductor width (m).
@@ -159,10 +134,10 @@ def cpw_z0(
     """
     w = jnp.asarray(w, dtype=float)
     s = jnp.asarray(s, dtype=float)
-    ep_eff = jnp.asarray(ep_eff, dtype=float)
+    ε_eff = jnp.asarray(ep_eff, dtype=float)
 
     k0 = w / (w + 2.0 * s)
-    return 30.0 * jnp.pi / (jnp.sqrt(ep_eff) * _ellipk_ratio(k0**2))
+    return 30.0 * π / (jnp.sqrt(ε_eff) * ellipk_ratio(k0**2))
 
 
 @partial(jax.jit, inline=True)
@@ -176,12 +151,12 @@ def cpw_thickness_correction(
 
     First-order correction from
     Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
-    (§7.5, Eqs. 7.98-7.100):
+    (§7.3, Eqs. 7.98-7.100):
 
     .. math::
 
         \Delta &= \frac{1.25\,t}{\pi}
-                  \left(1 + \ln\frac{4\pi w}{t}\right) \\
+                  \left(1 + \ln\\frac{4\pi w}{t}\right) \\
         k_e    &= k_0 + (1 - k_0^2)\,\frac{\Delta}{2s} \\
         \varepsilon_{\mathrm{eff},t}
                &= \varepsilon_{\mathrm{eff}}
@@ -204,32 +179,32 @@ def cpw_thickness_correction(
     w = jnp.asarray(w, dtype=float)
     s = jnp.asarray(s, dtype=float)
     t = jnp.asarray(t, dtype=float)
-    ep_eff = jnp.asarray(ep_eff, dtype=float)
+    ε_eff = jnp.asarray(ep_eff, dtype=float)
 
     k0 = w / (w + 2.0 * s)
-    q0 = _ellipk_ratio(k0**2)
+    q0 = ellipk_ratio(k0**2)
 
     # Avoid 0 * log(inf) -> NaN when t = 0
     t_safe = jnp.where(t < 1e-15, 1e-15, t)
 
     # Effective width increase (GGBB96 Eq. 7.98)
-    delta = (1.25 * t / jnp.pi) * (1.0 + jnp.log(4.0 * jnp.pi * w / t_safe))
+    Δ = (1.25 * t / π) * (1.0 + jnp.log(4.0 * π * w / t_safe))
 
     # Modified modulus for Z₀ (GGBB96, between 7.99 and 7.100)
-    ke = k0 + (1.0 - k0**2) * delta / (2.0 * s)
+    ke = k0 + (1.0 - k0**2) * Δ / (2.0 * s)
     ke = jnp.clip(ke, 1e-12, 1.0 - 1e-12)
 
     # Modified ε_eff (GGBB96 Eq. 7.100)
-    ep_eff_t = ep_eff - (0.7 * (ep_eff - 1.0) * t / s) / (q0 + 0.7 * t / s)
+    ε_eff_t = ε_eff - (0.7 * (ε_eff - 1.0) * t / s) / (q0 + 0.7 * t / s)
 
     # Modified Z₀
-    z0_t = 30.0 * jnp.pi / (jnp.sqrt(ep_eff_t) * _ellipk_ratio(ke**2))
+    z0_t = 30.0 * π / (jnp.sqrt(ε_eff_t) * ellipk_ratio(ke**2))
 
     # Disable thickness correction if t <= 0
-    ep_eff_t = jnp.where(t <= 0, ep_eff, ep_eff_t)
-    z0_t = jnp.where(t <= 0, cpw_z0(w, s, ep_eff), z0_t)
+    ε_eff_t = jnp.where(t <= 0, ε_eff, ε_eff_t)
+    z0_t = jnp.where(t <= 0, cpw_z0(w, s, ε_eff), z0_t)
 
-    return ep_eff_t, z0_t
+    return ε_eff_t, z0_t
 
 
 # ===================================================================
@@ -246,7 +221,7 @@ def microstrip_epsilon_eff(
     r"""Effective permittivity of a microstrip line.
 
     Uses the Hammerstad-Jensen
-    :cite:`hammerstadAccurateModelsComputer1980` formula as given in
+    :cite:`hammerstadAccurateModelsMicrostrip1980` formula as given in
     Pozar :cite:`m.pozarMicrowaveEngineering2012` (Eq. 3.195-3.196):
 
     .. math::
@@ -268,7 +243,7 @@ def microstrip_epsilon_eff(
     """
     w = jnp.asarray(w, dtype=float)
     h = jnp.asarray(h, dtype=float)
-    ep_r = jnp.asarray(ep_r, dtype=float)
+    ε_r = jnp.asarray(ep_r, dtype=float)
 
     u = w / h
     f_u = 1.0 / jnp.sqrt(1.0 + 12.0 / u)
@@ -277,7 +252,7 @@ def microstrip_epsilon_eff(
     narrow_correction = 0.04 * (1.0 - u) ** 2
     f_u = jnp.where(u < 1.0, f_u + narrow_correction, f_u)
 
-    return (ep_r + 1.0) / 2.0 + (ep_r - 1.0) / 2.0 * f_u
+    return (ε_r + 1.0) / 2.0 + (ε_r - 1.0) / 2.0 * f_u
 
 
 @partial(jax.jit, inline=True)
@@ -289,7 +264,7 @@ def microstrip_z0(
     r"""Characteristic impedance of a microstrip line.
 
     Uses the Hammerstad-Jensen
-    :cite:`hammerstadAccurateModelsComputer1980` approximation as given in
+    :cite:`hammerstadAccurateModelsMicrostrip1980` approximation as given in
     Pozar :cite:`m.pozarMicrowaveEngineering2012` (Eq. 3.197-3.198):
 
     .. math::
@@ -314,17 +289,15 @@ def microstrip_z0(
     """
     w = jnp.asarray(w, dtype=float)
     h = jnp.asarray(h, dtype=float)
-    ep_eff = jnp.asarray(ep_eff, dtype=float)
+    ε_eff = jnp.asarray(ep_eff, dtype=float)
 
     u = w / h
 
     # Narrow strip (w/h <= 1)
-    z_narrow = (60.0 / jnp.sqrt(ep_eff)) * jnp.log(8.0 / u + u / 4.0)
+    z_narrow = (60.0 / jnp.sqrt(ε_eff)) * jnp.log(8.0 / u + u / 4.0)
 
     # Wide strip (w/h >= 1)
-    z_wide = (
-        120.0 * jnp.pi / (jnp.sqrt(ep_eff) * (u + 1.393 + 0.667 * jnp.log(u + 1.444)))
-    )
+    z_wide = 120.0 * π / (jnp.sqrt(ε_eff) * (u + 1.393 + 0.667 * jnp.log(u + 1.444)))
 
     return jnp.where(u <= 1.0, z_narrow, z_wide)
 
@@ -341,7 +314,7 @@ def microstrip_thickness_correction(
 
     Uses the widely-adopted Schneider correction as presented in
     Pozar :cite:`m.pozarMicrowaveEngineering2012` (§3.8) and
-    Gupta et al. :cite:`guptaMicrostripLinesSlotlines1996` (§2.2.4):
+    Gupta et al. :cite:`guptaMicrostripLinesSlotlines1996`:
 
     .. math::
 
@@ -370,29 +343,27 @@ def microstrip_thickness_correction(
     w = jnp.asarray(w, dtype=float)
     h = jnp.asarray(h, dtype=float)
     t = jnp.asarray(t, dtype=float)
-    ep_r = jnp.asarray(ep_r, dtype=float)
-    ep_eff = jnp.asarray(ep_eff, dtype=float)
-
-    e = jnp.e  # Euler's number
+    ε_r = jnp.asarray(ep_r, dtype=float)
+    ε_eff = jnp.asarray(ep_eff, dtype=float)
 
     # Effective width (Schneider)
-    term = jnp.sqrt((t / h) ** 2 + (t / (w * jnp.pi + 1.1 * t * jnp.pi)) ** 2)
+    term = jnp.sqrt((t / h) ** 2 + (t / (w * π + 1.1 * t * π)) ** 2)
     # Avoid 0 * log(inf) -> NaN when t = 0
     term_safe = jnp.where(term < 1e-15, 1.0, term)
-    w_eff = w + (t / jnp.pi) * jnp.log(4.0 * e / term_safe)
+    w_eff = w + (t / π) * jnp.log(4.0 * jnp.e / term_safe)
 
     # Corrected epsilon_eff
-    ep_eff_t = ep_eff - (ep_r - 1.0) * t / h / (4.6 * jnp.sqrt(w / h))
+    ε_eff_t = ε_eff - (ε_r - 1.0) * t / h / (4.6 * jnp.sqrt(w / h))
 
     # Corrected Z0
-    z0_t = microstrip_z0(w_eff, h, ep_eff_t)
+    z0_t = microstrip_z0(w_eff, h, ε_eff_t)
 
     # Disable thickness correction if t <= 0
     w_eff = jnp.where(t <= 0, w, w_eff)
-    ep_eff_t = jnp.where(t <= 0, ep_eff, ep_eff_t)
-    z0_t = jnp.where(t <= 0, microstrip_z0(w, h, ep_eff), z0_t)
+    ε_eff_t = jnp.where(t <= 0, ε_eff, ε_eff_t)
+    z0_t = jnp.where(t <= 0, microstrip_z0(w, h, ε_eff), z0_t)
 
-    return w_eff, ep_eff_t, z0_t
+    return w_eff, ε_eff_t, z0_t
 
 
 # ===================================================================
@@ -445,29 +416,22 @@ def propagation_constant(
         Complex propagation constant :math:`\gamma` (1/m).
     """
     f = jnp.asarray(f, dtype=float)
-    ep_eff = jnp.asarray(ep_eff, dtype=float)
-    tand = jnp.asarray(tand, dtype=float)
-    ep_r = jnp.asarray(ep_r, dtype=float)
+    ε_eff = jnp.asarray(ep_eff, dtype=float)
+    tanδ = jnp.asarray(tand, dtype=float)
+    ε_r = jnp.asarray(ep_r, dtype=float)
 
-    beta = 2.0 * jnp.pi * f * jnp.sqrt(ep_eff) / c_0
+    β = 2.0 * π * f * jnp.sqrt(ε_eff) / c_0
 
     # Use safe denominator to prevent NaN gradients in JAX backward pass
-    denom = jnp.where(jnp.abs(ep_r - 1.0) < 1e-15, 1.0, ep_r - 1.0)
+    denom = jnp.where(jnp.abs(ε_r - 1.0) < 1e-15, 1.0, ε_r - 1.0)
 
     # Dielectric attenuation constant (Simons Eq. 2.2.41)
-    alpha_d = (
-        jnp.pi * f / c_0 * (ep_r / jnp.sqrt(ep_eff)) * ((ep_eff - 1.0) / denom) * tand
-    )
+    α_d = π * f / c_0 * (ε_r / jnp.sqrt(ε_eff)) * ((ε_eff - 1.0) / denom) * tanδ
     # Guard against ep_r == 1 (vacuum) where division would be 0/0.
-    # When ep_r == 1 there is no substrate, so alpha_d = 0 by definition.
-    alpha_d = jnp.where(jnp.abs(ep_r - 1.0) < 1e-15, 0.0, alpha_d)
+    # When ep_r == 1 there is no substrate, so α_d = 0 by definition.
+    α_d = jnp.where(jnp.abs(ε_r - 1.0) < 1e-15, 0.0, α_d)
 
-    return alpha_d + 1j * beta
-
-
-# Backward-compatible alias: cpw_gamma was the original name when this
-# function only supported CPW.  It now supports any quasi-TEM line.
-cpw_gamma = propagation_constant
+    return α_d + 1j * β
 
 
 @partial(jax.jit, inline=True)
@@ -513,7 +477,7 @@ def transmission_line_s_params(
     Returns:
         ``(S11, S21)`` — complex S-parameter arrays.
     """
-    gamma = jnp.asarray(gamma, dtype=complex)
+    γ = jnp.asarray(gamma, dtype=complex)
     z0 = jnp.asarray(z0, dtype=complex)
     length = jnp.asarray(length, dtype=float)
 
@@ -521,10 +485,10 @@ def transmission_line_s_params(
         z_ref = z0
     z_ref = jnp.asarray(z_ref, dtype=complex)
 
-    theta = gamma * length
+    θ = γ * length
 
-    cosh_t = jnp.cosh(theta)
-    sinh_t = jnp.sinh(theta)
+    cosh_t = jnp.cosh(θ)
+    sinh_t = jnp.sinh(θ)
 
     # ABCD elements (symmetric line: A = D)
     a = cosh_t

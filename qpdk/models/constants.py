@@ -1,5 +1,7 @@
 """Model constants."""
 
+import math
+
 import scipy.constants
 
 DEFAULT_FREQUENCY: float = 5e9
@@ -12,5 +14,8 @@ TEST_FREQUENCY: tuple[tuple[float, float, float], tuple[float, float, float]] = 
 c_0 = scipy.constants.speed_of_light
 e = scipy.constants.e
 h = scipy.constants.h
+μ_0 = scipy.constants.mu_0
 ε_0 = scipy.constants.epsilon_0
 π = scipy.constants.pi
+
+Z_0_FREE = math.sqrt(μ_0 / ε_0)

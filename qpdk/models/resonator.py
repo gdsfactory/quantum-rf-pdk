@@ -5,9 +5,8 @@ import sax
 from gdsfactory.typings import CrossSectionSpec
 from sax.models.rf import capacitor, electrical_open, electrical_short, tee
 
-from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.constants import DEFAULT_FREQUENCY, c_0
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
-from qpdk.models.cpw import c_0
 from qpdk.models.media import (
     cpw_parameters,
     cpw_z0_from_cross_section,

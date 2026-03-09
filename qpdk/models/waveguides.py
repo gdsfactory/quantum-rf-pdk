@@ -11,7 +11,6 @@ from sax.models.rf import electrical_open, electrical_short
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import (
-    cpw_gamma,
     microstrip_epsilon_eff,
     microstrip_thickness_correction,
     propagation_constant,
@@ -63,7 +62,7 @@ def straight(
     _h, _t, ep_r = get_cpw_substrate_params()
 
     # JAX-traceable computation
-    gamma = cpw_gamma(f_flat, ep_eff, tand=0.0, ep_r=ep_r)
+    gamma = propagation_constant(f_flat, ep_eff, tand=0.0, ep_r=ep_r)
     length_m = jnp.asarray(length) * 1e-6
     s11, s21 = transmission_line_s_params(gamma, z0_val, length_m)
 
