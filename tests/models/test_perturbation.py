@@ -3,7 +3,7 @@
 import math
 
 import hypothesis.strategies as st
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 
 from qpdk.models.perturbation import (
     dispersive_shift,
@@ -70,8 +70,7 @@ class TestDispersiveShift:
     def test_finite_result(self, g: float, omega_t: float, omega_r: float) -> None:
         """Result should be finite for non-degenerate parameters."""
         # Avoid resonance (omega_t = omega_r) and omega_t + omega_r = alpha
-        if abs(omega_t - omega_r) < 0.1 or abs(omega_t - omega_r - 0.2) < 0.1:
-            return
+        assume(not (abs(omega_t - omega_r) < 0.1 or abs(omega_t - omega_r - 0.2) < 0.1))
         chi = dispersive_shift(omega_t, omega_r, 0.2, g)
         assert math.isfinite(chi)
 
