@@ -280,7 +280,7 @@ def import_component_to_hfss(
         input_file=str(gds_path),
         mapping_layers=mapping_layers,
         units=units,
-        import_method=1,
+        import_method=0,
     )
 
     if result:
