@@ -13,7 +13,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.37.0"]
+dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.39.0"]
 
 [project.optional-dependencies]
 models = [
