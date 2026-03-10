@@ -16,6 +16,7 @@ classifiers = [
 dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.39.0"]
 
 [project.optional-dependencies]
+hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
@@ -140,7 +141,10 @@ redundant-cast = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]
-markers = ["skip_windows: skip test on Windows"]
+markers = [
+  "hfss: mark test as requiring HFSS",
+  "skip_windows: skip test on Windows"
+]
 norecursedirs = [
   "*.egg",
   ".*",

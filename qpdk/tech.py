@@ -91,6 +91,22 @@ material_properties = {
     "In": {"relative_permittivity": float("inf")},
 }
 
+NON_METADATA_LAYERS = {
+    LAYER.M1_DRAW,
+    LAYER.M1_ETCH,
+    LAYER.M2_DRAW,
+    LAYER.M2_ETCH,
+    LAYER.AB_DRAW,
+    LAYER.AB_VIA,
+    LAYER.JJ_AREA,
+    LAYER.JJ_PATCH,
+    LAYER.IND,
+    LAYER.TSV,
+    LAYER.DICE,
+    LAYER.ALN_TOP,
+    LAYER.ALN_BOT,
+}
+
 
 @cache
 def get_layer_stack() -> LayerStack:
