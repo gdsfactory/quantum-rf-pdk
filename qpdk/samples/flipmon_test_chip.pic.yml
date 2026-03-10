@@ -82,17 +82,41 @@ routes:
     settings:
       allow_width_mismatch: true
       auto_taper: false
-  probeline_input_to_output:
+  probeline_cap1_to_qubit1:
     links:
-      input_cap1,o2: input_cap2,o2
+      input_cap1,o2: qubit1,coupling_o1
     routing_strategy: route_bundle_cpw
     settings:
       allow_width_mismatch: true
       auto_taper: false
+  probeline_qubit1_to_qubit2:
+    links:
+      qubit1,coupling_o2: qubit2,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_qubit2_to_qubit3:
+    links:
+      qubit2,coupling_o2: qubit3,coupling_o2
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
       steps:
-      - dx: 4000
-        dy: -100
-      - dy: -200
+      - dx: 200
+      - dy: -952
+  probeline_qubit3_to_qubit4:
+    links:
+      qubit3,coupling_o1: qubit4,coupling_o2
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_qubit4_to_cap2:
+    links:
+      qubit4,coupling_o1: input_cap2,o2
+    routing_strategy: route_bundle_cpw
+    settings:
+      allow_width_mismatch: true
+      auto_taper: false
   probeline_output:
     links:
       input_cap2,o1: launcher_out,o1

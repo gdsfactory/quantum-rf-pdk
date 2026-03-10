@@ -11,6 +11,7 @@ from klayout.db import DCplxTrans
 
 from qpdk.cells.capacitor import plate_capacitor_single
 from qpdk.cells.resonator import resonator_quarter_wave
+from qpdk.cells.waveguides import coupler_straight
 from qpdk.helper import show_components
 from qpdk.tech import LAYER, route_bundle_cpw
 
@@ -30,8 +31,16 @@ def transmon_with_resonator(
     qubit_rotation: float = 90,
     coupler_port: str = "left_pad",
     coupler_offset: tuple[float, float] = (-45, 0),
+    probeline_coupler: ComponentSpec = coupler_straight,
+    probeline_coupling_gap: float = 16.0,
+    probeline_coupling_length: float = 200.0,
 ) -> Component:
     """Returns a transmon qubit coupled to a quarter wave resonator.
+
+    Uses a :func:`~qpdk.cells.waveguides.coupler_straight` to couple the
+    resonator to a probeline. The coupling section is inserted at the start
+    of the resonator meander, with one waveguide carrying the resonator signal
+    and the other providing ports for probeline routing.
 
     Args:
         qubit: Qubit component.
@@ -47,6 +56,10 @@ def transmon_with_resonator(
         qubit_rotation: Rotation angle for the qubit in degrees.
         coupler_port: Name of the qubit port to position the coupler relative to.
         coupler_offset: (x, y) offset for the coupler position.
+        probeline_coupler: Component spec for the probeline coupling section.
+        probeline_coupling_gap: Gap between the resonator and probeline
+            waveguides in the coupling section in µm.
+        probeline_coupling_length: Length of the coupling section in µm.
     """
     c = Component()
 
@@ -61,41 +74,64 @@ def transmon_with_resonator(
         * DCplxTrans(*coupler_offset)
     )
 
-    # Route to resonator input
-    resonator_input_port = gf.Port(
-        name="resonator_input",
-        center=resonator_meander_start,
-        orientation=0,
-        layer=LAYER.M1_DRAW,
-        width=10.0,
-        kcl=c.kcl,
+    # Create coupler_straight for probeline coupling
+    # The bottom track (o1→o4) carries the resonator signal
+    # The top track (o2→o3) provides probeline coupling ports
+    cs_ref = c << gf.get_component(
+        probeline_coupler,
+        gap=probeline_coupling_gap,
+        length=probeline_coupling_length,
+        cross_section=resonator_cross_section,
     )
+
+    # Position the coupler_straight so that o4 (bottom right) is at
+    # the resonator_meander_start position. The coupler extends to the
+    # left, and the resonator meander continues from o1 (bottom left).
+    cs_ref.move(
+        (
+            resonator_meander_start[0] - cs_ref.ports["o4"].x,
+            resonator_meander_start[1] - cs_ref.ports["o4"].y,
+        )
+    )
+
+    # Route from coupler_straight's right end to the plate capacitor
     routes = route_bundle_cpw(
         component=c,
-        ports1=[resonator_input_port],
+        ports1=[cs_ref.ports["o4"]],
         ports2=[coupler_ref.ports["o1"]],
         steps=[{"x": coupler_ref.ports["o1"].x}],
         auto_taper=False,
     )
     route = routes[0]
+
+    # Create resonator, accounting for both the route and coupling lengths
     resonator_ref = c << gf.get_component(
         resonator,
-        length=resonator_length - route.length * c.kcl.dbu,
+        length=resonator_length - route.length * c.kcl.dbu - probeline_coupling_length,
         meanders=resonator_meanders,
         bend_spec=resonator_bend_spec,
         cross_section=resonator_cross_section,
         open_start=resonator_open_start,
         open_end=resonator_open_end,
     )
-    resonator_ref.rotate(180)
-    resonator_ref.transform(resonator_input_port.dcplx_trans)
+
+    # Connect the resonator's shorted end to the coupler_straight's
+    # bottom-left port. This makes the resonator extend to the left.
+    resonator_ref.connect("o1", cs_ref.ports["o1"])
 
     c.info["qubit_type"] = qubit_ref.cell.info.get("qubit_type")
     c.info["resonator_type"] = resonator_ref.cell.info.get("resonator_type")
     c.info["coupler_type"] = coupler_ref.cell.info.get("coupler_type")
-    c.info["length"] = resonator_ref.cell.info.get("length") + route.length * c.kcl.dbu
+    c.info["length"] = (
+        resonator_ref.cell.info.get("length")
+        + route.length * c.kcl.dbu
+        + probeline_coupling_length
+    )
 
     c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
+    # Expose probeline coupling ports from the top track
+    c.add_port("coupling_o1", port=cs_ref.ports["o2"])
+    c.add_port("coupling_o2", port=cs_ref.ports["o3"])
     c.add_port(
         port=resonator_ref.ports["o1"],
         port_type="placement",
