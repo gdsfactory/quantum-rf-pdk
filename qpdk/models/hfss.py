@@ -329,6 +329,14 @@ def import_component_to_hfss(
     return result
 
 
+def _get_bbox_dimensions(component: Component) -> tuple[float, float, float, float]:
+    """Get the x_min, y_min, x_size, and y_size from a component's bounding box."""
+    bounds = component.bbox()
+    x_min, y_min = bounds.p1.x, bounds.p1.y
+    x_max, y_max = bounds.p2.x, bounds.p2.y
+    return x_min, y_min, x_max - x_min, y_max - y_min
+
+
 def add_substrate_to_hfss(
     hfss: Hfss,
     component: Component,
@@ -347,13 +355,11 @@ def add_substrate_to_hfss(
     Returns:
         Name of the created substrate object.
     """
-    bounds = component.bbox()
-    x_min, y_min = bounds.p1.x, bounds.p1.y
-    x_max, y_max = bounds.p2.x, bounds.p2.y
+    x_min, y_min, dx, dy = _get_bbox_dimensions(component)
 
     substrate = hfss.modeler.create_box(
         origin=[x_min, y_min, -thickness],
-        sizes=[x_max - x_min, y_max - y_min, thickness],
+        sizes=[dx, dy, thickness],
         name="Substrate",
         material=material,
     )
@@ -368,11 +374,12 @@ def add_air_region_to_hfss(
     *,
     height: float = 500.0,
     substrate_thickness: float = 500.0,
+    pec_boundary: bool = False,
 ) -> str:
     """Add an air region (vacuum box) around the component for eigenmode analysis.
 
-    Creates a vacuum region surrounding the component and assigns PerfectE (PEC)
-    boundary conditions to all outer faces. This is appropriate for closed-box
+    Creates a vacuum region surrounding the component. Optionally assigns PerfectE (PEC)
+    boundary conditions to all outer faces, which is appropriate for closed-box
     eigenmode simulations where the structure is shielded.
 
     Args:
@@ -380,17 +387,16 @@ def add_air_region_to_hfss(
         component: The component to create air region around.
         height: Height above the component in micrometers.
         substrate_thickness: Depth below surface for the region.
+        pec_boundary: If True, assign PerfectE boundary conditions to outer faces.
 
     Returns:
         Name of the created region object.
     """
-    bounds = component.bbox()
-    x_min, y_min = bounds.p1.x, bounds.p1.y
-    x_max, y_max = bounds.p2.x, bounds.p2.y
+    x_min, y_min, dx, dy = _get_bbox_dimensions(component)
 
     region = hfss.modeler.create_box(
         origin=[x_min, y_min, -substrate_thickness],
-        sizes=[x_max - x_min, y_max - y_min, height + substrate_thickness],
+        sizes=[dx, dy, height + substrate_thickness],
         name="AirRegion",
         material="vacuum",
     )
@@ -398,38 +404,14 @@ def add_air_region_to_hfss(
     # Ensure vacuum has lowest priority if it overlaps with substrate
     region.mesh_order = 99
 
-    # Assign PerfectE (PEC) boundary for closed-box eigenmode analysis
-    hfss.assign_perfect_e(
-        assignment=[face.id for face in region.faces],
-        name="PEC_Boundary",
-    )
+    if pec_boundary:
+        # Assign PerfectE (PEC) boundary for closed-box eigenmode analysis
+        hfss.assign_perfect_e(
+            assignment=[face.id for face in region.faces],
+            name="PEC_Boundary",
+        )
 
     return region.name
-
-
-def add_lumped_port(
-    hfss: Hfss,
-    port_face_id: int,
-    port_name: str = "Port1",
-    *,
-    impedance: float = 50.0,
-) -> object:
-    """Add a lumped port to a face in the HFSS model.
-
-    Args:
-        hfss: The HFSS application instance.
-        port_face_id: The face ID to assign the port to.
-        port_name: Name for the port.
-        impedance: Port impedance in ohms.
-
-    Returns:
-        The created port object.
-    """
-    return hfss.lumped_port(
-        assignment=port_face_id,
-        name=port_name,
-        impedance=impedance,
-    )
 
 
 def get_eigenmode_results(hfss: Hfss, setup_name: str = "EigenmodeSetup") -> dict:
