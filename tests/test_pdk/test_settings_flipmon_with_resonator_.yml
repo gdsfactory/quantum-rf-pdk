@@ -1,13 +1,16 @@
 info:
   length: 5000
   resonator_type: quarter_wave
-name: transmon_with_resonator_Qflipmon_with_bbox_RFresonator__7ec78d2a
+name: transmon_with_resonator_Qflipmon_with_bbox_RFresonator__92b22055
 settings:
   coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_SW10_L58
   coupler_offset:
   - -10
   - 0
   coupler_port: outer_ring_outside
+  probeline_coupler: Fcoupler_straight_Mgdsfactorypcomponentspcouplerspcoupler_SCScpw_G16
+  probeline_coupling_gap: 16
+  probeline_coupling_length: 200
   qubit: flipmon_with_bbox
   qubit_rotation: -90
   resonator: Fresonator_Mqpdkpcellspresonator_SOSFalse_OETrue_L4000_M6

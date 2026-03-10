@@ -19,6 +19,13 @@ instances:
       npoints: null
       radius: 100
       width: 10
+  coupler_straight:
+    component: coupler_straight
+    info: {}
+    settings:
+      cross_section: cpw
+      gap: 16
+      length: 200
   double_pad_transmon_with_bbox:
     component: double_pad_transmon_with_bbox
     info: {}
@@ -44,12 +51,12 @@ instances:
     component: resonator
     info:
       cross_section: coplanar_waveguide
-      length: 3357.42
+      length: 3157.42
       resonator_type: quarter_wave
     settings:
       bend_spec: bend_circular
       cross_section: cpw
-      length: 3357.42
+      length: 3157.42
       meanders: 5
       open_end: true
       open_start: false
@@ -86,16 +93,23 @@ nets:
   p2: straight2,o1
 - p1: bend_circular,o2
   p2: straight,o2
+- p1: coupler_straight,o1
+  p2: resonator,o1
+- p1: coupler_straight,o4
+  p2: straight,o1
 - p1: plate_capacitor_single,o1
   p2: straight2,o2
-- p1: resonator,o1
-  p2: straight,o1
 placements:
   bend_circular:
     mirror: true
     rotation: 270
     x: 0
     y: -1200
+  coupler_straight:
+    mirror: false
+    rotation: 0
+    x: -900
+    y: -1300
   double_pad_transmon_with_bbox:
     mirror: false
     rotation: 90
@@ -109,7 +123,7 @@ placements:
   resonator:
     mirror: false
     rotation: 180
-    x: -700
+    x: -900
     y: -1300
   straight:
     mirror: false
@@ -122,4 +136,6 @@ placements:
     x: 0
     y: -1200
 ports:
+  coupling_o1: coupler_straight,o2
+  coupling_o2: coupler_straight,o3
   junction: double_pad_transmon_with_bbox,junction

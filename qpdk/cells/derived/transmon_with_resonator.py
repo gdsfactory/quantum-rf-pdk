@@ -13,7 +13,7 @@ from qpdk.cells.capacitor import plate_capacitor_single
 from qpdk.cells.resonator import resonator_quarter_wave
 from qpdk.cells.waveguides import coupler_straight
 from qpdk.helper import show_components
-from qpdk.tech import LAYER, route_bundle_cpw
+from qpdk.tech import route_bundle_cpw
 
 
 @gf.cell
