@@ -296,18 +296,17 @@ if results["frequencies_ghz"]:
     try:
         # Create a field plot on a cut plane
         # Note: This requires PyVista and a valid display or virtual framebuffer
-        plot_obj = hfss.post.plot_field(
+        image_path = Path(temp_dir.name) / "e_field_mode1.png"
+        hfss.post.plot_field(
             quantity="Mag_E",
-            objects_list=["Global:XY"],
+            assignment=["Global:XY"],
             plot_type="CutPlane",
             setup="EigenmodeSetup",
             intrinsics={"Freq": mode_freq},
             show=False,
+            export_path=str(image_path),
         )
 
-        # Export the plot to an image file
-        image_path = Path(temp_dir.name) / "e_field_mode1.png"
-        plot_obj.export_image(str(image_path))
         print(f"Field plot saved to: {image_path}")
 
         # In a real notebook, you would display the image here:
