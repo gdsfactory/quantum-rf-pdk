@@ -1,6 +1,6 @@
 [project]
 name = "qpdk"
-version = "0.3.1"
+version = "0.3.2"
 description = "Quantum-RF generic PDK"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
