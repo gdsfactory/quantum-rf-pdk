@@ -58,7 +58,7 @@ idc_component = interdigital_capacitor(
     finger_length=20.0,  # Length of each finger in µm
     finger_gap=2.0,  # Gap between adjacent fingers in µm
     thickness=5.0,  # Finger width in µm
-    cross_section=coplanar_waveguide(width=10, gap=6),
+    cross_section=(cross_section := coplanar_waveguide(width=10, gap=6)),
 )
 
 # Visualize the component
@@ -90,7 +90,7 @@ for port in idc_component.ports:
 
 # %%
 # Get substrate permittivity from cross-section
-ep_r = cpw_ep_r_from_cross_section(idc_component.options["cross_section"])
+ep_r = cpw_ep_r_from_cross_section(cross_section)
 
 # Analytical estimate using QPDK model
 C_estimate = interdigital_capacitor_capacitance_analytical(
