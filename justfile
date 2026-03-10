@@ -10,10 +10,6 @@ install:
 install-tech:
     uv run --dev qpdk/install_tech.py
 
-# Remove samples folder
-rm-samples:
-    rm -rf qpdk/samples
-
 # Clean up all build, test, coverage and Python artifacts
 clean:
     rm -rf dist build *.egg-info docs/_build docs/notebooks
