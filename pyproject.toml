@@ -129,6 +129,15 @@ read-only = "ignore"
 # TODO: remove this when the pre-commit hook is updated to pyrefly >=0.55.0.
 redundant-cast = "ignore"
 
+[tool.coverage.run]
+source = ["qpdk"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "if __name__ == .__main__.",
+  "pragma: no cover",
+]
+
 [tool.pytest]
 addopts = ["--tb=short"]
 markers = ["skip_windows: skip test on Windows"]
