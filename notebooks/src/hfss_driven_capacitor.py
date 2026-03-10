@@ -253,37 +253,40 @@ for i, port in enumerate(prepared_component.ports, 1):
 
     # Create a small rectangle for the port face
     # Determine port orientation and create rectangle
+    # Note: explicit integration lines are used here instead of hfss.axis_directions
+    # due to a bug in PyAEDT's get_mid_points_on_dir which returns coordinates in mm 
+    # instead of the model units (um), causing port creation to fail.
     port_params = {
         0: {
-            "origin": [center[0] + cpw_gap, center[1] - cpw_width / 2, 0],
+            "origin": [center[0], center[1] - cpw_width / 2, 0],
             "sizes": [cpw_gap, cpw_width],
             "int_line": [
-                [center[0] + cpw_gap / 2, center[1], 0],
-                [center[0] - cpw_gap / 2, center[1], 0],
+                [center[0] + cpw_gap, center[1], 0],
+                [center[0], center[1], 0],
             ],
         },
         90: {
-            "origin": [center[0] - cpw_width / 2, center[1] + cpw_gap, 0],
+            "origin": [center[0] - cpw_width / 2, center[1], 0],
             "sizes": [cpw_width, cpw_gap],
             "int_line": [
-                [center[0], center[1] + cpw_gap / 2, 0],
-                [center[0], center[1] - cpw_gap / 2, 0],
+                [center[0], center[1] + cpw_gap, 0],
+                [center[0], center[1], 0],
             ],
         },
         180: {
             "origin": [center[0] - cpw_gap, center[1] - cpw_width / 2, 0],
             "sizes": [cpw_gap, cpw_width],
             "int_line": [
-                [center[0] - cpw_gap / 2, center[1], 0],
-                [center[0] + cpw_gap / 2, center[1], 0],
+                [center[0] - cpw_gap, center[1], 0],
+                [center[0], center[1], 0],
             ],
         },
         270: {
             "origin": [center[0] - cpw_width / 2, center[1] - cpw_gap, 0],
             "sizes": [cpw_width, cpw_gap],
             "int_line": [
-                [center[0], center[1] - cpw_gap / 2, 0],
-                [center[0], center[1] + cpw_gap / 2, 0],
+                [center[0], center[1] - cpw_gap, 0],
+                [center[0], center[1], 0],
             ],
         },
     }
@@ -305,7 +308,7 @@ for i, port in enumerate(prepared_component.ports, 1):
     if port_rect:
         hfss.lumped_port(
             assignment=port_rect.name,
-            name=port.name,
+            name=f"Port{i}",
             integration_line=integration_line,
         )
         print(f"  Created Port{i} at {center} ({port.name})")
