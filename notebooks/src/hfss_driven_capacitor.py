@@ -383,7 +383,7 @@ solution_y = hfss.post.get_solution_data(
 _, y_real = solution_y.get_expression_data(formula="real")
 _, y_imag = solution_y.get_expression_data(formula="imag")
 y21_trace = np.array(y_real) + 1j * np.array(y_imag)
-frequencies_hz_y = np.array(solution_y.primary_sweep_values)
+frequencies_ghz_y = np.array(solution_y.primary_sweep_values)
 
 # Analysis frequencies in GHz
 analysis_frequencies_ghz = [1, 5, 10]
@@ -394,13 +394,13 @@ print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
 print("-" * 40)
 
 for freq_target in analysis_frequencies_ghz:
-    idx = np.argmin(np.abs(frequencies_hz_y - freq_target * 1e9))
-    freq_hz = frequencies_hz_y[idx]
+    idx = np.argmin(np.abs(frequencies_ghz_y - freq_target))
+    freq_hz = frequencies_ghz_y[idx] * 1e9
     y21 = y21_trace[idx]
 
-    omega = 2 * np.pi * freq_hz
+    ω = 2 * np.pi * freq_hz
     # C_12 = -Im(Y_12) / w
-    C_extracted = -np.imag(y21) / omega
+    C_extracted = -np.imag(y21) / ω
 
     print(
         f"At {freq_hz / 1e9:.2f} GHz: Y21 = {y21:.2e}, C ≈ {C_extracted * 1e15:.2f} fF"
