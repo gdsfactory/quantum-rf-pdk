@@ -61,6 +61,15 @@ build-backend = "uv_build"
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
 skip = "bibliography.bib"
 
+[tool.coverage.run]
+source = ["qpdk"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "if __name__ == .__main__.",
+  "pragma: no cover",
+]
+
 [tool.gdsfactoryplus]
 name = "qpdk"
 
