@@ -497,9 +497,9 @@ def get_sparameter_results(
                 results["frequencies"] = np.array(solution.primary_sweep_values) / 1e9
 
             # Get complex S-parameter data
-            # data_real and data_imag give the real and imaginary parts
-            real_data = np.array(solution.data_real())
-            imag_data = np.array(solution.data_imag())
+            # Use get_expression_data to get real and imaginary parts
+            _, real_data = solution.get_expression_data(formula="real")
+            _, imag_data = solution.get_expression_data(formula="imag")
             complex_data = real_data + 1j * imag_data
 
             # Extract magnitude in dB and phase in degrees

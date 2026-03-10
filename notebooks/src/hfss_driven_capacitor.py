@@ -260,18 +260,26 @@ for i, port in enumerate(prepared_component.ports, 1):
         # Port facing left or right
         port_rect = hfss.modeler.create_rectangle(
             origin=[center[0], center[1] - port_height / 2, 0],
-            sizes=[metal_thickness, port_height],
-            cs_plane="YZ",
+            sizes=[port_height, metal_thickness],
+            orientation="YZ",
             name=f"PortFace_{i}",
         )
+        integration_line = [
+            [center[0], center[1] - port_height / 2, metal_thickness / 2],
+            [center[0], center[1] + port_height / 2, metal_thickness / 2],
+        ]
     else:
         # Port facing up or down
         port_rect = hfss.modeler.create_rectangle(
             origin=[center[0] - port_height / 2, center[1], 0],
             sizes=[port_height, metal_thickness],
-            cs_plane="XZ",
+            orientation="XZ",
             name=f"PortFace_{i}",
         )
+        integration_line = [
+            [center[0] - port_height / 2, center[1], metal_thickness / 2],
+            [center[0] + port_height / 2, center[1], metal_thickness / 2],
+        ]
 
     # Create lumped port
     if port_rect:
@@ -279,6 +287,7 @@ for i, port in enumerate(prepared_component.ports, 1):
             assignment=port_rect.name,
             name=f"Port{i}",
             impedance=50,
+            integration_line=integration_line,
         )
         print(f"  Created Port{i} at {center} ({port.name})")
 
