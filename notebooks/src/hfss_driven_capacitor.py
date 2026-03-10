@@ -35,16 +35,18 @@ import tempfile
 import time
 from pathlib import Path
 
-import numpy as np
-
 # %% [markdown]
 # ## Create an Interdigital Capacitor Component
 #
 # We'll use QPDK's interdigital capacitor cell, which creates interleaved
 # metal fingers for distributed capacitance.
 # %%
+import gdsfactory as gf
+import numpy as np
+
 from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
+from qpdk.cells.waveguides import straight_open
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.media import cpw_ep_r_from_cross_section
 from qpdk.tech import coplanar_waveguide
@@ -61,8 +63,26 @@ idc_component = interdigital_capacitor(
     cross_section=(cross_section := coplanar_waveguide(width=10, gap=6)),
 )
 
+# Attach straight open waveguides to the ports to provide a feedline
+# for the lumped ports in HFSS.
+c = gf.Component(name="idc_with_feeds")
+idc_ref = c << idc_component
+open_wvg = straight_open(length=5, cross_section=cross_section)
+
+# Connect feedlines to both ports
+feed1 = c << open_wvg
+feed1.connect("o1", idc_ref.ports["o1"])
+c.add_port("o1", port=feed1.ports["o2"])
+
+feed2 = c << open_wvg
+feed2.connect("o1", idc_ref.ports["o2"])
+c.add_port("o2", port=feed2.ports["o2"])
+
+# Use the combined component for the rest of the notebook
+idc_component = c
+
 # Visualize the component
-idc_component.plot()
+idc_component.show()
 print(f"Interdigital capacitor bounding box: {idc_component.bbox}")
 print(f"Number of ports: {len(idc_component.ports)}")
 for port in idc_component.ports:
@@ -183,7 +203,7 @@ from qpdk.models.hfss import (  # noqa: E402
 )
 
 # Prepare component for export
-idc_component = prepare_component_for_hfss(idc_component, margin=100)
+idc_component = prepare_component_for_hfss(idc_component, margin_draw=50)
 
 # Import the component geometry using native GDS import
 # This automatically applies additive metals and maps layers to 3D
@@ -223,16 +243,9 @@ print("Assigned radiation boundary to air region")
 # Define metal thickness for port geometry
 metal_thickness = 0.2  # µm (200nm Nb film)
 
-# Get port locations from component (excluding metadata ports)
-cpw_ports = {
-    name: p
-    for name, p in idc_component.ports.items()
-    if not name.startswith(("vertical_", "horizontal_"))
-}
+print("Creating lumped ports.")
 
-print(f"Creating lumped ports at {len(cpw_ports)} port locations:")
-
-for i, (port_name, port) in enumerate(cpw_ports.items(), 1):
+for i, port in enumerate(idc_component.ports, 1):
     center = port.center
     orientation = port.orientation
 
@@ -267,7 +280,7 @@ for i, (port_name, port) in enumerate(cpw_ports.items(), 1):
             name=f"Port{i}",
             impedance=50,
         )
-        print(f"  Created Port{i} at {center} ({port_name})")
+        print(f"  Created Port{i} at {center} ({port.name})")
 
 # %% [markdown]
 # ## Configure Driven Modal Analysis
@@ -460,3 +473,10 @@ print("HFSS session closed and temporary files cleaned up")
 # - Parameter sweep to study capacitance vs. finger count
 # - Compare with lumped element circuit models
 # - Study loss tangent effects for realistic Q estimation
+#
+# %% [markdown]
+# ## References
+#
+# ```{bibliography}
+# :filter: docname in docnames
+# ```

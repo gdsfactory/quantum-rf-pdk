@@ -186,7 +186,8 @@ def _get_layer_number_from_level(layer_level: LayerLevel) -> int | None:
 
 def prepare_component_for_hfss(
     component: Component,
-    margin: float = 0.0,
+    margin_draw: float = 0.0,
+    margin_etch: float = 0.0,
 ) -> Component:
     """Prepare a component for HFSS simulation export.
 
@@ -194,15 +195,17 @@ def prepare_component_for_hfss(
     the transformations you likely want.
 
     This function prepares the component by doing the following:
-    1. Applying additive metal operations
-    2. Inverting mask polarity to positive metals
-    3. Remove etch layers (e.g. M1_ETCH, M2_ETCH) that are not needed for HFSS geometry
-    4. Remove metadata-like layers
-    5. Optionally add a margin to the simulation bounding box by extending M1_DRAW and M2_DRAW
+    1. Optionally add a margin to the etch layers (e.g. M1_ETCH, M2_ETCH)
+    2. Applying additive metal operations
+    3. Inverting mask polarity to positive metals
+    4. Remove etch layers (e.g. M1_ETCH, M2_ETCH) that are not needed for HFSS geometry
+    5. Remove metadata-like layers
+    6. Optionally add a margin to the simulation bounding box by extending M1_DRAW and M2_DRAW
 
     Args:
         component: The gdsfactory component to prepare.
-        margin: The margin to add to the bounding box in µm.
+        margin_draw: The margin to add to the draw layers bounding box in µm.
+        margin_etch: The margin to add to the etch layers bounding box in µm.
 
     Returns:
         The prepared component (may be modified in-place).
@@ -210,21 +213,29 @@ def prepare_component_for_hfss(
     Example:
         >>> from qpdk.cells import resonator
         >>> comp = resonator(length=4000)
-        >>> prepared = prepare_component_for_hfss(comp)
+        >>> prepared = prepare_component_for_hfss(comp, margin_draw=100)
     """
     c = gf.Component(name=f"{component.name}_hfss")
     c << component.copy()
-    c = apply_additive_metals(c)
-    c = invert_mask_polarity(c)
-    c = c.remove_layers(layer for layer in LAYER if str(layer).endswith("_ETCH"))
-    if margin > 0.0:
+    if margin_etch > 0.0:
         c = add_margin_to_layer(
             c,
             layer_margins=[
-                (LAYER.M1_DRAW, margin),
-                (LAYER.M2_DRAW, margin),
+                (LAYER.M1_ETCH, margin_etch),
+                (LAYER.M2_ETCH, margin_etch),
             ],
         )
+    c = apply_additive_metals(c)
+    c = invert_mask_polarity(c)
+    if margin_draw > 0.0:
+        c = add_margin_to_layer(
+            c,
+            layer_margins=[
+                (LAYER.M1_DRAW, margin_draw),
+                (LAYER.M2_DRAW, margin_draw),
+            ],
+        )
+    c = c.remove_layers(layer for layer in LAYER if str(layer).endswith("_ETCH"))
     return remove_metadata_layers(c)
 
 

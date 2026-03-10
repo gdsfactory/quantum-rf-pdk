@@ -196,7 +196,6 @@ def invert_mask_polarity(component: Component) -> Component:
     return c
 
 
-@gf.cell
 def add_margin_to_layer(
     component: Component, layer_margins: Sequence[tuple[Layer, float]]
 ) -> Component:

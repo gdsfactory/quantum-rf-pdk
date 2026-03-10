@@ -57,7 +57,7 @@ def test_prepare_component_for_hfss_margin():
 
     # Original bbox
     bbox_orig = comp.bbox()
-    prepared = prepare_component_for_hfss(comp, margin=200)
+    prepared = prepare_component_for_hfss(comp, margin_draw=200)
 
     assert isinstance(prepared, Component)
     assert prepared.name is not None

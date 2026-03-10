@@ -169,7 +169,7 @@ from qpdk.models.hfss import (  # noqa: E402
 )
 
 # Prepare component for export
-res_component = prepare_component_for_hfss(res_component, margin=200)
+res_component = prepare_component_for_hfss(res_component, margin_draw=200)
 
 # Import the component geometry using native GDS import
 # This automatically applies additive metals and maps layers to 3D
