@@ -65,8 +65,8 @@ idc_component = interdigital_capacitor(
 idc_component.plot()
 print(f"Interdigital capacitor bounding box: {idc_component.bbox}")
 print(f"Number of ports: {len(idc_component.ports)}")
-for port_name, port in idc_component.ports.items():
-    print(f"  {port_name}: center={port.center}, orientation={port.orientation}°")
+for port in idc_component.ports:
+    print(f"  {port.name}: center={port.center}, orientation={port.orientation}°")
 
 # %% [markdown]
 # ## Estimate Capacitance
