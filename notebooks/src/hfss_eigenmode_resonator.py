@@ -281,6 +281,44 @@ if results["frequencies_ghz"]:
     print(f"  Difference:        {error_percent:.1f}%")
 
 # %% [markdown]
+# ## Field Visualization
+#
+# Visualize the electromagnetic fields of the simulated eigenmode using PyVista.
+# This helps verify the field distribution and confirms we are looking at the
+# correct resonator mode.
+
+# %%
+if results["frequencies_ghz"]:
+    # Plot Mag_E on the substrate surface (Z=0 plane)
+    mode_freq = f"{results['frequencies_ghz'][0]:.6f}GHz"
+    print(f"Generating E-field plot for Mode 1 ({mode_freq})...")
+
+    try:
+        # Create a field plot on a cut plane
+        # Note: This requires PyVista and a valid display or virtual framebuffer
+        plot_obj = hfss.post.plot_field(
+            quantity="Mag_E",
+            objects_list=["Global:XY"],
+            plot_type="CutPlane",
+            setup="EigenmodeSetup",
+            intrinsics={"Freq": mode_freq},
+            show=False,
+        )
+
+        # Export the plot to an image file
+        image_path = Path(temp_dir.name) / "e_field_mode1.png"
+        plot_obj.export_image(str(image_path))
+        print(f"Field plot saved to: {image_path}")
+
+        # In a real notebook, you would display the image here:
+        # from IPython.display import Image
+        # Image(filename=image_path)
+
+    except Exception as e:
+        print(f"Field visualization skipped or failed: {e}")
+        print("Ensure PyVista is installed and a display is available.")
+
+# %% [markdown]
 # ## Cleanup
 #
 # Close HFSS and clean up temporary files.
