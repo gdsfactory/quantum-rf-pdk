@@ -50,6 +50,8 @@ from qpdk.models.generic import capacitor, tee
 from qpdk.models.waveguides import straight, straight_shorted
 from qpdk.tech import coplanar_waveguide
 
+jax.config.update("jax_enable_x64", True)
+
 PDK.activate()
 
 # %% [markdown]
@@ -231,17 +233,16 @@ def benchmark_circuit(
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 _warmup = circuit_fn(f=freq_d)
-            jax.block_until_ready(_warmup)
-            # Timed runs
-            run_times: list[float] = []
-            for _ in range(n_repeats):
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
+                jax.block_until_ready(_warmup)
+
+                # Timed runs
+                run_times: list[float] = []
+                for _ in range(n_repeats):
                     t0 = time.perf_counter()
                     s = circuit_fn(f=freq_d)
                     jax.block_until_ready(s)
                     t1 = time.perf_counter()
-                run_times.append(t1 - t0)
+                    run_times.append(t1 - t0)
         # Use the median to reduce noise from JIT re-traces / OS scheduling
         times.append(sorted(run_times)[n_repeats // 2])
     return times
@@ -383,7 +384,7 @@ if HAS_OPENVINO:
 else:
     print(
         "OpenVINO is not installed on this system — skipping NPU/OpenVINO benchmark.\n"
-        "Install it with:  pip install openvino"
+        "Install it with:  uv sync --extra npu"
     )
 
 # %% [markdown]
