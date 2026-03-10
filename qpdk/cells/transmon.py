@@ -442,7 +442,7 @@ def xmon_transmon(
         c.flatten(merge=True)
 
     # Create etch by sizing drawn metal
-    layer_metal_tuple = gf.get_layer(layer_metal)
+    layer_metal_tuple = gf.get_layer_tuple(layer_metal)
     etch_region = gf.component.size(
         Region(
             kdb.RecursiveShapeIterator(

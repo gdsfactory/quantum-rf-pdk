@@ -1,8 +1,6 @@
-# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
-
 [project]
 name = "qpdk"
-version = "0.2.0"
+version = "0.3.0"
 description = "Quantum-RF generic PDK"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
@@ -15,7 +13,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.34.1"]
+dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.39.0"]
 
 [project.optional-dependencies]
 gdsfactoryplus = ["gdsfactoryplus"]
@@ -23,8 +21,9 @@ models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
   "optuna",
+  "pymablock>=2.2.1",
   "ray[tune]; sys_platform != 'win32'",
-  "sax>=0.16.7",
+  "sax>=0.16.11",
   "scikit-rf",
   "scqubits",
   "sympy",
@@ -42,6 +41,7 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-svgbob",
 ]
+github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
 stubs = ["scipy-stubs"]
 test = [
@@ -55,15 +55,15 @@ test = [
 ]
 
 [build-system]
-requires = ["flit_core >=3.12.0,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["uv_build>=0.10.8,<0.11.0"]
+build-backend = "uv_build"
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
 skip = "bibliography.bib"
 
-[tool.flit.sdist]
-exclude = ["tests", "docs"]
+[tool.gdsfactoryplus]
+name = "qpdk"
 
 [tool.gdsfactoryplus]
 name = "qpdk"
@@ -129,6 +129,9 @@ missing-module-attribute = "ignore"
 no-matching-overload = "ignore"
 not-a-type = "warn"
 read-only = "ignore"
+# The cast() calls are needed for pyrefly <0.55 compatibility (pre-commit hook uses 0.46.3).
+# TODO: remove this when the pre-commit hook is updated to pyrefly >=0.55.0.
+redundant-cast = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]
@@ -163,6 +166,7 @@ ignore = [
   "B905",  # `zip()` without an explicit `strict=` parameter
   "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
   "RUF001",  # ambiguous unicode characters (incl. lots of math)
+  "RUF002",  # ambiguous unicode characters (incl. docstring greek letters)
   "RUF003",  # -||- but for comments
 ]
 select = [
@@ -206,22 +210,12 @@ select = [
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.setuptools.package-data]
-"*" = [
-  "*.csv",
-  "*.yaml",
-  "*.yml",
-  "*.gds",
-  "*.lyp",
-  "*.oas",
-  "*.lyt",
-  "*.dat",
-  "*.nc",
-  "*.svg",
-]
-
-[tool.setuptools.packages]
-find = {  }
-
 [tool.tombi.schema]
 strict = false
+
+[tool.uv]
+default-groups = ["dev", "docs", "lint", "stubs", "test"]
+
+[tool.uv.build-backend]
+module-root = ""
+source-exclude = ["tests/**", "docs/**"]

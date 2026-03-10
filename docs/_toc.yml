@@ -6,9 +6,13 @@ parts:
   - caption: Development
     chapters:
       - file: just_commands
+      - file: changelog
   - caption: API
     chapters:
       - file: api
+        sections:
+          - file: cells
+          - file: models
   - caption: Samples
     chapters:
       - file: samples

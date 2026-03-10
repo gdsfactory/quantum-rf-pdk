@@ -98,6 +98,34 @@ transforms:
       x: 1.0
       y: 1.0
       z: 1.0
+  o1:
+    translation:
+      x: -150.31807
+      y: 1599.9205
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  o2:
+    translation:
+      x: -138.44772
+      y: 1377.3861
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
   qubit1:
     translation:
       x: 968.84845

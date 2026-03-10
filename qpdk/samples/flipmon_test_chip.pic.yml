@@ -100,7 +100,9 @@ routes:
     settings:
       auto_taper: false
 nets: []
-ports: {}
+ports:
+  o1: launcher_in,waveport
+  o2: launcher_out,waveport
 placements:
   input_cap1:
     x: 0

@@ -7,11 +7,6 @@ Pipfile
 # C extensions
 *.so
 *.fsp
-tests/gds_ref/*.oas
-tests/gds_ref/*.oas
-
-tests/gds_ref/*.oas
-uv.lock
 .vscode/
 
 # Distribution / packaging
@@ -162,3 +157,13 @@ docs/notebooks/
 docs/makefile_help.txt
 docs/justfile_help.txt
 !notebooks/*.ipynb
+
+# Testing
+tests/gds_ref/*.gds
+tests/gds_ref/*.oas
+tests/gds_run/*.gds
+tests/gds_run/*.oas
+test_diffs/
+
+# gdsfactory+
+scripts/

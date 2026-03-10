@@ -26,6 +26,8 @@ __all__ = [
     "gamma_0_load",
     "impedance",
     "inductor",
+    "lc_resonator",
+    "lc_resonator_coupled",
     "open",
     "short",
     "short_2_port",
@@ -34,14 +36,14 @@ __all__ = [
 
 
 @jax.jit
-def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SType:
+def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SDict:
     """Electrical short 2-port connection Sax model.
 
     Args:
         f: Array of frequency points in Hz
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return electrical_short(f=f, n_ports=2)
 
@@ -49,6 +51,154 @@ def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.ST
 short = electrical_short
 open = electrical_open
 short_2_port = electrical_short_2_port
+
+
+@jax.jit(static_argnames=["grounded"])
+def lc_resonator(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 1e-9,
+    grounded: bool = False,
+) -> sax.SDict:
+    r"""LC resonator Sax model with capacitor and inductor in parallel.
+
+    The resonance frequency is given by:
+
+    .. svgbob::
+
+        o1 ──┬──L──┬── o2
+             │     │
+             └──C──┘
+
+    If grounded=True, a 2-port short is connected to port o2:
+
+    .. svgbob::
+
+        o1 ──┬──L──┬──.
+             │     │  | "2-port ground"
+             └──C──┘  |
+                     "o2"
+
+    .. math::
+
+        f_r = \frac{1}{2 \pi \sqrt{LC}}
+
+    For theory and relation to superconductors, see :cite:`gaoPhysicsSuperconductingMicrowave2008`.
+
+    Args:
+        f: Array of frequency points in Hz.
+        capacitance: Capacitance of the resonator in Farads.
+        inductance: Inductance of the resonator in Henries.
+        grounded: If True, add a 2-port ground to the second port.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
+    """
+    f = jnp.asarray(f)
+
+    instances = {
+        "capacitor": capacitor(f=f, capacitance=capacitance),
+        "inductor": inductor(f=f, inductance=inductance),
+        "tee_1": tee(f=f),
+        "tee_2": tee(f=f),
+    }
+
+    connections = {
+        "tee_1,o2": "capacitor,o1",
+        "tee_1,o3": "inductor,o1",
+        "capacitor,o2": "tee_2,o2",
+        "inductor,o2": "tee_2,o3",
+    }
+
+    if grounded:
+        instances["ground"] = electrical_short(f=f, n_ports=2)
+        connections["tee_2,o1"] = "ground,o1"
+        ports = {
+            "o1": "tee_1,o1",
+            "o2": "ground,o2",
+        }
+    else:
+        ports = {
+            "o1": "tee_1,o1",
+            "o2": "tee_2,o1",
+        }
+
+    return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
+@jax.jit(static_argnames=["grounded"])
+def lc_resonator_coupled(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 1e-9,
+    grounded: bool = False,
+    coupling_capacitance: float = 10e-15,
+    coupling_inductance: float = 0.0,
+) -> sax.SDict:
+    r"""Coupled LC resonator Sax model.
+
+    This model extends the basic LC resonator by adding a coupling network
+    consisting of a parallel capacitor and inductor connected to one port
+    of the LC resonator via a tee junction.
+
+    The resonance frequency of the main LC resonator is given by:
+
+    .. math::
+
+        f_r = \frac{1}{2 \pi \sqrt{LC}}
+
+    The coupling network modifies the effective coupling to the resonator.
+
+    .. svgbob::
+
+
+                 +──Lc──+    +──L──+
+        o1 ──────│      │────|     │─── o2 or grounded o2
+                 +──Cc──+    +──C──+
+                           "LC resonator"
+
+    Where :math:`L_\text{c}` and :math:`C_\text{c}` are the coupling inductance and capacitance, respectively.
+
+    Args:
+        f: Array of frequency points in Hz.
+        capacitance: Capacitance of the main resonator in Farads.
+        inductance: Inductance of the main resonator in Henries.
+        grounded: If True, the resonator is grounded.
+        coupling_capacitance: Coupling capacitance in Farads.
+        coupling_inductance: Coupling inductance in Henries.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
+    """
+    f = jnp.asarray(f)
+    resonator = lc_resonator(
+        f=f, capacitance=capacitance, inductance=inductance, grounded=grounded
+    )
+
+    # Always use the full tee network topology for consistent behavior
+    # When an element has zero value, it naturally produces the correct S-parameters
+    instances: dict[str, sax.SType] = {
+        "resonator": resonator,
+        "tee_between": tee(f=f),
+        "tee_outer": tee(f=f),
+        "inductive_coupling": inductor(f=f, inductance=coupling_inductance),
+        "capacitive_coupling": capacitor(f=f, capacitance=coupling_capacitance),
+    }
+
+    connections = {
+        "tee_outer,o2": "inductive_coupling,o1",
+        "tee_outer,o3": "capacitive_coupling,o1",
+        "inductive_coupling,o2": "tee_between,o2",
+        "capacitive_coupling,o2": "tee_between,o3",
+        "tee_between,o1": "resonator,o1",
+    }
+
+    ports = {
+        "o1": "tee_outer,o1",
+        "o2": "resonator,o2",
+    }
+
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 if __name__ == "__main__":

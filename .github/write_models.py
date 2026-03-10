@@ -2,7 +2,7 @@
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-import qpdk
+import qpdk.models
 from qpdk.config import PATH
 
 filepath_models = PATH.docs / "models.rst"
@@ -20,11 +20,17 @@ skip_plots = {
 }
 
 # Collect all public functions/classes in qpdk.models
-models = {
-    name: obj
-    for name, obj in qpdk.models.__dict__.items()
-    if callable(obj) and not name.startswith("_")
-}
+if qpdk.models is not None:
+    models = {
+        name: obj
+        for name, obj in qpdk.models.__dict__.items()
+        if callable(obj) and not name.startswith("_")
+    }
+else:
+    models = {}
+
+# SAX models (functions that return S-parameter dictionaries)
+sax_model_names = set(qpdk.models.models.keys())
 
 # Prepare items for the template
 items = [
@@ -35,8 +41,9 @@ items = [
         "members": True,
         "undoc_members": True,
         "show_inheritance": True,
-        "functions": sorted(models.keys()),  # preserves order
+        "functions": sorted(models.keys()) if models else [],  # preserves order
         "skip_plots": skip_plots,
+        "sax_models": sax_model_names,
     },
     {
         "title": "References",
