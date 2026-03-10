@@ -367,7 +367,7 @@ plt.show()
 # For a series capacitor: Z = 1/(jωC), so |S21| relates to capacitive reactance
 
 # Analysis frequencies in GHz
-analysis_frequencies_ghz = [1e9, 5e9, 10e9]
+analysis_frequencies_ghz = [1, 5, 10]
 
 print("\n=== Capacitance Analysis ===")
 print("-" * 40)
@@ -379,7 +379,7 @@ print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
 print("-" * 40)
 for freq_target in analysis_frequencies_ghz:
     idx = np.argmin(np.abs(frequencies - freq_target))
-    freq_hz = frequencies[idx]
+    freq_hz = frequencies[idx] * 1e9
     s21_mag = 10 ** (mag_db[idx] / 20)
 
     # For series element: S21 = 2Z0 / (2Z0 + Z)
@@ -387,10 +387,10 @@ for freq_target in analysis_frequencies_ghz:
     if s21_mag > 0.01:
         z_series = 2 * Z0 * (1 - s21_mag) / s21_mag
         # For capacitor: Z = 1/(ωC), so C = 1/(ω|Z|)
-        omega = 2 * np.pi * freq_hz
-        C_extracted = 1 / (omega * z_series)
+        ω = 2 * np.pi * freq_hz
+        C_extracted = 1 / (ω * z_series)
         print(
-            f"At {frequencies[idx] / 1e9:.2f} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
+            f"At {frequencies[idx]:.2f} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
         )
         print(
             f"Relative difference: {(float(C_estimate) - C_extracted) / float(C_estimate) * 100:.2f}%"
