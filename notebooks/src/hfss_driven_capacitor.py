@@ -203,17 +203,17 @@ from qpdk.models.hfss import (  # noqa: E402
 )
 
 # Prepare component for export
-idc_component = prepare_component_for_hfss(idc_component, margin_draw=50)
+prepared_component = prepare_component_for_hfss(idc_component, margin_draw=50)
 
 # Import the component geometry using native GDS import
 # This automatically applies additive metals and maps layers to 3D
-success = import_component_to_hfss(hfss, idc_component, import_as_sheets=True)
+success = import_component_to_hfss(hfss, prepared_component, import_as_sheets=True)
 print(f"GDS import successful: {success}")
 
 # Add substrate below the component
 substrate_name = add_substrate_to_hfss(
     hfss,
-    idc_component,
+    prepared_component,
     thickness=500.0,
     material="silicon",
 )
@@ -222,7 +222,7 @@ print(f"Created substrate: {substrate_name}")
 # Add air region for driven simulation
 air_region_name = add_air_region_to_hfss(
     hfss,
-    idc_component,
+    prepared_component,
     height=500.0,
     substrate_thickness=500.0,
     pec_boundary=False,
@@ -245,7 +245,7 @@ metal_thickness = 0.2  # µm (200nm Nb film)
 
 print("Creating lumped ports.")
 
-for i, port in enumerate(idc_component.ports, 1):
+for i, port in enumerate(prepared_component.ports, 1):
     center = port.center
     orientation = port.orientation
 

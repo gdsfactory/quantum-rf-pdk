@@ -252,7 +252,6 @@ def add_margin_to_layer(
     return c
 
 
-@gf.cell
 def remove_metadata_layers(component: Component) -> Component:
     """Remove metadata layers from a component.
 

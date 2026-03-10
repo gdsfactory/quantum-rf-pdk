@@ -236,7 +236,9 @@ def prepare_component_for_hfss(
             ],
         )
     c = c.remove_layers(layer for layer in LAYER if str(layer).endswith("_ETCH"))
-    return remove_metadata_layers(c)
+    c = remove_metadata_layers(c)
+    c.add_ports(component.ports)
+    return c
 
 
 def import_component_to_hfss(
