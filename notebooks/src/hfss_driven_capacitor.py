@@ -321,20 +321,25 @@ import matplotlib.pyplot as plt  # noqa: E402
 from qpdk.models.hfss import get_sparameter_results  # noqa: E402
 
 # Extract results using the helper function
-sim_results = get_sparameter_results(hfss, "DrivenSetup", "FrequencySweep")
+df_results = get_sparameter_results(hfss, setup.name, sweep.name)
 
-frequencies = sim_results["frequencies"]
-s_params = sim_results["s_parameters"]
+frequencies = df_results["frequency_ghz"].to_numpy()
 
 # Plot S-parameters
 fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
 # Filter for S11 and S21 type traces
-s11_trace = s_params[next(t for t in s_params if "S(o1:1,o1:1)")]
-s21_trace = s_params[next(t for t in s_params if "S(o2:1,o1:1)")]
+s11_col = next(col for col in df_results.columns if "S(o1:1,o1:1)" in col)
+s21_col = next(col for col in df_results.columns if "S(o2:1,o1:1)" in col)
 
-axes[0].plot(frequencies, s11_trace["magnitude_db"], label=r"|S_{11}|")
-axes[1].plot(frequencies, s21_trace["magnitude_db"], label=r"|S_{21}|")
+s11_trace = df_results[s11_col].to_numpy()
+s21_trace = df_results[s21_col].to_numpy()
+
+s11_mag_db = 20 * np.log10(np.abs(s11_trace))
+s21_mag_db = 20 * np.log10(np.abs(s21_trace))
+
+axes[0].plot(frequencies, s11_mag_db, label=r"|S_{11}|")
+axes[1].plot(frequencies, s21_mag_db, label=r"|S_{21}|")
 
 axes[0].set_xlabel("Frequency (GHz)")
 axes[0].set_ylabel("Magnitude (dB)")
@@ -361,36 +366,35 @@ plt.show()
 # Extract capacitance from S21 at a specific frequency
 # For a series capacitor: Z = 1/(jωC), so |S21| relates to capacitive reactance
 
-if s21_trace:
-    # Analysis frequencies in GHz
-    analysis_frequencies_ghz = [1e9, 5e9, 10e9]
+# Analysis frequencies in GHz
+analysis_frequencies_ghz = [1e9, 5e9, 10e9]
 
-    print("\n=== Capacitance Analysis ===")
-    print("-" * 40)
+print("\n=== Capacitance Analysis ===")
+print("-" * 40)
 
-    Z0 = 50  # Reference impedance (ohms)
-    mag_db = s21_trace["magnitude_db"]
+Z0 = 50  # Reference impedance (ohms)
+mag_db = s21_mag_db
 
-    print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
-    print("-" * 40)
-    for freq_target in analysis_frequencies_ghz:
-        idx = np.argmin(np.abs(frequencies - freq_target))
-        freq_hz = frequencies[idx]
-        s21_mag = 10 ** (mag_db[idx] / 20)
+print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
+print("-" * 40)
+for freq_target in analysis_frequencies_ghz:
+    idx = np.argmin(np.abs(frequencies - freq_target))
+    freq_hz = frequencies[idx]
+    s21_mag = 10 ** (mag_db[idx] / 20)
 
-        # For series element: S21 = 2Z0 / (2Z0 + Z)
-        # Solving for |Z|: |Z| = 2Z0 * (1 - |S21|) / |S21|
-        if s21_mag > 0.01:
-            z_series = 2 * Z0 * (1 - s21_mag) / s21_mag
-            # For capacitor: Z = 1/(ωC), so C = 1/(ω|Z|)
-            omega = 2 * np.pi * freq_hz
-            C_extracted = 1 / (omega * z_series)
-            print(
-                f"At {frequencies[idx] / 1e9:.2f} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
-            )
-            print(
-                f"Relative difference: {(float(C_estimate) - C_extracted) / float(C_estimate) * 100:.2f}%"
-            )
+    # For series element: S21 = 2Z0 / (2Z0 + Z)
+    # Solving for |Z|: |Z| = 2Z0 * (1 - |S21|) / |S21|
+    if s21_mag > 0.01:
+        z_series = 2 * Z0 * (1 - s21_mag) / s21_mag
+        # For capacitor: Z = 1/(ωC), so C = 1/(ω|Z|)
+        omega = 2 * np.pi * freq_hz
+        C_extracted = 1 / (omega * z_series)
+        print(
+            f"At {frequencies[idx] / 1e9:.2f} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
+        )
+        print(
+            f"Relative difference: {(float(C_estimate) - C_extracted) / float(C_estimate) * 100:.2f}%"
+        )
 
 # %% [markdown]
 # ## Cleanup

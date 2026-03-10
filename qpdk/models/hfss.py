@@ -36,6 +36,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 import gdsfactory as gf
 import numpy as np
+import polars as pl
 from gdsfactory.technology.layer_stack import LayerLevel
 from gdsfactory.typings import Ports
 
@@ -551,7 +552,7 @@ def get_sparameter_results(
     hfss: Hfss,
     setup_name: str = "DrivenSetup",
     sweep_name: str = "FrequencySweep",
-) -> dict:
+) -> pl.DataFrame:
     """Extract S-parameter results from a driven simulation.
 
     Args:
@@ -560,13 +561,12 @@ def get_sparameter_results(
         sweep_name: Name of the frequency sweep.
 
     Returns:
-        Dictionary containing:
-        - frequencies: Array of frequencies in GHz
-        - s_parameters: Dictionary of S-parameter arrays (e.g., "S11", "S21")
+        DataFrame containing a 'frequency_ghz' column and a column
+        for each S-parameter trace (e.g., "S(1,1)") containing complex values.
     """
     traces = hfss.get_traces_for_plot()
 
-    results = {"frequencies": None, "s_parameters": {}}
+    data = {}
 
     for trace in traces:
         solution = hfss.post.get_solution_data(
@@ -574,8 +574,8 @@ def get_sparameter_results(
             setup_sweep_name=f"{setup_name} : {sweep_name}",
         )
         if solution:
-            if results["frequencies"] is None:
-                results["frequencies"] = np.array(solution.primary_sweep_values) / 1e9
+            if "frequency_ghz" not in data:
+                data["frequency_ghz"] = np.array(solution.primary_sweep_values) / 1e9
 
             # Get complex S-parameter data
             # Use get_expression_data to get real and imaginary parts
@@ -583,13 +583,9 @@ def get_sparameter_results(
             _, imag_data = solution.get_expression_data(formula="imag")
             complex_data = real_data + 1j * imag_data
 
-            # Extract magnitude in dB and phase in degrees
-            results["s_parameters"][trace] = {
-                "magnitude_db": 20 * np.log10(np.abs(complex_data)),
-                "phase_deg": np.degrees(np.angle(complex_data)),
-            }
+            data[trace] = complex_data
 
-    return results
+    return pl.DataFrame(data)
 
 
 if __name__ == "__main__":
