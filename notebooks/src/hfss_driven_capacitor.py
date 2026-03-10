@@ -323,7 +323,7 @@ from qpdk.models.hfss import get_sparameter_results  # noqa: E402
 # Extract results using the helper function
 df_results = get_sparameter_results(hfss, setup.name, sweep.name)
 
-frequencies = df_results["frequency_ghz"].to_numpy()
+frequencies_ghz = df_results["frequency_ghz"].to_numpy()
 
 # Plot S-parameters
 fig, axes = plt.subplots(2, 1, figsize=(10, 8))
@@ -338,8 +338,8 @@ s21_trace = df_results[s21_col].to_numpy().astype(np.complex128)
 s11_mag_db = 20 * np.log10(np.abs(s11_trace))
 s21_mag_db = 20 * np.log10(np.abs(s21_trace))
 
-axes[0].plot(frequencies, s11_mag_db, label=r"|S_{11}|")
-axes[1].plot(frequencies, s21_mag_db, label=r"|S_{21}|")
+axes[0].plot(frequencies_ghz, s11_mag_db, label=r"|S_{11}|")
+axes[1].plot(frequencies_ghz, s21_mag_db, label=r"|S_{21}|")
 
 axes[0].set_xlabel("Frequency (GHz)")
 axes[0].set_ylabel("Magnitude (dB)")
@@ -357,44 +357,57 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ## Extract Capacitance from S-Parameters
+# ## Extract Capacitance from Admittance (Y-Parameters)
 #
-# For a series capacitor, we can extract the capacitance from the
-# impedance calculated from S-parameters.
+# Relying only on the magnitude of $S_{21}$ assumes the geometry behaves identically
+# to a single perfect capacitor floating in a vacuum. In reality, the structure has
+# shunt parasitic capacitances to ground ($C_{11}$ and $C_{22}$) that skew the
+# $S_{21}$ magnitude.
+#
+# The robust way to extract mutual capacitance is using Y-parameters (Admittance).
+# In a Pi-network model, the mutual admittance $Y_{12}$ isolates the series element:
+#
+# $$ Y_{12} = -j\omega C_{12} $$
+#
+# Therefore, the exact mutual capacitance is:
+#
+# $$ C_{12} = -\frac{\text{Im}(Y_{12})}{\omega} $$
 
 # %%
-# Extract capacitance from S21 at a specific frequency
-# For a series capacitor: Z = 1/(jωC), so |S21| relates to capacitive reactance
+# Extract Y21 parameter manually using PyAEDT's solution data
+solution_y = hfss.post.get_solution_data(
+    expressions="Y(o2:1,o1:1)", setup_sweep_name=f"{setup.name} : {sweep.name}"
+)
+
+# Parse complex Y-parameters
+_, y_real = solution_y.get_expression_data(formula="real")
+_, y_imag = solution_y.get_expression_data(formula="imag")
+y21_trace = np.array(y_real) + 1j * np.array(y_imag)
+frequencies_hz_y = np.array(solution_y.primary_sweep_values)
 
 # Analysis frequencies in GHz
 analysis_frequencies_ghz = [1, 5, 10]
 
 print("\n=== Capacitance Analysis ===")
 print("-" * 40)
-
-Z0 = 50  # Reference impedance (ohms)
-mag_db = s21_mag_db
-
 print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
 print("-" * 40)
-for freq_target in analysis_frequencies_ghz:
-    idx = np.argmin(np.abs(frequencies - freq_target))
-    freq_hz = frequencies[idx] * 1e9
-    s21_mag = 10 ** (mag_db[idx] / 20)
 
-    # For series element: S21 = 2Z0 / (2Z0 + Z)
-    # Solving for |Z|: |Z| = 2Z0 * (1 - |S21|) / |S21|
-    if s21_mag > 0.01:
-        z_series = 2 * Z0 * (1 - s21_mag) / s21_mag
-        # For capacitor: Z = 1/(ωC), so C = 1/(ω|Z|)
-        ω = 2 * np.pi * freq_hz
-        C_extracted = 1 / (ω * z_series)
-        print(
-            f"At {frequencies[idx]:.2f} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
-        )
-        print(
-            f"Relative difference: {(float(C_estimate) - C_extracted) / float(C_estimate) * 100:.2f}%"
-        )
+for freq_target in analysis_frequencies_ghz:
+    idx = np.argmin(np.abs(frequencies_hz_y - freq_target * 1e9))
+    freq_hz = frequencies_hz_y[idx]
+    y21 = y21_trace[idx]
+
+    omega = 2 * np.pi * freq_hz
+    # C_12 = -Im(Y_12) / w
+    C_extracted = -np.imag(y21) / omega
+
+    print(
+        f"At {freq_hz / 1e9:.2f} GHz: Y21 = {y21:.2e}, C ≈ {C_extracted * 1e15:.2f} fF"
+    )
+    print(
+        f"Relative difference: {(float(C_estimate) - C_extracted) / float(C_estimate) * 100:.2f}%"
+    )
 
 # %% [markdown]
 # ## Cleanup
