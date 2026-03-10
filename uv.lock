@@ -2529,9 +2529,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-hardware = [
-    { name = "openvino" },
-]
 models = [
     { name = "gplugins", extra = ["meshwell"] },
     { name = "jaxellip" },
@@ -2544,6 +2541,9 @@ models = [
     { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "scqubits", version = "4.3.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
     { name = "sympy" },
+]
+npu = [
+    { name = "openvino" },
 ]
 
 [package.dev-dependencies]
@@ -2594,7 +2594,7 @@ requires-dist = [
     { name = "gdsfactory", specifier = "~=9.39.0" },
     { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = ">=2.0.1" },
     { name = "jaxellip", marker = "extra == 'models'" },
-    { name = "openvino", marker = "extra == 'hardware'", specifier = ">=2025.0.0" },
+    { name = "openvino", marker = "extra == 'npu'", specifier = ">=2025.4.1" },
     { name = "optuna", marker = "extra == 'models'" },
     { name = "polars", marker = "extra == 'models'" },
     { name = "pymablock", marker = "extra == 'models'", git = "https://gitlab.kwant-project.org/qt/pymablock.git?rev=c441ef5d3d95b7823a08cf81da686876ae2e5231" },
@@ -2604,7 +2604,7 @@ requires-dist = [
     { name = "scqubits", marker = "extra == 'models'" },
     { name = "sympy", marker = "extra == 'models'" },
 ]
-provides-extras = ["hardware", "models"]
+provides-extras = ["models", "npu"]
 
 [package.metadata.requires-dev]
 dev = [

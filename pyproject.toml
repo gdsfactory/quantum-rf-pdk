@@ -16,9 +16,6 @@ classifiers = [
 dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.39.0"]
 
 [project.optional-dependencies]
-hardware = [
-  "openvino>=2025.0.0",
-]
 models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
@@ -30,6 +27,9 @@ models = [
   "scqubits",
   "sympy",
   "polars",
+]
+npu = [
+  "openvino>=2025.4.1",
 ]
 
 [dependency-groups]
