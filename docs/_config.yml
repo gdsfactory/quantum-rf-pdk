@@ -12,6 +12,9 @@ exclude_patterns:
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: cache
+  exclude_patterns:
+    - "notebooks/hfss*.py"
+    - "notebooks/hfss*.ipynb"
   timeout: -1
   allow_errors: false
 latex:
