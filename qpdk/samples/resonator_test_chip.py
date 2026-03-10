@@ -27,8 +27,8 @@ from qpdk.cells.resonator import resonator_coupled
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
     coplanar_waveguide,
-    route_single_cpw,
-    route_single_sbend,
+    route_bundle_cpw,
+    route_bundle_sbend,
 )
 
 # %% [markdown]
@@ -122,17 +122,17 @@ def resonator_test_chip_python(
                     straight(length=200.0, cross_section=probeline_xs)
                 )
                 first_straight_ref.connect("o1", resonator_ref.ports["coupling_o1"])
-                route_single_sbend(
+                route_bundle_sbend(
                     c,
-                    port1=previous_port,
-                    port2=first_straight_ref.ports["o2"],
+                    ports1=[previous_port],
+                    ports2=[first_straight_ref.ports["o2"]],
                     cross_section=probeline_xs,
                 )
             else:
-                route_single_cpw(
+                route_bundle_cpw(
                     c,
-                    port1=previous_port,
-                    port2=resonator_ref.ports["coupling_o1"],
+                    ports1=[previous_port],
+                    ports2=[resonator_ref.ports["coupling_o1"]],
                     cross_section=probeline_xs,
                 )
 
@@ -145,10 +145,10 @@ def resonator_test_chip_python(
         final_straight_ref.connect("o1", previous_port)
 
         # Connect final launcher to probeline
-        route_single_sbend(
+        route_bundle_sbend(
             c,
-            port1=final_straight_ref.ports["o2"],
-            port2=launcher_east.ports["o1"],
+            ports1=[final_straight_ref.ports["o2"]],
+            ports2=[launcher_east.ports["o1"]],
             cross_section=probeline_xs,
         )
 

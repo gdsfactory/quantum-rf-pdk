@@ -22,9 +22,14 @@ class Path:
     build = repo / "build"
     docs = repo / "docs"
     gds = module / "gds"
-    klayout = module / "klayout"
     simulation = build / "simulation"
     tests = repo / "tests"
+
+    cells = module / "cells"
+    derived = module / "derived"
+    klayout = module / "klayout"
+    models = module / "models"
+    samples = module / "samples"
 
     lyp = klayout / "layers.lyp"
     lyt = klayout / "tech.lyt"

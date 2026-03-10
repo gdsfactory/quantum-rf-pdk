@@ -1,6 +1,6 @@
 name: Bug Report
 description: Report a bug or issue with the quantum-rf-pdk
-title: "[Bug]: "
+type: "Bug"
 labels: ["bug"]
 body:
   - type: markdown

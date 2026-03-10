@@ -15,15 +15,10 @@
 # ## Imports
 
 # %%
-import time
 
-import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-import sax
 import skrf
-from gdsfactory.typings import CrossSectionSpec
-from tqdm.notebook import tqdm
 
 from qpdk import PDK
 
@@ -35,7 +30,7 @@ PDK.activate()
 # ## Constants
 
 # %%
-from qpdk.models.constants import DEFAULT_FREQUENCY, TEST_FREQUENCY
+from qpdk.models.constants import TEST_FREQUENCY
 
 # %% [markdown]
 # ## Media
@@ -93,6 +88,16 @@ from qpdk.models.generic import inductor
 inductor(f=TEST_FREQUENCY)
 
 # %%
+from qpdk.models.generic import lc_resonator
+
+lc_resonator(f=TEST_FREQUENCY)
+
+# %%
+from qpdk.models.generic import lc_resonator_coupled
+
+lc_resonator_coupled(f=TEST_FREQUENCY, coupling_capacitance=10e-15)
+
+# %%
 from qpdk.models.junction import josephson_junction
 
 josephson_junction(f=TEST_FREQUENCY)
@@ -105,6 +110,51 @@ for key in S:
 plt.ylim(-0.05, 1.05)
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("S")
+plt.grid(True)
+plt.legend()
+plt.show(block=False)
+
+L = 1e-9
+C = 100e-15
+f_r = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
+f_sweep = jnp.linspace(f_r * 0.5, f_r * 1.5, 1001)
+
+S_res = lc_resonator(f=f_sweep, inductance=L, capacitance=C)
+
+plt.figure(figsize=(10, 6))
+plt.plot(f_sweep / 1e9, 20 * jnp.log10(jnp.abs(S_res[("o1", "o2")])), label="$S_{21}$")
+plt.axvline(
+    float(f_r / 1e9),
+    color="r",
+    linestyle="--",
+    label=f"Theoretical $f_r$ ({float(f_r / 1e9):.2f} GHz)",
+)
+plt.xlabel("Frequency [GHz]")
+plt.ylabel("Magnitude [dB]")
+plt.title(f"LC Resonator ($L={L * 1e9}$ nH, $C={C * 1e15}$ fF)")
+plt.grid(True)
+plt.legend()
+plt.show(block=False)
+
+S_coupled = lc_resonator_coupled(
+    f=f_sweep, inductance=L, capacitance=C, coupling_capacitance=10e-15
+)
+
+plt.figure(figsize=(10, 6))
+plt.plot(
+    f_sweep / 1e9,
+    20 * jnp.log10(jnp.abs(S_coupled[("o1", "o2")])),
+    label="$S_{21}$ (coupled)",
+)
+plt.plot(
+    f_sweep / 1e9,
+    20 * jnp.log10(jnp.abs(S_res[("o1", "o2")])),
+    "--",
+    label="$S_{21}$ (bare)",
+)
+plt.xlabel("Frequency [GHz]")
+plt.ylabel("Magnitude [dB]")
+plt.title("Coupled vs Bare LC Resonator")
 plt.grid(True)
 plt.legend()
 plt.show(block=False)
@@ -185,6 +235,79 @@ ax2.legend(loc="upper right")
 plt.title(f"Inductor $S$-parameters ($L={inductance * 1e9}\\,$nH)")
 plt.show()
 
+# %%
+
+from qpdk.models.capacitor import (
+    interdigital_capacitor_capacitance_analytical,
+    plate_capacitor_capacitance_analytical,
+)
+
+# 1. Plot Plate Capacitor Capacitance vs. Length for different Gaps
+lengths_plate = jnp.linspace(10, 500, 100)
+gaps_plate = jnp.geomspace(1.0, 20.0, 5)
+width_plate = 10.0
+ep_r = 11.7
+
+plt.figure(figsize=(10, 6))
+
+# Broadcast to compute total capacitance for all lengths and gaps (shape: (5, 100))
+capacitances_plate = (
+    plate_capacitor_capacitance_analytical(
+        length=lengths_plate[None, :],
+        width=width_plate,
+        gap=gaps_plate[:, None],
+        ep_r=ep_r,
+    )
+    * 1e15
+)  # Convert to fF
+
+for i, gap in enumerate(gaps_plate):
+    plt.plot(lengths_plate, capacitances_plate[i], label=f"gap = {gap:.1f} µm")
+
+plt.xlabel("Pad Length (µm)")
+plt.ylabel("Capacitance (fF)")
+plt.title(
+    rf"Plate Capacitor Capacitance ($\mathtt{{width}}=${width_plate} µm, $\epsilon_r={ep_r}$)"
+)
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# %%
+# 2. Plot Interdigital Capacitor Capacitance vs. Finger Length for different Finger Counts
+finger_lengths = jnp.linspace(10, 100, 100)
+finger_counts = jnp.arange(2, 11, 2)  # [2, 4, 6, 8, 10]
+finger_gap = 2.0
+thickness = 5.0
+
+plt.figure(figsize=(10, 6))
+
+# Broadcast to compute total capacitance for all lengths and counts (shape: (5, 100))
+capacitances_idc = (
+    interdigital_capacitor_capacitance_analytical(
+        fingers=finger_counts[:, None],
+        finger_length=finger_lengths[None, :],
+        finger_gap=finger_gap,
+        thickness=thickness,
+        ep_r=ep_r,
+    )
+    * 1e15
+)  # Convert to fF
+
+for i, n in enumerate(finger_counts):
+    plt.plot(finger_lengths, capacitances_idc[i], label=f"n = {n} fingers")
+
+plt.xlabel("Overlap Length (µm)")
+plt.ylabel("Mutual Capacitance (fF)")
+plt.title(
+    rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}}=${finger_gap} µm, $\mathtt{{thickness}}=${thickness} µm, $\epsilon_r={ep_r}$)"
+)
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
 # %% [markdown]
 # ## Waveguides
 
@@ -227,83 +350,6 @@ taper_cross_section(f=TEST_FREQUENCY)
 from qpdk.models.waveguides import launcher
 
 launcher(f=TEST_FREQUENCY)
-
-# %%
-from qpdk.tech import coplanar_waveguide
-
-cpw_cs = coplanar_waveguide(width=10, gap=6)
-
-
-def straight_no_jit(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: int | float = 1000,
-    cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
-    """Version of straight without just-in-time compilation."""
-    media = cross_section_to_media(cross_section)
-    skrf_media = media(frequency=skrf.Frequency.from_f(f, unit="Hz"))
-    transmission_line = skrf_media.line(d=length, unit="um")
-    sdict = {
-        ("o1", "o1"): jnp.array(transmission_line.s[:, 0, 0]),
-        ("o1", "o2"): jnp.array(transmission_line.s[:, 0, 1]),
-        ("o2", "o2"): jnp.array(transmission_line.s[:, 1, 1]),
-    }
-    return sax.reciprocal(sdict)
-
-
-test_freq = jnp.linspace(0.5e9, 9e9, 200001)
-test_length = 1000
-
-print("Benchmarking jitted vs non-jitted performance…")
-
-n_runs = 10
-
-jit_times = []
-for _ in tqdm(range(n_runs), desc="With jax.jit", ncols=80, unit="run"):
-    start_time = time.perf_counter()
-    S_jit = straight(f=test_freq, length=test_length, cross_section=cpw_cs)
-    _ = S_jit["o2", "o1"].block_until_ready()
-    end_time = time.perf_counter()
-    jit_times.append(end_time - start_time)
-
-no_jit_times = []
-for _ in tqdm(range(n_runs), desc="Without jax.jit", ncols=80, unit="run"):
-    start_time = time.perf_counter()
-    S_no_jit = straight_no_jit(f=test_freq, length=test_length, cross_section=cpw_cs)
-    _ = S_no_jit["o2", "o1"].block_until_ready()
-    end_time = time.perf_counter()
-    no_jit_times.append(end_time - start_time)
-
-jit_times_steady = jit_times[1:]
-avg_jit = sum(jit_times_steady) / len(jit_times_steady)
-avg_no_jit = sum(no_jit_times) / len(no_jit_times)
-speedup = avg_no_jit / avg_jit
-
-print(f"Jitted: {avg_jit:.4f}s avg (excl. first), {jit_times[0]:.3f}s first run")
-print(f"Non-jitted: {avg_no_jit:.4f}s avg")
-print(f"Speedup: {speedup:.1f}x")
-
-S_jit = straight(f=test_freq, length=test_length, cross_section=cpw_cs)
-S_no_jit = straight_no_jit(f=test_freq, length=test_length, cross_section=cpw_cs)
-max_diff = jnp.max(jnp.abs(S_jit["o2", "o1"] - S_no_jit["o2", "o1"]))
-print(f"Max absolute difference in results: {max_diff:.2e}")
-
-try:
-    s21_array = S_jit["o2", "o1"]
-    s21_gpu = jax.device_put(s21_array, jax.devices("gpu")[0])
-    print(f"GPU available: {s21_gpu.device}")
-except Exception:
-    print("GPU not available, using CPU")
-
-# Test tapers
-S = taper_cross_section(
-    f=test_freq,
-    length=1000,
-    cross_section_1=cpw_cs,
-    cross_section_2=coplanar_waveguide(width=12, gap=10),
-)
-print("Taper S-parameters computed successfully.")
-print(f"S-parameter keys: {list(S.keys())}")
 
 # %% [markdown]
 # ## Couplers
@@ -372,6 +418,38 @@ print(
     "F",
 )
 
+# %%
+from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
+
+lengths = jnp.linspace(10, 100, 100)
+gaps = jnp.linspace(0.1, 5.0, 5)
+width = 10.0
+cpw_gap = 6.0
+ep_r = 11.7
+
+plt.figure(figsize=(10, 6))
+
+# Calculate capacitance per unit length for all gaps simultaneously (shape: (5,))
+c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+    gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+)
+
+# Broadcast to compute total capacitance for all lengths and gaps (shape: (5, 100))
+capacitances = c_pul[:, None] * lengths[None, :] * 1e-6 * 1e15  # Convert to fF
+
+for i, gap in enumerate(gaps):
+    plt.plot(lengths, capacitances[i], label=f"gap = {gap:.1f} µm")
+
+plt.xlabel("Coupling Length (µm)")
+plt.ylabel("Mutual Capacitance (fF)")
+plt.title(
+    rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}}=${width} µm, $\mathtt{{cpw\_gap}}=${cpw_gap} µm, $\epsilon_r={ep_r}$)"
+)
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
 # %% [markdown]
 # ## Resonators
 
@@ -388,7 +466,7 @@ cpw = cross_section_to_media(cs)(frequency=skrf.Frequency(2, 9, 101, unit="GHz")
 print(f"{cpw=!r}")
 print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
 
-res_freq = resonator_frequency(length=4000, media=cpw, is_quarter_wave=True)
+res_freq = resonator_frequency(length=4000, cross_section=cs, is_quarter_wave=True)
 print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")
 
 # Plot resonator_coupled example

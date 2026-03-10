@@ -2,6 +2,7 @@
 
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
+[![Coverage](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/coverage.svg)](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/)
 [![HTML Docs](https://img.shields.io/badge/%F0%9F%93%84_HTML-Docs-blue?style=flat)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![PDF Docs](https://img.shields.io/badge/%F0%9F%93%84_PDF-Docs-blue?style=flat&logo=adobeacrobatreader)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD)
@@ -17,8 +18,12 @@ A generic process design kit (PDK) for superconducting quantum RF applications b
 
 - [PDK cells in the documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html): showcases available
   geometries.
-- [`qpdk/samples/`](qpdk/samples): contains example layouts and simulations.
-- [`notebooks/`](notebooks): contains notebooks demonstrating design and simulation workflows.
+- [`qpdk/samples/`](https://github.com/gdsfactory/quantum-rf-pdk/tree/main/qpdk/samples): contains example layouts and
+  simulations.
+- [`notebooks/`](https://github.com/gdsfactory/quantum-rf-pdk/tree/main/notebooks): contains notebooks demonstrating
+  design and simulation workflows.
+- [gsim example notebooks](https://gdsfactory.github.io/gsim/): electromagnetic simulation examples using Palace and
+  Meep with gdsfactory.
 
 ## Installation
 
@@ -81,4 +86,5 @@ just --list
 
 - [Quantum RF PDK documentation (HTML)](https://gdsfactory.github.io/quantum-rf-pdk/)
 - [Quantum RF PDK documentation (PDF)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
+- [Quantum RF PDK test coverage report](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/)
 - [gdsfactory documentation](https://gdsfactory.github.io/gdsfactory/)

@@ -4,7 +4,7 @@ default:
 
 # Install the package and all development dependencies
 install:
-    uv sync --all-extras --all-groups
+    uv sync --all-extras
 
 # Install KLayout technology files for the PDK
 install-tech:
@@ -22,11 +22,11 @@ clean:
 # Testing #
 ###########
 
-PYTEST_COMMAND := "uv run --group dev pytest -n auto"
+PYTEST_COMMAND := "uv run --all-extras --group dev pytest -n auto"
 
 # Check if Git LFS is available and pull LFS files
 check-lfs:
-    @echo "Checking for Git LFS..."
+    @echo "Checking for Git LFS…"
     @if ! command -v git-lfs >/dev/null 2>&1; then \
     echo ""; \
     echo "Error: Git LFS is not installed!"; \
@@ -43,12 +43,12 @@ check-lfs:
     echo ""; \
     exit 1; \
     fi
-    @echo "Git LFS is available. Pulling LFS files..."
+    @echo "Git LFS is available. Pulling LFS files…"
     @git lfs pull
 
 # Run the full test suite in parallel using pytest
-test: check-lfs
-    {{PYTEST_COMMAND}}
+test *args: check-lfs
+    {{PYTEST_COMMAND}} {{args}}
 
 # Run optical port position tests (tests/test_pdk.py::test_optical_port_positions)
 test-ports:
@@ -94,7 +94,7 @@ write-cells:
 
 # Write model outputs into documentation notebooks (used when building docs)
 write-models:
-    uv run --group docs .github/write_models.py
+    uv run --extra models --group docs .github/write_models.py
 
 # Write Justfile help output to documentation
 write-justfile-help:
@@ -109,20 +109,55 @@ copy-sample-notebooks:
     mkdir -p docs/notebooks
     cp notebooks/src/*.py docs/notebooks/
 
-# Setup IPython configuration for documentation build
-setup-ipython-config:
+# Temporarily setup IPython configuration for documentation build
+setup-ipython-config-temporary-before:
+    #!/usr/bin/env bash
+    set -euo pipefail
     mkdir -p ~/.ipython/profile_default
+    if [ -f ~/.ipython/profile_default/ipython_config.py ]; then
+        mv ~/.ipython/profile_default/ipython_config.py ~/.ipython/profile_default/ipython_config.py.bak
+    fi
     cp docs/ipython_config.py ~/.ipython/profile_default/ipython_config.py
+
     mkdir -p ~/.config/matplotlib/stylelib/
+    if [ -f ~/.config/matplotlib/stylelib/qpdk.mplstyle ]; then
+        mv ~/.config/matplotlib/stylelib/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle.bak
+    fi
     cp docs/qpdk.mplstyle ~/.config/matplotlib/stylelib/qpdk.mplstyle
 
+# Restore original IPython configuration
+setup-ipython-config-temporary-after:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -f ~/.ipython/profile_default/ipython_config.py.bak ]; then
+        mv ~/.ipython/profile_default/ipython_config.py.bak ~/.ipython/profile_default/ipython_config.py
+    else
+        rm -f ~/.ipython/profile_default/ipython_config.py
+    fi
+
+    if [ -f ~/.config/matplotlib/stylelib/qpdk.mplstyle.bak ]; then
+        mv ~/.config/matplotlib/stylelib/qpdk.mplstyle.bak ~/.config/matplotlib/stylelib/qpdk.mplstyle
+    else
+        rm -f ~/.config/matplotlib/stylelib/qpdk.mplstyle
+    fi
+
+# Shared prerequisites for building documentation (runs in parallel)
+[parallel]
+docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
+
 # Build the HTML documentation
-docs: write-cells write-models write-justfile-help copy-sample-notebooks
-    uv run --group docs jb build docs
+docs: docs-prerequisites setup-ipython-config-temporary-before
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trap 'just setup-ipython-config-temporary-after' EXIT INT TERM
+    uv run --all-extras --group docs jb build docs
 
 # Setup LaTeX for PDF documentation
-docs-latex: write-cells write-models write-justfile-help copy-sample-notebooks
-    uv run --group docs jb build docs --builder latex
+docs-latex: docs-prerequisites setup-ipython-config-temporary-before
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trap 'just setup-ipython-config-temporary-after' EXIT INT TERM
+    uv run --all-extras --group docs jb build docs --builder latex
 
 # Build PDF documentation (requires a TeXLive installation)
 docs-pdf: docs-latex
