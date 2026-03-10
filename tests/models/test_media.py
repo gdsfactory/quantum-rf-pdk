@@ -1,4 +1,4 @@
-"""Additional tests for qpdk.models.media module - covering missing lines."""
+"""Tests for qpdk.models.media module."""
 
 import warnings
 
@@ -14,7 +14,7 @@ from qpdk.tech import coplanar_waveguide
 
 
 class TestCpwMediaSkrf:
-    """Tests for cpw_media_skrf (deprecated) function (lines 50-62)."""
+    """Tests for cpw_media_skrf (deprecated) function."""
 
     @staticmethod
     def test_creates_media_callable() -> None:
@@ -29,7 +29,7 @@ class TestCpwMediaSkrf:
 
 
 class TestCrossSectionToMedia:
-    """Tests for cross_section_to_media (deprecated) function (lines 117-118)."""
+    """Tests for cross_section_to_media (deprecated) function."""
 
     @staticmethod
     def test_with_string_cross_section() -> None:
@@ -52,7 +52,7 @@ class TestGetCpwDimensions:
 
     @staticmethod
     def test_with_callable_cross_section() -> None:
-        """Test get_cpw_dimensions with callable cross-section (line 78)."""
+        """Test get_cpw_dimensions with callable cross-section."""
         xs_fn = coplanar_waveguide
         width, gap = get_cpw_dimensions(xs_fn)
         assert width > 0
@@ -60,7 +60,7 @@ class TestGetCpwDimensions:
 
     @staticmethod
     def test_with_cross_section_object() -> None:
-        """Test get_cpw_dimensions with CrossSection object (line 76)."""
+        """Test get_cpw_dimensions with CrossSection object."""
         xs = coplanar_waveguide()
         width, gap = get_cpw_dimensions(xs)
         assert width > 0
@@ -68,7 +68,7 @@ class TestGetCpwDimensions:
 
     @staticmethod
     def test_missing_etch_offset_raises() -> None:
-        """Test that missing 'etch_offset' section raises ValueError (lines 89-94)."""
+        """Test that missing 'etch_offset' section raises ValueError."""
         import gdsfactory as gf
 
         # Create a cross-section without any 'etch_offset' sections
@@ -78,7 +78,7 @@ class TestGetCpwDimensions:
 
 
 class TestCpwParameters:
-    """Tests for cpw_parameters function (lines 170-176)."""
+    """Tests for cpw_parameters function."""
 
     @staticmethod
     def test_returns_valid_values() -> None:

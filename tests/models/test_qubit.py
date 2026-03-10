@@ -13,11 +13,18 @@ from qpdk.models.constants import Φ_0, e, h
 from qpdk.models.qubit import (
     coupling_strength_to_capacitance,
     double_island_transmon,
+    double_island_transmon_with_bbox,
+    double_island_transmon_with_resonator,
     ec_to_capacitance,
     ej_to_inductance,
+    flipmon,
+    flipmon_with_bbox,
+    flipmon_with_resonator,
     qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
+    transmon_with_resonator,
+    xmon_transmon,
 )
 
 from .base import TwoPortModelTestSuite
@@ -199,6 +206,34 @@ class TestDoubleIslandTransmon(TwoPortModelTestSuite):
 
         relative_error = abs(float(f_observed - f_r_expected) / f_r_expected)
         assert relative_error < 0.01
+
+
+@final
+class TestDoubleIslandTransmonWithBbox(TwoPortModelTestSuite):
+    """Tests for double_island_transmon_with_bbox wrapper."""
+
+    model_function = staticmethod(double_island_transmon_with_bbox)
+
+
+@final
+class TestFlipmon(TwoPortModelTestSuite):
+    """Tests for flipmon wrapper."""
+
+    model_function = staticmethod(flipmon)
+
+
+@final
+class TestFlipmonWithBbox(TwoPortModelTestSuite):
+    """Tests for flipmon_with_bbox wrapper."""
+
+    model_function = staticmethod(flipmon_with_bbox)
+
+
+@final
+class TestXmonTransmon(TwoPortModelTestSuite):
+    """Tests for xmon_transmon wrapper."""
+
+    model_function = staticmethod(xmon_transmon)
 
 
 @final
@@ -427,3 +462,44 @@ class TestQubitWithResonator(TwoPortModelTestSuite):
         assert not jnp.allclose(s11_short, s11_long, atol=1e-3), (
             "Different resonator lengths should yield different S-parameters"
         )
+
+
+class TestQubitWithResonatorWrappers:
+    """Tests for qubit-resonator wrapper functions."""
+
+    @staticmethod
+    def test_flipmon_with_resonator() -> None:
+        """Test flipmon_with_resonator returns valid S-params."""
+        f = jnp.linspace(4e9, 8e9, 10)
+        result = flipmon_with_resonator(f=f)
+        assert isinstance(result, dict)
+        for value in result.values():
+            assert jnp.all(jnp.isfinite(value))
+
+    @staticmethod
+    def test_double_island_transmon_with_resonator() -> None:
+        """Test double_island_transmon_with_resonator returns valid S-params."""
+        f = jnp.linspace(4e9, 8e9, 10)
+        result = double_island_transmon_with_resonator(f=f)
+        assert isinstance(result, dict)
+        for value in result.values():
+            assert jnp.all(jnp.isfinite(value))
+
+    @staticmethod
+    def test_transmon_with_resonator_wrapper() -> None:
+        """Test transmon_with_resonator wrapper returns valid S-params."""
+        f = jnp.linspace(4e9, 8e9, 10)
+        result = transmon_with_resonator(f=f)
+        assert isinstance(result, dict)
+        for value in result.values():
+            assert jnp.all(jnp.isfinite(value))
+
+    @staticmethod
+    def test_transmon_with_resonator_grounded() -> None:
+        """Test transmon_with_resonator with grounded qubit."""
+        f = jnp.linspace(4e9, 8e9, 10)
+        result = transmon_with_resonator(f=f, qubit_grounded=True)
+        assert isinstance(result, dict)
+        # Grounded produces 1 port (o1 only)
+        expected_keys = {("o1", "o1")}
+        assert set(result.keys()) == expected_keys
