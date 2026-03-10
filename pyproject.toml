@@ -28,9 +28,6 @@ models = [
   "sympy",
   "polars",
 ]
-npu = [
-  "openvino>=2025.4.1",
-]
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]

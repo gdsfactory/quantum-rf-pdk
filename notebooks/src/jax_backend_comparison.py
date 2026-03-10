@@ -43,6 +43,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 import sax
+from tqdm.auto import tqdm, trange
 
 from qpdk import PDK
 from qpdk.models.generic import capacitor, tee
@@ -199,7 +200,9 @@ plt.show()
 # *pytree*, including dicts of arrays, so it works directly on the SAX output.
 
 # %%
-_BENCHMARK_SIZES = [100, 500, 1_000, 5_000, 10_000]
+_BENCHMARK_SIZES = jnp.geomspace(
+    100, 100_000, 10, dtype=int
+).tolist()  # number of frequency points
 _N_REPEATS = 10  # number of timed runs per size
 
 
@@ -219,7 +222,7 @@ def benchmark_circuit(
         List of median evaluation times in seconds, one per entry in *sizes*.
     """
     times: list[float] = []
-    for n in sizes:
+    for n in tqdm(sizes, desc=f"Benchmarking on {device}"):
         freq = jnp.linspace(2e9, 8e9, n)
         with jax.default_device(device):
             # Move the frequency array to the target device
@@ -248,7 +251,6 @@ def benchmark_circuit(
 # ## CPU Backend
 
 # %%
-print("Benchmarking on CPU …")
 cpu_times = benchmark_circuit(cpu_device)
 for n, t in zip(_BENCHMARK_SIZES, cpu_times):
     print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
@@ -263,7 +265,6 @@ for n, t in zip(_BENCHMARK_SIZES, cpu_times):
 gpu_times: list[float] | None = None
 
 if HAS_GPU:
-    print(f"Benchmarking on GPU ({gpu_device}) …")
     gpu_times = benchmark_circuit(gpu_device)
     for n, t in zip(_BENCHMARK_SIZES, gpu_times):
         print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
@@ -367,7 +368,9 @@ if HAS_OPENVINO:
         _infer.infer([_freq_np])
 
         _run_times: list[float] = []
-        for _ in range(_N_REPEATS):
+        for _ in trange(
+            _N_REPEATS, desc=f"Timing OpenVINO on {ov_device_name} for n={_n}"
+        ):
             _t0 = time.perf_counter()
             _infer.infer([_freq_np])
             _t1 = time.perf_counter()
