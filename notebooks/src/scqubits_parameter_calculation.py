@@ -238,6 +238,16 @@ display(
 # against the analytical formula.  The two approaches agree in the dispersive
 # regime ($g \ll |\Delta|$) and diverge as the system approaches the
 # resonance condition.
+#
+# From the quantum model, we can extract physical parameters relevant for PDK design.
+#
+# The coupling strength $g$ (in the dispersive limit $g\ll \omega_q, \omega_r$) can be related to a coupling capacitance $C_c$ via {cite:p}`Savola2023`:
+# ```{math}
+# :label: eq:coupling-capacitance
+# g &\approx \frac{1}{2} \frac{C_\text{c}}{\sqrt{C_{\Sigma} \left( C_\text{r} - \frac{C_\text{c}^2}{C_\text{q}} \right) }}  \sqrt{\omega_\text{q}\omega_\text{r}} \\
+# &\approx \frac{1}{2} \frac{C_\text{c}}{\sqrt{C_{\Sigma} C_\text{r}}}  \sqrt{\omega_\text{q}\omega_\text{r}}, \quad \text{for } C_\text{c} \ll C_\text{q}
+# ```
+# where $C_\Sigma$ is the total qubit capacitance, $C_{\text{q}}$ is the capacitance between the qubit pads, and $C_r$ is the total capacitance of the resonator.
 
 # %%
 _a_plus_adag = resonator.annihilation_operator() + resonator.creation_operator()
