@@ -384,7 +384,7 @@ if HAS_OPENVINO:
 else:
     print(
         "OpenVINO is not installed on this system — skipping NPU/OpenVINO benchmark.\n"
-        "Install it with:  uv sync --extra npu"
+        "Install it with:  uv pip install openvino"
     )
 
 # %% [markdown]
