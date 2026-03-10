@@ -345,8 +345,8 @@ s_params = sim_results["s_parameters"]
 fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
 # Filter for S11 and S21 type traces
-s11_trace = next(t for t in s_params if "S(o1:1,o1:1)")
-s21_trace = next(t for t in s_params if "S(o2:1,o1:1)")
+s11_trace = s_params[next(t for t in s_params if "S(o1:1,o1:1)")]
+s21_trace = s_params[next(t for t in s_params if "S(o2:1,o1:1)")]
 
 axes[0].plot(frequencies, s11_trace["magnitude_db"], label=r"|S_{11}|")
 axes[1].plot(frequencies, s21_trace["magnitude_db"], label=r"|S_{21}|")
