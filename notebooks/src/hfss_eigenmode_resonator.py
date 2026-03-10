@@ -35,18 +35,16 @@ import tempfile
 import time
 from pathlib import Path
 
+from scipy.optimize import minimize_scalar
+
 # %% [markdown]
 # ## Create a CPW Resonator Component
 #
 # First, let's create a simple quarter-wave resonator using QPDK's component library.
 # We will use the `resonator_frequency` helper to find the length needed for a 5 GHz resonance.
 # %%
-import numpy as np
-import skrf
-
 from qpdk import PDK
 from qpdk.cells.resonator import resonator
-from qpdk.models.media import cross_section_to_media
 from qpdk.models.resonator import resonator_frequency
 from qpdk.tech import coplanar_waveguide
 
@@ -58,17 +56,19 @@ cpw_cross_section = coplanar_waveguide(width=10, gap=6)
 
 # Calculate length for 5 GHz target
 target_f_hz = 5e9
-f_arr = np.linspace(4e9, 6e9, 100)
-freq = skrf.Frequency.from_f(f_arr, unit="Hz")
-cpw_media = cross_section_to_media(cpw_cross_section)(frequency=freq)
 
-# Simple fixed-point iteration to find the exact length
-current_length = 4000.0
-for _ in range(5):
+
+# Use scipy.optimize to find the exact length for the target frequency
+def objective(length):
+    """Objective function to find the exact length for the target frequency."""
     f_res = resonator_frequency(
-        length=current_length, media=cpw_media, is_quarter_wave=True
+        length=length, cross_section=cpw_cross_section, is_quarter_wave=True
     )
-    current_length = current_length * f_res / target_f_hz
+    return abs(f_res - target_f_hz)
+
+
+result = minimize_scalar(objective, bounds=(1000, 10000), method="bounded")
+current_length = result.x
 
 res_component = resonator(
     length=current_length,
@@ -169,7 +169,7 @@ from qpdk.models.hfss import (  # noqa: E402
 )
 
 # Prepare component for export
-res_component = prepare_component_for_hfss(res_component, margin=100)
+res_component = prepare_component_for_hfss(res_component, margin=200)
 
 # Import the component geometry using native GDS import
 # This automatically applies additive metals and maps layers to 3D
