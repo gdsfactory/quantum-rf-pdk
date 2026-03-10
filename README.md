@@ -18,8 +18,10 @@ A generic process design kit (PDK) for superconducting quantum RF applications b
 
 - [PDK cells in the documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html): showcases available
   geometries.
-- [`qpdk/samples/`](qpdk/samples): contains example layouts and simulations.
-- [`notebooks/`](notebooks): contains notebooks demonstrating design and simulation workflows.
+- [`qpdk/samples/`](https://github.com/gdsfactory/quantum-rf-pdk/tree/main/qpdk/samples): contains example layouts and
+  simulations.
+- [`notebooks/`](https://github.com/gdsfactory/quantum-rf-pdk/tree/main/notebooks): contains notebooks demonstrating
+  design and simulation workflows.
 - [gsim example notebooks](https://gdsfactory.github.io/gsim/): electromagnetic simulation examples using Palace and
   Meep with gdsfactory.
 
