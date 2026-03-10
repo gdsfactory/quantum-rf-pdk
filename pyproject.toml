@@ -20,7 +20,7 @@ models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
   "optuna",
-  "pymablock @ git+https://gitlab.kwant-project.org/qt/pymablock.git@c441ef5d3d95b7823a08cf81da686876ae2e5231",
+  "pymablock>=2.2.1",
   "ray[tune]; sys_platform != 'win32'",
   "sax>=0.16.11",
   "scikit-rf",
