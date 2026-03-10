@@ -55,12 +55,14 @@ PDK.activate()
 
 # Create an interdigital capacitor
 # This design has 6 fingers with 20µm finger length
+cpw_width, cpw_gap = 10, 6
+cross_section = coplanar_waveguide(width=cpw_width, gap=cpw_gap)
 idc_component = interdigital_capacitor(
     fingers=6,  # Number of interleaved fingers
     finger_length=20.0,  # Length of each finger in µm
     finger_gap=2.0,  # Gap between adjacent fingers in µm
     thickness=5.0,  # Finger width in µm
-    cross_section=(cross_section := coplanar_waveguide(width=10, gap=6)),
+    cross_section=cross_section,
 )
 
 # Attach straight open waveguides to the ports to provide a feedline
@@ -250,43 +252,60 @@ for i, port in enumerate(prepared_component.ports, 1):
     orientation = port.orientation
 
     # Create a small rectangle for the port face
-    # Port spans across the CPW gap
-    cpw_width = 10  # µm
-    cpw_gap = 6  # µm
-    port_height = cpw_width + 2 * cpw_gap  # Total CPW cross-section
-
     # Determine port orientation and create rectangle
-    if abs(orientation) < 45 or abs(orientation - 180) < 45:
-        # Port facing left or right
-        port_rect = hfss.modeler.create_rectangle(
-            origin=[center[0], center[1] - port_height / 2, 0],
-            sizes=[port_height, metal_thickness],
-            orientation="YZ",
-            name=f"PortFace_{i}",
-        )
-        integration_line = [
-            [center[0], center[1] - port_height / 2, metal_thickness / 2],
-            [center[0], center[1] + port_height / 2, metal_thickness / 2],
-        ]
-    else:
-        # Port facing up or down
-        port_rect = hfss.modeler.create_rectangle(
-            origin=[center[0] - port_height / 2, center[1], 0],
-            sizes=[port_height, metal_thickness],
-            orientation="XZ",
-            name=f"PortFace_{i}",
-        )
-        integration_line = [
-            [center[0] - port_height / 2, center[1], metal_thickness / 2],
-            [center[0] + port_height / 2, center[1], metal_thickness / 2],
-        ]
+    port_params = {
+        0: {
+            "origin": [center[0] + cpw_gap, center[1] - cpw_width / 2, 0],
+            "sizes": [cpw_gap, cpw_width],
+            "int_line": [
+                [center[0] + cpw_gap / 2, center[1], 0],
+                [center[0] - cpw_gap / 2, center[1], 0],
+            ],
+        },
+        90: {
+            "origin": [center[0] - cpw_width / 2, center[1] + cpw_gap, 0],
+            "sizes": [cpw_width, cpw_gap],
+            "int_line": [
+                [center[0], center[1] + cpw_gap / 2, 0],
+                [center[0], center[1] - cpw_gap / 2, 0],
+            ],
+        },
+        180: {
+            "origin": [center[0] - cpw_gap, center[1] - cpw_width / 2, 0],
+            "sizes": [cpw_gap, cpw_width],
+            "int_line": [
+                [center[0] - cpw_gap / 2, center[1], 0],
+                [center[0] + cpw_gap / 2, center[1], 0],
+            ],
+        },
+        270: {
+            "origin": [center[0] - cpw_width / 2, center[1] - cpw_gap, 0],
+            "sizes": [cpw_width, cpw_gap],
+            "int_line": [
+                [center[0], center[1] - cpw_gap / 2, 0],
+                [center[0], center[1] + cpw_gap / 2, 0],
+            ],
+        },
+    }
+
+    if orientation not in port_params:
+        print(f"Warning: Unsupported port orientation {orientation}° for {port.name}")
+        continue
+
+    params = port_params[int(np.round(orientation))]
+    port_rect = hfss.modeler.create_rectangle(
+        origin=params["origin"],
+        sizes=params["sizes"],
+        orientation="XY",
+        name=f"{port.name}_face",
+    )
+    integration_line = params["int_line"]
 
     # Create lumped port
     if port_rect:
         hfss.lumped_port(
             assignment=port_rect.name,
-            name=f"Port{i}",
-            impedance=50,
+            name=port.name,
             integration_line=integration_line,
         )
         print(f"  Created Port{i} at {center} ({port.name})")
