@@ -2310,18 +2310,17 @@ wheels = [
 
 [[package]]
 name = "pymablock"
-version = "2.2.0"
+version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "packaging" },
-    { name = "python-mumps" },
     { name = "scipy" },
     { name = "sympy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/b2/59bc4520bdbb35f61bc0f2a581a897c21a8c429f7626434b139a629f0665/pymablock-2.2.0.tar.gz", hash = "sha256:a35804c6c9f53ddf47849fef189ffafc0e0639d9261154fe9a8d56afcd3320f0", size = 79668, upload-time = "2025-06-05T11:57:40.241Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/65/80/6ab4d6f94d1ca39c37225722a9c7f9c5f836fe54287291e6b2cc5fc38cdb/pymablock-2.2.1.tar.gz", hash = "sha256:3c78c8021db23adea657ccd69dc7e52cd8643f077885ad0c265fe37a49288dd5", size = 80644, upload-time = "2026-03-10T01:17:04.749Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/00/8e2d1a522baec6d4ac526a646440e4dd53cadbd0cc606e212c142318e86f/pymablock-2.2.0-py3-none-any.whl", hash = "sha256:5ed9d9be5f101e2a79f2236a29b17eb18a7f9828802ce3cf8bdd68c8cea1c03b", size = 86187, upload-time = "2025-06-05T11:57:41.87Z" },
+    { url = "https://files.pythonhosted.org/packages/17/80/ef1e55eec87dcf0cb295f304f2445e4e9d95ca1673d2211e8882b31ef3f7/pymablock-2.2.1-py3-none-any.whl", hash = "sha256:6cc19dc6f47cc3ad8794fd21f1915927a38b3c1fbaacd880ad776a7650e2e00a", size = 87192, upload-time = "2026-03-10T01:17:05.881Z" },
 ]
 
 [[package]]
@@ -2434,16 +2433,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/82/ed/0301aeeac3e5353ef
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/d7/1959b9648791274998a9c3526f6d0ec8fd2233e4d4acce81bbae76b44b2a/python_dotenv-1.2.2-py3-none-any.whl", hash = "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a", size = 22101, upload-time = "2026-03-01T16:00:25.09Z" },
 ]
-
-[[package]]
-name = "python-mumps"
-version = "0.0.6"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-    { name = "scipy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d3/72/bc0e855f424877e54eb665b1c59e27146d56b37546b4acd49daff804a543/python_mumps-0.0.6.tar.gz", hash = "sha256:58c33104f77c448e127e9e6da316f71dfb1a17719ecf022634669d513306b1fa", size = 58257, upload-time = "2026-01-11T12:29:07.114Z" }
 
 [[package]]
 name = "pyyaml"
@@ -2580,7 +2569,7 @@ requires-dist = [
     { name = "jaxellip", marker = "extra == 'models'" },
     { name = "optuna", marker = "extra == 'models'" },
     { name = "polars", marker = "extra == 'models'" },
-    { name = "pymablock", marker = "extra == 'models'", specifier = ">=2.2.0" },
+    { name = "pymablock", marker = "extra == 'models'", specifier = ">=2.2.1" },
     { name = "ray", extras = ["tune"], marker = "sys_platform != 'win32' and extra == 'models'" },
     { name = "sax", marker = "extra == 'models'", specifier = ">=0.16.11" },
     { name = "scikit-rf", marker = "extra == 'models'" },
