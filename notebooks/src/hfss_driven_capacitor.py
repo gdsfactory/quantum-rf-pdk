@@ -138,8 +138,8 @@ HFSS_CONFIG = {
     "sweep_start_ghz": 0.1,  # Sweep from 100 MHz
     "sweep_stop_ghz": 20.0,  # to 20 GHz
     "sweep_points": 401,  # Number of frequency points
-    "max_passes": 10,
-    "max_delta_s": 0.02,  # 2% S-parameter convergence
+    "max_passes": 16,
+    "max_delta_s": 0.002,  # 0.2% S-parameter convergence
 }
 
 # %% [markdown]
@@ -201,6 +201,7 @@ from qpdk.models.hfss import (  # noqa: E402
     add_air_region_to_hfss,
     add_substrate_to_hfss,
     import_component_to_hfss,
+    lumped_port_rectangle_from_cpw,
     prepare_component_for_hfss,
 )
 
@@ -247,71 +248,24 @@ metal_thickness = 0.2  # µm (200nm Nb film)
 
 print("Creating lumped ports.")
 
-for i, port in enumerate(prepared_component.ports, 1):
-    center = port.center
-    orientation = port.orientation
-
-    # Create a small rectangle for the port face
-    # Determine port orientation and create rectangle
-    # Note: explicit integration lines are used here instead of hfss.axis_directions
-    # due to a bug in PyAEDT's get_mid_points_on_dir which returns coordinates in mm 
-    # instead of the model units (um), causing port creation to fail.
-    port_params = {
-        0: {
-            "origin": [center[0], center[1] - cpw_width / 2, 0],
-            "sizes": [cpw_gap, cpw_width],
-            "int_line": [
-                [center[0] + cpw_gap, center[1], 0],
-                [center[0], center[1], 0],
-            ],
-        },
-        90: {
-            "origin": [center[0] - cpw_width / 2, center[1], 0],
-            "sizes": [cpw_width, cpw_gap],
-            "int_line": [
-                [center[0], center[1] + cpw_gap, 0],
-                [center[0], center[1], 0],
-            ],
-        },
-        180: {
-            "origin": [center[0] - cpw_gap, center[1] - cpw_width / 2, 0],
-            "sizes": [cpw_gap, cpw_width],
-            "int_line": [
-                [center[0] - cpw_gap, center[1], 0],
-                [center[0], center[1], 0],
-            ],
-        },
-        270: {
-            "origin": [center[0] - cpw_width / 2, center[1] - cpw_gap, 0],
-            "sizes": [cpw_width, cpw_gap],
-            "int_line": [
-                [center[0], center[1] - cpw_gap, 0],
-                [center[0], center[1], 0],
-            ],
-        },
-    }
-
-    if orientation not in port_params:
-        print(f"Warning: Unsupported port orientation {orientation}° for {port.name}")
-        continue
-
-    params = port_params[int(np.round(orientation))]
-    port_rect = hfss.modeler.create_rectangle(
-        origin=params["origin"],
-        sizes=params["sizes"],
-        orientation="XY",
-        name=f"{port.name}_face",
+for port in prepared_component.ports:
+    port_rectangle_params = lumped_port_rectangle_from_cpw(
+        port.center, port.orientation, cpw_gap, cpw_width
     )
-    integration_line = params["int_line"]
 
-    # Create lumped port
-    if port_rect:
-        hfss.lumped_port(
-            assignment=port_rect.name,
-            name=f"Port{i}",
-            integration_line=integration_line,
-        )
-        print(f"  Created Port{i} at {center} ({port.name})")
+    port_rect = hfss.modeler.create_rectangle(
+        orientation="XY", name=f"{port.name}_face", **port_rectangle_params
+    )
+
+    hfss.lumped_port(
+        assignment=port_rect.name,
+        name=port.name,
+        create_port_sheet=False,  # Already done
+        integration_line=port_rectangle_params["integration_line"],
+    )
+    print(
+        f"  Created {port.name} at {port.center} with orientation {port.orientation}°"
+    )
 
 # %% [markdown]
 # ## Configure Driven Modal Analysis
@@ -456,6 +410,8 @@ if s21_trace:
 
     print("-" * 40)
     print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
+else:
+    breakpoint()  # noqa
 
 # %% [markdown]
 # ## Cleanup

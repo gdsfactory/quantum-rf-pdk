@@ -6,12 +6,14 @@ from pathlib import Path
 
 import pytest
 from gdsfactory.component import Component
+from numpy.testing import assert_allclose
 
 from qpdk import LAYER_STACK
 from qpdk.cells.resonator import resonator
 from qpdk.models.hfss import (
     _get_layer_number_from_level,
     layer_stack_to_gds_mapping,
+    lumped_port_rectangle_from_cpw,
     prepare_component_for_hfss,
 )
 
@@ -173,3 +175,49 @@ def test_hfss_eigenmode_setup():
         assert setup is not None, "Failed to setup eigenmode simulation"
     finally:
         hfss.release_desktop()
+
+
+@pytest.fixture
+def mock_port_dimensions():
+    """Provides a standardized set of dimensions for testing."""
+    return {"center": [10.0, 20.0, 0.0], "cpw_gap": 6.0, "cpw_width": 2.0}
+
+
+@pytest.mark.parametrize(
+    ("orientation", "expected_origin", "expected_sizes", "expected_int_line"),
+    [
+        (0, [10.0, 19.0, 0.0], [6.0, 2.0], [[16.0, 20.0, 0.0], [10.0, 20.0, 0.0]]),
+        (90, [9.0, 20.0, 0.0], [2.0, 6.0], [[10.0, 26.0, 0.0], [10.0, 20.0, 0.0]]),
+        (180, [4.0, 19.0, 0.0], [6.0, 2.0], [[4.0, 20.0, 0.0], [10.0, 20.0, 0.0]]),
+        (270, [9.0, 14.0, 0.0], [2.0, 6.0], [[10.0, 14.0, 0.0], [10.0, 20.0, 0.0]]),
+    ],
+)
+def test_lumped_port_rectangle_from_cpw_valid_angles(
+    mock_port_dimensions,
+    orientation,
+    expected_origin,
+    expected_sizes,
+    expected_int_line,
+):
+    """Verifies that the vectorized geometry perfectly matches the expected dictionary values."""
+    result = lumped_port_rectangle_from_cpw(
+        center=mock_port_dimensions["center"],
+        orientation=orientation,
+        cpw_gap=mock_port_dimensions["cpw_gap"],
+        cpw_width=mock_port_dimensions["cpw_width"],
+    )
+
+    assert_allclose(result["origin"], expected_origin)
+    assert_allclose(result["sizes"], expected_sizes)
+    assert_allclose(result["integration_line"], expected_int_line)
+
+
+def test_lumped_port_rectangle_from_cpw_invalid_angle(mock_port_dimensions):
+    """Ensures the function throws a ValueError if passed an unaligned angle."""
+    with pytest.raises(ValueError, match="Unsupported port orientation: 45°"):
+        lumped_port_rectangle_from_cpw(
+            center=mock_port_dimensions["center"],
+            orientation=45,
+            cpw_gap=mock_port_dimensions["cpw_gap"],
+            cpw_width=mock_port_dimensions["cpw_width"],
+        )

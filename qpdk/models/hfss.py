@@ -32,7 +32,7 @@ from __future__ import annotations
 import re
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import gdsfactory as gf
 import numpy as np
@@ -425,6 +425,55 @@ def add_air_region_to_hfss(
         )
 
     return region.name
+
+
+class LumpedPortConfig(TypedDict):
+    """Configuration for defining a lumped port rectangle in HFSS."""
+
+    origin: list[float]
+    sizes: list[float]
+    integration_line: list[list[float]]
+
+
+def lumped_port_rectangle_from_cpw(
+    center: list, orientation: float, cpw_gap: float, cpw_width: float
+) -> LumpedPortConfig:
+    """Calculates parameters for a lumped port based on its orientation.
+
+    Args:
+        center: [x, y, z] coordinates of the port face center.
+        orientation: Angle in degrees (must be a multiple of 90).
+        cpw_gap: The length of the port along the axis of propagation.
+        cpw_width: The width of the port perpendicular to propagation.
+
+    Returns:
+        A dictionary containing 'origin', 'sizes', and 'integration_line' for HFSS.
+    """
+    if orientation % 90 != 0:
+        raise ValueError(f"Unsupported port orientation: {orientation}°")
+
+    cx, cy = center[0], center[1]
+
+    # Calculate directional unit vectors
+    theta = np.deg2rad(orientation)
+    c = np.round(np.cos(theta))
+    s = np.round(np.sin(theta))
+
+    # Calculate bounding box sizes
+    size_x = cpw_gap * np.abs(c) + cpw_width * np.abs(s)
+    size_y = cpw_width * np.abs(c) + cpw_gap * np.abs(s)
+
+    # Calculate the literal center point of the port rectangle
+    rect_cx = cx + (cpw_gap / 2) * c
+    rect_cy = cy + (cpw_gap / 2) * s
+
+    # The HFSS origin is the bottom-left corner of the bounding box
+    origin = [rect_cx - size_x / 2, rect_cy - size_y / 2, 0]
+
+    # The integration line goes from the outer edge to the original center
+    int_line = [[cx + cpw_gap * c, cy + cpw_gap * s, 0], [cx, cy, 0]]
+
+    return {"origin": origin, "sizes": [size_x, size_y], "integration_line": int_line}
 
 
 def get_eigenmode_results(hfss: Hfss, setup_name: str = "EigenmodeSetup") -> dict:
