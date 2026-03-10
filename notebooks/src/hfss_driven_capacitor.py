@@ -345,14 +345,11 @@ s_params = sim_results["s_parameters"]
 fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
 # Filter for S11 and S21 type traces
-s11_traces = [t for t in s_params if "S(1,1)" in t or "S11" in t.upper()]
-s21_traces = [t for t in s_params if "S(2,1)" in t or "S21" in t.upper()]
+s11_trace = next(t for t in s_params if "S(o1:1,o1:1)")
+s21_trace = next(t for t in s_params if "S(o2:1,o1:1)")
 
-for trace in s11_traces:
-    axes[0].plot(frequencies, s_params[trace]["magnitude_db"], label=f"|{trace}| (dB)")
-
-for trace in s21_traces:
-    axes[1].plot(frequencies, s_params[trace]["magnitude_db"], label=f"|{trace}| (dB)")
+axes[0].plot(frequencies, s11_trace["magnitude_db"], label=r"|S_{11}|")
+axes[1].plot(frequencies, s21_trace["magnitude_db"], label=r"|S_{21}|")
 
 axes[0].set_xlabel("Frequency (GHz)")
 axes[0].set_ylabel("Magnitude (dB)")
@@ -379,9 +376,6 @@ plt.show()
 # Extract capacitance from S21 at a specific frequency
 # For a series capacitor: Z = 1/(jωC), so |S21| relates to capacitive reactance
 
-# Find S21 trace
-s21_trace = next((t for t in s_params if "S(2,1)" in t or "S21" in t.upper()), None)
-
 if s21_trace:
     # Analysis frequencies in GHz
     analysis_frequencies_ghz = [1.0, 5.0, 10.0]
@@ -390,8 +384,10 @@ if s21_trace:
     print("-" * 40)
 
     Z0 = 50  # Reference impedance (ohms)
-    mag_db = s_params[s21_trace]["magnitude_db"]
+    mag_db = s21_trace["magnitude_db"]
 
+    print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
+    print("-" * 40)
     for freq_target in analysis_frequencies_ghz:
         idx = np.argmin(np.abs(frequencies - freq_target))
         freq_hz = frequencies[idx] * 1e9
@@ -407,9 +403,9 @@ if s21_trace:
             print(
                 f"At {frequencies[idx]:.2f} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
             )
-
-    print("-" * 40)
-    print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
+            print(
+                f"Relative difference: {(float(C_estimate) - C_extracted) / float(C_estimate) * 100:.2f}%"
+            )
 else:
     breakpoint()  # noqa
 
