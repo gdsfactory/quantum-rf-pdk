@@ -55,41 +55,6 @@ if TYPE_CHECKING:
     from gdsfactory.technology import LayerStack
 
 
-# Default HFSS simulation parameters
-DEFAULT_EIGENMODE_PARAMS = {
-    "min_frequency_ghz": 1.0,
-    "num_modes": 3,
-    "max_passes": 15,
-    "min_passes": 2,
-    "percent_refinement": 30,
-    "max_delta_freq": 2,  # Percentage
-}
-
-DEFAULT_DRIVEN_PARAMS = {
-    "frequency_ghz": 5.0,
-    "max_delta_s": 0.02,
-    "max_passes": 10,
-    "min_passes": 2,
-    "percent_refinement": 30,
-}
-
-# Materials that should be treated as perfect conductors (PEC) in HFSS simulations.
-# Superconducting materials at cryogenic temperatures are well-approximated by PEC.
-SUPERCONDUCTING_MATERIALS = frozenset({"Nb", "Al", "TiN", "Ta", "NbN"})
-
-
-def _check_pyaedt_available() -> None:
-    """Check if PyAEDT is available and raise helpful error if not."""
-    try:
-        import ansys.aedt.core  # noqa: F401
-    except ImportError as e:
-        msg = (
-            "PyAEDT is required for HFSS simulations. "
-            "Install it with: uv sync --extra hfss or pip install qpdk[hfss]"
-        )
-        raise ImportError(msg) from e
-
-
 def layer_stack_to_gds_mapping(
     layer_stack: LayerStack | None = None,
     thickness_override: float | None = None,

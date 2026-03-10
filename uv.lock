@@ -3097,6 +3097,7 @@ dependencies = [
 
 [package.optional-dependencies]
 hfss = [
+    { name = "polars" },
     { name = "pyaedt", extra = ["graphics"] },
 ]
 models = [
@@ -3162,6 +3163,7 @@ requires-dist = [
     { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = ">=2.0.1" },
     { name = "jaxellip", marker = "extra == 'models'" },
     { name = "optuna", marker = "extra == 'models'" },
+    { name = "polars", marker = "extra == 'hfss'" },
     { name = "polars", marker = "extra == 'models'" },
     { name = "pyaedt", extras = ["graphics"], marker = "extra == 'hfss'", specifier = ">=0.15.0" },
     { name = "pymablock", marker = "extra == 'models'", specifier = ">=2.2.1" },
