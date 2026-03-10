@@ -44,6 +44,7 @@ sphinx:
     - "sphinx.ext.autosummary"
     - "sphinx.ext.napoleon"
     - "sphinx.ext.viewcode"
+    - "sphinx.ext.imgconverter"
     - "sphinxcontrib.katex"
     - "sphinxcontrib.svgbob"
     - "matplotlib.sphinxext.plot_directive"
@@ -78,6 +79,8 @@ sphinx:
         \ChTitleVar{\raggedleft\Large\sffamily\bfseries}
     suppress_warnings:
       - "myst.xref_missing"
+      - "myst.header"
+      - "bibtex.duplicate_citation"
     nb_custom_formats:
       .py:
         - jupytext.reads

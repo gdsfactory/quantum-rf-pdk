@@ -478,6 +478,7 @@ def taper_cross_section(
     Returns:
         sax.SDict: S-parameters dictionary
     """
+    n_points = int(n_points)
     w1, g1 = get_cpw_dimensions(cross_section_1)
     w2, g2 = get_cpw_dimensions(cross_section_2)
 

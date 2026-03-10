@@ -19,7 +19,7 @@ uvx jupytext --to ipynb <script>.py
 or all-at once with
 
 ```bash
-make convert-notebooks
+just convert-notebooks
 ```
 
-There is also a pre-commit hook checking that the notebooks are in-sync with the source files
+There is also a pre-commit hook checking that the notebooks are in-sync with the source files.
