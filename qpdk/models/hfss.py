@@ -575,7 +575,7 @@ def get_sparameter_results(
         )
         if solution:
             if "frequency_ghz" not in data:
-                data["frequency_ghz"] = np.array(solution.primary_sweep_values) / 1e9
+                data["frequency_ghz"] = np.array(solution.primary_sweep_values)
 
             # Get complex S-parameter data
             # Use get_expression_data to get real and imaginary parts

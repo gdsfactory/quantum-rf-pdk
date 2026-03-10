@@ -332,8 +332,8 @@ fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 s11_col = next(col for col in df_results.columns if "S(o1:1,o1:1)" in col)
 s21_col = next(col for col in df_results.columns if "S(o2:1,o1:1)" in col)
 
-s11_trace = df_results[s11_col].to_numpy()
-s21_trace = df_results[s21_col].to_numpy()
+s11_trace = df_results[s11_col].to_numpy().astype(np.complex128)
+s21_trace = df_results[s21_col].to_numpy().astype(np.complex128)
 
 s11_mag_db = 20 * np.log10(np.abs(s11_trace))
 s21_mag_db = 20 * np.log10(np.abs(s21_trace))
