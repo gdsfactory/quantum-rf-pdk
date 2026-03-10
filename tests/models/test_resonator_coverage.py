@@ -40,8 +40,12 @@ class TestResonatorCoupled:
         """Test that disabling both open terminations produces valid results."""
         f = jnp.linspace(3e9, 8e9, 50)
 
-        result_open = resonator_coupled(f=f, length=5000, open_start=True, open_end=False)
-        result_no_open = resonator_coupled(f=f, length=5000, open_start=False, open_end=False)
+        result_open = resonator_coupled(
+            f=f, length=5000, open_start=True, open_end=False
+        )
+        result_no_open = resonator_coupled(
+            f=f, length=5000, open_start=False, open_end=False
+        )
 
         # Both configurations should produce valid finite S-parameters
         for key in result_open:
@@ -63,7 +67,9 @@ class TestResonatorFrequency:
 
         assert f_qw > 0, "Frequency should be positive"
         # For typical Si CPW (ep_eff ~ 6-7), expect f ~ 3-4 GHz for 5mm
-        assert 2e9 < f_qw < 10e9, f"Quarter-wave frequency {f_qw / 1e9:.2f} GHz out of range"
+        assert 2e9 < f_qw < 10e9, (
+            f"Quarter-wave frequency {f_qw / 1e9:.2f} GHz out of range"
+        )
 
     @staticmethod
     def test_half_wave_frequency() -> None:

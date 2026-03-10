@@ -3,7 +3,11 @@
 import pytest
 from klayout.db import DCplxTrans
 
-from qpdk.cells.capacitor import interdigital_capacitor, plate_capacitor, plate_capacitor_single
+from qpdk.cells.capacitor import (
+    interdigital_capacitor,
+    plate_capacitor,
+    plate_capacitor_single,
+)
 from qpdk.cells.snspd import snspd
 from qpdk.cells.transmon import double_pad_transmon, flipmon_with_bbox, xmon_transmon
 

@@ -2,8 +2,6 @@
 
 import warnings
 
-import pytest
-
 from qpdk.helper import deprecated
 
 

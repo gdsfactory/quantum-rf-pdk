@@ -61,6 +61,15 @@ build-backend = "uv_build"
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
 skip = "bibliography.bib"
 
+[tool.coverage.run]
+source = ["qpdk"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "if __name__ == .__main__.",
+  "pragma: no cover",
+]
+
 [tool.gdsfactoryplus]
 name = "qpdk"
 
@@ -128,15 +137,6 @@ read-only = "ignore"
 # The cast() calls are needed for pyrefly <0.55 compatibility (pre-commit hook uses 0.46.3).
 # TODO: remove this when the pre-commit hook is updated to pyrefly >=0.55.0.
 redundant-cast = "ignore"
-
-[tool.coverage.run]
-source = ["qpdk"]
-
-[tool.coverage.report]
-exclude_lines = [
-  "if __name__ == .__main__.",
-  "pragma: no cover",
-]
 
 [tool.pytest]
 addopts = ["--tb=short"]

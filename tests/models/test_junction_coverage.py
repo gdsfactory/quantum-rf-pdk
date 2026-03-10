@@ -4,7 +4,6 @@ import warnings
 from typing import final
 
 import jax.numpy as jnp
-from numpy.testing import assert_allclose, assert_array_less
 
 from qpdk.models.junction import josephson_junction, squid_junction
 
@@ -40,7 +39,7 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
     def test_overbiased_warning() -> None:
         """Test that overbiased condition triggers a RuntimeWarning."""
         f = jnp.array([5e9])
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
             josephson_junction(f=f, ic=1e-6, ib=2e-6)
             # JAX debug.callback may or may not fire synchronously
@@ -53,7 +52,9 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
         # ib very close to ic: cos_Φ_0 ≈ 0, should still give finite output
         result = josephson_junction(f=f, ic=1e-6, ib=0.999e-6)
         s11 = result[("o1", "o1")]
-        assert jnp.all(jnp.isfinite(s11)), "Should produce finite S-parameters even near critical current"
+        assert jnp.all(jnp.isfinite(s11)), (
+            "Should produce finite S-parameters even near critical current"
+        )
 
 
 @final
@@ -64,7 +65,12 @@ class TestSQUIDJunction(TwoPortModelTestSuite):
 
     @staticmethod
     def get_model_kwargs() -> dict:
-        return {"ic_tot": 2e-6, "asymmetry": 0.0, "capacitance": 10e-15, "resistance": 5e3}
+        return {
+            "ic_tot": 2e-6,
+            "asymmetry": 0.0,
+            "capacitance": 10e-15,
+            "resistance": 5e3,
+        }
 
     @staticmethod
     def test_flux_tuning() -> None:
@@ -90,7 +96,9 @@ class TestSQUIDJunction(TwoPortModelTestSuite):
 
         result = squid_junction(f=f, ic_tot=2e-6, asymmetry=0.0, flux=Φ_0 / 2)
         s11 = result[("o1", "o1")]
-        assert jnp.all(jnp.isfinite(s11)), "SQUID at half flux quantum should give finite S-params"
+        assert jnp.all(jnp.isfinite(s11)), (
+            "SQUID at half flux quantum should give finite S-params"
+        )
 
     @staticmethod
     def test_squid_asymmetry() -> None:

@@ -41,7 +41,9 @@ class TestCrossSectionToMedia:
             media_fn = cross_section_to_media("cpw")
             assert callable(media_fn)
             # Should produce deprecation warnings
-            dep_warnings = [wi for wi in w if issubclass(wi.category, DeprecationWarning)]
+            dep_warnings = [
+                wi for wi in w if issubclass(wi.category, DeprecationWarning)
+            ]
             assert len(dep_warnings) >= 1
 
 
