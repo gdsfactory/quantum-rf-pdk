@@ -37,6 +37,7 @@ from typing import TYPE_CHECKING, TypedDict
 import gdsfactory as gf
 import numpy as np
 from gdsfactory.technology.layer_stack import LayerLevel
+from gdsfactory.typings import Ports
 
 from qpdk import LAYER_STACK
 from qpdk.cells.helpers import (
@@ -436,7 +437,10 @@ class LumpedPortConfig(TypedDict):
 
 
 def lumped_port_rectangle_from_cpw(
-    center: list, orientation: float, cpw_gap: float, cpw_width: float
+    center: tuple[float, float, float],
+    orientation: float,
+    cpw_gap: float,
+    cpw_width: float,
 ) -> LumpedPortConfig:
     """Calculates parameters for a lumped port based on its orientation.
 
@@ -474,6 +478,34 @@ def lumped_port_rectangle_from_cpw(
     int_line = [[cx + cpw_gap * c, cy + cpw_gap * s, 0], [cx, cy, 0]]
 
     return {"origin": origin, "sizes": [size_x, size_y], "integration_line": int_line}
+
+
+def add_lumped_ports_to_hfss(
+    hfss: Hfss, ports: Ports, cpw_gap: float, cpw_width: float
+) -> None:
+    """Add lumped ports to HFSS at given port locations.
+
+    Args:
+        hfss: The HFSS application instance.
+        ports: Collection of gdsfactory ports.
+        cpw_gap: The length of the port along the axis of propagation.
+        cpw_width: The width of the port perpendicular to propagation.
+    """
+    for port in ports:
+        port_rectangle_params = lumped_port_rectangle_from_cpw(
+            port.center, port.orientation, cpw_gap, cpw_width
+        )
+
+        port_rect = hfss.modeler.create_rectangle(
+            orientation="XY", name=f"{port.name}_face", **port_rectangle_params
+        )
+
+        hfss.lumped_port(
+            assignment=port_rect.name,
+            name=port.name,
+            create_port_sheet=False,  # Already done
+            integration_line=port_rectangle_params["integration_line"],
+        )
 
 
 def get_eigenmode_results(hfss: Hfss, setup_name: str = "EigenmodeSetup") -> dict:

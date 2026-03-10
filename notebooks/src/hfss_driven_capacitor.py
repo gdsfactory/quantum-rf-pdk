@@ -199,9 +199,9 @@ print(f"Solution type: {hfss.solution_type}")
 # %%
 from qpdk.models.hfss import (  # noqa: E402
     add_air_region_to_hfss,
+    add_lumped_ports_to_hfss,
     add_substrate_to_hfss,
     import_component_to_hfss,
-    lumped_port_rectangle_from_cpw,
     prepare_component_for_hfss,
 )
 
@@ -243,26 +243,11 @@ print("Assigned radiation boundary to air region")
 # The ports are placed at the CPW feed locations.
 
 # %%
-# Define metal thickness for port geometry
-metal_thickness = 0.2  # µm (200nm Nb film)
 
 print("Creating lumped ports.")
 
+add_lumped_ports_to_hfss(hfss, prepared_component.ports, cpw_gap, cpw_width)
 for port in prepared_component.ports:
-    port_rectangle_params = lumped_port_rectangle_from_cpw(
-        port.center, port.orientation, cpw_gap, cpw_width
-    )
-
-    port_rect = hfss.modeler.create_rectangle(
-        orientation="XY", name=f"{port.name}_face", **port_rectangle_params
-    )
-
-    hfss.lumped_port(
-        assignment=port_rect.name,
-        name=port.name,
-        create_port_sheet=False,  # Already done
-        integration_line=port_rectangle_params["integration_line"],
-    )
     print(
         f"  Created {port.name} at {port.center} with orientation {port.orientation}°"
     )
@@ -378,7 +363,7 @@ plt.show()
 
 if s21_trace:
     # Analysis frequencies in GHz
-    analysis_frequencies_ghz = [1.0, 5.0, 10.0]
+    analysis_frequencies_ghz = [1e9, 5e9, 10e9]
 
     print("\n=== Capacitance Analysis ===")
     print("-" * 40)
@@ -390,7 +375,7 @@ if s21_trace:
     print("-" * 40)
     for freq_target in analysis_frequencies_ghz:
         idx = np.argmin(np.abs(frequencies - freq_target))
-        freq_hz = frequencies[idx] * 1e9
+        freq_hz = frequencies[idx]
         s21_mag = 10 ** (mag_db[idx] / 20)
 
         # For series element: S21 = 2Z0 / (2Z0 + Z)
@@ -401,13 +386,11 @@ if s21_trace:
             omega = 2 * np.pi * freq_hz
             C_extracted = 1 / (omega * z_series)
             print(
-                f"At {frequencies[idx]:.2f} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
+                f"At {frequencies[idx] / 1e9:.2f} GHz: |S21| = {s21_mag:.4f}, C ≈ {C_extracted * 1e15:.2f} fF"
             )
             print(
                 f"Relative difference: {(float(C_estimate) - C_extracted) / float(C_estimate) * 100:.2f}%"
             )
-else:
-    breakpoint()  # noqa
 
 # %% [markdown]
 # ## Cleanup
