@@ -74,9 +74,11 @@ def transmon_with_resonator(
         * DCplxTrans(*coupler_offset)
     )
 
-    # Create coupler_straight for probeline coupling
-    # The bottom track (o1→o4) carries the resonator signal
-    # The top track (o2→o3) provides probeline coupling ports
+    # Create coupler_straight for probeline coupling.
+    # The coupler has two parallel waveguides separated by `gap`:
+    #   o2 (top left) ──────── o3 (top right)   ← probeline track
+    #                   gap
+    #   o1 (bottom left) ───── o4 (bottom right) ← resonator track
     cs_ref = c << gf.get_component(
         probeline_coupler,
         gap=probeline_coupling_gap,
