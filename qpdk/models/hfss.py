@@ -394,6 +394,34 @@ def add_air_region_to_hfss(
     return region.name
 
 
+def add_materials_to_aedt(app: Hfss | Q2d) -> None:
+    """Add QPDK materials to the PyAEDT application.
+
+    Args:
+        app: The PyAEDT application instance (e.g., Hfss or Q2d).
+    """
+    from qpdk.tech import material_properties
+
+    for name, props in material_properties.items():
+        # Check if material already exists in the project or system library
+        if app.materials.checkifmaterialexists(name):
+            mat = app.materials[name]
+        else:
+            mat = app.materials.add_material(name)
+
+        for prop_name, prop_value in props.items():
+            # Skip infinite values (like infinite permittivity for metals),
+            # as these are typically handled by PEC boundaries in HFSS/Q2D.
+            if prop_value == float("inf"):
+                continue
+
+            if prop_name == "relative_permittivity":
+                mat.permittivity = prop_value
+            elif prop_name == "conductivity":
+                mat.conductivity = prop_value
+            # Add other mappings as needed
+
+
 def create_2d_from_cross_section(
     q2d: Q2d,
     cross_section: CrossSectionSpec,
@@ -453,13 +481,13 @@ def create_2d_from_cross_section(
 
     conductor_level = layer_stack.layers["M1"]
     conductor_thickness = float(conductor_level.thickness)  # µm
+    conductor_material = cast(str, conductor_level.material)
 
     if ground_width is None:
         ground_width = 10.0 * cpw_gap
 
-    # Map QPDK material names to HFSS built-in material names
-    _material_map = {"Si": "silicon"}
-    hfss_material = _material_map.get(substrate_material, substrate_material)
+    # Add materials to Q2D project
+    add_materials_to_aedt(q2d)
 
     q2d.modeler.model_units = units
 
@@ -470,7 +498,7 @@ def create_2d_from_cross_section(
     # Layout (not to scale):
     #   |  gnd_left  | gap | signal | gap |  gnd_right  |
     #   |____________|_____|________|_____|_____________|  <-- y = conductor_thickness
-    #   |            substrate (silicon)                |
+    #   |            substrate                            |
     #   |______________________________________________|  <-- y = -substrate_thickness
 
     total_width = 2 * ground_width + 2 * cpw_gap + cpw_width
