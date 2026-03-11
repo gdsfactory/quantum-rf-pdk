@@ -40,10 +40,11 @@ References:
 
 from __future__ import annotations
 
+import contextlib
 import re
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import gdsfactory as gf
 import numpy as np
@@ -220,6 +221,53 @@ def prepare_component_for_hfss(
     return c
 
 
+@contextlib.contextmanager
+def _export_component_to_gds_temp(
+    component: Component,
+    gds_path: str | Path | None = None,
+    prefix: str = "qpdk_aedt_",
+):
+    """Context manager for exporting a component to a GDS file."""
+    if gds_path is not None:
+        path = Path(gds_path)
+        component.write_gds(str(path))
+        yield path
+    else:
+        with tempfile.TemporaryDirectory(prefix=prefix) as temp_dir:
+            path = Path(temp_dir) / "component.gds"
+            component.write_gds(str(path))
+            yield path
+
+
+def _rename_imported_objects(
+    app: Any, new_objects: list[str], layer_stack: LayerStack
+) -> list[str]:
+    """Rename imported GDS objects based on the layer stack."""
+    num_to_name = {}
+    for name, level in layer_stack.layers.items():
+        layer_num = _get_layer_number_from_level(level)
+        if layer_num is not None and layer_num not in num_to_name:
+            num_to_name[layer_num] = name
+
+    renamed_objects = []
+    for obj_name in new_objects:
+        match = re.match(r"^signal(\d+)(_.*)?$", obj_name)
+        new_name = obj_name
+        if match:
+            layer_num = int(match.group(1))
+            suffix = match.group(2) or ""
+            if layer_num in num_to_name:
+                layer_name = num_to_name[layer_num]
+                new_name = f"{layer_name}{suffix}"
+                try:
+                    app.modeler[obj_name].name = new_name
+                except Exception:
+                    new_name = obj_name  # Fallback if rename fails
+        renamed_objects.append(new_name)
+
+    return renamed_objects
+
+
 def import_component_to_hfss(
     hfss: Hfss,
     component: Component,
@@ -255,68 +303,33 @@ def import_component_to_hfss(
         layer_stack, thickness_override=thickness_override
     )
 
-    # Create reverse mapping from layer number to layer name for renaming
-    num_to_name = {}
-    for name, level in layer_stack.layers.items():
-        layer_num = _get_layer_number_from_level(level)
-        if layer_num is not None and layer_num not in num_to_name:
-            num_to_name[layer_num] = name
+    with _export_component_to_gds_temp(
+        component, gds_path, prefix="qpdk_hfss_"
+    ) as path:
+        # Set modeler units
+        hfss.modeler.model_units = units
 
-    # Export component to GDS
-    # Note: We use TemporaryDirectory to ensure cleanup, but need to keep it
-    # alive until import is complete, so we store the reference
-    temp_dir_obj = None
-    if gds_path is None:
-        # Use temporary directory that will be cleaned up when function returns
-        temp_dir_obj = tempfile.TemporaryDirectory(prefix="qpdk_hfss_")
-        gds_path = Path(temp_dir_obj.name) / "component.gds"
+        # Record existing objects
+        existing_objects = set(hfss.modeler.object_names)
 
-    gds_path = Path(gds_path)
-    component.write_gds(str(gds_path))
+        # Import GDS with 3D layer mapping
+        result = hfss.import_gds_3d(
+            input_file=str(path),
+            mapping_layers=mapping_layers,
+            units=units,
+            import_method=0,
+        )
 
-    # Set modeler units
-    hfss.modeler.model_units = units
+        if result:
+            # Set all newly imported objects to PEC
+            new_objects = list(set(hfss.modeler.object_names) - existing_objects)
+            renamed_objects = _rename_imported_objects(hfss, new_objects, layer_stack)
 
-    # Record existing objects
-    existing_objects = set(hfss.modeler.object_names)
-
-    # Import GDS with 3D layer mapping
-    result = hfss.import_gds_3d(
-        input_file=str(gds_path),
-        mapping_layers=mapping_layers,
-        units=units,
-        import_method=0,
-    )
-
-    if result:
-        # Set all newly imported objects to PEC
-        new_objects = list(set(hfss.modeler.object_names) - existing_objects)
-
-        renamed_objects = []
-        for obj_name in new_objects:
-            match = re.match(r"^signal(\d+)(_.*)?$", obj_name)
-            new_name = obj_name
-            if match:
-                layer_num = int(match.group(1))
-                suffix = match.group(2) or ""
-                if layer_num in num_to_name:
-                    layer_name = num_to_name[layer_num]
-                    new_name = f"{layer_name}{suffix}"
-                    try:
-                        hfss.modeler[obj_name].name = new_name
-                    except Exception:
-                        new_name = obj_name  # Fallback if rename fails
-            renamed_objects.append(new_name)
-
-        if renamed_objects:
-            if import_as_sheets:
-                hfss.assign_perfecte_to_sheets(renamed_objects, name="PEC_Sheets")
-            else:
-                hfss.assign_perfect_e(renamed_objects, name="PEC_3D")
-
-    # Clean up temporary directory if we created one
-    if temp_dir_obj is not None:
-        temp_dir_obj.cleanup()
+            if renamed_objects:
+                if import_as_sheets:
+                    hfss.assign_perfecte_to_sheets(renamed_objects, name="PEC_Sheets")
+                else:
+                    hfss.assign_perfect_e(renamed_objects, name="PEC_3D")
 
     return result
 
@@ -608,60 +621,24 @@ def import_component_to_q3d(
     # Generate layer mapping from LayerStack (use real thickness for Q3D)
     mapping_layers = layer_stack_to_gds_mapping(layer_stack)
 
-    # Create reverse mapping from layer number to layer name for renaming
-    num_to_name = {}
-    for name, level in layer_stack.layers.items():
-        layer_num = _get_layer_number_from_level(level)
-        if layer_num is not None and layer_num not in num_to_name:
-            num_to_name[layer_num] = name
+    with _export_component_to_gds_temp(component, gds_path, prefix="qpdk_q3d_") as path:
+        # Set modeler units
+        q3d.modeler.model_units = units
 
-    # Export component to GDS
-    temp_dir_obj = None
-    if gds_path is None:
-        temp_dir_obj = tempfile.TemporaryDirectory(prefix="qpdk_q3d_")
-        gds_path = Path(temp_dir_obj.name) / "component.gds"
+        # Record existing objects
+        existing_objects = set(q3d.modeler.object_names)
 
-    gds_path = Path(gds_path)
-    component.write_gds(str(gds_path))
+        # Import GDS with 3D layer mapping
+        q3d.import_gds_3d(
+            input_file=str(path),
+            mapping_layers=mapping_layers,
+            units=units,
+            import_method=0,
+        )
 
-    # Set modeler units
-    q3d.modeler.model_units = units
-
-    # Record existing objects
-    existing_objects = set(q3d.modeler.object_names)
-
-    # Import GDS with 3D layer mapping
-    q3d.import_gds_3d(
-        input_file=str(gds_path),
-        mapping_layers=mapping_layers,
-        units=units,
-        import_method=0,
-    )
-
-    # Track and rename new objects
-    new_objects = list(set(q3d.modeler.object_names) - existing_objects)
-
-    renamed_objects = []
-    for obj_name in new_objects:
-        match = re.match(r"^signal(\d+)(_.*)?$", obj_name)
-        new_name = obj_name
-        if match:
-            layer_num = int(match.group(1))
-            suffix = match.group(2) or ""
-            if layer_num in num_to_name:
-                layer_name = num_to_name[layer_num]
-                new_name = f"{layer_name}{suffix}"
-                try:
-                    q3d.modeler[obj_name].name = new_name
-                except Exception:
-                    new_name = obj_name  # Fallback if rename fails
-        renamed_objects.append(new_name)
-
-    # Clean up temporary directory
-    if temp_dir_obj is not None:
-        temp_dir_obj.cleanup()
-
-    return renamed_objects
+        # Track and rename new objects
+        new_objects = list(set(q3d.modeler.object_names) - existing_objects)
+        return _rename_imported_objects(q3d, new_objects, layer_stack)
 
 
 def assign_q3d_nets_from_ports(
