@@ -631,12 +631,15 @@ def import_component_to_q3d(
         existing_objects = set(q3d.modeler.object_names)
 
         # Import GDS with 3D layer mapping
-        q3d.import_gds_3d(
+        result = q3d.import_gds_3d(
             input_file=str(path),
             mapping_layers=mapping_layers,
             units=units,
             import_method=0,
         )
+        if not result:
+            msg = "Q3D GDS import failed"
+            raise RuntimeError(msg)
 
         # Track and rename new objects
         new_objects = list(set(q3d.modeler.object_names) - existing_objects)
@@ -702,7 +705,8 @@ def assign_q3d_nets_from_ports(
         return assigned_nets
 
     # Find scale factor by minimizing distance to the first port
-    px0, py0 = float(ports[0].center[0]), float(ports[0].center[1])
+    first_port = next(iter(ports))
+    px0, py0 = float(first_port.center[0]), float(first_port.center[1])
 
     def dist_to_bbox(px: float, py: float, bbox: list[float], s: float = 1.0) -> float:
         dx = max(bbox[0] * s - px, 0, px - bbox[3] * s)
@@ -714,11 +718,13 @@ def assign_q3d_nets_from_ports(
         key=lambda s: min(dist_to_bbox(px0, py0, b, s) for b in bboxes.values()),
     )
 
-    print(f"Computed scale factor from Q3D units to Port units: {scale_factor}")
+    gf.logger.debug(
+        f"Computed scale factor from Q3D units to Port units: {scale_factor}"
+    )
 
     for port in ports:
         px, py = float(port.center[0]), float(port.center[1])
-        print(f"\n--- Assigning port {port.name} at ({px}, {py}) ---")
+        gf.logger.debug(f"--- Assigning port {port.name} at ({px}, {py}) ---")
 
         available_objs = [obj for obj in bboxes if obj not in used_objects]
         if not available_objs:
@@ -734,7 +740,7 @@ def assign_q3d_nets_from_ports(
             return max(0.0, dist - 1.0), area  # 1.0 tolerance for "inside"
 
         best_obj = min(available_objs, key=port_metric)
-        print(f"Selected best object for {port.name}: {best_obj}")
+        gf.logger.debug(f"Selected best object for {port.name}: {best_obj}")
 
         # Find the auto-identified net that contains this object
         net_to_rename = next(
@@ -779,7 +785,7 @@ def get_q3d_capacitance_matrix(
         >>> print(cap_df)
     """
     nets = [b.name for b in q3d.boundaries if b.type == "SignalNet"]
-    expressions = [f"C({n1},{n2})" for n1 in nets for n2 in nets]
+    expressions = [f"C({n1},{n2})" for i, n1 in enumerate(nets) for n2 in nets[i:]]
 
     data: dict[str, list[float]] = {}
 
@@ -789,9 +795,21 @@ def get_q3d_capacitance_matrix(
             setup_sweep_name=f"{setup_name} : LastAdaptive",
         )
         if solution:
-            # Q3D usually returns capacitance in pF by default in reports
-            val_pf = float(solution.data_real()[0])
-            data[expr] = [val_pf * 1e-12]  # convert to Farads
+            val = float(solution.data_real()[0])
+            unit = (
+                solution.units[0]
+                if isinstance(solution.units, list)
+                else solution.units
+            )
+            multiplier = {
+                "fF": 1e-15,
+                "pF": 1e-12,
+                "nF": 1e-9,
+                "uF": 1e-6,
+                "mF": 1e-3,
+                "F": 1.0,
+            }.get(str(unit), 1.0)
+            data[expr] = [val * multiplier]
 
     return pl.DataFrame(data)
 
