@@ -733,9 +733,10 @@ def assign_q3d_nets_from_ports(
             continue
 
         # Assign this conductor as a signal net with the port's name
-        q3d.assign_single_signal_line(
-            target_objects=best_obj,
-            name=port.name,
+        q3d.assign_net(
+            assignment=[best_obj],
+            net_name=port.name,
+            net_type="Signal",
         )
         assigned_nets.append(port.name)
         used_objects.add(best_obj)
