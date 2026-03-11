@@ -62,6 +62,7 @@ def resonator(
     bend = gf.get_component(
         bend_spec, cross_section=cross_section, angle=180, angular_step=4
     )
+
     num_straights = meanders + 1
     if start_with_bend:
         num_straights -= 1
@@ -73,7 +74,7 @@ def resonator(
             "Cannot have fewer than 0 straight sections. Reduce meanders or adjust bend start/end settings."
         )
 
-    length_per_one_straight = 0
+    straight_comp = None
     if num_straights > 0:
         length_per_one_straight = (
             length - meanders * bend.info["length"]
@@ -106,6 +107,8 @@ def resonator(
             first_ref = bend_ref
             previous_port = bend_ref.ports["o2"]
         else:
+            if straight_comp is None:
+                raise ValueError("straight_comp is required but not initialized.")
             straight_ref = c.add_ref(straight_comp)
             if i == 0:
                 first_ref = straight_ref
@@ -124,12 +127,17 @@ def resonator(
 
     # Final section
     if not end_with_bend:
+        if straight_comp is None:
+            raise ValueError("straight_comp is required but not initialized.")
         final_straight_ref = c.add_ref(straight_comp)
         if previous_port:
             final_straight_ref.connect("o1", previous_port)
         last_ref = final_straight_ref
         if first_ref is None:
             first_ref = final_straight_ref
+
+    if first_ref is None or last_ref is None:
+        raise ValueError("Resonator could not be generated correctly.")
 
     # Etch at the open end
     if open_end or open_start:
