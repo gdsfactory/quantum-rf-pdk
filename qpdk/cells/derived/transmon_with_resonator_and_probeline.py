@@ -11,7 +11,9 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 from klayout.db import DCplxTrans
 
 from qpdk.cells.capacitor import plate_capacitor_single
-from qpdk.cells.resonator import resonator_quarter_wave
+from qpdk.cells.resonator import (
+    resonator_quarter_wave_bend_start,
+)
 from qpdk.cells.waveguides import coupler_straight
 from qpdk.helper import show_components
 from qpdk.tech import route_bundle_cpw
@@ -19,7 +21,9 @@ from qpdk.tech import route_bundle_cpw
 
 def _transmon_with_resonator_base(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
-    resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
+    resonator: ComponentSpec = partial(
+        resonator_quarter_wave_bend_start, length=4000, meanders=6
+    ),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
     resonator_meanders: int = 5,
@@ -87,12 +91,12 @@ def _transmon_with_resonator_base(
             cross_section=resonator_cross_section,
         )
 
-        # Position the coupler_straight so that o3 (top right) is at
+        # Position the coupler_straight so that o2 (bottom left) is at
         # the resonator_meander_start position.
         cs_ref.move(
             (
-                resonator_meander_start[0] - cs_ref.ports["o3"].x,
-                resonator_meander_start[1] - cs_ref.ports["o3"].y,
+                resonator_meander_start[0] - cs_ref.ports["o2"].x,
+                resonator_meander_start[1] - cs_ref.ports["o2"].y,
             )
         )
         route_start_port = cs_ref.ports["o3"]
@@ -168,7 +172,9 @@ def _transmon_with_resonator_base(
 @gf.cell
 def transmon_with_resonator_and_probeline(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
-    resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
+    resonator: ComponentSpec = partial(
+        resonator_quarter_wave_bend_start, length=4000, meanders=6
+    ),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
     resonator_meanders: int = 5,
@@ -234,7 +240,9 @@ def transmon_with_resonator_and_probeline(
 @gf.cell
 def transmon_with_resonator(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
-    resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
+    resonator: ComponentSpec = partial(
+        resonator_quarter_wave_bend_start, length=4000, meanders=6
+    ),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
     resonator_length: float = 5000.0,
     resonator_meanders: int = 5,
