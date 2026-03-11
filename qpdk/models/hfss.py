@@ -475,41 +475,42 @@ def create_2d_from_cross_section(
 
     total_width = 2 * ground_width + 2 * cpw_gap + cpw_width
 
-    # Signal conductor (centred)
-    signal_x = ground_width + cpw_gap
-    signal = q2d.modeler.create_rectangle(
-        origin=[signal_x, 0, 0],
-        sizes=[cpw_width, conductor_thickness],
-        name="signal",
-    )
+    parts = [
+        {
+            "name": "signal",
+            "origin": [ground_width + cpw_gap, 0, 0],
+            "sizes": [cpw_width, conductor_thickness],
+            "material": conductor_material,
+        },
+        {
+            "name": "gnd_left",
+            "origin": [0, 0, 0],
+            "sizes": [ground_width, conductor_thickness],
+            "material": conductor_material,
+        },
+        {
+            "name": "gnd_right",
+            "origin": [ground_width + cpw_gap + cpw_width + cpw_gap, 0, 0],
+            "sizes": [ground_width, conductor_thickness],
+            "material": conductor_material,
+        },
+        {
+            "name": "substrate",
+            "origin": [0, -substrate_thickness, 0],
+            "sizes": [total_width, substrate_thickness],
+            "material": substrate_material,
+        },
+    ]
 
-    # Left ground plane
-    gnd_left = q2d.modeler.create_rectangle(
-        origin=[0, 0, 0],
-        sizes=[ground_width, conductor_thickness],
-        name="gnd_left",
-    )
-
-    # Right ground plane
-    gnd_right_x = ground_width + cpw_gap + cpw_width + cpw_gap
-    gnd_right = q2d.modeler.create_rectangle(
-        origin=[gnd_right_x, 0, 0],
-        sizes=[ground_width, conductor_thickness],
-        name="gnd_right",
-    )
-
-    # Substrate (below conductors)
-    substrate = q2d.modeler.create_rectangle(
-        origin=[0, -substrate_thickness, 0],
-        sizes=[total_width, substrate_thickness],
-        name="Substrate",
-        material=hfss_material,
-    )
+    objects = {
+        part["name"]: q2d.modeler.create_rectangle(**part)
+        for part in parts
+    }
 
     # --- Conductor assignments ---
     q2d.assign_single_conductor(
         name="signal",
-        assignment=[signal],
+        assignment=[objects["signal"]],
         conductor_type="SignalLine",
         solve_option="SolveOnBoundary",
         units=units,
@@ -517,18 +518,13 @@ def create_2d_from_cross_section(
 
     q2d.assign_single_conductor(
         name="gnd",
-        assignment=[gnd_left, gnd_right],
+        assignment=[objects["gnd_left"], objects["gnd_right"]],
         conductor_type="ReferenceGround",
         solve_option="SolveOnBoundary",
         units=units,
     )
 
-    return {
-        "signal": signal.name,
-        "gnd_left": gnd_left.name,
-        "gnd_right": gnd_right.name,
-        "substrate": substrate.name,
-    }
+    return {name: obj.name for name, obj in objects.items()}
 
 
 class LumpedPortConfig(TypedDict):
