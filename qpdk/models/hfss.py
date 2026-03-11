@@ -796,11 +796,7 @@ def get_q3d_capacitance_matrix(
         )
         if solution:
             val = float(solution.data_real()[0])
-            unit = (
-                solution.units[0]
-                if isinstance(solution.units, list)
-                else solution.units
-            )
+            unit = solution.units_data.get(expr, "pF")
             multiplier = {
                 "fF": 1e-15,
                 "pF": 1e-12,
@@ -808,7 +804,7 @@ def get_q3d_capacitance_matrix(
                 "uF": 1e-6,
                 "mF": 1e-3,
                 "F": 1.0,
-            }.get(str(unit), 1.0)
+            }.get(str(unit), 1e-12)
             data[expr] = [val * multiplier]
 
     return pl.DataFrame(data)
