@@ -46,6 +46,7 @@ from scipy.optimize import minimize_scalar
 from qpdk import PDK
 from qpdk.cells.resonator import resonator
 from qpdk.models.resonator import resonator_frequency
+from qpdk.simulation import HFSS, prepare_component_for_aedt
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -160,25 +161,18 @@ print(f"Solution type: {hfss.solution_type}")
 # based on the QPDK LayerStack.
 
 # %%
-from qpdk.models.hfss import (  # noqa: E402
-    add_air_region_to_hfss,
-    add_substrate_to_hfss,
-    get_eigenmode_results,
-    import_component_to_hfss,
-    prepare_component_for_hfss,
-)
-
 # Prepare component for export
-res_component = prepare_component_for_hfss(res_component, margin_draw=200)
+res_component = prepare_component_for_aedt(res_component, margin_draw=200)
+
+# Initialize HFSS wrapper
+hfss_sim = HFSS(hfss)
 
 # Import the component geometry using native GDS import
-# This automatically applies additive metals and maps layers to 3D
-success = import_component_to_hfss(hfss, res_component, import_as_sheets=True)
+success = hfss_sim.import_component(res_component, import_as_sheets=True)
 print(f"GDS import successful: {success}")
 
 # Add substrate below the component
-substrate_name = add_substrate_to_hfss(
-    hfss,
+substrate_name = hfss_sim.add_substrate(
     res_component,
     thickness=500.0,
     material="silicon",
@@ -186,11 +180,11 @@ substrate_name = add_substrate_to_hfss(
 print(f"Created substrate: {substrate_name}")
 
 # Add air region with PEC boundary for eigenmode analysis
-air_region_name = add_air_region_to_hfss(
-    hfss,
+air_region_name = hfss_sim.add_air_region(
     res_component,
     height=500.0,
     substrate_thickness=500.0,
+    pec_boundary=True,
 )
 print(f"Created air region with PEC boundary: {air_region_name}")
 
@@ -249,8 +243,8 @@ else:
 # Get the eigenmode frequencies and Q-factors from the simulation.
 
 # %%
-# Extract results using the helper function
-sim_results = get_eigenmode_results(hfss, "EigenmodeSetup")
+# Extract results using the wrapper
+sim_results = hfss_sim.get_eigenmode_results("EigenmodeSetup")
 
 print("\n=== Eigenmode Results ===")
 print("-" * 40)

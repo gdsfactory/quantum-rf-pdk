@@ -49,6 +49,7 @@ from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.waveguides import straight_open
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.media import cpw_ep_r_from_cross_section
+from qpdk.simulation import HFSS, Q3D, prepare_component_for_aedt
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -197,25 +198,18 @@ print(f"Solution type: {hfss.solution_type}")
 # This uses `Hfss.import_gds_3d` which automatically handles 3D layer mapping.
 
 # %%
-from qpdk.models.hfss import (  # noqa: E402
-    add_air_region_to_hfss,
-    add_lumped_ports_to_hfss,
-    add_substrate_to_hfss,
-    import_component_to_hfss,
-    prepare_component_for_hfss,
-)
-
 # Prepare component for export
-prepared_component = prepare_component_for_hfss(idc_component, margin_draw=50)
+prepared_component = prepare_component_for_aedt(idc_component, margin_draw=50)
+
+# Initialize HFSS wrapper
+hfss_sim = HFSS(hfss)
 
 # Import the component geometry using native GDS import
-# This automatically applies additive metals and maps layers to 3D
-success = import_component_to_hfss(hfss, prepared_component, import_as_sheets=True)
+success = hfss_sim.import_component(prepared_component, import_as_sheets=True)
 print(f"GDS import successful: {success}")
 
 # Add substrate below the component
-substrate_name = add_substrate_to_hfss(
-    hfss,
+substrate_name = hfss_sim.add_substrate(
     prepared_component,
     thickness=500.0,
     material="silicon",
@@ -223,8 +217,7 @@ substrate_name = add_substrate_to_hfss(
 print(f"Created substrate: {substrate_name}")
 
 # Add air region for driven simulation
-air_region_name = add_air_region_to_hfss(
-    hfss,
+air_region_name = hfss_sim.add_air_region(
     prepared_component,
     height=500.0,
     substrate_thickness=500.0,
@@ -246,7 +239,7 @@ print("Assigned radiation boundary to air region")
 
 print("Creating lumped ports.")
 
-add_lumped_ports_to_hfss(hfss, prepared_component.ports, cpw_gap, cpw_width)
+hfss_sim.add_lumped_ports(prepared_component.ports, cpw_gap, cpw_width)
 for port in prepared_component.ports:
     print(
         f"  Created {port.name} at {port.center} with orientation {port.orientation}°"
@@ -318,10 +311,8 @@ else:
 # %%
 import matplotlib.pyplot as plt  # noqa: E402
 
-from qpdk.models.hfss import get_sparameter_results  # noqa: E402
-
-# Extract results using the helper function
-df_results = get_sparameter_results(hfss, setup.name, sweep.name)
+# Extract results using the wrapper
+df_results = hfss_sim.get_sparameter_results(setup.name, sweep.name)
 
 frequencies_ghz = df_results["frequency_ghz"].to_numpy()
 
@@ -460,6 +451,11 @@ from ansys.aedt.core import Q3d  # noqa: E402
 temp_dir_q3d = tempfile.TemporaryDirectory(suffix=".ansys_qpdk_q3d")
 project_path_q3d = Path(temp_dir_q3d.name) / "idc_q3d.aedt"
 
+
+# Create temporary directory for Q3D project
+temp_dir_q3d = tempfile.TemporaryDirectory(suffix=".ansys_qpdk_q3d")
+project_path_q3d = Path(temp_dir_q3d.name) / "idc_q3d.aedt"
+
 # Initialize Q3D Extractor
 q3d = Q3d(
     project=str(project_path_q3d),
@@ -469,6 +465,9 @@ q3d = Q3d(
     version="2025.2",
 )
 q3d.modeler.model_units = "um"
+
+# Initialize Q3D wrapper
+q3d_sim = Q3D(q3d)
 
 print(f"Q3D project created: {q3d.project_file}")
 print(f"Design name: {q3d.design_name}")
@@ -481,38 +480,28 @@ print(f"Solution type: {q3d.solution_type}")
 # based on port locations. Each port becomes a separate conductor
 # in the capacitance matrix.
 #
-# The helper function `assign_q3d_nets_from_ports` is the Q3D equivalent
-# of `add_lumped_ports_to_hfss` — it maps gdsfactory port locations to
+# The `q3d_sim.assign_nets_from_ports` method is the Q3D equivalent
+# of `hfss_sim.add_lumped_ports` — it maps gdsfactory port locations to
 # Q3D conductor nets.
 
 # %%
-from qpdk.models.hfss import (  # noqa: E402
-    assign_q3d_nets_from_ports,
-    get_q3d_capacitance_matrix,
-    import_component_to_q3d,
-)
 
 # Import the prepared component geometry into Q3D
-conductor_objects = import_component_to_q3d(q3d, prepared_component)
+conductor_objects = q3d_sim.import_component(prepared_component)
 print(f"Imported {len(conductor_objects)} conductor objects: {conductor_objects}")
 
 # Add substrate below the component (Q3D modeler API is compatible with HFSS)
-bounds = prepared_component.bbox()
-x_min, y_min = bounds.p1.x, bounds.p1.y
-dx, dy = bounds.p2.x - x_min, bounds.p2.y - y_min
-substrate_q3d = q3d.modeler.create_box(
-    origin=[x_min, y_min, -500],
-    sizes=[dx, dy, 500],
-    name="Substrate",
+substrate_q3d_name = q3d_sim.add_substrate(
+    prepared_component,
+    thickness=500.0,
     material="silicon",
 )
-substrate_q3d.mesh_order = 4
-print(f"Created substrate: {substrate_q3d.name}")
+print(f"Created substrate: {substrate_q3d_name}")
 
 # %%
 # Assign signal nets from port locations
-signal_nets = assign_q3d_nets_from_ports(
-    q3d, prepared_component.ports, conductor_objects
+signal_nets = q3d_sim.assign_nets_from_ports(
+    prepared_component.ports, conductor_objects
 )
 print(f"Assigned signal nets: {signal_nets}")
 
@@ -565,8 +554,8 @@ else:
 # corresponds to the coupling capacitance of the interdigital capacitor.
 
 # %%
-# Extract the capacitance matrix
-cap_df = get_q3d_capacitance_matrix(q3d, setup_name="Q3DSetup")
+# Extract the capacitance matrix using the wrapper
+cap_df = q3d_sim.get_capacitance_matrix(setup_name="Q3DSetup")
 print("Q3D Capacitance Matrix (F):")
 print(cap_df)
 

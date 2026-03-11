@@ -10,12 +10,15 @@ from numpy.testing import assert_allclose
 
 from qpdk import LAYER_STACK
 from qpdk.cells.resonator import resonator
-from qpdk.models.hfss import (
-    _get_layer_number_from_level,
+from qpdk.simulation import (
+    HFSS,
+    Q2D,
+    Q3D,
     layer_stack_to_gds_mapping,
     lumped_port_rectangle_from_cpw,
-    prepare_component_for_hfss,
+    prepare_component_for_aedt,
 )
+from qpdk.simulation.aedt_base import _get_layer_number_from_level
 
 # Ensure Ansys path is set so PyAEDT can find it
 ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
@@ -42,10 +45,10 @@ def test_layer_stack_to_gds_mapping():
     assert isinstance(thickness, float)
 
 
-def test_prepare_component_for_hfss():
-    """Test component preparation for HFSS."""
+def test_prepare_component_for_aedt():
+    """Test component preparation for AEDT."""
     comp = resonator()
-    prepared = prepare_component_for_hfss(comp)
+    prepared = prepare_component_for_aedt(comp)
 
     assert isinstance(prepared, Component)
     # The prepared component should be different if additive metals are applied
@@ -53,13 +56,13 @@ def test_prepare_component_for_hfss():
     assert prepared.name is not None
 
 
-def test_prepare_component_for_hfss_margin():
-    """Test component preparation for HFSS with margin."""
+def test_prepare_component_for_aedt_margin():
+    """Test component preparation for AEDT with margin."""
     comp = resonator(length=3000)
 
     # Original bbox
     bbox_orig = comp.bbox()
-    prepared = prepare_component_for_hfss(comp, margin_draw=200)
+    prepared = prepare_component_for_aedt(comp, margin_draw=200)
 
     assert isinstance(prepared, Component)
     assert prepared.name is not None
@@ -106,7 +109,6 @@ def test_hfss_import_and_draw():
 
     from qpdk import PDK
     from qpdk.cells.resonator import resonator
-    from qpdk.models.hfss import import_component_to_hfss
 
     settings.use_grpc_uds = False
 
@@ -114,18 +116,19 @@ def test_hfss_import_and_draw():
     comp = resonator(length=1000, meanders=1)
 
     project_name = f"test_draw_{int(time.time())}"
-    hfss = Hfss(
+    hfss_app = Hfss(
         project=project_name,
         solution_type="Eigenmode",
         non_graphical=True,
     )
 
     try:
+        hfss_sim = HFSS(hfss_app)
         # Use direct draw which we know is stable on Linux
-        success = import_component_to_hfss(hfss, comp)
+        success = hfss_sim.import_component(comp)
         assert success, "Failed to draw component in HFSS"
     finally:
-        hfss.release_desktop()
+        hfss_app.release_desktop()
 
 
 @pytest.mark.hfss
@@ -139,11 +142,6 @@ def test_hfss_eigenmode_setup():
 
     from qpdk import PDK
     from qpdk.cells.resonator import resonator
-    from qpdk.models.hfss import (
-        add_air_region_to_hfss,
-        add_substrate_to_hfss,
-        import_component_to_hfss,
-    )
 
     settings.use_grpc_uds = False
 
@@ -151,18 +149,19 @@ def test_hfss_eigenmode_setup():
     comp = resonator(length=1000, meanders=1)
 
     project_name = f"test_eigenmode_{int(time.time())}"
-    hfss = Hfss(
+    hfss_app = Hfss(
         project=project_name,
         solution_type="Eigenmode",
         non_graphical=True,
     )
 
     try:
-        import_component_to_hfss(hfss, comp)
-        add_substrate_to_hfss(hfss, comp)
-        add_air_region_to_hfss(hfss, comp)
+        hfss_sim = HFSS(hfss_app)
+        hfss_sim.import_component(comp)
+        hfss_sim.add_substrate(comp)
+        hfss_sim.add_air_region(comp)
 
-        setup = hfss.create_setup(name="EigenmodeSetup")
+        setup = hfss_app.create_setup(name="EigenmodeSetup")
         setup.props["MinimumFrequency"] = "1.0GHz"
         setup.props["NumModes"] = 1
         setup.props["MaximumPasses"] = 2
@@ -174,7 +173,7 @@ def test_hfss_eigenmode_setup():
 
         assert setup is not None, "Failed to setup eigenmode simulation"
     finally:
-        hfss.release_desktop()
+        hfss_app.release_desktop()
 
 
 @pytest.fixture
@@ -234,10 +233,6 @@ def test_q3d_import_and_net_assignment():
 
     from qpdk import PDK
     from qpdk.cells.capacitor import interdigital_capacitor
-    from qpdk.models.hfss import (
-        assign_q3d_nets_from_ports,
-        import_component_to_q3d,
-    )
 
     settings.use_grpc_uds = False
 
@@ -245,20 +240,21 @@ def test_q3d_import_and_net_assignment():
     comp = interdigital_capacitor(fingers=4, finger_length=20)
 
     project_name = f"test_q3d_{int(time.time())}"
-    q3d = Q3d(
+    q3d_app = Q3d(
         project=project_name,
         solution_type="Q3DExtractor",
         non_graphical=True,
     )
 
     try:
-        conductor_objects = import_component_to_q3d(q3d, comp)
+        q3d_sim = Q3D(q3d_app)
+        conductor_objects = q3d_sim.import_component(comp)
         assert len(conductor_objects) > 0, "No conductor objects imported"
 
-        signal_nets = assign_q3d_nets_from_ports(q3d, comp.ports, conductor_objects)
+        signal_nets = q3d_sim.assign_nets_from_ports(comp.ports, conductor_objects)
         assert len(signal_nets) > 0, "No signal nets assigned"
     finally:
-        q3d.release_desktop()
+        q3d_app.release_desktop()
 
 
 @pytest.mark.hfss
@@ -271,7 +267,6 @@ def test_create_2d_from_cross_section():
     from ansys.aedt.core import Q2d, settings
 
     from qpdk import PDK
-    from qpdk.models.hfss import create_2d_from_cross_section
     from qpdk.tech import coplanar_waveguide
 
     settings.use_grpc_uds = False
@@ -280,14 +275,15 @@ def test_create_2d_from_cross_section():
     cross_section = coplanar_waveguide(width=10, gap=6)
 
     project_name = f"test_q2d_{int(time.time())}"
-    q2d = Q2d(
+    q2d_app = Q2d(
         project=project_name,
         design="CPW_Test",
         non_graphical=True,
     )
 
     try:
-        result = create_2d_from_cross_section(q2d, cross_section)
+        q2d_sim = Q2D(q2d_app)
+        result = q2d_sim.create_2d_from_cross_section(cross_section)
 
         assert isinstance(result, dict)
         assert "signal" in result
@@ -295,4 +291,4 @@ def test_create_2d_from_cross_section():
         assert "gnd_right" in result
         assert "substrate" in result
     finally:
-        q2d.release_desktop()
+        q2d_app.release_desktop()
