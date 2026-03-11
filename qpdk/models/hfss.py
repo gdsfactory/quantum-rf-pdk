@@ -413,6 +413,9 @@ def add_materials_to_aedt(app: Hfss | Q2d) -> None:
             # Skip infinite values (like infinite permittivity for metals),
             # as these are typically handled by PEC boundaries in HFSS/Q2D.
             if prop_value == float("inf"):
+                if prop_name == "relative_permittivity":
+                    # Assign a high conductivity so Q2D treats it as a conductor
+                    mat.conductivity = 1e30
                 continue
 
             if prop_name == "relative_permittivity":
@@ -481,7 +484,18 @@ def create_2d_from_cross_section(
 
     conductor_level = layer_stack.layers["M1"]
     conductor_thickness = float(conductor_level.thickness)  # µm
+
+    # Q2D mesher often fails with 'Could not preserve critical nodes' 
+    # on extremely thin (e.g. 0.2 um) perfect conductors due to aspect ratio limits.
+    # Enforce a minimum meshing thickness to avoid this solver failure.
+    if conductor_thickness < 2.0:
+        conductor_thickness = 2.0
+
     conductor_material = cast(str, conductor_level.material)
+
+    from qpdk.tech import material_properties
+    if material_properties.get(conductor_material, {}).get("relative_permittivity") == float("inf"):
+        conductor_material = "pec"
 
     if ground_width is None:
         ground_width = 10.0 * cpw_gap
@@ -502,6 +516,7 @@ def create_2d_from_cross_section(
     #   |______________________________________________|  <-- y = -substrate_thickness
 
     total_width = 2 * ground_width + 2 * cpw_gap + cpw_width
+    substrate_margin = 50.0
 
     parts = [
         {
@@ -524,8 +539,8 @@ def create_2d_from_cross_section(
         },
         {
             "name": "substrate",
-            "origin": [0, -substrate_thickness, 0],
-            "sizes": [total_width, substrate_thickness],
+            "origin": [-substrate_margin, -substrate_thickness, 0],
+            "sizes": [total_width + 2 * substrate_margin, substrate_thickness],
             "material": substrate_material,
         },
     ]
@@ -537,7 +552,6 @@ def create_2d_from_cross_section(
         name="signal",
         assignment=[objects["signal"]],
         conductor_type="SignalLine",
-        solve_option="SolveOnBoundary",
         units=units,
     )
 
@@ -545,8 +559,15 @@ def create_2d_from_cross_section(
         name="gnd",
         assignment=[objects["gnd_left"], objects["gnd_right"]],
         conductor_type="ReferenceGround",
-        solve_option="SolveOnBoundary",
         units=units,
+    )
+
+    # Force a finer mesh on the thin traces to prevent 'critical nodes' meshing errors
+    q2d.mesh.assign_length_mesh(
+        assignment=[objects["signal"], objects["gnd_left"], objects["gnd_right"]],
+        maximum_length=2.0,
+        maximum_elements=10000,
+        name="thin_trace_mesh",
     )
 
     return {name: obj.name for name, obj in objects.items()}
