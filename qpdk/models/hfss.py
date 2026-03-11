@@ -41,8 +41,10 @@ References:
 from __future__ import annotations
 
 import contextlib
+import math
 import re
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict
 
@@ -226,8 +228,8 @@ def _export_component_to_gds_temp(
     component: Component,
     gds_path: str | Path | None = None,
     prefix: str = "qpdk_aedt_",
-):
-    """Context manager for exporting a component to a GDS file."""
+) -> Generator[Path, None, None]:
+    """Context manager for exporting a component to a temporary GDS file."""
     if gds_path is not None:
         path = Path(gds_path)
         component.write_gds(str(path))
@@ -686,105 +688,71 @@ def assign_q3d_nets_from_ports(
     assigned_nets: list[str] = []
     used_objects: set[str] = set()
 
-    # Find scale factor by trying powers of 10 (PyAEDT bounding_box might be in different units)
-    scale_factor = 1.0
-    if ports:
-        px0, py0 = float(ports[0].center[0]), float(ports[0].center[1])
-        for power in [-3, -2, -1, 0, 1, 2, 3, 4]:
-            test_scale = 10**power
-            found_contain = False
-            for obj_name in conductor_objects:
-                obj = q3d.modeler.get_object_from_name(obj_name)
-                if obj:
-                    bbox = obj.bounding_box
-                    xmin, ymin = bbox[0] * test_scale, bbox[1] * test_scale
-                    xmax, ymax = bbox[3] * test_scale, bbox[4] * test_scale
-                    if (xmin - 1.0 <= px0 <= xmax + 1.0) and (
-                        ymin - 1.0 <= py0 <= ymax + 1.0
-                    ):
-                        found_contain = True
-                        break
-            if found_contain:
-                scale_factor = test_scale
-                break
+    if not ports or not conductor_objects:
+        return assigned_nets
+
+    # Pre-fetch bounding boxes to avoid repeated slow COM/RPC calls
+    bboxes = {}
+    for obj_name in conductor_objects:
+        obj = q3d.modeler.get_object_from_name(obj_name)
+        if obj:
+            bboxes[obj_name] = obj.bounding_box
+
+    if not bboxes:
+        return assigned_nets
+
+    # Find scale factor by minimizing distance to the first port
+    px0, py0 = float(ports[0].center[0]), float(ports[0].center[1])
+
+    def dist_to_bbox(px: float, py: float, bbox: list[float], s: float = 1.0) -> float:
+        dx = max(bbox[0] * s - px, 0, px - bbox[3] * s)
+        dy = max(bbox[1] * s - py, 0, py - bbox[4] * s)
+        return math.hypot(dx, dy)
+
+    scale_factor = min(
+        (10**p for p in range(-3, 5)),
+        key=lambda s: min(dist_to_bbox(px0, py0, b, s) for b in bboxes.values()),
+    )
 
     print(f"Computed scale factor from Q3D units to Port units: {scale_factor}")
 
     for port in ports:
         px, py = float(port.center[0]), float(port.center[1])
-
-        # Find the conductor object closest to this port
-        best_obj: str | None = None
-        best_metric = float("inf")
-
         print(f"\n--- Assigning port {port.name} at ({px}, {py}) ---")
 
-        for obj_name in conductor_objects:
-            if obj_name in used_objects:
-                continue
+        available_objs = [obj for obj in bboxes if obj not in used_objects]
+        if not available_objs:
+            break
 
-            # Get object from modeler; skip if not found
-            obj = q3d.modeler.get_object_from_name(obj_name)
-            if obj is None:
-                continue
+        # Metric: (distance_to_bbox, area) -> minimizes distance, then area
+        def port_metric(
+            obj_name: str, px: float = px, py: float = py
+        ) -> tuple[float, float]:
+            b = bboxes[obj_name]
+            dist = dist_to_bbox(px, py, b, scale_factor)
+            area = (b[3] - b[0]) * (b[4] - b[1]) * scale_factor**2
+            return max(0.0, dist - 1.0), area  # 1.0 tolerance for "inside"
 
-            # bounding_box returns [xmin, ymin, zmin, xmax, ymax, zmax]
-            bbox = obj.bounding_box
-            xmin = bbox[0] * scale_factor
-            ymin = bbox[1] * scale_factor
-            xmax = bbox[3] * scale_factor
-            ymax = bbox[4] * scale_factor
-
-            area = (xmax - xmin) * (ymax - ymin)
-
-            # Check if port is inside or very close to the bounding box
-            tol = 1.0
-            if (xmin - tol <= px <= xmax + tol) and (ymin - tol <= py <= ymax + tol):
-                # Prefer the smallest area that contains the port (e.g. trace vs ground plane)
-                metric = area
-                print(
-                    f"Object {obj_name} CONTAINS port. bbox=({xmin:.1f}, {ymin:.1f}) to ({xmax:.1f}, {ymax:.1f}). area={area:.1f}. metric={metric}"
-                )
-            else:
-                # Fallback to distance if port is outside
-                obj_cx = (xmin + xmax) / 2
-                obj_cy = (ymin + ymax) / 2
-                dist = ((px - obj_cx) ** 2 + (py - obj_cy) ** 2) ** 0.5
-                metric = 1e9 + dist
-                print(
-                    f"Object {obj_name} DOES NOT contain port. bbox={bbox}, dist={dist:.1f}. metric={metric}"
-                )
-
-            if metric < best_metric:
-                best_metric = metric
-                best_obj = obj_name
-
+        best_obj = min(available_objs, key=port_metric)
         print(f"Selected best object for {port.name}: {best_obj}")
 
-        if best_obj is None:
-            continue
-
         # Find the auto-identified net that contains this object
-        net_to_rename = None
-        for b in q3d.boundaries:
-            if b.type == "SignalNet" and best_obj in b.props.get("Objects", []):
-                net_to_rename = b
-                break
+        net_to_rename = next(
+            (
+                b
+                for b in q3d.boundaries
+                if b.type == "SignalNet" and best_obj in b.props.get("Objects", [])
+            ),
+            None,
+        )
 
         if net_to_rename is not None:
-            # Rename the existing net instead of creating an overlapping one
             net_to_rename.name = port.name
-            assigned_nets.append(port.name)
-            used_objects.add(best_obj)
         else:
-            # Fallback if no net was auto-identified for some reason
-            q3d.assign_net(
-                assignment=[best_obj],
-                net_name=port.name,
-                net_type="Signal",
-            )
-            assigned_nets.append(port.name)
-            used_objects.add(best_obj)
+            q3d.assign_net(assignment=[best_obj], net_name=port.name, net_type="Signal")
+
+        assigned_nets.append(port.name)
+        used_objects.add(best_obj)
 
     return assigned_nets
 
