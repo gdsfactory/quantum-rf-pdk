@@ -1,4 +1,4 @@
-"""Tests for HFSS simulation integration."""
+"""Tests for HFSS and Q3D simulation integration."""
 
 import os
 import time
@@ -221,6 +221,44 @@ def test_lumped_port_rectangle_from_cpw_invalid_angle(mock_port_dimensions):
             cpw_gap=mock_port_dimensions["cpw_gap"],
             cpw_width=mock_port_dimensions["cpw_width"],
         )
+
+
+@pytest.mark.hfss
+def test_q3d_import_and_net_assignment():
+    """Test creating a Q3D project, importing a component, and assigning nets."""
+    ansys_dir = os.environ.get("ANSYSEM_ROOT252", "/usr/ansys_inc/v252/AnsysEM")
+    if not Path(ansys_dir).exists():
+        pytest.skip(f"HFSS/Q3D installation not found at {ansys_dir}")
+
+    from ansys.aedt.core import Q3d, settings
+
+    from qpdk import PDK
+    from qpdk.cells.capacitor import interdigital_capacitor
+    from qpdk.models.hfss import (
+        assign_q3d_nets_from_ports,
+        import_component_to_q3d,
+    )
+
+    settings.use_grpc_uds = False
+
+    PDK.activate()
+    comp = interdigital_capacitor(fingers=4, finger_length=20)
+
+    project_name = f"test_q3d_{int(time.time())}"
+    q3d = Q3d(
+        project=project_name,
+        solution_type="Q3DExtractor",
+        non_graphical=True,
+    )
+
+    try:
+        conductor_objects = import_component_to_q3d(q3d, comp)
+        assert len(conductor_objects) > 0, "No conductor objects imported"
+
+        signal_nets = assign_q3d_nets_from_ports(q3d, comp.ports, conductor_objects)
+        assert len(signal_nets) > 0, "No signal nets assigned"
+    finally:
+        q3d.release_desktop()
 
 
 @pytest.mark.hfss

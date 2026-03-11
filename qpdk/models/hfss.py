@@ -1,14 +1,24 @@
-"""HFSS simulation utilities using PyAEDT.
+"""HFSS and Q3D simulation utilities using PyAEDT.
 
 This module provides helper functions for setting up HFSS simulations
-(eigenmode and driven modal) from gdsfactory components. It uses the
-PyAEDT library to interface with Ansys HFSS.
+(eigenmode and driven modal) and Q3D Extractor parasitic extractions
+from gdsfactory components. It uses the PyAEDT library to interface
+with Ansys HFSS and Q3D Extractor.
 
-The main workflow is:
+**HFSS workflow:**
+
 1. Prepare a component with :func:`prepare_component_for_hfss`
 2. Export to GDS and import into HFSS with :func:`import_component_to_hfss`
 3. Configure simulation setup (e.g. Eigenmode or Driven) manually via PyAEDT
 4. Extract results with :func:`get_eigenmode_results` or :func:`get_sparameter_results`
+
+**Q3D Extractor workflow:**
+
+1. Prepare a component with :func:`prepare_component_for_hfss`
+2. Export to GDS and import into Q3D with :func:`import_component_to_q3d`
+3. Assign signal nets with :func:`assign_q3d_nets_from_ports`
+4. Configure Q3D setup and analyze
+5. Extract capacitance matrix with :func:`get_q3d_capacitance_matrix`
 
 Note:
     This module requires the optional ``hfss`` dependency group.
@@ -25,14 +35,18 @@ Example:
 References:
     - PyAEDT documentation: https://aedt.docs.pyansys.com/
     - HFSS import_gds_3d: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.hfss.Hfss.import_gds_3d.html
+    - Q3D Extractor: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.q3d.Q3d.html
 """
 
 from __future__ import annotations
 
+import contextlib
+import math
 import re
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 import gdsfactory as gf
 import numpy as np
@@ -51,6 +65,7 @@ from qpdk.tech import LAYER
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss, Q2d
+    from ansys.aedt.core.q3d import Q3d
     from gdsfactory.component import Component
     from gdsfactory.technology import LayerStack
 
@@ -208,6 +223,53 @@ def prepare_component_for_hfss(
     return c
 
 
+@contextlib.contextmanager
+def _export_component_to_gds_temp(
+    component: Component,
+    gds_path: str | Path | None = None,
+    prefix: str = "qpdk_aedt_",
+) -> Generator[Path, None, None]:
+    """Context manager for exporting a component to a temporary GDS file."""
+    if gds_path is not None:
+        path = Path(gds_path)
+        component.write_gds(str(path))
+        yield path
+    else:
+        with tempfile.TemporaryDirectory(prefix=prefix) as temp_dir:
+            path = Path(temp_dir) / "component.gds"
+            component.write_gds(str(path))
+            yield path
+
+
+def _rename_imported_objects(
+    app: Any, new_objects: list[str], layer_stack: LayerStack
+) -> list[str]:
+    """Rename imported GDS objects based on the layer stack."""
+    num_to_name = {}
+    for name, level in layer_stack.layers.items():
+        layer_num = _get_layer_number_from_level(level)
+        if layer_num is not None and layer_num not in num_to_name:
+            num_to_name[layer_num] = name
+
+    renamed_objects = []
+    for obj_name in new_objects:
+        match = re.match(r"^signal(\d+)(_.*)?$", obj_name)
+        new_name = obj_name
+        if match:
+            layer_num = int(match.group(1))
+            suffix = match.group(2) or ""
+            if layer_num in num_to_name:
+                layer_name = num_to_name[layer_num]
+                new_name = f"{layer_name}{suffix}"
+                try:
+                    app.modeler[obj_name].name = new_name
+                except Exception:
+                    new_name = obj_name  # Fallback if rename fails
+        renamed_objects.append(new_name)
+
+    return renamed_objects
+
+
 def import_component_to_hfss(
     hfss: Hfss,
     component: Component,
@@ -243,68 +305,33 @@ def import_component_to_hfss(
         layer_stack, thickness_override=thickness_override
     )
 
-    # Create reverse mapping from layer number to layer name for renaming
-    num_to_name = {}
-    for name, level in layer_stack.layers.items():
-        layer_num = _get_layer_number_from_level(level)
-        if layer_num is not None and layer_num not in num_to_name:
-            num_to_name[layer_num] = name
+    with _export_component_to_gds_temp(
+        component, gds_path, prefix="qpdk_hfss_"
+    ) as path:
+        # Set modeler units
+        hfss.modeler.model_units = units
 
-    # Export component to GDS
-    # Note: We use TemporaryDirectory to ensure cleanup, but need to keep it
-    # alive until import is complete, so we store the reference
-    temp_dir_obj = None
-    if gds_path is None:
-        # Use temporary directory that will be cleaned up when function returns
-        temp_dir_obj = tempfile.TemporaryDirectory(prefix="qpdk_hfss_")
-        gds_path = Path(temp_dir_obj.name) / "component.gds"
+        # Record existing objects
+        existing_objects = set(hfss.modeler.object_names)
 
-    gds_path = Path(gds_path)
-    component.write_gds(str(gds_path))
+        # Import GDS with 3D layer mapping
+        result = hfss.import_gds_3d(
+            input_file=str(path),
+            mapping_layers=mapping_layers,
+            units=units,
+            import_method=0,
+        )
 
-    # Set modeler units
-    hfss.modeler.model_units = units
+        if result:
+            # Set all newly imported objects to PEC
+            new_objects = list(set(hfss.modeler.object_names) - existing_objects)
+            renamed_objects = _rename_imported_objects(hfss, new_objects, layer_stack)
 
-    # Record existing objects
-    existing_objects = set(hfss.modeler.object_names)
-
-    # Import GDS with 3D layer mapping
-    result = hfss.import_gds_3d(
-        input_file=str(gds_path),
-        mapping_layers=mapping_layers,
-        units=units,
-        import_method=0,
-    )
-
-    if result:
-        # Set all newly imported objects to PEC
-        new_objects = list(set(hfss.modeler.object_names) - existing_objects)
-
-        renamed_objects = []
-        for obj_name in new_objects:
-            match = re.match(r"^signal(\d+)(_.*)?$", obj_name)
-            new_name = obj_name
-            if match:
-                layer_num = int(match.group(1))
-                suffix = match.group(2) or ""
-                if layer_num in num_to_name:
-                    layer_name = num_to_name[layer_num]
-                    new_name = f"{layer_name}{suffix}"
-                    try:
-                        hfss.modeler[obj_name].name = new_name
-                    except Exception:
-                        new_name = obj_name  # Fallback if rename fails
-            renamed_objects.append(new_name)
-
-        if renamed_objects:
-            if import_as_sheets:
-                hfss.assign_perfecte_to_sheets(renamed_objects, name="PEC_Sheets")
-            else:
-                hfss.assign_perfect_e(renamed_objects, name="PEC_3D")
-
-    # Clean up temporary directory if we created one
-    if temp_dir_obj is not None:
-        temp_dir_obj.cleanup()
+            if renamed_objects:
+                if import_as_sheets:
+                    hfss.assign_perfecte_to_sheets(renamed_objects, name="PEC_Sheets")
+                else:
+                    hfss.assign_perfect_e(renamed_objects, name="PEC_3D")
 
     return result
 
@@ -737,6 +764,236 @@ def get_sparameter_results(
             complex_data = real_data + 1j * imag_data
 
             data[trace] = complex_data
+
+    return pl.DataFrame(data)
+
+
+def import_component_to_q3d(
+    q3d: Q3d,
+    component: Component,
+    layer_stack: LayerStack | None = None,
+    *,
+    units: str = "um",
+    gds_path: str | Path | None = None,
+) -> list[str]:
+    """Import a gdsfactory component into Q3D Extractor.
+
+    Imports the component's GDS geometry into a Q3D Extractor project,
+    mapping each GDS layer to a 3D conductor at the appropriate elevation
+    and thickness from the layer stack. Imported objects are renamed based
+    on the layer stack for clarity.
+
+    This is the Q3D equivalent of :func:`import_component_to_hfss`.
+
+    Args:
+        q3d: The Q3D Extractor application instance.
+        component: The gdsfactory component to import.
+        layer_stack: LayerStack defining thickness and elevation for each layer.
+            If None, uses QPDK's default LAYER_STACK.
+        units: Length units for the geometry (default: "um" for micrometers).
+        gds_path: Optional path to write the GDS file. If None, uses a
+            temporary file.
+
+    Returns:
+        List of newly created conductor object names in Q3D.
+
+    Example:
+        >>> from ansys.aedt.core import Q3d
+        >>> from qpdk.models.hfss import import_component_to_q3d
+        >>> from qpdk.cells.capacitor import interdigital_capacitor
+        >>> comp = interdigital_capacitor(fingers=6, finger_length=20)
+        >>> q3d = Q3d(project="cap_q3d", solution_type="Q3DExtractor")
+        >>> objects = import_component_to_q3d(q3d, comp)
+    """
+    if layer_stack is None:
+        layer_stack = LAYER_STACK
+
+    # Generate layer mapping from LayerStack (use real thickness for Q3D)
+    mapping_layers = layer_stack_to_gds_mapping(layer_stack)
+
+    with _export_component_to_gds_temp(component, gds_path, prefix="qpdk_q3d_") as path:
+        # Set modeler units
+        q3d.modeler.model_units = units
+
+        # Record existing objects
+        existing_objects = set(q3d.modeler.object_names)
+
+        # Import GDS with 3D layer mapping
+        result = q3d.import_gds_3d(
+            input_file=str(path),
+            mapping_layers=mapping_layers,
+            units=units,
+            import_method=0,
+        )
+        if not result:
+            msg = "Q3D GDS import failed"
+            raise RuntimeError(msg)
+
+        # Track and rename new objects
+        new_objects = list(set(q3d.modeler.object_names) - existing_objects)
+        renamed_objects = _rename_imported_objects(q3d, new_objects, layer_stack)
+
+        # Assign material so Q3D identifies them as conductors
+        if renamed_objects:
+            q3d.assign_material(renamed_objects, "pec")
+
+        return renamed_objects
+
+
+def assign_q3d_nets_from_ports(
+    q3d: Q3d,
+    ports: Ports,
+    conductor_objects: list[str],
+) -> list[str]:
+    """Assign Q3D signal nets based on gdsfactory port locations.
+
+    For each gdsfactory port, finds the conductor object whose bounding-box
+    center is nearest to the port center and assigns it as a Q3D signal net.
+    Connected conductor objects sharing the same net are automatically
+    included via Q3D's auto net identification.
+
+    This is the Q3D equivalent of :func:`add_lumped_ports_to_hfss` for driven
+    HFSS simulations.
+
+    After calling this function, Q3D will include one signal net per port
+    in the computed capacitance (and inductance) matrices.
+
+    Args:
+        q3d: The Q3D Extractor application instance.
+        ports: Collection of gdsfactory ports defining signal locations.
+        conductor_objects: List of conductor object names created by
+            :func:`import_component_to_q3d`.
+
+    Returns:
+        List of assigned signal net names (one per port).
+
+    Example:
+        >>> from qpdk.models.hfss import assign_q3d_nets_from_ports
+        >>> signal_nets = assign_q3d_nets_from_ports(
+        ...     q3d, component.ports, conductor_objects
+        ... )
+    """
+    # Auto-identify nets to group geometrically connected conductors
+    q3d.auto_identify_nets()
+
+    assigned_nets: list[str] = []
+    used_objects: set[str] = set()
+
+    if not ports or not conductor_objects:
+        return assigned_nets
+
+    # Pre-fetch bounding boxes to avoid repeated slow COM/RPC calls
+    bboxes = {}
+    for obj_name in conductor_objects:
+        obj = q3d.modeler.get_object_from_name(obj_name)
+        if obj:
+            bboxes[obj_name] = obj.bounding_box
+
+    if not bboxes:
+        return assigned_nets
+
+    # Find scale factor by minimizing distance to the first port
+    first_port = next(iter(ports))
+    px0, py0 = float(first_port.center[0]), float(first_port.center[1])
+
+    def dist_to_bbox(px: float, py: float, bbox: list[float], s: float = 1.0) -> float:
+        dx = max(bbox[0] * s - px, 0, px - bbox[3] * s)
+        dy = max(bbox[1] * s - py, 0, py - bbox[4] * s)
+        return math.hypot(dx, dy)
+
+    scale_factor = min(
+        (10**p for p in range(-3, 5)),
+        key=lambda s: min(dist_to_bbox(px0, py0, b, s) for b in bboxes.values()),
+    )
+
+    gf.logger.debug(
+        f"Computed scale factor from Q3D units to Port units: {scale_factor}"
+    )
+
+    for port in ports:
+        px, py = float(port.center[0]), float(port.center[1])
+        gf.logger.debug(f"--- Assigning port {port.name} at ({px}, {py}) ---")
+
+        available_objs = [obj for obj in bboxes if obj not in used_objects]
+        if not available_objs:
+            break
+
+        # Metric: (distance_to_bbox, area) -> minimizes distance, then area
+        def port_metric(
+            obj_name: str, px: float = px, py: float = py
+        ) -> tuple[float, float]:
+            b = bboxes[obj_name]
+            dist = dist_to_bbox(px, py, b, scale_factor)
+            area = (b[3] - b[0]) * (b[4] - b[1]) * scale_factor**2
+            return max(0.0, dist - 1.0), area  # 1.0 tolerance for "inside"
+
+        best_obj = min(available_objs, key=port_metric)
+        gf.logger.debug(f"Selected best object for {port.name}: {best_obj}")
+
+        # Find the auto-identified net that contains this object
+        net_to_rename = next(
+            (
+                b
+                for b in q3d.boundaries
+                if b.type == "SignalNet" and best_obj in b.props.get("Objects", [])
+            ),
+            None,
+        )
+
+        if net_to_rename is not None:
+            net_to_rename.name = port.name
+        else:
+            q3d.assign_net(assignment=[best_obj], net_name=port.name, net_type="Signal")
+
+        assigned_nets.append(port.name)
+        used_objects.add(best_obj)
+
+    return assigned_nets
+
+
+def get_q3d_capacitance_matrix(
+    q3d: Q3d,
+    setup_name: str = "Q3DSetup",
+) -> pl.DataFrame:
+    """Extract the capacitance matrix from a Q3D Extractor simulation.
+
+    Retrieves all capacitance matrix entries (e.g. ``C(o1,o1)``, ``C(o1,o2)``)
+    from the solved Q3D setup.
+
+    Args:
+        q3d: The Q3D Extractor application instance.
+        setup_name: Name of the analysis setup.
+
+    Returns:
+        DataFrame with one column per capacitance expression containing
+        the extracted values in Farads.
+
+    Example:
+        >>> cap_df = get_q3d_capacitance_matrix(q3d, "Q3DSetup")
+        >>> print(cap_df)
+    """
+    nets = [b.name for b in q3d.boundaries if b.type == "SignalNet"]
+    expressions = [f"C({n1},{n2})" for i, n1 in enumerate(nets) for n2 in nets[i:]]
+
+    data: dict[str, list[float]] = {}
+
+    for expr in expressions:
+        solution = q3d.post.get_solution_data(
+            expressions=expr,
+            setup_sweep_name=f"{setup_name} : LastAdaptive",
+        )
+        if solution:
+            val = float(solution.data_real()[0])
+            unit = solution.units_data.get(expr, "pF")
+            multiplier = {
+                "fF": 1e-15,
+                "pF": 1e-12,
+                "nF": 1e-9,
+                "uF": 1e-6,
+                "mF": 1e-3,
+                "F": 1.0,
+            }.get(str(unit), 1e-12)
+            data[expr] = [val * multiplier]
 
     return pl.DataFrame(data)
 
