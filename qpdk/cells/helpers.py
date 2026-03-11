@@ -8,6 +8,7 @@ from gdsfactory.component import Component
 from gdsfactory.typings import Layer, LayerSpec
 from klayout.db import DCplxTrans, Region
 
+from qpdk.logger import logger
 from qpdk.tech import LAYER, NON_METADATA_LAYERS
 
 
@@ -171,8 +172,8 @@ def invert_mask_polarity(component: Component) -> Component:
 
         # Skip if both regions are empty (no shapes on these layers)
         if add_region.is_empty() and etch_region.is_empty():
-            gf.logger.debug(
-                "Skipping empty layers: %s, %s in component %s",
+            logger.debug(
+                "Skipping empty layers: {}, {} in component {}",
                 additive,
                 etch,
                 component.name,
