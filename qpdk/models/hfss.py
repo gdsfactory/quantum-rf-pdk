@@ -404,7 +404,7 @@ def add_materials_to_aedt(app: Hfss | Q2d) -> None:
 
     for name, props in material_properties.items():
         # Check if material already exists in the project or system library
-        if app.materials.checkifmaterialexists(name):
+        if app.materials.exists_material(name):
             mat = app.materials[name]
         else:
             mat = app.materials.add_material(name)
@@ -530,10 +530,7 @@ def create_2d_from_cross_section(
         },
     ]
 
-    objects = {
-        part["name"]: q2d.modeler.create_rectangle(**part)
-        for part in parts
-    }
+    objects = {part["name"]: q2d.modeler.create_rectangle(**part) for part in parts}
 
     # --- Conductor assignments ---
     q2d.assign_single_conductor(
