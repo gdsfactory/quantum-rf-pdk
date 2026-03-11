@@ -686,12 +686,36 @@ def assign_q3d_nets_from_ports(
     assigned_nets: list[str] = []
     used_objects: set[str] = set()
 
+    # Find scale factor by trying powers of 10 (PyAEDT bounding_box might be in different units)
+    scale_factor = 1.0
+    if ports:
+        px0, py0 = float(ports[0].center[0]), float(ports[0].center[1])
+        for power in [-3, -2, -1, 0, 1, 2, 3, 4]:
+            test_scale = 10 ** power
+            found_contain = False
+            for obj_name in conductor_objects:
+                obj = q3d.modeler.get_object_from_name(obj_name)
+                if obj:
+                    bbox = obj.bounding_box
+                    xmin, ymin = bbox[0] * test_scale, bbox[1] * test_scale
+                    xmax, ymax = bbox[3] * test_scale, bbox[4] * test_scale
+                    if (xmin - 1.0 <= px0 <= xmax + 1.0) and (ymin - 1.0 <= py0 <= ymax + 1.0):
+                        found_contain = True
+                        break
+            if found_contain:
+                scale_factor = test_scale
+                break
+
+    print(f"Computed scale factor from Q3D units to Port units: {scale_factor}")
+
     for port in ports:
         px, py = float(port.center[0]), float(port.center[1])
 
         # Find the conductor object closest to this port
         best_obj: str | None = None
-        best_dist = float("inf")
+        best_metric = float("inf")
+
+        print(f"\n--- Assigning port {port.name} at ({px}, {py}) ---")
 
         for obj_name in conductor_objects:
             if obj_name in used_objects:
@@ -704,13 +728,32 @@ def assign_q3d_nets_from_ports(
 
             # bounding_box returns [xmin, ymin, zmin, xmax, ymax, zmax]
             bbox = obj.bounding_box
-            obj_cx = (bbox[0] + bbox[3]) / 2
-            obj_cy = (bbox[1] + bbox[4]) / 2
+            xmin = bbox[0] * scale_factor
+            ymin = bbox[1] * scale_factor
+            xmax = bbox[3] * scale_factor
+            ymax = bbox[4] * scale_factor
+            
+            area = (xmax - xmin) * (ymax - ymin)
+            
+            # Check if port is inside or very close to the bounding box
+            tol = 1.0
+            if (xmin - tol <= px <= xmax + tol) and (ymin - tol <= py <= ymax + tol):
+                # Prefer the smallest area that contains the port (e.g. trace vs ground plane)
+                metric = area
+                print(f"Object {obj_name} CONTAINS port. bbox=({xmin:.1f}, {ymin:.1f}) to ({xmax:.1f}, {ymax:.1f}). area={area:.1f}. metric={metric}")
+            else:
+                # Fallback to distance if port is outside
+                obj_cx = (xmin + xmax) / 2
+                obj_cy = (ymin + ymax) / 2
+                dist = ((px - obj_cx) ** 2 + (py - obj_cy) ** 2) ** 0.5
+                metric = 1e9 + dist
+                print(f"Object {obj_name} DOES NOT contain port. bbox={bbox}, dist={dist:.1f}. metric={metric}")
 
-            dist = ((px - obj_cx) ** 2 + (py - obj_cy) ** 2) ** 0.5
-            if dist < best_dist:
-                best_dist = dist
+            if metric < best_metric:
+                best_metric = metric
                 best_obj = obj_name
+
+        print(f"Selected best object for {port.name}: {best_obj}")
 
         if best_obj is None:
             continue
@@ -775,7 +818,9 @@ def get_q3d_capacitance_matrix(
             setup_sweep_name=f"{setup_name} : LastAdaptive",
         )
         if solution:
-            data[expr] = [float(solution.data_real()[0])]
+            # Q3D usually returns capacitance in pF by default in reports
+            val_pf = float(solution.data_real()[0])
+            data[expr] = [val_pf * 1e-12] # convert to Farads
 
     return pl.DataFrame(data)
 

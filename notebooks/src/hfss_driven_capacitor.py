@@ -575,9 +575,8 @@ print(cap_df)
 # Extract mutual capacitance |C12| from the off-diagonal element
 C_q3d = None
 for col in cap_df.columns:
-    # Match off-diagonal entries like "C(o1,o2)" or "C(o2,o1)"
-    match = re.match(r"C\((.+),(.+)\)", col)
-    if match and match.group(1) != match.group(2):
+    # Match off-diagonal entries exactly between o1 and o2
+    if col in ["C(o1,o2)", "C(o2,o1)"]:
         C_q3d = abs(float(cap_df[col][0]))
         break
 
