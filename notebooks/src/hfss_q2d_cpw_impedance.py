@@ -28,7 +28,7 @@
 # **References:**
 # - PyAEDT Documentation: https://aedt.docs.pyansys.com/
 # - Q2D Coplanar Waveguide Example: https://examples.aedt.docs.pyansys.com/version/dev/examples/high_frequency/radiofrequency_mmwave/coplanar_waveguide.html
-# - Simons, *Coplanar Waveguide Circuits, Components, and Systems* :cite:`simonsCoplanarWaveguideCircuits2001`
+# - Simons, *Coplanar Waveguide Circuits, Components, and Systems* {cite:p}`simonsCoplanarWaveguideCircuits2001`
 
 # %% [markdown]
 # ## Setup and Imports
