@@ -112,15 +112,18 @@ print(f"Design name: {q2d.design_name}")
 # %% [markdown]
 # ## Build CPW Cross-Section Geometry
 #
-# Use :func:`~qpdk.models.hfss.create_2d_from_cross_section` to automatically
+# Use :meth:`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section` to automatically
 # build the CPW geometry (signal conductor, ground planes, substrate) from the
 # gdsfactory cross-section and QPDK layer stack.
 
 # %%
-from qpdk.models.hfss import create_2d_from_cross_section  # noqa: E402
+from qpdk.simulation import Q2D  # noqa: E402
+
+# Create the Q2D wrapper
+q2d_sim = Q2D(q2d)
 
 # Create the 2D cross-section geometry
-object_names = create_2d_from_cross_section(q2d, cross_section)
+object_names = q2d_sim.create_2d_from_cross_section(cross_section)
 
 print("Created Q2D geometry:")
 for role, name in object_names.items():
@@ -255,7 +258,7 @@ print("Q2D session closed and temporary files cleaned up")
 #
 # 2. **Q2D Setup**: Initializing Ansys 2D Extractor via PyAEDT and building the
 #    cross-sectional geometry using
-#    :func:`~qpdk.models.hfss.create_2d_from_cross_section`
+#    :meth:`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section`
 #
 # 3. **Impedance Extraction**: Running the Q2D quasi-static solver to compute
 #    :math:`Z_0` as a function of frequency from 1 to 10 GHz
