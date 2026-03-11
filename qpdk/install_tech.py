@@ -4,7 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 
-import gdsfactory as gf
+from qpdk.logger import logger
 
 
 def remove_path_or_dir(dest: Path) -> None:
@@ -25,18 +25,18 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
         raise FileNotFoundError(f"{src} does not exist")
 
     if dest.exists() and not overwrite:
-        gf.logger.warning("%s already exists", dest)
+        logger.warning("{} already exists", dest)
         return
     if dest.exists() or dest.is_symlink():
-        gf.logger.info("removing %s already installed", dest)
+        logger.info("removing {} already installed", dest)
         remove_path_or_dir(dest)
     try:
         Path.symlink_to(src, dest, target_is_directory=True)
     except OSError:
         shutil.copytree(src, dest)
-    gf.logger.info("link made:")
-    gf.logger.info("From: %s", src)
-    gf.logger.info("To:   %s", dest)
+    logger.info("link made:")
+    logger.info("From: {}", src)
+    logger.info("To:   {}", dest)
 
 
 if __name__ == "__main__":

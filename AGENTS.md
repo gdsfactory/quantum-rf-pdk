@@ -100,6 +100,8 @@ All PRs must pass:
    needs to create a new layer.
 1. **Use centralized physical constants**: Prefer using physical constants (like `e`, `h`, `Φ_0`, `ε_0`) from
    `qpdk/models/constants.py` instead of defining them locally.
+1. **Use the centralized logger**: ALWAYS prefer using the fancy `qpdk.logger` instead of raw `print` statements for
+   reporting information, warnings, or errors. Import it as `from qpdk import logger`.
 1. **Use JAX for analytical models**: When implementing analytical models for S-parameters, prefer using JAX-compatible
    functions (e.g., `jnp` instead of `np`, `jaxellip` for elliptic integrals) and enable JIT compilation with
    `@partial(jax.jit, inline=True)` for helper functions.

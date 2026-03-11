@@ -12,6 +12,7 @@ from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from sax.models.rf import capacitor, tee
 
+from qpdk.logger import logger
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
 from qpdk.models.math import (
     capacitance_per_length_conformal,
@@ -112,7 +113,7 @@ def cpw_cpw_coupling_capacitance(
     except ValueError:
         # Fallback to default CPW width and gap if not found in sections
         # Not sure if width needs fallback, but gap previously fell back to 6.0
-        gf.logger.warning(
+        logger.warning(
             "CPW gap not found in cross-section sections. Using default gap of 6.0 µm."
         )
         xs = (
