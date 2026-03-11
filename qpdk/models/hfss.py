@@ -46,13 +46,13 @@ import re
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 import gdsfactory as gf
 import numpy as np
 import polars as pl
 from gdsfactory.technology.layer_stack import LayerLevel
-from gdsfactory.typings import Ports
+from gdsfactory.typings import CrossSectionSpec, Ports
 
 from qpdk import LAYER_STACK
 from qpdk.cells.helpers import (
@@ -64,7 +64,7 @@ from qpdk.cells.helpers import (
 from qpdk.tech import LAYER
 
 if TYPE_CHECKING:
-    from ansys.aedt.core import Hfss
+    from ansys.aedt.core import Hfss, Q2d
     from ansys.aedt.core.q3d import Q3d
     from gdsfactory.component import Component
     from gdsfactory.technology import LayerStack
@@ -419,6 +419,194 @@ def add_air_region_to_hfss(
         )
 
     return region.name
+
+
+def add_materials_to_aedt(app: Hfss | Q2d) -> None:
+    """Add QPDK materials to the PyAEDT application.
+
+    Args:
+        app: The PyAEDT application instance (e.g., Hfss or Q2d).
+    """
+    from qpdk.tech import material_properties
+
+    for name, props in material_properties.items():
+        # Check if material already exists in the project or system library
+        if app.materials.exists_material(name):
+            continue  # assume existing material is already correctly configured
+
+        mat = app.materials.add_material(name)
+
+        for prop_name, prop_value in props.items():
+            # Skip infinite values (like infinite permittivity for metals),
+            # as these are typically handled by PEC boundaries in HFSS/Q2D.
+            if prop_value == float("inf"):
+                if prop_name == "relative_permittivity":
+                    # Assign a high conductivity so Q2D treats it as a conductor
+                    mat.conductivity = 1e30
+                continue
+
+            if prop_name == "relative_permittivity":
+                mat.permittivity = prop_value
+            elif prop_name == "conductivity":
+                mat.conductivity = prop_value
+            # Add other mappings as needed
+
+
+def create_2d_from_cross_section(
+    q2d: Q2d,
+    cross_section: CrossSectionSpec,
+    layer_stack: LayerStack | None = None,
+    *,
+    ground_width: float | None = None,
+    units: str = "um",
+) -> dict[str, str]:
+    """Create a 2D Extractor model from a CPW cross-section for impedance extraction.
+
+    Builds the cross-sectional geometry of a coplanar waveguide in Ansys Q2D
+    (2D Extractor) for characteristic impedance extraction via the
+    quasi-static field solver.
+
+    The geometry consists of:
+    - A signal conductor (centre strip)
+    - Two coplanar ground planes on each side
+    - A dielectric substrate below the conductors
+
+    No backplate metallisation is included, matching the typical
+    superconducting CPW fabrication process.
+
+    Args:
+        q2d: An Ansys Q2D (2D Extractor) application instance.
+        cross_section: A gdsfactory cross-section specification describing the CPW
+            geometry (width and gap).
+        layer_stack: LayerStack defining substrate and conductor properties.
+            If None, uses QPDK's default ``LAYER_STACK``.
+        ground_width: Width of each coplanar ground plane in µm.  If None,
+            defaults to 10× the CPW gap, providing a reasonable approximation
+            of a semi-infinite ground plane.
+        units: Length units for the Q2D geometry (default ``"um"``).
+
+    Returns:
+        Dictionary with keys ``"signal"``, ``"gnd_left"``, ``"gnd_right"``,
+        ``"substrate"`` mapping to the created Q2D object names.
+
+    Example:
+        >>> from ansys.aedt.core import Q2d
+        >>> from qpdk.models.hfss import create_2d_from_cross_section
+        >>> from qpdk.tech import coplanar_waveguide
+        >>> q2d = Q2d(project="cpw_q2d", design="impedance")
+        >>> names = create_2d_from_cross_section(q2d, coplanar_waveguide())
+    """
+    from qpdk.models.media import get_cpw_dimensions
+
+    if layer_stack is None:
+        layer_stack = LAYER_STACK
+
+    # Geometry parameters in this helper are defined in micrometers (µm).
+    # Restrict Q2D model units to "um" to avoid silent scaling errors.
+    if units != "um":
+        raise ValueError(
+            f"Q2D cross-section expects all geometry dimensions in micrometers; "
+            f"got units={units!r}. Pass units='um' or convert dimensions accordingly."
+        )
+    # --- Extract CPW dimensions from cross-section ---
+    cpw_width, cpw_gap = get_cpw_dimensions(cross_section)
+
+    # --- Extract substrate/conductor properties from layer stack ---
+    substrate_level = layer_stack.layers["Substrate"]
+    substrate_thickness = float(substrate_level.thickness)  # µm
+    substrate_material = cast(str, substrate_level.material)
+
+    conductor_level = layer_stack.layers["M1"]
+    conductor_thickness = float(conductor_level.thickness)  # µm
+
+    # Q2D mesher often fails with 'Could not preserve critical nodes'
+    # on extremely thin (e.g. 0.2 um) perfect conductors due to aspect ratio limits.
+    # Enforce a minimum meshing thickness to avoid this solver failure.
+    if conductor_thickness < 2.0:
+        gf.logger.warning(
+            f"Conductor thickness {conductor_thickness} µm is below the recommended "
+            f"minimum for Q2D meshing. Setting conductor_thickness to 2.0 µm to avoid "
+            f"meshing errors. Adjust layer stack or set thickness_override in "
+            f"layer_stack_to_gds_mapping if you want to change this."
+        )
+        conductor_thickness = 2.0
+
+    conductor_material = cast(str, conductor_level.material)
+
+    if ground_width is None:
+        ground_width = 10.0 * cpw_gap
+
+    # Add materials to Q2D project
+    add_materials_to_aedt(q2d)
+
+    q2d.modeler.model_units = units
+
+    # --- Geometry construction ---
+    # All coordinates in the XY plane (Q2D cross-section convention):
+    #   X = lateral position, Y = vertical position
+    #
+    # Layout (not to scale):
+    #   |  gnd_left  | gap | signal | gap |  gnd_right  |
+    #   |____________|_____|________|_____|_____________|  <-- y = conductor_thickness
+    #   |            substrate                            |
+    #   |______________________________________________|  <-- y = -substrate_thickness
+
+    total_width = 2 * ground_width + 2 * cpw_gap + cpw_width
+    substrate_margin = 50.0
+
+    parts = [
+        {
+            "name": "signal",
+            "origin": [ground_width + cpw_gap, 0, 0],
+            "sizes": [cpw_width, conductor_thickness],
+            "material": conductor_material,
+        },
+        {
+            "name": "gnd_left",
+            "origin": [0, 0, 0],
+            "sizes": [ground_width, conductor_thickness],
+            "material": conductor_material,
+        },
+        {
+            "name": "gnd_right",
+            "origin": [ground_width + cpw_gap + cpw_width + cpw_gap, 0, 0],
+            "sizes": [ground_width, conductor_thickness],
+            "material": conductor_material,
+        },
+        {
+            "name": "substrate",
+            "origin": [-substrate_margin, -substrate_thickness, 0],
+            "sizes": [total_width + 2 * substrate_margin, substrate_thickness],
+            "material": substrate_material,
+        },
+    ]
+
+    objects = {part["name"]: q2d.modeler.create_rectangle(**part) for part in parts}
+
+    # --- Conductor assignments ---
+    q2d.assign_single_conductor(
+        name="signal",
+        assignment=[objects["signal"]],
+        conductor_type="SignalLine",
+        units=units,
+    )
+
+    q2d.assign_single_conductor(
+        name="gnd",
+        assignment=[objects["gnd_left"], objects["gnd_right"]],
+        conductor_type="ReferenceGround",
+        units=units,
+    )
+
+    # Force a finer mesh on the thin traces to prevent 'critical nodes' meshing errors
+    q2d.mesh.assign_length_mesh(
+        assignment=[objects["signal"], objects["gnd_left"], objects["gnd_right"]],
+        maximum_length=2.0,
+        maximum_elements=10000,
+        name="thin_trace_mesh",
+    )
+
+    return {str(name): obj.name for name, obj in objects.items()}
 
 
 class LumpedPortConfig(TypedDict):
