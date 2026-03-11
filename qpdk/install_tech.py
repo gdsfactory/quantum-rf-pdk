@@ -4,6 +4,8 @@ import shutil
 import sys
 from pathlib import Path
 
+import gdsfactory as gf
+
 
 def remove_path_or_dir(dest: Path) -> None:
     """Remove a path or directory."""
@@ -23,18 +25,18 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
         raise FileNotFoundError(f"{src} does not exist")
 
     if dest.exists() and not overwrite:
-        print(f"{dest} already exists")
+        gf.logger.warning("%s already exists", dest)
         return
     if dest.exists() or dest.is_symlink():
-        print(f"removing {dest} already installed")
+        gf.logger.info("removing %s already installed", dest)
         remove_path_or_dir(dest)
     try:
         Path.symlink_to(src, dest, target_is_directory=True)
     except OSError:
         shutil.copytree(src, dest)
-    print("link made:")
-    print(f"From: {src}")
-    print(f"To:   {dest}")
+    gf.logger.info("link made:")
+    gf.logger.info("From: %s", src)
+    gf.logger.info("To:   %s", dest)
 
 
 if __name__ == "__main__":
