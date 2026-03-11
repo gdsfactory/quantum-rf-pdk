@@ -234,8 +234,6 @@ def resonator_coupled(
         meanders: Number of meander sections to fit the resonator in a compact area.
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator.
-        start_with_bend: If True, starts the resonator with a bend.
-        end_with_bend: If True, ends the resonator with a bend.
         open_start: If True, adds an etch section at the start of the resonator.
         open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
@@ -312,8 +310,6 @@ def quarter_wave_resonator_coupled(
         meanders: Number of meander sections to fit the resonator in a compact area.
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator.
-        start_with_bend: If True, starts the resonator with a bend.
-        end_with_bend: If True, ends the resonator with a bend.
         open_start: If True, adds an etch section at the start of the resonator.
         open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.

@@ -77,6 +77,9 @@ def _transmon_with_resonator_base(
         * DCplxTrans(*coupler_offset)
     )
 
+    coupling_o1_port = None
+    coupling_o2_port = None
+
     if with_probeline:
         if probeline_coupling_length is None:
             xs = gf.get_cross_section(resonator_cross_section)
@@ -84,6 +87,12 @@ def _transmon_with_resonator_base(
             probeline_coupling_length = (
                 abs(resonator_meander_start[0] - coupler_ref.ports["o1"].x) - radius
             )
+
+            if probeline_coupling_length <= 0:
+                raise ValueError(
+                    f"Auto-computed probeline_coupling_length={probeline_coupling_length:.1f} µm is non-positive. "
+                    "Increase the distance between resonator_meander_start and the coupler, or pass an explicit probeline_coupling_length."
+                )
 
         # Create probeline coupling.
         cs_ref = c << gf.get_component(
@@ -121,8 +130,6 @@ def _transmon_with_resonator_base(
         dummy_port.orientation = 0
         route_start_port = dummy_port
         resonator_connect_port = None
-        coupling_o1_port = None
-        coupling_o2_port = None
         added_length = 0.0
 
     # Route from meander start to the plate capacitor
@@ -161,7 +168,7 @@ def _transmon_with_resonator_base(
     )
 
     c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
-    if with_probeline and coupling_o1_port and coupling_o2_port:
+    if with_probeline and coupling_o1_port:
         c.add_port("coupling_o1", port=coupling_o1_port)
         c.add_port("coupling_o2", port=coupling_o2_port)
     c.add_port(

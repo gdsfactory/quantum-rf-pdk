@@ -5,11 +5,11 @@ from functools import partial
 import hypothesis.strategies as st
 import pytest
 from hypothesis import HealthCheck, assume, given, settings
-from qpdk.cells.derived.transmon_with_resonator import (
+
+from qpdk.cells.derived.transmon_with_resonator_and_probeline import (
     double_pad_transmon_with_resonator,
     flipmon_with_resonator,
 )
-
 from qpdk.cells.resonator import resonator, resonator_coupled
 from qpdk.cells.waveguides import bend_circular
 
