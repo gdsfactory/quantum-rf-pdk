@@ -43,7 +43,6 @@ from pathlib import Path
 #
 # We use QPDK's standard coplanar waveguide cross-section with the default
 # dimensions (10 µm centre conductor width, 6 µm gap to ground).
-
 # %%
 from qpdk import PDK
 from qpdk.models.media import cpw_parameters
@@ -60,7 +59,9 @@ cross_section = coplanar_waveguide(width=cpw_width, gap=cpw_gap)
 ep_eff_analytical, z0_analytical = cpw_parameters(cpw_width, cpw_gap)
 
 print(f"CPW dimensions: width = {cpw_width} µm, gap = {cpw_gap} µm")
-print(f"Analytical estimate: Z₀ = {z0_analytical:.2f} Ω, ε_eff = {ep_eff_analytical:.4f}")
+print(
+    f"Analytical estimate: Z₀ = {z0_analytical:.2f} Ω, ε_eff = {ep_eff_analytical:.4f}"
+)
 
 # %% [markdown]
 # ## Initialize Q2D Project
@@ -237,7 +238,7 @@ print("-" * 45)
 # %%
 # Save and close
 q2d.save_project()
-# q2d.release_desktop()
+# q2d.release_desktop()  # Uncomment to close the AEDT desktop session
 time.sleep(2)
 
 # Clean up temp directory
