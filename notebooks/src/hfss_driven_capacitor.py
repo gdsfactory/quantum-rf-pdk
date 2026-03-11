@@ -31,7 +31,6 @@
 # ## Setup and Imports
 
 # %% tags=["hide-input", "hide-output"]
-import re
 import tempfile
 import time
 from pathlib import Path
@@ -139,7 +138,7 @@ HFSS_CONFIG = {
     "sweep_start_ghz": 0.1,  # Sweep from 100 MHz
     "sweep_stop_ghz": 20.0,  # to 20 GHz
     "sweep_points": 401,  # Number of frequency points
-    "max_passes": 5,
+    "max_passes": 16,
     "max_delta_s": 0.002,  # 0.2% S-parameter convergence
 }
 
@@ -529,7 +528,7 @@ print(f"Assigned signal nets: {signal_nets}")
 # Create Q3D setup
 q3d_setup = q3d.create_setup(name="Q3DSetup")
 q3d_setup.props["AdaptiveFreq"] = f"{HFSS_CONFIG['solution_frequency_ghz']}GHz"
-q3d_setup.props["Cap"]["MaxPass"] = 5
+q3d_setup.props["Cap"]["MaxPass"] = 17
 q3d_setup.props["Cap"]["MinPass"] = 2
 q3d_setup.props["Cap"]["PerError"] = 0.5
 # Disable AC and DC solving to avoid source/sink errors

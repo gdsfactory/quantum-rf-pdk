@@ -639,11 +639,11 @@ def import_component_to_q3d(
         # Track and rename new objects
         new_objects = list(set(q3d.modeler.object_names) - existing_objects)
         renamed_objects = _rename_imported_objects(q3d, new_objects, layer_stack)
-        
+
         # Assign material so Q3D identifies them as conductors
         if renamed_objects:
             q3d.assign_material(renamed_objects, "pec")
-            
+
         return renamed_objects
 
 
@@ -691,7 +691,7 @@ def assign_q3d_nets_from_ports(
     if ports:
         px0, py0 = float(ports[0].center[0]), float(ports[0].center[1])
         for power in [-3, -2, -1, 0, 1, 2, 3, 4]:
-            test_scale = 10 ** power
+            test_scale = 10**power
             found_contain = False
             for obj_name in conductor_objects:
                 obj = q3d.modeler.get_object_from_name(obj_name)
@@ -699,7 +699,9 @@ def assign_q3d_nets_from_ports(
                     bbox = obj.bounding_box
                     xmin, ymin = bbox[0] * test_scale, bbox[1] * test_scale
                     xmax, ymax = bbox[3] * test_scale, bbox[4] * test_scale
-                    if (xmin - 1.0 <= px0 <= xmax + 1.0) and (ymin - 1.0 <= py0 <= ymax + 1.0):
+                    if (xmin - 1.0 <= px0 <= xmax + 1.0) and (
+                        ymin - 1.0 <= py0 <= ymax + 1.0
+                    ):
                         found_contain = True
                         break
             if found_contain:
@@ -732,22 +734,26 @@ def assign_q3d_nets_from_ports(
             ymin = bbox[1] * scale_factor
             xmax = bbox[3] * scale_factor
             ymax = bbox[4] * scale_factor
-            
+
             area = (xmax - xmin) * (ymax - ymin)
-            
+
             # Check if port is inside or very close to the bounding box
             tol = 1.0
             if (xmin - tol <= px <= xmax + tol) and (ymin - tol <= py <= ymax + tol):
                 # Prefer the smallest area that contains the port (e.g. trace vs ground plane)
                 metric = area
-                print(f"Object {obj_name} CONTAINS port. bbox=({xmin:.1f}, {ymin:.1f}) to ({xmax:.1f}, {ymax:.1f}). area={area:.1f}. metric={metric}")
+                print(
+                    f"Object {obj_name} CONTAINS port. bbox=({xmin:.1f}, {ymin:.1f}) to ({xmax:.1f}, {ymax:.1f}). area={area:.1f}. metric={metric}"
+                )
             else:
                 # Fallback to distance if port is outside
                 obj_cx = (xmin + xmax) / 2
                 obj_cy = (ymin + ymax) / 2
                 dist = ((px - obj_cx) ** 2 + (py - obj_cy) ** 2) ** 0.5
                 metric = 1e9 + dist
-                print(f"Object {obj_name} DOES NOT contain port. bbox={bbox}, dist={dist:.1f}. metric={metric}")
+                print(
+                    f"Object {obj_name} DOES NOT contain port. bbox={bbox}, dist={dist:.1f}. metric={metric}"
+                )
 
             if metric < best_metric:
                 best_metric = metric
@@ -805,10 +811,7 @@ def get_q3d_capacitance_matrix(
         >>> print(cap_df)
     """
     nets = [b.name for b in q3d.boundaries if b.type == "SignalNet"]
-    expressions = []
-    for n1 in nets:
-        for n2 in nets:
-            expressions.append(f"C({n1},{n2})")
+    expressions = [f"C({n1},{n2})" for n1 in nets for n2 in nets]
 
     data: dict[str, list[float]] = {}
 
@@ -820,7 +823,7 @@ def get_q3d_capacitance_matrix(
         if solution:
             # Q3D usually returns capacitance in pF by default in reports
             val_pf = float(solution.data_real()[0])
-            data[expr] = [val_pf * 1e-12] # convert to Farads
+            data[expr] = [val_pf * 1e-12]  # convert to Farads
 
     return pl.DataFrame(data)
 
