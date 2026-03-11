@@ -450,3 +450,10 @@ print("HFSS session closed and temporary files cleaned up")
 # - S-parameters capture both capacitance and parasitic effects
 # - Comparison with analytical models helps validate simulation setup
 # - Frequency-dependent behavior reveals parasitic inductance at high frequencies
+
+# %% [markdown]
+# ## References
+#
+# ```{bibliography}
+# :filter: docname in docnames
+# ```
