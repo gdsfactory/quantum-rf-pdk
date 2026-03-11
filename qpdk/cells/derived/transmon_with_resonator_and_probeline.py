@@ -61,6 +61,8 @@ def _transmon_with_resonator_base(
         probeline_coupling_gap: Gap between the resonator and probeline
             waveguides in the coupling section in µm.
         probeline_coupling_length: Length of the coupling section in µm.
+            If None, it will be calculated based on the distance from the
+            resonator meander start to the coupler position.
     """
     c = Component()
 
@@ -175,7 +177,7 @@ def transmon_with_resonator_and_probeline(
     resonator: ComponentSpec = partial(
         resonator_quarter_wave_bend_start, length=4000, meanders=6
     ),
-    resonator_meander_start: tuple[float, float] = (-700, -1300),
+    resonator_meander_start: tuple[float, float] = (-900, -1200),
     resonator_length: float = 5000.0,
     resonator_meanders: int = 5,
     resonator_bend_spec: ComponentSpec = "bend_circular",
@@ -243,7 +245,7 @@ def transmon_with_resonator(
     resonator: ComponentSpec = partial(
         resonator_quarter_wave_bend_start, length=4000, meanders=6
     ),
-    resonator_meander_start: tuple[float, float] = (-700, -1300),
+    resonator_meander_start: tuple[float, float] = (-900, -1200),
     resonator_length: float = 5000.0,
     resonator_meanders: int = 5,
     resonator_bend_spec: ComponentSpec = "bend_circular",

@@ -65,7 +65,7 @@ instances:
     settings:
       cross_section: cpw
       gap: 16
-      length: 600
+      length: 790
   flipmon_with_bbox:
     component: flipmon_with_bbox
     info: {}
@@ -93,13 +93,13 @@ instances:
     component: resonator
     info:
       cross_section: coplanar_waveguide
-      length: 2885.761
+      length: 2785.761
       resonator_type: quarter_wave
     settings:
       bend_spec: bend_circular
       cross_section: cpw
       end_with_bend: false
-      length: 2885.761
+      length: 2785.761
       meanders: 5
       open_end: true
       open_start: false
@@ -107,29 +107,29 @@ instances:
   straight:
     component: straight
     info:
-      length: 200
-      route_info_coplanar_waveguide_length: 200
-      route_info_length: 200
+      length: 210
+      route_info_coplanar_waveguide_length: 210
+      route_info_length: 210
       route_info_type: coplanar_waveguide
-      route_info_weight: 200
+      route_info_weight: 210
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 200
+      length: 210
       npoints: 2
       width: 10
   straight2:
     component: straight
     info:
-      length: 843
-      route_info_coplanar_waveguide_length: 843
-      route_info_length: 843
+      length: 743
+      route_info_coplanar_waveguide_length: 743
+      route_info_length: 743
       route_info_type: coplanar_waveguide
-      route_info_weight: 843
+      route_info_weight: 743
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 843
+      length: 743
       npoints: 2
       width: 10
 nets:
@@ -152,22 +152,22 @@ placements:
     mirror: false
     rotation: 270
     x: 0
-    y: -1000
+    y: -900
   bend_circular2:
     mirror: true
     rotation: 0
     x: 100
-    y: -1100
+    y: -1000
   bend_circular3:
     mirror: true
     rotation: 270
     x: 200
-    y: -1200
+    y: -1100
   coupler_straight:
     mirror: false
     rotation: 0
-    x: -700
-    y: -1326
+    x: -900
+    y: -1226
   flipmon_with_bbox:
     mirror: false
     rotation: 270
@@ -181,18 +181,18 @@ placements:
   resonator:
     mirror: false
     rotation: 270
-    x: -700
-    y: -1300
+    x: -900
+    y: -1200
   straight:
     mirror: false
     rotation: 0
-    x: -100
-    y: -1300
+    x: -110
+    y: -1200
   straight2:
     mirror: false
     rotation: 90
     x: 0
-    y: -1000
+    y: -900
 ports:
   coupling_o1: coupler_straight,o1
   coupling_o2: coupler_straight,o4

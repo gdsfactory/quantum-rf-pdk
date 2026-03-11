@@ -1,7 +1,7 @@
 info:
   length: 5000
   resonator_type: quarter_wave
-name: transmon_with_resonator_and_probeline_Qdouble_pad_trans_74f78e58
+name: transmon_with_resonator_and_probeline_Qdouble_pad_trans_e6eb9803
 settings:
   coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_SW20_L394
   coupler_offset:
@@ -17,8 +17,8 @@ settings:
   resonator_cross_section: cpw
   resonator_length: 5000
   resonator_meander_start:
-  - -700
-  - -1300
+  - -900
+  - -1200
   resonator_meanders: 5
   resonator_open_end: true
   resonator_open_start: false
