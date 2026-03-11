@@ -221,3 +221,40 @@ def test_lumped_port_rectangle_from_cpw_invalid_angle(mock_port_dimensions):
             cpw_gap=mock_port_dimensions["cpw_gap"],
             cpw_width=mock_port_dimensions["cpw_width"],
         )
+
+
+@pytest.mark.hfss
+def test_create_2d_from_cross_section():
+    """Test creating a Q2D model from a CPW cross-section."""
+    ansys_dir = os.environ.get("ANSYSEM_ROOT252", "/usr/ansys_inc/v252/AnsysEM")
+    if not Path(ansys_dir).exists():
+        pytest.skip(f"HFSS installation not found at {ansys_dir}")
+
+    from ansys.aedt.core import Q2d, settings
+
+    from qpdk import PDK
+    from qpdk.models.hfss import create_2d_from_cross_section
+    from qpdk.tech import coplanar_waveguide
+
+    settings.use_grpc_uds = False
+
+    PDK.activate()
+    cross_section = coplanar_waveguide(width=10, gap=6)
+
+    project_name = f"test_q2d_{int(time.time())}"
+    q2d = Q2d(
+        project=project_name,
+        design="CPW_Test",
+        non_graphical=True,
+    )
+
+    try:
+        result = create_2d_from_cross_section(q2d, cross_section)
+
+        assert isinstance(result, dict)
+        assert "signal" in result
+        assert "gnd_left" in result
+        assert "gnd_right" in result
+        assert "substrate" in result
+    finally:
+        q2d.release_desktop()

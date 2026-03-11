@@ -32,13 +32,13 @@ from __future__ import annotations
 import re
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, TypedDict, cast
 
 import gdsfactory as gf
 import numpy as np
 import polars as pl
 from gdsfactory.technology.layer_stack import LayerLevel
-from gdsfactory.typings import Ports
+from gdsfactory.typings import CrossSectionSpec, Ports
 
 from qpdk import LAYER_STACK
 from qpdk.cells.helpers import (
@@ -50,7 +50,7 @@ from qpdk.cells.helpers import (
 from qpdk.tech import LAYER
 
 if TYPE_CHECKING:
-    from ansys.aedt.core import Hfss
+    from ansys.aedt.core import Hfss, Q2d
     from gdsfactory.component import Component
     from gdsfactory.technology import LayerStack
 
@@ -392,6 +392,143 @@ def add_air_region_to_hfss(
         )
 
     return region.name
+
+
+def create_2d_from_cross_section(
+    q2d: Q2d,
+    cross_section: CrossSectionSpec,
+    layer_stack: LayerStack | None = None,
+    *,
+    ground_width: float | None = None,
+    units: str = "um",
+) -> dict[str, str]:
+    """Create a 2D Extractor model from a CPW cross-section for impedance extraction.
+
+    Builds the cross-sectional geometry of a coplanar waveguide in Ansys Q2D
+    (2D Extractor) for characteristic impedance extraction via the
+    quasi-static field solver.
+
+    The geometry consists of:
+    - A signal conductor (centre strip)
+    - Two coplanar ground planes on each side
+    - A dielectric substrate below the conductors
+
+    No backplate metallisation is included, matching the typical
+    superconducting CPW fabrication process.
+
+    Args:
+        q2d: An Ansys Q2D (2D Extractor) application instance.
+        cross_section: A gdsfactory cross-section specification describing the CPW
+            geometry (width and gap).
+        layer_stack: LayerStack defining substrate and conductor properties.
+            If None, uses QPDK's default ``LAYER_STACK``.
+        ground_width: Width of each coplanar ground plane in µm.  If None,
+            defaults to 10× the CPW gap, providing a reasonable approximation
+            of a semi-infinite ground plane.
+        units: Length units for the Q2D geometry (default ``"um"``).
+
+    Returns:
+        Dictionary with keys ``"signal"``, ``"gnd_left"``, ``"gnd_right"``,
+        ``"substrate"`` mapping to the created Q2D object names.
+
+    Example:
+        >>> from ansys.aedt.core import Q2d
+        >>> from qpdk.models.hfss import create_2d_from_cross_section
+        >>> from qpdk.tech import coplanar_waveguide
+        >>> q2d = Q2d(project="cpw_q2d", design="impedance")
+        >>> names = create_2d_from_cross_section(q2d, coplanar_waveguide())
+    """
+    from qpdk.models.media import get_cpw_dimensions
+
+    if layer_stack is None:
+        layer_stack = LAYER_STACK
+
+    # --- Extract CPW dimensions from cross-section ---
+    cpw_width, cpw_gap = get_cpw_dimensions(cross_section)
+
+    # --- Extract substrate/conductor properties from layer stack ---
+    substrate_level = layer_stack.layers["Substrate"]
+    substrate_thickness = float(substrate_level.thickness)  # µm
+    substrate_material = cast(str, substrate_level.material)
+
+    conductor_level = layer_stack.layers["M1"]
+    conductor_thickness = float(conductor_level.thickness)  # µm
+
+    if ground_width is None:
+        ground_width = 10.0 * cpw_gap
+
+    # Map QPDK material names to HFSS built-in material names
+    _material_map = {"Si": "silicon"}
+    hfss_material = _material_map.get(substrate_material, substrate_material)
+
+    q2d.modeler.model_units = units
+
+    # --- Geometry construction ---
+    # All coordinates in the XY plane (Q2D cross-section convention):
+    #   X = lateral position, Y = vertical position
+    #
+    # Layout (not to scale):
+    #   |  gnd_left  | gap | signal | gap |  gnd_right  |
+    #   |____________|_____|________|_____|_____________|  <-- y = conductor_thickness
+    #   |            substrate (silicon)                |
+    #   |______________________________________________|  <-- y = -substrate_thickness
+
+    total_width = 2 * ground_width + 2 * cpw_gap + cpw_width
+
+    # Signal conductor (centred)
+    signal_x = ground_width + cpw_gap
+    signal = q2d.modeler.create_rectangle(
+        origin=[signal_x, 0, 0],
+        sizes=[cpw_width, conductor_thickness],
+        name="signal",
+    )
+
+    # Left ground plane
+    gnd_left = q2d.modeler.create_rectangle(
+        origin=[0, 0, 0],
+        sizes=[ground_width, conductor_thickness],
+        name="gnd_left",
+    )
+
+    # Right ground plane
+    gnd_right_x = ground_width + cpw_gap + cpw_width + cpw_gap
+    gnd_right = q2d.modeler.create_rectangle(
+        origin=[gnd_right_x, 0, 0],
+        sizes=[ground_width, conductor_thickness],
+        name="gnd_right",
+    )
+
+    # Substrate (below conductors)
+    substrate = q2d.modeler.create_rectangle(
+        origin=[0, -substrate_thickness, 0],
+        sizes=[total_width, substrate_thickness],
+        name="Substrate",
+        material=hfss_material,
+    )
+
+    # --- Conductor assignments ---
+    q2d.assign_single_conductor(
+        name="signal",
+        assignment=[signal],
+        conductor_type="SignalLine",
+        solve_option="SolveOnBoundary",
+        units=units,
+    )
+
+    q2d.assign_single_conductor(
+        name="gnd",
+        assignment=[gnd_left, gnd_right],
+        conductor_type="ReferenceGround",
+        solve_option="SolveOnBoundary",
+        units=units,
+    )
+
+    return {
+        "signal": signal.name,
+        "gnd_left": gnd_left.name,
+        "gnd_right": gnd_right.name,
+        "substrate": substrate.name,
+    }
 
 
 class LumpedPortConfig(TypedDict):
