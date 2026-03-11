@@ -405,9 +405,9 @@ def add_materials_to_aedt(app: Hfss | Q2d) -> None:
     for name, props in material_properties.items():
         # Check if material already exists in the project or system library
         if app.materials.exists_material(name):
-            mat = app.materials[name]
-        else:
-            mat = app.materials.add_material(name)
+            continue  # assume existing material is already correctly configured
+
+        mat = app.materials.add_material(name)
 
         for prop_name, prop_value in props.items():
             # Skip infinite values (like infinite permittivity for metals),
@@ -474,6 +474,13 @@ def create_2d_from_cross_section(
     if layer_stack is None:
         layer_stack = LAYER_STACK
 
+    # Geometry parameters in this helper are defined in micrometers (µm).
+    # Restrict Q2D model units to "um" to avoid silent scaling errors.
+    if units != "um":
+        raise ValueError(
+            f"Q2D cross-section expects all geometry dimensions in micrometers; "
+            f"got units={units!r}. Pass units='um' or convert dimensions accordingly."
+        )
     # --- Extract CPW dimensions from cross-section ---
     cpw_width, cpw_gap = get_cpw_dimensions(cross_section)
 
@@ -485,17 +492,13 @@ def create_2d_from_cross_section(
     conductor_level = layer_stack.layers["M1"]
     conductor_thickness = float(conductor_level.thickness)  # µm
 
-    # Q2D mesher often fails with 'Could not preserve critical nodes' 
+    # Q2D mesher often fails with 'Could not preserve critical nodes'
     # on extremely thin (e.g. 0.2 um) perfect conductors due to aspect ratio limits.
     # Enforce a minimum meshing thickness to avoid this solver failure.
     if conductor_thickness < 2.0:
         conductor_thickness = 2.0
 
     conductor_material = cast(str, conductor_level.material)
-
-    from qpdk.tech import material_properties
-    if material_properties.get(conductor_material, {}).get("relative_permittivity") == float("inf"):
-        conductor_material = "pec"
 
     if ground_width is None:
         ground_width = 10.0 * cpw_gap
@@ -570,7 +573,7 @@ def create_2d_from_cross_section(
         name="thin_trace_mesh",
     )
 
-    return {name: obj.name for name, obj in objects.items()}
+    return {str(name): obj.name for name, obj in objects.items()}
 
 
 class LumpedPortConfig(TypedDict):

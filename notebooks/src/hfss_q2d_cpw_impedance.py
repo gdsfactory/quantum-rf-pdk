@@ -120,7 +120,9 @@ print(f"Design name: {q2d.design_name}")
 from qpdk.models.hfss import create_2d_from_cross_section  # noqa: E402
 
 # Create the 2D cross-section geometry
-object_names = create_2d_from_cross_section(q2d, cross_section)
+object_names = create_2d_from_cross_section(
+    q2d, cross_section, enforce_min_thickness=False
+)
 
 print("Created Q2D geometry:")
 for role, name in object_names.items():
@@ -169,7 +171,7 @@ success = q2d.analyze(cores=4)
 elapsed = time.time() - start_time
 
 if not success:
-    print("\nERROR: Q2D simulation failed!")
+    raise RuntimeError("Q2D simulation failed. Check the AEDT log for details.")
 else:
     print(f"Analysis completed in {elapsed:.1f} seconds")
 
@@ -198,7 +200,7 @@ z0_q2d = np.array(data.data_real())
 fig, ax = plt.subplots(figsize=(10, 5))
 
 # Q2D result
-ax.plot(frequencies_ghz, z0_q2d, "b-", linewidth=2, label="Q2D (full-wave)")
+ax.plot(frequencies_ghz, z0_q2d, "b-", linewidth=2, label="Q2D (quasi-static)")
 
 # Analytical estimate as a horizontal line
 ax.axhline(
