@@ -25,7 +25,7 @@
 # **References:**
 # - PyAEDT Documentation: https://aedt.docs.pyansys.com/
 # - HFSS Driven Modal Examples: https://examples.aedt.docs.pyansys.com/
-# - Interdigital Capacitor Theory: :cite:`leizhuAccurateCircuitModel2000`
+# - Interdigital Capacitor Theory: {cite:p}`leizhuAccurateCircuitModel2000`
 
 # %% [markdown]
 # ## Setup and Imports
@@ -95,7 +95,7 @@ for port in idc_component.ports:
 #
 # Before running the full-wave simulation, we can estimate the mutual capacitance
 # using the analytical conformal mapping model for interdigital capacitors
-# :cite:`igrejaAnalyticalEvaluationInterdigital2004`.
+# {cite:p}`igrejaAnalyticalEvaluationInterdigital2004`.
 #
 # For a structure with $n$ fingers of width $w$, gap $g$, and overlap length $L$,
 # the metallization ratio is $\eta = \frac{w}{w + g}$. The interior and exterior
@@ -364,7 +364,7 @@ plt.tight_layout()
 # shunt parasitic capacitances to ground ($C_{11}$ and $C_{22}$) that skew the
 # $S_{21}$ magnitude.
 #
-# The robust way to extract mutual capacitance is using Y-parameters (Admittance).
+# The robust way to extract mutual capacitance is using Y-parameters (Admittance), see {cite:p}`m.pozarMicrowaveEngineering2012`.
 # In a Pi-network model, the mutual admittance $Y_{12}$ isolates the series element:
 #
 # $$ Y_{12} = -j\omega C_{12} $$
@@ -400,7 +400,6 @@ for freq_target in analysis_frequencies_ghz:
     y21 = y21_trace[idx]
 
     ω = 2 * np.pi * freq_hz
-    # C_12 = -Im(Y_12) / w
     C_extracted = -np.imag(y21) / ω
     C_hfss_values[freq_target] = C_extracted
 
@@ -653,11 +652,6 @@ print("=" * 58)
 # - The analytical model provides a useful sanity check for both simulations
 # - All three methods should agree well at low frequencies where the structure
 #   is electrically small
-#
-# **Next Steps:**
-# - Parameter sweep to study capacitance vs. finger count
-# - Compare with lumped element circuit models
-# - Study loss tangent effects for realistic Q estimation
 #
 # %% [markdown]
 # ## References
