@@ -496,6 +496,12 @@ def create_2d_from_cross_section(
     # on extremely thin (e.g. 0.2 um) perfect conductors due to aspect ratio limits.
     # Enforce a minimum meshing thickness to avoid this solver failure.
     if conductor_thickness < 2.0:
+        gf.logger.warning(
+            f"Conductor thickness {conductor_thickness} µm is below the recommended "
+            f"minimum for Q2D meshing. Setting conductor_thickness to 2.0 µm to avoid "
+            f"meshing errors. Adjust layer stack or set thickness_override in "
+            f"layer_stack_to_gds_mapping if you want to change this."
+        )
         conductor_thickness = 2.0
 
     conductor_material = cast(str, conductor_level.material)

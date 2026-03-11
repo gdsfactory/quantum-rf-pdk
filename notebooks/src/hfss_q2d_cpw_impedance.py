@@ -120,9 +120,7 @@ print(f"Design name: {q2d.design_name}")
 from qpdk.models.hfss import create_2d_from_cross_section  # noqa: E402
 
 # Create the 2D cross-section geometry
-object_names = create_2d_from_cross_section(
-    q2d, cross_section, enforce_min_thickness=False
-)
+object_names = create_2d_from_cross_section(q2d, cross_section)
 
 print("Created Q2D geometry:")
 for role, name in object_names.items():
