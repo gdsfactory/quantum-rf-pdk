@@ -139,7 +139,7 @@ HFSS_CONFIG = {
     "sweep_start_ghz": 0.1,  # Sweep from 100 MHz
     "sweep_stop_ghz": 20.0,  # to 20 GHz
     "sweep_points": 401,  # Number of frequency points
-    "max_passes": 16,
+    "max_passes": 5,
     "max_delta_s": 0.002,  # 0.2% S-parameter convergence
 }
 
@@ -355,7 +355,7 @@ axes[1].grid(True)
 axes[1].legend()
 
 plt.tight_layout()
-plt.show()
+# plt.show()
 
 # %% [markdown]
 # ## Extract Capacitance from Admittance (Y-Parameters)
@@ -466,7 +466,6 @@ project_path_q3d = Path(temp_dir_q3d.name) / "idc_q3d.aedt"
 q3d = Q3d(
     project=str(project_path_q3d),
     design="InterdigitalCapacitor_Q3D",
-    solution_type="Q3DExtractor",
     non_graphical=False,
     new_desktop=True,
     version="2025.2",
@@ -530,9 +529,13 @@ print(f"Assigned signal nets: {signal_nets}")
 # Create Q3D setup
 q3d_setup = q3d.create_setup(name="Q3DSetup")
 q3d_setup.props["AdaptiveFreq"] = f"{HFSS_CONFIG['solution_frequency_ghz']}GHz"
-q3d_setup.props["MaxPass"] = 16
-q3d_setup.props["MinPass"] = 2
-q3d_setup.props["PercentError"] = 0.5
+q3d_setup.props["Cap"]["MaxPass"] = 5
+q3d_setup.props["Cap"]["MinPass"] = 2
+q3d_setup.props["Cap"]["PerError"] = 0.5
+# Disable AC and DC solving to avoid source/sink errors
+q3d_setup.ac_rl_enabled = False
+q3d_setup.dc_enabled = False
+q3d_setup.capacitance_enabled = True
 q3d_setup.update()
 
 print("Q3D setup configured:")
@@ -550,6 +553,9 @@ elapsed_q3d = time.time() - start_time_q3d
 
 if not success_q3d:
     print("\nERROR: Q3D simulation failed!")
+    m = q3d.desktop_class.odesktop.GetMessages(q3d.project_name, q3d.design_name, 0)
+    for msg in m:
+        print(f"Desktop Msg: {msg}")
 else:
     print(f"Q3D analysis completed in {elapsed_q3d:.1f} seconds")
 

@@ -638,7 +638,13 @@ def import_component_to_q3d(
 
         # Track and rename new objects
         new_objects = list(set(q3d.modeler.object_names) - existing_objects)
-        return _rename_imported_objects(q3d, new_objects, layer_stack)
+        renamed_objects = _rename_imported_objects(q3d, new_objects, layer_stack)
+        
+        # Assign material so Q3D identifies them as conductors
+        if renamed_objects:
+            q3d.assign_material(renamed_objects, "pec")
+            
+        return renamed_objects
 
 
 def assign_q3d_nets_from_ports(
@@ -709,14 +715,27 @@ def assign_q3d_nets_from_ports(
         if best_obj is None:
             continue
 
-        # Assign this conductor as a signal net with the port's name
-        q3d.assign_net(
-            assignment=[best_obj],
-            net_name=port.name,
-            net_type="Signal",
-        )
-        assigned_nets.append(port.name)
-        used_objects.add(best_obj)
+        # Find the auto-identified net that contains this object
+        net_to_rename = None
+        for b in q3d.boundaries:
+            if b.type == "SignalNet" and best_obj in b.props.get("Objects", []):
+                net_to_rename = b
+                break
+
+        if net_to_rename is not None:
+            # Rename the existing net instead of creating an overlapping one
+            net_to_rename.name = port.name
+            assigned_nets.append(port.name)
+            used_objects.add(best_obj)
+        else:
+            # Fallback if no net was auto-identified for some reason
+            q3d.assign_net(
+                assignment=[best_obj],
+                net_name=port.name,
+                net_type="Signal",
+            )
+            assigned_nets.append(port.name)
+            used_objects.add(best_obj)
 
     return assigned_nets
 
@@ -742,9 +761,11 @@ def get_q3d_capacitance_matrix(
         >>> cap_df = get_q3d_capacitance_matrix(q3d, "Q3DSetup")
         >>> print(cap_df)
     """
-    expressions = q3d.post.available_report_quantities(
-        quantities_category="C",
-    )
+    nets = [b.name for b in q3d.boundaries if b.type == "SignalNet"]
+    expressions = []
+    for n1 in nets:
+        for n2 in nets:
+            expressions.append(f"C({n1},{n2})")
 
     data: dict[str, list[float]] = {}
 
