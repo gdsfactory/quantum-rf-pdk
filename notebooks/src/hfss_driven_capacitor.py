@@ -31,6 +31,7 @@
 # ## Setup and Imports
 
 # %% tags=["hide-input", "hide-output"]
+import re
 import tempfile
 import time
 from pathlib import Path
@@ -388,11 +389,12 @@ frequencies_ghz_y = np.array(solution_y.primary_sweep_values)
 # Analysis frequencies in GHz
 analysis_frequencies_ghz = [1, 5, 10]
 
-print("\n=== Capacitance Analysis ===")
+print("\n=== HFSS Capacitance Analysis ===")
 print("-" * 40)
 print(f"Analytical estimate: {C_estimate * 1e15:.2f} fF")
 print("-" * 40)
 
+C_hfss_values = {}
 for freq_target in analysis_frequencies_ghz:
     idx = np.argmin(np.abs(frequencies_ghz_y - freq_target))
     freq_hz = frequencies_ghz_y[idx] * 1e9
@@ -401,6 +403,7 @@ for freq_target in analysis_frequencies_ghz:
     ω = 2 * np.pi * freq_hz
     # C_12 = -Im(Y_12) / w
     C_extracted = -np.imag(y21) / ω
+    C_hfss_values[freq_target] = C_extracted
 
     print(
         f"At {freq_hz / 1e9:.2f} GHz: Y21 = {y21:.2e}, C ≈ {C_extracted * 1e15:.2f} fF"
@@ -410,12 +413,12 @@ for freq_target in analysis_frequencies_ghz:
     )
 
 # %% [markdown]
-# ## Cleanup
+# ## HFSS Cleanup
 #
-# Close HFSS and clean up temporary files.
+# Close HFSS and clean up temporary files before starting Q3D.
 
 # %%
-# Save and close
+# Save and close HFSS
 hfss.save_project()
 # hfss.release_desktop()
 time.sleep(2)
@@ -424,33 +427,228 @@ time.sleep(2)
 temp_dir.cleanup()
 print("HFSS session closed and temporary files cleaned up")
 
+# %% [markdown]
+# ## Q3D Extractor Capacitance Extraction
+#
+# Now we simulate the same geometry using Q3D Extractor, which solves
+# quasi-static electric fields to directly compute the capacitance matrix.
+#
+# **Comparison of approaches:**
+# - **HFSS Driven Modal**: Full-wave solve → S-parameters → Y-parameters → $C_{12}$
+# - **Q3D Extractor**: Quasi-static solve → direct capacitance matrix
+# - **Analytical**: Conformal mapping model (no simulation)
+#
+# Q3D is particularly well suited for parasitic capacitance extraction because
+# it directly solves the electrostatic (or quasi-static) problem, which is
+# faster and more accurate at low frequencies than extracting capacitance from
+# full-wave S-parameters.
+#
+# **References:**
+# - Q3D Extractor: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.q3d.Q3d.html
+
+# %% [markdown]
+# ### Initialize Q3D Project
+#
+# Set up a Q3D Extractor project for capacitance extraction.
+#
+# ```{note}
+# This code requires an Ansys AEDT license (same as HFSS above).
+# ```
+
+# %%
+from ansys.aedt.core import Q3d  # noqa: E402
+
+# Create temporary directory for Q3D project
+temp_dir_q3d = tempfile.TemporaryDirectory(suffix=".ansys_qpdk_q3d")
+project_path_q3d = Path(temp_dir_q3d.name) / "idc_q3d.aedt"
+
+# Initialize Q3D Extractor
+q3d = Q3d(
+    project=str(project_path_q3d),
+    design="InterdigitalCapacitor_Q3D",
+    solution_type="Q3DExtractor",
+    non_graphical=False,
+    new_desktop=True,
+    version="2025.2",
+)
+q3d.modeler.model_units = "um"
+
+print(f"Q3D project created: {q3d.project_file}")
+print(f"Design name: {q3d.design_name}")
+print(f"Solution type: {q3d.solution_type}")
+
+# %% [markdown]
+# ### Import Geometry and Assign Signal Nets
+#
+# Import the same prepared component into Q3D and assign signal nets
+# based on port locations. Each port becomes a separate conductor
+# in the capacitance matrix.
+#
+# The helper function `assign_q3d_nets_from_ports` is the Q3D equivalent
+# of `add_lumped_ports_to_hfss` — it maps gdsfactory port locations to
+# Q3D conductor nets.
+
+# %%
+from qpdk.models.hfss import (  # noqa: E402
+    assign_q3d_nets_from_ports,
+    get_q3d_capacitance_matrix,
+    import_component_to_q3d,
+)
+
+# Import the prepared component geometry into Q3D
+conductor_objects = import_component_to_q3d(q3d, prepared_component)
+print(f"Imported {len(conductor_objects)} conductor objects: {conductor_objects}")
+
+# Add substrate below the component (Q3D modeler API is compatible with HFSS)
+bounds = prepared_component.bbox()
+x_min, y_min = bounds.p1.x, bounds.p1.y
+dx, dy = bounds.p2.x - x_min, bounds.p2.y - y_min
+substrate_q3d = q3d.modeler.create_box(
+    origin=[x_min, y_min, -500],
+    sizes=[dx, dy, 500],
+    name="Substrate",
+    material="silicon",
+)
+substrate_q3d.mesh_order = 4
+print(f"Created substrate: {substrate_q3d.name}")
+
+# %%
+# Assign signal nets from port locations
+signal_nets = assign_q3d_nets_from_ports(
+    q3d, prepared_component.ports, conductor_objects
+)
+print(f"Assigned signal nets: {signal_nets}")
+
+# %% [markdown]
+# ### Configure and Run Q3D Analysis
+#
+# Set up a Q3D adaptive analysis at the same frequency used for HFSS.
+# Q3D solves the quasi-static field problem and computes the full
+# capacitance matrix between all signal nets.
+
+# %%
+# Create Q3D setup
+q3d_setup = q3d.create_setup(name="Q3DSetup")
+q3d_setup.props["AdaptiveFreq"] = f"{HFSS_CONFIG['solution_frequency_ghz']}GHz"
+q3d_setup.props["MaxPass"] = 16
+q3d_setup.props["MinPass"] = 2
+q3d_setup.props["PercentError"] = 0.5
+q3d_setup.update()
+
+print("Q3D setup configured:")
+print(f"  - Adaptive frequency: {HFSS_CONFIG['solution_frequency_ghz']} GHz")
+
+# %%
+print("Starting Q3D analysis...")
+print("(This is typically faster than full-wave HFSS)")
+
+q3d.save_project()
+
+start_time_q3d = time.time()
+success_q3d = q3d.analyze_setup("Q3DSetup", cores=4)
+elapsed_q3d = time.time() - start_time_q3d
+
+if not success_q3d:
+    print("\nERROR: Q3D simulation failed!")
+else:
+    print(f"Q3D analysis completed in {elapsed_q3d:.1f} seconds")
+
+# %% [markdown]
+# ### Extract Q3D Capacitance Matrix
+#
+# Q3D directly outputs the capacitance matrix between all signal nets.
+# The off-diagonal element $C_{12}$ gives the mutual capacitance, which
+# corresponds to the coupling capacitance of the interdigital capacitor.
+
+# %%
+# Extract the capacitance matrix
+cap_df = get_q3d_capacitance_matrix(q3d, setup_name="Q3DSetup")
+print("Q3D Capacitance Matrix (F):")
+print(cap_df)
+
+# Extract mutual capacitance |C12| from the off-diagonal element
+C_q3d = None
+for col in cap_df.columns:
+    # Match off-diagonal entries like "C(o1,o2)" or "C(o2,o1)"
+    match = re.match(r"C\((.+),(.+)\)", col)
+    if match and match.group(1) != match.group(2):
+        C_q3d = abs(float(cap_df[col][0]))
+        break
+
+if C_q3d is not None:
+    print(f"\nQ3D mutual capacitance |C₁₂|: {C_q3d * 1e15:.2f} fF")
+
+# %% [markdown]
+# ### Q3D Cleanup
+
+# %%
+q3d.save_project()
+# q3d.release_desktop()
+time.sleep(2)
+
+temp_dir_q3d.cleanup()
+print("Q3D session closed and temporary files cleaned up")
+
+# %% [markdown]
+# ## Comparison: Analytical vs HFSS vs Q3D
+#
+# Compare the capacitance values obtained from all three methods.
+# The analytical model provides a quick estimate, the HFSS driven modal
+# simulation gives the full-wave result, and Q3D Extractor provides
+# a direct quasi-static capacitance extraction.
+
+# %%
+print("\n" + "=" * 58)
+print("          Capacitance Comparison Summary")
+print("=" * 58)
+print(f"{'Method':<28} {'C (fF)':>10} {'Δ vs Analytical':>16}")
+print("-" * 58)
+
+C_analytical_fF = float(C_estimate) * 1e15
+print(f"{'Analytical':<28} {C_analytical_fF:>10.2f} {'(reference)':>16}")
+
+for freq_ghz, c_val in C_hfss_values.items():
+    c_fF = c_val * 1e15
+    delta = (c_val - float(C_estimate)) / float(C_estimate) * 100
+    label = f"HFSS @ {freq_ghz} GHz"
+    print(f"{label:<28} {c_fF:>10.2f} {delta:>+15.1f}%")
+
+if C_q3d is not None:
+    C_q3d_fF = C_q3d * 1e15
+    delta_q3d = (C_q3d - float(C_estimate)) / float(C_estimate) * 100
+    print(f"{'Q3D Extractor':<28} {C_q3d_fF:>10.2f} {delta_q3d:>+15.1f}%")
+
+print("=" * 58)
+
 
 # %% [markdown]
 # ## Summary
 #
-# This notebook demonstrated:
+# This notebook demonstrated three approaches for characterizing an interdigital
+# capacitor:
 #
-# 1. **Component Creation**: Using QPDK's `interdigital_capacitor` cell
-#    to create a planar capacitor with interleaved metal fingers
+# 1. **Analytical Estimate**: Using the conformal mapping model for interdigital
+#    capacitors to get a quick capacitance estimate without simulation
 #
-# 2. **HFSS Setup**: Initializing PyAEDT with driven modal solution type
+# 2. **HFSS Driven Modal Simulation**:
+#    - Created the component geometry with QPDK and imported it into HFSS
+#    - Added lumped ports at CPW feed locations for S-parameter measurements
+#    - Ran a frequency sweep and extracted capacitance from Y-parameters
+#    ($C_{12} = -\text{Im}(Y_{12}) / \omega$)
 #
-# 3. **Geometry Building**: Converting gdsfactory polygons to HFSS 3D geometry
-#    with CPW structure and etched capacitor pattern
+# 3. **Q3D Extractor Simulation**:
+#    - Imported the same geometry into Q3D Extractor
+#    - Assigned signal nets from gdsfactory port locations
+#    - Directly computed the capacitance matrix via quasi-static field solution
 #
-# 4. **Port Creation**: Adding lumped ports at the CPW feed locations
-#    for S-parameter measurements
-#
-# 5. **Driven Analysis**: Configuring frequency sweep and running the solver
-#
-# 6. **Results Extraction**: Getting S-parameters and extracting capacitance
-#    values from the simulated data
-#
-# **Key Points for Capacitor Design:**
-# - Interdigital capacitors provide high capacitance in compact area
-# - S-parameters capture both capacitance and parasitic effects
-# - Comparison with analytical models helps validate simulation setup
-# - Frequency-dependent behavior reveals parasitic inductance at high frequencies
+# **Key Takeaways:**
+# - Q3D Extractor directly solves for capacitance, making it ideal for
+#   parasitic extraction at low frequencies
+# - HFSS driven modal captures frequency-dependent effects (parasitic
+#   inductance, radiation) that Q3D's quasi-static approach does not
+# - The analytical model provides a useful sanity check for both simulations
+# - All three methods should agree well at low frequencies where the structure
+#   is electrically small
 #
 # **Next Steps:**
 # - Parameter sweep to study capacitance vs. finger count

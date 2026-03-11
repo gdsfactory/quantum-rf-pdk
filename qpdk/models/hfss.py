@@ -1,14 +1,24 @@
-"""HFSS simulation utilities using PyAEDT.
+"""HFSS and Q3D simulation utilities using PyAEDT.
 
 This module provides helper functions for setting up HFSS simulations
-(eigenmode and driven modal) from gdsfactory components. It uses the
-PyAEDT library to interface with Ansys HFSS.
+(eigenmode and driven modal) and Q3D Extractor parasitic extractions
+from gdsfactory components. It uses the PyAEDT library to interface
+with Ansys HFSS and Q3D Extractor.
 
-The main workflow is:
+**HFSS workflow:**
+
 1. Prepare a component with :func:`prepare_component_for_hfss`
 2. Export to GDS and import into HFSS with :func:`import_component_to_hfss`
 3. Configure simulation setup (e.g. Eigenmode or Driven) manually via PyAEDT
 4. Extract results with :func:`get_eigenmode_results` or :func:`get_sparameter_results`
+
+**Q3D Extractor workflow:**
+
+1. Prepare a component with :func:`prepare_component_for_hfss`
+2. Export to GDS and import into Q3D with :func:`import_component_to_q3d`
+3. Assign signal nets with :func:`assign_q3d_nets_from_ports`
+4. Configure Q3D setup and analyze
+5. Extract capacitance matrix with :func:`get_q3d_capacitance_matrix`
 
 Note:
     This module requires the optional ``hfss`` dependency group.
@@ -25,6 +35,7 @@ Example:
 References:
     - PyAEDT documentation: https://aedt.docs.pyansys.com/
     - HFSS import_gds_3d: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.hfss.Hfss.import_gds_3d.html
+    - Q3D Extractor: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.q3d.Q3d.html
 """
 
 from __future__ import annotations
@@ -51,6 +62,7 @@ from qpdk.tech import LAYER
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss
+    from ansys.aedt.core.q3d import Q3d
     from gdsfactory.component import Component
     from gdsfactory.technology import LayerStack
 
@@ -549,6 +561,222 @@ def get_sparameter_results(
             complex_data = real_data + 1j * imag_data
 
             data[trace] = complex_data
+
+    return pl.DataFrame(data)
+
+
+def import_component_to_q3d(
+    q3d: Q3d,
+    component: Component,
+    layer_stack: LayerStack | None = None,
+    *,
+    units: str = "um",
+    gds_path: str | Path | None = None,
+) -> list[str]:
+    """Import a gdsfactory component into Q3D Extractor.
+
+    Imports the component's GDS geometry into a Q3D Extractor project,
+    mapping each GDS layer to a 3D conductor at the appropriate elevation
+    and thickness from the layer stack. Imported objects are renamed based
+    on the layer stack for clarity.
+
+    This is the Q3D equivalent of :func:`import_component_to_hfss`.
+
+    Args:
+        q3d: The Q3D Extractor application instance.
+        component: The gdsfactory component to import.
+        layer_stack: LayerStack defining thickness and elevation for each layer.
+            If None, uses QPDK's default LAYER_STACK.
+        units: Length units for the geometry (default: "um" for micrometers).
+        gds_path: Optional path to write the GDS file. If None, uses a
+            temporary file.
+
+    Returns:
+        List of newly created conductor object names in Q3D.
+
+    Example:
+        >>> from ansys.aedt.core import Q3d
+        >>> from qpdk.models.hfss import import_component_to_q3d
+        >>> from qpdk.cells.capacitor import interdigital_capacitor
+        >>> comp = interdigital_capacitor(fingers=6, finger_length=20)
+        >>> q3d = Q3d(project="cap_q3d", solution_type="Q3DExtractor")
+        >>> objects = import_component_to_q3d(q3d, comp)
+    """
+    if layer_stack is None:
+        layer_stack = LAYER_STACK
+
+    # Generate layer mapping from LayerStack (use real thickness for Q3D)
+    mapping_layers = layer_stack_to_gds_mapping(layer_stack)
+
+    # Create reverse mapping from layer number to layer name for renaming
+    num_to_name = {}
+    for name, level in layer_stack.layers.items():
+        layer_num = _get_layer_number_from_level(level)
+        if layer_num is not None and layer_num not in num_to_name:
+            num_to_name[layer_num] = name
+
+    # Export component to GDS
+    temp_dir_obj = None
+    if gds_path is None:
+        temp_dir_obj = tempfile.TemporaryDirectory(prefix="qpdk_q3d_")
+        gds_path = Path(temp_dir_obj.name) / "component.gds"
+
+    gds_path = Path(gds_path)
+    component.write_gds(str(gds_path))
+
+    # Set modeler units
+    q3d.modeler.model_units = units
+
+    # Record existing objects
+    existing_objects = set(q3d.modeler.object_names)
+
+    # Import GDS with 3D layer mapping
+    q3d.import_gds_3d(
+        input_file=str(gds_path),
+        mapping_layers=mapping_layers,
+        units=units,
+        import_method=0,
+    )
+
+    # Track and rename new objects
+    new_objects = list(set(q3d.modeler.object_names) - existing_objects)
+
+    renamed_objects = []
+    for obj_name in new_objects:
+        match = re.match(r"^signal(\d+)(_.*)?$", obj_name)
+        new_name = obj_name
+        if match:
+            layer_num = int(match.group(1))
+            suffix = match.group(2) or ""
+            if layer_num in num_to_name:
+                layer_name = num_to_name[layer_num]
+                new_name = f"{layer_name}{suffix}"
+                try:
+                    q3d.modeler[obj_name].name = new_name
+                except Exception:
+                    new_name = obj_name  # Fallback if rename fails
+        renamed_objects.append(new_name)
+
+    # Clean up temporary directory
+    if temp_dir_obj is not None:
+        temp_dir_obj.cleanup()
+
+    return renamed_objects
+
+
+def assign_q3d_nets_from_ports(
+    q3d: Q3d,
+    ports: Ports,
+    conductor_objects: list[str],
+) -> list[str]:
+    """Assign Q3D signal nets based on gdsfactory port locations.
+
+    For each gdsfactory port, finds the conductor object whose bounding-box
+    center is nearest to the port center and assigns it as a Q3D signal net.
+    Connected conductor objects sharing the same net are automatically
+    included via Q3D's auto net identification.
+
+    This is the Q3D equivalent of :func:`add_lumped_ports_to_hfss` for driven
+    HFSS simulations.
+
+    After calling this function, Q3D will include one signal net per port
+    in the computed capacitance (and inductance) matrices.
+
+    Args:
+        q3d: The Q3D Extractor application instance.
+        ports: Collection of gdsfactory ports defining signal locations.
+        conductor_objects: List of conductor object names created by
+            :func:`import_component_to_q3d`.
+
+    Returns:
+        List of assigned signal net names (one per port).
+
+    Example:
+        >>> from qpdk.models.hfss import assign_q3d_nets_from_ports
+        >>> signal_nets = assign_q3d_nets_from_ports(
+        ...     q3d, component.ports, conductor_objects
+        ... )
+    """
+    # Auto-identify nets to group geometrically connected conductors
+    q3d.auto_identify_nets()
+
+    assigned_nets: list[str] = []
+    used_objects: set[str] = set()
+
+    for port in ports:
+        px, py = float(port.center[0]), float(port.center[1])
+
+        # Find the conductor object closest to this port
+        best_obj: str | None = None
+        best_dist = float("inf")
+
+        for obj_name in conductor_objects:
+            if obj_name in used_objects:
+                continue
+
+            # Get object from modeler; skip if not found
+            obj = q3d.modeler.get_object_from_name(obj_name)
+            if obj is None:
+                continue
+
+            # bounding_box returns [xmin, ymin, zmin, xmax, ymax, zmax]
+            bbox = obj.bounding_box
+            obj_cx = (bbox[0] + bbox[3]) / 2
+            obj_cy = (bbox[1] + bbox[4]) / 2
+
+            dist = ((px - obj_cx) ** 2 + (py - obj_cy) ** 2) ** 0.5
+            if dist < best_dist:
+                best_dist = dist
+                best_obj = obj_name
+
+        if best_obj is None:
+            continue
+
+        # Assign this conductor as a signal net with the port's name
+        q3d.assign_single_signal_line(
+            target_objects=best_obj,
+            name=port.name,
+        )
+        assigned_nets.append(port.name)
+        used_objects.add(best_obj)
+
+    return assigned_nets
+
+
+def get_q3d_capacitance_matrix(
+    q3d: Q3d,
+    setup_name: str = "Q3DSetup",
+) -> pl.DataFrame:
+    """Extract the capacitance matrix from a Q3D Extractor simulation.
+
+    Retrieves all capacitance matrix entries (e.g. ``C(o1,o1)``, ``C(o1,o2)``)
+    from the solved Q3D setup.
+
+    Args:
+        q3d: The Q3D Extractor application instance.
+        setup_name: Name of the analysis setup.
+
+    Returns:
+        DataFrame with one column per capacitance expression containing
+        the extracted values in Farads.
+
+    Example:
+        >>> cap_df = get_q3d_capacitance_matrix(q3d, "Q3DSetup")
+        >>> print(cap_df)
+    """
+    expressions = q3d.post.available_report_quantities(
+        quantities_category="C",
+    )
+
+    data: dict[str, list[float]] = {}
+
+    for expr in expressions:
+        solution = q3d.post.get_solution_data(
+            expressions=expr,
+            setup_sweep_name=f"{setup_name} : LastAdaptive",
+        )
+        if solution:
+            data[expr] = [float(solution.data_real()[0])]
 
     return pl.DataFrame(data)
 
