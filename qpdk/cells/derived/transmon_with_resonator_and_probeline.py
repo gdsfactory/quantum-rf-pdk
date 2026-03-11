@@ -17,7 +17,7 @@ from qpdk.tech import route_bundle_cpw
 
 
 @gf.cell
-def transmon_with_resonator(
+def transmon_with_resonator_and_probeline(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(resonator_quarter_wave, length=4000, meanders=6),
     resonator_meander_start: tuple[float, float] = (-700, -1300),
@@ -74,11 +74,11 @@ def transmon_with_resonator(
         * DCplxTrans(*coupler_offset)
     )
 
-    # Create coupler_straight for probeline coupling.
+    # Create probeline coupling.
     # The coupler has two parallel waveguides separated by `gap`:
-    #   o2 (top left) ──────── o3 (top right)   ← probeline track
+    #   o2 (top left) ──────── o3 (top right)   ← resonator track
     #                   gap
-    #   o1 (bottom left) ───── o4 (bottom right) ← resonator track
+    #   o1 (bottom left) ───── o4 (bottom right) ← probeline track
     cs_ref = c << gf.get_component(
         probeline_coupler,
         gap=probeline_coupling_gap,
@@ -86,20 +86,20 @@ def transmon_with_resonator(
         cross_section=resonator_cross_section,
     )
 
-    # Position the coupler_straight so that o4 (bottom right) is at
+    # Position the coupler_straight so that o3 (top right) is at
     # the resonator_meander_start position. The coupler extends to the
-    # left, and the resonator meander continues from o1 (bottom left).
+    # left, and the resonator meander continues from o2 (top left).
     cs_ref.move(
         (
-            resonator_meander_start[0] - cs_ref.ports["o4"].x,
-            resonator_meander_start[1] - cs_ref.ports["o4"].y,
+            resonator_meander_start[0] - cs_ref.ports["o3"].x,
+            resonator_meander_start[1] - cs_ref.ports["o3"].y,
         )
     )
 
     # Route from coupler_straight's right end to the plate capacitor
     routes = route_bundle_cpw(
         component=c,
-        ports1=[cs_ref.ports["o4"]],
+        ports1=[cs_ref.ports["o3"]],
         ports2=[coupler_ref.ports["o1"]],
         steps=[{"x": coupler_ref.ports["o1"].x}],
         auto_taper=False,
@@ -118,8 +118,8 @@ def transmon_with_resonator(
     )
 
     # Connect the resonator's shorted end to the coupler_straight's
-    # bottom-left port. This makes the resonator extend to the left.
-    resonator_ref.connect("o1", cs_ref.ports["o1"])
+    # top-left port. This makes the resonator extend to the left.
+    resonator_ref.connect("o1", cs_ref.ports["o2"])
 
     c.info["qubit_type"] = qubit_ref.cell.info.get("qubit_type")
     c.info["resonator_type"] = resonator_ref.cell.info.get("resonator_type")
@@ -131,9 +131,8 @@ def transmon_with_resonator(
     )
 
     c.add_ports(qubit_ref.ports.filter(regex=r"junction"))
-    # Expose probeline coupling ports from the top track
-    c.add_port("coupling_o1", port=cs_ref.ports["o2"])
-    c.add_port("coupling_o2", port=cs_ref.ports["o3"])
+    c.add_port("coupling_o1", port=cs_ref.ports["o1"])
+    c.add_port("coupling_o2", port=cs_ref.ports["o4"])
     c.add_port(
         port=resonator_ref.ports["o1"],
         port_type="placement",
@@ -142,8 +141,8 @@ def transmon_with_resonator(
 
 
 # Create specific functions as partials of the general function
-double_pad_transmon_with_resonator = partial(
-    transmon_with_resonator,
+double_pad_transmon_with_resonator_and_probeline = partial(
+    transmon_with_resonator_and_probeline,
     qubit="double_pad_transmon_with_bbox",
     coupler=partial(plate_capacitor_single, width=20, length=394),
     qubit_rotation=90,
@@ -151,8 +150,8 @@ double_pad_transmon_with_resonator = partial(
     coupler_offset=(-45, 0),
 )
 
-flipmon_with_resonator = partial(
-    transmon_with_resonator,
+flipmon_with_resonator_and_probeline = partial(
+    transmon_with_resonator_and_probeline,
     qubit="flipmon_with_bbox",
     coupler=partial(plate_capacitor_single, width=10, length=58),
     qubit_rotation=-90,
@@ -162,12 +161,12 @@ flipmon_with_resonator = partial(
 
 
 # Alias for backward compatibility
-qubit_with_resonator = transmon_with_resonator
+qubit_with_resonator_and_probeline = transmon_with_resonator_and_probeline
 
 
 if __name__ == "__main__":
     show_components(
-        transmon_with_resonator,
-        double_pad_transmon_with_resonator,
-        flipmon_with_resonator,
+        transmon_with_resonator_and_probeline,
+        double_pad_transmon_with_resonator_and_probeline,
+        flipmon_with_resonator_and_probeline,
     )
