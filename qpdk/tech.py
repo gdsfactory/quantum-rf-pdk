@@ -91,6 +91,22 @@ material_properties = {
     "In": {"relative_permittivity": float("inf")},
 }
 
+NON_METADATA_LAYERS = {
+    LAYER.M1_DRAW,
+    LAYER.M1_ETCH,
+    LAYER.M2_DRAW,
+    LAYER.M2_ETCH,
+    LAYER.AB_DRAW,
+    LAYER.AB_VIA,
+    LAYER.JJ_AREA,
+    LAYER.JJ_PATCH,
+    LAYER.IND,
+    LAYER.TSV,
+    LAYER.DICE,
+    LAYER.ALN_TOP,
+    LAYER.ALN_BOT,
+}
+
 
 @cache
 def get_layer_stack() -> LayerStack:
@@ -181,6 +197,12 @@ def get_layer_stack() -> LayerStack:
 
 
 LAYER_STACK = get_layer_stack()
+# Nicer for 3D visualization
+LAYER_STACK_NO_VACUUM = LayerStack(
+    layers={
+        name: level for name, level in LAYER_STACK.layers.items() if name != "Vacuum"
+    }
+)
 LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp)
 
 LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
@@ -219,6 +241,13 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
             material="Si",
             mesh_order=4,
         ),
+    }
+)
+LAYER_STACK_FLIP_CHIP_NO_VACUUM = LayerStack(
+    layers={
+        name: level
+        for name, level in LAYER_STACK_FLIP_CHIP.layers.items()
+        if name != "Vacuum"
     }
 )
 
@@ -370,6 +399,8 @@ route_bundle = route_bundle_cpw = partial(
     gf.routing.route_bundle,
     cross_section=cpw,
     bend="bend_circular",
+    collision_check_layers=[LAYER.WG],
+    on_collision="error",
 )
 route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     gf.routing.route_bundle_all_angle,

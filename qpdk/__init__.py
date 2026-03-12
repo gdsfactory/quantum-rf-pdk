@@ -6,7 +6,6 @@ import pkgutil
 from functools import lru_cache, partial
 
 import gdsfactory as gf
-from gdsfactory import logger
 from gdsfactory.cross_section import get_cross_sections
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
@@ -14,6 +13,7 @@ from gdsfactory.pdk import Pdk
 import qpdk.samples
 from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
+from qpdk.logger import logger
 from qpdk.tech import (
     LAYER,
     LAYER_CONNECTIVITY,
@@ -77,6 +77,7 @@ __all__ = [
     "cells",
     "config",
     "helper",
+    "logger",
     "tech",
 ]
 __version__ = "0.3.0"

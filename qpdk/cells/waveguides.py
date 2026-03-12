@@ -9,6 +9,7 @@ from klayout.db import DCplxTrans
 
 from qpdk import tech
 from qpdk.helper import show_components
+from qpdk.logger import logger
 
 _DEFAULT_CROSS_SECTION = tech.cpw
 
@@ -269,8 +270,12 @@ def bend_circular(
     radius_min = gf.get_cross_section(cross_section).radius_min
     if radius_min is not None and radius < radius_min:
         radius = radius_min
-        print(
-            f"Bend radius needs to be >= {radius_min} for this cross-section. Setting it to the minimum acceptable value."
+        logger.warning(
+            (
+                "Bend radius needs to be >= {} for this cross-section. "
+                "Setting it to the minimum acceptable value."
+            ),
+            radius_min,
         )
     return gf.c.bend_circular(
         angle=angle,
