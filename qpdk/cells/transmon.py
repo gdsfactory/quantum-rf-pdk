@@ -13,7 +13,7 @@ from klayout.db import DCplxTrans, Region
 
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.helpers import transform_component
-from qpdk.cells.junction import josephson_junction, squid_junction
+from qpdk.cells.junction import squid_junction, squid_junction_long
 from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
@@ -197,10 +197,7 @@ def flipmon(
     outer_ring_radius: float = 110.0,
     outer_ring_width: float = 60.0,
     top_circle_radius: float = 110.0,
-    junction_spec: ComponentSpec = partial(
-        squid_junction,
-        junction_spec=partial(josephson_junction, wide_straight_length=12),
-    ),
+    junction_spec: ComponentSpec = squid_junction_long,
     junction_displacement: DCplxTrans | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_metal_top: LayerSpec = LAYER.M2_DRAW,
@@ -315,10 +312,7 @@ def flipmon_with_bbox(
     outer_ring_radius: float = 110.0,
     outer_ring_width: float = 60.0,
     top_circle_radius: float = 110.0,
-    junction_spec: ComponentSpec = partial(
-        squid_junction,
-        junction_spec=partial(josephson_junction, wide_straight_length=12),
-    ),
+    junction_spec: ComponentSpec = squid_junction_long,
     junction_displacement: DCplxTrans | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_metal_top: LayerSpec = LAYER.M2_DRAW,

@@ -19,13 +19,6 @@ instances:
       npoints: null
       radius: 100
       width: 10
-  coupler_straight:
-    component: coupler_straight
-    info: {}
-    settings:
-      cross_section: cpw
-      gap: 16
-      length: 800
   flipmon_with_bbox:
     component: flipmon_with_bbox
     info: {}
@@ -67,6 +60,20 @@ instances:
   straight:
     component: straight
     info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  straight2:
+    component: straight
+    info:
       length: 943
       route_info_coplanar_waveguide_length: 943
       route_info_length: 943
@@ -80,24 +87,19 @@ instances:
       width: 10
 nets:
 - p1: bend_circular,o1
-  p2: straight,o1
+  p2: straight2,o1
 - p1: bend_circular,o2
-  p2: coupler_straight,o3
-- p1: coupler_straight,o2
-  p2: resonator,o1
-- p1: plate_capacitor_single,o1
   p2: straight,o2
+- p1: plate_capacitor_single,o1
+  p2: straight2,o2
+- p1: resonator,o1
+  p2: straight,o1
 placements:
   bend_circular:
     mirror: true
     rotation: 270
     x: 0
     y: -1100
-  coupler_straight:
-    mirror: false
-    rotation: 0
-    x: -900
-    y: -1226
   flipmon_with_bbox:
     mirror: false
     rotation: 270
@@ -115,10 +117,13 @@ placements:
     y: -1200
   straight:
     mirror: false
+    rotation: 0
+    x: -900
+    y: -1200
+  straight2:
+    mirror: false
     rotation: 90
     x: 0
     y: -1100
 ports:
-  coupling_o1: coupler_straight,o1
-  coupling_o2: coupler_straight,o4
   junction: flipmon_with_bbox,junction

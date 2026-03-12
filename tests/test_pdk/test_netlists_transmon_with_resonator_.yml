@@ -19,27 +19,18 @@ instances:
       npoints: null
       radius: 100
       width: 10
-  coupler_straight:
-    component: coupler_straight
+  double_pad_transmon_with_bbox:
+    component: double_pad_transmon_with_bbox
     info: {}
     settings:
-      cross_section: cpw
-      gap: 16
-      length: 800
-  flipmon_with_bbox:
-    component: flipmon_with_bbox
-    info: {}
-    settings:
-      inner_circle_radius: 60
+      bbox_extension: 200
       junction_displacement: null
-      junction_spec: squid_junction_long
+      junction_spec: squid_junction
       layer_metal: M1_DRAW
-      layer_metal_top: M2_DRAW
-      m1_etch_extension_gap: 30
-      m2_etch_extension_gap: 40
-      outer_ring_radius: 110
-      outer_ring_width: 60
-      top_circle_radius: 110
+      pad_gap: 15
+      pad_size:
+      - 250
+      - 400
   plate_capacitor_single:
     component: plate_capacitor_single
     info: {}
@@ -47,19 +38,19 @@ instances:
       cross_section: cpw
       etch_bbox_margin: 2
       etch_layer: M1_ETCH
-      length: 58
-      width: 10
+      length: 394
+      width: 20
   resonator:
     component: resonator
     info:
       cross_section: coplanar_waveguide
-      length: 3099.92
+      length: 3257.42
       resonator_type: quarter_wave
     settings:
       bend_spec: bend_circular
       cross_section: cpw
       end_with_bend: false
-      length: 3099.92
+      length: 3257.42
       meanders: 5
       open_end: true
       open_start: false
@@ -67,47 +58,56 @@ instances:
   straight:
     component: straight
     info:
-      length: 943
-      route_info_coplanar_waveguide_length: 943
-      route_info_length: 943
+      length: 785.5
+      route_info_coplanar_waveguide_length: 785.5
+      route_info_length: 785.5
       route_info_type: coplanar_waveguide
-      route_info_weight: 943
+      route_info_weight: 785.5
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 943
+      length: 785.5
+      npoints: 2
+      width: 10
+  straight2:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
       npoints: 2
       width: 10
 nets:
 - p1: bend_circular,o1
   p2: straight,o1
 - p1: bend_circular,o2
-  p2: coupler_straight,o3
-- p1: coupler_straight,o2
-  p2: resonator,o1
+  p2: straight2,o2
 - p1: plate_capacitor_single,o1
   p2: straight,o2
+- p1: resonator,o1
+  p2: straight2,o1
 placements:
   bend_circular:
     mirror: true
     rotation: 270
     x: 0
     y: -1100
-  coupler_straight:
+  double_pad_transmon_with_bbox:
     mirror: false
-    rotation: 0
-    x: -900
-    y: -1226
-  flipmon_with_bbox:
-    mirror: false
-    rotation: 270
+    rotation: 90
     x: 0
     y: 0
   plate_capacitor_single:
     mirror: false
     rotation: 90
     x: 0
-    y: -150
+    y: -302.5
   resonator:
     mirror: false
     rotation: 270
@@ -118,7 +118,10 @@ placements:
     rotation: 90
     x: 0
     y: -1100
+  straight2:
+    mirror: false
+    rotation: 0
+    x: -900
+    y: -1200
 ports:
-  coupling_o1: coupler_straight,o1
-  coupling_o2: coupler_straight,o4
-  junction: flipmon_with_bbox,junction
+  junction: double_pad_transmon_with_bbox,junction

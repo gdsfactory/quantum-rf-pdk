@@ -198,6 +198,18 @@ def josephson_junction(
 
 
 @gf.cell
+def josephson_junction_long(**kwargs) -> Component:
+    """Josephson junction with wide_straight_length=12."""
+    return josephson_junction(wide_straight_length=12, **kwargs)
+
+
+@gf.cell
+def squid_junction_long(**kwargs) -> Component:
+    """SQUID junction with josephson_junction_long."""
+    return squid_junction(junction_spec=josephson_junction_long, **kwargs)
+
+
+@gf.cell
 def squid_junction(
     junction_spec: ComponentSpec = josephson_junction,
     loop_area: float = 4,

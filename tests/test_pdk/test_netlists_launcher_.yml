@@ -1,5 +1,5 @@
 instances:
-  straight_gdsfactorypcom_9e1d218e_0_0:
+  straight:
     component: straight
     info:
       length: 200
@@ -13,7 +13,7 @@ instances:
       length: 200
       npoints: 2
       width: null
-  taper_cross_section_gds_94230940_200000_0:
+  taper_cross_section:
     component: taper_cross_section
     info:
       route_info_launcher_cross_section_big_length: 100
@@ -28,29 +28,20 @@ instances:
       linear: true
       npoints: 100
       width_type: sine
-name: launcher_SL200_TL100_CS_e4704c5b
 nets:
-- p1: straight_gdsfactorypcom_9e1d218e_0_0,o2
-  p2: taper_cross_section_gds_94230940_200000_0,o1
+- p1: straight,o2
+  p2: taper_cross_section,o1
 placements:
-  straight_gdsfactorypcom_9e1d218e_0_0:
+  straight:
     mirror: false
     rotation: 0
     x: 0
     y: 0
-  taper_cross_section_gds_94230940_200000_0:
+  taper_cross_section:
     mirror: false
     rotation: 0
     x: 200
     y: 0
 ports:
-  o1: taper_cross_section_gds_94230940_200000_0,o2
-warnings:
-  optical:
-    unconnected_ports:
-    - message: 1 unconnected optical ports!
-      ports:
-      - straight_gdsfactorypcom_9e1d218e_0_0,o1
-      values:
-      - - 0
-        - 0
+  o1: taper_cross_section,o2
+  waveport: straight,o1
