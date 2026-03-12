@@ -137,7 +137,6 @@ def _transmon_with_resonator_base(
         component=c,
         ports1=[route_start_port],
         ports2=[coupler_ref.ports["o1"]],
-        steps=[{"x": coupler_ref.ports["o1"].x}],
         auto_taper=False,
     )
     route = routes[0]
