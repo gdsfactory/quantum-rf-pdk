@@ -3047,7 +3047,7 @@ wheels = [
 
 [[package]]
 name = "qpdk"
-version = "0.3.2"
+version = "0.3.3"
 source = { editable = "." }
 dependencies = [
     { name = "doroutes" },
@@ -3138,7 +3138,7 @@ requires-dist = [
     { name = "sympy", marker = "extra == 'models'" },
     { name = "trimesh", marker = "extra == 'graphics'" },
 ]
-provides-extras = ["hfss", "graphics", "models"]
+provides-extras = ["graphics", "hfss", "models"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3259,14 +3259,14 @@ name = "ray"
 version = "2.54.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click" },
-    { name = "filelock" },
-    { name = "jsonschema" },
-    { name = "msgpack" },
-    { name = "packaging" },
-    { name = "protobuf" },
-    { name = "pyyaml" },
-    { name = "requests" },
+    { name = "click", marker = "sys_platform != 'win32'" },
+    { name = "filelock", marker = "sys_platform != 'win32'" },
+    { name = "jsonschema", marker = "sys_platform != 'win32'" },
+    { name = "msgpack", marker = "sys_platform != 'win32'" },
+    { name = "packaging", marker = "sys_platform != 'win32'" },
+    { name = "protobuf", marker = "sys_platform != 'win32'" },
+    { name = "pyyaml", marker = "sys_platform != 'win32'" },
+    { name = "requests", marker = "sys_platform != 'win32'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/16/45eefb51eb1767342a6dbf41af0b432279e422e56160705fcd1098a7ec53/ray-2.54.0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:cf5c33b4b13850ec24a5bd5f9d9e0a8161f8e586bfd297e52913d170dec447fe", size = 70084880, upload-time = "2026-02-18T04:05:22.007Z" },
@@ -3279,12 +3279,12 @@ wheels = [
 
 [package.optional-dependencies]
 tune = [
-    { name = "fsspec" },
-    { name = "pandas" },
-    { name = "pyarrow" },
-    { name = "pydantic" },
-    { name = "requests" },
-    { name = "tensorboardx" },
+    { name = "fsspec", marker = "sys_platform != 'win32'" },
+    { name = "pandas", marker = "sys_platform != 'win32'" },
+    { name = "pyarrow", marker = "sys_platform != 'win32'" },
+    { name = "pydantic", marker = "sys_platform != 'win32'" },
+    { name = "requests", marker = "sys_platform != 'win32'" },
+    { name = "tensorboardx", marker = "sys_platform != 'win32'" },
 ]
 
 [[package]]
@@ -4054,9 +4054,9 @@ name = "tensorboardx"
 version = "2.6.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "protobuf" },
+    { name = "numpy", marker = "sys_platform != 'win32'" },
+    { name = "packaging", marker = "sys_platform != 'win32'" },
+    { name = "protobuf", marker = "sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/2b/c5/d4cc6e293fb837aaf9f76dd7745476aeba8ef7ef5146c3b3f9ee375fe7a5/tensorboardx-2.6.4.tar.gz", hash = "sha256:b163ccb7798b31100b9f5fa4d6bc22dad362d7065c2f24b51e50731adde86828", size = 4769801, upload-time = "2025-06-10T22:37:07.419Z" }
 wheels = [
