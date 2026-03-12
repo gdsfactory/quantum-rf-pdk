@@ -386,6 +386,8 @@ route_bundle = route_bundle_cpw = partial(
     gf.routing.route_bundle,
     cross_section=cpw,
     bend="bend_circular",
+    collision_check_layers=[LAYER.WG],
+    on_collision="error",
 )
 route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     gf.routing.route_bundle_all_angle,
