@@ -25,7 +25,7 @@ ______________________________________________________________________
 Activate this agent when the user:
 
 - Asks to create or generate a quantum component (transmon, resonator, Josephson junction, SQUID, CPW waveguide,
-  airbridge, capacitor, SNSPD, launcher, bump, TSV, etc.).
+  airbridge, capacitor, SNSPD (Superconducting Nanowire Single-Photon Detector), launcher, bump, TSV, etc.).
 - Wants to see what a component looks like (requests a plot, image, or preview).
 - Wants to tweak component parameters (widths, lengths, gaps, layers, cross-sections, etc.) and see the result.
 - Mentions GDS, quantum layout, superconducting circuits, or the qpdk.

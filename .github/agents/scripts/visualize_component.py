@@ -14,7 +14,7 @@ different Python command, for example::
 Choose whichever command gives access to the ``qpdk`` package in the current
 project.
 
-Examples
+Examples:
 --------
     python visualize_component.py "qpdk.cells.double_pad_transmon()" /tmp/transmon.png
     python visualize_component.py "gf.get_component('resonator_coupled', length=5000)" /tmp/resonator.png
@@ -33,6 +33,7 @@ import sys
 
 
 def main() -> None:
+    """Parse arguments, render the component, and write a PNG image."""
     parser = argparse.ArgumentParser(
         description="Render a qpdk / gdsfactory component to PNG.",
     )
@@ -62,9 +63,8 @@ def main() -> None:
     import matplotlib
 
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
     import gdsfactory as gf
+    import matplotlib.pyplot as plt
 
     import qpdk
     import qpdk.cells
@@ -73,9 +73,11 @@ def main() -> None:
     qpdk.PDK.activate()
     gf.clear_cache()
 
-    # Evaluate the user-provided expression in a restricted namespace that only
+    # Evaluate the agent-provided expression in a restricted namespace that only
     # exposes gdsfactory and qpdk.  __builtins__ is explicitly blanked so that
     # arbitrary built-in functions (open, __import__, exec, …) are unavailable.
+    # This script is intended to be called by AI agents (not by untrusted users)
+    # so the restricted eval is an appropriate defense-in-depth measure.
     restricted_ns: dict[str, object] = {
         "__builtins__": {},
         "gf": gf,
