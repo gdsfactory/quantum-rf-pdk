@@ -16,6 +16,7 @@ classifiers = [
 dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.39.0"]
 
 [project.optional-dependencies]
+graphics = ["trimesh", "pyglet<2"]
 hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]>=2.0.1",

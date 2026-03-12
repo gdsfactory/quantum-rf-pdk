@@ -167,3 +167,7 @@ test_diffs/
 
 # gdsfactory+
 scripts/
+
+# 3D
+*.glb
+*.stl

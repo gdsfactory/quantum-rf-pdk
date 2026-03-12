@@ -197,6 +197,12 @@ def get_layer_stack() -> LayerStack:
 
 
 LAYER_STACK = get_layer_stack()
+# Nicer for 3D visualization
+LAYER_STACK_NO_VACUUM = LayerStack(
+    layers={
+        name: level for name, level in LAYER_STACK.layers.items() if name != "Vacuum"
+    }
+)
 LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp)
 
 LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
@@ -235,6 +241,13 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
             material="Si",
             mesh_order=4,
         ),
+    }
+)
+LAYER_STACK_FLIP_CHIP_NO_VACUUM = LayerStack(
+    layers={
+        name: level
+        for name, level in LAYER_STACK_FLIP_CHIP.layers.items()
+        if name != "Vacuum"
     }
 )
 
