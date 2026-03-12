@@ -1,0 +1,14 @@
+info:
+  cross_section: coplanar_waveguide
+  length: 4000
+  resonator_type: quarter_wave
+name: resonator_L4000_M6_BSbend_circular_CScpw_SWBFalse_EWBTr_52659793
+settings:
+  bend_spec: bend_circular
+  cross_section: cpw
+  end_with_bend: true
+  length: 4000
+  meanders: 6
+  open_end: true
+  open_start: true
+  start_with_bend: false

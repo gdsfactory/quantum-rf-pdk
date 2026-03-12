@@ -8,10 +8,12 @@ instances:
     settings:
       bend_spec: bend_circular
       cross_section: cpw
+      end_with_bend: false
       length: 4000
       meanders: 6
       open_end: false
       open_start: true
+      start_with_bend: false
   straight:
     component: straight
     info:

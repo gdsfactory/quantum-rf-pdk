@@ -24,22 +24,6 @@ from qpdk.tech import LAYER
 
 cells = PDK.cells
 skip_test_netlist = {
-    "wire_corner",
-    "pack_doe",
-    "pack_doe_grid",
-    "add_pads_top",
-    "add_pads_bot",
-    "transmon_circular",
-    "resonator_lumped",
-    "coupler_symmetric",
-    "die_with_pads",
-    "launcher",
-    "indium_bump",
-    "qubit_with_resonator",
-    "transmon_with_resonator",
-    "flipmon_with_resonator",
-    "flipmon",
-    "flipmon_with_bbox",
     "all_cells",  # Skip netlist test for all_cells (collection of all components)
 }
 # Skip default gdsfactory cells

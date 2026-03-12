@@ -20,6 +20,8 @@ def resonator(
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
     *,
+    start_with_bend: bool = False,
+    end_with_bend: bool = False,
     open_start: bool = True,
     open_end: bool = False,
 ) -> Component:
@@ -47,6 +49,8 @@ def resonator(
         meanders: Number of meander sections to fit the resonator in a compact area.
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator.
+        start_with_bend: If True, starts the resonator with a bend.
+        end_with_bend: If True, ends the resonator with a bend.
         open_start: If True, adds an etch section at the start of the resonator.
         open_end: If True, adds an etch section at the end of the resonator.
 
@@ -58,49 +62,88 @@ def resonator(
     bend = gf.get_component(
         bend_spec, cross_section=cross_section, angle=180, angular_step=4
     )
-    length_per_one_straight = (length - meanders * bend.info["length"]) / (meanders + 1)
 
-    if length_per_one_straight <= 0:
+    num_straights = meanders + 1
+    if start_with_bend:
+        num_straights -= 1
+    if end_with_bend:
+        num_straights -= 1
+
+    if num_straights < 0:
         raise ValueError(
-            f"Resonator length {length} is too short for {meanders} meanders with current bend spec {bend}. "
-            f"Increase length, reduce meanders, or change the bend spec."
+            "Cannot have fewer than 0 straight sections. Reduce meanders or adjust bend start/end settings."
         )
 
-    straight_comp = straight(
-        length=length_per_one_straight,
-        cross_section=cross_section,
-    )
+    straight_comp = None
+    if num_straights > 0:
+        length_per_one_straight = (
+            length - meanders * bend.info["length"]
+        ) / num_straights
+
+        if length_per_one_straight <= 0:
+            raise ValueError(
+                f"Resonator length {length} is too short for {meanders} meanders with current bend spec {bend}. "
+                f"Increase length, reduce meanders, or change the bend spec."
+            )
+
+        straight_comp = straight(
+            length=length_per_one_straight,
+            cross_section=cross_section,
+        )
 
     # Route meandering quarter-wave resonator
     previous_port = None
-    first_straight_ref = None
+    first_ref = None
+    last_ref = None
+
     for i in range(meanders):
-        straight_ref = c.add_ref(straight_comp)
-        bend_ref = c.add_ref(bend)
+        # Determine if we should add a straight before this bend
+        if i == 0 and start_with_bend:
+            # First element is a bend
+            bend_ref = c.add_ref(bend)
+            if i % 2 == 0:
+                bend_ref.mirror()
+                bend_ref.rotate(90)
+            first_ref = bend_ref
+            previous_port = bend_ref.ports["o2"]
+        else:
+            if straight_comp is None:
+                raise ValueError("straight_comp is required but not initialized.")
+            straight_ref = c.add_ref(straight_comp)
+            if i == 0:
+                first_ref = straight_ref
+            else:
+                straight_ref.connect("o1", previous_port)
 
-        if i == 0:
-            first_straight_ref = straight_ref
-        else:  # i > 0
-            straight_ref.connect("o1", previous_port)
+            bend_ref = c.add_ref(bend)
+            if i % 2 == 0:
+                bend_ref.mirror()
+                bend_ref.rotate(90)
 
-        if i % 2 == 0:
-            bend_ref.mirror()
-            bend_ref.rotate(90)
+            bend_ref.connect("o1", straight_ref.ports["o2"])
+            previous_port = bend_ref.ports["o2"]
 
-        bend_ref.connect("o1", straight_ref.ports["o2"])
-        previous_port = bend_ref.ports["o2"]
+        last_ref = bend_ref
 
-    # Final straight section
-    final_straight = straight(
-        length=length_per_one_straight,
-        cross_section=cross_section,
-    )
-    final_straight_ref = c.add_ref(final_straight)
-    if previous_port:
-        final_straight_ref.connect("o1", previous_port)
+    # Final section
+    if not end_with_bend:
+        if straight_comp is None:
+            raise ValueError("straight_comp is required but not initialized.")
+        final_straight_ref = c.add_ref(straight_comp)
+        if previous_port:
+            final_straight_ref.connect("o1", previous_port)
+        last_ref = final_straight_ref
+        if first_ref is None:
+            first_ref = final_straight_ref
 
-    if first_straight_ref is None:
-        first_straight_ref = final_straight_ref
+    if first_ref is None or last_ref is None:
+        raise ValueError("Resonator could not be generated correctly.")
+
+    actual_length = meanders * bend.info["length"]
+    if num_straights > 0:
+        if straight_comp is None:
+            raise ValueError("straight_comp is required but not initialized.")
+        actual_length += num_straights * straight_comp.info["length"]
 
     # Etch at the open end
     if open_end or open_start:
@@ -135,18 +178,18 @@ def resonator(
             )
 
         if open_end:
-            _add_etch_at_port("o1", final_straight_ref.ports["o2"], "o2")
+            _add_etch_at_port("o1", last_ref.ports["o2"], "o2")
         if open_start:
-            _add_etch_at_port("o2", first_straight_ref.ports["o1"], "o1")
+            _add_etch_at_port("o2", first_ref.ports["o1"], "o1")
 
     if not open_end:
-        c.add_port("o2", port=final_straight_ref.ports["o2"])
+        c.add_port("o2", port=last_ref.ports["o2"])
 
     if not open_start:
-        c.add_port("o1", port=first_straight_ref.ports["o1"])
+        c.add_port("o1", port=first_ref.ports["o1"])
 
     # Add metadata
-    c.info["length"] = length
+    c.info["length"] = actual_length
     c.info["resonator_type"] = "quarter_wave"
     c.info["cross_section"] = cross_section.name
     # c.info["frequency_estimate"] = (
@@ -162,6 +205,25 @@ resonator_quarter_wave = partial(resonator, open_start=False, open_end=True)
 # A half-wave resonator is open at both ends
 resonator_half_wave = partial(resonator, open_start=True, open_end=True)
 
+# Quarter-wave resonator starting with a bend
+resonator_quarter_wave_bend_start = partial(
+    resonator_quarter_wave, start_with_bend=True
+)
+# Half-wave resonator starting with a bend
+resonator_half_wave_bend_start = partial(resonator_half_wave, start_with_bend=True)
+
+# Resonator ending with a bend
+resonator_quarter_wave_bend_end = partial(resonator_quarter_wave, end_with_bend=True)
+resonator_half_wave_bend_end = partial(resonator_half_wave, end_with_bend=True)
+
+# Both
+resonator_quarter_wave_bend_both = partial(
+    resonator_quarter_wave, start_with_bend=True, end_with_bend=True
+)
+resonator_half_wave_bend_both = partial(
+    resonator_half_wave, start_with_bend=True, end_with_bend=True
+)
+
 
 @gf.cell
 def resonator_coupled(
@@ -169,6 +231,9 @@ def resonator_coupled(
     meanders: int = 6,
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    start_with_bend: bool = False,
+    end_with_bend: bool = False,
     open_start: bool = True,
     open_end: bool = False,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
@@ -186,6 +251,8 @@ def resonator_coupled(
         meanders: Number of meander sections to fit the resonator in a compact area.
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator.
+        start_with_bend: If True, starts the resonator with a bend.
+        end_with_bend: If True, ends the resonator with a bend.
         open_start: If True, adds an etch section at the start of the resonator.
         open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
@@ -204,6 +271,8 @@ def resonator_coupled(
             meanders=meanders,
             bend_spec=bend_spec,
             cross_section=cross_section,
+            start_with_bend=start_with_bend,
+            end_with_bend=end_with_bend,
             open_start=open_start,
             open_end=open_end,
         )
@@ -246,6 +315,9 @@ def quarter_wave_resonator_coupled(
     meanders: int = 6,
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    start_with_bend: bool = False,
+    end_with_bend: bool = False,
     open_start: bool = True,
     open_end: bool = False,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
@@ -262,6 +334,8 @@ def quarter_wave_resonator_coupled(
         meanders: Number of meander sections to fit the resonator in a compact area.
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator.
+        start_with_bend: If True, starts the resonator with a bend.
+        end_with_bend: If True, ends the resonator with a bend.
         open_start: If True, adds an etch section at the start of the resonator.
         open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
@@ -275,6 +349,8 @@ def quarter_wave_resonator_coupled(
         meanders=meanders,
         bend_spec=bend_spec,
         cross_section=cross_section,
+        start_with_bend=start_with_bend,
+        end_with_bend=end_with_bend,
         open_start=open_start,
         open_end=open_end,
         cross_section_non_resonator=cross_section_non_resonator,
@@ -296,6 +372,8 @@ if __name__ == "__main__":
         resonator,
         resonator_quarter_wave,
         resonator_half_wave,
+        resonator_quarter_wave_bend_start,
+        resonator_quarter_wave_bend_both,
         resonator_coupled,
         partial(
             resonator_coupled,

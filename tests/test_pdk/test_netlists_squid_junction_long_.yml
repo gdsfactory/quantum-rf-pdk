@@ -1,0 +1,28 @@
+instances:
+  josephson_junction_long:
+    component: josephson_junction_long
+    info: {}
+    settings: {}
+  josephson_junction_long2:
+    component: josephson_junction_long
+    info: {}
+    settings: {}
+nets: []
+placements:
+  josephson_junction_long:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  josephson_junction_long2:
+    mirror: false
+    rotation: 180
+    x: 32.4
+    y: -2
+ports:
+  left_left_wide: josephson_junction_long,left_wide
+  left_overlap: josephson_junction_long,overlap
+  left_right_wide: josephson_junction_long,right_wide
+  right_left_wide: josephson_junction_long2,left_wide
+  right_overlap: josephson_junction_long2,overlap
+  right_right_wide: josephson_junction_long2,right_wide
