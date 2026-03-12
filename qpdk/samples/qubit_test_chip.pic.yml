@@ -23,22 +23,22 @@ instances:
     component: transmon_with_resonator_and_probeline
     settings:
       resonator_length: 5000
-      resonator_meanders: 5
   qubit2:
-    component: transmon_with_resonator_and_probeline
-    settings:
-      resonator_length: 4800
-      resonator_meanders: 3
-  qubit3:
     component: transmon_with_resonator_and_probeline
     settings:
       resonator_length: 4600
       resonator_meanders: 3
+      probeline_coupling_length: 400
+  qubit3:
+    component: transmon_with_resonator_and_probeline
+    settings:
+      resonator_length: 3600
+      resonator_meanders: 3
+      probeline_coupling_length: 400
   qubit4:
     component: transmon_with_resonator_and_probeline
     settings:
-      resonator_length: 4400
-      resonator_meanders: 5
+      resonator_length: 4800
   tee_bot:
     component: tee
     settings: {}
@@ -75,44 +75,17 @@ routes:
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
-  probeline_input:
-    links:
-      launcher_in,o1: input_cap1,o1
-    routing_strategy: route_bundle_cpw
-    settings:
-      allow_width_mismatch: true
-      auto_taper: false
   probeline_cap1_to_qubit1:
     links:
       input_cap1,o2: qubit1,coupling_o1
-    routing_strategy: route_bundle_cpw
+    routing_strategy: route_bundle_sbend_cpw
     settings:
-      allow_width_mismatch: true
-      auto_taper: false
-  probeline_qubit1_to_qubit2:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: false
+  probeline_input:
     links:
-      qubit1,coupling_o2: qubit2,coupling_o1
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
-  probeline_qubit2_to_qubit3:
-    links:
-      qubit2,coupling_o2: qubit3,coupling_o2
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
-      steps:
-      - dx: 200
-      - dy: -952
-  probeline_qubit3_to_qubit4:
-    links:
-      qubit3,coupling_o1: qubit4,coupling_o2
-    routing_strategy: route_bundle_cpw
-    settings:
-      auto_taper: false
-  probeline_qubit4_to_cap2:
-    links:
-      qubit4,coupling_o1: input_cap2,o2
+      launcher_in,o1: input_cap1,o1
     routing_strategy: route_bundle_cpw
     settings:
       allow_width_mismatch: true
@@ -123,6 +96,39 @@ routes:
     routing_strategy: route_bundle_cpw
     settings:
       auto_taper: false
+  probeline_qubit1_to_qubit2:
+    links:
+      qubit1,coupling_o2: qubit2,coupling_o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: false
+  probeline_qubit2_to_qubit3:
+    links:
+      qubit2,coupling_o2: qubit3,coupling_o2
+    routing_strategy: route_bundle_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: true
+      auto_taper: false
+  probeline_qubit3_to_qubit4:
+    links:
+      qubit3,coupling_o1: qubit4,coupling_o2
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: false
+  probeline_qubit4_to_cap2:
+    links:
+      qubit4,coupling_o1: input_cap2,o2
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: false
 nets: []
 ports:
   o1: launcher_in,waveport
@@ -153,21 +159,30 @@ placements:
     y: 3000
     rotation: -90
   qubit1:
-    x: 2200
-    y: 1750
-    mirror: false
-  qubit2:
-    x: 3800
-    y: 1750
+    x: 0
+    y: 0
+    dx: 2385
+    dy: 1625
     rotation: 0
-    mirror: false
+  qubit2:
+    x: 0.0
+    y: 0.0
+    dx: 3615.0
+    dy: 1625.0
+    rotation: 0
   qubit3:
-    x: 3800
-    y: -1750
+    x: 0.0
+    y: 0.0
+    dx: 3615.0
+    dy: -1627.421
+    rotation: 0
     mirror: true
   qubit4:
-    x: 2200
-    y: -1750
+    x: 0.0
+    y: 0.0
+    dx: 2385.0
+    dy: -1628.351
+    rotation: 0
     mirror: true
   tee_bot:
     x: 3000

@@ -52,7 +52,7 @@ def filled_qubit_test_chip(
 ):
     """Returns a qubit test chip filled with magnetic vortex trapping rectangles.
 
-    Rouhly corresponds to the sample in :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
+    Roughly corresponds to the sample in :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
     """
     c = gf.Component()
     test_chip = from_yaml(

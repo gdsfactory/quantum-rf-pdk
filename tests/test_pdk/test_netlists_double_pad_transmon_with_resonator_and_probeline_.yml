@@ -19,53 +19,13 @@ instances:
       npoints: null
       radius: 100
       width: 10
-  bend_circular2:
-    component: bend_circular
-    info:
-      dy: 100
-      length: 157.08
-      radius: 100
-      route_info_coplanar_waveguide_length: 157.08
-      route_info_length: 157.08
-      route_info_min_bend_radius: 100
-      route_info_n_bend_90: 1
-      route_info_type: coplanar_waveguide
-      route_info_weight: 157.08
-      width: 10
-    settings:
-      allow_min_radius_violation: true
-      angle: 90
-      cross_section: coplanar_waveguide
-      npoints: null
-      radius: 100
-      width: 10
-  bend_circular3:
-    component: bend_circular
-    info:
-      dy: 100
-      length: 157.08
-      radius: 100
-      route_info_coplanar_waveguide_length: 157.08
-      route_info_length: 157.08
-      route_info_min_bend_radius: 100
-      route_info_n_bend_90: 1
-      route_info_type: coplanar_waveguide
-      route_info_weight: 157.08
-      width: 10
-    settings:
-      allow_min_radius_violation: true
-      angle: 90
-      cross_section: coplanar_waveguide
-      npoints: null
-      radius: 100
-      width: 10
   coupler_straight:
     component: coupler_straight
     info: {}
     settings:
       cross_section: cpw
       gap: 16
-      length: 790
+      length: 800
   double_pad_transmon_with_bbox:
     component: double_pad_transmon_with_bbox
     info: {}
@@ -91,13 +51,13 @@ instances:
     component: resonator
     info:
       cross_section: coplanar_waveguide
-      length: 2943.261
+      length: 3257.42
       resonator_type: quarter_wave
     settings:
       bend_spec: bend_circular
       cross_section: cpw
       end_with_bend: false
-      length: 2943.261
+      length: 3257.42
       meanders: 5
       open_end: true
       open_start: false
@@ -105,61 +65,31 @@ instances:
   straight:
     component: straight
     info:
-      length: 210
-      route_info_coplanar_waveguide_length: 210
-      route_info_length: 210
+      length: 785.5
+      route_info_coplanar_waveguide_length: 785.5
+      route_info_length: 785.5
       route_info_type: coplanar_waveguide
-      route_info_weight: 210
+      route_info_weight: 785.5
       width: 10
     settings:
       cross_section: coplanar_waveguide
-      length: 210
-      npoints: 2
-      width: 10
-  straight2:
-    component: straight
-    info:
-      length: 585.5
-      route_info_coplanar_waveguide_length: 585.5
-      route_info_length: 585.5
-      route_info_type: coplanar_waveguide
-      route_info_weight: 585.5
-      width: 10
-    settings:
-      cross_section: coplanar_waveguide
-      length: 585.5
+      length: 785.5
       npoints: 2
       width: 10
 nets:
-- p1: bend_circular2,o2
-  p2: bend_circular3,o1
-- p1: bend_circular3,o2
-  p2: straight,o2
 - p1: bend_circular,o1
-  p2: straight2,o1
+  p2: straight,o1
 - p1: bend_circular,o2
-  p2: bend_circular2,o1
+  p2: coupler_straight,o3
 - p1: coupler_straight,o2
   p2: resonator,o1
-- p1: coupler_straight,o3
-  p2: straight,o1
 - p1: plate_capacitor_single,o1
-  p2: straight2,o2
+  p2: straight,o2
 placements:
   bend_circular:
-    mirror: false
+    mirror: true
     rotation: 270
     x: 0
-    y: -900
-  bend_circular2:
-    mirror: true
-    rotation: 0
-    x: 100
-    y: -1000
-  bend_circular3:
-    mirror: true
-    rotation: 270
-    x: 200
     y: -1100
   coupler_straight:
     mirror: false
@@ -183,14 +113,9 @@ placements:
     y: -1200
   straight:
     mirror: false
-    rotation: 0
-    x: -110
-    y: -1200
-  straight2:
-    mirror: false
     rotation: 90
     x: 0
-    y: -900
+    y: -1100
 ports:
   coupling_o1: coupler_straight,o1
   coupling_o2: coupler_straight,o4
