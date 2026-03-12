@@ -139,6 +139,10 @@ def resonator(
     if first_ref is None or last_ref is None:
         raise ValueError("Resonator could not be generated correctly.")
 
+    actual_length = meanders * bend.info["length"]
+    if num_straights > 0:
+        actual_length += num_straights * straight_comp.info["length"]
+
     # Etch at the open end
     if open_end or open_start:
         cross_section_etch_section = next(
@@ -183,7 +187,7 @@ def resonator(
         c.add_port("o1", port=first_ref.ports["o1"])
 
     # Add metadata
-    c.info["length"] = length
+    c.info["length"] = actual_length
     c.info["resonator_type"] = "quarter_wave"
     c.info["cross_section"] = cross_section.name
     # c.info["frequency_estimate"] = (
@@ -225,6 +229,9 @@ def resonator_coupled(
     meanders: int = 6,
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    start_with_bend: bool = False,
+    end_with_bend: bool = False,
     open_start: bool = True,
     open_end: bool = False,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
@@ -242,6 +249,8 @@ def resonator_coupled(
         meanders: Number of meander sections to fit the resonator in a compact area.
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator.
+        start_with_bend: If True, starts the resonator with a bend.
+        end_with_bend: If True, ends the resonator with a bend.
         open_start: If True, adds an etch section at the start of the resonator.
         open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
@@ -260,6 +269,8 @@ def resonator_coupled(
             meanders=meanders,
             bend_spec=bend_spec,
             cross_section=cross_section,
+            start_with_bend=start_with_bend,
+            end_with_bend=end_with_bend,
             open_start=open_start,
             open_end=open_end,
         )
@@ -302,6 +313,9 @@ def quarter_wave_resonator_coupled(
     meanders: int = 6,
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    start_with_bend: bool = False,
+    end_with_bend: bool = False,
     open_start: bool = True,
     open_end: bool = False,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
@@ -318,6 +332,8 @@ def quarter_wave_resonator_coupled(
         meanders: Number of meander sections to fit the resonator in a compact area.
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator.
+        start_with_bend: If True, starts the resonator with a bend.
+        end_with_bend: If True, ends the resonator with a bend.
         open_start: If True, adds an etch section at the start of the resonator.
         open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
@@ -331,6 +347,8 @@ def quarter_wave_resonator_coupled(
         meanders=meanders,
         bend_spec=bend_spec,
         cross_section=cross_section,
+        start_with_bend=start_with_bend,
+        end_with_bend=end_with_bend,
         open_start=open_start,
         open_end=open_end,
         cross_section_non_resonator=cross_section_non_resonator,

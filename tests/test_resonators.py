@@ -30,6 +30,8 @@ class TestResonators:
         meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
+        start_with_bend=st.booleans(),
+        end_with_bend=st.booleans(),
     )
     @settings(
         max_examples=MAX_EXAMPLES,
@@ -37,26 +39,51 @@ class TestResonators:
         suppress_health_check=[HealthCheck.filter_too_much],
     )
     def test_resonator_meanders(
-        self, length: float, meanders: int, open_start: bool, open_end: bool
+        self,
+        length: float,
+        meanders: int,
+        open_start: bool,
+        open_end: bool,
+        start_with_bend: bool,
+        end_with_bend: bool,
     ) -> None:
         bend_factory = partial(bend_circular, angle=180)
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
         bend_length = bend_factory().info["length"]
-        assume(length > meanders * bend_length)
+
+        num_straights = meanders + 1
+        if start_with_bend:
+            num_straights -= 1
+        if end_with_bend:
+            num_straights -= 1
+
+        if num_straights > 0:
+            assume(length > meanders * bend_length)
+        else:
+            # If no straights, the length must be exactly meanders * bend_length
+            # for consistency, but the component creation should still work.
+            # However, the current implementation of resonator() just uses 'length'
+            # to calculate straights length IF num_straights > 0.
+            # If num_straights == 0, 'length' is just stored in metadata.
+            pass
 
         c = resonator(
             length=length,
             meanders=meanders,
             open_start=open_start,
             open_end=open_end,
+            start_with_bend=start_with_bend,
+            end_with_bend=end_with_bend,
             bend_spec=bend_factory,
         )
 
+        expected_length = length if num_straights > 0 else meanders * bend_length
+
         assert c is not None, "Resonator component should be created successfully"
-        assert c.info["length"] == length, (
-            f"Expected length {length}, got {c.info['length']}"
+        assert c.info["length"] == pytest.approx(expected_length), (
+            f"Expected length {expected_length}, got {c.info['length']}"
         )
         assert len(c.ports) == 2, f"Expected 2 ports, got {len(c.ports)}"
 
@@ -65,6 +92,8 @@ class TestResonators:
         meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
+        start_with_bend=st.booleans(),
+        end_with_bend=st.booleans(),
         coupling_straight_length=st.floats(min_value=1, max_value=1000),
         coupling_gap=st.floats(min_value=1, max_value=100),
     )
@@ -79,6 +108,8 @@ class TestResonators:
         meanders: int,
         open_start: bool,
         open_end: bool,
+        start_with_bend: bool,
+        end_with_bend: bool,
         coupling_straight_length: float,
         coupling_gap: float,
     ) -> None:
@@ -87,23 +118,35 @@ class TestResonators:
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
         bend_length = bend_factory().info["length"]
-        assume(length > meanders * bend_length)
+
+        num_straights = meanders + 1
+        if start_with_bend:
+            num_straights -= 1
+        if end_with_bend:
+            num_straights -= 1
+
+        if num_straights > 0:
+            assume(length > meanders * bend_length)
 
         c = resonator_coupled(
             length=length,
             meanders=meanders,
             open_start=open_start,
             open_end=open_end,
+            start_with_bend=start_with_bend,
+            end_with_bend=end_with_bend,
             bend_spec=bend_factory,
             coupling_straight_length=coupling_straight_length,
             coupling_gap=coupling_gap,
         )
 
+        expected_length = length if num_straights > 0 else meanders * bend_length
+
         assert c is not None, (
             "Coupled resonator component should be created successfully"
         )
-        assert c.info["length"] == length, (
-            f"Expected length {length}, got {c.info['length']}"
+        assert c.info["length"] == pytest.approx(expected_length), (
+            f"Expected length {expected_length}, got {c.info['length']}"
         )
         assert c.info["coupling_length"] == coupling_straight_length, (
             f"Expected coupling length {coupling_straight_length}, got {c.info['coupling_length']}"
