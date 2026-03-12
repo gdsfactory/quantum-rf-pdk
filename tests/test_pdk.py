@@ -35,11 +35,14 @@ skip_test_netlist = {
     "die_with_pads",
     "launcher",
     "indium_bump",
-    "qubit_with_resonator",
-    "transmon_with_resonator",
-    "flipmon_with_resonator",
     "flipmon",
     "flipmon_with_bbox",
+    "flipmon_with_resonator_and_probeline",
+    "flipmon_with_resonator",
+    "transmon_with_resonator",
+    "transmon_with_resonator_and_probeline",
+    "double_pad_transmon_with_resonator",
+    "double_pad_transmon_with_resonator_and_probeline",
     "all_cells",  # Skip netlist test for all_cells (collection of all components)
 }
 # Skip default gdsfactory cells

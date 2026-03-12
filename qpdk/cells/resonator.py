@@ -141,6 +141,8 @@ def resonator(
 
     actual_length = meanders * bend.info["length"]
     if num_straights > 0:
+        if straight_comp is None:
+            raise ValueError("straight_comp is required but not initialized.")
         actual_length += num_straights * straight_comp.info["length"]
 
     # Etch at the open end
