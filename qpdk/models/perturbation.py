@@ -53,10 +53,12 @@ def transmon_resonator_hamiltonian() -> tuple[
 
     .. math::
 
+        \begin{aligned}
         H_0 &= -\omega_t\, a_t^\dagger a_t
               + \frac{\alpha}{2}\, a_t^{\dagger 2} a_t^2
               + \omega_r\, a_r^\dagger a_r \\
         H_p &= -g\,(a_t^\dagger - a_t)(a_r^\dagger - a_r)
+        \end{aligned}
 
     Returns:
         A tuple ``(H_0, H_p, symbols)`` where ``symbols`` is
@@ -196,8 +198,10 @@ def ej_ec_to_frequency_and_anharmonicity(
 
     .. math::
 
-        \omega_q \approx \sqrt{8 E_J E_C} - E_C
-        \alpha \approx E_C
+        \begin{aligned}
+        \omega_q &\approx \sqrt{8 E_J E_C} - E_C \\
+        \alpha &\approx E_C
+        \end{aligned}
 
     Note:
         The physical anharmonicity of a transmon is *negative*

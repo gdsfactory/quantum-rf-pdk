@@ -41,6 +41,7 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
 
     .. math::
 
+        \begin{aligned}
         x_1 &= s_c / 2 \\
         x_2 &= x_1 + W \\
         x_3 &= x_2 + G \\
@@ -49,6 +50,7 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
         C_{\text{even}} &= 2 \epsilon_0 \epsilon_{\text{eff}} \frac{K(k_e)}{K(k_e')} \\
         C_{\text{odd}} &= 2 \epsilon_0 \epsilon_{\text{eff}} \frac{K(k_o')}{K(k_o)} \\
         C_m &= \frac{C_{\text{odd}} - C_{\text{even}}}{2}
+        \end{aligned}
 
     where :math:`s_c` is the separation (gap) between inner edges, :math:`W` is the
     center conductor width, and :math:`G` is the gap to the ground plane.
