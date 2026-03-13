@@ -265,7 +265,8 @@ def resonator_linewidth_from_q(
 ) -> float | jax.Array:
     r"""Compute resonator linewidth from external quality factor.
 
-    :cite:`gopplCoplanarWaveguideResonators2008a,m.pozarMicrowaveEngineering2012`.
+    Converts external quality factor to linewidth (half-linewidth at half-maximum)
+    :cite:`gopplCoplanarWaveguideResonators2008a,m.pozarMicrowaveEngineering2012`:
 
     .. math::
 
