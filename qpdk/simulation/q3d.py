@@ -259,7 +259,7 @@ class Q2D(AEDTBase):
             Dictionary with keys ``"signal"``, ``"gnd_left"``, ``"gnd_right"``,
             ``"substrate"`` mapping to the created Q2D object names.
         """
-        from qpdk.models.media import get_cpw_dimensions
+        from qpdk.models.cpw import get_cpw_dimensions
 
         if layer_stack is None:
             layer_stack = LAYER_STACK

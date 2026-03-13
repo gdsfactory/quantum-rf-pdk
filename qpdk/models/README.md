@@ -6,7 +6,6 @@ This directory houses the models for frequency-dependent SPICE-like circuit simu
 ## Libraries
 
 - [Sax](https://flaport.github.io/sax/) is used as the circuit simulator backend
-- [scikit-rf](https://scikit-rf.org/) is used for coplanar waveguide properties
 
 ## Installation
 

@@ -239,8 +239,9 @@ class BaseCompareToQucs(ABC):
             """Reset a queue with colors, effectively dictate when colors reset in plots."""
             while not q.empty():
                 q.get()
-            for color in plt.rcParams["axes.prop_cycle"].by_key()["color"]:
-                q.put(color)
+            for _ in range(10):  # Arbitrary number to ensure we have enough colors
+                for color in plt.rcParams["axes.prop_cycle"].by_key()["color"]:
+                    q.put(color)
 
         # Default color cycler
         color_queue: SimpleQueue[str] = SimpleQueue()

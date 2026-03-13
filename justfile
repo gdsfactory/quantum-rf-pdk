@@ -172,3 +172,7 @@ docs-pdf: docs-latex
             exit 1
         fi
     }
+
+# Run all tests, pre-commit hooks, build wheel and documentation in parallel
+[parallel]
+all: test run-pre build docs

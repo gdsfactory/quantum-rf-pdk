@@ -18,7 +18,6 @@
 
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-import skrf
 
 from qpdk import PDK
 
@@ -35,9 +34,9 @@ from qpdk.models.constants import TEST_FREQUENCY
 # %% [markdown]
 # ## Media
 # %%
-from qpdk.models.media import cross_section_to_media
+from qpdk.models.cpw import cpw_parameters, get_cpw_dimensions
 
-cross_section_to_media("cpw")
+cpw_parameters(*get_cpw_dimensions("cpw"))
 
 # %% [markdown]
 # ## Generic
@@ -462,11 +461,13 @@ quarter_wave_resonator_coupled(f=TEST_FREQUENCY)
 from qpdk.models.resonator import resonator_frequency
 
 cs = coplanar_waveguide(width=10, gap=6)
-cpw = cross_section_to_media(cs)(frequency=skrf.Frequency(2, 9, 101, unit="GHz"))
-print(f"{cpw=!r}")
-print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
+ep_eff, z0 = cpw_parameters(*get_cpw_dimensions(cs))
+print(f"{ep_eff=!r}")
+print(f"{z0=!r}")  # Characteristic impedance
 
-res_freq = resonator_frequency(length=4000, cross_section=cs, is_quarter_wave=True)
+res_freq = resonator_frequency(
+    length=4000, epsilon_eff=float(jnp.real(ep_eff)), is_quarter_wave=True
+)
 print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")
 
 # Plot resonator_coupled example

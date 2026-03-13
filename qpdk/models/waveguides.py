@@ -11,17 +11,15 @@ from sax.models.rf import electrical_open, electrical_short
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import (
+    cpw_parameters,
+    get_cpw_dimensions,
+    get_cpw_substrate_params,
     microstrip_epsilon_eff,
     microstrip_thickness_correction,
     propagation_constant,
     transmission_line_s_params,
 )
 from qpdk.models.generic import admittance, short_2_port
-from qpdk.models.media import (
-    cpw_parameters,
-    get_cpw_dimensions,
-    get_cpw_substrate_params,
-)
 from qpdk.tech import coplanar_waveguide
 
 

@@ -47,7 +47,7 @@ class TestResonators:
         start_with_bend: bool,
         end_with_bend: bool,
     ) -> None:
-        bend_factory = partial(bend_circular, angle=180)
+        bend_factory = partial(bend_circular, angle=180, angular_step=4)
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
@@ -113,7 +113,7 @@ class TestResonators:
         coupling_straight_length: float,
         coupling_gap: float,
     ) -> None:
-        bend_factory = partial(bend_circular, angle=180)
+        bend_factory = partial(bend_circular, angle=180, angular_step=4)
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections

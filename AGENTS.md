@@ -45,7 +45,7 @@ these guidelines when contributing:
 - **Linting**: ruff for Python code formatting and linting, pyrefly for type checking
 - **Layout tool**: KLayout for viewing and editing GDS layouts
 - **Documentation**: Jupyter Book for building documentation, jupytext for notebook management
-- **Simulation tools** (optional): sax, scikit-rf, scqubits, jaxellip (install with `uv sync --extra models`)
+- **Simulation tools** (optional): sax, scqubits, jaxellip (install with `uv sync --extra models`)
 
 ## Git and Version Control
 
@@ -139,9 +139,8 @@ When adding new quantum device components:
 The `qpdk/models/` directory contains S-parameter and circuit models for quantum RF components:
 
 - **Models available**: Resonators, couplers, waveguides, generic components
-- **Simulation frameworks**: Uses `sax` for S-parameter simulations, `scikit-rf` for RF/microwave analysis, `scqubits`
-  for quantum circuit analysis
-- **Media definitions**: `qpdk/models/media.py` defines coplanar waveguide (CPW) media for different substrates
+- **Simulation frameworks**: Uses `sax` for S-parameter simulations, `scqubits` for quantum circuit analysis
+- **Media definitions**: `qpdk/models/cpw.py` defines coplanar waveguide (CPW) parameters
 - **Installing simulation tools**: Run `uv sync --extra models` to install optional simulation dependencies
 - **Model structure**: Each model typically provides functions that return S-parameters or network parameters as
   functions of frequency

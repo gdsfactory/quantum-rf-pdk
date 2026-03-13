@@ -48,7 +48,7 @@ from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.waveguides import straight_open
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-from qpdk.models.media import cpw_ep_r_from_cross_section
+from qpdk.models.cpw import cpw_ep_r_from_cross_section
 from qpdk.simulation import HFSS, Q3D, prepare_component_for_aedt
 from qpdk.tech import coplanar_waveguide
 

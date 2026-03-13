@@ -8,13 +8,13 @@ import sax
 from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
+from qpdk.models.cpw import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
 from qpdk.models.generic import capacitor
 from qpdk.models.math import (
     capacitance_per_length_conformal,
     ellipk_ratio,
     epsilon_eff,
 )
-from qpdk.models.media import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
 
 
 @partial(jax.jit, inline=True)

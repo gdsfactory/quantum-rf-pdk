@@ -2,6 +2,7 @@
 
 import jax
 import jax.numpy as jnp
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from numpy.testing import assert_allclose
@@ -9,14 +10,16 @@ from numpy.testing import assert_allclose
 from qpdk.models.constants import c_0
 from qpdk.models.cpw import (
     cpw_epsilon_eff,
+    cpw_parameters,
     cpw_thickness_correction,
     cpw_z0,
+    get_cpw_dimensions,
     propagation_constant,
     transmission_line_s_params,
 )
 from qpdk.models.math import ellipk_ratio
-from qpdk.models.media import cpw_parameters
 from qpdk.models.waveguides import straight
+from qpdk.tech import coplanar_waveguide
 
 
 class TestEllipkRatio:
@@ -123,9 +126,9 @@ class TestCPWThicknessCorrection:
         _ep_t, z0_t = cpw_thickness_correction(10e-6, 6e-6, 0.2e-6, ep0)
         assert float(z0_t) < float(z0_0)
 
-    def test_matches_scikit_rf(self) -> None:
-        """Result should match scikit-rf CPW within ~0.1%."""
-        # Known scikit-rf values for w=10um, s=6um, h=500um, t=0.2um, ep_r=11.45
+    def test_matches_known_values(self) -> None:
+        """Result should match known CPW values within ~0.2%."""
+        # Known values for w=10um, s=6um, h=500um, t=0.2um, ep_r=11.45
         ep_eff, z0 = cpw_parameters(10.0, 6.0)
         assert_allclose(z0, 49.28, rtol=0.002)  # ~0.2% tolerance
         assert_allclose(ep_eff, 6.065, rtol=0.001)
@@ -243,3 +246,33 @@ class TestStraightJIT:
                 atol=1e-10,
                 err_msg=f"Mismatch for {key}",
             )
+
+
+class TestGetCpwDimensions:
+    """Tests for get_cpw_dimensions edge cases."""
+
+    @staticmethod
+    def test_with_callable_cross_section() -> None:
+        """Test get_cpw_dimensions with callable cross-section."""
+        xs_fn = coplanar_waveguide
+        width, gap = get_cpw_dimensions(xs_fn)
+        assert width > 0
+        assert gap > 0
+
+    @staticmethod
+    def test_with_cross_section_object() -> None:
+        """Test get_cpw_dimensions with CrossSection object."""
+        xs = coplanar_waveguide()
+        width, gap = get_cpw_dimensions(xs)
+        assert width > 0
+        assert gap > 0
+
+    @staticmethod
+    def test_missing_etch_offset_raises() -> None:
+        """Test that missing 'etch_offset' section raises ValueError."""
+        import gdsfactory as gf
+
+        # Create a cross-section without any 'etch_offset' sections
+        xs = gf.cross_section.cross_section(width=10.0)
+        with pytest.raises(ValueError, match="etch_offset"):
+            get_cpw_dimensions(xs)

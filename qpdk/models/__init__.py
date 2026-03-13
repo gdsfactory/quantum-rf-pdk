@@ -20,8 +20,10 @@ from qpdk.models.couplers import (
 )
 from qpdk.models.cpw import (
     cpw_epsilon_eff,
+    cpw_parameters,
     cpw_thickness_correction,
     cpw_z0,
+    cpw_z0_from_cross_section,
     microstrip_epsilon_eff,
     microstrip_thickness_correction,
     microstrip_z0,
@@ -42,13 +44,6 @@ from qpdk.models.generic import (
     open,
     short,
     short_2_port,
-)
-from qpdk.models.media import (
-    MediaCallable,
-    cpw_media_skrf,
-    cpw_parameters,
-    cpw_z0_from_cross_section,
-    cross_section_to_media,
 )
 from qpdk.models.perturbation import (
     dispersive_shift,
@@ -106,7 +101,6 @@ from qpdk.models.waveguides import (
 
 __all__ = [
     "DEFAULT_FREQUENCY",
-    "MediaCallable",
     "admittance",
     "airbridge",
     "bend_circular",
@@ -118,12 +112,10 @@ __all__ = [
     "coupling_strength_to_capacitance",
     "cpw_cpw_coupling_capacitance",
     "cpw_epsilon_eff",
-    "cpw_media_skrf",
     "cpw_parameters",
     "cpw_thickness_correction",
     "cpw_z0",
     "cpw_z0_from_cross_section",
-    "cross_section_to_media",
     "dispersive_shift",
     "dispersive_shift_to_coupling",
     "double_island_transmon",

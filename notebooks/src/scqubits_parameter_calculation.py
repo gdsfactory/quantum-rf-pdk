@@ -66,11 +66,16 @@ if not hasattr(np, "float_"):
 import polars as pl
 import scipy
 import scqubits as scq
-import skrf
 from IPython.display import Math, display
 from matplotlib import pyplot as plt
 
-from qpdk.models.media import cpw_media_skrf
+from qpdk import PDK
+from qpdk.models.constants import c_0
+from qpdk.models.cpw import cpw_parameters
+
+PDK.activate()
+
+# ruff: disable[E402]
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -414,16 +419,14 @@ C_sigma = float(ec_to_capacitance(EC_design))
 L_J = float(ej_to_inductance(EJ_design))
 
 # Determine resonator length for the target frequency
-resonator_media = cpw_media_skrf(width=10, gap=6)(
-    frequency=skrf.Frequency.from_f([omega_r_design], unit="GHz")
-)
+ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
 def _resonator_objective(length: float) -> float:
     """Minimise the squared frequency error."""
     freq = resonator_frequency(
         length=length,
-        epsilon_eff=float(np.real(np.mean(resonator_media.ep_r))),
+        epsilon_eff=float(np.real(ep_eff)),
         is_quarter_wave=True,
     )
     return (freq - omega_r_design * 1e9) ** 2
@@ -435,12 +438,7 @@ resonator_length = result.x[0]
 # Total resonator capacitance from CPW impedance and phase velocity
 # {cite:p}`gopplCoplanarWaveguideResonators2008a`:
 # C_r = l / Re(Z_0 * v_p)
-C_r = (
-    1
-    / np.real(resonator_media.z0 * resonator_media.v_p).mean()
-    * resonator_length
-    * 1e-6
-)  # F
+C_r = 1 / np.real(z0 * (c_0 / np.sqrt(ep_eff))) * resonator_length * 1e-6  # F
 
 # Coupling capacitance
 C_c = float(
@@ -471,7 +469,7 @@ C_c = {C_c * 1e15:.2f}\,\mathrm{{fF}}
 # %%
 f_resonator_achieved = resonator_frequency(
     length=resonator_length,
-    epsilon_eff=float(np.real(np.mean(resonator_media.ep_r))),
+    epsilon_eff=float(np.real(ep_eff)),
     is_quarter_wave=True,
 )
 
@@ -574,3 +572,4 @@ with pl.Config(
 # ```{bibliography}
 # :filter: docname in docnames
 # ```
+# ruff: enable[E402]
