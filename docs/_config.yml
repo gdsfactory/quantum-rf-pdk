@@ -57,6 +57,7 @@ sphinx:
     - "sphinx.ext.viewcode"
     - "sphinx.ext.imgconverter"
     - "sphinxcontrib.katex"
+    - "sphinxcontrib.mermaid"
     - "sphinxcontrib.svgbob"
     - "matplotlib.sphinxext.plot_directive"
     - "sphinx_copybutton"

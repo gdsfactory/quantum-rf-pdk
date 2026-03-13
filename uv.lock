@@ -3411,6 +3411,11 @@ models = [
     { name = "sax" },
     { name = "sympy" },
 ]
+netket = [
+    { name = "flax" },
+    { name = "netket" },
+    { name = "optax" },
+]
 pymablock = [
     { name = "pymablock" },
 ]
@@ -3421,11 +3426,6 @@ qutip = [
 scqubits = [
     { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "scqubits", version = "4.3.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
-]
-netket = [
-    { name = "flax" },
-    { name = "netket" },
-    { name = "optax" },
 ]
 
 [package.dev-dependencies]
@@ -3447,6 +3447,7 @@ docs = [
     { name = "matplotlib" },
     { name = "pydata-sphinx-theme" },
     { name = "sphinxcontrib-katex" },
+    { name = "sphinxcontrib-mermaid" },
     { name = "sphinxcontrib-svgbob" },
 ]
 github = [
@@ -3514,6 +3515,7 @@ docs = [
     { name = "matplotlib" },
     { name = "pydata-sphinx-theme" },
     { name = "sphinxcontrib-katex" },
+    { name = "sphinxcontrib-mermaid", specifier = ">=2.0.1" },
     { name = "sphinxcontrib-svgbob" },
 ]
 github = [
@@ -4369,6 +4371,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/9a/cd/71d3c7fc1a4e40a03048ce68787e4e4b6f612dc6b95acc89f5010d4cda7a/sphinxcontrib_katex-0.9.11.tar.gz", hash = "sha256:2d32b210d20bbee451a51d19645f6fef5f5568b9a54e2813affb96efa661238a", size = 100476, upload-time = "2025-06-27T12:04:12.703Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/33/14/c62d4553dbf27156b6549ceed1a9768f801c979237a2cf0c3d074e16272f/sphinxcontrib_katex-0.9.11-py3-none-any.whl", hash = "sha256:b0a318d86b8f43314ccdd481ce0db90283ac51f51afd9479969f36a0c291f44e", size = 97956, upload-time = "2025-06-27T12:04:11.478Z" },
+]
+
+[[package]]
+name = "sphinxcontrib-mermaid"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "pyyaml" },
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2b/ae/999891de292919b66ea34f2c22fc22c9be90ab3536fbc0fca95716277351/sphinxcontrib_mermaid-2.0.1.tar.gz", hash = "sha256:a21a385a059a6cafd192aa3a586b14bf5c42721e229db67b459dc825d7f0a497", size = 19839, upload-time = "2026-03-05T14:10:41.901Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/03/46/25d64bcd7821c8d6f1080e1c43d5fcdfc442a18f759a230b5ccdc891093e/sphinxcontrib_mermaid-2.0.1-py3-none-any.whl", hash = "sha256:9dca7fbe827bad5e7e2b97c4047682cfd26e3e07398cfdc96c7a8842ae7f06e7", size = 14064, upload-time = "2026-03-05T14:10:40.533Z" },
 ]
 
 [[package]]

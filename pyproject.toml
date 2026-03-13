@@ -41,6 +41,7 @@ docs = [
   "matplotlib",
   "pydata-sphinx-theme",
   "sphinxcontrib-katex",
+  "sphinxcontrib-mermaid>=2.0.1",
   "sphinxcontrib-svgbob",
 ]
 github = ["genbadge[coverage]", "setuptools"]
