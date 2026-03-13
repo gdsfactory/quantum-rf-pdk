@@ -69,8 +69,13 @@ import scqubits as scq
 from IPython.display import Math, display
 from matplotlib import pyplot as plt
 
+from qpdk import PDK
 from qpdk.models.constants import c_0
 from qpdk.models.cpw import cpw_parameters
+
+PDK.activate()
+
+# ruff: disable[E402]
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -567,3 +572,4 @@ with pl.Config(
 # ```{bibliography}
 # :filter: docname in docnames
 # ```
+# ruff: enable[E402]

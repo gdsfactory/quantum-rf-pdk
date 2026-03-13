@@ -21,7 +21,12 @@ from functools import partial
 import jax.numpy as jnp
 import sax
 
+from qpdk import PDK
 from qpdk.models.cpw import cpw_parameters
+
+PDK.activate()
+
+# ruff: disable[E402]
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator_frequency,
@@ -169,3 +174,4 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 # ```
+# ruff: enable[E402]

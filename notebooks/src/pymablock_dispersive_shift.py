@@ -53,8 +53,13 @@ from pymablock import block_diagonalize
 from pymablock.number_ordered_form import NumberOperator
 from sympy.physics.quantum.boson import BosonOp
 
+from qpdk import PDK
 from qpdk.models.constants import c_0
 from qpdk.models.cpw import cpw_parameters
+
+PDK.activate()
+
+# ruff: disable[E402]
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -438,3 +443,4 @@ with pl.Config(
 # ```{bibliography}
 # :filter: docname in docnames
 # ```
+# ruff: enable[E402]

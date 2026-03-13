@@ -172,3 +172,6 @@ docs-pdf: docs-latex
             exit 1
         fi
     }
+
+[parallel]
+all: test run-pre build docs
