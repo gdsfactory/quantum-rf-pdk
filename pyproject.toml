@@ -23,6 +23,8 @@ models = [
   "jaxellip",
   "optuna",
   "pymablock>=2.2.1",
+  "qutip-jax>=0.1.1",
+  "qutip-qip>=0.4.1",
   "ray[tune]; sys_platform != 'win32'",
   "sax>=0.16.11",
   "scqubits",
