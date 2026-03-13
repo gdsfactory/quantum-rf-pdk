@@ -128,9 +128,13 @@ for ec in ec_values:
 # the population dynamics.
 
 # %%
-# Using parameters extracted from layout: wq = 5.7 GHz, alpha = -0.3 GHz
-wq = [5.7, 5.6]
-alpha = [-0.3, -0.3]
+# Using parameters extracted from layout (EC = 0.3 GHz, EJ = 15 GHz)
+# QuTiP-QIP SCQubits expects negative anharmonicity for transmons,
+# while the qpdk perturbation model returns positive values by convention.
+wq0, a0 = ej_ec_to_frequency_and_anharmonicity(EJ_val, 0.3)
+wq = [float(wq0), float(wq0) - 0.1]
+alpha = [-float(a0), -float(a0)]
+
 g_coupling = 0.1
 wr = 6.5
 
@@ -158,8 +162,7 @@ proj_ops = {
     r"$|2,0\rangle$": qutip.tensor(qutip.fock_dm(3, 2), qutip.fock_dm(3, 0)),
 }
 
-n_states = len(result_x.states)
-tlist_x = jnp.linspace(0, processor_x.get_full_tlist()[-1], n_states)
+tlist_x = jnp.asarray(result_x.times)
 
 fig, ax = plt.subplots(figsize=(8, 4))
 for label, proj in proj_ops.items():
@@ -214,7 +217,6 @@ bell_ideal = (
     + qutip.tensor(qutip.basis(3, 1), qutip.basis(3, 1))
 ).unit()
 
-# Convert to JAX backend for fidelity computation
 final_state = result_bell.states[-1]
 fidelity_bell = qutip.fidelity(final_state, bell_ideal)
 
