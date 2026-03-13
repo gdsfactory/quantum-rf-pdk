@@ -3132,7 +3132,7 @@ requires-dist = [
     { name = "pyglet", marker = "extra == 'graphics'", specifier = "<2" },
     { name = "pymablock", marker = "extra == 'models'", specifier = ">=2.2.1" },
     { name = "ray", extras = ["tune"], marker = "sys_platform != 'win32' and extra == 'models'" },
-    { name = "sax", marker = "extra == 'models'", specifier = ">=0.16.11" },
+    { name = "sax", extras = ["rf"], marker = "extra == 'models'", specifier = ">=0.16.11" },
     { name = "scikit-rf", marker = "extra == 'models'" },
     { name = "scqubits", marker = "extra == 'models'" },
     { name = "sympy", marker = "extra == 'models'" },
