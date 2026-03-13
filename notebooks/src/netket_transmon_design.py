@@ -302,10 +302,10 @@ for i, g_i in enumerate(g_sweep):
     si = np.argsort(ev_i)
     ev_i, evc_i = ev_i[si], evc_i[:, si]
 
-    def _fd(qi: int, ri: int) -> int:
+    def _fd(qi: int, ri: int, _evc: np.ndarray = evc_i) -> int:
         bv = np.zeros(n_levels**2)
         bv[qi * n_levels + ri] = 1.0
-        return int(np.argmax(np.abs(evc_i.T @ bv) ** 2))
+        return int(np.argmax(np.abs(_evc.T @ bv) ** 2))
 
     j00, j10, j01, j11 = _fd(0, 0), _fd(1, 0), _fd(0, 1), _fd(1, 1)
     chi_sweep[i] = (ev_i[j11] - ev_i[j10]) - (ev_i[j01] - ev_i[j00])
