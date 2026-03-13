@@ -3132,14 +3132,20 @@ models = [
     { name = "jaxellip" },
     { name = "optuna" },
     { name = "polars" },
-    { name = "pymablock" },
-    { name = "qutip-jax" },
-    { name = "qutip-qip" },
     { name = "ray", extra = ["tune"], marker = "sys_platform != 'win32'" },
     { name = "sax" },
+    { name = "sympy" },
+]
+pymablock = [
+    { name = "pymablock" },
+]
+qutip = [
+    { name = "qutip-jax" },
+    { name = "qutip-qip" },
+]
+scqubits = [
     { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "scqubits", version = "4.3.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
-    { name = "sympy" },
 ]
 
 [package.dev-dependencies]
@@ -3195,16 +3201,16 @@ requires-dist = [
     { name = "polars", marker = "extra == 'models'" },
     { name = "pyaedt", extras = ["graphics"], marker = "extra == 'hfss'", specifier = ">=0.15.0" },
     { name = "pyglet", marker = "extra == 'graphics'", specifier = "<2" },
-    { name = "pymablock", marker = "extra == 'models'", specifier = ">=2.2.1" },
-    { name = "qutip-jax", marker = "extra == 'models'", specifier = ">=0.1.1" },
-    { name = "qutip-qip", marker = "extra == 'models'", specifier = ">=0.4.1" },
+    { name = "pymablock", marker = "extra == 'pymablock'", specifier = ">=2.2.1" },
+    { name = "qutip-jax", marker = "extra == 'qutip'", specifier = ">=0.1.1" },
+    { name = "qutip-qip", marker = "extra == 'qutip'", specifier = ">=0.4.1" },
     { name = "ray", extras = ["tune"], marker = "sys_platform != 'win32' and extra == 'models'" },
     { name = "sax", marker = "extra == 'models'", specifier = ">=0.16.11" },
-    { name = "scqubits", marker = "extra == 'models'" },
+    { name = "scqubits", marker = "extra == 'scqubits'" },
     { name = "sympy", marker = "extra == 'models'" },
     { name = "trimesh", marker = "extra == 'graphics'" },
 ]
-provides-extras = ["graphics", "hfss", "models"]
+provides-extras = ["graphics", "hfss", "models", "pymablock", "qutip", "scqubits"]
 
 [package.metadata.requires-dev]
 dev = [

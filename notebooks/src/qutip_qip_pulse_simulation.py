@@ -47,10 +47,10 @@
 # %% tags=["hide-input", "hide-output"]
 import warnings
 
+import jax.numpy as jnp
 import matplotlib.pyplot as plt
-import numpy as np
 import qutip
-import qutip_jax  # Register JAX backend for QuTiP
+import qutip_jax  # noqa: F401 — registers JAX backend for QuTiP
 from IPython.display import Math, display
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.device import SCQubits
@@ -154,7 +154,7 @@ proj_ops = {
 }
 
 n_states = len(result_x.states)
-tlist_x = np.linspace(0, processor_x.get_full_tlist()[-1], n_states)
+tlist_x = jnp.linspace(0, processor_x.get_full_tlist()[-1], n_states)
 
 fig, ax = plt.subplots(figsize=(8, 4))
 for label, proj in proj_ops.items():
@@ -258,7 +258,7 @@ proj_bell = {
 }
 
 n_states_bell = len(result_bell.states)
-tlist_bell = np.linspace(0, processor_bell.get_full_tlist()[-1], n_states_bell)
+tlist_bell = jnp.linspace(0, processor_bell.get_full_tlist()[-1], n_states_bell)
 
 fig, ax = plt.subplots(figsize=(10, 5))
 for label, proj in proj_bell.items():
@@ -294,16 +294,13 @@ bell_ideal_jax = bell_ideal.to("jax")
 fidelity_bell = qutip.fidelity(final_state_jax, bell_ideal_jax)
 
 # Also compute leakage
-leakage_ops = []
-for i in range(3):
-    for j in range(3):
-        if i >= 2 or j >= 2:
-            leakage_ops.append(
-                qutip.tensor(qutip.fock_dm(3, i), qutip.fock_dm(3, j))
-            )
-total_leakage = sum(
-    qutip.expect(op, result_bell.states[-1]) for op in leakage_ops
-)
+leakage_ops = [
+    qutip.tensor(qutip.fock_dm(3, i), qutip.fock_dm(3, j))
+    for i in range(3)
+    for j in range(3)
+    if i >= 2 or j >= 2
+]
+total_leakage = sum(qutip.expect(op, result_bell.states[-1]) for op in leakage_ops)
 
 display(
     Math(rf"""
@@ -332,13 +329,19 @@ P(|1,1\rangle) = {qutip.expect(proj_bell[r"$|1,1\rangle$"], result_bell.states[-
 # Sweep T2 values (in ns) with fixed T1 = 80 μs
 # Note: T2 ≤ 2*T1 is required by the Lindblad master equation
 t1_fixed = 80_000.0  # 80 μs in ns
-t2_values_us = np.array([5, 10, 20, 40, 80, 160])  # μs (max = 2*T1)
+t2_values_us = jnp.array([5, 10, 20, 40, 80, 150])  # μs (must be < 2*T1)
 t2_values_ns = t2_values_us * 1e3  # Convert to ns
 
 fidelities_t2 = []
 for t2 in t2_values_ns:
     proc = SCQubits(
-        2, wq=wq, alpha=alpha, g=g_coupling, wr=wr, t1=t1_fixed, t2=t2
+        2,
+        wq=wq,
+        alpha=alpha,
+        g=g_coupling,
+        wr=wr,
+        t1=t1_fixed,
+        t2=float(t2),
     )
     proc.load_circuit(qc_bell)
     res = proc.run_state(init_state)
@@ -349,7 +352,7 @@ fig, ax = plt.subplots(figsize=(8, 4))
 ax.semilogx(t2_values_us, fidelities_t2, "o-", linewidth=2, markersize=8)
 ax.set_xlabel(r"$T_2$ ($\mu$s)")
 ax.set_ylabel(r"Bell state fidelity $F$")
-ax.set_title(rf"Bell state fidelity vs. $T_2$ ($T_1 = {t1_fixed/1e3:.0f}\,\mu$s)")
+ax.set_title(rf"Bell state fidelity vs. $T_2$ ($T_1 = {t1_fixed / 1e3:.0f}\,\mu$s)")
 ax.grid(True, alpha=0.3, which="both")
 ax.set_ylim(0.5, 1.02)
 fig.tight_layout()
@@ -379,9 +382,7 @@ processor_noisy.load_circuit(qc_bell)
 result_noisy = processor_noisy.run_state(init_state)
 
 n_states_noisy = len(result_noisy.states)
-tlist_noisy = np.linspace(
-    0, processor_noisy.get_full_tlist()[-1], n_states_noisy
-)
+tlist_noisy = jnp.linspace(0, processor_noisy.get_full_tlist()[-1], n_states_noisy)
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
 
@@ -402,8 +403,8 @@ for label, proj in proj_bell.items():
     ax2.plot(tlist_noisy, pops, linewidth=2, label=label)
 ax2.set_xlabel("Time (ns)")
 ax2.set_title(
-    rf"With decoherence ($T_1 = {t1_realistic/1e3:.0f}\,\mu$s, "
-    rf"$T_2 = {t2_realistic/1e3:.0f}\,\mu$s)"
+    rf"With decoherence ($T_1 = {t1_realistic / 1e3:.0f}\,\mu$s, "
+    rf"$T_2 = {t2_realistic / 1e3:.0f}\,\mu$s)"
 )
 ax2.legend(fontsize=9)
 ax2.set_ylim(-0.05, 1.05)
@@ -443,9 +444,9 @@ F_{{\text{{noisy}}}} = {f_noisy:.6f} \\
 
 # %%
 qc_ramsey = QubitCircuit(1)
-qc_ramsey.add_gate("RY", targets=0, arg_value=np.pi / 2)
+qc_ramsey.add_gate("RY", targets=0, arg_value=float(jnp.pi / 2))
 qc_ramsey.add_gate("IDLE", targets=0, arg_value=100.0)  # 100 ns idle
-qc_ramsey.add_gate("RY", targets=0, arg_value=np.pi / 2)
+qc_ramsey.add_gate("RY", targets=0, arg_value=float(jnp.pi / 2))
 
 processor_ramsey = SCQubits(1, wq=[5.15], alpha=[-0.3])
 processor_ramsey.load_circuit(qc_ramsey)
@@ -454,9 +455,7 @@ init_ramsey = qutip.basis([3], [0])
 result_ramsey = processor_ramsey.run_state(init_ramsey)
 
 n_ramsey = len(result_ramsey.states)
-tlist_ramsey = np.linspace(
-    0, processor_ramsey.get_full_tlist()[-1], n_ramsey
-)
+tlist_ramsey = jnp.linspace(0, processor_ramsey.get_full_tlist()[-1], n_ramsey)
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
 
@@ -476,11 +475,13 @@ sx = qutip.Qobj([[0, 1, 0], [1, 0, 0], [0, 0, 0]])  # σ_x in 3-level
 sy = qutip.Qobj([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])  # σ_y in 3-level
 sz = qutip.Qobj([[1, 0, 0], [0, -1, 0], [0, 0, 0]])  # σ_z in 3-level
 
-for op, label in [(sx, r"$\langle\sigma_x\rangle$"),
-                   (sy, r"$\langle\sigma_y\rangle$"),
-                   (sz, r"$\langle\sigma_z\rangle$")]:
+for op, label in [
+    (sx, r"$\langle\sigma_x\rangle$"),
+    (sy, r"$\langle\sigma_y\rangle$"),
+    (sz, r"$\langle\sigma_z\rangle$"),
+]:
     exps = [qutip.expect(op, s) for s in result_ramsey.states]
-    ax2.plot(tlist_ramsey, np.real(exps), linewidth=2, label=label)
+    ax2.plot(tlist_ramsey, jnp.real(jnp.array(exps)), linewidth=2, label=label)
 ax2.set_xlabel("Time (ns)")
 ax2.set_ylabel("Expectation value")
 ax2.set_title("Ramsey sequence: Bloch vector components")
@@ -525,8 +526,13 @@ bars = ax.barh(names, durations, color=colors, edgecolor="black", linewidth=0.5)
 ax.set_xlabel("Gate duration (ns)")
 ax.set_title("Pulse-level gate durations (SCQubits processor)")
 for bar, d in zip(bars, durations):
-    ax.text(bar.get_width() + 2, bar.get_y() + bar.get_height() / 2,
-            f"{d:.1f} ns", va="center", fontsize=10)
+    ax.text(
+        bar.get_width() + 2,
+        bar.get_y() + bar.get_height() / 2,
+        f"{d:.1f} ns",
+        va="center",
+        fontsize=10,
+    )
 ax.grid(True, alpha=0.3, axis="x")
 fig.tight_layout()
 plt.show()
@@ -542,14 +548,10 @@ plt.show()
 # X gate fidelity over time
 target_x = qutip.tensor(qutip.basis(3, 1), qutip.basis(3, 0))
 
-fidelity_evolution_x = [
-    qutip.fidelity(s, target_x) for s in result_x.states
-]
+fidelity_evolution_x = [qutip.fidelity(s, target_x) for s in result_x.states]
 
 # Bell state fidelity over time
-fidelity_evolution_bell = [
-    qutip.fidelity(s, bell_ideal) for s in result_bell.states
-]
+fidelity_evolution_bell = [qutip.fidelity(s, bell_ideal) for s in result_bell.states]
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 4))
 
@@ -579,15 +581,9 @@ plt.show()
 # backend for efficient batch computation of expectation values.
 
 # %%
-import jax.numpy as jnp
-
 # Convert all states to JAX for batch processing
-proj_00_jax = qutip.tensor(
-    qutip.fock_dm(3, 0), qutip.fock_dm(3, 0)
-).to("jax")
-proj_11_jax = qutip.tensor(
-    qutip.fock_dm(3, 1), qutip.fock_dm(3, 1)
-).to("jax")
+proj_00_jax = qutip.tensor(qutip.fock_dm(3, 0), qutip.fock_dm(3, 0)).to("jax")
+proj_11_jax = qutip.tensor(qutip.fock_dm(3, 1), qutip.fock_dm(3, 1)).to("jax")
 
 # Compute populations using JAX backend
 pops_00_jax = []
