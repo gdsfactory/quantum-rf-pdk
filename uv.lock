@@ -3356,7 +3356,6 @@ hfss = [
 models = [
     { name = "gplugins", extra = ["meshwell"] },
     { name = "jaxellip" },
-    { name = "netket" },
     { name = "optuna" },
     { name = "polars" },
     { name = "pymablock" },
@@ -3365,6 +3364,10 @@ models = [
     { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "scqubits", version = "4.3.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
     { name = "sympy" },
+]
+netket = [
+    { name = "flax" },
+    { name = "netket" },
 ]
 
 [package.dev-dependencies]
@@ -3412,10 +3415,11 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "doroutes", specifier = ">=0.2.0" },
+    { name = "flax", marker = "extra == 'netket'" },
     { name = "gdsfactory", specifier = "~=9.39.0" },
     { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = ">=2.0.1" },
     { name = "jaxellip", marker = "extra == 'models'" },
-    { name = "netket", marker = "extra == 'models'", specifier = ">=3.12" },
+    { name = "netket", marker = "extra == 'netket'", specifier = ">=3.12" },
     { name = "optuna", marker = "extra == 'models'" },
     { name = "polars", marker = "extra == 'hfss'" },
     { name = "polars", marker = "extra == 'models'" },
@@ -3428,7 +3432,7 @@ requires-dist = [
     { name = "sympy", marker = "extra == 'models'" },
     { name = "trimesh", marker = "extra == 'graphics'" },
 ]
-provides-extras = ["graphics", "hfss", "models"]
+provides-extras = ["graphics", "hfss", "models", "netket"]
 
 [package.metadata.requires-dev]
 dev = [

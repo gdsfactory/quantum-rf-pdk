@@ -51,12 +51,19 @@
 # ```
 
 # %% tags=["hide-input", "hide-output"]
+from functools import partial
+
+import flax.linen as nn
+import jax
+import jax.numpy as jnp
 import netket as nk
 import numpy as np
+import optax
 import polars as pl
 import scipy
 from IPython.display import Math, display
 from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
 
 from qpdk import PDK
 from qpdk.models.constants import c_0
@@ -100,15 +107,15 @@ ncut = 15  # Charge basis truncation: n ∈ {-ncut, ..., +ncut}
 n_states = 2 * ncut + 1
 
 # Build the Hamiltonian matrix in the charge basis
-charges = np.arange(n_states) - ncut  # physical charge quantum numbers
-H_mat = np.diag(4 * EC * (charges - ng) ** 2)
+charges = jnp.arange(n_states) - ncut  # physical charge quantum numbers
+H_mat = jnp.diag(4 * EC * (charges - ng) ** 2)
 for n in range(n_states - 1):
-    H_mat[n, n + 1] = -EJ / 2  # Josephson tunnelling
-    H_mat[n + 1, n] = -EJ / 2
+    H_mat = H_mat.at[n, n + 1].set(-EJ / 2)  # Josephson tunnelling
+    H_mat = H_mat.at[n + 1, n].set(-EJ / 2)
 
 # Wrap as a NetKet operator on a Fock Hilbert space
 hi = nk.hilbert.Fock(n_max=n_states - 1, N=1)
-H_transmon = nk.operator.LocalOperator(hi, H_mat, acting_on=[0])
+H_transmon = nk.operator.LocalOperator(hi, np.asarray(H_mat), acting_on=[0])
 
 # %% [markdown]
 # ## Transmon Spectrum via Exact Diagonalisation
@@ -120,8 +127,9 @@ H_transmon = nk.operator.LocalOperator(hi, H_mat, acting_on=[0])
 # the anharmonicity $\alpha = (E_2 - E_1) - (E_1 - E_0)$.
 
 # %%
-evals = nk.exact.lanczos_ed(H_transmon, k=5, compute_eigenvectors=False)
-evals -= evals[0]  # shift ground state to zero
+evals_exact = nk.exact.lanczos_ed(H_transmon, k=5, compute_eigenvectors=False)
+e0_exact = evals_exact[0]
+evals = evals_exact - e0_exact  # shift ground state to zero
 
 f01 = evals[1] - evals[0]
 f12 = evals[2] - evals[1]
@@ -143,6 +151,104 @@ f_{{12}} = {f12:.4f}\,\mathrm{{GHz}} \\
 )
 
 # %% [markdown]
+# ## Variational Energy via VMC (Full Summation)
+#
+# While exact diagonalisation works for this small Hilbert space, larger
+# systems require variational methods. Here we demonstrate a simple
+# Variational Monte Carlo (VMC) approach using JAX and Flax, computing
+# the energy by summing over all basis states.
+#
+# This case is trivial to diagonalize exactly, but looking at something
+# more complex cannot always be done exactly due to the exponential
+# growth of the Hilbert space.
+#
+# We define a simple feedforward neural network using Flax to serve
+# as our variational ansatz for the ground state wavefunction.
+# The network takes the charge configuration
+# as input and outputs the logarithm of the wavefunction amplitude (log-psi).
+# We then compute the energy expectation value by summing over all charge states,
+# and use JAX's automatic differentiation to compute gradients for optimization.
+#
+# For the network architecture, we use two hidden layers with Leaky ReLU {cite:p}`maas2013rectifier` non-linearities,
+# constituting a simple multilayer perceptron {cite:p}`rosenblattPerceptronProbabilisticModel1958`.
+#
+# For details on VMC with NetKet, see the documentation:
+# https://netket.readthedocs.io/en/latest/vmc-from-scratch/index.html
+
+
+# %%
+class VariationalTransmon(nn.Module):
+    """A simple multilayer perceptron neural network.
+
+    Uses two _fully connected_ linear layers with Leaky ReLU non-linearities
+    followed by a final linear layer to output a single scalar value.
+    """
+
+    @nn.compact
+    def __call__(self, x):
+        """Evaluate the model on a set of input configurations."""
+        # x has shape (..., 1)
+        x = x.astype(jnp.float32)
+        x = nn.Dense(features=16)(x)
+        x = nn.leaky_relu(x)
+        x = nn.Dense(features=16)(x)
+        x = nn.leaky_relu(x)
+        x = nn.Dense(features=1)(x)
+        return jnp.squeeze(x, axis=-1)
+
+
+model = VariationalTransmon()
+parameters = model.init(jax.random.key(0), jnp.ones((1, 1)))
+
+
+def to_array(model, parameters):
+    """Compute the normalized wavefunction as an array."""
+    all_configs = hi.all_states()
+    logpsi = model.apply(parameters, all_configs)
+    psi = jnp.exp(logpsi)
+    return psi / jnp.linalg.norm(psi)
+
+
+def compute_energy(model, parameters, H_sparse):
+    """Compute the variational energy of the state."""
+    psi = to_array(model, parameters)
+    psi = psi.astype(H_sparse.dtype)
+    return jnp.real(jnp.vdot(psi, H_sparse @ psi))
+
+
+@partial(jax.jit, static_argnames="model")
+def train_step(model, parameters, opt_state, H_sparse):
+    """Perform a single variational optimization step."""
+    energy, grad = jax.value_and_grad(compute_energy, argnums=1)(
+        model, parameters, H_sparse
+    )
+    updates, opt_state = tx.update(grad, opt_state, parameters)
+    parameters = optax.apply_updates(parameters, updates)
+    return parameters, opt_state, energy
+
+
+H_sparse = H_transmon.to_sparse(jax_=True)
+tx = optax.adam(0.01)
+opt_state = tx.init(parameters)
+
+energies = []
+for _ in tqdm(range(200), desc="Variational Optimization"):
+    parameters, opt_state, e_val = train_step(model, parameters, opt_state, H_sparse)
+    energies.append(e_val)
+
+e_gs_variational = float(energies[-1])
+
+display(
+    Math(rf"""
+\textbf{{Ground State Energy Comparison:}} \\
+E_{{0, \text{{exact}}}} = {e0_exact:.6f}\,\mathrm{{GHz}} \\
+E_{{0, \text{{variational}}}} = {e_gs_variational:.6f}\,\mathrm{{GHz}} \\
+\text{{Error:}} \quad |E_\text{{exact}} - E_\text{{var}}| = {abs(e0_exact - e_gs_variational):.2e}\,\mathrm{{GHz}}
+""")
+)
+
+
+# %% [markdown]
 # ## Charge Dispersion
 #
 # A key design criterion for the transmon is its exponential insensitivity
@@ -154,22 +260,22 @@ f_{{12}} = {f12:.4f}\,\mathrm{{GHz}} \\
 # energies for several values of $E_J/E_C$.
 
 # %%
-ng_sweep = np.linspace(-0.5, 0.5, 101)
-ej_ec_ratios = [5, 20, 50, 100]
+ng_sweep = jnp.linspace(-0.5, 0.5, 101)
+ej_ec_ratios = [1, 5, 20, 50]
 
 fig, axes = plt.subplots(1, len(ej_ec_ratios), figsize=(14, 3.5), sharey=True)
 
 for ax, ratio in zip(axes, ej_ec_ratios):
     EJ_sweep = ratio * EC
-    levels = np.zeros((len(ng_sweep), 4))
+    levels = jnp.zeros((len(ng_sweep), 4))
 
     for i, ng_val in enumerate(ng_sweep):
-        H_sweep = np.diag(4 * EC * (charges - ng_val) ** 2)
+        H_sweep = jnp.diag(4 * EC * (charges - ng_val) ** 2)
         for n in range(n_states - 1):
-            H_sweep[n, n + 1] = -EJ_sweep / 2
-            H_sweep[n + 1, n] = -EJ_sweep / 2
-        ev = np.linalg.eigvalsh(H_sweep)
-        levels[i] = ev[:4] - ev[0]
+            H_sweep = H_sweep.at[n, n + 1].set(-EJ_sweep / 2)
+            H_sweep = H_sweep.at[n + 1, n].set(-EJ_sweep / 2)
+        ev = jnp.linalg.eigvalsh(H_sweep)
+        levels = levels.at[i].set(ev[:4] - ev[0])
 
     for j in range(1, 4):
         ax.plot(ng_sweep, levels[:, j], label=rf"$E_{j} - E_0$")
@@ -223,30 +329,32 @@ n_levels = 8  # Truncation level for each mode
 hi_combined = nk.hilbert.Fock(n_max=n_levels - 1, N=2)
 
 # Transmon as Duffing oscillator: f01 * n + (α/2) * n(n-1)
-H_qubit = np.diag([f01 * n + (alpha_nk / 2) * n * (n - 1) for n in range(n_levels)])
+H_qubit = jnp.diag(
+    jnp.array([f01 * n + (alpha_nk / 2) * n * (n - 1) for n in range(n_levels)])
+)
 
 # Resonator: ω_r * n
-H_res = np.diag([omega_r_val * n for n in range(n_levels)])
+H_res = jnp.diag(jnp.array([omega_r_val * n for n in range(n_levels)]))
 
 # (a + a†) ladder operator
-a_plus_adag = np.zeros((n_levels, n_levels))
+a_plus_adag = jnp.zeros((n_levels, n_levels))
 for n in range(n_levels - 1):
-    a_plus_adag[n, n + 1] = np.sqrt(n + 1)
-    a_plus_adag[n + 1, n] = np.sqrt(n + 1)
+    a_plus_adag = a_plus_adag.at[n, n + 1].set(jnp.sqrt(n + 1))
+    a_plus_adag = a_plus_adag.at[n + 1, n].set(jnp.sqrt(n + 1))
 
 # Coupling operator: g * (a + a†) ⊗ (b + b†)
-coupling = g_val * np.kron(a_plus_adag, a_plus_adag)
+coupling = g_val * jnp.kron(a_plus_adag, a_plus_adag)
 
 # Build full Hamiltonian as sum of NetKet operators
 H_full = (
-    nk.operator.LocalOperator(hi_combined, H_qubit, acting_on=[0])
-    + nk.operator.LocalOperator(hi_combined, H_res, acting_on=[1])
-    + nk.operator.LocalOperator(hi_combined, coupling, acting_on=[0, 1])
+    nk.operator.LocalOperator(hi_combined, np.asarray(H_qubit), acting_on=[0])
+    + nk.operator.LocalOperator(hi_combined, np.asarray(H_res), acting_on=[1])
+    + nk.operator.LocalOperator(hi_combined, np.asarray(coupling), acting_on=[0, 1])
 )
 
 # Full exact diagonalisation
 evals_full, evecs_full = nk.exact.full_ed(H_full, compute_eigenvectors=True)
-sort_idx = np.argsort(evals_full)
+sort_idx = jnp.argsort(evals_full)
 evals_full = evals_full[sort_idx]
 evecs_full = evecs_full[:, sort_idx]
 
@@ -254,9 +362,9 @@ evecs_full = evecs_full[:, sort_idx]
 # Identify dressed states by maximum overlap with bare states
 def _find_dressed(qubit_idx: int, res_idx: int) -> int:
     """Return the index of the dressed state closest to |qubit_idx, res_idx⟩."""
-    bare = np.zeros(n_levels**2)
-    bare[qubit_idx * n_levels + res_idx] = 1.0
-    return int(np.argmax(np.abs(evecs_full.T @ bare) ** 2))
+    bare = jnp.zeros(n_levels**2)
+    bare = bare.at[qubit_idx * n_levels + res_idx].set(1.0)
+    return int(jnp.argmax(jnp.abs(evecs_full.T @ bare) ** 2))
 
 
 idx_00 = _find_dressed(0, 0)
@@ -285,30 +393,30 @@ g = {g_val * 1e3:.0f}\,\mathrm{{MHz}}, \quad
 # the dispersive shift in the dispersive regime ($g \ll |\Delta|$).
 
 # %%
-g_sweep = np.linspace(0.01, 0.25, 20)
-chi_sweep = np.zeros_like(g_sweep)
+g_sweep = jnp.linspace(0.01, 0.25, 20)
+chi_sweep = jnp.zeros_like(g_sweep)
 
 for i, g_i in enumerate(g_sweep):
     H_i = (
-        nk.operator.LocalOperator(hi_combined, H_qubit, acting_on=[0])
-        + nk.operator.LocalOperator(hi_combined, H_res, acting_on=[1])
+        nk.operator.LocalOperator(hi_combined, np.asarray(H_qubit), acting_on=[0])
+        + nk.operator.LocalOperator(hi_combined, np.asarray(H_res), acting_on=[1])
         + nk.operator.LocalOperator(
             hi_combined,
-            g_i * np.kron(a_plus_adag, a_plus_adag),
+            np.asarray(g_i * jnp.kron(a_plus_adag, a_plus_adag)),
             acting_on=[0, 1],
         )
     )
     ev_i, evc_i = nk.exact.full_ed(H_i, compute_eigenvectors=True)
-    si = np.argsort(ev_i)
+    si = jnp.argsort(ev_i)
     ev_i, evc_i = ev_i[si], evc_i[:, si]
 
-    def _fd(qi: int, ri: int, _evc: np.ndarray = evc_i) -> int:
-        bv = np.zeros(n_levels**2)
-        bv[qi * n_levels + ri] = 1.0
-        return int(np.argmax(np.abs(_evc.T @ bv) ** 2))
+    def _fd(qi: int, ri: int, _evc: jax.Array = evc_i) -> int:
+        bv = jnp.zeros(n_levels**2)
+        bv = bv.at[qi * n_levels + ri].set(1.0)
+        return int(jnp.argmax(jnp.abs(_evc.T @ bv) ** 2))
 
     j00, j10, j01, j11 = _fd(0, 0), _fd(1, 0), _fd(0, 1), _fd(1, 1)
-    chi_sweep[i] = (ev_i[j11] - ev_i[j10]) - (ev_i[j01] - ev_i[j00])
+    chi_sweep = chi_sweep.at[i].set((ev_i[j11] - ev_i[j10]) - (ev_i[j01] - ev_i[j00]))
 
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.plot(g_sweep * 1e3, chi_sweep * 1e3, "o-", markersize=5, label="NetKet (numerical)")
@@ -395,7 +503,7 @@ def _resonator_objective(length: float) -> float:
     """Minimise the squared frequency error."""
     freq = resonator_frequency(
         length=length,
-        epsilon_eff=float(np.real(ep_eff)),
+        epsilon_eff=float(jnp.real(ep_eff)),
         is_quarter_wave=True,
     )
     return (freq - omega_r_design * 1e9) ** 2
@@ -407,7 +515,7 @@ resonator_length = result.x[0]
 # Total resonator capacitance from CPW impedance and phase velocity
 # {cite:p}`gopplCoplanarWaveguideResonators2008a`:
 # C_r = l / Re(Z_0 * v_p)
-C_r = 1 / np.real(z0 * (c_0 / np.sqrt(ep_eff))) * resonator_length * 1e-6  # F
+C_r = 1 / jnp.real(z0 * (c_0 / jnp.sqrt(ep_eff))) * resonator_length * 1e-6  # F
 
 # Coupling capacitance
 C_c = float(
@@ -438,7 +546,7 @@ C_c = {C_c * 1e15:.2f}\,\mathrm{{fF}}
 # %%
 f_resonator_achieved = resonator_frequency(
     length=resonator_length,
-    epsilon_eff=float(np.real(ep_eff)),
+    epsilon_eff=float(jnp.real(ep_eff)),
     is_quarter_wave=True,
 )
 
