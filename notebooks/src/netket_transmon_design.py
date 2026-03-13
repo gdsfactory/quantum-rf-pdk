@@ -8,6 +8,8 @@
 #       jupytext_version: 1.17.3
 # ---
 
+# ruff: noqa: E402
+
 # %% [markdown]
 # # Transmon Qubit Design with NetKet
 #
@@ -71,7 +73,6 @@ from qpdk.models.cpw import cpw_parameters
 
 PDK.activate()
 
-# ruff: disable[E402]
 from qpdk.cells.transmon import (
     double_pad_transmon,
     xmon_transmon,
@@ -136,7 +137,7 @@ f12 = evals[2] - evals[1]
 alpha_nk = f12 - f01  # negative for transmon
 
 # Analytical transmon approximation from qpdk
-omega_t_approx, alpha_approx = ej_ec_to_frequency_and_anharmonicity(EJ, EC)
+omega_t_approx, _ = ej_ec_to_frequency_and_anharmonicity(EJ, EC)
 
 display(
     Math(rf"""
@@ -515,7 +516,7 @@ resonator_length = result.x[0]
 # Total resonator capacitance from CPW impedance and phase velocity
 # {cite:p}`gopplCoplanarWaveguideResonators2008a`:
 # C_r = l / Re(Z_0 * v_p)
-C_r = 1 / jnp.real(z0 * (c_0 / jnp.sqrt(ep_eff))) * resonator_length * 1e-6  # F
+C_r = float(1 / jnp.real(z0 * (c_0 / jnp.sqrt(ep_eff))) * resonator_length * 1e-6)  # F
 
 # Coupling capacitance
 C_c = float(
@@ -685,4 +686,3 @@ with pl.Config(
 # ```{bibliography}
 # :filter: docname in docnames
 # ```
-# ruff: enable[E402]

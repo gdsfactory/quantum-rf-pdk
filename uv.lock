@@ -3368,6 +3368,7 @@ models = [
 netket = [
     { name = "flax" },
     { name = "netket" },
+    { name = "optax" },
 ]
 
 [package.dev-dependencies]
@@ -3420,6 +3421,7 @@ requires-dist = [
     { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = ">=2.0.1" },
     { name = "jaxellip", marker = "extra == 'models'" },
     { name = "netket", marker = "extra == 'netket'", specifier = ">=3.12" },
+    { name = "optax", marker = "extra == 'netket'" },
     { name = "optuna", marker = "extra == 'models'" },
     { name = "polars", marker = "extra == 'hfss'" },
     { name = "polars", marker = "extra == 'models'" },

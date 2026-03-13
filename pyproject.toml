@@ -29,7 +29,7 @@ models = [
   "sympy",
   "polars",
 ]
-netket = ["netket>=3.12", "flax"]
+netket = ["netket>=3.12", "flax", "optax"]
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
