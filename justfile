@@ -18,7 +18,7 @@ clean:
 # Testing #
 ###########
 
-PYTEST_COMMAND := "uv run --all-extras --group dev pytest -n auto"
+PYTEST_COMMAND := "uv run --extra models --extra graphics --extra hfss --group dev pytest -n auto"
 
 # Check if Git LFS is available and pull LFS files
 check-lfs:
