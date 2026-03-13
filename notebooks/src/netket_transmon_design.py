@@ -223,9 +223,7 @@ n_levels = 8  # Truncation level for each mode
 hi_combined = nk.hilbert.Fock(n_max=n_levels - 1, N=2)
 
 # Transmon as Duffing oscillator: f01 * n + (α/2) * n(n-1)
-H_qubit = np.diag(
-    [f01 * n + (alpha_nk / 2) * n * (n - 1) for n in range(n_levels)]
-)
+H_qubit = np.diag([f01 * n + (alpha_nk / 2) * n * (n - 1) for n in range(n_levels)])
 
 # Resonator: ω_r * n
 H_res = np.diag([omega_r_val * n for n in range(n_levels)])
@@ -563,9 +561,7 @@ data = [
     ("Readout", "|χ|/κ", f"{chi_over_kappa:.1f}", ""),
 ]
 
-df = pl.DataFrame(
-    data, schema=["Category", "Parameter", "Value", "Unit"], orient="row"
-)
+df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"], orient="row")
 
 with pl.Config(
     tbl_rows=30,
