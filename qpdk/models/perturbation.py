@@ -53,10 +53,12 @@ def transmon_resonator_hamiltonian() -> tuple[
 
     .. math::
 
+        \begin{aligned}
         H_0 &= -\omega_t\, a_t^\dagger a_t
               + \frac{\alpha}{2}\, a_t^{\dagger 2} a_t^2
               + \omega_r\, a_r^\dagger a_r \\
         H_p &= -g\,(a_t^\dagger - a_t)(a_r^\dagger - a_r)
+        \end{aligned}
 
     Returns:
         A tuple ``(H_0, H_p, symbols)`` where ``symbols`` is
@@ -93,7 +95,8 @@ def dispersive_shift(
 
     Evaluates the second-order dispersive shift for a transmon coupled
     to a resonator. Uses the analytical formula derived from perturbation
-    theory (without the rotating wave approximation):
+    theory (without the rotating wave approximation)
+    :cite:`kochChargeinsensitiveQubitDesign2007a,blaisCircuitQuantumElectrodynamics2021`:
 
     .. math::
 
@@ -148,7 +151,8 @@ def dispersive_shift_to_coupling(
 
     Inverts the dispersive shift relation to find the coupling strength
     :math:`g` required to achieve a desired :math:`\chi`.  Uses only the
-    dominant rotating-wave term:
+    dominant rotating-wave term
+    :cite:`kochChargeinsensitiveQubitDesign2007a`:
 
     .. math::
 
@@ -192,12 +196,15 @@ def ej_ec_to_frequency_and_anharmonicity(
 ) -> tuple[float | jax.Array, float | jax.Array]:
     r"""Convert :math:`E_J` and :math:`E_C` to qubit frequency and anharmonicity.
 
-    Uses the standard transmon approximations:
+    Uses the standard transmon approximations
+    :cite:`kochChargeinsensitiveQubitDesign2007a`:
 
     .. math::
 
-        \omega_q \approx \sqrt{8 E_J E_C} - E_C
-        \alpha \approx E_C
+        \begin{aligned}
+        \omega_q &\approx \sqrt{8 E_J E_C} - E_C \\
+        \alpha &\approx E_C
+        \end{aligned}
 
     Note:
         The physical anharmonicity of a transmon is *negative*
@@ -228,7 +235,8 @@ def purcell_decay_rate(
     r"""Estimate the Purcell decay rate of a transmon through a resonator.
 
     The Purcell effect limits qubit lifetime when coupled to a lossy
-    resonator.  In the dispersive regime:
+    resonator.  In the dispersive regime
+    :cite:`houckControllingSpontaneousEmission2008,blaisCircuitQuantumElectrodynamics2021`:
 
     .. math::
 
@@ -261,6 +269,9 @@ def resonator_linewidth_from_q(
 ) -> float | jax.Array:
     r"""Compute resonator linewidth from external quality factor.
 
+    Converts external quality factor to linewidth (half-linewidth at half-maximum)
+    :cite:`gopplCoplanarWaveguideResonators2008a,m.pozarMicrowaveEngineering2012`:
+
     .. math::
 
         \kappa = \frac{\omega_r}{Q_\text{ext}}
@@ -286,7 +297,8 @@ def measurement_induced_dephasing(
     r"""Estimate measurement-induced dephasing rate.
 
     During dispersive readout, photons in the resonator cause
-    additional dephasing of the qubit:
+    additional dephasing of the qubit
+    :cite:`gambettaQubitphotonInteractionsCavity2006,blaisCircuitQuantumElectrodynamics2021`:
 
     .. math::
 

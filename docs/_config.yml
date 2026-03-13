@@ -17,6 +17,14 @@ execute:
     - "notebooks/hfss*.ipynb"
   timeout: -1
   allow_errors: false
+parse:
+  myst_enable_extensions:
+    - amsmath
+    - colon_fence
+    - dollarmath
+    - substitution
+    - tasklist
+    - linkify
 latex:
   latex_engine: &latex_engine xelatex
   use_jupyterbook_latex: true # use sphinx-jupyterbook-latex for pdf builds as default
@@ -51,6 +59,7 @@ sphinx:
     - "sphinxcontrib.katex"
     - "sphinxcontrib.svgbob"
     - "matplotlib.sphinxext.plot_directive"
+    - "sphinx_copybutton"
   config:
     autodoc_type_aliases:
       "ComponentSpec": "ComponentSpec"

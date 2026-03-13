@@ -72,6 +72,7 @@ def cpw_epsilon_eff(
 
     .. math::
 
+        \begin{aligned}
         k_0     &= \frac{w}{w + 2s} \\
         k_1     &= \frac{\sinh(\pi w / 4h)}
                          {\sinh\bigl(\pi(w + 2s) / 4h\bigr)} \\
@@ -79,6 +80,7 @@ def cpw_epsilon_eff(
                          {K(k_0^2)\,/\,K(1 - k_0^2)}  \\
         \varepsilon_{\mathrm{eff}}
                 &= 1 + \frac{q_1\,(\varepsilon_r - 1)}{2}
+        \end{aligned}
 
     where :math:`K` is the complete elliptic integral of the first kind in
     the *parameter* convention (:math:`m = k^2`).
@@ -462,10 +464,12 @@ def transmission_line_s_params(
 
     .. math::
 
+        \begin{aligned}
         S_{11} &= \frac{A + B/Z_{\mathrm{ref}} - C\,Z_{\mathrm{ref}} - D}
                        {A + B/Z_{\mathrm{ref}} + C\,Z_{\mathrm{ref}} + D} \\
         S_{21} &= \frac{2}
                        {A + B/Z_{\mathrm{ref}} + C\,Z_{\mathrm{ref}} + D}
+        \end{aligned}
 
     When ``z_ref`` is ``None`` the reference impedance defaults to ``z0``
     (matched case), giving :math:`S_{11} = 0` and

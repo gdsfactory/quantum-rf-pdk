@@ -639,6 +639,24 @@ wheels = [
 ]
 
 [[package]]
+name = "diffrax"
+version = "0.7.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "equinox" },
+    { name = "jax" },
+    { name = "jaxtyping" },
+    { name = "lineax" },
+    { name = "optimistix" },
+    { name = "typing-extensions" },
+    { name = "wadler-lindig" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5a/ea/a22853377a840d70d1d174d43183f12990c66eecf34ba7e76eec781249d0/diffrax-0.7.2.tar.gz", hash = "sha256:9adc70fe90dba83f7dd839845839b2531a3dd736a3944fe1aa26598507cfb48e", size = 155159, upload-time = "2026-02-18T01:14:04.964Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/48/c42f657f3d6b4d9d9674c9bc48e763d024511ea4cc1d6e0c68c7b4380c43/diffrax-0.7.2-py3-none-any.whl", hash = "sha256:1beee2f991cd049962fe3c89da28f933753aa66d80bef857533276c9f23301ed", size = 199673, upload-time = "2026-02-18T01:14:03.38Z" },
+]
+
+[[package]]
 name = "dill"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1723,6 +1741,21 @@ wheels = [
 ]
 
 [[package]]
+name = "lineax"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "equinox" },
+    { name = "jax" },
+    { name = "jaxtyping" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/35/d6/4e28416a6fe58dd6bc7565b1ffa330f4d0ba7d74212642b1b734c511299e/lineax-0.1.0.tar.gz", hash = "sha256:5f1a8f060142af2cdbf7d66b99e8d3071c3aa734b677df6339df4b4c4c0554d2", size = 50209, upload-time = "2026-01-27T21:17:26.652Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/80/0c/2ed47112fc1958a0a81c9b015d4e1861953a1ec3a17b081c0180a25ce82c/lineax-0.1.0-py3-none-any.whl", hash = "sha256:f00911c6b07d427c4835db46856970c8348bc82a035b51f4386ad09382af957a", size = 74600, upload-time = "2026-01-27T21:17:25.33Z" },
+]
+
+[[package]]
 name = "linkify-it-py"
 version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2343,6 +2376,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6d/3b/90c11f740a3538200b61cd2b7d9346959cb9e31e0bdea3d2f886b7262203/optax-0.2.6.tar.gz", hash = "sha256:ba8d1e12678eba2657484d6feeca4fb281b8066bdfd5efbfc0f41b87663109c0", size = 269660, upload-time = "2025-09-15T22:41:24.76Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b8/ec/19c6cc6064c7fc8f0cd6d5b37c4747849e66040c6ca98f86565efc2c227c/optax-0.2.6-py3-none-any.whl", hash = "sha256:f875251a5ab20f179d4be57478354e8e21963373b10f9c3b762b94dcb8c36d91", size = 367782, upload-time = "2025-09-15T22:41:22.825Z" },
+]
+
+[[package]]
+name = "optimistix"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "equinox" },
+    { name = "jax" },
+    { name = "jaxtyping" },
+    { name = "lineax" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5c/0b/3bdc0e698cb0d264e5dca0b5bb171342a950a43fa6e046d8c57189298422/optimistix-0.1.0.tar.gz", hash = "sha256:f05c9104748e87e1dc10a0b4a2be94e427f98c3eab0b1d41ea24a593d76be03d", size = 70164, upload-time = "2026-02-16T13:35:43.991Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/53/6a81a6ebb1739f19c32002139719d4ee021a349d5bdbe066910feed327a1/optimistix-0.1.0-py3-none-any.whl", hash = "sha256:c8edda7bf7fe48839c93fcd72bce750c950ed9f7033158303150b7ab395add81", size = 101740, upload-time = "2026-02-16T13:35:42.971Z" },
 ]
 
 [[package]]
@@ -3358,12 +3407,20 @@ models = [
     { name = "jaxellip" },
     { name = "optuna" },
     { name = "polars" },
-    { name = "pymablock" },
     { name = "ray", extra = ["tune"], marker = "sys_platform != 'win32'" },
     { name = "sax" },
+    { name = "sympy" },
+]
+pymablock = [
+    { name = "pymablock" },
+]
+qutip = [
+    { name = "qutip-jax" },
+    { name = "qutip-qip" },
+]
+scqubits = [
     { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "scqubits", version = "4.3.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
-    { name = "sympy" },
 ]
 netket = [
     { name = "flax" },
@@ -3427,14 +3484,16 @@ requires-dist = [
     { name = "polars", marker = "extra == 'models'" },
     { name = "pyaedt", extras = ["graphics"], marker = "extra == 'hfss'", specifier = ">=0.15.0" },
     { name = "pyglet", marker = "extra == 'graphics'", specifier = "<2" },
-    { name = "pymablock", marker = "extra == 'models'", specifier = ">=2.2.1" },
+    { name = "pymablock", marker = "extra == 'pymablock'", specifier = ">=2.2.1" },
+    { name = "qutip-jax", marker = "extra == 'qutip'", specifier = ">=0.1.1" },
+    { name = "qutip-qip", marker = "extra == 'qutip'", specifier = ">=0.4.1" },
     { name = "ray", extras = ["tune"], marker = "sys_platform != 'win32' and extra == 'models'" },
     { name = "sax", marker = "extra == 'models'", specifier = ">=0.16.11" },
-    { name = "scqubits", marker = "extra == 'models'" },
+    { name = "scqubits", marker = "extra == 'scqubits'" },
     { name = "sympy", marker = "extra == 'models'" },
     { name = "trimesh", marker = "extra == 'graphics'" },
 ]
-provides-extras = ["graphics", "hfss", "models", "netket"]
+provides-extras = ["graphics", "hfss", "models", "netket", "pymablock", "qutip", "scqubits"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3507,6 +3566,36 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1c/17/b1724f33d1fc52a11895d6649bcb9df4015c0ff521a04e82f01ff1680df3/qutip-5.2.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:ad70ceac878dd9c35b84697e83936e5f4e7c9659987a8a6104d7ecfd08e3ed51", size = 11073582, upload-time = "2026-01-26T17:30:37.992Z" },
     { url = "https://files.pythonhosted.org/packages/db/f6/66a3355fe828b7342c86d6d56c741e57a15c98a13512d3016cd88733d370/qutip-5.2.3-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ed6c54a04aa02e8b22f5bd31e0314e6bfe22e3c11697910816aa38e2c51eeb30", size = 32908243, upload-time = "2026-01-26T17:30:40.328Z" },
     { url = "https://files.pythonhosted.org/packages/14/bd/2912700775e1fd2d7f4b4e8d099dd32f04b90c7f178fc3d59f8fe0bb78d7/qutip-5.2.3-cp313-cp313-win_amd64.whl", hash = "sha256:53ca716ac2b0ceabc7e5ed51b593cb79d42faa31a6fa72c47681fc491140a058", size = 10703167, upload-time = "2026-01-26T17:30:42.348Z" },
+]
+
+[[package]]
+name = "qutip-jax"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "diffrax" },
+    { name = "equinox" },
+    { name = "jax" },
+    { name = "qutip" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/91/837887d247addb171d45f4a9ec56721bb14e84f378609fb65076457f052c/qutip_jax-0.1.1.tar.gz", hash = "sha256:9177fdd58dd7320166f326ad74395c7883412f459a6cc3a470d4d65271432876", size = 33809, upload-time = "2025-05-29T14:54:36.821Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/1a/487656f04bc5ae581047aa3c08dba24e42346f2f094ddd12de22211ef323/qutip_jax-0.1.1-py3-none-any.whl", hash = "sha256:5db62504193298ebc197c03a98cdeaccf952811631de62b34546817594fbd6d4", size = 27991, upload-time = "2025-05-29T14:54:35.18Z" },
+]
+
+[[package]]
+name = "qutip-qip"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "qutip" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b3/74/19bb890570b0ad854f099858f5e5a64cc2268c3ea14ccd52309d10508925/qutip_qip-0.4.1.tar.gz", hash = "sha256:110f15602086f22f90767b5dd22de566f5429b037865409df09c61ac1f664191", size = 161744, upload-time = "2025-04-07T17:26:02.555Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/99/85/50622645103786162a196e054f7875ce55f6ec3336797123286abc7eb472/qutip_qip-0.4.1-py3-none-any.whl", hash = "sha256:562050f96c445d6862d83d56f5dc3064662ddaf1889825fc9e9ed8fb8d868ece", size = 140822, upload-time = "2025-04-07T17:26:01.159Z" },
 ]
 
 [[package]]
