@@ -14,58 +14,46 @@ best fit their needs.
  Why multiple simulation approaches?
 *************************************
 
-Designing a superconducting quantum chip involves physics at many scales: from the
-electromagnetic properties of individual transmission lines, through the resonant
-behaviour of microwave cavities, to the quantum dynamics of qubits and gates. No single
-simulation tool covers all of these scales efficiently, so a practical design flow
-combines several complementary methods
+Designing a superconducting quantum chip involves physics at many scales. No single
+simulation tool covers all of them efficiently, so a practical design flow combines
+several complementary methods
 :cite:`krantzQuantumEngineersGuide2019,blaisCircuitQuantumElectrodynamics2021`.
 
-The notebooks in this collection are organised around **five broad simulation
-categories**:
+The notebooks in this collection are organized around **four simulation categories**:
 
 1. **Scattering-parameter (S-parameter) circuit models** — fast, analytical or
    semi-analytical models for passive microwave components.
 2. **FEM-based electromagnetic simulations** — full-wave or quasi-static solvers that
    capture geometry-dependent effects beyond simple analytical formulas.
-3. **Hamiltonian analysis** — numerical or perturbative diagonalisation of the quantum
+3. **Hamiltonian analysis** — numerical or perturbative diagonalization of the quantum
    Hamiltonian to extract qubit parameters such as frequency, anharmonicity, and
    dispersive shift.
 4. **Pulse-level simulations** — time-domain simulation of control pulses acting on the
    quantum system, including gate fidelity, leakage, and decoherence.
-5. **Optimisation and design-space exploration** — automated parameter sweeps or
-   optimisation loops that call one of the methods above as the objective function.
+
+Any of these methods can be wrapped in an automated optimization loop (e.g. with `Optuna
+<https://optuna.org/>`_) for design-space exploration.
 
 *******************************************
  Where each method fits in the design flow
 *******************************************
 
-The typical workflow when creating a chip with **qpdk / gdsfactory** can be summarised
-as:
+The typical workflow when creating a chip with **qpdk / gdsfactory** can be summarized
+as follows. Each stage may loop back to earlier stages as the design is refined.
 
-.. code-block:: text
+.. mermaid::
 
-    Physical requirements        (qubit frequency, coupling, T₁, …)
-         │
-         ▼
-    Hamiltonian / perturbation   (map requirements → circuit parameters)
-         │
-         ▼
-    Circuit / S-parameter models (dimension passive components)
-         │
-         ▼
-    Layout with gdsfactory       (draw the chip in qpdk)
-         │
-         ▼
-    FEM verification              (validate geometry with a full-wave solver)
-         │
-         ▼
-    Pulse-level simulation        (predict gate performance)
-         │
-         ▼
-    Fabrication & measurement
-
-Each stage may loop back to earlier stages as the design is refined.
+    flowchart TB
+        A["Physical requirements\n(qubit frequency, coupling, T₁, …)"]
+        B["Hamiltonian / perturbation analysis\n(map requirements → circuit parameters)"]
+        C["Circuit / S-parameter models\n(design passive components)"]
+        D["Layout with gdsfactory\n(draw the chip in qpdk)"]
+        E["FEM verification\n(validate geometry with a full-wave solver)"]
+        F["Pulse-level simulation\n(predict gate performance)"]
+        G["Fabrication & measurement"]
+        A --> B --> C --> D --> E --> F --> G
+        F -.-> A
+        E -.-> C
 
 ****************************
  S-parameter circuit models
@@ -79,10 +67,10 @@ implemented with `JAX <https://jax.readthedocs.io/>`_ and composed into circuits
 
 **Typical use cases:**
 
-- Dimensioning coplanar-waveguide (CPW) resonators, capacitors, and coupling structures.
+- Choosing coplanar-waveguide (CPW) resonator, capacitor, and coupling structure
+  geometries to meet target parameters.
 - Predicting resonance frequencies and quality factors of passive components.
 - Simulating complete test chips with many resonators from a gdsfactory netlist.
-- Validating analytical models against reference simulators such as Qucs-S.
 
 **Notebooks:**
 
@@ -104,7 +92,7 @@ implemented with `JAX <https://jax.readthedocs.io/>`_ and composed into circuits
  FEM-based electromagnetic simulations
 ***************************************
 
-Finite-element method (FEM) and full-wave solvers discretise Maxwell's equations over
+Finite-element method (FEM) and full-wave solvers discretize Maxwell's equations over
 the physical geometry of the device. They capture effects such as radiation, surface
 currents, and substrate modes that analytical models may miss
 :cite:`gopplCoplanarWaveguideResonators2008a,chenCompactInductorcapacitorResonators2023`.
@@ -116,7 +104,7 @@ currents, and substrate modes that analytical models may miss
   geometry.
 - Running driven-modal (port-based) S-parameter simulations of capacitors and other
   structures.
-- Optimising component geometry against a target specification (e.g. a desired
+- Optimizing component geometry against a target specification (e.g. a desired
   capacitance value).
 
 **Notebooks:**
@@ -128,20 +116,20 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
-- :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimisation with the
-  Palace FEM solver to optimise an interdigital capacitor towards a target capacitance.
+- :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
+  Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
 For additional electromagnetic simulation examples using **Palace** and **Meep** with
-gdsfactory, see the `gsim documentation <https://gdsfactory.github.io/gsim/>`_.
+gdsfactory and gdsfactory+, see the `gsim documentation
+<https://gdsfactory.github.io/gsim/>`_.
 
 **********************
  Hamiltonian analysis
 **********************
 
-Superconducting qubits are nonlinear quantum circuits whose behaviour is governed by a
-Hamiltonian. Diagonalising this Hamiltonian — numerically or perturbatively — yields
-qubit frequencies, anharmonicities, and coupling strengths that feed back into the
-layout design
+Superconducting qubits are nonlinear quantum circuits whose behavior is governed by a
+Hamiltonian. Diagonalizing this Hamiltonian yields qubit frequencies, anharmonicities,
+and coupling strengths that feed back into the layout design
 :cite:`kochChargeinsensitiveQubitDesign2007a,blaisCircuitQuantumElectrodynamics2021`.
 
 **Typical use cases:**
@@ -150,20 +138,19 @@ layout design
   (:math:`\alpha`) from Josephson energy :math:`E_J` and charging energy :math:`E_C`.
 - Calculating the dispersive shift :math:`\chi` of a transmon–resonator system for
   readout design.
-- Exploring parameter space (e.g. flux-tunable transmons) to find operating points.
 - Translating Hamiltonian-level parameters into physical layout dimensions.
 
 **Notebooks:**
 
-- :doc:`notebooks/scqubits_parameter_calculation` — Full numerical diagonalisation of
+- :doc:`notebooks/scqubits_parameter_calculation` — Full numerical diagonalization of
   the transmon–resonator Hamiltonian with scQubits
   :cite:`groszkowskiScqubitsPythonPackage2021`, compared against analytical perturbation
   theory.
-- :doc:`notebooks/pymablock_dispersive_shift` — Perturbative block-diagonalisation with
+- :doc:`notebooks/pymablock_dispersive_shift` — Perturbative block-diagonalization with
   Pymablock :cite:`arayaDayPymablockAlgorithmPackage2025` to compute the dispersive
   shift symbolically and map the result to layout parameters.
 - :doc:`notebooks/netket_transmon_design` — Transmon Hamiltonian analysis with NetKet
-  (exact diagonalisation and variational methods) including extraction of qubit
+  (exact diagonalization and variational methods) including extraction of qubit
   parameters and conversion to layout dimensions.
 
 *************************
@@ -228,7 +215,7 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
       - FEM electromagnetics
       - Ansys HFSS, PyAEDT
     - - :doc:`notebooks/optimize_capacitor_optuna`
-      - Optimisation / FEM
+      - FEM optimization
       - Optuna, Palace
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis

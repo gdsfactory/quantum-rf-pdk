@@ -187,6 +187,8 @@ for examples of:
 1. Add citations where appropriate using Sphinx citation syntax
 1. Test that the script runs without errors
 1. For samples, ensure the generated component is added to the test suite
+1. **Update `docs/notebooks.rst`** when adding or removing notebooks — this page describes each notebook and categorizes
+   it by simulation approach
 
 ## Pre-commit Hooks Details
 
