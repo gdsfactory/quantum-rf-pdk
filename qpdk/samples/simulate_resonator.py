@@ -151,14 +151,16 @@ if __name__ == "__main__":
     #
     # df = results.scattering_matrix
     # df.columns = df.columns.str.strip()
-    # s_complex = 10 ** df["|S[2][1]| (dB)"].values * np.exp(
+    # s_complex = 10 ** (df["|S[2][1]| (dB)"].values / 20) * np.exp(
     #     1j * np.deg2rad(df["arg(S[2][1]) (deg.)"].values)
     # )
-    # ntw = skrf.Network(f=df["f (GHz)"].values, s=s_complex, z0=50)
-    # cap = np.imag(ntw.y.flatten()) / (ntw.f * 2 * np.pi)
+    # # Assuming a 1-port reflection measurement for capacitance extraction
+    # y11 = (1 - s_complex) / (1 + s_complex) / 50.0
+    # freq_hz = df["f (GHz)"].values * 1e9
+    # cap = np.imag(y11) / (freq_hz * 2 * np.pi)
     # display(cap)
     #
-    # plt.plot(ntw.f, cap * 1e15)
+    # plt.plot(freq_hz / 1e9, cap * 1e15)
     # plt.xlabel("Freq (GHz)")
     # plt.ylabel("C (fF)")
     #

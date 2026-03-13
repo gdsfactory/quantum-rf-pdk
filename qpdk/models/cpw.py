@@ -45,7 +45,6 @@ from typing import cast
 import gdsfactory as gf
 import jax
 import jax.numpy as jnp
-from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 
@@ -528,22 +527,19 @@ def get_cpw_substrate_params() -> tuple[float, float, float]:
     return float(h), float(t), float(ep_r)
 
 
-def get_cpw_dimensions(cross_section: CrossSectionSpec) -> tuple[float, float]:
+def get_cpw_dimensions(
+    cross_section: CrossSectionSpec, **kwargs
+) -> tuple[float, float]:
     """Extracts CPW width and gap from a cross-section specification.
 
     Args:
         cross_section: A gdsfactory cross-section specification.
+        **kwargs: Additional keyword arguments passed to `gf.get_cross_section`.
 
     Returns:
         tuple[float, float]: Width and gap of the CPW.
     """
-    xs: CrossSection
-    if isinstance(cross_section, CrossSection):
-        xs = cross_section
-    elif callable(cross_section):
-        xs = cast(CrossSection, cross_section())
-    else:
-        xs = gf.get_cross_section(cross_section)
+    xs = gf.get_cross_section(cross_section, **kwargs)
 
     width = xs.width
     try:
@@ -584,6 +580,9 @@ def cpw_parameters(
         ``(ep_eff, z0)`` — effective permittivity (dimensionless) and
         characteristic impedance (Ω).
     """
+    width = float(width)
+    gap = float(gap)
+
     h_um, t_um, ep_r = get_cpw_substrate_params()
 
     # Convert to SI (metres)
