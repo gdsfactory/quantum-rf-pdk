@@ -12,7 +12,7 @@
 # # Transmon Qubit Design with NetKet
 #
 # This notebook demonstrates how to use
-# [NetKet](https://netket.readthedocs.io/) {cite:p}`vicentiniNetKetMachineLearning2022`
+# [NetKet](https://netket.readthedocs.io/) {cite:p}`netket3:2022,netket2:2019`
 # to numerically analyse the transmon qubit Hamiltonian for superconducting
 # qubit design, and how to translate the resulting quantum parameters into
 # physical layout parameters using **qpdk**.
