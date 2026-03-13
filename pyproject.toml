@@ -21,6 +21,7 @@ hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
+  "netket>=3.12",
   "optuna",
   "pymablock>=2.2.1",
   "ray[tune]; sys_platform != 'win32'",
