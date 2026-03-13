@@ -9,13 +9,13 @@ from numpy.testing import assert_allclose
 from qpdk.models.constants import c_0
 from qpdk.models.cpw import (
     cpw_epsilon_eff,
+    cpw_parameters,
     cpw_thickness_correction,
     cpw_z0,
     propagation_constant,
     transmission_line_s_params,
 )
 from qpdk.models.math import ellipk_ratio
-from qpdk.models.media import cpw_parameters
 from qpdk.models.waveguides import straight
 
 
@@ -123,9 +123,9 @@ class TestCPWThicknessCorrection:
         _ep_t, z0_t = cpw_thickness_correction(10e-6, 6e-6, 0.2e-6, ep0)
         assert float(z0_t) < float(z0_0)
 
-    def test_matches_scikit_rf(self) -> None:
-        """Result should match scikit-rf CPW within ~0.1%."""
-        # Known scikit-rf values for w=10um, s=6um, h=500um, t=0.2um, ep_r=11.45
+    def test_matches_known_values(self) -> None:
+        """Result should match known CPW values within ~0.1%."""
+        # Known values for w=10um, s=6um, h=500um, t=0.2um, ep_r=11.45
         ep_eff, z0 = cpw_parameters(10.0, 6.0)
         assert_allclose(z0, 49.28, rtol=0.002)  # ~0.2% tolerance
         assert_allclose(ep_eff, 6.065, rtol=0.001)

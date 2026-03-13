@@ -25,7 +25,6 @@ models = [
   "pymablock>=2.2.1",
   "ray[tune]; sys_platform != 'win32'",
   "sax>=0.16.11",
-  "scikit-rf",
   "scqubits",
   "sympy",
   "polars",

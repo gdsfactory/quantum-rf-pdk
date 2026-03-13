@@ -383,7 +383,7 @@ def qubit_with_resonator(
 
     Note:
         This function is not JIT-compiled because it depends on :func:`~straight_shorted`,
-        which internally uses scikit-rf for transmission line modeling.
+        which internally uses cpw_parameters for transmission line modeling.
 
     Args:
         f: Array of frequency points in Hz.

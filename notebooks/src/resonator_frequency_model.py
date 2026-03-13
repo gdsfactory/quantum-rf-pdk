@@ -11,7 +11,7 @@
 # %% [markdown]
 # # Resonator frequency estimation models
 #
-# This example demonstrates estimating resonance frequencies of superconducting microwave resonators using scikit-rf and Jax.
+# This example demonstrates estimating resonance frequencies of superconducting microwave resonators using Jax.
 
 # %% tags=["hide-input", "hide-output"]
 import math
@@ -20,9 +20,8 @@ from functools import partial
 
 import jax.numpy as jnp
 import sax
-import skrf
 
-from qpdk.models.media import cpw_media_skrf
+from qpdk.models.cpw import cpw_parameters
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator_frequency,
@@ -39,15 +38,13 @@ from qpdk.tech import coplanar_waveguide
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    cpw = cpw_media_skrf(width=10, gap=6)(
-        frequency=skrf.Frequency(2, 9, 101, unit="GHz")
-    )
-    print(f"{cpw=!r}")
-    print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
+    ep_eff, z0 = cpw_parameters(width=10, gap=6)
+    print(f"{ep_eff=!r}")
+    print(f"{z0=!r}")  # Characteristic impedance
 
     res_freq = resonator_frequency(
         length=4000,
-        epsilon_eff=float(jnp.real(jnp.mean(cpw.ep_r))),
+        epsilon_eff=float(jnp.real(ep_eff)),
         is_quarter_wave=True,
     )
     print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")

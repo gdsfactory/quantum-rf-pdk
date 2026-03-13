@@ -14,15 +14,15 @@ from sax.models.rf import capacitor, tee
 
 from qpdk.logger import logger
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
+from qpdk.models.cpw import (
+    cpw_ep_r_from_cross_section,
+    cpw_z0_from_cross_section,
+    get_cpw_dimensions,
+)
 from qpdk.models.math import (
     capacitance_per_length_conformal,
     ellipk_ratio,
     epsilon_eff,
-)
-from qpdk.models.media import (
-    cpw_ep_r_from_cross_section,
-    cpw_z0_from_cross_section,
-    get_cpw_dimensions,
 )
 from qpdk.models.waveguides import straight
 

@@ -147,12 +147,12 @@ if __name__ == "__main__":
     # )
     #
     # display(results)
-    # import skrf
+
     #
     # df = results.scattering_matrix
     # df.columns = df.columns.str.strip()
     # s_complex = 10 ** df["|S[2][1]| (dB)"].values * np.exp(
-    #     1j * skrf.degree_2_radian(df["arg(S[2][1]) (deg.)"].values)
+    #     1j * np.deg2rad(df["arg(S[2][1]) (deg.)"].values)
     # )
     # ntw = skrf.Network(f=df["f (GHz)"].values, s=s_complex, z0=50)
     # cap = np.imag(ntw.y.flatten()) / (ntw.f * 2 * np.pi)
