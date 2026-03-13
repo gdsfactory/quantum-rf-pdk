@@ -160,8 +160,10 @@ def resonator_frequency(
 
     .. math::
 
+        \begin{aligned}
         f &= \frac{v_p}{4L}  \mathtt{ (quarter-wave resonator)} \\
         f &= \frac{v_p}{2L}  \mathtt{ (half-wave resonator)}
+        \end{aligned}
 
     The phase velocity is :math:`v_p = c_0 / \sqrt{\varepsilon_{\mathrm{eff}}}`.
 

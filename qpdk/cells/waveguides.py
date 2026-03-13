@@ -108,7 +108,7 @@ def straight_double_open(
     r"""Returns a straight waveguide with etched gaps at both ends.
 
     Note:
-        This may be treated as a :math:`\lambda/2` as a straight resonator in some contexts.
+        This may be treated as a :math:`\lambda/2` straight resonator in some contexts.
 
     Args:
         length: Length of the straight waveguide in μm.
