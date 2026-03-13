@@ -10,15 +10,7 @@ from qpdk.models.junction import josephson_junction, squid_junction
 
 sax.set_port_naming_strategy("optical")
 
-from qpdk.models.constants import (
-    DEFAULT_FREQUENCY,
-)
-from qpdk.models.couplers import (
-    coupler_ring,
-    coupler_straight,
-    cpw_cpw_coupling_capacitance,
-)
-from qpdk.models.cpw import (
+from sax.models.rf import (
     cpw_epsilon_eff,
     cpw_thickness_correction,
     cpw_z0,
@@ -27,6 +19,15 @@ from qpdk.models.cpw import (
     microstrip_z0,
     propagation_constant,
     transmission_line_s_params,
+)
+
+from qpdk.models.constants import (
+    DEFAULT_FREQUENCY,
+)
+from qpdk.models.couplers import (
+    coupler_ring,
+    coupler_straight,
+    cpw_cpw_coupling_capacitance,
 )
 from qpdk.models.generic import (
     admittance,

@@ -9,15 +9,15 @@ import skrf
 from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
-from skrf.media import CPW
-
-from qpdk import LAYER_STACK
-from qpdk.helper import deprecated
-from qpdk.models.cpw import (
+from sax.models.rf import (
     cpw_epsilon_eff,
     cpw_thickness_correction,
     cpw_z0,
 )
+from skrf.media import CPW
+
+from qpdk import LAYER_STACK
+from qpdk.helper import deprecated
 from qpdk.tech import material_properties
 
 DEPRECATION_MSG = "Prefer cpw_parameters or the functions in qpdk.models.cpw for JAX-jittable analysis."
