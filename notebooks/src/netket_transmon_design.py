@@ -672,13 +672,7 @@ data = [
 
 df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"], orient="row")
 
-with pl.Config(
-    tbl_rows=30,
-    tbl_formatting="MARKDOWN",
-    tbl_hide_column_data_types=True,
-    tbl_hide_dataframe_shape=True,
-):
-    display(df)
+display(df.to_pandas().style.hide(axis="index"))
 
 # %% [markdown]
 # ## References
