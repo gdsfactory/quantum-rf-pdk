@@ -24,7 +24,7 @@ models = [
   "optuna",
   "pymablock>=2.2.1",
   "ray[tune]; sys_platform != 'win32'",
-  "sax[rf]>=0.16.11",
+  "sax[rf]>=0.16.14",
   "scikit-rf",
   "scqubits",
   "sympy",
