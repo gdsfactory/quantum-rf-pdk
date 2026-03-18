@@ -147,11 +147,6 @@ def test_sax_stype_functions_in_models_dict():
                 continue
 
     models_names = set(qpdk.models.models.keys())
-    # sax_stype_functions.add("straight")
-    # sax_stype_functions.add("straight_microstrip")
-    # sax_stype_functions.discard("coplanar_waveguide")
-    # sax_stype_functions.discard("microstrip")
-    # sax_stype_functions.discard("ellipk_ratio")
 
     assert sax_stype_functions == models_names, (
         "There are functions with sax.SType return type that are missing from the qpdk.models.models dictionary"
