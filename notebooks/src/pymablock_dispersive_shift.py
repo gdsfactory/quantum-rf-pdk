@@ -54,6 +54,7 @@ from pymablock.number_ordered_form import NumberOperator
 from sympy.physics.quantum.boson import BosonOp
 
 from qpdk import PDK
+from qpdk.helper import display_dataframe
 from qpdk.models.constants import c_0
 from qpdk.models.cpw import cpw_parameters
 
@@ -428,7 +429,7 @@ data = [
 
 df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"])
 
-display(df.to_pandas().style.hide(axis="index"))
+display_dataframe(df)
 
 
 # %% [markdown]

@@ -68,6 +68,7 @@ from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
 from qpdk import PDK
+from qpdk.helper import display_dataframe
 from qpdk.models.constants import c_0
 from qpdk.models.cpw import cpw_parameters
 
@@ -688,7 +689,7 @@ data = [
 
 df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"], orient="row")
 
-display(df.to_pandas().style.hide(axis="index"))
+display_dataframe(df)
 
 # %% [markdown]
 # ## References
