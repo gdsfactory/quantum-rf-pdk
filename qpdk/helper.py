@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import warnings
 from collections.abc import Callable, Sequence
 from functools import wraps
@@ -145,6 +146,74 @@ def layerenum_to_tuple(layerenum: LayerEnum) -> Layer:
     return layerenum.layer, layerenum.datatype
 
 
+_GREEK_MAP: dict[str, str] = {
+    r"\varepsilon": "ε",
+    r"\varphi": "φ",
+    r"\alpha": "α",
+    r"\beta": "β",
+    r"\gamma": "γ",
+    r"\delta": "δ",
+    r"\epsilon": "ε",
+    r"\zeta": "ζ",
+    r"\eta": "η",
+    r"\theta": "θ",
+    r"\iota": "ι",
+    r"\kappa": "κ",
+    r"\lambda": "λ",
+    r"\mu": "μ",
+    r"\nu": "ν",
+    r"\xi": "ξ",
+    r"\pi": "π",
+    r"\rho": "ρ",
+    r"\sigma": "σ",
+    r"\tau": "τ",
+    r"\upsilon": "υ",
+    r"\phi": "φ",
+    r"\chi": "χ",
+    r"\psi": "ψ",
+    r"\omega": "ω",
+    r"\Gamma": "Γ",
+    r"\Delta": "Δ",
+    r"\Theta": "Θ",
+    r"\Lambda": "Λ",
+    r"\Xi": "Ξ",
+    r"\Pi": "Π",
+    r"\Sigma": "Σ",
+    r"\Phi": "Φ",
+    r"\Psi": "Ψ",
+    r"\Omega": "Ω",
+}
+
+
+def _latex_math_to_html(expr: str) -> str:
+    r"""Convert a single LaTeX math expression (without ``$`` delimiters) to HTML.
+
+    Handles ``\mathrm``/``\text`` commands, Greek letters, and sub-/superscripts.
+    """
+    # Strip \mathrm{...} and \text{...} wrappers, keeping their content
+    expr = re.sub(r"\\(?:mathrm|text|textrm)\{([^}]+)\}", r"\1", expr)
+
+    # Replace Greek letter commands with Unicode (longest names first)
+    for latex, char in sorted(_GREEK_MAP.items(), key=lambda x: -len(x[0])):
+        expr = expr.replace(latex, char)
+
+    # Subscripts: _{...} then _X
+    expr = re.sub(r"_\{([^}]+)\}", r"<sub>\1</sub>", expr)
+    expr = re.sub(r"_(\w)", r"<sub>\1</sub>", expr)
+
+    # Superscripts: ^{...} then ^X
+    expr = re.sub(r"\^\{([^}]+)\}", r"<sup>\1</sup>", expr)
+    return re.sub(r"\^(\w)", r"<sup>\1</sup>", expr)
+
+
+def _latex_to_html(text: str) -> str:
+    r"""Convert ``$...$`` delimited LaTeX math in *text* to HTML.
+
+    Non-math text is returned unchanged.
+    """
+    return re.sub(r"\$([^$]+)\$", lambda m: _latex_math_to_html(m.group(1)), text)
+
+
 def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     """Display a DataFrame with both HTML and LaTeX representations.
 
@@ -153,21 +222,33 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     ``_repr_latex_`` representations so that Jupyter Book renders a proper
     table in both HTML and PDF outputs.
 
+    Cell values may contain ``$...$`` delimited LaTeX math.  The HTML
+    representation converts these to Unicode/HTML (subscripts, Greek
+    letters, etc.) while the LaTeX representation passes them through as
+    native math.
+
     Args:
         df: A polars or pandas DataFrame to display.
     """
+    import pandas as pd_mod
     from IPython.display import display
 
     # Convert polars DataFrame to pandas if needed
-    pdf: pd.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
+    pdf: pd_mod.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
 
     class _DualFormatTable:
         """Table object providing both HTML and LaTeX representations."""
 
         def _repr_html_(self) -> str:
-            return pdf.style.hide(axis="index")._repr_html_()
+            html_df = pdf.copy()
+            for col in html_df.columns:
+                if pd_mod.api.types.is_string_dtype(html_df[col]):
+                    html_df[col] = html_df[col].map(
+                        lambda x: _latex_to_html(x) if isinstance(x, str) else x
+                    )
+            return html_df.style.hide(axis="index")._repr_html_()
 
         def _repr_latex_(self) -> str:
-            return pdf.to_latex(index=False)
+            return pdf.to_latex(index=False, escape=False)
 
     display(_DualFormatTable())
