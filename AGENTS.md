@@ -105,6 +105,9 @@ All PRs must pass:
 1. **Use JAX for analytical models**: When implementing analytical models for S-parameters, prefer using JAX-compatible
    functions (e.g., `jnp` instead of `np`, `jaxellip` for elliptic integrals) and enable JIT compilation with
    `@partial(jax.jit, inline=True)` for helper functions.
+1. **Manage bibliography entries cleanly**: When editing the `bibliography.bib` file,
+   ensure that if a reference contains a valid `doi` field, it should **not** include
+   a `url` or `urldate` field to avoid redundant citation information.
 
 ## Testing Guidelines
 
