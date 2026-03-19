@@ -1,9 +1,15 @@
 """Helper functions for the qpdk package."""
 
+from __future__ import annotations
+
 import warnings
 from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import polars as pl
 
 from gdsfactory import Component, ComponentAllAngle, LayerEnum, get_component
 from gdsfactory.technology import LayerViews
@@ -137,3 +143,31 @@ def layerenum_to_tuple(layerenum: LayerEnum) -> Layer:
         layerenum: The LayerEnum object to convert.
     """
     return layerenum.layer, layerenum.datatype
+
+
+def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
+    """Display a DataFrame with both HTML and LaTeX representations.
+
+    Wraps a polars or pandas :class:`~pandas.DataFrame` in an object that
+    provides both ``_repr_html_`` (styled, index-hidden) and
+    ``_repr_latex_`` representations so that Jupyter Book renders a proper
+    table in both HTML and PDF outputs.
+
+    Args:
+        df: A polars or pandas DataFrame to display.
+    """
+    from IPython.display import display
+
+    # Convert polars DataFrame to pandas if needed
+    pdf: pd.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
+
+    class _DualFormatTable:
+        """Table object providing both HTML and LaTeX representations."""
+
+        def _repr_html_(self) -> str:
+            return pdf.style.hide(axis="index")._repr_html_()
+
+        def _repr_latex_(self) -> str:
+            return pdf.to_latex(index=False)
+
+    display(_DualFormatTable())
