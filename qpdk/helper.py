@@ -230,11 +230,11 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     Args:
         df: A polars or pandas DataFrame to display.
     """
-    import pandas as pd_mod
+    import pandas as pd
     from IPython.display import display
 
     # Convert polars DataFrame to pandas if needed
-    pdf: pd_mod.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
+    pdf: pd.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
 
     class _DualFormatTable:
         """Table object providing both HTML and LaTeX representations."""
@@ -242,7 +242,7 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
         def _repr_html_(self) -> str:
             html_df = pdf.copy()
             for col in html_df.columns:
-                if pd_mod.api.types.is_string_dtype(html_df[col]):
+                if pd.api.types.is_string_dtype(html_df[col]):
                     html_df[col] = html_df[col].map(
                         lambda x: _latex_to_html(x) if isinstance(x, str) else x
                     )
