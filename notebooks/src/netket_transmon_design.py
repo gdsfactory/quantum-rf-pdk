@@ -195,14 +195,16 @@ class VariationalTransmon(nn.Module):
     """
 
     n_max: int = 30
+    n_freqs: int = 4
 
     @nn.compact
     def __call__(self, x):
         """Evaluate the model on a set of input configurations."""
         # x has shape (..., 1)
         x = x.astype(jnp.float32)
-        # Sinusoidal feature encoding at geometrically spaced frequencies
-        freqs = 2.0 ** jnp.arange(4) * (jnp.pi / self.n_max)
+        # Sinusoidal feature encoding at geometrically spaced frequencies;
+        # maps the scalar input to a 2*n_freqs-dimensional feature vector.
+        freqs = 2.0 ** jnp.arange(self.n_freqs) * (jnp.pi / self.n_max)
         x = jnp.concatenate([jnp.sin(x * freqs), jnp.cos(x * freqs)], axis=-1)
         x = nn.Dense(features=32)(x)
         x = jnp.tanh(x)
