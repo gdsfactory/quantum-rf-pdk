@@ -170,8 +170,14 @@ f_{{12}} = {f12:.4f}\,\mathrm{{GHz}} \\
 # We then compute the energy expectation value by summing over all charge states,
 # and use JAX's automatic differentiation to compute gradients for optimization.
 #
-# For the network architecture, we use two hidden layers with Leaky ReLU {cite:p}`maas2013rectifier` non-linearities,
-# constituting a simple multilayer perceptron {cite:p}`rosenblattPerceptronProbabilisticModel1958`.
+# For the network architecture, we use a compact multilayer perceptron
+# {cite:p}`rosenblattPerceptronProbabilisticModel1958` preceded by a
+# sinusoidal input encoding at geometrically spaced frequencies.  This
+# encoding lifts the one-dimensional Fock-state index into a
+# higher-dimensional feature space of sines and cosines, enabling the
+# subsequent :math:`\tanh`-activated hidden layers to approximate the
+# smooth, Gaussian-like ground-state wavefunction much more efficiently
+# than piecewise-linear activations such as Leaky ReLU.
 #
 # For details on VMC with NetKet, see the documentation:
 # https://netket.readthedocs.io/en/latest/vmc-from-scratch/index.html
@@ -179,26 +185,36 @@ f_{{12}} = {f12:.4f}\,\mathrm{{GHz}} \\
 
 # %%
 class VariationalTransmon(nn.Module):
-    """A simple multilayer perceptron neural network.
+    r"""A compact MLP with sinusoidal input encoding for the transmon wavefunction.
 
-    Uses two _fully connected_ linear layers with Leaky ReLU non-linearities
-    followed by a final linear layer to output a single scalar value.
+    Sinusoidal (Fourier) features at geometrically spaced frequencies lift
+    the one-dimensional Fock-state index into a richer feature space, allowing
+    the two :math:`\tanh`-activated hidden layers to approximate the smooth,
+    Gaussian-like ground state much more efficiently than a plain MLP with
+    piecewise-linear activations.
     """
+
+    n_max: int = 30
+    n_freqs: int = 4
 
     @nn.compact
     def __call__(self, x):
         """Evaluate the model on a set of input configurations."""
         # x has shape (..., 1)
         x = x.astype(jnp.float32)
-        x = nn.Dense(features=16)(x)
-        x = nn.leaky_relu(x)
-        x = nn.Dense(features=16)(x)
-        x = nn.leaky_relu(x)
+        # Sinusoidal feature encoding at geometrically spaced frequencies;
+        # maps the scalar input to a 2*n_freqs-dimensional feature vector.
+        freqs = 2.0 ** jnp.arange(self.n_freqs) * (jnp.pi / self.n_max)
+        x = jnp.concatenate([jnp.sin(x * freqs), jnp.cos(x * freqs)], axis=-1)
+        x = nn.Dense(features=32)(x)
+        x = jnp.tanh(x)
+        x = nn.Dense(features=32)(x)
+        x = jnp.tanh(x)
         x = nn.Dense(features=1)(x)
         return jnp.squeeze(x, axis=-1)
 
 
-model = VariationalTransmon()
+model = VariationalTransmon(n_max=n_states - 1)
 parameters = model.init(jax.random.key(0), jnp.ones((1, 1)))
 
 
