@@ -41,7 +41,7 @@ docs = [
   "matplotlib",
   "myst-nb>=1.0",
   "pydata-sphinx-theme",
-  "sphinx>=7.0",
+  "sphinx>=9.0",
   "sphinx-copybutton",
   "sphinxcontrib-bibtex",
   "sphinxcontrib-katex",
