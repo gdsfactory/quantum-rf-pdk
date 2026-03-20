@@ -80,13 +80,13 @@ docs-prerequisites: write-cells write-models write-justfile-help copy-sample-not
 
 # Build the HTML documentation
 [group('docs')]
-docs: docs-prerequisites setup-ipython-config-temporary-before && setup-ipython-config-temporary-after
-    @uv run --all-extras --group docs jb build docs
+docs: docs-prerequisites setup-ipython-config-temporary-before
+    @trap 'just setup-ipython-config-temporary-after' EXIT INT TERM; uv run --all-extras --group docs jb build docs
 
 # Setup LaTeX for PDF documentation
 [group('docs')]
-docs-latex: docs-prerequisites setup-ipython-config-temporary-before && setup-ipython-config-temporary-after
-    @uv run --all-extras --group docs jb build docs --builder latex
+docs-latex: docs-prerequisites setup-ipython-config-temporary-before
+    @trap 'just setup-ipython-config-temporary-after' EXIT INT TERM; uv run --all-extras --group docs jb build docs --builder latex
 
 # Build PDF documentation (requires a TeXLive installation)
 [working-directory: 'docs/_build/latex']
