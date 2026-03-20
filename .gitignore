@@ -172,5 +172,7 @@ scripts/
 # 3D
 *.glb
 *.stl
+
 docs/requirements.txt
 docs/.jupyterlite.doit.db
+docs/_output
