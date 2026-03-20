@@ -3842,8 +3842,8 @@ dev = [
 ]
 docs = [
     { name = "jinja2" },
-    { name = "jupyterlite-core", specifier = "==0.5.1" },
-    { name = "jupyterlite-pyodide-kernel", specifier = "==0.5.2" },
+    { name = "jupyterlite-core" },
+    { name = "jupyterlite-pyodide-kernel" },
     { name = "jupyterlite-sphinx" },
     { name = "jupytext" },
     { name = "linkify-it-py" },
