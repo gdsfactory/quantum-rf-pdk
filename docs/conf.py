@@ -1,6 +1,6 @@
 """Sphinx configuration for Qpdk documentation."""
 
-project = "Qpdk"
+project = "qpdk"
 author = "gdsfactory"
 copyright = "gdsfactory"
 
@@ -13,9 +13,11 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.imgconverter",
+    "sphinx.ext.intersphinx",
     "sphinxcontrib.katex",
     "sphinxcontrib.mermaid",
     "sphinxcontrib.svgbob",
+    "sphinx_design",
     "matplotlib.sphinxext.plot_directive",
     "sphinx_copybutton",
     "sphinxcontrib.bibtex",
@@ -30,6 +32,18 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
 ]
+
+# -- Intersphinx configuration -----------------------------------------------
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "jax": ("https://docs.jax.dev/en/latest/", None),
+    "gdsfactory": ("https://gdsfactory.github.io/gdsfactory/", None),
+    "sax": ("https://flaport.github.io/sax/", None),
+    "netket": ("https://netket.readthedocs.io/en/latest/", None),
+}
 
 # -- MyST configuration ------------------------------------------------------
 myst_enable_extensions = [
@@ -61,9 +75,20 @@ autodoc_type_aliases = {
     "LayerSpec": "LayerSpec",
     "SDict": "sax.SDict",
     "sax.SDict": "sax.SDict",
+    "sax.FloatArrayLike": "FloatArrayLike",
+    "jax.typing.ArrayLike": "ArrayLike",
+    "ArrayLike": "ArrayLike",
     "gdsfactory.typings.CrossSectionSpec": "CrossSectionSpec",
     "gdsfactory.typings.LayerSpec": "LayerSpec",
     "gdsfactory.typings.ComponentSpec": "ComponentSpec",
+    "gdsfactory.typings.ComponentAllAngleSpec": "ComponentAllAngleSpec",
+    "gdsfactory.typings.Port": "Port",
+    "gdsfactory.typings.Ports": "Ports",
+    "gdsfactory.typings.Size": "Size",
+    "gdsfactory.typings.Ints": "Ints",
+    "gdsfactory.typings.Coordinate": "Coordinate",
+    "gdsfactory.typings.Coordinates": "Coordinates",
+    "gdsfactory.typings.Layer": "Layer",
     (
         "CrossSection | str | dict[str, Any] | "
         "Callable[[...], CrossSection] | SymmetricalCrossSection | DCrossSection"
@@ -87,6 +112,11 @@ html_theme_options = {
             "name": "GitHub",
             "url": "https://github.com/gdsfactory/quantum-rf-pdk",
             "icon": "fa-brands fa-github",
+        },
+        {
+            "name": "PDF",
+            "url": "https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf",
+            "icon": "fa-solid fa-file-pdf",
         },
         {
             "name": "PyPI",

@@ -43,6 +43,7 @@ docs = [
   "pydata-sphinx-theme",
   "sphinx>=9.0",
   "sphinx-copybutton",
+  "sphinx-design",
   "sphinxcontrib-bibtex",
   "sphinxcontrib-katex",
   "sphinxcontrib-mermaid>=2.0.1",
