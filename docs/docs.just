@@ -54,6 +54,12 @@ copy-sample-notebooks:
     @mkdir -p docs/notebooks
     @cp notebooks/src/*.py docs/notebooks/
 
+# Export requirements.txt for JupyterLite
+[private]
+[group('docs')]
+export-requirements:
+    @uv export --format requirements-txt --all-extras --output-file docs/requirements.txt
+
 # Temporarily setup IPython configuration for documentation build
 [private]
 [group('docs')]
@@ -76,7 +82,7 @@ setup-ipython-config-temporary-after:
 [private]
 [parallel]
 [group('docs')]
-docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
+docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks export-requirements
 
 # Build the HTML documentation
 [group('docs')]
