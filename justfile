@@ -1,6 +1,7 @@
 set dotenv-load := true
 
 pdk := env('pdk', 'qpdk')
+cpus := num_cpus()
 
 import 'tests/test.just'
 import 'docs/docs.just'
@@ -28,7 +29,7 @@ clean:
 # Update pre-commit hooks to the latest revisions
 [group('lint')]
 update-pre:
-    @uvx prek autoupdate -j $(( {{ num_cpus() }} / 2 + {{ num_cpus() }} % 2 ))
+    @uvx prek autoupdate -j $(( {{ cpus }} / 2 + {{ cpus }} % 2 ))
 
 # Run all pre-commit hooks on all files
 [group('lint')]
