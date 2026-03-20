@@ -46,9 +46,8 @@ intersphinx_mapping = {
 }
 
 # -- JupyterLite configuration -----------------------------------------------
-jupyterlite_contents = ["../notebooks"]
-jupyterlite_bind_ipynb_suffix = False
-global_enable_try_examples = True
+jupyterlite_contents = ["notebooks"]
+jupyterlite_bind_ipynb_suffix = True
 
 # -- MyST configuration ------------------------------------------------------
 myst_enable_extensions = [

@@ -1755,28 +1755,29 @@ wheels = [
 
 [[package]]
 name = "jupyterlite-core"
-version = "0.5.1"
+version = "0.7.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "doit" },
     { name = "jupyter-core" },
+    { name = "pycparser", marker = "platform_python_implementation == 'PyPy'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/82/7c2e6e186f32dce940dc47ca4e0fffe5ec3af467f7244a1078fc0d755e24/jupyterlite_core-0.5.1.tar.gz", hash = "sha256:c6eebc93b914b33d57ce5838cc1db197500ab8d6360fce9b163920011936c8e1", size = 14787228, upload-time = "2025-01-29T08:41:39.23Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e3/a9/db34fc372bf37daba4ecd8ae10f97d102483b27130e60a9f7c0075febfc9/jupyterlite_core-0.7.4.tar.gz", hash = "sha256:c8a74b4ca9792f611b657465f63a79543b381063ebebdc2b5b3b695704e14278", size = 16311836, upload-time = "2026-03-12T09:29:47.465Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/46/15/1d9160819d1e6e018d15de0e98b9297d0a09cfcfdc73add6e24ee3b2b83c/jupyterlite_core-0.5.1-py3-none-any.whl", hash = "sha256:76381619a632f06bf67fb47e5464af762ad8836df5ffe3d7e7ee0e316c1407ee", size = 14799350, upload-time = "2025-01-29T08:41:34.42Z" },
+    { url = "https://files.pythonhosted.org/packages/03/fc/0518d2de703fbdb328eed8e791fddd8628880719b4f0bf1e82ce3f829020/jupyterlite_core-0.7.4-py3-none-any.whl", hash = "sha256:354785c7575a87a55c06f385d6c22e25ebbe7801d9d2dcdc4b41158d5bd3aa8c", size = 16323931, upload-time = "2026-03-12T09:29:44.634Z" },
 ]
 
 [[package]]
 name = "jupyterlite-pyodide-kernel"
-version = "0.5.2"
+version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jupyterlite-core" },
     { name = "pkginfo" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/62/86ff7bf536e034686bfe90e7c0d05087b6989c3821f97ed45d04947ba4c2/jupyterlite_pyodide_kernel-0.5.2.tar.gz", hash = "sha256:c6c2c1bb685fb0a076cbf81cd2460cd9acfd764f91325a67194f79c49f9546a2", size = 529767, upload-time = "2025-01-17T17:41:41.642Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/86/fe/5f9e535f1e15852cb5e5745aeb9d4e9b4eb67282c3e7402d2ca823c76c1f/jupyterlite_pyodide_kernel-0.7.1.tar.gz", hash = "sha256:5e52c57190057d816e8551db1b2541f9c0398f71ea54ca47004886db6931cd6c", size = 545914, upload-time = "2026-03-03T07:17:05.245Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/b5/959a03ca011d1031abac03c18af9e767c18d6a9beb443eb106dda609748c/jupyterlite_pyodide_kernel-0.5.2-py3-none-any.whl", hash = "sha256:63ba6ce28d32f2cd19f636c40c153e171369a24189e11e2235457bd7000c5907", size = 546048, upload-time = "2025-01-17T17:41:39.371Z" },
+    { url = "https://files.pythonhosted.org/packages/94/03/65978831184bf53ebe3d3d07b83a540c9fa253bbf244d2ae92a6f0c758dc/jupyterlite_pyodide_kernel-0.7.1-py3-none-any.whl", hash = "sha256:3176bea5b471ca412514e87746c4804945ada8b4329754a4a0e027fdc92edfa3", size = 560227, upload-time = "2026-03-03T07:17:03.108Z" },
 ]
 
 [[package]]
@@ -3726,6 +3727,14 @@ hfss = [
     { name = "polars" },
     { name = "pyaedt", extra = ["graphics"] },
 ]
+lite = [
+    { name = "jaxellip" },
+    { name = "matplotlib" },
+    { name = "sax" },
+    { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
+    { name = "scqubits", version = "4.3.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
+    { name = "sympy" },
+]
 models = [
     { name = "gplugins", extra = ["meshwell"] },
     { name = "jaxellip" },
@@ -3809,7 +3818,9 @@ requires-dist = [
     { name = "flax", marker = "extra == 'netket'" },
     { name = "gdsfactory", specifier = "~=9.39.0" },
     { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = ">=2.0.1" },
+    { name = "jaxellip", marker = "extra == 'lite'" },
     { name = "jaxellip", marker = "extra == 'models'" },
+    { name = "matplotlib", marker = "extra == 'lite'" },
     { name = "netket", marker = "extra == 'netket'", specifier = ">=3.12" },
     { name = "optax", marker = "extra == 'netket'" },
     { name = "optuna", marker = "extra == 'models'" },
@@ -3821,12 +3832,15 @@ requires-dist = [
     { name = "qutip-jax", marker = "extra == 'qutip'", specifier = ">=0.1.1" },
     { name = "qutip-qip", marker = "extra == 'qutip'", specifier = ">=0.4.1" },
     { name = "ray", extras = ["tune"], marker = "sys_platform != 'win32' and extra == 'models'" },
+    { name = "sax", marker = "extra == 'lite'", specifier = ">=0.16.11" },
     { name = "sax", marker = "extra == 'models'", specifier = ">=0.16.11" },
+    { name = "scqubits", marker = "extra == 'lite'" },
     { name = "scqubits", marker = "extra == 'scqubits'" },
+    { name = "sympy", marker = "extra == 'lite'" },
     { name = "sympy", marker = "extra == 'models'" },
     { name = "trimesh", marker = "extra == 'graphics'" },
 ]
-provides-extras = ["graphics", "hfss", "models", "netket", "pymablock", "qutip", "scqubits"]
+provides-extras = ["graphics", "hfss", "lite", "models", "netket", "pymablock", "qutip", "scqubits"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3842,9 +3856,9 @@ dev = [
 ]
 docs = [
     { name = "jinja2" },
-    { name = "jupyterlite-core" },
-    { name = "jupyterlite-pyodide-kernel" },
-    { name = "jupyterlite-sphinx" },
+    { name = "jupyterlite-core", specifier = ">=0.7.4" },
+    { name = "jupyterlite-pyodide-kernel", specifier = ">=0.7.1" },
+    { name = "jupyterlite-sphinx", specifier = ">=0.22.1" },
     { name = "jupytext" },
     { name = "linkify-it-py" },
     { name = "matplotlib" },

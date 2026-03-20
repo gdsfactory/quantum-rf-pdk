@@ -52,13 +52,19 @@ convert-notebooks:
 [group('docs')]
 copy-sample-notebooks:
     @mkdir -p docs/notebooks
-    @cp notebooks/src/*.py docs/notebooks/
+    @cp notebooks/*.ipynb docs/notebooks/
+
+# Inject JupyterLite buttons into notebooks
+[private]
+[group('docs')]
+inject-buttons: copy-sample-notebooks
+    @python3 docs/inject_buttons.py
 
 # Export requirements.txt for JupyterLite
 [private]
 [group('docs')]
 export-requirements:
-    @uv export --format requirements-txt --all-extras --output-file docs/requirements.txt
+    @uv export --format requirements-txt --extra lite --no-dev --output-file docs/requirements.txt
 
 # Temporarily setup IPython configuration for documentation build
 [private]
@@ -82,7 +88,7 @@ setup-ipython-config-temporary-after:
 [private]
 [parallel]
 [group('docs')]
-docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks export-requirements
+docs-prerequisites: write-cells write-models write-justfile-help inject-buttons export-requirements
 
 # Build the HTML documentation
 [group('docs')]

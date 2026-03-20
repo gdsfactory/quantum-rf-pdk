@@ -53,7 +53,7 @@
   cursor: pointer;
 }
 
-.try_examples_button:focus {
+.try_examples_button:focus:not(:focus-visible) {
   outline: 0;
 }
 
