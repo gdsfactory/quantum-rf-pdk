@@ -42,7 +42,6 @@ intersphinx_mapping = {
     "jax": ("https://docs.jax.dev/en/latest/", None),
     "gdsfactory": ("https://gdsfactory.github.io/gdsfactory/", None),
     "sax": ("https://flaport.github.io/sax/", None),
-    "netket": ("https://netket.readthedocs.io/en/latest/", None),
 }
 
 # -- MyST configuration ------------------------------------------------------
