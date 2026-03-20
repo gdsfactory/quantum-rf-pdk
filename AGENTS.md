@@ -22,8 +22,8 @@ these guidelines when contributing:
 - **Run pre-commit hooks**: `just run-pre` (runs all pre-commit hooks on all files)
 - **Update pre-commit hooks**: `just update-pre` (updates pre-commit hooks to latest versions)
 - **Build package**: `just build` (creates distribution packages)
-- **Build documentation**: `just docs` (builds Sphinx documentation, this needs to succeed in order to be
-  mergeable to main)
+- **Build documentation**: `just docs` (builds Sphinx documentation, this needs to succeed in order to be mergeable to
+  main)
 
 ## Repository Structure
 
