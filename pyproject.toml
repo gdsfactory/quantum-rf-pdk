@@ -36,10 +36,14 @@ scqubits = ["scqubits"]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
   "jinja2",
-  "jupyter-book>=1.0.4,<2",
   "jupytext",
+  "linkify-it-py",
   "matplotlib",
+  "myst-nb>=1.0",
   "pydata-sphinx-theme",
+  "sphinx>=7.0",
+  "sphinx-copybutton",
+  "sphinxcontrib-bibtex",
   "sphinxcontrib-katex",
   "sphinxcontrib-mermaid>=2.0.1",
   "sphinxcontrib-svgbob",

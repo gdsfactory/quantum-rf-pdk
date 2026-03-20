@@ -229,3 +229,9 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
     - - :doc:`notebooks/qutip_qip_pulse_simulation`
       - Pulse-level simulation
       - QuTiP-QIP, JAX
+
+.. toctree::
+    :hidden:
+    :glob:
+
+    notebooks/*
