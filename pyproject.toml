@@ -26,6 +26,7 @@ models = [
   "sax>=0.16.11",
   "sympy",
   "polars",
+  "pandas[parquet]",
 ]
 netket = ["netket>=3.12", "flax", "optax"]
 pymablock = ["pymablock>=2.2.1"]
