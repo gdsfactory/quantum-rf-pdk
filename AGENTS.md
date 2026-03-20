@@ -22,7 +22,7 @@ these guidelines when contributing:
 - **Run pre-commit hooks**: `just run-pre` (runs all pre-commit hooks on all files)
 - **Update pre-commit hooks**: `just update-pre` (updates pre-commit hooks to latest versions)
 - **Build package**: `just build` (creates distribution packages)
-- **Build documentation**: `just docs` (builds Jupyter Book documentation, this needs to succeed in order to be
+- **Build documentation**: `just docs` (builds Sphinx documentation, this needs to succeed in order to be
   mergeable to main)
 
 ## Repository Structure
@@ -33,7 +33,7 @@ these guidelines when contributing:
 - `qpdk/klayout/`: KLayout technology files and layer definitions
 - `qpdk/tech.py`: Layer stack and main technology cross sections etc.
 - `tests/`: Test suite using pytest
-- `docs/`: Documentation built with Jupyter Book
+- `docs/`: Documentation built with Sphinx
 - `install_tech.py`: Script to symlink technology files to KLayout, rarely needed for AI agents
 
 ## Technology and Tools
@@ -44,7 +44,7 @@ these guidelines when contributing:
 - **Testing**: pytest with regression testing using `pytest_regressions`, hypothesis for property-based testing
 - **Linting**: ruff for Python code formatting and linting, pyrefly for type checking
 - **Layout tool**: KLayout for viewing and editing GDS layouts
-- **Documentation**: Jupyter Book for building documentation, jupytext for notebook management
+- **Documentation**: Sphinx for building documentation, jupytext for notebook management
 - **Simulation tools** (optional): sax, scqubits, jaxellip (install with `uv sync --extra models`)
 
 ## Git and Version Control
