@@ -1,5 +1,5 @@
-ipython_config := env('HOME') / ".ipython/profile_default/ipython_config.py"
-mpl_style := env('HOME') / ".config/matplotlib/stylelib/qpdk.mplstyle"
+ipython_config := home_directory() / ".ipython/profile_default/ipython_config.py"
+mpl_style := home_directory() / ".config/matplotlib/stylelib/qpdk.mplstyle"
 
 # Write cell outputs into documentation notebooks
 [private]
