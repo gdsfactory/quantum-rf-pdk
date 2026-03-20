@@ -1,35 +1,71 @@
-button.try_examples_button {
-    background-color: var(--pst-color-primary, #007bff);
-    color: var(--pst-color-on-background, white);
-    border: 1px solid var(--pst-color-border, #ccc);
-    padding: 10px 20px;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 5px;
-    cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    margin-bottom: 20px;
-    display: inline-block;
+/* Buttons for JupyterLite-enabled interactive examples */
+/* adapted from https://github.com/numpy/numpy/pull/26745 */
+
+.try_examples_button {
+  position: relative;
+  overflow: hidden;
+  color: white;
+  background-color: var(--pst-color-info);
+  border: none;
+  padding: 5px 10px;
+  border-radius: 0.25rem;
+  margin-top: 3px; /* better alignment under admonitions */
+  margin-bottom: 5px !important; /* fix uneven button sizes under admonitions and headings */
+  box-shadow: 0 2px 5px rgba(108, 108, 108, 0.2);
+  font-weight: bold;
+  font-size: small;
 }
 
-button.try_examples_button:hover {
-    background-color: var(--pst-color-primary-highlight, #0056b3);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+/* Use more accessible colours for text in dark mode */
+[data-theme="dark"] .try_examples_button {
+  color: black;
 }
 
-button.try_examples_button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.try_examples_button:after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  bottom: -50%;
+  left: -50%;
+  background: linear-gradient(
+    to bottom,
+    rgba(229, 172, 142, 0),
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(229, 172, 142, 0)
+  );
+  transform: rotateZ(-60deg) translate(-12em, -5em); /* Starting from the left */
 }
 
-/* Light mode specific adjustments if needed */
-[data-theme="light"] button.try_examples_button {
-    color: white;
+/* Activate sheen effect on hover */
+.try_examples_button:hover::after {
+  animation: jupyterSheen 0.75s forwards;
 }
 
-/* Dark mode specific adjustments if needed */
-[data-theme="dark"] button.try_examples_button {
-    color: white;
+@keyframes jupyterSheen {
+  100% {
+    transform: rotateZ(-60deg) translate(12em, 10em);
+  }
+}
+
+.try_examples_button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.try_examples_button:focus {
+  outline: 0;
+}
+
+.try_examples_button_container {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* Better gaps for examples buttons under admonitions */
+.try_examples_outer_iframe {
+  margin-top: 0.4em;
 }

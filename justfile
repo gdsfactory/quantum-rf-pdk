@@ -24,7 +24,7 @@ install-tech:
 [confirm]
 [group('setup')]
 clean:
-    @rm -rf dist build *.egg-info docs/_build docs/notebooks
+    @rm -rf dist build *.egg-info docs/_build docs/notebooks docs/requirements.txt docs/.jupyterlite.doit.db
 
 # Update pre-commit hooks to the latest revisions
 [group('lint')]
