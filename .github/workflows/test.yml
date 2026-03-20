@@ -12,7 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - uses: j178/prek-action@v1
+      - uses: extractions/setup-just@v3
+      - uses: j178/prek-action@v2
   get-python-versions:
     uses: ./.github/workflows/get-python-versions.yml
   test-code:
