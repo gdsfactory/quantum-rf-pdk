@@ -16,8 +16,30 @@ write-models:
 # Write Justfile help output to documentation
 [private]
 [group('docs')]
+[working-directory: 'docs']
+[script('uv', 'run', '--script')]
 write-justfile-help:
-    @uv run --group docs .github/write_justfile_help.py
+    import re
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    output_file = Path("justfile_help.txt")
+    result = subprocess.run(  # noqa: S603
+        [shutil.which("just"), "--list"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    # Remove ANSI color codes
+    ansi_escape = re.compile(r"\x1b\[[0-9;]*m")
+    output = result.stdout
+    output = ansi_escape.sub("", output)
+    output = output.rstrip()
+    output_file.write_text(output)
+
+    print(f"Justfile help written to {output_file}")
 
 # Convert jupytext scripts from notebooks/src to ipynb format in notebooks
 [private]
