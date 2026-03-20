@@ -21,8 +21,8 @@ hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
+  "optax",
   "optuna",
-  "ray[tune]; sys_platform != 'win32'",
   "sax>=0.16.11",
   "sympy",
   "polars",
