@@ -10,6 +10,10 @@
 
 # %% [markdown]
 # ## QPDK Models
+#
+# ```{notebooklite} ../../notebooks/all_models.ipynb
+# :new_tab: True
+# ```
 
 # %% [markdown]
 # ## Imports

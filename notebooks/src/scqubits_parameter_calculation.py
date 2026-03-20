@@ -11,6 +11,10 @@
 # %% [markdown]
 # # Dispersive Shift of a Transmon–Resonator System with scQubits
 #
+# ```{notebooklite} ../../notebooks/scqubits_parameter_calculation.ipynb
+# :new_tab: True
+# ```
+#
 # This notebook demonstrates how to use
 # [scqubits](https://scqubits.readthedocs.io/en/latest/) {cite:p}`groszkowskiScqubitsPythonPackage2021`
 # to numerically compute the **dispersive shift** of a readout resonator coupled

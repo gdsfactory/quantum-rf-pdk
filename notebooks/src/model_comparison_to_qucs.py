@@ -11,6 +11,10 @@
 # %% [markdown]
 # # Model Comparison to Qucs-S
 #
+# ```{notebooklite} ../../notebooks/model_comparison_to_qucs.ipynb
+# :new_tab: True
+# ```
+#
 # This notebook compares the S-parameter models from qpdk (using sax) against reference
 # results from Qucs-S simulations. Each test suite validates a different component model.
 #

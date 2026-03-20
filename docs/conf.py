@@ -14,6 +14,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.imgconverter",
     "sphinx.ext.intersphinx",
+    "jupyterlite_sphinx",
     "sphinxcontrib.katex",
     "sphinxcontrib.mermaid",
     "sphinxcontrib.svgbob",
@@ -43,6 +44,10 @@ intersphinx_mapping = {
     "gdsfactory": ("https://gdsfactory.github.io/gdsfactory/", None),
     "sax": ("https://flaport.github.io/sax/", None),
 }
+
+# -- JupyterLite configuration -----------------------------------------------
+jupyterlite_contents = ["../notebooks"]
+jupyterlite_bind_ipynb_suffix = False
 
 # -- MyST configuration ------------------------------------------------------
 myst_enable_extensions = [
@@ -130,6 +135,8 @@ html_context = {
     "github_version": "main",
     "doc_path": "docs",
 }
+html_static_path = ["_static"]
+html_css_files = ["jupyterlite_custom.css"]
 
 # -- LaTeX / PDF output -------------------------------------------------------
 latex_engine = "xelatex"

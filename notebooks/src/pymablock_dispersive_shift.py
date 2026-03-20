@@ -11,6 +11,10 @@
 # %% [markdown]
 # # Dispersive Shift of a Transmon–Resonator System with Pymablock
 #
+# ```{notebooklite} ../../notebooks/pymablock_dispersive_shift.ipynb
+# :new_tab: True
+# ```
+#
 # This notebook demonstrates how to use
 # [pymablock](https://pymablock.readthedocs.io/) {cite:p}`arayaDayPymablockAlgorithmPackage2025`
 # to compute the **dispersive shift** of a readout resonator coupled

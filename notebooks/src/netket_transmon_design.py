@@ -13,6 +13,10 @@
 # %% [markdown]
 # # Transmon Qubit Design with NetKet
 #
+# ```{notebooklite} ../../notebooks/netket_transmon_design.ipynb
+# :new_tab: True
+# ```
+#
 # This notebook demonstrates how to use
 # [NetKet](https://netket.readthedocs.io/) {cite:p}`netket3:2022,netket2:2019`
 # to numerically analyse the transmon qubit Hamiltonian for superconducting

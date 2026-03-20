@@ -10,6 +10,10 @@
 # %% [markdown]
 # # SAX Simulation of a Resonator Test Chip
 #
+# ```{notebooklite} ../../notebooks/resonator_test_chip_simulation.ipynb
+# :new_tab: True
+# ```
+#
 # This notebook demonstrates how to run a circuit-level SAX simulation of the
 # `resonator_test_chip_yaml` component, which is defined via a `.pic.yml` netlist
 # file and a corresponding gdsfactory+ schematic.

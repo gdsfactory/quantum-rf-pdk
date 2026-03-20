@@ -1,0 +1,35 @@
+button.try_examples_button {
+    background-color: var(--pst-color-primary, #007bff);
+    color: var(--pst-color-on-background, white);
+    border: 1px solid var(--pst-color-border, #ccc);
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+button.try_examples_button:hover {
+    background-color: var(--pst-color-primary-highlight, #0056b3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+button.try_examples_button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Light mode specific adjustments if needed */
+[data-theme="light"] button.try_examples_button {
+    color: white;
+}
+
+/* Dark mode specific adjustments if needed */
+[data-theme="dark"] button.try_examples_button {
+    color: white;
+}

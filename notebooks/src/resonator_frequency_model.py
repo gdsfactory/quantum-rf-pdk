@@ -11,6 +11,10 @@
 # %% [markdown]
 # # Resonator frequency estimation models
 #
+# ```{notebooklite} ../../notebooks/resonator_frequency_model.ipynb
+# :new_tab: True
+# ```
+#
 # This example demonstrates estimating resonance frequencies of superconducting microwave resonators using Jax.
 
 # %% tags=["hide-input", "hide-output"]

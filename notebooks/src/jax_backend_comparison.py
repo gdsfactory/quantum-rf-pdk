@@ -10,6 +10,10 @@
 # %% [markdown]
 # # JAX Backend Comparison for Quantum Circuit Simulation
 #
+# ```{notebooklite} ../../notebooks/jax_backend_comparison.ipynb
+# :new_tab: True
+# ```
+#
 # This notebook benchmarks a SAX-based quantum circuit simulation across available
 # JAX compute backends: **CPU**, **GPU** (CUDA), and **NPU** via
 # [OpenVINO](https://docs.openvino.ai/2025/openvino-workflow/model-preparation/convert-model-jax.html).

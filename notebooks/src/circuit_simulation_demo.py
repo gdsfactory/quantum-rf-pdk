@@ -25,6 +25,10 @@
 # %% [markdown]
 # # Circuit Simulation with QPDK
 #
+# ```{notebooklite} ../../notebooks/circuit_simulation_demo.ipynb
+# :new_tab: True
+# ```
+#
 # This notebook demonstrates how to perform circuit simulations using the `qpdk` models and the `sax` circuit solver. We will showcase individual components and then combine them to create a custom resonator circuit.
 
 # %% Imports tags=["hide-input", "hide-output"]

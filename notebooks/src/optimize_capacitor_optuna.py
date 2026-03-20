@@ -11,6 +11,10 @@
 # %% [markdown]
 # # Optuna Optimization of Interdigital Capacitor
 #
+# ```{notebooklite} ../../notebooks/optimize_capacitor_optuna.ipynb
+# :new_tab: True
+# ```
+#
 # This example demonstrates using [Optuna](https://optuna.readthedocs.io/en/stable/index.html) to optimize an interdigital capacitor
 # to achieve a target capacitance of 40 fF. The optimization is constrained to
 # use exactly 5 interdigital fingers.

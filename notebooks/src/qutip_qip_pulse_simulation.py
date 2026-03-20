@@ -15,6 +15,10 @@
 # %% [markdown]
 # # Pulse-Level Simulation of Superconducting Qubits with QuTiP-QIP
 #
+# ```{notebooklite} ../../notebooks/qutip_qip_pulse_simulation.ipynb
+# :new_tab: True
+# ```
+#
 # This notebook demonstrates how to use
 # [qutip-qip](https://qutip-qip.readthedocs.io/)
 # {cite:p}`liBoshlomQutipqipPulselevel2022` to perform

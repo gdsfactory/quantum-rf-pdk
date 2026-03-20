@@ -36,6 +36,9 @@ scqubits = ["scqubits"]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
   "jinja2",
+  "jupyterlite-core==0.5.1",
+  "jupyterlite-pyodide-kernel==0.5.2",
+  "jupyterlite-sphinx",
   "jupytext",
   "linkify-it-py",
   "matplotlib",
