@@ -30,9 +30,9 @@
   left: -50%;
   background: linear-gradient(
     to bottom,
-    rgba(229, 172, 142, 0),
-    rgba(255, 255, 255, 0.5) 50%,
-    rgba(229, 172, 142, 0)
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0)
   );
   transform: rotateZ(-60deg) translate(-12em, -5em); /* Starting from the left */
 }
@@ -49,7 +49,6 @@
 }
 
 .try_examples_button:hover {
-  transform: scale(1.02);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   cursor: pointer;
 }
