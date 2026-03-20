@@ -44,12 +44,12 @@ as follows. Each stage may loop back to earlier stages as the design is refined.
 .. mermaid::
 
     flowchart TB
-        A["Physical requirements\n(qubit frequency, coupling, T₁, …)"]
-        B["Hamiltonian / perturbation analysis\n(map requirements → circuit parameters)"]
-        C["Circuit / S-parameter models\n(design passive components)"]
-        D["Layout with gdsfactory\n(draw the chip in qpdk)"]
-        E["FEM verification\n(validate geometry with a full-wave solver)"]
-        F["Pulse-level simulation\n(predict gate performance)"]
+        A["Physical requirements<br>(qubit frequency, coupling, T₁, …)"]
+        B["Hamiltonian / perturbation analysis<br>(map requirements → circuit parameters)"]
+        C["Circuit / S-parameter models<br>(design passive components)"]
+        D["Layout with gdsfactory<br>(draw the chip in qpdk)"]
+        E["FEM verification<br>(validate geometry with a full-wave solver)"]
+        F["Pulse-level simulation<br>(predict gate performance)"]
         G["Fabrication & measurement"]
         A --> B --> C --> D --> E --> F --> G
         F -.-> A
