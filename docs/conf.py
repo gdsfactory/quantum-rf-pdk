@@ -123,6 +123,8 @@ html_theme_options = {
             "icon": "fa-solid fa-box",
         },
     ],
+    "pygments_light_style": "friendly",
+    "pygments_dark_style": "material",
 }
 html_context = {
     "github_user": "gdsfactory",
