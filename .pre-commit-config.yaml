@@ -127,6 +127,12 @@ repos:
         exclude: '^(?:docs/_build/.*|qpdk(?:/.*)?/__init__[.]py|notebooks/.*|docs/notebooks/[^/]+|qpdk/samples/[^/]+[.]py|tests/.*)$'
   - repo: local
     hooks:
+      - id: just-fmt
+        name: Format justfiles
+        entry: just --fmt --unstable
+        language: system
+        files: (^|/)justfile$|\.just$
+        pass_filenames: false
       - id: convert-notebooks
         name: Convert jupytext notebooks
         entry: ./.github/convert-notebooks.sh
