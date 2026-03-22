@@ -8,8 +8,8 @@ import sax
 from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-from qpdk.models.constants import DEFAULT_FREQUENCY, μ_0
-from qpdk.models.cpw import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
+from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.cpw import cpw_ep_r_from_cross_section
 from qpdk.models.generic import inductor, lc_resonator
 
 

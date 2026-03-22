@@ -6,7 +6,6 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
-from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.waveguides import straight
 from qpdk.tech import LAYER
 
@@ -72,7 +71,12 @@ def meander_inductor(
     for i in range(n_turns):
         y0 = i * pitch
         c.add_polygon(
-            [(0, y0), (turn_length, y0), (turn_length, y0 + wire_width), (0, y0 + wire_width)],
+            [
+                (0, y0),
+                (turn_length, y0),
+                (turn_length, y0 + wire_width),
+                (0, y0 + wire_width),
+            ],
             layer=layer,
         )
 
@@ -329,7 +333,10 @@ def lumped_element_resonator(
             [
                 (-etch_bbox_margin, -etch_bbox_margin),
                 (cap_width + etch_bbox_margin, -etch_bbox_margin),
-                (cap_width + etch_bbox_margin, total_internal_height + etch_bbox_margin),
+                (
+                    cap_width + etch_bbox_margin,
+                    total_internal_height + etch_bbox_margin,
+                ),
                 (-etch_bbox_margin, total_internal_height + etch_bbox_margin),
             ],
             layer=etch_layer,
@@ -337,7 +344,9 @@ def lumped_element_resonator(
 
     # --- Add CPW transitions for ports ---
     straight_cross_section = gf.get_cross_section(cross_section)
-    straight_out = straight(length=etch_bbox_margin, cross_section=straight_cross_section)
+    straight_out = straight(
+        length=etch_bbox_margin, cross_section=straight_cross_section
+    )
 
     # Left port: at the center height of the structure
     center_y = total_internal_height / 2
