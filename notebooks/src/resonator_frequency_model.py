@@ -168,7 +168,7 @@ def step(params, opt_state):
     return params, opt_state, loss_value
 
 
-for _i in trange(100, desc="Optimizing"):
+for _ in trange(100, desc="Optimizing"):
     params, opt_state, loss_value = step(params, opt_state)
 
 length_val = float(jax.device_get(params["length"]))
