@@ -557,7 +557,7 @@ data = [
     ("Readout", "$|\\chi|/\\kappa$", f"{chi_over_kappa:.1f}", ""),
 ]
 
-df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"])
+df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"], orient="row")
 
 display_dataframe(df)
 

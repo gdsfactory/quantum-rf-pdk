@@ -21,6 +21,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import optax
 import sax
+from tqdm.auto import trange
 
 from qpdk import PDK, logger
 from qpdk.models.cpw import cpw_parameters
@@ -167,13 +168,8 @@ def step(params, opt_state):
     return params, opt_state, loss_value
 
 
-logger.info("Starting optimization…")
-for i in range(100):
+for _i in trange(100, desc="Optimizing"):
     params, opt_state, loss_value = step(params, opt_state)
-    if i % 10 == 0:
-        length_val = float(jax.device_get(params["length"]))
-        loss_val = float(jax.device_get(loss_value))
-        logger.info(f"Step {i}, Length: {length_val:.2f} µm, Loss: {loss_val:.6f}")
 
 length_val = float(jax.device_get(params["length"]))
 logger.info(f"Optimized Length: {length_val:.2f} µm")
