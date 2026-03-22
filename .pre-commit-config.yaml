@@ -130,7 +130,6 @@ repos:
         args: [--fix, --config=.github/.stylelintrc.yaml]
         additional_dependencies:
           - stylelint@17.4.0
-          - stylelint-config-standard@40.0.0
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
