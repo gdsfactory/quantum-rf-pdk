@@ -1,9 +1,9 @@
 info:
   capacitor_finger_length: 20
   capacitor_fingers: 20
-  inductor_n_squares: 63
-  total_wire_length: 126
-name: lumped_element_resonator_F20_FL20_FG2_FT5_NT5_WW2_WG4_B_f4511e9a
+  inductor_n_squares: 210
+  total_wire_length: 420
+name: lumped_element_resonator_F20_FL20_FG2_FT5_NT15_WW2_WG4__78c01bab
 settings:
   bus_bar_spacing: 4
   cross_section: cpw
@@ -13,6 +13,6 @@ settings:
   finger_length: 20
   finger_thickness: 5
   fingers: 20
-  n_turns: 5
+  n_turns: 15
   wire_gap: 4
   wire_width: 2

@@ -67,7 +67,6 @@ def meander_inductor(
     pitch = wire_width + wire_gap
     total_height = n_turns * wire_width + max(0, n_turns - 1) * wire_gap
 
-    # Draw horizontal runs
     for i in range(n_turns):
         y0 = i * pitch
         c.add_polygon(
@@ -80,12 +79,10 @@ def meander_inductor(
             layer=layer,
         )
 
-    # Draw vertical connections between adjacent runs
     for i in range(n_turns - 1):
         y0 = i * pitch + wire_width
         y1 = (i + 1) * pitch
         if i % 2 == 0:
-            # Connection at right end
             c.add_polygon(
                 [
                     (turn_length - wire_width, y0),
@@ -96,13 +93,11 @@ def meander_inductor(
                 layer=layer,
             )
         else:
-            # Connection at left end
             c.add_polygon(
                 [(0, y0), (wire_width, y0), (wire_width, y1), (0, y1)],
                 layer=layer,
             )
 
-    # Add etch bounding box (boolean-subtracted by metal to avoid overlap)
     if etch_layer is not None:
         c.add_polygon(
             [
@@ -114,15 +109,8 @@ def meander_inductor(
             layer=etch_layer,
         )
 
-        # Subtract the metal region from the etch bounding box so that
-        # the etch layer surrounds, but does not overlap, the meander metal.
         c_metal = gf.boolean(
-            A=c,
-            B=c,
-            operation="or",
-            layer=layer,
-            layer1=layer,
-            layer2=layer,
+            A=c, B=c, operation="or", layer=layer, layer1=layer, layer2=layer
         )
         c_etch = gf.boolean(
             A=c,
@@ -136,7 +124,6 @@ def meander_inductor(
         c.absorb(c << c_metal)
         c.absorb(c << c_etch)
 
-    # Port o1: left side of the first (bottom) run
     c.add_port(
         name="o1",
         center=(0, wire_width / 2),
@@ -146,10 +133,8 @@ def meander_inductor(
         port_type="electrical",
     )
 
-    # Port o2: depends on parity of n_turns
     last_run_center_y = (n_turns - 1) * pitch + wire_width / 2
     if n_turns % 2 == 1:
-        # Odd: signal exits at right side of last run
         c.add_port(
             name="o2",
             center=(turn_length, last_run_center_y),
@@ -159,7 +144,6 @@ def meander_inductor(
             port_type="electrical",
         )
     else:
-        # Even: signal exits at left side of last run
         c.add_port(
             name="o2",
             center=(0, last_run_center_y),
@@ -169,10 +153,8 @@ def meander_inductor(
             port_type="electrical",
         )
 
-    # Center the component at the origin
     c.move((-turn_length / 2, -total_height / 2))
 
-    # Store metadata
     total_wire_length = n_turns * turn_length + max(0, n_turns - 1) * wire_gap
     c.info["total_wire_length"] = total_wire_length
     c.info["n_squares"] = total_wire_length / wire_width
@@ -186,7 +168,7 @@ def lumped_element_resonator(
     finger_length: float = 20.0,
     finger_gap: float = 2.0,
     finger_thickness: float = 5.0,
-    n_turns: int = 5,
+    n_turns: int = 15,
     wire_width: float = 2.0,
     wire_gap: float = 4.0,
     bus_bar_spacing: float = 4.0,
@@ -234,28 +216,26 @@ def lumped_element_resonator(
         Component: A gdsfactory component with the lumped-element resonator
             geometry and two ports ('o1' and 'o2').
     """
+    if n_turns % 2 == 0:
+        raise ValueError(
+            "n_turns must be odd so that the meander path spans from the "
+            "left bus bar to the right bus bar"
+        )
+    if bus_bar_spacing <= 0:
+        raise ValueError(
+            "bus_bar_spacing must be positive to electrically isolate the "
+            "last inductor run from the full-width bus bar sections"
+        )
+
     c = Component()
     layer = LAYER.M1_DRAW
 
-    # --- Capacitor section dimensions ---
     cap_width = 2 * finger_thickness + finger_length + finger_gap
     cap_height = fingers * finger_thickness + (fingers - 1) * finger_gap
-
-    # --- Inductor section dimensions ---
-    # The inductor turn length spans the internal width between bus bars
-    inductor_turn_length = cap_width - 2 * finger_thickness
     ind_height = n_turns * wire_width + max(0, n_turns - 1) * wire_gap
-
-    # --- Layout positions ---
-    # Capacitor occupies the top section, inductor the bottom
-    # Total internal height = cap + spacing + inductor
     total_internal_height = cap_height + bus_bar_spacing + ind_height
-
-    # Capacitor top-left corner (before centering)
     cap_y0 = ind_height + bus_bar_spacing
 
-    # Draw capacitor fingers (reuse interdigital_capacitor polygon logic)
-    # Left-side fingers (connected to left bus bar)
     _draw_interdigital_fingers_left(
         c,
         layer,
@@ -266,8 +246,6 @@ def lumped_element_resonator(
         finger_gap=finger_gap,
         thickness=finger_thickness,
     )
-
-    # Right-side fingers (connected to right bus bar)
     _draw_interdigital_fingers_right(
         c,
         layer,
@@ -280,76 +258,106 @@ def lumped_element_resonator(
         thickness=finger_thickness,
     )
 
-    # --- Draw meander inductor section ---
     pitch = wire_width + wire_gap
-    # The meander runs are centered between the bus bars
-    meander_x0 = finger_thickness
+    last_y0 = (n_turns - 1) * pitch
+
+    # Meander runs are inset wire_width from each narrow bus bar so that only
+    # run 0 (via left tab) and run n_turns-1 (via right tab) connect to the
+    # bus bars.  The bus bars remain narrow (wire_width) until cap_y0, ensuring
+    # the full-width sections never share an edge with any inductor run.
+    inner_x0 = 2 * wire_width
+    short_length = cap_width - 4 * wire_width
 
     for i in range(n_turns):
         y0 = i * pitch
         c.add_polygon(
             [
-                (meander_x0, y0),
-                (meander_x0 + inductor_turn_length, y0),
-                (meander_x0 + inductor_turn_length, y0 + wire_width),
-                (meander_x0, y0 + wire_width),
+                (inner_x0, y0),
+                (inner_x0 + short_length, y0),
+                (inner_x0 + short_length, y0 + wire_width),
+                (inner_x0, y0 + wire_width),
             ],
             layer=layer,
         )
 
-    # Vertical connections between meander runs
     for i in range(n_turns - 1):
         y0 = i * pitch + wire_width
         y1 = (i + 1) * pitch
         if i % 2 == 0:
-            # Connection at right end
-            x0 = meander_x0 + inductor_turn_length - wire_width
+            x0 = inner_x0 + short_length - wire_width
             c.add_polygon(
-                [
-                    (x0, y0),
-                    (x0 + wire_width, y0),
-                    (x0 + wire_width, y1),
-                    (x0, y1),
-                ],
+                [(x0, y0), (x0 + wire_width, y0), (x0 + wire_width, y1), (x0, y1)],
                 layer=layer,
             )
         else:
-            # Connection at left end
             c.add_polygon(
                 [
-                    (meander_x0, y0),
-                    (meander_x0 + wire_width, y0),
-                    (meander_x0 + wire_width, y1),
-                    (meander_x0, y1),
+                    (inner_x0, y0),
+                    (inner_x0 + wire_width, y0),
+                    (inner_x0 + wire_width, y1),
+                    (inner_x0, y1),
                 ],
                 layer=layer,
             )
 
-    # --- Draw bus bars ---
-    # Left bus bar: from bottom of inductor to top of capacitor
+    # Left tab: connects narrow left bus bar to run 0
     c.add_polygon(
         [
-            (0, 0),
-            (finger_thickness, 0),
+            (wire_width, 0),
+            (inner_x0, 0),
+            (inner_x0, wire_width),
+            (wire_width, wire_width),
+        ],
+        layer=layer,
+    )
+
+    # Right tab: connects last run to narrow right bus bar
+    c.add_polygon(
+        [
+            (inner_x0 + short_length, last_y0),
+            (cap_width - wire_width, last_y0),
+            (cap_width - wire_width, last_y0 + wire_width),
+            (inner_x0 + short_length, last_y0 + wire_width),
+        ],
+        layer=layer,
+    )
+
+    # Left bus bar: narrow to cap_y0, then full width
+    c.add_polygon(
+        [(0, 0), (wire_width, 0), (wire_width, cap_y0), (0, cap_y0)],
+        layer=layer,
+    )
+    c.add_polygon(
+        [
+            (0, cap_y0),
+            (finger_thickness, cap_y0),
             (finger_thickness, total_internal_height),
             (0, total_internal_height),
         ],
         layer=layer,
     )
 
-    # Right bus bar
+    # Right bus bar: starts at last_y0, narrow to cap_y0, then full width
+    c.add_polygon(
+        [
+            (cap_width - wire_width, last_y0),
+            (cap_width, last_y0),
+            (cap_width, cap_y0),
+            (cap_width - wire_width, cap_y0),
+        ],
+        layer=layer,
+    )
     x_right = cap_width - finger_thickness
     c.add_polygon(
         [
-            (x_right, 0),
-            (cap_width, 0),
+            (x_right, cap_y0),
+            (cap_width, cap_y0),
             (cap_width, total_internal_height),
             (x_right, total_internal_height),
         ],
         layer=layer,
     )
 
-    # --- Add etch bounding box ---
     if etch_layer is not None:
         c.add_polygon(
             [
@@ -364,20 +372,15 @@ def lumped_element_resonator(
             layer=etch_layer,
         )
 
-    # --- Add CPW transitions for ports ---
     straight_cross_section = gf.get_cross_section(cross_section)
     straight_out = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
 
-    # Left port: at the center height of the structure
     center_y = total_internal_height / 2
     straight_left = c.add_ref(straight_out).move((-etch_bbox_margin, center_y))
-
-    # Right port
     straight_right = c.add_ref(straight_out).move((cap_width, center_y))
 
-    # --- Boolean operations to merge metal layers ---
     c_additive = gf.boolean(
         A=c,
         B=c,
@@ -387,7 +390,6 @@ def lumped_element_resonator(
         layer2=straight_cross_section.layer,
     )
 
-    # Combine results
     c = gf.Component()
     c.absorb(c << c_additive)
 
@@ -404,7 +406,6 @@ def lumped_element_resonator(
         c.absorb(c << c_additive)
         c.absorb(c << c_negative)
 
-    # Add ports
     c.add_port(
         name="o1",
         width=straight_left["o1"].width,
@@ -420,11 +421,13 @@ def lumped_element_resonator(
         layer=LAYER.M1_DRAW,
     )
 
-    # Center at origin
     c.move((-cap_width / 2, -total_internal_height / 2))
 
-    # Store metadata
-    total_wire_length = n_turns * inductor_turn_length + max(0, n_turns - 1) * wire_gap
+    total_wire_length = (
+        2 * wire_width
+        + n_turns * (cap_width - 4 * wire_width)
+        + max(0, n_turns - 1) * wire_gap
+    )
     c.info["total_wire_length"] = total_wire_length
     c.info["inductor_n_squares"] = total_wire_length / wire_width
     c.info["capacitor_fingers"] = fingers
@@ -443,11 +446,7 @@ def _draw_interdigital_fingers_left(
     finger_gap: float,
     thickness: float,
 ) -> None:
-    """Draw left-side interdigital capacitor fingers.
-
-    Fingers extend to the right from the left bus bar.
-    Even-indexed fingers (0, 2, 4, ...) belong to the left side.
-    """
+    """Draw left-side interdigital capacitor fingers (even-indexed, extending right)."""
     from math import ceil
 
     for i in range(ceil(fingers / 2)):
@@ -475,11 +474,7 @@ def _draw_interdigital_fingers_right(
     finger_gap: float,
     thickness: float,
 ) -> None:
-    """Draw right-side interdigital capacitor fingers.
-
-    Fingers extend to the left from the right bus bar.
-    Odd-indexed fingers (1, 3, 5, ...) belong to the right side.
-    """
+    """Draw right-side interdigital capacitor fingers (odd-indexed, extending left)."""
     from math import floor
 
     x_right_inner = cap_width - x_offset
