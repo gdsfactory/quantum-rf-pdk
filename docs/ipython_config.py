@@ -32,4 +32,14 @@ c.InteractiveShellApp.exec_lines = [  # noqa: F821
     # Suppress fontTools warnings that can clutter notebook output
     "import logging",
     "logging.getLogger('fontTools').setLevel(logging.WARNING)",
+    # Suppress harmless warnings that clutter notebook output in documentation
+    "import warnings",
+    # fontTools timestamp warnings when embedding fonts in PDF/SVG figures
+    "warnings.filterwarnings('ignore', message=r\".*timestamp seems very low.*\")",
+    # fontTools subsetting warnings for special TeX glyphs
+    "warnings.filterwarnings('ignore', message=r\".*don't know how to subset.*\")",
+    # matplotlib missing glyph warnings for Unicode symbols
+    "warnings.filterwarnings('ignore', message=r\".*does not have a glyph for.*\")",
+    # polars row orientation inference during DataFrame construction
+    "warnings.filterwarnings('ignore', message=r'.*Row orientation inferred.*')",
 ]

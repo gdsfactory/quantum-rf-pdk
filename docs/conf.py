@@ -123,6 +123,8 @@ html_theme_options = {
             "icon": "fa-solid fa-box",
         },
     ],
+    "pygments_light_style": "tango",
+    "pygments_dark_style": "dracula",
 }
 html_context = {
     "github_user": "gdsfactory",
@@ -130,6 +132,10 @@ html_context = {
     "github_version": "main",
     "doc_path": "docs",
 }
+html_static_path = ["_static"]
+html_css_files = [
+    "css/custom.css",
+]
 
 # -- LaTeX / PDF output -------------------------------------------------------
 latex_engine = "xelatex"
