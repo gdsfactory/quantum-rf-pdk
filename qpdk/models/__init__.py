@@ -6,6 +6,11 @@ from qpdk.models.capacitor import (
     interdigital_capacitor,
     plate_capacitor,
 )
+from qpdk.models.inductor import (
+    lumped_element_resonator,
+    meander_inductor,
+    meander_inductor_inductance_analytical,
+)
 from qpdk.models.junction import josephson_junction, squid_junction
 
 sax.set_port_naming_strategy("optical")
@@ -142,6 +147,9 @@ __all__ = [
     "launcher",
     "lc_resonator",
     "lc_resonator_coupled",
+    "lumped_element_resonator",
+    "meander_inductor",
+    "meander_inductor_inductance_analytical",
     "measurement_induced_dephasing",
     "microstrip_epsilon_eff",
     "microstrip_thickness_correction",

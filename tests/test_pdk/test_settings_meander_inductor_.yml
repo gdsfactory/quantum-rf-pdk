@@ -1,0 +1,11 @@
+info:
+  n_squares: 508
+  total_wire_length: 1016
+name: meander_inductor_NT5_TL200_WW2_WG4_ELM1_ETCH_EBM2
+settings:
+  etch_bbox_margin: 2
+  etch_layer: M1_ETCH
+  n_turns: 5
+  turn_length: 200
+  wire_gap: 4
+  wire_width: 2
