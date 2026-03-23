@@ -102,7 +102,7 @@ def meander_inductor(
                 layer=layer,
             )
 
-    # Add etch bounding box
+    # Add etch bounding box (boolean-subtracted by metal to avoid overlap)
     if etch_layer is not None:
         c.add_polygon(
             [
@@ -113,6 +113,28 @@ def meander_inductor(
             ],
             layer=etch_layer,
         )
+
+        # Subtract the metal region from the etch bounding box so that
+        # the etch layer surrounds, but does not overlap, the meander metal.
+        c_metal = gf.boolean(
+            A=c,
+            B=c,
+            operation="or",
+            layer=layer,
+            layer1=layer,
+            layer2=layer,
+        )
+        c_etch = gf.boolean(
+            A=c,
+            B=c_metal,
+            operation="A-B",
+            layer=etch_layer,
+            layer1=etch_layer,
+            layer2=layer,
+        )
+        c = gf.Component()
+        c.absorb(c << c_metal)
+        c.absorb(c << c_etch)
 
     # Port o1: left side of the first (bottom) run
     c.add_port(
@@ -365,19 +387,22 @@ def lumped_element_resonator(
         layer2=straight_cross_section.layer,
     )
 
-    c_negative = gf.boolean(
-        A=c,
-        B=c_additive,
-        operation="A-B",
-        layer=etch_layer,
-        layer1=etch_layer,
-        layer2=layer,
-    )
-
     # Combine results
     c = gf.Component()
     c.absorb(c << c_additive)
-    c.absorb(c << c_negative)
+
+    if etch_layer is not None:
+        c_negative = gf.boolean(
+            A=c,
+            B=c_additive,
+            operation="A-B",
+            layer=etch_layer,
+            layer1=etch_layer,
+            layer2=layer,
+        )
+        c = gf.Component()
+        c.absorb(c << c_additive)
+        c.absorb(c << c_negative)
 
     # Add ports
     c.add_port(
