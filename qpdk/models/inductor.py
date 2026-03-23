@@ -137,7 +137,8 @@ def lumped_element_resonator(
         finger_length: Length of each capacitor finger in µm.
         finger_gap: Gap between adjacent capacitor fingers in µm.
         finger_thickness: Width of each capacitor finger in µm.
-        n_turns: Number of horizontal meander inductor runs.
+        n_turns: Number of horizontal meander inductor runs (must be odd to
+            match the cell geometry where the path spans left-to-right bus bars).
         wire_width: Width of the inductor wire in µm.
         wire_gap: Gap between adjacent inductor runs in µm.
         sheet_inductance: Sheet inductance per square in H/□.
@@ -159,9 +160,12 @@ def lumped_element_resonator(
         ep_r=ep_r,
     )
 
+    cap_width = 2 * finger_thickness + finger_length + finger_gap
+    meander_turn_length = cap_width - 4 * wire_width
+
     inductance = meander_inductor_inductance_analytical(
         n_turns=n_turns,
-        turn_length=finger_length + finger_gap,
+        turn_length=meander_turn_length,
         wire_width=wire_width,
         wire_gap=wire_gap,
         sheet_inductance=sheet_inductance,

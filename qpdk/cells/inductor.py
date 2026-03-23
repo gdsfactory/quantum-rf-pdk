@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from math import ceil, floor
+
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
@@ -221,10 +223,20 @@ def lumped_element_resonator(
             "n_turns must be odd so that the meander path spans from the "
             "left bus bar to the right bus bar"
         )
+    if wire_gap <= 0:
+        raise ValueError(f"wire_gap must be positive, got {wire_gap}")
     if bus_bar_spacing <= 0:
         raise ValueError(
             "bus_bar_spacing must be positive to electrically isolate the "
             "last inductor run from the full-width bus bar sections"
+        )
+
+    cap_width_check = 2 * finger_thickness + finger_length + finger_gap
+    short_length_check = cap_width_check - 4 * wire_width
+    if short_length_check <= 0:
+        raise ValueError(
+            f"Meander run length would be non-positive ({short_length_check} µm). "
+            "Increase finger_length/finger_gap/finger_thickness or decrease wire_width."
         )
 
     c = Component()
@@ -412,6 +424,7 @@ def lumped_element_resonator(
         center=straight_left["o1"].center,
         orientation=straight_left["o1"].orientation,
         layer=LAYER.M1_DRAW,
+        port_type="electrical",
     )
     c.add_port(
         name="o2",
@@ -419,6 +432,7 @@ def lumped_element_resonator(
         center=straight_right["o2"].center,
         orientation=straight_right["o2"].orientation,
         layer=LAYER.M1_DRAW,
+        port_type="electrical",
     )
 
     c.move((-cap_width / 2, -total_internal_height / 2))
@@ -447,8 +461,6 @@ def _draw_interdigital_fingers_left(
     thickness: float,
 ) -> None:
     """Draw left-side interdigital capacitor fingers (even-indexed, extending right)."""
-    from math import ceil
-
     for i in range(ceil(fingers / 2)):
         finger_idx = 2 * i
         y0 = y_offset + finger_idx * (thickness + finger_gap)
@@ -475,8 +487,6 @@ def _draw_interdigital_fingers_right(
     thickness: float,
 ) -> None:
     """Draw right-side interdigital capacitor fingers (odd-indexed, extending left)."""
-    from math import floor
-
     x_right_inner = cap_width - x_offset
     for i in range(floor(fingers / 2)):
         finger_idx = 1 + 2 * i
