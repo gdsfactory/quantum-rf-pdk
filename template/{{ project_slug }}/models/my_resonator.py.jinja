@@ -1,0 +1,47 @@
+"""Example resonator model using SAX.
+
+This is an example of a model that uses the SAX framework with JAX
+to define S-parameters for a hanger-style resonator.
+
+Requires qpdk[models] to be installed.
+"""
+
+from __future__ import annotations
+
+from functools import partial
+
+import jax
+import jax.numpy as jnp
+import sax
+
+from qpdk.models.constants import DEFAULT_FREQUENCY
+
+
+@partial(jax.jit, inline=True)
+def my_resonator(
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    f0: sax.Float = 5e9,
+    q_ext: sax.Float = 1e4,
+    q_int: sax.Float = 1e5,
+) -> sax.SDict:
+    """Hanger-style resonator notch filter model.
+
+    Models a resonator side-coupled to a feedline. The transmission shows
+    a notch (dip) at the resonant frequency f0, with depth determined by
+    the ratio of external and internal quality factors.
+
+    Args:
+        f: Frequency array in Hz.
+        f0: Resonant frequency in Hz.
+        q_ext: External (coupling) quality factor.
+        q_int: Internal quality factor.
+
+    Returns:
+        S-parameter dictionary with ports o1 and o2.
+    """
+    delta = (f - f0) / f0
+    q_l = 1.0 / (1.0 / q_ext + 1.0 / q_int)
+    s21 = 1 - q_l / q_ext / (1 + 2j * q_l * delta)
+    s11 = jnp.zeros_like(f, dtype=complex)
+    return sax.reciprocal({"o1@0,o1@0": s11, "o1@0,o2@0": s21})

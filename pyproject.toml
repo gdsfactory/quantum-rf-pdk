@@ -54,6 +54,7 @@ github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
 stubs = ["scipy-stubs"]
 test = [
+  "copier>=9",
   "hypothesis",
   "jsondiff",
   "pytest>=9.0.0",
@@ -127,6 +128,7 @@ project-excludes = [
   "dist/**",
   "*.egg-info/**",
   ".venv/**",
+  "template/**",
   # Exclude samples that may have experimental code
   "qpdk/samples/*.py",
   "qpdk/samples/**/*.py",

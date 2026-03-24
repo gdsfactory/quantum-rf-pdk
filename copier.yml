@@ -1,0 +1,28 @@
+_min_copier_version: "9.0.0"
+_subdirectory: template
+_templates_suffix: .jinja
+
+project_name:
+  type: str
+  help: The name of your project
+  default: My Quantum PDK Project
+
+project_slug:
+  type: str
+  help: The Python package name (lowercase, underscores)
+  default: "{{ project_name | lower | replace(' ', '_') | replace('-', '_') }}"
+
+description:
+  type: str
+  help: A brief description of your project
+  default: A quantum circuit PDK project based on qpdk
+
+author_name:
+  type: str
+  help: Author name
+  default: Your Name
+
+author_email:
+  type: str
+  help: Author email
+  default: your.email@example.com

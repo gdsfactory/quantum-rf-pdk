@@ -1,0 +1,36 @@
+"""{{ project_name }} - {{ description }}."""
+
+from functools import lru_cache
+
+from gdsfactory.get_factories import get_cells
+from gdsfactory.pdk import Pdk
+from qpdk.tech import LAYER, LAYER_CONNECTIVITY, LAYER_STACK, LAYER_VIEWS
+
+from {{ project_slug }} import cells
+
+try:
+    from {{ project_slug }}.models import models as _models
+except ImportError:
+    _models = {}
+
+_cells = get_cells(cells)
+
+
+@lru_cache
+def get_pdk() -> Pdk:
+    """Return PDK with all components, layers, and models."""
+    return Pdk(
+        name="{{ project_slug }}",
+        cells=_cells,
+        layers=LAYER,
+        layer_stack=LAYER_STACK,
+        layer_views=LAYER_VIEWS,
+        models=_models,
+        connectivity=LAYER_CONNECTIVITY,
+    )
+
+
+PDK = get_pdk()
+
+__all__ = ["LAYER", "PDK", "cells"]
+__version__ = "0.1.0"
