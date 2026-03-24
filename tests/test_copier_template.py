@@ -65,6 +65,9 @@ def test_template_variables_replaced(generated_project: Path) -> None:
     """Test that Jinja2 template variables are fully resolved."""
     for path in generated_project.rglob("*"):
         if path.is_file():
-            content = path.read_text()
+            try:
+                content = path.read_text()
+            except UnicodeDecodeError:
+                continue
             assert "{{ " not in content, f"Unresolved template variable in {path}"
             assert " }}" not in content, f"Unresolved template variable in {path}"

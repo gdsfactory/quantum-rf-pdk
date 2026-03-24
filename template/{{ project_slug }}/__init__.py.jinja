@@ -4,6 +4,7 @@ from functools import lru_cache
 
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
+from qpdk import logger
 from qpdk.tech import LAYER, LAYER_CONNECTIVITY, LAYER_STACK, LAYER_VIEWS
 
 from {{ project_slug }} import cells
@@ -11,6 +12,7 @@ from {{ project_slug }} import cells
 try:
     from {{ project_slug }}.models import models as _models
 except ImportError:
+    logger.info("Model dependencies (pip install qpdk[models]) not installed, skipping models.")
     _models = {}
 
 _cells = get_cells(cells)
