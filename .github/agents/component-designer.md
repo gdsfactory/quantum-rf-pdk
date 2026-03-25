@@ -20,239 +20,57 @@ using the [qpdk](https://github.com/gdsfactory/quantum-rf-pdk) Python package, b
 
 ______________________________________________________________________
 
-## When to use this agent
+## Step 0 — Read the upstream gdsfactory component designer skill
 
-Activate this agent when the user:
+Before doing anything else, **fetch and read** the upstream gdsfactory component designer skill document. It contains
+the canonical instructions for environment setup, component generation, headless visualization, modification patterns,
+and the iterative design loop:
 
-- Asks to create or generate a quantum component (transmon, resonator, Josephson junction, SQUID, CPW waveguide,
-  airbridge, capacitor, SNSPD (Superconducting Nanowire Single-Photon Detector), launcher, bump, TSV, etc.).
-- Wants to see what a component looks like (requests a plot, image, or preview).
-- Wants to tweak component parameters (widths, lengths, gaps, layers, cross-sections, etc.) and see the result.
-- Mentions GDS, quantum layout, superconducting circuits, or the qpdk.
-- Asks to compose multiple components together into a larger chip design.
+<https://raw.githubusercontent.com/gdsfactory/gdsfactory/main/.agents/skills/gdsfactory-component-designer/SKILL.md>
 
-______________________________________________________________________
-
-## 1 — Setting up the environment
-
-### Choosing the right Python command
-
-This repository uses **uv** as its package manager. The standard command is:
-
-```bash
-uv run python
-```
-
-Probe the environment first: check for `pyproject.toml` with `[tool.uv]` or an active virtualenv. When in doubt, try
-`uv run python -c "import qpdk"` — if it fails, install dependencies first with `uv sync --all-extras`.
-
-### Activating the PDK
-
-Before generating any component, activate the quantum PDK:
-
-```python
-import gdsfactory as gf
-import qpdk
-
-# Activate the quantum PDK
-qpdk.PDK.activate()
-```
-
-Always clear the cell cache between independent component generations to avoid stale state: `gf.clear_cache()`.
+Follow all instructions in that skill document. The sections below provide **qpdk-specific overrides and additions**
+that take precedence when they conflict with the upstream skill.
 
 ______________________________________________________________________
 
-## 2 — Generating a component
+## qpdk-specific overrides
 
-### 2.1 From the qpdk component library
+### Environment
 
-qpdk ships with parametric component factory functions. Components are accessed either through `qpdk.cells` or via
-`gf.get_component()` after PDK activation:
+This repository uses **uv** as its package manager. Use `uv run python` to run Python commands. If
+`uv run python -c "import qpdk"` fails, install dependencies first with `uv sync --all-extras`.
+
+### PDK activation
+
+Instead of activating the generic gdsfactory PDK, **always activate the qpdk**:
 
 ```python
 import gdsfactory as gf
 import qpdk
 
 qpdk.PDK.activate()
+```
 
-# Example: Double-pad transmon qubit
+### Visualization
+
+When using the visualization script from the upstream skill, adapt it for qpdk. In the restricted eval namespace, also
+expose the `qpdk` module so that expressions like `qpdk.cells.double_pad_transmon()` work. For example:
+
+```python
+import qpdk
+qpdk.PDK.activate()
+
+# Then use Component.plot(return_fig=True) as described in the upstream skill
 c = gf.get_component("double_pad_transmon")
-
-# Example: Coupled resonator with custom parameters
-c = gf.get_component(
-    "resonator_coupled",
-    length=5000.0,
-    meanders=8,
-    coupling_length=150.0,
-)
-```
-
-You can also call factory functions directly:
-
-```python
-from qpdk.cells import double_pad_transmon, resonator_coupled
-
-c = double_pad_transmon(pad_size=(250.0, 400.0), pad_gap=15.0)
-c = resonator_coupled(length=5000.0, meanders=8)
-```
-
-### 2.2 Inspecting component parameters
-
-Every component factory function is a standard Python callable with typed parameters. Use `help()` or
-`inspect.signature()` to discover the parameters:
-
-```python
-import inspect
-from qpdk.cells import double_pad_transmon
-print(inspect.signature(double_pad_transmon))
-```
-
-### 2.3 Listing all available components
-
-```python
-import qpdk
-qpdk.PDK.activate()
-
-for name in sorted(qpdk.PDK.cells):
-    print(name)
-```
-
-______________________________________________________________________
-
-## 3 — Visualizing a component (Proactive Workflow)
-
-Visualization is essential: render and inspect the component after creating or modifying it to verify the result.
-
-### 3.1 Save a plot image to disk and display it
-
-Use the helper script bundled with this agent for reliable headless rendering. From a bash tool:
-
-```bash
-uv run python .github/agents/scripts/visualize_component.py \
-    "qpdk.cells.double_pad_transmon()" \
-    /tmp/transmon.png
-```
-
-The script also supports generic gdsfactory expressions:
-
-```bash
-uv run python .github/agents/scripts/visualize_component.py \
-    "gf.get_component('resonator_coupled', length=5000)" \
-    /tmp/resonator.png
-```
-
-After saving, **always import the image into context** (e.g. using a screenshot or image-viewing tool) so you and the
-user can see it.
-
-### 3.2 Inline visualization
-
-You can also render inline in a Python script:
-
-```python
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import gdsfactory as gf
-import qpdk
-
-qpdk.PDK.activate()
-c = gf.get_component("double_pad_transmon")
-
 fig = c.plot(return_fig=True)
-fig.savefig("/tmp/component.png", dpi=150, bbox_inches="tight")
-plt.close(fig)
+fig.savefig("/tmp/transmon.png", dpi=150, bbox_inches="tight")
 ```
 
-### 3.3 Best practices
-
-- **Be Proactive:** If the user's intent is clear (e.g., "Create a transmon then change its pad size"), do not stop for
-  permission after the first step. Perform the generation, visualization, and modification in a single turn if possible.
-- **Concise Reporting:** Describe the component briefly (ports, size). If the change is minor, just confirm the update
-  and point to the new image. Avoid repeating the entire component description multiple times.
+Always render a PNG and import it into the conversation context after generating or modifying a component.
 
 ______________________________________________________________________
 
-## 4 — Modifying a component
-
-### 4.1 Adjusting parameters
-
-The simplest modification is changing the factory-function arguments. Always call `gf.clear_cache()` before regenerating
-to avoid stale data:
-
-```python
-gf.clear_cache()
-c = gf.get_component(
-    "double_pad_transmon",
-    pad_size=(300.0, 500.0),
-    pad_gap=20.0,
-)
-```
-
-### 4.2 Composing components
-
-Build a custom component by placing and connecting sub-components. Use the `@gf.cell` decorator for proper naming and
-caching:
-
-```python
-import gdsfactory as gf
-import qpdk
-
-qpdk.PDK.activate()
-
-@gf.cell
-def transmon_with_resonator() -> gf.Component:
-    c = gf.Component()
-    transmon = c << gf.get_component("double_pad_transmon")
-    resonator = c << gf.get_component(
-        "resonator_coupled", length=5000.0
-    )
-    # Connect resonator port to transmon port
-    resonator.connect("o1", transmon.ports["o1"])
-    return c
-```
-
-### 4.3 Using cross-sections
-
-qpdk provides specialized cross-sections for superconducting circuits:
-
-- **`coplanar_waveguide`** — Default 50Ω CPW (width=10µm, gap=6µm)
-- **`etch_only`** — Etch-only variant of CPW
-- **`microstrip`** — Simple additive metal strip
-
-```python
-from qpdk.tech import coplanar_waveguide
-
-xs = coplanar_waveguide(width=12, gap=8, radius=120)
-c = gf.get_component("straight", length=500, cross_section=xs)
-```
-
-______________________________________________________________________
-
-## 5 — Exporting the component
-
-```python
-# Write to GDS file
-gdspath = c.write_gds("/tmp/my_component.gds")
-print(f"GDS written to: {gdspath}")
-```
-
-______________________________________________________________________
-
-## 6 — Proactive Design Loop (Best Practices)
-
-When the user asks for a component, follow this streamlined loop:
-
-1. **Understand & Execute:** Identify the component and parameters. If the user asks for a sequence of steps, execute
-   them as a batch where logical.
-1. **Generate & Visualize:** Create the component and render the PNG using the helper script.
-1. **Show & Tell:** Share the image and a *short* summary of what changed (name, ports, bounding box size).
-1. **Anticipate:** If the next step is obvious, offer to perform it or just do it and show the result.
-1. **Iterate Concisely:** For small tweaks, don't repeat the full initial explanation. Just show the new image and
-   highlight the specific change.
-
-______________________________________________________________________
-
-## 7 — Common component quick-reference
+## qpdk component quick-reference
 
 | Component              | Factory function                 | Key parameters                               |
 | ---------------------- | -------------------------------- | -------------------------------------------- |
@@ -276,7 +94,7 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## 8 — Layers quick-reference
+## qpdk layers quick-reference
 
 | Layer      | Tuple   | Purpose                          |
 | ---------- | ------- | -------------------------------- |
@@ -292,7 +110,15 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## 9 — When you are unsure: consult the docs and samples
+## qpdk cross-sections
+
+- **`coplanar_waveguide`** — Default 50Ω CPW (width=10µm, gap=6µm)
+- **`etch_only`** — Etch-only variant of CPW
+- **`microstrip`** — Simple additive metal strip
+
+______________________________________________________________________
+
+## When you are unsure: consult the docs and samples
 
 The full qpdk docs are at **<https://gdsfactory.github.io/quantum-rf-pdk/>**. Browse tutorial notebooks under
 `notebooks/src/` or sample scripts under `qpdk/samples/` for worked examples.

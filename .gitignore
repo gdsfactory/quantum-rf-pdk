@@ -167,7 +167,6 @@ test_diffs/
 
 # gdsfactory+
 scripts/
-!.github/agents/scripts/
 
 # 3D
 *.glb
