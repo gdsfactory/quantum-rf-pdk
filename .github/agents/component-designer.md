@@ -53,17 +53,26 @@ qpdk.PDK.activate()
 
 ### Visualization
 
-When using the visualization script from the upstream skill, adapt it for qpdk. In the restricted eval namespace, also
-expose the `qpdk` module so that expressions like `qpdk.cells.double_pad_transmon()` work. For example:
+Follow the visualization workflow described in **Section 3** of the upstream skill (component rendering to PNG). When
+generating or modifying a component, always render it headlessly and import the image into the conversation so both you
+and the user can inspect it.
+
+The key pattern is:
 
 ```python
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import gdsfactory as gf
 import qpdk
-qpdk.PDK.activate()
 
-# Then use Component.plot(return_fig=True) as described in the upstream skill
+qpdk.PDK.activate()
+gf.clear_cache()
+
 c = gf.get_component("double_pad_transmon")
 fig = c.plot(return_fig=True)
 fig.savefig("/tmp/transmon.png", dpi=150, bbox_inches="tight")
+plt.close(fig)
 ```
 
 Always render a PNG and import it into the conversation context after generating or modifying a component.
