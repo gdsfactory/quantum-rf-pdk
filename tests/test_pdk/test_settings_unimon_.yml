@@ -1,0 +1,12 @@
+info:
+  arm_length: 4000
+  qubit_type: unimon
+  total_resonator_length: 8100
+name: unimon_AL4000_AM6_BSbend_circular_CScpw_JSsquid_junction_JCL50
+settings:
+  arm_length: 4000
+  arm_meanders: 6
+  bend_spec: bend_circular
+  cross_section: cpw
+  junction_coupler_length: 50
+  junction_spec: squid_junction

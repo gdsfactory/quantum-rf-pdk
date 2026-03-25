@@ -80,6 +80,14 @@ from qpdk.models.resonator import (
     resonator_half_wave,
     resonator_quarter_wave,
 )
+from qpdk.models.unimon import (
+    el_to_inductance,
+    unimon,
+    unimon_coupled,
+    unimon_energies,
+    unimon_frequency_and_anharmonicity,
+    unimon_hamiltonian,
+)
 from qpdk.models.waveguides import (
     airbridge,
     bend_circular,
@@ -127,6 +135,7 @@ __all__ = [
     "ec_to_capacitance",
     "ej_ec_to_frequency_and_anharmonicity",
     "ej_to_inductance",
+    "el_to_inductance",
     "electrical_open",
     "electrical_short",
     "electrical_short_2_port",
@@ -176,6 +185,8 @@ __all__ = [
     "transmon_coupled",
     "transmon_with_resonator",
     "tsv",
+    "unimon",
+    "unimon_coupled",
     "xmon_transmon",
 ]
 

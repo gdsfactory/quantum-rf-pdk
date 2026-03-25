@@ -1,0 +1,46 @@
+instances:
+  straight:
+    component: straight
+    info:
+      length: 200
+      route_info_coplanar_waveguide_length: 200
+      route_info_length: 200
+      route_info_type: coplanar_waveguide
+      route_info_weight: 200
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 200
+      npoints: 2
+      width: null
+  unimon:
+    component: unimon
+    info:
+      arm_length: 4000
+      qubit_type: unimon
+      total_resonator_length: 8100
+    settings:
+      arm_length: 4000
+      arm_meanders: 6
+      bend_spec: bend_circular
+      cross_section: cpw
+      junction_coupler_length: 50
+      junction_spec: squid_junction
+nets: []
+placements:
+  straight:
+    mirror: false
+    rotation: 0
+    x: 352.204
+    y: 1229.175
+  unimon:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+ports:
+  coupling_o1: straight,o1
+  coupling_o2: straight,o2
+  unimon_junction: unimon,junction
+  unimon_o1: unimon,o1
+  unimon_o2: unimon,o2
