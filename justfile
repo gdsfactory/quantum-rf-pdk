@@ -52,8 +52,7 @@ show component_name:
     from qpdk.config import PATH
 
     PDK.activate()
-    build_dir = PATH.gds
-    build_dir.mkdir(parents=True, exist_ok=True)
+    (build_dir := PATH.gds).mkdir(parents=True, exist_ok=True)
     component = gf.get_component("{{ component_name }}")
     gds_path = build_dir / f"{component.name}.gds"
     component.write_gds(gds_path)
