@@ -17,15 +17,12 @@ from qpdk.drc import (
 )
 from qpdk.tech import LAYER
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 
-def _rect(
-    width: float, height: float, layer: tuple[int, int]
-) -> Component:
+def _rect(width: float, height: float, layer: tuple[int, int]) -> Component:
     """Create a simple rectangle component on *layer*."""
     return gf.components.rectangle(size=(width, height), layer=layer)
 
@@ -36,6 +33,8 @@ def _rect(
 
 
 class TestMinWidth:
+    """Minimum-width check tests."""
+
     def test_passing_m1_etch(self):
         c = _rect(5.0, 5.0, LAYER.M1_ETCH)
         assert _check_min_width(c, LAYER.M1_ETCH, min_width=4.0) == 0
@@ -55,6 +54,8 @@ class TestMinWidth:
 
 
 class TestMinSpace:
+    """Minimum-spacing check tests."""
+
     def test_passing_space(self):
         c = Component()
         r1 = c << _rect(5.0, 5.0, LAYER.M1_ETCH)
@@ -78,6 +79,8 @@ class TestMinSpace:
 
 
 class TestMaxWidth:
+    """Maximum-width check tests."""
+
     def test_passing_max_width(self):
         c = _rect(50.0, 50.0, LAYER.M1_ETCH)
         assert _check_max_width(c, LAYER.M1_ETCH, max_width=100.0) == 0
@@ -97,6 +100,8 @@ class TestMaxWidth:
 
 
 class TestTsvIndOverlap:
+    """TSV / Indium-bump overlap detection tests."""
+
     def test_no_overlap(self):
         c = Component()
         r1 = c << _rect(15.0, 15.0, LAYER.TSV)
@@ -134,6 +139,8 @@ class TestTsvIndOverlap:
 
 
 class TestRunDrc:
+    """Full DRC run integration tests."""
+
     def test_clean_component_passes(self):
         """A simple rectangle should pass default DRC."""
         c = _rect(10.0, 10.0, LAYER.M1_ETCH)
@@ -174,6 +181,8 @@ class TestRunDrc:
 
 
 class TestDrcAfterAdditiveMetals:
+    """DRC integration with ``apply_additive_metals``."""
+
     def test_additive_metals_then_drc(self):
         """DRC should work on a component after ``apply_additive_metals``."""
         from qpdk.cells.transmon import flipmon_with_bbox

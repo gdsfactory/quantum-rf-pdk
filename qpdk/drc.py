@@ -69,12 +69,15 @@ class DRCResults:
 
     @property
     def num_violations(self) -> int:
+        """Return the total number of violations."""
         return len(self.violations)
 
     def print_summary(self) -> None:
         """Log a human-readable DRC summary."""
         if self.passed:
-            logger.info("DRC PASSED for '{}' – no violations found.", self.component_name)
+            logger.info(
+                "DRC PASSED for '{}' – no violations found.", self.component_name
+            )
             return
 
         logger.warning(
@@ -83,7 +86,9 @@ class DRCResults:
             self.num_violations,
         )
         for v in self.violations:
-            logger.warning("  • {} – {} (value={})", v.rule_name, v.description, v.value)
+            logger.warning(
+                "  • {} – {} (value={})", v.rule_name, v.description, v.value
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +178,6 @@ def _check_no_overlap(
     component: Component,
     layer1: Layer,
     layer2: Layer,
-    *,
-    dbu: float = DRC_DBU,
 ) -> int:
     """Return the overlapping area (in database units²) between two layers.
 
@@ -254,14 +257,20 @@ def run_drc(
         A :class:`DRCResults` object describing any violations found.
     """
     if isinstance(component, str | Path):
-        component = gf.import_gds(component) if Path(str(component)).suffix == ".gds" else gf.get_component(str(component))
+        path = Path(str(component))
+        if path.suffix == ".gds":
+            component = gf.import_gds(path)
+        else:
+            component = gf.get_component(str(component))
 
     name = getattr(component, "name", str(component))
     results = DRCResults(component_name=name)
 
     def _add_if_nonzero(value: int, rule: str, desc: str) -> None:
         if value:
-            results.violations.append(DRCViolation(rule_name=rule, description=desc, value=value))
+            results.violations.append(
+                DRCViolation(rule_name=rule, description=desc, value=value)
+            )
 
     # ── M1_ETCH checks ────────────────────────────────────────────────
     _add_if_nonzero(
@@ -299,12 +308,14 @@ def run_drc(
 
     # ── TSV / Indium-bump overlap ─────────────────────────────────────
     _add_if_nonzero(
-        _check_no_overlap(component, LAYER.TSV, LAYER.IND, dbu=dbu),
+        _check_no_overlap(component, LAYER.TSV, LAYER.IND),
         "TSV_IND.no_overlap",
         "TSV and Indium bump shapes overlap",
     )
     _add_if_nonzero(
-        _check_exclusion(component, LAYER.TSV, LAYER.IND, tsv_ind_min_exclusion, dbu=dbu),
+        _check_exclusion(
+            component, LAYER.TSV, LAYER.IND, tsv_ind_min_exclusion, dbu=dbu
+        ),
         "TSV_IND.min_exclusion",
         f"TSV–IND separation less than {tsv_ind_min_exclusion} µm",
     )
