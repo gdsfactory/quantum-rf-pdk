@@ -93,8 +93,10 @@ def half_circle_coupler(
     stem.movey(bend.dbbox().bottom)
     stem.movex(bend.dcenter[0])  # Center it
 
-    # Bridge the stem into the bend using M1_DRAW only (no M1_ETCH)
-    # so that the center conductor connects without etch-layer conflicts.
+    # Bridge the stem into the bend with M1_DRAW center conductor and
+    # M1_ETCH gap sections, matching the CPW cross-section pattern.
+    # Unlike using a straight ref, these polygons avoid hierarchical
+    # M1_ETCH-over-M1_DRAW conflicts with the bend.
     bridge_x = bend.dcenter[0]
     bridge_y_bottom = bend.dbbox().bottom
     bridge_y_top = bridge_y_bottom + overlap
@@ -107,6 +109,18 @@ def half_circle_coupler(
         ],
         layer=LAYER.M1_DRAW,
     )
+    for etch_s in xs.sections:
+        if etch_s.name and "etch_offset" in etch_s.name:
+            etch_x_center = bridge_x + etch_s.offset
+            c.add_polygon(
+                [
+                    (etch_x_center - etch_s.width / 2, bridge_y_bottom),
+                    (etch_x_center + etch_s.width / 2, bridge_y_bottom),
+                    (etch_x_center + etch_s.width / 2, bridge_y_top),
+                    (etch_x_center - etch_s.width / 2, bridge_y_top),
+                ],
+                layer=LAYER.M1_ETCH,
+            )
     c.add_port("o3", port=stem.ports["o2"])
     c.add_port(
         name="anchor",
