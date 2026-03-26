@@ -10,7 +10,6 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
-from qpdk.cells.helpers import apply_additive_metals
 from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
 from qpdk.helper import show_components
 from qpdk.tech import LAYER
@@ -78,7 +77,7 @@ def half_circle_coupler(
     )
     # Ensure significant overlap by moving stem into the bend metal
     # and considering the bend radius
-    overlap = xs.width /2 + cross_section_etch_section.width
+    overlap = xs.width / 2 + cross_section_etch_section.width
 
     # Add a stem/lead straight from the center of the arc
     stem = c.add_ref(

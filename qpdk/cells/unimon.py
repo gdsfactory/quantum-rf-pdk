@@ -101,14 +101,20 @@ def unimon_arm(
         # We'll use the side that is furthest from the ports (which are near x=0)
         if abs(bbox.left) > abs(bbox.right):
             center_x = bbox.left + radius
-            orientation = 180 # Pointing LEFT
+            orientation = 180  # Pointing LEFT
         else:
             center_x = bbox.right - radius
-            orientation = 0 # Pointing RIGHT
-            
+            orientation = 0  # Pointing RIGHT
+
         c.add_port(
             name="readout",
-            center=(center_x, bbox.top - radius - cross_section_etch_section.width - cross_section_obj.width/2),
+            center=(
+                center_x,
+                bbox.top
+                - radius
+                - cross_section_etch_section.width
+                - cross_section_obj.width / 2,
+            ),
             width=cross_section_obj.width,
             orientation=orientation,
             layer=LAYER.M1_DRAW,
@@ -333,8 +339,13 @@ def unimon_coupled(
 
     # Align coupler anchor with the unimon readout port
     # The readout port is at the center of the meander bend
-    coupler.connect("anchor", unimon_ref.ports["readout_top"], allow_width_mismatch=True, allow_layer_mismatch=True)
-    coupler.dcplx_trans *= kdb.DCplxTrans(1, 0, False, 0,coupling_gap*2)
+    coupler.connect(
+        "anchor",
+        unimon_ref.ports["readout_top"],
+        allow_width_mismatch=True,
+        allow_layer_mismatch=True,
+    )
+    coupler.dcplx_trans *= kdb.DCplxTrans(1, 0, False, 0, coupling_gap * 2)
 
     for port in unimon_ref.ports:
         c.add_port(f"unimon_{port.name}", port=port)

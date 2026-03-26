@@ -1,7 +1,6 @@
 """Helper functions for QPDK cells."""
 
 from collections.abc import Iterable, Sequence
-from copy import deepcopy
 
 import gdsfactory as gf
 import klayout.db as kdb
@@ -118,7 +117,6 @@ def apply_additive_metals(component: Component) -> Component:
 
     TODO: Implement without flattening. Maybe with a KLayout dataprep script?
     """
-    
     for additive, etch in (
         (LAYER.M1_DRAW, LAYER.M1_ETCH),
         (LAYER.M2_DRAW, LAYER.M2_ETCH),
