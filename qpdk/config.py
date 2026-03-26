@@ -21,7 +21,7 @@ class Path:
     repo = repo
     build = repo / "build"
     docs = repo / "docs"
-    gds = module / "gds"
+    gds = build / "gds"
     simulation = build / "simulation"
     tests = repo / "tests"
 

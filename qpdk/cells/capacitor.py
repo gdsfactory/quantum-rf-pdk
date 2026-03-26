@@ -79,18 +79,49 @@ def half_circle_coupler(
     # and considering the bend radius
     overlap = xs.width / 2 + cross_section_etch_section.width
 
-    # Add a stem/lead straight from the center of the arc
+    # Add a stem/lead straight from the center of the arc.
+    # The stem uses the CPW cross-section but does NOT extend into the bend,
+    # to avoid M1_ETCH overlapping with the bend's M1_DRAW.
     stem = c.add_ref(
         straight(
-            length=extra_straight_length + overlap,
+            length=extra_straight_length,
             cross_section=cross_section,
         )
     )
 
     stem.rotate(-90)
-    # Move stem so its M1_DRAW layer overlaps/shorts with the bend's M1_DRAW layer
-    stem.movey(bend.dbbox().bottom + overlap)
+    stem.movey(bend.dbbox().bottom)
     stem.movex(bend.dcenter[0])  # Center it
+
+    # Bridge the stem into the bend with M1_DRAW center conductor and
+    # M1_ETCH gap sections, matching the CPW cross-section pattern.
+    # Unlike using a straight ref, these polygons avoid hierarchical
+    # M1_ETCH-over-M1_DRAW conflicts with the bend.
+    bridge_x = bend.dcenter[0]
+    bridge_y_bottom = bend.dbbox().bottom
+    bridge_y_top = bridge_y_bottom + overlap
+    c.add_polygon(
+        [
+            (bridge_x - xs.width / 2, bridge_y_bottom),
+            (bridge_x + xs.width / 2, bridge_y_bottom),
+            (bridge_x + xs.width / 2, bridge_y_top),
+            (bridge_x - xs.width / 2, bridge_y_top),
+        ],
+        layer=LAYER.M1_DRAW,
+    )
+    etch_height = overlap / 3
+    for etch_s in xs.sections:
+        if etch_s.name and "etch_offset" in etch_s.name:
+            etch_x_center = bridge_x + etch_s.offset
+            c.add_polygon(
+                [
+                    (etch_x_center - etch_s.width / 2, bridge_y_bottom),
+                    (etch_x_center + etch_s.width / 2, bridge_y_bottom),
+                    (etch_x_center + etch_s.width / 2, bridge_y_bottom + etch_height),
+                    (etch_x_center - etch_s.width / 2, bridge_y_bottom + etch_height),
+                ],
+                layer=LAYER.M1_ETCH,
+            )
     c.add_port("o3", port=stem.ports["o2"])
 
     # Place anchor at the arc center, computed as the midpoint of the
