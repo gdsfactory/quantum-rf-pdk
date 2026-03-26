@@ -139,6 +139,10 @@ currents, and substrate modes that analytical models may miss
   transmon pad capacitance and field map.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
+- :doc:`notebooks/palace_eigenmode_qubit_resonator` — Eigenmode simulation of a
+  double-pad transmon qubit coupled to a quarter-wave readout resonator using `gsim
+  <https://gdsfactory.github.io/gsim/>`_ and Palace, including comparison with
+  semi-analytical frequency estimates and an Optuna optimization loop.
 
 .. note::
 
@@ -444,6 +448,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
+      - ``models``
+    - - :doc:`notebooks/palace_eigenmode_qubit_resonator`
+      - FEM electromagnetics
+      - gsim, Palace, Optuna
       - ``models``
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
