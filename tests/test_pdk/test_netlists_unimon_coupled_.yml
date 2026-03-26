@@ -6,9 +6,9 @@ instances:
       angle: 180
       cross_section: cpw
       extension_length: 50
-      extra_straight_length: 10
+      extra_straight_length: 20
       open_end: true
-      radius: 130
+      radius: 140
   unimon:
     component: unimon
     info:
@@ -24,12 +24,14 @@ instances:
       junction_etch_width: 22
       junction_gap: 6
       junction_spec: Fsquid_junction_Mqpdkpcellspjunction_SJSFjosephson_junction_Mqpdkpcellspjunction_SJOD1p8_WSL4_NSL0p5_TL4
-nets: []
+nets:
+- p1: half_circle_coupler,anchor
+  p2: unimon,readout_top
 placements:
   half_circle_coupler:
     mirror: false
     rotation: 90
-    x: 160.741
+    x: 161.241
     y: -100
   unimon:
     mirror: false
@@ -37,10 +39,8 @@ placements:
     x: 0
     y: 0
 ports:
-  coupling_anchor: half_circle_coupler,anchor
   coupling_o3: half_circle_coupler,o3
   unimon_junction: unimon,junction
   unimon_o1: unimon,o1
   unimon_o2: unimon,o2
   unimon_readout_bottom: unimon,readout_bottom
-  unimon_readout_top: unimon,readout_top

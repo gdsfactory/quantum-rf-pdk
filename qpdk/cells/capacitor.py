@@ -123,9 +123,15 @@ def half_circle_coupler(
                 layer=LAYER.M1_ETCH,
             )
     c.add_port("o3", port=stem.ports["o2"])
+
+    # Place anchor at the arc center, computed as the midpoint of the
+    # bend ports for a circular arc, for concentric alignment with an
+    # inner resonator bend.
+    arc_center_x = (bend.ports["o1"].dx + bend.ports["o2"].dx) / 2
+    arc_center_y = (bend.ports["o1"].dy + bend.ports["o2"].dy) / 2
     c.add_port(
         name="anchor",
-        center=(0, radius - cross_section_etch_section.width),
+        center=(arc_center_x, arc_center_y),
         width=xs.width,
         orientation=90,
         layer=LAYER.M1_DRAW,
