@@ -1,12 +1,14 @@
 info:
-  arm_length: 4000
+  arm_length: 3000
+  meander_radius: 100
   qubit_type: unimon
-  total_resonator_length: 8000
-name: unimon_AL4000_AM6_BSbend_circular_CScpw_JSsquid_junction_JG6
+  total_resonator_length: 6000
+name: unimon_AL3000_AM6_BSbend_circular_CScpw_JSFsquid_juncti_77b12a7c
 settings:
-  arm_length: 4000
+  arm_length: 3000
   arm_meanders: 6
   bend_spec: bend_circular
   cross_section: cpw
-  junction_gap: 6
-  junction_spec: squid_junction
+  junction_etch_width: 22
+  junction_gap: 10
+  junction_spec: Fsquid_junction_Mqpdkpcellspjunction_SJSFjosephson_junction_Mqpdkpcellspjunction_SJOD1p8_WSL4_NSL0p5_TL4

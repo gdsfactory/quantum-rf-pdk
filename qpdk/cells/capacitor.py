@@ -10,9 +10,99 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
-from qpdk.cells.waveguides import straight
+from qpdk.cells.helpers import apply_additive_metals
+from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
 from qpdk.helper import show_components
 from qpdk.tech import LAYER
+
+
+@gf.cell
+def half_circle_coupler(
+    radius: float = 50.0,
+    angle: float = 180.0,
+    extension_length: float = 10.0,
+    cross_section: CrossSectionSpec = "cpw",
+    extra_straight_length: float = 20.0,
+    open_end: bool = True,
+) -> Component:
+    """Creates a half-circle coupler for readout.
+
+    This coupler consists of a circular bend (typically 180 degrees) that wraps
+    around a resonator arm for capacitive coupling.
+
+    Args:
+        radius: Inner radius of the half-circle in μm.
+        angle: Angle of the circular arc in degrees.
+        extension_length: Length of the straight sections extending from the
+            ends of the half-circle in μm.
+        cross_section: Cross-section specification for the coupler.
+        extra_straight_length: Length of the straight section extending from the
+            bottom of the half-circle in μm.
+        open_end: If True, adds an etched gap at the ends of the extensions.
+
+    Returns:
+        Component: A gdsfactory component with the half-circle coupler geometry.
+    """
+    c = Component()
+
+    bend = c.add_ref(
+        bend_circular(
+            radius=radius,
+            angle=angle,
+            cross_section=cross_section,
+        )
+    )
+
+    # Position bend such that it's centered and opening upwards
+    bend.rotate(-angle / 2)
+    bend.move((-bend.dcenter[0], -bend.dcenter[1]))
+
+    # Add extensions to the ends of the bend
+    if extension_length > 0:
+        ext1 = c.add_ref(straight(length=extension_length, cross_section=cross_section))
+        ext1.connect("o1", bend.ports["o1"])
+        ext2 = c.add_ref(straight(length=extension_length, cross_section=cross_section))
+        ext2.connect("o1", bend.ports["o2"])
+        where_to_add_gaps = [ext1.ports["o2"], ext2.ports["o2"]]
+    else:
+        where_to_add_gaps = [bend.ports["o1"], bend.ports["o2"]]
+
+    if open_end:
+        for port in where_to_add_gaps:
+            add_etch_gap(c, port, cross_section=cross_section)
+
+    # Get cross section details to calculate overlap
+    xs = gf.get_cross_section(cross_section)
+    cross_section_etch_section = next(
+        s for s in xs.sections if s.name and "etch_offset" in s.name
+    )
+    # Ensure significant overlap by moving stem into the bend metal
+    # and considering the bend radius
+    overlap = xs.width /2 + cross_section_etch_section.width
+
+    # Add a stem/lead straight from the center of the arc
+    stem = c.add_ref(
+        straight(
+            length=extra_straight_length + overlap,
+            cross_section=cross_section,
+        )
+    )
+
+    stem.rotate(-90)
+    # Move stem so its M1_DRAW layer overlaps/shorts with the bend's M1_DRAW layer
+    stem.movey(bend.dbbox().bottom + overlap)
+    stem.movex(bend.dcenter[0])  # Center it
+    c.add_port("o3", port=stem.ports["o2"])
+    c.add_port(
+        name="anchor",
+        center=(0, radius - cross_section_etch_section.width),
+        width=xs.width,
+        orientation=90,
+        layer=LAYER.M1_DRAW,
+        port_type="placement",
+    )
+
+    return c
 
 
 @gf.cell
@@ -381,6 +471,7 @@ def plate_capacitor_single(
 
 if __name__ == "__main__":
     show_components(
+        half_circle_coupler,
         plate_capacitor_single,
         plate_capacitor,
         interdigital_capacitor,

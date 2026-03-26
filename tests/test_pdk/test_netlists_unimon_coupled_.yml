@@ -1,46 +1,47 @@
 instances:
-  straight:
-    component: straight
-    info:
-      length: 200
-      route_info_coplanar_waveguide_length: 200
-      route_info_length: 200
-      route_info_type: coplanar_waveguide
-      route_info_weight: 200
-      width: 10
+  half_circle_coupler:
+    component: half_circle_coupler
+    info: {}
     settings:
-      cross_section: coplanar_waveguide
-      length: 200
-      npoints: 2
-      width: null
+      angle: 180
+      cross_section: cpw
+      extension_length: 50
+      extra_straight_length: 200
+      open_end: true
+      radius: 120
   unimon:
     component: unimon
     info:
-      arm_length: 4000
+      arm_length: 3000
+      meander_radius: 100
       qubit_type: unimon
-      total_resonator_length: 8000
+      total_resonator_length: 6000
     settings:
-      arm_length: 4000
+      arm_length: 3000
       arm_meanders: 6
       bend_spec: bend_circular
       cross_section: cpw
+      junction_etch_width: 22
       junction_gap: 6
-      junction_spec: squid_junction
-nets: []
+      junction_spec: Fsquid_junction_Mqpdkpcellspjunction_SJSFjosephson_junction_Mqpdkpcellspjunction_SJOD1p8_WSL4_NSL0p5_TL4
+nets:
+- p1: half_circle_coupler,anchor
+  p2: unimon,readout_top
 placements:
-  straight:
+  half_circle_coupler:
     mirror: false
-    rotation: 0
-    x: 162.725
-    y: 1241
+    rotation: 270
+    x: 96.741
+    y: -111
   unimon:
     mirror: false
     rotation: 0
     x: 0
     y: 0
 ports:
-  coupling_o1: straight,o1
-  coupling_o2: straight,o2
+  coupling_o1: half_circle_coupler,o1
+  coupling_o2: half_circle_coupler,o2
+  coupling_o3: half_circle_coupler,o3
   unimon_junction: unimon,junction
   unimon_o1: unimon,o1
   unimon_o2: unimon,o2

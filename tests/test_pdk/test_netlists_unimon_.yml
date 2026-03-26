@@ -10,32 +10,32 @@ instances:
       - 180
       port_type: optical
       size:
-      - 6
+      - 10
       - 22
   squid_junction:
     component: squid_junction
     info: {}
     settings:
-      junction_spec: josephson_junction
+      junction_spec: Fjosephson_junction_Mqpdkpcellspjunction_SJOD1p8_WSL4_NSL0p5_TL4
       loop_area: 4
   unimon_arm:
     component: unimon_arm
     info: {}
     settings:
-      arm_length: 4000
+      arm_length: 3000
       arm_meanders: 6
       bend_spec: bend_circular
       cross_section: cpw
-      junction_gap: 6
+      junction_gap: 10
   unimon_arm2:
     component: unimon_arm
     info: {}
     settings:
-      arm_length: 4000
+      arm_length: 3000
       arm_meanders: 6
       bend_spec: bend_circular
       cross_section: cpw
-      junction_gap: 6
+      junction_gap: 10
 nets: []
 placements:
   rectangle:
@@ -45,17 +45,19 @@ placements:
     y: 0
   squid_junction:
     mirror: false
-    rotation: 270
-    x: 1
-    y: 12.5
+    rotation: 225
+    x: 6.01
+    y: 4.596
   unimon_arm:
     mirror: false
-    rotation: 180
-    x: 162.725
-    y: -1200
-  unimon_arm2:
-    mirror: true
-    rotation: 180
-    x: 162.725
+    rotation: 0
+    x: -85.802
     y: 1200
-ports: {}
+  unimon_arm2:
+    mirror: false
+    rotation: 180
+    x: 85.802
+    y: -1200
+ports:
+  readout_bottom: unimon_arm,readout
+  readout_top: unimon_arm2,readout

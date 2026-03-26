@@ -3,9 +3,9 @@ r"""Unimon qubit models.
 This module provides both a SAX microwave S-parameter model and a quantum
 Hamiltonian model for the unimon qubit.
 
-**Microwave model** — The unimon is modeled as two quarter-wave CPW
-transmission-line sections connected by a Josephson junction (SQUID).
-The S-parameters describe the linear microwave response of the structure.
+**Microwave model** — The unimon is modeled as a capacitively coupled closed
+system consisting of two quarter-wave CPW transmission-line sections shunted by
+a Josephson junction (SQUID).
 
 **Hamiltonian model** — The effective single-mode Hamiltonian of the unimon is
 
@@ -85,14 +85,14 @@ def el_to_inductance(el_ghz: float) -> float:
 # ---------------------------------------------------------------------------
 
 
-def unimon(
+def _unimon_internal(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    arm_length: float = 4000.0,
+    arm_length: float = 3000.0,
     cross_section: str = "cpw",
     junction_capacitance: float = 5e-15,
-    junction_inductance: float = 7e-9,
+    junction_inductance: float = -7e-9,
 ) -> sax.SDict:
-    r"""SAX S-parameter model for a unimon qubit.
+    r"""Internal SAX S-parameter model for a closed unimon qubit.
 
     The unimon is modeled as two shorted quarter-wave CPW transmission lines
     connected by a parallel LC element representing the Josephson junction
@@ -101,12 +101,13 @@ def unimon(
     .. svgbob::
 
         o1 ── λ/4 TL ──┬──L_J──┬── λ/4 TL ── o2
-                        │       │
-                        └──C_J──┘
-                        (junction)
+                       │       │
+                       └──C_J──┘
+                       (junction)
 
-    The two ports ``o1`` and ``o2`` correspond to the shorted ends of the
-    resonator arms, which are used for external coupling.
+    The two ports ``o1`` and ``o2`` correspond to the nodes on either side of
+    the Josephson junction. The other ends of the transmission lines are
+    shorted to ground.
 
     Args:
         f: Array of frequency points in Hz.
@@ -116,7 +117,7 @@ def unimon(
         junction_inductance: Junction inductance :math:`L_J` in Henries.
 
     Returns:
-        sax.SDict: S-parameters dictionary with ports ``o1`` and ``o2``.
+        sax.SDict: S-parameters dictionary with internal ports ``o1`` and ``o2``.
     """
     f = jnp.asarray(f)
 
@@ -174,21 +175,25 @@ def unimon(
 
 def unimon_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    arm_length: float = 4000.0,
+    arm_length: float = 3000.0,
     cross_section: str = "cpw",
     junction_capacitance: float = 5e-15,
-    junction_inductance: float = 7e-9,
+    junction_inductance: float = -7e-9,
     coupling_capacitance: float = 10e-15,
 ) -> sax.SDict:
-    r"""SAX model for a unimon qubit with capacitive coupling.
+    r"""SAX model for a capacitively coupled unimon qubit.
 
-    Extends :func:`unimon` by adding a coupling capacitor to one port,
-    representing the capacitive coupling to a readout resonator or
-    probe line.
+    The unimon is modeled as a closed system of two shorted quarter-wave CPW
+    resonators connected by a Josephson junction. Interaction with the qubit
+    is provided via a single coupling capacitor connected to one of the arms.
 
     .. svgbob::
 
-        o1 ── Cc ── unimon ── o2
+        o1 ── Cc ──┬── λ/4 TL ── (ground)
+                   │
+                 Junction
+                   │
+                   └── λ/4 TL ── (ground)
 
     Args:
         f: Array of frequency points in Hz.
@@ -196,15 +201,15 @@ def unimon_coupled(
         cross_section: Cross-section specification for the CPW arms.
         junction_capacitance: Junction capacitance :math:`C_J` in Farads.
         junction_inductance: Junction inductance :math:`L_J` in Henries.
-        coupling_capacitance: Coupling capacitance in Farads.
+        coupling_capacitance: Coupling capacitance :math:`C_c` in Farads.
 
     Returns:
-        sax.SDict: S-parameters dictionary with ports ``o1`` and ``o2``.
+        sax.SDict: S-parameters dictionary with a single port ``o1``.
     """
     f = jnp.asarray(f)
 
     instances: dict[str, sax.SType] = {
-        "unimon": unimon(
+        "unimon": _unimon_internal(
             f=f,
             arm_length=arm_length,
             cross_section=cross_section,
@@ -220,7 +225,6 @@ def unimon_coupled(
 
     ports = {
         "o1": "coupling_cap,o1",
-        "o2": "unimon,o2",
     }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)

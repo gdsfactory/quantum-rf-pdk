@@ -1,17 +1,21 @@
 info:
-  arm_length: 4000
+  arm_length: 3000
   coupling_gap: 20
-  coupling_length: 200
+  coupling_radius: 120
+  meander_radius: 100
   qubit_type: unimon
-  total_resonator_length: 8000
-name: unimon_coupled_AL4000_AM6_BSbend_circular_CScpw_JSsquid_df9d6401
+  total_resonator_length: 6000
+name: unimon_coupled_AL3000_AM6_BSbend_circular_CScpw_JSFsqui_08ce557e
 settings:
-  arm_length: 4000
+  arm_length: 3000
   arm_meanders: 6
   bend_spec: bend_circular
+  coupling_angle: 180
+  coupling_extension_length: 50
+  coupling_extra_straight_length: 200
   coupling_gap: 20
-  coupling_straight_length: 200
   cross_section: cpw
   cross_section_non_resonator: cpw
+  junction_etch_width: 22
   junction_gap: 6
-  junction_spec: squid_junction
+  junction_spec: Fsquid_junction_Mqpdkpcellspjunction_SJSFjosephson_junction_Mqpdkpcellspjunction_SJOD1p8_WSL4_NSL0p5_TL4

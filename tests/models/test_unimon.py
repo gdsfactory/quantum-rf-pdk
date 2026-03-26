@@ -12,14 +12,13 @@ import qpdk
 from qpdk.models.constants import Φ_0, h
 from qpdk.models.unimon import (
     el_to_inductance,
-    unimon,
     unimon_coupled,
     unimon_energies,
     unimon_frequency_and_anharmonicity,
     unimon_hamiltonian,
 )
 
-from .base import TwoPortModelTestSuite
+from .base import OnePortModelTestSuite
 
 # Ensure PDK is activated for tests that require cross-section lookups
 qpdk.PDK.activate()
@@ -193,24 +192,7 @@ class TestUnimonFrequencyAndAnharmonicity:
 
 
 @final
-class TestUnimonSAX(TwoPortModelTestSuite):
-    """Tests for the unimon SAX S-parameter model."""
-
-    model_function = staticmethod(unimon)
-
-    def test_symmetric_arms(self) -> None:
-        """Test that S11 == S22 for symmetric arm lengths."""
-        f = self.get_frequency_array(50)
-        result = self._call_model(f=f)
-        s11 = result[("o1", "o1")]
-        s22 = result[("o2", "o2")]
-        assert_allclose(
-            s11, s22, atol=1e-6, err_msg="Symmetric unimon should have S11 == S22"
-        )
-
-
-@final
-class TestUnimonCoupledSAX(TwoPortModelTestSuite):
+class TestUnimonCoupledSAX(OnePortModelTestSuite):
     """Tests for the unimon coupled SAX S-parameter model."""
 
     model_function = staticmethod(unimon_coupled)

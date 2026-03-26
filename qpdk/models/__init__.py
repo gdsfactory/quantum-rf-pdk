@@ -186,7 +186,6 @@ __all__ = [
     "transmon_coupled",
     "transmon_with_resonator",
     "tsv",
-    "unimon",
     "unimon_coupled",
     "unimon_energies",
     "unimon_frequency_and_anharmonicity",
