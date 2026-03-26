@@ -109,6 +109,7 @@ def half_circle_coupler(
         ],
         layer=LAYER.M1_DRAW,
     )
+    etch_height = overlap / 3
     for etch_s in xs.sections:
         if etch_s.name and "etch_offset" in etch_s.name:
             etch_x_center = bridge_x + etch_s.offset
@@ -116,8 +117,8 @@ def half_circle_coupler(
                 [
                     (etch_x_center - etch_s.width / 2, bridge_y_bottom),
                     (etch_x_center + etch_s.width / 2, bridge_y_bottom),
-                    (etch_x_center + etch_s.width / 2, bridge_y_top),
-                    (etch_x_center - etch_s.width / 2, bridge_y_top),
+                    (etch_x_center + etch_s.width / 2, bridge_y_bottom + etch_height),
+                    (etch_x_center - etch_s.width / 2, bridge_y_bottom + etch_height),
                 ],
                 layer=LAYER.M1_ETCH,
             )
