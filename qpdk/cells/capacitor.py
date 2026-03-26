@@ -79,18 +79,34 @@ def half_circle_coupler(
     # and considering the bend radius
     overlap = xs.width / 2 + cross_section_etch_section.width
 
-    # Add a stem/lead straight from the center of the arc
+    # Add a stem/lead straight from the center of the arc.
+    # The stem uses the CPW cross-section but does NOT extend into the bend,
+    # to avoid M1_ETCH overlapping with the bend's M1_DRAW.
     stem = c.add_ref(
         straight(
-            length=extra_straight_length + overlap,
+            length=extra_straight_length,
             cross_section=cross_section,
         )
     )
 
     stem.rotate(-90)
-    # Move stem so its M1_DRAW layer overlaps/shorts with the bend's M1_DRAW layer
-    stem.movey(bend.dbbox().bottom + overlap)
+    stem.movey(bend.dbbox().bottom)
     stem.movex(bend.dcenter[0])  # Center it
+
+    # Bridge the stem into the bend using M1_DRAW only (no M1_ETCH)
+    # so that the center conductor connects without etch-layer conflicts.
+    bridge_x = bend.dcenter[0]
+    bridge_y_bottom = bend.dbbox().bottom
+    bridge_y_top = bridge_y_bottom + overlap
+    c.add_polygon(
+        [
+            (bridge_x - xs.width / 2, bridge_y_bottom),
+            (bridge_x + xs.width / 2, bridge_y_bottom),
+            (bridge_x + xs.width / 2, bridge_y_top),
+            (bridge_x - xs.width / 2, bridge_y_top),
+        ],
+        layer=LAYER.M1_DRAW,
+    )
     c.add_port("o3", port=stem.ports["o2"])
     c.add_port(
         name="anchor",
