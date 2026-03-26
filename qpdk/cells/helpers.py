@@ -132,7 +132,6 @@ def apply_additive_metals(component: Component) -> Component:
         component.flatten()
         component.remove_layers([etch, additive])
         component << component_etch_only
-
     return component
 
 

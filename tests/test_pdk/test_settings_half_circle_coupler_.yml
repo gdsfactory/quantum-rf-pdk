@@ -1,0 +1,9 @@
+info: {}
+name: half_circle_coupler_R50_A180_EL10_CScpw_ESL20_OETrue
+settings:
+  angle: 180
+  cross_section: cpw
+  extension_length: 10
+  extra_straight_length: 20
+  open_end: true
+  radius: 50

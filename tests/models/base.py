@@ -178,6 +178,15 @@ class BaseModelTestSuite:
             )
 
 
+class OnePortModelTestSuite(BaseModelTestSuite):
+    """Base test suite for 1-port network models.
+
+    Provides default settings for models with port "o1".
+    """
+
+    expected_ports: ClassVar[set[str]] = {"o1"}
+
+
 class TwoPortModelTestSuite(BaseModelTestSuite):
     """Base test suite for 2-port network models.
 
