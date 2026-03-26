@@ -46,7 +46,7 @@ def fluxonium(
         |         |====XX=====|         |
         +---------+    JJ     +---------+
 
-    See :cite:`manucharyam_fluxonium_2009` for the original proposal and
+    See :cite:`manucharyan_fluxonium_2009` for the original proposal and
     :cite:`nguyen_blueprint_2019` for a modern high-coherence implementation.
 
     Args:
