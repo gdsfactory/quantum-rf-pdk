@@ -626,7 +626,6 @@ for i in range(n_res):
 # Resonator instance names
 res_names = sorted(
     [n for n in cpw_instance_names if n.startswith("resonator_")],
-    key=lambda x: x,
 )
 
 # Non-resonator CPW instances keep nominal values in the per-resonator scenario
