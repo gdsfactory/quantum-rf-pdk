@@ -1,0 +1,8 @@
+info: {}
+name: unimon_arm_AL4000_AM6_BSbend_circular_CScpw_ESL0
+settings:
+  arm_length: 4000
+  arm_meanders: 6
+  bend_spec: bend_circular
+  cross_section: cpw
+  extra_straight_length: 0

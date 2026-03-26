@@ -1,6 +1,7 @@
 """Model definitions for qpdk."""
 
 import sax
+import jax
 
 from qpdk.models.capacitor import (
     interdigital_capacitor,
@@ -187,6 +188,9 @@ __all__ = [
     "tsv",
     "unimon",
     "unimon_coupled",
+    "unimon_energies",
+    "unimon_frequency_and_anharmonicity",
+    "unimon_hamiltonian",
     "xmon_transmon",
 ]
 
@@ -195,6 +199,19 @@ def _is_sax_model(obj: object) -> bool:
     """Check if an object is a SAX model function."""
     if not callable(obj):
         return False
+
+    # Skip functions that return jax.Array or tuple (these are Hamiltonian models)
+    if hasattr(obj, "__annotations__") and "return" in obj.__annotations__:
+        ret = obj.__annotations__["return"]
+        # If it returns jax.Array or a tuple of floats, it's not a SAX S-parameter model
+        if ret in [jax.Array, "jax.Array", "jax.Array"]:
+            return False
+        # Match names like tuple[float, float]
+        if hasattr(ret, "__name__") and ret.__name__ == "tuple":
+            return False
+        if str(ret).startswith("tuple") or str(ret).startswith("Tuple"):
+            return False
+
     # Check if return type is sax.SType or sax.SDict
     for target in [obj, getattr(obj, "__wrapped__", None)]:
         if target is None:

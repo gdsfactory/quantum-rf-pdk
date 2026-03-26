@@ -1,4 +1,4 @@
-"""Unimon qubit models.
+r"""Unimon qubit models.
 
 This module provides both a SAX microwave S-parameter model and a quantum
 Hamiltonian model for the unimon qubit.
@@ -11,23 +11,23 @@ The S-parameters describe the linear microwave response of the structure.
 
 .. math::
 
-    \\hat{H} = 4 E_C \\hat{n}^2
-             + \\tfrac{1}{2} E_L (\\hat{\\varphi} - \\varphi_{\\text{ext}})^2
-             - E_J \\cos\\hat{\\varphi}
+    \hat{H} = 4 E_C \hat{n}^2
+             + \tfrac{1}{2} E_L (\hat{\varphi} - \varphi_{\text{ext}})^2
+             - E_J \cos\hat{\varphi}
 
 where :math:`E_C` is the charging energy, :math:`E_L` the inductive energy
 from the geometric inductance of the resonator arms, :math:`E_J` the
-Josephson energy, and :math:`\\varphi_{\\text{ext}}` the external flux bias
+Josephson energy, and :math:`\varphi_{\text{ext}}` the external flux bias
 (in units of the reduced flux quantum).
 
-The unimon operates in the regime :math:`E_L \\sim E_J`, which is distinct
-from both the transmon (:math:`E_J \\gg E_C`, no geometric inductance) and
-the fluxonium (:math:`E_L \\ll E_J`).
+The unimon operates in the regime :math:`E_L \sim E_J`, which is distinct
+from both the transmon (:math:`E_J \gg E_C`, no geometric inductance) and
+the fluxonium (:math:`E_L \ll E_J`).
 
 References:
     - :cite:`hyyppaUnimonQubit2022`
-    - :cite:`tuokkolaMultimodePhysicsUnimon2024`
-    - :cite:`sajadiParameterOptimizationUnimon2025`
+    - :cite:`tuohinoMultimodePhysicsUnimon2024`
+    - :cite:`dudaParameterOptimizationUnimon2025`
 """
 
 import math
@@ -35,13 +35,14 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
+import qutip
+import qutip_jax
 import sax
 from sax.models.rf import capacitor, electrical_short, tee
 
-from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
+from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, h
 from qpdk.models.generic import lc_resonator
 from qpdk.models.waveguides import straight_shorted
-
 
 # ---------------------------------------------------------------------------
 # Helper: energy-scale conversions
@@ -230,86 +231,6 @@ def unimon_coupled(
 # ---------------------------------------------------------------------------
 
 
-def _build_phase_operator(n_states: int) -> jax.Array:
-    r"""Build the phase operator :math:`\hat{\varphi}` in the charge basis.
-
-    In the charge basis :math:`|n\rangle`, the phase operator acts as a
-    shift operator:
-
-    .. math::
-
-        \hat{\varphi} |n\rangle = |n-1\rangle + |n+1\rangle
-
-    This is represented as an off-diagonal matrix (tridiagonal with ones
-    on the super- and sub-diagonals), which is the standard representation
-    used in circuit-QED Hamiltonian diagonalisation.
-
-    Note:
-        This operator is **not** the exact phase operator (which is not
-        well-defined on a finite Hilbert space), but the standard
-        approximation used for superconducting-circuit Hamiltonians
-        in the charge basis.  It becomes exact in the limit
-        :math:`n_{\\text{states}} \\to \\infty`.
-
-    Args:
-        n_states: Dimension of the truncated Hilbert space.
-
-    Returns:
-        A ``(n_states, n_states)`` real matrix.
-    """
-    return jnp.diag(jnp.ones(n_states - 1), k=1) + jnp.diag(
-        jnp.ones(n_states - 1), k=-1
-    )
-
-
-def _build_number_operator(n_states: int, n_max: int) -> jax.Array:
-    r"""Build the Cooper-pair number operator :math:`\hat{n}` in the charge basis.
-
-    In the charge basis :math:`|n\rangle` with
-    :math:`n \in \{-n_{\max}, \ldots, +n_{\max}\}`, the number operator is
-    diagonal:
-
-    .. math::
-
-        \hat{n} = \operatorname{diag}(-n_{\max}, \ldots, +n_{\max})
-
-    Args:
-        n_states: Dimension of the truncated Hilbert space
-            (should be ``2 * n_max + 1``).
-        n_max: Maximum charge number included in the truncation.
-
-    Returns:
-        A ``(n_states, n_states)`` real diagonal matrix.
-    """
-    return jnp.diag(jnp.arange(-n_max, n_max + 1, dtype=jnp.float64))
-
-
-def _build_cosine_operator(n_states: int) -> jax.Array:
-    r"""Build the cosine operator :math:`\cos\hat{\varphi}` in the charge basis.
-
-    In the charge basis the cosine of the phase is a nearest-neighbour
-    hopping operator:
-
-    .. math::
-
-        \cos\hat{\varphi} = \tfrac{1}{2}
-        \bigl( e^{i\hat{\varphi}} + e^{-i\hat{\varphi}} \bigr)
-
-    which acts as :math:`\cos\hat{\varphi}|n\rangle =
-    \tfrac{1}{2}(|n+1\rangle + |n-1\rangle)`.
-
-    Args:
-        n_states: Dimension of the truncated Hilbert space.
-
-    Returns:
-        A ``(n_states, n_states)`` real matrix.
-    """
-    return 0.5 * (
-        jnp.diag(jnp.ones(n_states - 1), k=1)
-        + jnp.diag(jnp.ones(n_states - 1), k=-1)
-    )
-
-
 def unimon_hamiltonian(
     ec_ghz: float = 1.0,
     el_ghz: float = 5.0,
@@ -327,17 +248,34 @@ def unimon_hamiltonian(
                  + \tfrac{1}{2} E_L (\hat{\varphi} - \varphi_{\text{ext}})^2
                  - E_J \cos\hat{\varphi}
 
-    This Hamiltonian is identical in form to the fluxonium Hamiltonian but
-    the unimon operates in a qualitatively different parameter regime
-    where :math:`E_L \sim E_J` (rather than :math:`E_L \ll E_J` for
-    fluxonium).
+    **Energy Scales and Physics**:
+    - :math:`E_J`: The Josephson energy of the single non-linear junction.
+    - :math:`E_C`: The effective charging energy. The large geometric capacitance
+      of the CPW resonator means this is lower than typical transmons.
+    - :math:`E_L`: The inductive energy provided by the CPW resonator shunting
+      the junction. The unimon operates in the regime :math:`E_L \sim E_J`.
 
-    The Hamiltonian is constructed in the charge basis
-    :math:`|n\rangle` with :math:`n \in \{-n_{\max}, \ldots, +n_{\max}\}`,
-    giving a matrix of size :math:`(2 n_{\max} + 1) \times (2 n_{\max} + 1)`.
+    **Similarities to Fluxonium**:
+    The effective single-mode circuit model of the unimon is mathematically identical
+    to a fluxonium qubit. The inductive shunt (provided by the CPW resonators)
+    guarantees there are no isolated superconducting islands, making the unimon
+    intrinsically immune to dephasing caused by low-frequency :math:`1/f` charge noise.
 
-    See :cite:`hyyppaUnimonQubit2022,sajadiParameterOptimizationUnimon2025`
-    for the derivation and parameter regimes.
+    **Phase and Charge Operators**:
+    Because the unimon is inductively shunted, its potential energy features a
+    quadratic term :math:`\tfrac{1}{2} E_L \hat{\varphi}^2`, meaning the potential
+    is **not** :math:`2\pi`-periodic. Thus, the phase operator :math:`\hat{\varphi}`
+    must be treated as an extended, non-compact variable. Consequently, the
+    conjugate charge variable :math:`n` is continuous, rather than taking discrete
+    integer values as it does for a transmon.
+
+    *Note on this implementation*: To evaluate the Hamiltonian, we use a standard
+    truncated discrete charge basis approximation
+    (:math:`n \in \{-n_{\max}, \ldots, +n_{\max}\}`). The charge operator is derived
+    from `qutip.charge`, and the non-compact phase space operators are approximated
+    as nearest-neighbor hopping matrices.
+
+    See :cite:`hyyppaUnimonQubit2022` and :cite:`tuohinoMultimodePhysicsUnimon2024`.
 
     Args:
         ec_ghz: Charging energy :math:`E_C` in GHz.
@@ -354,19 +292,22 @@ def unimon_hamiltonian(
     """
     n_states = 2 * n_max + 1
 
-    n_hat = _build_number_operator(n_states, n_max)
-    cos_phi = _build_cosine_operator(n_states)
-    phi_hat = _build_phase_operator(n_states)
+    # Extract raw JAX arrays from qutip-jax
+    n_hat = qutip.charge(n_max).to(qutip_jax.JaxArray).data._jxa
+
+    ones = jnp.ones(n_states - 1)
+    phi_hat = qutip.qdiags([ones, ones], [1, -1]).to(qutip_jax.JaxArray).data._jxa
+    cos_phi = (qutip.qdiags([ones, ones], [1, -1]) / 2).to(qutip_jax.JaxArray).data._jxa
 
     # H = 4 E_C n^2 + 0.5 E_L (phi - phi_ext)^2 - E_J cos(phi)
     # Expand the quadratic: (phi - phi_ext)^2 = phi^2 - 2*phi_ext*phi + phi_ext^2
-    H = (
+    return (
         4 * ec_ghz * n_hat @ n_hat
-        + 0.5 * el_ghz * (phi_hat @ phi_hat - 2 * phi_ext * phi_hat + phi_ext**2 * jnp.eye(n_states))
+        + 0.5
+        * el_ghz
+        * (phi_hat @ phi_hat - 2 * phi_ext * phi_hat + phi_ext**2 * jnp.eye(n_states))
         - ej_ghz * cos_phi
     )
-
-    return H
 
 
 def unimon_energies(

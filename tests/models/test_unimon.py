@@ -6,7 +6,7 @@ import hypothesis.strategies as st
 import jax.numpy as jnp
 import numpy as np
 from hypothesis import given, settings
-from numpy.testing import assert_allclose, assert_array_less
+from numpy.testing import assert_allclose
 
 import qpdk
 from qpdk.models.constants import Φ_0, h
@@ -84,14 +84,16 @@ class TestUnimonHamiltonian:
         ec_ghz=st.floats(min_value=0.1, max_value=5.0),
         el_ghz=st.floats(min_value=1.0, max_value=20.0),
         ej_ghz=st.floats(min_value=1.0, max_value=50.0),
+        phi_ext=st.floats(min_value=0.0, max_value=6.28),
+        n_max=st.integers(min_value=5, max_value=25),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_hamiltonian_always_hermitian(
-        self, ec_ghz: float, el_ghz: float, ej_ghz: float
+        self, ec_ghz: float, el_ghz: float, ej_ghz: float, phi_ext: float, n_max: int
     ) -> None:
         """Test Hermiticity with random parameters."""
         H = unimon_hamiltonian(
-            ec_ghz=ec_ghz, el_ghz=el_ghz, ej_ghz=ej_ghz, n_max=10
+            ec_ghz=ec_ghz, el_ghz=el_ghz, ej_ghz=ej_ghz, phi_ext=phi_ext, n_max=n_max
         )
         assert_allclose(H, H.T, atol=1e-10)
 
@@ -118,7 +120,7 @@ class TestUnimonEnergies:
         energies = unimon_energies(ec_ghz=1.0, el_ghz=5.0, ej_ghz=10.0, n_levels=5)
         for i in range(len(energies) - 1):
             assert energies[i] < energies[i + 1], (
-                f"Energy levels should be ordered: E_{i} < E_{i+1}"
+                f"Energy levels should be ordered: E_{i} < E_{i + 1}"
             )
 
     @staticmethod
@@ -173,9 +175,7 @@ class TestUnimonFrequencyAndAnharmonicity:
     @staticmethod
     def test_returns_tuple() -> None:
         """Test that the function returns a tuple of two floats."""
-        result = unimon_frequency_and_anharmonicity(
-            ec_ghz=1.0, el_ghz=5.0, ej_ghz=10.0
-        )
+        result = unimon_frequency_and_anharmonicity(ec_ghz=1.0, el_ghz=5.0, ej_ghz=10.0)
         assert isinstance(result, tuple)
         assert len(result) == 2
         f01, alpha = result
@@ -204,7 +204,9 @@ class TestUnimonSAX(TwoPortModelTestSuite):
         result = self._call_model(f=f)
         s11 = result[("o1", "o1")]
         s22 = result[("o2", "o2")]
-        assert_allclose(s11, s22, atol=1e-6, err_msg="Symmetric unimon should have S11 == S22")
+        assert_allclose(
+            s11, s22, atol=1e-6, err_msg="Symmetric unimon should have S11 == S22"
+        )
 
 
 @final
