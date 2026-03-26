@@ -135,30 +135,60 @@ def fluxonium(
     bus_top_y = pad_height / 2  # top of the pad area
 
     # Left bus bar: full height of gap
-    _add_rect(c, layer=layer_metal,
-              x_center=bus_left_x, width=connection_wire_width,
-              y0=bus_bottom_y, y1=bus_top_y)
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x_center=bus_left_x,
+        width=connection_wire_width,
+        y0=bus_bottom_y,
+        y1=bus_top_y,
+    )
     # Right bus bar: full height of gap (symmetric)
-    _add_rect(c, layer=layer_metal,
-              x_center=bus_right_x, width=connection_wire_width,
-              y0=bus_bottom_y, y1=bus_top_y)
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x_center=bus_right_x,
+        width=connection_wire_width,
+        y0=bus_bottom_y,
+        y1=bus_top_y,
+    )
 
     # Horizontal stubs: bus bars → inductor ports
-    _add_rect(c, layer=layer_metal,
-              x0=-pad_gap / 2, x1=ind_o1.dcenter[0],
-              y_center=ind_o1.dcenter[1], height=inductor_wire_width)
-    _add_rect(c, layer=layer_metal,
-              x0=ind_o2.dcenter[0], x1=pad_gap / 2,
-              y_center=ind_o2.dcenter[1], height=inductor_wire_width)
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x0=-pad_gap / 2,
+        x1=ind_o1.dcenter[0],
+        y_center=ind_o1.dcenter[1],
+        height=inductor_wire_width,
+    )
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x0=ind_o2.dcenter[0],
+        x1=pad_gap / 2,
+        y_center=ind_o2.dcenter[1],
+        height=inductor_wire_width,
+    )
 
     # Horizontal wires: bus bars → junction
     jj_half_w = junction_ref.size_info.width / 2
-    _add_rect(c, layer=layer_metal,
-              x0=-pad_gap / 2, x1=-jj_half_w,
-              y_center=junction_y, height=connection_wire_width)
-    _add_rect(c, layer=layer_metal,
-              x0=jj_half_w, x1=pad_gap / 2,
-              y_center=junction_y, height=connection_wire_width)
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x0=-pad_gap / 2,
+        x1=-jj_half_w,
+        y_center=junction_y,
+        height=connection_wire_width,
+    )
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x0=jj_half_w,
+        x1=pad_gap / 2,
+        y_center=junction_y,
+        height=connection_wire_width,
+    )
 
     # -- Ports ---------------------------------------------------------
     ports_config = [

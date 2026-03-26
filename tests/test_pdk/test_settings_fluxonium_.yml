@@ -1,0 +1,16 @@
+info:
+  inductor_n_turns: 59
+  inductor_total_wire_length: 6840
+  qubit_type: fluxonium
+name: fluxonium_PS250_400_PG120_JSjosephson_junction_JDNone_I_7a03456c
+settings:
+  connection_wire_width: 4
+  inductor_n_turns: 59
+  inductor_wire_gap: 4
+  inductor_wire_width: 2
+  junction_spec: josephson_junction
+  layer_metal: M1_DRAW
+  pad_gap: 120
+  pad_size:
+  - 250
+  - 400

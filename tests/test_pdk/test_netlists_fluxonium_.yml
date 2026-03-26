@@ -1,0 +1,80 @@
+instances:
+  josephson_junction:
+    component: josephson_junction
+    info: {}
+    settings:
+      cross_section_narrow: josephson_junction_cross_section_narrow
+      cross_section_wide: josephson_junction_cross_section_wide
+      junction_overlap_displacement: 1.8
+      layer_patch: JJ_PATCH
+      narrow_straight_length: 0.5
+      size_patch:
+      - 1.5
+      - 1
+      taper_length: 4.7
+      wide_straight_length: 8.3
+  meander_inductor:
+    component: meander_inductor
+    info:
+      n_squares: 3420
+      total_wire_length: 6840
+    settings:
+      etch_bbox_margin: 2
+      etch_layer: null
+      n_turns: 59
+      turn_length: 112
+      wire_gap: 4
+      wire_width: 2
+  rectangle:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 250
+      - 400
+  rectangle2:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 250
+      - 400
+nets: []
+placements:
+  josephson_junction:
+    mirror: false
+    rotation: 45
+    x: -9.546
+    y: -184.438
+  meander_inductor:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 25
+  rectangle:
+    mirror: false
+    rotation: 0
+    x: -310
+    y: -200
+  rectangle2:
+    mirror: false
+    rotation: 0
+    x: 60
+    y: -200
+ports: {}
