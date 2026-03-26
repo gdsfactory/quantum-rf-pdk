@@ -8,7 +8,7 @@ instances:
       extension_length: 50
       extra_straight_length: 20
       open_end: true
-      radius: 130
+      radius: 140
   unimon:
     component: unimon
     info:
@@ -31,7 +31,7 @@ placements:
   half_circle_coupler:
     mirror: false
     rotation: 90
-    x: 167.241
+    x: 161.241
     y: -100
   unimon:
     mirror: false

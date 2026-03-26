@@ -1,7 +1,7 @@
 info:
   arm_length: 3000
   coupling_gap: 30
-  coupling_radius: 130
+  coupling_radius: 140
   meander_radius: 100
   qubit_type: unimon
   total_resonator_length: 6000

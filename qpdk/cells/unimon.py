@@ -93,27 +93,23 @@ def unimon_arm(
     if bend_instances:
         last_bend = bend_instances[-1]
         radius = last_bend.cell.info["radius"]
-        # The center of the arc for a 180 deg bend is radius away from the straight path
-        # For our resonator meanders, we can use the instance bounding box
+        # Locate the center of curvature of the last meander bend.
+        # The bbox extends radius + width/2 + etch_width beyond the
+        # center in every direction that the arc reaches.
         bbox = last_bend.dbbox()
-        # If the bend is on the left, arc center is at the left peak
-        # If the bend is on the right, arc center is at the right peak
-        # We'll use the side that is furthest from the ports (which are near x=0)
+        half_cpw = cross_section_obj.width / 2 + cross_section_etch_section.width
         if abs(bbox.left) > abs(bbox.right):
-            center_x = bbox.left + radius
+            center_x = bbox.left + radius + half_cpw
             orientation = 180  # Pointing LEFT
         else:
-            center_x = bbox.right - radius
+            center_x = bbox.right - radius - half_cpw
             orientation = 0  # Pointing RIGHT
 
         c.add_port(
             name="readout",
             center=(
                 center_x,
-                bbox.top
-                - radius
-                - cross_section_etch_section.width
-                - cross_section_obj.width / 2,
+                bbox.top - radius - half_cpw,
             ),
             width=cross_section_obj.width,
             orientation=orientation,
@@ -291,11 +287,11 @@ def unimon_coupled(
         junction_spec: Component specification for the junction (SQUID) component.
         junction_gap: Length of the etched gap on which the junction sits in µm.
         junction_etch_width: Width of the etched region where the junction sits in µm.
-        coupling_gap: Gap between the unimon and coupling waveguide in µm.
-            Measured center-to-center between the conductors of the coupler
-            and the unimon resonator. The coupling radius is automatically
-            computed as ``meander_radius + coupling_gap`` to ensure a uniform
-            gap across the bend.
+        coupling_gap: Edge-to-edge gap between M1_DRAW centre conductors of the
+            unimon resonator and the coupling waveguide in µm.  The coupling
+            radius is automatically computed as
+            ``meander_radius + coupling_gap + width_resonator/2 + width_coupler/2``
+            to ensure a uniform gap across the bend.
         coupling_angle: Angle of the circular arc in degrees.
         coupling_extension_length: Length of the straight sections extending from the
             ends of the half-circle in μm.
@@ -318,9 +314,14 @@ def unimon_coupled(
         )
     )
 
-    # Match the meander radius and make it bigger by the coupling gap
+    # Compute coupling_radius so that the edge-to-edge gap between the
+    # M1_DRAW centre conductors equals coupling_gap for concentric arcs.
     meander_radius = unimon_ref.cell.info["meander_radius"]
-    coupling_radius = meander_radius + coupling_gap
+    xs_resonator = gf.get_cross_section(cross_section)
+    xs_coupler = gf.get_cross_section(cross_section_non_resonator)
+    coupling_radius = (
+        meander_radius + coupling_gap + xs_resonator.width / 2 + xs_coupler.width / 2
+    )
 
     coupler = c.add_ref(
         half_circle_coupler(
