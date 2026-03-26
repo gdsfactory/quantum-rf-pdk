@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import partial
+from pathlib import Path
 from queue import SimpleQueue
 from typing import ClassVar, final, override
 
@@ -22,6 +23,16 @@ from qpdk.models.waveguides import straight
 from qpdk.tech import coplanar_waveguide
 
 TEST_DATA_PATH = PATH.tests / "models" / "data"
+
+
+def _is_lfs_pointer(path: str | Path) -> bool:
+    """Check if a file is a Git LFS pointer instead of actual data."""
+    try:
+        with open(path) as f:
+            first_line = f.readline()
+        return first_line.startswith("version https://git-lfs.github.com")
+    except (OSError, UnicodeDecodeError):
+        return False
 
 NUMERIC_TOLERANCES = {
     "rtol": 1 / 100,
@@ -75,7 +86,13 @@ class BaseCompareToQucs(ABC):
             - S_sax: Dictionary of S-parameters from the qpdk model (e.g., {"S11": ..., "S21": ...}).
             - S_qucs: Dictionary of S-parameters from Qucs-S reference data.
         """
-        S_qucs = pl.read_csv(TEST_DATA_PATH / self.csv_filename)
+        csv_path = TEST_DATA_PATH / self.csv_filename
+        if not csv_path.exists() or _is_lfs_pointer(csv_path):
+            pytest.skip(
+                f"Reference data {self.csv_filename} not available "
+                "(Git LFS data not fetched)"
+            )
+        S_qucs = pl.read_csv(csv_path)
         f = S_qucs["frequency"].to_jax()
 
         model_func = self.get_model_function()
