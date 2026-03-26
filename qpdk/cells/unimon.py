@@ -293,8 +293,9 @@ def unimon_coupled(
         junction_etch_width: Width of the etched region where the junction sits in µm.
         coupling_gap: Gap between the unimon and coupling waveguide in µm.
             Measured center-to-center between the conductors of the coupler
-            and the unimon resonator. The coupling radius is inferred from
-            the meander radius to ensure a uniform gap across the bend.
+            and the unimon resonator. The coupling radius is automatically
+            computed as ``meander_radius + coupling_gap`` to ensure a uniform
+            gap across the bend.
         coupling_angle: Angle of the circular arc in degrees.
         coupling_extension_length: Length of the straight sections extending from the
             ends of the half-circle in μm.

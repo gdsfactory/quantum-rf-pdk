@@ -93,8 +93,9 @@ def half_circle_coupler(
     stem.movex(bend.dcenter[0])  # Center it
     c.add_port("o3", port=stem.ports["o2"])
 
-    # Place anchor at the arc center (midpoint of the bend ports) for
-    # concentric alignment with an inner resonator bend.
+    # Place anchor at the arc center, computed as the midpoint of the
+    # bend ports for a circular arc, for concentric alignment with an
+    # inner resonator bend.
     arc_center_x = (bend.ports["o1"].dx + bend.ports["o2"].dx) / 2
     arc_center_y = (bend.ports["o1"].dy + bend.ports["o2"].dy) / 2
     c.add_port(
