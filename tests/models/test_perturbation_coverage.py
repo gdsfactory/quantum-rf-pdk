@@ -1,9 +1,7 @@
 """Tests for qpdk.models.perturbation — covers previously untested functions."""
 
 import jax.numpy as jnp
-import sympy
 from numpy.testing import assert_allclose
-from sympy.physics.quantum.boson import BosonOp
 
 from qpdk.models.perturbation import (
     dispersive_shift,

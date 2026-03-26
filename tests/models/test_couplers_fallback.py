@@ -1,10 +1,7 @@
 """Tests for coupler model fallback path when cross-section lacks CPW sections."""
 
-import warnings
-
 import gdsfactory as gf
 import jax.numpy as jnp
-import pytest
 
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance, coupler_straight
 

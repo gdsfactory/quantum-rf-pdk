@@ -2,8 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from qpdk.helper import layerenum_to_tuple, show_components
 from qpdk.tech import LAYER
 
