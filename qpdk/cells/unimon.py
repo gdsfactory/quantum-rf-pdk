@@ -247,7 +247,7 @@ def unimon(
     c.info["qubit_type"] = "unimon"
     c.info["arm_length"] = arm_length
     c.info["total_resonator_length"] = 2 * arm_length
-    c.info["meander_radius"] = arm.info["radius"] if "radius" in arm.info else 100.0
+    c.info["meander_radius"] = arm.info.get("radius", 100.0)
 
     # Rotate whole component to be vertical
     c.rotate(-90)

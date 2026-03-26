@@ -83,7 +83,6 @@ from qpdk.models.resonator import (
 )
 from qpdk.models.unimon import (
     el_to_inductance,
-    unimon,
     unimon_coupled,
     unimon_energies,
     unimon_frequency_and_anharmonicity,

@@ -1,19 +1,19 @@
 info:
   arm_length: 3000
-  coupling_gap: 20
-  coupling_radius: 120
+  coupling_gap: 30
+  coupling_radius: 130
   meander_radius: 100
   qubit_type: unimon
   total_resonator_length: 6000
-name: unimon_coupled_AL3000_AM6_BSbend_circular_CScpw_JSFsqui_08ce557e
+name: unimon_coupled_AL3000_AM6_BSbend_circular_CScpw_JSFsqui_5ff2237b
 settings:
   arm_length: 3000
   arm_meanders: 6
   bend_spec: bend_circular
   coupling_angle: 180
   coupling_extension_length: 50
-  coupling_extra_straight_length: 200
-  coupling_gap: 20
+  coupling_extra_straight_length: 10
+  coupling_gap: 30
   cross_section: cpw
   cross_section_non_resonator: cpw
   junction_etch_width: 22

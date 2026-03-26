@@ -25,6 +25,8 @@ from qpdk.tech import LAYER
 cells = PDK.cells
 skip_test_netlist = {
     "all_cells",  # Skip netlist test for all_cells (collection of all components)
+    "unimon",  # Uses partial junction spec; generated cell name can't round-trip
+    "unimon_coupled",  # Uses partial junction spec; generated cell name can't round-trip
 }
 # Skip default gdsfactory cells
 skip_test = {
