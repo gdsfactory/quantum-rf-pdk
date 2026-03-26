@@ -19,8 +19,9 @@ from functools import partial
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
+from kfactory import kdb
 
-from qpdk.cells.junction import squid_junction
+from qpdk.cells.junction import josephson_junction, squid_junction
 from qpdk.cells.resonator import resonator
 from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.helper import show_components
@@ -33,7 +34,7 @@ def unimon_arm(
     arm_meanders: int = 6,
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
-    extra_straight_length: float = 0.0,
+    junction_gap: float = 6.0,
 ) -> Component:
     """Creates a quarter-wave resonator arm for the unimon qubit."""
     c = Component()
@@ -63,8 +64,9 @@ def unimon_arm(
     )
 
     # Short straight CPW section to be attached after the bend
+    # The length matches half of the meander straight lengths minus half the gap
     half_straight = straight(
-        length=length_per_one_straight / 2 + extra_straight_length,
+        length=(length_per_one_straight / 2) - (junction_gap / 2),
         cross_section=cross_section,
     )
 
@@ -82,14 +84,23 @@ def unimon_arm(
     return c
 
 
-@gf.cell
+@gf.cell(check_instances=False)
 def unimon(
     arm_length: float = 4000.0,
     arm_meanders: int = 6,
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
-    junction_spec: ComponentSpec = squid_junction,
-    junction_coupler_length: float = 50.0,
+    junction_spec: ComponentSpec = partial(
+        squid_junction,
+        junction_spec=partial(
+            josephson_junction,
+            junction_overlap_displacement=1.8,
+            wide_straight_length=4.5,
+            narrow_straight_length=0.5,
+            taper_length=4,
+        ),
+    ),
+    junction_gap: float = 6.0,
 ) -> Component:
     r"""Creates a unimon qubit from two grounded :math:`\lambda/4` CPW resonator arms connected by a SQUID junction.
 
@@ -103,7 +114,7 @@ def unimon(
 
         o1 (shorted)
            |
-           |  <-- :math:`\lambda/4` resonator arm (meandered)
+           | <-- :math:`\lambda/4` resonator arm (meandered)
            |
         junction
            |
@@ -119,8 +130,7 @@ def unimon(
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator arms.
         junction_spec: Component specification for the junction (SQUID) component.
-        junction_coupler_length: Length of the straight CPW section connecting
-            each resonator arm to the junction in µm.
+        junction_gap: Length of the etched gap on which the junction sits in µm.
 
     Returns:
         Component: A gdsfactory component with the unimon qubit geometry.
@@ -132,26 +142,24 @@ def unimon(
         arm_meanders=arm_meanders,
         bend_spec=bend_spec,
         cross_section=cross_section,
-        extra_straight_length=junction_coupler_length,
+        junction_gap=junction_gap,
     )
-
-    # Place the SQUID junction at the center
-    junction_comp = gf.get_component(junction_spec)
-    junction_ref = c.add_ref(junction_comp)
-    junction_ref.dcenter = (0, 0)
 
     cross_section_obj = gf.get_cross_section(cross_section)
     cross_section_etch_section = next(
         s for s in cross_section_obj.sections if s.name and "etch_offset" in s.name
     )
 
-    # Gap width is the width of the etch section line itself
-    gap_width = cross_section_etch_section.width
-    # Etch rectangle width is 2*gap_width + center conductor width
-    etch_rect_width = 2 * gap_width + cross_section_obj.width
+    # Place the SQUID junction at the center
+    junction_comp = gf.get_component(junction_spec)
+    junction_ref = c.add_ref(junction_comp)
+    junction_ref.dcplx_trans *= kdb.DCplxTrans(1, -45, False, 0, 0)
+    junction_ref.dcenter = (0, 0)
+
+    etch_rect_width = 2 * cross_section_etch_section.width + cross_section_obj.width
 
     gap_comp = gf.c.rectangle(
-        size=(gap_width, etch_rect_width),
+        size=(junction_gap, etch_rect_width),
         layer=cross_section_etch_section.layer,
         centered=True,
         port_type="optical",
@@ -162,7 +170,6 @@ def unimon(
     gap_ref.dcenter = (0, 0)
     gap_ref.rotate(90)
 
-    # Place resonator arms
     arm_top_ref = c.add_ref(arm)
     arm_top_ref.connect(
         "o2",
@@ -170,7 +177,6 @@ def unimon(
         allow_width_mismatch=True,
         allow_layer_mismatch=True,
     )
-
     arm_bottom_ref = c.add_ref(arm)
     arm_bottom_ref.connect(
         "o2",
@@ -178,11 +184,12 @@ def unimon(
         allow_width_mismatch=True,
         allow_layer_mismatch=True,
     )
+    # Mirror meander vertically (across extension axis X in horizontal phase)
+    # This becomes a horizontal mirror (mirror along Y) in the final vertical layout.
     arm_bottom_ref.mirror_y()
 
-    # Add ports at the shorted ends of the arms (for external coupling)
-    c.add_port("o1", port=arm_top_ref.ports["o1"])
-    c.add_port("o2", port=arm_bottom_ref.ports["o1"])
+    c.add_port("o1", port=arm_top_ref.ports["o1"], port_type="placement")
+    c.add_port("o2", port=arm_bottom_ref.ports["o1"], port_type="placement")
 
     # Add placement port for the junction center
     c.add_port(
@@ -197,9 +204,9 @@ def unimon(
     # Add metadata
     c.info["qubit_type"] = "unimon"
     c.info["arm_length"] = arm_length
-    c.info["total_resonator_length"] = 2 * arm_length + 2 * junction_coupler_length
+    c.info["total_resonator_length"] = 2 * arm_length
 
-    # Rotate to be vertical
+    # Rotate whole component to be vertical
     c.rotate(-90)
 
     return c
@@ -212,7 +219,7 @@ def unimon_coupled(
     bend_spec: ComponentSpec = bend_circular,
     cross_section: CrossSectionSpec = "cpw",
     junction_spec: ComponentSpec = squid_junction,
-    junction_coupler_length: float = 50.0,
+    junction_gap: float = 6.0,
     coupling_gap: float = 20.0,
     coupling_straight_length: float = 200.0,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
@@ -231,8 +238,7 @@ def unimon_coupled(
         bend_spec: Specification for the bend component used in meanders.
         cross_section: Cross-section specification for the resonator arms.
         junction_spec: Component specification for the junction (SQUID) component.
-        junction_coupler_length: Length of the straight CPW section connecting
-            each resonator arm to the junction in µm.
+        junction_gap: Length of the etched gap on which the junction sits in µm.
         coupling_gap: Gap between the unimon and coupling waveguide in µm.
         coupling_straight_length: Length of the coupling waveguide section in µm.
         cross_section_non_resonator: Cross-section for the coupling waveguide.
@@ -249,7 +255,7 @@ def unimon_coupled(
             bend_spec=bend_spec,
             cross_section=cross_section,
             junction_spec=junction_spec,
-            junction_coupler_length=junction_coupler_length,
+            junction_gap=junction_gap,
         )
     )
 

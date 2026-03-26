@@ -1,7 +1,7 @@
 """Model definitions for qpdk."""
 
-import sax
 import jax
+import sax
 
 from qpdk.models.capacitor import (
     interdigital_capacitor,

@@ -18,20 +18,20 @@ instances:
     info:
       arm_length: 4000
       qubit_type: unimon
-      total_resonator_length: 8100
+      total_resonator_length: 8000
     settings:
       arm_length: 4000
       arm_meanders: 6
       bend_spec: bend_circular
       cross_section: cpw
-      junction_coupler_length: 50
+      junction_gap: 6
       junction_spec: squid_junction
 nets: []
 placements:
   straight:
     mirror: false
     rotation: 0
-    x: 215.725
+    x: 162.725
     y: 1241
   unimon:
     mirror: false
