@@ -326,6 +326,18 @@ models miss
 
         :bdg-secondary-line:`JAX` :bdg-secondary-line:`Polars` :bdg-primary:`models`
 
+    .. grid-item-card:: Palace qubit and readout resonator
+        :link: notebooks/palace_eigenmode_qubit_resonator
+        :link-type: doc
+        :class-card: notebook-card
+
+        Double-pad transmon and quarter-wave readout eigenmodes, with analytical
+        estimates and geometry tuning.
+
+        +++
+
+        :bdg-secondary-line:`Palace` :bdg-secondary-line:`gsim` :bdg-success:`open source`
+
     .. grid-item-card:: More FEM and FDTD in gsim
         :link: https://gdsfactory.github.io/gsim/
         :class-card: notebook-card notebook-card-external
