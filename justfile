@@ -42,6 +42,23 @@ build:
     @rm -rf dist
     uv build
 
+# Generate and show a PDK component by name, saving its GDS to build/
+[group('build')]
+show component_name:
+    #!/usr/bin/env -S uv run python
+    import gdsfactory as gf
+
+    from qpdk import PDK, logger
+    from qpdk.config import PATH
+
+    PDK.activate()
+    (build_dir := PATH.gds).mkdir(parents=True, exist_ok=True)
+    component = gf.get_component("{{ component_name }}")
+    gds_path = build_dir / f"{component.name}.gds"
+    component.write_gds(gds_path)
+    logger.info(f"Saved GDS for {{ component_name }} to '{gds_path}'")
+    component.show()
+
 # Run all tests, pre-commit hooks, build wheel and documentation in parallel
 [group('all')]
 [parallel]
