@@ -274,10 +274,8 @@ def unimon_coupled(
     junction_gap: float = 6.0,
     junction_etch_width: float = 22.0,
     coupling_gap: float = 30.0,
-    coupling_radius: float | None = None,
     coupling_angle: float = 180.0,
     coupling_extension_length: float = 50.0,
-    coupling_extra_straight_length: float = 10.0,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
 ) -> Component:
     r"""Creates a unimon qubit with a half-circle coupling waveguide for readout.
@@ -294,15 +292,12 @@ def unimon_coupled(
         junction_gap: Length of the etched gap on which the junction sits in µm.
         junction_etch_width: Width of the etched region where the junction sits in µm.
         coupling_gap: Gap between the unimon and coupling waveguide in µm.
-            Measured from the center of the center conductor of the straight sections
-            of the coupler and the unimon resonators.
-        coupling_radius: Inner radius of the half-circle coupler in μm.
-            If None, defaults to meander_radius + coupling_gap.
+            Measured center-to-center between the conductors of the coupler
+            and the unimon resonator. The coupling radius is inferred from
+            the meander radius to ensure a uniform gap across the bend.
         coupling_angle: Angle of the circular arc in degrees.
         coupling_extension_length: Length of the straight sections extending from the
             ends of the half-circle in μm.
-        coupling_extra_straight_length: Length of the straight section extending
-            from the coupler in μm.
         cross_section_non_resonator: Cross-section for the coupling waveguide.
 
     Returns:
@@ -324,8 +319,7 @@ def unimon_coupled(
 
     # Match the meander radius and make it bigger by the coupling gap
     meander_radius = unimon_ref.cell.info["meander_radius"]
-    if coupling_radius is None:
-        coupling_radius = meander_radius + coupling_gap
+    coupling_radius = meander_radius + coupling_gap
 
     coupler = c.add_ref(
         half_circle_coupler(
@@ -333,24 +327,26 @@ def unimon_coupled(
             angle=coupling_angle,
             extension_length=coupling_extension_length,
             cross_section=cross_section_non_resonator,
-            extra_straight_length=coupling_extra_straight_length,
         )
     )
 
-    # Align coupler anchor with the unimon readout port
-    # The readout port is at the center of the meander bend
+    # Align coupler anchor (at arc center) with the unimon readout port
+    # (at the meander bend center) for concentric alignment and uniform gap
     coupler.connect(
         "anchor",
         unimon_ref.ports["readout_top"],
         allow_width_mismatch=True,
         allow_layer_mismatch=True,
     )
-    coupler.dcplx_trans *= kdb.DCplxTrans(1, 0, False, 0, coupling_gap * 2)
 
     for port in unimon_ref.ports:
+        if port.name == "readout_top":
+            continue  # connected to coupler anchor internally
         c.add_port(f"unimon_{port.name}", port=port)
 
     for port in coupler.ports:
+        if port.name == "anchor":
+            continue  # anchor was used for alignment, not an external port
         c.add_port(f"coupling_{port.name}", port=port)
 
     c.info += unimon_ref.cell.info
