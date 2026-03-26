@@ -11,7 +11,7 @@ from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
 
 import qpdk.samples
-from qpdk import cells, config, helper, tech
+from qpdk import cells, config, drc, helper, tech
 from qpdk.config import PATH
 from qpdk.logger import logger
 from qpdk.tech import (
@@ -76,6 +76,7 @@ __all__ = [
     "PATH",
     "cells",
     "config",
+    "drc",
     "helper",
     "logger",
     "tech",

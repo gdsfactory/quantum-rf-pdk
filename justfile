@@ -59,6 +59,11 @@ show component_name:
     logger.info(f"Saved GDS for {{ component_name }} to '{gds_path}'")
     component.show()
 
+# Run DRC checks on a PDK component by name, or on a GDS file path
+[group('build')]
+drc component_name:
+    uv run python -m qpdk.drc "{{ component_name }}"
+
 # Run all tests, pre-commit hooks, build wheel and documentation in parallel
 [group('all')]
 [parallel]
