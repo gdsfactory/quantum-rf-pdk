@@ -287,9 +287,7 @@ if results.ok:
     # Bar chart comparing all eigenmodes with the analytical estimate
     fig, ax = plt.subplots(figsize=(8, 4))
     mode_labels = [f"Mode {i}" for i in range(1, len(eigenfreqs_ghz) + 1)]
-    bars = ax.barh(
-        mode_labels, eigenfreqs_ghz, color="steelblue", label="Palace eigenmode"
-    )
+    ax.barh(mode_labels, eigenfreqs_ghz, color="steelblue", label="Palace eigenmode")
     ax.axvline(
         analytical_ghz,
         color="red",
