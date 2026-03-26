@@ -25,7 +25,7 @@ class TestShowComponents:
 
     @staticmethod
     @patch("qpdk.helper.Component.show")
-    def test_returns_correct_components(mock_show: MagicMock) -> None:
+    def test_returns_correct_components(mock_show: MagicMock) -> None:  # noqa: ARG004
         """Test that show_components returns the requested components."""
         from qpdk.cells.bump import indium_bump
         from qpdk.cells.tsv import tsv
@@ -35,7 +35,7 @@ class TestShowComponents:
 
     @staticmethod
     @patch("qpdk.helper.Component.show")
-    def test_single_component(mock_show: MagicMock) -> None:
+    def test_single_component(mock_show: MagicMock) -> None:  # noqa: ARG004
         """Test show_components with a single component."""
         from qpdk.cells.bump import indium_bump
 
@@ -44,7 +44,7 @@ class TestShowComponents:
 
     @staticmethod
     @patch("qpdk.helper.Component.show")
-    def test_custom_spacing(mock_show: MagicMock) -> None:
+    def test_custom_spacing(mock_show: MagicMock) -> None:  # noqa: ARG004
         """Test show_components with custom spacing."""
         from qpdk.cells.bump import indium_bump
         from qpdk.cells.tsv import tsv
