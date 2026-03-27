@@ -24,7 +24,5 @@ model visualizations, writing tests, or drafting documentation. However, **do no
 responsible for the quality of your contributions. Any AI-generated code, layouts, or text must be reviewed,
 functionally tested, and completely human-maintainable.
 
-## Code of Conduct
-
-We follow [gdsfactory](https://github.com/gdsfactory/gdsfactory)
-[Code of Conduct](https://gdsfactory.github.io/gdsfactory/code_of_conduct.html).
+```{include} CODE_OF_CONDUCT.md
+```
