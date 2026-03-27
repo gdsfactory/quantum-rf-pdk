@@ -13,7 +13,11 @@ from klayout.db import DCplxTrans
 from qpdk.cells.helpers import transform_component
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.junction import josephson_junction
-from qpdk.tech import LAYER
+from qpdk.tech import (
+    LAYER,
+    get_etch_section,
+    meander_inductor_cross_section,
+)
 
 
 @gf.cell(check_instances=False)
@@ -23,8 +27,7 @@ def fluxonium(
     junction_spec: ComponentSpec = josephson_junction,
     junction_displacement: DCplxTrans | None = None,
     inductor_n_turns: int = 59,
-    inductor_wire_width: float = 2.0,
-    inductor_wire_gap: float = 4.0,
+    inductor_cross_section: CrossSectionSpec = meander_inductor_cross_section,
     connection_wire_width: float = 4.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
@@ -59,8 +62,8 @@ def fluxonium(
             junction after default placement.
         inductor_n_turns: Number of horizontal meander runs in the
             superinductor.  Must be odd so both ports face outward.
-        inductor_wire_width: Width of the inductor wire in µm.
-        inductor_wire_gap: Gap between adjacent inductor runs in µm.
+        inductor_cross_section: Cross-section specification for the meander
+            inductor.
         connection_wire_width: Width of the wires connecting the pads to
             the junction and inductor in µm.
         layer_metal: Layer for the metal pads and connection wires.
@@ -74,6 +77,11 @@ def fluxonium(
             "inductor_n_turns must be odd so that both inductor ports "
             "face outward (left and right) for connection to the pads"
         )
+
+    xs = gf.get_cross_section(inductor_cross_section)
+    inductor_wire_width = xs.width
+    etch_section = get_etch_section(xs)
+    inductor_wire_gap = 2 * etch_section.width
 
     c = Component()
     pad_width, pad_height = pad_size
@@ -109,12 +117,15 @@ def fluxonium(
         junction_ref.transform(junction_displacement)
 
     # -- Superinductor (meander inductor, fills most of the gap) -------
+    # We disable the internal etch bounding box for the sub-component
+    # because it is handled by the fluxonium bounding box.
     inductor = meander_inductor(
         n_turns=inductor_n_turns,
         turn_length=inductor_turn_length,
-        wire_width=inductor_wire_width,
+        cross_section=inductor_cross_section,
         wire_gap=inductor_wire_gap,
-        etch_layer=None,  # no etch box on the sub-component
+        etch_bbox_margin=0,
+        add_etch=False,
     )
     inductor_ref = c.add_ref(inductor)
     # Place inductor above the junction, filling the remaining gap
@@ -290,8 +301,7 @@ def fluxonium_with_bbox(
     junction_spec: ComponentSpec = josephson_junction,
     junction_displacement: DCplxTrans | None = None,
     inductor_n_turns: int = 59,
-    inductor_wire_width: float = 2.0,
-    inductor_wire_gap: float = 4.0,
+    inductor_cross_section: CrossSectionSpec = meander_inductor_cross_section,
     connection_wire_width: float = 4.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
@@ -309,8 +319,8 @@ def fluxonium_with_bbox(
             junction.
         inductor_n_turns: Number of horizontal meander runs in the
             superinductor.
-        inductor_wire_width: Width of the inductor wire in µm.
-        inductor_wire_gap: Gap between adjacent inductor runs in µm.
+        inductor_cross_section: Cross-section specification for the meander
+            inductor.
         connection_wire_width: Width of the wires connecting the pads to
             the junction and inductor in µm.
         layer_metal: Layer for the metal pads and connection wires.
@@ -326,8 +336,7 @@ def fluxonium_with_bbox(
         junction_spec=junction_spec,
         junction_displacement=junction_displacement,
         inductor_n_turns=inductor_n_turns,
-        inductor_wire_width=inductor_wire_width,
-        inductor_wire_gap=inductor_wire_gap,
+        inductor_cross_section=inductor_cross_section,
         connection_wire_width=connection_wire_width,
         layer_metal=layer_metal,
     )
