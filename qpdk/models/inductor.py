@@ -9,7 +9,7 @@ from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.constants import DEFAULT_FREQUENCY
-from qpdk.models.cpw import cpw_ep_r_from_cross_section
+from qpdk.models.cpw import cpw_ep_r_from_cross_section, get_cpw_dimensions
 from qpdk.models.generic import inductor, lc_resonator
 
 
@@ -70,8 +70,7 @@ def meander_inductor(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     n_turns: int = 5,
     turn_length: float = 200.0,
-    wire_width: float = 2.0,
-    wire_gap: float = 4.0,
+    cross_section: CrossSectionSpec = "coplanar_waveguide",
     sheet_inductance: float = 0.4e-12,
 ) -> sax.SDict:
     r"""Meander inductor SAX model.
@@ -79,18 +78,33 @@ def meander_inductor(
     Computes the inductance from the meander geometry and returns
     S-parameters of an equivalent lumped inductor.
 
+    The model extracts the center conductor width and gap from the provided
+    cross-section. To ensure the etched regions of adjacent meander runs
+    do not overlap and interfere with the characteristic impedance of each other,
+    the vertical pitch is calculated as:
+
+    .. math::
+
+        p = w + 2 \cdot g
+
+    where :math:`w` is the center conductor width and :math:`g` is the gap
+    width. This corresponds to a metal-to-metal spacing of :math:`2g`.
+
     Args:
         f: Array of frequency points in Hz.
         n_turns: Number of horizontal meander runs.
         turn_length: Length of each horizontal run in µm.
-        wire_width: Width of the meander wire in µm.
-        wire_gap: Gap between adjacent meander runs in µm.
+        cross_section: Cross-section specification for the meander wire.
+            Used to determine the wire width and the gap between runs.
         sheet_inductance: Sheet inductance per square in H/□.
 
     Returns:
         sax.SDict: S-parameters dictionary.
     """
     f_arr = jnp.asarray(f)
+    wire_width, wire_gap_half = get_cpw_dimensions(cross_section)
+    wire_gap = 2 * wire_gap_half
+
     inductance = meander_inductor_inductance_analytical(
         n_turns=n_turns,
         turn_length=turn_length,
@@ -109,8 +123,6 @@ def lumped_element_resonator(
     finger_gap: float = 2.0,
     finger_thickness: float = 5.0,
     n_turns: int = 5,
-    wire_width: float = 2.0,
-    wire_gap: float = 4.0,
     sheet_inductance: float = 0.4e-12,
     cross_section: CrossSectionSpec = "cpw",
     grounded: bool = False,
@@ -129,6 +141,11 @@ def lumped_element_resonator(
     and :math:`L` is computed from the meander inductor geometry using
     :func:`meander_inductor_inductance_analytical`.
 
+    The inductor section uses the width and gap derived from the
+    `cross_section` to ensure consistent RF behavior across the meander.
+    The vertical spacing between meander runs is set to twice the etch gap
+    to prevent overlap of the etched regions.
+
     See :cite:`kimThinfilmSuperconductingResonator2011,chenCompactInductorcapacitorResonators2023`.
 
     Args:
@@ -139,10 +156,9 @@ def lumped_element_resonator(
         finger_thickness: Width of each capacitor finger in µm.
         n_turns: Number of horizontal meander inductor runs (must be odd to
             match the cell geometry where the path spans left-to-right bus bars).
-        wire_width: Width of the inductor wire in µm.
-        wire_gap: Gap between adjacent inductor runs in µm.
         sheet_inductance: Sheet inductance per square in H/□.
-        cross_section: Cross-section specification (used for substrate permittivity).
+        cross_section: Cross-section specification. Used for substrate
+            permittivity and to determine inductor wire width and gap.
         grounded: If True, one port of the resonator is grounded.
 
     Returns:
@@ -159,6 +175,9 @@ def lumped_element_resonator(
         thickness=finger_thickness,
         ep_r=ep_r,
     )
+
+    wire_width, wire_gap_half = get_cpw_dimensions(cross_section)
+    wire_gap = 2 * wire_gap_half
 
     cap_width = 2 * finger_thickness + finger_length + finger_gap
     meander_turn_length = cap_width - 4 * wire_width

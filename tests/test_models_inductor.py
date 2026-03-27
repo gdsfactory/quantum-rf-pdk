@@ -204,12 +204,6 @@ class TestMeanderInductorSAX:
         turn_length=st.floats(
             min_value=1.0, max_value=1000.0, allow_nan=False, allow_infinity=False
         ),
-        wire_width=st.floats(
-            min_value=0.1, max_value=20.0, allow_nan=False, allow_infinity=False
-        ),
-        wire_gap=st.floats(
-            min_value=0.1, max_value=20.0, allow_nan=False, allow_infinity=False
-        ),
         sheet_inductance=sheet_inductance_st,
         f=st.floats(
             min_value=1e6, max_value=1e12, allow_nan=False, allow_infinity=False
@@ -224,8 +218,6 @@ class TestMeanderInductorSAX:
         self,
         n_turns: int,
         turn_length: float,
-        wire_width: float,
-        wire_gap: float,
         sheet_inductance: float,
         f: float,
     ) -> None:
@@ -234,8 +226,7 @@ class TestMeanderInductorSAX:
             f=f,
             n_turns=n_turns,
             turn_length=turn_length,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
+            cross_section="cpw",
             sheet_inductance=sheet_inductance,
         )
         expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
@@ -245,12 +236,6 @@ class TestMeanderInductorSAX:
         n_turns=st.integers(min_value=1, max_value=20),
         turn_length=st.floats(
             min_value=10.0, max_value=500.0, allow_nan=False, allow_infinity=False
-        ),
-        wire_width=st.floats(
-            min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
-        ),
-        wire_gap=st.floats(
-            min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
         ),
         sheet_inductance=sheet_inductance_st,
         f=frequency_st,
@@ -264,8 +249,6 @@ class TestMeanderInductorSAX:
         self,
         n_turns: int,
         turn_length: float,
-        wire_width: float,
-        wire_gap: float,
         sheet_inductance: float,
         f: float,
     ) -> None:
@@ -274,8 +257,7 @@ class TestMeanderInductorSAX:
             f=f,
             n_turns=n_turns,
             turn_length=turn_length,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
+            cross_section="cpw",
             sheet_inductance=sheet_inductance,
         )
         s12 = jnp.abs(sdict[("o1", "o2")])
@@ -286,12 +268,6 @@ class TestMeanderInductorSAX:
         n_turns=st.integers(min_value=1, max_value=20),
         turn_length=st.floats(
             min_value=10.0, max_value=500.0, allow_nan=False, allow_infinity=False
-        ),
-        wire_width=st.floats(
-            min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
-        ),
-        wire_gap=st.floats(
-            min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
         ),
         sheet_inductance=sheet_inductance_st,
         f=frequency_st,
@@ -305,8 +281,6 @@ class TestMeanderInductorSAX:
         self,
         n_turns: int,
         turn_length: float,
-        wire_width: float,
-        wire_gap: float,
         sheet_inductance: float,
         f: float,
     ) -> None:
@@ -315,8 +289,7 @@ class TestMeanderInductorSAX:
             f=f,
             n_turns=n_turns,
             turn_length=turn_length,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
+            cross_section="cpw",
             sheet_inductance=sheet_inductance,
         )
         for v in sdict.values():
@@ -328,11 +301,11 @@ class TestMeanderInductorSAX:
             f=1e14,  # 100 THz — well above any practical resonance
             n_turns=20,
             turn_length=200.0,
-            wire_width=2.0,
-            wire_gap=4.0,
+            cross_section="cpw",
             sheet_inductance=1e-12,
         )
         assert float(jnp.abs(sdict[("o1", "o2")])) < 0.1
+
 
     def test_array_frequency_input(self) -> None:
         """Model must accept an array of frequencies and return arrays."""
@@ -360,12 +333,6 @@ class TestLumpedElementResonatorSAX:
             min_value=0.5, max_value=20.0, allow_nan=False, allow_infinity=False
         ),
         n_turns=st.integers(min_value=1, max_value=50),
-        wire_width=st.floats(
-            min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
-        ),
-        wire_gap=st.floats(
-            min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
-        ),
         sheet_inductance=sheet_inductance_st,
         f=frequency_st,
     )
@@ -381,8 +348,6 @@ class TestLumpedElementResonatorSAX:
         finger_gap: float,
         finger_thickness: float,
         n_turns: int,
-        wire_width: float,
-        wire_gap: float,
         sheet_inductance: float,
         f: float,
     ) -> None:
@@ -394,9 +359,8 @@ class TestLumpedElementResonatorSAX:
             finger_gap=finger_gap,
             finger_thickness=finger_thickness,
             n_turns=n_turns,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
             sheet_inductance=sheet_inductance,
+            cross_section="cpw",
         )
         expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
         assert set(sdict.keys()) == expected_keys
@@ -413,12 +377,6 @@ class TestLumpedElementResonatorSAX:
             min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
         ),
         n_turns=st.integers(min_value=1, max_value=20),
-        wire_width=st.floats(
-            min_value=0.5, max_value=5.0, allow_nan=False, allow_infinity=False
-        ),
-        wire_gap=st.floats(
-            min_value=0.5, max_value=5.0, allow_nan=False, allow_infinity=False
-        ),
         sheet_inductance=sheet_inductance_st,
         f=frequency_st,
     )
@@ -434,8 +392,6 @@ class TestLumpedElementResonatorSAX:
         finger_gap: float,
         finger_thickness: float,
         n_turns: int,
-        wire_width: float,
-        wire_gap: float,
         sheet_inductance: float,
         f: float,
     ) -> None:
@@ -447,9 +403,8 @@ class TestLumpedElementResonatorSAX:
             finger_gap=finger_gap,
             finger_thickness=finger_thickness,
             n_turns=n_turns,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
             sheet_inductance=sheet_inductance,
+            cross_section="cpw",
         )
         s12 = jnp.abs(sdict[("o1", "o2")])
         s21 = jnp.abs(sdict[("o2", "o1")])
@@ -467,12 +422,6 @@ class TestLumpedElementResonatorSAX:
             min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
         ),
         n_turns=st.integers(min_value=1, max_value=20),
-        wire_width=st.floats(
-            min_value=0.5, max_value=5.0, allow_nan=False, allow_infinity=False
-        ),
-        wire_gap=st.floats(
-            min_value=0.5, max_value=5.0, allow_nan=False, allow_infinity=False
-        ),
         sheet_inductance=sheet_inductance_st,
         f=frequency_st,
     )
@@ -488,8 +437,6 @@ class TestLumpedElementResonatorSAX:
         finger_gap: float,
         finger_thickness: float,
         n_turns: int,
-        wire_width: float,
-        wire_gap: float,
         sheet_inductance: float,
         f: float,
     ) -> None:
@@ -501,9 +448,8 @@ class TestLumpedElementResonatorSAX:
             finger_gap=finger_gap,
             finger_thickness=finger_thickness,
             n_turns=n_turns,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
             sheet_inductance=sheet_inductance,
+            cross_section="cpw",
         )
         for v in sdict.values():
             assert jnp.all(jnp.isfinite(v))
@@ -517,18 +463,20 @@ class TestLumpedElementResonatorSAX:
         import math
 
         from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-        from qpdk.models.cpw import cpw_ep_r_from_cross_section
+        from qpdk.models.cpw import (
+            cpw_ep_r_from_cross_section,
+            get_cpw_dimensions,
+        )
 
         fingers = 20
         finger_length = 20.0
         finger_gap = 2.0
         finger_thickness = 5.0
         n_turns = 5
-        wire_width = 2.0
-        wire_gap = 4.0
         sheet_inductance = 1e-9  # 1 nH/□ — large kinetic inductance
+        cross_section = "cpw"
 
-        ep_r = cpw_ep_r_from_cross_section("cpw")
+        ep_r = cpw_ep_r_from_cross_section(cross_section)
         C = float(
             interdigital_capacitor_capacitance_analytical(
                 fingers=fingers,
@@ -538,10 +486,14 @@ class TestLumpedElementResonatorSAX:
                 ep_r=ep_r,
             )
         )
+        wire_width, wire_gap_half = get_cpw_dimensions(cross_section)
+        wire_gap = 2 * wire_gap_half
+
         L = float(
             meander_inductor_inductance_analytical(
                 n_turns=n_turns,
-                turn_length=finger_length + finger_gap,
+                turn_length=(2 * finger_thickness + finger_length + finger_gap)
+                - 4 * wire_width,
                 wire_width=wire_width,
                 wire_gap=wire_gap,
                 sheet_inductance=sheet_inductance,
@@ -558,9 +510,8 @@ class TestLumpedElementResonatorSAX:
             finger_gap=finger_gap,
             finger_thickness=finger_thickness,
             n_turns=n_turns,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
             sheet_inductance=sheet_inductance,
+            cross_section=cross_section,
         )
         s21 = jnp.abs(sdict[("o1", "o2")])
         f_min = float(freqs[jnp.argmin(s21)])
@@ -571,15 +522,22 @@ class TestLumpedElementResonatorSAX:
         import math
 
         from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-        from qpdk.models.cpw import cpw_ep_r_from_cross_section
+        from qpdk.models.cpw import (
+            cpw_ep_r_from_cross_section,
+            get_cpw_dimensions,
+        )
 
-        ep_r = float(cpw_ep_r_from_cross_section("cpw"))
+        cross_section = "cpw"
+        ep_r = float(cpw_ep_r_from_cross_section(cross_section))
+        wire_width, wire_gap_half = get_cpw_dimensions(cross_section)
+        wire_gap = 2 * wire_gap_half
+
         L = float(
             meander_inductor_inductance_analytical(
                 n_turns=5,
                 turn_length=22.0,
-                wire_width=2.0,
-                wire_gap=4.0,
+                wire_width=wire_width,
+                wire_gap=wire_gap,
                 sheet_inductance=0.4e-12,
             )
         )
@@ -603,9 +561,13 @@ class TestLumpedElementResonatorSAX:
         import math
 
         from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-        from qpdk.models.cpw import cpw_ep_r_from_cross_section
+        from qpdk.models.cpw import (
+            cpw_ep_r_from_cross_section,
+            get_cpw_dimensions,
+        )
 
-        ep_r = float(cpw_ep_r_from_cross_section("cpw"))
+        cross_section = "cpw"
+        ep_r = float(cpw_ep_r_from_cross_section(cross_section))
         C = float(
             interdigital_capacitor_capacitance_analytical(
                 fingers=20,
@@ -615,20 +577,23 @@ class TestLumpedElementResonatorSAX:
                 ep_r=ep_r,
             )
         )
+        wire_width, wire_gap_half = get_cpw_dimensions(cross_section)
+        wire_gap = 2 * wire_gap_half
 
         def f_r(n_turns: int) -> float:
             L = float(
                 meander_inductor_inductance_analytical(
                     n_turns=n_turns,
                     turn_length=22.0,
-                    wire_width=2.0,
-                    wire_gap=4.0,
+                    wire_width=wire_width,
+                    wire_gap=wire_gap,
                     sheet_inductance=0.4e-12,
                 )
             )
             return 1.0 / (2 * math.pi * math.sqrt(L * C))
 
         assert f_r(n_turns=15) < f_r(n_turns=3)
+
 
     def test_array_frequency_input(self) -> None:
         """Model must accept a frequency array and return arrays of the same length."""

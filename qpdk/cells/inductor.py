@@ -9,16 +9,22 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells.waveguides import straight
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, coplanar_waveguide, xsection
 
+
+@xsection
+def default_meander_inductor_cross_section() -> CrossSectionSpec:
+    """Default cross-section for the meander inductor."""
+    return coplanar_waveguide(
+        width=2.0,
+        gap=2.0,
+    )
 
 @gf.cell
 def meander_inductor(
     n_turns: int = 5,
     turn_length: float = 200.0,
-    wire_width: float = 2.0,
-    wire_gap: float = 4.0,
-    etch_layer: LayerSpec | None = "M1_ETCH",
+    cross_section: CrossSectionSpec = default_meander_inductor_cross_section,
     etch_bbox_margin: float = 2.0,
 ) -> Component:
     r"""Creates a meander inductor with Manhattan routing using a narrow wire.
@@ -46,10 +52,15 @@ def meander_inductor(
     Args:
         n_turns: Number of horizontal meander runs (must be >= 1).
         turn_length: Length of each horizontal run in µm.
-        wire_width: Width of the meander wire in µm.
-        wire_gap: Gap between adjacent horizontal runs in µm.
-        etch_layer: Optional layer for the etch bounding box around the inductor.
-        etch_bbox_margin: Margin around the inductor for the etch bounding box in µm.
+        cross_section: Cross-section specification for the meander wire.
+            The center conductor width and etch gap are derived from this
+            specification. The meander's vertical pitch is set to ensure that
+            the etched regions of adjacent runs do not overlap, maintaining
+            the characteristic impedance of each run. Specifically, the pitch
+            is calculated as :math:`w + 2g`, where :math:`w` is the wire width
+            and :math:`g` is the etch gap.
+        etch_bbox_margin: Extra margin around the inductor for the etch bounding box in µm.
+            This margin is added in addition to the etch region defined in the cross-section.
 
     Returns:
         Component: A gdsfactory component with the meander inductor geometry
@@ -59,13 +70,31 @@ def meander_inductor(
         raise ValueError("Must have at least 1 turn")
     if turn_length <= 0:
         raise ValueError(f"turn_length must be positive, got {turn_length}")
-    if wire_width <= 0:
-        raise ValueError(f"wire_width must be positive, got {wire_width}")
-    if wire_gap <= 0:
-        raise ValueError(f"wire_gap must be positive, got {wire_gap}")
+
+    xs = gf.get_cross_section(cross_section)
+    wire_width = xs.width
+    layer = xs.layer
+
+    # Infer etch parameters and spacing from cross section
+    try:
+        etch_section = next(
+            s for s in xs.sections if s.name and "etch_offset" in s.name
+        )
+    except StopIteration as e:
+        raise ValueError(
+            f"Cross-section '{xs.name}' does not have a section with 'etch_offset' in the name. "
+            "The `meander_inductor` requires a cross-section with at least one etch section "
+            "(e.g., 'coplanar_waveguide') to correctly determine the meander pitch and "
+            "bounding box margin."
+        ) from e
+
+    etch_layer = etch_section.layer
+    etch_width = etch_section.width
+    # For CPW-like structures, we assume a pitch that allows for non-overlapping etches
+    # i.e. pitch = width + 2 * gap, which means wire_gap = 2 * etch_width
+    wire_gap = 2 * etch_width
 
     c = Component()
-    layer = LAYER.M1_DRAW
     pitch = wire_width + wire_gap
     total_height = n_turns * wire_width + max(0, n_turns - 1) * wire_gap
 
@@ -101,12 +130,14 @@ def meander_inductor(
             )
 
     if etch_layer is not None:
+        # Extra margin on top of the implicit etch margin from the cross-section
+        margin = etch_width + etch_bbox_margin
         c.add_polygon(
             [
-                (-etch_bbox_margin, -etch_bbox_margin),
-                (turn_length + etch_bbox_margin, -etch_bbox_margin),
-                (turn_length + etch_bbox_margin, total_height + etch_bbox_margin),
-                (-etch_bbox_margin, total_height + etch_bbox_margin),
+                (-margin, -margin),
+                (turn_length + margin, -margin),
+                (turn_length + margin, total_height + margin),
+                (-margin, total_height + margin),
             ],
             layer=etch_layer,
         )
@@ -133,6 +164,7 @@ def meander_inductor(
         orientation=180,
         layer=layer,
         port_type="electrical",
+        cross_section=xs,
     )
 
     last_run_center_y = (n_turns - 1) * pitch + wire_width / 2
@@ -144,6 +176,7 @@ def meander_inductor(
             orientation=0,
             layer=layer,
             port_type="electrical",
+            cross_section=xs,
         )
     else:
         c.add_port(
@@ -153,6 +186,7 @@ def meander_inductor(
             orientation=180,
             layer=layer,
             port_type="electrical",
+            cross_section=xs,
         )
 
     c.move((-turn_length / 2, -total_height / 2))
@@ -160,8 +194,10 @@ def meander_inductor(
     total_wire_length = n_turns * turn_length + max(0, n_turns - 1) * wire_gap
     c.info["total_wire_length"] = total_wire_length
     c.info["n_squares"] = total_wire_length / wire_width
+    c.info["cross_section"] = xs.name
 
     return c
+
 
 
 @gf.cell

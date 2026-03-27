@@ -1,11 +1,10 @@
 info:
-  n_squares: 508
-  total_wire_length: 1016
-name: meander_inductor_NT5_TL200_WW2_WG4_ELM1_ETCH_EBM2
+  cross_section: coplanar_waveguide
+  n_squares: 104.8
+  total_wire_length: 1048
+name: meander_inductor_NT5_TL200_CScoplanar_waveguide_EBM2
 settings:
+  cross_section: coplanar_waveguide
   etch_bbox_margin: 2
-  etch_layer: M1_ETCH
   n_turns: 5
   turn_length: 200
-  wire_gap: 4
-  wire_width: 2
