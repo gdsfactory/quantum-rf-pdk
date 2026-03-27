@@ -35,7 +35,7 @@ jobs:
         run: sudo apt-get install -y fonts-cmu
       - run: just install
       - run: just docs
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
@@ -109,7 +109,7 @@ jobs:
           continue_on_error: true
           latexmk_use_xelatex: true
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
