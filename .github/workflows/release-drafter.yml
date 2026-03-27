@@ -6,12 +6,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 permissions:
-  contents: read
+  contents: write
+  pull-requests: read
 jobs:
   update_release_draft:
-    permissions:
-      # write permission is required to create a github release
-      contents: write
     runs-on: ubuntu-latest
     steps:
       # (Optional) GitHub Enterprise requires GHE_HOST variable set
@@ -24,5 +22,4 @@ jobs:
         # (Optional) specify config name to use, relative to .github/. Default: release-drafter.yml
         with:
           disable-autolabeler: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
