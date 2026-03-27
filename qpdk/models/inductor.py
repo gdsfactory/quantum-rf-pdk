@@ -68,7 +68,7 @@ def meander_inductor(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     n_turns: int = 5,
     turn_length: float = 200.0,
-    cross_section: CrossSectionSpec = "coplanar_waveguide",
+    cross_section: CrossSectionSpec = "meander_inductor_cross_section",
     sheet_inductance: float = 0.4e-12,
 ) -> sax.SDict:
     r"""Meander inductor SAX model.
@@ -122,7 +122,7 @@ def lumped_element_resonator(
     finger_thickness: float = 5.0,
     n_turns: int = 5,
     sheet_inductance: float = 0.4e-12,
-    cross_section: CrossSectionSpec = "cpw",
+    cross_section: CrossSectionSpec = "meander_inductor_cross_section",
     grounded: bool = False,
 ) -> sax.SDict:
     r"""Lumped-element LC resonator SAX model.

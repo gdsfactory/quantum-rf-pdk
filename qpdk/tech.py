@@ -382,6 +382,15 @@ etch = etch_only = partial(
 
 
 @xsection
+def meander_inductor_cross_section() -> CrossSection:
+    """Return a narrow coplanar waveguide cross-section for meander inductors.
+
+    The default dimensions are width=2.0 µm and gap=2.0 µm.
+    """
+    return coplanar_waveguide(width=2.0, gap=2.0)
+
+
+@xsection
 def launcher_cross_section_big() -> gf.CrossSection:
     """Return a large coplanar waveguide cross-section for a launcher.
 

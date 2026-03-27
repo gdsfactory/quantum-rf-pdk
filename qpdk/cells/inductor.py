@@ -9,23 +9,20 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells.waveguides import straight
-from qpdk.tech import LAYER, coplanar_waveguide, get_etch_section, xsection
-
-
-@xsection
-def default_meander_inductor_cross_section() -> CrossSectionSpec:
-    """Default cross-section for the meander inductor."""
-    return coplanar_waveguide(
-        width=2.0,
-        gap=2.0,
-    )
+from qpdk.tech import (
+    LAYER,
+    coplanar_waveguide,
+    get_etch_section,
+    meander_inductor_cross_section,
+    xsection,
+)
 
 
 @gf.cell
 def meander_inductor(
     n_turns: int = 5,
     turn_length: float = 200.0,
-    cross_section: CrossSectionSpec = default_meander_inductor_cross_section,
+    cross_section: CrossSectionSpec = meander_inductor_cross_section,
     etch_bbox_margin: float = 2.0,
 ) -> Component:
     r"""Creates a meander inductor with Manhattan routing using a narrow wire.
@@ -153,7 +150,6 @@ def meander_inductor(
         width=wire_width,
         orientation=180,
         layer=layer,
-        port_type="electrical",
         cross_section=xs,
     )
 
@@ -165,7 +161,6 @@ def meander_inductor(
             width=wire_width,
             orientation=0,
             layer=layer,
-            port_type="electrical",
             cross_section=xs,
         )
     else:
@@ -175,7 +170,6 @@ def meander_inductor(
             width=wire_width,
             orientation=180,
             layer=layer,
-            port_type="electrical",
             cross_section=xs,
         )
 
@@ -196,12 +190,9 @@ def lumped_element_resonator(
     finger_gap: float = 2.0,
     finger_thickness: float = 5.0,
     n_turns: int = 15,
-    wire_width: float = 2.0,
-    wire_gap: float = 4.0,
     bus_bar_spacing: float = 4.0,
-    etch_layer: LayerSpec | None = "M1_ETCH",
+    cross_section: CrossSectionSpec = meander_inductor_cross_section,
     etch_bbox_margin: float = 2.0,
-    cross_section: CrossSectionSpec = "cpw",
 ) -> Component:
     r"""Creates a lumped-element resonator combining an interdigital capacitor and a meander inductor.
 
@@ -232,12 +223,9 @@ def lumped_element_resonator(
         finger_gap: Gap between adjacent capacitor fingers in µm.
         finger_thickness: Width of each capacitor finger and bus bar in µm.
         n_turns: Number of horizontal meander inductor runs.
-        wire_width: Width of the inductor wire in µm.
-        wire_gap: Gap between adjacent inductor runs in µm.
         bus_bar_spacing: Vertical spacing between the capacitor and inductor sections in µm.
-        etch_layer: Optional layer for the etch region.
+        cross_section: Cross-section specification for the inductor and ports.
         etch_bbox_margin: Margin around the structure for the etch region in µm.
-        cross_section: Cross-section specification for the CPW ports.
 
     Returns:
         Component: A gdsfactory component with the lumped-element resonator
@@ -248,35 +236,55 @@ def lumped_element_resonator(
             "n_turns must be odd so that the meander path spans from the "
             "left bus bar to the right bus bar"
         )
-    if wire_gap <= 0:
-        raise ValueError(f"wire_gap must be positive, got {wire_gap}")
     if bus_bar_spacing <= 0:
         raise ValueError(
             "bus_bar_spacing must be positive to electrically isolate the "
             "last inductor run from the full-width bus bar sections"
         )
 
-    cap_width_check = 2 * finger_thickness + finger_length + finger_gap
-    short_length_check = cap_width_check - 4 * wire_width
-    if short_length_check <= 0:
+    xs = gf.get_cross_section(cross_section)
+    wire_width = xs.width
+    etch_section = get_etch_section(xs)
+    wire_gap = 2 * etch_section.width
+    layer = xs.layer
+    etch_layer = etch_section.layer
+    etch_width = etch_section.width
+
+    cap_width = 2 * finger_thickness + finger_length + finger_gap
+    short_length = cap_width - 4 * wire_width
+    if short_length <= 0:
         raise ValueError(
-            f"Meander run length would be non-positive ({short_length_check} µm). "
+            f"Meander run length would be non-positive ({short_length} µm). "
             "Increase finger_length/finger_gap/finger_thickness or decrease wire_width."
         )
 
     c = Component()
-    layer = LAYER.M1_DRAW
 
-    cap_width = 2 * finger_thickness + finger_length + finger_gap
+    # 1. Inductor part
+    ind = c << meander_inductor(
+        n_turns=n_turns,
+        turn_length=short_length,
+        cross_section=cross_section,
+        etch_bbox_margin=0,
+    )
+
     cap_height = fingers * finger_thickness + (fingers - 1) * finger_gap
-    ind_height = n_turns * wire_width + max(0, n_turns - 1) * wire_gap
+    ind_height = ind.size_info.height
     total_internal_height = cap_height + bus_bar_spacing + ind_height
-    cap_y0 = ind_height + bus_bar_spacing
+
+    # Center inductor at the bottom of the internal area
+    ind.dcenter = (0, -total_internal_height / 2 + ind_height / 2)
+
+    # 2. Capacitor part (fingers and bus bars)
+    cap_y0 = -total_internal_height / 2 + ind_height + bus_bar_spacing
+
+    x_left_inner = -cap_width / 2 + finger_thickness
+    x_right_inner = cap_width / 2 - finger_thickness
 
     _draw_interdigital_fingers_left(
         c,
         layer,
-        x_offset=finger_thickness,
+        x_inner=x_left_inner,
         y_offset=cap_y0,
         fingers=fingers,
         finger_length=finger_length,
@@ -286,199 +294,162 @@ def lumped_element_resonator(
     _draw_interdigital_fingers_right(
         c,
         layer,
-        x_offset=finger_thickness,
+        x_inner=x_right_inner,
         y_offset=cap_y0,
-        cap_width=cap_width,
         fingers=fingers,
         finger_length=finger_length,
         finger_gap=finger_gap,
         thickness=finger_thickness,
     )
 
-    pitch = wire_width + wire_gap
-    last_y0 = (n_turns - 1) * pitch
+    # 3. Bus bars connecting everything
+    # Small overlap to ensure solid connectivity
+    overlap = 0.1
 
-    # Meander runs are inset wire_width from each narrow bus bar so that only
-    # run 0 (via left tab) and run n_turns-1 (via right tab) connect to the
-    # bus bars.  The bus bars remain narrow (wire_width) until cap_y0, ensuring
-    # the full-width sections never share an edge with any inductor run.
-    inner_x0 = 2 * wire_width
-    short_length = cap_width - 4 * wire_width
-
-    for i in range(n_turns):
-        y0 = i * pitch
-        c.add_polygon(
-            [
-                (inner_x0, y0),
-                (inner_x0 + short_length, y0),
-                (inner_x0 + short_length, y0 + wire_width),
-                (inner_x0, y0 + wire_width),
-            ],
-            layer=layer,
-        )
-
-    for i in range(n_turns - 1):
-        y0 = i * pitch + wire_width
-        y1 = (i + 1) * pitch
-        if i % 2 == 0:
-            x0 = inner_x0 + short_length - wire_width
-            c.add_polygon(
-                [(x0, y0), (x0 + wire_width, y0), (x0 + wire_width, y1), (x0, y1)],
-                layer=layer,
-            )
-        else:
-            c.add_polygon(
-                [
-                    (inner_x0, y0),
-                    (inner_x0 + wire_width, y0),
-                    (inner_x0 + wire_width, y1),
-                    (inner_x0, y1),
-                ],
-                layer=layer,
-            )
-
-    # Left tab: connects narrow left bus bar to run 0
+    # Left bus bar: connects to turn 0 (bottom)
+    # Use the metal bottom edge of the inductor, not the component bbox bottom (which includes etch)
+    left_bb_ymin = ind.ports["o1"].center[1] - wire_width / 2
     c.add_polygon(
         [
-            (wire_width, 0),
-            (inner_x0, 0),
-            (inner_x0, wire_width),
-            (wire_width, wire_width),
+            (-cap_width / 2, left_bb_ymin),
+            (-cap_width / 2 + wire_width, left_bb_ymin),
+            (-cap_width / 2 + wire_width, cap_y0 + overlap),
+            (-cap_width / 2, cap_y0 + overlap),
+        ],
+        layer=layer,
+    )
+    # Top wide part
+    c.add_polygon(
+        [
+            (-cap_width / 2, cap_y0),
+            (-cap_width / 2 + finger_thickness, cap_y0),
+            (-cap_width / 2 + finger_thickness, total_internal_height / 2),
+            (-cap_width / 2, total_internal_height / 2),
         ],
         layer=layer,
     )
 
-    # Right tab: connects last run to narrow right bus bar
+    # Right bus bar: connects to turn n_turns-1 (top)
+    # Redundant section below top run is removed
+    right_bb_ymin = ind.ports["o2"].center[1] - wire_width / 2
     c.add_polygon(
         [
-            (inner_x0 + short_length, last_y0),
-            (cap_width - wire_width, last_y0),
-            (cap_width - wire_width, last_y0 + wire_width),
-            (inner_x0 + short_length, last_y0 + wire_width),
+            (cap_width / 2 - wire_width, right_bb_ymin),
+            (cap_width / 2, right_bb_ymin),
+            (cap_width / 2, cap_y0 + overlap),
+            (cap_width / 2 - wire_width, cap_y0 + overlap),
+        ],
+        layer=layer,
+    )
+    # Top wide part
+    c.add_polygon(
+        [
+            (cap_width / 2 - finger_thickness, cap_y0),
+            (cap_width / 2, cap_y0),
+            (cap_width / 2, total_internal_height / 2),
+            (cap_width / 2 - finger_thickness, total_internal_height / 2),
         ],
         layer=layer,
     )
 
-    # Left bus bar: narrow to cap_y0, then full width
-    c.add_polygon(
-        [(0, 0), (wire_width, 0), (wire_width, cap_y0), (0, cap_y0)],
-        layer=layer,
-    )
+    # Tabs to inductor
+    # Left tab connects o1 to the left bus bar
     c.add_polygon(
         [
-            (0, cap_y0),
-            (finger_thickness, cap_y0),
-            (finger_thickness, total_internal_height),
-            (0, total_internal_height),
+            (
+                -cap_width / 2 + wire_width - overlap,
+                ind.ports["o1"].center[1] - wire_width / 2,
+            ),
+            (ind.ports["o1"].center[0] + overlap, ind.ports["o1"].center[1] - wire_width / 2),
+            (ind.ports["o1"].center[0] + overlap, ind.ports["o1"].center[1] + wire_width / 2),
+            (
+                -cap_width / 2 + wire_width - overlap,
+                ind.ports["o1"].center[1] + wire_width / 2,
+            ),
+        ],
+        layer=layer,
+    )
+    # Right tab connects o2 to the right bus bar
+    c.add_polygon(
+        [
+            (ind.ports["o2"].center[0] - overlap, ind.ports["o2"].center[1] - wire_width / 2),
+            (
+                cap_width / 2 - wire_width + overlap,
+                ind.ports["o2"].center[1] - wire_width / 2,
+            ),
+            (
+                cap_width / 2 - wire_width + overlap,
+                ind.ports["o2"].center[1] + wire_width / 2,
+            ),
+            (ind.ports["o2"].center[0] - overlap, ind.ports["o2"].center[1] + wire_width / 2),
         ],
         layer=layer,
     )
 
-    # Right bus bar: starts at last_y0, narrow to cap_y0, then full width
+    # 4. Etch bounding box
+    margin = etch_width + etch_bbox_margin
     c.add_polygon(
         [
-            (cap_width - wire_width, last_y0),
-            (cap_width, last_y0),
-            (cap_width, cap_y0),
-            (cap_width - wire_width, cap_y0),
+            (-cap_width / 2 - margin, -total_internal_height / 2 - margin),
+            (cap_width / 2 + margin, -total_internal_height / 2 - margin),
+            (cap_width / 2 + margin, total_internal_height / 2 + margin),
+            (-cap_width / 2 - margin, total_internal_height / 2 + margin),
         ],
-        layer=layer,
-    )
-    x_right = cap_width - finger_thickness
-    c.add_polygon(
-        [
-            (x_right, cap_y0),
-            (cap_width, cap_y0),
-            (cap_width, total_internal_height),
-            (x_right, total_internal_height),
-        ],
-        layer=layer,
+        layer=etch_layer,
     )
 
-    if etch_layer is not None:
-        c.add_polygon(
-            [
-                (-etch_bbox_margin, -etch_bbox_margin),
-                (cap_width + etch_bbox_margin, -etch_bbox_margin),
-                (
-                    cap_width + etch_bbox_margin,
-                    total_internal_height + etch_bbox_margin,
-                ),
-                (-etch_bbox_margin, total_internal_height + etch_bbox_margin),
-            ],
-            layer=etch_layer,
-        )
+    # 5. Ports
+    straight_out = straight(length=margin, cross_section=cross_section)
+    center_y = 0
+    straight_left = c.add_ref(straight_out).move((-cap_width / 2 - margin, center_y))
+    straight_right = c.add_ref(straight_out).move((cap_width / 2, center_y))
 
-    straight_cross_section = gf.get_cross_section(cross_section)
-    straight_out = straight(
-        length=etch_bbox_margin, cross_section=straight_cross_section
+    c_metal = gf.boolean(
+        A=c, B=c, operation="or", layer=layer, layer1=layer, layer2=xs.layer
     )
-
-    center_y = total_internal_height / 2
-    straight_left = c.add_ref(straight_out).move((-etch_bbox_margin, center_y))
-    straight_right = c.add_ref(straight_out).move((cap_width, center_y))
-
-    c_additive = gf.boolean(
+    c_etch = gf.boolean(
         A=c,
-        B=c,
-        operation="or",
-        layer=layer,
-        layer1=layer,
-        layer2=straight_cross_section.layer,
+        B=c_metal,
+        operation="A-B",
+        layer=etch_layer,
+        layer1=etch_layer,
+        layer2=layer,
     )
 
     c = gf.Component()
-    c.absorb(c << c_additive)
-
-    if etch_layer is not None:
-        c_negative = gf.boolean(
-            A=c,
-            B=c_additive,
-            operation="A-B",
-            layer=etch_layer,
-            layer1=etch_layer,
-            layer2=layer,
-        )
-        c = gf.Component()
-        c.absorb(c << c_additive)
-        c.absorb(c << c_negative)
+    c.absorb(c << c_metal)
+    c.absorb(c << c_etch)
 
     c.add_port(
         name="o1",
-        width=straight_left["o1"].width,
-        center=straight_left["o1"].center,
-        orientation=straight_left["o1"].orientation,
-        layer=LAYER.M1_DRAW,
+        port=straight_left.ports["o1"],
+        layer=layer,
         port_type="electrical",
+        cross_section=xs,
     )
     c.add_port(
         name="o2",
-        width=straight_right["o2"].width,
-        center=straight_right["o2"].center,
-        orientation=straight_right["o2"].orientation,
-        layer=LAYER.M1_DRAW,
+        port=straight_right.ports["o2"],
+        layer=layer,
         port_type="electrical",
+        cross_section=xs,
     )
 
-    c.move((-cap_width / 2, -total_internal_height / 2))
-
-    total_wire_length = (
-        2 * wire_width
-        + n_turns * (cap_width - 4 * wire_width)
-        + max(0, n_turns - 1) * wire_gap
+    c.info["total_wire_length"] = (
+        2 * wire_width + n_turns * short_length + max(0, n_turns - 1) * wire_gap
     )
-    c.info["total_wire_length"] = total_wire_length
-    c.info["inductor_n_squares"] = total_wire_length / wire_width
+    c.info["inductor_n_squares"] = c.info["total_wire_length"] / wire_width
     c.info["capacitor_fingers"] = fingers
     c.info["capacitor_finger_length"] = finger_length
 
     return c
 
 
+
 def _draw_interdigital_fingers_left(
     c: Component,
     layer: LayerSpec,
-    x_offset: float,
+    x_inner: float,
     y_offset: float,
     fingers: int,
     finger_length: float,
@@ -491,10 +462,10 @@ def _draw_interdigital_fingers_left(
         y0 = y_offset + finger_idx * (thickness + finger_gap)
         c.add_polygon(
             [
-                (x_offset, y0),
-                (x_offset + finger_length, y0),
-                (x_offset + finger_length, y0 + thickness),
-                (x_offset, y0 + thickness),
+                (x_inner, y0),
+                (x_inner + finger_length, y0),
+                (x_inner + finger_length, y0 + thickness),
+                (x_inner, y0 + thickness),
             ],
             layer=layer,
         )
@@ -503,25 +474,23 @@ def _draw_interdigital_fingers_left(
 def _draw_interdigital_fingers_right(
     c: Component,
     layer: LayerSpec,
-    x_offset: float,
+    x_inner: float,
     y_offset: float,
-    cap_width: float,
     fingers: int,
     finger_length: float,
     finger_gap: float,
     thickness: float,
 ) -> None:
     """Draw right-side interdigital capacitor fingers (odd-indexed, extending left)."""
-    x_right_inner = cap_width - x_offset
     for i in range(floor(fingers / 2)):
         finger_idx = 1 + 2 * i
         y0 = y_offset + finger_idx * (thickness + finger_gap)
         c.add_polygon(
             [
-                (x_right_inner - finger_length, y0),
-                (x_right_inner, y0),
-                (x_right_inner, y0 + thickness),
-                (x_right_inner - finger_length, y0 + thickness),
+                (x_inner - finger_length, y0),
+                (x_inner, y0),
+                (x_inner, y0 + thickness),
+                (x_inner - finger_length, y0 + thickness),
             ],
             layer=layer,
         )
