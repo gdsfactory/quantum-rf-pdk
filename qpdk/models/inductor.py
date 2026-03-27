@@ -59,10 +59,8 @@ def meander_inductor_inductance_analytical(
     """
     # Total wire length in µm (horizontal runs + vertical connections)
     total_length_um = n_turns * turn_length + jnp.maximum(0, n_turns - 1) * wire_gap
-    # Number of squares
     n_squares = total_length_um / wire_width
-    # Total inductance
-    return sheet_inductance * n_squares  # pyrefly: ignore[bad-return]
+    return sheet_inductance * n_squares
 
 
 def meander_inductor(
