@@ -18,7 +18,7 @@ from qpdk.models.generic import inductor, lc_resonator
 
 
 @partial(jax.jit, inline=True)
-def self_inductance_strip(l: float, w: float, t: float) -> jax.Array:
+def self_inductance_strip(length: float, width: float, thickness: float) -> jax.Array:
     r"""Analytical formula for the self-inductance of a rectangular metal strip.
 
     Uses the formula from :cite:`chenCompactInductorcapacitorResonators2023`:
@@ -28,18 +28,22 @@ def self_inductance_strip(l: float, w: float, t: float) -> jax.Array:
         L_s = \frac{\mu_0 l}{2\pi} \left[ \ln\left(\frac{2l}{w+t}\right) + 0.5 + \frac{w+t}{3l} \right]
 
     Args:
-        l: Length of the strip in m.
-        w: Width of the strip in m.
-        t: Thickness of the strip in m.
+        length: Length of the strip in m.
+        width: Width of the strip in m.
+        thickness: Thickness of the strip in m.
 
     Returns:
         Self-inductance in Henries.
     """
-    return (μ_0 * l / (2 * π)) * (jnp.log(2 * l / (w + t)) + 0.5 + (w + t) / (3 * l))
+    return (μ_0 * length / (2 * π)) * (
+        jnp.log(2 * length / (width + thickness))
+        + 0.5
+        + (width + thickness) / (3 * length)
+    )
 
 
 @partial(jax.jit, inline=True)
-def mutual_inductance_parallel_strips(l: float, d: float) -> jax.Array:
+def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
     r"""Analytical formula for the mutual inductance between two parallel metal strips.
 
     Uses the formula from :cite:`chenCompactInductorcapacitorResonators2023`:
@@ -49,14 +53,16 @@ def mutual_inductance_parallel_strips(l: float, d: float) -> jax.Array:
         L_m(d) = \frac{\mu_0 l}{2\pi} \left[ \ln \left( \frac{l}{d} + \sqrt{1 + \frac{l^2}{d^2}} \right) - \sqrt{1 + \frac{d^2}{l^2}} + \frac{d}{l} \right]
 
     Args:
-        l: Length of the strips in m.
+        length: Length of the strips in m.
         d: Center-to-center distance between the strips in m.
 
     Returns:
         Mutual inductance in Henries.
     """
-    return (μ_0 * l / (2 * π)) * (
-        jnp.log(l / d + jnp.sqrt(1 + (l / d) ** 2)) - jnp.sqrt(1 + (d / l) ** 2) + d / l
+    return (μ_0 * length / (2 * π)) * (
+        jnp.log(length / d + jnp.sqrt(1 + (length / d) ** 2))
+        - jnp.sqrt(1 + (d / length) ** 2)
+        + d / length
     )
 
 

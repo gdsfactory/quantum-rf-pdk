@@ -23,7 +23,9 @@ MAX_EXAMPLES = 50
 # ---------------------------------------------------------------------------
 # Use realistic dimensions (>= 1.0 µm) to avoid numerical instabilities
 # and ensure formulas are within their validity domain (length > width)
-dim_st = st.floats(min_value=1.0, max_value=1000.0, allow_nan=False, allow_infinity=False)
+dim_st = st.floats(
+    min_value=1.0, max_value=1000.0, allow_nan=False, allow_infinity=False
+)
 sheet_inductance_st = st.floats(
     min_value=1e-13, max_value=1e-9, allow_nan=False, allow_infinity=False
 )
