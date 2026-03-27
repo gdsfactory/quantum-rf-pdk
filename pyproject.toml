@@ -13,7 +13,11 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.39.0"]
+dependencies = [
+  "doroutes>=0.2.0",
+  "gdsfactory~=9.39.0",
+  "typing-extensions>=4.12.0"
+]
 
 [project.optional-dependencies]
 graphics = ["trimesh", "pyglet<2"]
@@ -207,6 +211,7 @@ ignore = [
   "S404",  # suspicious-subprocess-import
   "PLW1510",  # subprocess-run-without-check
   "S607",  # start-process-with-partial-path
+  "TC006",  # runtime-cast-value
 ]
 select = [
   "E",  # pycodestyle errors

@@ -3343,6 +3343,7 @@ source = { editable = "." }
 dependencies = [
     { name = "doroutes" },
     { name = "gdsfactory" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -3452,6 +3453,7 @@ requires-dist = [
     { name = "scqubits", marker = "extra == 'scqubits'" },
     { name = "sympy", marker = "extra == 'models'" },
     { name = "trimesh", marker = "extra == 'graphics'" },
+    { name = "typing-extensions", specifier = ">=4.12.0" },
 ]
 provides-extras = ["graphics", "hfss", "models", "netket", "pymablock", "qutip", "scqubits"]
 

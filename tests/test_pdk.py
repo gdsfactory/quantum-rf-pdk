@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 import pathlib
+import sys
 from collections.abc import Mapping
-from typing import Any, TypeIs, cast, overload
+from typing import Any, cast, overload
+
+if sys.version_info >= (3, 13):
+    from typing import TypeIs
+else:
+    from typing_extensions import TypeIs
 
 import gdsfactory as gf
 import jsondiff
