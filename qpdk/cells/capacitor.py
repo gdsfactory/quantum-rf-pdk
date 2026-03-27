@@ -10,9 +10,135 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
-from qpdk.cells.waveguides import straight
+from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
 from qpdk.helper import show_components
 from qpdk.tech import LAYER
+
+
+@gf.cell
+def half_circle_coupler(
+    radius: float = 50.0,
+    angle: float = 180.0,
+    extension_length: float = 10.0,
+    cross_section: CrossSectionSpec = "cpw",
+    extra_straight_length: float = 20.0,
+    open_end: bool = True,
+) -> Component:
+    """Creates a half-circle coupler for readout.
+
+    This coupler consists of a circular bend (typically 180 degrees) that wraps
+    around a resonator arm for capacitive coupling.
+
+    Args:
+        radius: Inner radius of the half-circle in μm.
+        angle: Angle of the circular arc in degrees.
+        extension_length: Length of the straight sections extending from the
+            ends of the half-circle in μm.
+        cross_section: Cross-section specification for the coupler.
+        extra_straight_length: Length of the straight section extending from the
+            bottom of the half-circle in μm.
+        open_end: If True, adds an etched gap at the ends of the extensions.
+
+    Returns:
+        Component: A gdsfactory component with the half-circle coupler geometry.
+    """
+    c = Component()
+
+    bend = c.add_ref(
+        bend_circular(
+            radius=radius,
+            angle=angle,
+            cross_section=cross_section,
+        )
+    )
+
+    # Position bend such that it's centered and opening upwards
+    bend.rotate(-angle / 2)
+    bend.move((-bend.dcenter[0], -bend.dcenter[1]))
+
+    # Add extensions to the ends of the bend
+    if extension_length > 0:
+        ext1 = c.add_ref(straight(length=extension_length, cross_section=cross_section))
+        ext1.connect("o1", bend.ports["o1"])
+        ext2 = c.add_ref(straight(length=extension_length, cross_section=cross_section))
+        ext2.connect("o1", bend.ports["o2"])
+        where_to_add_gaps = [ext1.ports["o2"], ext2.ports["o2"]]
+    else:
+        where_to_add_gaps = [bend.ports["o1"], bend.ports["o2"]]
+
+    if open_end:
+        for port in where_to_add_gaps:
+            add_etch_gap(c, port, cross_section=cross_section)
+
+    # Get cross section details to calculate overlap
+    xs = gf.get_cross_section(cross_section)
+    cross_section_etch_section = next(
+        s for s in xs.sections if s.name and "etch_offset" in s.name
+    )
+    # Ensure significant overlap by moving stem into the bend metal
+    # and considering the bend radius
+    overlap = xs.width / 2 + cross_section_etch_section.width
+
+    # Add a stem/lead straight from the center of the arc.
+    # The stem uses the CPW cross-section but does NOT extend into the bend,
+    # to avoid M1_ETCH overlapping with the bend's M1_DRAW.
+    stem = c.add_ref(
+        straight(
+            length=extra_straight_length,
+            cross_section=cross_section,
+        )
+    )
+
+    stem.rotate(-90)
+    stem.movey(bend.dbbox().bottom)
+    stem.movex(bend.dcenter[0])  # Center it
+
+    # Bridge the stem into the bend with M1_DRAW center conductor and
+    # M1_ETCH gap sections, matching the CPW cross-section pattern.
+    # Unlike using a straight ref, these polygons avoid hierarchical
+    # M1_ETCH-over-M1_DRAW conflicts with the bend.
+    bridge_x = bend.dcenter[0]
+    bridge_y_bottom = bend.dbbox().bottom
+    bridge_y_top = bridge_y_bottom + overlap
+    c.add_polygon(
+        [
+            (bridge_x - xs.width / 2, bridge_y_bottom),
+            (bridge_x + xs.width / 2, bridge_y_bottom),
+            (bridge_x + xs.width / 2, bridge_y_top),
+            (bridge_x - xs.width / 2, bridge_y_top),
+        ],
+        layer=LAYER.M1_DRAW,
+    )
+    etch_height = overlap / 3
+    for etch_s in xs.sections:
+        if etch_s.name and "etch_offset" in etch_s.name:
+            etch_x_center = bridge_x + etch_s.offset
+            c.add_polygon(
+                [
+                    (etch_x_center - etch_s.width / 2, bridge_y_bottom),
+                    (etch_x_center + etch_s.width / 2, bridge_y_bottom),
+                    (etch_x_center + etch_s.width / 2, bridge_y_bottom + etch_height),
+                    (etch_x_center - etch_s.width / 2, bridge_y_bottom + etch_height),
+                ],
+                layer=LAYER.M1_ETCH,
+            )
+    c.add_port("o3", port=stem.ports["o2"])
+
+    # Place anchor at the arc center, computed as the midpoint of the
+    # bend ports for a circular arc, for concentric alignment with an
+    # inner resonator bend.
+    arc_center_x = (bend.ports["o1"].dx + bend.ports["o2"].dx) / 2
+    arc_center_y = (bend.ports["o1"].dy + bend.ports["o2"].dy) / 2
+    c.add_port(
+        name="anchor",
+        center=(arc_center_x, arc_center_y),
+        width=xs.width,
+        orientation=90,
+        layer=LAYER.M1_DRAW,
+        port_type="placement",
+    )
+
+    return c
 
 
 @gf.cell
@@ -63,6 +189,9 @@ def interdigital_capacitor(
     Returns:
         Component: A gdsfactory component with the interdigital capacitor geometry
             and two ports ('o1' and 'o2') on opposing sides.
+
+    Raises:
+        ValueError: If fingers is less than 1.
     """
     c = Component()
 
@@ -150,9 +279,10 @@ def interdigital_capacitor(
     straight_out_of_etch = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    straight_left = c.add_ref(straight_out_of_etch).move(
-        (-etch_bbox_margin, height / 2)
-    )
+    straight_left = c.add_ref(straight_out_of_etch).move((
+        -etch_bbox_margin,
+        height / 2,
+    ))
     straight_right = None
     if not half:
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
@@ -237,6 +367,9 @@ def plate_capacitor(
 
     Returns:
         A gdsfactory component with the plate capacitor geometry and two ports ('o1' and 'o2') on opposing sides.
+
+    Raises:
+        ValueError: If width or length is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
@@ -308,6 +441,9 @@ def plate_capacitor_single(
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
+
+    Raises:
+        ValueError: If width or length is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
@@ -338,9 +474,10 @@ def plate_capacitor_single(
     straight_out_of_etch = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    straight_left = c.add_ref(straight_out_of_etch).move(
-        (-etch_bbox_margin, length / 2)
-    )
+    straight_left = c.add_ref(straight_out_of_etch).move((
+        -etch_bbox_margin,
+        length / 2,
+    ))
     # Add WG to additive metal
     c_additive = gf.boolean(
         A=c,
@@ -381,6 +518,7 @@ def plate_capacitor_single(
 
 if __name__ == "__main__":
     show_components(
+        half_circle_coupler,
         plate_capacitor_single,
         plate_capacitor,
         interdigital_capacitor,

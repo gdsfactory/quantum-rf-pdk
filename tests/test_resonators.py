@@ -19,12 +19,14 @@ MAX_EXAMPLES = 20
 class TestResonators:
     """Test basic resonator functionality."""
 
+    @staticmethod
     @pytest.mark.parametrize("length", [0, 10, 100])
-    def test_resonator_too_short_raises_error(self, length: float) -> None:
+    def test_resonator_too_short_raises_error(length: float) -> None:
         """Verify that providing a length too short for the meanders raises ValueError."""
         with pytest.raises(ValueError, match="too short"):
             resonator(length=length, meanders=6)
 
+    @staticmethod
     @given(
         length=st.floats(min_value=0, max_value=1000000),
         meanders=st.integers(min_value=1, max_value=100),
@@ -39,7 +41,6 @@ class TestResonators:
         suppress_health_check=[HealthCheck.filter_too_much],
     )
     def test_resonator_meanders(
-        self,
         length: float,
         meanders: int,
         open_start: bool,
@@ -47,7 +48,7 @@ class TestResonators:
         start_with_bend: bool,
         end_with_bend: bool,
     ) -> None:
-        bend_factory = partial(bend_circular, angle=180)
+        bend_factory = partial(bend_circular, angle=180, angular_step=4)
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
@@ -87,6 +88,7 @@ class TestResonators:
         )
         assert len(c.ports) == 2, f"Expected 2 ports, got {len(c.ports)}"
 
+    @staticmethod
     @given(
         length=st.floats(min_value=0, max_value=1000000),
         meanders=st.integers(min_value=1, max_value=100),
@@ -103,7 +105,6 @@ class TestResonators:
         suppress_health_check=[HealthCheck.filter_too_much],
     )
     def test_resonator_coupled(
-        self,
         length: float,
         meanders: int,
         open_start: bool,
@@ -113,7 +114,7 @@ class TestResonators:
         coupling_straight_length: float,
         coupling_gap: float,
     ) -> None:
-        bend_factory = partial(bend_circular, angle=180)
+        bend_factory = partial(bend_circular, angle=180, angular_step=4)
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
@@ -168,7 +169,8 @@ class TestResonators:
 class TestQubitWithResonator:
     """Test qubit—resonator coupled systems."""
 
-    def test_transmon_with_resonator_defaults(self) -> None:
+    @staticmethod
+    def test_transmon_with_resonator_defaults() -> None:
         """Test transmon_with_resonator with default parameters."""
         c = double_pad_transmon_with_resonator()
 
@@ -185,7 +187,8 @@ class TestQubitWithResonator:
         assert "junction" in port_names, "Should have junction port from transmon"
         assert "o1" in port_names, "Should have o1 port from resonator"
 
-    def test_flipmon_with_resonator_defaults(self) -> None:
+    @staticmethod
+    def test_flipmon_with_resonator_defaults() -> None:
         """Test flipmon_with_resonator with default parameters."""
         c = flipmon_with_resonator()
 

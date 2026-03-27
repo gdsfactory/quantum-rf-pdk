@@ -4,8 +4,7 @@ from unittest.mock import Mock
 
 import gdsfactory as gf
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
+from hypothesis import given, strategies as st
 
 from qpdk.helper import denest_layerviews_to_layer_tuples
 
@@ -13,7 +12,8 @@ from qpdk.helper import denest_layerviews_to_layer_tuples
 class TestDenestLayerviewsToLayerTuples:
     """Test suite for denest_layerviews_to_layer_tuples function."""
 
-    def test_empty_layer_views(self):
+    @staticmethod
+    def test_empty_layer_views():
         """Test with empty layer views."""
         # Mock LayerViews with empty layer_views
         mock_layer_views = Mock()
@@ -23,7 +23,8 @@ class TestDenestLayerviewsToLayerTuples:
 
         assert result == {}
 
-    def test_single_flat_layer(self):
+    @staticmethod
+    def test_single_flat_layer():
         """Test with a single non-nested layer."""
         # Mock LayerView without group_members
         mock_layer_view = Mock(spec=gf.technology.LayerView)
@@ -37,7 +38,8 @@ class TestDenestLayerviewsToLayerTuples:
 
         assert result == {"metal1": (1, 0)}
 
-    def test_multiple_flat_layers(self):
+    @staticmethod
+    def test_multiple_flat_layers():
         """Test with multiple non-nested layers."""
         # Mock multiple LayerViews without group_members
         mock_layer_view1 = Mock(spec=gf.technology.LayerView)
@@ -64,7 +66,8 @@ class TestDenestLayerviewsToLayerTuples:
         expected = {"metal1": (1, 0), "metal2": (2, 0), "via1": (3, 1)}
         assert result == expected
 
-    def test_single_nested_layer(self):
+    @staticmethod
+    def test_single_nested_layer():
         """Test with a single nested layer group."""
         # Mock nested structure
         mock_nested_layer = Mock(spec=gf.technology.LayerView)
@@ -81,7 +84,8 @@ class TestDenestLayerviewsToLayerTuples:
 
         assert result == {"sublayer": (10, 0)}
 
-    def test_deeply_nested_layers(self):
+    @staticmethod
+    def test_deeply_nested_layers():
         """Test with deeply nested layer groups."""
         # Create a 3-level nested structure
         mock_deep_layer = Mock(spec=gf.technology.LayerView)
@@ -101,7 +105,8 @@ class TestDenestLayerviewsToLayerTuples:
 
         assert result == {"deep": (100, 1)}
 
-    def test_mixed_nested_and_flat_layers(self):
+    @staticmethod
+    def test_mixed_nested_and_flat_layers():
         """Test with a mix of nested and flat layers."""
         # Flat layer
         mock_flat_layer = Mock(spec=gf.technology.LayerView)
@@ -134,7 +139,8 @@ class TestDenestLayerviewsToLayerTuples:
         expected = {"flat": (1, 0), "nested1": (2, 0), "nested2": (3, 1)}
         assert result == expected
 
-    def test_empty_group_members(self):
+    @staticmethod
+    def test_empty_group_members():
         """Test with a layer that has empty group_members dict."""
         mock_layer_view = Mock(spec=gf.technology.LayerViews)
         mock_layer_view.group_members = {}  # Empty but not None
@@ -147,13 +153,14 @@ class TestDenestLayerviewsToLayerTuples:
         # Should still process as a group (empty result)
         assert result == {}
 
+    @staticmethod
     @given(
         layer_name=st.text(min_size=1, max_size=20),
         layer_num=st.integers(min_value=0, max_value=1000),
         datatype=st.integers(min_value=0, max_value=255),
     )
     def test_single_layer_property_based(
-        self, layer_name: str, layer_num: int, datatype: int
+        layer_name: str, layer_num: int, datatype: int
     ):
         """Property-based test for single layer processing."""
         mock_layer_view = Mock(spec=gf.technology.LayerView)
@@ -167,7 +174,8 @@ class TestDenestLayerviewsToLayerTuples:
 
         assert result == {layer_name: (layer_num, datatype)}
 
-    def test_non_layerview_object_in_dict(self):
+    @staticmethod
+    def test_non_layerview_object_in_dict():
         """Test with non-LayerView object that doesn't have group_members."""
         # Regular object without group_members attribute
         regular_object = object()

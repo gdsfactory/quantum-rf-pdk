@@ -1,0 +1,156 @@
+"""Tests for microstrip electromagnetic analysis functions."""
+
+from typing import ClassVar, final, override
+
+import jax
+import jax.numpy as jnp
+from numpy.testing import assert_allclose
+
+from qpdk.models.cpw import (
+    microstrip_epsilon_eff,
+    microstrip_thickness_correction,
+    microstrip_z0,
+)
+from qpdk.models.waveguides import straight_microstrip
+
+from .base import TwoPortModelTestSuite
+
+
+class TestMicrostripEpsilonEff:
+    """Tests for microstrip effective permittivity."""
+
+    @staticmethod
+    def test_vacuum_substrate() -> None:
+        """With ε_r=1, ε_eff should be 1."""
+        ep = microstrip_epsilon_eff(10e-6, 500e-6, 1.0)
+        assert_allclose(float(ep), 1.0, atol=1e-10)
+
+    @staticmethod
+    def test_bounded() -> None:
+        """1 < ε_eff < ε_r for any substrate."""
+        ep_r = 11.45
+        ep = microstrip_epsilon_eff(10e-6, 500e-6, ep_r)
+        assert 1.0 < float(ep) < ep_r
+
+    @staticmethod
+    def test_wide_strip_approaches_ep_r() -> None:
+        """For very wide strips (w/h >> 1), ε_eff → ε_r."""
+        ep_r = 11.45
+        ep = microstrip_epsilon_eff(1e-3, 1e-6, ep_r)  # w/h = 1000
+        assert float(ep) > 0.9 * ep_r
+
+    @staticmethod
+    def test_narrow_strip_approaches_average() -> None:
+        """For very narrow strips (w/h << 1), ε_eff → (ε_r+1)/2."""
+        ep_r = 11.45
+        ep = microstrip_epsilon_eff(1e-9, 1e-3, ep_r)  # w/h = 1e-6
+        assert_allclose(float(ep), (ep_r + 1) / 2, rtol=0.1)
+
+    @staticmethod
+    def test_increases_with_width() -> None:
+        """ε_eff increases as strip gets wider (more field in substrate)."""
+        ep1 = microstrip_epsilon_eff(5e-6, 500e-6, 11.45)
+        ep2 = microstrip_epsilon_eff(100e-6, 500e-6, 11.45)
+        assert float(ep2) > float(ep1)
+
+
+class TestMicrostripZ0:
+    """Tests for microstrip characteristic impedance."""
+
+    @staticmethod
+    def test_narrow_strip_high_impedance() -> None:
+        """Narrow strip (w/h < 1) → high impedance."""
+        ep = microstrip_epsilon_eff(1e-6, 500e-6, 11.45)
+        z0 = microstrip_z0(1e-6, 500e-6, ep)
+        assert float(z0) > 100.0
+
+    @staticmethod
+    def test_wide_strip_low_impedance() -> None:
+        """Wide strip (w/h >> 1) → low impedance."""
+        ep = microstrip_epsilon_eff(1e-3, 500e-6, 11.45)
+        z0 = microstrip_z0(1e-3, 500e-6, ep)
+        assert float(z0) < 35.0
+
+    @staticmethod
+    def test_typical_50_ohm() -> None:
+        r"""A common 50 Ω microstrip on alumina (ε_r=9.8, h=0.635mm) has w ≈ 0.6mm."""
+        ep = microstrip_epsilon_eff(0.6e-3, 0.635e-3, 9.8)
+        z0 = microstrip_z0(0.6e-3, 0.635e-3, ep)
+        assert_allclose(float(z0), 50.0, atol=5.0)
+
+    @staticmethod
+    def test_jit_compatible() -> None:
+        """Function can be JIT-compiled."""
+        jitted = jax.jit(microstrip_z0)
+        result = jitted(10e-6, 500e-6, 6.2)
+        assert jnp.isfinite(result)
+
+
+class TestMicrostripThicknessCorrection:
+    """Tests for microstrip conductor thickness correction."""
+
+    @staticmethod
+    def test_reduces_impedance() -> None:
+        """Thickness correction should reduce Z0 (wider effective strip)."""
+        ep0 = microstrip_epsilon_eff(10e-6, 500e-6, 11.45)
+        z0_0 = microstrip_z0(10e-6, 500e-6, ep0)
+        _, _ep_t, z0_t = microstrip_thickness_correction(
+            10e-6, 500e-6, 0.2e-6, 11.45, ep0
+        )
+        assert float(z0_t) < float(z0_0)
+
+
+@final
+class TestStraightMicrostrip(TwoPortModelTestSuite):
+    """Tests for the straight_microstrip model."""
+
+    model_function = staticmethod(straight_microstrip)
+    expected_ports: ClassVar[set[str]] = {"o1", "o2"}
+
+    @staticmethod
+    @override
+    def get_model_kwargs() -> dict:
+        return {
+            "length": 1000,
+            "width": 10.0,
+            "h": 500.0,
+            "t": 0.2,
+            "ep_r": 11.45,
+        }
+
+    @staticmethod
+    def test_zero_length_transmission() -> None:
+        """Zero-length microstrip → near-unity transmission."""
+        f = jnp.array([5e9])
+        result = straight_microstrip(f=f, length=0.0)
+        s21 = jnp.abs(result["o1", "o2"])
+        assert_allclose(float(s21.squeeze()), 1.0, atol=1e-6)
+
+    @staticmethod
+    def test_phase_shift_increases_with_length() -> None:
+        """Longer lines should have more phase shift."""
+        f = jnp.array([5e9])
+        r1 = straight_microstrip(f=f, length=1000)
+        r2 = straight_microstrip(f=f, length=2000)
+        phase1 = jnp.angle(r1["o1", "o2"]).squeeze()
+        phase2 = jnp.angle(r2["o1", "o2"]).squeeze()
+        # Phase shift roughly doubles (unwrapped)
+        assert jnp.abs(phase2) > jnp.abs(phase1) - 0.01
+
+    @staticmethod
+    def test_lossy_attenuates() -> None:
+        """With tand > 0, transmission should be reduced."""
+        f = jnp.array([5e9])
+        r_lossless = straight_microstrip(f=f, length=10000, tand=0.0)
+        r_lossy = straight_microstrip(f=f, length=10000, tand=0.01)
+        s21_ll = jnp.abs(r_lossless["o1", "o2"]).squeeze()
+        s21_ly = jnp.abs(r_lossy["o1", "o2"]).squeeze()
+        assert float(s21_ly) < float(s21_ll)
+
+    @staticmethod
+    def test_jit_compatible() -> None:
+        """Microstrip straight model can be JIT-compiled."""
+        jitted = jax.jit(lambda f, length: straight_microstrip(f=f, length=length))
+        f = jnp.array([5e9])
+        result = jitted(f, 1000.0)
+        assert jnp.isfinite(result["o1", "o2"])

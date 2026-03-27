@@ -19,12 +19,24 @@ skip_plots = {
     "cpw_media_skrf",
 }
 
+# Models that should NOT be documented at all (re-exported from other packages)
+skip_autodoc = {
+    "admittance",
+    "capacitor",
+    "electrical_open",
+    "electrical_short",
+    "gamma_0_load",
+    "impedance",
+    "inductor",
+    "tee",
+}
+
 # Collect all public functions/classes in qpdk.models
 if qpdk.models is not None:
     models = {
         name: obj
         for name, obj in qpdk.models.__dict__.items()
-        if callable(obj) and not name.startswith("_")
+        if callable(obj) and not name.startswith("_") and name not in skip_autodoc
     }
 else:
     models = {}
@@ -57,5 +69,5 @@ template = env.get_template("models_static.rst.j2")
 
 rendered = template.render(items=items)
 
-with filepath_models.open("w") as f:
+with filepath_models.open("w", encoding="utf-8") as f:
     f.write(rendered)

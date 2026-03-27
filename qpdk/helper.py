@@ -1,9 +1,16 @@
 """Helper functions for the qpdk package."""
 
+from __future__ import annotations
+
+import re
 import warnings
 from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import polars as pl
 
 from gdsfactory import Component, ComponentAllAngle, LayerEnum, get_component
 from gdsfactory.technology import LayerViews
@@ -14,6 +21,9 @@ def deprecated(msg: str | Callable | None = None) -> Any:
     """Decorator to mark functions as deprecated.
 
     Can be used as @deprecated or @deprecated("custom message").
+
+    Returns:
+        A decorator function or the decorated function itself.
     """
 
     def decorator(func: Callable) -> Callable:
@@ -64,10 +74,9 @@ def denest_layerviews_to_layer_tuples(
                 # Recursively process nested group members and merge results
                 nested_layers = denest_layer_dict_recursive(value.group_members)
                 layers.update(nested_layers)
-            else:
-                # Base case: add the layer to our dictionary
-                if hasattr(value, "layer"):
-                    layers[key] = value.layer
+            # Base case: add the layer to our dictionary
+            elif hasattr(value, "layer"):
+                layers[key] = value.layer
 
         return layers
 
@@ -90,7 +99,7 @@ def show_components(
     Returns:
         Components after :func:`gdsfactory.get_component`.
     """
-    from qpdk import PDK
+    from qpdk import PDK  # noqa: PLC0415
 
     PDK.activate()
 
@@ -109,12 +118,10 @@ def show_components(
         shift = (max_component_width + spacing, 0)
 
     for i, component in enumerate(components):
-        (c << component).move(
-            (
-                shift[0] * i,
-                shift[1] * i,
-            )
-        )
+        (c << component).move((
+            shift[0] * i,
+            shift[1] * i,
+        ))
         label_offset = (
             shift[0] * i + (component.size_info.width / 2),
             shift[1] * i + (component.size_info.height / 2),
@@ -135,5 +142,124 @@ def layerenum_to_tuple(layerenum: LayerEnum) -> Layer:
 
     Args:
         layerenum: The LayerEnum object to convert.
+
+    Returns:
+        The (layer, datatype) tuple.
     """
     return layerenum.layer, layerenum.datatype
+
+
+_GREEK_MAP: dict[str, str] = {
+    r"\varepsilon": "ε",
+    r"\varphi": "φ",
+    r"\alpha": "α",
+    r"\beta": "β",
+    r"\gamma": "γ",
+    r"\delta": "δ",
+    r"\epsilon": "ε",
+    r"\zeta": "ζ",
+    r"\eta": "η",
+    r"\theta": "θ",
+    r"\iota": "ι",
+    r"\kappa": "κ",
+    r"\lambda": "λ",
+    r"\mu": "μ",
+    r"\nu": "ν",
+    r"\xi": "ξ",
+    r"\pi": "π",
+    r"\rho": "ρ",
+    r"\sigma": "σ",
+    r"\tau": "τ",
+    r"\upsilon": "υ",
+    r"\phi": "φ",
+    r"\chi": "χ",
+    r"\psi": "ψ",
+    r"\omega": "ω",
+    r"\Gamma": "Γ",
+    r"\Delta": "Δ",
+    r"\Theta": "Θ",
+    r"\Lambda": "Λ",
+    r"\Xi": "Ξ",
+    r"\Pi": "Π",
+    r"\Sigma": "Σ",
+    r"\Phi": "Φ",
+    r"\Psi": "Ψ",
+    r"\Omega": "Ω",
+}
+
+
+def _latex_math_to_html(expr: str) -> str:
+    r"""Convert a single LaTeX math expression (without ``$`` delimiters) to HTML.
+
+    Handles ``\mathrm``/``\text`` commands, Greek letters, and sub-/superscripts.
+
+    Returns:
+        HTML string representation of the LaTeX expression.
+    """
+    # Strip \mathrm{...} and \text{...} wrappers, keeping their content
+    expr = re.sub(r"\\(?:mathrm|text|textrm)\{([^}]+)\}", r"\1", expr)
+
+    # Replace Greek letter commands with Unicode (longest names first)
+    for latex, char in sorted(_GREEK_MAP.items(), key=lambda x: -len(x[0])):
+        expr = expr.replace(latex, char)
+
+    # Subscripts: _{...} then _X
+    expr = re.sub(r"_\{([^}]+)\}", r"<sub>\1</sub>", expr)
+    expr = re.sub(r"_(\w)", r"<sub>\1</sub>", expr)
+
+    # Superscripts: ^{...} then ^X
+    expr = re.sub(r"\^\{([^}]+)\}", r"<sup>\1</sup>", expr)
+    return re.sub(r"\^(\w)", r"<sup>\1</sup>", expr)
+
+
+def _latex_to_html(text: str) -> str:
+    r"""Convert ``$...$`` delimited LaTeX math in *text* to HTML.
+
+    Non-math text is returned unchanged.
+
+    Returns:
+        String with LaTeX math replaced by HTML.
+    """
+    return re.sub(r"\$([^$]+)\$", lambda m: _latex_math_to_html(m.group(1)), text)
+
+
+def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
+    """Display a DataFrame with both HTML and LaTeX representations.
+
+    Wraps a polars or pandas :class:`~pandas.DataFrame` in an object that
+    provides both ``_repr_html_`` (styled, index-hidden) and
+    ``_repr_latex_`` representations so that Jupyter Book renders a proper
+    table in both HTML and PDF outputs.
+
+    Cell values may contain ``$...$`` delimited LaTeX math.  The HTML
+    representation converts these to Unicode/HTML (subscripts, Greek
+    letters, etc.) while the LaTeX representation passes them through as
+    native math.
+
+    Args:
+        df: A polars or pandas DataFrame to display.
+    """
+    import pandas as pd  # noqa: PLC0415
+    from IPython.display import display  # noqa: PLC0415
+
+    # Convert polars DataFrame to pandas if needed
+    pdf: pd.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
+
+    class _DualFormatTable:
+        """Table object providing both HTML and LaTeX representations."""
+
+        @staticmethod
+        def _repr_html_() -> str:  # noqa: PLW3201
+            html_df = pdf.copy()
+            for col in html_df.columns:
+                if pd.api.types.is_string_dtype(html_df[col]):
+                    html_df[col] = html_df[col].map(
+                        lambda x: _latex_to_html(x) if isinstance(x, str) else x
+                    )
+            return html_df.style.hide(axis="index")._repr_html_()
+
+        @staticmethod
+        def _repr_latex_() -> str:  # noqa: PLW3201
+            return pdf.to_latex(index=False, escape=False)
+
+    display(_DualFormatTable())

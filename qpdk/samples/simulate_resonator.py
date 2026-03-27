@@ -40,7 +40,11 @@ from qpdk.tech import LAYER, route_bundle_sbend_cpw
 # %%
 @gf.cell
 def resonator_simulation(coupling_gap: float = 12.0) -> gf.Component:
-    """Create a resonator simulation layout with launchers and CPW routes."""
+    """Create a resonator simulation layout with launchers and CPW routes.
+
+    Returns:
+        The resonator simulation component.
+    """
     c = gf.Component()
 
     res_ref = c << resonator_coupled(
@@ -147,18 +151,20 @@ if __name__ == "__main__":
     # )
     #
     # display(results)
-    # import skrf
+
     #
     # df = results.scattering_matrix
     # df.columns = df.columns.str.strip()
-    # s_complex = 10 ** df["|S[2][1]| (dB)"].values * np.exp(
-    #     1j * skrf.degree_2_radian(df["arg(S[2][1]) (deg.)"].values)
+    # s_complex = 10 ** (df["|S[2][1]| (dB)"].values / 20) * np.exp(
+    #     1j * np.deg2rad(df["arg(S[2][1]) (deg.)"].values)
     # )
-    # ntw = skrf.Network(f=df["f (GHz)"].values, s=s_complex, z0=50)
-    # cap = np.imag(ntw.y.flatten()) / (ntw.f * 2 * np.pi)
+    # # Assuming a 1-port reflection measurement for capacitance extraction
+    # y11 = (1 - s_complex) / (1 + s_complex) / 50.0
+    # freq_hz = df["f (GHz)"].values * 1e9
+    # cap = np.imag(y11) / (freq_hz * 2 * np.pi)
     # display(cap)
     #
-    # plt.plot(ntw.f, cap * 1e15)
+    # plt.plot(freq_hz / 1e9, cap * 1e15)
     # plt.xlabel("Freq (GHz)")
     # plt.ylabel("C (fF)")
     #

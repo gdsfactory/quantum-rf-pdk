@@ -10,6 +10,7 @@ import gdsfactory as gf
 import polars as pl
 
 from qpdk import LAYER_STACK
+from qpdk.models.cpw import get_cpw_dimensions
 from qpdk.simulation.aedt_base import (
     AEDTBase,
     export_component_to_gds_temp,
@@ -64,6 +65,9 @@ class Q3D(AEDTBase):
 
         Returns:
             List of newly created conductor object names in Q3D.
+
+        Raises:
+            RuntimeError: If GDS import fails.
         """
         mapping_layers = layer_stack_to_gds_mapping(layer_stack)
 
@@ -83,7 +87,6 @@ class Q3D(AEDTBase):
                 raise RuntimeError("Q3D GDS import failed")
 
             new_objects = list(set(self.modeler.object_names) - existing_objects)
-            from qpdk import LAYER_STACK
 
             renamed_objects = rename_imported_objects(
                 self.q3d, new_objects, layer_stack or LAYER_STACK
@@ -258,9 +261,10 @@ class Q2D(AEDTBase):
         Returns:
             Dictionary with keys ``"signal"``, ``"gnd_left"``, ``"gnd_right"``,
             ``"substrate"`` mapping to the created Q2D object names.
-        """
-        from qpdk.models.media import get_cpw_dimensions
 
+        Raises:
+            ValueError: If cross-section mapping fails or dimensions are invalid.
+        """
         if layer_stack is None:
             layer_stack = LAYER_STACK
 

@@ -19,7 +19,7 @@
 # cross-sectional geometry, from which the characteristic impedance
 # can be obtained as a function of frequency.  We compare the
 # full-wave Q2D result against the analytical conformal-mapping estimate
-# from :func:`~qpdk.models.media.cpw_parameters`.
+# from :func:`~qpdk.models.cpw.cpw_parameters`.
 #
 # **Prerequisites:**
 # - Ansys Electronics Desktop installed (requires license)
@@ -45,7 +45,7 @@ from pathlib import Path
 # dimensions (10 µm centre conductor width, 6 µm gap to ground).
 # %%
 from qpdk import PDK
-from qpdk.models.media import cpw_parameters
+from qpdk.models.cpw import cpw_parameters
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -264,7 +264,7 @@ print("Q2D session closed and temporary files cleaned up")
 #    :math:`Z_0` as a function of frequency from 1 to 10 GHz
 #
 # 4. **Analytical Validation**: Comparing the Q2D result with the conformal-mapping
-#    analytical estimate from :func:`~qpdk.models.media.cpw_parameters`
+#    analytical estimate from :func:`~qpdk.models.cpw.cpw_parameters`
 #
 # **Key Points for CPW Design:**
 # - The Q2D solver gives frequency-dependent impedance including dispersion effects

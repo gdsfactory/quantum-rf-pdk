@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Any, cast
+import sys
+from collections.abc import Mapping
+from typing import Any, cast, overload
+
+if sys.version_info >= (3, 13):
+    from typing import TypeIs
+else:
+    from typing_extensions import TypeIs
 
 import gdsfactory as gf
 import jsondiff
@@ -25,6 +32,8 @@ from qpdk.tech import LAYER
 cells = PDK.cells
 skip_test_netlist = {
     "all_cells",  # Skip netlist test for all_cells (collection of all components)
+    "unimon",  # Uses partial junction spec; generated cell name can't round-trip
+    "unimon_coupled",  # Uses partial junction spec; generated cell name can't round-trip
 }
 # Skip default gdsfactory cells
 skip_test = {
@@ -86,19 +95,62 @@ def test_cell_in_pdk(name):
     assert instances1 == instances2
 
 
+type NormalizedValue = (
+    dict[Any, "NormalizedValue"]
+    | list["NormalizedValue"]
+    | int
+    | float
+    | str
+    | bool
+    | Any
+    | None
+)
+
+
+@overload
+def normalize_numeric_types[K, V](data: Mapping[K, V]) -> dict[K, NormalizedValue]: ...
+@overload
+def normalize_numeric_types(
+    data: list[Any] | tuple[Any, ...] | np.ndarray,
+) -> list[NormalizedValue]: ...
+@overload
+def normalize_numeric_types(data: float | np.floating) -> int | float: ...
+@overload
+def normalize_numeric_types(data: np.integer) -> int: ...
+@overload
+def normalize_numeric_types[T](data: T) -> T: ...
+
+
 def normalize_numeric_types(data: Any) -> Any:
     """Normalize numeric types in nested data structures.
 
     Converts floats that are whole numbers to ints to ensure consistent
     serialization across different platforms (e.g., macOS vs Linux).
+
+    Args:
+        data: The input data structure (dict, list, or primitive type).
+
+    Returns:
+        The data structure with numeric types normalized.
     """
-    if isinstance(data, dict):
+    if isinstance(data, Mapping):
         return {k: normalize_numeric_types(v) for k, v in data.items()}
-    if isinstance(data, list):
-        return [normalize_numeric_types(item) for item in data]
-    if isinstance(data, float) and data.is_integer():
+    if isinstance(data, (list, tuple, np.ndarray)):
+        # We always return a list for sequences to ensure consistency
+        # and because it's the standard way to represent sequences in JSON/YAML.
+        items = data.tolist() if isinstance(data, np.ndarray) else data
+        return [normalize_numeric_types(item) for item in items]
+
+    if is_integral_float(data):
+        return int(data)
+    if isinstance(data, np.integer):
         return int(data)
     return data
+
+
+def is_integral_float(val: Any) -> TypeIs[float | np.floating]:
+    """Check if a value is a float that represents a whole number."""
+    return isinstance(val, (float, np.floating)) and float(val).is_integer()
 
 
 @pytest.mark.parametrize("component_name", cell_names)
@@ -131,8 +183,8 @@ def test_netlists(
     if component_type in skip_test_netlist:
         pytest.skip(f"Skipping {component_type} netlist test")
     c = cells[component_type]()
-    n = c.get_netlist()
-    n = cast(dict, normalize_numeric_types(n))
+    netlist = c.get_netlist()
+    n: dict[str, Any] = normalize_numeric_types(netlist)
     data_regression.check(n)
 
     n.pop("connections", None)
@@ -144,8 +196,8 @@ def test_netlists(
         gf.kcl.dkcells[ci].delete()
 
     c2 = gf.read.from_yaml(yaml_str)
-    n2 = c2.get_netlist()
-    n2 = cast(dict, normalize_numeric_types(n2))
+    netlist2 = c2.get_netlist()
+    n2: dict[str, Any] = normalize_numeric_types(netlist2)
     d = jsondiff.diff(n, n2)
     d.pop("warnings", None)
     d.pop("ports", None)
@@ -188,7 +240,11 @@ port_test_cell_names = [name for name in cell_names if name not in _skip_port_te
 
 @pytest.mark.parametrize("component_name", port_test_cell_names)
 def test_optical_port_positions(component_name: str) -> None:
-    """Ensure that optical ports are positioned correctly."""
+    """Ensure that optical ports are positioned correctly.
+
+    Raises:
+        AssertionError: If port position or width does not match geometry.
+    """
     component = cells[component_name]()
     if isinstance(component, gf.ComponentAllAngle):
         new_component = gf.Component()

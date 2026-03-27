@@ -22,8 +22,8 @@ these guidelines when contributing:
 - **Run pre-commit hooks**: `just run-pre` (runs all pre-commit hooks on all files)
 - **Update pre-commit hooks**: `just update-pre` (updates pre-commit hooks to latest versions)
 - **Build package**: `just build` (creates distribution packages)
-- **Build documentation**: `just docs` (builds Jupyter Book documentation, this needs to succeed in order to be
-  mergeable to main)
+- **Build documentation**: `just docs` (builds Sphinx documentation, this needs to succeed in order to be mergeable to
+  main)
 
 ## Repository Structure
 
@@ -33,7 +33,7 @@ these guidelines when contributing:
 - `qpdk/klayout/`: KLayout technology files and layer definitions
 - `qpdk/tech.py`: Layer stack and main technology cross sections etc.
 - `tests/`: Test suite using pytest
-- `docs/`: Documentation built with Jupyter Book
+- `docs/`: Documentation built with Sphinx
 - `install_tech.py`: Script to symlink technology files to KLayout, rarely needed for AI agents
 
 ## Technology and Tools
@@ -44,8 +44,8 @@ these guidelines when contributing:
 - **Testing**: pytest with regression testing using `pytest_regressions`, hypothesis for property-based testing
 - **Linting**: ruff for Python code formatting and linting, pyrefly for type checking
 - **Layout tool**: KLayout for viewing and editing GDS layouts
-- **Documentation**: Jupyter Book for building documentation, jupytext for notebook management
-- **Simulation tools** (optional): sax, scikit-rf, scqubits, jaxellip (install with `uv sync --extra models`)
+- **Documentation**: Sphinx for building documentation, jupytext for notebook management
+- **Simulation tools** (optional): sax, scqubits, jaxellip (install with `uv sync --extra models`)
 
 ## Git and Version Control
 
@@ -105,6 +105,9 @@ All PRs must pass:
 1. **Use JAX for analytical models**: When implementing analytical models for S-parameters, prefer using JAX-compatible
    functions (e.g., `jnp` instead of `np`, `jaxellip` for elliptic integrals) and enable JIT compilation with
    `@partial(jax.jit, inline=True)` for helper functions.
+1. **Manage bibliography entries cleanly**: When editing the `bibliography.bib` file, ensure that if a reference
+   contains a valid `doi` field, it should **not** include a `url` or `urldate` field to avoid redundant citation
+   information.
 
 ## Testing Guidelines
 
@@ -139,9 +142,8 @@ When adding new quantum device components:
 The `qpdk/models/` directory contains S-parameter and circuit models for quantum RF components:
 
 - **Models available**: Resonators, couplers, waveguides, generic components
-- **Simulation frameworks**: Uses `sax` for S-parameter simulations, `scikit-rf` for RF/microwave analysis, `scqubits`
-  for quantum circuit analysis
-- **Media definitions**: `qpdk/models/media.py` defines coplanar waveguide (CPW) media for different substrates
+- **Simulation frameworks**: Uses `sax` for S-parameter simulations, `scqubits` for quantum circuit analysis
+- **Media definitions**: `qpdk/models/cpw.py` defines coplanar waveguide (CPW) parameters
 - **Installing simulation tools**: Run `uv sync --extra models` to install optional simulation dependencies
 - **Model structure**: Each model typically provides functions that return S-parameters or network parameters as
   functions of frequency
@@ -188,6 +190,8 @@ for examples of:
 1. Add citations where appropriate using Sphinx citation syntax
 1. Test that the script runs without errors
 1. For samples, ensure the generated component is added to the test suite
+1. **Update `docs/notebooks.rst`** when adding or removing notebooks — this page describes each notebook and categorizes
+   it by simulation approach
 
 ## Pre-commit Hooks Details
 

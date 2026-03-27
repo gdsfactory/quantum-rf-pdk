@@ -1,5 +1,7 @@
 """Write docs."""
 
+# ruff: noqa: S701, T201
+
 import inspect
 from pathlib import Path
 
@@ -29,15 +31,17 @@ env = Environment(loader=FileSystemLoader(template_dir), autoescape=False)
 
 
 def get_kwargs(sig: inspect.Signature) -> str:
-    """Extract kwargs from function signature."""
-    return ", ".join(
-        [
-            f"{p}={clean_value_json(sig.parameters[p].default)!r}"
-            for p in sig.parameters
-            if isinstance(sig.parameters[p].default, int | float | str | tuple)
-            and p not in skip_settings
-        ]
-    )
+    """Extract kwargs from function signature.
+
+    Returns:
+        String of comma-separated keyword arguments.
+    """
+    return ", ".join([
+        f"{p}={clean_value_json(sig.parameters[p].default)!r}"
+        for p in sig.parameters
+        if isinstance(sig.parameters[p].default, int | float | str | tuple)
+        and p not in skip_settings
+    ])
 
 
 # Generate cells.rst
@@ -53,8 +57,7 @@ for name in sorted(cells.keys()):
 template = env.get_template("cells.rst.j2")
 rendered = template.render(items=cells_items, skip_plot=skip_plot)
 
-with Path(filepath_cells).open("w") as f:
-    f.write(rendered)
+Path(filepath_cells).write_text(rendered, encoding="utf-8")
 
 # Generate samples.rst
 samples_items = []
@@ -70,5 +73,4 @@ for name in sorted(samples.keys()):
 template = env.get_template("samples.rst.j2")
 rendered = template.render(items=samples_items, skip_plot=skip_plot)
 
-with Path(filepath_samples).open("w") as f:
-    f.write(rendered)
+Path(filepath_samples).write_text(rendered, encoding="utf-8")

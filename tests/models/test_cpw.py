@@ -1,0 +1,301 @@
+"""Tests for CPW electromagnetic analysis functions."""
+
+import gdsfactory as gf
+import jax
+import jax.numpy as jnp
+import pytest
+from hypothesis import given, settings, strategies as st
+from numpy.testing import assert_allclose
+
+from qpdk.models.constants import c_0
+from qpdk.models.cpw import (
+    cpw_epsilon_eff,
+    cpw_parameters,
+    cpw_thickness_correction,
+    cpw_z0,
+    get_cpw_dimensions,
+    propagation_constant,
+    transmission_line_s_params,
+)
+from qpdk.models.math import ellipk_ratio
+from qpdk.models.waveguides import straight
+from qpdk.tech import coplanar_waveguide
+
+
+class TestEllipkRatio:
+    """Tests for the elliptic integral ratio K(m)/K(1-m)."""
+
+    @staticmethod
+    def test_symmetry() -> None:
+        """K(m)/K(1-m) = 1 / (K(1-m)/K(m)) → ratio(m) * ratio(1-m) == 1."""
+        m = 0.3
+        assert_allclose(
+            float(ellipk_ratio(m) * ellipk_ratio(1.0 - m)),
+            1.0,
+            atol=1e-10,
+        )
+
+    @staticmethod
+    def test_at_half() -> None:
+        """K(0.5) / K(0.5) == 1."""
+        assert_allclose(float(ellipk_ratio(0.5)), 1.0, atol=1e-10)
+
+    @staticmethod
+    @given(m=st.floats(min_value=0.01, max_value=0.99))
+    @settings(deadline=None)
+    def test_positive(m: float) -> None:
+        """Ratio should always be positive for 0 < m < 1."""
+        assert float(ellipk_ratio(m)) > 0
+
+
+class TestCPWEpsilonEff:
+    """Tests for CPW effective permittivity."""
+
+    @staticmethod
+    def test_vacuum_substrate() -> None:
+        """With ε_r=1 (vacuum), ε_eff should be 1."""
+        ep = cpw_epsilon_eff(10e-6, 6e-6, 500e-6, 1.0)
+        assert_allclose(float(ep), 1.0, atol=1e-6)
+
+    @staticmethod
+    def test_infinite_substrate_limit() -> None:
+        """For very thick substrate, ε_eff → (ε_r+1)/2."""
+        ep_r = 11.45
+        # Use very thick substrate (h >> w)
+        ep = cpw_epsilon_eff(10e-6, 6e-6, 100e-3, ep_r)
+        assert_allclose(float(ep), (ep_r + 1) / 2, rtol=1e-4)
+
+    @staticmethod
+    def test_bounded() -> None:
+        """1 < ε_eff < ε_r for any substrate."""
+        ep_r = 11.45
+        ep = cpw_epsilon_eff(10e-6, 6e-6, 500e-6, ep_r)
+        assert 1.0 < float(ep) < ep_r
+
+    @staticmethod
+    def test_increases_with_ep_r() -> None:
+        """ε_eff should increase with substrate permittivity."""
+        ep1 = cpw_epsilon_eff(10e-6, 6e-6, 500e-6, 4.0)
+        ep2 = cpw_epsilon_eff(10e-6, 6e-6, 500e-6, 11.45)
+        assert float(ep2) > float(ep1)
+
+    @staticmethod
+    def test_jit_compatible() -> None:
+        """Function can be JIT-compiled."""
+        jitted = jax.jit(cpw_epsilon_eff)
+        result = jitted(10e-6, 6e-6, 500e-6, 11.45)
+        assert jnp.isfinite(result)
+
+
+class TestCPWZ0:
+    """Tests for CPW characteristic impedance."""
+
+    @staticmethod
+    def test_default_cpw_approx_50_ohm() -> None:
+        """Default CPW dimensions (w=10, s=6) should give ~50 Ω."""
+        ep = cpw_epsilon_eff(10e-6, 6e-6, 500e-6, 11.45)
+        z0 = cpw_z0(10e-6, 6e-6, ep)
+        assert_allclose(float(z0), 50.0, atol=2.0)  # within 2 Ω
+
+    @staticmethod
+    def test_narrow_conductor_high_impedance() -> None:
+        """Narrow conductor (small w) → high impedance."""
+        ep = cpw_epsilon_eff(1e-6, 20e-6, 500e-6, 11.45)
+        z0 = cpw_z0(1e-6, 20e-6, ep)
+        assert float(z0) > 100.0
+
+    @staticmethod
+    def test_wide_conductor_low_impedance() -> None:
+        """Wide conductor (large w) → low impedance."""
+        ep = cpw_epsilon_eff(100e-6, 2e-6, 500e-6, 11.45)
+        z0 = cpw_z0(100e-6, 2e-6, ep)
+        assert float(z0) < 25.0
+
+    @staticmethod
+    def test_jit_compatible() -> None:
+        """Function can be JIT-compiled."""
+        jitted = jax.jit(cpw_z0)
+        result = jitted(10e-6, 6e-6, 6.2)
+        assert jnp.isfinite(result)
+
+
+class TestCPWThicknessCorrection:
+    """Tests for GGBB96 conductor thickness correction."""
+
+    @staticmethod
+    def test_thin_conductor_small_correction() -> None:
+        """Very thin conductor should produce small corrections."""
+        ep0 = cpw_epsilon_eff(10e-6, 6e-6, 500e-6, 11.45)
+        z0_0 = cpw_z0(10e-6, 6e-6, ep0)
+        ep_t, z0_t = cpw_thickness_correction(10e-6, 6e-6, 1e-9, ep0)
+        # Correction should be small for t = 1 nm
+        assert_allclose(float(ep_t), float(ep0), rtol=0.01)
+        assert_allclose(float(z0_t), float(z0_0), rtol=0.01)
+
+    @staticmethod
+    def test_reduces_impedance() -> None:
+        """Thickness correction should reduce Z0 (wider effective conductor)."""
+        ep0 = cpw_epsilon_eff(10e-6, 6e-6, 500e-6, 11.45)
+        z0_0 = cpw_z0(10e-6, 6e-6, ep0)
+        _ep_t, z0_t = cpw_thickness_correction(10e-6, 6e-6, 0.2e-6, ep0)
+        assert float(z0_t) < float(z0_0)
+
+    @staticmethod
+    def test_matches_known_values() -> None:
+        """Result should match known CPW values within ~0.2%."""
+        # Known values for w=10um, s=6um, h=500um, t=0.2um, ep_r=11.45
+        ep_eff, z0 = cpw_parameters(10.0, 6.0)
+        assert_allclose(z0, 49.28, rtol=0.002)  # ~0.2% tolerance
+        assert_allclose(ep_eff, 6.065, rtol=0.001)
+
+
+class TestPropagationConstant:
+    """Tests for the complex propagation constant."""
+
+    @staticmethod
+    def test_lossless_purely_imaginary() -> None:
+        """For tand=0, gamma should be purely imaginary."""
+        gamma = propagation_constant(5e9, 6.225, tand=0.0)
+        assert_allclose(float(jnp.real(gamma)), 0.0, atol=1e-20)
+        assert float(jnp.imag(gamma)) > 0
+
+    @staticmethod
+    def test_phase_velocity() -> None:
+        """β = ω√ε_eff/c₀, so v_p = ω/β = c₀/√ε_eff."""
+        ep_eff = 6.225
+        f = 5e9
+        gamma = propagation_constant(f, ep_eff)
+        beta = float(jnp.imag(gamma))
+        v_p = 2 * jnp.pi * f / beta
+        assert_allclose(float(v_p), c_0 / jnp.sqrt(ep_eff), rtol=1e-8)
+
+    @staticmethod
+    def test_lossy_has_real_part() -> None:
+        """For tand > 0, gamma should have a positive real part (attenuation)."""
+        gamma = propagation_constant(5e9, 6.225, tand=0.01, ep_r=11.45)
+        assert float(jnp.real(gamma)) > 0
+
+    @staticmethod
+    def test_scales_with_frequency() -> None:
+        """β should scale linearly with frequency."""
+        g1 = propagation_constant(5e9, 6.225)
+        g2 = propagation_constant(10e9, 6.225)
+        assert_allclose(
+            float(jnp.imag(g2)),
+            2.0 * float(jnp.imag(g1)),
+            rtol=1e-8,
+        )
+
+
+class TestTransmissionLineSParams:
+    """Tests for ABCD→S-parameter conversion."""
+
+    @staticmethod
+    def test_zero_length_identity() -> None:
+        """Zero-length line → S11=0, S21=1."""
+        gamma = 1j * 100.0
+        s11, s21 = transmission_line_s_params(gamma, 50.0, 0.0)
+        assert_allclose(float(jnp.abs(s11)), 0.0, atol=1e-10)
+        assert_allclose(float(jnp.abs(s21)), 1.0, atol=1e-10)
+
+    @staticmethod
+    def test_matched_impedance_no_reflection() -> None:
+        """With z_ref = z0, S11 should be zero."""
+        gamma = jnp.array([1j * 100.0])
+        s11, _ = transmission_line_s_params(gamma, 50.0, 0.001)
+        assert_allclose(float(jnp.abs(s11[0])), 0.0, atol=1e-10)
+
+    @staticmethod
+    def test_mismatched_impedance_reflection() -> None:
+        """With z_ref ≠ z0, S11 should be non-zero."""
+        gamma = jnp.array([1j * 100.0])
+        s11, _ = transmission_line_s_params(gamma, 50.0, 0.1, z_ref=75.0)
+        assert float(jnp.abs(s11[0])) > 0.01
+
+    @staticmethod
+    def test_lossless_passivity() -> None:
+        """For lossless line: |S11|² + |S21|² = 1."""
+        gamma = jnp.array([1j * 200.0])
+        s11, s21 = transmission_line_s_params(gamma, 50.0, 0.01, z_ref=75.0)
+        power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
+        assert_allclose(float(power[0]), 1.0, atol=1e-10)
+
+    @staticmethod
+    def test_reciprocal() -> None:
+        """S21 = S12 for a reciprocal 2-port network."""
+        gamma = jnp.array([1j * 150.0])
+        z0 = 50.0
+        length = 0.02
+        z_ref = 75.0
+        _s11, s21 = transmission_line_s_params(gamma, z0, length, z_ref=z_ref)
+
+        # In a reciprocal network, S21 = S12. Our implementation returns (S11, S21)
+        # assuming symmetry (S11=S22, S21=S12). We verify that the returned S21
+        # matches the general formula for S12 from a reciprocal ABCD matrix (AD-BC=1).
+        theta = gamma * length
+        a = jnp.cosh(theta)
+        b = z0 * jnp.sinh(theta)
+        c = jnp.sinh(theta) / z0
+        d = a  # symmetric
+
+        # General S12 formula from ABCD: S12 = 2(AD-BC) / (A + B/Zr + C*Zr + D)
+        # For a reciprocal network AD-BC = 1.
+        denom = a + b / z_ref + c * z_ref + d
+        s12_expected = 2.0 / denom
+
+        assert_allclose(s21, s12_expected, atol=1e-10)
+        assert jnp.isfinite(s21[0])
+
+
+class TestStraightJIT:
+    """Tests for JIT compilation of the straight CPW model."""
+
+    @staticmethod
+    def test_straight_matches_non_jit() -> None:
+        """JIT-compiled straight should give same results as non-JIT."""
+        f = jnp.linspace(4e9, 8e9, 10)
+
+        result_nojit = straight(f=f, length=1000, cross_section="cpw")
+
+        # The straight function uses cross_section as a Python-level param,
+        # so JIT-tracing happens naturally for f and length
+        jitted_inner = jax.jit(
+            lambda f, length: straight(f=f, length=length, cross_section="cpw")
+        )
+        result_jit = jitted_inner(f, 1000.0)
+
+        for key in result_nojit:
+            assert_allclose(
+                result_nojit[key],
+                result_jit[key],
+                atol=1e-10,
+                err_msg=f"Mismatch for {key}",
+            )
+
+
+class TestGetCpwDimensions:
+    """Tests for get_cpw_dimensions edge cases."""
+
+    @staticmethod
+    def test_with_callable_cross_section() -> None:
+        """Test get_cpw_dimensions with callable cross-section."""
+        xs_fn = coplanar_waveguide
+        width, gap = get_cpw_dimensions(xs_fn)
+        assert width > 0
+        assert gap > 0
+
+    @staticmethod
+    def test_with_cross_section_object() -> None:
+        """Test get_cpw_dimensions with CrossSection object."""
+        xs = coplanar_waveguide()
+        width, gap = get_cpw_dimensions(xs)
+        assert width > 0
+        assert gap > 0
+
+    @staticmethod
+    def test_missing_etch_offset_raises() -> None:
+        """Test that missing 'etch_offset' section raises ValueError."""
+        # Create a cross-section without any 'etch_offset' sections
+        xs = gf.cross_section.cross_section(width=10.0)
+        with pytest.raises(ValueError, match="etch_offset"):
+            get_cpw_dimensions(xs)

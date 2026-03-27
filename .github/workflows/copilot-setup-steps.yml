@@ -1,4 +1,6 @@
 name: Copilot Setup Steps
+permissions:
+  contents: read
 on:
   workflow_dispatch:
 jobs:
@@ -15,3 +17,5 @@ jobs:
         uses: extractions/setup-just@v3
       - name: Install dependencies
         run: just install
+      - name: Install Computer Modern Unicode fonts
+        run: sudo apt-get install -y fonts-cmu

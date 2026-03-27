@@ -1,0 +1,47 @@
+instances:
+  resonator:
+    component: resonator
+    info:
+      cross_section: coplanar_waveguide
+      length: 2914.198
+      resonator_type: quarter_wave
+    settings:
+      bend_spec: bend_circular
+      cross_section: cpw
+      end_with_bend: true
+      length: 2914.198
+      meanders: 6
+      open_end: false
+      open_start: false
+      start_with_bend: false
+  straight:
+    component: straight
+    info:
+      length: 82.802
+      route_info_coplanar_waveguide_length: 82.802
+      route_info_length: 82.802
+      route_info_type: coplanar_waveguide
+      route_info_weight: 82.802
+      width: 10
+    settings:
+      cross_section: cpw
+      length: 82.802
+      npoints: 2
+      width: null
+nets:
+- p1: resonator,o2
+  p2: straight,o1
+placements:
+  resonator:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  straight:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: -1200
+ports:
+  o1: resonator,o1
+  o2: straight,o2

@@ -48,7 +48,7 @@ from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.waveguides import straight_open
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-from qpdk.models.media import cpw_ep_r_from_cross_section
+from qpdk.models.cpw import cpw_ep_r_from_cross_section
 from qpdk.simulation import HFSS, Q3D, prepare_component_for_aedt
 from qpdk.tech import coplanar_waveguide
 
@@ -563,7 +563,7 @@ print(cap_df)
 C_q3d = None
 for col in cap_df.columns:
     # Match off-diagonal entries exactly between o1 and o2
-    if col in ["C(o1,o2)", "C(o2,o1)"]:
+    if col in {"C(o1,o2)", "C(o2,o1)"}:
         C_q3d = abs(float(cap_df[col][0]))
         break
 

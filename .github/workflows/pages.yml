@@ -31,9 +31,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install just
         uses: extractions/setup-just@v3
+      - name: Install Computer Modern Unicode fonts
+        run: sudo apt-get install -y fonts-cmu
       - run: just install
       - run: just docs
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
@@ -82,10 +84,10 @@ jobs:
         with:
           path: /var/cache/apt/archives
           key: ${{ runner.os }}-imagemagick
-      - name: Install ImageMagick
+      - name: Install ImageMagick and Computer Modern Unicode fonts
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y imagemagick
+          sudo apt-get install -y imagemagick fonts-cmu
           # Allow ImageMagick to convert SVG files (disabled by default in policy)
           if [ -f /etc/ImageMagick-6/policy.xml ]; then
             sudo sed -i 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' /etc/ImageMagick-6/policy.xml
@@ -107,7 +109,7 @@ jobs:
           continue_on_error: true
           latexmk_use_xelatex: true
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
@@ -126,17 +128,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML artifact (latest Python)
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: html-docs-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site
       - name: Download PDF artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: pdf-docs
           path: _site
       - name: Download coverage report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: coverage-report-${{ needs.get-latest-python.outputs.latest-python }}
@@ -147,4 +149,4 @@ jobs:
         uses: actions/upload-pages-artifact@v4
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

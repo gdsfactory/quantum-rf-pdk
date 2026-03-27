@@ -9,7 +9,7 @@ repos:
       - id: trailing-whitespace
       - id: detect-private-key
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.2
+    rev: 0.9.1
     hooks:
       - id: nbstripout
         files: ".ipynb"
@@ -21,7 +21,7 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.1
+    rev: v0.15.8
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
@@ -47,13 +47,13 @@ repos:
         args: [-conf, ".github/.yamlfmt.yaml"]
         exclude: &regression_tests ".*.tests*"
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
         args: [--strict, "-c=.github/.yamllint.yaml"]
         exclude: *regression_tests
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.10
+    rev: v1.7.11
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/uv-pre-commit
@@ -77,17 +77,6 @@ repos:
     rev: v2.14.0
     hooks:
       - id: hadolint
-  - repo: https://github.com/checkmake/checkmake.git
-    rev: 0.2.2
-    hooks:
-      - id: checkmake
-        args: ['--config=.github/.checkmake.ini']
-  - repo: https://github.com/EbodShojaei/bake
-    rev: v1.4.4
-    hooks:
-      - id: mbake-validate
-      - id: mbake-format
-        args: ['--config=.github/.bake.toml']
   - repo: https://github.com/LilSpazJoekp/docstrfmt
     rev: v2.0.1
     hooks:
@@ -118,6 +107,18 @@ repos:
           - mdformat-tables
           - mdformat-frontmatter
           - mdformat-footnote
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        types_or: [css]
+  - repo: https://github.com/thibaudcolas/pre-commit-stylelint
+    rev: v17.4.0
+    hooks:
+      - id: stylelint
+        args: [--fix, --config=.github/.stylelintrc.yaml]
+        additional_dependencies:
+          - stylelint@17.4.0
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
@@ -127,6 +128,12 @@ repos:
         exclude: '^(?:docs/_build/.*|qpdk(?:/.*)?/__init__[.]py|notebooks/.*|docs/notebooks/[^/]+|qpdk/samples/[^/]+[.]py|tests/.*)$'
   - repo: local
     hooks:
+      - id: just-fmt
+        name: Format justfiles
+        entry: just --fmt --unstable
+        language: system
+        files: (^|/)justfile$|\.just$
+        pass_filenames: false
       - id: convert-notebooks
         name: Convert jupytext notebooks
         entry: ./.github/convert-notebooks.sh

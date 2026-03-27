@@ -1,8 +1,11 @@
 # Quantum RF PDK Matplotlib Style
 # Custom style for quantum-rf-pdk documentation
 
-font.sans-serif: DejaVu Sans, Helvetica, Arial, Liberation Sans, sans-serif
-font.family: sans-serif
+font.family: serif
+font.serif: CMU Serif, cmr10, DejaVu Serif, Bitstream Vera Serif, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Times New Roman, Times, Palatino, Charter, serif
+
+# Use Computer Modern math fonts for consistent LaTeX-like math rendering
+mathtext.fontset: cm
 
 # Figure settings for better documentation appearance
 figure.facecolor: white

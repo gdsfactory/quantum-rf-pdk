@@ -58,19 +58,19 @@ def ec_to_capacitance(ec_ghz: float) -> float:
 
 @partial(jax.jit, inline=True)
 def ej_to_inductance(ej_ghz: float) -> float:
-    r"""Convert Josephson energy :math:`E_J` to Josephson inductance :math:`L_J`.
+    r"""Convert Josephson energy :math:`E_J` to Josephson inductance :math:`L_\text{J}`.
 
     The Josephson energy is related to inductance by:
 
     .. math::
 
-        E_J = \frac{\Phi_0^2}{4 \pi^2 L_J} = \frac{(\hbar / 2e)^2}{L_J}
+        E_J = \frac{\Phi_0^2}{4 \pi^2 L_\text{J}} = \frac{(\hbar / 2e)^2}{L_\text{J}}
 
     This is equivalent to:
 
     .. math::
 
-        L_J = \frac{\Phi_0}{2 \pi I_c}
+        L_\text{J} = \frac{\Phi_0}{2 \pi I_c}
 
     where :math:`I_c` is the critical current and :math:`\Phi_0` is the magnetic flux quantum.
 
@@ -175,7 +175,7 @@ def double_island_transmon(
     Args:
         f: Array of frequency points in Hz.
         capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
-        inductance: Josephson inductance :math:`L_J` in Henries.
+        inductance: Josephson inductance :math:`L_\text{J}` in Henries.
 
     Returns:
         sax.SDict: S-parameters dictionary with ports o1 and o2.
@@ -197,6 +197,9 @@ def double_island_transmon_with_bbox(
     """LC resonator model for a double-island transmon qubit with bounding box ports.
 
     This model is the same as :func:`double_island_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return double_island_transmon(
         f=f,
@@ -214,6 +217,9 @@ def flipmon(
     r"""LC resonator model for a flipmon qubit.
 
     This model is identical to :func:`double_island_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return double_island_transmon(
         f=f,
@@ -231,6 +237,9 @@ def flipmon_with_bbox(
     """LC resonator model for a flipmon qubit with bounding box ports.
 
     This model is the same as :func:`flipmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return flipmon(
         f=f,
@@ -275,7 +284,7 @@ def shunted_transmon(
     Args:
         f: Array of frequency points in Hz.
         capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
-        inductance: Josephson inductance :math:`L_J` in Henries.
+        inductance: Josephson inductance :math:`L_\text{J}` in Henries.
 
     Returns:
         sax.SDict: S-parameters dictionary with ports o1 and o2.
@@ -327,7 +336,7 @@ def transmon_coupled(
     Args:
         f: Array of frequency points in Hz.
         capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
-        inductance: Josephson inductance :math:`L_J` in Henries.
+        inductance: Josephson inductance :math:`L_\text{J}` in Henries.
         grounded: If True, the qubit is a shunted transmon (grounded).
             If False, it is a double-pad transmon (ungrounded).
         coupling_capacitance: Coupling capacitance :math:`C_c` in Farads.
@@ -383,13 +392,13 @@ def qubit_with_resonator(
 
     Note:
         This function is not JIT-compiled because it depends on :func:`~straight_shorted`,
-        which internally uses scikit-rf for transmission line modeling.
+        which internally uses cpw_parameters for transmission line modeling.
 
     Args:
         f: Array of frequency points in Hz.
         qubit_capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
             Convert from charging energy using :func:`ec_to_capacitance`.
-        qubit_inductance: Josephson inductance :math:`L_J` in Henries.
+        qubit_inductance: Josephson inductance :math:`L_\text{J}` in Henries.
             Convert from Josephson energy using :func:`ej_to_inductance`.
         qubit_grounded: If True, the qubit is a shunted transmon (grounded).
             If False, it is a double-island transmon (ungrounded).
@@ -464,6 +473,9 @@ def flipmon_with_resonator(
     """Model for a flipmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator` but the qubit is set to floating.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -487,6 +499,9 @@ def double_island_transmon_with_resonator(
     """Model for a double-island transmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator` but the qubit is set to floating.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -511,6 +526,9 @@ def transmon_with_resonator(
     """Model for a transmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator`.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -532,6 +550,9 @@ def xmon_transmon(
     """LC resonator model for an Xmon style transmon qubit.
 
     An Xmon transmon is typically shunted, so this model wraps :func:`shunted_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return shunted_transmon(
         f=f,

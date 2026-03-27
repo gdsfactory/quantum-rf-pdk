@@ -28,11 +28,11 @@ def has_sax_stype_return(func: Callable) -> bool:
             or (hasattr(sax, "SDict") and return_type is sax.SDict)
             or (
                 isinstance(return_type, type)
-                and return_type.__name__ in ["SType", "SDict"]
+                and return_type.__name__ in {"SType", "SDict"}
             )
             or (
                 hasattr(return_type, "__name__")
-                and return_type.__name__ in ["SType", "SDict"]
+                and return_type.__name__ in {"SType", "SDict"}
             )
         ):
             return True
@@ -76,7 +76,7 @@ def test_has_sax_stype_return():
 
     # Remove annotations to be sure
     if hasattr(func_no_annotations, "__annotations__"):
-        delattr(func_no_annotations, "__annotations__")
+        del func_no_annotations.__annotations__
 
     assert not has_sax_stype_return(func_no_annotations), (
         "Should not detect function with no annotations"
@@ -134,13 +134,11 @@ def test_sax_stype_functions_in_models_dict():
                         continue
 
                     # Check if function or its __wrapped__ version has sax.SType return type
-                    if any(
-                        (
-                            has_sax_stype_return(obj),
-                            hasattr(obj, "__wrapped__")
-                            and has_sax_stype_return(obj.__wrapped__),
-                        )
-                    ):
+                    if any((
+                        has_sax_stype_return(obj),
+                        hasattr(obj, "__wrapped__")
+                        and has_sax_stype_return(obj.__wrapped__),
+                    )):
                         sax_stype_functions.add(name)
 
             except ImportError:

@@ -8,13 +8,13 @@ import sax
 from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
+from qpdk.models.cpw import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
 from qpdk.models.generic import capacitor
 from qpdk.models.math import (
     capacitance_per_length_conformal,
     ellipk_ratio,
     epsilon_eff,
 )
-from qpdk.models.media import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
 
 
 @partial(jax.jit, inline=True)
@@ -39,6 +39,9 @@ def plate_capacitor_capacitance_analytical(
     where :math:`s` is the gap, :math:`W` is the pad width, and :math:`L` is the pad length.
 
     See :cite:`chenCompactInductorcapacitorResonators2023`.
+
+    Returns:
+        The calculated capacitance in Farads.
     """
     # Conformal mapping for coplanar pads
     k_sq = (gap / (gap + 2 * width)) ** 2
@@ -84,6 +87,9 @@ def interdigital_capacitor_capacitance_analytical(
     :math:`L` is the overlap length.
 
     See :cite:`igrejaAnalyticalEvaluationInterdigital2004,gonzalezDesignFabricationInterdigital2015`.
+
+    Returns:
+        The calculated mutual capacitance in Farads.
     """
     # Geometric parameters
     n = fingers
