@@ -128,17 +128,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML artifact (latest Python)
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: html-docs-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site
       - name: Download PDF artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: pdf-docs
           path: _site
       - name: Download coverage report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: coverage-report-${{ needs.get-latest-python.outputs.latest-python }}
