@@ -57,6 +57,9 @@ def resonator(
 
     Returns:
         Component: A gdsfactory component with meandering resonator geometry.
+
+    Raises:
+        ValueError: If length is too short for the requested meanders.
     """
     c = Component()
     cross_section = gf.get_cross_section(cross_section)
@@ -338,6 +341,9 @@ def quarter_wave_resonator_coupled(
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
         coupling_straight_length: Length of the coupling waveguide section in μm.
         coupling_gap: Gap between the resonator and coupling waveguide in μm.
+
+    Returns:
+        The coupled quarter-wave resonator component.
     """
     c = Component()
 

@@ -8,7 +8,8 @@ import pytest
 from gdsfactory.component import Component
 from numpy.testing import assert_allclose
 
-from qpdk import LAYER_STACK
+from qpdk import LAYER_STACK, PDK
+from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.resonator import resonator
 from qpdk.simulation import (
     HFSS,
@@ -19,6 +20,7 @@ from qpdk.simulation import (
     prepare_component_for_aedt,
 )
 from qpdk.simulation.aedt_base import _get_layer_number_from_level
+from qpdk.tech import coplanar_waveguide
 
 # Ensure Ansys path is set so PyAEDT can find it
 ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
@@ -105,10 +107,7 @@ def test_hfss_import_and_draw():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS installation not found at {ansys_dir}")
 
-    from ansys.aedt.core import Hfss, settings
-
-    from qpdk import PDK
-    from qpdk.cells.resonator import resonator
+    from ansys.aedt.core import Hfss, settings  # noqa: PLC0415
 
     settings.use_grpc_uds = False
 
@@ -138,10 +137,7 @@ def test_hfss_eigenmode_setup():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS installation not found at {ansys_dir}")
 
-    from ansys.aedt.core import Hfss, settings
-
-    from qpdk import PDK
-    from qpdk.cells.resonator import resonator
+    from ansys.aedt.core import Hfss, settings  # noqa: PLC0415
 
     settings.use_grpc_uds = False
 
@@ -229,10 +225,7 @@ def test_q3d_import_and_net_assignment():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS/Q3D installation not found at {ansys_dir}")
 
-    from ansys.aedt.core import Q3d, settings
-
-    from qpdk import PDK
-    from qpdk.cells.capacitor import interdigital_capacitor
+    from ansys.aedt.core import Q3d, settings  # noqa: PLC0415
 
     settings.use_grpc_uds = False
 
@@ -264,10 +257,7 @@ def test_create_2d_from_cross_section():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS installation not found at {ansys_dir}")
 
-    from ansys.aedt.core import Q2d, settings
-
-    from qpdk import PDK
-    from qpdk.tech import coplanar_waveguide
+    from ansys.aedt.core import Q2d, settings  # noqa: PLC0415
 
     settings.use_grpc_uds = False
 

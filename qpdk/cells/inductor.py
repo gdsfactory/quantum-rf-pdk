@@ -10,11 +10,8 @@ from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
-    LAYER,
-    coplanar_waveguide,
     get_etch_section,
     meander_inductor_cross_section,
-    xsection,
 )
 
 
@@ -360,8 +357,14 @@ def lumped_element_resonator(
                 -cap_width / 2 + wire_width - overlap,
                 ind.ports["o1"].center[1] - wire_width / 2,
             ),
-            (ind.ports["o1"].center[0] + overlap, ind.ports["o1"].center[1] - wire_width / 2),
-            (ind.ports["o1"].center[0] + overlap, ind.ports["o1"].center[1] + wire_width / 2),
+            (
+                ind.ports["o1"].center[0] + overlap,
+                ind.ports["o1"].center[1] - wire_width / 2,
+            ),
+            (
+                ind.ports["o1"].center[0] + overlap,
+                ind.ports["o1"].center[1] + wire_width / 2,
+            ),
             (
                 -cap_width / 2 + wire_width - overlap,
                 ind.ports["o1"].center[1] + wire_width / 2,
@@ -372,7 +375,10 @@ def lumped_element_resonator(
     # Right tab connects o2 to the right bus bar
     c.add_polygon(
         [
-            (ind.ports["o2"].center[0] - overlap, ind.ports["o2"].center[1] - wire_width / 2),
+            (
+                ind.ports["o2"].center[0] - overlap,
+                ind.ports["o2"].center[1] - wire_width / 2,
+            ),
             (
                 cap_width / 2 - wire_width + overlap,
                 ind.ports["o2"].center[1] - wire_width / 2,
@@ -381,7 +387,10 @@ def lumped_element_resonator(
                 cap_width / 2 - wire_width + overlap,
                 ind.ports["o2"].center[1] + wire_width / 2,
             ),
-            (ind.ports["o2"].center[0] - overlap, ind.ports["o2"].center[1] + wire_width / 2),
+            (
+                ind.ports["o2"].center[0] - overlap,
+                ind.ports["o2"].center[1] + wire_width / 2,
+            ),
         ],
         layer=layer,
     )
@@ -443,7 +452,6 @@ def lumped_element_resonator(
     c.info["capacitor_finger_length"] = finger_length
 
     return c
-
 
 
 def _draw_interdigital_fingers_left(

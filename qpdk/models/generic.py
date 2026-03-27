@@ -49,7 +49,7 @@ def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SD
 
 
 short = electrical_short
-open = electrical_open
+open = electrical_open  # noqa: A001
 short_2_port = electrical_short_2_port
 
 
@@ -218,14 +218,14 @@ if __name__ == "__main__":
     plt.figure()
     # Polar plot of S21 and S11
     plt.subplot(121, projection="polar")
-    plt.plot(jnp.angle(S_cap[("o1", "o1")]), abs(S_cap[("o1", "o1")]), label="$S_{11}$")
-    plt.plot(jnp.angle(S_cap[("o1", "o2")]), abs(S_cap[("o2", "o1")]), label="$S_{21}$")
+    plt.plot(jnp.angle(S_cap["o1", "o1"]), abs(S_cap["o1", "o1"]), label="$S_{11}$")
+    plt.plot(jnp.angle(S_cap["o1", "o2"]), abs(S_cap["o2", "o1"]), label="$S_{21}$")
     plt.title("S-parameters capacitor")
     plt.legend()
     # Magnitude and phase vs frequency
     ax1 = plt.subplot(122)
-    ax1.plot(f / 1e9, abs(S_cap[("o1", "o1")]), label="|S11|", color="C0")
-    ax1.plot(f / 1e9, abs(S_cap[("o1", "o2")]), label="|S21|", color="C1")
+    ax1.plot(f / 1e9, abs(S_cap["o1", "o1"]), label="|S11|", color="C0")
+    ax1.plot(f / 1e9, abs(S_cap["o1", "o2"]), label="|S21|", color="C1")
     ax1.set_xlabel("Frequency [GHz]")
     ax1.set_ylabel("Magnitude [unitless]")
     ax1.grid(True)
@@ -234,14 +234,14 @@ if __name__ == "__main__":
     ax2 = ax1.twinx()
     ax2.plot(
         f / 1e9,
-        jnp.angle(S_cap[("o1", "o1")]),
+        jnp.angle(S_cap["o1", "o1"]),
         label="∠S11",
         color="C0",
         linestyle="--",
     )
     ax2.plot(
         f / 1e9,
-        jnp.angle(S_cap[("o1", "o2")]),
+        jnp.angle(S_cap["o1", "o2"]),
         label="∠S21",
         color="C1",
         linestyle="--",
@@ -256,13 +256,13 @@ if __name__ == "__main__":
     # print(S_ind)
     plt.figure()
     plt.subplot(121, projection="polar")
-    plt.plot(jnp.angle(S_ind[("o1", "o1")]), abs(S_ind[("o1", "o1")]), label="$S_{11}$")
-    plt.plot(jnp.angle(S_ind[("o1", "o2")]), abs(S_ind[("o2", "o1")]), label="$S_{21}$")
+    plt.plot(jnp.angle(S_ind["o1", "o1"]), abs(S_ind["o1", "o1"]), label="$S_{11}$")
+    plt.plot(jnp.angle(S_ind["o1", "o2"]), abs(S_ind["o2", "o1"]), label="$S_{21}$")
     plt.title("S-parameters inductor")
     plt.legend()
     ax1 = plt.subplot(122)
-    ax1.plot(f / 1e9, abs(S_ind[("o1", "o1")]), label="|S11|", color="C0")
-    ax1.plot(f / 1e9, abs(S_ind[("o1", "o2")]), label="|S21|", color="C1")
+    ax1.plot(f / 1e9, abs(S_ind["o1", "o1"]), label="|S11|", color="C0")
+    ax1.plot(f / 1e9, abs(S_ind["o1", "o2"]), label="|S21|", color="C1")
     ax1.set_xlabel("Frequency [GHz]")
     ax1.set_ylabel("Magnitude [unitless]")
     ax1.grid(True)
@@ -271,14 +271,14 @@ if __name__ == "__main__":
     ax2 = ax1.twinx()
     ax2.plot(
         f / 1e9,
-        jnp.angle(S_ind[("o1", "o1")]),
+        jnp.angle(S_ind["o1", "o1"]),
         label="∠S11",
         color="C0",
         linestyle="--",
     )
     ax2.plot(
         f / 1e9,
-        jnp.angle(S_ind[("o1", "o2")]),
+        jnp.angle(S_ind["o1", "o2"]),
         label="∠S21",
         color="C1",
         linestyle="--",

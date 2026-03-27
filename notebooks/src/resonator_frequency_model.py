@@ -114,6 +114,9 @@ def loss_fn(params: dict[str, jnp.ndarray]) -> jnp.ndarray:
 
     Args:
         params: Dictionary containing the resonator length in micrometers.
+
+    Returns:
+        The loss value as a JAX array.
     """
     length = params["length"]
     # Setup model using the Jittable `circuit` function
@@ -140,6 +143,9 @@ def sweep_loss(length_val: jnp.ndarray) -> jnp.ndarray:
 
     Args:
         length_val: The length of the resonator in micrometers.
+
+    Returns:
+        The loss value for the given length.
     """
     return loss_fn({"length": length_val})
 
@@ -161,6 +167,9 @@ def step(params, opt_state):
     Args:
         params: Dictionary containing current parameters (e.g., 'length').
         opt_state: Current state of the optimizer.
+
+    Returns:
+        A tuple containing (updated parameters, updated opt_state).
     """
     loss_value, grads = jax.value_and_grad(loss_fn)(params)
     updates, opt_state = optimizer.update(grads, opt_state, params)

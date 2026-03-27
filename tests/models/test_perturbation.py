@@ -59,15 +59,16 @@ class TestDispersiveShift:
     def test_zero_coupling() -> None:
         """Zero coupling should give zero dispersive shift."""
         chi = dispersive_shift(5.0, 7.0, 0.2, 0.0)
-        assert chi == 0.0
+        assert math.isclose(chi, 0.0, abs_tol=1e-15)
 
+    @staticmethod
     @given(
         g=st.floats(min_value=0.01, max_value=0.3),
         omega_t=st.floats(min_value=3.0, max_value=7.0),
         omega_r=st.floats(min_value=5.0, max_value=10.0),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_finite_result(self, g: float, omega_t: float, omega_r: float) -> None:
+    def test_finite_result(g: float, omega_t: float, omega_r: float) -> None:
         """Result should be finite for non-degenerate parameters."""
         # Avoid resonance (omega_t = omega_r) and omega_t + omega_r = alpha
         assume(not (abs(omega_t - omega_r) < 0.1 or abs(omega_t - omega_r - 0.2) < 0.1))
@@ -112,7 +113,7 @@ class TestPurcellDecayRate:
     @staticmethod
     def test_zero_coupling() -> None:
         gamma = purcell_decay_rate(0.0, 5.0, 7.0, 0.001)
-        assert gamma == 0.0
+        assert math.isclose(gamma, 0.0, abs_tol=1e-15)
 
 
 class TestResonatorLinewidthFromQ:

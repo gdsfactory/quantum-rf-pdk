@@ -200,7 +200,11 @@ class VariationalTransmon(nn.Module):
 
     @nn.compact
     def __call__(self, x):
-        """Evaluate the model on a set of input configurations."""
+        """Evaluate the model on a set of input configurations.
+
+        Returns:
+            The model evaluation result as a squeezed array.
+        """
         # x has shape (..., 1)
         x = x.astype(jnp.float32)
         # Sinusoidal feature encoding at geometrically spaced frequencies;
@@ -220,7 +224,11 @@ parameters = model.init(jax.random.key(0), jnp.ones((1, 1)))
 
 
 def to_array(model, parameters):
-    """Compute the normalized wavefunction as an array."""
+    """Compute the normalized wavefunction as an array.
+
+    Returns:
+        The normalized wavefunction as a JAX array.
+    """
     all_configs = hi.all_states()
     logpsi = model.apply(parameters, all_configs)
     psi = jnp.exp(logpsi)
@@ -228,7 +236,11 @@ def to_array(model, parameters):
 
 
 def compute_energy(model, parameters, H_sparse):
-    """Compute the variational energy of the state."""
+    """Compute the variational energy of the state.
+
+    Returns:
+        The expected value of the energy (real part).
+    """
     psi = to_array(model, parameters)
     psi = psi.astype(H_sparse.dtype)
     return jnp.real(jnp.vdot(psi, H_sparse @ psi))
@@ -236,7 +248,11 @@ def compute_energy(model, parameters, H_sparse):
 
 @partial(jax.jit, static_argnames="model")
 def train_step(model, parameters, opt_state, H_sparse):
-    """Perform a single variational optimization step."""
+    """Perform a single variational optimization step.
+
+    Returns:
+        A tuple containing (updated parameters, updated opt_state, energy).
+    """
     energy, grad = jax.value_and_grad(compute_energy, argnums=1)(
         model, parameters, H_sparse
     )
@@ -518,7 +534,11 @@ ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
 def _resonator_objective(length: float) -> float:
-    """Minimise the squared frequency error."""
+    """Minimise the squared frequency error.
+
+    Returns:
+        The squared error between the calculated and design frequency.
+    """
     freq = resonator_frequency(
         length=length,
         epsilon_eff=float(jnp.real(ep_eff)),

@@ -258,13 +258,17 @@ display(
 # %%
 _a_plus_adag = resonator.annihilation_operator() + resonator.creation_operator()
 g_sweep = np.linspace(0.01, 0.3, 200)
-chi_sweep_analytical = np.array(
-    [dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep]
-)
+chi_sweep_analytical = np.array([
+    dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep
+])
 
 
 def chi_scqubits_at_g(g: float) -> float:
-    """Numerically compute χ via scQubits at a given coupling g."""
+    """Numerically compute χ via scQubits at a given coupling g.
+
+    Returns:
+        The dispersive shift value.
+    """
     hs = scq.HilbertSpace([transmon, resonator])
     hs.interaction_list = [
         scq.InteractionTerm(
@@ -424,7 +428,11 @@ ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
 def _resonator_objective(length: float) -> float:
-    """Minimise the squared frequency error."""
+    """Minimise the squared frequency error.
+
+    Returns:
+        The squared error between the calculated and target frequency.
+    """
     freq = resonator_frequency(
         length=length,
         epsilon_eff=float(np.real(ep_eff)),

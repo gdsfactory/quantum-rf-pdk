@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 import pytest
-from hypothesis import HealthCheck, given, settings
-from hypothesis import strategies as st
+from hypothesis import HealthCheck, given, settings, strategies as st
 
 from qpdk.models.inductor import (
     lumped_element_resonator,
@@ -260,8 +259,8 @@ class TestMeanderInductorSAX:
             cross_section="cpw",
             sheet_inductance=sheet_inductance,
         )
-        s12 = jnp.abs(sdict[("o1", "o2")])
-        s21 = jnp.abs(sdict[("o2", "o1")])
+        s12 = jnp.abs(sdict["o1", "o2"])
+        s21 = jnp.abs(sdict["o2", "o1"])
         assert float(s12) == pytest.approx(float(s21), rel=1e-5)
 
     @given(
@@ -304,7 +303,7 @@ class TestMeanderInductorSAX:
             cross_section="cpw",
             sheet_inductance=1e-12,
         )
-        assert float(jnp.abs(sdict[("o1", "o2")])) < 0.1
+        assert float(jnp.abs(sdict["o1", "o2"])) < 0.1
 
     def test_array_frequency_input(self) -> None:
         """Model must accept an array of frequencies and return arrays."""
@@ -405,8 +404,8 @@ class TestLumpedElementResonatorSAX:
             sheet_inductance=sheet_inductance,
             cross_section="cpw",
         )
-        s12 = jnp.abs(sdict[("o1", "o2")])
-        s21 = jnp.abs(sdict[("o2", "o1")])
+        s12 = jnp.abs(sdict["o1", "o2"])
+        s21 = jnp.abs(sdict["o2", "o1"])
         assert float(s12) == pytest.approx(float(s21), rel=1e-5)
 
     @given(
@@ -512,7 +511,7 @@ class TestLumpedElementResonatorSAX:
             sheet_inductance=sheet_inductance,
             cross_section=cross_section,
         )
-        s21 = jnp.abs(sdict[("o1", "o2")])
+        s21 = jnp.abs(sdict["o1", "o2"])
         f_min = float(freqs[jnp.argmin(s21)])
         assert abs(f_min - f_r) / f_r < 0.05  # within 5 % of the analytical f_r
 

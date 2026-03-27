@@ -197,6 +197,9 @@ def double_island_transmon_with_bbox(
     """LC resonator model for a double-island transmon qubit with bounding box ports.
 
     This model is the same as :func:`double_island_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return double_island_transmon(
         f=f,
@@ -214,6 +217,9 @@ def flipmon(
     r"""LC resonator model for a flipmon qubit.
 
     This model is identical to :func:`double_island_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return double_island_transmon(
         f=f,
@@ -231,6 +237,9 @@ def flipmon_with_bbox(
     """LC resonator model for a flipmon qubit with bounding box ports.
 
     This model is the same as :func:`flipmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return flipmon(
         f=f,
@@ -464,6 +473,9 @@ def flipmon_with_resonator(
     """Model for a flipmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator` but the qubit is set to floating.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -487,6 +499,9 @@ def double_island_transmon_with_resonator(
     """Model for a double-island transmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator` but the qubit is set to floating.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -511,6 +526,9 @@ def transmon_with_resonator(
     """Model for a transmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator`.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -532,6 +550,9 @@ def xmon_transmon(
     """LC resonator model for an Xmon style transmon qubit.
 
     An Xmon transmon is typically shunted, so this model wraps :func:`shunted_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return shunted_transmon(
         f=f,

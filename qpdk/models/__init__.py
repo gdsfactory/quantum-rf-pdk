@@ -1,5 +1,7 @@
 """Model definitions for qpdk."""
 
+# ruff: noqa: E402
+
 import jax
 import sax
 
@@ -210,7 +212,7 @@ def _is_sax_model(obj: object) -> bool:
     if hasattr(obj, "__annotations__") and "return" in obj.__annotations__:
         ret = obj.__annotations__["return"]
         # If it returns jax.Array or a tuple of floats, it's not a SAX S-parameter model
-        if ret in [jax.Array, "jax.Array", "jax.Array"]:
+        if ret in {jax.Array, "jax.Array"}:
             return False
         # Match names like tuple[float, float]
         if hasattr(ret, "__name__") and ret.__name__ == "tuple":
@@ -224,10 +226,10 @@ def _is_sax_model(obj: object) -> bool:
             continue
         if hasattr(target, "__annotations__") and "return" in target.__annotations__:
             ret = target.__annotations__["return"]
-            if hasattr(ret, "__name__") and ret.__name__ in ["SType", "SDict"]:
+            if hasattr(ret, "__name__") and ret.__name__ in {"SType", "SDict"}:
                 return True
             # Also check identity for standard cases
-            if ret in [sax.SType, sax.SDict]:
+            if ret in {sax.SType, sax.SDict}:
                 return True
     return sax.try_into[sax.Model](obj) is not None
 

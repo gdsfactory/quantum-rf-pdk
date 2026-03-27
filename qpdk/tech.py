@@ -1,5 +1,7 @@
 """Technology definitions."""
 
+# ruff: noqa: T201
+
 from collections.abc import Callable, Generator, Sequence
 from functools import cache, partial, wraps
 from typing import Any

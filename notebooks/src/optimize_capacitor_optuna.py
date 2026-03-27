@@ -130,11 +130,11 @@ def _objective_function(trial: optuna.trial.Trial) -> float:
         trial.set_user_attr("simulated_capacitance", simulated_capacitance)
         trial.set_user_attr("target_capacitance", target_capacitance)
 
-        return objective_value
-
     except Exception as e:
         print(f"Trial failed with error: {e}")
         return 1000.0  # Large penalty value
+    else:
+        return objective_value
 
 
 # %% [markdown]
@@ -218,8 +218,12 @@ def _run_capacitive_simulation(
     component: gf.Component,
     simulation_folder: Path | None = None,
 ) -> float:
-    """Run Palace capacitive simulation (requires system dependencies)."""
-    from gplugins.palace import run_capacitive_simulation_palace
+    """Run Palace capacitive simulation (requires system dependencies).
+
+    Returns:
+        The simulated capacitance in femtofarads.
+    """
+    from gplugins.palace import run_capacitive_simulation_palace  # noqa: PLC0415
 
     config = _setup_palace_simulation(simulation_folder=simulation_folder)
     results = run_capacitive_simulation_palace(component, n_processes=4, **config)

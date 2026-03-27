@@ -13,7 +13,11 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.39.0"]
+dependencies = [
+  "doroutes>=0.2.0",
+  "gdsfactory~=9.39.0",
+  "typing-extensions>=4.12.0"
+]
 
 [project.optional-dependencies]
 graphics = ["trimesh", "pyglet<2"]
@@ -75,10 +79,7 @@ skip = "bibliography.bib"
 source = ["qpdk"]
 
 [tool.coverage.report]
-exclude_lines = [
-  "if __name__ == .__main__.",
-  "pragma: no cover",
-]
+exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
 
 [tool.gdsfactoryplus]
 name = "qpdk"
@@ -152,7 +153,7 @@ redundant-cast = "ignore"
 addopts = ["--tb=short"]
 markers = [
   "hfss: mark test as requiring HFSS",
-  "skip_windows: skip test on Windows"
+  "skip_windows: skip test on Windows",
 ]
 norecursedirs = [
   "*.egg",
@@ -171,8 +172,10 @@ testpaths = ["qpdk/", "tests"]
 
 [tool.ruff]
 fix = true
+preview = true
 
 [tool.ruff.format]
+docstring-code-format = true
 exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
@@ -186,13 +189,36 @@ ignore = [
   "RUF001",  # ambiguous unicode characters (incl. lots of math)
   "RUF002",  # ambiguous unicode characters (incl. docstring greek letters)
   "RUF003",  # -||- but for comments
+  "RUF067",  # non-empty-init-module
+  "PLR2004",  # magic-value-comparison
+  "PLR0913",  # too-many-arguments
+  "PLR0914",  # too-many-locals
+  "PLC2401",  # non-ascii-name
+  "PLC2403",  # non-ascii-import-name
+  "N806",  # non-lowercase-variable-in-function
+  "N803",  # invalid-argument-name
+  "ERA001",  # commented-out-code
+  "PLR0917",  # too-many-positional-arguments
+  "TRY003",  # long messages in exceptions
+  "A004",  # builtin-import-shadowing
+  "N816",  # mixed-case-variable-in-global-scope
+  "PLC2701",  # import-private-name
+  "PLR0911",  # too-many-return-statements
+  "PLR6104",  # non-augmented-assignment
+  "PLR0912",  # too-many-branches
+  "PLR0915",  # too-many-statements
+  "PLR0916",  # too-many-boolean-expressions
+  "S404",  # suspicious-subprocess-import
+  "PLW1510",  # subprocess-run-without-check
+  "S607",  # start-process-with-partial-path
+  "TC006",  # runtime-cast-value
 ]
 select = [
   "E",  # pycodestyle errors
   "W",  # pycodestyle warnings
   "F",  # pyflakes
   "I",  # isort
-  "C",  # flake8-comprehensions
+  "C4",  # flake8-comprehensions
   "B",  # flake8-bugbear
   "D",  # pydocstyle
   "UP",  # pyupgrade
@@ -211,22 +237,60 @@ select = [
   "NPY",  # numpy
   "PERF",  # perflint
   "RUF",  # ruff
+  "PL",  # pylint
+  "N",  # pep8-naming
+  "A",  # flake8-builtins
+  "TRY",  # tryceratops
+  "T20",  # flake8-print
+  "ISC",  # flake8-implicit-str-concat
+  "ERA",  # eradicate
+  "FURB",  # refurb
+  "DOC",  # pydoclint
+  "ASYNC",  # flake8-async
+  "TID",  # flake8-tidy-imports
 ]
 
+[tool.ruff.lint.flake8-tidy-imports]
+require-lazy = [
+  "trimesh",
+  "polars",
+  "pyaedt",
+  "gplugins",
+  "jaxellip",
+  "optax",
+  "optuna",
+  "sax",
+  "sympy",
+  "pandas",
+  "netket",
+  "flax",
+  "pymablock",
+  "qutip-jax",
+  "qutip-qip",
+  "scqubits"
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
 [tool.ruff.lint.per-file-ignores]
-".github/write_cells.py" = [
-  "S701",
-]  # Jinja2 autoescape not needed for RST templates
-"notebooks/**/*.py" = ["D100"]
+"notebooks/**/*.py" = ["D100", "T201"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",
-]  # no public module docstring for sample scripts
-"tests/**" = ["S101", "D102", "D103"]
-"qpdk/models/__init__.py" = ["E402"]
+  "T201",
+]  # no public module docstring for sample scripts, print allowed in samples
+"tests/**" = ["S101", "D102", "D103", "ANN", "T201"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+ignore-decorators = ["typing.overload"]
+
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true
+
+[tool.ruff.lint.pycodestyle]
+ignore-overlong-task-comments = true
 
 [tool.tombi.schema]
 strict = false
