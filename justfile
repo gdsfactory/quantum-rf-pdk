@@ -42,21 +42,50 @@ build:
     @rm -rf dist
     uv build
 
-# Generate and show a PDK component by name, saving its GDS to build/
+# Generate and show a PDK component by name (opens interactive chooser by default), saving its GDS to build/
 [group('build')]
-show component_name:
+show component_name="":
     #!/usr/bin/env -S uv run python
+    import shutil
+    import subprocess
+    import sys
     import gdsfactory as gf
-
     from qpdk import PDK, logger
     from qpdk.config import PATH
 
     PDK.activate()
+    component_name = "{{ component_name }}"
+
+    if not component_name:
+        if not shutil.which("fzf"):
+            print("Error: 'fzf' is not installed.")
+            print(
+                "Please install it (see https://github.com/junegunn/fzf#installation) or provide a component name: 'just show <name>'"
+            )
+            sys.exit(1)
+
+        try:
+            cell_names = sorted(PDK.cells.keys())
+            process = subprocess.Popen(
+                ["fzf", "--header=Select a PDK component to show"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+            stdout, _ = process.communicate(input="\n".join(cell_names))
+            component_name = stdout.strip()
+            if not component_name:
+                print("No component selected.")
+                sys.exit(0)
+        except Exception as e:
+            logger.error(f"Error during selection: {e}")
+            sys.exit(1)
+
     (build_dir := PATH.gds).mkdir(parents=True, exist_ok=True)
-    component = gf.get_component("{{ component_name }}")
+    component = gf.get_component(component_name)
     gds_path = build_dir / f"{component.name}.gds"
     component.write_gds(gds_path)
-    logger.info(f"Saved GDS for {{ component_name }} to '{gds_path}'")
+    logger.info(f"Saved GDS for {component_name} to '{gds_path}'")
     component.show()
 
 # Run all tests, pre-commit hooks, build wheel and documentation in parallel
