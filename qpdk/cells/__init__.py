@@ -14,6 +14,7 @@ from qpdk.cells.resonator import *
 from qpdk.cells.snspd import *
 from qpdk.cells.transmon import *
 from qpdk.cells.tsv import *
+from qpdk.cells.unimon import *
 from qpdk.cells.waveguides import *
 
 circle = gf.components.circle

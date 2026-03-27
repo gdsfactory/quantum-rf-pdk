@@ -1,0 +1,63 @@
+instances:
+  rectangle:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_ETCH
+      port_orientations:
+      - 0
+      - 180
+      port_type: optical
+      size:
+      - 10
+      - 22
+  squid_junction:
+    component: squid_junction
+    info: {}
+    settings:
+      junction_spec: Fjosephson_junction_Mqpdkpcellspjunction_SJOD1p8_WSL4_NSL0p5_TL4
+      loop_area: 4
+  unimon_arm:
+    component: unimon_arm
+    info: {}
+    settings:
+      arm_length: 3000
+      arm_meanders: 6
+      bend_spec: bend_circular
+      cross_section: cpw
+      junction_gap: 10
+  unimon_arm2:
+    component: unimon_arm
+    info: {}
+    settings:
+      arm_length: 3000
+      arm_meanders: 6
+      bend_spec: bend_circular
+      cross_section: cpw
+      junction_gap: 10
+nets: []
+placements:
+  rectangle:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  squid_junction:
+    mirror: false
+    rotation: 225
+    x: 6.01
+    y: 4.596
+  unimon_arm:
+    mirror: false
+    rotation: 0
+    x: -85.802
+    y: 1200
+  unimon_arm2:
+    mirror: false
+    rotation: 180
+    x: 85.802
+    y: -1200
+ports:
+  readout_bottom: unimon_arm,readout
+  readout_top: unimon_arm2,readout

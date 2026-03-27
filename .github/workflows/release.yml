@@ -39,6 +39,8 @@ jobs:
   build:
     needs: check_and_tag
     if: needs.check_and_tag.outputs.new_tag_created == 'true'
+    permissions:
+      contents: read
     uses: ./.github/workflows/build.yml
   release_environment:
     needs: check_and_tag
