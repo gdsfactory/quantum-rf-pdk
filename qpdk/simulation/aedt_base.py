@@ -6,10 +6,10 @@ simulations (HFSS, Q3D, Q2D) from gdsfactory components.
 
 from __future__ import annotations
 
-import contextlib
 import re
 import tempfile
 from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -33,7 +33,11 @@ if TYPE_CHECKING:
 
 
 def _get_layer_number_from_level(layer_level: LayerLevel) -> int | None:
-    """Extract layer number from a LayerLevel's layer definition."""
+    """Extract layer number from a LayerLevel's layer definition.
+
+    Returns:
+        The GDS layer number if available, else None.
+    """
     if hasattr(layer_level, "derived_layer") and layer_level.derived_layer is not None:
         derived = layer_level.derived_layer
         if hasattr(derived, "layer"):
@@ -66,7 +70,11 @@ def layer_stack_to_gds_mapping(
     layer_stack: LayerStack | None = None,
     thickness_override: float | None = None,
 ) -> dict[int, tuple[float, float]]:
-    """Convert a LayerStack to HFSS/Q3D GDS import mapping dictionary."""
+    """Convert a LayerStack to HFSS/Q3D GDS import mapping dictionary.
+
+    Returns:
+        Dictionary mapping layer number to (thickness, elevation) tuple.
+    """
     if layer_stack is None:
         layer_stack = LAYER_STACK
 
@@ -93,7 +101,11 @@ def prepare_component_for_aedt(
     margin_draw: float = 0.0,
     margin_etch: float = 0.0,
 ) -> Component:
-    """Prepare a component for AEDT simulation export."""
+    """Prepare a component for AEDT simulation export.
+
+    Returns:
+        A copy of the component prepared for simulation.
+    """
     c = gf.Component(name=f"{component.name}_aedt")
     c << component.copy()
     if margin_etch > 0.0:
@@ -120,13 +132,17 @@ def prepare_component_for_aedt(
     return c
 
 
-@contextlib.contextmanager
+@contextmanager
 def export_component_to_gds_temp(
-    component: Component,
+    component: gf.Component,
     gds_path: str | Path | None = None,
     prefix: str = "qpdk_aedt_",
 ) -> Generator[Path, None, None]:
-    """Context manager for exporting a component to a temporary GDS file."""
+    """Context manager for exporting a component to a temporary GDS file.
+
+    Yields:
+        Path to the exported GDS file.
+    """
     if gds_path is not None:
         path = Path(gds_path)
         component.write_gds(str(path))
@@ -141,7 +157,11 @@ def export_component_to_gds_temp(
 def rename_imported_objects(
     app: Any, new_objects: list[str], layer_stack: LayerStack
 ) -> list[str]:
-    """Rename imported GDS objects based on the layer stack."""
+    """Rename imported GDS objects based on the layer stack.
+
+    Returns:
+        List of renamed object names.
+    """
     num_to_name = {}
     for name, level in layer_stack.layers.items():
         layer_num = _get_layer_number_from_level(level)
@@ -214,7 +234,11 @@ class AEDTBase:
         material: str = "silicon",
         name: str = "Substrate",
     ) -> str:
-        """Add a substrate box below the component geometry."""
+        """Add a substrate box below the component geometry.
+
+        Returns:
+            Name of the created substrate object.
+        """
         bounds = component.bbox()
         x_min, y_min = bounds.p1.x, bounds.p1.y
         dx, dy = bounds.p2.x - x_min, bounds.p2.y - y_min

@@ -63,6 +63,12 @@ def _transmon_with_resonator_base(
         probeline_coupling_length: Length of the coupling section in µm.
             If None, it will be calculated based on the distance from the
             resonator meander start to the coupler position.
+
+    Returns:
+        Component: A gdsfactory component with the transmon, resonator, and optionally a probeline.
+
+    Raises:
+        ValueError: If probeline_coupling_length is not provided and cannot be calculated.
     """
     c = Component()
 

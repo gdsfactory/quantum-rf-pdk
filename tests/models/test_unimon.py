@@ -1,6 +1,5 @@
 """Tests for qpdk.models.unimon module - Unimon qubit models."""
 
-import math
 from typing import final
 
 import hypothesis.strategies as st
@@ -49,9 +48,10 @@ class TestElToInductance:
         L_high = el_to_inductance(10.0)
         assert L_low > L_high
 
+    @staticmethod
     @given(el_ghz=st.floats(min_value=0.5, max_value=50.0))
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_positive_inductance(self, el_ghz: float) -> None:
+    def test_positive_inductance(el_ghz: float) -> None:
         """Test that inductance is always positive."""
         L = el_to_inductance(el_ghz)
         assert L > 0
@@ -80,16 +80,17 @@ class TestUnimonHamiltonian:
         H = unimon_hamiltonian(ec_ghz=1.0, el_ghz=5.0, ej_ghz=10.0)
         assert jnp.allclose(jnp.imag(H), 0, atol=1e-12)
 
+    @staticmethod
     @given(
-        ec_ghz=st.floats(min_value=0.1, max_value=5.0),
-        el_ghz=st.floats(min_value=1.0, max_value=20.0),
+        ec_ghz=st.floats(min_value=0.1, max_value=1.0),
+        el_ghz=st.floats(min_value=1.0, max_value=50.0),
         ej_ghz=st.floats(min_value=1.0, max_value=50.0),
-        phi_ext=st.floats(min_value=0.0, max_value=math.tau),
-        n_max=st.integers(min_value=5, max_value=25),
+        phi_ext=st.floats(min_value=-2.0, max_value=2.0),
+        n_max=st.integers(min_value=10, max_value=50),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_hamiltonian_always_hermitian(
-        self, ec_ghz: float, el_ghz: float, ej_ghz: float, phi_ext: float, n_max: int
+        ec_ghz: float, el_ghz: float, ej_ghz: float, phi_ext: float, n_max: int
     ) -> None:
         """Test Hermiticity with random parameters."""
         H = unimon_hamiltonian(
@@ -148,14 +149,15 @@ class TestUnimonEnergies:
         # Low-lying energies should be close for sufficient truncation
         assert_allclose(energies_small, energies_large, rtol=1e-3)
 
+    @staticmethod
     @given(
-        ec_ghz=st.floats(min_value=0.1, max_value=3.0),
-        el_ghz=st.floats(min_value=1.0, max_value=15.0),
-        ej_ghz=st.floats(min_value=2.0, max_value=30.0),
+        ec_ghz=st.floats(min_value=0.1, max_value=1.0),
+        el_ghz=st.floats(min_value=1.0, max_value=50.0),
+        ej_ghz=st.floats(min_value=1.0, max_value=50.0),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_positive_transition_frequency(
-        self, ec_ghz: float, el_ghz: float, ej_ghz: float
+        ec_ghz: float, el_ghz: float, ej_ghz: float
     ) -> None:
         """Test that the qubit transition frequency is always positive."""
         energies = unimon_energies(

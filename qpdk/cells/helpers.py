@@ -17,6 +17,9 @@ def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Co
     """Applies a complex transformation to a component.
 
     For use with :func:`~gdsfactory.container`.
+
+    Returns:
+        The transformed component.
     """
     component.transform(transform)
     return component
@@ -117,6 +120,9 @@ def apply_additive_metals(component: Component) -> Component:
     Removes additive metal layers from etch layers, leading to a negative mask.
 
     TODO: Implement without flattening. Maybe with a KLayout dataprep script?
+
+    Returns:
+        Component with additive metals applied.
     """
     for additive, etch in (
         (LAYER.M1_DRAW, LAYER.M1_ETCH),

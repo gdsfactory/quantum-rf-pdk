@@ -542,6 +542,9 @@ def get_cpw_dimensions(
 
     Returns:
         tuple[float, float]: Width and gap of the CPW.
+
+    Raises:
+        ValueError: If 'etch_offset' section is missing from cross-section.
     """
     # Make sure a PDK is activated
     PDK.activate()

@@ -92,6 +92,9 @@ class BaseModelTestSuite:
 
         This method ensures the model function is called correctly without
         passing `self` as the first argument.
+
+        Returns:
+            The S-parameter dictionary from the model.
         """
         result = type(self).model_function(**kwargs)
         assert isinstance(result, dict), "Model function must return a dict (sax.SDict)"

@@ -232,8 +232,8 @@ def benchmark_circuit(
             # JIT warmup — first call compiles the function for this shape
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                _warmup = circuit_fn(f=freq_d)
-                jax.block_until_ready(_warmup)
+                warmup = circuit_fn(f=freq_d)
+                jax.block_until_ready(warmup)
 
                 # Timed runs
                 run_times: list[float] = []

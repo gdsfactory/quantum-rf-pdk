@@ -65,6 +65,9 @@ class Q3D(AEDTBase):
 
         Returns:
             List of newly created conductor object names in Q3D.
+
+        Raises:
+            RuntimeError: If GDS import fails.
         """
         mapping_layers = layer_stack_to_gds_mapping(layer_stack)
 
@@ -258,6 +261,9 @@ class Q2D(AEDTBase):
         Returns:
             Dictionary with keys ``"signal"``, ``"gnd_left"``, ``"gnd_right"``,
             ``"substrate"`` mapping to the created Q2D object names.
+
+        Raises:
+            ValueError: If cross-section mapping fails or dimensions are invalid.
         """
         if layer_stack is None:
             layer_stack = LAYER_STACK

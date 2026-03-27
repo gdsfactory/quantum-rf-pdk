@@ -218,7 +218,11 @@ def _run_capacitive_simulation(
     component: gf.Component,
     simulation_folder: Path | None = None,
 ) -> float:
-    """Run Palace capacitive simulation (requires system dependencies)."""
+    """Run Palace capacitive simulation (requires system dependencies).
+
+    Returns:
+        The simulated capacitance in femtofarads.
+    """
     from gplugins.palace import run_capacitive_simulation_palace  # noqa: PLC0415
 
     config = _setup_palace_simulation(simulation_folder=simulation_folder)

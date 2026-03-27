@@ -301,7 +301,11 @@ ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
 def _resonator_objective(length: float) -> float:
-    """Minimize the squared frequency error."""
+    """Minimize the squared frequency error.
+
+    Returns:
+        The squared error between the calculated and target frequency.
+    """
     freq = resonator_frequency(
         length=length,
         epsilon_eff=float(np.real(ep_eff)),

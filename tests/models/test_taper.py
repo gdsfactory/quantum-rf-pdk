@@ -26,12 +26,13 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
         """Get model-specific keyword arguments."""
         return {"length": 200}
 
+    @staticmethod
     @given(
         f_center=st.floats(min_value=1e9, max_value=9e9),
         length=st.floats(min_value=10, max_value=5000),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_passivity_hypothesis(self, f_center: float, length: float) -> None:
+    def test_passivity_hypothesis(f_center: float, length: float) -> None:
         """Test that the taper satisfies passivity (energy conservation)."""
         f = jnp.linspace(f_center * 0.9, f_center * 1.1, 10)
         cs1 = coplanar_waveguide(width=10, gap=6)
@@ -110,6 +111,7 @@ class TestLauncher(BaseModelTestSuite):
         """Get model-specific keyword arguments."""
         return {"straight_length": 100, "taper_length": 100}
 
+    @staticmethod
     @given(
         f_center=st.floats(min_value=1e9, max_value=9e9),
         straight_length=st.floats(min_value=10, max_value=1000),
@@ -117,7 +119,7 @@ class TestLauncher(BaseModelTestSuite):
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_passivity_hypothesis(
-        self, f_center: float, straight_length: float, taper_length: float
+        f_center: float, straight_length: float, taper_length: float
     ) -> None:
         """Test that the launcher satisfies passivity."""
         f = jnp.linspace(f_center * 0.9, f_center * 1.1, 10)

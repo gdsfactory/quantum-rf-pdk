@@ -189,6 +189,9 @@ def interdigital_capacitor(
     Returns:
         Component: A gdsfactory component with the interdigital capacitor geometry
             and two ports ('o1' and 'o2') on opposing sides.
+
+    Raises:
+        ValueError: If fingers is less than 1.
     """
     c = Component()
 
@@ -364,6 +367,9 @@ def plate_capacitor(
 
     Returns:
         A gdsfactory component with the plate capacitor geometry and two ports ('o1' and 'o2') on opposing sides.
+
+    Raises:
+        ValueError: If width or length is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
@@ -435,6 +441,9 @@ def plate_capacitor_single(
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
+
+    Raises:
+        ValueError: If width or length is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")

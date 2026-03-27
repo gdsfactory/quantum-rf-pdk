@@ -47,6 +47,9 @@ def lumped_port_rectangle_from_cpw(
 
     Returns:
         A dictionary containing 'origin', 'sizes', and 'integration_line' for HFSS.
+
+    Raises:
+        ValueError: If port orientation is not a multiple of 90 degrees.
     """
     if orientation % 90 != 0:
         raise ValueError(f"Unsupported port orientation: {orientation}°")

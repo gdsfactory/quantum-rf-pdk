@@ -59,9 +59,10 @@ class TestEcToCapacitance:
         C_high = ec_to_capacitance(0.5)  # High E_C
         assert C_low > C_high
 
+    @staticmethod
     @given(ec_ghz=st.floats(min_value=0.05, max_value=1.0))
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_positive_capacitance(self, ec_ghz: float) -> None:
+    def test_positive_capacitance(ec_ghz: float) -> None:
         """Test that capacitance is always positive."""
         C = ec_to_capacitance(ec_ghz)
         assert C > 0
@@ -90,9 +91,10 @@ class TestEjToInductance:
         L_high = ej_to_inductance(40.0)  # High E_J
         assert L_low > L_high
 
+    @staticmethod
     @given(ej_ghz=st.floats(min_value=5.0, max_value=100.0))
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_positive_inductance(self, ej_ghz: float) -> None:
+    def test_positive_inductance(ej_ghz: float) -> None:
         """Test that inductance is always positive."""
         L = ej_to_inductance(ej_ghz)
         assert L > 0

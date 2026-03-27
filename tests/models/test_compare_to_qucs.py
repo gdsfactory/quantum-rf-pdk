@@ -134,9 +134,6 @@ class BaseCompareToQucs(ABC):
 
         Args:
             results: Tuple containing parameters, frequency array, S_sax_dict, S_qucs_dict
-
-        Raises:
-            AssertionError: If any S-parameter does not match within the specified tolerances.
         """
         _params, _f, S_sax_dict, S_qucs_dict = results
 

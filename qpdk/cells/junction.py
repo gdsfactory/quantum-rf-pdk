@@ -43,6 +43,9 @@ def single_josephson_junction_wire(
         cross_section_narrow: Cross-section specification for the narrow section.
         layer_patch: Layer for the patch that creates the overlap region.
         size_patch: Size of the patch that creates the overlap region.
+
+    Returns:
+        The junction wire component.
     """
     c = Component()
 
@@ -136,6 +139,9 @@ def josephson_junction(
         cross_section_narrow: Cross-section specification for the narrow section.
         layer_patch: Layer for the patch that creates the overlap region.
         size_patch: Size of the patch that creates the overlap region.
+
+    Returns:
+        The Josephson junction component.
     """
     c = Component()
 
@@ -200,13 +206,21 @@ def josephson_junction(
 
 @gf.cell
 def josephson_junction_long(**kwargs) -> Component:
-    """Josephson junction with wide_straight_length=12."""
+    """Josephson junction with wide_straight_length=12.
+
+    Returns:
+        The Josephson junction component with long wires.
+    """
     return josephson_junction(wide_straight_length=12, **kwargs)
 
 
 @gf.cell
 def squid_junction_long(**kwargs) -> Component:
-    """SQUID junction with josephson_junction_long."""
+    """SQUID junction with josephson_junction_long.
+
+    Returns:
+        The SQUID junction component with long wires.
+    """
     return squid_junction(junction_spec=josephson_junction_long, **kwargs)
 
 
@@ -225,6 +239,9 @@ def squid_junction(
         junction_spec: Component specification for the Josephson junction component.
         loop_area: Area of the SQUID loop in µm².
             This does not take into account the junction wire widths.
+
+    Returns:
+        The SQUID junction component.
     """
     c = Component()
 

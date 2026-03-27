@@ -28,11 +28,11 @@ def has_sax_stype_return(func: Callable) -> bool:
             or (hasattr(sax, "SDict") and return_type is sax.SDict)
             or (
                 isinstance(return_type, type)
-                and return_type.__name__ in ["SType", "SDict"]
+                and return_type.__name__ in {"SType", "SDict"}
             )
             or (
                 hasattr(return_type, "__name__")
-                and return_type.__name__ in ["SType", "SDict"]
+                and return_type.__name__ in {"SType", "SDict"}
             )
         ):
             return True

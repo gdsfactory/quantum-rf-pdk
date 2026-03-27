@@ -260,6 +260,9 @@ def nxn(
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1, o2, ..., oN.
+
+    Raises:
+        ValueError: If total number of ports is not positive.
     """
     f = jnp.asarray(f)
     n_ports = west + east + north + south

@@ -229,6 +229,9 @@ def bend_euler(
         cross_section: Cross-section specification.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
         **kwargs: Additional arguments passed to gf.c.bend_euler.
+
+    Returns:
+        The euler bend component.
     """
     return gf.c.bend_euler(
         angle=angle,
@@ -433,6 +436,9 @@ def add_etch_gap(
         port: Port where the etch gap will be added.
         cross_section: Cross-section specification to determine etch dimensions.
             The etch width is taken from a :class:`~Section` that includes "etch" in its name.
+
+    Returns:
+        Reference or VInstance of the added etch gap.
     """
     cross_section = gf.get_cross_section(cross_section)
     etch_section = next(

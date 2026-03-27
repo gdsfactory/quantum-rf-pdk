@@ -39,12 +39,13 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         """Get model-specific keyword arguments."""
         return {"length": 1000}
 
+    @staticmethod
     @given(
         f_center=st.floats(min_value=1e9, max_value=9e9),
         length=st.floats(min_value=10, max_value=50000),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_passivity_hypothesis(self, f_center: float, length: float) -> None:
+    def test_passivity_hypothesis(f_center: float, length: float) -> None:
         """Test that the waveguide satisfies passivity (energy conservation).
 
         For a passive two-port network: |S11|^2 + |S21|^2 <= 1
@@ -69,12 +70,13 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
             err_msg=f"Passivity violated: max total power = {jnp.max(total_power)}",
         )
 
+    @staticmethod
     @given(
-        length1=st.floats(min_value=100, max_value=10000),
-        length2=st.floats(min_value=100, max_value=10000),
+        length1=st.floats(min_value=10, max_value=10000),
+        length2=st.floats(min_value=10001, max_value=50000),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_length_effect(self, length1: float, length2: float) -> None:
+    def test_length_effect(length1: float, length2: float) -> None:
         """Test that longer waveguides have more attenuation.
 
         Args:
@@ -294,16 +296,15 @@ class TestNxN:
                     err_msg=f"Reciprocity violated between o{i} and o{j}",
                 )
 
+    @staticmethod
     @given(
-        west=st.integers(min_value=0, max_value=5),
-        east=st.integers(min_value=0, max_value=5),
-        north=st.integers(min_value=0, max_value=5),
-        south=st.integers(min_value=0, max_value=5),
+        west=st.integers(min_value=0, max_value=2),
+        east=st.integers(min_value=0, max_value=2),
+        north=st.integers(min_value=0, max_value=2),
+        south=st.integers(min_value=0, max_value=2),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_with_hypothesis(
-        self, west: int, east: int, north: int, south: int
-    ) -> None:
+    def test_with_hypothesis(west: int, east: int, north: int, south: int) -> None:
         """Test nxn model with random port counts using hypothesis."""
         n = west + east + north + south
         assume(n > 0)

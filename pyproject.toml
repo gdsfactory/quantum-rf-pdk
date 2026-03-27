@@ -75,10 +75,7 @@ skip = "bibliography.bib"
 source = ["qpdk"]
 
 [tool.coverage.report]
-exclude_lines = [
-  "if __name__ == .__main__.",
-  "pragma: no cover",
-]
+exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
 
 [tool.gdsfactoryplus]
 name = "qpdk"
@@ -152,7 +149,7 @@ redundant-cast = "ignore"
 addopts = ["--tb=short"]
 markers = [
   "hfss: mark test as requiring HFSS",
-  "skip_windows: skip test on Windows"
+  "skip_windows: skip test on Windows",
 ]
 norecursedirs = [
   "*.egg",
@@ -187,8 +184,10 @@ ignore = [
   "RUF001",  # ambiguous unicode characters (incl. lots of math)
   "RUF002",  # ambiguous unicode characters (incl. docstring greek letters)
   "RUF003",  # -||- but for comments
+  "RUF067",  # non-empty-init-module
   "PLR2004",  # magic-value-comparison
   "PLR0913",  # too-many-arguments
+  "PLR0914",  # too-many-locals
   "PLC2401",  # non-ascii-name
   "PLC2403",  # non-ascii-import-name
   "N806",  # non-lowercase-variable-in-function
@@ -255,6 +254,10 @@ select = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+ignore-decorators = ["typing.overload"]
+
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true
 
 [tool.tombi.schema]
 strict = false

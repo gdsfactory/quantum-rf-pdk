@@ -31,7 +31,11 @@ env = Environment(loader=FileSystemLoader(template_dir), autoescape=False)
 
 
 def get_kwargs(sig: inspect.Signature) -> str:
-    """Extract kwargs from function signature."""
+    """Extract kwargs from function signature.
+
+    Returns:
+        String of comma-separated keyword arguments.
+    """
     return ", ".join([
         f"{p}={clean_value_json(sig.parameters[p].default)!r}"
         for p in sig.parameters
@@ -53,7 +57,7 @@ for name in sorted(cells.keys()):
 template = env.get_template("cells.rst.j2")
 rendered = template.render(items=cells_items, skip_plot=skip_plot)
 
-Path(filepath_cells).write_text(rendered)
+Path(filepath_cells).write_text(rendered, encoding="utf-8")
 
 # Generate samples.rst
 samples_items = []
@@ -69,4 +73,4 @@ for name in sorted(samples.keys()):
 template = env.get_template("samples.rst.j2")
 rendered = template.render(items=samples_items, skip_plot=skip_plot)
 
-Path(filepath_samples).write_text(rendered)
+Path(filepath_samples).write_text(rendered, encoding="utf-8")

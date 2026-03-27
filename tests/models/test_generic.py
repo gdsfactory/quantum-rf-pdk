@@ -108,12 +108,13 @@ class TestLCResonator(TwoPortModelTestSuite):
             err_msg=f"S21 should be 0 for grounded port, got {s21}",
         )
 
+    @staticmethod
     @given(
         L=st.floats(min_value=0.1e-9, max_value=10e-9),
         C=st.floats(min_value=10e-15, max_value=1000e-15),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_resonance_with_hypothesis(self, L: float, C: float) -> None:
+    def test_resonance_with_hypothesis(L: float, C: float) -> None:
         """Test resonance frequency with random valid L and C values.
 
         Args:
@@ -244,12 +245,13 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
             f"Expected keys {expected_keys}, got {set(result.keys())}"
         )
 
+    @staticmethod
     @given(
         coupling_C=st.floats(min_value=1e-15, max_value=100e-15),
         coupling_L=st.floats(min_value=0.1e-9, max_value=10e-9),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_with_hypothesis(self, coupling_C: float, coupling_L: float) -> None:
+    def test_with_hypothesis(coupling_C: float, coupling_L: float) -> None:
         """Test coupled resonator with random coupling values.
 
         Args:
