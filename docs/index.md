@@ -22,7 +22,7 @@
 :caption: Development
 :hidden:
 
-ai_usage_policy
+contributing
 just_commands
 changelog
 ```
