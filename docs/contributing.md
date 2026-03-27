@@ -19,12 +19,12 @@ models. Please keep pull requests focused, documented, and easy to review.
 
 ## AI usage policy
 
-We encourage using AI tools to accelerate your workflow—for example, prototyping components and layouts, generating model
-visualizations, writing tests, or drafting documentation. However, **do not submit "AI slop."** You are fully
+We encourage using AI tools to accelerate your workflow—for example, prototyping components and layouts, generating
+model visualizations, writing tests, or drafting documentation. However, **do not submit "AI slop."** You are fully
 responsible for the quality of your contributions. Any AI-generated code, layouts, or text must be reviewed,
 functionally tested, and completely human-maintainable.
 
 ## Code of Conduct
 
-We follow the gdsfactory project Code of Conduct:
-https://gdsfactory.github.io/gdsfactory/code_of_conduct.html
+We follow [gdsfactory](https://github.com/gdsfactory/gdsfactory)
+[Code of Conduct](https://gdsfactory.github.io/gdsfactory/code_of_conduct.html).
