@@ -1,20 +1,17 @@
 version: 2
 updates:
-  # Python dependencies managed by uv.
-  # Dependabot does not support per-package schedules within a single ecosystem/directory
-  # combination, so one interval applies to all Python deps. Weekly is chosen because
-  # gdsfactory (the core dependency) should be updated at least bi-weekly; the finest
-  # granularity Dependabot supports is weekly.
   - package-ecosystem: uv
     directory: /
     schedule:
-      interval: weekly
-  # GitHub Actions workflow dependencies
+      interval: monthly
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
-  # pre-commit hook dependencies
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
   - package-ecosystem: pre-commit
     directory: /
     schedule:
