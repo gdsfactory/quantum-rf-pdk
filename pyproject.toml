@@ -171,6 +171,7 @@ fix = true
 preview = true
 
 [tool.ruff.format]
+docstring-code-format = true
 exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
@@ -241,8 +242,28 @@ select = [
   "FURB",  # refurb
   "DOC",  # pydoclint
   "ASYNC",  # flake8-async
+  "TID",  # flake8-tidy-imports
 ]
 
+[tool.ruff.lint.flake8-tidy-imports]
+require-lazy = [
+  "trimesh",
+  "polars",
+  "pyaedt",
+  "gplugins",
+  "jaxellip",
+  "optax",
+  "optuna",
+  "sax",
+  "sympy",
+  "pandas",
+  "netket",
+  "flax",
+  "pymablock",
+  "qutip-jax",
+  "qutip-qip",
+  "scqubits"
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
@@ -262,6 +283,9 @@ ignore-decorators = ["typing.overload"]
 
 [tool.ruff.lint.pydoclint]
 ignore-one-line-docstrings = true
+
+[tool.ruff.lint.pycodestyle]
+ignore-overlong-task-comments = true
 
 [tool.tombi.schema]
 strict = false
