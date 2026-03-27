@@ -112,7 +112,7 @@ class TestStraightMicrostrip(TwoPortModelTestSuite):
         """Zero-length microstrip → near-unity transmission."""
         f = jnp.array([5e9])
         result = straight_microstrip(f=f, length=0.0)
-        s21 = jnp.abs(result[("o1", "o2")])
+        s21 = jnp.abs(result["o1", "o2"])
         assert_allclose(float(s21.squeeze()), 1.0, atol=1e-6)
 
     def test_phase_shift_increases_with_length(self) -> None:
@@ -120,8 +120,8 @@ class TestStraightMicrostrip(TwoPortModelTestSuite):
         f = jnp.array([5e9])
         r1 = straight_microstrip(f=f, length=1000)
         r2 = straight_microstrip(f=f, length=2000)
-        phase1 = jnp.angle(r1[("o1", "o2")]).squeeze()
-        phase2 = jnp.angle(r2[("o1", "o2")]).squeeze()
+        phase1 = jnp.angle(r1["o1", "o2"]).squeeze()
+        phase2 = jnp.angle(r2["o1", "o2"]).squeeze()
         # Phase shift roughly doubles (unwrapped)
         assert jnp.abs(phase2) > jnp.abs(phase1) - 0.01
 
@@ -130,8 +130,8 @@ class TestStraightMicrostrip(TwoPortModelTestSuite):
         f = jnp.array([5e9])
         r_lossless = straight_microstrip(f=f, length=10000, tand=0.0)
         r_lossy = straight_microstrip(f=f, length=10000, tand=0.01)
-        s21_ll = jnp.abs(r_lossless[("o1", "o2")]).squeeze()
-        s21_ly = jnp.abs(r_lossy[("o1", "o2")]).squeeze()
+        s21_ll = jnp.abs(r_lossless["o1", "o2"]).squeeze()
+        s21_ly = jnp.abs(r_lossy["o1", "o2"]).squeeze()
         assert float(s21_ly) < float(s21_ll)
 
     def test_jit_compatible(self) -> None:
@@ -139,4 +139,4 @@ class TestStraightMicrostrip(TwoPortModelTestSuite):
         jitted = jax.jit(lambda f, length: straight_microstrip(f=f, length=length))
         f = jnp.array([5e9])
         result = jitted(f, 1000.0)
-        assert jnp.isfinite(result[("o1", "o2")])
+        assert jnp.isfinite(result["o1", "o2"])

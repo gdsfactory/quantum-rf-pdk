@@ -77,7 +77,10 @@ def single_josephson_junction_wire(
         )
         # Overlap with one fourth offset to one side
         patch.move(
-            (wide_straight_ref.dbbox().p1.x - size_patch[0] / 4, wide_straight_ref.y)
+            (
+                wide_straight_ref.dbbox().p1.x - size_patch[0] / 4,
+                wide_straight_ref.y,
+            )
         )
 
     # Add port at wide end

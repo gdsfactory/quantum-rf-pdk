@@ -1,5 +1,7 @@
 """Write docs."""
 
+# ruff: noqa: S701, T201
+
 import inspect
 from pathlib import Path
 
@@ -53,8 +55,7 @@ for name in sorted(cells.keys()):
 template = env.get_template("cells.rst.j2")
 rendered = template.render(items=cells_items, skip_plot=skip_plot)
 
-with Path(filepath_cells).open("w") as f:
-    f.write(rendered)
+Path(filepath_cells).write_text(rendered)
 
 # Generate samples.rst
 samples_items = []
@@ -70,5 +71,4 @@ for name in sorted(samples.keys()):
 template = env.get_template("samples.rst.j2")
 rendered = template.render(items=samples_items, skip_plot=skip_plot)
 
-with Path(filepath_samples).open("w") as f:
-    f.write(rendered)
+Path(filepath_samples).write_text(rendered)

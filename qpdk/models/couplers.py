@@ -124,7 +124,7 @@ def cpw_cpw_coupling_capacitance(
             else cross_section
         )
         if callable(xs):
-            xs = cast(CrossSection, xs())
+            xs = cast("CrossSection", xs())
         width = xs.width
         cpw_gap = 6.0
 

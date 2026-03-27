@@ -1,5 +1,6 @@
 """Tests for qpdk.models.unimon module - Unimon qubit models."""
 
+import math
 from typing import final
 
 import hypothesis.strategies as st
@@ -83,7 +84,7 @@ class TestUnimonHamiltonian:
         ec_ghz=st.floats(min_value=0.1, max_value=5.0),
         el_ghz=st.floats(min_value=1.0, max_value=20.0),
         ej_ghz=st.floats(min_value=1.0, max_value=50.0),
-        phi_ext=st.floats(min_value=0.0, max_value=6.28),
+        phi_ext=st.floats(min_value=0.0, max_value=math.tau),
         n_max=st.integers(min_value=5, max_value=25),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
@@ -202,8 +203,8 @@ class TestUnimonCoupledSAX(OnePortModelTestSuite):
         f = self.get_frequency_array(50)
         result_weak = self._call_model(f=f, coupling_capacitance=1e-15)
         result_strong = self._call_model(f=f, coupling_capacitance=50e-15)
-        s11_weak = result_weak[("o1", "o1")]
-        s11_strong = result_strong[("o1", "o1")]
+        s11_weak = result_weak["o1", "o1"]
+        s11_strong = result_strong["o1", "o1"]
         assert not jnp.allclose(s11_weak, s11_strong, atol=1e-3), (
             "Different coupling capacitances should produce different S-parameters"
         )

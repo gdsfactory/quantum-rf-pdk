@@ -71,10 +71,9 @@ def denest_layerviews_to_layer_tuples(
                 # Recursively process nested group members and merge results
                 nested_layers = denest_layer_dict_recursive(value.group_members)
                 layers.update(nested_layers)
-            else:
-                # Base case: add the layer to our dictionary
-                if hasattr(value, "layer"):
-                    layers[key] = value.layer
+            # Base case: add the layer to our dictionary
+            elif hasattr(value, "layer"):
+                layers[key] = value.layer
 
         return layers
 
@@ -130,7 +129,7 @@ def show_components(
         c.add_label(
             text=label_text,
             position=label_offset,
-            layer=cast(LayerEnum, PDK.layers).TEXT,
+            layer=cast("LayerEnum", PDK.layers).TEXT,
         )
     c.show()
 

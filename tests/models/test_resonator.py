@@ -46,8 +46,8 @@ def test_resonator_frequency_shifts_with_length() -> None:
     r_long = quarter_wave_resonator_coupled(f=f, length=10000)
 
     # Find min transmission (S21 of probeline) to get resonance
-    s21_short = jnp.abs(r_short[("coupling_o2", "coupling_o1")])
-    s21_long = jnp.abs(r_long[("coupling_o2", "coupling_o1")])
+    s21_short = jnp.abs(r_short["coupling_o2", "coupling_o1"])
+    s21_long = jnp.abs(r_long["coupling_o2", "coupling_o1"])
 
     f_short = f[jnp.argmin(s21_short)]
     f_long = f[jnp.argmin(s21_long)]

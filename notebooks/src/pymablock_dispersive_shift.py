@@ -197,7 +197,12 @@ display(
 # Verify against the symbolic expression
 chi_check = float(
     chi_sym.subs(
-        {omega_t: omega_t_val, omega_r: omega_r_val, alpha: alpha_val, g: g_val}
+        {
+            omega_t: omega_t_val,
+            omega_r: omega_r_val,
+            alpha: alpha_val,
+            g: g_val,
+        }
     )
 )
 print(

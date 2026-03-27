@@ -1,6 +1,6 @@
 """Tests for qpdk.models.capacitor module."""
 
-from typing import TYPE_CHECKING, final
+from typing import final
 
 import jax.numpy as jnp
 import numpy as np
@@ -13,9 +13,6 @@ from qpdk.models.capacitor import (
 )
 
 from .base import TwoPortModelTestSuite
-
-if TYPE_CHECKING:
-    pass
 
 
 @final
@@ -49,8 +46,8 @@ class TestInterdigitalCapacitor(TwoPortModelTestSuite):
         # Note: we are comparing S-parameters, but for a simple capacitor model
         # more capacitance means lower impedance, so more transmission (|S21|)
         # and less reflection (|S11|) at the same frequency.
-        s11_n2 = jnp.abs(result_n2[("o1", "o1")])
-        s11_n4 = jnp.abs(result_n4[("o1", "o1")])
+        s11_n2 = jnp.abs(result_n2["o1", "o1"])
+        s11_n4 = jnp.abs(result_n4["o1", "o1"])
 
         # At 5GHz, N=4 should have more capacitance than N=2
         assert_array_less(s11_n4, s11_n2 + 1e-10)

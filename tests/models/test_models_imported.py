@@ -76,7 +76,7 @@ def test_has_sax_stype_return():
 
     # Remove annotations to be sure
     if hasattr(func_no_annotations, "__annotations__"):
-        delattr(func_no_annotations, "__annotations__")
+        del func_no_annotations.__annotations__
 
     assert not has_sax_stype_return(func_no_annotations), (
         "Should not detect function with no annotations"

@@ -1,6 +1,6 @@
 """Tests for qpdk.models.qubit module - Qubit LC resonator models."""
 
-from typing import TYPE_CHECKING, final
+from typing import final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
@@ -28,9 +28,6 @@ from qpdk.models.qubit import (
 )
 
 from .base import TwoPortModelTestSuite
-
-if TYPE_CHECKING:
-    pass
 
 # Ensure PDK is activated for tests that require it (e.g., qubit_with_resonator)
 qpdk.PDK.activate()
@@ -174,13 +171,13 @@ class TestDoubleIslandTransmon(TwoPortModelTestSuite):
         result = self._call_model(f=f)
 
         # For ungrounded, S22 should NOT be -1 (which would indicate a short)
-        s22 = result[("o2", "o2")]
+        s22 = result["o2", "o2"]
         assert not jnp.allclose(s22, -1.0, atol=1e-6), (
             "Double-island transmon should NOT be grounded"
         )
 
         # For an ungrounded parallel LC, S22 should equal S11 due to symmetry
-        s11 = result[("o1", "o1")]
+        s11 = result["o1", "o1"]
         assert_allclose(
             s11,
             s22,
@@ -199,7 +196,7 @@ class TestDoubleIslandTransmon(TwoPortModelTestSuite):
         result = self._call_model(f=f, capacitance=C, inductance=L)
 
         # At resonance, |S21| should be minimum (parallel LC has infinite impedance)
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         s21_mag = jnp.abs(s21)
         idx_min = jnp.argmin(s21_mag)
         f_observed = f[idx_min]
@@ -248,7 +245,7 @@ class TestShuntedTransmon(TwoPortModelTestSuite):
         result = self._call_model(f=f)
 
         # For grounded, S22 should be -1 (short reflection)
-        s22 = result[("o2", "o2")]
+        s22 = result["o2", "o2"]
         assert_allclose(
             s22,
             -1.0,
@@ -257,7 +254,7 @@ class TestShuntedTransmon(TwoPortModelTestSuite):
         )
 
         # S21 should be zero (no transmission through ground)
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         assert_allclose(s21, 0.0, atol=1e-10)
 
     @given(
@@ -291,8 +288,8 @@ class TestTransmonCoupled(TwoPortModelTestSuite):
         assert len(result) == 4
 
         # Verify passivity
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
         assert_array_less(total_power, 1.0 + 1e-6)
 
@@ -333,8 +330,8 @@ class TestTransmonCoupled(TwoPortModelTestSuite):
         assert len(result) == 4
 
         # Verify passivity
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
         assert_array_less(total_power, 1.0 + 1e-6)
 
@@ -456,8 +453,8 @@ class TestQubitWithResonator(TwoPortModelTestSuite):
         result_long = self._call_model(f=f, resonator_length=6000.0)
 
         # S-parameters should differ for different resonator lengths
-        s11_short = result_short[("o1", "o1")]
-        s11_long = result_long[("o1", "o1")]
+        s11_short = result_short["o1", "o1"]
+        s11_long = result_long["o1", "o1"]
 
         assert not jnp.allclose(s11_short, s11_long, atol=1e-3), (
             "Different resonator lengths should yield different S-parameters"

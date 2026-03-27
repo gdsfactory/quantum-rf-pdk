@@ -524,7 +524,7 @@ def get_cpw_substrate_params() -> tuple[float, float, float]:
     """
     h = LAYER_STACK.layers["Substrate"].thickness  # µm
     t = LAYER_STACK.layers["M1"].thickness  # µm
-    ep_r = material_properties[cast(str, LAYER_STACK.layers["Substrate"].material)][
+    ep_r = material_properties[cast("str", LAYER_STACK.layers["Substrate"].material)][
         "relative_permittivity"
     ]
     return float(h), float(t), float(ep_r)

@@ -37,7 +37,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 1000)
         result = lc_resonator(f=f, capacitance=C, inductance=L)
 
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         s21_mag = jnp.abs(s21)
         idx_min = jnp.argmin(s21_mag)
         f_observed = f[idx_min]
@@ -58,7 +58,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         f = jnp.array([f_r_expected])
         result = lc_resonator(f=f, capacitance=C, inductance=L)
 
-        s21_at_resonance = float(jnp.abs(result[("o2", "o1")])[0])
+        s21_at_resonance = float(jnp.abs(result["o2", "o1"])[0])
         assert s21_at_resonance < 0.01, (
             f"|S21| at resonance should be near zero, got {s21_at_resonance}"
         )
@@ -73,7 +73,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         f = jnp.array([f_r_expected])
         result = lc_resonator(f=f, capacitance=C, inductance=L)
 
-        s11_at_resonance = float(jnp.abs(result[("o1", "o1")])[0])
+        s11_at_resonance = float(jnp.abs(result["o1", "o1"])[0])
         assert s11_at_resonance > 0.99, (
             f"|S11| at resonance should be near 1, got {s11_at_resonance}"
         )
@@ -91,7 +91,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         )
 
         # Second port is grounded, so S22 should be -1 (short reflection)
-        s22 = result[("o2", "o2")]
+        s22 = result["o2", "o2"]
         assert_allclose(
             s22,
             -1.0,
@@ -100,7 +100,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         )
 
         # S21 should be zero (no transmission through ground)
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         assert_allclose(
             s21,
             0.0,
@@ -127,7 +127,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 500)
         result = lc_resonator(f=f, capacitance=C, inductance=L)
 
-        s21_mag = jnp.abs(result[("o2", "o1")])
+        s21_mag = jnp.abs(result["o2", "o1"])
         idx_min = jnp.argmin(s21_mag)
         f_observed = f[idx_min]
 
@@ -167,8 +167,8 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
         assert isinstance(result, dict), "Result should be a dictionary"
         assert len(result) == 4, "Should have 4 S-parameters"
 
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
         assert_array_less(
             total_power,
@@ -222,7 +222,7 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
             coupling_capacitance=1e-15,
         )
 
-        s21_mag = jnp.abs(result[("o2", "o1")])
+        s21_mag = jnp.abs(result["o2", "o1"])
         idx_min = jnp.argmin(s21_mag)
         f_observed = f[idx_min]
 
@@ -266,8 +266,8 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
         assert isinstance(result, dict), "Result should be a dictionary"
         assert len(result) == 4, "Should have 4 S-parameters"
 
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
         assert_array_less(
             total_power,
@@ -275,8 +275,8 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
             err_msg=f"Passivity violated (col 1): max total power = {jnp.max(total_power)}",
         )
 
-        s12 = result[("o1", "o2")]
-        s22 = result[("o2", "o2")]
+        s12 = result["o1", "o2"]
+        s22 = result["o2", "o2"]
         total_power_col2 = jnp.abs(s12) ** 2 + jnp.abs(s22) ** 2
         assert_array_less(
             total_power_col2,

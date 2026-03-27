@@ -81,7 +81,7 @@ def layer_stack_to_gds_mapping(
         thickness = (
             thickness_override
             if thickness_override is not None
-            else (layer_level.thickness if layer_level.thickness else 0.0)
+            else (layer_level.thickness or 0.0)
         )
         mapping[layer_number] = (elevation, thickness)
 

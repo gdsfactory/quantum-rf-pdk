@@ -95,7 +95,7 @@ class BaseModelTestSuite:
         """
         result = type(self).model_function(**kwargs)
         assert isinstance(result, dict), "Model function must return a dict (sax.SDict)"
-        return cast(sax.SDict, result)
+        return cast("sax.SDict", result)
 
     def test_default_parameters(self) -> None:
         """Test that the model returns valid S-parameters with default parameters."""

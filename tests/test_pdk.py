@@ -134,7 +134,7 @@ def test_netlists(
         pytest.skip(f"Skipping {component_type} netlist test")
     c = cells[component_type]()
     n = c.get_netlist()
-    n = cast(dict, normalize_numeric_types(n))
+    n = cast("dict", normalize_numeric_types(n))
     data_regression.check(n)
 
     n.pop("connections", None)
@@ -147,7 +147,7 @@ def test_netlists(
 
     c2 = gf.read.from_yaml(yaml_str)
     n2 = c2.get_netlist()
-    n2 = cast(dict, normalize_numeric_types(n2))
+    n2 = cast("dict", normalize_numeric_types(n2))
     d = jsondiff.diff(n, n2)
     d.pop("warnings", None)
     d.pop("ports", None)
@@ -164,7 +164,7 @@ def test_yaml_matches_layers():
     LAYERS_ACCORDING_TO_YAML = denest_layerviews_to_layer_tuples(LAYER_VIEWS)
     LAYERS_DEFINED = {
         str(layer_enum): (layer_enum.layer, layer_enum.datatype)
-        for layer_enum in cast(LayerEnum, LAYER)
+        for layer_enum in cast("LayerEnum", LAYER)
     }
     assert LAYERS_ACCORDING_TO_YAML == LAYERS_DEFINED
 

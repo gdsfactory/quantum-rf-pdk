@@ -1,5 +1,7 @@
 """Model definitions for qpdk."""
 
+# ruff: noqa: E402
+
 import jax
 import sax
 

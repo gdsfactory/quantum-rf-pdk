@@ -40,8 +40,8 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
             f=f, length=length, cross_section_1=cs1, cross_section_2=cs2
         )
 
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
 
         power_reflection = jnp.abs(s11) ** 2
         power_transmission = jnp.abs(s21) ** 2
@@ -65,8 +65,8 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
         )
         straight_result = straight(f=f, length=length, cross_section=cs)
 
-        s21_taper = taper_result[("o2", "o1")]
-        s21_straight = straight_result[("o2", "o1")]
+        s21_taper = taper_result["o2", "o1"]
+        s21_straight = straight_result["o2", "o1"]
 
         assert_allclose(
             s21_taper,
@@ -85,9 +85,9 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
             f=f, length=0, cross_section_1=cs1, cross_section_2=cs2
         )
 
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         transmission = jnp.abs(s21)[0]
-        s11 = result[("o1", "o1")]
+        s11 = result["o1", "o1"]
         reflection = jnp.abs(s11)[0]
 
         assert transmission > 0.999, (
@@ -124,8 +124,8 @@ class TestLauncher(BaseModelTestSuite):
         result = launcher(
             f=f, straight_length=straight_length, taper_length=taper_length
         )
-        s11 = result[("waveport", "waveport")]
-        s21 = result[("o1", "waveport")]
+        s11 = result["waveport", "waveport"]
+        s21 = result["o1", "waveport"]
         power_reflection = jnp.abs(s11) ** 2
         power_transmission = jnp.abs(s21) ** 2
         total_power = power_reflection + power_transmission
@@ -149,9 +149,9 @@ class TestLauncher(BaseModelTestSuite):
             cross_section_small=cs_small,
         )
 
-        s21 = result[("o1", "waveport")]
+        s21 = result["o1", "waveport"]
         transmission = jnp.abs(s21)[0]
-        s11 = result[("waveport", "waveport")]
+        s11 = result["waveport", "waveport"]
         reflection = jnp.abs(s11)[0]
 
         assert transmission > 0.999
