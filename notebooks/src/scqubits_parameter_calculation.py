@@ -258,9 +258,9 @@ display(
 # %%
 _a_plus_adag = resonator.annihilation_operator() + resonator.creation_operator()
 g_sweep = np.linspace(0.01, 0.3, 200)
-chi_sweep_analytical = np.array(
-    [dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep]
-)
+chi_sweep_analytical = np.array([
+    dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep
+])
 
 
 def chi_scqubits_at_g(g: float) -> float:

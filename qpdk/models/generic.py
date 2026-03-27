@@ -49,7 +49,7 @@ def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SD
 
 
 short = electrical_short
-open = electrical_open
+open = electrical_open  # noqa: A001
 short_2_port = electrical_short_2_port
 
 

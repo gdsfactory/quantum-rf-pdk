@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, TypedDict
 import numpy as np
 import polars as pl
 
+from qpdk import LAYER_STACK
 from qpdk.simulation.aedt_base import (
     AEDTBase,
     export_component_to_gds_temp,
@@ -128,7 +129,6 @@ class HFSS(AEDTBase):
 
             if result:
                 new_objects = list(set(self.modeler.object_names) - existing_objects)
-                from qpdk import LAYER_STACK
 
                 renamed_objects = rename_imported_objects(
                     self.hfss, new_objects, layer_stack or LAYER_STACK

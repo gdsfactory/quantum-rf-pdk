@@ -134,13 +134,11 @@ def test_sax_stype_functions_in_models_dict():
                         continue
 
                     # Check if function or its __wrapped__ version has sax.SType return type
-                    if any(
-                        (
-                            has_sax_stype_return(obj),
-                            hasattr(obj, "__wrapped__")
-                            and has_sax_stype_return(obj.__wrapped__),
-                        )
-                    ):
+                    if any((
+                        has_sax_stype_return(obj),
+                        hasattr(obj, "__wrapped__")
+                        and has_sax_stype_return(obj.__wrapped__),
+                    )):
                         sax_stype_functions.add(name)
 
             except ImportError:

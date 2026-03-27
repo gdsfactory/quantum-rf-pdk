@@ -32,14 +32,12 @@ env = Environment(loader=FileSystemLoader(template_dir), autoescape=False)
 
 def get_kwargs(sig: inspect.Signature) -> str:
     """Extract kwargs from function signature."""
-    return ", ".join(
-        [
-            f"{p}={clean_value_json(sig.parameters[p].default)!r}"
-            for p in sig.parameters
-            if isinstance(sig.parameters[p].default, int | float | str | tuple)
-            and p not in skip_settings
-        ]
-    )
+    return ", ".join([
+        f"{p}={clean_value_json(sig.parameters[p].default)!r}"
+        for p in sig.parameters
+        if isinstance(sig.parameters[p].default, int | float | str | tuple)
+        and p not in skip_settings
+    ])
 
 
 # Generate cells.rst

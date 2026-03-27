@@ -171,6 +171,7 @@ testpaths = ["qpdk/", "tests"]
 
 [tool.ruff]
 fix = true
+preview = true
 
 [tool.ruff.format]
 exclude = ["*.ipynb"]
@@ -200,6 +201,8 @@ ignore = [
   "PLC2701",  # import-private-name
   "PLR0911",  # too-many-return-statements
   "PLR6104",  # non-augmented-assignment
+  "PLR0912",  # too-many-branches
+  "PLR0915",  # too-many-statements
   "PLR0916",  # too-many-boolean-expressions
   "S404",  # suspicious-subprocess-import
   "PLW1510",  # subprocess-run-without-check

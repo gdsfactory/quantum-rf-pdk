@@ -1,6 +1,7 @@
 """Tests for resonator models."""
 
 import warnings
+from unittest.mock import Mock
 
 import jax.numpy as jnp
 import numpy as np
@@ -142,8 +143,6 @@ class TestResonatorFrequency:
     @staticmethod
     def test_with_deprecated_media() -> None:
         """Test with deprecated media parameter."""
-        from unittest.mock import Mock
-
         mock_media = Mock()
         mock_media.ep_r = jnp.array([11.7])
 

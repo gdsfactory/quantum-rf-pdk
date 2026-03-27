@@ -23,7 +23,7 @@ from qpdk.cells.helpers import (
     invert_mask_polarity,
     remove_metadata_layers,
 )
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, material_properties
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss, Q2d
@@ -169,8 +169,6 @@ def rename_imported_objects(
 
 def add_materials_to_aedt(app: Hfss | Q2d | Q3d) -> None:
     """Add QPDK materials to the PyAEDT application."""
-    from qpdk.tech import material_properties
-
     for name, props in material_properties.items():
         if app.materials.exists_material(name):
             continue

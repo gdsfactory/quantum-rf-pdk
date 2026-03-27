@@ -181,14 +181,12 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
         for s in cross_section.sections
         if s.name is not None and s.name.startswith("etch")
     )
-    nxn_ref = c << nxn(
-        **{
-            "north": 1,
-            "east": 1,
-            "south": 1,
-            "west": 1,
-        }
-    )
+    nxn_ref = c << nxn(**{
+        "north": 1,
+        "east": 1,
+        "south": 1,
+        "west": 1,
+    })
     for port in list(nxn_ref.ports)[:-1]:
         straight_ref = c << straight(
             cross_section=cross_section, length=etch_section.width

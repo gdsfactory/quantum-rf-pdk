@@ -276,12 +276,10 @@ def interdigital_capacitor(
     straight_out_of_etch = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    straight_left = c.add_ref(straight_out_of_etch).move(
-        (
-            -etch_bbox_margin,
-            height / 2,
-        )
-    )
+    straight_left = c.add_ref(straight_out_of_etch).move((
+        -etch_bbox_margin,
+        height / 2,
+    ))
     straight_right = None
     if not half:
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
@@ -467,12 +465,10 @@ def plate_capacitor_single(
     straight_out_of_etch = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    straight_left = c.add_ref(straight_out_of_etch).move(
-        (
-            -etch_bbox_margin,
-            length / 2,
-        )
-    )
+    straight_left = c.add_ref(straight_out_of_etch).move((
+        -etch_bbox_margin,
+        length / 2,
+    ))
     # Add WG to additive metal
     c_additive = gf.boolean(
         A=c,

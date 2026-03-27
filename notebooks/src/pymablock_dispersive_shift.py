@@ -196,14 +196,12 @@ display(
 
 # Verify against the symbolic expression
 chi_check = float(
-    chi_sym.subs(
-        {
-            omega_t: omega_t_val,
-            omega_r: omega_r_val,
-            alpha: alpha_val,
-            g: g_val,
-        }
-    )
+    chi_sym.subs({
+        omega_t: omega_t_val,
+        omega_r: omega_r_val,
+        alpha: alpha_val,
+        g: g_val,
+    })
 )
 print(
     f"Symbolic evaluation: χ = {chi_check * 1e3:.3f} MHz "
@@ -219,9 +217,9 @@ print(
 
 # %%
 g_sweep = np.linspace(0.01, 0.3, 200)
-chi_sweep = np.array(
-    [dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep]
-)
+chi_sweep = np.array([
+    dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep
+])
 
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.plot(g_sweep * 1e3, chi_sweep * 1e3, "-", linewidth=2)

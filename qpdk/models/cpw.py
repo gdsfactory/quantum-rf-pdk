@@ -48,6 +48,7 @@ import jax.numpy as jnp
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 
+from qpdk import PDK
 from qpdk.models.constants import c_0, π
 from qpdk.models.math import ellipk_ratio
 from qpdk.tech import LAYER_STACK, material_properties
@@ -543,8 +544,6 @@ def get_cpw_dimensions(
         tuple[float, float]: Width and gap of the CPW.
     """
     # Make sure a PDK is activated
-    from qpdk import PDK
-
     PDK.activate()
     xs = gf.get_cross_section(cross_section, **kwargs)
 

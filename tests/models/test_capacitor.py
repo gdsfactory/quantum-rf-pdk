@@ -8,6 +8,7 @@ from numpy.testing import assert_array_less
 
 from qpdk.models.capacitor import (
     interdigital_capacitor,
+    interdigital_capacitor_capacitance_analytical,
     plate_capacitor,
     plate_capacitor_capacitance_analytical,
 )
@@ -55,8 +56,6 @@ class TestInterdigitalCapacitor(TwoPortModelTestSuite):
 
 def test_interdigital_capacitor_scaling() -> None:
     """Test that interdigital_capacitor capacitance scales correctly."""
-    from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-
     kwargs = {
         "finger_length": 20.0,
         "finger_gap": 2.0,

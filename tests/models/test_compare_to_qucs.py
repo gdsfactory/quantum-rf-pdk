@@ -55,9 +55,9 @@ class BaseCompareToQucs(ABC):
     # Subclasses should override these
     component_name: str = "Component"
     csv_filename: str = "component_qucs.csv"
-    parameters: ClassVar[frozenset[ModelParameter]] = frozenset(
-        {ModelParameter(name="parameter", value=0.0, unit=1e-9)}
-    )
+    parameters: ClassVar[frozenset[ModelParameter]] = frozenset({
+        ModelParameter(name="parameter", value=0.0, unit=1e-9)
+    })
     skip_values: ClassVar[list[str]] = []
 
     @abstractmethod
@@ -324,9 +324,9 @@ class TestCapacitorCompareToQucs(BaseCompareToQucs):
 
     component_name = "Capacitor"
     csv_filename = "capacitor_qucs.csv"
-    parameters = frozenset(
-        {ModelParameter(name="capacitance", value=60e-15, unit=1e-15)}
-    )
+    parameters = frozenset({
+        ModelParameter(name="capacitance", value=60e-15, unit=1e-15)
+    })
 
     @override
     def get_model_function(self) -> Callable[..., sax.SType]:
@@ -370,12 +370,10 @@ class TestCouplerStraightCompareToQucs(BaseCompareToQucs):
 
     component_name = "Coupler Straight"
     csv_filename = "coupler_straight_qucs.csv"
-    parameters = frozenset(
-        {
-            ModelParameter(name="length", value=500.0, unit=1e-6),
-            ModelParameter(name="gap", value=1.52, unit=1e-6),
-        }
-    )
+    parameters = frozenset({
+        ModelParameter(name="length", value=500.0, unit=1e-6),
+        ModelParameter(name="gap", value=1.52, unit=1e-6),
+    })
     skip_values: ClassVar[list[str]] = ["S11"]
 
     @override
@@ -395,12 +393,10 @@ class TestLCResonatorCompareToQucs(BaseCompareToQucs):
 
     component_name = "LC Resonator"
     csv_filename = "lc_resonator_qucs.csv"
-    parameters = frozenset(
-        {
-            ModelParameter(name="capacitance", value=10e-15, unit=1e-15),
-            ModelParameter(name="inductance", value=10e-9, unit=1e-9),
-        }
-    )
+    parameters = frozenset({
+        ModelParameter(name="capacitance", value=10e-15, unit=1e-15),
+        ModelParameter(name="inductance", value=10e-9, unit=1e-9),
+    })
 
     @override
     def get_model_function(self) -> Callable[..., sax.SType]:

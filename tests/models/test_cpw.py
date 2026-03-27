@@ -1,5 +1,6 @@
 """Tests for CPW electromagnetic analysis functions."""
 
+import gdsfactory as gf
 import jax
 import jax.numpy as jnp
 import pytest
@@ -270,8 +271,6 @@ class TestGetCpwDimensions:
     @staticmethod
     def test_missing_etch_offset_raises() -> None:
         """Test that missing 'etch_offset' section raises ValueError."""
-        import gdsfactory as gf
-
         # Create a cross-section without any 'etch_offset' sections
         xs = gf.cross_section.cross_section(width=10.0)
         with pytest.raises(ValueError, match="etch_offset"):

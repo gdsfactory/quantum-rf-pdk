@@ -96,7 +96,7 @@ def show_components(
     Returns:
         Components after :func:`gdsfactory.get_component`.
     """
-    from qpdk import PDK
+    from qpdk import PDK  # noqa: PLC0415
 
     PDK.activate()
 
@@ -115,12 +115,10 @@ def show_components(
         shift = (max_component_width + spacing, 0)
 
     for i, component in enumerate(components):
-        (c << component).move(
-            (
-                shift[0] * i,
-                shift[1] * i,
-            )
-        )
+        (c << component).move((
+            shift[0] * i,
+            shift[1] * i,
+        ))
         label_offset = (
             shift[0] * i + (component.size_info.width / 2),
             shift[1] * i + (component.size_info.height / 2),
@@ -229,8 +227,8 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     Args:
         df: A polars or pandas DataFrame to display.
     """
-    import pandas as pd
-    from IPython.display import display
+    import pandas as pd  # noqa: PLC0415
+    from IPython.display import display  # noqa: PLC0415
 
     # Convert polars DataFrame to pandas if needed
     pdf: pd.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
