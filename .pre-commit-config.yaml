@@ -47,7 +47,7 @@ repos:
         args: [-conf, ".github/.yamlfmt.yaml"]
         exclude: &regression_tests ".*.tests*"
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
         args: [--strict, "-c=.github/.yamllint.yaml"]
