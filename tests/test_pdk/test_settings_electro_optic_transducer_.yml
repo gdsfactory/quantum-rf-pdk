@@ -1,0 +1,22 @@
+info:
+  capacitor_gap: 5
+  capacitor_length: 100
+  capacitor_width: 100
+  inductor_n_turns: 8
+  inductor_turn_length: 200
+  transducer_type: electro_optic
+name: electro_optic_transducer_INT8_ITL200_CL100_CW100_CG5_CP_17c703d5
+settings:
+  capacitor_gap: 5
+  capacitor_length: 100
+  capacitor_width: 100
+  coupling_pad_gap: 20
+  coupling_pad_size:
+  - 200
+  - 100
+  cross_section: cpw
+  feedline_length: 100
+  inductor_n_turns: 8
+  inductor_turn_length: 200
+  layer_eo_coupler: IND
+  layer_metal: M1_DRAW
