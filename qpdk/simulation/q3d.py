@@ -274,7 +274,7 @@ class Q2D(AEDTBase):
         cpw_width, cpw_gap = get_cpw_dimensions(cross_section)
         substrate_level = layer_stack.layers["Substrate"]
         substrate_thickness = float(substrate_level.thickness)
-        substrate_material = cast("str", substrate_level.material)
+        substrate_material = cast(str, substrate_level.material)
 
         conductor_level = layer_stack.layers["M1"]
         conductor_thickness = float(conductor_level.thickness)
@@ -283,7 +283,7 @@ class Q2D(AEDTBase):
                 "Setting conductor_thickness to 2.0 um for Q2D stability."
             )
             conductor_thickness = 2.0
-        conductor_material = cast("str", conductor_level.material)
+        conductor_material = cast(str, conductor_level.material)
 
         if ground_width is None:
             ground_width = 10.0 * cpw_gap

@@ -130,7 +130,7 @@ def show_components(
         c.add_label(
             text=label_text,
             position=label_offset,
-            layer=cast("LayerEnum", PDK.layers).TEXT,
+            layer=cast(LayerEnum, PDK.layers).TEXT,
         )
     c.show()
 

@@ -214,7 +214,7 @@ def test_yaml_matches_layers():
     LAYERS_ACCORDING_TO_YAML = denest_layerviews_to_layer_tuples(LAYER_VIEWS)
     LAYERS_DEFINED = {
         str(layer_enum): (layer_enum.layer, layer_enum.datatype)
-        for layer_enum in cast("LayerEnum", LAYER)
+        for layer_enum in cast(LayerEnum, LAYER)
     }
     assert LAYERS_ACCORDING_TO_YAML == LAYERS_DEFINED
 
