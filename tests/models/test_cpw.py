@@ -4,8 +4,7 @@ import gdsfactory as gf
 import jax
 import jax.numpy as jnp
 import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
+from hypothesis import given, settings, strategies as st
 from numpy.testing import assert_allclose
 
 from qpdk.models.constants import c_0

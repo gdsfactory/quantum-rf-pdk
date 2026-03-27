@@ -4,8 +4,7 @@ from unittest.mock import Mock
 
 import gdsfactory as gf
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
+from hypothesis import given, strategies as st
 
 from qpdk.helper import denest_layerviews_to_layer_tuples
 
