@@ -116,10 +116,16 @@ def electro_optic_transducer(
     c = Component()
 
     # --- Plate capacitor forms the main resonator capacitance ---
-    cap = c.add_ref(plate_capacitor(length=capacitor_length, width=capacitor_width, gap=capacitor_gap))
+    cap = c.add_ref(
+        plate_capacitor(
+            length=capacitor_length, width=capacitor_width, gap=capacitor_gap
+        )
+    )
 
     # --- Meander inductor in parallel with capacitor ---
-    ind = c.add_ref(meander_inductor(n_turns=inductor_n_turns, turn_length=inductor_turn_length))
+    ind = c.add_ref(
+        meander_inductor(n_turns=inductor_n_turns, turn_length=inductor_turn_length)
+    )
     # Position inductor above the capacitor
     ind.dmove((
         cap.dcenter[0] - ind.dcenter[0],
@@ -149,7 +155,9 @@ def electro_optic_transducer(
     feed_left = c.add_ref(straight(length=feedline_length, cross_section=cross_section))
     feed_left.connect("o2", cap.ports["o1"])
 
-    feed_right = c.add_ref(straight(length=feedline_length, cross_section=cross_section))
+    feed_right = c.add_ref(
+        straight(length=feedline_length, cross_section=cross_section)
+    )
     feed_right.connect("o2", cap.ports["o2"])
 
     # --- Ports ---
@@ -255,7 +263,9 @@ def piezo_transducer_coupler(
         top_pad.dcenter[1] - feed_left.ports["o1"].dcenter[1],
     ))
 
-    feed_right = c.add_ref(straight(length=feedline_length, cross_section=cross_section))
+    feed_right = c.add_ref(
+        straight(length=feedline_length, cross_section=cross_section)
+    )
     feed_right.drotate(180)
     feed_right.dmove((
         bot_pad.dbbox().left - feed_right.ports["o1"].dcenter[0],

@@ -51,9 +51,8 @@ import jax.numpy as jnp
 import sax
 from sax.models.rf import capacitor, tee
 
-from qpdk.models.constants import DEFAULT_FREQUENCY, h, π
+from qpdk.models.constants import DEFAULT_FREQUENCY, π
 from qpdk.models.generic import lc_resonator
-
 
 # ---------------------------------------------------------------------------
 # Analytical helpers
@@ -161,11 +160,13 @@ def transducer_added_noise(
     c = jnp.asarray(cooperativity)
 
     # Internal loss noise from each mode
-    noise_mw_loss = n_thermal_mw * (1.0 - eta_ext_mw) / jnp.where(
-        eta_ext_mw > 0, eta_ext_mw, 1e-30
+    noise_mw_loss = (
+        n_thermal_mw * (1.0 - eta_ext_mw) / jnp.where(eta_ext_mw > 0, eta_ext_mw, 1e-30)
     )
-    noise_opt_loss = n_thermal_opt * (1.0 - eta_ext_opt) / jnp.where(
-        eta_ext_opt > 0, eta_ext_opt, 1e-30
+    noise_opt_loss = (
+        n_thermal_opt
+        * (1.0 - eta_ext_opt)
+        / jnp.where(eta_ext_opt > 0, eta_ext_opt, 1e-30)
     )
 
     # Imperfect conversion noise
@@ -293,14 +294,24 @@ def electro_optic_transducer(
 
     s_dict = sax.evaluate_circuit_fg((connections, ports), instances)
 
-    # Apply effective EO-induced loss to the S-parameters
-    # The EO coupling adds additional round-trip loss to the MW resonator
+    # Apply effective EO-induced loss to the S-parameters.
+    #
+    # From input-output theory, the optical subsystem (with linewidth
+    # κ_o) driven by the pump-enhanced EO coupling g acts as an
+    # additional dissipation channel on the MW resonator with an
+    # effective rate Γ_eo = 4|g|²/κ_o (see Eq. 7 of Lauk et al.,
+    # Quantum Sci. Technol. 5, 020501, 2020).  This appears as a
+    # Lorentzian susceptibility centred on the MW resonance ω_m:
+    #
+    #   χ_eo(ω) ∝ Γ_eo / [(ω − ω_m)² + (Γ_eo/2)²]
+    #
+    # The corresponding power attenuation on the MW signal traversing
+    # the resonator is modelled as exp(−|χ_eo|/2), which reduces the
+    # S-parameter magnitudes near resonance while leaving the far-
+    # detuned response unchanged.
     omega = 2.0 * π * f_arr
     omega_m = 1.0 / jnp.sqrt(mw_capacitance * mw_inductance)
-    # Lorentzian loss profile centred on MW resonance
-    loss_factor = gamma_eo**2 / (
-        (omega - omega_m) ** 2 + (gamma_eo / 2.0) ** 2
-    )
+    loss_factor = gamma_eo**2 / ((omega - omega_m) ** 2 + (gamma_eo / 2.0) ** 2)
     attenuation = jnp.exp(-loss_factor / 2.0)
     attenuation = attenuation.reshape(jnp.asarray(f).shape)
 
@@ -400,13 +411,25 @@ def piezo_optomechanical_transducer(
 
     s_dict = sax.evaluate_circuit_fg((connections, ports), instances)
 
-    # Apply frequency-dependent loss from piezo-OM coupling
+    # Apply frequency-dependent loss from the cascaded piezo-OM chain.
+    #
+    # In the Markov approximation, the mechanical mode mediates an
+    # effective coupling between the MW mode and the optical bath.
+    # Adiabatic elimination of the mechanical mode yields an effective
+    # dissipation rate Γ_eff on the MW mode that is Lorentzian in the
+    # detuning from the mechanical resonance ω_mech:
+    #
+    #   Γ(ω) ∝ Γ_eff² / [(ω − ω_mech)² + (Γ_eff/2)²]
+    #
+    # where Γ_eff combines the piezoelectric cooperativity
+    # (C_pe = 4g_pe²/κ_mech) and the optomechanical cooperativity
+    # (C_om = 4G_om²/κ_opt).  The S-parameter attenuation
+    # exp(−Γ/2) captures the power lost from the MW mode into the
+    # optical output channel via the mechanical intermediary (see
+    # Mirhosseini et al., Nature 588, 599, 2020).
     omega = 2.0 * π * f_arr
     omega_m_res = 2.0 * π * omega_mech
-    # Lorentzian profile around mechanical frequency
-    loss_factor = gamma_eff**2 / (
-        (omega - omega_m_res) ** 2 + (gamma_eff / 2.0) ** 2
-    )
+    loss_factor = gamma_eff**2 / ((omega - omega_m_res) ** 2 + (gamma_eff / 2.0) ** 2)
     attenuation = jnp.exp(-loss_factor / 2.0)
     attenuation = attenuation.reshape(jnp.asarray(f).shape)
 

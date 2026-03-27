@@ -2,14 +2,8 @@
 
 from __future__ import annotations
 
-from functools import partial
-
-import jax
 import jax.numpy as jnp
-import pytest
-import sax
-from hypothesis import given, settings
-from hypothesis import strategies as st
+from hypothesis import given, settings, strategies as st
 
 from qpdk.models.transducer import (
     electro_optic_transducer,
@@ -19,7 +13,6 @@ from qpdk.models.transducer import (
     transduction_bandwidth,
     transduction_efficiency,
 )
-
 
 # ---------------------------------------------------------------------------
 # Transduction efficiency tests
@@ -68,7 +61,9 @@ class TestTransductionEfficiency:
         self, cooperativity: float, eta_mw: float, eta_opt: float
     ) -> None:
         """Efficiency always in [0, 1] for valid inputs."""
-        eta = transduction_efficiency(cooperativity, eta_ext_mw=eta_mw, eta_ext_opt=eta_opt)
+        eta = transduction_efficiency(
+            cooperativity, eta_ext_mw=eta_mw, eta_ext_opt=eta_opt
+        )
         assert -1e-10 <= float(eta) <= 1.0 + 1e-10
 
 
