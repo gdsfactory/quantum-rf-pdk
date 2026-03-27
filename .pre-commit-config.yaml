@@ -107,7 +107,7 @@ repos:
         additional_dependencies:
           - katex@0.16.33
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.22
+    rev: 1.0.0
     hooks:
       - id: mdformat
         args: [--wrap=120]
