@@ -50,10 +50,6 @@ To use the PDK in KLayout (for viewing GDS files with correct layers and technol
 technology files:
 
 ```bash
-# For contributors (from the repository root)
-just install-tech
-
-# For users (after installing qpdk)
 python -m qpdk.install_tech
 ```
 
@@ -62,25 +58,7 @@ python -m qpdk.install_tech
 
 ### Installation for Contributors
 
-Clone the repository and install at least the development dependencies:
-
-```bash
-git clone https://github.com/gdsfactory/quantum-rf-pdk.git
-cd quantum-rf-pdk
-uv sync --group dev
-```
-
-> [!NOTE]
-> [Git LFS](https://git-lfs.github.com/) must be installed to run all tests locally. Some test data files (e.g., CSV
-> files in `tests/models/data/`) are tracked with Git LFS and will not be properly downloaded without it.
-
-#### Testing and Building Documentation
-
-Check out the commands for testing and building documentation with:
-
-```bash
-just --list
-```
+For contributors, please follow the [installation and development workflow instructions](docs/CONTRIBUTING.md).
 
 ## Documentation
 
