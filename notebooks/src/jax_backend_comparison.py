@@ -175,7 +175,7 @@ with warnings.catch_warnings():
     s_ref = circuit_fn(f=freq_ref)
 
 freq_ghz = freq_ref / 1e9
-s21_ref = s_ref[("o1", "o2")]
+s21_ref = s_ref["o1", "o2"]
 
 fig, ax = plt.subplots()
 ax.plot(freq_ghz, 20 * jnp.log10(jnp.abs(s21_ref)), label="$S_{21}$")
@@ -232,8 +232,8 @@ def benchmark_circuit(
             # JIT warmup — first call compiles the function for this shape
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                _warmup = circuit_fn(f=freq_d)
-                jax.block_until_ready(_warmup)
+                warmup = circuit_fn(f=freq_d)
+                jax.block_until_ready(warmup)
 
                 # Timed runs
                 run_times: list[float] = []
@@ -331,7 +331,7 @@ if HAS_OPENVINO:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             s = circuit_fn(f=freq)
-        return jnp.stack([jnp.abs(s[("o1", "o2")]), jnp.abs(s[("o1", "o1")])])
+        return jnp.stack([jnp.abs(s["o1", "o2"]), jnp.abs(s["o1", "o1"])])
 
     ov_times = []
     for _n in _BENCHMARK_SIZES:

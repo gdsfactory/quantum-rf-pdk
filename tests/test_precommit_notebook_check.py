@@ -12,7 +12,7 @@ TEMP_NB = "test_orphaned_temp.ipynb"
 def repo_root() -> Path:
     """Get the repository root directory."""
     result = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],  # noqa: S607
+        ["git", "rev-parse", "--show-toplevel"],
         capture_output=True,
         text=True,
         check=True,

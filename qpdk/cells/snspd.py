@@ -37,6 +37,8 @@ def snspd(
         layer: layer spec to put polygon geometry on.
         port_type: type of port to add to the component.
 
+    Returns:
+        A Component containing the SNSPD geometry.
     """
     if num_squares is not None:
         xy = np.sqrt(num_squares * wire_pitch * wire_width)

@@ -181,14 +181,12 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
         for s in cross_section.sections
         if s.name is not None and s.name.startswith("etch")
     )
-    nxn_ref = c << nxn(
-        **{
-            "north": 1,
-            "east": 1,
-            "south": 1,
-            "west": 1,
-        }
-    )
+    nxn_ref = c << nxn(**{
+        "north": 1,
+        "east": 1,
+        "south": 1,
+        "west": 1,
+    })
     for port in list(nxn_ref.ports)[:-1]:
         straight_ref = c << straight(
             cross_section=cross_section, length=etch_section.width
@@ -231,6 +229,9 @@ def bend_euler(
         cross_section: Cross-section specification.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
         **kwargs: Additional arguments passed to gf.c.bend_euler.
+
+    Returns:
+        The euler bend component.
     """
     return gf.c.bend_euler(
         angle=angle,
@@ -435,6 +436,9 @@ def add_etch_gap(
         port: Port where the etch gap will be added.
         cross_section: Cross-section specification to determine etch dimensions.
             The etch width is taken from a :class:`~Section` that includes "etch" in its name.
+
+    Returns:
+        Reference or VInstance of the added etch gap.
     """
     cross_section = gf.get_cross_section(cross_section)
     etch_section = next(

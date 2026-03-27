@@ -1,6 +1,7 @@
 """Helper functions for QPDK cells."""
 
 from collections.abc import Iterable, Sequence
+from itertools import starmap
 
 import gdsfactory as gf
 import klayout.db as kdb
@@ -16,6 +17,9 @@ def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Co
     """Applies a complex transformation to a component.
 
     For use with :func:`~gdsfactory.container`.
+
+    Returns:
+        The transformed component.
     """
     component.transform(transform)
     return component
@@ -116,6 +120,9 @@ def apply_additive_metals(component: Component) -> Component:
     Removes additive metal layers from etch layers, leading to a negative mask.
 
     TODO: Implement without flattening. Maybe with a KLayout dataprep script?
+
+    Returns:
+        Component with additive metals applied.
     """
     for additive, etch in (
         (LAYER.M1_DRAW, LAYER.M1_ETCH),
@@ -268,7 +275,7 @@ def remove_metadata_layers(component: Component) -> Component:
         A new component with metadata layers removed.
     """
     # Convert allowed layers into kcl layer indices
-    allowed_indices = {component.kcl.layer(*layer) for layer in NON_METADATA_LAYERS}
+    allowed_indices = set(starmap(component.kcl.layer, NON_METADATA_LAYERS))
 
     c = gf.Component()
 

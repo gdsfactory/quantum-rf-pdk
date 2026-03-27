@@ -1,8 +1,7 @@
 """Tests for analytical ECCPW mutual capacitance formula."""
 
 import jax.numpy as jnp
-from hypothesis import assume, given, settings
-from hypothesis import strategies as st
+from hypothesis import assume, given, settings, strategies as st
 
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
 

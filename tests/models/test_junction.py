@@ -35,8 +35,8 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
         s_no_bias = josephson_junction(f=f, ic=1e-6, ib=0.0)
         s_biased = josephson_junction(f=f, ic=1e-6, ib=0.5e-6)
 
-        s11_no = jnp.abs(s_no_bias[("o1", "o1")])
-        s11_biased = jnp.abs(s_biased[("o1", "o1")])
+        s11_no = jnp.abs(s_no_bias["o1", "o1"])
+        s11_biased = jnp.abs(s_biased["o1", "o1"])
 
         assert not jnp.allclose(s11_no, s11_biased, atol=1e-3), (
             "Bias current should change S-parameters"
@@ -58,7 +58,7 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
         f = jnp.array([5e9])
         # ib very close to ic: cos_Φ_0 ≈ 0, should still give finite output
         result = josephson_junction(f=f, ic=1e-6, ib=0.999e-6)
-        s11 = result[("o1", "o1")]
+        s11 = result["o1", "o1"]
         assert jnp.all(jnp.isfinite(s11)), (
             "Should produce finite S-parameters even near critical current"
         )
@@ -87,8 +87,8 @@ class TestSQUIDJunction(TwoPortModelTestSuite):
         s_zero_flux = squid_junction(f=f, ic_tot=2e-6, flux=0.0)
         s_half_flux = squid_junction(f=f, ic_tot=2e-6, flux=Φ_0 / 4)
 
-        s11_zero = jnp.abs(s_zero_flux[("o1", "o1")])
-        s11_half = jnp.abs(s_half_flux[("o1", "o1")])
+        s11_zero = jnp.abs(s_zero_flux["o1", "o1"])
+        s11_half = jnp.abs(s_half_flux["o1", "o1"])
 
         assert not jnp.allclose(s11_zero, s11_half, atol=1e-3), (
             "Flux should modify SQUID S-parameters"
@@ -100,7 +100,7 @@ class TestSQUIDJunction(TwoPortModelTestSuite):
         f = jnp.array([5e9])
 
         result = squid_junction(f=f, ic_tot=2e-6, asymmetry=0.0, flux=Φ_0 / 2)
-        s11 = result[("o1", "o1")]
+        s11 = result["o1", "o1"]
         assert jnp.all(jnp.isfinite(s11)), (
             "SQUID at half flux quantum should give finite S-params"
         )
@@ -113,8 +113,8 @@ class TestSQUIDJunction(TwoPortModelTestSuite):
         s_sym = squid_junction(f=f, ic_tot=2e-6, asymmetry=0.0, flux=Φ_0 / 4)
         s_asym = squid_junction(f=f, ic_tot=2e-6, asymmetry=0.3, flux=Φ_0 / 4)
 
-        s11_sym = jnp.abs(s_sym[("o1", "o1")])
-        s11_asym = jnp.abs(s_asym[("o1", "o1")])
+        s11_sym = jnp.abs(s_sym["o1", "o1"])
+        s11_asym = jnp.abs(s_asym["o1", "o1"])
 
         assert not jnp.allclose(s11_sym, s11_asym, atol=1e-3), (
             "Asymmetry should change SQUID response"
@@ -125,7 +125,7 @@ class TestSQUIDJunction(TwoPortModelTestSuite):
         """Test SQUID with DC bias current."""
         f = jnp.array([5e9])
         result = squid_junction(f=f, ic_tot=2e-6, ib=0.5e-6)
-        s11 = result[("o1", "o1")]
+        s11 = result["o1", "o1"]
         assert jnp.all(jnp.isfinite(s11))
 
 
@@ -147,8 +147,8 @@ def test_squid_junction_flux_tunability_hypothesis(
     s_half = squid_junction(f=f, ic_tot=ic_single, asymmetry=asymmetry, flux=Φ_0 / 2)
 
     # They should have different responses since the effective inductance changes
-    assert not jnp.allclose(s_zero[("o1", "o1")], s_half[("o1", "o1")])
-    assert jnp.isfinite(s_half[("o1", "o1")]).all()
+    assert not jnp.allclose(s_zero["o1", "o1"], s_half["o1", "o1"])
+    assert jnp.isfinite(s_half["o1", "o1"]).all()
 
 
 @given(
@@ -167,7 +167,7 @@ def test_squid_junction_overbias_warning_hypothesis(
         f = jnp.array([5e9])
         return squid_junction(
             f=f, ic_tot=ic_single, asymmetry=asymmetry, flux=phi_val, ib=ibias_val
-        )[("o1", "o1")]
+        )["o1", "o1"]
 
     phi_arr = jnp.array(phi)
     ibias = ibias_multiplier * ic_single

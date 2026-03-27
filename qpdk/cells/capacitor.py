@@ -189,6 +189,9 @@ def interdigital_capacitor(
     Returns:
         Component: A gdsfactory component with the interdigital capacitor geometry
             and two ports ('o1' and 'o2') on opposing sides.
+
+    Raises:
+        ValueError: If fingers is less than 1.
     """
     c = Component()
 
@@ -276,9 +279,10 @@ def interdigital_capacitor(
     straight_out_of_etch = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    straight_left = c.add_ref(straight_out_of_etch).move(
-        (-etch_bbox_margin, height / 2)
-    )
+    straight_left = c.add_ref(straight_out_of_etch).move((
+        -etch_bbox_margin,
+        height / 2,
+    ))
     straight_right = None
     if not half:
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
@@ -363,6 +367,9 @@ def plate_capacitor(
 
     Returns:
         A gdsfactory component with the plate capacitor geometry and two ports ('o1' and 'o2') on opposing sides.
+
+    Raises:
+        ValueError: If width or length is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
@@ -434,6 +441,9 @@ def plate_capacitor_single(
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
+
+    Raises:
+        ValueError: If width or length is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
@@ -464,9 +474,10 @@ def plate_capacitor_single(
     straight_out_of_etch = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    straight_left = c.add_ref(straight_out_of_etch).move(
-        (-etch_bbox_margin, length / 2)
-    )
+    straight_left = c.add_ref(straight_out_of_etch).move((
+        -etch_bbox_margin,
+        length / 2,
+    ))
     # Add WG to additive metal
     c_additive = gf.boolean(
         A=c,

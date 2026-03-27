@@ -4,7 +4,7 @@ __all__ = ["PATH"]
 
 import pathlib
 from dataclasses import dataclass
-from typing import final
+from typing import ClassVar, final
 
 cwd = pathlib.Path.cwd()
 cwd_config = cwd / "config.yml"
@@ -17,24 +17,24 @@ repo = module.parent
 class Path:
     """Creates object for referencing paths in repository."""
 
-    module = module
-    repo = repo
-    build = repo / "build"
-    docs = repo / "docs"
-    gds = build / "gds"
-    simulation = build / "simulation"
-    tests = repo / "tests"
+    module: ClassVar[pathlib.Path] = module
+    repo: ClassVar[pathlib.Path] = repo
+    build: ClassVar[pathlib.Path] = repo / "build"
+    docs: ClassVar[pathlib.Path] = repo / "docs"
+    gds: ClassVar[pathlib.Path] = build / "gds"
+    simulation: ClassVar[pathlib.Path] = build / "simulation"
+    tests: ClassVar[pathlib.Path] = repo / "tests"
 
-    cells = module / "cells"
-    derived = module / "derived"
-    klayout = module / "klayout"
-    models = module / "models"
-    samples = module / "samples"
+    cells: ClassVar[pathlib.Path] = module / "cells"
+    derived: ClassVar[pathlib.Path] = module / "derived"
+    klayout: ClassVar[pathlib.Path] = module / "klayout"
+    models: ClassVar[pathlib.Path] = module / "models"
+    samples: ClassVar[pathlib.Path] = module / "samples"
 
-    lyp = klayout / "layers.lyp"
-    lyt = klayout / "tech.lyt"
-    lyp_yaml = module / "layers.yaml"
-    tech = module / "klayout" / "tech"
+    lyp: ClassVar[pathlib.Path] = klayout / "layers.lyp"
+    lyt: ClassVar[pathlib.Path] = klayout / "tech.lyt"
+    lyp_yaml: ClassVar[pathlib.Path] = module / "layers.yaml"
+    tech: ClassVar[pathlib.Path] = module / "klayout" / "tech"
 
 
 PATH = Path()

@@ -61,7 +61,11 @@ target_f_hz = 5e9
 
 # Use scipy.optimize to find the exact length for the target frequency
 def objective(length):
-    """Objective function to find the exact length for the target frequency."""
+    """Objective function to find the exact length for the target frequency.
+
+    Returns:
+        Absolute difference between calculated and target frequency.
+    """
     f_res = resonator_frequency(
         length=length, cross_section=cpw_cross_section, is_quarter_wave=True
     )

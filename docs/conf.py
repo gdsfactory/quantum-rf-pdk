@@ -2,7 +2,7 @@
 
 project = "qpdk"
 author = "gdsfactory"
-copyright = "gdsfactory"
+copyright = "gdsfactory"  # noqa: A001
 
 # -- General configuration ---------------------------------------------------
 extensions = [

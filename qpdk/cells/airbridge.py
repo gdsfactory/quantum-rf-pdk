@@ -11,7 +11,7 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 
-import qpdk.tech as tech
+from qpdk import tech
 from qpdk.tech import LAYER
 
 
