@@ -7,7 +7,7 @@ from functools import partial
 
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.typings import ComponentSpec, LayerSpec
+from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
 from qpdk.cells.helpers import transform_component
@@ -71,6 +71,9 @@ def fluxonium(
     Returns:
         Component: A gdsfactory component with the fluxonium geometry and
             ports for both pads and the junction.
+
+    Raises:
+        ValueError: If `inductor_n_turns` is even.
     """
     if inductor_n_turns % 2 == 0:
         raise ValueError(
@@ -275,6 +278,9 @@ def _add_rect(
 
     Provide either ``(x0, x1)`` **or** ``(x_center, width)`` for the
     horizontal extent (likewise for the vertical extent).
+
+    Raises:
+        ValueError: If neither or both coordinate styles are provided for an axis.
     """
     if x0 is not None and x1 is not None:
         x_lo, x_hi = min(x0, x1), max(x0, x1)
