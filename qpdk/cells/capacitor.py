@@ -12,7 +12,7 @@ from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
 from qpdk.helper import show_components
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, get_etch_section, get_etch_sections
 
 
 @gf.cell
@@ -72,9 +72,7 @@ def half_circle_coupler(
 
     # Get cross section details to calculate overlap
     xs = gf.get_cross_section(cross_section)
-    cross_section_etch_section = next(
-        s for s in xs.sections if s.name and "etch_offset" in s.name
-    )
+    cross_section_etch_section = get_etch_section(xs)
     # Ensure significant overlap by moving stem into the bend metal
     # and considering the bend radius
     overlap = xs.width / 2 + cross_section_etch_section.width
@@ -110,18 +108,17 @@ def half_circle_coupler(
         layer=LAYER.M1_DRAW,
     )
     etch_height = overlap / 3
-    for etch_s in xs.sections:
-        if etch_s.name and "etch_offset" in etch_s.name:
-            etch_x_center = bridge_x + etch_s.offset
-            c.add_polygon(
-                [
-                    (etch_x_center - etch_s.width / 2, bridge_y_bottom),
-                    (etch_x_center + etch_s.width / 2, bridge_y_bottom),
-                    (etch_x_center + etch_s.width / 2, bridge_y_bottom + etch_height),
-                    (etch_x_center - etch_s.width / 2, bridge_y_bottom + etch_height),
-                ],
-                layer=LAYER.M1_ETCH,
-            )
+    for etch_s in get_etch_sections(xs):
+        etch_x_center = bridge_x + etch_s.offset
+        c.add_polygon(
+            [
+                (etch_x_center - etch_s.width / 2, bridge_y_bottom),
+                (etch_x_center + etch_s.width / 2, bridge_y_bottom),
+                (etch_x_center + etch_s.width / 2, bridge_y_bottom + etch_height),
+                (etch_x_center - etch_s.width / 2, bridge_y_bottom + etch_height),
+            ],
+            layer=LAYER.M1_ETCH,
+        )
     c.add_port("o3", port=stem.ports["o2"])
 
     # Place anchor at the arc center, computed as the midpoint of the

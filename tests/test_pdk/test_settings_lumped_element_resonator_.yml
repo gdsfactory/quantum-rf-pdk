@@ -1,0 +1,15 @@
+info:
+  capacitor_finger_length: 20
+  capacitor_fingers: 20
+  inductor_n_squares: 210
+  total_wire_length: 420
+name: lumped_element_resonator_F20_FL20_FG2_FT5_NT15_BBS4_CSm_172655b8
+settings:
+  bus_bar_spacing: 4
+  cross_section: meander_inductor_cross_section
+  etch_bbox_margin: 2
+  finger_gap: 2
+  finger_length: 20
+  finger_thickness: 5
+  fingers: 20
+  n_turns: 15

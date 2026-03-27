@@ -1,0 +1,10 @@
+info:
+  cross_section: meander_inductor_cross_section
+  n_squares: 508
+  total_wire_length: 1016
+name: meander_inductor_NT5_TL200_CSmeander_inductor_cross_section_EBM2
+settings:
+  cross_section: meander_inductor_cross_section
+  etch_bbox_margin: 2
+  n_turns: 5
+  turn_length: 200
