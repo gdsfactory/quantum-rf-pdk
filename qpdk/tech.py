@@ -295,7 +295,7 @@ def get_etch_sections(
     Args:
         cross_section: The cross-section to search for etch sections.
 
-    Returns:
+    Yields:
         Generator of sections with "etch" in their name.
     """
     xs = gf.get_cross_section(cross_section)

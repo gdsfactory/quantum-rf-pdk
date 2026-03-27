@@ -60,6 +60,10 @@ def meander_inductor(
     Returns:
         Component: A gdsfactory component with the meander inductor geometry
             and two ports ('o1' and 'o2').
+
+    Raises:
+        ValueError: If `n_turns` < 1, `turn_length` <= 0, or if the `cross_section`
+            does not contain an etch section.
     """
     if n_turns < 1:
         raise ValueError("Must have at least 1 turn")
@@ -227,6 +231,10 @@ def lumped_element_resonator(
     Returns:
         Component: A gdsfactory component with the lumped-element resonator
             geometry and two ports ('o1' and 'o2').
+
+    Raises:
+        ValueError: If `n_turns` is even, `bus_bar_spacing` <= 0, or if the
+            resultant meander run length is non-positive.
     """
     if n_turns % 2 == 0:
         raise ValueError(

@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import math
+
 import jax.numpy as jnp
 import pytest
 from hypothesis import HealthCheck, given, settings, strategies as st
 
+from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
+from qpdk.models.cpw import cpw_ep_r_from_cross_section, get_cpw_dimensions
 from qpdk.models.inductor import (
     lumped_element_resonator,
     meander_inductor,
@@ -34,6 +38,7 @@ frequency_st = st.floats(
 class TestMeanderInductorInductanceAnalytical:
     """Unit tests for the analytical inductance formula."""
 
+    @staticmethod
     @given(
         n_turns=st.integers(min_value=1, max_value=200),
         turn_length=positive_floats,
@@ -43,7 +48,6 @@ class TestMeanderInductorInductanceAnalytical:
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_inductance_is_positive(
-        self,
         n_turns: int,
         turn_length: float,
         wire_width: float,
@@ -60,6 +64,7 @@ class TestMeanderInductorInductanceAnalytical:
         )
         assert float(L) > 0
 
+    @staticmethod
     @given(
         n_turns=st.integers(min_value=1, max_value=100),
         turn_length=positive_floats,
@@ -72,7 +77,6 @@ class TestMeanderInductorInductanceAnalytical:
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_inductance_scales_with_sheet_inductance(
-        self,
         n_turns: int,
         turn_length: float,
         wire_width: float,
@@ -97,6 +101,7 @@ class TestMeanderInductorInductanceAnalytical:
         )
         assert float(L2) == pytest.approx(float(L1) * scale, rel=1e-5)
 
+    @staticmethod
     @given(
         n_turns=st.integers(min_value=2, max_value=100),
         turn_length=positive_floats,
@@ -106,7 +111,6 @@ class TestMeanderInductorInductanceAnalytical:
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_inductance_increases_with_n_turns(
-        self,
         n_turns: int,
         turn_length: float,
         wire_width: float,
@@ -130,6 +134,7 @@ class TestMeanderInductorInductanceAnalytical:
         )
         assert float(L_more) > float(L_base)
 
+    @staticmethod
     @given(
         n_turns=st.integers(min_value=1, max_value=100),
         turn_length=positive_floats,
@@ -142,7 +147,6 @@ class TestMeanderInductorInductanceAnalytical:
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_inductance_increases_with_turn_length(
-        self,
         n_turns: int,
         turn_length: float,
         wire_gap: float,
@@ -167,7 +171,8 @@ class TestMeanderInductorInductanceAnalytical:
         )
         assert float(L2) > float(L1)
 
-    def test_single_turn_no_gap_contribution(self) -> None:
+    @staticmethod
+    def test_single_turn_no_gap_contribution() -> None:
         """With n_turns=1 the wire_gap term vanishes (max(0, 1-1)=0)."""
         L = meander_inductor_inductance_analytical(
             n_turns=1,
@@ -179,7 +184,8 @@ class TestMeanderInductorInductanceAnalytical:
         expected = 1e-12 * (100.0 / 2.0)
         assert float(L) == pytest.approx(expected, rel=1e-5)
 
-    def test_known_value(self) -> None:
+    @staticmethod
+    def test_known_value() -> None:
         """Spot-check: 10 turns × 200 µm / 2 µm wide = 1000 □; L = 1 pH/□ → 1 nH."""
         L = meander_inductor_inductance_analytical(
             n_turns=10,
@@ -198,6 +204,7 @@ class TestMeanderInductorInductanceAnalytical:
 class TestMeanderInductorSAX:
     """Tests for the meander_inductor SAX model."""
 
+    @staticmethod
     @given(
         n_turns=st.integers(min_value=1, max_value=50),
         turn_length=st.floats(
@@ -214,7 +221,6 @@ class TestMeanderInductorSAX:
         suppress_health_check=[HealthCheck.too_slow],
     )
     def test_returns_valid_sdict(
-        self,
         n_turns: int,
         turn_length: float,
         sheet_inductance: float,
@@ -231,6 +237,7 @@ class TestMeanderInductorSAX:
         expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
         assert set(sdict.keys()) == expected_keys
 
+    @staticmethod
     @given(
         n_turns=st.integers(min_value=1, max_value=20),
         turn_length=st.floats(
@@ -245,7 +252,6 @@ class TestMeanderInductorSAX:
         suppress_health_check=[HealthCheck.too_slow],
     )
     def test_reciprocal(
-        self,
         n_turns: int,
         turn_length: float,
         sheet_inductance: float,
@@ -263,6 +269,7 @@ class TestMeanderInductorSAX:
         s21 = jnp.abs(sdict["o2", "o1"])
         assert float(s12) == pytest.approx(float(s21), rel=1e-5)
 
+    @staticmethod
     @given(
         n_turns=st.integers(min_value=1, max_value=20),
         turn_length=st.floats(
@@ -277,7 +284,6 @@ class TestMeanderInductorSAX:
         suppress_health_check=[HealthCheck.too_slow],
     )
     def test_s_parameters_are_finite(
-        self,
         n_turns: int,
         turn_length: float,
         sheet_inductance: float,
@@ -294,7 +300,8 @@ class TestMeanderInductorSAX:
         for v in sdict.values():
             assert jnp.all(jnp.isfinite(v))
 
-    def test_high_frequency_approaches_open(self) -> None:
+    @staticmethod
+    def test_high_frequency_approaches_open() -> None:
         """At very high frequency an inductor looks like an open circuit (|S21| → 0)."""
         sdict = meander_inductor(
             f=1e14,  # 100 THz — well above any practical resonance
@@ -305,7 +312,8 @@ class TestMeanderInductorSAX:
         )
         assert float(jnp.abs(sdict["o1", "o2"])) < 0.1
 
-    def test_array_frequency_input(self) -> None:
+    @staticmethod
+    def test_array_frequency_input() -> None:
         """Model must accept an array of frequencies and return arrays."""
         freqs = jnp.linspace(1e9, 10e9, 100)
         sdict = meander_inductor(f=freqs)
@@ -319,6 +327,7 @@ class TestMeanderInductorSAX:
 class TestLumpedElementResonatorSAX:
     """Tests for the lumped_element_resonator SAX model."""
 
+    @staticmethod
     @given(
         fingers=st.integers(min_value=2, max_value=40),
         finger_length=st.floats(
@@ -340,7 +349,6 @@ class TestLumpedElementResonatorSAX:
         suppress_health_check=[HealthCheck.too_slow],
     )
     def test_returns_valid_sdict(
-        self,
         fingers: int,
         finger_length: float,
         finger_gap: float,
@@ -363,6 +371,7 @@ class TestLumpedElementResonatorSAX:
         expected_keys = {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
         assert set(sdict.keys()) == expected_keys
 
+    @staticmethod
     @given(
         fingers=st.integers(min_value=2, max_value=30),
         finger_length=st.floats(
@@ -384,7 +393,6 @@ class TestLumpedElementResonatorSAX:
         suppress_health_check=[HealthCheck.too_slow],
     )
     def test_reciprocal(
-        self,
         fingers: int,
         finger_length: float,
         finger_gap: float,
@@ -408,6 +416,7 @@ class TestLumpedElementResonatorSAX:
         s21 = jnp.abs(sdict["o2", "o1"])
         assert float(s12) == pytest.approx(float(s21), rel=1e-5)
 
+    @staticmethod
     @given(
         fingers=st.integers(min_value=2, max_value=30),
         finger_length=st.floats(
@@ -429,7 +438,6 @@ class TestLumpedElementResonatorSAX:
         suppress_health_check=[HealthCheck.too_slow],
     )
     def test_s_parameters_are_finite(
-        self,
         fingers: int,
         finger_length: float,
         finger_gap: float,
@@ -452,20 +460,13 @@ class TestLumpedElementResonatorSAX:
         for v in sdict.values():
             assert jnp.all(jnp.isfinite(v))
 
-    def test_resonance_frequency_formula(self) -> None:
+    @staticmethod
+    def test_resonance_frequency_formula() -> None:
         """Transmission minimum in S21 must occur near f_r = 1/(2π√LC).
 
         Parameters are chosen so that f_r falls in the low-GHz range by using
         a large sheet inductance representative of a high-kinetic-inductance film.
         """
-        import math
-
-        from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-        from qpdk.models.cpw import (
-            cpw_ep_r_from_cross_section,
-            get_cpw_dimensions,
-        )
-
         fingers = 20
         finger_length = 20.0
         finger_gap = 2.0
@@ -515,16 +516,9 @@ class TestLumpedElementResonatorSAX:
         f_min = float(freqs[jnp.argmin(s21)])
         assert abs(f_min - f_r) / f_r < 0.05  # within 5 % of the analytical f_r
 
-    def test_more_fingers_shifts_resonance_lower(self) -> None:
+    @staticmethod
+    def test_more_fingers_shifts_resonance_lower() -> None:
         """Increasing capacitor fingers raises C, so the analytical f_r must decrease."""
-        import math
-
-        from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-        from qpdk.models.cpw import (
-            cpw_ep_r_from_cross_section,
-            get_cpw_dimensions,
-        )
-
         cross_section = "cpw"
         ep_r = float(cpw_ep_r_from_cross_section(cross_section))
         wire_width, wire_gap_half = get_cpw_dimensions(cross_section)
@@ -554,16 +548,9 @@ class TestLumpedElementResonatorSAX:
 
         assert f_r(fingers=20) < f_r(fingers=5)
 
-    def test_more_turns_shifts_resonance_lower(self) -> None:
+    @staticmethod
+    def test_more_turns_shifts_resonance_lower() -> None:
         """Increasing inductor turns raises L, so the analytical f_r must decrease."""
-        import math
-
-        from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-        from qpdk.models.cpw import (
-            cpw_ep_r_from_cross_section,
-            get_cpw_dimensions,
-        )
-
         cross_section = "cpw"
         ep_r = float(cpw_ep_r_from_cross_section(cross_section))
         C = float(
@@ -592,7 +579,8 @@ class TestLumpedElementResonatorSAX:
 
         assert f_r(n_turns=15) < f_r(n_turns=3)
 
-    def test_array_frequency_input(self) -> None:
+    @staticmethod
+    def test_array_frequency_input() -> None:
         """Model must accept a frequency array and return arrays of the same length."""
         freqs = jnp.linspace(1e9, 10e9, 200)
         sdict = lumped_element_resonator(f=freqs)
