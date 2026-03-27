@@ -50,7 +50,7 @@ from jax.typing import ArrayLike
 
 from qpdk.models.constants import c_0, π
 from qpdk.models.math import ellipk_ratio
-from qpdk.tech import LAYER_STACK, material_properties
+from qpdk.tech import LAYER_STACK, get_etch_section, material_properties
 
 # ===================================================================
 # Coplanar Waveguide (CPW)
@@ -549,19 +549,8 @@ def get_cpw_dimensions(
     xs = gf.get_cross_section(cross_section, **kwargs)
 
     width = xs.width
-    try:
-        gap = next(
-            section.width
-            for section in xs.sections
-            if section.name and "etch_offset" in section.name
-        )
-    except StopIteration as e:
-        msg = (
-            f"Cross-section does not have a section with 'etch_offset' in the name. "
-            f"Found sections: {[s.name for s in xs.sections]}"
-        )
-        raise ValueError(msg) from e
-    return width, gap
+    etch_section = get_etch_section(xs)
+    return width, etch_section.width
 
 
 @cache

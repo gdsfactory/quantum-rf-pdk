@@ -9,7 +9,7 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells.waveguides import straight
-from qpdk.tech import LAYER, coplanar_waveguide, xsection
+from qpdk.tech import LAYER, coplanar_waveguide, get_etch_section, xsection
 
 
 @xsection
@@ -19,6 +19,7 @@ def default_meander_inductor_cross_section() -> CrossSectionSpec:
         width=2.0,
         gap=2.0,
     )
+
 
 @gf.cell
 def meander_inductor(
@@ -76,18 +77,7 @@ def meander_inductor(
     layer = xs.layer
 
     # Infer etch parameters and spacing from cross section
-    try:
-        etch_section = next(
-            s for s in xs.sections if s.name and "etch_offset" in s.name
-        )
-    except StopIteration as e:
-        raise ValueError(
-            f"Cross-section '{xs.name}' does not have a section with 'etch_offset' in the name. "
-            "The `meander_inductor` requires a cross-section with at least one etch section "
-            "(e.g., 'coplanar_waveguide') to correctly determine the meander pitch and "
-            "bounding box margin."
-        ) from e
-
+    etch_section = get_etch_section(xs)
     etch_layer = etch_section.layer
     etch_width = etch_section.width
     # For CPW-like structures, we assume a pitch that allows for non-overlapping etches
@@ -197,7 +187,6 @@ def meander_inductor(
     c.info["cross_section"] = xs.name
 
     return c
-
 
 
 @gf.cell

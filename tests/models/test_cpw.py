@@ -272,7 +272,7 @@ class TestGetCpwDimensions:
         """Test that missing 'etch_offset' section raises ValueError."""
         import gdsfactory as gf
 
-        # Create a cross-section without any 'etch_offset' sections
+        # Create a cross-section without any 'etch' sections
         xs = gf.cross_section.cross_section(width=10.0)
-        with pytest.raises(ValueError, match="etch_offset"):
+        with pytest.raises(ValueError, match="etch"):
             get_cpw_dimensions(xs)

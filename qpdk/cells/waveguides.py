@@ -10,6 +10,7 @@ from klayout.db import DCplxTrans
 from qpdk import tech
 from qpdk.helper import show_components
 from qpdk.logger import logger
+from qpdk.tech import get_etch_section
 
 _DEFAULT_CROSS_SECTION = tech.cpw
 
@@ -176,11 +177,7 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     """
     c = gf.Component()
     cross_section = gf.get_cross_section(cross_section)
-    etch_section = next(
-        s
-        for s in cross_section.sections
-        if s.name is not None and s.name.startswith("etch")
-    )
+    etch_section = get_etch_section(cross_section)
     nxn_ref = c << nxn(
         **{
             "north": 1,
@@ -437,11 +434,7 @@ def add_etch_gap(
             The etch width is taken from a :class:`~Section` that includes "etch" in its name.
     """
     cross_section = gf.get_cross_section(cross_section)
-    etch_section = next(
-        s
-        for s in cross_section.sections
-        if s.name is not None and s.name.startswith("etch")
-    )
+    etch_section = get_etch_section(cross_section)
     etch_ref = c << rectangle(
         size=(etch_section.width, cross_section.width + 2 * etch_section.width),
         layer=etch_section.layer,

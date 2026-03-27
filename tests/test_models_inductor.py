@@ -306,7 +306,6 @@ class TestMeanderInductorSAX:
         )
         assert float(jnp.abs(sdict[("o1", "o2")])) < 0.1
 
-
     def test_array_frequency_input(self) -> None:
         """Model must accept an array of frequencies and return arrays."""
         freqs = jnp.linspace(1e9, 10e9, 100)
@@ -593,7 +592,6 @@ class TestLumpedElementResonatorSAX:
             return 1.0 / (2 * math.pi * math.sqrt(L * C))
 
         assert f_r(n_turns=15) < f_r(n_turns=3)
-
 
     def test_array_frequency_input(self) -> None:
         """Model must accept a frequency array and return arrays of the same length."""

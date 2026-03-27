@@ -1,6 +1,6 @@
 """Technology definitions."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Generator, Sequence
 from functools import cache, partial, wraps
 from typing import Any
 
@@ -19,6 +19,7 @@ from gdsfactory.technology import (
 )
 from gdsfactory.typings import (
     ConnectivitySpec,
+    CrossSectionSpec,
     Layer,
     LayerSpec,
 )
@@ -282,6 +283,48 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
 
     cross_sections[func.__name__] = decorated_cross_section
     return decorated_cross_section
+
+
+def get_etch_sections(
+    cross_section: CrossSectionSpec,
+) -> Generator[gf.Section, None, None]:
+    """Yields all etch sections of a cross-section.
+
+    Args:
+        cross_section: The cross-section to search for etch sections.
+
+    Returns:
+        Generator of sections with "etch" in their name.
+    """
+    xs = gf.get_cross_section(cross_section)
+    for s in xs.sections:
+        if s.name and "etch" in s.name:
+            yield s
+
+
+def get_etch_section(
+    cross_section: CrossSectionSpec,
+) -> gf.Section:
+    """Returns the first etch section of a cross-section.
+
+    Args:
+        cross_section: The cross-section to search for an etch section.
+
+    Returns:
+        The first section with "etch" in its name.
+
+    Raises:
+        ValueError: If no etch section is found.
+    """
+    try:
+        return next(get_etch_sections(cross_section))
+    except StopIteration as e:
+        xs = gf.get_cross_section(cross_section)
+        msg = (
+            f"Cross-section '{xs.name}' does not have a section with 'etch' in the name. "
+            f"Found sections: {[s.name for s in xs.sections]}"
+        )
+        raise ValueError(msg) from e
 
 
 @xsection

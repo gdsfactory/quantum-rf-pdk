@@ -26,7 +26,7 @@ from qpdk.cells.junction import josephson_junction, squid_junction
 from qpdk.cells.resonator import resonator
 from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.helper import show_components
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, get_etch_section
 
 
 @gf.cell
@@ -84,9 +84,7 @@ def unimon_arm(
     c.add_port("o1", port=arm_base_ref.ports["o1"])
     c.add_port("o2", port=half_straight_ref.ports["o2"])
 
-    cross_section_etch_section = next(
-        s for s in cross_section_obj.sections if s.name and "etch_offset" in s.name
-    )
+    cross_section_etch_section = get_etch_section(cross_section_obj)
     # Add a port for readout coupling at the center of the last bend
     # We find the last bend instance in the resonator
     bend_instances = [inst for inst in arm_base.insts if "bend" in inst.cell.name]
@@ -184,9 +182,7 @@ def unimon(
     )
 
     cross_section_obj = gf.get_cross_section(cross_section)
-    cross_section_etch_section = next(
-        s for s in cross_section_obj.sections if s.name and "etch_offset" in s.name
-    )
+    cross_section_etch_section = get_etch_section(cross_section_obj)
 
     # Place the SQUID junction at the center
     junction_comp = gf.get_component(junction_spec)
