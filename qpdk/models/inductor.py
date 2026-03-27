@@ -8,9 +8,56 @@ import sax
 from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-from qpdk.models.constants import DEFAULT_FREQUENCY
-from qpdk.models.cpw import cpw_ep_r_from_cross_section, get_cpw_dimensions
+from qpdk.models.constants import DEFAULT_FREQUENCY, μ_0, π
+from qpdk.models.cpw import (
+    cpw_ep_r_from_cross_section,
+    get_cpw_dimensions,
+    get_cpw_substrate_params,
+)
 from qpdk.models.generic import inductor, lc_resonator
+
+
+@partial(jax.jit, inline=True)
+def self_inductance_strip(l: float, w: float, t: float) -> jax.Array:
+    r"""Analytical formula for the self-inductance of a rectangular metal strip.
+
+    Uses the formula from :cite:`chenCompactInductorcapacitorResonators2023`:
+
+    .. math::
+
+        L_s = \frac{\mu_0 l}{2\pi} \left[ \ln\left(\frac{2l}{w+t}\right) + 0.5 + \frac{w+t}{3l} \right]
+
+    Args:
+        l: Length of the strip in m.
+        w: Width of the strip in m.
+        t: Thickness of the strip in m.
+
+    Returns:
+        Self-inductance in Henries.
+    """
+    return (μ_0 * l / (2 * π)) * (jnp.log(2 * l / (w + t)) + 0.5 + (w + t) / (3 * l))
+
+
+@partial(jax.jit, inline=True)
+def mutual_inductance_parallel_strips(l: float, d: float) -> jax.Array:
+    r"""Analytical formula for the mutual inductance between two parallel metal strips.
+
+    Uses the formula from :cite:`chenCompactInductorcapacitorResonators2023`:
+
+    .. math::
+
+        L_m(d) = \frac{\mu_0 l}{2\pi} \left[ \ln \left( \frac{l}{d} + \sqrt{1 + \frac{l^2}{d^2}} \right) - \sqrt{1 + \frac{d^2}{l^2}} + \frac{d}{l} \right]
+
+    Args:
+        l: Length of the strips in m.
+        d: Center-to-center distance between the strips in m.
+
+    Returns:
+        Mutual inductance in Henries.
+    """
+    return (μ_0 * l / (2 * π)) * (
+        jnp.log(l / d + jnp.sqrt(1 + (l / d) ** 2)) - jnp.sqrt(1 + (d / l) ** 2) + d / l
+    )
 
 
 @partial(jax.jit, inline=True)
@@ -20,30 +67,33 @@ def meander_inductor_inductance_analytical(
     wire_width: float,
     wire_gap: float,
     sheet_inductance: float,
+    thickness: float | None = None,
 ) -> jax.Array:
     r"""Analytical formula for meander inductor inductance.
 
-    The total inductance is dominated by kinetic inductance for
-    superconducting thin films:
+    The total inductance is the sum of geometric and kinetic contributions:
 
     .. math::
 
-        L = L_\square \cdot \frac{\ell_{\text{total}}}{w}
+        L_{\text{total}} = L_g + L_k
 
-    where :math:`L_\square` is the sheet inductance per square,
-    :math:`\ell_{\text{total}}` is the total wire length, and
-    :math:`w` is the wire width.
-
-    The sheet inductance combines kinetic and geometric contributions.
-    For a superconducting film of thickness :math:`t` and London
-    penetration depth :math:`\lambda_L`:
+    The geometric inductance :math:`L_g` is calculated by summing the
+    self-inductances of all horizontal segments and the mutual inductances
+    between all pairs of parallel segments, following
+    :cite:`chenCompactInductorcapacitorResonators2023`:
 
     .. math::
 
-        L_\square^{\text{kin}} = \frac{\mu_0 \lambda_L^2}{t}
+        L_g = N L_s + 2 \sum_{k=1}^{N-1} (N-k) (-1)^k L_m(k p)
 
-    See :cite:`chenCompactInductorcapacitorResonators2023` for details
-    on analytical models of meander inductors in LC resonators.
+    where :math:`N` is the number of turns and :math:`p` is the pitch.
+
+    The kinetic inductance :math:`L_k` is calculated from the sheet
+    inductance :math:`L_\square`:
+
+    .. math::
+
+        L_k = L_\square \cdot \frac{\ell_{\text{total}}}{w}
 
     Args:
         n_turns: Number of horizontal meander runs.
@@ -51,16 +101,53 @@ def meander_inductor_inductance_analytical(
         wire_width: Width of the meander wire in µm.
         wire_gap: Gap between adjacent meander runs in µm.
         sheet_inductance: Sheet inductance per square in H/□.
-            Includes both kinetic and geometric contributions.
-            Typical values for 200 nm Nb: 0.4–2.0 pH/□.
+        thickness: Thickness of the metal film in µm. If None, it is
+            fetched from the PDK technology parameters.
 
     Returns:
         Total inductance in Henries.
     """
+    if thickness is None:
+        _h, thickness, _ep_r = get_cpw_substrate_params()
+
+    # Convert to SI (meters)
+    l_m = turn_length * 1e-6
+    w_m = wire_width * 1e-6
+    g_m = wire_gap * 1e-6
+    t_m = thickness * 1e-6
+    p_m = w_m + g_m  # Pitch (center-to-center)
+
+    # 1. Geometric Inductance
+    # Self-inductance of horizontal segments (turns)
+    L_s_horiz = self_inductance_strip(l_m, w_m, t_m)
+
+    # Self-inductance of vertical connection segments
+    # There are (n_turns - 1) such segments, each of length p_m (the pitch)
+    # They are also wire_width wide.
+    L_s_vert = self_inductance_strip(p_m, w_m, t_m)
+
+    # Mutual inductance sum between horizontal segments
+    ks = jnp.arange(1, 501)
+    mask = ks < n_turns
+    L_m_sum = jnp.sum(
+        jnp.where(
+            mask,
+            (n_turns - ks)
+            * ((-1.0) ** ks)
+            * mutual_inductance_parallel_strips(l_m, ks * p_m),
+            0.0,
+        )
+    )
+
+    L_g = n_turns * L_s_horiz + (n_turns - 1) * L_s_vert + 2 * L_m_sum
+
+    # 2. Kinetic Inductance
     # Total wire length in µm (horizontal runs + vertical connections)
     total_length_um = n_turns * turn_length + jnp.maximum(0, n_turns - 1) * wire_gap
     n_squares = total_length_um / wire_width
-    return sheet_inductance * n_squares
+    L_k = sheet_inductance * n_squares
+
+    return L_g + L_k
 
 
 def meander_inductor(
