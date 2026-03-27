@@ -128,24 +128,31 @@ def meander_inductor_inductance_analytical(
     L_s_horiz = self_inductance_strip(l_m, w_m, t_m)
 
     # Self-inductance of vertical connection segments
-    # There are (n_turns - 1) such segments, each of length p_m (the pitch)
-    # They are also wire_width wide.
     L_s_vert = self_inductance_strip(p_m, w_m, t_m)
 
     # Mutual inductance sum between horizontal segments
-    ks = jnp.arange(1, 501)
-    mask = ks < n_turns
+    # Formula: L_g = sum(L_s_i) + sum_{i!=j} M_ij
+    # Current directions alternate: sign(i, j) = (-1)**(i-j)
+    # L_g_horiz = N*L_s_horiz + 2 * sum_{i=0 to N-2} sum_{j=i+1 to N-1} (-1)**(j-i) * L_m(abs(j-i)*p)
+    # This simplifies to the sum used in Chen et al. (2023):
+    # L_g_horiz = N*L_s_horiz + 2 * sum_{k=1 to N-1} (N-k) * (-1)**k * L_m(k*p)
+
+    offsets = jnp.arange(1, 501)
+    mask = offsets < n_turns
     L_m_sum = jnp.sum(
         jnp.where(
             mask,
-            (n_turns - ks)
-            * ((-1.0) ** ks)
-            * mutual_inductance_parallel_strips(l_m, ks * p_m),
+            (n_turns - offsets)
+            * ((-1.0) ** offsets)
+            * mutual_inductance_parallel_strips(l_m, offsets * p_m),
             0.0,
         )
     )
 
-    L_g = n_turns * L_s_horiz + (n_turns - 1) * L_s_vert + 2 * L_m_sum
+    # Ensure L_g_horiz calculation is accurate. The negative mutual inductance
+    # should be outweighed by the self-inductance for physically valid meanders.
+    L_g_horiz = n_turns * L_s_horiz + 2 * L_m_sum
+    L_g = L_g_horiz + (n_turns - 1) * L_s_vert
 
     # 2. Kinetic Inductance
     # Total wire length in µm (horizontal runs + vertical connections)
