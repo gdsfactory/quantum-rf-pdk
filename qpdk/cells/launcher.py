@@ -36,6 +36,14 @@ def launcher(
     This design facilitates RF signal access through probes or wirebonds while
     maintaining good impedance matching.
 
+    .. svgbob::
+
+        ┌─────────────────┐ ╲
+        │                 │   ╲
+        │    straight     │ taper ── o1
+        │   (waveport)    │   ╱  (to circuit)
+        └─────────────────┘ ╱
+
     The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
 
     Args:

@@ -246,6 +246,20 @@ def resonator_coupled(
     at a specified gap for proximity coupling. Similar to the design described in
     :cite:`besedinQualityFactorTransmission2018a`.
 
+    .. svgbob::
+
+        coupling_o1 ─────────────── coupling_o2
+                     coupling_gap
+        resonator_o1 ───────┐
+                            │
+        ┌───────────────────┘
+        │
+        └───────────────────┐
+                            │
+        ┌───────────────────┘
+        │
+        └──── resonator_o2
+
     Args:
         length: Length of the resonator in μm.
         meanders: Number of meander sections to fit the resonator in a compact area.
@@ -328,6 +342,20 @@ def quarter_wave_resonator_coupled(
 
     Uses :func:`~qpdk.cells.resonator.resonator_coupled` as the basis but
     removes the shorted end port from the output ports.
+
+    .. svgbob::
+
+        coupling_o1 ─────────────── coupling_o2
+                     coupling_gap
+        resonator_o1 ───────┐
+                            │
+        ┌───────────────────┘
+        │
+        └───────────────────┐
+                            │
+        ┌───────────────────┘
+        │
+        └──── (shorted, no port)
 
     Args:
         length: Length of the resonator in μm.
