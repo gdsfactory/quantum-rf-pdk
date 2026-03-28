@@ -141,19 +141,11 @@ project-excludes = [
   "notebooks/src/**/*.py",
 ]
 project-includes = ["**/*.py"]
+python-version = "3.12"
 
 [tool.pyrefly.errors]
-bad-argument-type = "ignore"
-# Configure specific error types - start permissive and tighten over time
-missing-argument = "ignore"
-missing-module-attribute = "ignore"
-# Not all gdsfactory overloads are seem to be properly typed
+# Not all gdsfactory overloads are properly typed
 no-matching-overload = "ignore"
-not-a-type = "warn"
-read-only = "ignore"
-# The cast() calls are needed for pyrefly <0.55 compatibility (pre-commit hook uses 0.46.3).
-# TODO: remove this when the pre-commit hook is updated to pyrefly >=0.55.0.
-redundant-cast = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]

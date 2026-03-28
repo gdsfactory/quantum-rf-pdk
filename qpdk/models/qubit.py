@@ -568,9 +568,18 @@ double_pad_transmon_with_resonator = double_island_transmon_with_resonator
 
 
 if __name__ == "__main__":
+    from typing import TypedDict
+
     import matplotlib.pyplot as plt
 
     from qpdk import PDK
+
+    class _QubitConfig(TypedDict):
+        """Configuration for a qubit type in the demo plot."""
+
+        label: str
+        grounded: bool
+        linestyle: str
 
     PDK.activate()
 
@@ -581,7 +590,7 @@ if __name__ == "__main__":
     L_q = 7e-9
     f_q_bare = 1 / (2 * jnp.pi * jnp.sqrt(L_q * C_q))
 
-    configs = [
+    configs: list[_QubitConfig] = [
         {"label": "Shunted Transmon", "grounded": True, "linestyle": "-"},
         {"label": "Double Island Transmon", "grounded": False, "linestyle": "--"},
     ]
