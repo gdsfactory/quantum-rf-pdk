@@ -54,5 +54,8 @@ model visualizations, writing tests, or drafting documentation. However, **do no
 responsible for the quality of your contributions. Any AI-generated code, layouts, or text must be reviewed,
 functionally tested, and completely human-maintainable.
 
+```{include} just_commands.md
+```
+
 ```{include} code_of_conduct.md
 ```
