@@ -20,6 +20,7 @@ extensions = [
     "sphinx_design",
     "matplotlib.sphinxext.plot_directive",
     "sphinx_copybutton",
+    "sphinx_github_alerts",
     "sphinxcontrib.bibtex",
 ]
 
