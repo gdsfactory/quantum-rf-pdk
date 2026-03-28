@@ -55,6 +55,7 @@ docs = [
   "sphinx>=9.0",
   "sphinx-copybutton",
   "sphinx-design",
+  "sphinx-github-alerts>=1.0",
   "sphinxcontrib-bibtex",
   "sphinxcontrib-katex",
   "sphinxcontrib-mermaid>=2.0.1",

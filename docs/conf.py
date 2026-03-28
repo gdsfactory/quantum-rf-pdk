@@ -1,17 +1,11 @@
 """Sphinx configuration for Qpdk documentation."""
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent / "_ext"))
-
 project = "qpdk"
 author = "gdsfactory"
 copyright = "gdsfactory"  # noqa: A001
 
 # -- General configuration ---------------------------------------------------
 extensions = [
-    "gfm_admonitions",
     "myst_nb",
     "sphinx.ext.autodoc",
     "sphinx.ext.autodoc.typehints",
@@ -26,6 +20,7 @@ extensions = [
     "sphinx_design",
     "matplotlib.sphinxext.plot_directive",
     "sphinx_copybutton",
+    "sphinx_github_alerts",
     "sphinxcontrib.bibtex",
 ]
 
