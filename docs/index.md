@@ -44,5 +44,5 @@ notebooks
 :hidden:
 
 just_commands
-CONTRIBUTING
+contributing
 ```
