@@ -121,25 +121,25 @@ currents, and substrate modes that analytical models may miss
 
 .. note::
 
-   **gsim — additional FEM and FDTD simulation examples**
+    **gsim — additional FEM and FDTD simulation examples**
 
-   The `gsim <https://gdsfactory.github.io/gsim/>`_ project provides a collection of
-   example notebooks that demonstrate FEM (finite-element method) and FDTD
-   (finite-difference time-domain) electromagnetic simulations built on top of
-   GDSFactory. These notebooks cover solvers such as **Palace** (FEM) and **Meep**
-   (FDTD), showing how to go from a GDSFactory layout to a full 3-D electromagnetic
-   simulation. They are a valuable complement to the Ansys-based notebooks above and
-   are especially useful for users looking for open-source solver workflows.
+    The `gsim <https://gdsfactory.github.io/gsim/>`_ project provides a collection of
+    example notebooks that demonstrate FEM (finite-element method) and FDTD
+    (finite-difference time-domain) electromagnetic simulations built on top of
+    GDSFactory. These notebooks cover solvers such as **Palace** (FEM) and **Meep**
+    (FDTD), showing how to go from a GDSFactory layout to a full 3-D electromagnetic
+    simulation. They are a valuable complement to the Ansys-based notebooks above and
+    are especially useful for users looking for open-source solver workflows.
 
-   Topics covered in the gsim notebooks include:
+    Topics covered in the gsim notebooks include:
 
-   - Eigenmode and driven-port simulations with Palace.
-   - FDTD simulations with Meep, including S-parameter extraction.
-   - Geometry preparation and meshing pipelines starting from GDSFactory components.
-   - Post-processing and visualization of electromagnetic field results.
+    - Eigenmode and driven-port simulations with Palace.
+    - FDTD simulations with Meep, including S-parameter extraction.
+    - Geometry preparation and meshing pipelines starting from GDSFactory components.
+    - Post-processing and visualization of electromagnetic field results.
 
-   See the `gsim documentation <https://gdsfactory.github.io/gsim/>`_ for the full
-   list of available notebooks.
+    See the `gsim documentation <https://gdsfactory.github.io/gsim/>`_ for the full list
+    of available notebooks.
 
 **********************
  Hamiltonian analysis
