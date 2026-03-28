@@ -19,6 +19,12 @@ dependencies = [
   "typing-extensions>=4.12.0"
 ]
 
+[project.urls]
+"Bug Tracker" = "https://github.com/gdsfactory/quantum-rf-pdk/issues"
+changelog = "https://github.com/gdsfactory/quantum-rf-pdk/releases"
+documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
+repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
+
 [project.optional-dependencies]
 graphics = ["trimesh", "pyglet<2"]
 hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
