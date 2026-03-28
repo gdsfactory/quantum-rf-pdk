@@ -141,7 +141,6 @@ project-excludes = [
   "notebooks/src/**/*.py",
 ]
 project-includes = ["**/*.py"]
-python-version = "3.12"
 
 [tool.pyrefly.errors]
 # Not all gdsfactory overloads are properly typed
