@@ -37,6 +37,11 @@ pymablock = ["pymablock>=2.2.1"]
 qutip = ["qutip-jax>=0.1.1", "qutip-qip>=0.4.1"]
 scqubits = ["scqubits"]
 
+[project.urls]
+documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
+repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
+"Bug Tracker" = "https://github.com/gdsfactory/quantum-rf-pdk/issues"
+
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
