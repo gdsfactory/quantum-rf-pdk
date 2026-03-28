@@ -8,7 +8,6 @@ copyright = "gdsfactory"  # noqa: A001
 extensions = [
     "myst_nb",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autodoc.typehints",
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
@@ -29,6 +28,7 @@ exclude_patterns = [
     "ipython_config.py",
     "*.mplstyle",
     "justfile_help.txt",
+    "changelog.md",
     "Thumbs.db",
     ".DS_Store",
 ]
