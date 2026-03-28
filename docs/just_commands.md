@@ -1,8 +1,8 @@
-# Justfile Commands
+## Justfile Commands
 
 The repository includes a `justfile` with convenient commands for common development tasks.
 
-## Available Commands
+### Available Commands
 
 To see the list of available commands at any time, run:
 
@@ -14,7 +14,7 @@ just --list
 :language: text
 ```
 
-## Usage
+### Usage
 
 To run any of these commands, use:
 

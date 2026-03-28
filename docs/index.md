@@ -43,6 +43,5 @@ notebooks
 :caption: Development
 :hidden:
 
-just_commands
 contributing
 ```
