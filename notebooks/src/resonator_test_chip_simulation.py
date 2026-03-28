@@ -45,6 +45,7 @@ from qpdk.models.cpw import (
     cpw_epsilon_eff,
     cpw_parameters,
     cpw_thickness_correction,
+    get_cpw_dimensions,
     get_cpw_substrate_params,
     propagation_constant,
     transmission_line_s_params,
@@ -251,18 +252,25 @@ plt.show()
 # a corresponding shift in resonance frequency.
 
 # %% [markdown]
-# ## MC-compatible model functions
+# ## MC-compatible model wrappers
 #
-# The standard QPDK models extract CPW width and gap from a *cross-section
-# object*, which is convenient for layout-driven simulation but opaque to JAX's
-# automatic differentiation and batching machinery.  Here we define thin wrapper
-# models that accept ``cpw_width`` and ``cpw_gap`` as explicit numeric
-# parameters while reusing the same analytical CPW theory
-# (conformal-mapping :math:`\varepsilon_{\mathrm{eff}}` and :math:`Z_0`,
-# conductor-thickness correction).
+# The standard QPDK models extract CPW width and gap from a ``cross_section``
+# object.  This is the natural interface for layout-driven simulation and
+# gdsfactory+ compatibility.  For Monte Carlo analysis, however, we need
+# the CPW dimensions to be explicit **numeric** parameters so that JAX can
+# batch them efficiently across trials.
 #
-# The substrate constants (height, metal thickness, :math:`\varepsilon_r`) are
-# fixed at PDK values since they do not vary across the wafer.
+# The wrappers below keep ``cross_section`` in their signature — when no
+# explicit ``cpw_width`` / ``cpw_gap`` are given (``None``), the dimensions
+# are extracted from ``cross_section`` exactly as the standard models do.
+# When ``cpw_width`` / ``cpw_gap`` *are* provided (e.g. as JAX arrays for
+# batched MC evaluation), they override the cross-section values and feed
+# directly into the JAX-traceable CPW theory.  ``cross_section`` itself is
+# never traced by JAX; it serves only as a static fallback for the nominal
+# geometry.
+#
+# The substrate constants (height, metal thickness, :math:`\varepsilon_r`)
+# are fixed at PDK values since they do not vary across the wafer.
 
 # %%
 # Substrate constants (fixed)
@@ -274,11 +282,25 @@ _t_si = _t_m * 1e-6
 def straight_mc(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000.0,
-    cpw_width: sax.Float = 10.0,
-    cpw_gap: sax.Float = 6.0,
+    cross_section: gf.typings.CrossSectionSpec = "cpw",
+    cpw_width: sax.Float | None = None,
+    cpw_gap: sax.Float | None = None,
 ) -> sax.SDict:
-    """Straight CPW model with explicit width/gap for Monte Carlo analysis."""
+    """Straight CPW model with optional width/gap overrides for MC analysis.
+
+    When ``cpw_width`` or ``cpw_gap`` are ``None``, the corresponding
+    value is extracted from *cross_section* (standard path).  When they
+    are provided as scalars or JAX arrays, they are used directly for
+    batched evaluation.
+    """
     f = jnp.asarray(f)
+
+    if cpw_width is None or cpw_gap is None:
+        _w, _g = get_cpw_dimensions(cross_section)
+        if cpw_width is None:
+            cpw_width = _w
+        if cpw_gap is None:
+            cpw_gap = _g
 
     w_m = jnp.asarray(cpw_width) * 1e-6
     s_m = jnp.asarray(cpw_gap) * 1e-6
@@ -286,8 +308,6 @@ def straight_mc(
     ep_eff = cpw_epsilon_eff(w_m, s_m, _h_si, _ep_r)
     ep_eff, z0_val = cpw_thickness_correction(w_m, s_m, _t_si, ep_eff)
 
-    # Do not ravel f: keep shape (n_freq, 1) so it broadcasts
-    # against ep_eff of shape (n_trials,) → (n_freq, n_trials).
     gamma = propagation_constant(f, ep_eff, tand=0.0, ep_r=_ep_r)
     length_m = jnp.asarray(length) * 1e-6
     s11, s21 = transmission_line_s_params(gamma, z0_val, length_m)
@@ -304,11 +324,18 @@ def straight_mc(
 def bend_mc(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000.0,
-    cpw_width: sax.Float = 10.0,
-    cpw_gap: sax.Float = 6.0,
+    cross_section: gf.typings.CrossSectionSpec = "cpw",
+    cpw_width: sax.Float | None = None,
+    cpw_gap: sax.Float | None = None,
 ) -> sax.SDict:
-    """Bend model delegating to ``straight_mc`` (phase-only approximation)."""
-    return straight_mc(f=f, length=length, cpw_width=cpw_width, cpw_gap=cpw_gap)
+    """Bend model delegating to :func:`straight_mc` (phase-only approximation)."""
+    return straight_mc(
+        f=f,
+        length=length,
+        cross_section=cross_section,
+        cpw_width=cpw_width,
+        cpw_gap=cpw_gap,
+    )
 
 
 def quarter_wave_resonator_coupled_mc(
@@ -316,11 +343,19 @@ def quarter_wave_resonator_coupled_mc(
     length: float = 5000.0,
     coupling_gap: float = 0.27,
     coupling_straight_length: float = 20.0,
-    cpw_width: float = 10.0,
-    cpw_gap: float = 6.0,
+    cross_section: gf.typings.CrossSectionSpec = "cpw",
+    cpw_width: float | None = None,
+    cpw_gap: float | None = None,
 ) -> sax.SDict:
-    """Quarter-wave coupled resonator with explicit CPW width/gap."""
+    """Quarter-wave coupled resonator with optional CPW width/gap overrides."""
     f_arr = jnp.asarray(f)
+
+    if cpw_width is None or cpw_gap is None:
+        _w, _g = get_cpw_dimensions(cross_section)
+        if cpw_width is None:
+            cpw_width = _w
+        if cpw_gap is None:
+            cpw_gap = _g
 
     # Coupling capacitance (JAX-traceable analytical model)
     c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
@@ -335,7 +370,7 @@ def quarter_wave_resonator_coupled_mc(
     _, z0_val = cpw_thickness_correction(w_m, s_m, _t_si, ep_eff)
 
     # Internal sub-circuit instances (all JAX-traceable)
-    _kw = {"cpw_width": cpw_width, "cpw_gap": cpw_gap}
+    _kw = {"cross_section": cross_section, "cpw_width": cpw_width, "cpw_gap": cpw_gap}
     instances = {
         "coupling_1": straight_mc(f=f_arr, length=coupling_straight_length / 2, **_kw),
         "coupling_2": straight_mc(f=f_arr, length=coupling_straight_length / 2, **_kw),
@@ -614,14 +649,13 @@ for i in range(n_res):
 # In practice, fabrication variations are not perfectly uniform across a die.
 # Local effects such as proximity-dependent etching cause each resonator to
 # experience a **different** random perturbation.  We model this by assigning
-# each resonator instance an independent draw from the tolerance distribution,
-# while all straight / bend routing sections that connect to a given resonator
-# share its perturbation (simulating local correlation).
+# each resonator instance an independent draw from the tolerance distribution.
+# Routing sections (straights and bends connecting resonators) are kept at
+# nominal dimensions to isolate the effect of per-resonator geometry variation.
 
 # %%
-# Group instances by resonator: each resonator and its adjacent route segments
-# receive the same local perturbation.  For instances not clearly tied to a
-# specific resonator (e.g. launcher-adjacent routes), we use the nominal value.
+# Resonator instance names get independent perturbations.
+# Non-resonator CPW instances (routing) stay at nominal.
 
 # Resonator instance names
 res_names = sorted(
