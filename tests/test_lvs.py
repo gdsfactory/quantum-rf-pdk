@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from qpdk.klayout.lvs import render_lvs as _render_lvs_mod
 from qpdk.klayout.lvs.render_lvs import (
     CONNECTIONS,
     DEVICES,
@@ -57,7 +58,7 @@ def test_render_lvs_contains_device_extraction():
     """Rendered deck must extract every registered device type."""
     result = render(write=False)
     for device in DEVICES:
-        assert f'{device["var"]}_region = ' in result
+        assert f"{device['var']}_region = " in result
         assert device["model_name"] in result
 
 
@@ -70,10 +71,10 @@ def test_render_lvs_contains_compare():
 
 def test_rendered_file_matches_template():
     """The committed .lvs file must match what the renderer produces."""
-    from qpdk.klayout.lvs import render_lvs as mod
-
     string_result = render(write=False)
-    committed_file = mod._HERE / "qpdk.lvs"
-    assert committed_file.exists(), "qpdk.lvs must be committed alongside the template"
-    file_result = committed_file.read_text()
+    committed_lvs_deck_path = _render_lvs_mod._HERE / "qpdk.lvs"
+    assert committed_lvs_deck_path.exists(), (
+        "qpdk.lvs must be committed alongside the template"
+    )
+    file_result = committed_lvs_deck_path.read_text()
     assert string_result == file_result

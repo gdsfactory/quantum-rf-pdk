@@ -15,6 +15,8 @@ import re
 
 from jinja2 import Environment, FileSystemLoader
 
+from qpdk import logger
+
 _HERE = pathlib.Path(__file__).parent
 
 
@@ -215,7 +217,7 @@ def render(*, write: bool = True) -> str:
     if write:
         out = _HERE / "qpdk.lvs"
         out.write_text(rendered)
-        print(f"Wrote '{out}'")  # noqa: T201
+        logger.info(f"Wrote '{out}'")
 
     return rendered
 
