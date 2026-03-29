@@ -11,6 +11,7 @@ Run directly to regenerate the deck::
 from __future__ import annotations
 
 import pathlib
+import re
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -24,7 +25,14 @@ def _layer_entry(
     comment: str,
     **extra: object,
 ) -> dict:
-    return {"var": var, "gds_layer": gds_layer, "gds_datatype": gds_datatype, "comment": comment, **extra}
+    """Build a layer-definition dict for the Jinja2 template."""
+    return {
+        "var": var,
+        "gds_layer": gds_layer,
+        "gds_datatype": gds_datatype,
+        "comment": comment,
+        **extra,
+    }
 
 
 def _connection(
@@ -33,6 +41,7 @@ def _connection(
     layer_b: str,
     comment: str,
 ) -> dict:
+    """Build a connectivity-rule dict for the Jinja2 template."""
     return {"layer_a": layer_a, "via": via, "layer_b": layer_b, "comment": comment}
 
 
@@ -47,6 +56,7 @@ def _device(
     *,
     sheet_rho: float = 0.0,
 ) -> dict:
+    """Build a device-extraction dict for the Jinja2 template."""
     return {
         "var": var,
         "description": description,
@@ -76,12 +86,20 @@ PHYSICAL_LAYERS = [
 
 PORT_LAYERS = [
     _layer_entry(
-        "port_m1", 1, 10, "Port shapes on M1",
-        metal_var="m1_draw", connect_comment="Ports connect to M1 metal",
+        "port_m1",
+        1,
+        10,
+        "Port shapes on M1",
+        metal_var="m1_draw",
+        connect_comment="Ports connect to M1 metal",
     ),
     _layer_entry(
-        "port_m2", 2, 10, "Port shapes on M2",
-        metal_var="m2_draw", connect_comment="Ports connect to M2 metal",
+        "port_m2",
+        2,
+        10,
+        "Port shapes on M2",
+        metal_var="m2_draw",
+        connect_comment="Ports connect to M2 metal",
     ),
 ]
 
@@ -175,10 +193,9 @@ def render(*, write: bool = True) -> str:
     Returns:
         The rendered LVS deck as a string.
     """
-    import re
-
     env = Environment(
         loader=FileSystemLoader(_HERE),
+        autoescape=False,  # noqa: S701 — LVS deck is not HTML; escaping would break Ruby syntax
         keep_trailing_newline=True,
         trim_blocks=True,
         lstrip_blocks=True,
