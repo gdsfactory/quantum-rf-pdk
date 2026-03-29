@@ -79,6 +79,52 @@ LayerViews:
     layer_in_name: true
     color: "gray"
     hatch_pattern: checkerboard 2px
+  LVS_Ports:
+    group_members:
+      PORT_M1:
+        layer: [1, 10]
+        layer_in_name: true
+        color: "#00BFFF"
+        hatch_pattern: hollow
+        visible: false
+      PORT_M2:
+        layer: [2, 10]
+        layer_in_name: true
+        color: "#FF6347"
+        hatch_pattern: hollow
+        visible: false
+  LVS_Markers:
+    group_members:
+      MK_TRANSMON:
+        layer: [200, 0]
+        layer_in_name: true
+        color: "#FF69B4"
+        hatch_pattern: hollow
+        visible: false
+      MK_RESONATOR:
+        layer: [201, 0]
+        layer_in_name: true
+        color: "#7B68EE"
+        hatch_pattern: hollow
+        visible: false
+      MK_INDUCTOR:
+        layer: [202, 0]
+        layer_in_name: true
+        color: "#32CD32"
+        hatch_pattern: hollow
+        visible: false
+      MK_CAPACITOR:
+        layer: [203, 0]
+        layer_in_name: true
+        color: "#FFD700"
+        hatch_pattern: hollow
+        visible: false
+      MK_JJ:
+        layer: [204, 0]
+        layer_in_name: true
+        color: "#DC143C"
+        hatch_pattern: hollow
+        visible: false
   gdsfactory:
     group_members:
       LABEL_SETTINGS:
