@@ -1,22 +1,33 @@
 exclude: ^uv\.lock$
+# Hook priorities for prek parallel execution:
+# 10: Initial formatters and independent checkers (e.g., ruff check, codespell)
+# 20: Dependent formatters and linters (e.g., ruff-format, stylelint)
+# 30: Global end-of-file-fixer
+# 40: Global trailing-whitespace cleanup
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: check-yaml
+        priority: 10
         exclude: ^(conda\.recipe/meta\.yaml|conda_build/templates/.*\.yaml|docs/click/meta\.yaml|conda/meta\.yaml|conda/construct.yaml|.*\.pic\.yml|conda/constructor/Miniforge3/construct.yaml)
       - id: end-of-file-fixer
+        priority: 30
       - id: trailing-whitespace
+        priority: 40
       - id: detect-private-key
+        priority: 10
   - repo: https://github.com/kynan/nbstripout
     rev: 0.9.1
     hooks:
       - id: nbstripout
+        priority: 10
         files: ".ipynb"
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
       - id: codespell
+        priority: 10
         exclude: ^docs/bibliography\.bib$
         additional_dependencies:
           - tomli
@@ -24,18 +35,23 @@ repos:
     rev: v0.15.8
     hooks:
       - id: ruff
+        priority: 10
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
       - id: ruff-format
+        priority: 20
         args: [--config=pyproject.toml]
   - repo: https://github.com/tombi-toml/tombi-pre-commit
     rev: v0.7.14
     hooks:
       - id: tombi-format
+        priority: 10
       - id: tombi-lint
+        priority: 20
   - repo: https://github.com/aristanetworks/j2lint.git
     rev: v1.2.0
     hooks:
       - id: j2lint
+        priority: 10
         types: [file]
         files: \.(j2|yml|yaml)$
         exclude: .github/.*
@@ -44,26 +60,31 @@ repos:
     rev: v0.20.0
     hooks:
       - id: yamlfmt
+        priority: 10
         args: [-conf, ".github/.yamlfmt.yaml"]
         exclude: &regression_tests ".*.tests*"
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.38.0
     hooks:
       - id: yamllint
+        priority: 20
         args: [--strict, "-c=.github/.yamllint.yaml"]
         exclude: *regression_tests
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.11
     hooks:
       - id: actionlint
+        priority: 10
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.6
     hooks:
       - id: uv-lock
+        priority: 10
   - repo: https://github.com/facebook/pyrefly-pre-commit
     rev: 0.58.0
     hooks:
       - id: pyrefly-check
+        priority: 20
         name: Pyrefly
         pass_filenames: false
         # Pre-commit may not have access to all deps.
@@ -72,25 +93,30 @@ repos:
     rev: v1.14.0
     hooks:
       - id: bibtex-tidy
+        priority: 10
         args: ['--align=1', '--curly', '--months', '--sort', '--duplicates', '--strip-enclosing-braces']
   - repo: https://github.com/AleksaC/hadolint-py
     rev: v2.14.0
     hooks:
       - id: hadolint
+        priority: 10
   - repo: https://github.com/LilSpazJoekp/docstrfmt
     rev: v2.0.1
     hooks:
       - id: docstrfmt
+        priority: 20
         language_version: python3
         types: [rst]
   - repo: https://github.com/sphinx-contrib/sphinx-lint
     rev: v1.0.2
     hooks:
       - id: sphinx-lint
+        priority: 20
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.20.0
     hooks:
       - id: markdownlint-cli2
+        priority: 20
         name: markdownlint
         args: [--config, .github/.markdownlint-cli2.yaml]
         additional_dependencies:
@@ -99,6 +125,7 @@ repos:
     rev: 0.7.22
     hooks:
       - id: mdformat
+        priority: 10
         args: [--wrap=120]
         exclude: ^docs/(index|changelog|make_commands)\.md$
         additional_dependencies:
@@ -111,11 +138,13 @@ repos:
     rev: v3.1.0
     hooks:
       - id: prettier
+        priority: 10
         types_or: [css]
   - repo: https://github.com/thibaudcolas/pre-commit-stylelint
     rev: v17.4.0
     hooks:
       - id: stylelint
+        priority: 20
         args: [--fix, --config=.github/.stylelintrc.yaml]
         additional_dependencies:
           - stylelint@17.4.0
@@ -123,24 +152,28 @@ repos:
     rev: 1.7.0
     hooks:
       - id: interrogate
+        priority: 20
         args: [--config=pyproject.toml]
         pass_filenames: true
         exclude: '^(?:docs/_build/.*|qpdk(?:/.*)?/__init__[.]py|notebooks/.*|docs/notebooks/[^/]+|qpdk/samples/[^/]+[.]py|tests/.*)$'
   - repo: local
     hooks:
       - id: just-fmt
+        priority: 10
         name: Format justfiles
         entry: just --fmt --unstable
         language: system
         files: (^|/)justfile$|\.just$
         pass_filenames: false
       - id: convert-notebooks
+        priority: 10
         name: Convert jupytext notebooks
         entry: ./.github/convert-notebooks.sh
         language: script
         files: ^notebooks/src/.*\.py$
         pass_filenames: true
       - id: check-notebook-sources
+        priority: 10
         name: Check notebooks have source files
         entry: ./.github/check-notebook-sources.sh
         language: script
