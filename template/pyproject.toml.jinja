@@ -1,0 +1,21 @@
+[project]
+name = "{{ project_slug }}"
+version = "0.1.0"
+description = "{{ description }}"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "{{ author_name }}", email = "{{ author_email }}" }]
+dependencies = ["qpdk"]
+
+[project.optional-dependencies]
+models = ["qpdk[models]"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.gdsfactoryplus]
+name = "{{ project_slug }}"
+
+[tool.gdsfactoryplus.pdk]
+name = "{{ project_slug }}"

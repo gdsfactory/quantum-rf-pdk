@@ -1,0 +1,50 @@
+"""Cross mark alignment component.
+
+This is an example of a component built from scratch using gdsfactory
+primitives and qpdk layers.
+"""
+
+from __future__ import annotations
+
+import gdsfactory as gf
+from gdsfactory.component import Component
+from gdsfactory.typings import LayerSpec
+
+from qpdk.tech import LAYER
+
+
+@gf.cell
+def cross_mark(
+    arm_length: float = 100.0,
+    arm_width: float = 5.0,
+    layer: LayerSpec = LAYER.ALN_TOP,
+) -> Component:
+    """Creates a cross-shaped alignment mark.
+
+    Args:
+        arm_length: Length of each arm in um.
+        arm_width: Width of each arm in um.
+        layer: GDS layer for the cross mark.
+
+    Returns:
+        A gdsfactory Component representing the cross mark.
+    """
+    c = Component()
+    # Horizontal arm
+    c.add_ref(
+        gf.components.rectangle(
+            size=(arm_length, arm_width), layer=layer, centered=True
+        )
+    )
+    # Vertical arm
+    c.add_ref(
+        gf.components.rectangle(
+            size=(arm_width, arm_length), layer=layer, centered=True
+        )
+    )
+    return c
+
+
+if __name__ == "__main__":
+    c = cross_mark()
+    c.show()

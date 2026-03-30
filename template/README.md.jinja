@@ -1,0 +1,23 @@
+# {{ project_name }}
+
+{{ description }}
+
+## Installation
+
+```bash
+uv pip install -e .
+```
+
+For models support:
+
+```bash
+uv pip install -e ".[models]"
+```
+
+## Usage
+
+```python
+from {{ project_slug }} import PDK
+
+PDK.activate()
+```

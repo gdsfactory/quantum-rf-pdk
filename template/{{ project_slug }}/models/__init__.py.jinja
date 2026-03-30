@@ -1,0 +1,10 @@
+"""{{ project_name }} models."""
+
+models: dict = {}
+
+try:
+    from {{ project_slug }}.models.my_resonator import my_resonator
+
+    models["my_resonator"] = my_resonator
+except ImportError:
+    pass

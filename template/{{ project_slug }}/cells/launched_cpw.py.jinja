@@ -1,0 +1,58 @@
+"""Launched CPW component combining qpdk cells.
+
+This is an example of a derived component that combines multiple
+qpdk components: a CPW waveguide section with RF launchers at both ends.
+"""
+
+from __future__ import annotations
+
+import gdsfactory as gf
+from gdsfactory.component import Component
+
+from qpdk.cells import launcher, straight
+
+
+@gf.cell
+def launched_cpw(
+    cpw_length: float = 200.0,
+    launcher_straight_length: float = 200.0,
+    launcher_taper_length: float = 100.0,
+) -> Component:
+    """Creates a CPW transmission line with RF launchers at both ends.
+
+    This component demonstrates combining multiple qpdk cells into a single
+    derived component. It uses:
+
+    - Two RF launchers from qpdk for signal access
+    - A straight CPW waveguide section from qpdk
+
+    Args:
+        cpw_length: Length of the CPW section in um.
+        launcher_straight_length: Length of the launcher straight section in um.
+        launcher_taper_length: Length of the launcher taper section in um.
+
+    Returns:
+        A gdsfactory Component with two RF launchers connected by a CPW.
+    """
+    c = Component()
+
+    cpw = c << straight(length=cpw_length)
+
+    launcher_in = c << launcher(
+        straight_length=launcher_straight_length,
+        taper_length=launcher_taper_length,
+    )
+    launcher_out = c << launcher(
+        straight_length=launcher_straight_length,
+        taper_length=launcher_taper_length,
+    )
+
+    launcher_in.connect("o1", cpw.ports["o1"])
+    launcher_out.connect("o1", cpw.ports["o2"])
+
+    return c
+
+
+if __name__ == "__main__":
+    c = launched_cpw()
+    c.show()
