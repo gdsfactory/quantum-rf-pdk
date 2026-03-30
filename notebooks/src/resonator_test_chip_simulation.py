@@ -689,11 +689,14 @@ for i in range(n_res):
 dimensions = []
 for label, values in parcoord_data.items():
     valid = ~np.isnan(values)
+    clean = values[valid]
+    if len(clean) == 0:
+        continue
     dimensions.append(
         dict(
             label=label,
-            values=values[valid] if not np.all(valid) else values,
-            range=[float(np.nanmin(values)), float(np.nanmax(values))],
+            values=clean,
+            range=[float(np.min(clean)), float(np.max(clean))],
         )
     )
 
