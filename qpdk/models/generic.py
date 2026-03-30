@@ -29,10 +29,86 @@ __all__ = [
     "lc_resonator",
     "lc_resonator_coupled",
     "open",
+    "series_impedance",
     "short",
     "short_2_port",
+    "shunt_admittance",
     "tee",
 ]
+
+
+@jax.jit
+def series_impedance(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    z: sax.Float = 0.0,
+    z0: float = 50.0,
+) -> sax.SDict:
+    r"""Two-port series impedance Sax model.
+
+    .. svgbob::
+
+        o1 ─── Z ─── o2
+
+    See :cite:`m.pozarMicrowaveEngineering2012` (Ch. 4, Table 4.1, Table 4.2, Problem 4.11)
+    for the S-parameter derivation.
+
+    Args:
+        f: Array of frequency points in Hz.
+        z: Complex impedance in Ohms.
+        z0: Reference characteristic impedance in Ohms.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
+    """
+    zn = jnp.asarray(z) / z0
+    s11 = zn / (zn + 2.0)
+    s21 = 2.0 / (zn + 2.0)
+    sdict: sax.SDict = {
+        ("o1", "o1"): s11,
+        ("o2", "o2"): s11,
+        ("o1", "o2"): s21,
+        ("o2", "o1"): s21,
+    }
+    return sdict
+
+
+@jax.jit
+def shunt_admittance(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    y: sax.Float = 0.0,
+    z0: float = 50.0,
+) -> sax.SDict:
+    r"""Two-port shunt admittance Sax model.
+
+    .. svgbob::
+
+             o1 ──┬── o2
+                  │
+                  Y
+                  │
+                 GND
+
+    See :cite:`m.pozarMicrowaveEngineering2012` (Ch. 4, Table 4.1, Table 4.2, Problem 4.11)
+    for the S-parameter derivation.
+
+    Args:
+        f: Array of frequency points in Hz.
+        y: Complex admittance in Siemens.
+        z0: Reference characteristic impedance in Ohms.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
+    """
+    yn = jnp.asarray(y) * z0
+    s11 = -yn / (yn + 2.0)
+    s21 = 2.0 / (yn + 2.0)
+    sdict: sax.SDict = {
+        ("o1", "o1"): s11,
+        ("o2", "o2"): s11,
+        ("o1", "o2"): s21,
+        ("o2", "o1"): s21,
+    }
+    return sdict
 
 
 @jax.jit
@@ -59,6 +135,7 @@ def lc_resonator(
     capacitance: float = 100e-15,
     inductance: float = 1e-9,
     grounded: bool = False,
+    ground_capacitance: float = 0.0,
 ) -> sax.SDict:
     r"""LC resonator Sax model with capacitor and inductor in parallel.
 
@@ -79,6 +156,17 @@ def lc_resonator(
              └──C──┘  |
                      "o2"
 
+    Optional ground capacitances Cg can be added to both ports:
+
+    .. svgbob::
+
+             ┌────── C ──────┐
+        o1 ──┼────── L ──────┼── o2
+             │               │
+            Cg              Cg
+             │               │
+            GND             GND
+
     .. math::
 
         f_r = \frac{1}{2 \pi \sqrt{LC}}
@@ -90,37 +178,45 @@ def lc_resonator(
         capacitance: Capacitance of the resonator in Farads.
         inductance: Inductance of the resonator in Henries.
         grounded: If True, add a 2-port ground to the second port.
+        ground_capacitance: Parasitic capacitance to ground Cg at each port in Farads.
 
     Returns:
         sax.SDict: S-parameters dictionary with ports o1 and o2.
     """
     f = jnp.asarray(f)
+    omega = 2 * jnp.pi * f
+    z0 = 50.0
+
+    # Calculate physical values
+    y_g = 1j * omega * ground_capacitance
+    y_lc = 1j * omega * capacitance + 1.0 / (1j * omega * inductance + 1e-25)
+    z_lc = 1.0 / (y_lc + 1e-25)
 
     instances = {
-        "capacitor": capacitor(f=f, capacitance=capacitance),
-        "inductor": inductor(f=f, inductance=inductance),
-        "tee_1": tee(f=f),
-        "tee_2": tee(f=f),
+        "cg1": shunt_admittance(f=f, y=y_g, z0=z0),
+        "lc": series_impedance(f=f, z=z_lc, z0=z0),
+        "cg2": shunt_admittance(f=f, y=y_g, z0=z0),
     }
 
     connections = {
-        "tee_1,o2": "capacitor,o1",
-        "tee_1,o3": "inductor,o1",
-        "capacitor,o2": "tee_2,o2",
-        "inductor,o2": "tee_2,o3",
+        "cg1,o2": "lc,o1",
+        "lc,o2": "cg2,o1",
     }
+
+    port_o1 = "cg1,o1"
+    port_o2 = "cg2,o2"
 
     if grounded:
         instances["ground"] = electrical_short(f=f, n_ports=2)
-        connections["tee_2,o1"] = "ground,o1"
+        connections[port_o2] = "ground,o1"
         ports = {
-            "o1": "tee_1,o1",
+            "o1": port_o1,
             "o2": "ground,o2",
         }
     else:
         ports = {
-            "o1": "tee_1,o1",
-            "o2": "tee_2,o1",
+            "o1": port_o1,
+            "o2": port_o2,
         }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
@@ -132,14 +228,15 @@ def lc_resonator_coupled(
     capacitance: float = 100e-15,
     inductance: float = 1e-9,
     grounded: bool = False,
+    ground_capacitance: float = 0.0,
     coupling_capacitance: float = 10e-15,
     coupling_inductance: float = 0.0,
 ) -> sax.SDict:
     r"""Coupled LC resonator Sax model.
 
     This model extends the basic LC resonator by adding a coupling network
-    consisting of a parallel capacitor and inductor connected to one port
-    of the LC resonator via a tee junction.
+    consisting of a parallel capacitor and inductor connected in series
+    to one port of the LC resonator.
 
     The resonance frequency of the main LC resonator is given by:
 
@@ -164,6 +261,7 @@ def lc_resonator_coupled(
         capacitance: Capacitance of the main resonator in Farads.
         inductance: Inductance of the main resonator in Henries.
         grounded: If True, the resonator is grounded.
+        ground_capacitance: Parasitic capacitance to ground Cg at each port in Farads.
         coupling_capacitance: Coupling capacitance in Farads.
         coupling_inductance: Coupling inductance in Henries.
 
@@ -171,30 +269,34 @@ def lc_resonator_coupled(
         sax.SDict: S-parameters dictionary with ports o1 and o2.
     """
     f = jnp.asarray(f)
+    omega = 2 * jnp.pi * f
+    z0 = 50.0
+
     resonator = lc_resonator(
-        f=f, capacitance=capacitance, inductance=inductance, grounded=grounded
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+        grounded=grounded,
+        ground_capacitance=ground_capacitance,
     )
 
-    # Always use the full tee network topology for consistent behavior
-    # When an element has zero value, it naturally produces the correct S-parameters
+    # Combined coupling admittance (parallel Cc and Lc)
+    y_coupling = 1j * omega * coupling_capacitance + 1.0 / (
+        1j * omega * coupling_inductance + 1e-25
+    )
+    z_coupling = 1.0 / (y_coupling + 1e-25)
+
     instances: dict[str, sax.SType] = {
         "resonator": resonator,
-        "tee_between": tee(f=f),
-        "tee_outer": tee(f=f),
-        "inductive_coupling": inductor(f=f, inductance=coupling_inductance),
-        "capacitive_coupling": capacitor(f=f, capacitance=coupling_capacitance),
+        "coupling": series_impedance(f=f, z=z_coupling, z0=z0),
     }
 
     connections = {
-        "tee_outer,o2": "inductive_coupling,o1",
-        "tee_outer,o3": "capacitive_coupling,o1",
-        "inductive_coupling,o2": "tee_between,o2",
-        "capacitive_coupling,o2": "tee_between,o3",
-        "tee_between,o1": "resonator,o1",
+        "coupling,o2": "resonator,o1",
     }
 
     ports = {
-        "o1": "tee_outer,o1",
+        "o1": "coupling,o1",
         "o2": "resonator,o2",
     }
 

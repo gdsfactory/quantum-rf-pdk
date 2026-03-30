@@ -25,6 +25,58 @@ def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Co
     return component
 
 
+def add_rect(
+    c: Component,
+    layer: LayerSpec,
+    *,
+    x0: float | None = None,
+    x1: float | None = None,
+    y0: float | None = None,
+    y1: float | None = None,
+    x_center: float | None = None,
+    y_center: float | None = None,
+    width: float | None = None,
+    height: float | None = None,
+) -> None:
+    """Add a rectangle to component *c* using flexible coordinates.
+
+    Coordinates can be specified using either (x0, x1) or (x_center, width),
+    and similarly for y.
+
+    Args:
+        c: Component to add the rectangle to.
+        layer: Layer specification for the rectangle.
+        x0: Left x-coordinate.
+        x1: Right x-coordinate.
+        y0: Bottom y-coordinate.
+        y1: Top y-coordinate.
+        x_center: Center x-coordinate.
+        y_center: Center y-coordinate.
+        width: Width of the rectangle.
+        height: Height of the rectangle.
+
+    Raises:
+        ValueError: If coordinate specification is incomplete or ambiguous.
+    """
+    match (x0, x1, x_center, width):
+        case (float() | int(), float() | int(), _, _):
+            x_lo, x_hi = min(x0, x1), max(x0, x1)
+        case (_, _, float() | int(), float() | int()):
+            x_lo, x_hi = x_center - width / 2, x_center + width / 2
+        case _:
+            raise ValueError("Provide (x0, x1) or (x_center, width)")
+
+    match (y0, y1, y_center, height):
+        case (float() | int(), float() | int(), _, _):
+            y_lo, y_hi = min(y0, y1), max(y0, y1)
+        case (_, _, float() | int(), float() | int()):
+            y_lo, y_hi = y_center - height / 2, y_center + height / 2
+        case _:
+            raise ValueError("Provide (y0, y1) or (y_center, height)")
+
+    c.add_polygon([(x_lo, y_lo), (x_hi, y_lo), (x_hi, y_hi), (x_lo, y_hi)], layer=layer)
+
+
 _EXCLUDE_LAYERS_DEFAULT_M1 = [
     (LAYER.M1_ETCH, 80),
     (LAYER.M1_DRAW, 80),

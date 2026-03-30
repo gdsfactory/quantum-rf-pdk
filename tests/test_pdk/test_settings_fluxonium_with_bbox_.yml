@@ -1,0 +1,15 @@
+info: {}
+name: fluxonium_with_bbox_BE200_PS250_400_PG25_JSjosephson_ju_e1e4aff6
+settings:
+  bbox_extension: 200
+  connection_wire_width: 0.5
+  inductor_cross_section: superinductor_cross_section
+  inductor_margin_x: 1
+  inductor_n_turns: 155
+  junction_margin: 1
+  junction_spec: josephson_junction
+  layer_metal: M1_DRAW
+  pad_gap: 25
+  pad_size:
+  - 250
+  - 400
