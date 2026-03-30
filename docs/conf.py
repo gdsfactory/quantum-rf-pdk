@@ -23,6 +23,24 @@ extensions = [
     "sphinxcontrib.bibtex",
 ]
 
+# -- Plot directive configuration ---------------------------------------------
+plot_pre_code = """
+import numpy as np
+from matplotlib import pyplot as plt
+from qpdk import PDK
+
+plt.style.use("qpdk")
+PDK.activate()
+"""
+plot_rcparams = {
+    "svg.fonttype": "path",
+    "pdf.compression": 9,
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+}
+plot_formats = ["svg", "pdf", "png"]
+plot_apply_rcparams = True  # Ensure rcParams are applied even with :context:
+
 exclude_patterns = [
     "_build",
     "conf.py",
