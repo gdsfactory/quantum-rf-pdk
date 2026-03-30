@@ -58,21 +58,19 @@ def add_rect(
     Raises:
         ValueError: If coordinate specification is incomplete or ambiguous.
     """
-    match (x0, x1, x_center, width):
-        case (float() | int(), float() | int(), _, _):
-            x_lo, x_hi = min(x0, x1), max(x0, x1)
-        case (_, _, float() | int(), float() | int()):
-            x_lo, x_hi = x_center - width / 2, x_center + width / 2  # pyright: ignore
-        case _:
-            raise ValueError("Provide (x0, x1) or (x_center, width)")
+    if x0 is not None and x1 is not None:
+        x_lo, x_hi = min(x0, x1), max(x0, x1)
+    elif x_center is not None and width is not None:
+        x_lo, x_hi = x_center - width / 2, x_center + width / 2
+    else:
+        raise ValueError("Provide (x0, x1) or (x_center, width)")
 
-    match (y0, y1, y_center, height):
-        case (float() | int(), float() | int(), _, _):
-            y_lo, y_hi = min(y0, y1), max(y0, y1)
-        case (_, _, float() | int(), float() | int()):
-            y_lo, y_hi = y_center - height / 2, y_center + height / 2  # pyright: ignore
-        case _:
-            raise ValueError("Provide (y0, y1) or (y_center, height)")
+    if y0 is not None and y1 is not None:
+        y_lo, y_hi = min(y0, y1), max(y0, y1)
+    elif y_center is not None and height is not None:
+        y_lo, y_hi = y_center - height / 2, y_center + height / 2
+    else:
+        raise ValueError("Provide (y0, y1) or (y_center, height)")
 
     c.add_polygon([(x_lo, y_lo), (x_hi, y_lo), (x_hi, y_hi), (x_lo, y_hi)], layer=layer)
 
