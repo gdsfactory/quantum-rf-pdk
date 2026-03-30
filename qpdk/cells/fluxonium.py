@@ -17,69 +17,55 @@ from qpdk.tech import (
     LAYER,
     get_etch_section,
     meander_inductor_cross_section,
+    superinductor_cross_section,
 )
+
+__all__ = ["fluxonium", "fluxonium_with_bbox"]
 
 
 @gf.cell(check_instances=False)
 def fluxonium(
     pad_size: tuple[float, float] = (250.0, 400.0),
-    pad_gap: float = 120.0,
+    pad_gap: float = 30.0,
     junction_spec: ComponentSpec = josephson_junction,
     junction_displacement: DCplxTrans | None = None,
-    inductor_n_turns: int = 59,
-    inductor_cross_section: CrossSectionSpec = meander_inductor_cross_section,
+    inductor_n_turns: int = 315,
+    inductor_cross_section: CrossSectionSpec = superinductor_cross_section,
     connection_wire_width: float = 4.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
     r"""Creates a fluxonium qubit with capacitor pads, Josephson junction, and superinductor.
 
-    A fluxonium qubit consists of a single small Josephson junction shunted
-    by a large inductance (superinductor) and a capacitor.  The two capacitor
-    pads are connected in parallel by the junction and a tightly meandering
-    inductor that provides the required large inductance.
-
     .. svgbob::
 
         +---------+           +---------+
-        |         |  ───────  |         |
-        |         |  ┌──────  |         |
-        |  pad1   |  ───────  |  pad2   |
-        |         |  inductor |         |
-        |         |  ───────  |         |
-        |         |====XX=====|         |
-        +---------+    JJ     +---------+
+        |         |           |         |
+        |         |           |         |
+        |  pad1   |           |  pad2   |
+        |         |           |         |
+        |         |           |         |
+        +----+----+           +----+----+
+             |                     |
+             |      JJ             |
+             +======XX=============+
+             |                     |
+             |      inductor       |
+             +---------------------+
 
-    See :cite:`manucharyan_fluxonium_2009` for the original proposal and
-    :cite:`nguyen_blueprint_2019` for a modern high-coherence implementation.
+    See :cite:`manucharyan_fluxonium_2009` and :cite:`nguyen_blueprint_2019`.
 
     Args:
         pad_size: (width, height) of each capacitor pad in µm.
-        pad_gap: Gap between the two capacitor pads in µm.  Must be large
-            enough to accommodate the meander inductor.
-        junction_spec: Component specification for the single Josephson
-            junction.
-        junction_displacement: Optional transformation applied to the
-            junction after default placement.
-        inductor_n_turns: Number of horizontal meander runs in the
-            superinductor.  Must be odd so both ports face outward.
-        inductor_cross_section: Cross-section specification for the meander
-            inductor.
-        connection_wire_width: Width of the wires connecting the pads to
-            the junction and inductor in µm.
+        pad_gap: Gap between the two capacitor pads in µm.
+        junction_spec: Component specification for the Josephson junction.
+        junction_displacement: Optional transformation applied to the junction.
+        inductor_n_turns: Number of horizontal meander runs. Must be odd.
+        inductor_cross_section: Cross-section for the meander inductor.
+        connection_wire_width: Width of the connecting wires in µm.
         layer_metal: Layer for the metal pads and connection wires.
-
-    Returns:
-        Component: A gdsfactory component with the fluxonium geometry and
-            ports for both pads and the junction.
-
-    Raises:
-        ValueError: If `inductor_n_turns` is even.
     """
     if inductor_n_turns % 2 == 0:
-        raise ValueError(
-            "inductor_n_turns must be odd so that both inductor ports "
-            "face outward (left and right) for connection to the pads"
-        )
+        raise ValueError("inductor_n_turns must be odd")
 
     xs = gf.get_cross_section(inductor_cross_section)
     inductor_wire_width = xs.width
@@ -89,19 +75,21 @@ def fluxonium(
     c = Component()
     pad_width, pad_height = pad_size
 
-    # -- Geometry budget -----------------------------------------------
-    # The junction and inductor share the vertical space between the pads.
     junction_comp = gf.get_component(junction_spec)
-    junction_rotated_height = junction_comp.size_info.width  # after 45° rotation
-    junction_margin = 10.0  # clearance above/below junction
+    junction_rotated_height = junction_comp.size_info.width
+    junction_margin = 10.0
+    inductor_margin_x = 10.0
 
-    inductor_turn_length = pad_gap - 2 * connection_wire_width
+    inductor_turn_length = pad_gap - 2 * inductor_margin_x
     inductor_total_height = (
         inductor_n_turns * inductor_wire_width
         + max(0, inductor_n_turns - 1) * inductor_wire_gap
     )
 
-    # -- Capacitor pads ------------------------------------------------
+    if inductor_turn_length <= 0:
+        raise ValueError(f"pad_gap={pad_gap} is too small")
+
+    # Capacitor pads
     def create_capacitor_pad(x_offset: float) -> gf.ComponentReference:
         pad = gf.components.rectangle(size=pad_size, layer=layer_metal)
         pad_ref = c.add_ref(pad)
@@ -111,17 +99,15 @@ def fluxonium(
     create_capacitor_pad(-pad_width - pad_gap / 2)
     create_capacitor_pad(pad_gap / 2)
 
-    # -- Josephson junction (at the bottom of the gap) -----------------
+    # Josephson junction
     junction_ref = c.add_ref(junction_comp)
     junction_ref.rotate(45)
-    junction_y = -pad_height / 2 + junction_rotated_height / 2 + junction_margin
+    junction_y = -pad_height / 2 - junction_margin - junction_rotated_height / 2
     junction_ref.dcenter = (0, junction_y)
     if junction_displacement:
         junction_ref.transform(junction_displacement)
 
-    # -- Superinductor (meander inductor, fills most of the gap) -------
-    # We disable the internal etch bounding box for the sub-component
-    # because it is handled by the fluxonium bounding box.
+    # Superinductor
     inductor = meander_inductor(
         n_turns=inductor_n_turns,
         turn_length=inductor_turn_length,
@@ -131,43 +117,78 @@ def fluxonium(
         add_etch=False,
     )
     inductor_ref = c.add_ref(inductor)
-    # Place inductor above the junction, filling the remaining gap
-    inductor_y = pad_height / 2 - inductor_total_height / 2
+    inductor_y = (
+        junction_ref.dcenter[1]
+        - junction_rotated_height / 2
+        - junction_margin
+        - inductor_total_height / 2
+    )
     inductor_ref.dcenter = (0, inductor_y)
 
-    # -- Connection wires from pads to inductor and junction -----------
-    # The inductor (odd n_turns) has o1 at its bottom-left and o2 at its
-    # top-right.  Vertical bus bars along each gap edge carry current
-    # from the pad inner edge down to the junction and up to both
-    # inductor ports.
+    # Connection wires
     ind_o1 = inductor_ref.ports["o1"]
     ind_o2 = inductor_ref.ports["o2"]
 
-    bus_left_x = -pad_gap / 2 + connection_wire_width / 2
-    bus_right_x = pad_gap / 2 - connection_wire_width / 2
-    bus_bottom_y = junction_y - connection_wire_width / 2
-    bus_top_y = pad_height / 2  # top of the pad area
+    bus_left_x = -pad_gap / 2 - connection_wire_width / 2
+    bus_right_x = pad_gap / 2 + connection_wire_width / 2
+    bus_top_y = -pad_height / 2 + 0.1
+    jj_conn_y0 = junction_ref.dcenter[1] - connection_wire_width / 2
 
-    # Left bus bar: full height of gap
+    # Left bus bar
     _add_rect(
         c,
         layer=layer_metal,
         x_center=bus_left_x,
         width=connection_wire_width,
-        y0=bus_bottom_y,
+        y0=jj_conn_y0,
         y1=bus_top_y,
     )
-    # Right bus bar: full height of gap (symmetric)
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x0=-pad_gap / 2 - inductor_wire_width,
+        x1=-pad_gap / 2,
+        y0=ind_o1.dcenter[1],
+        y1=jj_conn_y0,
+    )
+
+    # Right bus bar
     _add_rect(
         c,
         layer=layer_metal,
         x_center=bus_right_x,
         width=connection_wire_width,
-        y0=bus_bottom_y,
+        y0=jj_conn_y0,
         y1=bus_top_y,
     )
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x0=pad_gap / 2,
+        x1=pad_gap / 2 + inductor_wire_width,
+        y0=ind_o2.dcenter[1],
+        y1=jj_conn_y0,
+    )
 
-    # Horizontal stubs: bus bars → inductor ports
+    # Transitions
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x0=-pad_gap / 2 - connection_wire_width,
+        x1=-pad_gap / 2,
+        y0=-pad_height / 2,
+        y1=-pad_height / 2 + connection_wire_width,
+    )
+    _add_rect(
+        c,
+        layer=layer_metal,
+        x0=pad_gap / 2,
+        x1=pad_gap / 2 + connection_wire_width,
+        y0=-pad_height / 2,
+        y1=-pad_height / 2 + connection_wire_width,
+    )
+
+    # Inductor stubs
     _add_rect(
         c,
         layer=layer_metal,
@@ -185,14 +206,14 @@ def fluxonium(
         height=inductor_wire_width,
     )
 
-    # Horizontal wires: bus bars → junction
+    # Junction wires
     jj_half_w = junction_ref.size_info.width / 2
     _add_rect(
         c,
         layer=layer_metal,
         x0=-pad_gap / 2,
         x1=-jj_half_w,
-        y_center=junction_y,
+        y_center=junction_ref.dcenter[1],
         height=connection_wire_width,
     )
     _add_rect(
@@ -200,11 +221,11 @@ def fluxonium(
         layer=layer_metal,
         x0=jj_half_w,
         x1=pad_gap / 2,
-        y_center=junction_y,
+        y_center=junction_ref.dcenter[1],
         height=connection_wire_width,
     )
 
-    # -- Ports ---------------------------------------------------------
+    # Ports
     ports_config = [
         {
             "name": "left_pad",
@@ -248,7 +269,6 @@ def fluxonium(
     for port_config in ports_config:
         c.add_port(**port_config)
 
-    # -- Metadata ------------------------------------------------------
     c.info["qubit_type"] = "fluxonium"
     c.info["inductor_n_turns"] = inductor_n_turns
     c.info["inductor_total_wire_length"] = inductor.info["total_wire_length"]
@@ -257,7 +277,7 @@ def fluxonium(
 
 
 def _snap_to_grid(value: float, grid: float = 0.002) -> float:
-    """Snap a value to the nearest even grid multiple (for port widths)."""
+    """Snap a value up to the next grid multiple."""
     return math.ceil(value / grid) * grid
 
 
@@ -274,14 +294,7 @@ def _add_rect(
     width: float | None = None,
     height: float | None = None,
 ) -> None:
-    """Add a rectangle to *c* using flexible coordinates.
-
-    Provide either ``(x0, x1)`` **or** ``(x_center, width)`` for the
-    horizontal extent (likewise for the vertical extent).
-
-    Raises:
-        ValueError: If neither or both coordinate styles are provided for an axis.
-    """
+    """Add a rectangle to *c* using flexible coordinates."""
     if x0 is not None and x1 is not None:
         x_lo, x_hi = min(x0, x1), max(x0, x1)
     elif x_center is not None and width is not None:
@@ -303,38 +316,15 @@ def _add_rect(
 def fluxonium_with_bbox(
     bbox_extension: float = 200.0,
     pad_size: tuple[float, float] = (250.0, 400.0),
-    pad_gap: float = 120.0,
+    pad_gap: float = 30.0,
     junction_spec: ComponentSpec = josephson_junction,
     junction_displacement: DCplxTrans | None = None,
-    inductor_n_turns: int = 59,
-    inductor_cross_section: CrossSectionSpec = meander_inductor_cross_section,
+    inductor_n_turns: int = 315,
+    inductor_cross_section: CrossSectionSpec = superinductor_cross_section,
     connection_wire_width: float = 4.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
-    """Creates a fluxonium qubit with an etched bounding box.
-
-    See :func:`~fluxonium` for more details.
-
-    Args:
-        bbox_extension: Extension size for the bounding box in µm.
-        pad_size: (width, height) of each capacitor pad in µm.
-        pad_gap: Gap between the two capacitor pads in µm.
-        junction_spec: Component specification for the single Josephson
-            junction.
-        junction_displacement: Optional transformation applied to the
-            junction.
-        inductor_n_turns: Number of horizontal meander runs in the
-            superinductor.
-        inductor_cross_section: Cross-section specification for the meander
-            inductor.
-        connection_wire_width: Width of the wires connecting the pads to
-            the junction and inductor in µm.
-        layer_metal: Layer for the metal pads and connection wires.
-
-    Returns:
-        Component: A gdsfactory component with the fluxonium geometry
-            and etched box.
-    """
+    """Fluxonium with an etched bounding box."""
     c = gf.Component()
     flux_ref = c << fluxonium(
         pad_size=pad_size,
@@ -362,7 +352,6 @@ def fluxonium_with_bbox(
             transform_component, transform=DCplxTrans(*(-e / 2 for e in bbox_size))
         ),
     )
-    # Remove additive metal from etch
     bbox = gf.boolean(
         A=bbox,
         B=c,

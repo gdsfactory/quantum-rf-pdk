@@ -16,16 +16,16 @@ instances:
   meander_inductor:
     component: meander_inductor
     info:
-      cross_section: meander_inductor_cross_section
-      n_squares: 3420
-      total_wire_length: 6840
+      cross_section: superinductor_cross_section
+      n_squares: 315628
+      total_wire_length: 3156.28
     settings:
       add_etch: false
-      cross_section: meander_inductor_cross_section
+      cross_section: superinductor_cross_section
       etch_bbox_margin: 0
-      n_turns: 59
-      turn_length: 112
-      wire_gap: 4
+      n_turns: 315
+      turn_length: 10
+      wire_gap: 0.02
   rectangle:
     component: rectangle
     info: {}
@@ -62,20 +62,20 @@ placements:
     mirror: false
     rotation: 45
     x: -9.546
-    y: -184.438
+    y: -219.063
   meander_inductor:
     mirror: false
     rotation: 0
     x: 0
-    y: 25
+    y: -239.34
   rectangle:
     mirror: false
     rotation: 0
-    x: -310
+    x: -265
     y: -200
   rectangle2:
     mirror: false
     rotation: 0
-    x: 60
+    x: 15
     y: -200
 ports: {}

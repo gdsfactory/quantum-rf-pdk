@@ -2,17 +2,17 @@ instances:
   fluxonium:
     component: fluxonium
     info:
-      inductor_n_turns: 59
-      inductor_total_wire_length: 6840
+      inductor_n_turns: 315
+      inductor_total_wire_length: 3156.28
       qubit_type: fluxonium
     settings:
       connection_wire_width: 4
-      inductor_cross_section: meander_inductor_cross_section
-      inductor_n_turns: 59
+      inductor_cross_section: superinductor_cross_section
+      inductor_n_turns: 315
       junction_displacement: null
       junction_spec: josephson_junction
       layer_metal: M1_DRAW
-      pad_gap: 120
+      pad_gap: 30
       pad_size:
       - 250
       - 400

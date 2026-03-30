@@ -82,16 +82,15 @@ def meander_inductor(
     try:
         etch_section = get_etch_section(xs)
         etch_layer = etch_section.layer
-        etch_width = etch_section.width
     except ValueError:
+        etch_section = None
         etch_layer = None
-        etch_width = 0
 
     # For CPW-like structures, we assume a pitch that allows for non-overlapping etches
     # i.e. pitch = width + 2 * gap, which means wire_gap = 2 * etch_width
     # If no etch section is found, we use a default gap equal to the wire width
     if wire_gap is None:
-        wire_gap = 2 * etch_width if etch_layer is not None else wire_width
+        wire_gap = 2 * etch_section.width if etch_section is not None else wire_width
 
     c = Component()
     pitch = wire_width + wire_gap
@@ -128,9 +127,9 @@ def meander_inductor(
                 layer=layer,
             )
 
-    if add_etch and etch_layer is not None:
+    if add_etch and etch_section is not None:
         # Extra margin on top of the implicit etch margin from the cross-section
-        margin = etch_width + etch_bbox_margin
+        margin = etch_section.width + etch_bbox_margin
         c.add_polygon(
             [
                 (-margin, -margin),
