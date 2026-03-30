@@ -114,10 +114,15 @@ def fill_magnetic_vortices(
     return c
 
 
-def apply_additive_metals(component: Component) -> Component:
+def apply_additive_metals(component: Component, *, run_drc: bool = False) -> Component:
     """Apply additive metal layers and remove them.
 
     Removes additive metal layers from etch layers, leading to a negative mask.
+
+    Args:
+        component: The component to process.
+        run_drc: If True, run DRC checks after the boolean operations and
+            log the results.  Violations are reported but do **not** raise.
 
     TODO: Implement without flattening. Maybe with a KLayout dataprep script?
 
@@ -139,6 +144,13 @@ def apply_additive_metals(component: Component) -> Component:
         component.flatten()
         component.remove_layers([etch, additive])
         component << component_etch_only
+
+    if run_drc:
+        from qpdk.drc import run_drc as _run_drc
+
+        results = _run_drc(component)
+        results.print_summary()
+
     return component
 
 
