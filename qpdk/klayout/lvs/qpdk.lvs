@@ -1,0 +1,131 @@
+# frozen_string_literal: true
+# QPDK Layout vs. Schematic (LVS) Deck
+#
+# Auto-generated from qpdk.lvs.j2 — do not edit directly.
+# Regenerate with: uv run python qpdk/klayout/lvs/render_lvs.py
+#
+# KLayout LVS reference: https://www.klayout.de/doc/manual/lvs.html
+# API reference:          https://www.klayout.de/doc-qt5/about/lvs_ref.html
+
+# ─── Configuration ──────────────────────────────────────────────────────────────
+
+deep          # hierarchical extraction (supports large designs)
+
+# ─── Source & Reports ───────────────────────────────────────────────────────────
+
+# The layout and schematic paths are supplied externally via -rd switches
+# when invoking KLayout, e.g.:
+#   klayout -b -r qpdk.lvs \
+#       -rd input=layout.gds \
+#       -rd schematic=netlist.cir \
+#       -rd report=lvs_report.lvsdb
+#       -rd topcell=my_top_cell
+
+input_layout  = $input
+report_file   = $report  || "qpdk_lvs.lvsdb"
+spice_netlist = $schematic
+
+if $topcell
+  source(input_layout, $topcell)
+else
+  source(input_layout)
+end
+
+report_lvs(report_file)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 1. Layer Definitions
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Physical layers ────────────────────────────────────────────────────────────
+m1_draw = input(1, 0)  # M1 additive metal
+m1_etch = input(1, 1)  # M1 subtractive etch
+m2_draw = input(2, 0)  # M2 additive metal (flip-chip)
+m2_etch = input(2, 1)  # M2 subtractive etch
+ab_draw = input(10, 0)  # Airbridge metal
+ab_via = input(10, 1)  # Airbridge landing pads
+jj_area = input(20, 0)  # Josephson junction area
+jj_patch = input(20, 1)  # Josephson junction patch
+ind = input(30, 0)  # Indium bumps
+tsv = input(31, 0)  # Through-silicon vias
+
+# ─── Port / pin layers ─────────────────────────────────────────────────────────
+port_m1 = input(1, 10)  # Port shapes on M1
+port_m2 = input(2, 10)  # Port shapes on M2
+
+# ─── Device marker layers ──────────────────────────────────────────────────────
+mk_transmon = input(200, 0)  # Transmon qubit marker
+mk_resonator = input(201, 0)  # Resonator marker
+mk_inductor = input(202, 0)  # Inductor marker
+mk_capacitor = input(203, 0)  # Capacitor marker
+mk_jj = input(204, 0)  # Josephson junction marker
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 2. Layer Connectivity
+# ═══════════════════════════════════════════════════════════════════════════════
+# Defines which layers are electrically connected through vias and bumps.
+connect(m1_draw, tsv, m2_draw)  # M1 ↔ TSV ↔ M2
+connect(m1_draw, ind, m2_draw)  # M1 ↔ indium bump ↔ M2
+connect(m1_draw, ab_draw, m1_draw)  # M1 ↔ airbridge ↔ M1
+connect(m2_draw, ab_draw, m2_draw)  # M2 ↔ airbridge ↔ M2
+
+# Port layers connect to their corresponding metal layers so that
+# KLayout can identify net terminals.
+connect(m1_draw, port_m1)  # Ports connect to M1 metal
+connect(m2_draw, port_m2)  # Ports connect to M2 metal
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3. Device Extraction
+# ═══════════════════════════════════════════════════════════════════════════════
+# Each quantum device type is identified by a boolean AND of its marker layer
+# with the physical metal layer.  The marker layer is a bounding polygon drawn
+# on a dedicated GDS layer inside every instance of that component.
+# ─── Transmon qubit ──────────────────────────────────────────────────────────────
+transmon_region = m1_draw & mk_transmon
+# Custom subcircuit: detected by marker, terminals defined by port layer overlap
+extract_devices(RBA::SubCircuit.new("TRANSMON"), {
+  "pad_a" => port_m1,
+  "pad_b" => port_m1,
+})
+# ─── Coplanar waveguide resonator ────────────────────────────────────────────────
+resonator_region = m1_draw & mk_resonator
+# Custom subcircuit: detected by marker, terminals defined by port layer overlap
+extract_devices(RBA::SubCircuit.new("RESONATOR"), {
+  "input" => port_m1,
+  "output" => port_m1,
+})
+# ─── Meander inductor ────────────────────────────────────────────────────────────
+inductor_region = m1_draw & mk_inductor
+extract_devices(RBA::Resistor("INDUCTOR", 0.0), {
+  "R" => inductor_region,
+  "tA" => port_m1,
+  "tB" => port_m1,
+})
+# ─── Interdigital capacitor ──────────────────────────────────────────────────────
+capacitor_region = m1_draw & mk_capacitor
+extract_devices(RBA::Capacitor("CAPACITOR"), {
+  "P1" => capacitor_region,
+  "P2" => capacitor_region,
+})
+# ─── Josephson junction ──────────────────────────────────────────────────────────
+jj_region = jj_area & mk_jj
+# Custom subcircuit: detected by marker, terminals defined by port layer overlap
+extract_devices(RBA::SubCircuit.new("JJ"), {
+  "top" => port_m1,
+  "bottom" => port_m1,
+})
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 4. Top-Level Pins & Netlist Output
+# ═══════════════════════════════════════════════════════════════════════════════
+
+netlist.make_top_level_pins
+netlist.purge
+netlist.purge_nets
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5. Schematic & Compare
+# ═══════════════════════════════════════════════════════════════════════════════
+
+schematic(spice_netlist)
+compare

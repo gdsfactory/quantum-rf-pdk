@@ -1,0 +1,113 @@
+# frozen_string_literal: true
+# QPDK Layout vs. Schematic (LVS) Deck
+#
+# Auto-generated from qpdk.lvs.j2 — do not edit directly.
+# Regenerate with: uv run python qpdk/klayout/lvs/render_lvs.py
+#
+# KLayout LVS reference: https://www.klayout.de/doc/manual/lvs.html
+# API reference:          https://www.klayout.de/doc-qt5/about/lvs_ref.html
+
+# ─── Configuration ──────────────────────────────────────────────────────────────
+
+deep          # hierarchical extraction (supports large designs)
+
+# ─── Source & Reports ───────────────────────────────────────────────────────────
+
+# The layout and schematic paths are supplied externally via -rd switches
+# when invoking KLayout, e.g.:
+#   klayout -b -r qpdk.lvs \
+#       -rd input=layout.gds \
+#       -rd schematic=netlist.cir \
+#       -rd report=lvs_report.lvsdb
+#       -rd topcell=my_top_cell
+
+input_layout  = $input
+report_file   = $report  || "qpdk_lvs.lvsdb"
+spice_netlist = $schematic
+
+if $topcell
+  source(input_layout, $topcell)
+else
+  source(input_layout)
+end
+
+report_lvs(report_file)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 1. Layer Definitions
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Physical layers ────────────────────────────────────────────────────────────
+{% for layer in physical_layers %}
+{{ layer.var }} = input({{ layer.gds_layer }}, {{ layer.gds_datatype }})  # {{ layer.comment }}
+{% endfor %}
+
+# ─── Port / pin layers ─────────────────────────────────────────────────────────
+{% for port in port_layers %}
+{{ port.var }} = input({{ port.gds_layer }}, {{ port.gds_datatype }})  # {{ port.comment }}
+{% endfor %}
+
+# ─── Device marker layers ──────────────────────────────────────────────────────
+{% for marker in marker_layers %}
+{{ marker.var }} = input({{ marker.gds_layer }}, {{ marker.gds_datatype }})  # {{ marker.comment }}
+{% endfor %}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 2. Layer Connectivity
+# ═══════════════════════════════════════════════════════════════════════════════
+# Defines which layers are electrically connected through vias and bumps.
+{% for conn in connections %}
+connect({{ conn.layer_a }}, {{ conn.via }}, {{ conn.layer_b }})  # {{ conn.comment }}
+{% endfor %}
+
+# Port layers connect to their corresponding metal layers so that
+# KLayout can identify net terminals.
+{% for port in port_layers %}
+connect({{ port.metal_var }}, {{ port.var }})  # {{ port.connect_comment }}
+{% endfor %}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3. Device Extraction
+# ═══════════════════════════════════════════════════════════════════════════════
+# Each quantum device type is identified by a boolean AND of its marker layer
+# with the physical metal layer.  The marker layer is a bounding polygon drawn
+# on a dedicated GDS layer inside every instance of that component.
+{% for device in devices %}
+# ─── {{ device.description }} {{ "─" * [76 - device.description | length, 1] | max }}
+{{ device.var }}_region = {{ device.physical_layer }} & {{ device.marker_var }}
+{% if device.class_name == "RBA::Resistor" %}
+extract_devices({{ device.class_name }}("{{ device.model_name }}", {{ device.sheet_rho }}), {
+  "R" => {{ device.var }}_region,
+{% for terminal in device.terminals %}
+  "{{ terminal.name }}" => {{ terminal.layer }},
+{% endfor %}
+})
+{% elif device.class_name == "RBA::Capacitor" %}
+extract_devices({{ device.class_name }}("{{ device.model_name }}"), {
+  "P1" => {{ device.var }}_region,
+  "P2" => {{ device.var }}_region,
+})
+{% else %}
+# Custom subcircuit: detected by marker, terminals defined by port layer overlap
+extract_devices(RBA::SubCircuit.new("{{ device.model_name }}"), {
+{% for terminal in device.terminals %}
+  "{{ terminal.name }}" => {{ terminal.layer }},
+{% endfor %}
+})
+{% endif %}
+{% endfor %}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 4. Top-Level Pins & Netlist Output
+# ═══════════════════════════════════════════════════════════════════════════════
+
+netlist.make_top_level_pins
+netlist.purge
+netlist.purge_nets
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5. Schematic & Compare
+# ═══════════════════════════════════════════════════════════════════════════════
+
+schematic(spice_netlist)
+compare
