@@ -56,6 +56,7 @@ class LayerMapQPDK(LayerMap):
     # Packaging / 3D integration / backside / misc.
     IND: Layer = (30, 0)
     TSV: Layer = (31, 0)  # Throughs / vias / backside features
+    NbTiN: Layer = (32, 0)
     DICE: Layer = (70, 0)  # Dicing lanes
 
     # Alignment / admin
@@ -108,6 +109,7 @@ NON_METADATA_LAYERS = {
     LAYER.DICE,
     LAYER.ALN_TOP,
     LAYER.ALN_BOT,
+    LAYER.NbTiN,
 }
 
 
@@ -390,6 +392,17 @@ def meander_inductor_cross_section() -> CrossSection:
     The default dimensions are width=2.0 µm and gap=2.0 µm.
     """
     return coplanar_waveguide(width=2.0, gap=2.0)
+
+
+@xsection
+def superinductor_cross_section() -> CrossSection:
+    """Return an ultra-narrow coplanar waveguide cross-section for fluxonium superinductors.
+
+    The default dimensions are width=0.01 µm and gap=0.01 µm on the NbTiN layer.
+    """
+    return coplanar_waveguide(
+        width=0.01, gap=0.01, waveguide_layer=LAYER.NbTiN, etch_layer=LAYER.M1_ETCH
+    )
 
 
 @xsection

@@ -49,6 +49,11 @@ LayerViews:
         layer: [20, 1]
         layer_in_name: true
         color: "#947DA1"
+  NbTiN:
+    layer: [32, 0]
+    layer_in_name: true
+    color: "#4A90E2"
+    hatch_pattern: cross-hatched
   IND:
     layer: [30, 0]
     layer_in_name: true
