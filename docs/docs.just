@@ -81,12 +81,12 @@ docs-prerequisites: write-cells write-models write-justfile-help copy-sample-not
 # Build the HTML documentation
 [group('docs')]
 docs: docs-prerequisites setup-ipython-config-temporary-before
-    @trap 'just setup-ipython-config-temporary-after' EXIT INT TERM; uv run --all-extras --group docs sphinx-build -b html docs docs/_build/html
+    @trap 'just setup-ipython-config-temporary-after' EXIT INT TERM; uv run {{ all_extras_run }} --group docs sphinx-build -b html docs docs/_build/html
 
 # Setup LaTeX for PDF documentation
 [group('docs')]
 docs-latex: docs-prerequisites setup-ipython-config-temporary-before
-    @trap 'just setup-ipython-config-temporary-after' EXIT INT TERM; uv run --all-extras --group docs sphinx-build -b latex docs docs/_build/latex
+    @trap 'just setup-ipython-config-temporary-after' EXIT INT TERM; uv run {{ all_extras_run }} --group docs sphinx-build -b latex docs docs/_build/latex
 
 # Build PDF documentation (requires a TeXLive installation)
 [working-directory: 'docs/_build/latex']

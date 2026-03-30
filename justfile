@@ -3,6 +3,12 @@ set dotenv-load := true
 pdk := env('pdk', 'qpdk')
 cpus := num_cpus()
 
+python_version := env_var_or_default("UV_PYTHON", `python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")'`)
+hfss_extra := if python_version =~ '^3\.14.*' { "" } else { "--extra hfss" }
+
+install_extras := if hfss_extra == "" { "--no-extra hfss" } else { "" }
+all_extras_run := if hfss_extra == "" { "--extra models --extra graphics --extra qutip" } else { "--all-extras" }
+
 import 'tests/test.just'
 import 'docs/docs.just'
 
@@ -12,8 +18,8 @@ default:
 
 # Install the package and all development dependencies
 [group('setup')]
-install:
-    @uv sync --all-extras
+install *args:
+    @uv sync --all-extras {{ if args =~ '--python 3\.14' { "--no-extra hfss" } else { install_extras } }} {{ args }}
 
 # Install KLayout technology files for the PDK
 [group('setup')]
