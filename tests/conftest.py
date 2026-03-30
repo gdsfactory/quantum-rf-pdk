@@ -13,12 +13,22 @@ def pytest_collection_modifyitems(
     config: pytest.Config,  # noqa: ARG001
     items: list[pytest.Item],
 ) -> None:
-    """Skip tests marked with skip_windows on Windows platform."""
-    if sys.platform == "win32":
-        skip_windows = pytest.mark.skip(reason="Not supported on Windows")
-        for item in items:
-            if "skip_windows" in item.keywords:
-                item.add_marker(skip_windows)
+    """Skip tests marked with skip_windows on Windows platform or hfss if dependencies missing."""
+    skip_windows = pytest.mark.skip(reason="Not supported on Windows")
+    
+    try:
+        import ansys.aedt.core  # noqa: F401
+        has_hfss = True
+    except ImportError:
+        has_hfss = False
+    
+    skip_hfss = pytest.mark.skip(reason="hfss extra not installed")
+
+    for item in items:
+        if sys.platform == "win32" and "skip_windows" in item.keywords:
+            item.add_marker(skip_windows)
+        if not has_hfss and "hfss" in item.keywords:
+            item.add_marker(skip_hfss)
 
 
 @pytest.fixture(autouse=True)
