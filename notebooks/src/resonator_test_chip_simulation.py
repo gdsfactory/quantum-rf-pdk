@@ -30,26 +30,15 @@ import gdsfactory as gf
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 import sax
 from matplotlib.lines import Line2D
-from sax.models.rf import capacitor as rf_capacitor
-from sax.models.rf import electrical_open, electrical_short
-from sax.models.rf import tee as rf_tee
 from scipy.signal import find_peaks
 
 from qpdk import PATH, PDK
 from qpdk.models import models
-from qpdk.models.constants import DEFAULT_FREQUENCY
-from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
-from qpdk.models.cpw import (
-    cpw_epsilon_eff,
-    cpw_parameters,
-    cpw_thickness_correction,
-    get_cpw_dimensions,
-    get_cpw_substrate_params,
-    propagation_constant,
-    transmission_line_s_params,
-)
+from qpdk.models.cpw import cpw_parameters
+from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
 
@@ -187,16 +176,16 @@ plt.show()
 # resonance frequencies of the on-chip resonators.
 #
 # This section performs a **Monte Carlo analysis** inspired by the
-# `SAX layout-aware Monte Carlo example <https://flaport.github.io/sax/nbs/examples/07_layout_aware/>`_.
+# [SAX layout-aware Monte Carlo example](https://flaport.github.io/sax/nbs/examples/07_layout_aware/).
 # The approach is:
 #
-# 1. Build **MC-compatible model functions** whose CPW width and gap are
-#    explicit, JAX-traceable parameters (instead of being locked inside a
-#    cross-section object).
+# 1. Reuse the **standard QPDK model functions** (``straight``, ``bend_euler``,
+#    ``quarter_wave_resonator_coupled``, etc.) which accept a ``cross_section``
+#    parameter.
 # 2. Compile the SAX circuit **once** with these models.
-# 3. Pass per-instance ``cpw_width`` / ``cpw_gap`` overrides for each Monte
-#    Carlo trial, leveraging JAX array broadcasting for efficient batched
-#    evaluation.
+# 3. For each Monte Carlo trial, create a ``coplanar_waveguide(width=…, gap=…)``
+#    cross-section with perturbed geometry and pass it as an override to every
+#    CPW instance in the circuit.
 # 4. Analyse the resulting spread in resonance frequencies and transmission.
 
 # %% [markdown]
@@ -252,210 +241,11 @@ plt.show()
 # a corresponding shift in resonance frequency.
 
 # %% [markdown]
-# ## MC-compatible model wrappers
-#
-# The standard QPDK models extract CPW width and gap from a ``cross_section``
-# object.  This is the natural interface for layout-driven simulation and
-# gdsfactory+ compatibility.  For Monte Carlo analysis, however, we need
-# the CPW dimensions to be explicit **numeric** parameters so that JAX can
-# batch them efficiently across trials.
-#
-# The wrappers below keep ``cross_section`` in their signature — when no
-# explicit ``cpw_width`` / ``cpw_gap`` are given (``None``), the dimensions
-# are extracted from ``cross_section`` exactly as the standard models do.
-# When ``cpw_width`` / ``cpw_gap`` *are* provided (e.g. as JAX arrays for
-# batched MC evaluation), they override the cross-section values and feed
-# directly into the JAX-traceable CPW theory.  ``cross_section`` itself is
-# never traced by JAX; it serves only as a static fallback for the nominal
-# geometry.
-#
-# The substrate constants (height, metal thickness, :math:`\varepsilon_r`)
-# are fixed at PDK values since they do not vary across the wafer.
-
-# %%
-# Substrate constants (fixed)
-_h_m, _t_m, _ep_r = get_cpw_substrate_params()
-_h_si = _h_m * 1e-6  # convert µm → m
-_t_si = _t_m * 1e-6
-
-
-def straight_mc(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000.0,
-    cross_section: gf.typings.CrossSectionSpec = "cpw",
-    cpw_width: sax.Float | None = None,
-    cpw_gap: sax.Float | None = None,
-) -> sax.SDict:
-    """Straight CPW model with optional width/gap overrides for MC analysis.
-
-    When ``cpw_width`` or ``cpw_gap`` are ``None``, the corresponding
-    value is extracted from *cross_section* (standard path).  When they
-    are provided as scalars or JAX arrays, they are used directly for
-    batched evaluation.
-    """
-    f = jnp.asarray(f)
-
-    if cpw_width is None or cpw_gap is None:
-        _w, _g = get_cpw_dimensions(cross_section)
-        if cpw_width is None:
-            cpw_width = _w
-        if cpw_gap is None:
-            cpw_gap = _g
-
-    w_m = jnp.asarray(cpw_width) * 1e-6
-    s_m = jnp.asarray(cpw_gap) * 1e-6
-
-    ep_eff = cpw_epsilon_eff(w_m, s_m, _h_si, _ep_r)
-    ep_eff, z0_val = cpw_thickness_correction(w_m, s_m, _t_si, ep_eff)
-
-    gamma = propagation_constant(f, ep_eff, tand=0.0, ep_r=_ep_r)
-    length_m = jnp.asarray(length) * 1e-6
-    s11, s21 = transmission_line_s_params(gamma, z0_val, length_m)
-
-    return sax.reciprocal(
-        {
-            ("o1", "o1"): s11,
-            ("o1", "o2"): s21,
-            ("o2", "o2"): s11,
-        }
-    )
-
-
-def bend_mc(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000.0,
-    cross_section: gf.typings.CrossSectionSpec = "cpw",
-    cpw_width: sax.Float | None = None,
-    cpw_gap: sax.Float | None = None,
-) -> sax.SDict:
-    """Bend model delegating to :func:`straight_mc` (phase-only approximation)."""
-    return straight_mc(
-        f=f,
-        length=length,
-        cross_section=cross_section,
-        cpw_width=cpw_width,
-        cpw_gap=cpw_gap,
-    )
-
-
-def quarter_wave_resonator_coupled_mc(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: float = 5000.0,
-    coupling_gap: float = 0.27,
-    coupling_straight_length: float = 20.0,
-    cross_section: gf.typings.CrossSectionSpec = "cpw",
-    cpw_width: float | None = None,
-    cpw_gap: float | None = None,
-) -> sax.SDict:
-    """Quarter-wave coupled resonator with optional CPW width/gap overrides."""
-    f_arr = jnp.asarray(f)
-
-    if cpw_width is None or cpw_gap is None:
-        _w, _g = get_cpw_dimensions(cross_section)
-        if cpw_width is None:
-            cpw_width = _w
-        if cpw_gap is None:
-            cpw_gap = _g
-
-    # Coupling capacitance (JAX-traceable analytical model)
-    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
-        gap=coupling_gap, width=cpw_width, cpw_gap=cpw_gap, ep_r=_ep_r
-    )
-    c_coupling = c_pul * coupling_straight_length * 1e-6
-
-    # Characteristic impedance for the capacitor normalisation
-    w_m = jnp.asarray(cpw_width) * 1e-6
-    s_m = jnp.asarray(cpw_gap) * 1e-6
-    ep_eff = cpw_epsilon_eff(w_m, s_m, _h_si, _ep_r)
-    _, z0_val = cpw_thickness_correction(w_m, s_m, _t_si, ep_eff)
-
-    # Internal sub-circuit instances (all JAX-traceable)
-    _kw = {"cross_section": cross_section, "cpw_width": cpw_width, "cpw_gap": cpw_gap}
-    instances = {
-        "coupling_1": straight_mc(f=f_arr, length=coupling_straight_length / 2, **_kw),
-        "coupling_2": straight_mc(f=f_arr, length=coupling_straight_length / 2, **_kw),
-        "resonator_1": straight_mc(f=f_arr, length=coupling_straight_length / 2, **_kw),
-        "resonator_2": straight_mc(
-            f=f_arr, length=length - coupling_straight_length / 2, **_kw
-        ),
-        "tee_1": rf_tee(f=f_arr),
-        "tee_2": rf_tee(f=f_arr),
-        "capacitor": rf_capacitor(f=f_arr, capacitance=c_coupling, z0=z0_val),
-        "open_start_term": electrical_open(f=f_arr, n_ports=2),
-        "short": electrical_short(f=f_arr),
-    }
-
-    connections = {
-        "coupling_1,o2": "tee_1,o1",
-        "coupling_2,o1": "tee_1,o2",
-        "resonator_1,o2": "tee_2,o1",
-        "resonator_2,o1": "tee_2,o2",
-        "tee_1,o3": "capacitor,o1",
-        "tee_2,o3": "capacitor,o2",
-        "resonator_1,o1": "open_start_term,o1",
-        "resonator_2,o2": "short,o1",
-    }
-
-    ports = {
-        "coupling_o1": "coupling_1,o1",
-        "coupling_o2": "coupling_2,o2",
-        "resonator_o1": "open_start_term,o2",
-    }
-
-    return sax.evaluate_circuit_fg((connections, ports), instances)
-
-
-# %%
-# Build the MC-compatible models dictionary.
-# We replace only the CPW-sensitive components; the launcher model is kept
-# as-is because its large pad geometry (200 µm width) is insensitive to the
-# small absolute variations we study here.
-
-mc_models = {
-    **models,
-    "straight": straight_mc,
-    "bend_euler": bend_mc,
-    "bend_circular": bend_mc,
-    "bend_s": bend_mc,
-    "rectangle": bend_mc,
-    "quarter_wave_resonator_coupled": quarter_wave_resonator_coupled_mc,
-}
-
-# %% [markdown]
-# ## Build the MC circuit
-#
-# We compile the circuit **once**.  SAX exposes ``cpw_width`` and ``cpw_gap``
-# as tuneable parameters for every instance that uses our MC models.
-
-# %%
-mc_circuit_fn, _ = sax.circuit(
-    netlist=netlist,
-    models=mc_models,
-    on_internal_port="ignore",
-)
-
-# Verify: the nominal MC result should match the original simulation.
-s_nom = mc_circuit_fn(f=freq)
-s21_nom = s_nom[("o1", "o2")]
-s21_nom_db = 20 * jnp.log10(jnp.abs(s21_nom))
-
-fig, ax = plt.subplots()
-ax.plot(freq_ghz, 20 * jnp.log10(jnp.abs(s21)), label="Original", lw=2)
-ax.plot(freq_ghz, s21_nom_db, label="MC (nominal)", ls="--", lw=1.5)
-ax.set_xlabel("Frequency [GHz]")
-ax.set_ylabel("|$S_{21}$| [dB]")
-ax.set_title("Sanity check – nominal MC vs original simulation")
-ax.legend()
-ax.grid(True)
-plt.tight_layout()
-plt.show()
-
-# %% [markdown]
 # ## Define fabrication tolerances
 #
 # Typical superconducting CPW fabrication tolerances are on the order of
 # hundreds of nanometres to about 1 µm, depending on lithography technology
-# :cite:`krantzQuantumEngineersGuide2019`.  We model these as independent
+# {cite:p}`krantzQuantumEngineersGuide2019`.  We model these as independent
 # Gaussian random variables.
 
 # %%
@@ -468,15 +258,18 @@ N_TRIALS = 100
 rng = np.random.default_rng(42)
 
 # %% [markdown]
-# ## Identify MC-tuneable instances
+# ## Identify cross-section-tuneable instances
 #
 # We inspect the circuit settings to find all instances that expose
-# ``cpw_width`` as a tuneable parameter.  These are the straight sections,
+# ``cross_section`` as a tuneable parameter.  These are the straight sections,
 # bends, and resonators – i.e. every CPW element on the chip.
 
 # %%
-mc_settings = sax.get_settings(mc_circuit_fn)
-cpw_instance_names = [name for name, s in mc_settings.items() if "cpw_width" in s]
+settings = sax.get_settings(circuit_fn)
+cpw_instance_names = [name for name, s in settings.items() if "cross_section" in s]
+# Exclude launcher instances — their large pad geometry (200 µm width)
+# is insensitive to the small absolute variations we study here.
+cpw_instance_names = [n for n in cpw_instance_names if "launcher" not in n]
 print(f"{len(cpw_instance_names)} CPW instances found for MC perturbation.")
 
 # %% [markdown]
@@ -484,28 +277,29 @@ print(f"{len(cpw_instance_names)} CPW instances found for MC perturbation.")
 #
 # In this scenario **all** CPW sections on the chip receive the **same**
 # width and gap perturbation in each trial, modelling a uniform fabrication
-# bias across the die.
+# bias across the die.  We loop over trials, creating a
+# ``coplanar_waveguide(width=…, gap=…)`` cross-section for each and
+# passing it as an override to every CPW instance.
 
 # %%
 dw_global = rng.normal(0, WIDTH_SIGMA, N_TRIALS)
 dg_global = rng.normal(0, GAP_SIGMA, N_TRIALS)
 
-dw_jnp = jnp.array(dw_global)
-dg_jnp = jnp.array(dg_global)
+# Nominal S₂₁ for reference
+s21_nom_db = np.asarray(20 * jnp.log10(jnp.abs(s21)))
 
-# All CPW instances get the same perturbation per trial (batched).
-global_overrides = {
-    name: {
-        "cpw_width": NOMINAL_WIDTH + dw_jnp,
-        "cpw_gap": NOMINAL_GAP + dg_jnp,
-    }
-    for name in cpw_instance_names
-}
+# Collect results: each column is one trial
+s21_global_db = np.zeros((len(freq), N_TRIALS))
 
-# Evaluate (freq axis broadcasts against MC trial axis)
-s_global = mc_circuit_fn(f=freq[:, None], **global_overrides)
-s21_global = s_global[("o1", "o2")]  # shape: (n_freq, n_trials)
-s21_global_db = 20 * jnp.log10(jnp.abs(s21_global))
+for trial in range(N_TRIALS):
+    xs = coplanar_waveguide(
+        width=NOMINAL_WIDTH + dw_global[trial],
+        gap=NOMINAL_GAP + dg_global[trial],
+    )
+    overrides = {name: {"cross_section": xs} for name in cpw_instance_names}
+    s_trial = circuit_fn(f=freq, **overrides)
+    s21_trial = s_trial[("o1", "o2")]
+    s21_global_db[:, trial] = np.asarray(20 * jnp.log10(jnp.abs(s21_trial)))
 
 # %% [markdown]
 # ### Transmission overlay – global tolerance
@@ -572,9 +366,8 @@ def find_resonance_dips(
 # %%
 # Extract resonance frequencies for the nominal and all MC trials
 freq_np = np.asarray(freq)
-s21_nom_np = np.asarray(s21_nom_db)
 
-nominal_dips = find_resonance_dips(freq_np, s21_nom_np)
+nominal_dips = find_resonance_dips(freq_np, s21_nom_db)
 n_res = int(np.sum(~np.isnan(nominal_dips)))
 print(f"Nominal resonance frequencies ({n_res} detected):")
 for i, f_dip in enumerate(nominal_dips):
@@ -586,7 +379,7 @@ for i, f_dip in enumerate(nominal_dips):
 mc_dips = np.zeros((N_TRIALS, n_res))
 for trial in range(N_TRIALS):
     mc_dips[trial] = find_resonance_dips(
-        freq_np, np.asarray(s21_global_db[:, trial]), n_resonators=n_res
+        freq_np, s21_global_db[:, trial], n_resonators=n_res
     )
 
 # %% [markdown]
@@ -649,7 +442,7 @@ for i in range(n_res):
 # In practice, fabrication variations are not perfectly uniform across a die.
 # Local effects such as proximity-dependent etching cause each resonator to
 # experience a **different** random perturbation.  We model this by assigning
-# each resonator instance an independent draw from the tolerance distribution.
+# each resonator instance an independent cross-section perturbation.
 # Routing sections (straights and bends connecting resonators) are kept at
 # nominal dimensions to isolate the effect of per-resonator geometry variation.
 
@@ -661,31 +454,30 @@ for i in range(n_res):
 res_names = sorted(
     [n for n in cpw_instance_names if n.startswith("resonator_")],
 )
-
-# Non-resonator CPW instances keep nominal values in the per-resonator scenario
 non_res_names = [n for n in cpw_instance_names if n not in res_names]
+n_res_instances = len(res_names)
 
 # Draw per-resonator perturbations: shape (n_resonator_instances, N_TRIALS)
-n_res_instances = len(res_names)
 dw_per_res = rng.normal(0, WIDTH_SIGMA, (n_res_instances, N_TRIALS))
 dg_per_res = rng.normal(0, GAP_SIGMA, (n_res_instances, N_TRIALS))
 
-local_overrides = {}
-for i, name in enumerate(res_names):
-    local_overrides[name] = {
-        "cpw_width": NOMINAL_WIDTH + jnp.array(dw_per_res[i]),
-        "cpw_gap": NOMINAL_GAP + jnp.array(dg_per_res[i]),
-    }
-# Non-resonator instances at nominal
-for name in non_res_names:
-    local_overrides[name] = {
-        "cpw_width": jnp.full(N_TRIALS, NOMINAL_WIDTH),
-        "cpw_gap": jnp.full(N_TRIALS, NOMINAL_GAP),
-    }
+s21_local_db = np.zeros((len(freq), N_TRIALS))
+xs_nominal = coplanar_waveguide(width=NOMINAL_WIDTH, gap=NOMINAL_GAP)
 
-s_local = mc_circuit_fn(f=freq[:, None], **local_overrides)
-s21_local = s_local[("o1", "o2")]
-s21_local_db = 20 * jnp.log10(jnp.abs(s21_local))
+for trial in range(N_TRIALS):
+    overrides = {}
+    for i, name in enumerate(res_names):
+        xs_res = coplanar_waveguide(
+            width=NOMINAL_WIDTH + dw_per_res[i, trial],
+            gap=NOMINAL_GAP + dg_per_res[i, trial],
+        )
+        overrides[name] = {"cross_section": xs_res}
+    # Non-resonator instances at nominal
+    for name in non_res_names:
+        overrides[name] = {"cross_section": xs_nominal}
+
+    s_trial = circuit_fn(f=freq, **overrides)
+    s21_local_db[:, trial] = np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
 
 # %% [markdown]
 # ### Transmission overlay – per-resonator tolerance
@@ -715,7 +507,7 @@ plt.show()
 mc_dips_local = np.zeros((N_TRIALS, n_res))
 for trial in range(N_TRIALS):
     mc_dips_local[trial] = find_resonance_dips(
-        freq_np, np.asarray(s21_local_db[:, trial]), n_resonators=n_res
+        freq_np, s21_local_db[:, trial], n_resonators=n_res
     )
 
 shifts_local = (mc_dips_local - nominal_dips[None, :n_res]) / 1e6
@@ -758,37 +550,31 @@ plt.show()
 # %%
 # Width-only variation
 dw_only = rng.normal(0, WIDTH_SIGMA, N_TRIALS)
-overrides_w = {
-    name: {
-        "cpw_width": NOMINAL_WIDTH + jnp.array(dw_only),
-        "cpw_gap": jnp.full(N_TRIALS, NOMINAL_GAP),
-    }
-    for name in cpw_instance_names
-}
-s_w = mc_circuit_fn(f=freq[:, None], **overrides_w)
-s21_w_db = 20 * jnp.log10(jnp.abs(s_w[("o1", "o2")]))
+s21_w_db = np.zeros((len(freq), N_TRIALS))
+for trial in range(N_TRIALS):
+    xs = coplanar_waveguide(width=NOMINAL_WIDTH + dw_only[trial], gap=NOMINAL_GAP)
+    overrides = {name: {"cross_section": xs} for name in cpw_instance_names}
+    s_trial = circuit_fn(f=freq, **overrides)
+    s21_w_db[:, trial] = np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
 
 # Gap-only variation
 dg_only = rng.normal(0, GAP_SIGMA, N_TRIALS)
-overrides_g = {
-    name: {
-        "cpw_width": jnp.full(N_TRIALS, NOMINAL_WIDTH),
-        "cpw_gap": NOMINAL_GAP + jnp.array(dg_only),
-    }
-    for name in cpw_instance_names
-}
-s_g = mc_circuit_fn(f=freq[:, None], **overrides_g)
-s21_g_db = 20 * jnp.log10(jnp.abs(s_g[("o1", "o2")]))
+s21_g_db = np.zeros((len(freq), N_TRIALS))
+for trial in range(N_TRIALS):
+    xs = coplanar_waveguide(width=NOMINAL_WIDTH, gap=NOMINAL_GAP + dg_only[trial])
+    overrides = {name: {"cross_section": xs} for name in cpw_instance_names}
+    s_trial = circuit_fn(f=freq, **overrides)
+    s21_g_db[:, trial] = np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
 
 # %%
 mc_dips_w = np.zeros((N_TRIALS, n_res))
 mc_dips_g = np.zeros((N_TRIALS, n_res))
 for trial in range(N_TRIALS):
     mc_dips_w[trial] = find_resonance_dips(
-        freq_np, np.asarray(s21_w_db[:, trial]), n_resonators=n_res
+        freq_np, s21_w_db[:, trial], n_resonators=n_res
     )
     mc_dips_g[trial] = find_resonance_dips(
-        freq_np, np.asarray(s21_g_db[:, trial]), n_resonators=n_res
+        freq_np, s21_g_db[:, trial], n_resonators=n_res
     )
 
 std_w_only = np.nanstd((mc_dips_w - nominal_dips[None, :n_res]) / 1e6, axis=0)
@@ -885,32 +671,61 @@ plt.show()
 # fabrication concern for frequency targeting.
 
 # %% [markdown]
+# ## Interactive parallel coordinates plot
+#
+# The following interactive plot shows how the CPW width and gap perturbations
+# propagate through to each resonator's frequency shift.  Each line represents
+# one Monte Carlo trial.  Use the axis ranges to filter trials interactively.
+
+# %%
+# Build a DataFrame-like dict for parallel coordinates
+parcoord_data = {
+    "δwidth [µm]": dw_global,
+    "δgap [µm]": dg_global,
+}
+for i in range(n_res):
+    parcoord_data[f"Res {i + 1} Δf [MHz]"] = shifts_mhz[:, i]
+
+dimensions = []
+for label, values in parcoord_data.items():
+    valid = ~np.isnan(values)
+    dimensions.append(
+        dict(
+            label=label,
+            values=values[valid] if not np.all(valid) else values,
+            range=[float(np.nanmin(values)), float(np.nanmax(values))],
+        )
+    )
+
+fig_pc = go.Figure(
+    data=go.Parcoords(
+        line=dict(
+            color=dw_global,
+            colorscale="RdBu",
+            showscale=True,
+            cmin=float(np.min(dw_global)),
+            cmax=float(np.max(dw_global)),
+            colorbar=dict(title="δwidth [µm]"),
+        ),
+        dimensions=dimensions,
+    )
+)
+fig_pc.update_layout(
+    title="Monte Carlo: CPW perturbations → resonance frequency shifts",
+    width=900,
+    height=500,
+)
+fig_pc.show()
+
+# %% [markdown]
 # ## Summary
 #
-# .. list-table::
-#    :header-rows: 1
-#    :widths: 30 20 20 30
-#
-#    * - Scenario
-#      - Width σ [µm]
-#      - Gap σ [µm]
-#      - Typical freq. spread (1σ) [MHz]
-#    * - Global (systematic bias)
-#      - 0.5
-#      - 0.3
-#      - ~tens of MHz (correlated)
-#    * - Per-resonator (local)
-#      - 0.5
-#      - 0.3
-#      - ~tens of MHz (uncorrelated)
-#    * - Width only
-#      - 0.5
-#      - 0.0
-#      - dominant contribution
-#    * - Gap only
-#      - 0.0
-#      - 0.3
-#      - secondary contribution
+# | Scenario                 | Width σ [µm] | Gap σ [µm] | Typical freq. spread (1σ) [MHz] |
+# | ------------------------ | ------------ | ---------- | ------------------------------- |
+# | Global (systematic bias) | 0.5          | 0.3        | ~tens of MHz (correlated)       |
+# | Per-resonator (local)    | 0.5          | 0.3        | ~tens of MHz (uncorrelated)     |
+# | Width only               | 0.5          | 0.0        | dominant contribution           |
+# | Gap only                 | 0.0          | 0.3        | secondary contribution          |
 #
 # **Key takeaways:**
 #
@@ -921,6 +736,6 @@ plt.show()
 #   targeting.
 # - The Monte Carlo framework developed here can be extended to include spatial
 #   correlation across the die (wafer-map approach, as in the
-#   `SAX layout-aware example <https://flaport.github.io/sax/nbs/examples/07_layout_aware/>`_)
+#   [SAX layout-aware example](https://flaport.github.io/sax/nbs/examples/07_layout_aware/))
 #   or additional sources of variation (substrate permittivity, metal
 #   thickness).
