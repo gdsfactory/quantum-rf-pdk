@@ -25,7 +25,6 @@ extensions = [
 
 # -- Plot directive configuration ---------------------------------------------
 plot_pre_code = """
-import numpy as np
 from matplotlib import pyplot as plt
 from qpdk import PDK
 
