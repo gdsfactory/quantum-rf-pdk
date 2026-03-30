@@ -66,6 +66,12 @@ def fluxonium(
         inductor_cross_section: Cross-section for the meander inductor.
         connection_wire_width: Width of the connecting wires in µm.
         layer_metal: Layer for the metal pads and connection wires.
+
+    Returns:
+        The fluxonium component.
+
+    Raises:
+        ValueError: If inductor_n_turns is even or if pad_gap is too small.
     """
     if inductor_n_turns % 2 == 0:
         raise ValueError("inductor_n_turns must be odd")
@@ -313,6 +319,9 @@ def fluxonium_with_bbox(
         inductor_cross_section: Cross-section for the meander inductor.
         connection_wire_width: Width of the connecting wires in µm.
         layer_metal: Layer for the metal pads and connection wires.
+
+    Returns:
+        The fluxonium component with a bounding box.
     """
     c = gf.Component()
     flux_ref = c << fluxonium(

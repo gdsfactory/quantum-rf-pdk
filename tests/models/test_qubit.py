@@ -17,9 +17,12 @@ from qpdk.models.qubit import (
     double_island_transmon_with_resonator,
     ec_to_capacitance,
     ej_to_inductance,
+    el_to_inductance,
     flipmon,
     flipmon_with_bbox,
     flipmon_with_resonator,
+    fluxonium,
+    fluxonium_with_bbox,
     qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
@@ -97,6 +100,31 @@ class TestEjToInductance:
     def test_positive_inductance(ej_ghz: float) -> None:
         """Test that inductance is always positive."""
         L = ej_to_inductance(ej_ghz)
+        assert L > 0
+
+
+class TestElToInductance:
+    """Tests for el_to_inductance helper function."""
+
+    @staticmethod
+    def test_typical_value() -> None:
+        """Test with typical fluxonium inductive energy."""
+        # E_L = 0.5 GHz
+        el_ghz = 0.5
+        L = el_to_inductance(el_ghz)
+
+        # L = Φ_0² / (4π² E_L)
+        expected_L = Φ_0**2 / (4 * np.pi**2 * el_ghz * 1e9 * h)
+        assert np.isclose(L, expected_L, rtol=1e-10)
+        # For E_L = 0.5 GHz, L ≈ 327 nH
+        assert 100e-9 < L < 1000e-9, f"Inductance {L * 1e9:.2f} nH out of range"
+
+    @staticmethod
+    @given(el_ghz=st.floats(min_value=0.1, max_value=10.0))
+    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    def test_positive_inductance(el_ghz: float) -> None:
+        """Test that inductance is always positive."""
+        L = el_to_inductance(el_ghz)
         assert L > 0
 
 
@@ -233,6 +261,40 @@ class TestXmonTransmon(TwoPortModelTestSuite):
     """Tests for xmon_transmon wrapper."""
 
     model_function = staticmethod(xmon_transmon)
+
+
+@final
+class TestFluxonium(TwoPortModelTestSuite):
+    """Tests for fluxonium model."""
+
+    model_function = staticmethod(fluxonium)
+
+    def test_resonance_frequency(self) -> None:
+        """Test that resonance frequency matches expected parallel LCL."""
+        LJ = 10e-9
+        LS = 500e-9
+        C = 10e-15
+        L_total = (LJ * LS) / (LJ + LS)
+        f_r_expected = 1 / (2 * np.pi * np.sqrt(L_total * C))
+
+        f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 1000)
+        result = self._call_model(
+            f=f, capacitance=C, josephson_inductance=LJ, superinductance=LS
+        )
+
+        s21 = result["o2", "o1"]
+        idx_min = jnp.argmin(jnp.abs(s21))
+        f_observed = f[idx_min]
+
+        relative_error = abs(float(f_observed - f_r_expected) / f_r_expected)
+        assert relative_error < 0.01
+
+
+@final
+class TestFluxoniumWithBbox(TwoPortModelTestSuite):
+    """Tests for fluxonium_with_bbox model."""
+
+    model_function = staticmethod(fluxonium_with_bbox)
 
 
 @final
