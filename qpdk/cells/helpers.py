@@ -62,7 +62,7 @@ def add_rect(
         case (float() | int(), float() | int(), _, _):
             x_lo, x_hi = min(x0, x1), max(x0, x1)
         case (_, _, float() | int(), float() | int()):
-            x_lo, x_hi = x_center - width / 2, x_center + width / 2
+            x_lo, x_hi = x_center - width / 2, x_center + width / 2  # pyright: ignore
         case _:
             raise ValueError("Provide (x0, x1) or (x_center, width)")
 
@@ -70,7 +70,7 @@ def add_rect(
         case (float() | int(), float() | int(), _, _):
             y_lo, y_hi = min(y0, y1), max(y0, y1)
         case (_, _, float() | int(), float() | int()):
-            y_lo, y_hi = y_center - height / 2, y_center + height / 2
+            y_lo, y_hi = y_center - height / 2, y_center + height / 2  # pyright: ignore
         case _:
             raise ValueError("Provide (y0, y1) or (y_center, height)")
 

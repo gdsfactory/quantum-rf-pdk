@@ -39,7 +39,7 @@ __all__ = [
 
 @jax.jit
 def series_impedance(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # noqa: ARG001
     z: sax.Float = 0.0,
     z0: float = 50.0,
 ) -> sax.SDict:
@@ -74,7 +74,7 @@ def series_impedance(
 
 @jax.jit
 def shunt_admittance(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # noqa: ARG001
     y: sax.Float = 0.0,
     z0: float = 50.0,
 ) -> sax.SDict:
