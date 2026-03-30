@@ -31,6 +31,20 @@ def airbridge(
     without electrical contact, which is essential for complex quantum circuit
     routing without crosstalk.
 
+    .. svgbob::
+
+        ┌─────────┐
+        │ landing  │  AB_VIA
+        │   pad    │
+        ├────┬─────┤
+             │
+             │ bridge  AB_DRAW
+             │
+        ├────┴─────┤
+        │ landing  │  AB_VIA
+        │   pad    │
+        └─────────┘
+
     The bridge_layer (AB_DRAW) represents the elevated metal bridge structure,
     while the pad_layer (AB_VIA) represents the contact/landing pads that connect
     to the underlying circuit.

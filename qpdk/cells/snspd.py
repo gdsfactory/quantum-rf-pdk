@@ -21,6 +21,17 @@ def snspd(
 ) -> Component:
     """Creates an optimally-rounded SNSPD.
 
+    .. svgbob::
+
+        e1 ─────────────────────╮
+        ╭───────────────────────╯
+        ╰───────────────────────╮
+        ╭───────────────────────╯
+        ╰───────────────────────╮
+        ╭───────────────────────╯
+        ╰───────────────────────╮
+           e2 ──────────────────╯
+
     Args:
         wire_width: Width of the wire.
         wire_pitch: Distance between two adjacent wires. Must be greater than `width`.
