@@ -10,13 +10,12 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
-from qpdk.cells.helpers import transform_component
+from qpdk.cells.helpers import add_rect, transform_component
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.junction import josephson_junction
 from qpdk.tech import (
     LAYER,
     get_etch_section,
-    meander_inductor_cross_section,
     superinductor_cross_section,
 )
 
@@ -26,12 +25,14 @@ __all__ = ["fluxonium", "fluxonium_with_bbox"]
 @gf.cell(check_instances=False)
 def fluxonium(
     pad_size: tuple[float, float] = (250.0, 400.0),
-    pad_gap: float = 30.0,
+    pad_gap: float = 25.0,
     junction_spec: ComponentSpec = josephson_junction,
     junction_displacement: DCplxTrans | None = None,
-    inductor_n_turns: int = 315,
+    junction_margin: float = 1.0,
+    inductor_n_turns: int = 155,
+    inductor_margin_x: float = 1.0,
     inductor_cross_section: CrossSectionSpec = superinductor_cross_section,
-    connection_wire_width: float = 4.0,
+    connection_wire_width: float = 0.5,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
     r"""Creates a fluxonium qubit with capacitor pads, Josephson junction, and superinductor.
@@ -59,7 +60,9 @@ def fluxonium(
         pad_gap: Gap between the two capacitor pads in µm.
         junction_spec: Component specification for the Josephson junction.
         junction_displacement: Optional transformation applied to the junction.
+        junction_margin: Vertical margin between the junction and capacitor pads in µm.
         inductor_n_turns: Number of horizontal meander runs. Must be odd.
+        inductor_margin_x: Horizontal margin for the inductor in µm.
         inductor_cross_section: Cross-section for the meander inductor.
         connection_wire_width: Width of the connecting wires in µm.
         layer_metal: Layer for the metal pads and connection wires.
@@ -77,8 +80,6 @@ def fluxonium(
 
     junction_comp = gf.get_component(junction_spec)
     junction_rotated_height = junction_comp.size_info.width
-    junction_margin = 10.0
-    inductor_margin_x = 10.0
 
     inductor_turn_length = pad_gap - 2 * inductor_margin_x
     inductor_total_height = (
@@ -135,7 +136,7 @@ def fluxonium(
     jj_conn_y0 = junction_ref.dcenter[1] - connection_wire_width / 2
 
     # Left bus bar
-    _add_rect(
+    add_rect(
         c,
         layer=layer_metal,
         x_center=bus_left_x,
@@ -143,9 +144,9 @@ def fluxonium(
         y0=jj_conn_y0,
         y1=bus_top_y,
     )
-    _add_rect(
+    add_rect(
         c,
-        layer=layer_metal,
+        layer=LAYER.NbTiN,
         x0=-pad_gap / 2 - inductor_wire_width,
         x1=-pad_gap / 2,
         y0=ind_o1.dcenter[1],
@@ -153,7 +154,7 @@ def fluxonium(
     )
 
     # Right bus bar
-    _add_rect(
+    add_rect(
         c,
         layer=layer_metal,
         x_center=bus_right_x,
@@ -161,9 +162,9 @@ def fluxonium(
         y0=jj_conn_y0,
         y1=bus_top_y,
     )
-    _add_rect(
+    add_rect(
         c,
-        layer=layer_metal,
+        layer=LAYER.NbTiN,
         x0=pad_gap / 2,
         x1=pad_gap / 2 + inductor_wire_width,
         y0=ind_o2.dcenter[1],
@@ -171,7 +172,7 @@ def fluxonium(
     )
 
     # Transitions
-    _add_rect(
+    add_rect(
         c,
         layer=layer_metal,
         x0=-pad_gap / 2 - connection_wire_width,
@@ -179,7 +180,7 @@ def fluxonium(
         y0=-pad_height / 2,
         y1=-pad_height / 2 + connection_wire_width,
     )
-    _add_rect(
+    add_rect(
         c,
         layer=layer_metal,
         x0=pad_gap / 2,
@@ -189,39 +190,42 @@ def fluxonium(
     )
 
     # Inductor stubs
-    _add_rect(
+    add_rect(
         c,
-        layer=layer_metal,
+        layer=LAYER.NbTiN,
         x0=-pad_gap / 2,
         x1=ind_o1.dcenter[0],
         y_center=ind_o1.dcenter[1],
         height=inductor_wire_width,
     )
-    _add_rect(
+    add_rect(
         c,
-        layer=layer_metal,
+        layer=LAYER.NbTiN,
         x0=ind_o2.dcenter[0],
         x1=pad_gap / 2,
         y_center=ind_o2.dcenter[1],
         height=inductor_wire_width,
     )
 
+    # Junction leads
+    jj_p1 = junction_ref.ports["left_wide"].dcenter
+    jj_p2 = junction_ref.ports["right_wide"].dcenter
+
     # Junction wires
-    jj_half_w = junction_ref.size_info.width / 2
-    _add_rect(
+    add_rect(
         c,
         layer=layer_metal,
         x0=-pad_gap / 2,
-        x1=-jj_half_w,
-        y_center=junction_ref.dcenter[1],
+        x1=jj_p1[0],
+        y_center=jj_p1[1],
         height=connection_wire_width,
     )
-    _add_rect(
+    add_rect(
         c,
         layer=layer_metal,
-        x0=jj_half_w,
+        x0=jj_p2[0],
         x1=pad_gap / 2,
-        y_center=junction_ref.dcenter[1],
+        y_center=jj_p2[1],
         height=connection_wire_width,
     )
 
@@ -281,57 +285,44 @@ def _snap_to_grid(value: float, grid: float = 0.002) -> float:
     return math.ceil(value / grid) * grid
 
 
-def _add_rect(
-    c: Component,
-    layer: LayerSpec,
-    *,
-    x0: float | None = None,
-    x1: float | None = None,
-    y0: float | None = None,
-    y1: float | None = None,
-    x_center: float | None = None,
-    y_center: float | None = None,
-    width: float | None = None,
-    height: float | None = None,
-) -> None:
-    """Add a rectangle to *c* using flexible coordinates."""
-    if x0 is not None and x1 is not None:
-        x_lo, x_hi = min(x0, x1), max(x0, x1)
-    elif x_center is not None and width is not None:
-        x_lo, x_hi = x_center - width / 2, x_center + width / 2
-    else:
-        raise ValueError("Provide (x0, x1) or (x_center, width)")
-
-    if y0 is not None and y1 is not None:
-        y_lo, y_hi = min(y0, y1), max(y0, y1)
-    elif y_center is not None and height is not None:
-        y_lo, y_hi = y_center - height / 2, y_center + height / 2
-    else:
-        raise ValueError("Provide (y0, y1) or (y_center, height)")
-
-    c.add_polygon([(x_lo, y_lo), (x_hi, y_lo), (x_hi, y_hi), (x_lo, y_hi)], layer=layer)
-
-
 @gf.cell
 def fluxonium_with_bbox(
     bbox_extension: float = 200.0,
     pad_size: tuple[float, float] = (250.0, 400.0),
-    pad_gap: float = 30.0,
+    pad_gap: float = 25.0,
     junction_spec: ComponentSpec = josephson_junction,
     junction_displacement: DCplxTrans | None = None,
-    inductor_n_turns: int = 315,
+    junction_margin: float = 1.0,
+    inductor_n_turns: int = 155,
+    inductor_margin_x: float = 1.0,
     inductor_cross_section: CrossSectionSpec = superinductor_cross_section,
-    connection_wire_width: float = 4.0,
+    connection_wire_width: float = 0.5,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
-    """Fluxonium with an etched bounding box."""
+    """Fluxonium with an etched bounding box.
+
+    Args:
+        bbox_extension: Extension of the bounding box from the fluxonium edge in µm.
+        pad_size: (width, height) of each capacitor pad in µm.
+        pad_gap: Gap between the two capacitor pads in µm.
+        junction_spec: Component specification for the Josephson junction.
+        junction_displacement: Optional transformation applied to the junction.
+        junction_margin: Vertical margin between the junction and capacitor pads in µm.
+        inductor_n_turns: Number of horizontal meander runs. Must be odd.
+        inductor_margin_x: Horizontal margin for the inductor in µm.
+        inductor_cross_section: Cross-section for the meander inductor.
+        connection_wire_width: Width of the connecting wires in µm.
+        layer_metal: Layer for the metal pads and connection wires.
+    """
     c = gf.Component()
     flux_ref = c << fluxonium(
         pad_size=pad_size,
         pad_gap=pad_gap,
         junction_spec=junction_spec,
         junction_displacement=junction_displacement,
+        junction_margin=junction_margin,
         inductor_n_turns=inductor_n_turns,
+        inductor_margin_x=inductor_margin_x,
         inductor_cross_section=inductor_cross_section,
         connection_wire_width=connection_wire_width,
         layer_metal=layer_metal,

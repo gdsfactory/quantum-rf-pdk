@@ -53,10 +53,12 @@ class LayerMapQPDK(LayerMap):
     JJ_AREA: Layer = (20, 0)  # Optional bridge/overlap definition
     JJ_PATCH: Layer = (20, 1)
 
+    # Nanowire
+    NbTiN: Layer = (25, 0)
+
     # Packaging / 3D integration / backside / misc.
     IND: Layer = (30, 0)
     TSV: Layer = (31, 0)  # Throughs / vias / backside features
-    NbTiN: Layer = (32, 0)
     DICE: Layer = (70, 0)  # Dicing lanes
 
     # Alignment / admin
@@ -139,6 +141,14 @@ def get_layer_stack() -> LayerStack:
                 thickness=200e-9 * 1e6,
                 zmin=0.0,  # top of substrate
                 material="Nb",
+                mesh_order=1,
+            ),
+            "NbTiN": LayerLevel(
+                name="NbTiN",
+                layer=L.NbTiN,
+                thickness=15e-9 * 1e6,
+                zmin=0.0,  # top of substrate
+                material="NbTiN",
                 mesh_order=1,
             ),
             "Substrate": LayerLevel(
@@ -398,10 +408,11 @@ def meander_inductor_cross_section() -> CrossSection:
 def superinductor_cross_section() -> CrossSection:
     """Return an ultra-narrow coplanar waveguide cross-section for fluxonium superinductors.
 
-    The default dimensions are width=0.01 µm and gap=0.01 µm on the NbTiN layer.
+    The default dimensions (width=0.04 µm, gap=0.09 µm) are based on NbTiN superinductor and SNSPD
+    reports :cite:`hazardNanowireSuperinductanceFluxonium2019,yangComparisonSuperconductingNanowire2018`.
     """
     return coplanar_waveguide(
-        width=0.01, gap=0.01, waveguide_layer=LAYER.NbTiN, etch_layer=LAYER.M1_ETCH
+        width=0.04, gap=0.09, waveguide_layer=LAYER.NbTiN, etch_layer=LAYER.M1_ETCH
     )
 
 
