@@ -10,21 +10,14 @@
 
 {% if func_name in items[0].sax_models and func_name not in items[0].skip_plots %}
 .. plot::
-   :include-source:
+   :caption: :func:`qpdk.models.{{ func_name }}` S-parameters for :math:`f\in[1,10]\,\mathrm{GHz}`.
 
    import jax.numpy as jnp
-   import matplotlib.pyplot as plt
    from qpdk.models import {{ func_name }}
-   from qpdk import PDK
 
-   PDK.activate()
-
-   freq = jnp.linspace(2e9, 8e9, 501)
+   freq = jnp.linspace(1e9, 10e9, 501)
    freq_ghz = freq / 1e9
    s_model = {{ func_name }}(f=freq)
-
-   plt.figure()
-   plt.title("{{ func_name }}", fontsize=14)
 
    for (pout, pin), sij in s_model.items():
       i = int(pout[-1])  # "o2" -> 2
