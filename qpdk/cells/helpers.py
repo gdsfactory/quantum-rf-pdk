@@ -114,6 +114,87 @@ def fill_magnetic_vortices(
     return c
 
 
+def merge_layers_with_etch(
+    component: Component,
+    draw_layer: LayerSpec,
+    wg_layer: LayerSpec,
+    etch_layer: LayerSpec,
+) -> Component:
+    """Merge waveguide marker layer with draw layer and create an etch negative.
+
+    This function:
+
+    1. Merges the waveguide (WG) marker layer shapes with the draw layer
+       via boolean OR, producing a unified additive component.
+    2. Subtracts the merged additive shapes from the etch layer to produce
+       a clean etch negative.
+    3. Returns a fresh component containing both the additive and negative layers.
+
+    This is used in capacitor components to combine the CPW cross-section
+    waveguide markers with the capacitor metal draw layer and generate
+    the corresponding etch layer.
+
+    Args:
+        component: The component containing both draw and WG layer shapes.
+        draw_layer: The additive metal layer (e.g., M1_DRAW).
+        wg_layer: The waveguide marker layer to merge into the draw layer.
+        etch_layer: The etch layer for the negative mask.
+
+    Returns:
+        A new component with merged draw and etch layers.
+    """
+    c_additive = gf.boolean(
+        A=component,
+        B=component,
+        operation="or",
+        layer=draw_layer,
+        layer1=draw_layer,
+        layer2=wg_layer,
+    )
+    c_negative = gf.boolean(
+        A=component,
+        B=c_additive,
+        operation="A-B",
+        layer=etch_layer,
+        layer1=etch_layer,
+        layer2=draw_layer,
+    )
+    result = gf.Component()
+    result.absorb(result << c_additive)
+    result.absorb(result << c_negative)
+    return result
+
+
+def subtract_draw_from_etch(
+    component: Component,
+    etch_shape: Component,
+    etch_layer: LayerSpec,
+    draw_layer: LayerSpec,
+) -> None:
+    """Subtract draw layer from an etch shape and absorb the result into a component.
+
+    This is commonly used to create etch regions around qubit components where
+    metal is preserved wherever the draw layer defines features, and the remaining
+    area is etched away.
+
+    Args:
+        component: The target component to absorb the result into.
+            Its draw layer shapes are subtracted from the etch shape.
+        etch_shape: The component defining the full etch area (e.g., a bounding box).
+        etch_layer: The etch layer for the result.
+        draw_layer: The draw layer to subtract from the etch shape.
+    """
+    result = gf.boolean(
+        A=etch_shape,
+        B=component,
+        operation="-",
+        layer=etch_layer,
+        layer1=etch_layer,
+        layer2=draw_layer,
+    )
+    component.absorb(component.add_ref(result))
+
+
 def apply_additive_metals(component: Component) -> Component:
     """Apply additive metal layers and remove them.
 

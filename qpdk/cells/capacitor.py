@@ -10,6 +10,7 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
+from qpdk.cells.helpers import merge_layers_with_etch as _merge_layers_with_etch
 from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
 from qpdk.helper import show_components
 from qpdk.tech import LAYER, get_etch_section, get_etch_sections
@@ -284,30 +285,13 @@ def interdigital_capacitor(
     if not half:
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
 
-    # Add WG to additive metal
-    c_additive = gf.boolean(
-        A=c,
-        B=c,
-        operation="or",
-        layer=layer,
-        layer1=layer,
-        layer2=straight_cross_section.layer,
+    # Merge WG marker layer with draw metal and create etch negative
+    c = _merge_layers_with_etch(
+        component=c,
+        draw_layer=layer,
+        wg_layer=straight_cross_section.layer,
+        etch_layer=etch_layer,
     )
-
-    # Take boolean negative
-    c_negative = gf.boolean(
-        A=c,
-        B=c_additive,
-        operation="A-B",
-        layer=etch_layer,
-        layer1=etch_layer,
-        layer2=layer,
-    )
-
-    # Combine results
-    c = gf.Component()
-    c.absorb(c << c_additive)
-    c.absorb(c << c_negative)
 
     ports_config: list[tuple[str, gf.Port] | None] = [
         ("o1", straight_left["o1"]),
@@ -475,29 +459,13 @@ def plate_capacitor_single(
         -etch_bbox_margin,
         length / 2,
     ))
-    # Add WG to additive metal
-    c_additive = gf.boolean(
-        A=c,
-        B=c,
-        operation="or",
-        layer=layer,
-        layer1=layer,
-        layer2=straight_cross_section.layer,
+    # Merge WG marker layer with draw metal and create etch negative
+    c = _merge_layers_with_etch(
+        component=c,
+        draw_layer=layer,
+        wg_layer=straight_cross_section.layer,
+        etch_layer=etch_layer,
     )
-
-    # Take boolean negative
-    c_negative = gf.boolean(
-        A=c,
-        B=c_additive,
-        operation="A-B",
-        layer=etch_layer,
-        layer1=etch_layer,
-        layer2=layer,
-    )
-    # Combine results
-    c = gf.Component()
-    c.absorb(c << c_additive)
-    c.absorb(c << c_negative)
 
     c.add_port(
         name="o1",

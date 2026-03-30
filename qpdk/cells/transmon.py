@@ -12,7 +12,10 @@ from kfactory import kdb
 from klayout.db import DCplxTrans, Region
 
 from qpdk.cells.bump import indium_bump
-from qpdk.cells.helpers import transform_component
+from qpdk.cells.helpers import (
+    subtract_draw_from_etch as _subtract_draw_from_etch,
+    transform_component,
+)
 from qpdk.cells.junction import squid_junction, squid_junction_long
 from qpdk.helper import show_components
 from qpdk.tech import LAYER
@@ -176,16 +179,12 @@ def double_pad_transmon_with_bbox(
         ),
     )
     # Remove additive metal from etch
-    bbox = gf.boolean(
-        A=bbox,
-        B=c,
-        operation="-",
-        layer=LAYER.M1_ETCH,
-        layer1=LAYER.M1_ETCH,
-        layer2=LAYER.M1_DRAW,
+    _subtract_draw_from_etch(
+        component=c,
+        etch_shape=bbox,
+        etch_layer=LAYER.M1_ETCH,
+        draw_layer=LAYER.M1_DRAW,
     )
-    bbox_ref = c.add_ref(bbox)
-    c.absorb(bbox_ref)
 
     c.add_ports(double_pad_ref.ports)
     return c
@@ -356,18 +355,15 @@ def flipmon_with_bbox(
         (LAYER.M1_ETCH, LAYER.M1_DRAW, m1_bbox_radius),
         (LAYER.M2_ETCH, LAYER.M2_DRAW, m2_bbox_radius),
     ]:
-        bbox_comp = gf.boolean(
-            A=gf.components.circle(
+        _subtract_draw_from_etch(
+            component=c,
+            etch_shape=gf.components.circle(
                 radius=bbox_radius,
                 layer=etch_layer,
             ),
-            B=c,
-            operation="-",
-            layer=etch_layer,
-            layer1=etch_layer,
-            layer2=draw_layer,
+            etch_layer=etch_layer,
+            draw_layer=draw_layer,
         )
-        c.absorb(c.add_ref(bbox_comp))
 
     c.add_ports(flipmon_ref.ports)
     return c
@@ -451,16 +447,12 @@ def xmon_transmon(
     etch_component.add_polygon(etch_region, layer=layer_etch)
 
     # Remove additive metal from etch
-    etch_component = gf.boolean(
-        A=etch_component,
-        B=c,
-        operation="-",
-        layer=LAYER.M1_ETCH,
-        layer1=LAYER.M1_ETCH,
-        layer2=LAYER.M1_DRAW,
+    _subtract_draw_from_etch(
+        component=c,
+        etch_shape=etch_component,
+        etch_layer=LAYER.M1_ETCH,
+        draw_layer=LAYER.M1_DRAW,
     )
-    etch_ref = c.add_ref(etch_component)
-    c.absorb(etch_ref)
 
     # Create and place Josephson junction at the y-center of the gap
     junction_ref = c.add_ref(gf.get_component(junction_spec))
