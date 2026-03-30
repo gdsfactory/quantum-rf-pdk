@@ -53,4 +53,8 @@ test-gds-fail-fast:
 # Run HFSS simulation tests (requires HFSS to be installed)
 [group('test')]
 test-hfss *args: check-lfs
-    {{ if hfss_extra == "" { "echo Skipping HFSS tests on Python 3.14 (vtk incompatible)" } else { "uv run --all-extras --group dev pytest -m hfss " + args } }}
+    if [ "{{ hfss_extra }}" = "" ]; then \
+        echo "Skipping HFSS tests on Python 3.14 (vtk incompatible)"; \
+    else \
+        uv run --all-extras --group dev pytest -m hfss {{ args }}; \
+    fi

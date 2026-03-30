@@ -15,13 +15,10 @@ def pytest_collection_modifyitems(
 ) -> None:
     """Skip tests marked with skip_windows on Windows platform or hfss if dependencies missing."""
     skip_windows = pytest.mark.skip(reason="Not supported on Windows")
-    
-    try:
-        import ansys.aedt.core  # noqa: F401
-        has_hfss = True
-    except ImportError:
-        has_hfss = False
-    
+
+    import importlib.util
+
+    has_hfss = importlib.util.find_spec("ansys.aedt.core") is not None
     skip_hfss = pytest.mark.skip(reason="hfss extra not installed")
 
     for item in items:
