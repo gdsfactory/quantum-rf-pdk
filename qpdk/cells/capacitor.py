@@ -286,12 +286,13 @@ def interdigital_capacitor(
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
 
     # Merge WG marker layer with draw metal and create etch negative
-    c = _merge_layers_with_etch(
-        component=c,
-        draw_layer=layer,
-        wg_layer=straight_cross_section.layer,
-        etch_layer=etch_layer,
-    )
+    if etch_layer is not None:
+        c = _merge_layers_with_etch(
+            component=c,
+            draw_layer=layer,
+            wg_layer=straight_cross_section.layer,
+            etch_layer=etch_layer,
+        )
 
     ports_config: list[tuple[str, gf.Port] | None] = [
         ("o1", straight_left["o1"]),
@@ -460,12 +461,13 @@ def plate_capacitor_single(
         length / 2,
     ))
     # Merge WG marker layer with draw metal and create etch negative
-    c = _merge_layers_with_etch(
-        component=c,
-        draw_layer=layer,
-        wg_layer=straight_cross_section.layer,
-        etch_layer=etch_layer,
-    )
+    if etch_layer is not None:
+        c = _merge_layers_with_etch(
+            component=c,
+            draw_layer=layer,
+            wg_layer=straight_cross_section.layer,
+            etch_layer=etch_layer,
+        )
 
     c.add_port(
         name="o1",

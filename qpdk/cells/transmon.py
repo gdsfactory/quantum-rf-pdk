@@ -137,6 +137,7 @@ def double_pad_transmon_with_bbox(
     junction_spec: ComponentSpec = squid_junction,
     junction_displacement: DCplxTrans | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_etch: LayerSpec = LAYER.M1_ETCH,
 ) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction and an etched bounding box.
 
@@ -149,6 +150,7 @@ def double_pad_transmon_with_bbox(
         junction_spec: Component specification for the Josephson junction component.
         junction_displacement: Optional complex transformation to apply to the junction.
         layer_metal: Layer for the metal pads.
+        layer_etch: Layer for the etched bounding box.
 
     Returns:
         Component: A gdsfactory component with the transmon geometry and etched box.
@@ -171,7 +173,7 @@ def double_pad_transmon_with_bbox(
         partial(
             gf.components.rectangle,
             size=bbox_size,
-            layer=LAYER.M1_ETCH,
+            layer=layer_etch,
         ),
         # Center the bbox around the double pad
         partial(
@@ -182,8 +184,8 @@ def double_pad_transmon_with_bbox(
     _subtract_draw_from_etch(
         component=c,
         etch_shape=bbox,
-        etch_layer=LAYER.M1_ETCH,
-        draw_layer=LAYER.M1_DRAW,
+        etch_layer=layer_etch,
+        draw_layer=layer_metal,
     )
 
     c.add_ports(double_pad_ref.ports)
@@ -352,8 +354,8 @@ def flipmon_with_bbox(
     m2_bbox_radius = top_circle_radius + m2_etch_extension_gap
 
     for etch_layer, draw_layer, bbox_radius in [
-        (LAYER.M1_ETCH, LAYER.M1_DRAW, m1_bbox_radius),
-        (LAYER.M2_ETCH, LAYER.M2_DRAW, m2_bbox_radius),
+        (LAYER.M1_ETCH, layer_metal, m1_bbox_radius),
+        (LAYER.M2_ETCH, layer_metal_top, m2_bbox_radius),
     ]:
         _subtract_draw_from_etch(
             component=c,
