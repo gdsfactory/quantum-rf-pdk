@@ -382,11 +382,13 @@ def simulate_global_tolerance(
     instance_names: list[str],
 ) -> np.ndarray:
     """Ray task for a single global tolerance trial."""
+    # ruff: disable[PLC0415]
     import jax.numpy as jnp
     import numpy as np
     import sax
 
     from qpdk import PDK
+    # ruff: enable[PLC0415]
 
     PDK.activate()
     # Re-compiling the circuit on the worker is very fast in SAX
@@ -397,7 +399,7 @@ def simulate_global_tolerance(
     xs = coplanar_waveguide(width=10.0 + dw, gap=6.0 + dg)
     overrides = {name: {"cross_section": xs} for name in instance_names}
     s_trial = circuit_fn(f=freq, **overrides)
-    return np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
+    return np.asarray(20 * jnp.log10(jnp.abs(s_trial["o1", "o2"])))
 
 
 # %%
@@ -471,9 +473,10 @@ def find_resonance_dips(
 ) -> np.ndarray:
     """Find resonance dip frequencies by detecting peaks in −|S₂₁| (dB).
 
-    Returns an array of shape ``(n_resonators,)`` with the dip frequencies
-    in Hz, sorted in ascending order.  If fewer dips are found, the missing
-    entries are filled with ``NaN``.
+    Returns:
+        an array of shape ``(n_resonators,)`` with the dip frequencies
+        in Hz, sorted in ascending order. If fewer dips are found, the missing
+        entries are filled with ``NaN``.
     """
     s21_np = np.asarray(s21_db)
     peaks, properties = find_peaks(
@@ -600,10 +603,12 @@ def simulate_local_tolerance(
     non_res_names: list[str],
 ) -> np.ndarray:
     """Ray task for a single per-resonator tolerance trial."""
+    # ruff: disable[PLC0415]
     import numpy as np
     import sax
 
     from qpdk import PDK
+    # ruff: enable[PLC0415]
 
     PDK.activate()
     circuit_fn, _ = sax.circuit(
@@ -623,7 +628,7 @@ def simulate_local_tolerance(
         overrides[name] = {"cross_section": xs_nominal}
 
     s_trial = circuit_fn(f=freq, **overrides)
-    return np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
+    return np.asarray(20 * jnp.log10(jnp.abs(s_trial["o1", "o2"])))
 
 
 # %%
