@@ -6,6 +6,7 @@ font.serif: CMU Serif, cmr10, DejaVu Serif, Bitstream Vera Serif, New Century Sc
 
 # Use Computer Modern math fonts for consistent LaTeX-like math rendering
 mathtext.fontset: cm
+axes.formatter.use_mathtext: True
 
 # Figure settings for better documentation appearance
 figure.facecolor: white
