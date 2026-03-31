@@ -1,8 +1,9 @@
 info: {}
-name: plate_capacitor_single_L26_W5_ELM1_ETCH_EBM2_CScpw
+name: plate_capacitor_single_L26_W5_LMM1_DRAW_ELM1_ETCH_EBM2_CScpw
 settings:
   cross_section: cpw
   etch_bbox_margin: 2
   etch_layer: M1_ETCH
+  layer_metal: M1_DRAW
   length: 26
   width: 5
