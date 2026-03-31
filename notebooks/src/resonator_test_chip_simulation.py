@@ -297,7 +297,7 @@ IS_CI = any((
     os.environ.get("GITHUB_ACTIONS") == "true",
     os.environ.get("CI") == "true",
 ))
-N_TRIALS = 25 if IS_CI else 100
+N_TRIALS = 10 if IS_CI else 100
 
 rng = np.random.default_rng(42)
 
