@@ -672,7 +672,7 @@ plt.show()
 # $E_J/E_C$ exponentially suppresses charge dispersion but the
 # anharmonicity remains pinned at $\alpha \approx E_C$.
 # The right panel shows that the fluxonium frequency decreases with
-# smaller $E_L$ (heavier fluxonium), while the anharmonicity remains
+# smaller $E_L$ (heavier fluxonium, i.e. larger $L_s$), while the anharmonicity remains
 # large—a qualitatively different design knob.
 
 # %% [markdown]
