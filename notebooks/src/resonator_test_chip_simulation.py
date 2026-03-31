@@ -34,6 +34,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
+import polars as pl
 import ray
 import sax
 from matplotlib.lines import Line2D
@@ -41,6 +42,7 @@ from scipy.signal import find_peaks
 from tqdm.auto import tqdm
 
 from qpdk import PATH, PDK
+from qpdk.helper import display_dataframe
 from qpdk.models import models
 from qpdk.models.cpw import cpw_parameters
 from qpdk.tech import coplanar_waveguide
@@ -161,7 +163,7 @@ ax.set_title("Top probeline (variable coupling gap)")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # ### Bottom probeline – fixed coupling gap
@@ -182,7 +184,7 @@ ax.set_title("Bottom probeline (fixed coupling gap)")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # ### Both probelines
@@ -199,7 +201,7 @@ ax.set_title("Resonator test chip – transmission comparison")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # # Monte Carlo Fabrication Tolerance Analysis
@@ -268,7 +270,7 @@ ax2.grid(True)
 
 fig.suptitle("CPW parameter sensitivity to geometry", fontsize=13, y=1.02)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # The plots show that :math:`Z_0` and :math:`\varepsilon_{\mathrm{eff}}` are
@@ -291,8 +293,11 @@ WIDTH_SIGMA = 0.5  # µm (1σ tolerance on width)
 GAP_SIGMA = 0.3  # µm (1σ tolerance on gap)
 
 # For CI/documentation builds, reduce trials to speed up execution.
-IS_CI = os.environ.get("GITHUB_ACTIONS") == "true" or os.environ.get("CI") == "true"
-N_TRIALS = 10 if IS_CI else 1000
+IS_CI = any((
+    os.environ.get("GITHUB_ACTIONS") == "true",
+    os.environ.get("CI") == "true",
+))
+N_TRIALS = 25 if IS_CI else 100
 
 rng = np.random.default_rng(42)
 
@@ -323,7 +328,7 @@ rng = np.random.default_rng(42)
 # 4. **Overall Workers:** The number of concurrent workers is automatically
 #    calculated as `Total CPUs / Cores per Worker`.
 
-# %%
+# %% tags=["hide-output"]
 if not ray.is_initialized():
     # 1. Disable Ray's automatic uv-run matching which is causing setup errors.
     os.environ["RAY_ENABLE_UV_RUN_RUNTIME_ENV"] = "0"
@@ -343,7 +348,7 @@ if not ray.is_initialized():
     # Initialize Ray using 80% of available CPU cores.
     total_cpus = os.cpu_count() or 1
     num_cpus = max(1, int(total_cpus * 0.8))
-    print(f"Initializing Ray with {num_cpus} CPUs (80% of {total_cpus})...")
+    print(f"Initializing Ray with {num_cpus} CPUs (80% of {total_cpus})…")
     ray.init(num_cpus=num_cpus, runtime_env=runtime_env)
 
 # To connect to a remote Ray cluster instead, use:
@@ -418,7 +423,7 @@ models_ref = ray.put(models)
 freq_ref = ray.put(freq)
 
 # Launch tasks in parallel
-print(f"Launching {N_TRIALS} parallel global trials with Ray...")
+print(f"Launching {N_TRIALS} parallel global trials with Ray…")
 futures = [
     simulate_global_tolerance.remote(
         dw_global[i],
@@ -430,7 +435,7 @@ futures = [
     )
     for i in range(N_TRIALS)
 ]
-print("Waiting for global trials to complete...")
+print("Waiting for global trials to complete…")
 results_global = ray_get_with_progress(futures, desc="Global trials", timeout=1200)
 print("Global trials completed.")
 s21_global_db = np.array(results_global).T
@@ -457,7 +462,7 @@ ax.set_title(
 )
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # ## Resonance frequency extraction
@@ -520,7 +525,7 @@ for i, f_dip in enumerate(nominal_dips):
 
 # %%
 # MC dip extraction
-print(f"Extracting dips for {N_TRIALS} global trials...")
+print(f"Extracting dips for {N_TRIALS} global trials…")
 futures_dips = [
     find_resonance_dips_task.remote(freq_np, s21_global_db[:, trial], n_res)
     for trial in range(N_TRIALS)
@@ -562,7 +567,7 @@ ax.set_title("Resonance frequency spread (global tolerance)")
 ax.axhline(0, color="r", ls="--", lw=1, alpha=0.5)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # ### Frequency shift statistics
@@ -574,13 +579,14 @@ mean_shift = np.nanmean(shifts_mhz, axis=0)
 std_shift = np.nanstd(shifts_mhz, axis=0)
 max_shift = np.nanmax(np.abs(shifts_mhz), axis=0)
 
-print("Resonator | Nominal [GHz] | Mean shift [MHz] | Std [MHz] | Max |shift| [MHz]")
-print("-" * 80)
-for i in range(n_res):
-    print(
-        f"    {i + 1:2d}     |   {nominal_dips[i] / 1e9:8.4f}    |"
-        f"    {mean_shift[i]:+7.2f}      |  {std_shift[i]:6.2f}   |    {max_shift[i]:7.2f}"
-    )
+df_stats = pl.DataFrame({
+    "Resonator": [f"{i + 1}" for i in range(n_res)],
+    "Nominal [GHz]": [float(f) / 1e9 for f in nominal_dips],
+    "Mean shift [MHz]": mean_shift,
+    "Std [MHz]": std_shift,
+    "Max |shift| [MHz]": max_shift,
+})
+display_dataframe(df_stats)
 
 # %% [markdown]
 # ## Per-resonator (independent) tolerance simulation
@@ -654,7 +660,7 @@ dw_per_res_ref = ray.put(dw_per_res)
 dg_per_res_ref = ray.put(dg_per_res)
 
 # Launch tasks in parallel
-print(f"Launching {N_TRIALS} parallel per-resonator trials with Ray...")
+print(f"Launching {N_TRIALS} parallel per-resonator trials with Ray…")
 futures_local = [
     simulate_local_tolerance.remote(
         i,
@@ -692,13 +698,13 @@ ax.set_title(
 )
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # ### Compare global vs per-resonator spread
 
 # %%
-print("Extracting dips for local tolerance trials...")
+print("Extracting dips for local tolerance trials…")
 futures_dips_local = [
     find_resonance_dips_task.remote(freq_np, s21_local_db[:, trial], n_res)
     for trial in range(N_TRIALS)
@@ -732,7 +738,7 @@ ax.set_xticklabels([f"{nominal_dips[i - 1] / 1e9:.3f}" for i in x])
 ax.legend()
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # The global scenario produces **correlated** frequency shifts (all resonators
@@ -750,7 +756,7 @@ plt.show()
 # %%
 # Width-only variation
 dw_only = rng.normal(0, WIDTH_SIGMA, N_TRIALS)
-print(f"Launching {N_TRIALS} parallel width-only trials with Ray...")
+print(f"Launching {N_TRIALS} parallel width-only trials with Ray…")
 futures_w = [
     simulate_global_tolerance.remote(
         dw_only[i], 0.0, freq_ref, netlist_ref, models_ref, cpw_instance_names
@@ -762,7 +768,7 @@ s21_w_db = np.array(results_w).T
 
 # Gap-only variation
 dg_only = rng.normal(0, GAP_SIGMA, N_TRIALS)
-print(f"Launching {N_TRIALS} parallel gap-only trials with Ray...")
+print(f"Launching {N_TRIALS} parallel gap-only trials with Ray…")
 futures_g = [
     simulate_global_tolerance.remote(
         0.0, dg_only[i], freq_ref, netlist_ref, models_ref, cpw_instance_names
@@ -773,7 +779,7 @@ results_g = ray_get_with_progress(futures_g, desc="Gap-only trials", timeout=120
 s21_g_db = np.array(results_g).T
 
 # %%
-print("Extracting dips for sensitivity analysis trials...")
+print("Extracting dips for sensitivity analysis trials…")
 futures_dips_w = [
     find_resonance_dips_task.remote(freq_np, s21_w_db[:, trial], n_res)
     for trial in range(N_TRIALS)
@@ -832,7 +838,7 @@ ax.set_xticklabels([f"{nominal_dips[i - 1] / 1e9:.3f}" for i in x])
 ax.legend(fontsize=9)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # ### Scatter: width perturbation vs frequency shift
@@ -882,7 +888,7 @@ ax.grid(True, alpha=0.3)
 ax.legend(fontsize=7, ncol=2)
 
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 # %% [markdown]
 # The scatter plots reveal a nearly **linear** relationship between the
@@ -940,7 +946,7 @@ fig_pc.update_layout(
     width=900,
     height=500,
 )
-fig_pc.show()
+fig_pc.show(block=False)
 
 # %% [markdown]
 # ## Summary
