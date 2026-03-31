@@ -23,6 +23,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_github_alerts",
     "sphinxcontrib.bibtex",
+    "sphinxcontrib_bibtex_urn",
 ]
 
 # -- Plot directive configuration ---------------------------------------------

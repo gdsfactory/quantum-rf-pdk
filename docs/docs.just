@@ -52,7 +52,7 @@ convert-notebooks:
 [group('docs')]
 copy-sample-notebooks:
     @mkdir -p docs/notebooks
-    @cp notebooks/src/*.py docs/notebooks/
+    @cp -p notebooks/src/*.py docs/notebooks/
 
 # Temporarily setup IPython configuration for documentation build
 [private]

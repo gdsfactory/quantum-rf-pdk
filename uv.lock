@@ -3406,6 +3406,7 @@ docs = [
     { name = "sphinx-design" },
     { name = "sphinx-github-alerts" },
     { name = "sphinxcontrib-bibtex" },
+    { name = "sphinxcontrib-bibtex-urn" },
     { name = "sphinxcontrib-katex" },
     { name = "sphinxcontrib-mermaid" },
     { name = "sphinxcontrib-svgbob" },
@@ -3482,6 +3483,7 @@ docs = [
     { name = "sphinx-design" },
     { name = "sphinx-github-alerts", specifier = ">=1.0" },
     { name = "sphinxcontrib-bibtex" },
+    { name = "sphinxcontrib-bibtex-urn" },
     { name = "sphinxcontrib-katex" },
     { name = "sphinxcontrib-mermaid", specifier = ">=2.0.1" },
     { name = "sphinxcontrib-svgbob" },
@@ -4197,6 +4199,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/de/83/1488c9879f2fa3c2cbd6f666c7a3a42a1fa9e08462bec73281fa6c092cba/sphinxcontrib_bibtex-2.6.5.tar.gz", hash = "sha256:9b3224dd6fece9268ebd8c905dc0a83ff2f6c54148a9235fe70e9d1e9ff149c0", size = 118462, upload-time = "2025-06-27T10:40:14.061Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9e/a0/3a612da94f828f26cabb247817393e79472c32b12c49222bf85fb6d7b6c8/sphinxcontrib_bibtex-2.6.5-py3-none-any.whl", hash = "sha256:455ea4509642ea0b28ede3721550273626f85af65af01f161bfd8e19dc1edd7d", size = 40410, upload-time = "2025-06-27T10:40:12.274Z" },
+]
+
+[[package]]
+name = "sphinxcontrib-bibtex-urn"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pybtex" },
+    { name = "sphinx" },
+    { name = "sphinxcontrib-bibtex" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4f/46/fb2ba112d12c50f97cc0eb99f7679a476c82c25da117938fcd213e14e930/sphinxcontrib_bibtex_urn-0.1.0.tar.gz", hash = "sha256:9342749a0adf2678742b214d95fd4ac9c43395692f2aadbb0c5a6a066bf7ddfa", size = 7359, upload-time = "2026-03-31T08:51:00.48Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d0/ae/62f6934d293c25a6eed9c5141a57f2e89a4a1cef48da2df52ec6871b5119/sphinxcontrib_bibtex_urn-0.1.0-py3-none-any.whl", hash = "sha256:47d8de313bb7886d4a8ec52f462fe8f6a1ce4869b2dc8f5dc6a2191ed023a0f4", size = 8156, upload-time = "2026-03-31T08:50:59.207Z" },
 ]
 
 [[package]]
