@@ -71,7 +71,6 @@ docs = [
   "linkify-it-py",
   "matplotlib",
   "myst-nb>=1.0",
-  "plotly>=6.0",
   "pydata-sphinx-theme",
   "scipy",
   "sphinx>=9.0",
