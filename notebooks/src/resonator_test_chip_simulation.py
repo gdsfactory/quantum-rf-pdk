@@ -289,7 +289,10 @@ NOMINAL_WIDTH = 10.0  # µm (centre-conductor width)
 NOMINAL_GAP = 6.0  # µm (gap to ground plane)
 WIDTH_SIGMA = 0.5  # µm (1σ tolerance on width)
 GAP_SIGMA = 0.3  # µm (1σ tolerance on gap)
-N_TRIALS = 1000
+
+# For CI/documentation builds, reduce trials to speed up execution.
+IS_CI = os.environ.get("GITHUB_ACTIONS") == "true" or os.environ.get("CI") == "true"
+N_TRIALS = 10 if IS_CI else 1000
 
 rng = np.random.default_rng(42)
 
@@ -325,7 +328,7 @@ if not ray.is_initialized():
     # 1. Disable Ray's automatic uv-run matching which is causing setup errors.
     os.environ["RAY_ENABLE_UV_RUN_RUNTIME_ENV"] = "0"
     runtime_env = {
-        "working_dir": ".",
+        "working_dir": str(PATH.repo),
         "excludes": [
             ".git",
             ".venv",
@@ -335,7 +338,7 @@ if not ray.is_initialized():
             ".pytest_cache",
         ],
     }
-    print("Initializing Ray with runtime_env...")
+    print(f"Initializing Ray with working_dir: {PATH.repo}")
 
     # Initialize Ray using 80% of available CPU cores.
     total_cpus = os.cpu_count() or 1
