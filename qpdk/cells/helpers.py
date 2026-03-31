@@ -118,7 +118,7 @@ def merge_layers_with_etch(
     component: Component,
     draw_layer: LayerSpec,
     wg_layer: LayerSpec,
-    etch_layer: LayerSpec,
+    etch_layer: LayerSpec | None,
 ) -> Component:
     """Merge waveguide marker layer with draw layer and create an etch negative.
 
@@ -126,9 +126,9 @@ def merge_layers_with_etch(
 
     1. Merges the waveguide (WG) marker layer shapes with the draw layer
        via boolean OR, producing a unified additive component.
-    2. Subtracts the merged additive shapes from the etch layer to produce
-       a clean etch negative.
-    3. Returns a fresh component containing both the additive and negative layers.
+    2. If `etch_layer` is provided, subtracts the merged additive shapes
+       from the etch layer to produce a clean etch negative.
+    3. Returns a fresh component containing the merged layers.
 
     This is used in capacitor components to combine the CPW cross-section
     waveguide markers with the capacitor metal draw layer and generate
@@ -138,10 +138,10 @@ def merge_layers_with_etch(
         component: The component containing both draw and WG layer shapes.
         draw_layer: The additive metal layer (e.g., M1_DRAW).
         wg_layer: The waveguide marker layer to merge into the draw layer.
-        etch_layer: The etch layer for the negative mask.
+        etch_layer: Optional etch layer for the negative mask.
 
     Returns:
-        A new component with merged draw and etch layers.
+        A new component with merged draw and (optionally) etch layers.
     """
     c_additive = gf.boolean(
         A=component,
@@ -151,17 +151,20 @@ def merge_layers_with_etch(
         layer1=draw_layer,
         layer2=wg_layer,
     )
-    c_negative = gf.boolean(
-        A=component,
-        B=c_additive,
-        operation="A-B",
-        layer=etch_layer,
-        layer1=etch_layer,
-        layer2=draw_layer,
-    )
     result = gf.Component()
     result.absorb(result << c_additive)
-    result.absorb(result << c_negative)
+
+    if etch_layer is not None:
+        c_negative = gf.boolean(
+            A=component,
+            B=c_additive,
+            operation="A-B",
+            layer=etch_layer,
+            layer1=etch_layer,
+            layer2=draw_layer,
+        )
+        result.absorb(result << c_negative)
+
     return result
 
 

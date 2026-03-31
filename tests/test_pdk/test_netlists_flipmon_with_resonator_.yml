@@ -26,6 +26,8 @@ instances:
       inner_circle_radius: 60
       junction_displacement: null
       junction_spec: squid_junction_long
+      layer_etch: M1_ETCH
+      layer_etch_top: M2_ETCH
       layer_metal: M1_DRAW
       layer_metal_top: M2_DRAW
       m1_etch_extension_gap: 30
@@ -40,6 +42,7 @@ instances:
       cross_section: cpw
       etch_bbox_margin: 2
       etch_layer: M1_ETCH
+      layer_metal: M1_DRAW
       length: 58
       width: 10
   resonator:

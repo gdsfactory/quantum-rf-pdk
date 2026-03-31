@@ -81,6 +81,23 @@ def test_wg_layer_not_in_result():
     assert wg_layer_tuple not in result.layers
 
 
+def test_merge_layers_with_etch_handles_none_etch():
+    """Test merge_layers_with_etch handles etch_layer=None."""
+    c = Component()
+    c.add_polygon([(0, 0), (10, 0), (10, 10), (0, 10)], layer=LAYER.M1_DRAW)
+    c.add_polygon([(2, 2), (8, 2), (8, 8), (2, 8)], layer=LAYER.WG)
+
+    result = merge_layers_with_etch(
+        component=c,
+        draw_layer=LAYER.M1_DRAW,
+        wg_layer=LAYER.WG,
+        etch_layer=None,
+    )
+    assert isinstance(result, Component)
+    assert layerenum_to_tuple(LAYER.M1_DRAW) in result.layers
+    assert layerenum_to_tuple(LAYER.M1_ETCH) not in result.layers
+
+
 def test_produces_same_result_as_capacitor_components():
     """Verify the refactored capacitor components still work correctly."""
     # These should produce valid components without errors

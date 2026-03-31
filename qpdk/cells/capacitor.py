@@ -145,6 +145,7 @@ def interdigital_capacitor(
     finger_length: float = 20.0,
     finger_gap: float = 2.0,
     thickness: float = 5.0,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
@@ -179,6 +180,7 @@ def interdigital_capacitor(
         finger_length: Length of each finger in μm.
         finger_gap: Gap between adjacent fingers in μm.
         thickness: Thickness of fingers and the base section in μm.
+        layer_metal: Layer for the metal fingers.
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
@@ -192,9 +194,6 @@ def interdigital_capacitor(
         ValueError: If fingers is less than 1.
     """
     c = Component()
-
-    # Used temporarily
-    layer = LAYER.M1_DRAW
 
     if fingers < 1:
         raise ValueError("Must have at least 1 finger")
@@ -229,7 +228,7 @@ def interdigital_capacitor(
         (thickness, 0),
         (0, 0),
     ]
-    c.add_polygon(points_1, layer=layer)
+    c.add_polygon(points_1, layer=layer_metal)
 
     if not half:
         points_2 = [
@@ -260,7 +259,7 @@ def interdigital_capacitor(
             (width - thickness, 0),
             (width, 0),
         ]
-        c.add_polygon(points_2, layer=layer)
+        c.add_polygon(points_2, layer=layer_metal)
 
     # Add etch layer bbox if specified
     if etch_layer is not None:
@@ -286,13 +285,12 @@ def interdigital_capacitor(
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
 
     # Merge WG marker layer with draw metal and create etch negative
-    if etch_layer is not None:
-        c = _merge_layers_with_etch(
-            component=c,
-            draw_layer=layer,
-            wg_layer=straight_cross_section.layer,
-            etch_layer=etch_layer,
-        )
+    c = _merge_layers_with_etch(
+        component=c,
+        draw_layer=layer_metal,
+        wg_layer=straight_cross_section.layer,
+        etch_layer=etch_layer,
+    )
 
     ports_config: list[tuple[str, gf.Port] | None] = [
         ("o1", straight_left["o1"]),
@@ -396,6 +394,7 @@ def plate_capacitor(
 def plate_capacitor_single(
     length: float = 26.0,
     width: float = 5.0,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
@@ -417,6 +416,7 @@ def plate_capacitor_single(
     Args:
         length: Length (vertical extent) of the capacitor pad in μm.
         width: Width (horizontal extent) of the capacitor pad in μm.
+        layer_metal: Layer for the metal pad.
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
@@ -434,14 +434,13 @@ def plate_capacitor_single(
 
     c = Component()
 
-    layer = LAYER.M1_DRAW
     points = [
         (0, 0),
         (0, length),
         (width, length),
         (width, 0),
     ]
-    c.add_polygon(points, layer=layer)
+    c.add_polygon(points, layer=layer_metal)
     # Add etch layer bbox if specified
     if etch_layer is not None:
         etch_bbox = [
@@ -461,13 +460,12 @@ def plate_capacitor_single(
         length / 2,
     ))
     # Merge WG marker layer with draw metal and create etch negative
-    if etch_layer is not None:
-        c = _merge_layers_with_etch(
-            component=c,
-            draw_layer=layer,
-            wg_layer=straight_cross_section.layer,
-            etch_layer=etch_layer,
-        )
+    c = _merge_layers_with_etch(
+        component=c,
+        draw_layer=layer_metal,
+        wg_layer=straight_cross_section.layer,
+        etch_layer=etch_layer,
+    )
 
     c.add_port(
         name="o1",

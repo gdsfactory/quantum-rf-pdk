@@ -317,6 +317,8 @@ def flipmon_with_bbox(
     junction_displacement: DCplxTrans | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_metal_top: LayerSpec = LAYER.M2_DRAW,
+    layer_etch: LayerSpec = LAYER.M1_ETCH,
+    layer_etch_top: LayerSpec = LAYER.M2_ETCH,
     m1_etch_extension_gap: float = 30.0,
     m2_etch_extension_gap: float = 40.0,
 ) -> Component:
@@ -333,6 +335,8 @@ def flipmon_with_bbox(
         junction_displacement: Optional complex transformation to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_metal_top: Layer for the other metal layer pad for flip-chip.
+        layer_etch: Layer for the M1 etched bounding box.
+        layer_etch_top: Layer for the M2 etched bounding box.
         m1_etch_extension_gap: Radius extension length for the M1 etch bounding box in μm.
         m2_etch_extension_gap: Radius extension length for the M2 etch bounding box in μm.
 
@@ -353,18 +357,18 @@ def flipmon_with_bbox(
     m1_bbox_radius = outer_ring_radius + outer_ring_width / 2 + m1_etch_extension_gap
     m2_bbox_radius = top_circle_radius + m2_etch_extension_gap
 
-    for etch_layer, draw_layer, bbox_radius in [
-        (LAYER.M1_ETCH, layer_metal, m1_bbox_radius),
-        (LAYER.M2_ETCH, layer_metal_top, m2_bbox_radius),
+    for etch_l, draw_l, bbox_radius in [
+        (layer_etch, layer_metal, m1_bbox_radius),
+        (layer_etch_top, layer_metal_top, m2_bbox_radius),
     ]:
         _subtract_draw_from_etch(
             component=c,
             etch_shape=gf.components.circle(
                 radius=bbox_radius,
-                layer=etch_layer,
+                layer=etch_l,
             ),
-            etch_layer=etch_layer,
-            draw_layer=draw_layer,
+            etch_layer=etch_l,
+            draw_layer=draw_l,
         )
 
     c.add_ports(flipmon_ref.ports)
@@ -452,8 +456,8 @@ def xmon_transmon(
     _subtract_draw_from_etch(
         component=c,
         etch_shape=etch_component,
-        etch_layer=LAYER.M1_ETCH,
-        draw_layer=LAYER.M1_DRAW,
+        etch_layer=layer_etch,
+        draw_layer=layer_metal,
     )
 
     # Create and place Josephson junction at the y-center of the gap
