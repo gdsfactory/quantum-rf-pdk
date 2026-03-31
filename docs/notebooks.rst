@@ -41,19 +41,27 @@ Any of these methods can be wrapped in an automated optimization loop (e.g. with
 The typical workflow when creating a chip with **qpdk / gdsfactory** can be summarized
 as follows. Each stage may loop back to earlier stages as the design is refined.
 
-.. mermaid::
+.. only:: html
 
-    flowchart TB
-        A["Physical requirements<br>(qubit frequency, coupling, T₁, …)"]
-        B["Hamiltonian / perturbation analysis<br>(map requirements → circuit parameters)"]
-        C["Circuit / S-parameter models<br>(design passive components)"]
-        D["Layout with gdsfactory<br>(draw the chip in qpdk)"]
-        E["FEM verification<br>(validate geometry with a full-wave solver)"]
-        F["Pulse-level simulation<br>(predict gate performance)"]
-        G["Fabrication & measurement"]
-        A --> B --> C --> D --> E --> F --> G
-        F -.-> A
-        E -.-> C
+    .. mermaid::
+
+        flowchart TB
+            A["Physical requirements<br>(qubit frequency, coupling, T₁, …)"]
+            B["Hamiltonian / perturbation analysis<br>(map requirements → circuit parameters)"]
+            C["Circuit / S-parameter models<br>(design passive components)"]
+            D["Layout with gdsfactory<br>(draw the chip in qpdk)"]
+            E["FEM verification<br>(validate geometry with a full-wave solver)"]
+            F["Pulse-level simulation<br>(predict gate performance)"]
+            G["Fabrication & measurement"]
+            A --> B --> C --> D --> E --> F --> G
+            F -.-> A
+            E -.-> C
+
+.. only:: latex
+
+    Design flow: Physical requirements → Hamiltonian analysis → Circuit/S-parameter models
+    → Layout (gdsfactory/qpdk) → FEM verification → Pulse-level simulation → Fabrication.
+    FEM results feed back to circuit models; pulse simulations feed back to requirements.
 
 ****************************
  S-parameter circuit models
@@ -119,9 +127,27 @@ currents, and substrate modes that analytical models may miss
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
-For additional electromagnetic simulation examples using **Palace** and **Meep** with
-gdsfactory and gdsfactory+, see the `gsim documentation
-<https://gdsfactory.github.io/gsim/>`_.
+.. note::
+
+    **gsim — additional FEM and FDTD simulation examples**
+
+    The `gsim <https://gdsfactory.github.io/gsim/>`_ project provides a collection of
+    example notebooks that demonstrate FEM (finite-element method) and FDTD
+    (finite-difference time-domain) electromagnetic simulations built on top of
+    GDSFactory. These notebooks cover solvers such as **Palace** (FEM) and **Meep**
+    (FDTD), showing how to go from a GDSFactory layout to a full 3-D electromagnetic
+    simulation. They are a valuable complement to the Ansys-based notebooks above and
+    are especially useful for users looking for open-source solver workflows.
+
+    Topics covered in the gsim notebooks include:
+
+    - Eigenmode and driven-port simulations with Palace.
+    - FDTD simulations with Meep, including S-parameter extraction.
+    - Geometry preparation and meshing pipelines starting from GDSFactory components.
+    - Post-processing and visualization of electromagnetic field results.
+
+    See the `gsim documentation <https://gdsfactory.github.io/gsim/>`_ for the full list
+    of available notebooks.
 
 **********************
  Hamiltonian analysis

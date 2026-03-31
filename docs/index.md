@@ -19,14 +19,6 @@
 ```
 
 ```{toctree}
-:caption: Development
-:hidden:
-
-just_commands
-changelog
-```
-
-```{toctree}
 :caption: API
 :hidden:
 
@@ -45,4 +37,11 @@ samples
 :hidden:
 
 notebooks
+```
+
+```{toctree}
+:caption: Development
+:hidden:
+
+contributing
 ```

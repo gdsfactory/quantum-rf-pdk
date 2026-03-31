@@ -6,6 +6,7 @@ instances:
       cross_section: cpw
       etch_bbox_margin: 2
       etch_layer: M1_ETCH
+      layer_metal: M1_DRAW
       length: 26
       width: 5
   plate_capacitor_single2:
@@ -15,6 +16,7 @@ instances:
       cross_section: cpw
       etch_bbox_margin: 2
       etch_layer: M1_ETCH
+      layer_metal: M1_DRAW
       length: 26
       width: 5
 nets: []

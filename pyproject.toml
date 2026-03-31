@@ -1,23 +1,49 @@
 [project]
 name = "qpdk"
-version = "0.3.4"
+version = "0.3.5"
 description = "Quantum-RF generic PDK"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = { file = "LICENSE" }
 authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
-keywords = ["python"]
+keywords = [
+  "gdsfactory",
+  "layout",
+  "microwave",
+  "pdk",
+  "python",
+  "quantum",
+  "rf",
+  "simulation",
+  "superconducting",
+]
 classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Manufacturing",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
 ]
 dependencies = [
   "doroutes>=0.2.0",
   "gdsfactory~=9.39.0",
   "typing-extensions>=4.12.0"
 ]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/gdsfactory/quantum-rf-pdk/issues"
+changelog = "https://github.com/gdsfactory/quantum-rf-pdk/releases"
+documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
+repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
 
 [project.optional-dependencies]
 graphics = ["trimesh", "pyglet<2"]
@@ -50,7 +76,9 @@ docs = [
   "sphinx>=9.0",
   "sphinx-copybutton",
   "sphinx-design",
+  "sphinx-github-alerts>=1.0",
   "sphinxcontrib-bibtex",
+  "sphinxcontrib-bibtex-urn",
   "sphinxcontrib-katex",
   "sphinxcontrib-mermaid>=2.0.1",
   "sphinxcontrib-svgbob",
@@ -138,17 +166,8 @@ project-excludes = [
 project-includes = ["**/*.py"]
 
 [tool.pyrefly.errors]
-bad-argument-type = "ignore"
-# Configure specific error types - start permissive and tighten over time
-missing-argument = "ignore"
-missing-module-attribute = "ignore"
-# Not all gdsfactory overloads are seem to be properly typed
+# Not all gdsfactory overloads are properly typed
 no-matching-overload = "ignore"
-not-a-type = "warn"
-read-only = "ignore"
-# The cast() calls are needed for pyrefly <0.55 compatibility (pre-commit hook uses 0.46.3).
-# TODO: remove this when the pre-commit hook is updated to pyrefly >=0.55.0.
-redundant-cast = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]

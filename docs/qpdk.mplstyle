@@ -6,16 +6,17 @@ font.serif: CMU Serif, cmr10, DejaVu Serif, Bitstream Vera Serif, New Century Sc
 
 # Use Computer Modern math fonts for consistent LaTeX-like math rendering
 mathtext.fontset: cm
+axes.formatter.use_mathtext: true
 
 # Figure settings for better documentation appearance
 figure.facecolor: white
 figure.edgecolor: white
-figure.autolayout: True
+figure.autolayout: true
 
 # Axes settings for cleaner plots
 axes.labelsize: 11
 axes.titlesize: 12
-axes.grid: True
+axes.grid: true
 axes.xmargin: 0
 axes.facecolor: white
 axes.linewidth: 1.2
@@ -26,11 +27,11 @@ grid.linestyle: --
 grid.linewidth: 0.5
 
 # Legend settings
-legend.frameon: False
+legend.frameon: false
 legend.fontsize: 10
 legend.loc: best
-legend.fancybox: True
-legend.shadow: False
+legend.fancybox: true
+legend.shadow: false
 legend.borderpad: 0.25
 
 # Line settings

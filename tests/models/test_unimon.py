@@ -11,7 +11,7 @@ from numpy.testing import assert_allclose
 import qpdk
 from qpdk.models.constants import Φ_0, h
 from qpdk.models.unimon import (
-    el_to_inductance,
+    el_to_arm_inductance,
     unimon_coupled,
     unimon_energies,
     unimon_frequency_and_anharmonicity,
@@ -26,14 +26,14 @@ qpdk.PDK.activate()
 MAX_EXAMPLES = 20
 
 
-class TestElToInductance:
-    """Tests for el_to_inductance helper function."""
+class TestElToArmInductance:
+    """Tests for el_to_arm_inductance helper function."""
 
     @staticmethod
     def test_typical_value() -> None:
         """Test with typical unimon inductive energy."""
         el_ghz = 5.0
-        L = el_to_inductance(el_ghz)
+        L = el_to_arm_inductance(el_ghz)
 
         # L = Φ_0² / (8π² E_L)
         expected_L = Φ_0**2 / (8 * np.pi**2 * el_ghz * 1e9 * h)
@@ -44,8 +44,8 @@ class TestElToInductance:
     @staticmethod
     def test_inverse_relationship() -> None:
         """Test that inductance decreases as E_L increases."""
-        L_low = el_to_inductance(2.0)
-        L_high = el_to_inductance(10.0)
+        L_low = el_to_arm_inductance(2.0)
+        L_high = el_to_arm_inductance(10.0)
         assert L_low > L_high
 
     @staticmethod
@@ -53,7 +53,7 @@ class TestElToInductance:
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_positive_inductance(el_ghz: float) -> None:
         """Test that inductance is always positive."""
-        L = el_to_inductance(el_ghz)
+        L = el_to_arm_inductance(el_ghz)
         assert L > 0
 
 
