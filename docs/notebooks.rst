@@ -89,10 +89,10 @@ implemented with `JAX <https://jax.readthedocs.io/>`_ and composed into circuits
   with SAX, starting from individual components and assembling a quarter-wave resonator.
 - :doc:`notebooks/resonator_frequency_model` — Compares analytical resonance-frequency
   estimates with SAX circuit simulations.
-- :doc:`notebooks/resonator_test_chip_simulation` — Loads a multi-resonator test chip
-  from a YAML netlist and simulates the full S₂₁ response with SAX. Includes a **Monte
-  Carlo fabrication tolerance analysis** that varies CPW width and gap to quantify
-  resonance frequency spread.
+- :doc:`notebooks/monte_carlo_fabrication_tolerance` — Monte Carlo fabrication tolerance
+  analysis that loads a multi-resonator test chip from a YAML netlist, simulates the
+  full S₂₁ response with SAX, and varies CPW width and gap to quantify resonance
+  frequency spread.
 - :doc:`notebooks/model_comparison_to_qucs` — Validates qpdk S-parameter models against
   Qucs-S reference data for various passive components.
 - :doc:`notebooks/jax_backend_comparison` — Benchmarks SAX circuit evaluation on CPU,
@@ -224,7 +224,7 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
     - - :doc:`notebooks/resonator_frequency_model`
       - S-parameter models
       - SAX
-    - - :doc:`notebooks/resonator_test_chip_simulation`
+    - - :doc:`notebooks/monte_carlo_fabrication_tolerance`
       - S-parameter models
       - SAX, JAX, gdsfactory
     - - :doc:`notebooks/model_comparison_to_qucs`
