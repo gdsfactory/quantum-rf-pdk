@@ -3362,7 +3362,7 @@ models = [
     { name = "optuna" },
     { name = "pandas", extra = ["parquet"] },
     { name = "polars" },
-    { name = "sax" },
+    { name = "sax", extra = ["rf"] },
     { name = "scikit-rf" },
     { name = "sympy" },
 ]
@@ -3452,7 +3452,7 @@ requires-dist = [
     { name = "pymablock", marker = "extra == 'pymablock'", specifier = ">=2.2.1" },
     { name = "qutip-jax", marker = "extra == 'qutip'", specifier = ">=0.1.1" },
     { name = "qutip-qip", marker = "extra == 'qutip'", specifier = ">=0.4.1" },
-    { name = "sax", marker = "extra == 'models'", specifier = ">=0.16.13" },
+    { name = "sax", extras = ["rf"], marker = "extra == 'models'", specifier = ">=0.16.14" },
     { name = "scikit-rf", marker = "extra == 'models'" },
     { name = "scqubits", marker = "extra == 'scqubits'" },
     { name = "sympy", marker = "extra == 'models'" },
@@ -3769,7 +3769,7 @@ wheels = [
 
 [[package]]
 name = "sax"
-version = "0.16.13"
+version = "0.16.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jax" },
@@ -3791,9 +3791,14 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c1/5a/e72a36338fe59c56a479839df3510273473c8954edc258e0a57d990074c8/sax-0.16.13.tar.gz", hash = "sha256:9b2263f85c6100307b7a374dfe7600b8f8ba9ddbde3aebcceb9c3a9af3cc277f", size = 95819, upload-time = "2026-03-04T23:35:05.216Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4f/03/f4dce31712e32e7ac36869a5dee6072bb9f6dbdfc7b34040c6a68918030f/sax-0.16.14.tar.gz", hash = "sha256:e0a04d8dc6b144e040d788c7bc3749e7f4639f7af26dd51e59902edc1e762c7b", size = 105812, upload-time = "2026-03-28T22:27:56.71Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/b6/8bf9a93be5779662a0f655833b5abfa2161ce17f9fbc730e3e6c9282cb25/sax-0.16.13-py3-none-any.whl", hash = "sha256:bd7b9648e935148dff0bbcab8433d9e5f04edacf2aaa3f5995cecf756f588e7d", size = 113513, upload-time = "2026-03-04T23:35:03.98Z" },
+    { url = "https://files.pythonhosted.org/packages/58/d7/f6d2ceb617a1a9704a0bae4ef223a514a130b166109e30adcf82e8ef0ff1/sax-0.16.14-py3-none-any.whl", hash = "sha256:5fbb175cb0ab2d375ba570fb677aa72ee7a9d8765ac4001754d20f6355e86c78", size = 126371, upload-time = "2026-03-28T22:27:55.183Z" },
+]
+
+[package.optional-dependencies]
+rf = [
+    { name = "jaxellip" },
 ]
 
 [[package]]

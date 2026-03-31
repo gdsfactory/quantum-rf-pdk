@@ -53,7 +53,7 @@ models = [
   "jaxellip",
   "optax",
   "optuna",
-  "sax>=0.16.13",
+  "sax[rf]>=0.16.14",
   "scikit-rf",
   "sympy",
   "polars",
