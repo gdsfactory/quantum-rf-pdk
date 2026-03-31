@@ -32,7 +32,7 @@ def fluxonium(
     inductor_n_turns: int = 155,
     inductor_margin_x: float = 1.0,
     inductor_cross_section: CrossSectionSpec = superinductor_cross_section,
-    connection_wire_width: float = 0.5,
+    connection_wire_width: float = 2.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
     r"""Creates a fluxonium qubit with capacitor pads, Josephson junction, and superinductor.
@@ -138,7 +138,7 @@ def fluxonium(
 
     bus_left_x = -pad_gap / 2 - connection_wire_width / 2
     bus_right_x = pad_gap / 2 + connection_wire_width / 2
-    bus_top_y = -pad_height / 2 + 0.1
+    bus_top_y = -pad_height / 2 + 5.0  # 5 um overlap with pads
     jj_conn_y0 = junction_ref.dcenter[1] - connection_wire_width / 2
 
     # Left bus bar
@@ -150,13 +150,18 @@ def fluxonium(
         y0=jj_conn_y0,
         y1=bus_top_y,
     )
-    add_rect(
-        c,
+    # Tapered vertical NbTiN lead
+    c.add_polygon(
+        [
+            (-pad_gap / 2, jj_conn_y0),
+            (-pad_gap / 2 - connection_wire_width, jj_conn_y0),
+            (
+                -pad_gap / 2 - inductor_wire_width,
+                ind_o1.dcenter[1] - inductor_wire_width / 2,
+            ),
+            (-pad_gap / 2, ind_o1.dcenter[1] - inductor_wire_width / 2),
+        ],
         layer=LAYER.NbTiN,
-        x0=-pad_gap / 2 - inductor_wire_width,
-        x1=-pad_gap / 2,
-        y0=ind_o1.dcenter[1],
-        y1=jj_conn_y0,
     )
 
     # Right bus bar
@@ -168,34 +173,21 @@ def fluxonium(
         y0=jj_conn_y0,
         y1=bus_top_y,
     )
-    add_rect(
-        c,
+    # Tapered vertical NbTiN lead
+    c.add_polygon(
+        [
+            (pad_gap / 2, jj_conn_y0),
+            (pad_gap / 2 + connection_wire_width, jj_conn_y0),
+            (
+                pad_gap / 2 + inductor_wire_width,
+                ind_o2.dcenter[1] - inductor_wire_width / 2,
+            ),
+            (pad_gap / 2, ind_o2.dcenter[1] - inductor_wire_width / 2),
+        ],
         layer=LAYER.NbTiN,
-        x0=pad_gap / 2,
-        x1=pad_gap / 2 + inductor_wire_width,
-        y0=ind_o2.dcenter[1],
-        y1=jj_conn_y0,
     )
 
-    # Transitions
-    add_rect(
-        c,
-        layer=layer_metal,
-        x0=-pad_gap / 2 - connection_wire_width,
-        x1=-pad_gap / 2,
-        y0=-pad_height / 2,
-        y1=-pad_height / 2 + connection_wire_width,
-    )
-    add_rect(
-        c,
-        layer=layer_metal,
-        x0=pad_gap / 2,
-        x1=pad_gap / 2 + connection_wire_width,
-        y0=-pad_height / 2,
-        y1=-pad_height / 2 + connection_wire_width,
-    )
-
-    # Inductor stubs
+    # Inductor stubs - fixed height to prevent shorting
     add_rect(
         c,
         layer=LAYER.NbTiN,
@@ -214,24 +206,28 @@ def fluxonium(
     )
 
     # Junction leads
-    jj_p1 = junction_ref.ports["left_wide"].dcenter
-    jj_p2 = junction_ref.ports["right_wide"].dcenter
+    jj_ports = sorted(
+        [junction_ref.ports["left_wide"], junction_ref.ports["right_wide"]],
+        key=lambda p: p.dcenter[0],
+    )
+    jj_p_left = jj_ports[0].dcenter
+    jj_p_right = jj_ports[1].dcenter
 
     # Junction wires
     add_rect(
         c,
         layer=layer_metal,
         x0=-pad_gap / 2,
-        x1=jj_p1[0],
-        y_center=jj_p1[1],
+        x1=jj_p_left[0] + 1.0,  # 1 um overlap to ensure contact
+        y_center=jj_p_left[1],
         height=connection_wire_width,
     )
     add_rect(
         c,
         layer=layer_metal,
-        x0=jj_p2[0],
+        x0=jj_p_right[0] - 1.0,  # 1 um overlap
         x1=pad_gap / 2,
-        y_center=jj_p2[1],
+        y_center=jj_p_right[1],
         height=connection_wire_width,
     )
 
@@ -302,7 +298,7 @@ def fluxonium_with_bbox(
     inductor_n_turns: int = 155,
     inductor_margin_x: float = 1.0,
     inductor_cross_section: CrossSectionSpec = superinductor_cross_section,
-    connection_wire_width: float = 0.5,
+    connection_wire_width: float = 2.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
     """Fluxonium with an etched bounding box.

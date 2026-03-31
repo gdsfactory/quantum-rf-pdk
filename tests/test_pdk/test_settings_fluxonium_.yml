@@ -2,9 +2,9 @@ info:
   inductor_n_turns: 155
   inductor_total_wire_length: 3592.72
   qubit_type: fluxonium
-name: fluxonium_PS250_400_PG25_JSjosephson_junction_JDNone_JM_91f06f21
+name: fluxonium_PS250_400_PG25_JSjosephson_junction_JDNone_JM_9ad0c0bc
 settings:
-  connection_wire_width: 0.5
+  connection_wire_width: 2
   inductor_cross_section: superinductor_cross_section
   inductor_margin_x: 1
   inductor_n_turns: 155

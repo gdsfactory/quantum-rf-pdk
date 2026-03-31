@@ -6,7 +6,7 @@ instances:
       inductor_total_wire_length: 3592.72
       qubit_type: fluxonium
     settings:
-      connection_wire_width: 0.5
+      connection_wire_width: 2
       inductor_cross_section: superinductor_cross_section
       inductor_margin_x: 1
       inductor_n_turns: 155
