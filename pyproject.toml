@@ -31,7 +31,7 @@ models = [
 netket = ["netket>=3.12", "flax", "optax"]
 pymablock = ["pymablock>=2.2.1"]
 qutip = ["qutip-jax>=0.1.1", "qutip-qip>=0.4.1"]
-ray = ["ray[default]"]
+ray = ["ray[default]", "tqdm"]
 scqubits = ["scqubits"]
 
 [dependency-groups]

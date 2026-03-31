@@ -25,8 +25,9 @@
 
 # %% tags=["hide-input", "hide-output"]
 import os
-import sys
 import warnings
+from collections.abc import Sequence
+from typing import Any
 
 import gdsfactory as gf
 import jax.numpy as jnp
@@ -37,6 +38,7 @@ import ray
 import sax
 from matplotlib.lines import Line2D
 from scipy.signal import find_peaks
+from tqdm.auto import tqdm
 
 from qpdk import PATH, PDK
 from qpdk.models import models
@@ -45,10 +47,36 @@ from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
 
-# Determine if we are running in an interactive environment (notebook)
-# or as a script from the command line.
-IS_INTERACTIVE = hasattr(sys, "ps1") or "ipykernel" in sys.modules
-BLOCK = IS_INTERACTIVE
+
+def ray_get_with_progress(
+    futures: Sequence[ray.ObjectRef],
+    desc: str = "Processing",
+    unit: str = "sim",
+    timeout: float | None = None,
+) -> list[Any]:
+    """Get results from Ray futures with a tqdm progress bar, preserving order."""
+    # Map future ID to its original index to preserve order
+    result_map = {f: i for i, f in enumerate(futures)}
+    results: list[Any | None] = [None] * len(futures)
+
+    remaining_ids = list(futures)
+    with tqdm(
+        total=len(futures),
+        desc=f"{desc:.<25}",
+        unit=unit,
+        colour="green",
+        dynamic_ncols=True,
+    ) as pbar:
+        while remaining_ids:
+            done_ids, remaining_ids = ray.wait(remaining_ids, timeout=timeout)
+            if not done_ids:
+                break
+
+            for done_id in done_ids:
+                results[result_map[done_id]] = ray.get(done_id)
+                pbar.update(1)
+    return results  # type: ignore
+
 
 # %% [markdown]
 # ## Load the component
@@ -60,8 +88,7 @@ BLOCK = IS_INTERACTIVE
 # %%
 yaml_path = PATH.samples / "resonator_test_chip_yaml.pic.yml"
 chip = gf.read.from_yaml(yaml_path)
-if IS_INTERACTIVE:
-    chip.plot()
+chip.plot()
 
 # %% [markdown]
 # ## Extract the netlist
@@ -134,7 +161,7 @@ ax.set_title("Top probeline (variable coupling gap)")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # ### Bottom probeline – fixed coupling gap
@@ -155,7 +182,7 @@ ax.set_title("Bottom probeline (fixed coupling gap)")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # ### Both probelines
@@ -172,7 +199,7 @@ ax.set_title("Resonator test chip – transmission comparison")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # # Monte Carlo Fabrication Tolerance Analysis
@@ -241,7 +268,7 @@ ax2.grid(True)
 
 fig.suptitle("CPW parameter sensitivity to geometry", fontsize=13, y=1.02)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # The plots show that :math:`Z_0` and :math:`\varepsilon_{\mathrm{eff}}` are
@@ -262,7 +289,7 @@ NOMINAL_WIDTH = 10.0  # µm (centre-conductor width)
 NOMINAL_GAP = 6.0  # µm (gap to ground plane)
 WIDTH_SIGMA = 0.5  # µm (1σ tolerance on width)
 GAP_SIGMA = 0.3  # µm (1σ tolerance on gap)
-N_TRIALS = 500
+N_TRIALS = 1000
 
 rng = np.random.default_rng(42)
 
@@ -270,6 +297,15 @@ rng = np.random.default_rng(42)
 # ## Initialize Ray for Parallel Execution
 #
 # We use Ray to parallelize the Monte Carlo trials across multiple CPU cores.
+#
+# ::::{warning}
+# If you are running this notebook inside `uv run` and encounter a `RuntimeError`
+# related to `pip` or `uv` environments (e.g., "pip not found"), you may need to set
+# `RAY_ENABLE_UV_RUN_RUNTIME_ENV=0` in your environment before starting the notebook.
+#
+# See [Ray issue #50961](https://github.com/ray-project/ray/issues/50961#issuecomment-3953219989)
+# for more context on this integration issue.
+# ::::
 #
 # ### **Resource Configuration Guide:**
 #
@@ -286,43 +322,27 @@ rng = np.random.default_rng(42)
 
 # %%
 if not ray.is_initialized():
-    # Detect if we are running under 'uv run'
-    is_uv_run = "UV_RUN_RECURSION_DEPTH" in os.environ
-
-    if is_uv_run:
-        # 1. Disable Ray's automatic uv-run matching which is causing setup errors.
-        os.environ["RAY_ENABLE_UV_RUN_RUNTIME_ENV"] = "0"
-        os.environ.pop("UV_RUN_RECURSION_DEPTH", None)
-
-        # 2. Force workers to use the EXACT same environment as the driver.
-        # Since the driver was started with 'uv run --extra ...', this environment
-        # already has everything (ray, models, qutip, etc.) installed.
-        runtime_env = {
-            "py_executable": sys.executable,
-        }
-        print(f"Initializing Ray (local) using driver environment: {sys.executable}")
-    else:
-        # For generic Ray clusters where the driver's path might not exist on workers,
-        # we use the 'uv' field to install the project and extras from scratch.
-        runtime_env = {
-            "working_dir": ".",
-            "uv": [".[models,ray,qutip,scqubits]"],
-            "excludes": [
-                ".git",
-                ".venv",
-                "build",
-                "__pycache__",
-                ".ruff_cache",
-                ".pytest_cache",
-            ],
-        }
-        print("Initializing Ray with uv runtime_env...")
+    # 1. Disable Ray's automatic uv-run matching which is causing setup errors.
+    os.environ["RAY_ENABLE_UV_RUN_RUNTIME_ENV"] = "0"
+    runtime_env = {
+        "working_dir": ".",
+        "excludes": [
+            ".git",
+            ".venv",
+            "build",
+            "__pycache__",
+            ".ruff_cache",
+            ".pytest_cache",
+        ],
+    }
+    print("Initializing Ray with runtime_env...")
 
     # Initialize Ray using 80% of available CPU cores.
     total_cpus = os.cpu_count() or 1
     num_cpus = max(1, int(total_cpus * 0.8))
     print(f"Initializing Ray with {num_cpus} CPUs (80% of {total_cpus})...")
     ray.init(num_cpus=num_cpus, runtime_env=runtime_env)
+
 # To connect to a remote Ray cluster instead, use:
 # ray.init("ray://<head_node_host>:10001", runtime_env=runtime_env)
 
@@ -353,7 +373,14 @@ print(f"{len(cpw_instance_names)} CPW instances found for MC perturbation.")
 
 # %%
 @ray.remote(num_cpus=1)
-def simulate_global_tolerance(dw, dg, freq, netlist, models, instance_names):
+def simulate_global_tolerance(
+    dw: float,
+    dg: float,
+    freq: jnp.ndarray | ray.ObjectRef,
+    netlist: dict[str, Any] | ray.ObjectRef,
+    models: dict[str, Any] | ray.ObjectRef,
+    instance_names: list[str],
+) -> np.ndarray:
     """Ray task for a single global tolerance trial."""
     import jax.numpy as jnp
     import numpy as np
@@ -399,7 +426,7 @@ futures = [
     for i in range(N_TRIALS)
 ]
 print("Waiting for global trials to complete...")
-results_global = ray.get(futures, timeout=1200)
+results_global = ray_get_with_progress(futures, desc="Global trials", timeout=1200)
 print("Global trials completed.")
 s21_global_db = np.array(results_global).T
 
@@ -425,7 +452,7 @@ ax.set_title(
 )
 ax.grid(True)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # ## Resonance frequency extraction
@@ -467,7 +494,9 @@ def find_resonance_dips(
 
 # %%
 @ray.remote(num_cpus=1)
-def find_resonance_dips_task(freq_hz, s21_db, n_resonators):
+def find_resonance_dips_task(
+    freq_hz: np.ndarray, s21_db: np.ndarray, n_resonators: int
+) -> np.ndarray:
     """Ray task wrapper for find_resonance_dips."""
     return find_resonance_dips(freq_hz, s21_db, n_resonators=n_resonators)
 
@@ -490,7 +519,9 @@ futures_dips = [
     find_resonance_dips_task.remote(freq_np, s21_global_db[:, trial], n_res)
     for trial in range(N_TRIALS)
 ]
-mc_dips = np.array(ray.get(futures_dips, timeout=1200))
+mc_dips = np.array(
+    ray_get_with_progress(futures_dips, desc="Extracting global dips", timeout=1200)
+)
 
 # %% [markdown]
 # ### Resonance frequency distributions (global tolerance)
@@ -525,7 +556,7 @@ ax.set_title("Resonance frequency spread (global tolerance)")
 ax.axhline(0, color="r", ls="--", lw=1, alpha=0.5)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # ### Frequency shift statistics
@@ -559,8 +590,15 @@ for i in range(n_res):
 # %%
 @ray.remote(num_cpus=1)
 def simulate_local_tolerance(
-    trial_idx, dw_per_res, dg_per_res, freq, netlist, models, res_names, non_res_names
-):
+    trial_idx: int,
+    dw_per_res: np.ndarray | ray.ObjectRef,
+    dg_per_res: np.ndarray | ray.ObjectRef,
+    freq: jnp.ndarray | ray.ObjectRef,
+    netlist: dict[str, Any] | ray.ObjectRef,
+    models: dict[str, Any] | ray.ObjectRef,
+    res_names: list[str],
+    non_res_names: list[str],
+) -> np.ndarray:
     """Ray task for a single per-resonator tolerance trial."""
     import numpy as np
     import sax
@@ -622,7 +660,9 @@ futures_local = [
     )
     for i in range(N_TRIALS)
 ]
-results_local = ray.get(futures_local, timeout=1200)
+results_local = ray_get_with_progress(
+    futures_local, desc="Per-resonator trials", timeout=1200
+)
 s21_local_db = np.array(results_local).T
 
 # %% [markdown]
@@ -644,7 +684,7 @@ ax.set_title(
 )
 ax.grid(True)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # ### Compare global vs per-resonator spread
@@ -655,7 +695,11 @@ futures_dips_local = [
     find_resonance_dips_task.remote(freq_np, s21_local_db[:, trial], n_res)
     for trial in range(N_TRIALS)
 ]
-mc_dips_local = np.array(ray.get(futures_dips_local, timeout=1200))
+mc_dips_local = np.array(
+    ray_get_with_progress(
+        futures_dips_local, desc="Extracting local dips", timeout=1200
+    )
+)
 
 shifts_local = (mc_dips_local - nominal_dips[None, :n_res]) / 1e6
 std_local = np.nanstd(shifts_local, axis=0)
@@ -680,7 +724,7 @@ ax.set_xticklabels([f"{nominal_dips[i - 1] / 1e9:.3f}" for i in x])
 ax.legend()
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # The global scenario produces **correlated** frequency shifts (all resonators
@@ -705,7 +749,7 @@ futures_w = [
     )
     for i in range(N_TRIALS)
 ]
-results_w = ray.get(futures_w, timeout=1200)
+results_w = ray_get_with_progress(futures_w, desc="Width-only trials", timeout=1200)
 s21_w_db = np.array(results_w).T
 
 # Gap-only variation
@@ -717,7 +761,7 @@ futures_g = [
     )
     for i in range(N_TRIALS)
 ]
-results_g = ray.get(futures_g, timeout=1200)
+results_g = ray_get_with_progress(futures_g, desc="Gap-only trials", timeout=1200)
 s21_g_db = np.array(results_g).T
 
 # %%
@@ -726,13 +770,17 @@ futures_dips_w = [
     find_resonance_dips_task.remote(freq_np, s21_w_db[:, trial], n_res)
     for trial in range(N_TRIALS)
 ]
-mc_dips_w = np.array(ray.get(futures_dips_w, timeout=1200))
+mc_dips_w = np.array(
+    ray_get_with_progress(futures_dips_w, desc="Extracting width dips", timeout=1200)
+)
 
 futures_dips_g = [
     find_resonance_dips_task.remote(freq_np, s21_g_db[:, trial], n_res)
     for trial in range(N_TRIALS)
 ]
-mc_dips_g = np.array(ray.get(futures_dips_g, timeout=1200))
+mc_dips_g = np.array(
+    ray_get_with_progress(futures_dips_g, desc="Extracting gap dips", timeout=1200)
+)
 
 std_w_only = np.nanstd((mc_dips_w - nominal_dips[None, :n_res]) / 1e6, axis=0)
 std_g_only = np.nanstd((mc_dips_g - nominal_dips[None, :n_res]) / 1e6, axis=0)
@@ -776,7 +824,7 @@ ax.set_xticklabels([f"{nominal_dips[i - 1] / 1e9:.3f}" for i in x])
 ax.legend(fontsize=9)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # ### Scatter: width perturbation vs frequency shift
@@ -826,7 +874,7 @@ ax.grid(True, alpha=0.3)
 ax.legend(fontsize=7, ncol=2)
 
 plt.tight_layout()
-plt.show(block=BLOCK)
+plt.show()
 
 # %% [markdown]
 # The scatter plots reveal a nearly **linear** relationship between the
@@ -884,8 +932,7 @@ fig_pc.update_layout(
     width=900,
     height=500,
 )
-if IS_INTERACTIVE:
-    fig_pc.show()
+fig_pc.show()
 
 # %% [markdown]
 # ## Summary

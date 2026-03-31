@@ -3699,6 +3699,7 @@ qutip = [
 ]
 ray = [
     { name = "ray", extra = ["default"] },
+    { name = "tqdm" },
 ]
 scqubits = [
     { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
@@ -3778,9 +3779,10 @@ requires-dist = [
     { name = "sax", marker = "extra == 'models'", specifier = ">=0.16.11" },
     { name = "scqubits", marker = "extra == 'scqubits'" },
     { name = "sympy", marker = "extra == 'models'" },
+    { name = "tqdm", marker = "extra == 'ray'" },
     { name = "trimesh", marker = "extra == 'graphics'" },
 ]
-provides-extras = ["graphics", "hfss", "models", "ray", "netket", "pymablock", "qutip", "scqubits"]
+provides-extras = ["graphics", "hfss", "models", "netket", "pymablock", "qutip", "ray", "scqubits"]
 
 [package.metadata.requires-dev]
 dev = [
