@@ -9,20 +9,31 @@
 # ---
 
 # %% [markdown]
-# # Dispersive Shift of a Transmon–Resonator System with scQubits
+# # Transmon and Fluxonium Parameter Analysis with scQubits
 #
 # This notebook demonstrates how to use
 # [scqubits](https://scqubits.readthedocs.io/en/latest/) {cite:p}`groszkowskiScqubitsPythonPackage2021`
-# to numerically compute the **dispersive shift** of a readout resonator coupled
-# to a transmon qubit, and how to translate the resulting Hamiltonian
+# to numerically analyse **transmon** and **fluxonium** qubits coupled to a
+# readout resonator, and how to translate the resulting Hamiltonian
 # parameters into physical layout parameters using **qpdk**.
+#
+# The two qubit modalities represent complementary design philosophies in
+# circuit QED.  The **transmon** {cite:p}`kochChargeinsensitiveQubitDesign2007a`
+# achieves charge-noise insensitivity by operating deep in the $E_J \gg E_C$
+# regime at the cost of weak anharmonicity ($|\alpha| \sim E_C \sim 200$ MHz).
+# The **fluxonium** {cite:p}`manucharyan_fluxonium_2009` adds a large
+# superinductance that provides both strong anharmonicity and protection
+# against charge noise, while enabling coherence times exceeding one
+# millisecond {cite:p}`somoroff_millisecond_2023`.
 #
 # This notebook covers the same design workflow as the companion notebook on
 # **pymablock-based dispersive shift calculation**, but uses full numerical
 # diagonalization instead of closed-form perturbation theory—making it easy to
 # compare the two approaches.
 #
-# ## Background
+# ## Part I — Transmon
+#
+# ### Background
 #
 # In circuit quantum electrodynamics (cQED), the state of a transmon qubit is
 # typically measured via the *dispersive readout* technique
@@ -358,10 +369,322 @@ tunable_transmon.plot_evals_vs_paramvals(
 plt.show()
 
 # %% [markdown]
-# ## Design Workflow: From Hamiltonian to Layout Parameters
+# ## Part II — Fluxonium
+#
+# ### Background
+#
+# The **fluxonium** qubit {cite:p}`manucharyan_fluxonium_2009` replaces the
+# transmon's simple Josephson junction with a junction *shunted* by a large
+# superinductance $L_s$.  Its Hamiltonian reads:
+# ```{math}
+# :label: eq:fluxonium-hamiltonian
+# \mathcal{H}_\text{flx}
+#   = 4 E_C\, \hat{n}^2
+#   - E_J\, \cos\!\bigl(\hat{\varphi} - 2\pi\Phi_\text{ext}/\Phi_0\bigr)
+#   + \tfrac{1}{2} E_L\, \hat{\varphi}^2,
+# ```
+# where $E_C = e^2 / 2C_\Sigma$ is the charging energy,
+# $E_J$ is the Josephson energy, and $E_L = (\Phi_0/2\pi)^2 / L_s$ is the
+# inductive energy of the superinductance.  The external flux
+# $\Phi_\text{ext}$ threads the loop formed by the junction and superinductor.
+#
+# Compared with the transmon, the fluxonium has three key advantages:
+#
+# 1. **Large anharmonicity** — At the half-flux-quantum sweet spot
+#    ($\Phi_\text{ext} = \Phi_0/2$) the $0 \to 1$ transition can be as low
+#    as $\sim$ 100–500 MHz while higher transitions remain at several GHz,
+#    giving anharmonicities of many GHz
+#    {cite:p}`manucharyan_fluxonium_2009,nguyen_blueprint_2019`.
+# 2. **Charge-noise protection** — Like the transmon, the fluxonium operates
+#    in a regime where charge dispersion is exponentially suppressed
+#    {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
+# 3. **Long coherence times** — Heavy fluxoniums (large $E_L$) biased at the
+#    half-flux-quantum sweet spot have demonstrated $T_1$ exceeding 1 ms
+#    {cite:p}`somoroff_millisecond_2023`.
+#
+# The trade-off is that the low qubit frequency makes dispersive readout more
+# challenging, since the detuning to a typical readout resonator
+# ($\omega_r \sim 7$ GHz) is very large
+# {cite:p}`zhu_circuit_2013`.
+
+# %% [markdown]
+# ### Fluxonium Spectrum
+#
+# We construct a fluxonium qubit using parameters representative of a
+# high-coherence device {cite:p}`nguyen_blueprint_2019`.  The `cutoff`
+# parameter sets the size of the phase-basis truncation.
+
+# %%
+# Fluxonium Hamiltonian parameters
+EJ_flx = 3.395  # Josephson energy in GHz
+EC_flx = 0.479  # Charging energy in GHz
+EL_flx = 0.132  # Inductive energy in GHz
+
+fluxonium = scq.Fluxonium(
+    EJ=EJ_flx,
+    EC=EC_flx,
+    EL=EL_flx,
+    flux=0.5,  # Half-flux-quantum sweet spot
+    cutoff=110,
+    truncated_dim=10,
+)
+
+eigenvals_f = fluxonium.eigenvals(evals_count=6) - fluxonium.eigenvals(evals_count=1)[0]
+f01_flx = eigenvals_f[1]
+f12_flx = eigenvals_f[2] - eigenvals_f[1]
+anharmonicity_flx = f12_flx - f01_flx
+
+display(
+    Math(rf"""
+\textbf{{Fluxonium Spectrum (scQubits, \Phi_\text{{ext}} = \Phi_0/2):}} \\
+E_J = {EJ_flx:.3f}\,\mathrm{{GHz}}, \quad
+E_C = {EC_flx:.3f}\,\mathrm{{GHz}}, \quad
+E_L = {EL_flx:.3f}\,\mathrm{{GHz}} \\
+0\rightarrow 1\ \text{{frequency:}}\ {f01_flx:.4f}\,\mathrm{{GHz}}
+  \ ({f01_flx * 1e3:.1f}\,\mathrm{{MHz}}) \\
+1\rightarrow 2\ \text{{frequency:}}\ {f12_flx:.3f}\,\mathrm{{GHz}} \\
+\text{{Anharmonicity,}}\ \alpha_\text{{flx}} =\ {anharmonicity_flx:.3f}\,\mathrm{{GHz}}
+""")
+)
+
+# %% [markdown]
+# The fluxonium anharmonicity is **orders of magnitude larger** than a
+# transmon's ($\sim E_C \approx 200$ MHz).  This is a direct consequence
+# of the double-well potential created by the competition between the
+# cosine and quadratic terms in {eq}`eq:fluxonium-hamiltonian`.
+
+# %% [markdown]
+# ### Fluxonium Spectrum vs. External Flux
+#
+# The fluxonium energy levels depend strongly on external flux.
+# At half-integer flux quanta the lowest two levels form a
+# parity-protected sweet spot against flux noise
+# {cite:p}`manucharyan_fluxonium_2009,nguyen_blueprint_2019`.
+
+# %%
+fluxonium.plot_evals_vs_paramvals(
+    "flux", np.linspace(0.0, 1.0, 201), subtract_ground=True, evals_count=6
+)
+plt.title("Fluxonium spectrum vs. external flux")
+plt.show()
+
+# %% [markdown]
+# ### Fluxonium–Resonator Dispersive Shift
+#
+# We couple the fluxonium to the same readout resonator used for the
+# transmon analysis and extract the dispersive shift via numerical
+# diagonalization.  The coupling is again of the charge type
+# {cite:p}`zhu_circuit_2013`:
+# ```{math}
+# \mathcal{H}_\text{int} = g\, \hat{n}_\text{flx}\,(a_r + a_r^\dagger).
+# ```
+
+# %%
+omega_r_flx = 7.0  # Resonator frequency in GHz (same as transmon case)
+g_flx = 0.1  # Coupling strength in GHz
+
+resonator_flx = scq.Oscillator(E_osc=omega_r_flx, truncated_dim=6)
+
+hilbert_space_flx = scq.HilbertSpace([fluxonium, resonator_flx])
+_a_plus_adag_flx = (
+    resonator_flx.annihilation_operator() + resonator_flx.creation_operator()
+)
+
+interaction_flx = scq.InteractionTerm(
+    g_strength=g_flx,
+    operator_list=[
+        (0, fluxonium.n_operator),
+        (1, _a_plus_adag_flx),
+    ],
+)
+hilbert_space_flx.interaction_list = [interaction_flx]
+
+evals_flx, evecs_flx = hilbert_space_flx.eigensys(evals_count=20)
+evecs_flx = np.array([np.array(v.full()).flatten() for v in evecs_flx])
+
+dim_f = fluxonium.truncated_dim
+dim_r_flx = resonator_flx.truncated_dim
+
+
+def bare_state_vec_flx(q_idx: int, r_idx: int) -> np.ndarray:
+    """Return the bare state |q_idx, r_idx⟩ in the fluxonium–resonator Hilbert space."""
+    vec = np.zeros(dim_f * dim_r_flx)
+    vec[q_idx * dim_r_flx + r_idx] = 1.0
+    return vec
+
+
+def find_dressed_index_flx(bare_vec: np.ndarray) -> int:
+    """Return the dressed-state index with maximum overlap with bare_vec."""
+    return int(np.argmax(np.abs(evecs_flx @ bare_vec) ** 2))
+
+
+idx_00_f = find_dressed_index_flx(bare_state_vec_flx(0, 0))
+idx_10_f = find_dressed_index_flx(bare_state_vec_flx(1, 0))
+idx_01_f = find_dressed_index_flx(bare_state_vec_flx(0, 1))
+idx_11_f = find_dressed_index_flx(bare_state_vec_flx(1, 1))
+
+E_00_f = evals_flx[idx_00_f]
+E_10_f = evals_flx[idx_10_f]
+E_01_f = evals_flx[idx_01_f]
+E_11_f = evals_flx[idx_11_f]
+chi_flx = (E_11_f - E_10_f) - (E_01_f - E_00_f)
+
+display(
+    Math(rf"""
+\textbf{{Fluxonium–Resonator Dispersive Shift:}} \\
+\omega_\text{{flx}} = {f01_flx:.4f}\,\mathrm{{GHz}}, \quad
+\omega_r = {omega_r_flx:.1f}\,\mathrm{{GHz}}, \quad
+g = {g_flx:.1f}\,\mathrm{{GHz}} \\
+\Delta = \omega_\text{{flx}} - \omega_r = {f01_flx - omega_r_flx:.3f}\,\mathrm{{GHz}} \\
+\chi_{{\mathrm{{fluxonium}}}} = {chi_flx * 1e3:.4f}\,\mathrm{{MHz}}
+""")
+)
+
+# %% [markdown]
+# The fluxonium dispersive shift is typically **much smaller** than the
+# transmon's, because the qubit–resonator detuning $|\Delta|$ is very large
+# ($\sim 7$ GHz).  Achieving a useful $\chi$ requires either stronger
+# coupling or a lower-frequency resonator
+# {cite:p}`zhu_circuit_2013`.
+
+# %% [markdown]
+# ## Part III — Transmon vs. Fluxonium Comparison
+#
+# The table below highlights the key physical differences between the
+# two qubit modalities, computed with the parameters used above.
+
+# %%
+comparison_data = [
+    ("Qubit frequency $\\omega_{01}$", f"{f01:.3f} GHz", f"{f01_flx * 1e3:.1f} MHz"),
+    (
+        "Anharmonicity $\\alpha$",
+        f"{anharmonicity:.3f} GHz",
+        f"{anharmonicity_flx:.3f} GHz",
+    ),
+    (
+        "$|\\alpha / \\omega_{01}|$",
+        f"{abs(anharmonicity / f01) * 100:.1f}%",
+        f"{abs(anharmonicity_flx / f01_flx) * 100:.0f}%",
+    ),
+    ("$E_J / E_C$", f"{EJ / EC:.0f}", f"{EJ_flx / EC_flx:.1f}"),
+    (
+        "Dispersive shift $\\chi$ ($g = 100$ MHz)",
+        f"{chi_scqubits * 1e3:.3f} MHz",
+        f"{chi_flx * 1e3:.4f} MHz",
+    ),
+    (
+        "Detuning $|\\Delta|$ from 7 GHz resonator",
+        f"{abs(omega_t_val - omega_r_val):.3f} GHz",
+        f"{abs(f01_flx - omega_r_flx):.3f} GHz",
+    ),
+    ("Flux sweet spot", "Any (fixed-frequency)", "$\\Phi_0/2$"),
+    (
+        "Dominant dephasing mechanism",
+        "Charge noise (mitigated by $E_J/E_C \\gg 1$)",
+        "Flux noise (mitigated at $\\Phi_0/2$)",
+    ),
+]
+
+df_compare = pl.DataFrame(
+    comparison_data,
+    schema=["Property", "Transmon", "Fluxonium"],
+    orient="row",
+)
+display_dataframe(df_compare)
+
+# %% [markdown]
+# ### Anharmonicity Landscape
+#
+# The most striking difference is the anharmonicity-to-frequency ratio.
+# For the transmon, $|\alpha/\omega_{01}| \sim E_C / \sqrt{8 E_J E_C} \sim 4\%$,
+# meaning gate pulses must be carefully shaped to avoid leakage to the
+# $|2\rangle$ state {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
+# The fluxonium at half-flux-quantum has $|\alpha/\omega_{01}| \gg 1$,
+# so leakage is naturally suppressed, at the cost of slower gates due to
+# the low transition frequency {cite:p}`nguyen_blueprint_2019`.
+#
+# Below we sweep $E_J/E_C$ for the transmon and $E_L$ for the fluxonium
+# to visualise how anharmonicity varies across the design space.
+
+# %%
+# Transmon: sweep EJ/EC
+ej_ec_ratios = np.linspace(10, 120, 50)
+alpha_transmon_sweep = np.array([
+    ej_ec_to_frequency_and_anharmonicity(r * EC, EC)[1] for r in ej_ec_ratios
+])
+freq_transmon_sweep = np.array([
+    ej_ec_to_frequency_and_anharmonicity(r * EC, EC)[0] for r in ej_ec_ratios
+])
+
+# Fluxonium: sweep EL at half flux
+el_sweep = np.linspace(0.05, 1.0, 30)
+alpha_flx_sweep = []
+freq_flx_sweep = []
+for el_val in el_sweep:
+    fl_tmp = scq.Fluxonium(
+        EJ=EJ_flx, EC=EC_flx, EL=el_val, flux=0.5, cutoff=110, truncated_dim=4
+    )
+    evals_tmp = fl_tmp.eigenvals(evals_count=3)
+    evals_tmp -= evals_tmp[0]
+    freq_flx_sweep.append(evals_tmp[1])
+    alpha_flx_sweep.append((evals_tmp[2] - evals_tmp[1]) - evals_tmp[1])
+alpha_flx_sweep = np.array(alpha_flx_sweep)
+freq_flx_sweep = np.array(freq_flx_sweep)
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+ax = axes[0]
+ax.plot(ej_ec_ratios, freq_transmon_sweep, "C0-", linewidth=2, label="$\\omega_{01}$")
+ax.plot(
+    ej_ec_ratios,
+    alpha_transmon_sweep,
+    "C1--",
+    linewidth=2,
+    label="$|\\alpha|$",
+)
+ax.set_xlabel("$E_J / E_C$")
+ax.set_ylabel("Frequency (GHz)")
+ax.set_title("Transmon")
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+ax = axes[1]
+ax.plot(el_sweep, freq_flx_sweep, "C0-", linewidth=2, label="$\\omega_{01}$")
+ax.plot(
+    el_sweep,
+    np.abs(alpha_flx_sweep),
+    "C1--",
+    linewidth=2,
+    label="$|\\alpha|$",
+)
+ax.set_xlabel("$E_L$ (GHz)")
+ax.set_ylabel("Frequency (GHz)")
+ax.set_title("Fluxonium ($\\Phi_\\mathrm{ext} = \\Phi_0/2$)")
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+fig.suptitle("Qubit frequency and anharmonicity across the design space", fontsize=13)
+fig.tight_layout()
+plt.show()
+
+# %% [markdown]
+# The left panel shows the well-known transmon trade-off: increasing
+# $E_J/E_C$ exponentially suppresses charge dispersion but the
+# anharmonicity remains pinned at $\alpha \approx E_C$.
+# The right panel shows that the fluxonium frequency decreases with
+# smaller $E_L$ (heavier fluxonium), while the anharmonicity remains
+# large—a qualitatively different design knob.
+
+# %% [markdown]
+# ## Part IV — Design Workflow: From Hamiltonian to Layout Parameters
 #
 # The purpose of computing $\chi$ is to **design** a qubit–resonator system
-# with a target dispersive shift.  The workflow mirrors the pymablock notebook,
+# with a target dispersive shift.  The sections below walk through the full
+# design flow for both a transmon and a fluxonium.
+#
+# ### Transmon Design
+#
+# The transmon workflow mirrors the pymablock notebook,
 # using qpdk analytical helpers for speed and scQubits for numerical verification:
 #
 # 1. **Choose target $\chi$** based on readout speed requirements
@@ -370,7 +693,7 @@ plt.show()
 # 4. **Convert to circuit parameters** ($C_\Sigma$, $L_J$, $C_c$) using qpdk helpers
 # 5. **Convert to layout parameters** (resonator length, capacitor geometry)
 #
-# ### Step 1–3: From target $\chi$ to coupling $g$
+# #### Step 1–3: From target $\chi$ to coupling $g$
 
 # %%
 # Design targets
@@ -408,7 +731,7 @@ display(
 )
 
 # %% [markdown]
-# ### Step 4: Convert to circuit parameters
+# #### Step 4: Convert to circuit parameters
 #
 # Using the qpdk helper functions, we convert the Hamiltonian parameters
 # to circuit parameters:
@@ -471,7 +794,7 @@ C_c = {C_c * 1e15:.2f}\,\mathrm{{fF}}
 )
 
 # %% [markdown]
-# ### Step 5: Layout parameters
+# #### Step 5: Layout parameters
 #
 # The circuit parameters map directly to layout dimensions:
 
@@ -536,9 +859,50 @@ Q_\text{{ext}} = {Q_ext:,} \\
 )
 
 # %% [markdown]
-# ## Summary: Complete Design Table
+# ### Fluxonium Design
 #
-# The table below summarises the full design flow from Hamiltonian
+# For the fluxonium, the design workflow differs in two ways:
+#
+# 1. The qubit frequency and anharmonicity depend on three energies
+#    ($E_J$, $E_C$, $E_L$) and the external flux, so numerical
+#    diagonalization with scQubits is essential — there is no simple
+#    closed-form analog of the transmon approximation
+#    $\omega \approx \sqrt{8 E_J E_C} - E_C$.
+# 2. The circuit includes a **superinductance** $L_s$ whose value maps
+#    directly to the layout meander inductor in the qpdk `fluxonium` cell.
+#
+# #### Fluxonium circuit parameters
+
+# %%
+from qpdk.models.qubit import el_to_inductance
+
+# Fluxonium circuit parameters from the Hamiltonian energies
+C_sigma_flx = float(ec_to_capacitance(EC_flx))
+L_J_flx = float(ej_to_inductance(EJ_flx))
+L_s_flx = float(el_to_inductance(EL_flx))
+
+display(
+    Math(rf"""
+\textbf{{Fluxonium Circuit Parameters:}} \\
+E_J = {EJ_flx:.3f}\,\mathrm{{GHz}} \;\Rightarrow\;
+  L_J = {L_J_flx * 1e9:.2f}\,\mathrm{{nH}} \\
+E_C = {EC_flx:.3f}\,\mathrm{{GHz}} \;\Rightarrow\;
+  C_\Sigma = {C_sigma_flx * 1e15:.1f}\,\mathrm{{fF}} \\
+E_L = {EL_flx:.3f}\,\mathrm{{GHz}} \;\Rightarrow\;
+  L_s = {L_s_flx * 1e9:.1f}\,\mathrm{{nH}}
+""")
+)
+
+# %% [markdown]
+# The superinductance $L_s \sim 300\,\mathrm{nH}$ is realized by a
+# meander inductor made of a high-kinetic-inductance material (e.g. NbTiN
+# or granular aluminium) {cite:p}`manucharyan_fluxonium_2009,nguyen_blueprint_2019`.
+# The qpdk `fluxonium` cell parameterizes this as `inductor_n_turns`.
+
+# %% [markdown]
+# ## Summary: Transmon Design Table
+#
+# The table below summarises the full transmon design flow from Hamiltonian
 # parameters to layout parameters, with the dispersive shift as the
 # central design target.
 
@@ -568,6 +932,43 @@ data = [
 df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"], orient="row")
 
 display_dataframe(df)
+
+# %% [markdown]
+# ## Summary: Fluxonium Design Table
+#
+# The fluxonium design uses the same resonator and readout parameters, but
+# the qubit circuit parameters differ significantly due to the
+# superinductance.
+
+# %%
+data_flx = [
+    ("Hamiltonian", "$E_J$", f"{EJ_flx:.3f}", "GHz"),
+    ("Hamiltonian", "$E_C$", f"{EC_flx:.3f}", "GHz"),
+    ("Hamiltonian", "$E_L$", f"{EL_flx:.3f}", "GHz"),
+    ("Hamiltonian", "$\\omega_\\text{flx}$", f"{f01_flx * 1e3:.1f}", "MHz"),
+    (
+        "Hamiltonian",
+        "$\\alpha_\\text{flx}$",
+        f"{anharmonicity_flx:.3f}",
+        "GHz",
+    ),
+    ("Hamiltonian", "Flux bias", "$\\Phi_0/2$", ""),
+    ("Circuit", "$C_\\Sigma$", f"{C_sigma_flx * 1e15:.1f}", "fF"),
+    ("Circuit", "$L_J$", f"{L_J_flx * 1e9:.2f}", "nH"),
+    ("Circuit", "$L_s$ (superinductance)", f"{L_s_flx * 1e9:.1f}", "nH"),
+    (
+        "Dispersive shift",
+        "$\\chi$ ($g = 100$ MHz, $\\omega_r = 7$ GHz)",
+        f"{chi_flx * 1e3:.4f}",
+        "MHz",
+    ),
+]
+
+df_flx = pl.DataFrame(
+    data_flx, schema=["Category", "Parameter", "Value", "Unit"], orient="row"
+)
+
+display_dataframe(df_flx)
 
 # %% [markdown]
 # ## References
