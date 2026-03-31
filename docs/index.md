@@ -40,6 +40,13 @@ notebooks
 ```
 
 ```{toctree}
+:caption: Verification
+:hidden:
+
+lvs
+```
+
+```{toctree}
 :caption: Development
 :hidden:
 

@@ -79,6 +79,17 @@ class LayerMapQPDK(LayerMap):
     # Marker layer for waveguides
     WG: Layer = (102, 0)
 
+    # Port layers for LVS net extraction
+    PORT_M1: Layer = (1, 10)  # Port shapes on M1 metal
+    PORT_M2: Layer = (2, 10)  # Port shapes on M2 metal
+
+    # LVS device marker layers
+    MK_TRANSMON: Layer = (200, 0)  # Transmon qubit marker
+    MK_RESONATOR: Layer = (201, 0)  # Resonator marker
+    MK_INDUCTOR: Layer = (202, 0)  # Inductor marker
+    MK_CAPACITOR: Layer = (203, 0)  # Capacitor marker
+    MK_JJ: Layer = (204, 0)  # Josephson junction marker
+
     # Error marker layer (used by gdsfactory to highlight routing/DRC errors)
     ERROR_PATH: Layer = (1000, 0)
 
