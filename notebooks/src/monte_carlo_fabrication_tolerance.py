@@ -8,7 +8,7 @@
 # ---
 
 # %% [markdown]
-# # SAX Simulation of a Resonator Test Chip
+# # Monte Carlo Fabrication Tolerance Analysis
 #
 # This notebook demonstrates how to run a circuit-level SAX simulation of the
 # `resonator_test_chip_yaml` component, which is defined via a `.pic.yml` netlist
