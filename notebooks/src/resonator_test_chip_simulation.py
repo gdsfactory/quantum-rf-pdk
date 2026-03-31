@@ -24,6 +24,8 @@
 #    CPW width and gap variations affect resonance frequencies and transmission.
 
 # %% tags=["hide-input", "hide-output"]
+import os
+import sys
 import warnings
 
 import gdsfactory as gf
@@ -31,6 +33,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
+import ray
 import sax
 from matplotlib.lines import Line2D
 from scipy.signal import find_peaks
@@ -42,6 +45,11 @@ from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
 
+# Determine if we are running in an interactive environment (notebook)
+# or as a script from the command line.
+IS_INTERACTIVE = hasattr(sys, "ps1") or "ipykernel" in sys.modules
+BLOCK = IS_INTERACTIVE
+
 # %% [markdown]
 # ## Load the component
 #
@@ -52,7 +60,8 @@ PDK.activate()
 # %%
 yaml_path = PATH.samples / "resonator_test_chip_yaml.pic.yml"
 chip = gf.read.from_yaml(yaml_path)
-chip.plot()
+if IS_INTERACTIVE:
+    chip.plot()
 
 # %% [markdown]
 # ## Extract the netlist
@@ -125,7 +134,7 @@ ax.set_title("Top probeline (variable coupling gap)")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # ### Bottom probeline – fixed coupling gap
@@ -146,7 +155,7 @@ ax.set_title("Bottom probeline (fixed coupling gap)")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # ### Both probelines
@@ -163,7 +172,7 @@ ax.set_title("Resonator test chip – transmission comparison")
 ax.legend()
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # # Monte Carlo Fabrication Tolerance Analysis
@@ -232,7 +241,7 @@ ax2.grid(True)
 
 fig.suptitle("CPW parameter sensitivity to geometry", fontsize=13, y=1.02)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # The plots show that :math:`Z_0` and :math:`\varepsilon_{\mathrm{eff}}` are
@@ -253,9 +262,69 @@ NOMINAL_WIDTH = 10.0  # µm (centre-conductor width)
 NOMINAL_GAP = 6.0  # µm (gap to ground plane)
 WIDTH_SIGMA = 0.5  # µm (1σ tolerance on width)
 GAP_SIGMA = 0.3  # µm (1σ tolerance on gap)
-N_TRIALS = 100
+N_TRIALS = 500
 
 rng = np.random.default_rng(42)
+
+# %% [markdown]
+# ## Initialize Ray for Parallel Execution
+#
+# We use Ray to parallelize the Monte Carlo trials across multiple CPU cores.
+#
+# ### **Resource Configuration Guide:**
+#
+# 1. **Total Parallelism:** By default, Ray uses all available CPU cores. To limit
+#    this, use `ray.init(num_cpus=8)`.
+# 2. **Cores per Worker:** In the `@ray.remote(num_cpus=1)` decorators below, you can specify
+#    `num_cpus=1` (default). If your simulation uses heavy internal multi-threading,
+#    increasing this (e.g., `num_cpus=2`) will reduce the number of simultaneous
+#    workers to avoid over-subscribing the CPU.
+# 3. **GPU Allocation:** If using GPUs, you can specify `num_gpus=0.2` to allow
+#    5 workers to share a single GPU.
+# 4. **Overall Workers:** The number of concurrent workers is automatically
+#    calculated as `Total CPUs / Cores per Worker`.
+
+# %%
+if not ray.is_initialized():
+    # Detect if we are running under 'uv run'
+    is_uv_run = "UV_RUN_RECURSION_DEPTH" in os.environ
+
+    if is_uv_run:
+        # 1. Disable Ray's automatic uv-run matching which is causing setup errors.
+        os.environ["RAY_ENABLE_UV_RUN_RUNTIME_ENV"] = "0"
+        os.environ.pop("UV_RUN_RECURSION_DEPTH", None)
+
+        # 2. Force workers to use the EXACT same environment as the driver.
+        # Since the driver was started with 'uv run --extra ...', this environment
+        # already has everything (ray, models, qutip, etc.) installed.
+        runtime_env = {
+            "py_executable": sys.executable,
+        }
+        print(f"Initializing Ray (local) using driver environment: {sys.executable}")
+    else:
+        # For generic Ray clusters where the driver's path might not exist on workers,
+        # we use the 'uv' field to install the project and extras from scratch.
+        runtime_env = {
+            "working_dir": ".",
+            "uv": [".[models,ray,qutip,scqubits]"],
+            "excludes": [
+                ".git",
+                ".venv",
+                "build",
+                "__pycache__",
+                ".ruff_cache",
+                ".pytest_cache",
+            ],
+        }
+        print("Initializing Ray with uv runtime_env...")
+
+    # Initialize Ray using 80% of available CPU cores.
+    total_cpus = os.cpu_count() or 1
+    num_cpus = max(1, int(total_cpus * 0.8))
+    print(f"Initializing Ray with {num_cpus} CPUs (80% of {total_cpus})...")
+    ray.init(num_cpus=num_cpus, runtime_env=runtime_env)
+# To connect to a remote Ray cluster instead, use:
+# ray.init("ray://<head_node_host>:10001", runtime_env=runtime_env)
 
 # %% [markdown]
 # ## Identify cross-section-tuneable instances
@@ -281,6 +350,29 @@ print(f"{len(cpw_instance_names)} CPW instances found for MC perturbation.")
 # ``coplanar_waveguide(width=…, gap=…)`` cross-section for each and
 # passing it as an override to every CPW instance.
 
+
+# %%
+@ray.remote(num_cpus=1)
+def simulate_global_tolerance(dw, dg, freq, netlist, models, instance_names):
+    """Ray task for a single global tolerance trial."""
+    import jax.numpy as jnp
+    import numpy as np
+    import sax
+
+    from qpdk import PDK
+
+    PDK.activate()
+    # Re-compiling the circuit on the worker is very fast in SAX
+    circuit_fn, _ = sax.circuit(
+        netlist=netlist, models=models, on_internal_port="ignore"
+    )
+
+    xs = coplanar_waveguide(width=10.0 + dw, gap=6.0 + dg)
+    overrides = {name: {"cross_section": xs} for name in instance_names}
+    s_trial = circuit_fn(f=freq, **overrides)
+    return np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
+
+
 # %%
 dw_global = rng.normal(0, WIDTH_SIGMA, N_TRIALS)
 dg_global = rng.normal(0, GAP_SIGMA, N_TRIALS)
@@ -288,18 +380,28 @@ dg_global = rng.normal(0, GAP_SIGMA, N_TRIALS)
 # Nominal S₂₁ for reference
 s21_nom_db = np.asarray(20 * jnp.log10(jnp.abs(s21)))
 
-# Collect results: each column is one trial
-s21_global_db = np.zeros((len(freq), N_TRIALS))
+# Put large objects in the Ray Object Store to avoid serializing them repeatedly
+netlist_ref = ray.put(netlist)
+models_ref = ray.put(models)
+freq_ref = ray.put(freq)
 
-for trial in range(N_TRIALS):
-    xs = coplanar_waveguide(
-        width=NOMINAL_WIDTH + dw_global[trial],
-        gap=NOMINAL_GAP + dg_global[trial],
+# Launch tasks in parallel
+print(f"Launching {N_TRIALS} parallel global trials with Ray...")
+futures = [
+    simulate_global_tolerance.remote(
+        dw_global[i],
+        dg_global[i],
+        freq_ref,
+        netlist_ref,
+        models_ref,
+        cpw_instance_names,
     )
-    overrides = {name: {"cross_section": xs} for name in cpw_instance_names}
-    s_trial = circuit_fn(f=freq, **overrides)
-    s21_trial = s_trial[("o1", "o2")]
-    s21_global_db[:, trial] = np.asarray(20 * jnp.log10(jnp.abs(s21_trial)))
+    for i in range(N_TRIALS)
+]
+print("Waiting for global trials to complete...")
+results_global = ray.get(futures, timeout=1200)
+print("Global trials completed.")
+s21_global_db = np.array(results_global).T
 
 # %% [markdown]
 # ### Transmission overlay – global tolerance
@@ -323,7 +425,7 @@ ax.set_title(
 )
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # ## Resonance frequency extraction
@@ -364,6 +466,13 @@ def find_resonance_dips(
 
 
 # %%
+@ray.remote(num_cpus=1)
+def find_resonance_dips_task(freq_hz, s21_db, n_resonators):
+    """Ray task wrapper for find_resonance_dips."""
+    return find_resonance_dips(freq_hz, s21_db, n_resonators=n_resonators)
+
+
+# %%
 # Extract resonance frequencies for the nominal and all MC trials
 freq_np = np.asarray(freq)
 
@@ -376,45 +485,47 @@ for i, f_dip in enumerate(nominal_dips):
 
 # %%
 # MC dip extraction
-mc_dips = np.zeros((N_TRIALS, n_res))
-for trial in range(N_TRIALS):
-    mc_dips[trial] = find_resonance_dips(
-        freq_np, s21_global_db[:, trial], n_resonators=n_res
-    )
+print(f"Extracting dips for {N_TRIALS} global trials...")
+futures_dips = [
+    find_resonance_dips_task.remote(freq_np, s21_global_db[:, trial], n_res)
+    for trial in range(N_TRIALS)
+]
+mc_dips = np.array(ray.get(futures_dips, timeout=1200))
 
 # %% [markdown]
-# ### Resonance frequency histograms
+# ### Resonance frequency distributions (global tolerance)
 #
-# Each subplot shows the distribution of a single resonator's frequency
-# across all MC trials.  The red dashed line marks the nominal frequency.
+# This violin plot shows the distribution of frequency shifts for each resonator
+# across all Monte Carlo trials.  A shift of 0 MHz corresponds to the nominal
+# resonance frequency.
 
 # %%
-n_cols = min(4, n_res)
-n_rows = int(np.ceil(n_res / n_cols))
-fig, axes = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 3.5 * n_rows))
-axes_flat = np.atleast_1d(axes).ravel()
+shifts_mhz = (mc_dips - nominal_dips[None, :n_res]) / 1e6
 
-for i in range(n_res):
-    ax = axes_flat[i]
-    dips_ghz = mc_dips[:, i] / 1e9
-    valid = ~np.isnan(dips_ghz)
-    ax.hist(dips_ghz[valid], bins=25, color="C0", alpha=0.7, edgecolor="white")
-    ax.axvline(nominal_dips[i] / 1e9, color="r", ls="--", lw=1.5, label="Nominal")
-    ax.set_xlabel("Frequency [GHz]")
-    ax.set_ylabel("Count")
-    ax.set_title(f"Resonator {i + 1}", fontsize=10)
-    ax.legend(fontsize=7)
-    ax.grid(True, alpha=0.3)
+fig, ax = plt.subplots(figsize=(10, 5))
+data_to_plot = [shifts_mhz[~np.isnan(shifts_mhz[:, i]), i] for i in range(n_res)]
+vparts = ax.violinplot(data_to_plot, showmeans=True, showmedians=False)
 
-# Hide unused subplots
-for j in range(n_res, len(axes_flat)):
-    axes_flat[j].set_visible(False)
+# Customise violin appearance
+for pc in vparts["bodies"]:
+    pc.set_facecolor("C0")
+    pc.set_edgecolor("black")
+    pc.set_alpha(0.7)
 
-fig.suptitle(
-    "Resonance frequency distributions (global tolerance)", fontsize=13, y=1.02
-)
+for partname in ("cbars", "cmins", "cmaxes", "cmeans"):
+    vp = vparts[partname]
+    vp.set_edgecolor("black")
+    vp.set_linewidth(1)
+
+ax.set_xticks(np.arange(1, n_res + 1))
+ax.set_xticklabels([f"{nominal_dips[i] / 1e9:.3f} GHz" for i in range(n_res)])
+ax.set_xlabel("Nominal frequency [GHz]")
+ax.set_ylabel("Frequency shift Δf [MHz]")
+ax.set_title("Resonance frequency spread (global tolerance)")
+ax.axhline(0, color="r", ls="--", lw=1, alpha=0.5)
+ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # ### Frequency shift statistics
@@ -422,8 +533,6 @@ plt.show()
 # We summarise the absolute and relative frequency shifts.
 
 # %%
-shifts_mhz = (mc_dips - nominal_dips[None, :n_res]) / 1e6
-
 mean_shift = np.nanmean(shifts_mhz, axis=0)
 std_shift = np.nanstd(shifts_mhz, axis=0)
 max_shift = np.nanmax(np.abs(shifts_mhz), axis=0)
@@ -446,6 +555,39 @@ for i in range(n_res):
 # Routing sections (straights and bends connecting resonators) are kept at
 # nominal dimensions to isolate the effect of per-resonator geometry variation.
 
+
+# %%
+@ray.remote(num_cpus=1)
+def simulate_local_tolerance(
+    trial_idx, dw_per_res, dg_per_res, freq, netlist, models, res_names, non_res_names
+):
+    """Ray task for a single per-resonator tolerance trial."""
+    import numpy as np
+    import sax
+
+    from qpdk import PDK
+
+    PDK.activate()
+    circuit_fn, _ = sax.circuit(
+        netlist=netlist, models=models, on_internal_port="ignore"
+    )
+
+    overrides = {}
+    for i, name in enumerate(res_names):
+        xs_res = coplanar_waveguide(
+            width=NOMINAL_WIDTH + dw_per_res[i, trial_idx],
+            gap=NOMINAL_GAP + dg_per_res[i, trial_idx],
+        )
+        overrides[name] = {"cross_section": xs_res}
+
+    xs_nominal = coplanar_waveguide(width=NOMINAL_WIDTH, gap=NOMINAL_GAP)
+    for name in non_res_names:
+        overrides[name] = {"cross_section": xs_nominal}
+
+    s_trial = circuit_fn(f=freq, **overrides)
+    return np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
+
+
 # %%
 # Resonator instance names get independent perturbations.
 # Non-resonator CPW instances (routing) stay at nominal.
@@ -461,23 +603,27 @@ n_res_instances = len(res_names)
 dw_per_res = rng.normal(0, WIDTH_SIGMA, (n_res_instances, N_TRIALS))
 dg_per_res = rng.normal(0, GAP_SIGMA, (n_res_instances, N_TRIALS))
 
-s21_local_db = np.zeros((len(freq), N_TRIALS))
-xs_nominal = coplanar_waveguide(width=NOMINAL_WIDTH, gap=NOMINAL_GAP)
+# Put perturbations in object store
+dw_per_res_ref = ray.put(dw_per_res)
+dg_per_res_ref = ray.put(dg_per_res)
 
-for trial in range(N_TRIALS):
-    overrides = {}
-    for i, name in enumerate(res_names):
-        xs_res = coplanar_waveguide(
-            width=NOMINAL_WIDTH + dw_per_res[i, trial],
-            gap=NOMINAL_GAP + dg_per_res[i, trial],
-        )
-        overrides[name] = {"cross_section": xs_res}
-    # Non-resonator instances at nominal
-    for name in non_res_names:
-        overrides[name] = {"cross_section": xs_nominal}
-
-    s_trial = circuit_fn(f=freq, **overrides)
-    s21_local_db[:, trial] = np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
+# Launch tasks in parallel
+print(f"Launching {N_TRIALS} parallel per-resonator trials with Ray...")
+futures_local = [
+    simulate_local_tolerance.remote(
+        i,
+        dw_per_res_ref,
+        dg_per_res_ref,
+        freq_ref,
+        netlist_ref,
+        models_ref,
+        res_names,
+        non_res_names,
+    )
+    for i in range(N_TRIALS)
+]
+results_local = ray.get(futures_local, timeout=1200)
+s21_local_db = np.array(results_local).T
 
 # %% [markdown]
 # ### Transmission overlay – per-resonator tolerance
@@ -498,17 +644,18 @@ ax.set_title(
 )
 ax.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # ### Compare global vs per-resonator spread
 
 # %%
-mc_dips_local = np.zeros((N_TRIALS, n_res))
-for trial in range(N_TRIALS):
-    mc_dips_local[trial] = find_resonance_dips(
-        freq_np, s21_local_db[:, trial], n_resonators=n_res
-    )
+print("Extracting dips for local tolerance trials...")
+futures_dips_local = [
+    find_resonance_dips_task.remote(freq_np, s21_local_db[:, trial], n_res)
+    for trial in range(N_TRIALS)
+]
+mc_dips_local = np.array(ray.get(futures_dips_local, timeout=1200))
 
 shifts_local = (mc_dips_local - nominal_dips[None, :n_res]) / 1e6
 std_local = np.nanstd(shifts_local, axis=0)
@@ -525,14 +672,15 @@ ax.bar(
     color="C3",
     alpha=0.8,
 )
-ax.set_xlabel("Resonator index")
+ax.set_xlabel("Nominal frequency [GHz]")
 ax.set_ylabel("Frequency spread (1σ) [MHz]")
 ax.set_title("Frequency uncertainty: global vs per-resonator tolerance")
 ax.set_xticks(x)
+ax.set_xticklabels([f"{nominal_dips[i - 1] / 1e9:.3f}" for i in x])
 ax.legend()
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # The global scenario produces **correlated** frequency shifts (all resonators
@@ -550,32 +698,41 @@ plt.show()
 # %%
 # Width-only variation
 dw_only = rng.normal(0, WIDTH_SIGMA, N_TRIALS)
-s21_w_db = np.zeros((len(freq), N_TRIALS))
-for trial in range(N_TRIALS):
-    xs = coplanar_waveguide(width=NOMINAL_WIDTH + dw_only[trial], gap=NOMINAL_GAP)
-    overrides = {name: {"cross_section": xs} for name in cpw_instance_names}
-    s_trial = circuit_fn(f=freq, **overrides)
-    s21_w_db[:, trial] = np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
+print(f"Launching {N_TRIALS} parallel width-only trials with Ray...")
+futures_w = [
+    simulate_global_tolerance.remote(
+        dw_only[i], 0.0, freq_ref, netlist_ref, models_ref, cpw_instance_names
+    )
+    for i in range(N_TRIALS)
+]
+results_w = ray.get(futures_w, timeout=1200)
+s21_w_db = np.array(results_w).T
 
 # Gap-only variation
 dg_only = rng.normal(0, GAP_SIGMA, N_TRIALS)
-s21_g_db = np.zeros((len(freq), N_TRIALS))
-for trial in range(N_TRIALS):
-    xs = coplanar_waveguide(width=NOMINAL_WIDTH, gap=NOMINAL_GAP + dg_only[trial])
-    overrides = {name: {"cross_section": xs} for name in cpw_instance_names}
-    s_trial = circuit_fn(f=freq, **overrides)
-    s21_g_db[:, trial] = np.asarray(20 * jnp.log10(jnp.abs(s_trial[("o1", "o2")])))
+print(f"Launching {N_TRIALS} parallel gap-only trials with Ray...")
+futures_g = [
+    simulate_global_tolerance.remote(
+        0.0, dg_only[i], freq_ref, netlist_ref, models_ref, cpw_instance_names
+    )
+    for i in range(N_TRIALS)
+]
+results_g = ray.get(futures_g, timeout=1200)
+s21_g_db = np.array(results_g).T
 
 # %%
-mc_dips_w = np.zeros((N_TRIALS, n_res))
-mc_dips_g = np.zeros((N_TRIALS, n_res))
-for trial in range(N_TRIALS):
-    mc_dips_w[trial] = find_resonance_dips(
-        freq_np, s21_w_db[:, trial], n_resonators=n_res
-    )
-    mc_dips_g[trial] = find_resonance_dips(
-        freq_np, s21_g_db[:, trial], n_resonators=n_res
-    )
+print("Extracting dips for sensitivity analysis trials...")
+futures_dips_w = [
+    find_resonance_dips_task.remote(freq_np, s21_w_db[:, trial], n_res)
+    for trial in range(N_TRIALS)
+]
+mc_dips_w = np.array(ray.get(futures_dips_w, timeout=1200))
+
+futures_dips_g = [
+    find_resonance_dips_task.remote(freq_np, s21_g_db[:, trial], n_res)
+    for trial in range(N_TRIALS)
+]
+mc_dips_g = np.array(ray.get(futures_dips_g, timeout=1200))
 
 std_w_only = np.nanstd((mc_dips_w - nominal_dips[None, :n_res]) / 1e6, axis=0)
 std_g_only = np.nanstd((mc_dips_g - nominal_dips[None, :n_res]) / 1e6, axis=0)
@@ -611,14 +768,15 @@ ax.bar(
     color="C3",
     alpha=0.85,
 )
-ax.set_xlabel("Resonator index")
+ax.set_xlabel("Nominal frequency [GHz]")
 ax.set_ylabel("Frequency spread (1σ) [MHz]")
 ax.set_title("Sensitivity: width vs gap contribution to frequency uncertainty")
 ax.set_xticks(x)
+ax.set_xticklabels([f"{nominal_dips[i - 1] / 1e9:.3f}" for i in x])
 ax.legend(fontsize=9)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # ### Scatter: width perturbation vs frequency shift
@@ -634,7 +792,11 @@ ax = axes[0]
 for i in range(n_res):
     valid = ~np.isnan(shifts_w[:, i])
     ax.scatter(
-        dw_only[valid], shifts_w[valid, i], s=10, alpha=0.4, label=f"Res {i + 1}"
+        dw_only[valid],
+        shifts_w[valid, i],
+        s=10,
+        alpha=0.4,
+        label=f"{nominal_dips[i] / 1e9:.3f} GHz",
     )
 ax.set_xlabel("Width perturbation δw [µm]")
 ax.set_ylabel("Frequency shift [MHz]")
@@ -649,7 +811,11 @@ ax = axes[1]
 for i in range(n_res):
     valid = ~np.isnan(shifts_g[:, i])
     ax.scatter(
-        dg_only[valid], shifts_g[valid, i], s=10, alpha=0.4, label=f"Res {i + 1}"
+        dg_only[valid],
+        shifts_g[valid, i],
+        s=10,
+        alpha=0.4,
+        label=f"{nominal_dips[i] / 1e9:.3f} GHz",
     )
 ax.set_xlabel("Gap perturbation δg [µm]")
 ax.set_ylabel("Frequency shift [MHz]")
@@ -660,7 +826,7 @@ ax.grid(True, alpha=0.3)
 ax.legend(fontsize=7, ncol=2)
 
 plt.tight_layout()
-plt.show()
+plt.show(block=BLOCK)
 
 # %% [markdown]
 # The scatter plots reveal a nearly **linear** relationship between the
@@ -684,7 +850,7 @@ parcoord_data = {
     "δgap [µm]": dg_global,
 }
 for i in range(n_res):
-    parcoord_data[f"Res {i + 1} Δf [MHz]"] = shifts_mhz[:, i]
+    parcoord_data[f"{nominal_dips[i] / 1e9:.3f} GHz Δf [MHz]"] = shifts_mhz[:, i]
 
 dimensions = []
 for label, values in parcoord_data.items():
@@ -718,7 +884,8 @@ fig_pc.update_layout(
     width=900,
     height=500,
 )
-fig_pc.show()
+if IS_INTERACTIVE:
+    fig_pc.show()
 
 # %% [markdown]
 # ## Summary
