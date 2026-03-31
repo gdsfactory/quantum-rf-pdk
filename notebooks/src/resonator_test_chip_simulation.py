@@ -33,7 +33,6 @@ import gdsfactory as gf
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
-import plotly.graph_objects as go
 import polars as pl
 import ray
 import sax
@@ -148,7 +147,7 @@ freq_ghz = freq / 1e9
 #
 # ### Top probeline – variable coupling gap
 #
-# :math:`S_{21}` (port o1 → o2) shows eight notches, one per resonator.
+# $S_{21}$ (port o1 → o2) shows eight notches, one per resonator.
 
 # %%
 s21 = s_params["o1", "o2"]
@@ -168,7 +167,7 @@ plt.show(block=False)
 # %% [markdown]
 # ### Bottom probeline – fixed coupling gap
 #
-# :math:`S_{43}` (port o3 → o4) shows eight notches with uniform coupling
+# $S_{43}$ (port o3 → o4) shows eight notches with uniform coupling
 # depth because all resonators share the same 16 µm coupling gap.
 
 # %%
@@ -209,8 +208,8 @@ plt.show(block=False)
 # In superconducting quantum chip fabrication, the CPW centre-conductor width
 # and gap to the ground plane are subject to process variations introduced during
 # lithography and etching.  Even sub-micrometre deviations from the nominal
-# geometry change the characteristic impedance :math:`Z_0`, effective
-# permittivity :math:`\varepsilon_{\mathrm{eff}}`, and — most critically — the
+# geometry change the characteristic impedance $Z_0$, effective
+# permittivity $\varepsilon_{\mathrm{eff}}$, and — most critically — the
 # resonance frequencies of the on-chip resonators.
 #
 # This section performs a **Monte Carlo analysis** inspired by the
@@ -230,7 +229,7 @@ plt.show(block=False)
 # ## CPW impedance sensitivity
 #
 # Before running the Monte Carlo simulation it is instructive to see how
-# :math:`Z_0` and :math:`\varepsilon_{\mathrm{eff}}` depend on the CPW
+# $Z_0$ and $\varepsilon_{\mathrm{eff}}$ depend on the CPW
 # dimensions.
 
 # %%
@@ -273,9 +272,9 @@ plt.tight_layout()
 plt.show(block=False)
 
 # %% [markdown]
-# The plots show that :math:`Z_0` and :math:`\varepsilon_{\mathrm{eff}}` are
+# The plots show that $Z_0$ and $\varepsilon_{\mathrm{eff}}$ are
 # sensitive to both width and gap.  A ±0.5 µm width shift at the nominal
-# 10 µm / 6 µm geometry translates to a :math:`Z_0` change of several ohms and
+# 10 µm / 6 µm geometry translates to a $Z_0$ change of several ohms and
 # a corresponding shift in resonance frequency.
 
 # %% [markdown]
@@ -467,7 +466,7 @@ plt.show(block=False)
 # %% [markdown]
 # ## Resonance frequency extraction
 #
-# We locate the dip positions in each :math:`|S_{21}|` trace to track how
+# We locate the dip positions in each $|S_{21}|$ trace to track how
 # the resonance frequencies shift across Monte Carlo trials.
 
 
@@ -897,56 +896,6 @@ plt.show(block=False)
 # Width variations generally produce a **larger** frequency shift than gap
 # variations of similar magnitude, making width control the dominant
 # fabrication concern for frequency targeting.
-
-# %% [markdown]
-# ## Interactive parallel coordinates plot
-#
-# The following interactive plot shows how the CPW width and gap perturbations
-# propagate through to each resonator's frequency shift.  Each line represents
-# one Monte Carlo trial.  Use the axis ranges to filter trials interactively.
-
-# %%
-# Build a DataFrame-like dict for parallel coordinates
-parcoord_data = {
-    "δwidth [µm]": dw_global,
-    "δgap [µm]": dg_global,
-}
-for i in range(n_res):
-    parcoord_data[f"{nominal_dips[i] / 1e9:.3f} GHz Δf [MHz]"] = shifts_mhz[:, i]
-
-dimensions = []
-for label, values in parcoord_data.items():
-    valid = ~np.isnan(values)
-    clean = values[valid]
-    if len(clean) == 0:
-        continue
-    dimensions.append(
-        dict(
-            label=label,
-            values=clean,
-            range=[float(np.min(clean)), float(np.max(clean))],
-        )
-    )
-
-fig_pc = go.Figure(
-    data=go.Parcoords(
-        line=dict(
-            color=dw_global,
-            colorscale="RdBu",
-            showscale=True,
-            cmin=float(np.min(dw_global)),
-            cmax=float(np.max(dw_global)),
-            colorbar=dict(title="δwidth [µm]"),
-        ),
-        dimensions=dimensions,
-    )
-)
-fig_pc.update_layout(
-    title="Monte Carlo: CPW perturbations → resonance frequency shifts",
-    width=900,
-    height=500,
-)
-fig_pc.show(block=False)
 
 # %% [markdown]
 # ## Summary
