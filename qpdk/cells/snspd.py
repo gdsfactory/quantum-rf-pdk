@@ -7,6 +7,8 @@ import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec, Port, Size
 
+from qpdk.tech import LAYER
+
 
 @gf.cell
 def snspd(
@@ -16,7 +18,7 @@ def snspd(
     num_squares: int | None = None,
     turn_ratio: float = 4,
     terminals_same_side: bool = False,
-    layer: LayerSpec = "M1_DRAW",
+    layer: LayerSpec = LAYER.NbTiN,
     port_type: str = "electrical",
 ) -> Component:
     """Creates an optimally-rounded SNSPD.
@@ -37,6 +39,8 @@ def snspd(
         layer: layer spec to put polygon geometry on.
         port_type: type of port to add to the component.
 
+    Returns:
+        A Component containing the SNSPD geometry.
     """
     if num_squares is not None:
         xy = np.sqrt(num_squares * wire_pitch * wire_width)

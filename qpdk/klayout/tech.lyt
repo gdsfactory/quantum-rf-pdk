@@ -172,7 +172,7 @@
   <symbols>M2_DRAW='2/0'</symbols>
   <symbols>IND='30/0'</symbols>
   <symbols>AB_DRAW='10/0'</symbols>
-  <symbols>M1_DRAW='1/0'</symbols>
   <symbols>TSV='31/0'</symbols>
+  <symbols>M1_DRAW='1/0'</symbols>
  </connectivity>
 </technology>

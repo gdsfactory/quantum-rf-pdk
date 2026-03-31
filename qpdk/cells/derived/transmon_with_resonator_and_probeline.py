@@ -63,6 +63,12 @@ def _transmon_with_resonator_base(
         probeline_coupling_length: Length of the coupling section in µm.
             If None, it will be calculated based on the distance from the
             resonator meander start to the coupler position.
+
+    Returns:
+        Component: A gdsfactory component with the transmon, resonator, and optionally a probeline.
+
+    Raises:
+        ValueError: If probeline_coupling_length is not provided and cannot be calculated.
     """
     c = Component()
 
@@ -104,12 +110,10 @@ def _transmon_with_resonator_base(
 
         # Position the coupler_straight so that o2 (bottom left) is at
         # the resonator_meander_start position.
-        cs_ref.move(
-            (
-                resonator_meander_start[0] - cs_ref.ports["o2"].x,
-                resonator_meander_start[1] - cs_ref.ports["o2"].y,
-            )
-        )
+        cs_ref.move((
+            resonator_meander_start[0] - cs_ref.ports["o2"].x,
+            resonator_meander_start[1] - cs_ref.ports["o2"].y,
+        ))
         route_start_port = cs_ref.ports["o3"]
         resonator_connect_port = cs_ref.ports["o2"]
         coupling_o1_port = cs_ref.ports["o1"]

@@ -11,6 +11,7 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
 from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.helper import show_components
+from qpdk.tech import get_etch_section
 
 
 @gf.cell
@@ -56,6 +57,9 @@ def resonator(
 
     Returns:
         Component: A gdsfactory component with meandering resonator geometry.
+
+    Raises:
+        ValueError: If length is too short for the requested meanders.
     """
     c = Component()
     cross_section = gf.get_cross_section(cross_section)
@@ -147,11 +151,7 @@ def resonator(
 
     # Etch at the open end
     if open_end or open_start:
-        cross_section_etch_section = next(
-            s
-            for s in gf.get_cross_section(cross_section).sections
-            if s.name and "etch_offset" in s.name
-        )
+        cross_section_etch_section = get_etch_section(cross_section)
 
         open_etch_comp = gf.c.rectangle(
             size=(
@@ -341,6 +341,9 @@ def quarter_wave_resonator_coupled(
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
         coupling_straight_length: Length of the coupling waveguide section in μm.
         coupling_gap: Gap between the resonator and coupling waveguide in μm.
+
+    Returns:
+        The coupled quarter-wave resonator component.
     """
     c = Component()
 

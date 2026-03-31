@@ -1,6 +1,8 @@
 """Technology definitions."""
 
-from collections.abc import Callable, Sequence
+# ruff: noqa: T201
+
+from collections.abc import Callable, Generator, Sequence
 from functools import cache, partial, wraps
 from typing import Any
 
@@ -19,6 +21,7 @@ from gdsfactory.technology import (
 )
 from gdsfactory.typings import (
     ConnectivitySpec,
+    CrossSectionSpec,
     Layer,
     LayerSpec,
 )
@@ -49,6 +52,9 @@ class LayerMapQPDK(LayerMap):
     # Junctions
     JJ_AREA: Layer = (20, 0)  # Optional bridge/overlap definition
     JJ_PATCH: Layer = (20, 1)
+
+    # Nanowire
+    NbTiN: Layer = (25, 0)
 
     # Packaging / 3D integration / backside / misc.
     IND: Layer = (30, 0)
@@ -105,6 +111,7 @@ NON_METADATA_LAYERS = {
     LAYER.DICE,
     LAYER.ALN_TOP,
     LAYER.ALN_BOT,
+    LAYER.NbTiN,
 }
 
 
@@ -134,6 +141,14 @@ def get_layer_stack() -> LayerStack:
                 thickness=200e-9 * 1e6,
                 zmin=0.0,  # top of substrate
                 material="Nb",
+                mesh_order=1,
+            ),
+            "NbTiN": LayerLevel(
+                name="NbTiN",
+                layer=L.NbTiN,
+                thickness=15e-9 * 1e6,
+                zmin=0.0,  # top of substrate
+                material="NbTiN",
                 mesh_order=1,
             ),
             "Substrate": LayerLevel(
@@ -284,6 +299,48 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
     return decorated_cross_section
 
 
+def get_etch_sections(
+    cross_section: CrossSectionSpec,
+) -> Generator[gf.Section, None, None]:
+    """Yields all etch sections of a cross-section.
+
+    Args:
+        cross_section: The cross-section to search for etch sections.
+
+    Yields:
+        Generator of sections with "etch" in their name.
+    """
+    xs = gf.get_cross_section(cross_section)
+    for s in xs.sections:
+        if s.name and "etch" in s.name:
+            yield s
+
+
+def get_etch_section(
+    cross_section: CrossSectionSpec,
+) -> gf.Section:
+    """Returns the first etch section of a cross-section.
+
+    Args:
+        cross_section: The cross-section to search for an etch section.
+
+    Returns:
+        The first section with "etch" in its name.
+
+    Raises:
+        ValueError: If no etch section is found.
+    """
+    try:
+        return next(get_etch_sections(cross_section))
+    except StopIteration as e:
+        xs = gf.get_cross_section(cross_section)
+        msg = (
+            f"Cross-section '{xs.name}' does not have a section with 'etch' in the name. "
+            f"Found sections: {[s.name for s in xs.sections]}"
+        )
+        raise ValueError(msg) from e
+
+
 @xsection
 def coplanar_waveguide(
     width: float = 10,
@@ -336,6 +393,27 @@ etch = etch_only = partial(
     coplanar_waveguide,
     waveguide_layer=LAYER.M1_ETCH,
 )
+
+
+@xsection
+def meander_inductor_cross_section() -> CrossSection:
+    """Return a narrow coplanar waveguide cross-section for meander inductors.
+
+    The default dimensions are width=2.0 µm and gap=2.0 µm.
+    """
+    return coplanar_waveguide(width=2.0, gap=2.0)
+
+
+@xsection
+def superinductor_cross_section() -> CrossSection:
+    """Return an ultra-narrow coplanar waveguide cross-section for fluxonium superinductors.
+
+    The default dimensions (width=0.04 µm, gap=0.09 µm) are based on NbTiN superinductor and SNSPD
+    reports :cite:`hazardNanowireSuperinductanceFluxonium2019,yangComparisonSuperconductingNanowire2018`.
+    """
+    return coplanar_waveguide(
+        width=0.04, gap=0.09, waveguide_layer=LAYER.NbTiN, etch_layer=LAYER.M1_ETCH
+    )
 
 
 @xsection

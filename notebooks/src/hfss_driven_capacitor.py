@@ -563,7 +563,7 @@ print(cap_df)
 C_q3d = None
 for col in cap_df.columns:
     # Match off-diagonal entries exactly between o1 and o2
-    if col in ["C(o1,o2)", "C(o2,o1)"]:
+    if col in {"C(o1,o2)", "C(o2,o1)"}:
         C_q3d = abs(float(cap_df[col][0]))
         break
 

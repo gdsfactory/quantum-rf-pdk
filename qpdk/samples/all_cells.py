@@ -38,7 +38,7 @@ def all_cells(
         >>> c = qpdk.cells.all_cells()
         >>> c.show()  # Display all cells in KLayout
     """
-    from qpdk import PDK
+    from qpdk import PDK  # noqa: PLC0415
 
     # Get all cell names, excluding all_cells itself to avoid recursion
     cell_names = sorted([name for name in PDK.cells if name != "all_cells"])

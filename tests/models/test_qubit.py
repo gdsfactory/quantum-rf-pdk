@@ -1,6 +1,6 @@
 """Tests for qpdk.models.qubit module - Qubit LC resonator models."""
 
-from typing import TYPE_CHECKING, final
+from typing import final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
@@ -17,9 +17,12 @@ from qpdk.models.qubit import (
     double_island_transmon_with_resonator,
     ec_to_capacitance,
     ej_to_inductance,
+    el_to_inductance,
     flipmon,
     flipmon_with_bbox,
     flipmon_with_resonator,
+    fluxonium,
+    fluxonium_with_bbox,
     qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
@@ -28,9 +31,6 @@ from qpdk.models.qubit import (
 )
 
 from .base import TwoPortModelTestSuite
-
-if TYPE_CHECKING:
-    pass
 
 # Ensure PDK is activated for tests that require it (e.g., qubit_with_resonator)
 qpdk.PDK.activate()
@@ -62,9 +62,10 @@ class TestEcToCapacitance:
         C_high = ec_to_capacitance(0.5)  # High E_C
         assert C_low > C_high
 
+    @staticmethod
     @given(ec_ghz=st.floats(min_value=0.05, max_value=1.0))
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_positive_capacitance(self, ec_ghz: float) -> None:
+    def test_positive_capacitance(ec_ghz: float) -> None:
         """Test that capacitance is always positive."""
         C = ec_to_capacitance(ec_ghz)
         assert C > 0
@@ -93,11 +94,37 @@ class TestEjToInductance:
         L_high = ej_to_inductance(40.0)  # High E_J
         assert L_low > L_high
 
+    @staticmethod
     @given(ej_ghz=st.floats(min_value=5.0, max_value=100.0))
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_positive_inductance(self, ej_ghz: float) -> None:
+    def test_positive_inductance(ej_ghz: float) -> None:
         """Test that inductance is always positive."""
         L = ej_to_inductance(ej_ghz)
+        assert L > 0
+
+
+class TestElToInductance:
+    """Tests for el_to_inductance helper function."""
+
+    @staticmethod
+    def test_typical_value() -> None:
+        """Test with typical fluxonium inductive energy."""
+        # E_L = 0.5 GHz
+        el_ghz = 0.5
+        L = el_to_inductance(el_ghz)
+
+        # L = Φ_0² / (4π² E_L)
+        expected_L = Φ_0**2 / (4 * np.pi**2 * el_ghz * 1e9 * h)
+        assert np.isclose(L, expected_L, rtol=1e-10)
+        # For E_L = 0.5 GHz, L ≈ 327 nH
+        assert 100e-9 < L < 1000e-9, f"Inductance {L * 1e9:.2f} nH out of range"
+
+    @staticmethod
+    @given(el_ghz=st.floats(min_value=0.1, max_value=10.0))
+    @settings(max_examples=MAX_EXAMPLES, deadline=None)
+    def test_positive_inductance(el_ghz: float) -> None:
+        """Test that inductance is always positive."""
+        L = el_to_inductance(el_ghz)
         assert L > 0
 
 
@@ -174,13 +201,13 @@ class TestDoubleIslandTransmon(TwoPortModelTestSuite):
         result = self._call_model(f=f)
 
         # For ungrounded, S22 should NOT be -1 (which would indicate a short)
-        s22 = result[("o2", "o2")]
+        s22 = result["o2", "o2"]
         assert not jnp.allclose(s22, -1.0, atol=1e-6), (
             "Double-island transmon should NOT be grounded"
         )
 
         # For an ungrounded parallel LC, S22 should equal S11 due to symmetry
-        s11 = result[("o1", "o1")]
+        s11 = result["o1", "o1"]
         assert_allclose(
             s11,
             s22,
@@ -199,7 +226,7 @@ class TestDoubleIslandTransmon(TwoPortModelTestSuite):
         result = self._call_model(f=f, capacitance=C, inductance=L)
 
         # At resonance, |S21| should be minimum (parallel LC has infinite impedance)
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         s21_mag = jnp.abs(s21)
         idx_min = jnp.argmin(s21_mag)
         f_observed = f[idx_min]
@@ -237,6 +264,40 @@ class TestXmonTransmon(TwoPortModelTestSuite):
 
 
 @final
+class TestFluxonium(TwoPortModelTestSuite):
+    """Tests for fluxonium model."""
+
+    model_function = staticmethod(fluxonium)
+
+    def test_resonance_frequency(self) -> None:
+        """Test that resonance frequency matches expected parallel LCL."""
+        LJ = 10e-9
+        LS = 500e-9
+        C = 10e-15
+        L_total = (LJ * LS) / (LJ + LS)
+        f_r_expected = 1 / (2 * np.pi * np.sqrt(L_total * C))
+
+        f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 1000)
+        result = self._call_model(
+            f=f, capacitance=C, josephson_inductance=LJ, superinductance=LS
+        )
+
+        s21 = result["o2", "o1"]
+        idx_min = jnp.argmin(jnp.abs(s21))
+        f_observed = f[idx_min]
+
+        relative_error = abs(float(f_observed - f_r_expected) / f_r_expected)
+        assert relative_error < 0.01
+
+
+@final
+class TestFluxoniumWithBbox(TwoPortModelTestSuite):
+    """Tests for fluxonium_with_bbox model."""
+
+    model_function = staticmethod(fluxonium_with_bbox)
+
+
+@final
 class TestShuntedTransmon(TwoPortModelTestSuite):
     """Tests for shunted_transmon model."""
 
@@ -248,7 +309,7 @@ class TestShuntedTransmon(TwoPortModelTestSuite):
         result = self._call_model(f=f)
 
         # For grounded, S22 should be -1 (short reflection)
-        s22 = result[("o2", "o2")]
+        s22 = result["o2", "o2"]
         assert_allclose(
             s22,
             -1.0,
@@ -257,7 +318,7 @@ class TestShuntedTransmon(TwoPortModelTestSuite):
         )
 
         # S21 should be zero (no transmission through ground)
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         assert_allclose(s21, 0.0, atol=1e-10)
 
     @given(
@@ -291,8 +352,8 @@ class TestTransmonCoupled(TwoPortModelTestSuite):
         assert len(result) == 4
 
         # Verify passivity
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
         assert_array_less(total_power, 1.0 + 1e-6)
 
@@ -333,8 +394,8 @@ class TestTransmonCoupled(TwoPortModelTestSuite):
         assert len(result) == 4
 
         # Verify passivity
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
         total_power = jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2
         assert_array_less(total_power, 1.0 + 1e-6)
 
@@ -456,8 +517,8 @@ class TestQubitWithResonator(TwoPortModelTestSuite):
         result_long = self._call_model(f=f, resonator_length=6000.0)
 
         # S-parameters should differ for different resonator lengths
-        s11_short = result_short[("o1", "o1")]
-        s11_long = result_long[("o1", "o1")]
+        s11_short = result_short["o1", "o1"]
+        s11_long = result_long["o1", "o1"]
 
         assert not jnp.allclose(s11_short, s11_long, atol=1e-3), (
             "Different resonator lengths should yield different S-parameters"

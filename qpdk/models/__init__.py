@@ -1,11 +1,18 @@
 """Model definitions for qpdk."""
 
+# ruff: noqa: E402
+
 import jax
 import sax
 
 from qpdk.models.capacitor import (
     interdigital_capacitor,
     plate_capacitor,
+)
+from qpdk.models.inductor import (
+    lumped_element_resonator,
+    meander_inductor,
+    meander_inductor_inductance_analytical,
 )
 from qpdk.models.junction import josephson_junction, squid_junction
 
@@ -43,8 +50,10 @@ from qpdk.models.generic import (
     lc_resonator,
     lc_resonator_coupled,
     open,
+    series_impedance,
     short,
     short_2_port,
+    shunt_admittance,
 )
 from qpdk.models.perturbation import (
     dispersive_shift,
@@ -64,9 +73,14 @@ from qpdk.models.qubit import (
     double_pad_transmon_with_resonator,
     ec_to_capacitance,
     ej_to_inductance,
+    el_to_inductance,
     flipmon,
     flipmon_with_bbox,
     flipmon_with_resonator,
+    fluxonium,
+    fluxonium_coupled,
+    fluxonium_with_bbox,
+    fluxonium_with_resonator,
     qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
@@ -82,7 +96,7 @@ from qpdk.models.resonator import (
     resonator_quarter_wave,
 )
 from qpdk.models.unimon import (
-    el_to_inductance,
+    el_to_arm_inductance,
     unimon_coupled,
     unimon_energies,
     unimon_frequency_and_anharmonicity,
@@ -135,6 +149,7 @@ __all__ = [
     "ec_to_capacitance",
     "ej_ec_to_frequency_and_anharmonicity",
     "ej_to_inductance",
+    "el_to_arm_inductance",
     "el_to_inductance",
     "electrical_open",
     "electrical_short",
@@ -142,6 +157,10 @@ __all__ = [
     "flipmon",
     "flipmon_with_bbox",
     "flipmon_with_resonator",
+    "fluxonium",
+    "fluxonium_coupled",
+    "fluxonium_with_bbox",
+    "fluxonium_with_resonator",
     "gamma_0_load",
     "impedance",
     "indium_bump",
@@ -151,6 +170,9 @@ __all__ = [
     "launcher",
     "lc_resonator",
     "lc_resonator_coupled",
+    "lumped_element_resonator",
+    "meander_inductor",
+    "meander_inductor_inductance_analytical",
     "measurement_induced_dephasing",
     "microstrip_epsilon_eff",
     "microstrip_thickness_correction",
@@ -170,8 +192,10 @@ __all__ = [
     "resonator_half_wave",
     "resonator_linewidth_from_q",
     "resonator_quarter_wave",
+    "series_impedance",
     "short",
     "short_2_port",
+    "shunt_admittance",
     "shunted_transmon",
     "squid_junction",
     "straight",
@@ -202,7 +226,7 @@ def _is_sax_model(obj: object) -> bool:
     if hasattr(obj, "__annotations__") and "return" in obj.__annotations__:
         ret = obj.__annotations__["return"]
         # If it returns jax.Array or a tuple of floats, it's not a SAX S-parameter model
-        if ret in [jax.Array, "jax.Array", "jax.Array"]:
+        if ret in {jax.Array, "jax.Array"}:
             return False
         # Match names like tuple[float, float]
         if hasattr(ret, "__name__") and ret.__name__ == "tuple":
@@ -216,10 +240,10 @@ def _is_sax_model(obj: object) -> bool:
             continue
         if hasattr(target, "__annotations__") and "return" in target.__annotations__:
             ret = target.__annotations__["return"]
-            if hasattr(ret, "__name__") and ret.__name__ in ["SType", "SDict"]:
+            if hasattr(ret, "__name__") and ret.__name__ in {"SType", "SDict"}:
                 return True
             # Also check identity for standard cases
-            if ret in [sax.SType, sax.SDict]:
+            if ret in {sax.SType, sax.SDict}:
                 return True
     return sax.try_into[sax.Model](obj) is not None
 

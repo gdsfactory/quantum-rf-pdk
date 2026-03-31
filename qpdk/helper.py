@@ -21,6 +21,9 @@ def deprecated(msg: str | Callable | None = None) -> Any:
     """Decorator to mark functions as deprecated.
 
     Can be used as @deprecated or @deprecated("custom message").
+
+    Returns:
+        A decorator function or the decorated function itself.
     """
 
     def decorator(func: Callable) -> Callable:
@@ -71,10 +74,9 @@ def denest_layerviews_to_layer_tuples(
                 # Recursively process nested group members and merge results
                 nested_layers = denest_layer_dict_recursive(value.group_members)
                 layers.update(nested_layers)
-            else:
-                # Base case: add the layer to our dictionary
-                if hasattr(value, "layer"):
-                    layers[key] = value.layer
+            # Base case: add the layer to our dictionary
+            elif hasattr(value, "layer"):
+                layers[key] = value.layer
 
         return layers
 
@@ -97,7 +99,7 @@ def show_components(
     Returns:
         Components after :func:`gdsfactory.get_component`.
     """
-    from qpdk import PDK
+    from qpdk import PDK  # noqa: PLC0415
 
     PDK.activate()
 
@@ -116,12 +118,10 @@ def show_components(
         shift = (max_component_width + spacing, 0)
 
     for i, component in enumerate(components):
-        (c << component).move(
-            (
-                shift[0] * i,
-                shift[1] * i,
-            )
-        )
+        (c << component).move((
+            shift[0] * i,
+            shift[1] * i,
+        ))
         label_offset = (
             shift[0] * i + (component.size_info.width / 2),
             shift[1] * i + (component.size_info.height / 2),
@@ -142,6 +142,9 @@ def layerenum_to_tuple(layerenum: LayerEnum) -> Layer:
 
     Args:
         layerenum: The LayerEnum object to convert.
+
+    Returns:
+        The (layer, datatype) tuple.
     """
     return layerenum.layer, layerenum.datatype
 
@@ -189,6 +192,9 @@ def _latex_math_to_html(expr: str) -> str:
     r"""Convert a single LaTeX math expression (without ``$`` delimiters) to HTML.
 
     Handles ``\mathrm``/``\text`` commands, Greek letters, and sub-/superscripts.
+
+    Returns:
+        HTML string representation of the LaTeX expression.
     """
     # Strip \mathrm{...} and \text{...} wrappers, keeping their content
     expr = re.sub(r"\\(?:mathrm|text|textrm)\{([^}]+)\}", r"\1", expr)
@@ -210,6 +216,9 @@ def _latex_to_html(text: str) -> str:
     r"""Convert ``$...$`` delimited LaTeX math in *text* to HTML.
 
     Non-math text is returned unchanged.
+
+    Returns:
+        String with LaTeX math replaced by HTML.
     """
     return re.sub(r"\$([^$]+)\$", lambda m: _latex_math_to_html(m.group(1)), text)
 
@@ -230,8 +239,8 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     Args:
         df: A polars or pandas DataFrame to display.
     """
-    import pandas as pd
-    from IPython.display import display
+    import pandas as pd  # noqa: PLC0415
+    from IPython.display import display  # noqa: PLC0415
 
     # Convert polars DataFrame to pandas if needed
     pdf: pd.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
@@ -239,7 +248,8 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     class _DualFormatTable:
         """Table object providing both HTML and LaTeX representations."""
 
-        def _repr_html_(self) -> str:
+        @staticmethod
+        def _repr_html_() -> str:  # noqa: PLW3201
             html_df = pdf.copy()
             for col in html_df.columns:
                 if pd.api.types.is_string_dtype(html_df[col]):
@@ -248,7 +258,8 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
                     )
             return html_df.style.hide(axis="index")._repr_html_()
 
-        def _repr_latex_(self) -> str:
+        @staticmethod
+        def _repr_latex_() -> str:  # noqa: PLW3201
             return pdf.to_latex(index=False, escape=False)
 
     display(_DualFormatTable())

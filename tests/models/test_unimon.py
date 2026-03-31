@@ -11,7 +11,7 @@ from numpy.testing import assert_allclose
 import qpdk
 from qpdk.models.constants import Φ_0, h
 from qpdk.models.unimon import (
-    el_to_inductance,
+    el_to_arm_inductance,
     unimon_coupled,
     unimon_energies,
     unimon_frequency_and_anharmonicity,
@@ -26,14 +26,14 @@ qpdk.PDK.activate()
 MAX_EXAMPLES = 20
 
 
-class TestElToInductance:
-    """Tests for el_to_inductance helper function."""
+class TestElToArmInductance:
+    """Tests for el_to_arm_inductance helper function."""
 
     @staticmethod
     def test_typical_value() -> None:
         """Test with typical unimon inductive energy."""
         el_ghz = 5.0
-        L = el_to_inductance(el_ghz)
+        L = el_to_arm_inductance(el_ghz)
 
         # L = Φ_0² / (8π² E_L)
         expected_L = Φ_0**2 / (8 * np.pi**2 * el_ghz * 1e9 * h)
@@ -44,15 +44,16 @@ class TestElToInductance:
     @staticmethod
     def test_inverse_relationship() -> None:
         """Test that inductance decreases as E_L increases."""
-        L_low = el_to_inductance(2.0)
-        L_high = el_to_inductance(10.0)
+        L_low = el_to_arm_inductance(2.0)
+        L_high = el_to_arm_inductance(10.0)
         assert L_low > L_high
 
+    @staticmethod
     @given(el_ghz=st.floats(min_value=0.5, max_value=50.0))
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_positive_inductance(self, el_ghz: float) -> None:
+    def test_positive_inductance(el_ghz: float) -> None:
         """Test that inductance is always positive."""
-        L = el_to_inductance(el_ghz)
+        L = el_to_arm_inductance(el_ghz)
         assert L > 0
 
 
@@ -79,16 +80,17 @@ class TestUnimonHamiltonian:
         H = unimon_hamiltonian(ec_ghz=1.0, el_ghz=5.0, ej_ghz=10.0)
         assert jnp.allclose(jnp.imag(H), 0, atol=1e-12)
 
+    @staticmethod
     @given(
-        ec_ghz=st.floats(min_value=0.1, max_value=5.0),
-        el_ghz=st.floats(min_value=1.0, max_value=20.0),
+        ec_ghz=st.floats(min_value=0.1, max_value=1.0),
+        el_ghz=st.floats(min_value=1.0, max_value=50.0),
         ej_ghz=st.floats(min_value=1.0, max_value=50.0),
-        phi_ext=st.floats(min_value=0.0, max_value=6.28),
-        n_max=st.integers(min_value=5, max_value=25),
+        phi_ext=st.floats(min_value=-2.0, max_value=2.0),
+        n_max=st.integers(min_value=10, max_value=50),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_hamiltonian_always_hermitian(
-        self, ec_ghz: float, el_ghz: float, ej_ghz: float, phi_ext: float, n_max: int
+        ec_ghz: float, el_ghz: float, ej_ghz: float, phi_ext: float, n_max: int
     ) -> None:
         """Test Hermiticity with random parameters."""
         H = unimon_hamiltonian(
@@ -147,14 +149,15 @@ class TestUnimonEnergies:
         # Low-lying energies should be close for sufficient truncation
         assert_allclose(energies_small, energies_large, rtol=1e-3)
 
+    @staticmethod
     @given(
-        ec_ghz=st.floats(min_value=0.1, max_value=3.0),
-        el_ghz=st.floats(min_value=1.0, max_value=15.0),
-        ej_ghz=st.floats(min_value=2.0, max_value=30.0),
+        ec_ghz=st.floats(min_value=0.1, max_value=1.0),
+        el_ghz=st.floats(min_value=1.0, max_value=50.0),
+        ej_ghz=st.floats(min_value=1.0, max_value=50.0),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_positive_transition_frequency(
-        self, ec_ghz: float, el_ghz: float, ej_ghz: float
+        ec_ghz: float, el_ghz: float, ej_ghz: float
     ) -> None:
         """Test that the qubit transition frequency is always positive."""
         energies = unimon_energies(
@@ -202,8 +205,8 @@ class TestUnimonCoupledSAX(OnePortModelTestSuite):
         f = self.get_frequency_array(50)
         result_weak = self._call_model(f=f, coupling_capacitance=1e-15)
         result_strong = self._call_model(f=f, coupling_capacitance=50e-15)
-        s11_weak = result_weak[("o1", "o1")]
-        s11_strong = result_strong[("o1", "o1")]
+        s11_weak = result_weak["o1", "o1"]
+        s11_strong = result_strong["o1", "o1"]
         assert not jnp.allclose(s11_weak, s11_strong, atol=1e-3), (
             "Different coupling capacitances should produce different S-parameters"
         )

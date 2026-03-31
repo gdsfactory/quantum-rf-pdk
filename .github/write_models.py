@@ -69,5 +69,5 @@ template = env.get_template("models_static.rst.j2")
 
 rendered = template.render(items=items)
 
-with filepath_models.open("w") as f:
+with filepath_models.open("w", encoding="utf-8") as f:
     f.write(rendered)

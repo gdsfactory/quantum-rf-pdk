@@ -1,14 +1,15 @@
 """Sphinx configuration for Qpdk documentation."""
 
+import re
+
 project = "qpdk"
 author = "gdsfactory"
-copyright = "gdsfactory"
+copyright = "gdsfactory"  # noqa: A001
 
 # -- General configuration ---------------------------------------------------
 extensions = [
     "myst_nb",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autodoc.typehints",
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
@@ -20,8 +21,27 @@ extensions = [
     "sphinx_design",
     "matplotlib.sphinxext.plot_directive",
     "sphinx_copybutton",
+    "sphinx_github_alerts",
     "sphinxcontrib.bibtex",
+    "sphinxcontrib_bibtex_urn",
 ]
+
+# -- Plot directive configuration ---------------------------------------------
+plot_pre_code = """
+from matplotlib import pyplot as plt
+from qpdk import PDK
+
+plt.style.use("qpdk")
+PDK.activate()
+"""
+plot_rcparams = {
+    "svg.fonttype": "path",
+    "pdf.compression": 9,
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+}
+plot_formats = ["svg", "pdf", "png"]
+plot_apply_rcparams = True  # Ensure rcParams are applied even with :context:
 
 exclude_patterns = [
     "_build",
@@ -29,6 +49,7 @@ exclude_patterns = [
     "ipython_config.py",
     "*.mplstyle",
     "justfile_help.txt",
+    "changelog.md",
     "Thumbs.db",
     ".DS_Store",
 ]
@@ -77,25 +98,29 @@ autodoc_type_aliases = {
     "sax.FloatArrayLike": "FloatArrayLike",
     "jax.typing.ArrayLike": "ArrayLike",
     "ArrayLike": "ArrayLike",
-    "gdsfactory.typings.CrossSectionSpec": "CrossSectionSpec",
-    "gdsfactory.typings.LayerSpec": "LayerSpec",
-    "gdsfactory.typings.ComponentSpec": "ComponentSpec",
-    "gdsfactory.typings.ComponentAllAngleSpec": "ComponentAllAngleSpec",
-    "gdsfactory.typings.Port": "Port",
-    "gdsfactory.typings.Ports": "Ports",
-    "gdsfactory.typings.Size": "Size",
-    "gdsfactory.typings.Ints": "Ints",
-    "gdsfactory.typings.Coordinate": "Coordinate",
-    "gdsfactory.typings.Coordinates": "Coordinates",
-    "gdsfactory.typings.Layer": "Layer",
-    (
-        "CrossSection | str | dict[str, Any] | "
-        "Callable[[...], CrossSection] | SymmetricalCrossSection | DCrossSection"
-    ): "CrossSectionSpec",
+    "gt.CrossSectionSpec": "CrossSectionSpec",
+    "gt.LayerSpec": "LayerSpec",
+    "gt.ComponentSpec": "ComponentSpec",
+    "gt.ComponentAllAngleSpec": "ComponentAllAngleSpec",
+    "gt.Port": "Port",
+    "gt.Ports": "Ports",
+    "gt.Size": "Size",
+    "gt.Ints": "Ints",
+    "gt.Coordinate": "Coordinate",
+    "gt.Coordinates": "Coordinates",
+    "gt.Layer": "Layer",
+    "FloatArrayLike": "FloatArrayLike",
+    "sax.Float": "float",
+    "Float": "float",
+    "sax.SType": "SType",
+    "SType": "SType",
 }
 autodoc_typehints = "description"
 autodoc_typehints_format = "short"
 python_use_unqualified_type_names = True
+
+napoleon_preprocess_types = True
+napoleon_type_aliases = autodoc_type_aliases
 
 # -- Bibliography (sphinxcontrib-bibtex) --------------------------------------
 bibtex_bibfiles = ["bibliography.bib"]
@@ -163,3 +188,22 @@ suppress_warnings = [
     "myst.header",
     "bibtex.duplicate_citation",
 ]
+
+
+def setup(app):
+    """Sphinx setup."""
+    # Regex for types to shorten in the final rendered docstring fields
+    # Note: this is a bit hacky as it operates on the processed lines
+    patterns = {
+        r"Annotated\[Array \| ndarray \| .*?val_float_array.*?\]": "FloatArrayLike",
+        r"Annotated\[float \| floating, PlainValidator\(func=~sax\.saxtypes\.core\.val_float, .*?\)\]": "float",
+        r"CrossSection \| str \| dict\[str, Any\] \| Callable\[\[\.\.\.\], CrossSection\] \| SymmetricalCrossSection \| DCrossSection": "CrossSectionSpec",
+    }
+
+    def simplify_handler(_app, _what, _name, _obj, _options, lines):
+        for i, line in enumerate(lines):
+            for pattern, replacement in patterns.items():
+                lines[i] = re.sub(pattern, replacement, line)
+
+    # We use a late priority to ensure we see the types added by autodoc
+    app.connect("autodoc-process-docstring", simplify_handler, priority=999)

@@ -149,8 +149,8 @@ freq_ghz = freq / 1e9
 # :math:`S_{21}` (port o1 → o2) shows eight notches, one per resonator.
 
 # %%
-s21 = s_params[("o1", "o2")]
-s11 = s_params[("o1", "o1")]
+s21 = s_params["o1", "o2"]
+s11 = s_params["o1", "o1"]
 
 fig, ax = plt.subplots()
 ax.plot(freq_ghz, 20 * jnp.log10(jnp.abs(s21)), label="$S_{21}$")
@@ -170,8 +170,8 @@ plt.show()
 # depth because all resonators share the same 16 µm coupling gap.
 
 # %%
-s43 = s_params[("o3", "o4")]
-s33 = s_params[("o3", "o3")]
+s43 = s_params["o3", "o4"]
+s33 = s_params["o3", "o3"]
 
 fig, ax = plt.subplots()
 ax.plot(freq_ghz, 20 * jnp.log10(jnp.abs(s43)), label="$S_{43}$")

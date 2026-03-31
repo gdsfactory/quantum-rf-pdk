@@ -39,6 +39,9 @@ def plate_capacitor_capacitance_analytical(
     where :math:`s` is the gap, :math:`W` is the pad width, and :math:`L` is the pad length.
 
     See :cite:`chenCompactInductorcapacitorResonators2023`.
+
+    Returns:
+        The calculated capacitance in Farads.
     """
     # Conformal mapping for coplanar pads
     k_sq = (gap / (gap + 2 * width)) ** 2
@@ -84,6 +87,9 @@ def interdigital_capacitor_capacitance_analytical(
     :math:`L` is the overlap length.
 
     See :cite:`igrejaAnalyticalEvaluationInterdigital2004,gonzalezDesignFabricationInterdigital2015`.
+
+    Returns:
+        The calculated mutual capacitance in Farads.
     """
     # Geometric parameters
     n = fingers

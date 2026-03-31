@@ -19,7 +19,7 @@ from qpdk.models.cpw import (
     propagation_constant,
     transmission_line_s_params,
 )
-from qpdk.models.generic import admittance, short_2_port
+from qpdk.models.generic import admittance, short_2_port, tee
 from qpdk.tech import coplanar_waveguide
 
 
@@ -238,24 +238,6 @@ def straight_double_open(
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
 
 
-def tee(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-) -> sax.SType:
-    """S-parameter model for a 3-port tee junction.
-
-    This wraps the generic tee model.
-
-    Args:
-        f: Array of frequency points in Hz.
-
-    Returns:
-        sax.SType: S-parameters dictionary.
-    """
-    from qpdk.models.generic import tee as _generic_tee
-
-    return _generic_tee(f=f)
-
-
 @partial(jax.jit, static_argnames=["west", "east", "north", "south"])
 def nxn(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
@@ -278,9 +260,10 @@ def nxn(
 
     Returns:
         sax.SType: S-parameters dictionary with ports o1, o2, ..., oN.
-    """
-    from qpdk.models.generic import tee as _generic_tee
 
+    Raises:
+        ValueError: If total number of ports is not positive.
+    """
     f = jnp.asarray(f)
     n_ports = west + east + north + south
 
@@ -291,7 +274,7 @@ def nxn(
     if n_ports == 2:
         return electrical_short(f=f, n_ports=2)
 
-    instances = {f"tee_{i}": _generic_tee(f=f) for i in range(n_ports - 2)}
+    instances = {f"tee_{i}": tee(f=f) for i in range(n_ports - 2)}
     connections = {f"tee_{i},o3": f"tee_{i + 1},o1" for i in range(n_ports - 3)}
 
     ports = {

@@ -40,7 +40,11 @@ from qpdk.tech import LAYER, route_bundle_sbend_cpw
 # %%
 @gf.cell
 def resonator_simulation(coupling_gap: float = 12.0) -> gf.Component:
-    """Create a resonator simulation layout with launchers and CPW routes."""
+    """Create a resonator simulation layout with launchers and CPW routes.
+
+    Returns:
+        The resonator simulation component.
+    """
     c = gf.Component()
 
     res_ref = c << resonator_coupled(

@@ -88,6 +88,9 @@ def ej_to_inductance(ej_ghz: float) -> float:
     return Φ_0**2 / (4 * math.pi**2 * ej_joules)
 
 
+el_to_inductance = ej_to_inductance
+
+
 @partial(jax.jit, inline=True)
 def coupling_strength_to_capacitance(
     g_ghz: float,
@@ -140,10 +143,92 @@ def coupling_strength_to_capacitance(
 
 
 @partial(jax.jit, inline=True)
+def fluxonium(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 10e-15,
+    josephson_inductance: float = 10e-9,
+    superinductance: float = 500e-9,
+    ground_capacitance: float = 0.0,
+) -> sax.SDict:
+    r"""S-parameter model for a fluxonium qubit.
+
+    A fluxonium qubit consists of a Josephson junction shunted by a large
+    superinductance and a capacitor. In the linear regime, this is modeled
+    as a parallel LCL circuit.
+
+    For an accurate microwave model reflecting the real physical layout,
+    the circuit is treated as ungrounded (floating) with optional symmetric
+    parasitic capacitances connecting both ends to ground :cite:`nguyen_blueprint_2019`.
+
+    .. svgbob::
+
+             ┌────── C ──────┐
+        o1 ──┼────── Lj ─────┼── o2
+             ├────── Ls ─────┤
+             │               │
+            Cg              Cg
+             │               │
+            GND             GND
+
+    Note:
+        The total shunt capacitance `capacitance` should include the pads,
+        junction capacitance, and parasitic meander capacitance. Spurious
+        array self-resonance (SR) modes can be phenomenologically modeled
+        by adding to the shunt capacitance or using a multimode model.
+
+    Args:
+        f: Array of frequency points in Hz.
+        capacitance: Total shunt capacitance :math:`C_\Sigma` in Farads.
+        josephson_inductance: Josephson inductance :math:`L_\text{J}` in Henries.
+        superinductance: Superinductance :math:`L_\text{s}` in Henries.
+        ground_capacitance: Parasitic capacitance to ground :math:`C_g` at each port in Farads.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
+    """
+    # Combine the two inductors in parallel: L = (L1 * L2) / (L1 + L2)
+    L_total = (josephson_inductance * superinductance) / (
+        josephson_inductance + superinductance
+    )
+    return lc_resonator(
+        f=f,
+        capacitance=capacitance,
+        inductance=L_total,
+        grounded=False,
+        ground_capacitance=ground_capacitance,
+    )
+
+
+@partial(jax.jit, inline=True)
+def fluxonium_with_bbox(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 10e-15,
+    josephson_inductance: float = 10e-9,
+    superinductance: float = 500e-9,
+    ground_capacitance: float = 0.0,
+) -> sax.SType:
+    """S-parameter model for a fluxonium qubit with bounding box ports.
+
+    This model is the same as :func:`fluxonium`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
+    """
+    return fluxonium(
+        f=f,
+        capacitance=capacitance,
+        josephson_inductance=josephson_inductance,
+        superinductance=superinductance,
+        ground_capacitance=ground_capacitance,
+    )
+
+
+@partial(jax.jit, inline=True)
 def double_island_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 7e-9,
+    ground_capacitance: float = 0.0,
 ) -> sax.SDict:
     r"""LC resonator model for a double-island transmon qubit.
 
@@ -176,6 +261,7 @@ def double_island_transmon(
         f: Array of frequency points in Hz.
         capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
         inductance: Josephson inductance :math:`L_\text{J}` in Henries.
+        ground_capacitance: Parasitic capacitance to ground :math:`C_g` at each port in Farads.
 
     Returns:
         sax.SDict: S-parameters dictionary with ports o1 and o2.
@@ -185,6 +271,7 @@ def double_island_transmon(
         capacitance=capacitance,
         inductance=inductance,
         grounded=False,
+        ground_capacitance=ground_capacitance,
     )
 
 
@@ -193,15 +280,20 @@ def double_island_transmon_with_bbox(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 7e-9,
+    ground_capacitance: float = 0.0,
 ) -> sax.SType:
     """LC resonator model for a double-island transmon qubit with bounding box ports.
 
     This model is the same as :func:`double_island_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return double_island_transmon(
         f=f,
         capacitance=capacitance,
         inductance=inductance,
+        ground_capacitance=ground_capacitance,
     )
 
 
@@ -210,15 +302,20 @@ def flipmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 7e-9,
+    ground_capacitance: float = 0.0,
 ) -> sax.SType:
     r"""LC resonator model for a flipmon qubit.
 
     This model is identical to :func:`double_island_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return double_island_transmon(
         f=f,
         capacitance=capacitance,
         inductance=inductance,
+        ground_capacitance=ground_capacitance,
     )
 
 
@@ -227,15 +324,20 @@ def flipmon_with_bbox(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 7e-9,
+    ground_capacitance: float = 0.0,
 ) -> sax.SType:
     """LC resonator model for a flipmon qubit with bounding box ports.
 
     This model is the same as :func:`flipmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return flipmon(
         f=f,
         capacitance=capacitance,
         inductance=inductance,
+        ground_capacitance=ground_capacitance,
     )
 
 
@@ -244,6 +346,7 @@ def shunted_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
     inductance: float = 7e-9,
+    ground_capacitance: float = 0.0,
 ) -> sax.SDict:
     r"""LC resonator model for a shunted transmon qubit.
 
@@ -276,6 +379,7 @@ def shunted_transmon(
         f: Array of frequency points in Hz.
         capacitance: Total capacitance :math:`C_\Sigma` of the qubit in Farads.
         inductance: Josephson inductance :math:`L_\text{J}` in Henries.
+        ground_capacitance: Parasitic capacitance to ground :math:`C_g` at the floating port in Farads.
 
     Returns:
         sax.SDict: S-parameters dictionary with ports o1 and o2.
@@ -285,6 +389,7 @@ def shunted_transmon(
         capacitance=capacitance,
         inductance=inductance,
         grounded=True,
+        ground_capacitance=ground_capacitance,
     )
 
 
@@ -294,6 +399,7 @@ def transmon_coupled(
     capacitance: float = 100e-15,
     inductance: float = 1e-9,
     grounded: bool = False,
+    ground_capacitance: float = 0.0,
     coupling_capacitance: float = 10e-15,
     coupling_inductance: float = 0.0,
 ) -> sax.SDict:
@@ -330,6 +436,7 @@ def transmon_coupled(
         inductance: Josephson inductance :math:`L_\text{J}` in Henries.
         grounded: If True, the qubit is a shunted transmon (grounded).
             If False, it is a double-pad transmon (ungrounded).
+        ground_capacitance: Parasitic capacitance to ground :math:`C_g` in Farads.
         coupling_capacitance: Coupling capacitance :math:`C_c` in Farads.
         coupling_inductance: Coupling inductance :math:`L_c` in Henries.
 
@@ -341,9 +448,115 @@ def transmon_coupled(
         capacitance=capacitance,
         inductance=inductance,
         grounded=grounded,
+        ground_capacitance=ground_capacitance,
         coupling_capacitance=coupling_capacitance,
         coupling_inductance=coupling_inductance,
     )
+
+
+@partial(jax.jit)
+def fluxonium_coupled(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 10e-15,
+    josephson_inductance: float = 10e-9,
+    superinductance: float = 500e-9,
+    ground_capacitance: float = 0.0,
+    coupling_capacitance: float = 10e-15,
+    coupling_inductance: float = 0.0,
+) -> sax.SDict:
+    r"""Coupled fluxonium qubit model.
+
+    This model adds a coupling network to the fluxonium model.
+
+    Args:
+        f: Array of frequency points in Hz.
+        capacitance: Total shunt capacitance :math:`C_\Sigma` in Farads.
+        josephson_inductance: Josephson inductance :math:`L_\text{J}` in Henries.
+        superinductance: Superinductance :math:`L_\text{s}` in Henries.
+        ground_capacitance: Parasitic capacitance to ground :math:`C_g` in Farads.
+        coupling_capacitance: Coupling capacitance :math:`C_c` in Farads.
+        coupling_inductance: Coupling inductance :math:`L_c` in Henries.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
+    """
+    L_total = (josephson_inductance * superinductance) / (
+        josephson_inductance + superinductance
+    )
+    return lc_resonator_coupled(
+        f=f,
+        capacitance=capacitance,
+        inductance=L_total,
+        grounded=False,
+        ground_capacitance=ground_capacitance,
+        coupling_capacitance=coupling_capacitance,
+        coupling_inductance=coupling_inductance,
+    )
+
+
+def fluxonium_with_resonator(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 10e-15,
+    josephson_inductance: float = 10e-9,
+    superinductance: float = 500e-9,
+    ground_capacitance: float = 0.0,
+    resonator_length: float = 5000.0,
+    resonator_cross_section: str = "cpw",
+    coupling_capacitance: float = 10e-15,
+) -> sax.SDict:
+    r"""Model for a fluxonium qubit coupled to a quarter-wave resonator.
+
+    Args:
+        f: Array of frequency points in Hz.
+        capacitance: Total shunt capacitance :math:`C_\Sigma` in Farads.
+        josephson_inductance: Josephson inductance :math:`L_\text{J}` in Henries.
+        superinductance: Superinductance :math:`L_\text{s}` in Henries.
+        ground_capacitance: Parasitic capacitance to ground :math:`C_g` in Farads.
+        resonator_length: Length of the quarter-wave resonator in µm.
+        resonator_cross_section: Cross-section specification for the resonator.
+        coupling_capacitance: Coupling capacitance between qubit and resonator in Farads.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
+    """
+    f = jnp.asarray(f)
+    resonator = straight_shorted(
+        f=f,
+        length=resonator_length,
+        cross_section=resonator_cross_section,
+    )
+    qubit = fluxonium(
+        f=f,
+        capacitance=capacitance,
+        josephson_inductance=josephson_inductance,
+        superinductance=superinductance,
+        ground_capacitance=ground_capacitance,
+    )
+    coupling_cap = capacitor(f=f, capacitance=coupling_capacitance)
+    tee_junction = tee(f=f)
+    terminator = electrical_short(f=f, n_ports=1)
+
+    instances: dict[str, sax.SType] = {
+        "resonator": resonator,
+        "qubit": qubit,
+        "coupling_capacitor": coupling_cap,
+        "tee": tee_junction,
+        "terminator": terminator,
+    }
+
+    connections = {
+        "resonator,o1": "tee,o1",
+        "resonator,o2": "terminator,o1",
+        "tee,o2": "coupling_capacitor,o1",
+        "coupling_capacitor,o2": "qubit,o1",
+    }
+
+    ports = {
+        "o1": "tee,o3",
+        "o2": "qubit,o2",
+    }
+
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 def qubit_with_resonator(
@@ -464,6 +677,9 @@ def flipmon_with_resonator(
     """Model for a flipmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator` but the qubit is set to floating.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -487,6 +703,9 @@ def double_island_transmon_with_resonator(
     """Model for a double-island transmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator` but the qubit is set to floating.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -511,6 +730,9 @@ def transmon_with_resonator(
     """Model for a transmon qubit coupled to a quarter-wave resonator.
 
     This model is identical to :func:`qubit_with_resonator`.
+
+    Returns:
+        sax.SDict: S-parameters dictionary.
     """
     return qubit_with_resonator(
         f=f,
@@ -532,6 +754,9 @@ def xmon_transmon(
     """LC resonator model for an Xmon style transmon qubit.
 
     An Xmon transmon is typically shunted, so this model wraps :func:`shunted_transmon`.
+
+    Returns:
+        sax.SType: S-parameters dictionary.
     """
     return shunted_transmon(
         f=f,
@@ -547,9 +772,18 @@ double_pad_transmon_with_resonator = double_island_transmon_with_resonator
 
 
 if __name__ == "__main__":
+    from typing import TypedDict
+
     import matplotlib.pyplot as plt
 
     from qpdk import PDK
+
+    class _QubitConfig(TypedDict):
+        """Configuration for a qubit type in the demo plot."""
+
+        label: str
+        grounded: bool
+        linestyle: str
 
     PDK.activate()
 
@@ -560,7 +794,7 @@ if __name__ == "__main__":
     L_q = 7e-9
     f_q_bare = 1 / (2 * jnp.pi * jnp.sqrt(L_q * C_q))
 
-    configs = [
+    configs: list[_QubitConfig] = [
         {"label": "Shunted Transmon", "grounded": True, "linestyle": "-"},
         {"label": "Double Island Transmon", "grounded": False, "linestyle": "--"},
     ]

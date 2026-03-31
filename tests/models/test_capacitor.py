@@ -1,6 +1,6 @@
 """Tests for qpdk.models.capacitor module."""
 
-from typing import TYPE_CHECKING, final
+from typing import final
 
 import jax.numpy as jnp
 import numpy as np
@@ -8,14 +8,12 @@ from numpy.testing import assert_array_less
 
 from qpdk.models.capacitor import (
     interdigital_capacitor,
+    interdigital_capacitor_capacitance_analytical,
     plate_capacitor,
     plate_capacitor_capacitance_analytical,
 )
 
 from .base import TwoPortModelTestSuite
-
-if TYPE_CHECKING:
-    pass
 
 
 @final
@@ -49,8 +47,8 @@ class TestInterdigitalCapacitor(TwoPortModelTestSuite):
         # Note: we are comparing S-parameters, but for a simple capacitor model
         # more capacitance means lower impedance, so more transmission (|S21|)
         # and less reflection (|S11|) at the same frequency.
-        s11_n2 = jnp.abs(result_n2[("o1", "o1")])
-        s11_n4 = jnp.abs(result_n4[("o1", "o1")])
+        s11_n2 = jnp.abs(result_n2["o1", "o1"])
+        s11_n4 = jnp.abs(result_n4["o1", "o1"])
 
         # At 5GHz, N=4 should have more capacitance than N=2
         assert_array_less(s11_n4, s11_n2 + 1e-10)
@@ -58,8 +56,6 @@ class TestInterdigitalCapacitor(TwoPortModelTestSuite):
 
 def test_interdigital_capacitor_scaling() -> None:
     """Test that interdigital_capacitor capacitance scales correctly."""
-    from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
-
     kwargs = {
         "finger_length": 20.0,
         "finger_gap": 2.0,

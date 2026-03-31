@@ -1,6 +1,7 @@
 """Helper functions for QPDK cells."""
 
 from collections.abc import Iterable, Sequence
+from itertools import starmap
 
 import gdsfactory as gf
 import klayout.db as kdb
@@ -16,9 +17,62 @@ def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Co
     """Applies a complex transformation to a component.
 
     For use with :func:`~gdsfactory.container`.
+
+    Returns:
+        The transformed component.
     """
     component.transform(transform)
     return component
+
+
+def add_rect(
+    c: Component,
+    layer: LayerSpec,
+    *,
+    x0: float | None = None,
+    x1: float | None = None,
+    y0: float | None = None,
+    y1: float | None = None,
+    x_center: float | None = None,
+    y_center: float | None = None,
+    width: float | None = None,
+    height: float | None = None,
+) -> None:
+    """Add a rectangle to component *c* using flexible coordinates.
+
+    Coordinates can be specified using either (x0, x1) or (x_center, width),
+    and similarly for y.
+
+    Args:
+        c: Component to add the rectangle to.
+        layer: Layer specification for the rectangle.
+        x0: Left x-coordinate.
+        x1: Right x-coordinate.
+        y0: Bottom y-coordinate.
+        y1: Top y-coordinate.
+        x_center: Center x-coordinate.
+        y_center: Center y-coordinate.
+        width: Width of the rectangle.
+        height: Height of the rectangle.
+
+    Raises:
+        ValueError: If coordinate specification is incomplete or ambiguous.
+    """
+    if x0 is not None and x1 is not None:
+        x_lo, x_hi = min(x0, x1), max(x0, x1)
+    elif x_center is not None and width is not None:
+        x_lo, x_hi = x_center - width / 2, x_center + width / 2
+    else:
+        raise ValueError("Provide (x0, x1) or (x_center, width)")
+
+    if y0 is not None and y1 is not None:
+        y_lo, y_hi = min(y0, y1), max(y0, y1)
+    elif y_center is not None and height is not None:
+        y_lo, y_hi = y_center - height / 2, y_center + height / 2
+    else:
+        raise ValueError("Provide (y0, y1) or (y_center, height)")
+
+    c.add_polygon([(x_lo, y_lo), (x_hi, y_lo), (x_hi, y_hi), (x_lo, y_hi)], layer=layer)
 
 
 _EXCLUDE_LAYERS_DEFAULT_M1 = [
@@ -110,12 +164,99 @@ def fill_magnetic_vortices(
     return c
 
 
+def merge_layers_with_etch(
+    component: Component,
+    draw_layer: LayerSpec,
+    wg_layer: LayerSpec,
+    etch_layer: LayerSpec | None,
+) -> Component:
+    """Merge waveguide marker layer with draw layer and create an etch negative.
+
+    This function:
+
+    1. Merges the waveguide (WG) marker layer shapes with the draw layer
+       via boolean OR, producing a unified additive component.
+    2. If `etch_layer` is provided, subtracts the merged additive shapes
+       from the etch layer to produce a clean etch negative.
+    3. Returns a fresh component containing the merged layers.
+
+    This is used in capacitor components to combine the CPW cross-section
+    waveguide markers with the capacitor metal draw layer and generate
+    the corresponding etch layer.
+
+    Args:
+        component: The component containing both draw and WG layer shapes.
+        draw_layer: The additive metal layer (e.g., M1_DRAW).
+        wg_layer: The waveguide marker layer to merge into the draw layer.
+        etch_layer: Optional etch layer for the negative mask.
+
+    Returns:
+        A new component with merged draw and (optionally) etch layers.
+    """
+    c_additive = gf.boolean(
+        A=component,
+        B=component,
+        operation="or",
+        layer=draw_layer,
+        layer1=draw_layer,
+        layer2=wg_layer,
+    )
+    result = gf.Component()
+    result.absorb(result << c_additive)
+
+    if etch_layer is not None:
+        c_negative = gf.boolean(
+            A=component,
+            B=c_additive,
+            operation="A-B",
+            layer=etch_layer,
+            layer1=etch_layer,
+            layer2=draw_layer,
+        )
+        result.absorb(result << c_negative)
+
+    return result
+
+
+def subtract_draw_from_etch(
+    component: Component,
+    etch_shape: Component,
+    etch_layer: LayerSpec,
+    draw_layer: LayerSpec,
+) -> None:
+    """Subtract draw layer from an etch shape and absorb the result into a component.
+
+    This is commonly used to create etch regions around qubit components where
+    metal is preserved wherever the draw layer defines features, and the remaining
+    area is etched away.
+
+    Args:
+        component: The target component to absorb the result into.
+            Its draw layer shapes are subtracted from the etch shape.
+        etch_shape: The component defining the full etch area (e.g., a bounding box).
+        etch_layer: The etch layer for the result.
+        draw_layer: The draw layer to subtract from the etch shape.
+    """
+    result = gf.boolean(
+        A=etch_shape,
+        B=component,
+        operation="-",
+        layer=etch_layer,
+        layer1=etch_layer,
+        layer2=draw_layer,
+    )
+    component.absorb(component.add_ref(result))
+
+
 def apply_additive_metals(component: Component) -> Component:
     """Apply additive metal layers and remove them.
 
     Removes additive metal layers from etch layers, leading to a negative mask.
 
     TODO: Implement without flattening. Maybe with a KLayout dataprep script?
+
+    Returns:
+        Component with additive metals applied.
     """
     for additive, etch in (
         (LAYER.M1_DRAW, LAYER.M1_ETCH),
@@ -268,7 +409,7 @@ def remove_metadata_layers(component: Component) -> Component:
         A new component with metadata layers removed.
     """
     # Convert allowed layers into kcl layer indices
-    allowed_indices = {component.kcl.layer(*layer) for layer in NON_METADATA_LAYERS}
+    allowed_indices = set(starmap(component.kcl.layer, NON_METADATA_LAYERS))
 
     c = gf.Component()
 

@@ -68,8 +68,8 @@ straight_wg = straight(f=freq, length=1000, cross_section=cross_section)
 # Plot S-parameters
 plt.figure()
 plt.title("Straight Waveguide S-parameters")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(straight_wg[("o1", "o2")])), label="$S_{21}$")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(straight_wg[("o1", "o1")])), label="$S_{11}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(straight_wg["o1", "o2"])), label="$S_{21}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(straight_wg["o1", "o1"])), label="$S_{11}$")
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
 plt.grid(True)
@@ -87,8 +87,8 @@ cap = capacitor(f=freq, capacitance=cap_val, z0=50)
 # Plot S-parameters
 plt.figure()
 plt.title(f"Capacitor S-parameters (C={cap_val * 1e15:.0f} fF)")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(cap[("o1", "o2")])), label="$S_{21}$")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(cap[("o1", "o1")])), label="$S_{11}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(cap["o1", "o2"])), label="$S_{21}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(cap["o1", "o1"])), label="$S_{11}$")
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
 plt.grid(True)
@@ -106,8 +106,8 @@ ind = inductor(f=freq, inductance=ind_val, z0=50)
 # Plot S-parameters
 plt.figure()
 plt.title(f"Inductor S-parameters (L={ind_val * 1e9:.0f} nH)")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(ind[("o1", "o2")])), label="$S_{21}$")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(ind[("o1", "o1")])), label="$S_{11}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(ind["o1", "o2"])), label="$S_{21}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(ind["o1", "o1"])), label="$S_{11}$")
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
 plt.grid(True)
@@ -134,7 +134,7 @@ plt.figure()
 plt.title("Coupled Resonator S-parameters")
 plt.plot(
     freq_ghz,
-    20 * jnp.log10(jnp.abs(res[("coupling_o1", "coupling_o2")])),
+    20 * jnp.log10(jnp.abs(res["coupling_o1", "coupling_o2"])),
     label="$S_{21}$",
 )
 plt.xlabel("Frequency [GHz]")
@@ -206,7 +206,7 @@ plt.figure()
 plt.title("Custom-built Resonator S-parameters")
 plt.plot(
     freq_ghz,
-    20 * jnp.log10(jnp.abs(custom_res_s_params[("o1", "o2")])),
+    20 * jnp.log10(jnp.abs(custom_res_s_params["o1", "o2"])),
     label="$S_{21}$",
 )
 plt.xlabel("Frequency [GHz]")
