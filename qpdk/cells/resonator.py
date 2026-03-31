@@ -306,6 +306,30 @@ def resonator_coupled(
     c.info["coupling_length"] = coupling_straight_length
     c.info["coupling_gap"] = coupling_gap
 
+    # Add LVS marker
+    from qpdk.tech import LAYER
+    bbox = c.bbox()
+    c.add_polygon(
+        [
+            (bbox.left, bbox.bottom),
+            (bbox.right, bbox.bottom),
+            (bbox.right, bbox.top),
+            (bbox.left, bbox.top),
+        ],
+        layer=LAYER.MK_RESONATOR,
+    )
+
+    # Add LVS ports
+    port_size = 2.0
+    for port in c.ports:
+        if port.layer == LAYER.M1_DRAW:
+            port_marker = c.add_ref(
+                gf.components.rectangle(size=(port_size, port_size), layer=LAYER.PORT_M1)
+            )
+            port_marker.center = port.center
+            # Add label for pin identification
+            c.add_label(port.name.upper(), position=port.center, layer=LAYER.PORT_M1)
+
     return c
 
 

@@ -181,10 +181,10 @@ def my_transmon(**kwargs):
     bbox = c.bbox()
     c.add_polygon(
         [
-            (bbox[0][0], bbox[0][1]),
-            (bbox[1][0], bbox[0][1]),
-            (bbox[1][0], bbox[1][1]),
-            (bbox[0][0], bbox[1][1]),
+            (bbox.left, bbox.bottom),
+            (bbox.right, bbox.bottom),
+            (bbox.right, bbox.top),
+            (bbox.left, bbox.top),
         ],
         layer=LAYER.MK_TRANSMON,
     )

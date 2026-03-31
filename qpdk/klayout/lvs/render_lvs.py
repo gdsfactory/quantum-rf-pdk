@@ -1,7 +1,7 @@
 """Render the QPDK KLayout LVS deck from a Jinja2 template.
 
 The template ``qpdk.lvs.j2`` lives next to this script and is rendered into
-``qpdk.lvs`` using the layer and device definitions from :mod:`qpdk.tech`.
+``qpdk.lvs`` using the layer and device definitions defined in this module.
 
 Run directly to regenerate the deck::
 
@@ -13,9 +13,23 @@ from __future__ import annotations
 import pathlib
 import re
 
-from jinja2 import Environment, FileSystemLoader
+try:
+    from jinja2 import Environment, FileSystemLoader
+except ImportError:  # pragma: no cover - exercised only when jinja2 is missing
+    from typing import NoReturn
 
-from qpdk import logger
+    def _missing_jinja2(*_args: object, **_kwargs: object) -> NoReturn:
+        """Placeholder for Jinja2 classes when the package is missing."""
+        raise RuntimeError(
+            "The 'jinja2' package is required to use qpdk.klayout.lvs.render_lvs. "
+            "Install it as a runtime dependency (e.g. 'pip install jinja2') or via "
+            "the appropriate extras group for this project."
+        )
+
+    Environment = _missing_jinja2  # type: ignore[assignment]
+    FileSystemLoader = _missing_jinja2  # type: ignore[assignment]
+
+from qpdk.logger import logger
 
 _HERE = pathlib.Path(__file__).parent
 
@@ -197,7 +211,7 @@ def render(*, write: bool = True) -> str:
     """
     env = Environment(
         loader=FileSystemLoader(_HERE),
-        autoescape=False,  # noqa: S701 — LVS deck is not HTML; escaping would break Ruby syntax
+        autoescape=False,
         keep_trailing_newline=True,
         trim_blocks=True,
         lstrip_blocks=True,

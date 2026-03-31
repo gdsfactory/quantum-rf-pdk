@@ -2,6 +2,7 @@ set dotenv-load := true
 
 pdk := env('pdk', 'qpdk')
 cpus := num_cpus()
+klayout := "/Applications/KLayout/klayout.app/Contents/MacOS/klayout"
 
 import 'tests/test.just'
 import 'docs/docs.just'
@@ -87,6 +88,31 @@ show component_name="":
     component.write_gds(gds_path)
     logger.info(f"Saved GDS for {component_name} to '{gds_path}'")
     component.show()
+
+# Regenerate the KLayout LVS deck from the Jinja2 template
+[group('verification')]
+lvs-render:
+    @uv run python {{ pdk }}/klayout/lvs/render_lvs.py
+
+# Run Layout vs Schematic (LVS) verification on a GDS and SPICE netlist
+[group('verification')]
+lvs gds schematic topcell="" report="lvs_report.lvsdb": lvs-render
+    @echo "Running LVS: {{ gds }} vs {{ schematic }}..."
+    @{{ klayout }} -b -r {{ pdk }}/klayout/lvs/{{ pdk }}.lvs \
+        -rd input={{ gds }} \
+        -rd schematic={{ schematic }} \
+        -rd report={{ report }} \
+        {{ if topcell == "" { "" } else { "-rd topcell=" + topcell } }}
+    @echo "LVS completed. Report saved to {{ report }}"
+
+# Run LVS with a raw deck (skip Jinja2 rendering)
+[group('verification')]
+lvs-raw deck input schematic report topcell="":
+    @{{ klayout }} -b -r {{ deck }} \
+        -rd input={{ input }} \
+        -rd schematic={{ schematic }} \
+        -rd report={{ report }} \
+        {{ if topcell == "" { "" } else { "-rd topcell=" + topcell } }}
 
 # Run all tests, pre-commit hooks, build wheel and documentation in parallel
 [group('all')]

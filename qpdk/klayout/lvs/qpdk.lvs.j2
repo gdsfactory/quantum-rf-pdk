@@ -57,13 +57,15 @@ report_lvs(report_file)
 # ═══════════════════════════════════════════════════════════════════════════════
 # Defines which layers are electrically connected through vias and bumps.
 {% for conn in connections %}
-connect({{ conn.layer_a }}, {{ conn.via }}, {{ conn.layer_b }})  # {{ conn.comment }}
+connect({{ conn.layer_a }}, {{ conn.via }})
+connect({{ conn.via }}, {{ conn.layer_b }})  # {{ conn.comment }}
 {% endfor %}
 
 # Port layers connect to their corresponding metal layers so that
 # KLayout can identify net terminals.
 {% for port in port_layers %}
 connect({{ port.metal_var }}, {{ port.var }})  # {{ port.connect_comment }}
+labels({{ port.var }}, {{ port.metal_var }})  # Read labels from port layer onto metal
 {% endfor %}
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -75,25 +77,20 @@ connect({{ port.metal_var }}, {{ port.var }})  # {{ port.connect_comment }}
 {% for device in devices %}
 # ─── {{ device.description }} {{ "─" * [76 - device.description | length, 1] | max }}
 {{ device.var }}_region = {{ device.physical_layer }} & {{ device.marker_var }}
-{% if device.class_name == "RBA::Resistor" %}
-extract_devices({{ device.class_name }}("{{ device.model_name }}", {{ device.sheet_rho }}), {
+{% if device.class_name == "RBA::Resistor" or device.class_name == "SubCircuit" or device.class_name == "RBA::Capacitor" %}
+{% if device.terminals %}
+{% for terminal in device.terminals %}
+extract_devices(resistor("{{ device.model_name }}", 0.0), {
   "R" => {{ device.var }}_region,
-{% for terminal in device.terminals %}
-  "{{ terminal.name }}" => {{ terminal.layer }},
+  "C" => {{ terminal.layer }} | {{ device.physical_layer }}
+})
 {% endfor %}
-})
-{% elif device.class_name == "RBA::Capacitor" %}
-extract_devices({{ device.class_name }}("{{ device.model_name }}"), {
-  "P1" => {{ device.var }}_region,
-  "P2" => {{ device.var }}_region,
-})
 {% else %}
-# Custom subcircuit: detected by marker, terminals defined by port layer overlap
-extract_devices(RBA::SubCircuit.new("{{ device.model_name }}"), {
-{% for terminal in device.terminals %}
-  "{{ terminal.name }}" => {{ terminal.layer }},
-{% endfor %}
+extract_devices(resistor("{{ device.model_name }}", 0.0), {
+  "R" => {{ device.var }}_region,
+  "C" => {{ device.physical_layer }}
 })
+{% endif %}
 {% endif %}
 {% endfor %}
 
@@ -110,4 +107,5 @@ netlist.purge_nets
 # ═══════════════════════════════════════════════════════════════════════════════
 
 schematic(spice_netlist)
+align
 compare
