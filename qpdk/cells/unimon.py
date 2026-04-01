@@ -148,28 +148,18 @@ def unimon(
     .. svgbob::
 
         o1 (shorted to ground)
-        ──┐
-          │
-        ┌─┘   :math:`\lambda/4`
-        │      resonator arm
-        └─┐    (meandered)
-          │
+        ┌──
+        │     :math:`\lambda/4`
+        └─┐    resonator arm
+          │    (meandered)
         ┌─┘
         │
-        └─┐
-          │
-        ──┘
-        ╳╳  junction (SQUID)
-        ──┐
+        └X┐  junction (SQUID)
           │
         ┌─┘
-        │
-        └─┐    :math:`\lambda/4`
-          │    resonator arm
-        ┌─┘    (meandered)
-        │
-        └─┐
-          │
+        │     :math:`\lambda/4`
+        └─┐   resonator arm
+          │   (meandered)
         ──┘
         o2 (shorted to ground)
 
@@ -293,27 +283,21 @@ def unimon_coupled(
 
     .. svgbob::
 
-        unimon_o1 (shorted)
-        ──┐
-          │
+        o1 (shorted to ground)
+        ┌──
+        │    
+        └─┐  
+          │  
         ┌─┘
-        │       coupling_o1
-        └─╮    ╭──
-          │╭──╯  coupling_gap
-        ┌─╯╰──╮
-        │       ╰──
-        └─┐    coupling_o2
-          │
+        │ ─┐
+        └X┐│           
+          │+-- coupling_o3
+        ┌─┘│
+        │ ─┘ 
+        └─┐ 
+          │ 
         ──┘
-        ╳╳  junction
-        ──┐
-          │
-        ┌─┘
-        │
-        └─┐
-          │
-        ──┘
-        unimon_o2 (shorted)
+        o2 (shorted to ground)
 
     Args:
         arm_length: Length of each :math:`\lambda/4` resonator arm in µm.
