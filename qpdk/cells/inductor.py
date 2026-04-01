@@ -217,13 +217,13 @@ def lumped_element_resonator(
 
     .. svgbob::
 
-                    "capacitor"
-         o1 ──┬──||||||||||||||──┬── o2
-              │                  │
-              │  ─────────────── │
-              │  ─────────────── │
-              │  ─────────────── │
-              │   "inductor"     │
+       +-----------+
+       | Capacitor |
+    o1 --+   (IDC)   +-- o2
+       |           |
+       | Inductor  |
+       | (Meander) |
+       +-----------+
 
     Similar structures are described in
     :cite:`kimThinfilmSuperconductingResonator2011,chenCompactInductorcapacitorResonators2023`.

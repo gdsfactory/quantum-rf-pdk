@@ -147,15 +147,21 @@ def unimon(
 
     .. svgbob::
 
-        o1 (shorted)
-           |
-           | <-- :math:`\lambda/4` resonator arm (meandered)
-           |
-        junction
-           |
-           | <-- :math:`\lambda/4` resonator arm (meandered)
-           |
-        o2 (shorted)
+        o1 (shorted to ground)
+        ┌──
+        │     :math:`\lambda/4`
+        └─┐    resonator arm
+          │    (meandered)
+        ┌─┘
+        │
+        └X┐  junction (SQUID)
+          │
+        ┌─┘
+        │     :math:`\lambda/4`
+        └─┐   resonator arm
+          │   (meandered)
+        ──┘
+        o2 (shorted to ground)
 
     See :cite:`hyyppaUnimonQubit2022,tuohinoMultimodePhysicsUnimon2024` for details.
 
@@ -274,6 +280,24 @@ def unimon_coupled(
 
     This component combines a :func:`unimon` qubit with a half-circle coupler
     placed at a specified gap for proximity coupling to a readout resonator.
+
+    .. svgbob::
+
+        o1 (shorted to ground)
+        ┌──
+        │
+        └─┐
+          │
+        ┌─┘
+        │ ─┐
+        └X┐│
+          │+-- coupling_o3
+        ┌─┘│
+        │ ─┘
+        └─┐
+          │
+        ──┘
+        o2 (shorted to ground)
 
     Args:
         arm_length: Length of each :math:`\lambda/4` resonator arm in µm.

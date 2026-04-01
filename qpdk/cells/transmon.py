@@ -207,6 +207,20 @@ def flipmon(
 
     A circular variant of the transmon qubit with another circle as the inner pad.
 
+    .. svgbob::
+
+                 .─────────.
+              ,─'  .─────.  '─.
+            ,'   ,'       '.   '.
+           ;    ;    .─.    ;    :  outer ring
+           ;    ;    │*│ XX :    :  (M1_DRAW)
+           ;    ;    '─'    ;    :
+            '.   '.       ,'   ,'  inner pad
+              '─.  '─────'  ,─'   (M1_DRAW)
+                 '─────────'
+                                   * = bump (center)
+                                  XX = junction
+
     See :cite:`liVacuumgapTransmonQubits2021,liCosmicrayinducedCorrelatedErrors2025`
     for details about the `flipmon` design.
 
@@ -385,12 +399,32 @@ def xmon_transmon(
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
 ) -> Component:
-    """Creates an Xmon style transmon qubit with cross-shaped geometry.
+    r"""Creates an Xmon style transmon qubit with cross-shaped geometry.
 
     An Xmon transmon consists of a cross-shaped capacitor pad with four arms
     extending from a central region, connected by a Josephson junction at the center.
     The design provides better control over the coupling to readout resonators
     and neighboring qubits through the individual arm geometries.
+
+    .. svgbob::
+
+                 top_arm
+                ┌─────┐
+                │     │
+                │     │
+                │     │
+        ┌───────┘     └───────┐
+        │  left         right │
+        │  arm           arm  │
+        └───────┐     ┌───────┘
+                │     │
+                │     │
+                │     │ bottom_arm
+                └─────┘
+                  /
+                 x
+                  \
+                junction
 
     See :cite:`barendsCoherentJosephsonQubit2013a` for details about the Xmon design.
 
