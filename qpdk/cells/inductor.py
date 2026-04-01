@@ -219,7 +219,7 @@ def lumped_element_resonator(
 
        +-----------+
        | Capacitor |
-  o1 --+   (IDC)   +-- o2
+    o1 --+   (IDC)   +-- o2
        |           |
        | Inductor  |
        | (Meander) |
