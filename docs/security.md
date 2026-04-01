@@ -25,7 +25,7 @@ disclosure.
 ### Direct Contact
 
 If you prefer, you may contact the maintainers directly via the email addresses listed in the project's
-[PyPI page](https://pypi.org/p/qpdk) or in `pyproject.toml`.
+[PyPI page](https://pypi.org/p/qpdk) or in `pyproject.toml`
 
 ## What to Include
 
@@ -38,19 +38,18 @@ To help us triage your report quickly, please include:
 
 ## Response Process
 
-- We will acknowledge receipt of your report within **5 business days**.
-- We aim to provide an initial assessment within **10 business days**.
-- We will coordinate a fix and release timeline with you and credit you in the release notes (unless you prefer to
-  remain anonymous).
+- We will acknowledge receipt of your report.
+- We aim to provide an initial assessment.
+- We will coordinate a fix and credit you in the release notes (unless you prefer to remain anonymous).
 
 ## Scope
 
 This project is a process design kit (PDK) for superconducting quantum RF devices. Security concerns most likely to be
 relevant include:
 
-- Malicious code execution via crafted layout or netlist files.
-- Supply chain issues in PDK components or dependencies.
+- Supply chain issues in dependencies.
 - Sensitive fabrication or device parameters inadvertently exposed.
+- Malicious code execution via crafted layout or netlist files.
 
 ## Disclosure Policy
 
