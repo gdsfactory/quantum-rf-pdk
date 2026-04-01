@@ -21,7 +21,7 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
 
-@gf.cell(check_instances=False)
+@gf.cell(check_instances=False, tags=("qubits", "transmons"))
 def double_pad_transmon(
     pad_size: tuple[float, float] = (250.0, 400.0),
     pad_gap: float = 15.0,
@@ -129,7 +129,7 @@ def double_pad_transmon(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("qubits", "transmons"))
 def double_pad_transmon_with_bbox(
     bbox_extension: float = 200.0,
     pad_size: tuple[float, float] = (250.0, 400.0),
@@ -192,7 +192,7 @@ def double_pad_transmon_with_bbox(
     return c
 
 
-@gf.cell(check_instances=False)
+@gf.cell(check_instances=False, tags=("qubits", "transmons", "flip-chip"))
 def flipmon(
     inner_circle_radius: float = 60.0,
     outer_ring_radius: float = 110.0,
@@ -307,7 +307,7 @@ def flipmon(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("qubits", "transmons", "flip-chip"))
 def flipmon_with_bbox(
     inner_circle_radius: float = 60.0,
     outer_ring_radius: float = 110.0,
@@ -375,7 +375,7 @@ def flipmon_with_bbox(
     return c
 
 
-@gf.cell(check_instances=False)
+@gf.cell(check_instances=False, tags=("qubits", "transmons"))
 def xmon_transmon(
     arm_width: tuple[float, float, float, float] = (30.0, 20.0, 30.0, 20.0),
     arm_lengths: tuple[float, float, float, float] = (160.0, 120.0, 160.0, 120.0),
