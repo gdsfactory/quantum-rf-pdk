@@ -41,19 +41,27 @@ Any of these methods can be wrapped in an automated optimization loop (e.g. with
 The typical workflow when creating a chip with **qpdk / gdsfactory** can be summarized
 as follows. Each stage may loop back to earlier stages as the design is refined.
 
-.. mermaid::
+.. only:: html
 
-    flowchart TB
-        A["Physical requirements<br>(qubit frequency, coupling, T₁, …)"]
-        B["Hamiltonian / perturbation analysis<br>(map requirements → circuit parameters)"]
-        C["Circuit / S-parameter models<br>(design passive components)"]
-        D["Layout with gdsfactory<br>(draw the chip in qpdk)"]
-        E["FEM verification<br>(validate geometry with a full-wave solver)"]
-        F["Pulse-level simulation<br>(predict gate performance)"]
-        G["Fabrication & measurement"]
-        A --> B --> C --> D --> E --> F --> G
-        F -.-> A
-        E -.-> C
+    .. mermaid::
+
+        flowchart TB
+            A["Physical requirements<br>(qubit frequency, coupling, T₁, …)"]
+            B["Hamiltonian / perturbation analysis<br>(map requirements → circuit parameters)"]
+            C["Circuit / S-parameter models<br>(design passive components)"]
+            D["Layout with gdsfactory<br>(draw the chip in qpdk)"]
+            E["FEM verification<br>(validate geometry with a full-wave solver)"]
+            F["Pulse-level simulation<br>(predict gate performance)"]
+            G["Fabrication & measurement"]
+            A --> B --> C --> D --> E --> F --> G
+            F -.-> A
+            E -.-> C
+
+.. only:: latex
+
+    Design flow: Physical requirements → Hamiltonian analysis → Circuit/S-parameter models
+    → Layout (gdsfactory/qpdk) → FEM verification → Pulse-level simulation → Fabrication.
+    FEM results feed back to circuit models; pulse simulations feed back to requirements.
 
 ****************************
  S-parameter circuit models
@@ -81,8 +89,10 @@ implemented with `JAX <https://jax.readthedocs.io/>`_ and composed into circuits
   with SAX, starting from individual components and assembling a quarter-wave resonator.
 - :doc:`notebooks/resonator_frequency_model` — Compares analytical resonance-frequency
   estimates with SAX circuit simulations.
-- :doc:`notebooks/resonator_test_chip_simulation` — Loads a multi-resonator test chip
-  from a YAML netlist and simulates the full S₂₁ response with SAX.
+- :doc:`notebooks/monte_carlo_fabrication_tolerance` — Monte Carlo fabrication tolerance
+  analysis that loads a multi-resonator test chip from a YAML netlist, simulates the
+  full S₂₁ response with SAX, and varies CPW width and gap to quantify resonance
+  frequency spread.
 - :doc:`notebooks/model_comparison_to_qucs` — Validates qpdk S-parameter models against
   Qucs-S reference data for various passive components.
 - :doc:`notebooks/jax_backend_comparison` — Benchmarks SAX circuit evaluation on CPU,
@@ -119,9 +129,27 @@ currents, and substrate modes that analytical models may miss
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
-For additional electromagnetic simulation examples using **Palace** and **Meep** with
-gdsfactory and gdsfactory+, see the `gsim documentation
-<https://gdsfactory.github.io/gsim/>`_.
+.. note::
+
+    **gsim — additional FEM and FDTD simulation examples**
+
+    The `gsim <https://gdsfactory.github.io/gsim/>`_ project provides a collection of
+    example notebooks that demonstrate FEM (finite-element method) and FDTD
+    (finite-difference time-domain) electromagnetic simulations built on top of
+    GDSFactory. These notebooks cover solvers such as **Palace** (FEM) and **Meep**
+    (FDTD), showing how to go from a GDSFactory layout to a full 3-D electromagnetic
+    simulation. They are a valuable complement to the Ansys-based notebooks above and
+    are especially useful for users looking for open-source solver workflows.
+
+    Topics covered in the gsim notebooks include:
+
+    - Eigenmode and driven-port simulations with Palace.
+    - FDTD simulations with Meep, including S-parameter extraction.
+    - Geometry preparation and meshing pipelines starting from GDSFactory components.
+    - Post-processing and visualization of electromagnetic field results.
+
+    See the `gsim documentation <https://gdsfactory.github.io/gsim/>`_ for the full list
+    of available notebooks.
 
 **********************
  Hamiltonian analysis
@@ -196,9 +224,9 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
     - - :doc:`notebooks/resonator_frequency_model`
       - S-parameter models
       - SAX
-    - - :doc:`notebooks/resonator_test_chip_simulation`
+    - - :doc:`notebooks/monte_carlo_fabrication_tolerance`
       - S-parameter models
-      - SAX, gdsfactory
+      - SAX, JAX, gdsfactory
     - - :doc:`notebooks/model_comparison_to_qucs`
       - S-parameter models
       - SAX, Qucs-S

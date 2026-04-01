@@ -7,6 +7,7 @@ from qpdk.cells.bump import *
 from qpdk.cells.capacitor import *
 from qpdk.cells.chip import *
 from qpdk.cells.derived import *
+from qpdk.cells.fluxonium import *
 from qpdk.cells.inductor import *
 from qpdk.cells.junction import *
 from qpdk.cells.launcher import *

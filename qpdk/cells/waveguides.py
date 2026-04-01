@@ -15,7 +15,7 @@ from qpdk.tech import get_etch_section
 _DEFAULT_CROSS_SECTION = tech.cpw
 
 
-@gf.cell
+@gf.cell(tags=("waveguides",))
 def rectangle(
     size: Size = (4.0, 2.0),
     layer: LayerSpec = "M1_DRAW",
@@ -51,7 +51,7 @@ taper_cross_section = partial(
 )
 
 
-@gf.cell
+@gf.cell(tags=("waveguides",))
 def straight(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
@@ -74,7 +74,7 @@ def straight(
 straight_shorted = straight
 
 
-@gf.cell
+@gf.cell(tags=("waveguides", "resonators"))
 def straight_open(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
@@ -99,7 +99,7 @@ def straight_open(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("waveguides", "resonators"))
 def straight_double_open(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
@@ -127,7 +127,7 @@ def straight_double_open(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("waveguides",))
 def nxn(
     xsize: float = 10.0,
     ysize: float = 10.0,
@@ -168,7 +168,7 @@ def nxn(
     )
 
 
-@gf.cell
+@gf.cell(tags=("waveguides",))
 def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     """Returns a three-way tee waveguide.
 
@@ -206,7 +206,7 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     return c
 
 
-@gf.cell
+@gf.cell(tags=("waveguides",))
 def bend_euler(
     angle: float = 90.0,
     p: float = 0.5,
@@ -241,7 +241,7 @@ def bend_euler(
     )
 
 
-@gf.cell
+@gf.cell(tags=("waveguides",))
 def bend_circular(
     angle: float = 90.0,
     radius: float = 100.0,
@@ -286,7 +286,7 @@ def bend_circular(
     )
 
 
-@gf.cell
+@gf.cell(tags=("waveguides",))
 def bend_s(
     size: Size = (20.0, 3.0),
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,

@@ -50,17 +50,18 @@ from qpdk.models.waveguides import straight_shorted
 
 
 @partial(jax.jit, inline=True)
-def el_to_inductance(el_ghz: float) -> float:
-    r"""Convert inductive energy :math:`E_L` to geometric inductance :math:`L`.
+def el_to_arm_inductance(el_ghz: float) -> float:
+    r"""Convert inductive energy :math:`E_L` to geometric inductance of one arm :math:`L`.
 
-    The inductive energy is related to the geometric inductance by:
+    The total inductive energy :math:`E_L` of the unimon is related to the
+    geometric inductance of its two arms (in series) by:
 
     .. math::
 
         E_L = \frac{\Phi_0^2}{4 \pi^2 \cdot 2 L}
             = \frac{(\hbar / 2e)^2}{2 L}
 
-    Solving for :math:`L`:
+    Solving for the inductance :math:`L` of a single arm:
 
     .. math::
 
@@ -70,10 +71,10 @@ def el_to_inductance(el_ghz: float) -> float:
         el_ghz: Inductive energy in GHz.
 
     Returns:
-        Geometric inductance in Henries.
+        Geometric inductance of one arm in Henries.
 
     Example:
-        >>> L = el_to_inductance(5.0)  # 5 GHz inductive energy
+        >>> L = el_to_arm_inductance(5.0)  # 5 GHz inductive energy
         >>> print(f"{L * 1e9:.2f} nH")
     """
     el_joules = el_ghz * 1e9 * h

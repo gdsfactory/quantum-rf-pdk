@@ -12,13 +12,16 @@ from kfactory import kdb
 from klayout.db import DCplxTrans, Region
 
 from qpdk.cells.bump import indium_bump
-from qpdk.cells.helpers import transform_component
+from qpdk.cells.helpers import (
+    subtract_draw_from_etch as _subtract_draw_from_etch,
+    transform_component,
+)
 from qpdk.cells.junction import squid_junction, squid_junction_long
 from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
 
-@gf.cell(check_instances=False)
+@gf.cell(check_instances=False, tags=("qubits", "transmons"))
 def double_pad_transmon(
     pad_size: tuple[float, float] = (250.0, 400.0),
     pad_gap: float = 15.0,
@@ -126,7 +129,7 @@ def double_pad_transmon(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("qubits", "transmons"))
 def double_pad_transmon_with_bbox(
     bbox_extension: float = 200.0,
     pad_size: tuple[float, float] = (250.0, 400.0),
@@ -134,6 +137,7 @@ def double_pad_transmon_with_bbox(
     junction_spec: ComponentSpec = squid_junction,
     junction_displacement: DCplxTrans | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
+    layer_etch: LayerSpec = LAYER.M1_ETCH,
 ) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction and an etched bounding box.
 
@@ -146,6 +150,7 @@ def double_pad_transmon_with_bbox(
         junction_spec: Component specification for the Josephson junction component.
         junction_displacement: Optional complex transformation to apply to the junction.
         layer_metal: Layer for the metal pads.
+        layer_etch: Layer for the etched bounding box.
 
     Returns:
         Component: A gdsfactory component with the transmon geometry and etched box.
@@ -168,7 +173,7 @@ def double_pad_transmon_with_bbox(
         partial(
             gf.components.rectangle,
             size=bbox_size,
-            layer=LAYER.M1_ETCH,
+            layer=layer_etch,
         ),
         # Center the bbox around the double pad
         partial(
@@ -176,22 +181,18 @@ def double_pad_transmon_with_bbox(
         ),
     )
     # Remove additive metal from etch
-    bbox = gf.boolean(
-        A=bbox,
-        B=c,
-        operation="-",
-        layer=LAYER.M1_ETCH,
-        layer1=LAYER.M1_ETCH,
-        layer2=LAYER.M1_DRAW,
+    _subtract_draw_from_etch(
+        component=c,
+        etch_shape=bbox,
+        etch_layer=layer_etch,
+        draw_layer=layer_metal,
     )
-    bbox_ref = c.add_ref(bbox)
-    c.absorb(bbox_ref)
 
     c.add_ports(double_pad_ref.ports)
     return c
 
 
-@gf.cell(check_instances=False)
+@gf.cell(check_instances=False, tags=("qubits", "transmons", "flip-chip"))
 def flipmon(
     inner_circle_radius: float = 60.0,
     outer_ring_radius: float = 110.0,
@@ -320,7 +321,7 @@ def flipmon(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("qubits", "transmons", "flip-chip"))
 def flipmon_with_bbox(
     inner_circle_radius: float = 60.0,
     outer_ring_radius: float = 110.0,
@@ -330,6 +331,8 @@ def flipmon_with_bbox(
     junction_displacement: DCplxTrans | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_metal_top: LayerSpec = LAYER.M2_DRAW,
+    layer_etch: LayerSpec = LAYER.M1_ETCH,
+    layer_etch_top: LayerSpec = LAYER.M2_ETCH,
     m1_etch_extension_gap: float = 30.0,
     m2_etch_extension_gap: float = 40.0,
 ) -> Component:
@@ -346,6 +349,8 @@ def flipmon_with_bbox(
         junction_displacement: Optional complex transformation to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_metal_top: Layer for the other metal layer pad for flip-chip.
+        layer_etch: Layer for the M1 etched bounding box.
+        layer_etch_top: Layer for the M2 etched bounding box.
         m1_etch_extension_gap: Radius extension length for the M1 etch bounding box in μm.
         m2_etch_extension_gap: Radius extension length for the M2 etch bounding box in μm.
 
@@ -366,28 +371,25 @@ def flipmon_with_bbox(
     m1_bbox_radius = outer_ring_radius + outer_ring_width / 2 + m1_etch_extension_gap
     m2_bbox_radius = top_circle_radius + m2_etch_extension_gap
 
-    for etch_layer, draw_layer, bbox_radius in [
-        (LAYER.M1_ETCH, LAYER.M1_DRAW, m1_bbox_radius),
-        (LAYER.M2_ETCH, LAYER.M2_DRAW, m2_bbox_radius),
+    for etch_l, draw_l, bbox_radius in [
+        (layer_etch, layer_metal, m1_bbox_radius),
+        (layer_etch_top, layer_metal_top, m2_bbox_radius),
     ]:
-        bbox_comp = gf.boolean(
-            A=gf.components.circle(
+        _subtract_draw_from_etch(
+            component=c,
+            etch_shape=gf.components.circle(
                 radius=bbox_radius,
-                layer=etch_layer,
+                layer=etch_l,
             ),
-            B=c,
-            operation="-",
-            layer=etch_layer,
-            layer1=etch_layer,
-            layer2=draw_layer,
+            etch_layer=etch_l,
+            draw_layer=draw_l,
         )
-        c.absorb(c.add_ref(bbox_comp))
 
     c.add_ports(flipmon_ref.ports)
     return c
 
 
-@gf.cell(check_instances=False)
+@gf.cell(check_instances=False, tags=("qubits", "transmons"))
 def xmon_transmon(
     arm_width: tuple[float, float, float, float] = (30.0, 20.0, 30.0, 20.0),
     arm_lengths: tuple[float, float, float, float] = (160.0, 120.0, 160.0, 120.0),
@@ -484,16 +486,12 @@ def xmon_transmon(
     etch_component.add_polygon(etch_region, layer=layer_etch)
 
     # Remove additive metal from etch
-    etch_component = gf.boolean(
-        A=etch_component,
-        B=c,
-        operation="-",
-        layer=LAYER.M1_ETCH,
-        layer1=LAYER.M1_ETCH,
-        layer2=LAYER.M1_DRAW,
+    _subtract_draw_from_etch(
+        component=c,
+        etch_shape=etch_component,
+        etch_layer=layer_etch,
+        draw_layer=layer_metal,
     )
-    etch_ref = c.add_ref(etch_component)
-    c.absorb(etch_ref)
 
     # Create and place Josephson junction at the y-center of the gap
     junction_ref = c.add_ref(gf.get_component(junction_spec))

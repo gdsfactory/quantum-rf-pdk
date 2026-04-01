@@ -15,7 +15,7 @@ from qpdk import tech
 from qpdk.tech import LAYER
 
 
-@gf.cell
+@gf.cell(tags=("interconnects",))
 def airbridge(
     bridge_length: float = 30.0,
     bridge_width: float = 8.0,

@@ -29,7 +29,7 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER, get_etch_section
 
 
-@gf.cell
+@gf.cell(tags=("qubits", "resonators"))
 def unimon_arm(
     arm_length: float = 3000.0,
     arm_meanders: int = 6,
@@ -118,7 +118,7 @@ def unimon_arm(
     return c
 
 
-@gf.cell(check_instances=False)
+@gf.cell(check_instances=False, tags=("qubits",))
 def unimon(
     arm_length: float = 3000.0,
     arm_meanders: int = 6,
@@ -263,7 +263,7 @@ def unimon(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("qubits", "couplers"))
 def unimon_coupled(
     arm_length: float = 3000.0,
     arm_meanders: int = 6,

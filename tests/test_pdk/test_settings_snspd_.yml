@@ -3,9 +3,9 @@ info:
   num_squares: 750
   xsize: 10
   ysize: 8
-name: snspd_WW0p2_WP0p6_S10_8_NSNone_TR4_TSSFalse_LM1_DRAW_PT_329e2036
+name: snspd_WW0p2_WP0p6_S10_8_NSNone_TR4_TSSFalse_LNbTiN_PTelectrical
 settings:
-  layer: M1_DRAW
+  layer: NbTiN
   port_type: electrical
   size:
   - 10
