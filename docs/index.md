@@ -44,4 +44,5 @@ notebooks
 :hidden:
 
 contributing
+security
 ```
