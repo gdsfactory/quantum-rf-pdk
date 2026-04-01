@@ -10,7 +10,7 @@ from gdsfactory.typings import LayerSpec, Port, Size
 from qpdk.tech import LAYER
 
 
-@gf.cell
+@gf.cell(tags=("detectors",))
 def snspd(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,

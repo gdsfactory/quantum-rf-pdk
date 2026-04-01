@@ -14,7 +14,7 @@ from qpdk.helper import show_components
 from qpdk.tech import get_etch_section
 
 
-@gf.cell
+@gf.cell(tags=("resonators",))
 def resonator(
     length: float = 4000.0,
     meanders: int = 6,
@@ -225,7 +225,7 @@ resonator_half_wave_bend_both = partial(
 )
 
 
-@gf.cell
+@gf.cell(tags=("resonators", "couplers"))
 def resonator_coupled(
     length: float = 4000.0,
     meanders: int = 6,
@@ -309,7 +309,7 @@ def resonator_coupled(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("resonators", "couplers"))
 def quarter_wave_resonator_coupled(
     length: float = 4000.0,
     meanders: int = 6,
