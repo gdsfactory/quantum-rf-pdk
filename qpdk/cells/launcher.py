@@ -22,7 +22,7 @@ LAUNCHER_CROSS_SECTION_BIG = launcher_cross_section_big
 LAUNCHER_CROSS_SECTION_SMALL = partial(coplanar_waveguide, etch_layer=LAYER.M1_ETCH)
 
 
-@gf.cell(tags=("rf", "interconnects"))
+@gf.cell(tags=("interconnects",))
 def launcher(
     straight_length: float = 200.0,
     taper_length: float = 100.0,
