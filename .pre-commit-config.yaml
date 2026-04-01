@@ -71,7 +71,7 @@ repos:
         args: [--strict, "-c=.github/.yamllint.yaml"]
         exclude: *regression_tests
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.11
+    rev: v1.7.12
     hooks:
       - id: actionlint
         priority: 10
