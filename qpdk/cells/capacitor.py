@@ -390,7 +390,7 @@ def plate_capacitor(
     return c
 
 
-@gf.cell(tags=("capacitors",))
+@gf.cell(tags=("capacitors", "couplers"))
 def plate_capacitor_single(
     length: float = 26.0,
     width: float = 5.0,
