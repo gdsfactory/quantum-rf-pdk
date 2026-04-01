@@ -34,7 +34,7 @@ def launcher(
     cross_section_big: CrossSectionSpec = LAUNCHER_CROSS_SECTION_BIG,
     cross_section_small: CrossSectionSpec = "cpw",
 ) -> Component:
-    """Generate an RF launcher pad for wirebonding or probe testing.
+    r"""Generate an RF launcher pad for wirebonding or probe testing.
 
     Creates a launcher component consisting of a straight section with large
     cross-section connected to a tapered transition down to a smaller cross-section.
@@ -43,11 +43,11 @@ def launcher(
 
     .. svgbob::
 
-        ┌─────────────────┐ ╲
-        │                 │   ╲
-        │    straight     │ taper ── o1
-        │   (waveport)    │   ╱  (to circuit)
-        └─────────────────┘ ╱
+        ┌───────\
+        │        \
+        │         │ ── o1
+        │        /
+        └───────/
 
     The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
 
