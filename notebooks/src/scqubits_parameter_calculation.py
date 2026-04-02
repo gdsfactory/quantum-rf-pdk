@@ -171,6 +171,12 @@ display(
 # %%
 hilbert_space = scq.HilbertSpace([transmon, resonator])
 
+# Extract the charge matrix element n_01 to match scQubits with analytical formulas
+# scQubits interaction is g_val * n_t * (a + a†)
+# Analytical formulas use g_01 = g_val * |<0|n|1>|
+n_01 = np.abs(transmon.matrixelement_table("n_operator")[0, 1])
+g_01 = g_val * n_01
+
 interaction = scq.InteractionTerm(
     g_strength=g_val,
     operator_list=[
@@ -209,8 +215,8 @@ idx_11 = find_dressed_index(bare_state_vec(1, 1))
 E_00, E_10, E_01, E_11 = evals[idx_00], evals[idx_10], evals[idx_01], evals[idx_11]
 chi_scqubits = (E_11 - E_10) - (E_01 - E_00)
 
-# Compare to the analytical formula from qpdk.models.perturbation
-chi_analytical = dispersive_shift(omega_t_val, omega_r_val, alpha_val, g_val)
+# Compare to the analytical formula from qpdk.models.perturbation using g_01
+chi_analytical = dispersive_shift(omega_t_val, omega_r_val, alpha_val, g_01)
 
 display(
     Math(rf"""
@@ -223,8 +229,9 @@ display(
 
 # %% [markdown]
 # The scQubits result agrees well with the analytical perturbation-theory
-# formula; any residual difference reflects higher-order corrections beyond
-# the leading $g^2/\Delta$ term.
+# formula when using the effective coupling $g_{01} = g \langle 0|\hat{n}|1\rangle$.
+# Residual differences reflect higher-order corrections and the contribution of
+# higher transmon levels beyond the leading $g^2/\Delta$ terms.
 
 # %% [markdown]
 # ## Dispersive Shift vs. Coupling Strength
@@ -247,8 +254,9 @@ display(
 # %%
 _a_plus_adag = resonator.annihilation_operator() + resonator.creation_operator()
 g_sweep = np.linspace(0.01, 0.3, 200)
+# Use effective coupling g_01 for analytical sweep
 chi_sweep_analytical = np.array([
-    dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep
+    dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi * n_01) for gi in g_sweep
 ])
 
 
@@ -376,14 +384,14 @@ plt.show()
 # ### Fluxonium Spectrum
 #
 # We construct a fluxonium qubit using parameters representative of a
-# high-coherence device {cite:p}`nguyen_blueprint_2019`.  The `cutoff`
+# **GHz-regime heavy fluxonium** ($E_J/E_C = 10$).  The `cutoff`
 # parameter sets the size of the phase-basis truncation.
 
 # %%
-# Fluxonium Hamiltonian parameters
-EJ_flx = 3.395  # Josephson energy in GHz
-EC_flx = 0.479  # Charging energy in GHz
-EL_flx = 0.132  # Inductive energy in GHz
+# Fluxonium Hamiltonian parameters (GHz regime)
+EJ_flx = 5.0  # Josephson energy in GHz
+EC_flx = 0.5  # Charging energy in GHz
+EL_flx = 5.0  # Inductive energy in GHz
 
 fluxonium = scq.Fluxonium(
     EJ=EJ_flx,
@@ -401,22 +409,24 @@ anharmonicity_flx = f12_flx - f01_flx
 
 display(
     Math(rf"""
-\textbf{{Fluxonium Spectrum (scQubits, \Phi_\text{{ext}} = \Phi_0/2):}} \\
+\text{{Fluxonium Spectrum (scQubits, $\Phi_{{\mathrm{{ext}}}} = \Phi_0/2$):}} \\
 E_J = {EJ_flx:.3f}\,\mathrm{{GHz}}, \quad
 E_C = {EC_flx:.3f}\,\mathrm{{GHz}}, \quad
 E_L = {EL_flx:.3f}\,\mathrm{{GHz}} \\
-0\rightarrow 1\ \text{{frequency:}}\ {f01_flx:.4f}\,\mathrm{{GHz}}
-  \ ({f01_flx * 1e3:.1f}\,\mathrm{{MHz}}) \\
+0\rightarrow 1\ \text{{frequency:}}\ {f01_flx:.4f}\,\mathrm{{GHz}} \\
 1\rightarrow 2\ \text{{frequency:}}\ {f12_flx:.3f}\,\mathrm{{GHz}} \\
 \text{{Anharmonicity,}}\ \alpha_\text{{flx}} =\ {anharmonicity_flx:.3f}\,\mathrm{{GHz}}
 """)
 )
 
 # %% [markdown]
-# The fluxonium anharmonicity is **orders of magnitude larger** than a
+# The fluxonium anharmonicity is **much larger** than a
 # transmon's ($\sim E_C \approx 200$ MHz).  This is a direct consequence
 # of the double-well potential created by the competition between the
 # cosine and quadratic terms in {eq}`eq:fluxonium-hamiltonian`.
+# While many fluxoniums are designed for low frequencies (tens of MHz),
+# here we analyze a design operating in the GHz range for direct
+# comparison with the transmon.
 
 # %% [markdown]
 # ### Fluxonium Spectrum vs. External Flux
@@ -536,7 +546,7 @@ g = {g_flx:.1f}\,\mathrm{{GHz}} \\
 
 # %%
 comparison_data = [
-    ("Qubit frequency $\\omega_{01}$", f"{f01:.3f} GHz", f"{f01_flx * 1e3:.1f} MHz"),
+    ("Qubit frequency $\\omega_{01}$", f"{f01:.3f} GHz", f"{f01_flx:.3f} GHz"),
     (
         "Anharmonicity $\\alpha$",
         f"{anharmonicity:.3f} GHz",
@@ -545,13 +555,13 @@ comparison_data = [
     (
         "$|\\alpha / \\omega_{01}|$",
         f"{abs(anharmonicity / f01) * 100:.1f}%",
-        f"{abs(anharmonicity_flx / f01_flx) * 100:.0f}%",
+        f"{abs(anharmonicity_flx / f01_flx) * 100:.1f}%",
     ),
     ("$E_J / E_C$", f"{EJ / EC:.0f}", f"{EJ_flx / EC_flx:.1f}"),
     (
         "Dispersive shift $\\chi$ ($g = 100$ MHz)",
         f"{chi_scqubits * 1e3:.3f} MHz",
-        f"{chi_flx * 1e3:.4f} MHz",
+        f"{chi_flx * 1e3:.3f} MHz",
     ),
     (
         "Detuning $|\\Delta|$ from 7 GHz resonator",
@@ -699,13 +709,14 @@ g_design = dispersive_shift_to_coupling(
 chi_verify_analytical = dispersive_shift(
     omega_t_design, omega_r_design, alpha_design, float(g_design)
 )
-chi_verify_scq = chi_scqubits_at_g(float(g_design))
+# Note: scQubits interaction strength is scaled by n_01
+chi_verify_scq = chi_scqubits_at_g(float(g_design) / n_01)
 
 display(
     Math(rf"""
 \textbf{{Step 1–3: Hamiltonian Design}} \\
 \text{{Target:}}\quad \chi = {chi_target_mhz:.1f}\,\mathrm{{MHz}} \\
-\text{{Required coupling:}}\quad g = {float(g_design) * 1e3:.1f}\,\mathrm{{MHz}} \\
+\text{{Required coupling:}}\quad g_{{01}} = {float(g_design) * 1e3:.1f}\,\mathrm{{MHz}} \\
 \text{{Verification (analytical):}}\quad \chi = {chi_verify_analytical * 1e3:.3f}\,\mathrm{{MHz}} \\
 \text{{Verification (scQubits):}}\quad \chi = {chi_verify_scq * 1e3:.3f}\,\mathrm{{MHz}}
 """)
@@ -912,14 +923,14 @@ display_dataframe(df)
 # %% [markdown]
 # ## Summary: Fluxonium Design
 #
-# Core parameters for the fluxonium biased at $\Phi_0/2$.
+# Core parameters for the GHz-range fluxonium biased at $\Phi_0/2$.
 
 # %%
 data_flx = [
     ("Hamiltonian", "$E_J$", f"{EJ_flx:.3f}", "GHz"),
     ("Hamiltonian", "$E_C$", f"{EC_flx:.3f}", "GHz"),
     ("Hamiltonian", "$E_L$", f"{EL_flx:.3f}", "GHz"),
-    ("Hamiltonian", "$\\omega_\\text{flx}$", f"{f01_flx * 1e3:.1f}", "MHz"),
+    ("Hamiltonian", "$\\omega_\\text{flx}$", f"{f01_flx:.3f}", "GHz"),
     (
         "Hamiltonian",
         "$\\alpha_\\text{flx}$",
@@ -933,7 +944,7 @@ data_flx = [
     (
         "Dispersive shift",
         "$\\chi$ ($g = 100$ MHz)",
-        f"{chi_flx * 1e3:.4f}",
+        f"{chi_flx * 1e3:.3f}",
         "MHz",
     ),
 ]
