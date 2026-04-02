@@ -24,6 +24,22 @@
 #    CPW width and gap variations affect resonance frequencies and transmission.
 
 # %% tags=["hide-input", "hide-output"]
+import sys
+
+if "google.colab" in sys.modules:
+    import subprocess
+
+    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    subprocess.check_call([
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+    ])
+
+# %% tags=["hide-input", "hide-output"]
 import os
 import warnings
 from collections.abc import Sequence
