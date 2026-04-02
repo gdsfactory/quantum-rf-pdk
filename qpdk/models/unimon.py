@@ -295,17 +295,22 @@ def unimon_hamiltonian(
 
     Raises:
         ImportError: If the QuTiP extra is not installed.
+        ModuleNotFoundError: If a dependency other than QuTiP fails to import.
     """
     n_states = 2 * n_max + 1
 
     try:
         import qutip  # noqa: PLC0415
         import qutip_jax  # noqa: PLC0415
-    except ImportError as e:
-        raise ImportError(
-            "The QuTiP extra is required for Hamiltonian models. "
-            "Please install it with `pip install qpdk[qutip]`."
-        ) from e
+    except ModuleNotFoundError as e:
+        # Only treat missing top-level qutip/qutip_jax as an extra dependency issue.
+        # Re-raise any other import-time errors (including nested ones) unchanged.
+        if e.name in {"qutip", "qutip_jax"}:
+            raise ImportError(
+                "The QuTiP extra is required for Hamiltonian models. "
+                "Please install it with `pip install qpdk[qutip]`."
+            ) from e
+        raise
 
     # Extract raw JAX arrays from qutip-jax
     n_hat = qutip.charge(n_max).to(qutip_jax.JaxArray).data._jxa

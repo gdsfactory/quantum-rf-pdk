@@ -115,12 +115,9 @@ def get_cpw_dimensions(
         tuple[float, float]: Width and gap of the CPW.
     """
     # Make sure a PDK is activated
-    try:
-        from qpdk import PDK  # noqa: PLC0415
+    from qpdk import PDK  # noqa: PLC0415
 
-        PDK.activate()
-    except ImportError:
-        pass
+    PDK.activate()
     xs = gf.get_cross_section(cross_section, **kwargs)
 
     width = xs.width
