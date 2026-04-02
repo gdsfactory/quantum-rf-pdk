@@ -11,39 +11,24 @@
 # %% [markdown]
 # # Transmon and Fluxonium Parameter Analysis with scQubits
 #
-# This notebook demonstrates how to use
-# [scqubits](https://scqubits.readthedocs.io/en/latest/) {cite:p}`groszkowskiScqubitsPythonPackage2021`
-# to numerically analyse **transmon** and **fluxonium** qubits coupled to a
-# readout resonator, and how to translate the resulting Hamiltonian
-# parameters into physical layout parameters using **qpdk**.
+# This notebook uses [scqubits](https://scqubits.readthedocs.io/) {cite:p}`groszkowskiScqubitsPythonPackage2021`
+# to numerically analyze **transmon** and **fluxonium** qubits coupled to a resonator,
+# translating Hamiltonian parameters into physical layout parameters via **qpdk**.
 #
-# The two qubit modalities represent complementary design philosophies in
-# circuit QED.  The **transmon** {cite:p}`kochChargeinsensitiveQubitDesign2007a`
-# achieves charge-noise insensitivity by operating deep in the $E_J \gg E_C$
-# regime at the cost of weak anharmonicity ($|\alpha| \sim E_C \sim 200$ MHz).
-# The **fluxonium** {cite:p}`manucharyan_fluxonium_2009` adds a large
-# superinductance that provides both strong anharmonicity and protection
-# against charge noise, while enabling coherence times exceeding one
-# millisecond {cite:p}`somoroff_millisecond_2023`.
-#
-# This notebook covers the same design workflow as the companion notebook on
-# **pymablock-based dispersive shift calculation**, but uses full numerical
-# diagonalization instead of closed-form perturbation theory—making it easy to
-# compare the two approaches.
+# The **transmon** {cite:p}`kochChargeinsensitiveQubitDesign2007a` achieves
+# charge-noise insensitivity in the $E_J \gg E_C$ regime at the cost of weak
+# anharmonicity ($|\alpha| \approx E_C \sim 200$ MHz). The **fluxonium**
+# {cite:p}`manucharyan_fluxonium_2009` adds a large superinductance, providing
+# strong anharmonicity and multi-millisecond coherence
+# {cite:p}`somoroff_millisecond_2023`.
 #
 # ## Part I — Transmon
 #
 # ### Background
 #
-# In circuit quantum electrodynamics (cQED), the state of a transmon qubit is
-# typically measured via the *dispersive readout* technique
-# {cite:p}`blaisCircuitQuantumElectrodynamics2021`.  The qubit is detuned from
-# a readout resonator, and the qubit-state-dependent frequency shift of the
-# resonator—the **dispersive shift** $\chi$—allows non-destructive measurement
-# of the qubit state.
-#
-# The full transmon–resonator Hamiltonian (without the rotating-wave approximation)
-# reads:
+# Transmons are typically read out via the **dispersive shift** $\chi$ of a
+# coupled resonator {cite:p}`blaisCircuitQuantumElectrodynamics2021`.
+# The Hamiltonian is:
 # ```{math}
 # :label: eq:transmon-resonator-hamiltonian-scq
 # \mathcal{H} = \omega_t\, a_t^\dagger a_t
@@ -51,19 +36,12 @@
 # + \omega_r\, a_r^\dagger a_r
 # + g\,(a_t + a_t^\dagger)(a_r + a_r^\dagger),
 # ```
-# where $\omega_t$ is the transmon frequency, $\alpha$ its anharmonicity
-# ($\alpha < 0$ for a transmon),
-# $\omega_r$ the resonator frequency, and $g$ the coupling strength.
-#
-# scQubits constructs and diagonalizes this Hamiltonian numerically in the
-# transmon charge basis and Fock basis {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
-# The dispersive shift is then extracted directly from the dressed eigenvalues:
+# we extract $\chi$ from the dressed eigenenergies $E_{ij}$ (where $i$ is the
+# qubit state and $j$ the photon number):
 # ```{math}
 # :label: eq:dispersive-shift-definition-scq
-# \chi = (E_{11} - E_{10}) - (E_{01} - E_{00}),
+# \chi = (E_{11} - E_{10}) - (E_{01} - E_{00}).
 # ```
-# where $E_{ij}$ is the dressed eigenenergy with $i$ transmon excitations and
-# $j$ resonator photons.
 
 # %% tags=["hide-input", "hide-output"]
 import numpy as np
@@ -373,9 +351,8 @@ plt.show()
 #
 # ### Background
 #
-# The **fluxonium** qubit {cite:p}`manucharyan_fluxonium_2009` replaces the
-# transmon's simple Josephson junction with a junction *shunted* by a large
-# superinductance $L_s$.  Its Hamiltonian reads:
+# The **fluxonium** {cite:p}`manucharyan_fluxonium_2009` replaces the
+# transmon junction with a junction *shunted* by a large superinductance $L_s$:
 # ```{math}
 # :label: eq:fluxonium-hamiltonian
 # \mathcal{H}_\text{flx}
@@ -383,35 +360,17 @@ plt.show()
 #   - E_J\, \cos\!\bigl(\hat{\varphi} - 2\pi\Phi_\text{ext}/\Phi_0\bigr)
 #   + \tfrac{1}{2} E_L\, \hat{\varphi}^2,
 # ```
-# where $E_C = e^2 / 2C_\Sigma$ is the charging energy,
-# $E_J$ is the Josephson energy, and $E_L = (\Phi_0/2\pi)^2 / L_s$ is the
-# inductive energy of the superinductance.  The external flux
-# $\Phi_\text{ext}$ threads the loop formed by the junction and superinductor.
+# where $E_L = (\Phi_0/2\pi)^2 / L_s$. Modern **"heavy" fluxoniums**
+# {cite:p}`zhang_universal_2021` add a large shunting capacitor ($E_J \gtrsim 10 E_C$),
+# exponentially suppressing tunneling between potential wells and reaching multi-millisecond $T_1$.
 #
-# Modern designs typically operate in the **"heavy" fluxonium** regime
-# {cite:p}`zhang_universal_2021`. This variant adds a large shunting capacitor,
-# ensuring $E_J \gg E_L$ and $E_J \gtrsim 10 E_C$. This restricts the lowest energy
-# eigenstates to be deeply localized within their potential wells, exponentially
-# suppressing tunneling and improving energy relaxation times.
+# Key advantages:
+# 1. **Massive anharmonicity** — $|\alpha/\omega_{01}| \gg 1$ at the $\Phi_0/2$
+#    sweet spot, suppressing leakage {cite:p}`nguyen_blueprint_2019`.
+# 2. **Protection** — Built-in protection against both charge and flux noise.
 #
-# Compared with the transmon, the fluxonium has three key advantages:
-#
-# 1. **Large anharmonicity** — At the half-flux-quantum sweet spot
-#    ($\Phi_\text{ext} = \Phi_0/2$) the $0 \to 1$ transition can be as low
-#    as $\sim$ 100–500 MHz while higher transitions remain at several GHz,
-#    giving anharmonicities of many GHz
-#    {cite:p}`manucharyan_fluxonium_2009,nguyen_blueprint_2019`.
-# 2. **Charge-noise protection** — Like the transmon, the fluxonium operates
-#    in a regime where charge dispersion is exponentially suppressed
-#    {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
-# 3. **Long coherence times** — Heavy fluxoniums (large $E_L$) biased at the
-#    half-flux-quantum sweet spot have demonstrated $T_1$ exceeding 1 ms
-#    {cite:p}`somoroff_millisecond_2023`.
-#
-# The trade-off is that the low qubit frequency makes dispersive readout more
-# challenging, since the detuning to a typical readout resonator
-# ($\omega_r \sim 7$ GHz) is very large
-# {cite:p}`zhu_circuit_2013`.
+# Detuning to typical resonators ($\sim 7$ GHz) is large, making dispersive readout
+# challenging {cite:p}`zhu_circuit_2013`.
 
 # %% [markdown]
 # ### Fluxonium Spectrum
@@ -883,15 +842,12 @@ Q_\text{{ext}} = {Q_ext:,} \\
 # %% [markdown]
 # ### Fluxonium Design
 #
-# For the fluxonium, the design workflow differs in two ways:
+# Designing a fluxonium requires numerical diagonalization (via scQubits) since
+# transition frequencies depend complexly on $E_J$, $E_C$, $E_L$, and flux.
 #
-# 1. The qubit frequency and anharmonicity depend on three energies
-#    ($E_J$, $E_C$, $E_L$) and the external flux, so numerical
-#    diagonalization with scQubits is essential — there is no simple
-#    closed-form analog of the transmon approximation
-#    $\omega \approx \sqrt{8 E_J E_C} - E_C$.
-# 2. The circuit includes a **superinductance** $L_s$ whose value maps
-#    directly to the layout meander inductor in the qpdk `fluxonium` cell.
+# 1. **Numerical sweep**: Map $\omega_{01}$ and $\alpha$ vs. $E_L$ and $E_J$.
+# 2. **Circuit mapping**: Convert energies to $L_s$, $L_J$, and $C_\Sigma$.
+# 3. **Layout layout**: Map $L_s$ to `inductor_n_turns` in the qpdk `fluxonium` cell.
 #
 # #### Fluxonium circuit parameters
 
@@ -922,15 +878,13 @@ E_L = {EL_flx:.3f}\,\mathrm{{GHz}} \;\Rightarrow\;
 # The qpdk `fluxonium` cell parameterizes this as `inductor_n_turns`.
 
 # %% [markdown]
-# ## Summary: Transmon Design Table
+# ## Summary: Transmon Design
 #
-# The table below summarises the full transmon design flow from Hamiltonian
-# parameters to layout parameters, with the dispersive shift as the
-# central design target.
+# From Hamiltonian design targets to circuit and layout parameters.
 
 # %%
 data = [
-    ("Target", "Target dispersive shift $\\chi$", f"{chi_target_mhz:.1f}", "MHz"),
+    ("Target", "Dispersive shift $\\chi$", f"{chi_target_mhz:.1f}", "MHz"),
     ("Hamiltonian", "$E_J$", f"{EJ_design:.1f}", "GHz"),
     ("Hamiltonian", "$E_C$", f"{EC_design:.1f}", "GHz"),
     ("Hamiltonian", "$\\omega_t$", f"{omega_t_design:.3f}", "GHz"),
@@ -956,11 +910,9 @@ df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"], orien
 display_dataframe(df)
 
 # %% [markdown]
-# ## Summary: Fluxonium Design Table
+# ## Summary: Fluxonium Design
 #
-# The fluxonium design uses the same resonator and readout parameters, but
-# the qubit circuit parameters differ significantly due to the
-# superinductance.
+# Core parameters for the fluxonium biased at $\Phi_0/2$.
 
 # %%
 data_flx = [
@@ -980,7 +932,7 @@ data_flx = [
     ("Circuit", "$L_s$ (superinductance)", f"{L_s_flx * 1e9:.1f}", "nH"),
     (
         "Dispersive shift",
-        "$\\chi$ ($g = 100$ MHz, $\\omega_r = 7$ GHz)",
+        "$\\chi$ ($g = 100$ MHz)",
         f"{chi_flx * 1e3:.4f}",
         "MHz",
     ),
