@@ -11,6 +11,9 @@ models. Please keep pull requests focused, documented, and easy to review.
 
 ## Installation for Contributors
 
+This project uses [uv](https://github.com/astral-sh/uv) for Python package management and
+[just](https://github.com/casey/just) as a command runner.
+
 Clone the repository and install the development dependencies:
 
 ```bash
