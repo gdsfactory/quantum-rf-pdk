@@ -108,6 +108,8 @@ All PRs must pass:
 1. **Manage bibliography entries cleanly**: When editing the `bibliography.bib` file, ensure that if a reference
    contains a valid `doi` field, it should **not** include a `url` or `urldate` field to avoid redundant citation
    information.
+1. **Python imports**: Place imports at the top of the file, not inside functions, unless the dependency is missing from
+   `pyproject.toml` or is exceptionally heavy without lazy loading.
 
 ## Testing Guidelines
 
