@@ -62,7 +62,6 @@ from sax.models.rf import (
     transmission_line_s_params,
 )
 
-from qpdk import PDK
 from qpdk.tech import LAYER_STACK, get_etch_section, material_properties
 
 __all__ = [
@@ -116,6 +115,8 @@ def get_cpw_dimensions(
         tuple[float, float]: Width and gap of the CPW.
     """
     # Make sure a PDK is activated
+    from qpdk import PDK  # noqa: PLC0415
+
     PDK.activate()
     xs = gf.get_cross_section(cross_section, **kwargs)
 

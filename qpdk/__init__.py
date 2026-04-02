@@ -27,10 +27,10 @@ gf.CONF.layer_error_path = LAYER.ERROR_PATH
 try:
     from .models import models as _models
 except ImportError as e:
-    logger.info(
-        "QPDK model dependencies (pip install qpdk[models]) not installed. No models will be set in PDK."
+    logger.warning(
+        f"QPDK models could not be loaded ({e}). "
+        "Ensure dependencies are installed with `pip install qpdk[models]`."
     )
-    logger.debug(f"Reason for missing models: {e!r}")
     _models = {}
 
 # _models = get_models()
