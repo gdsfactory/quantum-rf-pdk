@@ -137,7 +137,7 @@ html_theme_options = {
         "page-toc",
         "edit-this-page",
         "sourcelink",
-        "colab-button",
+        "colab-button.html.j2",
     ],
     "icon_links": [
         {
