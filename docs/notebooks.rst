@@ -164,16 +164,20 @@ and coupling strengths that feed back into the layout design
 
 - Computing transmon qubit frequency (:math:`\omega_{01}`) and anharmonicity
   (:math:`\alpha`) from Josephson energy :math:`E_J` and charging energy :math:`E_C`.
-- Calculating the dispersive shift :math:`\chi` of a transmon–resonator system for
-  readout design.
+- Analysing fluxonium qubit spectra from :math:`E_J`, :math:`E_C`, :math:`E_L`, and
+  external flux.
+- Calculating the dispersive shift :math:`\chi` of a qubit–resonator system for readout
+  design.
+- Comparing design trade-offs between transmon and fluxonium qubits.
 - Translating Hamiltonian-level parameters into physical layout dimensions.
 
 **Notebooks:**
 
-- :doc:`notebooks/scqubits_parameter_calculation` — Full numerical diagonalization of
-  the transmon–resonator Hamiltonian with scQubits
-  :cite:`groszkowskiScqubitsPythonPackage2021`, compared against analytical perturbation
-  theory.
+- :doc:`notebooks/scqubits_parameter_calculation` — Numerical diagonalization of
+  transmon– and fluxonium–resonator Hamiltonians with scQubits
+  :cite:`groszkowskiScqubitsPythonPackage2021`, including a side-by-side comparison of
+  anharmonicity, dispersive shift, and design trade-offs between the two qubit
+  modalities.
 - :doc:`notebooks/pymablock_dispersive_shift` — Perturbative block-diagonalization with
   Pymablock :cite:`arayaDayPymablockAlgorithmPackage2025` to compute the dispersive
   shift symbolically and map the result to layout parameters.
