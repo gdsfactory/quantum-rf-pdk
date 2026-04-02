@@ -9,7 +9,6 @@ from gdsfactory.serialization import clean_value_json
 from jinja2 import Environment, FileSystemLoader
 
 import qpdk
-from qpdk import PDK
 from qpdk.config import PATH
 
 filepath_cells = PATH.docs / "cells.rst"
@@ -21,8 +20,8 @@ skip = {}
 skip_plot: set[str] = {"transform_component"}
 skip_settings: set[str] = set()
 
-PDK.activate()
-cells = PDK.cells
+qpdk.PDK.activate()
+cells = qpdk.PDK.cells
 samples = qpdk.sample_functions
 
 # Set up Jinja2 environment
