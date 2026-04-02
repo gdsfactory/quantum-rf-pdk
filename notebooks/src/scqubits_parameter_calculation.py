@@ -388,6 +388,12 @@ plt.show()
 # inductive energy of the superinductance.  The external flux
 # $\Phi_\text{ext}$ threads the loop formed by the junction and superinductor.
 #
+# Modern designs typically operate in the **"heavy" fluxonium** regime
+# {cite:p}`zhang_universal_2021`. This variant adds a large shunting capacitor,
+# ensuring $E_J \gg E_L$ and $E_J \gtrsim 10 E_C$. This restricts the lowest energy
+# eigenstates to be deeply localized within their potential wells, exponentially
+# suppressing tunneling and improving energy relaxation times.
+#
 # Compared with the transmon, the fluxonium has three key advantages:
 #
 # 1. **Large anharmonicity** — At the half-flux-quantum sweet spot
@@ -546,12 +552,28 @@ g = {g_flx:.1f}\,\mathrm{{GHz}} \\
 # ($\sim 7$ GHz).  Achieving a useful $\chi$ requires either stronger
 # coupling or a lower-frequency resonator
 # {cite:p}`zhu_circuit_2013`.
+#
+# Alternatively, to avoid qubit heating while ensuring high-fidelity readout,
+# modern heavy fluxoniums use a **plasmon-assisted readout** scheme
+# {cite:p}`zhang_universal_2021`. In this approach, a fast $\pi$-pulse transfers
+# the computational $|e\rangle$ state population to a higher-energy "plasmon" state
+# (e.g., $|f\rangle$ or $|h\rangle$) prior to measurement. Because these higher states
+# are much closer to the resonator frequency, their dispersive interaction is
+# significantly stronger, providing a large measurement signal while keeping the
+# fundamental qubit states protected from resonator-induced decoherence during normal operation.
 
 # %% [markdown]
 # ## Part III — Transmon vs. Fluxonium Comparison
 #
 # The table below highlights the key physical differences between the
 # two qubit modalities, computed with the parameters used above.
+#
+# **Two-Qubit Gating Advantage:** While transmons face speed limits due to weak
+# anharmonicity, heavy fluxoniums can achieve much faster entangling gates without
+# leaving the computational subspace. By coupling two fluxoniums via a tunable
+# inductive coupler, strong $XX$ interaction strengths (-35 to 75 MHz) can be
+# achieved while suppressing unwanted static $ZZ$ coupling to under 100 Hz,
+# maintaining high-fidelity single-qubit operations {cite:p}`zhang_tunable_2024`.
 
 # %%
 comparison_data = [
