@@ -131,6 +131,7 @@ html_logo = "logo.png"
 html_show_copyright = False
 html_theme_options = {
     "use_edit_page_button": True,
+    "header_links_before_dropdown": 3,
     "icon_links": [
         {
             "name": "GitHub",
