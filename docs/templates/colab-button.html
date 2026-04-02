@@ -1,0 +1,8 @@
+{% if pagename.startswith('notebooks/') %}
+<div class="sidebar-secondary-item">
+  <a href="https://colab.research.google.com/github/{{ github_user }}/{{ github_repo }}/blob/{{ github_version }}/{{ pagename }}.ipynb" target="_blank" class="btn btn-secondary w-100" style="font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 0.5em;">
+    <i class="fa-brands fa-google fa-lg"></i>
+    Open in Colab
+  </a>
+</div>
+{% endif %}

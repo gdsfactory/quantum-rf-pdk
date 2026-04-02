@@ -55,6 +55,22 @@
 # $j$ resonator photons.
 
 # %% tags=["hide-input", "hide-output"]
+import sys
+
+if "google.colab" in sys.modules:
+    import subprocess
+
+    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    subprocess.check_call([
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+    ])
+
+# %% tags=["hide-input", "hide-output"]
 import numpy as np
 
 # Monkeypatch for NumPy 2.0 compatibility with scqubits

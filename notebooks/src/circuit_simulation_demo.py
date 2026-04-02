@@ -27,6 +27,22 @@
 #
 # This notebook demonstrates how to perform circuit simulations using the `qpdk` models and the `sax` circuit solver. We will showcase individual components and then combine them to create a custom resonator circuit.
 
+# %% tags=["hide-input", "hide-output"]
+import sys
+
+if "google.colab" in sys.modules:
+    import subprocess
+
+    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    subprocess.check_call([
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+    ])
+
 # %% Imports tags=["hide-input", "hide-output"]
 import jax.numpy as jnp
 import sax

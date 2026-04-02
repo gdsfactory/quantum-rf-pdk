@@ -129,9 +129,16 @@ bibtex_bibfiles = ["bibliography.bib"]
 html_theme = "pydata_sphinx_theme"
 html_logo = "logo.png"
 html_show_copyright = False
+templates_path = ["templates"]
 html_theme_options = {
     "use_edit_page_button": True,
     "header_links_before_dropdown": 3,
+    "secondary_sidebar_items": [
+        "page-toc",
+        "edit-this-page",
+        "sourcelink",
+        "colab-button",
+    ],
     "icon_links": [
         {
             "name": "GitHub",

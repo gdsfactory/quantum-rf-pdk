@@ -189,7 +189,9 @@ for examples of:
 
 ### Creating New Notebooks or Samples
 
-1. For notebooks: Create `.py` file in `notebooks/src/` using jupytext percent format with proper YAML header
+1. For notebooks: Create `.py` file in `notebooks/src/` using jupytext percent format with proper YAML header. Ensure
+   the first code cell contains the Google Colab installation snippet with `tags=["hide-input", "hide-output"]` so it
+   can be run online without cluttering the docs.
 1. For samples: Create `.py` file in `qpdk/samples/` following existing examples
 1. Include docstrings and comments explaining the design and physics
 1. Add citations where appropriate using Sphinx citation syntax
