@@ -35,8 +35,6 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import qutip
-import qutip_jax
 import sax
 from sax.models.rf import capacitor, electrical_short, tee
 
@@ -294,8 +292,20 @@ def unimon_hamiltonian(
 
     Returns:
         A ``(2*n_max+1, 2*n_max+1)`` Hermitian matrix (in GHz).
+
+    Raises:
+        ImportError: If the QuTiP extra is not installed.
     """
     n_states = 2 * n_max + 1
+
+    try:
+        import qutip  # noqa: PLC0415
+        import qutip_jax  # noqa: PLC0415
+    except ImportError as e:
+        raise ImportError(
+            "The QuTiP extra is required for Hamiltonian models. "
+            "Please install it with `pip install qpdk[qutip]`."
+        ) from e
 
     # Extract raw JAX arrays from qutip-jax
     n_hat = qutip.charge(n_max).to(qutip_jax.JaxArray).data._jxa
