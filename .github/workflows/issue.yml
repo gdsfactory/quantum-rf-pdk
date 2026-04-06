@@ -17,7 +17,6 @@ on:
       - transferred
       - milestoned
       - demilestoned
-
 jobs:
   label:
     permissions:

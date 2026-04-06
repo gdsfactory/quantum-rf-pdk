@@ -4,7 +4,6 @@ permissions:
 on:
   push:
     branches: [main]
-
 jobs:
   draft:
     uses: doplaydo/pdk-ci-workflow/.github/workflows/release-drafter.yml@main
