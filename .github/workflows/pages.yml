@@ -22,20 +22,20 @@ jobs:
       matrix:
         python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # v3.0.0
       - name: Install Computer Modern Unicode fonts
         run: sudo apt-get install -y fonts-cmu
       - run: just install
       - run: just docs
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
@@ -71,16 +71,16 @@ jobs:
     runs-on: ubuntu-latest
     name: Build PDF docs
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7.0.0
       - name: Install just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # v3.0.0
       - run: just install
       - name: Cache ImageMagick
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.0
         with:
           path: /var/cache/apt/archives
           key: ${{ runner.os }}-imagemagick
@@ -96,7 +96,7 @@ jobs:
         run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
         continue-on-error: true
-        uses: xu-cheng/latex-action@v4
+        uses: xu-cheng/latex-action@6549dc21effb2730855a1281407ecfcececc6c1b # v4.0.0
         env:
           XINDYOPTS: "-L english -C utf8 -M sphinx.xdy"
         with:
@@ -109,7 +109,7 @@ jobs:
           continue_on_error: true
           latexmk_use_xelatex: true
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
@@ -128,17 +128,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML artifact (latest Python)
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.0
         with:
           name: html-docs-${{ needs.get-latest-python.outputs.latest-python }}
           path: _site
       - name: Download PDF artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.0
         with:
           name: pdf-docs
           path: _site
       - name: Download coverage report
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.0
         continue-on-error: true
         with:
           name: coverage-report-${{ needs.get-latest-python.outputs.latest-python }}
@@ -146,7 +146,7 @@ jobs:
           run-id: ${{ github.event.workflow_run.id || github.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload merged pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
