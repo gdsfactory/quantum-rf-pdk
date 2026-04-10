@@ -57,7 +57,7 @@ repos:
         exclude: .github/.*
         args: [--ignore, jinja-statements-delimiter, single-statement-per-line, jinja-statements-indentation, --]
   - repo: https://github.com/google/yamlfmt
-    rev: v0.20.0
+    rev: v0.21.0
     hooks:
       - id: yamlfmt
         priority: 10
