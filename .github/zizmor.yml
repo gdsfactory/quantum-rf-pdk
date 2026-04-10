@@ -1,0 +1,10 @@
+rules:
+  unpinned-uses:
+    disable: false
+  dangerous-triggers:
+    ignore:
+      - "pages.yml"
+  artipacked:
+    disable: true
+  template-injection:
+    disable: true

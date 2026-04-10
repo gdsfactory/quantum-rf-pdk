@@ -75,6 +75,11 @@ repos:
     hooks:
       - id: actionlint
         priority: 10
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: v1.23.1
+    hooks:
+      - id: zizmor
+        priority: 10
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.6
     hooks:
