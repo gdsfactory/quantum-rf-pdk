@@ -73,7 +73,9 @@ if "google.colab" in sys.modules:
 # %% tags=["hide-input", "hide-output"]
 import numpy as np
 
-# Monkeypatch for NumPy 2.0 compatibility with scqubits
+# Monkeypatch for NumPy 2.0 compatibility with scqubits.
+# TODO: Remove once the minimum required scqubits version officially supports
+# NumPy 2.x without relying on np.complex_ / np.float_ aliases.
 if not hasattr(np, "complex_"):
     np.complex_ = np.complex128  # noqa: NPY201
 if not hasattr(np, "float_"):
@@ -444,7 +446,7 @@ ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
 def _resonator_objective(length: float) -> float:
-    """Minimise the squared frequency error.
+    """Minimize the squared frequency error.
 
     Returns:
         The squared error between the calculated and target frequency.

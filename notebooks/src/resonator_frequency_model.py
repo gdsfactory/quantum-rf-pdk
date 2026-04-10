@@ -97,7 +97,13 @@ plt.ylabel("$S_{21}$")
 
 
 def _mark_resonance_frequency(x_value: float, color: str, label: str):
-    """Draws a vertical dashed line on the current matplotlib plot to mark a resonance frequency."""
+    """Draws a vertical dashed line on the current matplotlib plot to mark a resonance frequency.
+
+    Args:
+        x_value: Resonance frequency in Hz. This value is converted to GHz for plotting.
+        color: Matplotlib-compatible color specification for the vertical line.
+        label: Text label to use in the plot legend for this resonance marker.
+    """
     plt.axvline(
         float(x_value) / 1e9,  # Convert frequency from Hz to GHz for plotting
         color=color,
