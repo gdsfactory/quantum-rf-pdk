@@ -110,6 +110,8 @@ from qpdk.models.qubit import (
 )
 from qpdk.models.resonator import resonator_frequency
 
+# ruff: enable[E402]
+
 # %% [markdown]
 # ## Building the System
 #
@@ -593,4 +595,3 @@ display_dataframe(df)
 # ```{bibliography}
 # :filter: docname in docnames
 # ```
-# ruff: enable[E402]
