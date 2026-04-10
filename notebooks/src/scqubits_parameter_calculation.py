@@ -593,4 +593,3 @@ display_dataframe(df)
 # ```{bibliography}
 # :filter: docname in docnames
 # ```
-# ruff: enable[E402]
