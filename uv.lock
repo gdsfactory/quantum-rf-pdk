@@ -4553,16 +4553,16 @@ wheels = [
 
 [[package]]
 name = "sphinxcontrib-bibtex-urn"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pybtex" },
     { name = "sphinx" },
     { name = "sphinxcontrib-bibtex" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/46/fb2ba112d12c50f97cc0eb99f7679a476c82c25da117938fcd213e14e930/sphinxcontrib_bibtex_urn-0.1.0.tar.gz", hash = "sha256:9342749a0adf2678742b214d95fd4ac9c43395692f2aadbb0c5a6a066bf7ddfa", size = 7359, upload-time = "2026-03-31T08:51:00.48Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/30/af/339d2ce345394ad6ce8e37752c9e4c78dd1b591b6c7dddd3139b782e4456/sphinxcontrib_bibtex_urn-0.1.1.tar.gz", hash = "sha256:5601b5b2b5ace71aea976bb306d16a9c4e43c08ce870ac746f9d2ef5728b67b3", size = 7978, upload-time = "2026-04-02T10:13:50.297Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d0/ae/62f6934d293c25a6eed9c5141a57f2e89a4a1cef48da2df52ec6871b5119/sphinxcontrib_bibtex_urn-0.1.0-py3-none-any.whl", hash = "sha256:47d8de313bb7886d4a8ec52f462fe8f6a1ce4869b2dc8f5dc6a2191ed023a0f4", size = 8156, upload-time = "2026-03-31T08:50:59.207Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/50/4e0a2b568c6a69ba07490009feadbd81ab861fb8bc5f55246d5b86f84287/sphinxcontrib_bibtex_urn-0.1.1-py3-none-any.whl", hash = "sha256:3668869ba7c6d6739763293ee326e3cdfb350405f3f1f5b61adb8f567bfcfcd7", size = 8681, upload-time = "2026-04-02T10:13:49.012Z" },
 ]
 
 [[package]]
