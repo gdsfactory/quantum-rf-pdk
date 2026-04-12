@@ -12,10 +12,10 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-      - uses: extractions/setup-just@v3
-      - uses: j178/prek-action@v2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # v3
+      - uses: j178/prek-action@53276d8b0d10f8b6672aa85b4588c6921d0370cc # v2
   get-python-versions:
     uses: ./.github/workflows/get-python-versions.yml
   test-code:
@@ -27,13 +27,13 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           lfs: true
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # v3
       - name: Test with pytest
         run: just test ${{ (github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest') && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }}
       - name: Generate coverage badge
@@ -41,7 +41,7 @@ jobs:
         run: uv run --group dev --group github genbadge coverage -i coverage.xml -o htmlcov/coverage.svg
       - name: Upload coverage report
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: coverage-report-${{ matrix.python-version }}
           path: htmlcov

@@ -77,6 +77,9 @@ myst_enable_extensions = [
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
+# Exclude HFSS notebooks from execution as they depend on Ansys HFSS
+# (proprietary/licensed software) and can be slow or impossible to run
+# in typical documentation build environments.
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
 ]

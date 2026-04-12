@@ -169,7 +169,7 @@ def _setup_palace_simulation(
     to :func:`~meshwell.mesh.mesh`.
 
     The mesh parameters here are not optimized but serve as a reasonable
-    starting point while demonstrating how te set up the mesh in different ways.
+    starting point while demonstrating how to set up the mesh in different ways.
 
     Args:
         simulation_folder: Folder to use for simulation files

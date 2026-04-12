@@ -246,8 +246,6 @@ hfss.save_project()
 
 # Run the analysis
 start_time = time.time()
-print("Starting eigenmode analysis...")
-print("(This may take several minutes)")
 success = hfss.analyze_setup("EigenmodeSetup", cores=4)
 elapsed = time.time() - start_time
 

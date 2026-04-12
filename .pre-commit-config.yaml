@@ -57,7 +57,7 @@ repos:
         exclude: .github/.*
         args: [--ignore, jinja-statements-delimiter, single-statement-per-line, jinja-statements-indentation, --]
   - repo: https://github.com/google/yamlfmt
-    rev: v0.20.0
+    rev: v0.21.0
     hooks:
       - id: yamlfmt
         priority: 10
@@ -74,6 +74,11 @@ repos:
     rev: v1.7.12
     hooks:
       - id: actionlint
+        priority: 10
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: v1.23.1
+    hooks:
+      - id: zizmor
         priority: 10
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.6
@@ -113,14 +118,14 @@ repos:
       - id: sphinx-lint
         priority: 20
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.20.0
+    rev: v0.22.0
     hooks:
       - id: markdownlint-cli2
         priority: 20
         name: markdownlint
         args: [--config, .github/.markdownlint-cli2.yaml]
         additional_dependencies:
-          - katex@0.16.44
+          - katex@0.16.45
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.22
     hooks:
@@ -141,13 +146,13 @@ repos:
         priority: 10
         types_or: [css]
   - repo: https://github.com/thibaudcolas/pre-commit-stylelint
-    rev: v17.4.0
+    rev: v17.6.0
     hooks:
       - id: stylelint
         priority: 20
         args: [--fix, --config=.github/.stylelintrc.yaml]
         additional_dependencies:
-          - stylelint@17.4.0
+          - stylelint@17.6.0
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
