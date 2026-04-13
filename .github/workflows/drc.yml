@@ -3,13 +3,11 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-
 permissions:
   contents: read
   packages: read
-
 jobs:
   drc:
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/drc.yml@main
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/drc.yml@main # zizmor: ignore[unpinned-uses]
     secrets:
       GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
