@@ -4,8 +4,9 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: read
+  contents: write
   packages: read
+  pull-requests: write
 jobs:
   drc:
     uses: doplaydo/pdk-ci-workflow/.github/workflows/drc.yml@main # zizmor: ignore[unpinned-uses]
