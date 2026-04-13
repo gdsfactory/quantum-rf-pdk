@@ -339,7 +339,7 @@ ignore-overlong-task-comments = true
 strict = false
 
 [tool.uv]
-default-groups = ["dev", "docs", "lint", "stubs", "test"]
+default-groups = ["dev", "lint", "stubs", "test"]
 
 [tool.uv.build-backend]
 module-root = ""
