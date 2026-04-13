@@ -152,7 +152,7 @@ repos:
         priority: 20
         args: [--fix, --config=.github/.stylelintrc.yaml]
         additional_dependencies:
-          - stylelint@17.6.0
+          - stylelint@17.7.0
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
