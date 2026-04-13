@@ -13,16 +13,17 @@ FANCY_FORMAT = (
 )
 
 
-def configure_logger(level: str = "INFO"):
+def configure_logger(level: str = "INFO", log_format: str = FANCY_FORMAT):
     """Configures the logger with a fancy format.
 
     Args:
         level: The logging level to use.
+        log_format: The format to use.
     """
     logger.remove()  # Remove default handler
     logger.add(
         sys.stderr,
-        format=FANCY_FORMAT,
+        format=log_format,
         level=level,
         colorize=True,
     )
