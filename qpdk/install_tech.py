@@ -9,10 +9,11 @@ from qpdk.logger import configure_logger, logger
 
 def remove_path_or_dir(dest: Path) -> None:
     """Remove a path or directory."""
-    if not dest.exists():
+    if dest.is_symlink():
+        dest.unlink()
+    elif not dest.exists():
         raise FileNotFoundError(f"Path does not exist: {dest}")
-
-    if dest.is_dir():
+    elif dest.is_dir():
         shutil.rmtree(dest)
     else:
         dest.unlink()
