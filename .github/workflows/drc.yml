@@ -2,8 +2,7 @@ name: DRC Check
 on:
   workflow_dispatch:
   push:
-    branches: [main]
-
+    branches: [main, add-drc-niko-test]
 jobs:
   drc:
     uses: doplaydo/pdk-ci-workflow/.github/workflows/drc.yml@main
