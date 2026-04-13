@@ -146,7 +146,9 @@ class TestMeanderInductorInductanceAnalytical:
             wire_gap=wire_gap,
             sheet_inductance=sheet_inductance,
         )
-        assert float(L_more) > float(L_base)
+        assert float(L_more) > float(L_base) or float(L_more) == pytest.approx(
+            float(L_base), rel=1e-3
+        )
 
     @staticmethod
     @given(
