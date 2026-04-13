@@ -63,6 +63,7 @@ pymablock = ["pymablock>=2.2.1"]
 qutip = ["qutip-jax>=0.1.1", "qutip-qip>=0.4.1"]
 ray = ["ray[default]", "tqdm"]
 scqubits = ["scqubits"]
+gdsfactoryplus = ["gdsfactoryplus"]
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
