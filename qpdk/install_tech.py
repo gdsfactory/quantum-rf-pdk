@@ -25,10 +25,10 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
         raise FileNotFoundError(f"{src} does not exist")
 
     if dest.exists() and not overwrite:
-        logger.warning(f"Technology already exists at {dest}")
+        logger.warning("Technology already exists at {}", dest)
         return
     if dest.exists() or dest.is_symlink():
-        logger.info(f"Removing existing technology files: {dest}")
+        logger.info("Removing existing technology files: {}", dest)
         remove_path_or_dir(dest)
     try:
         dest.symlink_to(src, target_is_directory=True)
@@ -36,9 +36,9 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
     except OSError:
         shutil.copytree(src, dest)
         link_type = "Copied"
-    logger.info(f"{link_type} technology files:")
-    logger.info(f"  From: {src}")
-    logger.info(f"  To:   {dest}")
+    logger.info("{} technology files:", link_type)
+    logger.info("  From: {}", src)
+    logger.info("  To:   {}", dest)
 
 
 if __name__ == "__main__":
