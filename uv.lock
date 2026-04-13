@@ -4174,7 +4174,7 @@ test = [
 requires-dist = [
     { name = "doroutes", specifier = ">=0.2.0" },
     { name = "flax", marker = "extra == 'netket'" },
-    { name = "gdsfactory", specifier = "~=9.39.0" },
+    { name = "gdsfactory", specifier = ">=9.39.0,<9.40.0" },
     { name = "gdsfactoryplus", marker = "extra == 'gdsfactoryplus'" },
     { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = ">=2.0.1" },
     { name = "jaxellip", marker = "extra == 'models'" },
