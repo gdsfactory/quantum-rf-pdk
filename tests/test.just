@@ -50,6 +50,16 @@ test-gds-force:
 test-gds-fail-fast:
     {{ PYTEST_COMMAND }} -s tests/test_pdk.py -x
 
+# Run model regression tests (tests/test_models_regression.py)
+[group('test')]
+test-models:
+    {{ PYTEST_COMMAND }} -s tests/test_models_regression.py
+
+# Regenerate model regression reference files
+[group('test')]
+test-models-force:
+    {{ PYTEST_COMMAND }} -s tests/test_models_regression.py --force-regen
+
 # Run HFSS simulation tests (requires HFSS to be installed)
 [group('test')]
 test-hfss *args: check-lfs
