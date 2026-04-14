@@ -17,9 +17,7 @@ from qpdk.models import models
 skip_test_models: set[str] = set()
 
 model_names = sorted(
-    name
-    for name in models.keys() - skip_test_models
-    if not name.startswith("_")
+    name for name in models.keys() - skip_test_models if not name.startswith("_")
 )
 
 
