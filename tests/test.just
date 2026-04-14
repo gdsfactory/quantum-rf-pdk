@@ -54,3 +54,18 @@ test-gds-fail-fast:
 [group('test')]
 test-hfss *args: check-lfs
     uv run --all-extras --group dev pytest -m hfss {{ args }}
+
+# Report fraction of PDK cells that have a registered model
+[group('test')]
+model-coverage:
+    #!/usr/bin/env -S uv run python
+    import importlib
+    mod = importlib.import_module("qpdk")
+    pdk = mod.PDK
+    pdk.activate()
+    cells = pdk.cells
+    models = getattr(pdk, "models", {}) or {}
+    total = len(cells)
+    with_model = len(set(cells) & set(models))
+    pct = (with_model / total * 100) if total else 0
+    print(f"Model coverage: {with_model}/{total} ({pct:.1f}%)")
