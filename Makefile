@@ -1,4 +1,4 @@
-.PHONY: install check-lfs test help
+.PHONY: all install check-lfs test clean help
 
 # Makefile — compatibility shim for gdsfactory PDK CI tooling
 #
@@ -8,6 +8,8 @@
 # and forwards every other target to just.
 
 .DEFAULT_GOAL := help
+
+all: install ## Default target (alias for install)
 
 install: ## Install the package and all development dependencies
 	uv sync --all-extras
@@ -35,7 +37,11 @@ check-lfs: ## Check if Git LFS is available and pull LFS files
 test: check-lfs ## Run the full test suite (honors PYTEST_ADDOPTS)
 	uv run --extra models --extra graphics --extra hfss --extra qutip --group dev pytest -n auto
 
+clean: ## Clean up build artifacts
+	@just clean
+
 help: ## Show this help message
+
 	@echo "Makefile targets (compatibility shim — prefer 'just' for development):"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | \
