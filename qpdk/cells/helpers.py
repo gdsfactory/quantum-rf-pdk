@@ -86,7 +86,7 @@ _EXCLUDE_LAYERS_DEFAULT_M2 = [
 ]
 
 
-@gf.cell
+@gf.cell(tags={"type": "helpers"})
 def fill_magnetic_vortices(
     component: Component | None = None,
     rectangle_size: tuple[float, float] = (15.0, 15.0),
@@ -276,7 +276,7 @@ def apply_additive_metals(component: Component) -> Component:
     return component
 
 
-@gf.cell
+@gf.cell(tags={"type": "helpers"})
 def invert_mask_polarity(component: Component) -> Component:
     """Invert mask polarity of a component.
 

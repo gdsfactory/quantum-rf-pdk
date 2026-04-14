@@ -8,7 +8,7 @@ from gdsfactory.component import Component
 from qpdk.tech import LAYER
 
 
-@gf.cell(tags=("interconnects", "flip-chip", "3d-integration"))
+@gf.cell(tags=("interconnects", "flip-chip", "3d-integration"), tags={"type": "bump"})
 def indium_bump(diameter: float = 15.0) -> Component:
     """Creates an indium bump component for 3D integration.
 

@@ -26,6 +26,7 @@ LAUNCHER_CROSS_SECTION_SMALL = partial(coplanar_waveguide, etch_layer=LAYER.M1_E
     tags=(
         "waveguides",
         "interconnects",
+    tags={"type": "launcher"},
     )
 )
 def launcher(

@@ -7,7 +7,7 @@ from qpdk.cells.waveguides import rectangle
 from qpdk.helper import show_components
 
 
-@gf.cell(tags=("chip",))
+@gf.cell(tags=("chip",), tags={"type": "chip"})
 def chip_edge(
     size: tuple[float, float] = (10000.0, 10000.0),
     width: float = 200.0,

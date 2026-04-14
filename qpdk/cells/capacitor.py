@@ -16,7 +16,7 @@ from qpdk.helper import show_components
 from qpdk.tech import LAYER, get_etch_section, get_etch_sections
 
 
-@gf.cell(tags=("capacitors", "couplers"))
+@gf.cell(tags=("capacitors", "couplers"), tags={"type": "capacitor"})
 def half_circle_coupler(
     radius: float = 50.0,
     angle: float = 180.0,
@@ -139,7 +139,7 @@ def half_circle_coupler(
     return c
 
 
-@gf.cell(tags=("capacitors",))
+@gf.cell(tags=("capacitors",), tags={"type": "capacitor"})
 def interdigital_capacitor(
     fingers: int = 4,
     finger_length: float = 20.0,
@@ -313,7 +313,7 @@ def interdigital_capacitor(
     return c
 
 
-@gf.cell(tags=("capacitors",))
+@gf.cell(tags=("capacitors",), tags={"type": "capacitor"})
 def plate_capacitor(
     length: float = 26.0,
     width: float = 5.0,
@@ -390,7 +390,7 @@ def plate_capacitor(
     return c
 
 
-@gf.cell(tags=("capacitors", "couplers"))
+@gf.cell(tags=("capacitors", "couplers"), tags={"type": "capacitor"})
 def plate_capacitor_single(
     length: float = 26.0,
     width: float = 5.0,

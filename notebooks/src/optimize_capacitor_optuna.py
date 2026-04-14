@@ -55,7 +55,7 @@ from qpdk.tech import LAYER, material_properties
 
 
 # %%
-@gf.cell
+@gf.cell(tags={"type": "optimize_capacitor_optuna"})
 def capacitor_simulation(
     finger_length: float = 20.0,
     finger_gap: float = 2.0,

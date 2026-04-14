@@ -15,7 +15,7 @@ from qpdk.tech import (
 )
 
 
-@gf.cell(tags=("inductors",))
+@gf.cell(tags=("inductors",), tags={"type": "inductor"})
 def meander_inductor(
     n_turns: int = 5,
     turn_length: float = 200.0,
@@ -194,7 +194,7 @@ def meander_inductor(
     return c
 
 
-@gf.cell(tags=("resonators", "inductors", "capacitors"))
+@gf.cell(tags=("resonators", "inductors", "capacitors"), tags={"type": "inductor"})
 def lumped_element_resonator(
     fingers: int = 20,
     finger_length: float = 20.0,
