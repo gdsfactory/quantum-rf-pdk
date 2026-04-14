@@ -1,19 +1,30 @@
 version: 2
 updates:
-  - package-ecosystem: "uv"
-    cooldown:
-      default-days: 7
-    directory: "/"
-    schedule:
-      interval: monthly
-    ignore:
-      - dependency-name: "doplaydo/*"
-
-  - package-ecosystem: github-actions
-    cooldown:
-      default-days: 7
+  - package-ecosystem: uv
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
     ignore:
       - dependency-name: "doplaydo/*"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "doplaydo/*"
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
