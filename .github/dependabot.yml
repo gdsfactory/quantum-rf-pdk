@@ -6,12 +6,16 @@ updates:
       interval: monthly
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "doplaydo/*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "doplaydo/*"
   - package-ecosystem: docker
     directory: /
     schedule:

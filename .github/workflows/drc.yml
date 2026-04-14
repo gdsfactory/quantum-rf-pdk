@@ -1,0 +1,14 @@
+name: DRC Check
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+  packages: read
+  pull-requests: write
+jobs:
+  drc:
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/drc.yml@main # zizmor: ignore[unpinned-uses]
+    secrets:
+      GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
