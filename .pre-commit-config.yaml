@@ -5,41 +5,68 @@ exclude: ^uv\.lock$
 # 30: Global end-of-file-fixer
 # 40: Global trailing-whitespace cleanup
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+  - repo: https://github.com/doplaydo/pdk-ci-workflow
+    rev: main
     hooks:
+      - id: check-required-files
+        priority: 10
+      - id: check-pyproject-sections
+        priority: 10
+      - id: check-package-init
+        priority: 10
+      - id: check-cells-structure
+        priority: 10
+      - id: check-tech-structure
+        priority: 10
+      - id: check-pdk-object
+        priority: 10
+      - id: check-test-structure
+        priority: 10
+      - id: check-makefile-targets
+        priority: 10
+      - id: check-workflows
+        priority: 10
+      - id: check-multi-band
+        priority: 10
+      - id: check-no-raw-layers
+        priority: 10
+      - id: check-no-main-in-cells
+        priority: 10
+      - id: check-precommit-config
+        priority: 10
+      - id: check-version-sync
+        priority: 10
+      - id: trailing-whitespace
+        priority: 40
+      - id: end-of-file-fixer
+        priority: 30
       - id: check-yaml
         priority: 10
         exclude: ^(conda\.recipe/meta\.yaml|conda_build/templates/.*\.yaml|docs/click/meta\.yaml|conda/meta\.yaml|conda/construct.yaml|.*\.pic\.yml|conda/constructor/Miniforge3/construct.yaml)
-      - id: end-of-file-fixer
-        priority: 30
-      - id: trailing-whitespace
-        priority: 40
-      - id: detect-private-key
+      - id: check-added-large-files
         priority: 10
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.9.1
-    hooks:
-      - id: nbstripout
+      - id: check-toml
         priority: 10
-        files: ".ipynb"
-  - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
-    hooks:
-      - id: codespell
-        priority: 10
-        exclude: ^docs/bibliography\.bib$
-        additional_dependencies:
-          - tomli
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.8
-    hooks:
-      - id: ruff
+      - id: ruff-lint
         priority: 10
         args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
       - id: ruff-format
         priority: 20
         args: [--config=pyproject.toml]
+      - id: nbstripout
+        priority: 10
+        files: ".ipynb"
+      - id: codespell
+        priority: 10
+        exclude: ^docs/bibliography\.bib$
+      - id: pretty-format-toml
+        priority: 20
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: detect-private-key
+        priority: 10
   - repo: https://github.com/tombi-toml/tombi-pre-commit
     rev: v0.9.12
     hooks:
