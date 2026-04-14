@@ -13,6 +13,29 @@ write-cells:
 write-models:
     @uv run --extra models --group docs .github/write_models.py
 
+# Write Makefile help output to documentation
+[private]
+[group('docs')]
+[working-directory: 'docs']
+[script('uv', 'run', '--script')]
+write-makefile-help:
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    output_file = Path("makefile_help.txt")
+    result = subprocess.run(  # noqa: S603
+        [shutil.which("make"), "-C", "..", "--no-print-directory", "help"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    output = result.stdout.rstrip()
+    output_file.write_text(output)
+
+    print(f"Makefile help written to {output_file}")
+
 # Write Justfile help output to documentation
 [private]
 [group('docs')]
@@ -76,7 +99,7 @@ setup-ipython-config-temporary-after:
 [private]
 [parallel]
 [group('docs')]
-docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
+docs-prerequisites: write-cells write-models write-justfile-help write-makefile-help copy-sample-notebooks
 
 # Build the HTML documentation
 [group('docs')]

@@ -60,5 +60,8 @@ functionally tested, and completely human-maintainable.
 ```{include} just_commands.md
 ```
 
+```{include} make_commands.md
+```
+
 ```{include} code_of_conduct.md
 ```

@@ -105,6 +105,20 @@ repos:
     hooks:
       - id: hadolint
         priority: 10
+  - repo: https://github.com/checkmake/checkmake.git
+    rev: 0.2.2
+    hooks:
+      - id: checkmake
+        priority: 20
+        args: ['--config=.github/.checkmake.ini']
+  - repo: https://github.com/EbodShojaei/bake
+    rev: v1.4.4
+    hooks:
+      - id: mbake-validate
+        priority: 20
+      - id: mbake-format
+        priority: 10
+        args: ['--config=.github/.bake.toml']
   - repo: https://github.com/LilSpazJoekp/docstrfmt
     rev: v2.0.2
     hooks:
