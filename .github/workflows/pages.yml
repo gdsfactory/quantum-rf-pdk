@@ -8,4 +8,4 @@ on:
   workflow_dispatch:
 jobs:
   docs:
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/pages.yml@main
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/pages.yml@main # zizmor: ignore[unpinned-uses]

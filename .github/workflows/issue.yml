@@ -22,4 +22,4 @@ jobs:
     permissions:
       contents: read
       issues: write
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/issue.yml@main
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/issue.yml@main # zizmor: ignore[unpinned-uses]
