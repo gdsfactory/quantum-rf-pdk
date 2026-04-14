@@ -1,5 +1,17 @@
 # Sample Generic Superconducting Quantum RF PDK
 
+<!-- BADGES:START -->
+[![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml)
+[![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
+[![DRC](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/drc.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/drc.yml)
+[![Model Regression](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/model_regression.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/model_regression.yml)
+[![Test Coverage](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/coverage.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test_coverage.yml)
+[![Model Coverage](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/model_coverage.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/model_coverage.yml)
+[![Issues](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/issues.svg)](https://github.com/gdsfactory/quantum-rf-pdk/issues)
+[![PRs](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/prs.svg)](https://github.com/gdsfactory/quantum-rf-pdk/pulls)
+<!-- BADGES:END -->
+
+
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
 [![Coverage](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/coverage.svg)](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/)
