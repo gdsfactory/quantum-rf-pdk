@@ -12,8 +12,10 @@ on:
   workflow_dispatch:
 jobs:
   get-python-versions:
+    if: github.actor != 'dependabot[bot]'
     uses: ./.github/workflows/get-python-versions.yml
   build-docs:
+    if: github.actor != 'dependabot[bot]'
     needs: get-python-versions
     runs-on: ubuntu-latest
     name: Build HTML docs
@@ -68,6 +70,7 @@ jobs:
           echo "latest-python=$latest" >> "$GITHUB_OUTPUT"
           echo "Latest Python version: $latest"
   build-docs-pdf:
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     name: Build PDF docs
     steps:
