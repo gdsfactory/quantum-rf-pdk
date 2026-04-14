@@ -21,7 +21,7 @@ jobs:
         run: just test --cov=qpdk --cov-report=xml --cov-append -q
         continue-on-error: true
       - name: Generate badges
-        run: uv run python .github/scripts/generate_badges.py
+        run: uv run python .github/ci/generate_badges.py
       - name: Push badges to badges branch
         run: |
           git config user.name "github-actions[bot]"
