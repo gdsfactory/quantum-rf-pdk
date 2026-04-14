@@ -1,9 +1,4 @@
 rules:
-  unpinned-uses:
-    ignore:
-      - "issue.yml"
-      - "pages.yml"
-      - "release-drafter.yml"
   dangerous-triggers:
     ignore:
       - "pages.yml"
