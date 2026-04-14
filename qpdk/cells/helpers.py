@@ -18,6 +18,10 @@ def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Co
 
     For use with :func:`~gdsfactory.container`.
 
+    Args:
+        component: The component to transform.
+        transform: The complex transformation to apply.
+
     Returns:
         The transformed component.
     """
@@ -86,7 +90,6 @@ _EXCLUDE_LAYERS_DEFAULT_M2 = [
 ]
 
 
-@gf.cell
 def fill_magnetic_vortices(
     component: Component | None = None,
     rectangle_size: tuple[float, float] = (15.0, 15.0),
@@ -255,6 +258,9 @@ def apply_additive_metals(component: Component) -> Component:
 
     TODO: Implement without flattening. Maybe with a KLayout dataprep script?
 
+    Args:
+        component: The component to apply additive metals to.
+
     Returns:
         Component with additive metals applied.
     """
@@ -276,7 +282,6 @@ def apply_additive_metals(component: Component) -> Component:
     return component
 
 
-@gf.cell
 def invert_mask_polarity(component: Component) -> Component:
     """Invert mask polarity of a component.
 
@@ -420,17 +425,3 @@ def remove_metadata_layers(component: Component) -> Component:
                 c.shapes(layer_index).insert(other_region)
 
     return c
-
-
-if __name__ == "__main__":
-    from qpdk import PDK
-    from qpdk.cells.resonator import resonator
-
-    PDK.activate()
-    c = resonator(length=2000)
-    c = apply_additive_metals(c.copy())
-    c = invert_mask_polarity(c)
-    c = add_margin_to_layer(
-        c, layer_margins=[(LAYER.M1_DRAW, 50.0), (LAYER.M2_DRAW, 50.0)]
-    )
-    c.show()

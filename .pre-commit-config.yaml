@@ -36,7 +36,6 @@ repos:
         priority: 10
       - id: check-version-sync
         priority: 10
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

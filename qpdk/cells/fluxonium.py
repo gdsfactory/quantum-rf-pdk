@@ -361,12 +361,3 @@ def fluxonium_with_bbox(
 
     c.add_ports(flux_ref.ports)
     return c
-
-
-if __name__ == "__main__":
-    from qpdk.helper import show_components
-
-    show_components(
-        fluxonium,
-        fluxonium_with_bbox,
-    )

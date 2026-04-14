@@ -17,7 +17,6 @@ from qpdk.cells.helpers import (
     transform_component,
 )
 from qpdk.cells.junction import squid_junction, squid_junction_long
-from qpdk.helper import show_components
 from qpdk.tech import LAYER
 
 
@@ -535,22 +534,3 @@ def xmon_transmon(
     c.info["qubit_type"] = "xmon"
 
     return c
-
-
-if __name__ == "__main__":
-    show_components(
-        double_pad_transmon,
-        partial(double_pad_transmon, junction_displacement=DCplxTrans(0, 150)),
-        double_pad_transmon_with_bbox,
-        flipmon,
-        flipmon_with_bbox,
-        xmon_transmon,
-    )
-
-    # Visualize flip-chip flipmon
-    # c = gf.Component()
-    # (c << flipmon_with_bbox()).move((0, 0))
-    # c << rectangle(size=(500, 500), layer=LAYER.SIM_AREA, centered=True)
-    # to_stl(c, "flipmon.stl", layer_stack=LAYER_STACK_FLIP_CHIP)
-    # scene = c.to_3d(layer_stack=LAYER_STACK_FLIP_CHIP)
-    # scene.show()

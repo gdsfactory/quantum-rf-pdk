@@ -23,7 +23,7 @@ def indium_bump(diameter: float = 15.0) -> Component:
     c = Component()
     circle = gf.components.circle(radius=diameter / 2, layer=LAYER.IND)
     ref = c.add_ref(circle)
-    ref.move((0, 0))
+    ref.move((0.0, 0.0))
     c.add_port(
         name="center",
         center=(
@@ -36,8 +36,3 @@ def indium_bump(diameter: float = 15.0) -> Component:
         port_type="placement",
     )
     return c
-
-
-if __name__ == "__main__":
-    bump = indium_bump()
-    bump.show()

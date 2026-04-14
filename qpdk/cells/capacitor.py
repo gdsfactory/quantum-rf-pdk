@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import partial
 from itertools import chain
 from math import ceil, floor
 
@@ -12,7 +11,6 @@ from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells.helpers import merge_layers_with_etch as _merge_layers_with_etch
 from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
-from qpdk.helper import show_components
 from qpdk.tech import LAYER, get_etch_section, get_etch_sections
 
 
@@ -205,7 +203,7 @@ def interdigital_capacitor(
     )  # total length
     height = fingers * thickness + (fingers - 1) * finger_gap  # total height
     points_1 = [
-        (0, 0),
+        (0.0, 0.0),
         (0, height),
         (thickness + finger_length, height),
         (thickness + finger_length, height - thickness),
@@ -226,7 +224,7 @@ def interdigital_capacitor(
             for i in range(ceil(fingers / 2))
         ),
         (thickness, 0),
-        (0, 0),
+        (0.0, 0.0),
     ]
     c.add_polygon(points_1, layer=layer_metal)
 
@@ -369,7 +367,7 @@ def plate_capacitor(
     pad2 = c.add_ref(single_capacitor)
     pad2.rotate(180)
     pad2.move((width + gap, 0))
-    c.center = (0, 0)
+    c.center = (0.0, 0.0)
 
     # Add ports
     c.add_port(name="o1", port=pad1.ports["o1"])
@@ -435,7 +433,7 @@ def plate_capacitor_single(
     c = Component()
 
     points = [
-        (0, 0),
+        (0.0, 0.0),
         (0, length),
         (width, length),
         (width, 0),
@@ -479,13 +477,3 @@ def plate_capacitor_single(
     c.move((-width / 2, -length / 2))
 
     return c
-
-
-if __name__ == "__main__":
-    show_components(
-        half_circle_coupler,
-        plate_capacitor_single,
-        plate_capacitor,
-        interdigital_capacitor,
-        partial(interdigital_capacitor, half=True),
-    )

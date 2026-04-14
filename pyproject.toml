@@ -35,7 +35,7 @@ classifiers = [
 dependencies = [
   "doroutes>=0.2.0",
   "gdsfactory>=9.39.0,<9.40.0",
-  "typing-extensions>=4.12.0"
+  "typing-extensions>=4.12.0",
 ]
 
 [project.urls]
@@ -104,7 +104,7 @@ docs-models = [
   "scikit-rf",
   "scqubits",
   "sympy",
-  "tqdm"
+  "tqdm",
 ]
 github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
@@ -123,8 +123,36 @@ test = [
 requires = ["uv_build>=0.10.8,<0.12.0"]
 build-backend = "uv_build"
 
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.lyp", "*.lyt", "*.csv", "*.gds", "*.oas"]
+
+[tool.tbump]
+[[tool.tbump.file]]
+src = "pyproject.toml"
+
+[[tool.tbump.file]]
+src = "qpdk/__init__.py"
+
+[[tool.tbump.file]]
+src = "README.md"
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "v{new_version}"
+
+[tool.tbump.version]
+current = "0.3.6"
+
+[tool.mypy]
+strict = true
+
+[tool.towncrier]
+directory = ".changelog.d"
+filename = "CHANGELOG.md"
+template = ".changelog.d/changelog_template.jinja"
+
 [tool.codespell]
-ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
+ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, schem, Commun, Ue, inout"
 skip = "bibliography.bib"
 
 [tool.coverage.run]
@@ -291,6 +319,7 @@ select = [
   "DOC",  # pydoclint
   "ASYNC",  # flake8-async
   "TID",  # flake8-tidy-imports
+  "C",  # flake8-comprehensions
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -310,7 +339,7 @@ require-lazy = [
   "pymablock",
   "qutip-jax",
   "qutip-qip",
-  "scqubits"
+  "scqubits",
 ]
 
 [tool.ruff.lint.isort]
@@ -318,6 +347,8 @@ combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "notebooks/**/*.py" = ["D100", "T201"]
+"qpdk/cells/__init__.py" = ["F403"]
+"qpdk/models/__init__.py" = ["F403"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",

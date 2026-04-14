@@ -92,14 +92,3 @@ def launcher(
     )
 
     return c
-
-
-if __name__ == "__main__":
-    # Example usage and testing
-    from qpdk import PDK
-
-    PDK.activate()
-
-    # Create and display a launcher with default parameters
-    c = launcher()
-    c.show()
