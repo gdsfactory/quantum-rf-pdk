@@ -17,5 +17,6 @@ from qpdk.cells.transmon import *
 from qpdk.cells.tsv import *
 from qpdk.cells.unimon import *
 from qpdk.cells.waveguides import *
+from qpdk.samples.all_cells import all_cells as all_cells
 
 circle = gf.components.circle
