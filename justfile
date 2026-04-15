@@ -12,8 +12,8 @@ default:
 
 # Install the package and all development dependencies
 [group('setup')]
-install:
-    @uv sync --all-extras
+install extras="--all-extras":
+    @uv sync {{ extras }}
 
 # Install KLayout technology files for the PDK
 [group('setup')]
