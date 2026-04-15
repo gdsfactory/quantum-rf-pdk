@@ -106,7 +106,7 @@ repos:
       - id: hadolint
         priority: 10
   - repo: https://github.com/checkmake/checkmake.git
-    rev: 0.2.2
+    rev: v0.3.2
     hooks:
       - id: checkmake
         priority: 20
