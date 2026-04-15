@@ -37,6 +37,7 @@ jobs:
       - run: just docs
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
+          retention-days: 1
           name: html-docs-${{ matrix.python-version }}
           path: "./docs/_build/html/"
   build-docs-result:
@@ -111,6 +112,7 @@ jobs:
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
+          retention-days: 1
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
   deploy-docs:
