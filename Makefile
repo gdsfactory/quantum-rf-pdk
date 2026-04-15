@@ -24,7 +24,7 @@ install:
 	fi
 
 dev: install
-	$(JUST_CMD) install-pre
+	@$(JUST_CMD) install-pre
 
 test:
 	@$(JUST_CMD) test
