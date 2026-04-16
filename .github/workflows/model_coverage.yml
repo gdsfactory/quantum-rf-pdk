@@ -4,8 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-
+permissions: {}
 jobs:
   model-coverage:
+    permissions:
+      contents: write
+      pull-requests: write
     uses: doplaydo/pdk-ci-workflow/.github/workflows/model_coverage.yml@ae9c40561a365ac980256651b03a34c604eaa904 # main
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit]
