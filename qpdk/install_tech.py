@@ -11,11 +11,9 @@ def remove_path_or_dir(dest: Path) -> None:
     """Remove a path or directory."""
     if dest.is_symlink():
         dest.unlink()
-    elif not dest.exists():
-        raise FileNotFoundError(f"Path does not exist: {dest}")
     elif dest.is_dir():
         shutil.rmtree(dest)
-    else:
+    elif dest.exists():
         dest.unlink()
 
 
