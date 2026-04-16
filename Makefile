@@ -13,7 +13,12 @@ docs:
 	@if [ "$$GITHUB_ACTIONS" = "true" ]; then sudo apt-get update -y && sudo apt-get install -y fonts-cmu; fi
 	@$(JUST_CMD) docs
 	@if [ "$$GITHUB_ACTIONS" = "true" ]; then \
-		GH_TOKEN=$${GITHUB_TOKEN} gh run download $$GITHUB_RUN_ID -n pdf-docs -D docs/_build/html || echo "PDF artifact not found, skipping…"; \
+		TOKEN=$${GH_TOKEN:-$${GITHUB_TOKEN:-$$(git config --get http.https://github.com/.extraheader | cut -d ' ' -f 3 | base64 -d | cut -d ':' -f 2 2>/dev/null)}}; \
+		if [ -n "$$TOKEN" ]; then \
+			GH_TOKEN=$$TOKEN gh run download $$GITHUB_RUN_ID -n pdf-docs -D docs/_build/html || echo "PDF artifact not found, skipping…"; \
+		else \
+			echo "GH_TOKEN not set and could not be extracted from git, skipping PDF download…"; \
+		fi; \
 	fi
 
 build:
