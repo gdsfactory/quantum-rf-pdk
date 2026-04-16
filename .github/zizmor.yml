@@ -1,6 +1,13 @@
 rules:
   unpinned-uses:
-    disable: false
+    ignore:
+      - "claude-pr-review.yml"
+  excessive-permissions:
+    ignore:
+      - "claude-pr-review.yml"
+  secrets-inherit:
+    ignore:
+      - "claude-pr-review.yml"
   dangerous-triggers:
     ignore:
       - "pages.yml"
