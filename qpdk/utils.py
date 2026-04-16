@@ -125,7 +125,7 @@ def fill_magnetic_vortices(
 
     Example:
         >>> from qpdk.cells.resonator import resonator_quarter_wave
-        >>> from qpdk.cells.helpers import fill_magnetic_vortices
+        >>> from qpdk.utils import fill_magnetic_vortices
         >>> resonator = resonator_quarter_wave()
         >>> filled_resonator = fill_magnetic_vortices(resonator)
         >>> # Or use with default component

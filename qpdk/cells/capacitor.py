@@ -9,9 +9,9 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
-from qpdk.cells.helpers import merge_layers_with_etch as _merge_layers_with_etch
 from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
 from qpdk.tech import LAYER, get_etch_section, get_etch_sections
+from qpdk.utils import merge_layers_with_etch as _merge_layers_with_etch
 
 
 @gf.cell(tags=("capacitors", "couplers"))

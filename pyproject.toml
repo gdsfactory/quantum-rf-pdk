@@ -123,34 +123,6 @@ test = [
 requires = ["uv_build>=0.10.8,<0.12.0"]
 build-backend = "uv_build"
 
-[tool.setuptools.package-data]
-"*" = ["*.yaml", "*.lyp", "*.lyt", "*.csv", "*.gds", "*.oas"]
-
-[tool.tbump]
-[[tool.tbump.file]]
-src = "pyproject.toml"
-
-[[tool.tbump.file]]
-src = "qpdk/__init__.py"
-
-[[tool.tbump.file]]
-src = "README.md"
-
-[tool.tbump.git]
-message_template = "Bump to {new_version}"
-tag_template = "v{new_version}"
-
-[tool.tbump.version]
-current = "0.3.6"
-
-[tool.mypy]
-strict = true
-
-[tool.towncrier]
-directory = ".changelog.d"
-filename = "CHANGELOG.md"
-template = ".changelog.d/changelog_template.jinja"
-
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, schem, Commun, Ue, inout"
 skip = "bibliography.bib"
@@ -193,6 +165,9 @@ ignore-nested-functions = true
 ignore-regex = ["^test_.*"]
 omit-covered-files = true
 verbose = 2
+
+[tool.mypy]
+strict = true
 
 [tool.pylsp-mypy]
 enabled = true
@@ -366,8 +341,33 @@ ignore-one-line-docstrings = true
 [tool.ruff.lint.pycodestyle]
 ignore-overlong-task-comments = true
 
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.lyp", "*.lyt", "*.csv", "*.gds", "*.oas"]
+
+[tool.tbump]
+[[tool.tbump.file]]
+src = "pyproject.toml"
+
+[[tool.tbump.file]]
+src = "qpdk/__init__.py"
+
+[[tool.tbump.file]]
+src = "README.md"
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "v{new_version}"
+
+[tool.tbump.version]
+current = "0.3.6"
+
 [tool.tombi.schema]
 strict = false
+
+[tool.towncrier]
+directory = ".changelog.d"
+filename = "CHANGELOG.md"
+template = ".changelog.d/changelog_template.jinja"
 
 [tool.uv]
 default-groups = ["dev", "lint", "stubs", "test"]

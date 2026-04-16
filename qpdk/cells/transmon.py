@@ -12,12 +12,12 @@ from kfactory import kdb
 from klayout.db import DCplxTrans, Region
 
 from qpdk.cells.bump import indium_bump
-from qpdk.cells.helpers import (
+from qpdk.cells.junction import squid_junction, squid_junction_long
+from qpdk.tech import LAYER
+from qpdk.utils import (
     subtract_draw_from_etch as _subtract_draw_from_etch,
     transform_component,
 )
-from qpdk.cells.junction import squid_junction, squid_junction_long
-from qpdk.tech import LAYER
 
 
 @gf.cell(check_instances=False, tags=("qubits", "transmons"))
