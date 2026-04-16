@@ -28,6 +28,8 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
     if dest.exists() and not overwrite:
         logger.warning("Technology already exists at {}", dest)
         return
+    # Intentionally include `is_symlink()` to also remove broken symlinks:
+    # for broken links, `exists()` is False while `is_symlink()` is True.
     if dest.exists() or dest.is_symlink():
         logger.info("Removing existing technology files: {}", dest)
         remove_path_or_dir(dest)
