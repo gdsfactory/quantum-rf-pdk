@@ -10,7 +10,6 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
 from qpdk.cells.waveguides import bend_circular, straight
-from qpdk.helper import show_components
 from qpdk.tech import get_etch_section
 
 
@@ -396,21 +395,3 @@ def quarter_wave_resonator_coupled(
             c.add_port(port=port)
 
     return c
-
-
-if __name__ == "__main__":
-    show_components(
-        resonator,
-        resonator_quarter_wave,
-        resonator_half_wave,
-        resonator_quarter_wave_bend_start,
-        resonator_quarter_wave_bend_both,
-        resonator_coupled,
-        partial(
-            resonator_coupled,
-            length=2000,
-            meanders=4,
-            open_start=False,
-            open_end=True,
-        ),
-    )

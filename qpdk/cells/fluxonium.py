@@ -10,7 +10,6 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
-from qpdk.cells.helpers import add_rect, transform_component
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.junction import josephson_junction
 from qpdk.tech import (
@@ -18,6 +17,7 @@ from qpdk.tech import (
     get_etch_section,
     superinductor_cross_section,
 )
+from qpdk.utils import add_rect, transform_component
 
 __all__ = ["fluxonium", "fluxonium_with_bbox"]
 
@@ -361,12 +361,3 @@ def fluxonium_with_bbox(
 
     c.add_ports(flux_ref.ports)
     return c
-
-
-if __name__ == "__main__":
-    from qpdk.helper import show_components
-
-    show_components(
-        fluxonium,
-        fluxonium_with_bbox,
-    )

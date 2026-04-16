@@ -21,7 +21,6 @@ import numpy as np
 
 from qpdk import tech
 from qpdk.cells.chip import chip_edge
-from qpdk.cells.helpers import fill_magnetic_vortices
 from qpdk.cells.launcher import launcher
 from qpdk.cells.resonator import resonator_coupled
 from qpdk.cells.waveguides import straight
@@ -31,6 +30,7 @@ from qpdk.tech import (
     route_bundle_cpw,
     route_bundle_sbend,
 )
+from qpdk.utils import fill_magnetic_vortices
 
 # %% [markdown]
 # ## Resonator Test Chip Function

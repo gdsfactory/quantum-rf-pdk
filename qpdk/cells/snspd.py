@@ -116,12 +116,3 @@ def snspd(
     D.info["ysize"] = ysize
     D.flatten()
     return D
-
-
-if __name__ == "__main__":
-    from qpdk import PDK
-
-    PDK.activate()
-
-    c = snspd()
-    c.show()
