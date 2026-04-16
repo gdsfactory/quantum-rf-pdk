@@ -4,7 +4,6 @@ import gdsfactory as gf
 from gdsfactory import Component
 
 from qpdk.cells.capacitor import interdigital_capacitor, plate_capacitor_single
-from qpdk.cells.helpers import merge_layers_with_etch, subtract_draw_from_etch
 from qpdk.cells.transmon import (
     double_pad_transmon_with_bbox,
     flipmon_with_bbox,
@@ -12,6 +11,7 @@ from qpdk.cells.transmon import (
 )
 from qpdk.helper import layerenum_to_tuple
 from qpdk.tech import LAYER
+from qpdk.utils import merge_layers_with_etch, subtract_draw_from_etch
 
 
 def test_merge_layers_with_etch_returns_component():

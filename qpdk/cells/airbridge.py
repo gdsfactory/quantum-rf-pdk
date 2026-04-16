@@ -170,14 +170,3 @@ def cpw_with_airbridges(
 
     # Create a copy with airbridges using Pydantic model_copy
     return base_xs.model_copy(update={"components_along_path": (component_along_path,)})
-
-
-if __name__ == "__main__":
-    # Example usage and testing
-    from qpdk import PDK
-
-    PDK.activate()
-
-    # Create and display a single airbridge
-    bridge = airbridge()
-    bridge.show()

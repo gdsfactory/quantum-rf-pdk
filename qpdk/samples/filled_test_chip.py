@@ -17,8 +17,8 @@ from gdsfactory.read import from_yaml
 
 from qpdk import PDK, tech
 from qpdk.cells.chip import chip_edge
-from qpdk.cells.helpers import apply_additive_metals, fill_magnetic_vortices
 from qpdk.helper import layerenum_to_tuple
+from qpdk.utils import apply_additive_metals, fill_magnetic_vortices
 
 # %% [markdown]
 # # Filled Qubit Test Chip Example

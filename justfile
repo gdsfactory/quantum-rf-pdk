@@ -12,8 +12,8 @@ default:
 
 # Install the package and all development dependencies
 [group('setup')]
-install:
-    @uv sync --all-extras
+install extras="--all-extras":
+    @uv sync {{ extras }}
 
 # Install KLayout technology files for the PDK
 [group('setup')]
@@ -34,7 +34,12 @@ update-pre:
 # Run all pre-commit hooks on all files
 [group('lint')]
 run-pre:
-    uvx prek run --all-files
+    @uvx prek run --all-files
+
+# Install pre-commit hooks to run on `git commit`
+[group('lint')]
+install-pre:
+    @uvx prek install
 
 # Build the Python package (install build tool and create dist)
 [group('build')]
