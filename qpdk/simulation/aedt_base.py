@@ -17,13 +17,13 @@ import gdsfactory as gf
 from gdsfactory.technology.layer_stack import LayerLevel
 
 from qpdk import LAYER_STACK
-from qpdk.cells.helpers import (
+from qpdk.tech import LAYER, material_properties
+from qpdk.utils import (
     add_margin_to_layer,
     apply_additive_metals,
     invert_mask_polarity,
     remove_metadata_layers,
 )
-from qpdk.tech import LAYER, material_properties
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss, Q2d

@@ -17,7 +17,7 @@
 import gdsfactory as gf
 
 from qpdk import PDK, cells, tech
-from qpdk.cells.helpers import apply_additive_metals, fill_magnetic_vortices
+from qpdk.utils import apply_additive_metals, fill_magnetic_vortices
 
 # %% [markdown]
 # ## 3D Sample Function

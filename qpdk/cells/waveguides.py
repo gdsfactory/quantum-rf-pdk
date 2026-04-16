@@ -8,7 +8,6 @@ from kfactory import VInstance
 from klayout.db import DCplxTrans
 
 from qpdk import tech
-from qpdk.helper import show_components
 from qpdk.logger import logger
 from qpdk.tech import get_etch_section
 
@@ -28,7 +27,7 @@ def rectangle(
     Args:
         size: (tuple) Width and height of rectangle.
         layer: Specific layer to put polygon geometry on.
-        centered: True sets center to (0, 0), False sets south-west to (0, 0).
+        centered: True sets center to (0.0, 0.0), False sets south-west to (0.0, 0.0).
         port_type: optical, electrical.
         port_orientations: list of port_orientations to add. None adds no ports.
     """
@@ -201,7 +200,7 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     )
 
     # center
-    c.center = (0, 0)
+    c.center = (0.0, 0.0)
 
     return c
 
@@ -446,22 +445,3 @@ def add_etch_gap(
     )
     etch_ref.transform(port.dcplx_trans * DCplxTrans(etch_section.width / 2, 0))
     return etch_ref
-
-
-if __name__ == "__main__":
-    show_components(
-        taper_cross_section,
-        bend_euler,
-        bend_circular,
-        tee,
-        bend_s,
-        straight,
-        coupler_ring,
-        coupler_straight,
-        partial(straight_open, length=20),
-        partial(straight_double_open, length=20),
-        straight_all_angle,
-        partial(bend_euler_all_angle, angle=33),
-        rectangle,
-        spacing=50,
-    )

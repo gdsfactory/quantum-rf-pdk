@@ -16,9 +16,9 @@
 # %%
 import gdsfactory as gf
 
-from qpdk.cells.helpers import fill_magnetic_vortices
 from qpdk.cells.resonator import resonator_quarter_wave
 from qpdk.tech import LAYER
+from qpdk.utils import fill_magnetic_vortices
 
 # %% [markdown]
 # ## Filled Quarter Wave Resonator Function

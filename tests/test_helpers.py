@@ -3,8 +3,8 @@
 import gdsfactory as gf
 import pytest
 
-from qpdk.cells.helpers import add_rect
 from qpdk.tech import LAYER
+from qpdk.utils import add_rect
 
 
 def test_add_rect_x0_x1() -> None:
