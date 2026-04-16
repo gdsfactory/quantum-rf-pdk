@@ -3,89 +3,33 @@ permissions:
   contents: read
 on:
   pull_request:
-  workflow_run:
-    workflows: ["Test"]
-    types: [completed]
+  push:
     branches:
       - main
-  merge_group:
   workflow_dispatch:
+  merge_group:
 jobs:
-  get-python-versions:
-    uses: ./.github/workflows/get-python-versions.yml
-  build-docs:
-    needs: get-python-versions
-    runs-on: ubuntu-latest
-    name: Build HTML docs
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          lfs: true
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install just
-        uses: extractions/setup-just@v3
-      - run: just install
-      - run: just docs
-      - uses: actions/upload-artifact@v6
-        with:
-          name: html-docs-${{ matrix.python-version }}
-          path: "./docs/_build/html/"
-  build-docs-result:
-    runs-on: ubuntu-latest
-    name: Build docs result
-    needs: build-docs
-    if: always()
-    steps:
-      - name: Check build-docs matrix results
-        run: |
-          if [[ "${{ needs.build-docs.result }}" == "success" ]]; then
-            echo "All build-docs jobs succeeded"
-            exit 0
-          else
-            echo "One or more build-docs jobs failed"
-            exit 1
-          fi
-  get-latest-python:
-    needs: get-python-versions
-    runs-on: ubuntu-latest
-    outputs:
-      latest-python: ${{ steps.get-latest.outputs.latest-python }}
-    steps:
-      - name: Get latest Python version
-        id: get-latest
-        run: |
-          versions='${{ needs.get-python-versions.outputs.python-versions }}'
-          latest=$(echo "$versions" | jq -r '.[-1]')
-          echo "latest-python=$latest" >> "$GITHUB_OUTPUT"
-          echo "Latest Python version: $latest"
   build-docs-pdf:
     runs-on: ubuntu-latest
     name: Build PDF docs
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v7.0.0
       - name: Install just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v3.0.0
       - run: just install
       - name: Cache ImageMagick
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.0
         with:
           path: /var/cache/apt/archives
           key: ${{ runner.os }}-imagemagick
-      - name: Install ImageMagick
+      - name: Install ImageMagick and Computer Modern Unicode fonts
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y imagemagick
+          sudo apt-get install -y imagemagick fonts-cmu
           # Allow ImageMagick to convert SVG files (disabled by default in policy)
           if [ -f /etc/ImageMagick-6/policy.xml ]; then
             sudo sed -i 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' /etc/ImageMagick-6/policy.xml
@@ -94,7 +38,7 @@ jobs:
         run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
         continue-on-error: true
-        uses: xu-cheng/latex-action@v4
+        uses: xu-cheng/latex-action@6549dc21effb2730855a1281407ecfcececc6c1b # v4.0.0
         env:
           XINDYOPTS: "-L english -C utf8 -M sphinx.xdy"
         with:
@@ -107,44 +51,17 @@ jobs:
           continue_on_error: true
           latexmk_use_xelatex: true
           args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
-  deploy-docs:
-    runs-on: ubuntu-latest
-    name: Deploy to GitHub Pages
-    needs: [build-docs, build-docs-pdf, get-latest-python]
-    if: >
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-
+  pages:
+    needs: build-docs-pdf
     permissions:
+      actions: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Download HTML artifact (latest Python)
-        uses: actions/download-artifact@v7
-        with:
-          name: html-docs-${{ needs.get-latest-python.outputs.latest-python }}
-          path: _site
-      - name: Download PDF artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: pdf-docs
-          path: _site
-      - name: Download coverage report
-        uses: actions/download-artifact@v7
-        continue-on-error: true
-        with:
-          name: coverage-report-${{ needs.get-latest-python.outputs.latest-python }}
-          path: _site/reports/coverage
-          run-id: ${{ github.event.workflow_run.id || github.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload merged pages artifact
-        uses: actions/upload-pages-artifact@v4
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/pages.yml@main # zizmor: ignore[unpinned-uses, secrets-inherit]
+    secrets:
+      GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
+      SIMCLOUD_APIKEY: ${{ secrets.SIMCLOUD_APIKEY }}

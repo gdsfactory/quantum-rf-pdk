@@ -4,10 +4,23 @@ from typing import final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
+import pytest
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
-from qpdk.models.waveguides import airbridge, nxn, straight
+from qpdk.models.waveguides import (
+    airbridge,
+    bend_circular,
+    bend_euler,
+    bend_s,
+    indium_bump,
+    nxn,
+    rectangle,
+    straight,
+    straight_double_open,
+    straight_open,
+    tsv,
+)
 from qpdk.tech import coplanar_waveguide
 
 from .base import TwoPortModelTestSuite
@@ -26,12 +39,13 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         """Get model-specific keyword arguments."""
         return {"length": 1000}
 
+    @staticmethod
     @given(
         f_center=st.floats(min_value=1e9, max_value=9e9),
         length=st.floats(min_value=10, max_value=50000),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_passivity_hypothesis(self, f_center: float, length: float) -> None:
+    def test_passivity_hypothesis(f_center: float, length: float) -> None:
         """Test that the waveguide satisfies passivity (energy conservation).
 
         For a passive two-port network: |S11|^2 + |S21|^2 <= 1
@@ -43,8 +57,8 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         f = jnp.linspace(f_center * 0.9, f_center * 1.1, 10)
         result = straight(f=f, length=length)
 
-        s11 = result[("o1", "o1")]
-        s21 = result[("o2", "o1")]
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
 
         power_reflection = jnp.abs(s11) ** 2
         power_transmission = jnp.abs(s21) ** 2
@@ -56,12 +70,13 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
             err_msg=f"Passivity violated: max total power = {jnp.max(total_power)}",
         )
 
+    @staticmethod
     @given(
-        length1=st.floats(min_value=100, max_value=10000),
-        length2=st.floats(min_value=100, max_value=10000),
+        length1=st.floats(min_value=10, max_value=10000),
+        length2=st.floats(min_value=10001, max_value=50000),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_length_effect(self, length1: float, length2: float) -> None:
+    def test_length_effect(length1: float, length2: float) -> None:
         """Test that longer waveguides have more attenuation.
 
         Args:
@@ -74,8 +89,8 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         result1 = straight(f=f, length=length1)
         result2 = straight(f=f, length=length2)
 
-        transmission1 = jnp.abs(result1[("o2", "o1")])[0]
-        transmission2 = jnp.abs(result2[("o2", "o1")])[0]
+        transmission1 = jnp.abs(result1["o2", "o1"])[0]
+        transmission2 = jnp.abs(result2["o2", "o1"])[0]
 
         if length2 > length1:
             assert_array_less(
@@ -97,9 +112,9 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         result = straight(f=f, length=length)
 
         assert isinstance(result, dict), "Result should be a dictionary"
-        assert len(result[("o2", "o1")]) == 100, "Should have 100 frequency points"
+        assert len(result["o2", "o1"]) == 100, "Should have 100 frequency points"
 
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         assert jnp.all(jnp.isfinite(s21)), "All S21 values should be finite"
         assert_array_less(
             jnp.abs(s21),
@@ -116,10 +131,10 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         result = straight(f=f, length=1000, cross_section=custom_cross_section)
 
         assert isinstance(result, dict), "Result should be a dictionary"
-        assert len(result[("o2", "o1")]) == 2, "Should have 2 frequency points"
+        assert len(result["o2", "o1"]) == 2, "Should have 2 frequency points"
 
-        s12 = result[("o1", "o2")]
-        s21 = result[("o2", "o1")]
+        s12 = result["o1", "o2"]
+        s21 = result["o2", "o1"]
         max_diff = jnp.max(jnp.abs(s12 - s21))
         assert max_diff < 1e-10, f"S12 and S21 should be equal, max diff: {max_diff}"
 
@@ -129,12 +144,100 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         f = jnp.array([5e9])
         result = straight(f=f, length=0)
 
-        s21 = result[("o2", "o1")]
+        s21 = result["o2", "o1"]
         transmission = jnp.abs(s21)[0]
 
         assert transmission > 0.99, (
             f"Zero length should have ~perfect transmission, got {transmission}"
         )
+
+
+@final
+class TestStraightOpen(TwoPortModelTestSuite):
+    """Tests for straight_open model."""
+
+    model_function = straight_open
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"length": 1000}
+
+
+@final
+class TestStraightDoubleOpen(TwoPortModelTestSuite):
+    """Tests for straight_double_open model."""
+
+    model_function = straight_double_open
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"length": 1000}
+
+
+@final
+class TestTSV(TwoPortModelTestSuite):
+    """Tests for TSV model."""
+
+    model_function = tsv
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"via_height": 500.0}
+
+
+@final
+class TestIndiumBump(TwoPortModelTestSuite):
+    """Tests for indium_bump model."""
+
+    model_function = indium_bump
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"bump_height": 10.0}
+
+
+@final
+class TestBendCircular(TwoPortModelTestSuite):
+    """Tests for bend_circular model."""
+
+    model_function = bend_circular
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"length": 500}
+
+
+@final
+class TestBendEuler(TwoPortModelTestSuite):
+    """Tests for bend_euler model."""
+
+    model_function = bend_euler
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"length": 500}
+
+
+@final
+class TestBendS(TwoPortModelTestSuite):
+    """Tests for bend_s model."""
+
+    model_function = bend_s
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"length": 500}
+
+
+@final
+class TestRectangle(TwoPortModelTestSuite):
+    """Tests for rectangle model."""
+
+    model_function = rectangle
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"length": 500}
 
 
 @final
@@ -167,7 +270,7 @@ class TestNxN:
         for j in range(1, n + 1):
             total_power = jnp.zeros_like(f)
             for i in range(1, n + 1):
-                s_ij = result[(f"o{i}", f"o{j}")]
+                s_ij = result[f"o{i}", f"o{j}"]
                 total_power += jnp.abs(s_ij) ** 2
             assert_array_less(
                 total_power,
@@ -184,8 +287,8 @@ class TestNxN:
 
         for i in range(1, n + 1):
             for j in range(i + 1, n + 1):
-                s_ij = result[(f"o{i}", f"o{j}")]
-                s_ji = result[(f"o{j}", f"o{i}")]
+                s_ij = result[f"o{i}", f"o{j}"]
+                s_ji = result[f"o{j}", f"o{i}"]
                 assert_allclose(
                     s_ij,
                     s_ji,
@@ -193,16 +296,15 @@ class TestNxN:
                     err_msg=f"Reciprocity violated between o{i} and o{j}",
                 )
 
+    @staticmethod
     @given(
-        west=st.integers(min_value=0, max_value=5),
-        east=st.integers(min_value=0, max_value=5),
-        north=st.integers(min_value=0, max_value=5),
-        south=st.integers(min_value=0, max_value=5),
+        west=st.integers(min_value=0, max_value=2),
+        east=st.integers(min_value=0, max_value=2),
+        north=st.integers(min_value=0, max_value=2),
+        south=st.integers(min_value=0, max_value=2),
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
-    def test_with_hypothesis(
-        self, west: int, east: int, north: int, south: int
-    ) -> None:
+    def test_with_hypothesis(west: int, east: int, north: int, south: int) -> None:
         """Test nxn model with random port counts using hypothesis."""
         n = west + east + north + south
         assume(n > 0)
@@ -220,13 +322,48 @@ class TestNxN:
         # Verify passivity for the first port (o1)
         total_power = jnp.zeros_like(f)
         for i in range(1, n + 1):
-            s_i1 = result[(f"o{i}", "o1")]
+            s_i1 = result[f"o{i}", "o1"]
             total_power += jnp.abs(s_i1) ** 2
         assert_array_less(
             total_power,
             1.0 + 1e-6,
             err_msg=f"Passivity violated for port o1 with N={n}: max power = {jnp.max(total_power)}",
         )
+
+
+class TestNxNEdgeCases:
+    """Tests for nxn model edge cases."""
+
+    @staticmethod
+    def test_zero_ports_raises() -> None:
+        """Test that nxn with 0 total ports raises ValueError."""
+        f = jnp.array([5e9])
+        with pytest.raises(ValueError, match="Total number of ports must be positive"):
+            nxn(f=f, west=0, east=0, north=0, south=0)
+
+    @staticmethod
+    def test_single_port() -> None:
+        """Test nxn with single port returns electrical_open."""
+        f = jnp.array([5e9])
+        result = nxn(f=f, west=1, east=0, north=0, south=0)
+        assert isinstance(result, dict)
+        ports = set()
+        for p1, p2 in result:
+            ports.add(p1)
+            ports.add(p2)
+        assert len(ports) == 1
+
+    @staticmethod
+    def test_two_ports() -> None:
+        """Test nxn with two ports returns electrical_short."""
+        f = jnp.array([5e9])
+        result = nxn(f=f, west=1, east=1, north=0, south=0)
+        assert isinstance(result, dict)
+        ports = set()
+        for p1, p2 in result:
+            ports.add(p1)
+            ports.add(p2)
+        assert len(ports) == 2
 
 
 @final

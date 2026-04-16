@@ -1,5 +1,5 @@
 instances:
-  rectangle_S1000_50_LM1_ETCH_CFalse_PTNone_PO180_90_0_m90_0_0:
+  rectangle:
     component: rectangle
     info: {}
     settings:
@@ -12,9 +12,9 @@ instances:
       - -90
       port_type: null
       size:
-      - 1000
-      - 50
-  rectangle_S1000_50_LM1_ETCH_CFalse_PTNone_PO180_90_0_m90_0_950000:
+      - 10000
+      - 200
+  rectangle2:
     component: rectangle
     info: {}
     settings:
@@ -27,9 +27,9 @@ instances:
       - -90
       port_type: null
       size:
-      - 1000
-      - 50
-  rectangle_S50_1000_LM1_ETCH_CFalse_PTNone_PO180_90_0_m90_0_0:
+      - 10000
+      - 200
+  rectangle3:
     component: rectangle
     info: {}
     settings:
@@ -42,9 +42,9 @@ instances:
       - -90
       port_type: null
       size:
-      - 50
-      - 1000
-  rectangle_S50_1000_LM1_ETCH_CFalse_PTNone_PO180_90_0_m90_950000_0:
+      - 200
+      - 10000
+  rectangle4:
     component: rectangle
     info: {}
     settings:
@@ -57,29 +57,28 @@ instances:
       - -90
       port_type: null
       size:
-      - 50
-      - 1000
-name: chip_edge_S1000_1000_W50_LM1_ETCH_ATFalse_TS10
+      - 200
+      - 10000
 nets: []
 placements:
-  rectangle_S1000_50_LM1_ETCH_CFalse_PTNone_PO180_90_0_m90_0_0:
+  rectangle:
     mirror: false
     rotation: 0
     x: 0
     y: 0
-  rectangle_S1000_50_LM1_ETCH_CFalse_PTNone_PO180_90_0_m90_0_950000:
+  rectangle2:
     mirror: false
     rotation: 0
     x: 0
-    y: 950
-  rectangle_S50_1000_LM1_ETCH_CFalse_PTNone_PO180_90_0_m90_0_0:
+    y: 9800
+  rectangle3:
     mirror: false
     rotation: 0
     x: 0
     y: 0
-  rectangle_S50_1000_LM1_ETCH_CFalse_PTNone_PO180_90_0_m90_950000_0:
+  rectangle4:
     mirror: false
     rotation: 0
-    x: 950
+    x: 9800
     y: 0
 ports: {}

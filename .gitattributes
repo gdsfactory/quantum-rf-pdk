@@ -1,3 +1,4 @@
 *.gds binary
 *.oas binary
 tests/models/data/*.csv filter=lfs diff=lfs merge=lfs -text
+tests/test_models_regression/*.npz filter=lfs diff=lfs merge=lfs -text

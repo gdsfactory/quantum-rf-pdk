@@ -1,4 +1,6 @@
 name: Copilot Setup Steps
+permissions:
+  contents: read
 on:
   workflow_dispatch:
 jobs:
@@ -6,12 +8,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           lfs: true
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v7.0.0
       - name: Install just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v3.0.0
       - name: Install dependencies
         run: just install
+      - name: Install Computer Modern Unicode fonts
+        run: sudo apt-get install -y fonts-cmu

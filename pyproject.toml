@@ -1,45 +1,108 @@
 [project]
 name = "qpdk"
-version = "0.3.0"
+version = "0.3.6"
 description = "Quantum-RF generic PDK"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = { file = "LICENSE" }
 authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
-keywords = ["python"]
+keywords = [
+  "gdsfactory",
+  "layout",
+  "microwave",
+  "pdk",
+  "python",
+  "quantum",
+  "rf",
+  "simulation",
+  "superconducting",
+]
 classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Manufacturing",
+  "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
 ]
-dependencies = ["doroutes>=0.2.0", "gdsfactory~=9.39.0"]
+dependencies = [
+  "doroutes>=0.2.0",
+  "gdsfactory>=9.39.0,<9.40.0",
+  "typing-extensions>=4.12.0",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/gdsfactory/quantum-rf-pdk/issues"
+changelog = "https://github.com/gdsfactory/quantum-rf-pdk/releases"
+documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
+repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
 
 [project.optional-dependencies]
 gdsfactoryplus = ["gdsfactoryplus"]
 models = [
   "gplugins[meshwell]>=2.0.1",
   "jaxellip",
+  "optax",
   "optuna",
-  "pymablock>=2.2.1",
-  "ray[tune]; sys_platform != 'win32'",
-  "sax>=0.16.11",
+  "sax[rf]>=0.16.14",
   "scikit-rf",
-  "scqubits",
   "sympy",
   "polars",
+  "pandas[parquet]",
 ]
+netket = ["netket>=3.12", "flax", "optax"]
+pymablock = ["pymablock>=2.2.1"]
+qutip = ["qutip-jax>=0.1.1", "qutip-qip>=0.4.1"]
+ray = ["ray[default]", "tqdm"]
+scqubits = ["scqubits"]
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
   "jinja2",
-  "jupyter-book>=1.0.4,<2",
   "jupytext",
+  "linkify-it-py",
   "matplotlib",
+  "myst-nb>=1.0",
   "pydata-sphinx-theme",
+  "scipy",
+  "sphinx>=9.0",
+  "sphinx-copybutton",
+  "sphinx-design",
+  "sphinx-github-alerts>=1.0",
+  "sphinxcontrib-bibtex",
+  "sphinxcontrib-bibtex-urn",
   "sphinxcontrib-katex",
+  "sphinxcontrib-mermaid>=2.0.1",
   "sphinxcontrib-svgbob",
+  { include-group = "docs-models" },
+]
+docs-models = [
+  "flax",
+  "gplugins[meshwell]>=2.0.1",
+  "jaxellip",
+  "netket>=3.12",
+  "optax",
+  "optuna",
+  "pandas[parquet]",
+  "polars",
+  "pyaedt[graphics]>=0.15.0",
+  "pymablock>=2.2.1",
+  "qutip-jax>=0.1.1",
+  "qutip-qip>=0.4.1",
+  "ray[default]",
+  "sax[rf]>=0.16.14",
+  "scikit-rf",
+  "scqubits",
+  "sympy",
+  "tqdm",
 ]
 github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
@@ -55,12 +118,18 @@ test = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.10.8,<0.11.0"]
+requires = ["uv_build>=0.10.8,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.codespell]
-ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, Commun, Ue, inout"
+ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, schem, Commun, Ue, inout"
 skip = "bibliography.bib"
+
+[tool.coverage.run]
+source = ["qpdk"]
+
+[tool.coverage.report]
+exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
 
 [tool.gdsfactoryplus]
 name = "qpdk"
@@ -98,6 +167,9 @@ ignore-regex = ["^test_.*"]
 omit-covered-files = true
 verbose = 2
 
+[tool.mypy]
+strict = true
+
 [tool.pylsp-mypy]
 enabled = true
 live_mode = true
@@ -121,21 +193,15 @@ project-excludes = [
 project-includes = ["**/*.py"]
 
 [tool.pyrefly.errors]
-bad-argument-type = "ignore"
-# Configure specific error types - start permissive and tighten over time
-missing-argument = "ignore"
-missing-module-attribute = "ignore"
-# Not all gdsfactory overloads are seem to be properly typed
+# Not all gdsfactory overloads are properly typed
 no-matching-overload = "ignore"
-not-a-type = "warn"
-read-only = "ignore"
-# The cast() calls are needed for pyrefly <0.55 compatibility (pre-commit hook uses 0.46.3).
-# TODO: remove this when the pre-commit hook is updated to pyrefly >=0.55.0.
-redundant-cast = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]
-markers = ["skip_windows: skip test on Windows"]
+markers = [
+  "hfss: mark test as requiring HFSS",
+  "skip_windows: skip test on Windows",
+]
 norecursedirs = [
   "*.egg",
   ".*",
@@ -153,8 +219,10 @@ testpaths = ["qpdk/", "tests"]
 
 [tool.ruff]
 fix = true
+preview = true
 
 [tool.ruff.format]
+docstring-code-format = true
 exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
@@ -168,13 +236,36 @@ ignore = [
   "RUF001",  # ambiguous unicode characters (incl. lots of math)
   "RUF002",  # ambiguous unicode characters (incl. docstring greek letters)
   "RUF003",  # -||- but for comments
+  "RUF067",  # non-empty-init-module
+  "PLR2004",  # magic-value-comparison
+  "PLR0913",  # too-many-arguments
+  "PLR0914",  # too-many-locals
+  "PLC2401",  # non-ascii-name
+  "PLC2403",  # non-ascii-import-name
+  "N806",  # non-lowercase-variable-in-function
+  "N803",  # invalid-argument-name
+  "ERA001",  # commented-out-code
+  "PLR0917",  # too-many-positional-arguments
+  "TRY003",  # long messages in exceptions
+  "A004",  # builtin-import-shadowing
+  "N816",  # mixed-case-variable-in-global-scope
+  "PLC2701",  # import-private-name
+  "PLR0911",  # too-many-return-statements
+  "PLR6104",  # non-augmented-assignment
+  "PLR0912",  # too-many-branches
+  "PLR0915",  # too-many-statements
+  "PLR0916",  # too-many-boolean-expressions
+  "S404",  # suspicious-subprocess-import
+  "PLW1510",  # subprocess-run-without-check
+  "S607",  # start-process-with-partial-path
+  "TC006",  # runtime-cast-value
 ]
 select = [
   "E",  # pycodestyle errors
   "W",  # pycodestyle warnings
   "F",  # pyflakes
   "I",  # isort
-  "C",  # flake8-comprehensions
+  "C4",  # flake8-comprehensions
   "B",  # flake8-bugbear
   "D",  # pydocstyle
   "UP",  # pyupgrade
@@ -193,28 +284,94 @@ select = [
   "NPY",  # numpy
   "PERF",  # perflint
   "RUF",  # ruff
+  "PL",  # pylint
+  "N",  # pep8-naming
+  "A",  # flake8-builtins
+  "TRY",  # tryceratops
+  "T20",  # flake8-print
+  "ISC",  # flake8-implicit-str-concat
+  "ERA",  # eradicate
+  "FURB",  # refurb
+  "DOC",  # pydoclint
+  "ASYNC",  # flake8-async
+  "TID",  # flake8-tidy-imports
+  "C",  # flake8-comprehensions
 ]
 
+[tool.ruff.lint.flake8-tidy-imports]
+require-lazy = [
+  "trimesh",
+  "polars",
+  "pyaedt",
+  "gplugins",
+  "jaxellip",
+  "optax",
+  "optuna",
+  "sax",
+  "sympy",
+  "pandas",
+  "netket",
+  "flax",
+  "pymablock",
+  "qutip-jax",
+  "qutip-qip",
+  "scqubits",
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
 [tool.ruff.lint.per-file-ignores]
-".github/write_cells.py" = [
-  "S701",
-]  # Jinja2 autoescape not needed for RST templates
-"notebooks/**/*.py" = ["D100"]
+"notebooks/**/*.py" = ["D100", "T201"]
+"qpdk/cells/__init__.py" = ["F403"]
+"qpdk/models/__init__.py" = ["F403"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",
-]  # no public module docstring for sample scripts
-"tests/**" = ["S101", "D102", "D103"]
-"qpdk/models/__init__.py" = ["E402"]
+  "T201",
+]  # no public module docstring for sample scripts, print allowed in samples
+"tests/**" = ["S101", "D102", "D103", "ANN", "T201"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+ignore-decorators = ["typing.overload"]
+
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true
+
+[tool.ruff.lint.pycodestyle]
+ignore-overlong-task-comments = true
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.lyp", "*.lyt", "*.csv", "*.gds", "*.oas"]
+
+[tool.tbump]
+[[tool.tbump.file]]
+src = "pyproject.toml"
+
+[[tool.tbump.file]]
+src = "qpdk/__init__.py"
+
+[[tool.tbump.file]]
+src = "README.md"
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "v{new_version}"
+
+[tool.tbump.version]
+current = "0.3.6"
 
 [tool.tombi.schema]
 strict = false
 
+[tool.towncrier]
+directory = ".changelog.d"
+filename = "CHANGELOG.md"
+template = ".changelog.d/changelog_template.jinja"
+
 [tool.uv]
-default-groups = ["dev", "docs", "lint", "stubs", "test"]
+default-groups = ["dev", "lint", "stubs", "test"]
 
 [tool.uv.build-backend]
 module-root = ""

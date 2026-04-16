@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import partial
 from itertools import chain
 from math import ceil, floor
 
@@ -10,17 +9,141 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
-from qpdk.cells.waveguides import straight
-from qpdk.helper import show_components
-from qpdk.tech import LAYER
+from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
+from qpdk.tech import LAYER, get_etch_section, get_etch_sections
+from qpdk.utils import merge_layers_with_etch as _merge_layers_with_etch
 
 
-@gf.cell
+@gf.cell(tags=("capacitors", "couplers"))
+def half_circle_coupler(
+    radius: float = 50.0,
+    angle: float = 180.0,
+    extension_length: float = 10.0,
+    cross_section: CrossSectionSpec = "cpw",
+    extra_straight_length: float = 20.0,
+    open_end: bool = True,
+) -> Component:
+    """Creates a half-circle coupler for readout.
+
+    This coupler consists of a circular bend (typically 180 degrees) that wraps
+    around a resonator arm for capacitive coupling.
+
+    Args:
+        radius: Inner radius of the half-circle in μm.
+        angle: Angle of the circular arc in degrees.
+        extension_length: Length of the straight sections extending from the
+            ends of the half-circle in μm.
+        cross_section: Cross-section specification for the coupler.
+        extra_straight_length: Length of the straight section extending from the
+            bottom of the half-circle in μm.
+        open_end: If True, adds an etched gap at the ends of the extensions.
+
+    Returns:
+        Component: A gdsfactory component with the half-circle coupler geometry.
+    """
+    c = Component()
+
+    bend = c.add_ref(
+        bend_circular(
+            radius=radius,
+            angle=angle,
+            cross_section=cross_section,
+        )
+    )
+
+    # Position bend such that it's centered and opening upwards
+    bend.rotate(-angle / 2)
+    bend.move((-bend.dcenter[0], -bend.dcenter[1]))
+
+    # Add extensions to the ends of the bend
+    if extension_length > 0:
+        ext1 = c.add_ref(straight(length=extension_length, cross_section=cross_section))
+        ext1.connect("o1", bend.ports["o1"])
+        ext2 = c.add_ref(straight(length=extension_length, cross_section=cross_section))
+        ext2.connect("o1", bend.ports["o2"])
+        where_to_add_gaps = [ext1.ports["o2"], ext2.ports["o2"]]
+    else:
+        where_to_add_gaps = [bend.ports["o1"], bend.ports["o2"]]
+
+    if open_end:
+        for port in where_to_add_gaps:
+            add_etch_gap(c, port, cross_section=cross_section)
+
+    # Get cross section details to calculate overlap
+    xs = gf.get_cross_section(cross_section)
+    cross_section_etch_section = get_etch_section(xs)
+    # Ensure significant overlap by moving stem into the bend metal
+    # and considering the bend radius
+    overlap = xs.width / 2 + cross_section_etch_section.width
+
+    # Add a stem/lead straight from the center of the arc.
+    # The stem uses the CPW cross-section but does NOT extend into the bend,
+    # to avoid M1_ETCH overlapping with the bend's M1_DRAW.
+    stem = c.add_ref(
+        straight(
+            length=extra_straight_length,
+            cross_section=cross_section,
+        )
+    )
+
+    stem.rotate(-90)
+    stem.movey(bend.dbbox().bottom)
+    stem.movex(bend.dcenter[0])  # Center it
+
+    # Bridge the stem into the bend with M1_DRAW center conductor and
+    # M1_ETCH gap sections, matching the CPW cross-section pattern.
+    # Unlike using a straight ref, these polygons avoid hierarchical
+    # M1_ETCH-over-M1_DRAW conflicts with the bend.
+    bridge_x = bend.dcenter[0]
+    bridge_y_bottom = bend.dbbox().bottom
+    bridge_y_top = bridge_y_bottom + overlap
+    c.add_polygon(
+        [
+            (bridge_x - xs.width / 2, bridge_y_bottom),
+            (bridge_x + xs.width / 2, bridge_y_bottom),
+            (bridge_x + xs.width / 2, bridge_y_top),
+            (bridge_x - xs.width / 2, bridge_y_top),
+        ],
+        layer=LAYER.M1_DRAW,
+    )
+    etch_height = overlap / 3
+    for etch_s in get_etch_sections(xs):
+        etch_x_center = bridge_x + etch_s.offset
+        c.add_polygon(
+            [
+                (etch_x_center - etch_s.width / 2, bridge_y_bottom),
+                (etch_x_center + etch_s.width / 2, bridge_y_bottom),
+                (etch_x_center + etch_s.width / 2, bridge_y_bottom + etch_height),
+                (etch_x_center - etch_s.width / 2, bridge_y_bottom + etch_height),
+            ],
+            layer=LAYER.M1_ETCH,
+        )
+    c.add_port("o3", port=stem.ports["o2"])
+
+    # Place anchor at the arc center, computed as the midpoint of the
+    # bend ports for a circular arc, for concentric alignment with an
+    # inner resonator bend.
+    arc_center_x = (bend.ports["o1"].dx + bend.ports["o2"].dx) / 2
+    arc_center_y = (bend.ports["o1"].dy + bend.ports["o2"].dy) / 2
+    c.add_port(
+        name="anchor",
+        center=(arc_center_x, arc_center_y),
+        width=xs.width,
+        orientation=90,
+        layer=LAYER.M1_DRAW,
+        port_type="placement",
+    )
+
+    return c
+
+
+@gf.cell(tags=("capacitors",))
 def interdigital_capacitor(
     fingers: int = 4,
     finger_length: float = 20.0,
     finger_gap: float = 2.0,
     thickness: float = 5.0,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
@@ -55,6 +178,7 @@ def interdigital_capacitor(
         finger_length: Length of each finger in μm.
         finger_gap: Gap between adjacent fingers in μm.
         thickness: Thickness of fingers and the base section in μm.
+        layer_metal: Layer for the metal fingers.
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
@@ -63,11 +187,11 @@ def interdigital_capacitor(
     Returns:
         Component: A gdsfactory component with the interdigital capacitor geometry
             and two ports ('o1' and 'o2') on opposing sides.
+
+    Raises:
+        ValueError: If fingers is less than 1.
     """
     c = Component()
-
-    # Used temporarily
-    layer = LAYER.M1_DRAW
 
     if fingers < 1:
         raise ValueError("Must have at least 1 finger")
@@ -79,7 +203,7 @@ def interdigital_capacitor(
     )  # total length
     height = fingers * thickness + (fingers - 1) * finger_gap  # total height
     points_1 = [
-        (0, 0),
+        (0.0, 0.0),
         (0, height),
         (thickness + finger_length, height),
         (thickness + finger_length, height - thickness),
@@ -100,9 +224,9 @@ def interdigital_capacitor(
             for i in range(ceil(fingers / 2))
         ),
         (thickness, 0),
-        (0, 0),
+        (0.0, 0.0),
     ]
-    c.add_polygon(points_1, layer=layer)
+    c.add_polygon(points_1, layer=layer_metal)
 
     if not half:
         points_2 = [
@@ -133,7 +257,7 @@ def interdigital_capacitor(
             (width - thickness, 0),
             (width, 0),
         ]
-        c.add_polygon(points_2, layer=layer)
+        c.add_polygon(points_2, layer=layer_metal)
 
     # Add etch layer bbox if specified
     if etch_layer is not None:
@@ -150,37 +274,21 @@ def interdigital_capacitor(
     straight_out_of_etch = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    straight_left = c.add_ref(straight_out_of_etch).move(
-        (-etch_bbox_margin, height / 2)
-    )
+    straight_left = c.add_ref(straight_out_of_etch).move((
+        -etch_bbox_margin,
+        height / 2,
+    ))
     straight_right = None
     if not half:
         straight_right = c.add_ref(straight_out_of_etch).move((width, height / 2))
 
-    # Add WG to additive metal
-    c_additive = gf.boolean(
-        A=c,
-        B=c,
-        operation="or",
-        layer=layer,
-        layer1=layer,
-        layer2=straight_cross_section.layer,
+    # Merge WG marker layer with draw metal and create etch negative
+    c = _merge_layers_with_etch(
+        component=c,
+        draw_layer=layer_metal,
+        wg_layer=straight_cross_section.layer,
+        etch_layer=etch_layer,
     )
-
-    # Take boolean negative
-    c_negative = gf.boolean(
-        A=c,
-        B=c_additive,
-        operation="A-B",
-        layer=etch_layer,
-        layer1=etch_layer,
-        layer2=layer,
-    )
-
-    # Combine results
-    c = gf.Component()
-    c.absorb(c << c_additive)
-    c.absorb(c << c_negative)
 
     ports_config: list[tuple[str, gf.Port] | None] = [
         ("o1", straight_left["o1"]),
@@ -203,7 +311,7 @@ def interdigital_capacitor(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("capacitors",))
 def plate_capacitor(
     length: float = 26.0,
     width: float = 5.0,
@@ -237,6 +345,9 @@ def plate_capacitor(
 
     Returns:
         A gdsfactory component with the plate capacitor geometry and two ports ('o1' and 'o2') on opposing sides.
+
+    Raises:
+        ValueError: If width or length is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
@@ -256,7 +367,7 @@ def plate_capacitor(
     pad2 = c.add_ref(single_capacitor)
     pad2.rotate(180)
     pad2.move((width + gap, 0))
-    c.center = (0, 0)
+    c.center = (0.0, 0.0)
 
     # Add ports
     c.add_port(name="o1", port=pad1.ports["o1"])
@@ -277,10 +388,11 @@ def plate_capacitor(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("capacitors", "couplers"))
 def plate_capacitor_single(
     length: float = 26.0,
     width: float = 5.0,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
     etch_layer: LayerSpec | None = "M1_ETCH",
     etch_bbox_margin: float = 2.0,
     cross_section: CrossSectionSpec = "cpw",
@@ -302,12 +414,16 @@ def plate_capacitor_single(
     Args:
         length: Length (vertical extent) of the capacitor pad in μm.
         width: Width (horizontal extent) of the capacitor pad in μm.
+        layer_metal: Layer for the metal pad.
         etch_layer: Optional layer for etching around the capacitor.
         etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
         cross_section: Cross-section for the short straight from the etch box capacitor.
 
     Returns:
         A gdsfactory component with the plate capacitor geometry.
+
+    Raises:
+        ValueError: If width or length is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
@@ -316,14 +432,13 @@ def plate_capacitor_single(
 
     c = Component()
 
-    layer = LAYER.M1_DRAW
     points = [
-        (0, 0),
+        (0.0, 0.0),
         (0, length),
         (width, length),
         (width, 0),
     ]
-    c.add_polygon(points, layer=layer)
+    c.add_polygon(points, layer=layer_metal)
     # Add etch layer bbox if specified
     if etch_layer is not None:
         etch_bbox = [
@@ -338,32 +453,17 @@ def plate_capacitor_single(
     straight_out_of_etch = straight(
         length=etch_bbox_margin, cross_section=straight_cross_section
     )
-    straight_left = c.add_ref(straight_out_of_etch).move(
-        (-etch_bbox_margin, length / 2)
+    straight_left = c.add_ref(straight_out_of_etch).move((
+        -etch_bbox_margin,
+        length / 2,
+    ))
+    # Merge WG marker layer with draw metal and create etch negative
+    c = _merge_layers_with_etch(
+        component=c,
+        draw_layer=layer_metal,
+        wg_layer=straight_cross_section.layer,
+        etch_layer=etch_layer,
     )
-    # Add WG to additive metal
-    c_additive = gf.boolean(
-        A=c,
-        B=c,
-        operation="or",
-        layer=layer,
-        layer1=layer,
-        layer2=straight_cross_section.layer,
-    )
-
-    # Take boolean negative
-    c_negative = gf.boolean(
-        A=c,
-        B=c_additive,
-        operation="A-B",
-        layer=etch_layer,
-        layer1=etch_layer,
-        layer2=layer,
-    )
-    # Combine results
-    c = gf.Component()
-    c.absorb(c << c_additive)
-    c.absorb(c << c_negative)
 
     c.add_port(
         name="o1",
@@ -377,12 +477,3 @@ def plate_capacitor_single(
     c.move((-width / 2, -length / 2))
 
     return c
-
-
-if __name__ == "__main__":
-    show_components(
-        plate_capacitor_single,
-        plate_capacitor,
-        interdigital_capacitor,
-        partial(interdigital_capacitor, half=True),
-    )

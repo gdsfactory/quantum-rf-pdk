@@ -13,10 +13,12 @@ instances:
       coupling_straight_length: 200
       cross_section: cpw
       cross_section_non_resonator: cpw
+      end_with_bend: false
       length: 4000
       meanders: 6
       open_end: false
       open_start: true
+      start_with_bend: false
 nets: []
 placements:
   resonator_coupled:

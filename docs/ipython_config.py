@@ -29,7 +29,16 @@ c.InteractiveShellApp.exec_lines = [  # noqa: F821
     "plt.rcParams['ps.fonttype'] = 42",
     # Load custom matplotlib style for quantum-rf-pdk documentation
     "plt.style.use('qpdk')",
-    # Suppress fontTools warnings that can clutter notebook output
+    # Suppress harmless logging warnings that clutter notebook output.
+    # fontTools and matplotlib emit warnings via Python's logging module (not
+    # the warnings module), so they must be suppressed by raising the log level.
     "import logging",
-    "logging.getLogger('fontTools').setLevel(logging.WARNING)",
+    # fontTools: timestamp and font-subsetting warnings during PDF/SVG export
+    "logging.getLogger('fontTools').setLevel(logging.ERROR)",
+    # matplotlib: missing-glyph warnings for special Unicode/TeX symbols
+    "logging.getLogger('matplotlib.mathtext').setLevel(logging.ERROR)",
+    # Suppress harmless Python warnings that clutter notebook output
+    "import warnings",
+    # polars row orientation inference during DataFrame construction
+    "warnings.filterwarnings('ignore', message=r'.*Row orientation inferred.*')",
 ]

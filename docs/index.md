@@ -17,3 +17,32 @@
 ```{include} ../README.md
 :start-after: "______________________________________________________________________"
 ```
+
+```{toctree}
+:caption: API
+:hidden:
+
+api
+```
+
+```{toctree}
+:caption: Samples
+:hidden:
+
+samples
+```
+
+```{toctree}
+:caption: Notebooks
+:hidden:
+
+notebooks
+```
+
+```{toctree}
+:caption: Development
+:hidden:
+
+contributing
+security
+```

@@ -4,10 +4,9 @@ import gdsfactory as gf
 from gdsfactory.typings import LayerSpec
 
 from qpdk.cells.waveguides import rectangle
-from qpdk.helper import show_components
 
 
-@gf.cell
+@gf.cell(tags=("chip",))
 def chip_edge(
     size: tuple[float, float] = (10000.0, 10000.0),
     width: float = 200.0,
@@ -28,8 +27,8 @@ def chip_edge(
     # Create the hollow rectangle frame using four rectangles
     rect_configs = [
         {"size": (size[0], width), "position": (0, size[1] - width)},  # Top edge
-        {"size": (size[0], width), "position": (0, 0)},  # Bottom edge
-        {"size": (width, size[1]), "position": (0, 0)},  # Left edge
+        {"size": (size[0], width), "position": (0.0, 0.0)},  # Bottom edge
+        {"size": (width, size[1]), "position": (0.0, 0.0)},  # Left edge
         {"size": (width, size[1]), "position": (size[0] - width, 0)},  # Right edge
     ]
 
@@ -44,10 +43,3 @@ def chip_edge(
         rect.move(config["position"])
 
     return c
-
-
-if __name__ == "__main__":
-    show_components(
-        chip_edge,
-        spacing=50,
-    )

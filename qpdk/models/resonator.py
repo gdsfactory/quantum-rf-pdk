@@ -10,7 +10,7 @@ from sax.models.rf import capacitor, electrical_open, electrical_short, tee
 from qpdk.helper import deprecated
 from qpdk.models.constants import DEFAULT_FREQUENCY, c_0
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
-from qpdk.models.media import (
+from qpdk.models.cpw import (
     cpw_parameters,
     cpw_z0_from_cross_section,
     get_cpw_dimensions,
@@ -160,8 +160,10 @@ def resonator_frequency(
 
     .. math::
 
+        \begin{aligned}
         f &= \frac{v_p}{4L}  \mathtt{ (quarter-wave resonator)} \\
         f &= \frac{v_p}{2L}  \mathtt{ (half-wave resonator)}
+        \end{aligned}
 
     The phase velocity is :math:`v_p = c_0 / \sqrt{\varepsilon_{\mathrm{eff}}}`.
 
@@ -170,7 +172,7 @@ def resonator_frequency(
     Args:
         length: Length of the resonator in μm.
         epsilon_eff: Effective permittivity.  If ``None`` (default),
-            computed from *cross_section* using :func:`~qpdk.models.media.cpw_parameters`.
+            computed from *cross_section* using :func:`~qpdk.models.cpw.cpw_parameters`.
         media: Deprecated. Use *epsilon_eff* or *cross_section* instead.
         cross_section: Cross-section specification (used only when
             *epsilon_eff* and *media* are not provided).

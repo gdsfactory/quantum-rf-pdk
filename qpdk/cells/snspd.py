@@ -7,8 +7,10 @@ import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec, Port, Size
 
+from qpdk.tech import LAYER
 
-@gf.cell
+
+@gf.cell(tags=("detectors",))
 def snspd(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
@@ -16,10 +18,21 @@ def snspd(
     num_squares: int | None = None,
     turn_ratio: float = 4,
     terminals_same_side: bool = False,
-    layer: LayerSpec = "M1_DRAW",
+    layer: LayerSpec = LAYER.NbTiN,
     port_type: str = "electrical",
 ) -> Component:
     """Creates an optimally-rounded SNSPD.
+
+    .. svgbob::
+
+        e1 ─────────────────────╮
+        ╭───────────────────────╯
+        ╰───────────────────────╮
+        ╭───────────────────────╯
+        ╰───────────────────────╮
+        ╭───────────────────────╯
+        ╰───────────────────────╮
+           e2 ──────────────────╯
 
     Args:
         wire_width: Width of the wire.
@@ -37,6 +50,8 @@ def snspd(
         layer: layer spec to put polygon geometry on.
         port_type: type of port to add to the component.
 
+    Returns:
+        A Component containing the SNSPD geometry.
     """
     if num_squares is not None:
         xy = np.sqrt(num_squares * wire_pitch * wire_width)
@@ -101,12 +116,3 @@ def snspd(
     D.info["ysize"] = ysize
     D.flatten()
     return D
-
-
-if __name__ == "__main__":
-    from qpdk import PDK
-
-    PDK.activate()
-
-    c = snspd()
-    c.show()

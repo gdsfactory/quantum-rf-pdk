@@ -8,7 +8,7 @@ from gdsfactory.component import Component
 from qpdk.tech import LAYER
 
 
-@gf.cell
+@gf.cell(tags=("interconnects", "flip-chip", "3d-integration"))
 def indium_bump(diameter: float = 15.0) -> Component:
     """Creates an indium bump component for 3D integration.
 
@@ -23,7 +23,7 @@ def indium_bump(diameter: float = 15.0) -> Component:
     c = Component()
     circle = gf.components.circle(radius=diameter / 2, layer=LAYER.IND)
     ref = c.add_ref(circle)
-    ref.move((0, 0))
+    ref.move((0.0, 0.0))
     c.add_port(
         name="center",
         center=(
@@ -36,8 +36,3 @@ def indium_bump(diameter: float = 15.0) -> Component:
         port_type="placement",
     )
     return c
-
-
-if __name__ == "__main__":
-    bump = indium_bump()
-    bump.show()

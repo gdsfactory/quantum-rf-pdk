@@ -6,7 +6,6 @@ import pkgutil
 from functools import lru_cache, partial
 
 import gdsfactory as gf
-from gdsfactory import logger
 from gdsfactory.cross_section import get_cross_sections
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
@@ -14,6 +13,7 @@ from gdsfactory.pdk import Pdk
 import qpdk.samples
 from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
+from qpdk.logger import logger
 from qpdk.tech import (
     LAYER,
     LAYER_CONNECTIVITY,
@@ -27,10 +27,10 @@ gf.CONF.layer_error_path = LAYER.ERROR_PATH
 try:
     from .models import models as _models
 except ImportError as e:
-    logger.info(
-        "QPDK model dependencies (pip install qpdk[models]) not installed. No models will be set in PDK."
+    logger.warning(
+        f"QPDK models could not be loaded ({e}). "
+        "Ensure dependencies are installed with `pip install qpdk[models]`."
     )
-    logger.debug(f"Reason for missing models: {e!r}")
     _models = {}
 
 # _models = get_models()
@@ -77,6 +77,7 @@ __all__ = [
     "cells",
     "config",
     "helper",
+    "logger",
     "tech",
 ]
-__version__ = "0.3.0"
+__version__ = "0.3.6"

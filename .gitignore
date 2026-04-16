@@ -113,6 +113,7 @@ celerybeat.pid
 
 # Environments
 .env
+!/.env
 .venv
 env/
 venv/
@@ -167,3 +168,7 @@ test_diffs/
 
 # gdsfactory+
 scripts/
+
+# 3D
+*.glb
+*.stl

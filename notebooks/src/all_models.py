@@ -14,11 +14,26 @@
 # %% [markdown]
 # ## Imports
 
+# %% tags=["hide-input", "hide-output"]
+import sys
+
+if "google.colab" in sys.modules:
+    import subprocess
+
+    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    subprocess.check_call([
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+    ])
+
 # %%
 
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-import skrf
 
 from qpdk import PDK
 
@@ -35,9 +50,9 @@ from qpdk.models.constants import TEST_FREQUENCY
 # %% [markdown]
 # ## Media
 # %%
-from qpdk.models.media import cross_section_to_media
+from qpdk.models.cpw import cpw_parameters, get_cpw_dimensions
 
-cross_section_to_media("cpw")
+cpw_parameters(*get_cpw_dimensions("cpw"))
 
 # %% [markdown]
 # ## Generic
@@ -122,7 +137,7 @@ f_sweep = jnp.linspace(f_r * 0.5, f_r * 1.5, 1001)
 S_res = lc_resonator(f=f_sweep, inductance=L, capacitance=C)
 
 plt.figure(figsize=(10, 6))
-plt.plot(f_sweep / 1e9, 20 * jnp.log10(jnp.abs(S_res[("o1", "o2")])), label="$S_{21}$")
+plt.plot(f_sweep / 1e9, 20 * jnp.log10(jnp.abs(S_res["o1", "o2"])), label="$S_{21}$")
 plt.axvline(
     float(f_r / 1e9),
     color="r",
@@ -143,12 +158,12 @@ S_coupled = lc_resonator_coupled(
 plt.figure(figsize=(10, 6))
 plt.plot(
     f_sweep / 1e9,
-    20 * jnp.log10(jnp.abs(S_coupled[("o1", "o2")])),
+    20 * jnp.log10(jnp.abs(S_coupled["o1", "o2"])),
     label="$S_{21}$ (coupled)",
 )
 plt.plot(
     f_sweep / 1e9,
-    20 * jnp.log10(jnp.abs(S_res[("o1", "o2")])),
+    20 * jnp.log10(jnp.abs(S_res["o1", "o2"])),
     "--",
     label="$S_{21}$ (bare)",
 )
@@ -164,14 +179,14 @@ S_cap = capacitor(f=f, capacitance=(capacitance := 100e-15))
 plt.figure()
 # Polar plot of S21 and S11
 plt.subplot(121, projection="polar")
-plt.plot(jnp.angle(S_cap[("o1", "o1")]), abs(S_cap[("o1", "o1")]), label="$S_{11}$")
-plt.plot(jnp.angle(S_cap[("o1", "o2")]), abs(S_cap[("o2", "o1")]), label="$S_{21}$")
+plt.plot(jnp.angle(S_cap["o1", "o1"]), abs(S_cap["o1", "o1"]), label="$S_{11}$")
+plt.plot(jnp.angle(S_cap["o1", "o2"]), abs(S_cap["o2", "o1"]), label="$S_{21}$")
 plt.title("S-parameters capacitor")
 plt.legend()
 # Magnitude and phase vs frequency
 ax1 = plt.subplot(122)
-ax1.plot(f / 1e9, abs(S_cap[("o1", "o1")]), label="|S11|", color="C0")
-ax1.plot(f / 1e9, abs(S_cap[("o1", "o2")]), label="|S21|", color="C1")
+ax1.plot(f / 1e9, abs(S_cap["o1", "o1"]), label="|S11|", color="C0")
+ax1.plot(f / 1e9, abs(S_cap["o1", "o2"]), label="|S21|", color="C1")
 ax1.set_xlabel("Frequency [GHz]")
 ax1.set_ylabel("Magnitude [unitless]")
 ax1.grid(True)
@@ -180,14 +195,14 @@ ax1.legend(loc="upper left")
 ax2 = ax1.twinx()
 ax2.plot(
     f / 1e9,
-    jnp.angle(S_cap[("o1", "o1")]),
+    jnp.angle(S_cap["o1", "o1"]),
     label="∠S11",
     color="C0",
     linestyle="--",
 )
 ax2.plot(
     f / 1e9,
-    jnp.angle(S_cap[("o1", "o2")]),
+    jnp.angle(S_cap["o1", "o2"]),
     label="∠S21",
     color="C1",
     linestyle="--",
@@ -202,13 +217,13 @@ S_ind = inductor(f=f, inductance=(inductance := 1e-9))
 # print(S_ind)
 plt.figure()
 plt.subplot(121, projection="polar")
-plt.plot(jnp.angle(S_ind[("o1", "o1")]), abs(S_ind[("o1", "o1")]), label="$S_{11}$")
-plt.plot(jnp.angle(S_ind[("o1", "o2")]), abs(S_ind[("o2", "o1")]), label="$S_{21}$")
+plt.plot(jnp.angle(S_ind["o1", "o1"]), abs(S_ind["o1", "o1"]), label="$S_{11}$")
+plt.plot(jnp.angle(S_ind["o1", "o2"]), abs(S_ind["o2", "o1"]), label="$S_{21}$")
 plt.title("S-parameters inductor")
 plt.legend()
 ax1 = plt.subplot(122)
-ax1.plot(f / 1e9, abs(S_ind[("o1", "o1")]), label="|S11|", color="C0")
-ax1.plot(f / 1e9, abs(S_ind[("o1", "o2")]), label="|S21|", color="C1")
+ax1.plot(f / 1e9, abs(S_ind["o1", "o1"]), label="|S11|", color="C0")
+ax1.plot(f / 1e9, abs(S_ind["o1", "o2"]), label="|S21|", color="C1")
 ax1.set_xlabel("Frequency [GHz]")
 ax1.set_ylabel("Magnitude [unitless]")
 ax1.grid(True)
@@ -217,14 +232,14 @@ ax1.legend(loc="upper left")
 ax2 = ax1.twinx()
 ax2.plot(
     f / 1e9,
-    jnp.angle(S_ind[("o1", "o1")]),
+    jnp.angle(S_ind["o1", "o1"]),
     label="∠S11",
     color="C0",
     linestyle="--",
 )
 ax2.plot(
     f / 1e9,
-    jnp.angle(S_ind[("o1", "o2")]),
+    jnp.angle(S_ind["o1", "o2"]),
     label="∠S21",
     color="C1",
     linestyle="--",
@@ -462,11 +477,13 @@ quarter_wave_resonator_coupled(f=TEST_FREQUENCY)
 from qpdk.models.resonator import resonator_frequency
 
 cs = coplanar_waveguide(width=10, gap=6)
-cpw = cross_section_to_media(cs)(frequency=skrf.Frequency(2, 9, 101, unit="GHz"))
-print(f"{cpw=!r}")
-print(f"{cpw.z0.mean().real=!r}")  # Characteristic impedance
+ep_eff, z0 = cpw_parameters(*get_cpw_dimensions(cs))
+print(f"{ep_eff=!r}")
+print(f"{z0=!r}")  # Characteristic impedance
 
-res_freq = resonator_frequency(length=4000, cross_section=cs, is_quarter_wave=True)
+res_freq = resonator_frequency(
+    length=4000, epsilon_eff=float(jnp.real(ep_eff)), is_quarter_wave=True
+)
 print("Resonance frequency (quarter-wave):", res_freq / 1e9, "GHz")
 
 # Plot resonator_coupled example

@@ -16,6 +16,22 @@
 # use exactly 5 interdigital fingers.
 
 # %% tags=["hide-input", "hide-output"]
+import sys
+
+if "google.colab" in sys.modules:
+    import subprocess
+
+    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    subprocess.check_call([
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+    ])
+
+# %% tags=["hide-input", "hide-output"]
 
 import tempfile
 from pathlib import Path
@@ -130,11 +146,11 @@ def _objective_function(trial: optuna.trial.Trial) -> float:
         trial.set_user_attr("simulated_capacitance", simulated_capacitance)
         trial.set_user_attr("target_capacitance", target_capacitance)
 
-        return objective_value
-
     except Exception as e:
         print(f"Trial failed with error: {e}")
         return 1000.0  # Large penalty value
+    else:
+        return objective_value
 
 
 # %% [markdown]
@@ -153,7 +169,7 @@ def _setup_palace_simulation(
     to :func:`~meshwell.mesh.mesh`.
 
     The mesh parameters here are not optimized but serve as a reasonable
-    starting point while demonstrating how te set up the mesh in different ways.
+    starting point while demonstrating how to set up the mesh in different ways.
 
     Args:
         simulation_folder: Folder to use for simulation files
@@ -218,8 +234,12 @@ def _run_capacitive_simulation(
     component: gf.Component,
     simulation_folder: Path | None = None,
 ) -> float:
-    """Run Palace capacitive simulation (requires system dependencies)."""
-    from gplugins.palace import run_capacitive_simulation_palace
+    """Run Palace capacitive simulation (requires system dependencies).
+
+    Returns:
+        The simulated capacitance in femtofarads.
+    """
+    from gplugins.palace import run_capacitive_simulation_palace  # noqa: PLC0415
 
     config = _setup_palace_simulation(simulation_folder=simulation_folder)
     results = run_capacitive_simulation_palace(component, n_processes=4, **config)

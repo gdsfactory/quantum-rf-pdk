@@ -4,13 +4,16 @@ import shutil
 import sys
 from pathlib import Path
 
+from qpdk.logger import configure_logger, logger
+
 
 def remove_path_or_dir(dest: Path) -> None:
     """Remove a path or directory."""
-    if not dest.exists():
+    if dest.is_symlink():
+        dest.unlink()
+    elif not dest.exists():
         raise FileNotFoundError(f"Path does not exist: {dest}")
-
-    if dest.is_dir():
+    elif dest.is_dir():
         shutil.rmtree(dest)
     else:
         dest.unlink()
@@ -23,21 +26,25 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
         raise FileNotFoundError(f"{src} does not exist")
 
     if dest.exists() and not overwrite:
-        print(f"{dest} already exists")
+        logger.warning("Technology already exists at {}", dest)
         return
     if dest.exists() or dest.is_symlink():
-        print(f"removing {dest} already installed")
+        logger.info("Removing existing technology files: {}", dest)
         remove_path_or_dir(dest)
     try:
-        Path.symlink_to(src, dest, target_is_directory=True)
+        dest.symlink_to(src, target_is_directory=True)
+        link_type = "Symlinked"
     except OSError:
         shutil.copytree(src, dest)
-    print("link made:")
-    print(f"From: {src}")
-    print(f"To:   {dest}")
+        link_type = "Copied"
+    logger.info("{} technology files:", link_type)
+    logger.info("  From: {}", src)
+    logger.info("  To:   {}", dest)
 
 
 if __name__ == "__main__":
+    configure_logger(log_format="<level>{message}</level>")
+    logger.info("Installing KLayout technology...")
     klayout_folder = "KLayout" if sys.platform == "win32" else ".klayout"
     home = Path.home()
     dest_folder = home / klayout_folder / "tech"
@@ -47,3 +54,4 @@ if __name__ == "__main__":
     src = repo_root / "qpdk" / "klayout"
     dest = dest_folder / "qpdk"
     make_link(src=src, dest=dest)
+    logger.info("Successfully installed KLayout technology.")

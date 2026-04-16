@@ -21,15 +21,16 @@ import numpy as np
 
 from qpdk import tech
 from qpdk.cells.chip import chip_edge
-from qpdk.cells.helpers import fill_magnetic_vortices
 from qpdk.cells.launcher import launcher
 from qpdk.cells.resonator import resonator_coupled
 from qpdk.cells.waveguides import straight
+from qpdk.logger import logger
 from qpdk.tech import (
     coplanar_waveguide,
     route_bundle_cpw,
     route_bundle_sbend,
 )
+from qpdk.utils import fill_magnetic_vortices
 
 # %% [markdown]
 # ## Resonator Test Chip Function
@@ -114,7 +115,7 @@ def resonator_test_chip_python(
                 resonator_ref.mirror_y()
 
             resonator_ref.move((x_position - resonator_ref.size_info.width / 2, y_pos))
-            gf.logger.debug(f"Added resonator {res_idx} at x={x_position} µm")
+            logger.debug(f"Added resonator {res_idx} at x={x_position} µm")
 
             if res_idx == 0:
                 # Add some straight before connecting the first resonator

@@ -11,13 +11,16 @@ import argparse
 import polars as pl
 
 
-def main(
+def merge_csvs(
     files: list[str],
     output_file: str = "merged_data.csv",
 ) -> None:
     """Merge any number of CSV files horizontally and save the result to a new CSV file.
 
     This is used for post-processing exported data from Qucs-S simulations.
+
+    Raises:
+        ValueError: If no files are provided.
     """
     if not files:
         raise ValueError("At least one CSV file must be provided")
@@ -54,4 +57,4 @@ if __name__ == "__main__":
         "output_file", type=str, help="Path to save the merged CSV file"
     )
     args = parser.parse_args()
-    main(args.files, args.output_file)
+    merge_csvs(args.files, args.output_file)

@@ -8,7 +8,6 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
 from qpdk.cells.waveguides import straight
-from qpdk.helper import show_components
 from qpdk.tech import (
     LAYER,
     josephson_junction_cross_section_narrow,
@@ -16,7 +15,7 @@ from qpdk.tech import (
 )
 
 
-@gf.cell
+@gf.cell(tags=("junctions",))
 def single_josephson_junction_wire(
     wide_straight_length: float = 8.3,
     narrow_straight_length: float = 0.5,
@@ -43,6 +42,9 @@ def single_josephson_junction_wire(
         cross_section_narrow: Cross-section specification for the narrow section.
         layer_patch: Layer for the patch that creates the overlap region.
         size_patch: Size of the patch that creates the overlap region.
+
+    Returns:
+        The junction wire component.
     """
     c = Component()
 
@@ -76,9 +78,10 @@ def single_josephson_junction_wire(
             centered=True,
         )
         # Overlap with one fourth offset to one side
-        patch.move(
-            (wide_straight_ref.dbbox().p1.x - size_patch[0] / 4, wide_straight_ref.y)
-        )
+        patch.move((
+            wide_straight_ref.dbbox().p1.x - size_patch[0] / 4,
+            wide_straight_ref.y,
+        ))
 
     # Add port at wide end
     c.add_port(
@@ -94,7 +97,7 @@ def single_josephson_junction_wire(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("junctions",))
 def josephson_junction(
     junction_overlap_displacement: float = 1.8,
     wide_straight_length: float = 8.3,
@@ -135,6 +138,9 @@ def josephson_junction(
         cross_section_narrow: Cross-section specification for the narrow section.
         layer_patch: Layer for the patch that creates the overlap region.
         size_patch: Size of the patch that creates the overlap region.
+
+    Returns:
+        The Josephson junction component.
     """
     c = Component()
 
@@ -197,7 +203,27 @@ def josephson_junction(
     return c
 
 
-@gf.cell
+@gf.cell(tags=("junctions",))
+def josephson_junction_long(**kwargs) -> Component:
+    """Josephson junction with wide_straight_length=12.
+
+    Returns:
+        The Josephson junction component with long wires.
+    """
+    return josephson_junction(wide_straight_length=12, **kwargs)
+
+
+@gf.cell(tags=("junctions",))
+def squid_junction_long(**kwargs) -> Component:
+    """SQUID junction with josephson_junction_long.
+
+    Returns:
+        The SQUID junction component with long wires.
+    """
+    return squid_junction(junction_spec=josephson_junction_long, **kwargs)
+
+
+@gf.cell(tags=("junctions",))
 def squid_junction(
     junction_spec: ComponentSpec = josephson_junction,
     loop_area: float = 4,
@@ -212,6 +238,9 @@ def squid_junction(
         junction_spec: Component specification for the Josephson junction component.
         loop_area: Area of the SQUID loop in µm².
             This does not take into account the junction wire widths.
+
+    Returns:
+        The SQUID junction component.
     """
     c = Component()
 
@@ -266,7 +295,3 @@ def squid_junction(
         port_type="placement",
     )
     return c
-
-
-if __name__ == "__main__":
-    show_components(josephson_junction, squid_junction)

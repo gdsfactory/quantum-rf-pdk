@@ -20,6 +20,22 @@
 # - Visual validation of model accuracy against reference data
 
 # %% tags=["hide-input", "hide-output"]
+import sys
+
+if "google.colab" in sys.modules:
+    import subprocess
+
+    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    subprocess.check_call([
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+    ])
+
+# %% tags=["hide-input", "hide-output"]
 import inspect
 import sys
 
@@ -27,10 +43,10 @@ import numpy as np
 from IPython.display import Markdown, display
 
 from qpdk import PDK
-from qpdk.config import PATH as QPDKPath
+from qpdk.config import PATH as QPDK_PATH
 
 # Add the tests directory to the path so we can import the test modules
-sys.path.insert(0, str(QPDKPath.tests))
+sys.path.insert(0, str(QPDK_PATH.tests))
 
 from models.test_compare_to_qucs import BaseCompareToQucs
 
@@ -54,7 +70,7 @@ def discover_test_suites() -> list[type[BaseCompareToQucs]]:
         List of test suite classes that inherit from :class:`~BaseCompareToQucs`.
     """
     # Import the module to get all classes
-    from models import test_compare_to_qucs
+    from models import test_compare_to_qucs  # noqa: PLC0415
 
     test_suites = []
 

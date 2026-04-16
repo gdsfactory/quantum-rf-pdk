@@ -1,7 +1,47 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.12.9
+# ---
+
 # %% [markdown]
 # # Circuit Simulation with QPDK
 #
 # This notebook demonstrates how to perform circuit simulations using the `qpdk` models and the `sax` circuit solver. We will showcase individual components and then combine them to create a custom resonator circuit.
+
+# %% tags=["hide-input", "hide-output"]
+import sys
+
+if "google.colab" in sys.modules:
+    import subprocess
+
+    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    subprocess.check_call([
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+    ])
 
 # %% Imports tags=["hide-input", "hide-output"]
 import jax.numpy as jnp
@@ -44,8 +84,8 @@ straight_wg = straight(f=freq, length=1000, cross_section=cross_section)
 # Plot S-parameters
 plt.figure()
 plt.title("Straight Waveguide S-parameters")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(straight_wg[("o1", "o2")])), label="$S_{21}$")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(straight_wg[("o1", "o1")])), label="$S_{11}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(straight_wg["o1", "o2"])), label="$S_{21}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(straight_wg["o1", "o1"])), label="$S_{11}$")
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
 plt.grid(True)
@@ -63,8 +103,8 @@ cap = capacitor(f=freq, capacitance=cap_val, z0=50)
 # Plot S-parameters
 plt.figure()
 plt.title(f"Capacitor S-parameters (C={cap_val * 1e15:.0f} fF)")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(cap[("o1", "o2")])), label="$S_{21}$")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(cap[("o1", "o1")])), label="$S_{11}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(cap["o1", "o2"])), label="$S_{21}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(cap["o1", "o1"])), label="$S_{11}$")
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
 plt.grid(True)
@@ -82,8 +122,8 @@ ind = inductor(f=freq, inductance=ind_val, z0=50)
 # Plot S-parameters
 plt.figure()
 plt.title(f"Inductor S-parameters (L={ind_val * 1e9:.0f} nH)")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(ind[("o1", "o2")])), label="$S_{21}$")
-plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(ind[("o1", "o1")])), label="$S_{11}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(ind["o1", "o2"])), label="$S_{21}$")
+plt.plot(freq_ghz, 20 * jnp.log10(jnp.abs(ind["o1", "o1"])), label="$S_{11}$")
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
 plt.grid(True)
@@ -110,7 +150,7 @@ plt.figure()
 plt.title("Coupled Resonator S-parameters")
 plt.plot(
     freq_ghz,
-    20 * jnp.log10(jnp.abs(res[("coupling_o1", "coupling_o2")])),
+    20 * jnp.log10(jnp.abs(res["coupling_o1", "coupling_o2"])),
     label="$S_{21}$",
 )
 plt.xlabel("Frequency [GHz]")
@@ -182,7 +222,7 @@ plt.figure()
 plt.title("Custom-built Resonator S-parameters")
 plt.plot(
     freq_ghz,
-    20 * jnp.log10(jnp.abs(custom_res_s_params[("o1", "o2")])),
+    20 * jnp.log10(jnp.abs(custom_res_s_params["o1", "o2"])),
     label="$S_{21}$",
 )
 plt.xlabel("Frequency [GHz]")

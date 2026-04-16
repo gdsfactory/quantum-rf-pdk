@@ -22,19 +22,32 @@ LAUNCHER_CROSS_SECTION_BIG = launcher_cross_section_big
 LAUNCHER_CROSS_SECTION_SMALL = partial(coplanar_waveguide, etch_layer=LAYER.M1_ETCH)
 
 
-@gf.cell
+@gf.cell(
+    tags=(
+        "waveguides",
+        "interconnects",
+    )
+)
 def launcher(
     straight_length: float = 200.0,
     taper_length: float = 100.0,
     cross_section_big: CrossSectionSpec = LAUNCHER_CROSS_SECTION_BIG,
     cross_section_small: CrossSectionSpec = "cpw",
 ) -> Component:
-    """Generate an RF launcher pad for wirebonding or probe testing.
+    r"""Generate an RF launcher pad for wirebonding or probe testing.
 
     Creates a launcher component consisting of a straight section with large
     cross-section connected to a tapered transition down to a smaller cross-section.
     This design facilitates RF signal access through probes or wirebonds while
     maintaining good impedance matching.
+
+    .. svgbob::
+
+        ┌───────\
+        │        \
+        │         │ ── o1
+        │        /
+        └───────/
 
     The default dimensions are taken from :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
 
@@ -79,14 +92,3 @@ def launcher(
     )
 
     return c
-
-
-if __name__ == "__main__":
-    # Example usage and testing
-    from qpdk import PDK
-
-    PDK.activate()
-
-    # Create and display a launcher with default parameters
-    c = launcher()
-    c.show()

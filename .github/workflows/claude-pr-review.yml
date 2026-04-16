@@ -1,7 +1,9 @@
-name: Claude Auto Review
+name: Claude PR Review
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
 permissions:
   contents: read
   pull-requests: write
@@ -9,52 +11,6 @@ permissions:
   id-token: write
 jobs:
   review:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-      - uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
-
-            Please review this pull request with a focus on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Security implications
-            - Performance considerations
-
-            Note: The PR branch is already checked out in the current working directory.
-
-            ## CRITICAL: Avoid Duplicate Comments
-
-            **BEFORE posting any comment, you MUST:**
-
-            1. Run `gh pr view ${{ github.event.pull_request.number }} --comments` to see all existing top-level comments
-            2. Run `gh pr view ${{ github.event.pull_request.number }} --json reviews,comments` to see existing review comments
-            3. Check if your feedback has already been given in a previous review run
-            4. Do NOT repeat feedback that has already been posted, even if the issue is still present
-            5. Only comment on NEW issues that have not been mentioned in any existing comment
-
-            If an issue was already raised in a previous comment (even if unresolved), DO NOT comment on it again.
-            The PR author has already been notified and repetitive comments create noise.
-
-            ## Guidelines for your review:
-            - Do not write positive feedback or general comments. Only provide constructive criticism and actionable feedback. If there are no issues, no need to comment.
-            - Get familiar with the codebase by reading ./AGENTS.md in the repo root.
-            - You are called on new commits to the PR, so focus on the latest changes and how they integrate with the existing code. Avoid redundant comments on unchanged code.
-            - If all issues have already been raised in previous comments, respond with no new comments.
-
-            ## How to post comments:
-            - Use `gh pr comment` for top-level feedback (only for genuinely new issues)
-            - Use `mcp__github_inline_comment__create_inline_comment` to highlight specific code issues (only for genuinely new issues)
-            - Only post GitHub comments - don't submit review text as messages.
-          claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/claude-pr-review.yml@main
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

@@ -8,7 +8,7 @@ from gdsfactory.component import Component
 from qpdk.tech import LAYER
 
 
-@gf.cell
+@gf.cell(tags=("interconnects", "3d-integration"))
 def tsv(diameter: float = 15.0) -> Component:
     """Creates a Through-silicon via (TSV) component for 3D integration.
 
@@ -23,7 +23,7 @@ def tsv(diameter: float = 15.0) -> Component:
     c = Component()
     circle = gf.components.circle(radius=diameter / 2, layer=LAYER.TSV)
     ref = c.add_ref(circle)
-    ref.move((0, 0))
+    ref.move((0.0, 0.0))
     c.add_port(
         name="center",
         center=(
@@ -36,8 +36,3 @@ def tsv(diameter: float = 15.0) -> Component:
         port_type="placement",
     )
     return c
-
-
-if __name__ == "__main__":
-    c = tsv()
-    c.show()

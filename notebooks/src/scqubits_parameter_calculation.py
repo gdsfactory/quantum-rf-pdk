@@ -55,9 +55,27 @@
 # $j$ resonator photons.
 
 # %% tags=["hide-input", "hide-output"]
+import sys
+
+if "google.colab" in sys.modules:
+    import subprocess
+
+    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    subprocess.check_call([
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+    ])
+
+# %% tags=["hide-input", "hide-output"]
 import numpy as np
 
-# Monkeypatch for NumPy 2.0 compatibility with scqubits
+# Monkeypatch for NumPy 2.0 compatibility with scqubits.
+# TODO: Remove once the minimum required scqubits version officially supports
+# NumPy 2.x without relying on np.complex_ / np.float_ aliases.
 if not hasattr(np, "complex_"):
     np.complex_ = np.complex128  # noqa: NPY201
 if not hasattr(np, "float_"):
@@ -66,11 +84,17 @@ if not hasattr(np, "float_"):
 import polars as pl
 import scipy
 import scqubits as scq
-import skrf
 from IPython.display import Math, display
 from matplotlib import pyplot as plt
 
-from qpdk.models.media import cpw_media_skrf
+from qpdk import PDK
+from qpdk.helper import display_dataframe
+from qpdk.models.constants import c_0
+from qpdk.models.cpw import cpw_parameters
+
+PDK.activate()
+
+# ruff: disable[E402]
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -85,6 +109,8 @@ from qpdk.models.qubit import (
     ej_to_inductance,
 )
 from qpdk.models.resonator import resonator_frequency
+
+# ruff: enable[E402]
 
 # %% [markdown]
 # ## Building the System
@@ -252,13 +278,17 @@ display(
 # %%
 _a_plus_adag = resonator.annihilation_operator() + resonator.creation_operator()
 g_sweep = np.linspace(0.01, 0.3, 200)
-chi_sweep_analytical = np.array(
-    [dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep]
-)
+chi_sweep_analytical = np.array([
+    dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep
+])
 
 
 def chi_scqubits_at_g(g: float) -> float:
-    """Numerically compute χ via scQubits at a given coupling g."""
+    """Numerically compute χ via scQubits at a given coupling g.
+
+    Returns:
+        The dispersive shift value.
+    """
     hs = scq.HilbertSpace([transmon, resonator])
     hs.interaction_list = [
         scq.InteractionTerm(
@@ -414,16 +444,18 @@ C_sigma = float(ec_to_capacitance(EC_design))
 L_J = float(ej_to_inductance(EJ_design))
 
 # Determine resonator length for the target frequency
-resonator_media = cpw_media_skrf(width=10, gap=6)(
-    frequency=skrf.Frequency.from_f([omega_r_design], unit="GHz")
-)
+ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
 def _resonator_objective(length: float) -> float:
-    """Minimise the squared frequency error."""
+    """Minimize the squared frequency error.
+
+    Returns:
+        The squared error between the calculated and target frequency.
+    """
     freq = resonator_frequency(
         length=length,
-        epsilon_eff=float(np.real(np.mean(resonator_media.ep_r))),
+        epsilon_eff=float(np.real(ep_eff)),
         is_quarter_wave=True,
     )
     return (freq - omega_r_design * 1e9) ** 2
@@ -435,12 +467,7 @@ resonator_length = result.x[0]
 # Total resonator capacitance from CPW impedance and phase velocity
 # {cite:p}`gopplCoplanarWaveguideResonators2008a`:
 # C_r = l / Re(Z_0 * v_p)
-C_r = (
-    1
-    / np.real(resonator_media.z0 * resonator_media.v_p).mean()
-    * resonator_length
-    * 1e-6
-)  # F
+C_r = 1 / np.real(z0 * (c_0 / np.sqrt(ep_eff))) * resonator_length * 1e-6  # F
 
 # Coupling capacitance
 C_c = float(
@@ -471,7 +498,7 @@ C_c = {C_c * 1e15:.2f}\,\mathrm{{fF}}
 # %%
 f_resonator_achieved = resonator_frequency(
     length=resonator_length,
-    epsilon_eff=float(np.real(np.mean(resonator_media.ep_r))),
+    epsilon_eff=float(np.real(ep_eff)),
     is_quarter_wave=True,
 )
 
@@ -537,36 +564,30 @@ Q_\text{{ext}} = {Q_ext:,} \\
 
 # %%
 data = [
-    ("Target", "Target dispersive shift χ", f"{chi_target_mhz:.1f}", "MHz"),
-    ("Hamiltonian", "E_J", f"{EJ_design:.1f}", "GHz"),
-    ("Hamiltonian", "E_C", f"{EC_design:.1f}", "GHz"),
-    ("Hamiltonian", "ω_t", f"{omega_t_design:.3f}", "GHz"),
-    ("Hamiltonian", "α", f"{alpha_design:.1f}", "GHz"),
-    ("Hamiltonian", "ω_r", f"{omega_r_design:.1f}", "GHz"),
-    ("Hamiltonian", "g", f"{float(g_design) * 1e3:.1f}", "MHz"),
-    ("Circuit", "C_Σ", f"{C_sigma * 1e15:.1f}", "fF"),
-    ("Circuit", "L_J", f"{L_J * 1e9:.2f}", "nH"),
-    ("Circuit", "C_r", f"{C_r * 1e15:.1f}", "fF"),
-    ("Circuit", "C_c", f"{C_c * 1e15:.2f}", "fF"),
+    ("Target", "Target dispersive shift $\\chi$", f"{chi_target_mhz:.1f}", "MHz"),
+    ("Hamiltonian", "$E_J$", f"{EJ_design:.1f}", "GHz"),
+    ("Hamiltonian", "$E_C$", f"{EC_design:.1f}", "GHz"),
+    ("Hamiltonian", "$\\omega_t$", f"{omega_t_design:.3f}", "GHz"),
+    ("Hamiltonian", "$\\alpha$", f"{alpha_design:.1f}", "GHz"),
+    ("Hamiltonian", "$\\omega_r$", f"{omega_r_design:.1f}", "GHz"),
+    ("Hamiltonian", "$g$", f"{float(g_design) * 1e3:.1f}", "MHz"),
+    ("Circuit", "$C_\\Sigma$", f"{C_sigma * 1e15:.1f}", "fF"),
+    ("Circuit", "$L_J$", f"{L_J * 1e9:.2f}", "nH"),
+    ("Circuit", "$C_r$", f"{C_r * 1e15:.1f}", "fF"),
+    ("Circuit", "$C_c$", f"{C_c * 1e15:.2f}", "fF"),
     ("Layout", "Resonator length", f"{resonator_length:.0f}", "µm"),
     ("Layout", "Resonator CPW width", "10", "µm"),
     ("Layout", "Resonator CPW gap", "6", "µm"),
     ("Layout", "Resonator freq", f"{f_resonator_achieved / 1e9:.3f}", "GHz"),
-    ("Readout", "Q_ext", f"{Q_ext:,}", ""),
-    ("Readout", "κ", f"{kappa * 1e6:.1f}", "kHz"),
-    ("Readout", "T_Purcell", f"{T_purcell * 1e6:.0f}", "µs"),
-    ("Readout", "|χ|/κ", f"{chi_over_kappa:.1f}", ""),
+    ("Readout", "$Q_{\\mathrm{ext}}$", f"{Q_ext:,}", ""),
+    ("Readout", "$\\kappa$", f"{kappa * 1e6:.1f}", "kHz"),
+    ("Readout", "$T_{\\mathrm{Purcell}}$", f"{T_purcell * 1e6:.0f}", "µs"),
+    ("Readout", "$|\\chi|/\\kappa$", f"{chi_over_kappa:.1f}", ""),
 ]
 
-df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"])
+df = pl.DataFrame(data, schema=["Category", "Parameter", "Value", "Unit"], orient="row")
 
-with pl.Config(
-    tbl_rows=30,
-    tbl_formatting="MARKDOWN",
-    tbl_hide_column_data_types=True,
-    tbl_hide_dataframe_shape=True,
-):
-    display(df)
+display_dataframe(df)
 
 # %% [markdown]
 # ## References

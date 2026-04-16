@@ -92,10 +92,13 @@ class BaseModelTestSuite:
 
         This method ensures the model function is called correctly without
         passing `self` as the first argument.
+
+        Returns:
+            The S-parameter dictionary from the model.
         """
         result = type(self).model_function(**kwargs)
         assert isinstance(result, dict), "Model function must return a dict (sax.SDict)"
-        return cast(sax.SDict, result)
+        return cast("sax.SDict", result)
 
     def test_default_parameters(self) -> None:
         """Test that the model returns valid S-parameters with default parameters."""
@@ -176,6 +179,15 @@ class BaseModelTestSuite:
                 1.0 + self.passivity_tolerance,
                 err_msg=f"Passivity violated for column {port_j}: max total power = {jnp.max(power_sum)}",
             )
+
+
+class OnePortModelTestSuite(BaseModelTestSuite):
+    """Base test suite for 1-port network models.
+
+    Provides default settings for models with port "o1".
+    """
+
+    expected_ports: ClassVar[set[str]] = {"o1"}
 
 
 class TwoPortModelTestSuite(BaseModelTestSuite):

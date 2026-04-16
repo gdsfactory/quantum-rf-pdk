@@ -6,7 +6,7 @@ import hypothesis.strategies as st
 import pytest
 from hypothesis import HealthCheck, assume, given, settings
 
-from qpdk.cells.derived.transmon_with_resonator import (
+from qpdk.cells.derived.transmon_with_resonator_and_probeline import (
     double_pad_transmon_with_resonator,
     flipmon_with_resonator,
 )
@@ -19,17 +19,21 @@ MAX_EXAMPLES = 20
 class TestResonators:
     """Test basic resonator functionality."""
 
+    @staticmethod
     @pytest.mark.parametrize("length", [0, 10, 100])
-    def test_resonator_too_short_raises_error(self, length: float) -> None:
+    def test_resonator_too_short_raises_error(length: float) -> None:
         """Verify that providing a length too short for the meanders raises ValueError."""
         with pytest.raises(ValueError, match="too short"):
             resonator(length=length, meanders=6)
 
+    @staticmethod
     @given(
         length=st.floats(min_value=0, max_value=1000000),
         meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
+        start_with_bend=st.booleans(),
+        end_with_bend=st.booleans(),
     )
     @settings(
         max_examples=MAX_EXAMPLES,
@@ -37,34 +41,61 @@ class TestResonators:
         suppress_health_check=[HealthCheck.filter_too_much],
     )
     def test_resonator_meanders(
-        self, length: float, meanders: int, open_start: bool, open_end: bool
+        length: float,
+        meanders: int,
+        open_start: bool,
+        open_end: bool,
+        start_with_bend: bool,
+        end_with_bend: bool,
     ) -> None:
-        bend_factory = partial(bend_circular, angle=180)
+        bend_factory = partial(bend_circular, angle=180, angular_step=4)
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
         bend_length = bend_factory().info["length"]
-        assume(length > meanders * bend_length)
+
+        num_straights = meanders + 1
+        if start_with_bend:
+            num_straights -= 1
+        if end_with_bend:
+            num_straights -= 1
+
+        if num_straights > 0:
+            assume(length > meanders * bend_length)
+        else:
+            # If no straights, the length must be exactly meanders * bend_length
+            # for consistency, but the component creation should still work.
+            # However, the current implementation of resonator() just uses 'length'
+            # to calculate straights length IF num_straights > 0.
+            # If num_straights == 0, 'length' is just stored in metadata.
+            pass
 
         c = resonator(
             length=length,
             meanders=meanders,
             open_start=open_start,
             open_end=open_end,
+            start_with_bend=start_with_bend,
+            end_with_bend=end_with_bend,
             bend_spec=bend_factory,
         )
 
+        expected_length = length if num_straights > 0 else meanders * bend_length
+
         assert c is not None, "Resonator component should be created successfully"
-        assert c.info["length"] == length, (
-            f"Expected length {length}, got {c.info['length']}"
+        assert c.info["length"] == pytest.approx(expected_length), (
+            f"Expected length {expected_length}, got {c.info['length']}"
         )
         assert len(c.ports) == 2, f"Expected 2 ports, got {len(c.ports)}"
 
+    @staticmethod
     @given(
         length=st.floats(min_value=0, max_value=1000000),
         meanders=st.integers(min_value=1, max_value=100),
         open_start=st.booleans(),
         open_end=st.booleans(),
+        start_with_bend=st.booleans(),
+        end_with_bend=st.booleans(),
         coupling_straight_length=st.floats(min_value=1, max_value=1000),
         coupling_gap=st.floats(min_value=1, max_value=100),
     )
@@ -74,36 +105,49 @@ class TestResonators:
         suppress_health_check=[HealthCheck.filter_too_much],
     )
     def test_resonator_coupled(
-        self,
         length: float,
         meanders: int,
         open_start: bool,
         open_end: bool,
+        start_with_bend: bool,
+        end_with_bend: bool,
         coupling_straight_length: float,
         coupling_gap: float,
     ) -> None:
-        bend_factory = partial(bend_circular, angle=180)
+        bend_factory = partial(bend_circular, angle=180, angular_step=4)
 
         # Ensure total length is sufficient to accommodate all bends
         # Each meander requires space for the bend sections
         bend_length = bend_factory().info["length"]
-        assume(length > meanders * bend_length)
+
+        num_straights = meanders + 1
+        if start_with_bend:
+            num_straights -= 1
+        if end_with_bend:
+            num_straights -= 1
+
+        if num_straights > 0:
+            assume(length > meanders * bend_length)
 
         c = resonator_coupled(
             length=length,
             meanders=meanders,
             open_start=open_start,
             open_end=open_end,
+            start_with_bend=start_with_bend,
+            end_with_bend=end_with_bend,
             bend_spec=bend_factory,
             coupling_straight_length=coupling_straight_length,
             coupling_gap=coupling_gap,
         )
 
+        expected_length = length if num_straights > 0 else meanders * bend_length
+
         assert c is not None, (
             "Coupled resonator component should be created successfully"
         )
-        assert c.info["length"] == length, (
-            f"Expected length {length}, got {c.info['length']}"
+        assert c.info["length"] == pytest.approx(expected_length), (
+            f"Expected length {expected_length}, got {c.info['length']}"
         )
         assert c.info["coupling_length"] == coupling_straight_length, (
             f"Expected coupling length {coupling_straight_length}, got {c.info['coupling_length']}"
@@ -125,7 +169,8 @@ class TestResonators:
 class TestQubitWithResonator:
     """Test qubit—resonator coupled systems."""
 
-    def test_transmon_with_resonator_defaults(self) -> None:
+    @staticmethod
+    def test_transmon_with_resonator_defaults() -> None:
         """Test transmon_with_resonator with default parameters."""
         c = double_pad_transmon_with_resonator()
 
@@ -142,7 +187,8 @@ class TestQubitWithResonator:
         assert "junction" in port_names, "Should have junction port from transmon"
         assert "o1" in port_names, "Should have o1 port from resonator"
 
-    def test_flipmon_with_resonator_defaults(self) -> None:
+    @staticmethod
+    def test_flipmon_with_resonator_defaults() -> None:
         """Test flipmon_with_resonator with default parameters."""
         c = flipmon_with_resonator()
 

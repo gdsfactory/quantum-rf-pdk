@@ -11,11 +11,11 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 
-import qpdk.tech as tech
+from qpdk import tech
 from qpdk.tech import LAYER
 
 
-@gf.cell
+@gf.cell(tags=("interconnects",))
 def airbridge(
     bridge_length: float = 30.0,
     bridge_width: float = 8.0,
@@ -30,6 +30,20 @@ def airbridge(
     on either side. The bridge allows transmission lines to cross over each other
     without electrical contact, which is essential for complex quantum circuit
     routing without crosstalk.
+
+    .. svgbob::
+
+        +─────────+
+        │ landing │  AB_VIA
+        │   pad   │
+        +─+     +─+
+          │     │
+          │     │ bridge  AB_DRAW
+          │     │
+        +─+     +─+
+        │ landing │  AB_VIA
+        │   pad   │
+        +─────────+
 
     The bridge_layer (AB_DRAW) represents the elevated metal bridge structure,
     while the pad_layer (AB_VIA) represents the contact/landing pads that connect
@@ -156,14 +170,3 @@ def cpw_with_airbridges(
 
     # Create a copy with airbridges using Pydantic model_copy
     return base_xs.model_copy(update={"components_along_path": (component_along_path,)})
-
-
-if __name__ == "__main__":
-    # Example usage and testing
-    from qpdk import PDK
-
-    PDK.activate()
-
-    # Create and display a single airbridge
-    bridge = airbridge()
-    bridge.show()
