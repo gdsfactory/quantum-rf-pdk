@@ -7,6 +7,7 @@ on:
     branches:
       - main
   workflow_dispatch:
+  merge_group:
 jobs:
   build-docs-pdf:
     runs-on: ubuntu-latest
