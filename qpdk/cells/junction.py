@@ -8,7 +8,6 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
 from qpdk.cells.waveguides import straight
-from qpdk.helper import show_components
 from qpdk.tech import (
     LAYER,
     josephson_junction_cross_section_narrow,
@@ -296,7 +295,3 @@ def squid_junction(
         port_type="placement",
     )
     return c
-
-
-if __name__ == "__main__":
-    show_components(josephson_junction, squid_junction)

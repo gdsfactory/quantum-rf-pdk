@@ -25,7 +25,6 @@ from qpdk.cells.capacitor import half_circle_coupler
 from qpdk.cells.junction import josephson_junction, squid_junction
 from qpdk.cells.resonator import resonator
 from qpdk.cells.waveguides import bend_circular, straight
-from qpdk.helper import show_components
 from qpdk.tech import LAYER, get_etch_section
 
 
@@ -37,7 +36,18 @@ def unimon_arm(
     cross_section: CrossSectionSpec = "cpw",
     junction_gap: float = 6.0,
 ) -> Component:
-    """Creates a quarter-wave resonator arm for the unimon qubit."""
+    """Creates a quarter-wave resonator arm for the unimon qubit.
+
+    Args:
+        arm_length: Length of the resonator arm in µm.
+        arm_meanders: Number of meanders in the arm.
+        bend_spec: Specification for the bend component.
+        cross_section: Cross-section specification for the arm.
+        junction_gap: Gap for the junction in µm.
+
+    Returns:
+        Component: The quarter-wave resonator arm component.
+    """
     c = Component()
     cross_section_obj = gf.get_cross_section(cross_section)
     bend = gf.get_component(
@@ -194,7 +204,7 @@ def unimon(
     junction_comp = gf.get_component(junction_spec)
     junction_ref = c.add_ref(junction_comp)
     junction_ref.dcplx_trans *= kdb.DCplxTrans(1, -45, False, 0, 0)
-    junction_ref.dcenter = (0, 0)
+    junction_ref.dcenter = (0.0, 0.0)
 
     gap_comp = gf.c.rectangle(
         size=(junction_gap, junction_etch_width),
@@ -205,7 +215,7 @@ def unimon(
     )
 
     gap_ref = c.add_ref(gap_comp)
-    gap_ref.dcenter = (0, 0)
+    gap_ref.dcenter = (0.0, 0.0)
     gap_ref.rotate(90)
 
     arm_top_ref = c.add_ref(arm)
@@ -376,11 +386,3 @@ def unimon_coupled(
     c.info["coupling_radius"] = coupling_radius
 
     return c
-
-
-if __name__ == "__main__":
-    show_components(
-        unimon,
-        partial(unimon, arm_length=2000, arm_meanders=4),
-        unimon_coupled,
-    )

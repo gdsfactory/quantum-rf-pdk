@@ -3,10 +3,10 @@
 from gdsfactory import Component
 
 from qpdk import PDK
-from qpdk.cells.helpers import apply_additive_metals
 from qpdk.cells.transmon import flipmon_with_bbox
 from qpdk.helper import layerenum_to_tuple
 from qpdk.tech import LAYER
+from qpdk.utils import apply_additive_metals
 
 ADDITIVE_LAYERS = {
     layerenum_to_tuple(layer_enum) for layer_enum in (LAYER.M1_DRAW, LAYER.M2_DRAW)

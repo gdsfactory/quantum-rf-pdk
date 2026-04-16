@@ -3,9 +3,9 @@
 import gdsfactory as gf
 
 from qpdk import PDK
-from qpdk.cells.helpers import fill_magnetic_vortices
 from qpdk.cells.resonator import resonator_quarter_wave
 from qpdk.tech import LAYER
+from qpdk.utils import fill_magnetic_vortices
 
 
 def test_fill_magnetic_vortices():

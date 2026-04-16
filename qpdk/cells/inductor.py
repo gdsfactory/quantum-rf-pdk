@@ -520,12 +520,3 @@ def _draw_interdigital_fingers_right(
             ],
             layer=layer,
         )
-
-
-if __name__ == "__main__":
-    from qpdk.helper import show_components
-
-    show_components(
-        meander_inductor,
-        lumped_element_resonator,
-    )
