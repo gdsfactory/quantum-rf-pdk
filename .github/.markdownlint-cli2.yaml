@@ -8,6 +8,9 @@ config:
     code_block_line_length: 120
   # Allow punctuation in headings (useful for project names with versions)
   MD026: false
+  # Allow duplicate headings as long as they are not siblings (e.g., "Added" under different versions)
+  MD024:
+    siblings_only: true
   # Disable first-line-h1 rule for docs files that use includes
   MD041: false
 # Ignore specific files or patterns
