@@ -1,4 +1,4 @@
-.PHONY: docs build dev
+.PHONY: docs build install dev test
 
 # Makefile — compatibility shim for gdsfactory PDK CI tooling
 #
@@ -15,8 +15,14 @@ docs:
 build:
 	@$(JUST_CMD) build
 
-dev:
+install:
 	@$(JUST_CMD) install
+
+dev: install
+	@$(JUST_CMD) install-pre
+
+test:
+	@$(JUST_CMD) test
 
 # Any target not explicitly defined above is forwarded to just.
 %:
