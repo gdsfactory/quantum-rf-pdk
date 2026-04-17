@@ -60,3 +60,21 @@ jobs:
             echo "One or more test jobs failed"
             exit 1
           fi
+  code-coverage:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/test_coverage.yml@main # zizmor: ignore[unpinned-uses]
+    secrets: inherit # zizmor: ignore[secrets-inherit]
+  model-coverage:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/model_coverage.yml@main # zizmor: ignore[unpinned-uses]
+    secrets: inherit # zizmor: ignore[secrets-inherit]
+  model-regression:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/model_regression.yml@main # zizmor: ignore[unpinned-uses]
+    secrets: inherit # zizmor: ignore[secrets-inherit]
