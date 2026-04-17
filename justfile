@@ -1,4 +1,4 @@
-set dotenv-load
+set dotenv-load := true
 
 pdk := env('pdk', 'qpdk')
 cpus := num_cpus()
