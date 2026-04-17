@@ -58,7 +58,7 @@ def josephson_junction(
 
     # Bias-dependent phase factor
     # jnp.clip ensures we don't get NaNs during compilation tracing or slightly overbiased states
-    cos_Φ_0 = jnp.sqrt(jnp.clip(1.0 - (ib / ic) ** 2, a_min=1e-10))
+    cos_Φ_0 = jnp.sqrt(jnp.clip(1.0 - (ib / ic) ** 2, min=1e-10))
 
     # Josephson inductance
     Lⱼ = Φ_0 / (2 * jnp.pi * ic * cos_Φ_0)
@@ -122,7 +122,7 @@ def squid_junction(
     ratio_sq = jnp.where(
         ic_squid > 0, (ib / jnp.where(ic_squid > 0, ic_squid, 1.0)) ** 2, 0.0
     )
-    cos_Φ_0_eff = jnp.sqrt(jnp.clip(1.0 - ratio_sq, a_min=1e-10))
+    cos_Φ_0_eff = jnp.sqrt(jnp.clip(1.0 - ratio_sq, min=1e-10))
 
     # Effective Josephson inductance (will go to inf when ic_squid == 0)
     Lⱼ_eff = Φ_0 / (2 * jnp.pi * jnp.where(ic_squid > 0, ic_squid, 1e-20) * cos_Φ_0_eff)
