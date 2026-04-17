@@ -70,5 +70,4 @@ For contributors, please follow the [installation and development workflow instr
 
 - [Quantum RF PDK documentation (HTML)](https://gdsfactory.github.io/quantum-rf-pdk/)
 - [Quantum RF PDK documentation (PDF)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
-- [Quantum RF PDK test coverage report](https://gdsfactory.github.io/quantum-rf-pdk/reports/coverage/)
 - [gdsfactory documentation](https://gdsfactory.github.io/gdsfactory/)
