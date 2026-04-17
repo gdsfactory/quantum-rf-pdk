@@ -1,16 +1,4 @@
 rules:
-  unpinned-uses:
-    ignore:
-      - "claude-pr-review.yml"
-  excessive-permissions:
-    ignore:
-      - "claude-pr-review.yml"
-  secrets-inherit:
-    ignore:
-      - "claude-pr-review.yml"
-  dangerous-triggers:
-    ignore:
-      - "pages.yml"
   artipacked:
     disable: true
   template-injection:

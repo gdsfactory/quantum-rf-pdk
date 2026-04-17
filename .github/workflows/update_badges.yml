@@ -1,0 +1,14 @@
+name: Update Badges
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  badges:
+    permissions:
+      contents: write
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/update_badges.yml@main # zizmor: ignore[unpinned-uses]
+    secrets: inherit # zizmor: ignore[secrets-inherit]
