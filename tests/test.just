@@ -64,3 +64,50 @@ test-models-force:
 [group('test')]
 test-hfss *args: check-lfs
     uv run --all-extras --group dev pytest -m hfss {{ args }}
+
+# Filter a JSON array of Python versions to only those supported by the latest version of gdsfactoryplus on PyPI
+[group('test')]
+[script('uv', 'run', '--script')]
+get-gfp-versions versions:
+    import json, urllib.request, sys, re
+    v_in = json.loads('{{ versions }}')
+    try:
+        with urllib.request.urlopen("https://pypi.org/pypi/gdsfactoryplus/json") as r:
+            data = json.loads(r.read().decode())
+
+        latest = data.get("info", {}).get("version")
+        info = data.get("info", {})
+        req = info.get("requires_python", "")
+        rels = data.get("releases", {}).get(latest, [])
+
+        v_out = []
+        for v in v_in:
+            t = v.replace(".", "")
+            # Check for wheels first as they are definitive
+            if any(f"cp{t}" in rel.get("python_version","") or f"py{t}" in rel.get("python_version","") or v in rel.get("python_version","") for rel in rels):
+                v_out.append(v)
+            elif req:
+                # Fallback to parsing requires_python string for the latest version
+                vm = int(v.split('.')[1])
+                # Match major.minor patterns like >=3.11, <3.14, ~=3.12
+                m_ge = re.search(r'>=3\.(\d+)', req)
+                m_lt = re.search(r'<3\.(\d+)', req)
+                m_ti = re.search(r'~=3\.(\d+)', req)
+
+                is_supported = True
+                if m_ge and vm < int(m_ge.group(1)): is_supported = False
+                if m_lt and vm >= int(m_lt.group(1)): is_supported = False
+                if m_ti and vm != int(m_ti.group(1)): is_supported = False
+
+                if is_supported:
+                    v_out.append(v)
+        # If filtering resulted in an empty list, fallback to input to avoid breaking the matrix
+        print(json.dumps(v_out or v_in))
+    except Exception:
+        # Fallback to input versions on any error (network, parsing, etc.)
+        print(json.dumps(v_in))
+
+# Run GDSFactory+ tests
+[group('test')]
+test-gfp:
+    uv run --extra gdsfactoryplus gfp test
