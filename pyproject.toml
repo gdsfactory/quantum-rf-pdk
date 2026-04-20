@@ -198,6 +198,14 @@ no-matching-overload = "ignore"
 
 [tool.pytest]
 addopts = ["--tb=short"]
+filterwarnings = [
+  # gdsfactory internally warns about bend_euler for non-90/180 angles even
+  # when the user calls bend_circular; suppress until upstream fixes this.
+  "ignore:bend_euler angle should be 90 or 180:UserWarning",
+  # Equinox uses deprecated JAX core internals; nothing we can fix upstream
+  "ignore:jax\\.core\\.mapped_aval is deprecated:DeprecationWarning",
+  "ignore:jax\\.core\\.unmapped_aval is deprecated:DeprecationWarning",
+]
 markers = [
   "hfss: mark test as requiring HFSS",
   "skip_windows: skip test on Windows",

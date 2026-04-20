@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - uses: j178/prek-action@53276d8b0d10f8b6672aa85b4588c6921d0370cc # v2
+      - uses: j178/prek-action@53276d8b0d10f8b6672aa85b4588c6921d0370cc # v2.0.1
   get-python-versions:
     uses: ./.github/workflows/get-python-versions.yml
   test-code:
@@ -43,7 +43,7 @@ jobs:
         run: uv run --group dev --group github genbadge coverage -i coverage.xml -o htmlcov/coverage.svg
       - name: Upload coverage report
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: coverage-report-${{ matrix.python-version }}
           path: htmlcov
@@ -73,10 +73,28 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ${{ fromJson(needs.get-python-versions.outputs.python-versions) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Test GDSFactory+
         run: uv run --extra gdsfactoryplus gfp test
+  code-coverage:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/test_coverage.yml@main # zizmor: ignore[unpinned-uses]
+    secrets: inherit # zizmor: ignore[secrets-inherit]
+  model-coverage:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/model_coverage.yml@main # zizmor: ignore[unpinned-uses]
+    secrets: inherit # zizmor: ignore[secrets-inherit]
+  model-regression:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/model_regression.yml@main # zizmor: ignore[unpinned-uses]
+    secrets: inherit # zizmor: ignore[secrets-inherit]
