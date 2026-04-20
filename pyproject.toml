@@ -134,9 +134,6 @@ exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
 [tool.gdsfactoryplus]
 name = "qpdk"
 
-[tool.gdsfactoryplus]
-name = "qpdk"
-
 [tool.gdsfactoryplus.drc]
 timeout = 300
 
