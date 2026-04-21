@@ -19,6 +19,8 @@ documentation:
       - changed-files:
           - any-glob-to-any-file: '*.md'
           - any-glob-to-any-file: 'docs/**/*'
+          - any-glob-to-any-file: '.github/write_cells.py'
+          - any-glob-to-any-file: '.github/write_models.py'
 drc:
   - any:
       - changed-files:
@@ -41,6 +43,17 @@ pre_commit:
   - any:
       - changed-files:
           - any-glob-to-any-file: '.pre-commit-config.yaml'
+          - any-glob-to-any-file: '.github/.bake.toml'
+          - any-glob-to-any-file: '.github/.checkmake.ini'
+          - any-glob-to-any-file: '.github/.markdownlint-cli2.yaml'
+          - any-glob-to-any-file: '.github/.stylelintrc.yaml'
+          - any-glob-to-any-file: '.github/.yamlfmt.yaml'
+          - any-glob-to-any-file: '.github/.yamllint.yaml'
+          - any-glob-to-any-file: '.github/check-notebook-sources.sh'
+          - any-glob-to-any-file: '.github/convert-notebooks.sh'
+          - any-glob-to-any-file: '.github/zizmor.yml'
+          - any-glob-to-any-file: '.github/.bake.toml'
+          - any-glob-to-any-file: '.github/.bake.toml'
 python:
   - any:
       - changed-files:
