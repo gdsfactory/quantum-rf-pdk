@@ -1,23 +1,71 @@
 # Configuration for GitHub Actions PR Labeler
 # https://github.com/actions/labeler
+ci:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: '.github/workflows/**/*'
+components:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'qpdk/cells/**/*'
+dependencies:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'pyproject.toml'
+          - any-glob-to-any-file: 'uv.lock'
+          - any-glob-to-any-file: 'requirements*.txt'
 documentation:
   - any:
       - changed-files:
           - any-glob-to-any-file: '*.md'
           - any-glob-to-any-file: 'docs/**/*'
-notebooks:
+          - any-glob-to-any-file: '.github/write_cells.py'
+          - any-glob-to-any-file: '.github/write_models.py'
+drc:
   - any:
       - changed-files:
-          - any-glob-to-any-file: '*.ipynb'
-          - any-glob-to-any-file: 'qpdk/notebooks/**/*'
-components:
-  - any:
-      - changed-files:
-          - any-glob-to-any-file: 'qpdk/cells/**/*'
+          - any-glob-to-any-file: '.github/workflows/drc.yml'
+          - any-glob-to-any-file: '**/*.drc'
 models:
   - any:
       - changed-files:
           - any-glob-to-any-file: 'qpdk/models/**/*'
+notebooks:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: '*.ipynb'
+          - any-glob-to-any-file: 'notebooks/**/*'
+pdk:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'qpdk/**/*'
+pre_commit:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: '.pre-commit-config.yaml'
+          - any-glob-to-any-file: '.github/.bake.toml'
+          - any-glob-to-any-file: '.github/.checkmake.ini'
+          - any-glob-to-any-file: '.github/.markdownlint-cli2.yaml'
+          - any-glob-to-any-file: '.github/.stylelintrc.yaml'
+          - any-glob-to-any-file: '.github/.yamlfmt.yaml'
+          - any-glob-to-any-file: '.github/.yamllint.yaml'
+          - any-glob-to-any-file: '.github/check-notebook-sources.sh'
+          - any-glob-to-any-file: '.github/convert-notebooks.sh'
+          - any-glob-to-any-file: '.github/zizmor.yml'
+          - any-glob-to-any-file: '.github/.bake.toml'
+          - any-glob-to-any-file: '.github/.bake.toml'
+python:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: '**/*.py'
+samples:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'qpdk/samples/**/*'
+simulations:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file: 'qpdk/simulation/**/*'
 technology:
   - any:
       - changed-files:
@@ -30,14 +78,3 @@ tests:
           - any-glob-to-any-file: 'tests/**/*'
           - any-glob-to-any-file: 'test_*.py'
           - any-glob-to-any-file: '*_test.py'
-ci:
-  - any:
-      - changed-files:
-          - any-glob-to-any-file: '.github/workflows/*'
-          - any-glob-to-any-file: '.pre-commit-config.yaml'
-dependencies:
-  - any:
-      - changed-files:
-          - any-glob-to-any-file: 'pyproject.toml'
-          - any-glob-to-any-file: 'uv.lock'
-          - any-glob-to-any-file: 'requirements*.txt'
