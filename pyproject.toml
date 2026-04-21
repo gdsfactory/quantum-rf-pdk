@@ -137,6 +137,7 @@ exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
 name = "qpdk"
 
 [tool.gdsfactoryplus.drc]
+pdk = "quantum_rf"
 timeout = 300
 
 [tool.gdsfactoryplus.sim.x]
