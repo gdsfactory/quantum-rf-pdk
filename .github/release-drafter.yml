@@ -1,30 +1,38 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
-change-template: '- $TITLE (#$NUMBER)'
-change-title-escapes: '\<*_&'
+change-template: '- $TITLE [#$NUMBER](https://github.com/gdsfactory/quantum-rf-pdk/pull/$NUMBER)'
 template: |
   # What's Changed
 
   $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 categories:
   - title: 'Breaking'
     label: 'breaking'
-  - title: 'New'
+  - title: 'Features'
     labels:
       - 'feature'
       - 'enhancement'
+      - 'components'
+      - 'models'
+      - 'technology'
   - title: 'Bug Fixes'
     label: 'bug'
-  - title: 'Maintenance'
-    labels:
-      - 'maintenance'
-      - 'github_actions'
   - title: 'Documentation'
-    label: 'documentation'
+    labels:
+      - 'documentation'
+      - 'notebooks'
   - title: 'Dependency Updates'
     label: 'dependencies'
     collapse-after: 5
-
+  - title: 'Other Changes'
+    labels:
+      - 'maintenance'
+      - 'tests'
+      - 'ci'
+      - 'infrastructure'
+      - 'samples'
 version-resolver:
   major:
     labels:
@@ -35,6 +43,9 @@ version-resolver:
       - 'feature'
       - 'minor'
       - 'enhancement'
+      - 'components'
+      - 'models'
+      - 'technology'
   patch:
     labels:
       - 'bug'
@@ -43,25 +54,11 @@ version-resolver:
       - 'documentation'
       - 'dependencies'
       - 'security'
+      - 'tests'
+      - 'samples'
+      - 'notebooks'
+      - 'ci'
+      - 'infrastructure'
   default: patch
-
 exclude-labels:
   - 'skip-changelog'
-
-autolabeler:
-  - label: 'documentation'
-    files:
-      - '*.md'
-    branch:
-      - '/docs-.+/'
-  - label: 'bug'
-    branch:
-      - '/fix-.+/'
-    title:
-      - '/fix/i'
-  - label: 'enhancement'
-    branch:
-      - '/feature-.+/'
-      - '/add-.+/'
-    title:
-      - '/^add\s/i'

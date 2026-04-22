@@ -5,9 +5,10 @@ on:
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
-
+permissions: {}
 jobs:
   badges:
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/update_badges.yml@main
-    secrets:
-      GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
+    permissions:
+      contents: write
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/update_badges.yml@main # zizmor: ignore[unpinned-uses]
+    secrets: inherit # zizmor: ignore[secrets-inherit]
