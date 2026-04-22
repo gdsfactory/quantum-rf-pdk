@@ -36,7 +36,7 @@ if cell_name == "all_cells":
             p
             for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (p.VAR_POSITIONAL, p.VAR_KEYWORD)
+            and p.kind not in {p.VAR_POSITIONAL, p.VAR_KEYWORD}
         ]
         if required:
             print(f"Skipping {name}: requires arguments {[p.name for p in required]}")
@@ -44,7 +44,7 @@ if cell_name == "all_cells":
 
         try:
             c.add_ref(func())
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"Error instantiating cell {name}: {e}")
     c.write_gds(f"build/gds/{cell_name}.gds")
 else:
