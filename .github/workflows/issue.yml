@@ -17,9 +17,7 @@ on:
       - transferred
       - milestoned
       - demilestoned
+
 jobs:
   label:
-    permissions:
-      contents: read
-      issues: write
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/issue.yml@main # zizmor: ignore[unpinned-uses]
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/issue.yml@main

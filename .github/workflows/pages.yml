@@ -1,67 +1,27 @@
-name: Docs
-permissions:
-  contents: read
+name: Build docs
 on:
   pull_request:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
-  merge_group:
+
 jobs:
-  build-docs-pdf:
-    runs-on: ubuntu-latest
-    name: Build PDF docs
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          lfs: true
-      - name: Install uv
-        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
-      - name: Install just
-        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - run: just install
-      - name: Cache ImageMagick
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-imagemagick
-      - name: Install ImageMagick and Computer Modern Unicode fonts
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y imagemagick fonts-cmu
-          # Allow ImageMagick to convert SVG files (disabled by default in policy)
-          if [ -f /etc/ImageMagick-6/policy.xml ]; then
-            sudo sed -i 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' /etc/ImageMagick-6/policy.xml
-          fi
-      - name: Generate LaTeX files
-        run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
-      - name: Compile LaTeX document
-        continue-on-error: true
-        uses: xu-cheng/latex-action@6549dc21effb2730855a1281407ecfcececc6c1b # v4.0.0
-        env:
-          XINDYOPTS: "-L english -C utf8 -M sphinx.xdy"
-        with:
-          texlive_version: latest
-          os: alpine
-          pre_compile: cd docs/_build/latex
-          extra_system_packages: "ghostscript"
-          root_file: qpdk.tex
-          compiler: latexmk
-          continue_on_error: true
-          latexmk_use_xelatex: true
-          args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: pdf-docs
-          path: "./docs/_build/latex/qpdk.pdf"
-  pages:
-    needs: build-docs-pdf
-    permissions:
-      actions: read
-      pages: write
-      id-token: write
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/pages.yml@main # zizmor: ignore[unpinned-uses, secrets-inherit]
+  docs:
+    uses: doplaydo/pdk-ci-workflow/.github/workflows/pages.yml@main
     secrets:
       GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
       SIMCLOUD_APIKEY: ${{ secrets.SIMCLOUD_APIKEY }}
+  deploy-docs:
+    needs: docs
+    if: ${{ github.ref == 'refs/heads/main' }}
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
