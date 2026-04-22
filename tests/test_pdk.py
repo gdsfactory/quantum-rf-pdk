@@ -164,7 +164,7 @@ def test_gds(component_name: str) -> None:
 def test_settings(component_name: str, data_regression: DataRegressionFixture) -> None:
     """Avoid regressions when exporting settings."""
     component = cells[component_name]()
-    settings = normalize_numeric_types(component.to_dict())
+    settings = normalize_numeric_types(component.to_dict(with_ports=True))
     data_regression.check(settings)
 
 

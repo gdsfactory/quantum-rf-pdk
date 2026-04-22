@@ -1,6 +1,43 @@
 info:
   radius: 100
-name: coupler_ring_gdsfactorypcomponentspcouplerspcoupler_rin_11dc32cb
+name: coupler_ring_G16_RNone_LX20_Bbend_circular_Sstraight_CS_c1d37664
+ports:
+  o1:
+    center:
+    - -123
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - -120
+    - 126
+    layer: M1_DRAW
+    name: o2
+    orientation: 90
+    port_type: optical
+    width: 10
+  o3:
+    center:
+    - 100
+    - 126
+    layer: M1_DRAW
+    name: o3
+    orientation: 90
+    port_type: optical
+    width: 10
+  o4:
+    center:
+    - 103
+    - 0
+    layer: M1_DRAW
+    name: o4
+    orientation: 0
+    port_type: optical
+    width: 10
 settings:
   bend: bend_circular
   cross_section: cpw

@@ -1,3 +1,31 @@
 info: {}
 name: josephson_junction_long
+ports:
+  left_wide:
+    center:
+    - 17.2
+    - -15.4
+    layer: JJ_AREA
+    name: left_wide
+    orientation: 270
+    port_type: optical
+    width: 0.2
+  overlap:
+    center:
+    - 17.2
+    - 0
+    layer: JJ_AREA
+    name: overlap
+    orientation: 90
+    port_type: placement
+    width: 0.09
+  right_wide:
+    center:
+    - 1.8
+    - 0
+    layer: JJ_AREA
+    name: right_wide
+    orientation: 180
+    port_type: optical
+    width: 0.2
 settings: {}

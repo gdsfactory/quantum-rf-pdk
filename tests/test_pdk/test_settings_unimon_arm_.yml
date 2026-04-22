@@ -1,5 +1,33 @@
 info: {}
 name: unimon_arm_AL3000_AM6_BSbend_circular_CScpw_JG6
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 82.802
+    - -1200
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+  readout:
+    center:
+    - 0.061
+    - -1100
+    layer: M1_DRAW
+    name: readout
+    orientation: 180
+    port_type: placement
+    width: 10
 settings:
   arm_length: 3000
   arm_meanders: 6
