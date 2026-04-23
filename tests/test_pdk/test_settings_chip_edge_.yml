@@ -1,5 +1,6 @@
 info: {}
 name: chip_edge_S10000_10000_W200_LM1_ETCH
+ports: {}
 settings:
   layer: M1_ETCH
   size:

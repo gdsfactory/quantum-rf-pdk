@@ -2,6 +2,43 @@ info:
   length: 5000
   resonator_type: quarter_wave
 name: transmon_with_resonator_and_probeline_Qdouble_pad_trans_e6eb9803
+ports:
+  coupling_o1:
+    center:
+    - -900
+    - -1226
+    layer: M1_DRAW
+    name: coupling_o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  coupling_o2:
+    center:
+    - -100
+    - -1226
+    layer: M1_DRAW
+    name: coupling_o2
+    orientation: 0
+    port_type: optical
+    width: 10
+  junction:
+    center:
+    - 0
+    - 0
+    layer: JJ_AREA
+    name: junction
+    orientation: 180
+    port_type: placement
+    width: 33.446
+  o1:
+    center:
+    - -900
+    - -1200
+    layer: M1_DRAW
+    name: o1
+    orientation: 0
+    port_type: placement
+    width: 10
 settings:
   coupler: Fplate_capacitor_single_Mqpdkpcellspcapacitor_SW20_L394
   coupler_offset:

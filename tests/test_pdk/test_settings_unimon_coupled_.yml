@@ -6,6 +6,52 @@ info:
   qubit_type: unimon
   total_resonator_length: 6000
 name: unimon_coupled_AL3000_AM6_BSbend_circular_CScpw_JSFsqui_09c2c789
+ports:
+  coupling_o3:
+    center:
+    - 256.741
+    - -100
+    layer: M1_DRAW
+    name: coupling_o3
+    orientation: 0
+    port_type: optical
+    width: 10
+  unimon_junction:
+    center:
+    - 0
+    - 0
+    layer: JJ_AREA
+    name: unimon_junction
+    orientation: 0
+    port_type: placement
+    width: 19.304
+  unimon_o1:
+    center:
+    - 85.802
+    - -1200
+    layer: M1_DRAW
+    name: unimon_o1
+    orientation: 0
+    port_type: placement
+    width: 10
+  unimon_o2:
+    center:
+    - -85.802
+    - 1200
+    layer: M1_DRAW
+    name: unimon_o2
+    orientation: 180
+    port_type: placement
+    width: 10
+  unimon_readout_bottom:
+    center:
+    - -85.741
+    - 100
+    layer: M1_DRAW
+    name: unimon_readout_bottom
+    orientation: 180
+    port_type: placement
+    width: 10
 settings:
   arm_length: 3000
   arm_meanders: 6

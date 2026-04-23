@@ -1,5 +1,24 @@
 info: {}
 name: half_circle_coupler_R50_A180_EL10_CScpw_ESL20_OETrue
+ports:
+  anchor:
+    center:
+    - 0
+    - 30.5
+    layer: M1_DRAW
+    name: anchor
+    orientation: 90
+    port_type: placement
+    width: 10
+  o3:
+    center:
+    - 0
+    - -50.5
+    layer: M1_DRAW
+    name: o3
+    orientation: 270
+    port_type: optical
+    width: 10
 settings:
   angle: 180
   cross_section: cpw

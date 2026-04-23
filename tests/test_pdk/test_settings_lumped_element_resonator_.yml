@@ -4,6 +4,25 @@ info:
   inductor_n_squares: 210
   total_wire_length: 420
 name: lumped_element_resonator_F20_FL20_FG2_FT5_NT15_BBS4_CSm_172655b8
+ports:
+  o1:
+    center:
+    - -20
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: electrical
+    width: 2
+  o2:
+    center:
+    - 20
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: electrical
+    width: 2
 settings:
   bus_bar_spacing: 4
   cross_section: meander_inductor_cross_section
