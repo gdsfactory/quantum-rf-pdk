@@ -135,7 +135,7 @@ html_show_copyright = False
 templates_path = ["templates"]
 html_theme_options = {
     "use_edit_page_button": True,
-    "header_links_before_dropdown": 3,
+    "header_links_before_dropdown": 4,
     "secondary_sidebar_items": [
         "page-toc",
         "edit-this-page",
