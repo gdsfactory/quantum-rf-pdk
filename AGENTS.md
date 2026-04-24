@@ -8,8 +8,8 @@ these guidelines when contributing:
 
 Behavioral guidelines to reduce common LLM coding mistakes. Adapted from
 [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls
-([source](https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md)). These bias toward caution over
-speed — for trivial tasks, use judgment.
+([source](https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md)). These guidelines bias toward
+caution over speed — for trivial tasks, use judgment.
 
 ### Think Before Coding
 
