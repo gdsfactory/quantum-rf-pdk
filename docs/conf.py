@@ -231,12 +231,12 @@ def _dollar_math_to_rst(lines):
             continue
 
         # Convert inline $…$ to :math:`…` (but not $$)
-        lines[i] = re.sub(
+        converted = re.sub(
             r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)",
             r":math:`\1`",
             lines[i],
         )
-        result.append(lines[i])
+        result.append(converted)
         i += 1
 
     lines[:] = result
