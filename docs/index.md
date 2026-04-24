@@ -22,7 +22,8 @@
 :caption: API
 :hidden:
 
-api
+cells
+models
 ```
 
 ```{toctree}
