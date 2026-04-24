@@ -18,7 +18,6 @@ instances:
   launcher_top:
     component: launcher
     settings: {}
-    virtual: true
   qubit1:
     component: transmon_with_resonator_and_probeline
     settings:
