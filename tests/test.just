@@ -80,11 +80,18 @@ get-gfp-versions versions:
         req = info.get("requires_python", "")
         rels = data.get("releases", {}).get(latest, [])
 
+        def supports_version(rel, t, v):
+            python_version = rel.get("python_version", "")
+            has_cp_tag = f"cp{t}" in python_version
+            has_py_tag = f"py{t}" in python_version
+            has_plain_version = v in python_version
+            return has_cp_tag or has_py_tag or has_plain_version
+
         v_out = []
         for v in v_in:
             t = v.replace(".", "")
             # Check for wheels first as they are definitive
-            if any(f"cp{t}" in rel.get("python_version","") or f"py{t}" in rel.get("python_version","") or v in rel.get("python_version","") for rel in rels):
+            if any(supports_version(rel, t, v) for rel in rels):
                 v_out.append(v)
             elif req:
                 # Fallback to parsing requires_python string for the latest version
