@@ -362,8 +362,6 @@ def add_margin_to_layer(
 
     bbox = component.bbox()
 
-    bbox_region = Region(bbox.to_itype(component.kcl.dbu))
-
     # Identify layer indices for the specified margins
     layer_indices_margins = {
         component.kcl.layer(*layer): margin for layer, margin in layer_margins
