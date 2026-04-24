@@ -19,39 +19,36 @@
 
 ______________________________________________________________________
 
-**QPDK** is an open-source, generic process design kit (PDK) for superconducting quantum RF applications built on
-[gdsfactory](https://gdsfactory.github.io/gdsfactory/). It provides a complete library of parametric quantum circuit
-components — transmon qubits, coplanar waveguide resonators, Josephson junctions, airbridges, SNSPDs, and more — along
-with analytical S-parameter models, routing utilities, and full test-chip examples ready for tape-out.
+**QPDK** is an open-source process design kit (PDK) for superconducting quantum RF applications built on
+[gdsfactory](https://gdsfactory.github.io/gdsfactory/). It provides a library of parametric quantum circuit components
+(transmon qubits, CPW resonators, Josephson junctions, etc.), analytical S-parameter models, routing utilities, and
+test-chip examples.
 
-Whether you are a quantum hardware researcher prototyping a new qubit architecture, a process engineer validating a
-fabrication flow, or a student learning superconducting circuit design, QPDK gives you a scriptable, version-controlled
-foundation to go from concept to GDSII in minutes.
+QPDK gives researchers, engineers, and students a scriptable, version-controlled foundation to go from concept to GDSII
+in minutes.
 
 ## Key Features
 
 - **Rich component library** — Transmons, fluxonium, unimon qubits, CPW resonators, interdigital capacitors, SQUID
-  junctions, meander inductors, SNSPDs, airbridges, launchers, bump bonds, TSVs, and more.
-- **Parametric & composable** — Every component is a parametric Python function decorated with `@gf.cell`. Combine cells
-  into hierarchical designs or define full test chips in YAML.
-- **Analytical circuit models** — S-parameter models for resonators, couplers, waveguides, and junctions powered by
-  [SAX](https://flaport.github.io/sax/) and JAX for fast, differentiable simulations.
-- **Automated routing** — CPW-aware routing strategies with auto-tapers and airbridge insertion for complex multi-qubit
-  layouts.
-- **Magnetic vortex trapping** — Built-in utilities to fill ground planes with vortex-trapping hole arrays for improved
-  coherence.
-- **KLayout integration** — Layer definitions, technology files, and cross sections that install directly into KLayout
-  for immediate visual inspection.
-- **Regression-tested** — Every component is covered by GDS regression tests, netlist round-trip checks, and model
-  validation with 200+ automated tests across Python 3.12–3.13 on Linux, macOS, and Windows.
-- **Notebook-driven workflows** — Jupyter notebooks for resonator frequency modeling, Monte Carlo tolerance analysis,
-  Hamiltonian parameter extraction with scqubits, pulse-level simulation with QuTiP, and capacitor optimization with
-  Optuna.
+  junctions, launchers, bump bonds, TSVs, and more.
+- **Parametric & composable** — Combine Python functions (`@gf.cell`) into hierarchical designs or define full chips in
+  YAML.
+- **Analytical circuit models** — Fast, differentiable S-parameter simulations powered by
+  [SAX](https://flaport.github.io/sax/) and [JAX](https://github.com/jax-ml/jax).
+- **Automated routing** — CPW-aware routing strategies with auto-tapers for complex layouts, and
+  [DoRoutes](https://doplaydo.github.io/DoRoutes/).
+- **KLayout integration** — Layer definitions, technology files, and cross sections for immediate visual inspection.
+- **Regression-tested** — GDS regression tests, netlist checks, and model validation.
+- **Notebook-driven workflows** — Jupyter notebooks for frequency modeling, tolerance analysis, parameter extraction,
+  pulse-level simulation, and optimization.
+- **[GDSFactory+](https://gdsfactory.com/plus/) integration** — Seamlessly design, verify, and validate chips with the
+  enhanced commercial extension. Includes access to 43+ foundry PDKs, graphical layout and schematic editors directly in
+  VSCode, an AI assistant, and comprehensive verification tools (DRC, LVS, Connectivity checks).
 
-## Component Gallery
+## Notable Components
 
-QPDK ships with a broad set of ready-to-use superconducting circuit components. Browse the full interactive catalog in
-the [documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html).
+QPDK ships with a broad set of ready-to-use superconducting circuit components. Browse all the components in the
+[documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html).
 
 ### Qubits
 
@@ -72,39 +69,34 @@ the [documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html).
 |       Meandering coplanar waveguide resonator       |            Finger-style lumped-element capacitor             |
 | ![CPW Resonator](docs/_static/images/resonator.png) | ![Interdigital Capacitor](docs/_static/images/capacitor.png) |
 
-|                      SNSPD                      |                    Airbridge                    |
-| :---------------------------------------------: | :---------------------------------------------: |
-| Superconducting nanowire single-photon detector |     Elevated crossover for signal integrity     |
-|     ![SNSPD](docs/_static/images/snspd.png)     | ![Airbridge](docs/_static/images/airbridge.png) |
-
 ### Composite Components
 
-**Transmon with Resonator & Probeline** — Readout-ready qubit cell with coupled resonator and measurement line:
+**Transmon with Resonator & Probeline** — Qubit cell with coupled resonator and probeline section:
 
 ![Transmon with Resonator and Probeline](docs/_static/images/transmon_resonator.png)
 
 ## Sample Test Chips
 
-QPDK includes complete, tape-out-ready test chip examples that demonstrate real-world design workflows.
+QPDK includes some complete, tapeout-ready test chip examples that demonstrate real-world design workflows.
 
 ### Qubit Test Chip
 
-A four-transmon test chip with coupled readout resonators, probeline routing, flux lines, and launchers — defined
-entirely in YAML and ready for fabrication.
+A four-transmon test chip with coupled readout resonators, probeline routing, flux lines, and launchers. Defined
+entirely in YAML.
 
 ![Qubit Test Chip](docs/_static/images/qubit_test_chip.png)
 
 ### Filled Qubit Test Chip
 
-The same qubit test chip with magnetic vortex trapping holes filling the ground plane, chip edge metallization, and
-additive metal post-processing — as used in real millikelvin experiments.
+The same qubit test chip with magnetic vortex trapping holes filling the ground plane and chip edges.
 
 ![Filled Qubit Test Chip](docs/_static/images/filled_qubit_test_chip.png)
 
 ### Resonator Test Chip
 
-A 16-resonator characterization chip with systematically varied CPW widths and gaps across two probelines — ideal for
-extracting loss tangent and kinetic inductance.
+A 16-resonator characterization chip with systematically varied CPW widths and gaps across two probelines. Ideal for
+extracting loss tangents and kinetic inductance. Also check
+[the notebook demonstrating network model simulations and fabrication tolerance Monte Carlo](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/monte_carlo_fabrication_tolerance.html).
 
 ![Resonator Test Chip](docs/_static/images/resonator_test_chip.png)
 
@@ -137,20 +129,19 @@ chip.show()  # Opens in KLayout
 
 ## Examples & Notebooks
 
-- **[PDK cells in the documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html)** — Interactive gallery of
-  all available geometries with live parameter controls.
+- **[PDK cells in the documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html)** — Collection of all
+  available geometries.
 - **[`qpdk/samples/`](https://github.com/gdsfactory/quantum-rf-pdk/tree/main/qpdk/samples)** — Example layouts and
-  simulations including qubit test chips, resonator arrays, routing demos, and 3D exports.
+  simulations including qubit test chips, resonator arrays, routing demos, and 3D export.
 - **[`notebooks/`](https://github.com/gdsfactory/quantum-rf-pdk/tree/main/notebooks)** — Jupyter notebooks covering:
   - Resonator frequency modeling and S-parameter analysis
-  - Circuit simulation with SAX
+  - Circuit simulation with [SAX](https://github.com/flaport/sax)
   - Monte Carlo fabrication tolerance analysis
-  - Hamiltonian parameter extraction with scqubits
-  - Pulse-level quantum gate simulation with QuTiP
-  - Capacitor geometry optimization with Optuna
-  - Dispersive shift calculation with Pymablock
-  - Transmon design optimization with NetKet
-  - JAX backend comparison for model performance
+  - Hamiltonian parameter extraction with [scqubits](https://github.com/scqubits/scqubits)
+  - Pulse-level quantum gate simulation with [QuTiP](https://qutip.org/)
+  - Capacitor geometry optimization with [Optuna](https://optuna.org/)
+  - Dispersive shift calculation with [Pymablock](https://pymablock.readthedocs.io/en/latest/)
+  - Transmon design optimization with [NetKet](https://www.netket.org/)
 - **[gsim example notebooks](https://gdsfactory.github.io/gsim/)** — Electromagnetic simulation examples using Palace
   and Meep with gdsfactory.
 
@@ -200,11 +191,11 @@ For contributors, please follow the [installation and development workflow instr
 ```text
 qpdk/                   Core Python package
   cells/                Component definitions (transmons, resonators, capacitors, …)
-  models/               Analytical S-parameter and circuit models
+  models/               Analytical models, mostly S-parameters
   samples/              Example layouts and complete test chips
   klayout/              KLayout technology files
   tech.py               Layer stack, cross sections, routing strategies
-tests/                  200+ regression and unit tests
+tests/                  Regression, integration and unit tests
 notebooks/              Jupyter notebooks for design and simulation workflows
 docs/                   Sphinx documentation (HTML + PDF)
 ```
@@ -217,8 +208,13 @@ docs/                   Sphinx documentation (HTML + PDF)
 
 ## Contributing
 
-We welcome contributions of all sizes — new components, improved models, bug fixes, documentation, and notebook
+We welcome contributions of all sizes: new components, improved models, bug fixes, documentation, and notebook
 tutorials. Please see the [contributing guide](docs/CONTRIBUTING.md) to get started.
+
+## Support
+
+For commercial support, training, and custom PDK development, please visit
+[gdsfactory+ (gdsfactory.com/plus)](https://gdsfactory.com/plus/).
 
 ## License
 
