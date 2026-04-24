@@ -68,6 +68,14 @@ For multi-step tasks, state a brief plan:
 3. [Step] → verify: [check]
 ```
 
+Example for this PDK:
+
+```text
+1. Add new cell in qpdk/cells/ → verify: pre-commit hooks pass
+2. Register in qpdk/cells/__init__.py → verify: component importable
+3. Generate regression tests → verify: just test-gds passes
+```
+
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
 ## Code Standards
