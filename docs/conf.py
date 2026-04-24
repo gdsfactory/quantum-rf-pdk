@@ -201,6 +201,47 @@ suppress_warnings = [
 ]
 
 
+def _dollar_math_to_rst(lines):
+    r"""Convert ``$…$`` and ``$$…$$`` math to RST ``:math:`` and ``.. math::`` directives.
+
+    This is needed for docstrings from external libraries (e.g. sax) that use
+    LaTeX dollar-sign conventions instead of RST math markup.
+    """
+    result = []
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+
+        # Detect display-math opening ``$$`` on its own line
+        if stripped == "$$":
+            indent = " " * (len(lines[i]) - len(lines[i].lstrip()))
+            result.extend((f"{indent}.. math::", ""))
+            i += 1
+            # Collect lines until closing ``$$``
+            while i < len(lines) and lines[i].strip() != "$$":
+                math_line = lines[i]
+                # Ensure math content is indented under the directive
+                if math_line.strip():
+                    result.append(f"{indent}   {math_line.strip()}")
+                else:
+                    result.append("")
+                i += 1
+            result.append("")
+            i += 1  # skip closing $$
+            continue
+
+        # Convert inline $…$ to :math:`…` (but not $$)
+        converted = re.sub(
+            r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)",
+            r":math:`\1`",
+            lines[i],
+        )
+        result.append(converted)
+        i += 1
+
+    lines[:] = result
+
+
 def setup(app):
     """Sphinx setup."""
     # Regex for types to shorten in the final rendered docstring fields
@@ -216,5 +257,10 @@ def setup(app):
             for pattern, replacement in patterns.items():
                 lines[i] = re.sub(pattern, replacement, line)
 
+    def dollar_math_handler(_app, _what, _name, _obj, _options, lines):
+        _dollar_math_to_rst(lines)
+
+    # Convert $-delimited math before any other processing
+    app.connect("autodoc-process-docstring", dollar_math_handler, priority=100)
     # We use a late priority to ensure we see the types added by autodoc
     app.connect("autodoc-process-docstring", simplify_handler, priority=999)
