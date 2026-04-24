@@ -1,5 +1,7 @@
-% This file serves as the documentation homepage.
-% It includes the README.md but skips SVG badges which cannot be rendered in LaTeX/PDF.
+<!--
+This file serves as the documentation homepage.
+It includes the README.md but skips SVG badges which cannot be rendered in LaTeX/PDF.
+-->
 
 # Sample Generic Superconducting Quantum RF PDK
 
