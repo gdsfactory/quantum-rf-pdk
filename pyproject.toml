@@ -45,7 +45,7 @@ documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
 repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
 
 [project.optional-dependencies]
-gdsfactoryplus = ["gdsfactoryplus"]
+gdsfactoryplus = ["gdsfactoryplus", "httpx"]
 graphics = ["trimesh", "pyglet<3"]
 hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
 models = [
