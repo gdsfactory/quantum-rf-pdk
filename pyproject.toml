@@ -148,6 +148,27 @@ num = 3000
 
 [tool.gdsfactoryplus.pdk]
 name = "qpdk"
+cells_no_model_expected = [
+  "chip_edge",  # chip-finishing fabrication frame, not a circuit element
+  "circle",  # geometric utility, not a circuit element
+  "double_pad_transmon_with_resonator_and_probeline",  # composite derived cell; models on sub-components
+  "flipmon_with_resonator_and_probeline",  # composite derived cell; models on sub-components
+  "half_circle_coupler",  # coupler that doesn't make sense in isolation; model lives on full-circle variant
+  "josephson_junction_long",  # parametric variant; model lives on josephson_junction
+  "plate_capacitor_single",  # sub-component of plate_capacitor
+  "resonator_half_wave_bend_both",  # partial variant; model lives on resonator_half_wave
+  "resonator_half_wave_bend_end",  # partial variant; model lives on resonator_half_wave
+  "resonator_half_wave_bend_start",  # partial variant; model lives on resonator_half_wave
+  "resonator_quarter_wave_bend_both",  # partial variant; model lives on resonator_quarter_wave
+  "resonator_quarter_wave_bend_end",  # partial variant; model lives on resonator_quarter_wave
+  "resonator_quarter_wave_bend_start",  # partial variant; model lives on resonator_quarter_wave
+  "single_josephson_junction_wire",  # sub-component of josephson_junction
+  "snspd",  # detector; modelled with time-domain electrothermal models, not SAX
+  "squid_junction_long",  # parametric variant; model lives on squid_junction
+  "transform_component",  # gdsfactory utility cell, not a circuit element
+  "transmon_with_resonator_and_probeline",  # composite derived cell; models on sub-components
+  "unimon_arm",  # sub-component of unimon; model lives on parent
+]
 
 [tool.interrogate]
 docstring-style = "google"

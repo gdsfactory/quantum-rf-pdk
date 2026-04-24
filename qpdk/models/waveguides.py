@@ -61,6 +61,26 @@ def straight(
     )
 
 
+def straight_all_angle(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SDict:
+    r"""S-parameter model for a straight coplanar waveguide.
+
+    Same as :func:`straight`.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SDict: S-parameters dictionary
+    """
+    return straight(f=f, length=length, cross_section=cross_section)
+
+
 def straight_microstrip(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
@@ -356,7 +376,43 @@ def bend_circular(
     return straight(f=f, length=length, cross_section=cross_section)
 
 
+def bend_circular_all_angle(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SDict:
+    """S-parameter model for a circular bend, wrapped to :func:`~straight`.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SDict: S-parameters dictionary
+    """
+    return straight(f=f, length=length, cross_section=cross_section)
+
+
 def bend_euler(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SDict:
+    """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SDict: S-parameters dictionary
+    """
+    return straight(f=f, length=length, cross_section=cross_section)
+
+
+def bend_euler_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
