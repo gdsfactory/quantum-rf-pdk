@@ -133,7 +133,7 @@ chip.show()  # Opens in KLayout
   available geometries.
 - **[`qpdk/samples/`](https://github.com/gdsfactory/quantum-rf-pdk/tree/main/qpdk/samples)** — Example layouts and
   simulations including qubit test chips, resonator arrays, routing demos, and 3D export.
-- **[`notebooks/`](https://github.com/gdsfactory/quantum-rf-pdk/tree/main/notebooks)** — Jupyter notebooks covering:
+- **[`notebooks/`](https://gdsfactory.github.io/quantum-rf-pdk/notebooks.html)** — Jupyter notebooks covering:
   - Resonator frequency modeling and S-parameter analysis
   - Circuit simulation with [SAX](https://github.com/flaport/sax)
   - Monte Carlo fabrication tolerance analysis
@@ -184,7 +184,7 @@ python -m qpdk.install_tech
 
 ### Installation for Contributors
 
-For contributors, please follow the [installation and development workflow instructions](docs/CONTRIBUTING.md).
+For contributors, please follow the [installation and development workflow instructions](docs/contributing.md).
 
 ## Project Structure
 
@@ -209,7 +209,7 @@ docs/                   Sphinx documentation (HTML + PDF)
 ## Contributing
 
 We welcome contributions of all sizes: new components, improved models, bug fixes, documentation, and notebook
-tutorials. Please see the [contributing guide](docs/CONTRIBUTING.md) to get started.
+tutorials. Please see the [contributing guide](docs/contributing.md) to get started.
 
 ## Support
 
