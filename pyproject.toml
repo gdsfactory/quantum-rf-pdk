@@ -390,7 +390,7 @@ message_template = "Bump to {new_version}"
 tag_template = "v{new_version}"
 
 [tool.tbump.version]
-current = "0.3.6"
+current = "0.3.7"
 
 [tool.tombi.schema]
 strict = false
