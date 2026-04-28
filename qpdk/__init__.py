@@ -4,12 +4,12 @@ import importlib
 import inspect
 import pkgutil
 from functools import lru_cache, partial
-from typing import Any
 
 import gdsfactory as gf
 from gdsfactory.cross_section import get_cross_sections
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
+from gdsfactory.typings import ComponentFactory
 
 import qpdk.samples
 from qpdk import cells, config, helper, tech
@@ -59,12 +59,15 @@ PDK = get_pdk()
 
 
 @lru_cache(maxsize=1)
-def get_sample_functions() -> dict[str, Any]:
+def get_sample_functions() -> dict[str, ComponentFactory]:
     """Lazily discover and return all sample component functions.
 
     Walks ``qpdk.samples`` sub-modules and collects every public function
     and :class:`~functools.partial` whose defining module matches the
     discovered module.  Results are cached so the cost is paid at most once.
+
+    Returns:
+        A mapping from qualified names to component factory callables.
     """
     return {
         f"{modname}.{name}": obj
