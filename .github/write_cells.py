@@ -22,7 +22,7 @@ skip_settings: set[str] = set()
 
 qpdk.PDK.activate()
 cells = qpdk.PDK.cells
-samples = qpdk.sample_functions
+samples = qpdk.get_sample_functions()
 
 # Set up Jinja2 environment
 # Note: autoescape is False because we're generating RST, not HTML

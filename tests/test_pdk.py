@@ -221,8 +221,8 @@ def test_yaml_matches_layers():
 
 @pytest.mark.parametrize(
     "sample",
-    list(qpdk.sample_functions.values()),
-    ids=list(qpdk.sample_functions.keys()),
+    list(qpdk.get_sample_functions().values()),
+    ids=list(qpdk.get_sample_functions().keys()),
 )
 def test_sample_generates(sample: ComponentFactory):
     """Test that all sample cells generate without errors."""
