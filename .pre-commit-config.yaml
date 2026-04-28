@@ -54,12 +54,13 @@ repos:
       - id: nbstripout
         priority: 10
         files: ".ipynb"
+        exclude: ^notebooks/(hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance)\.ipynb$
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2
     hooks:
       - id: codespell
         priority: 10
-        exclude: ^docs/bibliography\.bib$
+        exclude: ^(docs/bibliography\.bib|notebooks/(hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance)\.ipynb)$
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
