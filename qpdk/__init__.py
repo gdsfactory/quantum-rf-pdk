@@ -9,6 +9,7 @@ import gdsfactory as gf
 from gdsfactory.cross_section import get_cross_sections
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
+from gdsfactory.typings import ComponentFactory
 
 import qpdk.samples
 from qpdk import cells, config, helper, tech
@@ -56,18 +57,30 @@ def get_pdk() -> Pdk:
 
 PDK = get_pdk()
 
-# Get all functions from qpdk.samples module that are component generators
-sample_functions = {
-    f"{modname}.{name}": obj
-    for importer, modname, ispkg in pkgutil.walk_packages(
-        qpdk.samples.__path__, qpdk.samples.__name__ + "."
-    )
-    for name, obj in inspect.getmembers(importlib.import_module(modname))
-    if (inspect.isfunction(obj) or isinstance(obj, partial))
-    and not name.startswith("_")
-    # Compare .func if exists (for partials), otherwise obj itself
-    and getattr(obj, "func", obj).__module__ == modname
-}
+
+@lru_cache(maxsize=1)
+def get_sample_functions() -> dict[str, ComponentFactory]:
+    """Lazily discover and return all sample component functions.
+
+    Walks ``qpdk.samples`` sub-modules and collects every public function
+    and :class:`~functools.partial` whose defining module matches the
+    discovered module.  Results are cached so the cost is paid at most once.
+
+    Returns:
+        A mapping from qualified names to component factory callables.
+    """
+    return {
+        f"{modname}.{name}": obj
+        for _importer, modname, _ispkg in pkgutil.walk_packages(
+            qpdk.samples.__path__, qpdk.samples.__name__ + "."
+        )
+        for name, obj in inspect.getmembers(importlib.import_module(modname))
+        if (inspect.isfunction(obj) or isinstance(obj, partial))
+        and not name.startswith("_")
+        # Compare .func if exists (for partials), otherwise obj itself
+        and getattr(obj, "func", obj).__module__ == modname
+    }
+
 
 __all__ = [
     "LAYER",
@@ -76,6 +89,7 @@ __all__ = [
     "PATH",
     "cells",
     "config",
+    "get_sample_functions",
     "helper",
     "logger",
     "tech",
