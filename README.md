@@ -55,25 +55,25 @@ QPDK ships with a broad set of ready-to-use superconducting circuit components. 
 |                   Transmon                    |                    Fluxonium                    |
 | :-------------------------------------------: | :---------------------------------------------: |
 |     Double-pad capacitively shunted qubit     |          Superinductance-shunted qubit          |
-| ![Transmon](docs/_static/images/transmon.png) | ![Fluxonium](docs/_static/images/fluxonium.png) |
+| ![Transmon](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/transmon.png) | ![Fluxonium](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/fluxonium.png) |
 
 |                  Unimon                   |                   SQUID Junction                    |
 | :---------------------------------------: | :-------------------------------------------------: |
 |     Resonator-embedded junction qubit     |     Superconducting quantum interference device     |
-| ![Unimon](docs/_static/images/unimon.png) | ![SQUID Junction](docs/_static/images/junction.png) |
+| ![Unimon](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/unimon.png) | ![SQUID Junction](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/junction.png) |
 
 ### Passive Components
 
 |                    CPW Resonator                    |                    Interdigital Capacitor                    |
 | :-------------------------------------------------: | :----------------------------------------------------------: |
 |       Meandering coplanar waveguide resonator       |            Finger-style lumped-element capacitor             |
-| ![CPW Resonator](docs/_static/images/resonator.png) | ![Interdigital Capacitor](docs/_static/images/capacitor.png) |
+| ![CPW Resonator](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/resonator.png) | ![Interdigital Capacitor](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/capacitor.png) |
 
 ### Composite Components
 
 **Transmon with Resonator & Probeline** — Qubit cell with coupled resonator and probeline section:
 
-![Transmon with Resonator and Probeline](docs/_static/images/transmon_resonator.png)
+![Transmon with Resonator and Probeline](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/transmon_resonator.png)
 
 ## Sample Test Chips
 
@@ -84,13 +84,13 @@ QPDK includes some complete, tapeout-ready test chip examples that demonstrate r
 A four-transmon test chip with coupled readout resonators, probeline routing, flux lines, and launchers. Defined
 entirely in YAML.
 
-![Qubit Test Chip](docs/_static/images/qubit_test_chip.png)
+![Qubit Test Chip](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/qubit_test_chip.png)
 
 ### Filled Qubit Test Chip
 
 The same qubit test chip with magnetic vortex trapping holes filling the ground plane and chip edges.
 
-![Filled Qubit Test Chip](docs/_static/images/filled_qubit_test_chip.png)
+![Filled Qubit Test Chip](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/filled_qubit_test_chip.png)
 
 ### Resonator Test Chip
 
@@ -98,7 +98,7 @@ A 16-resonator characterization chip with systematically varied CPW widths and g
 extracting loss tangents and kinetic inductance. Also check
 [the notebook demonstrating network model simulations and fabrication tolerance Monte Carlo](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/monte_carlo_fabrication_tolerance.html).
 
-![Resonator Test Chip](docs/_static/images/resonator_test_chip.png)
+![Resonator Test Chip](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/docs/_static/images/resonator_test_chip.png)
 
 ## Quick Start
 
