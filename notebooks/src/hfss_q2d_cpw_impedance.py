@@ -50,18 +50,20 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
+import os
 import tempfile
 import time
 from pathlib import Path
 
-# %% [markdown]
-# ## Define CPW Cross-Section
-#
-# We use QPDK's standard coplanar waveguide cross-section with the default
-# dimensions (10 µm centre conductor width, 6 µm gap to ground).
-# %%
+import matplotlib.pyplot as plt
+import numpy as np
+from ansys.aedt.core import Q2d, settings
+from IPython.display import Image, display
+
 from qpdk import PDK
+from qpdk.config import PATH
 from qpdk.models.cpw import cpw_parameters
+from qpdk.simulation import Q2D
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -98,14 +100,10 @@ Q2D_CONFIG = {
 }
 
 # %%
-import os  # noqa: E402
-
 # Ensure Ansys path is set so PyAEDT can find it
 ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
-
-from ansys.aedt.core import Q2d, settings  # noqa: E402
 
 settings.use_grpc_uds = False
 
@@ -133,17 +131,37 @@ print(f"Design name: {q2d.design_name}")
 # gdsfactory cross-section and QPDK layer stack.
 
 # %%
-from qpdk.simulation import Q2D  # noqa: E402
 
 # Create the Q2D wrapper
 q2d_sim = Q2D(q2d)
 
 # Create the 2D cross-section geometry
-object_names = q2d_sim.create_2d_from_cross_section(cross_section)
+object_names = q2d_sim.create_2d_from_cross_section(cross_section, ground_width=30)
 
 print("Created Q2D geometry:")
 for role, name in object_names.items():
     print(f"  {role}: {name}")
+
+# %% [markdown]
+# ### Q2D Cross-Section Geometry
+# Here is the 2D geometry of the CPW cross-section in Ansys 2D Extractor.
+#
+# ![Q2D geometry](../docs/_static/images/q2d_cpw_impedance_geom.jpg)
+
+# %%
+# Ensure Q2D model fits the screen
+q2d.modeler.fit_all()
+
+# Save screenshot
+img_dir = PATH.repo / "docs" / "_static" / "images"
+img_dir.mkdir(parents=True, exist_ok=True)
+q2d_img_path = img_dir / "q2d_cpw_impedance_geom.jpg"
+q2d.post.export_model_picture(
+    full_name=str(q2d_img_path), show_axis=True, show_grid=False, show_ruler=True
+)
+
+# Display in notebook
+display(Image(filename=str(q2d_img_path)))
 
 # %% [markdown]
 # ## Configure Q2D Analysis
@@ -200,9 +218,6 @@ else:
 # shown as a horizontal dashed line.
 
 # %%
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-
 # Extract Z0 from Q2D
 data = q2d.post.get_solution_data(
     expressions="Z0(signal,signal)",

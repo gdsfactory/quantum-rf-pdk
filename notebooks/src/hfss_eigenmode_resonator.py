@@ -47,10 +47,13 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
+import os
 import tempfile
 import time
 from pathlib import Path
 
+from ansys.aedt.core import Hfss, settings
+from IPython.display import Image, display
 from scipy.optimize import minimize_scalar
 
 # %% [markdown]
@@ -61,6 +64,7 @@ from scipy.optimize import minimize_scalar
 # %%
 from qpdk import PDK
 from qpdk.cells.resonator import resonator
+from qpdk.config import PATH
 from qpdk.models.resonator import resonator_frequency
 from qpdk.simulation import HFSS, prepare_component_for_aedt
 from qpdk.tech import coplanar_waveguide
@@ -142,14 +146,10 @@ EIGENMODE_CONFIG = {
 # Example HFSS eigenmode simulation workflow
 # This code block demonstrates the full workflow but requires HFSS license
 
-import os  # noqa: E402
-
 # Ensure Ansys path is set so PyAEDT can find it
 ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
-
-from ansys.aedt.core import Hfss, settings  # noqa: E402
 
 settings.use_grpc_uds = False
 
@@ -207,6 +207,27 @@ air_region_name = hfss_sim.add_air_region(
     pec_boundary=True,
 )
 print(f"Created air region with PEC boundary: {air_region_name}")
+
+# %% [markdown]
+# ### Geometry Verification
+# Here is the 3D geometry of the CPW resonator in HFSS for eigenmode analysis.
+#
+# ![HFSS geometry](../docs/_static/images/hfss_eigenmode_resonator_geom.jpg)
+
+# %%
+# Ensure HFSS model fits the screen
+hfss.modeler.fit_all()
+
+# Save screenshot
+img_dir = PATH.repo / "docs" / "_static" / "images"
+img_dir.mkdir(parents=True, exist_ok=True)
+hfss_img_path = img_dir / "hfss_eigenmode_resonator_geom.jpg"
+hfss.post.export_model_picture(
+    full_name=str(hfss_img_path), show_axis=True, show_grid=False, show_ruler=True
+)
+
+# Display in notebook
+display(Image(filename=str(hfss_img_path)))
 
 # %% [markdown]
 # ## Configure Eigenmode Analysis
@@ -291,6 +312,38 @@ if results["frequencies_ghz"]:
     print(f"  Expected (target): {expected_freq:.4f} GHz")
     print(f"  Simulated:         {actual_freq:.4f} GHz")
     print(f"  Difference:        {error_percent:.1f}%")
+
+# %% [markdown]
+# ## Plot Field Solution
+#
+# We can visualize the electric field magnitude of the first eigenmode on the surface of the substrate.
+#
+# ![HFSS field](../docs/_static/images/hfss_eigenmode_resonator_field.jpg)
+
+# %%
+# Ensure the model fits the screen
+hfss.modeler.fit_all()
+
+# Create a surface field plot of the electric field magnitude on the substrate
+plot = hfss.post.create_fieldplot_surface(
+    assignment=[substrate_name], quantity="Mag_E", setup=f"{setup.name} : LastAdaptive"
+)
+
+# Export the field plot picture
+hfss_field_img_path = img_dir / "hfss_eigenmode_resonator_field.jpg"
+if plot:
+    hfss.post.export_model_picture(
+        full_name=str(hfss_field_img_path),
+        show_axis=True,
+        show_grid=False,
+        show_ruler=True,
+        field_selections="all",
+    )
+else:
+    print("Failed to create field plot")
+
+# Display in notebook
+display(Image(filename=str(hfss_field_img_path)))
 
 # %% [markdown]
 # ## Cleanup

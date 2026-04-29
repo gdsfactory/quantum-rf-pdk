@@ -47,22 +47,21 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
+import os
 import tempfile
 import time
 from pathlib import Path
 
-# %% [markdown]
-# ## Create an Interdigital Capacitor Component
-#
-# We'll use QPDK's interdigital capacitor cell, which creates interleaved
-# metal fingers for distributed capacitance.
-# %%
 import gdsfactory as gf
+import matplotlib.pyplot as plt
 import numpy as np
+from ansys.aedt.core import Hfss, Q3d, settings
+from IPython.display import Image, display
 
 from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.waveguides import straight_open
+from qpdk.config import PATH
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.cpw import cpw_ep_r_from_cross_section
 from qpdk.simulation import HFSS, Q3D, prepare_component_for_aedt
@@ -176,14 +175,10 @@ HFSS_CONFIG = {
 # Example HFSS driven modal simulation workflow
 # This code block demonstrates the full workflow but requires HFSS license
 
-import os  # noqa: E402
-
 # Ensure Ansys path is set so PyAEDT can find it
 ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
-
-from ansys.aedt.core import Hfss, settings  # noqa: E402
 
 settings.use_grpc_uds = False
 
@@ -244,6 +239,27 @@ print(f"Created air region: {air_region_name}")
 # Assign radiation boundary to outer faces for driven analysis
 hfss.assign_radiation_boundary_to_objects(air_region_name)
 print("Assigned radiation boundary to air region")
+
+# %% [markdown]
+# ### Geometry Verification
+# Here is the 3D geometry of the interdigital capacitor, ready for simulation in HFSS.
+#
+# ![HFSS geometry](../docs/_static/images/hfss_driven_capacitor_geom.jpg)
+
+# %%
+# Ensure HFSS model fits the screen
+hfss.modeler.fit_all()
+
+# Save screenshot
+img_dir = PATH.repo / "docs" / "_static" / "images"
+img_dir.mkdir(parents=True, exist_ok=True)
+hfss_img_path = img_dir / "hfss_driven_capacitor_geom.jpg"
+hfss.post.export_model_picture(
+    full_name=str(hfss_img_path), show_axis=True, show_grid=False, show_ruler=True
+)
+
+# Display in notebook
+display(Image(filename=str(hfss_img_path)))
 
 # %% [markdown]
 # ## Create Lumped Ports
@@ -325,8 +341,6 @@ else:
 # Get the S-parameters from the simulation and visualize the results.
 
 # %%
-import matplotlib.pyplot as plt  # noqa: E402
-
 # Extract results using the wrapper
 df_results = hfss_sim.get_sparameter_results(setup.name, sweep.name)
 
@@ -362,6 +376,39 @@ axes[1].legend()
 
 plt.tight_layout()
 # plt.show()
+
+# %% [markdown]
+# ## Plot Field Solution
+#
+# We can visualize the electric field magnitude on the surface of the substrate
+# to see the capacitive coupling between the interdigital fingers.
+#
+# ![HFSS field](../docs/_static/images/hfss_driven_capacitor_field.jpg)
+
+# %%
+# Ensure the model fits the screen
+hfss.modeler.fit_all()
+
+# Create a surface field plot of the electric field magnitude on the substrate
+plot = hfss.post.create_fieldplot_surface(
+    assignment=[substrate_name], quantity="Mag_E", setup=f"{setup.name} : LastAdaptive"
+)
+
+# Export the field plot picture
+hfss_field_img_path = img_dir / "hfss_driven_capacitor_field.jpg"
+if plot:
+    hfss.post.export_model_picture(
+        full_name=str(hfss_field_img_path),
+        show_axis=True,
+        show_grid=False,
+        show_ruler=True,
+        field_selections="all",
+    )
+else:
+    print("Failed to create field plot")
+
+# Display in notebook
+display(Image(filename=str(hfss_field_img_path)))
 
 # %% [markdown]
 # ## Extract Capacitance from Admittance (Y-Parameters)
@@ -461,8 +508,6 @@ print("HFSS session closed and temporary files cleaned up")
 # ```
 
 # %%
-from ansys.aedt.core import Q3d  # noqa: E402
-
 # Create temporary directory for Q3D project
 temp_dir_q3d = tempfile.TemporaryDirectory(suffix=".ansys_qpdk_q3d")
 project_path_q3d = Path(temp_dir_q3d.name) / "idc_q3d.aedt"
@@ -520,6 +565,27 @@ signal_nets = q3d_sim.assign_nets_from_ports(
     prepared_component.ports, conductor_objects
 )
 print(f"Assigned signal nets: {signal_nets}")
+
+# %% [markdown]
+# ### Q3D Geometry Verification
+# Here is the 3D geometry of the interdigital capacitor in Q3D Extractor.
+#
+# ![Q3D geometry](../docs/_static/images/q3d_driven_capacitor_geom.jpg)
+
+# %%
+# Ensure Q3D model fits the screen
+q3d.modeler.fit_all()
+
+# Save screenshot
+img_dir = PATH.repo / "docs" / "_static" / "images"
+img_dir.mkdir(parents=True, exist_ok=True)
+q3d_img_path = img_dir / "q3d_driven_capacitor_geom.jpg"
+q3d.post.export_model_picture(
+    full_name=str(q3d_img_path), show_axis=True, show_grid=False, show_ruler=True
+)
+
+# Display in notebook
+display(Image(filename=str(q3d_img_path)))
 
 # %% [markdown]
 # ### Configure and Run Q3D Analysis
