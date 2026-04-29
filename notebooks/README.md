@@ -4,7 +4,7 @@ This folder contains [Jupyter Notebooks](https://jupyter.org/) demonstrating dif
 
 ## Contributors
 
-The source for the notebooks is the [`src`](notebooks/src) folder that contains
+The source for the notebooks is the [`src`](src) folder that contains
 [Jupytext](https://jupytext.readthedocs.io/en/latest/) `py:percent`.
 
 > [!IMPORTANT]
