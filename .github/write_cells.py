@@ -12,6 +12,7 @@ import qpdk
 from qpdk.config import PATH
 
 filepath_cells = PATH.docs / "cells.rst"
+filepath_gallery = PATH.docs / "gallery.rst"
 filepath_samples = PATH.docs / "samples.rst"
 template_dir = PATH.docs / "templates"
 
@@ -57,6 +58,12 @@ template = env.get_template("cells.rst.j2")
 rendered = template.render(items=cells_items, skip_plot=skip_plot)
 
 Path(filepath_cells).write_text(rendered, encoding="utf-8")
+
+# Generate gallery.rst
+template = env.get_template("gallery.rst.j2")
+rendered = template.render(items=cells_items, skip_plot=skip_plot)
+
+Path(filepath_gallery).write_text(rendered, encoding="utf-8")
 
 # Generate samples.rst
 samples_items = []
