@@ -76,6 +76,7 @@ repos:
     hooks:
       - id: tombi-format
         priority: 10
+        exclude: \.github/lychee\.toml$
       - id: tombi-lint
         priority: 20
   - repo: https://github.com/aristanetworks/j2lint.git
@@ -206,6 +207,12 @@ repos:
         args: [--config=pyproject.toml]
         pass_filenames: true
         exclude: '^(?:docs/_build/.*|qpdk(?:/.*)?/__init__[.]py|notebooks/.*|docs/notebooks/[^/]+|qpdk/samples/[^/]+[.]py|tests/.*)$'
+  - repo: https://github.com/lycheeverse/lychee.git
+    rev: lychee-v0.24.1
+    hooks:
+      - id: lychee
+        priority: 10
+        args: [--config, .github/lychee.toml]
   - repo: local
     hooks:
       # - id: just-fmt

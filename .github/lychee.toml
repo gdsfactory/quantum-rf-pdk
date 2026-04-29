@@ -1,0 +1,36 @@
+# .github/lychee.toml
+
+# Exclude some common patterns
+exclude = [
+  # localhost
+  "http://127.0.0.1",
+  "http://localhost",
+  "0.0.0.0",
+  # example domains
+  "example.com",
+  "example.org",
+  "https://example.com/.*",
+  # git lfs
+  "https://git-lfs.github.com.*",
+  # github variables
+  "\\$OWNER",
+  "\\$REPOSITORY",
+  "\\$NUMBER",
+  "\\$PREVIOUS_TAG",
+  "\\$RESOLVED_VERSION",
+  # pyansys broken parsed URLs
+  "https://.*\\.pyansys\\.com.*/n",
+  "https://.*\\.pyansys\\.com.*//n"
+]
+
+# Set a timeout
+timeout = 10
+
+# Maximum number of retries
+max_retries = 3
+
+# Wait time between retries
+retry_wait_time = 2
+
+# Acceptable HTTP status codes
+accept = [200, 204, 403, 429]
