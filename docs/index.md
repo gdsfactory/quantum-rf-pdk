@@ -24,7 +24,6 @@ It includes the README.md but skips SVG badges which cannot be rendered in LaTeX
 :caption: API
 :hidden:
 
-gallery
 cells
 models
 ```

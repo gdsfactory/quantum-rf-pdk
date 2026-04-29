@@ -1,19 +1,55 @@
-{% extends "base_component.rst.j2" %}
-
-{% block title %}
 PCells
 ======
-{% endblock %}
 
-{% block autofunction_path scoped -%}
-qpdk.cells.{{ item.name }}
-{%- endblock %}
+Gallery
+-------
 
-{% block plot_section scoped %}
-  from qpdk import cells, PDK
+.. grid:: 1 2 2 3
+   :gutter: 2
+   :class-container: gallery-grid
 
-  PDK.activate()
-  c = cells.{{ item.name }}({{ item.kwargs }}).copy()
-  c.draw_ports()
-  c.plot()
-{% endblock %}
+{% for item in items %}
+{%     if item.name not in skip_plot %}
+   .. grid-item-card:: {{ item.name }}
+      :link: #qpdk.cells.{{ item.name }}
+      :text-align: center
+      :class-card: gallery-card
+
+      .. plot::
+
+         from qpdk import cells, PDK
+
+         PDK.activate()
+         c = cells.{{ item.name }}({{ item.kwargs }}).copy()
+         c.draw_ports()
+         c.plot()
+
+{%     endif %}
+{% endfor %}
+
+API Reference
+-------------
+
+{% for item in items %}
+{{ item.name }}
+{{ '^' * (item.name | length) }}
+
+.. autofunction:: qpdk.cells.{{ item.name }}
+{%     if item.name not in skip_plot %}
+
+.. plot::
+
+   from qpdk import cells, PDK
+
+   PDK.activate()
+   c = cells.{{ item.name }}({{ item.kwargs }}).copy()
+   c.draw_ports()
+   c.plot()
+{%     endif %}
+{% endfor %}
+
+References
+----------
+
+.. bibliography::
+   :filter: docname in docnames

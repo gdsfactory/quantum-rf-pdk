@@ -152,7 +152,6 @@ cython_debug/
 
 # Documentation
 docs/cells.rst
-docs/gallery.rst
 docs/models.rst
 docs/samples.rst
 docs/notebooks/

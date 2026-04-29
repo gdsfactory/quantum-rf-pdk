@@ -9,3 +9,15 @@ html {
   --pst-font-family-monospace: "Code New Roman",
     var(--pst-font-family-monospace-system);
 }
+
+/* Hide plot download links inside gallery cards */
+.gallery-card .sd-card-body p.plot-directive {
+  display: none;
+}
+
+.gallery-card .sd-card-body .sphx-glr-download-link-note,
+.gallery-card .sd-card-body .plot-directive-inline + p,
+.gallery-card .sd-card-body > p:has(a[download]),
+.gallery-card .sd-card-body > p:has(.download) {
+  display: none;
+}
