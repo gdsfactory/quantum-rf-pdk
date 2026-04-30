@@ -20,7 +20,9 @@ exclude = [
   "\\$RESOLVED_VERSION",
   # pyansys broken parsed URLs
   "https://.*\\.pyansys\\.com.*/n",
-  "https://.*\\.pyansys\\.com.*//n"
+  "https://.*\\.pyansys\\.com.*//n",
+  # Persistent identifiers
+  "https://urn.fi/.*"
 ]
 
 # Set a timeout
