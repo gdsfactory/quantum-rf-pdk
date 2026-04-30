@@ -172,3 +172,8 @@ scripts/
 # 3D
 *.glb
 *.stl
+
+# Software Bill of Materials
+sbom.json
+bom.json
+bom.xml

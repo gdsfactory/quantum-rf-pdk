@@ -50,6 +50,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
+      - name: Generate SBOM
+        run: |
+          uv run --all-extras --with cyclonedx-bom cyclonedx-py environment --pyproject pyproject.toml --output-format JSON --output-file sbom.json
       - name: Create Release
         run: |
           # Get the latest draft release tag if it exists
@@ -61,12 +65,14 @@ jobs:
             # Create release with draft body
             gh release create ${{ needs.check_and_tag.outputs.tag }} \
               --title "${{ needs.check_and_tag.outputs.tag }}" \
-              --notes "$DRAFT_BODY"
+              --notes "$DRAFT_BODY" \
+              sbom.json
           else
             # Create release with auto-generated notes
             gh release create ${{ needs.check_and_tag.outputs.tag }} \
               --title "${{ needs.check_and_tag.outputs.tag }}" \
-              --generate-notes
+              --generate-notes \
+              sbom.json
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
