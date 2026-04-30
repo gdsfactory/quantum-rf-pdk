@@ -1,72 +1,9 @@
-[project]
-name = "qpdk"
-version = "0.3.7"
-description = "Quantum-RF generic PDK"
-readme = "README.md"
-requires-python = ">=3.12,<3.14"
-license = { file = "LICENSE" }
-authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
-keywords = [
-  "gdsfactory",
-  "layout",
-  "microwave",
-  "pdk",
-  "python",
-  "quantum",
-  "rf",
-  "simulation",
-  "superconducting",
-]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Developers",
-  "Intended Audience :: Manufacturing",
-  "Intended Audience :: Science/Research",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
-  "Topic :: Scientific/Engineering :: Mathematics",
-  "Topic :: Scientific/Engineering :: Physics",
-  "Topic :: Software Development :: Libraries",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Typing :: Typed",
-]
-dependencies = [
-  "doroutes>=0.2.0",
-  "gdsfactory>=9.39.0,<9.40.0",
-  "typing-extensions>=4.12.0",
-]
-
-[project.urls]
-"Bug Tracker" = "https://github.com/gdsfactory/quantum-rf-pdk/issues"
-changelog = "https://github.com/gdsfactory/quantum-rf-pdk/releases"
-documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
-repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
-
-[project.optional-dependencies]
-gdsfactoryplus = ["gdsfactoryplus", "httpx"]
-graphics = ["trimesh", "pyglet<3"]
-hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
-models = [
-  "gplugins[meshwell]>=2.0.1",
-  "jaxellip",
-  "optax",
-  "optuna",
-  "sax[rf]>=0.16.14",
-  "scikit-rf",
-  "sympy",
-  "polars",
-  "pandas[parquet]",
-]
-netket = ["netket>=3.12", "flax", "optax"]
-pymablock = ["pymablock>=2.2.1"]
-qutip = ["qutip-jax>=0.1.1", "qutip-qip>=0.4.1"]
-ray = ["ray[default]", "tqdm"]
-scqubits = ["scqubits"]
+[build-system]
+build-backend = "uv_build"
+requires = ["uv_build>=0.10.8,<0.12.0"]
 
 [dependency-groups]
-dev = [{ include-group = "lint" }, { include-group = "test" }]
+dev = [{include-group = "lint"}, {include-group = "test"}]
 docs = [
   "jinja2",
   "jupytext",
@@ -84,7 +21,7 @@ docs = [
   "sphinxcontrib-katex",
   "sphinxcontrib-mermaid>=2.0.1",
   "sphinxcontrib-svgbob",
-  { include-group = "docs-models" },
+  {include-group = "docs-models"}
 ]
 docs-models = [
   "flax",
@@ -104,10 +41,10 @@ docs-models = [
   "scikit-rf",
   "scqubits",
   "sympy",
-  "tqdm",
+  "tqdm"
 ]
 github = ["genbadge[coverage]", "setuptools"]
-lint = ["prek", { include-group = "stubs" }]
+lint = ["prek", {include-group = "stubs"}]
 stubs = ["scipy-stubs"]
 test = [
   "hypothesis",
@@ -116,22 +53,85 @@ test = [
   "pytest-cov",
   "pytest-github-actions-annotate-failures",
   "pytest_regressions",
-  "pytest-xdist",
+  "pytest-xdist"
 ]
 
-[build-system]
-requires = ["uv_build>=0.10.8,<0.12.0"]
-build-backend = "uv_build"
+[project]
+authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Manufacturing",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed"
+]
+dependencies = [
+  "doroutes>=0.2.0",
+  "gdsfactory>=9.39.0,<9.40.0",
+  "typing-extensions>=4.12.0"
+]
+description = "Quantum-RF generic PDK"
+keywords = [
+  "gdsfactory",
+  "layout",
+  "microwave",
+  "pdk",
+  "python",
+  "quantum",
+  "rf",
+  "simulation",
+  "superconducting"
+]
+license = {file = "LICENSE"}
+name = "qpdk"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+version = "0.3.7"
+
+[project.optional-dependencies]
+gdsfactoryplus = ["gdsfactoryplus", "httpx"]
+graphics = ["trimesh", "pyglet<3"]
+hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
+models = [
+  "gplugins[meshwell]>=2.0.1",
+  "jaxellip",
+  "optax",
+  "optuna",
+  "sax[rf]>=0.16.14",
+  "scikit-rf",
+  "sympy",
+  "polars",
+  "pandas[parquet]"
+]
+netket = ["netket>=3.12", "flax", "optax"]
+pymablock = ["pymablock>=2.2.1"]
+qutip = ["qutip-jax>=0.1.1", "qutip-qip>=0.4.1"]
+ray = ["ray[default]", "tqdm"]
+scqubits = ["scqubits"]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/gdsfactory/quantum-rf-pdk/issues"
+changelog = "https://github.com/gdsfactory/quantum-rf-pdk/releases"
+documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
+repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
 
 [tool.codespell]
 ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, schem, Commun, Ue, inout"
 skip = "bibliography.bib"
 
-[tool.coverage.run]
-source = ["qpdk"]
-
 [tool.coverage.report]
 exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
+
+[tool.coverage.run]
+source = ["qpdk"]
 
 [tool.gdsfactoryplus]
 name = "qpdk"
@@ -140,14 +140,7 @@ name = "qpdk"
 pdk = "quantum_rf"
 timeout = 300
 
-[tool.gdsfactoryplus.sim.x]
-max = 20  # 20GHz
-min = 1  # 1GHz
-name = "f"
-num = 3000
-
 [tool.gdsfactoryplus.pdk]
-name = "qpdk"
 cells_no_model_expected = [
   "chip_edge",  # chip-finishing fabrication frame, not a circuit element
   "circle",  # geometric utility, not a circuit element
@@ -167,8 +160,15 @@ cells_no_model_expected = [
   "squid_junction_long",  # parametric variant; model lives on squid_junction
   "transform_component",  # gdsfactory utility cell, not a circuit element
   "transmon_with_resonator_and_probeline",  # composite derived cell; models on sub-components
-  "unimon_arm",  # sub-component of unimon; model lives on parent
+  "unimon_arm"  # sub-component of unimon; model lives on parent
 ]
+name = "qpdk"
+
+[tool.gdsfactoryplus.sim.x]
+max = 20  # 20GHz
+min = 1  # 1GHz
+name = "f"
+num = 3000
 
 [tool.interrogate]
 docstring-style = "google"
@@ -178,7 +178,7 @@ exclude = [
   "notebooks/**",
   "docs/notebooks/*",
   "qpdk/samples/*.py",
-  "tests/**",
+  "tests/**"
 ]
 ext = []
 fail-under = 100
@@ -209,7 +209,7 @@ project-excludes = [
   "qpdk/samples/*.py",
   "qpdk/samples/**/*.py",
   "notebooks/src/*.py",
-  "notebooks/src/**/*.py",
+  "notebooks/src/**/*.py"
 ]
 project-includes = ["**/*.py"]
 
@@ -225,11 +225,11 @@ filterwarnings = [
   "ignore:bend_euler angle should be 90 or 180:UserWarning",
   # Equinox uses deprecated JAX core internals; nothing we can fix upstream
   "ignore:jax\\.core\\.mapped_aval is deprecated:DeprecationWarning",
-  "ignore:jax\\.core\\.unmapped_aval is deprecated:DeprecationWarning",
+  "ignore:jax\\.core\\.unmapped_aval is deprecated:DeprecationWarning"
 ]
 markers = [
   "hfss: mark test as requiring HFSS",
-  "skip_windows: skip test on Windows",
+  "skip_windows: skip test on Windows"
 ]
 norecursedirs = [
   "*.egg",
@@ -241,7 +241,7 @@ norecursedirs = [
   "extra/*.py",
   "node_modules",
   "venv",
-  "{arch}",
+  "{arch}"
 ]
 python_files = ["notebooks/*.ipynb", "qpdk/*.py", "tests/*.py"]
 testpaths = ["qpdk/", "tests"]
@@ -287,7 +287,7 @@ ignore = [
   "S404",  # suspicious-subprocess-import
   "PLW1510",  # subprocess-run-without-check
   "S607",  # start-process-with-partial-path
-  "TC006",  # runtime-cast-value
+  "TC006"  # runtime-cast-value
 ]
 select = [
   "E",  # pycodestyle errors
@@ -324,7 +324,7 @@ select = [
   "DOC",  # pydoclint
   "ASYNC",  # flake8-async
   "TID",  # flake8-tidy-imports
-  "C",  # flake8-comprehensions
+  "C"  # flake8-comprehensions
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -344,7 +344,7 @@ require-lazy = [
   "pymablock",
   "qutip-jax",
   "qutip-qip",
-  "scqubits",
+  "scqubits"
 ]
 
 [tool.ruff.lint.isort]
@@ -352,29 +352,30 @@ combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "notebooks/**/*.py" = ["D100", "T201"]
+"qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/cells/__init__.py" = ["F403"]
 "qpdk/models/__init__.py" = ["F403"]
-"qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",
-  "T201",
+  "T201"
 ]  # no public module docstring for sample scripts, print allowed in samples
 "tests/**" = ["S101", "D102", "D103", "ANN", "T201"]
+
+[tool.ruff.lint.pycodestyle]
+ignore-overlong-task-comments = true
+
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 ignore-decorators = ["typing.overload"]
 
-[tool.ruff.lint.pydoclint]
-ignore-one-line-docstrings = true
-
-[tool.ruff.lint.pycodestyle]
-ignore-overlong-task-comments = true
-
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.lyp", "*.lyt", "*.csv", "*.gds", "*.oas"]
 
 [tool.tbump]
+
 [[tool.tbump.file]]
 src = "pyproject.toml"
 

@@ -1,5 +1,7 @@
 # .github/lychee.toml
 
+# Acceptable HTTP status codes
+accept = [200, 204, 403, 429]
 # Exclude some common patterns
 exclude = [
   # localhost
@@ -24,15 +26,9 @@ exclude = [
   # Persistent identifiers
   "https://urn.fi/.*"
 ]
-
-# Set a timeout
-timeout = 10
-
 # Maximum number of retries
 max_retries = 3
-
 # Wait time between retries
 retry_wait_time = 2
-
-# Acceptable HTTP status codes
-accept = [200, 204, 403, 429]
+# Set a timeout
+timeout = 10
