@@ -1,6 +1,7 @@
 """Sphinx configuration for Qpdk documentation."""
 
 import re
+from pathlib import Path
 
 project = "qpdk"
 author = "gdsfactory"
@@ -242,6 +243,22 @@ def _dollar_math_to_rst(lines):
     lines[:] = result
 
 
+def replace_image_paths(app, docname, source):
+    """Fix image paths and manually include README.md into index."""
+    if docname == "index":
+        readme = Path(app.srcdir).parent / "README.md"
+        if readme.exists():
+            content = readme.read_text(encoding="utf-8").split("_" * 70, 1)[-1]
+            source[0] = re.sub(
+                r"```\{include\}\s+\.\./README\.md.*?```",
+                lambda _: content,
+                source[0],
+                flags=re.DOTALL,
+            )
+
+    source[0] = source[0].replace("docs/_static/images/", "/_static/images/")
+
+
 def setup(app):
     """Sphinx setup."""
     # Regex for types to shorten in the final rendered docstring fields
@@ -260,6 +277,7 @@ def setup(app):
     def dollar_math_handler(_app, _what, _name, _obj, _options, lines):
         _dollar_math_to_rst(lines)
 
+    app.connect("source-read", replace_image_paths)
     # Convert $-delimited math before any other processing
     app.connect("autodoc-process-docstring", dollar_math_handler, priority=100)
     # We use a late priority to ensure we see the types added by autodoc
