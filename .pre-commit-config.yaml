@@ -200,6 +200,12 @@ repos:
         args: [--fix, --config=.github/.stylelintrc.yaml]
         additional_dependencies:
           - stylelint@17.9.1
+  - repo: https://github.com/sco1/pre-commit-matlab
+    rev: v1.2.0
+    hooks:
+      - id: matlab-reflow-comments
+        priority: 20
+        args: [--line-length=100]
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
@@ -228,7 +234,7 @@ repos:
         name: Convert jupytext notebooks
         entry: ./.github/convert-notebooks.sh
         language: script
-        files: ^notebooks/src/.*\.py$
+        files: ^notebooks/src/.*\.(py|m)$
         pass_filenames: true
       - id: check-notebook-sources
         priority: 10

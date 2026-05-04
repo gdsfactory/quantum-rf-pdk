@@ -47,17 +47,23 @@ write-justfile-help:
 convert-notebooks:
     @./.github/convert-notebooks.sh notebooks/src/*.py
 
+# Notebooks that should be copied as .ipynb because they have precalculated outputs
+# (These will have their .py counterparts removed if they exist to force MyST-NB to use .ipynb)
+precalculated_notebooks := "hfss_*.ipynb matlab_integration.ipynb"
+
 # Copy all sample scripts and notebooks to use as documentation
 [private]
 [group('docs')]
 copy-sample-notebooks:
     @mkdir -p docs/notebooks
-    # Copy all .py source files from notebooks/src
-    @cp -p notebooks/src/*.py docs/notebooks/
-    # For HFSS/Q3D notebooks, copy the .ipynb files which contain pre-calculated outputs
-    @cp -p notebooks/hfss_*.ipynb docs/notebooks/
-    # Remove the .py versions of HFSS notebooks to ensure Myst-NB uses the .ipynb versions
-    @rm -f docs/notebooks/hfss_*.py
+    # Copy all source files from notebooks/src
+    @cp -p notebooks/src/*.py notebooks/src/*.m docs/notebooks/
+    # Copy notebooks with pre-calculated outputs and remove their source counterparts
+    @cd notebooks && for f in {{precalculated_notebooks}}; do \
+        cp -p "$f" ../docs/notebooks/; \
+        base="${f%.ipynb}"; \
+        rm -f "../docs/notebooks/$base.py" "../docs/notebooks/$base.m"; \
+    done
 
 # Temporarily setup IPython configuration for documentation build
 [private]

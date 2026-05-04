@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Script to check that all .ipynb files in notebooks/ have corresponding .py source files in notebooks/src/
-# This pre-commit hook ensures that notebooks are properly tracked as jupytext Python scripts
+# Script to check that all .ipynb files in notebooks/ have corresponding source files in notebooks/src/
+# This pre-commit hook ensures that notebooks are properly tracked as jupytext source scripts.
+# Source files use `.py` for Python-kernel notebooks and `.m` for MATLAB-kernel notebooks.
 
 set -euo pipefail
 
@@ -32,10 +33,9 @@ while IFS= read -r -d '' ipynb_file; do
     # Get the basename without extension
     basename=$(basename "$ipynb_file" .ipynb)
 
-    # Check if corresponding .py file exists in notebooks/src/
-    py_source="notebooks/src/${basename}.py"
-
-    if [ ! -f "$py_source" ]; then
+    # Check if a corresponding source file exists in notebooks/src/ for any
+    # supported jupytext extension (.py for Python, .m for MATLAB).
+    if [ ! -f "notebooks/src/${basename}.py" ] && [ ! -f "notebooks/src/${basename}.m" ]; then
         orphaned_notebooks+=("$ipynb_file")
     fi
 done < <(find notebooks -maxdepth 1 -type f -name "*.ipynb" -print0)
@@ -45,10 +45,10 @@ if [ "${#orphaned_notebooks[@]}" -gt 0 ]; then
     echo -e "${RED}Error:${NC} Found ${BOLD}${#orphaned_notebooks[@]}${NC} notebook(s) without corresponding source files in ${BOLD}notebooks/src/${NC}:" >&2
     for nb in "${orphaned_notebooks[@]}"; do
         basename=$(basename "$nb" .ipynb)
-        echo -e "  - ${BOLD}$nb${NC} is missing ${BOLD}notebooks/src/${basename}.py${NC}" >&2
+        echo -e "  - ${BOLD}$nb${NC} is missing ${BOLD}notebooks/src/${basename}.py${NC} (or ${BOLD}.m${NC})" >&2
     done
     echo -e "" >&2
-    echo -e "${YELLOW}All notebooks in notebooks/ must have corresponding jupytext Python source files in notebooks/src/${NC}" >&2
+    echo -e "${YELLOW}All notebooks in notebooks/ must have a corresponding jupytext source file in notebooks/src/ (.py for Python, .m for MATLAB).${NC}" >&2
     echo -e "${YELLOW}Please create the source file or remove the orphaned notebook.${NC}" >&2
     exit 1
 else

@@ -242,11 +242,14 @@ for examples of:
 
 ### Jupytext Workflow
 
-- **Notebook source**: All notebook source files are in `notebooks/src/` as Python files (`.py`) using jupytext format
-- **Conversion**: Run `just convert-notebooks` or `./.github/convert-notebooks.sh` to convert `.py` files to `.ipynb`
-- **Pre-commit hook**: Notebooks are automatically converted when `.py` files in `notebooks/src/` are modified
-- **Format**: Notebooks use the "percent" format with `# %%` cell markers and YAML metadata at the top
-- **Documentation**: Converted notebooks are copied to `docs/notebooks/` during documentation build
+- **Notebook source**: Notebook source files live in `notebooks/src/`. Python notebooks use `.py`; the MATLAB-kernel
+  notebook uses `.m` (see `notebooks/src/matlab_integration.m`)
+- **Conversion**: Run `just convert-notebooks` or `./.github/convert-notebooks.sh` to convert source files to `.ipynb`
+- **Pre-commit hook**: Notebooks are automatically converted when `.py` or `.m` files in `notebooks/src/` are modified
+- **Format**: Python notebooks use the "percent" format with `# %%` cell markers; MATLAB notebooks use `% %%` markers
+- **Documentation**: Converted notebooks are copied to `docs/notebooks/` during documentation build. Notebooks that
+  require external tooling (HFSS, MATLAB) are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the docs
+  build does not try to execute them
 
 ### Samples Directory
 

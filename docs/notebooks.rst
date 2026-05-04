@@ -204,6 +204,22 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
   with QuTiP-QIP :cite:`liBoshlomQutipqipPulselevel2022`, including population dynamics,
   leakage analysis, and decoherence effects.
 
+**********************
+ External integration
+**********************
+
+Notebooks that demonstrate driving qpdk from outside Python — useful for users whose
+primary tooling lives in another environment.
+
+**Notebooks:**
+
+- :doc:`notebooks/matlab_integration` — Calls qpdk **directly from MATLAB** via MATLAB's
+  built-in Python interface (`py.module.function(...)`). Demonstrates GDS generation,
+  parameter sweeps over `resonator_frequency`, inverse design with `fzero`, and a
+  parametric chip variant grid summarised in a MATLAB `table`. The notebook uses the
+  MATLAB Jupyter kernel from `jupyter-matlab-proxy
+  <https://github.com/mathworks/jupyter-matlab-proxy>`_.
+
 ***************
  Summary table
 ***************
@@ -257,6 +273,9 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
     - - :doc:`notebooks/qutip_qip_pulse_simulation`
       - Pulse-level simulation
       - QuTiP-QIP, JAX
+    - - :doc:`notebooks/matlab_integration`
+      - External integration
+      - MATLAB, jupyter-matlab-proxy
 
 .. toctree::
     :hidden:
