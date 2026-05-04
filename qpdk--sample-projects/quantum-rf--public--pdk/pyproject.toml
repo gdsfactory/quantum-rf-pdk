@@ -13,7 +13,7 @@ classifiers = [
 ]
 dependencies = [
   "flax",
-  "gdsfactory~=9.34.0",
+  "gdsfactory>=9.39.0,<9.41.0",
   "gdsfactoryplus",
   "gplugins[meshwell]>=2.0.1",
   "netket",
