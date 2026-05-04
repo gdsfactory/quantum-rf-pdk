@@ -47,12 +47,17 @@ write-justfile-help:
 convert-notebooks:
     @./.github/convert-notebooks.sh notebooks/src/*.py
 
-# Copy all sample scripts to use as notebooks docs
+# Copy all sample scripts and notebooks to use as documentation
 [private]
 [group('docs')]
 copy-sample-notebooks:
     @mkdir -p docs/notebooks
+    # Copy all .py source files from notebooks/src
     @cp -p notebooks/src/*.py docs/notebooks/
+    # For HFSS/Q3D notebooks, copy the .ipynb files which contain pre-calculated outputs
+    @cp -p notebooks/hfss_*.ipynb docs/notebooks/
+    # Remove the .py versions of HFSS notebooks to ensure Myst-NB uses the .ipynb versions
+    @rm -f docs/notebooks/hfss_*.py
 
 # Temporarily setup IPython configuration for documentation build
 [private]
