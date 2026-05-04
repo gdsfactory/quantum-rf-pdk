@@ -54,38 +54,95 @@ show component_name="":
     import shutil
     import subprocess
     import sys
-    import gdsfactory as gf
-    from qpdk import PDK, logger
-    from qpdk.config import PATH
+    import threading
+    from pathlib import Path
 
-    PDK.activate()
     component_name = "{{ component_name }}"
+    cache_path = Path("build/cell_names.cache")
 
     if not component_name:
         if not shutil.which("fzf"):
             print("Error: 'fzf' is not installed.")
-            print(
-                "Please install it (see https://github.com/junegunn/fzf#installation) or provide a component name: 'just show <name>'"
-            )
+            print("Please install it (see https://github.com/junegunn/fzf#installation) or provide a component name: 'just show <name>'")
             sys.exit(1)
 
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        # Use a descriptive header and a prompt that implies background activity
+        process = subprocess.Popen(
+            ["fzf", "--header=PDK Components", "--prompt=Select Component> "],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1
+        )
+        sent_cells = set()
+
+        def feed_fzf():
+            fresh_process = None
+            try:
+                # 1. Feed from cache immediately
+                if cache_path.exists():
+                    with open(cache_path, "r") as f:
+                        for line in f:
+                            cell = line.strip()
+                            if cell and cell not in sent_cells:
+                                try:
+                                    process.stdin.write(cell + "\n")
+                                    sent_cells.add(cell)
+                                except (BrokenPipeError, ValueError): return
+                    try: process.stdin.flush()
+                    except (BrokenPipeError, ValueError): return
+
+                # 2. Feed fresh list in background (unbuffered)
+                list_cmd = ["uv", "run", "python", "-u", "-c", "from qpdk import PDK; print('\\n'.join(sorted(PDK.cells.keys())))"]
+                fresh_process = subprocess.Popen(list_cmd, stdout=subprocess.PIPE, text=True, stderr=subprocess.DEVNULL)
+                new_cells = []
+                if fresh_process.stdout:
+                    for line in fresh_process.stdout:
+                        cell = line.strip()
+                        if cell:
+                            new_cells.append(cell)
+                            if cell not in sent_cells:
+                                try:
+                                    process.stdin.write(cell + "\n")
+                                    sent_cells.add(cell)
+                                    process.stdin.flush()
+                                except (BrokenPipeError, ValueError): break
+
+                if new_cells:
+                    with open(cache_path, "w") as f: f.write("\n".join(new_cells) + "\n")
+            except Exception as e:
+                print(f"Error in background component loading: {e}", file=sys.stderr)
+            finally:
+                try:
+                    if process.stdin: process.stdin.close()
+                except Exception: pass
+                if fresh_process:
+                    try: fresh_process.terminate()
+                    except Exception: pass
+
+        # Start background feeder
+        thread = threading.Thread(target=feed_fzf, daemon=True)
+        thread.start()
+
+        # Wait for selection WITHOUT using communicate() as it closes stdin immediately
         try:
-            cell_names = sorted(PDK.cells.keys())
-            process = subprocess.Popen(
-                ["fzf", "--header=Select a PDK component to show"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                text=True,
-            )
-            stdout, _ = process.communicate(input="\n".join(cell_names))
-            component_name = stdout.strip()
-            if not component_name:
-                print("No component selected.")
-                sys.exit(0)
-        except Exception as e:
-            logger.error(f"Error during selection: {e}")
+            stdout_data = process.stdout.read()
+            process.wait()
+            if process.returncode not in (0, 130) and not stdout_data:
+                print(f"Component selection process exited unexpectedly with code {process.returncode}.", file=sys.stderr)
+                sys.exit(process.returncode)
+            component_name = stdout_data.strip()
+        except KeyboardInterrupt:
+            process.terminate()
+            print("Component selection cancelled by user. Exiting.", file=sys.stderr)
             sys.exit(1)
 
+        if not component_name:
+            print("No component selected; exiting without running any layout.", file=sys.stderr)
+            sys.exit(0)
+
+    import gdsfactory as gf
+    from qpdk import PDK, logger
+    from qpdk.config import PATH
+    PDK.activate()
     (build_dir := PATH.gds).mkdir(parents=True, exist_ok=True)
     component = gf.get_component(component_name)
     gds_path = build_dir / f"{component.name}.gds"
