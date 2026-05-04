@@ -1,0 +1,19 @@
+info:
+  junction_area: 0.045
+  pad_gap: 6
+  pad_height: 100
+  pad_width: 200
+  qubit_type: transmon
+name: transmon_qpdkpcellsptra_f4699d67
+settings:
+  island_height: 4
+  island_width: 10
+  junction_height: 0.3
+  junction_width: 0.15
+  layer_island: M1_DRAW
+  layer_junction: JJ_AREA
+  layer_metal: M1_DRAW
+  pad_gap: 6
+  pad_height: 100
+  pad_width: 200
+  port_type: electrical

@@ -1,0 +1,6 @@
+info:
+  dy: 3
+  length: 3
+name: wire_corner_CSmetal_rou_cefec64b
+settings:
+  cross_section: metal_routing

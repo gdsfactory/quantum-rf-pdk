@@ -1,0 +1,357 @@
+# yaml-language-server: $schema=../../build/schemas/resonator_test_chip_yaml.json
+instances:
+  launcher_east_bot:
+    component: launcher
+    settings: {}
+  launcher_east_top:
+    component: launcher
+    settings: {}
+  launcher_west_bot:
+    component: launcher
+    settings: {}
+  launcher_west_top:
+    component: launcher
+    settings: {}
+  resonator_bot_1:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 3600
+      meanders: 5
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_bot_2:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 3800
+      meanders: 5
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_bot_3:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4000
+      meanders: 6
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_bot_4:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4200
+      meanders: 6
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_bot_5:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4400
+      meanders: 6
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_bot_6:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4600
+      meanders: 7
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_bot_7:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4800
+      meanders: 7
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_bot_8:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 5000
+      meanders: 7
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_top_1:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 3600
+      meanders: 5
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 12
+  resonator_top_2:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 3800
+      meanders: 5
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 14
+  resonator_top_3:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4000
+      meanders: 6
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 16
+  resonator_top_4:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4200
+      meanders: 6
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 18
+  resonator_top_5:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4400
+      meanders: 6
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 20
+  resonator_top_6:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4600
+      meanders: 7
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 22
+  resonator_top_7:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 4800
+      meanders: 7
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 24
+  resonator_top_8:
+    component: quarter_wave_resonator_coupled
+    settings:
+      cross_section: cpw
+      length: 5000
+      meanders: 7
+      open_end: false
+      open_start: true
+      coupling_straight_length: 200
+      coupling_gap: 26
+connections: {}
+routes:
+  bundle1:
+    links:
+      resonator_top_1,coupling_o2: resonator_top_2,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle10:
+    links:
+      resonator_bot_1,coupling_o2: resonator_bot_2,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle11:
+    links:
+      resonator_bot_2,coupling_o2: resonator_bot_3,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle12:
+    links:
+      resonator_bot_3,coupling_o2: resonator_bot_4,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle13:
+    links:
+      resonator_bot_4,coupling_o2: resonator_bot_5,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle14:
+    links:
+      resonator_bot_5,coupling_o2: resonator_bot_6,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle15:
+    links:
+      resonator_bot_6,coupling_o2: resonator_bot_7,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle16:
+    links:
+      resonator_bot_7,coupling_o2: resonator_bot_8,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle2:
+    links:
+      resonator_top_2,coupling_o2: resonator_top_3,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle22:
+    links:
+      launcher_west_top,o1: resonator_top_1,coupling_o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings: {}
+  bundle23:
+    links:
+      launcher_west_bot,o1: resonator_bot_1,coupling_o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings: {}
+  bundle24:
+    links:
+      resonator_bot_8,coupling_o2: launcher_east_bot,o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings: {}
+  bundle25:
+    links:
+      resonator_top_8,coupling_o2: launcher_east_top,o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings: {}
+  bundle3:
+    links:
+      resonator_top_3,coupling_o2: resonator_top_4,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle4:
+    links:
+      resonator_top_4,coupling_o2: resonator_top_5,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle5:
+    links:
+      resonator_top_5,coupling_o2: resonator_top_6,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle6:
+    links:
+      resonator_top_6,coupling_o2: resonator_top_7,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  bundle7:
+    links:
+      resonator_top_7,coupling_o2: resonator_top_8,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+nets: []
+ports:
+  o1: launcher_west_top,waveport
+  o2: launcher_east_top,waveport
+  o3: launcher_west_bot,waveport
+  o4: launcher_east_bot,waveport
+placements:
+  launcher_east_bot:
+    x: 9000
+    y: 0
+    rotation: 180
+  launcher_east_top:
+    x: 9000
+    y: 1000
+    rotation: 180
+  launcher_west_bot:
+    x: 0
+    y: 0
+  launcher_west_top:
+    x: 0
+    y: 1000
+  resonator_bot_1:
+    x: 1000
+    y: 0
+  resonator_bot_2:
+    x: 2000
+    y: 0
+  resonator_bot_3:
+    x: 3000
+    y: 0
+  resonator_bot_4:
+    x: 4000
+    y: 0
+  resonator_bot_5:
+    x: 5000
+    y: 0
+  resonator_bot_6:
+    x: 6000
+    y: 0
+  resonator_bot_7:
+    x: 7000
+    y: 0
+  resonator_bot_8:
+    x: 8000
+    y: 0
+  resonator_top_1:
+    x: 1000.0
+    y: 1000.0
+    mirror: true
+  resonator_top_2:
+    x: 2000
+    y: 1000
+    mirror: true
+  resonator_top_3:
+    x: 3000
+    y: 1000
+    mirror: true
+  resonator_top_4:
+    x: 4000
+    y: 1000
+    mirror: true
+  resonator_top_5:
+    x: 5000.0
+    y: 1000.0
+    mirror: true
+  resonator_top_6:
+    x: 6000
+    y: 1000
+    mirror: true
+  resonator_top_7:
+    x: 7000
+    y: 1000
+    mirror: true
+  resonator_top_8:
+    x: 8000
+    y: 1000
+    mirror: true
