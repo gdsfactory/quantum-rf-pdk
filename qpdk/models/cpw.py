@@ -86,20 +86,21 @@ __all__ = [
 # ===================================================================
 
 
-@cache
-def get_cpw_substrate_params() -> tuple[float, float, float]:
+def get_cpw_substrate_params() -> tuple[float, float, float, float]:
     """Extract substrate parameters from the PDK layer stack.
 
     Returns:
-        ``(h, t, ep_r)`` — substrate height (µm), conductor thickness (µm),
-        and relative permittivity.
+        ``(h, t, ep_r, tand)`` — substrate height (µm), conductor thickness (µm),
+        relative permittivity, and loss tangent.
     """
     h = LAYER_STACK.layers["Substrate"].thickness  # µm
     t = LAYER_STACK.layers["M1"].thickness  # µm
-    ep_r = material_properties[cast(str, LAYER_STACK.layers["Substrate"].material)][
-        "relative_permittivity"
+    substrate_mat = material_properties[
+        cast(str, LAYER_STACK.layers["Substrate"].material)
     ]
-    return float(h), float(t), float(ep_r)
+    ep_r = substrate_mat["relative_permittivity"]
+    tand = substrate_mat.get("loss_tangent", 0.0)
+    return float(h), float(t), float(ep_r), float(tand)
 
 
 def get_cpw_dimensions(
@@ -129,12 +130,22 @@ def get_cpw_dimensions(
 def cpw_parameters(
     width: float,
     gap: float,
-) -> tuple[float, float]:
-    r"""Compute effective permittivity and characteristic impedance for a CPW.
+    tand: float | None = None,
+) -> tuple[jnp.ndarray, float]:
+    r"""Compute complex effective permittivity and characteristic impedance for a CPW.
 
     Uses the JAX-jittable functions from :mod:`sax.models.rf` with the
     PDK layer stack (substrate height, conductor thickness, material
     permittivity).
+
+    Dielectric loss is included via the filling factor :math:`q` and the
+    provided *tand*:
+
+    .. math::
+
+        \varepsilon_{\text{eff, complex}} = \varepsilon_{\text{eff}} \left( 1 - j q \frac{\varepsilon_r}{\varepsilon_{\text{eff}}} \tan \delta \right)
+
+    where :math:`q = (\varepsilon_{\text{eff}} - 1) / (\varepsilon_r - 1)`.
 
     Conductor thickness corrections follow
     Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
@@ -143,15 +154,18 @@ def cpw_parameters(
     Args:
         width: Centre-conductor width in µm.
         gap: Gap between centre conductor and ground plane in µm.
+        tand: Loss tangent of the substrate. If None, uses the PDK default.
 
     Returns:
-        ``(ep_eff, z0)`` — effective permittivity (dimensionless) and
+        ``(ep_eff, z0)`` — complex effective permittivity (dimensionless) and
         characteristic impedance (Ω).
     """
     width = float(width)
     gap = float(gap)
 
-    h_um, t_um, ep_r = get_cpw_substrate_params()
+    h_um, t_um, ep_r, tand_default = get_cpw_substrate_params()
+    if tand is None:
+        tand = tand_default
 
     # Convert to SI (metres)
     w_m = width * 1e-6
@@ -163,11 +177,19 @@ def cpw_parameters(
     ep_eff = cpw_epsilon_eff(w_m, s_m, h_m, ep_r)
 
     if t_um > 0:
-        ep_eff_t, z0_val = cpw_thickness_correction(w_m, s_m, t_m, ep_eff)
-        return float(ep_eff_t), float(z0_val)
+        ep_eff, z0_val = cpw_thickness_correction(w_m, s_m, t_m, ep_eff)
+    else:
+        z0_val = cpw_z0(w_m, s_m, ep_eff)
 
-    z0_val = cpw_z0(w_m, s_m, ep_eff)
-    return float(ep_eff), float(z0_val)
+    # Include dielectric loss if tand > 0
+    # Formula: alpha_d = (pi * f / c0) * (ep_r / sqrt(ep_eff)) * q * tand
+    # In terms of complex epsilon_eff: epsilon_eff_complex = ep_eff * (1 - j * fill_factor * (ep_r / ep_eff) * tand)
+    # where q = (ep_eff - 1) / (ep_r - 1)
+    if tand > 0:
+        q = (ep_eff - 1) / (ep_r - 1)
+        ep_eff = ep_eff * (1 - 1j * q * (ep_r / ep_eff) * tand)
+
+    return jnp.asarray(ep_eff), float(z0_val)
 
 
 def cpw_z0_from_cross_section(
@@ -211,5 +233,5 @@ def cpw_ep_r_from_cross_section(
     Returns:
         Relative permittivity of the substrate.
     """
-    _h, _t, ep_r = get_cpw_substrate_params()
+    _h, _t, ep_r, _tand = get_cpw_substrate_params()
     return ep_r
