@@ -1,0 +1,532 @@
+exploded: ''
+camera_transform:
+  translation:
+    x: 719.6367
+    y: 3719.7935
+    z: 0.0
+  rotation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  scale:
+    x: 1.1187729
+    y: 1.1187729
+    z: 1.0
+transforms:
+  launcher_east_bot:
+    translation:
+      x: 1732.6057
+      y: 3720.6384
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: -1.0
+      y: 1.0
+      z: 1.0
+  launcher_east_top:
+    translation:
+      x: 1706.7903
+      y: 3999.8064
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: -1.0
+      y: 1.0
+      z: 1.0
+  launcher_west_bot:
+    translation:
+      x: -32.726074
+      y: 3698.0447
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  launcher_west_top:
+    translation:
+      x: 0.0
+      y: 4000.0
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  o1:
+    translation:
+      x: -80.0
+      y: 4080.0
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  o2:
+    translation:
+      x: 1865.3606
+      y: 4136.6084
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  o3:
+    translation:
+      x: -112.726074
+      y: 3778.0447
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  o4:
+    translation:
+      x: 1866.1855
+      y: 3829.275
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_1:
+    translation:
+      x: 134.95038
+      y: 3693.337
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_2:
+    translation:
+      x: 307.75232
+      y: 3692.447
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_3:
+    translation:
+      x: 489.51685
+      y: 3692.3867
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_4:
+    translation:
+      x: 697.6526
+      y: 3692.08
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_5:
+    translation:
+      x: 867.02057
+      y: 3690.536
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_6:
+    translation:
+      x: 1061.0596
+      y: 3686.0188
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_7:
+    translation:
+      x: 1255.6742
+      y: 3684.624
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_bot_8:
+    translation:
+      x: 1431.6155
+      y: 3694.7703
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_1:
+    translation:
+      x: 186.40308
+      y: 3994.9229
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_2:
+    translation:
+      x: 394.06128
+      y: 3999.2866
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_3:
+    translation:
+      x: 591.06665
+      y: 3998.71
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_4:
+    translation:
+      x: 774.2364
+      y: 4005.6526
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_5:
+    translation:
+      x: 953.27844
+      y: 4001.8845
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_6:
+    translation:
+      x: 1109.5192
+      y: 3999.6558
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_7:
+    translation:
+      x: 1267.8096
+      y: 4001.2932
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+  resonator_top_8:
+    translation:
+      x: 1476.1248
+      y: 3994.9434
+      z: 1.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+    scale:
+      x: 1.0
+      y: 1.0
+      z: 1.0
+sizes:
+  launcher_east_bot:
+    width: 100
+    height: 100
+  launcher_east_top:
+    width: 100
+    height: 100
+  launcher_west_bot:
+    width: 100
+    height: 100
+  launcher_west_top:
+    width: 100
+    height: 100
+  resonator_bot_1:
+    width: 100
+    height: 100
+  resonator_bot_2:
+    width: 100
+    height: 100
+  resonator_bot_3:
+    width: 100
+    height: 100
+  resonator_bot_4:
+    width: 100
+    height: 100
+  resonator_bot_5:
+    width: 100
+    height: 100
+  resonator_bot_6:
+    width: 100
+    height: 100
+  resonator_bot_7:
+    width: 100
+    height: 100
+  resonator_bot_8:
+    width: 100
+    height: 100
+  resonator_top_1:
+    width: 100
+    height: 100
+  resonator_top_2:
+    width: 100
+    height: 100
+  resonator_top_3:
+    width: 100
+    height: 100
+  resonator_top_4:
+    width: 100
+    height: 100
+  resonator_top_5:
+    width: 100
+    height: 100
+  resonator_top_6:
+    width: 100
+    height: 100
+  resonator_top_7:
+    width: 100
+    height: 100
+  resonator_top_8:
+    width: 100
+    height: 100
+link_paths:
+- key:
+  - resonator_bot_5,coupling_o2
+  - resonator_bot_6,coupling_o1
+  value:
+  - x: 1001.83936
+    y: 3709.2717
+layers:
+  launcher_east_bot: 0
+  launcher_east_top: 0
+  launcher_west_bot: 0
+  launcher_west_top: 0
+  resonator_bot_1: 0
+  resonator_bot_2: 0
+  resonator_bot_3: 0
+  resonator_bot_4: 0
+  resonator_bot_5: 0
+  resonator_bot_6: 0
+  resonator_bot_7: 0
+  resonator_bot_8: 0
+  resonator_top_1: 0
+  resonator_top_2: 0
+  resonator_top_3: 0
+  resonator_top_4: 0
+  resonator_top_5: 0
+  resonator_top_6: 0
+  resonator_top_7: 0
+  resonator_top_8: 0
+fan_point_positions:
+  bundle1:
+  - x: 263.31763
+    y: 3994.9229
+  - x: 317.14673
+    y: 4018.6199
+  bundle10:
+  - x: 203.15086
+    y: 3693.337
+  - x: 239.55183
+    y: 3711.7803
+  bundle11:
+  - x: 378.19345
+    y: 3692.447
+  - x: 419.0757
+    y: 3711.72
+  bundle12:
+  - x: 566.5508
+    y: 3692.3867
+  - x: 620.61865
+    y: 3711.4133
+  bundle13:
+  - x: 764.99457
+    y: 3692.08
+  - x: 799.6786
+    y: 3709.8691
+  bundle14:
+  - x: 940.53033
+    y: 3690.536
+  - x: 987.5498
+    y: 3705.352
+  bundle15:
+  - x: 1134.7133
+    y: 3686.0188
+  - x: 1182.0205
+    y: 3703.9573
+  bundle16:
+  - x: 1324.6595
+    y: 3684.624
+  - x: 1362.6301
+    y: 3714.1035
+  bundle2:
+  - x: 468.31262
+    y: 3999.2866
+  - x: 516.8153
+    y: 4018.0432
+  bundle22:
+  - x: 71.60077
+    y: 4000.0
+  - x: 114.80231
+    y: 4014.256
+  bundle23:
+  - x: 34.19304
+    y: 3698.0447
+  - x: 68.031265
+    y: 3712.6702
+  bundle24:
+  - x: 1531.863
+    y: 3694.7703
+  - x: 1632.3582
+    y: 3720.6384
+  bundle25:
+  - x: 1558.7911
+    y: 3994.9434
+  - x: 1624.1239
+    y: 3999.8064
+  bundle3:
+  - x: 661.8591
+    y: 3998.71
+  - x: 703.444
+    y: 4024.9858
+  bundle4:
+  - x: 843.9969
+    y: 4005.6526
+  - x: 883.51794
+    y: 4021.2178
+  bundle5:
+  - x: 1017.3386
+    y: 4001.8845
+  - x: 1045.459
+    y: 4018.989
+  bundle6:
+  - x: 1174.0918
+    y: 3999.6558
+  - x: 1203.2369
+    y: 4020.6265
+  bundle7:
+  - x: 1344.8884
+    y: 4001.2932
+  - x: 1399.0459
+    y: 4014.2766

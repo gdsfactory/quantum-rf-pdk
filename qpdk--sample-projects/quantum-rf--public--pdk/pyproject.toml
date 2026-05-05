@@ -1,0 +1,168 @@
+# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
+
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit-core>=3.2,<4"]
+
+[project]
+authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
+classifiers = [
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12"
+]
+dependencies = [
+  "flax",
+  "gdsfactory>=9.39.0,<9.41.0",
+  "gdsfactoryplus",
+  "gplugins[meshwell]>=2.0.1",
+  "netket",
+  "openvino",
+  "optax",
+  "optuna",
+  "pymablock",
+  "qutip-jax",
+  "qutip-qip",
+  "ray[tune]",
+  "sax",
+  "scikit-rf",
+  "scqubits",
+  "sympy",
+  "tqdm"
+]
+description = "Quantum RF PDK"
+keywords = ["python"]
+license = {file = "LICENSE"}
+name = "qpdk"
+readme = "README.md"
+requires-python = "~=3.12.0"
+version = "0.0.0"
+optional-dependencies.dev = [
+  "hypothesis",
+  "jsondiff",
+  "prek",
+  "pytest",
+  "pytest-cov",
+  "pytest-github-actions-annotate-failures",
+  "pytest-regressions",
+  "pytest-xdist"
+]
+optional-dependencies.docs = [
+  "jupyter-book>=1.0.4,<2",
+  "jupytext",
+  "matplotlib",
+  "pydata-sphinx-theme",
+  "sphinxcontrib-katex"
+]
+optional-dependencies.models = [
+  "gplugins[meshwell]",
+  "jaxellip",
+  "optuna",
+  "polars",
+  "ray[tune]",
+  "sax",
+  "scikit-rf",
+  "scqubits",
+  "sympy"
+]
+
+[tool.basedpyright]
+pythonPlatform = "Linux"
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnusedCallResult = false
+
+[tool.gdsfactoryplus]
+pdk.name = "qpdk"
+sim.x.max = 20  # 20GHz
+sim.x.min = 1  # 1GHz
+sim.x.name = "f"
+sim.x.num = 3000
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
+[tool.pylsp-mypy]
+enabled = true
+live_mode = true
+strict = true
+
+[tool.pytest]
+# addopts = --tb=no
+ini_options.addopts = "--tb=short"
+ini_options.norecursedirs = ["extra/*.py", "qpdk/cells/klayout/*.py"]
+ini_options.python_files = ["qpdk/*.py", "notebooks/*.ipynb", "tests/*.py"]
+ini_options.testpaths = ["tests"]
+
+[tool.ruff]
+fix = true
+lint.ignore = [
+  "B006",
+  "B008",  # do not perform function calls in argument defaults
+  "B905",  # `zip()` without an explicit `strict=` parameter
+  "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "C901",  # too complex
+  "E402",  # module level import not at top of file
+  "E501",
+  "RUF001",  # ambiguous unicode characters in strings
+  "RUF002",  # ambiguous unicode characters in docstrings
+  "RUF003"  # ambiguous unicode characters in comments
+]
+lint.select = [
+  "B",  # flake8-bugbear
+  "C",  # flake8-comprehensions
+  # "D",  # pydocstyle
+  "E",  # pycodestyle errors
+  "F",  # pyflakes
+  "I",  # isort
+  "PERF",  # performance improvements
+  "RUF",  # ruff
+  "T10",  # flake8-debugger
+  "UP",  # pyupgrade
+  "W"
+]
+lint.per-file-ignores."qpdk/cells/__init__.py" = [
+  "F403"
+]  # allowing star imports to aggregate cells
+lint.per-file-ignores."tests/**" = [
+  "S101"
+]  # allow assert statements in test files
+
+[tool.setuptools]
+package-data."*" = [
+  "*.csv",
+  "*.yaml",
+  "*.yml",
+  "*.gds",
+  "*.lyp",
+  "*.oas",
+  "*.lyt",
+  "*.dat",
+  "*.nc",
+  "*.svg",
+  "*.GDS",
+  "*.json",
+  "*.txt",
+  "*.md",
+  "*.OAS"
+]
+packages.find = {}
+
+[tool.tbump]
+file = [
+  {src = "README.md"},
+  {src = "pyproject.toml"},
+  {src = "qpdk/__init__.py"},
+  {src = "qpdk/klayout/grain.xml"}
+]
+git.message_template = "Bump to {new_version}"
+git.tag_template = "v{new_version}"
+version.current = "0.3.0"
+version.regex = '''(?P<major>\d+)
+    \.
+(?P<minor>\d+)
+    \.
+(?P<patch>\d+)
+    '''

@@ -1,0 +1,192 @@
+# yaml-language-server: $schema=../../build/schemas/flipmon_test_chip.json
+instances:
+  input_cap1:
+    component: interdigital_capacitor
+    settings: {}
+  input_cap2:
+    component: interdigital_capacitor
+    settings: {}
+  launcher_bot:
+    component: launcher
+    settings: {}
+  launcher_in:
+    component: launcher
+    settings: {}
+  launcher_out:
+    component: launcher
+    settings: {}
+  launcher_top:
+    component: launcher
+    settings: {}
+    virtual: true
+  qubit1:
+    component: flipmon_with_resonator_and_probeline
+    settings:
+      resonator_length: 5000
+  qubit2:
+    component: flipmon_with_resonator_and_probeline
+    settings:
+      resonator_length: 4800
+      resonator_meanders: 3
+  qubit3:
+    component: flipmon_with_resonator_and_probeline
+    settings:
+      resonator_length: 4600
+      resonator_meanders: 3
+  qubit4:
+    component: flipmon_with_resonator_and_probeline
+    settings:
+      resonator_length: 4400
+  tee_bot:
+    component: tee
+    settings: {}
+  tee_bot_straight_1:
+    component: straight_open
+    settings: {}
+  tee_bot_straight_2:
+    component: straight_open
+    settings: {}
+  tee_top:
+    component: tee
+    settings: {}
+  tee_top_straight_1:
+    component: straight_open
+    settings: {}
+  tee_top_straight_2:
+    component: straight_open
+    settings: {}
+connections:
+  tee_bot_straight_1,o1: tee_bot,o1
+  tee_bot_straight_2,o1: tee_bot,o3
+  tee_top_straight_1,o1: tee_top,o1
+  tee_top_straight_2,o1: tee_top,o3
+routes:
+  flux_line_bot:
+    links:
+      tee_bot,o2: launcher_bot,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  flux_line_top:
+    links:
+      tee_top,o2: launcher_top,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_cap1_to_qubit1:
+    links:
+      input_cap1,o2: qubit1,coupling_o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: false
+  probeline_input:
+    links:
+      launcher_in,o1: input_cap1,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      allow_width_mismatch: true
+      auto_taper: false
+  probeline_output:
+    links:
+      input_cap2,o1: launcher_out,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_qubit1_to_qubit2:
+    links:
+      qubit1,coupling_o2: qubit2,coupling_o1
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: false
+  probeline_qubit2_to_qubit3:
+    links:
+      qubit2,coupling_o2: qubit3,coupling_o2
+    routing_strategy: route_bundle_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: true
+      auto_taper: false
+  probeline_qubit3_to_qubit4:
+    links:
+      qubit3,coupling_o1: qubit4,coupling_o2
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: false
+  probeline_qubit4_to_cap2:
+    links:
+      qubit4,coupling_o1: input_cap2,o2
+    routing_strategy: route_bundle_sbend_cpw
+    settings:
+      allow_layer_mismatch: false
+      allow_type_mismatch: false
+      allow_width_mismatch: false
+nets: []
+ports:
+  o1: launcher_in,waveport
+  o2: launcher_out,waveport
+placements:
+  input_cap1:
+    x: 0
+    y: 0
+    dx: 800
+    dy: 400
+  input_cap2:
+    x: 0
+    y: 0
+    dx: 800
+    dy: -400
+  launcher_bot:
+    x: 3000
+    y: -3000
+    rotation: 90
+  launcher_in:
+    x: 0
+    y: 400
+  launcher_out:
+    x: 0
+    y: -400
+  launcher_top:
+    x: 3000
+    y: 3000
+    rotation: -90
+  qubit1:
+    x: 0
+    y: 0
+    dx: 2385
+    dy: 1625
+    rotation: 0
+  qubit2:
+    x: 0.0
+    y: 0.0
+    dx: 3615.0
+    dy: 1625.0
+    rotation: 0
+  qubit3:
+    x: 0.0
+    y: 0.0
+    dx: 3615.0
+    dy: -1627.421
+    rotation: 0
+    mirror: true
+  qubit4:
+    x: 0.0
+    y: 0.0
+    dx: 2385.0
+    dy: -1628.351
+    rotation: 0
+    mirror: true
+  tee_bot:
+    x: 3000
+    y: -1775
+    rotation: 180
+  tee_top:
+    x: 3000
+    y: 1775
+    rotation: 0

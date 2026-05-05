@@ -1,0 +1,17 @@
+info:
+  capacitor_fingers: 4
+  inductor_radius: 20
+  inductor_turns: 3
+  resonator_type: lumped
+name: resonator_lumped_qpdkpc_10ff391e
+settings:
+  capacitor_finger_gap: 2
+  capacitor_finger_length: 20
+  capacitor_fingers: 4
+  capacitor_thickness: 5
+  coupling_gap: 5
+  inductor_radius: 20
+  inductor_turns: 3
+  inductor_width: 2
+  layer_metal: M1_DRAW
+  port_type: electrical

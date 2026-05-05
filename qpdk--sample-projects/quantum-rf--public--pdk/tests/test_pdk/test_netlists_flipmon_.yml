@@ -1,0 +1,63 @@
+instances:
+  circle:
+    component: circle
+    info: {}
+    settings:
+      angle_resolution: 2.5
+      layer: M2_DRAW
+      radius: 110
+  circle2:
+    component: circle
+    info: {}
+    settings:
+      angle_resolution: 2.5
+      layer: M1_DRAW
+      radius: 60
+  indium_bump:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  ring:
+    component: ring
+    info: {}
+    settings:
+      angle: 360
+      angle_resolution: 2.5
+      distance_resolution: null
+      layer: M1_DRAW
+      radius: 110
+      width: 60
+  squid_junction_long:
+    component: squid_junction_long
+    info: {}
+    settings: {}
+nets: []
+placements:
+  circle:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  circle2:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  indium_bump:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  ring:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  squid_junction_long:
+    mirror: false
+    rotation: 45
+    x: 55.253
+    y: -10.748
+ports:
+  center: indium_bump,center

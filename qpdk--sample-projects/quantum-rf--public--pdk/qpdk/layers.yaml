@@ -1,0 +1,114 @@
+LayerViews:
+  Metal:
+    group_members:
+      M1_DRAW:
+        layer: [1, 0]
+        layer_in_name: true
+        width: 1
+        hatch_pattern: lightly left-hatched
+        color: "#ACF1EA"
+      M1_ETCH:
+        layer: [1, 1]
+        layer_in_name: true
+        hatch_pattern: dotted
+        width: 1
+        color: "#4DCCBD"
+      M2_DRAW:
+        layer: [2, 0]
+        layer_in_name: true
+        width: 1
+        hatch_pattern: lightly left-hatched
+        color: "#FFA9A4"
+      M2_ETCH:
+        layer: [2, 1]
+        layer_in_name: true
+        hatch_pattern: dotted
+        width: 1
+        color: "#FE5F55"
+  Airbridge:
+    hatch_pattern: lightly right-hatched
+    group_members:
+      AB_DRAW:
+        layer: [10, 0]
+        layer_in_name: true
+        transparent: true
+        width: 1
+        color: "#FEA82F"
+      AB_VIA:
+        layer: [10, 1]
+        layer_in_name: true
+        color: "#FEBB5D"
+  Junction:
+    hatch_pattern: lightly right-hatched
+    group_members:
+      JJ_AREA:
+        layer: [20, 0]
+        layer_in_name: true
+        fill_color: "#C4B7CB"
+      JJ_PATCH:
+        layer: [20, 1]
+        layer_in_name: true
+        color: "#947DA1"
+  IND:
+    layer: [30, 0]
+    layer_in_name: true
+    color: "#65F69C"
+    hatch_pattern: dotted
+  TSV:
+    layer: [31, 0]
+    layer_in_name: true
+    color: "#E637BF"
+    hatch_pattern: dotted
+  DICE:
+    layer: [70, 0]
+    layer_in_name: true
+    color: "red"
+    hatch_pattern: coarsely dotted
+  ALN_TOP:
+    layer: [80, 0]
+    layer_in_name: true
+    color: "yellow"
+    hatch_pattern: coarsely dotted
+  ALN_BOT:
+    layer: [81, 0]
+    layer_in_name: true
+    color: "magenta"
+    hatch_pattern: coarsely dotted
+  TEXT:
+    layer: [90, 0]
+    layer_in_name: true
+    color: "gray"
+    hatch_pattern: checkerboard 2px
+  gdsfactory:
+    group_members:
+      LABEL_SETTINGS:
+        layer: [100, 0]
+        layer_in_name: true
+        color: "cyan"
+        hatch_pattern: hollow
+      LABEL_INSTANCE:
+        layer: [101, 0]
+        layer_in_name: true
+        color: "cyan"
+        hatch_pattern: hollow
+      SIM_AREA:
+        layer: [98, 0]
+        layer_in_name: true
+        color: "green"
+        hatch_pattern: hollow
+      SIM_ONLY:
+        layer: [99, 0]
+        layer_in_name: true
+        color: "green"
+        hatch_pattern: hollow
+      WG:
+        layer: [102, 0]
+        layer_in_name: true
+        color: "#535353"
+        visible: false
+        hatch_pattern: 22.5 degree down
+      ERROR_PATH:
+        layer: [1000, 0]
+        layer_in_name: true
+        color: "red"
+        hatch_pattern: coarsely dotted
