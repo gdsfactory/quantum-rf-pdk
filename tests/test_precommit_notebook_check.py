@@ -68,7 +68,11 @@ def test_check_notebook_sources_logic(repo_root: Path) -> None:
 
 
 def test_all_existing_notebooks_have_sources(repo_root: Path) -> None:
-    """Verify that all existing .ipynb files have corresponding .py sources."""
+    """Verify that all existing .ipynb files have a corresponding jupytext source.
+
+    Source files use ``.py`` for Python-kernel notebooks and ``.m`` for
+    MATLAB-kernel notebooks; either is accepted.
+    """
     notebooks_dir = repo_root / "notebooks"
     src_dir = notebooks_dir / "src"
 
@@ -78,6 +82,8 @@ def test_all_existing_notebooks_have_sources(repo_root: Path) -> None:
 
     for ipynb_file in ipynb_files:
         py_source = src_dir / f"{ipynb_file.stem}.py"
-        assert py_source.exists(), (
-            f"Notebook {ipynb_file.name} is missing its source file at {py_source}"
+        m_source = src_dir / f"{ipynb_file.stem}.m"
+        assert py_source.exists() or m_source.exists(), (
+            f"Notebook {ipynb_file.name} is missing its source file "
+            f"(expected {py_source} or {m_source})"
         )

@@ -31,17 +31,18 @@ fi
 if [ "$#" -gt 0 ]; then
     echo -e "${CYAN}Converting jupytext notebooks for provided files to notebooks/${NC}"
     declare -a changed_files=()
-    for py_file in "$@"; do
-        if [ -f "$py_file" ]; then
-            basename=$(basename "$py_file" .py)
+    for src_file in "$@"; do
+        if [ -f "$src_file" ]; then
+            ext="${src_file##*.}"
+            basename=$(basename "$src_file" ".${ext}")
             ipynb_path="notebooks/${basename}.ipynb"
 
             # Handle missing commands (exit 127) explicitly
             set +e
-            show_changes_output=$(uvx jupytext --update --to ipynb "$py_file" --output "$ipynb_path" --show-changes 2>&1)
+            show_changes_output=$(uvx jupytext --update --to ipynb "$src_file" --output "$ipynb_path" --show-changes 2>&1)
             uvx_status=$?
             if [ $uvx_status -ne 0 ]; then
-                show_changes_output=$(jupytext --update --to ipynb "$py_file" --output "$ipynb_path" --show-changes 2>&1)
+                show_changes_output=$(jupytext --update --to ipynb "$src_file" --output "$ipynb_path" --show-changes 2>&1)
                 jupytext_status=$?
                 if [ $uvx_status -eq 127 ] && [ $jupytext_status -eq 127 ]; then
                     echo -e "${RED}Error:${NC} You need to have ${BOLD}'uv'${NC} or ${BOLD}'jupytext'${NC} in your PATH" >&2
@@ -55,8 +56,8 @@ if [ "$#" -gt 0 ]; then
             if ! printf '%s' "$show_changes_output" | grep -q 'Unchanged'; then
                 changed_files+=("$ipynb_path")
 
-                echo -e "${BLUE}Converting${NC} ${BOLD}$py_file${NC} ${BLUE}to${NC} ${BOLD}${ipynb_path}${NC}"
-                uvx jupytext --update --to ipynb "$py_file" --output "$ipynb_path" || jupytext --update --to ipynb "$py_file" --output "$ipynb_path"
+                echo -e "${BLUE}Converting${NC} ${BOLD}$src_file${NC} ${BLUE}to${NC} ${BOLD}${ipynb_path}${NC}"
+                uvx jupytext --update --to ipynb "$src_file" --output "$ipynb_path" || jupytext --update --to ipynb "$src_file" --output "$ipynb_path"
 
             else
                 # Ensure the notebook is tracked and has no unstaged changes
@@ -84,5 +85,5 @@ if [ "$#" -gt 0 ]; then
         echo -e "${GREEN}Conversion completed successfully${NC}"
     fi
 else
-    echo -e "${YELLOW}No Python files provided to convert${NC}"
+    echo -e "${YELLOW}No source files provided to convert${NC}"
 fi

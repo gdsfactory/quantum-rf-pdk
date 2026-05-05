@@ -126,3 +126,65 @@ jobs:
       pull-requests: write
     uses: doplaydo/pdk-ci-workflow/.github/workflows/model_regression.yml@main # zizmor: ignore[unpinned-uses]
     secrets: inherit # zizmor: ignore[secrets-inherit]
+  test-matlab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          lfs: true
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: Install qpdk with models extra
+        run: uv sync --extra models
+      - name: Export QPDK_PYTHON and Python library paths
+        run: |
+          QPDK_PY="$(uv run python -c 'import sys; print(sys.executable)')"
+          PY_LIBDIR="$(${QPDK_PY} -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')"
+          {
+            echo "QPDK_PYTHON=${QPDK_PY}"
+            echo "LD_LIBRARY_PATH=${PY_LIBDIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+          } >> "$GITHUB_ENV"
+          echo "Python: ${QPDK_PY}"
+          echo "LIBDIR: ${PY_LIBDIR}"
+      - name: Sanity-check qpdk import (Python side)
+        run: uv run python -c "import qpdk; qpdk.PDK.activate(); print('qpdk activated:', qpdk.PDK.name)"
+      - uses: matlab-actions/setup-matlab@a0180c939fb1a28de13f44f7b778b912384ced1f # v3.0.1
+        with:
+          cache: true
+      - name: Sanity-check MATLAB ↔ Python bridge
+        uses: matlab-actions/run-command@2970c890bd6dfbc8ba4d640879c4c496dec4e426 # v3.1.0
+        with:
+          command: |
+            diary('/tmp/matlab_bridge.log'); diary on;
+            disp(getenv('QPDK_PYTHON'));
+            pe = pyenv('Version', getenv('QPDK_PYTHON'), 'ExecutionMode', 'OutOfProcess');
+            disp(pe);
+            py.print('python is reachable from MATLAB');
+            qpdk_mod = py.importlib.import_module('qpdk');
+            PDK = py.getattr(qpdk_mod, 'PDK');
+            PDK.activate();
+            disp(string(py.getattr(PDK, 'name')));
+            diary off;
+      - name: Run MATLAB notebook source script
+        uses: matlab-actions/run-command@2970c890bd6dfbc8ba4d640879c4c496dec4e426 # v3.1.0
+        with:
+          command: |
+            diary('/tmp/matlab_script.log'); diary on;
+            addpath('notebooks/src');
+            matlab_integration;
+            diary off;
+      - name: Print MATLAB diary on failure
+        if: failure()
+        run: |
+          echo "=== /tmp/matlab_bridge.log ==="
+          cat /tmp/matlab_bridge.log 2>/dev/null || echo "(missing)"
+          echo "=== /tmp/matlab_script.log ==="
+          cat /tmp/matlab_script.log 2>/dev/null || echo "(missing)"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: matlab-notebook-artifacts
+          path: |
+            /tmp/qpdk_matlab_demo/**
+            /tmp/matlab_bridge.log
+            /tmp/matlab_script.log
+          if-no-files-found: warn
