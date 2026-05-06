@@ -260,7 +260,7 @@ def replace_image_paths(app, docname, source):
     source[0] = source[0].replace("docs/_static/images/", "/_static/images/")
 
 
-def fix_notebook_edit_url(app, pagename, templatename, context, doctree):
+def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
     """Fix *Edit on GitHub* URLs for notebook pages.
 
     Notebooks are copied from ``notebooks/src/`` into ``docs/notebooks/`` during
