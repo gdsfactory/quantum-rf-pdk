@@ -114,7 +114,7 @@ def meander_inductor_inductance_analytical(
         Total inductance in Henries.
     """
     if thickness is None:
-        _h, thickness, _ep_r = get_cpw_substrate_params()
+        _h, thickness, _ep_r, _tand = get_cpw_substrate_params()
 
     # Convert to SI (meters)
     l_m = turn_length * 1e-6
