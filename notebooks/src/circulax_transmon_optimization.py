@@ -85,7 +85,7 @@ from matplotlib import pyplot as plt
 
 from qpdk import PDK
 from qpdk.cells.transmon import double_pad_transmon
-from qpdk.models.constants import Φ_0, e, h
+from qpdk.models.constants import Φ_0, e, h, ε_0
 
 jax.config.update("jax_enable_x64", True)
 PDK.activate()
@@ -128,7 +128,7 @@ from circulax.solvers import setup_harmonic_balance, setup_transient
 # `phi` representing the junction phase (flux / :math:`\Phi_0 \cdot 2\pi`).
 
 # %%
-PHI_0 = Φ_0  # magnetic flux quantum ≈ 2.068e-15 Wb
+FLUX_PER_RAD = Φ_0 / (2.0 * jnp.pi)  # Φ₀/(2π) — flux per unit phase
 
 
 @component(ports=("p1", "p2"), states=("phi",))
@@ -164,11 +164,9 @@ def JosephsonJunction(  # noqa: N802
 
     # Flux-phase relation: V = (Φ₀/2π) * d(phi)/dt
     # In DAE form: f['phi'] = V, q['phi'] = -(Φ₀/2π) * phi
-    flux_per_rad = PHI_0 / (2.0 * jnp.pi)
-
     return (
         {"p1": i_total, "p2": -i_total, "phi": v_drop},
-        {"phi": -flux_per_rad * s.phi},
+        {"phi": -FLUX_PER_RAD * s.phi},
     )
 
 
@@ -186,8 +184,7 @@ def JosephsonJunction(  # noqa: N802
 #   density (typically :math:`\sim 100\;\text{A/cm}^2` for Al/AlOx/Al junctions).
 
 # %%
-# Physical constants
-ε_0 = 8.854e-12  # F/m
+# Substrate properties
 ε_r_substrate = 11.45  # silicon relative permittivity
 
 
@@ -229,7 +226,7 @@ print(f"Critical current:  Ic = {params['Ic'] * 1e9:.2f} nA")
 
 # Derived quantum parameters
 E_C = e**2 / (2 * params["Cs"])
-E_J = PHI_0 * params["Ic"] / (2 * jnp.pi)
+E_J = Φ_0 * params["Ic"] / (2 * jnp.pi)
 print(f"\nCharging energy:  E_C/h = {E_C / h / 1e9:.3f} GHz")
 print(f"Josephson energy: E_J/h = {E_J / h / 1e9:.3f} GHz")
 print(f"E_J / E_C = {E_J / E_C:.1f} (transmon regime: >> 1)")
@@ -406,7 +403,7 @@ def transmon_frequency(Ic: float, Cs: float) -> float:
     Returns:
         Transition frequency in Hz.
     """
-    E_J_val = PHI_0 * Ic / (2.0 * jnp.pi)
+    E_J_val = Φ_0 * Ic / (2.0 * jnp.pi)
     E_C_val = e**2 / (2.0 * Cs)
     # Transmon frequency: f01 ≈ (√(8 E_J E_C) - E_C) / h
     return (jnp.sqrt(8.0 * E_J_val * E_C_val) - E_C_val) / h
