@@ -8,7 +8,6 @@
 #       jupytext_version: 1.17.3
 # ---
 
-# ruff: noqa: E402
 
 # %% [markdown]
 # # Transmon Qubit Design with NetKet

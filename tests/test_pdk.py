@@ -5,7 +5,7 @@ from __future__ import annotations
 import pathlib
 import sys
 from collections.abc import Mapping
-from typing import Any, cast, overload
+from typing import Any, cast
 
 if sys.version_info >= (3, 13):
     from typing import TypeIs
@@ -93,32 +93,6 @@ def test_cell_in_pdk(name):
     instances1 = instances_without_info(net1)
     instances2 = instances_without_info(net2)
     assert instances1 == instances2
-
-
-type NormalizedValue = (
-    dict[Any, "NormalizedValue"]
-    | list["NormalizedValue"]
-    | int
-    | float
-    | str
-    | bool
-    | Any
-    | None
-)
-
-
-@overload
-def normalize_numeric_types[K, V](data: Mapping[K, V]) -> dict[K, NormalizedValue]: ...
-@overload
-def normalize_numeric_types(
-    data: list[Any] | tuple[Any, ...] | np.ndarray,
-) -> list[NormalizedValue]: ...
-@overload
-def normalize_numeric_types(data: float | np.floating) -> int | float: ...
-@overload
-def normalize_numeric_types(data: np.integer) -> int: ...
-@overload
-def normalize_numeric_types[T](data: T) -> T: ...
 
 
 def normalize_numeric_types(data: Any) -> Any:

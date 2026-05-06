@@ -70,7 +70,7 @@ def discover_test_suites() -> list[type[BaseCompareToQucs]]:
         List of test suite classes that inherit from :class:`~BaseCompareToQucs`.
     """
     # Import the module to get all classes
-    from models import test_compare_to_qucs  # noqa: PLC0415
+    from models import test_compare_to_qucs
 
     test_suites = []
 

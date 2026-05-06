@@ -1,6 +1,7 @@
 """Model definitions for qpdk."""
 
-# ruff: noqa: E402
+# ruff: noqa: RUF067
+# sax.set_port_naming_strategy must be called before importing models that use it.
 
 import jax
 import sax

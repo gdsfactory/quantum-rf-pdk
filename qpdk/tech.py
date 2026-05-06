@@ -1,7 +1,5 @@
 """Technology definitions."""
 
-# ruff: noqa: T201
-
 from collections.abc import Callable, Generator, Sequence
 from functools import cache, partial, wraps
 from typing import Any
@@ -518,10 +516,10 @@ if __name__ == "__main__":
     LAYER_VIEWS = LayerViews(PATH.lyp_yaml)
     # De-nest layers
     LAYERS_ACCORDING_TO_YAML = denest_layerviews_to_layer_tuples(LAYER_VIEWS)
-    print("LAYERS_ACCORDING_TO_YAML = {")
+    print("LAYERS_ACCORDING_TO_YAML = {")  # noqa: T201
     for yaml_layer_name, yaml_layer_tuple in LAYERS_ACCORDING_TO_YAML.items():
-        print(f"\t{yaml_layer_name}: Layer = {yaml_layer_tuple}")
-    print("}")
+        print(f"\t{yaml_layer_name}: Layer = {yaml_layer_tuple}")  # noqa: T201
+    print("}")  # noqa: T201
 
     klayout_tech = KLayoutTechnology(
         name="qpdk",

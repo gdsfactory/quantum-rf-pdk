@@ -14,7 +14,6 @@ ADDITIVE_LAYERS = {
 
 
 def test_apply_additive_metals_m1_m2():
-
     PDK.activate()
 
     c = Component()

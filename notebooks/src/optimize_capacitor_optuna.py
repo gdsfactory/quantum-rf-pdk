@@ -239,7 +239,7 @@ def _run_capacitive_simulation(
     Returns:
         The simulated capacitance in femtofarads.
     """
-    from gplugins.palace import run_capacitive_simulation_palace  # noqa: PLC0415
+    from gplugins.palace import run_capacitive_simulation_palace
 
     config = _setup_palace_simulation(simulation_folder=simulation_folder)
     results = run_capacitive_simulation_palace(component, n_processes=4, **config)
