@@ -265,7 +265,7 @@ ignore = [
   "RUF001",  # ambiguous unicode characters (incl. lots of math)
   "RUF002",  # ambiguous unicode characters (incl. docstring greek letters)
   "RUF003",  # -||- but for comments
-  # "RUF067",  # non-empty-init-module (not yet available in ruff 0.12)
+  "RUF067",  # non-empty-init-module
   "PLR2004",  # magic-value-comparison
   "PLR0913",  # too-many-arguments
   "PLR0914",  # too-many-locals
@@ -327,16 +327,33 @@ select = [
   "C",  # flake8-comprehensions
 ]
 
-# [tool.ruff.lint.flake8-tidy-imports]
-# require-lazy not yet supported in ruff 0.12; revisit when available
+[tool.ruff.lint.flake8-tidy-imports]
+require-lazy = [
+  "trimesh",
+  "polars",
+  "pyaedt",
+  "gplugins",
+  "jaxellip",
+  "optax",
+  "optuna",
+  "sax",
+  "sympy",
+  "pandas",
+  "netket",
+  "flax",
+  "pymablock",
+  "qutip-jax",
+  "qutip-qip",
+  "scqubits",
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
-"notebooks/**/*.py" = ["D100", "T201", "E402", "S603", "PLC0415"]
+"notebooks/**/*.py" = ["D100", "T201"]
 "qpdk/cells/__init__.py" = ["F403"]
-"qpdk/models/__init__.py" = ["F403", "E402"]
+"qpdk/models/__init__.py" = ["F403"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",

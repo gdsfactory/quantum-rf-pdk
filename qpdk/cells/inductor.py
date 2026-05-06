@@ -89,15 +89,12 @@ def meander_inductor(
     # For CPW-like structures, we assume a pitch that allows for non-overlapping etches
     # i.e. pitch = width + 2 * gap, which means wire_gap = 2 * etch_width
     # If no etch section is found, we use a default gap equal to the wire width
-    gap: float = (
-        wire_gap
-        if wire_gap is not None
-        else (2 * float(etch_section.width) if etch_section is not None else wire_width)
-    )
+    if wire_gap is None:
+        wire_gap = 2 * etch_section.width if etch_section is not None else wire_width
 
     c = Component()
-    pitch = wire_width + gap
-    total_height = n_turns * wire_width + max(0, n_turns - 1) * gap
+    pitch = wire_width + wire_gap
+    total_height = n_turns * wire_width + max(0, n_turns - 1) * wire_gap
 
     for i in range(n_turns):
         y0 = i * pitch
@@ -189,7 +186,7 @@ def meander_inductor(
 
     c.move((-turn_length / 2, -total_height / 2))
 
-    total_wire_length = n_turns * turn_length + max(0, n_turns - 1) * gap
+    total_wire_length = n_turns * turn_length + max(0, n_turns - 1) * wire_gap
     c.info["total_wire_length"] = total_wire_length
     c.info["n_squares"] = total_wire_length / wire_width
     c.info["cross_section"] = xs.name

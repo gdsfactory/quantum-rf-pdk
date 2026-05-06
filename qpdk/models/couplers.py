@@ -1,7 +1,7 @@
 """Coupler models."""
 
 from functools import partial
-from typing import Any, cast
+from typing import cast
 
 import gdsfactory as gf
 import jax
@@ -239,8 +239,7 @@ if __name__ == "__main__":
     )
 
     # Broadcast to compute total capacitance for all lengths and gaps (shape: (6, 1000))
-    c_pul_array = cast(Any, c_pul)
-    capacitances = c_pul_array[:, None] * lengths[None, :] * 1e-6 * 1e15  # fF
+    capacitances = c_pul[:, None] * lengths[None, :] * 1e-6 * 1e15  # Convert to fF
 
     for i, gap in enumerate(gaps):
         plt.plot(lengths, capacitances[i], label=f"gap = {gap:.1f} µm")
