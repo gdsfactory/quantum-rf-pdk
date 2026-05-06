@@ -126,6 +126,8 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
+- :doc:`notebooks/empro_driven_capacitor` — Driven-modal S-parameter simulation of an
+  interdigital capacitor in Keysight EMPro.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
@@ -258,6 +260,9 @@ primary tooling lives in another environment.
     - - :doc:`notebooks/hfss_driven_capacitor`
       - FEM electromagnetics
       - Ansys HFSS, PyAEDT
+    - - :doc:`notebooks/empro_driven_capacitor`
+      - FEM electromagnetics
+      - Keysight EMPro
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
