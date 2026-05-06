@@ -133,27 +133,37 @@ FLUX_PER_RAD = Φ_0 / (2.0 * jnp.pi)  # Φ₀/(2π) — flux per unit phase
 
 @component(ports=("p1", "p2"), states=("phi",))
 def JosephsonJunction(  # noqa: N802
-    signals: Signals, s: States, Ic: float = 50e-9, R_sub: float = 1e6
+    signals: Signals,
+    s: States,
+    Ic: float = 50e-9,
+    R_sub: float = 1e6,
+    EJ2_EJ1_ratio: float = 0.0,
 ) -> tuple[dict, dict]:
-    """Josephson junction with sinusoidal current-phase relation.
+    """Josephson junction with multi-harmonic current-phase relation.
 
     The junction is modelled in the flux formulation:
     - The voltage across the junction equals d(flux)/dt, captured by the
       charge (storage) equation: q['phi'] = -(Φ₀/(2π)) * phi.
-    - The supercurrent is I = Ic * sin(phi), entered as a flow equation.
+    - The supercurrent is I = Ic * [sin(phi) + 2 * (EJ2/EJ1) * sin(2*phi)],
+      accounting for higher-order harmonics in inhomogeneous tunnel barriers
+      (Willsch et al. 2023).
     - A large parallel sub-gap resistance provides DC bias stability.
 
     Args:
         signals: Port voltages.
         s: Internal states; ``s.phi`` is the gauge-invariant phase.
-        Ic: Critical current in amperes.
+        Ic: Critical current (1st harmonic) in amperes.
         R_sub: Sub-gap (quasi-particle) resistance in ohms.
+        EJ2_EJ1_ratio: Ratio of 2nd to 1st Josephson harmonic energy.
+            Typically -0.02 to -0.11 for AlOx junctions.
 
     Returns:
         Tuple of (flow_dict, charge_dict) for the DAE formulation.
     """
-    # Supercurrent: I = Ic * sin(phi)
-    i_jj = Ic * jnp.sin(s.phi)
+    # Supercurrent with 2nd harmonic correction
+    # I(phi) = (2e/hbar) * [EJ1 * sin(phi) + 2 * EJ2 * sin(2*phi)]
+    # Ic = (2e/hbar) * EJ1
+    i_jj = Ic * (jnp.sin(s.phi) + 2.0 * EJ2_EJ1_ratio * jnp.sin(2.0 * s.phi))
 
     # Small resistive shunt for numerical stability (sub-gap resistance)
     v_drop = signals.p1 - signals.p2
@@ -184,6 +194,8 @@ def JosephsonJunction(  # noqa: N802
 #   density (typically :math:`\sim 100\;\text{A/cm}^2` for Al/AlOx/Al junctions).
 
 # %%
+from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
+
 # Substrate properties
 ε_r_substrate = 11.45  # silicon relative permittivity
 
@@ -194,8 +206,9 @@ def layout_to_circuit_params(
     pad_gap_um: float = 15.0,
     jj_area_um2: float = 0.04,
     Jc_A_per_cm2: float = 100.0,
+    EJ2_EJ1_ratio: float = -0.05,
 ) -> dict:
-    """Convert layout dimensions to circuit parameters.
+    """Convert layout dimensions to circuit parameters using accurate analytical models.
 
     Args:
         pad_width_um: Capacitor pad width in μm.
@@ -203,20 +216,24 @@ def layout_to_circuit_params(
         pad_gap_um: Gap between pads in μm.
         jj_area_um2: Josephson junction area in μm².
         Jc_A_per_cm2: Critical current density in A/cm².
+        EJ2_EJ1_ratio: Ratio of 2nd to 1st Josephson harmonic energy.
 
     Returns:
-        Dictionary with Cs (shunt capacitance) and Ic (critical current).
+        Dictionary with Cs (shunt capacitance), Ic (critical current), and EJ2_ratio.
     """
-    # Shunt capacitance (parallel-plate estimate for two pads)
-    pad_area_m2 = (pad_width_um * 1e-6) * (pad_height_um * 1e-6)
-    gap_m = pad_gap_um * 1e-6
-    Cs = ε_0 * ε_r_substrate * pad_area_m2 / gap_m
+    # Shunt capacitance using conformal mapping for coplanar pads
+    Cs = plate_capacitor_capacitance_analytical(
+        length=pad_height_um,
+        width=pad_width_um,
+        gap=pad_gap_um,
+        ep_r=ε_r_substrate,
+    )
 
     # Critical current from JJ area
     jj_area_cm2 = jj_area_um2 * 1e-8  # μm² to cm²
     Ic = Jc_A_per_cm2 * jj_area_cm2
 
-    return {"Cs": Cs, "Ic": Ic}
+    return {"Cs": Cs, "Ic": Ic, "EJ2_ratio": EJ2_EJ1_ratio}
 
 
 # Example: default transmon layout
@@ -258,12 +275,13 @@ V_drive = 1e-6  # 1 μV drive amplitude (weak probe)
 f_drive = f_target  # drive at target frequency
 
 
-def build_transmon_netlist(Cs: float, Ic: float) -> dict:
+def build_transmon_netlist(Cs: float, Ic: float, EJ2_ratio: float = 0.0) -> dict:
     """Build a driven transmon circuit netlist.
 
     Args:
         Cs: Shunt capacitance in farads.
         Ic: Junction critical current in amperes.
+        EJ2_ratio: Ratio of 2nd to 1st Josephson harmonic energy.
 
     Returns:
         Circulax-compatible netlist dictionary.
@@ -281,7 +299,7 @@ def build_transmon_netlist(Cs: float, Ic: float) -> dict:
             },
             "JJ1": {
                 "component": "josephson_junction",
-                "settings": {"Ic": Ic, "R_sub": 1e6},
+                "settings": {"Ic": Ic, "R_sub": 1e6, "EJ2_EJ1_ratio": EJ2_ratio},
             },
             "Cs1": {
                 "component": "capacitor",
@@ -371,6 +389,7 @@ print("\nJunction node voltage harmonics (first 5):")
 for k in range(min(5, len(V_harmonics))):
     print(f"  Harmonic {k}: |V_{k}| = {float(V_harmonics[k]):.4e} V")
 
+
 # %% [markdown]
 # ### 1.7 Gradient-Based Optimization
 #
@@ -388,27 +407,8 @@ for k in range(min(5, len(V_harmonics))):
 #
 # where :math:`E_J = \Phi_0 I_c/(2\pi)` and :math:`E_C = e^2/(2C_\Sigma)`.
 
+
 # %%
-
-
-def transmon_frequency(Ic: float, Cs: float) -> float:
-    """Compute approximate transmon transition frequency.
-
-    Uses the standard expression from Koch et al. (2007).
-
-    Args:
-        Ic: Critical current in amperes.
-        Cs: Total shunt capacitance in farads.
-
-    Returns:
-        Transition frequency in Hz.
-    """
-    E_J_val = Φ_0 * Ic / (2.0 * jnp.pi)
-    E_C_val = e**2 / (2.0 * Cs)
-    # Transmon frequency: f01 ≈ (√(8 E_J E_C) - E_C) / h
-    return (jnp.sqrt(8.0 * E_J_val * E_C_val) - E_C_val) / h
-
-
 def transmon_anharmonicity(Ic: float, Cs: float) -> float:  # noqa: ARG001
     """Compute transmon anharmonicity α ≈ -E_C/ℏ.
 
@@ -423,39 +423,70 @@ def transmon_anharmonicity(Ic: float, Cs: float) -> float:  # noqa: ARG001
     return -E_C_val / h
 
 
-def loss_fn(params_vec: jnp.ndarray) -> float:
-    """Loss function: squared error from target frequency and anharmonicity.
+def transmon_frequency(Ic: float, Cs: float) -> float:
+    """Compute transmon frequency f01 ≈ (sqrt(8*Ej*Ec) - Ec) / h.
+
+    Args:
+        Ic: Critical current in amperes.
+        Cs: Total shunt capacitance in farads.
+
+    Returns:
+        Transition frequency in Hz.
+    """
+    E_C_val = e**2 / (2.0 * Cs)
+    E_J_val = Φ_0 * Ic / (2.0 * jnp.pi)
+    return (jnp.sqrt(8.0 * E_J_val * E_C_val) - E_C_val) / h
+
+
+def hb_loss_fn(params_vec: jnp.ndarray) -> float:
+    """Loss function: squared error from target frequency derived from HB simulation.
 
     Args:
         params_vec: Array [log(Ic), log(Cs)] (log-space for better conditioning).
 
     Returns:
-        Scalar loss value.
+        Scalar loss value based on the simulated 1st harmonic voltage.
     """
     Ic = jnp.exp(params_vec[0])
     Cs = jnp.exp(params_vec[1])
 
-    f01 = transmon_frequency(Ic, Cs)
-    alpha = transmon_anharmonicity(Ic, Cs)
+    # Rebuild netlist with current parameters
+    net = build_transmon_netlist(Cs, Ic, EJ2_ratio=params["EJ2_ratio"])
+    grps, n_vars, pmap = compile_netlist(net, models)
 
-    # Normalized squared errors
-    freq_error = ((f01 - f_target) / f_target) ** 2
+    # We need a custom DC solver step here inside the JIT-able loss fn
+    # For a simple LC circuit with no DC drive, the DC operating point is exactly zero
+    y_dc_current = jnp.zeros(n_vars)
+
+    # Set up harmonic balance at the target frequency
+    # We drive at f_target, so the response at the 1st harmonic should be maximized
+    # if the circuit is perfectly resonant at f_target.
+    # To formulate this as a minimization, we penalize the inverse of the response.
+    run_hb_current = setup_harmonic_balance(
+        grps, n_vars, freq=f_target, num_harmonics=3
+    )
+
+    _, y_freq_current = run_hb_current(y_dc_current)
+
+    # Extract the 1st harmonic voltage magnitude at the junction node
+    jj_node_idx = pmap.get("JJ1,p1", 0)
+    V_1st_harmonic = jnp.abs(y_freq_current[1, jj_node_idx])
+
+    # Loss is inversely proportional to the resonance amplitude at the target frequency
+    # We add a small epsilon to avoid division by zero, and a penalty for anharmonicity
+    alpha = transmon_anharmonicity(Ic, Cs)
     alpha_error = ((alpha - alpha_target) / alpha_target) ** 2
 
-    return freq_error + alpha_error
+    resonance_loss = 1.0 / (V_1st_harmonic * 1e6 + 1e-12)  # scale V to typical uV range
+
+    return resonance_loss + 0.1 * alpha_error
 
 
 # Initial parameters in log-space
 params_init = jnp.array([jnp.log(Ic_init), jnp.log(Cs_init)])
 
 # Check initial loss
-loss_init = loss_fn(params_init)
-f01_init = transmon_frequency(Ic_init, Cs_init)
-alpha_init = transmon_anharmonicity(Ic_init, Cs_init)
-print(
-    f"Initial: f01 = {float(f01_init) / 1e9:.3f} GHz, α = {float(alpha_init) / 1e6:.1f} MHz"
-)
-print(f"Target:  f01 = {f_target / 1e9:.3f} GHz, α = {alpha_target / 1e6:.1f} MHz")
+loss_init = hb_loss_fn(params_init)
 print(f"Initial loss: {float(loss_init):.6f}")
 
 # %% [markdown]
@@ -467,7 +498,7 @@ print(f"Initial loss: {float(loss_init):.6f}")
 
 # %%
 # Set up the optimizer
-optimizer = optax.adam(learning_rate=0.05)
+optimizer = optax.adam(learning_rate=0.02)
 opt_state = optimizer.init(params_init)
 
 params_opt = params_init
@@ -475,11 +506,11 @@ losses = []
 freq_history = []
 
 # Compile the gradient function
-grad_fn = jax.jit(jax.grad(loss_fn))
-loss_jit = jax.jit(loss_fn)
+grad_fn = jax.jit(jax.grad(hb_loss_fn))
+loss_jit = jax.jit(hb_loss_fn)
 
 # Optimization loop
-n_steps = 200
+n_steps = 150
 for step in range(n_steps):
     grads = grad_fn(params_opt)
     updates, opt_state = optimizer.update(grads, opt_state)
@@ -778,7 +809,7 @@ def crosstalk_metric(log_Cm: float) -> float:
             "Cs1": {"component": "capacitor", "settings": {"C": Cs_q1}},
             "JJ2": {"component": "josephson_junction", "settings": {"Ic": Ic_q2}},
             "Cs2": {"component": "capacitor", "settings": {"C": Cs_q2}},
-            "Cm": {"component": "coupling_cap", "settings": {"Cm": float(Cm_val)}},
+            "Cm": {"component": "coupling_cap", "settings": {"Cm": Cm_val}},
         },
         "connections": {
             "GND,p1": ("Vpulse,p2", "JJ1,p2", "Cs1,p2", "JJ2,p2", "Cs2,p2"),
@@ -789,7 +820,7 @@ def crosstalk_metric(log_Cm: float) -> float:
     }
 
     grps, n_vars, pmap = compile_netlist(net, models_coupled)
-    slvr = analyze_circuit(grps, n_vars)
+    slvr = analyze_circuit(grps, n_vars, backend="dense")
     y0 = slvr.solve_dc(grps, jnp.zeros(n_vars))
 
     sim_fn = setup_transient(groups=grps, linear_strategy=slvr)
