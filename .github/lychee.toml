@@ -21,7 +21,7 @@ exclude = [
   # pyansys broken parsed URLs
   "https://.*\\.pyansys\\.com.*/n",
   "https://.*\\.pyansys\\.com.*//n",
-  # Persistent identifiers
+  # Persistent identifiers (URNs often redirect in loops; match both http and https)
   "https?://urn.fi/.*"
 ]
 

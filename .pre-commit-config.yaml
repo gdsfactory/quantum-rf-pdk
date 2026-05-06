@@ -1,9 +1,10 @@
 exclude: ^uv\.lock$
 # Hook priorities for prek parallel execution:
-# 10: Initial formatters and independent checkers (e.g., ruff check, codespell)
-# 20: Dependent formatters and linters (e.g., ruff-format, stylelint)
-# 30: Global end-of-file-fixer
-# 40: Global trailing-whitespace cleanup
+# 10: Initial formatters, independent checkers, and read-only linters.
+# 20: Primary formatters and dependent linters (must run after group 10 fixes).
+# 30: Secondary formatters and heavy type checkers (must run after primary formatting).
+# 40: Global structure checks (end-of-file-fixer).
+# 50: Global whitespace cleanup.
 repos:
   - repo: https://github.com/doplaydo/pdk-ci-workflow
     rev: d0a634bb04aa162d2be5860660e5152ba302e707
@@ -43,9 +44,9 @@ repos:
         priority: 10
         exclude: ^(conda\.recipe/meta\.yaml|conda_build/templates/.*\.yaml|docs/click/meta\.yaml|conda/meta\.yaml|conda/construct.yaml|.*\.pic\.yml|conda/constructor/Miniforge3/construct.yaml)
       - id: end-of-file-fixer
-        priority: 30
-      - id: trailing-whitespace
         priority: 40
+      - id: trailing-whitespace
+        priority: 50
       - id: detect-private-key
         priority: 10
   - repo: https://github.com/kynan/nbstripout
@@ -122,7 +123,7 @@ repos:
     rev: 0.58.0
     hooks:
       - id: pyrefly-check
-        priority: 20
+        priority: 30
         name: Pyrefly
         pass_filenames: false
         # Pre-commit may not have access to all deps.
@@ -142,7 +143,7 @@ repos:
     rev: v0.3.2
     hooks:
       - id: checkmake
-        priority: 20
+        priority: 10
         args: ['--config=.github/.checkmake.ini']
   - repo: https://github.com/EbodShojaei/bake
     rev: v1.4.6
@@ -156,14 +157,14 @@ repos:
     rev: v2.0.2
     hooks:
       - id: docstrfmt
-        priority: 20
+        priority: 30
         language_version: python3
         types: [rst]
   - repo: https://github.com/sphinx-contrib/sphinx-lint
     rev: v1.0.2
     hooks:
       - id: sphinx-lint
-        priority: 20
+        priority: 10
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.22.1
     hooks:
@@ -204,13 +205,13 @@ repos:
     rev: v1.2.0
     hooks:
       - id: matlab-reflow-comments
-        priority: 20
+        priority: 10
         args: [--line-length=100]
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
       - id: interrogate
-        priority: 20
+        priority: 30
         args: [--config=pyproject.toml]
         pass_filenames: true
         exclude: '^(?:docs/_build/.*|qpdk(?:/.*)?/__init__[.]py|notebooks/.*|docs/notebooks/[^/]+|qpdk/samples/[^/]+[.]py|tests/.*)$'
