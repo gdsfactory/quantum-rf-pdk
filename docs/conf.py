@@ -84,6 +84,7 @@ nb_execution_mode = "cache"
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
     "notebooks/matlab_integration*",
+    "notebooks/circulax*",
 ]
 nb_execution_timeout = -1
 nb_execution_allow_errors = False
