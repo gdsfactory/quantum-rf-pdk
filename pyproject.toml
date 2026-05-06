@@ -141,10 +141,10 @@ pdk = "quantum_rf"
 timeout = 300
 
 [tool.gdsfactoryplus.sim.x]
-max = 20  # 20GHz
+max = 15  # 15GHz
 min = 1  # 1GHz
 name = "f"
-num = 3000
+num = 4001
 
 [tool.gdsfactoryplus.pdk]
 name = "qpdk"

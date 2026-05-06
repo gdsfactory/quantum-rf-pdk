@@ -247,6 +247,14 @@ plt.show(block=False)
 # Before running the Monte Carlo simulation it is instructive to see how
 # $Z_0$ and $\varepsilon_{\mathrm{eff}}$ depend on the CPW
 # dimensions.
+#
+# .. note::
+#    The characteristic impedance and effective permittivity have a small
+#    imaginary part due to the substrate loss tangent
+#    ($\tan \delta \approx 2.7 \times 10^{-6}$ for high-resistivity silicon
+#    at mK temperatures {cite:p}`checchinMeasurementLowTemperatureLoss2022`).
+#    In the sensitivity plots below, we only display the **real part** of
+#    these quantities.
 
 # %%
 widths_sweep = np.linspace(6, 16, 200)
@@ -259,16 +267,16 @@ for gap_val in gaps_sweep:
     z0_vals = []
     for w in widths_sweep:
         ep, z0 = cpw_parameters(float(w), float(gap_val))
-        ep_vals.append(ep)
-        z0_vals.append(z0)
+        ep_vals.append(float(jnp.real(ep)))
+        z0_vals.append(float(jnp.real(z0)))
     ax1.plot(widths_sweep, z0_vals, label=f"gap = {gap_val:.0f} µm")
     ax2.plot(widths_sweep, ep_vals, label=f"gap = {gap_val:.0f} µm")
 
 # Nominal point
 ep_nom, z0_nom = cpw_parameters(10.0, 6.0)
-ax1.axhline(z0_nom, color="k", ls=":", lw=0.8)
+ax1.axhline(float(jnp.real(z0_nom)), color="k", ls=":", lw=0.8)
 ax1.axvline(10.0, color="k", ls=":", lw=0.8)
-ax2.axhline(ep_nom, color="k", ls=":", lw=0.8)
+ax2.axhline(float(jnp.real(ep_nom)), color="k", ls=":", lw=0.8)
 ax2.axvline(10.0, color="k", ls=":", lw=0.8)
 
 ax1.set_xlabel("Centre-conductor width [µm]")

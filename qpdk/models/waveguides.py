@@ -48,7 +48,7 @@ def straight(
         sax.SDict: S-parameters dictionary
     """
     width, gap = get_cpw_dimensions(cross_section)
-    h, t, ep_r = get_cpw_substrate_params()
+    h, t, ep_r, tand = get_cpw_substrate_params()
 
     return _sax_coplanar_waveguide(
         f=f,
@@ -58,6 +58,7 @@ def straight(
         thickness=t,
         substrate_thickness=h,
         ep_r=ep_r,
+        tand=tand,
     )
 
 

@@ -192,9 +192,9 @@ def resonator_frequency(
             width, gap = get_cpw_dimensions(cross_section)
             epsilon_eff, _z0 = cpw_parameters(width, gap)
 
-    v_p = c_0 / jnp.sqrt(epsilon_eff)
+    v_p = c_0 / jnp.sqrt(jnp.real(epsilon_eff))
     coefficient = 4 if is_quarter_wave else 2
-    return float(jnp.squeeze(v_p / (coefficient * length * 1e-6)))
+    return float(jnp.squeeze(jnp.real(v_p / (coefficient * length * 1e-6))))
 
 
 def resonator(
