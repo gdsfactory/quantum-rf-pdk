@@ -260,6 +260,47 @@ def replace_image_paths(app, docname, source):
     source[0] = source[0].replace("docs/_static/images/", "/_static/images/")
 
 
+def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
+    """Fix *Edit on GitHub* URLs for notebook pages.
+
+    Notebooks are copied from ``notebooks/src/`` into ``docs/notebooks/`` during
+    the documentation build, so Sphinx computes an edit URL pointing to
+    ``docs/notebooks/<name>.py``.  The correct source lives at
+    ``notebooks/src/<name>.py`` (or ``.m`` for the MATLAB notebook).
+
+    This handler runs after the pydata-sphinx-theme ``setup_edit_url`` hook
+    (priority > 500) and replaces ``get_edit_provider_and_url`` in the Jinja2
+    context with a function that returns the right URL for notebook pages.
+    """
+    if not pagename.startswith("notebooks/"):
+        return
+
+    nb_name = pagename[len("notebooks/") :]
+    src_root = Path(app.srcdir).parent / "notebooks" / "src"
+
+    source_rel: str | None = None
+    for ext in (".py", ".m"):
+        if (src_root / f"{nb_name}{ext}").exists():
+            source_rel = f"notebooks/src/{nb_name}{ext}"
+            break
+
+    if source_rel is None:
+        return
+
+    github_url = context.get("github_url", "https://github.com")
+    github_user = context.get("github_user", "gdsfactory")
+    github_repo = context.get("github_repo", "quantum-rf-pdk")
+    github_version = context.get("github_version", "main")
+    edit_url = (
+        f"{github_url}/{github_user}/{github_repo}/edit/{github_version}/{source_rel}"
+    )
+
+    def _get_edit_provider_and_url():
+        return "GitHub", edit_url
+
+    context["get_edit_provider_and_url"] = _get_edit_provider_and_url
+
+
 def setup(app):
     """Sphinx setup."""
     # Regex for types to shorten in the final rendered docstring fields
@@ -283,3 +324,6 @@ def setup(app):
     app.connect("autodoc-process-docstring", dollar_math_handler, priority=100)
     # We use a late priority to ensure we see the types added by autodoc
     app.connect("autodoc-process-docstring", simplify_handler, priority=999)
+    # Fix Edit on GitHub URLs for notebook pages (runs after pydata-sphinx-theme's
+    # setup_edit_url which is registered at the default priority of 500)
+    app.connect("html-page-context", fix_notebook_edit_url, priority=600)
