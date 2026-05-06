@@ -126,7 +126,7 @@ def prepare_component_for_aedt(
                 (LAYER.M2_DRAW, margin_draw),
             ],
         )
-    c = c.remove_layers(layer for layer in LAYER if str(layer).endswith("_ETCH"))
+    c = c.remove_layers(layer for layer in LAYER if str(layer).endswith("_ETCH"))  # type: ignore[attr-defined]
     c = remove_metadata_layers(c)
     c.add_ports(component.ports)
     return c
