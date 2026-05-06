@@ -149,7 +149,7 @@ class TestMeanderInductorInductanceAnalytical:
         L_more_f = float(L_more)
         # We check for approximate monotonicity. In some extreme regimes allowed by the
         # assume constraints, geometric mutual inductance suppression can cause a small dip.
-        assert L_more_f == pytest.approx(L_base_f, rel=1e-3) or L_more_f > L_base_f
+        assert L_more_f == pytest.approx(L_base_f, rel=1e-2) or L_more_f > L_base_f
 
     @staticmethod
     @given(

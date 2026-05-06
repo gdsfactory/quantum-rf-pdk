@@ -91,7 +91,8 @@ L = LAYER = LayerMapQPDK
 material_properties = {
     "vacuum": {"relative_permittivity": 1},
     "Nb": {"relative_permittivity": float("inf")},
-    "Si": {"relative_permittivity": 11.45},
+    # Loss tangent from `checchinMeasurementLowTemperatureLoss2022`
+    "Si": {"relative_permittivity": 11.45, "loss_tangent": 2.7e-6},
     "AlOx/Al": {"relative_permittivity": float("inf")},
     "TiN": {"relative_permittivity": float("inf")},
     "In": {"relative_permittivity": float("inf")},

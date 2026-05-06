@@ -22,7 +22,7 @@ exclude = [
   "https://.*\\.pyansys\\.com.*/n",
   "https://.*\\.pyansys\\.com.*//n",
   # Persistent identifiers
-  "https://urn.fi/.*"
+  "https?://urn.fi/.*"
 ]
 
 # Set a timeout
