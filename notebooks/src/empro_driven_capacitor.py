@@ -12,7 +12,34 @@
 # # EMPro Driven Modal Simulation of an Interdigital Capacitor
 #
 # This notebook demonstrates how to set up and run a driven modal (S-parameter)
-# simulation of an interdigital capacitor using Keysight EMPro Python interface.
+# simulation of an interdigital capacitor (IDC) using the Keysight EMPro Python interface.
+#
+# ## Physics of Interdigital Capacitors
+#
+# An **Interdigital Capacitor (IDC)** is a multi-finger periodic structure used to provide 
+# capacitance in planar microwave circuits. Unlike a parallel-plate capacitor, which 
+# relies on the field between two plates, an IDC utilizes the **fringing electric fields** 
+# that couple across the narrow gaps between interlocking metallic fingers.
+#
+# ### Geometric Effects
+# The total series capacitance ($C_s$) of an IDC is governed by several geometric parameters:
+# - **Number of Fingers ($n$):** Increasing the number of fingers increases the total 
+#   area for field coupling, thereby increasing capacitance.
+# - **Finger Length:** Capacitance increases linearly with the length of the fingers.
+# - **Finger Gap:** A smaller gap between fingers results in stronger fringing fields 
+#   and higher capacitance.
+# - **Finger Width:** While width affects the current distribution, its impact on 
+#   capacitance is secondary to the gap spacing.
+#
+# ### Lumped Element Model
+# At microwave frequencies, an IDC is typically represented by a **$\pi$-equivalent circuit**:
+# 1. **Series Capacitance ($C_s$):** The primary capacitance between the interdigitated fingers.
+# 2. **Shunt Parasitics ($C_{p1}, C_{p2}$):** Parasitic capacitances representing the 
+#    coupling between the fingers and the underlying substrate or adjacent ground planes.
+#
+# In a **Coplanar Waveguide (CPW)** environment, the distance between the fingers 
+# and the side ground planes can be tuned to minimize these parasitic shunt 
+# capacitances, making the IDC a high-precision component for quantum RF circuits.
 #
 # **Prerequisites:**
 # - Keysight EMPro 2026 installed (requires license)
@@ -21,6 +48,7 @@
 # **References:**
 # - Keysight EMPro Documentation (online)
 # - Interdigital Capacitor Theory: {cite:p}`leizhuAccurateCircuitModel2000`
+# - Microwave Engineering: {cite:p}`pozarMicrowaveEngineering2011`
 
 # %% [markdown]
 # ## Setup and Imports
@@ -82,6 +110,22 @@ idc_component = c
 
 # %% [markdown]
 # ## Initialize EMPro Project
+#
+# ### Driven Modal vs. Eigenmode Simulation
+#
+# In EMPro (and other FEM solvers), we typically choose between two types of analysis:
+#
+# 1. **Driven Modal Simulation:**
+#    - **Mechanism:** The structure is "driven" by external signals applied at **ports**.
+#    - **Output:** It calculates the electromagnetic fields and derives **S-parameters** ($S_{11}, S_{21}$).
+#    - **Use Case:** Used to find how a component transmits or reflects signals over a frequency sweep. This is the "standard" way to characterize components in a circuit context.
+#
+# 2. **Eigenmode Simulation:**
+#    - **Mechanism:** No ports or external sources are used. The solver finds the natural "modes" or resonances of the structure.
+#    - **Output:** It provides **Resonant Frequencies** and **Quality Factors (Q)**.
+#    - **Use Case:** Ideal for designing cavities or resonators where you want to find the intrinsic resonance without worrying about the feedlines yet.
+#
+# This notebook focuses on **Driven Modal** simulations to extract S-parameters.
 #
 # Connect to the active EMPro project and clear existing content.
 
@@ -176,6 +220,26 @@ if sim.status == "Error":
 # %% [markdown]
 # ## Example 2: Driven Modal Simulation of a CPW Resonator
 # 
+# ### Physics of CPW Resonators
+# 
+# When the physical length of a transmission line becomes comparable to the wavelength of the signal, 
+# it begins to exhibit **distributed effects**. A **Coplanar Waveguide (CPW) Resonator** is a 
+# transmission line segment that supports standing waves at specific frequencies.
+# 
+# #### Resonance and Wavelength
+# - **Quarter-Wave Resonator ($\lambda/4$):** One end is shorted and the other is open (or coupled). 
+#   Resonance occurs when the length $L \approx \lambda/4$.
+# - **Half-Wave Resonator ($\lambda/2$):** Both ends are open or both are shorted. 
+#   Resonance occurs when $L \approx \lambda/2$.
+# 
+# #### Geometry and Frequency
+# The resonant frequency ($f_r$) is determined by the length $L$ and the effective 
+# dielectric constant ($\epsilon_{eff}$) of the CPW:
+# $$ f_r = \frac{c}{4L\sqrt{\epsilon_{eff}}} \quad \text{(for } \lambda/4 \text{)} $$
+# 
+# In superconducting circuits, these resonators are often "meandered" to save space on 
+# the chip while maintaining the long physical length required for GHz frequencies.
+# 
 # Now we demonstrate importing and simulating a coplanar waveguide resonator.
 # We will create a new EMPro project for this example to keep it separate.
 
@@ -233,6 +297,32 @@ print(f"Resonator simulation queued. Status: {res_sim.status}")
 
 # %% [markdown]
 # ## Example 3: Driven Modal Simulation of a Fluxonium Qubit
+# 
+# ### Physics of the Fluxonium Qubit
+# 
+# The **Fluxonium** is a superconducting qubit that can be thought of as an "artificial atom" 
+# with high anharmonicity and robustness against noise. It consists of three primary 
+# elements in parallel:
+# 
+# 1. **Josephson Junction ($E_J$):** A nonlinear superconducting element that acts 
+#    like a "wavy" potential surface (a cosine potential). Its nonlinearity allows 
+#    for the isolation of two specific energy levels as a qubit.
+# 2. **Capacitor ($E_C$):** Represents the charging energy. In the "particle in a 
+#    potential" analogy, the capacitance acts like the **mass** of the particle.
+# 3. **Superinductor ($E_L$):** The defining feature of the fluxonium. It is a very 
+#    large inductor (often a chain of larger junctions) that "tethers" the phase 
+#    of the qubit, protecting it from random charge fluctuations (charge noise).
+# 
+# #### The Potential Energy Landscape
+# The physics is described by a potential that combines the **parabolic** profile of 
+# the inductor and the **cosine** profile of the junction. This creates a "wavy" 
+# potential well where the inductor keeps the particle confined while the junction 
+# creates local minima.
+# 
+# By applying an external magnetic flux, we can shift this potential to create 
+# distinct, unevenly spaced energy levels. This **anharmonicity** is crucial for 
+# quantum control, as it ensures that we can excite the $|0\rangle \to |1\rangle$ 
+# transition without accidentally triggering higher-order transitions.
 # 
 # Finally, let's look at an even more complex component: a Fluxonium qubit.
 # This component has inductive elements, capacitive pads, and junctions.
