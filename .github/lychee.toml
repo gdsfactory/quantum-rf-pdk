@@ -21,6 +21,8 @@ exclude = [
   # pyansys broken parsed URLs
   "https://.*\\.pyansys\\.com.*/n",
   "https://.*\\.pyansys\\.com.*//n",
+  # GitHub URLs with /n appended by lychee JSON parsing
+  "https://github.com/.*/n",
   # Persistent identifiers (URNs often redirect in loops; match both http and https)
   "https?://urn.fi/.*"
 ]
