@@ -29,7 +29,7 @@ clean:
 # Update pre-commit hooks to the latest revisions
 [group('lint')]
 update-pre:
-    @uvx prek autoupdate -j $(( {{ cpus }} / 2 + {{ cpus }} % 2 ))
+    @uvx prek autoupdate -j $(( {{ cpus }} / 2 + {{ cpus }} % 2 ))  # use half the available CPUs, rounding up
 
 # Run all pre-commit hooks on all files
 [group('lint')]
@@ -51,6 +51,7 @@ build:
 [group('build')]
 show component_name="":
     #!/usr/bin/env -S uv run python
+    import importlib
     import shutil
     import subprocess
     import sys
@@ -86,12 +87,16 @@ show component_name="":
                                 try:
                                     process.stdin.write(cell + "\n")
                                     sent_cells.add(cell)
-                                except (BrokenPipeError, ValueError): return
+                                except (BrokenPipeError, ValueError) as e:
+                                    print(f"Stopping cached component feed: {e}", file=sys.stderr)
+                                    return
                     try: process.stdin.flush()
-                    except (BrokenPipeError, ValueError): return
+                    except (BrokenPipeError, ValueError) as e:
+                        print(f"Stopping cached component feed during flush: {e}", file=sys.stderr)
+                        return
 
                 # 2. Feed fresh list in background (unbuffered)
-                list_cmd = ["uv", "run", "python", "-u", "-c", "from qpdk import PDK; print('\\n'.join(sorted(PDK.cells.keys())))"]
+                list_cmd = ["uv", "run", "python", "-u", "-c", "from {{pdk}} import PDK; print('\\n'.join(sorted(PDK.cells.keys())))"]
                 fresh_process = subprocess.Popen(list_cmd, stdout=subprocess.PIPE, text=True, stderr=subprocess.DEVNULL)
                 new_cells = []
                 if fresh_process.stdout:
@@ -140,8 +145,12 @@ show component_name="":
             sys.exit(0)
 
     import gdsfactory as gf
-    from qpdk import PDK, logger
-    from qpdk.config import PATH
+    pdk_module_name = "{{ pdk }}"
+    pdk_module = importlib.import_module(pdk_module_name)
+    pdk_config_module = importlib.import_module(f"{pdk_module_name}.config")
+    PDK = pdk_module.PDK
+    logger = pdk_module.logger
+    PATH = pdk_config_module.PATH
     PDK.activate()
     (build_dir := PATH.gds).mkdir(parents=True, exist_ok=True)
     component = gf.get_component(component_name)

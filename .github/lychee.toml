@@ -21,8 +21,8 @@ exclude = [
   # pyansys broken parsed URLs
   "https://.*\\.pyansys\\.com.*/n",
   "https://.*\\.pyansys\\.com.*//n",
-  # Persistent identifiers
-  "https://urn.fi/.*"
+  # Persistent identifiers (URNs often redirect in loops; match both http and https)
+  "https?://urn.fi/.*"
 ]
 
 # Set a timeout

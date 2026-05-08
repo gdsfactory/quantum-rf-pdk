@@ -204,7 +204,7 @@ if __name__ == "__main__":
     )  # Convert to fF
 
     for i, gap in enumerate(gaps_plate):
-        plt.plot(lengths, capacitances_plate[i], label=f"gap = {gap:.1f} µm")
+        plt.plot(lengths, capacitances_plate[i], label=f"gap = {gap:.1f} µm")  # type: ignore[index]
 
     plt.xlabel("Pad Length (µm)")
     plt.ylabel("Capacitance (fF)")

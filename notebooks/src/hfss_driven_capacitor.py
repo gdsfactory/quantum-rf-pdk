@@ -512,11 +512,6 @@ print("HFSS session closed and temporary files cleaned up")
 temp_dir_q3d = tempfile.TemporaryDirectory(suffix=".ansys_qpdk_q3d")
 project_path_q3d = Path(temp_dir_q3d.name) / "idc_q3d.aedt"
 
-
-# Create temporary directory for Q3D project
-temp_dir_q3d = tempfile.TemporaryDirectory(suffix=".ansys_qpdk_q3d")
-project_path_q3d = Path(temp_dir_q3d.name) / "idc_q3d.aedt"
-
 # Initialize Q3D Extractor
 q3d = Q3d(
     project=str(project_path_q3d),

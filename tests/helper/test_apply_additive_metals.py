@@ -14,16 +14,24 @@ ADDITIVE_LAYERS = {
 
 
 def test_apply_additive_metals_m1_m2():
-
     PDK.activate()
 
     c = Component()
     c << flipmon_with_bbox()
 
     assert ADDITIVE_LAYERS.issubset(c.layers)
+    polygons_before = c.get_polygons(by="tuple")
+    additive_polygons_before = sum(
+        len(polygons_before.get(layer, [])) for layer in ADDITIVE_LAYERS
+    )
+    assert additive_polygons_before > 0
+
     c = apply_additive_metals(c)
+
     assert not ADDITIVE_LAYERS.issubset(c.layers)
-
-
-if __name__ == "__main__":
-    test_apply_additive_metals_m1_m2()
+    polygons_after = c.get_polygons(by="tuple")
+    additive_polygons_after = sum(
+        len(polygons_after.get(layer, [])) for layer in ADDITIVE_LAYERS
+    )
+    assert additive_polygons_after == 0
+    assert sum(len(v) for v in c.get_polygons(by="tuple").values()) > 0
