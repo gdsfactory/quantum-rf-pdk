@@ -119,6 +119,7 @@ def run_josim(
             [josim_path, "-o", str(out_path), str(cir_path)],
             capture_output=True,
             text=True,
+            check=False,
         )
         if result.returncode != 0:
             msg = f"JoSIM failed:\n{result.stderr}\n{result.stdout}"
