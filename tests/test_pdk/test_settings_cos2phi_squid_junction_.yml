@@ -1,0 +1,37 @@
+info: {}
+name: cos2phi_squid_junction_JSjosephson_junction_MLA100_SLA2_5ff23dca
+ports:
+  loop_center:
+    center:
+    - 0
+    - 0
+    layer: JJ_AREA
+    name: loop_center
+    orientation: 0
+    port_type: placement
+    width: 10
+  o_bot:
+    center:
+    - 0
+    - -6
+    layer: M1_DRAW
+    name: o_bot
+    orientation: 270
+    port_type: electrical
+    width: 2
+  o_top:
+    center:
+    - 0
+    - 6
+    layer: M1_DRAW
+    name: o_top
+    orientation: 90
+    port_type: electrical
+    width: 2
+settings:
+  connection_wire_width: 2
+  junction_spec: josephson_junction
+  layer_jj_area: JJ_AREA
+  layer_metal: M1_DRAW
+  main_loop_area: 100
+  small_loop_area: 25

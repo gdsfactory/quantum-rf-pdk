@@ -1,0 +1,199 @@
+instances:
+  josephson_junction:
+    component: josephson_junction
+    info: {}
+    settings:
+      cross_section_narrow: josephson_junction_cross_section_narrow
+      cross_section_wide: josephson_junction_cross_section_wide
+      junction_overlap_displacement: 1.8
+      layer_patch: JJ_PATCH
+      narrow_straight_length: 0.5
+      size_patch:
+      - 1.5
+      - 1
+      taper_length: 4.7
+      wide_straight_length: 8.3
+  josephson_junction2:
+    component: josephson_junction
+    info: {}
+    settings:
+      cross_section_narrow: josephson_junction_cross_section_narrow
+      cross_section_wide: josephson_junction_cross_section_wide
+      junction_overlap_displacement: 1.8
+      layer_patch: JJ_PATCH
+      narrow_straight_length: 0.5
+      size_patch:
+      - 1.5
+      - 1
+      taper_length: 4.7
+      wide_straight_length: 8.3
+  josephson_junction3:
+    component: josephson_junction
+    info: {}
+    settings:
+      cross_section_narrow: josephson_junction_cross_section_narrow
+      cross_section_wide: josephson_junction_cross_section_wide
+      junction_overlap_displacement: 1.8
+      layer_patch: JJ_PATCH
+      narrow_straight_length: 0.5
+      size_patch:
+      - 1.5
+      - 1
+      taper_length: 4.7
+      wide_straight_length: 8.3
+  josephson_junction4:
+    component: josephson_junction
+    info: {}
+    settings:
+      cross_section_narrow: josephson_junction_cross_section_narrow
+      cross_section_wide: josephson_junction_cross_section_wide
+      junction_overlap_displacement: 1.8
+      layer_patch: JJ_PATCH
+      narrow_straight_length: 0.5
+      size_patch:
+      - 1.5
+      - 1
+      taper_length: 4.7
+      wide_straight_length: 8.3
+  josephson_junction5:
+    component: josephson_junction
+    info: {}
+    settings:
+      cross_section_narrow: josephson_junction_cross_section_narrow
+      cross_section_wide: josephson_junction_cross_section_wide
+      junction_overlap_displacement: 1.8
+      layer_patch: JJ_PATCH
+      narrow_straight_length: 0.5
+      size_patch:
+      - 1.5
+      - 1
+      taper_length: 4.7
+      wide_straight_length: 8.3
+  rectangle:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 10
+      - 2
+  rectangle2:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 10
+      - 2
+  rectangle3:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: JJ_AREA
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 24.625
+      - 24.625
+  rectangle4:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 5
+      - 2
+  rectangle5:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 5
+      - 2
+nets: []
+placements:
+  josephson_junction:
+    mirror: false
+    rotation: 45
+    x: -14.546
+    y: -4.251
+  josephson_junction2:
+    mirror: false
+    rotation: 45
+    x: -14.546
+    y: 0.749
+  josephson_junction3:
+    mirror: false
+    rotation: 45
+    x: -2.046
+    y: -4.251
+  josephson_junction4:
+    mirror: false
+    rotation: 45
+    x: -4.546
+    y: 0.749
+  josephson_junction5:
+    mirror: false
+    rotation: 45
+    x: -7.046
+    y: -4.251
+  rectangle:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: -5
+  rectangle2:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 5
+  rectangle3:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  rectangle4:
+    mirror: false
+    rotation: 0
+    x: 5
+    y: -5
+  rectangle5:
+    mirror: false
+    rotation: 0
+    x: 5
+    y: 0
+ports: {}

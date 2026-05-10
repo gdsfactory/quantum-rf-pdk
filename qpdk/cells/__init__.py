@@ -6,6 +6,7 @@ from .airbridge import *
 from .bump import *
 from .capacitor import *
 from .chip import *
+from .cos2phi_transmon import *
 from .derived import *
 from .fluxonium import *
 from .inductor import *

@@ -1,0 +1,59 @@
+instances:
+  cos2phi_squid_junction:
+    component: cos2phi_squid_junction
+    info: {}
+    settings:
+      connection_wire_width: 2
+      junction_spec: josephson_junction
+      layer_jj_area: JJ_AREA
+      layer_metal: M1_DRAW
+      main_loop_area: 100
+      small_loop_area: 25
+  rectangle:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 250
+      - 400
+  rectangle2:
+    component: rectangle
+    info: {}
+    settings:
+      centered: false
+      layer: M1_DRAW
+      port_orientations:
+      - 180
+      - 90
+      - 0
+      - -90
+      port_type: electrical
+      size:
+      - 250
+      - 400
+nets: []
+placements:
+  cos2phi_squid_junction:
+    mirror: false
+    rotation: 0
+    x: -1.25
+    y: 0.001
+  rectangle:
+    mirror: false
+    rotation: 0
+    x: -265
+    y: -200
+  rectangle2:
+    mirror: false
+    rotation: 0
+    x: 15
+    y: -200
+ports: {}

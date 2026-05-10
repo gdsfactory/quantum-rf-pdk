@@ -1,0 +1,59 @@
+info:
+  qubit_type: cos2phi_transmon
+name: cos2phi_transmon_PS250_400_PG30_JSjosephson_junction_JD_50fd7427
+ports:
+  junction:
+    center:
+    - 0
+    - 0
+    layer: JJ_AREA
+    name: junction
+    orientation: 90
+    port_type: placement
+    width: 25.684
+  left_pad:
+    center:
+    - -265
+    - 0
+    layer: M1_DRAW
+    name: left_pad
+    orientation: 180
+    port_type: optical
+    width: 400
+  left_pad_inner:
+    center:
+    - -15
+    - 0
+    layer: M1_DRAW
+    name: left_pad_inner
+    orientation: 0
+    port_type: placement
+    width: 400
+  right_pad:
+    center:
+    - 265
+    - 0
+    layer: M1_DRAW
+    name: right_pad
+    orientation: 0
+    port_type: optical
+    width: 400
+  right_pad_inner:
+    center:
+    - 15
+    - 0
+    layer: M1_DRAW
+    name: right_pad_inner
+    orientation: 180
+    port_type: placement
+    width: 400
+settings:
+  connection_wire_width: 2
+  junction_spec: josephson_junction
+  layer_metal: M1_DRAW
+  main_loop_area: 100
+  pad_gap: 30
+  pad_size:
+  - 250
+  - 400
+  small_loop_area: 25
