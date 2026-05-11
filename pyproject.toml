@@ -135,7 +135,14 @@ exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
 
 [tool.elvis]
 short-layers = [[1, 0], [31, 0], [2, 0], [30, 0], [10, 0]]
-connected-layers = [[[1, 0], [2, 0]]]
+connected-layers = [
+  [[1, 0], [31, 0]],
+  [[31, 0], [2, 0]],
+  [[1, 0], [30, 0]],
+  [[30, 0], [2, 0]],
+  [[1, 0], [10, 0]],
+  [[2, 0], [10, 0]],
+]
 
 [tool.gdsfactoryplus]
 name = "qpdk"
