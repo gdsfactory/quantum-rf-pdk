@@ -1,5 +1,7 @@
 """Generic Models."""
 
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 import sax
@@ -129,7 +131,7 @@ open = electrical_open  # noqa: A001
 short_2_port = electrical_short_2_port
 
 
-@jax.jit(static_argnames=["grounded"])
+@partial(jax.jit, static_argnames=["grounded"])
 def lc_resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
@@ -222,7 +224,7 @@ def lc_resonator(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
-@jax.jit(static_argnames=["grounded"])
+@partial(jax.jit, static_argnames=["grounded"])
 def lc_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 100e-15,
