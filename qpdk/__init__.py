@@ -34,7 +34,6 @@ except ImportError as e:
     )
     _models = {}
 
-# _models = get_models()
 _cells = get_cells(cells)
 _cross_sections = get_cross_sections(tech)
 
@@ -45,7 +44,7 @@ def get_pdk() -> Pdk:
     return Pdk(
         name="qpdk",
         cells=_cells,
-        cross_sections=_cross_sections,  # type: ignore
+        cross_sections=_cross_sections,  # type: ignore[arg-type]
         layers=LAYER,
         layer_stack=LAYER_STACK,
         layer_views=LAYER_VIEWS,
