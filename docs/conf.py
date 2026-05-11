@@ -132,10 +132,15 @@ bibtex_bibfiles = ["bibliography.bib"]
 
 # -- HTML output --------------------------------------------------------------
 html_theme = "pydata_sphinx_theme"
-html_logo = "logo.png"
+html_favicon = "_static/favicon.svg"
 html_show_copyright = False
 templates_path = ["templates"]
 html_theme_options = {
+    "logo": {
+        "image_light": "_static/qpdk_mark.svg",
+        "image_dark": "_static/qpdk_mark_dark.svg",
+        "text": "QPDK",
+    },
     "use_edit_page_button": True,
     "header_links_before_dropdown": 4,
     "secondary_sidebar_items": [

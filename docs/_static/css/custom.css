@@ -1,16 +1,122 @@
-/* See https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html#theme-variables-and-css */
+/* QPDK — pydata-sphinx-theme overrides
+ * See https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html
+ */
 
 @import url("https://fonts.cdnfonts.com/css/code-new-roman");
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap");
 
+/* ---------------------------------------------------------------------------
+ * Brand tokens
+ * `--qpdk-accent-bright` is a lifted variant used for dark mode and hover.
+ * ------------------------------------------------------------------------- */
+:root {
+  --qpdk-accent: #2a6fb5;
+  --qpdk-accent-hover: #1f5994;
+  --qpdk-accent-bright: #5e9be0;
+  --qpdk-ink: #0e1116;
+  --qpdk-paper: #f6f4ef;
+}
+
+/* ---------------------------------------------------------------------------
+ * Typography
+ * - Body in Inter (readable, neutral)
+ * - Headings use stylish Outfit
+ * - Code uses Code New Roman
+ * ------------------------------------------------------------------------- */
 html {
-  --pst-font-family-base: "Nunito", var(--pst-font-family-base-system);
-  --pst-font-family-heading: "Inter", var(--pst-font-family-base-system);
+  --pst-font-family-base: "Inter", var(--pst-font-family-base-system);
+  --pst-font-family-heading: "Outfit", var(--pst-font-family-base-system);
   --pst-font-family-monospace: "Code New Roman",
     var(--pst-font-family-monospace-system);
 }
 
-/* Hide plot download links inside gallery cards */
+/* Tighten heading tracking. Outfit benefits from negative letter-spacing at display sizes. */
+h1,
+.h1 {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+h2,
+.h2 {
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+h3,
+.h3 {
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+h4,
+h5,
+h6 {
+  letter-spacing: -0.005em;
+  font-weight: 600;
+}
+
+/* The navbar brand text ("QPDK" beside the mark) should match tighter spacing */
+.navbar-brand .title,
+.navbar-brand p {
+  font-family: "Outfit", var(--pst-font-family-base-system);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  font-size: 1.35rem;
+}
+
+/* Logo mark sizing */
+.navbar-brand img {
+  height: 1.9rem;
+  width: auto;
+  margin-right: 0.65rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Accent color — pydata-sphinx-theme uses --pst-color-primary for links,
+ * active nav items, focus rings, the announcement banner, and brand chrome.
+ * ------------------------------------------------------------------------- */
+html[data-theme="light"] {
+  --pst-color-primary: var(--qpdk-accent);
+  --pst-color-primary-bg: #e8eff8;
+  --pst-color-secondary: var(--qpdk-accent-hover);
+  --pst-color-link: var(--qpdk-accent);
+  --pst-color-link-hover: var(--qpdk-accent-hover);
+  --pst-color-accent: var(--qpdk-accent);
+  --pst-color-inline-code-links: var(--qpdk-accent);
+}
+
+html[data-theme="dark"] {
+  --pst-color-primary: var(--qpdk-accent-bright);
+  --pst-color-primary-bg: #16263e;
+  --pst-color-secondary: var(--qpdk-accent);
+  --pst-color-link: var(--qpdk-accent-bright);
+  --pst-color-link-hover: #8fb8ea;
+  --pst-color-accent: var(--qpdk-accent-bright);
+  --pst-color-inline-code-links: var(--qpdk-accent-bright);
+}
+
+/* Propagate accent colors  */
+.bd-sidebar-primary .current > a,
+.bd-sidebar-primary .current > a:hover {
+  color: var(--pst-color-primary);
+  font-weight: 600;
+}
+.bd-toc-link.active,
+nav.page-toc .toc-entry.active > a {
+  color: var(--pst-color-primary);
+  border-left-color: var(--pst-color-primary);
+}
+
+/* Code-block "copy" button + admonitions. */
+.admonition.note,
+div.admonition.note {
+  border-left-color: var(--pst-color-primary);
+}
+.admonition.note > .admonition-title {
+  background-color: var(--pst-color-primary-bg);
+}
+
+/* ---------------------------------------------------------------------------
+ * Gallery view
+ * ------------------------------------------------------------------------- */
 .gallery-card .sd-card-body p.plot-directive {
   display: none;
 }

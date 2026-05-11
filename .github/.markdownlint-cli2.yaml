@@ -1,6 +1,8 @@
 # Configuration for markdownlint-cli2
 # https://github.com/DavidAnson/markdownlint-cli2
 config:
+  # Allow inline HTML (e.g. for picture tags)
+  MD033: false
   # Increase line length limit from default 80 to 120
   MD013:
     line_length: 120
