@@ -188,6 +188,11 @@ ignore-regex = ["^test_.*"]
 omit-covered-files = true
 verbose = 2
 
+
+[tool.elvis]
+short-layers = [[1, 0], [31, 0], [2, 0], [30, 0], [10, 0]]
+connected-layers = [[[1, 0], [2, 0]]]
+
 [tool.mypy]
 strict = true
 
