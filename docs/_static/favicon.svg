@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="QPDK">
+  <title>QPDK</title>
+
+  <line x1="10" y1="14" x2="10" y2="50" stroke="#0E1116" stroke-width="6" stroke-linecap="round"></line>
+  <line x1="20" y1="14" x2="20" y2="50" stroke="#0E1116" stroke-width="6" stroke-linecap="round"></line>
+
+  <path d="M24 32 L34 32 L34 14 L46 14 L46 50 L58 50 L58 32 L62 32" fill="none" stroke="#2A6FB5" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"></path>
+</svg>

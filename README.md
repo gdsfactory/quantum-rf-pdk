@@ -1,4 +1,7 @@
-# QPDK — Superconducting Quantum RF Process Design Kit
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/_static/qpdk_logo_dark.svg">
+  <img src="docs/_static/qpdk_logo.svg" alt="QPDK — Quantum RF PDK" width="410">
+</picture>
 
 <!-- BADGES:START -->
 
