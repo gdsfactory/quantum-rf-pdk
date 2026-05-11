@@ -480,6 +480,7 @@ route_bundle = route_bundle_cpw = partial(
     bend="bend_circular",
     collision_check_layers=[LAYER.WG],
     on_collision="error",
+    sbend="bend_s",
 )
 route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     gf.routing.route_bundle_all_angle,
