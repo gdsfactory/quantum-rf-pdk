@@ -2,9 +2,9 @@
 # Custom style for QPDK documentation
 #
 # Fonts are chosen to match the Sphinx documentation theme (see docs/_static/css/custom.css):
-#   - Body text / labels / ticks: Inter  (Google Fonts, sans-serif)
+#   - Body text / labels / ticks: Inter (Google Fonts, sans-serif)
 #   - Figure titles:              Outfit (Google Fonts, sans-serif — applied via ipython_config.py)
-#   - Monospace:                  Code New Roman  (cdnfonts / codeface, OFL)
+#   - Monospace:                  Code New Roman (cdnfonts / codeface, OFL)
 
 font.family: sans-serif
 font.sans-serif: Inter, DejaVu Sans, Helvetica, Arial, sans-serif

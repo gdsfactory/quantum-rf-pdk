@@ -22,7 +22,7 @@ install-doc-fonts:
 		curl -fsSL "$(FONT_BASE)/Code%20New%20Roman-Bold.otf" -o /tmp/qpdk-fonts/CNR-Bold.otf && \
 		curl -fsSL "$(FONT_BASE)/Code%20New%20Roman-Italic.otf" -o /tmp/qpdk-fonts/CNR-Italic.otf && \
 		sudo mkdir -p /usr/local/share/fonts/qpdk && \
-		sudo cp /tmp/qpdk-fonts/*.ttf /tmp/qpdk-fonts/*.otf /usr/local/share/fonts/qpdk/ && \
+	find /tmp/qpdk-fonts -type f \( -name '*.ttf' -o -name '*.otf' \) -exec sudo cp {} /usr/local/share/fonts/qpdk/ \; && \
 		sudo fc-cache -f && rm -rf /tmp/qpdk-fonts; \
 	fi
 
