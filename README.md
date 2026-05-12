@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/_static/qpdk_logo_dark.svg">
-  <img src="docs/_static/qpdk_logo.svg" alt="QPDK — Quantum RF PDK" width="410">
+  <img src="docs/_static/qpdk_logo.svg" alt="QPDK" width="410">
 </picture>
 
 <!-- BADGES:START -->
@@ -205,8 +205,8 @@ docs/                   Sphinx documentation (HTML + PDF)
 
 ## Documentation
 
-- [Quantum RF PDK documentation (HTML)](https://gdsfactory.github.io/quantum-rf-pdk/)
-- [Quantum RF PDK documentation (PDF)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
+- [QPDK documentation (HTML)](https://gdsfactory.github.io/quantum-rf-pdk/)
+- [QPDK documentation (PDF)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 - [gdsfactory documentation](https://gdsfactory.github.io/gdsfactory/)
 
 ## Contributing

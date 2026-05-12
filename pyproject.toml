@@ -1,7 +1,7 @@
 [project]
 name = "qpdk"
 version = "0.3.7"
-description = "Quantum-RF generic PDK"
+description = "Generic QPDK"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = { file = "LICENSE" }

@@ -27,7 +27,7 @@ c.InteractiveShellApp.exec_lines = [  # noqa: F821
     # TrueType font embedding (Type 42) for PDF/PS - more compatible than Type 3
     "plt.rcParams['pdf.fonttype'] = 42",
     "plt.rcParams['ps.fonttype'] = 42",
-    # Load custom matplotlib style for quantum-rf-pdk documentation
+    # Load custom matplotlib style for QPDK documentation
     "plt.style.use('qpdk')",
     # Suppress harmless logging warnings that clutter notebook output.
     # fontTools and matplotlib emit warnings via Python's logging module (not

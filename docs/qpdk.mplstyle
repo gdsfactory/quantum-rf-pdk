@@ -1,5 +1,5 @@
-# Quantum RF PDK Matplotlib Style
-# Custom style for quantum-rf-pdk documentation
+# QPDK Matplotlib Style
+# Custom style for QPDK documentation
 
 font.family: serif
 font.serif: CMU Serif, cmr10, DejaVu Serif, Bitstream Vera Serif, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Times New Roman, Times, Palatino, Charter, serif

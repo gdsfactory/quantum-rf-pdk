@@ -3,7 +3,7 @@ This file serves as the documentation homepage.
 It includes the README.md but skips SVG badges which cannot be rendered in LaTeX/PDF.
 -->
 
-# QPDK — Superconducting Quantum RF Process Design Kit
+# QPDK
 
 ```{only} html
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
