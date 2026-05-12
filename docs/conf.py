@@ -16,7 +16,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.imgconverter",
     "sphinx.ext.intersphinx",
-    "sphinxcontrib.katex",
+    "sphinx.ext.mathjax",
     "sphinxcontrib.mermaid",
     "sphinxcontrib.svgbob",
     "sphinx_design",
@@ -88,6 +88,13 @@ myst_enable_extensions = [
     "tasklist",
     "linkify",
 ]
+
+# -- MathJax configuration ---------------------------------------------------
+mathjax4_config = {
+    "output": {
+        "font": "mathjax-fira",
+    },
+}
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
