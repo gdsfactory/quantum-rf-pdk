@@ -41,10 +41,10 @@ PDK.activate()
 # matching the Sphinx heading font (see docs/_static/css/custom.css).
 import matplotlib.axes as _ma
 _orig_title = _ma.Axes.set_title
-def _qpdk_title(self, *a, **kw):
-    kw.setdefault('fontfamily', 'Outfit')
-    kw.setdefault('fontweight', 'bold')
-    return _orig_title(self, *a, **kw)
+def _qpdk_title(self, *args, **kwargs):
+    kwargs.setdefault('fontfamily', 'Outfit')
+    kwargs.setdefault('fontweight', 'bold')
+    return _orig_title(self, *args, **kwargs)
 _ma.Axes.set_title = _qpdk_title
 del _qpdk_title, _orig_title
 """
