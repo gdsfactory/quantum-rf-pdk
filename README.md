@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/_static/qpdk_logo_dark.svg">
-  <img src="docs/_static/qpdk_logo.svg" alt="QPDK" width="410">
+  <img src="docs/_static/qpdk_logo.svg" alt="QPDK — Quantum Process Design Kit" width="410">
 </picture>
 
 <!-- BADGES:START -->
