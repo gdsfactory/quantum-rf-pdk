@@ -90,7 +90,17 @@ myst_enable_extensions = [
 ]
 
 # -- MathJax configuration ---------------------------------------------------
+# NOTE: sphinx.ext.mathjax injects `window.MathJax = {options: {processHtmlClass: ...}}`
+# as a separate <script> tag BEFORE our mathjax4_config assignment.  The second
+# assignment overwrites the first, so we must include the Sphinx-required
+# `processHtmlClass` regex here too; otherwise MathJax ignores all math that
+# lives inside `<section class="mathjax_ignore">` elements (which is every
+# section in the Sphinx HTML output when MyST is used).
 mathjax4_config = {
+    "options": {
+        # Allow MathJax to process math nodes even inside mathjax_ignore regions.
+        "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area",
+    },
     "output": {
         "font": "mathjax-fira",
     },
