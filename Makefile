@@ -1,4 +1,4 @@
-.PHONY: docs build install dev test
+.PHONY: install-doc-fonts docs build install dev test
 
 # Makefile — compatibility shim for gdsfactory PDK CI tooling
 #
@@ -9,8 +9,24 @@
 
 JUST_CMD := uvx --from rust-just just
 
-docs:
-	@if [ "$$GITHUB_ACTIONS" = "true" ]; then sudo apt-get update -y && sudo apt-get install -y fonts-cmu; fi
+# Font download URLs (Outfit from GitHub, Code New Roman from codeface; Inter via apt fonts-inter)
+FONT_BASE := https://github.com/chrissimpkins/codeface/raw/master/fonts/code-new-roman
+
+install-doc-fonts:
+	@if [ "$$GITHUB_ACTIONS" = "true" ]; then \
+		sudo apt-get update -y && sudo apt-get install -y fonts-inter && \
+		mkdir -p /tmp/qpdk-fonts && \
+		curl -fsSL "https://github.com/Outfitio/Outfit-Fonts/raw/main/fonts/ttf/Outfit-Regular.ttf" -o /tmp/qpdk-fonts/Outfit-Regular.ttf && \
+		curl -fsSL "https://github.com/Outfitio/Outfit-Fonts/raw/main/fonts/ttf/Outfit-Bold.ttf" -o /tmp/qpdk-fonts/Outfit-Bold.ttf && \
+		curl -fsSL "$(FONT_BASE)/Code%20New%20Roman-Regular.otf" -o /tmp/qpdk-fonts/CNR-Regular.otf && \
+		curl -fsSL "$(FONT_BASE)/Code%20New%20Roman-Bold.otf" -o /tmp/qpdk-fonts/CNR-Bold.otf && \
+		curl -fsSL "$(FONT_BASE)/Code%20New%20Roman-Italic.otf" -o /tmp/qpdk-fonts/CNR-Italic.otf && \
+		sudo mkdir -p /usr/local/share/fonts/qpdk && \
+	find /tmp/qpdk-fonts -type f \( -name '*.ttf' -o -name '*.otf' \) -exec sudo cp {} /usr/local/share/fonts/qpdk/ \; && \
+		sudo fc-cache -f && rm -rf /tmp/qpdk-fonts; \
+	fi
+
+docs: install-doc-fonts
 	@$(JUST_CMD) docs
 	@if [ "$$GITHUB_ACTIONS" = "true" ]; then \
 		TOKEN=$${GH_TOKEN:-$${GITHUB_TOKEN:-$$(git config --get http.https://github.com/.extraheader | cut -d ' ' -f 3 | base64 -d | cut -d ':' -f 2 2>/dev/null)}}; \

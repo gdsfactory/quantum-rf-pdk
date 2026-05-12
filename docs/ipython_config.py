@@ -19,6 +19,8 @@ c.InlineBackend.rc = {"figure.dpi": 300}  # noqa: F821
 c.InteractiveShellApp.exec_lines = [  # noqa: F821
     # Import matplotlib
     "from matplotlib import pyplot as plt",
+    # Rebuild the matplotlib font cache so newly-installed fonts are discovered
+    "import matplotlib.font_manager as _fm; _fm._load_fontmanager(try_read_cache=False)",
     # Configure matplotlib font embedding for better PDF/SVG compatibility
     # 'path' converts text to paths in SVG (more compatible, but larger files)
     "plt.rcParams['svg.fonttype'] = 'path'",
@@ -29,6 +31,16 @@ c.InteractiveShellApp.exec_lines = [  # noqa: F821
     "plt.rcParams['ps.fonttype'] = 42",
     # Load custom matplotlib style for QPDK documentation
     "plt.style.use('qpdk')",
+    # Monkey-patch Axes.set_title so figure titles use Outfit (bold) to match
+    # the Sphinx documentation heading font (see docs/_static/css/custom.css).
+    "import matplotlib.axes as _ma; _orig_title = _ma.Axes.set_title",
+    (
+        "def _qpdk_title(self, *args, **kwargs):\n"
+        "    kwargs.setdefault('fontfamily', 'Outfit')\n"
+        "    kwargs.setdefault('fontweight', 'bold')\n"
+        "    return _orig_title(self, *args, **kwargs)"
+    ),
+    "_ma.Axes.set_title = _qpdk_title; del _qpdk_title",
     # Suppress harmless logging warnings that clutter notebook output.
     # fontTools and matplotlib emit warnings via Python's logging module (not
     # the warnings module), so they must be suppressed by raising the log level.
