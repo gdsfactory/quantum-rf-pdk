@@ -11,6 +11,7 @@ JUST_CMD := uvx --from rust-just just
 
 # Font download URLs (Outfit from GitHub, Code New Roman from codeface; Inter via apt fonts-inter)
 FONT_BASE := https://github.com/chrissimpkins/codeface/raw/master/fonts/code-new-roman
+FIRA_MATH_URL := https://github.com/firamath/firamath/releases/download/v0.3.4/FiraMath-Regular.otf
 
 install-doc-fonts:
 	@if [ "$$GITHUB_ACTIONS" = "true" ]; then \
@@ -21,6 +22,7 @@ install-doc-fonts:
 		curl -fsSL "$(FONT_BASE)/Code%20New%20Roman-Regular.otf" -o /tmp/qpdk-fonts/CNR-Regular.otf && \
 		curl -fsSL "$(FONT_BASE)/Code%20New%20Roman-Bold.otf" -o /tmp/qpdk-fonts/CNR-Bold.otf && \
 		curl -fsSL "$(FONT_BASE)/Code%20New%20Roman-Italic.otf" -o /tmp/qpdk-fonts/CNR-Italic.otf && \
+		curl -fsSL "$(FIRA_MATH_URL)" -o /tmp/qpdk-fonts/FiraMath-Regular.otf && \
 		sudo mkdir -p /usr/local/share/fonts/qpdk && \
 	find /tmp/qpdk-fonts -type f \( -name '*.ttf' -o -name '*.otf' \) -exec sudo cp {} /usr/local/share/fonts/qpdk/ \; && \
 		sudo fc-cache -f && rm -rf /tmp/qpdk-fonts; \
