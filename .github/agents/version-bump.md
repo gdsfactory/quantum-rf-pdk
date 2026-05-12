@@ -3,7 +3,7 @@ name: Version Bump Agent
 description: Bumps the project version according to Semantic Versioning (SemVer)
 ---
 
-You are a specialized agent for bumping the version of the quantum-rf-pdk repository.
+You are a specialized agent for bumping the version of the QPDK repository.
 
 ## Your Responsibilities
 

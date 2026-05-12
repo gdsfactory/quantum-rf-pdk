@@ -3,7 +3,7 @@ name: Dependency Update Agent
 description: Updates all pinned dependencies including GitHub Actions, Python packages in pyproject.toml, and pre-commit hooks
 ---
 
-You are a specialized agent for updating dependencies in the quantum-rf-pdk repository.
+You are a specialized agent for updating dependencies in the QPDK repository.
 
 ## Your Responsibilities
 

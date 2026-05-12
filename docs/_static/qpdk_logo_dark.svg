@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410 100" width="410" height="100" role="img" aria-label="QPDK — Quantum RF PDK">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410 100" width="410" height="100" role="img" aria-label="QPDK">
   <title>QPDK</title>
   <line x1="42" y1="22" x2="42" y2="78" stroke="#E9E6DF" stroke-width="8" stroke-linecap="round"></line>
   <line x1="58" y1="22" x2="58" y2="78" stroke="#E9E6DF" stroke-width="8" stroke-linecap="round"></line>

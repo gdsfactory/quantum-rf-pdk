@@ -1,4 +1,4 @@
-# AI Agent Best Practices for Superconducting Quantum PDK
+# AI Agent Best Practices for QPDK
 
 This is a Python-based superconducting microwave Process Design Kit (PDK) built on gdsfactory for designing quantum
 devices and circuits. It provides components like transmons, resonators, couplers, and quantum layouts. Please follow

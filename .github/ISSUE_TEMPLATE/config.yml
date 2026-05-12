@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: 📚 Documentation
     url: https://gdsfactory.github.io/quantum-rf-pdk/
-    about: Check the quantum-rf-pdk documentation for guides and API reference
+    about: Check the QPDK documentation for guides and API reference
   - name: 💬 Discussions
     url: https://github.com/gdsfactory/quantum-rf-pdk/discussions
     about: Ask questions and discuss ideas with the community

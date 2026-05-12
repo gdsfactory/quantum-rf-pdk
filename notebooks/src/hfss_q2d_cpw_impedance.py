@@ -39,7 +39,7 @@ import sys
 if "google.colab" in sys.modules:
     import subprocess
 
-    print("Running in Google Colab. Installing quantum-rf-pdk...")
+    print("Running in Google Colab. Installing QPDK...")
     subprocess.check_call([
         sys.executable,
         "-m",
