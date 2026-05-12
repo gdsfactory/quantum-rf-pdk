@@ -68,7 +68,6 @@ jobs:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
   pages:
-    needs: build-docs-pdf
     permissions:
       actions: read
       pages: write
@@ -78,9 +77,10 @@ jobs:
       GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
       SIMCLOUD_APIKEY: ${{ secrets.SIMCLOUD_APIKEY }}
   deploy-docs:
-    needs: pages
+    needs: [build-docs-pdf, pages]
     if: ${{ github.ref == 'refs/heads/main' }}
     permissions:
+      actions: read
       pages: write
       id-token: write
     environment:
@@ -88,6 +88,24 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      - name: Download Pages artifact
+        uses: actions/download-artifact@fa0b92f8cc0b10bb8e1454a060e9c7d0023c4a2e # v4.1.8
+        with:
+          name: github-pages
+          path: combined_tmp
+      - name: Extract and combine
+        run: |
+          mkdir -p combined
+          tar -xf combined_tmp/artifact.tar -C combined
+      - name: Download PDF docs
+        uses: actions/download-artifact@fa0b92f8cc0b10bb8e1454a060e9c7d0023c4a2e # v4.1.8
+        with:
+          name: pdf-docs
+          path: combined
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: combined
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
