@@ -4,14 +4,21 @@
 # Fonts are chosen to match the Sphinx documentation theme (see docs/_static/css/custom.css):
 #   - Body text / labels / ticks: Inter (Google Fonts, sans-serif)
 #   - Figure titles:              Outfit (Google Fonts, sans-serif — applied via ipython_config.py)
+#   - Math text:                  Fira Math (https://github.com/firamath/firamath, OFL)
 #   - Monospace:                  Code New Roman (cdnfonts / codeface, OFL)
 
 font.family: sans-serif
 font.sans-serif: Inter, DejaVu Sans, Helvetica, Arial, sans-serif
 font.monospace: Code New Roman, DejaVu Sans Mono, Courier New, Courier, monospace
 
-# Use Computer Modern math fonts for consistent LaTeX-like math rendering
-mathtext.fontset: cm
+# Use Fira Math for math rendering (custom fontset, no LaTeX backend needed)
+mathtext.fontset: custom
+mathtext.rm: Fira Math
+mathtext.it: Fira Math:italic
+mathtext.bf: Fira Math:bold
+mathtext.cal: Fira Math
+mathtext.sf: Fira Math
+mathtext.fallback: cm
 axes.formatter.use_mathtext: true
 
 # Titles use Outfit bold (font family is set via monkey-patch in ipython_config.py)
