@@ -36,8 +36,8 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
+import importlib.util
 import inspect
-import sys
 
 import numpy as np
 from IPython.display import Markdown, display
@@ -45,10 +45,14 @@ from IPython.display import Markdown, display
 from qpdk import PDK
 from qpdk.config import PATH as QPDK_PATH
 
-# Add the tests directory to the path so we can import the test modules
-sys.path.insert(0, str(QPDK_PATH.tests))
-
-from models.test_compare_to_qucs import BaseCompareToQucs
+# Load the test module directly by file path (avoids sys.path manipulation)
+_spec = importlib.util.spec_from_file_location(
+    "test_compare_to_qucs",
+    QPDK_PATH.tests / "models" / "test_compare_to_qucs.py",
+)
+_test_module = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_test_module)
+BaseCompareToQucs = _test_module.BaseCompareToQucs
 
 PDK.activate()
 
@@ -69,13 +73,10 @@ def discover_test_suites() -> list[type[BaseCompareToQucs]]:
     Returns:
         List of test suite classes that inherit from :class:`~BaseCompareToQucs`.
     """
-    # Import the module to get all classes
-    from models import test_compare_to_qucs  # noqa: PLC0415
-
     test_suites = []
 
-    # Get all members of the module
-    for _name, obj in inspect.getmembers(test_compare_to_qucs):
+    # Get all members of the module (loaded via importlib above)
+    for _name, obj in inspect.getmembers(_test_module):
         # Check if it's a class
         if not inspect.isclass(obj):
             continue
