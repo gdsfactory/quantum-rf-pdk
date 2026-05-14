@@ -16,15 +16,16 @@ This project uses [uv](https://github.com/astral-sh/uv) for Python package manag
 
 Clone the repository and install the development dependencies:
 
+> [!IMPORTANT]
+> [Git LFS](https://git-lfs.github.com/) must be installed **before** cloning. This repository uses Git LFS to track
+> binary and large data files (e.g., CSV files in `tests/models/data/`). Without Git LFS, the clone will fail or those
+> files will not be downloaded correctly.
+
 ```bash
 git clone https://github.com/gdsfactory/quantum-rf-pdk.git
 cd quantum-rf-pdk
 just install
 ```
-
-> [!NOTE]
-> [Git LFS](https://git-lfs.github.com/) must be installed to run all tests locally. Some test data files (e.g., CSV
-> files in `tests/models/data/`) are tracked with Git LFS and will not be properly downloaded without it.
 
 ### KLayout Technology Installation
 
