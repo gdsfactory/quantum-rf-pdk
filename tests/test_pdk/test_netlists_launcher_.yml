@@ -24,6 +24,7 @@ instances:
     settings:
       cross_section1: launcher_cross_section_big
       cross_section2: cpw
+      exclude_layers: null
       length: 100
       linear: true
       npoints: 100

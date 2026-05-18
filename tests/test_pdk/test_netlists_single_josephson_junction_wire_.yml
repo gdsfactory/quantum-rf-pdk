@@ -53,6 +53,7 @@ instances:
     settings:
       cross_section1: josephson_junction_cross_section_wide
       cross_section2: josephson_junction_cross_section_narrow
+      exclude_layers: null
       length: 4.7
       linear: true
       npoints: 100
