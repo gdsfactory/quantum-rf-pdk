@@ -68,22 +68,12 @@ scqubits = ["scqubits"]
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
-  "jinja2",
-  "jupytext",
-  "linkify-it-py",
-  "matplotlib",
-  "myst-nb>=1.0",
-  "pydata-sphinx-theme",
-  "scipy",
-  "sphinx>=9.0",
-  "sphinx-copybutton",
-  "sphinx-design",
-  "sphinx-github-alerts>=1.0",
-  "sphinxcontrib-bibtex",
-  "sphinxcontrib-bibtex-urn",
-  "sphinxcontrib-mermaid>=2.0.1",
-  "sphinxcontrib-svgbob",
-  { include-group = "docs-models" },
+  "jupyter",
+  "mkdocs-material",
+  "mkdocs-with-pdf",
+  "nbconvert",
+  "mkdocstrings[python]>=0.27.0",
+  "zensical>=0.0.40,<0.1.0"
 ]
 docs-models = [
   "flax",

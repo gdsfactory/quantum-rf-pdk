@@ -1,0 +1,39 @@
+site_name: Generic Superconducting Quantum Process Design Kit
+docs_dir: docs
+site_dir: build/pdf
+nav:
+  - Home: index.md
+  - Reference:
+      - Changelog: changelog.md
+  - Tutorial:
+      - All Models: notebooks/all_models.md
+      - Circuit Simulation Demo: notebooks/circuit_simulation_demo.md
+      - Hfss Driven Capacitor: notebooks/hfss_driven_capacitor.md
+      - Hfss Eigenmode Resonator: notebooks/hfss_eigenmode_resonator.md
+      - Hfss Q2D Cpw Impedance: notebooks/hfss_q2d_cpw_impedance.md
+      - Jax Backend Comparison: notebooks/jax_backend_comparison.md
+      - Matlab Integration: notebooks/matlab_integration.md
+      - Model Comparison To Qucs: notebooks/model_comparison_to_qucs.md
+      - Monte Carlo Fabrication Tolerance: notebooks/monte_carlo_fabrication_tolerance.md
+      - Netket Transmon Design: notebooks/netket_transmon_design.md
+      - Optimize Capacitor Optuna: notebooks/optimize_capacitor_optuna.md
+      - Pymablock Dispersive Shift: notebooks/pymablock_dispersive_shift.md
+      - Qutip Qip Pulse Simulation: notebooks/qutip_qip_pulse_simulation.md
+      - Resonator Frequency Model: notebooks/resonator_frequency_model.md
+      - Scqubits Parameter Calculation: notebooks/scqubits_parameter_calculation.md
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_toc_entry: false
+            show_source: false
+  - with-pdf:
+      author: GDSFactory
+      cover_subtitle: Photonics Process Design Kit
+      output_path: ../../docs.pdf
+theme:
+  name: material
