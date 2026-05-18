@@ -21,7 +21,9 @@ instances:
       width: 10
   flipmon_with_bbox:
     component: flipmon_with_bbox
-    info: {}
+    info:
+      pin_names:
+        outer_ring_outside: outer_ring
     settings:
       inner_circle_radius: 60
       junction_displacement: null
@@ -37,7 +39,9 @@ instances:
       top_circle_radius: 110
   plate_capacitor_single:
     component: plate_capacitor_single
-    info: {}
+    info:
+      pin_names:
+        o1: terminal_a
     settings:
       cross_section: cpw
       etch_bbox_margin: 2

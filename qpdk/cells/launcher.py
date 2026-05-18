@@ -91,4 +91,9 @@ def launcher(
         cross_section=cross_section_big,
     )
 
+    c.info["pin_names"] = {
+        "o1": "signal",
+        "waveport": "signal",
+    }
+
     return c

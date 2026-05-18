@@ -1,4 +1,9 @@
 info:
+  pin_names:
+    left_pad: pad_a
+    left_pad_inner: pad_a
+    right_pad: pad_b
+    right_pad_inner: pad_b
   qubit_type: transmon
 name: double_pad_transmon_PS250_400_PG15_JSsquid_junction_JDN_cc5ec781
 ports:

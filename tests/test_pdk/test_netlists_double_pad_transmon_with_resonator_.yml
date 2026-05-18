@@ -21,7 +21,12 @@ instances:
       width: 10
   double_pad_transmon_with_bbox:
     component: double_pad_transmon_with_bbox
-    info: {}
+    info:
+      pin_names:
+        left_pad: pad_a
+        left_pad_inner: pad_a
+        right_pad: pad_b
+        right_pad_inner: pad_b
     settings:
       bbox_extension: 200
       junction_displacement: null
@@ -34,7 +39,9 @@ instances:
       - 400
   plate_capacitor_single:
     component: plate_capacitor_single
-    info: {}
+    info:
+      pin_names:
+        o1: terminal_a
     settings:
       cross_section: cpw
       etch_bbox_margin: 2

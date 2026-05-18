@@ -1,4 +1,6 @@
-info: {}
+info:
+  pin_names:
+    o3: signal
 name: half_circle_coupler_R50_A180_EL10_CScpw_ESL20_OETrue
 ports:
   anchor:

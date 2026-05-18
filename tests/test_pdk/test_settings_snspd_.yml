@@ -1,6 +1,9 @@
 info:
   area: 80
   num_squares: 750
+  pin_names:
+    e1: terminal_a
+    e2: terminal_b
   xsize: 10
   ysize: 8
 name: snspd_WW0p2_WP0p6_S10_8_NSNone_TR4_TSSFalse_LNbTiN_PTelectrical

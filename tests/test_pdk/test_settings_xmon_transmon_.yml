@@ -1,4 +1,9 @@
 info:
+  pin_names:
+    bottom_arm: pad
+    left_arm: pad
+    right_arm: pad
+    top_arm: pad
   qubit_type: xmon
 name: xmon_transmon_AW30_20_30_20_AL160_120_160_120_GW10_JSsq_03ad55bf
 ports:
