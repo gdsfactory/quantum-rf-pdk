@@ -34,7 +34,7 @@ classifiers = [
 ]
 dependencies = [
   "doroutes~=0.6.0",
-  "gdsfactory>=9.39.0,<9.41.0",
+  "gdsfactory~=9.43.0",
   "typing-extensions>=4.12.0",
 ]
 
@@ -49,7 +49,7 @@ gdsfactoryplus = ["gdsfactoryplus", "httpx"]
 graphics = ["trimesh", "pyglet<3"]
 hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
 models = [
-  "gplugins[meshwell]>=2.0.1",
+  "gplugins[meshwell]~=2.1.0",
   "jaxellip",
   "optax",
   "optuna",
@@ -87,7 +87,7 @@ docs = [
 ]
 docs-models = [
   "flax",
-  "gplugins[meshwell]>=2.0.1",
+  "gplugins[meshwell]~=2.1.0",
   "jaxellip",
   "netket>=3.12",
   "optax",

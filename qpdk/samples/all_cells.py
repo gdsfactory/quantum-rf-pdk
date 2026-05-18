@@ -40,8 +40,18 @@ def all_cells(
     """
     from qpdk import PDK  # noqa: PLC0415
 
-    # Get all cell names, excluding all_cells itself to avoid recursion
-    cell_names = sorted([name for name in PDK.cells if name != "all_cells"])
+    def _is_qpdk_cell(cell_func: object) -> bool:
+        wrapped = getattr(cell_func, "func", cell_func)
+        module_name = getattr(wrapped, "__module__", "")
+        return module_name.startswith("qpdk.cells")
+
+    # Get only QPDK cell names, excluding all_cells itself to avoid recursion.
+    # PDK.cells can include imported factories from external modules.
+    cell_names = sorted([
+        name
+        for name, cell_func in PDK.cells.items()
+        if name != "all_cells" and _is_qpdk_cell(cell_func)
+    ])
 
     cells = []
 
