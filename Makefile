@@ -1,4 +1,4 @@
-
+.PHONY: install-doc-fonts build install dev test nbdocs docs-pdf docs docs-serve doc drc-sample drc
 
 # Makefile — compatibility shim for gdsfactory PDK CI tooling
 #
@@ -51,8 +51,8 @@ test:
 nbdocs:
 	rm -rf docs/notebooks/*.md
 	find notebooks -maxdepth 1 -mindepth 1 -name "*.ipynb" | sort | \
-		xargs -P4 -I{} uv run --extra docs jupyter nbconvert \
-			--execute --to markdown --embed-images {} --output-dir docs/notebooks
+	xargs -P4 -I{} uv run --extra docs jupyter nbconvert \
+	--execute --to markdown --embed-images {} --output-dir docs/notebooks
 	uv run python docs/hooks.py docs/notebooks/*.md
 
 docs-pdf: nbdocs
@@ -72,5 +72,3 @@ docs-serve: nbdocs
 	uv run python .github/write_models.py
 	cp CHANGELOG.md docs/changelog.md
 	uv run --extra docs zensical serve -a localhost:8080
-
-.PHONY: drc drc-sample doc docs docs-pdf build

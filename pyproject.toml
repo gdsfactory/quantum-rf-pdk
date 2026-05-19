@@ -64,6 +64,14 @@ pymablock = ["pymablock>=2.2.1"]
 qutip = ["qutip-jax>=0.1.1", "qutip-qip>=0.4.1"]
 ray = ["ray[default]", "tqdm"]
 scqubits = ["scqubits"]
+docs = [
+  "jupyter",
+  "mkdocs-material",
+  "mkdocs-with-pdf",
+  "mkdocstrings[python]>=0.27.0",
+  "nbconvert",
+  "zensical>=0.0.40,<0.1.0",
+]
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
