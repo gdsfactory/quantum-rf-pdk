@@ -1,6 +1,6 @@
 [build-system]
-requires = ["uv_build>=0.10.8,<0.12.0"]
 build-backend = "uv_build"
+requires = ["uv_build>=0.10.8,<0.12.0"]
 
 [dependency-groups]
 dev = [{include-group = "lint"}, {include-group = "test"}]
@@ -56,24 +56,7 @@ test = [
 ]
 
 [project]
-name = "qpdk"
-version = "0.3.7"
-description = "Generic Superconducting Quantum Process Design Kit"
-readme = "README.md"
-requires-python = ">=3.12,<3.14"
-license = {file = "LICENSE"}
 authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
-keywords = [
-  "gdsfactory",
-  "layout",
-  "microwave",
-  "pdk",
-  "python",
-  "quantum",
-  "rf",
-  "simulation",
-  "superconducting"
-]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -94,6 +77,23 @@ dependencies = [
   "gdsfactory~=9.43.0",
   "typing-extensions>=4.12.0"
 ]
+description = "Generic Superconducting Quantum Process Design Kit"
+keywords = [
+  "gdsfactory",
+  "layout",
+  "microwave",
+  "pdk",
+  "python",
+  "quantum",
+  "rf",
+  "simulation",
+  "superconducting"
+]
+license = {file = "LICENSE"}
+name = "qpdk"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+version = "0.3.7"
 
 [project.optional-dependencies]
 gdsfactoryplus = ["gdsfactoryplus", "httpx"]
@@ -133,7 +133,6 @@ exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
 source = ["qpdk"]
 
 [tool.elvis]
-short-layers = [[1, 0], [25, 0], [31, 0], [2, 0], [30, 0], [10, 0]]
 connected-layers = [
   [[1, 0], [31, 0]],
   [[31, 0], [2, 0]],
@@ -142,6 +141,7 @@ connected-layers = [
   [[1, 0], [10, 0]],
   [[2, 0], [10, 0]]
 ]
+short-layers = [[1, 0], [25, 0], [31, 0], [2, 0], [30, 0], [10, 0]]
 
 [tool.elvis.equivalent-ports]
 launcher = [["o1", "waveport"]]
@@ -154,32 +154,32 @@ pdk = "quantum_rf"
 timeout = 300
 
 [tool.gdsfactoryplus.pdk]
-name = "qpdk"
 cells_no_model_expected = [
-  "chip_edge", # chip-finishing fabrication frame, not a circuit element
-  "circle", # geometric utility, not a circuit element
-  "double_pad_transmon_with_resonator_and_probeline", # composite derived cell; models on sub-components
-  "flipmon_with_resonator_and_probeline", # composite derived cell; models on sub-components
-  "half_circle_coupler", # coupler that doesn't make sense in isolation; model lives on full-circle variant
-  "josephson_junction_long", # parametric variant; model lives on josephson_junction
-  "plate_capacitor_single", # sub-component of plate_capacitor
-  "resonator_half_wave_bend_both", # partial variant; model lives on resonator_half_wave
-  "resonator_half_wave_bend_end", # partial variant; model lives on resonator_half_wave
-  "resonator_half_wave_bend_start", # partial variant; model lives on resonator_half_wave
-  "resonator_quarter_wave_bend_both", # partial variant; model lives on resonator_quarter_wave
-  "resonator_quarter_wave_bend_end", # partial variant; model lives on resonator_quarter_wave
-  "resonator_quarter_wave_bend_start", # partial variant; model lives on resonator_quarter_wave
-  "single_josephson_junction_wire", # sub-component of josephson_junction
-  "snspd", # detector; modelled with time-domain electrothermal models, not SAX
-  "squid_junction_long", # parametric variant; model lives on squid_junction
-  "transform_component", # gdsfactory utility cell, not a circuit element
-  "transmon_with_resonator_and_probeline", # composite derived cell; models on sub-components
-  "unimon_arm" # sub-component of unimon; model lives on parent
+  "chip_edge",  # chip-finishing fabrication frame, not a circuit element
+  "circle",  # geometric utility, not a circuit element
+  "double_pad_transmon_with_resonator_and_probeline",  # composite derived cell; models on sub-components
+  "flipmon_with_resonator_and_probeline",  # composite derived cell; models on sub-components
+  "half_circle_coupler",  # coupler that doesn't make sense in isolation; model lives on full-circle variant
+  "josephson_junction_long",  # parametric variant; model lives on josephson_junction
+  "plate_capacitor_single",  # sub-component of plate_capacitor
+  "resonator_half_wave_bend_both",  # partial variant; model lives on resonator_half_wave
+  "resonator_half_wave_bend_end",  # partial variant; model lives on resonator_half_wave
+  "resonator_half_wave_bend_start",  # partial variant; model lives on resonator_half_wave
+  "resonator_quarter_wave_bend_both",  # partial variant; model lives on resonator_quarter_wave
+  "resonator_quarter_wave_bend_end",  # partial variant; model lives on resonator_quarter_wave
+  "resonator_quarter_wave_bend_start",  # partial variant; model lives on resonator_quarter_wave
+  "single_josephson_junction_wire",  # sub-component of josephson_junction
+  "snspd",  # detector; modelled with time-domain electrothermal models, not SAX
+  "squid_junction_long",  # parametric variant; model lives on squid_junction
+  "transform_component",  # gdsfactory utility cell, not a circuit element
+  "transmon_with_resonator_and_probeline",  # composite derived cell; models on sub-components
+  "unimon_arm"  # sub-component of unimon; model lives on parent
 ]
+name = "qpdk"
 
 [tool.gdsfactoryplus.sim.x]
-max = 15 # 15GHz
-min = 1 # 1GHz
+max = 15  # 15GHz
+min = 1  # 1GHz
 name = "f"
 num = 4001
 
@@ -270,74 +270,74 @@ exclude = ["*.ipynb"]
 [tool.ruff.lint]
 exclude = ["*.ipynb"]
 ignore = [
-  "E501", # line too long, handled by black
-  "B008", # do not perform function calls in argument defaults
-  "C901", # too complex
-  "B905", # `zip()` without an explicit `strict=` parameter
-  "C408", # C408 Unnecessary `dict` call (rewrite as a literal)
-  "RUF001", # ambiguous unicode characters (incl. lots of math)
-  "RUF002", # ambiguous unicode characters (incl. docstring greek letters)
-  "RUF003", # -||- but for comments
-  "RUF067", # non-empty-init-module
-  "PLR2004", # magic-value-comparison
-  "PLR0913", # too-many-arguments
-  "PLR0914", # too-many-locals
-  "PLC2401", # non-ascii-name
-  "PLC2403", # non-ascii-import-name
-  "N806", # non-lowercase-variable-in-function
-  "N803", # invalid-argument-name
-  "ERA001", # commented-out-code
-  "PLR0917", # too-many-positional-arguments
-  "TRY003", # long messages in exceptions
-  "A004", # builtin-import-shadowing
-  "N816", # mixed-case-variable-in-global-scope
-  "PLC2701", # import-private-name
-  "PLR0911", # too-many-return-statements
-  "PLR6104", # non-augmented-assignment
-  "PLR0912", # too-many-branches
-  "PLR0915", # too-many-statements
-  "PLR0916", # too-many-boolean-expressions
-  "S404", # suspicious-subprocess-import
-  "PLW1510", # subprocess-run-without-check
-  "S607", # start-process-with-partial-path
-  "TC006" # runtime-cast-value
+  "E501",  # line too long, handled by black
+  "B008",  # do not perform function calls in argument defaults
+  "C901",  # too complex
+  "B905",  # `zip()` without an explicit `strict=` parameter
+  "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "RUF001",  # ambiguous unicode characters (incl. lots of math)
+  "RUF002",  # ambiguous unicode characters (incl. docstring greek letters)
+  "RUF003",  # -||- but for comments
+  "RUF067",  # non-empty-init-module
+  "PLR2004",  # magic-value-comparison
+  "PLR0913",  # too-many-arguments
+  "PLR0914",  # too-many-locals
+  "PLC2401",  # non-ascii-name
+  "PLC2403",  # non-ascii-import-name
+  "N806",  # non-lowercase-variable-in-function
+  "N803",  # invalid-argument-name
+  "ERA001",  # commented-out-code
+  "PLR0917",  # too-many-positional-arguments
+  "TRY003",  # long messages in exceptions
+  "A004",  # builtin-import-shadowing
+  "N816",  # mixed-case-variable-in-global-scope
+  "PLC2701",  # import-private-name
+  "PLR0911",  # too-many-return-statements
+  "PLR6104",  # non-augmented-assignment
+  "PLR0912",  # too-many-branches
+  "PLR0915",  # too-many-statements
+  "PLR0916",  # too-many-boolean-expressions
+  "S404",  # suspicious-subprocess-import
+  "PLW1510",  # subprocess-run-without-check
+  "S607",  # start-process-with-partial-path
+  "TC006"  # runtime-cast-value
 ]
 select = [
-  "E", # pycodestyle errors
-  "W", # pycodestyle warnings
-  "F", # pyflakes
-  "I", # isort
-  "C4", # flake8-comprehensions
-  "B", # flake8-bugbear
-  "D", # pydocstyle
-  "UP", # pyupgrade
-  "T10", # flake8-debugger
-  "S", # flake8-bandit
-  "PT", # flake8-pytest-style
-  "SIM", # flake8-simplify
-  "RET", # flake8-return
-  "RSE", # flake8-raise
-  "Q", # flake8-quotes
-  "SLOT", # flake8-slots
-  "ARG", # flake8-unused-arguments
-  "PTH", # flake8-use-pathlib
-  "PD", # pandas-vet
-  "FLY", # flynt
-  "NPY", # numpy
-  "PERF", # perflint
-  "RUF", # ruff
-  "PL", # pylint
-  "N", # pep8-naming
-  "A", # flake8-builtins
-  "TRY", # tryceratops
-  "T20", # flake8-print
-  "ISC", # flake8-implicit-str-concat
-  "ERA", # eradicate
-  "FURB", # refurb
-  "DOC", # pydoclint
-  "ASYNC", # flake8-async
-  "TID", # flake8-tidy-imports
-  "C" # flake8-comprehensions
+  "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
+  "F",  # pyflakes
+  "I",  # isort
+  "C4",  # flake8-comprehensions
+  "B",  # flake8-bugbear
+  "D",  # pydocstyle
+  "UP",  # pyupgrade
+  "T10",  # flake8-debugger
+  "S",  # flake8-bandit
+  "PT",  # flake8-pytest-style
+  "SIM",  # flake8-simplify
+  "RET",  # flake8-return
+  "RSE",  # flake8-raise
+  "Q",  # flake8-quotes
+  "SLOT",  # flake8-slots
+  "ARG",  # flake8-unused-arguments
+  "PTH",  # flake8-use-pathlib
+  "PD",  # pandas-vet
+  "FLY",  # flynt
+  "NPY",  # numpy
+  "PERF",  # perflint
+  "RUF",  # ruff
+  "PL",  # pylint
+  "N",  # pep8-naming
+  "A",  # flake8-builtins
+  "TRY",  # tryceratops
+  "T20",  # flake8-print
+  "ISC",  # flake8-implicit-str-concat
+  "ERA",  # eradicate
+  "FURB",  # refurb
+  "DOC",  # pydoclint
+  "ASYNC",  # flake8-async
+  "TID",  # flake8-tidy-imports
+  "C"  # flake8-comprehensions
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -365,13 +365,13 @@ combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "notebooks/**/*.py" = ["D100", "T201"]
+"qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
 "qpdk/cells/__init__.py" = ["F403"]
 "qpdk/models/__init__.py" = ["F403"]
-"qpdk/**/__init__.py" = ["F403"] # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
   "D100",
   "T201"
-] # no public module docstring for sample scripts, print allowed in samples
+]  # no public module docstring for sample scripts, print allowed in samples
 "tests/**" = ["S101", "D102", "D103", "ANN", "T201"]
 
 [tool.ruff.lint.pycodestyle]
