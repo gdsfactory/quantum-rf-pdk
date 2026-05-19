@@ -1,4 +1,3 @@
-# ruff: noqa: INP001
 """Post-process notebook markdown: convert MyST admonitions to Material style.
 
 Usage: python docs/hooks.py docs/notebooks/*.md
@@ -51,4 +50,4 @@ def _myst_to_material_admonitions(markdown: str) -> str:
 if __name__ == "__main__":
     for path in sys.argv[1:]:
         p = Path(path)
-        p.write_text(process(p.read_text()))
+        p.write_text(process(p.read_text(encoding="utf-8")), encoding="utf-8")
