@@ -5,7 +5,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 import qpdk.models
 from qpdk.config import PATH
 
-filepath_models = PATH.docs / "models.rst"
+filepath_models = PATH.docs / "models.md"
 template_dir = PATH.docs / "templates"
 
 # Models that should NOT be plotted

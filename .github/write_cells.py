@@ -11,8 +11,8 @@ from jinja2 import Environment, FileSystemLoader
 import qpdk
 from qpdk.config import PATH
 
-filepath_cells = PATH.docs / "cells.rst"
-filepath_samples = PATH.docs / "samples.rst"
+filepath_cells = PATH.docs / "cells.md"
+filepath_samples = PATH.docs / "samples.md"
 template_dir = PATH.docs / "templates"
 
 skip = {}
