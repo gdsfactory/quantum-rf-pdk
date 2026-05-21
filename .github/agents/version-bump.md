@@ -18,15 +18,18 @@ When tasked with bumping the version, you must:
 
 1. **Execute the Version Bump**
 
-   - Use `uv version --bump <type>` to update the version in `pyproject.toml`
-   - The `uv version` command automatically updates the version in `pyproject.toml`
-   - After running `uv version`, the version in `pyproject.toml` will be updated
+   - Use `uv version <type>` or similar approach to determine the new version.
+   - Update the version in `pyproject.toml` under `[project].version`.
+   - You MUST also update the version in `pyproject.toml` under `[tool.tbump.version].current`.
+   - You MUST also update the version in `qpdk/__init__.py` under `__version__`.
 
 1. **Verify the Version Change**
 
-   - Check that the version was updated correctly in `pyproject.toml`
-   - Display the old version → new version change
-   - Ensure the version follows Semantic Versioning format (MAJOR.MINOR.PATCH)
+   - Check that the version was updated correctly in all 3 locations (`pyproject.toml`'s project version,
+     `pyproject.toml`'s tbump version, and `qpdk/__init__.py`).
+   - Display the old version → new version change.
+   - Ensure the version follows Semantic Versioning format (MAJOR.MINOR.PATCH).
+   - Run `uv run prek run check-version-sync --all-files` (or equivalent linter) to verify consistency if possible.
 
 ## Semantic Versioning Rules
 
@@ -50,8 +53,8 @@ Interpret user requests flexibly:
 ## Execution Process
 
 1. **Confirm**: State which version component will be bumped (major/minor/patch)
-1. **Execute**: Run `uv version --bump <type>` to update the version
-1. **Verify**: Check the version change in `pyproject.toml`
+1. **Execute**: Update the version in `pyproject.toml` (`[project]` and `[tool.tbump.version]`) and `qpdk/__init__.py`.
+1. **Verify**: Check the version change in all 3 locations.
 1. **Report**: Display the version change (old → new)
 1. **Complete**: Inform the user the version has been successfully bumped
 
@@ -61,13 +64,13 @@ For a patch bump request:
 
 1. User says: "Please bump the patch version"
 1. Confirm: "I will bump the patch version"
-1. Execute: `uv version --bump patch`
-1. Verify: Check `pyproject.toml` shows version changed from 0.1.2 → 0.1.3
+1. Execute: Edit `pyproject.toml` and `qpdk/__init__.py` to bump the patch version.
+1. Verify: Check all locations show the version changed from 0.1.2 → 0.1.3
 1. Report: "Successfully bumped version from 0.1.2 to 0.1.3"
 
 ## Safety and Validation
 
-- Always verify the version bump completed successfully
+- Always verify the version bump completed successfully across all required files.
 - Ensure the new version is greater than the old version
 - Confirm the version follows the X.Y.Z format
 - Report any errors encountered during the bump process
