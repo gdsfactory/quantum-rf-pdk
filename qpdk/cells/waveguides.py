@@ -340,10 +340,10 @@ def straight_all_angle(
         cross_section: Cross-section specification.
         width: Optional width override in μm.
 
-    .. code::
-
+    ```
         o1  ──────────────── o2
                 length
+    ```
     """
     return gf.c.straight_all_angle(
         length=length, npoints=npoints, cross_section=cross_section, width=width

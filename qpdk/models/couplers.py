@@ -154,11 +154,11 @@ def coupler_straight(
     Returns:
         sax.SDict: S-parameters dictionary
 
-    .. code::
-
+    ```
         o2──────▲───────o3
                 │gap
         o1──────▼───────o4
+    ```
     """
     f = jnp.asarray(f)
     straight_settings = {"length": length / 2, "cross_section": cross_section}
