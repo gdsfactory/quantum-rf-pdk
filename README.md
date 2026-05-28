@@ -98,7 +98,7 @@ The same qubit test chip with magnetic vortex trapping holes filling the ground 
 ### Flip-Chip (Flipmon) Test Chip
 
 A four-flipmon test chip demonstrating flip-chip qubit integration with coupled readout resonators, interdigital
-capacitor inputs, probeline routing, and flux lines. Defined entirely in YAML.
+capacitor inputs, probeline routing, and flux lines — shown here with ground-plane filling and chip edges.
 
 ![Flipmon Test Chip](docs/_static/images/flipmon_test_chip.png)
 
