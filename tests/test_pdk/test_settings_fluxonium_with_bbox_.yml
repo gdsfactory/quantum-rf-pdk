@@ -4,12 +4,12 @@ ports:
   junction:
     center:
     - 0
-    - -208.313
+    - -208.488
     layer: JJ_AREA
     name: junction
     orientation: 90
     port_type: placement
-    width: 20.684
+    width: 21.178
   left_pad:
     center:
     - -262.5

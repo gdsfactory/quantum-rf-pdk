@@ -24,7 +24,7 @@ ports:
     name: unimon_junction
     orientation: 0
     port_type: placement
-    width: 19.304
+    width: 20.294
   unimon_o1:
     center:
     - 85.802

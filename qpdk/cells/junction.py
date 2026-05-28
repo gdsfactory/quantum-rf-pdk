@@ -83,6 +83,28 @@ def single_josephson_junction_wire(
             wide_straight_ref.y,
         ))
 
+        # Add JJ_AREA enclosure around patch (DRC requires 0.3 µm overlap).
+        # Use 0.35 µm margin to account for corner rounding when shapes merge.
+        # Add as direct polygon to avoid extra sub-component in netlist.
+        enclosure = 0.35
+        area_layer = (
+            cross_section_wide
+            if isinstance(cross_section_wide, str)
+            else gf.get_cross_section(cross_section_wide).layer
+        )
+        patch_center_x = wide_straight_ref.dbbox().p1.x - size_patch[0] / 4
+        enc_w = size_patch[0] + 2 * enclosure
+        enc_h = size_patch[1] + 2 * enclosure
+        c.add_polygon(
+            [
+                (patch_center_x - enc_w / 2, wide_straight_ref.y - enc_h / 2),
+                (patch_center_x + enc_w / 2, wide_straight_ref.y - enc_h / 2),
+                (patch_center_x + enc_w / 2, wide_straight_ref.y + enc_h / 2),
+                (patch_center_x - enc_w / 2, wide_straight_ref.y + enc_h / 2),
+            ],
+            layer=area_layer,
+        )
+
     # Add port at wide end
     c.add_port(
         port=wide_straight_ref.ports["o1"], name="o1", cross_section=cross_section_wide

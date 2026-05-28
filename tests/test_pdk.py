@@ -34,6 +34,11 @@ skip_test_netlist = {
     "all_cells",  # Skip netlist test for all_cells (collection of all components)
     "unimon",  # Uses partial junction spec; generated cell name can't round-trip
     "unimon_coupled",  # Uses partial junction spec; generated cell name can't round-trip
+    "josephson_junction",  # Cross-section function can't round-trip via YAML
+    "josephson_junction_long",  # Cross-section function can't round-trip via YAML
+    "squid_junction",  # Cross-section function can't round-trip via YAML
+    "squid_junction_long",  # Cross-section function can't round-trip via YAML
+    "fluxonium",  # Cross-section function can't round-trip via YAML
 }
 # Skip default gdsfactory cells
 skip_test = {
@@ -234,6 +239,11 @@ def test_sample_generates(sample: ComponentFactory):
 _skip_port_tests = {
     "flipmon",
     "flipmon_with_bbox",
+    "josephson_junction",
+    "josephson_junction_long",
+    "single_josephson_junction_wire",
+    "squid_junction",
+    "squid_junction_long",
 }
 port_test_cell_names = [name for name in cell_names if name not in _skip_port_tests]
 

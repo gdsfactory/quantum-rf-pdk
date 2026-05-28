@@ -7,8 +7,94 @@ permissions:
   contents: write
   packages: read
   pull-requests: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-drc
+  cancel-in-progress: true
 jobs:
   drc:
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/drc.yml@main # zizmor: ignore[unpinned-uses]
-    secrets:
+    name: DRC all_cells
+    runs-on: ubuntu-latest
+    env:
       GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-extras -P gdsfactoryplus
+      - name: Configure gfp
+        run: uv run gfp configure --api-key ${{ secrets.GFP_API_KEY }} --uv
+      - name: Build cell
+        run: uv run python scripts/build_all_cells.py
+      - name: Run DRC
+        run: |
+          mkdir -p build/lyrdb
+          uv run gfp check drc build/gds/all_cells.gds --outpath build/lyrdb/all_cells.lyrdb
+      - name: Upload DRC report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: drc-report
+          path: |
+            build/lyrdb/
+            build/gds/all_cells.gds
+          retention-days: 3
+      - name: Create and commit DRC badge
+        if: always()
+        run: |
+          if [ -f build/lyrdb/all_cells.lyrdb ]; then
+            errors=$(grep -c '<item>' build/lyrdb/all_cells.lyrdb) || errors=0
+            if [ "$errors" = "0" ]; then color="#4c1"; else color="#e05d44"; fi
+          else
+            errors="failing"
+            color="#e05d44"
+          fi
+          mkdir -p badges
+          cat > badges/drc.svg << 'SVGEOF'
+          <svg xmlns="http://www.w3.org/2000/svg" width="106" height="20" role="img" aria-label="DRC errors: PLACEHOLDER">
+            <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+            <clipPath id="r"><rect width="106" height="20" rx="3" fill="#fff"/></clipPath>
+            <g clip-path="url(#r)">
+              <rect width="72" height="20" fill="#555"/>
+              <rect x="72" width="34" height="20" fill="COLORPLACEHOLDER"/>
+              <rect width="106" height="20" fill="url(#s)"/>
+            </g>
+            <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
+              <text aria-hidden="true" x="36" y="15" fill="#010101" fill-opacity=".3">DRC errors</text>
+              <text x="36" y="14">DRC errors</text>
+              <text aria-hidden="true" x="88" y="15" fill="#010101" fill-opacity=".3">PLACEHOLDER</text>
+              <text x="88" y="14">PLACEHOLDER</text>
+            </g>
+          </svg>
+          SVGEOF
+          sed -i "s/PLACEHOLDER/$errors/g; s/COLORPLACEHOLDER/$color/g" badges/drc.svg
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          tmp=$(mktemp -d)
+          cp badges/drc.svg "$tmp/"
+
+          # Clean untracked files so branch checkout succeeds
+          git clean -fd
+          git checkout -f .
+
+          for attempt in 1 2 3; do
+            git fetch origin badges 2>/dev/null
+            if git rev-parse --verify origin/badges >/dev/null 2>&1; then
+              git checkout -f -B badges origin/badges
+            else
+              git checkout --orphan badges
+              git rm -rf . 2>/dev/null || true
+            fi
+
+            cp "$tmp"/drc.svg .
+            git add drc.svg
+            git diff --cached --quiet && echo "No DRC badge changes" && exit 0
+            git commit -m "Update DRC badge [skip ci]"
+            git push origin badges && exit 0
+            echo "Push failed (attempt $attempt), retrying..."
+            sleep 5
+          done
+          echo "All push attempts failed" && exit 1

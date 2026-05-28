@@ -21,13 +21,13 @@ ports:
     width: 60
   junction:
     center:
-    - 67.416
+    - 67.911
     - 0
     layer: JJ_AREA
     name: junction
     orientation: 90
     port_type: placement
-    width: 43.912
+    width: 44.902
   outer_ring_near_junction:
     center:
     - 80
