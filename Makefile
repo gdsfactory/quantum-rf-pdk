@@ -1,4 +1,4 @@
-.PHONY: install-doc-fonts docs build install dev test
+.PHONY: install-doc-fonts docs build install dev test update-changelog
 
 # Makefile — compatibility shim for gdsfactory PDK CI tooling
 #
@@ -54,6 +54,9 @@ dev: install
 
 test:
 	@$(JUST_CMD) test
+
+update-changelog:
+	claude -p "remove links and make a user friendly changelog from @CHANGELOG.md to @docs/changelog.md"
 
 # Any target not explicitly defined above is forwarded to just.
 %:
