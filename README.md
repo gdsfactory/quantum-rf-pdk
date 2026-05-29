@@ -95,6 +95,13 @@ The same qubit test chip with magnetic vortex trapping holes filling the ground 
 
 ![Filled Qubit Test Chip](docs/_static/images/filled_qubit_test_chip.png)
 
+### Flip-Chip (Flipmon) Test Chip
+
+A four-flipmon test chip demonstrating flip-chip qubit integration with coupled readout resonators, interdigital
+capacitor inputs, probeline routing, and flux lines — shown here with ground-plane filling and chip edges.
+
+![Flipmon Test Chip](docs/_static/images/flipmon_test_chip.png)
+
 ### Resonator Test Chip
 
 A 16-resonator characterization chip with systematically varied CPW widths and gaps across two probelines. Ideal for
