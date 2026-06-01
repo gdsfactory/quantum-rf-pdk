@@ -74,7 +74,7 @@ repos:
         priority: 20
         args: [--config=pyproject.toml]
   - repo: https://github.com/tombi-toml/tombi-pre-commit
-    rev: v0.11.3
+    rev: v1.0.0
     hooks:
       - id: tombi-format
         priority: 10
