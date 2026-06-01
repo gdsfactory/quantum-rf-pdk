@@ -110,7 +110,7 @@ repos:
       - id: actionlint
         priority: 10
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.25.0
+    rev: v1.25.2
     hooks:
       - id: zizmor
         priority: 10
