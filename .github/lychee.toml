@@ -22,7 +22,9 @@ exclude = [
   "https://.*\\.pyansys\\.com.*/n",
   "https://.*\\.pyansys\\.com.*//n",
   # Persistent identifiers (URNs often redirect in loops; match both http and https)
-  "https?://urn.fi/.*"
+  "https?://urn.fi/.*",
+  # KLayout website returns 415 to link checkers in CI
+  "https://www\\.klayout\\.de/.*"
 ]
 
 # Set a timeout
