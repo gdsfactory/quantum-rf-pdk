@@ -12,23 +12,23 @@ package manager, `just` as the task runner, and `prek` (a parallel pre-commit ru
 All commands use the `justfile` (with imports from `tests/test.just` and `docs/docs.just`). Always prefer `just`
 commands over direct tool invocation.
 
-| Task                                    | Command                |
-| --------------------------------------- | ---------------------- |
-| Install dependencies                    | `just install`         |
-| Run full test suite                     | `just test`            |
-| Run GDS regression tests only           | `just test-gds`        |
-| Run GDS tests, stop at first failure    | `just test-gds-fail-fast` |
-| Regenerate GDS reference files          | `just test-gds-force`  |
-| Run model regression tests              | `just test-models`     |
-| Regenerate model reference files        | `just test-models-force` |
-| Run HFSS simulation tests               | `just test-hfss`       |
-| Run GDSFactory+ tests                   | `just test-gfp`        |
-| Run pre-commit hooks (lint + format)    | `just run-pre`         |
-| Build HTML documentation                | `just docs`            |
-| Build PDF documentation                 | `just docs-pdf`        |
-| Build package                           | `just build`           |
-| Show/preview a component interactively  | `just show`            |
-| Run everything (test, lint, build, docs) | `just all`            |
+| Task                                     | Command                   |
+| ---------------------------------------- | ------------------------- |
+| Install dependencies                     | `just install`            |
+| Run full test suite                      | `just test`               |
+| Run GDS regression tests only            | `just test-gds`           |
+| Run GDS tests, stop at first failure     | `just test-gds-fail-fast` |
+| Regenerate GDS reference files           | `just test-gds-force`     |
+| Run model regression tests               | `just test-models`        |
+| Regenerate model reference files         | `just test-models-force`  |
+| Run HFSS simulation tests                | `just test-hfss`          |
+| Run GDSFactory+ tests                    | `just test-gfp`           |
+| Run pre-commit hooks (lint + format)     | `just run-pre`            |
+| Build HTML documentation                 | `just docs`               |
+| Build PDF documentation                  | `just docs-pdf`           |
+| Build package                            | `just build`              |
+| Show/preview a component interactively   | `just show`               |
+| Run everything (test, lint, build, docs) | `just all`                |
 
 Pre-commit hooks **must** pass before every commit. They include `ruff` (format + lint), `pyrefly` (type checking),
 `yamlfmt`, `yamllint`, `codespell`, `interrogate` (docstring coverage), `markdownlint`, `mdformat`, `actionlint`,
@@ -111,8 +111,8 @@ justfile                Task runner recipes (imports test.just and docs.just)
 - Physical constants **must** come from `qpdk/models/constants.py` — verify no local redefinitions of `e`, `h`, `Φ_0`,
   `ε_0`, etc.
 - New models need unit tests in `tests/models/` verifying behavior, passivity, and reciprocity.
-- HFSS/Q3D simulation automation lives in `qpdk/simulation/` — changes there should be tested with `just test-hfss`
-  when HFSS is available.
+- HFSS/Q3D simulation automation lives in `qpdk/simulation/` — changes there should be tested with `just test-hfss` when
+  HFSS is available.
 
 ### Testing
 
