@@ -76,7 +76,7 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "jax": ("https://docs.jax.dev/en/latest/", None),
     "gdsfactory": ("https://gdsfactory.github.io/gdsfactory/", None),
-    "sax": ("https://flaport.github.io/sax/", None),
+    "sax": ("https://gdsfactory.github.io/sax/", None),
 }
 
 # -- MyST configuration ------------------------------------------------------

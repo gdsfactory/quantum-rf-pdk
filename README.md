@@ -37,7 +37,7 @@ in minutes.
 - **Parametric & composable** — Combine Python functions (`@gf.cell`) into hierarchical designs or define full chips in
   YAML.
 - **Analytical circuit models** — Fast, differentiable S-parameter simulations powered by
-  [SAX](https://flaport.github.io/sax/) and [JAX](https://github.com/jax-ml/jax).
+  [SAX](https://gdsfactory.github.io/sax/) and [JAX](https://github.com/jax-ml/jax).
 - **Automated routing** — CPW-aware routing strategies with auto-tapers for complex layouts, and
   [DoRoutes](https://doplaydo.github.io/DoRoutes/).
 - **KLayout integration** — Layer definitions, technology files, and cross sections for immediate visual inspection.
