@@ -229,7 +229,7 @@ plt.show(block=False)
 # resonance frequencies of the on-chip resonators.
 #
 # This section performs a **Monte Carlo analysis** inspired by the
-# [SAX layout-aware Monte Carlo example](https://flaport.github.io/sax/nbs/examples/07_layout_aware/).
+# [SAX layout-aware Monte Carlo example](https://gdsfactory.github.io/sax/nbs/examples/07_layout_aware/).
 # The approach is:
 #
 # 1. Reuse the **standard QPDK model functions** (``straight``, ``bend_euler``,
@@ -941,6 +941,6 @@ plt.show(block=False)
 #   targeting.
 # - The Monte Carlo framework developed here can be extended to include spatial
 #   correlation across the die (wafer-map approach, as in the
-#   [SAX layout-aware example](https://flaport.github.io/sax/nbs/examples/07_layout_aware/))
+#   [SAX layout-aware example](https://gdsfactory.github.io/sax/nbs/examples/07_layout_aware/))
 #   or additional sources of variation (substrate permittivity, metal
 #   thickness).

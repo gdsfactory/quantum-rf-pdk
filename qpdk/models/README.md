@@ -5,7 +5,7 @@ This directory houses the models for frequency-dependent SPICE-like circuit simu
 
 ## Libraries
 
-- [Sax](https://flaport.github.io/sax/) is used as the circuit simulator backend
+- [Sax](https://gdsfactory.github.io/sax/) is used as the circuit simulator backend
 
 ## Installation
 
