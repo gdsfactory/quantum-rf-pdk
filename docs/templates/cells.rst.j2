@@ -36,6 +36,22 @@ API Reference
 
 .. autofunction:: qpdk.cells.{{ item.name }}
 {%     if item.name not in skip_plot %}
+{%         if item.has_gds %}
+
+.. tab-set::
+
+   .. tab-item:: Static
+
+      .. image:: kwasm/gds/{{ item.name }}.png
+         :alt: {{ item.name }}
+
+   .. tab-item:: Dynamic
+
+      .. raw:: html
+
+         <iframe src="kwasm/viewer.html?url=gds/{{ item.name }}.gds" loading="lazy" width="100%" height="400" style="border:none"></iframe>
+
+{%         else %}
 
 .. plot::
 
@@ -45,6 +61,7 @@ API Reference
    c = cells.{{ item.name }}({{ item.kwargs }}).copy()
    c.draw_ports()
    c.plot()
+{%         endif %}
 {%     endif %}
 {% endfor %}
 
