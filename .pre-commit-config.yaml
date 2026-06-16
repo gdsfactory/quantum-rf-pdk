@@ -6,7 +6,7 @@ exclude: ^uv\.lock$
 # 40: Global structure checks (end-of-file-fixer).
 # 50: Global whitespace cleanup.
 repos:
-  - repo: https://github.com/doplaydo/pdk-ci-workflow
+  - repo: https://github.com/doplaydo/pdk-ci-workflow-public
     rev: f566e80e1525b5d53bb41a49e953d217b68d6453
     hooks:
       - id: check-required-files

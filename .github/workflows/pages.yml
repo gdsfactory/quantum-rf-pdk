@@ -74,7 +74,7 @@ jobs:
       actions: read
       pages: write
       id-token: write
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/pages.yml@main # zizmor: ignore[unpinned-uses, secrets-inherit]
+    uses: doplaydo/pdk-ci-workflow-public/.github/workflows/pages.yml@main # zizmor: ignore[unpinned-uses, secrets-inherit]
     secrets:
       GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
       SIMCLOUD_APIKEY: ${{ secrets.SIMCLOUD_APIKEY }}
