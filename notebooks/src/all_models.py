@@ -121,7 +121,7 @@ josephson_junction(f=TEST_FREQUENCY)
 f = jnp.linspace(1e9, 25e9, 201)
 S = gamma_0_load(f=f, gamma_0=0.5 + 0.5j, n_ports=2)
 for key in S:
-    plt.plot(f / 1e9, abs(S[key]) ** 2, label=key)
+    plt.plot(f / 1e9, abs(S[key]) ** 2, label=str(key))
 plt.ylim(-0.05, 1.05)
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("S")
