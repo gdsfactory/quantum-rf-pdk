@@ -9,7 +9,7 @@ ports:
     name: junction
     orientation: 90
     port_type: placement
-    width: 33.446
+    width: 34.436
   left_pad:
     center:
     - -257.5

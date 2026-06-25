@@ -29,7 +29,7 @@ ports:
     name: junction
     orientation: 180
     port_type: placement
-    width: 33.446
+    width: 34.436
   o1:
     center:
     - -900
