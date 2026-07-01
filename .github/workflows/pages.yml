@@ -52,7 +52,7 @@ jobs:
         run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
         continue-on-error: true
-        uses: xu-cheng/latex-action@6549dc21effb2730855a1281407ecfcececc6c1b # v4.0.0
+        uses: xu-cheng/latex-action@6549dc21effb2730855a1281407ecfcececc6c1b # 4.1.0
         env:
           XINDYOPTS: "-L english -C utf8 -M sphinx.xdy"
         with:
