@@ -199,15 +199,16 @@ For contributors, please follow the [installation and development workflow instr
 ## Project Structure
 
 ```text
-qpdk/                   Core Python package
-  cells/                Component definitions (transmons, resonators, capacitors, …)
-  models/               Analytical models, mostly S-parameters
-  samples/              Example layouts and complete test chips
-  klayout/              KLayout technology files
-  tech.py               Layer stack, cross sections, routing strategies
-tests/                  Regression, integration and unit tests
-notebooks/              Jupyter notebooks for design and simulation workflows
-docs/                   Sphinx documentation (HTML + PDF)
+quantum-rf-pdk/
+├── qpdk/               Core Python package
+│   ├── cells/          Component definitions (transmons, resonators, capacitors, …)
+│   ├── models/         Analytical models, mostly S-parameters
+│   ├── samples/        Example layouts and complete test chips
+│   ├── klayout/        KLayout technology files
+│   └── tech.py         Layer stack, cross sections, routing strategies
+├── tests/              Regression, integration and unit tests
+├── notebooks/          Jupyter notebooks for design and simulation workflows
+└── docs/               Sphinx documentation (HTML + PDF)
 ```
 
 ## Documentation
