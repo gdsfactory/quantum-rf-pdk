@@ -28,7 +28,9 @@ def all_cells(
 
     Args:
         spacing: Spacing between cells in micrometers (default: 200.0).
-        **kwargs: Additional arguments passed to gf.pack.
+        **kwargs: Additional arguments passed to gf.pack. If ``max_size`` is not
+            provided, it defaults to ``(None, None)`` so packing is unconstrained
+            in both dimensions unless the caller explicitly sets limits.
 
     Returns:
         Component containing all successfully instantiated cells.
@@ -61,7 +63,8 @@ def all_cells(
         required_params = [
             p
             for p in sig.parameters.values()
-            if p.default == inspect.Parameter.empty and p.name != "kwargs"
+            if p.default == inspect.Parameter.empty
+            and p.kind != inspect.Parameter.VAR_KEYWORD
         ]
 
         if required_params:
@@ -78,6 +81,13 @@ def all_cells(
                 continue
 
             if not isinstance(cell, gf.Component):
+                if not isinstance(cell, gf.ComponentReference):
+                    warnings.warn(
+                        f"Skipping cell '{name}': unsupported return type {type(cell).__name__}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    continue
                 c_wrap = gf.Component(name=f"{name}_wrap")
                 c_wrap.add_ref_off_grid(cell)
                 cell = c_wrap
@@ -94,6 +104,8 @@ def all_cells(
     if not cells:
         return Component("empty_all_cells")
 
+    # Use unconstrained packing by default to avoid implicit size limits unless
+    # callers explicitly provide `max_size`.
     kwargs.setdefault("max_size", (None, None))
     bins = gf.pack(cells, spacing=spacing, **kwargs)
 
