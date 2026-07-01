@@ -30,12 +30,19 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           lfs: true
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Test with pytest
-        run: just test ${{ (github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest') && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }}
+        run: just test ${{ matrix.os == 'ubuntu-latest' && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }}
+      - name: Upload coverage XML
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-xml-${{ matrix.python-version }}
+          path: coverage.xml
       - name: Generate coverage badge
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
         run: uv run --group dev --group github genbadge coverage -i coverage.xml -o htmlcov/coverage.svg
@@ -45,6 +52,24 @@ jobs:
         with:
           name: coverage-report-${{ matrix.python-version }}
           path: htmlcov
+  upload-coverage:
+    needs: test-code
+    if: ${{ !cancelled() && needs.test-code.result == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      code-quality: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: coverage-xml-*
+          merge-multiple: true
+      - name: Upload code coverage to GitHub
+        uses: actions/upload-code-coverage@82c7aee3fb2ad768e00b00a0a8d749c5815085b6 # v1
+        with:
+          file: coverage.xml
+          language: Python
+          label: code-coverage/pytest
   test-code-result:
     runs-on: ubuntu-latest
     name: Test result
