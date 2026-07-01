@@ -6,7 +6,6 @@ from numpy.testing import assert_allclose
 
 import qpdk
 import qpdk.models.cpw as cpw_mod
-from qpdk.models.cpw import cpw_parameters, get_cpw_substrate_params
 from qpdk.models.waveguides import straight
 
 
@@ -22,7 +21,7 @@ class TestCPWLossParameters:
     @staticmethod
     def test_lossless_is_real() -> None:
         """With tand=0.0, ep_eff should be purely real."""
-        ep_eff, _z0 = cpw_parameters(width=10.0, gap=6.0, tand=0.0)
+        ep_eff, _z0 = cpw_mod.cpw_parameters(width=10.0, gap=6.0, tand=0.0)
         assert jnp.isrealobj(ep_eff) or jnp.all(jnp.imag(ep_eff) == 0)
 
     @staticmethod
@@ -30,7 +29,7 @@ class TestCPWLossParameters:
         """With tand > 0, ep_eff should have a negative imaginary part."""
         # Realistic loss tangent
         tand = 1e-4
-        ep_eff, _z0 = cpw_parameters(width=10.0, gap=6.0, tand=tand)
+        ep_eff, _z0 = cpw_mod.cpw_parameters(width=10.0, gap=6.0, tand=tand)
 
         assert jnp.imag(ep_eff) < 0, (
             f"Imaginary part should be negative (got {jnp.imag(ep_eff)})"
@@ -42,8 +41,8 @@ class TestCPWLossParameters:
     @staticmethod
     def test_loss_scaling() -> None:
         """The imaginary part of ep_eff should scale linearly with tand."""
-        ep_eff_1, _ = cpw_parameters(width=10.0, gap=6.0, tand=1e-4)
-        ep_eff_2, _ = cpw_parameters(width=10.0, gap=6.0, tand=2e-4)
+        ep_eff_1, _ = cpw_mod.cpw_parameters(width=10.0, gap=6.0, tand=1e-4)
+        ep_eff_2, _ = cpw_mod.cpw_parameters(width=10.0, gap=6.0, tand=2e-4)
 
         ratio = jnp.imag(ep_eff_2) / jnp.imag(ep_eff_1)
         assert_allclose(float(ratio), 2.0, rtol=1e-5)
@@ -51,12 +50,12 @@ class TestCPWLossParameters:
     @staticmethod
     def test_default_pdk_loss() -> None:
         """Verify that omitting tand uses the PDK default (set to 2.7e-6)."""
-        _h, _t, _ep_r, tand_pdk = get_cpw_substrate_params()
+        _h, _t, _ep_r, tand_pdk = cpw_mod.get_cpw_substrate_params()
         # The default value should be 2.7e-6 in the technology definition
         assert tand_pdk == pytest.approx(2.7e-6)
 
-        ep_eff_default, _ = cpw_parameters(width=10.0, gap=6.0)
-        ep_eff_explicit, _ = cpw_parameters(width=10.0, gap=6.0, tand=2.7e-6)
+        ep_eff_default, _ = cpw_mod.cpw_parameters(width=10.0, gap=6.0)
+        ep_eff_explicit, _ = cpw_mod.cpw_parameters(width=10.0, gap=6.0, tand=2.7e-6)
 
         assert_allclose(ep_eff_default, ep_eff_explicit)
         if tand_pdk > 0:
