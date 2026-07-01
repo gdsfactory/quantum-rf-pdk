@@ -32,14 +32,13 @@ if "google.colab" in sys.modules:
 
 # %%
 
+# ruff: disable[E402]
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
 from qpdk import PDK
 
 PDK.activate()
-
-# ruff: disable[E402]
 
 # %% [markdown]
 # ## Constants
@@ -174,7 +173,8 @@ plt.grid(True)
 plt.legend()
 plt.show(block=False)
 
-S_cap = capacitor(f=f, capacitance=(capacitance := 100e-15))
+capacitance = 100e-15
+S_cap = capacitor(f=f, capacitance=capacitance)
 # print(S_cap)
 plt.figure()
 # Polar plot of S21 and S11
@@ -213,7 +213,8 @@ ax2.legend(loc="upper right")
 plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
 plt.show(block=False)
 
-S_ind = inductor(f=f, inductance=(inductance := 1e-9))
+inductance = 1e-9
+S_ind = inductor(f=f, inductance=inductance)
 # print(S_ind)
 plt.figure()
 plt.subplot(121, projection="polar")
@@ -372,7 +373,7 @@ launcher(f=TEST_FREQUENCY)
 # %%
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
 
-cpw_cpw_coupling_capacitance(TEST_FREQUENCY, 100, 100, "cpw")
+cpw_cpw_coupling_capacitance(f=TEST_FREQUENCY, length=100, gap=100, cross_section="cpw")
 
 # %%
 from qpdk.models.couplers import coupler_straight
