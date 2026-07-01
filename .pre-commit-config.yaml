@@ -7,7 +7,7 @@ exclude: ^uv\.lock$
 # 50: Global whitespace cleanup.
 repos:
   - repo: https://github.com/doplaydo/pdk-ci-workflow-public
-    rev: f566e80e1525b5d53bb41a49e953d217b68d6453
+    rev: 268d1a04880a24771ff66b1a8b433b289e1ff7a8
     hooks:
       - id: check-required-files
         priority: 10
