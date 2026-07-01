@@ -155,7 +155,9 @@ def export_component_to_gds_temp(
 
 
 def rename_imported_objects(
-    app: Any, new_objects: list[str], layer_stack: LayerStack
+    app: Any,
+    new_objects: list[str],
+    layer_stack: LayerStack,
 ) -> list[str]:
     """Rename imported GDS objects based on the layer stack.
 
@@ -220,7 +222,7 @@ class AEDTBase:
 
     @property
     def modeler(self):
-        """Return the AEDT modeler instance."""
+        """The AEDT modeler instance."""
         return self.app.modeler
 
     def add_materials(self) -> None:

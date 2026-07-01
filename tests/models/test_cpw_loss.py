@@ -10,7 +10,7 @@ from qpdk.models.cpw import cpw_parameters, get_cpw_substrate_params
 from qpdk.models.waveguides import straight
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # noqa: RUF076
 def activate_pdk():
     """Ensure PDK is active for all tests."""
     qpdk.PDK.activate()
@@ -117,7 +117,9 @@ class TestNumericalStability:
 
         # Mock get_cpw_substrate_params to return ep_r = 1.0
         monkeypatch.setattr(
-            cpw_mod, "get_cpw_substrate_params", lambda: (500.0, 0.2, 1.0, 1e-4)
+            cpw_mod,
+            "get_cpw_substrate_params",
+            lambda: (500.0, 0.2, 1.0, 1e-4),
         )
 
         # This shouldn't raise ZeroDivisionError now

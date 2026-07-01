@@ -21,7 +21,7 @@ def pytest_collection_modifyitems(
                 item.add_marker(skip_windows)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # noqa: RUF076
 def activate_pdk() -> None:
     """Activate PDK."""
     PDK.activate()
