@@ -110,7 +110,7 @@ repos:
       - id: actionlint
         priority: 10
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.25.0
+    rev: v1.26.1
     hooks:
       - id: zizmor
         priority: 10
@@ -120,7 +120,7 @@ repos:
       - id: uv-lock
         priority: 10
   - repo: https://github.com/facebook/pyrefly-pre-commit
-    rev: 1.0.0
+    rev: 1.1.1
     hooks:
       - id: pyrefly-check
         priority: 30
@@ -173,7 +173,7 @@ repos:
         name: markdownlint
         args: [--config, .github/.markdownlint-cli2.yaml]
         additional_dependencies:
-          - katex@0.16.45
+          - katex@0.17.0
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.22
     hooks:
@@ -194,7 +194,7 @@ repos:
         priority: 10
         types_or: [css]
   - repo: https://github.com/thibaudcolas/pre-commit-stylelint
-    rev: v17.11.0
+    rev: v17.13.0
     hooks:
       - id: stylelint
         priority: 20
