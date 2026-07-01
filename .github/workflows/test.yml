@@ -21,6 +21,9 @@ jobs:
   test-code:
     needs: get-python-versions
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      code-quality: write
     strategy:
       fail-fast: false
       matrix:
@@ -30,12 +33,20 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           lfs: true
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Test with pytest
-        run: just test ${{ (github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest') && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }}
+        run: just test ${{ matrix.os == 'ubuntu-latest' && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }}
+      - name: Upload code coverage to GitHub
+        if: matrix.os == 'ubuntu-latest' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: actions/upload-code-coverage@82c7aee3fb2ad768e00b00a0a8d749c5815085b6 # v1
+        with:
+          file: coverage.xml
+          language: Python
+          label: code-coverage/pytest
       - name: Generate coverage badge
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
         run: uv run --group dev --group github genbadge coverage -i coverage.xml -o htmlcov/coverage.svg
