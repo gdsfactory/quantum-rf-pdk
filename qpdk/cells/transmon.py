@@ -124,6 +124,12 @@ def double_pad_transmon(
 
     # Add metadata
     c.info["qubit_type"] = "transmon"
+    c.info["pin_names"] = {
+        "left_pad": "pad_a",
+        "left_pad_inner": "pad_a",
+        "right_pad": "pad_b",
+        "right_pad_inner": "pad_b",
+    }
 
     return c
 
@@ -188,6 +194,12 @@ def double_pad_transmon_with_bbox(
     )
 
     c.add_ports(double_pad_ref.ports)
+    c.info["pin_names"] = {
+        "left_pad": "pad_a",
+        "left_pad_inner": "pad_a",
+        "right_pad": "pad_b",
+        "right_pad_inner": "pad_b",
+    }
     return c
 
 
@@ -317,6 +329,10 @@ def flipmon(
         port_type="placement",
     )
 
+    c.info["pin_names"] = {
+        "outer_ring_outside": "outer_ring",
+    }
+
     return c
 
 
@@ -385,6 +401,9 @@ def flipmon_with_bbox(
         )
 
     c.add_ports(flipmon_ref.ports)
+    c.info["pin_names"] = {
+        "outer_ring_outside": "outer_ring",
+    }
     return c
 
 
@@ -532,5 +551,11 @@ def xmon_transmon(
 
     # Add metadata
     c.info["qubit_type"] = "xmon"
+    c.info["pin_names"] = {
+        "top_arm": "pad",
+        "right_arm": "pad",
+        "bottom_arm": "pad",
+        "left_arm": "pad",
+    }
 
     return c

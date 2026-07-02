@@ -290,3 +290,50 @@ if __name__ == "__main__":
     n2 = c2.get_netlist()
     d = jsondiff.diff(n, n2)
     assert len(d) == 0, d
+
+
+# Cells that are expected to have pin_names metadata for SPICE export
+_cells_with_pin_names = {
+    "airbridge",
+    "double_pad_transmon",
+    "double_pad_transmon_with_bbox",
+    "flipmon",
+    "flipmon_with_bbox",
+    "fluxonium",
+    "fluxonium_with_bbox",
+    "half_circle_coupler",
+    "interdigital_capacitor",
+    "launcher",
+    "lumped_element_resonator",
+    "meander_inductor",
+    "plate_capacitor",
+    "plate_capacitor_single",
+    "snspd",
+    "xmon_transmon",
+}
+
+
+@pytest.mark.parametrize(
+    "component_name",
+    sorted(_cells_with_pin_names & set(cell_names)),
+)
+def test_pin_names_defined(component_name: str) -> None:
+    """Verify that cells with electrical ports define pin_names metadata.
+
+    The pin_names info dict maps port names to electrical node identifiers,
+    which is required for correct SPICE netlist export.
+    """
+    component = cells[component_name]()
+    pin_names = component.info.get("pin_names")
+    assert pin_names is not None, (
+        f"Cell {component_name!r} should define info['pin_names'] "
+        f"for SPICE export support."
+    )
+    assert isinstance(pin_names, dict)
+    # All ports referenced in pin_names must exist on the component
+    electrical_port_names = {p.name for p in component.ports}
+    for port_name in pin_names:
+        assert port_name in electrical_port_names, (
+            f"pin_names references port {port_name!r} which does not exist "
+            f"on component {component_name!r}. Available ports: {sorted(electrical_port_names)}"
+        )

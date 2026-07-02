@@ -1,4 +1,9 @@
-info: {}
+info:
+  pin_names:
+    left_pad: pad_a
+    left_pad_inner: pad_a
+    right_pad: pad_b
+    right_pad_inner: pad_b
 name: fluxonium_with_bbox_BE200_PS250_400_PG25_JSjosephson_ju_9850e548
 ports:
   junction:

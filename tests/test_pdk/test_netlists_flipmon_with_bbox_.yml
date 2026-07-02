@@ -1,7 +1,9 @@
 instances:
   flipmon:
     component: flipmon
-    info: {}
+    info:
+      pin_names:
+        outer_ring_outside: outer_ring
     settings:
       inner_circle_radius: 60
       junction_displacement: null

@@ -190,6 +190,10 @@ def meander_inductor(
     c.info["total_wire_length"] = total_wire_length
     c.info["n_squares"] = total_wire_length / wire_width
     c.info["cross_section"] = xs.name
+    c.info["pin_names"] = {
+        "o1": "terminal_a",
+        "o2": "terminal_b",
+    }
 
     return c
 
@@ -468,6 +472,10 @@ def lumped_element_resonator(
     c.info["inductor_n_squares"] = c.info["total_wire_length"] / wire_width
     c.info["capacitor_fingers"] = fingers
     c.info["capacitor_finger_length"] = finger_length
+    c.info["pin_names"] = {
+        "o1": "terminal_a",
+        "o2": "terminal_b",
+    }
 
     return c
 
