@@ -1,0 +1,40 @@
+name: Test code
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+env:
+  GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.PDK_CI_WORKFLOW_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v8
+      - run: make install
+      - name: Regen tests
+        run: |
+          make test-force || true
+      - name: Commit regenerated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "regen tests for gdsfactory 9.45.0"
+            git push
+          fi
+
