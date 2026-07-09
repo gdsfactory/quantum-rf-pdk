@@ -34,7 +34,7 @@ classifiers = [
 ]
 dependencies = [
   "doroutes~=1.1.0",
-  "gdsfactory~=9.44.0",
+  "gdsfactory~=9.45.0",
   "typing-extensions>=4.12.0",
 ]
 
