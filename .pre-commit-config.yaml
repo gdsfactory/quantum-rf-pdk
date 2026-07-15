@@ -114,6 +114,13 @@ repos:
     hooks:
       - id: zizmor
         priority: 10
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.37.4
+    hooks:
+      - id: check-github-workflows
+        priority: 10
+      - id: check-dependabot
+        priority: 10
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.11.16
     hooks:
