@@ -49,8 +49,8 @@ build:
 
 # Generate and show a PDK component by name (opens interactive chooser by default), saving its GDS to build/
 [group('build')]
+[script('uv', 'run', 'python')]
 show component_name="":
-    #!/usr/bin/env -S uv run python
     import importlib
     import shutil
     import subprocess
