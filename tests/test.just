@@ -25,40 +25,42 @@ check-lfs:
     echo "Git LFS is available. Pulling LFS files…"
     git lfs pull
 
+# Shared pytest invocation for internal callers passing pre-split argument strings (ensures LFS data first)
+[private]
+[group('test')]
+_pytest *args: check-lfs
+    {{ PYTEST_COMMAND }} {{ args }}
+
 # Run the full test suite in parallel using pytest
+# Uses positional arguments so quoted args survive, e.g. `just test -k "some name"`
+[positional-arguments]
 [group('test')]
 test *args: check-lfs
-    {{ PYTEST_COMMAND }} {{ args }}
+    {{ PYTEST_COMMAND }} "$@"
 
 # Run optical port position tests (tests/test_pdk.py::test_optical_port_positions)
 [group('test')]
-test-ports:
-    {{ PYTEST_COMMAND }} -s tests/test_pdk.py::test_optical_port_positions
+test-ports: (_pytest "-s tests/test_pdk.py::test_optical_port_positions")
 
 # Run GDS regressions tests (tests/test_pdk.py)
 [group('test')]
-test-gds:
-    {{ PYTEST_COMMAND }} -s tests/test_pdk.py
+test-gds: (_pytest "-s tests/test_pdk.py")
 
 # Run GDS regressions tests (tests/test_pdk.py) and regenerate
 [group('test')]
-test-gds-force:
-    {{ PYTEST_COMMAND }} -s tests/test_pdk.py --force-regen
+test-gds-force: (_pytest "-s tests/test_pdk.py --force-regen")
 
 # Run GDS regressions tests (tests/test_pdk.py) and stop at first failure
 [group('test')]
-test-gds-fail-fast:
-    {{ PYTEST_COMMAND }} -s tests/test_pdk.py -x
+test-gds-fail-fast: (_pytest "-s tests/test_pdk.py -x")
 
 # Run model regression tests (tests/test_models_regression.py)
 [group('test')]
-test-models:
-    {{ PYTEST_COMMAND }} -s tests/test_models_regression.py
+test-models: (_pytest "-s tests/test_models_regression.py")
 
 # Regenerate model regression reference files
 [group('test')]
-test-models-force:
-    {{ PYTEST_COMMAND }} -s tests/test_models_regression.py --force-regen
+test-models-force: (_pytest "-s tests/test_models_regression.py --force-regen")
 
 # Run HFSS simulation tests (requires HFSS to be installed)
 [group('test')]
