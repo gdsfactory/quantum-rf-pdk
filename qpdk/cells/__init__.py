@@ -2,6 +2,7 @@
 
 import gdsfactory as gf
 
+from ._schematic import *
 from .airbridge import *
 from .bump import *
 from .capacitor import *

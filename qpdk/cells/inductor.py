@@ -8,6 +8,7 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
+from qpdk.cells._schematic import meander_inductor_schematic
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
     get_etch_section,
@@ -15,7 +16,7 @@ from qpdk.tech import (
 )
 
 
-@gf.cell(tags=("inductors",))
+@gf.cell(tags=("inductors",), schematic_function=meander_inductor_schematic)
 def meander_inductor(
     n_turns: int = 5,
     turn_length: float = 200.0,
@@ -192,6 +193,9 @@ def meander_inductor(
     c.info["cross_section"] = xs.name
 
     return c
+
+
+meander_inductor.schematic_function = meander_inductor_schematic
 
 
 @gf.cell(tags=("resonators", "inductors", "capacitors"))

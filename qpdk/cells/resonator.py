@@ -9,11 +9,12 @@ import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
+from qpdk.cells._schematic import resonator_schematic
 from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.tech import get_etch_section
 
 
-@gf.cell(tags=("resonators",))
+@gf.cell(tags=("resonators",), schematic_function=resonator_schematic)
 def resonator(
     length: float = 4000.0,
     meanders: int = 6,
@@ -196,6 +197,9 @@ def resonator(
     # )  # GHz, rough estimate
 
     return c
+
+
+resonator.schematic_function = resonator_schematic
 
 
 # A quarter-wave resonator is shorted at one end and has maximum electric field

@@ -8,6 +8,10 @@ from kfactory import VInstance
 from klayout.db import DCplxTrans
 
 from qpdk import tech
+from qpdk.cells._schematic import (
+    bend_circular_schematic,
+    straight_schematic,
+)
 from qpdk.logger import logger
 from qpdk.tech import get_etch_section
 
@@ -50,7 +54,7 @@ taper_cross_section = partial(
 )
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(tags=("waveguides",), schematic_function=straight_schematic)
 def straight(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
@@ -70,6 +74,7 @@ def straight(
     )
 
 
+straight.schematic_function = straight_schematic
 straight_shorted = straight
 
 
@@ -240,7 +245,7 @@ def bend_euler(
     )
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(tags=("waveguides",), schematic_function=bend_circular_schematic)
 def bend_circular(
     angle: float = 90.0,
     radius: float = 100.0,
@@ -283,6 +288,9 @@ def bend_circular(
         allow_min_radius_violation=allow_min_radius_violation,
         **kwargs,
     )
+
+
+bend_circular.schematic_function = bend_circular_schematic
 
 
 @gf.cell(tags=("waveguides",))
