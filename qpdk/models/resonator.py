@@ -24,15 +24,18 @@ def quarter_wave_resonator_coupled(
     coupling_gap: float = 0.27,
     coupling_straight_length: float = 20,
     cross_section: CrossSectionSpec = "cpw",
+    cross_section_non_resonator: CrossSectionSpec | None = None,
 ) -> sax.SDict:
     """Model for a quarter-wave coplanar waveguide resonator coupled to a probeline.
 
     Args:
-        cross_section: The cross-section of the CPW.
+        cross_section: The cross-section of the resonator CPW.
         f: Frequency in Hz at which to evaluate the S-parameters.
         length: Total length of the resonator in μm.
         coupling_gap: Gap between the resonator and the probeline in μm.
         coupling_straight_length: Length of the coupling section in μm.
+        cross_section_non_resonator: The cross-section of the coupling (probeline)
+            waveguide.  Defaults to *cross_section* when ``None``.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -46,6 +49,7 @@ def quarter_wave_resonator_coupled(
             coupling_gap=coupling_gap,
             coupling_straight_length=coupling_straight_length,
             cross_section=cross_section,
+            cross_section_non_resonator=cross_section_non_resonator,
             open_start=True,
             open_end=False,
         ),
@@ -71,17 +75,20 @@ def resonator_coupled(
     coupling_gap: float = 0.27,
     coupling_straight_length: float = 20,
     cross_section: CrossSectionSpec = "cpw",
+    cross_section_non_resonator: CrossSectionSpec | None = None,
     open_start: bool = True,
     open_end: bool = False,
 ) -> sax.SDict:
     """Model for a coplanar waveguide resonator coupled to a probeline.
 
     Args:
-        cross_section: The cross-section of the CPW.
+        cross_section: The cross-section of the resonator CPW.
         f: Frequency in Hz at which to evaluate the S-parameters.
         length: Total length of the resonator in μm.
         coupling_gap: Gap between the resonator and the probeline in μm.
         coupling_straight_length: Length of the coupling section in μm.
+        cross_section_non_resonator: Cross-section of the coupling (probeline)
+            waveguide. Defaults to *cross_section* when ``None``.
         open_start: If True, adds an electrical open at the start.
         open_end: If True, adds an electrical open at the end.
 
@@ -89,6 +96,8 @@ def resonator_coupled(
         sax.SDict: S-parameters dictionary with 4 ports.
     """
     f_arr = jnp.asarray(f)
+    if cross_section_non_resonator is None:
+        cross_section_non_resonator = cross_section
 
     capacitor_settings = {
         "capacitance": cpw_cpw_coupling_capacitance(
@@ -99,10 +108,14 @@ def resonator_coupled(
 
     instances = {
         "coupling_1": straight(
-            f=f_arr, length=coupling_straight_length / 2, cross_section=cross_section
+            f=f_arr,
+            length=coupling_straight_length / 2,
+            cross_section=cross_section_non_resonator,
         ),
         "coupling_2": straight(
-            f=f_arr, length=coupling_straight_length / 2, cross_section=cross_section
+            f=f_arr,
+            length=coupling_straight_length / 2,
+            cross_section=cross_section_non_resonator,
         ),
         "resonator_1": straight(
             f=f_arr, length=coupling_straight_length / 2, cross_section=cross_section
