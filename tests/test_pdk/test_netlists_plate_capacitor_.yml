@@ -1,7 +1,9 @@
 instances:
   plate_capacitor_single:
     component: plate_capacitor_single
-    info: {}
+    info:
+      pin_names:
+        o1: terminal_a
     settings:
       cross_section: cpw
       etch_bbox_margin: 2
@@ -11,7 +13,9 @@ instances:
       width: 5
   plate_capacitor_single2:
     component: plate_capacitor_single
-    info: {}
+    info:
+      pin_names:
+        o1: terminal_a
     settings:
       cross_section: cpw
       etch_bbox_margin: 2

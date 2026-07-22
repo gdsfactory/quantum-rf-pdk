@@ -2,6 +2,11 @@ instances:
   double_pad_transmon:
     component: double_pad_transmon
     info:
+      pin_names:
+        left_pad: pad_a
+        left_pad_inner: pad_a
+        right_pad: pad_b
+        right_pad_inner: pad_b
       qubit_type: transmon
     settings:
       junction_displacement: null
