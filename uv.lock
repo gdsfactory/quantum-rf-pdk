@@ -1797,7 +1797,7 @@ wheels = [
 
 [[package]]
 name = "klujax"
-version = "0.4.8"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jax" },
@@ -1806,16 +1806,16 @@ dependencies = [
     { name = "numpy" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/2b/6c889b2cc95c50acc77dc367c0524b8adc551f99cd4c224d992ab3c1e063/klujax-0.4.8-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:81ad10441b48d5bc50629a9eb5ef5f466d0fced75ac8a0fa9c222a8d21aece01", size = 203745, upload-time = "2026-01-27T13:07:13.195Z" },
-    { url = "https://files.pythonhosted.org/packages/80/3e/037e071d52a31277b458ce201ecd4fc90d7b8116563bd2b11ec3f23bac49/klujax-0.4.8-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:6c0df7470bb74779941a12103d1dd3579a147d34b58568306e690370467cdfbb", size = 2046555, upload-time = "2026-01-27T13:07:14.223Z" },
-    { url = "https://files.pythonhosted.org/packages/27/4a/13403335639fd4e8bb08bf12b284f9e54f2417da29b482cebff8693823bd/klujax-0.4.8-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5f1136a0b12edd98f32ed6fb2173344af699a5aaab8e2020c19fb0b59ccab115", size = 2126877, upload-time = "2026-01-27T13:07:15.784Z" },
-    { url = "https://files.pythonhosted.org/packages/12/ba/d1eceaf2ff48ec209a29cc19c64331f2168829f1b935f3c13b1f75aed58b/klujax-0.4.8-cp312-cp312-win_amd64.whl", hash = "sha256:3025161a2eb82b07f5d08c2fd2ff1713cb4e186556765a615976fca13b9586fc", size = 138567, upload-time = "2026-01-27T13:07:17.228Z" },
-    { url = "https://files.pythonhosted.org/packages/3e/7b/5ea4545eceae7e6c9489e5afb8c868bdcbf0cdffefc43d9828dc1d155969/klujax-0.4.8-cp312-cp312-win_arm64.whl", hash = "sha256:86d0541eeb3aa9a71568e1fcd3faec8c107a6f6f803275052aa8ad415913c428", size = 118339, upload-time = "2026-01-27T13:07:18.288Z" },
-    { url = "https://files.pythonhosted.org/packages/46/ba/f1ae5072b43937592c178ed67514fe4a80de0404a9a3d389ef5ea98ff671/klujax-0.4.8-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:2e65be9a03a3a2d21e3352d36388852ea7cfd189ffc4b2908b3bad024d4dc2b5", size = 203785, upload-time = "2026-01-27T13:07:19.175Z" },
-    { url = "https://files.pythonhosted.org/packages/ea/99/76dd75dc78884b23f78e03d32eb9fb32f184cd4952fa07cc29555abf2a12/klujax-0.4.8-cp313-cp313-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:58eee488492bd87145d2f1062fc02a92387c5720f323834fee75b7b71d84bcb2", size = 2046480, upload-time = "2026-01-27T13:07:20.328Z" },
-    { url = "https://files.pythonhosted.org/packages/da/a0/fad4b1177f09ea9204613e0f18291c9ae0e4c03f6378642791e09916e8fb/klujax-0.4.8-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:1873357da8bc59f02244491f69023503caef00b3035493292f84eb53270b3192", size = 2126159, upload-time = "2026-01-27T13:07:21.676Z" },
-    { url = "https://files.pythonhosted.org/packages/41/cd/a8b6bf56510db5aae474117396eec0b4c9d3918a1a5965a6b622f19e3640/klujax-0.4.8-cp313-cp313-win_amd64.whl", hash = "sha256:d963a0d4658aaf3eb3410bdcc4e614bbd780de2a0767dbe72292b3b168e89ca7", size = 138588, upload-time = "2026-01-27T13:07:22.744Z" },
-    { url = "https://files.pythonhosted.org/packages/36/cf/47b79353865a6196dfcff2ad75697332aef0e950004f3f43cffd02e7e57b/klujax-0.4.8-cp313-cp313-win_arm64.whl", hash = "sha256:e5dd6bae4a027f2272eb898c7dbfa45967c57fbc926264aee54f1097406fb865", size = 118315, upload-time = "2026-01-27T13:07:24.147Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/a7/d23e325e450be5dbf95a76638e2eb598eb8aff23cf934063eba3800a5be1/klujax-0.5.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:b18a26a5a0eebb35eb601af755c77830871b7336c782d6a50022e875d4f8d0ba", size = 241627, upload-time = "2026-04-15T18:52:06.418Z" },
+    { url = "https://files.pythonhosted.org/packages/be/9b/69ffcb2562b2ead851b17d4c4688586d538fe1469c48f29f0d3e3a3db8f1/klujax-0.5.0-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:2c986f7c0ececf3618241475a73f83975f883937f6e38ec078f3c2337575006b", size = 2851334, upload-time = "2026-04-15T18:52:07.75Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/43/59c8680bce1005bb0247d4d4291d1862f62ac12e1bca984f22920b97996d/klujax-0.5.0-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ea9668b52e6791345796470fba4a903113d2eef19ca03b58aaa54e76444522c5", size = 2915350, upload-time = "2026-04-15T18:52:09.238Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/26/48ed386475225905033f293ad67c48ccb83368b23192a0dc9f6272cdb59a/klujax-0.5.0-cp312-cp312-win_amd64.whl", hash = "sha256:fd2b664224a9f5935a4961d978ec9b40fc92fb35e78113ec0e8026be95132efe", size = 184786, upload-time = "2026-04-15T18:52:10.689Z" },
+    { url = "https://files.pythonhosted.org/packages/07/02/f232f8801c9aaa069c3ae5e56e66222561a6e9fd38a627fb0c5a792dc22b/klujax-0.5.0-cp312-cp312-win_arm64.whl", hash = "sha256:f4198d9973958246c9c8282004ee4053f36af3a000b9d7960b9aeb705362ee4a", size = 155148, upload-time = "2026-04-15T18:52:11.965Z" },
+    { url = "https://files.pythonhosted.org/packages/61/17/64196d979e7c73e3c58da9f891efa7ace6c5ec55240acf0563661234d2e8/klujax-0.5.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:39313aab26cd8e9ca3481e700d66d41068a625c106f4779c53caf5a680a1dbfc", size = 241672, upload-time = "2026-04-15T18:52:13.41Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/93/26a4ed1db29f1d3421ae4e2a5668be3230d8b15f03cce6117f8f67466fc6/klujax-0.5.0-cp313-cp313-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b3bbe2f16864f473eb77445ef287ead80c9f47fc0849d05b041453ba62bed501", size = 2851139, upload-time = "2026-04-15T18:52:14.659Z" },
+    { url = "https://files.pythonhosted.org/packages/91/4f/f04316561a244902afeca04bbf0ee6eafff470733030b13f886d589b0ee7/klujax-0.5.0-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:172a96f36143b469fdfcf0517867e5b49f3723dc70d75d244cf65ed0f424f3bf", size = 2913977, upload-time = "2026-04-15T18:52:16.238Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/12/df7c69f7850db9c8e808c81817ae9204cf060c995ce091e5b499f9b9330a/klujax-0.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:33a4193cd2996143ed0d294bf71cc3a12d7992d9b23241c9152680b681807cf1", size = 184833, upload-time = "2026-04-15T18:52:17.451Z" },
+    { url = "https://files.pythonhosted.org/packages/02/c8/61c2192dd1ec7c42d3d00f89b4be479c4d83cde1d9324759095a09fcdc8c/klujax-0.5.0-cp313-cp313-win_arm64.whl", hash = "sha256:d1e2abf2ffd1600b31b34ea64c27ccdc13403ae3fd2421ee4e13decc0ff50617", size = 155095, upload-time = "2026-04-15T18:52:18.434Z" },
 ]
 
 [[package]]
@@ -3683,7 +3683,7 @@ models = [
     { name = "optuna" },
     { name = "pandas", extra = ["parquet"] },
     { name = "polars" },
-    { name = "sax", extra = ["rf"] },
+    { name = "sax" },
     { name = "scikit-rf" },
     { name = "sympy" },
 ]
@@ -3740,7 +3740,7 @@ docs = [
     { name = "qutip-jax" },
     { name = "qutip-qip" },
     { name = "ray", extra = ["default"] },
-    { name = "sax", extra = ["rf"] },
+    { name = "sax" },
     { name = "scikit-rf" },
     { name = "scipy" },
     { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
@@ -3770,7 +3770,7 @@ docs-models = [
     { name = "qutip-jax" },
     { name = "qutip-qip" },
     { name = "ray", extra = ["default"] },
-    { name = "sax", extra = ["rf"] },
+    { name = "sax" },
     { name = "scikit-rf" },
     { name = "scqubits", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "scqubits", version = "4.3.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
@@ -3820,7 +3820,7 @@ requires-dist = [
     { name = "qutip-jax", marker = "extra == 'qutip'", specifier = ">=0.1.1" },
     { name = "qutip-qip", marker = "extra == 'qutip'", specifier = ">=0.4.1" },
     { name = "ray", extras = ["default"], marker = "extra == 'ray'" },
-    { name = "sax", extras = ["rf"], marker = "extra == 'models'", specifier = ">=0.16.14" },
+    { name = "sax", marker = "extra == 'models'", specifier = ">=0.18.2,<1" },
     { name = "scikit-rf", marker = "extra == 'models'" },
     { name = "scqubits", marker = "extra == 'scqubits'" },
     { name = "sympy", marker = "extra == 'models'" },
@@ -3862,7 +3862,7 @@ docs = [
     { name = "qutip-jax", specifier = ">=0.1.1" },
     { name = "qutip-qip", specifier = ">=0.4.1" },
     { name = "ray", extras = ["default"] },
-    { name = "sax", extras = ["rf"], specifier = ">=0.16.14" },
+    { name = "sax", specifier = ">=0.18.2,<1" },
     { name = "scikit-rf" },
     { name = "scipy" },
     { name = "scqubits" },
@@ -3891,7 +3891,7 @@ docs-models = [
     { name = "qutip-jax", specifier = ">=0.1.1" },
     { name = "qutip-qip", specifier = ">=0.4.1" },
     { name = "ray", extras = ["default"] },
-    { name = "sax", extras = ["rf"], specifier = ">=0.16.14" },
+    { name = "sax", specifier = ">=0.18.2,<1" },
     { name = "scikit-rf" },
     { name = "scqubits" },
     { name = "sympy" },
@@ -4231,10 +4231,11 @@ wheels = [
 
 [[package]]
 name = "sax"
-version = "0.16.14"
+version = "0.18.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jax" },
+    { name = "jaxellip" },
     { name = "jaxtyping" },
     { name = "klujax" },
     { name = "lark" },
@@ -4253,14 +4254,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/03/f4dce31712e32e7ac36869a5dee6072bb9f6dbdfc7b34040c6a68918030f/sax-0.16.14.tar.gz", hash = "sha256:e0a04d8dc6b144e040d788c7bc3749e7f4639f7af26dd51e59902edc1e762c7b", size = 105812, upload-time = "2026-03-28T22:27:56.71Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e5/e8/d5596c5f0e9a997135ed8fe602adb7061268a419ebc73f39c595b218f1b7/sax-0.18.2.tar.gz", hash = "sha256:39c0f8ca245d77616f722856f8f838d22703d6c8bef58da2969426de1217bcdb", size = 112480, upload-time = "2026-06-09T16:44:07.799Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/d7/f6d2ceb617a1a9704a0bae4ef223a514a130b166109e30adcf82e8ef0ff1/sax-0.16.14-py3-none-any.whl", hash = "sha256:5fbb175cb0ab2d375ba570fb677aa72ee7a9d8765ac4001754d20f6355e86c78", size = 126371, upload-time = "2026-03-28T22:27:55.183Z" },
-]
-
-[package.optional-dependencies]
-rf = [
-    { name = "jaxellip" },
+    { url = "https://files.pythonhosted.org/packages/e6/0b/94e9a63022f9a9f347176f54c2fae034c49cfc5989bd4384c97c4b814001/sax-0.18.2-py3-none-any.whl", hash = "sha256:ccacc71c6c74a5b2aa9fd0b5436e4a64b92ee4169a0a36469ef55d68e6472f03", size = 134218, upload-time = "2026-06-09T16:44:06.567Z" },
 ]
 
 [[package]]
