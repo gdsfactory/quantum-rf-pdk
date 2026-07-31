@@ -215,7 +215,7 @@ repos:
         priority: 10
         args: [--line-length=100]
   - repo: https://github.com/nikosavola/MATLAB-language-server-pre-commit
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: matlab-format
         priority: 20
