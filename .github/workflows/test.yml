@@ -11,6 +11,8 @@ on:
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    env:
+      SKIP: matlab-diagnostics,matlab-format,matlab-quickfix  # No license
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
@@ -175,6 +177,22 @@ jobs:
       - uses: matlab-actions/setup-matlab@a0180c939fb1a28de13f44f7b778b912384ced1f # v3.0.1
         with:
           cache: true
+      - name: Checkout MATLAB lint helper
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: nikosavola/MATLAB-language-server-pre-commit
+          ref: v0.1.0
+          sparse-checkout: matlab
+          sparse-checkout-cone-mode: false
+          path: matlab-lsp-hook
+      - name: Run MATLAB Code Analyzer lint
+        uses: matlab-actions/run-command@bcd446a219949c24051c1d04a4b4e0274c42f23b # v3.2.0
+        with:
+          command: |
+            diary('/tmp/matlab_lint.log'); diary on;
+            addpath('matlab-lsp-hook/matlab');
+            lintFiles();
+            diary off;
       - name: Sanity-check MATLAB ↔ Python bridge
         uses: matlab-actions/run-command@bcd446a219949c24051c1d04a4b4e0274c42f23b # v3.2.0
         with:
@@ -200,6 +218,8 @@ jobs:
       - name: Print MATLAB diary on failure
         if: failure()
         run: |
+          echo "=== /tmp/matlab_lint.log ==="
+          cat /tmp/matlab_lint.log 2>/dev/null || echo "(missing)"
           echo "=== /tmp/matlab_bridge.log ==="
           cat /tmp/matlab_bridge.log 2>/dev/null || echo "(missing)"
           echo "=== /tmp/matlab_script.log ==="
@@ -210,6 +230,7 @@ jobs:
           name: matlab-notebook-artifacts
           path: |
             /tmp/qpdk_matlab_demo/**
+            /tmp/matlab_lint.log
             /tmp/matlab_bridge.log
             /tmp/matlab_script.log
           if-no-files-found: warn
