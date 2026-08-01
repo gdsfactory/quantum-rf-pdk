@@ -180,7 +180,7 @@ repos:
         name: markdownlint
         args: [--config, .github/.markdownlint-cli2.yaml]
         additional_dependencies:
-          - katex@0.17.0
+          - katex@0.18.1
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.22
     hooks:
