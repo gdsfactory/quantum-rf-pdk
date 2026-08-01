@@ -57,7 +57,7 @@ repos:
         files: ".ipynb"
         exclude: ^notebooks/(hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance)\.ipynb$
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
       - id: codespell
         priority: 10
