@@ -173,7 +173,7 @@ repos:
       - id: sphinx-lint
         priority: 10
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.22.1
+    rev: v0.23.1
     hooks:
       - id: markdownlint-cli2
         priority: 20
