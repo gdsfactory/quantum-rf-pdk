@@ -2,6 +2,9 @@ info:
   capacitor_finger_length: 20
   capacitor_fingers: 20
   inductor_n_squares: 210
+  pin_names:
+    o1: terminal_a
+    o2: terminal_b
   total_wire_length: 420
 name: lumped_element_resonator_F20_FL20_FG2_FT5_NT15_BBS4_CSm_172655b8
 ports:

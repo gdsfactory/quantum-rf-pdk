@@ -18,6 +18,9 @@ instances:
     info:
       cross_section: superinductor_cross_section
       n_squares: 89818
+      pin_names:
+        o1: terminal_a
+        o2: terminal_b
       total_wire_length: 3592.72
     settings:
       add_etch: false

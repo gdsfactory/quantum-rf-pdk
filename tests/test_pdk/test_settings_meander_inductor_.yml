@@ -1,6 +1,9 @@
 info:
   cross_section: meander_inductor_cross_section
   n_squares: 508
+  pin_names:
+    o1: terminal_a
+    o2: terminal_b
   total_wire_length: 1016
 name: meander_inductor_NT5_TL200_CSmeander_inductor_cross_sec_b066afaa
 ports:

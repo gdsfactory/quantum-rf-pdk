@@ -1,4 +1,7 @@
-info: {}
+info:
+  pin_names:
+    o1: terminal_a
+    o2: terminal_b
 name: interdigital_capacitor_F4_FL20_FG2_T5_LMM1_DRAW_ELM1_ET_a1ca2a9c
 ports:
   o1:

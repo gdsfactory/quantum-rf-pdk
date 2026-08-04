@@ -278,6 +278,12 @@ def fluxonium(
     c.info["qubit_type"] = "fluxonium"
     c.info["inductor_n_turns"] = inductor_n_turns
     c.info["inductor_total_wire_length"] = inductor.info["total_wire_length"]
+    c.info["pin_names"] = {
+        "left_pad": "pad_a",
+        "left_pad_inner": "pad_a",
+        "right_pad": "pad_b",
+        "right_pad_inner": "pad_b",
+    }
 
     return c
 
@@ -360,4 +366,10 @@ def fluxonium_with_bbox(
     c.absorb(bbox_ref)
 
     c.add_ports(flux_ref.ports)
+    c.info["pin_names"] = {
+        "left_pad": "pad_a",
+        "left_pad_inner": "pad_a",
+        "right_pad": "pad_b",
+        "right_pad_inner": "pad_b",
+    }
     return c
