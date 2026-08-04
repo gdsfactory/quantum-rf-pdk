@@ -214,6 +214,15 @@ repos:
       - id: matlab-reflow-comments
         priority: 10
         args: [--line-length=100]
+  - repo: https://github.com/nikosavola/MATLAB-language-server-pre-commit
+    rev: v0.1.1
+    hooks:
+      - id: matlab-format
+        priority: 20
+      - id: matlab-diagnostics
+        priority: 30
+      - id: matlab-quickfix
+        priority: 30
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:

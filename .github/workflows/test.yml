@@ -11,6 +11,8 @@ on:
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    env:
+      PREK_SKIP: matlab-diagnostics,matlab-format,matlab-quickfix  # No license
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -175,6 +177,7 @@ jobs:
       - uses: matlab-actions/setup-matlab@a0180c939fb1a28de13f44f7b778b912384ced1f # v3.0.1
         with:
           cache: true
+      - uses: nikosavola/MATLAB-language-server-pre-commit@5966190480d0a77bf731bac19df84417aabc63b2 # v0.1.1
       - name: Sanity-check MATLAB ↔ Python bridge
         uses: matlab-actions/run-command@bcd446a219949c24051c1d04a4b4e0274c42f23b # v3.2.0
         with:
