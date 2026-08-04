@@ -113,6 +113,7 @@ nb_execution_mode = "cache"
 # in typical documentation build environments.
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
+    "notebooks/josim*",
     "notebooks/matlab_integration*",
 ]
 nb_execution_timeout = -1
