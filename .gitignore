@@ -154,6 +154,8 @@ docs/cells.rst
 docs/models.rst
 docs/samples.rst
 docs/notebooks/
+docs/_extra/
+docs/_generated/
 docs/makefile_help.txt
 docs/justfile_help.txt
 !notebooks/*.ipynb

@@ -59,6 +59,7 @@ plot_apply_rcparams = True  # Ensure rcParams are applied even with :context:
 
 exclude_patterns = [
     "_build",
+    "_extra",
     "conf.py",
     "ipython_config.py",
     "*.mplstyle",
@@ -206,6 +207,11 @@ html_context = {
     "doc_path": "docs",
 }
 html_static_path = ["_static"]
+# Contents are copied verbatim to the output root, so ``docs/_extra/kwasm/``
+# becomes ``kwasm/`` on the built site.  This is what serves the interactive
+# viewer and the GDS files behind the "Dynamic" tab of each PCell; Sphinx does
+# not copy them on its own since they are only referenced from ``.. raw:: html``.
+html_extra_path = ["_extra"]
 html_css_files = [
     "css/custom.css",
 ]

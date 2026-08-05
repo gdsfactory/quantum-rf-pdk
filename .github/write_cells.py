@@ -21,8 +21,17 @@ filepath_cells = PATH.docs / "cells.rst"
 filepath_samples = PATH.docs / "samples.rst"
 template_dir = PATH.docs / "templates"
 
-kwasm_dir = PATH.docs / "kwasm"
+# Lives under ``docs/_extra`` which is declared as ``html_extra_path`` in
+# ``docs/conf.py``, so its contents are copied verbatim to the HTML output root
+# as ``kwasm/``.  Sphinx only copies files it knows about (``.. image::``
+# targets and the like), so the viewer HTML and the GDS files it fetches would
+# otherwise never reach the built site and the Dynamic tab would 404.
+kwasm_dir = PATH.docs / "_extra" / "kwasm"
 gds_dir = kwasm_dir / "gds"
+# Static previews are referenced with ``.. image::`` so Sphinx copies them into
+# ``_images/`` itself; keeping them out of ``_extra`` avoids shipping a second
+# copy of every preview.
+png_dir = PATH.docs / "_generated" / "cells"
 
 skip = {}
 
@@ -41,6 +50,7 @@ env = Environment(loader=FileSystemLoader(template_dir), autoescape=False)
 def _setup_kwasm_viewer() -> None:
     """Create the kwasm viewer HTML and GDS output directory."""
     gds_dir.mkdir(parents=True, exist_ok=True)
+    png_dir.mkdir(parents=True, exist_ok=True)
     viewer_path = kwasm_dir / "viewer.html"
     if viewer_path.exists():
         return
@@ -58,7 +68,7 @@ def _generate_artifacts(c, name: str) -> None:
     c.write_gds(gds_dir / f"{name}.gds")
     fig, ax = plt.subplots()
     c.plot(ax=ax)
-    fig.savefig(gds_dir / f"{name}.png", dpi=150, bbox_inches="tight")
+    fig.savefig(png_dir / f"{name}.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
