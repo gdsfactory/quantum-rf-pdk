@@ -24,7 +24,8 @@ install-tech:
 [confirm]
 [group('setup')]
 clean:
-    @rm -rf dist build *.egg-info docs/_build docs/notebooks
+    @rm -rf dist build *.egg-info docs/_build docs/notebooks .hypothesis .pytest_cache .ruff_cache
+    @find . -path ./.venv -prune -o -path ./.git -prune -o -type d -name __pycache__ -exec rm -rf {} +
 
 # Update pre-commit hooks to the latest revisions
 [group('lint')]
