@@ -23,9 +23,21 @@ install-tech:
 # Clean up all build, test, coverage and Python artifacts
 [confirm]
 [group('setup')]
+[unix]
 clean:
     @rm -rf dist build *.egg-info docs/_build docs/notebooks .hypothesis .pytest_cache .ruff_cache
     @find . -path ./.venv -prune -o -path ./.git -prune -o -type d -name __pycache__ -exec rm -rf {} +
+
+# Clean up all build, test, coverage and Python artifacts
+[confirm]
+[group('setup')]
+[windows]
+[script('powershell.exe')]
+clean:
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue dist, build, *.egg-info, docs/_build, docs/notebooks, .hypothesis, .pytest_cache, .ruff_cache
+    Get-ChildItem -Recurse -Directory -Filter __pycache__ -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '\\\.venv\\' -and $_.FullName -notmatch '\\\.git\\' } |
+        Remove-Item -Recurse -Force
 
 # Update pre-commit hooks to the latest revisions
 [group('lint')]
