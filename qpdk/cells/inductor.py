@@ -455,14 +455,14 @@ def lumped_element_resonator(
         name="o1",
         port=straight_left.ports["o1"],
         layer=layer,
-        port_type="electrical",
+        port_type="optical",
         cross_section=xs,
     )
     c.add_port(
         name="o2",
         port=straight_right.ports["o2"],
         layer=layer,
-        port_type="electrical",
+        port_type="optical",
         cross_section=xs,
     )
 
