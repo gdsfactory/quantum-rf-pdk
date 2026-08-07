@@ -145,31 +145,42 @@ end
 %
 % ## Parametric chip variants
 %
-% Build a 2-D `ndgrid` of (coupling gap, resonator length) and call
-% `qpdk.samples.resonator_test_chip.resonator_test_chip_python` for each combination. Collect
+% Sweep over (coupling gap, resonator-length range) combinations and call
+% `qpdk.samples.resonator_test_chip.resonator_test_chip_python` for each. The chip spreads 16
+% resonator lengths across `resonator_length_range` to give distinct resonances. Collect
 % bounding-box areas in a MATLAB `table` for inspection.
 
 % %%
 gaps_um = [12, 16, 20];
-res_lengths_um = [3500, 4500];
-[GG, LL] = ndgrid(gaps_um, res_lengths_um);
-n = numel(GG);
+length_ranges_um = {[3000, 4500], [4500, 6000]};
+n = numel(gaps_um) * numel(length_ranges_um);
+gap_col = zeros(n, 1);
+lo_col = zeros(n, 1);
+hi_col = zeros(n, 1);
 areas_mm2 = zeros(n, 1);
 files = strings(n, 1);
 
-for k = 1:n
-    chip = py.qpdk.samples.resonator_test_chip.resonator_test_chip_python( ...
-        pyargs('coupling_gap', GG(k), 'resonator_length', LL(k)));
-    sz = chip.size_info;
-    w_um = double(sz.width);
-    h_um = double(sz.height);
-    areas_mm2(k) = (w_um * h_um) / 1e6;
-    files(k) = fullfile(results_dir, sprintf('chip_gap%g_len%g.gds', GG(k), LL(k)));
-    chip.write_gds(files(k));
+k = 0;
+for gi = 1:numel(gaps_um)
+    for li = 1:numel(length_ranges_um)
+        k = k + 1;
+        range_um = length_ranges_um{li};
+        chip = py.qpdk.samples.resonator_test_chip.resonator_test_chip_python( ...
+            pyargs('coupling_gap', gaps_um(gi), ...
+            'resonator_length_range', py.tuple({range_um(1), range_um(2)})));
+        sz = chip.size_info;
+        areas_mm2(k) = (double(sz.width) * double(sz.height)) / 1e6;
+        files(k) = fullfile(results_dir, ...
+            sprintf('chip_gap%g_len%g-%g.gds', gaps_um(gi), range_um(1), range_um(2)));
+        chip.write_gds(files(k));
+        gap_col(k) = gaps_um(gi);
+        lo_col(k) = range_um(1);
+        hi_col(k) = range_um(2);
+    end
 end
 
-T = table(GG(:), LL(:), areas_mm2, files, ...
-    'VariableNames', {'coupling_gap_um', 'resonator_length_um', 'area_mm2', 'gds_file'});
+T = table(gap_col, lo_col, hi_col, areas_mm2, files, ...
+    'VariableNames', {'coupling_gap_um', 'length_min_um', 'length_max_um', 'area_mm2', 'gds_file'});
 disp(T);
 
 % %% [markdown]
