@@ -12,7 +12,7 @@ ports:
     layer: M1_DRAW
     name: o1
     orientation: 180
-    port_type: electrical
+    port_type: optical
     width: 2
   o2:
     center:
@@ -21,7 +21,7 @@ ports:
     layer: M1_DRAW
     name: o2
     orientation: 0
-    port_type: electrical
+    port_type: optical
     width: 2
 settings:
   bus_bar_spacing: 4
