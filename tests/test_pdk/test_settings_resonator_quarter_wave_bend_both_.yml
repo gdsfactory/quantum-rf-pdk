@@ -20,7 +20,7 @@ ports:
     layer: M1_ETCH
     name: o2
     orientation: 270
-    port_type: placement
+    port_type: optical
     width: 22
 settings:
   bend_spec: bend_circular

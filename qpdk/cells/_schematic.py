@@ -13,6 +13,8 @@ __all__ = [
     "bend_circular_schematic",
     "double_pad_transmon_schematic",
     "meander_inductor_schematic",
+    "quarter_wave_resonator_coupled_schematic",
+    "resonator_coupled_schematic",
     "resonator_schematic",
     "sax_model",
     "schematic",
@@ -40,6 +42,17 @@ _3PORT = [
     {"name": "o2", "side": "right", "type": "photonic"},
     {"name": "o3", "side": "top", "type": "photonic"},
 ]
+
+# Coupled resonator model ports. The resonator endpoint is intentionally
+# retained in the SAX model boundary even though it is not a chip-level port.
+_RESONATOR_COUPLED = [
+    {"name": "coupling_o1", "side": "left", "type": "photonic"},
+    {"name": "coupling_o2", "side": "right", "type": "photonic"},
+    {"name": "resonator_o1", "side": "top", "type": "photonic"},
+    {"name": "resonator_o2", "side": "bottom", "type": "photonic"},
+]
+
+_QUARTER_WAVE_RESONATOR_COUPLED = _RESONATOR_COUPLED[:3]
 
 # Transmon qubit
 _TRANSMON = [
@@ -176,6 +189,37 @@ resonator_schematic = schematic(
     symbol="resonator",
     tags=["resonators"],
     ports=_2PORT,
+)
+
+resonator_coupled_schematic = schematic(
+    symbol="resonator_coupled",
+    tags=["resonators", "couplers"],
+    ports=_RESONATOR_COUPLED,
+    models=[
+        sax_model(
+            name="resonator_coupled",
+            module="qpdk.models.resonator",
+            port_order=[
+                "coupling_o1",
+                "coupling_o2",
+                "resonator_o1",
+                "resonator_o2",
+            ],
+        )
+    ],
+)
+
+quarter_wave_resonator_coupled_schematic = schematic(
+    symbol="quarter_wave_resonator_coupled",
+    tags=["resonators", "couplers"],
+    ports=_QUARTER_WAVE_RESONATOR_COUPLED,
+    models=[
+        sax_model(
+            name="quarter_wave_resonator_coupled",
+            module="qpdk.models.resonator",
+            port_order=["coupling_o1", "coupling_o2", "resonator_o1"],
+        )
+    ],
 )
 
 double_pad_transmon_schematic = schematic(

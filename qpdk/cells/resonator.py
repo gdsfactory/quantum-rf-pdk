@@ -9,7 +9,11 @@ import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
-from qpdk.cells._schematic import resonator_schematic
+from qpdk.cells._schematic import (
+    quarter_wave_resonator_coupled_schematic,
+    resonator_coupled_schematic,
+    resonator_schematic,
+)
 from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.tech import get_etch_section
 
@@ -173,9 +177,8 @@ def resonator(
                 allow_width_mismatch=True,
                 allow_layer_mismatch=True,
             )
-            c.add_port(
-                output_port, port=open_etch.ports[output_port], port_type="placement"
-            )
+            # Keep open-end ports optical so recursive circuit netlists retain them.
+            c.add_port(output_port, port=open_etch.ports[output_port])
 
         if open_end:
             _add_etch_at_port("o1", last_ref.ports["o2"], "o2")
@@ -228,7 +231,10 @@ resonator_half_wave_bend_both = partial(
 )
 
 
-@gf.cell(tags=("resonators", "couplers"))
+@gf.cell(
+    tags=("resonators", "couplers"),
+    schematic_function=resonator_coupled_schematic,
+)
 def resonator_coupled(
     length: float = 4000.0,
     meanders: int = 6,
@@ -309,12 +315,7 @@ def resonator_coupled(
     coupling_ref.xmin = resonator_ref["o1"].x  # Align left edges
 
     for port in resonator_ref.ports:
-        port_type = (
-            "placement"
-            if ((port.name == "o1" and open_start) or (port.name == "o2" and open_end))
-            else "optical"
-        )
-        c.add_port(f"resonator_{port.name}", port=port, port_type=port_type)
+        c.add_port(f"resonator_{port.name}", port=port)
 
     for port in coupling_ref.ports:
         c.add_port(f"coupling_{port.name}", port=port)
@@ -326,7 +327,10 @@ def resonator_coupled(
     return c
 
 
-@gf.cell(tags=("resonators", "couplers"))
+@gf.cell(
+    tags=("resonators", "couplers"),
+    schematic_function=quarter_wave_resonator_coupled_schematic,
+)
 def quarter_wave_resonator_coupled(
     length: float = 4000.0,
     meanders: int = 6,
