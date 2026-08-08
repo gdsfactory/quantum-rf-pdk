@@ -280,6 +280,29 @@ def test_optical_port_positions(component_name: str) -> None:
             )
 
 
+MANHATTAN_ORIENTATIONS = (0.0, 90.0, 180.0, 270.0)
+
+skip_test_manhattan_ports: set[str] = set()
+manhattan_test_cell_names = [
+    name for name in cell_names if name not in skip_test_manhattan_ports
+]
+
+
+@pytest.mark.parametrize("component_name", manhattan_test_cell_names)
+def test_port_orientations_manhattan(component_name: str) -> None:
+    """Ensure that all ports have a manhattan orientation (0, 90, 180 or 270 deg)."""
+    component = cells[component_name]()
+    if isinstance(component, gf.ComponentAllAngle):
+        pytest.skip(f"{component_name} is an all-angle component")
+    for port in component.ports:
+        orientation = port.orientation % 360
+        if not np.any(np.isclose(orientation, MANHATTAN_ORIENTATIONS, atol=1e-3)):
+            raise AssertionError(
+                f"Port {port.name} of {component_name} has non-manhattan "
+                f"orientation {port.orientation} degrees."
+            )
+
+
 if __name__ == "__main__":
     component_type = "coupler_symmetric"
     c = cells[component_type]()
