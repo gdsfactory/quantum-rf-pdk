@@ -31,7 +31,7 @@ ports:
     layer: M1_ETCH
     name: resonator_o1
     orientation: 180
-    port_type: placement
+    port_type: optical
     width: 22
   resonator_o2:
     center:

@@ -11,7 +11,7 @@ ports:
     layer: M1_ETCH
     name: o1
     orientation: 180
-    port_type: placement
+    port_type: optical
     width: 22
   o2:
     center:
@@ -20,7 +20,7 @@ ports:
     layer: M1_ETCH
     name: o2
     orientation: 0
-    port_type: placement
+    port_type: optical
     width: 22
 settings:
   bend_spec: bend_circular
