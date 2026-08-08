@@ -160,6 +160,12 @@ jobs:
         with:
           lfs: true
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: Set up MATLAB
+        id: matlab-setup
+        uses: matlab-actions/setup-matlab@a0180c939fb1a28de13f44f7b778b912384ced1f # v3.0.1
+        with:
+          cache: true
+        background: true # runs alongside the Python setup below, MATLAB install is the slower branch
       - name: Install qpdk with models extra
         run: uv sync --extra models
       - name: Export QPDK_PYTHON and Python library paths
@@ -174,9 +180,8 @@ jobs:
           echo "LIBDIR: ${PY_LIBDIR}"
       - name: Sanity-check qpdk import (Python side)
         run: uv run python -c "import qpdk; qpdk.PDK.activate(); print('qpdk activated:', qpdk.PDK.name)"
-      - uses: matlab-actions/setup-matlab@a0180c939fb1a28de13f44f7b778b912384ced1f # v3.0.1
-        with:
-          cache: true
+      - name: Wait for MATLAB setup
+        wait: matlab-setup
       - uses: nikosavola/MATLAB-language-server-pre-commit@5966190480d0a77bf731bac19df84417aabc63b2 # v0.1.1
       - name: Sanity-check MATLAB ↔ Python bridge
         uses: matlab-actions/run-command@bcd446a219949c24051c1d04a4b4e0274c42f23b # v3.2.0

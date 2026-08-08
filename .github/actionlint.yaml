@@ -1,4 +1,14 @@
 paths:
+  # actionlint v1.7.12 predates step-level parallelism (background steps and wait,
+  # shipped 2026-06-25), so it rejects both new step keys. Scoped to the two
+  # workflows that use them so the rest keep full syntax checking.
+  # Drop this once rhysd/actionlint#693 ships.
   .github/workflows/test.yml:
     ignore:
       - 'unknown permission scope "code-quality"'
+      - 'unexpected key "background" for step'
+      - 'step must run script with "run" section or run action with "uses" section'
+  .github/workflows/pages.yml:
+    ignore:
+      - 'unexpected key "background" for step'
+      - 'step must run script with "run" section or run action with "uses" section'

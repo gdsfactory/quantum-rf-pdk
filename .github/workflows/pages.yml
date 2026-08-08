@@ -20,7 +20,10 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - run: just install
+      - name: Install Python dependencies
+        id: install-deps
+        run: just install
+        background: true # runs alongside the ImageMagick/font setup below, which docs-latex also needs
       - name: Cache ImageMagick
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -48,6 +51,8 @@ jobs:
           if [ -f /etc/ImageMagick-6/policy.xml ]; then
             sudo sed -i 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' /etc/ImageMagick-6/policy.xml
           fi
+      - name: Wait for Python dependency installation
+        wait: install-deps
       - name: Generate LaTeX files
         run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
       - name: Compile LaTeX document
