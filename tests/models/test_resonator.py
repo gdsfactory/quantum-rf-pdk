@@ -5,7 +5,10 @@ from unittest.mock import Mock
 
 import jax.numpy as jnp
 import numpy as np
+import sax
 
+from qpdk import PDK
+from qpdk.models import models
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator,
@@ -14,6 +17,47 @@ from qpdk.models.resonator import (
     resonator_half_wave,
     resonator_quarter_wave,
 )
+from qpdk.samples.resonator_test_chip import resonator_test_chip_python
+from qpdk.tech import coplanar_waveguide
+
+
+def test_resonator_test_chip_has_distinct_resonances() -> None:
+    """Regression for issue #678: each probeline must show distinct resonances."""
+    PDK.activate()
+    c = resonator_test_chip_python()
+    top = c.get_netlist()
+    placements = top["placements"]
+
+    # Group launcher instances into probelines by their y position.
+    launchers = [n for n, v in top["instances"].items() if v["component"] == "launcher"]
+    probeline_ys = sorted({round(placements[n]["y"]) for n in launchers})
+
+    freq = jnp.linspace(5e9, 9e9, 4001)
+    for y_pos in probeline_ys:
+        pair = sorted(
+            (n for n in launchers if abs(placements[n]["y"] - y_pos) < 1.0),
+            key=lambda name: placements[name]["x"],
+        )
+        assert len(pair) == 2, f"Expected 2 launchers at y={y_pos}, got {pair}"
+        top["ports"] = {"o1": f"{pair[0]},waveport", "o2": f"{pair[1]},waveport"}
+
+        circuit, _ = sax.circuit(netlist=top, models=models)
+        s21_db = 20 * np.log10(np.abs(np.asarray(circuit(f=freq)["o1", "o2"])) + 1e-30)
+
+        # Resonance dips: local minima below a threshold (<= on one side is robust
+        # to flat minima from finite floating-point precision).
+        dips = [
+            i
+            for i in range(1, len(s21_db) - 1)
+            if s21_db[i] <= s21_db[i - 1]
+            and s21_db[i] < s21_db[i + 1]
+            and s21_db[i] < -0.3
+        ]
+        # Eight resonators per probeline; most should resolve distinctly.
+        assert len(dips) >= 6, (
+            f"Probeline at y={y_pos}: expected several distinct resonances, "
+            f"got {len(dips)}"
+        )
 
 
 def test_resonator_models_port_count() -> None:
@@ -82,6 +126,32 @@ class TestResonatorCoupled:
         result = resonator_coupled(f=f, length=2000, open_start=True, open_end=True)
         assert isinstance(result, dict)
         assert len(result) == 16
+
+    @staticmethod
+    def test_cross_section_non_resonator_sets_probeline_impedance() -> None:
+        """cross_section_non_resonator sets the coupling (probeline) waveguide."""
+        f = jnp.linspace(3e9, 8e9, 50)
+        xs_res = coplanar_waveguide(width=10, gap=6)
+        xs_probe = coplanar_waveguide(width=20, gap=10)
+
+        default = resonator_coupled(f=f, length=5000, cross_section=xs_res)
+        explicit_same = resonator_coupled(
+            f=f, length=5000, cross_section=xs_res, cross_section_non_resonator=xs_res
+        )
+        mismatched = resonator_coupled(
+            f=f, length=5000, cross_section=xs_res, cross_section_non_resonator=xs_probe
+        )
+
+        # None reuses cross_section
+        assert jnp.allclose(
+            default["coupling_o1", "coupling_o2"],
+            explicit_same["coupling_o1", "coupling_o2"],
+        )
+        # A different probeline cross-section changes the probeline transmission
+        assert not jnp.allclose(
+            default["coupling_o1", "coupling_o2"],
+            mismatched["coupling_o1", "coupling_o2"],
+        )
 
     @staticmethod
     def test_with_both_open_false_structure() -> None:
