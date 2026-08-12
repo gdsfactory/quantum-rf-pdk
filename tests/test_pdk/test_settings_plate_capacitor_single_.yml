@@ -1,4 +1,6 @@
-info: {}
+info:
+  pin_names:
+    o1: terminal_a
 name: plate_capacitor_single_L26_W5_LMM1_DRAW_ELM1_ETCH_EBM2_CScpw
 ports:
   o1:

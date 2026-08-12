@@ -1,6 +1,11 @@
 info:
   inductor_n_turns: 155
   inductor_total_wire_length: 3592.72
+  pin_names:
+    left_pad: pad_a
+    left_pad_inner: pad_a
+    right_pad: pad_b
+    right_pad_inner: pad_b
   qubit_type: fluxonium
 name: fluxonium_PS250_400_PG25_JSjosephson_junction_JDNone_JM_9ad0c0bc
 ports:

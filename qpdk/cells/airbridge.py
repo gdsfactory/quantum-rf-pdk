@@ -129,6 +129,11 @@ def airbridge(
     for config in port_configs:
         c.add_port(**config)
 
+    c.info["pin_names"] = {
+        "e1": "bridge",
+        "e2": "bridge",
+    }
+
     c.rotate(90)
 
     return c

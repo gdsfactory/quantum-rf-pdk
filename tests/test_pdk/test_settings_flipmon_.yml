@@ -1,4 +1,6 @@
-info: {}
+info:
+  pin_names:
+    outer_ring_outside: outer_ring
 name: flipmon_ICR60_ORR110_ORW60_TCR110_JSsquid_junction_long_1b7aa540
 ports:
   center:

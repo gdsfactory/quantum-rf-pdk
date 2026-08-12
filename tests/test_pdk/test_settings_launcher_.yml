@@ -1,4 +1,7 @@
-info: {}
+info:
+  pin_names:
+    o1: signal
+    waveport: signal
 name: launcher_SL200_TL100_CSBlauncher_cross_section_big_CSScpw
 ports:
   o1:

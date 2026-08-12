@@ -134,6 +134,10 @@ def half_circle_coupler(
         port_type="placement",
     )
 
+    c.info["pin_names"] = {
+        "o3": "signal",
+    }
+
     return c
 
 
@@ -308,6 +312,10 @@ def interdigital_capacitor(
     # Center at (0,0)
     c.move((-width / 2, -height / 2))
 
+    c.info["pin_names"] = {"o1": "terminal_a"}
+    if not half:
+        c.info["pin_names"]["o2"] = "terminal_b"
+
     return c
 
 
@@ -384,6 +392,11 @@ def plate_capacitor(
                 (-missing_width / 2, length / 2 + etch_bbox_margin),
             ]
             c.add_polygon(etch_bbox, layer=etch_layer)
+
+    c.info["pin_names"] = {
+        "o1": "terminal_a",
+        "o2": "terminal_b",
+    }
 
     return c
 
@@ -475,5 +488,9 @@ def plate_capacitor_single(
 
     # Center at (0,0)
     c.move((-width / 2, -length / 2))
+
+    c.info["pin_names"] = {
+        "o1": "terminal_a",
+    }
 
     return c
