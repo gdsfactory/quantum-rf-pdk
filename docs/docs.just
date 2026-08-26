@@ -26,6 +26,13 @@ write-justfile-help:
 convert-notebooks:
     @./.github/convert-notebooks.sh notebooks/src/*.py
 
+# Copy llms.txt (https://llmstxt.org/) into the built site root
+[private]
+[group('docs')]
+write-llms-txt:
+    @mkdir -p docs/_extra
+    @cp docs/llms.txt docs/_extra/llms.txt
+
 # Notebooks that should be copied as .ipynb because they have precalculated outputs
 # (These will have their .py counterparts removed if they exist to force MyST-NB to use .ipynb)
 precalculated_notebooks := "hfss_*.ipynb matlab_integration.ipynb"
@@ -66,7 +73,7 @@ setup-ipython-config-temporary-after:
 [private]
 [parallel]
 [group('docs')]
-docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
+docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks write-llms-txt
 
 # Build documentation with the given Sphinx builder into docs/_build/<builder>
 [private]
