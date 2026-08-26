@@ -1,0 +1,21 @@
+# QPDK
+
+> QPDK is an open-source process design kit (PDK) for superconducting quantum RF applications built on [gdsfactory](https://gdsfactory.github.io/gdsfactory/). It provides parametric quantum circuit components (transmon qubits, CPW resonators, Josephson junctions, etc.), analytical S-parameter models, routing utilities, and test-chip examples.
+
+QPDK gives researchers, engineers, and students a scriptable, version-controlled foundation to go from concept to GDSII in minutes. The source code lives at https://github.com/gdsfactory/quantum-rf-pdk and the package is published as `qpdk` on PyPI.
+
+## Docs
+
+- [Home](https://gdsfactory.github.io/quantum-rf-pdk/index.html): Overview, key features, installation, and notable components
+- [PCells](https://gdsfactory.github.io/quantum-rf-pdk/cells.html): Gallery and API reference for all layout components (qubits, resonators, couplers, routing, etc.)
+- [Models](https://gdsfactory.github.io/quantum-rf-pdk/models.html): S-parameter and circuit models for quantum RF components
+- [Samples](https://gdsfactory.github.io/quantum-rf-pdk/samples.html): Example scripts assembling components into full layouts
+- [Notebooks](https://gdsfactory.github.io/quantum-rf-pdk/notebooks.html): Jupyter notebooks demonstrating simulation approaches for superconducting quantum devices
+- [Contributing](https://gdsfactory.github.io/quantum-rf-pdk/contributing.html): Development setup, testing, and contribution guidelines
+- [Security](https://gdsfactory.github.io/quantum-rf-pdk/security.html): Security policy
+
+## Optional
+
+- [PDF documentation](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf): Full documentation as a single PDF
+- [Changelog](https://github.com/gdsfactory/quantum-rf-pdk/blob/main/docs/changelog.md): Release history
+- [Code of conduct](https://gdsfactory.github.io/quantum-rf-pdk/code_of_conduct.html)
