@@ -94,6 +94,8 @@ from qpdk.models.resonator import (
     resonator_frequency,
     resonator_half_wave,
     resonator_quarter_wave,
+    resonator_test_chip_python,
+    resonator_test_chip_yaml,
 )
 from qpdk.models.unimon import (
     el_to_arm_inductance,
@@ -197,6 +199,8 @@ __all__ = [
     "resonator_half_wave",
     "resonator_linewidth_from_q",
     "resonator_quarter_wave",
+    "resonator_test_chip_python",
+    "resonator_test_chip_yaml",
     "series_impedance",
     "short",
     "short_2_port",

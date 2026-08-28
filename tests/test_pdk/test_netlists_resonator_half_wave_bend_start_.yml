@@ -329,4 +329,6 @@ placements:
     rotation: 270
     x: -800
     y: 352.572
-ports: {}
+ports:
+  o1: rectangle2,o1
+  o2: rectangle,o2

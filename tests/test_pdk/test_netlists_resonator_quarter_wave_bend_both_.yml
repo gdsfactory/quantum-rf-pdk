@@ -292,3 +292,4 @@ placements:
     y: 423.086
 ports:
   o1: bend_circular6,o1
+  o2: rectangle,o2
