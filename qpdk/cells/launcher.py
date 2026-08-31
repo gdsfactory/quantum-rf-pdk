@@ -15,6 +15,7 @@ from gdsfactory.component import Component
 from gdsfactory.components import straight
 from gdsfactory.typings import CrossSectionSpec
 
+from qpdk.cells._schematic import launcher_schematic
 from qpdk.cells.waveguides import taper_cross_section
 from qpdk.tech import LAYER, coplanar_waveguide, launcher_cross_section_big
 
@@ -26,7 +27,8 @@ LAUNCHER_CROSS_SECTION_SMALL = partial(coplanar_waveguide, etch_layer=LAYER.M1_E
     tags=(
         "waveguides",
         "interconnects",
-    )
+    ),
+    schematic_function=launcher_schematic,
 )
 def launcher(
     straight_length: float = 200.0,
@@ -92,3 +94,6 @@ def launcher(
     )
 
     return c
+
+
+launcher.schematic_function = launcher_schematic

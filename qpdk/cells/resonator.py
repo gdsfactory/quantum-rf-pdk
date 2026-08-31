@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import partial
+from typing import Any, cast
 
 import gdsfactory as gf
 import numpy as np
@@ -12,6 +13,8 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 from qpdk.cells._schematic import (
     quarter_wave_resonator_coupled_schematic,
     resonator_coupled_schematic,
+    resonator_half_wave_schematic,
+    resonator_quarter_wave_schematic,
     resonator_schematic,
 )
 from qpdk.cells.waveguides import bend_circular, straight
@@ -193,8 +196,10 @@ def resonator(
 
     # Add metadata
     c.info["length"] = actual_length
-    c.info["resonator_type"] = "quarter_wave"
-    c.info["cross_section"] = cross_section.name
+    c.info["resonator_type"] = (
+        "half_wave" if open_start and open_end else "quarter_wave"
+    )
+    c.info["cross_section_name"] = cross_section.name
     # c.info["frequency_estimate"] = (
     #     3e8 / (4 * length * 1e-6) / 1e9
     # )  # GHz, rough estimate
@@ -229,6 +234,22 @@ resonator_quarter_wave_bend_both = partial(
 resonator_half_wave_bend_both = partial(
     resonator_half_wave, start_with_bend=True, end_with_bend=True
 )
+
+for _resonator_factory in (
+    resonator_quarter_wave,
+    resonator_quarter_wave_bend_start,
+    resonator_quarter_wave_bend_end,
+    resonator_quarter_wave_bend_both,
+):
+    cast(Any, _resonator_factory).schematic_function = resonator_quarter_wave_schematic
+
+for _resonator_factory in (
+    resonator_half_wave,
+    resonator_half_wave_bend_start,
+    resonator_half_wave_bend_end,
+    resonator_half_wave_bend_both,
+):
+    cast(Any, _resonator_factory).schematic_function = resonator_half_wave_schematic
 
 
 @gf.cell(
@@ -327,6 +348,9 @@ def resonator_coupled(
     return c
 
 
+resonator_coupled.schematic_function = resonator_coupled_schematic
+
+
 @gf.cell(
     tags=("resonators", "couplers"),
     schematic_function=quarter_wave_resonator_coupled_schematic,
@@ -403,3 +427,8 @@ def quarter_wave_resonator_coupled(
             c.add_port(port=port)
 
     return c
+
+
+quarter_wave_resonator_coupled.schematic_function = (
+    quarter_wave_resonator_coupled_schematic
+)

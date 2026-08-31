@@ -534,19 +534,16 @@ def fluxonium_with_resonator(
     )
     coupling_cap = capacitor(f=f, capacitance=coupling_capacitance)
     tee_junction = tee(f=f)
-    terminator = electrical_short(f=f, n_ports=1)
 
     instances: dict[str, sax.SType] = {
         "resonator": resonator,
         "qubit": qubit,
         "coupling_capacitor": coupling_cap,
         "tee": tee_junction,
-        "terminator": terminator,
     }
 
     connections = {
         "resonator,o1": "tee,o1",
-        "resonator,o2": "terminator,o1",
         "tee,o2": "coupling_capacitor,o1",
         "coupling_capacitor,o2": "qubit,o1",
     }
@@ -632,30 +629,24 @@ def qubit_with_resonator(
     )
     coupling_cap = capacitor(f=f, capacitance=coupling_capacitance)
     tee_junction = tee(f=f)
-    # Use a 1-port short to terminate the internally shorted resonator end
-    # to avoid dangling ports in the circuit evaluation.
-    # Also short the grounded qubit's o2 port
-    terminator = electrical_short(f=f, n_ports=2 if qubit_grounded else 1)
-
     instances: dict[str, sax.SType] = {
         "resonator": resonator,
         "qubit": qubit,
         "coupling_capacitor": coupling_cap,
         "tee": tee_junction,
-        "terminator": terminator,
     }
 
     # Connect: resonator -- tee -- capacitor -- qubit
     # The tee splits the resonator signal to the coupling capacitor
     connections = {
         "resonator,o1": "tee,o1",
-        "resonator,o2": "terminator,o1",  # Explicitly terminate
         "tee,o2": "coupling_capacitor,o1",
         "coupling_capacitor,o2": "qubit,o1",
     }
 
     if qubit_grounded:
-        connections["qubit,o2"] = "terminator,o2"
+        instances["qubit_terminator"] = electrical_short(f=f, n_ports=1)
+        connections["qubit,o2"] = "qubit_terminator,o1"
 
     ports = {
         "o1": "tee,o3",  # External port for resonator coupling

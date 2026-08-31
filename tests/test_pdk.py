@@ -44,6 +44,9 @@ skip_test = {
     "add_pads_bot",
     "die_with_pads",
     "transform_component",
+    # Registered for schematic-editor lookup; sample behavior is tested separately.
+    "resonator_test_chip_python",
+    "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]

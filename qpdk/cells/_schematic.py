@@ -12,9 +12,13 @@ from kfactory.schematic import DSchematic
 __all__ = [
     "bend_circular_schematic",
     "double_pad_transmon_schematic",
+    "launcher_schematic",
+    "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
     "quarter_wave_resonator_coupled_schematic",
     "resonator_coupled_schematic",
+    "resonator_half_wave_schematic",
+    "resonator_quarter_wave_schematic",
     "resonator_schematic",
     "sax_model",
     "schematic",
@@ -189,6 +193,39 @@ resonator_schematic = schematic(
     symbol="resonator",
     tags=["resonators"],
     ports=_2PORT,
+    models=[
+        sax_model(
+            name="resonator",
+            module="qpdk.models.resonator",
+            port_order=["o1", "o2"],
+        )
+    ],
+)
+
+resonator_half_wave_schematic = schematic(
+    symbol="resonator_half_wave",
+    tags=["resonators"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="resonator_half_wave",
+            module="qpdk.models.resonator",
+            port_order=["o1", "o2"],
+        )
+    ],
+)
+
+resonator_quarter_wave_schematic = schematic(
+    symbol="resonator_quarter_wave",
+    tags=["resonators"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="resonator_quarter_wave",
+            module="qpdk.models.resonator",
+            port_order=["o1", "o2"],
+        )
+    ],
 )
 
 resonator_coupled_schematic = schematic(
@@ -232,4 +269,33 @@ meander_inductor_schematic = schematic(
     symbol="meander_inductor",
     tags=["inductors"],
     ports=_2PORT,
+)
+
+lumped_element_resonator_schematic = schematic(
+    symbol="lumped_element_resonator",
+    tags=["resonators", "inductors", "capacitors"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="lumped_element_resonator",
+            module="qpdk.models.inductor",
+            port_order=["o1", "o2"],
+        )
+    ],
+)
+
+launcher_schematic = schematic(
+    symbol="launcher",
+    tags=["waveguides", "interconnects"],
+    ports=[
+        {"name": "waveport", "side": "left", "type": "photonic"},
+        {"name": "o1", "side": "right", "type": "photonic"},
+    ],
+    models=[
+        sax_model(
+            name="launcher",
+            module="qpdk.models.waveguides",
+            port_order=["waveport", "o1"],
+        )
+    ],
 )

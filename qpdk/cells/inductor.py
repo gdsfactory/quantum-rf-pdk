@@ -8,7 +8,10 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
-from qpdk.cells._schematic import meander_inductor_schematic
+from qpdk.cells._schematic import (
+    lumped_element_resonator_schematic,
+    meander_inductor_schematic,
+)
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
     get_etch_section,
@@ -190,7 +193,7 @@ def meander_inductor(
     total_wire_length = n_turns * turn_length + max(0, n_turns - 1) * wire_gap
     c.info["total_wire_length"] = total_wire_length
     c.info["n_squares"] = total_wire_length / wire_width
-    c.info["cross_section"] = xs.name
+    c.info["cross_section_name"] = xs.name
 
     return c
 
@@ -198,7 +201,10 @@ def meander_inductor(
 meander_inductor.schematic_function = meander_inductor_schematic
 
 
-@gf.cell(tags=("resonators", "inductors", "capacitors"))
+@gf.cell(
+    tags=("resonators", "inductors", "capacitors"),
+    schematic_function=lumped_element_resonator_schematic,
+)
 def lumped_element_resonator(
     fingers: int = 20,
     finger_length: float = 20.0,
@@ -474,6 +480,9 @@ def lumped_element_resonator(
     c.info["capacitor_finger_length"] = finger_length
 
     return c
+
+
+lumped_element_resonator.schematic_function = lumped_element_resonator_schematic
 
 
 def _draw_interdigital_fingers_left(

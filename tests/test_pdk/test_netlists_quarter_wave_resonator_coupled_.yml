@@ -4,7 +4,7 @@ instances:
     info:
       coupling_gap: 20
       coupling_length: 200
-      cross_section: coplanar_waveguide
+      cross_section_name: coplanar_waveguide
       length: 4000
       resonator_type: quarter_wave
     settings:

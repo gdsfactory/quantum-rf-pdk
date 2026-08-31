@@ -16,7 +16,7 @@ instances:
   meander_inductor:
     component: meander_inductor
     info:
-      cross_section: superinductor_cross_section
+      cross_section_name: superinductor_cross_section
       n_squares: 89818
       total_wire_length: 3592.72
     settings:

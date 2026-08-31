@@ -45,7 +45,7 @@ instances:
   resonator:
     component: resonator
     info:
-      cross_section: coplanar_waveguide
+      cross_section_name: coplanar_waveguide
       length: 3257.42
       resonator_type: quarter_wave
     settings:
