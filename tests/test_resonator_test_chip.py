@@ -6,7 +6,6 @@ import gdsfactory as gf
 import numpy as np
 import pytest
 import sax
-from gdsfactoryplus.serve.sax import _run_simulation
 
 from qpdk import PDK
 from qpdk.models import models
@@ -43,8 +42,9 @@ def test_resonator_test_chip_resolves_in_active_pdk(component_name: str) -> None
 
 def test_resonator_test_chip_runs_through_layout_simulation_server() -> None:
     """Exercise the editor's layout-driven SAX path without a .gsch workaround."""
+    sax_server = pytest.importorskip("gdsfactoryplus.serve.sax")
     PDK.activate()
-    result = _run_simulation(
+    result = sax_server._run_simulation(
         "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
         {
             # The server API represents 4--10 GHz as wavelengths in µm.
