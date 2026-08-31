@@ -36,7 +36,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import sax
-from sax.models.rf import capacitor, electrical_short, tee
+from sax.models.rf import capacitor, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, h
 from qpdk.models.generic import lc_resonator
@@ -136,29 +136,19 @@ def _unimon_internal(
     tee_l = tee(f=f)
     tee_r = tee(f=f)
 
-    # Terminal shorts for the shorted ends of the arms
-    short_l = electrical_short(f=f, n_ports=2)
-    short_r = electrical_short(f=f, n_ports=2)
-
     instances: dict[str, sax.SType] = {
         "arm_left": arm_left,
         "arm_right": arm_right,
         "junction": junction,
         "tee_l": tee_l,
         "tee_r": tee_r,
-        "short_l": short_l,
-        "short_r": short_r,
     }
 
     connections = {
         # Left arm connects to left tee
         "arm_left,o1": "tee_l,o1",
-        # Shorted end of left arm
-        "arm_left,o2": "short_l,o1",
         # Right arm connects to right tee
         "arm_right,o1": "tee_r,o1",
-        # Shorted end of right arm
-        "arm_right,o2": "short_r,o1",
         # Junction between tees
         "tee_l,o2": "junction,o1",
         "junction,o2": "tee_r,o2",

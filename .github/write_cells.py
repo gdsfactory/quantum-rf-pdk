@@ -39,7 +39,13 @@ skip_plot: set[str] = {"transform_component"}
 skip_settings: set[str] = set()
 
 qpdk.PDK.activate()
-cells = qpdk.PDK.cells
+cells = {
+    name: factory
+    for name, factory in qpdk.PDK.cells.items()
+    if getattr(getattr(factory, "func", factory), "__module__", "").startswith(
+        "qpdk.cells"
+    )
+}
 samples = qpdk.get_sample_functions()
 
 # Set up Jinja2 environment

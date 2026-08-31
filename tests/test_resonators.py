@@ -10,7 +10,13 @@ from qpdk.cells.derived.transmon_with_resonator_and_probeline import (
     double_pad_transmon_with_resonator,
     flipmon_with_resonator,
 )
-from qpdk.cells.resonator import resonator, resonator_coupled
+from qpdk.cells.inductor import meander_inductor
+from qpdk.cells.resonator import (
+    resonator,
+    resonator_coupled,
+    resonator_half_wave,
+    resonator_quarter_wave,
+)
 from qpdk.cells.waveguides import bend_circular
 
 MAX_EXAMPLES = 20
@@ -18,6 +24,23 @@ MAX_EXAMPLES = 20
 
 class TestResonators:
     """Test basic resonator functionality."""
+
+    @staticmethod
+    def test_cross_section_info_does_not_shadow_settings() -> None:
+        """Keep physical metadata separate from SAX model settings."""
+        resonator_component = resonator(cross_section="cpw")
+        inductor_component = meander_inductor(cross_section="cpw")
+
+        assert resonator_component.info["cross_section_name"] == "coplanar_waveguide"
+        assert inductor_component.info["cross_section_name"] == "coplanar_waveguide"
+        assert "cross_section" not in resonator_component.info
+        assert "cross_section" not in inductor_component.info
+
+    @staticmethod
+    def test_resonator_type_metadata_matches_termination() -> None:
+        """Distinguish half-wave and quarter-wave layouts in metadata."""
+        assert resonator_half_wave().info["resonator_type"] == "half_wave"
+        assert resonator_quarter_wave().info["resonator_type"] == "quarter_wave"
 
     @staticmethod
     @pytest.mark.parametrize("length", [0, 10, 100])

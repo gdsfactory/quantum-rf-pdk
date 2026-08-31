@@ -30,6 +30,10 @@ def _resonator_test_chip_model(
     """Build SAX model for two probelines with coupled resonators."""
     f_arr = jnp.asarray(f)
     resonator_spacing = probeline_length / (len(resonator_lengths[0]) + 1)
+    launcher_length = 300.0
+    west_feed_length = resonator_spacing - launcher_length
+    inter_resonator_length = resonator_spacing - coupling_length
+    east_feed_length = resonator_spacing - launcher_length - coupling_length
 
     instances = {}
     connections = {}
@@ -46,11 +50,13 @@ def _resonator_test_chip_model(
         east_launcher = f"launcher_{probeline_idx}_east"
         instances[west_launcher] = launcher(
             f=f_arr,
-            cross_section_small=cross_section,
+            cross_section_big="launcher_cross_section_big",
+            cross_section_small="cpw",
         )
         instances[east_launcher] = launcher(
             f=f_arr,
-            cross_section_small=cross_section,
+            cross_section_big="launcher_cross_section_big",
+            cross_section_small="cpw",
         )
         ports[port_names[0]] = f"{west_launcher},waveport"
         ports[port_names[1]] = f"{east_launcher},waveport"
@@ -58,7 +64,7 @@ def _resonator_test_chip_model(
         first_lead = f"lead_{probeline_idx}_west"
         instances[first_lead] = straight(
             f=f_arr,
-            length=200.0,
+            length=west_feed_length,
             cross_section=cross_section,
         )
         connections[f"{west_launcher},o1"] = f"{first_lead},o1"
@@ -81,7 +87,7 @@ def _resonator_test_chip_model(
                 inter_resonator = f"lead_{probeline_idx}_{resonator_idx}"
                 instances[inter_resonator] = straight(
                     f=f_arr,
-                    length=resonator_spacing,
+                    length=inter_resonator_length,
                     cross_section=cross_section,
                 )
                 connections[f"{previous_resonator},coupling_o2"] = (
@@ -93,7 +99,7 @@ def _resonator_test_chip_model(
         final_lead = f"lead_{probeline_idx}_east"
         instances[final_lead] = straight(
             f=f_arr,
-            length=400.0,
+            length=east_feed_length,
             cross_section=cross_section,
         )
         connections[f"{last_resonator},coupling_o2"] = f"{final_lead},o1"
@@ -146,23 +152,13 @@ def resonator_test_chip_yaml(
 ) -> sax.SDict:
     """SAX model for ``resonator_test_chip_yaml.pic.yml``.
 
-    This top-level model keeps gdsfactoryplus 1.x recursive netlists from
-    expanding settings-specific resonator cell names that have no matching
-    PDK model key.
+    The YAML sample is the serialized form of the Python sample, so both use
+    the same top-level model.
 
     Returns:
         SAX S-parameter dictionary for the four external ports.
     """
-    lengths = (3600.0, 3800.0, 4000.0, 4200.0, 4400.0, 4600.0, 4800.0, 5000.0)
-    return _resonator_test_chip_model(
-        f,
-        probeline_length=9000.0,
-        resonator_lengths=(lengths, lengths),
-        coupling_gaps=(
-            (16.0,) * 8,
-            (12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0),
-        ),
-    )
+    return resonator_test_chip_python(f=f)
 
 
 def quarter_wave_resonator_coupled(

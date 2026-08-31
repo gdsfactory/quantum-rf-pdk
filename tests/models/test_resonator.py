@@ -26,10 +26,10 @@ def test_resonator_models_port_count() -> None:
     r_half = resonator_half_wave(f=f, length=2000)
     assert len(r_half) == 4
 
-    # Quarter wave is 1-port, but our model exposes a dummy 2nd port for layout consistency.
-    # Actually evaluate_circuit drops the disconnected dummy port, so it only has 1 S-parameter
+    # Quarter wave keeps a dummy shorted port to match the two-port layout contract.
     r_quarter = resonator_quarter_wave(f=f, length=2000)
-    assert len(r_quarter) == 1  # 1 port -> 1 S-parameter
+    assert len(r_quarter) == 4
+    assert {port for key in r_quarter for port in key} == {"o1", "o2"}
 
 
 def test_resonator_coupled_basic_structure() -> None:

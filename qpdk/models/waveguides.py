@@ -156,7 +156,7 @@ def straight_shorted(
     }
     ports = {
         "o1": "straight,o1",
-        "o2": "short_2_port,o2",  # don't use: shorted!
+        "o2": "short,o2",  # don't use: shorted!
     }
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
 

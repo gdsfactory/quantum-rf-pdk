@@ -19,11 +19,6 @@
 import gdsfactory as gf
 import numpy as np
 
-try:
-    from gdsfactoryplus.factory_metadata import sax_model_for
-except ImportError:  # gdsfactoryplus is optional for core QPDK use.
-    sax_model_for = None
-
 from qpdk import tech
 from qpdk.cells._schematic import sax_model, schematic
 from qpdk.cells.chip import chip_edge
@@ -31,14 +26,28 @@ from qpdk.cells.launcher import launcher
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
 from qpdk.cells.waveguides import straight
 from qpdk.logger import logger
-from qpdk.models.resonator import (
-    resonator_test_chip_python as resonator_test_chip_python_model,
-)
 from qpdk.tech import (
     route_bundle_cpw,
     route_bundle_sbend,
 )
 from qpdk.utils import fill_magnetic_vortices
+
+
+def _name_new_route_instance(
+    component: gf.Component,
+    existing_names: set[str],
+    name: str,
+) -> None:
+    """Name the single instance added by a one-connection route bundle."""
+    new_instances = [
+        instance for instance in component.insts if instance.name not in existing_names
+    ]
+    if len(new_instances) != 1:
+        raise RuntimeError(
+            f"Expected route {name!r} to add one instance, got {len(new_instances)}"
+        )
+    new_instances[0].name = name
+
 
 # %% [markdown]
 # ## Resonator Test Chip Function
@@ -110,10 +119,12 @@ def resonator_test_chip_python(
     probeline_y_positions = [0, probeline_separation]
 
     for probeline_idx, y_pos in enumerate(probeline_y_positions):
+        probeline_name = "bot" if probeline_idx == 0 else "top"
+
         # Add launchers at both ends
-        launcher_west = c.add_ref(launcher())
+        launcher_west = c.add_ref(launcher(), name=f"probe_west_{probeline_name}")
         launcher_west.move((0, y_pos))
-        launcher_east = c.add_ref(launcher())  # Create some probeline straight
+        launcher_east = c.add_ref(launcher(), name=f"probe_east_{probeline_name}")
         launcher_east.mirror_x()
         launcher_east.move((probeline_length, y_pos))
 
@@ -141,58 +152,79 @@ def resonator_test_chip_python(
                 coupling_straight_length=coupling_length,
                 coupling_gap=coupling_gap,
             )
-            resonator_ref = c.add_ref(coupled_resonator)
+            resonator_ref = c.add_ref(
+                coupled_resonator,
+                name=f"resonator_{probeline_name}_{res_idx + 1}",
+            )
             # Position resonator above probeline
             if probeline_idx != 0:
                 resonator_ref.mirror_y()
 
-            resonator_ref.move((x_position - resonator_ref.size_info.width / 2, y_pos))
+            # The coupled resonator origin is its ``coupling_o1`` port, so place
+            # that port directly at the intended probeline position.
+            resonator_ref.move((x_position, y_pos))
             logger.debug(f"Added resonator {res_idx} at x={x_position} µm")
 
             if res_idx == 0:
                 # Add some straight before connecting the first resonator
                 first_straight_ref = c.add_ref(
-                    straight(length=200.0, cross_section=cross_section)
+                    straight(length=200.0, cross_section=cross_section),
+                    name=f"probeline_straight_west_{probeline_name}",
                 )
                 first_straight_ref.connect("o1", resonator_ref.ports["coupling_o1"])
+                existing_names = {instance.name for instance in c.insts}
                 route_bundle_sbend(
                     c,
                     ports1=[previous_port],
                     ports2=[first_straight_ref.ports["o2"]],
                     cross_section=cross_section,
                 )
+                _name_new_route_instance(
+                    c,
+                    existing_names,
+                    f"probeline_sbend_west_{probeline_name}",
+                )
             else:
+                existing_names = {instance.name for instance in c.insts}
                 route_bundle_cpw(
                     c,
                     ports1=[previous_port],
                     ports2=[resonator_ref.ports["coupling_o1"]],
                     cross_section=cross_section,
                 )
+                _name_new_route_instance(
+                    c,
+                    existing_names,
+                    f"probeline_straight_{probeline_name}_{res_idx}",
+                )
 
             previous_port = resonator_ref.ports["coupling_o2"]
 
         # Add some straight before connecting to the final launcher
         final_straight_ref = c.add_ref(
-            straight(length=400.0, cross_section=cross_section)
+            straight(length=400.0, cross_section=cross_section),
+            name=f"probeline_straight_east_{probeline_name}",
         )
         final_straight_ref.connect("o1", previous_port)
 
         # Connect final launcher to probeline
+        existing_names = {instance.name for instance in c.insts}
         route_bundle_sbend(
             c,
             ports1=[final_straight_ref.ports["o2"]],
             ports2=[launcher_east.ports["o1"]],
             cross_section=cross_section,
         )
+        _name_new_route_instance(
+            c,
+            existing_names,
+            f"probeline_sbend_east_{probeline_name}",
+        )
 
     return c
 
 
-if sax_model_for is not None:
-    sax_model_for(
-        "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
-        port_order=["o1", "o2", "o3", "o4"],
-    )(resonator_test_chip_python_model)
+resonator_test_chip_python.schematic_function = resonator_test_chip_python_schematic
 
 
 # %% [markdown]
