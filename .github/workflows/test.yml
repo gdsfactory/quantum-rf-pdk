@@ -67,7 +67,7 @@ jobs:
           pattern: coverage-xml-*
           merge-multiple: true
       - name: Upload code coverage to GitHub
-        uses: actions/upload-code-coverage@f8bb4848421d758cb893e8e371d261678618a754 # v1
+        uses: actions/upload-code-coverage@d8e329117199404bba6fc81efe8093dc7c015e34 # v1
         with:
           file: coverage.xml
           language: Python
