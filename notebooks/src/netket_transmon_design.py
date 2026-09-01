@@ -8,7 +8,7 @@
 #       jupytext_version: 1.17.3
 # ---
 
-# ruff: noqa: E402
+# ruff: file-ignore[module-import-not-at-top-of-file]
 
 # %% [markdown]
 # # Transmon Qubit Design with NetKet

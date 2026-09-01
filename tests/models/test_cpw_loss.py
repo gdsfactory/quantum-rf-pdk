@@ -9,7 +9,7 @@ import qpdk.models.cpw as cpw_mod
 from qpdk.models.waveguides import straight
 
 
-@pytest.fixture(autouse=True)  # noqa: RUF076
+@pytest.fixture(autouse=True)
 def activate_pdk():
     """Ensure PDK is active for all tests."""
     qpdk.PDK.activate()

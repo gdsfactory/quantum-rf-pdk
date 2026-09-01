@@ -290,8 +290,8 @@ def unimon_hamiltonian(
     n_states = 2 * n_max + 1
 
     try:
-        import qutip  # noqa: PLC0415
-        import qutip_jax  # noqa: PLC0415
+        import qutip  # ruff: ignore[import-outside-top-level]
+        import qutip_jax  # ruff: ignore[import-outside-top-level]
     except ModuleNotFoundError as e:
         # Only treat missing top-level qutip/qutip_jax as an extra dependency issue.
         # Re-raise any other import-time errors (including nested ones) unchanged.

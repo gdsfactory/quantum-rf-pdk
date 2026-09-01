@@ -92,7 +92,7 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
 
 
 def cpw_cpw_coupling_capacitance(
-    f: sax.FloatArrayLike,  # noqa: ARG001
+    f: sax.FloatArrayLike,  # ruff: ignore[unused-function-argument]
     length: float | ArrayLike,
     gap: float | ArrayLike,
     cross_section: CrossSectionSpec,

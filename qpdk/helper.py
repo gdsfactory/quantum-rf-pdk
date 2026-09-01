@@ -99,7 +99,7 @@ def show_components(
     Returns:
         Components after :func:`gdsfactory.get_component`.
     """
-    from qpdk import PDK  # noqa: PLC0415
+    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
 
     PDK.activate()
 
@@ -239,8 +239,8 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     Args:
         df: A polars or pandas DataFrame to display.
     """
-    import pandas as pd  # noqa: PLC0415
-    from IPython.display import display  # noqa: PLC0415
+    import pandas as pd  # ruff: ignore[import-outside-top-level]
+    from IPython.display import display  # ruff: ignore[import-outside-top-level]
 
     # Convert polars DataFrame to pandas if needed
     pdf: pd.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
@@ -249,7 +249,7 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
         """Table object providing both HTML and LaTeX representations."""
 
         @staticmethod
-        def _repr_html_() -> str:  # noqa: PLW3201
+        def _repr_html_() -> str:  # ruff: ignore[bad-dunder-method-name]
             html_df = pdf.copy()
             for col in html_df.columns:
                 if pd.api.types.is_string_dtype(html_df[col]):
@@ -259,7 +259,7 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
             return html_df.style.hide(axis="index")._repr_html_()
 
         @staticmethod
-        def _repr_latex_() -> str:  # noqa: PLW3201
+        def _repr_latex_() -> str:  # ruff: ignore[bad-dunder-method-name]
             return pdf.to_latex(index=False, escape=False)
 
     display(_DualFormatTable())

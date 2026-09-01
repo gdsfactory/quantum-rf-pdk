@@ -120,7 +120,7 @@ def get_cpw_dimensions(
         tuple[float, float]: Width and gap of the CPW.
     """
     # Make sure a PDK is activated
-    from qpdk import PDK  # noqa: PLC0415
+    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
 
     PDK.activate()
     xs = gf.get_cross_section(cross_section, **kwargs)
@@ -219,7 +219,7 @@ def cpw_z0_from_cross_section(
 
 
 def cpw_ep_r_from_cross_section(
-    cross_section: CrossSectionSpec,  # noqa: ARG001
+    cross_section: CrossSectionSpec,  # ruff: ignore[unused-function-argument]
 ) -> float:
     r"""Substrate relative permittivity for a given cross-section.
 

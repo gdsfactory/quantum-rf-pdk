@@ -1,6 +1,6 @@
 """Model definitions for qpdk."""
 
-# ruff: noqa: E402
+# ruff: file-ignore[module-import-not-at-top-of-file]
 
 import jax
 import sax

@@ -5,7 +5,7 @@ from pathlib import Path
 
 project = "qpdk"
 author = "gdsfactory"
-copyright = "gdsfactory"  # noqa: A001
+copyright = "gdsfactory"  # ruff: ignore[builtin-variable-shadowing]
 
 # -- General configuration ---------------------------------------------------
 extensions = [

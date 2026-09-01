@@ -7,16 +7,16 @@ to ensure consistent, high-quality figures in the generated docs.
 
 # Configure inline backend for matplotlib
 # Export figures in multiple formats for flexibility
-c.InlineBackend.figure_formats = ["pdf", "svg", "png"]  # noqa: F821
+c.InlineBackend.figure_formats = ["pdf", "svg", "png"]  # ruff: ignore[undefined-name]
 
 # Use tight bounding box to remove excess whitespace
-c.InlineBackend.print_figure_kwargs = {"bbox_inches": "tight"}  # noqa: F821
+c.InlineBackend.print_figure_kwargs = {"bbox_inches": "tight"}  # ruff: ignore[undefined-name]
 
 # Set higher DPI for PNG figures (default is 72, we use 300 for publication quality)
-c.InlineBackend.rc = {"figure.dpi": 300}  # noqa: F821
+c.InlineBackend.rc = {"figure.dpi": 300}  # ruff: ignore[undefined-name]
 
 # Execute these lines at IPython startup
-c.InteractiveShellApp.exec_lines = [  # noqa: F821
+c.InteractiveShellApp.exec_lines = [  # ruff: ignore[undefined-name]
     # Import matplotlib
     "from matplotlib import pyplot as plt",
     # Rebuild the matplotlib font cache so newly-installed fonts are discovered

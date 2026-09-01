@@ -30,7 +30,7 @@ def test_check_notebook_sources_logic(repo_root: Path) -> None:
     assert script.exists(), f"Script not found at {script}"
 
     # 1. Test that the check passes when all notebooks have source files
-    result = subprocess.run(  # noqa: S603
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [str(script)],
         capture_output=True,
         text=True,
@@ -49,7 +49,7 @@ def test_check_notebook_sources_logic(repo_root: Path) -> None:
             '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}'
         )
 
-        result = subprocess.run(  # noqa: S603
+        result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
             [str(script)],
             capture_output=True,
             text=True,

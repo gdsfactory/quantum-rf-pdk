@@ -77,9 +77,9 @@ import numpy as np
 # TODO: Remove once the minimum required scqubits version officially supports
 # NumPy 2.x without relying on np.complex_ / np.float_ aliases.
 if not hasattr(np, "complex_"):
-    np.complex_ = np.complex128  # noqa: NPY201
+    np.complex_ = np.complex128  # ruff: ignore[numpy2-deprecation]
 if not hasattr(np, "float_"):
-    np.float_ = np.float64  # noqa: NPY201
+    np.float_ = np.float64  # ruff: ignore[numpy2-deprecation]
 
 import polars as pl
 import scipy
@@ -94,7 +94,7 @@ from qpdk.models.cpw import cpw_parameters
 
 PDK.activate()
 
-# ruff: disable[E402]
+# ruff: disable[module-import-not-at-top-of-file]
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -110,7 +110,7 @@ from qpdk.models.qubit import (
 )
 from qpdk.models.resonator import resonator_frequency
 
-# ruff: enable[E402]
+# ruff: enable[module-import-not-at-top-of-file]
 
 # %% [markdown]
 # ## Building the System
