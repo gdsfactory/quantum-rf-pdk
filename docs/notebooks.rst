@@ -204,6 +204,28 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
   with QuTiP-QIP :cite:`liBoshlomQutipqipPulselevel2022`, including population dynamics,
   leakage analysis, and decoherence effects.
 
+*************************
+ RSFQ circuit simulation
+*************************
+
+Rapid Single Flux Quantum (RSFQ) logic uses Josephson junctions as ultrafast switching
+elements, encoding information in single magnetic flux quanta. The circuit-level design
+and verification of RSFQ cells is performed with dedicated superconducting SPICE
+simulators :cite:`likharevRSFQLogicMemory1991,delportJoSIMSupercondutor2019`.
+
+**Typical use cases:**
+
+- Verifying SFQ pulse propagation through Josephson Transmission Lines (JTLs).
+- Simulating DC-to-SFQ converters, splitters, and logic gates.
+- Performing margin analysis on bias currents and junction parameters.
+- Connecting simulation results to qpdk layout components.
+
+**Notebooks:**
+
+- :doc:`notebooks/josim_rsfq_simulation` — Demonstrates transient simulation of RSFQ
+  circuits (JTL, DC-SFQ converter) using JoSIM and links the results to qpdk Josephson
+  junction and inductor layout components.
+
 **********************
  External integration
 **********************
@@ -273,6 +295,9 @@ primary tooling lives in another environment.
     - - :doc:`notebooks/qutip_qip_pulse_simulation`
       - Pulse-level simulation
       - QuTiP-QIP, JAX
+    - - :doc:`notebooks/josim_rsfq_simulation`
+      - RSFQ circuit simulation
+      - JoSIM, qpdk
     - - :doc:`notebooks/matlab_integration`
       - External integration
       - MATLAB, jupyter-matlab-proxy
