@@ -3,12 +3,12 @@ revision = 3
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version >= '3.13' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version >= '3.13' and sys_platform == 'darwin'",
-    "python_full_version < '3.13' and sys_platform == 'darwin'",
     "python_full_version >= '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
+    "python_full_version < '3.13' and sys_platform == 'darwin'",
     "python_full_version < '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -1005,7 +1005,7 @@ wheels = [
 
 [[package]]
 name = "gdsfactory"
-version = "9.46.0"
+version = "9.48.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1041,9 +1041,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f2/5b/5ab971d466eafdc014a84331107631660012423ccda1294451504b63dd09/gdsfactory-9.46.0.tar.gz", hash = "sha256:b9969e9d436161b0875a7d7b04c72254bf897cf50a9c9fbcabbf8a6116c2d10e", size = 560005, upload-time = "2026-07-22T05:07:35.6Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/66/593cac08cf056f5d43b18ed5aba4f3da689731992dd1e28cc59c4f59278d/gdsfactory-9.48.0.tar.gz", hash = "sha256:3fe3b23d77545f1ad33a217f393e92cccc5024ea43b24c3cfd5c0f4d2921f011", size = 563111, upload-time = "2026-08-12T19:47:57.696Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e0/42/6b8bc5beeba14213592a1a4f3e1f3bb9d610a65a9ae45bdaf601f8cd5035/gdsfactory-9.46.0-py3-none-any.whl", hash = "sha256:39458475c5edb0027e8f8d697d5f28345d9e7d659c2675f26b7f20442e817c41", size = 812107, upload-time = "2026-07-22T05:07:33.234Z" },
+    { url = "https://files.pythonhosted.org/packages/78/6f/25e340cd61badf4ec8e0b0949d85658b5e36ccf081cc1d458b27a5a20f32/gdsfactory-9.48.0-py3-none-any.whl", hash = "sha256:a57c0a1396b3b79f3a2bb03808a68984e29ebba90b33da790e5cce7faca1178e", size = 815059, upload-time = "2026-08-12T19:47:56.039Z" },
 ]
 
 [[package]]
@@ -1667,7 +1667,7 @@ wheels = [
 
 [[package]]
 name = "kfactory"
-version = "3.0.2"
+version = "3.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aenum" },
@@ -1689,9 +1689,9 @@ dependencies = [
     { name = "toolz" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/00/8c/de9a0d5d578e544e71d2da22ab3d0c238c762850c6cdebfb4205906d0e6b/kfactory-3.0.2.tar.gz", hash = "sha256:8246feaedfd9278df59c4301d3a8c6f6d9728c7cea0ed1a11bd05664ed7939a2", size = 1676892, upload-time = "2026-07-21T11:19:14.07Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/eb/d1407de9be7152e16d604ee98d468f08612374bd35ea524064f2caeb051c/kfactory-3.0.4.tar.gz", hash = "sha256:40aab620d93cd389c74e76a96980aa4914249422ad1817b20b747abed65f566b", size = 1677726, upload-time = "2026-07-27T22:51:01.353Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/79/c3a38e30b848684f9ec0956a55d6ec47e68e1df29a2f3772a485e7118805/kfactory-3.0.2-py3-none-any.whl", hash = "sha256:87e47be3f0a20ac028a8fd3d8d170ef7b97153717097bbeb32e6cbf69107c507", size = 288666, upload-time = "2026-07-21T11:19:12.281Z" },
+    { url = "https://files.pythonhosted.org/packages/52/ba/74c8e5250dca1489890118c68f9ce02b9a177a18cbaf07d9e6451e5c7cff/kfactory-3.0.4-py3-none-any.whl", hash = "sha256:590ff7abad4a56bbf0cef6b005e41dd1b0682ccd56eb8f529d73f439cce8fd1b", size = 289149, upload-time = "2026-07-27T22:50:59.584Z" },
 ]
 
 [package.optional-dependencies]
@@ -2264,7 +2264,7 @@ name = "multiprocess"
 version = "0.70.19"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "dill", marker = "sys_platform != 'darwin'" },
+    { name = "dill" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a2/f2/e783ac7f2aeeed14e9e12801f22529cc7e6b7ab80928d6dcce4e9f00922d/multiprocess-0.70.19.tar.gz", hash = "sha256:952021e0e6c55a4a9fe4cd787895b86e239a40e76802a789d6305398d3975897", size = 2079989, upload-time = "2026-01-19T06:47:39.744Z" }
 wheels = [
@@ -2787,10 +2787,10 @@ name = "pathos"
 version = "0.3.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "dill", marker = "sys_platform != 'darwin'" },
-    { name = "multiprocess", marker = "sys_platform != 'darwin'" },
-    { name = "pox", marker = "sys_platform != 'darwin'" },
-    { name = "ppft", marker = "sys_platform != 'darwin'" },
+    { name = "dill" },
+    { name = "multiprocess" },
+    { name = "pox" },
+    { name = "ppft" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/32/37/0c730979d3890f8096a86af2683fac74edd4d15cb037391098dca70dcb1d/pathos-0.3.5.tar.gz", hash = "sha256:8fe041b8545c5d3880a038f866022bdebf935e5cf68f56ed3407cb7e65193a61", size = 166975, upload-time = "2026-01-20T00:06:57.848Z" }
 wheels = [
@@ -2802,7 +2802,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -3800,7 +3800,7 @@ test = [
 requires-dist = [
     { name = "doroutes", specifier = ">=1.1,<1.3" },
     { name = "flax", marker = "extra == 'netket'" },
-    { name = "gdsfactory", specifier = "~=9.46.0" },
+    { name = "gdsfactory", specifier = ">=9.46,<9.49" },
     { name = "gdsfactoryplus", marker = "extra == 'gdsfactoryplus'" },
     { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = "~=2.1.0" },
     { name = "httpx", marker = "extra == 'gdsfactoryplus'" },
@@ -4375,16 +4375,16 @@ resolution-markers = [
     "python_full_version < '3.13' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "cycler", marker = "sys_platform == 'darwin'" },
-    { name = "cython", marker = "sys_platform == 'darwin'" },
-    { name = "dill", marker = "sys_platform == 'darwin'" },
-    { name = "matplotlib", marker = "sys_platform == 'darwin'" },
-    { name = "numpy", marker = "sys_platform == 'darwin'" },
-    { name = "qutip", marker = "sys_platform == 'darwin'" },
-    { name = "scipy", marker = "sys_platform == 'darwin'" },
-    { name = "sympy", marker = "sys_platform == 'darwin'" },
-    { name = "tqdm", marker = "sys_platform == 'darwin'" },
-    { name = "typing-extensions", marker = "sys_platform == 'darwin'" },
+    { name = "cycler" },
+    { name = "cython" },
+    { name = "dill" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "qutip" },
+    { name = "scipy" },
+    { name = "sympy" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8d/ed/69b37d03b9794518b38528efb14884f53a1ec155b61b4b126b8c58c682bd/scqubits-4.1.0.tar.gz", hash = "sha256:806f171d4b5905af3f8d4c68fce461be91eab38466fa4fbe87b71ec7b167fc7b", size = 6457745, upload-time = "2024-05-17T01:22:20.31Z" }
 wheels = [
@@ -4397,23 +4397,23 @@ version = "4.3.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version >= '3.13' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version >= '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version < '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "cycler", marker = "sys_platform != 'darwin'" },
-    { name = "dill", marker = "sys_platform != 'darwin'" },
-    { name = "matplotlib", marker = "sys_platform != 'darwin'" },
-    { name = "numpy", marker = "sys_platform != 'darwin'" },
-    { name = "pathos", marker = "sys_platform != 'darwin'" },
-    { name = "qutip", marker = "sys_platform != 'darwin'" },
-    { name = "scipy", marker = "sys_platform != 'darwin'" },
-    { name = "sympy", marker = "sys_platform != 'darwin'" },
-    { name = "tqdm", marker = "sys_platform != 'darwin'" },
-    { name = "typing-extensions", marker = "sys_platform != 'darwin'" },
+    { name = "cycler" },
+    { name = "dill" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pathos" },
+    { name = "qutip" },
+    { name = "scipy" },
+    { name = "sympy" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/2a/57/a552661e93e9d3ea6530112f06572f0f88d55972c7a0a98d79275b67bf3c/scqubits-4.3.1.tar.gz", hash = "sha256:a40440e7270fa559d201220524f8b95eaae24235a1d4918ad08dc7358a0c39e4", size = 6498157, upload-time = "2025-05-17T16:53:35.721Z" }
 wheels = [
