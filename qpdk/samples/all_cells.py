@@ -40,7 +40,7 @@ def all_cells(
         >>> c = qpdk.cells.all_cells()
         >>> c.show()  # Display all cells in KLayout
     """
-    from qpdk import PDK  # noqa: PLC0415
+    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
 
     def _is_qpdk_cell(cell_func: object) -> bool:
         wrapped = getattr(cell_func, "func", cell_func)

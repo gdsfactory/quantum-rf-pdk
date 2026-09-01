@@ -67,7 +67,7 @@ import warnings
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import qutip
-import qutip_jax  # noqa: F401 — registers JAX backend for QuTiP
+import qutip_jax  # ruff: ignore[unused-import] — registers JAX backend for QuTiP
 from IPython.display import Math, display
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.device import SCQubits

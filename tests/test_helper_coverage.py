@@ -27,21 +27,21 @@ class TestShowComponents:
 
     @staticmethod
     @patch("qpdk.helper.Component.show")
-    def test_returns_correct_components(mock_show: MagicMock) -> None:  # noqa: ARG004
+    def test_returns_correct_components(mock_show: MagicMock) -> None:  # ruff: ignore[unused-static-method-argument]
         """Test that show_components returns the requested components."""
         result = show_components(indium_bump, tsv)
         assert len(result) == 2
 
     @staticmethod
     @patch("qpdk.helper.Component.show")
-    def test_single_component(mock_show: MagicMock) -> None:  # noqa: ARG004
+    def test_single_component(mock_show: MagicMock) -> None:  # ruff: ignore[unused-static-method-argument]
         """Test show_components with a single component."""
         result = show_components(indium_bump)
         assert len(result) == 1
 
     @staticmethod
     @patch("qpdk.helper.Component.show")
-    def test_custom_spacing(mock_show: MagicMock) -> None:  # noqa: ARG004
+    def test_custom_spacing(mock_show: MagicMock) -> None:  # ruff: ignore[unused-static-method-argument]
         """Test show_components with custom spacing."""
         result = show_components(indium_bump, tsv, spacing=500)
         assert len(result) == 2

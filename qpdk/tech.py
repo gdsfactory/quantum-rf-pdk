@@ -1,6 +1,6 @@
 """Technology definitions."""
 
-# ruff: noqa: T201
+# ruff: file-ignore[print]
 
 from collections.abc import Callable, Generator, Sequence
 from functools import cache, partial, wraps

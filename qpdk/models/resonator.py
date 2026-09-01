@@ -111,7 +111,7 @@ def _resonator_test_chip_model(
 def resonator_test_chip_python(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     probeline_length: float = 9000.0,
-    probeline_separation: float = 1000.0,  # noqa: ARG001
+    probeline_separation: float = 1000.0,  # ruff: ignore[unused-function-argument]
     resonator_length: float = 4000.0,
     coupling_length: float = 200.0,
     coupling_gap: float = 16.0,

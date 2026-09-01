@@ -41,7 +41,7 @@ __all__ = [
 
 @jax.jit
 def series_impedance(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # noqa: ARG001
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # ruff: ignore[unused-function-argument]
     z: sax.Float = 0.0,
     z0: float = 50.0,
 ) -> sax.SDict:
@@ -76,7 +76,7 @@ def series_impedance(
 
 @jax.jit
 def shunt_admittance(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # noqa: ARG001
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # ruff: ignore[unused-function-argument]
     y: sax.Float = 0.0,
     z0: float = 50.0,
 ) -> sax.SDict:
@@ -127,7 +127,7 @@ def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SD
 
 
 short = electrical_short
-open = electrical_open  # noqa: A001
+open = electrical_open  # ruff: ignore[builtin-variable-shadowing]
 short_2_port = electrical_short_2_port
 
 

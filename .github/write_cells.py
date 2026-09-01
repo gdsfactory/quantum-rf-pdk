@@ -1,6 +1,6 @@
 """Write docs."""
 
-# ruff: noqa: S701, T201
+# ruff: file-ignore[jinja2-autoescape-false, print]
 
 import inspect
 import traceback

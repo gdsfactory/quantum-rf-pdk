@@ -107,7 +107,7 @@ def test_hfss_import_and_draw():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS installation not found at {ansys_dir}")
 
-    from ansys.aedt.core import Hfss, settings  # noqa: PLC0415
+    from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
@@ -137,7 +137,7 @@ def test_hfss_eigenmode_setup():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS installation not found at {ansys_dir}")
 
-    from ansys.aedt.core import Hfss, settings  # noqa: PLC0415
+    from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
@@ -225,7 +225,7 @@ def test_q3d_import_and_net_assignment():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS/Q3D installation not found at {ansys_dir}")
 
-    from ansys.aedt.core import Q3d, settings  # noqa: PLC0415
+    from ansys.aedt.core import Q3d, settings  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
@@ -257,7 +257,7 @@ def test_create_2d_from_cross_section():
     if not Path(ansys_dir).exists():
         pytest.skip(f"HFSS installation not found at {ansys_dir}")
 
-    from ansys.aedt.core import Q2d, settings  # noqa: PLC0415
+    from ansys.aedt.core import Q2d, settings  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 

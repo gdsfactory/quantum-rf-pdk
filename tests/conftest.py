@@ -10,7 +10,7 @@ from qpdk import PDK
 
 
 def pytest_collection_modifyitems(
-    config: pytest.Config,  # noqa: ARG001
+    config: pytest.Config,  # ruff: ignore[unused-function-argument]
     items: list[pytest.Item],
 ) -> None:
     """Skip tests marked with skip_windows on Windows platform."""
@@ -21,7 +21,7 @@ def pytest_collection_modifyitems(
                 item.add_marker(skip_windows)
 
 
-@pytest.fixture(autouse=True)  # noqa: RUF076
+@pytest.fixture(autouse=True)
 def activate_pdk() -> None:
     """Activate PDK."""
     PDK.activate()
