@@ -184,7 +184,7 @@ jobs:
         wait: matlab-setup
       - uses: nikosavola/MATLAB-language-server-pre-commit@5966190480d0a77bf731bac19df84417aabc63b2 # v0.1.1
       - name: Sanity-check MATLAB ↔ Python bridge
-        uses: matlab-actions/run-command@bcd446a219949c24051c1d04a4b4e0274c42f23b # v3.2.0
+        uses: matlab-actions/run-command@bfa857648f4895aa98a446fe41c85e0788421ed5 # v3.3.0
         with:
           command: |
             diary('/tmp/matlab_bridge.log'); diary on;
@@ -198,7 +198,7 @@ jobs:
             disp(string(py.getattr(PDK, 'name')));
             diary off;
       - name: Run MATLAB notebook source script
-        uses: matlab-actions/run-command@bcd446a219949c24051c1d04a4b4e0274c42f23b # v3.2.0
+        uses: matlab-actions/run-command@bfa857648f4895aa98a446fe41c85e0788421ed5 # v3.3.0
         with:
           command: |
             diary('/tmp/matlab_script.log'); diary on;
