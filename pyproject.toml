@@ -177,6 +177,9 @@ cells_no_model_expected = [
   "unimon_arm",  # sub-component of unimon; model lives on parent
 ]
 
+[tool.gdsfactoryplus.sidebar]
+default_libraries = ["qpdk"]
+
 [tool.interrogate]
 docstring-style = "google"
 exclude = [
