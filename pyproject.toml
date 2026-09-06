@@ -68,6 +68,7 @@ scqubits = ["scqubits"]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
   "jinja2",
+  "kwasm",
   "jupytext",
   "linkify-it-py",
   "matplotlib",
