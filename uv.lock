@@ -739,27 +739,6 @@ wheels = [
 ]
 
 [[package]]
-name = "doroutes"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "kfactory" },
-    { name = "kwasm" },
-    { name = "numpy" },
-    { name = "shapely" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/9a/008744e31752592c9eb019f36874e52e73979fdcdc8bd957a723910c4b4f/doroutes-1.2.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:342eb51d62a68a0378714289dc36fa0c238ae9d78dfe88213df678d5d5ae522b", size = 3331244, upload-time = "2026-07-08T15:38:51.496Z" },
-    { url = "https://files.pythonhosted.org/packages/f6/a0/8bedb9a202304b54abab66be1524423a2ae120dafdcbe7fa63b62d9235e8/doroutes-1.2.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:914df86a812014ea90890d82280a12ca71593ec446336bce2bdd9887be1f9505", size = 3497797, upload-time = "2026-07-08T15:38:53.83Z" },
-    { url = "https://files.pythonhosted.org/packages/f9/da/2dc2fadfe55e6437a0c2f8c2054d78a5ad4690e6a3b7b2f5ad453d111a8f/doroutes-1.2.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:8229b25a6024214be09d6f44f4810de67c520c46fb038dcb3b20d7adf04d2832", size = 3672426, upload-time = "2026-07-08T15:38:55.444Z" },
-    { url = "https://files.pythonhosted.org/packages/c6/d3/6b5b20bfbf02a35dbc241fd5e097ffe45d1c0e6aa7690b3b9226cd6a32f9/doroutes-1.2.0-cp312-cp312-win_amd64.whl", hash = "sha256:1d5c48daa832d5d505d8f7697a7e242fc3df24e1bcae936a61490da66a9daeb6", size = 3062682, upload-time = "2026-07-08T15:38:57.107Z" },
-    { url = "https://files.pythonhosted.org/packages/60/6a/2239d0ba1b830ea4163751ddc4085b599a4c6bcfd6fb8559a1b7d73f39c3/doroutes-1.2.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:c3204a92d3d246229a6cc1b8067a9bffbcde420158c0d57f6b0a31b4f35c911c", size = 3330736, upload-time = "2026-07-08T15:38:58.903Z" },
-    { url = "https://files.pythonhosted.org/packages/05/5a/9394803db54175239f8058511f282479d472036e9990aa5afa30b63ba747/doroutes-1.2.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:e9ef1cea847ad9d7b9e42690b46ea2baa9677950cbb47c508bc7ea439d29e6fd", size = 3497869, upload-time = "2026-07-08T15:39:00.548Z" },
-    { url = "https://files.pythonhosted.org/packages/5c/f7/e01f1e50dc50c9a37b656e1e74295db9f884a4fd30b3bce9c8a404fd2009/doroutes-1.2.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:01ef1a49c99a0efa41841ca99e09deb4aa755d20876b6525dc704ace15ad6d02", size = 3672203, upload-time = "2026-07-08T15:39:02.068Z" },
-    { url = "https://files.pythonhosted.org/packages/79/ff/2eb3c7132f3f56f0fe8952ef9a40257dbf95e78e2733d613f4bbeb275ee8/doroutes-1.2.0-cp313-cp313-win_amd64.whl", hash = "sha256:d524f6e7355ab5d7208bfea058d325b3b3d6d2c69a6bd9f247c855e58dce2236", size = 3062174, upload-time = "2026-07-08T15:39:03.688Z" },
-]
-
-[[package]]
 name = "einops"
 version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1814,17 +1793,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/91/4f/f04316561a244902afeca04bbf0ee6eafff470733030b13f886d589b0ee7/klujax-0.5.0-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:172a96f36143b469fdfcf0517867e5b49f3723dc70d75d244cf65ed0f424f3bf", size = 2913977, upload-time = "2026-04-15T18:52:16.238Z" },
     { url = "https://files.pythonhosted.org/packages/c5/12/df7c69f7850db9c8e808c81817ae9204cf060c995ce091e5b499f9b9330a/klujax-0.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:33a4193cd2996143ed0d294bf71cc3a12d7992d9b23241c9152680b681807cf1", size = 184833, upload-time = "2026-04-15T18:52:17.451Z" },
     { url = "https://files.pythonhosted.org/packages/02/c8/61c2192dd1ec7c42d3d00f89b4be479c4d83cde1d9324759095a09fcdc8c/klujax-0.5.0-cp313-cp313-win_arm64.whl", hash = "sha256:d1e2abf2ffd1600b31b34ea64c27ccdc13403ae3fd2421ee4e13decc0ff50617", size = 155095, upload-time = "2026-04-15T18:52:18.434Z" },
-]
-
-[[package]]
-name = "kwasm"
-version = "0.2.14"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typer" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/71/44/6ed2692a69deb5617491c77f5f6c5fda761e01d45b713b0bc1a0ce8bced3/kwasm-0.2.14-py3-none-any.whl", hash = "sha256:146d20c5dbd5dcf39c371e5d68d9ce9135e39513b14bd99848ae8965ea4f2b7c", size = 6868304, upload-time = "2026-05-12T15:46:17.225Z" },
 ]
 
 [[package]]
@@ -3656,7 +3624,6 @@ name = "qpdk"
 version = "0.3.8"
 source = { editable = "." }
 dependencies = [
-    { name = "doroutes" },
     { name = "gdsfactory" },
     { name = "typing-extensions" },
 ]
@@ -3798,7 +3765,6 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "doroutes", specifier = ">=1.1,<1.3" },
     { name = "flax", marker = "extra == 'netket'" },
     { name = "gdsfactory", specifier = ">=9.46,<9.49" },
     { name = "gdsfactoryplus", marker = "extra == 'gdsfactoryplus'" },

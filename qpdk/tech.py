@@ -7,7 +7,6 @@ from functools import cache, partial, wraps
 from typing import Any
 
 import gdsfactory as gf
-from doroutes.bundles import add_bundle_astar
 from gdsfactory.cross_section import (
     CrossSection,
 )
@@ -495,14 +494,6 @@ route_bundle_sbend = route_bundle_sbend_cpw = partial(
     bend_s="bend_s",
 )
 
-route_astar = route_astar_cpw = partial(
-    add_bundle_astar,
-    layers=["M1_ETCH"],
-    bend="bend_circular",
-    straight="straight",
-    grid_unit=500,
-    spacing=3,
-)
 routing_strategies = {
     "route_bundle": route_bundle,
     "route_bundle_cpw": route_bundle_cpw,
@@ -510,8 +501,6 @@ routing_strategies = {
     "route_bundle_all_angle_cpw": route_bundle_all_angle_cpw,
     "route_bundle_sbend": route_bundle_sbend,
     "route_bundle_sbend_cpw": route_bundle_sbend_cpw,
-    "route_astar": route_astar,
-    "route_astar_cpw": route_astar_cpw,
 }
 
 if __name__ == "__main__":
