@@ -234,8 +234,11 @@ if __name__ == "__main__":
     plt.figure(figsize=(10, 6))
 
     # Calculate capacitance per unit length for all gaps simultaneously (shape: (6,))
-    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
-        gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    c_pul = cast(
+        jax.Array,
+        cpw_cpw_coupling_capacitance_per_length_analytical(
+            gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+        ),
     )
 
     # Broadcast to compute total capacitance for all lengths and gaps (shape: (6, 1000))
