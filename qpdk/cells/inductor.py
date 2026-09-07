@@ -94,7 +94,14 @@ def meander_inductor(
     # i.e. pitch = width + 2 * gap, which means wire_gap = 2 * etch_width
     # If no etch section is found, we use a default gap equal to the wire width
     if wire_gap is None:
-        wire_gap = 2 * etch_section.width if etch_section is not None else wire_width
+        if etch_section is not None:
+            if etch_section.width is None:
+                raise ValueError("Etch section must define a width")
+            wire_gap = 2 * etch_section.width
+        else:
+            wire_gap = wire_width
+    if wire_gap is None:
+        raise ValueError("wire_gap could not be inferred from the cross-section")
 
     c = Component()
     pitch = wire_width + wire_gap
