@@ -214,12 +214,17 @@ def test_resonator_test_chip_can_be_placed_and_simulated() -> None:
     )
     frequencies = np.linspace(4e9, 10e9, 31)
     s_params = circuit(f=frequencies)
-    expected = resonator_test_chip_python_model(f=frequencies)
+    expected = sax.sdict(sax.sdense(resonator_test_chip_python_model(f=frequencies)))
 
     assert {port for key in s_params for port in key} == {"o1", "o2", "o3", "o4"}
-    zero = np.zeros_like(frequencies, dtype=complex)
-    for key, value in s_params.items():
-        np.testing.assert_allclose(value, expected.get(key, zero), rtol=0, atol=0)
+    assert s_params.keys() == expected.keys()
+    for key in s_params:
+        np.testing.assert_allclose(
+            s_params[key],
+            expected[key],
+            rtol=1e-10,
+            atol=1e-12,
+        )
 
 
 def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
