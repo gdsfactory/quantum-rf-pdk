@@ -1,16 +1,37 @@
 name: Claude PR Review
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-  issue_comment:
-    types: [created]
+  # This runs in the trusted base-repository context, so fork PRs can use the
+  # repository's OIDC identity and API key. Do not check out or execute PR code
+  # in this workflow.
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    types: [opened, synchronize]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-claude-pr-review
+  cancel-in-progress: true
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
-  id-token: write
 jobs:
-  review:
-    uses: doplaydo/pdk-ci-workflow-public/.github/workflows/claude-pr-review.yml@main # zizmor: ignore[unpinned-uses]
-    secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    steps:
+      - name: Checkout trusted base revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@5ccc3a35a6367cdb8e6fbd0728287467540ecfe2 # v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          plugin_marketplaces: https://github.com/anthropics/claude-code.git
+          plugins: code-review@claude-code-plugins
+          prompt: /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
+          claude_args: --max-turns 30
+          # Review PRs from every contributor, including forks and Dependabot.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_non_write_users: "*"
+          allowed_bots: "*"
