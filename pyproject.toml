@@ -32,11 +32,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Typing :: Typed",
 ]
-dependencies = [
-  "doroutes>=1.1,<1.3",
-  "gdsfactory>=9.46,<9.49",
-  "typing-extensions>=4.12.0"
-]
+dependencies = ["gdsfactory>=9.46,<9.49", "typing-extensions>=4.12.0"]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/gdsfactory/quantum-rf-pdk/issues"
@@ -70,6 +66,7 @@ dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
   "jinja2",
   "jupytext",
+  "kwasm",
   "linkify-it-py",
   "matplotlib",
   "myst-nb>=1.0",

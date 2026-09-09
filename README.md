@@ -38,8 +38,7 @@ in minutes.
   YAML.
 - **Analytical circuit models** — Fast, differentiable S-parameter simulations powered by
   [SAX](https://gdsfactory.github.io/sax/) and [JAX](https://github.com/jax-ml/jax).
-- **Automated routing** — CPW-aware routing strategies with auto-tapers for complex layouts, and
-  [DoRoutes](https://doplaydo.github.io/DoRoutes/).
+- **Automated routing** — CPW-aware routing strategies with auto-tapers for complex layouts.
 - **KLayout integration** — Layer definitions, technology files, and cross sections for immediate visual inspection.
 - **Regression-tested** — GDS regression tests, netlist checks, and model validation.
 - **Notebook-driven workflows** — Jupyter notebooks for frequency modeling, tolerance analysis, parameter extraction,
