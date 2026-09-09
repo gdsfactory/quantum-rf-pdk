@@ -114,7 +114,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 - **Python versions**: Specified in `pyproject.toml` (currently >=3.11,\<3.15)
 - **Package manager**: `uv` (preferred over pip/conda)
-- **Main dependencies**: gdsfactory (>=9.15.0,\<9.21.0), doroutes (>=0.2.0)
+- **Main dependencies**: gdsfactory (>=9.15.0,\<9.21.0)
 - **Testing**: pytest with regression testing using `pytest_regressions`, hypothesis for property-based testing
 - **Linting**: ruff for Python code formatting and linting, pyrefly for type checking
 - **Layout tool**: KLayout for viewing and editing GDS layouts
