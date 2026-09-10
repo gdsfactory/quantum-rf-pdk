@@ -260,3 +260,10 @@ repos:
         language: script
         files: ^notebooks/.*\.ipynb$
         pass_filenames: false
+      - id: check-agents-version-ranges
+        priority: 10
+        name: Check AGENTS.md version ranges match pyproject.toml
+        entry: ./.github/check-agents-version-ranges.sh
+        language: script
+        files: ^(AGENTS\.md|pyproject\.toml)$
+        pass_filenames: false
