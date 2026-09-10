@@ -89,6 +89,7 @@ jobs:
           fi
   filter-gdsfactoryplus-versions:
     needs: get-python-versions
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     outputs:
       python-versions: ${{ steps.filter.outputs.python-versions }}
@@ -104,6 +105,7 @@ jobs:
   test-gdsfactoryplus:
     runs-on: ${{ matrix.os }}
     needs: filter-gdsfactoryplus-versions
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     strategy:
       fail-fast: false
       matrix:
@@ -124,7 +126,11 @@ jobs:
     runs-on: ubuntu-latest
     name: GDSFactory+ test result
     needs: test-gdsfactoryplus
-    if: always()
+    # always() suppresses the implicit success(), so the fork gate alone decides:
+    # on fork PRs this job is skipped, which makes the required check neutral
+    # ("skipped") for branch protection; on the main repo it must run, and the
+    # check below then strictly requires "success" (a filter job failure exits 1).
+    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - name: Check GDSFactory+ test matrix results
         run: |
