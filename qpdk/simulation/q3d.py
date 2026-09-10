@@ -15,6 +15,7 @@ from qpdk.simulation.aedt_base import (
     AEDTBase,
     export_component_to_gds_temp,
     layer_stack_to_gds_mapping,
+    object_names_to_materials,
     rename_imported_objects,
 )
 
@@ -88,14 +89,26 @@ class Q3D(AEDTBase):
 
             new_objects = list(set(self.modeler.object_names) - existing_objects)
 
-            renamed_objects = rename_imported_objects(
-                self.q3d, new_objects, layer_stack or LAYER_STACK
-            )
+            stack = layer_stack or LAYER_STACK
+            renamed_objects = rename_imported_objects(self.q3d, new_objects, stack)
 
-            if renamed_objects:
-                self.q3d.assign_material(renamed_objects, "pec")
+            # Assign materials from the layer stack: metals become "pec",
+            # substrate/etch objects get their real dielectric materials.
+            # Batched per material to keep AEDT round trips minimal.
+            self.add_materials()
+            objects_to_materials = object_names_to_materials(renamed_objects, stack)
+            by_material: dict[str, list[str]] = {}
+            for obj_name, material in objects_to_materials.items():
+                by_material.setdefault(material, []).append(obj_name)
+            for material, objects in by_material.items():
+                self.q3d.assign_material(objects, material)
 
-            return renamed_objects
+            # Only conductors are meaningful downstream (e.g. net assignment).
+            return [
+                obj_name
+                for obj_name, material in objects_to_materials.items()
+                if material == "pec"
+            ]
 
     def assign_nets_from_ports(
         self,

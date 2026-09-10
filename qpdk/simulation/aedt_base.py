@@ -189,6 +189,68 @@ def rename_imported_objects(
     return renamed_objects
 
 
+def object_names_to_materials(
+    object_names: list[str],
+    layer_stack: LayerStack,
+) -> dict[str, str]:
+    """Map imported object names to AEDT material names based on the layer stack.
+
+    Resolves each object to its :class:`LayerLevel` either by parsing the
+    ``signal<layer_number>`` GDS import names (same convention as
+    :func:`rename_imported_objects`) or by matching the (renamed) object name
+    against layer stack names. Metal levels (materials with infinite
+    relative permittivity in ``material_properties``) map to ``"pec"``;
+    dielectric levels map to their layer stack material name.
+
+    Returns:
+        Dictionary mapping object names to AEDT material names.
+
+    Raises:
+        ValueError: If an object cannot be resolved to a layer stack level,
+            or its level material is not registered in ``material_properties``.
+            Failing closed avoids silently leaving objects with the project
+            default material, which would make extracted results wrong
+            rather than failed.
+    """
+    num_to_name: dict[int, str] = {}
+    for name, level in layer_stack.layers.items():
+        layer_num = _get_layer_number_from_level(level)
+        if layer_num is not None and layer_num not in num_to_name:
+            num_to_name[layer_num] = name
+
+    def find_level(obj_name: str) -> LayerLevel | None:
+        match = re.match(r"^signal(\d+)(_.*)?$", obj_name)
+        if match and int(match.group(1)) in num_to_name:
+            return layer_stack.layers[num_to_name[int(match.group(1))]]
+        # Exact name first, then prefix match (longest names first so that
+        # e.g. "Airbridge_Via_1" is not matched by "Airbridge")
+        for name in sorted(layer_stack.layers, key=len, reverse=True):
+            if obj_name == name or obj_name.startswith(f"{name}_"):
+                return layer_stack.layers[name]
+        return None
+
+    assignments: dict[str, str] = {}
+    for obj_name in object_names:
+        level = find_level(obj_name)
+        material = level.material if level is not None else None
+        if material is None:
+            raise ValueError(
+                f"Could not resolve AEDT object {obj_name!r} to a layer stack "
+                "level with a material; refusing to leave it with the default "
+                "material."
+            )
+        props = material_properties.get(material)
+        if props is None:
+            raise ValueError(
+                f"Material {material!r} of AEDT object {obj_name!r} is not "
+                "registered in material_properties; refusing to leave it with "
+                "the default material."
+            )
+        is_conductor = props.get("relative_permittivity") == float("inf")
+        assignments[obj_name] = "pec" if is_conductor else material
+    return assignments
+
+
 def add_materials_to_aedt(app: Hfss | Q2d | Q3d) -> None:
     """Add QPDK materials to the PyAEDT application."""
     for name, props in material_properties.items():

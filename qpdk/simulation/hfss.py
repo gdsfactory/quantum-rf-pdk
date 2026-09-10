@@ -13,6 +13,7 @@ from qpdk.simulation.aedt_base import (
     AEDTBase,
     export_component_to_gds_temp,
     layer_stack_to_gds_mapping,
+    object_names_to_materials,
     rename_imported_objects,
 )
 
@@ -133,17 +134,26 @@ class HFSS(AEDTBase):
             if result:
                 new_objects = list(set(self.modeler.object_names) - existing_objects)
 
-                renamed_objects = rename_imported_objects(
-                    self.hfss, new_objects, layer_stack or LAYER_STACK
-                )
+                stack = layer_stack or LAYER_STACK
+                renamed_objects = rename_imported_objects(self.hfss, new_objects, stack)
 
-                if renamed_objects:
+                # PerfectE is a conductor boundary: assign it only to metal
+                # levels, not to dielectric objects such as the substrate.
+                conductor_objects = [
+                    obj_name
+                    for obj_name, material in object_names_to_materials(
+                        renamed_objects, stack
+                    ).items()
+                    if material == "pec"
+                ]
+
+                if conductor_objects:
                     if import_as_sheets:
                         self.hfss.assign_perfecte_to_sheets(
-                            renamed_objects, name="PEC_Sheets"
+                            conductor_objects, name="PEC_Sheets"
                         )
                     else:
-                        self.hfss.assign_perfect_e(renamed_objects, name="PEC_3D")
+                        self.hfss.assign_perfect_e(conductor_objects, name="PEC_3D")
 
         return result
 
