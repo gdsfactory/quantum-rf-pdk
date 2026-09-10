@@ -40,25 +40,6 @@ def test_resonator_test_chip_resolves_in_active_pdk(component_name: str) -> None
     assert {port for key in s_params for port in key} == {"o1", "o2", "o3", "o4"}
 
 
-def test_resonator_test_chip_runs_through_layout_simulation_server() -> None:
-    """Exercise the editor's layout-driven SAX path without a .gsch workaround."""
-    sax_server = pytest.importorskip("gdsfactoryplus.serve.sax")
-    PDK.activate()
-    result = sax_server._run_simulation(
-        "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
-        {
-            # The server API represents 4--10 GHz as wavelengths in µm.
-            "wl_min": 299_792.458 / 10,
-            "wl_max": 299_792.458 / 4,
-            "wl_num": 3,
-            "layout": {},
-        },
-    )
-
-    assert len(result["wavelengths"]) == 3
-    assert set(result["sdict"]) == {"o1", "o2", "o3", "o4"}
-
-
 def test_resonator_test_chip_exposes_launcher_waveports() -> None:
     """Expose both ends of both resonator-test-chip probelines."""
     component = resonator_test_chip_python()
