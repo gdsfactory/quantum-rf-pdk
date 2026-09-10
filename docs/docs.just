@@ -95,11 +95,4 @@ docs-latex: (_sphinx "latex")
 docs-pdf: docs-latex
     #!/usr/bin/env bash
     set -euo pipefail
-    XINDYOPTS="-M sphinx.xdy" latexmk -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error || {
-        if [ -f qpdk.pdf ]; then
-            echo "PDF generated despite warnings"
-            exit 0
-        else
-            exit 1
-        fi
-    }
+    XINDYOPTS="-L english -C utf8 -M sphinx.xdy" latexmk -xelatex -interaction=nonstopmode -file-line-error -halt-on-error qpdk.tex

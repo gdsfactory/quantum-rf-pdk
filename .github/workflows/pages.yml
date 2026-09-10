@@ -54,26 +54,37 @@ jobs:
       - name: Wait for Python dependency installation
         wait: install-deps
       - name: Generate LaTeX files
-        run: just docs-latex || echo "LaTeX build completed with warnings, continuing…"
+        run: just docs-latex
       - name: Compile LaTeX document
-        continue-on-error: true
         uses: xu-cheng/latex-action@6549dc21effb2730855a1281407ecfcececc6c1b # 4.1.0
-        env:
-          XINDYOPTS: "-L english -C utf8 -M sphinx.xdy"
         with:
-          texlive_version: latest
+          texlive_version: "2025" # pin the TeX Live Docker image (latest is floating)
           os: alpine
-          pre_compile: cd docs/_build/latex
-          extra_system_packages: "ghostscript"
+          # XINDYOPTS must be exported here: the action's docker run does not pass step
+          # env into the container, but pre_compile runs in the same shell as the compile
+          # (entrypoint.sh eval's it), so the index pass sees the same flags as
+          # `just docs-pdf` does locally.
+          pre_compile: cd docs/_build/latex && export XINDYOPTS="-L english -C utf8 -M sphinx.xdy"
           root_file: qpdk.tex
           compiler: latexmk
-          continue_on_error: true
           latexmk_use_xelatex: true
-          args: -pdfxe -xelatex -interaction=nonstopmode -f -file-line-error
+          args: -interaction=nonstopmode -file-line-error -halt-on-error
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pdf-docs
           path: "./docs/_build/latex/qpdk.pdf"
+          if-no-files-found: error
+      - name: Upload LaTeX build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: latex-logs
+          path: |
+            docs/_build/latex/*.log
+            docs/_build/latex/*.ilg
+            docs/_build/latex/*.blg
+            docs/_build/latex/*.fls
+          if-no-files-found: ignore
   pages:
     permissions:
       actions: read

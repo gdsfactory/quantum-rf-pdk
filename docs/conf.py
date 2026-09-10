@@ -244,6 +244,33 @@ suppress_warnings = [
 ]
 
 
+def _repair_external_math(content):
+    r"""Repair malformed LaTeX found in external docstring math (e.g. sax).
+
+    - A doubled backslash before a command name (``\ln\\frac``): in math,
+      ``\\`` is a row break and is always followed by whitespace or end of
+      line, so ``\\<command>`` is always a typo.  It breaks the LaTeX build
+      with ``Extra }, or forgotten \right.``.
+    - A bare ``_`` inside ``\text{...}`` (``I_\text{n_ports}``): ``\text``
+      typesets its argument in text mode, where an unescaped ``_`` fails the
+      LaTeX build with ``Missing $ inserted``.
+    - Consecutive bare subscripts on one token (``C_M_S``): invalid LaTeX
+      ("Double subscript") unless grouped, so group them mechanically.
+
+    Returns:
+        The repaired math content.
+    """
+    content = re.sub(
+        r"([A-Za-z0-9]+)_([A-Za-z0-9]+)_([A-Za-z0-9]+)", r"\1_{\2_\3}", content
+    )
+    content = re.sub(r"\\\\([a-zA-Z]+)", r"\\\1", content)
+    return re.sub(
+        r"\\text\{([^{}]*)\}",
+        lambda match: "\\text{" + match.group(1).replace("_", r"\_") + "}",
+        content,
+    )
+
+
 def _dollar_math_to_rst(lines):
     r"""Convert ``$…$`` and ``$$…$$`` math to RST ``:math:`` and ``.. math::`` directives.
 
@@ -262,7 +289,7 @@ def _dollar_math_to_rst(lines):
             i += 1
             # Collect lines until closing ``$$``
             while i < len(lines) and lines[i].strip() != "$$":
-                math_line = lines[i]
+                math_line = _repair_external_math(lines[i])
                 # Ensure math content is indented under the directive
                 if math_line.strip():
                     result.append(f"{indent}   {math_line.strip()}")
@@ -276,7 +303,7 @@ def _dollar_math_to_rst(lines):
         # Convert inline $…$ to :math:`…` (but not $$)
         converted = re.sub(
             r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)",
-            r":math:`\1`",
+            lambda match: f":math:`{_repair_external_math(match.group(1))}`",
             lines[i],
         )
         result.append(converted)
