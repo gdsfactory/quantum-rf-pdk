@@ -25,6 +25,7 @@ from qpdk.cells.capacitor import half_circle_coupler
 from qpdk.cells.junction import josephson_junction, squid_junction
 from qpdk.cells.resonator import resonator
 from qpdk.cells.waveguides import bend_circular, straight
+from qpdk.logger import logger
 from qpdk.tech import LAYER, get_etch_section
 
 
@@ -101,6 +102,9 @@ def unimon_arm(
     if bend_instances:
         last_bend = bend_instances[-1]
         radius = last_bend.cell.info["radius"]
+        # Record the actual bend radius used so downstream cells (e.g. unimon)
+        # can place readout couplers concentric with the meander bends.
+        c.info["radius"] = radius
         # Locate the center of curvature of the last meander bend.
         # The bbox extends radius + width/2 + etch_width beyond the
         # center in every direction that the arc reaches.
@@ -352,6 +356,24 @@ def unimon_coupled(
     coupling_radius = (
         meander_radius + coupling_gap + xs_resonator.width / 2 + xs_coupler.width / 2
     )
+
+    # Warn if the coupler would cross a meander straight: the straights beyond
+    # the two adjacent to the last bend sit at odd multiples of the bend radius
+    # from the bend center, so a small bend radius can bring the concentric
+    # coupler into M1_DRAW overlap with them.
+    half_width_sum = (xs_resonator.width + xs_coupler.width) / 2
+    for k in range(1, arm_meanders - 1):
+        straight_distance = (2 * k + 1) * meander_radius
+        if abs(coupling_radius - straight_distance) < half_width_sum:
+            logger.warning(
+                "coupling_radius {} µm is within {} µm of a meander straight at "
+                "{} µm from the last bend center, so the readout coupler would "
+                "overlap the resonator M1_DRAW metal. Use a larger bend radius "
+                "or coupling_gap.",
+                coupling_radius,
+                half_width_sum,
+                straight_distance,
+            )
 
     coupler = c.add_ref(
         half_circle_coupler(
