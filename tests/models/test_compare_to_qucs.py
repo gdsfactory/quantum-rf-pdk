@@ -55,6 +55,7 @@ class BaseCompareToQucs(ABC):
     # Subclasses should override these
     component_name: str = "Component"
     csv_filename: str = "component_qucs.csv"
+    num_ports: ClassVar[int] = 2
     parameters: ClassVar[frozenset[ModelParameter]] = frozenset({
         ModelParameter(name="parameter", value=0.0, unit=1e-9)
     })
@@ -77,29 +78,19 @@ class BaseCompareToQucs(ABC):
         """
         S_qucs = pl.read_csv(TEST_DATA_PATH / self.csv_filename)
         f = S_qucs["frequency"].to_jax()
+        assert f.size > 0, f"Qucs reference CSV {self.csv_filename} has no data rows"
 
         model_func = self.get_model_function()
         kwargs = {p.name: p.value for p in self.parameters}
         S_matrix = model_func(f=f, **kwargs)
         assert isinstance(S_matrix, dict), "Model function must return a dict"
 
-        # Determine number of ports from the S-matrix
-        # S-matrix keys are tuples like ("o1", "o1"), ("o2", "o1"), etc.
-        port_numbers = set()
-        for key in S_matrix:
-            # Extract port numbers from keys like ("o1", "o2")
-            for port in key:
-                if isinstance(port, str) and port.startswith("o"):
-                    port_numbers.add(int(port[1:]))
-
-        num_ports = max(port_numbers, default=2)
-
         # Build dictionaries for S-parameters in Sij format
         # Only check first from diagonal and below diagonal (S11, S21, S31, S41, etc.)
         S_sax_dict = {}
         S_qucs_dict = {}
 
-        for i in range(1, num_ports + 1):
+        for i in range(1, self.num_ports + 1):
             for j in range(1, i + 1):
                 s_param_name = f"S{i}{j}"
 
@@ -117,6 +108,24 @@ class BaseCompareToQucs(ABC):
                         S_qucs[qucs_real_col].to_jax()
                         + 1j * S_qucs[qucs_imag_col].to_jax()
                     )
+
+        # The Qucs-S reference exports the first column of the S-matrix
+        # (S11, S21, S31, ...), which is what this test compares. Assert that
+        # both sides cover that set so a missing or renamed CSV column, or a
+        # model regression, cannot make the comparison pass vacuously.
+        # Richer reference data (e.g. S22) is welcome but not required.
+        assert S_qucs_dict, f"No Qucs reference data loaded from {self.csv_filename}"
+        expected_qucs_keys = {f"S{i}1" for i in range(1, self.num_ports + 1)}
+        assert expected_qucs_keys <= S_qucs_dict.keys(), (
+            f"Qucs reference CSV {self.csv_filename} is missing expected "
+            f"first-column S-parameter columns {sorted(expected_qucs_keys - S_qucs_dict.keys())}; "
+            f"got {sorted(S_qucs_dict)}"
+        )
+        assert expected_qucs_keys <= S_sax_dict.keys(), (
+            f"Model S-matrix for {self.component_name} is missing expected "
+            f"first-column S-parameters {sorted(expected_qucs_keys - S_sax_dict.keys())}; "
+            f"got {sorted(S_sax_dict)}"
+        )
 
         return (
             self.parameters,
@@ -367,6 +376,7 @@ class TestCouplerStraightCompareToQucs(BaseCompareToQucs):
 
     component_name = "Coupler Straight"
     csv_filename = "coupler_straight_qucs.csv"
+    num_ports: ClassVar[int] = 4
     parameters = frozenset({
         ModelParameter(name="length", value=500.0, unit=1e-6),
         ModelParameter(name="gap", value=1.52, unit=1e-6),
