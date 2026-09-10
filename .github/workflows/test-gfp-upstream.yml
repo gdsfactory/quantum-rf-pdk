@@ -1,0 +1,79 @@
+name: Test GDSFactory+ upstream
+
+permissions:
+  contents: read
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  # Gate: the pytest gfp suite targets the gdsfactoryplus v2 API and fails by
+  # design against v1, so it only runs when the latest PyPI release is v2+
+  # (remove this gate once 2.0.0 ships and it is expected to always run).
+  gate-gfp-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      python-versions: ${{ steps.versions.outputs.python-versions }}
+      gfp-major: ${{ steps.versions.outputs.gfp-major }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      - name: Resolve latest PyPI gdsfactoryplus and supported Pythons
+        id: versions
+        run: |
+          # `just get-gfp-versions` prints the filtered JSON array first, then
+          # latest=<version> and major=<major> lines of the PyPI gdsfactoryplus release.
+          OUTPUT="$(just get-gfp-versions '["3.11", "3.12", "3.13"]')"
+          echo "python-versions=$(echo "$OUTPUT" | head -n1)" >> "$GITHUB_OUTPUT"
+          MAJOR="$(echo "$OUTPUT" | sed -n 's/^major=//p')"
+          LATEST="$(echo "$OUTPUT" | sed -n 's/^latest=//p')"
+          # Empty major (unknown version) counts as 0 so the test job is skipped
+          echo "gfp-major=${MAJOR:-0}" >> "$GITHUB_OUTPUT"
+          if [[ "${MAJOR:-0}" -lt 2 ]]; then
+            {
+              echo "### GDSFactory+ upstream test skipped"
+              echo
+              echo "Latest PyPI gdsfactoryplus is \`${LATEST:-unknown}\` (< 2.0.0);"
+              echo "the gfp suite requires the v2 API. This gate can be removed once 2.0.0 is released."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+  test-gfp:
+    runs-on: ${{ matrix.os }}
+    needs: gate-gfp-versions
+    if: ${{ needs.gate-gfp-versions.outputs.gfp-major >= 2 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ${{ fromJson(needs.gate-gfp-versions.outputs.python-versions) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      - name: Test GDSFactory+
+        run: just test-gfp
+        env:
+          GFP_API_KEY: ${{ secrets.GFP_API_KEY }} # zizmor: ignore[secrets-outside-env]
+  test-gfp-result:
+    runs-on: ubuntu-latest
+    name: GDSFactory+ test result
+    needs: test-gfp
+    if: always()
+    steps:
+      - name: Check GDSFactory+ test matrix results
+        run: |
+          RESULT="${{ needs.test-gfp.result }}"
+          if [[ "$RESULT" == "success" ]]; then
+            echo "All GDSFactory+ test jobs succeeded"
+            exit 0
+          elif [[ "$RESULT" == "skipped" ]]; then
+            echo "GDSFactory+ test job skipped: latest PyPI gdsfactoryplus is < 2.0.0"
+            exit 0
+          else
+            echo "One or more GDSFactory+ test jobs failed"
+            exit 1
+          fi

@@ -92,6 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       python-versions: ${{ steps.filter.outputs.python-versions }}
+      gfp-major: ${{ steps.filter.outputs.gfp-major }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -100,10 +101,18 @@ jobs:
         id: filter
         run: |
           INPUT='${{ needs.get-python-versions.outputs.python-versions }}'
-          echo "python-versions=$(just get-gfp-versions "$INPUT")" >> "$GITHUB_OUTPUT"
+          # `just get-gfp-versions` prints the filtered JSON array first, then
+          # latest=<version> and major=<major> lines of the PyPI gdsfactoryplus release.
+          OUTPUT="$(just get-gfp-versions "$INPUT")"
+          echo "python-versions=$(echo "$OUTPUT" | head -n1)" >> "$GITHUB_OUTPUT"
+          echo "gfp-major=$(echo "$OUTPUT" | sed -n 's/^major=//p')" >> "$GITHUB_OUTPUT"
+  # Gate: gdsfactoryplus 2.0.0 is not on PyPI yet, and the pytest gfp suite targets the
+  # v2 API (it fails by design against v1). Run the suite only when the latest PyPI
+  # release is v2+; remove this gate once 2.0.0 ships and the job is expected to always run.
   test-gdsfactoryplus:
     runs-on: ${{ matrix.os }}
     needs: filter-gdsfactoryplus-versions
+    if: ${{ needs.filter-gdsfactoryplus-versions.outputs.gfp-major >= 2 }}
     strategy:
       fail-fast: false
       matrix:
@@ -128,8 +137,12 @@ jobs:
     steps:
       - name: Check GDSFactory+ test matrix results
         run: |
-          if [[ "${{ needs.test-gdsfactoryplus.result }}" == "success" ]]; then
+          RESULT="${{ needs.test-gdsfactoryplus.result }}"
+          if [[ "$RESULT" == "success" ]]; then
             echo "All GDSFactory+ test jobs succeeded"
+            exit 0
+          elif [[ "$RESULT" == "skipped" ]]; then
+            echo "GDSFactory+ test job skipped: latest PyPI gdsfactoryplus is < 2.0.0"
             exit 0
           else
             echo "One or more GDSFactory+ test jobs failed"

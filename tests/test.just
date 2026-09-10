@@ -67,11 +67,27 @@ test-models-force: (_pytest "-s tests/test_models_regression.py --force-regen")
 test-hfss *args: check-lfs
     uv run --all-extras --group dev pytest -m hfss {{ args }}
 
-# Filter a JSON array of Python versions to only those supported by the latest version of gdsfactoryplus on PyPI
+# Filter a JSON array of Python versions to only those supported by the latest version of gdsfactoryplus on PyPI.
+# Output contract (used by .github/workflows/test.yml and test-gfp-upstream.yml):
+#   line 1: JSON array of supported Python versions (the original behavior)
+#   line 2: latest=<latest gdsfactoryplus version on PyPI> (empty when unknown)
+#   line 3: major=<major version of that release> (empty when unknown)
 [group('test')]
 [script('uv', 'run', '--script')]
 get-gfp-versions versions:
     import json, urllib.request, sys, re
+
+    # Emit the latest= and major= lines of the output contract.
+    # major is empty when the version is unknown or not <int>.<int>... shaped.
+    def print_version_info(latest):
+        major = ""
+        if latest:
+            head = latest.split(".")[0]
+            if head.isdigit():
+                major = head
+        print(f"latest={latest or ''}")
+        print(f"major={major}")
+
     v_in = json.loads('{{ versions }}')
     try:
         with urllib.request.urlopen("https://pypi.org/pypi/gdsfactoryplus/json") as r:
@@ -112,11 +128,18 @@ get-gfp-versions versions:
                     v_out.append(v)
         # If filtering resulted in an empty list, fallback to input to avoid breaking the matrix
         print(json.dumps(v_out or v_in))
+        print_version_info(latest)
     except Exception:
-        # Fallback to input versions on any error (network, parsing, etc.)
+        # Fallback to input versions on any error (network, parsing, etc.);
+        # unknown version → empty latest/major so consumers can skip the gfp job
         print(json.dumps(v_in))
+        print_version_info(None)
 
-# Run GDSFactory+ tests
+# Run GDSFactory+ tests (pytest-based suite marked `gfp`; replaces the removed v2 `gfp test` CLI).
+# GFP_REQUIRED=1: gdsfactoryplus and its v2 API must be present (no silent skips).
+# The `gfp` binary is not pip-installable, so binary-dependent tests
+# (tests/test_gfp_server.py) still skip when it is missing — see that module's docstring.
+# `uv run` syncs the `gdsfactoryplus` extra and `dev` group automatically.
 [group('test')]
-test-gfp:
-    uv run --extra gdsfactoryplus gfp test
+test-gfp *args:
+    GFP_REQUIRED=1 uv run --extra gdsfactoryplus --group dev pytest -m gfp -n auto {{ args }}
