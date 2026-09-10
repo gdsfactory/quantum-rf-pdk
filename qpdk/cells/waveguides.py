@@ -187,6 +187,11 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
         "east": 1,
         "south": 1,
         "west": 1,
+        "cross_section": cross_section,
+        "wg_width": cross_section.width,
+        "xsize": cross_section.width,
+        "ysize": cross_section.width,
+        "layer": cross_section.layer,
     })
     for port in list(nxn_ref.ports)[:-1]:
         straight_ref = c << straight(
