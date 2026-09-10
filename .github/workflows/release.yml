@@ -19,12 +19,18 @@ jobs:
         id: get_version
         run: |
           VERSION=$(grep -m 1 '^version =' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format in pyproject.toml: '$VERSION'" >&2
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
       - name: Check if tag exists and create if not
         id: check_tag
+        env:
+          TAG: ${{ steps.get_version.outputs.tag }}
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          TAG=${{ steps.get_version.outputs.tag }}
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG"; then
             echo "Tag $TAG already exists. No new release will be created."
             echo "new_tag=false" >> "$GITHUB_OUTPUT"
@@ -32,7 +38,7 @@ jobs:
             echo "Tag $TAG does not exist. Creating and pushing tag."
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag -a "$TAG" -m "Release ${{ steps.get_version.outputs.version }}"
+            git tag -a "$TAG" -m "Release $VERSION"
             git push origin "$TAG"
             echo "new_tag=true" >> "$GITHUB_OUTPUT"
           fi
@@ -55,27 +61,32 @@ jobs:
         run: |
           uv run --all-extras --with cyclonedx-bom cyclonedx-py environment --pyproject pyproject.toml --output-format JSON --output-file sbom.json
       - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.check_and_tag.outputs.tag }}
         run: |
+          DRAFT_BODY=""
           # Get the latest draft release tag if it exists
           DRAFT_TAG=$(gh release list --limit 1 --json isDraft,tagName --jq '.[] | select(.isDraft==true) | .tagName' || echo "")
 
           if [ -n "$DRAFT_TAG" ]; then
             # Get the body of the draft release
             DRAFT_BODY=$(gh release view "$DRAFT_TAG" --json body --jq '.body' || echo "")
+          fi
+
+          if [ -n "$DRAFT_BODY" ]; then
             # Create release with draft body
-            gh release create ${{ needs.check_and_tag.outputs.tag }} \
-              --title "${{ needs.check_and_tag.outputs.tag }}" \
+            gh release create "$TAG" \
+              --title "$TAG" \
               --notes "$DRAFT_BODY" \
               sbom.json
           else
-            # Create release with auto-generated notes
-            gh release create ${{ needs.check_and_tag.outputs.tag }} \
-              --title "${{ needs.check_and_tag.outputs.tag }}" \
+            # No draft release or empty body: create release with auto-generated notes
+            gh release create "$TAG" \
+              --title "$TAG" \
               --generate-notes \
               sbom.json
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release_pypi:
     needs: [check_and_tag, build]
     if: needs.check_and_tag.outputs.new_tag_created == 'true'
