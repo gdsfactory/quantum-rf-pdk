@@ -20,7 +20,8 @@ instances:
       loop_area: 4
   unimon_arm:
     component: unimon_arm
-    info: {}
+    info:
+      radius: 100
     settings:
       arm_length: 3000
       arm_meanders: 6
@@ -29,7 +30,8 @@ instances:
       junction_gap: 10
   unimon_arm2:
     component: unimon_arm
-    info: {}
+    info:
+      radius: 100
     settings:
       arm_length: 3000
       arm_meanders: 6
