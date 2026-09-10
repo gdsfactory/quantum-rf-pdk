@@ -13,8 +13,9 @@ against this PDK:
   noise for hierarchical GDS: library leaf-cell ports connect in their
   parent, and ``resonator_o1`` of ``quarter_wave_resonator_coupled`` is
   intentionally unterminated (capacitive coupling through the gap).
-- ``check_drc``: remote submission smoke test against the
-  ``quantum_rf`` deck, skipped unless ``GFP_API_KEY`` is set.
+- ``check_drc``: remote submission smoke test, skipped unless
+  ``GFP_API_KEY`` is set and ``[tool.gdsfactoryplus.project].identifier``
+  (the portal project slug submissions are filed under) is configured.
 
 Behavioral notes these tests encode:
 
@@ -42,6 +43,7 @@ never received from untrusted sources.
 from __future__ import annotations
 
 import os
+import tomllib
 import xml.etree.ElementTree as ET  # ruff: ignore[suspicious-xml-etree-import]
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -68,10 +70,30 @@ SCHEMATIC_PATH = PROJECT_ROOT / "qpdk/samples/resonator_test_chip_yaml.pic.yml"
 #: Environment variable holding the gdsfactoryplus DRC API key.
 GFP_API_KEY_ENV = "GFP_API_KEY"
 
-#: ``[tool.gdsfactoryplus.drc] pdk`` in pyproject.toml; also the portal
-#: project slug for this PDK's DRC submissions (qpdk configures no
-#: ``[tool.gdsfactoryplus.project].identifier``).
-QUANTUM_RF_SLUG = "quantum_rf"
+
+def _portal_project_slug() -> str | None:
+    """Read the GDSFactory+ portal project slug from ``pyproject.toml``.
+
+    ``[tool.gdsfactoryplus.project].identifier`` is the cloud portal project
+    that DRC submissions are filed under (orthogonal to
+    ``[tool.gdsfactoryplus.drc] pdk``, which names the DRC process deck).
+    qpdk leaves it unset; the GF+ extension writes it on first interactive
+    DRC use.
+
+    Returns:
+        The configured slug, or ``None`` when not configured.
+    """
+    with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
+        data = tomllib.load(stream)
+    slug = (
+        data
+        .get("tool", {})
+        .get("gdsfactoryplus", {})
+        .get("project", {})
+        .get("identifier")
+    )
+    return slug or None
+
 
 #: Connectivity-check categories that indicate real defects. ``DanglingPort``
 #: is excluded on purpose (see module docstring).
@@ -207,12 +229,18 @@ def test_connectivity_no_shorts_or_overlaps(
 )
 def test_drc_submission_smoke(gfp_check: ModuleType, tmp_path: Path) -> None:
     """Submit a small qpdk cell to the remote DRC service without error."""
+    project_slug = _portal_project_slug()
+    if project_slug is None:
+        pytest.skip(
+            "[tool.gdsfactoryplus.project].identifier not set in pyproject.toml "
+            "— no portal project configured for DRC submissions",
+        )
     gds_path = tmp_path / "double_pad_transmon.gds"
     double_pad_transmon().write_gds(gds_path)
 
     submission = gfp_check.check_drc(
         str(gds_path),
-        project_slug=QUANTUM_RF_SLUG,
+        project_slug=project_slug,
         api_key=os.environ[GFP_API_KEY_ENV],
     )
 

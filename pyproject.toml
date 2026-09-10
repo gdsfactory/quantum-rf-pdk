@@ -159,8 +159,9 @@ unit = "GHz"
 
 [tool.gdsfactoryplus.pdk]
 name = "qpdk"
-# v1-only key: ignored by gdsfactoryplus >= 2.0 (unknown keys are skipped by
-# its settings schema). Kept until the v2 model-coverage mechanism is known.
+# qpdk-internal convention (never a gdsfactoryplus key in any version; unknown
+# keys are ignored by the v2 settings schema). Read by the model-coverage test
+# in tests/test_gfp_sax.py.
 cells_no_model_expected = [
   "chip_edge",  # chip-finishing fabrication frame, not a circuit element
   "circle",  # geometric utility, not a circuit element
@@ -177,8 +178,9 @@ cells_no_model_expected = [
   "unimon_arm",  # sub-component of unimon; model lives on parent
 ]
 
-# v1-only key: not part of the gdsfactoryplus >= 2.0 settings schema (silently
-# ignored there). Kept until its v2 replacement is confirmed.
+# Read directly from this file by the gdsfactoryplus >= 2.0 sidebar webview
+# (not part of the v2 settings schema; the "Make default" sidebar action
+# also writes this key). Selects the default library chips in the GF+ sidebar.
 [tool.gdsfactoryplus.sidebar]
 default_libraries = ["qpdk"]
 
