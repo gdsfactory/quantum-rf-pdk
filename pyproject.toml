@@ -407,6 +407,11 @@ directory = ".changelog.d"
 filename = "CHANGELOG.md"
 template = ".changelog.d/changelog_template.jinja"
 
+[[tool.towncrier.type]]
+directory = "fixed"
+name = "Fixed"
+showcontent = true
+
 [tool.uv]
 default-groups = ["dev", "lint", "stubs", "test"]
 

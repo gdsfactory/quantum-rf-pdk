@@ -74,7 +74,7 @@ class TestStraightAttenuation:
         original_params = cpw_mod.cpw_parameters
 
         def mock_params(w, g, tand=None):
-            ep, z0 = original_params(w, g, tand)
+            ep, z0 = original_params(w, g, tand=tand)
             return ep.real * (1 - 0.01j), z0
 
         monkeypatch.setattr(cpw_mod, "cpw_parameters", mock_params)
@@ -93,7 +93,7 @@ class TestStraightAttenuation:
         original_params = cpw_mod.cpw_parameters
 
         def mock_params(w, g, tand=None):
-            ep, z0 = original_params(w, g, tand)
+            ep, z0 = original_params(w, g, tand=tand)
             return ep.real * (1 - 0.01j), z0
 
         monkeypatch.setattr(cpw_mod, "cpw_parameters", mock_params)
@@ -110,8 +110,9 @@ class TestNumericalStability:
     @staticmethod
     def test_vacuum_loss_stability(monkeypatch) -> None:
         """Verify that loss correction does not crash for ep_r ~ 1."""
-        # Clear cache to ensure mock is used
-        cpw_mod.cpw_parameters.cache_clear()
+        # Clear cache to ensure mock is used. `cpw_parameters` itself is not
+        # cached (caching would leak tracers under `jax.jit`), so only its
+        # cached substrate-parameter dependency needs clearing.
         cpw_mod.get_cpw_substrate_params.cache_clear()
 
         # Mock get_cpw_substrate_params to return ep_r = 1.0

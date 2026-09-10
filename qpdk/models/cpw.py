@@ -130,7 +130,10 @@ def get_cpw_dimensions(
     return width, etch_section.width
 
 
-@cache
+# Note: do not decorate this function with `functools.cache` (or any cache that
+# retains return values). The sax helpers called below are jitted with
+# `inline=True`, so when this function runs inside a `jax.jit` trace its return
+# values contain tracers; caching them would leak tracers into later traces.
 def cpw_parameters(
     width: float,
     gap: float,
