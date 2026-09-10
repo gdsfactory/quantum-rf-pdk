@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - main
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   check_and_tag:
     name: Check for version bump and create tag

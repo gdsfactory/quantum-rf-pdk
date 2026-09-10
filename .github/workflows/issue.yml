@@ -17,6 +17,9 @@ on:
       - transferred
       - milestoned
       - demilestoned
+concurrency:
+  group: issue-${{ github.event.issue.number }}
+  cancel-in-progress: true
 jobs:
   label:
     permissions:

@@ -17,6 +17,9 @@ on:
       - transferred
       - milestoned
       - demilestoned
+concurrency:
+  group: auto-label-pdk-${{ github.event.issue.number }}
+  cancel-in-progress: true
 permissions:
   issues: write
 jobs:

@@ -4,6 +4,9 @@ permissions:
 on:
   push:
     branches: [main]
+concurrency:
+  group: release-drafter
+  cancel-in-progress: false
 jobs:
   draft:
     uses: doplaydo/pdk-ci-workflow-public/.github/workflows/release-drafter.yml@main # zizmor: ignore[unpinned-uses]
