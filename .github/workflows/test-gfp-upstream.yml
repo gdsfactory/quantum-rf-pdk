@@ -6,6 +6,9 @@ on:
   schedule:
     - cron: "0 6 * * 1" # Mondays 06:00 UTC
   workflow_dispatch:
+concurrency:
+  group: test-gfp-upstream
+  cancel-in-progress: true
 
 jobs:
   # Gate: the pytest gfp suite targets the gdsfactoryplus v2 SDK, which ships

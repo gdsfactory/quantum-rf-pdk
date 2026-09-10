@@ -7,6 +7,9 @@ on:
   merge_group:
   workflow_dispatch:
   workflow_call:
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 permissions:
   contents: read
 jobs:
