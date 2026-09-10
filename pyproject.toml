@@ -155,9 +155,12 @@ max = 15  # 15GHz
 min = 1  # 1GHz
 name = "f"
 num = 4001
+unit = "GHz"
 
 [tool.gdsfactoryplus.pdk]
 name = "qpdk"
+# v1-only key: ignored by gdsfactoryplus >= 2.0 (unknown keys are skipped by
+# its settings schema). Kept until the v2 model-coverage mechanism is known.
 cells_no_model_expected = [
   "chip_edge",  # chip-finishing fabrication frame, not a circuit element
   "circle",  # geometric utility, not a circuit element
@@ -174,8 +177,14 @@ cells_no_model_expected = [
   "unimon_arm",  # sub-component of unimon; model lives on parent
 ]
 
+# v1-only key: not part of the gdsfactoryplus >= 2.0 settings schema (silently
+# ignored there). Kept until its v2 replacement is confirmed.
 [tool.gdsfactoryplus.sidebar]
 default_libraries = ["qpdk"]
+
+# qpdk has no via_stack cell; tells the v2 Livewire router not to expect vias.
+[tool.gdsfactoryplus.livewire]
+has_vias = false
 
 [tool.interrogate]
 docstring-style = "google"
@@ -235,6 +244,7 @@ filterwarnings = [
   "ignore:jax\\.core\\.unmapped_aval is deprecated:DeprecationWarning",
 ]
 markers = [
+  "gfp: mark test as requiring GDSFactory+ (gdsfactoryplus)",
   "hfss: mark test as requiring HFSS",
   "skip_windows: skip test on Windows",
 ]
