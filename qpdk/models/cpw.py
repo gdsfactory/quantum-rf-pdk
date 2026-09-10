@@ -118,6 +118,10 @@ def get_cpw_dimensions(
 
     Returns:
         tuple[float, float]: Width and gap of the CPW.
+
+    Raises:
+        ValueError: If the conductor width or etch gap is not positive, or if
+            no etch section is found.
     """
     # Make sure a PDK is activated
     from qpdk import PDK  # ruff: ignore[import-outside-top-level]
@@ -126,8 +130,21 @@ def get_cpw_dimensions(
     xs = gf.get_cross_section(cross_section, **kwargs)
 
     width = xs.width
+    if not width > 0:
+        msg = (
+            f"Cross-section '{xs.name}' has non-positive conductor width {width}. "
+            "CPW conductor width must be positive."
+        )
+        raise ValueError(msg)
     etch_section = get_etch_section(xs)
-    return width, etch_section.width
+    etch_gap = etch_section.width
+    if not etch_gap > 0:
+        msg = (
+            f"Cross-section '{xs.name}' has non-positive etch gap {etch_gap}. "
+            "CPW etch gap must be positive."
+        )
+        raise ValueError(msg)
+    return width, etch_gap
 
 
 @cache
