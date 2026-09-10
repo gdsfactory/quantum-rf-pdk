@@ -32,8 +32,6 @@ from qpdk.tech import LAYER
 cells = PDK.cells
 skip_test_netlist = {
     "all_cells",  # Skip netlist test for all_cells (collection of all components)
-    "unimon",  # Uses partial junction spec; generated cell name can't round-trip
-    "unimon_coupled",  # Uses partial junction spec; generated cell name can't round-trip
 }
 # Skip default gdsfactory cells
 skip_test = {
@@ -168,10 +166,6 @@ def test_netlists(
     n.pop("warnings", None)
     yaml_str = c.write_netlist(n)
 
-    cis = list(c.kcl.each_cell_top_down())
-    for ci in cis:
-        gf.kcl.dkcells[ci].delete()
-
     c2 = gf.read.from_yaml(yaml_str)
     netlist2 = c2.get_netlist()
     n2: dict[str, Any] = normalize_numeric_types(netlist2)
@@ -179,10 +173,6 @@ def test_netlists(
     d.pop("warnings", None)
     d.pop("ports", None)
     assert len(d) == 0, d
-
-    cis = list(c.kcl.each_cell_top_down())
-    for ci in cis:
-        gf.kcl.dkcells[ci].delete()
 
 
 def test_yaml_matches_layers():
