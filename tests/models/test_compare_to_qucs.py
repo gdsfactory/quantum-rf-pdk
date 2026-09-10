@@ -29,6 +29,31 @@ NUMERIC_TOLERANCES = {
 }
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _require_lfs_test_data() -> None:
+    """Fail with a clear message if the LFS-stored Qucs reference data is not pulled.
+
+    The ``.csv`` reference files in ``tests/models/data/`` are stored in Git
+    LFS. In a fresh clone or worktree whose LFS objects have not been
+    downloaded, they contain pointer text instead of CSV data, which makes
+    ``pl.read_csv`` fail with a confusing schema error.
+    """
+    for csv_path in sorted(TEST_DATA_PATH.glob("*.csv")):
+        with csv_path.open("rb") as file:
+            head = file.read(128)
+        # Git LFS pointer text starts with "version " followed by the LFS API
+        # URL and then an "oid sha256:..." line; real CSV files start with
+        # column headers instead. (Split checks avoid a URL literal that link
+        # checkers would try to resolve.)
+        if head.startswith(b"version ") and b"oid sha256:" in head:
+            pytest.fail(
+                f"{csv_path.name} contains Git LFS pointer text instead of the "
+                "actual reference data. Run `git lfs pull` to download the LFS "
+                "files, then re-run the tests.",
+                pytrace=False,
+            )
+
+
 @final
 class ModelParameter(BaseModel):
     """Model parameter configuration."""
