@@ -1,9 +1,63 @@
-"""Tests for cell validation edge cases — resonator, waveguides."""
+"""Tests for cell validation edge cases — inductor, resonator, waveguides."""
 
 import pytest
 
+from qpdk.cells.inductor import lumped_element_resonator, meander_inductor
 from qpdk.cells.resonator import resonator
 from qpdk.cells.waveguides import bend_circular
+
+
+class TestInductorValidation:
+    """Tests for meander inductor and lumped-element resonator validation."""
+
+    @staticmethod
+    def test_resonator_cell_even_n_turns_raises() -> None:
+        """Even n_turns must raise in the lumped_element_resonator cell.
+
+        The meander path must span from the left bus bar to the right bus
+        bar, which requires an odd number of runs.
+        """
+        with pytest.raises(ValueError, match="n_turns must be odd"):
+            lumped_element_resonator(n_turns=4)
+
+    @staticmethod
+    def test_resonator_cell_odd_n_turns_succeeds() -> None:
+        """Odd n_turns must be accepted by the lumped_element_resonator cell."""
+        c = lumped_element_resonator(n_turns=5)
+        assert c is not None
+
+    @staticmethod
+    def test_meander_cell_even_n_turns_port_on_same_side() -> None:
+        """The bare meander cell accepts even n_turns: o2 lands beside o1.
+
+        The model (qpdk.models.inductor.meander_inductor) therefore accepts
+        even n_turns too; the odd constraint is layout-only and specific to
+        the resonator cell.
+        """
+        turn_length = 200.0
+        c = meander_inductor(n_turns=4, turn_length=turn_length, cross_section="cpw")
+        assert c.ports["o1"].center[0] == pytest.approx(-turn_length / 2)
+        assert c.ports["o2"].center[0] == pytest.approx(-turn_length / 2)
+
+    @staticmethod
+    def test_meander_cell_odd_n_turns_port_on_opposite_side() -> None:
+        """Odd n_turns places o2 on the side opposite to o1."""
+        turn_length = 200.0
+        c = meander_inductor(n_turns=5, turn_length=turn_length, cross_section="cpw")
+        assert c.ports["o1"].center[0] == pytest.approx(-turn_length / 2)
+        assert c.ports["o2"].center[0] == pytest.approx(turn_length / 2)
+
+    @staticmethod
+    def test_meander_cell_less_than_one_turn_raises() -> None:
+        """n_turns < 1 must raise in the meander cell."""
+        with pytest.raises(ValueError, match="at least 1 turn"):
+            meander_inductor(n_turns=0, cross_section="cpw")
+
+    @staticmethod
+    def test_meander_cell_nonpositive_turn_length_raises() -> None:
+        """turn_length <= 0 must raise in the meander cell."""
+        with pytest.raises(ValueError, match="turn_length must be positive"):
+            meander_inductor(turn_length=0.0, cross_section="cpw")
 
 
 class TestResonatorValidation:

@@ -14,6 +14,8 @@ from qpdk.models.inductor import (
     lumped_element_resonator,
     meander_inductor,
     meander_inductor_inductance_analytical,
+    mutual_inductance_parallel_strips,
+    self_inductance_strip,
 )
 
 MAX_EXAMPLES = 50
@@ -213,6 +215,97 @@ class TestMeanderInductorInductanceAnalytical:
         assert float(L) == pytest.approx(expected, rel=1e-5)
 
     @staticmethod
+    def test_matches_brute_force_pair_sum_for_odd_and_even() -> None:
+        """Closed-form sum must equal a brute-force pairwise sum for any n_turns.
+
+        Verifies the formula is valid for both odd and even turn counts: in a
+        meander, adjacent runs carry opposite currents and there are
+        n_turns - 1 vertical connectors regardless of parity, so the odd-turn
+        requirement of some layout cells is not a constraint of the
+        mathematics.
+        """
+        turn_length, wire_width, wire_gap, thickness = 200.0, 2.0, 2.0, 0.2
+        sheet_inductance = 1e-12
+        l_m = turn_length * 1e-6
+        w_m = wire_width * 1e-6
+        t_m = thickness * 1e-6
+        p_m = (wire_width + wire_gap) * 1e-6  # pitch (center-to-center)
+
+        for n_turns in range(1, 9):  # covers both odd and even parities
+            expected = n_turns * float(self_inductance_strip(l_m, w_m, t_m))
+            for i in range(n_turns):
+                for j in range(n_turns):
+                    if i != j:
+                        expected += ((-1.0) ** (j - i)) * float(
+                            mutual_inductance_parallel_strips(l_m, abs(j - i) * p_m)
+                        )
+            expected += (n_turns - 1) * float(self_inductance_strip(p_m, w_m, t_m))
+            # Kinetic part: total length = horizontal runs + vertical connectors
+            expected += (
+                sheet_inductance
+                * (n_turns * turn_length + (n_turns - 1) * wire_gap)
+                / wire_width
+            )
+            L = meander_inductor_inductance_analytical(
+                n_turns=n_turns,
+                turn_length=turn_length,
+                wire_width=wire_width,
+                wire_gap=wire_gap,
+                sheet_inductance=sheet_inductance,
+                thickness=thickness,
+            )
+            # JAX computes in float32, so ~7e-4 relative agreement is the
+            # practical ceiling; the explicit 1e-12 absolute floor dominates
+            # near zero and governs the pass.
+            assert float(L) == pytest.approx(expected, rel=1e-5, abs=1e-12)
+
+    @staticmethod
+    def test_even_n_turns_accepted() -> None:
+        """The analytical model must accept even n_turns without error.
+
+        The odd-turn constraint is layout-only (see
+        qpdk.cells.inductor.lumped_element_resonator); the formula itself is
+        parity-agnostic.
+        """
+        L_even = meander_inductor_inductance_analytical(
+            n_turns=4,
+            turn_length=200.0,
+            wire_width=2.0,
+            wire_gap=2.0,
+            sheet_inductance=1e-12,
+            thickness=0.2,
+        )
+        L_odd = meander_inductor_inductance_analytical(
+            n_turns=5,
+            turn_length=200.0,
+            wire_width=2.0,
+            wire_gap=2.0,
+            sheet_inductance=1e-12,
+            thickness=0.2,
+        )
+        assert float(L_even) > 0
+        assert float(L_odd) > float(L_even)
+
+    @staticmethod
+    @pytest.mark.parametrize("n_turns", [0, -3])
+    def test_nonpositive_n_turns_returns_zero(n_turns: int) -> None:
+        """Nonpositive n_turns returns zero inductance, not a negative value.
+
+        A meander with fewer than one run has no inductance; the raw formula
+        would otherwise return a negative value for the missing vertical
+        connector.
+        """
+        L = meander_inductor_inductance_analytical(
+            n_turns=n_turns,
+            turn_length=200.0,
+            wire_width=2.0,
+            wire_gap=2.0,
+            sheet_inductance=1e-12,
+            thickness=0.2,
+        )
+        assert float(L) == pytest.approx(0.0, abs=1e-30)
+
+    @staticmethod
     def test_known_value() -> None:
         """Spot-check: 10 turns × 200 µm / 2 µm wide = 1000 □; L = 1 pH/□ kinetic + L_g."""
         L = meander_inductor_inductance_analytical(
@@ -351,6 +444,31 @@ class TestMeanderInductorSAX:
         sdict = meander_inductor(f=freqs)
         for v in sdict.values():
             assert v.shape == (100,)
+
+    @staticmethod
+    def test_even_n_turns_accepted() -> None:
+        """The SAX model must accept even n_turns without error.
+
+        The odd-turn constraint is layout-only; even values describe the
+        valid meander geometry where the cell places the second port on the
+        same side as the first.
+        """
+        sdict = meander_inductor(n_turns=4, turn_length=200.0, cross_section="cpw")
+        for v in sdict.values():
+            assert jnp.all(jnp.isfinite(v))
+
+    @staticmethod
+    @pytest.mark.parametrize("n_turns", [0, -3])
+    def test_nonpositive_n_turns_returns_zero_inductance(n_turns: int) -> None:
+        """Nonpositive n_turns gives a zero-inductance (short) model.
+
+        Discrete-geometry validation (n_turns >= 1) happens in the layout
+        cell; the jittable model clamps instead of raising so that traced
+        n_turns stay supported.
+        """
+        sdict = meander_inductor(n_turns=n_turns, cross_section="cpw")
+        for v in sdict.values():
+            assert jnp.all(jnp.isfinite(v))
 
 
 # ---------------------------------------------------------------------------
@@ -570,3 +688,27 @@ class TestLumpedElementResonatorSAX:
         sdict = lumped_element_resonator(f=freqs)
         for v in sdict.values():
             assert v.shape == (200,)
+
+    @staticmethod
+    def test_even_n_turns_accepted() -> None:
+        """The SAX model must accept even n_turns without error.
+
+        The odd-turn constraint is a layout-only requirement of the
+        lumped_element_resonator cell, not of this model.
+        """
+        sdict = lumped_element_resonator(n_turns=4)
+        for v in sdict.values():
+            assert jnp.all(jnp.isfinite(v))
+
+    @staticmethod
+    @pytest.mark.parametrize("n_turns", [0, -3])
+    def test_nonpositive_n_turns_returns_zero_inductance(n_turns: int) -> None:
+        """Nonpositive n_turns gives a zero-inductance (short) resonator model.
+
+        Discrete-geometry validation (n_turns >= 1) happens in the layout
+        cell; the jittable model clamps instead of raising so that traced
+        n_turns stay supported.
+        """
+        sdict = lumped_element_resonator(n_turns=n_turns)
+        for v in sdict.values():
+            assert jnp.all(jnp.isfinite(v))
