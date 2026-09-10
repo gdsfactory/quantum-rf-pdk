@@ -1,4 +1,5 @@
-info: {}
+info:
+  radius: 100
 name: unimon_arm_AL3000_AM6_BSbend_circular_CScpw_JG6
 ports:
   o1:
