@@ -41,7 +41,20 @@ documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
 repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
 
 [project.optional-dependencies]
-gdsfactoryplus = ["gdsfactoryplus", "httpx"]
+# Dependencies of the gdsfactoryplus v2 SDK exercised by the gfp test suite.
+# The SDK itself is not on PyPI: gdsfactoryplus >= 2.0 ships bundled inside
+# the public GDSFactory+ VS Code extension, and `just test-gfp` extracts it
+# from there onto PYTHONPATH (see tests/test.just). Listed here are only the
+# SDK's own dependencies that the suite imports.
+gdsfactoryplus = [
+  "doroutes>=1.4.0,<2.0.0",
+  "elvis-lvs",
+  "httpx",
+  "inspice",
+  "jaxellip",
+  "kfnetlist",
+  "sax>=0.18.2,<1",
+]
 graphics = ["trimesh", "pyglet<3"]
 hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
 models = [

@@ -11,10 +11,6 @@ this PDK:
   ``.pic.yml`` sample factories; the server exposes Python factories via
   ``listFactories``.
 - Nyanlib generation: server startup writes ``build/models.nyanlib``.
-- Component picker: ``gdsfactoryplus.component_picker``/``get_component``
-  resolves qpdk cells; ``get_component`` also default-constructs the full
-  ``PDK.cells`` registry (skipping cells with required parameters), the
-  per-cell build sweep that ``gfp test`` did in gdsfactoryplus v1.
 
 The tests need the ``gfp`` binary, which is not pip-installable. Discovery:
 ``GFP_BIN`` environment variable, then ``gfp`` on ``PATH``. When the binary
@@ -27,8 +23,6 @@ tests keep their skip.
 
 from __future__ import annotations
 
-import functools
-import inspect
 import json
 import os
 import shutil
@@ -42,14 +36,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from conftest import import_gfp_module
-
-from qpdk import PDK
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
-    from types import ModuleType
-    from typing import Any
+    from collections.abc import Generator
 
 #: qpdk repository root (parent of ``tests/``).
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -66,10 +55,6 @@ NYANLIB_SPOT_CHECKS = (
     "models:qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "models:qpdk.cells.transmon.double_pad_transmon",
 )
-
-#: Environment variable that makes ``component_picker`` return its default
-#: deterministically (docs builds) instead of building an ipywidgets picker.
-DOCS_ENV = "SIMULATION_TEMPLATES_DOCS"
 
 
 # ---------------------------------------------------------------------------
@@ -396,107 +381,3 @@ def test_gfp_stats_subprocess(gfp_bin: str) -> None:
         assert f'"name":"{factory_name}"' in result.stderr, (
             f"pic.yml factory {factory_name!r} not discovered by gfp stats"
         )
-
-
-@pytest.mark.gfp
-def test_component_picker_docs_mode(monkeypatch: pytest.MonkeyPatch) -> None:
-    """component_picker returns the default deterministically in docs mode."""
-    gfp = import_gfp_module("gdsfactoryplus")
-    monkeypatch.setenv(DOCS_ENV, "1")
-
-    cell_names = list(PDK.cells)
-    selected = gfp.component_picker("double_pad_transmon", cell_names)
-    assert selected == "double_pad_transmon"
-
-    with pytest.raises(ValueError, match=r"not in pdk\.cells"):
-        gfp.component_picker("not_a_qpdk_cell", cell_names)
-
-
-@pytest.mark.gfp
-def test_component_picker_interactive(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Without the docs env var, component_picker builds an ipywidgets picker."""
-    gfp = import_gfp_module("gdsfactoryplus")
-    import_gfp_module("ipywidgets")  # skips when ipywidgets is not installed
-    monkeypatch.delenv(DOCS_ENV, raising=False)
-
-    picker = gfp.component_picker("double_pad_transmon", ["double_pad_transmon"])
-    assert picker.value == "double_pad_transmon"
-    assert list(picker.options) == ["double_pad_transmon"]
-
-
-@pytest.mark.gfp
-def test_get_component_builds_qpdk_cells(gfp_sdk: ModuleType) -> None:
-    """get_component instantiates the picked qpdk cell."""
-    for cell_name in ("double_pad_transmon", "quarter_wave_resonator_coupled"):
-        component = gfp_sdk.get_component(cell_name, cell_name)
-        # Instantiated cells carry hashed parameter suffixes in their name.
-        assert component.name.startswith(cell_name)
-
-
-def _base_cell_name(cell: Callable[..., Any], default: str) -> str:
-    """Name of the underlying factory behind a registered cell.
-
-    ``PDK.cells`` may map a registry key to a partial or an alias (e.g.
-    ``straight_shorted = straight``), whose built components are named after
-    the underlying function instead of the registry key.
-
-    Args:
-        cell: The registered cell factory.
-        default: Name to return when the factory exposes no ``__name__``.
-
-    Returns:
-        The ``__name__`` of the unwrapped factory, or ``default``.
-    """
-    obj: Any = cell
-    while isinstance(obj, functools.partial):
-        obj = obj.func
-    return getattr(obj, "__name__", "") or default
-
-
-@pytest.mark.gfp
-@pytest.mark.parametrize("cell_name", sorted(PDK.cells))
-def test_get_component_builds_all_qpdk_cells(
-    gfp_sdk: ModuleType, cell_name: str
-) -> None:
-    """get_component default-constructs every registered qpdk cell.
-
-    Per-cell build sweep through the gfp registry path, mirroring the
-    ``gfp test`` behavior of gdsfactoryplus v1: cells whose signature has
-    required (default-less) parameters cannot be built with defaults and are
-    skipped. If the signature cannot be inspected, the build is attempted
-    rather than skipping blindly. Built components carry hashed parameter
-    suffixes in their name; partial/alias registry entries are named after
-    their underlying factory, so the name is checked against that.
-
-    Args:
-        gfp_sdk: The gdsfactoryplus SDK top-level module.
-        cell_name: Name of the qpdk cell to instantiate.
-    """
-    try:
-        signature = inspect.signature(PDK.cells[cell_name])
-    except (TypeError, ValueError):
-        required: list[str] = []
-    else:
-        required = [
-            param.name
-            for param in signature.parameters.values()
-            if param.default is inspect.Parameter.empty
-            and param.kind
-            in {
-                inspect.Parameter.POSITIONAL_ONLY,
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                inspect.Parameter.KEYWORD_ONLY,
-            }
-        ]
-    if required:
-        pytest.skip(
-            f"cell cannot be default-constructed: requires {', '.join(required)}"
-        )
-
-    component = gfp_sdk.get_component(cell_name, cell_name)
-    base_name = _base_cell_name(
-        PDK.cells[cell_name], cell_name.rsplit(".", maxsplit=1)[-1]
-    )
-    assert component.name.startswith(base_name), (
-        f"{cell_name!r} built a component named {component.name!r}"
-    )

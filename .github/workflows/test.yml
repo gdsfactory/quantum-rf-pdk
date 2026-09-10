@@ -88,7 +88,6 @@ jobs:
             exit 1
           fi
   filter-gdsfactoryplus-versions:
-    needs: get-python-versions
     runs-on: ubuntu-latest
     outputs:
       python-versions: ${{ steps.filter.outputs.python-versions }}
@@ -97,18 +96,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - name: Filter versions for gdsfactoryplus
+      - name: Resolve GDSFactory+ extension version
         id: filter
         run: |
-          INPUT='${{ needs.get-python-versions.outputs.python-versions }}'
-          # `just get-gfp-versions` prints the filtered JSON array first, then
-          # latest=<version> and major=<major> lines of the PyPI gdsfactoryplus release.
-          OUTPUT="$(just get-gfp-versions "$INPUT")"
+          # `just get-gfp-versions` prints the gfp matrix Python versions as a
+          # JSON array first, then latest=<version> and major=<major> lines of
+          # the public GDSFactory+ VS Code extension.
+          OUTPUT="$(just get-gfp-versions)"
           echo "python-versions=$(echo "$OUTPUT" | head -n1)" >> "$GITHUB_OUTPUT"
           echo "gfp-major=$(echo "$OUTPUT" | sed -n 's/^major=//p')" >> "$GITHUB_OUTPUT"
-  # Gate: gdsfactoryplus 2.0.0 is not on PyPI yet, and the pytest gfp suite targets the
-  # v2 API (it fails by design against v1). Run the suite only when the latest PyPI
-  # release is v2+; remove this gate once 2.0.0 ships and the job is expected to always run.
+  # Gate: the pytest gfp suite targets the gdsfactoryplus v2 SDK, which ships
+  # bundled in the public GDSFactory+ VS Code extension (not on PyPI). Run the
+  # suite only when the latest extension release is v2+; the gate also skips
+  # the job gracefully when the Marketplace cannot be reached.
   test-gdsfactoryplus:
     runs-on: ${{ matrix.os }}
     needs: filter-gdsfactoryplus-versions
@@ -142,7 +142,7 @@ jobs:
             echo "All GDSFactory+ test jobs succeeded"
             exit 0
           elif [[ "$RESULT" == "skipped" ]]; then
-            echo "GDSFactory+ test job skipped: latest PyPI gdsfactoryplus is < 2.0.0"
+            echo "GDSFactory+ test job skipped: latest VS Code extension release is < 2.0"
             exit 0
           else
             echo "One or more GDSFactory+ test jobs failed"

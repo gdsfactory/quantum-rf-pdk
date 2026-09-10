@@ -67,18 +67,20 @@ test-models-force: (_pytest "-s tests/test_models_regression.py --force-regen")
 test-hfss *args: check-lfs
     uv run --all-extras --group dev pytest -m hfss {{ args }}
 
-# Filter a JSON array of Python versions to only those supported by the latest version of gdsfactoryplus on PyPI.
+# Query the latest version of the public GDSFactory+ VS Code extension.
 # Output contract (used by .github/workflows/test.yml and test-gfp-upstream.yml):
-#   line 1: JSON array of supported Python versions (the original behavior)
-#   line 2: latest=<latest gdsfactoryplus version on PyPI> (empty when unknown)
+#   line 1: JSON array of Python versions for the gfp test matrix
+#   line 2: latest=<latest extension version> (empty when unknown)
 #   line 3: major=<major version of that release> (empty when unknown)
 [group('test')]
 [script('uv', 'run', '--script')]
-get-gfp-versions versions:
-    import json, urllib.request, sys, re
+get-gfp-versions:
+    import json, urllib.request
 
-    # Emit the latest= and major= lines of the output contract.
-    # major is empty when the version is unknown or not <int>.<int>... shaped.
+    # The extension bundles a cp312-only SDK and runtime, so the gfp
+    # matrix is pinned to Python 3.12 regardless of the main matrix.
+    print(json.dumps(["3.12"]))
+
     def print_version_info(latest):
         major = ""
         if latest:
@@ -88,58 +90,179 @@ get-gfp-versions versions:
         print(f"latest={latest or ''}")
         print(f"major={major}")
 
-    v_in = json.loads('{{ versions }}')
+    def version_key(v):
+        return [int(x) if x.isdigit() else 0 for x in v.split(".")]
+
     try:
-        with urllib.request.urlopen("https://pypi.org/pypi/gdsfactoryplus/json") as r:
-            data = json.loads(r.read().decode())
-
-        latest = data.get("info", {}).get("version")
-        info = data.get("info", {})
-        req = info.get("requires_python", "")
-        rels = data.get("releases", {}).get(latest, [])
-
-        def supports_version(rel, t, v):
-            python_version = rel.get("python_version", "")
-            has_cp_tag = f"cp{t}" in python_version
-            has_py_tag = f"py{t}" in python_version
-            has_plain_version = v in python_version
-            return has_cp_tag or has_py_tag or has_plain_version
-
-        v_out = []
-        for v in v_in:
-            t = v.replace(".", "")
-            # Check for wheels first as they are definitive
-            if any(supports_version(rel, t, v) for rel in rels):
-                v_out.append(v)
-            elif req:
-                # Fallback to parsing requires_python string for the latest version
-                vm = int(v.split('.')[1])
-                # Match major.minor patterns like >=3.11, <3.14, ~=3.12
-                m_ge = re.search(r'>=3\.(\d+)', req)
-                m_lt = re.search(r'<3\.(\d+)', req)
-                m_ti = re.search(r'~=3\.(\d+)', req)
-
-                is_supported = True
-                if m_ge and vm < int(m_ge.group(1)): is_supported = False
-                if m_lt and vm >= int(m_lt.group(1)): is_supported = False
-                if m_ti and vm != int(m_ti.group(1)): is_supported = False
-
-                if is_supported:
-                    v_out.append(v)
-        # If filtering resulted in an empty list, fallback to input to avoid breaking the matrix
-        print(json.dumps(v_out or v_in))
-        print_version_info(latest)
+        body = json.dumps({
+            "filters": [{
+                "criteria": [{"filterType": 7, "value": "gdsfactory.gdsfactoryplus"}],
+                "pageNumber": 1,
+                "pageSize": 1,
+                "sortBy": 0,
+                "sortOrder": 0,
+            }],
+            "assetTypes": [],
+            "flags": 1,  # IncludeVersions
+        }).encode()
+        req = urllib.request.Request(
+            "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery?api-version=7.2-preview.1",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json;api-version=7.2-preview.1",
+                "User-Agent": "quantum-rf-pdk-ci",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read())
+        extensions = data.get("results", [{}])[0].get("extensions", [])
+        versions = (
+            [v["version"] for v in extensions[0].get("versions", [])]
+            if extensions
+            else []
+        )
+        print_version_info(max(versions, key=version_key) if versions else None)
     except Exception:
-        # Fallback to input versions on any error (network, parsing, etc.);
-        # unknown version → empty latest/major so consumers can skip the gfp job
-        print(json.dumps(v_in))
+        # Unknown version → empty latest/major so consumers skip the gfp job
         print_version_info(None)
+
+# Download the public GDSFactory+ VS Code extension and extract the bundled
+# gdsfactoryplus SDK and `gfp` binary into build/gfp-vsix/ (neither is
+# pip-installable: gdsfactoryplus >= 2.0 ships only inside the extension).
+# Writes build/gfp-vsix/env.sh exporting PYTHONPATH (SDK + bundled nyancad)
+# and GFP_BIN (binary) for `just test-gfp` to source.
+[group('test')]
+[script('uv', 'run', '--script')]
+fetch-gfp version="latest":
+    import gzip, io, json, os, platform, shutil, stat, urllib.request, zipfile
+    from pathlib import Path
+
+    PUBLISHER = "gdsfactory"
+    EXTENSION = "gdsfactoryplus"
+    API = "https://marketplace.visualstudio.com/_apis/public/gallery"
+    OUT = Path("build/gfp-vsix")
+    IS_WINDOWS = platform.system() == "Windows"
+
+    def resolve_latest():
+        body = json.dumps({
+            "filters": [{
+                "criteria": [{"filterType": 7, "value": f"{PUBLISHER}.{EXTENSION}"}],
+                "pageNumber": 1,
+                "pageSize": 1,
+                "sortBy": 0,
+                "sortOrder": 0,
+            }],
+            "assetTypes": [],
+            "flags": 1,  # IncludeVersions
+        }).encode()
+        req = urllib.request.Request(
+            f"{API}/extensionquery?api-version=7.2-preview.1",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json;api-version=7.2-preview.1",
+                "User-Agent": "quantum-rf-pdk-ci",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read())
+        extensions = data.get("results", [{}])[0].get("extensions", [])
+        versions = (
+            [v["version"] for v in extensions[0].get("versions", [])]
+            if extensions
+            else []
+        )
+        if not versions:
+            raise SystemExit(
+                f"extension {PUBLISHER}.{EXTENSION} not found on the Marketplace"
+            )
+
+        def version_key(v):
+            return [int(x) if x.isdigit() else 0 for x in v.split(".")]
+
+        return max(versions, key=version_key)
+
+    def target_platform():
+        arch = {
+            "x86_64": "x64",
+            "amd64": "x64",
+            "arm64": "arm64",
+            "aarch64": "arm64",
+        }.get(platform.machine().lower())
+        os_name = {"Darwin": "darwin", "Linux": "linux", "Windows": "win32"}.get(
+            platform.system()
+        )
+        if not arch or not os_name:
+            raise SystemExit(
+                f"unsupported platform: {platform.system()} {platform.machine()}"
+            )
+        return f"{os_name}-{arch}"
+
+    version = "{{ version }}"
+    target = target_platform()
+    if version == "latest":
+        version = resolve_latest()
+    stamp = OUT / "VERSION"
+    wanted = f"{version} {target}"
+
+    if stamp.exists() and stamp.read_text().strip() == wanted:
+        print(f"gdsfactoryplus {wanted} already extracted at {OUT}")
+    else:
+        url = (
+            f"{API}/publishers/{PUBLISHER}/vsextensions/{EXTENSION}"
+            f"/{version}/vspackage?targetPlatform={target}"
+        )
+        print(f"downloading {PUBLISHER}.{EXTENSION} {version} ({target})")
+        req = urllib.request.Request(url, headers={"User-Agent": "quantum-rf-pdk-ci"})
+        with urllib.request.urlopen(req, timeout=600) as r:
+            payload = r.read()
+        # The Marketplace may serve the VSIX gzip-encoded.
+        if payload[:2] == b"\x1f\x8b":
+            payload = gzip.decompress(payload)
+
+        if OUT.exists():
+            shutil.rmtree(OUT)
+        OUT.mkdir(parents=True)
+        with zipfile.ZipFile(io.BytesIO(payload)) as vsix:
+            for member in vsix.namelist():
+                if member.startswith("extension/bin/") and not member.endswith("/"):
+                    target_path = OUT / member.removeprefix("extension/")
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    target_path.write_bytes(vsix.read(member))
+
+        gfp_bin = OUT / "bin" / ("gfp.exe" if IS_WINDOWS else "gfp")
+        if not IS_WINDOWS:
+            gfp_bin.chmod(gfp_bin.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        stamp.write_text(wanted)
+
+    gfp_bin = OUT / "bin" / ("gfp.exe" if IS_WINDOWS else "gfp")
+    sdk_dirs = [OUT / "bin" / "python" / "gdsfactoryplus", OUT / "bin" / "python" / "nyancad"]
+    sep = os.pathsep
+    env_sh = OUT / "env.sh"
+    env_sh.write_text(
+        f'export PYTHONPATH="{sep.join(str(d.resolve()) for d in sdk_dirs)}"\n'
+        f'export GFP_BIN="{gfp_bin.resolve()}"\n'
+    )
+    print(f"extracted to {OUT}; source {env_sh} for PYTHONPATH and GFP_BIN")
 
 # Run GDSFactory+ tests (pytest-based suite marked `gfp`; replaces the removed v2 `gfp test` CLI).
 # GFP_REQUIRED=1: gdsfactoryplus and its v2 API must be present (no silent skips).
-# The `gfp` binary is not pip-installable, so binary-dependent tests
-# (tests/test_gfp_server.py) still skip when it is missing — see that module's docstring.
-# `uv run` syncs the `gdsfactoryplus` extra and `dev` group automatically.
+# The SDK and the `gfp` binary are not pip-installable: gdsfactoryplus >= 2.0
+# ships bundled in the public GDSFactory+ VS Code extension, so when the SDK is
+# not importable this recipe first extracts both from the extension (fetch-gfp).
+# The gfp-marked tests live in the three files listed below; naming them
+# explicitly avoids collecting the whole repo under the minimal gfp extras.
 [group('test')]
 test-gfp *args:
-    GFP_REQUIRED=1 uv run --extra gdsfactoryplus --group dev pytest -m gfp -n auto {{ args }}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ -f build/gfp-vsix/env.sh ]]; then
+        source build/gfp-vsix/env.sh
+    fi
+    if ! uv run --no-sync python -c "import gdsfactoryplus" 2>/dev/null; then
+        just fetch-gfp
+        source build/gfp-vsix/env.sh
+    fi
+    GFP_REQUIRED=1 uv run --extra gdsfactoryplus --group dev pytest -m gfp -n auto \
+        tests/test_gfp_lvs.py tests/test_gfp_sax.py tests/test_gfp_server.py {{ args }}
