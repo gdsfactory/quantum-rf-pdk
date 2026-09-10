@@ -10,13 +10,14 @@ import re
 import tempfile
 from collections.abc import Generator
 from contextlib import contextmanager
+from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import gdsfactory as gf
 from gdsfactory.technology.layer_stack import LayerLevel
 
-from qpdk import LAYER_STACK
+from qpdk import LAYER_STACK, logger
 from qpdk.tech import LAYER, material_properties
 from qpdk.utils import (
     add_margin_to_layer,
@@ -72,15 +73,46 @@ def layer_stack_to_gds_mapping(
 ) -> dict[int, tuple[float, float]]:
     """Convert a LayerStack to HFSS/Q3D GDS import mapping dictionary.
 
+    Vacuum levels (``material == "vacuum"``) are skipped: the AEDT background
+    region is already vacuum and any vacuum box is added explicitly with
+    :meth:`qpdk.simulation.hfss.HFSS.add_air_region`, so importing vacuum as
+    GDS geometry is redundant. This also resolves the Substrate/Vacuum
+    collision on ``LAYER.SIM_AREA`` (98, 0).
+
+    pyaedt's ``import_gds_3d`` keys the mapping on GDS layer number only — the
+    GDS datatype is not part of the key — so two levels sharing a layer number
+    (e.g. ``LAYER.AB_DRAW`` = (10, 0) and ``LAYER.AB_VIA`` = (10, 1)) are merged
+    into a single entry when they share a material and their z-spans join into
+    one box; otherwise an error is raised rather than silently importing wrong
+    geometry. Levels sharing a layer number are processed in ascending
+    ``zmin`` order so the result does not depend on the layer stack's
+    insertion order.
+
     Returns:
-        Dictionary mapping layer number to (thickness, elevation) tuple.
+        Dictionary mapping layer number to (elevation, thickness) tuple.
+
+    Raises:
+        ValueError: If two levels share a GDS layer number but cannot be merged
+            into a single (elevation, thickness) entry because their materials
+            differ (regardless of ``thickness_override``) or, with
+            ``thickness_override=None``, their z-spans do not join into a
+            single box.
     """
     if layer_stack is None:
         layer_stack = LAYER_STACK
 
-    mapping: dict[int, tuple[float, float]] = {}
+    # Collect levels per layer number first, then process each number's levels
+    # in zmin order so the result is independent of the layer stack's
+    # insertion order.
+    levels_by_number: dict[int, list[tuple[str, LayerLevel, float, float]]] = {}
+    for name, layer_level in layer_stack.layers.items():
+        if layer_level.material == "vacuum":
+            logger.info(
+                f"Skipping layer level {name!r} in GDS import mapping: vacuum is"
+                " already the AEDT background region."
+            )
+            continue
 
-    for layer_level in layer_stack.layers.values():
         layer_number = _get_layer_number_from_level(layer_level)
         if layer_number is None:
             continue
@@ -91,7 +123,75 @@ def layer_stack_to_gds_mapping(
             if thickness_override is not None
             else (layer_level.thickness or 0.0)
         )
-        mapping[layer_number] = (elevation, thickness)
+        levels_by_number.setdefault(layer_number, []).append((
+            name,
+            layer_level,
+            elevation,
+            thickness,
+        ))
+
+    mapping: dict[int, tuple[float, float]] = {}
+    for layer_number, levels in levels_by_number.items():
+        levels.sort(key=itemgetter(2))  # ascending zmin
+
+        prev_name, prev_level, prev_elevation, prev_thickness = levels[0]
+        mapping[layer_number] = (prev_elevation, prev_thickness)
+
+        for name, layer_level, elevation, thickness in levels[1:]:
+            if prev_level.material != layer_level.material:
+                raise ValueError(
+                    f"Layer levels {prev_name!r} ({prev_level.material!r}) and"
+                    f" {name!r} ({layer_level.material!r}) share GDS layer"
+                    f" {layer_number} but have different materials. pyaedt"
+                    f" import_gds_3d keys the mapping on GDS layer number only"
+                    f" (the datatype is discarded), so both would be imported as"
+                    f" one object with a single material. Give them distinct GDS"
+                    f" layer numbers or pass a custom layer_stack to"
+                    f" import_component."
+                )
+
+            # Union of the two z-spans (um)
+            span_low = min(prev_elevation, elevation)
+            span_high = max(prev_elevation + prev_thickness, elevation + thickness)
+            # Overlapping or touching intervals join into a single box
+            max_low = max(prev_elevation, elevation)
+            min_high = min(prev_elevation + prev_thickness, elevation + thickness)
+
+            if thickness_override is not None:
+                # Sheets/forced thickness: colliding levels cannot keep distinct
+                # z-spans, so collapse to the lowest elevation and warn loudly.
+                logger.warning(
+                    f"Layer levels {prev_name!r} and {name!r} share GDS layer"
+                    f" {layer_number} (pyaedt import_gds_3d keys on layer number"
+                    f" only): collapsing to a single entry at elevation"
+                    f" {span_low} um; the higher level's geometry is not"
+                    f" represented separately."
+                )
+                mapping[layer_number] = (span_low, thickness)
+            elif max_low > min_high + 1e-6:  # 1 pm tolerance in um
+                raise ValueError(
+                    f"Layer levels {prev_name!r} and {name!r} share GDS layer"
+                    f" {layer_number} but their z-spans [{prev_elevation},"
+                    f" {prev_elevation + prev_thickness}] and [{elevation},"
+                    f" {elevation + thickness}] do not join into a single box."
+                    f" pyaedt import_gds_3d keys the mapping on GDS layer number"
+                    f" only (the datatype is discarded), so both would be imported"
+                    f" with a single elevation and thickness. Give them distinct"
+                    f" GDS layer numbers or pass a custom layer_stack to"
+                    f" import_component."
+                )
+            else:
+                logger.info(
+                    f"Merging layer levels {prev_name!r} and {name!r}: both use"
+                    f" GDS layer {layer_number} and their z-spans join into a"
+                    f" single box (elevation {span_low} um, thickness"
+                    f" {span_high - span_low} um)."
+                )
+                mapping[layer_number] = (span_low, span_high - span_low)
+
+            prev_name = name
+            prev_level = layer_level
+            prev_elevation, prev_thickness = mapping[layer_number]
 
     return mapping
 
