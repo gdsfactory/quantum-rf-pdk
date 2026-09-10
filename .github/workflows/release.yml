@@ -22,12 +22,18 @@ jobs:
         id: get_version
         run: |
           VERSION=$(grep -m 1 '^version =' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format in pyproject.toml: '$VERSION'" >&2
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
       - name: Check if tag exists and create if not
         id: check_tag
+        env:
+          TAG: ${{ steps.get_version.outputs.tag }}
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          TAG=${{ steps.get_version.outputs.tag }}
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG"; then
             echo "Tag $TAG already exists. No new release will be created."
             echo "new_tag=false" >> "$GITHUB_OUTPUT"
@@ -35,7 +41,7 @@ jobs:
             echo "Tag $TAG does not exist. Creating and pushing tag."
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag -a "$TAG" -m "Release ${{ steps.get_version.outputs.version }}"
+            git tag -a "$TAG" -m "Release $VERSION"
             git push origin "$TAG"
             echo "new_tag=true" >> "$GITHUB_OUTPUT"
           fi
