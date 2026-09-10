@@ -1,9 +1,18 @@
 name: Release Drafter
-permissions:
-  contents: read
+permissions: {}
 on:
   push:
     branches: [main]
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   draft:
-    uses: doplaydo/pdk-ci-workflow-public/.github/workflows/release-drafter.yml@main # zizmor: ignore[unpinned-uses]
+    permissions:
+      contents: write
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@ed4bc48ec97379be2258e7b7ac2624a3e26ab809 # v7.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
