@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 
+import jax
 import jax.numpy as jnp
 import pytest
 from hypothesis import HealthCheck, assume, given, settings, strategies as st
@@ -17,6 +18,75 @@ from qpdk.models.inductor import (
 )
 
 MAX_EXAMPLES = 50
+
+
+# ---------------------------------------------------------------------------
+# Reference implementation (pure Python, transcribes the same published
+# Chen et al. 2023 formulas as qpdk/models/inductor.py)
+# ---------------------------------------------------------------------------
+def _strip_self_inductance(
+    length_m: float, width_m: float, thickness_m: float
+) -> float:
+    """Self-inductance of a rectangular strip (Chen et al. 2023), in H."""
+    mu0 = 4e-7 * math.pi
+    return (mu0 * length_m / (2 * math.pi)) * (
+        math.log(2 * length_m / (width_m + thickness_m))
+        + 0.5
+        + (width_m + thickness_m) / (3 * length_m)
+    )
+
+
+def _mutual_inductance_strips(length_m: float, d_m: float) -> float:
+    """Mutual inductance of two parallel strips (Chen et al. 2023), in H."""
+    mu0 = 4e-7 * math.pi
+    return (mu0 * length_m / (2 * math.pi)) * (
+        math.log(length_m / d_m + math.sqrt(1 + (length_m / d_m) ** 2))
+        - math.sqrt(1 + (d_m / length_m) ** 2)
+        + d_m / length_m
+    )
+
+
+def _meander_reference_inductance(
+    n_turns: int,
+    *,
+    turn_length: float = 200.0,
+    wire_width: float = 2.0,
+    wire_gap: float = 2.0,
+    sheet_inductance: float = 1e-12,
+    thickness: float = 0.2,
+    max_offset: int | None = None,
+) -> float:
+    """Explicit reference for the meander inductance, in H.
+
+    Sums the mutual-inductance series term by term in pure Python. The strip
+    formulas below are transcriptions of the same published formulas the
+    implementation uses, so this reference discriminates the summation bounds
+    and term assembly, not the strip formulas themselves. ``max_offset``
+    emulates the legacy hardcoded ``jnp.arange(1, 501)`` limit when set.
+
+    Returns:
+        Total meander inductance in Henries.
+    """
+    l_m = turn_length * 1e-6
+    w_m = wire_width * 1e-6
+    g_m = wire_gap * 1e-6
+    t_m = thickness * 1e-6
+    p_m = w_m + g_m
+
+    last_k = n_turns - 1 if max_offset is None else min(n_turns - 1, max_offset)
+    l_m_sum = sum(
+        (n_turns - k) * (-1.0) ** k * _mutual_inductance_strips(l_m, k * p_m)
+        for k in range(1, last_k + 1)
+    )
+    l_g = (
+        n_turns * _strip_self_inductance(l_m, w_m, t_m)
+        + 2 * l_m_sum
+        + (n_turns - 1) * _strip_self_inductance(p_m, w_m, t_m)
+    )
+    total_length_um = n_turns * turn_length + max(0, n_turns - 1) * wire_gap
+    l_k = sheet_inductance * total_length_um / wire_width
+    return l_g + l_k
+
 
 # ---------------------------------------------------------------------------
 # Shared strategies
@@ -228,6 +298,86 @@ class TestMeanderInductorInductanceAnalytical:
         # Obtained value will also include L_g (self + mutual)
         assert float(L) > 1009e-12
         assert float(L) < 2000e-12  # sanity upper bound
+
+    @staticmethod
+    @pytest.mark.parametrize("n_turns", [155, 501, 750])
+    def test_large_turn_counts_match_full_sum(n_turns: int) -> None:
+        """Large turn counts match an explicit full mutual-inductance sum.
+
+        155 is the default superinductor turn count of the ``fluxonium`` cell;
+        501 and 750 lie above the legacy hardcoded 500-offset limit, so these
+        cases fail if the mutual-inductance sum is truncated at
+        :math:`k = 500`.
+        """
+        L = meander_inductor_inductance_analytical(
+            n_turns=n_turns,
+            turn_length=200.0,
+            wire_width=2.0,
+            wire_gap=2.0,
+            sheet_inductance=1e-12,
+            thickness=0.2,
+        )
+        expected = _meander_reference_inductance(n_turns)
+        # For these ~1e-8 H values the 1e-12 absolute floor dominates
+        # rel=1e-9; float64 accumulation error over the alternating terms
+        # (sax enables x64 on import) stays well below the floor.
+        assert float(L) == pytest.approx(expected, rel=1e-9, abs=1e-12)
+
+    @staticmethod
+    def test_turn_counts_beyond_legacy_500_limit() -> None:
+        """n_turns > 500 must include every mutual term, not truncate at k=500.
+
+        The legacy implementation hardcoded ``offsets = jnp.arange(1, 501)``
+        with a mask, silently dropping mutual-inductance terms with
+        :math:`k > 500`. The full sum must be computed instead.
+        """
+        L_600 = float(
+            meander_inductor_inductance_analytical(
+                n_turns=600,
+                turn_length=200.0,
+                wire_width=2.0,
+                wire_gap=2.0,
+                sheet_inductance=1e-12,
+                thickness=0.2,
+            )
+        )
+        expected_full = _meander_reference_inductance(600)
+        # As above, the 1e-12 absolute floor dominates rel=1e-9 for ~1e-8 H
+        # values; stated explicitly so the tolerance matches what is applied.
+        assert pytest.approx(expected_full, rel=1e-9, abs=1e-12) == L_600
+        # Truncating at the legacy limit would give a measurably different
+        # (wrong) value — confirm the high-order terms are actually included.
+        expected_truncated = _meander_reference_inductance(600, max_offset=500)
+        assert pytest.approx(expected_truncated, rel=1e-4, abs=1e-12) != L_600
+
+    @staticmethod
+    def test_composes_with_jax_transformations() -> None:
+        """A traced n_turns (vmap) must match the concrete-int evaluation."""
+        ns = jnp.arange(2, 8)
+        batched = jax.vmap(
+            lambda n: meander_inductor_inductance_analytical(
+                n_turns=n,
+                turn_length=200.0,
+                wire_width=2.0,
+                wire_gap=2.0,
+                sheet_inductance=1e-12,
+                thickness=0.2,
+            )
+        )(ns)
+        direct = jnp.asarray([
+            float(
+                meander_inductor_inductance_analytical(
+                    n_turns=int(n),
+                    turn_length=200.0,
+                    wire_width=2.0,
+                    wire_gap=2.0,
+                    sheet_inductance=1e-12,
+                    thickness=0.2,
+                )
+            )
+            for n in range(2, 8)
+        ])
+        assert jnp.allclose(batched, direct, rtol=1e-9)
 
 
 # ---------------------------------------------------------------------------
