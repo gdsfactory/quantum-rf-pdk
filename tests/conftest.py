@@ -24,7 +24,10 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
     A missing ``gdsfactoryplus.*`` submodule while the package itself imports
     means upstream changed the API these tests guard against — that must fail
     loudly, never silently skip. Set ``GFP_REQUIRED=1`` to also turn the
-    "package absent" skip into a failure (used in the gfp CI job).
+    "package absent" skip and any missing transitive dependency into
+    failures (used in the gfp CI job, where ``just test-gfp`` provisions
+    everything); otherwise a silently missing dependency would green the CI
+    with the SAX/LVS coverage gone.
 
     gdsfactoryplus >= 2.0 is not on PyPI; it ships bundled in the public
     GDSFactory+ VS Code extension. ``just test-gfp`` provisions it from the
@@ -41,9 +44,10 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
         return importlib.import_module(module)
     except ModuleNotFoundError as exc:
         missing = exc.name or ""
+        required = os.environ.get(GFP_REQUIRED_ENV) == "1"
         if missing == "gdsfactoryplus":
             hint = "run `just fetch-gfp` and source build/gfp-vsix/env.sh"
-            if os.environ.get(GFP_REQUIRED_ENV) == "1":
+            if required:
                 pytest.fail(
                     f"gdsfactoryplus is required (GFP_REQUIRED=1) but not "
                     f"importable — {hint}"
@@ -55,6 +59,13 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
             pytest.fail(
                 f"gdsfactoryplus is installed but {module!r} is unavailable "
                 f"({missing!r} missing) — upstream API changed?"
+            )
+        if required:
+            pytest.fail(
+                f"gdsfactoryplus is required (GFP_REQUIRED=1) but its "
+                f"dependency {missing!r} is not importable — the SDK "
+                "provisioning is broken; run `just fetch-gfp` and source "
+                "build/gfp-vsix/env.sh, or install the gdsfactoryplus extra"
             )
         pytest.skip(
             f"optional dependency {missing!r} not installed", allow_module_level=True

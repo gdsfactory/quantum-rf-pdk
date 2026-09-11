@@ -75,6 +75,16 @@ _SPEED_OF_LIGHT_UM_PER_S = 299_792_458_000_000.0
 #: Fully qualified factory id of the resonator test chip sample.
 _CHIP_QUALNAME = "qpdk.samples.resonator_test_chip.resonator_test_chip_python"
 
+#: An exempted cell (listed in ``cells_no_model_expected``: its SAX model
+#: lives on the full ``plate_capacitor``). Unlike portless exemptions such
+#: as ``chip_edge``, it has one port, so an instance wired into a net
+#: survives netlist pruning and is reported as a missing model — the only
+#: way to exercise the exemptions subtraction.
+_EXEMPT_CELL_QUALNAME = "qpdk.cells.capacitor.plate_capacitor_single"
+
+#: File name of the nyancir that instantiates the exempted cell.
+_EXEMPT_GSCH_NAME = "resonator_test_chip_exemption.gsch"
+
 #: Chip ports exposed by the nyancir port markers.
 _PORT_NAMES = ("o1", "o2", "o3", "o4")
 
@@ -138,7 +148,7 @@ def _resonator_test_chip_nyanlib(
 
     Mirrors the entries the ``gfp`` binary generates (see
     ``build/models.nyanlib``): for a Python-factory leaf, the Mosaic
-    netlist builder only reads the component ``name`` and ``type``
+    netlist builder only reads the component ``name``
     (``nyancad.netlist.kf_component_name``).
 
     Args:
@@ -192,7 +202,8 @@ def mosaic_project_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
     the repository root with a ``gfp``-generated nyanlib. A throwaway
     root with a hand-authored nyanlib exercises the same SDK path
     without cross-test ordering dependencies. Holds a default-props and
-    a tuned-props nyancir (see ``_TUNED_GSCH_NAME``).
+    a tuned-props nyancir (see ``_TUNED_GSCH_NAME``), plus an exemption
+    nyancir (see ``_EXEMPT_GSCH_NAME``) for the model-coverage test.
 
     Returns:
         Path to the temporary project root.
@@ -205,9 +216,25 @@ def mosaic_project_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
             indent=2,
         )
     )
-    (root / "models.nyanlib").write_text(
-        json.dumps(_resonator_test_chip_nyanlib(), indent=2)
-    )
+    exemption_document = _resonator_test_chip_nyancir()
+    exemption_document["cap:E1"] = {
+        "type": "ckt",
+        "model": _EXEMPT_CELL_QUALNAME,
+        "name": "E1",
+        "transform": [1, 0, 0, 1, 0, 0],
+        "x": 0,
+        "y": 0,
+        "props": {},
+        "nets": {"o1": "net_o2"},
+    }
+    (root / _EXEMPT_GSCH_NAME).write_text(json.dumps(exemption_document, indent=2))
+    nyanlib = _resonator_test_chip_nyanlib()
+    nyanlib[f"models:{_EXEMPT_CELL_QUALNAME}"] = {
+        "name": "plate_capacitor_single",
+        "type": "ckt",
+        "tags": ["qpdk"],
+    }
+    (root / "models.nyanlib").write_text(json.dumps(nyanlib, indent=2))
     return root
 
 
@@ -293,14 +320,21 @@ def _assert_sweep_matches_reference(
 
     for key in set(expected) | simulated_keys:
         entry = sdict.get(f"{key[0]},{key[1]}")
-        actual = (
-            zero
-            if entry is None  # near-zero terms may be dropped
-            else np.asarray(entry["real"]) + 1j * np.asarray(entry["imag"])
-        )
+        expected_value = expected.get(key, zero)
+        if entry is None:
+            # The SDK drops entries whose |S| stays below 1e-5 across the
+            # whole band (sim/sax.py ``_sweep``), so an absent entry only
+            # guarantees the reference is under that threshold — comparing
+            # it to zero at a tighter tolerance would spuriously fail.
+            assert np.abs(np.asarray(expected_value)).max() < 1e-5, (
+                f"S[{key}] is missing from the sdict but the reference is "
+                "not negligible; the SDK should not have dropped it"
+            )
+            continue
+        actual = np.asarray(entry["real"]) + 1j * np.asarray(entry["imag"])
         np.testing.assert_allclose(
             actual,
-            expected.get(key, zero),
+            expected_value,
             rtol=1e-6,
             atol=1e-6,
             err_msg=f"S-parameters disagree for {key}",
@@ -439,7 +473,10 @@ def test_layout_sax_model_coverage(nyancir_path: Path) -> None:
 
     Components without a SAX model are acceptable only when they are
     listed in ``[tool.gdsfactoryplus.pdk] cells_no_model_expected``;
-    anything else is an upstream regression to fix with a model.
+    anything else is an upstream regression to fix with a model. This
+    fixture resolves only the chip (unmodelled leaf cells are dropped
+    during layout extraction and never reported), so the exemptions
+    list is genuinely exercised by ``test_mosaic_sax_model_coverage``.
     """
     info = sax_sim.inspect_layout_sax_models(str(nyancir_path), "qpdk.PDK")
 
@@ -459,14 +496,23 @@ def test_mosaic_sax_model_coverage(mosaic_project_root: Path) -> None:
 
     Same contract as the layout pipeline, but for
     ``inspect_mosaic_sax_models`` (schematic-driven resolution from
-    ``project_root``).
+    ``project_root``). The schematic instantiates ``plate_capacitor_single``
+    — a cell exempted via ``cells_no_model_expected`` because its model
+    lives on the full ``plate_capacitor`` — wired into a live net so it
+    survives pruning and is reported as a missing model. That makes the
+    subtraction below real: removing the cell from the exemptions must
+    fail this test.
     """
     info = sax_sim.inspect_mosaic_sax_models(
-        str(mosaic_project_root / _GSCH_NAME),
+        str(mosaic_project_root / _EXEMPT_GSCH_NAME),
         "qpdk.PDK",
         project_root=str(mosaic_project_root),
     )
 
+    assert "plate_capacitor_single" in info["missing_models"], (
+        "the exemption fixture no longer reports plate_capacitor_single "
+        f"as missing, so the exemptions subtraction is not exercised: {info}"
+    )
     unexpected = set(info["missing_models"]) - _cells_no_model_expected()
     assert not unexpected, (
         f"Schematic pipeline reported missing SAX models {sorted(unexpected)}; "

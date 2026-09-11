@@ -258,7 +258,13 @@ def spawn_gfp_server(
         time.sleep(2)
     else:
         proc.terminate()
-        proc.wait(timeout=5)
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            # A wedged server must not mask the startup-timeout failure
+            # below with a TimeoutExpired traceback.
+            proc.kill()
+            proc.wait()
         log_file.close()
         pytest.fail(
             f"gfp serve did not become ready within {startup_timeout}s. See {log_path}"

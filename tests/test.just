@@ -179,7 +179,10 @@ fetch-gfp version="latest":
             )
 
         def version_key(v):
-            return [int(x) if x.isdigit() else 0 for x in v.split(".")]
+            # Release versions must beat prereleases at equal numbers
+            # ("2.1.0" > "2.1.0-beta"), so append a release flag; the
+            # non-digit component of a prerelease sorts as 0 either way.
+            return ([int(x) if x.isdigit() else 0 for x in v.split(".")], "-" not in v)
 
         return max(versions, key=version_key)
 
@@ -231,13 +234,21 @@ fetch-gfp version="latest":
                     target_path.parent.mkdir(parents=True, exist_ok=True)
                     target_path.write_bytes(vsix.read(member))
 
-        gfp_bin = OUT / "bin" / ("gfp.exe" if IS_WINDOWS else "gfp")
-        if not IS_WINDOWS:
-            gfp_bin.chmod(gfp_bin.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         stamp.write_text(wanted)
 
+    # Validate on every run (not just fresh extraction) and chmod
+    # unconditionally: zip extraction does not preserve the exec bit, so
+    # a stamp hit on a re-cloned or partially cleaned checkout would
+    # otherwise produce a non-executable gfp with no error.
     gfp_bin = OUT / "bin" / ("gfp.exe" if IS_WINDOWS else "gfp")
     sdk_dirs = [OUT / "bin" / "python" / "gdsfactoryplus", OUT / "bin" / "python" / "nyancad"]
+    if not gfp_bin.is_file():
+        raise SystemExit(f"extraction incomplete: {gfp_bin} is missing from {OUT}")
+    missing_dirs = [str(d) for d in sdk_dirs if not d.is_dir()]
+    if missing_dirs:
+        raise SystemExit(f"extraction incomplete: SDK dirs missing: {missing_dirs}")
+    if not IS_WINDOWS:
+        gfp_bin.chmod(gfp_bin.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     sep = os.pathsep
     env_sh = OUT / "env.sh"
     env_sh.write_text(

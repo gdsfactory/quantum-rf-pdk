@@ -63,11 +63,18 @@ jobs:
   test-gfp-result:
     runs-on: ubuntu-latest
     name: GDSFactory+ test result
-    needs: test-gfp
+    needs: [test-gfp, gate-gfp-versions]
     if: always()
     steps:
       - name: Check GDSFactory+ test matrix results
         run: |
+          # A failed gate maps the test job to "skipped"; without this
+          # check a broken gate would show up green as "skipped".
+          GATE="${{ needs.gate-gfp-versions.result }}"
+          if [[ "$GATE" == "failure" ]]; then
+            echo "GDSFactory+ version gate failed; the test job did not run meaningfully"
+            exit 1
+          fi
           RESULT="${{ needs.test-gfp.result }}"
           if [[ "$RESULT" == "success" ]]; then
             echo "All GDSFactory+ test jobs succeeded"
