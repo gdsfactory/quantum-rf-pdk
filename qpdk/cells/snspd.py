@@ -41,29 +41,29 @@ def snspd(
             (width, height) of the rectangle formed by the outer boundary of the
             SNSPD.
         num_squares: int | None = None
-            Total number of squares inside the SNSPD length.
+            Total number of squares inside the SNSPD length. If given, overrides
+            `size` with a square SNSPD with that total number of squares.
         turn_ratio: float
             Specifies how much of the SNSPD width is dedicated to the 180 degree
             turn. A `turn_ratio` of 10 will result in 20% of the width being
             comprised of the turn.
         terminals_same_side: If True, both ports will be located on the same side of the SNSPD.
         layer: layer spec to put polygon geometry on.
-        port_type: type of port to add to the component.
+        port_type: type of port to add to the component (e.g. `"electrical"` or `"optical"`).
 
     Returns:
         A Component containing the SNSPD geometry.
+
+    Raises:
+        ValueError: If the SNSPD is too small for at least 3 meanders.
     """
     if num_squares is not None:
+        # num_squares overrides size: build a square SNSPD with the requested
+        # total number of squares.
         xy = np.sqrt(num_squares * wire_pitch * wire_width)
         size = (xy, xy)
-        num_squares = None
 
     xsize, ysize = size
-    if num_squares is not None:
-        if xsize is None:
-            xsize = num_squares * wire_pitch * wire_width / ysize
-        elif ysize is None:
-            ysize = num_squares * wire_pitch * wire_width / xsize
 
     num_meanders = int(np.ceil(ysize / wire_pitch))
 
@@ -82,11 +82,14 @@ def snspd(
     ):
         num_meanders += 1
 
-    port_type = "electrical"
+    if num_meanders < 3:
+        raise ValueError(
+            f"num_meanders={num_meanders} is too small; the SNSPD needs at least "
+            "3 meanders. Increase `size` or decrease `wire_pitch`."
+        )
 
-    start_nw = D.add_ref(
-        gf.c.compass(size=(xsize / 2, wire_width), layer=layer, port_type=port_type)
-    )
+    start_nw = D.add_ref(gf.c.compass(size=(xsize / 2, wire_width), layer=layer))
+
     hp_prev = D.add_ref(hairpin)
     hp_prev.connect("e1", start_nw.ports["e3"])
     alternate = True
@@ -101,14 +104,16 @@ def snspd(
         hp_prev = hp
         alternate = not alternate
 
-    finish_se = D.add_ref(
-        gf.c.compass(size=(xsize / 2, wire_width), layer=layer, port_type=port_type)
-    )
+    finish_se = D.add_ref(gf.c.compass(size=(xsize / 2, wire_width), layer=layer))
     if last_port is not None:
         finish_se.connect("e3", last_port)
 
-    D.add_port(port=start_nw.ports["e1"], name="e1")
-    D.add_port(port=finish_se.ports["e1"], name="e2")
+    # The nanowire geometry itself only makes electrical connections
+    # (`optimal_hairpin` has electrical ports), so honor `port_type` on the
+    # exposed terminal ports.
+    port_prefix = "e" if port_type == "electrical" else "o"
+    D.add_port(port=start_nw.ports["e1"], name=f"{port_prefix}1", port_type=port_type)
+    D.add_port(port=finish_se.ports["e1"], name=f"{port_prefix}2", port_type=port_type)
 
     D.info["num_squares"] = num_meanders * (xsize / wire_width)
     D.info["area"] = xsize * ysize
