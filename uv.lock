@@ -3896,7 +3896,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "circulax", marker = "extra == 'circulax'", specifier = ">=0.1.7" },
+    { name = "circulax", marker = "extra == 'circulax'", specifier = ">=0.2.3" },
     { name = "doroutes", marker = "extra == 'gdsfactoryplus'", specifier = ">=1.4.0,<2.0.0" },
     { name = "elvis-lvs", marker = "extra == 'gdsfactoryplus'" },
     { name = "flax", marker = "extra == 'netket'" },

@@ -113,9 +113,9 @@ PDK.activate()
 # (charge equations).
 
 # %%
-from circulax.components.base_component import Signals, States, component, source
-from circulax.components.electronic import Capacitor, Resistor
-from circulax.solvers import setup_harmonic_balance, setup_transient
+from circulax.circuit import compile_circuit
+from circulax.components.base_component import Signals, States, component
+from circulax.components.electronic import Capacitor, Resistor, VoltageSourceAC
 
 # %% [markdown]
 # ### 1.2 Defining the Josephson Junction Component
@@ -290,8 +290,8 @@ def build_transmon_netlist(Cs: float, Ic: float, EJ2_ratio: float = 0.0) -> dict
         "instances": {
             "GND": {"component": "ground"},
             "Vdrive": {
-                "component": "source_voltage",
-                "settings": {"V": V_drive, "delay": 0.0},
+                "component": "source_voltage_ac",
+                "settings": {"V": V_drive, "freq": f_drive, "delay": 0.0},
             },
             "Rdrive": {
                 "component": "resistor",
@@ -318,18 +318,9 @@ models = {
     "resistor": Resistor,
     "capacitor": Capacitor,
     "josephson_junction": JosephsonJunction,
-    "source_voltage": source(
-        ports=("p1", "p2"), states=("i_src",), amplitude_param="V"
-    )(
-        lambda signals, s, t, V=0.0, delay=0.0: (
-            {
-                "p1": s.i_src,
-                "p2": -s.i_src,
-                "i_src": (signals.p1 - signals.p2) - jnp.where(t >= delay, V, 0.0),
-            },
-            {},
-        )
-    ),
+    # Sinusoidal drive: harmonic balance needs a periodic excitation, so a
+    # step source would leave the circuit unexcited (zero AC response).
+    "source_voltage_ac": VoltageSourceAC,
     "ground": lambda: 0,
 }
 
@@ -340,17 +331,21 @@ models = {
 # circuit (all time derivatives zero). This serves as the initial guess for
 # the HB solver.
 
+# %% [markdown]
+# `compile_circuit` turns the netlist into a callable :class:`~circulax.circuit.Circuit`.
+# Compiling **once**, outside any `jax.jit`/`jax.grad` boundary, is what makes the
+# rest of this notebook differentiable: the circuit topology (and the integer index
+# arrays derived from it) stays static, while component values are swapped in
+# functionally through the `params=` argument of each analysis.
+
 # %%
-from circulax.compiler import compile_netlist
-from circulax.solvers import analyze_circuit
+# Compile the netlist into a reusable, differentiable circuit
+net_dict = build_transmon_netlist(Cs_init, Ic_init, EJ2_ratio=params["EJ2_ratio"])
+circuit = compile_circuit(net_dict, models)
+num_vars, port_map = circuit.sys_size, circuit.port_map
 
-# Compile the netlist
-net_dict = build_transmon_netlist(Cs_init, Ic_init)
-groups, num_vars, port_map = compile_netlist(net_dict, models)
-
-# Analyze and find DC operating point
-solver = analyze_circuit(groups, num_vars)
-y_dc = solver.solve_dc(groups, jnp.zeros(num_vars))
+# DC operating point
+y_dc = circuit.dc()
 
 print(f"System size: {num_vars} state variables")
 print(f"DC operating point norm: {jnp.linalg.norm(y_dc):.2e}")
@@ -370,14 +365,9 @@ print(f"DC operating point norm: {jnp.linalg.norm(y_dc):.2e}")
 # ```
 
 # %%
-# Set up harmonic balance at the drive frequency
+# Solve for the periodic steady state at the drive frequency
 num_harmonics = 7  # capture up to 7th harmonic for nonlinear response
-run_hb = setup_harmonic_balance(
-    groups, num_vars, freq=f_drive, num_harmonics=num_harmonics
-)
-
-# Solve for periodic steady state
-y_time, y_freq = run_hb(y_dc)
+y_time, y_freq = circuit.hb(freq=f_drive, harmonics=num_harmonics, y0=y_dc)
 
 print(f"HB solution shape: {y_time.shape} (K time samples × {num_vars} vars)")
 print(f"Frequency components shape: {y_freq.shape}")
@@ -450,36 +440,38 @@ def hb_loss_fn(params_vec: jnp.ndarray) -> float:
     Ic = jnp.exp(params_vec[0])
     Cs = jnp.exp(params_vec[1])
 
-    # Rebuild netlist with current parameters
-    net = build_transmon_netlist(Cs, Ic, EJ2_ratio=params["EJ2_ratio"])
-    grps, n_vars, pmap = compile_netlist(net, models)
-
-    # We need a custom DC solver step here inside the JIT-able loss fn
-    # For a simple LC circuit with no DC drive, the DC operating point is exactly zero
-    y_dc_current = jnp.zeros(n_vars)
-
-    # Set up harmonic balance at the target frequency
-    # We drive at f_target, so the response at the 1st harmonic should be maximized
-    # if the circuit is perfectly resonant at f_target.
-    # To formulate this as a minimization, we penalize the inverse of the response.
-    run_hb_current = setup_harmonic_balance(
-        grps, n_vars, freq=f_target, num_harmonics=3
+    # Reuse the circuit compiled above and swap in the current parameter values.
+    # Recompiling the netlist inside the traced function would turn the
+    # topology index arrays into tracers and break the solver setup.
+    #
+    # We drive at f_target, so the response at the 1st harmonic should be
+    # maximized if the circuit is perfectly resonant at f_target. To formulate
+    # this as a minimization, we penalize the inverse of the response.
+    # For this LC-like circuit with no DC drive, the DC operating point is zero.
+    _, y_freq_current = circuit.hb(
+        freq=f_target,
+        harmonics=3,
+        y0=jnp.zeros(circuit.sys_size),
+        params={"JJ1.Ic": Ic, "Cs1.C": Cs},
     )
 
-    _, y_freq_current = run_hb_current(y_dc_current)
-
     # Extract the 1st harmonic voltage magnitude at the junction node
-    jj_node_idx = pmap.get("JJ1,p1", 0)
+    jj_node_idx = port_map.get("JJ1,p1", 0)
     V_1st_harmonic = jnp.abs(y_freq_current[1, jj_node_idx])
 
-    # Loss is inversely proportional to the resonance amplitude at the target frequency
-    # We add a small epsilon to avoid division by zero, and a penalty for anharmonicity
+    # Targets: transition frequency and anharmonicity, plus a weak term that
+    # keeps the harmonic-balance response in the objective (and therefore keeps
+    # the gradient flowing through the simulator).
+    f01 = transmon_frequency(Ic, Cs)
+    f_error = ((f01 - f_target) / f_target) ** 2
+
     alpha = transmon_anharmonicity(Ic, Cs)
     alpha_error = ((alpha - alpha_target) / alpha_target) ** 2
 
+    # Inversely proportional to the drive response; epsilon avoids /0
     resonance_loss = 1.0 / (V_1st_harmonic * 1e6 + 1e-12)  # scale V to typical uV range
 
-    return resonance_loss + 0.1 * alpha_error
+    return f_error + 0.1 * alpha_error + 0.01 * resonance_loss
 
 
 # Initial parameters in log-space
@@ -687,10 +679,11 @@ models_coupled = {
     "ground": lambda: 0,
 }
 
-# Compile the coupled circuit
-groups_c, num_vars_c, port_map_c = compile_netlist(coupled_netlist, models_coupled)
-solver_c = analyze_circuit(groups_c, num_vars_c)
-y_dc_c = solver_c.solve_dc(groups_c, jnp.zeros(num_vars_c))
+# Compile the coupled circuit once — as in Part 1, the compiled circuit is
+# reused for both the nominal run and the differentiable crosstalk metric.
+circuit_c = compile_circuit(coupled_netlist, models_coupled, backend="dense")
+num_vars_c, port_map_c = circuit_c.sys_size, circuit_c.port_map
+y_dc_c = circuit_c.dc()
 
 print(f"Coupled system size: {num_vars_c} variables")
 print(f"Port map keys: {list(port_map_c.keys())}")
@@ -706,9 +699,6 @@ print(f"Port map keys: {list(port_map_c.keys())}")
 # %%
 import diffrax
 
-# Set up transient simulation
-sim = setup_transient(groups=groups_c, linear_strategy=solver_c)
-
 # Time parameters
 t_end = 2.0e-9  # 2 ns simulation
 dt0 = 1e-12  # 1 ps initial timestep
@@ -716,7 +706,7 @@ n_save = 500  # number of saved points
 
 # Run transient simulation
 t_save = jnp.linspace(0, t_end, n_save)
-sol = sim(
+sol = circuit_c.transient(
     t0=0.0,
     t1=t_end,
     dt0=dt0,
@@ -796,46 +786,19 @@ def crosstalk_metric(log_Cm: float) -> float:
     """
     Cm_val = jnp.exp(log_Cm)
 
-    # Rebuild netlist with updated Cm
-    net = {
-        "instances": {
-            "GND": {"component": "ground"},
-            "Vpulse": {
-                "component": "smooth_pulse",
-                "settings": {"V": V_pulse, "delay": pulse_delay, "tr": pulse_rise},
-            },
-            "Rdrive": {"component": "resistor", "settings": {"R": 50.0}},
-            "JJ1": {"component": "josephson_junction", "settings": {"Ic": Ic_q1}},
-            "Cs1": {"component": "capacitor", "settings": {"C": Cs_q1}},
-            "JJ2": {"component": "josephson_junction", "settings": {"Ic": Ic_q2}},
-            "Cs2": {"component": "capacitor", "settings": {"C": Cs_q2}},
-            "Cm": {"component": "coupling_cap", "settings": {"Cm": Cm_val}},
-        },
-        "connections": {
-            "GND,p1": ("Vpulse,p2", "JJ1,p2", "Cs1,p2", "JJ2,p2", "Cs2,p2"),
-            "Vpulse,p1": "Rdrive,p1",
-            "Rdrive,p2": ("JJ1,p1", "Cs1,p1", "Cm,p1"),
-            "Cm,p2": ("JJ2,p1", "Cs2,p1"),
-        },
-    }
-
-    grps, n_vars, pmap = compile_netlist(net, models_coupled)
-    slvr = analyze_circuit(grps, n_vars, backend="dense")
-    y0 = slvr.solve_dc(grps, jnp.zeros(n_vars))
-
-    sim_fn = setup_transient(groups=grps, linear_strategy=slvr)
-    sol_val = sim_fn(
+    # Reuse the compiled circuit and update only the coupling capacitance.
+    # The gradient flows through the ODE solve into `Cm`.
+    sol_val = circuit_c.transient(
         t0=0.0,
         t1=t_end,
         dt0=dt0,
-        y0=y0,
         saveat=diffrax.SaveAt(ts=t_save),
         max_steps=200_000,
+        params={"Cm.Cm": Cm_val},
     )
 
     # Get Q2 voltage
-    q2_i = pmap.get("JJ2,p1", pmap.get("Cs2,p1", 1))
-    v_victim = sol_val.ys[:, q2_i]
+    v_victim = sol_val.ys[:, q2_idx]
     return jnp.max(jnp.abs(v_victim))
 
 
