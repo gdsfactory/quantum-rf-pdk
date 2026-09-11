@@ -3,10 +3,24 @@
 from functools import partial
 
 import jax
+import jax.numpy as jnp
 import jaxellip
 from jax.typing import ArrayLike
 
 from qpdk.models.constants import ε_0
+
+
+def _is_positive_finite(value: ArrayLike) -> bool:
+    """Check that a scalar or array geometry value is positive and finite.
+
+    Args:
+        value: Value(s) to validate.
+
+    Returns:
+        True if all elements of ``value`` are positive and finite.
+    """
+    arr = jnp.asarray(value)
+    return bool(jnp.all(jnp.isfinite(arr))) and bool(jnp.all(arr > 0))
 
 
 @partial(jax.jit, inline=True)

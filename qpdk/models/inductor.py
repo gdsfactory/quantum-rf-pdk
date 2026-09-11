@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec
 
-from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
+from qpdk.models.capacitor import _interdigital_capacitor_capacitance_core
 from qpdk.models.constants import DEFAULT_FREQUENCY, μ_0, π
 from qpdk.models.cpw import (
     cpw_ep_r_from_cross_section,
@@ -266,7 +266,7 @@ def lumped_element_resonator(
 
     ep_r = cpw_ep_r_from_cross_section(cross_section)
 
-    capacitance = interdigital_capacitor_capacitance_analytical(
+    capacitance = _interdigital_capacitor_capacitance_core(
         fingers=fingers,
         finger_length=finger_length,
         finger_gap=finger_gap,

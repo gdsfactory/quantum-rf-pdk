@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 
+import jax
 import jax.numpy as jnp
 import pytest
 from hypothesis import HealthCheck, assume, given, settings, strategies as st
@@ -570,3 +571,23 @@ class TestLumpedElementResonatorSAX:
         sdict = lumped_element_resonator(f=freqs)
         for v in sdict.values():
             assert v.shape == (200,)
+
+    @staticmethod
+    def test_jit_grad_traced_geometry() -> None:
+        """jit/grad over traced geometry must not raise TracerBoolConversionError.
+
+        Regression test replicating the docs notebook failure, where a traced
+        length flowed through a SAX circuit into this model. The model now
+        calls the jitted `_interdigital_capacitor_capacitance_core` instead of
+        the eagerly-validating wrapper.
+        """
+        freqs = jnp.linspace(4e9, 8e9, 11)
+
+        def loss(finger_length: float) -> jax.Array:
+            sdict = lumped_element_resonator(f=freqs, finger_length=finger_length)
+            return jnp.abs(sdict["o1", "o2"][0])
+
+        value = jax.jit(loss)(jnp.array(20.0))
+        assert bool(jnp.isfinite(value))
+        grad = jax.jit(jax.grad(loss))(jnp.array(20.0))
+        assert bool(jnp.all(jnp.isfinite(grad)))

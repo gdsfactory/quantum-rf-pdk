@@ -2,6 +2,7 @@
 
 from typing import final
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -72,3 +73,42 @@ class TestCPWCouplingCapacitance:
         c1 = cpw_cpw_coupling_capacitance(f, length=100.0, gap=5.0, cross_section="cpw")
         c2 = cpw_cpw_coupling_capacitance(f, length=200.0, gap=5.0, cross_section="cpw")
         np.testing.assert_allclose(float(c2), 2.0 * float(c1), rtol=1e-6)
+
+
+@final
+class TestCouplerJitComposability:
+    """Coupler models must remain jit-composable with traced geometry.
+
+    Regression tests: `cpw_cpw_coupling_capacitance` previously called the
+    eagerly-validating `cpw_cpw_coupling_capacitance_per_length_analytical`
+    wrapper, which raised `TracerBoolConversionError` under `jax.jit`/`jax.grad`
+    for traced gap or length. It now calls the jitted core directly, keeping
+    `coupler_straight` (registered in the SAX model dict) trace-safe too.
+    """
+
+    f: jax.Array = jnp.linspace(4e9, 8e9, 11)
+
+    def test_coupling_capacitance_jit_traced_length_gap(self) -> None:
+        """Jit over traced coupling length and gap yields finite capacitance."""
+        c = jax.jit(
+            lambda length, gap: cpw_cpw_coupling_capacitance(
+                f=self.f, length=length, gap=gap, cross_section="cpw"
+            )
+        )(jnp.array(20.0), jnp.array(0.27))
+        assert bool(jnp.all(jnp.isfinite(c)))
+
+    def test_coupler_straight_jit_grad_traced_geometry(self) -> None:
+        """jit/grad over traced coupler length and gap succeeds with finite gradient."""
+        value = jax.jit(
+            lambda length, gap: jnp.abs(
+                coupler_straight(f=self.f, length=length, gap=gap)["o1", "o2"][0]
+            )
+        )(jnp.array(20.0), jnp.array(0.27))
+        assert bool(jnp.isfinite(value))
+
+        def loss(length: float) -> jax.Array:
+            s = coupler_straight(f=self.f, length=length, gap=0.27)
+            return jnp.abs(s["o1", "o2"][0])
+
+        grad = jax.jit(jax.grad(loss))(jnp.array(20.0))
+        assert bool(jnp.all(jnp.isfinite(grad)))

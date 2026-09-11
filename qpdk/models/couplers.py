@@ -20,6 +20,7 @@ from qpdk.models.cpw import (
     get_cpw_dimensions,
 )
 from qpdk.models.math import (
+    _is_positive_finite,
     capacitance_per_length_conformal,
     ellipk_ratio,
     epsilon_eff,
@@ -28,6 +29,48 @@ from qpdk.models.waveguides import straight
 
 
 @partial(jax.jit, inline=True)
+def _cpw_cpw_coupling_capacitance_per_length_core(
+    gap: float | ArrayLike,
+    width: float | ArrayLike,
+    cpw_gap: float | ArrayLike,
+    ep_r: float | ArrayLike,
+) -> float | jax.Array:
+    r"""Jitted core for :func:`cpw_cpw_coupling_capacitance_per_length_analytical`.
+
+    Args:
+        gap: The gap (separation) between the two center conductors in µm.
+        width: Center conductor width in µm.
+        cpw_gap: Gap between center conductor and ground plane in µm.
+        ep_r: Relative permittivity of the substrate.
+
+    Returns:
+        The mutual coupling capacitance per unit length in Farads/meter.
+    """
+    # Geometric parameters in m (convert from μm)
+    s_c = gap * 1e-6
+    w_m = width * 1e-6
+    g_m = cpw_gap * 1e-6
+
+    x1 = s_c / 2
+    x2 = x1 + w_m
+    x3 = x2 + g_m
+
+    # Even-mode modulus squared
+    ke_sq = (x2**2 - x1**2) / (x3**2 - x1**2)
+
+    # Odd-mode modulus squared
+    ko_sq = (x1**2 / x2**2) * ((x3**2 - x2**2) / (x3**2 - x1**2))
+
+    # Capacitances per unit length
+    # Factor is 2.0 since ECCPW formula uses 2 * ε_0 * ε_eff
+    c_even_pul = 2.0 * capacitance_per_length_conformal(m=ke_sq, ep_r=ep_r)
+    # c_odd uses K(1-m)/K(m) which is the inverse of ellipk_ratio(m)
+    c_odd_pul = 2.0 * ε_0 * epsilon_eff(ep_r) / ellipk_ratio(ko_sq)
+
+    # Mutual capacitance per unit length
+    return (c_odd_pul - c_even_pul) / 2
+
+
 def cpw_cpw_coupling_capacitance_per_length_analytical(
     gap: float | ArrayLike,
     width: float | ArrayLike,
@@ -65,30 +108,23 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
 
     Returns:
         The mutual coupling capacitance per unit length in Farads/meter.
+
+    Raises:
+        ValueError: If any geometry value is not positive and finite.
+
+    Note:
+        Geometry is validated eagerly, so this wrapper is not jit-composable
+        with traced arguments. For use inside `jax.jit`, call the jitted core
+        `_cpw_cpw_coupling_capacitance_per_length_core` directly. The registered
+        SAX models (`coupler_straight`, `coupler_ring`, `resonator_coupled`) reach
+        the core through `cpw_cpw_coupling_capacitance` for this reason.
     """
-    # Geometric parameters in m (convert from μm)
-    s_c = gap * 1e-6
-    w_m = width * 1e-6
-    g_m = cpw_gap * 1e-6
-
-    x1 = s_c / 2
-    x2 = x1 + w_m
-    x3 = x2 + g_m
-
-    # Even-mode modulus squared
-    ke_sq = (x2**2 - x1**2) / (x3**2 - x1**2)
-
-    # Odd-mode modulus squared
-    ko_sq = (x1**2 / x2**2) * ((x3**2 - x2**2) / (x3**2 - x1**2))
-
-    # Capacitances per unit length
-    # Factor is 2.0 since ECCPW formula uses 2 * ε_0 * ε_eff
-    c_even_pul = 2.0 * capacitance_per_length_conformal(m=ke_sq, ep_r=ep_r)
-    # c_odd uses K(1-m)/K(m) which is the inverse of ellipk_ratio(m)
-    c_odd_pul = 2.0 * ε_0 * epsilon_eff(ep_r) / ellipk_ratio(ko_sq)
-
-    # Mutual capacitance per unit length
-    return (c_odd_pul - c_even_pul) / 2
+    for name, value in (("gap", gap), ("width", width), ("cpw_gap", cpw_gap)):
+        if not _is_positive_finite(value):
+            raise ValueError(f"{name} must be positive and finite, got {value!r}.")
+    return _cpw_cpw_coupling_capacitance_per_length_core(
+        gap=gap, width=width, cpw_gap=cpw_gap, ep_r=ep_r
+    )
 
 
 def cpw_cpw_coupling_capacitance(
@@ -128,7 +164,9 @@ def cpw_cpw_coupling_capacitance(
         width = xs.width
         cpw_gap = 6.0
 
-    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+    # Call the jitted core directly: gap and length may be traced by
+    # `jax.jit`/`jax.grad`, and the validating wrapper would fail on them.
+    c_pul = _cpw_cpw_coupling_capacitance_per_length_core(
         gap=gap,
         width=width,
         cpw_gap=cpw_gap,

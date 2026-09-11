@@ -1,6 +1,7 @@
 """Tests for analytical ECCPW mutual capacitance formula."""
 
 import jax.numpy as jnp
+import pytest
 from hypothesis import assume, given, settings, strategies as st
 
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
@@ -28,6 +29,23 @@ def valid_cpw_geometry(draw: st.DrawFn) -> tuple[float, float, float]:
     assume(is_valid_geometry(gap, width, cpw_gap))
 
     return gap, width, cpw_gap
+
+
+@st.composite
+def invalid_cpw_geometry(draw: st.DrawFn) -> dict[str, float]:
+    """Generate CPW geometry with exactly one non-positive or non-finite dimension."""
+    dims = {
+        "gap": draw(st.floats(min_value=0.1, max_value=10.0)),
+        "width": draw(st.floats(min_value=0.1, max_value=50.0)),
+        "cpw_gap": draw(st.floats(min_value=0.1, max_value=50.0)),
+    }
+    key = draw(st.sampled_from(list(dims)))
+    dims[key] = draw(
+        st.one_of(
+            st.floats(max_value=0.0), st.just(float("inf")), st.just(float("nan"))
+        )
+    )
+    return dims
 
 
 @st.composite
@@ -130,3 +148,26 @@ def test_cpw_cpw_coupling_capacitance_permittivity_scaling(
     # c_m should be proportional to ep_eff
     ep_eff_ratio = ((ep_r + 1) / 2) / ((1.0 + 1) / 2)
     assert jnp.isclose(c_pul, float(c_pul_vacuum) * ep_eff_ratio, rtol=1e-5)
+
+
+@settings(deadline=None)
+@given(
+    geometry=invalid_cpw_geometry(),
+    ep_r=permittivities,
+)
+def test_cpw_cpw_coupling_capacitance_invalid_geometry_raises(
+    geometry: dict[str, float], ep_r: float
+) -> None:
+    """Non-positive or non-finite geometry raises ValueError instead of returning NaN."""
+    with pytest.raises(ValueError, match="positive and finite"):
+        cpw_cpw_coupling_capacitance_per_length_analytical(ep_r=ep_r, **geometry)
+
+
+def test_cpw_cpw_coupling_capacitance_broadcasting() -> None:
+    """Broadcast inputs through the public wrapper give a finite array of expected shape."""
+    gaps = jnp.geomspace(0.1, 5.0, 6)
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gaps, width=10.0, cpw_gap=6.0, ep_r=11.7
+    )
+    assert c_pul.shape == (6,)
+    assert bool(jnp.all(jnp.isfinite(c_pul)))
