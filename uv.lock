@@ -3,12 +3,12 @@ revision = 3
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version >= '3.13' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version >= '3.13' and sys_platform == 'darwin'",
-    "python_full_version < '3.13' and sys_platform == 'darwin'",
     "python_full_version >= '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
+    "python_full_version < '3.13' and sys_platform == 'darwin'",
     "python_full_version < '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -427,12 +427,14 @@ wheels = [
 
 [[package]]
 name = "circulax"
-version = "0.1.7"
+version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "diffrax" },
+    { name = "equinox" },
     { name = "jax" },
     { name = "jaxlib" },
+    { name = "kfnetlist" },
     { name = "klujax" },
     { name = "lineax" },
     { name = "matplotlib" },
@@ -440,9 +442,9 @@ dependencies = [
     { name = "sax" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/41/7961958b26b2552c1d3cbca3c712c42f68926703ea4d9aace56bba425b9b/circulax-0.1.7.tar.gz", hash = "sha256:2567825ff4750d3e5555a1f02dea61c294b9eb13e9d4e55db0445f4d0d7d591c", size = 504916, upload-time = "2026-04-30T15:16:11.626Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ae/d7/d4838228e30a54ab4dbc78682364a7fbeb8e9031db3180ef7cc10e269943/circulax-0.2.3.tar.gz", hash = "sha256:3ea8f6f5a0b175a034de3bdae64dc77ea121b9a758524d5c50ccfaaed22aecaa", size = 3492258, upload-time = "2026-07-31T08:16:00.09Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/bc/7dc9c9932287f6fad2948bdfff5da00a5b0651606f2c6a8dc89401f1fa11/circulax-0.1.7-py3-none-any.whl", hash = "sha256:908fa6b4ee8448c766cd6cacda5e647be4228cd8f45c27bb1ed4edf6b007118c", size = 77552, upload-time = "2026-04-30T15:16:09.849Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/bf/0ad8b46152e90699af38df5c063fc999269c56c4290d626579f91a41a563/circulax-0.2.3-py3-none-any.whl", hash = "sha256:d5a99d207ce6053acb5adfc17fd35ed057ff13d6a1264de0523d9c995c4c9c15", size = 190958, upload-time = "2026-07-31T08:15:57.505Z" },
 ]
 
 [[package]]
@@ -797,7 +799,7 @@ name = "dotnetcore2"
 version = "3.1.23"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "distro", marker = "sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "distro" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d9/04/ddd3fc5c374870e5e3d386b18512e8c0c7557aca9fbc1d9f286bf9f4844d/dotnetcore2-3.1.23-py3-none-manylinux1_x86_64.whl", hash = "sha256:5f076ddc39da0c685e7de20ecb91ee81185928918ec86fbeb3bffc55dd867ab5", size = 31118828, upload-time = "2022-04-28T18:06:16.738Z" },
@@ -1744,6 +1746,19 @@ ipy = [
 ]
 
 [[package]]
+name = "kfnetlist"
+version = "0.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/80/6c1ec7ba4160c61ffaf710943fc25cc1b096ebe50233edf20f8258fd5a8d/kfnetlist-0.2.2.tar.gz", hash = "sha256:9ae38fc262867daa9d06cbda3efff3f1c00504227480d4ab92c379bf0d13b84e", size = 184421, upload-time = "2026-07-13T07:37:03.628Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/c1/591bf4433eb6ed36a375c1c8322ec73cc759ab31839c83efac435876c55e/kfnetlist-0.2.2-cp312-abi3-macosx_10_12_x86_64.whl", hash = "sha256:df4d4d138f796b4e6957194d2598654c90cee11d931e8ad2aa220a108555ae73", size = 605038, upload-time = "2026-07-13T07:36:56.468Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/0d/b89f0ebaa30d46b14e2fdfbecb7a51afadc51913822209794f938140abaf/kfnetlist-0.2.2-cp312-abi3-macosx_11_0_arm64.whl", hash = "sha256:fbaafd1cac298fa5b05ade6d5d764d363f9d1d5314428e876eeda1afac3c5a3c", size = 572532, upload-time = "2026-07-13T07:36:58.142Z" },
+    { url = "https://files.pythonhosted.org/packages/12/f6/da7b9274d1ce01597fc38cdaf01d152e283f99e9420877a10ca8a28c5708/kfnetlist-0.2.2-cp312-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0d9f0558537d8f53dcef81395f43b32aec525a812ee29b8b5b552739d0a8e2c4", size = 588358, upload-time = "2026-07-13T07:36:59.555Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/ec/668945d0c21c9eb5fa64efcf52cd98fafdda72e3edbbe3458e7cb8a96001/kfnetlist-0.2.2-cp312-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3c72a1e26a72a4e3d0b57cc63f6a7c60b47b7397122147a0a5c044d8a0a15aea", size = 608655, upload-time = "2026-07-13T07:37:00.987Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/46/ef0e5a0c31dd1861ee5b8fed042ed705ae08f27aceb55cb3fd87cdf40e88/kfnetlist-0.2.2-cp312-abi3-win_amd64.whl", hash = "sha256:6788a491686aac13c59c2de3ba2721b6495fc68b13b98ddc0fa81ca1d30f8a2b", size = 496245, upload-time = "2026-07-13T07:37:02.262Z" },
+]
+
+[[package]]
 name = "kiwisolver"
 version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2265,7 +2280,7 @@ name = "multiprocess"
 version = "0.70.19"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "dill", marker = "sys_platform != 'darwin'" },
+    { name = "dill" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a2/f2/e783ac7f2aeeed14e9e12801f22529cc7e6b7ab80928d6dcce4e9f00922d/multiprocess-0.70.19.tar.gz", hash = "sha256:952021e0e6c55a4a9fe4cd787895b86e239a40e76802a789d6305398d3975897", size = 2079989, upload-time = "2026-01-19T06:47:39.744Z" }
 wheels = [
@@ -2758,10 +2773,10 @@ name = "pathos"
 version = "0.3.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "dill", marker = "sys_platform != 'darwin'" },
-    { name = "multiprocess", marker = "sys_platform != 'darwin'" },
-    { name = "pox", marker = "sys_platform != 'darwin'" },
-    { name = "ppft", marker = "sys_platform != 'darwin'" },
+    { name = "dill" },
+    { name = "multiprocess" },
+    { name = "pox" },
+    { name = "ppft" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/32/37/0c730979d3890f8096a86af2683fac74edd4d15cb037391098dca70dcb1d/pathos-0.3.5.tar.gz", hash = "sha256:8fe041b8545c5d3880a038f866022bdebf935e5cf68f56ed3407cb7e65193a61", size = 166975, upload-time = "2026-01-20T00:06:57.848Z" }
 wheels = [
@@ -2773,7 +2788,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -3794,7 +3809,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "circulax", marker = "extra == 'circulax'", specifier = ">=0.1.7" },
+    { name = "circulax", marker = "extra == 'circulax'", specifier = ">=0.2.3" },
     { name = "doroutes", specifier = ">=0.2.0" },
     { name = "flax", marker = "extra == 'netket'" },
     { name = "gdsfactory", specifier = ">=9.39.0,<9.41.0" },
@@ -4371,16 +4386,16 @@ resolution-markers = [
     "python_full_version < '3.13' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "cycler", marker = "sys_platform == 'darwin'" },
-    { name = "cython", marker = "sys_platform == 'darwin'" },
-    { name = "dill", marker = "sys_platform == 'darwin'" },
-    { name = "matplotlib", marker = "sys_platform == 'darwin'" },
-    { name = "numpy", marker = "sys_platform == 'darwin'" },
-    { name = "qutip", marker = "sys_platform == 'darwin'" },
-    { name = "scipy", marker = "sys_platform == 'darwin'" },
-    { name = "sympy", marker = "sys_platform == 'darwin'" },
-    { name = "tqdm", marker = "sys_platform == 'darwin'" },
-    { name = "typing-extensions", marker = "sys_platform == 'darwin'" },
+    { name = "cycler" },
+    { name = "cython" },
+    { name = "dill" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "qutip" },
+    { name = "scipy" },
+    { name = "sympy" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8d/ed/69b37d03b9794518b38528efb14884f53a1ec155b61b4b126b8c58c682bd/scqubits-4.1.0.tar.gz", hash = "sha256:806f171d4b5905af3f8d4c68fce461be91eab38466fa4fbe87b71ec7b167fc7b", size = 6457745, upload-time = "2024-05-17T01:22:20.31Z" }
 wheels = [
@@ -4393,23 +4408,23 @@ version = "4.3.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version >= '3.13' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version >= '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version < '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "cycler", marker = "sys_platform != 'darwin'" },
-    { name = "dill", marker = "sys_platform != 'darwin'" },
-    { name = "matplotlib", marker = "sys_platform != 'darwin'" },
-    { name = "numpy", marker = "sys_platform != 'darwin'" },
-    { name = "pathos", marker = "sys_platform != 'darwin'" },
-    { name = "qutip", marker = "sys_platform != 'darwin'" },
-    { name = "scipy", marker = "sys_platform != 'darwin'" },
-    { name = "sympy", marker = "sys_platform != 'darwin'" },
-    { name = "tqdm", marker = "sys_platform != 'darwin'" },
-    { name = "typing-extensions", marker = "sys_platform != 'darwin'" },
+    { name = "cycler" },
+    { name = "dill" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pathos" },
+    { name = "qutip" },
+    { name = "scipy" },
+    { name = "sympy" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/2a/57/a552661e93e9d3ea6530112f06572f0f88d55972c7a0a98d79275b67bf3c/scqubits-4.3.1.tar.gz", hash = "sha256:a40440e7270fa559d201220524f8b95eaae24235a1d4918ad08dc7358a0c39e4", size = 6498157, upload-time = "2025-05-17T16:53:35.721Z" }
 wheels = [
