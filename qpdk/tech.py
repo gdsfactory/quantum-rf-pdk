@@ -186,7 +186,7 @@ def get_layer_stack() -> LayerStack:
             "JosephsonJunction": LayerLevel(
                 name="JosephsonJunction",
                 layer=L.JJ_AREA,
-                thickness=70e-9,
+                thickness=70e-9 * 1e6,
                 zmin=0,
                 material="AlOx/Al",
                 mesh_order=2,
