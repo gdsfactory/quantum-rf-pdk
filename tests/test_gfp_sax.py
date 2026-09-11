@@ -7,17 +7,26 @@ Covers the v2 (>= 2.0.0) SDK SAX surface against this PDK:
   LayoutToNetlist extraction, and feeds the resulting netlist to SAX.
   The v1 ``gdsfactoryplus.serve.sax._run_simulation`` server API no
   longer exists; this module replaces the test that used it.
+- Schematic-driven simulation: ``simulate_mosaic_sax`` builds the
+  netlist directly from the same nyancir schematic (no layout
+  materialization) and runs SAX on it — both paths must agree with the
+  reference model.
 - Model contract: every model in ``PDK.models`` must accept ``f`` in Hz
   (the v2 frontend sweeps frequency, see ``[tool.gdsfactoryplus.sim.x]``
   ``name = "f"`` in ``pyproject.toml``).
-- Model coverage: ``inspect_layout_sax_models`` must not ask for SAX
-  models beyond the exemptions in ``pyproject.toml``
+- Model coverage: ``inspect_layout_sax_models`` and
+  ``inspect_mosaic_sax_models`` must not ask for SAX models beyond the
+  exemptions in ``pyproject.toml``
   (``[tool.gdsfactoryplus.pdk] cells_no_model_expected``).
 
-The nyancir (``.gsch``) fixture is authored directly as JSON in the
+The nyancir (``.gsch``) fixtures are authored directly as JSON in the
 Mosaic dialect. The file holds one ``type: "ckt"`` instance of the
 sample factory plus four ``type: "port"`` markers exposing its
-``o1``..``o4`` ports.
+``o1``..``o4`` ports. The Mosaic (schematic-driven) pipeline resolves
+both the ``.gsch`` and ``models.nyanlib`` through nyancad's ``FileAPI``
+relative to ``project_root``, so its fixture builds a self-contained
+project root: the nyancir plus a hand-authored ``models.nyanlib`` with
+the single entry the ``gfp`` binary generates for the sample factory.
 
 The PDK qualified name is ``"qpdk.PDK"``: the v2 API resolves
 ``pdk_qn`` as ``<module>.<attribute>`` (like ``ihp.PDK``), not a bare
@@ -45,6 +54,9 @@ sax_sim = import_gfp_module("gdsfactoryplus.sim.sax")
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+#: File name of the resonator-test-chip nyancir inside both fixture roots.
+_GSCH_NAME = "resonator_test_chip_gfp.gsch"
 
 #: Speed of light in µm/s — converts between the API's wavelengths (µm)
 #: and the models' native frequencies (Hz), matching gdsfactoryplus.
@@ -98,6 +110,26 @@ def _resonator_test_chip_nyancir() -> dict[str, Any]:
     return document
 
 
+def _resonator_test_chip_nyanlib() -> dict[str, Any]:
+    """Build a minimal ``models.nyanlib`` for the resonator test chip.
+
+    Mirrors the single entry the ``gfp`` binary generates for the sample
+    factory (``build/models.nyanlib``): for a Python-factory leaf, the
+    Mosaic netlist builder only reads the component ``name`` and ``type``
+    (``nyancad.netlist.kf_component_name``).
+
+    Returns:
+        Nyanlib document ready to be serialized to a ``.nyanlib`` file.
+    """
+    return {
+        f"models:{_CHIP_QUALNAME}": {
+            "name": "resonator_test_chip_python",
+            "type": "ckt",
+            "tags": ["qpdk"],
+        }
+    }
+
+
 @pytest.fixture(scope="module")
 def nyancir_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """Write the resonator-test-chip nyancir to a temporary ``.gsch`` file.
@@ -109,31 +141,43 @@ def nyancir_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
     Returns:
         Path to the written ``.gsch`` nyancir file.
     """
-    path = tmp_path_factory.mktemp("nyancir") / "resonator_test_chip_gfp.gsch"
+    path = tmp_path_factory.mktemp("nyancir") / _GSCH_NAME
     path.write_text(json.dumps(_resonator_test_chip_nyancir(), indent=2))
     return path
 
 
-@pytest.mark.gfp
-def test_resonator_test_chip_layout_sax_simulation(nyancir_path: Path) -> None:
-    """Simulate the chip through the v2 layout-driven SAX pipeline.
+@pytest.fixture(scope="module")
+def mosaic_project_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build a self-contained project root for the Mosaic pipeline.
 
-    Replaces the removed v1
-    ``test_resonator_test_chip_runs_through_layout_simulation_server``:
-    the layout netlist is extracted from materialized geometry, the chip
-    resolves to its registered SAX model, and the frequency sweep must
-    agree with the reference model evaluated at the same frequencies.
+    The schematic-driven pipeline resolves the ``.gsch`` and
+    ``models.nyanlib`` relative to ``project_root`` through nyancad's
+    ``FileAPI``, so both must live in one directory; the real app uses
+    the repository root with a ``gfp``-generated nyanlib. A throwaway
+    root with a hand-authored nyanlib exercises the same SDK path
+    without cross-test ordering dependencies.
+
+    Returns:
+        Path to the temporary project root.
     """
-    result = sax_sim.simulate_layout_sax(
-        str(nyancir_path),
-        "qpdk.PDK",
-        # The API represents the 4--10 GHz band as wavelengths in µm.
-        wl_min=_SPEED_OF_LIGHT_UM_PER_S / 10e9,
-        wl_max=_SPEED_OF_LIGHT_UM_PER_S / 4e9,
-        wl_num=3,
-        sweep_frequency=True,
+    root = tmp_path_factory.mktemp("mosaic_project")
+    (root / _GSCH_NAME).write_text(json.dumps(_resonator_test_chip_nyancir(), indent=2))
+    (root / "models.nyanlib").write_text(
+        json.dumps(_resonator_test_chip_nyanlib(), indent=2)
     )
+    return root
 
+
+def _assert_sweep_matches_reference(result: dict[str, Any]) -> None:
+    """Assert a simulation result is the reference model over the 4--10 GHz band.
+
+    Checks the returned sweep grid, the exposed chip ports, and that every
+    S-parameter entry agrees with ``resonator_test_chip_python`` evaluated at
+    the same frequencies (near-zero terms may be dropped from the sdict).
+
+    Args:
+        result: Return value of ``simulate_layout_sax``/``simulate_mosaic_sax``.
+    """
     wavelengths = np.asarray(result["wavelengths"], dtype=float)
     assert len(wavelengths) == 3
     assert wavelengths[0] == pytest.approx(299_792.458 / 4)
@@ -168,6 +212,52 @@ def test_resonator_test_chip_layout_sax_simulation(nyancir_path: Path) -> None:
         )
 
 
+@pytest.mark.gfp
+def test_resonator_test_chip_layout_sax_simulation(nyancir_path: Path) -> None:
+    """Simulate the chip through the v2 layout-driven SAX pipeline.
+
+    Replaces the removed v1
+    ``test_resonator_test_chip_runs_through_layout_simulation_server``:
+    the layout netlist is extracted from materialized geometry, the chip
+    resolves to its registered SAX model, and the frequency sweep must
+    agree with the reference model evaluated at the same frequencies.
+    """
+    result = sax_sim.simulate_layout_sax(
+        str(nyancir_path),
+        "qpdk.PDK",
+        # The API represents the 4--10 GHz band as wavelengths in µm.
+        wl_min=_SPEED_OF_LIGHT_UM_PER_S / 10e9,
+        wl_max=_SPEED_OF_LIGHT_UM_PER_S / 4e9,
+        wl_num=3,
+        sweep_frequency=True,
+    )
+    _assert_sweep_matches_reference(result)
+
+
+@pytest.mark.gfp
+def test_resonator_test_chip_mosaic_sax_simulation(
+    mosaic_project_root: Path,
+) -> None:
+    """Simulate the chip through the v2 schematic-driven (Mosaic) SAX pipeline.
+
+    ``simulate_mosaic_sax`` builds the netlist directly from the nyancir
+    schematic (resolving the schematic and ``models.nyanlib`` from
+    ``project_root``) without materializing any layout geometry — the
+    path used when simulating straight from a schematic. It must agree
+    with the reference model exactly like the layout-driven pipeline.
+    """
+    result = sax_sim.simulate_mosaic_sax(
+        str(mosaic_project_root / _GSCH_NAME),
+        "qpdk.PDK",
+        wl_min=_SPEED_OF_LIGHT_UM_PER_S / 10e9,
+        wl_max=_SPEED_OF_LIGHT_UM_PER_S / 4e9,
+        wl_num=3,
+        project_root=str(mosaic_project_root),
+        sweep_frequency=True,
+    )
+    _assert_sweep_matches_reference(result)
+
+
 def _cells_no_model_expected() -> set[str]:
     """Read the SAX-model exemptions from ``pyproject.toml``."""
     pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
@@ -189,6 +279,30 @@ def test_layout_sax_model_coverage(nyancir_path: Path) -> None:
     unexpected = set(info["missing_models"]) - _cells_no_model_expected()
     assert not unexpected, (
         f"Layout pipeline reported missing SAX models {sorted(unexpected)}; "
+        "add a model or extend cells_no_model_expected in pyproject.toml"
+    )
+    assert {"resonator_test_chip_python", _CHIP_QUALNAME} & set(
+        info["resolved_models"]
+    ), f"chip model unresolved: {info}"
+
+
+@pytest.mark.gfp
+def test_mosaic_sax_model_coverage(mosaic_project_root: Path) -> None:
+    """Model resolution over the schematic honors the exemptions.
+
+    Same contract as the layout pipeline, but for
+    ``inspect_mosaic_sax_models`` (schematic-driven resolution from
+    ``project_root``).
+    """
+    info = sax_sim.inspect_mosaic_sax_models(
+        str(mosaic_project_root / _GSCH_NAME),
+        "qpdk.PDK",
+        project_root=str(mosaic_project_root),
+    )
+
+    unexpected = set(info["missing_models"]) - _cells_no_model_expected()
+    assert not unexpected, (
+        f"Schematic pipeline reported missing SAX models {sorted(unexpected)}; "
         "add a model or extend cells_no_model_expected in pyproject.toml"
     )
     assert {"resonator_test_chip_python", _CHIP_QUALNAME} & set(
