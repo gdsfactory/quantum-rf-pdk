@@ -110,6 +110,7 @@ def test_sax_stype_functions_in_models_dict():
     (commonly used by decorators like @jax.jit, @functools.wraps, etc.).
     """
     sax_stype_functions = set()
+    import_failures: list[tuple[str, str]] = []
 
     for _, modname, ispkg in pkgutil.iter_modules(qpdk.models.__path__):
         if not ispkg:  # Only look at modules, not packages
@@ -141,8 +142,14 @@ def test_sax_stype_functions_in_models_dict():
                     )):
                         sax_stype_functions.add(name)
 
-            except ImportError:
+            except ImportError as exc:
+                import_failures.append((modname, str(exc)))
                 continue
+
+    assert not import_failures, (
+        "qpdk.models submodules failed to import, so the equality check below "
+        f"would silently miss them: {import_failures}"
+    )
 
     models_names = set(qpdk.models.models.keys())
 

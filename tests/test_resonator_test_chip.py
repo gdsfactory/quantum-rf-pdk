@@ -42,6 +42,8 @@ def test_resonator_test_chip_resolves_in_active_pdk(component_name: str) -> None
 
 def test_resonator_test_chip_runs_through_layout_simulation_server() -> None:
     """Exercise the editor's layout-driven SAX path without a .gsch workaround."""
+    # No custom reason: the default skip message embeds the actual ImportError,
+    # unlike the previously hardcoded (and inaccurate) reason.
     sax_server = pytest.importorskip("gdsfactoryplus.serve.sax")
     PDK.activate()
     result = sax_server._run_simulation(
