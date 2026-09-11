@@ -91,7 +91,13 @@ get-gfp-versions:
         print(f"major={major}")
 
     def version_key(v):
-        return [int(x) if x.isdigit() else 0 for x in v.split(".")]
+        # Split off any prerelease suffix and add a release flag so a
+        # stable release beats prereleases at equal version numbers
+        # ("2.1.0" over "2.1.0-beta.1"): without splitting, the "1" in
+        # "2.1.0-beta.1" parses as an extra numeric component and sorts
+        # after the stable release.
+        nums = v.split("-")[0].split(".")
+        return ([int(x) if x.isdigit() else 0 for x in nums], "-" not in v)
 
     try:
         body = json.dumps({
@@ -179,10 +185,13 @@ fetch-gfp version="latest":
             )
 
         def version_key(v):
-            # Release versions must beat prereleases at equal numbers
-            # ("2.1.0" > "2.1.0-beta"), so append a release flag; the
-            # non-digit component of a prerelease sorts as 0 either way.
-            return ([int(x) if x.isdigit() else 0 for x in v.split(".")], "-" not in v)
+            # Split off any prerelease suffix and add a release flag so a
+            # stable release beats prereleases at equal version numbers
+            # ("2.1.0" over "2.1.0-beta.1"): without splitting, the "1" in
+            # "2.1.0-beta.1" parses as an extra numeric component and sorts
+            # after the stable release.
+            nums = v.split("-")[0].split(".")
+            return ([int(x) if x.isdigit() else 0 for x in nums], "-" not in v)
 
         return max(versions, key=version_key)
 

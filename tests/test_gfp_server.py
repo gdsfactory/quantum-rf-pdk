@@ -13,12 +13,13 @@ this PDK:
 - Nyanlib generation: server startup writes ``build/models.nyanlib``.
 
 The tests need the ``gfp`` binary, which is not pip-installable. Discovery:
-``GFP_BIN`` environment variable, then ``gfp`` on ``PATH``. When the binary
-is missing (or non-functional) these tests skip — even under
-``GFP_REQUIRED=1``. ``GFP_REQUIRED=1`` (as set in the gfp CI jobs) still
-turns the "package absent" and "v2 API missing" skips from
-``conftest.import_gfp_module`` into failures; only the binary-dependent
-tests keep their skip.
+``GFP_BIN`` environment variable, then ``gfp`` on ``PATH``. A missing or
+non-functional binary skips in local runs but fails under ``GFP_REQUIRED=1``
+(the gfp CI job provisions the binary via ``just fetch-gfp``, so absence
+there means a broken setup — otherwise CI could pass with the server
+coverage silently gone). ``GFP_REQUIRED=1`` likewise turns the "package
+absent" and "v2 API missing" skips from ``conftest.import_gfp_module``
+into failures.
 """
 
 from __future__ import annotations
@@ -37,6 +38,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+from conftest import GFP_REQUIRED_ENV
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -176,20 +178,26 @@ class GfpServer:
 def _find_gfp_binary() -> str:
     """Locate the ``gfp`` binary (GFP_BIN env var, else ``gfp`` on PATH).
 
-    The binary is not pip-installable, so a missing (or non-functional)
-    binary always skips — even under ``GFP_REQUIRED=1``; only the Python
-    package and its v2 API are required by that policy (see conftest).
+    The binary is not pip-installable: a missing binary skips in local
+    runs but fails under ``GFP_REQUIRED=1`` (see the module docstring).
 
     Returns:
         Path to the ``gfp`` binary.
 
     Raises:
-        AssertionError: Unreachable; ``pytest.skip`` always raises before this.
+        AssertionError: Unreachable; ``pytest.skip``/``pytest.fail`` always
+            raise before this.
     """
     if env := os.environ.get("GFP_BIN"):
         return str(Path(env).resolve())
     if path := shutil.which("gfp"):
         return path
+    if os.environ.get(GFP_REQUIRED_ENV) == "1":
+        pytest.fail(
+            "gfp binary not found (set GFP_BIN or put gfp on PATH) — "
+            "GFP_REQUIRED=1 requires one; run `just fetch-gfp` and source "
+            "build/gfp-vsix/env.sh"
+        )
     pytest.skip("gfp binary not found (set GFP_BIN or put gfp on PATH)")
     raise AssertionError("unreachable")
 
@@ -293,13 +301,26 @@ def spawn_gfp_server(
 
 @pytest.fixture(scope="session")
 def gfp_bin() -> str:
-    """Path to a functional ``gfp`` binary, discovered or skipped."""
+    """Path to a functional ``gfp`` binary, discovered or skipped.
+
+    A non-functional binary skips in local runs but fails under
+    ``GFP_REQUIRED=1`` (see the module docstring).
+
+    Returns:
+        Path to a functional ``gfp`` binary.
+    """
     binary = _find_gfp_binary()
     try:
         subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
             [binary, "hello"], capture_output=True, timeout=10, check=True
         )
     except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        if os.environ.get(GFP_REQUIRED_ENV) == "1":
+            pytest.fail(
+                f"gfp binary at {binary} is not functional — GFP_REQUIRED=1 "
+                "requires one; run `just fetch-gfp` and source "
+                "build/gfp-vsix/env.sh"
+            )
         pytest.skip(f"gfp binary at {binary} is not functional")
     return binary
 
