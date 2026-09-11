@@ -98,8 +98,9 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Filter versions for gdsfactoryplus
         id: filter
+        env:
+          INPUT: ${{ needs.get-python-versions.outputs.python-versions }}
         run: |
-          INPUT='${{ needs.get-python-versions.outputs.python-versions }}'
           echo "python-versions=$(just get-gfp-versions "$INPUT")" >> "$GITHUB_OUTPUT"
   test-gdsfactoryplus:
     runs-on: ${{ matrix.os }}
