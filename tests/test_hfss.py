@@ -2,13 +2,16 @@
 
 import os
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
+import gdsfactory as gf
 import pytest
 from gdsfactory.component import Component
+from gdsfactory.technology import LayerLevel, LayerStack
 from numpy.testing import assert_allclose
 
-from qpdk import LAYER_STACK, PDK
+from qpdk import LAYER, LAYER_STACK, PDK
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.resonator import resonator
 from qpdk.simulation import (
@@ -17,6 +20,7 @@ from qpdk.simulation import (
     Q3D,
     layer_stack_to_gds_mapping,
     lumped_port_rectangle_from_cpw,
+    object_names_to_materials,
     prepare_component_for_aedt,
 )
 from qpdk.simulation.aedt_base import _get_layer_number_from_level
@@ -98,6 +102,133 @@ def test_get_layer_number_from_level():
         derived_layer = MockLogicalLayer()
 
     assert _get_layer_number_from_level(MockDerivedLevel()) == 2
+
+
+@dataclass
+class MockAEDTObject:
+    """Minimal stand-in for a PyAEDT modeler object."""
+
+    name: str
+
+
+class MockModeler:
+    """Minimal stand-in for a PyAEDT modeler."""
+
+    def __init__(self, object_names: list[str]):
+        """Initialize with the names of objects created by the GDS import."""
+        self.object_names = list(object_names)
+        self._objects = {name: MockAEDTObject(name) for name in object_names}
+
+    def __getitem__(self, name: str) -> MockAEDTObject:
+        """Return the modeler object with the given name."""
+        return self._objects[name]
+
+
+@dataclass
+class MockMaterial:
+    """Minimal stand-in for a PyAEDT material."""
+
+    permittivity: float | None = None
+    conductivity: float | None = None
+
+
+class MockMaterials:
+    """Minimal stand-in for a PyAEDT materials manager."""
+
+    def __init__(self) -> None:
+        """Initialize an empty materials database."""
+        self.material_names: list[str] = []
+
+    def exists_material(self, name: str) -> bool:
+        """Return whether the material exists in the project."""
+        return name in self.material_names
+
+    def add_material(self, name: str) -> MockMaterial:
+        """Add a material to the project."""
+        self.material_names.append(name)
+        return MockMaterial()
+
+
+class MockQ3dApp:
+    """Minimal stand-in for a PyAEDT Q3d application."""
+
+    def __init__(self, object_names: list[str]):
+        """Initialize with the names of objects created by the GDS import."""
+        self.imported_object_names = list(object_names)
+        self.modeler = MockModeler([])
+        self.materials = MockMaterials()
+        self.assigned_materials: dict[str, str] = {}
+
+    def import_gds_3d(self, **kwargs: object) -> bool:
+        """Simulate a successful 3D GDS import creating the objects."""
+        self.import_kwargs = kwargs
+        self.modeler.object_names.extend(self.imported_object_names)
+        for name in self.imported_object_names:
+            self.modeler._objects[name] = MockAEDTObject(name)
+        return True
+
+    def assign_material(self, assignment: list, material: str) -> None:
+        for obj in assignment:
+            self.assigned_materials[str(obj)] = material
+
+
+def test_object_names_to_materials():
+    """Test mapping imported object names to materials from the layer stack."""
+    # Layer 1 -> M1 (Nb, a metal -> pec); layer 98 -> Substrate (Si); layer 31 -> TSV (TiN)
+    result = object_names_to_materials(
+        ["signal1", "signal25", "signal98", "signal31", "Substrate", "M1_offset"],
+        LAYER_STACK,
+    )
+
+    # Metals are PEC
+    assert result["signal1"] == "pec"
+    assert result["signal25"] == "pec"  # NbTiN
+    assert result["signal31"] == "pec"
+    assert result["M1_offset"] == "pec"
+    # Substrate and other dielectrics get their real material, not pec
+    assert result["signal98"] == "Si"
+    assert result["Substrate"] == "Si"
+    assert result["Substrate"] != "pec"
+
+    # Objects that cannot be resolved to a layer level fail closed
+    with pytest.raises(ValueError, match="Could not resolve"):
+        object_names_to_materials(["signal7", "unknown_object"], LAYER_STACK)
+
+
+def test_object_names_to_materials_unregistered_material():
+    """Levels with materials missing from material_properties fail closed."""
+    stack = LayerStack(
+        layers={
+            "Custom": LayerLevel(
+                name="Custom",
+                layer=(50, 0),
+                thickness=1,
+                zmin=0.0,
+                material="unobtainium",
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="not registered in material_properties"):
+        object_names_to_materials(["signal50"], stack)
+
+
+def test_q3d_import_assigns_materials_from_layer_stack(tmp_path):
+    """Q3D import must not blanket-assign pec: substrate gets its real material."""
+    comp = gf.components.rectangle(size=(10, 10), layer=LAYER.M1_DRAW)
+
+    # Simulate a GDS import that creates the M1 metal and the Substrate objects
+    app = MockQ3dApp(["signal1", "signal98"])
+    sim = Q3D(app)
+
+    renamed = sim.import_component(comp, gds_path=tmp_path / "comp.gds")
+
+    # Only conductor objects are returned for downstream net assignment
+    assert renamed == ["M1"]
+    # Metal level becomes PEC, substrate gets silicon from the layer stack
+    assert app.assigned_materials["M1"] == "pec"
+    assert app.assigned_materials["Substrate"] == "Si"
+    assert app.assigned_materials["Substrate"] != "pec"
 
 
 @pytest.mark.hfss

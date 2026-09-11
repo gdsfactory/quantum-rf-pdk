@@ -44,6 +44,7 @@ from qpdk.simulation.aedt_base import (
     AEDTBase,
     add_materials_to_aedt,
     layer_stack_to_gds_mapping,
+    object_names_to_materials,
     prepare_component_for_aedt,
 )
 from qpdk.simulation.hfss import HFSS, lumped_port_rectangle_from_cpw
@@ -57,5 +58,6 @@ __all__ = [
     "add_materials_to_aedt",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
+    "object_names_to_materials",
     "prepare_component_for_aedt",
 ]
