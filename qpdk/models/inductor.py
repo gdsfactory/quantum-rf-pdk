@@ -102,7 +102,13 @@ def meander_inductor_inductance_analytical(
         L_k = L_\square \cdot \frac{\ell_{\text{total}}}{w}
 
     Args:
-        n_turns: Number of horizontal meander runs.
+        n_turns: Number of horizontal meander runs. Valid for any positive
+            integer; nonpositive values return zero inductance. The
+            mutual-inductance sum includes offsets up to 500, far beyond
+            practical turn counts. The odd-turn constraint is a layout-only
+            requirement of some cells
+            (e.g. :func:`qpdk.cells.inductor.lumped_element_resonator`),
+            not of this formula.
         turn_length: Length of each horizontal run in µm.
         wire_width: Width of the meander wire in µm.
         wire_gap: Gap between adjacent meander runs in µm.
@@ -122,6 +128,10 @@ def meander_inductor_inductance_analytical(
     g_m = wire_gap * 1e-6
     t_m = thickness * 1e-6
     p_m = w_m + g_m  # Pitch (center-to-center)
+
+    # Clamp nonpositive turn counts to zero: a meander with fewer than one
+    # run has no inductance, and the raw formula would return negative values.
+    n_turns = jnp.maximum(n_turns, 0)
 
     # 1. Geometric Inductance
     # Self-inductance of horizontal segments (turns)
@@ -152,7 +162,7 @@ def meander_inductor_inductance_analytical(
     # Ensure L_g_horiz calculation is accurate. The negative mutual inductance
     # should be outweighed by the self-inductance for physically valid meanders.
     L_g_horiz = n_turns * L_s_horiz + 2 * L_m_sum
-    L_g = L_g_horiz + (n_turns - 1) * L_s_vert
+    L_g = L_g_horiz + jnp.maximum(0, n_turns - 1) * L_s_vert
 
     # 2. Kinetic Inductance
     # Total wire length in µm (horizontal runs + vertical connections)
@@ -190,7 +200,11 @@ def meander_inductor(
 
     Args:
         f: Array of frequency points in Hz.
-        n_turns: Number of horizontal meander runs.
+        n_turns: Number of horizontal meander runs. Valid for any positive
+            integer; note that the corresponding layout cell places the second
+            port on the same side as the first for even values, while the
+            :func:`qpdk.cells.inductor.lumped_element_resonator` cell requires
+            an odd value.
         turn_length: Length of each horizontal run in µm.
         cross_section: Cross-section specification for the meander wire.
             Used to determine the wire width and the gap between runs.
@@ -252,8 +266,14 @@ def lumped_element_resonator(
         finger_length: Length of each capacitor finger in µm.
         finger_gap: Gap between adjacent capacitor fingers in µm.
         finger_thickness: Width of each capacitor finger in µm.
-        n_turns: Number of horizontal meander inductor runs (must be odd to
-            match the cell geometry where the path spans left-to-right bus bars).
+        n_turns: Number of horizontal meander inductor runs. The analytical
+            model accepts any positive integer; the odd-turn constraint is a
+            layout-only requirement of the
+            :func:`qpdk.cells.inductor.lumped_element_resonator` cell (where
+            the meander path must span from the left bus bar to the right bus
+            bar), not of the mathematics. Note the defaults differ: this
+            model defaults to 5 turns while the cell defaults to 15, so pass
+            `n_turns` explicitly to match a layout.
         sheet_inductance: Sheet inductance per square in H/□.
         cross_section: Cross-section specification. Used for substrate
             permittivity and to determine inductor wire width and gap.
