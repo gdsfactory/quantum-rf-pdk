@@ -88,22 +88,34 @@ jobs:
             exit 1
           fi
   filter-gdsfactoryplus-versions:
-    needs: get-python-versions
     runs-on: ubuntu-latest
     outputs:
       python-versions: ${{ steps.filter.outputs.python-versions }}
+      gfp-major: ${{ steps.filter.outputs.gfp-major }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - name: Filter versions for gdsfactoryplus
+      - name: Resolve GDSFactory+ extension version
         id: filter
         run: |
-          INPUT='${{ needs.get-python-versions.outputs.python-versions }}'
-          echo "python-versions=$(just get-gfp-versions "$INPUT")" >> "$GITHUB_OUTPUT"
+          # `just get-gfp-versions` prints the gfp matrix Python versions as a
+          # JSON array first, then latest=<version> and major=<major> lines of
+          # the public GDSFactory+ VS Code extension.
+          OUTPUT="$(just get-gfp-versions)"
+          echo "python-versions=$(echo "$OUTPUT" | head -n1)" >> "$GITHUB_OUTPUT"
+          MAJOR="$(echo "$OUTPUT" | sed -n 's/^major=//p')"
+          # Empty major (Marketplace unreachable / unknown version) counts as 0
+          # so the gate reliably skips instead of comparing an empty string.
+          echo "gfp-major=${MAJOR:-0}" >> "$GITHUB_OUTPUT"
+  # Gate: the pytest gfp suite targets the gdsfactoryplus v2 SDK, which ships
+  # bundled in the public GDSFactory+ VS Code extension (not on PyPI). Run the
+  # suite only when the latest extension release is v2+; the gate also skips
+  # the job gracefully when the Marketplace cannot be reached.
   test-gdsfactoryplus:
     runs-on: ${{ matrix.os }}
     needs: filter-gdsfactoryplus-versions
+    if: ${{ needs.filter-gdsfactoryplus-versions.outputs.gfp-major >= 2 }}
     strategy:
       fail-fast: false
       matrix:
@@ -123,13 +135,24 @@ jobs:
   test-gdsfactoryplus-result:
     runs-on: ubuntu-latest
     name: GDSFactory+ test result
-    needs: test-gdsfactoryplus
+    needs: [test-gdsfactoryplus, filter-gdsfactoryplus-versions]
     if: always()
     steps:
       - name: Check GDSFactory+ test matrix results
         run: |
-          if [[ "${{ needs.test-gdsfactoryplus.result }}" == "success" ]]; then
+          # A failed gate maps the test job to "skipped"; without this
+          # check a broken gate would show up green as "skipped".
+          GATE="${{ needs.filter-gdsfactoryplus-versions.result }}"
+          if [[ "$GATE" == "failure" ]]; then
+            echo "GDSFactory+ version gate failed; the test job did not run meaningfully"
+            exit 1
+          fi
+          RESULT="${{ needs.test-gdsfactoryplus.result }}"
+          if [[ "$RESULT" == "success" ]]; then
             echo "All GDSFactory+ test jobs succeeded"
+            exit 0
+          elif [[ "$RESULT" == "skipped" ]]; then
+            echo "GDSFactory+ test job skipped: latest VS Code extension release is < 2.0"
             exit 0
           else
             echo "One or more GDSFactory+ test jobs failed"

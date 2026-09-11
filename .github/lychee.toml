@@ -26,7 +26,9 @@ exclude = [
   # KLayout homepage rejects some automated checks with 415 in CI
   "https://www.klayout.de/",
   # Generated PDF can be unavailable while GitHub Pages deploys it
-  "https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf"
+  "https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf",
+  # VS Code Marketplace gallery API (POST-only; rejects lychee's GET with 405)
+  "https://marketplace.visualstudio.com/_apis/public/gallery.*"
 ]
 
 # Set a timeout

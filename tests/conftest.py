@@ -2,11 +2,75 @@
 
 from __future__ import annotations
 
+import importlib
+import os
 import sys
+from typing import TYPE_CHECKING
 
 import pytest
 
 from qpdk import PDK
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+#: When set to "1", tests needing gdsfactoryplus fail instead of skipping.
+GFP_REQUIRED_ENV = "GFP_REQUIRED"
+
+
+def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
+    """Import a gdsfactoryplus module, skipping only when the package is absent.
+
+    A missing ``gdsfactoryplus.*`` submodule while the package itself imports
+    means upstream changed the API these tests guard against — that must fail
+    loudly, never silently skip. Set ``GFP_REQUIRED=1`` to also turn the
+    "package absent" skip and any missing transitive dependency into
+    failures (used in the gfp CI job, where ``just test-gfp`` provisions
+    everything); otherwise a silently missing dependency would green the CI
+    with the SAX/LVS coverage gone.
+
+    gdsfactoryplus >= 2.0 is not on PyPI; it ships bundled in the public
+    GDSFactory+ VS Code extension. ``just test-gfp`` provisions it from the
+    extension automatically (see ``fetch-gfp`` in ``tests/test.just``).
+
+    Returns:
+        The imported module.
+
+    Raises:
+        AssertionError: Unreachable; satisfies the type checker since
+            ``pytest.skip``/``pytest.fail`` only raise.
+    """
+    try:
+        return importlib.import_module(module)
+    except ModuleNotFoundError as exc:
+        missing = exc.name or ""
+        required = os.environ.get(GFP_REQUIRED_ENV) == "1"
+        if missing == "gdsfactoryplus":
+            hint = "run `just fetch-gfp` and source build/gfp-vsix/env.sh"
+            if required:
+                pytest.fail(
+                    f"gdsfactoryplus is required (GFP_REQUIRED=1) but not "
+                    f"importable — {hint}"
+                )
+            pytest.skip(
+                f"gdsfactoryplus not installed ({hint})", allow_module_level=True
+            )
+        if missing.startswith("gdsfactoryplus"):
+            pytest.fail(
+                f"gdsfactoryplus is installed but {module!r} is unavailable "
+                f"({missing!r} missing) — upstream API changed?"
+            )
+        if required:
+            pytest.fail(
+                f"gdsfactoryplus is required (GFP_REQUIRED=1) but its "
+                f"dependency {missing!r} is not importable — the SDK "
+                "provisioning is broken; run `just fetch-gfp` and source "
+                "build/gfp-vsix/env.sh, or install the gdsfactoryplus extra"
+            )
+        pytest.skip(
+            f"optional dependency {missing!r} not installed", allow_module_level=True
+        )
+    raise AssertionError("unreachable")
 
 
 def pytest_collection_modifyitems(
