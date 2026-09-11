@@ -104,7 +104,10 @@ jobs:
           # the public GDSFactory+ VS Code extension.
           OUTPUT="$(just get-gfp-versions)"
           echo "python-versions=$(echo "$OUTPUT" | head -n1)" >> "$GITHUB_OUTPUT"
-          echo "gfp-major=$(echo "$OUTPUT" | sed -n 's/^major=//p')" >> "$GITHUB_OUTPUT"
+          MAJOR="$(echo "$OUTPUT" | sed -n 's/^major=//p')"
+          # Empty major (Marketplace unreachable / unknown version) counts as 0
+          # so the gate reliably skips instead of comparing an empty string.
+          echo "gfp-major=${MAJOR:-0}" >> "$GITHUB_OUTPUT"
   # Gate: the pytest gfp suite targets the gdsfactoryplus v2 SDK, which ships
   # bundled in the public GDSFactory+ VS Code extension (not on PyPI). Run the
   # suite only when the latest extension release is v2+; the gate also skips

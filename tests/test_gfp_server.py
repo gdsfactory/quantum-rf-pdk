@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import shutil
 import signal
 import socket
@@ -42,6 +43,14 @@ if TYPE_CHECKING:
 
 #: qpdk repository root (parent of ``tests/``).
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+#: Sentinel the stdout reader thread enqueues at EOF.
+_EOF = object()
+
+# Server tests share one ``gfp serve`` instance and the repository's
+# ``build/`` directory, so they must never be split across xdist workers;
+# run the suite with ``--dist loadgroup`` (test-gfp does).
+pytestmark = pytest.mark.xdist_group("gfp-server")
 
 #: ``.pic.yml`` factories that indexing must discover from ``qpdk/samples/``.
 PIC_YAML_FACTORIES = (
@@ -64,11 +73,26 @@ NYANLIB_SPOT_CHECKS = (
 
 @dataclass
 class StdioRpc:
-    """Content-Length framed JSON-RPC 2.0 client over stdin/stdout."""
+    """Content-Length framed JSON-RPC 2.0 client over stdin/stdout.
+
+    A daemon reader thread parses framed messages off the server's
+    stdout into a queue, so every wait enforces its own timeout. Direct
+    blocking ``readline`` calls could hang the harness forever when the
+    server stops emitting a full frame.
+    """
 
     proc: subprocess.Popen
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _id: int = field(default=0)
+    _messages: queue.Queue = field(default_factory=queue.Queue)
+    _reader: threading.Thread = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Start the daemon reader thread pumping stdout into the queue."""
+        self._reader = threading.Thread(
+            target=self._pump_stdout, name="gfp-rpc-reader", daemon=True
+        )
+        self._reader.start()
 
     def call(
         self, method: str, params: dict | None = None, timeout: float = 60
@@ -83,7 +107,27 @@ class StdioRpc:
             body = json.dumps(msg).encode()
             frame = f"Content-Length: {len(body)}\r\n\r\n".encode() + body
             self._write(frame)
-            return self._read_response(req_id, timeout)
+            deadline = time.monotonic() + timeout
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    error = f"Timed out waiting for response to request {req_id}"
+                    raise TimeoutError(error)
+                try:
+                    incoming = self._messages.get(timeout=remaining)
+                except queue.Empty:
+                    error = f"Timed out waiting for response to request {req_id}"
+                    raise TimeoutError(error) from None
+                if incoming is _EOF:
+                    error = (
+                        f"gfp server closed its stdout before responding "
+                        f"to request {req_id}"
+                    )
+                    raise EOFError(error)
+                # Calls are serialized by _lock, so anything else is a
+                # stale response or a server notification; drop it.
+                if incoming.get("id") == req_id:
+                    return incoming
 
     def _write(self, data: bytes) -> None:
         stdin = self.proc.stdin
@@ -91,58 +135,32 @@ class StdioRpc:
         stdin.write(data)
         stdin.flush()
 
-    def _readline(self) -> bytes:
+    def _pump_stdout(self) -> None:
+        """Read framed JSON-RPC messages from stdout until EOF (daemon thread)."""
         stdout = self.proc.stdout
         assert stdout is not None  # spawned with stdout=PIPE
-        return stdout.readline()
-
-    def _read(self, n: int) -> bytes:
-        stdout = self.proc.stdout
-        assert stdout is not None  # spawned with stdout=PIPE
-        return stdout.read(n)
-
-    def _read_response(self, req_id: int, timeout: float) -> dict:
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            content_length = self._read_header(deadline)
-            if content_length is None:
-                msg = f"Timed out reading response for request {req_id}"
-                raise TimeoutError(msg)
-            raw = self._read_exact(content_length, deadline)
-            if raw is None:
-                msg = f"Timed out reading body for request {req_id}"
-                raise TimeoutError(msg)
-            resp = json.loads(raw)
-            if resp.get("id") == req_id:
-                return resp
-        msg = f"Timed out waiting for response to request {req_id}"
-        raise TimeoutError(msg)
-
-    def _read_header(self, deadline: float) -> int | None:
-        content_length = None
         while True:
-            if time.monotonic() >= deadline:
-                return None
-            line = self._readline()
-            if not line:
-                return None
-            text = line.decode().strip()
-            if not text:
-                break
-            if text.lower().startswith("content-length:"):
-                content_length = int(text.split(":", 1)[1].strip())
-        return content_length
-
-    def _read_exact(self, n: int, deadline: float) -> bytes | None:
-        buf = b""
-        while len(buf) < n:
-            if time.monotonic() >= deadline:
-                return None
-            chunk = self._read(n - len(buf))
-            if not chunk:
-                return None
-            buf += chunk
-        return buf
+            content_length = 0
+            saw_header = False
+            while line := stdout.readline():
+                text = line.decode(errors="replace").strip()
+                if not text:
+                    break  # blank line ends the header block
+                if text.lower().startswith("content-length:"):
+                    content_length = int(text.split(":", 1)[1].strip())
+                    saw_header = True
+            else:
+                break  # EOF between frames
+            if not saw_header:
+                continue
+            body = stdout.read(content_length)
+            if len(body) < content_length:
+                break  # EOF mid-frame
+            try:
+                self._messages.put(json.loads(body))
+            except json.JSONDecodeError:
+                continue  # skip malformed frames; the request will time out
+        self._messages.put(_EOF)
 
 
 @dataclass
@@ -202,14 +220,18 @@ def spawn_gfp_server(
         "w", encoding="utf-8"
     )
 
-    port = _free_port()
-    proc = subprocess.Popen(  # ruff: ignore[subprocess-without-shell-equals-true]
-        [gfp_bin, "serve", "--port", str(port)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=log_file,
-        cwd=str(project_root),
-    )
+    try:
+        port = _free_port()
+        proc = subprocess.Popen(  # ruff: ignore[subprocess-without-shell-equals-true]
+            [gfp_bin, "serve", "--port", str(port)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=log_file,
+            cwd=str(project_root),
+        )
+    except BaseException:
+        log_file.close()
+        raise
 
     rpc = StdioRpc(proc)
     deadline = time.monotonic() + startup_timeout
@@ -222,7 +244,10 @@ def spawn_gfp_server(
                 and result.get("index_error") is None
             ):
                 break
-        except (TimeoutError, OSError, json.JSONDecodeError):
+        except (EOFError, TimeoutError, OSError, json.JSONDecodeError):
+            # Not ready yet (server still booting or a frame not yet
+            # parseable): retry until the deadline. The poll() check below
+            # turns an early server exit into a proper failure.
             pass
         if proc.poll() is not None:
             log_file.close()

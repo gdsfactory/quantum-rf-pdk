@@ -1,4 +1,4 @@
-PYTEST_COMMAND := "uv run --extra models --extra graphics --extra hfss --extra qutip --group dev pytest -n auto"
+PYTEST_COMMAND := "uv run --extra models --extra graphics --extra hfss --extra qutip --group dev pytest -n auto --dist loadgroup"
 
 # Check if Git LFS is available and pull LFS files
 [private]
@@ -246,13 +246,15 @@ fetch-gfp version="latest":
     )
     print(f"extracted to {OUT}; source {env_sh} for PYTHONPATH and GFP_BIN")
 
-# Run GDSFactory+ tests (pytest-based suite marked `gfp`; replaces the removed v2 `gfp test` CLI).
+# Run GDSFactory+ tests (pytest-based suite marked `gfp`; replaces the `gfp test` CLI removed in v2).
 # GFP_REQUIRED=1: gdsfactoryplus and its v2 API must be present (no silent skips).
 # The SDK and the `gfp` binary are not pip-installable: gdsfactoryplus >= 2.0
 # ships bundled in the public GDSFactory+ VS Code extension, so when the SDK is
 # not importable this recipe first extracts both from the extension (fetch-gfp).
 # The gfp-marked tests live in the three files listed below; naming them
 # explicitly avoids collecting the whole repo under the minimal gfp extras.
+# --dist loadgroup keeps the server tests (xdist_group "gfp-server", which
+# share one gfp serve process and the repo's build/ dir) on a single worker.
 [group('test')]
 test-gfp *args:
     #!/usr/bin/env bash
@@ -264,5 +266,5 @@ test-gfp *args:
         just fetch-gfp
         source build/gfp-vsix/env.sh
     fi
-    GFP_REQUIRED=1 uv run --extra gdsfactoryplus --group dev pytest -m gfp -n auto \
+    GFP_REQUIRED=1 uv run --extra gdsfactoryplus --group dev pytest -m gfp -n auto --dist loadgroup \
         tests/test_gfp_lvs.py tests/test_gfp_sax.py tests/test_gfp_server.py {{ args }}

@@ -7,7 +7,9 @@ against this PDK:
   ``resonator_test_chip_yaml.pic.yml`` schematic with zero violations
   (elvis engine).
 - ``check_lvs`` detects real violations (negative control, so the passing
-  assertion above cannot become vacuous).
+  assertions above cannot become vacuous).
+- ``check_lvs`` also runs against a hand-authored ``.gsch`` nyancir (the
+  other schematic dialect the gfp app produces), positive and negative.
 - ``check_connectivity``: the report is parseable and contains no
   short/overlap/mismatch violations. ``DanglingPort`` items are expected
   noise for hierarchical GDS: library leaf-cell ports connect in their
@@ -42,11 +44,12 @@ never received from untrusted sources.
 
 from __future__ import annotations
 
+import json
 import os
 import tomllib
 import xml.etree.ElementTree as ET  # ruff: ignore[suspicious-xml-etree-import]
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import gdsfactory as gf
 import pytest
@@ -66,6 +69,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 #: Schematic describing the resonator test chip (wrapper sample).
 SCHEMATIC_PATH = PROJECT_ROOT / "qpdk/samples/resonator_test_chip_yaml.pic.yml"
+
+#: Fully qualified factory id of the resonator test chip sample.
+_CHIP_QUALNAME = "qpdk.samples.resonator_test_chip.resonator_test_chip_python"
+
+#: Chip ports the nyancir exposes; must match the wrapper GDS ports.
+_NYANCIR_PORTS = ("o1", "o2", "o3", "o4")
 
 #: Environment variable holding the gdsfactoryplus DRC API key.
 GFP_API_KEY_ENV = "GFP_API_KEY"
@@ -140,6 +149,80 @@ def chip_yaml_gds(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return gds_path
 
 
+def _nyancir_document() -> dict[str, Any]:
+    """Build a ``.gsch`` nyancir mirroring the wrapper layout.
+
+    One ``type: "ckt"`` instance of the sample factory named like the
+    wrapper GDS instance (``resonator_test_chip``), with its four ports
+    exposed through ``type: "port"`` markers.
+
+    Returns:
+        Nyancir document ready to be serialized to a ``.gsch`` file.
+    """
+    document: dict[str, Any] = {
+        "chip:resonator_test_chip": {
+            "type": "ckt",
+            "model": _CHIP_QUALNAME,
+            "name": "resonator_test_chip",
+            "transform": [1, 0, 0, 1, 0, 0],
+            "x": 0,
+            "y": 0,
+            "props": {},
+            "nets": {port: f"net_{port}" for port in _NYANCIR_PORTS},
+        }
+    }
+    for port in _NYANCIR_PORTS:
+        document[f"chip:{port}"] = {
+            "type": "port",
+            "name": port,
+            "x": 0,
+            "y": 0,
+            "nets": {"P": f"net_{port}"},
+        }
+    return document
+
+
+@pytest.fixture(scope="module")
+def nyancir_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build a self-contained project root holding a ``.gsch`` schematic.
+
+    ``check_lvs`` resolves a ``.gsch`` schematic and its
+    ``models.nyanlib`` through nyancad's ``FileAPI`` relative to
+    ``project_root``; the hand-authored nyanlib entry mirrors what the
+    ``gfp`` binary generates for the sample factory (only the component
+    ``name`` is read for a Python-factory leaf).
+
+    Returns:
+        Path to the temporary project root.
+    """
+    root = tmp_path_factory.mktemp("gfp_nyancir")
+    (root / "resonator_test_chip_gfp.gsch").write_text(
+        json.dumps(_nyancir_document(), indent=2)
+    )
+    (root / "models.nyanlib").write_text(
+        json.dumps(
+            {
+                f"models:{_CHIP_QUALNAME}": {
+                    "name": "resonator_test_chip_python",
+                    "type": "ckt",
+                    "tags": ["qpdk"],
+                }
+            },
+            indent=2,
+        )
+    )
+    return root
+
+
+@pytest.fixture(scope="module")
+def nyancir_chip_gds(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Write the nyancir-matching wrapper layout GDS to a temp directory."""
+    PDK.activate()  # not applied to module-scoped fixtures by the autouse hook
+    gds_path = tmp_path_factory.mktemp("gfp_verify") / "resonator_test_chip_gfp.gds"
+    _wrapper_component("resonator_test_chip_gfp").write_gds(gds_path)
+    return gds_path
+
+
 def _leaf_category(item: ET.Element) -> str:
     """Return the leaf category path of a LYRDB item, e.g. ``LVS.open``."""
     return item.findtext("category") or ""
@@ -191,6 +274,46 @@ def test_lvs_reports_a_broken_layout(gfp_check: ModuleType, tmp_path: Path) -> N
         str(SCHEMATIC_PATH),
         "qpdk",
         project_root=str(PROJECT_ROOT),
+    )
+    root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
+    items = list(root.iter("item"))
+    descriptions = " | ".join(_item_description(item) for item in items)
+
+    assert items, "LVS accepted a layout that lost the o4 port connection"
+    assert "o4" in descriptions, f"Violations do not mention o4:\n{descriptions}"
+
+
+def test_lvs_resonator_test_chip_matches_nyancir(
+    gfp_check: ModuleType, nyancir_root: Path, nyancir_chip_gds: Path
+) -> None:
+    """Elvis LVS reports zero violations for the sample chip vs a ``.gsch``."""
+    xml = gfp_check.check_lvs(
+        str(nyancir_chip_gds),
+        str(nyancir_root / "resonator_test_chip_gfp.gsch"),
+        "qpdk",
+        project_root=str(nyancir_root),
+    )
+    root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
+
+    assert root.tag == "report-database", xml[:500]
+    violations = _describe_violations(root)
+    assert not list(root.iter("item")), f"LVS violations:\n{violations}"
+
+
+def test_lvs_nyancir_reports_a_broken_layout(
+    gfp_check: ModuleType, nyancir_root: Path, tmp_path: Path
+) -> None:
+    """Negative control: a dropped o4 port must violate the ``.gsch`` LVS."""
+    gds_path = tmp_path / "resonator_test_chip_gfp_broken.gds"
+    _wrapper_component("resonator_test_chip_gfp_broken", with_o4=False).write_gds(
+        gds_path
+    )
+
+    xml = gfp_check.check_lvs(
+        str(gds_path),
+        str(nyancir_root / "resonator_test_chip_gfp.gsch"),
+        "qpdk",
+        project_root=str(nyancir_root),
     )
     root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
     items = list(root.iter("item"))
