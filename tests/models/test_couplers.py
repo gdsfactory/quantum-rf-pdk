@@ -2,8 +2,10 @@
 
 from typing import final
 
+import gdsfactory as gf
 import jax.numpy as jnp
 import numpy as np
+import pytest
 
 from qpdk.models.couplers import (
     coupler_ring,
@@ -72,3 +74,10 @@ class TestCPWCouplingCapacitance:
         c1 = cpw_cpw_coupling_capacitance(f, length=100.0, gap=5.0, cross_section="cpw")
         c2 = cpw_cpw_coupling_capacitance(f, length=200.0, gap=5.0, cross_section="cpw")
         np.testing.assert_allclose(float(c2), 2.0 * float(c1), rtol=1e-6)
+
+    @staticmethod
+    def test_missing_etch_section_raises() -> None:
+        """Test that a cross-section without an etch section raises ValueError."""
+        xs = gf.cross_section.cross_section(width=10.0)
+        with pytest.raises(ValueError, match="etch"):
+            cpw_cpw_coupling_capacitance(5e9, length=100.0, gap=5.0, cross_section=xs)
