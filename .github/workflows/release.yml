@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - main
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   check_and_tag:
     name: Check for version bump and create tag
@@ -55,27 +58,31 @@ jobs:
         run: |
           uv run --all-extras --with cyclonedx-bom cyclonedx-py environment --pyproject pyproject.toml --output-format JSON --output-file sbom.json
       - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.check_and_tag.outputs.tag }}
         run: |
-          # Get the latest draft release tag if it exists
-          DRAFT_TAG=$(gh release list --limit 1 --json isDraft,tagName --jq '.[] | select(.isDraft==true) | .tagName' || echo "")
-
-          if [ -n "$DRAFT_TAG" ]; then
-            # Get the body of the draft release
-            DRAFT_BODY=$(gh release view "$DRAFT_TAG" --json body --jq '.body' || echo "")
-            # Create release with draft body
-            gh release create ${{ needs.check_and_tag.outputs.tag }} \
-              --title "${{ needs.check_and_tag.outputs.tag }}" \
-              --notes "$DRAFT_BODY" \
-              sbom.json
+          # Publish the release-drafter draft in place if it matches the tag being
+          # released; the draft already carries its curated notes. gh release view
+          # looks the tag up directly (no pagination window) and fails with a
+          # non-zero exit when no release has it, which is the normal no-draft case.
+          # tag_name must be unique across releases (drafts included), so a new
+          # release with the same tag would fail. If the release already exists but
+          # is published (retry after a failed upload), just (re-)attach the SBOM.
+          # Stale draft, next version already resolved, or lookup race: fall back to
+          # auto-generated notes.
+          if IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null); then
+            if [ "$IS_DRAFT" = "true" ]; then
+              gh release edit "$TAG" --draft=false --title "$TAG"
+            fi
+            gh release upload --clobber "$TAG" sbom.json
           else
             # Create release with auto-generated notes
-            gh release create ${{ needs.check_and_tag.outputs.tag }} \
-              --title "${{ needs.check_and_tag.outputs.tag }}" \
+            gh release create "$TAG" \
+              --title "$TAG" \
               --generate-notes \
               sbom.json
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release_pypi:
     needs: [check_and_tag, build]
     if: needs.check_and_tag.outputs.new_tag_created == 'true'
