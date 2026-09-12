@@ -70,7 +70,7 @@ as follows. Each stage may loop back to earlier stages as the design is refined.
 S-parameter circuit models treat microwave components as linear, frequency-dependent
 networks described by their scattering matrices. In **qpdk** these models are
 implemented with `JAX <https://jax.readthedocs.io/>`_ and composed into circuits using
-`SAX <https://flaport.github.io/sax/>`_
+`SAX <https://gdsfactory.github.io/sax/>`_
 :cite:`blaisCircuitQuantumElectrodynamics2021,gopplCoplanarWaveguideResonators2008a`.
 
 **Typical use cases:**
