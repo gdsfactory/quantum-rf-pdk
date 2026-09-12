@@ -6,4 +6,4 @@ on:
     branches: [main]
 jobs:
   draft:
-    uses: doplaydo/pdk-ci-workflow/.github/workflows/release-drafter.yml@main # zizmor: ignore[unpinned-uses]
+    uses: doplaydo/pdk-ci-workflow-public/.github/workflows/release-drafter.yml@main # zizmor: ignore[unpinned-uses]
