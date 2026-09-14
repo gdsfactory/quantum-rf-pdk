@@ -59,7 +59,11 @@
 
   // Headings: Outfit 700, tracking tightened the way custom.css does
   // (-0.02em at h1 easing to -0.005em deeper down).
-  set heading(numbering: if toctree_numbered { "1.1" } else { "1.1" })
+  // Headings are always numbered, regardless of `toctree_numbered`: Sphinx's
+  // LaTeX builder numbered them too (`:numbered:` is not set on any toctree
+  // here, yet the old PDF had numbered sections), and a 400-page reference
+  // manual needs them for the outline and cross-references to be usable.
+  set heading(numbering: "1.1")
   show heading: it => {
     let sizes = (20pt, 15pt, 12.5pt, 11pt, 10.5pt, 10pt)
     let tracks = (-0.02em, -0.015em, -0.01em, -0.005em, -0.005em, -0.005em)
