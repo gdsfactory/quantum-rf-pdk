@@ -26,7 +26,6 @@ It includes the README.md but skips SVG badges which cannot be rendered in LaTeX
 
 cells
 models
-simulation
 ```
 
 ```{toctree}
@@ -41,6 +40,13 @@ samples
 :hidden:
 
 notebooks
+```
+
+```{toctree}
+:caption: Simulation API
+:hidden:
+
+simulation
 ```
 
 ```{toctree}
