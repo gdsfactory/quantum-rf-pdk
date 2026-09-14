@@ -3,6 +3,11 @@
 # Script to check that all .ipynb files in notebooks/ have corresponding source files in notebooks/src/
 # This pre-commit hook ensures that notebooks are properly tracked as jupytext source scripts.
 # Source files use `.py` for Python-kernel notebooks and `.m` for MATLAB-kernel notebooks.
+#
+# It also checks that no notebook contains a leaked jupytext YAML header cell. jupytext only
+# recognises the header when its `---` fence is on its own line; if a formatter reflows the
+# source's comment block the fence merges with the next line, and the whole header silently
+# becomes a regular cell that then renders in the built documentation.
 
 set -euo pipefail
 
@@ -51,7 +56,37 @@ if [ "${#orphaned_notebooks[@]}" -gt 0 ]; then
     echo -e "${YELLOW}All notebooks in notebooks/ must have a corresponding jupytext source file in notebooks/src/ (.py for Python, .m for MATLAB).${NC}" >&2
     echo -e "${YELLOW}Please create the source file or remove the orphaned notebook.${NC}" >&2
     exit 1
-else
-    echo -e "${GREEN}All notebooks have corresponding source files${NC}"
-    exit 0
 fi
+
+echo -e "${GREEN}All notebooks have corresponding source files${NC}"
+
+# Check that no notebook carries the jupytext YAML header as a visible cell.
+# Prefer uv (as the notebook conversion hook does); fall back to the system
+# interpreter since the checker is standard-library only.
+if command -v uv >/dev/null 2>&1; then
+    header_check=(uv run --script .github/check_jupytext_header.py)
+else
+    header_check=(python3 .github/check_jupytext_header.py)
+fi
+
+declare -a leaked_notebooks=()
+while IFS= read -r -d '' ipynb_file; do
+    if "${header_check[@]}" "$ipynb_file"; then
+        continue
+    fi
+    leaked_notebooks+=("$ipynb_file")
+done < <(find notebooks -maxdepth 1 -type f -name "*.ipynb" -print0)
+
+if [ "${#leaked_notebooks[@]}" -gt 0 ]; then
+    echo -e "${RED}Error:${NC} Found ${BOLD}${#leaked_notebooks[@]}${NC} notebook(s) containing the jupytext YAML header as a cell:" >&2
+    for nb in "${leaked_notebooks[@]}"; do
+        echo -e "  - ${BOLD}$nb${NC}" >&2
+    done
+    echo -e "" >&2
+    echo -e "${YELLOW}The header must stay a comment block in notebooks/src/ with its '---' fence on its own line.${NC}" >&2
+    echo -e "${YELLOW}Check that no formatter reflowed it, then regenerate the notebook.${NC}" >&2
+    exit 1
+fi
+
+echo -e "${GREEN}No notebooks leak their jupytext header${NC}"
+exit 0

@@ -214,6 +214,11 @@ repos:
       - id: matlab-reflow-comments
         priority: 10
         args: [--line-length=100]
+        # This also reflows the jupytext percent-format sources in notebooks/src.
+        # The hook joins adjacent comment lines whose inner indent is below two
+        # spaces, so structural comments must keep an inner indent of either zero
+        # (passed through as a blank comment) or two or more (passed through as
+        # indented). See the YAML header in notebooks/src/matlab_integration.m.
   - repo: https://github.com/nikosavola/MATLAB-language-server-pre-commit
     rev: v0.1.1
     hooks:
