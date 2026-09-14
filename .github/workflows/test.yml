@@ -38,7 +38,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Test with pytest
-        run: just test ${{ matrix.os == 'ubuntu-latest' && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }}
+        run: just test ${{ matrix.os == 'ubuntu-latest' && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }} --junitxml=junit.xml -o junit_family=legacy
+      # `!cancelled()` so test results still upload when pytest fails, which
+      # is exactly when the failed-test report is useful.
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
+          fail_ci_if_error: false
       - name: Upload coverage XML
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -66,12 +75,19 @@ jobs:
         with:
           pattern: coverage-xml-*
           merge-multiple: true
-      - name: Upload code coverage to GitHub
-        uses: actions/upload-code-coverage@d8e329117199404bba6fc81efe8093dc7c015e34 # v1
-        with:
-          file: coverage.xml
-          language: Python
-          label: code-coverage/pytest
+      - parallel:
+          - name: Upload code coverage to GitHub
+            uses: actions/upload-code-coverage@d8e329117199404bba6fc81efe8093dc7c015e34 # v1
+            with:
+              file: coverage.xml
+              language: Python
+              label: code-coverage/pytest
+              fail-on-error: false
+          - name: Upload coverage to Codecov
+            uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+            with:
+              token: ${{ secrets.CODECOV_TOKEN }}
+              fail_ci_if_error: false
   test-code-result:
     runs-on: ubuntu-latest
     name: Test result
