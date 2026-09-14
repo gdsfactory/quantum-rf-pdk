@@ -130,6 +130,26 @@ nb_custom_formats = {
     ".py": ["jupytext.reads", {"fmt": "py"}],
 }
 
+# myst-nb ships a mime-priority table per builder and has no entry for the
+# typsphinx builders, so every notebook output cell would be dropped from the
+# PDF with a "No mime type available in priority list" warning.  This mirrors
+# myst-nb's own ``latex`` priorities, with two changes for Typst: SVG is
+# preferred over PNG (Typst embeds it natively, so plots stay vector), and
+# ``application/pdf`` is left out entirely (Typst's ``image()`` cannot embed
+# a PDF -- see TypstBuilder.supported_image_types).
+nb_mime_priority_overrides = [
+    (builder, mime, priority)
+    for builder in ("typst", "typstpdf")
+    for mime, priority in (
+        ("image/svg+xml", 10),
+        ("image/png", 20),
+        ("image/jpeg", 30),
+        ("text/latex", 40),
+        ("text/markdown", 50),
+        ("text/plain", 60),
+    )
+]
+
 # -- Autodoc configuration ---------------------------------------------------
 autodoc_type_aliases = {
     "ComponentSpec": "ComponentSpec",
@@ -387,7 +407,9 @@ def _typst_drop_unresolved_myst_xrefs(app, doctree, _docname):
         if node.get("refuri"):
             continue
         if any(
-            {"xref", "myst"} <= set(child.get("classes", [])) for child in node.children
+            isinstance(child, nodes.Element)
+            and {"xref", "myst"} <= set(child.get("classes", []))
+            for child in node.children
         ):
             node.replace_self(node.children)
 
