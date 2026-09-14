@@ -76,7 +76,6 @@ from qpdk.models.cpw import cpw_parameters
 
 PDK.activate()
 
-# ruff: disable[module-import-not-at-top-of-file]
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -461,4 +460,3 @@ display_dataframe(df)
 # ```{bibliography}
 # :filter: docname in docnames
 # ```
-# ruff: enable[module-import-not-at-top-of-file]

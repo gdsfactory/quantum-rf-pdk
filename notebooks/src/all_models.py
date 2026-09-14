@@ -32,7 +32,6 @@ if "google.colab" in sys.modules:
 
 # %%
 
-# ruff: disable[module-import-not-at-top-of-file]
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
@@ -511,4 +510,3 @@ ax.grid(True, which="both")
 ax.legend()
 
 plt.show()
-# ruff: enable[module-import-not-at-top-of-file]
