@@ -328,7 +328,7 @@ def resonator_frequency(
     Args:
         length: Length of the resonator in μm.
         epsilon_eff: Effective permittivity.  If ``None`` (default),
-            computed from *cross_section* using :func:`~qpdk.models.cpw.cpw_parameters`.
+            computed from *cross_section* using :func:`~qpdk.models.cpw_parameters`.
         media: Deprecated. Use *epsilon_eff* or *cross_section* instead.
         cross_section: Cross-section specification (used only when
             *epsilon_eff* and *media* are not provided).
