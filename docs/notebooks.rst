@@ -128,6 +128,9 @@ currents, and substrate modes that analytical models may miss
   interdigital capacitor in Ansys HFSS.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
+- :doc:`notebooks/palace_driven_resonator` — Driven S-parameter simulation of a coupled
+  CPW resonator with Palace through gsim, including resonance frequency and Q extraction
+  from the S21 dip.
 
 .. note::
 
@@ -147,6 +150,10 @@ currents, and substrate modes that analytical models may miss
     - FDTD simulations with Meep, including S-parameter extraction.
     - Geometry preparation and meshing pipelines starting from GDSFactory components.
     - Post-processing and visualization of electromagnetic field results.
+
+    The :doc:`notebooks/palace_driven_resonator` notebook above is an in-repo example of
+    the same workflow, built on a qpdk layout and run with Palace directly on an HPC
+    cluster.
 
     See the `gsim documentation <https://gdsfactory.github.io/gsim/>`_ for the full list
     of available notebooks.
@@ -261,6 +268,9 @@ primary tooling lives in another environment.
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
+    - - :doc:`notebooks/palace_driven_resonator`
+      - FEM electromagnetics
+      - Palace, gsim
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
       - scQubits
