@@ -383,7 +383,10 @@ require-lazy = [
 combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
-"notebooks/**/*.py" = ["D100", "T201"]
+# E402: notebooks import modules after setup code (e.g. PDK.activate()) by design.
+# Set here rather than with in-file `# ruff:` comments, which leak into the
+# rendered documentation pages.
+"notebooks/**/*.py" = ["D100", "T201", "E402"]
 "qpdk/cells/__init__.py" = ["F403"]
 "qpdk/models/__init__.py" = ["F403"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
