@@ -491,7 +491,11 @@ def _tabular_to_typst(latex):
         The Typst ``table(...)`` source, or ``None`` if ``latex`` is not a
         single ``tabular`` environment.
     """
-    match = _TABULAR_RE.search(latex)
+    # fullmatch, not search: a block that merely *contains* a tabular also has
+    # surrounding math, and the caller emits only what is returned here, so a
+    # partial match would silently drop the rest.  Anything else falls through
+    # to typsphinx's normal mitex path.
+    match = _TABULAR_RE.fullmatch(latex.strip())
     if match is None:
         return None
     # Every spec `DataFrame.to_latex()` emits here is plain `[lr]+` (`llll`,

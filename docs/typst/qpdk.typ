@@ -78,9 +78,11 @@
     block(above: if it.level == 1 { 1.5em } else { 1.15em }, below: 0.6em, it)
   }
 
-  // Links carry the accent; internal cross-references stay inked so the
-  // body does not turn blue (`it.dest` is a str only for external URLs).
-  show link: it => if type(it.dest) == str { text(fill: accent, it.body) } else { it }
+  // Links carry the accent; internal cross-references stay inked so the body
+  // does not turn blue (`it.dest` is a str only for external URLs).  Style
+  // `it`, never `it.body`: returning the body alone replaces the link element
+  // with plain text and the PDF loses its clickable URL annotation.
+  show link: it => if type(it.dest) == str { text(fill: accent, it) } else { it }
 
   // Math in Fira Math, matching the HTML MathJax font (mathjax4_config).
   show math.equation: set text(font: math-font)
@@ -121,9 +123,13 @@
   counter(page).update(1)
 
   // ---- Contents ---------------------------------------------------------
-  if toctree_caption != "" {
+  // Deliberately NOT `toctree_caption`: typsphinx passes the caption of the
+  // *first* toctree in the master document ("API", here), but this outline
+  // covers every section, so that caption would mislabel the whole contents
+  // page.  The parameter is still accepted because typsphinx always passes it.
+  {
     set text(font: heading-font, weight: 700, size: 20pt, tracking: -0.02em)
-    block(above: 0pt, below: 0.8em, text(fill: accent)[#toctree_caption])
+    block(above: 0pt, below: 0.8em, text(fill: accent)[Contents])
   }
   show outline.entry.where(level: 1): it => {
     set text(font: heading-font, weight: 700)
