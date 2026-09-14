@@ -49,6 +49,26 @@ c.InteractiveShellApp.exec_lines = [  # ruff: ignore[undefined-name]
     "logging.getLogger('fontTools').setLevel(logging.ERROR)",
     # matplotlib: missing-glyph warnings for special Unicode/TeX symbols
     "logging.getLogger('matplotlib.mathtext').setLevel(logging.ERROR)",
+    # Raising a logger's level is too blunt when the same logger also emits
+    # warnings worth keeping, so skip individual messages instead.  Filters
+    # match on ``record.msg`` (the unformatted format string), so a pattern
+    # stays stable across the message's ``%s`` arguments.
+    (
+        "def _qpdk_ignore_log_messages(logger_name, *patterns):\n"
+        "    logging.getLogger(logger_name).addFilter(\n"
+        "        lambda record: not any(p in record.msg for p in patterns)\n"
+        "    )"
+    ),
+    # matplotlib.font_manager: Fira Math (``mathtext.bf`` in qpdk.mplstyle)
+    # ships a Regular weight only, so every bold math title logs
+    # "findfont: Failed to find font weight bold, now using 400." even though
+    # the rendered output is exactly what we asked for.  The logger's other
+    # warnings stay visible on purpose — "Font family ... not found" means the
+    # documentation fonts failed to install, which we do want to hear about.
+    (
+        "_qpdk_ignore_log_messages("
+        "'matplotlib.font_manager', 'Failed to find font weight')"
+    ),
     # Suppress harmless Python warnings that clutter notebook output
     "import warnings",
     # polars row orientation inference during DataFrame construction
