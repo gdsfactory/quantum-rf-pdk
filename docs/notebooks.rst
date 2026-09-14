@@ -131,6 +131,9 @@ currents, and substrate modes that analytical models may miss
 - :doc:`notebooks/palace_driven_resonator` — Driven S-parameter simulation of a coupled
   CPW resonator with Palace through gsim, including resonance frequency and Q extraction
   from the S21 dip.
+- :doc:`notebooks/palace_cpu_gpu_benchmark` — Companion benchmark running the same
+  Palace simulation on CPU and GPU nodes, comparing per-phase timings, memory use, and
+  where each device wins.
 
 .. note::
 
@@ -269,6 +272,9 @@ primary tooling lives in another environment.
       - FEM optimization
       - Optuna, Palace
     - - :doc:`notebooks/palace_driven_resonator`
+      - FEM electromagnetics
+      - Palace, gsim
+    - - :doc:`notebooks/palace_cpu_gpu_benchmark`
       - FEM electromagnetics
       - Palace, gsim
     - - :doc:`notebooks/scqubits_parameter_calculation`
