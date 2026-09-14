@@ -651,6 +651,10 @@ def setup(app):
     # setup_edit_url which is registered at the default priority of 500)
     app.connect("html-page-context", fix_notebook_edit_url, priority=600)
 
+    # NOTE: everything below reaches into typsphinx internals (the translator's
+    # visitor methods, `_inline_concat_context`, `in_paragraph`), which is why
+    # `pyproject.toml` pins `typsphinx<0.10`.  Re-check these when unpinning.
+    #
     # Typst handlers for nodes typsphinx does not know about.  Without them
     # the nodes are dropped with a warning -- and, for PassthroughTextElement,
     # emit invalid Typst that aborts the whole compile (see its docstring).

@@ -3952,7 +3952,7 @@ docs = [
     { name = "sphinxcontrib-svgbob" },
     { name = "sympy" },
     { name = "tqdm" },
-    { name = "typsphinx", specifier = ">=0.9.2" },
+    { name = "typsphinx", specifier = ">=0.9.2,<0.10" },
 ]
 docs-models = [
     { name = "flax" },
