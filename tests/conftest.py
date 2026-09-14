@@ -100,9 +100,14 @@ def preserve_kcl_cells():
     cells other code still references (they are rebuilt through the ``@cell``
     cache-purge path instead). Tests must only ever delete cells they created
     themselves.
+
+    Comparison is by cell name, not index: rebuilding a cell under the same
+    name is legitimate (kfactory's ``overwrite_existing`` path, used by the
+    gdsfactoryplus layout pipeline) and the replacement gets a fresh cell
+    index, so index-based comparison would false-positive on it.
     """
-    before = set(gf.kcl.each_cell_top_down())
+    before = {gf.kcl[ci].name for ci in gf.kcl.each_cell_top_down()}
     yield
-    after = set(gf.kcl.each_cell_top_down())
+    after = {gf.kcl[ci].name for ci in gf.kcl.each_cell_top_down()}
     deleted = before - after
     assert not deleted, f"Test deleted pre-existing KCLayout cells: {sorted(deleted)}"
