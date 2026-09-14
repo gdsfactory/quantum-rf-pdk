@@ -369,6 +369,29 @@ def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
     context["get_edit_provider_and_url"] = _get_edit_provider_and_url
 
 
+def _typst_drop_unresolved_myst_xrefs(app, doctree, _docname):
+    """Render MyST cross-references that did not resolve as plain text.
+
+    A few relative links in ``README.md`` (``docs/contributing.md``,
+    ``LICENSE``) point at repository paths that are not documents, so MyST
+    leaves them unresolved and marks them with the ``xref myst`` class (the
+    ``myst.xref_missing`` warning suppressed above).  HTML already emits these
+    as dead anchors (``href="#LICENSE"``), but typsphinx turns them into Typst
+    labels, and an unresolvable ``link(<...>)`` aborts the whole PDF compile
+    rather than degrading.  Unwrapping them to their own text keeps the wording
+    and matches what the HTML link already does -- nothing.
+    """
+    if app.builder.name not in {"typst", "typstpdf"}:
+        return
+    for node in list(doctree.findall(nodes.reference)):
+        if node.get("refuri"):
+            continue
+        if any(
+            {"xref", "myst"} <= set(child.get("classes", [])) for child in node.children
+        ):
+            node.replace_self(node.children)
+
+
 def _typst_string(text):
     """Escape ``text`` for use inside a Typst double-quoted string literal.
 
@@ -468,6 +491,7 @@ def setup(app):
         _dollar_math_to_rst(lines)
 
     app.connect("source-read", replace_image_paths)
+    app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
     # Convert $-delimited math before any other processing
     app.connect("autodoc-process-docstring", dollar_math_handler, priority=100)
     # We use a late priority to ensure we see the types added by autodoc
