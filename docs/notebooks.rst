@@ -57,7 +57,7 @@ as follows. Each stage may loop back to earlier stages as the design is refined.
             F -.-> A
             E -.-> C
 
-.. only:: latex
+.. only:: typst or typstpdf
 
     Design flow: Physical requirements → Hamiltonian analysis → Circuit/S-parameter models
     → Layout (gdsfactory/qpdk) → FEM verification → Pulse-level simulation → Fabrication.

@@ -3,6 +3,10 @@
 import re
 from pathlib import Path
 
+from docutils import nodes
+from sphinx_design.shared import PassthroughTextElement
+from typsphinx.translator import TypstTranslator
+
 project = "qpdk"
 author = "gdsfactory"
 copyright = "gdsfactory"  # ruff: ignore[builtin-variable-shadowing]
@@ -25,6 +29,7 @@ extensions = [
     "sphinx_github_alerts",
     "sphinxcontrib.bibtex",
     "sphinxcontrib_bibtex_urn",
+    "typsphinx",
 ]
 
 # -- Plot directive configuration ---------------------------------------------
@@ -217,25 +222,19 @@ html_css_files = [
     "css/custom.css",
 ]
 
-# -- LaTeX / PDF output -------------------------------------------------------
-latex_engine = "xelatex"
-latex_documents = [
-    ("index", "qpdk.tex", "Qpdk", "gdsfactory", "manual"),
+# -- Typst / PDF output (typsphinx) -------------------------------------------
+# The fifth tuple element is a typsphinx *template registry key*, not a LaTeX
+# documentclass.  ``"typst"`` is the built-in key.
+typst_documents = [
+    ("index", "qpdk.typ", "Qpdk", "gdsfactory", "typst"),
 ]
-latex_show_pagerefs = True
-latex_show_urls = "footnote"
-latex_use_xindy = True
-latex_elements = {
-    "papersize": "a4paper",
-    "pointsize": "10pt",
-    "fncychap": (
-        r"\usepackage[Bjornstrup]{fncychap}"
-        "\n"
-        r"\ChNumVar{\fontsize{50}{54}\usefont{OT1}{pzc}{m}{n}\selectfont}"
-        "\n"
-        r"\ChTitleVar{\raggedleft\Large\sffamily\bfseries}"
-    ),
+# Only ``papersize``, ``fontsize`` and ``lang`` are accepted here; everything
+# else about the look of the PDF lives in the template.
+typst_elements = {
+    "papersize": "a4",
+    "fontsize": "10pt",
 }
+typst_use_mitex = True
 
 # -- Warning suppression ------------------------------------------------------
 suppress_warnings = [
@@ -370,6 +369,86 @@ def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
     context["get_edit_provider_and_url"] = _get_edit_provider_and_url
 
 
+def _typst_string(text):
+    """Escape ``text`` for use inside a Typst double-quoted string literal.
+
+    Returns:
+        The escaped string, without the surrounding quotes.
+    """
+    return (
+        text
+        .replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+        .replace("\r", "")
+    )
+
+
+def _typst_visit_passthrough(self, node):
+    """Render a sphinx-design ``PassthroughTextElement`` in the Typst output.
+
+    sphinx-design registers a no-op visitor for this node on every builder it
+    knows about (``visit_depart_null`` in ``sphinx_design/extension.py``), so
+    the wrapper is invisible and its inline children render inline.  typsphinx
+    emits into Typst *code* mode, where two adjacent expressions on one line
+    are a syntax error (``expected semicolon or line break``), so a no-op here
+    would emit ``text("title")par({...})`` and abort the whole compile.
+    Wrapping the children in ``par({...})`` both supplies that separator and
+    gives the card title its own block, which is how it reads in HTML.
+
+    A card's ``:link:`` also arrives as one of these, holding a
+    ``sd-hide-link-text`` reference: an invisible overlay that makes the whole
+    card clickable in HTML, whose target is a bare URL fragment.  It has no
+    Typst label to point at, and an unresolvable ``link(<...>)`` aborts the
+    entire PDF compile, so it is dropped -- print has no stretched-link
+    affordance for it to be, and HTML renders no visible text for it either.
+
+    Raises:
+        nodes.SkipNode: For a card's hidden stretched link, which is dropped.
+    """
+    if any(
+        "sd-hide-link-text" in child.get("classes", [])
+        for child in node.findall(nodes.reference)
+    ):
+        raise nodes.SkipNode
+    self.add_text("par({")
+    state = self.__dict__.setdefault("_qpdk_paragraph_state", [])
+    state.append((self.in_paragraph, self.paragraph_has_content))
+    self.in_paragraph = True
+    self.paragraph_has_content = False
+
+
+def _typst_depart_passthrough(self, _node):
+    """Close the ``par({`` opened by :func:`_typst_visit_passthrough`."""
+    self.add_text("})\n\n")
+    self.in_paragraph, self.paragraph_has_content = self._qpdk_paragraph_state.pop()
+
+
+def _typst_visit_doctest_block(self, node):
+    """Render a docutils ``doctest_block`` as a Typst code block.
+
+    ``>>>`` examples in docstrings parse into ``doctest_block``, which
+    typsphinx does not handle; without this the interpreter prompts would be
+    dropped from the PDF with only a warning.
+
+    Raises:
+        nodes.SkipNode: Always, the block is emitted here in full.
+    """
+    self.add_text(
+        f'raw("{_typst_string(node.astext())}", lang: "pycon", block: true)\n'
+    )
+    raise nodes.SkipNode
+
+
+def _typst_visit_meta(_self, _node):
+    """Drop docutils ``meta`` nodes, which carry HTML ``<meta>`` tags only.
+
+    Raises:
+        nodes.SkipNode: Always, the node has no print representation.
+    """
+    raise nodes.SkipNode
+
+
 def setup(app):
     """Sphinx setup."""
     # Regex for types to shorten in the final rendered docstring fields
@@ -396,3 +475,23 @@ def setup(app):
     # Fix Edit on GitHub URLs for notebook pages (runs after pydata-sphinx-theme's
     # setup_edit_url which is registered at the default priority of 500)
     app.connect("html-page-context", fix_notebook_edit_url, priority=600)
+
+    # Typst handlers for nodes typsphinx does not know about.  Without them
+    # the nodes are dropped with a warning -- and, for PassthroughTextElement,
+    # emit invalid Typst that aborts the whole compile (see its docstring).
+    #
+    # These are attached to the translator class directly rather than through
+    # `app.add_node(..., typst=...)`: typsphinx constructs its translator with
+    # a bare `TypstTranslator(document, builder)` (typsphinx/writer.py) instead
+    # of `Sphinx.registry.create_translator()`, so nothing registered through
+    # `add_node` ever reaches it.  docutils dispatches on the node class name,
+    # so a `visit_<classname>` attribute on the class is picked up as-is.
+    for node_class, visit, depart in (
+        (PassthroughTextElement, _typst_visit_passthrough, _typst_depart_passthrough),
+        (nodes.doctest_block, _typst_visit_doctest_block, None),
+        (nodes.meta, _typst_visit_meta, None),
+    ):
+        name = node_class.__name__
+        setattr(TypstTranslator, f"visit_{name}", visit)
+        if depart is not None:
+            setattr(TypstTranslator, f"depart_{name}", depart)

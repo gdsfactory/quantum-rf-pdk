@@ -85,14 +85,10 @@ _sphinx builder: check-lfs docs-prerequisites setup-ipython-config-temporary-bef
 [group('docs')]
 docs: (_sphinx "html")
 
-# Setup LaTeX for PDF documentation
+# Generate Typst sources for the PDF documentation
 [group('docs')]
-docs-latex: (_sphinx "latex")
+docs-typst: (_sphinx "typst")
 
-# Build PDF documentation (requires a TeXLive installation)
-[working-directory: 'docs/_build/latex']
+# Build PDF documentation (typsphinx compiles it with the bundled Typst compiler)
 [group('docs')]
-docs-pdf: docs-latex
-    #!/usr/bin/env bash
-    set -euo pipefail
-    XINDYOPTS="-L english -C utf8 -M sphinx.xdy" latexmk -xelatex -interaction=nonstopmode -file-line-error -halt-on-error qpdk.tex
+docs-pdf: (_sphinx "typstpdf")
