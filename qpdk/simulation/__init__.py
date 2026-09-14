@@ -7,14 +7,14 @@ with Ansys HFSS and Q3D Extractor.
 
 **HFSS workflow:**
 
-1. Prepare a component with :func:`prepare_component_for_aedt`
+1. Prepare a component with :func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt`
 2. Export to GDS and import into HFSS with :meth:`qpdk.simulation.hfss.HFSS.import_component`
 3. Configure simulation setup (e.g. Eigenmode or Driven) manually via PyAEDT
 4. Extract results with :meth:`qpdk.simulation.hfss.HFSS.get_eigenmode_results` or :meth:`qpdk.simulation.hfss.HFSS.get_sparameter_results`
 
 **Q3D Extractor workflow:**
 
-1. Prepare a component with :func:`prepare_component_for_aedt`
+1. Prepare a component with :func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt`
 2. Export to GDS and import into Q3D with :meth:`qpdk.simulation.q3d.Q3D.import_component`
 3. Assign signal nets with :meth:`qpdk.simulation.q3d.Q3D.assign_nets_from_ports`
 4. Configure Q3D setup and analyze

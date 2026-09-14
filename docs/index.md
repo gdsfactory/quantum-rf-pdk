@@ -43,6 +43,13 @@ notebooks
 ```
 
 ```{toctree}
+:caption: Simulation API
+:hidden:
+
+simulation
+```
+
+```{toctree}
 :caption: Development
 :hidden:
 
