@@ -17,8 +17,10 @@
 %
 % This notebook demonstrates calling `qpdk` (and through it, `gdsfactory`) **directly from MATLAB**
 % using MATLAB's built-in Python interface (`py.module.function(...)`); see [Ways to Call Python
-% from MATLAB](https://se.mathworks.com/help/matlab/matlab_external/ways-to-call-python-from-matlab.
-% html).
+% from MATLAB][call-python-from-matlab].
+%
+% [call-python-from-matlab]:
+% https://se.mathworks.com/help/matlab/matlab_external/ways-to-call-python-from-matlab.html
 %
 % The notebook itself is written for the **MATLAB Jupyter kernel** provided by
 % [jupyter-matlab-proxy](https://github.com/mathworks/jupyter-matlab-proxy); see also the [MathWorks
