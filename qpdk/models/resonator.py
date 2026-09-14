@@ -150,10 +150,10 @@ def resonator_test_chip_python(
 def resonator_test_chip_yaml(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
 ) -> sax.SDict:
-    """SAX model for ``resonator_test_chip_yaml.pic.yml``.
+    """SAX model for ``resonator_test_chip_yaml.gsch``.
 
-    The YAML sample is the serialized form of the Python sample, so both use
-    the same top-level model.
+    The ``.gsch`` sample is the declarative form of the Python sample, so both
+    use the same top-level model.
 
     Returns:
         SAX S-parameter dictionary for the four external ports.

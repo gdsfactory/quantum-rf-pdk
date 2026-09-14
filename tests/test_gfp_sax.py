@@ -61,6 +61,11 @@ if TYPE_CHECKING:
 #: File name of the resonator-test-chip nyancir inside both fixture roots.
 _GSCH_NAME = "resonator_test_chip_gfp.gsch"
 
+#: The declarative sample ``.gsch`` checked into ``qpdk/samples/``.
+_SAMPLE_GSCH = (
+    Path(__file__).resolve().parents[1] / "qpdk/samples/resonator_test_chip_yaml.gsch"
+)
+
 #: A non-default ``resonator_length`` (µm) used to prove instance ``props``
 #: reach the model; the default in ``resonator_test_chip_python`` is 4000.
 _TUNED_RESONATOR_LENGTH = 6000.0
@@ -353,6 +358,26 @@ def test_resonator_test_chip_layout_sax_simulation(nyancir_path: Path) -> None:
     """
     result = sax_sim.simulate_layout_sax(
         str(nyancir_path),
+        "qpdk.PDK",
+        # The API represents the 4--10 GHz band as wavelengths in µm.
+        wl_min=_SPEED_OF_LIGHT_UM_PER_S / 10e9,
+        wl_max=_SPEED_OF_LIGHT_UM_PER_S / 4e9,
+        wl_num=3,
+        sweep_frequency=True,
+    )
+    _assert_sweep_matches_reference(result)
+
+
+@pytest.mark.gfp
+def test_resonator_test_chip_sample_gsch_sax_simulation() -> None:
+    """Simulate the declarative sample ``.gsch`` through the layout pipeline.
+
+    The sample instantiates the chip's leaf factories directly (launchers,
+    straights, resonators) instead of wrapping the Python factory, so this
+    proves the fully extracted flat netlist matches the reference model.
+    """
+    result = sax_sim.simulate_layout_sax(
+        str(_SAMPLE_GSCH),
         "qpdk.PDK",
         # The API represents the 4--10 GHz band as wavelengths in µm.
         wl_min=_SPEED_OF_LIGHT_UM_PER_S / 10e9,
