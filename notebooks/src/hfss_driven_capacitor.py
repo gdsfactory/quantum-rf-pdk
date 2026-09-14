@@ -206,7 +206,7 @@ print(f"Solution type: {hfss.solution_type}")
 # ## Build Interdigital Capacitor Geometry
 #
 # Import the gdsfactory component geometry into HFSS using native GDS import.
-# This uses `Hfss.import_gds_3d` which automatically handles 3D layer mapping.
+# This uses {py:meth}`~ansys.aedt.core.hfss.Hfss.import_gds_3d` which automatically handles 3D layer mapping.
 
 # %%
 # Prepare component for export
