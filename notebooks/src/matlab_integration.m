@@ -1,4 +1,10 @@
-% --- jupyter:
+%---
+%jupyter:
+%   # The fences and root keys above sit tight against the `%` on purpose: the
+%   # matlab-reflow-comments hook merges adjacent comment lines whose inner
+%   # indent is a single space, which would fold `% ---` into `% jupyter:` and
+%   # leak this header into the generated notebook as a cell. Inner indents of
+%   # zero or of two-or-more spaces are both passed through untouched.
 %   jupytext:
 %     text_representation:
 %       extension: .m
@@ -9,7 +15,7 @@
 %     display_name: MATLAB Kernel
 %     language: matlab
 %     name: jupyter_matlab_kernel
-% ---
+%---
 
 % %% [markdown]
 %
