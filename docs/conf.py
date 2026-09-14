@@ -78,6 +78,7 @@ intersphinx_mapping = {
     "jax": ("https://docs.jax.dev/en/latest/", None),
     "gdsfactory": ("https://gdsfactory.github.io/gdsfactory/", None),
     "sax": ("https://gdsfactory.github.io/sax/", None),
+    "pyaedt": ("https://aedt.docs.pyansys.com/version/stable/", None),
 }
 
 # -- MyST configuration ------------------------------------------------------
