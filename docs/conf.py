@@ -7,6 +7,8 @@ from docutils import nodes
 from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator
 
+_TYPST_VISIT_MATH_BLOCK = TypstTranslator.visit_math_block
+
 project = "qpdk"
 author = "gdsfactory"
 copyright = "gdsfactory"  # ruff: ignore[builtin-variable-shadowing]
@@ -429,6 +431,79 @@ def _typst_string(text):
     )
 
 
+_TABULAR_RE = re.compile(
+    r"\\begin\{tabular\}\{([^}]*)\}(.*?)\\end\{tabular\}", re.DOTALL
+)
+
+
+def _typst_cell(cell):
+    """Convert one LaTeX table cell to a Typst content expression.
+
+    ``$...$`` spans are handed to mitex; the rest becomes a plain string.
+
+    Returns:
+        A Typst expression for the cell content.
+    """
+    parts = []
+    for index, chunk in enumerate(re.split(r"\$([^$]*)\$", cell.strip())):
+        if index % 2:
+            parts.append(f"mi(`{chunk}`)")
+        elif chunk:
+            parts.append(f'text("{_typst_string(chunk)}")')
+    return " + ".join(parts) if parts else '""'
+
+
+def _tabular_to_typst(latex):
+    """Convert a LaTeX ``tabular`` environment into a Typst ``table()`` call.
+
+    ``qpdk.helper.display_dataframe`` gives its tables a ``_repr_latex_``
+    (``DataFrame.to_latex()``, i.e. booktabs ``tabular``) so the LaTeX PDF
+    rendered a real table.  mitex is a *math* translator and aborts the whole
+    compile on ``tabular``, so the table is rebuilt as a native Typst one here
+    rather than being dropped -- the alternative mime types these outputs
+    carry are ``text/html`` and an unusable object ``repr``.
+
+    Returns:
+        The Typst ``table(...)`` source, or ``None`` if ``latex`` is not a
+        single ``tabular`` environment.
+    """
+    match = _TABULAR_RE.search(latex)
+    if match is None:
+        return None
+    columns = sum(match.group(1).count(spec) for spec in "lcr")
+    rows = []
+    for raw_row in match.group(2).split(r"\\"):
+        row = re.sub(r"\\(top|mid|bottom)rule", "", raw_row).strip()
+        if row:
+            rows.append([_typst_cell(cell) for cell in row.split("&")])
+    if not rows or columns == 0:
+        return None
+    header, *body = rows
+    lines = [
+        f"table(\n  columns: {columns},",
+        "  table.header(" + ", ".join(header) + "),",
+    ]
+    lines.extend("  " + ", ".join(row) + "," for row in body)
+    lines.append(")")
+    return "\n".join(lines)
+
+
+def _typst_visit_math_block(self, node):
+    """Render a ``tabular`` math block as a Typst table, else defer to typsphinx.
+
+    Returns:
+        Whatever typsphinx's own visitor returns, for ordinary math blocks.
+
+    Raises:
+        nodes.SkipNode: When the block was a table and is fully emitted here.
+    """
+    table = _tabular_to_typst(node.astext())
+    if table is None:
+        return _TYPST_VISIT_MATH_BLOCK(self, node)
+    self.add_text(table + "\n")
+    raise nodes.SkipNode
+
+
 def _typst_visit_passthrough(self, node):
     """Render a sphinx-design ``PassthroughTextElement`` in the Typst output.
 
@@ -541,3 +616,4 @@ def setup(app):
         setattr(TypstTranslator, f"visit_{name}", visit)
         if depart is not None:
             setattr(TypstTranslator, f"depart_{name}", depart)
+    TypstTranslator.visit_math_block = _typst_visit_math_block
