@@ -257,6 +257,11 @@ typst_elements = {
     "fontsize": "10pt",
 }
 typst_use_mitex = True
+# Brand-matched template (Outfit/Inter/Code New Roman, #2a6fb5 accent), chosen
+# over the stock typsphinx look and a classic serif report variant.  The whole
+# containing directory is copied to the build as the template bundle, so keep
+# `docs/typst/` to template files only.
+typst_template = "typst/qpdk.typ"
 
 # -- Warning suppression ------------------------------------------------------
 suppress_warnings = [
@@ -391,6 +396,24 @@ def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
     context["get_edit_provider_and_url"] = _get_edit_provider_and_url
 
 
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _typst_strip_ansi(app, doctree, _docname):
+    """Strip ANSI colour escapes from notebook stream output.
+
+    Cells that log through ``qpdk.logger`` emit coloured stderr.  myst-nb turns
+    those escapes into styled spans for HTML, but the Typst builder has no such
+    handling and the raw ``ESC[36m`` bytes end up printed in the PDF.
+    """
+    if app.builder.name not in {"typst", "typstpdf"}:
+        return
+    for node in list(doctree.findall(nodes.Text)):
+        stripped = _ANSI_RE.sub("", node.astext())
+        if stripped != node.astext():
+            node.parent.replace(node, nodes.Text(stripped))
+
+
 def _typst_drop_unresolved_myst_xrefs(app, doctree, _docname):
     """Render MyST cross-references that did not resolve as plain text.
 
@@ -470,6 +493,9 @@ def _tabular_to_typst(latex):
     match = _TABULAR_RE.search(latex)
     if match is None:
         return None
+    # Every spec `DataFrame.to_latex()` emits here is plain `[lr]+` (`llll`,
+    # `lrrrr`), so counting alignment letters is enough; a spec with widths
+    # (`p{3cm}`) or `@{}` padding would need real parsing.
     columns = sum(match.group(1).count(spec) for spec in "lcr")
     rows = []
     for raw_row in match.group(2).split(r"\\"):
@@ -589,6 +615,7 @@ def setup(app):
 
     app.connect("source-read", replace_image_paths)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
+    app.connect("doctree-resolved", _typst_strip_ansi)
     # Convert $-delimited math before any other processing
     app.connect("autodoc-process-docstring", dollar_math_handler, priority=100)
     # We use a late priority to ensure we see the types added by autodoc
