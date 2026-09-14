@@ -8,6 +8,8 @@ from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator
 
 _TYPST_VISIT_MATH_BLOCK = TypstTranslator.visit_math_block
+_TYPST_VISIT_LIST_ITEM = TypstTranslator.visit_list_item
+_TYPST_DEPART_LIST_ITEM = TypstTranslator.depart_list_item
 
 project = "qpdk"
 author = "gdsfactory"
@@ -529,6 +531,32 @@ def _typst_visit_math_block(self, node):
     raise nodes.SkipNode
 
 
+def _typst_visit_list_item(self, node):
+    """Open a list item with the surrounding code-mode concat context suppressed.
+
+    A list inside a field body (a Napoleon ``Returns:`` block whose text is
+    followed by bullets) is emitted as ``list({...}, {...})`` while typsphinx
+    still considers the field body an active ``+``-concatenation context, so
+    every item after the first opens with a stray unary ``+`` and Typst fails
+    with "cannot apply unary '+' to content".  Each item's ``{ }`` block is a
+    fresh context, so suppress the outer one exactly as typsphinx's own
+    ``_enter_inline_concat_element`` does for emphasis, strong and links.
+    """
+    _TYPST_VISIT_LIST_ITEM(self, node)
+    context = self._inline_concat_context()
+    self.__dict__.setdefault("_qpdk_list_item_concat", []).append(context)
+    if context is not None:
+        setattr(self, context[0], False)
+
+
+def _typst_depart_list_item(self, node):
+    """Restore the concat context suppressed by :func:`_typst_visit_list_item`."""
+    context = self._qpdk_list_item_concat.pop()
+    if context is not None:
+        setattr(self, context[0], True)
+    _TYPST_DEPART_LIST_ITEM(self, node)
+
+
 def _typst_visit_passthrough(self, node):
     """Render a sphinx-design ``PassthroughTextElement`` in the Typst output.
 
@@ -643,3 +671,5 @@ def setup(app):
         if depart is not None:
             setattr(TypstTranslator, f"depart_{name}", depart)
     TypstTranslator.visit_math_block = _typst_visit_math_block
+    TypstTranslator.visit_list_item = _typst_visit_list_item
+    TypstTranslator.depart_list_item = _typst_depart_list_item
