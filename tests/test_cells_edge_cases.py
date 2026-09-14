@@ -1,9 +1,10 @@
 """Tests for cell validation edge cases — resonator, waveguides."""
 
+import gdsfactory as gf
 import pytest
 
 from qpdk.cells.resonator import resonator
-from qpdk.cells.waveguides import bend_circular
+from qpdk.cells.waveguides import bend_circular, tee
 
 
 class TestResonatorValidation:
@@ -61,6 +62,28 @@ class TestResonatorValidation:
         """Test resonator with closed start."""
         c = resonator(length=4000, meanders=4, open_start=False)
         assert c is not None
+
+
+class TestTee:
+    """Tests for tee junction consistency with the attached straights."""
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "cross_section_name",
+        ["cpw", "meander_inductor_cross_section", "superinductor_cross_section"],
+    )
+    def test_junction_widths_match_cross_section(cross_section_name: str) -> None:
+        """Test that junction ports match the cross-section width and layer.
+
+        The junction must not be built with the default CPW width (10 µm) or
+        layer (M1_DRAW) when ``tee`` is given a different cross-section.
+        """
+        cross_section = gf.get_cross_section(cross_section_name)
+        c = tee(cross_section=cross_section_name)
+        junction = next(inst for inst in c.insts if inst.cell.name.startswith("nxn"))
+        for port in junction.ports:
+            assert port.width == pytest.approx(cross_section.width)
+            assert port.layer == gf.get_layer(cross_section.layer)
 
 
 class TestBendCircularEdgeCases:
