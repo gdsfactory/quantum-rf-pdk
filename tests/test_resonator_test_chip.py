@@ -1,11 +1,14 @@
 """Tests for resonator test-chip samples."""
 
+import json
 from pathlib import Path
+from typing import Any
 
 import gdsfactory as gf
 import numpy as np
 import pytest
 import sax
+from conftest import import_gfp_module
 
 from qpdk import PDK
 from qpdk.models import models
@@ -15,9 +18,39 @@ from qpdk.models.resonator import (
 )
 from qpdk.samples.resonator_test_chip import resonator_test_chip_python
 
-YAML_SAMPLE = (
-    Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_yaml.pic.yml"
-)
+GSCH_SAMPLE = Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_yaml.gsch"
+
+_SPEED_OF_LIGHT_UM_PER_S = 299_792_458_000_000.0
+
+
+@pytest.fixture(scope="module")
+def mosaic_project_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build a self-contained project root for the Mosaic SAX pipeline.
+
+    The pipeline resolves the ``.gsch`` and ``models.nyanlib`` through
+    nyancad's ``FileAPI`` relative to ``project_root``. Pointing at the
+    repository root would depend on the gitignored
+    ``build/models.nyanlib``, which the ``gfp_server`` fixture deletes and
+    regenerates on a separate xdist worker.
+
+    Returns:
+        Path to the temporary project root.
+    """
+    root = tmp_path_factory.mktemp("sample_mosaic")
+    (root / GSCH_SAMPLE.name).write_text(GSCH_SAMPLE.read_text())
+    nyanlib = {
+        f"models:{qualname}": {"name": name, "type": "ckt", "tags": ["qpdk"]}
+        for qualname, name in (
+            ("qpdk.cells.launcher.launcher", "launcher"),
+            (
+                "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+                "quarter_wave_resonator_coupled",
+            ),
+            ("qpdk.cells.waveguides.straight", "straight"),
+        )
+    }
+    (root / "models.nyanlib").write_text(json.dumps(nyanlib, indent=2))
+    return root
 
 
 @pytest.mark.parametrize(
@@ -74,33 +107,54 @@ def test_resonator_test_chip_has_readable_instance_names() -> None:
     assert set(netlist["instances"]) == expected_names
 
 
+@pytest.mark.gfp
 def test_resonator_test_chip_yaml_matches_python() -> None:
-    """Keep the YAML as a visible wrapper with identical Python geometry."""
+    """Materialize the ``.gsch`` sample and match the Python chip exactly."""
+    nyancir = import_gfp_module("gdsfactoryplus.nyancir_to_dschematic")
+    dschematic = import_gfp_module("gdsfactoryplus.dschematic_to_gds")
+
+    result = nyancir.nyancir_to_dschematic(str(GSCH_SAMPLE), "qpdk.PDK")
+    cell, errors = dschematic.materialize_dschematic(
+        result.top,
+        kcl=result.kcl,
+        schem_name=result.schem_name,
+        factories=result.factories,
+    )
+    assert not errors, errors
+
     python_component = resonator_test_chip_python()
-    yaml_component = gf.read.from_yaml(
-        YAML_SAMPLE,
-        name="resonator_test_chip_yaml_parity",
-        label_instance_function=lambda **_kwargs: None,
-    )
 
-    yaml_netlist = yaml_component.get_netlist(on_dangling_port="ignore")
-    assert set(yaml_netlist["instances"]) == {"resonator_test_chip"}
-    assert yaml_netlist["instances"]["resonator_test_chip"]["component"] == (
-        "resonator_test_chip_python"
-    )
-    assert yaml_netlist["ports"] == {
-        port_name: f"resonator_test_chip,{port_name}"
-        for port_name in ("o1", "o2", "o3", "o4")
+    assert {port.name for port in cell.ports} == {
+        port.name for port in python_component.ports
     }
-    assert yaml_component.dbbox() == python_component.dbbox()
-    assert set(yaml_component.layers) == set(python_component.layers)
+    dbu = cell.kcl.dbu
+    for name in ("o1", "o2", "o3", "o4"):
+        gsch_port = cell.ports[name]
+        python_port = python_component.ports[name]
+        assert not gsch_port.trans.is_mirror()
+        assert (
+            gsch_port.trans.disp.x * dbu,
+            gsch_port.trans.disp.y * dbu,
+        ) == tuple(python_port.center)
+        assert gsch_port.angle * 90 == python_port.orientation
+        # kf3 port width is already in microns, unlike trans.disp.
+        assert gsch_port.width == python_port.width
 
-    for layer in python_component.layers:
-        layer_index = gf.get_layer(layer)
-        python_region = gf.kdb.Region(python_component.begin_shapes_rec(layer_index))
-        yaml_region = gf.kdb.Region(yaml_component.begin_shapes_rec(layer_index))
+    def layer_regions(component: Any) -> dict[Any, gf.kdb.Region]:
+        layout = component.kcl.layout
+        regions: dict[Any, gf.kdb.Region] = {}
+        for layer_index in layout.layer_indexes():
+            info = layout.get_info(layer_index)
+            region = gf.kdb.Region(component.begin_shapes_rec(layer_index))
+            if not region.is_empty():
+                regions[info] = region
+        return regions
 
-        assert (python_region ^ yaml_region).is_empty()
+    gsch_regions = layer_regions(cell)
+    python_regions = layer_regions(python_component)
+    assert set(gsch_regions) == set(python_regions)
+    for info in gsch_regions:
+        assert (gsch_regions[info] ^ python_regions[info]).is_empty(), str(info)
 
 
 def test_resonator_test_chip_uses_registered_cross_sections() -> None:
@@ -226,7 +280,7 @@ def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
 
 
 def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
-    """Keep the YAML sample usable by legacy recursive-netlist simulation."""
+    """Keep the ``.gsch`` sample usable via its registered SAX model."""
     assert models["resonator_test_chip_yaml"] is resonator_test_chip_yaml
 
     s_params = resonator_test_chip_yaml(f=[7e9])
@@ -239,3 +293,44 @@ def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
         "o3",
         "o4",
     }
+
+
+@pytest.mark.gfp
+def test_resonator_test_chip_yaml_mosaic_sax_solves(
+    mosaic_project_root: Path,
+) -> None:
+    """Solve the SAX circuit gfp builds from the ``.gsch`` sample's nets."""
+    gfp_sax = import_gfp_module("gdsfactoryplus.sim.sax")
+
+    wl_num = 5
+    result = gfp_sax.simulate_mosaic_sax(
+        str(mosaic_project_root / GSCH_SAMPLE.name),
+        "qpdk.PDK",
+        # The 4--10 GHz design band, as wavelengths in µm.
+        _SPEED_OF_LIGHT_UM_PER_S / 10e9,
+        _SPEED_OF_LIGHT_UM_PER_S / 4e9,
+        wl_num,
+        str(mosaic_project_root),
+        sweep_frequency=True,
+    )
+
+    # Each probeline couples only its own two launchers.
+    expected_keys = {
+        f"o{out},o{inp}"
+        for out, inp in (
+            (1, 1),
+            (1, 2),
+            (2, 1),
+            (2, 2),
+            (3, 3),
+            (3, 4),
+            (4, 3),
+            (4, 4),
+        )
+    }
+    assert set(result["sdict"]) == expected_keys
+    for value in result["sdict"].values():
+        assert len(value["real"]) == wl_num
+        assert len(value["imag"]) == wl_num
+        assert np.isfinite(value["real"]).all()
+        assert np.isfinite(value["imag"]).all()

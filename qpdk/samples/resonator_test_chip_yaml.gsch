@@ -1,0 +1,792 @@
+{
+  "probe_west_bot": {
+    "type": "ckt",
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "probe_west_bot",
+    "x": 0,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "nets": {
+      "o1": "net_probeline_sbend_west_bot",
+      "waveport": "net_port_o3"
+    }
+  },
+  "probe_east_bot": {
+    "type": "ckt",
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "probe_east_bot",
+    "x": 180,
+    "y": 0,
+    "orientation": 180,
+    "mirror": true,
+    "nets": {
+      "o1": "net_probeline_sbend_east_bot",
+      "waveport": "net_port_o4"
+    }
+  },
+  "probeline_straight_west_bot": {
+    "type": "ckt",
+    "model": "qpdk.cells.waveguides.straight",
+    "name": "probeline_straight_west_bot",
+    "x": 20,
+    "y": 0,
+    "orientation": 180,
+    "mirror": false,
+    "props": {
+      "length": 200.0,
+      "cross_section": "coplanar_waveguide"
+    },
+    "nets": {
+      "o1": "net_probeline_abut_west_bot",
+      "o2": "net_probeline_sbend_west_bot"
+    }
+  },
+  "probeline_straight_east_bot": {
+    "type": "ckt",
+    "model": "qpdk.cells.waveguides.straight",
+    "name": "probeline_straight_east_bot",
+    "x": 164,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 400.0,
+      "cross_section": "coplanar_waveguide"
+    },
+    "nets": {
+      "o1": "net_probeline_abut_east_bot",
+      "o2": "net_probeline_sbend_east_bot"
+    }
+  },
+  "probe_west_top": {
+    "type": "ckt",
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "probe_west_top",
+    "x": 0,
+    "y": 20,
+    "orientation": 0,
+    "mirror": false,
+    "nets": {
+      "o1": "net_probeline_sbend_west_top",
+      "waveport": "net_port_o1"
+    }
+  },
+  "probe_east_top": {
+    "type": "ckt",
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "probe_east_top",
+    "x": 180,
+    "y": 20,
+    "orientation": 180,
+    "mirror": true,
+    "nets": {
+      "o1": "net_probeline_sbend_east_top",
+      "waveport": "net_port_o2"
+    }
+  },
+  "probeline_straight_west_top": {
+    "type": "ckt",
+    "model": "qpdk.cells.waveguides.straight",
+    "name": "probeline_straight_west_top",
+    "x": 20,
+    "y": 20,
+    "orientation": 180,
+    "mirror": false,
+    "props": {
+      "length": 200.0,
+      "cross_section": "coplanar_waveguide"
+    },
+    "nets": {
+      "o1": "net_probeline_abut_west_top",
+      "o2": "net_probeline_sbend_west_top"
+    }
+  },
+  "probeline_straight_east_top": {
+    "type": "ckt",
+    "model": "qpdk.cells.waveguides.straight",
+    "name": "probeline_straight_east_top",
+    "x": 164,
+    "y": 20,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 400.0,
+      "cross_section": "coplanar_waveguide"
+    },
+    "nets": {
+      "o1": "net_probeline_abut_east_top",
+      "o2": "net_probeline_sbend_east_top"
+    }
+  },
+  "resonator_bot_1": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_1",
+    "x": 20,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 3600.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_abut_west_bot",
+      "coupling_o2": "net_probeline_straight_bot_1"
+    }
+  },
+  "resonator_bot_2": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_2",
+    "x": 40,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 3800.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_bot_1",
+      "coupling_o2": "net_probeline_straight_bot_2"
+    }
+  },
+  "resonator_bot_3": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_3",
+    "x": 60,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 4000.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_bot_2",
+      "coupling_o2": "net_probeline_straight_bot_3"
+    }
+  },
+  "resonator_bot_4": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_4",
+    "x": 80,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 4200.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_bot_3",
+      "coupling_o2": "net_probeline_straight_bot_4"
+    }
+  },
+  "resonator_bot_5": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_5",
+    "x": 100,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 4400.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_bot_4",
+      "coupling_o2": "net_probeline_straight_bot_5"
+    }
+  },
+  "resonator_bot_6": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_6",
+    "x": 120,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 4600.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_bot_5",
+      "coupling_o2": "net_probeline_straight_bot_6"
+    }
+  },
+  "resonator_bot_7": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_7",
+    "x": 140,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 4800.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_bot_6",
+      "coupling_o2": "net_probeline_straight_bot_7"
+    }
+  },
+  "resonator_bot_8": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_8",
+    "x": 160,
+    "y": 0,
+    "orientation": 0,
+    "mirror": false,
+    "props": {
+      "length": 5000.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_bot_7",
+      "coupling_o2": "net_probeline_abut_east_bot"
+    }
+  },
+  "resonator_top_1": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_1",
+    "x": 20,
+    "y": 20,
+    "orientation": 0,
+    "mirror": true,
+    "props": {
+      "length": 3700.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_abut_west_top",
+      "coupling_o2": "net_probeline_straight_top_1"
+    }
+  },
+  "resonator_top_2": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_2",
+    "x": 40,
+    "y": 20,
+    "orientation": 0,
+    "mirror": true,
+    "props": {
+      "length": 3900.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_top_1",
+      "coupling_o2": "net_probeline_straight_top_2"
+    }
+  },
+  "resonator_top_3": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_3",
+    "x": 60,
+    "y": 20,
+    "orientation": 0,
+    "mirror": true,
+    "props": {
+      "length": 4100.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_top_2",
+      "coupling_o2": "net_probeline_straight_top_3"
+    }
+  },
+  "resonator_top_4": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_4",
+    "x": 80,
+    "y": 20,
+    "orientation": 0,
+    "mirror": true,
+    "props": {
+      "length": 4300.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_top_3",
+      "coupling_o2": "net_probeline_straight_top_4"
+    }
+  },
+  "resonator_top_5": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_5",
+    "x": 100,
+    "y": 20,
+    "orientation": 0,
+    "mirror": true,
+    "props": {
+      "length": 4500.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_top_4",
+      "coupling_o2": "net_probeline_straight_top_5"
+    }
+  },
+  "resonator_top_6": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_6",
+    "x": 120,
+    "y": 20,
+    "orientation": 0,
+    "mirror": true,
+    "props": {
+      "length": 4700.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_top_5",
+      "coupling_o2": "net_probeline_straight_top_6"
+    }
+  },
+  "resonator_top_7": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_7",
+    "x": 140,
+    "y": 20,
+    "orientation": 0,
+    "mirror": true,
+    "props": {
+      "length": 4900.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_top_6",
+      "coupling_o2": "net_probeline_straight_top_7"
+    }
+  },
+  "resonator_top_8": {
+    "type": "ckt",
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_8",
+    "x": 160,
+    "y": 20,
+    "orientation": 0,
+    "mirror": true,
+    "props": {
+      "length": 5100.0,
+      "meanders": 6,
+      "cross_section": "coplanar_waveguide",
+      "open_start": true,
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "coupling_straight_length": 200.0,
+      "coupling_gap": 16.0
+    },
+    "nets": {
+      "coupling_o1": "net_probeline_straight_top_7",
+      "coupling_o2": "net_probeline_abut_east_top"
+    }
+  },
+  "probeline_sbend_west_bot": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "probe_west_bot",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "probeline_straight_west_bot",
+        "port_name": "o2"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_sbend_west_bot"
+  },
+  "probeline_straight_bot_1": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_1",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_2",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_bot_1"
+  },
+  "probeline_straight_bot_2": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_2",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_3",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_bot_2"
+  },
+  "probeline_straight_bot_3": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_3",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_4",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_bot_3"
+  },
+  "probeline_straight_bot_4": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_4",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_5",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_bot_4"
+  },
+  "probeline_straight_bot_5": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_5",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_6",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_bot_5"
+  },
+  "probeline_straight_bot_6": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_6",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_7",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_bot_6"
+  },
+  "probeline_straight_bot_7": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_7",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_8",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_bot_7"
+  },
+  "probeline_sbend_east_bot": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "probeline_straight_east_bot",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "probe_east_bot",
+        "port_name": "o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_sbend_east_bot"
+  },
+  "probeline_sbend_west_top": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "probe_west_top",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "probeline_straight_west_top",
+        "port_name": "o2"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_sbend_west_top"
+  },
+  "probeline_straight_top_1": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_1",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_top_2",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_top_1"
+  },
+  "probeline_straight_top_2": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_2",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_top_3",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_top_2"
+  },
+  "probeline_straight_top_3": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_3",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_top_4",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_top_3"
+  },
+  "probeline_straight_top_4": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_4",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_top_5",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_top_4"
+  },
+  "probeline_straight_top_5": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_5",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_top_6",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_top_5"
+  },
+  "probeline_straight_top_6": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_6",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_top_7",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_top_6"
+  },
+  "probeline_straight_top_7": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_7",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_top_8",
+        "port_name": "coupling_o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_straight_top_7"
+  },
+  "probeline_sbend_east_top": {
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "probeline_straight_east_top",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "probe_east_top",
+        "port_name": "o1"
+      }
+    },
+    "cross_section": "coplanar_waveguide",
+    "net": "net_probeline_sbend_east_top"
+  },
+  "port_o1": {
+    "type": "port",
+    "name": "o1",
+    "nature": "photonic",
+    "nets": {
+      "P": "net_port_o1"
+    },
+    "attached_port": {
+      "component_id": "probe_west_top",
+      "port_name": "waveport"
+    }
+  },
+  "port_o2": {
+    "type": "port",
+    "name": "o2",
+    "nature": "photonic",
+    "nets": {
+      "P": "net_port_o2"
+    },
+    "attached_port": {
+      "component_id": "probe_east_top",
+      "port_name": "waveport"
+    }
+  },
+  "port_o3": {
+    "type": "port",
+    "name": "o3",
+    "nature": "photonic",
+    "nets": {
+      "P": "net_port_o3"
+    },
+    "attached_port": {
+      "component_id": "probe_west_bot",
+      "port_name": "waveport"
+    }
+  },
+  "port_o4": {
+    "type": "port",
+    "name": "o4",
+    "nature": "photonic",
+    "nets": {
+      "P": "net_port_o4"
+    },
+    "attached_port": {
+      "component_id": "probe_east_bot",
+      "port_name": "waveport"
+    }
+  }
+}
