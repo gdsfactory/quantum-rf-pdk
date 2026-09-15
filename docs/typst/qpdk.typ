@@ -94,7 +94,7 @@
   // Math in Fira Math, matching the HTML MathJax font (mathjax4_config).
   show math.equation: set text(font: math-font)
 
-  show raw: set text(font: mono-font, size: 0.92em)
+  show raw: set text(font: mono-font, size: 0.875em)
   show: codly-init.with()
   codly(
     languages: codly-languages,
@@ -102,6 +102,16 @@
     fill: rgb("#fbfbfc"),
     stroke: 0.5pt + rule,
     number-format: none,
+  )
+  // Inline code renders as the site's `code.literal` chip: light surface,
+  // hairline border, small radius, Bootstrap's violet --bs-code-color.  Must
+  // come after codly-init so it styles what codly leaves untouched.
+  show raw.where(block: false): it => box(
+    fill: rgb("#f3f4f5"),
+    stroke: 0.5pt + rgb("#d1d5da"),
+    radius: 3pt,
+    inset: (x: 3pt, y: 1.2pt),
+    text(fill: rgb("#912583"), it),
   )
 
   // Figures and tables
