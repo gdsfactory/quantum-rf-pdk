@@ -1,6 +1,7 @@
 """Sphinx configuration for Qpdk documentation."""
 
 import re
+import tempfile
 from pathlib import Path
 
 import typst
@@ -302,11 +303,34 @@ def _repair_svgbob_svgs(root):
         )
 
 
+def _check_docs_fonts(font_paths):
+    """Fail before compiling when the docs font families do not resolve."""
+    # typst.compile() silently discards font warnings, so an unfound family
+    # just falls back to tofu; only compile_with_warnings reports it.
+    families = ("Outfit", "Inter", "Code New Roman", "Fira Math")
+    with tempfile.TemporaryDirectory() as tmp:
+        probe = Path(tmp) / "font-probe.typ"
+        probe.write_text("".join(f'#text(font: ("{f}",))[a]\n' for f in families))
+        _, warnings = typst.compile_with_warnings(
+            str(probe), font_paths=font_paths or []
+        )
+    reported = {w.message for w in warnings}
+    missing = sorted(
+        f for f in families if f"unknown font family: {f.lower()}" in reported
+    )
+    if missing:
+        raise RuntimeError(
+            f"Typst cannot resolve the docs fonts: {', '.join(missing)}. "
+            "Run `just fetch-docs-fonts` or install them system-wide, then rebuild."
+        )
+
+
 def _typst_compile_with_fonts(*args, **kwargs):
     """Compile Typst as PDF/A-2b, with the local docs font cache when present."""
     kwargs.setdefault("pdf_standards", ["a-2b"])
     if _local_fonts.is_dir():
         kwargs.setdefault("font_paths", [str(_local_fonts)])
+    _check_docs_fonts(kwargs.get("font_paths"))
     root = Path(kwargs.get("root") or Path(args[0]).parent)
     if root.is_dir():
         _repair_svgbob_svgs(root)
