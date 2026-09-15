@@ -26,12 +26,8 @@ check-lfs:
         echo "Git LFS is available. Pulling LFS files…"
         git lfs pull
     elif command -v jj >/dev/null 2>&1 && jj git root >/dev/null 2>&1; then
-        # jj workspaces have no .git and jj never runs smudge filters, so the
-        # working copies hold LFS pointer text. Smudge each file in place via
-        # the backing git dir (smudge fetches missing objects on demand).
-        # The smudged files then show up as modified in jj; restore them from
-        # the parent commit before describing/pushing real work:
-        #   jj restore --from @- tests/models/data tests/test_models_regression
+        # jj does not run smudge filters, so create a private child change for
+        # the fetched content rather than leaving LFS files dirty in real work.
         echo "Git LFS is available. Smudging LFS files in the jj working copy…"
         gitdir=$(jj git root)
         mapfile -t lfs_files < <(git --git-dir "$gitdir" lfs ls-files -n)
@@ -39,6 +35,7 @@ check-lfs:
             echo "Error: Git LFS tracks no files in the backing repository." >&2
             exit 1
         fi
+        pointer_files=()
         for f in "${lfs_files[@]}"; do
             if [[ ! -f "$f" ]]; then
                 echo "Error: LFS-tracked file is missing from the workspace: $f" >&2
@@ -50,6 +47,12 @@ check-lfs:
                 <(printf 'version https://git-lfs.github.com/spec/v1'); then
                 continue
             fi
+            pointer_files+=("$f")
+        done
+        if ((${#pointer_files[@]})); then
+            jj new -m "private: lfs"
+        fi
+        for f in "${pointer_files[@]}"; do
             tmp=$(mktemp "$f.XXXXXX")
             GIT_LFS_SKIP_SMUDGE=0 git --git-dir "$gitdir" lfs smudge < "$f" > "$tmp"
             if cmp -s <(head -c 42 "$tmp") \
