@@ -13,8 +13,9 @@
 # This notebook compares CPU and GPU execution of the driven Palace simulation from the
 # `palace_driven_resonator` notebook. Both runs used the identical mesh, geometry, and
 # `config.json` produced by gsim there; the only configuration difference is the solver
-# device (`"Device": "CPU"` versus `"Device": "GPU"`). The timings reported by Palace are
-# embedded below, so the analysis cells run without any Palace installation.
+# device (`"Device": "CPU"` versus `"Device": "GPU"`). A single live run cannot produce
+# both datasets (the GPU run needs a CUDA machine), so the timings below are recorded
+# measurements from the two runs, not values the notebook recomputes.
 #
 # The runs used:
 #

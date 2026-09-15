@@ -178,3 +178,6 @@ scripts/
 sbom.json
 bom.json
 bom.xml
+
+# Palace notebook simulation output
+sim_qpdk_resonator/

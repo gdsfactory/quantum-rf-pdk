@@ -112,10 +112,12 @@ mathjax4_config = {
 nb_execution_mode = "cache"
 # Exclude HFSS notebooks from execution as they depend on Ansys HFSS
 # (proprietary/licensed software) and can be slow or impossible to run
-# in typical documentation build environments.
+# in typical documentation build environments. The Palace notebooks run
+# the solver for real, which takes far too long for a docs build.
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
     "notebooks/matlab_integration*",
+    "notebooks/palace*",
 ]
 nb_execution_timeout = -1
 nb_execution_allow_errors = False
