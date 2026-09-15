@@ -46,6 +46,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
+        "scipy",
         "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
@@ -68,7 +69,8 @@ PDK.activate()
 # The device under test is a meandering half-wave resonator (`resonator_coupled`) with two
 # straight feed lines capacitively coupled to it. Each feed is routed to the resonator
 # coupling gap with smooth s-bends, using a CPW cross section that carries airbridges so
-# the ground plane stays equipotential across the bends.
+# the ground plane stays equipotential across the bends. The airbridge metal itself is
+# left out of the FEM geometry below; only the planar M1 conductor layer is simulated.
 
 # %%
 
@@ -1267,29 +1269,32 @@ print(f"Lorentzian fit: f0 = {fit_f0:.6f} GHz, Q = {fit_q:.1f}")
 #
 # Palace saves the electric field at the requested frequencies (`save_fields_at`) in the
 # `output/palace/paraview/` directory. gsim's `load_fields` helper reads them into a
-# PyVista volume for inspection:
+# PyVista volume for inspection, and `plot_topview` slices it at a given height and
+# renders a top view of the named field:
 #
 # ```python
-# from gsim.palace.postpro import load_fields, plot_topview
+# from gsim.palace.results import load_fields
+# from gsim.viz import plot_topview
 #
-# vol = load_fields(results_dir, excitation=2)
-# vpts = vol.slice(normal="z", origin=(0, 0, substrate_thickness)).points
-# plot_topview(vpts, np.linalg.norm(vol_slice.point_data["E_real"], axis=1),
-#              f"|E| at {freq_ghz:.4f} GHz (V/m)")
+# vol = load_fields("sim_qpdk_resonator", excitation=2)
+# plot_topview(vol, field="E_real", z=substrate_thickness,
+#              title="|E| at 7.7800 GHz (V/m)")
 # ```
 #
-# The field snapshot at the resonance shows the energy concentrated along the meander,
-# with fringing fields strongest at the coupling gaps, exactly where the layout geometry
-# controls the external quality factor.
+# The snapshot is taken at 7.78 GHz, about 11 MHz above the resonance dip, so the fields
+# are close to but not exactly the resonant mode. They show the energy concentrated along
+# the meander, with fringing fields strongest at the coupling gaps, exactly where the
+# layout geometry controls the external quality factor.
 
 # %% [markdown]
 # ## Summary
 #
 # Starting from a pure qpdk layout, the gsim meshing pipeline plus a parallel Palace
 # solve yields the full-wave S₂₁ response of a coupled CPW resonator, including the
-# anisotropic sapphire substrate and realistic port terminations, without any commercial
-# solver license. Compared to the SAX circuit models in the other notebooks, this FEM
-# result captures geometry-dependent effects (radiation, substrate modes, finite ground
-# plane) at a substantially higher computational cost, so the two approaches complement
-# each other: circuit models to explore the design space, FEM to verify the final
-# geometry.
+# anisotropic sapphire substrate, without any commercial solver license. The geometry is
+# the planar M1 conductor only; the airbridges drawn on their own layers are not part of
+# the mesh, so the ground plane is a single etched sheet with no cross-connections.
+# Compared to the SAX circuit models in the other notebooks, this FEM result captures
+# geometry-dependent effects (radiation, substrate modes) at a substantially higher
+# computational cost, so the two approaches complement each other: circuit models to
+# explore the design space, FEM to verify the final geometry.

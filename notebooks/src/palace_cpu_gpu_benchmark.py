@@ -203,16 +203,18 @@ plt.show()
 #   alone takes 12.3 s on the GPU job against 0.8 s on CPU.
 #
 # Two lessons follow. First, a single GPU replaces a small CPU allocation for this
-# problem size, at lower memory (2.4 GB against 6.6 GB peak) as well as lower wall time.
-# Second, the GPU advantage grows with the linear-algebra share: a bigger mesh, higher
-# element order, or a tighter adaptive tolerance makes the preconditioner and solve
-# phases dominate even more, while the serial meshing and postprocessing overhead stays
-# roughly fixed.
+# problem size, at lower memory as well as lower wall time. The figures above are the
+# peak memory Palace reports for each job, aggregated over all ranks: 6.6 GB for the
+# 8-rank CPU run (about 0.9 GB per rank, well under the 24 GB request) against 2.4 GB
+# for the single-rank GPU run. Second, the GPU advantage grows with the
+# linear-algebra share: a bigger mesh, higher element order, or a tighter adaptive
+# tolerance makes the preconditioner and solve phases dominate even more, while the
+# serial meshing and postprocessing overhead stays roughly fixed.
 #
-# The results are numerically identical, not approximately equal: both runs converged
-# the adaptive sweep with the same 14 solve samples (greedy error indicator 4.2e-05
-# against a 2e-02 tolerance), and the resulting `port-S.csv` files agree to about 1e-9.
-# Nothing about the GPU path is an approximation.
+# The two runs converged the adaptive sweep with the same 14 solve samples (greedy error
+# indicator 4.2e-05 against a 2e-02 tolerance), and the resulting `port-S.csv` files
+# agree to about 1e-9, i.e. single-precision round-off level. The GPU path is not an
+# approximation of the CPU result.
 
 # %% [markdown]
 # ## Summary
