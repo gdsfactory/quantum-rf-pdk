@@ -11,11 +11,11 @@
 # # Monte Carlo Fabrication Tolerance Analysis
 #
 # This notebook demonstrates how to run a circuit-level SAX simulation of the
-# `resonator_test_chip_python` component, which is defined in the QPDK sample
-# scripts (and available declaratively as a `.gsch` schematic).
+# `resonator_test_chip_yaml` component, which is defined via a `.pic.yml` netlist
+# file and a corresponding gdsfactory+ schematic.
 #
 # The workflow is:
-# 1. Build the component with the sample factory.
+# 1. Load the component from the YAML netlist with gdsfactory.
 # 2. Extract the netlist for circuit simulation.
 # 3. Build a SAX circuit using the QPDK model library.
 # 4. Evaluate the S-parameters over a frequency range.
@@ -45,6 +45,7 @@ import warnings
 from collections.abc import Sequence
 from typing import Any
 
+import gdsfactory as gf
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
@@ -59,7 +60,6 @@ from qpdk import PATH, PDK
 from qpdk.helper import display_dataframe
 from qpdk.models import models
 from qpdk.models.cpw import cpw_parameters
-from qpdk.samples.resonator_test_chip import resonator_test_chip_python
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -98,11 +98,13 @@ def ray_get_with_progress(
 # %% [markdown]
 # ## Load the component
 #
-# The resonator test chip sample contains 16 quarter-wave coupled resonators
+# The resonator test chip is defined in a `.pic.yml` file that lives alongside
+# the QPDK sample scripts.  It contains 16 quarter-wave coupled resonators
 # (8 per probeline), four launchers, and CPW routing between all elements.
 
 # %%
-chip = resonator_test_chip_python()
+yaml_path = PATH.samples / "resonator_test_chip_yaml.pic.yml"
+chip = gf.read.from_yaml(yaml_path)
 chip.plot()
 
 # %% [markdown]

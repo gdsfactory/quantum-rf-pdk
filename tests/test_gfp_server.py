@@ -8,8 +8,8 @@ this PDK:
   (the Python SDK ``gdsfactoryplus.settings.get_settings()`` only reads
   defaults, so it is intentionally not used here).
 - Indexing: ``gfp stats``/``gfp index`` discovers qpdk cells and the
-  sample factories (``.pic.yml`` and ``.gsch``); the server exposes Python
-  factories via ``listFactories``.
+  ``.pic.yml`` sample factories; the server exposes Python factories via
+  ``listFactories``.
 - Nyanlib generation: server startup writes ``build/models.nyanlib``.
 
 The tests need the ``gfp`` binary, which is not pip-installable. Discovery:
@@ -54,12 +54,11 @@ _EOF = object()
 # run the suite with ``--dist loadgroup`` (test-gfp does).
 pytestmark = pytest.mark.xdist_group("gfp-server")
 
-#: Sample factories that indexing must discover from ``qpdk/samples/``
-#: (the first two are ``.pic.yml``, the third a ``.gsch``).
-SAMPLE_FACTORIES = (
+#: ``.pic.yml`` factories that indexing must discover from ``qpdk/samples/``.
+PIC_YAML_FACTORIES = (
     "qubit_test_chip",
     "flipmon_test_chip",
-    "resonator_test_chip_schematic",
+    "resonator_test_chip_yaml",
 )
 
 #: Well-known qpdk cells that must appear in the generated nyanlib.
@@ -411,7 +410,7 @@ def test_server_indexes_qpdk_cells(gfp_server: GfpServer) -> None:
 
 @pytest.mark.gfp
 def test_gfp_stats_subprocess(gfp_bin: str) -> None:
-    """``gfp stats`` succeeds, indexes qpdk and discovers the sample factories."""
+    """``gfp stats`` succeeds, indexes qpdk and discovers the pic.yml factories."""
     result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [gfp_bin, "--cwd", str(PROJECT_ROOT), "stats"],
         capture_output=True,
@@ -430,7 +429,7 @@ def test_gfp_stats_subprocess(gfp_bin: str) -> None:
         f"qpdk missing from stats library table:\n{result.stdout}"
     )
 
-    for factory_name in SAMPLE_FACTORIES:
+    for factory_name in PIC_YAML_FACTORIES:
         assert f'"name":"{factory_name}"' in result.stderr, (
-            f"sample factory {factory_name!r} not discovered by gfp stats"
+            f"pic.yml factory {factory_name!r} not discovered by gfp stats"
         )
