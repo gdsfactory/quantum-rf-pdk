@@ -264,6 +264,23 @@ typst_use_mitex = True
 # `docs/typst/` to template files only.
 typst_template = "typst/qpdk.typ"
 
+# typsphinx calls typst.compile() without font_paths and typst-py ignores
+# TYPST_FONT_PATHS, so the template's font stacks fall back to the Typst
+# defaults unless the families are installed system-wide. docs.just fetches
+# them into build/docs-fonts; use it when present.
+_local_fonts = Path(__file__).parent.parent / "build" / "docs-fonts"
+if _local_fonts.is_dir():
+    import typst
+
+    _typst_compile = typst.compile
+
+    def _typst_compile_with_fonts(*args, **kwargs):
+        """Compile Typst with the local docs font cache on the font path."""
+        kwargs.setdefault("font_paths", [str(_local_fonts)])
+        return _typst_compile(*args, **kwargs)
+
+    typst.compile = _typst_compile_with_fonts
+
 # -- Warning suppression ------------------------------------------------------
 suppress_warnings = [
     "myst.xref_missing",
