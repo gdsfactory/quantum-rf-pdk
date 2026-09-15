@@ -5,7 +5,10 @@ against this PDK:
 
 - ``check_lvs``: a hand-authored ``.gsch`` nyancir wrapper schematic matches
   its wrapper layout with zero violations (elvis engine), plus a negative
-  control so the passing assertion cannot become vacuous.
+  control so the passing assertion cannot become vacuous. The checked-in
+  ``.pic.yml`` sample is covered against its directly materialized layout,
+  so a gfp release dropping ``.pic.yml`` schematic resolution does not go
+  unnoticed.
 - ``check_connectivity``: the report is parseable and contains no
   short/overlap/mismatch violations. ``DanglingPort`` items are expected
   noise for hierarchical GDS: library leaf-cell ports connect in their
@@ -19,6 +22,10 @@ Behavioral notes these tests encode:
 
 - ``check_lvs`` resolves a ``.gsch`` schematic and its ``models.nyanlib``
   through nyancad's ``FileAPI`` relative to ``project_root``.
+- ``check_lvs`` resolves a ``.pic.yml`` schematic purely through YAML: it
+  rglobs ``*.pic.yml`` under ``project_root`` and recursively expands only
+  components that have their own ``.pic.yml`` file. No ``models.nyanlib``
+  is involved, so ``project_root`` can be the repository root directly.
 - The SDK LVS flow does not forward qpdk's ``[tool.elvis.equivalent-ports]``
   config (``launcher``: ``o1``/``waveport``). Empirically this does not
   break the resonator test chip: elvis derives equivalent-port groups from
@@ -28,10 +35,16 @@ Behavioral notes these tests encode:
 The schematic/layout pairing mirrors the gfp app: the nyancir is a wrapper
 around ``resonator_test_chip_python``, so the compared layout is a wrapper
 cell containing that chip as a single instance. The fully detailed sample
-``resonator_test_chip_yaml.gsch`` is intentionally not used here: its
+``resonator_test_chip_schematic.gsch`` is intentionally not used here: its
 schematic nets are keyed by logical instance names and the resonator open
 ends are by design, so a materialized layout does not LVS-match it (build
-and geometric parity live in ``test_resonator_test_chip.py``).
+and geometric parity live in ``test_resonator_test_chip.py``). The
+``.pic.yml`` sample, in contrast, is fully detailed but LVS-matches its
+materialized layout, because gdsfactory derives its nets from the very
+placement and routes it materializes. Two opens remain by design: the
+sample's tees end on the launchers' ``o1`` pins, leaving the
+``launcher_bot``/``launcher_top`` waveports unterminated
+(``_EXPECTED_OPEN_PORTS``).
 
 Reports are parsed with stdlib ``xml.etree`` (bandit XML rules are ignored
 at the use sites): the LYRDB output is generated locally by elvis/klayout,
@@ -68,6 +81,13 @@ _CHIP_QUALNAME = "qpdk.samples.resonator_test_chip.resonator_test_chip_python"
 
 #: Chip ports the nyancir exposes; must match the wrapper GDS ports.
 _NYANCIR_PORTS = ("o1", "o2", "o3", "o4")
+
+#: Checked-in ``.pic.yml`` sample covered by the YAML-path LVS tests.
+PIC_YML_SAMPLE = PROJECT_ROOT / "qpdk/samples/qubit_test_chip.pic.yml"
+
+#: Launcher waveports the ``.pic.yml`` sample intentionally leaves unterminated
+#: (its tees end on the launchers' ``o1`` pins); elvis still flags them as opens.
+_EXPECTED_OPEN_PORTS = frozenset({"launcher_bot", "launcher_top"})
 
 #: Environment variable holding the gdsfactoryplus DRC API key.
 GFP_API_KEY_ENV = "GFP_API_KEY"
@@ -137,10 +157,12 @@ def _wrapper_component(name: str, *, with_o4: bool = True) -> gf.Component:
 def chip_yaml_gds(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """Write the wrapper test-chip layout GDS to a temp directory."""
     PDK.activate()  # not applied to module-scoped fixtures by the autouse hook
-    gds_path = tmp_path_factory.mktemp("gfp_verify") / "resonator_test_chip_yaml.gds"
+    gds_path = (
+        tmp_path_factory.mktemp("gfp_verify") / "resonator_test_chip_schematic.gds"
+    )
     # Distinct cellname: materializing the .gsch sample elsewhere in the
-    # suite registers "resonator_test_chip_yaml" in the shared KCLayout.
-    _wrapper_component("resonator_test_chip_yaml_wrapper").write_gds(gds_path)
+    # suite registers "resonator_test_chip_schematic" in the shared KCLayout.
+    _wrapper_component("resonator_test_chip_schematic_wrapper").write_gds(gds_path)
     return gds_path
 
 
@@ -175,6 +197,27 @@ def _nyancir_document() -> dict[str, Any]:
             "nets": {"P": f"net_{port}"},
         }
     return document
+
+
+def _materialize_pic_yml(yml_path: Path, name: str) -> gf.Component:
+    """Materialize a ``.pic.yml`` sample as a component named like its GDS.
+
+    Elvis reads the top cell by the GDS file stem, so the component name and
+    the file name must agree; without ``name`` the component is ``Unnamed_0``.
+
+    Returns:
+        The materialized sample component.
+    """
+    return gf.read.from_yaml(str(yml_path), name=name)
+
+
+@pytest.fixture(scope="module")
+def pic_yml_chip_gds(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Write the ``.pic.yml`` sample's materialized layout GDS to a temp directory."""
+    PDK.activate()  # not applied to module-scoped fixtures by the autouse hook
+    gds_path = tmp_path_factory.mktemp("gfp_pic_yml") / "qubit_test_chip_lvs.gds"
+    _materialize_pic_yml(PIC_YML_SAMPLE, gds_path.stem).write_gds(gds_path)
+    return gds_path
 
 
 @pytest.fixture(scope="module")
@@ -278,6 +321,59 @@ def test_lvs_nyancir_reports_a_broken_layout(
 
     assert items, "LVS accepted a layout that lost the o4 port connection"
     assert "o4" in descriptions, f"Violations do not mention o4:\n{descriptions}"
+
+
+def test_lvs_pic_yml_sample_matches_layout(
+    gfp_check: ModuleType, pic_yml_chip_gds: Path
+) -> None:
+    """Elvis LVS matches the ``.pic.yml`` sample against its materialized layout.
+
+    The sample's tees end on the launchers' ``o1`` pins, so the
+    ``launcher_bot``/``launcher_top`` waveports dangle by design and elvis
+    flags them as opens (``_EXPECTED_OPEN_PORTS``); every other violation
+    category means a real mismatch.
+    """
+    xml = gfp_check.check_lvs(
+        str(pic_yml_chip_gds),
+        str(PIC_YML_SAMPLE),
+        "qpdk",
+        project_root=str(PROJECT_ROOT),
+    )
+    root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
+
+    assert root.tag == "report-database", xml[:500]
+    unexpected = [
+        f"[{_leaf_category(item)}] {_item_description(item)}"
+        for item in root.iter("item")
+        if _leaf_category(item) != "LVS.open"
+        or not any(port in _item_description(item) for port in _EXPECTED_OPEN_PORTS)
+    ]
+    assert not unexpected, "LVS violations:\n" + "\n".join(unexpected)
+
+
+def test_lvs_pic_yml_reports_a_broken_layout(
+    gfp_check: ModuleType, tmp_path: Path
+) -> None:
+    """Negative control: a dropped o2 port must violate the ``.pic.yml`` LVS."""
+    broken_yml = tmp_path / "qubit_test_chip_broken.pic.yml"
+    broken_yml.write_text(
+        PIC_YML_SAMPLE.read_text().replace("  o2: launcher_out,waveport\n", "")
+    )
+    gds_path = tmp_path / "qubit_test_chip_broken.gds"
+    _materialize_pic_yml(broken_yml, gds_path.stem).write_gds(gds_path)
+
+    xml = gfp_check.check_lvs(
+        str(gds_path),
+        str(PIC_YML_SAMPLE),
+        "qpdk",
+        project_root=str(PROJECT_ROOT),
+    )
+    root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
+    items = list(root.iter("item"))
+    descriptions = " | ".join(_item_description(item) for item in items)
+
+    assert items, "LVS accepted a layout that lost the o2 port connection"
+    assert "o2" in descriptions, f"Violations do not mention o2:\n{descriptions}"
 
 
 def test_connectivity_no_shorts_or_overlaps(
