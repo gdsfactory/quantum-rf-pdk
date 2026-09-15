@@ -61,6 +61,13 @@ PIC_YAML_FACTORIES = (
     "resonator_test_chip_yaml",
 )
 
+#: Checked-in Nyancir sample schematics that must build without dropped nets.
+GSCH_SAMPLES = (
+    "qubit_test_chip.gsch",
+    "flipmon_test_chip.gsch",
+    "resonator_test_chip_yaml.gsch",
+)
+
 #: Well-known qpdk cells that must appear in the generated nyanlib.
 NYANLIB_SPOT_CHECKS = (
     "models:qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -399,6 +406,7 @@ def test_server_indexes_qpdk_cells(gfp_server: GfpServer) -> None:
         factory.get("qualified_name") for factory in resp["result"]["factories"]
     ]
     for expected in (
+        "qpdk.cells.derived.transmon_with_resonator_and_probeline.flipmon_with_resonator_and_probeline",
         "qpdk.cells.transmon.double_pad_transmon",
         "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     ):
@@ -406,6 +414,43 @@ def test_server_indexes_qpdk_cells(gfp_server: GfpServer) -> None:
             f"{expected} not indexed; sample of indexed names: "
             f"{[n for n in qualified_names if n and '.qpdk.' in n][:10]}"
         )
+
+
+@pytest.mark.gfp
+@pytest.mark.parametrize("sample_name", GSCH_SAMPLES)
+def test_gsch_samples_materialize_without_warnings(
+    gfp_bin: str, sample_name: str, tmp_path: Path
+) -> None:
+    """Build each checked-in Nyancir sample without dropping a connection."""
+    payload = {
+        "kind": "nyancir_build",
+        "nyancir_path": f"qpdk/samples/{sample_name}",
+        "output_path": str(tmp_path / f"{sample_name}.gds"),
+        "pdk_qualified_name": "qpdk.PDK",
+        "dschematic_path": str(tmp_path / f"{sample_name}.dschematic"),
+        "invalidation_plan": {
+            "changed_modules": [],
+            "added_modules": [],
+            "deleted_modules": [],
+            "changed_factories": [],
+            "deleted_factories": [],
+        },
+    }
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [gfp_bin, "--cwd", str(PROJECT_ROOT), "worker", "--pdk", "qpdk.PDK"],
+        capture_output=True,
+        input=f"{json.dumps(payload)}\n",
+        text=True,
+        timeout=300,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"gfp worker failed for {sample_name} (rc={result.returncode}).\n"
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr[-2000:]}"
+    )
+    response = json.loads(result.stdout.strip().splitlines()[-1])
+    assert response["kind"] == "nyancir_build", response
+    assert response["warnings"] == [], response["warnings"]
 
 
 @pytest.mark.gfp

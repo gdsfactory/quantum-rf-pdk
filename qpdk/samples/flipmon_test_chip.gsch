@@ -9,8 +9,8 @@
       "o2": "net_6",
       "o3": "net_4"
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 60.0,
+    "y": 35.5
   },
   "input_cap1": {
     "type": "ckt",
@@ -23,8 +23,8 @@
       "o1": "net_8",
       "o2": "net_7"
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 16.0,
+    "y": 8.0
   },
   "tee_bot": {
     "type": "ckt",
@@ -37,8 +37,8 @@
       "o3": "net_2"
     },
     "orientation": 180.0,
-    "x": 0.0,
-    "y": 0.0
+    "x": 60.0,
+    "y": -35.5
   },
   "launcher_bot": {
     "type": "ckt",
@@ -49,14 +49,14 @@
       "o1": "net_5"
     },
     "orientation": 90.0,
-    "x": 0.0,
-    "y": 0.0
+    "x": 60.0,
+    "y": -60.0
   },
   "qubit3": {
     "type": "ckt",
     "id": null,
     "irl_x": 3615.0,
-    "irl_y": -1627.421,
+    "irl_y": -1626.0,
     "mirror": true,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.flipmon_with_resonator_and_probeline",
     "name": "qubit3",
@@ -68,8 +68,8 @@
       "resonator_length": 4600,
       "resonator_meanders": 3
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 72.3,
+    "y": -32.54842
   },
   "tee_top_straight_1": {
     "type": "ckt",
@@ -79,8 +79,9 @@
     "nets": {
       "o1": "net_3"
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 59.78,
+    "y": 35.5,
+    "orientation": 180.0
   },
   "flux_line_top": {
     "type": "polyline",
@@ -96,8 +97,10 @@
         "port": "o1"
       }
     },
-    "routing_strategy": "route_bundle_cpw",
-    "net": "net_6"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_6",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular"
   },
   "probeline_qubit1_to_qubit2": {
     "type": "polyline",
@@ -113,8 +116,10 @@
         "port": "coupling_o1"
       }
     },
-    "routing_strategy": "route_bundle_sbend_cpw",
-    "net": "net_10"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_10",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular"
   },
   "tee_bot_straight_2": {
     "type": "ckt",
@@ -124,8 +129,9 @@
     "nets": {
       "o1": "net_2"
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 59.78,
+    "y": -35.5,
+    "orientation": 180.0
   },
   "probeline_output": {
     "type": "polyline",
@@ -141,8 +147,28 @@
         "port": "o1"
       }
     },
-    "routing_strategy": "route_bundle_cpw",
-    "net": "net_9"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_9",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular",
+    "waypoints": [
+      [
+        782.0,
+        400.0
+      ],
+      [
+        582.0,
+        400.0
+      ],
+      [
+        582.0,
+        -400.0
+      ],
+      [
+        300.0,
+        -400.0
+      ]
+    ]
   },
   "probeline_qubit2_to_qubit3": {
     "type": "polyline",
@@ -158,14 +184,34 @@
         "port": "coupling_o2"
       }
     },
-    "routing_strategy": "route_bundle_cpw",
-    "net": "net_11"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_11",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular",
+    "waypoints": [
+      [
+        3515.0,
+        -2851.0
+      ],
+      [
+        3615.0,
+        -2851.0
+      ],
+      [
+        3615.0,
+        2852.0
+      ],
+      [
+        3515.0,
+        2852.0
+      ]
+    ]
   },
   "qubit4": {
     "type": "ckt",
     "id": null,
     "irl_x": 2385.0,
-    "irl_y": -1628.351,
+    "irl_y": -1626.0,
     "mirror": true,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.flipmon_with_resonator_and_probeline",
     "name": "qubit4",
@@ -176,8 +222,8 @@
     "props": {
       "resonator_length": 4400
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 47.7,
+    "y": -32.56702
   },
   "launcher_in": {
     "type": "ckt",
@@ -189,7 +235,7 @@
       "waveport": "port_net_o1"
     },
     "x": 0.0,
-    "y": 0.0
+    "y": 8.0
   },
   "probeline_qubit4_to_cap2": {
     "type": "polyline",
@@ -205,8 +251,28 @@
         "port": "o2"
       }
     },
-    "routing_strategy": "route_bundle_sbend_cpw",
-    "net": "net_13"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_13",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular",
+    "waypoints": [
+      [
+        1485.0,
+        2852.0
+      ],
+      [
+        1285.0,
+        2852.0
+      ],
+      [
+        1285.0,
+        400.0
+      ],
+      [
+        818.0,
+        400.0
+      ]
+    ]
   },
   "qubit2": {
     "type": "ckt",
@@ -223,8 +289,8 @@
       "resonator_length": 4800,
       "resonator_meanders": 3
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 72.3,
+    "y": 32.5
   },
   "input_cap2": {
     "type": "ckt",
@@ -237,8 +303,8 @@
       "o1": "net_9",
       "o2": "net_13"
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 16.0,
+    "y": -8.0
   },
   "launcher_top": {
     "type": "ckt",
@@ -249,8 +315,8 @@
       "o1": "net_6"
     },
     "orientation": -90.0,
-    "x": 0.0,
-    "y": 0.0
+    "x": 60.0,
+    "y": 60.0
   },
   "tee_bot_straight_1": {
     "type": "ckt",
@@ -260,8 +326,8 @@
     "nets": {
       "o1": "net_1"
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 60.22,
+    "y": -35.5
   },
   "tee_top_straight_2": {
     "type": "ckt",
@@ -271,8 +337,8 @@
     "nets": {
       "o1": "net_4"
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 60.22,
+    "y": 35.5
   },
   "flux_line_bot": {
     "type": "polyline",
@@ -288,8 +354,10 @@
         "port": "o1"
       }
     },
-    "routing_strategy": "route_bundle_cpw",
-    "net": "net_5"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_5",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular"
   },
   "qubit1": {
     "type": "ckt",
@@ -305,8 +373,8 @@
     "props": {
       "resonator_length": 5000
     },
-    "x": 0.0,
-    "y": 0.0
+    "x": 47.7,
+    "y": 32.5
   },
   "o1": {
     "type": "port",
@@ -346,7 +414,7 @@
       "waveport": "port_net_o2"
     },
     "x": 0.0,
-    "y": 0.0
+    "y": -8.0
   },
   "probeline_input": {
     "type": "polyline",
@@ -362,8 +430,28 @@
         "port": "o1"
       }
     },
-    "routing_strategy": "route_bundle_cpw",
-    "net": "net_8"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_8",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular",
+    "waypoints": [
+      [
+        300.0,
+        400.0
+      ],
+      [
+        500.0,
+        400.0
+      ],
+      [
+        500.0,
+        -400.0
+      ],
+      [
+        782.0,
+        -400.0
+      ]
+    ]
   },
   "probeline_cap1_to_qubit1": {
     "type": "polyline",
@@ -379,8 +467,28 @@
         "port": "coupling_o1"
       }
     },
-    "routing_strategy": "route_bundle_sbend_cpw",
-    "net": "net_7"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_7",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular",
+    "waypoints": [
+      [
+        818.0,
+        -400.0
+      ],
+      [
+        1018.0,
+        -400.0
+      ],
+      [
+        1018.0,
+        -2851.0
+      ],
+      [
+        1485.0,
+        -2851.0
+      ]
+    ]
   },
   "probeline_qubit3_to_qubit4": {
     "type": "polyline",
@@ -396,7 +504,9 @@
         "port": "coupling_o2"
       }
     },
-    "routing_strategy": "route_bundle_sbend_cpw",
-    "net": "net_12"
+    "routing_strategy": "doroute_from_corners",
+    "net": "net_12",
+    "cross_section": "coplanar_waveguide",
+    "bend_type": "circular"
   }
 }
