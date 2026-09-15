@@ -824,11 +824,11 @@ plt.show()
 # ### 2.5 Crosstalk Sensitivity Analysis
 #
 # We use `jax.grad` to differentiate the peak crosstalk voltage with respect
-# to :math:`\log C_m`. The resulting logarithmic sensitivity
+# to :math:`\log C_m`. The resulting sensitivity
 # :math:`\partial V_{\text{peak}}/\partial \log C_m = C_m \, \partial
-# V_{\text{peak}}/\partial C_m` quantifies the fractional change in the
-# parasitic coupling per unit fractional change in :math:`C_m`, which
-# in a real design is set by the physical spacing between qubits.
+# V_{\text{peak}}/\partial C_m` has units of volts: it is the absolute
+# change in peak victim voltage per unit fractional change in :math:`C_m`,
+# which in a real design is set by the physical spacing between qubits.
 #
 # Since Circulax runs entirely in JAX, the gradient flows through the ODE
 # solver back to the circuit parameters, so the same machinery could drive
@@ -866,7 +866,8 @@ def crosstalk_metric(log_Cm: float) -> float:
     return jnp.max(jnp.abs(v_victim))
 
 
-# Logarithmic sensitivity: dV_peak/dlog(Cm) = Cm * dV_peak/dCm
+# Absolute voltage sensitivity per fractional change in Cm:
+# dV_peak/dlog(Cm) = Cm * dV_peak/dCm
 log_Cm = jnp.log(Cm_init)
 grad_crosstalk = jax.grad(crosstalk_metric)(log_Cm)
 
