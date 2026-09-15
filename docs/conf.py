@@ -1,5 +1,6 @@
 """Sphinx configuration for Qpdk documentation."""
 
+import json
 import re
 import shutil
 import tempfile
@@ -334,6 +335,191 @@ def _stage_template_assets(root):
             )
 
 
+# Text column is 164mm wide (A4 minus the template margins); keep a hair of
+# slack so an equation at exactly the column width does not get broken up.
+_MATH_COLUMN_MM = 163
+
+# latex bodies already carrying manual linebreaks or alignment markup
+_MATH_SKIP = ("\\begin{", "\\\\")
+
+_MATH_RELATIONS = (
+    "\\approx",
+    "\\equiv",
+    "\\ge",
+    "\\geq",
+    "\\le",
+    "\\leq",
+    "\\propto",
+    "\\sim",
+)
+
+_mitex_re = re.compile(r"mitex\(`(.*?)`\)", re.DOTALL)
+
+
+def _math_widths(bodies, font_paths):
+    """Measure rendered widths (mm) of block equations for LaTeX bodies."""
+    if not bodies:
+        return []
+    with tempfile.TemporaryDirectory() as tmp:
+        probe = Path(tmp) / "math-widths.typ"
+        probe.write_text(
+            '#import "@preview/mitex:0.2.7": mitex\n'
+            '#set text(font: ("Fira Math", "New Computer Modern Math"), size: 10pt)\n'
+            # trailing comma: ("x") is a parenthesized string, not an array
+            f"#let eqs = ({', '.join(json.dumps(b, ensure_ascii=False) for b in bodies)},)\n"
+            "#context for eq in eqs {\n"
+            "  metadata(measure(block(math.equation(block: true, mitex(eq)))).width / 1mm)\n"
+            "}\n"
+        )
+        result = typst.query(str(probe), "metadata", font_paths=font_paths or [])
+    return [row["value"] for row in json.loads(result)]
+
+
+def _split_wide_math(body):
+    """Split a LaTeX body at top-level binary +/- into (head, terms).
+
+    head runs up to and including the first top-level relation.  Returns
+    None when there is no relation or no top-level term boundary.
+    """
+    cuts = []
+    depth = 0
+    relation_end = None
+    prev = ""
+    i, n = 0, len(body)
+    while i < n:
+        c = body[i]
+        if c == "\\":
+            word = re.match(r"\\[a-zA-Z]+", body[i:])
+            if word:
+                word = word.group(0)
+                i += len(word)
+                # \left( / \right) bump depth twice, once for the word and
+                # once for the delimiter char; consistent, so nesting works
+                if word == "\\left":
+                    depth += 1
+                elif word == "\\right":
+                    depth -= 1
+                elif depth == 0 and relation_end is None and word in _MATH_RELATIONS:
+                    relation_end = i
+                prev = word
+                continue
+            # escaped delimiters like \{ or \% count as plain text
+            i += 2
+            prev = body[i - 1]
+            continue
+        if c in "{([":
+            depth += 1
+        elif c in "})]":
+            depth -= 1
+        elif c == "=" and depth == 0:
+            if relation_end is None:
+                relation_end = i + 1
+        elif c in "+-" and depth == 0 and relation_end is not None and prev not in (
+            "",
+            "+",
+            "-",
+            "=",
+            "(",
+            "[",
+            "{",
+            "^",
+            "_",
+            ",",
+            "\\left",
+        ) and prev not in _MATH_RELATIONS:
+            cuts.append(i)
+        if not c.isspace():
+            prev = c
+        i += 1
+    if not cuts or relation_end is None:
+        return None
+    head = body[:relation_end].rstrip()
+    starts = [relation_end, *cuts]
+    terms = [body[a:b].strip() for a, b in zip(starts, [*cuts, n])]
+    return head, terms
+
+
+def _wrap_wide_math(root, font_paths):
+    """Rewrite block mitex equations wider than the text column as multiline.
+
+    Typst block equations never wrap, so an over-wide one just runs into the
+    margin; break it after its relation and at top-level +/- term boundaries,
+    aligned at the relation.  Terms are packed greedily, as many per line as
+    fit beside the head.  A body whose multiline form still overflows is left
+    untouched.
+    """
+    entries = []  # (path, span start, span end, latex body)
+    for typ_path in root.rglob("*.typ"):
+        entries.extend(
+            (typ_path, m.start(1), m.end(1), m.group(1))
+            for m in _mitex_re.finditer(typ_path.read_text())
+            if not any(s in m.group(1) for s in _MATH_SKIP)
+        )
+    if not entries:
+        return
+    wide = [
+        (entry, *split)
+        for entry, width in zip(entries, _math_widths([e[3] for e in entries], font_paths))
+        if width > _MATH_COLUMN_MM and (split := _split_wide_math(entry[3]))
+    ]
+    if not wide:
+        return
+
+    # Greedy packing, one probe per round: every unfinished candidate
+    # contributes its trial line, so packing all equations together costs
+    # a handful of compiles.
+    lines = [[] for _ in wide]  # accepted term groups per candidate
+    taken = [0] * len(wide)
+    failed = [False] * len(wide)
+    while any(
+        not fail and taken[k] < len(wide[k][2]) for k, fail in enumerate(failed)
+    ):
+        trials = []
+        order = []
+        for k, (_, head, terms) in enumerate(wide):
+            if failed[k] or taken[k] >= len(terms):
+                continue
+            group = lines[k][-1] if lines[k] else []
+            order.append(k)
+            trials.append(f"{head} {' '.join([*group, terms[taken[k]]])}")
+        for k, width in zip(order, _math_widths(trials, font_paths)):
+            terms = wide[k][2]
+            if width <= _MATH_COLUMN_MM:
+                if lines[k]:
+                    lines[k][-1].append(terms[taken[k]])
+                else:
+                    lines[k].append([terms[taken[k]]])
+            elif lines[k]:  # line full: start a new one at this term
+                lines[k].append([terms[taken[k]]])
+            else:  # a lone term beside the head overflows: give up
+                failed[k] = True
+                continue
+            taken[k] += 1
+
+    finals = []
+    for (entry, head, _), groups, fail in zip(wide, lines, failed):
+        if fail or not groups:
+            continue
+        finals.append(
+            (
+                entry,
+                f"{head} & {' '.join(groups[0])}"
+                + "".join(f" \\\\ & {' '.join(g)}" for g in groups[1:]),
+            )
+        )
+    rewrites = {}
+    for (entry, split), width in zip(
+        finals, _math_widths([split for _, split in finals], font_paths)
+    ):
+        if width <= _MATH_COLUMN_MM:
+            rewrites.setdefault(entry[0], []).append((entry[1], entry[2], split))
+    for typ_path, spans in rewrites.items():
+        src = typ_path.read_text()
+        for start, end, split in sorted(spans, reverse=True):
+            src = src[:start] + split + src[end:]
+        typ_path.write_text(src)
+
+
 def _check_docs_fonts(font_paths):
     """Fail before compiling when the docs font families do not resolve."""
     # typst.compile() silently discards font warnings, so an unfound family
@@ -431,6 +617,7 @@ def _typst_compile_with_fonts(*args, **kwargs):
         _repair_svgbob_svgs(root)
         _rename_ipython_fences(root)
         _stage_template_assets(root)
+        _wrap_wide_math(root, kwargs.get("font_paths"))
     return _enrich_pdf_metadata(_typst_compile(*args, **kwargs))
 
 

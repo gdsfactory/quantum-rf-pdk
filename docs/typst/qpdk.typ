@@ -152,6 +152,9 @@
 
   // Math in Fira Math, matching the HTML MathJax font (mathjax4_config).
   show math.equation: set text(font: math-font)
+  // Rows of a line-broken block equation sit closer than text lines; amsmath
+  // spaces align rows by a jot, not a full baseline gap.
+  show math.equation.where(block: true): set par(leading: 0.4em)
 
   show raw: set text(font: mono-font, size: 0.9em)
   show: codly-init.with()
