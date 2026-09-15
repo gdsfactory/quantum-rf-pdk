@@ -17,136 +17,63 @@ from qpdk.models.cpw import (
     cpw_z0_from_cross_section,
     get_cpw_dimensions,
 )
-from qpdk.models.waveguides import launcher, straight, straight_shorted
-
-
-def _resonator_test_chip_model(
-    f: sax.FloatArrayLike,
-    *,
-    probeline_length: float,
-    resonator_lengths: tuple[tuple[float, ...], tuple[float, ...]],
-    coupling_gaps: tuple[tuple[float, ...], tuple[float, ...]],
-    coupling_length: float = 200.0,
-    cross_section: CrossSectionSpec = "coplanar_waveguide",
-) -> sax.SDict:
-    """Build SAX model for two probelines with coupled resonators."""
-    f_arr = jnp.asarray(f)
-    resonator_spacing = probeline_length / (len(resonator_lengths[0]) + 1)
-    launcher_length = 300.0
-    west_feed_length = resonator_spacing - launcher_length
-    inter_resonator_length = resonator_spacing - coupling_length
-    east_feed_length = resonator_spacing - launcher_length - coupling_length
-
-    instances = {}
-    connections = {}
-    ports = {}
-
-    for probeline_idx, (port_names, lengths, gaps) in enumerate(
-        zip(
-            (("o3", "o4"), ("o1", "o2")),
-            resonator_lengths,
-            coupling_gaps,
-        )
-    ):
-        west_launcher = f"launcher_{probeline_idx}_west"
-        east_launcher = f"launcher_{probeline_idx}_east"
-        instances[west_launcher] = launcher(
-            f=f_arr,
-            cross_section_big="launcher_cross_section_big",
-            cross_section_small="cpw",
-        )
-        instances[east_launcher] = launcher(
-            f=f_arr,
-            cross_section_big="launcher_cross_section_big",
-            cross_section_small="cpw",
-        )
-        ports[port_names[0]] = f"{west_launcher},waveport"
-        ports[port_names[1]] = f"{east_launcher},waveport"
-
-        first_lead = f"lead_{probeline_idx}_west"
-        instances[first_lead] = straight(
-            f=f_arr,
-            length=west_feed_length,
-            cross_section=cross_section,
-        )
-        connections[f"{west_launcher},o1"] = f"{first_lead},o1"
-
-        for resonator_idx, (length, gap) in enumerate(zip(lengths, gaps)):
-            resonator_name = f"resonator_{probeline_idx}_{resonator_idx}"
-            instances[resonator_name] = quarter_wave_resonator_coupled(
-                f=f_arr,
-                length=length,
-                coupling_gap=gap,
-                coupling_straight_length=coupling_length,
-                cross_section=cross_section,
-                cross_section_non_resonator=cross_section,
-            )
-
-            if resonator_idx == 0:
-                connections[f"{first_lead},o2"] = f"{resonator_name},coupling_o1"
-            else:
-                previous_resonator = f"resonator_{probeline_idx}_{resonator_idx - 1}"
-                inter_resonator = f"lead_{probeline_idx}_{resonator_idx}"
-                instances[inter_resonator] = straight(
-                    f=f_arr,
-                    length=inter_resonator_length,
-                    cross_section=cross_section,
-                )
-                connections[f"{previous_resonator},coupling_o2"] = (
-                    f"{inter_resonator},o1"
-                )
-                connections[f"{inter_resonator},o2"] = f"{resonator_name},coupling_o1"
-
-        last_resonator = f"resonator_{probeline_idx}_{len(lengths) - 1}"
-        final_lead = f"lead_{probeline_idx}_east"
-        instances[final_lead] = straight(
-            f=f_arr,
-            length=east_feed_length,
-            cross_section=cross_section,
-        )
-        connections[f"{last_resonator},coupling_o2"] = f"{final_lead},o1"
-        connections[f"{final_lead},o2"] = f"{east_launcher},o1"
-
-    return sax.evaluate_circuit_fg((connections, ports), instances)
+from qpdk.models.waveguides import straight, straight_shorted
 
 
 def resonator_test_chip_python(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     probeline_length: float = 9000.0,
-    probeline_separation: float = 1000.0,  # ruff: ignore[unused-function-argument]
+    probeline_separation: float = 1000.0,
     resonator_length: float = 4000.0,
     coupling_length: float = 200.0,
     coupling_gap: float = 16.0,
-    cross_section: CrossSectionSpec = "coplanar_waveguide",
 ) -> sax.SDict:
     """SAX model for the four-port resonator test chip sample.
 
-    The layout sample is a composite factory. Keeping its four-port model as
-    a SAX leaf lets recursive netlist resolution treat the complete chip like
-    an optical composite component while preserving each resonator's settings.
+    Builds the circuit directly from the gdsfactory-extracted netlist of the
+    layout sample (:func:`qpdk.samples.resonator_test_chip.resonator_test_chip_python`)
+    instead of hand-reimplementing the probeline/resonator topology, so the
+    model stays in sync with the actual layout. ``quarter_wave_resonator_coupled``
+    instances are kept as single circuit elements, resolved through their own
+    registered SAX model, rather than flattened further: collapsing that
+    hierarchy would lose the capacitive coupling between resonator and
+    probeline.
 
     Returns:
         SAX S-parameter dictionary for the four external ports.
     """
-    total_resonators = 16
-    lengths = [
-        resonator_length * (0.9 + 0.375 * index / (total_resonators - 1))
-        for index in range(total_resonators)
-    ]
-    per_line_lengths: tuple[tuple[float, ...], tuple[float, ...]] = (
-        tuple(lengths[0::2]),
-        tuple(lengths[1::2]),
+    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
+    from qpdk.models import models  # ruff: ignore[import-outside-top-level]
+    from qpdk.samples.resonator_test_chip import (  # ruff: ignore[import-outside-top-level]
+        resonator_test_chip_python as resonator_test_chip_python_component,
     )
-    per_line_count = len(per_line_lengths[0])
 
-    return _resonator_test_chip_model(
-        f,
-        probeline_length=probeline_length,
-        resonator_lengths=per_line_lengths,
-        coupling_gaps=((coupling_gap,) * per_line_count,) * 2,
-        coupling_length=coupling_length,
-        cross_section=cross_section,
+    PDK.activate()
+    # sax hands instance settings back as (possibly device-backed) jax
+    # scalars even outside a jit trace; the gdsfactory cell cache needs
+    # plain hashable Python floats.
+    component = resonator_test_chip_python_component(
+        probeline_length=float(probeline_length),
+        probeline_separation=float(probeline_separation),
+        resonator_length=float(resonator_length),
+        coupling_length=float(coupling_length),
+        coupling_gap=float(coupling_gap),
     )
+    netlist = component.get_netlist(on_dangling_port="ignore")
+    # Exclude this model itself: the extracted netlist's top-level circuit
+    # shares its name with this function, and including it would let SAX
+    # short-circuit back to this model instead of building the circuit.
+    leaf_models = {
+        name: model
+        for name, model in models.items()
+        if name != "resonator_test_chip_python"
+    }
+    circuit, _ = sax.circuit(
+        netlist,
+        models=leaf_models,
+        ignore_impossible_connections=False,
+    )
+    return circuit(f=f)
 
 
 def resonator_test_chip_yaml(

@@ -274,6 +274,16 @@ def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
         "o3",
         "o4",
     }
+    # Two probelines are independent, so cross terms between them vanish;
+    # same-line terms carry a real signal.
+    top_line = {"o1", "o2"}
+    bottom_line = {"o3", "o4"}
+    for (port_a, port_b), raw_value in s_params.items():
+        value = np.asarray(raw_value)
+        if {port_a, port_b} <= top_line or {port_a, port_b} <= bottom_line:
+            assert np.abs(value).max() > 1e-6
+        else:
+            np.testing.assert_allclose(value, 0.0, atol=1e-9)
 
 
 def test_resonator_test_chip_yaml_model_matches_python_model() -> None:
