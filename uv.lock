@@ -3816,6 +3816,7 @@ dev = [
     { name = "scipy-stubs" },
 ]
 docs = [
+    { name = "circulax" },
     { name = "flax" },
     { name = "gplugins", extra = ["meshwell"] },
     { name = "jaxellip" },
@@ -3853,6 +3854,7 @@ docs = [
     { name = "tqdm" },
 ]
 docs-models = [
+    { name = "circulax" },
     { name = "flax" },
     { name = "gplugins", extra = ["meshwell"] },
     { name = "jaxellip" },
@@ -3945,6 +3947,7 @@ dev = [
     { name = "scipy-stubs" },
 ]
 docs = [
+    { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
     { name = "gplugins", extras = ["meshwell"], specifier = "~=2.1.0" },
     { name = "jaxellip" },
@@ -3981,6 +3984,7 @@ docs = [
     { name = "tqdm" },
 ]
 docs-models = [
+    { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
     { name = "gplugins", extras = ["meshwell"], specifier = "~=2.1.0" },
     { name = "jaxellip" },

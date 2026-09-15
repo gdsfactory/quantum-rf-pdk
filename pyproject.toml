@@ -97,6 +97,7 @@ docs = [
   { include-group = "docs-models" },
 ]
 docs-models = [
+  "circulax>=0.2.3",
   "flax",
   "gplugins[meshwell]~=2.1.0",
   "jaxellip",
