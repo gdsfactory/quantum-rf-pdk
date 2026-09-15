@@ -21,69 +21,34 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Install Python dependencies
-        id: install-deps
         run: just install
-        background: true # runs alongside the ImageMagick/font setup below, which docs-latex also needs
-      - name: Cache ImageMagick
+      # typsphinx compiles the PDF with the Typst compiler bundled in typst-py,
+      # so there is nothing to install for it -- but the Typst packages the
+      # template imports (codly, mitex, gentle-clues) are downloaded on first
+      # use and cached here.
+      - name: Cache Typst packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-imagemagick
-      - name: Install ImageMagick and documentation fonts
-        env:
-          FONT_BASE: https://github.com/chrissimpkins/codeface/raw/master/fonts/code-new-roman
-          OUTFIT_BASE: https://github.com/Outfitio/Outfit-Fonts/raw/main/fonts/ttf
-          FIRA_MATH_URL: https://github.com/firamath/firamath/releases/download/v0.3.4/FiraMath-Regular.otf
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y imagemagick fonts-inter
-          mkdir -p /tmp/qpdk-fonts
-          curl -fsSL "$OUTFIT_BASE/Outfit-Regular.ttf" -o /tmp/qpdk-fonts/Outfit-Regular.ttf
-          curl -fsSL "$OUTFIT_BASE/Outfit-Bold.ttf" -o /tmp/qpdk-fonts/Outfit-Bold.ttf
-          curl -fsSL "$FONT_BASE/Code%20New%20Roman-Regular.otf" -o /tmp/qpdk-fonts/CNR-Regular.otf
-          curl -fsSL "$FONT_BASE/Code%20New%20Roman-Bold.otf" -o /tmp/qpdk-fonts/CNR-Bold.otf
-          curl -fsSL "$FONT_BASE/Code%20New%20Roman-Italic.otf" -o /tmp/qpdk-fonts/CNR-Italic.otf
-          curl -fsSL "$FIRA_MATH_URL" -o /tmp/qpdk-fonts/FiraMath-Regular.otf
-          sudo mkdir -p /usr/local/share/fonts/qpdk
-          find /tmp/qpdk-fonts -type f \( -name '*.ttf' -o -name '*.otf' \) -exec sudo cp {} /usr/local/share/fonts/qpdk/ \;
-          sudo fc-cache -f && rm -rf /tmp/qpdk-fonts
-          # Allow ImageMagick to convert SVG files (disabled by default in policy)
-          if [ -f /etc/ImageMagick-6/policy.xml ]; then
-            sudo sed -i 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' /etc/ImageMagick-6/policy.xml
-          fi
-      - name: Wait for Python dependency installation
-        wait: install-deps
-      - name: Generate LaTeX files
-        run: just docs-latex
-      - name: Compile LaTeX document
-        uses: xu-cheng/latex-action@6549dc21effb2730855a1281407ecfcececc6c1b # 4.1.0
-        with:
-          texlive_version: "2025" # pin the TeX Live Docker image (latest is floating)
-          os: alpine
-          # XINDYOPTS must be exported here: the action's docker run does not pass step
-          # env into the container, but pre_compile runs in the same shell as the compile
-          # (entrypoint.sh eval's it), so the index pass sees the same flags as
-          # `just docs-pdf` does locally.
-          pre_compile: cd docs/_build/latex && export XINDYOPTS="-L english -C utf8 -M sphinx.xdy"
-          root_file: qpdk.tex
-          compiler: latexmk
-          latexmk_use_xelatex: true
-          args: -interaction=nonstopmode -file-line-error -halt-on-error
+          path: |
+            ~/.cache/typst
+            build/docs-fonts
+          key: ${{ runner.os }}-typst-${{ hashFiles('docs/docs.just', 'docs/typst/**/*.typ') }}
+          restore-keys: |
+            ${{ runner.os }}-typst-
+      - name: Build PDF documentation
+        run: just docs-pdf
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pdf-docs
-          path: "./docs/_build/latex/qpdk.pdf"
+          path: "./docs/_build/typstpdf/qpdk.pdf"
           if-no-files-found: error
-      - name: Upload LaTeX build logs on failure
+      - name: Upload generated Typst sources on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: latex-logs
+          name: typst-sources
           path: |
-            docs/_build/latex/*.log
-            docs/_build/latex/*.ilg
-            docs/_build/latex/*.blg
-            docs/_build/latex/*.fls
+            docs/_build/typstpdf/**/*.typ
           if-no-files-found: ignore
   pages:
     permissions:

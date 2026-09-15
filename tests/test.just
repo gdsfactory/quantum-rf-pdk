@@ -22,8 +22,51 @@ check-lfs:
         echo ""
         exit 1
     fi
-    echo "Git LFS is available. Pulling LFS files…"
-    git lfs pull
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        echo "Git LFS is available. Pulling LFS files…"
+        git lfs pull
+    elif command -v jj >/dev/null 2>&1 && jj git root >/dev/null 2>&1; then
+        # jj does not run smudge filters, so create a private child change for
+        # the fetched content rather than leaving LFS files dirty in real work.
+        echo "Git LFS is available. Smudging LFS files in the jj working copy…"
+        gitdir=$(jj git root)
+        mapfile -t lfs_files < <(git --git-dir "$gitdir" lfs ls-files -n)
+        if ((${#lfs_files[@]} == 0)); then
+            echo "Error: Git LFS tracks no files in the backing repository." >&2
+            exit 1
+        fi
+        pointer_files=()
+        for f in "${lfs_files[@]}"; do
+            if [[ ! -f "$f" ]]; then
+                echo "Error: LFS-tracked file is missing from the workspace: $f" >&2
+                exit 1
+            fi
+            # Skip files that already hold real content, not a pointer (cmp, not
+            # $(head ...): the binary content would trip bash's null-byte check)
+            if ! cmp -s <(head -c 42 "$f") \
+                <(printf 'version https://git-lfs.github.com/spec/v1'); then
+                continue
+            fi
+            pointer_files+=("$f")
+        done
+        if ((${#pointer_files[@]})); then
+            jj new -m "private: lfs"
+        fi
+        for f in "${pointer_files[@]}"; do
+            tmp=$(mktemp "$f.XXXXXX")
+            GIT_LFS_SKIP_SMUDGE=0 git --git-dir "$gitdir" lfs smudge < "$f" > "$tmp"
+            if cmp -s <(head -c 42 "$tmp") \
+                <(printf 'version https://git-lfs.github.com/spec/v1'); then
+                rm -f "$tmp"
+                echo "Error: Git LFS did not smudge $f." >&2
+                exit 1
+            fi
+            mv "$tmp" "$f"
+        done
+    else
+        echo "Error: Not in a Git or Jujutsu repository." >&2
+        exit 1
+    fi
 
 # Shared pytest invocation for internal callers passing pre-split argument strings (ensures LFS data first)
 [private]
