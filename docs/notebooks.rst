@@ -211,8 +211,7 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
 Differentiable circuit simulators formulate the circuit as a system of Differential
 Algebraic Equations (DAEs) and solve them with automatic differentiation support. This
 enables gradient-based optimization of physical parameters directly from simulation
-outputs—without finite-difference approximations
-:cite:`kochChargeinsensitiveQubitDesign2007a`.
+outputs—without finite-difference approximations.
 
 **Typical use cases:**
 
@@ -228,8 +227,8 @@ outputs—without finite-difference approximations
 
 - :doc:`notebooks/circulax_transmon_optimization` — Demonstrates Circulax's harmonic
   balance and transient solvers applied to a transmon qubit circuit: optimizes junction
-  parameters via ``jax.grad`` and simulates crosstalk between coupled qubits with
-  gradient-based minimization of parasitic coupling.
+  parameters via ``jax.grad`` and simulates crosstalk between coupled qubits, analyzing
+  its sensitivity to the coupling capacitance.
 
 **********************
  External integration

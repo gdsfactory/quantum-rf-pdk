@@ -72,8 +72,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
-        "circulax>=0.2.3,<0.3",
+        "qpdk[models,circulax] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
 # %% tags=["hide-input"]
@@ -100,14 +99,15 @@ PDK.activate()
 # :math:`C_s` so that the circuit's transition frequency and anharmonicity
 # match target values.
 #
-# The Josephson junction's constitutive relation in the flux formulation is:
+# The Josephson junction's constitutive relation is:
 #
 # ```{math}
-# I(\varphi) = I_c \sin\!\left(\frac{2\pi}{\Phi_0}\,\varphi\right),
+# I(\varphi) = I_c \sin\varphi,
 # ```
 #
-# where :math:`\varphi` is the flux (integral of voltage) across the
-# junction. In Circulax, this is implemented as a custom component that
+# where :math:`\varphi = 2\pi\Phi/\Phi_0` is the dimensionless
+# gauge-invariant phase, with :math:`\Phi` the junction flux (integral of
+# voltage). In Circulax, this is implemented as a custom component that
 # returns current contributions (flow equations) and flux storage terms
 # (charge equations).
 
@@ -190,9 +190,9 @@ def JosephsonJunction(  # ruff: ignore[invalid-function-name]
 #   with :math:`k = s/(s + 2W)`, where :math:`s` is the pad gap, :math:`W` the
 #   pad width and :math:`L` the pad length
 #   :cite:`chenCompactInductorcapacitorResonators2023`.
-# - **Critical current** from the Ambegaokar–Baratoff relation for the JJ area:
-#   :math:`I_c = J_c \cdot A_{JJ}`, where :math:`J_c` is the critical current
-#   density (typically :math:`\sim 100\;\text{A/cm}^2` for Al/AlOx/Al junctions).
+# - **Critical current** from the process critical-current density and the JJ
+#   area: :math:`I_c = J_c \cdot A_{JJ}`, with :math:`J_c \sim
+#   100\;\text{A/cm}^2` for Al/AlOx/Al junctions.
 
 # %%
 from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
@@ -207,7 +207,7 @@ def layout_to_circuit_params(
     pad_gap_um: float = 15.0,
     jj_area_um2: float = 0.04,
     Jc_A_per_cm2: float = 100.0,
-    EJ2_EJ1_ratio: float = -0.05,
+    EJ2_EJ1_ratio: float = 0.0,
 ) -> dict:
     """Convert layout dimensions to circuit parameters using accurate analytical models.
 
@@ -217,7 +217,8 @@ def layout_to_circuit_params(
         pad_gap_um: Gap between pads in μm.
         jj_area_um2: Josephson junction area in μm².
         Jc_A_per_cm2: Critical current density in A/cm².
-        EJ2_EJ1_ratio: Ratio of 2nd to 1st Josephson harmonic energy.
+        EJ2_EJ1_ratio: Ratio of 2nd to 1st Josephson harmonic energy. Kept at
+            zero here so the circuit matches the sinusoidal analytic targets.
 
     Returns:
         Dictionary with Cs (shunt capacitance), Ic (critical current), and EJ2_ratio.
@@ -398,9 +399,12 @@ for k in range(min(5, len(V_harmonics))):
 #
 # where :math:`E_J = \Phi_0 I_c/(2\pi)` and :math:`E_C = e^2/(2C_\Sigma)`.
 # These closed-form estimates assume a purely sinusoidal current-phase
-# relation; the simulated junction carries a small 2nd-harmonic term
-# (:math:`E_{J2}/E_{J1} = -0.05` from `layout_to_circuit_params`), which we
-# treat as a perturbation of the analytic values.
+# relation, so the junction's 2nd harmonic is set to zero for this workflow
+# (:math:`E_{J2}/E_{J1} = 0` in `layout_to_circuit_params`). The component
+# does support a nonzero ratio :math:`r`, but at leading order such a term
+# rescales the potential's quadratic coefficient by :math:`(1+4r)` and the
+# anharmonicity by :math:`(1+16r)/(1+4r)`, so the sinusoidal targets above
+# would no longer describe the circuit.
 
 
 # %%
@@ -564,7 +568,14 @@ plt.show()
 # %% [markdown]
 # ### 1.10 Updated Layout Visualization
 #
-# We can now visualize the transmon layout with the optimized dimensions.
+# We can now visualize the transmon layout with the optimized dimensions. The
+# inversion below targets the shunt capacitance :math:`C_s` only: the pads are
+# resized so the conformal-mapping model reproduces :math:`C_s^{\text{opt}}`,
+# while the junction keeps the default SQUID spec used throughout the PDK.
+# Realizing :math:`I_c^{\text{opt}}` in layout would additionally require sizing
+# the junction overlap area :math:`A = I_c^{\text{opt}} / J_c` for the process
+# critical-current density, which is a process-level decision outside the scope
+# of this conformal-mapping inversion.
 
 # %%
 # Compute updated pad dimensions from optimized Cs by inverting the same
@@ -595,6 +606,10 @@ for _ in range(100):
 pad_height_opt = 0.5 * (lo + hi)
 pad_width_opt = aspect * pad_height_opt
 
+# kfactory ports require widths to be even multiples of the 1 nm database unit
+pad_height_opt = round(pad_height_opt / 0.002) * 0.002
+pad_width_opt = round(pad_width_opt / 0.002) * 0.002
+
 print(f"Optimized pad dimensions: {pad_width_opt:.1f} × {pad_height_opt:.1f} μm²")
 
 # Create the transmon component with optimized dimensions
@@ -619,7 +634,7 @@ plt.show()
 #
 # ```{math}
 # :label: eq:coupled-qubits
-# \text{Drive} \to Q_1 \xleftrightarrow{C_m} Q_2 \to \text{GND}
+# \text{Drive} \to Q_1 \overset{C_m}{\longleftrightarrow} Q_2 \to \text{GND}
 # ```
 
 # %%
