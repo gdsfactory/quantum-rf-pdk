@@ -25,9 +25,11 @@
 # 4. Run Palace over a frequency sweep and extract the S₂₁ response.
 # 5. Extract the resonance frequency and quality factor from the transmission dip.
 #
-# gsim and Palace are not qpdk dependencies: install gsim with `pip install gsim` and
-# see the [Palace documentation](https://awslabs.github.io/palace/) for solver
-# installation, including precompiled [Apptainer](https://apptainer.org) images. The
+# gsim and Palace are not qpdk dependencies: install gsim with
+# `pip install "gsim @ git+https://github.com/gdsfactory/gsim.git"` (requires Python
+# 3.12; the PyPI release is outdated) and see the [Palace
+# documentation](https://awslabs.github.io/palace/) for solver installation, including
+# precompiled [Apptainer](https://apptainer.org) images. The
 # results shown below were produced with Palace on the Aalto Triton cluster; the
 # S-parameter data is embedded so the analysis cells run anywhere.
 
