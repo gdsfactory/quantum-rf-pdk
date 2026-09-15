@@ -1,0 +1,404 @@
+{
+  "tee_top": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.waveguides.tee",
+    "name": "tee_top",
+    "nets": {
+      "o1": "net_3",
+      "o2": "net_6",
+      "o3": "net_4"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "input_cap1": {
+    "type": "ckt",
+    "id": null,
+    "irl_x": 800.0,
+    "irl_y": 400.0,
+    "model": "gdsfactory.components.analog.interdigital_capacitor.interdigital_capacitor",
+    "name": "input_cap1",
+    "nets": {
+      "o1": "net_8",
+      "o2": "net_7"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "tee_bot": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.waveguides.tee",
+    "name": "tee_bot",
+    "nets": {
+      "o1": "net_1",
+      "o2": "net_5",
+      "o3": "net_2"
+    },
+    "orientation": 180.0,
+    "x": 0.0,
+    "y": 0.0
+  },
+  "launcher_bot": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "launcher_bot",
+    "nets": {
+      "o1": "net_5"
+    },
+    "orientation": 90.0,
+    "x": 0.0,
+    "y": 0.0
+  },
+  "qubit3": {
+    "type": "ckt",
+    "id": null,
+    "irl_x": 3615.0,
+    "irl_y": -1627.421,
+    "mirror": true,
+    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
+    "name": "qubit3",
+    "nets": {
+      "coupling_o1": "net_12",
+      "coupling_o2": "net_11"
+    },
+    "props": {
+      "probeline_coupling_length": 400,
+      "resonator_length": 3600,
+      "resonator_meanders": 3
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "tee_top_straight_1": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.waveguides.straight_open",
+    "name": "tee_top_straight_1",
+    "nets": {
+      "o1": "net_3"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "flux_line_top": {
+    "type": "polyline",
+    "id": "flux_line_top",
+    "name": "flux_line_top",
+    "terminals": {
+      "start": {
+        "device": "tee_top",
+        "port": "o2"
+      },
+      "finish": {
+        "device": "launcher_top",
+        "port": "o1"
+      }
+    },
+    "routing_strategy": "route_bundle_cpw",
+    "net": "net_6"
+  },
+  "probeline_qubit1_to_qubit2": {
+    "type": "polyline",
+    "id": "probeline_qubit1_to_qubit2",
+    "name": "probeline_qubit1_to_qubit2",
+    "terminals": {
+      "start": {
+        "device": "qubit1",
+        "port": "coupling_o2"
+      },
+      "finish": {
+        "device": "qubit2",
+        "port": "coupling_o1"
+      }
+    },
+    "routing_strategy": "route_bundle_sbend_cpw",
+    "net": "net_10"
+  },
+  "tee_bot_straight_2": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.waveguides.straight_open",
+    "name": "tee_bot_straight_2",
+    "nets": {
+      "o1": "net_2"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "probeline_output": {
+    "type": "polyline",
+    "id": "probeline_output",
+    "name": "probeline_output",
+    "terminals": {
+      "start": {
+        "device": "input_cap2",
+        "port": "o1"
+      },
+      "finish": {
+        "device": "launcher_out",
+        "port": "o1"
+      }
+    },
+    "routing_strategy": "route_bundle_cpw",
+    "net": "net_9"
+  },
+  "probeline_qubit2_to_qubit3": {
+    "type": "polyline",
+    "id": "probeline_qubit2_to_qubit3",
+    "name": "probeline_qubit2_to_qubit3",
+    "terminals": {
+      "start": {
+        "device": "qubit2",
+        "port": "coupling_o2"
+      },
+      "finish": {
+        "device": "qubit3",
+        "port": "coupling_o2"
+      }
+    },
+    "routing_strategy": "route_bundle_cpw",
+    "net": "net_11"
+  },
+  "qubit4": {
+    "type": "ckt",
+    "id": null,
+    "irl_x": 2385.0,
+    "irl_y": -1628.351,
+    "mirror": true,
+    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
+    "name": "qubit4",
+    "nets": {
+      "coupling_o1": "net_13",
+      "coupling_o2": "net_12"
+    },
+    "props": {
+      "resonator_length": 4800
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "launcher_in": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "launcher_in",
+    "nets": {
+      "o1": "net_8",
+      "waveport": "port_net_o1"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "probeline_qubit4_to_cap2": {
+    "type": "polyline",
+    "id": "probeline_qubit4_to_cap2",
+    "name": "probeline_qubit4_to_cap2",
+    "terminals": {
+      "start": {
+        "device": "qubit4",
+        "port": "coupling_o1"
+      },
+      "finish": {
+        "device": "input_cap2",
+        "port": "o2"
+      }
+    },
+    "routing_strategy": "route_bundle_sbend_cpw",
+    "net": "net_13"
+  },
+  "qubit2": {
+    "type": "ckt",
+    "id": null,
+    "irl_x": 3615.0,
+    "irl_y": 1625.0,
+    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
+    "name": "qubit2",
+    "nets": {
+      "coupling_o1": "net_10",
+      "coupling_o2": "net_11"
+    },
+    "props": {
+      "probeline_coupling_length": 400,
+      "resonator_length": 4600,
+      "resonator_meanders": 3
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "input_cap2": {
+    "type": "ckt",
+    "id": null,
+    "irl_x": 800.0,
+    "irl_y": -400.0,
+    "model": "gdsfactory.components.analog.interdigital_capacitor.interdigital_capacitor",
+    "name": "input_cap2",
+    "nets": {
+      "o1": "net_9",
+      "o2": "net_13"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "launcher_top": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "launcher_top",
+    "nets": {
+      "o1": "net_6"
+    },
+    "orientation": -90.0,
+    "x": 0.0,
+    "y": 0.0
+  },
+  "tee_bot_straight_1": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.waveguides.straight_open",
+    "name": "tee_bot_straight_1",
+    "nets": {
+      "o1": "net_1"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "tee_top_straight_2": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.waveguides.straight_open",
+    "name": "tee_top_straight_2",
+    "nets": {
+      "o1": "net_4"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "flux_line_bot": {
+    "type": "polyline",
+    "id": "flux_line_bot",
+    "name": "flux_line_bot",
+    "terminals": {
+      "start": {
+        "device": "tee_bot",
+        "port": "o2"
+      },
+      "finish": {
+        "device": "launcher_bot",
+        "port": "o1"
+      }
+    },
+    "routing_strategy": "route_bundle_cpw",
+    "net": "net_5"
+  },
+  "qubit1": {
+    "type": "ckt",
+    "id": null,
+    "irl_x": 2385.0,
+    "irl_y": 1625.0,
+    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
+    "name": "qubit1",
+    "nets": {
+      "coupling_o1": "net_7",
+      "coupling_o2": "net_10"
+    },
+    "props": {
+      "resonator_length": 5000
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "o1": {
+    "type": "port",
+    "id": null,
+    "name": "o1",
+    "x": 0.0,
+    "y": 0.0,
+    "nets": {
+      "P": "port_net_o1"
+    },
+    "attached_port": {
+      "component_id": "launcher_in",
+      "port_name": "waveport"
+    }
+  },
+  "o2": {
+    "type": "port",
+    "id": null,
+    "name": "o2",
+    "x": 0.0,
+    "y": 0.0,
+    "nets": {
+      "P": "port_net_o2"
+    },
+    "attached_port": {
+      "component_id": "launcher_out",
+      "port_name": "waveport"
+    }
+  },
+  "launcher_out": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "launcher_out",
+    "nets": {
+      "o1": "net_9",
+      "waveport": "port_net_o2"
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "probeline_input": {
+    "type": "polyline",
+    "id": "probeline_input",
+    "name": "probeline_input",
+    "terminals": {
+      "start": {
+        "device": "launcher_in",
+        "port": "o1"
+      },
+      "finish": {
+        "device": "input_cap1",
+        "port": "o1"
+      }
+    },
+    "routing_strategy": "route_bundle_cpw",
+    "net": "net_8"
+  },
+  "probeline_cap1_to_qubit1": {
+    "type": "polyline",
+    "id": "probeline_cap1_to_qubit1",
+    "name": "probeline_cap1_to_qubit1",
+    "terminals": {
+      "start": {
+        "device": "input_cap1",
+        "port": "o2"
+      },
+      "finish": {
+        "device": "qubit1",
+        "port": "coupling_o1"
+      }
+    },
+    "routing_strategy": "route_bundle_sbend_cpw",
+    "net": "net_7"
+  },
+  "probeline_qubit3_to_qubit4": {
+    "type": "polyline",
+    "id": "probeline_qubit3_to_qubit4",
+    "name": "probeline_qubit3_to_qubit4",
+    "terminals": {
+      "start": {
+        "device": "qubit3",
+        "port": "coupling_o1"
+      },
+      "finish": {
+        "device": "qubit4",
+        "port": "coupling_o2"
+      }
+    },
+    "routing_strategy": "route_bundle_sbend_cpw",
+    "net": "net_12"
+  }
+}
