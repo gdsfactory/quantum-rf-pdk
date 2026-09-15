@@ -59,7 +59,7 @@ pytestmark = pytest.mark.xdist_group("gfp-server")
 SAMPLE_FACTORIES = (
     "qubit_test_chip",
     "flipmon_test_chip",
-    "resonator_test_chip_yaml",
+    "resonator_test_chip_schematic",
 )
 
 #: Well-known qpdk cells that must appear in the generated nyanlib.

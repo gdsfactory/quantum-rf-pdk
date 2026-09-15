@@ -147,10 +147,10 @@ def resonator_test_chip_python(
     )
 
 
-def resonator_test_chip_yaml(
+def resonator_test_chip_schematic(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
 ) -> sax.SDict:
-    """SAX model for ``resonator_test_chip_yaml.gsch``.
+    """SAX model for ``resonator_test_chip_schematic.gsch``.
 
     The ``.gsch`` sample is the declarative form of the Python sample, so both
     use the same top-level model.
