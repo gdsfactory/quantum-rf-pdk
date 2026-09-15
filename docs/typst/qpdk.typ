@@ -87,12 +87,25 @@
   // LaTeX builder numbered them too (`:numbered:` is not set on any toctree
   // here, yet the old PDF had numbered sections), and a 400-page reference
   // manual needs them for the outline and cross-references to be usable.
-  set heading(numbering: "1.1")
+  //
+  // The generated index.typ wraps everything under a single level-1 root
+  // title.  Rather than numbering it "1" and shifting every real section
+  // down, the numbering drops the root's counter step: the root title is
+  // unnumbered and level-2 headings read "1", "2", ... like the HTML's top
+  // sections.  `outlined: false` keeps it out of the contents page and the
+  // PDF bookmarks, so the hierarchy is one level shallower everywhere.
+  set heading(numbering: (..nums) => {
+    let numbers = nums.pos()
+    if numbers.len() < 2 { "" } else { numbering("1.1", ..numbers.slice(1)) }
+  })
+  show heading.where(level: 1): set heading(outlined: false)
   show heading: it => {
     let sizes = (20pt, 15pt, 12.5pt, 11pt, 10.5pt, 10pt)
     let tracks = (-0.02em, -0.015em, -0.01em, -0.005em, -0.005em, -0.005em)
     let weights = (700, 700, 600, 600, 600, 600)
-    let i = calc.min(it.level, 6) - 1
+    // Style by content level, not heading level: level 2 is the top of the
+    // real hierarchy after the root title is taken out of the numbering.
+    let i = calc.max(calc.min(it.level, 6) - 2, 0)
     set text(
       font: heading-font,
       weight: weights.at(i),
@@ -182,7 +195,9 @@
     set text(font: heading-font, weight: 700, size: 20pt, tracking: -0.02em)
     block(above: 0pt, below: 0.8em, text(fill: accent)[Contents])
   }
-  show outline.entry.where(level: 1): it => {
+  // Level 2 entries are the top of the contents now that the root title is
+  // unoutlined (outlined: false above keeps it out of this query entirely).
+  show outline.entry.where(level: 2): it => {
     set text(font: heading-font, weight: 700)
     v(8pt, weak: true)
     it
