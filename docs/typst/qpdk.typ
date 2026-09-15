@@ -1,11 +1,12 @@
 // QPDK brand template for the Typst PDF documentation.
 //
-// Echoes the HTML theme (docs/_static/css/custom.css): Outfit for headings at
-// 700 with tightened tracking, Inter for body text, Code New Roman for code,
-// and #2a6fb5 as the accent.  The page is pure white rather than the site's
-// warm --qpdk-paper (#f6f4ef): that off-white reads as a deliberate screen
-// surface, but in print it looks like a scanning artefact, and a tinted
-// background costs ink on every page of a 400-page manual.
+// Colors and font families are parsed straight from the HTML theme's
+// custom.css (docs/_static/css/custom.css), which docs/conf.py stages next to
+// this copy, so the PDF and the site share one source of truth.  The page is
+// pure white rather than the site's warm --qpdk-paper (#f6f4ef): that
+// off-white reads as a deliberate screen surface, but in print it looks like
+// a scanning artefact, and a tinted background costs ink on every page of a
+// 400-page manual.
 //
 // The `project` signature is fixed by typsphinx: it passes title, authors,
 // date, toctree_* (from the master toctree) and the `typst_elements` keys.
@@ -13,14 +14,25 @@
 #import "@preview/codly:1.3.0": *
 #import "@preview/codly-languages:0.1.10": *
 
-#let accent = rgb("#2a6fb5")
-#let ink = rgb("#0e1116")
+#let css = read("custom.css")
+#let css-token(name, pattern) = {
+  let m = css.match(regex("--" + name + ":\\s*" + pattern))
+  if m == none { panic("custom.css has no --" + name + " token") }
+  m.captures.first()
+}
+#let css-color(name) = rgb(css-token(name, "(#[0-9a-fA-F]{6})"))
+#let css-font(name) = css-token(name, "\"([^\"]+)\"")
+
+#let accent = css-color("qpdk-accent")
+#let ink = css-color("qpdk-ink")
+// Print-only grays: custom.css has no muted-text or hairline-rule token.
 #let muted = rgb("#5b6472")
 #let rule = rgb("#dcdfe4")
 
-#let heading-font = ("Outfit", "DejaVu Sans")
-#let body-font = ("Inter", "DejaVu Sans")
-#let mono-font = ("Code New Roman", "DejaVu Sans Mono")
+#let heading-font = (css-font("pst-font-family-heading"), "DejaVu Sans")
+#let body-font = (css-font("pst-font-family-base"), "DejaVu Sans")
+#let mono-font = (css-font("pst-font-family-monospace"), "DejaVu Sans Mono")
+// The math font pairs with MathJax on the site, not with custom.css.
 #let math-font = ("Fira Math", "New Computer Modern Math")
 
 #let project(

@@ -306,15 +306,17 @@ def _repair_svgbob_svgs(root):
 
 def _stage_template_assets(root):
     """Copy template-referenced docs/_static assets into the template bundle."""
-    # This file lives in docs/_static/ but is referenced only by the
+    # These files live in docs/_static/ but are referenced only by the
     # template, and typsphinx copies just the document-referenced assets
-    # into the build, so it has to be staged next to the template copy.
+    # into the build, so they have to be staged next to the template copy.
     bundle = root / "_template" / "typst"
     if bundle.is_dir():
-        shutil.copy(
-            Path(__file__).parent / "_static" / "qpdk_logo.svg",
-            bundle / "qpdk_logo.svg",
-        )
+        # Staged flat: the template reads read("custom.css") relative to
+        # itself, so the css/ subpath from _static is dropped.
+        for name in ("qpdk_logo.svg", "css/custom.css"):
+            shutil.copy(
+                Path(__file__).parent / "_static" / name, bundle / Path(name).name
+            )
 
 
 def _check_docs_fonts(font_paths):
