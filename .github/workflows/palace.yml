@@ -1,0 +1,43 @@
+name: Palace
+permissions:
+  contents: read
+on:
+  pull_request:
+    paths:
+      - tests/test_palace_smoke.py
+      - notebooks/src/palace*
+      - .github/workflows/palace.yml
+  push:
+    branches:
+      - main
+    paths:
+      - tests/test_palace_smoke.py
+      - notebooks/src/palace*
+      - .github/workflows/palace.yml
+  workflow_dispatch:
+jobs:
+  palace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: Install system libraries for gmsh, klayout, and Palace
+        # The prebuilt Palace runtime bundles libmpi but expects system OpenMPI
+        # pieces: MCA components from libopenmpi3 and the orted daemon from
+        # openmpi-bin (the wrapper runs Palace as an MPI singleton)
+        run: >-
+          sudo apt-get update && sudo apt-get install -y libglu1-mesa libgl1 libexpat1 libgomp1 libxrender1 libxcursor1 libxfixes3 libxft2 libxinerama1 openmpi-bin openmpi-common
+      - name: Sync project environment
+        run: uv sync --python 3.12
+      - name: Install gsim and palace-toolkit
+        # gsim 0.4.0 (requires-python ~=3.12) is only on GitHub; PyPI has a stale 0.0.6
+        run: >-
+          uv pip install "gsim @ git+https://github.com/gdsfactory/gsim.git@0.4.0" palace-toolkit
+      - name: Pre-download the Palace runtime
+        run: uv run palace-toolkit-install-binary
+      - name: Run Palace smoke test
+        run: uv run pytest tests/test_palace_smoke.py -v
