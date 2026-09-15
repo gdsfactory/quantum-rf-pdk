@@ -3,10 +3,14 @@
 import re
 import shutil
 import tempfile
+from io import BytesIO
 from pathlib import Path
 
+import pikepdf
 import typst
 from docutils import nodes
+from lxml import etree
+from pikepdf.models.metadata import XmpDocument
 from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator, escape_typst_string
 
@@ -341,8 +345,72 @@ def _check_docs_fonts(font_paths):
         )
 
 
+_pdf_extra_metadata = {
+    "Repository": "https://github.com/gdsfactory/quantum-rf-pdk/",
+    "Documentation": "https://gdsfactory.github.io/quantum-rf-pdk/",
+    "License": "MIT",
+}
+
+_pdf_extra_descriptions = {
+    "Repository": "Source code repository",
+    "Documentation": "Rendered documentation site",
+    "License": "SPDX license identifier",
+}
+
+
+def _declare_pdfx_schema(meta):
+    """Describe the custom pdfx: properties in the XMP extension schemas bag.
+
+    PDF/A requires every non-standard XMP property to be declared in
+    pdfaExtension:schemas or validators flag the file.  pikepdf has no public
+    API for that bag, so edit the lxml tree it wraps; the edits serialize when
+    the open_metadata context exits.
+    """
+    ns = XmpDocument.NS
+    rdf = meta._xmp_doc._get_rdf_root()
+    bag = rdf.find(".//pdfaExtension:schemas/rdf:Bag", ns)
+    schema = etree.SubElement(bag, f"{{{ns['rdf']}}}li")
+    schema.set(f"{{{ns['rdf']}}}parseType", "Resource")
+    etree.SubElement(schema, f"{{{ns['pdfaSchema']}}}schema").text = "QPDK"
+    etree.SubElement(schema, f"{{{ns['pdfaSchema']}}}namespaceURI").text = ns["pdfx"]
+    etree.SubElement(schema, f"{{{ns['pdfaSchema']}}}prefix").text = "pdfx"
+    properties = etree.SubElement(schema, f"{{{ns['pdfaSchema']}}}property")
+    seq = etree.SubElement(properties, f"{{{ns['rdf']}}}Seq")
+    for name, description in _pdf_extra_descriptions.items():
+        prop = etree.SubElement(seq, f"{{{ns['rdf']}}}li")
+        prop.set(f"{{{ns['rdf']}}}parseType", "Resource")
+        etree.SubElement(prop, f"{{{ns['pdfaProperty']}}}category").text = "external"
+        etree.SubElement(
+            prop, f"{{{ns['pdfaProperty']}}}description"
+        ).text = description
+        etree.SubElement(prop, f"{{{ns['pdfaProperty']}}}name").text = name
+        etree.SubElement(prop, f"{{{ns['pdfaProperty']}}}valueType").text = "Text"
+
+
+def _enrich_pdf_metadata(pdf_bytes):
+    """Add repo, docs and license metadata to the compiled PDF bytes."""
+    with pikepdf.open(BytesIO(pdf_bytes)) as pdf:
+        # set_pikepdf_as_editor=False keeps Typst as xmp:CreatorTool and leaves
+        # the Info dictionary without a Producer, matching a plain typst build.
+        with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
+            for key, value in _pdf_extra_metadata.items():
+                meta[f"pdfx:{key}"] = value
+            _declare_pdfx_schema(meta)
+        for key, value in _pdf_extra_metadata.items():
+            pdf.docinfo[f"/{key}"] = value
+        out = BytesIO()
+        # Typst writes its objects unpacked; repacking into object streams
+        # roughly halves the file size at no cost to PDF/A conformance.
+        pdf.save(out, object_stream_mode=pikepdf.ObjectStreamMode.generate)
+    return out.getvalue()
+
+
 def _typst_compile_with_fonts(*args, **kwargs):
-    """Compile Typst as PDF/A-2b, with the local docs font cache when present."""
+    """Compile Typst as PDF/A-2b, with the local docs font cache when present.
+
+    Returns:
+        The compiled PDF bytes, enriched with the extra pdfx metadata.
+    """
     kwargs.setdefault("pdf_standards", ["a-2b"])
     if _local_fonts.is_dir():
         kwargs.setdefault("font_paths", [str(_local_fonts)])
@@ -351,7 +419,7 @@ def _typst_compile_with_fonts(*args, **kwargs):
     if root.is_dir():
         _repair_svgbob_svgs(root)
         _stage_template_assets(root)
-    return _typst_compile(*args, **kwargs)
+    return _enrich_pdf_metadata(_typst_compile(*args, **kwargs))
 
 
 typst.compile = _typst_compile_with_fonts
