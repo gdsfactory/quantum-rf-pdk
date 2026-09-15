@@ -12,13 +12,15 @@ import typst
 from docutils import nodes
 from lxml import etree
 from pikepdf.models.metadata import XmpDocument
+from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator, escape_typst_string
 
 _TYPST_VISIT_MATH_BLOCK = TypstTranslator.visit_math_block
-_TYPST_VISIT_LIST_ITEM = TypstTranslator.visit_list_item
-_TYPST_DEPART_LIST_ITEM = TypstTranslator.depart_list_item
+_TYPST_VISIT_BULLET_LIST = TypstTranslator.visit_bullet_list
+_TYPST_DEPART_BULLET_LIST = TypstTranslator.depart_bullet_list
 _TYPST_VISIT_ADMONITION = TypstTranslator._visit_admonition
+logger = logging.getLogger(__name__)
 
 project = "qpdk"
 author = "gdsfactory"
@@ -153,10 +155,10 @@ nb_mime_priority_overrides = [
     (builder, mime, priority)
     for builder in ("typst", "typstpdf")
     for mime, priority in (
-        ("image/svg+xml", 10),
-        ("image/png", 20),
-        ("image/jpeg", 30),
-        ("text/latex", 40),
+        ("text/latex", 10),
+        ("image/svg+xml", 20),
+        ("image/png", 30),
+        ("image/jpeg", 40),
         ("text/markdown", 50),
         ("text/plain", 60),
     )
@@ -797,18 +799,12 @@ def _typst_drop_unresolved_myst_xrefs(app, doctree, _docname):
     if app.builder.name not in {"typst", "typstpdf"}:
         return
     for node in list(doctree.findall(nodes.reference)):
-        if node.get("refuri"):
-            continue
-        if any(
-            isinstance(child, nodes.Element)
-            and {"xref", "myst"} <= set(child.get("classes", []))
-            for child in node.children
-        ):
+        if node.get("refid") and not node.get("refuri"):
             node.replace_self(node.children)
 
 
 def _typst_lift_block_images(app, doctree, _docname):
-    """Unwrap paragraphs whose only child is an image.
+    """Lift images and their links out of paragraphs.
 
     MyST renders standalone ``![]()`` images as a paragraph around the image,
     and typsphinx wraps the paragraph in ``par({...})``, so the ``image()``
@@ -819,8 +815,25 @@ def _typst_lift_block_images(app, doctree, _docname):
     if app.builder.name not in {"typst", "typstpdf"}:
         return
     for par in list(doctree.findall(nodes.paragraph)):
-        if len(par.children) == 1 and isinstance(par.children[0], nodes.image):
-            par.replace_self(par.children[0])
+        replacement = []
+        inline = []
+        for child in par.children:
+            is_image = isinstance(child, nodes.image) or (
+                isinstance(child, nodes.reference)
+                and len(child.children) == 1
+                and isinstance(child.children[0], nodes.image)
+            )
+            if is_image:
+                if inline:
+                    replacement.append(nodes.paragraph("", *inline))
+                    inline = []
+                replacement.append(child)
+            else:
+                inline.append(child)
+        if replacement:
+            if inline:
+                replacement.append(nodes.paragraph("", *inline))
+            par.replace_self(replacement)
 
 
 def _typst_string(text):
@@ -839,8 +852,18 @@ def _typst_string(text):
 
 
 _TABULAR_RE = re.compile(
-    r"\\begin\{tabular\}\{([^}]*)\}(.*?)\\end\{tabular\}", re.DOTALL
+    r"\\begin\{(?P<environment>tabular|longtable)\}\{(?P<columns>[^}]*)\}"
+    r"(?P<body>.*?)\\end\{(?P=environment)\}",
+    re.DOTALL,
 )
+_TABLE_WRAPPER_RE = re.compile(
+    r"\\begin\{table\}(?:\[[^]]*])?(?P<content>.*?)\\end\{table\}", re.DOTALL
+)
+_TABULAR_START_RE = re.compile(r"\\begin\{(?:table|tabular|longtable)\}")
+_TABLE_CAPTION_RE = re.compile(
+    r"\\caption(?:\[[^]]*])?\{(?P<caption>(?:[^{}]|\{[^{}]*})*)\}", re.DOTALL
+)
+_LATEX_TEXT_ESCAPE_RE = re.compile(r"\\([&%_#])")
 
 
 def _typst_cell(cell):
@@ -852,6 +875,7 @@ def _typst_cell(cell):
         A Typst expression for the cell content.
     """
     parts = []
+    cell = _LATEX_TEXT_ESCAPE_RE.sub(r"\1", cell)
     for index, chunk in enumerate(re.split(r"\$([^$]*)\$", cell.strip())):
         if index % 2:
             parts.append(f"mi(`{chunk}`)")
@@ -872,24 +896,35 @@ def _tabular_to_typst(latex):
 
     Returns:
         The Typst ``table(...)`` source, or ``None`` if ``latex`` is not a
-        single ``tabular`` environment.
+        single ``tabular`` or ``longtable`` environment, optionally wrapped
+        in a LaTex ``table`` environment.
     """
-    # fullmatch, not search: a block that merely *contains* a tabular also has
-    # surrounding math, and the caller emits only what is returned here, so a
-    # partial match would silently drop the rest.  Anything else falls through
-    # to typsphinx's normal mitex path.
-    match = _TABULAR_RE.fullmatch(latex.strip())
+    latex = latex.strip()
+    caption = None
+    if wrapper := _TABLE_WRAPPER_RE.fullmatch(latex):
+        latex = wrapper["content"].strip()
+        if caption_match := _TABLE_CAPTION_RE.search(latex):
+            caption = caption_match["caption"]
+            latex = _TABLE_CAPTION_RE.sub("", latex).strip()
+        latex = re.sub(r"\\label\{[^}]*}", "", latex).strip()
+
+    match = _TABULAR_RE.fullmatch(latex)
     if match is None:
         return None
     # Every spec `DataFrame.to_latex()` emits here is plain `[lr]+` (`llll`,
     # `lrrrr`), so counting alignment letters is enough; a spec with widths
     # (`p{3cm}`) or `@{}` padding would need real parsing.
-    columns = sum(match.group(1).count(spec) for spec in "lcr")
+    columns = sum(match["columns"].count(spec) for spec in "lcr")
+    if any(token in match["body"] for token in (r"\multicolumn", r"\multirow")):
+        return None
     rows = []
-    for raw_row in match.group(2).split(r"\\"):
+    for raw_row in match["body"].split(r"\\"):
         row = re.sub(r"\\(top|mid|bottom)rule", "", raw_row).strip()
         if row:
-            rows.append([_typst_cell(cell) for cell in row.split("&")])
+            cells = re.split(r"(?<!\\)&", row)
+            if len(cells) != columns:
+                return None
+            rows.append([_typst_cell(cell) for cell in cells])
     if not rows or columns == 0:
         return None
     header, *body = rows
@@ -899,7 +934,17 @@ def _tabular_to_typst(latex):
     ]
     lines.extend("  " + ", ".join(row) + "," for row in body)
     lines.append(")")
-    return "\n".join(lines)
+    table = "\n".join(lines)
+    if caption is None:
+        return table
+    return f"figure(\n  {table},\n  caption: [{_typst_cell(caption)}],\n)"
+
+
+def _typst_add_block_separator(self):
+    """Prepare a block expression following prose or another list-item block."""
+    self._add_paragraph_separator()
+    if self.in_list_item and self.list_item_needs_separator:
+        self.add_text("\n")
 
 
 def _typst_visit_math_block(self, node):
@@ -913,35 +958,42 @@ def _typst_visit_math_block(self, node):
     """
     table = _tabular_to_typst(node.astext())
     if table is None:
+        if _TABULAR_START_RE.search(node.astext()):
+            logger.warning(
+                "Rendering unsupported LaTeX table as a code block in the Typst output"
+            )
+            _typst_add_block_separator(self)
+            self.add_text(
+                f'raw("{_typst_string(node.astext())}", lang: "latex", block: true)\n'
+            )
+            if self.in_list_item:
+                self.list_item_needs_separator = True
+            raise nodes.SkipNode
         return _TYPST_VISIT_MATH_BLOCK(self, node)
+    _typst_add_block_separator(self)
     self.add_text(table + "\n")
+    if self.in_list_item:
+        self.list_item_needs_separator = True
     raise nodes.SkipNode
 
 
-def _typst_visit_list_item(self, node):
-    """Open a list item with the surrounding code-mode concat context suppressed.
+def _typst_visit_bullet_list(self, node):
+    """Open a list with the surrounding inline concat context suppressed.
 
     A list inside a field body (a Napoleon ``Returns:`` block whose text is
     followed by bullets) is emitted as ``list({...}, {...})`` while typsphinx
-    still considers the field body an active ``+``-concatenation context, so
-    every item after the first opens with a stray unary ``+`` and Typst fails
-    with "cannot apply unary '+' to content".  Each item's ``{ }`` block is a
-    fresh context, so suppress the outer one exactly as typsphinx's own
-    ``_enter_inline_concat_element`` does for emphasis, strong and links.
+    still considers the field body an active ``+``-concatenation context.
+    Treat the list itself as one concat element so both preceding and following
+    prose are separated from the block expression.
     """
-    _TYPST_VISIT_LIST_ITEM(self, node)
-    context = self._inline_concat_context()
-    self.__dict__.setdefault("_qpdk_list_item_concat", []).append(context)
-    if context is not None:
-        setattr(self, context[0], False)
+    self._enter_inline_concat_element()
+    _TYPST_VISIT_BULLET_LIST(self, node)
 
 
-def _typst_depart_list_item(self, node):
-    """Restore the concat context suppressed by :func:`_typst_visit_list_item`."""
-    context = self._qpdk_list_item_concat.pop()
-    if context is not None:
-        setattr(self, context[0], True)
-    _TYPST_DEPART_LIST_ITEM(self, node)
+def _typst_depart_bullet_list(self, node):
+    """Restore the concat context around a completed list."""
+    _TYPST_DEPART_BULLET_LIST(self, node)
+    self._exit_inline_concat_element()
 
 
 # HTML light-mode admonition colors, per gentle-clues function name.
@@ -964,7 +1016,7 @@ _TYPST_CLUE_COLORS = {
 
 def _typst_visit_admonition(self, node, clue_type, custom_title=None):
     """Delegate to typsphinx's helper, remembering the clue type for depart."""
-    self._qpdk_clue_type = clue_type
+    self.__dict__.setdefault("_qpdk_clue_types", []).append(clue_type)
     _TYPST_VISIT_ADMONITION(self, node, clue_type, custom_title)
 
 
@@ -993,7 +1045,7 @@ def _typst_depart_admonition(self):
     if title_expr:
         self.add_text(f", title: {title_expr}")
 
-    colors = _TYPST_CLUE_COLORS.get(getattr(self, "_qpdk_clue_type", None))
+    colors = _TYPST_CLUE_COLORS.get(self._qpdk_clue_types.pop())
     if colors:
         accent, header = colors
         self.add_text(
@@ -1034,6 +1086,7 @@ def _typst_visit_passthrough(self, node):
         for child in node.findall(nodes.reference)
     ):
         raise nodes.SkipNode
+    _typst_add_block_separator(self)
     self.add_text("par({")
     state = self.__dict__.setdefault("_qpdk_paragraph_state", [])
     state.append((self.in_paragraph, self.paragraph_has_content))
@@ -1057,9 +1110,12 @@ def _typst_visit_doctest_block(self, node):
     Raises:
         nodes.SkipNode: Always, the block is emitted here in full.
     """
+    _typst_add_block_separator(self)
     self.add_text(
         f'raw("{_typst_string(node.astext())}", lang: "pycon", block: true)\n'
     )
+    if self.in_list_item:
+        self.list_item_needs_separator = True
     raise nodes.SkipNode
 
 
@@ -1125,11 +1181,19 @@ def setup(app):
         (nodes.meta, _typst_visit_meta, None),
     ):
         name = node_class.__name__
+        if hasattr(TypstTranslator, f"visit_{name}"):
+            raise RuntimeError(
+                f"typsphinx now implements visit_{name}; remove the QPDK override"
+            )
         setattr(TypstTranslator, f"visit_{name}", visit)
         if depart is not None:
+            if hasattr(TypstTranslator, f"depart_{name}"):
+                raise RuntimeError(
+                    f"typsphinx now implements depart_{name}; remove the QPDK override"
+                )
             setattr(TypstTranslator, f"depart_{name}", depart)
     TypstTranslator.visit_math_block = _typst_visit_math_block
-    TypstTranslator.visit_list_item = _typst_visit_list_item
-    TypstTranslator.depart_list_item = _typst_depart_list_item
+    TypstTranslator.visit_bullet_list = _typst_visit_bullet_list
+    TypstTranslator.depart_bullet_list = _typst_depart_bullet_list
     TypstTranslator._visit_admonition = _typst_visit_admonition
     TypstTranslator._depart_admonition = _typst_depart_admonition
