@@ -35,7 +35,29 @@
   lang: "en",
   body,
 ) = {
-  set document(title: title, author: authors)
+  // typsphinx's typst_elements allowlist (papersize, fontsize, lang) cannot
+  // carry these, and the tuple title must stay short for the running header,
+  // so the full metadata lives here.
+  set document(
+    title: title,
+    author: authors,
+    description: "QPDK is an open-source process design kit (PDK) for superconducting quantum RF applications built on gdsfactory: parametric quantum circuit components (transmon qubits, CPW resonators, Josephson junctions, ...), analytical S-parameter models, routing utilities, and test-chip examples.",
+    keywords: (
+      "QPDK",
+      "process design kit",
+      "PDK",
+      "superconducting quantum circuits",
+      "quantum computing",
+      "transmon qubits",
+      "CPW resonators",
+      "Josephson junctions",
+      "gdsfactory",
+      "GDSII",
+      "S-parameters",
+      "SAX",
+      "JAX",
+    ),
+  )
 
   set page(
     paper: papersize,
