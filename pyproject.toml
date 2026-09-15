@@ -78,6 +78,7 @@ scqubits = ["scqubits"]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
   "jinja2",
+  "jupyterlab==4.6.3",
   "jupytext",
   "kwasm",
   "linkify-it-py",
