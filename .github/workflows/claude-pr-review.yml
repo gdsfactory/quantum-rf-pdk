@@ -4,6 +4,9 @@ on:
     types: [opened, synchronize, reopened]
   issue_comment:
     types: [created]
+concurrency:
+  group: claude-pr-review-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event.action }}
+  cancel-in-progress: true
 permissions:
   contents: read
   pull-requests: write

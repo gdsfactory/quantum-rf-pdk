@@ -8,6 +8,9 @@ on:
       - main
   workflow_dispatch:
   merge_group:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   build-docs-pdf:
     runs-on: ubuntu-latest
