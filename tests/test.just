@@ -34,20 +34,32 @@ check-lfs:
         #   jj restore --from @- tests/models/data tests/test_models_regression
         echo "Git LFS is available. Smudging LFS files in the jj working copy…"
         gitdir=$(jj git root)
-        while IFS= read -r -d '' f; do
+        mapfile -t lfs_files < <(git --git-dir "$gitdir" lfs ls-files -n)
+        if ((${#lfs_files[@]} == 0)); then
+            echo "Error: Git LFS tracks no files in the backing repository." >&2
+            exit 1
+        fi
+        for f in "${lfs_files[@]}"; do
+            if [[ ! -f "$f" ]]; then
+                echo "Error: LFS-tracked file is missing from the workspace: $f" >&2
+                exit 1
+            fi
             # Skip files that already hold real content, not a pointer (cmp, not
             # $(head ...): the binary content would trip bash's null-byte check)
             if ! cmp -s <(head -c 42 "$f") \
                 <(printf 'version https://git-lfs.github.com/spec/v1'); then
                 continue
             fi
-            git --git-dir "$gitdir" lfs smudge < "$f" > "$f.tmp" \
-                && mv "$f.tmp" "$f" || { rm -f "$f.tmp"; exit 1; }
-        done < <(
-            grep 'filter=lfs' .gitattributes | cut -d' ' -f1 | while IFS= read -r pat; do
-                find . -name .jj -prune -o -type f -path "./$pat" -print0
-            done
-        )
+            tmp=$(mktemp "$f.XXXXXX")
+            GIT_LFS_SKIP_SMUDGE=0 git --git-dir "$gitdir" lfs smudge < "$f" > "$tmp"
+            if cmp -s <(head -c 42 "$tmp") \
+                <(printf 'version https://git-lfs.github.com/spec/v1'); then
+                rm -f "$tmp"
+                echo "Error: Git LFS did not smudge $f." >&2
+                exit 1
+            fi
+            mv "$tmp" "$f"
+        done
     else
         echo "Error: Not in a Git or Jujutsu repository." >&2
         exit 1
