@@ -261,7 +261,8 @@ for examples of:
   - Filled test chips with multiple components (`filled_test_chip.py`)
   - Routing examples with airbridges (`route_with_airbridges.py`)
   - Simulation workflows (`simulate_resonator.py`)
-- **Netlist and schematic files**: Some samples use `.pic.yml` netlists for layout definitions and `.gsch` for schematic definitions
+- **Netlist and schematic files**: Some samples use `.pic.yml` netlists for layout definitions and `.gsch` for schematic
+  definitions
 - **Testing**: Samples are tested to ensure they generate valid GDS files (see `tests/test_pdk.py`)
 
 ### Creating New Notebooks or Samples
