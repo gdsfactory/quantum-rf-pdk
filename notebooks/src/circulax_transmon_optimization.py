@@ -274,7 +274,10 @@ Ic_init = params["Ic"]
 
 # Weak drive parameters
 V_drive = 1e-6  # 1 μV drive amplitude (weak probe)
-f_drive = f_target  # drive at target frequency
+# The classical small-signal resonance of the JJ||Cs circuit is the plasma
+# frequency f_p = f01 - alpha, not the transition frequency f01 itself.
+f_p_target = f_target - alpha_target  # 5.3 GHz plasma frequency
+f_drive = f_p_target
 
 
 def build_transmon_netlist(Cs: float, Ic: float, EJ2_ratio: float = 0.0) -> dict:
@@ -457,12 +460,13 @@ def hb_loss_fn(params_vec: jnp.ndarray) -> float:
     # Recompiling the netlist inside the traced function would turn the
     # topology index arrays into tracers and break the solver setup.
     #
-    # We drive at f_target, so the response at the 1st harmonic should be
-    # maximized if the circuit is perfectly resonant at f_target. To formulate
-    # this as a minimization, we penalize the inverse of the response.
+    # The classical circuit resonates at the plasma frequency
+    # f_p = f01 - alpha, so the response at the 1st harmonic is maximized when
+    # the plasma frequency matches f_p_target. To formulate this as a
+    # minimization, we penalize the inverse of the response.
     # For this LC-like circuit with no DC drive, the DC operating point is zero.
     _, y_freq_current = circuit.hb(
-        freq=f_target,
+        freq=f_p_target,
         harmonics=3,
         y0=jnp.zeros(circuit.sys_size),
         params={"JJ1.Ic": Ic, "Cs1.C": Cs},
@@ -820,8 +824,10 @@ plt.show()
 # ### 2.5 Crosstalk Sensitivity Analysis
 #
 # We use `jax.grad` to differentiate the peak crosstalk voltage with respect
-# to the coupling capacitance. The resulting sensitivity quantifies how
-# strongly the parasitic coupling responds to changes in :math:`C_m`, which
+# to :math:`\log C_m`. The resulting logarithmic sensitivity
+# :math:`\partial V_{\text{peak}}/\partial \log C_m = C_m \, \partial
+# V_{\text{peak}}/\partial C_m` quantifies the fractional change in the
+# parasitic coupling per unit fractional change in :math:`C_m`, which
 # in a real design is set by the physical spacing between qubits.
 #
 # Since Circulax runs entirely in JAX, the gradient flows through the ODE
@@ -860,7 +866,7 @@ def crosstalk_metric(log_Cm: float) -> float:
     return jnp.max(jnp.abs(v_victim))
 
 
-# Compute gradient of crosstalk w.r.t. coupling capacitance
+# Logarithmic sensitivity: dV_peak/dlog(Cm) = Cm * dV_peak/dCm
 log_Cm = jnp.log(Cm_init)
 grad_crosstalk = jax.grad(crosstalk_metric)(log_Cm)
 
