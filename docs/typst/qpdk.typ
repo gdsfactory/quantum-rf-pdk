@@ -88,10 +88,20 @@
   // stroke, .1578em offset).  Style `it`, never `it.body`: returning the body
   // alone replaces the link element with plain text and the PDF loses its
   // clickable URL annotation.
-  show link: it => text(
-    fill: accent,
-    underline(offset: 0.1578em, stroke: 0.75pt + accent, it),
-  )
+  show link: it => {
+    // Chip links (raw body) skip the underline: drawn around the chip box it
+    // lands below the border and reads as a stray blue bar.  The site
+    // underlines the code text inside the chip, which Typst cannot reach
+    // from here.
+    if it.body.func() == raw {
+      text(fill: accent, it)
+    } else {
+      text(
+        fill: accent,
+        underline(offset: 0.1578em, stroke: 0.75pt + accent, it),
+      )
+    }
+  }
 
   // Math in Fira Math, matching the HTML MathJax font (mathjax4_config).
   show math.equation: set text(font: math-font)
