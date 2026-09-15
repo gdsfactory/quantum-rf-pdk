@@ -3,6 +3,7 @@
 import re
 from pathlib import Path
 
+import typst
 from docutils import nodes
 from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator, escape_typst_string
@@ -265,22 +266,54 @@ typst_use_mitex = True
 # `docs/typst/` to template files only.
 typst_template = "typst/qpdk.typ"
 
-# typsphinx calls typst.compile() without font_paths and typst-py ignores
-# TYPST_FONT_PATHS, so the template's font stacks fall back to the Typst
-# defaults unless the families are installed system-wide. docs.just fetches
-# them into build/docs-fonts; use it when present.
+# typsphinx calls typst.compile() without font_paths or pdf_standards, and
+# typst-py ignores TYPST_FONT_PATHS.  PDF/A-2b is an export-time setting with
+# no in-document equivalent, so it has to be injected here: typsphinx imports
+# the module inside its compile function, which picks up this wrapper.  Typst
+# enforces the standard during the write, so a successful build is a
+# conforming one.
+# font_paths is only needed when the families are not installed system-wide;
+# docs.just fetches them into build/docs-fonts, CI installs them via fc-cache.
 _local_fonts = Path(__file__).parent.parent / "build" / "docs-fonts"
-if _local_fonts.is_dir():
-    import typst
 
-    _typst_compile = typst.compile
+_typst_compile = typst.compile
 
-    def _typst_compile_with_fonts(*args, **kwargs):
-        """Compile Typst with the local docs font cache on the font path."""
+
+def _repair_svgbob_svgs(root):
+    """Fix svgbob SVG font stacks Typst cannot resolve.
+
+    sphinxcontrib-svgbob writes ``font-family: Iosevka Fixed, monospace``;
+    Typst's SVG engine parses the comma stack as one unknown family, so the
+    text falls back to LastResort (tofu, and a hard PDF/A-2b error for
+    box-drawing glyphs like U+2577).  DejaVu Sans Mono ships with Typst and
+    covers them.
+    """
+    # typsphinx rewrites image URIs source-root-relative, so the SVGs end up
+    # nested one _build/typstpdf deeper than the compile root.
+    for svg_path in root.rglob("*.svg"):
+        src = svg_path.read_text()
+        if "Iosevka Fixed" not in src:
+            continue
+        svg_path.write_text(
+            src.replace(
+                "font-family: Iosevka Fixed, monospace;",
+                "font-family: DejaVu Sans Mono;",
+            )
+        )
+
+
+def _typst_compile_with_fonts(*args, **kwargs):
+    """Compile Typst as PDF/A-2b, with the local docs font cache when present."""
+    kwargs.setdefault("pdf_standards", ["a-2b"])
+    if _local_fonts.is_dir():
         kwargs.setdefault("font_paths", [str(_local_fonts)])
-        return _typst_compile(*args, **kwargs)
+    root = Path(kwargs.get("root") or Path(args[0]).parent)
+    if root.is_dir():
+        _repair_svgbob_svgs(root)
+    return _typst_compile(*args, **kwargs)
 
-    typst.compile = _typst_compile_with_fonts
+
+typst.compile = _typst_compile_with_fonts
 
 # -- Warning suppression ------------------------------------------------------
 suppress_warnings = [
