@@ -7,6 +7,7 @@ import os
 import sys
 from typing import TYPE_CHECKING
 
+import gdsfactory as gf
 import pytest
 
 from qpdk import PDK
@@ -89,3 +90,24 @@ def pytest_collection_modifyitems(
 def activate_pdk() -> None:
     """Activate PDK."""
     PDK.activate()
+
+
+@pytest.fixture(autouse=True)
+def preserve_kcl_cells():
+    """Fail a test that deletes pre-existing cells from the shared KCLayout.
+
+    ``gf.kcl`` is process-global; deleting cells from it silently invalidates
+    cells other code still references (they are rebuilt through the ``@cell``
+    cache-purge path instead). Tests must only ever delete cells they created
+    themselves.
+
+    Comparison is by cell name, not index: rebuilding a cell under the same
+    name is legitimate (kfactory's ``overwrite_existing`` path, used by the
+    gdsfactoryplus layout pipeline) and the replacement gets a fresh cell
+    index, so index-based comparison would false-positive on it.
+    """
+    before = {gf.kcl[ci].name for ci in gf.kcl.each_cell_top_down()}
+    yield
+    after = {gf.kcl[ci].name for ci in gf.kcl.each_cell_top_down()}
+    deleted = before - after
+    assert not deleted, f"Test deleted pre-existing KCLayout cells: {sorted(deleted)}"
