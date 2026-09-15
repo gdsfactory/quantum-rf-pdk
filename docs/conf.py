@@ -458,6 +458,22 @@ def _typst_drop_unresolved_myst_xrefs(app, doctree, _docname):
             node.replace_self(node.children)
 
 
+def _typst_lift_block_images(app, doctree, _docname):
+    """Unwrap paragraphs whose only child is an image.
+
+    MyST renders standalone ``![]()`` images as a paragraph around the image,
+    and typsphinx wraps the paragraph in ``par({...})``, so the ``image()``
+    lands inside a paragraph and Typst silently drops it with "block may not
+    occur inside of a paragraph".  Lifting the image to the paragraph's place
+    emits it bare, the way the figure and plot directives already do.
+    """
+    if app.builder.name not in {"typst", "typstpdf"}:
+        return
+    for par in list(doctree.findall(nodes.paragraph)):
+        if len(par.children) == 1 and isinstance(par.children[0], nodes.image):
+            par.replace_self(par.children[0])
+
+
 def _typst_string(text):
     """Escape ``text`` for use inside a Typst double-quoted string literal.
 
@@ -731,6 +747,7 @@ def setup(app):
     app.connect("source-read", replace_image_paths, priority=400)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
     app.connect("doctree-resolved", _typst_strip_ansi)
+    app.connect("doctree-resolved", _typst_lift_block_images)
     # Convert $-delimited math before any other processing
     app.connect("autodoc-process-docstring", dollar_math_handler, priority=100)
     # We use a late priority to ensure we see the types added by autodoc
