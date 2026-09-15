@@ -5,10 +5,11 @@ against this PDK:
 
 - ``check_lvs``: a hand-authored ``.gsch`` nyancir wrapper schematic matches
   its wrapper layout with zero violations (elvis engine), plus a negative
-  control so the passing assertion cannot become vacuous. The checked-in
-  ``.pic.yml`` sample is covered against its directly materialized layout,
-  so a gfp release dropping ``.pic.yml`` schematic resolution does not go
-  unnoticed.
+  control so the passing assertion cannot become vacuous. Both checked-in
+  ``.pic.yml`` samples are covered against their directly materialized
+  layouts, so a gfp release dropping ``.pic.yml`` schematic resolution does
+  not go unnoticed: the resonator test chip matches with zero violations,
+  the qubit test chip keeps two by-design opens.
 - ``check_connectivity``: the report is parseable and contains no
   short/overlap/mismatch violations. ``DanglingPort`` items are expected
   noise for hierarchical GDS: library leaf-cell ports connect in their
@@ -34,15 +35,11 @@ Behavioral notes these tests encode:
 
 The schematic/layout pairing mirrors the gfp app: the nyancir is a wrapper
 around ``resonator_test_chip_python``, so the compared layout is a wrapper
-cell containing that chip as a single instance. The fully detailed sample
-``resonator_test_chip_schematic.gsch`` is intentionally not used here: its
-schematic nets are keyed by logical instance names and the resonator open
-ends are by design, so a materialized layout does not LVS-match it (build
-and geometric parity live in ``test_resonator_test_chip.py``). The
-``.pic.yml`` sample, in contrast, is fully detailed but LVS-matches its
-materialized layout, because gdsfactory derives its nets from the very
-placement and routes it materializes. Two opens remain by design: the
-sample's tees end on the launchers' ``o1`` pins, leaving the
+cell containing that chip as a single instance. Both ``.pic.yml`` samples,
+in contrast, are fully detailed netlists and LVS-match their directly
+materialized layouts, because gdsfactory derives their nets from the very
+placement and routes it materializes. The qubit sample keeps two by-design
+opens: its tees end on the launchers' ``o1`` pins, leaving the
 ``launcher_bot``/``launcher_top`` waveports unterminated
 (``_EXPECTED_OPEN_PORTS``).
 
@@ -82,7 +79,8 @@ _CHIP_QUALNAME = "qpdk.samples.resonator_test_chip.resonator_test_chip_python"
 #: Chip ports the nyancir exposes; must match the wrapper GDS ports.
 _NYANCIR_PORTS = ("o1", "o2", "o3", "o4")
 
-#: Checked-in ``.pic.yml`` sample covered by the YAML-path LVS tests.
+#: Checked-in ``.pic.yml`` samples covered by the YAML-path LVS tests.
+RESONATOR_YML_SAMPLE = PROJECT_ROOT / "qpdk/samples/resonator_test_chip_yaml.pic.yml"
 PIC_YML_SAMPLE = PROJECT_ROOT / "qpdk/samples/qubit_test_chip.pic.yml"
 
 #: Launcher waveports the ``.pic.yml`` sample intentionally leaves unterminated
@@ -155,14 +153,10 @@ def _wrapper_component(name: str, *, with_o4: bool = True) -> gf.Component:
 
 @pytest.fixture(scope="module")
 def chip_yaml_gds(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Write the wrapper test-chip layout GDS to a temp directory."""
+    """Write the resonator ``.pic.yml`` sample's materialized layout GDS."""
     PDK.activate()  # not applied to module-scoped fixtures by the autouse hook
-    gds_path = (
-        tmp_path_factory.mktemp("gfp_verify") / "resonator_test_chip_schematic.gds"
-    )
-    # Distinct cellname: materializing the .gsch sample elsewhere in the
-    # suite registers "resonator_test_chip_schematic" in the shared KCLayout.
-    _wrapper_component("resonator_test_chip_schematic_wrapper").write_gds(gds_path)
+    gds_path = tmp_path_factory.mktemp("gfp_verify") / "resonator_test_chip_yaml.gds"
+    _materialize_pic_yml(RESONATOR_YML_SAMPLE, gds_path.stem).write_gds(gds_path)
     return gds_path
 
 
@@ -314,6 +308,48 @@ def test_lvs_nyancir_reports_a_broken_layout(
         str(nyancir_root / "resonator_test_chip_gfp.gsch"),
         "qpdk",
         project_root=str(nyancir_root),
+    )
+    root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
+    items = list(root.iter("item"))
+    descriptions = " | ".join(_item_description(item) for item in items)
+
+    assert items, "LVS accepted a layout that lost the o4 port connection"
+    assert "o4" in descriptions, f"Violations do not mention o4:\n{descriptions}"
+
+
+def test_lvs_resonator_test_chip_matches_schematic(
+    gfp_check: ModuleType, chip_yaml_gds: Path
+) -> None:
+    """Elvis LVS reports zero violations for the resonator chip vs its pic.yml."""
+    xml = gfp_check.check_lvs(
+        str(chip_yaml_gds),
+        str(RESONATOR_YML_SAMPLE),
+        "qpdk",
+        project_root=str(PROJECT_ROOT),
+    )
+    root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
+
+    assert root.tag == "report-database", xml[:500]
+    violations = _describe_violations(root)
+    assert not list(root.iter("item")), f"LVS violations:\n{violations}"
+
+
+def test_lvs_resonator_test_chip_yaml_reports_a_broken_layout(
+    gfp_check: ModuleType, tmp_path: Path
+) -> None:
+    """Negative control: a dropped o4 port must violate the resonator LVS."""
+    broken_yml = tmp_path / "resonator_test_chip_yaml_broken.pic.yml"
+    broken_yml.write_text(
+        RESONATOR_YML_SAMPLE.read_text().replace("  o4: probe_east_bot,waveport\n", "")
+    )
+    gds_path = tmp_path / "resonator_test_chip_yaml_broken.gds"
+    _materialize_pic_yml(broken_yml, gds_path.stem).write_gds(gds_path)
+
+    xml = gfp_check.check_lvs(
+        str(gds_path),
+        str(RESONATOR_YML_SAMPLE),
+        "qpdk",
+        project_root=str(PROJECT_ROOT),
     )
     root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
     items = list(root.iter("item"))
