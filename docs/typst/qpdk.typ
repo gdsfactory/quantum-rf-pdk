@@ -128,7 +128,7 @@
   // Math in Fira Math, matching the HTML MathJax font (mathjax4_config).
   show math.equation: set text(font: math-font)
 
-  show raw: set text(font: mono-font, size: 0.875em)
+  show raw: set text(font: mono-font, size: 0.9em)
   show: codly-init.with()
   codly(
     languages: codly-languages,
