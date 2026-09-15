@@ -74,7 +74,9 @@
       weight: weights.at(i),
       size: sizes.at(i),
       tracking: tracks.at(i),
-      fill: if it.level == 1 { accent } else { ink },
+      // The site keeps all headings near-black; only the navbar and the
+      // rules under the title page carry the accent.
+      fill: ink,
     )
     block(above: if it.level == 1 { 1.5em } else { 1.15em }, below: 0.6em, it)
   }
