@@ -57,8 +57,8 @@
   set text(font: body-font, size: fontsize, lang: lang, fill: ink)
   set par(justify: true, leading: 0.62em)
 
-  // Headings: Outfit 700, tracking tightened the way custom.css does
-  // (-0.02em at h1 easing to -0.005em deeper down).
+  // Headings: Outfit, weights and tracking matching custom.css (700 at h1/h2,
+  // 600 deeper down; -0.02em at h1 easing to -0.005em).
   // Headings are always numbered, regardless of `toctree_numbered`: Sphinx's
   // LaTeX builder numbered them too (`:numbered:` is not set on any toctree
   // here, yet the old PDF had numbered sections), and a 400-page reference
@@ -67,10 +67,11 @@
   show heading: it => {
     let sizes = (20pt, 15pt, 12.5pt, 11pt, 10.5pt, 10pt)
     let tracks = (-0.02em, -0.015em, -0.01em, -0.005em, -0.005em, -0.005em)
+    let weights = (700, 700, 600, 600, 600, 600)
     let i = calc.min(it.level, 6) - 1
     set text(
       font: heading-font,
-      weight: 700,
+      weight: weights.at(i),
       size: sizes.at(i),
       tracking: tracks.at(i),
       fill: if it.level == 1 { accent } else { ink },
