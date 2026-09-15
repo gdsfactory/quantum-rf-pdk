@@ -22,8 +22,36 @@ check-lfs:
         echo ""
         exit 1
     fi
-    echo "Git LFS is available. Pulling LFS files…"
-    git lfs pull
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        echo "Git LFS is available. Pulling LFS files…"
+        git lfs pull
+    elif command -v jj >/dev/null 2>&1 && jj git root >/dev/null 2>&1; then
+        # jj workspaces have no .git and jj never runs smudge filters, so the
+        # working copies hold LFS pointer text. Smudge each file in place via
+        # the backing git dir (smudge fetches missing objects on demand).
+        # The smudged files then show up as modified in jj; restore them from
+        # the parent commit before describing/pushing real work:
+        #   jj restore --from @- tests/models/data tests/test_models_regression
+        echo "Git LFS is available. Smudging LFS files in the jj working copy…"
+        gitdir=$(jj git root)
+        while IFS= read -r -d '' f; do
+            # Skip files that already hold real content, not a pointer (cmp, not
+            # $(head ...): the binary content would trip bash's null-byte check)
+            if ! cmp -s <(head -c 42 "$f") \
+                <(printf 'version https://git-lfs.github.com/spec/v1'); then
+                continue
+            fi
+            git --git-dir "$gitdir" lfs smudge < "$f" > "$f.tmp" \
+                && mv "$f.tmp" "$f" || { rm -f "$f.tmp"; exit 1; }
+        done < <(
+            grep 'filter=lfs' .gitattributes | cut -d' ' -f1 | while IFS= read -r pat; do
+                find . -name .jj -prune -o -type f -path "./$pat" -print0
+            done
+        )
+    else
+        echo "Error: Not in a Git or Jujutsu repository." >&2
+        exit 1
+    fi
 
 # Shared pytest invocation for internal callers passing pre-split argument strings (ensures LFS data first)
 [private]
