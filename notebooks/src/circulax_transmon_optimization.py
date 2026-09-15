@@ -534,7 +534,7 @@ print(f"Target:     f01 = {f_target / 1e9:.4f} GHz,  α = {alpha_target / 1e6:.1
 # ### 1.9 Optimization Convergence
 
 # %%
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+_, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
 
 ax1.semilogy(losses)
 ax1.set_xlabel("Optimization step")
@@ -738,7 +738,7 @@ print(
 # ### 2.4 Time-Domain Waveforms
 
 # %%
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+_, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
 
 t_ns = t_save * 1e9
 
