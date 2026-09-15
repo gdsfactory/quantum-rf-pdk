@@ -308,6 +308,17 @@ def _repair_svgbob_svgs(root):
         )
 
 
+def _rename_ipython_fences(root):
+    """Rename ipython3 code fences to python so codly highlights them."""
+    # Notebook code cells carry the kernel language ipython3, which
+    # codly-languages has no lexer for, so they would render unhighlighted.
+    for typ_path in root.rglob("*.typ"):
+        src = typ_path.read_text()
+        if "```ipython3" not in src:
+            continue
+        typ_path.write_text(src.replace("```ipython3", "```python"))
+
+
 def _stage_template_assets(root):
     """Copy template-referenced docs/_static assets into the template bundle."""
     # These files live in docs/_static/ but are referenced only by the
@@ -418,6 +429,7 @@ def _typst_compile_with_fonts(*args, **kwargs):
     root = Path(kwargs.get("root") or Path(args[0]).parent)
     if root.is_dir():
         _repair_svgbob_svgs(root)
+        _rename_ipython_fences(root)
         _stage_template_assets(root)
     return _enrich_pdf_metadata(_typst_compile(*args, **kwargs))
 
