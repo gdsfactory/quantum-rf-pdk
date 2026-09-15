@@ -4,14 +4,10 @@ import json
 import re
 import shutil
 import tempfile
-from io import BytesIO
 from pathlib import Path
 
-import pikepdf
 import typst
 from docutils import nodes
-from lxml import etree
-from pikepdf.models.metadata import XmpDocument
 from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator, escape_typst_string
@@ -276,11 +272,9 @@ typst_use_mitex = True
 typst_template = "typst/qpdk.typ"
 
 # typsphinx calls typst.compile() without font_paths or pdf_standards, and
-# typst-py ignores TYPST_FONT_PATHS.  PDF/A-2b is an export-time setting with
+# typst-py ignores TYPST_FONT_PATHS. PDF/A-2b is an export-time setting with
 # no in-document equivalent, so it has to be injected here: typsphinx imports
-# the module inside its compile function, which picks up this wrapper.  Typst
-# enforces the standard during the write, so a successful build is a
-# conforming one.
+# the module inside its compile function, which picks up this wrapper.
 # font_paths is only needed when the families are not installed system-wide;
 # docs.just fetches them into build/docs-fonts, CI installs them via fc-cache.
 _local_fonts = Path(__file__).parent.parent / "build" / "docs-fonts"
@@ -531,92 +525,45 @@ def _wrap_wide_math(root, font_paths):
 
 
 def _check_docs_fonts(font_paths):
-    """Fail before compiling when the docs font families do not resolve."""
+    """Fail before compiling when required docs font variants do not resolve."""
     # typst.compile() silently discards font warnings, so an unfound family
     # just falls back to tofu; only compile_with_warnings reports it.
-    families = ("Outfit", "Inter", "Code New Roman", "Fira Math")
+    fonts = (
+        ("Outfit", 600),
+        ("Outfit", 700),
+        ("Inter", 400),
+        ("Code New Roman", 400),
+        ("Fira Math", 400),
+    )
     with tempfile.TemporaryDirectory() as tmp:
         probe = Path(tmp) / "font-probe.typ"
-        probe.write_text("".join(f'#text(font: ("{f}",))[a]\n' for f in families))
+        probe.write_text(
+            "".join(
+                f'#text(font: ("{family}",), weight: {weight})[a]\n'
+                for family, weight in fonts
+            )
+        )
         _, warnings = typst.compile_with_warnings(
             str(probe), font_paths=font_paths or []
         )
-    reported = {w.message for w in warnings}
-    missing = sorted(
-        f for f in families if f"unknown font family: {f.lower()}" in reported
-    )
-    if missing:
+    unresolved = [
+        warning.message
+        for warning in warnings
+        if "unknown font family" in warning.message.lower()
+        or "font variant" in warning.message.lower()
+    ]
+    if unresolved:
         raise RuntimeError(
-            f"Typst cannot resolve the docs fonts: {', '.join(missing)}. "
+            f"Typst cannot resolve the docs fonts: {'; '.join(unresolved)}. "
             "Run `just fetch-docs-fonts` or install them system-wide, then rebuild."
         )
-
-
-_pdf_extra_metadata = {
-    "Repository": "https://github.com/gdsfactory/quantum-rf-pdk/",
-    "Documentation": "https://gdsfactory.github.io/quantum-rf-pdk/",
-    "License": "MIT",
-}
-
-_pdf_extra_descriptions = {
-    "Repository": "Source code repository",
-    "Documentation": "Rendered documentation site",
-    "License": "SPDX license identifier",
-}
-
-
-def _declare_pdfx_schema(meta):
-    """Describe the custom pdfx: properties in the XMP extension schemas bag.
-
-    PDF/A requires every non-standard XMP property to be declared in
-    pdfaExtension:schemas or validators flag the file.  pikepdf has no public
-    API for that bag, so edit the lxml tree it wraps; the edits serialize when
-    the open_metadata context exits.
-    """
-    ns = XmpDocument.NS
-    rdf = meta._xmp_doc._get_rdf_root()
-    bag = rdf.find(".//pdfaExtension:schemas/rdf:Bag", ns)
-    schema = etree.SubElement(bag, f"{{{ns['rdf']}}}li")
-    schema.set(f"{{{ns['rdf']}}}parseType", "Resource")
-    etree.SubElement(schema, f"{{{ns['pdfaSchema']}}}schema").text = "QPDK"
-    etree.SubElement(schema, f"{{{ns['pdfaSchema']}}}namespaceURI").text = ns["pdfx"]
-    etree.SubElement(schema, f"{{{ns['pdfaSchema']}}}prefix").text = "pdfx"
-    properties = etree.SubElement(schema, f"{{{ns['pdfaSchema']}}}property")
-    seq = etree.SubElement(properties, f"{{{ns['rdf']}}}Seq")
-    for name, description in _pdf_extra_descriptions.items():
-        prop = etree.SubElement(seq, f"{{{ns['rdf']}}}li")
-        prop.set(f"{{{ns['rdf']}}}parseType", "Resource")
-        etree.SubElement(prop, f"{{{ns['pdfaProperty']}}}category").text = "external"
-        etree.SubElement(
-            prop, f"{{{ns['pdfaProperty']}}}description"
-        ).text = description
-        etree.SubElement(prop, f"{{{ns['pdfaProperty']}}}name").text = name
-        etree.SubElement(prop, f"{{{ns['pdfaProperty']}}}valueType").text = "Text"
-
-
-def _enrich_pdf_metadata(pdf_bytes):
-    """Add repo, docs and license metadata to the compiled PDF bytes."""
-    with pikepdf.open(BytesIO(pdf_bytes)) as pdf:
-        # set_pikepdf_as_editor=False keeps Typst as xmp:CreatorTool and leaves
-        # the Info dictionary without a Producer, matching a plain typst build.
-        with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
-            for key, value in _pdf_extra_metadata.items():
-                meta[f"pdfx:{key}"] = value
-            _declare_pdfx_schema(meta)
-        for key, value in _pdf_extra_metadata.items():
-            pdf.docinfo[f"/{key}"] = value
-        out = BytesIO()
-        # Typst writes its objects unpacked; repacking into object streams
-        # roughly halves the file size at no cost to PDF/A conformance.
-        pdf.save(out, object_stream_mode=pikepdf.ObjectStreamMode.generate)
-    return out.getvalue()
 
 
 def _typst_compile_with_fonts(*args, **kwargs):
     """Compile Typst as PDF/A-2b, with the local docs font cache when present.
 
     Returns:
-        The compiled PDF bytes, enriched with the extra pdfx metadata.
+        The compiled PDF bytes.
     """
     kwargs.setdefault("pdf_standards", ["a-2b"])
     if _local_fonts.is_dir():
@@ -628,7 +575,7 @@ def _typst_compile_with_fonts(*args, **kwargs):
         _rename_ipython_fences(root)
         _stage_template_assets(root)
         _wrap_wide_math(root, kwargs.get("font_paths"))
-    return _enrich_pdf_metadata(_typst_compile(*args, **kwargs))
+    return _typst_compile(*args, **kwargs)
 
 
 typst.compile = _typst_compile_with_fonts

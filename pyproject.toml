@@ -83,7 +83,6 @@ docs = [
   "linkify-it-py",
   "matplotlib",
   "myst-nb>=1.0",
-  "pikepdf",
   "pydata-sphinx-theme",
   "scipy",
   "sphinx>=9.1",

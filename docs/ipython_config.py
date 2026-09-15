@@ -6,8 +6,8 @@ to ensure consistent, high-quality figures in the generated docs.
 """
 
 # Configure inline backend for matplotlib
-# Export figures in multiple formats for flexibility
-c.InlineBackend.figure_formats = ["pdf", "svg", "png"]  # ruff: ignore[undefined-name]
+# Export formats that the HTML and Typst builders can embed
+c.InlineBackend.figure_formats = ["svg", "png"]  # ruff: ignore[undefined-name]
 
 # Use tight bounding box to remove excess whitespace
 c.InlineBackend.print_figure_kwargs = {"bbox_inches": "tight"}  # ruff: ignore[undefined-name]

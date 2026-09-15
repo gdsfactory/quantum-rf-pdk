@@ -15,23 +15,36 @@
 #import "@preview/codly-languages:0.1.10": *
 
 #let css = read("custom.css")
-#let css-token(name, pattern) = {
-  let m = css.match(regex("--" + name + ":\\s*" + pattern))
-  if m == none { panic("custom.css has no --" + name + " token") }
-  m.captures.first()
+#let root-match = css.match(regex(":root\\s*\\{([\\s\\S]*?)\\}"))
+#let root-css = if root-match == none { "" } else {
+  root-match.captures.first()
 }
-#let css-color(name) = rgb(css-token(name, "(#[0-9a-fA-F]{6})"))
-#let css-font(name) = css-token(name, "\"([^\"]+)\"")
+#let css-token(name, pattern, fallback) = {
+  let m = root-css.match(regex("--" + name + ":\\s*" + pattern))
+  if m == none { fallback } else { m.captures.first() }
+}
+#let css-color(name, fallback) = rgb(css-token(
+  name,
+  "(#[0-9a-fA-F]{6})",
+  fallback,
+))
+#let css-font(name, fallback) = css-token(name, "\"([^\"]+)\"", fallback)
 
-#let accent = css-color("qpdk-accent")
-#let ink = css-color("qpdk-ink")
+#let accent = css-color("qpdk-accent", "#2a6fb5")
+#let ink = css-color("qpdk-ink", "#0e1116")
 // Print-only grays: custom.css has no muted-text or hairline-rule token.
 #let muted = rgb("#5b6472")
 #let rule = rgb("#dcdfe4")
 
-#let heading-font = (css-font("pst-font-family-heading"), "DejaVu Sans")
-#let body-font = (css-font("pst-font-family-base"), "DejaVu Sans")
-#let mono-font = (css-font("pst-font-family-monospace"), "DejaVu Sans Mono")
+#let heading-font = (
+  css-font("pst-font-family-heading", "Outfit"),
+  "DejaVu Sans",
+)
+#let body-font = (css-font("pst-font-family-base", "Inter"), "DejaVu Sans")
+#let mono-font = (
+  css-font("pst-font-family-monospace", "Code New Roman"),
+  "DejaVu Sans Mono",
+)
 // The math font pairs with MathJax on the site, not with custom.css.
 #let math-font = ("Fira Math", "New Computer Modern Math")
 
@@ -178,11 +191,15 @@
 
   // Figures and tables
   show figure.caption: set text(size: 0.88em, fill: muted)
-  set table(stroke: (x, y) => (
-    top: if y == 0 { 0.8pt + ink } else if y == 1 { 0.5pt + rule } else { 0pt },
-    bottom: 0.8pt + ink,
-  ))
-  show table.cell.where(y: 0): set text(font: heading-font, weight: 700)
+  set table(stroke: none)
+  show table.header: it => {
+    set text(font: heading-font, weight: 700)
+    set table.cell(stroke: (
+      top: 0.8pt + ink,
+      bottom: 0.5pt + rule,
+    ))
+    it
+  }
 
   // ---- Title page -------------------------------------------------------
   page(header: none, numbering: none, {
@@ -219,7 +236,11 @@
     v(8pt, weak: true)
     it
   }
-  outline(title: none, depth: toctree_maxdepth, indent: auto)
+  outline(
+    title: none,
+    depth: if toctree_maxdepth == none { 2 } else { toctree_maxdepth },
+    indent: auto,
+  )
   pagebreak()
 
   body
