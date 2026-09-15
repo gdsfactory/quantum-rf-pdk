@@ -5,11 +5,12 @@ from pathlib import Path
 
 from docutils import nodes
 from sphinx_design.shared import PassthroughTextElement
-from typsphinx.translator import TypstTranslator
+from typsphinx.translator import TypstTranslator, escape_typst_string
 
 _TYPST_VISIT_MATH_BLOCK = TypstTranslator.visit_math_block
 _TYPST_VISIT_LIST_ITEM = TypstTranslator.visit_list_item
 _TYPST_DEPART_LIST_ITEM = TypstTranslator.depart_list_item
+_TYPST_VISIT_ADMONITION = TypstTranslator._visit_admonition
 
 project = "qpdk"
 author = "gdsfactory"
@@ -578,6 +579,69 @@ def _typst_depart_list_item(self, node):
     _TYPST_DEPART_LIST_ITEM(self, node)
 
 
+# HTML light-mode admonition colors, per gentle-clues function name.
+# pydata-sphinx-theme maps note to its info token and custom.css overrides both
+# `--pst-color-primary` (border) and `--pst-color-primary-bg` (title
+# background) for `.admonition.note`; the rest are the theme's stock tokens.
+# gentle-clues' own accent palette is catppuccin, which matches none of these.
+_TYPST_CLUE_COLORS = {
+    "info": ("#2a6fb5", "#e8eff8"),  # note: site accent, --pst-color-primary-bg
+    "tip": ("#00843f", "#d6ece1"),  # hint/tip/seealso: --pst-color-success
+    "warning": ("#f66a0a", "#f8e3d0"),  # warning/caution/important/attention
+    "error": ("#d72d47", "#f9e1e4"),  # --pst-color-danger
+    "danger": ("#d72d47", "#f9e1e4"),
+    "task": ("#1f5994", "#e0c7ff"),  # todo: --pst-color-secondary
+    "memo": ("#f66a0a", "#f8e3d0"),  # attention alias of warning
+    "notify": ("#276be9", "#dce7fc"),  # generic admonition: base .admonition rule
+    "abstract": ("#276be9", "#dce7fc"),  # topic: base .admonition rule
+}
+
+
+def _typst_visit_admonition(self, node, clue_type, custom_title=None):
+    """Delegate to typsphinx's helper, remembering the clue type for depart."""
+    self._qpdk_clue_type = clue_type
+    _TYPST_VISIT_ADMONITION(self, node, clue_type, custom_title)
+
+
+def _typst_depart_admonition(self):
+    """Close the clue call with the site's accent and title background.
+
+    Reimplements typsphinx's ``_depart_admonition`` to append
+    ``accent-color``/``header-color`` per the mapping above.  gentle-clues has
+    no global accent configuration and the generated per-document files bind
+    its names through a wildcard import, so per-call keyword arguments are the
+    only styleable hook.  ``header-color`` is passed explicitly because
+    gentle-clues' default (the accent lightened 85%) does not land exactly on
+    the theme's ``-bg`` tokens.
+
+    The geometry matches pydata-sphinx-theme's ``.admonition`` rule: a
+    ``border-left: .2rem`` accent bar (~2.4pt) with no outline on the other
+    sides, and a ``border-radius: .25rem`` (~3pt).
+    """
+    self.add_text("}")
+
+    title_expr = None
+    if self._pending_admonition_title:
+        title_expr = "{" + self._pending_admonition_title + "}"
+    elif self._custom_admonition_title:
+        title_expr = f'"{escape_typst_string(str(self._custom_admonition_title))}"'
+    if title_expr:
+        self.add_text(f", title: {title_expr}")
+
+    colors = _TYPST_CLUE_COLORS.get(getattr(self, "_qpdk_clue_type", None))
+    if colors:
+        accent, header = colors
+        self.add_text(
+            f', accent-color: rgb("{accent}"), header-color: rgb("{header}")'
+            ", stroke-width: 2.4pt, border-width: 0pt, radius: 3pt"
+        )
+
+    self.add_text(")\n\n")
+
+    if self.in_list_item:
+        self.list_item_needs_separator = True
+
+
 def _typst_visit_passthrough(self, node):
     """Render a sphinx-design ``PassthroughTextElement`` in the Typst output.
 
@@ -698,3 +762,5 @@ def setup(app):
     TypstTranslator.visit_math_block = _typst_visit_math_block
     TypstTranslator.visit_list_item = _typst_visit_list_item
     TypstTranslator.depart_list_item = _typst_depart_list_item
+    TypstTranslator._visit_admonition = _typst_visit_admonition
+    TypstTranslator._depart_admonition = _typst_depart_admonition
