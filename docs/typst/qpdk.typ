@@ -172,9 +172,11 @@
   // ---- Title page -------------------------------------------------------
   page(header: none, numbering: none, {
     v(52mm)
+    // Project logo instead of typeset title text, as on the README.  The path
+    // resolves against this template copy; docs/conf.py stages the SVG into
+    // the bundle because typsphinx does not copy unreferenced _static assets.
     block(width: 100%, stroke: (bottom: 2.5pt + accent), inset: (bottom: 10pt))[
-      #set text(font: heading-font, weight: 700, size: 40pt, tracking: -0.02em)
-      #text(fill: accent)[#title]
+      #image("qpdk_logo.svg", width: 80mm)
     ]
     v(6pt)
     set text(font: heading-font, size: 11.5pt, fill: muted)

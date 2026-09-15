@@ -1,6 +1,7 @@
 """Sphinx configuration for Qpdk documentation."""
 
 import re
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -303,6 +304,19 @@ def _repair_svgbob_svgs(root):
         )
 
 
+def _stage_template_assets(root):
+    """Copy template-referenced docs/_static assets into the template bundle."""
+    # This file lives in docs/_static/ but is referenced only by the
+    # template, and typsphinx copies just the document-referenced assets
+    # into the build, so it has to be staged next to the template copy.
+    bundle = root / "_template" / "typst"
+    if bundle.is_dir():
+        shutil.copy(
+            Path(__file__).parent / "_static" / "qpdk_logo.svg",
+            bundle / "qpdk_logo.svg",
+        )
+
+
 def _check_docs_fonts(font_paths):
     """Fail before compiling when the docs font families do not resolve."""
     # typst.compile() silently discards font warnings, so an unfound family
@@ -334,6 +348,7 @@ def _typst_compile_with_fonts(*args, **kwargs):
     root = Path(kwargs.get("root") or Path(args[0]).parent)
     if root.is_dir():
         _repair_svgbob_svgs(root)
+        _stage_template_assets(root)
     return _typst_compile(*args, **kwargs)
 
 
