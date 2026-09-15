@@ -378,8 +378,11 @@ def _math_widths(bodies, font_paths):
 def _split_wide_math(body):
     """Split a LaTeX body at top-level binary +/- into (head, terms).
 
-    head runs up to and including the first top-level relation.  Returns
-    None when there is no relation or no top-level term boundary.
+    head runs up to and including the first top-level relation.
+
+    Returns:
+        (head, terms) tuple, or None when there is no relation or no
+        top-level term boundary.
     """
     cuts = []
     depth = 0
@@ -414,19 +417,26 @@ def _split_wide_math(body):
         elif c == "=" and depth == 0:
             if relation_end is None:
                 relation_end = i + 1
-        elif c in "+-" and depth == 0 and relation_end is not None and prev not in (
-            "",
-            "+",
-            "-",
-            "=",
-            "(",
-            "[",
-            "{",
-            "^",
-            "_",
-            ",",
-            "\\left",
-        ) and prev not in _MATH_RELATIONS:
+        elif (
+            c in "+-"
+            and depth == 0
+            and relation_end is not None
+            and prev
+            not in {
+                "",
+                "+",
+                "-",
+                "=",
+                "(",
+                "[",
+                "{",
+                "^",
+                "_",
+                ",",
+                "\\left",
+            }
+            and prev not in _MATH_RELATIONS
+        ):
             cuts.append(i)
         if not c.isspace():
             prev = c
@@ -459,7 +469,9 @@ def _wrap_wide_math(root, font_paths):
         return
     wide = [
         (entry, *split)
-        for entry, width in zip(entries, _math_widths([e[3] for e in entries], font_paths))
+        for entry, width in zip(
+            entries, _math_widths([e[3] for e in entries], font_paths)
+        )
         if width > _MATH_COLUMN_MM and (split := _split_wide_math(entry[3]))
     ]
     if not wide:
@@ -471,9 +483,7 @@ def _wrap_wide_math(root, font_paths):
     lines = [[] for _ in wide]  # accepted term groups per candidate
     taken = [0] * len(wide)
     failed = [False] * len(wide)
-    while any(
-        not fail and taken[k] < len(wide[k][2]) for k, fail in enumerate(failed)
-    ):
+    while any(not fail and taken[k] < len(wide[k][2]) for k, fail in enumerate(failed)):
         trials = []
         order = []
         for k, (_, head, terms) in enumerate(wide):
@@ -500,13 +510,11 @@ def _wrap_wide_math(root, font_paths):
     for (entry, head, _), groups, fail in zip(wide, lines, failed):
         if fail or not groups:
             continue
-        finals.append(
-            (
-                entry,
-                f"{head} & {' '.join(groups[0])}"
-                + "".join(f" \\\\ & {' '.join(g)}" for g in groups[1:]),
-            )
-        )
+        finals.append((
+            entry,
+            f"{head} & {' '.join(groups[0])}"
+            + "".join(f" \\\\ & {' '.join(g)}" for g in groups[1:]),
+        ))
     rewrites = {}
     for (entry, split), width in zip(
         finals, _math_widths([split for _, split in finals], font_paths)
