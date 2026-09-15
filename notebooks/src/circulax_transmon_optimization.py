@@ -28,8 +28,8 @@
 #
 # 1. **Harmonic-Balance (HB) Optimization** — Find the periodic steady-state
 #    response of a nonlinear transmon circuit under a microwave drive and use
-#    `jax.grad` to optimize the junction critical current :math:`I_c` and shunt
-#    capacitance :math:`C_s` toward target qubit parameters.
+#    `jax.grad` to optimize the junction critical current $I_c$ and shunt
+#    capacitance $C_s$ toward target qubit parameters.
 #
 # 2. **Transient Pulse Analysis** — Simulate the time-domain response of a
 #    coupled two-qubit system to a voltage pulse and differentiate a crosstalk
@@ -39,7 +39,7 @@
 #
 # A transmon qubit is a weakly anharmonic oscillator formed by shunting a
 # Josephson junction (JJ) with a large capacitance
-# :cite:`kochChargeinsensitiveQubitDesign2007a`. The circuit Hamiltonian in
+# {cite:p}`kochChargeinsensitiveQubitDesign2007a`. The circuit Hamiltonian in
 # the phase basis reads:
 #
 # ```{math}
@@ -47,8 +47,8 @@
 # \mathcal{H} = 4 E_C \hat{n}^2 - E_J \cos\hat{\varphi},
 # ```
 #
-# where the charging energy :math:`E_C = e^2 / (2 C_\Sigma)` and Josephson
-# energy :math:`E_J = \Phi_0 I_c / (2\pi)`.  In the classical circuit
+# where the charging energy $E_C = e^2 / (2 C_\Sigma)$ and Josephson
+# energy $E_J = \Phi_0 I_c / (2\pi)$.  In the classical circuit
 # picture the junction behaves as a nonlinear inductance:
 #
 # ```{math}
@@ -95,8 +95,8 @@ PDK.activate()
 #
 # We model a transmon qubit as an LC oscillator with a **nonlinear**
 # Josephson inductance driven by a weak microwave tone. The goal is to
-# optimize the junction critical current :math:`I_c` and shunt capacitance
-# :math:`C_s` so that the circuit's transition frequency and anharmonicity
+# optimize the junction critical current $I_c$ and shunt capacitance
+# $C_s$ so that the circuit's transition frequency and anharmonicity
 # match target values.
 #
 # The Josephson junction's constitutive relation is:
@@ -105,8 +105,8 @@ PDK.activate()
 # I(\varphi) = I_c \sin\varphi,
 # ```
 #
-# where :math:`\varphi = 2\pi\Phi/\Phi_0` is the dimensionless
-# gauge-invariant phase, with :math:`\Phi` the junction flux (integral of
+# where $\varphi = 2\pi\Phi/\Phi_0$ is the dimensionless
+# gauge-invariant phase, with $\Phi$ the junction flux (integral of
 # voltage). In Circulax, this is implemented as a custom component that
 # returns current contributions (flow equations) and flux storage terms
 # (charge equations).
@@ -124,7 +124,7 @@ from circulax.components.electronic import Capacitor, Resistor, VoltageSourceAC
 # two dicts: `(f_dict, q_dict)` for current and charge contributions.
 #
 # For the JJ we use a flux-based formulation with an internal state variable
-# `phi` representing the junction phase (flux / :math:`\Phi_0 \cdot 2\pi`).
+# `phi` representing the junction phase (flux / $\Phi_0 \cdot 2\pi$).
 
 # %%
 FLUX_PER_RAD = Φ_0 / (2.0 * jnp.pi)  # Φ₀/(2π) — flux per unit phase
@@ -186,13 +186,13 @@ def JosephsonJunction(  # ruff: ignore[invalid-function-name]
 # parameters using simple analytical estimates:
 #
 # - **Shunt capacitance** from the coplanar conformal-mapping formula
-#   :math:`C_s = \varepsilon_0\, \varepsilon_{\mathrm{eff}}\, L\, K(k')/K(k)`
-#   with :math:`k = s/(s + 2W)`, where :math:`s` is the pad gap, :math:`W` the
-#   pad width and :math:`L` the pad length
-#   :cite:`chenCompactInductorcapacitorResonators2023`.
+#   $C_s = \varepsilon_0\, \varepsilon_{\mathrm{eff}}\, L\, K(k')/K(k)$
+#   with $k = s/(s + 2W)$, where $s$ is the pad gap, $W$ the
+#   pad width and $L$ the pad length
+#   {cite:p}`chenCompactInductorcapacitorResonators2023`.
 # - **Critical current** from the process critical-current density and the JJ
-#   area: :math:`I_c = J_c \cdot A_{JJ}`, with :math:`J_c \sim
-#   100\;\text{A/cm}^2` for Al/AlOx/Al junctions.
+#   area: $I_c = J_c \cdot A_{JJ}$, with
+#   $J_c \sim 100\;\text{A/cm}^2$ for Al/AlOx/Al junctions.
 
 # %%
 from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
@@ -360,8 +360,8 @@ print(f"DC operating point norm: {jnp.linalg.norm(y_dc):.2e}")
 #
 # The Harmonic Balance method finds the **periodic steady-state** of the
 # nonlinear circuit directly in the frequency domain, without stepping through
-# many transient cycles. The state vector :math:`\mathbf{y}(t)` is
-# represented by :math:`K = 2N+1` equally spaced time samples over one
+# many transient cycles. The state vector $\mathbf{y}(t)$ is
+# represented by $K = 2N+1$ equally spaced time samples over one
 # period, and the residual is evaluated in the frequency domain:
 #
 # ```{math}
@@ -400,13 +400,13 @@ for k in range(min(5, len(V_harmonics))):
 # f_{01} \approx \frac{\sqrt{8 E_J E_C} - E_C}{h},
 # ```
 #
-# where :math:`E_J = \Phi_0 I_c/(2\pi)` and :math:`E_C = e^2/(2C_\Sigma)`.
+# where $E_J = \Phi_0 I_c/(2\pi)$ and $E_C = e^2/(2C_\Sigma)$.
 # These closed-form estimates assume a purely sinusoidal current-phase
 # relation, so the junction's 2nd harmonic is set to zero for this workflow
-# (:math:`E_{J2}/E_{J1} = 0` in `layout_to_circuit_params`). The component
-# does support a nonzero ratio :math:`r`, but at leading order such a term
-# rescales the potential's quadratic coefficient by :math:`(1+4r)` and the
-# anharmonicity by :math:`(1+16r)/(1+4r)`, so the sinusoidal targets above
+# ($E_{J2}/E_{J1} = 0$ in `layout_to_circuit_params`). The component
+# does support a nonzero ratio $r$, but at leading order such a term
+# rescales the potential's quadratic coefficient by $(1+4r)$ and the
+# anharmonicity by $(1+16r)/(1+4r)$, so the sinusoidal targets above
 # would no longer describe the circuit.
 
 
@@ -573,11 +573,11 @@ plt.show()
 # ### 1.10 Updated Layout Visualization
 #
 # We can now visualize the transmon layout with the optimized dimensions. The
-# inversion below targets the shunt capacitance :math:`C_s` only: the pads are
-# resized so the conformal-mapping model reproduces :math:`C_s^{\text{opt}}`,
+# inversion below targets the shunt capacitance $C_s$ only: the pads are
+# resized so the conformal-mapping model reproduces $C_s^{\text{opt}}$,
 # while the junction keeps the default SQUID spec used throughout the PDK.
-# Realizing :math:`I_c^{\text{opt}}` in layout would additionally require sizing
-# the junction overlap area :math:`A = I_c^{\text{opt}} / J_c` for the process
+# Realizing $I_c^{\text{opt}}$ in layout would additionally require sizing
+# the junction overlap area $A = I_c^{\text{opt}} / J_c$ for the process
 # critical-current density, which is a process-level decision outside the scope
 # of this conformal-mapping inversion.
 
@@ -631,7 +631,7 @@ plt.show()
 # ### 2.1 Coupled Qubit Model
 #
 # We model two adjacent transmon qubits coupled through a parasitic mutual
-# capacitance :math:`C_m`. A voltage pulse is applied to qubit 1, and we
+# capacitance $C_m$. A voltage pulse is applied to qubit 1, and we
 # observe the induced response on qubit 2 (crosstalk).
 #
 # The circuit topology:
@@ -824,10 +824,10 @@ plt.show()
 # ### 2.5 Crosstalk Sensitivity Analysis
 #
 # We use `jax.grad` to differentiate the peak crosstalk voltage with respect
-# to :math:`\log C_m`. The resulting sensitivity
-# :math:`\partial V_{\text{peak}}/\partial \log C_m = C_m \, \partial
-# V_{\text{peak}}/\partial C_m` has units of volts: it is the absolute
-# change in peak victim voltage per unit fractional change in :math:`C_m`,
+# to $\log C_m$. The resulting sensitivity
+# $\partial V_{\text{peak}}/\partial \log C_m = C_m \, \partial
+# V_{\text{peak}}/\partial C_m$ has units of volts: it is the absolute
+# change in peak victim voltage per unit fractional change in $C_m$,
 # which in a real design is set by the physical spacing between qubits.
 #
 # Since Circulax runs entirely in JAX, the gradient flows through the ODE
@@ -908,7 +908,8 @@ else:
 #
 # ### References
 #
-# - Koch, J. et al., "Charge-insensitive qubit design derived from the Cooper
-#   pair box", *Physical Review A* **76**, 042319 (2007).
-#   :cite:`kochChargeinsensitiveQubitDesign2007a`
+# ```{bibliography}
+# :filter: docname in docnames
+# ```
+#
 # - Circulax documentation: https://gdsfactory.github.io/circulax/
