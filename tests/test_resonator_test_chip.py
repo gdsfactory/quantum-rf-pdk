@@ -6,6 +6,7 @@ import gdsfactory as gf
 import numpy as np
 import pytest
 import sax
+import yaml
 
 from qpdk import PDK
 from qpdk.models import models
@@ -74,8 +75,41 @@ def test_resonator_test_chip_has_readable_instance_names() -> None:
     assert set(netlist["instances"]) == expected_names
 
 
+def test_resonator_test_chip_yaml_netlist_matches_python() -> None:
+    """Keep the checked-in netlist in sync with the Python chip.
+
+    The ``.pic.yml`` hardcodes what ``resonator_test_chip_python`` derives, so
+    without this check changing the Python netlist silently diverges the
+    sample. Only stdlib ``yaml`` is used, so the file stays covered in the
+    non-gfp test runs.
+    """
+    document = yaml.safe_load(YAML_SAMPLE.read_text())
+    netlist = resonator_test_chip_python().get_netlist(on_dangling_port="ignore")
+
+    assert set(document["instances"]) == set(netlist["instances"])
+    for name, instance in netlist["instances"].items():
+        assert document["instances"][name]["component"] == instance["component"]
+        # YAML turns tuples into lists, e.g. "size: (100, 0)" -> [100, 0].
+        settings = {
+            key: list(value) if isinstance(value, tuple) else value
+            for key, value in instance["settings"].items()
+        }
+        assert document["instances"][name]["settings"] == settings
+        assert document["instances"][name]["info"] == instance["info"]
+
+    assert document["ports"] == netlist["ports"]
+
+    yaml_nets = {
+        frozenset(connection) for connection in document["connections"].items()
+    }
+    python_nets = {frozenset((net["p1"], net["p2"])) for net in netlist["nets"]}
+    assert len(document["connections"]) == len(netlist["nets"])
+    assert yaml_nets == python_nets
+
+
 def test_resonator_test_chip_yaml_matches_python() -> None:
-    """Keep the YAML as a visible wrapper with identical Python geometry."""
+    """Materialize the YAML netlist and match the Python chip exactly."""
+    PDK.activate()
     python_component = resonator_test_chip_python()
     yaml_component = gf.read.from_yaml(
         YAML_SAMPLE,
@@ -83,18 +117,18 @@ def test_resonator_test_chip_yaml_matches_python() -> None:
         label_instance_function=lambda **_kwargs: None,
     )
 
-    yaml_netlist = yaml_component.get_netlist(on_dangling_port="ignore")
-    assert set(yaml_netlist["instances"]) == {"resonator_test_chip"}
-    assert yaml_netlist["instances"]["resonator_test_chip"]["component"] == (
-        "resonator_test_chip_python"
-    )
-    assert yaml_netlist["ports"] == {
-        port_name: f"resonator_test_chip,{port_name}"
-        for port_name in ("o1", "o2", "o3", "o4")
+    assert {port.name for port in yaml_component.ports} == {
+        port.name for port in python_component.ports
     }
+    for name in ("o1", "o2", "o3", "o4"):
+        yaml_port = yaml_component.ports[name]
+        python_port = python_component.ports[name]
+        assert yaml_port.center == python_port.center
+        assert yaml_port.orientation == python_port.orientation
+        assert yaml_port.width == python_port.width
+
     assert yaml_component.dbbox() == python_component.dbbox()
     assert set(yaml_component.layers) == set(python_component.layers)
-
     for layer in python_component.layers:
         layer_index = gf.get_layer(layer)
         python_region = gf.kdb.Region(python_component.begin_shapes_rec(layer_index))
@@ -226,16 +260,33 @@ def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
 
 
 def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
-    """Keep the YAML sample usable by legacy recursive-netlist simulation."""
+    """Keep the YAML sample usable via its registered SAX model."""
     assert models["resonator_test_chip_yaml"] is resonator_test_chip_yaml
 
     s_params = resonator_test_chip_yaml(f=[7e9])
 
-    # Two probelines are independent, so SAX returns four entries per line.
-    assert len(s_params) == 8
+    # sax.circuit emits the full 4x4 key set; the cross-probeline entries
+    # (e.g. ("o1", "o3")) are zero because the two probelines are independent.
+    assert len(s_params) == 16
     assert {port for key in s_params for port in key} == {
         "o1",
         "o2",
         "o3",
         "o4",
     }
+
+
+def test_resonator_test_chip_yaml_model_matches_python_model() -> None:
+    """The netlist-driven YAML model must match the analytical Python model."""
+    frequencies = np.linspace(4e9, 10e9, 31)
+    actual = resonator_test_chip_yaml(f=frequencies)
+    expected = resonator_test_chip_python_model(f=frequencies)
+    zero = np.zeros_like(frequencies, dtype=complex)
+
+    for key in actual.keys() | expected.keys():
+        np.testing.assert_allclose(
+            actual.get(key, zero),
+            expected.get(key, zero),
+            rtol=1e-10,
+            atol=1e-12,
+        )

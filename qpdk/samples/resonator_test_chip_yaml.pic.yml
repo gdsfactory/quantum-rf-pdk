@@ -1,19 +1,848 @@
 # yaml-language-server: $schema=../../build/schemas/resonator_test_chip_yaml.json
+connections:
+  probe_east_bot,o1: probeline_sbend_east_bot,o2
+  probe_east_top,o1: probeline_sbend_east_top,o2
+  probe_west_bot,o1: probeline_sbend_west_bot,o1
+  probe_west_top,o1: probeline_sbend_west_top,o1
+  probeline_sbend_east_bot,o1: probeline_straight_east_bot,o2
+  probeline_sbend_east_top,o1: probeline_straight_east_top,o2
+  probeline_sbend_west_bot,o2: probeline_straight_west_bot,o2
+  probeline_sbend_west_top,o2: probeline_straight_west_top,o2
+  probeline_straight_bot_1,o1: resonator_bot_1,coupling_o2
+  probeline_straight_bot_1,o2: resonator_bot_2,coupling_o1
+  probeline_straight_bot_2,o1: resonator_bot_2,coupling_o2
+  probeline_straight_bot_2,o2: resonator_bot_3,coupling_o1
+  probeline_straight_bot_3,o1: resonator_bot_3,coupling_o2
+  probeline_straight_bot_3,o2: resonator_bot_4,coupling_o1
+  probeline_straight_bot_4,o1: resonator_bot_4,coupling_o2
+  probeline_straight_bot_4,o2: resonator_bot_5,coupling_o1
+  probeline_straight_bot_5,o1: resonator_bot_5,coupling_o2
+  probeline_straight_bot_5,o2: resonator_bot_6,coupling_o1
+  probeline_straight_bot_6,o1: resonator_bot_6,coupling_o2
+  probeline_straight_bot_6,o2: resonator_bot_7,coupling_o1
+  probeline_straight_bot_7,o1: resonator_bot_7,coupling_o2
+  probeline_straight_bot_7,o2: resonator_bot_8,coupling_o1
+  probeline_straight_east_bot,o1: resonator_bot_8,coupling_o2
+  probeline_straight_east_top,o1: resonator_top_8,coupling_o2
+  probeline_straight_top_1,o1: resonator_top_1,coupling_o2
+  probeline_straight_top_1,o2: resonator_top_2,coupling_o1
+  probeline_straight_top_2,o1: resonator_top_2,coupling_o2
+  probeline_straight_top_2,o2: resonator_top_3,coupling_o1
+  probeline_straight_top_3,o1: resonator_top_3,coupling_o2
+  probeline_straight_top_3,o2: resonator_top_4,coupling_o1
+  probeline_straight_top_4,o1: resonator_top_4,coupling_o2
+  probeline_straight_top_4,o2: resonator_top_5,coupling_o1
+  probeline_straight_top_5,o1: resonator_top_5,coupling_o2
+  probeline_straight_top_5,o2: resonator_top_6,coupling_o1
+  probeline_straight_top_6,o1: resonator_top_6,coupling_o2
+  probeline_straight_top_6,o2: resonator_top_7,coupling_o1
+  probeline_straight_top_7,o1: resonator_top_7,coupling_o2
+  probeline_straight_top_7,o2: resonator_top_8,coupling_o1
+  probeline_straight_west_bot,o1: resonator_bot_1,coupling_o1
+  probeline_straight_west_top,o1: resonator_top_1,coupling_o1
 instances:
-  resonator_test_chip:
-    component: resonator_test_chip_python
+  probe_east_bot:
+    component: launcher
+    info: {}
     settings:
+      cross_section_big: launcher_cross_section_big
+      cross_section_small: cpw
+      straight_length: 200
+      taper_length: 100
+  probe_east_top:
+    component: launcher
+    info: {}
+    settings:
+      cross_section_big: launcher_cross_section_big
+      cross_section_small: cpw
+      straight_length: 200
+      taper_length: 100
+  probe_west_bot:
+    component: launcher
+    info: {}
+    settings:
+      cross_section_big: launcher_cross_section_big
+      cross_section_small: cpw
+      straight_length: 200
+      taper_length: 100
+  probe_west_top:
+    component: launcher
+    info: {}
+    settings:
+      cross_section_big: launcher_cross_section_big
+      cross_section_small: cpw
+      straight_length: 200
+      taper_length: 100
+  probeline_sbend_east_bot:
+    component: bend_s
+    info:
+      length: 100
+      route_info_coplanar_waveguide_length: 100
+      route_info_length: 100
+      route_info_type: coplanar_waveguide
+      route_info_weight: 100
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      cross_section: coplanar_waveguide
+      size:
+        - 100
+        - 0
+      width: 10
+  probeline_sbend_east_top:
+    component: bend_s
+    info:
+      length: 100
+      route_info_coplanar_waveguide_length: 100
+      route_info_length: 100
+      route_info_type: coplanar_waveguide
+      route_info_weight: 100
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      cross_section: coplanar_waveguide
+      size:
+        - 100
+        - 0
+      width: 10
+  probeline_sbend_west_bot:
+    component: bend_s
+    info:
+      length: 500
+      route_info_coplanar_waveguide_length: 500
+      route_info_length: 500
+      route_info_type: coplanar_waveguide
+      route_info_weight: 500
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      cross_section: coplanar_waveguide
+      size:
+        - 500
+        - 0
+      width: 10
+  probeline_sbend_west_top:
+    component: bend_s
+    info:
+      length: 500
+      route_info_coplanar_waveguide_length: 500
+      route_info_length: 500
+      route_info_type: coplanar_waveguide
+      route_info_weight: 500
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      cross_section: coplanar_waveguide
+      size:
+        - 500
+        - 0
+      width: 10
+  probeline_straight_bot_1:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_bot_2:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_bot_3:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_bot_4:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_bot_5:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_bot_6:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_bot_7:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_east_bot:
+    component: straight
+    info:
+      length: 400
+      route_info_coplanar_waveguide_length: 400
+      route_info_length: 400
+      route_info_type: coplanar_waveguide
+      route_info_weight: 400
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 400
+      npoints: 2
+      width: null
+  probeline_straight_east_top:
+    component: straight
+    info:
+      length: 400
+      route_info_coplanar_waveguide_length: 400
+      route_info_length: 400
+      route_info_type: coplanar_waveguide
+      route_info_weight: 400
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 400
+      npoints: 2
+      width: null
+  probeline_straight_top_1:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_top_2:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_top_3:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_top_4:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_top_5:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_top_6:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_top_7:
+    component: straight
+    info:
+      length: 800
+      route_info_coplanar_waveguide_length: 800
+      route_info_length: 800
+      route_info_type: coplanar_waveguide
+      route_info_weight: 800
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 800
+      npoints: 2
+      width: 10
+  probeline_straight_west_bot:
+    component: straight
+    info:
+      length: 200
+      route_info_coplanar_waveguide_length: 200
+      route_info_length: 200
+      route_info_type: coplanar_waveguide
+      route_info_weight: 200
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 200
+      npoints: 2
+      width: null
+  probeline_straight_west_top:
+    component: straight
+    info:
+      length: 200
+      route_info_coplanar_waveguide_length: 200
+      route_info_length: 200
+      route_info_type: coplanar_waveguide
+      route_info_weight: 200
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 200
+      npoints: 2
+      width: null
+  resonator_bot_1:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
       coupling_gap: 16
-      coupling_length: 200
-      probeline_length: 9000
-      probeline_separation: 1000
-      resonator_length: 4000
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 3600
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_bot_2:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 3800
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_bot_3:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4000
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_bot_4:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4200
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_bot_5:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4400
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_bot_6:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4600
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_bot_7:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4800
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_bot_8:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 5000
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_top_1:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 3700
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_top_2:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 3900
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_top_3:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4100
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_top_4:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4300
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_top_5:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4500
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_top_6:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4700
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_top_7:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 4900
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
+  resonator_top_8:
+    component: quarter_wave_resonator_coupled
+    info: {}
+    settings:
+      bend_spec: bend_circular
+      coupling_gap: 16
+      coupling_straight_length: 200
+      cross_section: coplanar_waveguide
+      cross_section_non_resonator: coplanar_waveguide
+      end_with_bend: false
+      length: 5100
+      meanders: 6
+      open_end: false
+      open_start: true
+      start_with_bend: false
 placements:
-  resonator_test_chip:
+  probe_east_bot:
+    mirror: true
+    rotation: 180
+    x: 9000
+    y: 0
+  probe_east_top:
+    mirror: true
+    rotation: 180
+    x: 9000
+    y: 1000
+  probe_west_bot:
+    mirror: false
+    rotation: 0
     x: 0
     y: 0
+  probe_west_top:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 1000
+  probeline_sbend_east_bot:
+    mirror: false
+    rotation: 0
+    x: 8600
+    y: 0
+  probeline_sbend_east_top:
+    mirror: false
+    rotation: 0
+    x: 8600
+    y: 1000
+  probeline_sbend_west_bot:
+    mirror: false
+    rotation: 0
+    x: 300
+    y: 0
+  probeline_sbend_west_top:
+    mirror: false
+    rotation: 0
+    x: 300
+    y: 1000
+  probeline_straight_bot_1:
+    mirror: false
+    rotation: 0
+    x: 1200
+    y: 0
+  probeline_straight_bot_2:
+    mirror: false
+    rotation: 0
+    x: 2200
+    y: 0
+  probeline_straight_bot_3:
+    mirror: false
+    rotation: 0
+    x: 3200
+    y: 0
+  probeline_straight_bot_4:
+    mirror: false
+    rotation: 0
+    x: 4200
+    y: 0
+  probeline_straight_bot_5:
+    mirror: false
+    rotation: 0
+    x: 5200
+    y: 0
+  probeline_straight_bot_6:
+    mirror: false
+    rotation: 0
+    x: 6200
+    y: 0
+  probeline_straight_bot_7:
+    mirror: false
+    rotation: 0
+    x: 7200
+    y: 0
+  probeline_straight_east_bot:
+    mirror: false
+    rotation: 0
+    x: 8200
+    y: 0
+  probeline_straight_east_top:
+    mirror: false
+    rotation: 0
+    x: 8200
+    y: 1000
+  probeline_straight_top_1:
+    mirror: false
+    rotation: 0
+    x: 1200
+    y: 1000
+  probeline_straight_top_2:
+    mirror: false
+    rotation: 0
+    x: 2200
+    y: 1000
+  probeline_straight_top_3:
+    mirror: false
+    rotation: 0
+    x: 3200
+    y: 1000
+  probeline_straight_top_4:
+    mirror: false
+    rotation: 0
+    x: 4200
+    y: 1000
+  probeline_straight_top_5:
+    mirror: false
+    rotation: 0
+    x: 5200
+    y: 1000
+  probeline_straight_top_6:
+    mirror: false
+    rotation: 0
+    x: 6200
+    y: 1000
+  probeline_straight_top_7:
+    mirror: false
+    rotation: 0
+    x: 7200
+    y: 1000
+  probeline_straight_west_bot:
+    mirror: false
+    rotation: 180
+    x: 1000
+    y: 0
+  probeline_straight_west_top:
+    mirror: false
+    rotation: 180
+    x: 1000
+    y: 1000
+  resonator_bot_1:
+    mirror: false
+    rotation: 0
+    x: 1000
+    y: 0
+  resonator_bot_2:
+    mirror: false
+    rotation: 0
+    x: 2000
+    y: 0
+  resonator_bot_3:
+    mirror: false
+    rotation: 0
+    x: 3000
+    y: 0
+  resonator_bot_4:
+    mirror: false
+    rotation: 0
+    x: 4000
+    y: 0
+  resonator_bot_5:
+    mirror: false
+    rotation: 0
+    x: 5000
+    y: 0
+  resonator_bot_6:
+    mirror: false
+    rotation: 0
+    x: 6000
+    y: 0
+  resonator_bot_7:
+    mirror: false
+    rotation: 0
+    x: 7000
+    y: 0
+  resonator_bot_8:
+    mirror: false
+    rotation: 0
+    x: 8000
+    y: 0
+  resonator_top_1:
+    mirror: true
+    rotation: 0
+    x: 1000
+    y: 1000
+  resonator_top_2:
+    mirror: true
+    rotation: 0
+    x: 2000
+    y: 1000
+  resonator_top_3:
+    mirror: true
+    rotation: 0
+    x: 3000
+    y: 1000
+  resonator_top_4:
+    mirror: true
+    rotation: 0
+    x: 4000
+    y: 1000
+  resonator_top_5:
+    mirror: true
+    rotation: 0
+    x: 5000
+    y: 1000
+  resonator_top_6:
+    mirror: true
+    rotation: 0
+    x: 6000
+    y: 1000
+  resonator_top_7:
+    mirror: true
+    rotation: 0
+    x: 7000
+    y: 1000
+  resonator_top_8:
+    mirror: true
+    rotation: 0
+    x: 8000
+    y: 1000
 ports:
-  o1: resonator_test_chip,o1
-  o2: resonator_test_chip,o2
-  o3: resonator_test_chip,o3
-  o4: resonator_test_chip,o4
+  o1: probe_west_top,waveport
+  o2: probe_east_top,waveport
+  o3: probe_west_bot,waveport
+  o4: probe_east_bot,waveport
+routes: {}

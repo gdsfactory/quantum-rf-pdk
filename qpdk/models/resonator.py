@@ -1,9 +1,11 @@
 """Resonators."""
 
+from pathlib import Path
 from typing import Any
 
 import jax.numpy as jnp
 import sax
+import yaml
 from gdsfactory.typings import CrossSectionSpec
 from sax.models.rf import capacitor, electrical_open, electrical_short, tee
 
@@ -150,15 +152,27 @@ def resonator_test_chip_python(
 def resonator_test_chip_yaml(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
 ) -> sax.SDict:
-    """SAX model for ``resonator_test_chip_yaml.pic.yml``.
+    """SAX model evaluated from the ``resonator_test_chip_yaml.pic.yml`` netlist.
 
-    The YAML sample is the serialized form of the Python sample, so both use
-    the same top-level model.
+    The full chip layout is defined declaratively in the sample's netlist;
+    this model only reads that file and solves it against the registered
+    PDK models, so editing the netlist edits the simulation.
 
     Returns:
         SAX S-parameter dictionary for the four external ports.
     """
-    return resonator_test_chip_python(f=f)
+    document = yaml.safe_load(
+        (
+            Path(__file__).parents[1] / "samples/resonator_test_chip_yaml.pic.yml"
+        ).read_text()
+    )
+    netlist = {key: document[key] for key in ("instances", "connections", "ports")}
+
+    # Imported here to avoid the circular import through qpdk.models.__init__.
+    from qpdk.models import models  # ruff: ignore[import-outside-top-level]
+
+    circuit, _ = sax.circuit(netlist, models=models)
+    return circuit(f=f)
 
 
 def quarter_wave_resonator_coupled(

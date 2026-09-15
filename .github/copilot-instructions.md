@@ -57,7 +57,7 @@ qpdk/                   Core Python package
   tech.py               Layer stack, cross sections, LAYER enum
   layers.yaml           Layer definitions (must stay in sync with tech.py)
   logger.py             Centralized loguru logger
-  samples/              Example layout and simulation scripts (.py, .pic.yml, .scm.yml)
+  samples/              Example layout and simulation scripts (.py, .pic.yml, .gsch)
 tests/                  pytest test suite
   gds_ref/              GDS regression reference files
   models/               Model unit tests

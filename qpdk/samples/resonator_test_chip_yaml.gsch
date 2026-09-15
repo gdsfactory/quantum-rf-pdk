@@ -1,0 +1,952 @@
+{
+  "probeline_straight_east_bot": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_east_bot",
+    "nets": {
+      "o1": "net_23",
+      "o2": "net_5"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 400,
+      "npoints": 2,
+      "width": null
+    },
+    "x": 164.0,
+    "y": 0.0
+  },
+  "o1": {
+    "type": "port",
+    "id": null,
+    "name": "o1",
+    "x": 0.0,
+    "y": 0.0,
+    "nets": {
+      "P": "port_net_o1"
+    },
+    "attached_port": {
+      "component_id": "probe_west_top",
+      "port_name": "waveport"
+    }
+  },
+  "resonator_top_2": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_2",
+    "nets": {
+      "coupling_o1": "net_26",
+      "coupling_o2": "net_27"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 3900,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 40.0,
+    "y": 20.0
+  },
+  "probeline_straight_top_3": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_top_3",
+    "nets": {
+      "o1": "net_29",
+      "o2": "net_30"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 64.0,
+    "y": 20.0
+  },
+  "probeline_straight_bot_7": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_bot_7",
+    "nets": {
+      "o1": "net_21",
+      "o2": "net_22"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 144.0,
+    "y": 0.0
+  },
+  "probeline_straight_top_6": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_top_6",
+    "nets": {
+      "o1": "net_35",
+      "o2": "net_36"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 124.0,
+    "y": 20.0
+  },
+  "probeline_straight_bot_2": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_bot_2",
+    "nets": {
+      "o1": "net_11",
+      "o2": "net_12"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 44.0,
+    "y": 0.0
+  },
+  "o4": {
+    "type": "port",
+    "id": null,
+    "name": "o4",
+    "x": 0.0,
+    "y": 0.0,
+    "nets": {
+      "P": "port_net_o4"
+    },
+    "attached_port": {
+      "component_id": "probe_east_bot",
+      "port_name": "waveport"
+    }
+  },
+  "probe_west_top": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "probe_west_top",
+    "nets": {
+      "o1": "net_4",
+      "waveport": "port_net_o1"
+    },
+    "props": {
+      "cross_section_big": "launcher_cross_section_big",
+      "cross_section_small": "cpw",
+      "straight_length": 200,
+      "taper_length": 100
+    },
+    "x": 0.0,
+    "y": 20.0
+  },
+  "resonator_bot_6": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_6",
+    "nets": {
+      "coupling_o1": "net_18",
+      "coupling_o2": "net_19"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4600,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 120.0,
+    "y": 0.0
+  },
+  "probeline_straight_east_top": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_east_top",
+    "nets": {
+      "o1": "net_24",
+      "o2": "net_6"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 400,
+      "npoints": 2,
+      "width": null
+    },
+    "x": 164.0,
+    "y": 20.0
+  },
+  "resonator_top_1": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_1",
+    "nets": {
+      "coupling_o1": "net_40",
+      "coupling_o2": "net_25"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 3700,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 20.0,
+    "y": 20.0
+  },
+  "resonator_bot_1": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_1",
+    "nets": {
+      "coupling_o1": "net_39",
+      "coupling_o2": "net_9"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 3600,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 20.0,
+    "y": 0.0
+  },
+  "resonator_bot_5": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_5",
+    "nets": {
+      "coupling_o1": "net_16",
+      "coupling_o2": "net_17"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4400,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 100.0,
+    "y": 0.0
+  },
+  "probeline_straight_bot_1": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_bot_1",
+    "nets": {
+      "o1": "net_9",
+      "o2": "net_10"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 24.0,
+    "y": 0.0
+  },
+  "probeline_straight_top_7": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_top_7",
+    "nets": {
+      "o1": "net_37",
+      "o2": "net_38"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 144.0,
+    "y": 20.0
+  },
+  "resonator_bot_4": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_4",
+    "nets": {
+      "coupling_o1": "net_14",
+      "coupling_o2": "net_15"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4200,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 80.0,
+    "y": 0.0
+  },
+  "resonator_bot_8": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_8",
+    "nets": {
+      "coupling_o1": "net_22",
+      "coupling_o2": "net_23"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 5000,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 160.0,
+    "y": 0.0
+  },
+  "resonator_top_3": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_3",
+    "nets": {
+      "coupling_o1": "net_28",
+      "coupling_o2": "net_29"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4100,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 60.0,
+    "y": 20.0
+  },
+  "probeline_sbend_east_top": {
+    "type": "ckt",
+    "id": null,
+    "model": "gdsfactory.components.bends.bend_s.bend_s",
+    "name": "probeline_sbend_east_top",
+    "nets": {
+      "o1": "net_6",
+      "o2": "net_2"
+    },
+    "props": {
+      "allow_min_radius_violation": true,
+      "cross_section": "coplanar_waveguide",
+      "size": [
+        100,
+        0
+      ],
+      "width": 10
+    },
+    "x": 172.0,
+    "y": 20.0
+  },
+  "probeline_straight_top_1": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_top_1",
+    "nets": {
+      "o1": "net_25",
+      "o2": "net_26"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 24.0,
+    "y": 20.0
+  },
+  "probeline_sbend_east_bot": {
+    "type": "ckt",
+    "id": null,
+    "model": "gdsfactory.components.bends.bend_s.bend_s",
+    "name": "probeline_sbend_east_bot",
+    "nets": {
+      "o1": "net_5",
+      "o2": "net_1"
+    },
+    "props": {
+      "allow_min_radius_violation": true,
+      "cross_section": "coplanar_waveguide",
+      "size": [
+        100,
+        0
+      ],
+      "width": 10
+    },
+    "x": 172.0,
+    "y": 0.0
+  },
+  "probeline_straight_bot_6": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_bot_6",
+    "nets": {
+      "o1": "net_19",
+      "o2": "net_20"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 124.0,
+    "y": 0.0
+  },
+  "probeline_straight_west_bot": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_west_bot",
+    "nets": {
+      "o1": "net_39",
+      "o2": "net_7"
+    },
+    "orientation": 180.0,
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 200,
+      "npoints": 2,
+      "width": null
+    },
+    "x": 20.0,
+    "y": 0.0
+  },
+  "resonator_bot_3": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_3",
+    "nets": {
+      "coupling_o1": "net_12",
+      "coupling_o2": "net_13"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4000,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 60.0,
+    "y": 0.0
+  },
+  "probeline_straight_top_5": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_top_5",
+    "nets": {
+      "o1": "net_33",
+      "o2": "net_34"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 104.0,
+    "y": 20.0
+  },
+  "resonator_top_5": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_5",
+    "nets": {
+      "coupling_o1": "net_32",
+      "coupling_o2": "net_33"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4500,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 100.0,
+    "y": 20.0
+  },
+  "resonator_top_4": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_4",
+    "nets": {
+      "coupling_o1": "net_30",
+      "coupling_o2": "net_31"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4300,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 80.0,
+    "y": 20.0
+  },
+  "probeline_straight_west_top": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_west_top",
+    "nets": {
+      "o1": "net_40",
+      "o2": "net_8"
+    },
+    "orientation": 180.0,
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 200,
+      "npoints": 2,
+      "width": null
+    },
+    "x": 20.0,
+    "y": 20.0
+  },
+  "resonator_bot_7": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_7",
+    "nets": {
+      "coupling_o1": "net_20",
+      "coupling_o2": "net_21"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4800,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 140.0,
+    "y": 0.0
+  },
+  "o2": {
+    "type": "port",
+    "id": null,
+    "name": "o2",
+    "x": 0.0,
+    "y": 0.0,
+    "nets": {
+      "P": "port_net_o2"
+    },
+    "attached_port": {
+      "component_id": "probe_east_top",
+      "port_name": "waveport"
+    }
+  },
+  "o3": {
+    "type": "port",
+    "id": null,
+    "name": "o3",
+    "x": 0.0,
+    "y": 0.0,
+    "nets": {
+      "P": "port_net_o3"
+    },
+    "attached_port": {
+      "component_id": "probe_west_bot",
+      "port_name": "waveport"
+    }
+  },
+  "probeline_straight_bot_4": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_bot_4",
+    "nets": {
+      "o1": "net_15",
+      "o2": "net_16"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 84.0,
+    "y": 0.0
+  },
+  "resonator_top_7": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_7",
+    "nets": {
+      "coupling_o1": "net_36",
+      "coupling_o2": "net_37"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4900,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 140.0,
+    "y": 20.0
+  },
+  "probeline_straight_bot_3": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_bot_3",
+    "nets": {
+      "o1": "net_13",
+      "o2": "net_14"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 64.0,
+    "y": 0.0
+  },
+  "probeline_straight_bot_5": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_bot_5",
+    "nets": {
+      "o1": "net_17",
+      "o2": "net_18"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 104.0,
+    "y": 0.0
+  },
+  "probe_east_top": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "probe_east_top",
+    "nets": {
+      "o1": "net_2",
+      "waveport": "port_net_o2"
+    },
+    "orientation": 180.0,
+    "props": {
+      "cross_section_big": "launcher_cross_section_big",
+      "cross_section_small": "cpw",
+      "straight_length": 200,
+      "taper_length": 100
+    },
+    "x": 180.0,
+    "y": 20.0
+  },
+  "probe_west_bot": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "probe_west_bot",
+    "nets": {
+      "o1": "net_3",
+      "waveport": "port_net_o3"
+    },
+    "props": {
+      "cross_section_big": "launcher_cross_section_big",
+      "cross_section_small": "cpw",
+      "straight_length": 200,
+      "taper_length": 100
+    },
+    "x": 0.0,
+    "y": 0.0
+  },
+  "probe_east_bot": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "probe_east_bot",
+    "nets": {
+      "o1": "net_1",
+      "waveport": "port_net_o4"
+    },
+    "orientation": 180.0,
+    "props": {
+      "cross_section_big": "launcher_cross_section_big",
+      "cross_section_small": "cpw",
+      "straight_length": 200,
+      "taper_length": 100
+    },
+    "x": 180.0,
+    "y": 0.0
+  },
+  "resonator_top_6": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_6",
+    "nets": {
+      "coupling_o1": "net_34",
+      "coupling_o2": "net_35"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 4700,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 120.0,
+    "y": 20.0
+  },
+  "probeline_sbend_west_top": {
+    "type": "ckt",
+    "id": null,
+    "model": "gdsfactory.components.bends.bend_s.bend_s",
+    "name": "probeline_sbend_west_top",
+    "nets": {
+      "o1": "net_4",
+      "o2": "net_8"
+    },
+    "props": {
+      "allow_min_radius_violation": true,
+      "cross_section": "coplanar_waveguide",
+      "size": [
+        500,
+        0
+      ],
+      "width": 10
+    },
+    "x": 6.0,
+    "y": 20.0
+  },
+  "probeline_straight_top_2": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_top_2",
+    "nets": {
+      "o1": "net_27",
+      "o2": "net_28"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 44.0,
+    "y": 20.0
+  },
+  "probeline_straight_top_4": {
+    "type": "straight",
+    "id": null,
+    "model": "gdsfactory.components.waveguides.straight.straight",
+    "name": "probeline_straight_top_4",
+    "nets": {
+      "o1": "net_31",
+      "o2": "net_32"
+    },
+    "props": {
+      "cross_section": "coplanar_waveguide",
+      "length": 800,
+      "npoints": 2,
+      "width": 10
+    },
+    "x": 84.0,
+    "y": 20.0
+  },
+  "resonator_bot_2": {
+    "type": "ckt",
+    "id": null,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_bot_2",
+    "nets": {
+      "coupling_o1": "net_10",
+      "coupling_o2": "net_11"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 3800,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 40.0,
+    "y": 0.0
+  },
+  "probeline_sbend_west_bot": {
+    "type": "ckt",
+    "id": null,
+    "model": "gdsfactory.components.bends.bend_s.bend_s",
+    "name": "probeline_sbend_west_bot",
+    "nets": {
+      "o1": "net_3",
+      "o2": "net_7"
+    },
+    "props": {
+      "allow_min_radius_violation": true,
+      "cross_section": "coplanar_waveguide",
+      "size": [
+        500,
+        0
+      ],
+      "width": 10
+    },
+    "x": 6.0,
+    "y": 0.0
+  },
+  "resonator_top_8": {
+    "type": "ckt",
+    "id": null,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "name": "resonator_top_8",
+    "nets": {
+      "coupling_o1": "net_38",
+      "coupling_o2": "net_24"
+    },
+    "props": {
+      "bend_spec": "bend_circular",
+      "coupling_gap": 16,
+      "coupling_straight_length": 200,
+      "cross_section": "coplanar_waveguide",
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "end_with_bend": false,
+      "length": 5100,
+      "meanders": 6,
+      "open_end": false,
+      "open_start": true,
+      "start_with_bend": false
+    },
+    "x": 160.0,
+    "y": 20.0
+  }
+}
