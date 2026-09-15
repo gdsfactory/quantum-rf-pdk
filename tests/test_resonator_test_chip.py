@@ -14,11 +14,13 @@ from qpdk import PDK
 from qpdk.models import models
 from qpdk.models.resonator import (
     resonator_test_chip_python as resonator_test_chip_python_model,
-    resonator_test_chip_yaml,
+    resonator_test_chip_schematic,
 )
 from qpdk.samples.resonator_test_chip import resonator_test_chip_python
 
-GSCH_SAMPLE = Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_yaml.gsch"
+GSCH_SAMPLE = (
+    Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_schematic.gsch"
+)
 
 _SPEED_OF_LIGHT_UM_PER_S = 299_792_458_000_000.0
 
@@ -107,8 +109,48 @@ def test_resonator_test_chip_has_readable_instance_names() -> None:
     assert set(netlist["instances"]) == expected_names
 
 
+def test_resonator_test_chip_schematic_json_matches_python_netlist() -> None:
+    """Keep the checked-in ``.gsch`` names and lengths in sync with the chip.
+
+    The ``.gsch`` hardcodes what ``resonator_test_chip_python`` derives, so
+    without this check changing the Python netlist silently diverges the
+    sample. Only stdlib ``json`` is used, so the ``.gsch`` stays covered in
+    the non-gfp test runs.
+    """
+    document = json.loads(GSCH_SAMPLE.read_text())
+    gsch_instances = {
+        key: entry
+        for key, entry in document.items()
+        if entry["type"] in {"ckt", "polyline"}
+    }
+    netlist = resonator_test_chip_python().get_netlist(on_dangling_port="ignore")
+
+    assert set(gsch_instances) == set(netlist["instances"])
+    for name, entry in gsch_instances.items():
+        if entry["type"] == "ckt":
+            assert (
+                entry["model"].rsplit(".", 1)[-1]
+                == (netlist["instances"][name]["component"])
+            )
+
+    gsch_lengths = {
+        name: entry["props"]["length"]
+        for name, entry in gsch_instances.items()
+        if entry.get("model") == "qpdk.cells.resonator.quarter_wave_resonator_coupled"
+    }
+    python_lengths = {
+        name: instance["settings"]["length"]
+        for name, instance in netlist["instances"].items()
+        if instance["component"] == "quarter_wave_resonator_coupled"
+    }
+
+    assert len(gsch_lengths) == 16
+    assert gsch_lengths == python_lengths
+
+
 @pytest.mark.gfp
-def test_resonator_test_chip_yaml_matches_python() -> None:
+@pytest.mark.xdist_group("resonator-gsch")
+def test_resonator_test_chip_schematic_matches_python() -> None:
     """Materialize the ``.gsch`` sample and match the Python chip exactly."""
     nyancir = import_gfp_module("gdsfactoryplus.nyancir_to_dschematic")
     dschematic = import_gfp_module("gdsfactoryplus.dschematic_to_gds")
@@ -279,11 +321,11 @@ def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
     assert np.linalg.svd(matrix, compute_uv=False).max() <= 1 + 1e-6
 
 
-def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
+def test_resonator_test_chip_schematic_has_top_level_sax_model() -> None:
     """Keep the ``.gsch`` sample usable via its registered SAX model."""
-    assert models["resonator_test_chip_yaml"] is resonator_test_chip_yaml
+    assert models["resonator_test_chip_schematic"] is resonator_test_chip_schematic
 
-    s_params = resonator_test_chip_yaml(f=[7e9])
+    s_params = resonator_test_chip_schematic(f=[7e9])
 
     # Two probelines are independent, so SAX returns four entries per line.
     assert len(s_params) == 8
@@ -296,7 +338,7 @@ def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
 
 
 @pytest.mark.gfp
-def test_resonator_test_chip_yaml_mosaic_sax_solves(
+def test_resonator_test_chip_schematic_mosaic_sax_solves(
     mosaic_project_root: Path,
 ) -> None:
     """Solve the SAX circuit gfp builds from the ``.gsch`` sample's nets."""

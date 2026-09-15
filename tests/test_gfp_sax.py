@@ -63,7 +63,8 @@ _GSCH_NAME = "resonator_test_chip_gfp.gsch"
 
 #: The declarative sample ``.gsch`` checked into ``qpdk/samples/``.
 _SAMPLE_GSCH = (
-    Path(__file__).resolve().parents[1] / "qpdk/samples/resonator_test_chip_yaml.gsch"
+    Path(__file__).resolve().parents[1]
+    / "qpdk/samples/resonator_test_chip_schematic.gsch"
 )
 
 #: A non-default ``resonator_length`` (µm) used to prove instance ``props``
@@ -369,6 +370,7 @@ def test_resonator_test_chip_layout_sax_simulation(nyancir_path: Path) -> None:
 
 
 @pytest.mark.gfp
+@pytest.mark.xdist_group("resonator-gsch")
 def test_resonator_test_chip_sample_gsch_sax_simulation() -> None:
     """Simulate the declarative sample ``.gsch`` through the layout pipeline.
 
