@@ -725,7 +725,10 @@ def setup(app):
     def dollar_math_handler(_app, _what, _name, _obj, _options, lines):
         _dollar_math_to_rst(lines)
 
-    app.connect("source-read", replace_image_paths)
+    # Earlier than the default 500 so the README splice lands before
+    # sphinx_github_alerts' source-read hook, which then also converts the
+    # README's `> [!NOTE]` alert instead of leaving it as a literal quote.
+    app.connect("source-read", replace_image_paths, priority=400)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
     app.connect("doctree-resolved", _typst_strip_ansi)
     # Convert $-delimited math before any other processing
