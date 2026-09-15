@@ -66,7 +66,6 @@ def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
     )
 
 
-@partial(jax.jit, inline=True)
 def meander_inductor_inductance_analytical(
     n_turns: int,
     turn_length: float,
@@ -102,7 +101,11 @@ def meander_inductor_inductance_analytical(
         L_k = L_\square \cdot \frac{\ell_{\text{total}}}{w}
 
     Args:
-        n_turns: Number of horizontal meander runs.
+        n_turns: Number of horizontal meander runs. Every mutual-inductance
+            term up to :math:`k = N - 1` is included, with no upper limit on
+            :math:`N`. A concrete Python ``int`` enables reverse-mode
+            differentiation; traced values (e.g. inside ``sax`` circuits,
+            ``jit`` or ``vmap``) are supported for forward evaluation.
         turn_length: Length of each horizontal run in µm.
         wire_width: Width of the meander wire in µm.
         wire_gap: Gap between adjacent meander runs in µm.
@@ -136,18 +139,33 @@ def meander_inductor_inductance_analytical(
     # L_g_horiz = N*L_s_horiz + 2 * sum_{i=0 to N-2} sum_{j=i+1 to N-1} (-1)**(j-i) * L_m(abs(j-i)*p)
     # This simplifies to the sum used in Chen et al. (2023):
     # L_g_horiz = N*L_s_horiz + 2 * sum_{k=1 to N-1} (N-k) * (-1)**k * L_m(k*p)
+    # The sum runs over exactly k = 1 .. N-1 (no truncation for large N).
+    # With a concrete Python int n_turns, the terms are evaluated vectorized
+    # over a concrete shape (required for reverse-mode differentiation).
+    # When n_turns is traced (e.g. inside sax circuits, where parameters
+    # arrive as traced arrays), a fixed-memory loop with a dynamic trip count
+    # keeps it traceable for forward evaluation. This function is left
+    # un-jitted so that a concrete int stays concrete under jit/grad traces.
 
-    offsets = jnp.arange(1, 501)
-    mask = offsets < n_turns
-    L_m_sum = jnp.sum(
-        jnp.where(
-            mask,
+    if isinstance(n_turns, int):
+        offsets = jnp.arange(1, n_turns)
+        L_m_sum = jnp.sum(
             (n_turns - offsets)
             * ((-1.0) ** offsets)
-            * mutual_inductance_parallel_strips(l_m, offsets * p_m),
-            0.0,
+            * mutual_inductance_parallel_strips(l_m, offsets * p_m)
         )
-    )
+    else:
+
+        def mutual_term(k, acc):
+            return acc + (
+                (n_turns - k)
+                * ((-1.0) ** k)
+                * mutual_inductance_parallel_strips(l_m, k * p_m)
+            )
+
+        L_m_sum = jax.lax.fori_loop(
+            1, jnp.asarray(n_turns).astype(jnp.int_), mutual_term, 0.0
+        )
 
     # Ensure L_g_horiz calculation is accurate. The negative mutual inductance
     # should be outweighed by the self-inductance for physically valid meanders.
