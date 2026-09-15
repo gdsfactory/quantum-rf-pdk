@@ -55,7 +55,9 @@
   )
 
   set text(font: body-font, size: fontsize, lang: lang, fill: ink)
-  set par(justify: true, leading: 0.62em)
+  // Ragged right like the site; justification rivers badly on the long
+  // type-annotation lines the autodoc pages produce.
+  set par(justify: false, leading: 0.62em)
 
   // Headings: Outfit, weights and tracking matching custom.css (700 at h1/h2,
   // 600 deeper down; -0.02em at h1 easing to -0.005em).
