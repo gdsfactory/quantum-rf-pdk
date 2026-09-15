@@ -81,11 +81,15 @@
     block(above: if it.level == 1 { 1.5em } else { 1.15em }, below: 0.6em, it)
   }
 
-  // Links carry the accent; internal cross-references stay inked so the body
-  // does not turn blue (`it.dest` is a str only for external URLs).  Style
-  // `it`, never `it.body`: returning the body alone replaces the link element
-  // with plain text and the PDF loses its clickable URL annotation.
-  show link: it => if type(it.dest) == str { text(fill: accent, it) } else { it }
+  // Every anchor carries the accent and an underline, matching the site's
+  // `a { color: var(--pst-color-link); text-decoration: underline }` (1px
+  // stroke, .1578em offset).  Style `it`, never `it.body`: returning the body
+  // alone replaces the link element with plain text and the PDF loses its
+  // clickable URL annotation.
+  show link: it => text(
+    fill: accent,
+    underline(offset: 0.1578em, stroke: 0.75pt + accent, it),
+  )
 
   // Math in Fira Math, matching the HTML MathJax font (mathjax4_config).
   show math.equation: set text(font: math-font)
