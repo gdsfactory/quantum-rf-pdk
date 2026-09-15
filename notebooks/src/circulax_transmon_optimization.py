@@ -8,7 +8,6 @@
 #       jupytext_version: 1.17.3
 # ---
 
-# ruff: noqa: E402
 
 # %% [markdown]
 # # Differentiable Transmon Circuit Simulation with Circulax
@@ -33,8 +32,8 @@
 #    capacitance :math:`C_s` toward target qubit parameters.
 #
 # 2. **Transient Pulse Analysis** — Simulate the time-domain response of a
-#    coupled two-qubit system to a flux pulse and use gradient-based
-#    optimization to minimize crosstalk between adjacent qubits.
+#    coupled two-qubit system to a voltage pulse and differentiate a crosstalk
+#    metric with respect to the coupling capacitance.
 #
 # ## Background
 #
@@ -74,7 +73,7 @@ if "google.colab" in sys.modules:
         "install",
         "-q",
         "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
-        "circulax",
+        "circulax>=0.2.3,<0.3",
     ])
 
 # %% tags=["hide-input"]
@@ -85,7 +84,7 @@ from matplotlib import pyplot as plt
 
 from qpdk import PDK
 from qpdk.cells.transmon import double_pad_transmon
-from qpdk.models.constants import Φ_0, e, h, ε_0
+from qpdk.models.constants import Φ_0, e, h
 
 jax.config.update("jax_enable_x64", True)
 PDK.activate()
@@ -132,7 +131,7 @@ FLUX_PER_RAD = Φ_0 / (2.0 * jnp.pi)  # Φ₀/(2π) — flux per unit phase
 
 
 @component(ports=("p1", "p2"), states=("phi",))
-def JosephsonJunction(  # noqa: N802
+def JosephsonJunction(  # ruff: ignore[invalid-function-name]
     signals: Signals,
     s: States,
     Ic: float = 50e-9,
@@ -186,9 +185,11 @@ def JosephsonJunction(  # noqa: N802
 # We map physical dimensions from the qpdk transmon layout to circuit
 # parameters using simple analytical estimates:
 #
-# - **Shunt capacitance** from the parallel-plate formula:
-#   :math:`C_s \approx \varepsilon_0\, \varepsilon_r\, A / d`, where :math:`A`
-#   is the pad area and :math:`d` the gap.
+# - **Shunt capacitance** from the coplanar conformal-mapping formula
+#   :math:`C_s = \varepsilon_0\, \varepsilon_{\mathrm{eff}}\, L\, K(k')/K(k)`
+#   with :math:`k = s/(s + 2W)`, where :math:`s` is the pad gap, :math:`W` the
+#   pad width and :math:`L` the pad length
+#   :cite:`chenCompactInductorcapacitorResonators2023`.
 # - **Critical current** from the Ambegaokar–Baratoff relation for the JJ area:
 #   :math:`I_c = J_c \cdot A_{JJ}`, where :math:`J_c` is the critical current
 #   density (typically :math:`\sim 100\;\text{A/cm}^2` for Al/AlOx/Al junctions).
@@ -373,7 +374,7 @@ print(f"HB solution shape: {y_time.shape} (K time samples × {num_vars} vars)")
 print(f"Frequency components shape: {y_freq.shape}")
 
 # Extract junction node voltage spectrum
-jj_node_idx = port_map.get("JJ1,p1", 0)
+jj_node_idx = port_map["JJ1,p1"]
 V_harmonics = jnp.abs(y_freq[:, jj_node_idx])
 print("\nJunction node voltage harmonics (first 5):")
 for k in range(min(5, len(V_harmonics))):
@@ -392,15 +393,19 @@ for k in range(min(5, len(V_harmonics))):
 #
 # ```{math}
 # :label: eq:transmon-frequency
-# f_{01} \approx \frac{1}{2\pi}\sqrt{8 E_J E_C} - E_C,
+# f_{01} \approx \frac{\sqrt{8 E_J E_C} - E_C}{h},
 # ```
 #
 # where :math:`E_J = \Phi_0 I_c/(2\pi)` and :math:`E_C = e^2/(2C_\Sigma)`.
+# These closed-form estimates assume a purely sinusoidal current-phase
+# relation; the simulated junction carries a small 2nd-harmonic term
+# (:math:`E_{J2}/E_{J1} = -0.05` from `layout_to_circuit_params`), which we
+# treat as a perturbation of the analytic values.
 
 
 # %%
-def transmon_anharmonicity(Ic: float, Cs: float) -> float:  # noqa: ARG001
-    """Compute transmon anharmonicity α ≈ -E_C/ℏ.
+def transmon_anharmonicity(Ic: float, Cs: float) -> float:  # ruff: ignore[unused-function-argument]
+    """Compute transmon anharmonicity α ≈ -E_C/h.
 
     Args:
         Ic: Critical current in amperes (unused, kept for API symmetry).
@@ -429,13 +434,17 @@ def transmon_frequency(Ic: float, Cs: float) -> float:
 
 
 def hb_loss_fn(params_vec: jnp.ndarray) -> float:
-    """Loss function: squared error from target frequency derived from HB simulation.
+    """Loss for the HB optimization of Ic and Cs.
+
+    The dominant terms are squared relative errors of the analytic transmon
+    f01 and anharmonicity estimates. A weak inverse-response term based on the
+    HB 1st harmonic voltage keeps gradients flowing through the simulator.
 
     Args:
         params_vec: Array [log(Ic), log(Cs)] (log-space for better conditioning).
 
     Returns:
-        Scalar loss value based on the simulated 1st harmonic voltage.
+        Scalar loss value.
     """
     Ic = jnp.exp(params_vec[0])
     Cs = jnp.exp(params_vec[1])
@@ -456,7 +465,7 @@ def hb_loss_fn(params_vec: jnp.ndarray) -> float:
     )
 
     # Extract the 1st harmonic voltage magnitude at the junction node
-    jj_node_idx = port_map.get("JJ1,p1", 0)
+    jj_node_idx = port_map["JJ1,p1"]
     V_1st_harmonic = jnp.abs(y_freq_current[1, jj_node_idx])
 
     # Targets: transition frequency and anharmonicity, plus a weak term that
@@ -484,9 +493,8 @@ print(f"Initial loss: {float(loss_init):.6f}")
 # %% [markdown]
 # ### 1.8 Running the Optimization Loop
 #
-# We use Optax (Adam optimizer) to minimize the loss. Since `jax.grad`
-# provides exact gradients via automatic differentiation, convergence is
-# fast—typically under 100 iterations.
+# We use Optax (Adam optimizer) to minimize the loss, with `jax.grad`
+# providing exact gradients via automatic differentiation.
 
 # %%
 # Set up the optimizer
@@ -559,22 +567,39 @@ plt.show()
 # We can now visualize the transmon layout with the optimized dimensions.
 
 # %%
-# Compute updated pad dimensions from optimized Cs
-# From C = ε₀ εᵣ A/d → A = C·d/(ε₀ εᵣ)
-pad_gap_m = 15e-6  # keep gap fixed
-A_opt = Cs_opt * pad_gap_m / (ε_0 * ε_r_substrate)
-# Keep aspect ratio ≈ 250:400 = 5:8
-aspect = 5.0 / 8.0
-pad_height_opt = jnp.sqrt(A_opt / aspect)
+# Compute updated pad dimensions from optimized Cs by inverting the same
+# conformal-mapping model used in layout_to_circuit_params. No closed-form
+# inverse exists, but the capacitance is monotonic in pad size, so we bisect
+# on the pad height with the aspect ratio and gap held fixed.
+pad_gap_inv_um = 15.0  # keep gap fixed
+aspect = 5.0 / 8.0  # keep aspect ratio ≈ 250:400 = 5:8 (width:height)
+
+
+def capacitance_for_height(pad_height_um: float) -> float:
+    """Forward-model capacitance of pads with the given height and fixed aspect."""
+    return plate_capacitor_capacitance_analytical(
+        length=pad_height_um,
+        width=aspect * pad_height_um,
+        gap=pad_gap_inv_um,
+        ep_r=ε_r_substrate,
+    )
+
+
+lo, hi = 1.0, 1e4  # bracketing range in μm
+for _ in range(100):
+    mid = 0.5 * (lo + hi)
+    if capacitance_for_height(mid) < Cs_opt:
+        lo = mid
+    else:
+        hi = mid
+pad_height_opt = 0.5 * (lo + hi)
 pad_width_opt = aspect * pad_height_opt
 
-print(
-    f"Optimized pad dimensions: {float(pad_width_opt) * 1e6:.1f} × {float(pad_height_opt) * 1e6:.1f} μm²"
-)
+print(f"Optimized pad dimensions: {pad_width_opt:.1f} × {pad_height_opt:.1f} μm²")
 
 # Create the transmon component with optimized dimensions
 transmon_opt = double_pad_transmon(
-    pad_size=(float(pad_width_opt) * 1e6, float(pad_height_opt) * 1e6),
+    pad_size=(pad_width_opt, pad_height_opt),
     pad_gap=15.0,
 )
 transmon_opt.plot()
@@ -582,13 +607,13 @@ plt.title("Optimized Transmon Layout")
 plt.show()
 
 # %% [markdown]
-# ## Part 2 — Transient Pulse Analysis and Crosstalk Minimization
+# ## Part 2 — Transient Pulse Analysis and Crosstalk Sensitivity
 #
 # ### 2.1 Coupled Qubit Model
 #
 # We model two adjacent transmon qubits coupled through a parasitic mutual
-# capacitance :math:`C_m`. A flux pulse is applied to qubit 1, and we observe
-# the induced response on qubit 2 (crosstalk).
+# capacitance :math:`C_m`. A voltage pulse is applied to qubit 1, and we
+# observe the induced response on qubit 2 (crosstalk).
 #
 # The circuit topology:
 #
@@ -601,9 +626,9 @@ plt.show()
 
 
 @component(ports=("p1", "p2"))
-def CouplingCapacitor(  # noqa: N802
+def CouplingCapacitor(  # ruff: ignore[invalid-function-name]
     signals: Signals,
-    s: States,  # noqa: ARG001
+    s: States,  # ruff: ignore[unused-function-argument]
     Cm: float = 1e-15,
 ) -> tuple[dict, dict]:
     """Mutual coupling capacitor between two nodes.
@@ -639,15 +664,27 @@ Cm_init = 0.5e-15  # 0.5 fF coupling capacitance (parasitic)
 # Drive pulse parameters
 V_pulse = 0.5e-3  # 0.5 mV pulse amplitude
 pulse_delay = 0.2e-9  # 200 ps delay
-pulse_rise = 50e-12  # 50 ps rise time
+pulse_rise = 50e-12  # 50 ps rise/fall time
+pulse_width = 1.0e-9  # 1 ns pulse width
+# PulseVoltageSource is periodic; a period far beyond the simulation window
+# keeps the drive a single pulse.
+pulse_period = 1e-3
 
 coupled_netlist = {
     "instances": {
         "GND": {"component": "ground"},
         # Drive pulse for qubit 1
         "Vpulse": {
-            "component": "smooth_pulse",
-            "settings": {"V": V_pulse, "delay": pulse_delay, "tr": pulse_rise},
+            "component": "pulse_source",
+            "settings": {
+                "v1": 0.0,
+                "v2": V_pulse,
+                "td": pulse_delay,
+                "tr": pulse_rise,
+                "tf": pulse_rise,
+                "pw": pulse_width,
+                "per": pulse_period,
+            },
         },
         "Rdrive": {"component": "resistor", "settings": {"R": 50.0}},
         # Qubit 1
@@ -667,15 +704,15 @@ coupled_netlist = {
     },
 }
 
-# Add the smooth pulse and coupling cap to models
-from circulax.components.electronic import SmoothPulse
+# Add the pulse source and coupling cap to models
+from circulax.components.electronic import PulseVoltageSource
 
 models_coupled = {
     "resistor": Resistor,
     "capacitor": Capacitor,
     "josephson_junction": JosephsonJunction,
     "coupling_cap": CouplingCapacitor,
-    "smooth_pulse": SmoothPulse,
+    "pulse_source": PulseVoltageSource,
     "ground": lambda: 0,
 }
 
@@ -693,8 +730,9 @@ print(f"Port map keys: {list(port_map_c.keys())}")
 #
 # We use Circulax's transient solver (built on
 # [Diffrax](https://docs.kidger.site/diffrax/)) to simulate the time-domain
-# response. The solver uses implicit Backward Euler stepping with adaptive
-# Newton iterations, making it stable for stiff circuits.
+# response. For the dense backend the solver steps with the implicit
+# trapezoidal rule at a constant step size, which is stable for stiff
+# circuits.
 
 # %%
 import diffrax
@@ -715,9 +753,14 @@ sol = circuit_c.transient(
     max_steps=200_000,
 )
 
+# A failed integration still returns a Solution object, so check the status
+# explicitly before trusting the waveform.
+if sol.result != diffrax.RESULTS.successful:
+    raise RuntimeError(f"Transient solve failed: {sol.result}")
+
 # Extract voltages at qubit nodes
-q1_idx = port_map_c.get("JJ1,p1", port_map_c.get("Cs1,p1", 0))
-q2_idx = port_map_c.get("JJ2,p1", port_map_c.get("Cs2,p1", 1))
+q1_idx = port_map_c["JJ1,p1"]
+q2_idx = port_map_c["JJ2,p1"]
 
 v_q1 = sol.ys[:, q1_idx]
 v_q2 = sol.ys[:, q2_idx]
@@ -759,16 +802,16 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ### 2.5 Crosstalk Optimization via Gradient Descent
+# ### 2.5 Crosstalk Sensitivity Analysis
 #
 # We use `jax.grad` to differentiate the peak crosstalk voltage with respect
-# to the coupling capacitance. In a real design, this gradient could drive
-# adjustments to the physical spacing between qubits (which determines
-# :math:`C_m`).
+# to the coupling capacitance. The resulting sensitivity quantifies how
+# strongly the parasitic coupling responds to changes in :math:`C_m`, which
+# in a real design is set by the physical spacing between qubits.
 #
 # Since Circulax runs entirely in JAX, the gradient flows through the ODE
-# solver back to the circuit parameters—enabling end-to-end optimization of
-# layout parameters against time-domain performance metrics.
+# solver back to the circuit parameters, so the same machinery could drive
+# end-to-end optimization of layout parameters against time-domain metrics.
 
 # %%
 
@@ -808,8 +851,11 @@ grad_crosstalk = jax.grad(crosstalk_metric)(log_Cm)
 
 print(f"Coupling capacitance: Cm = {Cm_init * 1e15:.3f} fF")
 print(f"∂(crosstalk)/∂(log Cm) = {float(grad_crosstalk):.4e}")
-print("\nPositive gradient confirms: reducing Cm reduces crosstalk.")
-print("This maps to increasing qubit-qubit spacing in the layout.")
+if grad_crosstalk > 0:
+    print("\nCrosstalk grows with Cm, so reducing Cm (increasing")
+    print("qubit-qubit spacing in the layout) reduces crosstalk.")
+else:
+    print("\nCrosstalk does not grow with Cm at this operating point.")
 
 # %% [markdown]
 # ## Summary
@@ -820,13 +866,12 @@ print("This maps to increasing qubit-qubit spacing in the layout.")
 # 1. **Harmonic-Balance Optimization** — We defined a nonlinear Josephson
 #    junction component, assembled a driven transmon circuit, and used
 #    `jax.grad` to optimize the junction parameters toward a target qubit
-#    frequency. The optimization converged in ~100 steps thanks to exact
-#    gradient information.
+#    frequency.
 #
 # 2. **Transient Crosstalk Analysis** — We simulated a pulse driving one
 #    qubit in a coupled two-qubit system and computed gradients of the
-#    crosstalk voltage with respect to the coupling capacitance. This enables
-#    layout optimization to minimize parasitic coupling.
+#    crosstalk voltage with respect to the coupling capacitance, quantifying
+#    how sensitive the parasitic coupling is to layout choices.
 #
 # ### Key Takeaways
 #
