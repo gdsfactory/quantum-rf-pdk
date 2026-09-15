@@ -16,12 +16,11 @@
 # device (`"Device": "CPU"` versus `"Device": "GPU"`). The timings reported by Palace are
 # embedded below, so the analysis cells run without any Palace installation.
 #
-# The runs took place on the Aalto Triton cluster:
+# The runs used:
 #
-# - **CPU**: 8 MPI ranks on one Cascade Lake node (Xeon Gold 6248, `batch-csl`), 24 GB
-#   requested, second-order elements giving about 754k unknowns.
-# - **GPU**: 1 MPI rank with one Tesla V100-SXM2-16GB (`gpu-v100-16g`), 16 GB of host
-#   memory requested.
+# - **CPU**: 8 MPI ranks on one 8-core Cascade Lake node (Xeon Gold 6248), 24 GB of
+#   memory, second-order elements giving about 754k unknowns.
+# - **GPU**: 1 MPI rank with one Tesla V100-SXM2-16GB, 16 GB of host memory.
 #
 # Job wall time was 8m20s on CPU and 4m04s on GPU.
 
@@ -46,57 +45,35 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # %% [markdown]
-# ## The two batch scripts
+# ## The two invocations
 #
-# The CPU job uses the precompiled Palace Apptainer image with the container's own MPI:
+# The CPU run uses the precompiled Palace Apptainer image with the container's own MPI,
+# one rank per core, from the directory holding the generated `config.json`:
 #
 # ```bash
-# #!/bin/bash
-# #SBATCH --job-name=palace-cpu
-# #SBATCH --partition=batch-milan,batch-csl,batch-skl,batch-bdw,batch-hsw
-# #SBATCH --cpus-per-task=8
-# #SBATCH --mem=24G
-# #SBATCH --time=01:00:00
-# #SBATCH --output=/scratch/work/%u/slurm-logs/%x-%j.out
-#
-# set -euo pipefail
 # export OMP_NUM_THREADS=1
 # export MKL_NUM_THREADS=1
 # export OPENBLAS_NUM_THREADS=1
 #
-# SIF=/scratch/work/savolan2/palace-container/palace-x86_64_v3.sif
-# cd /scratch/work/savolan2/gsim-palace/sim_qpdk_resonator
-# apptainer exec --cleanenv "$SIF" mpirun --oversubscribe -np 8 \
+# apptainer exec --cleanenv palace.sif mpirun -np 8 \
 #     palace-x86_64.bin config.json > run.log 2>&1
 # ```
 #
-# The GPU job needs the CUDA-enabled image, `--nv` to expose the GPU inside the container,
-# and one MPI rank per GPU. The solver device is switched in the generated configuration:
+# The GPU run needs the CUDA-enabled image, `--nv` to expose the GPU inside the container,
+# and one MPI rank per GPU. The solver device is switched in the generated
+# configuration:
 #
 # ```bash
-# #!/bin/bash
-# #SBATCH --job-name=palace-gpu
-# #SBATCH --partition=gpu-v100-16g,gpu-v100-32g
-# #SBATCH --gres=gpu:1
-# #SBATCH --cpus-per-task=1
-# #SBATCH --mem=16G
-# #SBATCH --time=01:00:00
-# #SBATCH --output=/scratch/work/%u/slurm-logs/%x-%j.out
-#
-# set -euo pipefail
-#
-# SIF=/scratch/work/savolan2/palace-container/palace-cuda.sif
-# cd /scratch/work/savolan2/gsim-palace/sim_qpdk_resonator_gpu
 # sed -i 's/"Device": "CPU"/"Device": "GPU"/' config.json
-# apptainer exec --cleanenv --nv "$SIF" mpirun -np 1 \
+# apptainer exec --cleanenv --nv palace-cuda.sif mpirun -np 1 \
 #     palace-x86_64.bin config.json > run.log 2>&1
 # ```
 #
-# The same practical notes as in the resonator notebook apply: `--cleanenv` keeps host
-# modules out of the container, the raw `palace-x86_64.bin` binary is used instead of the
-# `palace` wrapper (which mis-parses the Slurm environment inside an allocation), BLAS
-# threading is pinned to one thread per rank, and each run lives in its own
-# self-contained directory.
+# The same practical notes as in the resonator notebook apply: `--cleanenv` keeps the
+# host environment out of the container, the raw `palace-x86_64.bin` binary avoids the
+# `palace` wrapper's environment parsing, BLAS threading is pinned to one thread per
+# rank, and each run lives in its own self-contained directory. These invocations also
+# drop unchanged into a batch script for an HPC scheduler such as Slurm.
 
 # %% [markdown]
 # ## Timings
@@ -220,8 +197,7 @@ plt.show()
 # ## Summary
 #
 # For this driven resonator simulation, one V100 GPU ran Palace about 2.2x faster
-# end-to-end than 8 CPU ranks on a comparable cluster node. The win comes entirely from
+# end-to-end than 8 CPU ranks on a comparable node. The win comes entirely from
 # the GPU-friendly linear algebra; phases that scale with MPI rank count (mesh
-# preprocessing, postprocessing, coarse solves) favor the CPU run. On a cluster the GPU
-# queue also matters: V100 partitions are typically the least contended GPU resource,
-# so for problems of this size a single-GPU Palace job is the practical default.
+# preprocessing, postprocessing, coarse solves) favor the CPU run. For problems of
+# this size a single-GPU Palace job is the practical default.

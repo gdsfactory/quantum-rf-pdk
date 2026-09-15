@@ -30,8 +30,8 @@
 # 3.12; the PyPI release is outdated) and see the [Palace
 # documentation](https://awslabs.github.io/palace/) for solver installation, including
 # precompiled [Apptainer](https://apptainer.org) images. The
-# results shown below were produced with Palace on the Aalto Triton cluster; the
-# S-parameter data is embedded so the analysis cells run anywhere.
+# results shown below were produced with Palace; the S-parameter data is embedded so the
+# analysis cells run anywhere.
 
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -231,53 +231,44 @@ etched.show()
 # - The two feeds end in lumped 50 Ω ports, one excited and one passive, so the sweep
 #   directly yields the S₂₁ transmission through the coupled resonator.
 # - Meshing with `sim.mesh()` invokes Gmsh; `gmsh` needs `libGLU` at import time on
-#   some systems (on Triton, `module load mesa-glu` provides it).
+#   some systems (`libglu1-mesa` on Debian/Ubuntu provides it).
 
 # %% [markdown]
 # ## Running Palace
 #
 # `sim.run()` in gsim submits the simulation to the GDSFactory+ cloud service. To run
-# the same configuration locally or on an HPC cluster, execute the generated
-# `config.json` with a Palace binary directly. On Aalto Triton, Palace is available as a
-# precompiled Apptainer image, which makes the Slurm batch script short:
+# the same configuration locally, execute the generated `config.json` with a Palace
+# binary directly. The simplest route is one of the precompiled Apptainer images, which
+# bundle Palace with its own MPI and need no system installation. From the directory
+# holding `config.json` and the mesh:
 #
 # ```bash
-# #!/bin/bash
-# #SBATCH --job-name=palace-res
-# #SBATCH --partition=batch-milan,batch-csl,batch-skl,batch-bdw,batch-hsw
-# #SBATCH --cpus-per-task=8
-# #SBATCH --mem=24G
-# #SBATCH --time=08:00:00
-# #SBATCH --output=/scratch/work/%u/slurm-logs/%x-%j.out
-#
-# set -euo pipefail
 # export OMP_NUM_THREADS=1
 # export MKL_NUM_THREADS=1
 # export OPENBLAS_NUM_THREADS=1
 #
-# SIF=/scratch/work/savolan2/palace-container/palace-x86_64_v3.sif
-# cd /scratch/work/savolan2/gsim-palace/sim_qpdk_resonator
-#
-# # One MPI rank per core; the container ships its own MPI and Palace binaries.
-# # The palace-x86_64.bin binary is used instead of the palace wrapper because
-# # the wrapper mis-parses Slurm's environment inside an allocation.
-# apptainer exec --cleanenv "$SIF" mpirun --oversubscribe -np 8 \
+# # One MPI rank per core; use the raw palace-x86_64.bin binary instead of the
+# # palace wrapper if the wrapper mis-parses the host environment in a batch
+# # allocation.
+# apptainer exec --cleanenv palace.sif mpirun -np 8 \
 #     palace-x86_64.bin config.json > run.log 2>&1
 # ```
 #
-# Practical notes for running the container on a cluster:
+# Practical notes for running the container:
 #
-# - `--cleanenv` keeps the host environment (loaded modules, Slurm variables) out of the
-#   container, avoiding conflicts with the bundled MPI.
-# - Name several partitions: Slurm starts the job wherever it can begin earliest, so a
-#   comma-separated list usually beats hand-picking one.
+# - `--cleanenv` keeps the host environment out of the container, avoiding conflicts
+#   with the bundled MPI.
 # - Pin BLAS threading to one thread per rank, since Palace parallelizes with MPI.
 # - Run from a self-contained directory: Apptainer binds the current working directory
 #   subtree, so `config.json`, the mesh and the `output/` folder all live side by side.
 # - Palace writes S-parameters to `output/palace/port-S.csv` and prints an "Elapsed Time
 #   Report" at the end, handy for benchmarking (see the CPU vs GPU comparison notebook).
 #
-# The run below used 8 MPI ranks on a Cascade Lake node with second-order elements,
+# The same invocation works unchanged in an HPC environment such as a Slurm cluster,
+# where a batch script requests the cores and then runs the `mpirun` line inside the
+# allocation.
+#
+# The run below used 8 MPI ranks on an 8-core CPU node with second-order elements,
 # giving about 754k unknowns. Palace's adaptive frequency sampling converged the
 # 7.75 to 7.8 GHz sweep with 14 sampled points, and the whole job, including meshing
 # and the PROM (projection-based reduced-order model) evaluation of all 300 sweep
