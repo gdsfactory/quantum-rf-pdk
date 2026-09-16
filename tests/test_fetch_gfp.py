@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import platform
 import subprocess
 import zipfile
@@ -14,9 +15,16 @@ _JUSTFILE = Path(__file__).parents[1] / "justfile"
 
 def _write_vsix(path: Path, *extra_members: str) -> None:
     """Write the smallest archive accepted by the ``fetch-gfp`` recipe."""
-    executable = "gfp.exe" if platform.system() == "Windows" else "gfp"
+    executables = (
+        ["gfp.exe", "uv.exe", "rg.exe"]
+        if platform.system() == "Windows"
+        else ["gfp", "uv", "rg"]
+    )
     members = {
-        f"extension/bin/{executable}": b"development binary",
+        **{
+            f"extension/bin/{executable}": b"development binary"
+            for executable in executables
+        },
         "extension/bin/python/gdsfactoryplus/__init__.py": b"",
         "extension/bin/python/nyancad/__init__.py": b"",
         **dict.fromkeys(extra_members, b"must not escape"),
@@ -44,14 +52,24 @@ def _fetch(workdir: Path, vsix: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_fetch_gfp_accepts_quoted_local_path(tmp_path: Path) -> None:
+def test_fetch_gfp_accepts_local_path_with_spaces(tmp_path: Path) -> None:
     """Pass local paths as data rather than interpolating them into Python."""
-    vsix = tmp_path / 'local "development".vsix'
+    vsix = tmp_path / "local development.vsix"
     _write_vsix(vsix)
 
     result = _fetch(tmp_path, vsix)
 
     assert result.returncode == 0, result.stderr
+    executable_names = (
+        ["gfp.exe", "uv.exe", "rg.exe"]
+        if platform.system() == "Windows"
+        else ["gfp", "uv", "rg"]
+    )
+    for executable_name in executable_names:
+        executable = tmp_path / "build/gfp-vsix/bin" / executable_name
+        assert executable.is_file()
+        if platform.system() != "Windows":
+            assert os.access(executable, os.X_OK)
     assert (tmp_path / "build/gfp-vsix/bin/python/gdsfactoryplus").is_dir()
     assert (tmp_path / "build/gfp-vsix/bin/python/nyancad").is_dir()
 

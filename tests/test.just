@@ -309,15 +309,25 @@ fetch-gfp $version="latest":
     # unconditionally: zip extraction does not preserve the exec bit, so
     # a stamp hit on a re-cloned or partially cleaned checkout would
     # otherwise produce a non-executable gfp with no error.
-    gfp_bin = OUT / "bin" / ("gfp.exe" if IS_WINDOWS else "gfp")
+    executable_names = (
+        ["gfp.exe", "uv.exe", "rg.exe"] if IS_WINDOWS else ["gfp", "uv", "rg"]
+    )
+    executables = [OUT / "bin" / name for name in executable_names]
+    gfp_bin = executables[0]
     sdk_dirs = [OUT / "bin" / "python" / "gdsfactoryplus", OUT / "bin" / "python" / "nyancad"]
-    if not gfp_bin.is_file():
-        raise SystemExit(f"extraction incomplete: {gfp_bin} is missing from {OUT}")
+    missing_executables = [str(path) for path in executables if not path.is_file()]
+    if missing_executables:
+        raise SystemExit(
+            f"extraction incomplete: executables missing: {missing_executables}"
+        )
     missing_dirs = [str(d) for d in sdk_dirs if not d.is_dir()]
     if missing_dirs:
         raise SystemExit(f"extraction incomplete: SDK dirs missing: {missing_dirs}")
     if not IS_WINDOWS:
-        gfp_bin.chmod(gfp_bin.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        for executable in executables:
+            executable.chmod(
+                executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            )
     stamp.write_text(wanted)
     sep = os.pathsep
     env_sh = OUT / "env.sh"
@@ -341,18 +351,18 @@ fetch-gfp $version="latest":
 test-gfp *args:
     #!/usr/bin/env bash
     set -euo pipefail
+    uv sync --extra gdsfactoryplus --group dev
     probe_gfp_v2() {
         uv run --no-sync python -c \
-            "from gdsfactoryplus.factory_metadata import resolve_factory_model; from gdsfactoryplus.sim.sax import simulate_mosaic_sax" \
-            >/dev/null 2>&1
+            "from gdsfactoryplus.factory_metadata import resolve_factory_model; from gdsfactoryplus.sim.sax import simulate_mosaic_sax"
     }
     if [[ -f build/gfp-vsix/env.sh ]]; then
         source build/gfp-vsix/env.sh
     fi
-    if ! probe_gfp_v2 || [[ -z "${GFP_BIN:-}" || ! -x "${GFP_BIN:-}" ]]; then
+    if ! probe_gfp_v2 >/dev/null 2>&1 || [[ -z "${GFP_BIN:-}" || ! -x "${GFP_BIN:-}" ]]; then
         just fetch-gfp
         source build/gfp-vsix/env.sh
     fi
     probe_gfp_v2
-    GFP_REQUIRED=1 uv run --extra gdsfactoryplus --group dev pytest -m gfp -n auto --dist loadgroup \
+    GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
         tests/test_gfp_lvs.py tests/test_gfp_sax.py tests/test_gfp_server.py "$@"
