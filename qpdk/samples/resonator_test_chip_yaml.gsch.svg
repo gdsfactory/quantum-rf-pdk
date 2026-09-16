@@ -80,11 +80,11 @@ body, html { padding: 0px; margin: 0px; }
 .mosaic-libman .libhead { display: flex; flex-direction: row; justify-content: space-between; align-items: baseline; }
 .syncstatus.active svg { animation: 1.5s linear 0s infinite normal none running spinner; }
 .syncstatus.done { animation: 1.5s linear 0s 1 normal none running fadeout; opacity: 0; }
-@keyframes spinner { 
+@keyframes spinner {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-@keyframes fadeout { 
+@keyframes fadeout {
   0% { opacity: 1; }
   100% { opacity: 0; }
 }

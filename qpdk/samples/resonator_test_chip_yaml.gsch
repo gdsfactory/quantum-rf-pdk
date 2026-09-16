@@ -5,8 +5,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_east_bot",
     "nets": {
-      "o1": "net_23",
-      "o2": "net_5"
+      "o1": "W19",
+      "o2": "W20"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -14,47 +14,51 @@
       "npoints": 2,
       "width": null
     },
-    "x": 164.0,
-    "y": 0.0
+    "x": 164,
+    "y": 0
   },
   "o1": {
     "type": "port",
     "id": null,
     "name": "o1",
-    "x": 0.0,
-    "y": 0.0,
+    "x": -1,
+    "y": 21,
     "nets": {
       "P": "port_net_o1"
     },
     "attached_port": {
       "component_id": "probe_west_top",
       "port_name": "waveport"
-    }
+    },
+    "nature": "photonic"
   },
   "resonator_top_2": {
+    "y": 20,
+    "name": "resonator_top_2",
     "type": "ckt",
+    "nets": {
+      "coupling_o1": "W37",
+      "resonator_o1": "net15",
+      "coupling_o2": "W36"
+    },
+    "x": 40,
     "mirror": true,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
-    "name": "resonator_top_2",
-    "nets": {
-      "coupling_o1": "net_26",
-      "coupling_o2": "net_27"
-    },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 3900,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 3900,
+      "coupling_straight_length": 200
     },
-    "y": 20,
-    "irl_y": 1000,
+    "irl_x": 1952.2269962101564,
+    "irl_y": 1091.3630086765197,
     "bbox_width": 509.797,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -111,8 +115,7 @@
         "layer_name": "M1_DRAW"
       }
     ],
-    "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_a262bbdb",
-    "irl_x": 2000
+    "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_a262bbdb"
   },
   "probeline_straight_top_3": {
     "type": "straight",
@@ -120,8 +123,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_top_3",
     "nets": {
-      "o1": "net_29",
-      "o2": "net_30"
+      "o1": "W34",
+      "o2": "W33"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -129,8 +132,8 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 64.0,
-    "y": 20.0
+    "x": 64,
+    "y": 20
   },
   "probeline_straight_bot_7": {
     "type": "straight",
@@ -138,8 +141,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_bot_7",
     "nets": {
-      "o1": "net_21",
-      "o2": "net_22"
+      "o1": "W17",
+      "o2": "W18"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -147,8 +150,8 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 144.0,
-    "y": 0.0
+    "x": 144,
+    "y": 0
   },
   "probeline_straight_top_6": {
     "type": "straight",
@@ -156,8 +159,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_top_6",
     "nets": {
-      "o1": "net_35",
-      "o2": "net_36"
+      "o1": "W28",
+      "o2": "W27"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -165,8 +168,8 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 124.0,
-    "y": 20.0
+    "x": 124,
+    "y": 20
   },
   "probeline_straight_bot_2": {
     "type": "straight",
@@ -174,8 +177,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_bot_2",
     "nets": {
-      "o1": "net_11",
-      "o2": "net_12"
+      "o1": "W7",
+      "o2": "W8"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -183,30 +186,39 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 44.0,
-    "y": 0.0
+    "x": 44,
+    "y": 0
   },
   "o4": {
-    "type": "port",
-    "id": null,
+    "y": 1,
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
     "name": "o4",
-    "x": 0.0,
-    "y": 0.0,
-    "nets": {
-      "P": "port_net_o4"
-    },
     "attached_port": {
       "component_id": "probe_east_bot",
       "port_name": "waveport"
-    }
+    },
+    "type": "port",
+    "nature": "photonic",
+    "nets": {
+      "P": "port_net_o4"
+    },
+    "id": null,
+    "x": 183
   },
   "probe_west_top": {
     "type": "ckt",
     "model": "qpdk.cells.launcher.launcher",
     "name": "probe_west_top",
     "nets": {
-      "o1": "net_4",
-      "waveport": "port_net_o1"
+      "waveport": "net1",
+      "o1": "W40"
     },
     "props": {
       "cross_section_big": "launcher_cross_section_big",
@@ -265,25 +277,27 @@
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "name": "resonator_bot_6",
     "nets": {
-      "coupling_o1": "net_18",
-      "coupling_o2": "net_19"
+      "coupling_o1": "W14",
+      "resonator_o1": "net38",
+      "coupling_o2": "W15"
     },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4600,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 4600,
+      "coupling_straight_length": 200
     },
+    "x": 120,
     "y": 0,
-    "irl_x": 6000,
-    "irl_y": 0,
+    "irl_x": 5866.718773734833,
+    "irl_y": -570.8530048099261,
     "bbox_width": 609.797,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -341,7 +355,7 @@
       }
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_dcc39d39",
-    "irl_flip": false
+    "irl_flip": true
   },
   "probeline_straight_east_top": {
     "type": "straight",
@@ -349,8 +363,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_east_top",
     "nets": {
-      "o1": "net_24",
-      "o2": "net_6"
+      "o1": "W24",
+      "o2": "W23"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -358,33 +372,36 @@
       "npoints": 2,
       "width": null
     },
-    "x": 164.0,
-    "y": 20.0
+    "x": 164,
+    "y": 20
   },
   "resonator_top_1": {
+    "y": 20,
+    "name": "resonator_top_1",
     "type": "ckt",
+    "nets": {
+      "coupling_o1": "W39",
+      "resonator_o1": "net6",
+      "coupling_o2": "net7"
+    },
+    "x": 18,
     "mirror": true,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
-    "name": "resonator_top_1",
-    "nets": {
-      "coupling_o1": "net_40",
-      "coupling_o2": "net_25"
-    },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 3700,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 3700,
+      "coupling_straight_length": 200
     },
-    "y": 20,
-    "irl_y": 1000,
+    "irl_x": 903.5867904826737,
+    "irl_y": 1091.3630086765197,
     "bbox_width": 481.225,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -441,33 +458,34 @@
         "layer_name": "M1_DRAW"
       }
     ],
-    "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_2706f119",
-    "irl_x": 1000
+    "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_2706f119"
   },
   "resonator_bot_1": {
     "type": "ckt",
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "name": "resonator_bot_1",
     "nets": {
-      "coupling_o1": "net_39",
-      "coupling_o2": "net_9"
+      "coupling_o1": "W2",
+      "resonator_o1": "net8",
+      "coupling_o2": "W4"
     },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 3600,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 3600,
+      "coupling_straight_length": 200
     },
+    "x": 20,
     "y": 0,
-    "irl_x": 1000,
-    "irl_y": 0,
+    "irl_x": 986.783790643344,
+    "irl_y": -570.8530048099261,
     "bbox_width": 466.939,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -526,32 +544,34 @@
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_69590bb8",
     "irl_orientation": 0,
-    "irl_flip": false
+    "irl_flip": true
   },
   "resonator_bot_5": {
     "type": "ckt",
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "name": "resonator_bot_5",
     "nets": {
-      "coupling_o1": "net_16",
-      "coupling_o2": "net_17"
+      "coupling_o1": "W12",
+      "resonator_o1": "net32",
+      "coupling_o2": "W13"
     },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4400,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 4400,
+      "coupling_straight_length": 200
     },
+    "x": 100,
     "y": 0,
-    "irl_x": 5000,
-    "irl_y": 0,
+    "irl_x": 4776.352295154397,
+    "irl_y": -570.8530048099261,
     "bbox_width": 581.225,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -609,7 +629,7 @@
       }
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_6167d277",
-    "irl_flip": false
+    "irl_flip": true
   },
   "probeline_straight_bot_1": {
     "type": "straight",
@@ -617,8 +637,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_bot_1",
     "nets": {
-      "o1": "net_9",
-      "o2": "net_10"
+      "o1": "W5",
+      "o2": "W6"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -626,8 +646,8 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 24.0,
-    "y": 0.0
+    "x": 27,
+    "y": 0
   },
   "probeline_straight_top_7": {
     "type": "straight",
@@ -635,8 +655,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_top_7",
     "nets": {
-      "o1": "net_37",
-      "o2": "net_38"
+      "o1": "W26",
+      "o2": "W25"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -644,33 +664,35 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 144.0,
-    "y": 20.0
+    "x": 144,
+    "y": 20
   },
   "resonator_bot_4": {
     "type": "ckt",
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "name": "resonator_bot_4",
     "nets": {
-      "coupling_o1": "net_14",
-      "coupling_o2": "net_15"
+      "coupling_o1": "W10",
+      "resonator_o1": "net26",
+      "coupling_o2": "W11"
     },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4200,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 4200,
+      "coupling_straight_length": 200
     },
+    "x": 80,
     "y": 0,
-    "irl_x": 4000,
-    "irl_y": 0,
+    "irl_x": 3881.108386306605,
+    "irl_y": -570.8530048099261,
     "bbox_width": 552.654,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -728,32 +750,34 @@
       }
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_e60c07b5",
-    "irl_flip": false
+    "irl_flip": true
   },
   "resonator_bot_8": {
     "type": "ckt",
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "name": "resonator_bot_8",
     "nets": {
-      "coupling_o1": "net_22",
-      "coupling_o2": "net_23"
+      "coupling_o1": "W18",
+      "resonator_o1": "net50",
+      "coupling_o2": "W19"
     },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 5000,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 5000,
+      "coupling_straight_length": 200
     },
+    "x": 160,
     "y": 0,
-    "irl_x": 8000,
-    "irl_y": 0,
+    "irl_x": 7914.58391484726,
+    "irl_y": -570.8530048099261,
     "bbox_width": 666.939,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -811,34 +835,35 @@
       }
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_de1ace74",
-    "irl_flip": false
+    "irl_flip": true
   },
   "resonator_top_3": {
-    "type": "ckt",
-    "mirror": true,
-    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "y": 20,
     "name": "resonator_top_3",
+    "type": "ckt",
     "nets": {
-      "coupling_o1": "net_28",
-      "coupling_o2": "net_29"
-    },
-    "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
-      "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4100,
-      "meanders": 6,
-      "open_end": false,
-      "open_start": true,
-      "start_with_bend": false
+      "coupling_o1": "W35",
+      "resonator_o1": "net21",
+      "coupling_o2": "W34"
     },
     "x": 60,
-    "y": 20,
-    "irl_x": 3000,
-    "irl_y": 1000,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "props": {
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
+      "open_end": false,
+      "open_start": true,
+      "bend_spec": "bend_circular",
+      "length": 4100,
+      "coupling_straight_length": 200
+    },
+    "irl_x": 2952.2269962101564,
+    "irl_y": 1265.1113102992897,
     "bbox_width": 538.368,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -903,8 +928,8 @@
     "model": "gdsfactory.components.bends.bend_s.bend_s",
     "name": "probeline_sbend_east_top",
     "nets": {
-      "o1": "net_6",
-      "o2": "net_2"
+      "o1": "W23",
+      "o2": "W22"
     },
     "props": {
       "allow_min_radius_violation": true,
@@ -915,8 +940,8 @@
       ],
       "width": 10
     },
-    "x": 172.0,
-    "y": 20.0
+    "x": 172,
+    "y": 20
   },
   "probeline_straight_top_1": {
     "type": "straight",
@@ -924,8 +949,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_top_1",
     "nets": {
-      "o1": "net_25",
-      "o2": "net_26"
+      "o1": "W38",
+      "o2": "W37"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -933,8 +958,8 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 24.0,
-    "y": 20.0
+    "x": 24,
+    "y": 20
   },
   "probeline_sbend_east_bot": {
     "type": "ckt",
@@ -942,8 +967,8 @@
     "model": "gdsfactory.components.bends.bend_s.bend_s",
     "name": "probeline_sbend_east_bot",
     "nets": {
-      "o1": "net_5",
-      "o2": "net_1"
+      "o1": "W20",
+      "o2": "W21"
     },
     "props": {
       "allow_min_radius_violation": true,
@@ -954,8 +979,8 @@
       ],
       "width": 10
     },
-    "x": 172.0,
-    "y": 0.0
+    "x": 172,
+    "y": 0
   },
   "probeline_straight_bot_6": {
     "type": "straight",
@@ -963,8 +988,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_bot_6",
     "nets": {
-      "o1": "net_19",
-      "o2": "net_20"
+      "o1": "W15",
+      "o2": "W16"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -972,52 +997,54 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 124.0,
-    "y": 0.0
+    "x": 124,
+    "y": 0
   },
   "probeline_straight_west_bot": {
-    "type": "straight",
-    "id": null,
-    "model": "gdsfactory.components.waveguides.straight.straight",
+    "y": 0,
     "name": "probeline_straight_west_bot",
+    "orientation": 180,
+    "type": "straight",
     "nets": {
-      "o1": "net_39",
-      "o2": "net_7"
+      "o1": "W4",
+      "o2": "W5"
     },
-    "orientation": 180.0,
+    "id": null,
+    "x": 24,
+    "model": "gdsfactory.components.waveguides.straight.straight",
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 200,
       "npoints": 2,
       "width": null
-    },
-    "x": 20.0,
-    "y": 0.0
+    }
   },
   "resonator_bot_3": {
     "type": "ckt",
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "name": "resonator_bot_3",
     "nets": {
-      "coupling_o1": "net_12",
-      "coupling_o2": "net_13"
+      "coupling_o1": "W8",
+      "resonator_o1": "net20",
+      "coupling_o2": "W9"
     },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4000,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 4000,
+      "coupling_straight_length": 200
     },
+    "x": 60,
     "y": 0,
-    "irl_x": 3000,
-    "irl_y": 0,
+    "irl_x": 3019.341311274656,
+    "irl_y": -570.8530048099261,
     "bbox_width": 524.082,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -1075,7 +1102,7 @@
       }
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_6ab03cf3",
-    "irl_flip": false
+    "irl_flip": true
   },
   "probeline_straight_top_5": {
     "type": "straight",
@@ -1083,8 +1110,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_top_5",
     "nets": {
-      "o1": "net_33",
-      "o2": "net_34"
+      "o1": "W30",
+      "o2": "W29"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -1092,35 +1119,36 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 104.0,
-    "y": 20.0
+    "x": 104,
+    "y": 20
   },
   "resonator_top_5": {
-    "type": "ckt",
-    "mirror": true,
-    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "y": 20,
     "name": "resonator_top_5",
+    "type": "ckt",
     "nets": {
-      "coupling_o1": "net_32",
-      "coupling_o2": "net_33"
-    },
-    "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
-      "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4500,
-      "meanders": 6,
-      "open_end": false,
-      "open_start": true,
-      "start_with_bend": false
+      "coupling_o1": "W31",
+      "resonator_o1": "net33",
+      "coupling_o2": "W30"
     },
     "x": 100,
-    "y": 20,
-    "irl_x": 5000,
-    "irl_y": 1000,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "props": {
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
+      "open_end": false,
+      "open_start": true,
+      "bend_spec": "bend_circular",
+      "length": 4500,
+      "coupling_straight_length": 200
+    },
+    "irl_x": 4952.226996210156,
+    "irl_y": 1265.1113102992897,
     "bbox_width": 595.511,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -1180,31 +1208,32 @@
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_1f15b7d8"
   },
   "resonator_top_4": {
-    "type": "ckt",
-    "mirror": true,
-    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "y": 20,
     "name": "resonator_top_4",
+    "type": "ckt",
     "nets": {
-      "coupling_o1": "net_30",
-      "coupling_o2": "net_31"
-    },
-    "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
-      "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4300,
-      "meanders": 6,
-      "open_end": false,
-      "open_start": true,
-      "start_with_bend": false
+      "coupling_o1": "W33",
+      "resonator_o1": "net27",
+      "coupling_o2": "W32"
     },
     "x": 80,
-    "y": 20,
-    "irl_x": 4000,
-    "irl_y": 1000,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "props": {
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
+      "open_end": false,
+      "open_start": true,
+      "bend_spec": "bend_circular",
+      "length": 4300,
+      "coupling_straight_length": 200
+    },
+    "irl_x": 3952.2269962101564,
+    "irl_y": 1265.1113102992897,
     "bbox_width": 566.939,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -1264,48 +1293,50 @@
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_a3b9ed16"
   },
   "probeline_straight_west_top": {
-    "type": "straight",
-    "id": null,
-    "model": "gdsfactory.components.waveguides.straight.straight",
+    "y": 20,
     "name": "probeline_straight_west_top",
+    "orientation": 180,
+    "type": "straight",
     "nets": {
-      "o1": "net_40",
-      "o2": "net_8"
+      "o1": "net7",
+      "o2": "W38"
     },
-    "orientation": 180.0,
+    "id": null,
+    "x": 20,
+    "model": "gdsfactory.components.waveguides.straight.straight",
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 200,
       "npoints": 2,
       "width": null
-    },
-    "x": 20.0,
-    "y": 20.0
+    }
   },
   "resonator_bot_7": {
     "type": "ckt",
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "name": "resonator_bot_7",
     "nets": {
-      "coupling_o1": "net_20",
-      "coupling_o2": "net_21"
+      "coupling_o1": "W16",
+      "resonator_o1": "net44",
+      "coupling_o2": "W17"
     },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4800,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 4800,
+      "coupling_straight_length": 200
     },
+    "x": 140,
     "y": 0,
-    "irl_x": 7000,
-    "irl_y": 0,
+    "irl_x": 6902.4993200170275,
+    "irl_y": -570.8530048099261,
     "bbox_width": 638.3679999999999,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -1363,35 +1394,45 @@
       }
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_581f67fb",
-    "irl_flip": false
+    "irl_flip": true
   },
   "o2": {
-    "type": "port",
-    "id": null,
+    "y": 21,
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
     "name": "o2",
-    "x": 0.0,
-    "y": 0.0,
-    "nets": {
-      "P": "port_net_o2"
-    },
     "attached_port": {
       "component_id": "probe_east_top",
       "port_name": "waveport"
-    }
+    },
+    "type": "port",
+    "nature": "photonic",
+    "nets": {
+      "P": "port_net_o2"
+    },
+    "id": null,
+    "x": 184
   },
   "o3": {
     "type": "port",
     "id": null,
     "name": "o3",
-    "x": 0.0,
-    "y": 0.0,
+    "x": -1,
+    "y": 1,
     "nets": {
       "P": "port_net_o3"
     },
     "attached_port": {
       "component_id": "probe_west_bot",
       "port_name": "waveport"
-    }
+    },
+    "nature": "photonic"
   },
   "probeline_straight_bot_4": {
     "type": "straight",
@@ -1399,8 +1440,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_bot_4",
     "nets": {
-      "o1": "net_15",
-      "o2": "net_16"
+      "o1": "W11",
+      "o2": "W12"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -1408,35 +1449,36 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 84.0,
-    "y": 0.0
+    "x": 84,
+    "y": 0
   },
   "resonator_top_7": {
-    "type": "ckt",
-    "mirror": true,
-    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "y": 20,
     "name": "resonator_top_7",
+    "type": "ckt",
     "nets": {
-      "coupling_o1": "net_36",
-      "coupling_o2": "net_37"
-    },
-    "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
-      "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4900,
-      "meanders": 6,
-      "open_end": false,
-      "open_start": true,
-      "start_with_bend": false
+      "coupling_o1": "W27",
+      "resonator_o1": "net45",
+      "coupling_o2": "W26"
     },
     "x": 140,
-    "y": 20,
-    "irl_x": 7000,
-    "irl_y": 1000,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "props": {
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
+      "open_end": false,
+      "open_start": true,
+      "bend_spec": "bend_circular",
+      "length": 4900,
+      "coupling_straight_length": 200
+    },
+    "irl_x": 6952.226996210156,
+    "irl_y": 1265.1113102992897,
     "bbox_width": 652.654,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -1501,8 +1543,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_bot_3",
     "nets": {
-      "o1": "net_13",
-      "o2": "net_14"
+      "o1": "W9",
+      "o2": "W10"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -1510,8 +1552,8 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 64.0,
-    "y": 0.0
+    "x": 64,
+    "y": 0
   },
   "probeline_straight_bot_5": {
     "type": "straight",
@@ -1519,8 +1561,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_bot_5",
     "nets": {
-      "o1": "net_17",
-      "o2": "net_18"
+      "o1": "W13",
+      "o2": "W14"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -1528,27 +1570,37 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 104.0,
-    "y": 0.0
+    "x": 104,
+    "y": 0
   },
   "probe_east_top": {
+    "y": 20,
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "name": "probe_east_top",
+    "orientation": 180,
     "type": "ckt",
+    "nets": {
+      "o1": "W22",
+      "waveport": "net59"
+    },
+    "x": 180,
     "mirror": true,
     "model": "qpdk.cells.launcher.launcher",
-    "name": "probe_east_top",
-    "nets": {
-      "o1": "net_2",
-      "waveport": "port_net_o2"
-    },
-    "orientation": 180,
     "props": {
       "cross_section_big": "launcher_cross_section_big",
       "cross_section_small": "cpw",
       "straight_length": 200,
       "taper_length": 100
     },
-    "y": 20,
-    "irl_y": 1000,
+    "irl_x": 9000,
+    "irl_y": 1091.3630086765197,
     "bbox_width": 300,
     "bbox_height": 420,
     "bbox_xmin": 0,
@@ -1589,17 +1641,16 @@
         "layer_name": "M1_DRAW"
       }
     ],
-    "irl_orientation": 0,
-    "texture_key": "qpdk.cells.launcher.launcher_0c517617",
-    "irl_x": 9000
+    "irl_orientation": 180,
+    "texture_key": "qpdk.cells.launcher.launcher_0c517617"
   },
   "probe_west_bot": {
     "type": "ckt",
     "model": "qpdk.cells.launcher.launcher",
     "name": "probe_west_bot",
     "nets": {
-      "o1": "net_3",
-      "waveport": "port_net_o3"
+      "waveport": "net0",
+      "o1": "W1"
     },
     "props": {
       "cross_section_big": "launcher_cross_section_big",
@@ -1607,9 +1658,10 @@
       "straight_length": 200,
       "taper_length": 100
     },
+    "x": 0,
     "y": 0,
-    "irl_x": 0,
-    "irl_y": 0,
+    "irl_x": 20.819772145933598,
+    "irl_y": -570.9048108042542,
     "bbox_width": 300,
     "bbox_height": 420,
     "bbox_xmin": 0,
@@ -1654,24 +1706,33 @@
     "irl_orientation": 0
   },
   "probe_east_bot": {
+    "y": 0,
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "name": "probe_east_bot",
+    "orientation": 180,
     "type": "ckt",
+    "nets": {
+      "o1": "W21",
+      "waveport": "net58"
+    },
+    "x": 180,
     "mirror": true,
     "model": "qpdk.cells.launcher.launcher",
-    "name": "probe_east_bot",
-    "nets": {
-      "o1": "net_1",
-      "waveport": "port_net_o4"
-    },
-    "orientation": 180,
     "props": {
       "cross_section_big": "launcher_cross_section_big",
       "cross_section_small": "cpw",
       "straight_length": 200,
       "taper_length": 100
     },
-    "y": 0,
-    "irl_y": 0,
-    "irl_x": 9000,
+    "irl_x": 8990.409377767864,
+    "irl_y": -570.9048108042542,
     "bbox_width": 300,
     "bbox_height": 420,
     "bbox_xmin": 0,
@@ -1712,35 +1773,36 @@
         "layer_name": "M1_DRAW"
       }
     ],
-    "irl_orientation": 0,
+    "irl_orientation": 180,
     "texture_key": "qpdk.cells.launcher.launcher_0c517617"
   },
   "resonator_top_6": {
-    "type": "ckt",
-    "mirror": true,
-    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "y": 20,
     "name": "resonator_top_6",
+    "type": "ckt",
     "nets": {
-      "coupling_o1": "net_34",
-      "coupling_o2": "net_35"
-    },
-    "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
-      "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 4700,
-      "meanders": 6,
-      "open_end": false,
-      "open_start": true,
-      "start_with_bend": false
+      "coupling_o1": "W29",
+      "resonator_o1": "net39",
+      "coupling_o2": "W28"
     },
     "x": 120,
-    "y": 20,
-    "irl_x": 6000,
-    "irl_y": 1000,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "props": {
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
+      "open_end": false,
+      "open_start": true,
+      "bend_spec": "bend_circular",
+      "length": 4700,
+      "coupling_straight_length": 200
+    },
+    "irl_x": 5952.226996210156,
+    "irl_y": 1265.1113102992897,
     "bbox_width": 624.082,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -1805,8 +1867,8 @@
     "model": "gdsfactory.components.bends.bend_s.bend_s",
     "name": "probeline_sbend_west_top",
     "nets": {
-      "o1": "net_4",
-      "o2": "net_8"
+      "o1": "W40",
+      "o2": "W39"
     },
     "props": {
       "allow_min_radius_violation": true,
@@ -1817,8 +1879,8 @@
       ],
       "width": 10
     },
-    "x": 6.0,
-    "y": 20.0
+    "x": 6,
+    "y": 20
   },
   "probeline_straight_top_2": {
     "type": "straight",
@@ -1826,8 +1888,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_top_2",
     "nets": {
-      "o1": "net_27",
-      "o2": "net_28"
+      "o1": "W36",
+      "o2": "W35"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -1835,8 +1897,8 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 44.0,
-    "y": 20.0
+    "x": 44,
+    "y": 20
   },
   "probeline_straight_top_4": {
     "type": "straight",
@@ -1844,8 +1906,8 @@
     "model": "gdsfactory.components.waveguides.straight.straight",
     "name": "probeline_straight_top_4",
     "nets": {
-      "o1": "net_31",
-      "o2": "net_32"
+      "o1": "W32",
+      "o2": "W31"
     },
     "props": {
       "cross_section": "coplanar_waveguide",
@@ -1853,33 +1915,35 @@
       "npoints": 2,
       "width": 10
     },
-    "x": 84.0,
-    "y": 20.0
+    "x": 84,
+    "y": 20
   },
   "resonator_bot_2": {
     "type": "ckt",
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     "name": "resonator_bot_2",
     "nets": {
-      "coupling_o1": "net_10",
-      "coupling_o2": "net_11"
+      "coupling_o1": "W6",
+      "resonator_o1": "net14",
+      "coupling_o2": "W7"
     },
     "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
       "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 3800,
       "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
       "open_end": false,
       "open_start": true,
-      "start_with_bend": false
+      "bend_spec": "bend_circular",
+      "length": 3800,
+      "coupling_straight_length": 200
     },
+    "x": 40,
     "y": 0,
-    "irl_x": 2000,
-    "irl_y": 0,
+    "irl_x": 1879.0049549479086,
+    "irl_y": -570.8530048099261,
     "bbox_width": 495.511,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -1937,7 +2001,7 @@
       }
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_e4b4d67a",
-    "irl_flip": false
+    "irl_flip": true
   },
   "probeline_sbend_west_bot": {
     "type": "ckt",
@@ -1945,8 +2009,8 @@
     "model": "gdsfactory.components.bends.bend_s.bend_s",
     "name": "probeline_sbend_west_bot",
     "nets": {
-      "o1": "net_3",
-      "o2": "net_7"
+      "o1": "W1",
+      "o2": "W2"
     },
     "props": {
       "allow_min_radius_violation": true,
@@ -1957,35 +2021,36 @@
       ],
       "width": 10
     },
-    "x": 6.0,
-    "y": 0.0
+    "x": 6,
+    "y": 0
   },
   "resonator_top_8": {
-    "type": "ckt",
-    "mirror": true,
-    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "y": 20,
     "name": "resonator_top_8",
+    "type": "ckt",
     "nets": {
-      "coupling_o1": "net_38",
-      "coupling_o2": "net_24"
-    },
-    "props": {
-      "bend_spec": "bend_circular",
-      "coupling_gap": 16,
-      "coupling_straight_length": 200,
-      "cross_section": "coplanar_waveguide",
-      "cross_section_non_resonator": "coplanar_waveguide",
-      "end_with_bend": false,
-      "length": 5100,
-      "meanders": 6,
-      "open_end": false,
-      "open_start": true,
-      "start_with_bend": false
+      "coupling_o1": "W25",
+      "resonator_o1": "net51",
+      "coupling_o2": "W24"
     },
     "x": 160,
-    "y": 20,
-    "irl_x": 8000,
-    "irl_y": 1000,
+    "mirror": true,
+    "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
+    "props": {
+      "cross_section_non_resonator": "coplanar_waveguide",
+      "meanders": 6,
+      "start_with_bend": false,
+      "end_with_bend": false,
+      "coupling_gap": 16,
+      "cross_section": "coplanar_waveguide",
+      "open_end": false,
+      "open_start": true,
+      "bend_spec": "bend_circular",
+      "length": 5100,
+      "coupling_straight_length": 200
+    },
+    "irl_x": 7952.226996210156,
+    "irl_y": 1091.3630086765197,
     "bbox_width": 681.225,
     "bbox_height": 1248,
     "bbox_xmin": -104.939,
@@ -2044,1302 +2109,964 @@
     ],
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_9bc8b3d5"
   },
-     "irl_x": 7952.226996210156,
--    "irl_y": 1265.1113102992897,
-+    "irl_y": 1091.3630086765197,
-     "bbox_width": 681.225,
-     "bbox_height": 1248,
-     "bbox_xmin": -104.939,
-     "bbox_ymin": -1237,
-     "ports": [
-       {
-         "name": "resonator_o1",
-         "irl_rx": -235.67350000000002,
-         "irl_ry": -587,
-         "orientation": 180,
-         "bendRadii": [
-           5
-         ],
-         "port_type": "optical",
-         "width": 22,
-         "layer": [
-           1,
-           1
-         ],
-         "layer_name": "M1_ETCH"
-       },
-       {
-         "name": "coupling_o1",
-         "irl_rx": -235.67350000000002,
-         "irl_ry": -613,
-         "orientation": 180,
-         "bendRadii": [
-           100
-         ],
-         "port_type": "optical",
-         "width": 10,
-         "cross_section": "coplanar_waveguide",
-         "layer": [
-           1,
-           0
-         ],
-         "layer_name": "M1_DRAW"
-       },
-       {
-         "name": "coupling_o2",
-         "irl_rx": -35.67349999999999,
-         "irl_ry": -613,
-         "orientation": 0,
-         "bendRadii": [
-           100
-         ],
-         "port_type": "optical",
-         "width": 10,
-         "cross_section": "coplanar_waveguide",
-         "layer": [
-           1,
-           0
-         ],
-         "layer_name": "M1_DRAW"
-       }
-     ],
-     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_9bc8b3d5"
-   },
-   "resonator_test_chip_yaml:W1": {
-     "type": "wire",
-     "x": 2,
-     "y": 1,
-     "rx": 4,
-     "ry": 0,
-     "variant": "d",
-     "name": "W1",
-     "net": "W1"
-   },
-   "resonator_test_chip_yaml:W2": {
-     "type": "wire",
-     "x": 8,
-     "y": 1,
-     "rx": 9,
-     "ry": 0,
-     "variant": "d",
-     "name": "W2",
-     "net": "W2"
-   },
-   "resonator_test_chip_yaml:W3": {
-     "type": "wire",
-     "x": 17,
-     "y": 1,
-     "rx": 3,
-     "ry": 0,
-     "variant": "d",
-     "name": "W3",
-     "net": "W2"
-   },
-   "resonator_test_chip_yaml:W4": {
-     "type": "wire",
-     "x": 24,
-     "y": 1,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W4",
-     "net": "W4"
-   },
-   "resonator_test_chip_yaml:W5": {
-     "type": "wire",
-     "x": 26,
-     "y": 1,
-     "rx": 1,
-     "ry": 0,
-     "variant": "d",
-     "name": "W5",
-     "net": "W5"
-   },
-   "resonator_test_chip_yaml:W6": {
-     "type": "wire",
-     "x": 29,
-     "y": 1,
-     "rx": 11,
-     "ry": 0,
-     "variant": "d",
-     "name": "W6",
-     "net": "W6"
-   },
-   "resonator_test_chip_yaml:W7": {
-     "type": "wire",
-     "x": 42,
-     "y": 1,
-     "rx": 2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W7",
-     "net": "W7"
-   },
-   "resonator_test_chip_yaml:W8": {
-     "type": "wire",
-     "x": 46,
-     "y": 1,
-     "rx": 14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W8",
-     "net": "W8"
-   },
-   "resonator_test_chip_yaml:W9": {
-     "type": "wire",
-     "x": 62,
-     "y": 1,
-     "rx": 2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W9",
-     "net": "W9"
-   },
-   "resonator_test_chip_yaml:W10": {
-     "type": "wire",
-     "x": 66,
-     "y": 1,
-     "rx": 14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W10",
-     "net": "W10"
-   },
-   "resonator_test_chip_yaml:W11": {
-     "type": "wire",
-     "x": 82,
-     "y": 1,
-     "rx": 2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W11",
-     "net": "W11"
-   },
-   "resonator_test_chip_yaml:W12": {
-     "type": "wire",
-     "x": 86,
-     "y": 1,
-     "rx": 14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W12",
-     "net": "W12"
-   },
-   "resonator_test_chip_yaml:W13": {
-     "type": "wire",
-     "x": 102,
-     "y": 1,
-     "rx": 2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W13",
-     "net": "W13"
-   },
-   "resonator_test_chip_yaml:W14": {
-     "type": "wire",
-     "x": 106,
-     "y": 1,
-     "rx": 14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W14",
-     "net": "W14"
-   },
-   "resonator_test_chip_yaml:W15": {
-     "type": "wire",
-     "x": 122,
-     "y": 1,
-     "rx": 2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W15",
-     "net": "W15"
-   },
-   "resonator_test_chip_yaml:W16": {
-     "type": "wire",
-     "x": 126,
-     "y": 1,
-     "rx": 14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W16",
-     "net": "W16"
-   },
-   "resonator_test_chip_yaml:W17": {
-     "type": "wire",
-     "x": 144,
-     "y": 1,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W17",
-     "net": "W17"
-   },
-   "resonator_test_chip_yaml:W18": {
-     "type": "wire",
-     "x": 146,
-     "y": 1,
-     "rx": 14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W18",
-     "net": "W18"
-   },
-   "resonator_test_chip_yaml:W19": {
-     "type": "wire",
-     "x": 162,
-     "y": 1,
-     "rx": 2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W19",
-     "net": "W19"
-   },
-   "resonator_test_chip_yaml:W20": {
-     "type": "wire",
-     "x": 166,
-     "y": 1,
-     "rx": 6,
-     "ry": 0,
-     "variant": "d",
-     "name": "W20",
-     "net": "W20"
-   },
-   "resonator_test_chip_yaml:W21": {
-     "type": "wire",
-     "x": 174,
-     "y": 1,
-     "rx": 6,
-     "ry": 0,
-     "variant": "d",
-     "name": "W21",
-     "net": "W21"
-   },
-   "resonator_test_chip_yaml:W22": {
-     "type": "wire",
-     "x": 180,
-     "y": 21,
-     "rx": -6,
-     "ry": 0,
-     "variant": "d",
-     "name": "W22",
-     "net": "W22"
-   },
-   "resonator_test_chip_yaml:W23": {
-     "type": "wire",
-     "x": 172,
-     "y": 21,
-     "rx": -6,
-     "ry": 0,
-     "variant": "d",
-     "name": "W23",
-     "net": "W23"
-   },
-   "resonator_test_chip_yaml:W24": {
-     "type": "wire",
-     "x": 164,
-     "y": 21,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W24",
-     "net": "W24"
-   },
-   "resonator_test_chip_yaml:W25": {
-     "type": "wire",
-     "x": 160,
-     "y": 21,
-     "rx": -14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W25",
-     "net": "W25"
-   },
-   "resonator_test_chip_yaml:W26": {
-     "type": "wire",
-     "x": 144,
-     "y": 21,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W26",
-     "net": "W26"
-   },
-   "resonator_test_chip_yaml:W27": {
-     "type": "wire",
-     "x": 140,
-     "y": 21,
-     "rx": -14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W27",
-     "net": "W27"
-   },
-   "resonator_test_chip_yaml:W28": {
-     "type": "wire",
-     "x": 124,
-     "y": 21,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W28",
-     "net": "W28"
-   },
-   "resonator_test_chip_yaml:W29": {
-     "type": "wire",
-     "x": 120,
-     "y": 21,
-     "rx": -14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W29",
-     "net": "W29"
-   },
-   "resonator_test_chip_yaml:W30": {
-     "type": "wire",
-     "x": 104,
-     "y": 21,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W30",
-     "net": "W30"
-   },
-   "resonator_test_chip_yaml:W31": {
-     "type": "wire",
-     "x": 100,
-     "y": 21,
-     "rx": -14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W31",
-     "net": "W31"
-   },
-   "resonator_test_chip_yaml:W32": {
-     "type": "wire",
-     "x": 84,
-     "y": 21,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W32",
-     "net": "W32"
-   },
-   "resonator_test_chip_yaml:W33": {
-     "type": "wire",
-     "x": 80,
-     "y": 21,
-     "rx": -14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W33",
-     "net": "W33"
-   },
-   "resonator_test_chip_yaml:W34": {
-     "type": "wire",
-     "x": 64,
-     "y": 21,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W34",
-     "net": "W34"
-   },
-   "resonator_test_chip_yaml:W35": {
-     "type": "wire",
-     "x": 60,
-     "y": 21,
-     "rx": -14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W35",
-     "net": "W35"
-   },
-   "resonator_test_chip_yaml:W36": {
-     "type": "wire",
-     "x": 44,
-     "y": 21,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W36",
-     "net": "W36"
-   },
-   "resonator_test_chip_yaml:W37": {
-     "type": "wire",
-     "x": 40,
-     "y": 21,
-     "rx": -14,
-     "ry": 0,
-     "variant": "d",
-     "name": "W37",
-     "net": "W37"
-   },
-   "resonator_test_chip_yaml:W38": {
-     "type": "wire",
-     "x": 24,
-     "y": 21,
-     "rx": -2,
-     "ry": 0,
-     "variant": "d",
-     "name": "W38",
-     "net": "W38"
-   },
-   "resonator_test_chip_yaml:W39": {
-     "type": "wire",
-     "x": 18,
-     "y": 21,
-     "rx": -10,
-     "ry": 0,
-     "variant": "d",
-     "name": "W39",
-     "net": "W39"
-   },
-   "resonator_test_chip_yaml:W40": {
-     "type": "wire",
-     "x": 6,
-     "y": 21,
-     "rx": -4,
-     "ry": 0,
-     "variant": "d",
-     "name": "W40",
-     "net": "W40"
-   },
-   "poly_1": {
-     "name": "poly_1",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "probe_west_bot",
-         "port_name": "o1"
-       },
-       "finish": {
-         "component_id": "resonator_bot_1",
-         "port_name": "coupling_o1"
-       }
-     },
-     "vertices": [
-       [
-         170.8197784423828,
--        -93.23319244384766
--      ],
--      [
--        781.433349609375,
--        -93.23319244384766
--      ],
--      [
--        781.433349609375,
--        24.240976333618164
--      ],
--      [
--        781.433349609375,
--        141.71514892578125
--      ]
--    ],
--    "cross_section": "coplanar_waveguide",
--    "layer": "M1_DRAW",
--    "width": 10,
--    "radius": 100
--  },
--  "poly_2": {
--    "name": "poly_2",
--    "type": "polyline",
--    "terminals": {
--      "start": {
--        "component_id": "resonator_bot_1",
--        "port_name": "coupling_o2"
--      },
--      "finish": {
--        "component_id": "resonator_bot_2",
--        "port_name": "coupling_o1"
--      }
--    },
--    "vertices": [
--      [
--        981.433349609375,
--        141.71514892578125
--      ],
--      [
--        1796.70849609375,
--        141.71514892578125
--      ],
--      [
--        1796.70849609375,
--        55.269351959228516
--      ],
--      [
--        1796.70849609375,
--        -31.176448822021484
--      ]
--    ],
--    "cross_section": "coplanar_waveguide",
--    "layer": "M1_DRAW",
--    "width": 10,
--    "radius": 100
--  },
--  "poly_3": {
--    "name": "poly_3",
--    "type": "polyline",
--    "terminals": {
--      "start": {
--        "component_id": "resonator_bot_2",
--        "port_name": "coupling_o2"
--      },
--      "finish": {
--        "component_id": "resonator_bot_3",
--        "port_name": "coupling_o1"
--      }
--    },
--    "vertices": [
--      [
--        1996.70849609375,
--        -31.176448822021484
--      ],
--      [
--        2783.935302734375,
--        -31.176448822021484
--      ],
--      [
--        2783.935302734375,
--        -37.48495101928711
--      ],
--      [
--        2783.935302734375,
--        -43.793453216552734
--      ]
--    ],
--    "cross_section": "coplanar_waveguide",
--    "layer": "M1_DRAW",
--    "width": 10,
--    "radius": 100
--  },
--  "poly_4": {
--    "name": "poly_4",
--    "type": "polyline",
--    "terminals": {
--      "start": {
--        "component_id": "resonator_bot_3",
--        "port_name": "coupling_o2"
--      },
--      "finish": {
--        "component_id": "resonator_bot_4",
--        "port_name": "coupling_o1"
--      }
--    },
--    "vertices": [
--      [
--        2983.935302734375,
--        -43.793453216552734
--      ],
--      [
--        3769.6494140625,
--        -43.793453216552734
--      ]
--    ],
--    "cross_section": "coplanar_waveguide",
--    "layer": "M1_DRAW",
--    "width": 10,
--    "radius": 100
--  },
--  "poly_5": {
--    "name": "poly_5",
--    "type": "polyline",
--    "terminals": {
--      "start": {
--        "component_id": "resonator_bot_4",
--        "port_name": "coupling_o2"
--      },
--      "finish": {
--        "component_id": "resonator_bot_5",
--        "port_name": "coupling_o1"
--      }
--    },
--    "vertices": [
--      [
--        3969.6494140625,
--        -43.793453216552734
--      ],
--      [
--        4755.36376953125,
--        -43.793453216552734
--      ]
--    ],
--    "cross_section": "coplanar_waveguide",
--    "layer": "M1_DRAW",
--    "width": 10,
--    "radius": 100
--  },
--  "poly_6": {
--    "name": "poly_6",
--    "type": "polyline",
--    "terminals": {
--      "start": {
--        "component_id": "resonator_bot_5",
--        "port_name": "coupling_o2"
--      },
--      "finish": {
--        "component_id": "resonator_bot_6",
--        "port_name": "coupling_o1"
--      }
--    },
--    "vertices": [
--      [
--        4955.36376953125,
--        -43.793453216552734
--      ],
--      [
--        5741.07763671875,
--        -43.793453216552734
-+        -570.90478515625
-+      ],
-+      [
-+        521.3489379882812,
-+        -570.90478515625
-+      ],
-+      [
-+        521.3489379882812,
-+        40.909202575683594
-+      ],
-+      [
-+        858.2532958984375,
-+        40.909202575683594
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_7": {
-     "name": "poly_7",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_bot_6",
-         "port_name": "coupling_o2"
-       },
-       "finish": {
-         "component_id": "resonator_bot_7",
-         "port_name": "coupling_o1"
-       }
-     },
-     "vertices": [
-       [
--        5941.07763671875,
--        -43.793453216552734
-+        5866.75927734375,
-+        42.09518814086914
-       ],
-       [
--        6726.79248046875,
--        -43.793453216552734
-+        6688.25439453125,
-+        42.09518814086914
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_8": {
-     "name": "poly_8",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_bot_7",
-         "port_name": "coupling_o2"
-       },
-       "finish": {
-         "component_id": "resonator_bot_8",
-         "port_name": "coupling_o1"
-       }
-     },
-     "vertices": [
-       [
--        6926.79248046875,
--        -43.793453216552734
-+        6888.25439453125,
-+        42.09518814086914
-       ],
-       [
--        7712.5068359375,
--        -43.793453216552734
-+        7686.05322265625,
-+        42.09518814086914
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_9": {
-     "name": "poly_9",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_bot_8",
-         "port_name": "coupling_o2"
-       },
-       "finish": {
-         "component_id": "probe_east_bot",
-         "port_name": "o1"
-       }
-     },
-     "vertices": [
-       [
--        7912.5068359375,
--        -43.793453216552734
--      ],
--      [
--        8850,
--        -43.793453216552734
--      ],
--      [
--        8850,
--        -21.896726608276367
--      ],
--      [
--        8850,
--        0
--      ]
--    ],
--    "cross_section": "coplanar_waveguide",
--    "layer": "M1_DRAW",
--    "width": 10,
--    "radius": 100
--  },
--  "poly_10": {
--    "name": "poly_10",
--    "type": "polyline",
--    "terminals": {
--      "start": {
--        "component_id": "probe_east_top",
--        "port_name": "o1"
--      },
--      "finish": {
--        "component_id": "resonator_top_8",
--        "port_name": "coupling_o2"
--      }
--    },
--    "vertices": [
--      [
--        8850,
--        1000
--      ],
--      [
--        7916.5537109375,
--        1000
--      ],
--      [
--        7916.5537109375,
--        826.0556640625
--      ],
--      [
--        7916.5537109375,
--        652.111328125
-+        7886.05322265625,
-+        42.09518814086914
-+      ],
-+      [
-+        8580.3486328125,
-+        42.09518814086914
-+      ],
-+      [
-+        8580.3486328125,
-+        -570.90478515625
-+      ],
-+      [
-+        8840.4091796875,
-+        -570.90478515625
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_11": {
-     "name": "poly_11",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_top_8",
-         "port_name": "coupling_o1"
-       },
-       "finish": {
-         "component_id": "resonator_top_7",
-         "port_name": "coupling_o2"
-       }
-     },
-     "vertices": [
-       [
-         7716.5537109375,
-         652.111328125
-       ],
-       [
-         6930.8388671875,
-         652.111328125
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_12": {
-     "name": "poly_12",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_top_7",
-         "port_name": "coupling_o1"
-       },
-       "finish": {
-         "component_id": "resonator_top_6",
-         "port_name": "coupling_o2"
-       }
-     },
-     "vertices": [
-       [
-         6730.8388671875,
-         652.111328125
-       ],
-       [
-         5945.125,
-         652.111328125
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_13": {
-     "name": "poly_13",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_top_6",
-         "port_name": "coupling_o1"
-       },
-       "finish": {
-         "component_id": "resonator_top_5",
-         "port_name": "coupling_o2"
-       }
-     },
-     "vertices": [
-       [
-         5745.125,
-         652.111328125
-       ],
-       [
-         4959.41064453125,
-         652.111328125
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_14": {
-     "name": "poly_14",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_top_5",
-         "port_name": "coupling_o1"
-       },
-       "finish": {
-         "component_id": "resonator_top_4",
-         "port_name": "coupling_o2"
-       }
-     },
-     "vertices": [
-       [
-         4759.41064453125,
-         652.111328125
-       ],
-       [
-         3973.696533203125,
-         652.111328125
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_15": {
-     "name": "poly_15",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_top_4",
-         "port_name": "coupling_o1"
-       },
-       "finish": {
-         "component_id": "resonator_top_3",
-         "port_name": "coupling_o2"
-       }
-     },
-     "vertices": [
-       [
-         3773.696533203125,
-         652.111328125
-       ],
-       [
-         2987.98193359375,
-         652.111328125
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
-   "poly_16": {
-     "name": "poly_16",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_top_3",
-         "port_name": "coupling_o1"
-       },
-       "finish": {
-         "component_id": "resonator_top_2",
-         "port_name": "coupling_o2"
-       }
-     },
-     "vertices": [
-       [
-         2787.98193359375,
-         652.111328125
-       ],
-       [
-         2002.2674560546875,
-         652.111328125
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
-   },
--  "poly_17": {
--    "name": "poly_17",
--    "type": "polyline",
--    "terminals": {
--      "start": {
--        "component_id": "resonator_top_2",
--        "port_name": "coupling_o1"
--      },
--      "finish": {
--        "component_id": "resonator_top_1",
--        "port_name": "coupling_o2"
--      }
--    },
--    "vertices": [
--      [
--        1802.2674560546875,
--        652.111328125
--      ],
--      [
--        967.9132690429688,
--        652.111328125
--      ],
--      [
--        967.9132690429688,
--        642.3406982421875
--      ],
--      [
--        967.9132690429688,
--        632.5700073242188
--      ]
--    ],
--    "cross_section": "coplanar_waveguide",
--    "layer": "M1_DRAW",
--    "width": 10,
--    "radius": 100
--  },
-   "poly_18": {
-     "name": "poly_18",
-     "type": "polyline",
-     "terminals": {
-       "start": {
-         "component_id": "resonator_top_1",
-         "port_name": "coupling_o1"
-       },
-       "finish": {
-         "component_id": "probe_west_top",
-         "port_name": "o1"
-       }
-     },
-     "vertices": [
-       [
-         767.9132690429688,
--        632.5700073242188
--      ],
--      [
--        150,
--        632.5700073242188
--      ],
--      [
--        150,
--        816.2850341796875
--      ],
--      [
--        150,
--        1000
-+        478.3630065917969
-+      ],
-+      [
-+        389.5782165527344,
-+        478.3630065917969
-+      ],
-+      [
-+        389.5782165527344,
-+        1091.363037109375
-+      ],
-+      [
-+        150,
-+        1091.363037109375
-+      ]
-+    ],
-+    "cross_section": "coplanar_waveguide",
-+    "layer": "M1_DRAW",
-+    "width": 10,
-+    "radius": 100
-+  },
-+  "poly_19": {
-+    "name": "poly_19",
-+    "type": "polyline",
-+    "terminals": {
-+      "start": {
-+        "component_id": "resonator_bot_4",
-+        "port_name": "coupling_o2"
-+      },
-+      "finish": {
-+        "component_id": "resonator_bot_5",
-+        "port_name": "coupling_o1"
-+      }
-+    },
-+    "vertices": [
-+      [
-+        3909.720458984375,
-+        42.09518814086914
-+      ],
-+      [
-+        4276.154296875,
-+        42.09518814086914
-+      ],
-+      [
-+        4276.154296875,
-+        42.09518814086914
-+      ],
-+      [
-+        4590.6787109375,
-+        42.09518814086914
-+      ]
-+    ],
-+    "cross_section": "coplanar_waveguide",
-+    "layer": "M1_DRAW",
-+    "width": 10,
-+    "radius": 100
-+  },
-+  "poly_20": {
-+    "name": "poly_20",
-+    "type": "polyline",
-+    "terminals": {
-+      "start": {
-+        "component_id": "resonator_bot_4",
-+        "port_name": "coupling_o1"
-+      },
-+      "finish": {
-+        "component_id": "resonator_bot_3",
-+        "port_name": "coupling_o2"
-+      }
-+    },
-+    "vertices": [
-+      [
-+        3709.720458984375,
-+        42.09518814086914
-+      ],
-+      [
-+        3259.08642578125,
-+        42.09518814086914
-+      ],
-+      [
-+        3259.08642578125,
-+        42.09518814086914
-+      ],
-+      [
-+        3062.2392578125,
-+        42.09518814086914
-+      ]
-+    ],
-+    "cross_section": "coplanar_waveguide",
-+    "layer": "M1_DRAW",
-+    "width": 10,
-+    "radius": 100
-+  },
-+  "poly_21": {
-+    "name": "poly_21",
-+    "type": "polyline",
-+    "terminals": {
-+      "start": {
-+        "component_id": "resonator_bot_5",
-+        "port_name": "coupling_o2"
-+      },
-+      "finish": {
-+        "component_id": "resonator_bot_6",
-+        "port_name": "coupling_o1"
-+      }
-+    },
-+    "vertices": [
-+      [
-+        4790.6787109375,
-+        42.09518814086914
-+      ],
-+      [
-+        5345.0791015625,
-+        42.09518814086914
-+      ],
-+      [
-+        5345.0791015625,
-+        42.09518814086914
-+      ],
-+      [
-+        5666.75927734375,
-+        42.09518814086914
-+      ]
-+    ],
-+    "cross_section": "coplanar_waveguide",
-+    "layer": "M1_DRAW",
-+    "width": 10,
-+    "radius": 100
-+  },
-+  "poly_22": {
-+    "name": "poly_22",
-+    "type": "polyline",
-+    "terminals": {
-+      "start": {
-+        "component_id": "resonator_bot_1",
-+        "port_name": "coupling_o2"
-+      },
-+      "finish": {
-+        "component_id": "resonator_bot_2",
-+        "port_name": "coupling_o1"
-+      }
-+    },
-+    "vertices": [
-+      [
-+        1058.2532958984375,
-+        42.146995544433594
-+      ],
-+      [
-+        1736.1884765625,
-+        42.146995544433594
-+      ]
-+    ],
-+    "cross_section": "coplanar_waveguide",
-+    "layer": "M1_DRAW",
-+    "width": 10,
-+    "radius": 100
-+  },
-+  "poly_23": {
-+    "name": "poly_23",
-+    "type": "polyline",
-+    "terminals": {
-+      "start": {
-+        "component_id": "resonator_bot_2",
-+        "port_name": "coupling_o2"
-+      },
-+      "finish": {
-+        "component_id": "resonator_bot_3",
-+        "port_name": "coupling_o1"
-+      }
-+    },
-+    "vertices": [
-+      [
-+        1936.1884765625,
-+        42.146995544433594
-+      ],
-+      [
-+        2862.2392578125,
-+        42.146995544433594
-+      ]
-+    ],
-+    "cross_section": "coplanar_waveguide",
-+    "layer": "M1_DRAW",
-+    "width": 10,
-+    "radius": 100
-+  },
-+  "poly_24": {
-+    "name": "poly_24",
-+    "type": "polyline",
-+    "terminals": {
-+      "start": {
-+        "component_id": "resonator_top_1",
-+        "port_name": "coupling_o2"
-+      },
-+      "finish": {
-+        "component_id": "resonator_top_2",
-+        "port_name": "coupling_o1"
-+      }
-+    },
-+    "vertices": [
-+      [
-+        967.9132690429688,
-+        478.3630065917969
-+      ],
-+      [
-+        1802.2674560546875,
-+        478.3630065917969
-+      ]
-+    ],
-+    "cross_section": "coplanar_waveguide",
-+    "layer": "M1_DRAW",
-+    "width": 10,
-+    "radius": 100
-+  },
-+  "poly_25": {
-+    "name": "poly_25",
-+    "type": "polyline",
-+    "terminals": {
-+      "start": {
-+        "component_id": "resonator_top_8",
-+        "port_name": "coupling_o2"
-+      },
-+      "finish": {
-+        "component_id": "probe_east_top",
-+        "port_name": "o1"
-+      }
-+    },
-+    "vertices": [
-+      [
-+        7916.5537109375,
-+        478.3630065917969
-+      ],
-+      [
-+        8595.1201171875,
-+        478.3630065917969
-+      ],
-+      [
-+        8595.1201171875,
-+        1091.363037109375
-+      ],
-+      [
-+        8850,
-+        1091.363037109375
-       ]
-     ],
-     "cross_section": "coplanar_waveguide",
-     "layer": "M1_DRAW",
-     "width": 10,
-     "radius": 100
->>>>>>> conflict 14 of 14 ends
+  "resonator_test_chip_yaml:W1": {
+    "type": "wire",
+    "x": 2,
+    "y": 1,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "W1",
+    "net": "W1"
+  },
+  "resonator_test_chip_yaml:W2": {
+    "type": "wire",
+    "x": 8,
+    "y": 1,
+    "rx": 9,
+    "ry": 0,
+    "variant": "d",
+    "name": "W2",
+    "net": "W2"
+  },
+  "resonator_test_chip_yaml:W3": {
+    "type": "wire",
+    "x": 17,
+    "y": 1,
+    "rx": 3,
+    "ry": 0,
+    "variant": "d",
+    "name": "W3",
+    "net": "W2"
+  },
+  "resonator_test_chip_yaml:W4": {
+    "type": "wire",
+    "x": 24,
+    "y": 1,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W4",
+    "net": "W4"
+  },
+  "resonator_test_chip_yaml:W5": {
+    "type": "wire",
+    "x": 26,
+    "y": 1,
+    "rx": 1,
+    "ry": 0,
+    "variant": "d",
+    "name": "W5",
+    "net": "W5"
+  },
+  "resonator_test_chip_yaml:W6": {
+    "type": "wire",
+    "x": 29,
+    "y": 1,
+    "rx": 11,
+    "ry": 0,
+    "variant": "d",
+    "name": "W6",
+    "net": "W6"
+  },
+  "resonator_test_chip_yaml:W7": {
+    "type": "wire",
+    "x": 42,
+    "y": 1,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W7",
+    "net": "W7"
+  },
+  "resonator_test_chip_yaml:W8": {
+    "type": "wire",
+    "x": 46,
+    "y": 1,
+    "rx": 14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W8",
+    "net": "W8"
+  },
+  "resonator_test_chip_yaml:W9": {
+    "type": "wire",
+    "x": 62,
+    "y": 1,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W9",
+    "net": "W9"
+  },
+  "resonator_test_chip_yaml:W10": {
+    "type": "wire",
+    "x": 66,
+    "y": 1,
+    "rx": 14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W10",
+    "net": "W10"
+  },
+  "resonator_test_chip_yaml:W11": {
+    "type": "wire",
+    "x": 82,
+    "y": 1,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W11",
+    "net": "W11"
+  },
+  "resonator_test_chip_yaml:W12": {
+    "type": "wire",
+    "x": 86,
+    "y": 1,
+    "rx": 14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W12",
+    "net": "W12"
+  },
+  "resonator_test_chip_yaml:W13": {
+    "type": "wire",
+    "x": 102,
+    "y": 1,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W13",
+    "net": "W13"
+  },
+  "resonator_test_chip_yaml:W14": {
+    "type": "wire",
+    "x": 106,
+    "y": 1,
+    "rx": 14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W14",
+    "net": "W14"
+  },
+  "resonator_test_chip_yaml:W15": {
+    "type": "wire",
+    "x": 122,
+    "y": 1,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W15",
+    "net": "W15"
+  },
+  "resonator_test_chip_yaml:W16": {
+    "type": "wire",
+    "x": 126,
+    "y": 1,
+    "rx": 14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W16",
+    "net": "W16"
+  },
+  "resonator_test_chip_yaml:W17": {
+    "type": "wire",
+    "x": 144,
+    "y": 1,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W17",
+    "net": "W17"
+  },
+  "resonator_test_chip_yaml:W18": {
+    "type": "wire",
+    "x": 146,
+    "y": 1,
+    "rx": 14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W18",
+    "net": "W18"
+  },
+  "resonator_test_chip_yaml:W19": {
+    "type": "wire",
+    "x": 162,
+    "y": 1,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W19",
+    "net": "W19"
+  },
+  "resonator_test_chip_yaml:W20": {
+    "type": "wire",
+    "x": 166,
+    "y": 1,
+    "rx": 6,
+    "ry": 0,
+    "variant": "d",
+    "name": "W20",
+    "net": "W20"
+  },
+  "resonator_test_chip_yaml:W21": {
+    "type": "wire",
+    "x": 174,
+    "y": 1,
+    "rx": 6,
+    "ry": 0,
+    "variant": "d",
+    "name": "W21",
+    "net": "W21"
+  },
+  "resonator_test_chip_yaml:W22": {
+    "type": "wire",
+    "x": 180,
+    "y": 21,
+    "rx": -6,
+    "ry": 0,
+    "variant": "d",
+    "name": "W22",
+    "net": "W22"
+  },
+  "resonator_test_chip_yaml:W23": {
+    "type": "wire",
+    "x": 172,
+    "y": 21,
+    "rx": -6,
+    "ry": 0,
+    "variant": "d",
+    "name": "W23",
+    "net": "W23"
+  },
+  "resonator_test_chip_yaml:W24": {
+    "type": "wire",
+    "x": 164,
+    "y": 21,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W24",
+    "net": "W24"
+  },
+  "resonator_test_chip_yaml:W25": {
+    "type": "wire",
+    "x": 160,
+    "y": 21,
+    "rx": -14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W25",
+    "net": "W25"
+  },
+  "resonator_test_chip_yaml:W26": {
+    "type": "wire",
+    "x": 144,
+    "y": 21,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W26",
+    "net": "W26"
+  },
+  "resonator_test_chip_yaml:W27": {
+    "type": "wire",
+    "x": 140,
+    "y": 21,
+    "rx": -14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W27",
+    "net": "W27"
+  },
+  "resonator_test_chip_yaml:W28": {
+    "type": "wire",
+    "x": 124,
+    "y": 21,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W28",
+    "net": "W28"
+  },
+  "resonator_test_chip_yaml:W29": {
+    "type": "wire",
+    "x": 120,
+    "y": 21,
+    "rx": -14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W29",
+    "net": "W29"
+  },
+  "resonator_test_chip_yaml:W30": {
+    "type": "wire",
+    "x": 104,
+    "y": 21,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W30",
+    "net": "W30"
+  },
+  "resonator_test_chip_yaml:W31": {
+    "type": "wire",
+    "x": 100,
+    "y": 21,
+    "rx": -14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W31",
+    "net": "W31"
+  },
+  "resonator_test_chip_yaml:W32": {
+    "type": "wire",
+    "x": 84,
+    "y": 21,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W32",
+    "net": "W32"
+  },
+  "resonator_test_chip_yaml:W33": {
+    "type": "wire",
+    "x": 80,
+    "y": 21,
+    "rx": -14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W33",
+    "net": "W33"
+  },
+  "resonator_test_chip_yaml:W34": {
+    "type": "wire",
+    "x": 64,
+    "y": 21,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W34",
+    "net": "W34"
+  },
+  "resonator_test_chip_yaml:W35": {
+    "type": "wire",
+    "x": 60,
+    "y": 21,
+    "rx": -14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W35",
+    "net": "W35"
+  },
+  "resonator_test_chip_yaml:W36": {
+    "type": "wire",
+    "x": 44,
+    "y": 21,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W36",
+    "net": "W36"
+  },
+  "resonator_test_chip_yaml:W37": {
+    "type": "wire",
+    "x": 40,
+    "y": 21,
+    "rx": -14,
+    "ry": 0,
+    "variant": "d",
+    "name": "W37",
+    "net": "W37"
+  },
+  "resonator_test_chip_yaml:W38": {
+    "type": "wire",
+    "x": 24,
+    "y": 21,
+    "rx": -2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W38",
+    "net": "W38"
+  },
+  "resonator_test_chip_yaml:W39": {
+    "type": "wire",
+    "x": 18,
+    "y": 21,
+    "rx": -10,
+    "ry": 0,
+    "variant": "d",
+    "name": "W39",
+    "net": "W39"
+  },
+  "resonator_test_chip_yaml:W40": {
+    "type": "wire",
+    "x": 6,
+    "y": 21,
+    "rx": -4,
+    "ry": 0,
+    "variant": "d",
+    "name": "W40",
+    "net": "W40"
+  },
+  "poly_1": {
+    "name": "poly_1",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "probe_west_bot",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "resonator_bot_1",
+        "port_name": "coupling_o1"
+      }
+    },
+    "vertices": [
+      [
+        170.8197784423828,
+        -570.90478515625
+      ],
+      [
+        521.3489379882812,
+        -570.90478515625
+      ],
+      [
+        521.3489379882812,
+        40.909202575683594
+      ],
+      [
+        858.2532958984375,
+        40.909202575683594
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_7": {
+    "name": "poly_7",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_6",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_7",
+        "port_name": "coupling_o1"
+      }
+    },
+    "vertices": [
+      [
+        5866.75927734375,
+        42.09518814086914
+      ],
+      [
+        6688.25439453125,
+        42.09518814086914
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_8": {
+    "name": "poly_8",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_7",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_8",
+        "port_name": "coupling_o1"
+      }
+    },
+    "vertices": [
+      [
+        6888.25439453125,
+        42.09518814086914
+      ],
+      [
+        7686.05322265625,
+        42.09518814086914
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_9": {
+    "name": "poly_9",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_8",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "probe_east_bot",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        7886.05322265625,
+        42.09518814086914
+      ],
+      [
+        8580.3486328125,
+        42.09518814086914
+      ],
+      [
+        8580.3486328125,
+        -570.90478515625
+      ],
+      [
+        8840.4091796875,
+        -570.90478515625
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_11": {
+    "name": "poly_11",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_8",
+        "port_name": "coupling_o1"
+      },
+      "finish": {
+        "component_id": "resonator_top_7",
+        "port_name": "coupling_o2"
+      }
+    },
+    "vertices": [
+      [
+        7716.5537109375,
+        652.111328125
+      ],
+      [
+        6930.8388671875,
+        652.111328125
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_12": {
+    "name": "poly_12",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_7",
+        "port_name": "coupling_o1"
+      },
+      "finish": {
+        "component_id": "resonator_top_6",
+        "port_name": "coupling_o2"
+      }
+    },
+    "vertices": [
+      [
+        6730.8388671875,
+        652.111328125
+      ],
+      [
+        5945.125,
+        652.111328125
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_13": {
+    "name": "poly_13",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_6",
+        "port_name": "coupling_o1"
+      },
+      "finish": {
+        "component_id": "resonator_top_5",
+        "port_name": "coupling_o2"
+      }
+    },
+    "vertices": [
+      [
+        5745.125,
+        652.111328125
+      ],
+      [
+        4959.41064453125,
+        652.111328125
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_14": {
+    "name": "poly_14",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_5",
+        "port_name": "coupling_o1"
+      },
+      "finish": {
+        "component_id": "resonator_top_4",
+        "port_name": "coupling_o2"
+      }
+    },
+    "vertices": [
+      [
+        4759.41064453125,
+        652.111328125
+      ],
+      [
+        3973.696533203125,
+        652.111328125
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_15": {
+    "name": "poly_15",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_4",
+        "port_name": "coupling_o1"
+      },
+      "finish": {
+        "component_id": "resonator_top_3",
+        "port_name": "coupling_o2"
+      }
+    },
+    "vertices": [
+      [
+        3773.696533203125,
+        652.111328125
+      ],
+      [
+        2987.98193359375,
+        652.111328125
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_16": {
+    "name": "poly_16",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_3",
+        "port_name": "coupling_o1"
+      },
+      "finish": {
+        "component_id": "resonator_top_2",
+        "port_name": "coupling_o2"
+      }
+    },
+    "vertices": [
+      [
+        2787.98193359375,
+        652.111328125
+      ],
+      [
+        2002.2674560546875,
+        652.111328125
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_18": {
+    "name": "poly_18",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_1",
+        "port_name": "coupling_o1"
+      },
+      "finish": {
+        "component_id": "probe_west_top",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        767.9132690429688,
+        478.3630065917969
+      ],
+      [
+        389.5782165527344,
+        478.3630065917969
+      ],
+      [
+        389.5782165527344,
+        1091.363037109375
+      ],
+      [
+        150,
+        1091.363037109375
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_19": {
+    "name": "poly_19",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_4",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_5",
+        "port_name": "coupling_o1"
+      }
+    },
+    "vertices": [
+      [
+        3909.720458984375,
+        42.09518814086914
+      ],
+      [
+        4276.154296875,
+        42.09518814086914
+      ],
+      [
+        4276.154296875,
+        42.09518814086914
+      ],
+      [
+        4590.6787109375,
+        42.09518814086914
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_20": {
+    "name": "poly_20",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_4",
+        "port_name": "coupling_o1"
+      },
+      "finish": {
+        "component_id": "resonator_bot_3",
+        "port_name": "coupling_o2"
+      }
+    },
+    "vertices": [
+      [
+        3709.720458984375,
+        42.09518814086914
+      ],
+      [
+        3259.08642578125,
+        42.09518814086914
+      ],
+      [
+        3259.08642578125,
+        42.09518814086914
+      ],
+      [
+        3062.2392578125,
+        42.09518814086914
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_21": {
+    "name": "poly_21",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_5",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_6",
+        "port_name": "coupling_o1"
+      }
+    },
+    "vertices": [
+      [
+        4790.6787109375,
+        42.09518814086914
+      ],
+      [
+        5345.0791015625,
+        42.09518814086914
+      ],
+      [
+        5345.0791015625,
+        42.09518814086914
+      ],
+      [
+        5666.75927734375,
+        42.09518814086914
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_22": {
+    "name": "poly_22",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_1",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_2",
+        "port_name": "coupling_o1"
+      }
+    },
+    "vertices": [
+      [
+        1058.2532958984375,
+        42.146995544433594
+      ],
+      [
+        1736.1884765625,
+        42.146995544433594
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_23": {
+    "name": "poly_23",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_bot_2",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_bot_3",
+        "port_name": "coupling_o1"
+      }
+    },
+    "vertices": [
+      [
+        1936.1884765625,
+        42.146995544433594
+      ],
+      [
+        2862.2392578125,
+        42.146995544433594
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_24": {
+    "name": "poly_24",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_1",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "resonator_top_2",
+        "port_name": "coupling_o1"
+      }
+    },
+    "vertices": [
+      [
+        967.9132690429688,
+        478.3630065917969
+      ],
+      [
+        1802.2674560546875,
+        478.3630065917969
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
+  },
+  "poly_25": {
+    "name": "poly_25",
+    "type": "polyline",
+    "terminals": {
+      "start": {
+        "component_id": "resonator_top_8",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "probe_east_top",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        7916.5537109375,
+        478.3630065917969
+      ],
+      [
+        8595.1201171875,
+        478.3630065917969
+      ],
+      [
+        8595.1201171875,
+        1091.363037109375
+      ],
+      [
+        8850,
+        1091.363037109375
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100
   }
 }

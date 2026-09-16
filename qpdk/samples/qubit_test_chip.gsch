@@ -1,418 +1,1519 @@
 {
   "tee_top": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.waveguides.tee",
+    "y": -2,
+    "bbox_xmin": -11,
+    "bbox_ymin": -11,
     "name": "tee_top",
+    "type": "ckt",
+    "bbox_width": 22,
+    "irl_x": 685.323018939491,
+    "bbox_height": 22,
     "nets": {
-      "o1": "net_3",
-      "o2": "net_6",
-      "o3": "net_4"
+      "o1": "net10",
+      "o2": "net17",
+      "o3": "net20"
     },
-    "x": 60.0,
-    "y": 35.5
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -11,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o3",
+        "irl_rx": 11,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 0,
+        "irl_ry": -11,
+        "orientation": 90,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "irl_flip": false,
+    "x": 8,
+    "texture_key": "qpdk.cells.waveguides.tee_00597a9d",
+    "irl_y": 649.56614341537,
+    "model": "qpdk.cells.waveguides.tee"
   },
   "input_cap1": {
-    "type": "ckt",
-    "id": null,
-    "model": "gdsfactory.components.analog.interdigital_capacitor.interdigital_capacitor",
+    "y": 1,
+    "bbox_xmin": -18,
+    "irl_orientation": 0,
+    "bbox_ymin": -15,
     "name": "input_cap1",
-    "nets": {
-      "o1": "net_8",
-      "o2": "net_7"
-    },
-    "x": 16.0,
-    "y": 8.0
-  },
-  "tee_bot": {
     "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.waveguides.tee",
-    "name": "tee_bot",
+    "bbox_width": 36,
+    "irl_x": -1503.0440800740605,
+    "bbox_height": 30,
     "nets": {
-      "o1": "net_1",
-      "o2": "net_5",
-      "o3": "net_2"
+      "o1": "net2",
+      "o2": "net6"
     },
-    "orientation": 180.0,
-    "x": 60.0,
-    "y": -35.5
-  },
-  "launcher_bot": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.launcher.launcher",
-    "name": "launcher_bot",
-    "nets": {
-      "o1": "net_5"
-    },
-    "orientation": 90.0,
-    "x": 60.0,
-    "y": -60.0
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -18,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 18,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "irl_flip": false,
+    "x": 4,
+    "texture_key": "qpdk.cells.capacitor.interdigital_capacitor_00597a9d",
+    "irl_y": 1841.0659038961953,
+    "model": "qpdk.cells.capacitor.interdigital_capacitor"
   },
   "qubit3": {
-    "type": "ckt",
-    "id": null,
-    "mirror": true,
-    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
+    "y": 4,
+    "bbox_xmin": -1010.939,
+    "transform": [
+      1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "bbox_ymin": -1237,
     "name": "qubit3",
+    "type": "ckt",
+    "bbox_width": 1410.939,
+    "irl_x": 1179.3456816476646,
+    "bbox_height": 1694.5,
     "nets": {
-      "coupling_o1": "net_12",
-      "coupling_o2": "net_11"
+      "coupling_o1": "W4",
+      "junction": "net22",
+      "coupling_o2": "W1",
+      "o1": "net27"
     },
+    "ports": [
+      {
+        "name": "junction",
+        "irl_rx": 305.4694999999999,
+        "irl_ry": -389.75,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "electrical",
+        "width": 33.446,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
+        "name": "coupling_o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 836.25,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "coupling_o2",
+        "irl_rx": -194.53050000000002,
+        "irl_ry": 836.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 810.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "irl_flip": true,
+    "x": 10,
+    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_f7df2c89",
+    "mirror": true,
+    "irl_y": 3301.040703693508,
+    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "probeline_coupling_length": 400,
       "resonator_length": 3600,
       "resonator_meanders": 3
-    },
-    "x": 72.3,
-    "y": -32.52
+    }
   },
   "tee_top_straight_1": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.waveguides.straight_open",
-    "name": "tee_top_straight_1",
-    "nets": {
-      "o1": "net_3"
-    },
-    "orientation": 180.0,
-    "x": 59.78,
-    "y": 35.5
-  },
-  "flux_line_top": {
-    "type": "polyline",
-    "id": "flux_line_top",
-    "name": "flux_line_top",
-    "terminals": {
-      "start": {
-        "device": "tee_top",
-        "port": "o2"
-      },
-      "finish": {
-        "device": "launcher_top",
-        "port": "o1"
-      }
-    },
-    "routing_strategy": "doroute_from_corners",
-    "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "net": "net_6"
-  },
-  "probeline_qubit1_to_qubit2": {
-    "type": "polyline",
-    "id": "probeline_qubit1_to_qubit2",
-    "name": "probeline_qubit1_to_qubit2",
-    "terminals": {
-      "start": {
-        "device": "qubit1",
-        "port": "coupling_o2"
-      },
-      "finish": {
-        "device": "qubit2",
-        "port": "coupling_o1"
-      }
-    },
-    "routing_strategy": "doroute_from_corners",
-    "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "net": "net_10"
-  },
-  "tee_bot_straight_2": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.waveguides.straight_open",
-    "name": "tee_bot_straight_2",
-    "nets": {
-      "o1": "net_2"
-    },
-    "orientation": 180.0,
-    "x": 59.78,
-    "y": -35.5
-  },
-  "probeline_output": {
-    "type": "polyline",
-    "id": "probeline_output",
-    "name": "probeline_output",
-    "terminals": {
-      "start": {
-        "device": "input_cap2",
-        "port": "o1"
-      },
-      "finish": {
-        "device": "launcher_out",
-        "port": "o1"
-      }
-    },
-    "routing_strategy": "doroute_from_corners",
-    "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "net": "net_9"
-  },
-  "probeline_qubit2_to_qubit3": {
-    "type": "polyline",
-    "id": "probeline_qubit2_to_qubit3",
-    "name": "probeline_qubit2_to_qubit3",
-    "terminals": {
-      "start": {
-        "device": "qubit2",
-        "port": "coupling_o2"
-      },
-      "finish": {
-        "device": "qubit3",
-        "port": "coupling_o2"
-      }
-    },
-    "routing_strategy": "doroute_from_corners",
-    "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "waypoints": [
-      [3115.0, 400.0],
-      [3215.0, 400.0],
-      [3215.0, -400.0],
-      [3115.0, -400.0]
+    "y": -2,
+    "bbox_xmin": 0,
+    "transform": [
+      -1,
+      0,
+      0,
+      1,
+      0,
+      0
     ],
-    "net": "net_11"
+    "irl_orientation": 180,
+    "bbox_ymin": -11,
+    "name": "tee_top_straight_1",
+    "orientation": 180,
+    "type": "ckt",
+    "bbox_width": 16,
+    "irl_x": 666.323018939491,
+    "bbox_height": 22,
+    "nets": {
+      "o2": "net4",
+      "o1": "net10"
+    },
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -8,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 2,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "irl_flip": true,
+    "x": 6,
+    "texture_key": "qpdk.cells.waveguides.straight_open_00597a9d",
+    "irl_y": 649.56614341537,
+    "model": "qpdk.cells.waveguides.straight_open"
   },
   "qubit4": {
-    "type": "ckt",
-    "id": null,
-    "mirror": true,
-    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
+    "y": 4,
+    "bbox_xmin": -1010.939,
+    "transform": [
+      1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "irl_orientation": 0,
+    "bbox_ymin": -1237,
     "name": "qubit4",
+    "type": "ckt",
+    "bbox_width": 1410.939,
+    "irl_x": -382.5513813235367,
+    "bbox_height": 1694.5,
     "nets": {
-      "coupling_o1": "net_13",
-      "coupling_o2": "net_12"
+      "coupling_o1": "net7",
+      "junction": "net8",
+      "coupling_o2": "W4",
+      "o1": "net14"
     },
+    "ports": [
+      {
+        "name": "junction",
+        "irl_rx": 305.4694999999999,
+        "irl_ry": -389.75,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "electrical",
+        "width": 33.446,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
+        "name": "coupling_o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 836.25,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "coupling_o2",
+        "irl_rx": 205.46949999999993,
+        "irl_ry": 836.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 810.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "irl_flip": true,
+    "x": 6,
+    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_410935c5",
+    "mirror": true,
+    "irl_y": 3301.040703693508,
+    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "resonator_length": 4800
-    },
-    "x": 47.7,
-    "y": -32.52
+    }
   },
   "launcher_in": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.launcher.launcher",
+    "y": 1,
+    "bbox_xmin": 0,
+    "irl_orientation": 0,
+    "bbox_ymin": -210,
     "name": "launcher_in",
+    "type": "ckt",
+    "bbox_width": 300,
+    "irl_x": -1924.3108313627586,
+    "bbox_height": 420,
     "nets": {
-      "o1": "net_8",
-      "waveport": "port_net_o1"
+      "waveport": "o1",
+      "o1": "net2"
     },
-    "x": 0.0,
-    "y": 8.0
-  },
-  "probeline_qubit4_to_cap2": {
-    "type": "polyline",
-    "id": "probeline_qubit4_to_cap2",
-    "name": "probeline_qubit4_to_cap2",
-    "terminals": {
-      "start": {
-        "device": "qubit4",
-        "port": "coupling_o1"
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": 150,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
       },
-      "finish": {
-        "device": "input_cap2",
-        "port": "o2"
+      {
+        "name": "waveport",
+        "irl_rx": -150,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 200,
+        "cross_section": "launcher_cross_section_big",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
       }
-    },
-    "routing_strategy": "doroute_from_corners",
-    "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "net": "net_13"
+    ],
+    "irl_flip": false,
+    "x": 2,
+    "texture_key": "qpdk.cells.launcher.launcher_00597a9d",
+    "irl_y": 1841.0659038961953,
+    "model": "qpdk.cells.launcher.launcher"
   },
   "qubit2": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
+    "y": 0,
+    "bbox_xmin": -1010.939,
+    "bbox_ymin": -1237,
     "name": "qubit2",
+    "type": "ckt",
+    "bbox_width": 1410.939,
+    "irl_x": 1179.3456816476646,
+    "bbox_height": 1694.5,
     "nets": {
-      "coupling_o1": "net_10",
-      "coupling_o2": "net_11"
+      "coupling_o1": "W3",
+      "junction": "net21",
+      "o1": "net25",
+      "coupling_o2": "W1"
     },
+    "ports": [
+      {
+        "name": "junction",
+        "irl_rx": 305.4694999999999,
+        "irl_ry": -389.75,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "electrical",
+        "width": 33.446,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
+        "name": "coupling_o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 836.25,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "coupling_o2",
+        "irl_rx": -194.53050000000002,
+        "irl_ry": 836.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 810.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "irl_flip": false,
+    "x": 10,
+    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_7a7b2bea",
+    "irl_y": 1004.8159038961953,
+    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "probeline_coupling_length": 400,
       "resonator_length": 4600,
       "resonator_meanders": 3
-    },
-    "x": 72.3,
-    "y": 32.52
+    }
   },
   "input_cap2": {
-    "type": "ckt",
-    "id": null,
-    "model": "gdsfactory.components.analog.interdigital_capacitor.interdigital_capacitor",
+    "y": 4,
+    "bbox_xmin": -18,
+    "bbox_ymin": -15,
     "name": "input_cap2",
+    "type": "ckt",
+    "bbox_width": 36,
+    "irl_x": -1504.4020688725475,
+    "bbox_height": 30,
     "nets": {
-      "o1": "net_9",
-      "o2": "net_13"
+      "o1": "net3",
+      "o2": "net7"
     },
-    "x": 16.0,
-    "y": -8.0
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -18,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 18,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "x": 4,
+    "texture_key": "qpdk.cells.capacitor.interdigital_capacitor_00597a9d",
+    "irl_y": 2464.790703693508,
+    "model": "qpdk.cells.capacitor.interdigital_capacitor"
   },
   "launcher_top": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.launcher.launcher",
+    "y": -4,
+    "bbox_xmin": 0,
+    "transform": [
+      0,
+      1,
+      -1,
+      0,
+      0,
+      0
+    ],
+    "irl_orientation": 90,
+    "bbox_ymin": -210,
     "name": "launcher_top",
-    "nets": {
-      "o1": "net_6"
-    },
-    "orientation": -90.0,
-    "x": 60.0,
-    "y": 60.0
-  },
-  "tee_bot_straight_1": {
+    "orientation": -90,
     "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.waveguides.straight_open",
-    "name": "tee_bot_straight_1",
+    "bbox_width": 300,
+    "irl_x": 685.323018939491,
+    "bbox_height": 420,
     "nets": {
-      "o1": "net_1"
+      "waveport": "net16",
+      "o1": "net17"
     },
-    "x": 60.22,
-    "y": -35.5
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": 150,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "waveport",
+        "irl_rx": -150,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 200,
+        "cross_section": "launcher_cross_section_big",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "x": 8,
+    "texture_key": "qpdk.cells.launcher.launcher_00597a9d",
+    "irl_y": -343.75841095602556,
+    "model": "qpdk.cells.launcher.launcher"
   },
   "tee_top_straight_2": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.waveguides.straight_open",
+    "y": -2,
+    "bbox_xmin": 0,
+    "bbox_ymin": -11,
     "name": "tee_top_straight_2",
+    "type": "ckt",
+    "bbox_width": 16,
+    "irl_x": 704.323018939491,
+    "bbox_height": 22,
     "nets": {
-      "o1": "net_4"
+      "o1": "net20",
+      "o2": "net24"
     },
-    "x": 60.22,
-    "y": 35.5
-  },
-  "flux_line_bot": {
-    "type": "polyline",
-    "id": "flux_line_bot",
-    "name": "flux_line_bot",
-    "terminals": {
-      "start": {
-        "device": "tee_bot",
-        "port": "o2"
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -8,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
       },
-      "finish": {
-        "device": "launcher_bot",
-        "port": "o1"
+      {
+        "name": "o2",
+        "irl_rx": 2,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
       }
-    },
-    "routing_strategy": "doroute_from_corners",
-    "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "net": "net_5"
+    ],
+    "x": 10,
+    "texture_key": "qpdk.cells.waveguides.straight_open_00597a9d",
+    "irl_y": 649.56614341537,
+    "model": "qpdk.cells.waveguides.straight_open"
   },
   "qubit1": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
+    "y": 0,
+    "bbox_xmin": -1010.939,
+    "irl_orientation": 0,
+    "bbox_ymin": -1237,
     "name": "qubit1",
+    "type": "ckt",
+    "bbox_width": 1410.939,
+    "irl_x": -380.71063793551707,
+    "bbox_height": 1694.5,
     "nets": {
-      "coupling_o1": "net_7",
-      "coupling_o2": "net_10"
+      "junction": "net5",
+      "coupling_o1": "net6",
+      "o1": "net11",
+      "coupling_o2": "W3"
     },
+    "ports": [
+      {
+        "name": "junction",
+        "irl_rx": 305.4694999999999,
+        "irl_ry": -389.75,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "electrical",
+        "width": 33.446,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
+        "name": "coupling_o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 836.25,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "coupling_o2",
+        "irl_rx": 205.46949999999993,
+        "irl_ry": 836.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 810.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "irl_flip": false,
+    "x": 6,
+    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_4116eb3e",
+    "irl_y": 1004.8159038961953,
+    "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "resonator_length": 5000
-    },
-    "x": 47.7,
-    "y": 32.52
+    }
   },
   "o1": {
-    "type": "port",
-    "id": null,
+    "y": 2,
     "name": "o1",
-    "x": 0.0,
-    "y": 8.0,
-    "nets": {
-      "P": "port_net_o1"
-    },
     "attached_port": {
       "component_id": "launcher_in",
       "port_name": "waveport"
-    }
+    },
+    "width": 200,
+    "type": "port",
+    "irl_x": -2184.434534951683,
+    "nature": "photonic",
+    "nets": {
+      "P": "o1"
+    },
+    "x": 2,
+    "irl_y": -238.4853201382955,
+    "port_type": "optical"
   },
   "o2": {
     "type": "port",
     "id": null,
     "name": "o2",
-    "x": 0.0,
-    "y": -8.0,
+    "x": 2,
+    "y": 5,
     "nets": {
-      "P": "port_net_o2"
+      "P": "o2"
     },
     "attached_port": {
       "component_id": "launcher_out",
       "port_name": "waveport"
-    }
+    },
+    "nature": "photonic"
   },
   "launcher_out": {
-    "type": "ckt",
-    "id": null,
-    "model": "qpdk.cells.launcher.launcher",
+    "y": 4,
+    "bbox_xmin": 0,
+    "bbox_ymin": -210,
     "name": "launcher_out",
+    "type": "ckt",
+    "bbox_width": 300,
+    "irl_x": -1924.3108313627586,
+    "bbox_height": 420,
     "nets": {
-      "o1": "net_9",
-      "waveport": "port_net_o2"
+      "waveport": "o2",
+      "o1": "net3"
     },
-    "x": 0.0,
-    "y": -8.0
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": 150,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "waveport",
+        "irl_rx": -150,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 200,
+        "cross_section": "launcher_cross_section_big",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "x": 2,
+    "texture_key": "qpdk.cells.launcher.launcher_00597a9d",
+    "irl_y": 2464.790703693508,
+    "model": "qpdk.cells.launcher.launcher"
   },
-  "probeline_input": {
-    "type": "polyline",
-    "id": "probeline_input",
-    "name": "probeline_input",
+  "qubit_test_chip:W1": {
+    "type": "wire",
+    "x": 12,
+    "y": 2,
+    "rx": 1,
+    "ry": 2,
+    "variant": "hv",
+    "name": "W1",
+    "net": "W1"
+  },
+  "qubit_test_chip:W2": {
+    "type": "wire",
+    "x": 13,
+    "y": 4,
+    "rx": -1,
+    "ry": 1,
+    "variant": "vh",
+    "name": "W2",
+    "net": "W1"
+  },
+  "qubit_test_chip:W3": {
+    "type": "wire",
+    "x": 8,
+    "y": 2,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W3",
+    "net": "W3"
+  },
+  "qubit_test_chip:W4": {
+    "type": "wire",
+    "x": 8,
+    "y": 5,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "W4",
+    "net": "W4"
+  },
+  "poly_1": {
+    "y": 7,
+    "vertices": [
+      [
+        685.322998046875,
+        -193.75840759277344
+      ],
+      [
+        685.322998046875,
+        638.566162109375
+      ]
+    ],
     "terminals": {
       "start": {
-        "device": "launcher_in",
-        "port": "o1"
+        "component_id": "launcher_top",
+        "port_name": "o1"
       },
       "finish": {
-        "device": "input_cap1",
-        "port": "o1"
+        "component_id": "tee_top",
+        "port_name": "o2"
       }
     },
-    "routing_strategy": "doroute_from_corners",
-    "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "net": "net_8"
-  },
-  "probeline_cap1_to_qubit1": {
+    "name": "poly_1",
+    "width": 10,
     "type": "polyline",
-    "id": "probeline_cap1_to_qubit1",
-    "name": "probeline_cap1_to_qubit1",
+    "radius": 100,
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "x": 0
+  },
+  "group_1": {
+    "x": 0,
+    "y": 1,
+    "type": "group",
+    "name": "group_1",
+    "members": [
+      "tee_top",
+      "tee_top_straight_1",
+      "launcher_top",
+      "tee_top_straight_2",
+      "poly_1"
+    ]
+  },
+  "tee_1": {
+    "y": 7,
+    "bbox_xmin": -11,
+    "transform": [
+      1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "irl_orientation": 180,
+    "bbox_ymin": -11,
+    "name": "tee_bot",
+    "type": "ckt",
+    "bbox_width": 22,
+    "irl_x": 686.3645773975319,
+    "bbox_height": 22,
+    "nets": {
+      "o1": "net15",
+      "o2": "net18",
+      "o3": "net23"
+    },
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -11,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o3",
+        "irl_rx": 11,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 0,
+        "irl_ry": -11,
+        "orientation": 90,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "x": 8,
+    "texture_key": "qpdk.cells.waveguides.tee_00597a9d",
+    "irl_y": 3737.8090296774317,
+    "model": "qpdk.cells.waveguides.tee"
+  },
+  "straight_open_1": {
+    "y": 7,
+    "bbox_xmin": 0,
+    "transform": [
+      -1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "irl_orientation": 0,
+    "bbox_ymin": -11,
+    "name": "tee_bot_straight_1",
+    "type": "ckt",
+    "bbox_width": 16,
+    "irl_x": 705.3645773975319,
+    "bbox_height": 22,
+    "nets": {
+      "o2": "net9",
+      "o1": "net15"
+    },
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -8,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 2,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "irl_flip": true,
+    "x": 6,
+    "texture_key": "qpdk.cells.waveguides.straight_open_00597a9d",
+    "irl_y": 3737.8090296774317,
+    "model": "qpdk.cells.waveguides.straight_open"
+  },
+  "launcher_1": {
+    "y": 9,
+    "bbox_xmin": 0,
+    "transform": [
+      0,
+      -1,
+      1,
+      0,
+      0,
+      0
+    ],
+    "irl_orientation": 270,
+    "bbox_ymin": -210,
+    "name": "launcher_bot",
+    "type": "ckt",
+    "bbox_width": 300,
+    "irl_x": 686.3652331846866,
+    "bbox_height": 420,
+    "nets": {
+      "o1": "net18",
+      "waveport": "net19"
+    },
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": 150,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "waveport",
+        "irl_rx": -150,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 200,
+        "cross_section": "launcher_cross_section_big",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "x": 8,
+    "texture_key": "qpdk.cells.launcher.launcher_00597a9d",
+    "irl_y": 4731.049643292969,
+    "model": "qpdk.cells.launcher.launcher"
+  },
+  "straight_open_2": {
+    "y": 7,
+    "bbox_xmin": 0,
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "irl_orientation": 180,
+    "bbox_ymin": -11,
+    "name": "tee_bot_straight_2",
+    "type": "ckt",
+    "bbox_width": 16,
+    "irl_x": 667.3645773975319,
+    "bbox_height": 22,
+    "nets": {
+      "o1": "net23",
+      "o2": "net28"
+    },
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -8,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 2,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "x": 10,
+    "texture_key": "qpdk.cells.waveguides.straight_open_00597a9d",
+    "irl_y": 3737.8090296774317,
+    "model": "qpdk.cells.waveguides.straight_open"
+  },
+  "poly_2": {
+    "y": 11,
+    "vertices": [
+      [
+        686.365234375,
+        4581.0498046875
+      ],
+      [
+        686.3645629882812,
+        3748.80908203125
+      ]
+    ],
     "terminals": {
       "start": {
-        "device": "input_cap1",
-        "port": "o2"
+        "component_id": "launcher_1",
+        "port_name": "o1"
       },
       "finish": {
-        "device": "qubit1",
-        "port": "coupling_o1"
+        "component_id": "tee_1",
+        "port_name": "o2"
       }
     },
-    "routing_strategy": "doroute_from_corners",
-    "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "net": "net_7"
-  },
-  "probeline_qubit3_to_qubit4": {
+    "name": "poly_2",
+    "width": 10,
     "type": "polyline",
-    "id": "probeline_qubit3_to_qubit4",
-    "name": "probeline_qubit3_to_qubit4",
+    "radius": 100,
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "x": 0
+  },
+  "group_2": {
+    "x": 0,
+    "y": 4,
+    "type": "group",
+    "name": "group_2",
+    "members": [
+      "tee_1",
+      "straight_open_1",
+      "launcher_1",
+      "straight_open_2"
+    ]
+  },
+  "poly_3": {
+    "y": 5,
+    "vertices": [
+      [
+        -1774.310791015625,
+        1841.06591796875
+      ],
+      [
+        -1521.0440673828125,
+        1841.06591796875
+      ]
+    ],
     "terminals": {
       "start": {
-        "device": "qubit3",
-        "port": "coupling_o1"
+        "component_id": "launcher_in",
+        "port_name": "o1"
       },
       "finish": {
-        "device": "qubit4",
-        "port": "coupling_o2"
+        "component_id": "input_cap1",
+        "port_name": "o1"
       }
     },
-    "routing_strategy": "doroute_from_corners",
+    "name": "poly_3",
+    "width": 10,
+    "type": "polyline",
+    "radius": 100,
     "cross_section": "coplanar_waveguide",
-    "bend_type": "circular",
-    "net": "net_12"
+    "layer": "M1_DRAW",
+    "x": 0
+  },
+  "poly_4": {
+    "y": 0,
+    "vertices": [
+      [
+        -1774.310791015625,
+        2464.790771484375
+      ],
+      [
+        -1522.402099609375,
+        2464.790771484375
+      ]
+    ],
+    "terminals": {
+      "start": {
+        "component_id": "launcher_out",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "input_cap2",
+        "port_name": "o1"
+      }
+    },
+    "name": "poly_4",
+    "width": 10,
+    "type": "polyline",
+    "radius": 100,
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "x": 0
+  },
+  "poly_5": {
+    "y": 9,
+    "vertices": [
+      [
+        -1485.0440673828125,
+        1841.06591796875
+      ],
+      [
+        -975.2411499023438,
+        1841.06591796875
+      ]
+    ],
+    "terminals": {
+      "start": {
+        "component_id": "input_cap1",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "qubit1",
+        "port_name": "coupling_o1"
+      }
+    },
+    "name": "poly_5",
+    "width": 10,
+    "type": "polyline",
+    "radius": 100,
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "x": 0
+  },
+  "poly_6": {
+    "y": 8,
+    "vertices": [
+      [
+        -175.2411346435547,
+        1841.06591796875
+      ],
+      [
+        584.815185546875,
+        1841.06591796875
+      ]
+    ],
+    "terminals": {
+      "start": {
+        "component_id": "qubit1",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "qubit2",
+        "port_name": "coupling_o1"
+      }
+    },
+    "name": "poly_6",
+    "width": 10,
+    "type": "polyline",
+    "radius": 100,
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "x": 0
+  },
+  "group_3": {
+    "x": 0,
+    "y": 10,
+    "type": "group",
+    "name": "group_3",
+    "members": [
+      "qubit1",
+      "qubit2"
+    ]
+  },
+  "poly_7": {
+    "y": 3,
+    "vertices": [
+      [
+        984.815185546875,
+        2464.790771484375
+      ],
+      [
+        1112.9373779296875,
+        2464.790771484375
+      ],
+      [
+        1112.9373779296875,
+        1841.06591796875
+      ],
+      [
+        984.815185546875,
+        1841.06591796875
+      ]
+    ],
+    "terminals": {
+      "start": {
+        "component_id": "qubit3",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "qubit2",
+        "port_name": "coupling_o2"
+      }
+    },
+    "name": "poly_7",
+    "width": 10,
+    "type": "polyline",
+    "radius": 100,
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "x": 0
+  },
+  "poly_11": {
+    "y": 2,
+    "vertices": [
+      [
+        -1486.402099609375,
+        2464.790771484375
+      ],
+      [
+        -977.0819091796875,
+        2464.790771484375
+      ]
+    ],
+    "terminals": {
+      "start": {
+        "component_id": "input_cap2",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "qubit4",
+        "port_name": "coupling_o1"
+      }
+    },
+    "name": "poly_11",
+    "width": 10,
+    "type": "polyline",
+    "radius": 11,
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "x": 0
+  },
+  "poly_12": {
+    "y": 6,
+    "vertices": [
+      [
+        -177.08187866210938,
+        2464.790771484375
+      ],
+      [
+        584.815185546875,
+        2464.790771484375
+      ]
+    ],
+    "terminals": {
+      "start": {
+        "component_id": "qubit4",
+        "port_name": "coupling_o2"
+      },
+      "finish": {
+        "component_id": "qubit3",
+        "port_name": "coupling_o1"
+      }
+    },
+    "name": "poly_12",
+    "width": 10,
+    "type": "polyline",
+    "radius": 100,
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "x": 0
   }
 }
