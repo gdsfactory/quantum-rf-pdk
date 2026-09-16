@@ -176,15 +176,16 @@ get-gfp-versions:
         # Unknown version → empty latest/major so consumers skip the gfp job
         print_version_info(None)
 
-# Download the public GDSFactory+ VS Code extension and extract the bundled
-# gdsfactoryplus SDK and `gfp` binary into build/gfp-vsix/ (neither is
-# pip-installable: gdsfactoryplus >= 2.0 ships only inside the extension).
+# Download the public GDSFactory+ VS Code extension, or accept a local VSIX
+# path as the argument, and extract the bundled gdsfactoryplus SDK and `gfp`
+# binary into build/gfp-vsix/ (neither is pip-installable: gdsfactoryplus >=
+# 2.0 ships only inside the extension).
 # Writes build/gfp-vsix/env.sh exporting PYTHONPATH (SDK + bundled nyancad)
 # and GFP_BIN (binary) for `just test-gfp` to source.
 [group('test')]
 [script('uv', 'run', '--script')]
-fetch-gfp version="latest":
-    import gzip, io, json, os, platform, shutil, stat, urllib.request, zipfile
+fetch-gfp $version="latest":
+    import gzip, hashlib, io, json, os, platform, shlex, shutil, stat, urllib.request, zipfile
     from pathlib import Path
 
     PUBLISHER = "gdsfactory"
@@ -254,39 +255,55 @@ fetch-gfp version="latest":
             )
         return f"{os_name}-{arch}"
 
-    version = "{{ version }}"
+    requested = os.environ["version"]
     target = target_platform()
-    if version == "latest":
-        version = resolve_latest()
+    local_vsix = None
+    if requested.lower().endswith(".vsix"):
+        local_vsix = Path(requested).expanduser().resolve()
+        if not local_vsix.is_file():
+            raise SystemExit(f"local VSIX does not exist: {local_vsix}")
+        with local_vsix.open("rb") as stream:
+            fingerprint = hashlib.file_digest(stream, "sha256").hexdigest()[:16]
+        wanted = f"local:{fingerprint} {target}"
+    else:
+        version = resolve_latest() if requested == "latest" else requested
+        wanted = f"{version} {target}"
     stamp = OUT / "VERSION"
-    wanted = f"{version} {target}"
 
     if stamp.exists() and stamp.read_text().strip() == wanted:
         print(f"gdsfactoryplus {wanted} already extracted at {OUT}")
     else:
-        url = (
-            f"{API}/publishers/{PUBLISHER}/vsextensions/{EXTENSION}"
-            f"/{version}/vspackage?targetPlatform={target}"
-        )
-        print(f"downloading {PUBLISHER}.{EXTENSION} {version} ({target})")
-        req = urllib.request.Request(url, headers={"User-Agent": "quantum-rf-pdk-ci"})
-        with urllib.request.urlopen(req, timeout=600) as r:
-            payload = r.read()
-        # The Marketplace may serve the VSIX gzip-encoded.
-        if payload[:2] == b"\x1f\x8b":
-            payload = gzip.decompress(payload)
+        if local_vsix is not None:
+            print(f"extracting local VSIX {local_vsix} ({target})")
+            archive = local_vsix
+        else:
+            url = (
+                f"{API}/publishers/{PUBLISHER}/vsextensions/{EXTENSION}"
+                f"/{version}/vspackage?targetPlatform={target}"
+            )
+            print(f"downloading {PUBLISHER}.{EXTENSION} {version} ({target})")
+            req = urllib.request.Request(url, headers={"User-Agent": "quantum-rf-pdk-ci"})
+            with urllib.request.urlopen(req, timeout=600) as r:
+                payload = r.read()
+            # The Marketplace may serve the VSIX gzip-encoded.
+            if payload[:2] == b"\x1f\x8b":
+                payload = gzip.decompress(payload)
+            archive = io.BytesIO(payload)
 
         if OUT.exists():
             shutil.rmtree(OUT)
         OUT.mkdir(parents=True)
-        with zipfile.ZipFile(io.BytesIO(payload)) as vsix:
+        bin_dir = (OUT / "bin").resolve()
+        with zipfile.ZipFile(archive) as vsix:
             for member in vsix.namelist():
                 if member.startswith("extension/bin/") and not member.endswith("/"):
-                    target_path = OUT / member.removeprefix("extension/")
+                    target_path = (OUT / member.removeprefix("extension/")).resolve()
+                    if not target_path.is_relative_to(bin_dir):
+                        raise SystemExit(
+                            f"unsafe VSIX member escapes extension/bin: {member}"
+                        )
                     target_path.parent.mkdir(parents=True, exist_ok=True)
                     target_path.write_bytes(vsix.read(member))
-
-        stamp.write_text(wanted)
 
     # Validate on every run (not just fresh extraction) and chmod
     # unconditionally: zip extraction does not preserve the exec bit, so
@@ -301,11 +318,12 @@ fetch-gfp version="latest":
         raise SystemExit(f"extraction incomplete: SDK dirs missing: {missing_dirs}")
     if not IS_WINDOWS:
         gfp_bin.chmod(gfp_bin.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    stamp.write_text(wanted)
     sep = os.pathsep
     env_sh = OUT / "env.sh"
     env_sh.write_text(
-        f'export PYTHONPATH="{sep.join(str(d.resolve()) for d in sdk_dirs)}"\n'
-        f'export GFP_BIN="{gfp_bin.resolve()}"\n'
+        f"export PYTHONPATH={shlex.quote(sep.join(str(d.resolve()) for d in sdk_dirs))}\n"
+        f"export GFP_BIN={shlex.quote(str(gfp_bin.resolve()))}\n"
     )
     print(f"extracted to {OUT}; source {env_sh} for PYTHONPATH and GFP_BIN")
 
@@ -319,15 +337,22 @@ fetch-gfp version="latest":
 # --dist loadgroup keeps the server tests (xdist_group "gfp-server", which
 # share one gfp serve process and the repo's build/ dir) on a single worker.
 [group('test')]
+[positional-arguments]
 test-gfp *args:
     #!/usr/bin/env bash
     set -euo pipefail
+    probe_gfp_v2() {
+        uv run --no-sync python -c \
+            "from gdsfactoryplus.factory_metadata import resolve_factory_model; from gdsfactoryplus.sim.sax import simulate_mosaic_sax" \
+            >/dev/null 2>&1
+    }
     if [[ -f build/gfp-vsix/env.sh ]]; then
         source build/gfp-vsix/env.sh
     fi
-    if ! uv run --no-sync python -c "import gdsfactoryplus" 2>/dev/null; then
+    if ! probe_gfp_v2 || [[ -z "${GFP_BIN:-}" || ! -x "${GFP_BIN:-}" ]]; then
         just fetch-gfp
         source build/gfp-vsix/env.sh
     fi
+    probe_gfp_v2
     GFP_REQUIRED=1 uv run --extra gdsfactoryplus --group dev pytest -m gfp -n auto --dist loadgroup \
-        tests/test_gfp_lvs.py tests/test_gfp_sax.py tests/test_gfp_server.py {{ args }}
+        tests/test_gfp_lvs.py tests/test_gfp_sax.py tests/test_gfp_server.py "$@"

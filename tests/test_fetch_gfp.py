@@ -1,0 +1,76 @@
+"""Tests for extracting a local gdsfactoryplus development VSIX."""
+
+from __future__ import annotations
+
+import platform
+import subprocess
+import zipfile
+from pathlib import Path
+
+import pytest
+
+_JUSTFILE = Path(__file__).parents[1] / "justfile"
+
+
+def _write_vsix(path: Path, *extra_members: str) -> None:
+    """Write the smallest archive accepted by the ``fetch-gfp`` recipe."""
+    executable = "gfp.exe" if platform.system() == "Windows" else "gfp"
+    members = {
+        f"extension/bin/{executable}": b"development binary",
+        "extension/bin/python/gdsfactoryplus/__init__.py": b"",
+        "extension/bin/python/nyancad/__init__.py": b"",
+        **dict.fromkeys(extra_members, b"must not escape"),
+    }
+    with zipfile.ZipFile(path, "w") as archive:
+        for name, contents in members.items():
+            archive.writestr(name, contents)
+
+
+def _fetch(workdir: Path, vsix: Path) -> subprocess.CompletedProcess[str]:
+    """Run ``fetch-gfp`` in an isolated working directory."""
+    return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [
+            "just",
+            "--justfile",
+            str(_JUSTFILE),
+            "--working-directory",
+            str(workdir),
+            "fetch-gfp",
+            str(vsix),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_fetch_gfp_accepts_quoted_local_path(tmp_path: Path) -> None:
+    """Pass local paths as data rather than interpolating them into Python."""
+    vsix = tmp_path / 'local "development".vsix'
+    _write_vsix(vsix)
+
+    result = _fetch(tmp_path, vsix)
+
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "build/gfp-vsix/bin/python/gdsfactoryplus").is_dir()
+    assert (tmp_path / "build/gfp-vsix/bin/python/nyancad").is_dir()
+
+
+@pytest.mark.parametrize(
+    "member",
+    [
+        "extension/bin/../../escaped",
+        "extension/bin/subdirectory/../../../escaped",
+    ],
+)
+def test_fetch_gfp_rejects_path_traversal(tmp_path: Path, member: str) -> None:
+    """Reject archive members whose normalized path leaves ``extension/bin``."""
+    vsix = tmp_path / "malicious.vsix"
+    _write_vsix(vsix, member)
+
+    result = _fetch(tmp_path, vsix)
+
+    assert result.returncode != 0
+    assert "unsafe VSIX member" in result.stderr
+    assert not (tmp_path / "build/escaped").exists()
+    assert not (tmp_path / "escaped").exists()
