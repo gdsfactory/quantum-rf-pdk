@@ -1,44 +1,59 @@
 """Tests for resonator test-chip samples."""
 
+import json
 from pathlib import Path
 
 import gdsfactory as gf
 import numpy as np
-import pytest
 import sax
 import yaml
 
 from qpdk import PDK
 from qpdk.models import models
-from qpdk.models.resonator import (
-    resonator_test_chip_python as resonator_test_chip_python_model,
-    resonator_test_chip_yaml,
-)
 from qpdk.samples.resonator_test_chip import resonator_test_chip_python
 
 YAML_SAMPLE = (
     Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_yaml.pic.yml"
 )
+GSCH_SAMPLE = YAML_SAMPLE.with_suffix("").with_suffix(".gsch")
 
 
-@pytest.mark.parametrize(
-    "component_name",
-    [
-        "resonator_test_chip_python",
-        "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
-    ],
-)
-def test_resonator_test_chip_resolves_in_active_pdk(component_name: str) -> None:
-    """Resolve and directly simulate both identifiers used by the editor."""
+def _simulate_netlist(
+    netlist: dict,
+    frequencies: sax.FloatArrayLike,
+) -> sax.SDict:
+    """Evaluate a chip netlist from the registered component models."""
+    circuit, _ = sax.circuit(
+        netlist,
+        models=models,
+        ignore_impossible_connections=False,
+    )
+    return circuit(f=frequencies)
+
+
+def _simulate_python_chip(frequencies: sax.FloatArrayLike) -> sax.SDict:
+    """Evaluate the Python sample without a whole-chip model."""
+    netlist = resonator_test_chip_python().get_netlist(on_dangling_port="ignore")
+    return _simulate_netlist(netlist, frequencies)
+
+
+def _simulate_yaml_chip(frequencies: sax.FloatArrayLike) -> sax.SDict:
+    """Evaluate the declarative sample without a whole-chip model."""
+    document = yaml.safe_load(YAML_SAMPLE.read_text())
+    netlist = {key: document[key] for key in ("instances", "connections", "ports")}
+    return _simulate_netlist(netlist, frequencies)
+
+
+def test_resonator_test_chip_resolves_from_the_cells_module() -> None:
+    """Register the sample through the normal PDK cell collection."""
     PDK.activate()
 
-    component = gf.get_component(component_name)
+    component = gf.get_component("resonator_test_chip_python")
+    schematic = resonator_test_chip_python.schematic_function()
 
     assert component.function_name == "resonator_test_chip_python"
-    assert resonator_test_chip_python.schematic_function is not None
-    assert PDK.models is not None
-    s_params = PDK.models[component_name](f=[7e9])
-    assert {port for key in s_params for port in key} == {"o1", "o2", "o3", "o4"}
+    assert schematic.info["models"] == []
+    assert "resonator_test_chip_python" not in models
 
 
 def test_resonator_test_chip_exposes_launcher_waveports() -> None:
@@ -107,6 +122,21 @@ def test_resonator_test_chip_yaml_netlist_matches_python() -> None:
     assert yaml_nets == python_nets
 
 
+def test_resonator_test_chip_gsch_preserves_yaml_connectivity() -> None:
+    """Keep every declarative connection wired in the Mosaic schematic."""
+    yaml_document = yaml.safe_load(YAML_SAMPLE.read_text())
+    gsch_document = json.loads(GSCH_SAMPLE.read_text())
+
+    for left, right in yaml_document["connections"].items():
+        left_instance, left_port = left.split(",")
+        right_instance, right_port = right.split(",")
+
+        assert (
+            gsch_document[left_instance]["nets"][left_port]
+            == gsch_document[right_instance]["nets"][right_port]
+        ), f"{left} is disconnected from {right} in {GSCH_SAMPLE.name}"
+
+
 def test_resonator_test_chip_yaml_matches_python() -> None:
     """Materialize the YAML netlist and match the Python chip exactly."""
     PDK.activate()
@@ -169,37 +199,19 @@ def test_recursive_sax_netlist_builds_without_cross_section_shadowing() -> None:
         on_dangling_port="ignore",
     )
 
-    # This direct netlist keeps the sample factory name as its top-level
-    # circuit name. Exclude the public top-level model to avoid SAX treating
-    # that circuit itself as a model. The app netlist uses top name ``t`` and
-    # therefore exercises the registered sample model.
-    simulation_models = {
-        name: model
-        for name, model in models.items()
-        if name != "resonator_test_chip_python"
-    }
-
     sax.circuit(
-        netlist,
-        models=simulation_models,
-        ignore_impossible_connections=False,
-    )
-
-
-def test_resonator_test_chip_sax_model_matches_physical_netlist() -> None:
-    """Keep analytical launcher and route parameters aligned with the layout."""
-    PDK.activate()
-    frequencies = np.linspace(4e9, 10e9, 31)
-    netlist = resonator_test_chip_python().get_netlist(
-        on_dangling_port="ignore",
-    )
-    circuit, _ = sax.circuit(
         netlist,
         models=models,
         ignore_impossible_connections=False,
     )
-    actual = circuit(f=frequencies)
-    expected = resonator_test_chip_python_model(f=frequencies)
+
+
+def test_python_and_yaml_chip_simulations_match() -> None:
+    """Solve both chip definitions recursively from the same leaf models."""
+    PDK.activate()
+    frequencies = np.linspace(4e9, 10e9, 31)
+    actual = _simulate_python_chip(frequencies)
+    expected = _simulate_yaml_chip(frequencies)
     zero = np.zeros_like(frequencies, dtype=complex)
 
     for key in actual.keys() | expected.keys():
@@ -211,41 +223,10 @@ def test_resonator_test_chip_sax_model_matches_physical_netlist() -> None:
         )
 
 
-def test_resonator_test_chip_can_be_placed_and_simulated() -> None:
-    """Simulate the chip as an instance inside a schematic."""
-    PDK.activate()
-    schematic = gf.Component("placed_resonator_test_chip")
-    chip = schematic.add_ref(
-        gf.get_component("resonator_test_chip_python"),
-        name="resonator_test_chip_python",
-    )
-    schematic.add_ports(chip.ports)
-    netlist = schematic.get_netlist(recursive=True, on_dangling_port="ignore")
-
-    circuit, _ = sax.circuit(
-        netlist,
-        models=models,
-        ignore_impossible_connections=False,
-    )
-    frequencies = np.linspace(4e9, 10e9, 31)
-    s_params = circuit(f=frequencies)
-    expected = sax.sdict(sax.sdense(resonator_test_chip_python_model(f=frequencies)))
-
-    assert {port for key in s_params for port in key} == {"o1", "o2", "o3", "o4"}
-    assert s_params.keys() == expected.keys()
-    for key in s_params:
-        np.testing.assert_allclose(
-            s_params[key],
-            expected[key],
-            rtol=1e-10,
-            atol=1e-12,
-        )
-
-
 def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
     """Check basic physical constraints across the intended RF band."""
     frequencies = np.linspace(4e9, 10e9, 101)
-    s_params = resonator_test_chip_python_model(f=frequencies)
+    s_params = _simulate_python_chip(frequencies)
     port_names = ("o1", "o2", "o3", "o4")
     matrix = np.zeros((len(frequencies), 4, 4), dtype=complex)
 
@@ -262,13 +243,12 @@ def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
 def test_resonator_test_chip_has_distinct_resonances() -> None:
     """Regression for issue #678: each probeline must show distinct resonances.
 
-    Exercises the netlist-driven ``resonator_test_chip_python`` SAX model
-    directly (see #796), so a hierarchy-flattening regression that collapses
-    the 16 distinct resonator lengths back into one merged resonance would be
-    caught here too.
+    Exercises the extracted chip netlist directly, so a hierarchy-flattening
+    regression that collapses the 16 distinct resonator lengths back into one
+    merged resonance is caught without a whole-chip model.
     """
     frequencies = np.linspace(4e9, 10e9, 4001)
-    s_params = resonator_test_chip_python_model(f=frequencies)
+    s_params = _simulate_python_chip(frequencies)
 
     for probe_ports in (("o1", "o2"), ("o3", "o4")):
         s21_db = 20 * np.log10(np.abs(np.asarray(s_params[probe_ports])) + 1e-30)
@@ -287,11 +267,11 @@ def test_resonator_test_chip_has_distinct_resonances() -> None:
         )
 
 
-def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
-    """Keep the YAML sample usable via its registered SAX model."""
-    assert models["resonator_test_chip_yaml"] is resonator_test_chip_yaml
+def test_resonator_test_chip_yaml_simulates_from_leaf_models() -> None:
+    """Keep the YAML sample usable without a registered chip model."""
+    assert "resonator_test_chip_yaml" not in models
 
-    s_params = resonator_test_chip_yaml(f=[7e9])
+    s_params = _simulate_yaml_chip([7e9])
 
     # sax.circuit emits the full 4x4 key set; the cross-probeline entries
     # (e.g. ("o1", "o3")) are zero because the two probelines are independent.
@@ -315,10 +295,10 @@ def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
 
 
 def test_resonator_test_chip_yaml_model_matches_python_model() -> None:
-    """The netlist-driven YAML model must match the analytical Python model."""
+    """The declarative and Python netlists must produce the same response."""
     frequencies = np.linspace(4e9, 10e9, 31)
-    actual = resonator_test_chip_yaml(f=frequencies)
-    expected = resonator_test_chip_python_model(f=frequencies)
+    actual = _simulate_yaml_chip(frequencies)
+    expected = _simulate_python_chip(frequencies)
     zero = np.zeros_like(frequencies, dtype=complex)
 
     for key in actual.keys() | expected.keys():

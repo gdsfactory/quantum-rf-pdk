@@ -10,7 +10,7 @@
     "irl_x": 550,
     "bbox_height": 22,
     "nets": {
-      "o1": "net3",
+      "o1": "net5",
       "o2": "net7"
     },
     "ports": [
@@ -61,6 +61,7 @@
         500,
         0
       ],
+      "npoints": 99,
       "width": 10
     }
   },
@@ -75,9 +76,9 @@
     "irl_x": 2149.9595,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net21",
+      "coupling_o1": "net20",
       "resonator_o1": "net23",
-      "coupling_o2": "net27"
+      "coupling_o2": "net26"
     },
     "ports": [
       {
@@ -224,9 +225,9 @@
     "irl_x": 2142.8165,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net18",
+      "coupling_o1": "net19",
       "resonator_o1": "net22",
-      "coupling_o2": "net24"
+      "coupling_o2": "net25"
     },
     "ports": [
       {
@@ -382,9 +383,9 @@
     "irl_x": 6207.102,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net61",
+      "coupling_o1": "net59",
       "resonator_o1": "net65",
-      "coupling_o2": "net67"
+      "coupling_o2": "net64"
     },
     "ports": [
       {
@@ -567,7 +568,7 @@
     "irl_x": 550,
     "bbox_height": 22,
     "nets": {
-      "o1": "net2",
+      "o1": "net4",
       "o2": "net6"
     },
     "ports": [
@@ -618,6 +619,7 @@
         500,
         0
       ],
+      "npoints": 99,
       "width": 10
     }
   },
@@ -694,9 +696,9 @@
     "irl_x": 4171.388,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net38",
+      "coupling_o1": "net39",
       "resonator_o1": "net42",
-      "coupling_o2": "net44"
+      "coupling_o2": "net45"
     },
     "ports": [
       {
@@ -780,9 +782,9 @@
     "irl_x": 8228.5305,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net80",
+      "coupling_o1": "net78",
       "resonator_o1": "net82",
-      "coupling_o2": "net86"
+      "coupling_o2": "net83"
     },
     "ports": [
       {
@@ -1025,9 +1027,9 @@
     "irl_x": 5185.6735,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net48",
+      "coupling_o1": "net49",
       "resonator_o1": "net51",
-      "coupling_o2": "net53"
+      "coupling_o2": "net54"
     },
     "ports": [
       {
@@ -1173,9 +1175,9 @@
     "irl_x": 3157.102,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net28",
+      "coupling_o1": "net29",
       "resonator_o1": "net32",
-      "coupling_o2": "net34"
+      "coupling_o2": "net35"
     },
     "ports": [
       {
@@ -1384,7 +1386,7 @@
     "bbox_height": 22,
     "nets": {
       "o1": "net83",
-      "o2": "net90"
+      "o2": "net87"
     },
     "ports": [
       {
@@ -1508,7 +1510,7 @@
     "bbox_height": 22,
     "nets": {
       "o1": "net88",
-      "o2": "net93"
+      "o2": "net91"
     },
     "ports": [
       {
@@ -1558,6 +1560,7 @@
         100,
         0
       ],
+      "npoints": 99,
       "width": 10
     }
   },
@@ -1572,9 +1575,9 @@
     "irl_x": 6199.9595,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net60",
+      "coupling_o1": "net58",
       "resonator_o1": "net62",
-      "coupling_o2": "net66"
+      "coupling_o2": "net63"
     },
     "ports": [
       {
@@ -1658,9 +1661,9 @@
     "irl_x": 7214.245,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net70",
+      "coupling_o1": "net68",
       "resonator_o1": "net72",
-      "coupling_o2": "net76"
+      "coupling_o2": "net73"
     },
     "ports": [
       {
@@ -1744,9 +1747,9 @@
     "irl_x": 3164.245,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net31",
+      "coupling_o1": "net30",
       "resonator_o1": "net33",
-      "coupling_o2": "net37"
+      "coupling_o2": "net36"
     },
     "ports": [
       {
@@ -1831,9 +1834,9 @@
     "irl_x": 8235.6735,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net81",
+      "coupling_o1": "net79",
       "resonator_o1": "net85",
-      "coupling_o2": "net89"
+      "coupling_o2": "net84"
     },
     "ports": [
       {
@@ -2043,7 +2046,7 @@
     "bbox_height": 22,
     "nets": {
       "o1": "net84",
-      "o2": "net91"
+      "o2": "net88"
     },
     "ports": [
       {
@@ -2192,9 +2195,9 @@
     "irl_x": 5192.8165,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net52",
+      "coupling_o1": "net50",
       "resonator_o1": "net56",
-      "coupling_o2": "net57"
+      "coupling_o2": "net55"
     },
     "ports": [
       {
@@ -2748,9 +2751,9 @@
     "irl_x": 1135.6735,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net9",
+      "coupling_o1": "net12",
       "resonator_o1": "net13",
-      "coupling_o2": "net17"
+      "coupling_o2": "net16"
     },
     "ports": [
       {
@@ -2835,9 +2838,9 @@
     "irl_x": 1128.5305,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net8",
+      "coupling_o1": "net11",
       "resonator_o1": "net10",
-      "coupling_o2": "net14"
+      "coupling_o2": "net15"
     },
     "ports": [
       {
@@ -2921,9 +2924,9 @@
     "irl_x": 4178.5305,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net41",
+      "coupling_o1": "net40",
       "resonator_o1": "net43",
-      "coupling_o2": "net47"
+      "coupling_o2": "net46"
     },
     "ports": [
       {
@@ -3009,7 +3012,7 @@
     "bbox_height": 22,
     "nets": {
       "o1": "net87",
-      "o2": "net92"
+      "o2": "net90"
     },
     "ports": [
       {
@@ -3059,6 +3062,7 @@
         100,
         0
       ],
+      "npoints": 99,
       "width": 10
     }
   },
@@ -3073,9 +3077,9 @@
     "irl_x": 7221.388,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net71",
+      "coupling_o1": "net69",
       "resonator_o1": "net75",
-      "coupling_o2": "net77"
+      "coupling_o2": "net74"
     },
     "ports": [
       {

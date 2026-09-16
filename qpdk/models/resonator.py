@@ -1,11 +1,9 @@
 """Resonators."""
 
-from pathlib import Path
 from typing import Any
 
 import jax.numpy as jnp
 import sax
-import yaml
 from gdsfactory.typings import CrossSectionSpec
 from sax.models.rf import capacitor, electrical_open, electrical_short, tee
 
@@ -18,88 +16,6 @@ from qpdk.models.cpw import (
     get_cpw_dimensions,
 )
 from qpdk.models.waveguides import straight, straight_shorted
-
-
-def resonator_test_chip_python(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    probeline_length: float = 9000.0,
-    probeline_separation: float = 1000.0,
-    resonator_length: float = 4000.0,
-    coupling_length: float = 200.0,
-    coupling_gap: float = 16.0,
-) -> sax.SDict:
-    """SAX model for the four-port resonator test chip sample.
-
-    Builds the circuit directly from the gdsfactory-extracted netlist of the
-    layout sample (:func:`qpdk.samples.resonator_test_chip.resonator_test_chip_python`)
-    instead of hand-reimplementing the probeline/resonator topology, so the
-    model stays in sync with the actual layout. ``quarter_wave_resonator_coupled``
-    instances are kept as single circuit elements, resolved through their own
-    registered SAX model, rather than flattened further: collapsing that
-    hierarchy would lose the capacitive coupling between resonator and
-    probeline.
-
-    Returns:
-        SAX S-parameter dictionary for the four external ports.
-    """
-    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
-    from qpdk.models import models  # ruff: ignore[import-outside-top-level]
-    from qpdk.samples.resonator_test_chip import (  # ruff: ignore[import-outside-top-level]
-        resonator_test_chip_python as resonator_test_chip_python_component,
-    )
-
-    PDK.activate()
-    # sax hands instance settings back as (possibly device-backed) jax
-    # scalars even outside a jit trace; the gdsfactory cell cache needs
-    # plain hashable Python floats.
-    component = resonator_test_chip_python_component(
-        probeline_length=float(probeline_length),
-        probeline_separation=float(probeline_separation),
-        resonator_length=float(resonator_length),
-        coupling_length=float(coupling_length),
-        coupling_gap=float(coupling_gap),
-    )
-    netlist = component.get_netlist(on_dangling_port="ignore")
-    # Exclude this model itself: the extracted netlist's top-level circuit
-    # shares its name with this function, and including it would let SAX
-    # short-circuit back to this model instead of building the circuit.
-    leaf_models = {
-        name: model
-        for name, model in models.items()
-        if name != "resonator_test_chip_python"
-    }
-    circuit, _ = sax.circuit(
-        netlist,
-        models=leaf_models,
-        ignore_impossible_connections=False,
-    )
-    return circuit(f=f)
-
-
-def resonator_test_chip_yaml(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-) -> sax.SDict:
-    """SAX model evaluated from the ``resonator_test_chip_yaml.pic.yml`` netlist.
-
-    The full chip layout is defined declaratively in the sample's netlist;
-    this model only reads that file and solves it against the registered
-    PDK models, so editing the netlist edits the simulation.
-
-    Returns:
-        SAX S-parameter dictionary for the four external ports.
-    """
-    document = yaml.safe_load(
-        (
-            Path(__file__).parents[1] / "samples/resonator_test_chip_yaml.pic.yml"
-        ).read_text()
-    )
-    netlist = {key: document[key] for key in ("instances", "connections", "ports")}
-
-    # Imported here to avoid the circular import through qpdk.models.__init__.
-    from qpdk.models import models  # ruff: ignore[import-outside-top-level]
-
-    circuit, _ = sax.circuit(netlist, models=models)
-    return circuit(f=f)
 
 
 def quarter_wave_resonator_coupled(

@@ -85,6 +85,7 @@ instances:
     settings:
       allow_min_radius_violation: true
       cross_section: coplanar_waveguide
+      npoints: 99
       size:
         - 100
         - 0
@@ -101,6 +102,7 @@ instances:
     settings:
       allow_min_radius_violation: true
       cross_section: coplanar_waveguide
+      npoints: 99
       size:
         - 100
         - 0
@@ -117,6 +119,7 @@ instances:
     settings:
       allow_min_radius_violation: true
       cross_section: coplanar_waveguide
+      npoints: 99
       size:
         - 500
         - 0
@@ -133,6 +136,7 @@ instances:
     settings:
       allow_min_radius_violation: true
       cross_section: coplanar_waveguide
+      npoints: 99
       size:
         - 500
         - 0

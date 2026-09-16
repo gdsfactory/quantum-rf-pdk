@@ -15,8 +15,6 @@ import qpdk.samples
 from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
 from qpdk.logger import logger
-from qpdk.samples.qubit_test_chip import qubit_test_chip
-from qpdk.samples.resonator_test_chip import resonator_test_chip_python
 from qpdk.singleton import SingletonMeta
 from qpdk.tech import (
     LAYER,
@@ -39,27 +37,7 @@ except ImportError as e:
 else:
     _models = dict(_models)
 
-_RESONATOR_TEST_CHIP_QUALNAME = (
-    "qpdk.samples.resonator_test_chip.resonator_test_chip_python"
-)
-_QUBIT_TEST_CHIP_QUALNAME = "qpdk.samples.qubit_test_chip.qubit_test_chip"
 _cells = get_cells(cells)
-_cells["resonator_test_chip_python"] = resonator_test_chip_python
-_cells[_RESONATOR_TEST_CHIP_QUALNAME] = resonator_test_chip_python
-if "resonator_test_chip_python" in _models:
-    _models[_RESONATOR_TEST_CHIP_QUALNAME] = _models["resonator_test_chip_python"]
-_cells["qubit_test_chip"] = qubit_test_chip
-_cells[_QUBIT_TEST_CHIP_QUALNAME] = qubit_test_chip
-for variant, model_name in {
-    "resonator_quarter_wave_bend_start": "resonator_quarter_wave",
-    "resonator_quarter_wave_bend_end": "resonator_quarter_wave",
-    "resonator_quarter_wave_bend_both": "resonator_quarter_wave",
-    "resonator_half_wave_bend_start": "resonator_half_wave",
-    "resonator_half_wave_bend_end": "resonator_half_wave",
-    "resonator_half_wave_bend_both": "resonator_half_wave",
-}.items():
-    if model_name in _models:
-        _models[variant] = _models[model_name]
 _cross_sections = get_cross_sections(tech)
 
 
