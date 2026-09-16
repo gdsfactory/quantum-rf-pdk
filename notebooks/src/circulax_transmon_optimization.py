@@ -39,8 +39,10 @@
 #
 # A transmon qubit is a weakly anharmonic oscillator formed by shunting a
 # Josephson junction (JJ) with a large capacitance
-# {cite:p}`kochChargeinsensitiveQubitDesign2007a`. The circuit Hamiltonian in
-# the phase basis reads:
+# {cite:p}`kochChargeinsensitiveQubitDesign2007a,krantzQuantumEngineersGuide2019`.
+# Following the node-flux formulation of quantum electromagnetic circuits
+# {cite:p}`voolIntroductionQuantumElectromagnetic2017`, the circuit Hamiltonian
+# in the phase basis reads:
 #
 # ```{math}
 # :label: eq:transmon-hamiltonian-circulax
@@ -145,7 +147,7 @@ def JosephsonJunction(  # ruff: ignore[invalid-function-name]
       charge (storage) equation: q['phi'] = -(Φ₀/(2π)) * phi.
     - The supercurrent is I = Ic * [sin(phi) + 2 * (EJ2/EJ1) * sin(2*phi)],
       accounting for higher-order harmonics in inhomogeneous tunnel barriers
-      (Willsch et al. 2023).
+      :cite:p:`willschObservationJosephsonHarmonics2024`.
     - A large parallel sub-gap resistance provides DC bias stability.
 
     Args:
@@ -404,8 +406,9 @@ for k in range(min(5, len(V_harmonics))):
 # These closed-form estimates assume a purely sinusoidal current-phase
 # relation, so the junction's 2nd harmonic is set to zero for this workflow
 # ($E_{J2}/E_{J1} = 0$ in `layout_to_circuit_params`). The component
-# does support a nonzero ratio $r$, but at leading order such a term
-# rescales the potential's quadratic coefficient by $(1+4r)$ and the
+# does support a nonzero ratio $r$
+# {cite:p}`willschObservationJosephsonHarmonics2024`, but at leading order such
+# a term rescales the potential's quadratic coefficient by $(1+4r)$ and the
 # anharmonicity by $(1+16r)/(1+4r)$, so the sinusoidal targets above
 # would no longer describe the circuit.
 
@@ -631,8 +634,10 @@ plt.show()
 # ### 2.1 Coupled Qubit Model
 #
 # We model two adjacent transmon qubits coupled through a parasitic mutual
-# capacitance $C_m$. A voltage pulse is applied to qubit 1, and we
-# observe the induced response on qubit 2 (crosstalk).
+# capacitance $C_m$
+# {cite:p}`krantzQuantumEngineersGuide2019,voolIntroductionQuantumElectromagnetic2017`.
+# A voltage pulse is applied to qubit 1, and we observe the induced response on
+# qubit 2 (crosstalk).
 #
 # The circuit topology:
 #
