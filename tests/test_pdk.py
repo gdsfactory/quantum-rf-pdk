@@ -45,6 +45,8 @@ skip_test = {
     # Registered for schematic-editor lookup; sample behavior is tested separately.
     "resonator_test_chip_python",
     "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
+    "qubit_test_chip",
+    "qpdk.samples.qubit_test_chip.qubit_test_chip",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]
@@ -193,6 +195,20 @@ def test_yaml_matches_layers():
 )
 def test_sample_generates(sample: ComponentFactory):
     """Test that all sample cells generate without errors."""
+    # conftest.import_gfp_module would fail here on a v1 gdsfactoryplus
+    # install (missing submodule treated as an upstream API break), so probe
+    # locally instead: building the gsch-backed sample needs the v2-only
+    # build_nyancir_gds.
+    if getattr(sample, "__name__", "") == "qubit_test_chip":
+        try:
+            from gdsfactoryplus.compile import (  # ruff: ignore[import-outside-top-level]
+                build_nyancir_gds,  # ruff: ignore[unused-import]
+            )
+        except ImportError:
+            pytest.skip(
+                "needs the gdsfactoryplus 2.0 SDK; run `just fetch-gfp` and "
+                "source build/gfp-vsix/env.sh"
+            )
     result = gf.get_component(sample)
     assert result
     print(f"Successfully ran {sample!r}")
