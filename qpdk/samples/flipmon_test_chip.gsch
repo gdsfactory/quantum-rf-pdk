@@ -27,7 +27,18 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "waypoints": [
+      [818.0, 400.0],
+      [1151.5, 400.0],
+      [1151.5, 399.0],
+      [1485.0, 399.0]
+    ],
+    "sbend_segments": {
+      "1": {
+        "factory": "bend_s"
+      }
+    }
   },
   "probeline_qubit1_to_qubit2": {
     "type": "polyline",
@@ -132,7 +143,13 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "waypoints": [
+      [3515.0, 399.0],
+      [3700.0, 399.0],
+      [3700.0, -401.421],
+      [3515.0, -401.421]
+    ]
   },
   "qubit3": {
     "type": "ckt",
@@ -342,7 +359,18 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "waypoints": [
+      [2715.0, -401.421],
+      [2500.0, -401.421],
+      [2500.0, -402.351],
+      [2285.0, -402.351]
+    ],
+    "sbend_segments": {
+      "1": {
+        "factory": "bend_s"
+      }
+    }
   },
   "launcher_in": {
     "type": "ckt",
@@ -782,7 +810,18 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "waypoints": [
+      [1485.0, -402.351],
+      [1151.5, -402.351],
+      [1151.5, -400.0],
+      [818.0, -400.0]
+    ],
+    "sbend_segments": {
+      "1": {
+        "factory": "bend_s"
+      }
+    }
   },
   "tee_top": {
     "type": "ckt",
