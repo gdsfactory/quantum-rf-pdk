@@ -31,7 +31,7 @@ instances:
     info: {}
     settings:
       inner_circle_radius: 60
-      junction_displacement: null
+      junction_displacement: 180
       junction_spec: squid_junction_long
       layer_etch: M1_ETCH
       layer_etch_top: M2_ETCH

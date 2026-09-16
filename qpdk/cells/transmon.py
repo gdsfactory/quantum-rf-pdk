@@ -30,7 +30,7 @@ def double_pad_transmon(
     pad_size: tuple[float, float] = (250.0, 400.0),
     pad_gap: float = 15.0,
     junction_spec: ComponentSpec = squid_junction,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction.
@@ -53,7 +53,8 @@ def double_pad_transmon(
         pad_size: (width, height) of each capacitor pad in μm.
         pad_gap: Gap between the two capacitor pads in μm.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or rotation in
+            degrees about the ring center, to apply to the junction.
         layer_metal: Layer for the metal pads.
 
     Returns:
@@ -142,7 +143,7 @@ def double_pad_transmon_with_bbox(
     pad_size: tuple[float, float] = (250.0, 400.0),
     pad_gap: float = 15.0,
     junction_spec: ComponentSpec = squid_junction,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
 ) -> Component:
@@ -155,7 +156,8 @@ def double_pad_transmon_with_bbox(
         pad_size: (width, height) of each capacitor pad in μm.
         pad_gap: Gap between the two capacitor pads in μm.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or rotation in
+            degrees about the ring center, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_etch: Layer for the etched bounding box.
 
@@ -206,7 +208,7 @@ def flipmon(
     outer_ring_width: float = 60.0,
     top_circle_radius: float = 110.0,
     junction_spec: ComponentSpec = squid_junction_long,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_metal_top: LayerSpec = LAYER.M2_DRAW,
 ) -> Component:
@@ -238,7 +240,8 @@ def flipmon(
         top_circle_radius: Central radius of the top circular capacitor pad in μm.
             There is no separate width as the filled circle is not a ring.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or rotation in
+            degrees about the ring center, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_metal_top: Layer for the other metal layer pad for flip-chip.
 
@@ -276,7 +279,13 @@ def flipmon(
     junction_ref.y = 0
 
     if junction_displacement:
-        junction_ref.transform(junction_displacement)
+        # gdsfactory cannot serialize klayout transforms in cell settings,
+        # so a plain rotation angle is accepted and built here.
+        junction_ref.transform(
+            junction_displacement
+            if isinstance(junction_displacement, DCplxTrans)
+            else DCplxTrans(1, junction_displacement, False)
+        )
 
     # Create top circular pad for flip-chip
     top_circle = gf.components.circle(
@@ -335,7 +344,7 @@ def flipmon_with_bbox(
     outer_ring_width: float = 60.0,
     top_circle_radius: float = 110.0,
     junction_spec: ComponentSpec = squid_junction_long,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_metal_top: LayerSpec = LAYER.M2_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
@@ -353,7 +362,8 @@ def flipmon_with_bbox(
         outer_ring_width: Width of the outer circular capacitor pad in μm.
         top_circle_radius: Central radius of the top circular capacitor pad in μm.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or rotation in
+            degrees about the ring center, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_metal_top: Layer for the other metal layer pad for flip-chip.
         layer_etch: Layer for the M1 etched bounding box.
@@ -402,7 +412,7 @@ def xmon_transmon(
     arm_lengths: tuple[float, float, float, float] = (160.0, 120.0, 160.0, 120.0),
     gap_width: float = 10.0,
     junction_spec: ComponentSpec = squid_junction,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
 ) -> Component:
@@ -441,7 +451,8 @@ def xmon_transmon(
             Computed from center to end of each arm.
         gap_width: Width of the etched gap around arms in μm.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or rotation in
+            degrees about the ring center, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_etch: Layer for the etched regions.
 
