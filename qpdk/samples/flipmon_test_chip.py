@@ -8,7 +8,7 @@ from gdsfactory.read import from_yaml
 YAML_SAMPLE = Path(__file__).parent / "flipmon_test_chip.pic.yml"
 
 
-@gf.cell
+@gf.cell(tags=["samples", "qubits", "flip-chip"])
 def flipmon_test_chip() -> gf.Component:
     """Layout of the flipmon test chip, read from its ``.pic.yml`` netlist.
 

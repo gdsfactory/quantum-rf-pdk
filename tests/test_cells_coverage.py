@@ -1,6 +1,9 @@
 """Tests for qpdk.cells module - covering missing lines."""
 
+from collections.abc import Callable
+
 import pytest
+from hypothesis import given, settings, strategies as st
 from klayout.db import DCplxTrans
 
 from qpdk.cells.capacitor import (
@@ -9,7 +12,12 @@ from qpdk.cells.capacitor import (
     plate_capacitor_single,
 )
 from qpdk.cells.snspd import snspd
-from qpdk.cells.transmon import double_pad_transmon, flipmon_with_bbox, xmon_transmon
+from qpdk.cells.transmon import (
+    double_pad_transmon,
+    flipmon,
+    flipmon_with_bbox,
+    xmon_transmon,
+)
 
 
 class TestInterdigitalCapacitorValidation:
@@ -104,3 +112,20 @@ class TestTransmonJunctionDisplacement:
         c = xmon_transmon(junction_displacement=displacement)
         assert c is not None
         assert c.info["qubit_type"] == "xmon"
+
+
+@pytest.mark.parametrize("factory", [double_pad_transmon, flipmon, xmon_transmon])
+@given(
+    angle=st.floats(
+        min_value=-360,
+        max_value=360,
+        allow_nan=False,
+        allow_infinity=False,
+    )
+)
+@settings(max_examples=10, deadline=None)
+def test_transmon_accepts_numeric_junction_rotation(
+    factory: Callable[..., object], angle: float
+) -> None:
+    """Accept serializable rotation angles across public transmon factories."""
+    assert factory(junction_displacement=angle) is not None

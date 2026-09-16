@@ -82,7 +82,11 @@ def double_pad_transmon(
     # Center the junction between the pads
     junction_ref.dcenter = c.dcenter  # move((-junction_height / 2, 0))
     if junction_displacement:
-        junction_ref.transform(junction_displacement)
+        junction_ref.transform(
+            junction_displacement
+            if isinstance(junction_displacement, DCplxTrans)
+            else DCplxTrans(1, junction_displacement, False)
+        )
 
     # Add ports for easy reference
     ports_config = [
@@ -119,7 +123,7 @@ def double_pad_transmon(
         {
             "name": "junction",
             "center": junction_ref.dcenter,
-            "width": junction_ref.size_info.height,
+            "width": gf.snap.snap_to_grid(junction_ref.size_info.height, grid_factor=2),
             "orientation": 90,
             "layer": LAYER.JJ_AREA,
             "port_type": "placement",
@@ -328,7 +332,7 @@ def flipmon(
     c.add_port(
         name="junction",
         center=junction_ref.dcenter,
-        width=junction_ref.size_info.height,
+        width=gf.snap.snap_to_grid(junction_ref.size_info.height, grid_factor=2),
         orientation=90,
         layer=LAYER.JJ_AREA,
         port_type="placement",
@@ -517,7 +521,11 @@ def xmon_transmon(
     junction_ref.rotate(-45)
     junction_ref.dcenter = (0, c.ymin + gap_width / 2)
     if junction_displacement:
-        junction_ref.transform(junction_displacement)
+        junction_ref.transform(
+            junction_displacement
+            if isinstance(junction_displacement, DCplxTrans)
+            else DCplxTrans(1, junction_displacement, False)
+        )
 
     # Add ports at the ends of each arm for connectivity
     for name, width, center, orientation in zip(
@@ -543,7 +551,7 @@ def xmon_transmon(
     c.add_port(
         name="junction",
         center=junction_ref.dcenter,
-        width=junction_ref.size_info.height,
+        width=gf.snap.snap_to_grid(junction_ref.size_info.height, grid_factor=2),
         orientation=90,
         layer=LAYER.JJ_AREA,
         port_type="placement",

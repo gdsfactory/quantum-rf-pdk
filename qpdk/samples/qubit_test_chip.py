@@ -10,7 +10,7 @@ import gdsfactory as gf
 GSCH_SAMPLE = Path(__file__).parent / "qubit_test_chip.gsch"
 
 
-@gf.cell
+@gf.cell(tags=["samples", "qubits"])
 def qubit_test_chip() -> gf.Component:
     """Layout of the qubit test chip, built from its ``.gsch`` schematic.
 

@@ -8,7 +8,7 @@ from gdsfactory.read import from_yaml
 YAML_SAMPLE = Path(__file__).parent / "resonator_test_chip_yaml.pic.yml"
 
 
-@gf.cell
+@gf.cell(tags=["samples", "resonators"])
 def resonator_test_chip_yaml() -> gf.Component:
     """Layout of the resonator test chip, read from its ``.pic.yml`` netlist.
 
