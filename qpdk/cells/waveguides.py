@@ -215,7 +215,7 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     return c
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(tags=("waveguides", "bend", "euler"))
 def bend_euler(
     angle: float = 90.0,
     p: float = 0.5,
@@ -250,7 +250,9 @@ def bend_euler(
     )
 
 
-@gf.cell(tags=("waveguides",), schematic_function=bend_circular_schematic)
+@gf.cell(
+    tags=("waveguides", "bend", "circular"), schematic_function=bend_circular_schematic
+)
 def bend_circular(
     angle: float = 90.0,
     radius: float = 100.0,
@@ -298,7 +300,7 @@ def bend_circular(
 bend_circular.schematic_function = bend_circular_schematic
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(tags=("waveguides", "bend", "s"))
 def bend_s(
     size: Size = (20.0, 3.0),
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
