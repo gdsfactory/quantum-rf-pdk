@@ -277,6 +277,13 @@ primary tooling lives in another environment.
       - External integration
       - MATLAB, jupyter-matlab-proxy
 
+************
+ References
+************
+
+.. bibliography::
+    :filter: docname in docnames
+
 .. toctree::
     :hidden:
     :glob:
