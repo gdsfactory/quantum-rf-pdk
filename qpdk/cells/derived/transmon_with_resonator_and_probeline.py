@@ -313,46 +313,14 @@ double_pad_transmon_with_resonator_and_probeline = partial(
 )
 
 
-@gf.cell(tags=("qubits", "flipmons", "resonators", "couplers"))
-def flipmon_with_resonator_and_probeline(
-    qubit: ComponentSpec = "flipmon_with_bbox",
-    resonator: ComponentSpec = partial(
-        resonator_quarter_wave_bend_start, length=4000, meanders=6
-    ),
-    resonator_meander_start: tuple[float, float] = (-900, -1200),
-    resonator_length: float = 5000.0,
-    resonator_meanders: int = 5,
-    resonator_bend_spec: ComponentSpec = "bend_circular",
-    resonator_cross_section: CrossSectionSpec = "cpw",
-    resonator_open_start: bool = False,
-    resonator_open_end: bool = True,
-    coupler: ComponentSpec = partial(plate_capacitor_single, width=10, length=58),
-    qubit_rotation: float = -90,
-    coupler_port: str = "outer_ring_outside",
-    coupler_offset: tuple[float, float] = (-10, 0),
-    probeline_coupler: ComponentSpec = coupler_straight,
-    probeline_coupling_gap: float = 16.0,
-    probeline_coupling_length: float | None = None,
-) -> Component:
-    """Return a Flipmon coupled to a quarter-wave resonator and a probeline."""
-    return transmon_with_resonator_and_probeline(
-        qubit=qubit,
-        resonator=resonator,
-        resonator_meander_start=resonator_meander_start,
-        resonator_length=resonator_length,
-        resonator_meanders=resonator_meanders,
-        resonator_bend_spec=resonator_bend_spec,
-        resonator_cross_section=resonator_cross_section,
-        resonator_open_start=resonator_open_start,
-        resonator_open_end=resonator_open_end,
-        coupler=coupler,
-        qubit_rotation=qubit_rotation,
-        coupler_port=coupler_port,
-        coupler_offset=coupler_offset,
-        probeline_coupler=probeline_coupler,
-        probeline_coupling_gap=probeline_coupling_gap,
-        probeline_coupling_length=probeline_coupling_length,
-    )
+flipmon_with_resonator_and_probeline = partial(
+    transmon_with_resonator_and_probeline,
+    qubit="flipmon_with_bbox",
+    coupler=partial(plate_capacitor_single, width=10, length=58),
+    qubit_rotation=-90,
+    coupler_port="outer_ring_outside",
+    coupler_offset=(-10, 0),
+)
 
 
 double_pad_transmon_with_resonator = partial(

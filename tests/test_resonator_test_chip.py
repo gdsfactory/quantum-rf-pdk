@@ -259,6 +259,34 @@ def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
     assert np.linalg.svd(matrix, compute_uv=False).max() <= 1 + 1e-6
 
 
+def test_resonator_test_chip_has_distinct_resonances() -> None:
+    """Regression for issue #678: each probeline must show distinct resonances.
+
+    Exercises the netlist-driven ``resonator_test_chip_python`` SAX model
+    directly (see #796), so a hierarchy-flattening regression that collapses
+    the 16 distinct resonator lengths back into one merged resonance would be
+    caught here too.
+    """
+    frequencies = np.linspace(4e9, 10e9, 4001)
+    s_params = resonator_test_chip_python_model(f=frequencies)
+
+    for probe_ports in (("o1", "o2"), ("o3", "o4")):
+        s21_db = 20 * np.log10(np.abs(np.asarray(s_params[probe_ports])) + 1e-30)
+        # Resonance dips: local minima below a threshold (<= on one side is
+        # robust to flat minima from finite floating-point precision).
+        dips = [
+            index
+            for index in range(1, len(s21_db) - 1)
+            if s21_db[index] <= s21_db[index - 1]
+            and s21_db[index] < s21_db[index + 1]
+            and s21_db[index] < -0.3
+        ]
+        # Eight resonators per probeline; all should resolve distinctly.
+        assert len(dips) == 8, (
+            f"Probeline {probe_ports}: expected 8 distinct resonances, got {len(dips)}"
+        )
+
+
 def test_resonator_test_chip_yaml_has_top_level_sax_model() -> None:
     """Keep the YAML sample usable via its registered SAX model."""
     assert models["resonator_test_chip_yaml"] is resonator_test_chip_yaml

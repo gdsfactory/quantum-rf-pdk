@@ -406,7 +406,6 @@ def test_server_indexes_qpdk_cells(gfp_server: GfpServer) -> None:
         factory.get("qualified_name") for factory in resp["result"]["factories"]
     ]
     for expected in (
-        "qpdk.cells.derived.transmon_with_resonator_and_probeline.flipmon_with_resonator_and_probeline",
         "qpdk.cells.transmon.double_pad_transmon",
         "qpdk.cells.resonator.quarter_wave_resonator_coupled",
     ):
