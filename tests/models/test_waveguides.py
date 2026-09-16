@@ -3,11 +3,13 @@
 from typing import final
 
 import hypothesis.strategies as st
+import jax
 import jax.numpy as jnp
 import pytest
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
+from qpdk.cells.waveguides import bend_s as bend_s_cell
 from qpdk.models.waveguides import (
     airbridge,
     bend_circular,
@@ -26,6 +28,7 @@ from qpdk.tech import coplanar_waveguide
 from .base import TwoPortModelTestSuite
 
 MAX_EXAMPLES = 20
+_compiled_bend_s = jax.jit(bend_s)
 
 
 @final
@@ -152,6 +155,21 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         )
 
 
+@pytest.mark.parametrize("width", [5.0, 15.0])
+def test_straight_width_override_matches_cross_section(width: float) -> None:
+    """Treat a layout width override as the equivalent CPW geometry."""
+    frequencies = jnp.array([4e9, 8e9])
+    overridden = straight(f=frequencies, length=1_000, width=width)
+    equivalent = straight(
+        f=frequencies,
+        length=1_000,
+        cross_section=coplanar_waveguide(width=width, gap=6),
+    )
+
+    for key in overridden:
+        assert_allclose(overridden[key], equivalent[key], rtol=1e-6, atol=1e-12)
+
+
 @final
 class TestStraightOpen(TwoPortModelTestSuite):
     """Tests for straight_open model."""
@@ -227,6 +245,72 @@ class TestBendS(TwoPortModelTestSuite):
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
+
+
+@given(
+    dx=st.floats(min_value=100, max_value=2_000),
+    bend_case=st.one_of(
+        st.tuples(st.just(0.0), st.integers(min_value=0, max_value=2)),
+        st.tuples(
+            st.one_of(
+                st.floats(min_value=-500, max_value=-1),
+                st.floats(min_value=1, max_value=500),
+            ),
+            st.integers(min_value=3, max_value=199),
+        ),
+    ),
+    width_dbu=st.integers(min_value=1_000, max_value=15_000),
+    frequency=st.floats(min_value=1e9, max_value=12e9),
+)
+@settings(max_examples=10, deadline=None)
+def test_bend_s_serialized_settings_set_physical_length(
+    dx: float,
+    bend_case: tuple[float, int],
+    width_dbu: int,
+    frequency: float,
+) -> None:
+    """Consume the layout factory's serialized settings directly."""
+    frequencies = jnp.array([frequency])
+    dy, npoints = bend_case
+    width = width_dbu * 0.002
+    layout = bend_s_cell(
+        size=(dx, dy),
+        npoints=npoints,
+        width=width,
+        allow_min_radius_violation=True,
+    )
+
+    serialized_npoints = jnp.asarray(npoints, dtype=float)
+    from_size = _compiled_bend_s(
+        f=frequencies,
+        size=(dx, dy),
+        npoints=serialized_npoints,
+        width=width,
+    )
+    from_length = bend_s(
+        f=frequencies,
+        length=layout.info["length"],
+        width=width,
+    )
+
+    for key in from_size:
+        assert_allclose(from_size[key], from_length[key], rtol=1e-6, atol=1e-12)
+
+
+@pytest.mark.parametrize("npoints", [0, 1, 2])
+def test_bend_s_zero_offset_uses_straight_shortcut(npoints: int) -> None:
+    """Match gdsfactory's zero-offset shortcut for every accepted point count."""
+    frequencies = jnp.array([5e9])
+    layout = bend_s_cell(size=(100, 0), npoints=npoints)
+    from_size = _compiled_bend_s(
+        f=frequencies,
+        size=(100, 0),
+        npoints=jnp.asarray(npoints, dtype=float),
+    )
+    from_length = bend_s(f=frequencies, length=layout.info["length"])
+
+    for key in from_size:
+        assert_allclose(from_size[key], from_length[key], rtol=1e-6, atol=1e-12)
 
 
 @final

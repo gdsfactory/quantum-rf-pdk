@@ -10,6 +10,7 @@ from klayout.db import DCplxTrans
 from qpdk import tech
 from qpdk.cells._schematic import (
     bend_circular_schematic,
+    bend_s_schematic,
     straight_schematic,
 )
 from qpdk.logger import logger
@@ -300,9 +301,13 @@ def bend_circular(
 bend_circular.schematic_function = bend_circular_schematic
 
 
-@gf.cell(tags=("waveguides", "bend", "s"))
+@gf.cell(
+    tags=("waveguides", "bend", "s"),
+    schematic_function=bend_s_schematic,
+)
 def bend_s(
     size: Size = (20.0, 3.0),
+    npoints: int = 99,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
     width: float | None = None,
     allow_min_radius_violation: bool = True,
@@ -315,6 +320,7 @@ def bend_s(
 
     Args:
         size: Tuple of (length, offset) for the S bend in μm.
+        npoints: Number of points used to discretize the Bézier curve.
         cross_section: Cross-section specification.
         width: Optional width override in μm.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
@@ -322,11 +328,15 @@ def bend_s(
     """
     return gf.c.bend_s(
         size=size,
+        npoints=npoints,
         cross_section=cross_section,
         width=width,
         allow_min_radius_violation=allow_min_radius_violation,
         **kwargs,
     )
+
+
+bend_s.schematic_function = bend_s_schematic
 
 
 coupler_straight = partial(gf.c.coupler_straight, cross_section="cpw", gap=16)
