@@ -62,10 +62,8 @@ PIC_YAML_FACTORIES = (
 )
 
 #: Checked-in Nyancir sample schematics that must build without dropped nets.
-GSCH_SAMPLES = (
-    "qubit_test_chip.gsch",
-    "flipmon_test_chip.gsch",
-    "resonator_test_chip_yaml.gsch",
+GSCH_SAMPLES = tuple(
+    path.name for path in sorted((PROJECT_ROOT / "qpdk/samples").glob("*.gsch"))
 )
 
 #: Well-known qpdk cells that must appear in the generated nyanlib.
