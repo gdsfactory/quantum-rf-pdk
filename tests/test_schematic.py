@@ -32,6 +32,7 @@ from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
     straight_schematic,
 )
+from qpdk.models import models as sax_models
 
 
 def _get_schematic(cell: Any) -> DSchematic | None:
@@ -166,6 +167,8 @@ def test_sax_model_descriptors_resolve_from_the_pdk_registry() -> None:
 def test_sax_model_aliases(alias: str, model_name: str) -> None:
     """Resolve aliased cells to the intended registered model."""
     assert PDK.models is not None
+    assert alias not in sax_models
+    assert model_name in sax_models
     assert alias in PDK.cells
     assert PDK.models[alias] is PDK.models[model_name]
 

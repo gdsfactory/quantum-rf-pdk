@@ -43,12 +43,6 @@ def _add_sax_model_aliases(
     models: Mapping[str, Callable[..., Any]],
 ) -> dict[str, Callable[..., Any]]:
     registered = dict(models)
-    if collisions := registered.keys() & SAX_MODEL_ALIASES.keys():
-        raise ValueError(f"SAX model aliases already registered: {sorted(collisions)}")
-    if missing := set(SAX_MODEL_ALIASES.values()) - registered.keys():
-        raise ValueError(
-            f"SAX model alias targets are not registered: {sorted(missing)}"
-        )
     registered.update({
         alias: registered[model_name] for alias, model_name in SAX_MODEL_ALIASES.items()
     })
