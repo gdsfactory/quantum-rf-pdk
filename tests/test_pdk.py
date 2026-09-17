@@ -43,7 +43,10 @@ skip_test = {
     "die_with_pads",
     "transform_component",
     # Registered for schematic-editor lookup; sample behavior is tested separately.
+    "flipmon_test_chip",
+    "qubit_test_chip",
     "resonator_test_chip_python",
+    "resonator_test_chip_yaml",
     "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
 }
 cell_names = cells.keys() - skip_test

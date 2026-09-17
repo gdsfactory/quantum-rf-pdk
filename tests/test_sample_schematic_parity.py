@@ -4,16 +4,17 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
+import gdsfactory as gf
 import pytest
 import yaml
 
+from qpdk import PDK
+
 SAMPLE_DIR = Path(__file__).parents[1] / "qpdk/samples"
+SAMPLE_STEMS = tuple(path.stem for path in sorted(SAMPLE_DIR.glob("*.gsch")))
 
 
-@pytest.mark.parametrize(
-    "stem",
-    ["flipmon_test_chip", "qubit_test_chip", "resonator_test_chip_yaml"],
-)
+@pytest.mark.parametrize("stem", SAMPLE_STEMS)
 def test_gsch_matches_pic_yml(stem: str) -> None:
     """Keep each Mosaic schematic in sync with its declarative netlist."""
     yaml_document = yaml.safe_load((SAMPLE_DIR / f"{stem}.pic.yml").read_text())
@@ -60,3 +61,11 @@ def test_gsch_matches_pic_yml(stem: str) -> None:
             "component_id": instance,
             "port_name": port,
         }
+
+
+@pytest.mark.parametrize("stem", SAMPLE_STEMS)
+def test_sample_resolves_from_pdk(stem: str) -> None:
+    """Resolve every checked-in schematic sample by its short name."""
+    PDK.activate()
+
+    assert gf.get_component(stem).name == stem
