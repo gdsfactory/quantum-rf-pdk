@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import operator
 from functools import partial, reduce
 
@@ -21,6 +22,31 @@ from qpdk.utils import (
 )
 
 
+def _transform_junction(
+    junction_ref: gf.ComponentReference,
+    displacement: DCplxTrans | float | None,
+    port_orientation: float = 90.0,
+) -> float:
+    """Transform a junction and return its placement-port orientation."""
+    if displacement is None:
+        return port_orientation % 360
+
+    if isinstance(displacement, DCplxTrans):
+        transform = displacement
+    else:
+        center = junction_ref.dcenter
+        transform = (
+            DCplxTrans(1, 0, False, *center)
+            * DCplxTrans(1, displacement, False)
+            * DCplxTrans(1, 0, False, -center[0], -center[1])
+        )
+
+    junction_ref.transform(transform)
+    angle = math.radians(port_orientation)
+    direction = transform * kdb.DVector(math.cos(angle), math.sin(angle))
+    return math.degrees(math.atan2(direction.y, direction.x)) % 360
+
+
 @gf.cell(
     check_instances=False,
     tags=("qubits", "transmons"),
@@ -30,7 +56,7 @@ def double_pad_transmon(
     pad_size: tuple[float, float] = (250.0, 400.0),
     pad_gap: float = 15.0,
     junction_spec: ComponentSpec = squid_junction,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
 ) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction.
@@ -53,7 +79,8 @@ def double_pad_transmon(
         pad_size: (width, height) of each capacitor pad in μm.
         pad_gap: Gap between the two capacitor pads in μm.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or in-place
+            rotation in degrees, to apply to the junction.
         layer_metal: Layer for the metal pads.
 
     Returns:
@@ -80,8 +107,7 @@ def double_pad_transmon(
     junction_ref.rotate(45)
     # Center the junction between the pads
     junction_ref.dcenter = c.dcenter  # move((-junction_height / 2, 0))
-    if junction_displacement:
-        junction_ref.transform(junction_displacement)
+    junction_orientation = _transform_junction(junction_ref, junction_displacement)
 
     # Add ports for easy reference
     ports_config = [
@@ -118,8 +144,8 @@ def double_pad_transmon(
         {
             "name": "junction",
             "center": junction_ref.dcenter,
-            "width": junction_ref.size_info.height,
-            "orientation": 90,
+            "width": gf.snap.snap_to_grid(junction_ref.size_info.height, grid_factor=2),
+            "orientation": junction_orientation,
             "layer": LAYER.JJ_AREA,
             "port_type": "placement",
         },
@@ -142,7 +168,7 @@ def double_pad_transmon_with_bbox(
     pad_size: tuple[float, float] = (250.0, 400.0),
     pad_gap: float = 15.0,
     junction_spec: ComponentSpec = squid_junction,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
 ) -> Component:
@@ -155,7 +181,8 @@ def double_pad_transmon_with_bbox(
         pad_size: (width, height) of each capacitor pad in μm.
         pad_gap: Gap between the two capacitor pads in μm.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or in-place
+            rotation in degrees, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_etch: Layer for the etched bounding box.
 
@@ -206,9 +233,10 @@ def flipmon(
     outer_ring_width: float = 60.0,
     top_circle_radius: float = 110.0,
     junction_spec: ComponentSpec = squid_junction_long,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_metal_top: LayerSpec = LAYER.M2_DRAW,
+    junction_position_rotation: float = 0.0,
 ) -> Component:
     """Creates a circular transmon qubit with `flipmon` geometry.
 
@@ -238,9 +266,12 @@ def flipmon(
         top_circle_radius: Central radius of the top circular capacitor pad in μm.
             There is no separate width as the filled circle is not a ring.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or in-place
+            rotation in degrees, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_metal_top: Layer for the other metal layer pad for flip-chip.
+        junction_position_rotation: Rotation in degrees about the ring center,
+            relocating the junction around the ring.
 
     Returns:
         Component: A gdsfactory component with the circular transmon geometry.
@@ -274,9 +305,12 @@ def flipmon(
         ),
     )
     junction_ref.y = 0
-
-    if junction_displacement:
-        junction_ref.transform(junction_displacement)
+    junction_ref.rotate(junction_position_rotation, center=c.dcenter)
+    junction_orientation = _transform_junction(
+        junction_ref,
+        junction_displacement,
+        port_orientation=90 + junction_position_rotation,
+    )
 
     # Create top circular pad for flip-chip
     top_circle = gf.components.circle(
@@ -319,8 +353,8 @@ def flipmon(
     c.add_port(
         name="junction",
         center=junction_ref.dcenter,
-        width=junction_ref.size_info.height,
-        orientation=90,
+        width=gf.snap.snap_to_grid(junction_ref.size_info.height, grid_factor=2),
+        orientation=junction_orientation,
         layer=LAYER.JJ_AREA,
         port_type="placement",
     )
@@ -335,13 +369,14 @@ def flipmon_with_bbox(
     outer_ring_width: float = 60.0,
     top_circle_radius: float = 110.0,
     junction_spec: ComponentSpec = squid_junction_long,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_metal_top: LayerSpec = LAYER.M2_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
     layer_etch_top: LayerSpec = LAYER.M2_ETCH,
     m1_etch_extension_gap: float = 30.0,
     m2_etch_extension_gap: float = 40.0,
+    junction_position_rotation: float = 0.0,
 ) -> Component:
     """Creates a circular transmon qubit with `flipmon` geometry and a circular etched bounding box.
 
@@ -353,13 +388,16 @@ def flipmon_with_bbox(
         outer_ring_width: Width of the outer circular capacitor pad in μm.
         top_circle_radius: Central radius of the top circular capacitor pad in μm.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or in-place
+            rotation in degrees, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_metal_top: Layer for the other metal layer pad for flip-chip.
         layer_etch: Layer for the M1 etched bounding box.
         layer_etch_top: Layer for the M2 etched bounding box.
         m1_etch_extension_gap: Radius extension length for the M1 etch bounding box in μm.
         m2_etch_extension_gap: Radius extension length for the M2 etch bounding box in μm.
+        junction_position_rotation: Rotation in degrees about the ring center,
+            relocating the junction around the ring.
 
     Returns:
         Component: A gdsfactory component with the flipmon geometry and etched box.
@@ -372,6 +410,7 @@ def flipmon_with_bbox(
         top_circle_radius=top_circle_radius,
         junction_spec=junction_spec,
         junction_displacement=junction_displacement,
+        junction_position_rotation=junction_position_rotation,
         layer_metal=layer_metal,
         layer_metal_top=layer_metal_top,
     )
@@ -402,7 +441,7 @@ def xmon_transmon(
     arm_lengths: tuple[float, float, float, float] = (160.0, 120.0, 160.0, 120.0),
     gap_width: float = 10.0,
     junction_spec: ComponentSpec = squid_junction,
-    junction_displacement: DCplxTrans | None = None,
+    junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
 ) -> Component:
@@ -441,7 +480,8 @@ def xmon_transmon(
             Computed from center to end of each arm.
         gap_width: Width of the etched gap around arms in μm.
         junction_spec: Component specification for the Josephson junction component.
-        junction_displacement: Optional complex transformation to apply to the junction.
+        junction_displacement: Optional complex transformation, or in-place
+            rotation in degrees, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_etch: Layer for the etched regions.
 
@@ -505,8 +545,7 @@ def xmon_transmon(
     junction_ref = c.add_ref(gf.get_component(junction_spec))
     junction_ref.rotate(-45)
     junction_ref.dcenter = (0, c.ymin + gap_width / 2)
-    if junction_displacement:
-        junction_ref.transform(junction_displacement)
+    junction_orientation = _transform_junction(junction_ref, junction_displacement)
 
     # Add ports at the ends of each arm for connectivity
     for name, width, center, orientation in zip(
@@ -532,8 +571,8 @@ def xmon_transmon(
     c.add_port(
         name="junction",
         center=junction_ref.dcenter,
-        width=junction_ref.size_info.height,
-        orientation=90,
+        width=gf.snap.snap_to_grid(junction_ref.size_info.height, grid_factor=2),
+        orientation=junction_orientation,
         layer=LAYER.JJ_AREA,
         port_type="placement",
     )

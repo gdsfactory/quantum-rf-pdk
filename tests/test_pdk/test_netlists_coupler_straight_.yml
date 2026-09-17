@@ -12,7 +12,6 @@ instances:
       cross_section: cpw
       length: 10
       npoints: 2
-      width: null
   straight2:
     component: straight
     info:
@@ -26,7 +25,6 @@ instances:
       cross_section: cpw
       length: 10
       npoints: 2
-      width: null
 nets: []
 placements:
   straight:

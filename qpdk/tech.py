@@ -474,25 +474,63 @@ strip = strip_metal = microstrip
 # Routing functions
 ############################
 
+
+def _route_cross_section(
+    cross_section: CrossSectionSpec, width: float | None
+) -> CrossSectionSpec:
+    """Fold the router's separate width into the cross-section specification."""
+    if width is None or width == gf.get_cross_section(cross_section).width:
+        return cross_section
+    if isinstance(cross_section, str):
+        return {"cross_section": cross_section, "settings": {"width": width}}
+    if callable(cross_section) and hasattr(cross_section, "__name__"):
+        return {
+            "cross_section": cross_section.__name__,
+            "settings": {"width": width},
+        }
+    if isinstance(cross_section, dict):
+        settings = {**cross_section.get("settings", {}), "width": width}
+        return {**cross_section, "settings": settings}
+    return gf.get_cross_section(cross_section, width=width)
+
+
+def _route_component(
+    component: str,
+    width: float | None = None,
+    cross_section: CrossSectionSpec = cpw,
+    **settings: Any,
+) -> gf.Component | gf.ComponentAllAngle:
+    """Build a routing cell with width owned by its cross-section."""
+    return gf.get_cell(component)(
+        cross_section=_route_cross_section(cross_section, width),
+        **settings,
+    )
+
+
 route_bundle = route_bundle_cpw = partial(
     gf.routing.route_bundle,
     cross_section=cpw,
-    bend="bend_circular",
+    bend=partial(_route_component, "bend_circular", allow_min_radius_violation=True),
     collision_check_layers=[LAYER.WG],
     on_collision="error",
-    sbend="bend_s",
+    straight=partial(_route_component, "straight"),
+    sbend=partial(_route_component, "bend_s", allow_min_radius_violation=True),
 )
 route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     gf.routing.route_bundle_all_angle,
     cross_section=cpw,
     separation=3,
-    bend="bend_circular_all_angle",
-    straight="straight_all_angle",
+    bend=partial(
+        _route_component,
+        "bend_circular_all_angle",
+        allow_min_radius_violation=True,
+    ),
+    straight=partial(_route_component, "straight_all_angle"),
 )
 route_bundle_sbend = route_bundle_sbend_cpw = partial(
     gf.routing.route_bundle_sbend,
     cross_section=cpw,
-    bend_s="bend_s",
+    bend_s=partial(_route_component, "bend_s", allow_min_radius_violation=True),
 )
 
 routing_strategies = {

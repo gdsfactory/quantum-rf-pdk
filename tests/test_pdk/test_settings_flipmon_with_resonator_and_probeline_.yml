@@ -1,7 +1,7 @@
 info:
   length: 5000
   resonator_type: quarter_wave
-name: transmon_with_resonator_and_probeline_Qflipmon_with_bbo_5718f3ba
+name: transmon_with_resonator_and_probeline_QFflipmon_with_bb_c9bb9429
 ports:
   coupling_o1:
     center:
@@ -24,10 +24,10 @@ ports:
   junction:
     center:
     - 0
-    - -67.416
+    - 67.416
     layer: JJ_AREA
     name: junction
-    orientation: 0
+    orientation: 180
     port_type: placement
     width: 43.912
   o1:
@@ -45,9 +45,9 @@ settings:
   - -10
   - 0
   coupler_port: outer_ring_outside
-  probeline_coupler: Fcoupler_straight_Mgdsfactorypcomponentspcouplerspcoupler_SCScpw_G16
+  probeline_coupler: coupler_straight
   probeline_coupling_gap: 16
-  qubit: flipmon_with_bbox
+  qubit: Fflipmon_with_bbox_Mqpdkpcellsptransmon_SJPR180
   qubit_rotation: -90
   resonator: Fresonator_Mqpdkpcellspresonator_SL4000_M6
   resonator_bend_spec: bend_circular

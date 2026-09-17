@@ -16,7 +16,7 @@
 # %%
 import gdsfactory as gf
 
-from qpdk import cells
+from qpdk import cells, tech
 
 # %% [markdown]
 # ## Sample Function
@@ -29,9 +29,10 @@ from qpdk import cells
 def sample1_connect() -> gf.Component:
     """Returns a component with connected waveguides."""
     c = gf.Component()
-    wg1 = c << cells.straight(length=1, width=1)
-    wg2 = c << cells.straight(length=2, width=1)
-    wg3 = c << cells.straight(length=3, width=1)
+    cross_section = tech.cpw(width=1)
+    wg1 = c << cells.straight(length=1, cross_section=cross_section)
+    wg2 = c << cells.straight(length=2, cross_section=cross_section)
+    wg3 = c << cells.straight(length=3, cross_section=cross_section)
 
     wg2.connect(port="o1", other=wg1["o2"])
     wg3.connect(port="o1", other=wg2["o2"])

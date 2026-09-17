@@ -43,7 +43,10 @@ skip_test = {
     "die_with_pads",
     "transform_component",
     # Registered for schematic-editor lookup; sample behavior is tested separately.
+    "flipmon_test_chip",
+    "qubit_test_chip",
     "resonator_test_chip_python",
+    "resonator_test_chip_yaml",
     "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
 }
 cell_names = cells.keys() - skip_test
@@ -186,13 +189,16 @@ def test_yaml_matches_layers():
     assert LAYERS_ACCORDING_TO_YAML == LAYERS_DEFINED
 
 
+standalone_sample_functions = qpdk.get_sample_functions()
+
+
 @pytest.mark.parametrize(
     "sample",
-    list(qpdk.get_sample_functions().values()),
-    ids=list(qpdk.get_sample_functions().keys()),
+    standalone_sample_functions.values(),
+    ids=standalone_sample_functions,
 )
 def test_sample_generates(sample: ComponentFactory):
-    """Test that all sample cells generate without errors."""
+    """Test that standalone sample cells generate without errors."""
     result = gf.get_component(sample)
     assert result
     print(f"Successfully ran {sample!r}")

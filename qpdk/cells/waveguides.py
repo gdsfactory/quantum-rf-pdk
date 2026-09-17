@@ -10,6 +10,7 @@ from klayout.db import DCplxTrans
 from qpdk import tech
 from qpdk.cells._schematic import (
     bend_circular_schematic,
+    bend_s_schematic,
     straight_schematic,
 )
 from qpdk.logger import logger
@@ -58,7 +59,6 @@ taper_cross_section = partial(
 def straight(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
-    width: float | None = None,
     npoints: int = 2,
 ) -> gf.Component:
     """Returns a straight waveguide.
@@ -66,12 +66,9 @@ def straight(
     Args:
         length: Length of the straight waveguide in μm.
         cross_section: Cross-section specification.
-        width: Optional width override in μm.
         npoints: Number of points for the waveguide.
     """
-    return gf.c.straight(
-        length=length, cross_section=cross_section, width=width, npoints=npoints
-    )
+    return gf.c.straight(length=length, cross_section=cross_section, npoints=npoints)
 
 
 straight.schematic_function = straight_schematic
@@ -82,7 +79,6 @@ straight_shorted = straight
 def straight_open(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
-    width: float | None = None,
     npoints: int = 2,
 ) -> gf.Component:
     """Returns a straight waveguide with etched gap at one end.
@@ -90,12 +86,11 @@ def straight_open(
     Args:
         length: Length of the straight waveguide in μm.
         cross_section: Cross-section specification.
-        width: Optional width override in μm.
         npoints: Number of points for the waveguide.
     """
     c = gf.Component()
-    straight_ref = c << gf.c.straight(
-        length=length, cross_section=cross_section, width=width, npoints=npoints
+    straight_ref = c << straight(
+        length=length, cross_section=cross_section, npoints=npoints
     )
     c.add_port(port=straight_ref.ports["o1"])
     c.add_port(port=straight_ref.ports["o2"], port_type="placement")
@@ -107,7 +102,6 @@ def straight_open(
 def straight_double_open(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
-    width: float | None = None,
     npoints: int = 2,
 ) -> gf.Component:
     r"""Returns a straight waveguide with etched gaps at both ends.
@@ -118,12 +112,11 @@ def straight_double_open(
     Args:
         length: Length of the straight waveguide in μm.
         cross_section: Cross-section specification.
-        width: Optional width override in μm.
         npoints: Number of points for the waveguide.
     """
     c = gf.Component()
     straight_ref = c << straight_open(
-        length=length, cross_section=cross_section, width=width, npoints=npoints
+        length=length, cross_section=cross_section, npoints=npoints
     )
     c.add_port(port=straight_ref.ports["o1"], port_type="placement")
     c.add_port(port=straight_ref.ports["o2"], port_type="placement")
@@ -215,7 +208,7 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     return c
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(tags=("waveguides", "bend", "euler"))
 def bend_euler(
     angle: float = 90.0,
     p: float = 0.5,
@@ -250,13 +243,14 @@ def bend_euler(
     )
 
 
-@gf.cell(tags=("waveguides",), schematic_function=bend_circular_schematic)
+@gf.cell(
+    tags=("waveguides", "bend", "circular"), schematic_function=bend_circular_schematic
+)
 def bend_circular(
     angle: float = 90.0,
     radius: float = 100.0,
     npoints: int | None = None,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
-    width: float | None = None,
     allow_min_radius_violation: bool = True,
     **kwargs,
 ) -> gf.Component:
@@ -270,7 +264,6 @@ def bend_circular(
         radius: Radius of the bend in μm.
         npoints: Number of points for the bend (optional, cannot be used with angular_step).
         cross_section: Cross-section specification.
-        width: Optional width override in μm.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
         **kwargs: Additional arguments passed to gf.c.bend_circular (e.g., angular_step).
     """
@@ -289,7 +282,6 @@ def bend_circular(
         radius=radius,
         npoints=npoints,
         cross_section=cross_section,
-        width=width,
         allow_min_radius_violation=allow_min_radius_violation,
         **kwargs,
     )
@@ -298,11 +290,14 @@ def bend_circular(
 bend_circular.schematic_function = bend_circular_schematic
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(
+    tags=("waveguides", "bend", "s"),
+    schematic_function=bend_s_schematic,
+)
 def bend_s(
     size: Size = (20.0, 3.0),
+    npoints: int = 99,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
-    width: float | None = None,
     allow_min_radius_violation: bool = True,
     **kwargs,
 ) -> gf.Component:
@@ -313,21 +308,43 @@ def bend_s(
 
     Args:
         size: Tuple of (length, offset) for the S bend in μm.
+        npoints: Number of points used to discretize the Bézier curve.
         cross_section: Cross-section specification.
-        width: Optional width override in μm.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
         **kwargs: Additional arguments passed to gf.c.bend_s.
     """
     return gf.c.bend_s(
         size=size,
+        npoints=npoints,
         cross_section=cross_section,
-        width=width,
         allow_min_radius_violation=allow_min_radius_violation,
         **kwargs,
     )
 
 
-coupler_straight = partial(gf.c.coupler_straight, cross_section="cpw", gap=16)
+@gf.cell(tags=("waveguides", "couplers"))
+def coupler_straight(
+    length: float = 10,
+    gap: float = 16,
+    cross_section: CrossSectionSpec = "cpw",
+) -> gf.Component:
+    """Return two parallel coupled waveguides.
+
+    Args:
+        length: Coupling length in μm.
+        gap: Edge-to-edge conductor gap in μm.
+        cross_section: Cross-section specification.
+    """
+    component = gf.Component()
+    lower = component << straight(length=length, cross_section=cross_section)
+    upper = component << straight(length=length, cross_section=cross_section)
+    upper.dmovey(gf.get_cross_section(cross_section).width + gap)
+    component.add_ports(lower.ports, prefix="lower_")
+    component.add_ports(upper.ports, prefix="upper_")
+    component.auto_rename_ports()
+    return component
+
+
 coupler_ring = partial(
     gf.c.coupler_ring,
     cross_section="cpw",
@@ -343,7 +360,6 @@ def straight_all_angle(
     length: float = 10.0,
     npoints: int = 2,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
-    width: float | None = None,
 ) -> gf.ComponentAllAngle:
     """Returns a Straight waveguide with offgrid ports.
 
@@ -351,7 +367,6 @@ def straight_all_angle(
         length: Length of the straight waveguide in μm.
         npoints: Number of points for the waveguide.
         cross_section: Cross-section specification.
-        width: Optional width override in μm.
 
     .. code::
 
@@ -359,7 +374,7 @@ def straight_all_angle(
                 length
     """
     return gf.c.straight_all_angle(
-        length=length, npoints=npoints, cross_section=cross_section, width=width
+        length=length, npoints=npoints, cross_section=cross_section
     )
 
 
@@ -371,7 +386,6 @@ def bend_euler_all_angle(
     with_arc_floorplan: bool = True,
     npoints: int | None = None,
     layer: gf.typings.LayerSpec | None = None,
-    width: float | None = None,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
     allow_min_radius_violation: bool = True,
 ) -> gf.ComponentAllAngle:
@@ -384,7 +398,6 @@ def bend_euler_all_angle(
         with_arc_floorplan: Include arc floorplan.
         npoints: Number of points for the bend.
         layer: Layer specification.
-        width: Optional width override in μm.
         cross_section: Cross-section specification.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
     """
@@ -395,7 +408,6 @@ def bend_euler_all_angle(
         with_arc_floorplan=with_arc_floorplan,
         npoints=npoints,
         layer=layer,
-        width=width,
         cross_section=cross_section,
         allow_min_radius_violation=allow_min_radius_violation,
     )
@@ -407,7 +419,6 @@ def bend_circular_all_angle(
     angle: float = 90.0,
     npoints: int | None = None,
     layer: gf.typings.LayerSpec | None = None,
-    width: float | None = None,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
     allow_min_radius_violation: bool = True,
 ) -> gf.ComponentAllAngle:
@@ -418,7 +429,6 @@ def bend_circular_all_angle(
         angle: Angle of the bend in degrees.
         npoints: Number of points for the bend.
         layer: Layer specification.
-        width: Optional width override in μm.
         cross_section: Cross-section specification.
         allow_min_radius_violation: Allow radius smaller than cross-section radius.
     """
@@ -427,7 +437,6 @@ def bend_circular_all_angle(
         angle=angle,
         npoints=npoints,
         layer=layer,
-        width=width,
         cross_section=cross_section,
         allow_min_radius_violation=allow_min_radius_violation,
     )

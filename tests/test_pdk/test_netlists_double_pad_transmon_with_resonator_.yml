@@ -18,7 +18,6 @@ instances:
       cross_section: coplanar_waveguide
       npoints: null
       radius: 100
-      width: 10
   double_pad_transmon_with_bbox:
     component: double_pad_transmon_with_bbox
     info: {}
@@ -70,7 +69,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 785.5
       npoints: 2
-      width: 10
   straight2:
     component: straight
     info:
@@ -84,7 +82,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 800
       npoints: 2
-      width: 10
 nets:
 - p1: bend_circular,o1
   p2: straight,o1

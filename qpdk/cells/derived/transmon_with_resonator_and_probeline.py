@@ -14,6 +14,7 @@ from qpdk.cells.capacitor import plate_capacitor_single
 from qpdk.cells.resonator import (
     resonator_quarter_wave_bend_start,
 )
+from qpdk.cells.transmon import flipmon_with_bbox
 from qpdk.cells.waveguides import coupler_straight
 from qpdk.helper import show_components
 from qpdk.tech import route_bundle_cpw
@@ -302,7 +303,7 @@ def transmon_with_resonator(
     )
 
 
-# Create specific functions as partials of the general function
+# Create component-specific factory variants.
 double_pad_transmon_with_resonator_and_probeline = partial(
     transmon_with_resonator_and_probeline,
     qubit="double_pad_transmon_with_bbox",
@@ -312,14 +313,17 @@ double_pad_transmon_with_resonator_and_probeline = partial(
     coupler_offset=(-45, 0),
 )
 
+
 flipmon_with_resonator_and_probeline = partial(
     transmon_with_resonator_and_probeline,
-    qubit="flipmon_with_bbox",
+    # Relocate the junction away from the probeline with a serializable setting.
+    qubit=partial(flipmon_with_bbox, junction_position_rotation=180),
     coupler=partial(plate_capacitor_single, width=10, length=58),
     qubit_rotation=-90,
     coupler_port="outer_ring_outside",
     coupler_offset=(-10, 0),
 )
+
 
 double_pad_transmon_with_resonator = partial(
     transmon_with_resonator,

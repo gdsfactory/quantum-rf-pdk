@@ -1,13 +1,17 @@
 """Tests for qpdk.models.waveguides module."""
 
+import inspect
 from typing import final
 
 import hypothesis.strategies as st
+import jax
 import jax.numpy as jnp
 import pytest
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
+from qpdk.cells.waveguides import bend_s as bend_s_cell
+from qpdk.models import waveguides as waveguide_models
 from qpdk.models.waveguides import (
     airbridge,
     bend_circular,
@@ -26,6 +30,7 @@ from qpdk.tech import coplanar_waveguide
 from .base import TwoPortModelTestSuite
 
 MAX_EXAMPLES = 20
+_compiled_bend_s = jax.jit(bend_s, static_argnames=["npoints"])
 
 
 @final
@@ -227,6 +232,90 @@ class TestBendS(TwoPortModelTestSuite):
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
+
+
+@given(
+    dx=st.floats(min_value=100, max_value=2_000),
+    bend_case=st.one_of(
+        st.tuples(st.just(0.0), st.integers(min_value=0, max_value=2)),
+        st.tuples(
+            st.one_of(
+                st.floats(min_value=-500, max_value=-1),
+                st.floats(min_value=1, max_value=500),
+            ),
+            st.integers(min_value=3, max_value=199),
+        ),
+    ),
+    frequency=st.floats(min_value=1e9, max_value=12e9),
+)
+@settings(max_examples=10, deadline=None)
+def test_bend_s_serialized_settings_set_physical_length(
+    dx: float,
+    bend_case: tuple[float, int],
+    frequency: float,
+) -> None:
+    """Consume the layout factory's serialized settings directly."""
+    frequencies = jnp.array([frequency])
+    dy, npoints = bend_case
+    layout = bend_s_cell(
+        size=(dx, dy),
+        npoints=npoints,
+        allow_min_radius_violation=True,
+    )
+
+    from_size = _compiled_bend_s(
+        f=frequencies,
+        size=(dx, dy),
+        npoints=npoints,
+    )
+    from_length = bend_s(
+        f=frequencies,
+        length=layout.info["length"],
+    )
+
+    for key in from_size:
+        assert_allclose(from_size[key], from_length[key], rtol=1e-6, atol=1e-12)
+
+
+@pytest.mark.parametrize("npoints", [0, 1, 2])
+def test_bend_s_zero_offset_uses_straight_shortcut(npoints: int) -> None:
+    """Match gdsfactory's zero-offset shortcut for every accepted point count."""
+    frequencies = jnp.array([5e9])
+    layout = bend_s_cell(size=(100, 0), npoints=npoints)
+    from_size = _compiled_bend_s(
+        f=frequencies,
+        size=(100, 0),
+        npoints=npoints,
+    )
+    from_length = bend_s(f=frequencies, length=layout.info["length"])
+
+    for key in from_size:
+        assert_allclose(from_size[key], from_length[key], rtol=1e-6, atol=1e-12)
+
+
+def test_bend_s_defaults_match_layout_factory() -> None:
+    """Keep geometry defaults aligned with the layout factory."""
+    model_parameters = inspect.signature(bend_s).parameters
+    cell_parameters = inspect.signature(bend_s_cell).parameters
+
+    assert model_parameters["size"].default == cell_parameters["size"].default
+    assert model_parameters["npoints"].default == cell_parameters["npoints"].default
+
+
+def test_bend_s_accepts_serialized_npoints() -> None:
+    """Accept the scalar array emitted by gdsfactoryplus model binding."""
+    result = bend_s(f=jnp.array([5e9]), npoints=jnp.asarray(99.0))
+
+    assert result
+
+
+def test_bend_s_length_supports_reverse_mode_differentiation() -> None:
+    """Keep S-bend geometry differentiable for circuit optimization."""
+    gradient = jax.grad(
+        lambda offset: waveguide_models._bend_s_length((20.0, offset), npoints=99)
+    )(3.0)
+
+    assert jnp.isfinite(gradient)
 
 
 @final

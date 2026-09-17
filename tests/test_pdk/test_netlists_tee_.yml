@@ -41,7 +41,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 6
       npoints: 2
-      width: null
   straight2:
     component: straight
     info:
@@ -55,7 +54,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 6
       npoints: 2
-      width: null
   straight3:
     component: straight
     info:
@@ -69,7 +67,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 6
       npoints: 2
-      width: null
 nets:
 - p1: nxn,o1
   p2: straight,o1

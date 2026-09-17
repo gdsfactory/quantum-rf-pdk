@@ -5,7 +5,7 @@ info:
   route_info_type: coplanar_waveguide
   route_info_weight: 10
   width: 10
-name: straight_all_angle_L10_N2_CScoplanar_waveguide_WNone
+name: straight_all_angle_L10_N2_CScoplanar_waveguide
 ports:
   o1:
     center:

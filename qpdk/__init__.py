@@ -3,7 +3,9 @@
 import importlib
 import inspect
 import pkgutil
+from collections.abc import Callable, Mapping
 from functools import lru_cache, partial
+from typing import Any
 
 import gdsfactory as gf
 from gdsfactory.cross_section import get_cross_sections
@@ -15,7 +17,6 @@ import qpdk.samples
 from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
 from qpdk.logger import logger
-from qpdk.samples.resonator_test_chip import resonator_test_chip_python
 from qpdk.singleton import SingletonMeta
 from qpdk.tech import (
     LAYER,
@@ -27,6 +28,27 @@ from qpdk.tech import (
 
 gf.CONF.layer_error_path = LAYER.ERROR_PATH
 
+# Add a cell factory here when it uses another cell's SAX model unchanged.
+SAX_MODEL_ALIASES = {
+    "resonator_quarter_wave_bend_start": "resonator_quarter_wave",
+    "resonator_quarter_wave_bend_end": "resonator_quarter_wave",
+    "resonator_quarter_wave_bend_both": "resonator_quarter_wave",
+    "resonator_half_wave_bend_start": "resonator_half_wave",
+    "resonator_half_wave_bend_end": "resonator_half_wave",
+    "resonator_half_wave_bend_both": "resonator_half_wave",
+}
+
+
+def _add_sax_model_aliases(
+    models: Mapping[str, Callable[..., Any]],
+) -> dict[str, Callable[..., Any]]:
+    registered = dict(models)
+    registered.update({
+        alias: registered[model_name] for alias, model_name in SAX_MODEL_ALIASES.items()
+    })
+    return registered
+
+
 try:
     from .models import models as _models
 except ImportError as e:
@@ -36,26 +58,9 @@ except ImportError as e:
     )
     _models = {}
 else:
-    _models = dict(_models)
+    _models = _add_sax_model_aliases(_models)
 
-_RESONATOR_TEST_CHIP_QUALNAME = (
-    "qpdk.samples.resonator_test_chip.resonator_test_chip_python"
-)
 _cells = get_cells(cells)
-_cells["resonator_test_chip_python"] = resonator_test_chip_python
-_cells[_RESONATOR_TEST_CHIP_QUALNAME] = resonator_test_chip_python
-if "resonator_test_chip_python" in _models:
-    _models[_RESONATOR_TEST_CHIP_QUALNAME] = _models["resonator_test_chip_python"]
-for variant, model_name in {
-    "resonator_quarter_wave_bend_start": "resonator_quarter_wave",
-    "resonator_quarter_wave_bend_end": "resonator_quarter_wave",
-    "resonator_quarter_wave_bend_both": "resonator_quarter_wave",
-    "resonator_half_wave_bend_start": "resonator_half_wave",
-    "resonator_half_wave_bend_end": "resonator_half_wave",
-    "resonator_half_wave_bend_both": "resonator_half_wave",
-}.items():
-    if model_name in _models:
-        _models[variant] = _models[model_name]
 _cross_sections = get_cross_sections(tech)
 
 
@@ -116,6 +121,7 @@ __all__ = [
     "LAYER_STACK",
     "LAYER_VIEWS",
     "PATH",
+    "SAX_MODEL_ALIASES",
     "cells",
     "config",
     "get_sample_functions",

@@ -1,9 +1,4 @@
-"""Reusable schematic factory for qpdk cells, linked to SAX models.
-
-Mirrors gdsfactory's ``gpdk/_schematic.py`` port-pattern approach and
-IHP's ``s.info["models"]`` SPICE-link pattern, but carries SAX model
-references instead of SPICE.
-"""
+"""Schematic metadata used mainly by gdsfactoryplus to link cells to SAX models."""
 
 from __future__ import annotations
 
@@ -11,6 +6,7 @@ from kfactory.schematic import DSchematic
 
 __all__ = [
     "bend_circular_schematic",
+    "bend_s_schematic",
     "double_pad_transmon_schematic",
     "launcher_schematic",
     "lumped_element_resonator_schematic",
@@ -181,12 +177,32 @@ straight_schematic = schematic(
     symbol="straight",
     tags=["waveguides"],
     ports=_2PORT,
+    models=[
+        sax_model(
+            name="straight",
+            module="qpdk.models.waveguides",
+            port_order=["o1", "o2"],
+        )
+    ],
 )
 
 bend_circular_schematic = schematic(
     symbol="bend_circular",
     tags=["waveguides"],
     ports=_2PORT,
+)
+
+bend_s_schematic = schematic(
+    symbol="bend_s",
+    tags=["waveguides"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="bend_s",
+            module="qpdk.models.waveguides",
+            port_order=["o1", "o2"],
+        )
+    ],
 )
 
 resonator_schematic = schematic(

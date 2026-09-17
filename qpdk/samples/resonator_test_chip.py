@@ -20,7 +20,7 @@ import gdsfactory as gf
 import numpy as np
 
 from qpdk import tech
-from qpdk.cells._schematic import sax_model, schematic
+from qpdk.cells._schematic import schematic
 from qpdk.cells.chip import chip_edge
 from qpdk.cells.launcher import launcher
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
@@ -64,14 +64,6 @@ resonator_test_chip_python_schematic = schematic(
         {"name": "o3", "side": "left", "type": "photonic"},
         {"name": "o2", "side": "right", "type": "photonic"},
         {"name": "o4", "side": "right", "type": "photonic"},
-    ],
-    models=[
-        sax_model(
-            name="resonator_test_chip_python",
-            module="qpdk.models.resonator",
-            qualname="resonator_test_chip_python",
-            port_order=["o1", "o2", "o3", "o4"],
-        )
     ],
 )
 

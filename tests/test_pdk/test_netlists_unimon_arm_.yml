@@ -27,7 +27,6 @@ instances:
       cross_section: cpw
       length: 82.802
       npoints: 2
-      width: null
 nets:
 - p1: resonator,o2
   p2: straight,o1

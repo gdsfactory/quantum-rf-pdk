@@ -8,6 +8,8 @@ Pipfile
 *.so
 *.fsp
 .vscode/
+.claude/
+.codex/
 
 # Distribution / packaging
 .Python

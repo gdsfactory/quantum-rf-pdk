@@ -18,7 +18,6 @@ instances:
       cross_section: cpw
       npoints: null
       radius: 50
-      width: null
   rectangle:
     component: rectangle
     info: {}
@@ -62,7 +61,6 @@ instances:
       cross_section: cpw
       length: 10
       npoints: 2
-      width: null
   straight2:
     component: straight
     info:
@@ -76,7 +74,6 @@ instances:
       cross_section: cpw
       length: 10
       npoints: 2
-      width: null
   straight3:
     component: straight
     info:
@@ -90,7 +87,6 @@ instances:
       cross_section: cpw
       length: 20
       npoints: 2
-      width: null
 nets:
 - p1: bend_circular,o1
   p2: straight,o1

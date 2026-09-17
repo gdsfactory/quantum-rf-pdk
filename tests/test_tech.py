@@ -1,9 +1,17 @@
 """Tests for qpdk.tech module."""
 
+import inspect
+from collections.abc import Callable
+
+import gdsfactory as gf
+import hypothesis.strategies as st
 import pytest
 from gdsfactory.technology import LayerStack
+from hypothesis import given
 
-from qpdk.tech import LAYER_STACK, LAYER_STACK_FLIP_CHIP
+from qpdk.cells import waveguides as waveguide_cells
+from qpdk.models import waveguides as waveguide_models
+from qpdk.tech import LAYER_STACK, LAYER_STACK_FLIP_CHIP, _route_component
 
 # Expected (thickness, zmin) in µm for each level of LAYER_STACK.
 # Written as plain µm numbers (not the ``Xe-9 * 1e6`` idiom used in qpdk/tech.py)
@@ -52,3 +60,50 @@ def test_layer_stack_geometry(
         thickness, zmin = expected[name]
         assert level.thickness == pytest.approx(thickness), name
         assert level.zmin == pytest.approx(zmin), name
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        waveguide_cells.straight,
+        waveguide_cells.straight_open,
+        waveguide_cells.straight_double_open,
+        waveguide_cells.bend_circular,
+        waveguide_cells.bend_s,
+        waveguide_cells.straight_all_angle,
+        waveguide_cells.bend_euler_all_angle,
+        waveguide_cells.bend_circular_all_angle,
+        waveguide_models.straight,
+        waveguide_models.straight_all_angle,
+        waveguide_models.straight_shorted,
+        waveguide_models.straight_open,
+        waveguide_models.straight_double_open,
+        waveguide_models.bend_circular,
+        waveguide_models.bend_circular_all_angle,
+        waveguide_models.bend_euler,
+        waveguide_models.bend_euler_all_angle,
+        waveguide_models.bend_s,
+    ],
+)
+def test_waveguide_width_is_a_cross_section_setting(
+    factory: Callable[..., object],
+) -> None:
+    """Keep width out of the public waveguide cell and model APIs."""
+    assert "width" not in inspect.signature(factory).parameters
+
+
+@given(width_units=st.integers(min_value=500, max_value=10_000))
+def test_routing_width_round_trips_in_cross_section(width_units: int) -> None:
+    """Preserve the routing callback width without a cell-level override."""
+    width = width_units * 0.002
+    component = _route_component(
+        "straight",
+        length=10,
+        width=width,
+        cross_section="coplanar_waveguide",
+    )
+    serialized_settings = component.settings.model_dump()
+
+    assert "width" not in serialized_settings
+    rebuilt = gf.get_component("straight", settings=serialized_settings)
+    assert all(port.width == pytest.approx(width) for port in rebuilt.ports)

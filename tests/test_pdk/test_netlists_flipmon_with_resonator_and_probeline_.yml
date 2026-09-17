@@ -18,7 +18,6 @@ instances:
       cross_section: coplanar_waveguide
       npoints: null
       radius: 100
-      width: 10
   coupler_straight:
     component: coupler_straight
     info: {}
@@ -32,6 +31,7 @@ instances:
     settings:
       inner_circle_radius: 60
       junction_displacement: null
+      junction_position_rotation: 180
       junction_spec: squid_junction_long
       layer_etch: M1_ETCH
       layer_etch_top: M2_ETCH
@@ -80,7 +80,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 943
       npoints: 2
-      width: 10
 nets:
 - p1: bend_circular,o1
   p2: straight,o1

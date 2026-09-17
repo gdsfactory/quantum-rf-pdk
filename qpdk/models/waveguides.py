@@ -5,7 +5,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import sax
-from gdsfactory.typings import CrossSectionSpec
+from gdsfactory.typings import CrossSectionSpec, Size
 from jax.typing import ArrayLike
 from sax.models.rf import (
     coplanar_waveguide as _sax_coplanar_waveguide,
@@ -431,22 +431,50 @@ def bend_euler_all_angle(
     return straight(f=f, length=length, cross_section=cross_section)
 
 
+@partial(jax.jit, static_argnames=["npoints"], inline=True)
+def _bend_s_length(size: Size, npoints: int = 99) -> jax.Array:
+    """Return the layout S-bend length with JAX-compatible operations.
+
+    gdsfactory's path-length helper uses NumPy and cannot be traced by JAX.
+    """
+    dx, dy = size
+    coordinate_dtype = jnp.result_type(dx, dy, jnp.asarray(0.0))
+    dx = jnp.asarray(dx, dtype=coordinate_dtype)
+    dy = jnp.asarray(dy, dtype=coordinate_dtype)
+    t = jnp.linspace(0, 1, npoints, dtype=coordinate_dtype)
+    one_minus_t = 1 - t
+    x = 3 * one_minus_t**2 * t * dx / 2 + 3 * one_minus_t * t**2 * dx / 2 + t**3 * dx
+    y = 3 * one_minus_t * t**2 * dy + t**3 * dy
+    points = jnp.stack((x, y), axis=1)
+    polyline_length = jnp.linalg.norm(jnp.diff(points, axis=0), axis=1).sum()
+
+    return jnp.where(dy == 0, jnp.abs(dx), polyline_length)
+
+
 def bend_s(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float | None = None,
+    size: Size = (20.0, 3.0),
+    npoints: int = 99,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     """S-parameter model for an S-bend, wrapped to :func:`~straight`.
 
     Args:
         f: Array of frequency points in Hz
-        length: Physical length in µm
+        length: Physical length in µm. When omitted, it is derived from ``size``.
+        size: Layout S-bend extent in µm.
+        npoints: Number of points used to discretize the layout Bézier curve.
         cross_section: The cross-section of the waveguide.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section)
+    npoints = int(npoints)
+    physical_length = (
+        _bend_s_length(size, npoints=npoints) if length is None else length
+    )
+    return straight(f=f, length=physical_length, cross_section=cross_section)
 
 
 def rectangle(

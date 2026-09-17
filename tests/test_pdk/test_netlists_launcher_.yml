@@ -12,7 +12,6 @@ instances:
       cross_section: launcher_cross_section_big
       length: 200
       npoints: 2
-      width: null
   taper_cross_section:
     component: taper_cross_section
     info:

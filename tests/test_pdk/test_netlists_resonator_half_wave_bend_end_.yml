@@ -19,7 +19,6 @@ instances:
       cross_section: coplanar_waveguide
       npoints: null
       radius: 100
-      width: null
   bend_circular2:
     component: bend_circular
     info:
@@ -40,7 +39,6 @@ instances:
       cross_section: coplanar_waveguide
       npoints: null
       radius: 100
-      width: null
   bend_circular3:
     component: bend_circular
     info:
@@ -61,7 +59,6 @@ instances:
       cross_section: coplanar_waveguide
       npoints: null
       radius: 100
-      width: null
   bend_circular4:
     component: bend_circular
     info:
@@ -82,7 +79,6 @@ instances:
       cross_section: coplanar_waveguide
       npoints: null
       radius: 100
-      width: null
   bend_circular5:
     component: bend_circular
     info:
@@ -103,7 +99,6 @@ instances:
       cross_section: coplanar_waveguide
       npoints: null
       radius: 100
-      width: null
   bend_circular6:
     component: bend_circular
     info:
@@ -124,7 +119,6 @@ instances:
       cross_section: coplanar_waveguide
       npoints: null
       radius: 100
-      width: null
   rectangle:
     component: rectangle
     info: {}
@@ -164,7 +158,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 352.572
       npoints: 2
-      width: null
   straight2:
     component: straight
     info:
@@ -178,7 +171,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 352.572
       npoints: 2
-      width: null
   straight3:
     component: straight
     info:
@@ -192,7 +184,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 352.572
       npoints: 2
-      width: null
   straight4:
     component: straight
     info:
@@ -206,7 +197,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 352.572
       npoints: 2
-      width: null
   straight5:
     component: straight
     info:
@@ -220,7 +210,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 352.572
       npoints: 2
-      width: null
   straight6:
     component: straight
     info:
@@ -234,7 +223,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 352.572
       npoints: 2
-      width: null
 nets:
 - p1: bend_circular2,o1
   p2: straight5,o2
