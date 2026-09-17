@@ -1,7 +1,10 @@
 """Tests for qpdk.models.waveguides module."""
 
+import inspect
+from collections.abc import Callable
 from typing import final
 
+import gdsfactory as gf
 import hypothesis.strategies as st
 import jax
 import jax.numpy as jnp
@@ -9,11 +12,15 @@ import pytest
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
-from qpdk.cells.waveguides import bend_s as bend_s_cell
+from qpdk.cells.waveguides import bend_s as bend_s_cell, straight as straight_cell
+from qpdk.models import waveguides as waveguide_models
+from qpdk.models.cpw import get_cpw_dimensions
 from qpdk.models.waveguides import (
     airbridge,
     bend_circular,
+    bend_circular_all_angle,
     bend_euler,
+    bend_euler_all_angle,
     bend_s,
     indium_bump,
     nxn,
@@ -28,7 +35,7 @@ from qpdk.tech import coplanar_waveguide
 from .base import TwoPortModelTestSuite
 
 MAX_EXAMPLES = 20
-_compiled_bend_s = jax.jit(bend_s)
+_compiled_bend_s = jax.jit(bend_s, static_argnames=["npoints"])
 
 
 @final
@@ -156,18 +163,54 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
 
 
 @pytest.mark.parametrize("width", [5.0, 15.0])
-def test_straight_width_override_matches_cross_section(width: float) -> None:
-    """Treat a layout width override as the equivalent CPW geometry."""
-    frequencies = jnp.array([4e9, 8e9])
-    overridden = straight(f=frequencies, length=1_000, width=width)
-    equivalent = straight(
-        f=frequencies,
-        length=1_000,
-        cross_section=coplanar_waveguide(width=width, gap=6),
+def test_straight_width_override_uses_extruded_geometry(
+    width: float, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pass the layout's extruded CPW dimensions to the SAX model."""
+    layout = straight_cell(width=width)
+    settings = layout.settings.model_dump()
+    cross_section = gf.get_cross_section(
+        settings["cross_section"], width=settings["width"]
+    )
+    expected_width, expected_gap = get_cpw_dimensions(cross_section)
+    model_settings: dict[str, object] = {}
+
+    def capture_model_settings(**kwargs: object) -> dict[object, object]:
+        model_settings.update(kwargs)
+        return {}
+
+    monkeypatch.setattr(
+        waveguide_models, "_sax_coplanar_waveguide", capture_model_settings
+    )
+    straight(
+        f=jnp.array([5e9]),
+        length=settings["length"],
+        cross_section=settings["cross_section"],
+        width=settings["width"],
     )
 
-    for key in overridden:
-        assert_allclose(overridden[key], equivalent[key], rtol=1e-6, atol=1e-12)
+    assert model_settings["width"] == expected_width
+    assert model_settings["gap"] == expected_gap
+
+
+@pytest.mark.parametrize(
+    "model",
+    [bend_circular, bend_circular_all_angle, bend_euler, bend_euler_all_angle],
+)
+def test_bend_width_override_is_forwarded(
+    model: Callable[..., object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Forward bend width settings to their straight model."""
+    model_settings: dict[str, object] = {}
+
+    def capture_model_settings(**kwargs: object) -> dict[object, object]:
+        model_settings.update(kwargs)
+        return {}
+
+    monkeypatch.setattr(waveguide_models, "straight", capture_model_settings)
+    model(f=jnp.array([5e9]), length=100, width=3.0)
+
+    assert model_settings["width"] == pytest.approx(3.0)
 
 
 @final
@@ -280,11 +323,10 @@ def test_bend_s_serialized_settings_set_physical_length(
         allow_min_radius_violation=True,
     )
 
-    serialized_npoints = jnp.asarray(npoints, dtype=float)
     from_size = _compiled_bend_s(
         f=frequencies,
         size=(dx, dy),
-        npoints=serialized_npoints,
+        npoints=npoints,
         width=width,
     )
     from_length = bend_s(
@@ -305,12 +347,37 @@ def test_bend_s_zero_offset_uses_straight_shortcut(npoints: int) -> None:
     from_size = _compiled_bend_s(
         f=frequencies,
         size=(100, 0),
-        npoints=jnp.asarray(npoints, dtype=float),
+        npoints=npoints,
     )
     from_length = bend_s(f=frequencies, length=layout.info["length"])
 
     for key in from_size:
         assert_allclose(from_size[key], from_length[key], rtol=1e-6, atol=1e-12)
+
+
+def test_bend_s_defaults_match_layout_factory() -> None:
+    """Keep geometry defaults aligned with the layout factory."""
+    model_parameters = inspect.signature(bend_s).parameters
+    cell_parameters = inspect.signature(bend_s_cell).parameters
+
+    assert model_parameters["size"].default == cell_parameters["size"].default
+    assert model_parameters["npoints"].default == cell_parameters["npoints"].default
+
+
+def test_bend_s_accepts_serialized_npoints() -> None:
+    """Accept the scalar array emitted by gdsfactoryplus model binding."""
+    result = bend_s(f=jnp.array([5e9]), npoints=jnp.asarray(99.0))
+
+    assert result
+
+
+def test_bend_s_length_supports_reverse_mode_differentiation() -> None:
+    """Keep S-bend geometry differentiable for circuit optimization."""
+    gradient = jax.grad(
+        lambda offset: waveguide_models._bend_s_length((20.0, offset), npoints=99)
+    )(3.0)
+
+    assert jnp.isfinite(gradient)
 
 
 @final

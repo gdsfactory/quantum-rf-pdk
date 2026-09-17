@@ -380,6 +380,7 @@ def bend_circular(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
+    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for a circular bend, wrapped to :func:`~straight`.
 
@@ -387,17 +388,19 @@ def bend_circular(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
+        width: Optional centre-conductor width override in µm.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section)
+    return straight(f=f, length=length, cross_section=cross_section, width=width)
 
 
 def bend_circular_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
+    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for a circular bend, wrapped to :func:`~straight`.
 
@@ -405,17 +408,19 @@ def bend_circular_all_angle(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
+        width: Optional centre-conductor width override in µm.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section)
+    return straight(f=f, length=length, cross_section=cross_section, width=width)
 
 
 def bend_euler(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
+    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
 
@@ -423,17 +428,19 @@ def bend_euler(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
+        width: Optional centre-conductor width override in µm.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section)
+    return straight(f=f, length=length, cross_section=cross_section, width=width)
 
 
 def bend_euler_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
+    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
 
@@ -441,43 +448,29 @@ def bend_euler_all_angle(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
+        width: Optional centre-conductor width override in µm.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section)
+    return straight(f=f, length=length, cross_section=cross_section, width=width)
 
 
-@partial(jax.jit, inline=True)
+@partial(jax.jit, static_argnames=["npoints"], inline=True)
 def _bend_s_length(size: Size, npoints: int = 99) -> jax.Array:
     """Return the polyline length used by the layout S-bend factory."""
     dx, dy = size
     coordinate_dtype = jnp.result_type(dx, dy, jnp.asarray(0.0))
     dx = jnp.asarray(dx, dtype=coordinate_dtype)
     dy = jnp.asarray(dy, dtype=coordinate_dtype)
-    point_count = jnp.asarray(npoints, dtype=jnp.int32)
+    t = jnp.linspace(0, 1, npoints, dtype=coordinate_dtype)
+    one_minus_t = 1 - t
+    x = 3 * one_minus_t**2 * t * dx / 2 + 3 * one_minus_t * t**2 * dx / 2 + t**3 * dx
+    y = 3 * one_minus_t * t**2 * dy + t**3 * dy
+    points = jnp.stack((x, y), axis=1)
+    polyline_length = jnp.linalg.norm(jnp.diff(points, axis=0), axis=1).sum()
 
-    def point(index: jax.Array) -> jax.Array:
-        t = index / (point_count - 1)
-        one_minus_t = 1 - t
-        x = (
-            3 * one_minus_t**2 * t * dx / 2
-            + 3 * one_minus_t * t**2 * dx / 2
-            + t**3 * dx
-        )
-        y = 3 * one_minus_t * t**2 * dy + t**3 * dy
-        return jnp.stack((x, y))
-
-    def add_segment(index: jax.Array, total: jax.Array) -> jax.Array:
-        return total + jnp.linalg.norm(point(index) - point(index - 1))
-
-    return jax.lax.cond(
-        jnp.asarray(dy) == 0,
-        lambda: jnp.abs(jnp.asarray(dx)),
-        lambda: jax.lax.fori_loop(
-            1, point_count, add_segment, jnp.zeros((), dtype=coordinate_dtype)
-        ),
-    )
+    return jnp.where(dy == 0, jnp.abs(dx), polyline_length)
 
 
 def bend_s(
@@ -501,6 +494,7 @@ def bend_s(
     Returns:
         sax.SDict: S-parameters dictionary
     """
+    npoints = int(npoints)
     physical_length = (
         _bend_s_length(size, npoints=npoints) if length is None else length
     )
