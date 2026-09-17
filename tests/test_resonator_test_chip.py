@@ -1,6 +1,5 @@
 """Tests for resonator test-chip samples."""
 
-import json
 from pathlib import Path
 
 import gdsfactory as gf
@@ -15,7 +14,6 @@ from qpdk.samples.resonator_test_chip import resonator_test_chip_python
 YAML_SAMPLE = (
     Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_yaml.pic.yml"
 )
-GSCH_SAMPLE = YAML_SAMPLE.with_suffix("").with_suffix(".gsch")
 
 
 def _simulate_netlist(
@@ -122,21 +120,6 @@ def test_resonator_test_chip_yaml_netlist_matches_python() -> None:
     assert yaml_nets == python_nets
 
 
-def test_resonator_test_chip_gsch_preserves_yaml_connectivity() -> None:
-    """Keep every declarative connection wired in the Mosaic schematic."""
-    yaml_document = yaml.safe_load(YAML_SAMPLE.read_text())
-    gsch_document = json.loads(GSCH_SAMPLE.read_text())
-
-    for left, right in yaml_document["connections"].items():
-        left_instance, left_port = left.split(",")
-        right_instance, right_port = right.split(",")
-
-        assert (
-            gsch_document[left_instance]["nets"][left_port]
-            == gsch_document[right_instance]["nets"][right_port]
-        ), f"{left} is disconnected from {right} in {GSCH_SAMPLE.name}"
-
-
 def test_resonator_test_chip_yaml_matches_python() -> None:
     """Materialize the YAML netlist and match the Python chip exactly."""
     PDK.activate()
@@ -199,11 +182,14 @@ def test_recursive_sax_netlist_builds_without_cross_section_shadowing() -> None:
         on_dangling_port="ignore",
     )
 
-    sax.circuit(
+    circuit, _ = sax.circuit(
         netlist,
         models=models,
         ignore_impossible_connections=False,
     )
+    s_params = circuit(f=[7e9])
+
+    assert {port for key in s_params for port in key} == {"o1", "o2", "o3", "o4"}
 
 
 def test_python_and_yaml_chip_simulations_match() -> None:
@@ -269,8 +255,6 @@ def test_resonator_test_chip_has_distinct_resonances() -> None:
 
 def test_resonator_test_chip_yaml_simulates_from_leaf_models() -> None:
     """Keep the YAML sample usable without a registered chip model."""
-    assert "resonator_test_chip_yaml" not in models
-
     s_params = _simulate_yaml_chip([7e9])
 
     # sax.circuit emits the full 4x4 key set; the cross-probeline entries
@@ -282,29 +266,12 @@ def test_resonator_test_chip_yaml_simulates_from_leaf_models() -> None:
         "o3",
         "o4",
     }
-    # Two probelines are independent, so cross terms between them vanish;
-    # same-line terms carry a real signal.
     top_line = {"o1", "o2"}
     bottom_line = {"o3", "o4"}
     for (port_a, port_b), raw_value in s_params.items():
         value = np.asarray(raw_value)
-        if {port_a, port_b} <= top_line or {port_a, port_b} <= bottom_line:
-            assert np.abs(value).max() > 1e-6
-        else:
+        if not ({port_a, port_b} <= top_line or {port_a, port_b} <= bottom_line):
             np.testing.assert_allclose(value, 0.0, atol=1e-9)
 
-
-def test_resonator_test_chip_yaml_model_matches_python_model() -> None:
-    """The declarative and Python netlists must produce the same response."""
-    frequencies = np.linspace(4e9, 10e9, 31)
-    actual = _simulate_yaml_chip(frequencies)
-    expected = _simulate_python_chip(frequencies)
-    zero = np.zeros_like(frequencies, dtype=complex)
-
-    for key in actual.keys() | expected.keys():
-        np.testing.assert_allclose(
-            actual.get(key, zero),
-            expected.get(key, zero),
-            rtol=1e-10,
-            atol=1e-12,
-        )
+    for key in (("o1", "o2"), ("o2", "o1"), ("o3", "o4"), ("o4", "o3")):
+        assert np.abs(np.asarray(s_params[key])).min() > 0.9

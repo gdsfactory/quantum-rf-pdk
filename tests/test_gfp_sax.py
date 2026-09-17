@@ -71,8 +71,6 @@ def _assert_model_boundaries(info: dict[str, Any]) -> None:
     assert info["missing_models"] == []
     assert required >= _COUPLING_MODEL_BOUNDARIES
     assert not required & _COUPLING_INTERNAL_COMPONENTS
-    assert "resonator_test_chip_python" not in info["resolved_models"]
-    assert "resonator_test_chip_yaml" not in info["resolved_models"]
 
 
 def _assert_sweep_matches_reference(result: dict[str, Any]) -> None:

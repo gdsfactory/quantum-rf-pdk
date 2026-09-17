@@ -41,7 +41,7 @@ materialized layouts, because gdsfactory derives their nets from the very
 placement and routes it materializes. The qubit sample keeps two by-design
 opens: its tees end on the launchers' ``o1`` pins, leaving the
 ``launcher_bot``/``launcher_top`` waveports unterminated
-(``_EXPECTED_OPEN_PORTS``).
+(``_EXPECTED_OPEN_DESCRIPTIONS``).
 
 Reports are parsed with stdlib ``xml.etree`` (bandit XML rules are ignored
 at the use sites): the LYRDB output is generated locally by elvis/klayout,
@@ -50,10 +50,12 @@ never received from untrusted sources.
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 import tomllib
 import xml.etree.ElementTree as ET  # ruff: ignore[suspicious-xml-etree-import]
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -85,7 +87,10 @@ PIC_YML_SAMPLE = PROJECT_ROOT / "qpdk/samples/qubit_test_chip.pic.yml"
 
 #: Launcher waveports the ``.pic.yml`` sample intentionally leaves unterminated
 #: (its tees end on the launchers' ``o1`` pins); elvis still flags them as opens.
-_EXPECTED_OPEN_PORTS = frozenset({"launcher_bot", "launcher_top"})
+_EXPECTED_OPEN_DESCRIPTIONS = frozenset({
+    "Open port: launcher_bot['waveport'] is not connected",
+    "Open port: launcher_top['waveport'] is not connected",
+})
 
 #: Environment variable holding the gdsfactoryplus DRC API key.
 GFP_API_KEY_ENV = "GFP_API_KEY"
@@ -262,11 +267,16 @@ def _leaf_category(item: ET.Element) -> str:
 
 def _item_description(item: ET.Element) -> str:
     """Return the human-readable text values of a LYRDB item."""
-    return "; ".join(
-        (value.text or "").removeprefix("text: ").strip()
-        for value in item.findall("./values/value")
-        if (value.text or "").startswith("text: ")
-    )
+    descriptions = []
+    for value in item.findall("./values/value"):
+        text = value.text or ""
+        if not text.startswith("text: "):
+            continue
+        description = text.removeprefix("text: ").strip()
+        with suppress(SyntaxError, ValueError):
+            description = ast.literal_eval(description)
+        descriptions.append(description)
+    return "; ".join(descriptions)
 
 
 def _describe_violations(root: ET.Element) -> str:
@@ -366,7 +376,7 @@ def test_lvs_pic_yml_sample_matches_layout(
 
     The sample's tees end on the launchers' ``o1`` pins, so the
     ``launcher_bot``/``launcher_top`` waveports dangle by design and elvis
-    flags them as opens (``_EXPECTED_OPEN_PORTS``); every other violation
+    flags them as opens (``_EXPECTED_OPEN_DESCRIPTIONS``); every other violation
     category means a real mismatch.
     """
     xml = gfp_check.check_lvs(
@@ -378,13 +388,10 @@ def test_lvs_pic_yml_sample_matches_layout(
     root = ET.fromstring(xml)  # ruff: ignore[suspicious-xml-element-tree-usage]
 
     assert root.tag == "report-database", xml[:500]
-    unexpected = [
-        f"[{_leaf_category(item)}] {_item_description(item)}"
-        for item in root.iter("item")
-        if _leaf_category(item) != "LVS.open"
-        or not any(port in _item_description(item) for port in _EXPECTED_OPEN_PORTS)
-    ]
-    assert not unexpected, "LVS violations:\n" + "\n".join(unexpected)
+    items = list(root.iter("item"))
+    assert len(items) == 2, _describe_violations(root)
+    assert {_leaf_category(item) for item in items} == {"LVS.open"}
+    assert {_item_description(item) for item in items} == _EXPECTED_OPEN_DESCRIPTIONS
 
 
 def test_lvs_pic_yml_reports_a_broken_layout(
