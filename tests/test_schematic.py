@@ -3,6 +3,7 @@
 import importlib
 from typing import Any, cast
 
+import gdsfactory as gf
 from kfactory.schematic import DSchematic
 
 from qpdk import PDK
@@ -32,6 +33,19 @@ from qpdk.cells._schematic import (
 )
 
 
+def _get_schematic(cell: Any) -> DSchematic | None:
+    if schematic_function := getattr(cell, "schematic_function", None):
+        return schematic_function()
+    try:
+        factory = gf.kcl.factories[cell.__name__]
+    except (AttributeError, KeyError):
+        return None
+    try:
+        return factory.get_schematic()
+    except ValueError:
+        return None
+
+
 def test_schematic_functions():
     """Verify that schematic functions are attached to cells."""
     cells = [
@@ -56,12 +70,7 @@ def test_schematic_functions():
     ]
 
     for cell in cells:
-        # Check if schematic_function is attached to the cell
-        assert hasattr(cell, "schematic_function")
-        assert cell.schematic_function is not None
-
-        # Execute it and verify it returns a DSchematic
-        s = cell.schematic_function()
+        s = _get_schematic(cell)
         assert isinstance(s, DSchematic)
         assert "symbol" in s.info
 
@@ -102,13 +111,16 @@ def test_simulation_cells_have_sax_models() -> None:
     }
 
     for cell, (module, ports) in expected.items():
-        schematic = cast(Any, cell).schematic_function()
+        schematic = _get_schematic(cell)
+        assert schematic is not None
 
         assert set(schematic.ports) == ports
         assert schematic.info["models"][0]["module"] == module
         assert set(schematic.info["models"][0]["port_order"]) == ports
 
-    bend_s_model = cast(Any, bend_s).schematic_function().info["models"][0]
+    bend_s_schematic = _get_schematic(bend_s)
+    assert bend_s_schematic is not None
+    bend_s_model = bend_s_schematic.info["models"][0]
     assert bend_s_model["params"] == {}
 
 
@@ -129,11 +141,11 @@ def test_sax_model_descriptors_resolve_from_the_pdk_registry() -> None:
         if id(cell) in seen_cells:
             continue
         seen_cells.add(id(cell))
-        schematic_function = getattr(cell, "schematic_function", None)
-        if schematic_function is None:
+        schematic = _get_schematic(cell)
+        if schematic is None:
             continue
 
-        for descriptor in schematic_function().info["models"]:
+        for descriptor in schematic.info["models"]:
             descriptor_count += 1
             assert required_fields <= descriptor.keys()
             assert descriptor["language"] == "sax"

@@ -44,12 +44,13 @@ def straight(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
     cross_section_width, gap = get_cpw_dimensions(cross_section)
+    # Layout cells serialize their width separately from the cross-section spec.
     model_width = cross_section_width if width is None else width
     h, t, ep_r, tand = get_cpw_substrate_params()
 
@@ -79,7 +80,7 @@ def straight_all_angle(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -149,7 +150,7 @@ def straight_shorted(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -186,7 +187,7 @@ def straight_open(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SType: S-parameters dictionary
@@ -223,7 +224,7 @@ def straight_double_open(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SType: S-parameters dictionary
@@ -388,7 +389,7 @@ def bend_circular(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -408,7 +409,7 @@ def bend_circular_all_angle(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -428,7 +429,7 @@ def bend_euler(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -448,7 +449,7 @@ def bend_euler_all_angle(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -489,7 +490,7 @@ def bend_s(
         size: Layout S-bend extent in µm.
         npoints: Number of points used to discretize the layout Bézier curve.
         cross_section: The cross-section of the waveguide.
-        width: Optional centre-conductor width override in µm.
+        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary

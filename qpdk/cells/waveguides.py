@@ -336,9 +336,6 @@ def bend_s(
     )
 
 
-bend_s.schematic_function = bend_s_schematic
-
-
 coupler_straight = partial(gf.c.coupler_straight, cross_section="cpw", gap=16)
 coupler_ring = partial(
     gf.c.coupler_ring,

@@ -1,9 +1,4 @@
-"""Reusable schematic factory for qpdk cells, linked to SAX models.
-
-Mirrors gdsfactory's ``gpdk/_schematic.py`` port-pattern approach and
-IHP's ``s.info["models"]`` SPICE-link pattern, but carries SAX model
-references instead of SPICE.
-"""
+"""Schematic metadata used mainly by gdsfactoryplus to link cells to SAX models."""
 
 from __future__ import annotations
 

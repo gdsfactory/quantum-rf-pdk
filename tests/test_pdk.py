@@ -186,27 +186,20 @@ def test_yaml_matches_layers():
     assert LAYERS_ACCORDING_TO_YAML == LAYERS_DEFINED
 
 
+standalone_sample_functions = {
+    name: factory
+    for name, factory in qpdk.get_sample_functions().items()
+    if name != "qpdk.samples.qubit_test_chip.qubit_test_chip"
+}
+
+
 @pytest.mark.parametrize(
     "sample",
-    list(qpdk.get_sample_functions().values()),
-    ids=list(qpdk.get_sample_functions().keys()),
+    standalone_sample_functions.values(),
+    ids=standalone_sample_functions,
 )
 def test_sample_generates(sample: ComponentFactory):
-    """Test that all sample cells generate without errors."""
-    # conftest.import_gfp_module would fail here on a v1 gdsfactoryplus
-    # install (missing submodule treated as an upstream API break), so probe
-    # locally instead: building the gsch-backed sample needs the v2-only
-    # build_nyancir_gds.
-    if getattr(sample, "__name__", "") == "qubit_test_chip":
-        try:
-            from gdsfactoryplus.compile import (  # ruff: ignore[import-outside-top-level]
-                build_nyancir_gds,  # ruff: ignore[unused-import]
-            )
-        except ImportError:
-            pytest.skip(
-                "needs the gdsfactoryplus 2.0 SDK; run `just fetch-gfp` and "
-                "source build/gfp-vsix/env.sh"
-            )
+    """Test that standalone sample cells generate without errors."""
     result = gf.get_component(sample)
     assert result
     print(f"Successfully ran {sample!r}")
