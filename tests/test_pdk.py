@@ -186,11 +186,7 @@ def test_yaml_matches_layers():
     assert LAYERS_ACCORDING_TO_YAML == LAYERS_DEFINED
 
 
-standalone_sample_functions = {
-    name: factory
-    for name, factory in qpdk.get_sample_functions().items()
-    if name != "qpdk.samples.qubit_test_chip.qubit_test_chip"
-}
+standalone_sample_functions = qpdk.get_sample_functions()
 
 
 @pytest.mark.parametrize(

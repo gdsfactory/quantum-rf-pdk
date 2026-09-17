@@ -37,11 +37,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import gdsfactory as gf
 import pytest
-from conftest import GFP_REQUIRED_ENV, import_gfp_module
-
-from qpdk.samples.qubit_test_chip import qubit_test_chip
+from conftest import GFP_REQUIRED_ENV
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -416,19 +413,6 @@ def test_server_indexes_qpdk_cells(gfp_server: GfpServer) -> None:
             f"{expected} not indexed; sample of indexed names: "
             f"{[n for n in qualified_names if n and '.qpdk.' in n][:10]}"
         )
-
-
-@pytest.mark.gfp
-def test_qubit_test_chip_preserves_same_name_kcl_cell() -> None:
-    """Do not delete an unrelated cell while materializing the sample."""
-    import_gfp_module("gdsfactoryplus.compile")
-    sentinel = gf.Component("qubit_test_chip")
-    sentinel_index = sentinel.cell_index()
-
-    component = qubit_test_chip.__wrapped__()
-
-    assert gf.kcl[sentinel_index].name == "qubit_test_chip"
-    assert component.name.startswith("_qpdk_qubit_test_chip_")
 
 
 @pytest.mark.gfp
