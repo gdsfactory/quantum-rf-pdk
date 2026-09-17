@@ -17,6 +17,7 @@ import gdsfactory as gf
 from gdsfactory.technology.layer_stack import LayerLevel
 
 from qpdk import LAYER_STACK
+from qpdk.singleton import SingletonMeta
 from qpdk.tech import LAYER, material_properties
 from qpdk.utils import (
     add_margin_to_layer,
@@ -271,7 +272,7 @@ def add_materials_to_aedt(app: Hfss | Q2d | Q3d) -> None:
                 mat.conductivity = prop_value
 
 
-class AEDTBase:
+class AEDTBase(metaclass=SingletonMeta):
     """Base class for AEDT simulations."""
 
     def __init__(self, app: Hfss | Q2d | Q3d):
