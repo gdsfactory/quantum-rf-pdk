@@ -36,6 +36,15 @@ except ImportError as e:
     _models = {}
 else:
     _models = dict(_models)
+    for variant, model_name in {
+        "resonator_quarter_wave_bend_start": "resonator_quarter_wave",
+        "resonator_quarter_wave_bend_end": "resonator_quarter_wave",
+        "resonator_quarter_wave_bend_both": "resonator_quarter_wave",
+        "resonator_half_wave_bend_start": "resonator_half_wave",
+        "resonator_half_wave_bend_end": "resonator_half_wave",
+        "resonator_half_wave_bend_both": "resonator_half_wave",
+    }.items():
+        _models[variant] = _models[model_name]
 
 _cells = get_cells(cells)
 _cross_sections = get_cross_sections(tech)

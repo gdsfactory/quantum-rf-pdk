@@ -150,16 +150,13 @@ def test_sax_model_descriptors_resolve_from_the_pdk_registry() -> None:
 
 
 def test_resonator_variants_have_direct_sax_models() -> None:
-    """Resolve bend variants through their declared model metadata."""
+    """Resolve bend variants by their registered cell names."""
     assert PDK.models is not None
 
     for wave_type in ("quarter_wave", "half_wave"):
         for bend_type in ("start", "end", "both"):
             name = f"resonator_{wave_type}_bend_{bend_type}"
-            cell = PDK.cells[name]
-            schematic = cast(Any, cell).schematic_function()
-            model_name = schematic.info["models"][0]["name"]
-            s_params = PDK.models[model_name](f=[7e9])
+            s_params = PDK.models[name](f=[7e9])
 
             assert {port for key in s_params for port in key} == {"o1", "o2"}
 
