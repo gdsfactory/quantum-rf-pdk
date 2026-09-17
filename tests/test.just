@@ -185,7 +185,7 @@ get-gfp-versions:
 [group('test')]
 [script('uv', 'run', '--script')]
 fetch-gfp $version="latest":
-    import gzip, hashlib, io, json, os, platform, shlex, shutil, stat, urllib.request, zipfile
+    import gzip, hashlib, io, json, os, platform, shlex, shutil, stat, subprocess, sys, tempfile, urllib.request, zipfile
     from pathlib import Path
 
     PUBLISHER = "gdsfactory"
@@ -193,6 +193,14 @@ fetch-gfp $version="latest":
     API = "https://marketplace.visualstudio.com/_apis/public/gallery"
     OUT = Path("build/gfp-vsix")
     IS_WINDOWS = platform.system() == "Windows"
+    MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024
+    MAX_EXTRACTED_BYTES = 1024 * 1024 * 1024
+
+    def read_limited(stream, limit, label):
+        payload = stream.read(limit + 1)
+        if len(payload) > limit:
+            raise SystemExit(f"{label} exceeds {limit} bytes")
+        return payload
 
     def resolve_latest():
         body = json.dumps({
@@ -216,7 +224,7 @@ fetch-gfp $version="latest":
             },
         )
         with urllib.request.urlopen(req, timeout=30) as r:
-            data = json.loads(r.read())
+            data = json.loads(read_limited(r, 10 * 1024 * 1024, "Marketplace response"))
         extensions = data.get("results", [{}])[0].get("extensions", [])
         versions = (
             [v["version"] for v in extensions[0].get("versions", [])]
@@ -269,6 +277,9 @@ fetch-gfp $version="latest":
         version = resolve_latest() if requested == "latest" else requested
         wanted = f"{version} {target}"
     stamp = OUT / "VERSION"
+    extract_root = OUT
+    staged = False
+    staging_dir = None
 
     if stamp.exists() and stamp.read_text().strip() == wanted:
         print(f"gdsfactoryplus {wanted} already extracted at {OUT}")
@@ -284,37 +295,54 @@ fetch-gfp $version="latest":
             print(f"downloading {PUBLISHER}.{EXTENSION} {version} ({target})")
             req = urllib.request.Request(url, headers={"User-Agent": "quantum-rf-pdk-ci"})
             with urllib.request.urlopen(req, timeout=600) as r:
-                payload = r.read()
-            # The Marketplace may serve the VSIX gzip-encoded.
+                payload = read_limited(r, MAX_DOWNLOAD_BYTES, "VSIX download")
             if payload[:2] == b"\x1f\x8b":
-                payload = gzip.decompress(payload)
+                with gzip.GzipFile(fileobj=io.BytesIO(payload)) as compressed:
+                    payload = read_limited(
+                        compressed, MAX_DOWNLOAD_BYTES, "decompressed VSIX"
+                    )
             archive = io.BytesIO(payload)
 
-        if OUT.exists():
-            shutil.rmtree(OUT)
-        OUT.mkdir(parents=True)
-        bin_dir = (OUT / "bin").resolve()
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        staging_dir = tempfile.TemporaryDirectory(
+            prefix=f".{OUT.name}-", dir=OUT.parent
+        )
+        extract_root = Path(staging_dir.name)
+        staged = True
+        bin_dir = (extract_root / "bin").resolve()
         with zipfile.ZipFile(archive) as vsix:
-            for member in vsix.namelist():
-                if member.startswith("extension/bin/") and not member.endswith("/"):
-                    target_path = (OUT / member.removeprefix("extension/")).resolve()
-                    if not target_path.is_relative_to(bin_dir):
-                        raise SystemExit(
-                            f"unsafe VSIX member escapes extension/bin: {member}"
-                        )
-                    target_path.parent.mkdir(parents=True, exist_ok=True)
-                    target_path.write_bytes(vsix.read(member))
+            members = [
+                member
+                for member in vsix.infolist()
+                if member.filename.startswith("extension/bin/")
+                and not member.is_dir()
+            ]
+            if sum(member.file_size for member in members) > MAX_EXTRACTED_BYTES:
+                raise SystemExit("VSIX extension/bin contents exceed extraction limit")
+            for member in members:
+                mode = member.external_attr >> 16
+                if stat.S_ISLNK(mode):
+                    raise SystemExit(f"unsafe VSIX symlink member: {member.filename}")
+                target_path = (
+                    extract_root / member.filename.removeprefix("extension/")
+                ).resolve()
+                if not target_path.is_relative_to(bin_dir):
+                    raise SystemExit(
+                        "unsafe VSIX member escapes extension/bin: "
+                        f"{member.filename}"
+                    )
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                with vsix.open(member) as source, target_path.open("wb") as destination:
+                    shutil.copyfileobj(source, destination, length=1024 * 1024)
 
-    # Validate on every run (not just fresh extraction) and chmod
-    # unconditionally: zip extraction does not preserve the exec bit, so
-    # a stamp hit on a re-cloned or partially cleaned checkout would
-    # otherwise produce a non-executable gfp with no error.
     executable_names = (
         ["gfp.exe", "uv.exe", "rg.exe"] if IS_WINDOWS else ["gfp", "uv", "rg"]
     )
-    executables = [OUT / "bin" / name for name in executable_names]
-    gfp_bin = executables[0]
-    sdk_dirs = [OUT / "bin" / "python" / "gdsfactoryplus", OUT / "bin" / "python" / "nyancad"]
+    executables = [extract_root / "bin" / name for name in executable_names]
+    sdk_dirs = [
+        extract_root / "bin" / "python" / "gdsfactoryplus",
+        extract_root / "bin" / "python" / "nyancad",
+    ]
     missing_executables = [str(path) for path in executables if not path.is_file()]
     if missing_executables:
         raise SystemExit(
@@ -328,14 +356,44 @@ fetch-gfp $version="latest":
             executable.chmod(
                 executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
             )
-    stamp.write_text(wanted)
-    sep = os.pathsep
-    env_sh = OUT / "env.sh"
-    env_sh.write_text(
-        f"export PYTHONPATH={shlex.quote(sep.join(str(d.resolve()) for d in sdk_dirs))}\n"
-        f"export GFP_BIN={shlex.quote(str(gfp_bin.resolve()))}\n"
+    import_env = dict(os.environ)
+    import_env["PYTHONPATH"] = os.pathsep.join(str(path) for path in sdk_dirs)
+    import_check = subprocess.run(
+        [sys.executable, "-c", "import gdsfactoryplus, nyancad"],
+        capture_output=True,
+        env=import_env,
+        text=True,
     )
-    print(f"extracted to {OUT}; source {env_sh} for PYTHONPATH and GFP_BIN")
+    if import_check.returncode:
+        raise SystemExit(f"extracted SDK import failed: {import_check.stderr.strip()}")
+
+    final_gfp_bin = OUT / "bin" / executable_names[0]
+    final_sdk_dirs = [
+        OUT / "bin" / "python" / "gdsfactoryplus",
+        OUT / "bin" / "python" / "nyancad",
+    ]
+    (extract_root / "VERSION").write_text(wanted)
+    sep = os.pathsep
+    env_sh = extract_root / "env.sh"
+    env_sh.write_text(
+        f"export PYTHONPATH={shlex.quote(sep.join(str(d.resolve()) for d in final_sdk_dirs))}\n"
+        f"export GFP_BIN={shlex.quote(str(final_gfp_bin.resolve()))}\n"
+    )
+
+    if staged:
+        backup = OUT.with_name(f".{OUT.name}-previous-{os.getpid()}")
+        if OUT.exists():
+            OUT.replace(backup)
+        try:
+            extract_root.replace(OUT)
+        except Exception:
+            if backup.exists():
+                backup.replace(OUT)
+            raise
+        if backup.exists():
+            shutil.rmtree(backup)
+        staging_dir.cleanup()
+    print(f"extracted to {OUT}; source {OUT / 'env.sh'} for PYTHONPATH and GFP_BIN")
 
 # Run GDSFactory+ tests (pytest-based suite marked `gfp`; replaces the `gfp test` CLI removed in v2).
 # GFP_REQUIRED=1: gdsfactoryplus and its v2 API must be present (no silent skips).

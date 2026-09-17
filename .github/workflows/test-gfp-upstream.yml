@@ -61,8 +61,6 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Test GDSFactory+
         run: just test-gfp
-        env:
-          GFP_API_KEY: ${{ secrets.GFP_API_KEY }} # zizmor: ignore[secrets-outside-env]
   test-gfp-result:
     runs-on: ubuntu-latest
     name: GDSFactory+ test result
