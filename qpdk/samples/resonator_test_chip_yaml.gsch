@@ -61,8 +61,7 @@
         500,
         0
       ],
-      "npoints": 99,
-      "width": 10
+      "npoints": 99
     }
   },
   "resonator_top_2": {
@@ -619,8 +618,7 @@
         500,
         0
       ],
-      "npoints": 99,
-      "width": 10
+      "npoints": 99
     }
   },
   "probeline_straight_top_1": {
@@ -681,8 +679,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "resonator_bot_4": {
@@ -950,8 +947,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 200,
-      "npoints": 2,
-      "width": null
+      "npoints": 2
     }
   },
   "probeline_straight_bot_6": {
@@ -1012,8 +1008,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "resonator_bot_5": {
@@ -1160,8 +1155,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "resonator_bot_3": {
@@ -1308,8 +1302,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "probeline_straight_bot_7": {
@@ -1370,8 +1363,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "probeline_straight_east_bot": {
@@ -1432,8 +1424,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 400,
-      "npoints": 2,
-      "width": null
+      "npoints": 2
     }
   },
   "probeline_straight_top_3": {
@@ -1494,8 +1485,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "probeline_sbend_east_top": {
@@ -1560,8 +1550,7 @@
         100,
         0
       ],
-      "npoints": 99,
-      "width": 10
+      "npoints": 99
     }
   },
   "resonator_bot_6": {
@@ -1968,8 +1957,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "probeline_straight_bot_5": {
@@ -2030,8 +2018,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "probeline_straight_east_top": {
@@ -2092,8 +2079,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 400,
-      "npoints": 2,
-      "width": null
+      "npoints": 2
     }
   },
   "probeline_straight_top_4": {
@@ -2154,8 +2140,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "o3": {
@@ -2329,8 +2314,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "probeline_straight_top_2": {
@@ -2391,8 +2375,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "probe_west_top": {
@@ -2515,8 +2498,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "o2": {
@@ -2612,8 +2594,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 200,
-      "npoints": 2,
-      "width": null
+      "npoints": 2
     }
   },
   "probeline_straight_top_7": {
@@ -2674,8 +2655,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "probeline_straight_top_5": {
@@ -2736,8 +2716,7 @@
     "props": {
       "cross_section": "coplanar_waveguide",
       "length": 800,
-      "npoints": 2,
-      "width": 10
+      "npoints": 2
     }
   },
   "resonator_top_1": {
@@ -3062,8 +3041,7 @@
         100,
         0
       ],
-      "npoints": 99,
-      "width": 10
+      "npoints": 99
     }
   },
   "resonator_top_7": {

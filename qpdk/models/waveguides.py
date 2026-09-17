@@ -24,7 +24,6 @@ def straight(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SDict:
     r"""S-parameter model for a straight coplanar waveguide.
 
@@ -44,20 +43,17 @@ def straight(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    cross_section_width, gap = get_cpw_dimensions(cross_section)
-    # Layout cells serialize their width separately from the cross-section spec.
-    model_width = cross_section_width if width is None else width
+    width, gap = get_cpw_dimensions(cross_section)
     h, t, ep_r, tand = get_cpw_substrate_params()
 
     return _sax_coplanar_waveguide(
         f=f,
         length=length,
-        width=model_width,
+        width=width,
         gap=gap,
         thickness=t,
         substrate_thickness=h,
@@ -70,7 +66,6 @@ def straight_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SDict:
     r"""S-parameter model for a straight coplanar waveguide.
 
@@ -80,12 +75,11 @@ def straight_all_angle(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section, width=width)
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 def straight_microstrip(
@@ -136,7 +130,6 @@ def straight_shorted(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for a straight waveguide with one shorted end.
 
@@ -150,15 +143,12 @@ def straight_shorted(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
     instances = {
-        "straight": straight(
-            f=f, length=length, cross_section=cross_section, width=width
-        ),
+        "straight": straight(f=f, length=length, cross_section=cross_section),
         "short": short_2_port(f=f),
     }
     connections = {
@@ -175,7 +165,6 @@ def straight_open(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SType:
     """S-parameter model for a straight waveguide with one open end.
 
@@ -187,15 +176,12 @@ def straight_open(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SType: S-parameters dictionary
     """
     instances = {
-        "straight": straight(
-            f=f, length=length, cross_section=cross_section, width=width
-        ),
+        "straight": straight(f=f, length=length, cross_section=cross_section),
         "open": electrical_open(f=f, n_ports=2),
     }
     connections = {
@@ -212,7 +198,6 @@ def straight_double_open(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SType:
     """S-parameter model for a straight waveguide with open ends.
 
@@ -224,15 +209,12 @@ def straight_double_open(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SType: S-parameters dictionary
     """
     instances = {
-        "straight": straight(
-            f=f, length=length, cross_section=cross_section, width=width
-        ),
+        "straight": straight(f=f, length=length, cross_section=cross_section),
         "open1": electrical_open(f=f, n_ports=2),
         "open2": electrical_open(f=f, n_ports=2),
     }
@@ -381,7 +363,6 @@ def bend_circular(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for a circular bend, wrapped to :func:`~straight`.
 
@@ -389,19 +370,17 @@ def bend_circular(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section, width=width)
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 def bend_circular_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for a circular bend, wrapped to :func:`~straight`.
 
@@ -409,19 +388,17 @@ def bend_circular_all_angle(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section, width=width)
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 def bend_euler(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
 
@@ -429,19 +406,17 @@ def bend_euler(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section, width=width)
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 def bend_euler_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 1000,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
 
@@ -449,17 +424,19 @@ def bend_euler_all_angle(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=length, cross_section=cross_section, width=width)
+    return straight(f=f, length=length, cross_section=cross_section)
 
 
 @partial(jax.jit, static_argnames=["npoints"], inline=True)
 def _bend_s_length(size: Size, npoints: int = 99) -> jax.Array:
-    """Return the polyline length used by the layout S-bend factory."""
+    """Return the layout S-bend length with JAX-compatible operations.
+
+    gdsfactory's path-length helper uses NumPy and cannot be traced by JAX.
+    """
     dx, dy = size
     coordinate_dtype = jnp.result_type(dx, dy, jnp.asarray(0.0))
     dx = jnp.asarray(dx, dtype=coordinate_dtype)
@@ -480,7 +457,6 @@ def bend_s(
     size: Size = (20.0, 3.0),
     npoints: int = 99,
     cross_section: CrossSectionSpec = "cpw",
-    width: sax.Float | None = None,
 ) -> sax.SDict:
     """S-parameter model for an S-bend, wrapped to :func:`~straight`.
 
@@ -490,7 +466,6 @@ def bend_s(
         size: Layout S-bend extent in µm.
         npoints: Number of points used to discretize the layout Bézier curve.
         cross_section: The cross-section of the waveguide.
-        width: Layout centre-conductor width in µm. Defaults to the cross-section width.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -499,12 +474,7 @@ def bend_s(
     physical_length = (
         _bend_s_length(size, npoints=npoints) if length is None else length
     )
-    return straight(
-        f=f,
-        length=physical_length,
-        cross_section=cross_section,
-        width=width,
-    )
+    return straight(f=f, length=physical_length, cross_section=cross_section)
 
 
 def rectangle(

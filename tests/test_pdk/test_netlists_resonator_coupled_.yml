@@ -27,7 +27,6 @@ instances:
       cross_section: coplanar_waveguide
       length: 200
       npoints: 2
-      width: null
 nets: []
 placements:
   resonator:

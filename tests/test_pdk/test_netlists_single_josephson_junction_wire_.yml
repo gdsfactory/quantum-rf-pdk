@@ -27,7 +27,6 @@ instances:
       cross_section: josephson_junction_cross_section_narrow
       length: 0.5
       npoints: 2
-      width: null
   straight2:
     component: straight
     info:
@@ -41,7 +40,6 @@ instances:
       cross_section: josephson_junction_cross_section_wide
       length: 8.3
       npoints: 2
-      width: null
   taper_cross_section:
     component: taper_cross_section
     info:

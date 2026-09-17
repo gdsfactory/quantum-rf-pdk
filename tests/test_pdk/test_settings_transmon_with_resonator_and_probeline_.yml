@@ -1,7 +1,7 @@
 info:
   length: 5000
   resonator_type: quarter_wave
-name: transmon_with_resonator_and_probeline_Qdouble_pad_trans_497d14fa
+name: transmon_with_resonator_and_probeline_Qdouble_pad_trans_25ef912f
 ports:
   coupling_o1:
     center:
@@ -45,7 +45,7 @@ settings:
   - -45
   - 0
   coupler_port: left_pad
-  probeline_coupler: Fcoupler_straight_Mgdsfactorypcomponentspcouplerspcoupler_SCScpw_G16
+  probeline_coupler: coupler_straight
   probeline_coupling_gap: 16
   qubit: double_pad_transmon_with_bbox
   qubit_rotation: 90

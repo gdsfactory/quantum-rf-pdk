@@ -1,5 +1,5 @@
 info: {}
-name: straight_double_open_L10_CScoplanar_waveguide_WNone_N2
+name: straight_double_open_L10_CScoplanar_waveguide_N2
 ports:
   o1:
     center:

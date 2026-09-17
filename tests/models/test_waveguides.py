@@ -1,10 +1,8 @@
 """Tests for qpdk.models.waveguides module."""
 
 import inspect
-from collections.abc import Callable
 from typing import final
 
-import gdsfactory as gf
 import hypothesis.strategies as st
 import jax
 import jax.numpy as jnp
@@ -12,15 +10,12 @@ import pytest
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
-from qpdk.cells.waveguides import bend_s as bend_s_cell, straight as straight_cell
+from qpdk.cells.waveguides import bend_s as bend_s_cell
 from qpdk.models import waveguides as waveguide_models
-from qpdk.models.cpw import get_cpw_dimensions
 from qpdk.models.waveguides import (
     airbridge,
     bend_circular,
-    bend_circular_all_angle,
     bend_euler,
-    bend_euler_all_angle,
     bend_s,
     indium_bump,
     nxn,
@@ -162,57 +157,6 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
         )
 
 
-@pytest.mark.parametrize("width", [5.0, 15.0])
-def test_straight_width_override_uses_extruded_geometry(
-    width: float, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Pass the layout's extruded CPW dimensions to the SAX model."""
-    layout = straight_cell(width=width)
-    settings = layout.settings.model_dump()
-    cross_section = gf.get_cross_section(
-        settings["cross_section"], width=settings["width"]
-    )
-    expected_width, expected_gap = get_cpw_dimensions(cross_section)
-    model_settings: dict[str, object] = {}
-
-    def capture_model_settings(**kwargs: object) -> dict[object, object]:
-        model_settings.update(kwargs)
-        return {}
-
-    monkeypatch.setattr(
-        waveguide_models, "_sax_coplanar_waveguide", capture_model_settings
-    )
-    straight(
-        f=jnp.array([5e9]),
-        length=settings["length"],
-        cross_section=settings["cross_section"],
-        width=settings["width"],
-    )
-
-    assert model_settings["width"] == expected_width
-    assert model_settings["gap"] == expected_gap
-
-
-@pytest.mark.parametrize(
-    "model",
-    [bend_circular, bend_circular_all_angle, bend_euler, bend_euler_all_angle],
-)
-def test_bend_width_override_is_forwarded(
-    model: Callable[..., object], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Forward bend width settings to their straight model."""
-    model_settings: dict[str, object] = {}
-
-    def capture_model_settings(**kwargs: object) -> dict[object, object]:
-        model_settings.update(kwargs)
-        return {}
-
-    monkeypatch.setattr(waveguide_models, "straight", capture_model_settings)
-    model(f=jnp.array([5e9]), length=100, width=3.0)
-
-    assert model_settings["width"] == pytest.approx(3.0)
-
-
 @final
 class TestStraightOpen(TwoPortModelTestSuite):
     """Tests for straight_open model."""
@@ -302,24 +246,20 @@ class TestBendS(TwoPortModelTestSuite):
             st.integers(min_value=3, max_value=199),
         ),
     ),
-    width_dbu=st.integers(min_value=1_000, max_value=15_000),
     frequency=st.floats(min_value=1e9, max_value=12e9),
 )
 @settings(max_examples=10, deadline=None)
 def test_bend_s_serialized_settings_set_physical_length(
     dx: float,
     bend_case: tuple[float, int],
-    width_dbu: int,
     frequency: float,
 ) -> None:
     """Consume the layout factory's serialized settings directly."""
     frequencies = jnp.array([frequency])
     dy, npoints = bend_case
-    width = width_dbu * 0.002
     layout = bend_s_cell(
         size=(dx, dy),
         npoints=npoints,
-        width=width,
         allow_min_radius_violation=True,
     )
 
@@ -327,12 +267,10 @@ def test_bend_s_serialized_settings_set_physical_length(
         f=frequencies,
         size=(dx, dy),
         npoints=npoints,
-        width=width,
     )
     from_length = bend_s(
         f=frequencies,
         length=layout.info["length"],
-        width=width,
     )
 
     for key in from_size:

@@ -12,11 +12,10 @@ from functools import partial
 
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.components import straight
 from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.cells._schematic import launcher_schematic
-from qpdk.cells.waveguides import taper_cross_section
+from qpdk.cells.waveguides import straight, taper_cross_section
 from qpdk.tech import LAYER, coplanar_waveguide, launcher_cross_section_big
 
 LAUNCHER_CROSS_SECTION_BIG = launcher_cross_section_big
