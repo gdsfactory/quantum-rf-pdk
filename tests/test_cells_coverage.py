@@ -3,13 +3,16 @@
 from collections.abc import Callable
 
 import pytest
-from hypothesis import given, settings, strategies as st
-from klayout.db import DCplxTrans
+from gdsfactory.component import Component
+from klayout.db import DCplxTrans, DPoint
 
 from qpdk.cells.capacitor import (
     interdigital_capacitor,
     plate_capacitor,
     plate_capacitor_single,
+)
+from qpdk.cells.derived.transmon_with_resonator_and_probeline import (
+    flipmon_with_resonator_and_probeline,
 )
 from qpdk.cells.snspd import snspd
 from qpdk.cells.transmon import (
@@ -115,17 +118,42 @@ class TestTransmonJunctionDisplacement:
 
 
 @pytest.mark.parametrize("factory", [double_pad_transmon, flipmon, xmon_transmon])
-@given(
-    angle=st.floats(
-        min_value=-360,
-        max_value=360,
-        allow_nan=False,
-        allow_infinity=False,
-    )
-)
-@settings(max_examples=10, deadline=None)
+@pytest.mark.parametrize("angle", [0.0, 90.0, 180.0, 270.0])
 def test_transmon_accepts_numeric_junction_rotation(
-    factory: Callable[..., object], angle: float
+    factory: Callable[..., Component], angle: float
 ) -> None:
-    """Accept serializable rotation angles across public transmon factories."""
-    assert factory(junction_displacement=angle) is not None
+    """Rotate junctions in place while keeping their placement ports aligned."""
+    baseline: Component = factory()
+    rotated: Component = factory(junction_displacement=angle)
+    baseline_port = baseline.ports["junction"]
+    rotated_port = rotated.ports["junction"]
+
+    assert rotated_port.dcenter == pytest.approx(baseline_port.dcenter)
+    assert rotated_port.orientation == pytest.approx(
+        (baseline_port.orientation + angle) % 360
+    )
+    assert baseline.dxmin <= rotated_port.dx <= baseline.dxmax
+    assert baseline.dymin <= rotated_port.dy <= baseline.dymax
+
+
+@pytest.mark.parametrize("angle", [90.0, 180.0, 270.0])
+def test_flipmon_position_rotation_moves_junction_around_ring(angle: float) -> None:
+    """Rotate the junction position and placement port about the ring center."""
+    baseline = flipmon()
+    rotated = flipmon(junction_position_rotation=angle)
+    transform = DCplxTrans(1, angle, False)
+    expected_center = transform * DPoint(*baseline.ports["junction"].dcenter)
+
+    assert rotated.ports["junction"].dcenter == pytest.approx(expected_center)
+    assert rotated.ports["junction"].orientation == pytest.approx((90 + angle) % 360)
+
+
+def test_flipmon_resonator_places_junction_away_from_probeline() -> None:
+    """Keep the assembled flipmon junction on the intended side and orientation."""
+    baseline_port = flipmon().ports["junction"]
+    component = flipmon_with_resonator_and_probeline()
+    junction_port = component.ports["junction"]
+    expected_center = DCplxTrans(1, 90, False) * DPoint(*baseline_port.dcenter)
+
+    assert junction_port.dcenter == pytest.approx(expected_center)
+    assert junction_port.orientation == pytest.approx(180)

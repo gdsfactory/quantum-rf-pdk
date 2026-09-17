@@ -1,5 +1,5 @@
 info: {}
-name: flipmon_with_bbox_ICR60_ORR110_ORW60_TCR110_JSsquid_jun_75aa4181
+name: flipmon_with_bbox_ICR60_ORR110_ORW60_TCR110_JSsquid_jun_34c69d49
 ports:
   center:
     center:
@@ -48,6 +48,7 @@ ports:
     width: 60
 settings:
   inner_circle_radius: 60
+  junction_position_rotation: 0
   junction_spec: squid_junction_long
   layer_etch: M1_ETCH
   layer_etch_top: M2_ETCH

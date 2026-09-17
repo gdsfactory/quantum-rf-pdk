@@ -5,6 +5,7 @@ instances:
     settings:
       inner_circle_radius: 60
       junction_displacement: null
+      junction_position_rotation: 0
       junction_spec: squid_junction_long
       layer_metal: M1_DRAW
       layer_metal_top: M2_DRAW

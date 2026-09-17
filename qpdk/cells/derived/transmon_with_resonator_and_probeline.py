@@ -316,10 +316,8 @@ double_pad_transmon_with_resonator_and_probeline = partial(
 
 flipmon_with_resonator_and_probeline = partial(
     transmon_with_resonator_and_probeline,
-    # Mirror the junction about the ring center so it faces away from the
-    # probeline bus, matching the qubit_test_chip orientation. A plain angle
-    # keeps the setting serializable for netlist extraction.
-    qubit=partial(flipmon_with_bbox, junction_displacement=180),
+    # Relocate the junction away from the probeline with a serializable setting.
+    qubit=partial(flipmon_with_bbox, junction_position_rotation=180),
     coupler=partial(plate_capacitor_single, width=10, length=58),
     qubit_rotation=-90,
     coupler_port="outer_ring_outside",
