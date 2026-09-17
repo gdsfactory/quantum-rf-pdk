@@ -45,8 +45,6 @@ skip_test = {
     # Registered for schematic-editor lookup; sample behavior is tested separately.
     "resonator_test_chip_python",
     "qpdk.samples.resonator_test_chip.resonator_test_chip_python",
-    "qubit_test_chip",
-    "qpdk.samples.qubit_test_chip.qubit_test_chip",
 }
 cell_names = cells.keys() - skip_test
 cell_names = [name for name in cell_names if not name.startswith("_")]

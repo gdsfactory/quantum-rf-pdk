@@ -977,7 +977,7 @@
       "poly_1"
     ]
   },
-  "tee_1": {
+  "tee_bot": {
     "y": 7,
     "bbox_xmin": -11,
     "transform": [
@@ -1058,7 +1058,7 @@
     "irl_y": 3737.8090296774317,
     "model": "qpdk.cells.waveguides.tee"
   },
-  "straight_open_1": {
+  "tee_bot_straight_1": {
     "y": 7,
     "bbox_xmin": 0,
     "transform": [
@@ -1121,7 +1121,7 @@
     "irl_y": 3737.8090296774317,
     "model": "qpdk.cells.waveguides.straight_open"
   },
-  "launcher_1": {
+  "launcher_bot": {
     "y": 9,
     "bbox_xmin": 0,
     "transform": [
@@ -1184,7 +1184,7 @@
     "irl_y": 4731.049643292969,
     "model": "qpdk.cells.launcher.launcher"
   },
-  "straight_open_2": {
+  "tee_bot_straight_2": {
     "y": 7,
     "bbox_xmin": 0,
     "transform": [
@@ -1260,11 +1260,11 @@
     ],
     "terminals": {
       "start": {
-        "component_id": "launcher_1",
+        "component_id": "launcher_bot",
         "port_name": "o1"
       },
       "finish": {
-        "component_id": "tee_1",
+        "component_id": "tee_bot",
         "port_name": "o2"
       }
     },
@@ -1282,10 +1282,10 @@
     "type": "group",
     "name": "group_2",
     "members": [
-      "tee_1",
-      "straight_open_1",
-      "launcher_1",
-      "straight_open_2"
+      "tee_bot",
+      "tee_bot_straight_1",
+      "launcher_bot",
+      "tee_bot_straight_2"
     ]
   },
   "poly_3": {

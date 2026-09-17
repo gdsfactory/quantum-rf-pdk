@@ -57,9 +57,14 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
                 f"gdsfactoryplus not installed ({hint})", allow_module_level=True
             )
         if missing.startswith("gdsfactoryplus"):
-            pytest.fail(
-                f"gdsfactoryplus is installed but {module!r} is unavailable "
-                f"({missing!r} missing) — upstream API changed?"
+            if required:
+                pytest.fail(
+                    f"gdsfactoryplus is installed but {module!r} is unavailable "
+                    f"({missing!r} missing) — upstream API changed?"
+                )
+            pytest.skip(
+                f"gdsfactoryplus v2 API unavailable ({missing!r} missing)",
+                allow_module_level=True,
             )
         if required:
             pytest.fail(

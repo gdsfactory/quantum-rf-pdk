@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+import uuid
 from pathlib import Path
 
 import gdsfactory as gf
@@ -40,12 +41,15 @@ def qubit_test_chip() -> gf.Component:
         ) from e
 
     with tempfile.TemporaryDirectory() as tmp:
-        gds_path = Path(tmp) / "qubit_test_chip.gds"
+        materialized_name = f"_qpdk_qubit_test_chip_{uuid.uuid4().hex}"
+        schematic_path = Path(tmp) / f"{materialized_name}.gsch"
+        schematic_path.write_bytes(GSCH_SAMPLE.read_bytes())
+        gds_path = Path(tmp) / f"{materialized_name}.gds"
         result = build_nyancir_gds(
-            str(GSCH_SAMPLE),
+            str(schematic_path),
             str(gds_path),
             "qpdk.PDK",
-            str(Path(tmp) / "qubit_test_chip.dschematic"),
+            str(Path(tmp) / f"{materialized_name}.dschematic"),
         )
         warnings = result["warnings"]
         if warnings:
@@ -53,9 +57,4 @@ def qubit_test_chip() -> gf.Component:
                 "qubit_test_chip.gsch dropped unrouted connections: "
                 + "; ".join(warnings)
             )
-        # The gfp pipeline leaves its materialized top cell in the shared
-        # kcl under the same name; drop it so import_gds can claim the name.
-        for cell_index in list(gf.kcl.each_cell_top_down()):
-            if gf.kcl[cell_index].name == "qubit_test_chip":
-                gf.kcl[cell_index].delete()
-        return gf.import_gds(gds_path)
+        return gf.kcl[materialized_name]
