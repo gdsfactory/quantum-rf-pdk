@@ -4,9 +4,10 @@ import importlib
 from typing import Any, cast
 
 import gdsfactory as gf
+import pytest
 from kfactory.schematic import DSchematic
 
-from qpdk import PDK
+from qpdk import PDK, SAX_MODEL_ALIASES
 from qpdk.cells import (
     bend_circular,
     bend_s,
@@ -161,16 +162,12 @@ def test_sax_model_descriptors_resolve_from_the_pdk_registry() -> None:
     assert descriptor_count > 0
 
 
-def test_resonator_variants_have_direct_sax_models() -> None:
-    """Resolve bend variants by their registered cell names."""
+@pytest.mark.parametrize(("alias", "model_name"), SAX_MODEL_ALIASES.items())
+def test_sax_model_aliases(alias: str, model_name: str) -> None:
+    """Resolve aliased cells to the intended registered model."""
     assert PDK.models is not None
-
-    for wave_type in ("quarter_wave", "half_wave"):
-        for bend_type in ("start", "end", "both"):
-            name = f"resonator_{wave_type}_bend_{bend_type}"
-            s_params = PDK.models[name](f=[7e9])
-
-            assert {port for key in s_params for port in key} == {"o1", "o2"}
+    assert alias in PDK.cells
+    assert PDK.models[alias] is PDK.models[model_name]
 
 
 def test_coupled_resonators_declare_model_boundaries() -> None:

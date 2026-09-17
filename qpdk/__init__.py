@@ -3,7 +3,9 @@
 import importlib
 import inspect
 import pkgutil
+from collections.abc import Callable, Mapping
 from functools import lru_cache, partial
+from typing import Any
 
 import gdsfactory as gf
 from gdsfactory.cross_section import get_cross_sections
@@ -26,6 +28,33 @@ from qpdk.tech import (
 
 gf.CONF.layer_error_path = LAYER.ERROR_PATH
 
+# Add a cell factory here when it uses another cell's SAX model unchanged.
+SAX_MODEL_ALIASES = {
+    "resonator_quarter_wave_bend_start": "resonator_quarter_wave",
+    "resonator_quarter_wave_bend_end": "resonator_quarter_wave",
+    "resonator_quarter_wave_bend_both": "resonator_quarter_wave",
+    "resonator_half_wave_bend_start": "resonator_half_wave",
+    "resonator_half_wave_bend_end": "resonator_half_wave",
+    "resonator_half_wave_bend_both": "resonator_half_wave",
+}
+
+
+def _add_sax_model_aliases(
+    models: Mapping[str, Callable[..., Any]],
+) -> dict[str, Callable[..., Any]]:
+    registered = dict(models)
+    if collisions := registered.keys() & SAX_MODEL_ALIASES.keys():
+        raise ValueError(f"SAX model aliases already registered: {sorted(collisions)}")
+    if missing := set(SAX_MODEL_ALIASES.values()) - registered.keys():
+        raise ValueError(
+            f"SAX model alias targets are not registered: {sorted(missing)}"
+        )
+    registered.update({
+        alias: registered[model_name] for alias, model_name in SAX_MODEL_ALIASES.items()
+    })
+    return registered
+
+
 try:
     from .models import models as _models
 except ImportError as e:
@@ -35,16 +64,7 @@ except ImportError as e:
     )
     _models = {}
 else:
-    _models = dict(_models)
-    for variant, model_name in {
-        "resonator_quarter_wave_bend_start": "resonator_quarter_wave",
-        "resonator_quarter_wave_bend_end": "resonator_quarter_wave",
-        "resonator_quarter_wave_bend_both": "resonator_quarter_wave",
-        "resonator_half_wave_bend_start": "resonator_half_wave",
-        "resonator_half_wave_bend_end": "resonator_half_wave",
-        "resonator_half_wave_bend_both": "resonator_half_wave",
-    }.items():
-        _models[variant] = _models[model_name]
+    _models = _add_sax_model_aliases(_models)
 
 _cells = get_cells(cells)
 _cross_sections = get_cross_sections(tech)
@@ -107,6 +127,7 @@ __all__ = [
     "LAYER_STACK",
     "LAYER_VIEWS",
     "PATH",
+    "SAX_MODEL_ALIASES",
     "cells",
     "config",
     "get_sample_functions",
