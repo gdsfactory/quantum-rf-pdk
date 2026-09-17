@@ -36,7 +36,8 @@
     ],
     "sbend_segments": {
       "1": {
-        "factory": "bend_s"
+        "factory": "bend_s",
+        "size": [333.5, -1.0]
       }
     }
   },
@@ -368,7 +369,8 @@
     ],
     "sbend_segments": {
       "1": {
-        "factory": "bend_s"
+        "factory": "bend_s",
+        "size": [-215.0, -0.93]
       }
     }
   },
@@ -819,7 +821,8 @@
     ],
     "sbend_segments": {
       "1": {
-        "factory": "bend_s"
+        "factory": "bend_s",
+        "size": [-333.5, 2.351]
       }
     }
   },

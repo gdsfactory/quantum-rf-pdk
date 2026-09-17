@@ -277,3 +277,10 @@ repos:
         language: script
         files: ^(AGENTS\.md|pyproject\.toml)$
         pass_filenames: false
+      - id: check-schematic-sources
+        priority: 20
+        name: Check .gsch and .pic.yml sources match
+        entry: uv run --script .github/check-schematic-sources.py
+        language: system
+        files: ^qpdk/samples/.*\.(gsch|pic\.yml)$
+        pass_filenames: false
