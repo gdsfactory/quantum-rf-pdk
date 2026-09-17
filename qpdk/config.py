@@ -6,6 +6,8 @@ import pathlib
 from dataclasses import dataclass
 from typing import ClassVar, final
 
+from qpdk.singleton import SingletonMeta
+
 cwd = pathlib.Path.cwd()
 cwd_config = cwd / "config.yml"
 module = pathlib.Path(__file__).parent.absolute()
@@ -14,7 +16,7 @@ repo = module.parent
 
 @final
 @dataclass
-class Path:
+class Path(metaclass=SingletonMeta):
     """Creates object for referencing paths in repository."""
 
     module: ClassVar[pathlib.Path] = module

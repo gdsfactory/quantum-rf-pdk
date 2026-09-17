@@ -16,6 +16,7 @@ from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
 from qpdk.logger import logger
 from qpdk.samples.resonator_test_chip import resonator_test_chip_python
+from qpdk.singleton import SingletonMeta
 from qpdk.tech import (
     LAYER,
     LAYER_CONNECTIVITY,
@@ -58,10 +59,19 @@ for variant, model_name in {
 _cross_sections = get_cross_sections(tech)
 
 
-@lru_cache
+# Under the pre-commit hook's --ignore missing-import, pyrefly cannot resolve
+# type(Pdk) and rejects it as a base class
+class _QPdkMeta(SingletonMeta, type(Pdk)):  # pyrefly: ignore[invalid-inheritance]
+    """Singleton semantics layered on pydantic's model metaclass."""
+
+
+class QPdk(Pdk, metaclass=_QPdkMeta):
+    """Pdk subclass whose every construction returns the same instance."""
+
+
 def get_pdk() -> Pdk:
     """Return Quantum PDK."""
-    return Pdk(
+    return QPdk(
         name="qpdk",
         cells=_cells,
         cross_sections=_cross_sections,  # type: ignore[arg-type]
