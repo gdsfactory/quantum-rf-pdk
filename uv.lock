@@ -412,6 +412,28 @@ wheels = [
 ]
 
 [[package]]
+name = "circulax"
+version = "0.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "diffrax" },
+    { name = "equinox" },
+    { name = "jax" },
+    { name = "jaxlib" },
+    { name = "kfnetlist" },
+    { name = "klujax" },
+    { name = "lineax" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "sax" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ae/d7/d4838228e30a54ab4dbc78682364a7fbeb8e9031db3180ef7cc10e269943/circulax-0.2.3.tar.gz", hash = "sha256:3ea8f6f5a0b175a034de3bdae64dc77ea121b9a758524d5c50ccfaaed22aecaa", size = 3492258, upload-time = "2026-07-31T08:16:00.09Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1d/bf/0ad8b46152e90699af38df5c063fc999269c56c4290d626579f91a41a563/circulax-0.2.3-py3-none-any.whl", hash = "sha256:d5a99d207ce6053acb5adfc17fd35ed057ff13d6a1264de0523d9c995c4c9c15", size = 190958, upload-time = "2026-07-31T08:15:57.505Z" },
+]
+
+[[package]]
 name = "click"
 version = "8.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3728,6 +3750,10 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+circulax = [
+    { name = "circulax" },
+    { name = "optax" },
+]
 gdsfactoryplus = [
     { name = "doroutes" },
     { name = "elvis-lvs" },
@@ -3790,6 +3816,7 @@ dev = [
     { name = "scipy-stubs" },
 ]
 docs = [
+    { name = "circulax" },
     { name = "flax" },
     { name = "gplugins", extra = ["meshwell"] },
     { name = "jaxellip" },
@@ -3828,6 +3855,7 @@ docs = [
     { name = "typsphinx" },
 ]
 docs-models = [
+    { name = "circulax" },
     { name = "flax" },
     { name = "gplugins", extra = ["meshwell"] },
     { name = "jaxellip" },
@@ -3871,6 +3899,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "circulax", marker = "extra == 'circulax'", specifier = ">=0.2.3" },
     { name = "doroutes", marker = "extra == 'gdsfactoryplus'", specifier = ">=1.4.0,<2.0.0" },
     { name = "elvis-lvs", marker = "extra == 'gdsfactoryplus'" },
     { name = "flax", marker = "extra == 'netket'" },
@@ -3882,6 +3911,7 @@ requires-dist = [
     { name = "jaxellip", marker = "extra == 'models'" },
     { name = "kfnetlist", marker = "extra == 'gdsfactoryplus'" },
     { name = "netket", marker = "extra == 'netket'", specifier = ">=3.12" },
+    { name = "optax", marker = "extra == 'circulax'" },
     { name = "optax", marker = "extra == 'models'" },
     { name = "optax", marker = "extra == 'netket'" },
     { name = "optuna", marker = "extra == 'models'" },
@@ -3903,7 +3933,7 @@ requires-dist = [
     { name = "trimesh", marker = "extra == 'graphics'" },
     { name = "typing-extensions", specifier = ">=4.12.0" },
 ]
-provides-extras = ["gdsfactoryplus", "graphics", "hfss", "models", "netket", "pymablock", "qutip", "ray", "scqubits"]
+provides-extras = ["circulax", "gdsfactoryplus", "graphics", "hfss", "models", "netket", "pymablock", "qutip", "ray", "scqubits"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3918,6 +3948,7 @@ dev = [
     { name = "scipy-stubs" },
 ]
 docs = [
+    { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
     { name = "gplugins", extras = ["meshwell"], specifier = "~=2.1.0" },
     { name = "jaxellip" },
@@ -3955,6 +3986,7 @@ docs = [
     { name = "typsphinx", specifier = ">=0.9.2,<0.10" },
 ]
 docs-models = [
+    { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
     { name = "gplugins", extras = ["meshwell"], specifier = "~=2.1.0" },
     { name = "jaxellip" },
