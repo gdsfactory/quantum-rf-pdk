@@ -3,6 +3,9 @@ permissions:
   contents: read
 on:
   workflow_dispatch:
+concurrency:
+  group: copilot-setup-steps
+  cancel-in-progress: false
 jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest

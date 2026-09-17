@@ -57,7 +57,7 @@ as follows. Each stage may loop back to earlier stages as the design is refined.
             F -.-> A
             E -.-> C
 
-.. only:: latex
+.. only:: typst or typstpdf
 
     Design flow: Physical requirements → Hamiltonian analysis → Circuit/S-parameter models
     → Layout (gdsfactory/qpdk) → FEM verification → Pulse-level simulation → Fabrication.
@@ -204,6 +204,32 @@ gate fidelities, leakage to non-computational states, and the impact of decohere
   with QuTiP-QIP :cite:`liBoshlomQutipqipPulselevel2022`, including population dynamics,
   leakage analysis, and decoherence effects.
 
+***********************************
+ Differentiable circuit simulation
+***********************************
+
+Differentiable circuit simulators formulate the circuit as a system of Differential
+Algebraic Equations (DAEs) and solve them with automatic differentiation support. This
+enables gradient-based optimization of physical parameters directly from simulation
+outputs—without finite-difference approximations.
+
+**Typical use cases:**
+
+- Optimizing Josephson junction parameters (critical current, shunt capacitance) to meet
+  target qubit frequency and anharmonicity.
+- Simulating time-domain response of coupled qubit circuits to fast control pulses.
+- Computing gradients of crosstalk metrics with respect to layout geometry for automated
+  design refinement.
+- Harmonic-balance analysis of nonlinear superconducting circuits under periodic
+  microwave drives.
+
+**Notebooks:**
+
+- :doc:`notebooks/circulax_transmon_optimization` — Demonstrates Circulax's harmonic
+  balance and transient solvers applied to a transmon qubit circuit: optimizes junction
+  parameters via ``jax.grad`` and simulates crosstalk between coupled qubits, analyzing
+  its sensitivity to the coupling capacitance.
+
 **********************
  External integration
 **********************
@@ -273,9 +299,19 @@ primary tooling lives in another environment.
     - - :doc:`notebooks/qutip_qip_pulse_simulation`
       - Pulse-level simulation
       - QuTiP-QIP, JAX
+    - - :doc:`notebooks/circulax_transmon_optimization`
+      - Differentiable circuit simulation
+      - Circulax, JAX, Optax
     - - :doc:`notebooks/matlab_integration`
       - External integration
       - MATLAB, jupyter-matlab-proxy
+
+************
+ References
+************
+
+.. bibliography::
+    :filter: docname in docnames
 
 .. toctree::
     :hidden:

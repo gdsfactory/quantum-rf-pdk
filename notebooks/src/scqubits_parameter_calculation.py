@@ -94,7 +94,6 @@ from qpdk.models.cpw import cpw_parameters
 
 PDK.activate()
 
-# ruff: disable[module-import-not-at-top-of-file]
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -109,8 +108,6 @@ from qpdk.models.qubit import (
     ej_to_inductance,
 )
 from qpdk.models.resonator import resonator_frequency
-
-# ruff: enable[module-import-not-at-top-of-file]
 
 # %% [markdown]
 # ## Building the System

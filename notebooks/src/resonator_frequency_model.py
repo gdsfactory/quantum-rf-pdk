@@ -44,7 +44,6 @@ from qpdk.models.cpw import cpw_parameters
 
 PDK.activate()
 
-# ruff: disable[module-import-not-at-top-of-file]
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator_frequency,
@@ -221,4 +220,3 @@ _mark_resonance_frequency(optimal_freq_val, "blue", "Optimized resonance Frequen
 _mark_resonance_frequency(TARGET_FREQUENCY, "orange", "Target resonance Frequency")
 plt.legend()
 plt.show()
-# ruff: enable[module-import-not-at-top-of-file]

@@ -12,14 +12,14 @@
 # # Q2D Cross-Section Impedance of a Coplanar Waveguide
 #
 # This notebook demonstrates how to extract the characteristic impedance
-# :math:`Z_0` of a coplanar waveguide (CPW) cross-section using the
+# $Z_0$ of a coplanar waveguide (CPW) cross-section using the
 # Ansys 2D Extractor (Q2D) quasi-static field solver via PyAEDT.
 #
 # The Q2D solver computes per-unit-length RLGC parameters from the
 # cross-sectional geometry, from which the characteristic impedance
 # can be obtained as a function of frequency.  We compare the
 # full-wave Q2D result against the analytical conformal-mapping estimate
-# from :func:`~qpdk.models.cpw.cpw_parameters`.
+# from {py:func}`~qpdk.models.cpw_parameters`.
 #
 # **Prerequisites:**
 # - Ansys Electronics Desktop installed (requires license)
@@ -126,7 +126,7 @@ print(f"Design name: {q2d.design_name}")
 # %% [markdown]
 # ## Build CPW Cross-Section Geometry
 #
-# Use :meth:`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section` to automatically
+# Use {py:meth}`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section` to automatically
 # build the CPW geometry (signal conductor, ground planes, substrate) from the
 # gdsfactory cross-section and QPDK layer stack.
 
@@ -213,7 +213,7 @@ else:
 # %% [markdown]
 # ## Extract and Plot Impedance
 #
-# Extract the characteristic impedance :math:`Z_0` from Q2D and compare it
+# Extract the characteristic impedance $Z_0$ from Q2D and compare it
 # with the analytical conformal-mapping estimate.  The analytical value is
 # shown as a horizontal dashed line.
 
@@ -289,13 +289,13 @@ print("Q2D session closed and temporary files cleaned up")
 #
 # 2. **Q2D Setup**: Initializing Ansys 2D Extractor via PyAEDT and building the
 #    cross-sectional geometry using
-#    :meth:`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section`
+#    {py:meth}`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section`
 #
 # 3. **Impedance Extraction**: Running the Q2D quasi-static solver to compute
-#    :math:`Z_0` as a function of frequency from 1 to 10 GHz
+#    $Z_0$ as a function of frequency from 1 to 10 GHz
 #
 # 4. **Analytical Validation**: Comparing the Q2D result with the conformal-mapping
-#    analytical estimate from :func:`~qpdk.models.cpw.cpw_parameters`
+#    analytical estimate from {py:func}`~qpdk.models.cpw_parameters`
 #
 # **Key Points for CPW Design:**
 # - The Q2D solver gives frequency-dependent impedance including dispersion effects

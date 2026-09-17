@@ -172,6 +172,11 @@ repos:
     hooks:
       - id: sphinx-lint
         priority: 10
+  - repo: https://github.com/typstyle-rs/pre-commit-typstyle
+    rev: v0.15.1
+    hooks:
+      - id: typstyle
+        priority: 20
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.23.1
     hooks:
@@ -214,6 +219,11 @@ repos:
       - id: matlab-reflow-comments
         priority: 10
         args: [--line-length=100]
+        # This also reflows the jupytext percent-format sources in notebooks/src.
+        # The hook joins adjacent comment lines whose inner indent is below two
+        # spaces, so structural comments must keep an inner indent of either zero
+        # (passed through as a blank comment) or two or more (passed through as
+        # indented). See the YAML header in notebooks/src/matlab_integration.m.
   - repo: https://github.com/nikosavola/MATLAB-language-server-pre-commit
     rev: v0.1.1
     hooks:
@@ -259,4 +269,11 @@ repos:
         entry: ./.github/check-notebook-sources.sh
         language: script
         files: ^notebooks/.*\.ipynb$
+        pass_filenames: false
+      - id: check-agents-version-ranges
+        priority: 10
+        name: Check AGENTS.md version ranges match pyproject.toml
+        entry: ./.github/check-agents-version-ranges.sh
+        language: script
+        files: ^(AGENTS\.md|pyproject\.toml)$
         pass_filenames: false

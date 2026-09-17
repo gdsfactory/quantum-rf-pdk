@@ -944,3 +944,10 @@ plt.show(block=False)
 #   [SAX layout-aware example](https://gdsfactory.github.io/sax/nbs/examples/07_layout_aware/))
 #   or additional sources of variation (substrate permittivity, metal
 #   thickness).
+
+# %% [markdown]
+# ## References
+#
+# ```{bibliography}
+# :filter: docname in docnames
+# ```

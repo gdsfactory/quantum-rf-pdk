@@ -299,3 +299,35 @@ class TestGetCpwDimensions:
         xs = gf.cross_section.cross_section(width=10.0)
         with pytest.raises(ValueError, match="etch"):
             get_cpw_dimensions(xs)
+
+    @staticmethod
+    def test_zero_width_raises() -> None:
+        """Test that a cross-section with zero conductor width raises ValueError."""
+        # Direct width=0 is rejected by gdsfactory's Section validator, but a
+        # width_function returning 0 is constructible and yields width 0.
+        # The lambda takes the normalized position argument so the cross-section
+        # remains usable (extrudable).
+        xs = gf.CrossSection(
+            sections=(
+                gf.Section(
+                    width_function=lambda *_: 0.0, layer=(1, 0), name="conductor"
+                ),
+                gf.Section(width=6.0, layer=(1, 0), name="etch_m1"),
+            )
+        )
+        with pytest.raises(ValueError, match="conductor width"):
+            get_cpw_dimensions(xs)
+
+    @staticmethod
+    def test_zero_gap_raises() -> None:
+        """Test that a cross-section with zero etch gap raises ValueError."""
+        # A zero-width etch section yields cpw_gap = 0, which would produce
+        # NaN coupling capacitances downstream, so it is rejected.
+        xs = gf.CrossSection(
+            sections=(
+                gf.Section(width=10.0, layer=(1, 0), name="conductor"),
+                gf.Section(width_function=lambda *_: 0.0, layer=(1, 0), name="etch_m1"),
+            )
+        )
+        with pytest.raises(ValueError, match="etch gap"):
+            get_cpw_dimensions(xs)

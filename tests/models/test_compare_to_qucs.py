@@ -29,6 +29,31 @@ NUMERIC_TOLERANCES = {
 }
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _require_lfs_test_data() -> None:
+    """Fail with a clear message if the LFS-stored Qucs reference data is not pulled.
+
+    The ``.csv`` reference files in ``tests/models/data/`` are stored in Git
+    LFS. In a fresh clone or worktree whose LFS objects have not been
+    downloaded, they contain pointer text instead of CSV data, which makes
+    ``pl.read_csv`` fail with a confusing schema error.
+    """
+    for csv_path in sorted(TEST_DATA_PATH.glob("*.csv")):
+        with csv_path.open("rb") as file:
+            head = file.read(128)
+        # Git LFS pointer text starts with "version " followed by the LFS API
+        # URL and then an "oid sha256:..." line; real CSV files start with
+        # column headers instead. (Split checks avoid a URL literal that link
+        # checkers would try to resolve.)
+        if head.startswith(b"version ") and b"oid sha256:" in head:
+            pytest.fail(
+                f"{csv_path.name} contains Git LFS pointer text instead of the "
+                "actual reference data. Run `git lfs pull` to download the LFS "
+                "files, then re-run the tests.",
+                pytrace=False,
+            )
+
+
 @final
 class ModelParameter(BaseModel):
     """Model parameter configuration."""
@@ -77,6 +102,7 @@ class BaseCompareToQucs(ABC):
         """
         S_qucs = pl.read_csv(TEST_DATA_PATH / self.csv_filename)
         f = S_qucs["frequency"].to_jax()
+        assert f.size > 0, f"Qucs reference CSV {self.csv_filename} has no data rows"
 
         model_func = self.get_model_function()
         kwargs = {p.name: p.value for p in self.parameters}
@@ -117,6 +143,19 @@ class BaseCompareToQucs(ABC):
                         S_qucs[qucs_real_col].to_jax()
                         + 1j * S_qucs[qucs_imag_col].to_jax()
                     )
+
+        # The Qucs-S reference exports the first column of the S-matrix
+        # (S11, S21, S31, ...), which is what this test compares. Require the
+        # reference CSV to cover that first column for every port the model
+        # exposes, so a missing or renamed column cannot shrink the comparison.
+        # Richer reference data (e.g. S22) is welcome but not required.
+        assert S_qucs_dict, f"No Qucs reference data loaded from {self.csv_filename}"
+        expected_qucs_keys = {f"S{i}1" for i in range(1, num_ports + 1)}
+        assert expected_qucs_keys <= S_qucs_dict.keys(), (
+            f"Qucs reference CSV {self.csv_filename} is missing expected "
+            f"first-column S-parameter columns {sorted(expected_qucs_keys - S_qucs_dict.keys())}; "
+            f"got {sorted(S_qucs_dict)}"
+        )
 
         return (
             self.parameters,

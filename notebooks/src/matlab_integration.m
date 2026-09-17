@@ -1,4 +1,10 @@
-% --- jupyter:
+%---
+%jupyter:
+%   # The fences and root keys above sit tight against the `%` on purpose: the
+%   # matlab-reflow-comments hook merges adjacent comment lines whose inner
+%   # indent is a single space, which would fold `% ---` into `% jupyter:` and
+%   # leak this header into the generated notebook as a cell. Inner indents of
+%   # zero or of two-or-more spaces are both passed through untouched.
 %   jupytext:
 %     text_representation:
 %       extension: .m
@@ -9,7 +15,7 @@
 %     display_name: MATLAB Kernel
 %     language: matlab
 %     name: jupyter_matlab_kernel
-% ---
+%---
 
 % %% [markdown]
 %
@@ -17,8 +23,10 @@
 %
 % This notebook demonstrates calling `qpdk` (and through it, `gdsfactory`) **directly from MATLAB**
 % using MATLAB's built-in Python interface (`py.module.function(...)`); see [Ways to Call Python
-% from MATLAB](https://se.mathworks.com/help/matlab/matlab_external/ways-to-call-python-from-matlab.
-% html).
+% from MATLAB][call-python-from-matlab].
+%
+% [call-python-from-matlab]:
+% https://se.mathworks.com/help/matlab/matlab_external/ways-to-call-python-from-matlab.html
 %
 % The notebook itself is written for the **MATLAB Jupyter kernel** provided by
 % [jupyter-matlab-proxy](https://github.com/mathworks/jupyter-matlab-proxy); see also the [MathWorks

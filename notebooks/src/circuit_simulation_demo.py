@@ -25,7 +25,7 @@
 # %% [markdown]
 # # Circuit Simulation with QPDK
 #
-# This notebook demonstrates how to perform circuit simulations using the `qpdk` models and the `sax` circuit solver. We will showcase individual components and then combine them to create a custom resonator circuit.
+# This notebook demonstrates how to perform circuit simulations using the `qpdk` models and the [`sax`](https://gdsfactory.github.io/sax/) circuit solver. We will showcase individual components and then combine them to create a custom resonator circuit.
 
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -162,7 +162,7 @@ plt.show()
 # %% [markdown]
 # ## Building a Custom Resonator Circuit
 #
-# We can use `sax` to build our own circuits from basic components. Let's build a quarter-wave resonator capacitively coupled to a feedline.
+# We can use [`sax`](https://gdsfactory.github.io/sax/) to build our own circuits from basic components. Let's build a quarter-wave resonator capacitively coupled to a feedline.
 #
 # The circuit is a feedline with a T-junction. A series combination of a capacitor and a shorted transmission line (the resonator) is connected to the T-junction as a shunt element.
 

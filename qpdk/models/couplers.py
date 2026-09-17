@@ -3,16 +3,13 @@
 from functools import partial
 from typing import cast
 
-import gdsfactory as gf
 import jax
 import jax.numpy as jnp
 import sax
-from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from sax.models.rf import capacitor, tee
 
-from qpdk.logger import logger
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
 from qpdk.models.cpw import (
     cpw_ep_r_from_cross_section,
@@ -107,26 +104,16 @@ def cpw_cpw_coupling_capacitance(
 
     Returns:
         The total coupling capacitance in Farads.
+
+    Note:
+        Raises ``ValueError`` via :func:`~qpdk.models.cpw.get_cpw_dimensions`
+        if the cross-section has no section with 'etch' in its name, so the
+        CPW gap cannot be determined, or if the conductor width or etch gap
+        is not positive.
     """
     ep_r = cpw_ep_r_from_cross_section(cross_section)
 
-    try:
-        width, cpw_gap = get_cpw_dimensions(cross_section)
-    except ValueError:
-        # Fallback to default CPW width and gap if not found in sections
-        # Not sure if width needs fallback, but gap previously fell back to 6.0
-        logger.warning(
-            "CPW gap not found in cross-section sections. Using default gap of 6.0 µm."
-        )
-        xs = (
-            gf.get_cross_section(cross_section)
-            if isinstance(cross_section, str)
-            else cross_section
-        )
-        if callable(xs):
-            xs = cast(CrossSection, xs())
-        width = xs.width
-        cpw_gap = 6.0
+    width, cpw_gap = get_cpw_dimensions(cross_section)
 
     c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
         gap=gap,
