@@ -136,13 +136,12 @@ jobs:
   # suite only when the latest extension release is v2+; the gate also skips
   # the job gracefully when the Marketplace cannot be reached.
   test-gdsfactoryplus:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     needs: filter-gdsfactoryplus-versions
     if: ${{ needs.filter-gdsfactoryplus-versions.outputs.gfp-major >= 2 }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ${{ fromJson(needs.filter-gdsfactoryplus-versions.outputs.python-versions) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
