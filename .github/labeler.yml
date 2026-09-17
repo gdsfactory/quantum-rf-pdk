@@ -1,5 +1,11 @@
 # Configuration for GitHub Actions PR Labeler
 # https://github.com/actions/labeler
+ansys-aedt:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'qpdk/simulation/**/*'
+              - 'notebooks/src/hfss*.py'
 ci:
   - any:
       - changed-files:
@@ -21,6 +27,32 @@ documentation:
           - any-glob-to-any-file: 'docs/**/*'
           - any-glob-to-any-file: '.github/write_cells.py'
           - any-glob-to-any-file: '.github/write_models.py'
+fabrication:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'qpdk/tech.py'
+              - 'qpdk/layers.yaml'
+              - 'qpdk/klayout/**/*'
+infrastructure:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'Dockerfile'
+              - 'Makefile'
+              - 'justfile'
+              - '.github/CODEOWNERS'
+              - '.github/agents/**/*'
+              - '.github/dependabot.yml'
+              - '.github/labeler.yml'
+              - '.github/release-drafter.yml'
+              - '.github/lychee.toml'
+junctions:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'qpdk/cells/junction.py'
+              - 'qpdk/models/junction.py'
 drc:
   - any:
       - changed-files:
@@ -58,6 +90,23 @@ python:
   - any:
       - changed-files:
           - any-glob-to-any-file: '**/*.py'
+qubits:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'qpdk/cells/transmon.py'
+              - 'qpdk/cells/fluxonium.py'
+              - 'qpdk/cells/unimon.py'
+              - 'qpdk/cells/derived/**/*'
+              - 'qpdk/models/qubit.py'
+              - 'qpdk/models/unimon.py'
+              - 'qpdk/models/perturbation.py'
+resonators:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'qpdk/cells/resonator.py'
+              - 'qpdk/models/resonator.py'
 samples:
   - any:
       - changed-files:
@@ -66,15 +115,16 @@ simulations:
   - any:
       - changed-files:
           - any-glob-to-any-file: 'qpdk/simulation/**/*'
-technology:
-  - any:
-      - changed-files:
-          - any-glob-to-any-file: 'qpdk/tech.py'
-          - any-glob-to-any-file: 'qpdk/layers.yaml'
-          - any-glob-to-any-file: 'qpdk/klayout/**/*'
 tests:
   - any:
       - changed-files:
           - any-glob-to-any-file: 'tests/**/*'
           - any-glob-to-any-file: 'test_*.py'
           - any-glob-to-any-file: '*_test.py'
+3d-integration:
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'qpdk/cells/airbridge.py'
+              - 'qpdk/cells/bump.py'
+              - 'qpdk/cells/tsv.py'

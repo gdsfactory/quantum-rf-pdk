@@ -12,11 +12,10 @@ categories:
     label: 'breaking'
   - title: 'Features'
     labels:
-      - 'feature'
       - 'enhancement'
       - 'components'
       - 'models'
-      - 'technology'
+      - 'fabrication'
   - title: 'Bug Fixes'
     label: 'bug'
   - title: 'Documentation'
@@ -28,7 +27,6 @@ categories:
     collapse-after: 5
   - title: 'Other Changes'
     labels:
-      - 'maintenance'
       - 'tests'
       - 'ci'
       - 'infrastructure'
@@ -40,16 +38,14 @@ version-resolver:
       - 'major'
   minor:
     labels:
-      - 'feature'
       - 'minor'
       - 'enhancement'
       - 'components'
       - 'models'
-      - 'technology'
+      - 'fabrication'
   patch:
     labels:
       - 'bug'
-      - 'maintenance'
       - 'github_actions'
       - 'documentation'
       - 'dependencies'
