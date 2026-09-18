@@ -17,9 +17,11 @@
 # This notebook needs the `models` extra:
 #
 # ```bash
-# pip install "qpdk[models]"
-# # or, from a checkout of the repository:
+# uv add "qpdk[models]"
+# # or, from a checkout of this repository:
 # uv sync --extra models
+# # or with pip:
+# pip install "qpdk[models]"
 # ```
 #
 # The [Palace](https://awslabs.github.io/palace/) FEM solver must also be available on `PATH`.

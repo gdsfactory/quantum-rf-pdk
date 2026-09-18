@@ -16,9 +16,11 @@
 # This notebook needs the `models` extra:
 #
 # ```bash
-# pip install "qpdk[models]"
-# # or, from a checkout of the repository:
+# uv add "qpdk[models]"
+# # or, from a checkout of this repository:
 # uv sync --extra models
+# # or with pip:
+# pip install "qpdk[models]"
 # ```
 #
 # The OpenVINO benchmark additionally needs `pip install openvino`, and is skipped if it is missing.

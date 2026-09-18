@@ -16,9 +16,11 @@
 # This notebook needs the `models` and `ray` extras:
 #
 # ```bash
-# pip install "qpdk[models,ray]"
-# # or, from a checkout of the repository:
+# uv add "qpdk[models,ray]"
+# # or, from a checkout of this repository:
 # uv sync --extra models --extra ray
+# # or with pip:
+# pip install "qpdk[models,ray]"
 # ```
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.

@@ -17,9 +17,11 @@
 # This notebook needs the `models` and `netket` extras:
 #
 # ```bash
-# pip install "qpdk[models,netket]"
-# # or, from a checkout of the repository:
+# uv add "qpdk[models,netket]"
+# # or, from a checkout of this repository:
 # uv sync --extra models --extra netket
+# # or with pip:
+# pip install "qpdk[models,netket]"
 # ```
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
