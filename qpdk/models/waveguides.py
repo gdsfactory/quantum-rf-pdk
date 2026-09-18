@@ -17,12 +17,12 @@ from sax.models.rf import (
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import get_cpw_dimensions, get_cpw_substrate_params
 from qpdk.models.generic import admittance, tee
-from qpdk.tech import coplanar_waveguide
+from qpdk.tech import coplanar_waveguide, launcher_cross_section_big
 
 
 def straight(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float = 10.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     r"""S-parameter model for a straight coplanar waveguide.
@@ -64,7 +64,7 @@ def straight(
 
 def straight_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float = 10.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     r"""S-parameter model for a straight coplanar waveguide.
@@ -128,7 +128,7 @@ def straight_microstrip(
 
 def straight_shorted(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float = 10.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     """S-parameter model for a straight waveguide with one shorted end.
@@ -158,7 +158,7 @@ def straight_shorted(
 
 def straight_open(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float = 10.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     """S-parameter model for a straight waveguide with one open end.
@@ -186,7 +186,7 @@ def straight_open(
 
 def straight_double_open(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float = 10.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """S-parameter model for a straight waveguide with open ends.
@@ -275,7 +275,7 @@ def nxn(
 def airbridge(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     cpw_width: sax.Float = 10.0,
-    bridge_width: sax.Float = 10.0,
+    bridge_width: sax.Float = 8.0,
     airgap_height: sax.Float = 3.0,
     loss_tangent: sax.Float = 1.2e-8,
 ) -> sax.SType:
@@ -487,32 +487,32 @@ def rectangle(
 
 def taper_cross_section(
     f: ArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
-    cross_section_1: CrossSectionSpec = "cpw",
-    cross_section_2: CrossSectionSpec = "cpw",
-    n_points: int = 50,
+    length: sax.Float = 10,
+    cross_section1: CrossSectionSpec = "cpw",
+    cross_section2: CrossSectionSpec = "cpw",
+    npoints: int = 100,
 ) -> sax.SDict:
     """S-parameter model for a cross-section taper using linear interpolation.
 
     Args:
         f: Array of frequency points in Hz
         length: Physical length in µm
-        cross_section_1: Cross-section for the start of the taper.
-        cross_section_2: Cross-section for the end of the taper.
-        n_points: Number of segments to divide the taper into for simulation.
+        cross_section1: Cross-section for the start of the taper.
+        cross_section2: Cross-section for the end of the taper.
+        npoints: Number of segments to divide the taper into for simulation.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    n_points = int(n_points)
-    w1, g1 = get_cpw_dimensions(cross_section_1)
-    w2, g2 = get_cpw_dimensions(cross_section_2)
+    npoints = int(npoints)
+    w1, g1 = get_cpw_dimensions(cross_section1)
+    w2, g2 = get_cpw_dimensions(cross_section2)
 
     f = jnp.asarray(f)
-    segment_length = length / n_points
+    segment_length = length / npoints
 
-    ws = jnp.linspace(w1, w2, n_points)
-    gs = jnp.linspace(g1, g2, n_points)
+    ws = jnp.linspace(w1, w2, npoints)
+    gs = jnp.linspace(g1, g2, npoints)
 
     instances = {
         f"straight_{i}": straight(
@@ -520,14 +520,14 @@ def taper_cross_section(
             length=segment_length,
             cross_section=coplanar_waveguide(width=float(ws[i]), gap=float(gs[i])),
         )
-        for i in range(n_points)
+        for i in range(npoints)
     }
     connections = {
-        f"straight_{i},o2": f"straight_{i + 1},o1" for i in range(n_points - 1)
+        f"straight_{i},o2": f"straight_{i + 1},o1" for i in range(npoints - 1)
     }
     ports = {
         "o1": "straight_0,o1",
-        "o2": f"straight_{n_points - 1},o2",
+        "o2": f"straight_{npoints - 1},o2",
     }
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
 
@@ -536,7 +536,7 @@ def launcher(
     f: ArrayLike = DEFAULT_FREQUENCY,
     straight_length: sax.Float = 200.0,
     taper_length: sax.Float = 100.0,
-    cross_section_big: CrossSectionSpec | None = None,
+    cross_section_big: CrossSectionSpec = launcher_cross_section_big,
     cross_section_small: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     """S-parameter model for a launcher, effectively a straight section followed by a taper.
@@ -552,9 +552,6 @@ def launcher(
         sax.SDict: S-parameters dictionary
     """
     f = jnp.asarray(f)
-    if cross_section_big is None:
-        cross_section_big = coplanar_waveguide(width=200, gap=100)
-
     instances = {
         "straight": straight(
             f=f,
@@ -564,8 +561,8 @@ def launcher(
         "taper": taper_cross_section(
             f=f,
             length=taper_length,
-            cross_section_1=cross_section_big,
-            cross_section_2=cross_section_small,
+            cross_section1=cross_section_big,
+            cross_section2=cross_section_small,
         ),
     }
     connections = {

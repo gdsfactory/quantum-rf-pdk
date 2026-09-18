@@ -1,10 +1,13 @@
 """Tests for resonator models."""
 
 import warnings
+from collections.abc import Callable
+from importlib import import_module
 from unittest.mock import Mock
 
 import jax.numpy as jnp
 import numpy as np
+import pytest
 import sax
 
 from qpdk.models.generic import open as open_model, short as short_model
@@ -16,6 +19,9 @@ from qpdk.models.resonator import (
     resonator_half_wave,
     resonator_quarter_wave,
 )
+from qpdk.tech import coplanar_waveguide
+
+resonator_models = import_module("qpdk.models.resonator")
 
 
 def test_resonator_models_port_count() -> None:
@@ -38,6 +44,31 @@ def test_resonator_coupled_basic_structure() -> None:
     f = jnp.array([5e9])
     rc = resonator_coupled(f=f, length=2000)
     assert len(rc) == 16  # 4 ports -> 16 S-parameters
+
+
+@pytest.mark.parametrize("model", [resonator_coupled, quarter_wave_resonator_coupled])
+def test_coupled_resonator_uses_feedline_cross_section_override(
+    monkeypatch: pytest.MonkeyPatch,
+    model: Callable[..., sax.SDict],
+) -> None:
+    resonator_cross_section = coplanar_waveguide(width=10, gap=6)
+    feedline_cross_section = coplanar_waveguide(width=20, gap=10)
+    straight_mock = Mock(wraps=resonator_models.straight)
+    monkeypatch.setattr(resonator_models, "straight", straight_mock)
+
+    model(
+        f=jnp.array([5e9]),
+        length=2000,
+        cross_section=resonator_cross_section,
+        cross_section_non_resonator=feedline_cross_section,
+    )
+
+    used_cross_sections = [
+        call.kwargs["cross_section"] for call in straight_mock.call_args_list
+    ]
+    assert len(used_cross_sections) == 4
+    assert all(value is feedline_cross_section for value in used_cross_sections[:2])
+    assert all(value is resonator_cross_section for value in used_cross_sections[2:])
 
 
 def test_resonator_frequency_shifts_with_length() -> None:
