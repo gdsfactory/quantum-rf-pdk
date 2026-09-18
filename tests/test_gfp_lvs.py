@@ -67,11 +67,39 @@ def schematic_project(tmp_path_factory: pytest.TempPathFactory) -> SchematicProj
     return SchematicProject(root=root, gsch=gsch)
 
 
+def _strip_cross_section_settings(circuit: gf.Component) -> None:
+    """Drop the multisection cross-section info gdsfactory >= 9.51 adds to ports.
+
+    gdsfactory 9.51 serializes the full cross-section into
+    ``port.info["cross_section_settings"]`` for multisection cross-sections,
+    and the nested section dicts carry their own ``name`` keys. elvis-lvs
+    (0.2.1) takes the first ``name`` it sees in the GDS port metadata, so every
+    port reads back as a section name (``_default``) instead of its real name
+    and LVS reports the whole netlist as mismatched. Drop the key until
+    elvis-lvs can parse nested port info.
+    """
+    visited: set[str] = set()
+
+    def walk(cell: gf.Component) -> None:
+        if cell.name in visited:
+            return
+        visited.add(cell.name)
+        for port in cell.ports:
+            if "cross_section_settings" in port.info.model_dump(exclude_defaults=True):
+                del port.info.cross_section_settings
+        for instance in cell.insts:
+            walk(instance.cell)
+
+    walk(circuit)
+
+
 def _write_layout(pic_yml: Path, output_dir: Path) -> Path:
     """Materialize a fallback using the schematic's top-cell name."""
     PDK.activate()
     gds_path = output_dir / f"{SAMPLE_STEM}.gds"
-    gf.read.from_yaml(pic_yml, name=SAMPLE_STEM).write_gds(gds_path)
+    circuit = gf.read.from_yaml(pic_yml, name=SAMPLE_STEM)
+    _strip_cross_section_settings(circuit)
+    circuit.write_gds(gds_path)
     return gds_path
 
 
