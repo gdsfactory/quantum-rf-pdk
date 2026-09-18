@@ -1,18 +1,43 @@
 """Tests for qpdk.models.generic module - LC resonator models."""
 
+from collections.abc import Callable
 from typing import final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
 import numpy as np
+import pytest
+import sax
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
-from qpdk.models.generic import lc_resonator, lc_resonator_coupled
+from qpdk.models.generic import (
+    lc_resonator,
+    lc_resonator_coupled,
+    open as open_model,
+    short as short_model,
+)
 
 from .base import TwoPortModelTestSuite
 
 MAX_EXAMPLES = 20
+
+
+@pytest.mark.parametrize(
+    ("model", "expected_gamma"),
+    [(open_model, 1.0), (short_model, -1.0)],
+    ids=["open", "short"],
+)
+@given(frequency=st.floats(min_value=1e6, max_value=100e9))
+@settings(max_examples=MAX_EXAMPLES, deadline=None)
+def test_ideal_one_port_termination(
+    model: Callable[..., sax.SDict], expected_gamma: float, frequency: float
+) -> None:
+    """Ideal loads expose one port with the expected reflection coefficient."""
+    result = model(f=jnp.asarray([frequency]))
+
+    assert set(result) == {("o1", "o1")}
+    assert_allclose(result["o1", "o1"], expected_gamma)
 
 
 @final

@@ -5,7 +5,9 @@ from unittest.mock import Mock
 
 import jax.numpy as jnp
 import numpy as np
+import sax
 
+from qpdk.models.generic import open as open_model, short as short_model
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator,
@@ -54,6 +56,36 @@ def test_resonator_frequency_shifts_with_length() -> None:
     f_long = f[jnp.argmin(s21_long)]
 
     assert f_long < f_short
+
+
+def test_explicit_open_and_short_match_quarter_wave_model() -> None:
+    """Compose the coupled resonator from explicit one-port terminations."""
+    f = jnp.linspace(3e9, 5e9, 101)
+    length = 8000.0
+    instances = {
+        "resonator": resonator_coupled(
+            f=f,
+            length=length,
+            open_start=False,
+            open_end=False,
+        ),
+        "open": open_model(f=f),
+        "short": short_model(f=f),
+    }
+    connections = {
+        "resonator,resonator_o1": "open,o1",
+        "resonator,resonator_o2": "short,o1",
+    }
+    ports = {
+        "coupling_o1": "resonator,coupling_o1",
+        "coupling_o2": "resonator,coupling_o2",
+    }
+
+    explicit = sax.evaluate_circuit_fg((connections, ports), instances)
+    expected = quarter_wave_resonator_coupled(f=f, length=length)
+
+    for key in explicit:
+        np.testing.assert_allclose(explicit[key], expected[key], rtol=1e-10, atol=1e-10)
 
 
 class TestResonatorCoupled:

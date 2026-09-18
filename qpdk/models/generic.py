@@ -126,8 +126,18 @@ def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SD
     return electrical_short(f=f, n_ports=2)
 
 
-short = electrical_short
-open = electrical_open  # ruff: ignore[builtin-variable-shadowing]
+def short(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SDict:
+    """Return the reflection coefficient of an ideal one-port short."""
+    return electrical_short(f=f)
+
+
+def open(  # ruff: ignore[builtin-variable-shadowing]
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+) -> sax.SDict:
+    """Return the reflection coefficient of an ideal one-port open."""
+    return electrical_open(f=f)
+
+
 short_2_port = electrical_short_2_port
 
 

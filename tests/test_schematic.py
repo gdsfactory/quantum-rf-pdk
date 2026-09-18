@@ -5,6 +5,7 @@ from typing import Any, cast
 
 import gdsfactory as gf
 import pytest
+from gdsfactory.typings import ComponentFactory
 from kfactory.schematic import DSchematic
 
 from qpdk import PDK, SAX_MODEL_ALIASES
@@ -15,6 +16,7 @@ from qpdk.cells import (
     launcher,
     lumped_element_resonator,
     meander_inductor,
+    open as open_cell,
     quarter_wave_resonator_coupled,
     resonator,
     resonator_coupled,
@@ -26,7 +28,10 @@ from qpdk.cells import (
     resonator_quarter_wave_bend_both,
     resonator_quarter_wave_bend_end,
     resonator_quarter_wave_bend_start,
+    short as short_cell,
     straight,
+    straight_open,
+    straight_shorted,
 )
 from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
@@ -96,6 +101,10 @@ def test_simulation_cells_have_sax_models() -> None:
     """Expose SAX-backed symbols with the same ports as their layout cells."""
     expected = {
         straight: ("qpdk.models.waveguides", {"o1", "o2"}),
+        open_cell: ("qpdk.models.generic", {"o1"}),
+        short_cell: ("qpdk.models.generic", {"o1"}),
+        straight_open: ("qpdk.models.waveguides", {"o1"}),
+        straight_shorted: ("qpdk.models.waveguides", {"o1"}),
         bend_s: ("qpdk.models.waveguides", {"o1", "o2"}),
         launcher: ("qpdk.models.waveguides", {"waveport", "o1"}),
         lumped_element_resonator: ("qpdk.models.inductor", {"o1", "o2"}),
@@ -124,6 +133,19 @@ def test_simulation_cells_have_sax_models() -> None:
     assert bend_s_schematic is not None
     bend_s_model = bend_s_schematic.info["models"][0]
     assert bend_s_model["params"] == {}
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [open_cell, short_cell, straight_open, straight_shorted],
+)
+def test_termination_cells_expose_one_simulation_port(
+    cell: ComponentFactory,
+) -> None:
+    """Keep ideal and distributed terminations one-port in layout netlists."""
+    component = cell()
+
+    assert {port.name for port in component.ports.filter(port_type="optical")} == {"o1"}
 
 
 def test_sax_model_descriptors_resolve_from_the_pdk_registry() -> None:

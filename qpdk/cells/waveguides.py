@@ -11,7 +11,11 @@ from qpdk import tech
 from qpdk.cells._schematic import (
     bend_circular_schematic,
     bend_s_schematic,
+    open_schematic,
+    short_schematic,
+    straight_open_schematic,
     straight_schematic,
+    straight_shorted_schematic,
 )
 from qpdk.logger import logger
 from qpdk.tech import get_etch_section
@@ -72,10 +76,74 @@ def straight(
 
 
 straight.schematic_function = straight_schematic
-straight_shorted = straight
 
 
-@gf.cell(tags=("waveguides", "resonators"))
+@gf.cell(tags=("terminations",), schematic_function=open_schematic)
+def open() -> gf.Component:  # ruff: ignore[builtin-variable-shadowing]
+    """Return a layout-free ideal one-port open for schematic simulation."""
+    c = gf.Component()
+    c.add_port(
+        "o1",
+        center=(0, 0),
+        orientation=180,
+        cross_section=_DEFAULT_CROSS_SECTION,
+    )
+    return c
+
+
+open.schematic_function = open_schematic
+
+
+@gf.cell(tags=("terminations",), schematic_function=short_schematic)
+def short() -> gf.Component:
+    """Return a layout-free ideal one-port short for schematic simulation."""
+    c = gf.Component()
+    c.add_port(
+        "o1",
+        center=(0, 0),
+        orientation=180,
+        cross_section=_DEFAULT_CROSS_SECTION,
+    )
+    return c
+
+
+short.schematic_function = short_schematic
+
+
+@gf.cell(
+    tags=("waveguides", "resonators", "terminations"),
+    schematic_function=straight_shorted_schematic,
+)
+def straight_shorted(
+    length: float = 10.0,
+    cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
+    npoints: int = 2,
+) -> gf.Component:
+    """Return a straight waveguide whose far end is shorted.
+
+    The CPW slots stop at the far end, joining its center trace to ground.
+
+    Args:
+        length: Length of the straight waveguide in μm.
+        cross_section: Cross-section specification.
+        npoints: Number of points for the waveguide.
+    """
+    c = gf.Component()
+    straight_ref = c << straight(
+        length=length, cross_section=cross_section, npoints=npoints
+    )
+    c.add_port(port=straight_ref.ports["o1"])
+    c.add_port(port=straight_ref.ports["o2"], port_type="placement")
+    return c
+
+
+straight_shorted.schematic_function = straight_shorted_schematic
+
+
+@gf.cell(
+    tags=("waveguides", "resonators", "terminations"),
+    schematic_function=straight_open_schematic,
+)
 def straight_open(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
@@ -96,6 +164,9 @@ def straight_open(
     c.add_port(port=straight_ref.ports["o2"], port_type="placement")
     add_etch_gap(c, c.ports["o2"], cross_section=cross_section)
     return c
+
+
+straight_open.schematic_function = straight_open_schematic
 
 
 @gf.cell(tags=("waveguides", "resonators"))

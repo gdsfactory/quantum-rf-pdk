@@ -23,11 +23,12 @@ from qpdk.models.waveguides import (
     straight,
     straight_double_open,
     straight_open,
+    straight_shorted,
     tsv,
 )
 from qpdk.tech import coplanar_waveguide
 
-from .base import TwoPortModelTestSuite
+from .base import OnePortModelTestSuite, TwoPortModelTestSuite
 
 MAX_EXAMPLES = 20
 _compiled_bend_s = jax.jit(bend_s, static_argnames=["npoints"])
@@ -158,10 +159,21 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
 
 
 @final
-class TestStraightOpen(TwoPortModelTestSuite):
+class TestStraightOpen(OnePortModelTestSuite):
     """Tests for straight_open model."""
 
     model_function = straight_open
+
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"length": 1000}
+
+
+@final
+class TestStraightShorted(OnePortModelTestSuite):
+    """Tests for straight_shorted model."""
+
+    model_function = straight_shorted
 
     @staticmethod
     def get_model_kwargs() -> dict:

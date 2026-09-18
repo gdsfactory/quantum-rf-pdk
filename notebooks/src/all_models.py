@@ -63,7 +63,7 @@ gamma_0_load(f=TEST_FREQUENCY, gamma_0=1, n_ports=2)
 # %%
 from qpdk.models.generic import short
 
-short(f=TEST_FREQUENCY, n_ports=2)
+short(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.generic import short_2_port
@@ -73,7 +73,7 @@ short_2_port(f=TEST_FREQUENCY)
 # %%
 from qpdk.models.generic import open
 
-open(f=TEST_FREQUENCY, n_ports=2)
+open(f=TEST_FREQUENCY)
 
 # %%
 from qpdk.models.generic import tee

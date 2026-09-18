@@ -40,6 +40,19 @@ _COUPLING_MODEL_BOUNDARIES = {
 }
 
 
+@pytest.mark.gfp
+@pytest.mark.parametrize(
+    "component",
+    ["open", "short", "straight_open", "straight_shorted"],
+)
+def test_one_port_termination_models_resolve(component: str) -> None:
+    """Resolve each termination as a one-port model through GFP metadata."""
+    model = factory_metadata.resolve_factory_model(component, "sax")
+
+    assert model is not None
+    assert set(model(f=np.asarray([5e9]))) == {("o1", "o1")}
+
+
 @cache
 def _reference_chip_circuit() -> Callable[..., sax.SDict]:
     """Build the flat declarative chip circuit from registered leaf models."""
