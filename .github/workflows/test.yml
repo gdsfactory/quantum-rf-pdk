@@ -160,17 +160,17 @@ jobs:
     # always() suppresses the implicit success(), so the fork gate alone decides:
     # on fork PRs this job is skipped, which makes the required check neutral
     # ("skipped") for branch protection; on the main repo it must run, and the
-    # check below then fails on any failed or cancelled matrix leg (a filter
-    # job failure also exits 1, a version-gate skip still passes).
+    # check below then fails on any failed or cancelled matrix leg or gate
+    # job (a version-gate skip still passes).
     if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - name: Check GDSFactory+ test matrix results
         run: |
-          # A failed gate maps the test job to "skipped"; without this
+          # A non-success gate maps the test job to "skipped"; without this
           # check a broken gate would show up green as "skipped".
           GATE="${{ needs.filter-gdsfactoryplus-versions.result }}"
-          if [[ "$GATE" == "failure" ]]; then
-            echo "GDSFactory+ version gate failed; the test job did not run meaningfully"
+          if [[ "$GATE" != "success" ]]; then
+            echo "GDSFactory+ version gate did not succeed (result: $GATE); the test job did not run meaningfully"
             exit 1
           fi
           RESULT="${{ needs.test-gdsfactoryplus.result }}"
@@ -178,7 +178,7 @@ jobs:
             echo "All GDSFactory+ test jobs succeeded"
             exit 0
           elif [[ "$RESULT" == "skipped" ]]; then
-            echo "GDSFactory+ test job skipped: latest VS Code extension release is < 2.0"
+            echo "GDSFactory+ test job skipped: latest extension release is < 2.0 or the Marketplace was unreachable"
             exit 0
           else
             echo "One or more GDSFactory+ test jobs failed"
