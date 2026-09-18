@@ -36,7 +36,7 @@ jobs:
           claude_args: |
             --max-turns 30
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
-          # Review PRs from every contributor, including forks and Dependabot.
+          # Not setting allowed_non_write_users: it enables the action's
+          # subprocess env scrub, which strips the GitHub token from Claude's
+          # shell. Trade-off: forks and Dependabot are not reviewed.
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          allowed_non_write_users: "*"
-          allowed_bots: "*"
