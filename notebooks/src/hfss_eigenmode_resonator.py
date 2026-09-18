@@ -17,9 +17,11 @@
 # This notebook needs the `models` and `hfss` extras:
 #
 # ```bash
-# pip install "qpdk[models,hfss]"
-# # or, from a checkout of the repository:
+# uv add "qpdk[models,hfss]"
+# # or, from a checkout of this repository:
 # uv sync --extra models --extra hfss
+# # or with pip:
+# pip install "qpdk[models,hfss]"
 # ```
 #
 # A local Ansys HFSS installation and license are also required.

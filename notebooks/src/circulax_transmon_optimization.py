@@ -18,9 +18,11 @@
 # This notebook needs the `models` and `circulax` extras:
 #
 # ```bash
-# pip install "qpdk[models,circulax]"
-# # or, from a checkout of the repository:
+# uv add "qpdk[models,circulax]"
+# # or, from a checkout of this repository:
 # uv sync --extra models --extra circulax
+# # or with pip:
+# pip install "qpdk[models,circulax]"
 # ```
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.

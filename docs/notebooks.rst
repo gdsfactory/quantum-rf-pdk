@@ -11,94 +11,9 @@ flow and uses a different simulation method, allowing users to choose the tools 
 best fit their needs.
 
 Because each notebook pulls in a different simulation backend, ``qpdk`` keeps those
-backends behind :ref:`optional dependencies <notebook-extras>` rather than installing
-all of them by default. Check the extra a notebook needs before running it — the
-:ref:`summary table <notebook-summary>` at the bottom lists them per notebook.
-
-.. _notebook-extras:
-
-****************************
- Installing optional extras
-****************************
-
-``pip install qpdk`` gives you the layout PDK and nothing else: the analytical models,
-FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
-``[project.optional-dependencies]`` in ``pyproject.toml``.
-
-.. list-table::
-    :header-rows: 1
-    :widths: 18 40 42
-
-    - - Extra
-      - Installs
-      - What it is for
-    - - ``models``
-      - ``sax``, ``jaxellip``, ``optax``, ``optuna``, ``gplugins[meshwell]``,
-        ``scikit-rf``, ``sympy``, ``polars``, ``pandas[parquet]``
-      - The analytical and S-parameter model library (``qpdk.models``), SAX circuit
-        simulation, meshing, and the DataFrame display helpers. **This is the baseline
-        extra — nearly every notebook needs it.**
-    - - ``hfss``
-      - ``pyaedt[graphics]``, ``polars``
-      - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
-        local Ansys installation and a license, which are not pip-installable.
-    - - ``circulax``
-      - ``circulax``, ``optax``
-      - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient
-        solvers with gradients.
-    - - ``netket``
-      - ``netket``, ``flax``, ``optax``
-      - Exact-diagonalization and variational Hamiltonian analysis with NetKet.
-    - - ``pymablock``
-      - ``pymablock``
-      - Symbolic perturbative block-diagonalization of the qubit–resonator Hamiltonian.
-    - - ``qutip``
-      - ``qutip-jax``, ``qutip-qip``
-      - Pulse-level, time-domain simulation of gates, leakage, and decoherence.
-    - - ``scqubits``
-      - ``scqubits``
-      - Numerical diagonalization of transmon and transmon–resonator Hamiltonians.
-    - - ``ray``
-      - ``ray[default]``, ``tqdm``
-      - Parallel and distributed parameter sweeps, used for Monte Carlo tolerance runs.
-    - - ``graphics``
-      - ``trimesh``, ``pyglet``
-      - Interactive 3-D viewing of component meshes. Not needed by any notebook.
-    - - ``gdsfactoryplus``
-      - ``doroutes``, ``elvis-lvs``, ``httpx``, ``inspice``, ``jaxellip``,
-        ``kfnetlist``, ``sax``
-      - Dependencies of the GDSFactory+ v2 SDK exercised by ``just test-gfp``. Not
-        needed by any notebook.
-
-Extras compose, so install them together in one command:
-
-.. code-block:: bash
-
-    # pip — quote the brackets so your shell does not glob them
-    pip install "qpdk[models]"
-    pip install "qpdk[models,netket]"
-
-    # uv, in a checkout of the repository
-    uv sync --extra models --extra netket
-
-    # everything at once
-    pip install "qpdk[circulax,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
-    uv sync --all-extras
-
-.. note::
-
-    Two notebook dependencies are deliberately *not* extras:
-
-    - ``openvino``, used by :doc:`notebooks/jax_backend_comparison` for the NPU
-      benchmark, is optional and platform-specific — install it with ``pip install
-      openvino``. The notebook skips that section if it is missing.
-    - MATLAB and `jupyter-matlab-proxy
-      <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
-      :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
-
-    If you only want to reproduce the rendered documentation, ``uv sync --group docs``
-    installs the ``docs`` dependency group, which already pulls in every backend the
-    notebooks execute with.
+backends behind optional dependencies rather than installing all of them by default. The
+:ref:`summary table <notebook-summary>` at the bottom lists which :ref:`extras
+<notebook-extras>` each notebook needs, and how to install them.
 
 *************************************
  Why multiple simulation approaches?
@@ -335,6 +250,105 @@ primary tooling lives in another environment.
   parametric chip variant grid summarised in a MATLAB `table`. The notebook uses the
   MATLAB Jupyter kernel from `jupyter-matlab-proxy
   <https://github.com/mathworks/jupyter-matlab-proxy>`_.
+
+.. _notebook-extras:
+
+****************************
+ Installing optional extras
+****************************
+
+``pip install qpdk`` gives you the layout PDK and nothing else: the analytical models,
+FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
+``[project.optional-dependencies]`` in ``pyproject.toml``.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 18 40 42
+
+    - - Extra
+      - Installs
+      - What it is for
+    - - ``models``
+      - ``sax``, ``jaxellip``, ``optax``, ``optuna``, ``gplugins[meshwell]``,
+        ``scikit-rf``, ``sympy``, ``polars``, ``pandas[parquet]``
+      - The analytical and S-parameter model library (``qpdk.models``), SAX circuit
+        simulation, meshing, and the DataFrame display helpers. **This is the baseline
+        extra — nearly every notebook needs it.**
+    - - ``hfss``
+      - ``pyaedt[graphics]``, ``polars``
+      - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
+        local Ansys installation and a license, which are not pip-installable.
+    - - ``circulax``
+      - ``circulax``, ``optax``
+      - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient
+        solvers with gradients.
+    - - ``netket``
+      - ``netket``, ``flax``, ``optax``
+      - Exact-diagonalization and variational Hamiltonian analysis with NetKet.
+    - - ``pymablock``
+      - ``pymablock``
+      - Symbolic perturbative block-diagonalization of the qubit–resonator Hamiltonian.
+    - - ``qutip``
+      - ``qutip-jax``, ``qutip-qip``
+      - Pulse-level, time-domain simulation of gates, leakage, and decoherence.
+    - - ``scqubits``
+      - ``scqubits``
+      - Numerical diagonalization of transmon and transmon–resonator Hamiltonians.
+    - - ``ray``
+      - ``ray[default]``, ``tqdm``
+      - Parallel and distributed parameter sweeps, used for Monte Carlo tolerance runs.
+    - - ``graphics``
+      - ``trimesh``, ``pyglet``
+      - Interactive 3-D viewing of component meshes. Not needed by any notebook.
+    - - ``gdsfactoryplus``
+      - ``doroutes``, ``elvis-lvs``, ``httpx``, ``inspice``, ``jaxellip``,
+        ``kfnetlist``, ``sax``
+      - Dependencies of the GDSFactory+ v2 SDK exercised by ``just test-gfp``. Not
+        needed by any notebook.
+
+Extras compose, so install them together in one command. Always quote the brackets —
+``zsh`` and ``fish`` treat them as globs.
+
+With `uv <https://docs.astral.sh/uv/>`_:
+
+.. code-block:: bash
+
+    # add qpdk with extras to the current project (writes pyproject.toml)
+    uv add "qpdk[models]"
+    uv add "qpdk[models,netket]"
+
+    # install into the active environment without touching pyproject.toml
+    uv pip install "qpdk[models,netket]"
+
+    # in a checkout of this repository, sync the locked environment
+    uv sync --extra models --extra netket
+    uv sync --all-extras
+
+    # run a notebook in a throwaway environment, no install step
+    uvx --with "qpdk[models,netket]" --from jupyterlab jupyter lab
+
+With ``pip``:
+
+.. code-block:: bash
+
+    pip install "qpdk[models]"
+    pip install "qpdk[models,netket]"
+    pip install "qpdk[circulax,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
+
+.. note::
+
+    Two notebook dependencies are deliberately *not* extras:
+
+    - ``openvino``, used by :doc:`notebooks/jax_backend_comparison` for the NPU
+      benchmark, is optional and platform-specific — install it with ``pip install
+      openvino``. The notebook skips that section if it is missing.
+    - MATLAB and `jupyter-matlab-proxy
+      <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
+      :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
+
+    If you only want to reproduce the rendered documentation, ``uv sync --group docs``
+    installs the ``docs`` dependency group, which already pulls in every backend the
+    notebooks execute with.
 
 .. _notebook-summary:
 

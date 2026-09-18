@@ -31,9 +31,11 @@
 # This notebook needs the `models` extra:
 #
 # ```bash
-# pip install "qpdk[models]"
-# # or, from a checkout of the repository:
+# uv add "qpdk[models]"
+# # or, from a checkout of this repository:
 # uv sync --extra models
+# # or with pip:
+# pip install "qpdk[models]"
 # ```
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
