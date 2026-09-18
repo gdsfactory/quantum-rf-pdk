@@ -179,6 +179,10 @@ All PRs must pass:
 1. **Use JAX for analytical models**: When implementing analytical models for S-parameters, prefer using JAX-compatible
    functions (e.g., `jnp` instead of `np`, `jaxellip` for elliptic integrals) and enable JIT compilation with
    `@partial(jax.jit, inline=True)` for helper functions.
+1. **Keep SAX models jittable**: S-parameter (SAX) models must always support JAX JIT compilation. Avoid Python features
+   that break jitting, e.g. control flow that depends on traced values (`if`/`for`/`while` on array values), in-place
+   array mutation, or data-dependent shapes. Use `jnp` operations and `jax.lax` control flow (`lax.cond`, `lax.scan`,
+   `lax.fori_loop`) instead, and double-check that the finished model actually jits.
 1. **Manage bibliography entries cleanly**: When editing the `bibliography.bib` file, ensure that if a reference
    contains a valid `doi` field, it should **not** include a `url` or `urldate` field to avoid redundant citation
    information.
