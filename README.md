@@ -176,8 +176,13 @@ pip install qpdk
 Optional dependencies for the analytical models and simulation tools (SAX, scqubits, JAX) can be installed with:
 
 ```bash
-uv pip install qpdk[models]
+uv pip install "qpdk[models]"
 ```
+
+`models` is one of several extras — `hfss`, `circulax`, `netket`, `pymablock`, `qutip`, `ray`, `scqubits` and `graphics`
+pull in the remaining simulation backends, and extras compose (`"qpdk[models,netket]"`). See
+[Installing optional extras](https://gdsfactory.github.io/quantum-rf-pdk/notebooks.html#installing-optional-extras) for
+what each one installs and which notebooks need it.
 
 ### KLayout Technology Installation
 

@@ -11,6 +11,20 @@
 # %% [markdown]
 # # Resonator frequency estimation models
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` extra:
+#
+# ```bash
+# pip install "qpdk[models]"
+# # or, from a checkout of the repository:
+# uv sync --extra models
+# ```
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This example demonstrates estimating resonance frequencies of superconducting microwave resonators using Jax.
 
 # %% tags=["hide-input", "hide-output"]

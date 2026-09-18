@@ -10,6 +10,20 @@
 # %% [markdown]
 # # Monte Carlo Fabrication Tolerance Analysis
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` and `ray` extras:
+#
+# ```bash
+# pip install "qpdk[models,ray]"
+# # or, from a checkout of the repository:
+# uv sync --extra models --extra ray
+# ```
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to run a circuit-level SAX simulation of the
 # `resonator_test_chip_yaml` component, which is defined via a `.pic.yml` netlist
 # file and a corresponding gdsfactory+ schematic.
@@ -36,7 +50,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+        "qpdk[models,ray] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
 # %% tags=["hide-input", "hide-output"]

@@ -35,7 +35,8 @@
 %
 % ## Prerequisites
 %
-% - A Python environment with `qpdk` installed including the `models` extra:
+% - A Python environment with `qpdk` installed including the `models` extra (see the
+%   {ref}`extras reference <notebook-extras>` for what each extra installs):
 %   ```bash
 %   uv pip install "qpdk[models]"
 %   ```

@@ -10,6 +10,96 @@ superconducting quantum devices. Each notebook addresses a different stage of th
 flow and uses a different simulation method, allowing users to choose the tools that
 best fit their needs.
 
+Because each notebook pulls in a different simulation backend, ``qpdk`` keeps those
+backends behind :ref:`optional dependencies <notebook-extras>` rather than installing
+all of them by default. Check the extra a notebook needs before running it — the
+:ref:`summary table <notebook-summary>` at the bottom lists them per notebook.
+
+.. _notebook-extras:
+
+****************************
+ Installing optional extras
+****************************
+
+``pip install qpdk`` gives you the layout PDK and nothing else: the analytical models,
+FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
+``[project.optional-dependencies]`` in ``pyproject.toml``.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 18 40 42
+
+    - - Extra
+      - Installs
+      - What it is for
+    - - ``models``
+      - ``sax``, ``jaxellip``, ``optax``, ``optuna``, ``gplugins[meshwell]``,
+        ``scikit-rf``, ``sympy``, ``polars``, ``pandas[parquet]``
+      - The analytical and S-parameter model library (``qpdk.models``), SAX circuit
+        simulation, meshing, and the DataFrame display helpers. **This is the baseline
+        extra — nearly every notebook needs it.**
+    - - ``hfss``
+      - ``pyaedt[graphics]``, ``polars``
+      - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
+        local Ansys installation and a license, which are not pip-installable.
+    - - ``circulax``
+      - ``circulax``, ``optax``
+      - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient
+        solvers with gradients.
+    - - ``netket``
+      - ``netket``, ``flax``, ``optax``
+      - Exact-diagonalization and variational Hamiltonian analysis with NetKet.
+    - - ``pymablock``
+      - ``pymablock``
+      - Symbolic perturbative block-diagonalization of the qubit–resonator Hamiltonian.
+    - - ``qutip``
+      - ``qutip-jax``, ``qutip-qip``
+      - Pulse-level, time-domain simulation of gates, leakage, and decoherence.
+    - - ``scqubits``
+      - ``scqubits``
+      - Numerical diagonalization of transmon and transmon–resonator Hamiltonians.
+    - - ``ray``
+      - ``ray[default]``, ``tqdm``
+      - Parallel and distributed parameter sweeps, used for Monte Carlo tolerance runs.
+    - - ``graphics``
+      - ``trimesh``, ``pyglet``
+      - Interactive 3-D viewing of component meshes. Not needed by any notebook.
+    - - ``gdsfactoryplus``
+      - ``doroutes``, ``elvis-lvs``, ``httpx``, ``inspice``, ``jaxellip``,
+        ``kfnetlist``, ``sax``
+      - Dependencies of the GDSFactory+ v2 SDK exercised by ``just test-gfp``. Not
+        needed by any notebook.
+
+Extras compose, so install them together in one command:
+
+.. code-block:: bash
+
+    # pip — quote the brackets so your shell does not glob them
+    pip install "qpdk[models]"
+    pip install "qpdk[models,netket]"
+
+    # uv, in a checkout of the repository
+    uv sync --extra models --extra netket
+
+    # everything at once
+    pip install "qpdk[circulax,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
+    uv sync --all-extras
+
+.. note::
+
+    Two notebook dependencies are deliberately *not* extras:
+
+    - ``openvino``, used by :doc:`notebooks/jax_backend_comparison` for the NPU
+      benchmark, is optional and platform-specific — install it with ``pip install
+      openvino``. The notebook skips that section if it is missing.
+    - MATLAB and `jupyter-matlab-proxy
+      <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
+      :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
+
+    If you only want to reproduce the rendered documentation, ``uv sync --group docs``
+    installs the ``docs`` dependency group, which already pulls in every backend the
+    notebooks execute with.
+
 *************************************
  Why multiple simulation approaches?
 *************************************
@@ -246,65 +336,87 @@ primary tooling lives in another environment.
   MATLAB Jupyter kernel from `jupyter-matlab-proxy
   <https://github.com/mathworks/jupyter-matlab-proxy>`_.
 
+.. _notebook-summary:
+
 ***************
  Summary table
 ***************
 
+The **Extras** column lists the ``qpdk`` extras required to run each notebook; see
+:ref:`notebook-extras` for what each one installs.
+
 .. list-table::
     :header-rows: 1
-    :widths: 40 30 30
+    :widths: 31 22 23 24
 
     - - Notebook
       - Category
       - Key tools
+      - Extras
     - - :doc:`notebooks/all_models`
       - S-parameter models
       - qpdk, JAX
+      - ``models``
     - - :doc:`notebooks/circuit_simulation_demo`
       - S-parameter models
       - SAX, JAX
+      - ``models``
     - - :doc:`notebooks/resonator_frequency_model`
       - S-parameter models
       - SAX
+      - ``models``
     - - :doc:`notebooks/monte_carlo_fabrication_tolerance`
       - S-parameter models
       - SAX, JAX, gdsfactory
+      - ``models``, ``ray``
     - - :doc:`notebooks/model_comparison_to_qucs`
       - S-parameter models
       - SAX, Qucs-S
+      - ``models``
     - - :doc:`notebooks/jax_backend_comparison`
       - S-parameter models
       - SAX, JAX, OpenVINO
+      - ``models`` (+ ``openvino``)
     - - :doc:`notebooks/hfss_q2d_cpw_impedance`
       - FEM electromagnetics
       - Ansys Q2D, PyAEDT
+      - ``models``, ``hfss``
     - - :doc:`notebooks/hfss_eigenmode_resonator`
       - FEM electromagnetics
       - Ansys HFSS, PyAEDT
+      - ``models``, ``hfss``
     - - :doc:`notebooks/hfss_driven_capacitor`
       - FEM electromagnetics
       - Ansys HFSS, PyAEDT
+      - ``models``, ``hfss``
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
+      - ``models``
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
       - scQubits
+      - ``models``, ``scqubits``
     - - :doc:`notebooks/pymablock_dispersive_shift`
       - Hamiltonian analysis
       - Pymablock, SymPy
+      - ``models``, ``pymablock``
     - - :doc:`notebooks/netket_transmon_design`
       - Hamiltonian analysis
       - NetKet, JAX
+      - ``models``, ``netket``
     - - :doc:`notebooks/qutip_qip_pulse_simulation`
       - Pulse-level simulation
       - QuTiP-QIP, JAX
+      - ``models``, ``qutip``
     - - :doc:`notebooks/circulax_transmon_optimization`
       - Differentiable circuit simulation
       - Circulax, JAX, Optax
+      - ``models``, ``circulax``
     - - :doc:`notebooks/matlab_integration`
       - External integration
       - MATLAB, jupyter-matlab-proxy
+      - ``models``
 
 ************
  References
