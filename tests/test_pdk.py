@@ -36,6 +36,9 @@ skip_test_netlist = {
 # Skip default gdsfactory cells
 skip_test = {
     "all_cells",
+    # Ideal schematic loads intentionally have no process geometry.
+    "open",
+    "short",
     "pack_doe",
     "pack_doe_grid",
     "add_pads_top",

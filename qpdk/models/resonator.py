@@ -15,7 +15,7 @@ from qpdk.models.cpw import (
     cpw_z0_from_cross_section,
     get_cpw_dimensions,
 )
-from qpdk.models.waveguides import straight, straight_shorted
+from qpdk.models.waveguides import straight
 
 
 def quarter_wave_resonator_coupled(
@@ -261,4 +261,10 @@ def resonator_quarter_wave(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    return straight_shorted(f=f, length=length, cross_section=cross_section)
+    instances = {
+        "straight": straight(f=f, length=length, cross_section=cross_section),
+        "short": electrical_short(f=f, n_ports=2),
+    }
+    connections = {"straight,o2": "short,o1"}
+    ports = {"o1": "straight,o1", "o2": "short,o2"}
+    return sax.evaluate_circuit_fg((connections, ports), instances)

@@ -16,7 +16,7 @@ from sax.models.rf import (
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import get_cpw_dimensions, get_cpw_substrate_params
-from qpdk.models.generic import admittance, short_2_port, tee
+from qpdk.models.generic import admittance, tee
 from qpdk.tech import coplanar_waveguide
 
 
@@ -135,9 +135,33 @@ def straight_shorted(
 
     This may be used to model a quarter-wave coplanar waveguide resonator.
 
-    Note:
-        The port ``o2`` is internally shorted and should not be used.
-        It seems to be a Sax limitation that we need to define at least two ports.
+    Args:
+        f: Array of frequency points in Hz
+        length: Physical length in µm
+        cross_section: The cross-section of the waveguide.
+
+    Returns:
+        sax.SDict: S-parameters dictionary
+    """
+    instances = {
+        "straight": straight(f=f, length=length, cross_section=cross_section),
+        "short": electrical_short(f=f),
+    }
+    connections = {
+        "straight,o2": "short,o1",
+    }
+    ports = {
+        "o1": "straight,o1",
+    }
+    return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
+def straight_open(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 1000,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SDict:
+    """S-parameter model for a straight waveguide with one open end.
 
     Args:
         f: Array of frequency points in Hz
@@ -149,49 +173,15 @@ def straight_shorted(
     """
     instances = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
-        "short": short_2_port(f=f),
-    }
-    connections = {
-        "straight,o2": "short,o1",
-    }
-    ports = {
-        "o1": "straight,o1",
-        "o2": "short,o2",  # don't use: shorted!
-    }
-    return sax.backends.evaluate_circuit_fg((connections, ports), instances)
-
-
-def straight_open(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
-    cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
-    """S-parameter model for a straight waveguide with one open end.
-
-    Note:
-        The port ``o2`` is internally open-circuited and should not be used.
-        It is provided to match the number of ports in the layout component.
-
-    Args:
-        f: Array of frequency points in Hz
-        length: Physical length in µm
-        cross_section: The cross-section of the waveguide.
-
-    Returns:
-        sax.SType: S-parameters dictionary
-    """
-    instances = {
-        "straight": straight(f=f, length=length, cross_section=cross_section),
-        "open": electrical_open(f=f, n_ports=2),
+        "open": electrical_open(f=f),
     }
     connections = {
         "straight,o2": "open,o1",
     }
     ports = {
         "o1": "straight,o1",
-        "o2": "open,o2",  # don't use: opened!
     }
-    return sax.backends.evaluate_circuit_fg((connections, ports), instances)
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 def straight_double_open(

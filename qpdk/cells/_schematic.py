@@ -11,6 +11,7 @@ __all__ = [
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
+    "open_schematic",
     "quarter_wave_resonator_coupled_schematic",
     "resonator_coupled_schematic",
     "resonator_half_wave_schematic",
@@ -18,7 +19,10 @@ __all__ = [
     "resonator_schematic",
     "sax_model",
     "schematic",
+    "short_schematic",
+    "straight_open_schematic",
     "straight_schematic",
+    "straight_shorted_schematic",
 ]
 
 # ---------------------------------------------------------------------------
@@ -182,6 +186,58 @@ straight_schematic = schematic(
             name="straight",
             module="qpdk.models.waveguides",
             port_order=["o1", "o2"],
+        )
+    ],
+)
+
+open_schematic = schematic(
+    symbol="open",
+    tags=["terminations"],
+    ports=_1PORT,
+    models=[
+        sax_model(
+            name="open",
+            module="qpdk.models.generic",
+            port_order=["o1"],
+        )
+    ],
+)
+
+short_schematic = schematic(
+    symbol="short",
+    tags=["terminations"],
+    ports=_1PORT,
+    models=[
+        sax_model(
+            name="short",
+            module="qpdk.models.generic",
+            port_order=["o1"],
+        )
+    ],
+)
+
+straight_open_schematic = schematic(
+    symbol="straight_open",
+    tags=["waveguides", "resonators", "terminations"],
+    ports=_1PORT,
+    models=[
+        sax_model(
+            name="straight_open",
+            module="qpdk.models.waveguides",
+            port_order=["o1"],
+        )
+    ],
+)
+
+straight_shorted_schematic = schematic(
+    symbol="straight_shorted",
+    tags=["waveguides", "resonators", "terminations"],
+    ports=_1PORT,
+    models=[
+        sax_model(
+            name="straight_shorted",
+            module="qpdk.models.waveguides",
+            port_order=["o1"],
         )
     ],
 )
