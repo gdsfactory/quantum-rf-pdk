@@ -29,8 +29,13 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           plugin_marketplaces: https://github.com/anthropics/claude-code.git
           plugins: code-review@claude-code-plugins
-          prompt: /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
-          claude_args: --max-turns 30
+          # --comment makes the review post to the PR. The inline comment tool
+          # is granted below because claude-code-action only adds that MCP
+          # server when claude_args requests the tool.
+          prompt: /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment
+          claude_args: |
+            --max-turns 30
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
           # Review PRs from every contributor, including forks and Dependabot.
           github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_non_write_users: "*"
