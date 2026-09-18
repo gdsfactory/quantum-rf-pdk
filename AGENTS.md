@@ -228,6 +228,18 @@ The `qpdk/models/` directory contains S-parameter and circuit models for quantum
   functions of frequency
 - **Integration with components**: Models can be linked to layout components through the netlist system
 
+### SAX Port Terminations
+
+Omitting a model port from a SAX circuit applies a matched load, not an open circuit:
+
+- Matched load: $Z_L = Z_0$ and $\\Gamma = 0$, so incident power is absorbed.
+- Open circuit: $Z_L \\to \\infty$ and $\\Gamma = +1$.
+- Short circuit: $Z_L = 0$ and $\\Gamma = -1$.
+
+Do not leave a port disconnected when the model requires an open or short boundary. For a quarter-wave coupled
+resonator, `resonator_o1` is open and `resonator_o2` is shorted. Prefer `quarter_wave_resonator_coupled`, which applies
+the short internally, or connect an explicit short model.
+
 ### Example Model Usage
 
 Models are typically used in notebooks and sample scripts (see `notebooks/` and `qpdk/samples/simulate_resonator.py`)
