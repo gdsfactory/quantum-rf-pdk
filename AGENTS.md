@@ -112,7 +112,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Technology and Tools
 
-- **Python versions**: Specified in `pyproject.toml` (currently >=3.12,\<3.14)
+- **Python versions**: Specified in `pyproject.toml` (currently >=3.12,\<3.15)
 - **Package manager**: `uv` (preferred over pip/conda)
 - **Main dependencies**: gdsfactory (~=9.51.0)
 - **Testing**: pytest with regression testing using `pytest_regressions`, hypothesis for property-based testing

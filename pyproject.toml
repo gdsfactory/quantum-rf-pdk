@@ -3,7 +3,7 @@ name = "qpdk"
 version = "0.3.8"
 description = "Generic Superconducting Quantum Process Design Kit"
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12,<3.15"
 license = { file = "LICENSE" }
 authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
 keywords = [
@@ -25,6 +25,7 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
   "Topic :: Scientific/Engineering :: Mathematics",
   "Topic :: Scientific/Engineering :: Physics",
