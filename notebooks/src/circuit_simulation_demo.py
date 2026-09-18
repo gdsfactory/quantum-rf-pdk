@@ -25,6 +25,20 @@
 # %% [markdown]
 # # Circuit Simulation with QPDK
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` extra:
+#
+# ```bash
+# pip install "qpdk[models]"
+# # or, from a checkout of the repository:
+# uv sync --extra models
+# ```
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to perform circuit simulations using the `qpdk` models and the [`sax`](https://gdsfactory.github.io/sax/) circuit solver. We will showcase individual components and then combine them to create a custom resonator circuit.
 
 # %% tags=["hide-input", "hide-output"]

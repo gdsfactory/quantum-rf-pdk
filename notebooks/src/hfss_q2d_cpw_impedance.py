@@ -11,6 +11,22 @@
 # %% [markdown]
 # # Q2D Cross-Section Impedance of a Coplanar Waveguide
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` and `hfss` extras:
+#
+# ```bash
+# pip install "qpdk[models,hfss]"
+# # or, from a checkout of the repository:
+# uv sync --extra models --extra hfss
+# ```
+#
+# A local Ansys Electronics Desktop installation and license are also required.
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to extract the characteristic impedance
 # $Z_0$ of a coplanar waveguide (CPW) cross-section using the
 # Ansys 2D Extractor (Q2D) quasi-static field solver via PyAEDT.
@@ -23,7 +39,6 @@
 #
 # **Prerequisites:**
 # - Ansys Electronics Desktop installed (requires license)
-# - Install hfss extras: `uv sync --extra hfss` or `pip install qpdk[hfss]`
 #
 # **References:**
 # - PyAEDT Documentation: https://aedt.docs.pyansys.com/
@@ -46,7 +61,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+        "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
 # %% tags=["hide-input", "hide-output"]

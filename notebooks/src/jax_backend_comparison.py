@@ -10,6 +10,22 @@
 # %% [markdown]
 # # JAX Backend Comparison for Quantum Circuit Simulation
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` extra:
+#
+# ```bash
+# pip install "qpdk[models]"
+# # or, from a checkout of the repository:
+# uv sync --extra models
+# ```
+#
+# The OpenVINO benchmark additionally needs `pip install openvino`, and is skipped if it is missing.
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook benchmarks a SAX-based quantum circuit simulation across available
 # JAX compute backends: **CPU**, **GPU** (CUDA), and **NPU** via
 # [OpenVINO](https://docs.openvino.ai/2025/openvino-workflow/model-preparation/convert-model-jax.html).

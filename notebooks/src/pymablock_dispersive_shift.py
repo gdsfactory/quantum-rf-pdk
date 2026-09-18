@@ -11,6 +11,20 @@
 # %% [markdown]
 # # Dispersive Shift of a Transmon–Resonator System with Pymablock
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` and `pymablock` extras:
+#
+# ```bash
+# pip install "qpdk[models,pymablock]"
+# # or, from a checkout of the repository:
+# uv sync --extra models --extra pymablock
+# ```
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to use
 # [pymablock](https://pymablock.readthedocs.io/) {cite:p}`arayaDayPymablockAlgorithmPackage2025`
 # to compute the **dispersive shift** of a readout resonator coupled
@@ -55,7 +69,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+        "qpdk[models,pymablock] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
 # %% tags=["hide-input", "hide-output"]

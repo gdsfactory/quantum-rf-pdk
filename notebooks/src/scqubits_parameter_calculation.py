@@ -11,6 +11,20 @@
 # %% [markdown]
 # # Dispersive Shift of a Transmon–Resonator System with scQubits
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` and `scqubits` extras:
+#
+# ```bash
+# pip install "qpdk[models,scqubits]"
+# # or, from a checkout of the repository:
+# uv sync --extra models --extra scqubits
+# ```
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to use
 # [scqubits](https://scqubits.readthedocs.io/en/latest/) {cite:p}`groszkowskiScqubitsPythonPackage2021`
 # to numerically compute the **dispersive shift** of a readout resonator coupled
@@ -67,7 +81,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+        "qpdk[models,scqubits] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
 # %% tags=["hide-input", "hide-output"]

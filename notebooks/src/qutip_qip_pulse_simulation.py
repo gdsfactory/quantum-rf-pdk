@@ -15,6 +15,20 @@
 # %% [markdown]
 # # Pulse-Level Simulation of Superconducting Qubits with QuTiP-QIP
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` and `qutip` extras:
+#
+# ```bash
+# pip install "qpdk[models,qutip]"
+# # or, from a checkout of the repository:
+# uv sync --extra models --extra qutip
+# ```
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to use
 # [qutip-qip](https://qutip-qip.readthedocs.io/)
 # {cite:p}`liBoshlomQutipqipPulselevel2022` to perform
@@ -58,7 +72,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+        "qpdk[models,qutip] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
 # %% tags=["hide-input", "hide-output"]

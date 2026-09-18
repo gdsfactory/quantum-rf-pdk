@@ -11,6 +11,20 @@
 # %% [markdown]
 # # Transmon Qubit Design with NetKet
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` and `netket` extras:
+#
+# ```bash
+# pip install "qpdk[models,netket]"
+# # or, from a checkout of the repository:
+# uv sync --extra models --extra netket
+# ```
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to use
 # [NetKet](https://netket.readthedocs.io/) {cite:p}`netket3:2022,netket2:2019`
 # to numerically analyse the transmon qubit Hamiltonian for superconducting
@@ -63,7 +77,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+        "qpdk[models,netket] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
 # %% tags=["hide-input", "hide-output"]

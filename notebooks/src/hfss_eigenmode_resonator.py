@@ -11,6 +11,22 @@
 # %% [markdown]
 # # HFSS Eigenmode Simulation of a CPW Resonator
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` and `hfss` extras:
+#
+# ```bash
+# pip install "qpdk[models,hfss]"
+# # or, from a checkout of the repository:
+# uv sync --extra models --extra hfss
+# ```
+#
+# A local Ansys HFSS installation and license are also required.
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to set up and run an eigenmode simulation
 # of a superconducting coplanar waveguide (CPW) resonator using PyAEDT
 # (Ansys HFSS Python interface).
@@ -21,7 +37,6 @@
 #
 # **Prerequisites:**
 # - Ansys HFSS installed (requires license)
-# - Install hfss extras: `uv sync --extra hfss` or `pip install qpdk[hfss]`
 #
 # **References:**
 # - PyAEDT Documentation: https://aedt.docs.pyansys.com/
@@ -43,7 +58,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+        "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
     ])
 
 # %% tags=["hide-input", "hide-output"]

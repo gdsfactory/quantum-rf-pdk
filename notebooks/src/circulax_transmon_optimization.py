@@ -12,6 +12,20 @@
 # %% [markdown]
 # # Differentiable Transmon Circuit Simulation with Circulax
 #
+# ::::{admonition} Required extras
+# :class: tip
+#
+# This notebook needs the `models` and `circulax` extras:
+#
+# ```bash
+# pip install "qpdk[models,circulax]"
+# # or, from a checkout of the repository:
+# uv sync --extra models --extra circulax
+# ```
+#
+# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# ::::
+#
 # This notebook demonstrates how to use
 # [Circulax](https://github.com/gdsfactory/circulax)—a differentiable,
 # JAX-based circuit simulator—together with **qpdk** to design and optimize
