@@ -220,7 +220,7 @@ def lumped_element_resonator(
     finger_length: float = 20.0,
     finger_gap: float = 2.0,
     finger_thickness: float = 5.0,
-    n_turns: int = 5,
+    n_turns: int = 15,
     sheet_inductance: float = 0.4e-12,
     cross_section: CrossSectionSpec = "meander_inductor_cross_section",
     grounded: bool = False,

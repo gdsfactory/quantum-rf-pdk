@@ -20,11 +20,11 @@ from qpdk.models.waveguides import straight
 
 def quarter_wave_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: float = 5000.0,
-    coupling_gap: float = 0.27,
-    coupling_straight_length: float = 20,
+    length: float = 4000.0,
+    coupling_gap: float = 20.0,
+    coupling_straight_length: float = 200.0,
     cross_section: CrossSectionSpec = "cpw",
-    cross_section_non_resonator: CrossSectionSpec | None = None,
+    cross_section_non_resonator: CrossSectionSpec | None = "cpw",
 ) -> sax.SDict:
     """Model for a quarter-wave coplanar waveguide resonator coupled to a probeline.
 
@@ -71,11 +71,11 @@ def quarter_wave_resonator_coupled(
 
 def resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: float = 5000.0,
-    coupling_gap: float = 0.27,
-    coupling_straight_length: float = 20,
+    length: float = 4000.0,
+    coupling_gap: float = 20.0,
+    coupling_straight_length: float = 200.0,
     cross_section: CrossSectionSpec = "cpw",
-    cross_section_non_resonator: CrossSectionSpec | None = None,
+    cross_section_non_resonator: CrossSectionSpec | None = "cpw",
     open_start: bool = True,
     open_end: bool = False,
 ) -> sax.SDict:
@@ -212,7 +212,7 @@ def resonator_frequency(
 
 def resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """S-parameter model for a simple transmission line resonator.
@@ -230,7 +230,7 @@ def resonator(
 
 def resonator_half_wave(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """S-parameter model for a half-wave resonator (open at both ends).
@@ -248,7 +248,7 @@ def resonator_half_wave(
 
 def resonator_quarter_wave(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SType:
     """S-parameter model for a quarter-wave resonator (shorted at one end).

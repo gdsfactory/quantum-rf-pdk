@@ -38,7 +38,7 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
         cs1 = coplanar_waveguide(width=10, gap=6)
         cs2 = coplanar_waveguide(width=20, gap=10)
         result = taper_cross_section(
-            f=f, length=length, cross_section_1=cs1, cross_section_2=cs2
+            f=f, length=length, cross_section1=cs1, cross_section2=cs2
         )
 
         s11 = result["o1", "o1"]
@@ -62,7 +62,7 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
         cs = coplanar_waveguide(width=10, gap=6)
 
         taper_result = taper_cross_section(
-            f=f, length=length, cross_section_1=cs, cross_section_2=cs
+            f=f, length=length, cross_section1=cs, cross_section2=cs
         )
         straight_result = straight(f=f, length=length, cross_section=cs)
 
@@ -83,7 +83,7 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
         cs1 = coplanar_waveguide(width=10, gap=6)
         cs2 = coplanar_waveguide(width=20, gap=10)
         result = taper_cross_section(
-            f=f, length=0, cross_section_1=cs1, cross_section_2=cs2
+            f=f, length=0, cross_section1=cs1, cross_section2=cs2
         )
 
         s21 = result["o2", "o1"]

@@ -126,8 +126,8 @@ def cpw_cpw_coupling_capacitance(
 
 def coupler_straight(
     f: ArrayLike = DEFAULT_FREQUENCY,
-    length: int | float = 20.0,
-    gap: int | float = 0.27,
+    length: int | float = 10,
+    gap: int | float = 16,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides, :func:`~qpdk.cells.waveguides.coupler_straight`.
@@ -187,8 +187,8 @@ def coupler_straight(
 
 def coupler_ring(
     f: ArrayLike = DEFAULT_FREQUENCY,
-    length: int | float = 20.0,
-    gap: int | float = 0.27,
+    length_x: int | float = 20.0,
+    gap: int | float = 16,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides in a ring configuration.
@@ -199,14 +199,14 @@ def coupler_ring(
 
     Args:
         f: Array of frequency points in Hz
-        length: Physical length of coupling section in µm
+        length_x: Physical length of coupling section in µm
         gap: Gap between the coupled waveguides in µm
         cross_section: The cross-section of the CPW.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return coupler_straight(f=f, length=length, gap=gap, cross_section=cross_section)
+    return coupler_straight(f=f, length=length_x, gap=gap, cross_section=cross_section)
 
 
 if __name__ == "__main__":
