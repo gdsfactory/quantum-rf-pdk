@@ -1,10 +1,11 @@
 """Tests for qpdk.models.qubit module - Qubit LC resonator models."""
 
-from typing import final
+from typing import ClassVar, final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
 import numpy as np
+import pytest
 from hypothesis import given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
@@ -15,6 +16,7 @@ from qpdk.models.qubit import (
     double_island_transmon,
     double_island_transmon_with_bbox,
     double_island_transmon_with_resonator,
+    double_pad_transmon,
     ec_to_capacitance,
     ej_to_inductance,
     el_to_inductance,
@@ -233,6 +235,26 @@ class TestDoubleIslandTransmon(TwoPortModelTestSuite):
 
         relative_error = abs(float(f_observed - f_r_expected) / f_r_expected)
         assert relative_error < 0.01
+
+
+@final
+class TestDoublePadTransmon(TwoPortModelTestSuite):
+    """Tests for the double_pad_transmon port-renamed wrapper."""
+
+    model_function = staticmethod(double_pad_transmon)
+    expected_ports: ClassVar[set[str]] = {"left_pad", "right_pad"}
+
+    @pytest.mark.parametrize("ground_capacitance", [0.0, 5e-15])
+    def test_matches_double_island_transmon(self, ground_capacitance: float) -> None:
+        """Only the port names may differ from double_island_transmon."""
+        f = self.get_frequency_array(self.n_freq_default)
+        renamed = self._call_model(f=f, ground_capacitance=ground_capacitance)
+        reference = double_island_transmon(f=f, ground_capacitance=ground_capacitance)
+        port_map = {"o1": "left_pad", "o2": "right_pad"}
+
+        assert set(renamed) == {(port_map[p1], port_map[p2]) for p1, p2 in reference}
+        for (p1, p2), value in reference.items():
+            assert_allclose(renamed[port_map[p1], port_map[p2]], value, atol=1e-12)
 
 
 @final

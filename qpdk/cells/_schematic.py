@@ -335,6 +335,13 @@ double_pad_transmon_schematic = schematic(
     symbol="double_pad_transmon",
     tags=["qubits", "transmons"],
     ports=_TRANSMON,
+    models=[
+        sax_model(
+            name="double_pad_transmon",
+            module="qpdk.models.qubit",
+            port_order=["left_pad", "right_pad"],
+        )
+    ],
 )
 
 meander_inductor_schematic = schematic(

@@ -119,6 +119,7 @@ def test_simulation_cells_have_sax_models() -> None:
             "qpdk.models.resonator",
             {"coupling_o1", "coupling_o2", "resonator_o1"},
         ),
+        double_pad_transmon: ("qpdk.models.qubit", {"left_pad", "right_pad"}),
     }
 
     for cell, (module, ports) in expected.items():
