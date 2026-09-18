@@ -34,5 +34,8 @@ jobs:
           claude_args: |
             --max-turns 100
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
-          # Leave github_token and allowed_non_write_users unset: they post as
-          # github-actions[bot] and strip gh's token respectively.
+          # Required: without it the action falls back to its OIDC app-token
+          # exchange, which fails here with "Invalid OIDC token". Reviews post
+          # as github-actions[bot]. Leave allowed_non_write_users unset: it
+          # strips gh's token.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
