@@ -17,6 +17,7 @@
 import gdsfactory as gf
 
 from qpdk import PDK, cells, tech
+from qpdk.logger import logger
 
 # %% [markdown]
 # ## Main Example
@@ -56,4 +57,4 @@ if __name__ == "__main__":
 
     c.show()
 
-    print("Routing with airbridges example created successfully!")
+    logger.info("Routing with airbridges example created successfully!")
