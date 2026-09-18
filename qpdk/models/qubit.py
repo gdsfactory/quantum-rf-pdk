@@ -756,8 +756,33 @@ def xmon_transmon(
     )
 
 
+@partial(jax.jit, inline=True)
+def double_pad_transmon(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: float = 100e-15,
+    inductance: float = 7e-9,
+    ground_capacitance: float = 0.0,
+) -> sax.SDict:
+    """LC resonator model for a double-pad transmon qubit.
+
+    Physically the :func:`double_island_transmon` model, with ports renamed to
+    ``left_pad`` and ``right_pad`` to match the layout cell ports.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports left_pad and right_pad.
+    """
+    return sax.rename_ports(
+        double_island_transmon(
+            f=f,
+            capacitance=capacitance,
+            inductance=inductance,
+            ground_capacitance=ground_capacitance,
+        ),
+        {"o1": "left_pad", "o2": "right_pad"},
+    )
+
+
 # Aliases for backward compatibility or to match cell naming
-double_pad_transmon = double_island_transmon
 double_pad_transmon_with_bbox = double_island_transmon_with_bbox
 double_pad_transmon_with_resonator = double_island_transmon_with_resonator
 
