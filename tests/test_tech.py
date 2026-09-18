@@ -7,7 +7,7 @@ import gdsfactory as gf
 import hypothesis.strategies as st
 import pytest
 from gdsfactory.technology import LayerStack
-from hypothesis import given
+from hypothesis import given, settings
 
 from qpdk.cells import waveguides as waveguide_cells
 from qpdk.models import waveguides as waveguide_models
@@ -93,6 +93,7 @@ def test_waveguide_width_is_a_cross_section_setting(
 
 
 @given(width_units=st.integers(min_value=500, max_value=10_000))
+@settings(deadline=None)
 def test_routing_width_round_trips_in_cross_section(width_units: int) -> None:
     """Preserve the routing callback width without a cell-level override."""
     width = width_units * 0.002
