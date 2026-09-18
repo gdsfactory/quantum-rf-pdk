@@ -4,7 +4,7 @@
 
 This is **qpdk**, a Python-based superconducting microwave Process Design Kit (PDK) built on
 [gdsfactory](https://gdsfactory.github.io/gdsfactory/) for designing quantum devices and circuits (transmons,
-resonators, couplers, airbridges, SNSPDs, fluxoniums, unimons, etc.). It targets Python 3.12–3.13, uses `uv` as the
+resonators, couplers, airbridges, SNSPDs, fluxoniums, unimons, etc.). It targets Python 3.12–3.14, uses `uv` as the
 package manager, `just` as the task runner, and `prek` (a parallel pre-commit runner) for linting.
 
 ## Build, Test, and Lint Commands
@@ -123,7 +123,7 @@ justfile                Task runner recipes (imports test.just and docs.just)
 - Prefer the **hypothesis** library for property-based tests. When using it:
   - Do **not** combine `@given` with `@staticmethod` (causes `AttributeError` during collection).
   - Add `@settings(deadline=None)` when testing JAX JIT-compiled code.
-- The full test suite runs across Python 3.12–3.13 on Ubuntu, macOS, and Windows. Verify no platform-specific
+- The full test suite runs across Python 3.12–3.14 on Ubuntu, macOS, and Windows. Verify no platform-specific
   assumptions.
 - If GDS reference files changed, verify the diff is intentional and corresponds to the code change.
 - Tests run in parallel using `pytest-xdist` (`-n auto`). Verify no test interdependencies.
