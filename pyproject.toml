@@ -142,6 +142,7 @@ skip = "bibliography.bib"
 
 [tool.coverage.run]
 source = ["qpdk"]
+relative_files = true
 
 [tool.coverage.report]
 exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
