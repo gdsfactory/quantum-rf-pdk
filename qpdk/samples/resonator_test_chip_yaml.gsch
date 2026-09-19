@@ -144,8 +144,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 3900,
       "coupling_straight_length": 200
@@ -292,8 +290,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 3800,
       "coupling_straight_length": 200
@@ -451,8 +447,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4700,
       "coupling_straight_length": 200
@@ -761,8 +755,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4200,
       "coupling_straight_length": 200
@@ -847,8 +839,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 5000,
       "coupling_straight_length": 200
@@ -1090,8 +1080,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4400,
       "coupling_straight_length": 200
@@ -1237,8 +1225,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4000,
       "coupling_straight_length": 200
@@ -1632,8 +1618,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4600,
       "coupling_straight_length": 200
@@ -1718,8 +1702,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4800,
       "coupling_straight_length": 200
@@ -1805,8 +1787,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4100,
       "coupling_straight_length": 200
@@ -1892,8 +1872,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 5100,
       "coupling_straight_length": 200
@@ -2249,8 +2227,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4500,
       "coupling_straight_length": 200
@@ -2799,8 +2775,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 3700,
       "coupling_straight_length": 200
@@ -2885,8 +2859,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 3600,
       "coupling_straight_length": 200
@@ -2972,8 +2944,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4300,
       "coupling_straight_length": 200
@@ -3124,8 +3094,6 @@
       "end_with_bend": false,
       "coupling_gap": 16,
       "cross_section": "coplanar_waveguide",
-      "open_end": false,
-      "open_start": true,
       "bend_spec": "bend_circular",
       "length": 4900,
       "coupling_straight_length": 200

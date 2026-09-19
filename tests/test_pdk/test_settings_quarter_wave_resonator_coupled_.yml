@@ -1,5 +1,5 @@
 info: {}
-name: quarter_wave_resonator_coupled_L4000_M6_BSbend_circular_397bfada
+name: quarter_wave_resonator_coupled_L4000_M6_BSbend_circular_e32fad4e
 ports:
   coupling_o1:
     center:
@@ -37,6 +37,4 @@ settings:
   end_with_bend: false
   length: 4000
   meanders: 6
-  open_end: false
-  open_start: true
   start_with_bend: false

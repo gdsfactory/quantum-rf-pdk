@@ -1,5 +1,6 @@
 """Test resonator generation and properties."""
 
+import inspect
 from functools import partial
 
 import hypothesis.strategies as st
@@ -12,6 +13,7 @@ from qpdk.cells.derived.transmon_with_resonator_and_probeline import (
 )
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.resonator import (
+    quarter_wave_resonator_coupled,
     resonator,
     resonator_coupled,
     resonator_half_wave,
@@ -187,6 +189,28 @@ class TestResonators:
         assert set(port_names) == expected_ports, (
             f"Expected ports {expected_ports}, got {set(port_names)}"
         )
+
+
+class TestQuarterWaveResonatorCoupled:
+    """Test the fixed three-port quarter-wave coupled resonator."""
+
+    @staticmethod
+    def test_terminations_are_not_public_settings() -> None:
+        """Terminations are fixed, so the layout factory hides them."""
+        parameters = inspect.signature(quarter_wave_resonator_coupled).parameters
+
+        assert "open_start" not in parameters
+        assert "open_end" not in parameters
+
+    @staticmethod
+    def test_nested_coupled_resonator_terminations() -> None:
+        """The coupled end is open and the hidden far end stays shorted."""
+        netlist = quarter_wave_resonator_coupled().get_netlist()
+        (instance,) = netlist["instances"].values()
+
+        assert instance["component"] == "resonator_coupled"
+        assert instance["settings"]["open_start"] is True
+        assert instance["settings"]["open_end"] is False
 
 
 class TestQubitWithResonator:
