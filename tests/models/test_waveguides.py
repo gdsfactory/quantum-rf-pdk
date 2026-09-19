@@ -1,6 +1,8 @@
 """Tests for qpdk.models.waveguides module."""
 
 import inspect
+import subprocess
+import sys
 from collections.abc import Callable
 from functools import partial
 from typing import Any, final
@@ -10,6 +12,7 @@ import hypothesis.strategies as st
 import jax
 import jax.numpy as jnp
 import pytest
+import sax
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
@@ -20,7 +23,7 @@ from qpdk.cells.waveguides import (
     bend_euler_all_angle as bend_euler_all_angle_cell,
     bend_s as bend_s_cell,
 )
-from qpdk.models import waveguides as waveguide_models
+from qpdk.models import models, waveguides as waveguide_models
 from qpdk.models.waveguides import (
     airbridge,
     bend_circular,
@@ -352,6 +355,9 @@ _CIRCULAR_BEND_SETTINGS: list[dict[str, Any]] = [
     {"radius": 0.0},
     {"radius": 250.0},
     {"npoints": 32},
+    # radius (100) below radius_min (210): the regular cell clamps, the
+    # all-angle factory does not.
+    {"cross_section": "launcher_cross_section_big"},
 ]
 
 _EULER_BEND_SETTINGS: list[dict[str, Any]] = [
@@ -402,9 +408,6 @@ def _case_id(model: Callable[..., Any], geometry: dict[str, Any]) -> str:
     return f"{model.__name__}-{settings or 'default'}"
 
 
-_BEND_MODELS = [model for _, model, _ in _BEND_PAIRS]
-_CIRCULAR_BEND_MODELS = [bend_circular, bend_circular_all_angle]
-
 # No minimum bend radius, unlike the PDK's coplanar waveguide cross-section.
 _NO_RADIUS_MIN_CROSS_SECTION = gf.cross_section.cross_section(
     width=10,
@@ -428,7 +431,11 @@ def _assert_matches_layout(
     """Compare the model to straight propagation over the materialized cell's length."""
     component = cell_factory(**geometry)
     frequencies = jnp.array([2e9, 5e9, 8e9])
-    expected = straight(f=frequencies, length=component.info["length"])
+    expected = straight(
+        f=frequencies,
+        length=component.info["length"],
+        cross_section=geometry.get("cross_section", "cpw"),
+    )
 
     results = [
         model(f=frequencies, **geometry),
@@ -451,58 +458,85 @@ def test_bend_model_matches_layout_length(
 
 
 @pytest.mark.parametrize(
-    "model", _BEND_MODELS, ids=[model.__name__ for model in _BEND_MODELS]
+    ("cell_factory", "model"),
+    [(cell, model) for cell, model, _ in _BEND_PAIRS],
+    ids=[model.__name__ for _, model, _ in _BEND_PAIRS],
 )
-def test_bend_model_explicit_length_overrides_geometry(
-    model: Callable[..., Any],
+def test_bend_model_circuit_overrides_geometry(
+    cell_factory: Callable[..., Any], model: Callable[..., Any]
 ) -> None:
-    """An explicit length wins, both by keyword and in the positional second slot."""
-    frequencies = jnp.array([5e9])
-    expected = straight(f=frequencies, length=250.0)
-    results = [model(frequencies, 250.0), model(f=frequencies, length=250.0)]
+    """Geometry knobs stay live through ``Component.get_netlist()`` -> ``sax.circuit``.
 
-    # The derived length must differ from the override, or the check is vacuous.
-    assert not jnp.allclose(model(f=frequencies)["o2", "o1"], expected["o2", "o1"])
-    for result in results:
-        assert set(result) == set(expected)
+    gdsfactory netlists carry the layout length in the instance ``info`` block,
+    which sax merges into the model settings. A ``length`` model parameter would
+    let that merged value shadow the geometry settings, so the bend models must
+    not expose one.
+    """
+    frequencies = jnp.array([5e9])
+    bend = cell_factory(angle=90.0, radius=250.0)
+    component_class = (
+        gf.ComponentAllAngle if isinstance(bend, gf.ComponentAllAngle) else gf.Component
+    )
+    component = component_class()
+    reference = component << bend
+    component.add_ports(reference.ports)
+    netlist = component.get_netlist()
+    (instance_name,) = netlist["instances"]
+    assert instance_name == model.__name__
+    circuit, _ = sax.circuit(netlist, models=models)
+
+    default = circuit(f=frequencies)
+    overridden = circuit(
+        f=frequencies, **{instance_name: {"angle": 180.0, "radius": 100.0}}
+    )
+
+    # The override must move the result, or the check below is vacuous.
+    assert not jnp.allclose(default["o2", "o1"], overridden["o2", "o1"])
+
+    expected_settings = [
+        (bend, default),
+        (cell_factory(angle=180.0, radius=100.0), overridden),
+    ]
+    for cell, result in expected_settings:
+        expected = straight(f=frequencies, length=cell.info["length"])
         for key in expected:
             assert_allclose(result[key], expected[key], rtol=1e-12, atol=1e-12)
 
 
 @pytest.mark.parametrize(
-    "model", _BEND_MODELS, ids=[model.__name__ for model in _BEND_MODELS]
+    ("cell_factory", "model"),
+    [
+        (bend_circular_cell, bend_circular),
+        (bend_circular_all_angle_cell, bend_circular_all_angle),
+    ],
+    ids=["bend_circular", "bend_circular_all_angle"],
 )
-def test_bend_model_legacy_positional_call(model: Callable[..., Any]) -> None:
-    """The legacy ``(f, length, cross_section)`` positional order still resolves."""
-    frequencies = jnp.array([5e9])
-    cross_section = "launcher_cross_section_big"
-    expected = straight(f=frequencies, length=250.0, cross_section=cross_section)
-    result = model(frequencies, 250.0, cross_section)
-
-    assert set(result) == set(expected)
-    for key in expected:
-        assert_allclose(result[key], expected[key], rtol=1e-12, atol=1e-12)
-
-
-@pytest.mark.parametrize(
-    "model",
-    _CIRCULAR_BEND_MODELS,
-    ids=[model.__name__ for model in _CIRCULAR_BEND_MODELS],
-)
-def test_bend_circular_none_radius_uses_cross_section_radius(
+@pytest.mark.parametrize("cross_section", ["cpw", "launcher_cross_section_big"])
+def test_bend_circular_none_radius_matches_layout_default(
+    cell_factory: Callable[..., Any],
     model: Callable[..., Any],
+    cross_section: str,
 ) -> None:
-    """A missing radius falls back to the cross-section radius, like the factories."""
+    """A ``None`` radius falls back and then clamps like the cell's default radius.
+
+    On ``launcher_cross_section_big`` the cross-section radius (100) is below
+    ``radius_min`` (210), so the fallback result must be clamped too, exactly
+    like the layout cell treats its own default radius.
+    """
     frequencies = jnp.array([5e9])
-    expected = model(f=frequencies, radius=100.0)
-    result = model(f=frequencies, radius=None)
+    expected = straight(
+        f=frequencies,
+        length=cell_factory(cross_section=cross_section).info["length"],
+        cross_section=cross_section,
+    )
+    result = model(f=frequencies, radius=None, cross_section=cross_section)
 
     for key in expected:
         assert_allclose(result[key], expected[key], rtol=1e-12, atol=1e-12)
 
 
 def test_bend_circular_without_cross_section_radius_min() -> None:
-    """Without a cross-section minimum, radii stay unclamped and zero falls back."""
+    """Without a cross-section minimum, radii stay unclamped and None falls back."""
     frequencies = jnp.array([5e9])
     cross_section = _NO_RADIUS_MIN_CROSS_SECTION
     unclamped = bend_circular(f=frequencies, radius=5.0, cross_section=cross_section)
@@ -511,7 +545,7 @@ def test_bend_circular_without_cross_section_radius_min() -> None:
         length=gf.path.arc(radius=5.0, angle=90.0).length(),
         cross_section=cross_section,
     )
-    fallback = bend_circular(f=frequencies, radius=0.0, cross_section=cross_section)
+    fallback = bend_circular(f=frequencies, radius=None, cross_section=cross_section)
     at_cross_section_radius = bend_circular(
         f=frequencies, radius=100.0, cross_section=cross_section
     )
@@ -521,23 +555,6 @@ def test_bend_circular_without_cross_section_radius_min() -> None:
         assert_allclose(
             fallback[key], at_cross_section_radius[key], rtol=1e-12, atol=1e-12
         )
-
-
-@pytest.mark.parametrize(
-    ("cell_factory", "model"),
-    [(cell, model) for cell, model, _ in _BEND_PAIRS],
-    ids=[model.__name__ for _, model, _ in _BEND_PAIRS],
-)
-def test_bend_model_defaults_match_layout_cell(
-    cell_factory: Callable[..., Any], model: Callable[..., Any]
-) -> None:
-    """Keep the model's geometry defaults aligned with the layout cells."""
-    model_parameters = inspect.signature(model).parameters
-    cell_parameters = inspect.signature(cell_factory).parameters
-
-    for name in ("angle", "radius", "p", "with_arc_floorplan", "npoints"):
-        if name in model_parameters and name in cell_parameters:
-            assert model_parameters[name].default == cell_parameters[name].default
 
 
 @given(
@@ -561,6 +578,35 @@ def test_bend_euler_model_matches_layout_length_property(
         "with_arc_floorplan": with_arc_floorplan,
     }
     _assert_matches_layout(bend_euler_cell, bend_euler, geometry)
+
+
+def test_bend_models_activate_pdk_themselves() -> None:
+    """The bend models work in a fresh interpreter with no PDK activated.
+
+    The suite cannot see this: ``tests/conftest.py`` activates the PDK at
+    collection time, so the subprocess starts from a clean slate.
+    """
+    code = """\
+import jax.numpy as jnp
+from qpdk.models.waveguides import (
+    bend_circular,
+    bend_circular_all_angle,
+    bend_euler,
+    bend_euler_all_angle,
+)
+for model in (bend_circular, bend_circular_all_angle, bend_euler, bend_euler_all_angle):
+    s21 = model(f=jnp.array([5e9]))['o2', 'o1']
+    assert abs(s21) > 0.9, s21
+"""
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 @final
