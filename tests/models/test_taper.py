@@ -4,6 +4,7 @@ from typing import ClassVar, final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
+import pytest
 from hypothesis import given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
@@ -75,6 +76,57 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
             atol=1e-6,
             err_msg="Taper with same start/end CS should match straight waveguide",
         )
+
+    @staticmethod
+    @pytest.mark.parametrize("npoints", [-1, 0, 1])
+    def test_equal_cross_sections_ignore_npoints(npoints: int) -> None:
+        """Test that equal dimensions return a straight before npoints is validated."""
+        f = jnp.linspace(4e9, 6e9, 5)
+        cs1 = coplanar_waveguide(width=10, gap=6)
+        cs2 = coplanar_waveguide(width=10, gap=6)
+
+        taper_result = taper_cross_section(
+            f=f, length=200, cross_section1=cs1, cross_section2=cs2, npoints=npoints
+        )
+        straight_result = straight(f=f, length=200, cross_section=cs1)
+
+        for key in straight_result:
+            assert_allclose(
+                taper_result[key],
+                straight_result[key],
+                atol=1e-9,
+                err_msg=f"npoints={npoints} should be a straight",
+            )
+
+    @staticmethod
+    @pytest.mark.parametrize("npoints", [-1, 0, 1])
+    def test_too_few_points_raises(npoints: int) -> None:
+        """Test that fewer than two segments is rejected, matching the layout cell."""
+        f = jnp.linspace(4e9, 6e9, 5)
+        cs1 = coplanar_waveguide(width=10, gap=6)
+        cs2 = coplanar_waveguide(width=20, gap=10)
+
+        with pytest.raises(ValueError, match="npoints"):
+            taper_cross_section(
+                f=f, length=200, cross_section1=cs1, cross_section2=cs2, npoints=npoints
+            )
+
+    @staticmethod
+    def test_two_points_is_accepted() -> None:
+        """Test the smallest valid segment count for a real transition."""
+        f = jnp.linspace(4e9, 6e9, 5)
+        cs1 = coplanar_waveguide(width=10, gap=6)
+        cs2 = coplanar_waveguide(width=20, gap=10)
+
+        result = taper_cross_section(
+            f=f, length=200, cross_section1=cs1, cross_section2=cs2, npoints=2
+        )
+
+        assert set(result) == {("o1", "o1"), ("o1", "o2"), ("o2", "o1"), ("o2", "o2")}
+        s11 = result["o1", "o1"]
+        s21 = result["o2", "o1"]
+        assert jnp.all(jnp.isfinite(s21)), "expected finite S-parameters"
+        assert_array_less(jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2, 1.0 + 1e-6)
 
     @staticmethod
     def test_zero_length() -> None:
