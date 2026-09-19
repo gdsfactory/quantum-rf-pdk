@@ -2,6 +2,7 @@
 
 from functools import partial
 
+import gdsfactory as gf
 import jax
 import jax.numpy as jnp
 import sax
@@ -15,6 +16,7 @@ from qpdk.models.cpw import (
     get_cpw_substrate_params,
 )
 from qpdk.models.generic import inductor, lc_resonator
+from qpdk.tech import get_etch_section
 
 
 @partial(jax.jit, inline=True)
@@ -163,12 +165,51 @@ def meander_inductor_inductance_analytical(
     return L_g + L_k
 
 
+def _get_wire_width_and_gap(
+    cross_section: CrossSectionSpec,
+    wire_gap: float | None,
+) -> tuple[float, float]:
+    """Resolve the wire width and the run-to-run gap from a cross-section.
+
+    Mirrors the rule used by the meander inductor cell: an explicit gap wins,
+    otherwise the gap is twice the etch width, falling back to the wire width
+    for plain-wire cross-sections that carry no etch section.
+
+    Args:
+        cross_section: Cross-section specification for the meander wire.
+        wire_gap: Explicit gap between adjacent meander runs in µm, if given.
+
+    Returns:
+        tuple[float, float]: Wire width and run-to-run gap in µm.
+
+    Raises:
+        ValueError: If an etch section does not define its width.
+    """
+    # Local import: qpdk/__init__.py imports the models before defining PDK.
+    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
+
+    PDK.activate()
+    xs = gf.get_cross_section(cross_section)
+    wire_width = xs.width
+    if wire_gap is not None:
+        return wire_width, wire_gap
+
+    try:
+        etch_section = get_etch_section(xs)
+    except ValueError:
+        return wire_width, wire_width
+    if etch_section.width is None:
+        raise ValueError("Etch section must define a width")
+    return wire_width, 2 * etch_section.width
+
+
 def meander_inductor(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     n_turns: int = 5,
     turn_length: float = 200.0,
     cross_section: CrossSectionSpec = "meander_inductor_cross_section",
+    wire_gap: float | None = None,
     sheet_inductance: float = 0.4e-12,
 ) -> sax.SDict:
     r"""Meander inductor SAX model.
@@ -187,6 +228,8 @@ def meander_inductor(
 
     where :math:`w` is the center conductor width and :math:`g` is the gap
     width. This corresponds to a metal-to-metal spacing of :math:`2g`.
+    Cross-sections without an etch section, such as a plain microstrip, have
+    no gap to space out and fall back to a pitch of :math:`2w`.
 
     Args:
         f: Array of frequency points in Hz.
@@ -194,14 +237,17 @@ def meander_inductor(
         turn_length: Length of each horizontal run in µm.
         cross_section: Cross-section specification for the meander wire.
             Used to determine the wire width and the gap between runs.
+        wire_gap: Optional explicit gap between adjacent meander runs in µm.
+            If None (default), it is inferred from the cross-section the same
+            way the meander inductor cell does it. An explicit gap is used
+            as is, whether or not the cross-section defines an etch section.
         sheet_inductance: Sheet inductance per square in H/□.
 
     Returns:
         sax.SDict: S-parameters dictionary.
     """
     f_arr = jnp.asarray(f)
-    wire_width, wire_gap_half = get_cpw_dimensions(cross_section)
-    wire_gap = 2 * wire_gap_half
+    wire_width, wire_gap = _get_wire_width_and_gap(cross_section, wire_gap)
 
     inductance = meander_inductor_inductance_analytical(
         n_turns=n_turns,
