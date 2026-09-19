@@ -2,6 +2,7 @@
 
 from functools import partial
 
+import gdsfactory as gf
 import jax
 import jax.numpy as jnp
 import sax
@@ -349,75 +350,217 @@ def indium_bump(
     return straight(f=f, length=bump_height)
 
 
+def _circular_bend_length(
+    radius: float,
+    angle: float,
+    npoints: int | None,
+    angular_step: float | None = None,
+) -> float:
+    """Return the length of the arc the layout factory extrudes."""
+    return gf.path.arc(
+        radius=radius,
+        angle=angle,
+        npoints=npoints,
+        angular_step=angular_step,
+    ).length()
+
+
+def _euler_bend_length(
+    radius: float,
+    angle: float,
+    p: float,
+    with_arc_floorplan: bool,
+    npoints: int | None,
+    angular_step: float | None = None,
+) -> float:
+    """Return the length of the Euler curve the layout factory extrudes."""
+    return gf.path.euler(
+        radius=radius,
+        angle=angle,
+        p=p,
+        use_eff=with_arc_floorplan,
+        npoints=npoints,
+        angular_step=angular_step,
+    ).length()
+
+
+def _resolve_radius(radius: float | None, cross_section: CrossSectionSpec) -> float:
+    """Fall back to the cross-section radius, as the layout factories do."""
+    radius = radius or gf.get_cross_section(cross_section).radius
+    if radius is None:
+        raise ValueError("radius must be specified")
+    return radius
+
+
+def _circular_bend_radius(
+    radius: float | None, cross_section: CrossSectionSpec
+) -> float:
+    """Clamp to the QPDK cell's minimum radius, then fall back like the factories."""
+    if radius is not None:
+        radius_min = gf.get_cross_section(cross_section).radius_min
+        if radius_min is not None and radius < radius_min:
+            radius = radius_min
+    return _resolve_radius(radius, cross_section)
+
+
 def bend_circular(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float | None = None,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    angle: float = 90.0,
+    radius: float | None = 100.0,
+    npoints: int | None = None,
+    angular_step: float | None = None,
 ) -> sax.SDict:
     """S-parameter model for a circular bend, wrapped to :func:`~straight`.
 
+    Geometry mirrors :func:`qpdk.cells.waveguides.bend_circular`, and the phase comes
+    from the length of the layout arc rather than a separate length argument. A radius
+    below the cross-section minimum is clamped exactly like the layout cell clamps it.
+
+    .. note::
+        Geometry settings are static: they are resolved through gdsfactory's path API
+        and cannot be traced, so JIT-compile over frequency only.
+
     Args:
         f: Array of frequency points in Hz
-        length: Physical length in µm
+        length: Physical length in µm. When omitted, it is derived from the geometry.
         cross_section: The cross-section of the waveguide.
+        angle: Angle of the bend in degrees.
+        radius: Radius of the bend in µm. Radii below the cross-section minimum are
+            clamped first; a radius that is still falsy then falls back to the
+            cross-section radius.
+        npoints: Number of points used per 360 degrees of the layout arc.
+        angular_step: Angular step in degrees between layout points, mutually
+            exclusive with ``npoints``.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
+    if length is None:
+        radius = _circular_bend_radius(radius, cross_section)
+        length = _circular_bend_length(radius, angle, npoints, angular_step)
     return straight(f=f, length=length, cross_section=cross_section)
 
 
 def bend_circular_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float | None = None,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    angle: float = 90.0,
+    radius: float | None = 100.0,
+    npoints: int | None = None,
 ) -> sax.SDict:
     """S-parameter model for a circular bend, wrapped to :func:`~straight`.
 
+    Geometry mirrors :func:`qpdk.cells.waveguides.bend_circular_all_angle`, which
+    passes it through to the all-angle layout factory: no minimum-radius clamp, and
+    ``radius=None`` falls back to the cross-section radius.
+
+    .. note::
+        Geometry settings are static: they are resolved through gdsfactory's path API
+        and cannot be traced, so JIT-compile over frequency only.
+
     Args:
         f: Array of frequency points in Hz
-        length: Physical length in µm
+        length: Physical length in µm. When omitted, it is derived from the geometry.
         cross_section: The cross-section of the waveguide.
+        angle: Angle of the bend in degrees.
+        radius: Radius of the bend in µm. Defaults to the cross-section radius.
+        npoints: Number of points used per 360 degrees of the layout arc.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
+    if length is None:
+        radius = _resolve_radius(radius, cross_section)
+        length = _circular_bend_length(radius, angle, npoints)
     return straight(f=f, length=length, cross_section=cross_section)
 
 
 def bend_euler(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float | None = None,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    angle: float = 90.0,
+    radius: float | None = None,
+    p: float = 0.5,
+    with_arc_floorplan: bool = True,
+    npoints: int | None = 720,
+    angular_step: float | None = None,
 ) -> sax.SDict:
     """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
 
+    Geometry mirrors :func:`qpdk.cells.waveguides.bend_euler`, and the phase comes
+    from the length of the layout curve rather than a separate length argument.
+
+    .. note::
+        Geometry settings are static: they are resolved through gdsfactory's path API
+        and cannot be traced, so JIT-compile over frequency only.
+
     Args:
         f: Array of frequency points in Hz
-        length: Physical length in µm
+        length: Physical length in µm. When omitted, it is derived from the geometry.
         cross_section: The cross-section of the waveguide.
+        angle: Angle of the bend in degrees.
+        radius: Radius of the bend in µm. Defaults to the cross-section radius.
+        p: Fraction of the bend that is curved (0-1).
+        with_arc_floorplan: If True, the curve matches an arc of the same radius and angle.
+        npoints: Number of points used per 360 degrees of the layout curve.
+        angular_step: Angular step in degrees between layout points, mutually
+            exclusive with ``npoints``. The layout cell defaults to ``npoints=720``,
+            so pass ``npoints=None`` alongside it, as gdsfactory does.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
+    if length is None:
+        radius = _resolve_radius(radius, cross_section)
+        length = _euler_bend_length(
+            radius, angle, p, with_arc_floorplan, npoints, angular_step
+        )
     return straight(f=f, length=length, cross_section=cross_section)
 
 
 def bend_euler_all_angle(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 1000,
+    length: sax.Float | None = None,
     cross_section: CrossSectionSpec = "cpw",
+    *,
+    angle: float = 90.0,
+    radius: float | None = None,
+    p: float = 0.5,
+    with_arc_floorplan: bool = True,
+    npoints: int | None = None,
 ) -> sax.SDict:
     """S-parameter model for an Euler bend, wrapped to :func:`~straight`.
 
+    Geometry mirrors :func:`qpdk.cells.waveguides.bend_euler_all_angle`, which passes
+    it through to the all-angle layout factory.
+
+    .. note::
+        Geometry settings are static: they are resolved through gdsfactory's path API
+        and cannot be traced, so JIT-compile over frequency only.
+
     Args:
         f: Array of frequency points in Hz
-        length: Physical length in µm
+        length: Physical length in µm. When omitted, it is derived from the geometry.
         cross_section: The cross-section of the waveguide.
+        angle: Angle of the bend in degrees.
+        radius: Radius of the bend in µm. Defaults to the cross-section radius.
+        p: Fraction of the bend that is curved (0-1).
+        with_arc_floorplan: If True, the curve matches an arc of the same radius and angle.
+        npoints: Number of points used per 360 degrees of the layout curve.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
+    if length is None:
+        radius = _resolve_radius(radius, cross_section)
+        length = _euler_bend_length(radius, angle, p, with_arc_floorplan, npoints)
     return straight(f=f, length=length, cross_section=cross_section)
 
 
