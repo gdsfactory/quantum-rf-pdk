@@ -1,8 +1,11 @@
 """Tests for qpdk.models.waveguides module."""
 
 import inspect
-from typing import final
+from collections.abc import Callable
+from functools import partial
+from typing import Any, final
 
+import gdsfactory as gf
 import hypothesis.strategies as st
 import jax
 import jax.numpy as jnp
@@ -10,12 +13,20 @@ import pytest
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
-from qpdk.cells.waveguides import bend_s as bend_s_cell
+from qpdk.cells.waveguides import (
+    bend_circular as bend_circular_cell,
+    bend_circular_all_angle as bend_circular_all_angle_cell,
+    bend_euler as bend_euler_cell,
+    bend_euler_all_angle as bend_euler_all_angle_cell,
+    bend_s as bend_s_cell,
+)
 from qpdk.models import waveguides as waveguide_models
 from qpdk.models.waveguides import (
     airbridge,
     bend_circular,
+    bend_circular_all_angle,
     bend_euler,
+    bend_euler_all_angle,
     bend_s,
     indium_bump,
     nxn,
@@ -26,7 +37,7 @@ from qpdk.models.waveguides import (
     straight_shorted,
     tsv,
 )
-from qpdk.tech import coplanar_waveguide
+from qpdk.tech import LAYER, coplanar_waveguide
 
 from .base import OnePortModelTestSuite, TwoPortModelTestSuite
 
@@ -221,7 +232,7 @@ class TestBendCircular(TwoPortModelTestSuite):
 
     @staticmethod
     def get_model_kwargs() -> dict:
-        return {"length": 500}
+        return {"angle": -180.0, "radius": 250.0}
 
 
 @final
@@ -232,7 +243,7 @@ class TestBendEuler(TwoPortModelTestSuite):
 
     @staticmethod
     def get_model_kwargs() -> dict:
-        return {"length": 500}
+        return {"angle": 180.0, "p": 0.25, "with_arc_floorplan": False}
 
 
 @final
@@ -328,6 +339,228 @@ def test_bend_s_length_supports_reverse_mode_differentiation() -> None:
     )(3.0)
 
     assert jnp.isfinite(gradient)
+
+
+_CIRCULAR_BEND_SETTINGS: list[dict[str, Any]] = [
+    {},
+    {"angle": 45.0},
+    {"angle": -90.0},
+    {"angle": 180.0},
+    {"angle": -135.0},
+    # Below the cpw minimum radius (and zero), exercising the clamp and the fallback.
+    {"radius": 5.0},
+    {"radius": 0.0},
+    {"radius": 250.0},
+    {"npoints": 32},
+]
+
+_EULER_BEND_SETTINGS: list[dict[str, Any]] = [
+    {},
+    {"angle": 45.0},
+    {"angle": -90.0},
+    {"angle": 180.0},
+    {"angle": -135.0},
+    {"radius": 25.0},
+    {"radius": 250.0},
+    {"p": 0.25},
+    {"p": 1.0},
+    {"with_arc_floorplan": False},
+    {"angle": 45.0, "radius": 30.0, "p": 0.75, "with_arc_floorplan": False},
+    {"npoints": 32},
+]
+
+_BEND_PAIRS = [
+    (
+        bend_circular_cell,
+        bend_circular,
+        # Only the regular layout cells forward angular_step, through **kwargs.
+        [
+            *_CIRCULAR_BEND_SETTINGS,
+            {"angular_step": 45.0},
+            {"angle": 180.0, "angular_step": 30.0},
+        ],
+    ),
+    (bend_circular_all_angle_cell, bend_circular_all_angle, _CIRCULAR_BEND_SETTINGS),
+    (
+        bend_euler_cell,
+        bend_euler,
+        # gdsfactory rejects angular_step together with npoints, and the regular
+        # Euler cell defaults to npoints=720.
+        [
+            *_EULER_BEND_SETTINGS,
+            {"angular_step": 45.0, "npoints": None},
+            {"angle": 180.0, "angular_step": 30.0, "npoints": None},
+        ],
+    ),
+    (bend_euler_all_angle_cell, bend_euler_all_angle, _EULER_BEND_SETTINGS),
+]
+
+
+def _case_id(model: Callable[..., Any], geometry: dict[str, Any]) -> str:
+    """Render a case as a readable test id."""
+    settings = ", ".join(f"{name}={value}" for name, value in geometry.items())
+    return f"{model.__name__}-{settings or 'default'}"
+
+
+_BEND_MODELS = [model for _, model, _ in _BEND_PAIRS]
+_CIRCULAR_BEND_MODELS = [bend_circular, bend_circular_all_angle]
+
+# No minimum bend radius, unlike the PDK's coplanar waveguide cross-section.
+_NO_RADIUS_MIN_CROSS_SECTION = gf.cross_section.cross_section(
+    width=10,
+    radius=100,
+    radius_min=None,
+    sections=(gf.Section(width=6, layer=LAYER.M1_ETCH, name="etch"),),
+)
+
+_BEND_CASES = [
+    pytest.param(cell, model, geometry, id=_case_id(model, geometry))
+    for cell, model, geometries in _BEND_PAIRS
+    for geometry in geometries
+]
+
+
+def _assert_matches_layout(
+    cell_factory: Callable[..., Any],
+    model: Callable[..., Any],
+    geometry: dict[str, Any],
+) -> None:
+    """Compare the model to straight propagation over the materialized cell's length."""
+    component = cell_factory(**geometry)
+    frequencies = jnp.array([2e9, 5e9, 8e9])
+    expected = straight(f=frequencies, length=component.info["length"])
+
+    results = [
+        model(f=frequencies, **geometry),
+        jax.jit(partial(model, **geometry))(frequencies),
+    ]
+    for result in results:
+        assert set(result) == set(expected)
+        for key in expected:
+            assert_allclose(result[key], expected[key], rtol=1e-6, atol=1e-12)
+
+
+@pytest.mark.parametrize(("cell_factory", "model", "geometry"), _BEND_CASES)
+def test_bend_model_matches_layout_length(
+    cell_factory: Callable[..., Any],
+    model: Callable[..., Any],
+    geometry: dict[str, Any],
+) -> None:
+    """Every bend model propagates like its cell, eagerly and jitted over frequency."""
+    _assert_matches_layout(cell_factory, model, geometry)
+
+
+@pytest.mark.parametrize(
+    "model", _BEND_MODELS, ids=[model.__name__ for model in _BEND_MODELS]
+)
+def test_bend_model_explicit_length_overrides_geometry(
+    model: Callable[..., Any],
+) -> None:
+    """An explicit length wins, both by keyword and in the positional second slot."""
+    frequencies = jnp.array([5e9])
+    expected = straight(f=frequencies, length=250.0)
+    results = [model(frequencies, 250.0), model(f=frequencies, length=250.0)]
+
+    # The derived length must differ from the override, or the check is vacuous.
+    assert not jnp.allclose(model(f=frequencies)["o2", "o1"], expected["o2", "o1"])
+    for result in results:
+        assert set(result) == set(expected)
+        for key in expected:
+            assert_allclose(result[key], expected[key], rtol=1e-12, atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    "model", _BEND_MODELS, ids=[model.__name__ for model in _BEND_MODELS]
+)
+def test_bend_model_legacy_positional_call(model: Callable[..., Any]) -> None:
+    """The legacy ``(f, length, cross_section)`` positional order still resolves."""
+    frequencies = jnp.array([5e9])
+    cross_section = "launcher_cross_section_big"
+    expected = straight(f=frequencies, length=250.0, cross_section=cross_section)
+    result = model(frequencies, 250.0, cross_section)
+
+    assert set(result) == set(expected)
+    for key in expected:
+        assert_allclose(result[key], expected[key], rtol=1e-12, atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    "model",
+    _CIRCULAR_BEND_MODELS,
+    ids=[model.__name__ for model in _CIRCULAR_BEND_MODELS],
+)
+def test_bend_circular_none_radius_uses_cross_section_radius(
+    model: Callable[..., Any],
+) -> None:
+    """A missing radius falls back to the cross-section radius, like the factories."""
+    frequencies = jnp.array([5e9])
+    expected = model(f=frequencies, radius=100.0)
+    result = model(f=frequencies, radius=None)
+
+    for key in expected:
+        assert_allclose(result[key], expected[key], rtol=1e-12, atol=1e-12)
+
+
+def test_bend_circular_without_cross_section_radius_min() -> None:
+    """Without a cross-section minimum, radii stay unclamped and zero falls back."""
+    frequencies = jnp.array([5e9])
+    cross_section = _NO_RADIUS_MIN_CROSS_SECTION
+    unclamped = bend_circular(f=frequencies, radius=5.0, cross_section=cross_section)
+    expected = straight(
+        f=frequencies,
+        length=gf.path.arc(radius=5.0, angle=90.0).length(),
+        cross_section=cross_section,
+    )
+    fallback = bend_circular(f=frequencies, radius=0.0, cross_section=cross_section)
+    at_cross_section_radius = bend_circular(
+        f=frequencies, radius=100.0, cross_section=cross_section
+    )
+
+    for key in expected:
+        assert_allclose(unclamped[key], expected[key], rtol=1e-12, atol=1e-12)
+        assert_allclose(
+            fallback[key], at_cross_section_radius[key], rtol=1e-12, atol=1e-12
+        )
+
+
+@pytest.mark.parametrize(
+    ("cell_factory", "model"),
+    [(cell, model) for cell, model, _ in _BEND_PAIRS],
+    ids=[model.__name__ for _, model, _ in _BEND_PAIRS],
+)
+def test_bend_model_defaults_match_layout_cell(
+    cell_factory: Callable[..., Any], model: Callable[..., Any]
+) -> None:
+    """Keep the model's geometry defaults aligned with the layout cells."""
+    model_parameters = inspect.signature(model).parameters
+    cell_parameters = inspect.signature(cell_factory).parameters
+
+    for name in ("angle", "radius", "p", "with_arc_floorplan", "npoints"):
+        if name in model_parameters and name in cell_parameters:
+            assert model_parameters[name].default == cell_parameters[name].default
+
+
+@given(
+    angle=st.one_of(
+        st.floats(min_value=-180, max_value=-1),
+        st.floats(min_value=1, max_value=180),
+    ),
+    radius=st.floats(min_value=20, max_value=500),
+    p=st.sampled_from([0.25, 0.5, 0.75, 1.0]),
+    with_arc_floorplan=st.booleans(),
+)
+@settings(max_examples=10, deadline=None)
+def test_bend_euler_model_matches_layout_length_property(
+    angle: float, radius: float, p: float, with_arc_floorplan: bool
+) -> None:
+    """Sweep continuous angles and radii against the Euler layout curve."""
+    geometry = {
+        "angle": angle,
+        "radius": radius,
+        "p": p,
+        "with_arc_floorplan": with_arc_floorplan,
+    }
+    _assert_matches_layout(bend_euler_cell, bend_euler, geometry)
 
 
 @final
