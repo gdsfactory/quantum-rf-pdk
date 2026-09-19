@@ -14,7 +14,10 @@ from kfactory import kdb
 from kfactory.conf import CheckInstances
 from klayout.db import DCplxTrans, Region
 
-from qpdk.cells._schematic import attach_schematic, double_pad_transmon_schematic
+from qpdk.cells._schematic import (
+    double_pad_transmon_schematic,
+    double_pad_transmon_with_bbox_schematic,
+)
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.junction import squid_junction, squid_junction_long
 from qpdk.tech import LAYER
@@ -164,10 +167,10 @@ def double_pad_transmon(
     return c
 
 
-attach_schematic(double_pad_transmon, double_pad_transmon_schematic)
-
-
-@gf.cell(tags=["qubits", "transmons"])
+@gf.cell(
+    tags=["qubits", "transmons"],
+    schematic_function=double_pad_transmon_with_bbox_schematic,
+)
 def double_pad_transmon_with_bbox(
     bbox_extension: float = 200.0,
     pad_size: tuple[float, float] = (250.0, 400.0),

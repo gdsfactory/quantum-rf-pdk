@@ -10,7 +10,6 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
 from qpdk.cells._schematic import (
-    attach_schematic,
     quarter_wave_resonator_coupled_schematic,
     resonator_coupled_schematic,
     resonator_half_wave_schematic,
@@ -223,14 +222,77 @@ def resonator(
     return c
 
 
-attach_schematic(resonator, resonator_schematic)
+@gf.cell(tags=["resonators"], schematic_function=resonator_quarter_wave_schematic)
+def resonator_quarter_wave(
+    length: float = 4000.0,
+    meanders: int = 6,
+    bend_spec: ComponentSpec = bend_circular,
+    cross_section: CrossSectionSpec = "cpw",
+    *,
+    start_with_bend: bool = False,
+    end_with_bend: bool = False,
+    open_start: bool = False,
+    open_end: bool = True,
+) -> Component:
+    """Return a quarter-wave resonator with its schematic and model boundary.
+
+    Args:
+        length: Total resonator length in µm.
+        meanders: Number of meander bends.
+        bend_spec: Component used for each bend.
+        cross_section: Resonator cross section.
+        start_with_bend: Start the path with a bend.
+        end_with_bend: End the path with a bend.
+        open_start: Leave the start open instead of shorting it.
+        open_end: Leave the end open instead of shorting it.
+    """
+    return resonator(
+        length=length,
+        meanders=meanders,
+        bend_spec=bend_spec,
+        cross_section=cross_section,
+        start_with_bend=start_with_bend,
+        end_with_bend=end_with_bend,
+        open_start=open_start,
+        open_end=open_end,
+    )
 
 
-# A quarter-wave resonator is shorted at one end and has maximum electric field
-# at the open end, making it suitable for capacitive coupling.
-resonator_quarter_wave = partial(resonator, open_start=False, open_end=True)
-# A half-wave resonator is open at both ends
-resonator_half_wave = partial(resonator, open_start=True, open_end=True)
+@gf.cell(tags=["resonators"], schematic_function=resonator_half_wave_schematic)
+def resonator_half_wave(
+    length: float = 4000.0,
+    meanders: int = 6,
+    bend_spec: ComponentSpec = bend_circular,
+    cross_section: CrossSectionSpec = "cpw",
+    *,
+    start_with_bend: bool = False,
+    end_with_bend: bool = False,
+    open_start: bool = True,
+    open_end: bool = True,
+) -> Component:
+    """Return a half-wave resonator with its schematic and model boundary.
+
+    Args:
+        length: Total resonator length in µm.
+        meanders: Number of meander bends.
+        bend_spec: Component used for each bend.
+        cross_section: Resonator cross section.
+        start_with_bend: Start the path with a bend.
+        end_with_bend: End the path with a bend.
+        open_start: Leave the start open instead of shorting it.
+        open_end: Leave the end open instead of shorting it.
+    """
+    return resonator(
+        length=length,
+        meanders=meanders,
+        bend_spec=bend_spec,
+        cross_section=cross_section,
+        start_with_bend=start_with_bend,
+        end_with_bend=end_with_bend,
+        open_start=open_start,
+        open_end=open_end,
+    )
+
 
 # Quarter-wave resonator starting with a bend
 resonator_quarter_wave_bend_start = partial(
@@ -250,22 +312,6 @@ resonator_quarter_wave_bend_both = partial(
 resonator_half_wave_bend_both = partial(
     resonator_half_wave, start_with_bend=True, end_with_bend=True
 )
-
-for _resonator_factory in (
-    resonator_quarter_wave,
-    resonator_quarter_wave_bend_start,
-    resonator_quarter_wave_bend_end,
-    resonator_quarter_wave_bend_both,
-):
-    attach_schematic(_resonator_factory, resonator_quarter_wave_schematic)
-
-for _resonator_factory in (
-    resonator_half_wave,
-    resonator_half_wave_bend_start,
-    resonator_half_wave_bend_end,
-    resonator_half_wave_bend_both,
-):
-    attach_schematic(_resonator_factory, resonator_half_wave_schematic)
 
 
 @gf.cell(
@@ -362,9 +408,6 @@ def resonator_coupled(
     c.info["coupling_gap"] = coupling_gap
 
     return c
-
-
-attach_schematic(resonator_coupled, resonator_coupled_schematic)
 
 
 @gf.cell(
@@ -508,8 +551,3 @@ def quarter_wave_resonator_coupled(
     c.info["coupling_gap"] = coupling_gap
 
     return c
-
-
-attach_schematic(
-    quarter_wave_resonator_coupled, quarter_wave_resonator_coupled_schematic
-)

@@ -14,7 +14,7 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec
 
-from qpdk.cells._schematic import attach_schematic, launcher_schematic
+from qpdk.cells._schematic import launcher_schematic
 from qpdk.cells.waveguides import straight, taper_cross_section
 from qpdk.tech import LAYER, coplanar_waveguide, launcher_cross_section_big
 
@@ -93,6 +93,3 @@ def launcher(
     )
 
     return c
-
-
-attach_schematic(launcher, launcher_schematic)

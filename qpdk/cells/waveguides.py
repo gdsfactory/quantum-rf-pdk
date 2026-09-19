@@ -9,7 +9,6 @@ from klayout.db import DCplxTrans
 
 from qpdk import tech
 from qpdk.cells._schematic import (
-    attach_schematic,
     bend_circular_schematic,
     bend_s_schematic,
     coupler_straight_schematic,
@@ -78,9 +77,6 @@ def straight(
     return gf.c.straight(length=length, cross_section=cross_section, npoints=npoints)
 
 
-attach_schematic(straight, straight_schematic)
-
-
 @gf.cell(tags=["terminations"], schematic_function=open_schematic)
 def open() -> gf.Component:  # ruff: ignore[builtin-variable-shadowing]
     """Return a layout-free ideal one-port open for schematic simulation."""
@@ -92,9 +88,6 @@ def open() -> gf.Component:  # ruff: ignore[builtin-variable-shadowing]
         cross_section=_DEFAULT_CROSS_SECTION,
     )
     return c
-
-
-attach_schematic(open, open_schematic)
 
 
 @gf.cell(tags=["terminations"], schematic_function=open_2_port_schematic)
@@ -141,9 +134,6 @@ def open_2_port(
     return component
 
 
-attach_schematic(open_2_port, open_2_port_schematic)
-
-
 @gf.cell(tags=["terminations"], schematic_function=short_schematic)
 def short() -> gf.Component:
     """Return a layout-free ideal one-port short for schematic simulation."""
@@ -155,9 +145,6 @@ def short() -> gf.Component:
         cross_section=_DEFAULT_CROSS_SECTION,
     )
     return c
-
-
-attach_schematic(short, short_schematic)
 
 
 @gf.cell(
@@ -187,9 +174,6 @@ def straight_shorted(
     return c
 
 
-attach_schematic(straight_shorted, straight_shorted_schematic)
-
-
 @gf.cell(
     tags=["waveguides", "resonators", "terminations"],
     schematic_function=straight_open_schematic,
@@ -214,9 +198,6 @@ def straight_open(
     c.add_port(port=straight_ref.ports["o2"], port_type="placement")
     add_etch_gap(c, c.ports["o2"], cross_section=cross_section)
     return c
-
-
-attach_schematic(straight_open, straight_open_schematic)
 
 
 @gf.cell(tags=["waveguides", "resonators"])
@@ -408,9 +389,6 @@ def bend_circular(
     )
 
 
-attach_schematic(bend_circular, bend_circular_schematic)
-
-
 @gf.cell(
     tags=["waveguides", "bend", "s"],
     schematic_function=bend_s_schematic,
@@ -470,9 +448,6 @@ def coupler_straight(
     component.add_ports(upper.ports, prefix="upper_")
     component.auto_rename_ports()
     return component
-
-
-attach_schematic(coupler_straight, coupler_straight_schematic)
 
 
 coupler_ring = partial(

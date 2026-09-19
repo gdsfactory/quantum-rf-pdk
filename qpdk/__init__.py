@@ -51,7 +51,7 @@ def _add_sax_model_aliases(
 
 
 try:
-    from .models import models as _models
+    from .models import pdk_models as _models
 except ImportError as e:
     logger.warning(
         f"QPDK models could not be loaded ({e}). "

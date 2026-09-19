@@ -18,10 +18,8 @@ def _pin(device: dict, name: str) -> tuple[float, float]:
     if device["type"] == "port":
         local = (0, 0)
     else:
-        factory = gf.get_cell(device["model"].rsplit(".", 1)[-1])
-        schematic_function = getattr(factory, "schematic_function", None)
-        assert callable(schematic_function)
-        schematic = schematic_function()
+        factory = gf.kcl.factories[device["model"].rsplit(".", 1)[-1]]
+        schematic = factory.get_schematic()
         assert isinstance(schematic, DSchematic)
         ports = schematic.info["ports"]
         assert isinstance(ports, list)

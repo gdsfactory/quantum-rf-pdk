@@ -1,6 +1,6 @@
 """Tests for qpdk.models.unimon module - Unimon qubit models."""
 
-from typing import final
+from typing import ClassVar, final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
@@ -219,14 +219,15 @@ class TestUnimonCoupledSAX(OnePortModelTestSuite):
     """Tests for the unimon coupled SAX S-parameter model."""
 
     model_function = staticmethod(unimon_coupled)
+    expected_ports: ClassVar[set[str]] = {"coupling_o3"}
 
     def test_coupling_affects_response(self) -> None:
         """Test that coupling capacitance changes S-parameters."""
         f = self.get_frequency_array(50)
         result_weak = self._call_model(f=f, coupling_capacitance=1e-15)
         result_strong = self._call_model(f=f, coupling_capacitance=50e-15)
-        s11_weak = result_weak["o1", "o1"]
-        s11_strong = result_strong["o1", "o1"]
+        s11_weak = result_weak["coupling_o3", "coupling_o3"]
+        s11_strong = result_strong["coupling_o3", "coupling_o3"]
         assert not jnp.allclose(s11_weak, s11_strong, atol=1e-3), (
             "Different coupling capacitances should produce different S-parameters"
         )

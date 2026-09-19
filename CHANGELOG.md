@@ -28,6 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Aligned cell SAX model ports with their layouts. Fluxonium models now use `left_pad` and `right_pad`, Josephson
+  junctions use `left_wide` and `right_wide`, and coupled Unimons use `coupling_o3`. `double_pad_transmon_with_bbox` now
+  shares the `double_pad_transmon` model and its pad ports.
+- Registered supported PDK models explicitly and read schematic metadata from the cell factory registry.
 - Replaced numpy with JAX in tests and notebooks where possible.
 - Organized the tests into subfolders by tool.
 - Installed the GDSFactory+ v2 SDK from PyPI instead of the VS Code extension.

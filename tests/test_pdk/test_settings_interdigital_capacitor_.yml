@@ -1,5 +1,5 @@
 info: {}
-name: interdigital_capacitor_F4_FL20_FG2_T5_LMM1_DRAW_ELM1_ET_a1ca2a9c
+name: interdigital_capacitor_F4_FL20_FG2_T5_LMM1_DRAW_ELM1_ET_345c9ff5
 ports:
   o1:
     center:
@@ -26,6 +26,5 @@ settings:
   finger_gap: 2
   finger_length: 20
   fingers: 4
-  half: false
   layer_metal: M1_DRAW
   thickness: 5

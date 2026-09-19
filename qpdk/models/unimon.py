@@ -179,11 +179,11 @@ def unimon_coupled(
 
     .. svgbob::
 
-        o1 ── Cc ──┬── λ/4 TL ── (ground)
-                   │
-                 Junction
-                   │
-                   └── λ/4 TL ── (ground)
+        coupling_o3 ── Cc ──┬── λ/4 TL ── (ground)
+                            │
+                          Junction
+                            │
+                            └── λ/4 TL ── (ground)
 
     Args:
         f: Array of frequency points in Hz.
@@ -194,7 +194,7 @@ def unimon_coupled(
         coupling_capacitance: Coupling capacitance :math:`C_\text{c}` in Farads.
 
     Returns:
-        sax.SDict: S-parameters dictionary with a single port ``o1``.
+        sax.SDict: S-parameters dictionary with a single port ``coupling_o3``.
     """
     f = jnp.asarray(f)
 
@@ -214,7 +214,7 @@ def unimon_coupled(
     }
 
     ports = {
-        "o1": "coupling_cap,o1",
+        "coupling_o3": "coupling_cap,o1",
     }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)

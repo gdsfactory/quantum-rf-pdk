@@ -196,3 +196,41 @@ def test_resonator_test_chip_sax_simulation(source: str, tmp_path: Path) -> None
 
     _assert_model_boundaries(info)
     _assert_sweep_matches_reference(result)
+
+
+@pytest.mark.gfp
+def test_metadata_resolved_models_model_their_layout_ports() -> None:
+    """Models resolved through v2 metadata must match their layout cell ports.
+
+    ``resolve_factory_model`` returns ``None`` for cells gdsfactoryplus has no
+    SAX binding for, so only the names it does resolve are compared. Those are
+    the names whose schematic declares a model.
+    """
+    resolved: set[str] = set()
+
+    for name in sorted(PDK.cells.keys() & PDK.models.keys()):
+        model = factory_metadata.resolve_factory_model(name, "sax")
+        if model is None:
+            continue
+        resolved.add(name)
+
+        layout_ports = {
+            port.name
+            for port in PDK.cells[name]().ports
+            if port.port_type != "placement"
+        }
+        s_params = model(f=jnp.asarray([5e9]))
+        model_ports = {port for pair in s_params for port in pair}
+
+        assert model_ports == layout_ports, (
+            f"{name}: model ports {sorted(model_ports)} do not match layout "
+            f"ports {sorted(layout_ports)}"
+        )
+
+    assert {
+        "double_pad_transmon_with_bbox",
+        "fluxonium",
+        "fluxonium_with_bbox",
+        "josephson_junction",
+        "unimon_coupled",
+    } <= resolved

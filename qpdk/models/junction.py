@@ -55,7 +55,7 @@ def josephson_junction(
         ib: DC bias current :math:`I_\text{b}` in Amperes (:math:`\|I_\text{b}\| < I_\text{c}`)
 
     Returns:
-        sax.SDict: S-parameters dictionary
+        sax.SDict: S-parameters dictionary with ports left_wide and right_wide
     """
     jax.debug.callback(_warn_if_overbiased, ib, ic)
 
@@ -76,7 +76,9 @@ def josephson_junction(
     # Total admittance
     Y_JJ = Y_R + Y_C + Y_L
 
-    return impedance(f=f, z=1 / Y_JJ)
+    return sax.rename_ports(
+        impedance(f=f, z=1 / Y_JJ), {"o1": "left_wide", "o2": "right_wide"}
+    )
 
 
 @jit(inline=True)
@@ -152,9 +154,9 @@ if __name__ == "__main__":
     f = jnp.linspace(1e9, 10e9, 500)
     s = josephson_junction(f=f, ic=1e-6, capacitance=50e-15, resistance=10e3, ib=0.5e-6)
     plt.figure()
-    plt.plot(f / 1e9, jnp.abs(s["o1", "o1"]), label="|S11|")
-    plt.plot(f / 1e9, jnp.abs(s["o1", "o2"]), label="|S12|")
-    plt.plot(f / 1e9, jnp.abs(s["o2", "o2"]), label="|S22|")
+    plt.plot(f / 1e9, jnp.abs(s["left_wide", "left_wide"]), label="|S11|")
+    plt.plot(f / 1e9, jnp.abs(s["left_wide", "right_wide"]), label="|S12|")
+    plt.plot(f / 1e9, jnp.abs(s["right_wide", "right_wide"]), label="|S22|")
     plt.xlabel("Frequency [GHz]")
     plt.ylabel("Magnitude")
     plt.legend()

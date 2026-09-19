@@ -178,8 +178,17 @@ files.
 
 Before you remove a cell, check which cells import it, for example with `git grep -n "import.*\bjosephson_junction\b"`.
 
-SAX models are also matched to cells by name. `SAX_MODEL_ALIASES` in `qpdk/__init__.py` lets some cells use another
-cell's model. If you remove a model that an alias points to, `import qpdk` fails with a `KeyError`. If you remove a cell
+SAX models are also matched to cells by name. `pdk_models` in `qpdk/models/__init__.py` explicitly registers the
+supported models. Analytical helpers and models without a matching layout boundary remain available through their
+modules and the full `models` catalog. Adding a public analytical function does not register it in the PDK. Cell models
+use the layout's circuit port names. Placement markers are not circuit ports.
+
+Declare schematic metadata with `@gf.cell(schematic_function=...)`. It is available through
+`gf.kcl.factories[name].get_schematic()`, so no separate attachment call is needed. Keep the model and schematic
+descriptor aligned when changing a cell's circuit ports.
+
+`SAX_MODEL_ALIASES` in `qpdk/__init__.py` lets some cells use another cell's model. Each target must be registered in
+`pdk_models`. If you remove a model that an alias points to, `import qpdk` fails with a `KeyError`. If you remove a cell
 that has an alias, remove the alias too.
 
 ## Pruning
@@ -246,6 +255,7 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork  | Keep yours. Add QPDK layers you want, regenerate |
 | `qpdk/tech.py`                                         | Both  | Keep your values. Take new QPDK definitions      |
 | `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
+| PDK model registry in `qpdk/models/__init__.py`        | Both  | Preserve fork models and matching descriptors    |
 | `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
 | QPDK modules in `qpdk/cells/`                          | QPDK  | Merge. New QPDK cells usually merge cleanly      |
 | `qpdk/__init__.py`                                     | Both  | Keep Python cells ahead of YAML sample fallbacks |

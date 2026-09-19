@@ -289,6 +289,7 @@ class TestFluxonium(TwoPortModelTestSuite):
     """Tests for fluxonium model."""
 
     model_function = staticmethod(fluxonium)
+    expected_ports: ClassVar[set[str]] = {"left_pad", "right_pad"}
 
     def test_resonance_frequency(self) -> None:
         """Test that resonance frequency matches expected parallel LCL."""
@@ -303,7 +304,7 @@ class TestFluxonium(TwoPortModelTestSuite):
             f=f, capacitance=C, josephson_inductance=LJ, superinductance=LS
         )
 
-        s21 = result["o2", "o1"]
+        s21 = result["right_pad", "left_pad"]
         idx_min = jnp.argmin(jnp.abs(s21))
         f_observed = f[idx_min]
 
@@ -316,6 +317,7 @@ class TestFluxoniumWithBbox(TwoPortModelTestSuite):
     """Tests for fluxonium_with_bbox model."""
 
     model_function = staticmethod(fluxonium_with_bbox)
+    expected_ports: ClassVar[set[str]] = {"left_pad", "right_pad"}
 
 
 @final
