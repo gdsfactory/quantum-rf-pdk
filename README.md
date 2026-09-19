@@ -15,8 +15,6 @@
 [![DRC](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/drc.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/drc.yml)
 [![Code Coverage](https://codecov.io/github/gdsfactory/quantum-rf-pdk/branch/main/graph/badge.svg)](https://codecov.io/github/gdsfactory/quantum-rf-pdk)
 [![Model Coverage](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/model_coverage.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
-[![Issues](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/issues.svg)](https://github.com/gdsfactory/quantum-rf-pdk/issues)
-[![PRs](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/prs.svg)](https://github.com/gdsfactory/quantum-rf-pdk/pulls)
 
 <!-- BADGES:END -->
 
