@@ -10,6 +10,10 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
+from qpdk.cells._schematic import (
+    fluxonium_schematic,
+    fluxonium_with_bbox_schematic,
+)
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.junction import josephson_junction
 from qpdk.tech import (
@@ -22,7 +26,11 @@ from qpdk.utils import add_rect, transform_component
 __all__ = ["fluxonium", "fluxonium_with_bbox"]
 
 
-@gf.cell(check_instances=False, tags=("qubits", "inductors"))
+@gf.cell(
+    check_instances=False,
+    tags=("qubits", "inductors"),
+    schematic_function=fluxonium_schematic,
+)
 def fluxonium(
     pad_size: tuple[float, float] = (250.0, 400.0),
     pad_gap: float = 25.0,
@@ -287,7 +295,10 @@ def _snap_to_grid(value: float, grid: float = 0.002) -> float:
     return math.ceil(value / grid) * grid
 
 
-@gf.cell(tags=("qubits", "inductors"))
+@gf.cell(
+    tags=("qubits", "inductors"),
+    schematic_function=fluxonium_with_bbox_schematic,
+)
 def fluxonium_with_bbox(
     bbox_extension: float = 200.0,
     pad_size: tuple[float, float] = (250.0, 400.0),
