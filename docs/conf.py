@@ -3,6 +3,7 @@
 import json
 import re
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -11,6 +12,9 @@ from docutils import nodes
 from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator, escape_typst_string
+
+# Local Sphinx extensions live in ``docs/_ext`` and are imported by name below.
+sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
 _TYPST_VISIT_MATH_BLOCK = TypstTranslator.visit_math_block
 _TYPST_VISIT_BULLET_LIST = TypstTranslator.visit_bullet_list
@@ -40,6 +44,7 @@ extensions = [
     "sphinxcontrib.bibtex",
     "sphinxcontrib_bibtex_urn",
     "typsphinx",
+    "alias_typehints",  # local, see docs/_ext/
 ]
 
 # -- Plot directive configuration ---------------------------------------------
@@ -1077,19 +1082,11 @@ def _typst_visit_meta(_self, _node):
 
 def setup(app):
     """Sphinx setup."""
-    # Regex for types to shorten in the final rendered docstring fields
-    # Note: this is a bit hacky as it operates on the processed lines
-    patterns = {
-        r"Annotated\[Array \| ndarray \| .*?val_float_array.*?\]": "FloatArrayLike",
-        r"Annotated\[float \| floating, PlainValidator\(func=~sax\.saxtypes\.core\.val_float, .*?\)\]": "float",
-        r"CrossSection \| str \| dict\[str, Any\] \| Callable\[\[\.\.\.\], CrossSection\] \| SymmetricalCrossSection \| DCrossSection": "CrossSectionSpec",
-    }
 
-    def simplify_handler(_app, _what, _name, _obj, _options, lines):
-        for i, line in enumerate(lines):
-            for pattern, replacement in patterns.items():
-                lines[i] = re.sub(pattern, replacement, line)
-
+    # Type shortening used to live here as regexes over the processed docstring
+    # lines, but `autodoc_typehints = "description"` injects parameter types into
+    # the doctree and never through `autodoc-process-docstring`, so they never
+    # matched.  It is now done in the `alias_typehints` extension instead.
     def dollar_math_handler(_app, _what, _name, _obj, _options, lines):
         _dollar_math_to_rst(lines)
 
@@ -1102,8 +1099,6 @@ def setup(app):
     app.connect("doctree-resolved", _typst_lift_block_images)
     # Convert $-delimited math before any other processing
     app.connect("autodoc-process-docstring", dollar_math_handler, priority=100)
-    # We use a late priority to ensure we see the types added by autodoc
-    app.connect("autodoc-process-docstring", simplify_handler, priority=999)
     # Fix Edit on GitHub URLs for notebook pages (runs after pydata-sphinx-theme's
     # setup_edit_url which is registered at the default priority of 500)
     app.connect("html-page-context", fix_notebook_edit_url, priority=600)
