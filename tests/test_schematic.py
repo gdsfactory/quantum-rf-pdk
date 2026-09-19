@@ -8,11 +8,16 @@ import pytest
 from gdsfactory.typings import ComponentFactory
 from kfactory.schematic import DSchematic
 
-from qpdk import PDK, SAX_MODEL_ALIASES
+from qpdk import MODELS_WITHOUT_LAYOUT_PORTS, PDK, SAX_MODEL_ALIASES
 from qpdk.cells import (
     bend_circular,
     bend_s,
     double_pad_transmon,
+    double_pad_transmon_with_bbox,
+    fluxonium,
+    fluxonium_with_bbox,
+    interdigital_capacitor,
+    josephson_junction,
     launcher,
     lumped_element_resonator,
     meander_inductor,
@@ -32,6 +37,7 @@ from qpdk.cells import (
     straight,
     straight_open,
     straight_shorted,
+    unimon_coupled,
 )
 from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
@@ -120,6 +126,17 @@ def test_simulation_cells_have_sax_models() -> None:
             {"coupling_o1", "coupling_o2", "resonator_o1"},
         ),
         double_pad_transmon: ("qpdk.models.qubit", {"left_pad", "right_pad"}),
+        double_pad_transmon_with_bbox: (
+            "qpdk.models.pdk_bindings",
+            {"left_pad", "right_pad"},
+        ),
+        fluxonium: ("qpdk.models.pdk_bindings", {"left_pad", "right_pad"}),
+        fluxonium_with_bbox: ("qpdk.models.pdk_bindings", {"left_pad", "right_pad"}),
+        josephson_junction: (
+            "qpdk.models.pdk_bindings",
+            {"left_wide", "right_wide"},
+        ),
+        unimon_coupled: ("qpdk.models.pdk_bindings", {"coupling_o3"}),
     }
 
     for cell, (module, ports) in expected.items():
@@ -184,6 +201,49 @@ def test_sax_model_descriptors_resolve_from_the_pdk_registry() -> None:
             assert model_ports == set(descriptor["port_order"])
 
     assert descriptor_count > 0
+
+
+@pytest.mark.parametrize(
+    "cell_name",
+    sorted(PDK.cells.keys() & PDK.models.keys()),
+    ids=lambda name: name,
+)
+def test_registered_models_expose_their_layout_ports(cell_name: str) -> None:
+    """Every registered model simulates the ports its layout cell exposes."""
+    layout_ports = {
+        port.name
+        for port in PDK.cells[cell_name]().ports
+        if port.port_type != "placement"
+    }
+    s_params = PDK.models[cell_name](f=5e9)
+    model_ports = {port for pair in s_params for port in pair}
+
+    assert model_ports == layout_ports
+
+
+def test_port_incompatible_models_stay_out_of_the_pdk_registry() -> None:
+    """Keep port-incompatible models importable but unregistered."""
+    assert MODELS_WITHOUT_LAYOUT_PORTS
+
+    for name in MODELS_WITHOUT_LAYOUT_PORTS:
+        assert name in sax_models
+        assert name not in PDK.models
+
+
+def test_interdigital_capacitor_stays_out_of_the_pdk_registry() -> None:
+    """One factory name with two port contracts cannot be a model boundary.
+
+    ``half`` selects between the two-plate layout and a single plate, so the
+    two-port analytical model only ever describes the default variant. The cell
+    keeps both variants; the model stays public but is not registered.
+    """
+    full = interdigital_capacitor()
+    half = interdigital_capacitor(half=True)
+
+    assert {port.name for port in full.ports} == {"o1", "o2"}
+    assert {port.name for port in half.ports} == {"o1"}
+    assert "interdigital_capacitor" in sax_models
+    assert "interdigital_capacitor" not in PDK.models
 
 
 @pytest.mark.parametrize(("alias", "model_name"), SAX_MODEL_ALIASES.items())
