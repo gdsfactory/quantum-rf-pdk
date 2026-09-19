@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import math
 
+import jax
 import jax.numpy as jnp
 import pytest
+import sax
 from hypothesis import HealthCheck, assume, given, settings, strategies as st
 
+from qpdk.cells.inductor import meander_inductor as meander_inductor_cell
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.cpw import cpw_ep_r_from_cross_section, get_cpw_dimensions
+from qpdk.models.generic import inductor
 from qpdk.models.inductor import (
     lumped_element_resonator,
     meander_inductor,
@@ -233,6 +237,36 @@ class TestMeanderInductorInductanceAnalytical:
 # ---------------------------------------------------------------------------
 # meander_inductor (SAX model)
 # ---------------------------------------------------------------------------
+# Geometry shared by the wire-gap tests below.
+MEANDER_N_TURNS = 5
+MEANDER_TURN_LENGTH = 200.0
+MEANDER_SHEET_INDUCTANCE = 1e-12
+
+# Cross-section, the run-to-run gap the layout infers from it in µm, and an
+# arbitrary explicit gap used to check the override. "microstrip" is a plain
+# wire without an etch section, so cell and model both fall back to a gap equal
+# to the wire width.
+MEANDER_CROSS_SECTIONS = [
+    ("cpw", 12.0, 3.0),
+    ("meander_inductor_cross_section", 4.0, 1.5),
+    ("microstrip", 10.0, 3.0),
+]
+
+
+def _meander_sdict(
+    f: sax.FloatArrayLike, cross_section: str, wire_gap: float | None
+) -> sax.SDict:
+    """Model call at the shared test geometry, varying only the gap."""
+    return meander_inductor(
+        f=f,
+        n_turns=MEANDER_N_TURNS,
+        turn_length=MEANDER_TURN_LENGTH,
+        cross_section=cross_section,
+        wire_gap=wire_gap,
+        sheet_inductance=MEANDER_SHEET_INDUCTANCE,
+    )
+
+
 class TestMeanderInductorSAX:
     """Tests for the meander_inductor SAX model."""
 
@@ -351,6 +385,63 @@ class TestMeanderInductorSAX:
         sdict = meander_inductor(f=freqs)
         for v in sdict.values():
             assert v.shape == (100,)
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        ("cross_section", "inferred_gap", "explicit_gap"), MEANDER_CROSS_SECTIONS
+    )
+    def test_wire_gap_matches_layout(
+        cross_section: str, inferred_gap: float, explicit_gap: float
+    ) -> None:
+        """Inferred gap must equal the layout's, and an explicit gap must win."""
+        freqs = jnp.linspace(1e9, 10e9, 50)
+        layout = meander_inductor_cell(
+            n_turns=MEANDER_N_TURNS,
+            turn_length=MEANDER_TURN_LENGTH,
+            cross_section=cross_section,
+        )
+        layout_gap = (
+            layout.info["total_wire_length"] - MEANDER_N_TURNS * MEANDER_TURN_LENGTH
+        ) / (MEANDER_N_TURNS - 1)
+        assert layout_gap == pytest.approx(inferred_gap)
+
+        explicit_layout = meander_inductor_cell(
+            n_turns=MEANDER_N_TURNS,
+            turn_length=MEANDER_TURN_LENGTH,
+            cross_section=cross_section,
+            wire_gap=explicit_gap,
+        )
+        assert explicit_layout.info["total_wire_length"] == pytest.approx(
+            MEANDER_N_TURNS * MEANDER_TURN_LENGTH + (MEANDER_N_TURNS - 1) * explicit_gap
+        )
+
+        wire_width = layout.ports["o1"].width
+        for wire_gap in (None, inferred_gap, explicit_gap):
+            expected_inductance = meander_inductor_inductance_analytical(
+                n_turns=MEANDER_N_TURNS,
+                turn_length=MEANDER_TURN_LENGTH,
+                wire_width=wire_width,
+                wire_gap=layout_gap if wire_gap is None else wire_gap,
+                sheet_inductance=MEANDER_SHEET_INDUCTANCE,
+            )
+            expected = inductor(f=freqs, inductance=expected_inductance)
+            sdict = _meander_sdict(freqs, cross_section, wire_gap)
+            for key, value in expected.items():
+                assert jnp.allclose(sdict[key], value, rtol=1e-6), (
+                    f"wire_gap={wire_gap}"
+                )
+
+    @staticmethod
+    @pytest.mark.parametrize("cross_section", ["cpw", "microstrip"])
+    @pytest.mark.parametrize("wire_gap", [None, 6.0])
+    def test_jit_compatible(cross_section: str, wire_gap: float | None) -> None:
+        """Frequency stays traced while the geometry, wire_gap included, is static."""
+        freqs = jnp.linspace(1e9, 10e9, 20)
+        jitted = jax.jit(lambda f: _meander_sdict(f, cross_section, wire_gap))
+        expected = _meander_sdict(freqs, cross_section, wire_gap)
+        sdict = jitted(freqs)
+        for key, value in expected.items():
+            assert jnp.allclose(sdict[key], value, rtol=1e-6)
 
 
 # ---------------------------------------------------------------------------
