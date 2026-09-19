@@ -17,6 +17,8 @@ from gdsfactory.technology import LayerViews
 from gdsfactory.typings import ComponentAllAngleSpec, ComponentSpec, Layer
 
 
+# TODO(Python 3.13): @warnings.deprecated (PEP 702) - replaces this, and type checkers
+# flag call sites statically.
 def deprecated(msg: str | Callable | None = None) -> Any:
     """Decorator to mark functions as deprecated.
 
@@ -239,6 +241,8 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     Args:
         df: A polars or pandas DataFrame to display.
     """
+    # TODO(Python 3.15): `lazy import` (PEP 810) - hoist to module scope, drop the
+    # suppressions, keep these off the `import qpdk` path.
     import pandas as pd  # ruff: ignore[import-outside-top-level]
     from IPython.display import display  # ruff: ignore[import-outside-top-level]
 

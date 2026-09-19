@@ -35,6 +35,7 @@ def make_link(src: str | Path, dest: str | Path, overwrite: bool = True) -> None
         dest.symlink_to(src, target_is_directory=True)
         link_type = "Symlinked"
     except OSError:
+        # TODO(Python 3.14): `src.copy(dest)` (pathlib.Path.copy)
         shutil.copytree(src, dest)
         link_type = "Copied"
     logger.info("{} technology files:", link_type)

@@ -223,6 +223,8 @@ __all__ = [
 ]
 
 
+# TODO(Python 3.14): annotationlib.get_annotations(obj, format=Format.VALUE) (PEP 649)
+# always yields objects, so the string fallbacks below collapse to identity tests.
 def _is_sax_model(obj: object) -> bool:
     """Check if an object is a SAX model function."""
     if not callable(obj):
