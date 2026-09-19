@@ -78,6 +78,10 @@ jobs:
       contents: read
       code-quality: write
     steps:
+      # The Codecov CLI reconciles the paths in coverage.xml against the repo's
+      # file listing, so it needs a working tree even though the report itself
+      # arrives as an artifact.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: coverage-xml-*

@@ -142,6 +142,10 @@ skip = "bibliography.bib"
 
 [tool.coverage.run]
 source = ["qpdk"]
+# Without this the XML report's <source> is the absolute runner path to qpdk/
+# and every filename is relative to that, so Codecov matches none of them
+# against the repo and reports 0%.
+relative_files = true
 
 [tool.coverage.report]
 exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
