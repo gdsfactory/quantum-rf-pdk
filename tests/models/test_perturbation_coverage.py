@@ -83,11 +83,11 @@ class TestDispersiveShiftRoundTrip:
 
     @staticmethod
     def test_dispersive_shift_sign() -> None:
-        """Test that chi is positive when omega_t < omega_r (negative detuning)."""
+        """Test that chi is negative when omega_t < omega_r (negative detuning)."""
         chi = dispersive_shift(5.0, 7.0, 0.2, 0.1)
         # With negative Delta and positive alpha, the dominant RWA term
-        # 2g^2*alpha / (Delta*(Delta-alpha)) is positive
-        assert float(chi) > 0
+        # -2g^2*alpha / (Delta*(Delta-alpha)) is negative
+        assert float(chi) < 0
 
     @staticmethod
     def test_array_input() -> None:
