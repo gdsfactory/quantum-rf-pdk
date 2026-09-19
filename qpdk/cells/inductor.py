@@ -9,7 +9,6 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells._schematic import (
-    attach_schematic,
     lumped_element_resonator_schematic,
     meander_inductor_schematic,
 )
@@ -197,9 +196,6 @@ def meander_inductor(
     c.info["cross_section_name"] = xs.name
 
     return c
-
-
-attach_schematic(meander_inductor, meander_inductor_schematic)
 
 
 @gf.cell(
@@ -481,9 +477,6 @@ def lumped_element_resonator(
     c.info["capacitor_finger_length"] = finger_length
 
     return c
-
-
-attach_schematic(lumped_element_resonator, lumped_element_resonator_schematic)
 
 
 def _draw_interdigital_fingers_left(

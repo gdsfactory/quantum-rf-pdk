@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import importlib
 import re
+from functools import partial
 from importlib.resources import files
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import gdsfactory as gf
 import pytest
@@ -17,6 +18,12 @@ from qpdk.cells import (
     bend_circular,
     bend_s,
     double_pad_transmon,
+    double_pad_transmon_with_bbox,
+    fluxonium,
+    fluxonium_with_bbox,
+    interdigital_capacitor,
+    interdigital_capacitor_half,
+    josephson_junction,
     launcher,
     lumped_element_resonator,
     meander_inductor,
@@ -36,12 +43,13 @@ from qpdk.cells import (
     straight,
     straight_open,
     straight_shorted,
+    unimon_coupled,
 )
 from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
     straight_schematic,
 )
-from qpdk.models import models as sax_models
+from qpdk.models import models as sax_models, pdk_models
 
 if TYPE_CHECKING:
     from kfactory.schematic import TSchematic
@@ -53,16 +61,17 @@ def _info(schematic: TSchematic[Any], key: str) -> Any:
 
 
 def _get_schematic(cell: Any) -> TSchematic[Any] | None:
-    if schematic_function := getattr(cell, "schematic_function", None):
-        return schematic_function()
+    settings = {}
+    if isinstance(cell, partial):
+        settings = cell.keywords
+        cell = cell.func
     try:
         factory = gf.kcl.factories[cell.__name__]
     except (AttributeError, KeyError):
         return None
-    try:
-        return factory.get_schematic()
-    except ValueError:
+    if not factory.schematic_driven():
         return None
+    return factory.get_schematic(**settings)
 
 
 def test_schematic_functions():
@@ -85,6 +94,11 @@ def test_schematic_functions():
         launcher,
         lumped_element_resonator,
         double_pad_transmon,
+        double_pad_transmon_with_bbox,
+        fluxonium,
+        fluxonium_with_bbox,
+        josephson_junction,
+        unimon_coupled,
         meander_inductor,
     ]
 
@@ -192,6 +206,17 @@ def test_simulation_cells_have_sax_models() -> None:
             {"coupling_o1", "coupling_o2", "resonator_o1"},
         ),
         double_pad_transmon: ("qpdk.models.qubit", {"left_pad", "right_pad"}),
+        double_pad_transmon_with_bbox: (
+            "qpdk.models.qubit",
+            {"left_pad", "right_pad"},
+        ),
+        fluxonium: ("qpdk.models.qubit", {"left_pad", "right_pad"}),
+        fluxonium_with_bbox: ("qpdk.models.qubit", {"left_pad", "right_pad"}),
+        josephson_junction: (
+            "qpdk.models.junction",
+            {"left_wide", "right_wide"},
+        ),
+        unimon_coupled: ("qpdk.models.unimon", {"coupling_o3"}),
     }
 
     for cell, (module, ports) in expected.items():
@@ -278,6 +303,48 @@ def test_sax_model_descriptors_resolve_from_the_pdk_registry() -> None:
     assert descriptor_count > 0
 
 
+@pytest.mark.parametrize(
+    "cell_name",
+    sorted(PDK.cells.keys() & PDK.models.keys()),
+    ids=lambda name: name,
+)
+def test_registered_models_expose_their_layout_ports(cell_name: str) -> None:
+    """Every registered model simulates the ports its layout cell exposes."""
+    layout_ports = {
+        port.name
+        for port in PDK.cells[cell_name]().ports
+        if port.port_type != "placement"
+    }
+    s_params = PDK.models[cell_name](f=5e9)
+    model_ports = {port for pair in s_params for port in pair}
+
+    assert model_ports == layout_ports
+
+
+def test_pdk_registers_the_supported_models() -> None:
+    """Registration uses the supported models without replacing their callables."""
+    assert PDK.models.keys() == pdk_models.keys() | SAX_MODEL_ALIASES.keys()
+    for name, model in pdk_models.items():
+        assert PDK.models[name] is model
+        assert model is sax_models[name]
+
+
+def test_interdigital_capacitor_keeps_its_model_boundary() -> None:
+    """The default two-plate layout matches the analytical model's ports.
+
+    The single-sided variant is its own factory, ``interdigital_capacitor_half``,
+    so the two-port model keeps one unambiguous port contract and stays
+    registered for the sample chips that use it.
+    """
+    full = interdigital_capacitor()
+    half = interdigital_capacitor_half()
+
+    assert {port.name for port in full.ports} == {"o1", "o2"}
+    assert {port.name for port in half.ports} == {"o1"}
+    assert "interdigital_capacitor" in PDK.models
+    assert "interdigital_capacitor_half" not in PDK.models
+
+
 @pytest.mark.parametrize(("alias", "model_name"), SAX_MODEL_ALIASES.items())
 def test_sax_model_aliases(alias: str, model_name: str) -> None:
     """Resolve aliased cells to the intended registered model."""
@@ -291,7 +358,8 @@ def test_sax_model_aliases(alias: str, model_name: str) -> None:
 def test_coupled_resonators_declare_model_boundaries() -> None:
     """Stop hierarchy expansion where capacitive coupling is modeled."""
     for cell in (resonator_coupled, quarter_wave_resonator_coupled):
-        schematic = cast(Any, cell).schematic_function()
+        schematic = _get_schematic(cell)
+        assert schematic is not None
 
         assert _info(schematic, "models")[0]["name"] == cell.__name__
 
@@ -299,6 +367,7 @@ def test_coupled_resonators_declare_model_boundaries() -> None:
 def test_test_chip_does_not_declare_a_whole_chip_model() -> None:
     """Allow chip assemblies to expand until modeled component boundaries."""
     cell = PDK.cells["resonator_test_chip_python"]
-    schematic = cast(Any, cell).schematic_function()
+    schematic = _get_schematic(cell)
+    assert schematic is not None
 
     assert _info(schematic, "models") == []

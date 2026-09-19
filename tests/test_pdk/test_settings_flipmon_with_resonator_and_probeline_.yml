@@ -1,7 +1,7 @@
 info:
   length: 5000
   resonator_type: quarter_wave
-name: transmon_with_resonator_and_probeline_QFflipmon_with_bb_c9bb9429
+name: transmon_with_resonator_and_probeline_QFflipmon_with_bb_220cc1f0
 ports:
   coupling_o1:
     center:
@@ -49,7 +49,7 @@ settings:
   probeline_coupling_gap: 16
   qubit: Fflipmon_with_bbox_Mqpdkpcellsptransmon_SJPR180
   qubit_rotation: -90
-  resonator: Fresonator_Mqpdkpcellspresonator_SL4000_M6
+  resonator: Fresonator_quarter_wave_Mqpdkpcellspresonator_SSWBTrue_L4000_M6
   resonator_bend_spec: bend_circular
   resonator_cross_section: cpw
   resonator_length: 5000

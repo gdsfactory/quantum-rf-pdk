@@ -16,7 +16,6 @@ from gdsfactory.typings import CrossSectionSpec, LayerSpec
 from kfactory.conf import CheckInstances
 
 from qpdk.cells._schematic import (
-    attach_schematic,
     gatemon_coupler_schematic,
     gatemon_schematic,
 )
@@ -316,9 +315,6 @@ def gatemon(
     return c
 
 
-attach_schematic(gatemon, gatemon_schematic)
-
-
 @gf.cell(tags=["couplers"], schematic_function=gatemon_coupler_schematic)
 def gatemon_coupler(
     length: float = 600.0,
@@ -373,6 +369,3 @@ def gatemon_coupler(
     c.info["length"] = length
     c.info["coupling_capacitance"] = coupling_capacitance
     return c
-
-
-attach_schematic(gatemon_coupler, gatemon_coupler_schematic)

@@ -284,13 +284,13 @@ def fluxonium(
 
     .. svgbob::
 
-             ┌────── C ──────┐
-        o1 ──┼────── Lj ─────┼── o2
-             ├────── Ls ─────┤
-             │               │
-            Cg              Cg
-             │               │
-            GND             GND
+                   ┌────── C ──────┐
+        left_pad ──┼────── Lj ─────┼── right_pad
+                   ├────── Ls ─────┤
+                   │               │
+                  Cg              Cg
+                   │               │
+                  GND             GND
 
     Note:
         The total shunt capacitance `capacitance` should include the pads,
@@ -306,18 +306,21 @@ def fluxonium(
         ground_capacitance: Parasitic capacitance to ground :math:`C_\text{g}` at each port in Farads.
 
     Returns:
-        sax.SDict: S-parameters dictionary with ports o1 and o2.
+        sax.SDict: S-parameters dictionary with ports left_pad and right_pad.
     """
     # Combine the two inductors in parallel: L = (L1 * L2) / (L1 + L2)
     L_total = (josephson_inductance * superinductance) / (
         josephson_inductance + superinductance
     )
-    return lc_resonator(
-        f=f,
-        capacitance=capacitance,
-        inductance=L_total,
-        grounded=False,
-        ground_capacitance=ground_capacitance,
+    return sax.rename_ports(
+        lc_resonator(
+            f=f,
+            capacitance=capacitance,
+            inductance=L_total,
+            grounded=False,
+            ground_capacitance=ground_capacitance,
+        ),
+        {"o1": "left_pad", "o2": "right_pad"},
     )
 
 
@@ -667,12 +670,12 @@ def fluxonium_with_resonator(
     connections = {
         "resonator,o1": "tee,o1",
         "tee,o2": "coupling_capacitor,o1",
-        "coupling_capacitor,o2": "qubit,o1",
+        "coupling_capacitor,o2": "qubit,left_pad",
     }
 
     ports = {
         "o1": "tee,o3",
-        "o2": "qubit,o2",
+        "o2": "qubit,right_pad",
     }
 
     return sax.evaluate_circuit_fg((connections, ports), instances)
@@ -905,7 +908,7 @@ def double_pad_transmon(
 
 
 # Aliases for backward compatibility or to match cell naming
-double_pad_transmon_with_bbox = double_island_transmon_with_bbox
+double_pad_transmon_with_bbox = double_pad_transmon
 double_pad_transmon_with_resonator = double_island_transmon_with_resonator
 
 

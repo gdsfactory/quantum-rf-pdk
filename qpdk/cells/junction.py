@@ -7,6 +7,7 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
+from qpdk.cells._schematic import josephson_junction_schematic
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
     LAYER,
@@ -97,7 +98,12 @@ def single_josephson_junction_wire(
     return c
 
 
-@gf.cell(tags=["junctions"])
+@gf.cell(
+    tags=[
+        "junctions",
+    ],
+    schematic_function=josephson_junction_schematic,
+)
 def josephson_junction(
     junction_overlap_displacement: float = 1.8,
     wide_straight_length: float = 8.3,
@@ -203,7 +209,11 @@ def josephson_junction(
     return c
 
 
-@gf.cell(tags=["junctions"])
+@gf.cell(
+    tags=[
+        "junctions",
+    ]
+)
 def josephson_junction_long(**kwargs) -> Component:
     """Josephson junction with wide_straight_length=12.
 

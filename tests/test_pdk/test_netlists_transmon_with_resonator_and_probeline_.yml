@@ -50,8 +50,8 @@ instances:
       layer_metal: M1_DRAW
       length: 394
       width: 20
-  resonator:
-    component: resonator
+  resonator_quarter_wave:
+    component: resonator_quarter_wave
     info:
       cross_section_name: coplanar_waveguide
       length: 3257.42
@@ -84,7 +84,7 @@ nets:
 - p1: bend_circular,o2
   p2: coupler_straight,o3
 - p1: coupler_straight,o2
-  p2: resonator,o1
+  p2: resonator_quarter_wave,o1
 - p1: plate_capacitor_single,o1
   p2: straight,o2
 placements:
@@ -108,7 +108,7 @@ placements:
     rotation: 90
     x: 0
     y: -302.5
-  resonator:
+  resonator_quarter_wave:
     mirror: false
     rotation: 270
     x: -900

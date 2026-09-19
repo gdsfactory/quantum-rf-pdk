@@ -2,7 +2,7 @@ info:
   cross_section_name: coplanar_waveguide
   length: 4000
   resonator_type: half_wave
-name: resonator_L4000_M6_BSbend_circular_CScpw_SWBFalse_EWBFa_8f61664b
+name: resonator_half_wave_L4000_M6_BSbend_circular_CScpw_SWBF_848161b4
 ports:
   o1:
     center:

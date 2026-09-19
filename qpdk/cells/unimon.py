@@ -22,6 +22,7 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 from kfactory import kdb
 from kfactory.conf import CheckInstances
 
+from qpdk.cells._schematic import unimon_coupled_schematic
 from qpdk.cells.capacitor import half_circle_coupler
 from qpdk.cells.junction import josephson_junction, squid_junction
 from qpdk.cells.resonator import resonator
@@ -268,7 +269,10 @@ def unimon(
     return c
 
 
-@gf.cell(tags=["qubits", "couplers"])
+@gf.cell(
+    tags=["qubits", "couplers"],
+    schematic_function=unimon_coupled_schematic,
+)
 def unimon_coupled(
     arm_length: float = 3000.0,
     arm_meanders: int = 6,

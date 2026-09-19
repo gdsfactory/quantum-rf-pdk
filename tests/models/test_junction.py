@@ -1,7 +1,7 @@
 """Tests for junction models."""
 
 import warnings
-from typing import final, override
+from typing import ClassVar, final, override
 
 import hypothesis.strategies as st
 import jax
@@ -22,6 +22,7 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
     """Tests for josephson_junction S-parameter model."""
 
     model_function = josephson_junction
+    expected_ports: ClassVar[set[str]] = {"left_wide", "right_wide"}
 
     @override
     @staticmethod
@@ -36,8 +37,8 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
         s_no_bias = josephson_junction(f=f, ic=1e-6, ib=0.0)
         s_biased = josephson_junction(f=f, ic=1e-6, ib=0.5e-6)
 
-        s11_no = jnp.abs(s_no_bias["o1", "o1"])
-        s11_biased = jnp.abs(s_biased["o1", "o1"])
+        s11_no = jnp.abs(s_no_bias["left_wide", "left_wide"])
+        s11_biased = jnp.abs(s_biased["left_wide", "left_wide"])
 
         assert not jnp.allclose(s11_no, s11_biased, atol=1e-3), (
             "Bias current should change S-parameters"
@@ -59,7 +60,7 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
         f = jnp.array([5e9])
         # ib very close to ic: cos_Φ_0 ≈ 0, should still give finite output
         result = josephson_junction(f=f, ic=1e-6, ib=0.999e-6)
-        s11 = result["o1", "o1"]
+        s11 = result["left_wide", "left_wide"]
         assert jnp.all(jnp.isfinite(s11)), (
             "Should produce finite S-parameters even near critical current"
         )
@@ -75,11 +76,14 @@ def test_josephson_junction_impedance_is_referenced_to_50_ohm(ic: float) -> None
     """In the lossless, capacitance-free limit the junction is a pure ``jωL_J`` in series."""
     f = jnp.array([4e9, 6e9, 8e9])
     s = josephson_junction(f=f, ic=ic, capacitance=1e-24, resistance=1e18)
-    z = _series_impedance_from_s11(s["o1", "o1"])
+    z = _series_impedance_from_s11(s["left_wide", "left_wide"])
     expected = 1j * 2 * jnp.pi * f * Φ_0 / (2 * jnp.pi * ic)
     assert jnp.allclose(z, expected, rtol=1e-4), (z, expected)
     assert jnp.allclose(
-        jnp.abs(s["o1", "o1"]) ** 2 + jnp.abs(s["o1", "o2"]) ** 2, 1.0, atol=1e-9
+        jnp.abs(s["left_wide", "left_wide"]) ** 2
+        + jnp.abs(s["left_wide", "right_wide"]) ** 2,
+        1.0,
+        atol=1e-9,
     )
 
 
