@@ -342,6 +342,40 @@ def get_etch_section(
         raise ValueError(msg) from e
 
 
+def get_meander_wire_gap(
+    cross_section: CrossSection,
+    wire_gap: float | None = None,
+) -> float:
+    """Resolve the run-to-run gap of a meander inductor.
+
+    An explicit gap wins. Otherwise the gap is twice the etch section width,
+    so the etched regions of adjacent runs do not overlap, falling back to
+    the wire width for cross-sections without an etch section.
+
+    Shared by the meander inductor cell and its SAX model so the two cannot
+    drift apart.
+
+    Args:
+        cross_section: Resolved cross-section of the meander wire.
+        wire_gap: Explicit gap between adjacent meander runs in µm, if given.
+
+    Returns:
+        Gap between adjacent meander runs in µm.
+
+    Raises:
+        ValueError: If an explicit wire_gap is not positive.
+    """
+    if wire_gap is not None:
+        # Concrete scalars only: branching on a jax tracer would break jit.
+        if isinstance(wire_gap, int | float) and not wire_gap > 0:
+            raise ValueError(f"wire_gap must be positive, got {wire_gap}")
+        return wire_gap
+    try:
+        return 2 * get_etch_section(cross_section).width
+    except ValueError:
+        return cross_section.width
+
+
 @xsection
 def coplanar_waveguide(
     width: float = 10,

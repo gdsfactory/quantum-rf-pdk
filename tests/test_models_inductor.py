@@ -4,17 +4,23 @@ from __future__ import annotations
 
 import math
 
+import jax
 import jax.numpy as jnp
 import pytest
+import sax
 from hypothesis import HealthCheck, assume, given, settings, strategies as st
 
+from qpdk import PDK
+from qpdk.cells.inductor import meander_inductor as meander_inductor_cell
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.cpw import cpw_ep_r_from_cross_section, get_cpw_dimensions
+from qpdk.models.generic import inductor
 from qpdk.models.inductor import (
     lumped_element_resonator,
     meander_inductor,
     meander_inductor_inductance_analytical,
 )
+from qpdk.tech import get_etch_section
 
 MAX_EXAMPLES = 50
 
@@ -233,6 +239,29 @@ class TestMeanderInductorInductanceAnalytical:
 # ---------------------------------------------------------------------------
 # meander_inductor (SAX model)
 # ---------------------------------------------------------------------------
+# Geometry shared by the wire-gap tests below.
+MEANDER_N_TURNS = 5
+MEANDER_TURN_LENGTH = 200.0
+MEANDER_SHEET_INDUCTANCE = 1e-12
+
+# Arbitrary override used to check that an explicit gap wins over inference.
+MEANDER_EXPLICIT_GAP = 1.0
+
+
+def _meander_sdict(
+    f: sax.FloatArrayLike, cross_section: str, wire_gap: float | None
+) -> sax.SDict:
+    """Model call at the shared test geometry, varying only the gap."""
+    return meander_inductor(
+        f=f,
+        n_turns=MEANDER_N_TURNS,
+        turn_length=MEANDER_TURN_LENGTH,
+        cross_section=cross_section,
+        wire_gap=wire_gap,
+        sheet_inductance=MEANDER_SHEET_INDUCTANCE,
+    )
+
+
 class TestMeanderInductorSAX:
     """Tests for the meander_inductor SAX model."""
 
@@ -351,6 +380,99 @@ class TestMeanderInductorSAX:
         sdict = meander_inductor(f=freqs)
         for v in sdict.values():
             assert v.shape == (100,)
+
+    @staticmethod
+    @pytest.mark.parametrize("cross_section", sorted(PDK.cross_sections))
+    def test_wire_gap_matches_layout(cross_section: str) -> None:
+        """The model must use the gap the cell draws, for every PDK cross-section."""
+        layout = meander_inductor_cell(
+            n_turns=MEANDER_N_TURNS,
+            turn_length=MEANDER_TURN_LENGTH,
+            cross_section=cross_section,
+        )
+        wire_width = layout.ports["o1"].width
+        # The ports sit on the first and last run, so their vertical spacing
+        # is (n_turns - 1) pitches; subtract the wire width to get the gap.
+        drawn_gap = (
+            abs(layout.ports["o2"].center[1] - layout.ports["o1"].center[1])
+            / (MEANDER_N_TURNS - 1)
+            - wire_width
+        )
+        # Pin the inference rule itself, derived from the cross-section:
+        # twice the etch width, or the wire width without an etch section.
+        try:
+            expected_inferred_gap = 2 * get_etch_section(cross_section).width
+        except ValueError:
+            expected_inferred_gap = wire_width
+        assert drawn_gap == pytest.approx(expected_inferred_gap)
+
+        explicit_layout = meander_inductor_cell(
+            n_turns=MEANDER_N_TURNS,
+            turn_length=MEANDER_TURN_LENGTH,
+            cross_section=cross_section,
+            wire_gap=MEANDER_EXPLICIT_GAP,
+        )
+        explicit_drawn_gap = (
+            abs(
+                explicit_layout.ports["o2"].center[1]
+                - explicit_layout.ports["o1"].center[1]
+            )
+            / (MEANDER_N_TURNS - 1)
+            - wire_width
+        )
+        assert explicit_drawn_gap == pytest.approx(MEANDER_EXPLICIT_GAP)
+
+        freqs = jnp.linspace(1e9, 10e9, 50)
+        for wire_gap, expected_gap in (
+            (None, drawn_gap),
+            (MEANDER_EXPLICIT_GAP, MEANDER_EXPLICIT_GAP),
+        ):
+            expected_inductance = meander_inductor_inductance_analytical(
+                n_turns=MEANDER_N_TURNS,
+                turn_length=MEANDER_TURN_LENGTH,
+                wire_width=wire_width,
+                wire_gap=expected_gap,
+                sheet_inductance=MEANDER_SHEET_INDUCTANCE,
+            )
+            expected = inductor(f=freqs, inductance=expected_inductance)
+            sdict = _meander_sdict(freqs, cross_section, wire_gap)
+            for key, value in expected.items():
+                assert jnp.allclose(sdict[key], value, rtol=1e-6), (
+                    f"wire_gap={wire_gap}"
+                )
+
+    @staticmethod
+    @pytest.mark.parametrize("bad_gap", [0.0, -3.0, float("nan")])
+    def test_rejects_non_positive_wire_gap(bad_gap: float) -> None:
+        """A non-positive explicit gap must raise, not give NaN or wrong inductance."""
+        with pytest.raises(ValueError, match="wire_gap must be positive"):
+            _meander_sdict(jnp.array([5e9]), "cpw", bad_gap)
+        with pytest.raises(ValueError, match="wire_gap must be positive"):
+            meander_inductor_cell(wire_gap=bad_gap)
+
+    @staticmethod
+    @pytest.mark.parametrize("cross_section", ["cpw", "microstrip"])
+    def test_jit_compatible(cross_section: str) -> None:
+        """wire_gap must trace as a jit argument and reach the formula unchanged."""
+        freqs = jnp.linspace(1e9, 10e9, 20)
+        wire_gap = 3.0
+        # wire_gap is a traced argument here: a Python-level branch on it
+        # inside the model would raise a tracer conversion error.
+        jitted = jax.jit(lambda f, g: _meander_sdict(f, cross_section, g))
+        sdict = jitted(freqs, wire_gap)
+
+        # Reference computed eagerly from the analytical formula, not the model
+        xs = PDK.get_cross_section(cross_section)
+        expected_inductance = meander_inductor_inductance_analytical(
+            n_turns=MEANDER_N_TURNS,
+            turn_length=MEANDER_TURN_LENGTH,
+            wire_width=xs.width,
+            wire_gap=wire_gap,
+            sheet_inductance=MEANDER_SHEET_INDUCTANCE,
+        )
+        expected = inductor(f=freqs, inductance=expected_inductance)
+        for key, value in expected.items():
+            assert jnp.allclose(sdict[key], value, rtol=1e-6)
 
 
 # ---------------------------------------------------------------------------
