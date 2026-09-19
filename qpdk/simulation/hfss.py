@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     from gdsfactory.typings import Ports
 
 
+# TODO(Python 3.13): wrap each key in typing.ReadOnly (PEP 705); never mutated.
+# TODO(Python 3.15): add `closed=True` (PEP 728) to reject misspelled keys.
 class LumpedPortConfig(TypedDict):
     """Configuration for defining a lumped port rectangle in HFSS."""
 

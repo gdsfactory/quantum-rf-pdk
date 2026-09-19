@@ -7,6 +7,7 @@ import sys
 from collections.abc import Mapping
 from typing import Any, cast
 
+# TODO(Python 3.13): collapse to `from typing import TypeIs`.
 if sys.version_info >= (3, 13):
     from typing import TypeIs
 else:
