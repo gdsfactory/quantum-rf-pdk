@@ -188,6 +188,10 @@ All PRs must pass:
    information.
 1. **Python imports**: Place imports at the top of the file, not inside functions, unless the dependency is missing from
    `pyproject.toml` or is exceptionally heavy without lazy loading.
+1. **Mark blocked Python upgrades**: When a newer Python feature would simplify the code but the minimum supported
+   version in `pyproject.toml` rules it out, leave a marker instead of silently working around it. Use
+   `# TODO(Python 3.X): <feature> - <what to change>`, keep it to one line (two at most), and let the adjacent code
+   imply the rest. Then `rg "TODO\(Python"` lists the cleanups unlocked by a version bump.
 
 ## Testing Guidelines
 
