@@ -16,7 +16,7 @@ from sax.models.rf import (
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import get_cpw_dimensions, get_cpw_substrate_params
-from qpdk.models.generic import admittance, tee
+from qpdk.models.generic import shunt_admittance, tee
 from qpdk.tech import coplanar_waveguide, launcher_cross_section_big
 
 
@@ -281,9 +281,16 @@ def airbridge(
 ) -> sax.SType:
     r"""S-parameter model for a superconducting CPW airbridge.
 
-    The airbridge is modeled as a lumped lossy shunt admittance (accounting for
-    dielectric loss and shunt capacitance) embedded between two sections of
-    transmission line that represent the physical footprint of the bridge.
+    The airbridge is modeled as a lumped lossy shunt admittance to ground
+    (shunt capacitance plus dielectric loss) across the CPW at the bridge
+    location.
+
+    Ports ``o1`` and ``o2`` are the CPW reference planes immediately either
+    side of the bridge, both referenced to :math:`Z_0 = 50\,\Omega`. The
+    bridge footprint adds no transmission line length, so the two reference
+    planes coincide. The landing pads of the layout cell (``e1`` and ``e2``,
+    on the ``AB_VIA`` layer) contact the ground plane and are *not* RF ports
+    of this model.
 
     Parallel plate capacitor model is as done in :cite:`chenFabricationCharacterizationAluminum2014`
     The default value for the loss tangent :math:`\tan\,\delta` is also taken from there.
@@ -310,7 +317,7 @@ def airbridge(
     # Admittance of the bridge (Conductance from dielectric loss + Susceptance)
     Y_bridge = ω * c_bridge * (loss_tangent + 1j)
 
-    return admittance(f=f, y=Y_bridge)
+    return shunt_admittance(f=f, y=Y_bridge)
 
 
 def tsv(
