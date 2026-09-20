@@ -426,6 +426,8 @@ def quarter_wave_resonator_coupled(
         if port.name != "resonator_o2":  # Skip the shorted end port
             c.add_port(port=port)
 
+    c.info += res_ref.cell.info
+
     return c
 
 

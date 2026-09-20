@@ -1,8 +1,11 @@
 """Test resonator generation and properties."""
 
 import inspect
+import math
 from functools import partial
+from typing import Any
 
+import gdsfactory as gf
 import hypothesis.strategies as st
 import pytest
 from hypothesis import HealthCheck, assume, given, settings
@@ -20,8 +23,28 @@ from qpdk.cells.resonator import (
     resonator_quarter_wave,
 )
 from qpdk.cells.waveguides import bend_circular
+from qpdk.tech import LAYER, get_etch_section
 
 MAX_EXAMPLES = 20
+
+
+def _offset_point(port: Any, distance: float) -> tuple[float, float]:
+    """Point at distance from a port center along its orientation."""
+    angle = math.radians(port.orientation)
+    return (
+        port.center[0] + distance * math.cos(angle),
+        port.center[1] + distance * math.sin(angle),
+    )
+
+
+def _etch_covers(component: gf.Component, point: tuple[float, float]) -> bool:
+    """Whether the merged M1_ETCH region covers a point given in um."""
+    # kdb points are integers in database units, 1 nm for this PDK
+    probe = gf.kdb.Point(round(point[0] * 1000), round(point[1] * 1000))
+    region = gf.kdb.Region(
+        component.begin_shapes_rec(gf.get_layer(LAYER.M1_ETCH))
+    ).merged()
+    return any(polygon.inside(probe) for polygon in region.each())
 
 
 class TestResonators:
@@ -205,12 +228,37 @@ class TestQuarterWaveResonatorCoupled:
     @staticmethod
     def test_nested_coupled_resonator_terminations() -> None:
         """The coupled end is open and the hidden far end stays shorted."""
-        netlist = quarter_wave_resonator_coupled().get_netlist()
+        c = quarter_wave_resonator_coupled()
+
+        assert {port.name for port in c.ports} == {
+            "coupling_o1",
+            "coupling_o2",
+            "resonator_o1",
+        }
+
+        netlist = c.get_netlist()
         (instance,) = netlist["instances"].values()
 
         assert instance["component"] == "resonator_coupled"
         assert instance["settings"]["open_start"] is True
         assert instance["settings"]["open_end"] is False
+        assert c.info["resonator_type"] == "quarter_wave"
+
+        # Pin the etch geometry, not just the settings literals above: an
+        # open end is capped by an etch patch past the trace end, a shorted
+        # end is bare. The patch extends one etch-section width outwards.
+        etch_width = get_etch_section(gf.get_cross_section("cpw")).width
+        port = c.ports["resonator_o1"]
+        assert _etch_covers(c, _offset_point(port, -etch_width / 2))
+
+        # The hidden far end sits where resonator_coupled's shorted port is,
+        # relative to the coupling port the wrapper normalizes to the origin.
+        inner = resonator_coupled()
+        far_port = inner["resonator_o2"]
+        offset = inner["coupling_o1"].center
+        far_point = _offset_point(far_port, etch_width / 2)
+        far_point = (far_point[0] - offset[0], far_point[1] - offset[1])
+        assert not _etch_covers(c, far_point)
 
 
 class TestQubitWithResonator:
