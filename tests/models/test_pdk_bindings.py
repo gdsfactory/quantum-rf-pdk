@@ -11,9 +11,8 @@ from __future__ import annotations
 
 import importlib
 from operator import itemgetter
-from typing import Any
+from typing import Any, cast
 
-import gdsfactory as gf
 import jax
 import jax.numpy as jnp
 import pytest
@@ -43,11 +42,7 @@ FREQUENCIES = jnp.linspace(4e9, 8e9, 5)
 
 def _descriptor(name: str) -> dict[str, Any]:
     """Return the SAX model descriptor the same-named cell declares."""
-    cell = PDK.cells[name]
-    schematic_function = getattr(cell, "schematic_function", None)
-    if schematic_function is None:
-        cell()  # instantiate so the factory is registered in the active layout
-        schematic_function = gf.kcl.factories[name].get_schematic
+    schematic_function = cast(Any, PDK.cells[name]).schematic_function
     return schematic_function().info["models"][0]
 
 

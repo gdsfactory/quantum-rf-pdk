@@ -57,8 +57,9 @@ from qpdk.models.generic import (
 )
 
 # Private layout-facing bindings: port-renamed wrappers the PDK registers
-# instead of the analytical functions above. Not part of the public catalog.
-from qpdk.models.pdk_bindings import _PDK_MODEL_OVERRIDES
+# instead of the analytical functions above. Deliberately re-exported without
+# a __all__ entry, so it stays out of the star-import surface.
+from qpdk.models.pdk_bindings import _PDK_MODEL_OVERRIDES as _PDK_MODEL_OVERRIDES
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -130,7 +131,6 @@ from qpdk.models.waveguides import (
 
 __all__ = [
     "DEFAULT_FREQUENCY",
-    "_PDK_MODEL_OVERRIDES",
     "admittance",
     "airbridge",
     "bend_circular",

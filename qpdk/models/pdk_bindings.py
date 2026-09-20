@@ -4,8 +4,9 @@ The functions in :mod:`qpdk.models` are the public scientific catalog and keep
 their own port contracts (``o1``/``o2``). The PDK instead binds the same-named
 wrappers defined here, which only rename the returned ports to the ones their
 layout cell exposes. Nothing in this module is part of the public catalog:
-:data:`PDK_MODEL_OVERRIDES` is consumed by :func:`qpdk.get_pdk` and the wrappers
-are reachable only through the schematic descriptors that name them.
+``_PDK_MODEL_OVERRIDES`` is consumed by ``_build_pdk_models`` in :mod:`qpdk`
+and the wrappers are reachable only through the schematic descriptors that
+name them.
 """
 
 from functools import partial

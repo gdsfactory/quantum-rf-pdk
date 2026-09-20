@@ -290,6 +290,9 @@ def fluxonium(
     return c
 
 
+fluxonium.schematic_function = fluxonium_schematic
+
+
 def _snap_to_grid(value: float, grid: float = 0.002) -> float:
     """Snap a value up to the next grid multiple."""
     return math.ceil(value / grid) * grid
@@ -372,3 +375,6 @@ def fluxonium_with_bbox(
 
     c.add_ports(flux_ref.ports)
     return c
+
+
+fluxonium_with_bbox.schematic_function = fluxonium_with_bbox_schematic

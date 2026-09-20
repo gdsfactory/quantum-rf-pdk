@@ -207,6 +207,9 @@ def josephson_junction(
     return c
 
 
+josephson_junction.schematic_function = josephson_junction_schematic
+
+
 @gf.cell(tags=("junctions",))
 def josephson_junction_long(**kwargs) -> Component:
     """Josephson junction with wide_straight_length=12.

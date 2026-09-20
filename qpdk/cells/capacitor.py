@@ -137,41 +137,18 @@ def half_circle_coupler(
     return c
 
 
-@gf.cell(tags=("capacitors",))
-def interdigital_capacitor(
-    fingers: int = 4,
-    finger_length: float = 20.0,
-    finger_gap: float = 2.0,
-    thickness: float = 5.0,
-    layer_metal: LayerSpec = LAYER.M1_DRAW,
-    etch_layer: LayerSpec | None = "M1_ETCH",
-    etch_bbox_margin: float = 2.0,
-    cross_section: CrossSectionSpec = "cpw",
-    half: bool = False,
+def _interdigital_capacitor(
+    fingers: int,
+    finger_length: float,
+    finger_gap: float,
+    thickness: float,
+    layer_metal: LayerSpec,
+    etch_layer: LayerSpec | None,
+    etch_bbox_margin: float,
+    cross_section: CrossSectionSpec,
+    half: bool,
 ) -> Component:
-    """Generate an interdigital capacitor component with ports on both ends.
-
-    An interdigital capacitor consists of interleaved metal fingers that create
-    a distributed capacitance. This component creates a planar capacitor with
-    two sets of interleaved fingers extending from opposite ends.
-
-    .. svgbob::
-
-          ┌─┐───────┐┌─┐
-          │ │───────┘│ │
-          │ │ ┌──────│ │
-         ┌│ │ └──────│ │┐
-       o1└│ │──────┐ │ │┘o2
-          │ │──────┘ │ │
-          │ │ ┌──────│ │
-          └─┘ └──────└─┘
-
-    See for example :cite:`leizhuAccurateCircuitModel2000`.
-
-    Note:
-        ``finger_length=0`` effectively provides a parallel plate capacitor.
-        The capacitance scales approximately linearly with the number of fingers
-        and finger length.
+    """Shared geometry of the interdigital capacitor variants.
 
     Args:
         fingers: Total number of fingers of the capacitor (must be >= 1).
@@ -185,8 +162,9 @@ def interdigital_capacitor(
         half: If True, creates a single-sided capacitor (half of the interdigital capacitor).
 
     Returns:
-        Component: A gdsfactory component with the interdigital capacitor geometry
-            and two ports ('o1' and 'o2') on opposing sides.
+        Component: A gdsfactory component with the interdigital capacitor
+            geometry and one port ('o1'), plus a second one ('o2') on the
+            opposing side unless *half* is True.
 
     Raises:
         ValueError: If fingers is less than 1.
@@ -309,6 +287,118 @@ def interdigital_capacitor(
     c.move((-width / 2, -height / 2))
 
     return c
+
+
+@gf.cell(tags=("capacitors",))
+def interdigital_capacitor(
+    fingers: int = 4,
+    finger_length: float = 20.0,
+    finger_gap: float = 2.0,
+    thickness: float = 5.0,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    etch_layer: LayerSpec | None = "M1_ETCH",
+    etch_bbox_margin: float = 2.0,
+    cross_section: CrossSectionSpec = "cpw",
+) -> Component:
+    """Generate an interdigital capacitor component with ports on both ends.
+
+    An interdigital capacitor consists of interleaved metal fingers that create
+    a distributed capacitance. This component creates a planar capacitor with
+    two sets of interleaved fingers extending from opposite ends.
+
+    .. svgbob::
+
+          ┌─┐───────┐┌─┐
+          │ │───────┘│ │
+          │ │ ┌──────│ │
+         ┌│ │ └──────│ │┐
+       o1└│ │──────┐ │ │┘o2
+          │ │──────┘ │ │
+          │ │ ┌──────│ │
+          └─┘ └──────└─┘
+
+    See for example :cite:`leizhuAccurateCircuitModel2000`.
+
+    Note:
+        ``finger_length=0`` effectively provides a parallel plate capacitor.
+        The capacitance scales approximately linearly with the number of fingers
+        and finger length.
+
+    The matching SAX model is
+    :func:`~qpdk.models.capacitor.interdigital_capacitor`. The single-sided
+    variant is its own factory, :func:`interdigital_capacitor_half`, with a
+    different port contract.
+
+    Args:
+        fingers: Total number of fingers of the capacitor (must be >= 1).
+        finger_length: Length of each finger in μm.
+        finger_gap: Gap between adjacent fingers in μm.
+        thickness: Thickness of fingers and the base section in μm.
+        layer_metal: Layer for the metal fingers.
+        etch_layer: Optional layer for etching around the capacitor.
+        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
+        cross_section: Cross-section for the short straight from the etch box capacitor.
+
+    Returns:
+        Component: A gdsfactory component with the interdigital capacitor geometry
+            and two ports ('o1' and 'o2') on opposing sides.
+    """
+    return _interdigital_capacitor(
+        fingers=fingers,
+        finger_length=finger_length,
+        finger_gap=finger_gap,
+        thickness=thickness,
+        layer_metal=layer_metal,
+        etch_layer=etch_layer,
+        etch_bbox_margin=etch_bbox_margin,
+        cross_section=cross_section,
+        half=False,
+    )
+
+
+@gf.cell(tags=("capacitors",))
+def interdigital_capacitor_half(
+    fingers: int = 4,
+    finger_length: float = 20.0,
+    finger_gap: float = 2.0,
+    thickness: float = 5.0,
+    layer_metal: LayerSpec = LAYER.M1_DRAW,
+    etch_layer: LayerSpec | None = "M1_ETCH",
+    etch_bbox_margin: float = 2.0,
+    cross_section: CrossSectionSpec = "cpw",
+) -> Component:
+    """Generate a single-sided interdigital capacitor with a single port.
+
+    This is one comb of the interdigital capacitor, for layouts whose second
+    plate is a separate object. It exposes only port 'o1', so the two-port
+    :func:`~qpdk.models.capacitor.interdigital_capacitor` model does not
+    describe it and no SAX model is registered for this factory.
+
+    Args:
+        fingers: Total number of fingers of the capacitor (must be >= 1).
+        finger_length: Length of each finger in μm.
+        finger_gap: Gap between adjacent fingers in μm.
+        thickness: Thickness of fingers and the base section in μm.
+        layer_metal: Layer for the metal fingers.
+        etch_layer: Optional layer for etching around the capacitor.
+        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
+        cross_section: Cross-section for the short straight from the etch box capacitor.
+
+    Returns:
+        Component: A gdsfactory component with the single-sided interdigital
+            capacitor geometry and a single port ('o1').
+    """
+    return _interdigital_capacitor(
+        fingers=fingers,
+        finger_length=finger_length,
+        finger_gap=finger_gap,
+        thickness=thickness,
+        layer_metal=layer_metal,
+        etch_layer=etch_layer,
+        etch_bbox_margin=etch_bbox_margin,
+        cross_section=cross_section,
+        half=True,
+    )
 
 
 @gf.cell(tags=("capacitors",))

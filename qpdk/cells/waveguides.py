@@ -393,6 +393,9 @@ def bend_s(
     )
 
 
+bend_s.schematic_function = bend_s_schematic
+
+
 @gf.cell(tags=("waveguides", "couplers"))
 def coupler_straight(
     length: float = 10,

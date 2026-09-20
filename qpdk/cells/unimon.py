@@ -412,3 +412,6 @@ def unimon_coupled(
     c.info["coupling_radius"] = coupling_radius
 
     return c
+
+
+unimon_coupled.schematic_function = unimon_coupled_schematic

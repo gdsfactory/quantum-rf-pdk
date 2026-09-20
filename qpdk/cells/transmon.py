@@ -232,6 +232,11 @@ def double_pad_transmon_with_bbox(
     return c
 
 
+double_pad_transmon_with_bbox.schematic_function = (
+    double_pad_transmon_with_bbox_schematic
+)
+
+
 @gf.cell(check_instances=False, tags=("qubits", "transmons", "flip-chip"))
 def flipmon(
     inner_circle_radius: float = 60.0,

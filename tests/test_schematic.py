@@ -17,6 +17,7 @@ from qpdk.cells import (
     fluxonium,
     fluxonium_with_bbox,
     interdigital_capacitor,
+    interdigital_capacitor_half,
     josephson_junction,
     launcher,
     lumped_element_resonator,
@@ -43,7 +44,7 @@ from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
     straight_schematic,
 )
-from qpdk.models import models as sax_models
+from qpdk.models import _PDK_MODEL_OVERRIDES, models as sax_models
 
 
 def _get_schematic(cell: Any) -> DSchematic | None:
@@ -79,10 +80,18 @@ def test_schematic_functions():
         launcher,
         lumped_element_resonator,
         double_pad_transmon,
+        double_pad_transmon_with_bbox,
+        fluxonium,
+        fluxonium_with_bbox,
+        josephson_junction,
+        unimon_coupled,
         meander_inductor,
     ]
 
     for cell in cells:
+        # The ``@gf.cell(schematic_function=...)`` kwarg alone does not attach
+        # the attribute; consumers read ``cell.schematic_function`` directly.
+        assert hasattr(cell, "schematic_function")
         s = _get_schematic(cell)
         assert isinstance(s, DSchematic)
         assert "symbol" in s.info
@@ -230,20 +239,39 @@ def test_port_incompatible_models_stay_out_of_the_pdk_registry() -> None:
         assert name not in PDK.models
 
 
-def test_interdigital_capacitor_stays_out_of_the_pdk_registry() -> None:
-    """One factory name with two port contracts cannot be a model boundary.
+def test_interdigital_capacitor_keeps_its_model_boundary() -> None:
+    """The default two-plate layout matches the analytical model's ports.
 
-    ``half`` selects between the two-plate layout and a single plate, so the
-    two-port analytical model only ever describes the default variant. The cell
-    keeps both variants; the model stays public but is not registered.
+    The single-sided variant is its own factory, ``interdigital_capacitor_half``,
+    so the two-port model keeps one unambiguous port contract and stays
+    registered for the sample chips that use it.
     """
     full = interdigital_capacitor()
-    half = interdigital_capacitor(half=True)
+    half = interdigital_capacitor_half()
 
     assert {port.name for port in full.ports} == {"o1", "o2"}
     assert {port.name for port in half.ports} == {"o1"}
-    assert "interdigital_capacitor" in sax_models
-    assert "interdigital_capacitor" not in PDK.models
+    assert "interdigital_capacitor" in PDK.models
+    assert "interdigital_capacitor_half" not in PDK.models
+
+
+def test_port_incompatible_models_genuinely_mismatch() -> None:
+    """MODELS_WITHOUT_LAYOUT_PORTS may only hide genuinely mismatched models.
+
+    A registered model must simulate the ports its layout cell exposes, so a
+    matching model belongs in the registry; hiding it would silently drop its
+    cells from layout simulation.
+    """
+    for name in MODELS_WITHOUT_LAYOUT_PORTS:
+        layout_ports = {
+            port.name
+            for port in PDK.cells[name]().ports
+            if port.port_type != "placement"
+        }
+        s_params = sax_models[name](f=5e9)
+        model_ports = {port for pair in s_params for port in pair}
+
+        assert model_ports != layout_ports, f"{name} matches its layout ports"
 
 
 @pytest.mark.parametrize(("alias", "model_name"), SAX_MODEL_ALIASES.items())
@@ -254,6 +282,18 @@ def test_sax_model_aliases(alias: str, model_name: str) -> None:
     assert model_name in sax_models
     assert alias in PDK.cells
     assert PDK.models[alias] is PDK.models[model_name]
+
+
+def test_alias_targets_survive_registration_filtering() -> None:
+    """Keep the alias loop in ``_build_pdk_models`` free of KeyError paths.
+
+    Alias targets resolve from the port-filtered registry, so a target may
+    only be de-registered when an override registers it again.
+    """
+    for model_name in SAX_MODEL_ALIASES.values():
+        assert model_name not in MODELS_WITHOUT_LAYOUT_PORTS or (
+            model_name in _PDK_MODEL_OVERRIDES
+        )
 
 
 def test_coupled_resonators_declare_model_boundaries() -> None:
