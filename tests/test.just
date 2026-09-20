@@ -400,7 +400,7 @@ fetch-gfp $version="latest":
 # The SDK and the `gfp` binary are not pip-installable: gdsfactoryplus >= 2.0
 # ships bundled in the public GDSFactory+ VS Code extension, so when the SDK is
 # not importable this recipe first extracts both from the extension (fetch-gfp).
-# The gfp-marked tests live in the three files listed below; naming them
+# The gfp-marked tests live in the files listed below; naming them
 # explicitly avoids collecting the whole repo under the minimal gfp extras.
 # --dist loadgroup keeps the server tests (xdist_group "gfp-server", which
 # share one gfp serve process and the repo's build/ dir) on a single worker.
@@ -423,4 +423,5 @@ test-gfp *args:
     fi
     probe_gfp_v2
     GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
-        tests/test_gfp_lvs.py tests/test_gfp_sax.py tests/test_gfp_server.py "$@"
+        tests/test_gfp_lvs.py tests/test_gfp_sax.py tests/test_gfp_server.py \
+        tests/test_sample_schematic_geometry.py "$@"
