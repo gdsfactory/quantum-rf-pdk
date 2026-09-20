@@ -1,8 +1,10 @@
 """Tests for qpdk.models.waveguides.taper_cross_section function."""
 
+from functools import partial
 from typing import ClassVar, final
 
 import hypothesis.strategies as st
+import jax
 import jax.numpy as jnp
 import pytest
 from hypothesis import given, settings
@@ -80,7 +82,7 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
     @staticmethod
     @pytest.mark.parametrize("npoints", [-1, 0, 1])
     def test_equal_cross_sections_ignore_npoints(npoints: int) -> None:
-        """Test that equal dimensions return a straight before npoints is validated."""
+        """Test that equal dimensions return a straight for any npoints."""
         f = jnp.linspace(4e9, 6e9, 5)
         cs1 = coplanar_waveguide(width=10, gap=6)
         cs2 = coplanar_waveguide(width=10, gap=6)
@@ -100,15 +102,23 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
 
     @staticmethod
     @pytest.mark.parametrize("npoints", [-1, 0, 1])
-    def test_too_few_points_raises(npoints: int) -> None:
-        """Test that fewer than two segments is rejected, matching the layout cell."""
+    def test_too_few_points_clamp_to_one_segment(npoints: int) -> None:
+        """Test that npoints below 2 collapses to a single start-cross-section segment."""
         f = jnp.linspace(4e9, 6e9, 5)
         cs1 = coplanar_waveguide(width=10, gap=6)
         cs2 = coplanar_waveguide(width=20, gap=10)
 
-        with pytest.raises(ValueError, match="npoints"):
-            taper_cross_section(
-                f=f, length=200, cross_section1=cs1, cross_section2=cs2, npoints=npoints
+        taper_result = taper_cross_section(
+            f=f, length=200, cross_section1=cs1, cross_section2=cs2, npoints=npoints
+        )
+        straight_result = straight(f=f, length=200, cross_section=cs1)
+
+        for key in straight_result:
+            assert_allclose(
+                taper_result[key],
+                straight_result[key],
+                atol=1e-9,
+                err_msg=f"npoints={npoints} should collapse to one start segment",
             )
 
     @staticmethod
@@ -127,6 +137,33 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
         s21 = result["o2", "o1"]
         assert jnp.all(jnp.isfinite(s21)), "expected finite S-parameters"
         assert_array_less(jnp.abs(s11) ** 2 + jnp.abs(s21) ** 2, 1.0 + 1e-6)
+
+    @staticmethod
+    def test_jittable_with_differing_cross_sections() -> None:
+        """Test that the segmented cascade compiles under ``jax.jit``.
+
+        The registered-model jit test uses the default (equal) cross-sections,
+        which take the straight early return and never trace this path.
+        """
+        f = jnp.linspace(4e9, 6e9, 5)
+        kwargs = {
+            "length": 200,
+            "cross_section1": coplanar_waveguide(width=10, gap=6),
+            "cross_section2": coplanar_waveguide(width=20, gap=10),
+            "npoints": 4,
+        }
+
+        jitted = jax.jit(partial(taper_cross_section, **kwargs))(f)
+        eager = taper_cross_section(f=f, **kwargs)
+
+        for key in eager:
+            assert_allclose(
+                jitted[key],
+                eager[key],
+                atol=1e-12,
+                err_msg=f"jitted and eager S-parameters differ for {key}",
+            )
+        assert jnp.all(jnp.isfinite(jitted["o2", "o1"]))
 
     @staticmethod
     def test_zero_length() -> None:

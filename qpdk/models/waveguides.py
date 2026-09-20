@@ -491,6 +491,8 @@ def _static_linspace(start: float, stop: float, npoints: int) -> list[float]:
     Cross-section dimensions are static geometry, and gdsfactory cross-sections
     cannot receive JAX tracers.
     """
+    if npoints < 2:
+        return [start]
     step = (stop - start) / (npoints - 1)
     return [start + i * step for i in range(npoints - 1)] + [stop]
 
@@ -510,24 +512,18 @@ def taper_cross_section(
         cross_section1: Cross-section for the start of the taper.
         cross_section2: Cross-section for the end of the taper.
         npoints: Number of segments to divide the taper into for simulation.
-            Ignored when both cross-sections have identical dimensions, otherwise
-            it must be at least 2.
+            Clamped to a minimum of one segment. Ignored when both
+            cross-sections have identical dimensions.
 
     Returns:
         sax.SDict: S-parameters dictionary
-
-    Raises:
-        ValueError: If the cross-sections differ and ``npoints`` is less than 2.
     """
-    npoints = int(npoints)
+    npoints = max(int(npoints), 1)
     w1, g1 = get_cpw_dimensions(cross_section1)
     w2, g2 = get_cpw_dimensions(cross_section2)
 
     if (w1, g1) == (w2, g2):
         return straight(f=f, length=length, cross_section=cross_section1)
-
-    if npoints < 2:
-        raise ValueError(f"npoints must be at least 2, got {npoints}")
 
     f = jnp.asarray(f)
     segment_length = length / npoints

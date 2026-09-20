@@ -24,3 +24,6 @@ def test_model_is_jittable(name: str) -> None:
     jax.block_until_ready(result)
 
     assert result, f"Model {name!r} returned no S-parameters"
+    assert all(jnp.all(jnp.isfinite(value)) for value in result.values()), (
+        f"Model {name!r} returned non-finite S-parameters"
+    )
