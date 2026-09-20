@@ -3,18 +3,27 @@
 from functools import partial
 from typing import cast
 
+import gdsfactory as gf
 import jax
 import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
-from sax.models.rf import capacitor, tee
+from sax.models.rf import (
+    capacitor,
+    cpw_epsilon_eff,
+    cpw_thickness_correction,
+    propagation_constant,
+    tee,
+    transmission_line_s_params,
+)
 
-from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
+from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import (
     cpw_ep_r_from_cross_section,
     cpw_z0_from_cross_section,
     get_cpw_dimensions,
+    get_cpw_substrate_params,
 )
 from qpdk.models.math import (
     capacitance_per_length_conformal,
@@ -185,15 +194,75 @@ def coupler_straight(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
+def _get_cross_section(cross_section: CrossSectionSpec) -> gf.CrossSection:
+    """Resolve a cross-section spec against the activated PDK.
+
+    Args:
+        cross_section: A gdsfactory cross-section specification.
+
+    Returns:
+        gf.CrossSection: The resolved cross-section.
+    """
+    # Local import: qpdk/__init__ imports this module.
+    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
+
+    PDK.activate()
+    return gf.get_cross_section(cross_section)
+
+
+def _access_line_s_params(
+    f: ArrayLike,
+    length: ArrayLike,
+    cross_section: CrossSectionSpec,
+    z_ref: ArrayLike,
+) -> sax.SDict:
+    """Access line S-parameters referenced to *z_ref* rather than its own impedance.
+
+    An access cross-section with the same conductor width but a different gap
+    has a different characteristic impedance, so the junction to the coupled
+    section reflects. Passing ``z_ref`` keeps that step in the model.
+
+    Args:
+        f: Array of frequency points in Hz.
+        length: Propagation length in µm.
+        cross_section: The cross-section of the access line.
+        z_ref: Reference impedance of the coupled section in Ω.
+
+    Returns:
+        sax.SDict: Two-port S-parameters of the line.
+    """
+    width, gap = get_cpw_dimensions(cross_section)
+    h, t, ep_r, tand = get_cpw_substrate_params()
+    ep_eff = cpw_epsilon_eff(width * 1e-6, gap * 1e-6, h * 1e-6, ep_r)
+    ep_eff, z0 = cpw_thickness_correction(width * 1e-6, gap * 1e-6, t * 1e-6, ep_eff)
+
+    f = jnp.asarray(f)
+    gamma = propagation_constant(f.ravel(), ep_eff, tand=tand, ep_r=ep_r)
+    s11, s21 = transmission_line_s_params(gamma, z0, jnp.asarray(length) * 1e-6, z_ref)
+    return sax.reciprocal({
+        ("o1", "o1"): s11.reshape(f.shape),
+        ("o1", "o2"): s21.reshape(f.shape),
+        ("o2", "o2"): s11.reshape(f.shape),
+    })
+
+
 def coupler_ring(
     f: ArrayLike = DEFAULT_FREQUENCY,
     length_x: int | float = 20.0,
     gap: int | float = 16,
     cross_section: CrossSectionSpec = "cpw",
+    radius: float | None = None,
+    cross_section_bend: CrossSectionSpec | None = None,
+    length_extension: float | None = None,
 ) -> sax.SDict:
-    """S-parameter model for two coupled coplanar waveguides in a ring configuration.
+    r"""S-parameter model for two coupled coplanar waveguides in a ring configuration.
 
-    The implementation is the same as straight coupler for now.
+    The coupled section is :func:`~qpdk.models.couplers.coupler_straight` of
+    length *length_x*. Uncoupled propagation is cascaded onto all four ports so
+    that the model reference planes land on the ports of
+    :func:`~qpdk.cells.waveguides.coupler_ring`: the lower access lines are
+    straights of *length_extension*, the upper ones quarter-circle arcs of
+    radius *radius*.
 
     TODO: Fetch coupling capacitance from a curved simulation library.
 
@@ -202,11 +271,78 @@ def coupler_ring(
         length_x: Physical length of coupling section in µm
         gap: Gap between the coupled waveguides in µm
         cross_section: The cross-section of the CPW.
+        radius: Bend radius of the upper access lines in µm, clamped to the
+            bend cross-section's ``radius_min`` like the layout bend. ``None``
+            uses the radius of *cross_section*.
+        cross_section_bend: Cross-section of the upper access lines. ``None``
+            uses *cross_section*.
+        length_extension: Length of the lower access lines in µm, always
+            derived from the requested *radius*. ``None`` uses ``3.0 + radius``,
+            matching gdsfactory's ``coupler_ring``.
 
     Returns:
         sax.SDict: S-parameters dictionary
+
+    Raises:
+        ValueError: If *radius* is ``None`` and *cross_section* has no radius.
+
+    .. code::
+
+        o2──────▲───────o3
+                │gap
+        o1──────▼───────o4
     """
-    return coupler_straight(f=f, length=length_x, gap=gap, cross_section=cross_section)
+    xs_main = _get_cross_section(cross_section)
+    if radius is None:
+        if xs_main.radius is None:
+            msg = (
+                f"Cross-section '{xs_main.name}' has no radius. "
+                "Pass radius explicitly to coupler_ring."
+            )
+            raise ValueError(msg)
+        radius = xs_main.radius
+    if length_extension is None:
+        length_extension = 3.0 + radius
+
+    xs_bend = cross_section_bend or cross_section
+    bend_radius_min = _get_cross_section(xs_bend).radius_min
+    bend_radius = (
+        radius if bend_radius_min is None else jnp.maximum(radius, bend_radius_min)
+    )
+    # Upper arms are quarter circles, so each reference plane sits one arc out.
+    arc_length = π * bend_radius / 2
+    z_ref = cpw_z0_from_cross_section(cross_section)
+
+    instances = {
+        "coupler": coupler_straight(
+            f=f, length=length_x, gap=gap, cross_section=cross_section
+        ),
+        "lower_left": straight(
+            f=f, length=length_extension, cross_section=cross_section
+        ),
+        "lower_right": straight(
+            f=f, length=length_extension, cross_section=cross_section
+        ),
+        "upper_left": _access_line_s_params(
+            f=f, length=arc_length, cross_section=xs_bend, z_ref=z_ref
+        ),
+        "upper_right": _access_line_s_params(
+            f=f, length=arc_length, cross_section=xs_bend, z_ref=z_ref
+        ),
+    }
+    connections = {
+        "lower_left,o2": "coupler,o1",
+        "upper_left,o2": "coupler,o2",
+        "upper_right,o1": "coupler,o3",
+        "lower_right,o1": "coupler,o4",
+    }
+    ports = {
+        "o1": "lower_left,o1",
+        "o2": "upper_left,o1",
+        "o3": "upper_right,o2",
+        "o4": "lower_right,o2",
+    }
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 if __name__ == "__main__":
