@@ -15,9 +15,9 @@ from sax.models.rf import (
     cpw_thickness_correction,
     propagation_constant,
     tee,
-    transmission_line_s_params,
 )
 
+from qpdk.logger import logger
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import (
     cpw_ep_r_from_cross_section,
@@ -216,11 +216,13 @@ def _access_line_s_params(
     cross_section: CrossSectionSpec,
     z_ref: ArrayLike,
 ) -> sax.SDict:
-    """Access line S-parameters referenced to *z_ref* rather than its own impedance.
+    """Access line with a single impedance step at its coupler-facing port.
 
-    An access cross-section with the same conductor width but a different gap
-    has a different characteristic impedance, so the junction to the coupled
-    section reflects. Passing ``z_ref`` keeps that step in the model.
+    The line keeps its own characteristic impedance at the outer port ``o1``,
+    where the layout port physically sits on the access cross-section. ``o2``
+    faces the coupled section and is referenced to *z_ref*, so the junction
+    between the two cross-sections reflects. Renormalising both ports to
+    *z_ref* would plant a second, fictitious step at the outer port.
 
     Args:
         f: Array of frequency points in Hz.
@@ -229,7 +231,8 @@ def _access_line_s_params(
         z_ref: Reference impedance of the coupled section in Ω.
 
     Returns:
-        sax.SDict: Two-port S-parameters of the line.
+        sax.SDict: Two-port S-parameters; ``o1`` is the outer port on the
+            access cross-section, ``o2`` the coupler-facing one.
     """
     width, gap = get_cpw_dimensions(cross_section)
     h, t, ep_r, tand = get_cpw_substrate_params()
@@ -238,11 +241,17 @@ def _access_line_s_params(
 
     f = jnp.asarray(f)
     gamma = propagation_constant(f.ravel(), ep_eff, tand=tand, ep_r=ep_r)
-    s11, s21 = transmission_line_s_params(gamma, z0, jnp.asarray(length) * 1e-6, z_ref)
+    # One interface between z_ref and z0 sits at the junction. Seen from o2 it
+    # is distance zero away, so its reflection is flat; seen from o1 it is one
+    # round trip down the matched line. The through path is the power-normalized
+    # junction transmission attenuated by a single pass.
+    rho = (z0 - jnp.asarray(z_ref)) / (z0 + jnp.asarray(z_ref))
+    matched = jnp.exp(-gamma * (jnp.asarray(length) * 1e-6))
+    thru = jnp.sqrt(1 - rho**2) * matched
     return sax.reciprocal({
-        ("o1", "o1"): s11.reshape(f.shape),
-        ("o1", "o2"): s21.reshape(f.shape),
-        ("o2", "o2"): s11.reshape(f.shape),
+        ("o1", "o1"): (-rho * matched**2).reshape(f.shape),
+        ("o1", "o2"): thru.reshape(f.shape),
+        ("o2", "o2"): jnp.broadcast_to(rho, matched.shape).reshape(f.shape),
     })
 
 
@@ -276,9 +285,9 @@ def coupler_ring(
             uses the radius of *cross_section*.
         cross_section_bend: Cross-section of the upper access lines. ``None``
             uses *cross_section*.
-        length_extension: Length of the lower access lines in µm, always
-            derived from the requested *radius*. ``None`` uses ``3.0 + radius``,
-            matching gdsfactory's ``coupler_ring``.
+        length_extension: Length of the lower access lines in µm. ``None``
+            defaults to ``3.0 + radius``, matching gdsfactory's ``coupler_ring``;
+            an explicit value is used verbatim.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -306,13 +315,27 @@ def coupler_ring(
 
     xs_bend = cross_section_bend or cross_section
     bend_radius_min = _get_cross_section(xs_bend).radius_min
-    bend_radius = (
-        radius if bend_radius_min is None else jnp.maximum(radius, bend_radius_min)
-    )
+    if bend_radius_min is None:
+        bend_radius = radius
+    else:
+        # Skip the warning under tracing: the clamp itself stays jittable via
+        # jnp.maximum, and converting a traced radius to bool would fail.
+        if jax.core.is_concrete(radius) and radius < bend_radius_min:
+            logger.warning(
+                "Bend radius needs to be >= {} for this cross-section. "
+                "Setting it to the minimum acceptable value.",
+                bend_radius_min,
+            )
+        bend_radius = jnp.maximum(radius, bend_radius_min)
     # Upper arms are quarter circles, so each reference plane sits one arc out.
     arc_length = π * bend_radius / 2
     z_ref = cpw_z0_from_cross_section(cross_section)
 
+    # The arcs share one mixed-reference two-port: o1 is the outer port on the
+    # bend cross-section, o2 faces the coupled section.
+    arc = _access_line_s_params(
+        f=f, length=arc_length, cross_section=xs_bend, z_ref=z_ref
+    )
     instances = {
         "coupler": coupler_straight(
             f=f, length=length_x, gap=gap, cross_section=cross_section
@@ -323,23 +346,19 @@ def coupler_ring(
         "lower_right": straight(
             f=f, length=length_extension, cross_section=cross_section
         ),
-        "upper_left": _access_line_s_params(
-            f=f, length=arc_length, cross_section=xs_bend, z_ref=z_ref
-        ),
-        "upper_right": _access_line_s_params(
-            f=f, length=arc_length, cross_section=xs_bend, z_ref=z_ref
-        ),
+        "upper_left": arc,
+        "upper_right": arc,
     }
     connections = {
         "lower_left,o2": "coupler,o1",
         "upper_left,o2": "coupler,o2",
-        "upper_right,o1": "coupler,o3",
+        "upper_right,o2": "coupler,o3",
         "lower_right,o1": "coupler,o4",
     }
     ports = {
         "o1": "lower_left,o1",
         "o2": "upper_left,o1",
-        "o3": "upper_right,o2",
+        "o3": "upper_right,o1",
         "o4": "lower_right,o2",
     }
     return sax.evaluate_circuit_fg((connections, ports), instances)
