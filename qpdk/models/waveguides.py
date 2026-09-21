@@ -485,6 +485,18 @@ def rectangle(
     return straight(f=f, length=length, cross_section=cross_section)
 
 
+def _static_linspace(start: float, stop: float, npoints: int) -> list[float]:
+    """Return ``jnp.linspace`` values as plain scalars matching its endpoints.
+
+    Cross-section dimensions are static geometry, and gdsfactory cross-sections
+    cannot receive JAX tracers.
+    """
+    if npoints < 2:
+        return [start]
+    step = (stop - start) / (npoints - 1)
+    return [start + i * step for i in range(npoints - 1)] + [stop]
+
+
 def taper_cross_section(
     f: ArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 10,
@@ -500,25 +512,30 @@ def taper_cross_section(
         cross_section1: Cross-section for the start of the taper.
         cross_section2: Cross-section for the end of the taper.
         npoints: Number of segments to divide the taper into for simulation.
+            Clamped to a minimum of one segment. Ignored when both
+            cross-sections have identical dimensions.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    npoints = int(npoints)
+    npoints = max(int(npoints), 1)
     w1, g1 = get_cpw_dimensions(cross_section1)
     w2, g2 = get_cpw_dimensions(cross_section2)
+
+    if (w1, g1) == (w2, g2):
+        return straight(f=f, length=length, cross_section=cross_section1)
 
     f = jnp.asarray(f)
     segment_length = length / npoints
 
-    ws = jnp.linspace(w1, w2, npoints)
-    gs = jnp.linspace(g1, g2, npoints)
+    widths = _static_linspace(w1, w2, npoints)
+    gaps = _static_linspace(g1, g2, npoints)
 
     instances = {
         f"straight_{i}": straight(
             f=f,
             length=segment_length,
-            cross_section=coplanar_waveguide(width=float(ws[i]), gap=float(gs[i])),
+            cross_section=coplanar_waveguide(width=widths[i], gap=gaps[i]),
         )
         for i in range(npoints)
     }
