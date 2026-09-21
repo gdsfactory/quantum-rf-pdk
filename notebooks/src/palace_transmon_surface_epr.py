@@ -47,7 +47,11 @@
 from pathlib import Path
 
 from IPython.display import display
-from scgsim.palace import EigenmodeSim, resolve_palace_result
+from scgsim.palace import (
+    EigenmodeSim,
+    inspect_run_trustworthiness,
+    resolve_palace_result,
+)
 from scgsim.sgb import build_component_stack
 from scgsim.visualization import inspect_palace_geometry
 
@@ -122,6 +126,11 @@ SURFACE_EPR_SPECS = {
 }
 JUNCTION_INDUCTANCE_H = 7e-9
 NUM_MODES = 2
+# Caller-selected lower search bound in Hz, not a predicted resonance.
+TARGET_HZ = 2e9
+EIGENMODE_TOLERANCE = 1e-6
+# Number of mode fields saved for visualization; zero saves none.
+SAVE_FIELDS = 0
 
 if WORKFLOW_ACTION == "prepare":
     if RUN_DIR.exists():
@@ -143,7 +152,12 @@ if WORKFLOW_ACTION == "prepare":
         layout_sheet=True,
         inductance=JUNCTION_INDUCTANCE_H,
     )
-    sim.set_eigenmode(num_modes=NUM_MODES)
+    sim.set_eigenmode(
+        num_modes=NUM_MODES,
+        target=TARGET_HZ,
+        tolerance=EIGENMODE_TOLERANCE,
+        save=SAVE_FIELDS,
+    )
 
 # %% [markdown]
 # ## Build Mesh
@@ -232,30 +246,38 @@ if WORKFLOW_ACTION == "prepare":
 # assignments before sending the archive to the cluster. After the completed package
 # is returned, change `WORKFLOW_ACTION` to `"analyze-returned"`, keep the same
 # `RUN_ID`, and paste the exact handoff ID displayed above into the stage-local control
-# below. Resolution verifies the returned receipt against that independent expected
-# identity before any report is shown.
+# below. Extract the returned package into a separate directory and set
+# `RETURNED_RUN_DIR` to its run root (the directory containing `metadata`).
+# Trust inspection exposes completeness before strict resolution verifies the
+# returned receipt against the independently recorded expected handoff identity.
 #
 # The report order is run identity and numerical evidence, simulation cost, then
 # physics quantities. A returned package without bound Surface-EPR snapshots fails
 # rather than presenting an empty report as success.
 
 # %%
+RETURNED_RUN_DIR = RUN_ROOT / "returned" / RUN_ID
 EXPECTED_HANDOFF_ID = None
 REPORT_THEME = "light"
 SURFACE_RANKING_LIMIT = 20
 
-preview = inspect_palace_geometry(RUN_DIR)
-display(preview.show_surface_epr())
+if WORKFLOW_ACTION == "prepare":
+    preview = inspect_palace_geometry(RUN_DIR)
+    display(preview.show_surface_epr())
 
 if WORKFLOW_ACTION == "analyze-returned":
     if not EXPECTED_HANDOFF_ID:
         raise ValueError(
             "Set EXPECTED_HANDOFF_ID to the exact ID recorded during preparation."
         )
+    returned_trust = inspect_run_trustworthiness(RETURNED_RUN_DIR, theme=REPORT_THEME)
+    display(returned_trust.show_run_trustworthiness(theme=REPORT_THEME))
     result = resolve_palace_result(
-        RUN_DIR,
+        RETURNED_RUN_DIR,
         expected_handoff_id=EXPECTED_HANDOFF_ID,
     )
+    preview = inspect_palace_geometry(RETURNED_RUN_DIR)
+    display(preview.show_surface_epr())
     trust_report = result.show_run_trustworthiness(theme=REPORT_THEME)
     benchmark_report = result.show_simulation_benchmark()
     physics_report = result.show_physics_quantities(

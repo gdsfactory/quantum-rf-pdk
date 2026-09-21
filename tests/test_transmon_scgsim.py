@@ -107,6 +107,7 @@ def test_process_facts_retain_existing_dimensions():
     assert metal.info["simulation_role"] == "conductor"
     assert metal.info["host_void_semantic_id"] == "Vacuum"
     assert metal.info["part_role"] == "face_metal"
+    assert metal.info["geometry"] == {"geometry_source": "gds_polygon"}
     for name in ["Substrate", "Vacuum"]:
         assert stack.layers[name].info["simulation_role"] == "solution_region"
         assert stack.layers[name].info["include_in_component_simulation"] is True

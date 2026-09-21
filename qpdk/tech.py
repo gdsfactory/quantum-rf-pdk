@@ -151,6 +151,7 @@ def get_layer_stack() -> LayerStack:
                 info={
                     "simulation_role": "conductor",
                     "part_role": "face_metal",
+                    "geometry": {"geometry_source": "gds_polygon"},
                     "host_void_semantic_id": "Vacuum",
                 },
             ),
