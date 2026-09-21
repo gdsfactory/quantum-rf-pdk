@@ -1,16 +1,36 @@
-# Copilot Custom Review Instructions for qpdk
+# Copilot instructions for qpdk
 
-## Repository Overview
+## Repository overview
 
-This is **qpdk**, a Python-based superconducting microwave Process Design Kit (PDK) built on
-[gdsfactory](https://gdsfactory.github.io/gdsfactory/) for designing quantum devices and circuits (transmons,
-resonators, couplers, airbridges, SNSPDs, fluxoniums, unimons, etc.). It targets Python 3.12–3.14, uses `uv` as the
-package manager, `just` as the task runner, and `prek` (a parallel pre-commit runner) for linting.
+This is **qpdk**, a Python superconducting microwave Process Design Kit (PDK) built on
+[gdsfactory](https://gdsfactory.github.io/gdsfactory/) for designing quantum devices and circuits — transmons,
+resonators, couplers, airbridges, SNSPDs, fluxoniums, unimons. It targets Python 3.12–3.14, uses `uv` as the package
+manager, `just` as the task runner, and `prek` (a parallel pre-commit runner) for linting.
 
-## Build, Test, and Lint Commands
+`AGENTS.md` at the repository root is the fuller contributor guide, including the coding-agent behavioural rules. This
+file is the review-oriented summary; the detail for individual areas lives in the path-specific files listed below.
 
-All commands use the `justfile` (with imports from `tests/test.just` and `docs/docs.just`). Always prefer `just`
-commands over direct tool invocation.
+## Path-specific instructions
+
+Detailed rules in `.github/instructions/` apply automatically to the areas below (via each file's `applyTo` frontmatter)
+— consult them before commenting on a file they cover:
+
+- `python.instructions.md` — all Python
+- `cells.instructions.md` — `qpdk/cells/**`
+- `tech-layers.instructions.md` — `qpdk/tech.py`, `qpdk/layers.yaml`, `qpdk/klayout/**`
+- `models.instructions.md` — `qpdk/models/**`
+- `simulation.instructions.md` — `qpdk/simulation/**`
+- `samples.instructions.md` — `qpdk/samples/**`
+- `tests.instructions.md` — `tests/**`
+- `notebooks.instructions.md` — `notebooks/**`
+- `docs.instructions.md` — `docs/**`, Markdown, RST
+- `github-actions.instructions.md` — `.github/workflows/**`
+- `dependencies.instructions.md` — `pyproject.toml`, `uv.lock`, `Dockerfile`, `.pre-commit-config.yaml`
+
+## Build, test, and lint commands
+
+All commands go through the `justfile` (which imports `tests/test.just` and `docs/docs.just`). Prefer `just` recipes
+over direct tool invocation.
 
 | Task                                     | Command                   |
 | ---------------------------------------- | ------------------------- |
@@ -30,127 +50,76 @@ commands over direct tool invocation.
 | Show/preview a component interactively   | `just show`               |
 | Run everything (test, lint, build, docs) | `just all`                |
 
-Pre-commit hooks **must** pass before every commit. They include `ruff` (format + lint), `pyrefly` (type checking),
-`yamlfmt`, `yamllint`, `codespell`, `interrogate` (docstring coverage), `markdownlint`, `mdformat`, `actionlint`,
-`zizmor` (GitHub Actions security), `hadolint` (Dockerfile), `checkmake` (Makefile), `bibtex-tidy`, `sphinx-lint`,
-`lychee` (link checking), `uv-lock`, `pdk-ci-workflow` structural checks, and more. Run with `just run-pre` or
-`uvx prek run --all-files`.
+Pre-commit hooks **must** pass before every commit (`just run-pre`, or `uvx prek run --all-files`). They include `ruff`
+(format + lint), `pyrefly` (type checking), `yamlfmt`, `yamllint`, `codespell`, `interrogate` (100% docstring coverage),
+`markdownlint`, `mdformat`, `docstrfmt`, `sphinx-lint`, `actionlint`, `zizmor`, `hadolint`, `checkmake`, `bibtex-tidy`,
+`typstyle`, `lychee`, `uv-lock`, and the shared `pdk-ci-workflow` structural checks.
 
-## Project Layout
+## Project layout
 
 ```text
 qpdk/                   Core Python package
   __init__.py            PDK object, version, public API
   cells/                Component definitions (transmons, resonators, …)
     __init__.py          Aggregates all cells via `from ... import *`
-    derived/             Composite/derived cells (e.g., transmon_with_resonator_and_probeline)
+    derived/             Composite cells (e.g. transmon_with_resonator_and_probeline)
   models/               S-parameter and circuit models
     constants.py         Centralized physical constants (e, h, Φ_0, ε_0, …)
-    math.py              Mathematical utilities for models
-    perturbation.py      Perturbation theory models
-    qubit.py             Qubit Hamiltonian and frequency models
-  simulation/           HFSS/Q3D simulation automation (aedt_base, hfss, q3d)
+  simulation/           HFSS/Q3D automation (aedt_base, hfss, q3d)
   klayout/              KLayout technology files
-  config.py             Path configuration (PATH dataclass)
-  helper.py             Helper utilities
-  utils.py              General utility functions
-  tech.py               Layer stack, cross sections, LAYER enum
-  layers.yaml           Layer definitions (must stay in sync with tech.py)
+  samples/              Example designs (.py, .pic.yml, .gsch)
+  tech.py               Layer map, layer stack, cross sections
+  layers.yaml           Layer views (must stay in sync with tech.py)
   logger.py             Centralized loguru logger
-  samples/              Example layout and simulation scripts (.py, .pic.yml, .gsch)
-tests/                  pytest test suite
+  config.py             Path configuration (PATH dataclass)
+tests/                  pytest suite
   gds_ref/              GDS regression reference files
-  models/               Model unit tests
+  test_pdk/             Settings and netlist regression YAML
   test_models_regression/ Model regression reference data
-  helper/               Test helper utilities
-  test_pdk.py           Component regression + netlist round-trip tests
-  test.just             Test-related just recipes
+  models/               Model unit tests
 docs/                   Sphinx documentation source
-  docs.just             Documentation-related just recipes
 notebooks/src/          Jupytext notebook sources (.py percent format, .m for MATLAB)
-pyproject.toml          Project metadata, dependency specs, ruff/pyrefly/pytest config
-justfile                Task runner recipes (imports test.just and docs.just)
+pyproject.toml          Metadata, dependencies, ruff/pyrefly/pytest/interrogate config
+justfile                Task runner recipes
 .pre-commit-config.yaml Pre-commit hook definitions
-.github/workflows/      CI pipelines (test, docs, build, release)
-.changelog.d/           Towncrier changelog fragments
+.github/workflows/      CI pipelines (test, docs, build, release, drc)
 ```
 
-## Review Checklist — What to Verify on Every PR
+## Review priorities
 
-### Code Style and Quality
+Comment on these in roughly this order, and stay quiet about the rest:
 
-- Python code is formatted and linted by **ruff** (config in `pyproject.toml`). Verify no lint violations are
-  introduced.
-- **Docstrings** follow [Google style](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) and
-  are required on all public modules, classes, and functions (`interrogate` enforced at 100% coverage). Verify new
-  public APIs have docstrings.
-- Use the RST `:math:` role for inline LaTeX in docstrings — never raw `$` or `$$`.
-- Use `from qpdk import logger` (loguru) instead of `print()` for runtime output. The `T20` ruff rule forbids print in
-  library code.
-- Unicode math identifiers (Φ, ε, μ, π) are acceptable — the relevant ruff rules are suppressed.
-- Type hints are expected. `pyrefly` runs in pre-commit. Verify new code is typed.
-- Optional heavy dependencies (sax, scqubits, jaxellip, polars, netket, flax, pymablock, qutip-jax, qutip-qip, optax,
-  optuna, sympy, pandas, trimesh, gplugins, pyaedt) must be **lazily imported** — ruff's `require-lazy` is configured
-  for them in `pyproject.toml`.
+1. **Correctness of the physics.** Wrong units, a wrong formula, a non-passive passive model, or a layer on the wrong
+   mask are the failures that reach silicon. They outrank every style concern here.
+1. **Breaking changes to the public surface.** Renamed cells, renamed ports, changed port types, changed cross-section
+   defaults, or changed layer numbers break user designs and stored netlists. Always call them out explicitly.
+1. **Regression references.** A component or model change should come with regenerated references; a reference diff
+   should come with a code change that explains it. Mismatches in either direction are worth a comment.
+1. **Missing tests** for new public behaviour.
+1. **Missing or wrong docstrings** on new public API — `interrogate` fails CI at anything under 100% coverage.
+1. **Security**, per the rules in the path-specific files.
 
-### Component (Cell) Changes
+## Cross-cutting rules
 
-- Every new cell **must** use the `@gf.cell` decorator with a `tags` parameter for categorization (e.g.,
-  `@gf.cell(tags=("qubits", "transmons"))`).
-- New cell modules **must** be re-exported via a `from qpdk.cells.<module> import *` line in `qpdk/cells/__init__.py`.
-- Layer assignments **must** use the `LAYER` enum from `qpdk/tech.py`. Verify no ad-hoc layer tuples are introduced.
-- Layer definitions in `qpdk/layers.yaml` and `qpdk/tech.py` **must** stay in sync — any change to one requires a
-  matching change in the other.
-- Components must produce valid netlists that can be round-tripped (component → netlist → component). This is
-  automatically tested by `test_netlists` in `tests/test_pdk.py`.
+- **Logging:** use `from qpdk import logger` (loguru), never `print()`, in library code.
+- **Math in docstrings:** use the RST `:math:` role, never `$...$`.
+- **Physical constants:** import from `qpdk/models/constants.py`; never redefine locally.
+- **Layers:** use the `LAYER` map from `qpdk/tech.py`; raw layer tuples are rejected by pre-commit.
+- **Git LFS:** CSV data under `tests/models/data/` is LFS-tracked; GDS/OAS are binary per `.gitattributes`. Check new
+  large or binary files are handled the same way.
+- **Commit messages:** imperative mood ("Add component", not "Added component").
+- **Release notes:** drafted automatically by release-drafter from PR titles and labels, so a PR title should read as a
+  changelog entry on its own. `CHANGELOG.md` follows Keep a Changelog and is updated at release time, not per PR.
+- **Secrets:** never approve a committed key, token, or licence file.
 
-### Model and Simulation Changes
+## What not to flag
 
-- Prefer **JAX-compatible** functions (`jnp` over `np`, `jaxellip` for elliptic integrals) and use
-  `@partial(jax.jit, inline=True)` for helper functions.
-- Physical constants **must** come from `qpdk/models/constants.py` — verify no local redefinitions of `e`, `h`, `Φ_0`,
-  `ε_0`, etc.
-- New models need unit tests in `tests/models/` verifying behavior, passivity, and reciprocity.
-- HFSS/Q3D simulation automation lives in `qpdk/simulation/` — changes there should be tested with `just test-hfss` when
-  HFSS is available.
+Avoid noise on things the toolchain already owns or deliberately allows:
 
-### Testing
-
-- New components must have **GDS regression tests** (settings + netlists). Reference files are generated with
-  `just test-gds-force` and committed in `tests/gds_ref/`.
-- New models must have **model regression tests**. Reference files are generated with `just test-models-force` and
-  committed in `tests/test_models_regression/`.
-- Prefer the **hypothesis** library for property-based tests. When using it:
-  - Do **not** combine `@given` with `@staticmethod` (causes `AttributeError` during collection).
-  - Add `@settings(deadline=None)` when testing JAX JIT-compiled code.
-- The full test suite runs across Python 3.12–3.14 on Ubuntu, macOS, and Windows. Verify no platform-specific
-  assumptions.
-- If GDS reference files changed, verify the diff is intentional and corresponds to the code change.
-- Tests run in parallel using `pytest-xdist` (`-n auto`). Verify no test interdependencies.
-
-### Documentation
-
-- Docstrings should explain the underlying quantum physics and design parameters, with citations where appropriate.
-- Bibliography entries in `docs/bibliography.bib`: if a `doi` field is present, do **not** include `url` or `urldate`.
-- Notebooks live in `notebooks/src/` as jupytext `.py` (percent format) or `.m` (MATLAB) files. When adding or removing
-  notebooks, update `docs/notebooks.rst`.
-- Notebooks requiring external tools (HFSS, MATLAB) should be listed in `nb_execution_excludepatterns` in `docs/conf.py`
-  and committed as pre-executed `.ipynb` files in `notebooks/`.
-- Documentation must build successfully (`just docs`) for a PR to be mergeable.
-
-### Git and CI
-
-- **Git LFS**: CSV files in `tests/models/data/` are LFS-tracked. GDS/OAS files are binary (`.gitattributes`). Verify
-  new binary or large data files are handled correctly.
-- Commit messages use **imperative mood** (e.g., "Add component", not "Added component").
-- All CI checks must pass: pre-commit hooks, the full pytest suite, and the documentation build.
-- **Changelog**: Use [towncrier](https://towncrier.readthedocs.io/) fragments in `.changelog.d/` for user-facing
-  changes. Fragment filenames follow the pattern `<issue_or_pr>.<type>.md`.
-
-### Security and Supply Chain
-
-- No private keys or sensitive fabrication parameters committed (the `detect-private-key` pre-commit hook helps, but
-  reviewers should also verify).
-- New dependencies should be justified. Check for known vulnerabilities and verify they are pinned appropriately in
-  `pyproject.toml`.
-- GitHub Actions workflows are checked by `actionlint` and `zizmor` for security best practices.
+- Formatting that `ruff format`, `mdformat`, `yamlfmt`, `docstrfmt` or `typstyle` controls.
+- Line length in Python (`E501` is disabled) — 120 characters is the Markdown/RST limit only.
+- Unicode math identifiers such as `Φ_0`, `ε_0`, `μ_0`, `π` — intentional and rule-suppressed.
+- Star imports in `qpdk/**/__init__.py` — they are how the cell registry is assembled.
+- `assert`, missing docstrings, or `print()` in `tests/`, `qpdk/samples/`, and `notebooks/`.
+- Any rule listed under `[tool.ruff.lint] ignore` in `pyproject.toml`.
+- Purely stylistic rewrites of existing code that the PR did not touch.
