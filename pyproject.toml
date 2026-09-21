@@ -137,7 +137,7 @@ requires = ["uv_build>=0.10.8,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.codespell]
-ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, schem, Commun, Ue, inout"
+ignore-words-list = "te, te/tm, te, ba, fpr, fpr_spacing, ro, nd, donot, scheme, schem, Commun, Ue, inout, retuned, Retuned"
 skip = "bibliography.bib"
 
 [tool.coverage.run]
@@ -371,9 +371,17 @@ combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 # E402: notebooks import modules after setup code (e.g. PDK.activate()) by design.
+# S101: notebooks assert sanity checks of embedded simulation data so the
+# cell fails loudly on inconsistency.
 # Set here rather than with in-file `# ruff:` comments, which leak into the
 # rendered documentation pages.
-"notebooks/**/*.py" = ["D100", "T201", "E402"]
+"notebooks/**/*.py" = ["D100", "T201", "E402", "S101"]
+# CI helper: gsim is not a qpdk dependency (imported in a function), asserts
+# are the checks, prints go to the Actions log, and Palace's eig.csv column
+# names contain literal braces.
+".github/palace_smoke.py" = ["PLC0415", "T201", "S101", "RUF027"]
+# gsim is not a qpdk dependency, so single_chip_stack imports it lazily.
+"qpdk/simulation/fem.py" = ["PLC0415"]
 "qpdk/cells/__init__.py" = ["F403"]
 "qpdk/models/__init__.py" = ["F403"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
