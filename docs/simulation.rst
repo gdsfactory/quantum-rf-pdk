@@ -21,6 +21,14 @@ For new components, attach the compact model through ``schematic_function`` and 
 
 .. automodule:: qpdk.simulation
 
+*****
+ FEM
+*****
+
+.. automodule:: qpdk.simulation.fem
+    :members:
+    :show-inheritance:
+
 ********
  Common
 ********

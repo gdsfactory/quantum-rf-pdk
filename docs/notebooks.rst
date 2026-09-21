@@ -136,7 +136,8 @@ currents, and substrate modes that analytical models may miss
 - :doc:`notebooks/palace_eigenmode_qubit_resonator` — Eigenmode simulation of a
   double-pad transmon qubit coupled to a quarter-wave readout resonator using `gsim
   <https://gdsfactory.github.io/gsim/>`_ and Palace, including comparison with
-  semi-analytical frequency estimates and an Optuna optimization loop.
+  semi-analytical frequency estimates and a calibrated retune of the resonator length to
+  a target frequency.
 
 .. note::
 
@@ -413,7 +414,7 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - ``models``
     - - :doc:`notebooks/palace_eigenmode_qubit_resonator`
       - FEM electromagnetics
-      - gsim, Palace, Optuna
+      - gsim, Palace
       - ``models``
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
