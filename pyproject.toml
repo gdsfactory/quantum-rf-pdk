@@ -411,7 +411,10 @@ combine-as-imports = true
 # E402: notebooks import modules after setup code (e.g. PDK.activate()) by design.
 # Set here rather than with in-file `# ruff:` comments, which leak into the
 # rendered documentation pages.
+".github/palace_smoke.py" = ["module-import-not-at-top-of-file", "print", "assert", "missing-f-string-prefix"]
+"qpdk/simulation/fem.py" = ["module-import-not-at-top-of-file"]
 "notebooks/**/*.py" = [
+  "assert",
   "undocumented-public-module",
   "print",
   "module-import-not-at-top-of-file"
