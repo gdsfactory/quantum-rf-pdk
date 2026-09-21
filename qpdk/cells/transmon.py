@@ -15,7 +15,7 @@ from klayout.db import DCplxTrans, Region
 from qpdk.cells._schematic import double_pad_transmon_schematic
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.junction import squid_junction, squid_junction_long
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, NON_METADATA_LAYERS
 from qpdk.utils import (
     subtract_draw_from_etch as _subtract_draw_from_etch,
     transform_component,
@@ -58,6 +58,9 @@ def double_pad_transmon(
     junction_spec: ComponentSpec = squid_junction,
     junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
+    with_junction_lumped_port: bool = False,
+    junction_lumped_port_width: float = 1.0,
+    layer_simulation: LayerSpec = LAYER.SIM_BOUNDARY,
 ) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction.
 
@@ -82,9 +85,17 @@ def double_pad_transmon(
         junction_displacement: Optional complex transformation, or in-place
             rotation in degrees, to apply to the junction.
         layer_metal: Layer for the metal pads.
+        with_junction_lumped_port: Add a simulation-only sheet and placement port
+            between the pads, independent of the microscopic junction geometry.
+        junction_lumped_port_width: Transverse sheet width in μm. Must be finite,
+            positive, and no larger than the pad height when enabled.
+        layer_simulation: Non-fabrication layer for the lumped-port sheet, excluding SIM_AREA.
 
     Returns:
         Component: A gdsfactory component with the transmon geometry.
+
+    Raises:
+        ValueError: If enabled sheet dimensions or its simulation layer are invalid.
     """
     c = Component()
 
@@ -99,8 +110,8 @@ def double_pad_transmon(
         pad_ref.move((x_offset, -pad_height / 2))
         return pad_ref
 
-    create_capacitor_pad(-pad_width - pad_gap / 2)
-    create_capacitor_pad(pad_gap / 2)
+    left_pad = create_capacitor_pad(-pad_width - pad_gap / 2)
+    right_pad = create_capacitor_pad(pad_gap / 2)
 
     # Create Josephson junction
     junction_ref = c.add_ref(gf.get_component(junction_spec))
@@ -155,6 +166,59 @@ def double_pad_transmon(
 
     # Add metadata
     c.info["qubit_type"] = "transmon"
+    # EM topology names only the capacitor pads, never the microscopic JJ metal.
+    c.info["component_semantics"] = {
+        "schema_version": 1,
+        "conductor_regions": [
+            {
+                "semantic_id": semantic_id,
+                "level": "M1",
+                "gds_layer": list(gf.get_layer_tuple(layer_metal)),
+                "net_id": net_id,
+                "geometry": {"selector_point_um": list(pad.dcenter)},
+            }
+            for semantic_id, net_id, pad in (
+                ("LEFT_PAD", "left_pad", left_pad),
+                ("RIGHT_PAD", "right_pad", right_pad),
+            )
+        ],
+    }
+    if with_junction_lumped_port:
+        if not (
+            math.isfinite(junction_lumped_port_width)
+            and 0 < junction_lumped_port_width <= pad_height
+            and math.isfinite(pad_gap)
+            and pad_gap > 0
+        ):
+            raise ValueError(
+                "Lumped sheet requires a positive gap and width within the pad height."
+            )
+        fabrication_layers = {
+            gf.get_layer_tuple(layer) for layer in NON_METADATA_LAYERS
+        } | {gf.get_layer_tuple(layer_metal), gf.get_layer_tuple(LAYER.SIM_AREA)}
+        if gf.get_layer_tuple(layer_simulation) in fabrication_layers:
+            raise ValueError("Lumped sheet must use a separate non-fabrication layer.")
+        # One DBU of overlap keeps the sheet attached to both inner pad edges.
+        overlap = c.kcl.dbu
+        x_left, x_right = left_pad.dxmax - overlap, right_pad.dxmin + overlap
+        half_width = junction_lumped_port_width / 2
+        c.add_polygon(
+            [
+                (x_left, -half_width),
+                (x_right, -half_width),
+                (x_right, half_width),
+                (x_left, half_width),
+            ],
+            layer=layer_simulation,
+        )
+        c.add_port(
+            name="junction_lumped",
+            center=(0, 0),
+            width=junction_lumped_port_width,
+            orientation=0,
+            layer=layer_simulation,
+            port_type="placement",
+        )
 
     return c
 

@@ -133,6 +133,9 @@ currents, and substrate modes that analytical models may miss
   interdigital capacitor in Ansys HFSS.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
+- :doc:`notebooks/palace_transmon_surface_epr` — Compiles QPDK's authored transmon and
+  layer-stack semantics with SCGSim, prepares a manual single-node Slurm handoff for a
+  two-mode Palace eigenmode solve, and verifies returned Surface-EPR results.
 
 .. note::
 
@@ -342,6 +345,11 @@ With ``pip``:
     - ``openvino``, used by :doc:`notebooks/jax_backend_comparison` for the NPU
       benchmark, is optional and platform-specific — install it with ``pip install
       openvino``. The notebook skips that section if it is missing.
+    - SCGSim, used by :doc:`notebooks/palace_transmon_surface_epr`, is pinned directly
+      from its public repository for this converging workflow. Use Python 3.12 and
+      install ``scgsim[palace,visualization]`` at revision
+      ``de446a96c74f56ac06dbcd39776bee8372b74311`` as shown in the notebook. Palace
+      itself remains an external executable supplied by the target machine.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
@@ -407,6 +415,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - FEM optimization
       - Optuna, Palace
       - ``models``
+    - - :doc:`notebooks/palace_transmon_surface_epr`
+      - FEM electromagnetics
+      - SCGSim, Palace
+      - Pinned SCGSim install (Python 3.12)
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
       - scQubits

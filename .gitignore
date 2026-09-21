@@ -177,6 +177,9 @@ scripts/
 *.glb
 *.stl
 
+# Local solver handoff and returned-run artifacts
+.artifacts/
+
 # Software Bill of Materials
 sbom.json
 bom.json
