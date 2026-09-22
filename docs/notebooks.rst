@@ -147,6 +147,9 @@ currents, and substrate modes that analytical models may miss
 - :doc:`notebooks/palace_flipmon_flip_chip`: A sapphire flipmon with a 5 µm vacuum gap,
   saved Palace eigenmode and electric field, and a comparison to measured frequencies
   and simulated gap participation in Li et al.
+- :doc:`notebooks/palace_batched_qubit_optimization`: Batched double-pad transmon
+  optimization with Palace eigenmodes, quality factor and geometry plots, interface
+  participation, and a Pareto comparison.
 
 .. note::
 
@@ -302,7 +305,10 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
         ``scikit-rf``, ``sympy``, ``polars``, ``pandas[parquet]``
       - The analytical and S-parameter model library (``qpdk.models``), SAX circuit
         simulation, meshing, the gsim FEM simulation wrappers, and the DataFrame display
-        helpers. **This is the baseline extra — nearly every notebook needs it.**
+        helpers. Nearly every notebook needs this baseline extra.
+    - - ``optimization``
+      - ``cloudpickle``
+      - Serializes notebook evaluators for Slurm workers in the batched Palace study.
     - - ``hfss``
       - ``pyaedt[graphics]``, ``polars``
       - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
@@ -330,7 +336,8 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - Numerical diagonalization of transmon and transmon–resonator Hamiltonians.
     - - ``ray``
       - ``ray[default]``, ``tqdm``
-      - Parallel and distributed parameter sweeps, used for Monte Carlo tolerance runs.
+      - Parallel and distributed parameter sweeps, used for Monte Carlo tolerance runs,
+        and one of the two backends for batching optimisation trials across a cluster.
     - - ``graphics``
       - ``trimesh``, ``pyglet``
       - Interactive 3-D viewing of component meshes. Not needed by any notebook.
@@ -461,6 +468,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - FEM electromagnetics
       - gsim, Palace
       - ``models``
+    - - :doc:`notebooks/palace_batched_qubit_optimization`
+      - FEM optimization
+      - Ray, Optuna, gsim, Palace
+      - ``models``, ``ray``
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
       - scQubits
