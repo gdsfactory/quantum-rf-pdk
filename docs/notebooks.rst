@@ -349,6 +349,17 @@ models miss
 
         :bdg-secondary-line:`Palace` :bdg-secondary-line:`gsim` :bdg-success:`open source`
 
+    .. grid-item-card:: Palace qubit optimization
+        :link: notebooks/palace_batched_qubit_optimization
+        :link-type: doc
+        :class-card: notebook-card
+
+        Batched geometry studies with Slurm MPI and Ray workers.
+
+        +++
+
+        :bdg-secondary-line:`Palace` :bdg-secondary-line:`Slurm` :bdg-primary:`optimization`
+
     .. grid-item-card:: More FEM and FDTD in gsim
         :link: https://gdsfactory.github.io/gsim/
         :class-card: notebook-card notebook-card-external

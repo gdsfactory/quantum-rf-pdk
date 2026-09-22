@@ -477,13 +477,11 @@ def simulate_global_tolerance(
     instance_names: list[str],
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return transmission and refined resonances for a global trial."""
-    # ruff: disable[import-outside-top-level]
     import jax.numpy as jnp
     import numpy as np
     import sax
 
     from qpdk import PDK
-    # ruff: enable[import-outside-top-level]
 
     PDK.activate()
     # Re-compiling the circuit on the worker is very fast in SAX
@@ -661,12 +659,10 @@ def simulate_local_tolerance(
     non_res_names: list[str],
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return transmission and refined resonances for a local trial."""
-    # ruff: disable[import-outside-top-level]
     import numpy as np
     import sax
 
     from qpdk import PDK
-    # ruff: enable[import-outside-top-level]
 
     PDK.activate()
     circuit_fn, _ = sax.circuit(
