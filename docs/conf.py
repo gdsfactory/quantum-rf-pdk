@@ -136,6 +136,11 @@ nb_execution_mode = "cache"
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
     "notebooks/matlab_integration*",
+    # These two Palace notebooks need the solver (and its cluster-sized runs),
+    # so they ship with their outputs committed, like the HFSS ones. The
+    # batched-optimisation notebook has no solver calls and executes normally.
+    "notebooks/palace_eigenmode_qubit_resonator*",
+    "notebooks/palace_flipmon_flip_chip*",
 ]
 nb_execution_timeout = -1
 nb_execution_allow_errors = False
