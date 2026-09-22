@@ -110,6 +110,31 @@ The same rule applies per metal level for flip-chip stacks, where
 :func:`~qpdk.simulation.to_flip_chip_regions` converts both levels and copies the indium
 bump layer to its own region.
 
+***************************************************
+ Batched layout optimisation and cluster execution
+***************************************************
+
+The Palace optimisation notebook defines its transmon layout and loss objective. The
+generic runner keeps trials in flight and sends that callable to Slurm or Ray workers.
+gsim provides single-node local execution and text-result loading; these helpers add
+multi-node MPI launching, domain-energy requests and port-connectivity checks.
+
+.. automodule:: qpdk.simulation.palace_run
+    :members:
+    :show-inheritance:
+
+.. automodule:: qpdk.simulation.study
+    :members:
+    :show-inheritance:
+
+.. automodule:: qpdk.simulation.trial
+    :members:
+    :show-inheritance:
+
+.. automodule:: qpdk.simulation.cluster
+    :members:
+    :show-inheritance:
+
 ********
  Common
 ********

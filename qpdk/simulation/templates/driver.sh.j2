@@ -1,0 +1,16 @@
+{% extends "_job.sh.j2" %}
+{#- The driver only asks the sampler for trials and submits them, so it needs
+    one core and a wall clock longer than the whole study. -#}
+{%- block resources %}
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=2G
+{%- endblock %}
+{%- block env %}
+export MPLBACKEND=Agg
+{%- endblock %}
+{%- block body %}
+# --- driver ---------------------------------------------------------------
+{{ command }}
+{%- endblock %}

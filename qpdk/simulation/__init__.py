@@ -49,6 +49,7 @@ from qpdk.simulation.aedt_base import (
     object_names_to_materials,
     prepare_component_for_aedt,
 )
+from qpdk.simulation.cluster import RAY_PORT, SlurmCluster, SlurmJobError
 from qpdk.simulation.fem import (
     FEM_LAYERS,
     FLIP_CHIP_FEM_LAYERS,
@@ -59,6 +60,7 @@ from qpdk.simulation.fem import (
 )
 from qpdk.simulation.hfss import HFSS, lumped_port_rectangle_from_cpw
 from qpdk.simulation.q3d import Q2D, Q3D
+from qpdk.simulation.study import RayRunner, SlurmRunner, run_study
 
 __all__ = [
     "FEM_LAYERS",
@@ -66,7 +68,12 @@ __all__ = [
     "HFSS",
     "Q2D",
     "Q3D",
+    "RAY_PORT",
     "AEDTBase",
+    "RayRunner",
+    "SlurmCluster",
+    "SlurmJobError",
+    "SlurmRunner",
     "add_materials_to_aedt",
     "detach_desktop_logging",
     "fit_view",
@@ -75,6 +82,7 @@ __all__ = [
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",
     "prepare_component_for_aedt",
+    "run_study",
     "single_chip_stack",
     "to_fem_regions",
     "to_flip_chip_regions",

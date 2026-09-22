@@ -1,0 +1,28 @@
+{#- Shared skeleton for every sbatch script this package renders. Subclasses
+    fill in the resources they need, any extra environment, and the body. -#}
+#!/bin/bash
+#SBATCH --job-name={{ job_name }}{{ suffix }}
+#SBATCH --partition={{ partition }}
+{%- if account %}
+#SBATCH --account={{ account }}
+{%- endif %}
+{%- block resources %}{% endblock %}
+#SBATCH --time={{ time_limit }}
+#SBATCH --output={{ log_dir }}/{{ job_name }}{{ suffix }}-{{ log_id }}.out
+
+set -euo pipefail
+# Slurm runs a spool copy of the batch script, so $0 is not the submit
+# directory. It sets SLURM_SUBMIT_DIR for jobs submitted from a login node but
+# not always for ones submitted from a compute node, and a plain `cd ""` would
+# quietly leave the job in $HOME, so fall back to where it already is. Commands
+# passed in should use absolute paths all the same.
+cd "${SLURM_SUBMIT_DIR:-$PWD}"
+
+# Exported before the setup snippet, which may expand it; `set -u` would
+# otherwise abort the job here.
+export QPDK_SCRATCH="{{ scratch }}"
+{%- block env %}{% endblock %}
+
+{{ setup }}
+
+{% block body %}{% endblock %}

@@ -279,7 +279,7 @@ def _run_capacitive_simulation(
     Returns:
         The simulated capacitance in femtofarads.
     """
-    from gplugins.palace import (  # ruff: ignore[import-outside-top-level]
+    from gplugins.palace import (
         run_capacitive_simulation_palace,
     )
 
