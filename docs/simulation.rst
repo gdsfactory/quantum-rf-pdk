@@ -106,6 +106,10 @@ turns into vacuum, and an additive shape sitting inside an etched gap survives a
         ax.axis("off")
     fig.tight_layout()
 
+The same rule applies per metal level for flip-chip stacks, where
+:func:`~qpdk.simulation.to_flip_chip_regions` converts both levels and copies the indium
+bump layer to its own region.
+
 ********
  Common
 ********

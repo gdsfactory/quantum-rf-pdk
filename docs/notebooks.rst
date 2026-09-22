@@ -338,6 +338,17 @@ models miss
 
         :bdg-secondary-line:`Palace` :bdg-secondary-line:`gsim` :bdg-success:`open source`
 
+    .. grid-item-card:: Palace flip-chip flipmon
+        :link: notebooks/palace_flipmon_flip_chip
+        :link-type: doc
+        :class-card: notebook-card
+
+        Flip-chip eigenmodes and vacuum-gap energy participation.
+
+        +++
+
+        :bdg-secondary-line:`Palace` :bdg-secondary-line:`gsim` :bdg-success:`open source`
+
     .. grid-item-card:: More FEM and FDTD in gsim
         :link: https://gdsfactory.github.io/gsim/
         :class-card: notebook-card notebook-card-external

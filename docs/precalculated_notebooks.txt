@@ -15,3 +15,4 @@ josephsoncircuits_twpa
 vacask_lumped_parametric_amplifier
 vacask_cpw_parametric_amplifier
 palace_eigenmode_qubit_resonator
+palace_flipmon_flip_chip
