@@ -130,11 +130,11 @@ mathjax4_config = {
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
-# Exclude solver-backed notebooks from execution: HFSS needs a licensed Ansys
-# installation, while Palace workflows build external handoff artifacts.
+# Render the SCGSim-backed transmon handoff notebook without executing it during
+# docs builds; preserve the existing HFSS and MATLAB execution exclusions.
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
-    "notebooks/palace*",
+    "notebooks/palace_transmon_surface_epr.py",
     "notebooks/matlab_integration*",
 ]
 nb_execution_timeout = -1
