@@ -89,7 +89,11 @@ class LayerMapQPDK(LayerMap):
 L = LAYER = LayerMapQPDK
 
 material_properties = {
-    "vacuum": {"relative_permittivity": 1, "material_kind": "vacuum"},
+    "vacuum": {
+        "relative_permittivity": 1,
+        "loss_tangent": 0.0,
+        "material_kind": "vacuum",
+    },
     "Nb": {"relative_permittivity": float("inf"), "material_kind": "superconductor"},
     "NbTiN": {"relative_permittivity": float("inf")},
     # Loss tangent from `checchinMeasurementLowTemperatureLoss2022`
