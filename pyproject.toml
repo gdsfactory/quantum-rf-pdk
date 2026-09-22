@@ -67,6 +67,7 @@ models = [
   "optax",
   "optuna",
   "sax>=0.18.2,<1",
+  "scikit-learn",
   "scikit-rf",
   "sympy",
   "polars",
@@ -118,6 +119,7 @@ docs-models = [
   "qutip-qip>=0.4.1",
   "ray[default]",
   "sax>=0.18.2,<1",
+  "scikit-learn",
   "scikit-rf",
   "scqubits",
   "sympy",
@@ -280,37 +282,37 @@ exclude = ["*.ipynb"]
 [tool.ruff.lint]
 exclude = ["*.ipynb"]
 ignore = [
-  "E501",  # line too long, handled by black
-  "B008",  # do not perform function calls in argument defaults
-  "C901",  # too complex
-  "B905",  # `zip()` without an explicit `strict=` parameter
-  "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
-  "RUF001",  # ambiguous unicode characters (incl. lots of math)
-  "RUF002",  # ambiguous unicode characters (incl. docstring greek letters)
-  "RUF003",  # -||- but for comments
-  "RUF067",  # non-empty-init-module
-  "PLR2004",  # magic-value-comparison
-  "PLR0913",  # too-many-arguments
-  "PLR0914",  # too-many-locals
-  "PLC2401",  # non-ascii-name
-  "PLC2403",  # non-ascii-import-name
-  "N806",  # non-lowercase-variable-in-function
-  "N803",  # invalid-argument-name
-  "ERA001",  # commented-out-code
-  "PLR0917",  # too-many-positional-arguments
-  "TRY003",  # long messages in exceptions
-  "A004",  # builtin-import-shadowing
-  "N816",  # mixed-case-variable-in-global-scope
-  "PLC2701",  # import-private-name
-  "PLR0911",  # too-many-return-statements
-  "PLR6104",  # non-augmented-assignment
-  "PLR0912",  # too-many-branches
-  "PLR0915",  # too-many-statements
-  "PLR0916",  # too-many-boolean-expressions
-  "S404",  # suspicious-subprocess-import
-  "PLW1510",  # subprocess-run-without-check
-  "S607",  # start-process-with-partial-path
-  "TC006",  # runtime-cast-value
+  "line-too-long",  # line too long, handled by black
+  "function-call-in-default-argument",  # do not perform function calls in argument defaults
+  "complex-structure",  # too complex
+  "zip-without-explicit-strict",  # `zip()` without an explicit `strict=` parameter
+  "unnecessary-collection-call",  # C408 Unnecessary `dict` call (rewrite as a literal)
+  "ambiguous-unicode-character-string",  # ambiguous unicode characters (incl. lots of math)
+  "ambiguous-unicode-character-docstring",  # ambiguous unicode characters (incl. docstring greek letters)
+  "ambiguous-unicode-character-comment",  # -||- but for comments
+  "non-empty-init-module",  # non-empty-init-module
+  "magic-value-comparison",  # magic-value-comparison
+  "too-many-arguments",  # too-many-arguments
+  "too-many-locals",  # too-many-locals
+  "non-ascii-name",  # non-ascii-name
+  "non-ascii-import-name",  # non-ascii-import-name
+  "non-lowercase-variable-in-function",  # non-lowercase-variable-in-function
+  "invalid-argument-name",  # invalid-argument-name
+  "commented-out-code",  # commented-out-code
+  "too-many-positional-arguments",  # too-many-positional-arguments
+  "raise-vanilla-args",  # long messages in exceptions
+  "builtin-import-shadowing",  # builtin-import-shadowing
+  "mixed-case-variable-in-global-scope",  # mixed-case-variable-in-global-scope
+  "import-private-name",  # import-private-name
+  "too-many-return-statements",  # too-many-return-statements
+  "non-augmented-assignment",  # non-augmented-assignment
+  "too-many-branches",  # too-many-branches
+  "too-many-statements",  # too-many-statements
+  "too-many-boolean-expressions",  # too-many-boolean-expressions
+  "suspicious-subprocess-import",  # suspicious-subprocess-import
+  "subprocess-run-without-check",  # subprocess-run-without-check
+  "start-process-with-partial-path",  # start-process-with-partial-path
+  "runtime-cast-value",  # runtime-cast-value
 ]
 select = [
   "E",  # pycodestyle errors
@@ -379,22 +381,55 @@ combine-as-imports = true
 # cell fails loudly on inconsistency.
 # Set here rather than with in-file `# ruff:` comments, which leak into the
 # rendered documentation pages.
-"notebooks/**/*.py" = ["D100", "T201", "E402", "S101"]
+# B018: a bare expression at the end of a cell is how a notebook displays it.
+# PLC0415: ray comes from the optional ray extra.
+"notebooks/**/*.py" = [
+  "useless-expression",
+  "undocumented-public-module",
+  "module-import-not-at-top-of-file",
+  "import-outside-top-level",
+  "assert",
+  "print"
+]
 # CI helper: gsim (a models-extra dependency) is imported in a function,
 # asserts are the checks, prints go to the Actions log, and Palace's eig.csv
 # column names contain literal braces.
-".github/palace_smoke.py" = ["PLC0415", "T201", "S101", "RUF027"]
+".github/palace_smoke.py" = [
+  "import-outside-top-level",
+  "print",
+  "assert",
+  "missing-f-string-syntax"
+]
 # gsim is an optional (models-extra) dependency, so fem.py imports it lazily.
-"qpdk/simulation/fem.py" = ["PLC0415"]
-"qpdk/cells/__init__.py" = ["F403"]
-"qpdk/models/__init__.py" = ["F403"]
-"qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells
+"qpdk/simulation/fem.py" = ["import-outside-top-level"]
+# Same for palace_run.py, which also activates the PDK when a worker imports it
+# cold.
+"qpdk/simulation/palace_run.py" = ["import-outside-top-level"]
+# gsim is only available with the models extra on Python 3.12.
+"qpdk/simulation/transmon_sweep.py" = ["import-outside-top-level"]
+# ray is an optional (ray-extra) dependency, so study.py imports it lazily.
+"qpdk/simulation/study.py" = ["import-outside-top-level"]
+# trial.py is a command-line entry point for one trial; its stdout is the
+# task's log, which is where a failed solve says why.
+"qpdk/simulation/trial.py" = ["print"]
+"qpdk/cells/__init__.py" = ["undefined-local-with-import-star"]
+"qpdk/models/__init__.py" = ["undefined-local-with-import-star"]
+"qpdk/**/__init__.py" = [
+  "undefined-local-with-import-star"
+]  # allowing star imports to aggregate cells
 "qpdk/samples/**/*.py" = [
-  "D100",
-  "PLW0717",
-  "T201",
+  "undocumented-public-module",
+  "too-many-statements-in-try-clause",
+  "print",
 ]  # no public module docstring for sample scripts, print allowed in samples
-"tests/**" = ["S101", "D102", "D103", "ANN", "PLW0717", "T201"]
+"tests/**" = [
+  "assert",
+  "undocumented-public-method",
+  "undocumented-public-function",
+  "ANN",
+  "too-many-statements-in-try-clause",
+  "print"
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

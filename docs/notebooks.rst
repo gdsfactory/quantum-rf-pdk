@@ -143,6 +143,10 @@ currents, and substrate modes that analytical models may miss
   stack with gsim and Palace, mesh verification on every layer, and the qubit eigenmode
   identified through junction participation, inductance scaling, and a bump-conductivity
   A/B, with a saved electric-field map.
+- :doc:`notebooks/palace_batched_qubit_optimization` — Batched geometry optimisation of
+  a double-pad transmon, sweeping pad geometry against a target linearised frequency,
+  substrate-limited quality factor from electric-energy participation, and pad
+  footprint, with Optuna driving Palace eigenmode solves as separate Slurm jobs.
 
 .. note::
 
@@ -279,8 +283,9 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - Installs
       - What it is for
     - - ``models``
-      - ``sax``, ``jaxellip``, ``optax``, ``optuna``, ``gplugins[meshwell]``, ``gsim``,
-        ``scikit-rf``, ``sympy``, ``polars``, ``pandas[parquet]``
+      - ``sax``, ``jaxellip``, ``optax``, ``optuna``, ``scikit-learn``,
+        ``gplugins[meshwell]``, ``gsim``, ``scikit-rf``, ``sympy``, ``polars``,
+        ``pandas[parquet]``
       - The analytical and S-parameter model library (``qpdk.models``), SAX circuit
         simulation, meshing, the gsim FEM simulation wrappers, and the DataFrame display
         helpers. **This is the baseline extra — nearly every notebook needs it.**
@@ -306,7 +311,8 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - Numerical diagonalization of transmon and transmon–resonator Hamiltonians.
     - - ``ray``
       - ``ray[default]``, ``tqdm``
-      - Parallel and distributed parameter sweeps, used for Monte Carlo tolerance runs.
+      - Parallel and distributed parameter sweeps, used for Monte Carlo tolerance runs,
+        and one of the two backends for batching optimisation trials across a cluster.
     - - ``graphics``
       - ``trimesh``, ``pyglet``
       - Interactive 3-D viewing of component meshes. Not needed by any notebook.
@@ -425,6 +431,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - FEM electromagnetics
       - gsim, Palace
       - ``models``
+    - - :doc:`notebooks/palace_batched_qubit_optimization`
+      - FEM optimization
+      - Ray, Optuna, gsim, Palace
+      - ``models``, ``ray``
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
       - scQubits
