@@ -22,6 +22,7 @@ on:
       - "qpdk/tech.py"
       - "qpdk/utils.py"
       - "notebooks/src/palace_eigenmode_qubit_resonator.py"
+      - "notebooks/src/palace_flipmon_flip_chip.py"
   workflow_dispatch:
 permissions: {}
 concurrency:
@@ -40,7 +41,7 @@ jobs:
         run: uv sync --extra models
       - name: Generate the small eigenmode simulation
         run: >
-          uv run --with "gsim @ git+https://github.com/gdsfactory/gsim.git" python .github/palace_smoke.py generate --out build/palace_ci_sim
+          uv run python .github/palace_smoke.py generate --out build/palace_ci_sim
 
       - name: Fetch the Palace container image
         env:

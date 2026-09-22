@@ -47,21 +47,31 @@ from qpdk.simulation.aedt_base import (
     object_names_to_materials,
     prepare_component_for_aedt,
 )
-from qpdk.simulation.fem import FEM_LAYERS, single_chip_stack, to_fem_regions
+from qpdk.simulation.fem import (
+    FEM_LAYERS,
+    FLIP_CHIP_FEM_LAYERS,
+    flip_chip_stack,
+    single_chip_stack,
+    to_fem_regions,
+    to_flip_chip_regions,
+)
 from qpdk.simulation.hfss import HFSS, lumped_port_rectangle_from_cpw
 from qpdk.simulation.q3d import Q2D, Q3D
 
 __all__ = [
     "FEM_LAYERS",
+    "FLIP_CHIP_FEM_LAYERS",
     "HFSS",
     "Q2D",
     "Q3D",
     "AEDTBase",
     "add_materials_to_aedt",
+    "flip_chip_stack",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",
     "prepare_component_for_aedt",
     "single_chip_stack",
     "to_fem_regions",
+    "to_flip_chip_regions",
 ]

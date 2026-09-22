@@ -1,0 +1,98 @@
+{
+  "Problem": {
+    "Type": "Eigenmode",
+    "Verbose": 3,
+    "Output": "output/palace"
+  },
+  "Model": {
+    "Mesh": "palace.msh",
+    "L0": 1e-06,
+    "Refinement": {
+      "UniformLevels": 0,
+      "Tol": 0.01,
+      "MaxIts": 0
+    }
+  },
+  "Solver": {
+    "Linear": {
+      "Type": "MUMPS",
+      "KSPType": "GMRES",
+      "Tol": 1e-06,
+      "MaxIts": 10,
+      "MGMaxLevels": 1,
+      "EstimatorMaxIts": 0,
+      "EstimatorTol": 1e-06,
+      "DivFreeTol": 1e-06,
+      "DivFreeMaxIts": 0,
+      "PCMatReal": false,
+      "ComplexCoarseSolve": true,
+      "ColumnOrdering": "ParMETIS"
+    },
+    "Order": 2,
+    "Device": "CPU",
+    "Eigenmode": {
+      "N": 1,
+      "Tol": 1e-06,
+      "Target": 2.0,
+      "Save": 1
+    }
+  },
+  "Domains": {
+    "Materials": [
+      {
+        "Attributes": [
+          2
+        ],
+        "Permittivity": 1.0,
+        "Conductivity": 11600000.0
+      },
+      {
+        "Attributes": [
+          3
+        ],
+        "Permittivity": 11.45,
+        "LossTan": 2.7e-06
+      },
+      {
+        "Attributes": [
+          1
+        ],
+        "Permittivity": 1.0,
+        "LossTan": 0.0
+      },
+      {
+        "Attributes": [
+          4
+        ],
+        "Permittivity": 11.45,
+        "LossTan": 2.7e-06
+      }
+    ],
+    "Postprocessing": {
+      "Energy": [],
+      "Probe": []
+    }
+  },
+  "Boundaries": {
+    "Conductivity": [],
+    "LumpedPort": [
+      {
+        "Index": 1,
+        "Direction": "X",
+        "Excitation": false,
+        "Attributes": [
+          7
+        ],
+        "R": 0,
+        "L": 1e-08
+      }
+    ],
+    "WavePort": [],
+    "PEC": {
+      "Attributes": [
+        5,
+        6
+      ]
+    }
+  }
+}

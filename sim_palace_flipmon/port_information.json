@@ -1,0 +1,21 @@
+{
+    "ports": [
+        {
+            "portnumber": 1,
+            "name": "junction",
+            "Z0": 50,
+            "type": "lumped",
+            "direction": "X",
+            "length": 12.0,
+            "width": 43.912,
+            "xmin": 60.0,
+            "xmax": 72.0,
+            "ymin": -21.956,
+            "ymax": 21.956,
+            "zmin": 0.0,
+            "zmax": 0.0
+        }
+    ],
+    "unit": 1e-06,
+    "name": "palace"
+}

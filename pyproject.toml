@@ -61,6 +61,8 @@ graphics = ["trimesh", "pyglet<3"]
 hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]~=2.1.0",
+  # gsim pulls in gdsfactoryplus, which is 3.12-only (cp312 wheels, ~=3.12.0).
+  "gsim>=0.5; python_version < '3.13'",
   "jaxellip",
   "optax",
   "optuna",
@@ -102,6 +104,8 @@ docs-models = [
   "circulax>=0.2.3",
   "flax",
   "gplugins[meshwell]~=2.1.0",
+  # gsim pulls in gdsfactoryplus, which is 3.12-only (cp312 wheels, ~=3.12.0).
+  "gsim>=0.5; python_version < '3.13'",
   "jaxellip",
   "netket>=3.12",
   "optax",
@@ -376,11 +380,11 @@ combine-as-imports = true
 # Set here rather than with in-file `# ruff:` comments, which leak into the
 # rendered documentation pages.
 "notebooks/**/*.py" = ["D100", "T201", "E402", "S101"]
-# CI helper: gsim is not a qpdk dependency (imported in a function), asserts
-# are the checks, prints go to the Actions log, and Palace's eig.csv column
-# names contain literal braces.
+# CI helper: gsim (a models-extra dependency) is imported in a function,
+# asserts are the checks, prints go to the Actions log, and Palace's eig.csv
+# column names contain literal braces.
 ".github/palace_smoke.py" = ["PLC0415", "T201", "S101", "RUF027"]
-# gsim is not a qpdk dependency, so single_chip_stack imports it lazily.
+# gsim is an optional (models-extra) dependency, so fem.py imports it lazily.
 "qpdk/simulation/fem.py" = ["PLC0415"]
 "qpdk/cells/__init__.py" = ["F403"]
 "qpdk/models/__init__.py" = ["F403"]

@@ -58,11 +58,9 @@
 # pip install "qpdk[models]"
 # ```
 #
-# The simulation cells additionally need [gsim](https://gdsfactory.github.io/gsim/)
-# (`pip install "gsim @ git+https://github.com/gdsfactory/gsim.git"`, the PyPI
-# release lags the repository) and a Palace installation; both are external to
-# qpdk. The sections that call them are fenced so the notebook renders without
-# them, and the Palace results are embedded below so the analysis runs anywhere.
+# The `models` extra includes gsim. Palace itself is external; mesh generation
+# and the solve are shown as commands for a cluster. The results are embedded
+# below so the analysis runs without Palace.
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
@@ -376,51 +374,44 @@ logger.info(
 #
 # gsim turns the converted layout into a 3-D model: a `LayerStack` assigns each
 # GDS layer a material and a z-extent, and `EigenmodeSim` configures the ports
-# and the eigenmode search. The setup is shown as code without meshing during
-# notebook execution; gsim and Palace are installed separately. The
-# configuration matches the saved solve below.
+# and the eigenmode search. The setup runs here; the fine mesh is generated on
+# a cluster.
+
+# %%
+from gsim.palace import EigenmodeSim
+
+from qpdk.simulation import single_chip_stack
+
+stack = single_chip_stack(substrate_thickness=500.0, vacuum_thickness=500.0)
+sim = EigenmodeSim()
+sim.set_geometry(etched)
+sim.set_stack(stack)
+sim.set_numerical(order=2, solver_type="MUMPS")
+
+# The junction port spans the pad gap and overlaps both pads; resistance=0
+# keeps the linearized Josephson inductor lossless.
+sim.add_port(
+    "junction",
+    layer="SUPERCONDUCTOR",
+    length=QUBIT_PAD_GAP + 10.0,
+    inductance=10e-9,
+    resistance=0.0,
+)
+sim.add_cpw_port(
+    "coupling_o1", layer="SUPERCONDUCTOR", s_width=10.0, gap_width=6.0, length=5.0
+)
+sim.add_cpw_port(
+    "coupling_o2", layer="SUPERCONDUCTOR", s_width=10.0, gap_width=6.0, length=5.0
+)
+sim.set_eigenmode(target=4e9, num_modes=2, save=2)
+sim.set_output_dir("./sim_palace_qubit_resonator")
+
+# %% [markdown]
+# Generate the 0.70 µm near-conductor mesh and Palace config on a cluster:
 #
 # ```python
 # import json
 #
-# from gsim.palace import EigenmodeSim
-#
-# from qpdk.simulation import single_chip_stack
-#
-# # 500 µm of microwave silicon and 500 µm of air above it; the substrate
-# # uses the qpdk material properties (eps_r = 11.45, tan d = 2.7e-6), so the
-# # FEM models the same chip as the analytical CPW models of the previous
-# # section.
-# stack = single_chip_stack(substrate_thickness=500.0, vacuum_thickness=500.0)
-#
-# sim = EigenmodeSim()
-# sim.set_geometry(etched)
-# sim.set_stack(stack)
-# sim.set_numerical(order=2, solver_type="MUMPS")
-#
-# # Josephson junction as a linear lumped inductor, L_J = 10 nH, a typical
-# # transmon value. resistance=0 overrides the R = 50 Ω that gsim's default
-# # port impedance would emit: the linearized junction is purely reactive, so
-# # it shifts the qubit-like mode but adds no dissipation, the same convention
-# # as Palace's own transmon example. The port length spans the 15 µm pad gap
-# # and overlaps both pads; a shorter rectangle would sit entirely in the
-# # vacuum gap and couple nothing.
-# sim.add_port(
-#     "junction",
-#     layer="SUPERCONDUCTOR",
-#     length=QUBIT_PAD_GAP + 10.0,
-#     inductance=10e-9,
-#     resistance=0.0,
-# )
-#
-# # Probeline feeds as 50 Ω CPW lumped ports, one per end.
-# sim.add_cpw_port("coupling_o1", layer="SUPERCONDUCTOR", s_width=10.0, gap_width=6.0, length=5.0)
-# sim.add_cpw_port("coupling_o2", layer="SUPERCONDUCTOR", s_width=10.0, gap_width=6.0, length=5.0)
-#
-# # Search near the expected pair and save both eigenfields for the maps below.
-# sim.set_eigenmode(target=4e9, num_modes=2, save=2)
-#
-# sim.set_output_dir("./sim_palace_qubit_resonator")
 # sim.mesh(preset="default", refined_mesh_size=0.70, auto_size=False)
 # sim.write_config()
 # config_path = Path("sim_palace_qubit_resonator/config.json")
@@ -438,6 +429,11 @@ logger.info(
 # config_path.write_text(json.dumps(config, indent=2))
 # ```
 #
+# The mesh is graded around metal edges and the junction gap. At this
+# resolution a full-domain wireframe obscures the device, so the saved field
+# slices below show the spatial mode patterns instead.
+
+# %% [markdown]
 # A few points worth noting:
 #
 # - The substrate carries the qpdk microwave-silicon loss tangent
