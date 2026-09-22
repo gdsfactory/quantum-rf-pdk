@@ -110,6 +110,34 @@ The same rule applies per metal level for flip-chip stacks, where
 :func:`~qpdk.simulation.to_flip_chip_regions` converts both levels and copies the indium
 bump layer to its own region.
 
+***************************************************
+ Batched layout optimisation and cluster execution
+***************************************************
+
+Geometry sweeps over the FEM solvers are embarrassingly parallel, so the plumbing for
+running them on a cluster lives here: helpers that turn a layout into a solvable Palace
+directory and read the result back, a loop that keeps a fixed number of trials in
+flight, a command-line entry point for a single trial, and the ``sbatch`` scripts that
+put those trials on Slurm, either one job per trial or a Ray cluster inside one
+allocation. What is being swept stays in the notebook that runs it; the evaluator is
+named as ``module:function``.
+
+.. automodule:: qpdk.simulation.palace_run
+    :members:
+    :show-inheritance:
+
+.. automodule:: qpdk.simulation.study
+    :members:
+    :show-inheritance:
+
+.. automodule:: qpdk.simulation.trial
+    :members:
+    :show-inheritance:
+
+.. automodule:: qpdk.simulation.cluster
+    :members:
+    :show-inheritance:
+
 ********
  Common
 ********
