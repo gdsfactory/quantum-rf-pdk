@@ -119,7 +119,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Linting**: ruff for Python code formatting and linting, pyrefly for type checking
 - **Layout tool**: KLayout for viewing and editing GDS layouts
 - **Documentation**: Sphinx for building documentation, jupytext for notebook management
-- **Simulation tools** (optional): sax, scqubits, jaxellip (install with `uv sync --extra models`)
+- **Simulation tools** (optional): sax, scqubits, jaxellip, gsim (install with `uv sync --extra models`)
 
 ## Git and Version Control
 
