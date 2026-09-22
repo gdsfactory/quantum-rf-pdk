@@ -136,13 +136,17 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "refine_metal_plane_mesh",
     ),
     "FEM_LAYERS": ("qpdk.simulation.fem", "FEM_LAYERS"),
+    "FLIP_CHIP_FEM_LAYERS": ("qpdk.simulation.fem", "FLIP_CHIP_FEM_LAYERS"),
+    "flip_chip_stack": ("qpdk.simulation.fem", "flip_chip_stack"),
     "single_chip_stack": ("qpdk.simulation.fem", "single_chip_stack"),
     "to_fem_regions": ("qpdk.simulation.fem", "to_fem_regions"),
+    "to_flip_chip_regions": ("qpdk.simulation.fem", "to_flip_chip_regions"),
 }
 
 __all__ = [
     "COMSOL",
     "FEM_LAYERS",
+    "FLIP_CHIP_FEM_LAYERS",
     "HFSS",
     "Q2D",
     "Q3D",
@@ -158,6 +162,7 @@ __all__ = [
     "build_comsol_sheet_model",
     "detach_desktop_logging",
     "fit_view",
+    "flip_chip_stack",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",
@@ -168,6 +173,7 @@ __all__ = [
     "refine_metal_plane_mesh",
     "single_chip_stack",
     "to_fem_regions",
+    "to_flip_chip_regions",
 ]
 
 
