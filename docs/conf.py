@@ -60,13 +60,14 @@ PDK.activate()
 # Monkey-patch Axes.set_title to use Outfit (bold) for figure titles,
 # matching the Sphinx heading font (see docs/_static/css/custom.css).
 import matplotlib.axes as _ma
-_orig_title = _ma.Axes.set_title
-def _qpdk_title(self, *args, **kwargs):
-    kwargs.setdefault('fontfamily', 'Outfit')
-    kwargs.setdefault('fontweight', 'bold')
-    return _orig_title(self, *args, **kwargs)
-_ma.Axes.set_title = _qpdk_title
-del _qpdk_title, _orig_title
+if not getattr(_ma.Axes.set_title, '_qpdk_outfit_title', False):
+    _orig_title = _ma.Axes.set_title
+    def _qpdk_title(self, *args, _original=_orig_title, **kwargs):
+        kwargs.setdefault('fontfamily', 'Outfit')
+        kwargs.setdefault('fontweight', 'bold')
+        return _original(self, *args, **kwargs)
+    _qpdk_title._qpdk_outfit_title = True
+    _ma.Axes.set_title = _qpdk_title
 """
 plot_rcparams = {
     "svg.fonttype": "path",
@@ -136,6 +137,11 @@ nb_execution_mode = "cache"
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
     "notebooks/matlab_integration*",
+    # These two Palace notebooks need the solver (and its cluster-sized runs),
+    # so they ship with their outputs committed, like the HFSS ones. The
+    # batched-optimisation notebook has no solver calls and executes normally.
+    "notebooks/palace_eigenmode_qubit_resonator*",
+    "notebooks/palace_flipmon_flip_chip*",
 ]
 nb_execution_timeout = -1
 nb_execution_allow_errors = False

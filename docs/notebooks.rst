@@ -136,8 +136,8 @@ currents, and substrate modes that analytical models may miss
 - :doc:`notebooks/palace_eigenmode_qubit_resonator` — Eigenmode simulation of a
   double-pad transmon qubit coupled to a quarter-wave readout resonator using `gsim
   <https://gdsfactory.github.io/gsim/>`_ and Palace, including comparison with
-  semi-analytical frequency estimates and a calibrated retune of the resonator length to
-  a target frequency.
+  semi-analytical frequency estimates, near-resonant qubit geometry, mesh sensitivity,
+  and saved electric-field maps.
 
 .. note::
 

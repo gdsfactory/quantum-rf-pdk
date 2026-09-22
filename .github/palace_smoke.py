@@ -28,35 +28,74 @@ from __future__ import annotations
 
 import argparse
 import csv
+from functools import partial
 from pathlib import Path
 
 import gdsfactory as gf
 import klayout.db as kdb
 
 from qpdk import PDK
-from qpdk.cells import straight, transmon_with_resonator_and_probeline
+from qpdk.cells import (
+    double_pad_transmon_with_bbox,
+    plate_capacitor_single,
+    straight,
+    transmon_with_resonator_and_probeline,
+)
 from qpdk.models.resonator import resonator_frequency
-from qpdk.simulation import to_fem_regions
+from qpdk.simulation import FEM_LAYERS, to_fem_regions
 from qpdk.tech import LAYER
 
-MEANDER_LENGTH = 2000.0  # µm, shortened from the notebook's 5000
+MEANDER_LENGTH = 2000.0  # µm
 RESONATOR_MEANDERS = 3
 SUBSTRATE_THICKNESS = 200.0  # µm
 VACUUM_THICKNESS = 200.0  # µm
 NUM_MODES = 2
 
 
-def _drawn_meander_length(resonator_length: float, meanders: int) -> float:
-    """Return the meander length the cell draws for a given parameter."""
-    probe = transmon_with_resonator_and_probeline(
-        qubit="double_pad_transmon_with_bbox",
+def _device(resonator_length: float) -> gf.Component:
+    """Build the notebook device with the same open and short end conditions."""
+    device = transmon_with_resonator_and_probeline(
+        qubit=partial(
+            double_pad_transmon_with_bbox,
+            pad_size=(55.0, 110.0),
+            pad_gap=15.0,
+            bbox_extension=20.0,
+        ),
+        coupler=partial(
+            plate_capacitor_single,
+            width=10.0,
+            length=120.0,
+            etch_bbox_margin=2.0,
+        ),
+        coupler_offset=(-26.0, 0.0),
         resonator_length=resonator_length,
-        resonator_meanders=meanders,
+        resonator_meanders=RESONATOR_MEANDERS,
+        resonator_meander_start=(-1100.0, -1200.0),
+        resonator_open_end=False,
         qubit_rotation=90,
     )
-    return next(
-        inst.cell for inst in probe.insts if inst.cell.name.startswith("resonator_")
-    ).info["length"]
+    qubit, coupler = list(device.insts)[:2]
+    assert coupler.dbbox().top - 2.0 < qubit.dbbox().bottom < coupler.dbbox().top
+    assert qubit.ports["left_pad"].y - (coupler.dbbox().top - 2.0) >= 20.0
+    meander = next(
+        inst
+        for inst in device.insts
+        if inst.cell.info.get("resonator_type") == "quarter_wave"
+    )
+    assert meander.dbbox().right < coupler.ports["o1"].x - 30.0
+    return device
+
+
+def _total_length() -> float:
+    """Choose the length that leaves the requested amount of meander."""
+    probe_length = 5000.0
+    probe = _device(probe_length)
+    meander = next(
+        inst
+        for inst in probe.insts
+        if inst.cell.info.get("resonator_type") == "quarter_wave"
+    )
+    return MEANDER_LENGTH + probe_length - meander.cell.info["length"]
 
 
 def build_sim():
@@ -69,35 +108,36 @@ def build_sim():
 
     @gf.cell
     def sim_component() -> gf.Component:
-        """Small transmon-resonator layout with the notebook's geometry patches."""
+        """Small transmon-resonator layout with the notebook's end conditions."""
         c = gf.Component()
-        probe_length = 5000.0
-        overhead = probe_length - _drawn_meander_length(
-            probe_length, RESONATOR_MEANDERS
-        )
-        ref = c << transmon_with_resonator_and_probeline(
-            qubit="double_pad_transmon_with_bbox",
-            resonator_length=MEANDER_LENGTH + overhead,
-            resonator_meanders=RESONATOR_MEANDERS,
-            qubit_rotation=90,
-        )
+        ref = c << _device(_total_length())
         c.add_ports(ref.ports)
-        # Geometry patches identical to the notebook: the quarter-wave short
-        # bridge at the resonator start and open probeline feed ends.
-        c.kdb_cell.shapes(LAYER.M1_DRAW).insert(
-            kdb.DBox(-975.0, -1201.0, -920.0, -1197.0)
-        )
         for name in ("coupling_o1", "coupling_o2"):
             ext = c << straight(length=10.0, cross_section="etch")
             ext.connect("o1", ref.ports[name], allow_layer_mismatch=True)
         c.kdb_cell.shapes(LAYER.SIM_AREA).insert(c.bbox().enlarged(100, 100))
         return c
 
-    etched = to_fem_regions(sim_component())
-    etched.ports["junction"].orientation = 270.0
+    layout = sim_component()
+    etched = to_fem_regions(layout)
+    metal = kdb.Region(
+        etched.kdb_cell.begin_shapes_rec(
+            etched.kdb_cell.layout().layer(*FEM_LAYERS["SUPERCONDUCTOR"])
+        )
+    ).merged()
+    assert len(metal) == 4, "expected grounded readout, feed, and two qubit pads"
+    ground = kdb.Point(
+        round((layout.dbbox().left + 5.0) / etched.kcl.dbu),
+        round((layout.dbbox().top - 5.0) / etched.kcl.dbu),
+    )
+    readout = kdb.Point(*(round(v / etched.kcl.dbu) for v in layout.ports["o1"].center))
+    assert any(polygon.inside(ground) and polygon.inside(readout) for polygon in metal)
+    etched.ports["junction"].orientation = (
+        etched.ports["junction"].orientation + 90.0
+    ) % 360.0
 
     analytical_freq = resonator_frequency(
-        length=MEANDER_LENGTH, cross_section="cpw", is_quarter_wave=True
+        length=_total_length(), cross_section="cpw", is_quarter_wave=True
     )
 
     sim = EigenmodeSim()
@@ -137,6 +177,7 @@ def cmd_generate(out_dir: Path) -> None:
 
 def cmd_check(sim_dir: Path) -> None:
     """Sanity-check the eigenmode CSV of a finished Palace run."""
+    PDK.activate()
     eig_csv = sim_dir / "output" / "palace" / "eig.csv"
     with eig_csv.open() as f:
         rows = [
@@ -147,13 +188,10 @@ def cmd_check(sim_dir: Path) -> None:
     qs = [float(row["Q"]) for row in rows]
     assert all(0.1 < f < 100.0 for f in freqs), f"unphysical frequencies: {freqs}"
     assert all(q > 1.0 for q in qs), f"unphysical quality factors: {qs}"
-    # The readout mode must sit near the analytical quarter-wave estimate for
-    # the drawn meander: this catches a solver or layout that is off by an
-    # order of magnitude, which the per-mode physicality checks above would
-    # happily pass.
+    # The full routed line sets the quarter-wave estimate.
     analytical_ghz = (
         resonator_frequency(
-            length=MEANDER_LENGTH, cross_section="cpw", is_quarter_wave=True
+            length=_total_length(), cross_section="cpw", is_quarter_wave=True
         )
         / 1e9
     )
