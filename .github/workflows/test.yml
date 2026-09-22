@@ -44,6 +44,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      - name: Install Gmsh system libraries
+        # gsim (models extra) imports gmsh, which links against GL libraries.
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libgl1
       - name: Test with pytest
         run: just test ${{ matrix.os == 'ubuntu-latest' && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }} --junitxml=junit.xml -o junit_family=legacy
       # `!cancelled()` so test results still upload when pytest fails, which
