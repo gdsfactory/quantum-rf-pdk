@@ -184,7 +184,7 @@ if WORKFLOW_ACTION == "prepare":
 # Palace configuration explicitly keeps nonconformal refinement disabled.
 
 # %%
-FEM_ORDER = 1
+FEM_ORDER = 2
 LINEAR_TOLERANCE = 1e-6
 LINEAR_MAX_ITERATIONS = 400
 AMR_MAX_PASSES = 0
