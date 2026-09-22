@@ -1,0 +1,16 @@
+{% extends "_job.sh.j2" %}
+{#- One trial. Slurm forwards arguments after the script name, so one script
+    serves the whole study and only its parameter file differs. -#}
+{%- block resources %}
+#SBATCH --cpus-per-task={{ solver_cores }}
+#SBATCH --mem={{ mem_per_task }}
+{%- endblock %}
+{%- block env %}
+# One solver per job, so no BLAS thread pool should be spun up underneath it.
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+       OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
+{%- endblock %}
+{%- block body %}
+# --- one trial ------------------------------------------------------------
+{{ command }}
+{%- endblock %}

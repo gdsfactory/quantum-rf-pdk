@@ -67,6 +67,7 @@ models = [
   "optax",
   "optuna",
   "sax>=0.18.2,<1",
+  "scikit-learn",
   "scikit-rf",
   "sympy",
   "polars",
@@ -118,6 +119,7 @@ docs-models = [
   "qutip-qip>=0.4.1",
   "ray[default]",
   "sax>=0.18.2,<1",
+  "scikit-learn",
   "scikit-rf",
   "scqubits",
   "sympy",
@@ -379,13 +381,23 @@ combine-as-imports = true
 # cell fails loudly on inconsistency.
 # Set here rather than with in-file `# ruff:` comments, which leak into the
 # rendered documentation pages.
-"notebooks/**/*.py" = ["D100", "T201", "E402", "S101"]
+# B018: a bare expression at the end of a cell is how a notebook displays it.
+# PLC0415: ray comes from the optional ray extra.
+"notebooks/**/*.py" = ["B018", "D100", "E402", "PLC0415", "S101", "T201"]
 # CI helper: gsim (a models-extra dependency) is imported in a function,
 # asserts are the checks, prints go to the Actions log, and Palace's eig.csv
 # column names contain literal braces.
 ".github/palace_smoke.py" = ["PLC0415", "T201", "S101", "RUF027"]
 # gsim is an optional (models-extra) dependency, so fem.py imports it lazily.
 "qpdk/simulation/fem.py" = ["PLC0415"]
+# Same for palace_run.py, which also activates the PDK when a worker imports it
+# cold.
+"qpdk/simulation/palace_run.py" = ["PLC0415"]
+# ray is an optional (ray-extra) dependency, so study.py imports it lazily.
+"qpdk/simulation/study.py" = ["PLC0415"]
+# trial.py is a command-line entry point for one trial; its stdout is the
+# task's log, which is where a failed solve says why.
+"qpdk/simulation/trial.py" = ["T201"]
 "qpdk/cells/__init__.py" = ["F403"]
 "qpdk/models/__init__.py" = ["F403"]
 "qpdk/**/__init__.py" = ["F403"]  # allowing star imports to aggregate cells

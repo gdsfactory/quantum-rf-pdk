@@ -1,0 +1,49 @@
+{% extends "_job.sh.j2" %}
+{#- A Ray cluster inside one allocation: a head on the first node, workers on
+    the rest, and the driver on the head once the cluster answers. -#}
+{%- block resources %}
+#SBATCH --nodes={{ nodes }}
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task={{ cores_per_node }}
+#SBATCH --mem={{ mem_per_node }}
+{%- endblock %}
+{%- block env %}
+# Left to itself every solver invocation opens a full node's worth of BLAS
+# threads, which thrashes the node once several trials share it.
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+       OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
+export RAY_ADDRESS="auto"
+{%- endblock %}
+{%- block body %}
+# --- Ray cluster ----------------------------------------------------------
+mapfile -t nodes < <(scontrol show hostnames "$SLURM_JOB_NODELIST")
+head="${nodes[0]}"
+others=$(printf '%s\n' "${nodes[@]:1}" | paste -sd, -)
+echo "Ray head $head over {{ nodes_count }} node(s)"
+
+srun -N 1 -n 1 --nodelist="$head" \
+  ray start --head --node-ip-address="$head" --port={{ ray_port }} --num-cpus="$SLURM_CPUS_PER_TASK" --block &
+
+# The workers need the head's address to join it, and the head's GCS is not
+# accepting connections the instant srun returns.
+export RAY_ADDRESS="$head:{{ ray_port }}"
+for _ in $(seq 1 60); do
+  ray status > /dev/null 2>&1 && break
+  sleep 5
+done
+ray status
+{% if nodes_count > 1 %}
+srun -N {{ nodes_count - 1 }} -n {{ nodes_count - 1 }} --nodelist="$others" \
+  ray start --address="$head:{{ ray_port }}" --num-cpus="$SLURM_CPUS_PER_TASK" --block &
+{% endif %}
+# --- driver ---------------------------------------------------------------
+# A failing driver must still tear the cluster down, so the status is captured
+# rather than left to ``set -e``.
+set +e
+{{ command }}
+status=$?
+set -e
+
+ray stop --force || true
+exit "$status"
+{%- endblock %}
