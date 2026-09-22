@@ -93,6 +93,9 @@ from typing import Any
 # TODO(Python 3.15): `lazy from ... import` (PEP 810) - replaces _LAZY_IMPORTS, __getattr__,
 # __dir__ and the undefined-export ignore. Keep them lazy, not eager.
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
+    "FLIP_CHIP_FEM_LAYERS": ("qpdk.simulation.fem", "FLIP_CHIP_FEM_LAYERS"),
+    "flip_chip_stack": ("qpdk.simulation.fem", "flip_chip_stack"),
+    "to_flip_chip_regions": ("qpdk.simulation.fem", "to_flip_chip_regions"),
     "FEM_LAYERS": ("qpdk.simulation.fem", "FEM_LAYERS"),
     "single_chip_stack": ("qpdk.simulation.fem", "single_chip_stack"),
     "to_fem_regions": ("qpdk.simulation.fem", "to_fem_regions"),
@@ -109,15 +112,18 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
 
 __all__ = [
     "FEM_LAYERS",
+    "FLIP_CHIP_FEM_LAYERS",
     "Netlist",
     "RawFile",
     "RawPlot",
     "Vacask",
     "VacaskError",
     "cpw_tline_params",
+    "flip_chip_stack",
     "format_value",
     "single_chip_stack",
     "to_fem_regions",
+    "to_flip_chip_regions",
     "vector_fit",
     "vector_fit_subckt",
 ]

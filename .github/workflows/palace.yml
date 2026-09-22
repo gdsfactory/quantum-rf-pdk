@@ -10,6 +10,7 @@ on:
       - "qpdk/tech.py"
       - "qpdk/utils.py"
       - "notebooks/src/palace_eigenmode_qubit_resonator.py"
+      - "notebooks/src/palace_flipmon_flip_chip.py"
   workflow_dispatch:
 permissions: {}
 concurrency:
