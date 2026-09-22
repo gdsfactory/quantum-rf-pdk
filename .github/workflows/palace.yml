@@ -1,0 +1,87 @@
+name: Palace pipeline smoke test
+# Runs the notebook's eigenmode pipeline (layout -> etch conversion -> gsim
+# stack/ports -> Gmsh mesh -> Palace solve invocation) on a deliberately
+# small setting set, so the qpdk-to-Palace integration is exercised in CI
+# without eating runner minutes. The Palace binary comes from the container
+# image artifacts that the upstream awslabs/palace repository publishes for
+# every push to its main branch.
+#
+# The published x86 images are CUDA-linked: the binary initializes CUDA and
+# its MAGMA dependency at startup even for CPU solves, so the solve cannot
+# finish on GPU-less runners (an upstream CPU-only x86_64_v3 image would fix
+# this). The solve step therefore stays soft-checked, and the result check
+# upgrades itself to a hard check as soon as a solve produces eig.csv.
+on:
+  pull_request:
+    paths:
+      - ".github/palace_smoke.py"
+      - ".github/workflows/palace.yml"
+      - "qpdk/cells/**"
+      - "qpdk/models/**"
+      - "qpdk/simulation/**"
+      - "qpdk/tech.py"
+      - "qpdk/utils.py"
+      - "notebooks/src/palace_eigenmode_qubit_resonator.py"
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  palace-eigenmode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: Install system libraries for Gmsh
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libgl1
+      - name: Install qpdk
+        run: uv sync --extra models
+      - name: Generate the small eigenmode simulation
+        run: >
+          uv run --with "gsim @ git+https://github.com/gdsfactory/gsim.git" python .github/palace_smoke.py generate --out build/palace_ci_sim
+
+      - name: Fetch the Palace container image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          id="$(gh api "repos/awslabs/palace/actions/artifacts?per_page=100" \
+            --jq '[.artifacts[]
+                   | select(.name | test("^palace-x86_64_v3_cuda-[a-f0-9]+-oci$"))
+                   | select(.expired == false)][0].id')"
+          echo "using palace OCI artifact $id"
+          gh api "repos/awslabs/palace/actions/artifacts/$id/zip" > /tmp/palace-oci.zip
+          cd /tmp && unzip -o palace-oci.zip
+          docker load -i palace-x86_64_v3_cuda-*.tar
+          docker images --format "{{.Repository}}" | grep palace | head -1 > /tmp/palace_image
+          cat /tmp/palace_image
+      - name: Run Palace
+        continue-on-error: true
+        run: |
+          image="$(cat /tmp/palace_image)"
+          cd build/palace_ci_sim
+          # The image's spack activation script exports library paths but
+          # not PATH, so call the Palace binary by its absolute path.
+          set -o pipefail
+          docker run --rm -v "$PWD:/sim" -w /sim "$image" \
+            /opt/views/view/bin/palace-x86_64.bin config.json 2>&1 | tee run.log
+      - name: Check eigenmode results
+        run: |
+          if [ -f build/palace_ci_sim/output/palace/eig.csv ]; then
+            uv run python .github/palace_smoke.py check --sim build/palace_ci_sim
+          else
+            echo "Palace solve did not produce results (see the Run Palace log);" \
+              "meshing, image fetch and the solve invocation are still exercised."
+          fi
+      - name: Upload simulation outputs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: palace-smoke-failure
+          path: |
+            build/palace_ci_sim/run.log
+            build/palace_ci_sim/output
+          if-no-files-found: ignore
+          retention-days: 7
