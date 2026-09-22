@@ -109,8 +109,6 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
 
 __all__ = [
     "FEM_LAYERS",
-    "single_chip_stack",
-    "to_fem_regions",
     "Netlist",
     "RawFile",
     "RawPlot",
@@ -118,6 +116,8 @@ __all__ = [
     "VacaskError",
     "cpw_tline_params",
     "format_value",
+    "single_chip_stack",
+    "to_fem_regions",
     "vector_fit",
     "vector_fit_subckt",
 ]

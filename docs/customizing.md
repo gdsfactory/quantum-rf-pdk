@@ -85,6 +85,7 @@ then conflict here in a known way, and the diff of this commit is your checklist
 | GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries          |
 | Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                           |
 | PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py`     |
+| FEM stacks          | `pdk_name="qpdk"` in `qpdk/simulation/fem.py`                                              |
 | KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`       |
 | KLayout install     | `src` and `dest` in `qpdk/install_tech.py`                                                 |
 | Docs                | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                     |
@@ -163,6 +164,9 @@ your own rule deck.
 The FEM datasets in `qpdk/models/datasets/` were simulated on the QPDK stack. The analytical models follow your stack,
 but these datasets do not. Regenerate them with the scripts in `qpdk/models/datasets/recipes/`, or treat the models that
 use them as approximate.
+
+The Palace layer stack in `qpdk/simulation/fem.py` also needs your chip thicknesses and materials. Its simulation-only
+GDS layers carry explicit metal and dielectric regions rather than fabrication masks.
 
 (cell-library)=
 
@@ -278,6 +282,7 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | `CITATION.cff`                                         | Fork  | Use your authors and your own Zenodo DOI series  |
 | `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork  | Keep yours. Add QPDK layers you want, regenerate |
 | `qpdk/tech.py`                                         | Both  | Keep your values. Take new QPDK definitions      |
+| `qpdk/simulation/fem.py`                               | Both  | Keep your stack. Take conversion fixes           |
 | `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
 | `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
 | `qpdk/models/datasets/recipes/`                        | QPDK  | Take QPDK                                        |
