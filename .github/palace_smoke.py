@@ -2,7 +2,7 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #   "gmsh",
-#   "gsim @ git+https://github.com/gdsfactory/gsim.git",
+#   "gsim>=0.5",
 #   "qpdk[models]",
 # ]
 #

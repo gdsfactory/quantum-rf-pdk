@@ -138,6 +138,11 @@ currents, and substrate modes that analytical models may miss
   <https://gdsfactory.github.io/gsim/>`_ and Palace, including comparison with
   semi-analytical frequency estimates and a calibrated retune of the resonator length to
   a target frequency.
+- :doc:`notebooks/palace_flipmon_flip_chip` — Flip-chip simulation of a flipmon qubit
+  with a vacuum-gap shunt capacitor and conducting indium bumps: the two-chip layer
+  stack with gsim and Palace, mesh verification on every layer, and the qubit eigenmode
+  identified through junction participation, inductance scaling, and a bump-conductivity
+  A/B.
 
 .. note::
 
@@ -274,11 +279,11 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - Installs
       - What it is for
     - - ``models``
-      - ``sax``, ``jaxellip``, ``optax``, ``optuna``, ``gplugins[meshwell]``,
+      - ``sax``, ``jaxellip``, ``optax``, ``optuna``, ``gplugins[meshwell]``, ``gsim``,
         ``scikit-rf``, ``sympy``, ``polars``, ``pandas[parquet]``
       - The analytical and S-parameter model library (``qpdk.models``), SAX circuit
-        simulation, meshing, and the DataFrame display helpers. **This is the baseline
-        extra — nearly every notebook needs it.**
+        simulation, meshing, the gsim FEM simulation wrappers, and the DataFrame display
+        helpers. **This is the baseline extra — nearly every notebook needs it.**
     - - ``hfss``
       - ``pyaedt[graphics]``, ``polars``
       - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
@@ -413,6 +418,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - Optuna, Palace
       - ``models``
     - - :doc:`notebooks/palace_eigenmode_qubit_resonator`
+      - FEM electromagnetics
+      - gsim, Palace
+      - ``models``
+    - - :doc:`notebooks/palace_flipmon_flip_chip`
       - FEM electromagnetics
       - gsim, Palace
       - ``models``

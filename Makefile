@@ -15,7 +15,7 @@ FIRA_MATH_URL := https://github.com/firamath/firamath/releases/download/v0.3.4/F
 
 install-doc-fonts:
 	@if [ "$$GITHUB_ACTIONS" = "true" ]; then \
-		sudo apt-get update -y && sudo apt-get install -y fonts-inter && \
+		sudo apt-get update -y && sudo apt-get install -y fonts-inter libglu1-mesa libgl1 && \
 		mkdir -p /tmp/qpdk-fonts && \
 		curl -fsSL "https://github.com/Outfitio/Outfit-Fonts/raw/main/fonts/ttf/Outfit-Regular.ttf" -o /tmp/qpdk-fonts/Outfit-Regular.ttf && \
 		curl -fsSL "https://github.com/Outfitio/Outfit-Fonts/raw/main/fonts/ttf/Outfit-Bold.ttf" -o /tmp/qpdk-fonts/Outfit-Bold.ttf && \

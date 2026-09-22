@@ -59,11 +59,9 @@
 # pip install "qpdk[models]"
 # ```
 #
-# The simulation cells additionally need [gsim](https://gdsfactory.github.io/gsim/)
-# (`pip install "gsim @ git+https://github.com/gdsfactory/gsim.git"`, the PyPI
-# release lags the repository) and a Palace installation; both are external to
-# qpdk. The sections that call them are fenced so the notebook renders without
-# them, and the Palace results are embedded below so the analysis runs anywhere.
+# The simulation cells additionally need the [Palace](https://awslabs.github.io/palace/)
+# solver itself, which is external to qpdk; the cells that invoke it are fenced,
+# and the Palace results are embedded below so the analysis runs anywhere.
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
@@ -268,57 +266,72 @@ logger.info(f"Analytical quarter-wave estimate: {analytical_freq / 1e9:.4f} GHz"
 #
 # gsim turns the converted layout into a 3-D model: a `LayerStack` assigns each
 # GDS layer a material and a z-extent, and `EigenmodeSim` configures the ports
-# and the eigenmode search. This section is fenced because gsim and Palace are
-# not qpdk dependencies, but it is the exact code that produced the mesh and
-# configuration used below.
-#
-# ```python
-# from gsim.palace import EigenmodeSim
-#
-# from qpdk.simulation import single_chip_stack
-#
-# # 500 µm of microwave silicon and 500 µm of air above it; the substrate
-# # uses the qpdk material properties (eps_r = 11.45, tan d = 2.7e-6), so the
-# # FEM models the same chip as the analytical CPW models of the previous
-# # section.
-# stack = single_chip_stack(substrate_thickness=500.0, vacuum_thickness=500.0)
-#
-# sim = EigenmodeSim()
-# sim.set_geometry(etched)
-# sim.set_stack(stack)
-# # A direct factorization makes each shift-and-invert apply cheap, which
-# # matters on this roughly 1.2M-unknown first-order model.
-# sim.set_numerical(order=1, solver_type="MUMPS")
-#
-# # Josephson junction as a linear lumped inductor, L_J = 10 nH, a typical
-# # transmon value. resistance=0 overrides the R = 50 Ω that gsim's default
-# # port impedance would emit: the linearized junction is purely reactive, so
-# # it shifts the qubit-like mode but adds no dissipation, the same convention
-# # as Palace's own transmon example. The port length spans the 15 µm pad gap
-# # and overlaps both pads; a shorter rectangle would sit entirely in the
-# # vacuum gap and couple nothing.
-# sim.add_port(
-#     "junction",
-#     layer="SUPERCONDUCTOR",
-#     length=25.0,
-#     inductance=10e-9,
-#     resistance=0.0,
-# )
-#
-# # Probeline feeds as 50 Ω CPW lumped ports, one per end.
-# sim.add_cpw_port("coupling_o1", layer="SUPERCONDUCTOR", s_width=10.0, gap_width=6.0, length=5.0)
-# sim.add_cpw_port("coupling_o2", layer="SUPERCONDUCTOR", s_width=10.0, gap_width=6.0, length=5.0)
-#
-# # Target sets the lower edge of the eigenvalue search: the solver returns
-# # the N lowest modes above it. Keep it well below the expected band so the
-# # qubit-like mode (a few GHz below the readout) is included.
-# sim.set_eigenmode(target=2e9, num_modes=10)
-#
-# sim.set_output_dir("./sim_palace_qubit_resonator")
-# sim.mesh(preset="default", refined_mesh_size=1.5, auto_size=False)
-# sim.write_config()
-# ```
-#
+# and the eigenmode search. gsim is part of the `models` extra, so the setup
+# below runs as-is; only the Palace solver itself stays external.
+
+# %%
+from gsim.palace import EigenmodeSim
+
+from qpdk.simulation import single_chip_stack
+
+# 500 µm of microwave silicon and 500 µm of air above it; the substrate
+# uses the qpdk material properties (eps_r = 11.45, tan d = 2.7e-6), so the
+# FEM models the same chip as the analytical CPW models of the previous
+# section.
+stack = single_chip_stack(substrate_thickness=500.0, vacuum_thickness=500.0)
+
+sim = EigenmodeSim()
+sim.set_geometry(etched)
+sim.set_stack(stack)
+# A direct factorization makes each shift-and-invert apply cheap, which
+# matters on this roughly 1.2M-unknown first-order model.
+sim.set_numerical(order=1, solver_type="MUMPS")
+
+# Josephson junction as a linear lumped inductor, L_J = 10 nH, a typical
+# transmon value. resistance=0 overrides the R = 50 Ω that gsim's default
+# port impedance would emit: the linearized junction is purely reactive, so
+# it shifts the qubit-like mode but adds no dissipation, the same convention
+# as Palace's own transmon example. The port length spans the 15 µm pad gap
+# and overlaps both pads; a shorter rectangle would sit entirely in the
+# vacuum gap and couple nothing.
+sim.add_port(
+    "junction",
+    layer="SUPERCONDUCTOR",
+    length=25.0,
+    inductance=10e-9,
+    resistance=0.0,
+)
+
+# Probeline feeds as 50 Ω CPW lumped ports, one per end.
+sim.add_cpw_port(
+    "coupling_o1", layer="SUPERCONDUCTOR", s_width=10.0, gap_width=6.0, length=5.0
+)
+sim.add_cpw_port(
+    "coupling_o2", layer="SUPERCONDUCTOR", s_width=10.0, gap_width=6.0, length=5.0
+)
+
+# Target sets the lower edge of the eigenvalue search: the solver returns
+# the N lowest modes above it. Keep it well below the expected band so the
+# qubit-like mode (a few GHz below the readout) is included.
+sim.set_eigenmode(target=2e9, num_modes=10)
+
+sim.set_output_dir("./sim_palace_qubit_resonator")
+sim.mesh(preset="default", refined_mesh_size=1.5, auto_size=False)
+sim.write_config()
+
+# %% [markdown]
+# The mesh is graded, which is the whole game in FEM cost: elements cluster on
+# the metal edges and the junction gap, where the fields vary fastest, and
+# coarsen into the substrate bulk and the vacuum above, where they do not.
+
+# %% tags=["hide-input"]
+import gsim.viz
+
+gsim.viz.plot_mesh(
+    "./sim_palace_qubit_resonator/palace.msh", style="wireframe", mode="static"
+)
+
+# %% [markdown]
 # A few points worth noting:
 #
 # - The substrate carries the qpdk microwave-silicon loss tangent
@@ -590,24 +603,44 @@ logger.info(
 # gsim slices them straight onto the mesh with
 # [pyvista](https://docs.pyvista.org):
 #
-# ```python
-# import pyvista as pv
-# from gsim.palace.field_viz import plot_fields_2d
-#
-# fields = pv.read(
-#     "sim_palace_qubit_resonator/output/palace/paraview"
-#     "/eigenmode/Cycle000001/data.pvtu"
-# )
-# plot_fields_2d(
-#     fields,
-#     field="E_real",
-#     normal="z",
-#     origin=500.0,  # the metal plane, atop the 500 µm substrate
-#     cmap="inferno",
-#     title="|E|",
-# )
-# ```
-#
+
+# %% tags=["hide-input"]
+import os
+from pathlib import Path
+
+import matplotlib_inline
+import pyvista as pv
+
+# A dense field map is a raster image whichever way it is stored: as SVG this
+# figure is ~4 MB of vector cells and renders no better than a 200 kB PNG.
+matplotlib_inline.backend_inline.set_matplotlib_formats("png")
+
+# Point QPDK_PALACE_FIELDS at a solve made with `save=N` to regenerate this.
+field_file = Path(
+    os.environ.get(
+        "QPDK_PALACE_FIELDS",
+        "sim_palace_qubit_resonator/output/palace/paraview"
+        "/eigenmode/Cycle000001/data.pvtu",
+    )
+)
+if field_file.exists():
+    # Log scale, because the field spans several decades between the junction
+    # gap and the far side of the chip: on a linear scale everything except
+    # the pads reads as black.
+    gsim.viz.plot_cross_section(
+        pv.read(field_file),
+        normal="z",
+        origin=500.0,  # the metal plane, atop the 500 µm substrate
+        field="E_real",
+        log=True,
+        quiver=False,
+        cmap="inferno",
+        title="|E| of the qubit mode at the metal plane",
+    )
+else:
+    print(f"no saved eigenfields at {field_file}")
+
+# %% [markdown]
 # The qubit-like mode is unmistakable: the field piles up across the junction
 # gap between the two pads and along the pad edges, while the resonator
 # meander stays dark. The readout mode does the opposite, forming the
