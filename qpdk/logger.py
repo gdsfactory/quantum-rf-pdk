@@ -13,23 +13,36 @@ FANCY_FORMAT = (
 )
 
 
-def configure_logger(level: str = "INFO", log_format: str = FANCY_FORMAT):
+def configure_logger(
+    level: str = "INFO",
+    log_format: str = FANCY_FORMAT,
+    *,
+    colorize: bool = True,
+):
     """Configures the logger with a fancy format.
 
     Args:
         level: The logging level to use.
         log_format: The format to use.
+        colorize: Whether to emit ANSI colour escapes. Turn this off when
+            stderr is a log file rather than a terminal, so the escape codes do
+            not end up baked into the log.
     """
     logger.remove()  # Remove default handler
     logger.add(
         sys.stderr,
         format=log_format,
         level=level,
-        colorize=True,
+        colorize=colorize,
     )
+
+
+# Compact alternative to the fancy format, for when the log is a file that
+# somebody will read while a long job is still running.
+PLAIN_FORMAT = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}"
 
 
 # Initialize with default level
 configure_logger()
 
-__all__ = ["configure_logger", "logger"]
+__all__ = ["FANCY_FORMAT", "PLAIN_FORMAT", "configure_logger", "logger"]

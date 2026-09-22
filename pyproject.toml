@@ -71,6 +71,7 @@ models = [
   "pandas[parquet]",
 ]
 netket = ["netket>=3.12", "flax", "optax"]
+optimization = ["cloudpickle"]
 pymablock = ["pymablock>=2.2.1"]
 qutip = ["qutip-jax>=0.1.1", "qutip-qip>=0.4.1"]
 ray = ["ray[default]", "tqdm"]
@@ -132,6 +133,7 @@ stubs = [
   "types-tqdm"
 ]
 test = [
+  "cloudpickle",
   "hypothesis",
   "jsondiff",
   "moto[server]>=5",
@@ -418,7 +420,12 @@ combine-as-imports = true
   "missing-f-string-syntax"
 ]
 "qpdk/simulation/fem.py" = ["import-outside-top-level"]
+"qpdk/simulation/palace_run.py" = ["import-outside-top-level"]
+"qpdk/simulation/study.py" = ["import-outside-top-level"]
+"qpdk/simulation/trial.py" = ["print", "import-outside-top-level"]
 "notebooks/**/*.py" = [
+  "useless-expression",
+  "import-outside-top-level",
   "assert",
   "undocumented-public-module",
   "print",
