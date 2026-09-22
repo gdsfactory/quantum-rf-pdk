@@ -14,7 +14,6 @@ import gdsfactory as gf
 import klayout.db as kdb
 
 from qpdk.tech import LAYER, material_properties
-from qpdk.utils import apply_additive_metals
 
 __all__ = ["FEM_LAYERS", "single_chip_stack", "to_fem_regions"]
 
@@ -51,16 +50,17 @@ def to_fem_regions(component: gf.Component) -> gf.Component:
             simulation area is fully etched away, either of which would
             silently produce an empty FEM model.
     """
-    processed = apply_additive_metals(component.copy())
-
-    layout = processed.kdb_cell.layout()
+    layout = component.kdb_cell.layout()
     sim_region = kdb.Region(
-        processed.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.SIM_AREA))
+        component.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.SIM_AREA))
     )
     etch_region = kdb.Region(
-        processed.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.M1_ETCH))
+        component.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.M1_ETCH))
     )
-    conductor_region = sim_region - etch_region
+    draw_region = kdb.Region(
+        component.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.M1_DRAW))
+    )
+    conductor_region = sim_region - (etch_region - draw_region)
 
     if sim_region.is_empty():
         msg = "no SIM_AREA layer in the component; the FEM model would be empty"
@@ -77,7 +77,7 @@ def to_fem_regions(component: gf.Component) -> gf.Component:
         ("VACUUM", sim_region),
     ]:
         etched.kdb_cell.shapes(el.layer(*FEM_LAYERS[name])).insert(region)
-    for port in processed.ports:
+    for port in component.ports:
         etched.add_port(name=port.name, port=port)
     return etched
 
