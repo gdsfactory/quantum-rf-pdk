@@ -14,3 +14,4 @@ matlab_integration
 josephsoncircuits_twpa
 vacask_lumped_parametric_amplifier
 vacask_cpw_parametric_amplifier
+palace_eigenmode_qubit_resonator

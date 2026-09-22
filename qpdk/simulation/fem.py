@@ -8,13 +8,14 @@ qpdk dependency, so it is imported lazily by the functions that need it.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from typing import Any
 
 import gdsfactory as gf
 import klayout.db as kdb
+from kfactory.layer import LayerEnum
 
-from qpdk.tech import LAYER, material_properties
-from qpdk.utils import apply_additive_metals
+from qpdk.tech import LAYER, NON_METADATA_LAYERS, material_properties
 
 __all__ = ["FEM_LAYERS", "single_chip_stack", "to_fem_regions"]
 
@@ -28,6 +29,35 @@ __all__ = ["FEM_LAYERS", "single_chip_stack", "to_fem_regions"]
 FEM_LAYERS = {"SUBSTRATE": (91, 0), "SUPERCONDUCTOR": (92, 0), "VACUUM": (93, 0)}
 
 
+def _reject_unsupported_layers(
+    component: gf.Component, supported: Collection[LayerEnum]
+) -> None:
+    """Reject fabrication masks that would be silently lost by conversion.
+
+    Raises:
+        ValueError: If an unsupported fabrication layer carries polygons.
+    """
+    unsupported = {
+        tuple(layer): str(layer)
+        for layer in NON_METADATA_LAYERS
+        if layer not in supported
+    }
+    layout = component.kdb_cell.layout()
+    present = []
+    for index in layout.layer_indices():
+        info = layout.get_info(index)
+        spec = (info.layer, info.datatype)
+        if (
+            spec in unsupported
+            and not kdb.Region(component.kdb_cell.begin_shapes_rec(index)).is_empty()
+        ):
+            present.append(unsupported[spec])
+    if present:
+        raise ValueError(
+            f"FEM conversion does not model fabrication layers {sorted(present)}"
+        )
+
+
 def to_fem_regions(component: gf.Component) -> gf.Component:
     """Convert an etch-based qpdk layout into explicit FEM regions.
 
@@ -37,7 +67,9 @@ def to_fem_regions(component: gf.Component) -> gf.Component:
     ``get_layer_stack()``'s M1 definition. The conductor, substrate and
     vacuum regions are copied onto the layer numbering of
     :data:`FEM_LAYERS`, with the zero-thickness conductor later becoming a
-    perfect-electric-conductor boundary in the solver.
+    perfect-electric-conductor boundary in the solver. Junction masks are
+    omitted because lumped ports represent them. Other fabrication layers
+    outside M1 are rejected.
 
     Args:
         component: Layout with a ``SIM_AREA`` layer and simulation ports.
@@ -47,20 +79,25 @@ def to_fem_regions(component: gf.Component) -> gf.Component:
         ``VACUUM`` regions plus the input ports.
 
     Raises:
-        ValueError: If the component carries no ``SIM_AREA`` shapes or the
+        ValueError: If unsupported fabrication layers are present, or the
+            component carries no ``SIM_AREA`` shapes or the
             simulation area is fully etched away, either of which would
             silently produce an empty FEM model.
     """
-    processed = apply_additive_metals(component.copy())
-
-    layout = processed.kdb_cell.layout()
+    _reject_unsupported_layers(
+        component, {LAYER.M1_DRAW, LAYER.M1_ETCH, LAYER.JJ_AREA, LAYER.JJ_PATCH}
+    )
+    layout = component.kdb_cell.layout()
     sim_region = kdb.Region(
-        processed.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.SIM_AREA))
+        component.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.SIM_AREA))
     )
     etch_region = kdb.Region(
-        processed.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.M1_ETCH))
+        component.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.M1_ETCH))
     )
-    conductor_region = sim_region - etch_region
+    draw_region = kdb.Region(
+        component.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.M1_DRAW))
+    )
+    conductor_region = sim_region - (etch_region - draw_region)
 
     if sim_region.is_empty():
         msg = "no SIM_AREA layer in the component; the FEM model would be empty"
@@ -69,7 +106,7 @@ def to_fem_regions(component: gf.Component) -> gf.Component:
         msg = "SIM_AREA is fully etched away; the FEM conductor would be empty"
         raise ValueError(msg)
 
-    etched = gf.Component()
+    etched = gf.Component(kcl=component.kcl)
     el = etched.kdb_cell.layout()
     for name, region in [
         ("SUPERCONDUCTOR", conductor_region),
@@ -77,7 +114,7 @@ def to_fem_regions(component: gf.Component) -> gf.Component:
         ("VACUUM", sim_region),
     ]:
         etched.kdb_cell.shapes(el.layer(*FEM_LAYERS[name])).insert(region)
-    for port in processed.ports:
+    for port in component.ports:
         etched.add_port(name=port.name, port=port)
     return etched
 
