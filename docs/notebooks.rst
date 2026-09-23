@@ -131,6 +131,8 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
+- :doc:`notebooks/elmer_capacitance_interdigital` — Quasi-static capacitance extraction
+  of an interdigital capacitor with the open-source Elmer FEM solver.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
@@ -404,6 +406,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - FEM electromagnetics
       - Ansys HFSS, PyAEDT
       - ``models``, ``hfss``
+    - - :doc:`notebooks/elmer_capacitance_interdigital`
+      - FEM electromagnetics
+      - Elmer, meshwell
+      - ``models`` (+ ``gplugins[elmer]``)
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
