@@ -133,6 +133,12 @@ currents, and substrate modes that analytical models may miss
   interdigital capacitor in Ansys HFSS.
 - :doc:`notebooks/elmer_capacitance_interdigital` — Quasi-static capacitance extraction
   of an interdigital capacitor with the open-source Elmer FEM solver.
+- :doc:`notebooks/comsol_cpw_resonator` — Prepares a coupled quarter-wave CPW
+  resonator for COMSOL with MPh: extracts the QPDK metal polygons, gaps, and feed
+  ports, builds an unsolved 3D geometry project, and lays out the physics setup
+  (materials, PEC and scattering boundaries, numeric TEM ports, boundary mode
+  analysis, eigenfrequency search, narrow frequency sweep) needed to obtain
+  S₂₁. The notebook stops at geometry unless you supply a solved model.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
@@ -281,6 +287,11 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - ``pyaedt[graphics]``, ``polars``
       - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
         local Ansys installation and a license, which are not pip-installable.
+    - - ``comsol``
+      - ``MPh``
+      - The MPh-based COMSOL geometry builder behind ``qpdk.simulation.comsol``.
+        Also requires a local COMSOL installation with an RF Module license; MPh
+        itself is only a client and installs no solver.
     - - ``circulax``
       - ``circulax``, ``optax``
       - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient
@@ -336,7 +347,7 @@ With ``pip``:
 
     pip install "qpdk[models]"
     pip install "qpdk[models,netket]"
-    pip install "qpdk[circulax,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
+    pip install "qpdk[circulax,comsol,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
 
 .. note::
 
@@ -410,6 +421,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - FEM electromagnetics
       - Elmer, meshwell
       - ``models`` (+ ``gplugins[elmer]`` from Git until release)
+    - - :doc:`notebooks/comsol_cpw_resonator`
+      - FEM electromagnetics
+      - COMSOL, MPh
+      - ``comsol``
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
