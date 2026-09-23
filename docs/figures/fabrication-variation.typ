@@ -1,8 +1,12 @@
 #import "@preview/cetz:0.4.2"
-#import "style.typ": blue, coral, cyan, ink, muted, paper, purple, rule
+#import "style.typ": (
+  blue, body-font, dark-blue, heading-font, ink, light-blue, muted, paper, rule,
+  slate,
+)
 
 #set page(width: 165mm, height: 62mm, margin: 3mm, fill: white)
-#set text(font: "Arial", fill: ink)
+#set text(font: body-font, fill: ink)
+#show math.equation: set text(font: "Fira Math")
 
 #cetz.canvas(length: 1cm, {
   import cetz.draw: *
@@ -11,6 +15,7 @@
     (0.5, 5.7),
     text(
       size: 8pt,
+      font: heading-font,
       weight: "bold",
       fill: blue,
       [TWO WAYS FABRICATION SHIFTS A RESONATOR ARRAY],
@@ -30,7 +35,7 @@
   let axis(y, title, color) = {
     content(
       (0.55, y + 0.44),
-      text(size: 9pt, weight: "bold", fill: color, title),
+      text(size: 9pt, font: heading-font, weight: "bold", fill: color, title),
       anchor: "west",
     )
     line((4.25, y), (14.9, y), stroke: 0.8pt + rule, mark: (
@@ -60,16 +65,20 @@
     anchor: "east",
   )
 
-  axis(1.45, [Local variation], purple)
+  axis(1.45, [Local variation], dark-blue)
   let offsets = (-0.35, 0.45, -0.15, 0.3, -0.4)
   for (i, x) in nominal.enumerate() {
     let shifted = x + offsets.at(i)
-    line((x, 4.0), (shifted, 1.69), stroke: 0.6pt + purple.transparentize(65%))
-    tick(shifted, 1.45, purple)
+    line(
+      (x, 4.0),
+      (shifted, 1.69),
+      stroke: 0.6pt + dark-blue.transparentize(65%),
+    )
+    tick(shifted, 1.45, dark-blue)
   }
   content(
     (14.75, 1.1),
-    text(size: 7pt, fill: purple, [independent shifts]),
+    text(size: 7pt, fill: dark-blue, [independent shifts]),
     anchor: "east",
   )
   content(

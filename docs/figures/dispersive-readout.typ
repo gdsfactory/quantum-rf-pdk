@@ -1,15 +1,25 @@
 #import "@preview/cetz:0.4.2"
-#import "style.typ": blue, coral, cyan, ink, muted, paper, purple, rule
+#import "style.typ": (
+  blue, body-font, dark-blue, heading-font, ink, light-blue, muted, paper, rule,
+  slate,
+)
 
 #set page(width: 164mm, height: 58mm, margin: 3mm, fill: white)
-#set text(font: "Arial", fill: ink)
+#set text(font: body-font, fill: ink)
+#show math.equation: set text(font: "Fira Math")
 
 #cetz.canvas(length: 1cm, {
   import cetz.draw: *
 
   content(
     (0.5, 5.2),
-    text(size: 8pt, weight: "bold", fill: blue, [DISPERSIVE READOUT]),
+    text(
+      size: 8pt,
+      font: heading-font,
+      weight: "bold",
+      fill: blue,
+      [DISPERSIVE READOUT],
+    ),
     anchor: "west",
   )
   content(
@@ -31,12 +41,12 @@
   )
   content(
     (2.85, 3.66),
-    text(size: 10pt, weight: "bold", [qubit]),
+    text(size: 10pt, font: heading-font, weight: "bold", [qubit]),
     anchor: "center",
   )
   content(
     (2.85, 2.88),
-    text(size: 16pt, fill: purple, [$|0⟩$  or  $|1⟩$]),
+    text(size: 16pt, fill: dark-blue, [$|0⟩$  or  $|1⟩$]),
     anchor: "center",
   )
   content(
@@ -80,18 +90,30 @@
       3.52 - 1.5 / (1 + ((x - 11.65) / 0.34) * ((x - 11.65) / 0.34)),
     ))
   }
-  line(..left, stroke: 1.5pt + cyan)
-  line(..right, stroke: 1.5pt + purple)
-  line((10.25, 1.35), (10.25, 1.93), stroke: 0.7pt + cyan)
-  line((11.65, 1.35), (11.65, 1.93), stroke: 0.7pt + purple)
+  line(..left, stroke: 1.5pt + light-blue)
+  line(..right, stroke: 1.5pt + dark-blue)
+  line((10.25, 1.35), (10.25, 1.93), stroke: 0.7pt + light-blue)
+  line((11.65, 1.35), (11.65, 1.93), stroke: 0.7pt + dark-blue)
   content(
     (9.75, 4.16),
-    text(size: 8pt, weight: "bold", fill: cyan, [$|0⟩$ response]),
+    text(
+      size: 8pt,
+      font: heading-font,
+      weight: "bold",
+      fill: light-blue,
+      [$|0⟩$ response],
+    ),
     anchor: "center",
   )
   content(
     (12.3, 4.16),
-    text(size: 8pt, weight: "bold", fill: purple, [$|1⟩$ response]),
+    text(
+      size: 8pt,
+      font: heading-font,
+      weight: "bold",
+      fill: dark-blue,
+      [$|1⟩$ response],
+    ),
     anchor: "center",
   )
 })

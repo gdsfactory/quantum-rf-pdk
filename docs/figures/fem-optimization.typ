@@ -1,8 +1,12 @@
 #import "@preview/cetz:0.4.2"
-#import "style.typ": blue, coral, cyan, ink, muted, paper, purple, rule
+#import "style.typ": (
+  blue, body-font, dark-blue, heading-font, ink, light-blue, muted, paper, rule,
+  slate,
+)
 
 #set page(width: 171mm, height: 50mm, margin: 3mm, fill: white)
-#set text(font: "Arial", fill: ink)
+#set text(font: body-font, fill: ink)
+#show math.equation: set text(font: "Fira Math")
 
 #cetz.canvas(length: 1cm, {
   import cetz.draw: *
@@ -18,7 +22,7 @@
     rect((x, 3.92), (x + 3.55, 4.05), fill: color, stroke: none)
     content(
       (x + 0.26, 3.35),
-      text(size: 9pt, weight: "bold", fill: color, title),
+      text(size: 9pt, font: heading-font, weight: "bold", fill: color, title),
       anchor: "west",
     )
     content(
@@ -37,6 +41,7 @@
     (0.5, 4.72),
     text(
       size: 8pt,
+      font: heading-font,
       weight: "bold",
       fill: blue,
       [OPTUNA + PALACE CAPACITOR DESIGN LOOP],
@@ -44,9 +49,9 @@
     anchor: "west",
   )
   card(0.5, [Suggest geometry], [length · gap · thickness], blue)
-  card(4.65, [Build & mesh], [five-finger capacitor], cyan)
-  card(8.8, [Solve fields], [Palace capacitance], purple)
-  card(12.95, [Score trial], [distance from 40 fF], coral)
+  card(4.65, [Build & mesh], [five-finger capacitor], light-blue)
+  card(8.8, [Solve fields], [Palace capacitance], dark-blue)
+  card(12.95, [Score trial], [distance from 40 fF], slate)
   arrow((4.1, 3.0), (4.55, 3.0))
   arrow((8.25, 3.0), (8.7, 3.0))
   arrow((12.4, 3.0), (12.85, 3.0))
@@ -57,7 +62,13 @@
   rect((6.3, 0.77), (10.75, 1.37), radius: 0.12, fill: white, stroke: none)
   content(
     (8.5, 1.08),
-    text(size: 8pt, weight: "bold", fill: blue, [next Optuna trial]),
+    text(
+      size: 8pt,
+      font: heading-font,
+      weight: "bold",
+      fill: blue,
+      [next Optuna trial],
+    ),
     anchor: "center",
   )
 })

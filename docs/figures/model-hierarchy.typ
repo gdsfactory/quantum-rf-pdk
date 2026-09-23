@@ -1,8 +1,12 @@
 #import "@preview/cetz:0.4.2"
-#import "style.typ": blue, coral, cyan, ink, muted, paper, purple, rule
+#import "style.typ": (
+  blue, body-font, dark-blue, heading-font, ink, light-blue, muted, paper, rule,
+  slate,
+)
 
 #set page(width: 162mm, height: 55mm, margin: 3mm, fill: white)
-#set text(font: "Arial", fill: ink)
+#set text(font: body-font, fill: ink)
+#show math.equation: set text(font: "Fira Math")
 
 #cetz.canvas(length: 1cm, {
   import cetz.draw: *
@@ -11,6 +15,7 @@
     (0.5, 5.25),
     text(
       size: 8pt,
+      font: heading-font,
       weight: "bold",
       fill: blue,
       [WHERE SAX STOPS EXPANDING A CHIP],
@@ -36,7 +41,13 @@
   )
   content(
     (0.85, 3.87),
-    text(size: 10pt, weight: "bold", fill: ink, [chip assembly]),
+    text(
+      size: 10pt,
+      font: heading-font,
+      weight: "bold",
+      fill: ink,
+      [chip assembly],
+    ),
     anchor: "west",
   )
   content(
@@ -60,10 +71,14 @@
     (0.9, 1.39),
     (5.3, 2.31),
     radius: 0.12,
-    fill: cyan.transparentize(85%),
-    stroke: 0.8pt + cyan,
+    fill: light-blue.transparentize(85%),
+    stroke: 0.8pt + light-blue,
   )
-  content((1.2, 1.88), text(size: 9pt, fill: cyan, [CPW route]), anchor: "west")
+  content(
+    (1.2, 1.88),
+    text(size: 9pt, fill: light-blue, [CPW route]),
+    anchor: "west",
+  )
 
   line((5.9, 2.5), (8.0, 2.5), stroke: 1.2pt + blue, mark: (
     end: ">",
@@ -85,7 +100,13 @@
   )
   content(
     (8.65, 3.62),
-    text(size: 10pt, weight: "bold", fill: blue, [coupled resonator model]),
+    text(
+      size: 10pt,
+      font: heading-font,
+      weight: "bold",
+      fill: blue,
+      [coupled resonator model],
+    ),
     anchor: "west",
   )
   content(
@@ -97,12 +118,18 @@
     (8.3, 0.83),
     (15.1, 2.35),
     radius: 0.13,
-    fill: cyan.transparentize(85%),
-    stroke: 0.8pt + cyan,
+    fill: light-blue.transparentize(85%),
+    stroke: 0.8pt + light-blue,
   )
   content(
     (8.65, 1.81),
-    text(size: 10pt, weight: "bold", fill: cyan, [modeled CPW primitives]),
+    text(
+      size: 10pt,
+      font: heading-font,
+      weight: "bold",
+      fill: light-blue,
+      [modeled CPW primitives],
+    ),
     anchor: "west",
   )
   content(
