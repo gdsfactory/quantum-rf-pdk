@@ -46,27 +46,12 @@ Any of these methods can be wrapped in an automated optimization loop (e.g. with
 The typical workflow when creating a chip with **qpdk / gdsfactory** can be summarized
 as follows. Each stage may loop back to earlier stages as the design is refined.
 
-.. only:: html
+.. figure:: notebooks/figures/design-flow.svg
+    :alt: Requirements, Hamiltonian analysis, SAX circuit models, layout, EM verification, pulse simulation, then measurement.
+    :width: 100%
 
-    .. mermaid::
-
-        flowchart TB
-            A["Physical requirements<br>(qubit frequency, coupling, T₁, …)"]
-            B["Hamiltonian / perturbation analysis<br>(map requirements → circuit parameters)"]
-            C["Circuit / S-parameter models<br>(design passive components)"]
-            D["Layout with gdsfactory<br>(draw the chip in qpdk)"]
-            E["FEM verification<br>(validate geometry with a full-wave solver)"]
-            F["Pulse-level simulation<br>(predict gate performance)"]
-            G["Fabrication & measurement"]
-            A --> B --> C --> D --> E --> F --> G
-            F -.-> A
-            E -.-> C
-
-.. only:: typst or typstpdf
-
-    Design flow: Physical requirements → Hamiltonian analysis → Circuit/S-parameter models
-    → Layout (gdsfactory/qpdk) → FEM verification → Pulse-level simulation → Fabrication.
-    FEM results feed back to circuit models; pulse simulations feed back to requirements.
+    A design pass from target parameters through simulation and layout to measurement.
+    Results can feed back into earlier stages.
 
 ****************************
  S-parameter circuit models
