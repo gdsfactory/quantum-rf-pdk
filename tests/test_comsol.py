@@ -11,7 +11,12 @@ from typing import Any
 
 import pytest
 
-from qpdk.simulation import build_comsol_cpw_model, build_comsol_metal_model
+from qpdk import simulation
+from qpdk.simulation import (
+    build_comsol_cpw_model,
+    build_comsol_metal_model,
+    comsol_layout,
+)
 from qpdk.simulation.comsol import (
     build_comsol_cpw_model as comsol_cpw_model,
     build_comsol_metal_model as comsol_metal_model,
@@ -37,6 +42,21 @@ def test_generic_and_cpw_names_are_the_same_builder():
     assert build_comsol_cpw_model is build_comsol_metal_model
     assert comsol_cpw_model is comsol_metal_model
     assert build_comsol_metal_model.__name__ == "build_comsol_metal_model"
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "ComsolBoundingBox",
+        "ComsolFeedPort",
+        "ComsolLayout",
+        "ComsolPolygon",
+        "prepare_comsol_layout",
+    ],
+)
+def test_comsol_layout_public_exports(name: str):
+    """The lazy package exports resolve to the geometry module's objects."""
+    assert getattr(simulation, name) is getattr(comsol_layout, name)
 
 
 @pytest.mark.parametrize("thickness", [0.0, -0.2, float("nan"), float("inf")])
