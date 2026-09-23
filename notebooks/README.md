@@ -26,6 +26,7 @@ There is also a pre-commit hook checking that the notebooks are in-sync with the
 
 ## Documentation figures
 
-Figures in `figures/` are generated from `docs/figures/*.typ` with `just build-doc-figures`. Commit the Typst source and
-SVG together. Notebook Markdown uses `figures/<name>.svg`, which works in Jupyter and after the docs build copies the
-notebooks and figures into `docs/notebooks/`.
+Figures in `figures/` are generated from `docs/figures/*.typ` with `just build-doc-figures`. The recipe uses the same
+pinned Inter and Outfit fonts as the docs PDF, and the colors come from the HTML theme in `docs/_static/css/custom.css`.
+Commit the Typst source and SVG together. Notebook Markdown uses `figures/<name>.svg`, which works in Jupyter and after
+the docs build copies the notebooks and figures into `docs/notebooks/`.

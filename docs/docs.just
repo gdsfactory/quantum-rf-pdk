@@ -28,7 +28,7 @@ convert-notebooks:
 
 # Rebuild the checked-in SVG figures after editing docs/figures/*.typ
 [group('docs')]
-build-doc-figures:
+build-doc-figures: fetch-docs-fonts
     @./.github/build-doc-figures.sh
 
 # Copy llms.txt (https://llmstxt.org/) into the built site root
