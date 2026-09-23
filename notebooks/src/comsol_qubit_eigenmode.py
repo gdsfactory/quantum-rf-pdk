@@ -106,11 +106,9 @@
 # those, not as a replacement.
 #
 # **References:**
-# - COMSOL RF Module User's Guide:
-#   https://doc.comsol.com/6.3/doc/com.comsol.help.rf/RFModuleUsersGuide.pdf
-# - COMSOL eigenfrequency solver reference:
-#   https://doc.comsol.com/6.3/doc/com.comsol.help.comsol/comsol_ref_solver.36.024.html
-# - MPh documentation and tutorial: https://mph.readthedocs.io/en/stable/tutorial.html
+# - [COMSOL RF Module User's Guide](https://doc.comsol.com/6.3/doc/com.comsol.help.rf/RFModuleUsersGuide.pdf)
+# - [COMSOL eigenfrequency solver reference](https://doc.comsol.com/6.3/doc/com.comsol.help.comsol/comsol_ref_solver.36.024.html)
+# - [MPh tutorial](https://mph.readthedocs.io/en/stable/tutorial.html)
 
 # %% [markdown]
 # ## Setup and imports
