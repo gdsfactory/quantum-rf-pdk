@@ -16,14 +16,10 @@
 # Slurm handoff for a two-mode Palace eigenmode solve. It never submits or runs the
 # solver.
 #
-# **Current limitation:** the pinned SCGSim revision rejects the requested
-# `metal_gap_equivalent` profile for this single-face M1 stack with
-# `ValueError: Route A requires exactly two physical face-metal Z ranges.`
-# Stack compilation is supported, but mesh preparation stops at that check; config,
-# handoff, solver execution, and returned-run analysis below are not validated.
-# The supported single-face profile, `substrate_face`, would also require compatible
-# vacuum-host bounds that contain M1. This notebook retains the requested profile
-# and physical stack; it does not add an artificial second metal face.
+# Route A uses the single-face `substrate_face` profile. SCGSim creates the
+# background vacuum around the authored substrate and metal; this notebook does
+# not add an artificial second metal face. Preparation generates a mesh, config,
+# and Slurm handoff, but does not establish a Palace solve or Surface-EPR result.
 #
 # The installation command pins the source revision. SCGSim handoff receipts record
 # its package version, not the Git commit; a receipt alone does not prove that pin.
@@ -36,7 +32,7 @@
 # source .venv/bin/activate
 # python -m pip install -e .
 # python -m pip install \
-#   "scgsim[palace,visualization] @ git+https://github.com/OrPenStrike/scgsim.git@de446a96c74f56ac06dbcd39776bee8372b74311"
+#   "scgsim[palace,visualization] @ git+https://github.com/OrPenStrike/scgsim.git@82e4af6eea0f32d39ff364169c2cba1652995d48"
 # ```
 #
 # Palace itself is an external executable. The handoff stage records the caller's
@@ -55,9 +51,9 @@ from scgsim.palace import (
 from scgsim.sgb import build_component_stack
 from scgsim.visualization import inspect_palace_geometry
 
-from qpdk import LAYER, LAYER_STACK, PDK
+from qpdk import LAYER, PDK
 from qpdk.cells.transmon import double_pad_transmon
-from qpdk.tech import material_properties
+from qpdk.tech import LAYER_STACK_NO_VACUUM, material_properties
 
 PDK.activate()
 
@@ -72,9 +68,9 @@ if WORKFLOW_ACTION not in {"prepare", "analyze-returned"}:
 # %% [markdown]
 # ## Build Component Coupon
 #
-# QPDK owns the layer stack, material records, conductor identities, nets, and
-# selector points. SCGSim compiles those authored facts; this notebook does not
-# reconstruct them from geometry.
+# QPDK owns the substrate, metal, material, conductor, net, and selector facts.
+# A notebook-local copy omits QPDK's explicit Vacuum and its legacy M1 host
+# reference; SCGSim builds the background vacuum from the remaining stack.
 
 # %%
 PAD_SIZE_UM = (250.0, 400.0)
@@ -89,9 +85,11 @@ component = double_pad_transmon(
     junction_lumped_port_width=JUNCTION_LUMPED_PORT_WIDTH_UM,
     layer_simulation=LAYER.SIM_BOUNDARY,
 )
+simulation_layer_stack = LAYER_STACK_NO_VACUUM.model_copy(deep=True)
+del simulation_layer_stack.layers["M1"].info["host_void_semantic_id"]
 stack = build_component_stack(
     component=component,
-    layer_stack=LAYER_STACK,
+    layer_stack=simulation_layer_stack,
     material_records=material_properties,
     coupon_padding_um=COUPON_PADDING_UM,
 )
@@ -131,6 +129,8 @@ TARGET_HZ = 2e9
 EIGENMODE_TOLERANCE = 1e-6
 # Number of mode fields saved for visualization; zero saves none.
 SAVE_FIELDS = 0
+# Extend the generated vacuum 500 um above the top of M1.
+VACUUM_PADDING_UM = {"z_plus_um": 500.0}
 
 if WORKFLOW_ACTION == "prepare":
     if RUN_DIR.exists():
@@ -140,11 +140,12 @@ if WORKFLOW_ACTION == "prepare":
     sim = EigenmodeSim()
     sim.set_geometry(component)
     sim.set_stack(stack)
+    sim.set_vacuum_region(padding=VACUUM_PADDING_UM)
     sim.set_output_dir(RUN_DIR)
     sim.set_surface_epr(
         representation="A",
         specs=SURFACE_EPR_SPECS,
-        route_a_thin_film="metal_gap_equivalent",
+        route_a_thin_film="substrate_face",
     )
     sim.add_port(
         "junction_lumped",

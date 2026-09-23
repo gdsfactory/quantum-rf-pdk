@@ -135,7 +135,7 @@ currents, and substrate modes that analytical models may miss
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 - :doc:`notebooks/palace_transmon_surface_epr` — Compiles QPDK's authored transmon and
   layer-stack semantics with SCGSim, prepares a manual single-node Slurm handoff for a
-  two-mode Palace eigenmode solve, and verifies returned Surface-EPR results.
+  two-mode Palace eigenmode solve, and provides checks for a returned Surface-EPR run.
 
 .. note::
 
@@ -348,7 +348,7 @@ With ``pip``:
     - SCGSim, used by :doc:`notebooks/palace_transmon_surface_epr`, is pinned directly
       from its public repository for this converging workflow. Use Python 3.12 and
       install ``scgsim[palace,visualization]`` at revision
-      ``de446a96c74f56ac06dbcd39776bee8372b74311`` as shown in the notebook. Palace
+      ``82e4af6eea0f32d39ff364169c2cba1652995d48`` as shown in the notebook. Palace
       itself remains an external executable supplied by the target machine.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
