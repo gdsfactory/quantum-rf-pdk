@@ -207,7 +207,7 @@ component = quarter_wave_resonator_coupled(
 )
 
 print(f"Component: {component.name}")
-print(f"Bounding box: {component.bbox}")
+print(f"Bounding box: {component.bbox()}")
 for port in component.ports:
     print(
         f"  {port.name}: center={tuple(round(value, 3) for value in port.center)} µm, "
@@ -359,14 +359,16 @@ for feed in layout.feed_ports:
 # metal thickness. It then runs the geometry sequence and returns the model.
 #
 # `mph.start(cores=...)` launches a COMSOL server process and attaches to it.
-# **Only one MPh client can exist per Python process**, and the call takes a few
-# seconds to a few tens of seconds. Set `cores` to leave headroom on your
-# machine; here it only needs to build geometry, so a modest number is plenty.
+# **Only one MPh client can exist per Python process**, and the call needs a
+# COMSOL installation and a license. **The run is off by default** so the
+# notebook executes while building the documentation; set `RUN_COMSOL = True`
+# on a licensed machine to build and save the model.
 #
 # The output path is outside the repository by default. Change it to a location
 # with enough space for the saved model.
 
 # %%
+RUN_COMSOL = False
 MODEL_DIR = Path.home() / "comsol_models"
 MODEL_PATH = MODEL_DIR / "comsol_cpw_resonator.mph"
 COMPLETED_MODEL_PATH = MODEL_DIR / "comsol_cpw_resonator_solved.mph"
@@ -376,7 +378,14 @@ CORES = 4
 client = None
 model = None
 
-if MPH_AVAILABLE:
+if not RUN_COMSOL:
+    print(
+        "RUN_COMSOL is False, so no COMSOL process was started. Set it to True "
+        "on a machine with COMSOL and a license to build the geometry project."
+    )
+elif not MPH_AVAILABLE:
+    print("MPh is not installed, so no COMSOL model was created.")
+else:
     try:
         MODEL_DIR.mkdir(parents=True, exist_ok=True)
         client = mph.start(cores=CORES)
@@ -390,8 +399,6 @@ if MPH_AVAILABLE:
         print(f"Saved geometry project to {MODEL_PATH}")
     except Exception as error:  # COMSOL missing, not licensed, or busy
         print(f"COMSOL geometry build did not run: {error!r}")
-else:
-    print("MPh is not installed, so no COMSOL model was created.")
 
 # %% [markdown]
 # ### Inspect what the builder produced
@@ -546,7 +553,7 @@ if MPH_AVAILABLE and client is not None and COMPLETED_MODEL_PATH.exists():
                 "under Results in the COMSOL GUI and update S21_EXPRESSION."
             )
 else:
-    print(f"No completed model at {COMPLETED_MODEL_PATH}")
+    print(f"No completed model named {COMPLETED_MODEL_PATH.name!r} in MODEL_DIR")
     print(
         "Set up the physics and study in the COMSOL GUI (or run `comsol batch`), "
         "save the solved model to that path, then re-run this cell."

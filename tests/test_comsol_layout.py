@@ -1,8 +1,8 @@
 """Tests for the COMSOL layout extraction.
 
 These check the pure geometry and validation in
-:mod:`qpdk.simulation.comsol_layout` on small QPDK CPW shapes. No COMSOL or
-MPh involvement.
+:mod:`qpdk.simulation.comsol_layout` on small QPDK CPW and unfed shapes. No
+COMSOL or MPh involvement.
 """
 
 from __future__ import annotations
@@ -150,6 +150,36 @@ def test_coupled_resonator_feed_ports_and_holes():
     assert layout.bbox.ymin == pytest.approx(source.bottom - margin)
     assert layout.bbox.xmax == pytest.approx(source.right + margin)
     assert layout.bbox.ymax == pytest.approx(source.top + margin)
+
+
+def test_no_feed_extraction_keeps_metal_and_bbox():
+    """An unfed layout extracts the same metal but carries no feed ports."""
+    comp = gf.components.straight(length=200, cross_section="cpw")
+    margin = 50.0
+    layout = prepare_comsol_layout(comp, feed_ports=None, ground_margin=margin)
+
+    assert layout.feed_ports == ()
+
+    source = comp.bbox()
+    assert layout.bbox.xmin == pytest.approx(source.left - margin)
+    assert layout.bbox.ymin == pytest.approx(source.bottom - margin)
+    assert layout.bbox.xmax == pytest.approx(source.right + margin)
+    assert layout.bbox.ymax == pytest.approx(source.top + margin)
+
+    fed = prepare_comsol_layout(comp, feed_ports=("o1", "o2"), ground_margin=margin)
+    assert layout.polygons == fed.polygons
+    assert _metal_area(layout) == pytest.approx(_metal_area(fed))
+
+
+def test_no_feed_extraction_still_rejects_junction_layers():
+    """JJ layers are refused, not skipped, so the caller must strip them itself."""
+    comp = gf.Component()
+    ref = comp << gf.components.straight(length=200, cross_section="cpw")
+    comp.add_ports(ref.ports)
+    comp.add_polygon([(0, 0), (2, 0), (2, 2), (0, 2)], layer=LAYER.JJ_AREA)
+
+    with pytest.raises(ValueError, match="JJ_AREA"):
+        prepare_comsol_layout(comp, feed_ports=None, ground_margin=50.0)
 
 
 def test_reextracting_same_component_with_new_margin():

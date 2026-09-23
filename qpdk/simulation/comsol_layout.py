@@ -1,9 +1,10 @@
 """Extract a gdsfactory component into COMSOL-ready metal polygons and ports.
 
 This module is pure geometry: it converts a QPDK M1_ETCH mask into physical
-M1_DRAW metal polygons (in micrometres) plus explicit feed-port metadata so a
-separate COMSOL model builder can consume it. No COMSOL, MPh, or PyAEDT imports
-live here.
+M1_DRAW metal polygons (in micrometres) plus optional feed-port metadata so a
+separate COMSOL model builder can consume it. Layouts that are not fed (e.g. an
+eigenmode qubit cell) are extracted with ``feed_ports=None`` and carry no feed
+metadata. No COMSOL, MPh, or PyAEDT imports live here.
 
 The negative-mask trick lives in the neutral
 :func:`~qpdk.simulation.layout.prepare_metal_layout`: it folds the additive
@@ -92,6 +93,7 @@ class ComsolLayout:
     """Extracted COMSOL geometry and feed ports for one component.
 
     All coordinates are in micrometres in the component's own frame.
+    ``feed_ports`` is empty for layouts extracted with ``feed_ports=None``.
 
     Note:
         The feed ports are reported as-is. Whether each one actually sits on
@@ -109,49 +111,60 @@ class ComsolLayout:
 
 def prepare_comsol_layout(
     component: Component,
-    feed_ports: tuple[str, str] = ("coupling_o1", "coupling_o2"),
+    feed_ports: tuple[str, str] | None = ("coupling_o1", "coupling_o2"),
     ground_margin: float = 100.0,
 ) -> ComsolLayout:
-    """Extract M1_DRAW metal polygons and feed ports from a component.
+    """Extract M1_DRAW metal polygons and optional feed ports from a component.
 
     Args:
         component: The gdsfactory component to extract. It must contain an
-            M1_ETCH mask; positive M1_DRAW shapes alone do not define CPW gaps.
+            M1_ETCH mask; positive M1_DRAW shapes alone do not define the gaps.
             The original ports are preserved.
-        feed_ports: Names of exactly two distinct ports to expose as feeds.
+        feed_ports: Names of exactly two distinct ports to expose as feeds, or
+            ``None`` for an unfed layout, in which case the result carries no
+            feed ports. ``None`` fits layouts with no CPW feedline, e.g. an
+            eigenmode qubit cell.
         ground_margin: Positive margin in µm added around the component
             bounding box to form the ground plane.
 
     Returns:
         A :class:`ComsolLayout` with metal polygons (holes preserved), the
-        selected feed ports, and the prepared bounding box, all in µm.
+        selected feed ports (empty when ``feed_ports`` is ``None``), and the
+        prepared bounding box, all in µm.
 
     Raises:
         ValueError: If ``ground_margin`` is not positive and finite, if
-            ``feed_ports`` are not two distinct available ports, if a feed
-            port is not cardinal or has non-finite coordinates or width, if
-            the component has no M1_ETCH mask or carries geometry on unsupported fabrication layers,
-            or if no M1_DRAW metal remains.
+            ``feed_ports`` is supplied but does not name two distinct available
+            ports, if a feed port is not cardinal or has non-finite coordinates
+            or width, if the component has no M1_ETCH mask or carries geometry
+            on unsupported fabrication layers, or if no M1_DRAW metal remains.
     """
     if not math.isfinite(ground_margin) or ground_margin <= 0.0:
         raise ValueError(
             f"ground_margin must be positive and finite, got {ground_margin!r}"
         )
-    if len(feed_ports) != 2:
-        raise ValueError(
-            f"feed_ports must name exactly two ports, got {len(feed_ports)}"
-        )
-    if feed_ports[0] == feed_ports[1]:
-        raise ValueError(f"feed_ports must be two distinct names, got {feed_ports!r}")
 
-    # Validate feeds before preparation: preparing registers a new cell and we
-    # do not want invalid input to leave that side effect behind.
-    ports = tuple(_feed_port(component, name) for name in feed_ports)
+    ports: tuple[ComsolFeedPort, ...]
+    if feed_ports is None:
+        ports = ()
+    else:
+        if len(feed_ports) != 2:
+            raise ValueError(
+                "feed_ports must name exactly two ports or be None, "
+                f"got {len(feed_ports)}"
+            )
+        if feed_ports[0] == feed_ports[1]:
+            raise ValueError(
+                f"feed_ports must be two distinct names, got {feed_ports!r}"
+            )
+        # Validate feeds before preparation: preparing registers a new cell and
+        # we do not want invalid input to leave that side effect behind.
+        ports = tuple(_feed_port(component, name) for name in feed_ports)
 
     _reject_unsupported_layers(component)
     if not any(component.get_polygons(by="tuple", layers=[LAYER.M1_ETCH]).values()):
         raise ValueError(
-            "COMSOL layout extraction requires an M1_ETCH mask to define CPW "
+            "COMSOL layout extraction requires an M1_ETCH mask to define the "
             "gaps; M1_DRAW shapes alone cannot be inverted into a ground plane"
         )
 
@@ -184,9 +197,12 @@ def _reject_unsupported_layers(component: Component) -> None:
     """Refuse components carrying fabrication layers this extractor ignores.
 
     Only M1_DRAW (and the M1_ETCH it is inverted from) is modelled. Layers
-    such as M2_DRAW or airbridges would be silently lost, making the extracted
-    geometry wrong rather than failed, so they are rejected up front. Checked
-    on the input because the AEDT preparation discards additive metal layers.
+    such as M2_DRAW, airbridges, or the JJ_AREA/JJ_PATCH junction layers would
+    be silently lost, making the extracted geometry wrong rather than failed,
+    so they are rejected up front. A layout that wants an EM-only copy (e.g. a
+    qubit cell with the junction removed) must strip those layers itself before
+    extraction. Checked on the input because the AEDT preparation discards
+    additive metal layers.
 
     Raises:
         ValueError: If any unsupported fabrication layer carries geometry.
