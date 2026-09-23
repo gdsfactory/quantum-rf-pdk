@@ -86,7 +86,6 @@ from pathlib import Path
 import gdsfactory as gf
 import numpy as np
 from gdsfactory.technology import LayerLevel, LayerStack
-from gplugins.elmer import run_capacitive_simulation_elmer
 from meshwell.resolution import ConstantInField
 
 from qpdk import PDK
@@ -269,6 +268,8 @@ print(f"Simulation folder: {simulation_folder}")
 # `capacitance_matrix` is keyed by the port names.
 
 # %%
+from gplugins.elmer import run_capacitive_simulation_elmer
+
 results = run_capacitive_simulation_elmer(
     component,
     element_order=1,
