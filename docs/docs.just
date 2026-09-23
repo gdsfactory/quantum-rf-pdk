@@ -26,6 +26,11 @@ write-justfile-help:
 convert-notebooks:
     @./.github/convert-notebooks.sh notebooks/src/*.py
 
+# Rebuild the checked-in SVG figures after editing docs/figures/*.typ
+[group('docs')]
+build-doc-figures:
+    @./.github/build-doc-figures.sh
+
 # Copy llms.txt (https://llmstxt.org/) into the built site root
 [private]
 [group('docs')]
@@ -44,6 +49,8 @@ copy-sample-notebooks:
     @mkdir -p docs/notebooks
     # Copy all source files from notebooks/src
     @cp -p notebooks/src/*.py notebooks/src/*.m docs/notebooks/
+    @mkdir -p docs/notebooks/figures
+    @cp -p notebooks/figures/*.svg docs/notebooks/figures/
     # Copy notebooks with pre-calculated outputs and remove their source counterparts
     @cd notebooks && for f in {{precalculated_notebooks}}; do \
         cp -p "$f" ../docs/notebooks/; \
