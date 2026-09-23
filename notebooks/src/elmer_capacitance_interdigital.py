@@ -353,6 +353,8 @@ results_wide = run_capacitive_simulation_elmer(
 )
 
 terminals_wide = tuple(port.name for port in component_wide.ports)
+if terminals_wide != terminals:
+    raise ValueError(f"unexpected wide-domain terminals: {terminals_wide}")
 capacitance_wide_fF = (
     np.array([
         [results_wide.capacitance_matrix[i, j] for j in terminals_wide]
@@ -370,22 +372,31 @@ print(f"Relative change: {(mutual_wide_fF - mutual_fF) / mutual_fF:+.2%}")
 # %% [markdown]
 # ## Sanity Checks
 #
-# A valid passive extraction must give a finite, symmetric matrix with a positive diagonal
-# and a negative off-diagonal. With no grounded conductor, `C11` and `C22` duplicate the
-# mutual term. The broad 5–40 fF range brackets earlier 14–15 fF solves of this exact
-# geometry; it guards against order-of-magnitude regressions, not model accuracy.
+# Both solves must give finite, symmetric Maxwell matrices with a positive diagonal,
+# negative off-diagonal and near-zero row sums. With no grounded conductor, `C11` and
+# `C22` duplicate the mutual term. The broad 5–40 fF range brackets earlier 14–15 fF
+# solves of this exact geometry; it guards against order-of-magnitude regressions, not
+# model accuracy.
 
 # %%
-if not np.isfinite(capacitance_fF).all():
-    raise ValueError("capacitance matrix has non-finite entries")
-if not np.allclose(capacitance_fF, capacitance_fF.T, rtol=1e-2, atol=1e-3):
-    raise ValueError("capacitance matrix is not symmetric")
-if not (np.diag(capacitance_fF) > 0).all():
-    raise ValueError("diagonal entries must be positive")
-if capacitance_fF[0, 1] >= 0 or capacitance_fF[1, 0] >= 0:
-    raise ValueError("off-diagonal Maxwell entries must be negative")
-if not 5.0 < mutual_fF < 40.0:
-    raise ValueError(f"mutual capacitance outside 5–40 fF reference range: {mutual_fF}")
+for domain_pad, matrix, mutual in (
+    (10.0, capacitance_fF, mutual_fF),
+    (30.0, capacitance_wide_fF, mutual_wide_fF),
+):
+    if not np.isfinite(matrix).all():
+        raise ValueError(f"{domain_pad} μm matrix has non-finite entries")
+    if not np.allclose(matrix, matrix.T, rtol=1e-2, atol=1e-3):
+        raise ValueError(f"{domain_pad} μm matrix is not symmetric")
+    if not (np.diag(matrix) > 0).all():
+        raise ValueError(f"{domain_pad} μm matrix diagonal must be positive")
+    if matrix[0, 1] >= 0 or matrix[1, 0] >= 0:
+        raise ValueError(f"{domain_pad} μm Maxwell off-diagonals must be negative")
+    if not 5.0 < mutual < 40.0:
+        raise ValueError(
+            f"{domain_pad} μm mutual capacitance outside 5–40 fF: {mutual}"
+        )
+    if (np.abs(matrix.sum(axis=1)) > 0.01 * mutual).any():
+        raise ValueError(f"{domain_pad} μm matrix has nonzero row sums")
 
 print("All checks passed.")
 
