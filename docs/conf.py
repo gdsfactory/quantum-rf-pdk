@@ -132,10 +132,11 @@ mathjax4_config = {
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
-# Exclude HFSS notebooks from execution as they depend on Ansys HFSS
-# (proprietary/licensed software) and can be slow or impossible to run
+# Exclude HFSS and COMSOL notebooks from execution as they depend on
+# proprietary/licensed software and can be slow or impossible to run
 # in typical documentation build environments.
 nb_execution_excludepatterns = [
+    "notebooks/comsol*",
     "notebooks/hfss*",
     "notebooks/matlab_integration*",
 ]

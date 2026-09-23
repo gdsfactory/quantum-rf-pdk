@@ -25,6 +25,9 @@ For new components, attach the compact model through ``schematic_function`` and 
  Common
 ********
 
+.. automodule:: qpdk.simulation.layout
+    :members:
+
 .. automodule:: qpdk.simulation.aedt_base
     :members:
     :show-inheritance:
@@ -42,5 +45,17 @@ For new components, attach the compact model through ``schematic_function`` and 
 *************
 
 .. automodule:: qpdk.simulation.q3d
+    :members:
+    :show-inheritance:
+
+********
+ COMSOL
+********
+
+.. automodule:: qpdk.simulation.comsol_layout
+    :members:
+    :show-inheritance:
+
+.. automodule:: qpdk.simulation.comsol
     :members:
     :show-inheritance:
