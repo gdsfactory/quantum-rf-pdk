@@ -42,6 +42,11 @@
 # resonator—the **dispersive shift** $\chi$—allows non-destructive measurement
 # of the qubit state.
 #
+# ![Two readout resonances whose frequencies depend on the qubit state](figures/dispersive-readout.svg)
+#
+# The two response frequencies differ by $\chi$ under the convention used below;
+# the sketch shows the separation qualitatively, without assigning its sign.
+#
 # The full transmon–resonator Hamiltonian (without the rotating-wave approximation)
 # reads:
 # ```{math}
