@@ -131,8 +131,8 @@
 # Java API).
 #
 # **References:**
-# - COMSOL "Coplanar Waveguide Resonator" model: https://www.comsol.com/model/download/953251/models.rf.cpw_resonator.pdf
-# - MPh documentation and tutorial: https://mph.readthedocs.io/en/stable/tutorial.html
+# - [COMSOL "Coplanar Waveguide Resonator" model](https://www.comsol.com/model/download/953251/models.rf.cpw_resonator.pdf)
+# - [MPh tutorial](https://mph.readthedocs.io/en/stable/tutorial.html)
 # - MPh repository: https://github.com/MPh-py/MPh
 
 # %% [markdown]

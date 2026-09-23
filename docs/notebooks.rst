@@ -131,21 +131,20 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
-- :doc:`notebooks/comsol_cpw_resonator` — Prepares a coupled quarter-wave CPW
-  resonator for COMSOL with MPh: extracts the QPDK metal polygons, gaps, and feed
-  ports, builds an unsolved 3D geometry project, and lays out the physics setup
-  (materials, PEC and scattering boundaries, numeric TEM ports, boundary mode
-  analysis, eigenfrequency search, narrow frequency sweep) needed to obtain
-  S₂₁. The notebook stops at geometry unless you supply a solved model.
-- :doc:`notebooks/comsol_qubit_eigenmode` — Prepares a linearized double-pad
-  transmon eigenmode for COMSOL with MPh: removes the Josephson-junction mask
-  from an EM-only copy of the QPDK cell, extracts the pad metal and the
-  preserved etched gaps, and builds an unsolved 3D geometry project. It lays
-  out what the eigenfrequency setup needs (substrate and air, PEC, a finite
-  Josephson inductance at the junction site, an RF eigenfrequency study) and
-  notes that the result is a linearized mode, not the anharmonic qubit
-  spectrum. The run is off by default and no eigenfrequency is computed or
-  faked from geometry alone.
+- :doc:`notebooks/comsol_cpw_resonator` — Prepares a coupled quarter-wave CPW resonator
+  for COMSOL with MPh: extracts the QPDK metal polygons, gaps, and feed ports, builds an
+  unsolved 3D geometry project, and lays out the physics setup (materials, PEC and
+  scattering boundaries, numeric TEM ports, boundary mode analysis, eigenfrequency
+  search, narrow frequency sweep) needed to obtain S₂₁. The notebook stops at geometry
+  unless you supply a solved model.
+- :doc:`notebooks/comsol_qubit_eigenmode` — Prepares a linearized double-pad transmon
+  eigenmode for COMSOL with MPh: removes the Josephson-junction mask from an EM-only
+  copy of the QPDK cell, extracts the pad metal and the preserved etched gaps, and
+  builds an unsolved 3D geometry project. It lays out what the eigenfrequency setup
+  needs (substrate and air, PEC, a finite Josephson inductance at the junction site, an
+  RF eigenfrequency study) and notes that the result is a linearized mode, not the
+  anharmonic qubit spectrum. The run is off by default and no eigenfrequency is computed
+  or faked from geometry alone.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
@@ -295,9 +294,9 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
         local Ansys installation and a license, which are not pip-installable.
     - - ``comsol``
       - ``MPh``
-      - The MPh-based COMSOL geometry builder behind ``qpdk.simulation.comsol``.
-        Also requires a local COMSOL installation with an RF Module license; MPh
-        itself is only a client and installs no solver.
+      - The MPh-based COMSOL geometry builder behind ``qpdk.simulation.comsol``. Also
+        requires a local COMSOL installation with an RF Module license; MPh itself is
+        only a client and installs no solver.
     - - ``circulax``
       - ``circulax``, ``optax``
       - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient
