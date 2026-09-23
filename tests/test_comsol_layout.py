@@ -11,7 +11,9 @@ import gdsfactory as gf
 import pytest
 
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
+from qpdk.simulation.aedt_base import prepare_component_for_aedt
 from qpdk.simulation.comsol_layout import ComsolLayout, prepare_comsol_layout
+from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.tech import LAYER
 
 
@@ -43,6 +45,53 @@ def _metal_area(layout: ComsolLayout) -> float:
         - sum(_polygon_area(hole) for hole in polygon.holes)
         for polygon in layout.polygons
     )
+
+
+def _geometry_signature(component: gf.Component) -> dict:
+    """Canonical per-layer polygon outlines and holes of a component.
+
+    Returns:
+        Layer specs mapped to sorted polygon outlines and holes.
+    """
+    signature = {}
+    for layer, shapes in component.get_polygons(by="tuple", merge=True).items():
+        polys = []
+        for shape in shapes:
+            outline = tuple((point.x, point.y) for point in shape.each_point_hull())
+            holes = tuple(
+                tuple((point.x, point.y) for point in shape.each_point_hole(hole))
+                for hole in range(shape.holes())
+            )
+            polys.append((outline, holes))
+        signature[layer] = sorted(polys)
+    return signature
+
+
+def test_aedt_wrapper_matches_shared_helper():
+    """The AEDT entry point is geometrically identical to the shared helper."""
+    comp = gf.components.straight(length=200, cross_section="cpw")
+
+    via_wrapper = prepare_component_for_aedt(
+        comp, margin_draw=40, margin_etch=5, name="equiv_aedt"
+    )
+    via_helper = prepare_metal_layout(
+        comp, margin_draw=40, margin_etch=5, name="equiv_metal"
+    )
+
+    assert _geometry_signature(via_wrapper) == _geometry_signature(via_helper)
+    wrapper_bbox, helper_bbox = via_wrapper.bbox(), via_helper.bbox()
+    assert (
+        wrapper_bbox.left,
+        wrapper_bbox.bottom,
+        wrapper_bbox.right,
+        wrapper_bbox.top,
+    ) == (
+        helper_bbox.left,
+        helper_bbox.bottom,
+        helper_bbox.right,
+        helper_bbox.top,
+    )
+    assert {p.name for p in via_wrapper.ports} == {p.name for p in via_helper.ports}
 
 
 def test_straight_cpw_metal_area_and_ports():
@@ -103,6 +152,17 @@ def test_coupled_resonator_feed_ports_and_holes():
     assert layout.bbox.ymax == pytest.approx(source.top + margin)
 
 
+def test_reextracting_same_component_with_new_margin():
+    """Notebook reruns can change the margin without a duplicate-cell error."""
+    comp = gf.components.straight(length=200, cross_section="cpw")
+    first = prepare_comsol_layout(comp, feed_ports=("o1", "o2"), ground_margin=50)
+    second = prepare_comsol_layout(comp, feed_ports=("o1", "o2"), ground_margin=75)
+
+    assert second.bbox.width == pytest.approx(first.bbox.width + 50)
+    assert second.bbox.height == pytest.approx(first.bbox.height + 50)
+    assert second.feed_ports == first.feed_ports
+
+
 @pytest.mark.parametrize("margin", [0.0, -1.0, float("nan"), float("inf")])
 def test_rejects_non_positive_margin(margin: float):
     """Ground margin must be strictly positive and finite."""
@@ -145,3 +205,18 @@ def test_rejects_unsupported_fabrication_layer():
 
     with pytest.raises(ValueError, match="M2_DRAW"):
         prepare_comsol_layout(comp, feed_ports=("o1", "o2"), ground_margin=50.0)
+
+
+def test_rejects_positive_metal_without_etch_mask():
+    """A positive metal rectangle does not define the CPW gaps or ground."""
+    comp = gf.Component()
+    comp.add_polygon([(0, 0), (200, 0), (200, 10), (0, 10)], layer=LAYER.M1_DRAW)
+    comp.add_port(
+        name="o1", center=(0, 5), width=10, orientation=180, layer=LAYER.M1_DRAW
+    )
+    comp.add_port(
+        name="o2", center=(200, 5), width=10, orientation=0, layer=LAYER.M1_DRAW
+    )
+
+    with pytest.raises(ValueError, match="requires an M1_ETCH mask"):
+        prepare_comsol_layout(comp, feed_ports=("o1", "o2"))
