@@ -63,6 +63,8 @@ from qpdk.models.constants import TEST_FREQUENCY
 
 # %% [markdown]
 # ## Media
+#
+# ![CPW cross-section showing the width, gap, and substrate](figures/cpw-cross-section.svg)
 # %%
 from qpdk.models.cpw import cpw_parameters, get_cpw_dimensions
 

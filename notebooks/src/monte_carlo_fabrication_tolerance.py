@@ -264,6 +264,8 @@ plt.show(block=False)
 # $Z_0$ and $\varepsilon_{\mathrm{eff}}$ depend on the CPW
 # dimensions.
 #
+# ![CPW cross-section showing center width and slot gaps](figures/cpw-cross-section.svg)
+#
 # .. note::
 #    The characteristic impedance and effective permittivity have a small
 #    imaginary part due to the substrate loss tangent

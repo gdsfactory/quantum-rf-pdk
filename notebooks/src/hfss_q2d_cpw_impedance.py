@@ -46,6 +46,8 @@
 # - PyAEDT Documentation: https://aedt.docs.pyansys.com/
 # - Q2D Coplanar Waveguide Example: https://examples.aedt.docs.pyansys.com/version/dev/examples/high_frequency/radiofrequency_mmwave/coplanar_waveguide.html
 # - Simons, *Coplanar Waveguide Circuits, Components, and Systems* {cite:p}`simonsCoplanarWaveguideCircuits2001`
+#
+# ![CPW cross-section with center width and ground gaps labelled](figures/cpw-cross-section.svg)
 
 # %% [markdown]
 # ## Setup and Imports
