@@ -1,25 +1,25 @@
 """Extract a gdsfactory component into COMSOL-ready metal polygons and ports.
 
-This module is pure geometry: it converts a QPDK component into physical
+This module is pure geometry: it converts a QPDK M1_ETCH mask into physical
 M1_DRAW metal polygons (in micrometres) plus explicit feed-port metadata so a
 separate COMSOL model builder can consume it. No COMSOL, MPh, or PyAEDT imports
 live here.
 
-The negative-mask trick lives in
-:func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt` (the "aedt" in
-the name is historical): it folds the additive metal into the etch layer, then
-inverts the mask around the component bounding box and applies the ground
-margin. The result exchanged here has positive M1_DRAW metal, no etch layers,
-and the original ports re-added.
+The negative-mask trick lives in the neutral
+:func:`~qpdk.simulation.layout.prepare_metal_layout`: it folds the additive
+metal into the etch layer, then inverts the mask around the component bounding
+box and applies the ground margin. The result exchanged here has positive
+M1_DRAW metal, no etch layers, and the original ports re-added.
 """
 
 from __future__ import annotations
 
 import math
+import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from qpdk.simulation.aedt_base import prepare_component_for_aedt
+from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.tech import LAYER, NON_METADATA_LAYERS
 
 if TYPE_CHECKING:
@@ -115,8 +115,9 @@ def prepare_comsol_layout(
     """Extract M1_DRAW metal polygons and feed ports from a component.
 
     Args:
-        component: The gdsfactory component to extract. The original ports are
-            preserved.
+        component: The gdsfactory component to extract. It must contain an
+            M1_ETCH mask; positive M1_DRAW shapes alone do not define CPW gaps.
+            The original ports are preserved.
         feed_ports: Names of exactly two distinct ports to expose as feeds.
         ground_margin: Positive margin in µm added around the component
             bounding box to form the ground plane.
@@ -129,7 +130,7 @@ def prepare_comsol_layout(
         ValueError: If ``ground_margin`` is not positive and finite, if
             ``feed_ports`` are not two distinct available ports, if a feed
             port is not cardinal or has non-finite coordinates or width, if
-            the component carries geometry on unsupported fabrication layers,
+            the component has no M1_ETCH mask or carries geometry on unsupported fabrication layers,
             or if no M1_DRAW metal remains.
     """
     if not math.isfinite(ground_margin) or ground_margin <= 0.0:
@@ -148,8 +149,17 @@ def prepare_comsol_layout(
     ports = tuple(_feed_port(component, name) for name in feed_ports)
 
     _reject_unsupported_layers(component)
+    if not any(component.get_polygons(by="tuple", layers=[LAYER.M1_ETCH]).values()):
+        raise ValueError(
+            "COMSOL layout extraction requires an M1_ETCH mask to define CPW "
+            "gaps; M1_DRAW shapes alone cannot be inverted into a ground plane"
+        )
 
-    prepared = prepare_component_for_aedt(component, margin_draw=ground_margin)
+    prepared = prepare_metal_layout(
+        component,
+        margin_draw=ground_margin,
+        name=f"{component.name}_comsol_{uuid.uuid4().hex}",
+    )
 
     polygons = _extract_metal_polygons(prepared)
     if not polygons:
@@ -182,7 +192,7 @@ def _reject_unsupported_layers(component: Component) -> None:
         ValueError: If any unsupported fabrication layer carries geometry.
     """
     unsupported_specs = {
-        tuple(layer): layer.name
+        tuple(layer): str(layer)
         for layer in NON_METADATA_LAYERS
         if tuple(layer) not in _SUPPORTED_LAYERS
     }
