@@ -168,9 +168,11 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 # %% [markdown]
 # ## Layer Stack and Materials
 #
-# The stack uses a thin Nb film on a $30\,\mu m$ Si substrate with $20\,\mu m$ of
-# vacuum above. This compact domain keeps the example quick; increase the domain and
-# refine the mesh before treating the reported capacitance as a precision result.
+# The stack uses a thin Nb film on a $30\,\mu m$ Si substrate. A $20\,\mu m$
+# vacuum prism starts at the substrate surface to fill the gaps beside the film;
+# meshwell cuts the higher-priority metal out of that prism. This compact domain keeps
+# the example quick; increase the domain and refine the mesh before treating the
+# reported capacitance as a precision result.
 #
 # Material permittivities come from the QPDK technology definition
 # (`qpdk.tech.material_properties`): Si uses :math:`\epsilon_r = 11.45`, and the niobium
