@@ -255,11 +255,8 @@ mesh_parameters = {
     },
 }
 
-# Scratch directory for the mesh, Elmer input and field solution. Nothing here is tracked.
-simulation_folder = (
-    Path(tempfile.gettempdir()).resolve() / "qpdk_elmer_interdigital_capacitor"
-)
-simulation_folder.mkdir(parents=True, exist_ok=True)
+# Each solve keeps its mesh and field files in a separate scratch directory.
+simulation_folder = Path(tempfile.mkdtemp(prefix="qpdk_elmer_interdigital_capacitor_"))
 print(f"Simulation folder: {simulation_folder}")
 
 # %% [markdown]
