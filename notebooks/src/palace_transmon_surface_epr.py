@@ -181,14 +181,13 @@ if WORKFLOW_ACTION == "prepare":
 # %% [markdown]
 # ## Generate Config
 #
-# AMR is explicitly disabled for this handoff (`MaxIts = 0`), and the generated
-# Palace configuration explicitly keeps nonconformal refinement disabled.
+# Allow up to 20 AMR iterations; nonconformal refinement remains disabled.
 
 # %%
 FEM_ORDER = 2
 LINEAR_TOLERANCE = 1e-6
 LINEAR_MAX_ITERATIONS = 400
-AMR_MAX_PASSES = 0
+AMR_MAX_PASSES = 20
 AMR_NONCONFORMAL = False
 AMR_TOLERANCE = 1e-2
 
