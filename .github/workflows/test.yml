@@ -276,3 +276,42 @@ jobs:
             /tmp/matlab_bridge.log
             /tmp/matlab_script.log
           if-no-files-found: warn
+  # Docs skip solver notebooks, so exercise this one in its own job.
+  test-elmer-notebook:
+    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Elmer FEM
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes software-properties-common
+          sudo add-apt-repository --yes ppa:elmer-csc-ubuntu/elmer-csc-ppa
+          sudo apt-get update
+          sudo apt-get install --yes elmerfem-csc libglu1-mesa
+          command -v ElmerGrid
+          command -v ElmerSolver
+          dpkg-query -W --showformat='${Package} ${Version}\n' elmerfem-csc
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - name: Install QPDK with the models extra and the Elmer driver
+        run: |
+          uv add --no-sync "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@4ac6063ebfc01473a2f514b460d6f3ff04f5a17d"
+          uv sync --locked --python 3.12 --no-dev --extra models
+          uv pip install nbclient nbformat ipykernel
+      - name: Execute the Elmer notebook
+        # Keep notebook-only execution helpers installed without changing the lock.
+        run: uv run --no-sync python .github/run_elmer_notebook.py notebooks/elmer_capacitance_interdigital.ipynb
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: elmer-notebook-logs
+          path: |
+            /tmp/qpdk_elmer_interdigital_capacitor_*/*.log
+            /tmp/qpdk_elmer_interdigital_capacitor_*/*.sif
+          if-no-files-found: warn

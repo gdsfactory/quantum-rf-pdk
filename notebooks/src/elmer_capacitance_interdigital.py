@@ -17,14 +17,14 @@
 # This notebook needs the `models` extra and the Elmer driver from `gplugins`:
 #
 # ```bash
-# uv add "qpdk[models]" "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@elmer-capacitance"
+# uv add "qpdk[models]" "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@4ac6063ebfc01473a2f514b460d6f3ff04f5a17d"
 # # or with pip:
-# pip install "qpdk[models]" "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@elmer-capacitance"
+# pip install "qpdk[models]" "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@4ac6063ebfc01473a2f514b460d6f3ff04f5a17d"
 # ```
 #
 # The Elmer driver changes are currently in the companion
-# [gplugins pull request](https://github.com/gdsfactory/gplugins/pull/781); use its branch
-# until a release includes them.
+# [gplugins pull request](https://github.com/gdsfactory/gplugins/pull/781); the install
+# commands pin the revision tested with this notebook until a release includes it.
 #
 # **Elmer is an external solver.** `ElmerGrid` and `ElmerSolver` must be available on your
 # `PATH`; they are not pip-installable. See the
@@ -37,27 +37,33 @@
 # This notebook runs a quasi-static electrostatic solve with Elmer FEM to extract the
 # capacitance of a QPDK interdigital capacitor. Elmer solves
 # :math:`\nabla \cdot (\epsilon \nabla \phi) = 0` with a fixed potential on each metal
-# terminal and returns the Maxwell capacitance matrix, the same quantity Ansys Q3D would
-# report for a quasi-static extraction.
+# terminal. Elmer's `.dat` result is the lumped (circuit) capacitance matrix;
+# `gplugins` converts it to a Maxwell matrix, with negative off-diagonal entries, in
+# `ElectrostaticResults`.
 
 # %% [markdown]
 # ## Physics
 #
 # An interdigital capacitor (IDC) is two interleaved combs of metal fingers. Each comb is
 # a separate conductor (terminal), and the capacitance we care about is the coupling
-# between them, see {cite:p}`leizhuAccurateCircuitModel2000` and
-# {cite:p}`igrejaAnalyticalEvaluationInterdigital2004`.
+# between them.
 #
-# For :math:`N` conductors Elmer reports the **Maxwell capacitance matrix** :math:`C`,
-# defined by :math:`Q_i = \sum_j C_{ij} V_j`. Its diagonal entries are the self
-# capacitances (the total capacitance from conductor :math:`i` to everything else) and its
-# off-diagonal entries are the negatives of the pairwise mutual capacitances:
+# For :math:`N` conductors Elmer's `.dat` result is the lumped (circuit) capacitance
+# matrix. `gplugins` converts it to the Maxwell form :math:`C` reported in
+# `ElectrostaticResults`, defined by :math:`Q_i = \sum_j C_{ij} V_j` with negative
+# off-diagonal entries:
 #
-# $$ C_{ii} = \sum_{j \neq i} C_{ij}^{\text{mutual}} + C_{i}^{\text{ground}}, \qquad C_{ij} = -C_{ij}^{\text{mutual}} \quad (i \neq j). $$
+# $$ C_{ij} = -C_{ij}^{\text{mutual}} \quad (i \neq j). $$
 #
 # So for a two-terminal device the mutual capacitance is
 # :math:`C_{12}^{\text{mutual}} = -C_{12}`, and it shows up as a **negative** off-diagonal
-# entry. All Elmer output is in SI units (farads); we convert to femtofarads below.
+# entry. This model has **no grounded conductor**: the diagonal entries are not independent
+# capacitances-to-ground, and :math:`C_{11}` and :math:`C_{22}` are effectively equal to the
+# mutual :math:`|C_{12}|`. All Elmer output is in SI units (farads); we convert to
+# femtofarads below.
+#
+# This is a 3D FEM result only. It is **not benchmarked against an analytic IDC model**,
+# and no analytic formula is evaluated here.
 
 # %% [markdown]
 # ## Setup and Imports
@@ -76,7 +82,7 @@ if "google.colab" in sys.modules:
         "install",
         "-q",
         "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
-        "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@elmer-capacitance",
+        "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@4ac6063ebfc01473a2f514b460d6f3ff04f5a17d",
     ])
 
 # %% tags=["hide-input", "hide-output"]
@@ -258,18 +264,19 @@ mesh_parameters = {
 
 # Each solve keeps its mesh and field files in a separate scratch directory.
 simulation_folder = Path(tempfile.mkdtemp(prefix="qpdk_elmer_interdigital_capacitor_"))
-print(f"Simulation folder: {simulation_folder}")
+print("Elmer mesh and field files go to a fresh temporary scratch directory.")
 
 # %% [markdown]
 # ## Solve
 #
 # We call `run_capacitive_simulation_elmer` with the default first-order elements and a
-# single process. Each port becomes a terminal held at a fixed potential, and the metal
-# surfaces that carry no port are grounded. The solve writes the Elmer SIF, runs
-# `ElmerGrid` and `ElmerSolver`, and returns an `ElectrostaticResults` whose
-# `capacitance_matrix` is keyed by the port names.
+# single process. Each port becomes a terminal held at a fixed potential; both combs carry
+# a port, so no metal surface is grounded and the model has no grounded conductor. The
+# solve writes the Elmer SIF, runs `ElmerGrid` and `ElmerSolver`, and returns an
+# `ElectrostaticResults` whose `capacitance_matrix` holds the converted Maxwell matrix,
+# keyed by the port names.
 
-# %%
+# %% tags=["hide-output"]
 from gplugins.elmer import run_capacitive_simulation_elmer
 
 results = run_capacitive_simulation_elmer(
@@ -307,7 +314,8 @@ print(f"\nCapacitance matrix indexed by {terminals}")
 # %% [markdown]
 # The off-diagonal entry is negative by the Maxwell convention
 # (:math:`C_{ij} = -C_{ij}^{\text{mutual}}`), so the mutual capacitance between the two
-# combs is its negative.
+# combs is its negative. There is no grounded conductor, so :math:`C_{11}` and
+# :math:`C_{22}` are not independent capacitances-to-ground; we report the mutual value.
 
 # %%
 c12_fF = float(capacitance_fF[0, 1])
@@ -315,14 +323,57 @@ mutual_fF = -c12_fF
 
 print(f"Off-diagonal C12: {c12_fF:.3f} fF")
 print(f"Mutual capacitance C12_mutual = -C12: {mutual_fF:.3f} fF")
-print(f"Self capacitance C11: {capacitance_fF[0, 0]:.3f} fF")
+
+# %% [markdown]
+# ## Lateral Domain Sensitivity
+#
+# The extraction above pads the simulation outline by only 10 μm, so the outer boundary
+# may truncate field lines that should extend further. Below we rebuild the same geometry
+# with a 30 μm lateral pad and re-solve with the same layer stack, materials and mesh
+# settings, comparing the mutual capacitance.
+#
+# This comparison changes the lateral boundary and the generated mesh, so the difference
+# mixes domain and discretization effects. It does not establish convergence of the
+# vertical extent or the mesh.
+
+# %% tags=["hide-output"]
+component_wide = interdigital_capacitor_for_elmer(domain_pad=30.0)
+simulation_folder_wide = Path(
+    tempfile.mkdtemp(prefix="qpdk_elmer_interdigital_capacitor_wide_")
+)
+
+results_wide = run_capacitive_simulation_elmer(
+    component_wide,
+    element_order=1,
+    n_processes=1,
+    layer_stack=layer_stack,
+    material_spec=material_spec,
+    simulation_folder=simulation_folder_wide,
+    mesh_parameters=mesh_parameters,
+)
+
+terminals_wide = tuple(port.name for port in component_wide.ports)
+capacitance_wide_fF = (
+    np.array([
+        [results_wide.capacitance_matrix[i, j] for j in terminals_wide]
+        for i in terminals_wide
+    ])
+    * 1e15
+)
+mutual_wide_fF = -float(capacitance_wide_fF[0, 1])
+
+# %%
+print(f"Mutual capacitance at domain_pad=10.0 μm: {mutual_fF:.3f} fF")
+print(f"Mutual capacitance at domain_pad=30.0 μm: {mutual_wide_fF:.3f} fF")
+print(f"Relative change: {(mutual_wide_fF - mutual_fF) / mutual_fF:+.2%}")
 
 # %% [markdown]
 # ## Sanity Checks
 #
-# A valid passive extraction must give a finite, symmetric, diagonally dominant matrix with
-# a negative off-diagonal. A guard ring would add a third terminal and turn this into a
-# 3x3 problem, so we solve the two-terminal device only.
+# A valid passive extraction must give a finite, symmetric matrix with a positive diagonal
+# and a negative off-diagonal. With no grounded conductor, `C11` and `C22` duplicate the
+# mutual term. The broad 5–40 fF range brackets earlier 14–15 fF solves of this exact
+# geometry; it guards against order-of-magnitude regressions, not model accuracy.
 
 # %%
 if not np.isfinite(capacitance_fF).all():
@@ -330,14 +381,11 @@ if not np.isfinite(capacitance_fF).all():
 if not np.allclose(capacitance_fF, capacitance_fF.T, rtol=1e-2, atol=1e-3):
     raise ValueError("capacitance matrix is not symmetric")
 if not (np.diag(capacitance_fF) > 0).all():
-    raise ValueError("self capacitances must be positive")
+    raise ValueError("diagonal entries must be positive")
 if capacitance_fF[0, 1] >= 0 or capacitance_fF[1, 0] >= 0:
     raise ValueError("off-diagonal Maxwell entries must be negative")
-if mutual_fF <= 0:
-    raise ValueError("mutual capacitance must be positive")
-diagonal = np.diag(capacitance_fF)
-if np.any(diagonal + 1e-3 < np.sum(np.abs(capacitance_fF), axis=1) - diagonal):
-    raise ValueError("each self capacitance must meet or exceed its mutual sum")
+if not 5.0 < mutual_fF < 40.0:
+    raise ValueError(f"mutual capacitance outside 5–40 fF reference range: {mutual_fF}")
 
 print("All checks passed.")
 
@@ -351,15 +399,13 @@ print("All checks passed.")
 #   `M1_DRAW`-based layer stack to sidestep QPDK's derived `M1` level.
 # - Meshed a $30\,\mu m$ substrate and $20\,\mu m$ air region with `meshwell`,
 #   refining only the metal surfaces.
-# - Solved the electrostatic problem and read the 2x2 Maxwell capacitance matrix, whose
-#   off-diagonal is :math:`-C_{12}^{\text{mutual}}`.
+# - Solved the electrostatic problem, converted Elmer's lumped result to the 2x2 Maxwell
+#   matrix, and reported the mutual capacitance :math:`-C_{12}`. With no grounded
+#   conductor, `C11` and `C22` are not independent capacitances-to-ground.
+# - Re-ran the solve with a 30 μm lateral pad. The observed change also includes mesh
+#   discretization effects, so it is a sensitivity check rather than a convergence claim.
+#
+# The result is a 3D FEM number only and is not benchmarked against an analytic IDC model.
 #
 # The same layout can be swept or optimized by varying `fingers`, `finger_length` and
 # `finger_gap` in `interdigital_capacitor_for_elmer` and re-running the solve.
-
-# %% [markdown]
-# ## References
-#
-# ```{bibliography}
-# :filter: docname in docnames
-# ```
