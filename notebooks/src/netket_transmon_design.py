@@ -44,6 +44,11 @@
 # The transmon qubit {cite:p}`kochChargeinsensitiveQubitDesign2007a` is an
 # anharmonic oscillator formed by shunting a Josephson junction with a large
 # capacitance.  Its Hamiltonian in the charge basis reads:
+#
+# ![Transmon circuit with a Josephson junction shunted by capacitance, setting EJ and EC](figures/transmon-energy.svg)
+#
+# The shunt capacitance sets $E_C$, while the junction critical current sets $E_J$.
+#
 # ```{math}
 # :label: eq:transmon-hamiltonian-netket
 # \hat{H} = 4 E_C (\hat{n} - n_g)^2 - E_J \cos\hat{\varphi},
