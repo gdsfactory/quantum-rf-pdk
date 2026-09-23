@@ -181,6 +181,8 @@ plt.show()
 # We can use [`sax`](https://gdsfactory.github.io/sax/) to build our own circuits from basic components. Let's build a quarter-wave resonator capacitively coupled to a feedline.
 #
 # The circuit is a feedline with a T-junction. A series combination of a capacitor and a shorted transmission line (the resonator) is connected to the T-junction as a shunt element.
+#
+# ![Feedline with a capacitively coupled quarter-wave resonator shorted at the far end](figures/quarter-wave-resonator.svg)
 
 # %%
 # Define component settings
