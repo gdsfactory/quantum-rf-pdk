@@ -184,12 +184,13 @@ if WORKFLOW_ACTION == "prepare":
 # Allow up to 20 AMR iterations; nonconformal refinement remains disabled.
 
 # %%
-FEM_ORDER = 2
+FEM_ORDER = 3
 LINEAR_TOLERANCE = 1e-6
 LINEAR_MAX_ITERATIONS = 400
 AMR_MAX_PASSES = 20
 AMR_NONCONFORMAL = False
 AMR_TOLERANCE = 1e-2
+AMR_UPDATE_FRACTION = 0.3
 
 if WORKFLOW_ACTION == "prepare":
     sim.set_numerical(
@@ -202,6 +203,7 @@ if WORKFLOW_ACTION == "prepare":
         amr_max_passes=AMR_MAX_PASSES,
         amr_nonconformal=AMR_NONCONFORMAL,
         amr_tolerance=AMR_TOLERANCE,
+        amr_update_fraction=AMR_UPDATE_FRACTION,
         output_paraview=True,
     )
     config_path = sim.write_config()
