@@ -36,7 +36,7 @@
 #
 # This notebook runs a quasi-static electrostatic solve with Elmer FEM to extract the
 # capacitance of a QPDK interdigital capacitor. Elmer solves
-# :math:`\nabla \cdot (\epsilon \nabla \phi) = 0` with a fixed potential on each metal
+# $\nabla \cdot (\epsilon \nabla \phi) = 0$ with a fixed potential on each metal
 # terminal. Elmer's `.dat` result is the lumped (circuit) capacitance matrix;
 # `gplugins` converts it to a Maxwell matrix, with negative off-diagonal entries, in
 # `ElectrostaticResults`.
@@ -48,18 +48,18 @@
 # a separate conductor (terminal), and the capacitance we care about is the coupling
 # between them.
 #
-# For :math:`N` conductors Elmer's `.dat` result is the lumped (circuit) capacitance
-# matrix. `gplugins` converts it to the Maxwell form :math:`C` reported in
-# `ElectrostaticResults`, defined by :math:`Q_i = \sum_j C_{ij} V_j` with negative
+# For $N$ conductors Elmer's `.dat` result is the lumped (circuit) capacitance
+# matrix. `gplugins` converts it to the Maxwell form $C$ reported in
+# `ElectrostaticResults`, defined by $Q_i = \sum_j C_{ij} V_j$ with negative
 # off-diagonal entries:
 #
 # $$ C_{ij} = -C_{ij}^{\text{mutual}} \quad (i \neq j). $$
 #
 # So for a two-terminal device the mutual capacitance is
-# :math:`C_{12}^{\text{mutual}} = -C_{12}`, and it shows up as a **negative** off-diagonal
+# $C_{12}^{\text{mutual}} = -C_{12}$, and it shows up as a **negative** off-diagonal
 # entry. This model has **no grounded conductor**: the diagonal entries are not independent
-# capacitances-to-ground, and :math:`C_{11}` and :math:`C_{22}` are effectively equal to the
-# mutual :math:`|C_{12}|`. All Elmer output is in SI units (farads); we convert to
+# capacitances-to-ground, and $C_{11}$ and $C_{22}$ are effectively equal to the
+# mutual $|C_{12}|$. All Elmer output is in SI units (farads); we convert to
 # femtofarads below.
 #
 # This is a 3D FEM result only. It is **not benchmarked against an analytic IDC model**,
@@ -181,7 +181,7 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 # reported capacitance as a precision result.
 #
 # Material permittivities come from the QPDK technology definition
-# (`qpdk.tech.material_properties`): Si uses :math:`\epsilon_r = 11.45`, and the niobium
+# (`qpdk.tech.material_properties`): Si uses $\epsilon_r = 11.45$, and the niobium
 # film is treated as a perfect conductor.
 
 # %%
@@ -313,9 +313,9 @@ print(f"\nCapacitance matrix indexed by {terminals}")
 
 # %% [markdown]
 # The off-diagonal entry is negative by the Maxwell convention
-# (:math:`C_{ij} = -C_{ij}^{\text{mutual}}`), so the mutual capacitance between the two
-# combs is its negative. There is no grounded conductor, so :math:`C_{11}` and
-# :math:`C_{22}` are not independent capacitances-to-ground; we report the mutual value.
+# ($C_{ij} = -C_{ij}^{\text{mutual}}$), so the mutual capacitance between the two
+# combs is its negative. There is no grounded conductor, so $C_{11}$ and
+# $C_{22}$ are not independent capacitances-to-ground; we report the mutual value.
 
 # %%
 c12_fF = float(capacitance_fF[0, 1])
@@ -411,7 +411,7 @@ print("All checks passed.")
 # - Meshed a $30\,\mu m$ substrate and $20\,\mu m$ air region with `meshwell`,
 #   refining only the metal surfaces.
 # - Solved the electrostatic problem, converted Elmer's lumped result to the 2x2 Maxwell
-#   matrix, and reported the mutual capacitance :math:`-C_{12}`. With no grounded
+#   matrix, and reported the mutual capacitance $-C_{12}$. With no grounded
 #   conductor, `C11` and `C22` are not independent capacitances-to-ground.
 # - Re-ran the solve with a 30 μm lateral pad. The observed change also includes mesh
 #   discretization effects, so it is a sensitivity check rather than a convergence claim.
