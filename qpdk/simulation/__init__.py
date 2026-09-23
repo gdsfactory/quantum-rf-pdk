@@ -24,10 +24,10 @@ Extractor.
 
 **COMSOL workflow:**
 
-1. Extract metal polygons and feed ports with
+1. Extract metal polygons and optional feed ports with
    :func:`~qpdk.simulation.comsol_layout.prepare_comsol_layout`
 2. Build a 3D geometry project with
-   :func:`~qpdk.simulation.comsol.build_comsol_cpw_model`
+   :func:`~qpdk.simulation.comsol.build_comsol_metal_model`
 3. Add RF physics and a study to the returned model yourself
 
 Note:
@@ -89,6 +89,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "prepare_comsol_layout",
     ),
     "build_comsol_cpw_model": ("qpdk.simulation.comsol", "build_comsol_cpw_model"),
+    "build_comsol_metal_model": (
+        "qpdk.simulation.comsol",
+        "build_comsol_metal_model",
+    ),
 }
 
 __all__ = [
@@ -104,6 +108,7 @@ __all__ = [
     "detach_desktop_logging",
     "fit_view",
     "build_comsol_cpw_model",
+    "build_comsol_metal_model",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",

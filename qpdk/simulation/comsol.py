@@ -5,17 +5,20 @@ by :mod:`qpdk.simulation.comsol_layout` (holes preserved) into a COMSOL work
 plane and extrudes them to a metal thickness. No RF physics, materials, ports,
 or studies are added: an unsolved geometry project is not an RF simulation.
 
+The builder is layout-agnostic: a CPW feedline and an unfed qubit cell both
+become extruded metal. It does not infer a Josephson junction from layout data.
+
 The MPh model is returned so a user can add the physics and study that fit
-their problem, e.g. ``model.java.physics().create(...)``. Feed port coordinates
+their problem. Feed port coordinates
 stay on the :class:`~qpdk.simulation.comsol_layout.ComsolLayout` that was passed
 in; this module never claims a port was assigned in physics.
 
 Example:
     >>> import mph
-    >>> from qpdk.simulation.comsol import build_comsol_cpw_model
-    >>> layout = prepare_comsol_layout(component)
-    >>> model = build_comsol_cpw_model(client, layout, metal_thickness_um=0.2)
-    >>> model.save("cpw.mph")
+    >>> from qpdk.simulation.comsol import build_comsol_metal_model
+    >>> layout = prepare_comsol_layout(component, feed_ports=None)
+    >>> model = build_comsol_metal_model(client, layout, metal_thickness_um=0.2)
+    >>> model.save("metal.mph")
 """
 
 from __future__ import annotations
@@ -52,18 +55,20 @@ def _add_polygon(work_plane: Any, tag: str, points: tuple[Point, ...]) -> None:
     polygon.set("y", ",".join(_format_number(point[1]) for point in points))
 
 
-def build_comsol_cpw_model(
+def build_comsol_metal_model(
     client: mph.Client,
     layout: ComsolLayout,
     *,
     metal_thickness_um: float = 0.2,
-    name: str = "QPDK CPW",
+    name: str = "QPDK metal",
 ) -> mph.Model:
     """Create a COMSOL 3D model holding the layout's metal as extruded polygons.
 
-    Each polygon outline becomes a solid polygon on work plane ``wp1``; each
-    hole becomes a second polygon subtracted by its own ``Difference`` feature.
-    The finished work plane is extruded to ``metal_thickness_um`` by ``ext1``.
+    Works for any extracted layout, fed or not: the feed ports are not used
+    here. Each polygon outline becomes a solid polygon on work plane ``wp1``;
+    each hole becomes a second polygon subtracted by its own ``Difference``
+    feature. The finished work plane is extruded to ``metal_thickness_um`` by
+    ``ext1``.
 
     Args:
         client: A connected :class:`mph.Client`.
@@ -118,3 +123,8 @@ def build_comsol_cpw_model(
     geometry.run()
 
     return model
+
+
+# Kept for the CPW resonator notebook and any existing caller; the builder is
+# layout-agnostic, so this is the same object, not a wrapper.
+build_comsol_cpw_model = build_comsol_metal_model

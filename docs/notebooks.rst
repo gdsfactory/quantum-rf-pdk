@@ -137,6 +137,15 @@ currents, and substrate modes that analytical models may miss
   (materials, PEC and scattering boundaries, numeric TEM ports, boundary mode
   analysis, eigenfrequency search, narrow frequency sweep) needed to obtain
   S₂₁. The notebook stops at geometry unless you supply a solved model.
+- :doc:`notebooks/comsol_qubit_eigenmode` — Prepares a linearized double-pad
+  transmon eigenmode for COMSOL with MPh: removes the Josephson-junction mask
+  from an EM-only copy of the QPDK cell, extracts the pad metal and the
+  preserved etched gaps, and builds an unsolved 3D geometry project. It lays
+  out what the eigenfrequency setup needs (substrate and air, PEC, a finite
+  Josephson inductance at the junction site, an RF eigenfrequency study) and
+  notes that the result is a linearized mode, not the anharmonic qubit
+  spectrum. The run is off by default and no eigenfrequency is computed or
+  faked from geometry alone.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
@@ -415,6 +424,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - Ansys HFSS, PyAEDT
       - ``models``, ``hfss``
     - - :doc:`notebooks/comsol_cpw_resonator`
+      - FEM electromagnetics
+      - COMSOL, MPh
+      - ``comsol``
+    - - :doc:`notebooks/comsol_qubit_eigenmode`
       - FEM electromagnetics
       - COMSOL, MPh
       - ``comsol``
