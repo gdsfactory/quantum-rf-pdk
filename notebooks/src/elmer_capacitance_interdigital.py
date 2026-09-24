@@ -27,7 +27,8 @@
 # commands pin the revision tested with this notebook until a release includes it.
 #
 # **Elmer is an external solver.** `ElmerGrid` and `ElmerSolver` must be available on your
-# `PATH`; they are not pip-installable. See the
+# `PATH`; `ElmerSolver_mpi` is also needed when `QPDK_ELMER_PROCESSES` exceeds 1. They
+# are not pip-installable. See the
 # [Elmer FEM installation guide](https://www.elmerfem.org/blog/binaries/) for binaries and
 # container options.
 #
@@ -42,9 +43,14 @@
 # `ElectrostaticResults`.
 #
 # The reported number comes from a mesh-convergence study. The geometry, the layer stack
-# and the simulation domain are held fixed, the mesh is refined over four factors, and
+# and the simulation domain are held fixed, the mesh is refined over five factors, and
 # the finest mesh supplies the final value. A separate lateral-pad comparison checks how
 # much that value depends on the outer boundary of the finite domain.
+#
+# The saved output uses cubic elements and a 0.5 % refinement check. CI separately
+# executes the notebook with quadratic elements and a 3 % check
+# (`QPDK_ELMER_CI_FAST=1`). The saved values come from the cubic run. The cubic
+# profile is memory intensive; use the CI smoke profile for a quick functional run.
 
 # %% [markdown]
 # ## Physics
@@ -100,6 +106,7 @@ import matplotlib
 matplotlib.use("module://matplotlib_inline.backend_inline")
 
 # %% tags=["hide-input", "hide-output"]
+import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -196,10 +203,11 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 # ## Layer Stack and Materials
 #
 # The stack uses a thin Nb film on a $60\,\mu m$ Si substrate with a $40\,\mu m$
-# vacuum prism above it. The vacuum starts at the substrate surface to fill the gaps
-# beside the film; meshwell cuts the higher-priority metal out of that prism. The
-# substrate is thick enough that the field has room below the fingers, and the vacuum
-# prism gives it room above.
+# vacuum prism above it. These finite heights are reduced from the 500 μm levels in
+# QPDK's technology stack. The vacuum starts at the substrate surface to fill the gaps
+# beside the film; meshwell cuts the higher-priority metal out of that prism. We check
+# lateral-domain sensitivity below, but do not quantify the effect of these vertical
+# truncations.
 #
 # Material permittivities come from the QPDK technology definition
 # (`qpdk.tech.material_properties`): Si uses $\epsilon_r = 11.45$, and the niobium
@@ -325,12 +333,16 @@ for prism, specs in nominal_mesh["resolution_specs"].items():
 # ## Solve at Each Mesh Factor
 #
 # Every solve below uses the same component, layer stack, materials and domain; only the
-# mesh factor changes. Two solver settings are worth calling out:
+# mesh factor changes. The run profile controls these settings:
 #
-# - `element_order=2` uses second-order (quadratic) basis functions, which resolve the
+# - The default profile uses cubic (`element_order=3`) basis functions, which resolve the
 #   potential far better per element than the first-order default at the same element
-#   count. A first-order solve on a coarse mesh is not a reliable capacitance number.
-# - `n_processes=1` keeps the solve serial, so it runs on a plain CPU runner without MPI.
+#   count. The CI smoke profile drops to quadratic (`element_order=2`) elements. A
+#   first-order solve on a coarse mesh is not a reliable capacitance number.
+# - `QPDK_ELMER_PROCESSES` selects MPI ranks for the default profile (1 by default).
+#   CI runs serially.
+# - The default profile raises the linear-iteration cap to 3500: the cubic basis needs more
+#   iterations per solve than the driver's default of 500, which CI keeps.
 #
 # `solve_idc` runs one solve into a fresh scratch directory and returns the Maxwell
 # matrix in fF together with the mutual capacitance. Each port becomes a terminal held at
@@ -338,11 +350,20 @@ for prism, specs in nominal_mesh["resolution_specs"].items():
 # model has no grounded conductor.
 
 # %%
-ELEMENT_ORDER = 2
-N_PROCESSES = 1
-MESH_FACTORS = (1.0, 0.75, 0.6, 0.5)
-# Require two successive refinements to change the result by less than 2%.
-CONVERGENCE_TOLERANCE = 0.02
+CI_FAST = os.environ.get("QPDK_ELMER_CI_FAST") == "1"
+RUN_MODE = "CI smoke" if CI_FAST else "high accuracy"
+MESH_FACTORS = (1.0, 0.75, 0.6, 0.5) if CI_FAST else (0.5, 0.4, 0.35, 0.3, 0.25)
+ELEMENT_ORDER = 2 if CI_FAST else 3
+CONVERGENCE_TOLERANCE = 0.03 if CI_FAST else 0.005
+MAX_LINEAR_ITERATIONS = 500 if CI_FAST else 3500
+N_PROCESSES = 1 if CI_FAST else int(os.environ.get("QPDK_ELMER_PROCESSES", "1"))
+
+print(
+    f"Elmer notebook run mode: {RUN_MODE} "
+    f"(element_order={ELEMENT_ORDER}, "
+    f"tolerance={100 * CONVERGENCE_TOLERANCE:.1f} %, "
+    f"n_processes={N_PROCESSES})"
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -381,6 +402,7 @@ def solve_idc(component: gf.Component, mesh_factor: float, label: str) -> MeshSo
         material_spec=material_spec,
         simulation_folder=simulation_folder,
         mesh_parameters=mesh_parameters_for_factor(mesh_factor),
+        simulator_params={"linear_system_max_iterations": MAX_LINEAR_ITERATIONS},
     )
 
     terminals = tuple(port.name for port in component.ports)
@@ -437,15 +459,16 @@ print(
 # %% [markdown]
 # ## Mesh Convergence
 #
-# The four solves above are **independent remeshes**, not Elmer nonlinear iteration
-# counts: pass 1 is the nominal mesh (factor 1.0), followed by factors 0.75, 0.6,
-# and 0.5. Nothing is continued from one solve to the next, and no field
+# The five saved solves are **independent remeshes**, not Elmer nonlinear iteration
+# counts: their factors are 0.5, 0.4, 0.35, 0.3 and 0.25. CI uses the coarser
+# factors 1.0, 0.75, 0.6 and 0.5. Nothing is continued from one solve to the next, and no field
 # solution is reused, so the pass number is only an index into the refinement sequence.
 #
 # The upper panel shows the extracted mutual capacitance, the lower panel the absolute
-# relative change from the previous pass, and the table lists the same two numbers. A
-# the final two changes below `CONVERGENCE_TOLERANCE` are a practical refinement check,
-# not an error bound. Independent remeshes need not change the result monotonically.
+# relative change from the previous pass, and the table lists the same two numbers. Both
+# final changes staying below `CONVERGENCE_TOLERANCE` (0.5 % in the saved run, 3 % in
+# CI) provides a practical refinement check, not an absolute error bound. Independent
+# remeshes need not change the result monotonically.
 
 # %%
 passes = np.arange(1, len(mesh_results) + 1)
@@ -465,7 +488,7 @@ ax_change.axhline(
     100 * CONVERGENCE_TOLERANCE,
     color="tab:red",
     linestyle=":",
-    label=f"tolerance {100 * CONVERGENCE_TOLERANCE:.0f} %",
+    label=f"tolerance {100 * CONVERGENCE_TOLERANCE:.1f} %",
 )
 ax_change.set_xticks(passes)
 ax_change.set_xlabel("Pass number (independently remeshed solve)")
@@ -500,13 +523,14 @@ print(
 #
 # Mesh convergence above holds the domain fixed at `domain_pad=90.0` μm. This separate
 # check asks how much the extracted value depends on the outer boundary: we rebuild the
-# same capacitor with a 60 μm lateral pad, keep second-order elements and the finest
-# mesh factor 0.5, and compare against the pad-90 μm result from the final pass.
+# same capacitor with a 60 μm lateral pad, keep the active profile's element order and
+# reuse the finest mesh factor, and compare against the pad-90 μm result from the final
+# pass.
 #
 # Changing the pad also changes the mesh, so the difference mixes the domain effect with
 # a discretization effect. This is a sensitivity check between two finite domains: it is
 # **not** a proof that the 90 μm boundary is converged to an infinite domain, and it says
-# nothing about absolute accuracy.
+# nothing about vertical truncation or absolute accuracy.
 
 # %%
 component_narrow = interdigital_capacitor_for_elmer(domain_pad=60.0)
@@ -552,25 +576,32 @@ print("All checks passed.")
 # %% [markdown]
 # ## Summary
 #
-# We extracted the quasi-static capacitance of a QPDK interdigital capacitor with Elmer
-# and report the value from the finest mesh of the convergence study:
+# We extracted the quasi-static capacitance of a QPDK interdigital capacitor with Elmer in
+# the default high accuracy profile (cubic elements, 0.5 % refinement tolerance) and report
+# the value from the finest mesh of the convergence study:
 #
 # - Built a two-terminal geometry from `qpdk.cells.capacitor.interdigital_capacitor`,
 #   disabling its `M1_ETCH` mask so the two `M1_DRAW` combs stay isolated, and a minimal
 #   `M1_DRAW`-based layer stack to sidestep QPDK's derived `M1` level.
 # - Fixed the domain at a 90 μm lateral pad with a 60 μm substrate and a 40 μm vacuum,
-#   and solved with second-order elements on four independently generated meshes
-#   (factors 1.0, 0.75, 0.6, 0.5).
+#   and solved with cubic (third-order) elements on five independently generated meshes
+#   (factors 0.5, 0.4, 0.35, 0.3, 0.25).
 # - Converted Elmer's lumped result to the 2x2 Maxwell matrix and took the mutual
 #   capacitance $-C_{12}$ from each solve. With no grounded conductor, `C11` and `C22`
 #   are not independent capacitances-to-ground.
-# - Required both final successive changes to stay below the named 2 % tolerance, and
+# - Required both final successive changes to stay below the named 0.5 % tolerance, and
 #   reported the finest-mesh value as the result.
 # - Required the 60 μm against 90 μm lateral-pad comparison at the finest mesh to change
 #   the value by no more than 1 %, as a finite-domain sensitivity check.
 #
 # The result is a 3D FEM number only, not benchmarked against an analytic IDC model. The
-# refinement tolerance measures change between meshes, not absolute accuracy.
+# refinement tolerance measures change between meshes, not absolute accuracy, and the
+# lateral-pad comparison is a sensitivity check between two finite domains, not a
+# convergence proof for an unbounded one. Vertical truncation is not checked here.
+#
+# CI executes this notebook fresh in the CI smoke profile (quadratic elements, 3 %
+# tolerance) to check that the pipeline still runs end to end. It does not reproduce the
+# numbers above.
 #
 # The same layout can be swept or optimized by varying `fingers`, `finger_length` and
 # `finger_gap` in `interdigital_capacitor_for_elmer` and re-running the solve.
