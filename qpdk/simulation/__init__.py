@@ -112,6 +112,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "qpdk.simulation.comsol_capacitance",
         "add_qubit_capacitance_study",
     ),
+    "pin_absolute_edge_mesh_sizes": (
+        "qpdk.simulation.comsol_mesh",
+        "pin_absolute_edge_mesh_sizes",
+    ),
     "pin_absolute_mesh_sizes": (
         "qpdk.simulation.comsol_mesh",
         "pin_absolute_mesh_sizes",
@@ -142,6 +146,7 @@ __all__ = [
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",
+    "pin_absolute_edge_mesh_sizes",
     "pin_absolute_mesh_sizes",
     "prepare_component_for_aedt",
     "prepare_comsol_layout",

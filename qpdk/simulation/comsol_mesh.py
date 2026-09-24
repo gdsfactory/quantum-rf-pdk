@@ -15,6 +15,10 @@ the refined box.
 must not follow the domain at all. A physics-controlled mesh scales its element
 sizes with the longest dimension of the domain, so a series that varies the
 distance to the boundary would vary the near-metal resolution with it.
+
+:func:`pin_absolute_edge_mesh_sizes` is the same idea one dimension down: the
+local sizes go on a named edge selection instead of conductor faces, for a study
+whose resolution has to follow a trace outline rather than cover a whole face.
 """
 
 from __future__ import annotations
@@ -51,6 +55,11 @@ GENERATED_FREE_TET_TAG = "ftet1"
 #: A ``Size`` feature only affects the operation features after it, so this has
 #: to follow every size.
 FREE_TET_TAG = "ftet_fixed"
+
+#: Tag of the ``Size`` feature :func:`pin_absolute_edge_mesh_sizes` creates for
+#: the named edge selection. It sits between the default size and the generator
+#: for the same reason every other size does.
+EDGE_SIZE_TAG = "size_edges"
 
 
 def refine_metal_plane_mesh(
@@ -181,6 +190,39 @@ def _drop_generated_free_tet(sequence: Any) -> None:
     # either way, and a leftover generator shows up there.
     with suppress(Exception):
         sequence.feature().remove(GENERATED_FREE_TET_TAG)
+
+
+def _drop_generated_sizes(sequence: Any, keep: tuple[str, ...]) -> None:
+    """Remove the ``Size`` features COMSOL generated, keeping the pinned ones.
+
+    A physics-controlled sequence can hold more than the one default size, and
+    an extra one still carries the predefined sizing that this module exists to
+    replace.
+
+    Args:
+        sequence: The ``mesh1`` sequence.
+        keep: Tags of the size features that must survive the sweep.
+    """
+    for tag in (str(tag) for tag in sequence.feature().tags()):
+        if tag.startswith("size") and tag not in keep:
+            # A removal that fails is not fatal: the sequence order is checked
+            # after this either way, and a leftover size shows up there.
+            with suppress(Exception):
+                sequence.feature().remove(tag)
+
+
+def _selection_entities(selection: Any) -> list[int]:
+    """Read the entities a selection resolved to, empty if COMSOL will not say.
+
+    Args:
+        selection: A COMSOL feature selection.
+
+    Returns:
+        The entity numbers, or an empty list if they could not be read.
+    """
+    with suppress(Exception):
+        return [int(entity) for entity in selection.entities()]
+    return []
 
 
 def pin_absolute_mesh_sizes(
@@ -318,6 +360,138 @@ def pin_absolute_mesh_sizes(
         raise RuntimeError(
             "the mesh sequence is still physics-controlled after editing it, so the "
             "near-metal size would follow the domain again"
+        )
+
+    sequence.run()
+    try:
+        count = int(sequence.getNumElem())
+    except (TypeError, ValueError) as error:
+        raise RuntimeError(
+            f"COMSOL reported no element count for the pinned mesh: {error!r}"
+        ) from error
+    if count <= 0:
+        raise RuntimeError(f"the pinned mesh holds {count} elements")
+    return count
+
+
+def pin_absolute_edge_mesh_sizes(
+    model: mph.Model,
+    *,
+    edge_selection: str,
+    global_hmax_um: float,
+    global_hmin_um: float,
+    edge_hmax_um: float,
+    edge_hmin_um: float,
+) -> int:
+    """Mesh a sheet model with absolute element sizes on a named edge selection.
+
+    The edge counterpart of :func:`pin_absolute_mesh_sizes`, for the case where
+    the resolution has to follow an outline instead of covering a face: the bulk
+    stays at the global sizes and one ``Size`` feature pins the edge sizes on
+    ``edge_selection``, which the caller has already created on ``comp1``. Both
+    sizes are absolute in µm, so the edge resolution no longer moves with the
+    domain. The sequence is left user-controlled, as there.
+
+    The sequence is built the same way and refused if it comes out any other
+    way, including an ``edge_selection`` that resolves to no edge, which would
+    leave the local size applying to nothing.
+
+    Args:
+        model: A model carrying ``comp1``/``mesh1`` from a study builder, with a
+            named edge selection already created on ``comp1``.
+        edge_selection: Name of the edge selection to pin the local sizes on.
+        global_hmax_um: Largest element size in µm away from the edges, positive
+            and finite.
+        global_hmin_um: Smallest element size in µm away from the edges.
+        edge_hmax_um: Largest element size in µm on the selected edges.
+        edge_hmin_um: Smallest element size in µm on the selected edges.
+
+    Returns:
+        The number of mesh elements the pinned sequence built.
+
+    Raises:
+        ValueError: If a size is not positive and finite, or if an ``hmin`` is
+            larger than the ``hmax`` it belongs to.
+        RuntimeError: If the physics-controlled build left no default ``size``
+            feature, the edge selection resolved to no edge, the sequence came
+            out in an order the sizes would not apply in, the sequence is still
+            physics-controlled afterwards, or COMSOL reported no usable element
+            count.
+    """
+    for name, value in (
+        ("global_hmax_um", global_hmax_um),
+        ("global_hmin_um", global_hmin_um),
+        ("edge_hmax_um", edge_hmax_um),
+        ("edge_hmin_um", edge_hmin_um),
+    ):
+        _require_positive(name, value)
+    for name, hmax_um, hmin_um in (
+        ("global", global_hmax_um, global_hmin_um),
+        ("edge", edge_hmax_um, edge_hmin_um),
+    ):
+        if hmin_um > hmax_um:
+            raise ValueError(
+                f"{name}_hmin_um must not exceed {name}_hmax_um, got "
+                f"{hmin_um!r} > {hmax_um!r}"
+            )
+
+    sequence = model.java.component("comp1").mesh("mesh1")
+
+    # A physics-controlled build is what writes the ordinary Size and FreeTet
+    # features into the sequence; until it exists there is no editable sizing.
+    sequence.run()
+    features = list(sequence.feature().tags())
+    if DEFAULT_SIZE_TAG not in features:
+        raise RuntimeError(
+            f"the physics-controlled build produced {features}, which holds no "
+            f"{DEFAULT_SIZE_TAG!r}; there is no default sizing to pin the absolute "
+            "sizes to"
+        )
+
+    _set_size(sequence.feature(DEFAULT_SIZE_TAG), global_hmax_um, global_hmin_um)
+
+    # A new feature is inserted after the current one and then becomes current, so
+    # parking the cursor on the default size puts the edge size between it and
+    # everything that follows.
+    sequence.current(DEFAULT_SIZE_TAG)
+    sequence.create(EDGE_SIZE_TAG, "Size")
+    edge_size = sequence.feature(EDGE_SIZE_TAG)
+    edge_size.selection().named(edge_selection)
+    _set_size(edge_size, edge_hmax_um, edge_hmin_um)
+    edges = _selection_entities(edge_size.selection())
+    if not edges:
+        raise RuntimeError(
+            f"the {edge_selection!r} selection reported the edges {edges}, so the "
+            "local size would apply to nothing; the selection has to be created on "
+            "comp1 before this is called"
+        )
+
+    # Both sweeps go before the explicit generator is created, so that create
+    # lands after the last Size rather than after a feature about to disappear.
+    _drop_generated_sizes(sequence, (DEFAULT_SIZE_TAG, EDGE_SIZE_TAG))
+    _drop_generated_free_tet(sequence)
+    sequence.current(EDGE_SIZE_TAG)
+    sequence.create(FREE_TET_TAG, "FreeTet")
+    # Swept again: a build that kept the generated generator through the create
+    # would otherwise leave two of them, and the domains would be meshed twice.
+    _drop_generated_free_tet(sequence)
+
+    desired = (DEFAULT_SIZE_TAG, EDGE_SIZE_TAG, FREE_TET_TAG)
+    observed = tuple(sequence.feature().tags())
+    if observed != desired:
+        raise RuntimeError(
+            f"the mesh sequence came out as {observed}, expected {desired}; a Size "
+            "feature only affects the features after it, so meshing this would not "
+            "apply the sizes it was asked for"
+        )
+
+    still_automatic = False
+    with suppress(Exception):
+        still_automatic = bool(sequence.isAutomatic())
+    if still_automatic:
+        raise RuntimeError(
+            "the mesh sequence is still physics-controlled after editing it, so the "
+            "edge size would follow the domain again"
         )
 
     sequence.run()
