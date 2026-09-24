@@ -135,7 +135,9 @@ currents, and substrate modes that analytical models may miss
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 - :doc:`notebooks/palace_transmon_surface_epr` — Compiles QPDK's authored transmon and
   layer-stack semantics with SCGSim, prepares a manual single-node Slurm handoff for a
-  two-mode Palace eigenmode solve, and provides checks for a returned Surface-EPR run.
+  two-mode Palace eigenmode solve, and provides checks for a returned Surface-EPR run. A
+  :doc:`recorded partial AMR diagnostic <transmon_surface_epr_diagnostic>` shows the
+  readable snapshots and the out-of-memory limitation of one attempted run.
 
 .. note::
 
@@ -458,3 +460,4 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
     :glob:
 
     notebooks/*
+    transmon_surface_epr_diagnostic
