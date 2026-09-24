@@ -228,6 +228,25 @@ def test_three_metal_faces_are_selected_by_point():
         assert _mid(box["zmin"], box["zmax"]) == pytest.approx(0.0)
 
 
+def test_a_layout_with_a_fourth_metal_polygon_is_refused():
+    """An unassigned metal polygon would be solved as a dielectric interface."""
+    stray = ComsolPolygon(
+        outline=((500.0, 300.0), (520.0, 300.0), (520.0, 320.0), (500.0, 320.0))
+    )
+    layout = ComsolLayout(
+        polygons=(*_LAYOUT.polygons, stray),
+        feed_ports=(),
+        bbox=_LAYOUT.bbox,
+    )
+    model = _model()
+    with pytest.raises(ValueError, match="one metal polygon per conductor"):
+        _study(model, layout=layout)
+    component = model.java.component("comp1")
+    assert component.created == []
+    assert component.physics.created == []
+    assert model.java.study.created == []
+
+
 def test_a_point_that_selects_no_face_is_refused():
     """A point in a pad gap must not quietly leave an electrode unassigned."""
     model = _model({**_FACES, (0.0, 0.0): []})
