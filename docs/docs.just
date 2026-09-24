@@ -28,8 +28,73 @@ convert-notebooks:
 
 # Build SVG figures from docs/figures/*.typ
 [group('docs')]
+[script('uv', 'run', '--script')]
 build-doc-figures: fetch-docs-fonts
-    @./.github/build-doc-figures.sh
+    # /// script
+    # requires-python = ">=3.12"
+    # dependencies = ["typst==0.15.0", "pymupdf==1.28.2", "fonttools==4.63.0"]
+    # ///
+    import base64
+    from io import BytesIO
+    from pathlib import Path
+    from xml.etree import ElementTree
+
+    import pymupdf
+    import typst
+    from fontTools import subset
+    from fontTools.ttLib import TTFont
+
+    sources = {p.stem: p for p in Path("docs/figures").glob("*.typ") if p.stem != "style"}
+    output_dir = Path("notebooks/figures")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    fonts_dir = Path("build/docs-fonts")
+    font_faces = (
+        ("Inter Variable", "InterVariable.ttf", "100 900"),
+        ("Outfit", "Outfit-Regular.ttf", "400"),
+        ("Outfit", "Outfit-Bold.ttf", "700"),
+        ("FiraMath-Regular", "FiraMath-Regular.otf", "400"),
+    )
+
+    for name, source in sorted(sources.items()):
+        pdf = typst.compile(
+            str(source), root=".", font_paths=[str(fonts_dir)],
+            ignore_system_fonts=True, format="pdf",
+        )
+        with pymupdf.open(stream=pdf, filetype="pdf") as document:
+            svg = document[0].get_svg_image(text_as_path=False)
+
+        characters = {}
+        for element in ElementTree.fromstring(svg).iter("{http://www.w3.org/2000/svg}text"):
+            family = element.get("font-family")
+            characters.setdefault(family, set()).update("".join(element.itertext()))
+
+        faces = []
+        for family, filename, weight in font_faces:
+            if family not in characters:
+                continue
+            font = TTFont(fonts_dir / filename)
+            options = subset.Options()
+            options.drop_tables.append("FFTM")
+            subsetter = subset.Subsetter(options=options)
+            subsetter.populate(text="".join(sorted(characters[family])))
+            subsetter.subset(font)
+            data = BytesIO()
+            font.save(data)
+            encoded = base64.b64encode(data.getvalue()).decode("ascii")
+            kind = "opentype" if filename.endswith(".otf") else "truetype"
+            extension = "otf" if filename.endswith(".otf") else "ttf"
+            faces.append(
+                '@font-face{font-family:"' + family + '";font-weight:' + weight + ';'
+                + f'src:url(data:font/{extension};base64,{encoded}) format("{kind}")' + '}'
+            )
+
+        opening_tag_end = svg.index(">") + 1
+        svg = svg[:opening_tag_end] + "<style>" + "".join(faces) + "</style>" + svg[opening_tag_end:]
+        (output_dir / f"{name}.svg").write_text(svg + "\n")
+
+    for stale in output_dir.glob("*.svg"):
+        if stale.stem not in sources:
+            stale.unlink()
 
 # Copy llms.txt (https://llmstxt.org/) into the built site root
 [private]

@@ -256,6 +256,7 @@ html_extra_path = ["_extra"]
 html_css_files = [
     "css/custom.css",
 ]
+html_js_files = ["js/inline-figures.js"]
 
 # -- Typst / PDF output (typsphinx) -------------------------------------------
 # The fifth tuple element is a typsphinx *template registry key*, not a LaTeX

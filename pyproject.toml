@@ -96,7 +96,6 @@ docs = [
   "sphinxcontrib-mermaid>=2.0.1",
   "sphinxcontrib-svgbob",
   "typsphinx>=0.9.2,<0.10",
-  "typst>=0.15,<0.16",
   { include-group = "docs-models" },
 ]
 docs-models = [
