@@ -11,6 +11,7 @@ import polars as pl
 from qpdk import LAYER_STACK
 from qpdk.simulation.aedt_base import (
     AEDTBase,
+    _first_real_value,
     export_component_to_gds_temp,
     layer_stack_to_gds_mapping,
     object_names_to_materials,
@@ -245,16 +246,14 @@ class HFSS(AEDTBase):
             solution = self.hfss.post.get_solution_data(
                 expressions=f_name, report_category="Eigenmode"
             )
-            if solution:
-                freq_hz = float(solution.data_real()[0])
+            if solution and (freq_hz := _first_real_value(solution)) is not None:
                 results["frequencies"].append(freq_hz / 1e9)
 
         for q_name in q_names:
             solution = self.hfss.post.get_solution_data(
                 expressions=q_name, report_category="Eigenmode"
             )
-            if solution:
-                q = float(solution.data_real()[0])
+            if solution and (q := _first_real_value(solution)) is not None:
                 results["q_factors"].append(q)
 
         return results
