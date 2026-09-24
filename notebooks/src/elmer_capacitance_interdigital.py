@@ -453,7 +453,7 @@ mutual_ff = np.array([result.mutual_ff for result in mesh_results])
 relative_change = np.full(mutual_ff.shape, np.nan)
 relative_change[1:] = np.abs(np.diff(mutual_ff)) / mutual_ff[:-1]
 
-fig, (ax_value, ax_change) = plt.subplots(
+_, (ax_value, ax_change) = plt.subplots(
     2, 1, sharex=True, figsize=(6.0, 5.0), layout="constrained"
 )
 ax_value.plot(passes, mutual_ff, marker="o")
