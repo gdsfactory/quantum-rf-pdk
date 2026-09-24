@@ -33,7 +33,19 @@
 # to achieve a target capacitance of 40 fF. The optimization is constrained to
 # use exactly 5 interdigital fingers.
 #
-# ![Optuna suggests capacitor geometry, Palace solves fields, and the trial is scored against 40 fF](figures/fem-optimization.svg)
+# ::::{only} html
+# :::{mermaid}
+# flowchart LR
+#     A["Optuna suggests<br/>finger geometry"] --> B["Build and mesh<br/>the capacitor"]
+#     B --> C["Palace solves<br/>capacitance"]
+#     C --> D["Score against<br/>40 fF target"]
+#     D -->|next trial| A
+# :::
+# ::::
+#
+# ::::{only} typst or typstpdf
+# Optuna suggests the finger geometry, Palace solves its capacitance, and the result is scored against 40 fF before the next trial.
+# ::::
 
 # %% tags=["hide-input", "hide-output"]
 import sys
