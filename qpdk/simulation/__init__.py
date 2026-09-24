@@ -31,6 +31,10 @@ Extractor.
 3. Add a CPW RF or qubit electrostatic study with
    :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` or
    :func:`~qpdk.simulation.comsol_capacitance.add_qubit_capacitance_study`
+4. Mesh it, optionally refined at the metal plane, with
+   :func:`~qpdk.simulation.comsol_mesh.refine_metal_plane_mesh`, or with
+   absolute sizes at the metal via
+   :func:`~qpdk.simulation.comsol_mesh.pin_absolute_mesh_sizes`
 
 Note:
     The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL builder
@@ -108,6 +112,14 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "qpdk.simulation.comsol_capacitance",
         "add_qubit_capacitance_study",
     ),
+    "pin_absolute_mesh_sizes": (
+        "qpdk.simulation.comsol_mesh",
+        "pin_absolute_mesh_sizes",
+    ),
+    "refine_metal_plane_mesh": (
+        "qpdk.simulation.comsol_mesh",
+        "refine_metal_plane_mesh",
+    ),
 }
 
 __all__ = [
@@ -130,8 +142,10 @@ __all__ = [
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",
+    "pin_absolute_mesh_sizes",
     "prepare_component_for_aedt",
     "prepare_comsol_layout",
+    "refine_metal_plane_mesh",
 ]
 
 
