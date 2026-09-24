@@ -131,24 +131,29 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
-- :doc:`notebooks/comsol_cpw_resonator` — Builds and solves a coupled quarter-wave CPW
-  resonator in COMSOL with MPh: extends both source feeds to open port planes, extracts
-  the QPDK metal, builds the air/silicon sheet model, and adds PEC, two numeric TEM
-  ports with voltage integration lines, boundary mode analysis, and a frequency-domain
-  study. Published with the outputs of a COMSOL 6.3 run stored in the notebook; the code
-  reads results from a ``RESULTS_DIR`` of exported files, so it runs without a license
-  and explains how to supply results when none are present. Saved mesh-size and local
-  refinement plots show the fixed-frequency convergence study. No notch was resolved in
-  the 5-10 GHz sweep; its coarse spacing could miss a narrow feature. The feed extension
-  changes the coupling geometry relative to the unextended reference cell.
+- :doc:`notebooks/comsol_cpw_resonator` — Builds a coupled quarter-wave CPW resonator in
+  COMSOL: extends both source feeds to open port planes, extracts the QPDK metal, builds
+  the air/silicon sheet model, and adds PEC, two numeric TEM ports with voltage
+  integration lines, boundary mode analysis, and a frequency-domain study. A coarse 5-10
+  GHz sweep cannot resolve a notch that narrow, so an eigenfrequency search selects a
+  mode near 11.71 GHz and an adaptive 200 kHz sweep around it resolves a narrow dip
+  there. The diagnostics do not read that dip as a meander resonance: no
+  meander-localised field is shown, the selected frequency drifts with the mesh by more
+  than the sweep window, and the mode disappears when the outer PEC walls become
+  scattering boundaries. The feed extension changes the coupling geometry relative to
+  the unextended reference cell.
 - :doc:`notebooks/comsol_qubit_capacitance` — Solves the pad capacitance of an EM-only
-  QPDK double-pad transmon in COMSOL with MPh: removes the Josephson-junction mask,
-  extracts the pads and ground plane, builds the air/silicon sheet model, and adds an
-  Electrostatics study driving one pad with a voltage terminal and grounding the other
-  pad and the ground. Published with the outputs of a COMSOL 6.3 run stored in the
-  notebook: es.C11 and the stored energy, potential and field maps, and mesh-size and
-  local-refinement plots. The LC frequency formed from a chosen L_J is labelled an
-  estimate rather than an eigenmode or the anharmonic f01.
+  QPDK double-pad transmon in COMSOL: removes the Josephson-junction mask, extracts the
+  pads and ground plane, builds the air/silicon sheet model, and adds an Electrostatics
+  study driving one pad with a voltage terminal and grounding the other pad and the
+  ground. The result is an electrostatic one-terminal pad capacitance of :math:`C_{11} =
+  125.3797` fF, not a qubit eigenmode, and the LC frequency built from a chosen
+  :math:`L_J` is labelled an illustrative estimate rather than an eigenfrequency or the
+  anharmonic :math:`f_{01}`. Sixteen domain and near-metal cases vary the margin, the
+  near-metal mesh size, the air height, and the substrate thickness; the value is still
+  moving with the near-metal mesh, whose finest step, at 30,893,436 elements, is
+  -0.0437%. Potential and field maps and the near-metal and domain-size comparison plots
+  are included.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 

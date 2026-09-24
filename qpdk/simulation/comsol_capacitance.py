@@ -72,22 +72,44 @@ def _select_metal_faces(
 ) -> None:
     """Add one face selection per conductor and check what they resolved to.
 
-    Every box has to hold exactly one face, and no two conductors the same one,
+    The layout has to hold exactly one metal polygon per conductor, and each
+    point has to land in a different one. A polygon left over would keep its
+    metal boundary condition nowhere and be solved as a dielectric interface,
+    so the capacitance would be for a geometry other than the one drawn. Every
+    box also has to hold exactly one face, and no two conductors the same one,
     or a point that misses the metal would put a terminal or a ground on the
-    wrong face and the solve would return a capacitance for the wrong geometry.
+    wrong face.
 
     Raises:
-        ValueError: If a selection holds a number of faces other than one, or if
-            two selections hold the same face.
+        ValueError: If the layout does not hold one metal polygon per
+            conductor, if a point does not lie inside exactly one of them, if
+            two points lie in the same polygon, if a selection holds a number
+            of faces other than one, or if two selections hold the same face.
     """
     metal_regions = [
         Polygon(polygon.outline, polygon.holes) for polygon in layout.polygons
     ]
+    if len(metal_regions) != len(conductors):
+        raise ValueError(
+            f"the layout must hold one metal polygon per conductor, expected "
+            f"{len(conductors)}, got {len(metal_regions)}"
+        )
+    assigned: set[int] = set()
     for tag, point in conductors:
-        if sum(region.contains(ShapelyPoint(point)) for region in metal_regions) != 1:
+        inside = [
+            index
+            for index, region in enumerate(metal_regions)
+            if region.contains(ShapelyPoint(point))
+        ]
+        if len(inside) != 1:
             raise ValueError(
                 f"the {tag} point must lie inside exactly one metal polygon"
             )
+        if inside[0] in assigned:
+            raise ValueError(
+                "the conductor points must lie in three different metal polygons"
+            )
+        assigned.add(inside[0])
 
     faces = {
         tag: _add_face_selection(component, tag, point) for tag, point in conductors
@@ -145,7 +167,9 @@ def add_qubit_capacitance_study(
     Args:
         model: The MPh model from
             :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`.
-        layout: The metal polygons used to build that model.
+        layout: The metal polygons used to build that model. It must hold
+            exactly one polygon per conductor; a metal polygon that no point
+            names is refused rather than left as a dielectric interface.
         left_pad_point: Point in µm on the sheet plane, inside the pad to drive.
             It centres a small box, so it has to sit clear of the pad's edges.
         right_pad_point: Point in µm inside the pad to ground.
@@ -161,7 +185,8 @@ def add_qubit_capacitance_study(
     Raises:
         ValueError: If the voltage is not positive and finite, if the mesh size
             is not an integer in 1 to 9, if a point is not a finite (x, y) pair,
-            or if a point does not select exactly one distinct metal face.
+            or if the layout, the polygons, or the points do not assign exactly
+            one distinct metal face to each conductor.
     """
     if not math.isfinite(voltage_v) or voltage_v <= 0.0:
         raise ValueError(f"voltage_v must be positive and finite, got {voltage_v!r}")

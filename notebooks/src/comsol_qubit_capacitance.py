@@ -861,12 +861,13 @@ else:
 # 3. **Air height and substrate thickness** at 8000 µm of margin and the `2.5/5`
 #    near-metal sizes: the air from 200 µm up to 3200 µm over 1600 µm of silicon,
 #    and the silicon from 1600 µm up to 3200 µm under 200 µm of air. Each series
-#    is printed against its own base row.
+#    is printed against its own shortest row, and the value the rest of the
+#    geometry was held at is printed in the table title.
 #
 # The base case is the main solve's own configuration: 8000 µm of margin, 1600 µm
 # of silicon, and 1600 µm of air. The air ladder is read around that row, and the
-# substrate rows, which were solved under a shorter air column, fall outside the
-# base group.
+# substrate pair was solved under a shorter air column, so it forms a series of
+# its own rather than joining the base air group.
 #
 # The rows on disk are completed licensed solves, so every case of the series has
 # landed. The convergence reading is still the deltas printed for those rows
@@ -899,10 +900,27 @@ else:
 # mesh, and a solve per case. A case that fails to build, mesh, or solve is
 # printed in full and left out of the rows, and the failed cases stay in the JSON
 # next to the rows that were written, so a gap is visible rather than silently
-# dropped.
+# dropped. The JSON is rewritten after every case, so interrupting a long series
+# keeps the cases already solved.
 
 # %%
 DOMAIN_JSON = "comsol_qubit_domain_convergence.json"
+
+
+def write_json_atomically(path: Path, payload: dict[str, Any]) -> None:
+    """Write JSON through a sibling temporary file, then replace in place.
+
+    The series writes on every case, so an interrupt partway through still
+    leaves the cases already solved on disk. The temporary file is a sibling so
+    the replace stays a same-filesystem rename, which is what makes it atomic.
+
+    Args:
+        path: The JSON file to write.
+        payload: The object to serialise.
+    """
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2) + "\n")
+    temporary.replace(path)
 
 
 class DomainCase(NamedTuple):
@@ -1047,7 +1065,16 @@ def run_qubit_domain_case(client: Any, case: DomainCase) -> dict[str, Any]:
 if RUN_COMSOL and MPH_AVAILABLE and RUN_DOMAIN_STUDY:
     domain_rows: list[dict[str, Any]] = []
     domain_failures: list[dict[str, Any]] = []
+    domain_path = MODEL_DIR / DOMAIN_JSON
 
+    def save_domain() -> None:
+        """Write the cases solved so far, so a late failure keeps them."""
+        domain_payload: dict[str, Any] = {"rows": domain_rows}
+        if domain_failures:
+            domain_payload["failures"] = domain_failures
+        write_json_atomically(domain_path, domain_payload)
+
+    save_domain()
     for case in DOMAIN_CASES:
         print(f"{domain_case_label(case)}: building, meshing, and solving")
         try:
@@ -1058,6 +1085,7 @@ if RUN_COMSOL and MPH_AVAILABLE and RUN_DOMAIN_STUDY:
                 "error": type(error).__name__,
             })
             print(f"{domain_case_label(case)} FAILED: {type(error).__name__}: {error}")
+            save_domain()
             continue
         domain_rows.append(row)
         print(
@@ -1065,12 +1093,8 @@ if RUN_COMSOL and MPH_AVAILABLE and RUN_DOMAIN_STUDY:
             f"C11 = {row['c11_f'] * 1e15:.4f} fF, "
             f"intWe = {row['int_we_j']:.6e} J"
         )
+        save_domain()
 
-    domain_payload: dict[str, Any] = {"rows": domain_rows}
-    if domain_failures:
-        domain_payload["failures"] = domain_failures
-    domain_path = MODEL_DIR / DOMAIN_JSON
-    domain_path.write_text(json.dumps(domain_payload, indent=2) + "\n")
     print(f"Wrote {len(domain_rows)} of {len(DOMAIN_CASES)} rows to {domain_path}")
     if domain_failures:
         failed = ", ".join(item["label"] for item in domain_failures)
@@ -1105,11 +1129,13 @@ elif RUN_DOMAIN_STUDY and not RUN_COMSOL:
 # effects are compared as numbers rather than by eye.
 #
 # The air height and the substrate thickness get the same treatment: rows that
-# hold one of them fixed and vary the other are grouped and printed in order,
-# against the other rows of their own series. That is what shows whether the
-# capacitance is still moving with the height of air above the metal, which the
-# margin series alone cannot see. A series with fewer than two rows on disk prints
-# no table, and the cell says which comparison it skipped.
+# hold the other length, the margin, and the near-metal setting fixed are grouped
+# and printed in order, with the held length named in the title. A series is not
+# required to sit at the base case, so a pair solved away from it is read too.
+# That is what shows whether the capacitance is still moving with the height of
+# air above the metal, which the margin series alone cannot see. A series with
+# fewer than two rows on disk prints no table, and the cell says which comparison
+# it skipped.
 #
 # Differences that shrink are the shape a settled number makes; differences that
 # keep their size, or change sign, mean that parameter is still setting the
@@ -1427,35 +1453,27 @@ else:
             plt.tight_layout()
             plt.show()
 
-        # The two vertical lengths get the same treatment: rows holding one of them
-        # fixed are grouped per margin and near-metal setting, and printed in order
-        # of the one that moves, against the rows at the base value of it.
+        # The two vertical lengths get the same treatment: a series is the set of
+        # rows that hold the other length, the margin, and the near-metal setting
+        # fixed, so only the swept length moves within a table. The sweep does not
+        # have to start at the base case; each series prints the value of the
+        # length it holds, so a pair solved off the base case is still read.
         variation_tables = 0
-        for value_key, fixed_key, fixed_value, fixed_name, header in (
-            (
-                "air_height_um",
-                "substrate_thickness_um",
-                SUBSTRATE_THICKNESS_UM,
-                "substrate",
-                "air",
-            ),
-            (
-                "substrate_thickness_um",
-                "air_height_um",
-                AIR_HEIGHT_UM,
-                "air",
-                "substrate",
-            ),
+        for value_key, fixed_key, fixed_name, header in (
+            ("air_height_um", "substrate_thickness_um", "substrate", "air"),
+            ("substrate_thickness_um", "air_height_um", "air", "substrate"),
         ):
-            series: dict[tuple[float, str], list[dict[str, Any]]] = {}
-            for row in sorted(domain_rows, key=lambda item: float(item[value_key])):
-                if not math.isclose(float(row[fixed_key]), fixed_value):
-                    continue
+            series: dict[tuple[float, float, str], dict[float, dict[str, Any]]] = {}
+            for row in domain_rows:
                 series.setdefault(
-                    (float(row["lateral_margin_um"]), domain_near_metal_name(row)),
-                    [],
-                ).append(row)
-            for (margin, setting), group in sorted(series.items()):
+                    (
+                        float(row[fixed_key]),
+                        float(row["lateral_margin_um"]),
+                        domain_near_metal_name(row),
+                    ),
+                    {},
+                ).setdefault(float(row[value_key]), row)
+            for (fixed_value, margin, setting), group in sorted(series.items()):
                 if len(group) < 2:
                     continue
                 variation_tables += 1
@@ -1466,17 +1484,18 @@ else:
                     header,
                     [
                         (
-                            f"{float(row[value_key]):g}",
+                            f"{value:g}",
                             int(row["element_count"]),
                             float(row["c11_f"]) * 1e15,
                         )
-                        for row in group
+                        for value, row in sorted(group.items())
                     ],
                 )
         if not variation_tables:
             print(
-                "\nNo series moves the air height or the substrate thickness away "
-                "from the base case on the rows on disk, so that comparison is "
+                "\nNo series holds the other vertical length, the margin, and the "
+                "near-metal setting fixed while moving the air height or the "
+                "substrate thickness on the rows on disk, so that comparison is "
                 "skipped."
             )
 

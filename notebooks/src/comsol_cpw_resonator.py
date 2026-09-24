@@ -193,13 +193,17 @@
 # `Eigenfrequency` step put in its place. It searches near a shift of 11.6 GHz
 # for six modes, and the modes come back as **complex** eigenfrequencies
 # $f = f' + i f''$: the real part is the mode frequency and the imaginary part
-# the damping, so $f'/(2f'')$ is the unloaded quality factor the model itself
-# predicts. A mode whose imaginary part is negligible next to its real part is a
-# high-$Q$ candidate, which is what a superconducting resonator is expected to
-# look like once its metal is treated as lossless PEC. The selection below takes
-# the lowest-frequency mode in 8 to 14 GHz with $|f''|/f' < 10^{-3}$, and writes
-# the whole spectrum next to the selected mode. Frequency and loss ratio are all
-# the selection looks at, so what it returns is a candidate mode with no claim
+# carries the damping. $f'/(2f'')$ would be an unloaded quality factor only if
+# that damping were the device's own, and here it is not: the PEC metal has no
+# conductor or dielectric loss, the two numeric feed ports are matched
+# terminations that load the line, and the mesh contributes error of its own. So
+# the loss ratio is used as a selection screen and nothing more. A mode whose
+# imaginary part is negligible next to its real part is taken as a high-$Q$
+# candidate, which is what a superconducting resonator is expected to look like
+# once its metal is treated as lossless PEC. The selection below takes the
+# lowest-frequency mode in 8 to 14 GHz with $|f''|/f' < 10^{-3}$, and writes the
+# whole spectrum next to the selected mode. Frequency and loss ratio are all the
+# selection looks at, so what it returns is a candidate mode with no claim
 # attached to its identity.
 #
 # **Second, an adaptive sweep around that mode.** A second model is then built
@@ -626,7 +630,8 @@ plt.show()
 # search, following the same selected mode, once per row of
 # `EIGEN_CONVERGENCE_CONFIGS`, so it needs
 # `RUN_COMSOL = True` for the client and it costs a full build, mesh, and solve
-# per row. It is off by default.
+# per row. It rewrites its JSON after every row, so interrupting a long series
+# keeps the rows already solved. It is off by default.
 #
 # `RESULTS_DIR` is where the cells that read results look for exported files. It
 # defaults to `None` so that a run without a license skips those cells, and to
@@ -752,7 +757,8 @@ if RUN_COMSOL and MPH_AVAILABLE:
         for problem in eigen_model.problems():
             print(f"  eigenfrequency model reports: {problem}")
         # Eigenfrequencies come back complex: f' is the mode frequency and f''
-        # its damping, so f'/(2 f'') is the quality factor the model predicts.
+        # its damping. Not the device Q: PEC has no loss and the ports are
+        # matched loads, so the damping is port loading plus mesh error.
         eigen_modes = [
             complex(value)
             for value in np.atleast_1d(eigen_model.evaluate("freq")).ravel()
@@ -857,11 +863,14 @@ if RUN_COMSOL and MPH_AVAILABLE:
 # 15 dB above it. That locates the feature and says nothing more: a dip at the
 # frequency of a mode the search itself chose is a consistency check between two
 # solves, not a resonance measurement. The depth is set by the coupling and by
-# the loss the model has, and this model's only loss is numerical, so the depth
-# is not a prediction of a fabricated device. Converting the dip into a loaded
-# quality factor would need a converged width, and neither the mesh nor the outer
-# boundary is converged: refining moves the mode by more than this whole window,
-# and removing the outer PEC walls removes the mode.
+# whatever damping the model carries. The metal is PEC, so there is no conductor
+# or dielectric loss, but the two numeric feed ports are matched terminations, so
+# a lossless model can still show a real external decay; numerical error sits on
+# top of that. Whatever the split, the depth is not a prediction of a fabricated
+# device. Converting the dip into a loaded quality factor would need a converged
+# width, and neither the mesh nor the outer boundary is converged: refining moves
+# the mode by more than this whole window, and removing the outer PEC walls
+# removes the mode.
 #
 # ### Exporting a field map
 #
@@ -909,12 +918,14 @@ if RUN_COMSOL and MPH_AVAILABLE and model is not None:
 # minimum still falls at its centre to within the spacing of the grid. Three
 # caveats belong with it. A dip only counts as a resonance if the mode behind it
 # is the resonator mode, and that has not been shown here. The depth is set by
-# the coupling and by whatever loss the model carries, and a PEC model carries
-# only numerical loss, so the depth is not a fabricated-device prediction. And
-# the width, which is what a quality factor would come from, is not trustworthy
-# while the mesh is still moving the selected mode by more than the window width
-# and the outer PEC walls are still able to remove the mode, so no $Q$ is quoted
-# from this curve.
+# the coupling and by whatever damping the model carries: the PEC metal adds no
+# conductor or dielectric loss, but the matched numeric feed ports give a
+# physical external decay on their own, with numerical error on top, so the depth
+# is not a fabricated-device prediction and cannot be read as one kind of loss.
+# And the width, which is what a quality factor would come from, is not
+# trustworthy while the mesh is still moving the selected mode by more than the
+# window width and the outer PEC walls are still able to remove the mode, so no
+# $Q$ is quoted from this curve.
 #
 # With `RESULTS_DIR` unset, or set to a directory without the export, the cell
 # prints how to supply the file and draws nothing.
@@ -1127,11 +1138,13 @@ else:
 # 3.46 MHz across these three rows, more than seventeen times the width of the
 # 200 kHz sweep window the dip sits in above, and the movement does not shrink as
 # elements are added: the largest step is the last one. The imaginary part does
-# not decrease either, so the damping, and with it any quality factor read from
-# this model, is set by the mesh rather than by the physics. The size 2 row
-# reproduces the primary eigenfrequency solve of the main branch to the digits
-# printed there, which is a check that the series is measuring the same mode, not
-# that the mode is physical.
+# not settle either: it goes 1694.030 Hz, then 147.606 Hz, then 930.375 Hz, so it
+# moves non-monotonically with the mesh and is not converged. This model has no
+# conductor or dielectric loss, so the imaginary part mixes numerical error with
+# the external decay the matched feed ports impose, and no quality factor read
+# from it can be attributed to either. The size 2 row reproduces the primary
+# eigenfrequency solve of the main branch to the digits printed there, which is a
+# check that the series is measuring the same mode, not that the mode is physical.
 #
 # A fourth row was attempted, size 2 with 3 localized passes over a broad mesh.
 # It was canceled after roughly 1.08 million elements because memory kept
@@ -1170,6 +1183,22 @@ EIGEN_CONVERGENCE_CONFIGS = (
     (1, 0),
     (EIGEN_LOCAL_BASE_MESH_SIZE, 2),
 )
+
+
+def write_json_atomically(path: Path, payload: dict[str, Any]) -> None:
+    """Write JSON through a sibling temporary file, then replace in place.
+
+    The series writes on every row, so an interrupt partway through still leaves
+    the rows already solved on disk. The temporary file is a sibling so the
+    replace stays a same-filesystem rename, which is what makes it atomic.
+
+    Args:
+        path: The JSON file to write.
+        payload: The object to serialise.
+    """
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2) + "\n")
+    temporary.replace(path)
 
 
 def convergence_label(mesh_size: int, refine_passes: int) -> str:
@@ -1264,6 +1293,16 @@ def solve_cpw_eigen_row(
 if RUN_COMSOL and MPH_AVAILABLE and RUN_EIGEN_MESH_STUDY:
     convergence_rows: list[dict[str, Any]] = []
     convergence_failures: list[dict[str, Any]] = []
+    convergence_path = MODEL_DIR / EIGEN_CONVERGENCE_JSON
+
+    def save_convergence() -> None:
+        """Write the rows solved so far, so a late failure keeps them."""
+        write_json_atomically(
+            convergence_path,
+            {"rows": convergence_rows, "failures": convergence_failures},
+        )
+
+    save_convergence()
     for mesh_size, refine_passes in EIGEN_CONVERGENCE_CONFIGS:
         label = convergence_label(mesh_size, refine_passes)
         print(f"{label}: building, meshing, and solving")
@@ -1277,6 +1316,7 @@ if RUN_COMSOL and MPH_AVAILABLE and RUN_EIGEN_MESH_STUDY:
                 "error": f"{type(error).__name__}: {error}",
             })
             print(f"{label} FAILED: {type(error).__name__}: {error}")
+            save_convergence()
             continue
         convergence_rows.append(row)
         print(
@@ -1284,14 +1324,8 @@ if RUN_COMSOL and MPH_AVAILABLE and RUN_EIGEN_MESH_STUDY:
             f"{row['resonance_ghz']:.9f} GHz, "
             f"{row['imag_frequency_hz']:+.3f} Hz imaginary"
         )
+        save_convergence()
 
-    convergence_path = MODEL_DIR / EIGEN_CONVERGENCE_JSON
-    convergence_path.write_text(
-        json.dumps(
-            {"rows": convergence_rows, "failures": convergence_failures}, indent=2
-        )
-        + "\n"
-    )
     print(
         f"Wrote {len(convergence_rows)} of {len(EIGEN_CONVERGENCE_CONFIGS)} rows "
         f"to {convergence_path}"
@@ -1487,8 +1521,10 @@ else:
 #   mode outside that window would not be found.
 # - The feed extension is not the reference device, so the solved coupling is
 #   not the reference coupling.
-# - The selected mode's imaginary part does not shrink as the mesh is refined, so
-#   the damping is mesh-set too, not just the frequency.
+# - The selected mode's imaginary part does not fall as the mesh is refined, and
+#   it is not monotonic: 1694.030, 147.606, and 930.375 Hz across the three rows.
+#   It mixes numerical error with the external decay the matched feed ports give
+#   a lossless PEC model, so no quality factor is read from it.
 # - The main sweep uses one mesh setting and one enclosure. An adaptive sweep on
 #   a converged, enclosure-independent physical mode would be needed before the
 #   dip depth means anything.
