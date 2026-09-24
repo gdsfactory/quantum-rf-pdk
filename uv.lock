@@ -4641,7 +4641,6 @@ docs = [
     { name = "sympy" },
     { name = "tqdm" },
     { name = "typsphinx" },
-    { name = "typst" },
 ]
 docs-models = [
     { name = "circulax" },
@@ -4773,7 +4772,6 @@ docs = [
     { name = "sympy" },
     { name = "tqdm" },
     { name = "typsphinx", specifier = ">=0.9.2,<0.10" },
-    { name = "typst", specifier = ">=0.15,<0.16" },
 ]
 docs-models = [
     { name = "circulax", specifier = ">=0.2.3" },
