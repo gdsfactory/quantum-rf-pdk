@@ -54,6 +54,32 @@ build-doc-figures: fetch-docs-fonts
         ("Outfit", "Outfit-Bold.ttf", "700"),
         ("FiraMath-Regular", "FiraMath-Regular.otf", "400"),
     )
+    colors = {
+        "#ffffff": "#14181e",
+        "#f6f4ef": "#2a3340",
+        "#0e1116": "#f0f2f6",
+        "#5b6472": "#c5cbd5",
+        "#dcdfe4": "#586272",
+        "#2a6fb5": "#76a9ee",
+        "#3979ba": "#5e9be0",
+        "#1f5994": "#9ac4ff",
+        "#a95a20": "#edb37c",
+    }
+
+    def color_rules(palette, prefix=""):
+        return "".join(
+            f'{prefix}svg.qpdk-figure [{attribute}="{color}"]'
+            + "{" + f"{attribute}:{value}" + "}"
+            for color, value in palette.items()
+            for attribute in ("fill", "stroke")
+        )
+
+    dark = color_rules(colors)
+    theme = (
+        "@media(prefers-color-scheme:dark){" + dark + "}"
+        + color_rules({color: color for color in colors}, "html[data-theme=light] ")
+        + color_rules(colors, "html[data-theme=dark] ")
+    )
 
     for name, source in sorted(sources.items()):
         pdf = typst.compile(
@@ -88,8 +114,9 @@ build-doc-figures: fetch-docs-fonts
                 + f'src:url(data:font/{extension};base64,{encoded}) format("{kind}")' + '}'
             )
 
+        svg = svg.replace("<svg ", '<svg class="qpdk-figure" ', 1)
         opening_tag_end = svg.index(">") + 1
-        svg = svg[:opening_tag_end] + "<style>" + "".join(faces) + "</style>" + svg[opening_tag_end:]
+        svg = svg[:opening_tag_end] + "<style>" + "".join(faces) + theme + "</style>" + svg[opening_tag_end:]
         (output_dir / f"{name}.svg").write_text(svg + "\n")
 
     for stale in output_dir.glob("*.svg"):
