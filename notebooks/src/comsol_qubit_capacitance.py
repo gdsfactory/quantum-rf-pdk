@@ -241,6 +241,27 @@ def apply_qpdk_style() -> str:
     return applied
 
 
+def prefer_svg_figures() -> None:
+    """Save every figure as SVG as well as PNG, so stored outputs stay vector.
+
+    The saved cell outputs are what the documentation renders, and both the HTML
+    and the Typst PDF build embed the SVG ahead of the PNG. The PNG is kept as a
+    fallback for a viewer that cannot render SVG, and text is written as paths so
+    the figures carry their own glyphs instead of relying on installed fonts.
+    Outside a notebook kernel there is no inline backend to configure, so a
+    plain script run keeps matplotlib's PNG default.
+    """
+    try:
+        # Ships with ipykernel, so it is present in a notebook kernel only.
+        from matplotlib_inline.backend_inline import (  # ruff: ignore[import-outside-top-level]
+            set_matplotlib_formats,
+        )
+    except ImportError:
+        return
+    plt.rcParams["svg.fonttype"] = "path"
+    set_matplotlib_formats("svg", "png")
+
+
 def result_file(name: str) -> Path | None:
     """Return the path of an exported solver result, if one is available.
 
@@ -272,6 +293,7 @@ def explain_missing_results(name: str) -> None:
     )
 
 
+prefer_svg_figures()
 STYLE_SOURCE = apply_qpdk_style()
 print("Plot style: QPDK" if STYLE_SOURCE != "matplotlib defaults" else STYLE_SOURCE)
 
