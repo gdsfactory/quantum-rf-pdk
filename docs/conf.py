@@ -134,7 +134,7 @@ nb_execution_mode = "cache"
 # docs builds; preserve the existing HFSS and MATLAB execution exclusions.
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
-    "notebooks/palace_transmon_surface_epr.py",
+    "notebooks/palace_transmon_surface_epr.ipynb",
     "notebooks/matlab_integration*",
 ]
 nb_execution_timeout = -1
