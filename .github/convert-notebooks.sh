@@ -66,7 +66,7 @@ if [ "$#" -gt 0 ]; then
                     echo -e "${YELLOW}Please add it to the index before committing:${NC} git add \"$ipynb_path\"" >&2
                     exit 1
                 fi
-                if [ ! -d .jj ] && git diff --name-only -- "$ipynb_path" | grep -q .; then
+                if git diff --name-only -- "$ipynb_path" | grep -q .; then
                     echo -e "${RED}Error:${NC} ${BOLD}$ipynb_path${NC} has unstaged changes." >&2
                     echo -e "${YELLOW}Please stage or discard changes before committing.${NC}" >&2
                     exit 1
