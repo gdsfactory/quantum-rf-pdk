@@ -16,13 +16,6 @@ depth.
 Coupled resonators declare their own models so the coupling is preserved. Chip
 assemblies remain unmodeled and expand to these boundaries and other modeled primitives.
 
-.. figure:: notebooks/figures/model-hierarchy.svg
-    :alt: An unmodeled chip assembly expands to a coupled resonator model and modeled CPW primitives.
-    :width: 100%
-
-    The coupled resonator remains a single modeled unit while unmodeled routes expand to
-    modeled cells.
-
 For new components, attach the compact model through ``schematic_function`` and keep its
 ``port_order`` consistent with the layout ports.
 
