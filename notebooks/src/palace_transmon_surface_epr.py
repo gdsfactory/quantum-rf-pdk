@@ -242,13 +242,13 @@ if WORKFLOW_ACTION == "prepare":
 # ## Analyze Returned Run
 #
 # In preparation mode, inspect the generated mesh's structured Surface-EPR
-# assignments before sending the archive to the cluster. After the completed package
+# assignments before sending the archive to the cluster. After the package
 # is returned, change `WORKFLOW_ACTION` to `"analyze-returned"`, keep the same
 # `RUN_ID`, and paste the exact handoff ID displayed above into the stage-local control
 # below. Extract the returned package into a separate directory and set
 # `RETURNED_RUN_DIR` to its run root (the directory containing `metadata`).
-# Trust inspection exposes completeness before strict resolution verifies the
-# returned receipt against the independently recorded expected handoff identity.
+# Trust inspection exposes readable snapshots from failed runs as partial
+# evidence. Completed runs additionally require strict receipt resolution.
 #
 # The report order is run identity and numerical evidence, simulation cost, then
 # physics quantities. A returned package without bound Surface-EPR snapshots fails
@@ -271,15 +271,21 @@ if WORKFLOW_ACTION == "analyze-returned":
         )
     returned_trust = inspect_run_trustworthiness(RETURNED_RUN_DIR, theme=REPORT_THEME)
     display(returned_trust.show_run_trustworthiness(theme=REPORT_THEME))
-    result = resolve_palace_result(
-        RETURNED_RUN_DIR,
-        expected_handoff_id=EXPECTED_HANDOFF_ID,
+    if returned_trust.identity["handoff_id"] != EXPECTED_HANDOFF_ID:
+        raise ValueError("Returned run handoff ID does not match EXPECTED_HANDOFF_ID.")
+    analysis = (
+        resolve_palace_result(
+            RETURNED_RUN_DIR,
+            expected_handoff_id=EXPECTED_HANDOFF_ID,
+        )
+        if returned_trust.completeness == "complete"
+        else returned_trust
     )
     preview = inspect_palace_geometry(RETURNED_RUN_DIR)
     display(preview.show_surface_epr())
-    trust_report = result.show_run_trustworthiness(theme=REPORT_THEME)
-    benchmark_report = result.show_simulation_benchmark()
-    physics_report = result.show_physics_quantities(
+    trust_report = analysis.show_run_trustworthiness(theme=REPORT_THEME)
+    benchmark_report = analysis.show_simulation_benchmark()
+    physics_report = analysis.show_physics_quantities(
         theme=REPORT_THEME,
         ranking_limit=SURFACE_RANKING_LIMIT,
     )
