@@ -9,16 +9,10 @@ The builder is layout-agnostic: a CPW feedline and an unfed qubit cell both
 become extruded metal. It does not infer a Josephson junction from layout data.
 
 The MPh model is returned so a user can add the physics and study that fit
-their problem. Feed port coordinates
-stay on the :class:`~qpdk.simulation.comsol_layout.ComsolLayout` that was passed
-in; this module never claims a port was assigned in physics.
-
-Example:
-    >>> import mph
-    >>> from qpdk.simulation.comsol import build_comsol_metal_model
-    >>> layout = prepare_comsol_layout(component, feed_ports=None)
-    >>> model = build_comsol_metal_model(client, layout, metal_thickness_um=0.2)
-    >>> model.save("metal.mph")
+their problem. Feed port coordinates stay on the
+:class:`~qpdk.simulation.comsol_layout.ComsolLayout` that was passed in; this
+module never claims a port was assigned in physics. See the COMSOL notebooks
+for complete layout and client setup.
 """
 
 from __future__ import annotations

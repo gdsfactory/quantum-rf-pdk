@@ -160,7 +160,6 @@ if "google.colab" in sys.modules:
     )
 
 # %% tags=["hide-input", "hide-output"]
-import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -322,6 +321,10 @@ plt.show()
 # The source feed locations at $x = 0$ and $x = 200$ are **inside** the prepared
 # region. Cropping the whole model there would remove much of the resonator;
 # cropping only the dielectric would leave ground metal across the port faces.
+# The source etch gaps also stop at those x positions. The ground margin wraps
+# around their ends, so the exported centre strip is galvanically connected to
+# ground. This saved geometry is not ready for a driven CPW solve or S-parameter
+# interpretation.
 # Before assigning numeric TEM ports, extend the feed conductor *and both CPW
 # gap strips* from each source feed to separate exterior faces beyond the entire
 # resonator. Terminate the metal, substrate, and air consistently at those
@@ -337,7 +340,7 @@ plt.show()
 for feed in layout.feed_ports:
     # Orientation is cardinal: 0°/180° means the line runs along x, so the port
     # plane's normal is x and the transverse direction is y (and vice versa).
-    along_x = math.isclose(feed.orientation % 180.0, 0.0, abs_tol=1e-6)
+    along_x = round(feed.orientation / 90.0) % 2 == 0
     normal_axis = "x" if along_x else "y"
     plane_position = feed.center[0] if along_x else feed.center[1]
     half_span = feed.width / 2.0 + CPW_GAP_UM
