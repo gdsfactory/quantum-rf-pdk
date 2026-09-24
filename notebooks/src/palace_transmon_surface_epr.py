@@ -270,7 +270,6 @@ if WORKFLOW_ACTION == "analyze-returned":
             "Set EXPECTED_HANDOFF_ID to the exact ID recorded during preparation."
         )
     returned_trust = inspect_run_trustworthiness(RETURNED_RUN_DIR, theme=REPORT_THEME)
-    display(returned_trust.show_run_trustworthiness(theme=REPORT_THEME))
     if returned_trust.identity["handoff_id"] != EXPECTED_HANDOFF_ID:
         raise ValueError("Returned run handoff ID does not match EXPECTED_HANDOFF_ID.")
     analysis = (
@@ -281,18 +280,11 @@ if WORKFLOW_ACTION == "analyze-returned":
         if returned_trust.completeness == "complete"
         else returned_trust
     )
-    preview = inspect_palace_geometry(RETURNED_RUN_DIR)
-    display(preview.show_surface_epr())
-    trust_report = analysis.show_run_trustworthiness(theme=REPORT_THEME)
-    benchmark_report = analysis.show_simulation_benchmark()
-    physics_report = analysis.show_physics_quantities(
+    if not analysis.show_physics_quantities(
         theme=REPORT_THEME,
         ranking_limit=SURFACE_RANKING_LIMIT,
-    )
-    if not physics_report.snapshots:
+    ).snapshots:
         raise RuntimeError(
             "Returned run has no Surface-EPR snapshots bound to structured semantics."
         )
-    display(trust_report)
-    display(benchmark_report)
-    display(physics_report)
+    analysis.show_all_results(theme=REPORT_THEME, ranking_limit=SURFACE_RANKING_LIMIT)
