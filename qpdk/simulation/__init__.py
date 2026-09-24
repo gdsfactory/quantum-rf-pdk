@@ -43,6 +43,8 @@ References:
 from qpdk.simulation.aedt_base import (
     AEDTBase,
     add_materials_to_aedt,
+    detach_desktop_logging,
+    fit_view,
     layer_stack_to_gds_mapping,
     object_names_to_materials,
     prepare_component_for_aedt,
@@ -56,6 +58,8 @@ __all__ = [
     "Q3D",
     "AEDTBase",
     "add_materials_to_aedt",
+    "detach_desktop_logging",
+    "fit_view",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",

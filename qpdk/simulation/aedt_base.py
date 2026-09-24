@@ -241,18 +241,45 @@ def export_component_to_gds_temp(
 ) -> Generator[Path, None, None]:
     """Context manager for exporting a component to a temporary GDS file.
 
+    The GDS is written without the layout's context info, where gdsfactory keeps its
+    ports, cross-sections and settings. AEDT needs the geometry only, and on AEDT
+    2026 R1 the importer fails on a file that carries the info: the import returns
+    success, the AEDT process is gone moments later, and every later call in the
+    session reports a dead desktop. A consumer that reads the file back with
+    gdsfactory rather than handing it to AEDT gets no ports from it.
+
     Yields:
         Path to the exported GDS file.
     """
     if gds_path is not None:
         path = Path(gds_path)
-        component.write_gds(str(path))
+        component.write_gds(str(path), with_metadata=False)
         yield path
     else:
         with tempfile.TemporaryDirectory(prefix=prefix) as temp_dir:
             path = Path(temp_dir) / "component.gds"
-            component.write_gds(str(path))
+            component.write_gds(str(path), with_metadata=False)
             yield path
+
+
+def _first_real_value(solution: Any) -> float | None:
+    """Read the first real value of a solution's active expression.
+
+    ``get_expression_data`` is awkward about missing data: an expression the report
+    does not carry comes back as empty arrays, and a sweep with no row matching the
+    requested variation returns ``None`` for both the values and the sweep, in both
+    cases while the ``SolutionData`` object itself stays truthy.
+
+    Args:
+        solution: A PyAEDT ``SolutionData`` for a single expression.
+
+    Returns:
+        The value, or ``None`` when the expression has no data to read.
+    """
+    _, values = solution.get_expression_data(formula="real")
+    if values is None or len(values) == 0:
+        return None
+    return float(values[0])
 
 
 def rename_imported_objects(
@@ -420,3 +447,50 @@ class AEDTBase(metaclass=SingletonMeta):
     def save(self) -> None:
         """Save the AEDT project."""
         self.app.save_project()
+
+
+def fit_view(app: Any) -> None:
+    """Frame the model in a graphical AEDT session, and do nothing when headless.
+
+    ``modeler.fit_all`` is a view operation. A non-graphical session has no view, and
+    on AEDT 2026 R1 the failed call loses the gRPC channel: the geometry is fine, but
+    every later call in the session reports a dead desktop.
+
+    The guard reads the flag the session was constructed with, not what the session
+    itself reports, so attaching to an existing headless session still needs
+    ``non_graphical`` set or ``PYAEDT_NON_GRAPHICAL`` exported. A released session has
+    no desktop left and raises.
+
+    Args:
+        app: The AEDT application (an ``Hfss``, ``Q3d`` or ``Q2d`` instance).
+    """
+    if not app.desktop_class.non_graphical:
+        app.modeler.fit_all()
+
+
+def detach_desktop_logging(app: Any) -> None:
+    """Stop PyAEDT reading the AEDT desktop on every log message.
+
+    ``Logger._log_on_desktop`` tests the desktop before it tests
+    ``settings.enable_desktop_logs``, so the setting PyAEDT turns off itself in
+    non-graphical mode does not prevent the read. The read goes through
+    ``Desktop.odesktop``, whose failure path releases the gRPC plugin's AEDT handle,
+    so a stray log message can end a session that AEDT is still running. Dropping the
+    logger's reference to the desktop is what ``Desktop.release_desktop`` does at the
+    end of a session anyway.
+
+    PyAEDT has one logger per process and every desktop construction points it back at
+    that desktop, so this is process-global and needs calling after each ``Hfss``,
+    ``Q3d`` or ``Q2d`` is built. Messages the logger reads out of the desktop, such as
+    ``get_messages(aedt_messages=True)``, stop working afterwards.
+
+    Args:
+        app: The AEDT application (an ``Hfss``, ``Q3d`` or ``Q2d`` instance).
+    """
+    if hasattr(app.logger, "_desktop_class"):
+        app.logger._desktop_class = None
+    else:  # pragma: no cover - only where PyAEDT renamed the attribute
+        logger.warning(
+            "PyAEDT's logger has no _desktop_class, so it keeps reading the desktop on"
+            " every log message. Check the PyAEDT version."
+        )

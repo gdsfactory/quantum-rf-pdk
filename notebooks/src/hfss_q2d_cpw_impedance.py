@@ -80,7 +80,7 @@ from IPython.display import Image, display
 from qpdk import PDK
 from qpdk.config import PATH
 from qpdk.models.cpw import cpw_parameters
-from qpdk.simulation import Q2D
+from qpdk.simulation import Q2D, detach_desktop_logging, fit_view
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -136,6 +136,8 @@ q2d = Q2d(
     new_desktop=True,
     version="2025.2",
 )
+# PyAEDT logs through the desktop by default; reading it per message can drop the session.
+detach_desktop_logging(q2d)
 
 print(f"Q2D project created: {q2d.project_file}")
 print(f"Design name: {q2d.design_name}")
@@ -167,7 +169,7 @@ for role, name in object_names.items():
 
 # %%
 # Ensure Q2D model fits the screen
-q2d.modeler.fit_all()
+fit_view(q2d)
 
 # Save screenshot
 img_dir = PATH.repo / "docs" / "_static" / "images"
@@ -243,7 +245,8 @@ data = q2d.post.get_solution_data(
 )
 
 frequencies_ghz = np.array(data.primary_sweep_values)
-z0_q2d = np.array(data.data_real())
+_, z0_real = data.get_expression_data(formula="real")
+z0_q2d = np.array(z0_real)
 
 # --- Plot ---
 fig, ax = plt.subplots(figsize=(10, 5))
