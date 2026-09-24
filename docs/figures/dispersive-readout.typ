@@ -7,7 +7,7 @@
 #set text(font: body-font, fill: ink)
 #show math.equation: set text(font: "Fira Math")
 
-#let copper = rgb("#bc642a")
+#let copper = rgb("#a95a20")
 
 #cetz.canvas(length: 1cm, {
   import cetz.draw: *
