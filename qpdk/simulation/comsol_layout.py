@@ -35,8 +35,7 @@ _SUPPORTED_LAYERS: frozenset[tuple[int, int]] = frozenset({
     tuple(LAYER.M1_ETCH),
 })
 
-# Orientation is snapped to the nearest cardinal direction by kfactory, so a
-# real diagonal port shows up as an off-grid angle. Well below one degree.
+# Feed planes are currently defined only for axis-aligned ports.
 _ANGLE_TOLERANCE = 1e-6
 
 
@@ -285,7 +284,8 @@ def _feed_port(component: Component, name: str) -> ComsolFeedPort:
             raise ValueError(f"Feed port {name!r} has non-finite {label}")
     if width <= 0.0:
         raise ValueError(f"Feed port {name!r} has non-positive width {width}")
-    if not math.isclose(orientation % 90.0, 0.0, abs_tol=_ANGLE_TOLERANCE):
+    remainder = orientation % 90.0
+    if min(remainder, 90.0 - remainder) > _ANGLE_TOLERANCE:
         raise ValueError(
             f"Feed port {name!r} orientation {orientation} is not cardinal; "
             "COMSOL feeds must face along ±x or ±y"

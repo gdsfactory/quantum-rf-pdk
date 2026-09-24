@@ -136,7 +136,8 @@ currents, and substrate modes that analytical models may miss
   unsolved 3D geometry project, and lays out the physics setup (materials, PEC and
   scattering boundaries, numeric TEM ports, boundary mode analysis, eigenfrequency
   search, narrow frequency sweep) needed to obtain S₂₁. The notebook stops at geometry
-  unless you supply a solved model.
+  unless you supply a solved model. Its unextended feed strip reconnects to ground at
+  both ends, so it is not ready for a driven solve.
 - :doc:`notebooks/comsol_qubit_eigenmode` — Prepares a linearized double-pad transmon
   eigenmode for COMSOL with MPh: removes the Josephson-junction mask from an EM-only
   copy of the QPDK cell, extracts the pad metal and the preserved etched gaps, and
@@ -294,9 +295,9 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
         local Ansys installation and a license, which are not pip-installable.
     - - ``comsol``
       - ``MPh``
-      - The MPh-based COMSOL geometry builder behind ``qpdk.simulation.comsol``. Also
-        requires a local COMSOL installation with an RF Module license; MPh itself is
-        only a client and installs no solver.
+      - The MPh-based COMSOL geometry builder behind ``qpdk.simulation.comsol``.
+        Building geometry requires a local COMSOL installation and license; RF solves
+        also need the RF Module. MPh itself is only a client and installs no solver.
     - - ``circulax``
       - ``circulax``, ``optax``
       - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient

@@ -8,6 +8,7 @@ COMSOL or MPh involvement.
 from __future__ import annotations
 
 import gdsfactory as gf
+import klayout.db as kdb
 import pytest
 
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
@@ -68,7 +69,7 @@ def _geometry_signature(component: gf.Component) -> dict:
 
 
 def test_aedt_wrapper_matches_shared_helper():
-    """The AEDT entry point is geometrically identical to the shared helper."""
+    """The AEDT wrapper forwards both margins and ports to the shared helper."""
     comp = gf.components.straight(length=200, cross_section="cpw")
 
     via_wrapper = prepare_component_for_aedt(
@@ -92,6 +93,23 @@ def test_aedt_wrapper_matches_shared_helper():
         helper_bbox.top,
     )
     assert {p.name for p in via_wrapper.ports} == {p.name for p in via_helper.ports}
+
+
+def test_etch_margin_widens_the_cpw_gap():
+    """A positive etch margin removes ground metal beside the CPW gap."""
+    comp = gf.components.straight(length=200, cross_section="cpw")
+    plain = prepare_metal_layout(comp, margin_draw=50, name="plain_etch_margin")
+    widened = prepare_metal_layout(
+        comp, margin_draw=50, margin_etch=2, name="widened_etch_margin"
+    )
+    point = kdb.Point(round(100 / plain.kcl.dbu), round(12 / plain.kcl.dbu))
+
+    def contains(component: gf.Component) -> bool:
+        shapes = component.get_polygons(merge=True, by="tuple", layers=[LAYER.M1_DRAW])
+        return any(shape.inside(point) for shape in shapes[tuple(LAYER.M1_DRAW)])
+
+    assert contains(plain)
+    assert not contains(widened)
 
 
 def test_straight_cpw_metal_area_and_ports():
@@ -224,6 +242,32 @@ def test_rejects_non_cardinal_feed_port():
 
     with pytest.raises(ValueError, match="cardinal"):
         prepare_comsol_layout(comp, feed_ports=("o1", "o2"), ground_margin=50.0)
+
+
+@pytest.mark.parametrize("orientation", [89.9999999, 179.9999999])
+def test_accepts_roundoff_below_cardinal_angle(orientation: float):
+    """Roundoff on either side of a cardinal angle is accepted."""
+    comp = gf.Component()
+    comp << gf.components.straight(length=200, cross_section="cpw")
+    comp.add_port(
+        name="near_cardinal",
+        center=(0, 0),
+        width=10,
+        orientation=orientation,
+        layer=LAYER.M1_DRAW,
+    )
+    comp.add_port(
+        name="other",
+        center=(200, 0),
+        width=10,
+        orientation=0,
+        layer=LAYER.M1_DRAW,
+    )
+
+    layout = prepare_comsol_layout(
+        comp, feed_ports=("near_cardinal", "other"), ground_margin=50.0
+    )
+    assert layout.feed_ports[0].orientation == pytest.approx(orientation)
 
 
 def test_rejects_unsupported_fabrication_layer():
