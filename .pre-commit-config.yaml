@@ -204,7 +204,7 @@ repos:
     hooks:
       - id: prettier
         priority: 10
-        types_or: [css]
+        types_or: [css, javascript]
   - repo: https://github.com/thibaudcolas/pre-commit-stylelint
     rev: v17.14.1
     hooks:
@@ -249,6 +249,14 @@ repos:
         args: [--config, .github/lychee.toml]
   - repo: local
     hooks:
+      - id: eslint
+        priority: 20
+        name: ESLint
+        entry: eslint --config .github/eslint.config.mjs
+        language: node
+        additional_dependencies:
+          - eslint@9.39.2
+        types_or: [javascript]
       # - id: just-fmt
       #   priority: 10
       #   name: Format justfiles
