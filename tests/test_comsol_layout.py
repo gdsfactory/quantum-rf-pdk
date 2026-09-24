@@ -68,6 +68,31 @@ def _geometry_signature(component: gf.Component) -> dict:
     return signature
 
 
+def _kdb_polygon(points: tuple[tuple[float, float], ...], dbu: float) -> kdb.Polygon:
+    """Rebuild a µm vertex list as a KLayout polygon in database units.
+
+    Returns:
+        The polygon in database units.
+    """
+    return kdb.Polygon([kdb.Point(round(x / dbu), round(y / dbu)) for x, y in points])
+
+
+def _in_metal(layout: ComsolLayout, point: tuple[float, float], dbu: float) -> bool:
+    """Return whether a µm point falls on extracted metal (holes excluded).
+
+    Returns:
+        ``True`` when the point lies inside some outline and no hole of it.
+    """
+    probe = kdb.Point(round(point[0] / dbu), round(point[1] / dbu))
+    for polygon in layout.polygons:
+        if not _kdb_polygon(polygon.outline, dbu).inside(probe):
+            continue
+        if any(_kdb_polygon(hole, dbu).inside(probe) for hole in polygon.holes):
+            continue
+        return True
+    return False
+
+
 def test_aedt_wrapper_matches_shared_helper():
     """The AEDT wrapper forwards both margins and ports to the shared helper."""
     comp = gf.components.straight(length=200, cross_section="cpw")
@@ -294,3 +319,196 @@ def test_rejects_positive_metal_without_etch_mask():
 
     with pytest.raises(ValueError, match="requires an M1_ETCH mask"):
         prepare_comsol_layout(comp, feed_ports=("o1", "o2"))
+
+
+def test_crop_to_feed_ports_defaults_to_off():
+    """Cropping is opt-in; the default keeps the prepared ground untouched."""
+    comp = gf.components.straight(length=200, cross_section="cpw")
+    margin = 50.0
+    default = prepare_comsol_layout(comp, feed_ports=("o1", "o2"), ground_margin=margin)
+    explicit = prepare_comsol_layout(
+        comp, feed_ports=("o1", "o2"), ground_margin=margin, crop_to_feed_ports=False
+    )
+
+    assert default.polygons == explicit.polygons
+    assert default.bbox == explicit.bbox
+    source = comp.bbox()
+    assert default.bbox.xmin == pytest.approx(source.left - margin)
+    assert default.bbox.xmax == pytest.approx(source.right + margin)
+
+
+def test_crop_to_feed_ports_opens_both_x_faces():
+    """Cropping exposes conductor/gap/ground separation at both feed planes."""
+    comp = gf.components.straight(length=200, cross_section="cpw")
+    margin = 50.0
+    dbu = comp.kcl.dbu
+    layout = prepare_comsol_layout(
+        comp, feed_ports=("o1", "o2"), ground_margin=margin, crop_to_feed_ports=True
+    )
+
+    source = comp.bbox()
+    assert layout.bbox.xmin == pytest.approx(source.left)
+    assert layout.bbox.xmax == pytest.approx(source.right)
+    assert layout.bbox.ymin == pytest.approx(source.bottom - margin)
+    assert layout.bbox.ymax == pytest.approx(source.top + margin)
+
+    # Probe just inside each feed plane: the CPW cross-section is open, i.e.
+    # the center conductor is present and both etch gaps and the ground are
+    # separated from it.
+    for x in (0.5, 199.5):
+        assert _in_metal(layout, (x, 0.0), dbu)
+        assert not _in_metal(layout, (x, 8.0), dbu)
+        assert not _in_metal(layout, (x, -8.0), dbu)
+        assert _in_metal(layout, (x, 40.0), dbu)
+        assert _in_metal(layout, (x, -40.0), dbu)
+    # The ground no longer extends past the feed planes.
+    assert not _in_metal(layout, (-1.0, 40.0), dbu)
+    assert not _in_metal(layout, (201.0, 40.0), dbu)
+
+
+def test_crop_to_feed_ports_supports_vertical_feeds():
+    """The y axis works the same way: bottom 270°, top 90°."""
+    comp = gf.Component()
+    ref = comp << gf.components.straight(length=200, cross_section="cpw")
+    ref.rotate(90)
+    comp.add_ports(ref.ports)
+    margin = 50.0
+    dbu = comp.kcl.dbu
+    layout = prepare_comsol_layout(
+        comp, feed_ports=("o1", "o2"), ground_margin=margin, crop_to_feed_ports=True
+    )
+
+    source = comp.bbox()
+    assert layout.bbox.ymin == pytest.approx(source.bottom)
+    assert layout.bbox.ymax == pytest.approx(source.top)
+    assert layout.bbox.xmin == pytest.approx(source.left - margin)
+    assert layout.bbox.xmax == pytest.approx(source.right + margin)
+
+    for y in (0.5, 199.5):
+        assert _in_metal(layout, (0.0, y), dbu)
+        assert not _in_metal(layout, (8.0, y), dbu)
+        assert not _in_metal(layout, (-8.0, y), dbu)
+        assert _in_metal(layout, (40.0, y), dbu)
+
+
+def test_crop_to_feed_ports_preserves_holes():
+    """An enclosed void survives cropping as a hole in the ground metal."""
+    comp = gf.Component()
+    ref = comp << gf.components.straight(length=200, cross_section="cpw")
+    comp.add_ports(ref.ports)
+    comp.add_polygon([(90, 20), (110, 20), (110, 30), (90, 30)], layer=LAYER.M1_ETCH)
+
+    layout = prepare_comsol_layout(
+        comp, feed_ports=("o1", "o2"), ground_margin=50.0, crop_to_feed_ports=True
+    )
+
+    holes = [hole for polygon in layout.polygons for hole in polygon.holes]
+    assert len(holes) == 1
+    xs = [x for x, _ in holes[0]]
+    ys = [y for _, y in holes[0]]
+    assert (min(xs), min(ys), max(xs), max(ys)) == pytest.approx((
+        90.0,
+        20.0,
+        110.0,
+        30.0,
+    ))
+
+
+def test_crop_to_feed_ports_rejects_metal_beyond_the_planes():
+    """A resonator wider than its coupling feeds must not be sliced."""
+    comp = quarter_wave_resonator_coupled(length=1000, meanders=2)
+
+    with pytest.raises(ValueError, match="cut component geometry"):
+        prepare_comsol_layout(comp, ground_margin=50.0, crop_to_feed_ports=True)
+
+
+def test_crop_to_feed_ports_rejects_etch_stopping_short():
+    """Gaps that do not reach the planes would leave a shorted face."""
+    comp = gf.Component()
+    comp.add_polygon([(0, -5), (200, -5), (200, 5), (0, 5)], layer=LAYER.M1_DRAW)
+    comp.add_polygon([(50, -11), (150, -11), (150, -5), (50, -5)], layer=LAYER.M1_ETCH)
+    comp.add_polygon([(50, 5), (150, 5), (150, 11), (50, 11)], layer=LAYER.M1_ETCH)
+    comp.add_port(
+        name="o1", center=(0, 0), width=10, orientation=180, layer=LAYER.M1_DRAW
+    )
+    comp.add_port(
+        name="o2", center=(200, 0), width=10, orientation=0, layer=LAYER.M1_DRAW
+    )
+
+    with pytest.raises(ValueError, match="etch gaps to reach both"):
+        prepare_comsol_layout(
+            comp, feed_ports=("o1", "o2"), ground_margin=50.0, crop_to_feed_ports=True
+        )
+
+
+def test_crop_to_feed_ports_requires_feeds():
+    """Cropping has no planes to use when the layout is unfed."""
+    comp = gf.components.straight(length=200, cross_section="cpw")
+
+    with pytest.raises(ValueError, match="needs two feed ports"):
+        prepare_comsol_layout(
+            comp, feed_ports=None, ground_margin=50.0, crop_to_feed_ports=True
+        )
+
+
+def test_crop_to_feed_ports_rejects_inward_feeds():
+    """Both feeds facing the same way is not a valid opposite pair."""
+    comp = gf.Component()
+    ref = comp << gf.components.straight(length=200, cross_section="cpw")
+    comp.add_ports(ref.ports)
+    comp.add_port(
+        name="inward", center=(0, 0), width=10, orientation=0, layer=LAYER.M1_DRAW
+    )
+    comp.add_port(
+        name="outward", center=(200, 0), width=10, orientation=0, layer=LAYER.M1_DRAW
+    )
+
+    with pytest.raises(ValueError, match="face outwards"):
+        prepare_comsol_layout(
+            comp,
+            feed_ports=("inward", "outward"),
+            ground_margin=50.0,
+            crop_to_feed_ports=True,
+        )
+
+
+def test_crop_to_feed_ports_rejects_mixed_axes():
+    """Feeds on different axes do not define a single crop plane pair."""
+    comp = gf.Component()
+    ref = comp << gf.components.straight(length=200, cross_section="cpw")
+    comp.add_ports(ref.ports)
+    comp.add_port(
+        name="o1", center=(0, 0), width=10, orientation=180, layer=LAYER.M1_DRAW
+    )
+    comp.add_port(
+        name="vertical", center=(200, 0), width=10, orientation=90, layer=LAYER.M1_DRAW
+    )
+
+    with pytest.raises(ValueError, match="same axis"):
+        prepare_comsol_layout(
+            comp,
+            feed_ports=("o1", "vertical"),
+            ground_margin=50.0,
+            crop_to_feed_ports=True,
+        )
+
+
+def test_crop_to_feed_ports_rejects_misaligned_feeds():
+    """Feeds that do not share a transverse coordinate cannot bound a strip."""
+    comp = gf.Component()
+    ref = comp << gf.components.straight(length=200, cross_section="cpw")
+    comp.add_ports(ref.ports)
+    comp.add_port(
+        name="o1", center=(0, 0), width=10, orientation=180, layer=LAYER.M1_DRAW
+    )
+    comp.add_port(
+        name="raised", center=(200, 5), width=10, orientation=0, layer=LAYER.M1_DRAW
+    )
+
+    with pytest.raises(ValueError, match="transverse coordinate"):
+        prepare_comsol_layout(
+            comp,
+            feed_ports=("o1", "raised"),
+            ground_margin=50.0,
+            crop_to_feed_ports=True,
+        )

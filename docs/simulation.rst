@@ -59,3 +59,12 @@ For new components, attach the compact model through ``schematic_function`` and 
 .. automodule:: qpdk.simulation.comsol
     :members:
     :show-inheritance:
+
+.. automodule:: qpdk.simulation.comsol_sheet
+    :members:
+
+.. automodule:: qpdk.simulation.comsol_rf
+    :members:
+
+.. automodule:: qpdk.simulation.comsol_capacitance
+    :members:

@@ -138,7 +138,9 @@ precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb matlab_integration.ipynb
 [private]
 [group('docs')]
 copy-sample-notebooks: build-doc-figures
-    @mkdir -p docs/notebooks
+    @mkdir -p docs/notebooks/data docs/_extra/notebooks/data
+    @cp -p notebooks/data/comsol_* docs/notebooks/data/
+    @cp -p notebooks/data/comsol_* docs/_extra/notebooks/data/
     # Copy all source files from notebooks/src
     @cp -p notebooks/src/*.py notebooks/src/*.m docs/notebooks/
     @mkdir -p docs/notebooks/figures

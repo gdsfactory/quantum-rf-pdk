@@ -131,21 +131,21 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
-- :doc:`notebooks/comsol_cpw_resonator` — Prepares a coupled quarter-wave CPW resonator
-  for COMSOL with MPh: extracts the QPDK metal polygons, gaps, and feed ports, builds an
-  unsolved 3D geometry project, and lays out the physics setup (materials, PEC and
-  scattering boundaries, numeric TEM ports, boundary mode analysis, eigenfrequency
-  search, narrow frequency sweep) needed to obtain S₂₁. The notebook stops at geometry
-  unless you supply a solved model. Its unextended feed strip reconnects to ground at
-  both ends, so it is not ready for a driven solve.
-- :doc:`notebooks/comsol_qubit_eigenmode` — Prepares a linearized double-pad transmon
-  eigenmode for COMSOL with MPh: removes the Josephson-junction mask from an EM-only
-  copy of the QPDK cell, extracts the pad metal and the preserved etched gaps, and
-  builds an unsolved 3D geometry project. It lays out what the eigenfrequency setup
-  needs (substrate and air, PEC, a finite Josephson inductance at the junction site, an
-  RF eigenfrequency study) and notes that the result is a linearized mode, not the
-  anharmonic qubit spectrum. The run is off by default and no eigenfrequency is computed
-  or faked from geometry alone.
+- :doc:`notebooks/comsol_cpw_resonator` — Builds and solves a coupled quarter-wave CPW
+  resonator in COMSOL with MPh: extends both source feeds to open port planes, extracts
+  the QPDK metal, builds the air/silicon sheet model, and adds PEC, two numeric TEM
+  ports with voltage integration lines, boundary mode analysis, and a frequency-domain
+  study. Ships a real 5-10 GHz transmission sweep and a saved field map from a COMSOL
+  6.3 solve, and notes that the 0.25 GHz sweep spacing is too coarse to resolve the
+  resonance notch. The feed extension changes the coupling geometry relative to the
+  unextended reference cell.
+- :doc:`notebooks/comsol_qubit_capacitance` — Solves the pad capacitance of an EM-only
+  QPDK double-pad transmon in COMSOL with MPh: removes the Josephson-junction mask,
+  extracts the pads and ground plane, builds the air/silicon sheet model, and adds an
+  Electrostatics study driving one pad with a voltage terminal and grounding the other
+  pad and the ground. Reports the saved es.C11 and stored energy from a COMSOL 6.3 solve
+  with a potential and field map, and labels the LC frequency formed from a chosen L_J
+  an estimate rather than an eigenmode or the anharmonic f01.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
@@ -295,9 +295,9 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
         local Ansys installation and a license, which are not pip-installable.
     - - ``comsol``
       - ``MPh``
-      - The MPh-based COMSOL geometry builder behind ``qpdk.simulation.comsol``.
-        Building geometry requires a local COMSOL installation and license; RF solves
-        also need the RF Module. MPh itself is only a client and installs no solver.
+      - MPh-based COMSOL geometry and study builders in ``qpdk.simulation``. Building
+        and solving require a COMSOL installation and license; RF solves also need the
+        RF Module. MPh itself is only a client and installs no solver.
     - - ``circulax``
       - ``circulax``, ``optax``
       - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient
@@ -427,7 +427,7 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - FEM electromagnetics
       - COMSOL, MPh
       - ``comsol``
-    - - :doc:`notebooks/comsol_qubit_eigenmode`
+    - - :doc:`notebooks/comsol_qubit_capacitance`
       - FEM electromagnetics
       - COMSOL, MPh
       - ``comsol``
