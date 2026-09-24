@@ -5,6 +5,7 @@ import re
 import shutil
 import sys
 import tempfile
+from html import escape
 from pathlib import Path
 
 import typst
@@ -257,7 +258,6 @@ html_extra_path = ["_extra"]
 html_css_files = [
     "css/custom.css",
 ]
-html_js_files = ["js/inline-figures.js"]
 
 # -- Typst / PDF output (typsphinx) -------------------------------------------
 # The fifth tuple element is a typsphinx *template registry key*, not a LaTeX
@@ -679,8 +679,8 @@ def replace_image_paths(app, docname, source):
     source[0] = source[0].replace("docs/_static/images/", "/_static/images/")
 
 
-def mark_inline_figures(app: Sphinx, doctree: nodes.document, _docname: str) -> None:
-    """Mark generated Typst images for inlining in HTML."""
+def inline_figures(app: Sphinx, doctree: nodes.document, _docname: str) -> None:
+    """Inline generated Typst SVGs in HTML so their text can be selected."""
     if app.builder.format != "html":
         return
 
@@ -691,7 +691,14 @@ def mark_inline_figures(app: Sphinx, doctree: nodes.document, _docname: str) -> 
             uri.parent == Path("notebooks/figures")
             and (figure_sources / f"{uri.stem}.typ").is_file()
         ):
-            image["classes"].append("qpdk-inline-figure")
+            svg = (Path(app.srcdir) / uri).read_text(encoding="utf-8")
+            label = escape(image.get("alt", ""), quote=True)
+            svg = svg.replace(
+                "<svg ",
+                f'<svg role="group" aria-label="{label}" ',
+                1,
+            )
+            image.replace_self(nodes.raw("", svg, format="html"))
 
 
 def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
@@ -1111,7 +1118,7 @@ def setup(app):
     # sphinx_github_alerts' source-read hook, which then also converts the
     # README's `> [!NOTE]` alert instead of leaving it as a literal quote.
     app.connect("source-read", replace_image_paths, priority=400)
-    app.connect("doctree-resolved", mark_inline_figures)
+    app.connect("doctree-resolved", inline_figures)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
     app.connect("doctree-resolved", _typst_strip_ansi)
     app.connect("doctree-resolved", _typst_lift_block_images)
