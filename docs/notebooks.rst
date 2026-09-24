@@ -135,17 +135,20 @@ currents, and substrate modes that analytical models may miss
   resonator in COMSOL with MPh: extends both source feeds to open port planes, extracts
   the QPDK metal, builds the air/silicon sheet model, and adds PEC, two numeric TEM
   ports with voltage integration lines, boundary mode analysis, and a frequency-domain
-  study. Ships a real 5-10 GHz transmission sweep and a saved field map from a COMSOL
-  6.3 solve, and notes that the 0.25 GHz sweep spacing is too coarse to resolve the
-  resonance notch. The feed extension changes the coupling geometry relative to the
-  unextended reference cell.
+  study. Published with the outputs of a COMSOL 6.3 run stored in the notebook; the code
+  reads results from a ``RESULTS_DIR`` of exported files, so it runs without a license
+  and explains how to supply results when none are present. Saved mesh-size and local
+  refinement plots show the fixed-frequency convergence study. No notch was resolved in
+  the 5-10 GHz sweep; its coarse spacing could miss a narrow feature. The feed extension
+  changes the coupling geometry relative to the unextended reference cell.
 - :doc:`notebooks/comsol_qubit_capacitance` — Solves the pad capacitance of an EM-only
   QPDK double-pad transmon in COMSOL with MPh: removes the Josephson-junction mask,
   extracts the pads and ground plane, builds the air/silicon sheet model, and adds an
   Electrostatics study driving one pad with a voltage terminal and grounding the other
-  pad and the ground. Reports the saved es.C11 and stored energy from a COMSOL 6.3 solve
-  with a potential and field map, and labels the LC frequency formed from a chosen L_J
-  an estimate rather than an eigenmode or the anharmonic f01.
+  pad and the ground. Published with the outputs of a COMSOL 6.3 run stored in the
+  notebook: es.C11 and the stored energy, potential and field maps, and mesh-size and
+  local-refinement plots. The LC frequency formed from a chosen L_J is labelled an
+  estimate rather than an eigenmode or the anharmonic f01.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
@@ -170,6 +173,20 @@ currents, and substrate modes that analytical models may miss
 
     See the `gsim documentation <https://gdsfactory.github.io/gsim/>`_ for the full list
     of available notebooks.
+
+.. note::
+
+    **Notebooks that need a licensed solver are published with saved outputs**
+
+    COMSOL and Ansys AEDT are not pip-installable and do not run without a license, so
+    :doc:`notebooks/hfss_q2d_cpw_impedance`, :doc:`notebooks/hfss_eigenmode_resonator`,
+    :doc:`notebooks/hfss_driven_capacitor`, :doc:`notebooks/comsol_cpw_resonator`, and
+    :doc:`notebooks/comsol_qubit_capacitance` are published with the outputs of a real
+    solver run stored in the notebook. Those stored figures and numbers are the
+    artifact: the pages are not re-executed here, so what you see is the recorded run.
+    The two COMSOL notebooks additionally run without a license, skipping the solver
+    cells and reporting how to supply exported results, so their code can be read and
+    executed up to the point where a license is needed.
 
 **********************
  Hamiltonian analysis
