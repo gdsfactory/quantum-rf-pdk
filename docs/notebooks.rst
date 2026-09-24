@@ -340,16 +340,18 @@ With ``pip``:
 
 .. note::
 
-    Two notebook dependencies are deliberately *not* extras:
+    Some notebook dependencies are deliberately *not* extras:
 
     - ``openvino``, used by :doc:`notebooks/jax_backend_comparison` for the NPU
       benchmark, is optional and platform-specific — install it with ``pip install
       openvino``. The notebook skips that section if it is missing.
     - SCGSim, used by :doc:`notebooks/palace_transmon_surface_epr`, is pinned directly
-      from its public repository for this converging workflow. Use Python 3.12 and
-      install ``scgsim[palace,visualization]`` at revision
-      ``82e4af6eea0f32d39ff364169c2cba1652995d48`` as shown in the notebook. Palace
-      itself remains an external executable supplied by the target machine.
+      from its public repository in the ``palace-notebook`` development dependency
+      group. From this checkout, run ``uv sync --python 3.13 --group palace-notebook``
+      and select ``.venv/bin/python`` as the notebook kernel. This group requires Python
+      3.12 or 3.13 because the pinned SCGSim revision
+      ``6af444d274b633a4b5397d23ef32512856f7c11d`` does. Palace itself remains an
+      external executable supplied by the target machine.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
@@ -418,7 +420,7 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
     - - :doc:`notebooks/palace_transmon_surface_epr`
       - FEM electromagnetics
       - SCGSim, Palace
-      - Pinned SCGSim install (Python 3.12)
+      - ``palace-notebook`` development group (Python 3.13)
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
       - scQubits
