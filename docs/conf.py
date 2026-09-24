@@ -9,6 +9,7 @@ from pathlib import Path
 
 import typst
 from docutils import nodes
+from sphinx.application import Sphinx
 from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator, escape_typst_string
@@ -678,6 +679,21 @@ def replace_image_paths(app, docname, source):
     source[0] = source[0].replace("docs/_static/images/", "/_static/images/")
 
 
+def mark_inline_figures(app: Sphinx, doctree: nodes.document, _docname: str) -> None:
+    """Mark generated Typst images for inlining in HTML."""
+    if app.builder.format != "html":
+        return
+
+    figure_sources = Path(app.srcdir) / "figures"
+    for image in doctree.findall(nodes.image):
+        uri = Path(image["uri"])
+        if (
+            uri.parent == Path("notebooks/figures")
+            and (figure_sources / f"{uri.stem}.typ").is_file()
+        ):
+            image["classes"].append("qpdk-inline-figure")
+
+
 def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
     """Fix *Edit on GitHub* URLs for notebook pages.
 
@@ -1095,6 +1111,7 @@ def setup(app):
     # sphinx_github_alerts' source-read hook, which then also converts the
     # README's `> [!NOTE]` alert instead of leaving it as a literal quote.
     app.connect("source-read", replace_image_paths, priority=400)
+    app.connect("doctree-resolved", mark_inline_figures)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
     app.connect("doctree-resolved", _typst_strip_ansi)
     app.connect("doctree-resolved", _typst_lift_block_images)
