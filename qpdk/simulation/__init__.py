@@ -56,7 +56,11 @@ References:
 # ruff: file-ignore[undefined-export]
 
 import importlib
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from qpdk.simulation.hfss import HFSS
+    from qpdk.simulation.q3d import Q2D, Q3D
 
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),
