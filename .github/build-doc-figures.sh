@@ -19,6 +19,7 @@ for source in sorted((repo_root / "docs" / "figures").glob("*.typ")):
         str(source),
         root=str(repo_root),
         font_paths=[str(repo_root / "build" / "docs-fonts")],
+        ignore_system_fonts=True,
         format="svg",
     )
     (figures / f"{source.stem}.svg").write_bytes(svg + b"\n")

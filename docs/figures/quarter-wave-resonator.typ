@@ -73,7 +73,7 @@
       font: heading-font,
       weight: "bold",
       fill: dark-blue,
-      [λ / 4 resonator],
+      [#text(font: "Fira Math", weight: "regular")[λ] / 4 resonator],
     ),
     anchor: "west",
   )
