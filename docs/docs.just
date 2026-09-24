@@ -26,7 +26,7 @@ write-justfile-help:
 convert-notebooks:
     @./.github/convert-notebooks.sh notebooks/src/*.py
 
-# Rebuild the checked-in SVG figures after editing docs/figures/*.typ
+# Build SVG figures from docs/figures/*.typ
 [group('docs')]
 build-doc-figures: fetch-docs-fonts
     @./.github/build-doc-figures.sh
@@ -45,7 +45,7 @@ precalculated_notebooks := "hfss_*.ipynb matlab_integration.ipynb"
 # Copy all sample scripts and notebooks to use as documentation
 [private]
 [group('docs')]
-copy-sample-notebooks:
+copy-sample-notebooks: build-doc-figures
     @mkdir -p docs/notebooks
     # Copy all source files from notebooks/src
     @cp -p notebooks/src/*.py notebooks/src/*.m docs/notebooks/
