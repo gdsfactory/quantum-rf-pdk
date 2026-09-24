@@ -8,6 +8,7 @@ plus the compatibility alias, so nothing needs to mock MPh or the Java API.
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import MagicMock, call
 
 import pytest
 
@@ -21,7 +22,7 @@ from qpdk.simulation.comsol import (
     build_comsol_cpw_model as comsol_cpw_model,
     build_comsol_metal_model as comsol_metal_model,
 )
-from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout
+from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout, ComsolPolygon
 
 
 def _empty_layout() -> ComsolLayout:
@@ -57,6 +58,71 @@ def test_generic_and_cpw_names_are_the_same_builder():
 def test_comsol_layout_public_exports(name: str):
     """The lazy package exports resolve to the geometry module's objects."""
     assert getattr(simulation, name) is getattr(comsol_layout, name)
+
+
+def test_build_metal_model_subtracts_each_hole_before_extrusion():
+    """The Java geometry calls retain both etched voids in the metal solid."""
+    layout = ComsolLayout(
+        polygons=(
+            ComsolPolygon(
+                outline=((0, 0), (10, 0), (10, 10), (0, 10)),
+                holes=(
+                    ((1, 1), (2, 1), (2, 2), (1, 2)),
+                    ((3, 3), (4, 3), (4, 4), (3, 4)),
+                ),
+            ),
+        ),
+        feed_ports=(),
+        bbox=ComsolBoundingBox(xmin=0, ymin=0, xmax=10, ymax=10),
+    )
+    client = MagicMock()
+    model = client.create.return_value
+    geometry = model.java.component.return_value.geom.return_value.create.return_value
+    work_plane_feature = MagicMock()
+    extrude = MagicMock()
+    geometry.feature.side_effect = {"wp1": work_plane_feature, "ext1": extrude}.get
+    work_plane = work_plane_feature.geom.return_value
+    features = {
+        tag: MagicMock() for tag in ("pol0", "hole0_0", "hole0_1", "dif0_0", "dif0_1")
+    }
+    work_plane.feature.side_effect = features.get
+    for tag in ("dif0_0", "dif0_1"):
+        features[tag].selection.side_effect = {
+            "input": MagicMock(),
+            "input2": MagicMock(),
+        }.get
+
+    result = build_comsol_metal_model(client, layout, metal_thickness_um=0.35)
+
+    assert result is model
+    client.create.assert_called_once_with("QPDK metal")
+    geometry.lengthUnit.assert_called_once_with("um")
+    assert geometry.create.call_args_list == [
+        call("wp1", "WorkPlane"),
+        call("ext1", "Extrude"),
+    ]
+    assert work_plane.create.call_args_list == [
+        call("pol0", "Polygon"),
+        call("hole0_0", "Polygon"),
+        call("dif0_0", "Difference"),
+        call("hole0_1", "Polygon"),
+        call("dif0_1", "Difference"),
+    ]
+    features["pol0"].set.assert_any_call("x", "0,10,10,0")
+    features["pol0"].set.assert_any_call("y", "0,0,10,10")
+    features["hole0_0"].set.assert_any_call("x", "1,2,2,1")
+    features["hole0_0"].set.assert_any_call("y", "1,1,2,2")
+    features["hole0_1"].set.assert_any_call("x", "3,4,4,3")
+    features["hole0_1"].set.assert_any_call("y", "3,3,4,4")
+    features["dif0_0"].selection("input").set.assert_called_once_with("pol0")
+    features["dif0_0"].selection("input2").set.assert_called_once_with("hole0_0")
+    features["dif0_1"].selection("input").set.assert_called_once_with("dif0_0")
+    features["dif0_1"].selection("input2").set.assert_called_once_with("hole0_1")
+    extrude.set.assert_any_call("workplane", "wp1")
+    extrude.set.assert_any_call("distance", "0.35")
+    extrude.selection.assert_called_once_with("input")
+    extrude.selection.return_value.set.assert_called_once_with("wp1")
+    geometry.run.assert_called_once_with()
 
 
 @pytest.mark.parametrize("thickness", [0.0, -0.2, float("nan"), float("inf")])
