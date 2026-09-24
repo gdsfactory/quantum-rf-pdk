@@ -8,7 +8,9 @@ box end up on the refine feature; for the absolute-size helper, that the sizes
 land on the right features in the order a ``Size`` feature needs, that the
 generated generator is swept, and that anything else about the sequence is
 refused rather than meshed. Bad arguments are refused before COMSOL is touched
-in both.
+in both. The edge-size helper gets the same treatment, plus the selection it
+pins the local size on: one that resolved to no edge is refused instead of
+meshed.
 """
 
 from __future__ import annotations
@@ -27,11 +29,16 @@ from qpdk.simulation.comsol_capacitance import (
 from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout
 from qpdk.simulation.comsol_mesh import (
     DEFAULT_SIZE_TAG,
+    EDGE_SIZE_TAG,
     FREE_TET_TAG,
     GENERATED_FREE_TET_TAG,
+    pin_absolute_edge_mesh_sizes,
     pin_absolute_mesh_sizes as absolute_mesh_helper,
     refine_metal_plane_mesh as comsol_mesh_helper,
 )
+
+#: The named edge selection the edge-size helper expects from its caller.
+EDGE_SELECTION = "meander_edges"
 
 
 class _Node:
@@ -214,12 +221,17 @@ def test_the_package_export_resolves_to_the_helper():
 class _Selection:
     """Stands in for a feature selection, recording the named selection used."""
 
-    def __init__(self) -> None:
+    def __init__(self, entities: tuple[int, ...] = (1, 2, 3)) -> None:
         self.named_tags: list[str] = []
+        self.entity_ids = list(entities)
 
     def named(self, tag: str) -> None:
         """Record an assignment to a named selection."""
         self.named_tags.append(tag)
+
+    def entities(self) -> list[int]:
+        """Return the entities the selection resolved to."""
+        return list(self.entity_ids)
 
 
 class _MeshFeature:
@@ -497,3 +509,165 @@ def test_the_package_export_resolves_to_the_absolute_size_helper():
     """The lazy package export is the helper, not a re-implementation."""
     assert simulation.pin_absolute_mesh_sizes is absolute_mesh_helper
     assert "pin_absolute_mesh_sizes" in simulation.__all__
+
+
+class _PrependingMesh(_SequenceMesh):
+    """A sequence that puts every new feature before the current one."""
+
+    def _insert_at(self) -> int:
+        """Return the index of the current feature, so new ones precede it."""
+        if self._cursor is None:
+            return len(self.order)
+        return self.order.index(self._cursor)
+
+
+class _EdgelessMesh(_SequenceMesh):
+    """A sequence whose created features resolve to no entity."""
+
+    def create(self, tag: str, feature_type: str) -> _MeshFeature:
+        """Create the feature with a selection that resolved to nothing."""
+        feature = super().create(tag, feature_type)
+        feature.selection_node.entity_ids = []
+        return feature
+
+
+def _pin_edges(mesh: Any, **overrides: Any) -> int:
+    """Pin the absolute edge sizes on a model built over this fake mesh.
+
+    Returns:
+        The element count the helper returned.
+    """
+    sizes: dict[str, Any] = {
+        "edge_selection": EDGE_SELECTION,
+        "global_hmax_um": 100.0,
+        "global_hmin_um": 2.0,
+        "edge_hmax_um": 2.0,
+        "edge_hmin_um": 0.2,
+    }
+    return pin_absolute_edge_mesh_sizes(_Model(mesh), **(sizes | overrides))
+
+
+def test_the_edge_sizes_land_between_the_default_size_and_the_generator():
+    """The edge size sits between the default size and the one generator."""
+    mesh = _SequenceMesh()
+    elements = _pin_edges(mesh)
+
+    assert mesh.order == [DEFAULT_SIZE_TAG, EDGE_SIZE_TAG, FREE_TET_TAG]
+    assert mesh.runs == [
+        (DEFAULT_SIZE_TAG, GENERATED_FREE_TET_TAG),
+        (DEFAULT_SIZE_TAG, EDGE_SIZE_TAG, FREE_TET_TAG),
+    ]
+    assert elements == 623831
+
+
+def test_the_edge_size_is_pinned_on_the_named_edge_selection():
+    """The local sizes go on the caller's selection as absolute µm values."""
+    mesh = _SequenceMesh()
+    _pin_edges(mesh)
+
+    edge_size = mesh.features[EDGE_SIZE_TAG]
+    assert edge_size.feature_type == "Size"
+    assert edge_size.selection_node.named_tags == [EDGE_SELECTION]
+    assert edge_size.properties == {
+        "custom": "on",
+        "hmax": "2[um]",
+        "hmin": "0.2[um]",
+    }
+
+
+def test_the_global_size_is_pinned_on_the_default_size_feature():
+    """The bulk sizes still go on the default size the build left behind."""
+    mesh = _SequenceMesh()
+    _pin_edges(mesh, global_hmax_um=100.0, global_hmin_um=2.0)
+
+    assert mesh.features[DEFAULT_SIZE_TAG].properties == {
+        "custom": "on",
+        "hmax": "100[um]",
+        "hmin": "2[um]",
+    }
+
+
+def test_extra_generated_sizes_are_swept():
+    """A second generated size is dropped, leaving only the two pinned ones."""
+    mesh = _SequenceMesh(
+        generated=(DEFAULT_SIZE_TAG, "size_subdomain", GENERATED_FREE_TET_TAG)
+    )
+    _pin_edges(mesh)
+
+    assert "size_subdomain" not in mesh.features
+    assert mesh.order == [DEFAULT_SIZE_TAG, EDGE_SIZE_TAG, FREE_TET_TAG]
+
+
+def test_an_hmin_equal_to_its_hmax_is_allowed():
+    """A uniform size on the selected edges is not rejected."""
+    assert _pin_edges(_SequenceMesh(), edge_hmax_um=1.0, edge_hmin_um=1.0) == 623831
+
+
+def test_an_edge_selection_with_no_edge_is_refused():
+    """A local size with nothing to size is refused instead of meshed."""
+    with pytest.raises(RuntimeError, match="apply to nothing"):
+        _pin_edges(_EdgelessMesh())
+
+
+def test_an_edge_sequence_in_another_order_is_refused():
+    """Sizes that would not apply to the features after them are refused."""
+    with pytest.raises(RuntimeError, match="came out as"):
+        _pin_edges(_PrependingMesh())
+
+
+def test_an_unreadable_automatic_getter_is_not_fatal_for_the_edge_sizes():
+    """A sequence whose isAutomatic cannot be read still gets meshed."""
+    assert _pin_edges(_UnreadableAutomaticMesh()) == 623831
+
+
+def test_an_edge_sequence_left_physics_controlled_is_refused():
+    """A sequence that would re-derive the edge size is not meshed."""
+    with pytest.raises(RuntimeError, match="still physics-controlled"):
+        _pin_edges(_SequenceMesh(automatic=True))
+
+
+def test_an_edge_build_without_a_default_size_feature_is_refused():
+    """A physics-controlled build with nothing to edit is refused."""
+    with pytest.raises(RuntimeError, match="no default sizing"):
+        _pin_edges(_SequenceMesh(generated=(GENERATED_FREE_TET_TAG,)))
+
+
+@pytest.mark.parametrize("elements", [0.0, -1.0, None, "many"])
+def test_an_unusable_edge_element_count_is_refused(elements: Any):
+    """A mesh that reports no usable element count is not returned as one."""
+    with pytest.raises(RuntimeError, match=r"element count|elements"):
+        _pin_edges(_SequenceMesh(elements=elements))
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("global_hmax_um", 0.0),
+        ("global_hmin_um", -2.0),
+        ("edge_hmax_um", float("nan")),
+        ("edge_hmin_um", float("inf")),
+        ("edge_hmax_um", "2"),
+        ("edge_hmin_um", None),
+        ("edge_hmin_um", True),
+    ],
+)
+def test_rejects_bad_edge_sizes_before_touching_comsol(name: str, value: Any):
+    """An invalid size is refused before any Java call is made."""
+    with pytest.raises(ValueError, match=name):
+        _pin_edges(_RejectingModel(), **{name: value})
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [("global_hmin_um", 200.0), ("edge_hmin_um", 3.0)],
+)
+def test_rejects_an_hmin_above_its_hmax_for_the_edges(name: str, value: Any):
+    """A minimum above the maximum it belongs to is refused up front."""
+    with pytest.raises(ValueError, match=name):
+        _pin_edges(_RejectingModel(), **{name: value})
+
+
+def test_the_package_export_resolves_to_the_absolute_edge_size_helper():
+    """The lazy package export is the helper, not a re-implementation."""
+    assert simulation.pin_absolute_edge_mesh_sizes is pin_absolute_edge_mesh_sizes
+    assert "pin_absolute_edge_mesh_sizes" in simulation.__all__
