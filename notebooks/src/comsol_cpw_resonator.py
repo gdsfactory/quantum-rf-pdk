@@ -281,6 +281,27 @@ def apply_qpdk_style() -> str:
     return applied
 
 
+def prefer_svg_figures() -> None:
+    """Save every figure as SVG as well as PNG, so stored outputs stay vector.
+
+    The saved cell outputs are what the documentation renders, and both the HTML
+    and the Typst PDF build embed the SVG ahead of the PNG. The PNG is kept as a
+    fallback for a viewer that cannot render SVG, and text is written as paths so
+    the figures carry their own glyphs instead of relying on installed fonts.
+    Outside a notebook kernel there is no inline backend to configure, so a
+    plain script run keeps matplotlib's PNG default.
+    """
+    try:
+        # Ships with ipykernel, so it is present in a notebook kernel only.
+        from matplotlib_inline.backend_inline import (  # ruff: ignore[import-outside-top-level]
+            set_matplotlib_formats,
+        )
+    except ImportError:
+        return
+    plt.rcParams["svg.fonttype"] = "path"
+    set_matplotlib_formats("svg", "png")
+
+
 def result_file(name: str) -> Path | None:
     """Return the path of an exported solver result, if one is available.
 
@@ -329,6 +350,7 @@ def exported_frequency_ghz(file: Path) -> float | None:
     return None
 
 
+prefer_svg_figures()
 STYLE_SOURCE = apply_qpdk_style()
 print("Plot style: QPDK" if STYLE_SOURCE != "matplotlib defaults" else STYLE_SOURCE)
 
@@ -340,15 +362,23 @@ print("Plot style: QPDK" if STYLE_SOURCE != "matplotlib defaults" else STYLE_SOU
 # describing the ports. On the source cell the feed ports `coupling_o1` and
 # `coupling_o2` sit at $x = 0$ and $x = 200$ µm, well inside the prepared ground
 # plane. Each is extended to the left and right with a straight CPW of the same
-# cross-section, so the new feed planes at $x = -300$ µm and $x = 900$ µm are
-# clear of the resonator and the ground margin.
+# cross-section, so the new feed planes at $x = -1320$ µm and $x = 2200$ µm are
+# clear of the resonator.
+#
+# The ground reaches at least 1200 µm beyond the resonator in every lateral
+# direction. The prepared box spans $x=-1320\ldots2200$ µm and
+# $y=-2041\ldots1211$ µm. The larger box reduces the influence of the outer
+# PEC walls; a mesh study alone cannot measure that boundary effect.
+#
+# The feedline extensions put each port on an outer face while preserving an
+# open CPW cross section at the crop plane.
 
 # %%
 CPW_WIDTH_UM = 10.0
 CPW_GAP_UM = 6.0
-LEFT_EXTENSION_UM = 300.0
-RIGHT_EXTENSION_UM = 700.0
-GROUND_MARGIN_UM = 100.0
+LEFT_EXTENSION_UM = 1320.0
+RIGHT_EXTENSION_UM = 2000.0
+GROUND_MARGIN_UM = 1200.0
 
 cross_section = coplanar_waveguide(width=CPW_WIDTH_UM, gap=CPW_GAP_UM)
 
