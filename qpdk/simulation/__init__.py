@@ -2,7 +2,7 @@
 
 This package provides class-based interfaces for setting up HFSS simulations
 (eigenmode and driven modal) and Q3D Extractor parasitic extractions from
-gdsfactory components, plus a small MPh-based COMSOL geometry builder.
+gdsfactory components, plus MPh-based COMSOL geometry and study builders.
 
 The AEDT wrappers use the PyAEDT library to interface with Ansys HFSS and Q3D
 Extractor.
@@ -26,9 +26,11 @@ Extractor.
 
 1. Extract metal polygons and optional feed ports with
    :func:`~qpdk.simulation.comsol_layout.prepare_comsol_layout`
-2. Build a 3D geometry project with
-   :func:`~qpdk.simulation.comsol.build_comsol_metal_model`
-3. Add RF physics and a study to the returned model yourself
+2. Build a 3D air/silicon model with sheet metal via
+   :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`
+3. Add a CPW RF or qubit electrostatic study with
+   :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` or
+   :func:`~qpdk.simulation.comsol_capacitance.add_qubit_capacitance_study`
 
 Note:
     The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL builder
@@ -93,6 +95,15 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "qpdk.simulation.comsol",
         "build_comsol_metal_model",
     ),
+    "build_comsol_sheet_model": (
+        "qpdk.simulation.comsol_sheet",
+        "build_comsol_sheet_model",
+    ),
+    "add_cpw_rf_study": ("qpdk.simulation.comsol_rf", "add_cpw_rf_study"),
+    "add_qubit_capacitance_study": (
+        "qpdk.simulation.comsol_capacitance",
+        "add_qubit_capacitance_study",
+    ),
 }
 
 __all__ = [
@@ -104,11 +115,14 @@ __all__ = [
     "ComsolFeedPort",
     "ComsolLayout",
     "ComsolPolygon",
+    "add_cpw_rf_study",
     "add_materials_to_aedt",
     "detach_desktop_logging",
     "fit_view",
+    "add_qubit_capacitance_study",
     "build_comsol_cpw_model",
     "build_comsol_metal_model",
+    "build_comsol_sheet_model",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",

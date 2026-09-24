@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # COMSOL Geometry Preparation for a Coupled Quarter-Wave Resonator
+# # COMSOL Full-Wave Simulation of a Coupled Quarter-Wave Resonator
 #
 # ::::{admonition} Required extras
 # :class: tip
@@ -29,109 +29,111 @@
 # ```
 #
 # Installing the extra installs `MPh`, the Python client for COMSOL, and nothing
-# else. **It does not install COMSOL and it does not grant a license.** A COMSOL
-# installation and license are required to build a model; solving the RF
-# problem also requires the RF Module. Google Colab has neither, so these cells cannot
-# produce a mesh or a solution there.
+# else. **It does not install COMSOL and it does not grant a license.** Running
+# the model build and the full-wave solve needs a local COMSOL installation, a
+# license, and the RF Module. Google Colab has none of them, so the build cells
+# cannot run there.
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# ```{warning}
-# **Scope of this notebook: geometry only.**
+# This notebook takes a QPDK coupled quarter-wave resonator all the way to a
+# solved COMSOL model: it prepares the ported layout, builds the sheet model
+# with air and silicon domains, assigns PEC and numeric TEM ports, adds a
+# frequency study, solves it, and reads back real field and S-parameter results.
 #
-# `qpdk.simulation` provides two functions for COMSOL:
-#
-# - {py:func}`~qpdk.simulation.comsol_layout.prepare_comsol_layout` extracts
-#   M1 metal polygons (holes preserved), feed ports, and a bounding box from a
-#   gdsfactory component.
-# - {py:func}`~qpdk.simulation.comsol.build_comsol_cpw_model` imports those
-#   polygons into an MPh/COMSOL model as a 3D extruded solid.
-#
-# Neither function adds a substrate, an air domain, materials, RF physics,
-# ports, a mesh, or a study. What you get by the end of this notebook is an
-# **unsolved geometry project**. It is not a COMSOL resonator simulation and it
-# does not produce an $S_{21}$ curve. Any $S_{21}$ numbers require the extra
-# modelling steps described in the continuation section below, done by you in
-# the COMSOL GUI or through the COMSOL Java API.
-# ```
+# The committed results shown at the end of the notebook come from an actual
+# COMSOL 6.3 solve. The build and solve cells are gated behind `RUN_COMSOL`
+# because they need a license; set it to `True` on a licensed machine to
+# reproduce them. With `RUN_COMSOL = False` it plots the committed data without
+# a license. The documentation build uses the saved notebook outputs.
+# If running a downloaded copy outside a repository checkout, place the
+# [sweep CSV](data/comsol_cpw_sparameters.csv)
+# and [field TXT](data/comsol_cpw_field.txt)
+# in a `data/` directory next to the notebook.
+# The [single-point check](data/comsol_cpw_singlepoint.csv) is also included.
 #
 # ## What is being modelled
 #
 # The device is a QPDK
-# {py:func}`~qpdk.cells.quarter_wave_resonator_coupled`: a
-# meandering coplanar-waveguide (CPW) resonator placed alongside a straight
-# feedline, separated by a coupling gap. This is the standard hanger geometry
-# used to read out superconducting qubits {cite:p}`gopplCoplanarWaveguideResonators2008a`.
+# {py:func}`~qpdk.cells.quarter_wave_resonator_coupled`: a meandering
+# coplanar-waveguide (CPW) resonator placed alongside a straight feedline,
+# separated by a coupling gap. This is the standard hanger geometry used to read
+# out superconducting qubits {cite:p}`gopplCoplanarWaveguideResonators2008a`.
 #
 # Two terminations define a **quarter-wave** resonator:
 #
-# - The end nearest the feedline is **open**. Charge accumulates there, so the
-#   voltage has an antinode and the current a node.
-# - The far end is **shorted**. Current has an antinode and the voltage a node.
+# - The end nearest the feedline is **open**, where the voltage has an antinode.
+# - The far end is **shorted**, where the current has an antinode.
 #
 # A line with one open and one shorted end resonates when its electrical length
 # is an odd multiple of $\lambda/4$. Close to resonance the coupling capacitor
-# loads the feedline, and the feedline transmission $|S_{21}|$ shows a **narrow
-# notch**: at the resonant frequency, power that would travel from `coupling_o1`
-# to `coupling_o2` is largely reflected through interference with the resonator
-# response. Material and radiation losses can also absorb some power. The
-# depth and width of the notch give the coupling and the loaded
-# quality factor; its centre frequency gives $f_r$.
+# loads the feedline and the transmission $|S_{21}|$ shows a **notch**: at the
+# resonant frequency, power that would travel from `coupling_o1` to
+# `coupling_o2` is largely reflected. The centre of the notch gives $f_r$ and
+# its width the loaded quality factor.
 #
-# ### Why this problem is harder than it looks
-#
-# - **Lossless metal is the starting approximation.** The QPDK metal is a
-#   superconductor, but the first COMSOL model should treat the metal as a
-#   perfect electric conductor (PEC). PEC has zero surface resistance, so it
-#   predicts no conductor loss, and it also ignores the **kinetic inductance**
-#   of the superconducting film. PEC is a useful first approximation for
-#   checking geometry and coupling; a measured frequency or quality factor
-#   cannot be predicted from it alone.
-# - **The resonance is narrow.** A hanger resonator can reach $Q \sim 10^4$ to
-#   $10^6$, so the fractional linewidth $f_r/Q$ can be $10^{-4}$ or smaller. A
-#   frequency sweep that is wide enough to see the mode is far too coarse to
-#   resolve it. This is why the COMSOL reference workflow below first searches
-#   for the eigenfrequency and then runs a **narrow** sweep around it rather than
-#   sweeping a broad band on a uniform grid.
-# - **The mesh must resolve the small features.** The electromagnetic field
-#   concentrates in the CPW gaps (a few µm) and near the metal edges. The
-#   extruded metal is only `0.2 µm` thick, three orders of magnitude thinner
-#   than a 500 µm silicon substrate, so a naive tetrahedral mesh over the whole
-#   domain produces badly shaped elements at the metal. Refine the gap region
-#   and the metal explicitly, and check convergence of $f_r$ under mesh
-#   refinement before trusting any number.
-# - **Frequency and mesh sensitivity interact.** Because the notch is narrow,
-#   both an under-resolved mesh and an under-resolved sweep look like a shifted
-#   or shallow dip. The two must be checked separately.
-#
-# ### The COMSOL reference model
+# ## The model behind the results
 #
 # COMSOL's own RF example ["Coplanar Waveguide Resonator"](https://www.comsol.com/model/download/953251/models.rf.cpw_resonator.pdf)
-# is the natural companion for this geometry. Its workflow is:
+# is the companion for this geometry. The model built here uses the same stack
+# and port approach:
 #
-# 1. A 3D domain made of silicon plus an enclosing air region.
-# 2. **Numeric TEM ports** on the feedline cross-sections at the model boundary,
-#    each with a **voltage integration line** (an edge running from ground to the
-#    centre conductor) that defines the port voltage.
-# 3. **Boundary mode analysis** study steps, one per port, that solve the 2D
-#    cross-section eigenmode and supply the port mode field.
-# 4. An **eigenfrequency** study to locate the resonator mode, followed by a
-#    **narrow, adaptive frequency-domain sweep** around it to produce the
-#    transmission notch.
+# 1. A silicon block under the metal and an air region above, meeting at the
+#    metal plane.
+# 2. **PEC on the metal sheets.** The metal is drawn as faces on the
+#    silicon/air interface rather than as a thin extruded solid, which meshes far
+#    more reliably for a metal that is three orders of magnitude thinner than the
+#    substrate.
+# 3. **Numeric TEM ports** on two feed cross sections, each with a **voltage
+#    integration line** running from ground to the centre conductor.
+# 4. **Boundary mode analysis** study steps that solve the 2D cross-section
+#    eigenmode and supply each port's mode field.
+# 5. A **frequency-domain study** over the feedline's transmission band.
 #
-# **The entity IDs in that model are properties of its geometry.** Its port
-# boundaries, PEC boundaries, scattering boundaries, and integration edges are
-# numbered according to its own building sequence and dimensions. Those numbers
-# are meaningless in this layout, and copying COMSOL Java/`physics.create`
-# calls with hardcoded selections from the reference into this model will
-# silently attach boundary conditions to the wrong faces. Every selection in
-# this notebook's geometry must be made by you, by inspecting the actual faces
-# and edges in the COMSOL GUI (or by selecting them geometrically through the
-# Java API).
+# The outer air and silicon walls use COMSOL's default PEC boundary. This is a
+# finite conducting enclosure, whereas the reference includes scattering
+# boundaries. Its influence on the S-parameters has not been converged away.
+#
+# ### What PEC leaves out
+#
+# The QPDK metal is a superconductor, but this first model treats it as a
+# perfect electric conductor. PEC has zero surface resistance, so it predicts no
+# conductor loss, and it ignores the **kinetic inductance** of the film. It is a
+# useful first approximation for checking geometry, porting, and coupling, but a
+# measured quality factor cannot be predicted from it. The kinetic inductance
+# also shifts the resonance. Replacing PEC with a surface-impedance or transition boundary condition
+# is the next modelling step.
+#
+# ### The ported layout
+#
+# `prepare_comsol_layout` inverts the M1 etch mask into a ground plane, and the
+# ground plane then *surrounds* the source feed ports, which sit at $x = 0$ and
+# $x = 200$ µm inside the prepared bounding box. A port face there would be
+# buried in ground metal, so those planes cannot be turned into TEM ports.
+#
+# To expose them, this notebook extends each feed with a straight CPW section to
+# a plane clear of the whole resonator, then extracts with
+# `crop_to_feed_ports=True` so both external faces are open CPW cross sections.
+# **The extension is part of the modelled device**: it lengthens the feedline and
+# changes the coupling geometry, so the resonance solved here is the resonance of
+# this extended layout and not the resonance of the unextended reference cell.
+#
+# ### The frequency sweep is not a resonance measurement
+#
+# The committed S-parameter curve comes from a coarse sweep over 5 to 10 GHz in
+# steps of 0.25 GHz. A hanger resonator can reach $Q \sim 10^4$ to $10^6$, so its
+# fractional linewidth can be $10^{-4}$ or smaller, far narrower than the
+# 0.25 GHz spacing. A sweep at this spacing samples the band but **cannot resolve
+# a notch**, and no resonance frequency or quality factor can be read off it.
+# Locating $f_r$ that way needs either an eigenfrequency search followed by a
+# narrow sweep around it, or a much finer grid, plus a mesh refined in the CPW
+# gaps. The results section below says exactly what the saved data does and does
+# not show.
 #
 # **References:**
 # - [COMSOL "Coplanar Waveguide Resonator" model](https://www.comsol.com/model/download/953251/models.rf.cpw_resonator.pdf)
+# - [COMSOL RF Module User's Guide](https://doc.comsol.com/6.3/doc/com.comsol.help.rf/RFModuleUsersGuide.pdf)
 # - [MPh tutorial](https://mph.readthedocs.io/en/stable/tutorial.html)
 # - MPh repository: https://github.com/MPh-py/MPh
 
@@ -155,19 +157,27 @@ if "google.colab" in sys.modules:
     ])
     print(
         "Note: this installs the Python client only. COMSOL itself and its "
-        "license are not pip-installable, so the modelling cells below cannot "
-        "run in Colab."
+        "license are not pip-installable, so the build and solve cells below "
+        "cannot run in Colab."
     )
 
 # %% tags=["hide-input", "hide-output"]
 from pathlib import Path
 
+import gdsfactory as gf
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import LogNorm
 from matplotlib.patches import Polygon as MplPolygon
 
 from qpdk import PDK
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
-from qpdk.simulation import build_comsol_cpw_model, prepare_comsol_layout
+from qpdk.config import PATH
+from qpdk.simulation import (
+    add_cpw_rf_study,
+    build_comsol_sheet_model,
+    prepare_comsol_layout,
+)
 from qpdk.tech import coplanar_waveguide
 
 try:
@@ -178,25 +188,55 @@ except ImportError:
 PDK.activate()
 
 MPH_AVAILABLE = mph is not None
-if not MPH_AVAILABLE:
-    print(
-        "MPh is not installed. The COMSOL cells in this notebook will be "
-        "skipped. Install it with `uv sync --extra comsol`."
+
+#: Committed COMSOL results, either relative to the repository root or to a
+#: working directory of `notebooks/`.
+_DATA_DIR_CANDIDATES = (
+    PATH.repo / "notebooks" / "data",
+    Path("notebooks/data"),
+    Path("data"),
+)
+
+
+def data_path(name: str) -> Path:
+    """Return the path of a committed data file in ``notebooks/data``.
+
+    Returns:
+        The first existing candidate path.
+
+    Raises:
+        FileNotFoundError: If no candidate holds the file.
+    """
+    for directory in _DATA_DIR_CANDIDATES:
+        candidate = directory / name
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f"{name!r} not found in {[str(directory) for directory in _DATA_DIR_CANDIDATES]}"
     )
 
+
 # %% [markdown]
-# ## Build the coupled quarter-wave resonator
+# ## Build the ported layout
 #
-# The component is created with an explicit CPW cross-section so that the
-# centre-conductor width and the gap are known constants we can reuse when
-# describing the port planes later.
+# The resonator is created with an explicit CPW cross-section so that the
+# centre-conductor width and the gap are known constants we reuse when
+# describing the ports. On the source cell the feed ports `coupling_o1` and
+# `coupling_o2` sit at $x = 0$ and $x = 200$ µm, well inside the prepared ground
+# plane. Each is extended to the left and right with a straight CPW of the same
+# cross-section, so the new feed planes at $x = -300$ µm and $x = 900$ µm are
+# clear of the resonator and the ground margin.
 
 # %%
 CPW_WIDTH_UM = 10.0
 CPW_GAP_UM = 6.0
+LEFT_EXTENSION_UM = 300.0
+RIGHT_EXTENSION_UM = 700.0
+GROUND_MARGIN_UM = 100.0
+
 cross_section = coplanar_waveguide(width=CPW_WIDTH_UM, gap=CPW_GAP_UM)
 
-component = quarter_wave_resonator_coupled(
+resonator = quarter_wave_resonator_coupled(
     length=4000.0,
     meanders=4,
     cross_section=cross_section,
@@ -205,8 +245,22 @@ component = quarter_wave_resonator_coupled(
     coupling_gap=20.0,
 )
 
-print(f"Component: {component.name}")
-print(f"Bounding box: {component.bbox()}")
+component = gf.Component(name="comsol_cpw_resonator")
+component << resonator
+
+left_straight = component << gf.components.straight(
+    length=LEFT_EXTENSION_UM, cross_section=cross_section
+)
+right_straight = component << gf.components.straight(
+    length=RIGHT_EXTENSION_UM, cross_section=cross_section
+)
+left_straight.connect("o2", resonator.ports["coupling_o1"])
+right_straight.connect("o1", resonator.ports["coupling_o2"])
+component.add_port("input", port=left_straight.ports["o1"])
+component.add_port("output", port=right_straight.ports["o2"])
+
+print(f"Extended component: {component.name}")
+print(f"Bounding box (µm): {component.bbox()}")
 for port in component.ports:
     print(
         f"  {port.name}: center={tuple(round(value, 3) for value in port.center)} µm, "
@@ -214,40 +268,16 @@ for port in component.ports:
     )
 
 # %%
-# 2D layout preview
-component.plot()
-
-# %% [markdown]
-# Note the ports: `coupling_o1` and `coupling_o2` are the two ends of the
-# feedline and are the natural S-parameter reference planes. `resonator_o1` is
-# the open end of the resonator; the shorted end has no port.
-#
-# The feedline port width is reported as the **centre-conductor width only**
-# (`10 µm`). The gap and the ground plane are not part of that number, which
-# matters when the port plane is placed.
-#
-# ## Extract the COMSOL layout
-#
-# {py:func}`~qpdk.simulation.comsol_layout.prepare_comsol_layout` folds the
-# additive metal into the etch layer, inverts the mask around the component
-# bounding box, applies a ground margin, and returns positive M1 metal. The
-# result is the metal of the chip: a large ground plane with the CPW gaps cut
-# out of it. The input needs an M1_ETCH mask to define those gaps; a positive
-# M1_DRAW shape alone cannot identify them.
-
-# %%
-GROUND_MARGIN_UM = 100.0
-
 layout = prepare_comsol_layout(
     component,
-    feed_ports=("coupling_o1", "coupling_o2"),
+    feed_ports=("input", "output"),
     ground_margin=GROUND_MARGIN_UM,
+    crop_to_feed_ports=True,
 )
 
 hole_count = sum(len(polygon.holes) for polygon in layout.polygons)
 print(f"Metal polygons: {len(layout.polygons)} ({hole_count} holes total)")
 print(f"Prepared bounding box (µm): {layout.bbox}")
-print(f"  width = {layout.bbox.width:.3f} µm, height = {layout.bbox.height:.3f} µm")
 for feed in layout.feed_ports:
     print(
         f"Feed {feed.name}: center={feed.center} µm, width={feed.width} µm, "
@@ -255,21 +285,24 @@ for feed in layout.feed_ports:
     )
 
 # %% [markdown]
-# ### Holes are preserved
-#
-# The CPW gaps are *holes* in the ground-plane polygon, not separate outlines.
-# `ComsolPolygon` therefore stores `outline` and `holes` separately:
-# `outline` alone is the complete shape only when `holes` is empty, and a
-# consumer that accepts a single COMSOL polygon point list has to subtract the
-# holes itself. `build_comsol_cpw_model` does exactly that, emitting one
-# `Difference` feature per hole.
+# The result is three metal polygons with one hole. One polygon is the ground
+# plane, and the hole is the CPW channel cut through it: the centre-conductor
+# strip, both etch gaps, and the surrounding ground all come from that one
+# outline-plus-hole shape. Cropping to the feed planes cut the ground back so
+# each external face shows an open CPW cross section instead of a wall of
+# ground, which is what lets the port solver define a mode there.
 
 # %%
-# Visualise the prepared metal, its holes, and the feed port locations. The
-# ground plane dominates the extent, so this is an overview rather than a
-# close-up of the CPW gaps.
-fig, ax = plt.subplots(figsize=(6, 6))
-for polygon in layout.polygons:
+fig, ax = plt.subplots(figsize=(7, 4))
+for polygon in sorted(
+    layout.polygons,
+    key=lambda item: (
+        -(
+            (max(x for x, _ in item.outline) - min(x for x, _ in item.outline))
+            * (max(y for _, y in item.outline) - min(y for _, y in item.outline))
+        )
+    ),
+):
     ax.add_patch(
         MplPolygon(
             polygon.outline,
@@ -288,7 +321,7 @@ for polygon in layout.polygons:
                 facecolor="white",
                 edgecolor="0.35",
                 linewidth=0.6,
-                zorder=2,
+                zorder=1,
             )
         )
 for feed in layout.feed_ports:
@@ -304,321 +337,304 @@ for feed in layout.feed_ports:
 ax.set_aspect("equal")
 ax.set_xlabel("x (µm)")
 ax.set_ylabel("y (µm)")
-ax.set_title("Prepared metal, etched gaps, and feed ports")
+ax.set_title("Ported metal: ground plane, CPW channel, and feed planes")
 plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ### Where the port planes have to go
+# ## Build the COMSOL model, physics, and study
 #
-# `prepare_comsol_layout` reports the feed ports exactly as they appear on the
-# component and asserts nothing about where they sit relative to the prepared
-# ground plane. That is deliberate: after the mask inversion the ground plane
-# **surrounds** the feeds, so a feed centre can easily lie several hundred
-# micrometres inside the bounding box, as it does here. Valid port boundaries
-# still have to be constructed before the RF study can run.
+# Three calls turn the layout into a configured model:
 #
-# The source feed locations at $x = 0$ and $x = 200$ are **inside** the prepared
-# region. Cropping the whole model there would remove much of the resonator;
-# cropping only the dielectric would leave ground metal across the port faces.
-# The source etch gaps also stop at those x positions. The ground margin wraps
-# around their ends, so the exported centre strip is galvanically connected to
-# ground. This saved geometry is not ready for a driven CPW solve or S-parameter
-# interpretation.
-# Before assigning numeric TEM ports, extend the feed conductor *and both CPW
-# gap strips* from each source feed to separate exterior faces beyond the entire
-# resonator. Terminate the metal, substrate, and air consistently at those
-# faces. A port face must cover the conductor, both gaps, and some ground on
-# either side. Route the extensions away from the resonator so they do not
-# lengthen the intended coupling region; if that is impossible, include the
-# extra coupled length when comparing with the analytical layout model. The
-# current builder does not make these extensions; make and
-# inspect them in COMSOL before adding RF physics. The table below records the
-# source feed locations and minimum CPW width to carry into that work.
-
-# %%
-for feed in layout.feed_ports:
-    # Orientation is cardinal: 0°/180° means the line runs along x, so the port
-    # plane's normal is x and the transverse direction is y (and vice versa).
-    along_x = round(feed.orientation / 90.0) % 2 == 0
-    normal_axis = "x" if along_x else "y"
-    plane_position = feed.center[0] if along_x else feed.center[1]
-    half_span = feed.width / 2.0 + CPW_GAP_UM
-    print(f"{feed.name}:")
-    print(f"  source feed:     {normal_axis} = {plane_position:.3f} µm")
-    print(f"  plane normal:    ±{normal_axis}")
-    print(
-        f"  transverse span: more than ±{half_span:.1f} µm about the port centre "
-        f"({feed.width:.1f} µm conductor + {CPW_GAP_UM:.1f} µm gap each side)"
-    )
-    print("  voltage integration line: ground edge to centre conductor, on this face")
-
-# %% [markdown]
-# ## Build the COMSOL geometry project
+# - {py:func}`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model` creates the
+#   air and silicon blocks meeting at $z = 0$, imprints the layout metal on that
+#   interface as faces, and assigns materials ($\epsilon_r = 1$ air,
+#   $\epsilon_r = 11.7$ silicon).
+# - {py:func}`~qpdk.simulation.comsol_rf.add_cpw_rf_study` selects the metal
+#   faces and applies PEC, adds two numeric TEM ports with voltage integration
+#   lines spanning the CPW gap, adds the mesh sequence, and adds a study with one
+#   boundary mode analysis step per port plus a frequency step. Every selection
+#   is derived from the layout geometry, so no face or edge ID is hard-coded.
+# - The last calls set the sweep and run it.
 #
-# {py:func}`~qpdk.simulation.comsol.build_comsol_cpw_model` starts MPh, creates a
-# 3D component, draws each polygon outline on work plane `wp1`, subtracts each
-# hole with its own `Difference` feature, and extrudes the work plane by the
-# metal thickness. It then runs the geometry sequence and returns the model.
+# The boundary mode steps use 5 GHz as their reference and search near an
+# effective mode index of 2.5, following the COMSOL CPW reference. The port
+# mode is then used across the frequency sweep. Check passivity before using
+# a sweep for design decisions: a passive two-port should have
+# $|S_{11}|^2 + |S_{21}|^2 \leq 1$ within numerical tolerance.
 #
 # `mph.start(cores=...)` launches a COMSOL server process and attaches to it.
-# **Only one MPh client can exist per Python process**, and the call needs a
-# COMSOL installation and a license. **The run is off by default** so the
-# notebook executes while building the documentation; set `RUN_COMSOL = True`
-# on a licensed machine to build and save the model.
-#
-# The output path is outside the repository by default. Change it to a location
-# with enough space for the saved model.
+# Only one MPh client can exist per Python process, and the call needs a COMSOL
+# installation and a license. The whole block is off by default so the notebook
+# runs without one; set `RUN_COMSOL = True` on a licensed machine to build, solve,
+# and save the model.
 
 # %%
 RUN_COMSOL = False
 MODEL_DIR = Path.home() / "comsol_models"
 MODEL_PATH = MODEL_DIR / "comsol_cpw_resonator.mph"
-COMPLETED_MODEL_PATH = MODEL_DIR / "comsol_cpw_resonator_solved.mph"
-METAL_THICKNESS_UM = 0.2
 CORES = 4
+SOLVE_FREQUENCY_GHZ = 7.5
+SAVED_FIELD_FREQUENCY_GHZ = 7.5
+MODE_FREQUENCY_GHZ = 5.0
+SWEEP_EXPRESSION = "range(5[GHz],0.25[GHz],10[GHz])"
 
-client = None
 model = None
+if RUN_COMSOL and not MPH_AVAILABLE:
+    raise RuntimeError("RUN_COMSOL needs MPh and a licensed COMSOL installation")
 
+if RUN_COMSOL and MPH_AVAILABLE:
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    client = mph.start(cores=CORES)
+    model = build_comsol_sheet_model(
+        client,
+        layout,
+        name="QPDK Coupled Quarter-Wave Resonator",
+        substrate_thickness_um=200.0,
+        air_height_um=200.0,
+    )
+    add_cpw_rf_study(
+        model,
+        layout,
+        cpw_gap_um=CPW_GAP_UM,
+        frequency_ghz=MODE_FREQUENCY_GHZ,
+        mesh_size=8,
+    )
+    model.java.study("std1").feature("freq").set("plist", SWEEP_EXPRESSION)
+    model.java.component("comp1").mesh("mesh1").run()
+    model.java.study("std1").run()
+    model.save(MODEL_PATH)
+
+    solved_frequencies_ghz = np.atleast_1d(model.evaluate("freq")) / 1e9
+    solved_s21_db = np.atleast_1d(model.evaluate("emw.S21dB"))
+    solved_s11_db = np.atleast_1d(model.evaluate("emw.S11dB"))
+    solved_power_sum = 10 ** (solved_s21_db / 10) + 10 ** (solved_s11_db / 10)
+    if solved_power_sum.max() > 1.001:
+        raise ValueError("The solved sweep violates passive two-port power balance")
+    print(f"Solved {solved_frequencies_ghz.size} frequency points")
+    print(f"Saved model to {MODEL_PATH}")
+
+    sweep_path = MODEL_DIR / "comsol_cpw_sparameters.csv"
+    np.savetxt(
+        sweep_path,
+        np.column_stack([solved_frequencies_ghz, solved_s21_db, solved_s11_db]),
+        delimiter=",",
+        header="frequency_ghz,s21_db,s11_db",
+        comments="",
+    )
+    print(f"Saved sweep to {sweep_path}")
+
+    nearest = int(np.argmin(np.abs(solved_frequencies_ghz - SOLVE_FREQUENCY_GHZ)))
+    print(
+        f"At {solved_frequencies_ghz[nearest]:.2f} GHz: "
+        f"S21 = {solved_s21_db[nearest]:+.3f} dB, "
+        f"S11 = {solved_s11_db[nearest]:+.3f} dB"
+    )
+
+# %% [markdown]
+# A single-point solve is a quick check of the ports. Set the frequency step's
+# `plist` to one value (`"7.5[GHz]"`) and compare it with the corresponding
+# sweep point. The independent solve supplied with this notebook used the same
+# layout, 5 GHz boundary-mode reference, and mesh-size setting. It returned
+# $S_{21}=-0.2511$ dB and $S_{11}=-12.5106$ dB at 7.5 GHz, whereas the sweep
+# returned $-0.1786$ dB and $-13.9515$ dB. A separate run with the sweep's
+# frequency range in place during meshing gave the same single-point values.
+# The cause has not been isolated, so this curve is a solver workflow example,
+# not a converged response to use for design decisions. Investigate study,
+# solver, port-mode, and mesh settings before interpreting a resonant feature.
+#
+# ### Exporting a field map
+#
+# The committed field data in `notebooks/data/comsol_cpw_field.txt` was written
+# from the solved model with COMSOL's Data export on a cut plane at $z = 1$ µm,
+# exported at 7.5 GHz. The same export is scripted below: a
+# `CutPlane` dataset over the $xy$ plane, then a `Data` result export with the
+# expression `emw.normE`. It runs inside the licensed branch, next to the solve,
+# and writes a file of the same shape as the committed one.
+
+# %%
+if RUN_COMSOL and MPH_AVAILABLE and model is not None:
+    plane = model.java.result().dataset().create("cutplane", "CutPlane")
+    plane.set("planetype", "quick")
+    plane.set("quickplane", "xy")
+    plane.set("quickz", "1[um]")
+    plane.set("data", "dset1")
+
+    field_export = model.java.result().export().create("field", "Data")
+    field_export.set("data", "cutplane")
+    field_export.set("expr", ["emw.normE"])
+    field_export.set("innerinput", "manual")
+    field_export.set("solnum", str(nearest + 1))
+    field_export.set("filename", str(MODEL_DIR / "comsol_cpw_field.txt"))
+    field_export.run()
+    print(f"Exported emw.normE to {MODEL_DIR / 'comsol_cpw_field.txt'}")
+
+# %% [markdown]
+# ## Saved transmission sweep
+#
+# The committed curve was produced by the sweep configured above and exported as
+# `frequency_ghz, s21_db, s11_db`. It is a transmission snapshot of the ported
+# feedline, not a resonance measurement: the sweep spacing is much wider than the
+# expected linewidth, so the curve is smooth wherever the resonance actually sits
+# and no notch is resolved. The values are real solver output at each sweep
+# point; what they do not establish is $f_r$ or $Q$.
+
+# %%
+results_dir = MODEL_DIR if RUN_COMSOL else None
+sweep_file = (
+    results_dir / "comsol_cpw_sparameters.csv"
+    if results_dir is not None
+    else data_path("comsol_cpw_sparameters.csv")
+)
+SPARAMETERS = np.atleast_1d(np.genfromtxt(sweep_file, delimiter=",", names=True))
+sweep_ghz = SPARAMETERS["frequency_ghz"]
+sweep_s21_db = SPARAMETERS["s21_db"]
+sweep_s11_db = SPARAMETERS["s11_db"]
+power_sum = 10 ** (sweep_s21_db / 10) + 10 ** (sweep_s11_db / 10)
+if power_sum.max() > 1.001:
+    raise ValueError("The saved sweep violates passive two-port power balance")
+
+nearest = int(np.argmin(np.abs(sweep_ghz - SOLVE_FREQUENCY_GHZ)))
+print(
+    f"Sweep points: {sweep_ghz.size}, {sweep_ghz.min():.2f} to {sweep_ghz.max():.2f} GHz"
+)
+print(
+    f"At {sweep_ghz[nearest]:.2f} GHz: "
+    f"S21 = {sweep_s21_db[nearest]:+.3f} dB, "
+    f"S11 = {sweep_s11_db[nearest]:+.3f} dB"
+)
+print(
+    "Scan of the band: "
+    f"S21 from {sweep_s21_db.min():+.3f} to {sweep_s21_db.max():+.3f} dB, "
+    f"S11 from {sweep_s11_db.min():+.3f} to {sweep_s11_db.max():+.3f} dB"
+)
+print(f"Largest |S11|² + |S21|² = {power_sum.max():.6f}")
 if not RUN_COMSOL:
-    print(
-        "RUN_COMSOL is False, so no COMSOL process was started. Set it to True "
-        "on a machine with COMSOL and a license to build the geometry project."
+    single_point = np.genfromtxt(
+        data_path("comsol_cpw_singlepoint.csv"), delimiter=",", names=True
     )
-elif not MPH_AVAILABLE:
-    print("MPh is not installed, so no COMSOL model was created.")
-else:
-    try:
-        MODEL_DIR.mkdir(parents=True, exist_ok=True)
-        client = mph.start(cores=CORES)
-        model = build_comsol_cpw_model(
-            client,
-            layout,
-            metal_thickness_um=METAL_THICKNESS_UM,
-            name="QPDK Coupled Quarter-Wave Resonator",
-        )
-        model.save(MODEL_PATH)
-        print(f"Saved geometry project to {MODEL_PATH}")
-    except Exception as error:  # COMSOL missing, not licensed, or busy
-        print(f"COMSOL geometry build did not run: {error!r}")
-
-# %% [markdown]
-# ### Inspect what the builder produced
-#
-# MPh exposes the model structure through thin wrappers over the COMSOL Java
-# API. At this point the model contains exactly one component, one 3D geometry
-# with a work plane and an extrude, and **no** physics, materials, mesh, or
-# study. The `problems()` call is the cheapest way to find out whether COMSOL
-# itself is unhappy with what was built.
+    print(
+        "Independent single point at 7.5 GHz: "
+        f"S21 = {single_point['s21_db']:+.3f} dB, "
+        f"S11 = {single_point['s11_db']:+.3f} dB"
+    )
 
 # %%
-if model is not None:
-    print(f"components: {model.components()}")
-    print(f"geometries: {model.geometries()}")
-    print(f"problems:   {model.problems()}")
-    print(
-        "Not yet present (by design): "
-        f"physics={model.physics()}, materials={model.materials()}, "
-        f"studies={model.studies()}"
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(sweep_ghz, sweep_s21_db, marker="o", markersize=3, label=r"$|S_{21}|$")
+ax.plot(sweep_ghz, sweep_s11_db, marker="s", markersize=3, label=r"$|S_{11}|$")
+if not RUN_COMSOL:
+    ax.scatter(
+        single_point["frequency_ghz"],
+        single_point["s21_db"],
+        marker="x",
+        color="C0",
+        s=55,
+        label="single-point $S_{21}$",
     )
-else:
-    print("No model to inspect.")
+    ax.scatter(
+        single_point["frequency_ghz"],
+        single_point["s11_db"],
+        marker="x",
+        color="C1",
+        s=55,
+        label="single-point $S_{11}$",
+    )
+ax.set_xlabel("Frequency (GHz)")
+ax.set_ylabel("Magnitude (dB)")
+ax.set_title("Feedline transmission and reflection, 0.25 GHz sweep")
+ax.grid(True)
+ax.legend()
+plt.tight_layout()
+plt.show()
 
 # %% [markdown]
-# ## How MPh relates to COMSOL
-#
-# MPh keeps a COMSOL server session
-# alive from Python and forwards calls to the COMSOL Java API through `model.java`.
-# Anything you can do in the GUI can be scripted this way, but nothing is done
-# for you. The geometry above was created through a COMSOL **work plane**, which
-# means the QPDK polygons are ordinary 2D geometry: no ECAD or layout-import
-# license is needed to build them.
-#
-# The saved `.mph` file is a normal COMSOL model file. You can open it directly
-# in the COMSOL Desktop GUI and continue from there, which is the recommended
-# path for the physics setup. Use `model.java.<...>` from Python only once you
-# know the selection you want, and prefer selecting faces and edges
-# geometrically (by coordinates or by a named selection) over copying numeric
-# entity IDs from another model.
-#
-# ## Continuing in the COMSOL GUI
-#
-# The steps below are what turn the geometry project into an RF simulation. Do
-# them in the GUI, where you can see the selections you are making.
-#
-# 1. **Add the material domains.** Create a silicon block under the metal
-#    (typically 500 µm thick) and an air region above it, both large enough that
-#    the fields have decayed before reaching the outer boundary. For this layout
-#    extend the feed conductor and gaps to exterior faces beyond the resonator
-#    as described above.
-# 2. **Assign PEC to the metal faces.** `Extrude 1` selects the metal by
-#    geometry, but the PEC boundary condition must reference the *actual* faces
-#    of that extruded solid, which is only visible once the substrate and air
-#    domains exist. Do not paste boundary numbers from the reference model.
-# 3. **Assign a scattering boundary condition to the exterior**, so the domain
-#    behaves as if it extends to infinity and does not reflect.
-# 4. **Add two numeric TEM ports**, one on each feed plane, with port type
-#    `Numeric`. Each port needs a **voltage integration line**: an edge on the
-#    port face running from the ground conductor to the centre conductor. Create
-#    those edges explicitly, or the port solver cannot define the mode voltage.
-#    The port's transverse extent must cover conductor *and* gap on both sides,
-#    per the checklist.
-# 5. **Add two boundary mode analysis study steps**, one per port, to solve the
-#    2D cross-section eigenmode that defines each port's TEM field.
-# 6. **Add an eigenfrequency study** to locate the quarter-wave resonance in a
-#    band around your analytical estimate, then a **frequency-domain study with
-#    a narrow sweep** spanning a few linewidths around it. Enable the adaptive
-#    frequency sweep so COMSOL refines where the notch is.
-# 7. **Check convergence**: refine the mesh in the CPW gaps and around the metal,
-#    re-solve, and confirm that $f_r$ and the notch depth stop moving. Report
-#    $Q$ only after that.
-#
-# Keep the metal as PEC for the first pass. Once the geometry and coupling are
-# trusted, replace it with a surface-impedance or transition boundary condition
-# using the superconductor's surface resistance $R_s$ and kinetic inductance
-# $L_k$ to get a realistic, finite $Q$.
-#
-# ## Running the solver headlessly
-#
-# A complete model can be solved without the GUI, which is useful for batches
-# and for moving the solve to a bigger machine. COMSOL ships a `comsol batch`
-# command for exactly this:
-#
-# ```bash
-# comsol batch \
-#     -inputfile cpw_resonator.mph \
-#     -outputfile cpw_resonator_solved.mph \
-#     -study std1 \
-#     -np 4 \
-#     -tmpdir ./comsol_tmp
-# ```
-#
-# - `-inputfile` is the model to solve, `-outputfile` is where the solved model
-#   (geometry, settings, **and** solutions) is written. Point it somewhere you
-#   have space, and keep it as the file the next cell loads.
-# - `-study` takes the study **tag** (such as `std1`), which may differ from
-#   the label shown in the GUI. Inspect `model.java.study().tags()` to find it.
-#   Drop this option to run every study in the model.
-# - `-np` is the number of compute cores. Full-wave 3D RF solves are
-#   memory-bound, so check that `-np` times the per-core memory estimate fits in
-#   RAM before raising it.
-# - `-tmpdir` should be a fast local disk with room for the solver's temporary
-#   files, not a network mount.
-#
-# The same command runs anywhere COMSOL is installed; there is nothing
-# site-specific about it.
-#
-# ## Loading and evaluating a completed model
-#
-# Everything below only runs if a solved `.mph` exists at
-# `COMPLETED_MODEL_PATH`. Without one, the notebook still runs to this point and
-# simply reports that there is nothing to show. **Anything printed here is a
-# real solver output only if you actually produced a solved model.**
-
-# %%
-RUN_SOLVE = False
-STUDY_NAME = "Study 1"
-DATASET_NAME = None  # Set this to a name printed by solved_model.datasets().
-S21_EXPRESSION = "emw.S21dB"
-
-solved_model = None
-frequencies_ghz = None
-s21_db = None
-
-if MPH_AVAILABLE and client is not None and COMPLETED_MODEL_PATH.exists():
-    solved_model = client.load(COMPLETED_MODEL_PATH)
-    studies = solved_model.studies()
-    datasets = solved_model.datasets()
-    print(f"studies:  {studies}")
-    print(f"datasets: {datasets}")
-
-    if RUN_SOLVE and STUDY_NAME in studies:
-        print(f"Solving study {STUDY_NAME!r}...")
-        solved_model.solve(STUDY_NAME)
-        solved_model.save(COMPLETED_MODEL_PATH)
-        datasets = solved_model.datasets()
-        print(f"datasets after solve: {datasets}")
-
-    if DATASET_NAME is None:
-        print("Choose DATASET_NAME from the datasets listed above to evaluate S21.")
-    elif DATASET_NAME not in datasets:
-        print(f"Dataset {DATASET_NAME!r} is not in this model: {datasets}")
-    else:
-        print(f"Evaluating on dataset {DATASET_NAME!r}")
-        try:
-            frequencies_ghz = solved_model.evaluate("freq", dataset=DATASET_NAME) / 1e9
-            s21_db = solved_model.evaluate(S21_EXPRESSION, dataset=DATASET_NAME)
-        except Exception as error:
-            print(f"Evaluation failed for {S21_EXPRESSION!r}: {error!r}")
-            print(
-                "The expression name is model-specific. Check the variable name "
-                "under Results in the COMSOL GUI and update S21_EXPRESSION."
-            )
-else:
-    print(f"No completed model named {COMPLETED_MODEL_PATH.name!r} in MODEL_DIR")
-    print(
-        "Set up the physics and study in the COMSOL GUI (or run `comsol batch`), "
-        "save the solved model to that path, then re-run this cell."
-    )
-    print("No S-parameters were computed, so none are shown.")
+# The curve varies smoothly by a fraction of a dB across the band. That is the
+# expected response of a feedline sampled far from any narrow feature; it is not
+# evidence that the resonator has no resonance, only that this grid cannot see
+# one. Two things resolve it: an eigenfrequency search to place $f_r$, then a
+# narrow frequency sweep of a few linewidths around that value with the adaptive
+# sweep enabled; and a mesh refined in the CPW gaps so the notch depth and
+# position stop moving under refinement.
 
 # %% [markdown]
-# `emw.S21dB` is the S-parameter variable name this notebook assumes. If your
-# model defines the S-parameter evaluation under a different name, or if the
-# frequency axis lives on a different dataset, edit `S21_EXPRESSION` and the
-# `DATASET_NAME`. `model.inner(dataset)` and `model.outer(dataset)` return
-# the sweep indices and values directly if the `freq` expression is not
-# available on the selected dataset.
+# ## Saved field map
+#
+# The exported field is the electric-field norm on the $z = 1$ µm plane at the
+# saved 7.5 GHz point. The metal sheet lies at $z = 0$ and the plane sits just above
+# it, so the map shows the modal field in the CPW gaps and along the resonator.
 
 # %%
-if s21_db is not None and frequencies_ghz is not None:
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.plot(frequencies_ghz, s21_db)
-    ax.set_xlabel("Frequency (GHz)")
-    ax.set_ylabel(r"$|S_{21}|$ (dB)")
-    ax.set_title("Feedline transmission from the completed COMSOL model")
-    ax.grid(True)
-    plt.tight_layout()
-    plt.show()
-else:
-    print("No simulated transmission data, so there is nothing to plot.")
+field_file = (
+    results_dir / "comsol_cpw_field.txt"
+    if results_dir is not None
+    else data_path("comsol_cpw_field.txt")
+)
+field = np.loadtxt(field_file, comments="%")
+field_x, field_y, field_e = field[:, 0], field[:, 1], field[:, 3]
+
+fig, ax = plt.subplots(figsize=(8, 4))
+contour = ax.tricontourf(
+    field_x,
+    field_y,
+    field_e,
+    levels=np.geomspace(1.0, field_e.max(), 40),
+    norm=LogNorm(vmin=1.0, vmax=field_e.max()),
+    cmap="inferno",
+    extend="min",
+)
+ax.set_aspect("equal")
+ax.set_xlabel("x (µm)")
+ax.set_ylabel("y (µm)")
+field_frequency_ghz = sweep_ghz[nearest] if RUN_COMSOL else SAVED_FIELD_FREQUENCY_GHZ
+ax.set_title(f"Electric field norm at {field_frequency_ghz:g} GHz, z = 1 µm")
+fig.colorbar(contour, ax=ax, label=r"$|\mathbf{E}|$ (V/m)")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# The field concentrates in the narrow CPW gaps and at the ends of the metal
+# edges, where the surface charge collects. That localisation is why the mesh has
+# to be refined in the gaps before the notch position is trusted: an
+# under-resolved gap smears the field and shifts the resonance.
 
 # %% [markdown]
 # ## Summary
 #
-# What this notebook did, end to end:
+# 1. Built a coupled quarter-wave resonator, extended both feeds with straight
+#    CPW to planes clear of the resonator, and extracted a ported layout with
+#    `crop_to_feed_ports=True`, so both external faces are open CPW cross
+#    sections. The extension is part of the modelled device and changes the
+#    coupling geometry relative to the unextended cell.
+# 2. Built the COMSOL sheet model (air, silicon, metal faces on the interface)
+#    and configured the PEC, the two numeric TEM ports with voltage integration
+#    lines, the mesh, and the frequency study, all from layout geometry.
+# 3. Solved a 5 to 10 GHz sweep and read back `emw.S21dB`, `emw.S11dB`, and the
+#    electric field norm.
+# 4. Showed the committed sweep and field map, and stated what they do not show:
+#    the 0.25 GHz spacing is far wider than the expected linewidth, so no
+#    resonance frequency or quality factor is read off this curve.
 #
-# 1. Built a QPDK `quarter_wave_resonator_coupled` component with an explicit
-#    CPW cross-section and identified its feedline ports.
-# 2. Extracted `ComsolLayout` metal polygons via `prepare_comsol_layout`,
-#    showing that the ground plane dominates the bounding box, the CPW gaps
-#    survive as polygon holes, and the feed centres sit inside the prepared
-#    domain rather than on its edge.
-# 3. Built an **unsolved** 3D geometry project with
-#    `build_comsol_cpw_model` and saved it as a `.mph` file that opens in the
-#    COMSOL GUI.
-# 4. Inspected the model structure with MPh to confirm that geometry is all
-#    that exists, and printed the source feed coordinates for the physics setup.
-# 5. Described the continuation - materials, PEC and scattering boundaries,
-#    numeric TEM ports with voltage integration lines, boundary mode analysis,
-#    eigenfrequency search, and a narrow frequency sweep - and showed how to
-#    load, optionally solve, and evaluate a completed model.
+# ### Limitations
 #
-# What it did **not** do: it did not add physics, materials, ports, a mesh, or a
-# study, and it did not compute an $S_{21}$ curve. Output from the evaluation
-# cell is real only if you produced a solved model yourself.
+# - Metal is PEC: no surface resistance and no kinetic inductance, so loss and
+#   the kinetic-inductance frequency shift are both missing.
+# - The sweep is sparse and the mesh is a single automatic setting; neither is a
+#   convergence study.
+# - The feed extension is not the reference device, so the solved coupling is
+#   not the reference coupling.
 #
-# **Recommended next steps:**
+# ### Next steps
 #
-# - Follow the COMSOL reference model's workflow for the physics, but make every
-#   selection on *this* geometry; the reference's entity IDs do not transfer.
-# - Mesh the CPW gaps and the metal explicitly, then verify that $f_r$ converges
-#   under refinement before reporting it.
-# - Compare the PEC result against the QPDK analytical and SAX models in
-#   {doc}`/notebooks/all_models` as a sanity check on the coupling and frequency.
-# - Add surface impedance for the superconductor to get a realistic $Q$, and
-#   compare with measurements.
+# - Add an eigenfrequency study to locate $f_r$, then sweep a few linewidths
+#   around it with the adaptive sweep enabled.
+# - Refine the mesh in the CPW gaps and confirm $f_r$ and the notch depth stop
+#   moving.
+# - Replace PEC with a surface-impedance or transition boundary condition using
+#   the superconductor's surface resistance and kinetic inductance to get a
+#   realistic $Q$.
+# - Compare the ported section against the QPDK analytical and SAX models in
+#   {doc}`/notebooks/all_models` as a sanity check on the coupling.
 #
 # ## References
 #
