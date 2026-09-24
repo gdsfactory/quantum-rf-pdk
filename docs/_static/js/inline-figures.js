@@ -1,21 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const figures = new Set([
-    "cpw-cross-section.svg",
-    "dispersive-readout.svg",
-    "fabrication-variation.svg",
-    "pulse-leakage.svg",
-    "quarter-wave-resonator.svg",
-    "transmon-energy.svg",
-  ]);
-  for (const image of document.querySelectorAll('img[src*="_images/"]')) {
-    if (!figures.has(new URL(image.src).pathname.split("/").pop())) continue;
+  for (const image of document.querySelectorAll("img.qpdk-inline-figure")) {
     fetch(image.src)
       .then((response) => {
-        if (!response.ok) throw new Error(`Figure request failed: ${response.status}`);
+        if (!response.ok)
+          throw new Error(`Figure request failed: ${response.status}`);
         return response.text();
       })
       .then((source) => {
-        const svg = new DOMParser().parseFromString(source, "image/svg+xml").documentElement;
+        const svg = new DOMParser().parseFromString(
+          source,
+          "image/svg+xml",
+        ).documentElement;
         if (svg.localName !== "svg") return;
         svg.classList.add("qpdk-figure");
         svg.setAttribute("role", "img");
