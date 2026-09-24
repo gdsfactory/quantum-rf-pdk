@@ -31,8 +31,10 @@
 # Installing the extra installs `MPh`, the Python client for COMSOL, and nothing
 # else. **It does not install COMSOL and it does not grant a license.** Running
 # the model build and the full-wave solve needs a local COMSOL installation, a
-# license, and the RF Module. Google Colab has none of them, so the build cells
-# cannot run there.
+# license, and the RF Module. The metal here has etched holes, so the sheet model
+# is imprinted with the Design Module's `ProjectToFaces`, which needs the Design
+# Module as well. Google Colab has none of them, so the build cells cannot run
+# there.
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
