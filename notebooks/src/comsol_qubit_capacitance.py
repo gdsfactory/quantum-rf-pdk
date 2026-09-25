@@ -18,42 +18,27 @@
 # ::::{admonition} Required extras
 # :class: tip
 #
-# This notebook needs the `comsol` extra:
-#
-# ```bash
-# uv add "qpdk[comsol]"          # or: pip install "qpdk[comsol]"
-# uv sync --extra comsol         # from a checkout of this repository
-# ```
-#
-# The extra installs `MPh`, the Python client for COMSOL, and nothing else: it does not install
-# COMSOL or grant a license, so the build and solve cells need a local installation and cannot
-# run on Colab. See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# This notebook needs the `comsol` extra (`uv sync --extra comsol`). It installs `MPh`, the Python client for
+# COMSOL, and nothing else: not COMSOL and not a license, so the build and solve cells need a local
+# installation and cannot run on Colab. See the {ref}`extras reference <notebook-extras>`.
 # ::::
 #
-# This notebook extracts the two capacitor pads of a QPDK double-pad transmon, builds a COMSOL
-# sheet model around them, runs a stationary **Electrostatics** solve, and reads back the pad
-# capacitance, the stored energy, and the potential and field on a cut plane. The figures and
-# numbers below are **saved cell outputs** of licensed solves, reproduced with `RUN_COMSOL = True`
-# on a licensed machine; without a license the COMSOL cells are skipped and the cells that read
-# results print how to supply them instead.
+# This notebook runs a stationary **Electrostatics** solve on a COMSOL sheet model of a QPDK double-pad
+# transmon. The figures are **saved cell outputs** of licensed solves; without a license the COMSOL cells are
+# skipped.
 #
 # ## What is modelled, and what is solved
 #
-# The device is a QPDK {py:func}`~qpdk.cells.transmon.double_pad_transmon_with_bbox`: two
-# rectangular pads separated by a small gap, with a SQUID loop at the centre. The pads dominate the
-# total capacitance $C$ and the SQUID supplies the Josephson energy $E_J$, so the qubit transition
-# frequency is set by $E_J$ and the charging energy $E_C = e^2 / 2C$
-# {cite:p}`kochChargeinsensitiveQubitDesign2007a`. The pads are joined **only** through the
-# Josephson junction. The sheet model cannot represent the junction overlap and its insulating
-# barrier, so the extraction uses an **EM-only copy** with the junction layers removed. The SQUID
-# loop and its leads are absent from the solved geometry.
+# The device is a QPDK {py:func}`~qpdk.cells.transmon.double_pad_transmon_with_bbox`: two pads joined
+# **only** through the Josephson junction, with a SQUID loop at the centre, so the qubit frequency follows
+# from $E_J$ and $E_C = e^2 / 2C$ {cite:p}`kochChargeinsensitiveQubitDesign2007a`. The sheet model cannot
+# represent the junction overlap or its barrier, so the extraction uses an **EM-only copy** with the junction
+# layers removed: the SQUID loop and its leads are absent from the solved geometry.
 #
-# On that geometry the model adds **Electrostatics**, not electromagnetic waves: a voltage terminal
-# drives the left pad, and the right pad and the chip ground plane are held at ground. The solve
-# returns `es.C11`, the capacitance of the driven pad to the grounded rest of the chip, and
-# `es.intWe`, the stored electric energy, which agree through $2 W_e / V^2 = C_{11}$
-# {cite:p}`m.pozarMicrowaveEngineering2012`. This is a **quasi-static capacitance extraction**: the
-# metal is a perfect conductor and there is no Josephson inductance, so no resonance is solved.
+# The solve adds **Electrostatics**, not electromagnetic waves, and returns `es.C11`, the driven pad's
+# capacitance to the grounded rest of the chip, plus `es.intWe`, which agree through
+# $2 W_e / V^2 = C_{11}$ {cite:p}`m.pozarMicrowaveEngineering2012`. It is a **quasi-static extraction**, with
+# no Josephson inductance and no resonance solved.
 #
 # ::::{only} html
 # ```{mermaid}
@@ -63,30 +48,19 @@
 # ::::
 #
 # ::::{only} typst or typstpdf
-# The pipeline: transmon cell; an EM-only copy with the junction layers removed; the extracted
-# layout of two pad polygons and the ground plane; the sheet model with air over silicon; an
-# Electrostatics interface driving the left pad with the rest grounded; the mesh and a stationary
-# solve; the capacitance, energy, and field results.
+# The pipeline: transmon cell, EM-only copy with the junction layers removed, extracted layout of pads and
+# ground plane, sheet model with air over silicon, Electrostatics solve driving the left pad, mesh, and the
+# capacitance, energy, and field results.
 # ::::
-#
-# ### The LC frequency is an estimate, not an eigenmode
-#
-# Given $C_{11}$ one can pick a Josephson inductance $L_J$ and form
-# $f_{LC} = 1 / (2 \pi \sqrt{L_J C_{11}})$. That number is an **estimate**: the inductance is
-# not in the COMSOL model, and it is neither a COMSOL eigenfrequency nor the transmon $f_{01}$.
-# A transmon is an anharmonic oscillator whose spectrum follows from $E_J$ and $E_C$ treated as
-# a quantum circuit, not from a single linear LC resonance
-# {cite:p}`blaisCircuitQuantumElectrodynamics2021`, so the true $f_{01}$ also carries the
-# $E_C$ anharmonic correction, which QPDK's scQubits notebook and
-# {cite:p}`groszkowskiScqubitsPythonPackage2021` provide.
 #
 # ::::{admonition} Reading the numbers on this page
 # :class: warning
 #
-# The capacitance and energy come from licensed electrostatic solves, but they are not a validated
-# device prediction: the SQUID loop and leads are absent, and $C_{11}$ is a one-terminal value
-# rather than the two-pad differential capacitance that sets $E_C$. The plots and tables below show
-# how far the value moves with the mesh, the solved box, and the air and silicon around the metal.
+# The values come from licensed electrostatic solves, but they are not a validated device prediction:
+# the SQUID loop and leads are absent, and $C_{11}$ is a one-terminal value rather than the two-pad
+# differential capacitance that sets $E_C$, so the $f_{LC}$ estimate further down is neither a COMSOL
+# eigenmode nor the transmon $f_{01}$ {cite:p}`blaisCircuitQuantumElectrodynamics2021`. The plots below show
+# how far it moves with the mesh, the lateral margin, and the air height.
 # ::::
 #
 # **References:**
@@ -258,9 +232,8 @@ print("Plot style: QPDK" if STYLE_SOURCE != "matplotlib defaults" else STYLE_SOU
 # %% [markdown]
 # ## Build the transmon cell and an EM-only copy
 #
-# `prepare_comsol_layout` rejects components carrying geometry on layers it does not model, and
-# the junction layers are among those. The simplification is explicit: the cell is copied and
-# `JJ_AREA` and `JJ_PATCH` are removed, leaving `M1_DRAW` and the `M1_ETCH` mask it inverts.
+# `prepare_comsol_layout` rejects geometry on layers it does not model, the junction layers among them. The
+# cell is copied and `JJ_AREA` and `JJ_PATCH` removed, leaving `M1_DRAW` and the `M1_ETCH` mask.
 
 # %%
 component = double_pad_transmon_with_bbox(bbox_extension=200.0)
@@ -280,9 +253,8 @@ print("JJ_AREA/JJ_PATCH removed; M1_DRAW and M1_ETCH remain.")
 # %% [markdown]
 # ## Extract the COMSOL layout
 #
-# The qubit pads are not transmission-line ports, so the extraction is asked for no feed ports.
-# The etched moat is a *hole* in the ground-plane polygon; the pads sit inside it as separate
-# metal polygons.
+# The pads are not transmission-line ports, so no feed ports are requested. The etched moat is a *hole* in
+# the ground-plane polygon; the pads sit inside it as separate polygons.
 
 # %%
 layout = prepare_comsol_layout(em_component, feed_ports=None, ground_margin=100.0)
@@ -366,25 +338,17 @@ plt.show()
 # %% [markdown]
 # ## Build the COMSOL model and capacitance study
 #
-# Three calls configure the model:
+# Three calls configure the model: {py:meth}`~qpdk.simulation.comsol_model.COMSOL.create_sheet` makes the
+# air and silicon blocks meeting at $z = 0$, imprints the layout metal on that interface as faces, and
+# assigns materials;
+# {py:meth}`~qpdk.simulation.comsol_model.COMSOL.add_capacitance_study` picks the pad and ground faces from
+# the points above, drives the left pad, grounds the right pad and the ground plane, and adds the mesh and a
+# stationary study; and {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_mesh_sizes` reruns that
+# mesh with absolute element sizes in micrometres, so the near-metal resolution no longer moves with the
+# domain.
 #
-# - {py:meth}`~qpdk.simulation.comsol_model.COMSOL.create_sheet` creates the air and silicon
-#   blocks meeting at $z = 0$, imprints the layout metal on that interface as faces, and assigns
-#   materials ($\epsilon_r$ of 1 for air and 11.7 for silicon).
-# - {py:meth}`~qpdk.simulation.comsol_model.COMSOL.add_capacitance_study` picks the pad and
-#   ground faces with the points in the cell above, drives the left pad with a voltage terminal,
-#   grounds the right pad and the ground plane, and adds the mesh and a stationary study. The
-#   selection builder refuses a point that lands on no face or on several, so a wrong point fails
-#   loudly instead of grounding the wrong area.
-# - {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_mesh_sizes` runs that mesh once,
-#   then replaces the sizing COMSOL derived from the physics with absolute element sizes in
-#   micrometres, so the near-metal resolution no longer moves with the domain.
-#
-# The constants in the next cell are the base configuration the saved metrics and field map report:
-# 8000 µm of lateral margin, 1600 µm of silicon, 1600 µm of air, and the finest `0.625/1.25` entry
-# of `NEAR_METAL_SIZES`. `mph.start(cores=...)` attaches to a local COMSOL process and needs a
-# license, so the block is off by default; `RUN_DOMAIN_STUDY` turns on the series further down, and
-# `RESULTS_DIR` is where the cells that read results look for exports.
+# The constants below are the base configuration the saved metrics and field map report: 8000 µm of margin,
+# 1600 µm of silicon, 1600 µm of air, and the finest `0.625/1.25` near-metal entry.
 
 # %%
 RUN_COMSOL = False
@@ -508,10 +472,8 @@ if RUN_COMSOL and MPH_AVAILABLE:
 # %% [markdown]
 # ### Exporting the potential and field map
 #
-# The map further down was written from the solved model above, with COMSOL's Data export on a
-# cut plane at $z = 1$ µm carrying the potential $V$ and the field norm `es.normE`. The scripted
-# version below creates a `CutPlane` dataset over the $xy$ plane and a `Data` export listing
-# both expressions, writing into `MODEL_DIR` where `RESULTS_DIR` picks it up.
+# The map below came from COMSOL's Data export on a cut plane at $z = 1$ µm carrying $V$ and `es.normE`; this
+# block creates that `CutPlane` dataset and the export into `MODEL_DIR`.
 
 # %%
 if RUN_COMSOL and MPH_AVAILABLE and model is not None:
@@ -531,13 +493,8 @@ if RUN_COMSOL and MPH_AVAILABLE and model is not None:
 # %% [markdown]
 # ## Saved capacitance result
 #
-# This cell replots the exported metrics from the electrostatic solve: `C11`, and the stored
-# energy checked against it through $2 W_e / V^2$. The one-terminal $C_{11}$ does not by
-# itself give the differential-mode capacitance of the two floating pads, so it is not the
-# transmon charging capacitance. The settings printed alongside are the ones the main solve
-# used, which matter because $C_{11}$ moves with both the mesh and the box. With
-# `RESULTS_DIR` unset, or set to a directory without the export, the cell prints how to
-# supply the file instead of a result.
+# This cell replots the exported `C11` and the stored energy checked against it through $2 W_e / V^2$, beside
+# the settings the main solve used, since $C_{11}$ moves with both the mesh and the box.
 
 # %%
 METRICS_JSON = "comsol_qubit_metrics.json"
@@ -556,42 +513,30 @@ else:
     voltage_v = float(metrics["voltage_v"])
 
     capacitance_from_energy_f = 2.0 * stored_energy_j / voltage_v**2
-    print(f"es.C11                       = {capacitance_f:.6e} F")
-    print(f"2 * es.intWe / V^2           = {capacitance_from_energy_f:.6e} F")
     print(
-        "relative difference          = "
-        f"{abs(capacitance_from_energy_f - capacitance_f) / capacitance_f:.2e}"
+        f"C11                    = {capacitance_f * 1e15:.4f} fF at V = {voltage_v:g} V"
     )
-    for key in (
-        "solver",
-        "study",
-        "mesh",
-        "base_mesh_size",
-        "near_metal",
-        "element_count",
-        "global_hmax_um",
-        "global_hmin_um",
-        "hgrad",
-        "hcurve",
-        "hnarrow",
-        "pad_hmax_um",
-        "pad_hmin_um",
-        "ground_hmax_um",
-        "ground_hmin_um",
-        "lateral_margin_um",
-        "substrate_thickness_um",
-        "air_height_um",
-    ):
-        if (value := metrics.get(key)) is not None:
-            print(f"{key:<28} = {value}")
+    print(
+        f"2 * We / V^2           = {capacitance_from_energy_f * 1e15:.4f} fF "
+        f"(relative difference "
+        f"{abs(capacitance_from_energy_f - capacitance_f) / capacitance_f:.2e})"
+    )
+
+    print(
+        f"mesh                   = {int(metrics['element_count']):,} elements, "
+        f"{metrics['near_metal']} near-metal sizes"
+    )
+    print(
+        f"box                    = margin {float(metrics['lateral_margin_um']):g} µm, "
+        f"silicon {float(metrics['substrate_thickness_um']):g} µm, "
+        f"air {float(metrics['air_height_um']):g} µm"
+    )
 
 # %% [markdown]
 # ### An LC frequency estimate
 #
-# With $C_{11}$ in hand, a chosen Josephson inductance $L_J$ gives a rough scale for the
-# circuit frequency. **$L_J$ is not part of the COMSOL solve**, and $C_{11}$ is not the two-pad
-# differential capacitance, so the number only shows the scale these illustrative circuit
-# values would give, not an eigenfrequency or the transmon $f_{01}$.
+# A chosen $L_J$ turns $C_{11}$ into a rough circuit frequency. **$L_J$ is not in the COMSOL solve** and
+# $C_{11}$ is not the two-pad differential capacitance, so this is a scale, not an eigenfrequency.
 
 # %%
 LJ_H = 10e-9  # chosen, not solved for
@@ -602,21 +547,15 @@ else:
     f_lc_ghz = 1.0 / (2.0 * np.pi * np.sqrt(LJ_H * capacitance_f)) / 1e9
     print(f"Chosen L_J                    = {LJ_H * 1e9:.1f} nH")
     print(f"illustrative f_LC using C11     = {f_lc_ghz:.3f} GHz")
-    print("L_J is not in the model; C11 is not the differential pad capacitance.")
 
 # %% [markdown]
 # ## Saved potential and field map
 #
-# The exported field is the potential $V$ and the electric-field norm on the $z = 1$ µm plane,
-# from the main solve. The metal sheet lies at $z = 0$ and the plane sits just above it, so the
-# map shows the potential holding across the driven pad and the field concentrating in the pad
-# gap and along the pad edges.
+# The exported field is $V$ and the field norm `es.normE` on the $z = 1$ µm plane just above the metal sheet.
 #
-# The exported plane spans the whole domain, out to ±8.5 mm, where the 250 x 400 µm pads and
-# their 15 µm gap are a dot, so the map is a **close-up**: `FIELD_LIMIT_X_UM` and
-# `FIELD_LIMIT_Y_UM` frame both pads and the gap, and nodes outside are dropped. The rest of
-# the window is the etched moat, and the remaining nodes are resampled onto a display grid,
-# which is **display only**: it reads the solved field and does not re-solve or smooth it.
+# The export spans ±8.5 mm, where the pads are a dot, so the map is a **close-up**: `FIELD_LIMIT_X_UM` and
+# `FIELD_LIMIT_Y_UM` frame both pads, and the remaining nodes are resampled onto a display grid (**display
+# only**: it reads the solved field without re-solving it).
 
 # %%
 FIELD_TXT = "comsol_qubit_field.txt"
@@ -682,48 +621,36 @@ else:
     plt.show()
 
 # %% [markdown]
-# The potential is near its terminal value over the driven pad and falls to zero across the
-# gap to the grounded pad; over the etched moat beyond the pads it sits between the two, with
-# no metal there to hold it at either. The field is concentrated in that gap and at the pad
-# edges, which is where the pad capacitance mainly lives and why the mesh has to resolve them
-# for the capacitance to settle. On the full ±8.5 mm window the gap would be a single line.
+# The potential holds across the driven pad and falls through the gap to the grounded pad; the field
+# concentrates in that gap and at the pad edges, where the pad capacitance mainly lives.
 
 # %% [markdown]
 # ## Domain and near-metal mesh study
 #
-# A physics-controlled mesh scales its sizes with the domain, so a series that changes the domain
-# changes the near-metal resolution with it. Every case below pins the element sizes to absolute
-# micrometres instead, as the main solve above does, so its number and the rows here are
-# comparable, and a mesh study alone cannot see the box, because refining elements does not move a
-# wall. Two effects are separated:
+# A physics-controlled mesh scales with the domain, so a domain sweep moves the near-metal resolution with it;
+# every case here pins absolute element sizes instead, as the main solve does. Two effects are separated:
 #
-# 1. **The finite box.** The sheet model surrounds the metal with two finite blocks, air above
-#    and silicon below, spanning the prepared layout box grown by `lateral_margin_um`. Their
-#    outer walls take the Electrostatics default for an exterior boundary, zero charge
-#    ($\mathbf{n} \cdot \mathbf{D} = 0$), so field that would have spread into a larger chip is
-#    turned back at a wall. The margin is therefore one of three lengths, with the air above and
-#    the silicon below the other two.
-# 2. **The near-metal element size.** The pad-to-ground capacitance lives in the field at the
-#    pad gap and the pad edges, so the element size there sets how well it is resolved.
+# - **The finite box.** Air above and silicon below span the layout box grown by `lateral_margin_um`; their
+#   outer walls take the Electrostatics default for an exterior boundary, zero charge
+#   ($\mathbf{n} \cdot \mathbf{D} = 0$), turning back field that would spread into a larger chip.
+# - **The near-metal element size**, which sets how well the field in the pad gap and at the pad edges is
+#   resolved.
 #
-# A margin sweep alone cannot see the second effect unless the sizes are pinned. Every case calls
-# {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_mesh_sizes`, which runs the physics-controlled
-# build once, then writes absolute sizes into the sequence: `GLOBAL_HMAX_UM`/`GLOBAL_HMIN_UM` for
-# the bulk air and silicon, and one size per conductor on the pad and ground faces, so the sizing no
-# longer follows the domain. The five `NEAR_METAL_SIZES` settings run from `5/10` down to
-# `0.625/1.25`, keyed by the pad and ground `hmax` with every `hmin` a tenth of it; none is a
-# none is a converged mesh, and what the series measures is the step from each setting to the next
-# smaller one.
+# {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_mesh_sizes` writes absolute sizes into the mesh
+# sequence, one per conductor face. `NEAR_METAL_SIZES` runs five settings from `5/10` to `0.625/1.25`; none is a
+# converged mesh, and the series measures the step from each setting to the next.
 #
-# The series walks the margin at a fixed near-metal setting, the near-metal ladder at margins already
-# solved, and the air height and substrate thickness away from the base case; `DOMAIN_CASES` lists
-# the exact cases, each one fresh model solved from scratch.
+# `DOMAIN_CASES` lists the cases, each a fresh model solved from scratch. The curves compare **one parameter
+# at a time**, every other length fixed:
 #
-# The base case is the main solve's own configuration, 8000 / 1600 / 1600 µm, and the tables below
-# carry one set of deltas per series: those deltas, not a statement made here, are the reading. A
-# margin series alone cannot see what the air above the metal contributes, and a value still moving
-# with the near-metal size or the air height has not settled whatever the margin does. The series is
-# off by default: set `RUN_DOMAIN_STUDY = True` alongside `RUN_COMSOL = True`.
+# - **Lateral margin**, at air 200 µm and silicon 1600 µm, one line per near-metal setting, so the mesh
+#   sizes are told apart inside one box.
+# - **Air height**, at margin 8000 µm, silicon 1600 µm, and the `2.5/5` near-metal setting.
+# - **Mesh**, the near-metal ladder against element count at the base box: margin 8000 µm, air 1600 µm,
+#   silicon 1600 µm.
+#
+# That base box is the main solve's own configuration; run the series with `RUN_DOMAIN_STUDY = True` and
+# `RUN_COMSOL = True`.
 
 # %% tags=["hide-input"]
 DOMAIN_JSON = "comsol_qubit_domain_convergence.json"
@@ -927,28 +854,14 @@ elif RUN_DOMAIN_STUDY and not RUN_COMSOL:
 # %% [markdown]
 # ### Reading the domain and mesh series
 #
-# The cell below draws $C_{11}$ against the lateral margin, one line per near-metal setting, and
-# $C_{11}$ against the mesh element count, one line per margin. A line that flattens says the
-# outer walls, or the near-metal resolution, no longer set $C_{11}$.
-#
-# It then prints one table per group of rows sharing a margin, a substrate, and an air height,
-# in refinement order, so the step from one near-metal setting to the next is the change the
-# series is after, and compares the largest such step with the spread across the margins at a
-# fixed setting. The table also carries $2 W_e / V^2$ next to $C_{11}$: an internal consistency
-# check, not convergence.
-
+# Each line changes one setting at a time. The margin sweep fixes air at 200 µm and silicon at 1600 µm;
+# the air sweep fixes margin at 8000 µm, silicon at 1600 µm, and the near-metal mesh at 2.5/5 µm.
+# The separate mesh sweep uses the main simulation box. Flat curves suggest lower sensitivity to the
+# swept setting; the energy check $2 W_e / V^2$ tests consistency, not convergence.
 
 # %% tags=["hide-input"]
-def compact_element_count(count: int) -> str:
-    """Format an element count for a plot label.
-
-    Args:
-        count: Number of mesh elements.
-
-    Returns:
-        The count in thousands, or the plain count below ten thousand.
-    """
-    return f"{count / 1e3:.0f}k" if count >= 10_000 else f"{count:,}"
+MARGIN_PANEL_AIR_UM = 200.0
+AIR_PANEL_NEAR_METAL = "2.5/5"
 
 
 def domain_near_metal_name(row: dict[str, Any]) -> str:
@@ -990,28 +903,106 @@ def ordered_near_metal_names(names: set[str]) -> list[str]:
     return known + sorted(names.difference(NEAR_METAL_SIZES))
 
 
-def print_domain_table(
-    title: str, header: str, points: list[tuple[str, int, float]]
-) -> None:
-    """Print one comparison with each row's step from the row above it.
+def compact_element_count(count: int) -> str:
+    """Format an element count for an axis tick.
 
     Args:
-        title: Line describing the comparison, printed above the table.
-        header: Column heading for the varying parameter.
-        points: One ``(value, element count, capacitance in fF)`` per row.
+        count: Number of mesh elements.
+
+    Returns:
+        The count in millions, or in thousands below a million.
     """
-    print(f"\n{title}")
-    print(f"{header:>12} {'elements':>10} {'C11 (fF)':>10} {'dC11':>9} {'dC11 %':>8}")
-    for index, (value, element_count, capacitance_ff) in enumerate(points):
-        step = change = ""
-        if index > 0:
-            previous_ff = points[index - 1][2]
-            step = f"{capacitance_ff - previous_ff:>+9.4f}"
-            change = f"{(capacitance_ff - previous_ff) / previous_ff:>+8.2%}"
-        print(
-            f"{value:>12} {element_count:>10} {capacitance_ff:>10.4f} "
-            f"{step:>9} {change:>8}"
-        )
+    return f"{count / 1e6:.1f}M" if count >= 1_000_000 else f"{count / 1e3:.0f}k"
+
+
+def rows_pinning(
+    rows: list[dict[str, Any]],
+    *,
+    lateral_margin_um: float | None = None,
+    substrate_thickness_um: float | None = None,
+    air_height_um: float | None = None,
+    near_metal: str | None = None,
+) -> list[dict[str, Any]]:
+    """Select the rows that hold the given case parameters.
+
+    A curve may only join rows that differ in the swept length alone, so every
+    series reads its points from the rows this picks out.
+
+    Args:
+        rows: Rows read from the domain JSON.
+        lateral_margin_um: Margin to hold, or ``None`` to leave it free.
+        substrate_thickness_um: Substrate thickness to hold, or ``None``.
+        air_height_um: Air height to hold, or ``None``.
+        near_metal: Near-metal setting to hold, or ``None``.
+
+    Returns:
+        The matching rows, in the order they were read.
+    """
+
+    def holds(value: Any, target: float | None) -> bool:
+        """Return whether a row's value sits on the parameter it is checked against.
+
+        Args:
+            value: Value read from a row.
+            target: Value to match, or ``None`` to accept any value.
+
+        Returns:
+            Whether the value may be joined to the rows being collected.
+        """
+        return target is None or math.isclose(float(value), target)
+
+    return [
+        row
+        for row in rows
+        if holds(row["lateral_margin_um"], lateral_margin_um)
+        and holds(row["substrate_thickness_um"], substrate_thickness_um)
+        and holds(row["air_height_um"], air_height_um)
+        and (near_metal is None or domain_near_metal_name(row) == near_metal)
+    ]
+
+
+def series_points(
+    rows: list[dict[str, Any]], swept_key: str
+) -> tuple[np.ndarray, np.ndarray]:
+    """Turn rows into a ``(swept value, C11)`` series in fF.
+
+    Args:
+        rows: Rows holding the swept key and ``c11_f``.
+        swept_key: Row key of the value swept along the x axis.
+
+    Returns:
+        The swept values and the capacitances, ordered by swept value.
+    """
+    ordered = sorted(rows, key=itemgetter(swept_key))
+    swept = np.array([float(row[swept_key]) for row in ordered], dtype=float)
+    capacitance_ff = np.array([float(row["c11_f"]) for row in ordered]) * 1e15
+    return swept, capacitance_ff
+
+
+def log_axis_on_values(
+    ax: mpl_axes.Axes,
+    values: np.ndarray,
+    label: str,
+    tick_labels: list[str] | None = None,
+) -> None:
+    """Put a log x axis on the solved values themselves.
+
+    The solved settings sit between round decades, so matplotlib's own log ticks
+    would land off the points; ticking the solved values keeps every tick on a
+    curve it belongs to.
+
+    Args:
+        ax: Axes to label.
+        values: Every value plotted along x.
+        label: Axis label.
+        tick_labels: One label per distinct value, or the values in µm.
+    """
+    ticks = np.unique(values)
+    ax.set_xscale("log")
+    ax.set_xticks(ticks, labels=tick_labels or [f"{value:g}" for value in ticks])
+    ax.minorticks_off()
+    ax.set_xlim(ticks[0] / 1.15, ticks[-1] * 1.15)
+    ax.set_xlabel(label)
 
 
 domain_file = result_file(DOMAIN_JSON)
@@ -1038,254 +1029,168 @@ else:
             raise ValueError("Domain rows have different solved voltages")
         solved_voltage_v = voltages_v.pop()
 
-        base_rows = [
-            row
-            for row in domain_rows
-            if math.isclose(float(row["air_height_um"]), AIR_HEIGHT_UM)
-            and math.isclose(
-                float(row["substrate_thickness_um"]), SUBSTRATE_THICKNESS_UM
-            )
-        ]
-        settings = ordered_near_metal_names({
-            domain_near_metal_name(row) for row in base_rows
-        })
-        if not base_rows:
-            print(
-                f"No rows at {SUBSTRATE_THICKNESS_UM:g} µm of substrate and "
-                f"{AIR_HEIGHT_UM:g} µm of air are on disk."
-            )
-
-        # The effects as numbers: how far C11 moves with the lateral margin at a
-        # fixed mesh, and how far it moves from one near-metal setting to the next
-        # smaller one at a fixed domain.
-        spreads_ff = {
-            setting: float(
-                np.ptp([
-                    float(row["c11_f"]) * 1e15
-                    for row in base_rows
-                    if domain_near_metal_name(row) == setting
-                ])
-            )
-            for setting in settings
-        }
-
-        # Every near-metal setting solved at each margin, substrate, and air
-        # height, so a table can be printed per group in refinement order.
-        mesh_groups: dict[tuple[float, float, float], list[dict[str, Any]]] = {}
-        for row in domain_rows:
-            group = (
-                float(row["lateral_margin_um"]),
-                float(row["substrate_thickness_um"]),
-                float(row["air_height_um"]),
-            )
-            mesh_groups.setdefault(group, []).append(row)
-        near_metal_steps_ff: list[float] = []
-
-        fig, ax = plt.subplots(figsize=(7, 4))
-        for setting in settings:
-            series = sorted(
-                (row for row in base_rows if domain_near_metal_name(row) == setting),
-                key=itemgetter("lateral_margin_um"),
-            )
-            margins_um = np.array(
-                [row["lateral_margin_um"] for row in series], dtype=float
-            )
-            capacitance_ff = (
-                np.array([row["c11_f"] for row in series], dtype=float) * 1e15
-            )
-            ax.plot(
-                margins_um,
-                capacitance_ff,
-                marker="o",
-                markersize=5,
-                label=f"{setting} near-metal sizes",
-            )
-            for margin, value, row in zip(
-                margins_um, capacitance_ff, series, strict=True
-            ):
-                ax.annotate(
-                    compact_element_count(int(row["element_count"])),
-                    (margin, value),
-                    textcoords="offset points",
-                    xytext=(6, 6),
-                    fontsize=8,
-                )
-        if base_rows:
-            ax.set_xscale("log")
-            ax.set_xlabel("Lateral margin (µm)")
-            ax.set_ylabel("Capacitance (fF)")
-            ax.set_title(
-                f"Pad capacitance vs domain size at V = {solved_voltage_v:g} V"
-            )
-            ax.grid(True, which="both", alpha=0.3)
-            ax.legend()
-            plt.tight_layout()
-            plt.show()
-
-        for setting in settings:
-            print_domain_table(
-                f"Lateral margin at the {setting} near-metal sizes, "
-                f"{SUBSTRATE_THICKNESS_UM:g} µm of substrate, "
-                f"{AIR_HEIGHT_UM:g} µm of air",
-                "margin",
-                [
-                    (
-                        f"{row['lateral_margin_um']:g}",
-                        int(row["element_count"]),
-                        float(row["c11_f"]) * 1e15,
-                    )
-                    for row in sorted(
-                        (
-                            row
-                            for row in base_rows
-                            if domain_near_metal_name(row) == setting
-                        ),
-                        key=itemgetter("lateral_margin_um"),
-                    )
-                ],
-            )
-
-        # One table per group of rows sharing a margin, a substrate, and an air
-        # height, so each table is one near-metal series in refinement order.
-        for group_key, group in sorted(mesh_groups.items()):
-            margin, substrate_um, air_um = group_key
-            by_setting = {domain_near_metal_name(row): row for row in group}
-            ordered = [
-                by_setting[name] for name in ordered_near_metal_names(set(by_setting))
+        margin_rows = rows_pinning(
+            domain_rows,
+            substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
+            air_height_um=MARGIN_PANEL_AIR_UM,
+        )
+        margin_series: list[tuple[str, np.ndarray, np.ndarray]] = []
+        for setting in ordered_near_metal_names({
+            domain_near_metal_name(row) for row in margin_rows
+        }):
+            setting_rows = [
+                row for row in margin_rows if domain_near_metal_name(row) == setting
             ]
-            if len(ordered) < 2:
+            if len(setting_rows) < 2:
                 continue
-            print_domain_table(
-                f"Near-metal size at margin {margin:g} µm, {substrate_um:g} µm of "
-                f"substrate, {air_um:g} µm of air",
-                "near-metal",
+            margin_series.append((
+                setting,
+                *series_points(setting_rows, "lateral_margin_um"),
+            ))
+        if not margin_series:
+            print(
+                f"No two solved margins share air {MARGIN_PANEL_AIR_UM:g} µm and "
+                f"silicon {SUBSTRATE_THICKNESS_UM:g} µm, so the margin panel is "
+                "skipped."
+            )
+
+        air_rows = rows_pinning(
+            domain_rows,
+            lateral_margin_um=LATERAL_MARGIN_UM,
+            substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
+            near_metal=AIR_PANEL_NEAR_METAL,
+        )
+        air_heights, air_capacitance_ff = series_points(air_rows, "air_height_um")
+        has_air_panel = len(air_heights) >= 2
+        if not has_air_panel:
+            print(
+                f"Fewer than two air heights are on disk at margin "
+                f"{LATERAL_MARGIN_UM:g} µm, silicon {SUBSTRATE_THICKNESS_UM:g} µm, "
+                f"and {AIR_PANEL_NEAR_METAL} near-metal sizes, so the air panel is "
+                "skipped."
+            )
+
+        panels: list[tuple[str, list[tuple[str, np.ndarray, np.ndarray]]]] = []
+        if margin_series:
+            panels.append(("lateral margin (µm)", margin_series))
+        if has_air_panel:
+            panels.append((
+                "air height (µm)",
                 [
                     (
-                        domain_near_metal_name(row),
-                        int(row["element_count"]),
-                        float(row["c11_f"]) * 1e15,
+                        f"{AIR_PANEL_NEAR_METAL} near-metal sizes",
+                        air_heights,
+                        air_capacitance_ff,
                     )
-                    for row in ordered
                 ],
-            )
-            near_metal_steps_ff.extend(
-                float(later["c11_f"]) * 1e15 - float(earlier["c11_f"]) * 1e15
-                for earlier, later in pairwise(ordered)
-            )
+            ))
 
-        if spreads_ff and near_metal_steps_ff:
-            largest_spread = max(spreads_ff.values())
-            largest_step = max(abs(step) for step in near_metal_steps_ff)
-            print(
-                f"\nLargest spread across the margins at a fixed mesh: "
-                f"{largest_spread:.4f} fF"
+        if panels:
+            fig, axes = plt.subplots(
+                1, len(panels), figsize=(5.2 * len(panels), 3.4), squeeze=False
             )
-            print(
-                f"Largest step between neighbouring near-metal settings: "
-                f"{largest_step:.4f} fF"
-            )
-            if largest_step > largest_spread:
-                print(
-                    "The near-metal size moves C11 more than the lateral walls do "
-                    "in these rows, so the mesh is the stronger limiter of the two, "
-                    "and neither has stopped moving it."
-                )
-            else:
-                print(
-                    "The lateral spread is at least as large as the near-metal step "
-                    "in these rows; read the two together before calling either "
-                    "settled."
-                )
-
-        fig, ax = plt.subplots(figsize=(7, 4))
-        for margin in sorted({float(row["lateral_margin_um"]) for row in base_rows}):
-            series = sorted(
-                (
-                    row
-                    for row in base_rows
-                    if math.isclose(float(row["lateral_margin_um"]), margin)
-                ),
-                key=itemgetter("element_count"),
-            )
-            element_counts = np.array(
-                [row["element_count"] for row in series], dtype=float
-            )
-            capacitance_ff = (
-                np.array([row["c11_f"] for row in series], dtype=float) * 1e15
-            )
-            ax.plot(
-                element_counts,
-                capacitance_ff,
-                marker="s",
-                markersize=5,
-                label=f"margin {margin:g} µm",
-            )
-            for count, value, row in zip(
-                element_counts, capacitance_ff, series, strict=True
+            for index, (ax, (xlabel, series)) in enumerate(
+                zip(axes[0], panels, strict=True)
             ):
-                ax.annotate(
-                    domain_near_metal_name(row),
-                    (count, value),
-                    textcoords="offset points",
-                    xytext=(6, -14),
-                    fontsize=8,
+                for series_label, values, capacitance_ff in series:
+                    ax.plot(
+                        values,
+                        capacitance_ff,
+                        marker="o",
+                        markersize=4,
+                        label=series_label,
+                    )
+                log_axis_on_values(
+                    ax,
+                    np.concatenate([values for _, values, _ in series]),
+                    f"({chr(ord('a') + index)}) {xlabel}",
                 )
-        if base_rows:
-            ax.set_xscale("log")
-            ax.set_xlabel("mesh elements")
-            ax.set_ylabel("Capacitance (fF)")
-            ax.set_title(
-                f"Pad capacitance vs mesh elements at V = {solved_voltage_v:g} V"
-            )
-            ax.grid(True, which="both", alpha=0.3)
-            ax.legend()
-            plt.tight_layout()
+                ax.set_ylabel("$C_{11}$ (fF)")
+                ax.grid(True, which="both", alpha=0.3)
+                if len(series) > 1:
+                    ax.legend(fontsize=8)
+            fig.suptitle(f"Pad capacitance vs domain size ({solved_voltage_v:g} V)")
+            fig.tight_layout(rect=(0, 0, 1, 0.93))
             plt.show()
 
-        # The two vertical lengths get the same treatment: a series is the set of
-        # rows that hold the other length, the margin, and the near-metal setting
-        # fixed, so only the swept length moves within a table. The sweep does not
-        # have to start at the base case; each series prints the value of the
-        # length it holds, so a pair solved off the base case is still read.
-        variation_tables = 0
-        for value_key, fixed_key, fixed_name, header in (
-            ("air_height_um", "substrate_thickness_um", "substrate", "air"),
-            ("substrate_thickness_um", "air_height_um", "air", "substrate"),
-        ):
-            series: dict[tuple[float, float, str], dict[float, dict[str, Any]]] = {}
-            for row in domain_rows:
-                series.setdefault(
-                    (
-                        float(row[fixed_key]),
-                        float(row["lateral_margin_um"]),
-                        domain_near_metal_name(row),
-                    ),
-                    {},
-                ).setdefault(float(row[value_key]), row)
-            for (fixed_value, margin, setting), group in sorted(series.items()):
-                if len(group) < 2:
-                    continue
-                variation_tables += 1
-                print_domain_table(
-                    f"{header.capitalize()} at margin {margin:g} µm, "
-                    f"{fixed_value:g} µm of {fixed_name}, "
-                    f"{setting} near-metal sizes",
-                    header,
-                    [
-                        (
-                            f"{value:g}",
-                            int(row["element_count"]),
-                            float(row["c11_f"]) * 1e15,
-                        )
-                        for value, row in sorted(group.items())
-                    ],
-                )
-        if not variation_tables:
+        mesh_rows = rows_pinning(
+            domain_rows,
+            lateral_margin_um=LATERAL_MARGIN_UM,
+            substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
+            air_height_um=AIR_HEIGHT_UM,
+        )
+        mesh_ordered = sorted(mesh_rows, key=itemgetter("element_count"))
+        if len(mesh_ordered) >= 2:
+            element_counts = np.array([
+                float(row["element_count"]) for row in mesh_ordered
+            ])
+            mesh_capacitance_ff = (
+                np.array([float(row["c11_f"]) for row in mesh_ordered]) * 1e15
+            )
+            ladder = ordered_near_metal_names({
+                domain_near_metal_name(row) for row in mesh_ordered
+            })
+            fig, ax = plt.subplots(figsize=(6, 3.4))
+            ax.plot(element_counts, mesh_capacitance_ff, marker="s", markersize=4)
+            log_axis_on_values(
+                ax,
+                element_counts,
+                "mesh elements",
+                [
+                    compact_element_count(int(count))
+                    for count in np.unique(element_counts)
+                ],
+            )
+            ax.set_ylabel("$C_{11}$ (fF)")
+            ax.set_title(
+                f"Mesh convergence ({ladder[0]} to {ladder[-1]} µm near metal)"
+            )
+            ax.grid(True, which="both", alpha=0.3)
+            fig.tight_layout()
+            plt.show()
+        else:
             print(
-                "\nNo series holds the other vertical length, the margin, and the "
-                "near-metal setting fixed while moving the air height or the "
-                "substrate thickness on the rows on disk, so that comparison is "
-                "skipped."
+                f"Fewer than two near-metal settings are on disk at margin "
+                f"{LATERAL_MARGIN_UM:g} µm, air {AIR_HEIGHT_UM:g} µm, silicon "
+                f"{SUBSTRATE_THICKNESS_UM:g} µm, so the mesh panel is skipped."
+            )
+
+        if margin_series:
+            print(
+                f"\nLateral margin at air {MARGIN_PANEL_AIR_UM:g} µm, silicon "
+                f"{SUBSTRATE_THICKNESS_UM:g} µm, C11 in fF"
+            )
+            for setting, values, capacitance_ff in margin_series:
+                print(
+                    f"  {setting} near-metal: {len(values)} margins "
+                    f"{values[0]:g}-{values[-1]:g} µm, spread "
+                    f"{float(np.ptp(capacitance_ff)):.4f}"
+                )
+        if has_air_panel:
+            print(
+                f"Air height at margin {LATERAL_MARGIN_UM:g} µm, silicon "
+                f"{SUBSTRATE_THICKNESS_UM:g} µm, {AIR_PANEL_NEAR_METAL} near-metal, "
+                "C11 in fF"
+            )
+            print(
+                f"  {air_heights[0]:g}-{air_heights[-1]:g} µm: "
+                f"{air_capacitance_ff[0]:.4f} to {air_capacitance_ff[-1]:.4f}, spread "
+                f"{float(np.ptp(air_capacitance_ff)):.4f}"
+            )
+        if len(mesh_ordered) >= 2:
+            steps_ff = [
+                abs(float(later["c11_f"]) - float(earlier["c11_f"])) * 1e15
+                for earlier, later in pairwise(mesh_ordered)
+            ]
+            print(
+                f"Near-metal ladder at margin {LATERAL_MARGIN_UM:g} µm, air "
+                f"{AIR_HEIGHT_UM:g} µm, silicon {SUBSTRATE_THICKNESS_UM:g} µm, C11 "
+                "in fF"
+            )
+            print(
+                f"  {ladder[0]} to {ladder[-1]}: "
+                f"{mesh_capacitance_ff[0]:.4f} to {mesh_capacitance_ff[-1]:.4f}, "
+                f"largest neighbouring step {max(steps_ff):.4f}"
             )
 
         print(
@@ -1295,49 +1200,20 @@ else:
         )
 
 # %% [markdown]
-# The series is read by the shape of the curves and the size of the steps printed next to them:
-# a flattening margin curve says the outer walls no longer set $C_{11}$, shrinking near-metal
-# steps say the element size no longer does, and an air or substrate series whose steps shrink
-# with the taller or thicker box says the same of the box.
+# Read the curves with the printed spreads: a flattening margin or air curve suggests reduced box
+# sensitivity, while smaller mesh steps suggest reduced sensitivity to element size.
 #
-# Those steps are empirical last-step figures, not rigorous error bounds: they say the value
-# barely moved between two neighbouring settings, not how far it still sits from the
-# mesh-independent answer. The box cannot be reduced to its lateral walls alone, since the air
-# above the metal is a lever no margin case moves, and the number remains a one-terminal
-# capacitance rather than the two-pad charging capacitance.
+# These observed changes are not error bounds. They do not measure the distance to a mesh-independent answer.
 
 # %% [markdown]
-# ## Summary
+# ## Limitations
 #
-# 1. Built a QPDK `double_pad_transmon_with_bbox` cell and made an EM-only copy with `JJ_AREA` and
-#    `JJ_PATCH` removed, so the SQUID and its leads are not in the solved geometry, then extracted
-#    the two pad polygons and the ground plane with `prepare_comsol_layout(..., feed_ports=None)`.
-# 2. Built the COMSOL sheet model and added an Electrostatics study: a voltage terminal on the left
-#    pad, ground on the right pad and the ground plane, a mesh, and a stationary study.
-# 3. Ran the main solve at 8000 / 1600 / 1600 µm of margin, silicon, and air with the element sizes
-#    pinned, exported `es.C11` and `es.intWe`, checked them through $2 W_e / V^2$, and replotted the
-#    field map.
-# 4. Added one series that pins the element sizes and moves the margin, the near-metal setting, the
-#    air height, and the substrate thickness around the base case, answering the box question a mesh
-#    study cannot; the printed deltas carry the numbers.
-#
-# ### Limitations
-#
-# - The solve is electrostatic: no Josephson inductance, so no resonance is solved, and the
-#   `f_LC` number is a chosen $L_J$ times a one-terminal $C_{11}$ rather than a transmon
-#   eigenfrequency or $f_{01}$.
-# - The EM-only copy omits the SQUID loop and its leads, so their parasitic capacitance is
-#   missing from $C_{11}$, which is the driven pad's capacitance to the grounded chip rather
-#   than the differential-mode capacitance of the two pads.
-# - The last-step figures are empirical, not rigorous error bounds, and the finite
-#   zero-charge outer walls act on $C_{11}$ at any mesh.
-#
-# ### Next steps
-#
-# - Refine the near-metal mesh once more below `0.625/1.25`, or grow the box, to test whether the
-#   last-step figure holds.
-# - Extract the two-pad capacitance matrix and use it with a junction model in the QPDK
-#   Hamiltonian workflow ({doc}`/notebooks/scqubits_parameter_calculation`).
+# The solve is electrostatic and the EM-only copy omits the SQUID loop and its leads, so $C_{11}$ is a
+# one-terminal capacitance to the grounded chip rather than the two-pad charging capacitance, and the `f_LC`
+# estimate is not a transmon eigenfrequency or $f_{01}$. The observed shifts are not error bounds,
+# and the finite zero-charge outer walls act at any mesh, so nothing here is a converged or validated device
+# number. The two-pad capacitance matrix, feeding the QPDK Hamiltonian workflow
+# ({doc}`/notebooks/scqubits_parameter_calculation`), is the next step.
 #
 # ## References
 #
