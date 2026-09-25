@@ -95,6 +95,11 @@ from qpdk.models.resonator import (
     resonator_half_wave,
     resonator_quarter_wave,
 )
+from qpdk.models.touchstone import (
+    sdict_to_array,
+    sdict_to_network,
+    write_touchstone,
+)
 from qpdk.models.unimon import (
     el_to_arm_inductance,
     unimon_coupled,
@@ -197,6 +202,8 @@ __all__ = [
     "resonator_half_wave",
     "resonator_linewidth_from_q",
     "resonator_quarter_wave",
+    "sdict_to_array",
+    "sdict_to_network",
     "series_impedance",
     "short",
     "short_2_port",
@@ -219,6 +226,7 @@ __all__ = [
     "unimon_energies",
     "unimon_frequency_and_anharmonicity",
     "unimon_hamiltonian",
+    "write_touchstone",
     "xmon_transmon",
 ]
 

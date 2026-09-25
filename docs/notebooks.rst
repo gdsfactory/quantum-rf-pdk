@@ -248,8 +248,14 @@ primary tooling lives in another environment.
 - :doc:`notebooks/matlab_integration` — Calls qpdk **directly from MATLAB** via MATLAB's
   built-in Python interface (`py.module.function(...)`). Demonstrates GDS generation,
   parameter sweeps over `resonator_frequency`, inverse design with `fzero`, and a
-  parametric chip variant grid summarised in a MATLAB `table`. The notebook uses the
-  MATLAB Jupyter kernel from `jupyter-matlab-proxy
+  parametric chip variant grid summarised in a MATLAB `table`. It then exports SAX
+  models as Touchstone files with ``qpdk.models.touchstone.write_touchstone`` and
+  consumes them from MATLAB's `RF Toolbox
+  <https://se.mathworks.com/help/rf/index.html>`_ as ``sparameters``/``nport`` boxes —
+  Smith charts, group delay, cascades in a ``circuit``, rational fitting and transient
+  response. Those sections need the RF Toolbox and skip themselves when it is
+  unavailable or when ``QPDK_SKIP_RF_TOOLBOX`` is set. The notebook uses the MATLAB
+  Jupyter kernel from `jupyter-matlab-proxy
   <https://github.com/mathworks/jupyter-matlab-proxy>`_.
 
 .. _notebook-extras:
@@ -430,7 +436,7 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - ``models``, ``circulax``
     - - :doc:`notebooks/matlab_integration`
       - External integration
-      - MATLAB, jupyter-matlab-proxy
+      - MATLAB, RF Toolbox (optional), jupyter-matlab-proxy
       - ``models``
 
 ************
