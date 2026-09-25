@@ -1,22 +1,17 @@
-"""Build a minimal COMSOL 3D geometry project from a QPDK layout, via MPh.
+"""QPDK COMSOL models built on MPh.
 
-This is the geometry milestone only. It imports the M1 metal polygons extracted
-by :mod:`qpdk.simulation.comsol_layout` (holes preserved) into a COMSOL work
-plane and extrudes them to a metal thickness. No RF physics, materials, ports,
-or studies are added: an unsolved geometry project is not an RF simulation.
+:class:`~qpdk.simulation.comsol_model.COMSOL` extends MPh's model with QPDK
+layout, study, and mesh methods. This module also builds unsolved extruded metal
+geometry from a :class:`~qpdk.simulation.comsol_layout.ComsolLayout`; the sheet
+builder for RF and electrostatic studies lives in :mod:`qpdk.simulation.comsol_sheet`.
 
-The builder is layout-agnostic: a CPW feedline and an unfed qubit cell both
-become extruded metal. It does not infer a Josephson junction from layout data.
-
-The MPh model is returned so a user can add the physics and study that fit
-their problem. Feed port coordinates stay on the
-:class:`~qpdk.simulation.comsol_layout.ComsolLayout` that was passed in; this
-module never claims a port was assigned in physics. See the COMSOL notebooks
-for complete layout and client setup.
+See the `MPh repository <https://github.com/MPh-py/MPh>`_ and
+`MPh documentation <https://mph.readthedocs.io/en/stable/>`_.
 """
 
 from __future__ import annotations
 
+import importlib
 import math
 from typing import TYPE_CHECKING, Any
 
@@ -119,6 +114,15 @@ def build_comsol_metal_model(
     return model
 
 
-# Kept for the CPW resonator notebook and any existing caller; the builder is
-# layout-agnostic, so this is the same object, not a wrapper.
-build_comsol_cpw_model = build_comsol_metal_model
+def __getattr__(name: str) -> Any:
+    """Import a public name that needs MPh only when it is asked for.
+
+    Returns:
+        The requested attribute.
+
+    Raises:
+        AttributeError: If ``name`` is not part of this module's public API.
+    """
+    if name == "COMSOL":
+        return importlib.import_module("qpdk.simulation.comsol_model").COMSOL
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

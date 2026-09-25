@@ -1,41 +1,12 @@
-r"""Build a QPDK COMSOL model that holds metal as sheets at the z = 0 interface.
+r"""Build air and silicon domains with QPDK metal sheets at their interface.
 
-The layout's metal polygons go on a work plane embedded at the silicon/air
-interface instead of being extruded, so the unioned model holds two dielectric
-domains, air above the plane and silicon below it, and one face per metal
-region. That is the representation that meshed and solved cleanly for the QPDK
-double-pad transmon; thin extruded solids did not.
-
-A layout without holes keeps the original sequence: the two blocks, a work plane
-holding the metal polygons, and Form Union, which already leaves one face per
-polygon. The solved qubit capacitance models were built that way, so it is left
-alone.
-
-A layout with holes needs more, and needs the Design Module, because Form Union
-drops the hole edges and a work plane on its own does not imprint them either:
-
-1. The two blocks are unioned with the interface kept as an interior boundary,
-   so the face to imprint on exists before anything is drawn on it.
-2. A geometry ``BoxSelection`` picks that one interior face.
-3. The work plane holds the metal polygons and is marked as construction
-   geometry, so its faces are a tool rather than an object Form Union has to
-   take apart.
-4. ``ProjectToFaces`` projects every face of every metal object onto the selected
-   interface and imprints its outline, holes included, before Form Union
-   finalizes the sequence.
-
-Two earlier attempts failed on a live 6.3 build with the same symptom, a point
-inside a hole resolving to the metal face: partitioning every face against the
-work plane before the union, and partitioning the interface with the work plane
-as the tool. A work plane coplanar with the face it should cut does not split it
-along its drawn edges, which is why the metal is projected instead. A layout
-with holes is checked after the geometry runs: a point inside each metal polygon
-has to resolve to its own interface face, and a point inside each hole has to
-resolve to a further face of its own.
-
-Each domain gets a Box selection and a Common material. No physics, mesh, or
-study is added: see
-:func:`~qpdk.simulation.comsol_capacitance.add_qubit_capacitance_study`.
+The metal polygons are faces at ``z = 0``. Layouts without holes use a work
+plane and Form Union. Layouts with holes use the Design Module's
+``ProjectToFaces`` to imprint each outline and hole onto the interface; the
+builder checks that those faces survived. Air and silicon get named selections
+and materials. Physics and studies are added separately by
+:func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` or
+:func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`.
 """
 
 from __future__ import annotations
@@ -43,7 +14,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any
 
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point as ShapelyPoint, Polygon
 from shapely.geometry.base import BaseGeometry
 
 from qpdk.simulation.comsol import _add_polygon, _format_number
@@ -51,7 +22,7 @@ from qpdk.simulation.comsol import _add_polygon, _format_number
 if TYPE_CHECKING:
     import mph
 
-    from qpdk.simulation.comsol_layout import ComsolLayout
+    from qpdk.simulation.comsol_layout import ComsolLayout, Point
 
 #: Domain selection tags, reused by the physics added on top of this model.
 AIR_SELECTION = "air"
@@ -247,7 +218,7 @@ def _project_interface(geometry: Any, objects: tuple[str, ...]) -> None:
 def _face_probe(
     component: Any,
     tag: str,
-    point: tuple[float, float],
+    point: Point,
     region: BaseGeometry,
     z_half_extent_um: float,
 ) -> tuple[int, ...]:
@@ -261,7 +232,7 @@ def _face_probe(
     Returns:
         The entities the selection resolved to, as COMSOL reports them.
     """
-    room = region.boundary.distance(Point(point))
+    room = region.boundary.distance(ShapelyPoint(point))
     half_width = min(_PROBE_MAX_HALF_WIDTH_UM, _PROBE_BOUNDARY_FRACTION * room)
     half_height = min(half_width, z_half_extent_um)
     component.selection().create(tag, "Box")

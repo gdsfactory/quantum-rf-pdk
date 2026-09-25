@@ -4,8 +4,9 @@ The study talks to COMSOL through MPh, which is not installed here, so a small
 fake of the Java tree answers ``entities()`` for a Box selection from a map of
 which face sits at which point. That keeps the tests on behaviour: that a point
 picks the face under it, that a point which picks nothing or picks a face
-already taken is refused, and that the terminal, grounds, mesh, and study are
-wired but not run.
+already taken is refused, that the conductor tags have to name a terminal and a
+ground each, and that the terminal, grounds, mesh, and study are wired but not
+run.
 """
 
 from __future__ import annotations
@@ -17,10 +18,8 @@ import pytest
 
 from qpdk.simulation import comsol_capacitance
 from qpdk.simulation.comsol_capacitance import (
-    GROUND_SELECTION,
-    LEFT_PAD_SELECTION,
-    RIGHT_PAD_SELECTION,
-    add_qubit_capacitance_study,
+    add_capacitance_study,
+    add_electrostatics,
 )
 from qpdk.simulation.comsol_layout import (
     ComsolBoundingBox,
@@ -29,10 +28,13 @@ from qpdk.simulation.comsol_layout import (
 )
 from qpdk.simulation.comsol_sheet import AIR_SELECTION, SILICON_SELECTION
 
-_LEFT_PAD = (-132.5, 0.0)
-_RIGHT_PAD = (132.5, 0.0)
+_DRIVE = (-132.5, 0.0)
+_SENSE = (132.5, 0.0)
 _GROUND = (300.0, 200.0)
-_FACES = {_LEFT_PAD: [3], _RIGHT_PAD: [4], _GROUND: [5]}
+_CONDUCTORS = (("drive", _DRIVE), ("sense", _SENSE), ("gnd", _GROUND))
+_TERMINAL = "drive"
+_GROUNDS = ("sense", "gnd")
+_FACES = {_DRIVE: [3], _SENSE: [4], _GROUND: [5]}
 _LAYOUT = ComsolLayout(
     polygons=tuple(
         ComsolPolygon(
@@ -43,7 +45,7 @@ _LAYOUT = ComsolLayout(
                 (x - 10, y + 10),
             )
         )
-        for x, y in (_LEFT_PAD, _RIGHT_PAD, _GROUND)
+        for x, y in (_DRIVE, _SENSE, _GROUND)
     ),
     feed_ports=(),
     bbox=ComsolBoundingBox(xmin=-200, ymin=-20, xmax=320, ymax=220),
@@ -188,38 +190,36 @@ def _model(faces: dict[tuple[float, float], list[int]] | None = None) -> MagicMo
 
 
 def _study(model: MagicMock, **overrides: Any) -> MagicMock:
-    """Add the capacitance study with default points.
+    """Add the capacitance study with default conductors.
 
     Returns:
         The model double.
     """
     arguments: dict[str, Any] = {
         "layout": _LAYOUT,
-        "left_pad_point": _LEFT_PAD,
-        "right_pad_point": _RIGHT_PAD,
-        "ground_point": _GROUND,
+        "conductors": _CONDUCTORS,
+        "terminal": _TERMINAL,
+        "grounds": _GROUNDS,
     }
     arguments.update(overrides)
-    return add_qubit_capacitance_study(model, **arguments)
+    return add_capacitance_study(model, **arguments)
 
 
-def test_three_metal_faces_are_selected_by_point():
+def _assert_comsol_untouched(model: MagicMock) -> None:
+    """Assert nothing on the model reached the Java tree."""
+    assert model.java.component_tags == []
+    assert model.java.study.created == []
+
+
+def test_each_conductor_point_becomes_a_box_selection():
     """Each conductor point becomes a Box selection on the sheet plane."""
     model = _model()
     _study(model)
     assert model.java.component_tags == ["comp1"]
     component = model.java.component("comp1")
 
-    assert component.created == [
-        (LEFT_PAD_SELECTION, "Box"),
-        (RIGHT_PAD_SELECTION, "Box"),
-        (GROUND_SELECTION, "Box"),
-    ]
-    for tag, point in (
-        (LEFT_PAD_SELECTION, _LEFT_PAD),
-        (RIGHT_PAD_SELECTION, _RIGHT_PAD),
-        (GROUND_SELECTION, _GROUND),
-    ):
+    assert component.created == [(tag, "Box") for tag, _ in _CONDUCTORS]
+    for tag, point in _CONDUCTORS:
         box = component.selection(tag).properties
         assert box["entitydim"] == "2"
         assert box["condition"] == "intersects"
@@ -228,7 +228,7 @@ def test_three_metal_faces_are_selected_by_point():
         assert _mid(box["zmin"], box["zmax"]) == pytest.approx(0.0)
 
 
-def test_a_layout_with_a_fourth_metal_polygon_is_refused():
+def test_a_layout_with_an_extra_metal_polygon_is_refused():
     """An unassigned metal polygon would be solved as a dielectric interface."""
     stray = ComsolPolygon(
         outline=((500.0, 300.0), (520.0, 300.0), (520.0, 320.0), (500.0, 320.0))
@@ -250,15 +250,26 @@ def test_a_layout_with_a_fourth_metal_polygon_is_refused():
 def test_a_point_that_selects_no_face_is_refused():
     """A point in a pad gap must not quietly leave an electrode unassigned."""
     model = _model({**_FACES, (0.0, 0.0): []})
+    conductors = (("drive", _DRIVE), ("sense", _SENSE), ("gnd", (0.0, 0.0)))
     with pytest.raises(ValueError, match="inside exactly one metal polygon"):
-        _study(model, ground_point=(0.0, 0.0))
+        _study(model, conductors=conductors)
     assert model.java.study.created == []
 
 
 def test_a_gap_point_is_refused_even_when_comsol_returns_a_dielectric_face():
     model = _model({**_FACES, (0.0, 0.0): [9]})
+    conductors = (("drive", _DRIVE), ("sense", _SENSE), ("gnd", (0.0, 0.0)))
     with pytest.raises(ValueError, match="inside exactly one metal polygon"):
-        _study(model, ground_point=(0.0, 0.0))
+        _study(model, conductors=conductors)
+    assert model.java.study.created == []
+
+
+def test_two_conductor_points_in_the_same_polygon_are_refused():
+    """Two conductors on one polygon would leave that polygon's other face out."""
+    model = _model()
+    conductors = (("drive", _DRIVE), ("sense", (-132.5, 5.0)), ("gnd", _GROUND))
+    with pytest.raises(ValueError, match="different metal polygons"):
+        _study(model, conductors=conductors)
     assert model.java.study.created == []
 
 
@@ -270,14 +281,14 @@ def test_a_point_that_selects_two_faces_is_refused():
 
 
 def test_two_points_on_the_same_face_are_refused():
-    """Grounding the same face twice would short the two pads."""
+    """Grounding the same face twice would short two conductors together."""
     model = _model({**_FACES, _GROUND: [3]})
-    with pytest.raises(ValueError, match="three different faces"):
+    with pytest.raises(ValueError, match="different faces"):
         _study(model)
 
 
-def test_electrostatics_drives_the_left_pad_and_grounds_the_rest():
-    """The terminal is a voltage source and both other faces are grounded."""
+def test_electrostatics_drives_the_terminal_and_grounds_the_rest():
+    """The terminal is a voltage source and the other conductors are grounded."""
     model = _model()
     _study(model, voltage_v=0.5)
     physics = model.java.component("comp1").physics
@@ -292,12 +303,33 @@ def test_electrostatics_drives_the_left_pad_and_grounds_the_rest():
     ]
     assert electrostatics.feature("ccSi").named_tags == [SILICON_SELECTION]
     terminal = electrostatics.feature("term1")
-    assert terminal.named_tags == [LEFT_PAD_SELECTION]
+    assert terminal.named_tags == [_TERMINAL]
     assert terminal.properties["TerminalType"] == "Voltage"
     assert terminal.properties["V0"] == "0.5[V]"
-    assert electrostatics.feature("gnd1").named_tags == [RIGHT_PAD_SELECTION]
-    assert electrostatics.feature("gnd2").named_tags == [GROUND_SELECTION]
+    assert electrostatics.feature("gnd1").named_tags == [_GROUNDS[0]]
+    assert electrostatics.feature("gnd2").named_tags == [_GROUNDS[1]]
     assert "V0" not in electrostatics.feature("gnd1").properties
+
+
+def test_add_electrostatics_grounds_every_selection_it_is_given():
+    """The public helper adds one Ground feature per grounded selection."""
+    component = _Component(_FACES)
+    add_electrostatics(
+        component, terminal="drive", grounds=("a", "b", "c"), voltage_v=1.0
+    )
+    electrostatics = component.physics("es")
+
+    assert electrostatics.created == [
+        ("ccSi", "ChargeConservation", 3),
+        ("term1", "Terminal", 2),
+        ("gnd1", "Ground", 2),
+        ("gnd2", "Ground", 2),
+        ("gnd3", "Ground", 2),
+    ]
+    assert electrostatics.feature("term1").named_tags == ["drive"]
+    assert [
+        electrostatics.feature(f"gnd{index}").named_tags[0] for index in (1, 2, 3)
+    ] == ["a", "b", "c"]
 
 
 def test_the_dielectric_selections_are_left_to_the_sheet_model():
@@ -306,11 +338,7 @@ def test_the_dielectric_selections_are_left_to_the_sheet_model():
     _study(model)
     component = model.java.component("comp1")
 
-    assert set(component.selections) == {
-        LEFT_PAD_SELECTION,
-        RIGHT_PAD_SELECTION,
-        GROUND_SELECTION,
-    }
+    assert set(component.selections) == {tag for tag, _ in _CONDUCTORS}
     assert AIR_SELECTION not in component.selections
     assert SILICON_SELECTION not in component.selections
 
@@ -347,9 +375,36 @@ def test_returns_the_same_model():
         ({"mesh_size": 0}, "mesh_size"),
         ({"mesh_size": 10}, "mesh_size"),
         ({"mesh_size": "7"}, "mesh_size"),
-        ({"left_pad_point": (0.0, float("nan"))}, "left_pad_point"),
-        ({"right_pad_point": (0.0, 0.0, 0.0)}, "right_pad_point"),
-        ({"ground_point": (float("inf"), 0.0)}, "ground_point"),
+        (
+            {
+                "conductors": (
+                    ("drive", (0.0, float("nan"))),
+                    ("sense", _SENSE),
+                    ("gnd", _GROUND),
+                )
+            },
+            "drive",
+        ),
+        (
+            {
+                "conductors": (
+                    ("drive", (0.0, 0.0, 0.0)),
+                    ("sense", _SENSE),
+                    ("gnd", _GROUND),
+                )
+            },
+            "drive",
+        ),
+        (
+            {
+                "conductors": (
+                    ("drive", _DRIVE),
+                    ("sense", _SENSE),
+                    ("gnd", (float("inf"), 0.0)),
+                )
+            },
+            "gnd",
+        ),
     ],
 )
 def test_rejects_bad_arguments_before_touching_comsol(
@@ -360,8 +415,36 @@ def test_rejects_bad_arguments_before_touching_comsol(
     with pytest.raises(ValueError, match=match):
         _study(model, **overrides)
 
-    assert model.java.component_tags == []
-    assert model.java.study.created == []
+    _assert_comsol_untouched(model)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "match"),
+    [
+        (
+            {
+                "conductors": (("a", _DRIVE), ("a", _SENSE), ("gnd", _GROUND)),
+                "terminal": "a",
+                "grounds": ("gnd",),
+            },
+            "conductor tags must be unique",
+        ),
+        ({"terminal": "missing"}, "not one of the conductors"),
+        ({"grounds": ("sense", "missing")}, "not one of the conductors"),
+        ({"grounds": ("sense", "sense")}, "ground tags must be unique"),
+        ({"grounds": ("drive", "gnd")}, "must not also be grounded"),
+        ({"grounds": ("sense",)}, "neither the terminal nor a ground"),
+    ],
+)
+def test_rejects_tags_that_do_not_name_every_conductor(
+    overrides: dict[str, Any], match: str
+):
+    """Tags that leave a conductor unnamed are refused before COMSOL is touched."""
+    model = _model()
+    with pytest.raises(ValueError, match=match):
+        _study(model, **overrides)
+
+    _assert_comsol_untouched(model)
 
 
 def test_mph_is_not_imported_at_runtime():

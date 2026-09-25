@@ -1,15 +1,16 @@
-r"""Add a qubit capacitance study to a COMSOL model that uses metal sheets.
+r"""Add an electrostatic capacitance study to a COMSOL model that uses metal sheets.
 
 The model comes from
 :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`, where the metal
-is a set of faces on the silicon/air interface. This module picks three of those
-faces out with points inside them, drives the left pad with a voltage terminal,
-grounds the right pad and the ground plane, and adds a mesh sequence and a
-stationary study. Nothing is solved here.
+is a set of faces on the silicon/air interface. This module picks those faces out
+with points inside them, drives one of them with a voltage terminal, grounds the
+others, and adds a mesh sequence and a stationary study. Nothing is solved here,
+and nothing here is specific to a device: the caller names the conductors, which
+one is driven, and which are grounded.
 
 A solve gives electrostatic capacitance: ``es.C11`` is the capacitance of the
-left pad to the grounded rest of the chip, and the stored energy agrees with it,
-since :math:`2 W_e / V^2` equals ``es.C11``. It is not an RF Josephson
+driven conductor to the grounded rest of the chip, and the stored energy agrees
+with it, since :math:`2 W_e / V^2` equals ``es.C11``. It is not an RF Josephson
 eigenmode, and turning it into a qubit frequency needs an :math:`L_J` picked
 outside COMSOL: that LC estimate is not an eigensolve.
 """
@@ -29,11 +30,6 @@ if TYPE_CHECKING:
 
     from qpdk.simulation.comsol_layout import ComsolLayout, Point
 
-#: Face selection tags, one per conductor, matching the sheet model's plane.
-LEFT_PAD_SELECTION = "pad_l"
-RIGHT_PAD_SELECTION = "pad_r"
-GROUND_SELECTION = "gnd"
-
 #: Half-size in µm of the boxes that pick one metal face out of the plane. The
 #: metal lives on a single plane, so the box straddles ``z = 0``.
 _FACE_HALF_SIZE_UM = 0.01
@@ -47,6 +43,48 @@ def _require_point(point: Point, name: str) -> None:
     """
     if len(point) != 2 or not all(math.isfinite(value) for value in point):
         raise ValueError(f"{name} must be a finite (x, y) pair in µm, got {point!r}")
+
+
+def _require_conductor_tags(
+    conductors: tuple[tuple[str, Point], ...],
+    terminal: str,
+    grounds: tuple[str, ...],
+) -> None:
+    """Raise unless the tags name every conductor exactly once.
+
+    A tag that repeats, a terminal or ground that names no conductor, and a
+    conductor that is neither driven nor grounded are all refused: the first two
+    would point a terminal or a ground at a selection that does not exist, and
+    the third would leave that face as a dielectric interface, so the
+    capacitance would be for a geometry other than the one drawn.
+
+    Raises:
+        ValueError: If a conductor tag repeats, if the terminal or a ground is
+            not one of the conductors, if the terminal is also grounded, if two
+            grounds are the same tag, or if a conductor is neither driven nor
+            grounded.
+    """
+    tags = [tag for tag, _ in conductors]
+    if len(set(tags)) != len(tags):
+        raise ValueError(f"the conductor tags must be unique, got {tags}")
+    if terminal not in tags:
+        raise ValueError(
+            f"the terminal {terminal!r} is not one of the conductors {tags}"
+        )
+    if len(set(grounds)) != len(grounds):
+        raise ValueError(f"the ground tags must be unique, got {grounds}")
+    for ground in grounds:
+        if ground not in tags:
+            raise ValueError(
+                f"the ground {ground!r} is not one of the conductors {tags}"
+            )
+    if terminal in grounds:
+        raise ValueError(f"the terminal {terminal!r} must not also be grounded")
+    unnamed = [tag for tag in tags if tag != terminal and tag not in grounds]
+    if unnamed:
+        raise ValueError(
+            f"the conductors {unnamed} are neither the terminal nor a ground"
+        )
 
 
 def _add_face_selection(component: Any, tag: str, point: Point) -> tuple[int, ...]:
@@ -107,7 +145,8 @@ def _select_metal_faces(
             )
         if inside[0] in assigned:
             raise ValueError(
-                "the conductor points must lie in three different metal polygons"
+                f"the conductor points must lie in {len(conductors)} different "
+                "metal polygons"
             )
         assigned.add(inside[0])
 
@@ -122,43 +161,55 @@ def _select_metal_faces(
             )
     if len(set(faces.values())) != len(faces):
         raise ValueError(
-            f"the conductor points must select three different faces, got {faces}"
+            f"the conductor points must select {len(conductors)} different faces, "
+            f"got {faces}"
         )
 
 
-def _add_electrostatics(component: Any, voltage_v: float) -> None:
-    """Add Electrostatics with a voltage terminal and two grounded faces.
+def add_electrostatics(
+    component: Any,
+    *,
+    terminal: str,
+    grounds: tuple[str, ...],
+    voltage_v: float,
+) -> None:
+    """Add Electrostatics with one voltage terminal and a ground per selection.
 
     The interface covers every domain, so the default Free Space feature keeps
     the air, and a Charge Conservation feature on silicon uses that domain's
     material permittivity through the default ``epsilonr_mat``.
+
+    Args:
+        component: The Java component to add the physics to, usually ``comp1``.
+        terminal: Name of the face selection to drive with the voltage source.
+        grounds: Names of the face selections to ground, one Ground feature each.
+            The features are tagged ``gnd1``, ``gnd2``, and so on, in this order.
+        voltage_v: Terminal voltage in V, positive.
     """
     physics = component.physics().create("es", "Electrostatics", "geom1")
     physics.create("ccSi", "ChargeConservation", 3)
     physics.feature("ccSi").selection().named(SILICON_SELECTION)
 
     physics.create("term1", "Terminal", 2)
-    terminal = physics.feature("term1")
-    terminal.selection().named(LEFT_PAD_SELECTION)
-    # The default TerminalType is Charge, which would leave the pad floating.
-    terminal.set("TerminalType", "Voltage")
-    terminal.set("V0", f"{_format_number(voltage_v)}[V]")
+    terminal_feature = physics.feature("term1")
+    terminal_feature.selection().named(terminal)
+    # The default TerminalType is Charge, which would leave the face floating.
+    terminal_feature.set("TerminalType", "Voltage")
+    terminal_feature.set("V0", f"{_format_number(voltage_v)}[V]")
 
-    for tag, selection in (
-        ("gnd1", RIGHT_PAD_SELECTION),
-        ("gnd2", GROUND_SELECTION),
-    ):
+    for index, selection in enumerate(grounds, start=1):
+        tag = f"gnd{index}"
         physics.create(tag, "Ground", 2)
         physics.feature(tag).selection().named(selection)
 
 
-def add_qubit_capacitance_study(
+def add_capacitance_study(
     model: mph.Model,
     layout: ComsolLayout,
     *,
-    left_pad_point: Point,
-    right_pad_point: Point,
-    ground_point: Point,
+    conductors: tuple[tuple[str, Point], ...],
+    terminal: str,
+    grounds: tuple[str, ...],
     voltage_v: float = 1.0,
     mesh_size: int = 7,
 ) -> mph.Model:
@@ -170,10 +221,14 @@ def add_qubit_capacitance_study(
         layout: The metal polygons used to build that model. It must hold
             exactly one polygon per conductor; a metal polygon that no point
             names is refused rather than left as a dielectric interface.
-        left_pad_point: Point in µm on the sheet plane, inside the pad to drive.
-            It centres a small box, so it has to sit clear of the pad's edges.
-        right_pad_point: Point in µm inside the pad to ground.
-        ground_point: Point in µm inside the ground plane.
+        conductors: One ``(tag, point)`` pair per metal face. The tag names the
+            face selection created on ``comp1``, and the point in µm on the sheet
+            plane has to sit inside that face. It centres a small box, so it has
+            to sit clear of the face's edges.
+        terminal: Tag of the conductor to drive with the voltage terminal.
+        grounds: Tags of the conductors to ground, in the order their Ground
+            features are tagged. Together with ``terminal`` they have to name
+            every conductor exactly once.
         voltage_v: Terminal voltage in V, positive.
         mesh_size: COMSOL mesh size, an integer from 1 (finest) to 9 (coarsest).
 
@@ -185,8 +240,9 @@ def add_qubit_capacitance_study(
     Raises:
         ValueError: If the voltage is not positive and finite, if the mesh size
             is not an integer in 1 to 9, if a point is not a finite (x, y) pair,
-            or if the layout, the polygons, or the points do not assign exactly
-            one distinct metal face to each conductor.
+            if the conductor tags do not name a terminal and a ground each, or
+            if the layout, the polygons, or the points do not assign exactly one
+            distinct metal face to each conductor.
     """
     if not math.isfinite(voltage_v) or voltage_v <= 0.0:
         raise ValueError(f"voltage_v must be positive and finite, got {voltage_v!r}")
@@ -195,21 +251,15 @@ def add_qubit_capacitance_study(
             "mesh_size must be an integer from 1 (finest) to 9 (coarsest), "
             f"got {mesh_size!r}"
         )
-    _require_point(left_pad_point, "left_pad_point")
-    _require_point(right_pad_point, "right_pad_point")
-    _require_point(ground_point, "ground_point")
+    _require_conductor_tags(conductors, terminal, grounds)
+    for tag, point in conductors:
+        _require_point(point, tag)
 
     component = model.java.component("comp1")
-    _select_metal_faces(
-        component,
-        layout,
-        (
-            (LEFT_PAD_SELECTION, left_pad_point),
-            (RIGHT_PAD_SELECTION, right_pad_point),
-            (GROUND_SELECTION, ground_point),
-        ),
+    _select_metal_faces(component, layout, conductors)
+    add_electrostatics(
+        component, terminal=terminal, grounds=grounds, voltage_v=voltage_v
     )
-    _add_electrostatics(component, voltage_v)
 
     mesh = component.mesh().create("mesh1", "geom1")
     mesh.autoMeshSize(mesh_size)

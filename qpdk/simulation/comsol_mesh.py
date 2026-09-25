@@ -6,7 +6,7 @@ metal plane, to check that a solved quantity has stopped moving with mesh size.
 The sequence is the same in both, so it lives here once.
 
 The study builders (:func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` and
-:func:`~qpdk.simulation.comsol_capacitance.add_qubit_capacitance_study`) leave
+:func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`) leave
 ``mesh1`` physics-controlled. Running it once realizes that sizing; a ``Refine``
 feature then switches the sequence to user-controlled, and the second run meshes
 the refined box.
@@ -24,15 +24,11 @@ whose resolution has to follow a trace outline rather than cover a whole face.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
 from qpdk.simulation.comsol import _format_number
-from qpdk.simulation.comsol_capacitance import (
-    GROUND_SELECTION,
-    LEFT_PAD_SELECTION,
-    RIGHT_PAD_SELECTION,
-)
 
 if TYPE_CHECKING:
     import mph
@@ -83,7 +79,7 @@ def refine_metal_plane_mesh(
     Args:
         model: A model carrying ``comp1``/``mesh1`` from
             :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` or
-            :func:`~qpdk.simulation.comsol_capacitance.add_qubit_capacitance_study`.
+            :func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`.
         layout: The layout the model was built from. Its bounding box sets the
             refine box unless ``refine_box`` is given.
         passes: Number of refinement passes, a non-negative integer. ``0`` meshes
@@ -230,10 +226,7 @@ def pin_absolute_mesh_sizes(
     *,
     global_hmax_um: float,
     global_hmin_um: float,
-    pad_hmax_um: float,
-    pad_hmin_um: float,
-    ground_hmax_um: float,
-    ground_hmin_um: float,
+    face_sizes: Mapping[str, tuple[float, float]],
     hgrad: float | None = None,
     hcurve: float | None = None,
     hnarrow: float | None = None,
@@ -244,12 +237,12 @@ def pin_absolute_mesh_sizes(
     domain, so the near-metal resolution moves whenever the domain does. This
     helper runs that mesh once to materialise the sequence, then pins every size
     to an absolute value in µm: the default ``Size`` feature takes the global
-    sizes, and one ``Size`` feature per conductor takes the pad and ground sizes
-    on the existing named selections. The sequence is left user-controlled, so a
-    later build or solve cannot re-derive the sizing.
+    sizes, and one ``Size`` feature per entry of ``face_sizes`` takes the local
+    sizes on the named face selection that entry is keyed by. The sequence is
+    left user-controlled, so a later build or solve cannot re-derive the sizing.
 
-    A ``Size`` feature only affects the operation features after it, so the
-    conductor sizes have to sit between the default size and the generator. The
+    A ``Size`` feature only affects the operation features after it, so the face
+    sizes have to sit between the default size and the generator. The
     construction builds that order and refuses to mesh if the sequence comes out
     any other way, rather than silently meshing something else. The generated
     FreeTet of the physics-controlled sequence does not survive an edit, and when
@@ -260,16 +253,14 @@ def pin_absolute_mesh_sizes(
 
     Args:
         model: A model carrying ``comp1``/``mesh1`` from
-            :func:`~qpdk.simulation.comsol_capacitance.add_qubit_capacitance_study`,
-            including the ``pad_l``, ``pad_r`` and ``gnd`` face selections that
-            study creates.
+            :func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`,
+            including the face selections that study creates.
         global_hmax_um: Largest element size in µm away from the metal, positive
             and finite.
         global_hmin_um: Smallest element size in µm away from the metal.
-        pad_hmax_um: Largest element size in µm on the two pad faces.
-        pad_hmin_um: Smallest element size in µm on the two pad faces.
-        ground_hmax_um: Largest element size in µm on the ground faces.
-        ground_hmin_um: Smallest element size in µm on the ground faces.
+        face_sizes: ``(hmax, hmin)`` element sizes in µm keyed by the name of a
+            face selection on ``comp1``, one ``Size`` feature each, tagged
+            ``size_`` followed by the selection name.
         hgrad: Maximum element growth rate for the global sizes.
         hcurve: Curvature resolution for the global sizes, in elements per radian.
         hnarrow: Narrow region resolution for the global sizes.
@@ -286,12 +277,11 @@ def pin_absolute_mesh_sizes(
     for name, value in (
         ("global_hmax_um", global_hmax_um),
         ("global_hmin_um", global_hmin_um),
-        ("pad_hmax_um", pad_hmax_um),
-        ("pad_hmin_um", pad_hmin_um),
-        ("ground_hmax_um", ground_hmax_um),
-        ("ground_hmin_um", ground_hmin_um),
     ):
         _require_positive(name, value)
+    for selection, (hmax_um, hmin_um) in face_sizes.items():
+        _require_positive(f"face_sizes[{selection!r}] hmax", hmax_um)
+        _require_positive(f"face_sizes[{selection!r}] hmin", hmin_um)
     for name, value in (("hgrad", hgrad), ("hcurve", hcurve), ("hnarrow", hnarrow)):
         if value is not None:
             _require_positive(name, value)
@@ -321,30 +311,32 @@ def pin_absolute_mesh_sizes(
     )
 
     # A new feature is inserted after the current one and then becomes current, so
-    # parking the cursor on the default size puts the conductor sizes between it
-    # and everything that follows, in the order they are created.
+    # parking the cursor on the default size puts the face sizes between it and
+    # everything that follows, in the order they are created.
     sequence.current(DEFAULT_SIZE_TAG)
-    conductor_sizes = (
-        ("size_pad_l", LEFT_PAD_SELECTION, pad_hmax_um, pad_hmin_um),
-        ("size_pad_r", RIGHT_PAD_SELECTION, pad_hmax_um, pad_hmin_um),
-        ("size_gnd", GROUND_SELECTION, ground_hmax_um, ground_hmin_um),
-    )
-    for tag, selection, hmax_um, hmin_um in conductor_sizes:
+    last_size_tag = DEFAULT_SIZE_TAG
+    for selection, (hmax_um, hmin_um) in face_sizes.items():
+        tag = f"size_{selection}"
         sequence.create(tag, "Size")
         feature = sequence.feature(tag)
         feature.selection().named(selection)
         _set_size(feature, hmax_um, hmin_um)
+        last_size_tag = tag
 
     # The generated generator is swept first, so the one created below lands after
     # the last Size feature rather than after a feature about to disappear.
     _drop_generated_free_tet(sequence)
-    sequence.current(conductor_sizes[-1][0])
+    sequence.current(last_size_tag)
     sequence.create(FREE_TET_TAG, "FreeTet")
     # Swept again: a build that kept the generated generator through the create
     # would otherwise leave two of them, and the domains would be meshed twice.
     _drop_generated_free_tet(sequence)
 
-    desired = (DEFAULT_SIZE_TAG, *(tag for tag, *_ in conductor_sizes), FREE_TET_TAG)
+    desired = (
+        DEFAULT_SIZE_TAG,
+        *(f"size_{selection}" for selection in face_sizes),
+        FREE_TET_TAG,
+    )
     observed = tuple(sequence.feature().tags())
     if observed != desired:
         raise RuntimeError(

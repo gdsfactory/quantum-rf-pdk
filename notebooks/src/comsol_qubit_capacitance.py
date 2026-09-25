@@ -25,116 +25,68 @@
 # uv sync --extra comsol         # from a checkout of this repository
 # ```
 #
-# Installing the extra installs `MPh`, the Python client for COMSOL, and nothing
-# else. **It does not install COMSOL and it does not grant a license.** Running
-# the model build and the electrostatic solve needs a local COMSOL installation
-# and a license. Google Colab has neither, so the build cells cannot run there.
-#
-# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
+# The extra installs `MPh`, the Python client for COMSOL, and nothing else: it does not install
+# COMSOL or grant a license, so the build and solve cells need a local installation and cannot
+# run on Colab. See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# This notebook extracts the two capacitor pads of a QPDK double-pad transmon,
-# builds a COMSOL sheet model around them, solves the electrostatic problem, and
-# reads back the pad capacitance and stored energy.
+# This notebook extracts the two capacitor pads of a QPDK double-pad transmon, builds a COMSOL
+# sheet model around them, runs a stationary **Electrostatics** solve, and reads back the pad
+# capacitance, the stored energy, and the potential and field on a cut plane. The figures and
+# numbers below are **saved cell outputs** of licensed solves, reproduced with `RUN_COMSOL = True`
+# on a licensed machine; without a license the COMSOL cells are skipped and the cells that read
+# results print how to supply them instead.
 #
-# ## How this page is published
+# ## What is modelled, and what is solved
 #
-# The figures and numbers on this page are **saved cell outputs**. The numerical
-# data comes from licensed COMSOL solves; the plotting cells were rerun against
-# those exports and saved in the committed notebook. The documentation renders
-# that copy rather than running the cells again.
+# The device is a QPDK {py:func}`~qpdk.cells.transmon.double_pad_transmon_with_bbox`: two
+# rectangular pads separated by a small gap, with a SQUID loop at the centre. The pads dominate the
+# total capacitance $C$ and the SQUID supplies the Josephson energy $E_J$, so the qubit transition
+# frequency is set by $E_J$ and the charging energy $E_C = e^2 / 2C$
+# {cite:p}`kochChargeinsensitiveQubitDesign2007a`. The pads are joined **only** through the
+# Josephson junction, and the junction layers (`JJ_AREA`, `JJ_PATCH`) are oxide barriers rather
+# than metal shorts, so the extraction works on an **EM-only copy** with those layers removed: the
+# SQUID loop and its leads are absent from the solved geometry.
 #
-# The whole path is scripted, so a licensed machine reproduces it end to end by
-# setting `RUN_COMSOL = True`. Without a license the notebook still runs from top
-# to bottom: the COMSOL cells are skipped, and every cell that reads results
-# prints how to supply them instead of plotting. On a fresh machine with neither
-# a license nor exported results you will therefore see the stored figures in the
-# documentation, but a local run prints skip messages rather than plots. To
-# replot locally, either export the files with `RUN_COMSOL = True`, or set
-# `RESULTS_DIR` to a directory that already holds an exported copy.
-#
-# ## What is being modelled
-#
-# The device is a QPDK
-# {py:func}`~qpdk.cells.transmon.double_pad_transmon_with_bbox`: two rectangular
-# capacitor pads separated by a small gap, with a SQUID loop at the centre. The
-# pads dominate the total capacitance $C$, and the SQUID supplies the Josephson
-# energy $E_J$, so the qubit transition frequency is set by $E_J$ and the
-# charging energy $E_C = e^2 / 2C$ {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
-#
-# In the real device the pads are joined **only** through the Josephson
-# junction. The QPDK cell draws the SQUID's leads and contact patches on
-# `JJ_AREA` and `JJ_PATCH`, and those oxide barriers are not metal shorts. The
-# extraction here works on an **EM-only copy** with those two layers removed, so
-# the SQUID loop and its leads are not part of the solved geometry and their
-# parasitic inductance and capacitance are omitted. What remains is the two pads
-# and the surrounding ground plane, which is exactly what the pad capacitance
-# needs.
-#
-# ## What the solve is, and what it is not
-#
-# The physics added is **Electrostatics**, not electromagnetic waves:
-#
-# - The left pad is driven by a voltage terminal, and the right pad and the
-#   ground plane are held at ground.
-# - The solve returns `es.C11`, the capacitance of the driven pad to the grounded
-#   rest of the chip, and `es.intWe`, the stored electric energy. The two agree,
-#   since $2 W_e / V^2 = C_{11}$, the standard relation between the energy stored
-#   in the field and the capacitance of the conductors {cite:p}`m.pozarMicrowaveEngineering2012`.
-#
-# This is a **quasi-static capacitance extraction**. It says nothing about a
-# resonance, because there is no resonant element in the model: no Josephson
-# inductance is present, and the metal is a perfect conductor.
-#
-# The cells below run this pipeline, in this order:
+# On that geometry the model adds **Electrostatics**, not electromagnetic waves: a voltage terminal
+# drives the left pad, and the right pad and the chip ground plane are held at ground. The solve
+# returns `es.C11`, the capacitance of the driven pad to the grounded rest of the chip, and
+# `es.intWe`, the stored electric energy, which agree through $2 W_e / V^2 = C_{11}$
+# {cite:p}`m.pozarMicrowaveEngineering2012`. This is a **quasi-static capacitance extraction**: the
+# metal is a perfect conductor and there is no Josephson inductance, so no resonance is solved.
 #
 # ::::{only} html
 # ```{mermaid}
-# flowchart TB
-#     A["Transmon cell:<br>two pads with a SQUID loop"]
-#     B["EM-only copy:<br>JJ_AREA and JJ_PATCH removed"]
-#     C["Extracted layout:<br>two pad polygons and the ground plane"]
-#     D["Sheet model:<br>air above, silicon below, metal faces at z = 0"]
-#     E["Electrostatics:<br>voltage terminal on the left pad,<br>ground on the right pad and the chip ground"]
-#     F["Mesh and stationary study"]
-#     G["Results:<br>es.C11, es.intWe, and the V and es.normE export"]
-#     A --> B --> C --> D --> E --> F --> G
+# flowchart LR
+#     A["Transmon cell"] --> B["EM-only copy"] --> C["Extracted layout"] --> D["Sheet model"] --> E["Electrostatics"] --> F["Mesh, stationary solve"] --> G["C11, intWe, V, normE"]
 # ```
 # ::::
 #
 # ::::{only} typst or typstpdf
-# The pipeline: the transmon cell, then an EM-only copy with `JJ_AREA` and
-# `JJ_PATCH` removed, then the extracted layout of two pad polygons and the
-# ground plane, then the sheet model with air above and silicon below, then an
-# Electrostatics interface with a voltage terminal on the left pad and ground on
-# the right pad and the chip ground, then the mesh and a stationary study, then
-# the capacitance, energy, and field results.
+# The pipeline: transmon cell; an EM-only copy with the junction layers removed; the extracted
+# layout of two pad polygons and the ground plane; the sheet model with air over silicon; an
+# Electrostatics interface driving the left pad with the rest grounded; the mesh and a stationary
+# solve; the capacitance, energy, and field results.
 # ::::
 #
 # ### The LC frequency is an estimate, not an eigenmode
 #
 # Given $C_{11}$ one can pick a Josephson inductance $L_J$ and form
-# $f_{LC} = 1 / (2 \pi \sqrt{L_J C_{11}})$. That number is an **estimate**: it uses
-# an inductance that is not in the COMSOL model, and it is neither a COMSOL
-# eigenfrequency nor the transmon $f_{01}$. A transmon is an anharmonic oscillator
-# whose spectrum follows from $E_J$ and $E_C$ treated as a quantum circuit, not
-# from a single linear LC resonance {cite:p}`blaisCircuitQuantumElectrodynamics2021`,
-# so the true $f_{01}$ also carries the $E_C$ anharmonic correction. QPDK's
-# scQubits notebook and {cite:p}`groszkowskiScqubitsPythonPackage2021` provide that
-# treatment. The value below is labelled an estimate wherever it appears.
+# $f_{LC} = 1 / (2 \pi \sqrt{L_J C_{11}})$. That number is an **estimate**: the inductance is
+# not in the COMSOL model, and it is neither a COMSOL eigenfrequency nor the transmon $f_{01}$.
+# A transmon is an anharmonic oscillator whose spectrum follows from $E_J$ and $E_C$ treated as
+# a quantum circuit, not from a single linear LC resonance
+# {cite:p}`blaisCircuitQuantumElectrodynamics2021`, so the true $f_{01}$ also carries the
+# $E_C$ anharmonic correction, which QPDK's scQubits notebook and
+# {cite:p}`groszkowskiScqubitsPythonPackage2021` provide.
 #
 # ::::{admonition} Reading the numbers on this page
 # :class: warning
 #
-# The capacitance and energy come from the licensed electrostatic solves below,
-# but they are not a validated device prediction. The metal is a perfect
-# conductor, the SQUID loop and leads are absent, and $C_{11}$ is a one-terminal
-# value rather than the two-pad differential capacitance that sets $E_C$. The
-# plots and tables further down show how far the value moves with the fineness of
-# the mesh, with the size of the solved box, and with the air above and the
-# silicon below the metal. Over the last tested mesh refinement at the chosen
-# 8000 µm / 1600 µm / 1600 µm box the one-terminal $C_{11}$ is stable to about
-# 0.05%, but that is an empirical last-step figure and not a rigorous error bound.
+# The capacitance and energy come from licensed electrostatic solves, but they are not a validated
+# device prediction: the SQUID loop and leads are absent, and $C_{11}$ is a one-terminal value
+# rather than the two-pad differential capacitance that sets $E_C$. The plots and tables below show
+# how far the value moves with the mesh, the solved box, and the air and silicon around the metal.
 # ::::
 #
 # **References:**
@@ -187,18 +139,16 @@ from matplotlib.patches import Polygon as MplPolygon
 from qpdk import PDK
 from qpdk.cells.transmon import double_pad_transmon_with_bbox
 from qpdk.config import PATH
-from qpdk.simulation import (
-    add_qubit_capacitance_study,
-    build_comsol_sheet_model,
-    pin_absolute_mesh_sizes,
-    prepare_comsol_layout,
-)
+from qpdk.simulation import prepare_comsol_layout
 from qpdk.tech import LAYER
 
 try:
     import mph
+
+    from qpdk.simulation import COMSOL
 except ImportError:
     mph = None
+    COMSOL = None
 
 PDK.activate()
 
@@ -308,10 +258,9 @@ print("Plot style: QPDK" if STYLE_SOURCE != "matplotlib defaults" else STYLE_SOU
 # %% [markdown]
 # ## Build the transmon cell and an EM-only copy
 #
-# `prepare_comsol_layout` rejects components carrying geometry on layers it does
-# not model, and the junction layers are among those. The simplification is made
-# explicit here: the cell is copied and `JJ_AREA` and `JJ_PATCH` are removed, so
-# only `M1_DRAW` and the `M1_ETCH` mask it is inverted from remain.
+# `prepare_comsol_layout` rejects components carrying geometry on layers it does not model, and
+# the junction layers are among those. The simplification is explicit: the cell is copied and
+# `JJ_AREA` and `JJ_PATCH` are removed, leaving `M1_DRAW` and the `M1_ETCH` mask it inverts.
 
 # %%
 component = double_pad_transmon_with_bbox(bbox_extension=200.0)
@@ -331,9 +280,9 @@ print("JJ_AREA/JJ_PATCH removed; M1_DRAW and M1_ETCH remain.")
 # %% [markdown]
 # ## Extract the COMSOL layout
 #
-# The qubit pads are not transmission-line ports, so the extraction is asked for
-# no feed ports. The etched moat is a *hole* in the ground-plane polygon; the two
-# pads sit inside it as separate metal polygons.
+# The qubit pads are not transmission-line ports, so the extraction is asked for no feed ports.
+# The etched moat is a *hole* in the ground-plane polygon; the pads sit inside it as separate
+# metal polygons.
 
 # %%
 layout = prepare_comsol_layout(em_component, feed_ports=None, ground_margin=100.0)
@@ -348,6 +297,17 @@ print(f"Prepared bbox (µm): {layout.bbox}")
 LEFT_PAD_POINT = (-132.5, 0.0)
 RIGHT_PAD_POINT = (132.5, 0.0)
 GROUND_POINT = (-500.0, 0.0)
+
+# The study names one face selection per conductor after these tags, so the mesh
+# sizes and the terminal and ground arguments below can name a face by tag.
+PAD_L_SELECTION = "pad_l"
+PAD_R_SELECTION = "pad_r"
+GROUND_SELECTION = "gnd"
+CONDUCTORS = (
+    (PAD_L_SELECTION, LEFT_PAD_POINT),
+    (PAD_R_SELECTION, RIGHT_PAD_POINT),
+    (GROUND_SELECTION, GROUND_POINT),
+)
 
 # %%
 fig, ax = plt.subplots(figsize=(6, 6))
@@ -408,49 +368,23 @@ plt.show()
 #
 # Three calls configure the model:
 #
-# - {py:func}`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model` creates the
-#   air and silicon blocks meeting at $z = 0$, imprints the layout metal on that
-#   interface as faces, and assigns materials ($\epsilon_r = 1$ air,
-#   $\epsilon_r = 11.7$ silicon).
-# - {py:func}`~qpdk.simulation.comsol_capacitance.add_qubit_capacitance_study`
-#   picks the two pad faces and the ground face with the points above, drives the
-#   left pad with a voltage terminal, grounds the right pad and the ground plane,
-#   and adds the mesh and a stationary study. The selection builder refuses a
-#   point that does not land on exactly one face, so a wrong point fails loudly
-#   instead of grounding the wrong area.
-# - {py:func}`~qpdk.simulation.comsol_mesh.pin_absolute_mesh_sizes` runs that
-#   mesh once and then replaces the sizing COMSOL derived from the physics with
-#   absolute element sizes in micrometres, on the whole model and on the two pads
-#   and the ground plane separately. A physics-controlled mesh scales its sizes
-#   with the longest dimension of the domain, so without this the near-metal
-#   resolution would move whenever the domain did. The domain series further down
-#   the page depends on the sizes staying put.
+# - {py:meth}`~qpdk.simulation.comsol_model.COMSOL.create_sheet` creates the air and silicon
+#   blocks meeting at $z = 0$, imprints the layout metal on that interface as faces, and assigns
+#   materials ($\epsilon_r$ of 1 for air and 11.7 for silicon).
+# - {py:meth}`~qpdk.simulation.comsol_model.COMSOL.add_capacitance_study` picks the pad and
+#   ground faces with the points in the cell above, drives the left pad with a voltage terminal,
+#   grounds the right pad and the ground plane, and adds the mesh and a stationary study. The
+#   selection builder refuses a point that lands on no face or on several, so a wrong point fails
+#   loudly instead of grounding the wrong area.
+# - {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_mesh_sizes` runs that mesh once,
+#   then replaces the sizing COMSOL derived from the physics with absolute element sizes in
+#   micrometres, so the near-metal resolution no longer moves with the domain.
 #
-# The main solve uses the base configuration the domain series further down also
-# starts from: 8000 µm of lateral margin, 1600 µm of silicon, 1600 µm of air, and
-# `MAIN_NEAR_METAL`, the finest `0.625/1.25` entry of `NEAR_METAL_SIZES`. Those
-# are the values of the constants below, and they are what the saved metrics
-# report and what the field map below shows.
-#
-# `mph.start(cores=...)` launches a local COMSOL process and attaches to it.
-# Only one MPh client can exist per Python process, and the call needs a COMSOL
-# installation and a license. The block is off by default so the notebook runs
-# without one; set `RUN_COMSOL = True` on a licensed machine to build, solve, and
-# save the model.
-#
-# `RUN_DOMAIN_STUDY` turns on the series further down this page. It builds and
-# solves one fresh model per case, with the element sizes pinned and one of the
-# lateral margin, the near-metal resolution, the substrate thickness, or the air
-# height moved away from the base case, so it needs `RUN_COMSOL = True` for the
-# client and costs a build, a mesh, and a solve per case. The cases with the
-# smallest near-metal elements are the expensive ones. It is off by default.
-#
-# `RESULTS_DIR` is where the cells that read results look for exported files. It
-# defaults to `None` so that a run without a license skips those cells, and to
-# `MODEL_DIR` when `RUN_COMSOL` is `True`, because the licensed branch below
-# exports into `MODEL_DIR`. Point it at any directory of exported files to replot
-# an existing run without starting COMSOL, for example
-# `RESULTS_DIR = Path("exports")`.
+# The constants in the next cell are the base configuration the saved metrics and field map report:
+# 8000 µm of lateral margin, 1600 µm of silicon, 1600 µm of air, and the finest `0.625/1.25` entry
+# of `NEAR_METAL_SIZES`. `mph.start(cores=...)` attaches to a local COMSOL process and needs a
+# license, so the block is off by default; `RUN_DOMAIN_STUDY` turns on the series further down, and
+# `RESULTS_DIR` is where the cells that read results look for exports.
 
 # %%
 RUN_COMSOL = False
@@ -500,31 +434,28 @@ if RUN_COMSOL and MPH_AVAILABLE:
         ground_hmax_um,
         ground_hmin_um,
     ) = NEAR_METAL_SIZES[MAIN_NEAR_METAL]
-    model = build_comsol_sheet_model(
+    model = COMSOL.create_sheet(
         client,
         layout,
         name="QPDK Double-Pad Transmon",
         substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
         air_height_um=AIR_HEIGHT_UM,
         lateral_margin_um=LATERAL_MARGIN_UM,
-    )
-    add_qubit_capacitance_study(
-        model,
-        layout,
-        left_pad_point=LEFT_PAD_POINT,
-        right_pad_point=RIGHT_PAD_POINT,
-        ground_point=GROUND_POINT,
+    ).add_capacitance_study(
+        conductors=CONDUCTORS,
+        terminal=PAD_L_SELECTION,
+        grounds=(PAD_R_SELECTION, GROUND_SELECTION),
         voltage_v=VOLTAGE_V,
         mesh_size=BASE_MESH_SIZE,
     )
-    element_count = pin_absolute_mesh_sizes(
-        model,
+    element_count = model.pin_absolute_mesh_sizes(
         global_hmax_um=GLOBAL_HMAX_UM,
         global_hmin_um=GLOBAL_HMIN_UM,
-        pad_hmax_um=pad_hmax_um,
-        pad_hmin_um=pad_hmin_um,
-        ground_hmax_um=ground_hmax_um,
-        ground_hmin_um=ground_hmin_um,
+        face_sizes={
+            PAD_L_SELECTION: (pad_hmax_um, pad_hmin_um),
+            PAD_R_SELECTION: (pad_hmax_um, pad_hmin_um),
+            GROUND_SELECTION: (ground_hmax_um, ground_hmin_um),
+        },
         hgrad=HGRAD,
         hcurve=HCURVE,
         hnarrow=HNARROW,
@@ -577,13 +508,10 @@ if RUN_COMSOL and MPH_AVAILABLE:
 # %% [markdown]
 # ### Exporting the potential and field map
 #
-# The potential and field map shown further down this page was written from the
-# main solved model above, on the main solve's domain with the near-metal element
-# sizes pinned, with COMSOL's Data export on a cut plane at $z = 1$ µm, carrying
-# the potential $V$ and the field norm `es.normE`. The same export is scripted
-# below: a `CutPlane` dataset over the $xy$ plane, then a `Data` result export
-# listing both expressions. It runs inside the licensed branch, next to the
-# solve, and writes into `MODEL_DIR`, where `RESULTS_DIR` picks it up.
+# The map further down was written from the solved model above, with COMSOL's Data export on a
+# cut plane at $z = 1$ µm carrying the potential $V$ and the field norm `es.normE`. The scripted
+# version below creates a `CutPlane` dataset over the $xy$ plane and a `Data` export listing
+# both expressions, writing into `MODEL_DIR` where `RESULTS_DIR` picks it up.
 
 # %%
 if RUN_COMSOL and MPH_AVAILABLE and model is not None:
@@ -603,20 +531,13 @@ if RUN_COMSOL and MPH_AVAILABLE and model is not None:
 # %% [markdown]
 # ## Saved capacitance result
 #
-# This cell replots the exported metrics from the electrostatic solve above.
-# `C11` is the capacitance of the driven pad to the grounded rest of the chip,
-# and the stored energy is checked against it through $2 W_e / V^2$. This
-# one-terminal $C_{11}$ does not by itself give the differential-mode capacitance
-# of the two floating pads, so it is not yet the transmon charging capacitance.
-#
-# The settings printed below are the ones the main solve actually used: 8000 µm of
-# lateral margin, 1600 µm of silicon and 1600 µm of air, and the absolute element
-# sizes that replaced COMSOL's physics-controlled sizing. They matter because
-# $C_{11}$ moves with both, and the series further down the page is what shows by
-# how much.
-#
-# With `RESULTS_DIR` unset, or set to a directory without the export, the cell
-# prints how to supply the file instead of a result.
+# This cell replots the exported metrics from the electrostatic solve: `C11`, and the stored
+# energy checked against it through $2 W_e / V^2$. The one-terminal $C_{11}$ does not by
+# itself give the differential-mode capacitance of the two floating pads, so it is not the
+# transmon charging capacitance. The settings printed alongside are the ones the main solve
+# used, which matter because $C_{11}$ moves with both the mesh and the box. With
+# `RESULTS_DIR` unset, or set to a directory without the export, the cell prints how to
+# supply the file instead of a result.
 
 # %%
 METRICS_JSON = "comsol_qubit_metrics.json"
@@ -667,11 +588,10 @@ else:
 # %% [markdown]
 # ### An LC frequency estimate
 #
-# With $C_{11}$ in hand, a Josephson inductance $L_J$ gives a rough scale for the
-# circuit frequency. **$L_J$ is not part of the COMSOL solve**, and $C_{11}$ is
-# not the two-pad differential capacitance. The resulting number only shows the
-# scale one would get from these illustrative circuit values; it is not an
-# eigenfrequency or the transmon $f_{01}$.
+# With $C_{11}$ in hand, a chosen Josephson inductance $L_J$ gives a rough scale for the
+# circuit frequency. **$L_J$ is not part of the COMSOL solve**, and $C_{11}$ is not the two-pad
+# differential capacitance, so the number only shows the scale these illustrative circuit
+# values would give, not an eigenfrequency or the transmon $f_{01}$.
 
 # %%
 LJ_H = 10e-9  # chosen, not solved for
@@ -687,29 +607,16 @@ else:
 # %% [markdown]
 # ## Saved potential and field map
 #
-# The exported field is the potential $V$ and the electric-field norm on the
-# $z = 1$ µm plane. The metal sheet lies at $z = 0$ and the plane sits just above
-# it, so the map shows the potential holding across the driven pad and the field
-# concentrating in the pad gap and along the pad edges. This map is from the main
-# solve: the 8000 µm margin domain with the near-metal element sizes pinned to
-# absolute values.
+# The exported field is the potential $V$ and the electric-field norm on the $z = 1$ µm plane,
+# from the main solve. The metal sheet lies at $z = 0$ and the plane sits just above it, so the
+# map shows the potential holding across the driven pad and the field concentrating in the pad
+# gap and along the pad edges.
 #
-# The exported plane spans that whole domain, out to ±8.5 mm, and on that
-# scale the 250 x 400 µm pads and their 15 µm gap are a dot. The map below is
-# therefore a **close-up**: `FIELD_LIMIT_X_UM` and `FIELD_LIMIT_Y_UM` frame both
-# pads and the gap between them, and the points outside that window are dropped
-# before anything is drawn. The rest of the window is the etched moat around the
-# pads; the grounded conductor is a frame further out, from ±457.5 µm in $x$ and
-# ±400 µm in $y$ to the edge of the prepared layout, so it lies outside this
-# close-up.
-#
-# The remaining nodes are resampled onto a regular display grid to draw the map.
-# That resampling is **display only**: it reads the solved field, it does not
-# re-solve, re-mesh, or smooth it. The grid step is about 2 µm, coarser than the
-# finest pinned near-metal size, so the map is drawn at display resolution rather
-# than at the mesh's, with the pad gap and the pad edges still several cells wide.
-# Contouring the crop's nodes directly would draw the same picture from an SVG
-# many megabytes larger, because the plot is saved as vector art.
+# The exported plane spans the whole domain, out to ±8.5 mm, where the 250 x 400 µm pads and
+# their 15 µm gap are a dot, so the map is a **close-up**: `FIELD_LIMIT_X_UM` and
+# `FIELD_LIMIT_Y_UM` frame both pads and the gap, and nodes outside are dropped. The rest of
+# the window is the etched moat, and the remaining nodes are resampled onto a display grid,
+# which is **display only**: it reads the solved field and does not re-solve or smooth it.
 
 # %%
 FIELD_TXT = "comsol_qubit_field.txt"
@@ -775,135 +682,50 @@ else:
     plt.show()
 
 # %% [markdown]
-# The potential is near its terminal value over the driven pad and falls to zero
-# across the gap to the grounded pad. Over the etched moat beyond the pads it sits
-# between the two, with no metal there to hold it at either. The field is
-# concentrated in that gap and at the pad edges, which is where the pad
-# capacitance mainly lives, and it is why the mesh has to resolve the gap and the
-# metal edges for the capacitance to converge. The close-up is what makes that gap
-# visible at all; on the full ±8.5 mm window of the export it would be a single
-# line.
+# The potential is near its terminal value over the driven pad and falls to zero across the
+# gap to the grounded pad; over the etched moat beyond the pads it sits between the two, with
+# no metal there to hold it at either. The field is concentrated in that gap and at the pad
+# edges, which is where the pad capacitance mainly lives and why the mesh has to resolve them
+# for the capacitance to settle. On the full ±8.5 mm window the gap would be a single line.
 
 # %% [markdown]
 # ## Domain and near-metal mesh study
 #
-# COMSOL's physics-controlled mesh sizes scale with the longest dimension of the
-# domain. A series that changes the domain therefore changes the near-metal
-# resolution with it, and nothing read off such a series can separate the two.
-# Every case below pins the element sizes to absolute values in micrometres
-# instead, so the domain can move while the mesh stays where it was put. The main
-# solve above is built the same way, so its number and the rows here are
-# comparable.
+# A physics-controlled mesh scales its sizes with the domain, so a series that changes the domain
+# changes the near-metal resolution with it. Every case below pins the element sizes to absolute
+# micrometres instead, as the main solve above does, so its number and the rows here are
+# comparable, and a mesh study alone cannot see the box, because refining elements does not move a
+# wall. Two effects are separated:
 #
-# ### Two questions, one set of cases
+# 1. **The finite box.** The sheet model surrounds the metal with two finite blocks, air above
+#    and silicon below, spanning the prepared layout box grown by `lateral_margin_um`. Their
+#    outer walls take the Electrostatics default for an exterior boundary, zero charge
+#    ($\mathbf{n} \cdot \mathbf{D} = 0$), so field that would have spread into a larger chip is
+#    turned back at a wall. The margin is therefore one of three lengths, with the air above and
+#    the silicon below the other two.
+# 2. **The near-metal element size.** The pad-to-ground capacitance lives in the field at the
+#    pad gap and the pad edges, so the element size there sets how well it is resolved.
 #
-# 1. **How much of $C_{11}$ comes from the finite box the model is solved in?**
-#    The model is not an open problem. The sheet model surrounds the metal with
-#    two finite blocks, air above and silicon below, both spanning the prepared
-#    layout box grown by `lateral_margin_um`. Their outer walls carry no explicit
-#    boundary condition, so they take the Electrostatics default for an exterior
-#    boundary, zero charge ($\mathbf{n} \cdot \mathbf{D} = 0$), and the ground
-#    plane itself reaches only 100 µm past the device bounding box. Field that
-#    would have spread out into a larger chip is turned back at a wall, and
-#    $C_{11}$ carries the signature of where that wall sits. The box is finite in
-#    all three directions, so the lateral margin is one of three lengths here:
-#    the air above the metal and the silicon below it are the other two.
-# 2. **How much of it comes from the near-metal element size?** The capacitance
-#    of a pad to the grounded rest of the chip lives in the field at the pad gap
-#    and the pad edges, so the element size on the pads and on the ground plane
-#    beside them sets how well that field is resolved.
+# A margin sweep alone cannot see the second effect unless the sizes are pinned. Every case calls
+# {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_mesh_sizes`, which runs the physics-controlled
+# build once, then writes absolute sizes into the sequence: `GLOBAL_HMAX_UM`/`GLOBAL_HMIN_UM` for
+# the bulk air and silicon, and one size per conductor on the pad and ground faces, so the sizing no
+# longer follows the domain. The five `NEAR_METAL_SIZES` settings run from `5/10` down to
+# `0.625/1.25`, keyed by the pad and ground `hmax` with every `hmin` a tenth of it; none is a
+# none is a converged mesh, and what the series measures is the step from each setting to the next
+# smaller one.
 #
-# A mesh study alone cannot see the first effect, because refining elements does
-# not move a wall. A margin sweep alone cannot see the second one cleanly unless
-# the element sizes are pinned, and a margin sweep on its own cannot see what the
-# air above the metal contributes either. The cases below do all of it in one
-# series: the margin moves with the near-metal size held fixed, the near-metal
-# size changes at margins that have already been solved, and the air height and
-# the substrate thickness move away from the base case, so the levers can be read
-# against each other.
+# The series walks the margin at a fixed near-metal setting, the near-metal ladder at margins already
+# solved, and the air height and substrate thickness away from the base case; `DOMAIN_CASES` lists
+# the exact cases, each one fresh model solved from scratch.
 #
-# ### How the sizes are pinned
-#
-# Every case calls
-# {py:func}`~qpdk.simulation.comsol_mesh.pin_absolute_mesh_sizes`, which runs the
-# physics-controlled build once to materialise the mesh sequence and then writes
-# absolute sizes into it: `GLOBAL_HMAX_UM` and `GLOBAL_HMIN_UM` for the bulk air
-# and silicon away from the metal, and one size per conductor on the two pad
-# faces and the ground face. The sequence is left user-controlled, so a later
-# build cannot re-derive the sizing from the domain. The growth rate `HGRAD`, the
-# curvature resolution `HCURVE`, and the narrow-region resolution `HNARROW` are
-# pinned with the sizes, so they do not move either.
-#
-# The near-metal sizes come in five settings, `NEAR_METAL_SIZES`, keyed by the pad
-# and ground `hmax`: `5/10` puts 5 µm elements on the pads and 10 µm on the ground
-# plane, `2.5/5` scales both by the same factor, and the settings run on down to
-# `0.625/1.25`. Every `hmin` is a tenth of its `hmax`. None of the five is a
-# converged mesh, and none is meant to be: what the series measures is the step
-# from each setting to the next smaller one, at element counts a licensed
-# workstation can still solve, and the finest settings are the slow ones.
-#
-# ### The cases
-#
-# Every case is one fresh model, solved from scratch and removed from the client
-# afterwards, so nothing carries over from another case. Each one keeps the
-# layout, the three conductor points, the 1 V terminal, the electrostatics, and
-# the base mesh size the helper starts from; the case itself sets the lateral
-# margin, the substrate thickness, the air height, and the near-metal setting.
-#
-# 1. **Lateral margin** at the `5/10` near-metal sizes, for 2400, 8000, and
-#    16000 µm, and at the `2.5/5` and `1.25/2.5` sizes for 8000 and 16000 µm.
-#    Plotted as $C_{11}$ against the margin.
-# 2. **Near-metal size** at 8000 and 16000 µm of margin for `5/10`, `2.5/5`, and
-#    `1.25/2.5`, and at 8000 µm of margin with 1600 µm of air for the four
-#    settings from `2.5/5` down to `0.625/1.25`. Plotted as $C_{11}$ against the
-#    mesh element count, and printed as the step from each setting to the next
-#    smaller one.
-# 3. **Air height and substrate thickness** at 8000 µm of margin and the `2.5/5`
-#    near-metal sizes: the air from 200 µm up to 3200 µm over 1600 µm of silicon,
-#    and the silicon from 1600 µm up to 3200 µm under 200 µm of air. Each series
-#    is printed against its own shortest row, and the value the rest of the
-#    geometry was held at is printed in the table title.
-#
-# The base case is the main solve's own configuration: 8000 µm of margin, 1600 µm
-# of silicon, and 1600 µm of air. The air ladder is read around that row, and the
-# substrate pair was solved under a shorter air column, so it forms a series of
-# its own rather than joining the base air group.
-#
-# The rows on disk are completed licensed solves, so every case of the series has
-# landed. The convergence reading is still the deltas printed for those rows
-# rather than a statement made here.
-#
-# ### What these cases show, and what they do not
-#
-# The tables below carry one set of deltas per series, and those deltas are the
-# reading: how far $C_{11}$ moves across the margins at a fixed mesh, from each
-# near-metal setting to the next finer one at a fixed domain, and from one air
-# height or substrate thickness to the next.
-#
-# Two things follow from the shape of the series rather than from any single row.
-# The margin series on its own cannot see what the air above the metal
-# contributes, because no margin case moves it, so a domain claim read off the
-# margins alone would miss it. And a value that is still moving with the near-metal
-# size or with the air height has not converged, whatever the margin does; the
-# deltas the tables print are where that is read off, and they are what shows the
-# finest near-metal step at this box has become small.
-#
-# A settled set of series is still not the transmon charging capacitance:
-# $C_{11}$ is the capacitance of the driven pad to the grounded rest of the chip,
-# not the differential capacitance of the two floating pads, and the SQUID and
-# its leads are missing from the geometry. It also says nothing about the peak
-# field at the metal edges, which stays mesh-limited at any domain size.
-#
-# The series is off by default. Set `RUN_DOMAIN_STUDY = True` alongside
-# `RUN_COMSOL = True`; it reuses the client the licensed branch already started,
-# because only one MPh client can exist per Python process. It costs a build, a
-# mesh, and a solve per case. A case that fails to build, mesh, or solve is
-# printed in full and left out of the rows, and the failed cases stay in the JSON
-# next to the rows that were written, so a gap is visible rather than silently
-# dropped. The JSON is rewritten after every case, so interrupting a long series
-# keeps the cases already solved.
+# The base case is the main solve's own configuration, 8000 / 1600 / 1600 µm, and the tables below
+# carry one set of deltas per series: those deltas, not a statement made here, are the reading. A
+# margin series alone cannot see what the air above the metal contributes, and a value still moving
+# with the near-metal size or the air height has not settled whatever the margin does. The series is
+# off by default: set `RUN_DOMAIN_STUDY = True` alongside `RUN_COMSOL = True`.
 
-# %%
+# %% tags=["hide-input"]
 DOMAIN_JSON = "comsol_qubit_domain_convergence.json"
 
 
@@ -1005,32 +827,29 @@ def run_qubit_domain_case(client: Any, case: DomainCase) -> dict[str, Any]:
     pad_hmax_um, pad_hmin_um, ground_hmax_um, ground_hmin_um = NEAR_METAL_SIZES[
         case.near_metal
     ]
-    temp_model = build_comsol_sheet_model(
+    temp_model = COMSOL.create_sheet(
         client,
         layout,
         name=f"QPDK transmon domain {domain_case_label(case)}",
         substrate_thickness_um=case.substrate_thickness_um,
         air_height_um=case.air_height_um,
         lateral_margin_um=case.lateral_margin_um,
+    ).add_capacitance_study(
+        conductors=CONDUCTORS,
+        terminal=PAD_L_SELECTION,
+        grounds=(PAD_R_SELECTION, GROUND_SELECTION),
+        voltage_v=VOLTAGE_V,
+        mesh_size=BASE_MESH_SIZE,
     )
     try:
-        add_qubit_capacitance_study(
-            temp_model,
-            layout,
-            left_pad_point=LEFT_PAD_POINT,
-            right_pad_point=RIGHT_PAD_POINT,
-            ground_point=GROUND_POINT,
-            voltage_v=VOLTAGE_V,
-            mesh_size=BASE_MESH_SIZE,
-        )
-        element_count = pin_absolute_mesh_sizes(
-            temp_model,
+        element_count = temp_model.pin_absolute_mesh_sizes(
             global_hmax_um=GLOBAL_HMAX_UM,
             global_hmin_um=GLOBAL_HMIN_UM,
-            pad_hmax_um=pad_hmax_um,
-            pad_hmin_um=pad_hmin_um,
-            ground_hmax_um=ground_hmax_um,
-            ground_hmin_um=ground_hmin_um,
+            face_sizes={
+                PAD_L_SELECTION: (pad_hmax_um, pad_hmin_um),
+                PAD_R_SELECTION: (pad_hmax_um, pad_hmin_um),
+                GROUND_SELECTION: (ground_hmax_um, ground_hmin_um),
+            },
             hgrad=HGRAD,
             hcurve=HCURVE,
             hnarrow=HNARROW,
@@ -1108,48 +927,18 @@ elif RUN_DOMAIN_STUDY and not RUN_COMSOL:
 # %% [markdown]
 # ### Reading the domain and mesh series
 #
-# The cell below draws two views of the rows solved at the base substrate
-# thickness and air height. Most of the cases at that air height walk the
-# near-metal ladder at one margin, so the margin view carries few points and the
-# mesh view is the denser one; either way the tables below print the deltas for
-# whichever rows are on disk:
+# The cell below draws $C_{11}$ against the lateral margin, one line per near-metal setting, and
+# $C_{11}$ against the mesh element count, one line per margin. A line that flattens says the
+# outer walls, or the near-metal resolution, no longer set $C_{11}$.
 #
-# - $C_{11}$ in fF against the lateral margin, one line per near-metal setting,
-#   each point labelled with its element count. A line that flattens says the
-#   outer walls no longer set $C_{11}$ at that mesh.
-# - $C_{11}$ in fF against the mesh element count, one line per margin, each
-#   point labelled with its near-metal setting. A line that flattens as the
-#   elements get smaller says the near-metal resolution no longer sets it.
-#
-# It then prints, for every margin and every air height a near-metal series was
-# solved at, one table per group of rows that share them, in the order the
-# settings refine, so the step from one setting to the next is the change the
-# near-metal series is after. The largest of those steps is printed next to the
-# spread across the margins at a fixed setting, so the near-metal and the lateral
-# effects are compared as numbers rather than by eye.
-#
-# The air height and the substrate thickness get the same treatment: rows that
-# hold the other length, the margin, and the near-metal setting fixed are grouped
-# and printed in order, with the held length named in the title. A series is not
-# required to sit at the base case, so a pair solved away from it is read too.
-# That is what shows whether the capacitance is still moving with the height of
-# air above the metal, which the margin series alone cannot see. A series with
-# fewer than two rows on disk prints no table, and the cell says which comparison
-# it skipped.
-#
-# Differences that shrink are the shape a settled number makes; differences that
-# keep their size, or change sign, mean that parameter is still setting the
-# answer. The table also carries $2 W_e / V^2$ next to $C_{11}$ and their
-# relative difference. That is an internal consistency check, not convergence:
-# the solver reports the same field twice, once as a terminal capacitance and
-# once as a stored energy, so the two agree whatever the mesh is, and it cannot
-# verify the terminal selection or resolve an under-meshed gap.
-#
-# With `RESULTS_DIR` unset, or set to a directory without the file, the cell
-# prints how to supply it and draws nothing.
+# It then prints one table per group of rows sharing a margin, a substrate, and an air height,
+# in refinement order, so the step from one near-metal setting to the next is the change the
+# series is after, and compares the largest such step with the spread across the margins at a
+# fixed setting. The table also carries $2 W_e / V^2$ next to $C_{11}$: an internal consistency
+# check, not convergence.
 
 
-# %%
+# %% tags=["hide-input"]
 def compact_element_count(count: int) -> str:
     """Format an element count for a plot label.
 
@@ -1506,81 +1295,49 @@ else:
         )
 
 # %% [markdown]
-# The series is read by the shape of the curves and by the size of the steps
-# printed next to them. A margin curve that flattens says the outer walls no
-# longer set $C_{11}$; a near-metal table whose steps shrink towards the finest
-# setting says the element size no longer does; an air or substrate series whose
-# steps shrink with the taller or thicker box says the same of the box.
+# The series is read by the shape of the curves and the size of the steps printed next to them:
+# a flattening margin curve says the outer walls no longer set $C_{11}$, shrinking near-metal
+# steps say the element size no longer does, and an air or substrate series whose steps shrink
+# with the taller or thicker box says the same of the box.
 #
-# At the chosen 8000 µm / 1600 µm / 1600 µm box the near-metal ladder flattens:
-# the last step, from `0.8/1.6` to `0.625/1.25` at 8000 µm of margin, moves
-# $C_{11}$ by -0.0548020655 fF, which is -0.0437%. The one-terminal capacitance
-# is therefore stable to about 0.05% over that one refinement. That is an
-# empirical last-step metric and not a rigorous error bound: it says the value
-# barely moved between those two meshes, not how far it still sits from the
-# mesh-independent answer. The box levers are read from their own tables, where
-# the tallest air column tested, 1600 µm to 3200 µm at the `2.5/5` setting, moves
-# $C_{11}$ by +0.000856 fF.
-#
-# The box cannot be reduced to its lateral walls alone: the air above the metal is
-# a lever the margin series does not move, so it is read from its own table. The
-# box stays finite and the ground plane is still the prepared layout's own, so the
-# outer walls act on $C_{11}$ at any mesh. The number is a one-terminal
+# Those steps are empirical last-step figures, not rigorous error bounds: they say the value
+# barely moved between two neighbouring settings, not how far it still sits from the
+# mesh-independent answer. The box cannot be reduced to its lateral walls alone, since the air
+# above the metal is a lever no margin case moves, and the number remains a one-terminal
 # capacitance rather than the two-pad charging capacitance.
 
 # %% [markdown]
 # ## Summary
 #
-# 1. Built a QPDK `double_pad_transmon_with_bbox` cell and made an EM-only copy
-#    with `JJ_AREA`/`JJ_PATCH` removed, so the SQUID and its leads are not in the
-#    solved geometry.
-# 2. Extracted the two pad polygons and the ground plane with
-#    `prepare_comsol_layout(..., feed_ports=None)`.
-# 3. Built the COMSOL sheet model and added an Electrostatics study: a voltage
-#    terminal on the left pad, ground on the right pad and the ground plane, a
-#    mesh, and a stationary study.
-# 4. Ran the main solve on 8000 µm of lateral margin, 1600 µm of silicon, and
-#    1600 µm of air with the element sizes pinned to absolute values, exported
-#    `es.C11` and `es.intWe`, checked them against each other through
-#    $2 W_e / V^2$, and replotted the exported field map. The saved metrics carry
-#    the settings the solve used.
-# 5. Added one series that pins the element sizes to absolute values and moves the
-#    lateral margin, the near-metal setting, the air height, and the substrate
-#    thickness around a base case, at a mesh that no longer follows the domain. It
-#    answers the box question a mesh study cannot, and shows by how much the
-#    near-metal mesh and the box move $C_{11}$. The finest step at the chosen box
-#    is -0.0437%, so the one-terminal value is stable to about 0.05% over the last
-#    tested refinement.
+# 1. Built a QPDK `double_pad_transmon_with_bbox` cell and made an EM-only copy with `JJ_AREA` and
+#    `JJ_PATCH` removed, so the SQUID and its leads are not in the solved geometry, then extracted
+#    the two pad polygons and the ground plane with `prepare_comsol_layout(..., feed_ports=None)`.
+# 2. Built the COMSOL sheet model and added an Electrostatics study: a voltage terminal on the left
+#    pad, ground on the right pad and the ground plane, a mesh, and a stationary study.
+# 3. Ran the main solve at 8000 / 1600 / 1600 µm of margin, silicon, and air with the element sizes
+#    pinned, exported `es.C11` and `es.intWe`, checked them through $2 W_e / V^2$, and replotted the
+#    field map.
+# 4. Added one series that pins the element sizes and moves the margin, the near-metal setting, the
+#    air height, and the substrate thickness around the base case, answering the box question a mesh
+#    study cannot; the printed deltas carry the numbers.
 #
 # ### Limitations
 #
-# - The solve is electrostatic; the metal is a perfect conductor and there is no
-#   Josephson inductance, so no resonance is solved.
-# - The `f_LC` number uses a chosen $L_J$ and $C_{11}$ in place of a two-pad
-#   differential capacitance. It is not a transmon eigenfrequency or $f_{01}$.
-# - The EM-only copy omits the SQUID loop and its leads, so their parasitic
-#   capacitance is missing from $C_{11}$.
-# - The ~0.05% stability is an empirical last-step metric, not a rigorous error
-#   bound. It compares two meshes, so a further refinement of the metal could
-#   still move $C_{11}$.
-# - The differential transmon capacitance is a separate question: $C_{11}$ is the
-#   driven pad's capacitance to the grounded rest of the chip, not the
-#   differential-mode capacitance of the two pads.
-# - The field at the pad edges is singular, so the peak $|\mathbf{E}|$ in the map
-#   stays mesh-limited even where the capacitance has settled.
-# - The main capacitance and field map use one mesh setting; the saved
-#   convergence plots are from separate solves.
-# - The domain is finite: the outer walls are a zero-charge truncation and the
-#   ground plane is the prepared layout's own box, so $C_{11}$ carries their
-#   effect at any mesh.
+# - The solve is electrostatic: no Josephson inductance, so no resonance is solved, and the
+#   `f_LC` number is a chosen $L_J$ times a one-terminal $C_{11}$ rather than a transmon
+#   eigenfrequency or $f_{01}$.
+# - The EM-only copy omits the SQUID loop and its leads, so their parasitic capacitance is
+#   missing from $C_{11}$, which is the driven pad's capacitance to the grounded chip rather
+#   than the differential-mode capacitance of the two pads.
+# - The last-step figures are empirical, not rigorous error bounds, and the finite
+#   zero-charge outer walls act on $C_{11}$ at any mesh.
 #
 # ### Next steps
 #
-# - Refine the near-metal mesh once more below `0.625/1.25`, or grow the box, to
-#   test whether the last-step figure holds.
-# - Extract the two-pad capacitance matrix, then use its differential-mode
-#   capacitance with a junction model in the QPDK Hamiltonian workflow
-#   ({doc}`/notebooks/scqubits_parameter_calculation`).
+# - Refine the near-metal mesh once more below `0.625/1.25`, or grow the box, to test whether the
+#   last-step figure holds.
+# - Extract the two-pad capacitance matrix and use it with a junction model in the QPDK
+#   Hamiltonian workflow ({doc}`/notebooks/scqubits_parameter_calculation`).
 #
 # ## References
 #

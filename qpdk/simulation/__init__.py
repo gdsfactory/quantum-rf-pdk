@@ -30,15 +30,24 @@ Extractor.
    :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`
 3. Add a CPW RF or qubit electrostatic study with
    :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` or
-   :func:`~qpdk.simulation.comsol_capacitance.add_qubit_capacitance_study`
+   :func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`
 4. Mesh it, optionally refined at the metal plane, with
    :func:`~qpdk.simulation.comsol_mesh.refine_metal_plane_mesh`, or with
    absolute sizes at the metal via
    :func:`~qpdk.simulation.comsol_mesh.pin_absolute_mesh_sizes`
 
+The steps above are also available as one chainable class:
+:class:`~qpdk.simulation.comsol_model.COMSOL` builds a model through
+:meth:`~qpdk.simulation.comsol_model.COMSOL.create_sheet` or
+:meth:`~qpdk.simulation.comsol_model.COMSOL.create_metal`, holds the layout, and
+offers a method per study and mesh helper, so neither the model nor the layout
+has to be passed again. Solving, saving, and evaluating are MPh's own methods.
+
 Note:
-    The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL builder
-    requires ``uv sync --extra comsol`` and a local COMSOL installation.
+    The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL builders
+    require ``uv sync --extra comsol`` and a local COMSOL installation; only
+    :class:`~qpdk.simulation.comsol_model.COMSOL` imports MPh eagerly, so the
+    helper modules and this package stay importable without it.
 
 Example:
     >>> from ansys.aedt.core import Hfss
@@ -63,10 +72,12 @@ import importlib
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from qpdk.simulation.comsol_model import COMSOL
     from qpdk.simulation.hfss import HFSS
     from qpdk.simulation.q3d import Q2D, Q3D
 
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
+    "COMSOL": ("qpdk.simulation.comsol_model", "COMSOL"),
     "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),
     "add_materials_to_aedt": ("qpdk.simulation.aedt_base", "add_materials_to_aedt"),
     "detach_desktop_logging": ("qpdk.simulation.aedt_base", "detach_desktop_logging"),
@@ -98,7 +109,6 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "qpdk.simulation.comsol_layout",
         "prepare_comsol_layout",
     ),
-    "build_comsol_cpw_model": ("qpdk.simulation.comsol", "build_comsol_cpw_model"),
     "build_comsol_metal_model": (
         "qpdk.simulation.comsol",
         "build_comsol_metal_model",
@@ -108,9 +118,9 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "build_comsol_sheet_model",
     ),
     "add_cpw_rf_study": ("qpdk.simulation.comsol_rf", "add_cpw_rf_study"),
-    "add_qubit_capacitance_study": (
+    "add_capacitance_study": (
         "qpdk.simulation.comsol_capacitance",
-        "add_qubit_capacitance_study",
+        "add_capacitance_study",
     ),
     "pin_absolute_edge_mesh_sizes": (
         "qpdk.simulation.comsol_mesh",
@@ -127,6 +137,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
 }
 
 __all__ = [
+    "COMSOL",
     "HFSS",
     "Q2D",
     "Q3D",
@@ -135,10 +146,9 @@ __all__ = [
     "ComsolFeedPort",
     "ComsolLayout",
     "ComsolPolygon",
+    "add_capacitance_study",
     "add_cpw_rf_study",
     "add_materials_to_aedt",
-    "add_qubit_capacitance_study",
-    "build_comsol_cpw_model",
     "build_comsol_metal_model",
     "build_comsol_sheet_model",
     "detach_desktop_logging",
