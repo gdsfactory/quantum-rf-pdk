@@ -56,6 +56,9 @@
 # A transmon qubit is a weakly anharmonic oscillator formed by shunting a
 # Josephson junction (JJ) with a large capacitance
 # {cite:p}`kochChargeinsensitiveQubitDesign2007a,krantzQuantumEngineersGuide2019`.
+#
+# ![Transmon circuit with shunt capacitance and Josephson junction controlling EC and EJ](figures/transmon-energy.svg)
+#
 # Following the node-flux formulation of quantum electromagnetic circuits
 # {cite:p}`voolIntroductionQuantumElectromagnetic2017`, the circuit Hamiltonian
 # in the phase basis reads:

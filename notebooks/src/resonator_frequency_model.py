@@ -71,6 +71,8 @@ from qpdk.tech import coplanar_waveguide
 #
 # Creates a probelines weakly coupled to a quarter-wave resonator.
 # The resonance frequency is first estimated using the `resonator_frequency` function and then compared to the frequency in the coupled case.
+#
+# ![Capacitively coupled quarter-wave resonator with a shorted far end](figures/quarter-wave-resonator.svg)
 
 # %%
 ep_eff, z0 = cpw_parameters(width=10, gap=6)

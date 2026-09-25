@@ -13,6 +13,7 @@ from qpdk import LAYER_STACK
 from qpdk.models.cpw import get_cpw_dimensions
 from qpdk.simulation.aedt_base import (
     AEDTBase,
+    _first_real_value,
     export_component_to_gds_temp,
     layer_stack_to_gds_mapping,
     object_names_to_materials,
@@ -218,8 +219,7 @@ class Q3D(AEDTBase):
                 expressions=expr,
                 setup_sweep_name=f"{setup_name} : LastAdaptive",
             )
-            if solution:
-                val = float(solution.data_real()[0])
+            if solution and (val := _first_real_value(solution)) is not None:
                 unit = solution.units_data.get(expr, "pF")
                 multiplier = {
                     "fF": 1e-15,

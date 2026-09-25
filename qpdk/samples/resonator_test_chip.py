@@ -139,7 +139,6 @@ def resonator_test_chip_python(
                 length=float(lengths[res_idx]),
                 meanders=6,
                 cross_section=cross_section,
-                open_start=True,
                 cross_section_non_resonator=cross_section,
                 coupling_straight_length=coupling_length,
                 coupling_gap=coupling_gap,

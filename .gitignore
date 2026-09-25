@@ -161,6 +161,7 @@ docs/_extra/
 docs/_generated/
 docs/makefile_help.txt
 docs/justfile_help.txt
+notebooks/figures/*.svg
 !notebooks/*.ipynb
 !notebooks/recorded/palace_transmon_surface_epr.ipynb
 

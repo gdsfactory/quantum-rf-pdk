@@ -264,6 +264,8 @@ plt.show(block=False)
 # $Z_0$ and $\varepsilon_{\mathrm{eff}}$ depend on the CPW
 # dimensions.
 #
+# ![CPW cross-section showing center width and slot gaps](figures/cpw-cross-section.svg)
+#
 # .. note::
 #    The characteristic impedance and effective permittivity have a small
 #    imaginary part due to the substrate loss tangent
@@ -417,6 +419,11 @@ print(f"{len(cpw_instance_names)} CPW instances found for MC perturbation.")
 # bias across the die.  We loop over trials, creating a
 # ``coplanar_waveguide(width=…, gap=…)`` cross-section for each and
 # passing it as an override to every CPW instance.
+#
+# ![Global fabrication variation moves resonances together, while local variation moves them independently](figures/fabrication-variation.svg)
+#
+# The sketch shows why common and per-resonator geometry variation lead to
+# different patterns of frequency shifts. Each tick represents one resonator.
 
 
 # %%

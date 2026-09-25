@@ -5,10 +5,12 @@ import re
 import shutil
 import sys
 import tempfile
+from html import escape
 from pathlib import Path
 
 import typst
 from docutils import nodes
+from sphinx.application import Sphinx
 from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
 from typsphinx.translator import TypstTranslator, escape_typst_string
@@ -677,6 +679,28 @@ def replace_image_paths(app, docname, source):
     source[0] = source[0].replace("docs/_static/images/", "/_static/images/")
 
 
+def inline_figures(app: Sphinx, doctree: nodes.document, _docname: str) -> None:
+    """Inline generated Typst SVGs in HTML so their text can be selected."""
+    if app.builder.format != "html":
+        return
+
+    figure_sources = Path(app.srcdir) / "figures"
+    for image in doctree.findall(nodes.image):
+        uri = Path(image["uri"])
+        if (
+            uri.parent == Path("notebooks/figures")
+            and (figure_sources / f"{uri.stem}.typ").is_file()
+        ):
+            svg = (Path(app.srcdir) / uri).read_text(encoding="utf-8")
+            label = escape(image.get("alt", ""), quote=True)
+            svg = svg.replace(
+                "<svg ",
+                f'<svg role="group" aria-label="{label}" ',
+                1,
+            )
+            image.replace_self(nodes.raw("", svg, format="html"))
+
+
 def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
     """Fix *Edit on GitHub* URLs for notebook pages.
 
@@ -1094,6 +1118,7 @@ def setup(app):
     # sphinx_github_alerts' source-read hook, which then also converts the
     # README's `> [!NOTE]` alert instead of leaving it as a literal quote.
     app.connect("source-read", replace_image_paths, priority=400)
+    app.connect("doctree-resolved", inline_figures)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
     app.connect("doctree-resolved", _typst_strip_ansi)
     app.connect("doctree-resolved", _typst_lift_block_images)
