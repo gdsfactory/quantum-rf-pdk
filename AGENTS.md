@@ -240,9 +240,9 @@ The `qpdk/models/` directory contains S-parameter and circuit models for quantum
 
 Omitting a model port from a SAX circuit applies a matched load, not an open circuit:
 
-- Matched load: $Z_L = Z_0$ and $\\Gamma = 0$, so incident power is absorbed.
-- Open circuit: $Z_L \\to \\infty$ and $\\Gamma = +1$.
-- Short circuit: $Z_L = 0$ and $\\Gamma = -1$.
+- Matched load: $Z\_\\text{L} = Z_0$ and $\\Gamma = 0$, so incident power is absorbed.
+- Open circuit: $Z\_\\text{L} \\to \\infty$ and $\\Gamma = +1$.
+- Short circuit: $Z\_\\text{L} = 0$ and $\\Gamma = -1$.
 
 Do not leave a port disconnected when the model requires an open or short boundary. For a quarter-wave coupled
 resonator, `resonator_o1` is open and `resonator_o2` is shorted. Prefer `quarter_wave_resonator_coupled`, which applies

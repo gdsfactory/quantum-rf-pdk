@@ -174,11 +174,11 @@ def resonator_frequency(
     .. math::
 
         \begin{aligned}
-        f &= \frac{v_p}{4L}  \mathtt{ (quarter-wave resonator)} \\
-        f &= \frac{v_p}{2L}  \mathtt{ (half-wave resonator)}
+        f &= \frac{v_\text{p}}{4L}  \text{(quarter-wave resonator)} \\
+        f &= \frac{v_\text{p}}{2L}  \text{(half-wave resonator)}
         \end{aligned}
 
-    The phase velocity is :math:`v_p = c_0 / \sqrt{\varepsilon_{\mathrm{eff}}}`.
+    The phase velocity is :math:`v_\text{p} = c_0 / \sqrt{\varepsilon_{\text{eff}}}`.
 
     See :cite:`simonsCoplanarWaveguideCircuits2001,m.pozarMicrowaveEngineering2012` for details.
 

@@ -113,7 +113,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="qutip")
 #
 # We start with an **Xmon transmon** design. The sizes of arms
 # and the gap between them determine the total shunt capacitance $C_\Sigma$,
-# which sets the charging energy $E_C = e^2 / (2 C_\Sigma)$.
+# which sets the charging energy $E_\text{C} = e^2 / (2 C_\Sigma)$.
 
 # %%
 c_transmon = xmon_transmon(arm_width=[10.0] * 4, arm_lengths=[100.0] * 4)
@@ -124,12 +124,12 @@ plt.show()
 # %% [markdown]
 # ### Step 2: Parameter Extraction
 #
-# Changing the `arm_width` and `arm_length` in the layout modifies $E_C$.
-# For a transmon, the Josephson energy $E_J$ is determined by the critical
+# Changing the `arm_width` and `arm_length` in the layout modifies $E_\text{C}$.
+# For a transmon, the Josephson energy $E_\text{J}$ is determined by the critical
 # current of the junction.
 #
-# Below we see how a change in $E_C$ (e.g., from making the pads larger)
-# affects the qubit frequency $\omega_q$ and anharmonicity $\alpha$.
+# Below we see how a change in $E_\text{C}$ (e.g., from making the pads larger)
+# affects the qubit frequency $\omega_\text{q}$ and anharmonicity $\alpha$.
 
 # %%
 # Fixed EJ = 15 GHz
@@ -142,17 +142,17 @@ for ec in ec_values:
     wq_calc, alpha_calc = ej_ec_to_frequency_and_anharmonicity(EJ_val, ec)
     display(
         Math(rf"""
-\text{{For }} E_C = {ec:.1f}\,\mathrm{{GHz}} \implies
-\omega_q \approx {wq_calc:.3f}\,\mathrm{{GHz}}, \quad
-\alpha \approx {alpha_calc:.3f}\,\mathrm{{GHz}}
+\text{{For }} E_\text{{C}} = {ec:.1f}\,\text{{GHz}} \implies
+\omega_\text{{q}} \approx {wq_calc:.3f}\,\text{{GHz}}, \quad
+\alpha \approx {alpha_calc:.3f}\,\text{{GHz}}
 """)
     )
 
 # %% [markdown]
 # **Design Trade-off:**
-# - **Larger pads (Lower $E_C$)**: Reduces $\alpha$, which requires longer
+# - **Larger pads (Lower $E_\text{C}$)**: Reduces $\alpha$, which requires longer
 #   pulses to avoid leakage to $|2\rangle$ (slower gates).
-# - **Smaller pads (Higher $E_C$)**: Increases $\alpha$, allowing faster
+# - **Smaller pads (Higher $E_\text{C}$)**: Increases $\alpha$, allowing faster
 #   gates, but makes the qubit more sensitive to charge noise.
 
 # %% [markdown]
@@ -217,7 +217,7 @@ plt.show()
 # Entanglement between two qubits is realized via a CNOT gate. In this
 # processor, the CNOT is implemented using **Cross-Resonance (CR)** pulses.
 # The efficiency of the CR interaction depends on the frequency detuning
-# $\Delta = \omega_{q,1} - \omega_{q,2}$, which is set by the junction
+# $\Delta = \omega_{\text{q},1} - \omega_{\text{q},2}$, which is set by the junction
 # sizing in the layout.
 
 # %%
@@ -233,7 +233,7 @@ result_bell = processor_bell.run_state(init_state)
 # %%
 fig, axes = processor_bell.plot_pulses(figsize=(10, 8))
 fig.suptitle(
-    r"Control pulses for Bell state preparation ($H + \mathrm{CNOT}$)",
+    r"Control pulses for Bell state preparation ($H + \text{CNOT}$)",
     fontsize=14,
     y=1.02,
 )
@@ -287,9 +287,11 @@ for t2 in t2_values_ns:
 
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.semilogx(t2_values_us, fidelities_t2, "o-", linewidth=2, markersize=8)
-ax.set_xlabel(r"$T_2$ ($\mu$s)")
+ax.set_xlabel(r"$T_2$ (µs)")
 ax.set_ylabel(r"Bell state fidelity $F$")
-ax.set_title(rf"Bell state fidelity vs. $T_2$ ($T_1 = {t1_fixed / 1e3:.0f}\,\mu$s)")
+ax.set_title(
+    rf"Bell state fidelity vs. $T_2$ ($T_1 = {t1_fixed / 1e3:.0f}\,\text{{µs}}$)"
+)
 ax.grid(True, alpha=0.3, which="both")
 plt.show()
 
@@ -299,11 +301,11 @@ plt.show()
 # This notebook demonstrated the connection between physical layout and
 # pulse-level performance:
 #
-# 1. **Layout (qpdk)**: Geometric parameters (pad size, gap) determine $C_\Sigma$ and $L_J$.
-# 2. **Hamiltonian (qpdk.models)**: Parameters $E_C, E_J$ set $\omega_q$ and $\alpha$.
+# 1. **Layout (qpdk)**: Geometric parameters (pad size, gap) determine $C_\Sigma$ and $L_\text{J}$.
+# 2. **Hamiltonian (qpdk.models)**: Parameters $E_\text{C}, E_\text{J}$ set $\omega_\text{q}$ and $\alpha$.
 # 3. **Simulation (QuTiP)**: Pulse-level dynamics reveal gate fidelity and leakage.
 # 4. **Iterate**: If leakage is too high ($|2\rangle$ population), we go back to
-#    step 1 and increase $E_C$ in the layout.
+#    step 1 and increase $E_\text{C}$ in the layout.
 #
 # For more details on parameter extraction, see the companion notebooks
 # on [scQubits parameter calculation](scqubits_parameter_calculation).

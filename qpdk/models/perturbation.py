@@ -15,12 +15,12 @@ is:
 
 .. math::
 
-    \mathcal{H} = -\omega_t\, a_t^\dagger a_t
-    + \frac{\alpha}{2}\, a_t^{\dagger 2} a_t^2
-    + \omega_r\, a_r^\dagger a_r
-    - g\,(a_t^\dagger - a_t)(a_r^\dagger - a_r)
+    \mathcal{H} = -\omega_\text{t}\, a_\text{t}^\dagger a_\text{t}
+    + \frac{\alpha}{2}\, a_\text{t}^{\dagger 2} a_\text{t}^2
+    + \omega_\text{r}\, a_\text{r}^\dagger a_\text{r}
+    - g\,(a_\text{t}^\dagger - a_\text{t})(a_\text{r}^\dagger - a_\text{r})
 
-where :math:`\omega_t` is the transmon frequency, :math:`\omega_r` the resonator
+where :math:`\omega_\text{t}` is the transmon frequency, :math:`\omega_\text{r}` the resonator
 frequency, :math:`\alpha` the anharmonicity, and :math:`g` the coupling strength.
 
 References:
@@ -46,18 +46,18 @@ def transmon_resonator_hamiltonian() -> tuple[
 ]:
     r"""Build the symbolic transmon-resonator Hamiltonian.
 
-    Constructs the unperturbed (:math:`H_0`) and perturbation (:math:`H_p`)
+    Constructs the unperturbed (:math:`H_0`) and perturbation (:math:`H_\text{p}`)
     parts of the transmon-resonator Hamiltonian using bosonic operators.
 
-    The Hamiltonian is split as :math:`H = H_0 + H_p` where:
+    The Hamiltonian is split as :math:`H = H_0 + H_\text{p}` where:
 
     .. math::
 
         \begin{aligned}
-        H_0 &= -\omega_t\, a_t^\dagger a_t
-              + \frac{\alpha}{2}\, a_t^{\dagger 2} a_t^2
-              + \omega_r\, a_r^\dagger a_r \\
-        H_p &= -g\,(a_t^\dagger - a_t)(a_r^\dagger - a_r)
+        H_0 &= -\omega_\text{t}\, a_\text{t}^\dagger a_\text{t}
+              + \frac{\alpha}{2}\, a_\text{t}^{\dagger 2} a_\text{t}^2
+              + \omega_\text{r}\, a_\text{r}^\dagger a_\text{r} \\
+        H_\text{p} &= -g\,(a_\text{t}^\dagger - a_\text{t})(a_\text{r}^\dagger - a_\text{r})
         \end{aligned}
 
     Returns:
@@ -102,10 +102,10 @@ def dispersive_shift(
 
         \chi = \frac{2g^2}{\Delta - \alpha}
              - \frac{2g^2}{\Delta}
-             - \frac{2g^2}{\omega_t + \omega_r + \alpha}
-             + \frac{2g^2}{\omega_t + \omega_r}
+             - \frac{2g^2}{\omega_\text{t} + \omega_\text{r} + \alpha}
+             + \frac{2g^2}{\omega_\text{t} + \omega_\text{r}}
 
-    where :math:`\Delta = \omega_t - \omega_r`.  The first two terms give
+    where :math:`\Delta = \omega_\text{t} - \omega_\text{r}`.  The first two terms give
     the rotating-wave-approximation (RWA) contribution
 
     .. math::
@@ -158,7 +158,7 @@ def dispersive_shift_to_coupling(
 
         g \approx \sqrt{\frac{-\chi\,\Delta\,(\Delta - \alpha)}{2\alpha}}
 
-    where :math:`\Delta = \omega_t - \omega_r`.
+    where :math:`\Delta = \omega_\text{t} - \omega_\text{r}`.
 
     Note:
         The expression under the square root may be negative when the
@@ -194,7 +194,7 @@ def dispersive_shift_to_coupling(
 def ej_ec_to_frequency_and_anharmonicity(
     ej_ghz: float | ArrayLike, ec_ghz: float | ArrayLike
 ) -> tuple[float | jax.Array, float | jax.Array]:
-    r"""Convert :math:`E_J` and :math:`E_C` to qubit frequency and anharmonicity.
+    r"""Convert :math:`E_\text{J}` and :math:`E_\text{C}` to qubit frequency and anharmonicity.
 
     Uses the standard transmon approximations
     :cite:`kochChargeinsensitiveQubitDesign2007a`:
@@ -202,13 +202,13 @@ def ej_ec_to_frequency_and_anharmonicity(
     .. math::
 
         \begin{aligned}
-        \omega_q &\approx \sqrt{8 E_J E_C} - E_C \\
-        \alpha &\approx E_C
+        \omega_\text{q} &\approx \sqrt{8 E_\text{J} E_\text{C}} - E_\text{C} \\
+        \alpha &\approx E_\text{C}
         \end{aligned}
 
     Note:
         The physical anharmonicity of a transmon is *negative*
-        (:math:`\alpha = -E_C`), but the Hamiltonian convention used
+        (:math:`\alpha = -E_\text{C}`), but the Hamiltonian convention used
         in this module and in pymablock takes :math:`\alpha` as positive.
 
     Args:
@@ -243,7 +243,7 @@ def purcell_decay_rate(
         \gamma_\text{Purcell} = \kappa \left(\frac{g}{\Delta}\right)^2
 
     where :math:`\kappa` is the resonator decay rate and
-    :math:`\Delta = \omega_t - \omega_r`.
+    :math:`\Delta = \omega_\text{t} - \omega_\text{r}`.
 
     Args:
         g_ghz: Coupling strength in GHz.
@@ -274,7 +274,7 @@ def resonator_linewidth_from_q(
 
     .. math::
 
-        \kappa = \frac{\omega_r}{Q_\text{ext}}
+        \kappa = \frac{\omega_\text{r}}{Q_\text{ext}}
 
     Args:
         ω_r_ghz: Resonator frequency in GHz.

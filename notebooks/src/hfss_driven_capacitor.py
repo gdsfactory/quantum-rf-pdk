@@ -141,13 +141,13 @@ for port in idc_component.ports:
 # capacitances per unit length are derived using the complete elliptic integrals
 # of the first kind $K(k)$:
 #
-# $$ \eta = \frac{w}{w + g}, \quad k_i = \sin\left(\frac{\pi \eta}{2}\right), \quad k_e = \frac{2\sqrt{\eta}}{1 + \eta} $$
+# $$ \eta = \frac{w}{w + g}, \quad k_\text{i} = \sin\left(\frac{\pi \eta}{2}\right), \quad k_\text{e} = \frac{2\sqrt{\eta}}{1 + \eta} $$
 #
-# $$ C_i = \epsilon_0 (\epsilon_r + 1) \frac{K(k_i)}{K(k_i')}, \quad C_e = \epsilon_0 (\epsilon_r + 1) \frac{K(k_e)}{K(k_e')} $$
+# $$ C_\text{i} = \epsilon_0 (\epsilon_\text{r} + 1) \frac{K(k_\text{i})}{K(k_\text{i}')}, \quad C_\text{e} = \epsilon_0 (\epsilon_\text{r} + 1) \frac{K(k_\text{e})}{K(k_\text{e}')} $$
 #
 # The total mutual capacitance for $n$ fingers is then:
 #
-# $$ C = \begin{cases} C_e L / 2 & \text{if } n=2 \\ (n - 3) \frac{C_i L}{2} + 2 \frac{C_i C_e L}{C_i + C_e} & \text{if } n > 2 \end{cases} $$
+# $$ C = \begin{cases} C_\text{e} L / 2 & \text{if } n=2 \\ (n - 3) \frac{C_\text{i} L}{2} + 2 \frac{C_\text{i} C_\text{e} L}{C_\text{i} + C_\text{e}} & \text{if } n > 2 \end{cases} $$
 
 # %%
 # Get substrate permittivity from cross-section

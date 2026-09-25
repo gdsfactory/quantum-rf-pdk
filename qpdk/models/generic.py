@@ -181,7 +181,7 @@ def lc_resonator(
 
     .. math::
 
-        f_r = \frac{1}{2 \pi \sqrt{LC}}
+        f_\text{r} = \frac{1}{2 \pi \sqrt{LC}}
 
     For theory and relation to superconductors, see :cite:`gaoPhysicsSuperconductingMicrowave2008`.
 
@@ -254,7 +254,7 @@ def lc_resonator_coupled(
 
     .. math::
 
-        f_r = \frac{1}{2 \pi \sqrt{LC}}
+        f_\text{r} = \frac{1}{2 \pi \sqrt{LC}}
 
     The coupling network modifies the effective coupling to the resonator.
 
@@ -363,7 +363,7 @@ if __name__ == "__main__":
     ax2.set_ylabel("Phase [rad]")
     ax2.legend(loc="upper right")
 
-    plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
+    plt.title(rf"Capacitor $S$-parameters ($C={capacitance * 1e15}\,\text{{fF}}$)")
     plt.show(block=False)
 
     S_ind = inductor(f=f, inductance=(inductance := 1e-9))
@@ -400,5 +400,5 @@ if __name__ == "__main__":
     ax2.set_ylabel("Phase [rad]")
     ax2.legend(loc="upper right")
 
-    plt.title(f"Inductor $S$-parameters ($L={inductance * 1e9}\\,$nH)")
+    plt.title(rf"Inductor $S$-parameters ($L={inductance * 1e9}\,\text{{nH}}$)")
     plt.show()

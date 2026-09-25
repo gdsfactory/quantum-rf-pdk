@@ -44,10 +44,10 @@ def josephson_junction(
 
     Args:
         f: Array of frequency points in Hz
-        ic: Critical current :math:`I_c` in Amperes
+        ic: Critical current :math:`I_\text{c}` in Amperes
         capacitance: Junction capacitance :math:`C` in Farads
         resistance: Shunt resistance :math:`R` in Ohms
-        ib: DC bias current :math:`I_b` in Amperes (:math:`\|I_b\| < I_c`)
+        ib: DC bias current :math:`I_\text{b}` in Amperes (:math:`\|I_\text{b}\| < I_\text{c}`)
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -95,12 +95,12 @@ def squid_junction(
 
     Args:
         f: Array of frequency points in Hz
-        ic_tot: Total critical current sum :math:`I_{c1} + I_{c2}` in Amperes
-        asymmetry: Junction asymmetry :math:`(I_{c1} - I_{c2}) / I_{c,tot}`
+        ic_tot: Total critical current sum :math:`I_{\text{c}1} + I_{\text{c}2}` in Amperes
+        asymmetry: Junction asymmetry :math:`(I_{\text{c}1} - I_{\text{c}2}) / I_{\text{c,tot}}`
         capacitance: Total SQUID capacitance :math:`C_1 + C_2` in Farads
         resistance: Total SQUID shunt resistance :math:`R_1 || R_2` in Ohms
-        ib: DC bias current :math:`I_b` in Amperes
-        flux: External magnetic flux :math:`\Phi_{ext}` in Webers
+        ib: DC bias current :math:`I_\text{b}` in Amperes
+        flux: External magnetic flux :math:`\Phi_{\text{ext}}` in Webers
 
     Returns:
         sax.SDict: S-parameters dictionary

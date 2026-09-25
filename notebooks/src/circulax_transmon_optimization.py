@@ -44,8 +44,8 @@
 #
 # 1. **Harmonic-Balance (HB) Optimization** — Find the periodic steady-state
 #    response of a nonlinear transmon circuit under a microwave drive and use
-#    `jax.grad` to optimize the junction critical current $I_c$ and shunt
-#    capacitance $C_s$ toward target qubit parameters.
+#    `jax.grad` to optimize the junction critical current $I_\text{c}$ and shunt
+#    capacitance $C_\text{s}$ toward target qubit parameters.
 #
 # 2. **Transient Pulse Analysis** — Simulate the time-domain response of a
 #    coupled two-qubit system to a voltage pulse and differentiate a crosstalk
@@ -65,16 +65,16 @@
 #
 # ```{math}
 # :label: eq:transmon-hamiltonian-circulax
-# \mathcal{H} = 4 E_C \hat{n}^2 - E_J \cos\hat{\varphi},
+# \mathcal{H} = 4 E_\text{C} \hat{n}^2 - E_\text{J} \cos\hat{\varphi},
 # ```
 #
-# where the charging energy $E_C = e^2 / (2 C_\Sigma)$ and Josephson
-# energy $E_J = \Phi_0 I_c / (2\pi)$.  In the classical circuit
+# where the charging energy $E_\text{C} = e^2 / (2 C_\Sigma)$ and Josephson
+# energy $E_\text{J} = \Phi_0 I_\text{c} / (2\pi)$.  In the classical circuit
 # picture the junction behaves as a nonlinear inductance:
 #
 # ```{math}
 # :label: eq:josephson-inductance
-# L_J(\varphi) = \frac{\Phi_0}{2\pi I_c \cos\varphi},
+# L_\text{J}(\varphi) = \frac{\Phi_0}{2\pi I_\text{c} \cos\varphi},
 # ```
 #
 # which Circulax handles naturally through automatic differentiation of the
@@ -116,14 +116,14 @@ PDK.activate()
 #
 # We model a transmon qubit as an LC oscillator with a **nonlinear**
 # Josephson inductance driven by a weak microwave tone. The goal is to
-# optimize the junction critical current $I_c$ and shunt capacitance
-# $C_s$ so that the circuit's transition frequency and anharmonicity
+# optimize the junction critical current $I_\text{c}$ and shunt capacitance
+# $C_\text{s}$ so that the circuit's transition frequency and anharmonicity
 # match target values.
 #
 # The Josephson junction's constitutive relation is:
 #
 # ```{math}
-# I(\varphi) = I_c \sin\varphi,
+# I(\varphi) = I_\text{c} \sin\varphi,
 # ```
 #
 # where $\varphi = 2\pi\Phi/\Phi_0$ is the dimensionless
@@ -207,13 +207,13 @@ def JosephsonJunction(  # ruff: ignore[invalid-function-name]
 # parameters using simple analytical estimates:
 #
 # - **Shunt capacitance** from the coplanar conformal-mapping formula
-#   $C_s = \varepsilon_0\, \varepsilon_{\mathrm{eff}}\, L\, K(k')/K(k)$
+#   $C_\text{s} = \varepsilon_0\, \varepsilon_{\text{eff}}\, L\, K(k')/K(k)$
 #   with $k = s/(s + 2W)$, where $s$ is the pad gap, $W$ the
 #   pad width and $L$ the pad length
 #   {cite:p}`chenCompactInductorcapacitorResonators2023`.
 # - **Critical current** from the process critical-current density and the JJ
-#   area: $I_c = J_c \cdot A_{JJ}$, with
-#   $J_c \sim 100\;\text{A/cm}^2$ for Al/AlOx/Al junctions.
+#   area: $I_\text{c} = J_\text{c} \cdot A_{\text{JJ}}$, with
+#   $J_\text{c} \sim 100\;\text{A/cm}^2$ for Al/AlOx/Al junctions.
 
 # %%
 from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
@@ -280,7 +280,7 @@ print(f"E_J / E_C = {E_J / E_C:.1f} (transmon regime: >> 1)")
 #
 # ```{math}
 # :label: eq:driven-transmon-circuit
-# \text{Drive} \xrightarrow{R_{drive}} \text{JJ} \parallel C_s
+# \text{Drive} \xrightarrow{R_{\text{drive}}} \text{JJ} \parallel C_\text{s}
 # \xrightarrow{\text{GND}}
 # ```
 
@@ -418,13 +418,13 @@ for k in range(min(5, len(V_harmonics))):
 #
 # ```{math}
 # :label: eq:transmon-frequency
-# f_{01} \approx \frac{\sqrt{8 E_J E_C} - E_C}{h},
+# f_{01} \approx \frac{\sqrt{8 E_\text{J} E_\text{C}} - E_\text{C}}{h},
 # ```
 #
-# where $E_J = \Phi_0 I_c/(2\pi)$ and $E_C = e^2/(2C_\Sigma)$.
+# where $E_\text{J} = \Phi_0 I_\text{c}/(2\pi)$ and $E_\text{C} = e^2/(2C_\Sigma)$.
 # These closed-form estimates assume a purely sinusoidal current-phase
 # relation, so the junction's 2nd harmonic is set to zero for this workflow
-# ($E_{J2}/E_{J1} = 0$ in `layout_to_circuit_params`). The component
+# ($E_{\text{J}2}/E_{\text{J}1} = 0$ in `layout_to_circuit_params`). The component
 # does support a nonzero ratio $r$
 # {cite:p}`willschObservationJosephsonHarmonics2024`, but at leading order such
 # a term rescales the potential's quadratic coefficient by $(1+4r)$ and the
@@ -595,11 +595,11 @@ plt.show()
 # ### 1.10 Updated Layout Visualization
 #
 # We can now visualize the transmon layout with the optimized dimensions. The
-# inversion below targets the shunt capacitance $C_s$ only: the pads are
-# resized so the conformal-mapping model reproduces $C_s^{\text{opt}}$,
+# inversion below targets the shunt capacitance $C_\text{s}$ only: the pads are
+# resized so the conformal-mapping model reproduces $C_\text{s}^{\text{opt}}$,
 # while the junction keeps the default SQUID spec used throughout the PDK.
-# Realizing $I_c^{\text{opt}}$ in layout would additionally require sizing
-# the junction overlap area $A = I_c^{\text{opt}} / J_c$ for the process
+# Realizing $I_\text{c}^{\text{opt}}$ in layout would additionally require sizing
+# the junction overlap area $A = I_\text{c}^{\text{opt}} / J_\text{c}$ for the process
 # critical-current density, which is a process-level decision outside the scope
 # of this conformal-mapping inversion.
 
@@ -653,7 +653,7 @@ plt.show()
 # ### 2.1 Coupled Qubit Model
 #
 # We model two adjacent transmon qubits coupled through a parasitic mutual
-# capacitance $C_m$
+# capacitance $C_\text{m}$
 # {cite:p}`krantzQuantumEngineersGuide2019,voolIntroductionQuantumElectromagnetic2017`.
 # A voltage pulse is applied to qubit 1, and we observe the induced response on
 # qubit 2 (crosstalk).
@@ -662,7 +662,7 @@ plt.show()
 #
 # ```{math}
 # :label: eq:coupled-qubits
-# \text{Drive} \to Q_1 \overset{C_m}{\longleftrightarrow} Q_2 \to \text{GND}
+# \text{Drive} \to Q_1 \overset{C_\text{m}}{\longleftrightarrow} Q_2 \to \text{GND}
 # ```
 
 # %%
@@ -848,10 +848,10 @@ plt.show()
 # ### 2.5 Crosstalk Sensitivity Analysis
 #
 # We use `jax.grad` to differentiate the peak crosstalk voltage with respect
-# to $\log C_m$. The resulting sensitivity
+# to $\log C_\text{m}$. The resulting sensitivity
 # $\partial V_{\text{peak}}/\partial \log C_m = C_m \, \partial
 # V_{\text{peak}}/\partial C_m$ has units of volts: it is the absolute
-# change in peak victim voltage per unit fractional change in $C_m$,
+# change in peak victim voltage per unit fractional change in $C_\text{m}$,
 # which in a real design is set by the physical spacing between qubits.
 #
 # Since Circulax runs entirely in JAX, the gradient flows through the ODE

@@ -33,7 +33,7 @@ def plate_capacitor_capacitance_analytical(
 
         k &= \frac{s}{s + 2W} \\
         k' &= \sqrt{1 - k^2} \\
-        \epsilon_{\text{eff}} &= \frac{\epsilon_r + 1}{2} \\
+        \epsilon_{\text{eff}} &= \frac{\epsilon_\text{r} + 1}{2} \\
         C &= \epsilon_0 \epsilon_{\text{eff}} L \frac{K(k')}{K(k)}
 
     where :math:`s` is the gap, :math:`W` is the pad width, and :math:`L` is the pad length.
@@ -69,18 +69,18 @@ def interdigital_capacitor_capacitance_analytical(
     .. math::
 
         \eta &= \frac{w}{w + g} \\
-        k_i &= \sin\left(\frac{\pi \eta}{2}\right) \\
-        k_e &= \frac{2\sqrt{\eta}}{1 + \eta} \\
-        C_i &= \epsilon_0 L (\epsilon_r + 1) \frac{K(k_i)}{K(k_i')} \\
-        C_e &= \epsilon_0 L (\epsilon_r + 1) \frac{K(k_e)}{K(k_e')}
+        k_\text{i} &= \sin\left(\frac{\pi \eta}{2}\right) \\
+        k_\text{e} &= \frac{2\sqrt{\eta}}{1 + \eta} \\
+        C_\text{i} &= \epsilon_0 L (\epsilon_\text{r} + 1) \frac{K(k_\text{i})}{K(k_\text{i}')} \\
+        C_\text{e} &= \epsilon_0 L (\epsilon_\text{r} + 1) \frac{K(k_\text{e})}{K(k_\text{e}')}
 
     The total mutual capacitance for :math:`n` fingers is:
 
     .. math::
 
         C = \begin{cases}
-            C_e / 2 & \text{if } n=2 \\
-            (n - 3) \frac{C_i}{2} + 2 \frac{C_i C_e}{C_i + C_e} & \text{if } n > 2
+            C_\text{e} / 2 & \text{if } n=2 \\
+            (n - 3) \frac{C_\text{i}}{2} + 2 \frac{C_\text{i} C_\text{e}}{C_\text{i} + C_\text{e}} & \text{if } n > 2
         \end{cases}
 
     where :math:`w` is the finger thickness (width), :math:`g` is the finger gap, and
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     plt.xlabel("Pad Length (µm)")
     plt.ylabel("Capacitance (fF)")
     plt.title(
-        rf"Plate Capacitor Capacitance ($\mathtt{{width}}=${width_plate} µm, $\epsilon_r={ep_r}$)"
+        rf"Plate Capacitor Capacitance ($\mathtt{{width}} = {width_plate}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
     )
     plt.grid(True)
     plt.legend()
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     plt.xlabel("Overlap Length (µm)")
     plt.ylabel("Mutual Capacitance (fF)")
     plt.title(
-        rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}}=${finger_gap} µm, $\mathtt{{thickness}}=${thickness} µm, $\epsilon_r={ep_r}$)"
+        rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}} = {finger_gap}\,\text{{µm}}$, $\mathtt{{thickness}} = {thickness}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
     )
     plt.grid(True)
     plt.legend()

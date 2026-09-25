@@ -26,7 +26,7 @@ def self_inductance_strip(length: float, width: float, thickness: float) -> jax.
 
     .. math::
 
-        L_s = \frac{\mu_0 l}{2\pi} \left[ \ln\left(\frac{2l}{w+t}\right) + 0.5 + \frac{w+t}{3l} \right]
+        L_\text{s} = \frac{\mu_0 l}{2\pi} \left[ \ln\left(\frac{2l}{w+t}\right) + 0.5 + \frac{w+t}{3l} \right]
 
     Args:
         length: Length of the strip in m.
@@ -51,7 +51,7 @@ def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
 
     .. math::
 
-        L_m(d) = \frac{\mu_0 l}{2\pi} \left[ \ln \left( \frac{l}{d} + \sqrt{1 + \frac{l^2}{d^2}} \right) - \sqrt{1 + \frac{d^2}{l^2}} + \frac{d}{l} \right]
+        L_\text{m}(d) = \frac{\mu_0 l}{2\pi} \left[ \ln \left( \frac{l}{d} + \sqrt{1 + \frac{l^2}{d^2}} \right) - \sqrt{1 + \frac{d^2}{l^2}} + \frac{d}{l} \right]
 
     Args:
         length: Length of the strips in m.
@@ -82,25 +82,25 @@ def meander_inductor_inductance_analytical(
 
     .. math::
 
-        L_{\text{total}} = L_g + L_k
+        L_{\text{total}} = L_\text{g} + L_\text{k}
 
-    The geometric inductance :math:`L_g` is calculated by summing the
+    The geometric inductance :math:`L_\text{g}` is calculated by summing the
     self-inductances of all horizontal segments and the mutual inductances
     between all pairs of parallel segments, following
     :cite:`chenCompactInductorcapacitorResonators2023`:
 
     .. math::
 
-        L_g = N L_s + 2 \sum_{k=1}^{N-1} (N-k) (-1)^k L_m(k p)
+        L_\text{g} = N L_\text{s} + 2 \sum_{k=1}^{N-1} (N-k) (-1)^k L_\text{m}(k p)
 
     where :math:`N` is the number of turns and :math:`p` is the pitch.
 
-    The kinetic inductance :math:`L_k` is calculated from the sheet
+    The kinetic inductance :math:`L_\text{k}` is calculated from the sheet
     inductance :math:`L_\square`:
 
     .. math::
 
-        L_k = L_\square \cdot \frac{\ell_{\text{total}}}{w}
+        L_\text{k} = L_\square \cdot \frac{\ell_{\text{total}}}{w}
 
     Args:
         n_turns: Number of horizontal meander runs.
@@ -262,7 +262,7 @@ def lumped_element_resonator(
 
     .. math::
 
-        f_r = \frac{1}{2\pi\sqrt{LC}}
+        f_\text{r} = \frac{1}{2\pi\sqrt{LC}}
 
     where :math:`C` is computed from the interdigital capacitor geometry
     using :func:`~qpdk.models.capacitor.interdigital_capacitor_capacitance_analytical`

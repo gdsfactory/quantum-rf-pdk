@@ -241,7 +241,7 @@ plt.show(block=False)
 # and gap to the ground plane are subject to process variations introduced during
 # lithography and etching.  Even sub-micrometre deviations from the nominal
 # geometry change the characteristic impedance $Z_0$, effective
-# permittivity $\varepsilon_{\mathrm{eff}}$, and — most critically — the
+# permittivity $\varepsilon_{\text{eff}}$, and — most critically — the
 # resonance frequencies of the on-chip resonators.
 #
 # This section performs a **Monte Carlo analysis** inspired by the
@@ -261,7 +261,7 @@ plt.show(block=False)
 # ## CPW impedance sensitivity
 #
 # Before running the Monte Carlo simulation it is instructive to see how
-# $Z_0$ and $\varepsilon_{\mathrm{eff}}$ depend on the CPW
+# $Z_0$ and $\varepsilon_{\text{eff}}$ depend on the CPW
 # dimensions.
 #
 # ![CPW cross-section showing center width and slot gaps](figures/cpw-cross-section.svg)
@@ -304,7 +304,7 @@ ax1.legend(fontsize=8)
 ax1.grid(True)
 
 ax2.set_xlabel("Centre-conductor width [µm]")
-ax2.set_ylabel(r"$\varepsilon_{\mathrm{eff}}$")
+ax2.set_ylabel(r"$\varepsilon_{\text{eff}}$")
 ax2.set_title("Effective permittivity")
 ax2.legend(fontsize=8)
 ax2.grid(True)
@@ -314,7 +314,7 @@ plt.tight_layout()
 plt.show(block=False)
 
 # %% [markdown]
-# The plots show that $Z_0$ and $\varepsilon_{\mathrm{eff}}$ are
+# The plots show that $Z_0$ and $\varepsilon_{\text{eff}}$ are
 # sensitive to both width and gap.  A ±0.5 µm width shift at the nominal
 # 10 µm / 6 µm geometry translates to a $Z_0$ change of several ohms and
 # a corresponding shift in resonance frequency.
