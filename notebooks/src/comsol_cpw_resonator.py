@@ -46,7 +46,7 @@
 # `Eigenfrequency` step whose search is set per edge mesh. **Stage 2** is the
 # ported study: the same sheet model with the two numeric TEM ports and their
 # boundary mode analysis steps kept, a ported eigenfrequency search repeated on
-# three meander edge meshes, and a driven $S_{21}$ window whose notch is checked
+# four meander edge meshes, and a driven $S_{21}$ window whose notch is checked
 # against direct single-frequency solves. Both stages have been solved on a
 # licensed machine, and the saved figures and numbers on this page are their
 # exported output.
@@ -54,32 +54,38 @@
 # ## What the saved output is
 #
 # It is a record of a COMSOL workflow, not an experimentally validated QPDK
-# resonator prediction. The ported eigen solve has been repeated on three
+# resonator prediction. The ported eigen solve has been repeated on four
 # meander edge meshes. Only the meander edge sizes change between rows: the
 # layout, the PEC/air/silicon enclosure, the boundary mode analysis steps, both
-# numeric ports, the 100 µm / 2 µm global mesh, and the four-mode search near a
-# 7.0 GHz shift with the largest-real-part rule are the same on all three.
+# numeric ports, the 100 µm / 2 µm global mesh, the meander edge box behind the
+# local sizing, the field cut plane, and the four-mode search near a
+# 7.0 GHz shift with the largest-real-part rule are the same on all four.
 #
 # | meander edge | elements | selected mode (GHz) | eigen $Q$ | meander/feed p95 |
 # | --- | --- | --- | --- | --- |
 # | 4 µm / 0.4 µm | 659682 | 7.326615894917222 | 6852.73055 | 2.823515744 |
 # | 3 µm / 0.3 µm | 847139 | 7.310673309271429 | 6808.34564731 | 3.62555436556 |
 # | 2 µm / 0.2 µm | 1293967 | 7.291804565419142 | 6756.96810772 | 5.34819981173 |
+# | 1.8 µm / 0.18 µm | 1473313 | 7.299221820394853 | 6735.1965161720545 | 3.387505909396685 |
 #
 # The selected mode is the meander-localised one on every row. The successive
-# signed shifts are **-15.943 MHz** and **-18.869 MHz**, and their
-# magnitudes grow, so the series does **not** demonstrate mesh convergence and no
-# limit is extrapolated from it. The eigen $Q = f_r / (2|f''|)$ drifts from
-# 6852.73055 to 6756.96810772 and the localisation ratio from 2.823515744 to
-# 5.34819981173 over the same three meshes. That $Q$ is the eigenvalue's own
-# damping, which carries the port loading and each mesh's numerical error, and it
-# is not read from the notch width.
+# signed shifts are **-15.943 MHz**, **-18.869 MHz** and **+7.417 MHz**: the
+# magnitude grows over the first two and the third reverses direction and is
+# smaller, so the series does **not** demonstrate mesh convergence, and no limit
+# is extrapolated from it. A single reversal establishes neither a trend nor an
+# uncertainty bound. The eigen $Q = f_r / (2|f''|)$ moves from
+# 6852.73055 to 6735.1965161720545 and the localisation ratio moves through
+# 2.823515744, 3.62555436556 and 5.34819981173 to 3.387505909396685 over the
+# same four meshes, neither falling nor rising monotonically. That $Q$ is the
+# eigenvalue's own damping, which carries the port loading and each mesh's
+# numerical error, and it is not read from the notch width.
 #
-# The finest of the three, **2 µm / 0.2 µm**, is the selected main stage-2 row:
-# it is the mesh the driven $S_{21}$ window and the saved field export belong to,
-# and it is what the ported outputs below lead with. The 4 µm / 0.4 µm and
-# 3 µm / 0.3 µm rows are kept as the refinement history that shows the shifts
-# growing.
+# The **2 µm / 0.2 µm** row is the selected main stage-2 row: it is the mesh the
+# driven $S_{21}$ window and the saved field export belong to, and it is what the
+# ported outputs below lead with. It is no longer the finest row in the series:
+# the 4 µm / 0.4 µm and 3 µm / 0.3 µm rows are coarser, the 1.8 µm / 0.18 µm row
+# is finer, and those three are kept as the refinement history. The
+# 1.8 µm / 0.18 µm row was solved eigen-only, so it has no driven data of its own.
 #
 # The driven $S_{21}$ window and the field map belong to that **2 µm / 0.2 µm
 # row** alone. Its selected mode sits at **7.291804565419142 GHz** with an
@@ -104,17 +110,21 @@
 # ratio, the sixteenth of the sixteen modes that row searched. The numeric ports
 # in stage 2 are matched terminations, so they load the mode: the ported
 # eigenvalue is not expected to sit at the port-free frequency, and the
-# 7.292 GHz row does not predict any of the three ported rows. The port-free row
+# 7.292 GHz row does not predict any of the four ported rows. The port-free row
 # and the selected ported row happen to share the same 2 µm / 0.2 µm local edge
 # sizes, but they still differ in both port condition and search, so the small
 # difference between them is not assigned to either change alone.
 #
-# No convergence result is claimed. The ported series has three solved meshes,
-# but the shifts between them grow rather than shrink, so no frequency, ratio, or
+# No convergence result is claimed. The ported series has four solved meshes,
+# but the shifts do not fall monotonically: they grow over the first three rows
+# and then reverse sign and shrink at the finest, so no frequency, ratio, or
 # quality factor here is mesh independent, and the driven notch is verified on
-# the selected 2 µm / 0.2 µm mesh alone. The finer stage-1 edge mesh at
+# the selected 2 µm / 0.2 µm mesh alone. One reversal does not establish a trend
+# or an uncertainty bound. The finer stage-1 edge mesh at
 # 1 µm / 0.1 µm never finished, so the port-free series has one row. No quality
-# factor read from the notch width is independently verified.
+# factor read from the notch width is independently verified. A further ported
+# eigen row at 1.7 µm / 0.17 µm meander edge sizes is being solved and has
+# returned no result yet.
 #
 # ## How this page is published
 #
@@ -176,7 +186,7 @@
 # the matched-load terminations as well, so the eigenfrequencies come back closer
 # to real and any damping is numerical rather than partly the external decay of a
 # driven line. Stage 2, ported, is what turns an eigenmode into an S-parameter
-# statement. Its eigen solve has been repeated on three meander edge meshes, and
+# statement. Its eigen solve has been repeated on four meander edge meshes, and
 # it is where the driven notch comes from.
 #
 # Both use the same five ingredients:
@@ -190,15 +200,15 @@
 # 3. A **mesh pinned to absolute sizes**, so the resolution near the meander does
 #    not follow the size of the enclosing box. The bulk runs at 100 µm / 2 µm in
 #    every stage, the stage-1 meander edges at 2 µm / 0.2 µm, and the stage-2
-#    meander edges at 4 µm / 0.4 µm, 3 µm / 0.3 µm, and 2 µm / 0.2 µm in the
-#    three rows of the ported eigen series. The stage-2 default is the finest of
-#    those, 2 µm / 0.2 µm, so the licensed stage-2 branch solves and saves the
-#    selected main row unless the constant is set coarser.
+#    meander edges at 4 µm / 0.4 µm, 3 µm / 0.3 µm, 2 µm / 0.2 µm, and
+#    1.8 µm / 0.18 µm in the four rows of the ported eigen series. The stage-2
+#    default is 2 µm / 0.2 µm, the selected main row the licensed stage-2 branch
+#    solves and saves unless the constant is set coarser or tighter.
 # 4. In stage 1, a plain **eigenfrequency search**, with the shift, the mode
 #    count, and the eigenvalue selection set per edge-mesh row. In stage 2,
 #    **boundary mode analysis** steps and **numeric TEM ports** with voltage
 #    integration lines across the CPW gap are kept, four modes are searched near
-#    a 7.0 GHz shift with the largest-real-part rule on each of the three ported
+#    a 7.0 GHz shift with the largest-real-part rule on each of the four ported
 #    eigen meshes, and the driven window
 #    carries an **AWE** curve plus direct single-frequency solves at the two
 #    flanks, the centre, and the AWE minimum.
@@ -211,14 +221,14 @@
 #     A["Ported layout:<br>metal polygons and two open feed planes"]
 #     B["Sheet model:<br>air above, silicon below, metal faces at z = 0"]
 #     C["Stage 1 physics:<br>PEC on the metal and no ports,<br>so no matched loads"]
-#     D["Mesh:<br>absolute global 100/2 um,<br>meander edges 2/0.2 um stage 1;<br>4/0.4, 3/0.3 and 2/0.2 um<br>in the ported eigen series,<br>2/0.2 um selected"]
+#     D["Mesh:<br>absolute global 100/2 um,<br>meander edges 2/0.2 um stage 1;<br>4/0.4, 3/0.3, 2/0.2 and<br>1.8/0.18 um in the ported<br>eigen series, 2/0.2 um selected"]
 #     E["Stage 1 study:<br>Eigenfrequency, 16 modes<br>at a 7.5 GHz shift,<br>then emw.normE per mode"]
 #     F["Stage 1 result:<br>port-free meander mode,<br>7.292 GHz, ratio 5.398"]
 #     G["Stage 2 study:<br>BMA and two numeric ports kept,<br>4 ported modes at a<br>7.0 GHz shift (eigwhich=lr)<br>on each edge mesh"]
-#     H["Ported eigen series:<br>7.32662, 7.31067, 7.29180 GHz;<br>Q 6853, 6808, 6757;<br>shifts grow, not converged"]
+#     H["Ported eigen series:<br>7.32662, 7.31067, 7.29180,<br>7.29922 GHz; Q 6853, 6808,<br>6757, 6735;<br>shifts grow then reverse, not converged"]
 #     I["Driven S21 window:<br>AWE curve plus direct solves<br>at both flanks, the centre<br>and the AWE minimum"]
 #     J["Driven result (2/0.2 um selected):<br>direct notch -23.62 dB<br>at 7.29170 GHz"]
-#     K["Pending:<br>driven window on finer meshes,<br>and 1.8 and 1.7 um ported<br>eigen rows, no results yet"]
+#     K["Pending:<br>driven window on finer meshes,<br>and the 1.7 um ported<br>eigen row, still solving"]
 #     A --> B --> C --> D
 #     D --> E --> F
 #     D --> G --> H
@@ -235,10 +245,11 @@
 # mode spectrum and localisation ratio. Separately, on the same sheet model with
 # the boundary mode analysis steps and both numeric ports kept, four ported modes
 # near a 7.0 GHz shift with the largest-real-part rule, repeated on meander edge
-# meshes of 4/0.4, 3/0.3 and 2/0.2 um, then an AWE curve over the driven window
-# with direct solves at the flanks, centre and AWE minimum on the selected 2/0.2
-# um mesh. The frequency shifts between the three ported meshes grow, so the
-# series shows no convergence, and further refinement has returned no result yet.
+# meshes of 4/0.4, 3/0.3, 2/0.2 and 1.8/0.18 um, then an AWE curve over the driven
+# window with direct solves at the flanks, centre and AWE minimum on the selected
+# 2/0.2 um mesh. The frequency shifts between the four ported meshes grow over the
+# first three rows and then reverse at the finest, so the series shows no
+# convergence, and a further row at 1.7 um is still being solved.
 # ::::
 #
 # The outer air and silicon walls use COMSOL's default PEC boundary. This is a
@@ -290,9 +301,10 @@
 #   terminations, so the ported eigenvalues are not the port-free ones. Whether
 #   the meander-localised mode survives as a ported eigenmode, and where its
 #   loaded frequency lands, comes from the ported eigen solve. Here it does
-#   survive on all three ported meshes: 7.326615894917222 GHz, 7.310673309271429
-#   GHz and 7.291804565419142 GHz, with meander-to-feed 95th percentile ratios of
-#   2.823515744, 3.62555436556 and 5.34819981173, against the port-free
+#   survive on all four ported meshes: 7.326615894917222 GHz, 7.310673309271429
+#   GHz, 7.291804565419142 GHz and 7.299221820394853 GHz, with meander-to-feed
+#   95th percentile ratios of 2.823515744, 3.62555436556, 5.34819981173 and
+#   3.387505909396685, against the port-free
 #   7.292084525308305 GHz. The selected 2 µm / 0.2 µm ported row sits 0.280 MHz
 #   below the port-free row, but the two share only their local edge sizes and
 #   still differ in both port loading and search, so that difference cannot be
@@ -323,16 +335,18 @@
 #
 # The values come from the licensed solves described below, and both stages have
 # run, but they are not a validated device prediction. The ported eigen solve has
-# three solved meshes, and the frequency shifts between them grow rather than
-# shrink, so no frequency, ratio, or quality factor here has been shown to be mesh
-# independent and no limit is extrapolated from the series. The driven window and
+# four solved meshes, and the frequency shifts between them grow over the first
+# three rows and then reverse and shrink at the finest, so no frequency, ratio, or
+# quality factor here has been shown to be mesh independent and no limit is
+# extrapolated from the series. The driven window and
 # its field map come from the selected 2 µm / 0.2 µm mesh only.
 # The metal is a perfect conductor with no surface resistance or kinetic
 # inductance, so conductor loss and its frequency shift are missing. The feed
 # extension changes the layout relative to the reference cell. The
 # **7.292084525308305 GHz** row is the *port-free* mode, not a ported one: the
-# ported rows sit at 7.326615894917222 GHz, 7.310673309271429 GHz and
-# 7.291804565419142 GHz, and the ported and port-free sets differ in both loading
+# ported rows sit at 7.326615894917222 GHz, 7.310673309271429 GHz,
+# 7.291804565419142 GHz and 7.299221820394853 GHz, and the ported and port-free
+# sets differ in both loading
 # and search, so they are never merged. The driven notch is verified at the four
 # directly solved frequencies only: the curve between them is a fit, so any
 # quality factor read from its linewidth is not independently verified. Treat the
@@ -1446,7 +1460,8 @@ if RUN_COMSOL and not MPH_AVAILABLE:
 # 1.294 million elements and the mode at 7.292084525308305 GHz with a ratio of
 # 5.398, the sixteenth of its sixteen modes. This is a port-free result. It is
 # **not** any of the ported rows from stage 2, which sit at 7.326615894917222 GHz,
-# 7.310673309271429 GHz and 7.291804565419142 GHz under the matched port
+# 7.310673309271429 GHz, 7.291804565419142 GHz and 7.299221820394853 GHz under the
+# matched port
 # terminations; the two sets are reported separately and never merged. The
 # element count happens to sit close to the 2 µm / 0.2 µm ported row's, but the
 # port-free row has the ports removed and a different search, so the two are not
@@ -1902,26 +1917,35 @@ else:
 # that fails leaves the stable pair on the mesh its driven data came from. That is
 # how the saved 2 µm / 0.2 µm row was produced.
 #
-# The ported eigen solve has been run on three edge meshes, pinned at 4 µm /
-# 0.4 µm, 3 µm / 0.3 µm and 2 µm / 0.2 µm on the meander edges over the same
-# 100 µm / 2 µm global mesh, giving **659682**, **847139** and **1293967**
-# elements. The finest of the three, 2 µm / 0.2 µm, is the selected main row that
-# the saved outputs lead with. Four modes were searched near a 7.0 GHz shift with
-# `eigwhich="lr"` on each. The selected mode is the meander-localised one on all
-# three, at **7.326615894917222 GHz**, **7.310673309271429 GHz** and
-# **7.291804565419142 GHz**, with loaded eigen $Q = f_r / (2|f''|)$ of
-# **6852.73055**, **6808.34564731** and **6756.96810772** and meander-to-feed
-# 95th percentile field ratios of **2.823515744**, **3.62555436556** and
-# **5.34819981173**. The signed shifts between consecutive rows are -15.943 MHz
-# and -18.869 MHz, whose magnitudes grow, so this series does not show
-# convergence. Each $Q$ comes from that row's eigenvalue damping, which carries
-# the port loading and that mesh's own numerical error; none is read from the
-# notch width and none is a converged quality factor. The driven window below is
-# solved on the selected 2 µm / 0.2 µm row only.
+# The ported eigen solve has been run on four edge meshes, pinned at 4 µm /
+# 0.4 µm, 3 µm / 0.3 µm, 2 µm / 0.2 µm and 1.8 µm / 0.18 µm on the meander edges
+# over the same 100 µm / 2 µm global mesh, giving **659682**, **847139**,
+# **1293967** and **1473313** elements. The 2 µm / 0.2 µm row is the selected main
+# row that the saved outputs lead with; the finer 1.8 µm / 0.18 µm row was solved
+# eigen-only, without a driven window. Four modes were searched near a 7.0 GHz
+# shift with `eigwhich="lr"` on each. The selected mode is the meander-localised
+# one on all four, at **7.326615894917222 GHz**, **7.310673309271429 GHz**,
+# **7.291804565419142 GHz** and **7.299221820394853 GHz**, with loaded eigen
+# $Q = f_r / (2|f''|)$ of **6852.73055**, **6808.34564731**, **6756.96810772** and
+# **6735.1965161720545** and meander-to-feed 95th percentile field ratios of
+# **2.823515744**, **3.62555436556**, **5.34819981173** and
+# **3.387505909396685**. The signed shifts between consecutive rows are -15.943 MHz,
+# -18.869 MHz and +7.417 MHz, whose magnitudes grow over the first two steps and
+# then reverse to a smaller value, so this series does not show convergence and no
+# limit is extrapolated; one reversal is not a trend. Each $Q$ comes from that
+# row's eigenvalue damping, which carries the port loading and that mesh's own
+# numerical error; none is read from the notch width and none is a converged
+# quality factor. The driven window below is solved on the selected
+# 2 µm / 0.2 µm row only.
 #
 # The selected 2 µm / 0.2 µm row's imaginary part is **+539576.6599142547 Hz**
 # and its field export annotation matches its selected mode, so the ported field
-# map is that row's.
+# map is that row's. The 1.8 µm / 0.18 µm row exported its field the same way:
+# the export is tied to the solved dataset and its Study1/Solution1 solution, its
+# header's complex-frequency annotation agrees with the selected
+# 7.299221820394853 GHz mode within the same $10^{-4}$ relative tolerance, both
+# numeric ports and their boundary mode analysis steps were present, and the solve
+# reported no problems. Its imaginary part is **+541871.4808742775 Hz**.
 #
 # ### A dense curve without a many-hour sweep
 #
@@ -1995,7 +2019,8 @@ else:
 # - **Do not quote a quality factor from one mesh.** The notch width is the
 #   quantity a $Q$ comes from, and the driven window is solved on one edge mesh
 #   only, so a width from it is not settled any more than the frequency is. That
-#   is why the 6852.73055, 6808.34564731 and 6756.96810772 figures above are
+#   is why the 6852.73055, 6808.34564731, 6756.96810772 and 6735.1965161720545
+#   figures above are
 #   labelled as each ported row's own loaded eigenvalue damping, which moves with
 #   the mesh, and no $Q$ is read from the fitted curve.
 
@@ -3737,11 +3762,13 @@ else:
 # damping ratio with the port loading included, not as a Q read from a measured or
 # simulated linewidth. The full ported series, one row per edge mesh, is charted
 # under "Ported eigen mesh refinement" below: **659682** elements at
-# 7.326615894917222 GHz with a localisation ratio of 2.823515744, and **847139**
-# elements at 7.310673309271429 GHz with 3.62555436556, rising to 5.34819981173
-# on the selected row. The shifts between the three rows are -15.943 MHz and
-# -18.869 MHz, whose magnitudes grow, so none of these frequencies or ratios is
-# shown to be mesh independent.
+# 7.326615894917222 GHz with a localisation ratio of 2.823515744, **847139**
+# elements at 7.310673309271429 GHz with 3.62555436556, **1293967** at
+# 7.291804565419142 GHz with 5.34819981173, and the finer eigen-only **1473313**
+# elements at 7.299221820394853 GHz with 3.387505909396685. The shifts between the
+# four rows are -15.943 MHz, -18.869 MHz and +7.417 MHz, whose magnitudes grow over
+# the first two steps and then reverse to a smaller value, so none of these
+# frequencies or ratios is shown to be mesh independent.
 #
 # When the file is absent, the cell says so and infers nothing.
 
@@ -3815,9 +3842,10 @@ else:
 # that mode's field.
 #
 # On the selected 2 µm / 0.2 µm row the loaded mode's meander-to-feed 95th
-# percentile field ratio is **5.34819981173**, and the coarser ported meshes put
-# the same ratio at 2.823515744 and 3.62555436556. Those are three edge meshes
-# under the same port conditions, and the port-free row's 5.398 comes from a
+# percentile field ratio is **5.34819981173**, and the other ported meshes put
+# the same ratio at 2.823515744, 3.62555436556 and 3.387505909396685. Those are
+# four edge meshes under the same port conditions, and the ratio does not move
+# monotonically across them, and the port-free row's 5.398 comes from a
 # different port condition and a different search as well, so neither the spread
 # across the ported meshes nor the comparison with 5.398 is read as the loading
 # moving the field. Each is reported as its own number.
@@ -3986,25 +4014,31 @@ else:
 # When `comsol_cpw_ported_mesh_series.json` is present, this cell reads the ported
 # eigen study repeated on tighter meander edge meshes and puts the selected
 # loaded frequency against the mesh element count, coarse to fine: 4 µm / 0.4 µm,
-# 3 µm / 0.3 µm, and 2 µm / 0.2 µm in this study. Only the mesh changes between
-# rows: the same layout, the same PEC sheet and enclosure, the same global
-# 100 µm / 2 µm mesh, the same numeric TEM ports with their boundary mode
-# analysis steps, and the same four-mode search near a 7.0 GHz shift with
-# `eigwhich="lr"`. Three rows are solved, which is what the chart below draws:
+# 3 µm / 0.3 µm, 2 µm / 0.2 µm and 1.8 µm / 0.18 µm in this study. Only the local
+# edge sizes change between rows: the same layout, the same PEC sheet and
+# enclosure, the same global 100 µm / 2 µm mesh, the same meander edge box and
+# field cut plane, the same numeric TEM ports with their boundary mode analysis
+# steps, and the same four-mode search near a 7.0 GHz shift with
+# `eigwhich="lr"`. Four rows are solved, which is what the chart below draws:
 # 659682 elements at 7.326615894917222 GHz with an eigen $Q$ of 6852.73055 and a
 # localisation ratio of 2.823515744, 847139 at 7.310673309271429 GHz with
-# 6808.34564731 and 3.62555436556, and 1293967 at 7.291804565419142 GHz with
-# 6756.96810772 and 5.34819981173. The same three rows are tabulated under
-# "What the saved output is" above. The finest row, 2 µm / 0.2 µm, is the selected
-# main stage-2 row that the driven window and the saved field map belong to; the
-# two coarser rows are kept as the refinement history.
+# 6808.34564731 and 3.62555436556, 1293967 at 7.291804565419142 GHz with
+# 6756.96810772 and 5.34819981173, and 1473313 at 7.299221820394853 GHz with
+# 6735.1965161720545 and 3.387505909396685. The same four rows are tabulated under
+# "What the saved output is" above. The 2 µm / 0.2 µm row is the selected main
+# stage-2 row that the driven window and the saved field map belong to; the two
+# coarser rows and the finer 1.8 µm / 0.18 µm eigen-only row are kept as the
+# refinement history.
 #
 # Between the coarse row and the middle row the frequency moves by -15.943 MHz,
-# and between the middle row and the finest by -18.869 MHz. Those magnitudes
-# **grow** with refinement, so the series does not demonstrate convergence, and
-# no limit is extrapolated from three points. The eigen $Q$ drifts down from
-# 6852.73055 to 6756.96810772 and the localisation ratio rises from 2.823515744
-# to 5.34819981173 over the same rows.
+# between the middle pair by -18.869 MHz, and then by +7.417 MHz onto the finest.
+# Those magnitudes **grow** over the first two steps and the last reverses
+# direction and is smaller, which is not a shrinking sequence, so the series does
+# not demonstrate convergence, and no limit is extrapolated from four points; one
+# reversal establishes neither a trend nor an uncertainty bound. The eigen $Q$
+# runs down from 6852.73055 to 6735.1965161720545 and the localisation ratio is
+# not monotonic, moving 2.823515744, 3.62555436556, 5.34819981173 then
+# 3.387505909396685 over the same rows.
 #
 # ### How the series is produced
 #
@@ -4030,7 +4064,8 @@ else:
 # To obtain the chart, set `RUN_COMSOL = True` and `RUN_PORTED_DRIVEN = True` on a
 # licensed machine and run the stage-2 cell once per meander edge size, tightening
 # `PORTED_EDGE_HMAX_UM` / `PORTED_EDGE_HMIN_UM` between runs, for example 4 µm /
-# 0.4 µm, then 3 µm / 0.3 µm, then 2 µm / 0.2 µm. Each run replaces its own row if
+# 0.4 µm, then 3 µm / 0.3 µm, then 2 µm / 0.2 µm, then 1.8 µm / 0.18 µm. Each run
+# replaces its own row if
 # that edge size was solved before and adds one if it was not, so the coarse-to-
 # fine order comes out of the element counts rather than the order the runs
 # happened in. The port-free series is not needed, and a refinement row does not
@@ -4053,8 +4088,8 @@ else:
 # monotonically, and this series is eigen-only: the driven notch depth and
 # linewidth come from a driven sweep on its own mesh, so an eigenfrequency that
 # stops moving does not establish that the notch has converged. Here the
-# eigenfrequency has not stopped moving: the shifts grow as the meander edges
-# tighten. Invalid rows are reported and no chart is drawn.
+# eigenfrequency has not stopped moving: the shifts grow over the first three rows
+# and then reverse at the finest. Invalid rows are reported and no chart is drawn.
 
 # %%
 # Read side only: one row per meander edge mesh, coarse to fine, and nothing
@@ -4183,10 +4218,10 @@ else:
 #    study, all from layout geometry.
 # 3. Replaced the physics-controlled mesh with absolute sizes: 100 µm / 2 µm
 #    globally, 2 µm / 0.2 µm on a named meander edge selection for the port-free
-#    series, and 4 µm / 0.4 µm, 3 µm / 0.3 µm, and 2 µm / 0.2 µm on the same
-#    selection across the three rows of the ported eigen series, excluding the
-#    feedline edges. The ported default, and so the row the saved stage-2 outputs
-#    come from, is the finest of the three, 2 µm / 0.2 µm.
+#    series, and 4 µm / 0.4 µm, 3 µm / 0.3 µm, 2 µm / 0.2 µm, and 1.8 µm / 0.18 µm
+#    on the same selection across the four rows of the ported eigen series,
+#    excluding the feedline edges. The ported default, and so the row the saved
+#    stage-2 outputs come from, is 2 µm / 0.2 µm, which is no longer the finest row.
 # 4. Removed the port study steps and the port physics features, in that order,
 #    and ran the port-free eigenfrequency search. The coarser row searched
 #    sixteen modes near a 7.5 GHz shift and is the one solved: about 1.294
@@ -4199,17 +4234,21 @@ else:
 # 5. Replotted the mode spectrum and localisation ratios and the field map for the
 #    selected port-free mode. This is a port-free result and no convergence
 #    result: one mesh is solved and the second never returned.
-# 6. Ran stage 2 on three meander edge meshes with the boundary mode analysis
+# 6. Ran stage 2 on four meander edge meshes with the boundary mode analysis
 #    steps and both numeric TEM ports kept, four modes searched near a 7.0 GHz
 #    shift with `eigwhich="lr"` on each. The rows are 659682 elements at
-#    7.326615894917222 GHz, 847139 at 7.310673309271429 GHz, and 1293967 at
-#    7.291804565419142 GHz, with loaded eigen ratios $f_r/(2|f''|)$ of 6852.73055,
-#    6808.34564731 and 6756.96810772 and meander-to-feed 95th percentile field
-#    ratios of 2.823515744, 3.62555436556 and 5.34819981173. The signed shifts
-#    between consecutive rows are -15.943 MHz and -18.869 MHz, and their
-#    magnitudes grow, so the series shows no convergence. The finest row,
-#    2 µm / 0.2 µm, is the selected main stage-2 row. Only that selected row's
-#    field export is saved, and its complex-frequency annotation matches its
+#    7.326615894917222 GHz, 847139 at 7.310673309271429 GHz, 1293967 at
+#    7.291804565419142 GHz, and 1473313 at 7.299221820394853 GHz, with loaded
+#    eigen ratios $f_r/(2|f''|)$ of 6852.73055, 6808.34564731, 6756.96810772 and
+#    6735.1965161720545 and meander-to-feed 95th percentile field
+#    ratios of 2.823515744, 3.62555436556, 5.34819981173 and 3.387505909396685.
+#    The signed shifts
+#    between consecutive rows are -15.943 MHz, -18.869 MHz and +7.417 MHz: the
+#    magnitudes grow over the first two steps and the last reverses and is
+#    smaller, so the series shows no convergence. The 2 µm / 0.2 µm row is the
+#    selected main stage-2 row; the finer 1.8 µm / 0.18 µm row was solved
+#    eigen-only, without a driven window. The field map drawn below is the
+#    selected row's, and its complex-frequency annotation matches its
 #    7.291804565419142 GHz mode, so the ported map belongs to that row. These
 #    loaded modes are different objects from the port-free 7.292084525308305 GHz
 #    row and the two sets are never merged.
@@ -4229,19 +4268,23 @@ else:
 # What the page establishes is a scripted, reproducible path from layout through
 # meshing to a port-free localised eigenmode and then to a ported eigenmode with a
 # driven notch verified at four directly solved frequencies. The ported eigen
-# solve now has three meshes, but the frequency shifts between them grow with
-# refinement rather than shrink, so this is not a converged model and not a device
-# prediction, and no limit is extrapolated. The driven notch and the ported field
+# solve now has four meshes, but the frequency shifts between them grow over the
+# first three rows and then reverse at the finest, so this is not a converged
+# model and not a device prediction, and no limit is extrapolated; one reversal is
+# not a trend. The driven notch and the ported field
 # map come from the selected 2 µm / 0.2 µm row alone.
 #
 # ### Limitations
 #
-# - **Not mesh independent.** The ported eigen solve has three meander edge
-#   meshes, at 4 µm / 0.4 µm, 3 µm / 0.3 µm, and 2 µm / 0.2 µm, but the frequency
-#   shifts between them are -15.943 MHz and -18.869 MHz, so their magnitudes grow
-#   with refinement and the series is not converging. No frequency, localisation
+# - **Not mesh independent.** The ported eigen solve has four meander edge
+#   meshes, at 4 µm / 0.4 µm, 3 µm / 0.3 µm, 2 µm / 0.2 µm, and 1.8 µm / 0.18 µm,
+#   but the frequency
+#   shifts between them are -15.943 MHz, -18.869 MHz and +7.417 MHz, so the
+#   magnitudes grow over the first two steps and the last reverses to a smaller
+#   value: the series is not settling and one reversal is not a trend. No
+#   frequency, localisation
 #   ratio, or quality factor here is shown to be mesh independent, and nothing is
-#   extrapolated from the three rows. The port-free series has one solved mesh,
+#   extrapolated from the four rows. The port-free series has one solved mesh,
 #   with its finer one never completing. The driven notch and both field maps come
 #   from single meshes as well.
 # - **Not an experimentally validated prediction.** These are simulated
@@ -4257,9 +4300,10 @@ else:
 #   curve's shape between those points is a fit and is not a set of independent
 #   solves.
 # - No quality factor is verified from the notch width. The 6852.73055,
-#   6808.34564731 and 6756.96810772 figures are each ported row's loaded
+#   6808.34564731, 6756.96810772 and 6735.1965161720545 figures are each ported
+#   row's loaded
 #   eigenvalue damping ratio, which carries the port loading and that mesh's own
-#   numerical error and drifts with the mesh; a $Q$ from the fitted linewidth is
+#   numerical error and moves with the mesh; a $Q$ from the fitted linewidth is
 #   not independently checked.
 # - The notch is required at the directly solved AWE minimum, not at the ported
 #   eigenfrequency. A loaded mode can sit off the eigenfrequency, so a centre that
@@ -4282,20 +4326,21 @@ else:
 #
 # ### Next steps
 #
-# - **Refine further and watch the shift, not just the element count.** The three
-#   rows already solved show the shift growing with refinement, so the next step
-#   is tighter ported eigen meshes, checked by field localisation that each
-#   selects the same physical mode as the rows already solved, and read for
-#   whether the shifts start to shrink. Tighter ported eigen rows at 1.8 µm and
-#   1.7 µm meander edge sizes are in progress and have returned no result yet, so
-#   nothing is quoted for them. Those rows only need the eigen solve, so they can
-#   be run with `RUN_PORTED_EIGEN_ONLY = True`, which costs one solve per row
-#   instead of a full driven window. An extrapolated limit needs a trend that the
-#   three solved rows do not yet show.
+# - **Refine further and watch the shift, not just the element count.** The four
+#   rows already solved show the shift growing over the first three and then
+#   reversing to a smaller magnitude at the finest, which is one reversal and not
+#   a trend, so the next step is a tighter ported eigen mesh, checked by field
+#   localisation that it selects the same physical mode as the rows already
+#   solved, and read for whether the shifts start to shrink. A tighter ported
+#   eigen row at 1.7 µm / 0.17 µm meander edge size is being solved and has
+#   returned no result yet, so nothing is quoted for it. That row only needs the
+#   eigen solve, so it can be run with `RUN_PORTED_EIGEN_ONLY = True`, which costs
+#   one solve instead of a full driven window. An extrapolated limit needs a trend
+#   that the four solved rows do not yet show.
 # - **Extend the driven check beyond the selected mesh.** The notch is verified at
 #   four directly solved frequencies on the 2 µm / 0.2 µm row only, so a driven
 #   window on a finer mesh is still open.
-# - **Verify a quality factor from the notch width, not from the damping.** Three
+# - **Verify a quality factor from the notch width, not from the damping.** Four
 #   ported eigen meshes are in hand, so fit the linewidth where the direct solves
 #   actually constrain it and check that the width stops moving, so any $Q$ comes
 #   from solved points rather than from the fitted curve.
