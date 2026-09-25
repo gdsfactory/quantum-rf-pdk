@@ -8,7 +8,8 @@ arithmetic is checked rather than re-implemented.
 Face probes are resolved against a hand-written model of the interface: for a
 layout with holes, one face per metal polygon and one per hole once the sequence
 projects the work plane's metal onto it, and a single face covering all of it
-when it does not. The fake settles that from the calls the builder made, so the
+when it does not. The regions are cut out of one another, so an island drawn
+inside a hole takes that part of the hole away from the dielectric face. The fake settles that from the calls the builder made, so the
 wiring itself is what the imprint tests exercise: the union that keeps the
 interface, the Box selection that holds it, the construction work plane, and the
 projection that imprints its metal objects.
@@ -21,6 +22,8 @@ from unittest.mock import MagicMock
 
 import pytest
 from shapely.geometry import Point, Polygon
+from shapely.geometry.base import BaseGeometry
+from shapely.ops import unary_union
 
 from qpdk.simulation.comsol_layout import (
     ComsolBoundingBox,
@@ -76,6 +79,50 @@ _NARROW_HOLE_LAYOUT = ComsolLayout(
     ),
     feed_ports=(),
     bbox=ComsolBoundingBox(xmin=-10.0, ymin=-5.0, xmax=10.0, ymax=5.0),
+)
+#: A hole with a separate island inside it, covering the hole's own middle, (5,
+#: 5), which is where the hole probe used to aim.
+_ISLAND_IN_HOLE_LAYOUT = ComsolLayout(
+    polygons=(
+        ComsolPolygon(
+            outline=((0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)),
+            holes=(((2.0, 2.0), (8.0, 2.0), (8.0, 8.0), (2.0, 8.0)),),
+        ),
+        ComsolPolygon(
+            outline=((4.0, 4.0), (6.0, 4.0), (6.0, 6.0), (4.0, 6.0)),
+        ),
+    ),
+    feed_ports=(),
+    bbox=ComsolBoundingBox(xmin=0.0, ymin=0.0, xmax=10.0, ymax=10.0),
+)
+#: The same, with the island's edge through the hole's middle, so the old probe
+#: box straddled that edge.
+_ISLAND_EDGE_ON_HOLE_MIDDLE_LAYOUT = ComsolLayout(
+    polygons=(
+        ComsolPolygon(
+            outline=((0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)),
+            holes=(((2.0, 2.0), (8.0, 2.0), (8.0, 8.0), (2.0, 8.0)),),
+        ),
+        ComsolPolygon(
+            outline=((5.0, 4.0), (6.0, 4.0), (6.0, 6.0), (5.0, 6.0)),
+        ),
+    ),
+    feed_ports=(),
+    bbox=ComsolBoundingBox(xmin=0.0, ymin=0.0, xmax=10.0, ymax=10.0),
+)
+#: An island filling a hole exactly, leaving no dielectric in it to probe.
+_FILLED_HOLE_LAYOUT = ComsolLayout(
+    polygons=(
+        ComsolPolygon(
+            outline=((0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)),
+            holes=(((2.0, 2.0), (8.0, 2.0), (8.0, 8.0), (2.0, 8.0)),),
+        ),
+        ComsolPolygon(
+            outline=((2.0, 2.0), (8.0, 2.0), (8.0, 8.0), (2.0, 8.0)),
+        ),
+    ),
+    feed_ports=(),
+    bbox=ComsolBoundingBox(xmin=0.0, ymin=0.0, xmax=10.0, ymax=10.0),
 )
 _EMPTY_LAYOUT = ComsolLayout(
     polygons=(),
@@ -147,14 +194,37 @@ class _Interface:
         probe = Polygon.from_bounds(
             span["x"][0], span["y"][0], span["x"][1], span["y"][1]
         )
-        regions: list[int] = []
-        for index, polygon in enumerate(self.layout.polygons):
-            if Polygon(polygon.outline, polygon.holes).intersects(probe):
-                regions.append(100 + index)
-            for hole, ring in enumerate(polygon.holes):
-                if Polygon(ring).intersects(probe):
-                    regions.append(200 + 10 * index + hole)
+        regions = [
+            face for face, region in self._face_regions() if region.intersects(probe)
+        ]
         return faces + (regions or [_INTERFACE_FACE])
+
+    def _face_regions(self) -> list[tuple[int, BaseGeometry]]:
+        """Return one region per metal polygon and per hole, cut apart.
+
+        The imprint runs along every outline, so each metal polygon is cut by the
+        others and each hole by all of them: an island inside a hole is not part
+        of the dielectric that hole leaves behind.
+
+        Returns:
+            The face IDs with the region each one covers.
+        """
+        metal = [
+            Polygon(polygon.outline, polygon.holes) for polygon in self.layout.polygons
+        ]
+        everything = unary_union(metal)
+        regions: list[tuple[int, BaseGeometry]] = []
+        for index, polygon in enumerate(self.layout.polygons):
+            others = unary_union([
+                region for other, region in enumerate(metal) if other != index
+            ])
+            regions.append((100 + index, metal[index].difference(others)))
+            for hole, ring in enumerate(polygon.holes):
+                regions.append((
+                    200 + 10 * index + hole,
+                    Polygon(ring).difference(everything),
+                ))
+        return regions
 
 
 class _Node:
@@ -401,6 +471,20 @@ def _centre(box: dict[str, Any]) -> Point:
     )
 
 
+def _box(properties: dict[str, Any]) -> Polygon:
+    """Return the x-y footprint of a recorded box.
+
+    Returns:
+        The box in µm.
+    """
+    return Polygon.from_bounds(
+        float(properties["xmin"]),
+        float(properties["ymin"]),
+        float(properties["xmax"]),
+        float(properties["ymax"]),
+    )
+
+
 def test_blocks_touch_at_the_interface_and_span_the_bbox():
     """Air sits on silicon at z = 0, both exactly the layout's bounding box."""
     component = _build(_client())
@@ -604,6 +688,51 @@ def test_metal_and_holes_become_separate_interface_faces():
     polygon = _LAYOUT.polygons[0]
     assert Polygon(polygon.outline, polygon.holes).contains(_centre(metal.properties))
     assert Polygon(polygon.holes[0]).contains(_centre(hole.properties))
+
+
+def test_a_hole_probe_avoids_an_island_over_the_hole_middle():
+    """An island over the hole's middle does not fail a correct imprint.
+
+    The hole probe used to aim at the hole's own representative point, (5, 5),
+    which this island covers; the probe then picked the island's face as well as
+    the hole's.
+    """
+    layout = _ISLAND_IN_HOLE_LAYOUT
+    component = _build(_client(layout=layout), layout)
+    ring = Polygon(layout.polygons[0].holes[0])
+    island = Polygon(layout.polygons[1].outline)
+
+    assert ring.representative_point().within(island)
+    assert component.selection("imprint_metal1").entities() == [101]
+    probe = _box(component.selection("imprint_hole0_0").properties)
+    assert probe.within(ring)
+    assert not probe.intersects(island)
+    assert component.selection("imprint_hole0_0").entities() == [200]
+
+
+def test_a_hole_probe_avoids_an_island_edge_through_the_hole_middle():
+    """An island edge through the hole's middle is stepped around as well."""
+    layout = _ISLAND_EDGE_ON_HOLE_MIDDLE_LAYOUT
+    component = _build(_client(layout=layout), layout)
+    ring = Polygon(layout.polygons[0].holes[0])
+    island = Polygon(layout.polygons[1].outline)
+
+    # The island's edge runs exactly through the hole's representative point.
+    point = ring.representative_point()
+    assert island.intersects(point)
+    assert not point.within(island)
+    assert component.selection("imprint_metal1").entities() == [101]
+    probe = _box(component.selection("imprint_hole0_0").properties)
+    assert probe.within(ring)
+    assert not probe.intersects(island)
+    assert component.selection("imprint_hole0_0").entities() == [200]
+
+
+def test_a_hole_covered_by_metal_leaves_no_dielectric_to_probe():
+    """A hole with no dielectric left in it is refused, not probed empty."""
+    layout = _FILLED_HOLE_LAYOUT
+    with pytest.raises(ValueError, match="leaves no dielectric to probe"):
+        _build(_client(layout=layout), layout)
 
 
 def test_a_hole_probe_that_finds_no_face_is_refused(
