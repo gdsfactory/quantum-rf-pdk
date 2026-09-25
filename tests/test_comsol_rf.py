@@ -62,8 +62,12 @@ class _Sheet:
         Returns:
             The entity IDs, empty when the box holds nothing.
         """
+        # An axis the box does not set is unbounded in COMSOL, so -inf to inf.
         spans = {
-            axis: (float(properties[f"{axis}min"]), float(properties[f"{axis}max"]))
+            axis: (
+                float(properties.get(f"{axis}min", "-inf")),
+                float(properties.get(f"{axis}max", "inf")),
+            )
             for axis in "xyz"
         }
         if properties["entitydim"] == "2" and properties["condition"] == "intersects":
@@ -424,7 +428,6 @@ def test_port_faces_and_gap_edges_sit_on_the_bounding_planes():
             plane + 0.001,
         ))
         assert (float(box["ymin"]), float(box["ymax"])) == (-51.0, 51.0)
-        assert float(box["zmin"]) < -200.0 < 200.0 < float(box["zmax"])
         assert component.selection(tag).entities() == (
             [1, 2] if plane < 0.0 else [3, 4]
         )
@@ -447,6 +450,26 @@ def test_port_faces_and_gap_edges_sit_on_the_bounding_planes():
             0.001,
         ))
         assert component.selection(tag).entities() == [13 if plane < 0.0 else 29]
+
+
+def test_only_the_port_face_boxes_leave_z_unbounded():
+    """A z bound on the port slab would drop every face taller than the box.
+
+    The air block can be taller than any fixed height, so the port box has to
+    span z without limit; a capped one then reports only the silicon half of the
+    cross section. The gap probes stay tightly bound in z.
+    """
+    model = _study()
+    component = model.java.component("comp1")
+
+    for tag in (INPUT_FACES_SELECTION, OUTPUT_FACES_SELECTION):
+        box = component.selection(tag).properties
+        assert "zmin" not in box
+        assert "zmax" not in box
+    for tag in (INPUT_GAP_SELECTION, OUTPUT_GAP_SELECTION):
+        box = component.selection(tag).properties
+        assert "zmin" in box
+        assert "zmax" in box
 
 
 def test_vertical_feeds_swap_the_axes():
@@ -650,7 +673,20 @@ def test_a_port_plane_with_no_face_is_refused():
     layout = _horizontal_layout()
     sheet = _sheet(layout)
     sheet.port_faces = {(0, 900.0): [3, 4]}
-    with pytest.raises(ValueError, match="selects no face on the port plane"):
+    with pytest.raises(ValueError, match="selects 0 faces on the port plane"):
+        _study(layout, sheet=sheet)
+
+
+def test_a_port_plane_holding_one_face_is_refused():
+    """A plane carrying only one dielectric half is not a full cross section.
+
+    This is what a capped z box used to return for a tall air block: the silicon
+    face alone, which would have been ported silently as a half port.
+    """
+    layout = _horizontal_layout()
+    sheet = _sheet(layout)
+    sheet.port_faces = {(0, -300.0): [1], (0, 900.0): [3, 4]}
+    with pytest.raises(ValueError, match="expected two, one air and one silicon"):
         _study(layout, sheet=sheet)
 
 
