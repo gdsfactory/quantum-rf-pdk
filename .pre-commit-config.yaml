@@ -140,7 +140,10 @@ repos:
     hooks:
       - id: bibtex-tidy
         priority: 10
-        args: ['--align=1', '--curly', '--months', '--sort', '--duplicates', '--strip-enclosing-braces']
+        # --no-escape keeps non-ASCII names as UTF-8. Escaping them back to
+        # LaTeX (\'e) makes each surname non-alphabetic, so pybtex's alpha
+        # citation style stops abbreviating and emits the whole name.
+        args: ['--align=1', '--curly', '--months', '--sort', '--duplicates', '--strip-enclosing-braces', '--no-escape']
   - repo: https://github.com/AleksaC/hadolint-py
     rev: v2.14.0
     hooks:
