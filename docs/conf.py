@@ -1,6 +1,7 @@
 """Sphinx configuration for Qpdk documentation."""
 
 import json
+import os
 import re
 import shutil
 import sys
@@ -10,6 +11,7 @@ from pathlib import Path
 
 import typst
 from docutils import nodes
+from matplotlib.sphinxext import plot_directive
 from sphinx.application import Sphinx
 from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
@@ -50,13 +52,23 @@ extensions = [
 ]
 
 # -- Plot directive configuration ---------------------------------------------
+#: Style used for the second, dark render of every ``.. plot::`` figure, and the
+#: suffix its output files get.  See `_render_figures_for_both_themes`.
+PLOT_DARK_STYLE = "qpdk-dark"
+PLOT_DARK_SUFFIX = "_dark"
+#: Selects the style for the render in progress.  ``plot_pre_code`` is executed
+#: as source text in a namespace of the directive's own, so the style has to
+#: reach it through the environment rather than as a variable.
+PLOT_STYLE_ENV = "QPDK_MPL_STYLE"
+
 plot_pre_code = """
+import os
 from matplotlib import pyplot as plt
 from qpdk import PDK
 import matplotlib.font_manager as _fm
 _fm._load_fontmanager(try_read_cache=False)
 
-plt.style.use("qpdk")
+plt.style.use(os.environ.get("QPDK_MPL_STYLE", "qpdk"))
 PDK.activate()
 
 # Monkey-patch Axes.set_title to use Outfit (bold) for figure titles,
@@ -701,6 +713,80 @@ def inline_figures(app: Sphinx, doctree: nodes.document, _docname: str) -> None:
             image.replace_self(nodes.raw("", svg, format="html"))
 
 
+_plot_render_figures = plot_directive.render_figures
+
+
+def _render_figures_for_both_themes(*args, **kwargs):
+    """Render every ``.. plot::`` figure a second time in the dark style.
+
+    Matplotlib bakes colours into each artist as it is created, so a figure
+    cannot be recoloured after the fact -- the snippet has to run again under
+    a different style.  The second run writes to ``<basename>_dark.<fmt>``
+    beside the first, and `pair_plot_images_by_theme` puts the two files on the
+    page as a light/dark pair.
+
+    Args:
+        *args: Positional arguments for ``plot_directive.render_figures``.
+        **kwargs: Keyword arguments for the same; ``output_base`` is the one
+            this overrides for the dark render.
+
+    Returns:
+        The light render's results, unchanged, so the directive keeps emitting
+        exactly the markup it did before.
+    """
+    light = _plot_render_figures(*args, **kwargs)
+    # The PDF has a single, printed theme, and building it is already the slow
+    # half of `just docs`.
+    if plot_directive.setup.app.builder.format != "html":
+        return light
+
+    previous = os.environ.get(PLOT_STYLE_ENV)
+    os.environ[PLOT_STYLE_ENV] = PLOT_DARK_STYLE
+    try:
+        _plot_render_figures(
+            *args,
+            **kwargs | {"output_base": kwargs["output_base"] + PLOT_DARK_SUFFIX},
+        )
+    finally:
+        if previous is None:
+            del os.environ[PLOT_STYLE_ENV]
+        else:
+            os.environ[PLOT_STYLE_ENV] = previous
+
+    return light
+
+
+def pair_plot_images_by_theme(app: Sphinx, doctree: nodes.document) -> None:
+    """Show the light or the dark render of a plot depending on the theme.
+
+    Each plot image gains pydata-sphinx-theme's ``only-light`` class and is
+    followed by a copy of itself pointing at the dark render, marked
+    ``only-dark``.  The theme shows whichever matches ``html[data-theme]``,
+    which its default ``auto`` mode resolves from the OS colour-scheme
+    preference -- so this follows both the preference and the toggle button.
+
+    This runs before Sphinx's asset collector (priority < 500) so the dark
+    files it introduces are copied into the output alongside the light ones.
+    Images the plot directive emits for non-HTML builders are globbed
+    (``<basename>.*``) rather than named, so the suffix test skips them.
+    """
+    if app.builder.format != "html":
+        return
+
+    document_dir = Path(doctree["source"]).parent
+    for image in list(doctree.findall(nodes.image)):
+        uri = Path(image["uri"])
+        dark_uri = uri.with_name(f"{uri.stem}{PLOT_DARK_SUFFIX}{uri.suffix}")
+        if not (document_dir / dark_uri).is_file():
+            continue
+
+        dark_image = image.deepcopy()
+        dark_image["uri"] = dark_uri.as_posix()
+        dark_image["classes"] = [*image["classes"], "only-dark"]
+        image["classes"].append("only-light")
+        image.parent.insert(image.parent.index(image) + 1, dark_image)
+
+
 def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
     """Fix *Edit on GitHub* URLs for notebook pages.
 
@@ -1118,6 +1204,10 @@ def setup(app):
     # sphinx_github_alerts' source-read hook, which then also converts the
     # README's `> [!NOTE]` alert instead of leaving it as a literal quote.
     app.connect("source-read", replace_image_paths, priority=400)
+    # Earlier than the default 500 so Sphinx's asset collector, which runs on
+    # the same event, sees the dark images this adds and copies them out.
+    app.connect("doctree-read", pair_plot_images_by_theme, priority=400)
+    plot_directive.render_figures = _render_figures_for_both_themes
     app.connect("doctree-resolved", inline_figures)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
     app.connect("doctree-resolved", _typst_strip_ansi)

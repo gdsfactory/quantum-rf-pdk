@@ -1,5 +1,6 @@
 ipython_config := home_directory() / ".ipython/profile_default/ipython_config.py"
 mpl_style := home_directory() / ".config/matplotlib/stylelib/qpdk.mplstyle"
+mpl_style_dark := home_directory() / ".config/matplotlib/stylelib/qpdk-dark.mplstyle"
 
 # Write cell outputs into documentation notebooks
 [private]
@@ -160,6 +161,8 @@ setup-ipython-config-temporary-before:
     @mkdir -p ~/.config/matplotlib/stylelib/
     @{{ if path_exists(mpl_style) == "TRUE" { "mv " + mpl_style + " " + mpl_style + ".bak" } else { "true" } }}
     @cp docs/qpdk.mplstyle {{ mpl_style }}
+    @{{ if path_exists(mpl_style_dark) == "TRUE" { "mv " + mpl_style_dark + " " + mpl_style_dark + ".bak" } else { "true" } }}
+    @cp docs/qpdk-dark.mplstyle {{ mpl_style_dark }}
 
 # Restore original IPython configuration
 [private]
@@ -167,6 +170,7 @@ setup-ipython-config-temporary-before:
 setup-ipython-config-temporary-after:
     @{{ if path_exists(ipython_config + ".bak") == "TRUE" { "mv " + ipython_config + ".bak " + ipython_config } else { "rm -f " + ipython_config } }}
     @{{ if path_exists(mpl_style + ".bak") == "TRUE" { "mv " + mpl_style + ".bak " + mpl_style } else { "rm -f " + mpl_style } }}
+    @{{ if path_exists(mpl_style_dark + ".bak") == "TRUE" { "mv " + mpl_style_dark + ".bak " + mpl_style_dark } else { "rm -f " + mpl_style_dark } }}
 
 # Local cache of the docs fonts (Inter, Outfit, Code New Roman, Fira Math).
 # CI installs the same families system-wide (see .github/workflows/pages.yml),
