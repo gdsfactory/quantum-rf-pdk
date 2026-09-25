@@ -131,33 +131,10 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
-- :doc:`notebooks/comsol_cpw_resonator` — Driven CPW resonator solve on the QPDK coupled
-  quarter-wave layout with extended feed ports and an enlarged ground: MPh builds the
-  air/silicon sheet model, PEC, two numeric TEM ports and a boundary mode analysis. The
-  selected ported 2 um / 0.2 um edge mesh (1293967 elements) gives a localised eigenmode
-  at 7.291804565 GHz with a meander-to-feed p95 field ratio of 5.348. Direct driven
-  solves on that mesh show S21 = -23.617 dB at 7.291698182 GHz against near-0 dB flanks.
-  A 95-row adaptive sweep matches the four direct anchors within 0.191 dB, but its
-  reconstructed rows reach a two-port power sum of 1.002849, so the fit is labelled
-  approximate. Repeating the identical geometry and physics with 4 / 0.4, 3 / 0.3, 2 /
-  0.2 and 1.8 / 0.18 um meander-edge meshes gives 659682, 847139, 1293967 and 1473313
-  elements and selected frequencies 7.326615895, 7.310673309, 7.291804565 and
-  7.299221820 GHz, i.e. signed shifts of -15.943, -18.869 and +7.417 MHz whose
-  magnitudes grow over the first two steps and then reverse to a smaller value at the
-  finest, so the series does not demonstrate mesh convergence and no frequency or Q is
-  called converged.
-- :doc:`notebooks/comsol_qubit_capacitance` — Solves the pad capacitance of an EM-only
-  QPDK double-pad transmon in COMSOL: removes the Josephson-junction mask, extracts the
-  pads and ground plane, builds the air/silicon sheet model, and adds an Electrostatics
-  study driving one pad with a voltage terminal and grounding the other pad and the
-  ground. The result is an electrostatic one-terminal pad capacitance of :math:`C_{11} =
-  125.3797` fF, not a qubit eigenmode, and the LC frequency built from a chosen
-  :math:`L_J` is labelled an illustrative estimate rather than an eigenfrequency or the
-  anharmonic :math:`f_{01}`. Sixteen domain and near-metal cases vary the margin, the
-  near-metal mesh size, the air height, and the substrate thickness; the value is still
-  moving with the near-metal mesh, whose finest step, at 30,893,436 elements, is
-  -0.0437%. Potential and field maps and the near-metal and domain-size comparison plots
-  are included.
+- :doc:`notebooks/comsol_cpw_resonator` — COMSOL ported resonator simulation with an
+  adaptive S-parameter sweep, field maps, and mesh sensitivity.
+- :doc:`notebooks/comsol_qubit_capacitance` — COMSOL electrostatic extraction of
+  transmon pad capacitance, with field maps and mesh sensitivity.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 

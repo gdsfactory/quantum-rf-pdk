@@ -1,8 +1,8 @@
-"""Tests for the COMSOL geometry builder's public surface.
+"""Tests for the COMSOL metal geometry builder's public surface.
 
 The builder talks to COMSOL through MPh, which is not installed here. These
 tests cover only what runs before the client is touched (argument validation)
-plus the compatibility alias, so nothing needs to mock MPh or the Java API.
+plus what the package exposes, so nothing needs to mock MPh or the Java API.
 """
 
 from __future__ import annotations
@@ -13,15 +13,7 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from qpdk import simulation
-from qpdk.simulation import (
-    build_comsol_cpw_model,
-    build_comsol_metal_model,
-    comsol_layout,
-)
-from qpdk.simulation.comsol import (
-    build_comsol_cpw_model as comsol_cpw_model,
-    build_comsol_metal_model as comsol_metal_model,
-)
+from qpdk.simulation import build_comsol_metal_model, comsol, comsol_layout
 from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout, ComsolPolygon
 
 
@@ -38,11 +30,20 @@ def _empty_layout() -> ComsolLayout:
     )
 
 
-def test_generic_and_cpw_names_are_the_same_builder():
-    """The old CPW name is the generic builder, not a re-implementation."""
-    assert build_comsol_cpw_model is build_comsol_metal_model
-    assert comsol_cpw_model is comsol_metal_model
+def test_historical_cpw_alias_is_gone():
+    """The builder is named for what it does; the old CPW alias was removed."""
+    assert not hasattr(simulation, "build_comsol_cpw_model")
+    assert not hasattr(comsol, "build_comsol_cpw_model")
     assert build_comsol_metal_model.__name__ == "build_comsol_metal_model"
+
+
+def test_comsol_class_is_exposed_lazily():
+    """The model class is public, and importing it stays the caller's choice."""
+    assert "COMSOL" in simulation.__all__
+    assert simulation._LAZY_IMPORTS["COMSOL"] == (
+        "qpdk.simulation.comsol_model",
+        "COMSOL",
+    )
 
 
 @pytest.mark.parametrize(

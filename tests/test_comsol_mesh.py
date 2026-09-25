@@ -4,13 +4,13 @@ MPh and COMSOL are not installed here, so small fakes of the Java mesh tree
 record the sequence calls and report a fixed element count. The assertions stay
 on behaviour: for the refinement helper, that the mesh is run once before the
 refine feature is added, and that the requested passes and the layout bounding
-box end up on the refine feature; for the absolute-size helper, that the sizes
-land on the right features in the order a ``Size`` feature needs, that the
-generated generator is swept, and that anything else about the sequence is
-refused rather than meshed. Bad arguments are refused before COMSOL is touched
-in both. The edge-size helper gets the same treatment, plus the selection it
-pins the local size on: one that resolved to no edge is refused instead of
-meshed.
+box end up on the refine feature; for the absolute-size helper, that each face
+size lands on a ``Size`` feature tagged after its selection, in the order a
+``Size`` feature needs, that the generated generator is swept, and that anything
+else about the sequence is refused rather than meshed. Bad arguments are refused
+before COMSOL is touched in both. The edge-size helper gets the same treatment,
+plus the selection it pins the local size on: one that resolved to no edge is
+refused instead of meshed.
 """
 
 from __future__ import annotations
@@ -21,11 +21,6 @@ import pytest
 
 from qpdk import simulation
 from qpdk.simulation import pin_absolute_mesh_sizes, refine_metal_plane_mesh
-from qpdk.simulation.comsol_capacitance import (
-    GROUND_SELECTION,
-    LEFT_PAD_SELECTION,
-    RIGHT_PAD_SELECTION,
-)
 from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout
 from qpdk.simulation.comsol_mesh import (
     DEFAULT_SIZE_TAG,
@@ -39,6 +34,9 @@ from qpdk.simulation.comsol_mesh import (
 
 #: The named edge selection the edge-size helper expects from its caller.
 EDGE_SELECTION = "meander_edges"
+
+#: One ``(hmax, hmin)`` pair per face selection the helper pins sizes on.
+FACE_SIZES = {"pad_l": (5.0, 0.5), "pad_r": (5.0, 0.5), "gnd": (10.0, 1.0)}
 
 
 class _Node:
@@ -366,16 +364,13 @@ def _pin(mesh: Any, **overrides: Any) -> int:
     sizes: dict[str, Any] = {
         "global_hmax_um": 1000.0,
         "global_hmin_um": 2.0,
-        "pad_hmax_um": 5.0,
-        "pad_hmin_um": 0.5,
-        "ground_hmax_um": 10.0,
-        "ground_hmin_um": 1.0,
+        "face_sizes": FACE_SIZES,
     }
     return pin_absolute_mesh_sizes(_Model(mesh), **(sizes | overrides))
 
 
 def test_the_sequence_is_left_in_the_order_the_sizes_need():
-    """The conductor sizes sit between the default size and the one generator."""
+    """The face sizes sit between the default size and the one generator."""
     mesh = _SequenceMesh()
     elements = _pin(mesh)
 
@@ -430,24 +425,35 @@ def test_the_grading_parameters_go_on_the_global_size_only():
     assert "hgrad" not in mesh.features["size_pad_l"].properties
 
 
-def test_each_conductor_gets_its_own_selection_and_size():
-    """The pads share one size and the ground its own, on the study's selections."""
+def test_each_face_size_gets_its_own_selection_and_size():
+    """Each entry pins its own ``(hmax, hmin)`` on the selection it is keyed by."""
     mesh = _SequenceMesh()
     _pin(mesh)
 
-    assert mesh.features["size_pad_l"].selection_node.named_tags == [LEFT_PAD_SELECTION]
-    assert mesh.features["size_pad_r"].selection_node.named_tags == [
-        RIGHT_PAD_SELECTION
-    ]
-    assert mesh.features["size_gnd"].selection_node.named_tags == [GROUND_SELECTION]
-    for tag, hmax, hmin in (
-        ("size_pad_l", "5[um]", "0.5[um]"),
-        ("size_pad_r", "5[um]", "0.5[um]"),
-        ("size_gnd", "10[um]", "1[um]"),
-    ):
-        assert mesh.features[tag].properties["custom"] == "on"
-        assert mesh.features[tag].properties["hmax"] == hmax
-        assert mesh.features[tag].properties["hmin"] == hmin
+    for selection, (hmax_um, hmin_um) in FACE_SIZES.items():
+        feature = mesh.features[f"size_{selection}"]
+        assert feature.selection_node.named_tags == [selection]
+        assert feature.properties["custom"] == "on"
+        assert feature.properties["hmax"] == f"{hmax_um:g}[um]"
+        assert feature.properties["hmin"] == f"{hmin_um:g}[um]"
+
+
+def test_a_face_size_keyed_by_another_selection_is_pinned_there():
+    """The helper takes any selection name, not a fixed set of conductors."""
+    mesh = _SequenceMesh()
+    _pin(mesh, face_sizes={"meander": (1.5, 0.15)})
+
+    assert mesh.order == [DEFAULT_SIZE_TAG, "size_meander", FREE_TET_TAG]
+    assert mesh.features["size_meander"].selection_node.named_tags == ["meander"]
+    assert mesh.features["size_meander"].properties["hmax"] == "1.5[um]"
+
+
+def test_global_sizes_alone_are_meshed_without_face_features():
+    """An empty face_sizes pins the bulk sizes and adds no face feature."""
+    mesh = _SequenceMesh()
+    _pin(mesh, face_sizes={})
+
+    assert mesh.order == [DEFAULT_SIZE_TAG, FREE_TET_TAG]
 
 
 def test_an_unreadable_automatic_getter_is_not_fatal():
@@ -489,20 +495,35 @@ def test_an_unusable_element_count_is_refused(elements: Any):
     [
         ("global_hmax_um", 0.0),
         ("global_hmin_um", -2.0),
-        ("pad_hmax_um", float("nan")),
-        ("pad_hmin_um", float("inf")),
-        ("ground_hmax_um", "10"),
-        ("ground_hmin_um", None),
-        ("ground_hmin_um", True),
         ("hgrad", 0.0),
         ("hcurve", -1.0),
         ("hnarrow", float("nan")),
     ],
 )
-def test_rejects_bad_sizes_before_touching_comsol(name: str, value: Any):
-    """An invalid size is refused before any Java call is made."""
+def test_rejects_bad_global_sizes_before_touching_comsol(name: str, value: Any):
+    """An invalid global size is refused before any Java call is made."""
     with pytest.raises(ValueError, match=name):
         _pin(_RejectingModel(), **{name: value})
+
+
+@pytest.mark.parametrize(
+    ("face_sizes", "match"),
+    [
+        ({"pad_l": (0.0, 0.5)}, "pad_l"),
+        ({"pad_l": (5.0, -0.5)}, "pad_l"),
+        ({"pad_l": (float("nan"), 0.5)}, "pad_l"),
+        ({"gnd": (float("inf"), 1.0)}, "gnd"),
+        ({"gnd": ("10", 1.0)}, "gnd"),
+        ({"gnd": (10.0, None)}, "gnd"),
+        ({"gnd": (10.0, True)}, "gnd"),
+    ],
+)
+def test_rejects_bad_face_sizes_before_touching_comsol(
+    face_sizes: dict[str, Any], match: str
+):
+    """An invalid face size names its selection and is refused before COMSOL."""
+    with pytest.raises(ValueError, match=match):
+        _pin(_RejectingModel(), face_sizes=face_sizes)
 
 
 def test_the_package_export_resolves_to_the_absolute_size_helper():
