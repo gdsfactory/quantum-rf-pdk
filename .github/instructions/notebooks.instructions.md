@@ -21,10 +21,9 @@ files at `notebooks/` are produced by `just convert-notebooks` (via the `convert
 - Committed cell outputs. `nbstripout` strips them, except for the pre-executed Elmer notebook
   (`elmer_capacitance_interdigital`) and HFSS notebooks (`hfss_driven_capacitor`, `hfss_eigenmode_resonator`,
   `hfss_q2d_cpw_impedance`), which intentionally keep theirs.
-- The Elmer notebook's `qpdk_elmer_high_code_sha256` metadata must match the code from the completed cubic run. After
-  converting its source, refresh the saved result with
-  `uv run --no-sync python .github/run_elmer_notebook.py --save-high-output notebooks/elmer_capacitance_interdigital.ipynb`;
-  this executes every cell before saving.
+- After changing the Elmer notebook's simulation code, run and save its default cubic profile with
+  `jupytext --execute --to ipynb --set-kernel python3 --output notebooks/elmer_capacitance_interdigital.ipynb notebooks/src/elmer_capacitance_interdigital.py`.
+  CI executes a separate quadratic smoke run because `GITHUB_ACTIONS=true` selects the fast profile.
 
 ## Style
 

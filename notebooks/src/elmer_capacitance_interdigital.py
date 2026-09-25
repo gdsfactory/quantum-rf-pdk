@@ -48,8 +48,8 @@
 # much that value depends on the outer boundary of the finite domain.
 #
 # The saved output uses cubic elements and a 0.5 % refinement check. CI separately
-# executes the notebook with quadratic elements and a 3 % check
-# (`QPDK_ELMER_CI_FAST=1`). The saved values come from the cubic run. The cubic
+# executes the notebook with quadratic elements and a 3 % check when `GITHUB_ACTIONS`
+# is set. Set `QPDK_ELMER_CI_FAST=1` to use that profile locally. The cubic
 # profile is memory intensive; use the CI smoke profile for a quick functional run.
 
 # %% [markdown]
@@ -114,7 +114,6 @@ from typing import Any
 
 import gdsfactory as gf
 import numpy as np
-from gdsfactory.technology import LayerLevel, LayerStack
 from gplugins.elmer import run_capacitive_simulation_elmer
 from matplotlib import pyplot as plt
 from meshwell.resolution import ConstantInField
@@ -135,19 +134,11 @@ PDK.activate()
 #
 # 1. **Two isolated terminals.** The capacitor must present two disconnected metal
 #    polygons. QPDK's IDC draws its metal on `M1_DRAW` (the additive mask) and an
-#    enclosing rectangle on `M1_ETCH` (the subtractive mask). We pass `etch_layer=None` so
-#    the component contains only the two `M1_DRAW` combs: nothing can merge them into one
-#    conductor.
+#    enclosing rectangle on `M1_ETCH` (the subtractive mask). We draw the two combs
+#    without that enclosure, then etch the entire `SIM_AREA`. QPDK's derived `M1` rule
+#    is `SIM_AREA - (M1_ETCH - M1_DRAW)`, so its remaining metal is exactly the two combs.
 # 2. **A domain outline for the dielectrics.** The substrate and air prisms are built from
-#    an explicit outline, drawn on the non-fabrication `SIM_AREA` layer.
-#
-# We deliberately do **not** reuse `PDK.layer_stack` here. In QPDK the `M1` level is a
-# `DerivedLayer` built from `SIM_AREA`, `M1_ETCH` and `M1_DRAW` (metal is reconstructed
-# wherever `SIM_AREA` is not etched). Fed a bare capacitor component that derived layer
-# either resolves to nothing (no `SIM_AREA` shape) or rebuilds the whole `SIM_AREA` region
-# as one conductor, which would short both terminals into a full-plane `M1`. A minimal
-# stack whose metal level *is* `LAYER.M1_DRAW` keeps exactly the two terminal polygons the
-# component draws.
+#    the same outline on the non-fabrication `SIM_AREA` layer.
 #
 # The lateral pad is fixed for the whole study at `domain_pad=90.0` μm, which puts the
 # outer boundary well away from the finger gaps where the coupling lives. The outer
@@ -165,7 +156,7 @@ def interdigital_capacitor_for_elmer(
     thickness: float = 5.0,
     domain_pad: float = 90.0,
 ) -> gf.Component:
-    """Two-terminal IDC plus a `SIM_AREA` outline for the dielectric prisms.
+    """Two-terminal IDC with PDK mask layers for metal and dielectric prisms.
 
     Args:
         fingers: Total number of interleaved fingers.
@@ -175,8 +166,8 @@ def interdigital_capacitor_for_elmer(
         domain_pad: Lateral padding of the simulation outline around the metal in μm.
 
     Returns:
-        Component with two isolated `M1_DRAW` terminals (ports ``o1`` and ``o2``) and a
-        `SIM_AREA` rectangle marking the substrate/air footprint.
+        Component with two isolated `M1_DRAW` terminals (ports ``o1`` and ``o2``) and
+        coincident `SIM_AREA` and `M1_ETCH` rectangles.
     """
     c = gf.Component()
     idc = c << interdigital_capacitor(
@@ -190,7 +181,9 @@ def interdigital_capacitor_for_elmer(
 
     # Flatten so the terminals are plain polygons in one cell, as the mesher expects.
     c.flatten()
-    c.kdb_cell.shapes(LAYER.SIM_AREA).insert(c.bbox().enlarged(domain_pad, domain_pad))
+    domain = c.bbox().enlarged(domain_pad, domain_pad)
+    c.kdb_cell.shapes(LAYER.SIM_AREA).insert(domain)
+    c.kdb_cell.shapes(LAYER.M1_ETCH).insert(domain)
     return c
 
 
@@ -202,50 +195,29 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 # %% [markdown]
 # ## Layer Stack and Materials
 #
-# The stack uses a thin Nb film on a $60\,\mu m$ Si substrate with a $40\,\mu m$
-# vacuum prism above it. These finite heights are reduced from the 500 μm levels in
-# QPDK's technology stack. The vacuum starts at the substrate surface to fill the gaps
-# beside the film; meshwell cuts the higher-priority metal out of that prism. We check
-# lateral-domain sensitivity below, but do not quantify the effect of these vertical
-# truncations.
+# We start from `PDK.layer_stack`, which the Palace capacitor optimization notebook
+# also uses. We retain the three levels needed here, including the derived `M1` rule.
+# The PDK specifies the Nb film thickness and material. We reduce the substrate and
+# vacuum heights to $60\,\text{μm}$ and $40\,\text{μm}$ for this finite simulation
+# domain; both are $500\,\text{μm}$ in the full PDK stack. The vacuum starts at the
+# substrate surface to fill the gaps beside
+# the film; [meshwell](https://github.com/simbilod/meshwell) cuts the higher-priority
+# metal out of that prism. We check lateral-domain sensitivity below, but do not
+# quantify the effect of these vertical truncations.
 #
 # Material permittivities come from the QPDK technology definition
-# (`qpdk.tech.material_properties`): Si uses $\epsilon_r = 11.45$, and the niobium
+# (`qpdk.tech.material_properties`): Si uses $\epsilon_{\mathrm{r}} = 11.45$, and the niobium
 # film is treated as a perfect conductor.
 
 # %%
-metal_thickness = 0.2  # µm, a 200 nm Nb film
-substrate_thickness = 60.0  # µm
-air_thickness = 40.0  # µm
-
-layer_stack = LayerStack(
-    layers={
-        "metal": LayerLevel(
-            name="metal",
-            layer=LAYER.M1_DRAW,
-            thickness=metal_thickness,
-            zmin=substrate_thickness,
-            material="Nb",
-            mesh_order=2,
-        ),
-        "substrate": LayerLevel(
-            name="substrate",
-            layer=LAYER.SIM_AREA,
-            thickness=substrate_thickness,
-            zmin=0.0,
-            material="Si",
-            mesh_order=4,
-        ),
-        "vacuum": LayerLevel(
-            name="vacuum",
-            layer=LAYER.SIM_AREA,
-            thickness=air_thickness,
-            zmin=substrate_thickness,
-            material="vacuum",
-            mesh_order=99,
-        ),
-    }
-)
+layer_stack = PDK.layer_stack.model_copy(deep=True)
+layer_stack.layers = {
+    name: layer_stack.layers[name] for name in ("M1", "Substrate", "Vacuum")
+}
+layer_stack.layers["Substrate"].zmin = -60.0
+layer_stack.layers["Substrate"].thickness = 60.0
+layer_stack.layers["Vacuum"].zmin = 0.0
+layer_stack.layers["Vacuum"].thickness = 40.0
 
 material_spec = material_properties
 
@@ -259,10 +231,11 @@ for name, level in layer_stack.layers.items():
 # %% [markdown]
 # ## Mesh Settings
 #
-# `mesh_parameters` is forwarded to `meshwell.mesh.mesh`. Resolution is controlled with the
-# `resolution_specs` API: each key is a physical prism name, and each value is a list of
-# resolution objects. The driver splits the metal into `metal@o1` and `metal@o2`.
-# `ConstantInField` is the simplest one and pins a uniform element size. The
+# `mesh_parameters` is forwarded to [meshwell's mesh function](https://simbilod.github.io/meshwell/02_intro_meshwell.html#cad-mesh).
+# Its [`resolution_specs` API](https://simbilod.github.io/meshwell/21_resolution_advanced.html)
+# maps each physical prism name to a list of resolution objects. The driver splits
+# the PDK metal into `M1@o1` and `M1@o2`. [`ConstantInField`](https://simbilod.github.io/meshwell/20_resolution_basic.html)
+# pins a uniform element size. The
 # metal surfaces are meshed finely because the finger gaps (2 μm) carry most of the
 # coupling; the bulk dielectric only needs to resolve the field far from the metal.
 #
@@ -300,12 +273,12 @@ def mesh_parameters_for_factor(mesh_factor: float) -> dict[str, Any]:
         name: length * mesh_factor for name, length in BASE_MESH_LENGTHS_UM.items()
     }
     resolution_specs: dict[str, list[ConstantInField]] = {}
-    for terminal in ("metal@o1", "metal@o2"):
+    for terminal in ("M1@o1", "M1@o2"):
         resolution_specs[terminal] = [
             ConstantInField(resolution=scaled["terminal"], apply_to="curves"),
             ConstantInField(resolution=scaled["terminal"], apply_to="surfaces"),
         ]
-    for dielectric in ("substrate", "vacuum"):
+    for dielectric in ("Substrate", "Vacuum"):
         resolution_specs[dielectric] = [
             ConstantInField(
                 resolution=scaled["dielectric_surfaces"], apply_to="surfaces"
@@ -317,6 +290,7 @@ def mesh_parameters_for_factor(mesh_factor: float) -> dict[str, Any]:
     return {
         "default_characteristic_length": scaled["default"],
         "resolution_specs": resolution_specs,
+        "background_tag": "Vacuum",
     }
 
 
@@ -335,9 +309,10 @@ for prism, specs in nominal_mesh["resolution_specs"].items():
 # Every solve below uses the same component, layer stack, materials and domain; only the
 # mesh factor changes. The run profile controls these settings:
 #
-# - The default profile uses cubic (`element_order=3`) basis functions, which resolve the
-#   potential far better per element than the first-order default at the same element
-#   count. The CI smoke profile drops to quadratic (`element_order=2`) elements. A
+# - Finite element order is the polynomial degree of the basis used to approximate the
+#   potential within an element; see [MFEM's basis-function reference](https://mfem.org/basis-functions/).
+#   The saved study uses cubic (`element_order=3`) functions; CI uses quadratic
+#   (`element_order=2`). A
 #   first-order solve on a coarse mesh is not a reliable capacitance number.
 # - `QPDK_ELMER_PROCESSES` selects MPI ranks for the default profile (1 by default).
 #   CI runs serially.
@@ -350,13 +325,16 @@ for prism, specs in nominal_mesh["resolution_specs"].items():
 # model has no grounded conductor.
 
 # %%
-CI_FAST = os.environ.get("QPDK_ELMER_CI_FAST") == "1"
-RUN_MODE = "CI smoke" if CI_FAST else "high accuracy"
-MESH_FACTORS = (1.0, 0.75, 0.6, 0.5) if CI_FAST else (0.5, 0.4, 0.35, 0.3, 0.25)
-ELEMENT_ORDER = 2 if CI_FAST else 3
-CONVERGENCE_TOLERANCE = 0.03 if CI_FAST else 0.005
-MAX_LINEAR_ITERATIONS = 500 if CI_FAST else 3500
-N_PROCESSES = 1 if CI_FAST else int(os.environ.get("QPDK_ELMER_PROCESSES", "1"))
+IS_CI = (
+    os.environ.get("GITHUB_ACTIONS") == "true"
+    or os.environ.get("QPDK_ELMER_CI_FAST") == "1"
+)
+RUN_MODE = "CI smoke" if IS_CI else "high accuracy"
+MESH_FACTORS = (1.0, 0.75, 0.6, 0.5) if IS_CI else (0.5, 0.4, 0.35, 0.3, 0.25)
+ELEMENT_ORDER = 2 if IS_CI else 3
+CONVERGENCE_TOLERANCE = 0.03 if IS_CI else 0.005
+MAX_LINEAR_ITERATIONS = 500 if IS_CI else 3500
+N_PROCESSES = 1 if IS_CI else int(os.environ.get("QPDK_ELMER_PROCESSES", "1"))
 
 print(
     f"Elmer notebook run mode: {RUN_MODE} "
@@ -553,7 +531,7 @@ print("Lateral-domain sensitivity check passed: change <= 1 %")
 # `C22` duplicate the mutual term. The broad 5-40 fF range is a regression guard against
 # order-of-magnitude errors, not a claim about model accuracy.
 
-# %%
+# %% tags=["hide-input", "hide-output"]
 for result in (*mesh_results, narrow):
     matrix = result.capacitance_ff
     if not np.isfinite(matrix).all():
@@ -581,8 +559,8 @@ print("All checks passed.")
 # the value from the finest mesh of the convergence study:
 #
 # - Built a two-terminal geometry from `qpdk.cells.capacitor.interdigital_capacitor`,
-#   disabling its `M1_ETCH` mask so the two `M1_DRAW` combs stay isolated, and a minimal
-#   `M1_DRAW`-based layer stack to sidestep QPDK's derived `M1` level.
+#   etching `SIM_AREA` except for the two `M1_DRAW` combs, and using the PDK's derived
+#   `M1` level for both terminals.
 # - Fixed the domain at a 90 μm lateral pad with a 60 μm substrate and a 40 μm vacuum,
 #   and solved with cubic (third-order) elements on five independently generated meshes
 #   (factors 0.5, 0.4, 0.35, 0.3, 0.25).

@@ -285,7 +285,6 @@ jobs:
       OMP_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
-      QPDK_ELMER_CI_FAST: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -307,10 +306,56 @@ jobs:
         run: |
           uv add --no-sync "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@4ac6063ebfc01473a2f514b460d6f3ff04f5a17d"
           uv sync --locked --python 3.12 --no-dev --extra models
-          uv pip install nbclient nbformat ipykernel
+          uv pip install jupytext nbconvert ipykernel
+      - name: Check the saved Elmer result
+        run: |
+          uv run --no-sync python - <<'PY'
+          import re
+
+          import nbformat
+
+          notebook = nbformat.read("notebooks/elmer_capacitance_interdigital.ipynb", as_version=4)
+          code_cells = [cell for cell in notebook.cells if cell.cell_type == "code"]
+          if not code_cells or any(
+              cell.execution_count is None
+              or any(output.output_type == "error" for output in cell.outputs)
+              for cell in code_cells
+          ):
+              raise SystemExit("Saved Elmer notebook has incomplete or failed cells")
+          output = "\n".join(
+              str(item.text)
+              for cell in code_cells
+              for item in cell.outputs
+              if item.output_type == "stream"
+          )
+          required = (
+              "Elmer notebook run mode: high accuracy (element_order=3",
+              "Final reported mutual capacitance:",
+              "(element_order=3, mesh factor 0.25)",
+              "Lateral-domain sensitivity check passed: change <= 1 %",
+              "All checks passed.",
+          )
+          if any(marker not in output for marker in required):
+              raise SystemExit("Saved Elmer notebook is missing the high accuracy result")
+          if output.count("MAIN: *** Elmer Solver: ALL DONE ***") != 6:
+              raise SystemExit("Saved Elmer notebook is missing a completed solve")
+          match = re.search(
+              r"Mesh convergence check passed: final changes ([\d.]+) % and "
+              r"([\d.]+) % <= tolerance 0\.5 %",
+              output,
+          )
+          if match is None or any(float(value) > 0.5 for value in match.groups()):
+              raise SystemExit("Saved Elmer notebook does not meet 0.5 % convergence")
+          plots = sum(
+              "image/png" in item.get("data", {})
+              for cell in code_cells
+              for item in cell.outputs
+          )
+          if plots < 2:
+              raise SystemExit("Saved Elmer notebook is missing a plot")
+          PY
       - name: Execute the Elmer notebook
-        # Keep notebook-only execution helpers installed without changing the lock.
-        run: uv run --no-sync python .github/run_elmer_notebook.py notebooks/elmer_capacitance_interdigital.ipynb
+        run: uv run --no-sync jupytext --execute --to ipynb --set-kernel python3 --output /tmp/qpdk-elmer-ci.ipynb notebooks/elmer_capacitance_interdigital.ipynb
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
