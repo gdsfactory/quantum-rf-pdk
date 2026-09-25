@@ -506,6 +506,11 @@ def test_rejects_bad_global_sizes_before_touching_comsol(name: str, value: Any):
         _pin(_RejectingModel(), **{name: value})
 
 
+def test_rejects_global_minimum_above_maximum():
+    with pytest.raises(ValueError, match="global_hmin_um"):
+        _pin(_RejectingModel(), global_hmax_um=2.0, global_hmin_um=3.0)
+
+
 @pytest.mark.parametrize(
     ("face_sizes", "match"),
     [
@@ -516,6 +521,7 @@ def test_rejects_bad_global_sizes_before_touching_comsol(name: str, value: Any):
         ({"gnd": ("10", 1.0)}, "gnd"),
         ({"gnd": (10.0, None)}, "gnd"),
         ({"gnd": (10.0, True)}, "gnd"),
+        ({"gnd": (1.0, 10.0)}, "gnd"),
     ],
 )
 def test_rejects_bad_face_sizes_before_touching_comsol(
@@ -550,6 +556,11 @@ class _EdgelessMesh(_SequenceMesh):
         feature = super().create(tag, feature_type)
         feature.selection_node.entity_ids = []
         return feature
+
+
+def test_a_face_selection_with_no_face_is_refused():
+    with pytest.raises(RuntimeError, match="resolved to no faces"):
+        _pin(_EdgelessMesh())
 
 
 def _pin_edges(mesh: Any, **overrides: Any) -> int:

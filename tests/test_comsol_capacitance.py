@@ -430,6 +430,7 @@ def test_rejects_bad_arguments_before_touching_comsol(
             "conductor tags must be unique",
         ),
         ({"terminal": "missing"}, "not one of the conductors"),
+        ({"grounds": ()}, "at least one grounded conductor"),
         ({"grounds": ("sense", "missing")}, "not one of the conductors"),
         ({"grounds": ("sense", "sense")}, "ground tags must be unique"),
         ({"grounds": ("drive", "gnd")}, "must not also be grounded"),

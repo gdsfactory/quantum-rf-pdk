@@ -44,9 +44,9 @@
 # total capacitance $C$ and the SQUID supplies the Josephson energy $E_J$, so the qubit transition
 # frequency is set by $E_J$ and the charging energy $E_C = e^2 / 2C$
 # {cite:p}`kochChargeinsensitiveQubitDesign2007a`. The pads are joined **only** through the
-# Josephson junction, and the junction layers (`JJ_AREA`, `JJ_PATCH`) are oxide barriers rather
-# than metal shorts, so the extraction works on an **EM-only copy** with those layers removed: the
-# SQUID loop and its leads are absent from the solved geometry.
+# Josephson junction. The sheet model cannot represent the junction overlap and its insulating
+# barrier, so the extraction uses an **EM-only copy** with the junction layers removed. The SQUID
+# loop and its leads are absent from the solved geometry.
 #
 # On that geometry the model adds **Electrostatics**, not electromagnetic waves: a voltage terminal
 # drives the left pad, and the right pad and the chip ground plane are held at ground. The solve

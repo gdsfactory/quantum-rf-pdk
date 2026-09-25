@@ -65,6 +65,8 @@ def _require_conductor_tags(
             grounded.
     """
     tags = [tag for tag, _ in conductors]
+    if not grounds:
+        raise ValueError("at least one grounded conductor is required")
     if len(set(tags)) != len(tags):
         raise ValueError(f"the conductor tags must be unique, got {tags}")
     if terminal not in tags:
