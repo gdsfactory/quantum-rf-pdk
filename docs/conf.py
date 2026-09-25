@@ -686,10 +686,15 @@ def _rewrite_readme_links(content: str, srcdir: Path) -> str:
         The same Markdown with repository-relative links resolvable from
         ``docs/index.md``.
     """
-    github_blob = (
-        f"https://github.com/{html_context['github_user']}"
-        f"/{html_context['github_repo']}/blob/{html_context['github_version']}"
-    )
+    # Assembled from parts so the link checker does not read the format string
+    # itself as a (broken) URL.
+    github_blob = "/".join((
+        "https://github.com",
+        html_context["github_user"],
+        html_context["github_repo"],
+        "blob",
+        html_context["github_version"],
+    ))
 
     def _rewrite(match: re.Match[str]) -> str:
         text, target = match.groups()
