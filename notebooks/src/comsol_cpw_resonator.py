@@ -126,7 +126,9 @@
 # The whole path is scripted, so a licensed machine reproduces it end to end by
 # setting `RUN_COMSOL = True` and, for the ported eigenmode and the driven
 # window, `RUN_PORTED_DRIVEN = True`. The port-free series is its own switch,
-# `RUN_PORT_FREE_SERIES`, so the ported study can run without it. Without a
+# `RUN_PORT_FREE_SERIES`, so the ported study can run without it, and
+# `RUN_PORTED_EIGEN_ONLY` adds one ported mesh-refinement row without repeating
+# the driven sweep. Without a
 # license the notebook still runs from top to bottom: the COMSOL cells are
 # skipped, and every cell that reads results prints how to supply them instead
 # of plotting. On a fresh machine with neither a license nor exported results you
@@ -812,6 +814,11 @@ RUN_PORT_FREE_SERIES = False
 # run per meander edge size builds that series, so it is off by default and a
 # licensed run has to ask for each row.
 RUN_PORTED_DRIVEN = False
+# Stage 2 with the driven sweep skipped, so a mesh-refinement row costs one eigen
+# solve instead of a full driven window. It writes only this edge size's tagged
+# record and field and the rebuilt series, leaving every stable file to the
+# coupled run that solved the driven data. Needs RUN_PORTED_DRIVEN = True.
+RUN_PORTED_EIGEN_ONLY = False
 MODEL_DIR = Path.home() / "comsol_models"
 RESULTS_DIR_ENV = "QPDK_COMSOL_RESULTS_DIR"
 # The environment variable wins when it is set and non-empty, so a run without a
@@ -925,6 +932,31 @@ def mesh_element_count(model: Any) -> int:
         The number of mesh elements.
     """
     return int(model.java.component("comp1").mesh("mesh1").getNumElem())
+
+
+def enforce_element_budget(label: str, element_count: int) -> None:
+    """Refuse to start a stage-2 solve on a mesh over the element limit.
+
+    Stage 2 solves one row at a time and keeps nothing to fall back on, so an
+    unexpectedly large mesh is stopped here rather than left to run for hours.
+    Stage 1 has the same limit but records a mesh-only row instead of raising,
+    because its series is built to keep partial rows.
+
+    Args:
+        label: Name of the solve, for the error message.
+        element_count: The element count the mesh was pinned to.
+
+    Raises:
+        RuntimeError: If the mesh produced no elements, or more than
+            ``MAX_ELEMENTS``.
+    """
+    if element_count == 0:
+        raise RuntimeError(f"The {label} mesh produced no elements")
+    if element_count > MAX_ELEMENTS:
+        raise RuntimeError(
+            f"The {label} mesh has {element_count} elements, above the "
+            f"{MAX_ELEMENTS} limit, so the solve was not started"
+        )
 
 
 def default_dataset(model: Any) -> tuple[Any, str]:
@@ -1857,6 +1889,19 @@ else:
 # the rows the chart needs. Nothing is combined across a layout or port-setup
 # change, and no row is ever interpolated.
 #
+# A refinement row does not need the driven sweep: `RUN_PORTED_EIGEN_ONLY = True`
+# stops the run after the eigen solve, so one row costs one eigen solve instead
+# of that plus four direct solves and an adaptive sweep. In that mode the run
+# writes only this edge size's tagged record and field and the rebuilt series. It
+# leaves the stable `comsol_cpw_ported_eigen.json` and its field, the saved driven
+# model, and the driven curve and verification record untouched, so the driven
+# plot and its verdict keep describing the mesh they were solved on rather than
+# being paired with a newer eigen-only row. With the switch off, a run is the
+# coupled one: the eigen solve, the driven window on the same mesh, and only then
+# the stable record and field, which are published last so that a driven solve
+# that fails leaves the stable pair on the mesh its driven data came from. That is
+# how the saved 2 µm / 0.2 µm row was produced.
+#
 # The ported eigen solve has been run on three edge meshes, pinned at 4 µm /
 # 0.4 µm, 3 µm / 0.3 µm and 2 µm / 0.2 µm on the meander edges over the same
 # 100 µm / 2 µm global mesh, giving **659682**, **847139** and **1293967**
@@ -1999,6 +2044,11 @@ POWER_SUM_MAX = 1.001
 # far outside the reconstructed rows is clamped to the nearest endpoint; further
 # out, the comparison is refused rather than accepted at a distant row.
 CURVE_ENDPOINT_TOLERANCE_GHZ = 1.0e-7
+# How far the saved direct "AWE minimum" frequency may sit from the minimum of
+# the curve as loaded. One kilohertz is well under one row here (~106 kHz) and
+# well over the grid's rounding, so it accepts the writer's own result while
+# catching a minimum that moved by a row.
+DIRECT_MINIMUM_FREQUENCY_TOLERANCE_GHZ = 1.0e-6
 
 
 def ported_mode_field_path(solution_index: int) -> Path:
@@ -2145,7 +2195,10 @@ def ported_layout_signature(layout: Any) -> str:
     signature makes that check mechanical, so a record solved on a different
     layout, in a different enclosure, with a different port setup, or with a
     different search is left out of the series and reported rather than charted as
-    if the mesh were the only thing that changed. Only the meander-edge sizes are
+    if the mesh were the only thing that changed. The meander edge box and the
+    field cut plane are in it as well, because both change which edges carry the
+    local size and which plane the mode is scored on, and a ratio from another
+    selection or another cut is not this row's. Only the meander-edge sizes are
     outside it, because refining them is what the series measures.
 
     Args:
@@ -2203,6 +2256,9 @@ def ported_layout_signature(layout: Any) -> str:
         "mode_window_ghz": list(EIGEN_MODE_WINDOW_GHZ),
         "feed_y_um": list(FEED_Y_UM),
         "meander_box_um": MEANDER_BOX_UM,
+        # Both change what a row measures, not just how finely it discretises.
+        "meander_edge_box_um": MEANDER_EDGE_BOX_UM,
+        "field_cut_z": FIELD_CUT_Z,
     }
     payload = json.dumps({"geometry": geometry, "settings": settings}, sort_keys=True)
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
@@ -2231,7 +2287,8 @@ def ported_field_record_path(edge_hmax_um: float, edge_hmin_um: float) -> Path:
     """Return the mesh-tagged copy of one edge mesh's selected field export.
 
     The tagged eigen record points at this copy rather than at ``PORTED_FIELD_TXT``,
-    which every run overwrites with its own field.
+    which only a completed coupled run publishes, so each tagged record keeps the
+    field it was actually solved with.
 
     Args:
         edge_hmax_um: Meander-edge ``hmax`` in µm.
@@ -2243,6 +2300,24 @@ def ported_field_record_path(edge_hmax_um: float, edge_hmin_um: float) -> Path:
     return MODEL_DIR / (
         f"{PORTED_FIELD_TAGGED_PREFIX}_{edge_hmax_um:g}um_{edge_hmin_um:g}um.txt"
     )
+
+
+def publish_ported_stable(record: dict[str, Any], field_source: Path) -> None:
+    """Publish the stable ported eigen record and field of a coupled run.
+
+    Both are written only once the driven window has finished and its model is
+    saved, so a driven solve that fails leaves the stable pair on the mesh its
+    driven data came from.
+
+    Args:
+        record: The ported eigen record to publish, naming the stable field file.
+        field_source: The selected mode's field export this run solved.
+    """
+    field_path = MODEL_DIR / PORTED_FIELD_TXT
+    temporary = field_path.with_name(field_path.name + ".tmp")
+    temporary.write_bytes(field_source.read_bytes())
+    temporary.replace(field_path)
+    write_json_atomically(MODEL_DIR / PORTED_EIGEN_JSON, record)
 
 
 def ported_series_row(
@@ -2732,6 +2807,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
             edge_hmax_um=PORTED_EDGE_HMAX_UM,
             edge_hmin_um=PORTED_EDGE_HMIN_UM,
         )
+        enforce_element_budget("ported eigen", ported_elements)
         ported_model.java.study("std1").run()
         for problem in ported_model.problems():
             print(f"  ported eigen model reports: {problem}")
@@ -2739,18 +2815,17 @@ elif RUN_PORTED_DRIVEN and client is not None:
         ported_selected, ported_field_source, ported_ratio = select_ported_mode(
             ported_model, ported_modes
         )
-        # The read side looks for one stable name, so the selected mode's field
-        # is copied there from the per-mode export that was already scored.
+        # Every run writes its own tagged copy; the stable name is published only
+        # by a coupled run that reaches the end of its driven window.
         ported_field_path = MODEL_DIR / PORTED_FIELD_TXT
-        ported_field_path.write_bytes(ported_field_source.read_bytes())
-        # The stable name above is overwritten by every run, so the mesh-tagged
-        # record keeps its own copy of the field it was solved with.
         tagged_field_path = ported_field_record_path(
             PORTED_EDGE_HMAX_UM, PORTED_EDGE_HMIN_UM
         )
         tagged_field_path.write_bytes(ported_field_source.read_bytes())
+        # Identified from the tagged copy, since the stable name still holds the
+        # last published row's field.
         ported_identification = identify_ported_mode(
-            ported_field_path, ported_selected, ported_ratio
+            tagged_field_path, ported_selected, ported_ratio
         )
         ported_record = {
             "element_count": ported_elements,
@@ -2779,12 +2854,8 @@ elif RUN_PORTED_DRIVEN and client is not None:
             # in the mesh series.
             "layout_signature": ported_layout_signature(layout),
         }
-        (MODEL_DIR / PORTED_EIGEN_JSON).write_text(
-            json.dumps(ported_record, indent=2) + "\n"
-        )
-        # The stable record keeps the stable field name the read cells use; the
-        # tagged copy points at its own field, so a later run cannot leave it
-        # describing a field that has since been overwritten.
+        # The tagged copy overrides field_file with its own field, so a later run
+        # cannot leave it describing a field that has since been overwritten.
         write_json_atomically(
             ported_eigen_record_path(PORTED_EDGE_HMAX_UM, PORTED_EDGE_HMIN_UM),
             ported_record
@@ -2806,295 +2877,329 @@ elif RUN_PORTED_DRIVEN and client is not None:
             f"Ported mesh series: {len(ported_series['rows'])} row(s) rebuilt into "
             f"{PORTED_MESH_SERIES_JSON} from the mesh-tagged records in {MODEL_DIR}; "
             "rerun this stage at another PORTED_EDGE_HMAX_UM/PORTED_EDGE_HMIN_UM to "
-            "add a row"
+            "add a row, with RUN_PORTED_EIGEN_ONLY = True to pay for the eigen solve "
+            "only"
         )
         for reason in ported_series["rejected"]:
             print(f"  left out of the series: {reason}")
     finally:
         client.remove(ported_model)
 
-    center_ghz = ported_selected.real / 1e9
-    half_span_ghz = sweep_half_span_ghz(ported_selected.imag)
-    low_ghz, high_ghz = center_ghz - half_span_ghz, center_ghz + half_span_ghz
-    # Ten requested rows per loading width over the span the range actually
-    # sweeps, so a 1.07 MHz notch inside the +/-5 MHz cap asks for ~95 rows.
-    awe_points = sweep_requested_points(ported_selected.imag)
-
-    model = build_comsol_sheet_model(
-        client,
-        layout,
-        name="QPDK Coupled Quarter-Wave Resonator driven",
-        substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
-        air_height_um=AIR_HEIGHT_UM,
-    )
-    add_cpw_rf_study(
-        model,
-        layout,
-        cpw_gap_um=CPW_GAP_UM,
-        frequency_ghz=PORTED_SHIFT_GHZ,
-        mesh_size=2,
-    )
-    create_meander_edge_selection(model)
-    pin_absolute_edge_mesh_sizes(
-        model,
-        edge_selection=MEANDER_EDGE_SELECTION,
-        global_hmax_um=GLOBAL_HMAX_UM,
-        global_hmin_um=GLOBAL_HMIN_UM,
-        edge_hmax_um=PORTED_EDGE_HMAX_UM,
-        edge_hmin_um=PORTED_EDGE_HMIN_UM,
-    )
-
-    # The run's own ID names the curve and the record, so a reader can tell a
-    # fresh curve from a stale verification record.
-    run_id = uuid.uuid4().hex[:12]
-    direct_path = MODEL_DIR / f"{DIRECT_PREFIX}-{run_id}.json"
-    awe_path = MODEL_DIR / f"{AWE_CURVE_PREFIX}-{run_id}.csv"
-    record: dict[str, Any] = {
-        "run_id": run_id,
-        "window": {
-            "centre_ghz": center_ghz,
-            "low_ghz": low_ghz,
-            "high_ghz": high_ghz,
-            "half_span_ghz": half_span_ghz,
-            "fwhm_ghz": sweep_fwhm_ghz(ported_selected.imag),
-        },
-        "awe_points_requested": awe_points,
-        "awe_points_per_fwhm": AWE_POINTS_PER_FWHM,
-        "awe_agreement_db": AWE_AGREEMENT_DB,
-        "notch_min_depth_db": NOTCH_MIN_DEPTH_DB,
-        "power_sum_band": [POWER_SUM_MIN, POWER_SUM_MAX],
-        # Stored as a bare file name, so a saved record carries no absolute path;
-        # the reader resolves it under RESULTS_DIR or next to the record.
-        "awe_curve_csv": awe_path.name,
-        "awe_curve_rows_are_reconstructed": True,
-        "direct_points": [],
-        "verified": False,
-        "verified_reason": "run started; nothing solved yet",
-    }
-
-    def checkpoint() -> None:
-        """Write the record with whatever has been solved so far."""
-        write_json_atomically(direct_path, record)
-
-    checkpoint()
-    # The flanks are the requested grid's own endpoints, at the same formatted
-    # precision the AWE curve is built from, so a flank sits on a curve row
-    # rather than a fraction of a hertz outside it.
-    _, driven_grid_ghz = requested_frequency_grid(low_ghz, high_ghz, awe_points)
-    # Both flanks and the centre, solved directly. Each point is solved and
-    # checkpointed on its own, so an interrupted run keeps every point already
-    # solved rather than losing the batch, and stays marked unverified until the
-    # whole check passes.
-    for label, frequency in (
-        ("low flank", float(driven_grid_ghz[0])),
-        ("centre", center_ghz),
-        ("high flank", float(driven_grid_ghz[-1])),
-    ):
-        record["direct_points"].append(solve_direct_point(model, label, frequency))
-        record["verified_reason"] = (
-            f"direct point {label!r} solved; curve and checks pending"
-        )
-        checkpoint()
-    direct_points = list(record["direct_points"])
-
-    flank_levels_db = [direct_points[0]["s21_db"], direct_points[2]["s21_db"]]
-    direct_notch_at_centre = notch_verdict(direct_points[1]["s21_db"], flank_levels_db)
-
-    curve = solve_awe_curve(model, low_ghz, high_ghz, awe_points, awe_path)
-    minimum_index = int(np.argmin(curve["s21_db"]))
-    awe_minimum_ghz = float(curve["frequencies_ghz"][minimum_index])
-    record |= {
-        "awe_curve_rows": curve["solved_rows"],
-        "awe_curve_requested_points": curve["requested_points"],
-        "awe_curve_requested_grid_low_ghz": curve["requested_grid_low_ghz"],
-        "awe_curve_requested_grid_high_ghz": curve["requested_grid_high_ghz"],
-        "awe_curve_requested_grid_step_ghz": curve["requested_grid_step_ghz"],
-        "awe_curve_physical_window_ghz": curve["physical_window_ghz"],
-        "awe_curve_refinement_rows": curve["refinement_rows"],
-        "awe_curve_worst_power_sum": curve["worst_power_sum"],
-        "awe_curve_worst_power_deficit": curve["worst_power_deficit"],
-        "awe_curve_power_sum_min": curve["power_sum_min"],
-        "awe_curve_power_sum_max": curve["power_sum_max"],
-        "awe_curve_power_within_band": curve["power_within_band"],
-        "awe_curve_power_balance_caveat": curve["power_balance_caveat"],
-        "awe_minimum_ghz": awe_minimum_ghz,
-    }
-    record["verified_reason"] = "curve solved; checks pending"
-    checkpoint()
-
-    # The fit can put its minimum between the direct points, so that frequency
-    # gets its own direct solve before any depth is believed.
-    direct_minimum = solve_direct_point(model, "AWE minimum", awe_minimum_ghz)
-    record["direct_points"] = [*direct_points, direct_minimum]
-    checkpoint()
-
-    # The notch is required at the directly solved AWE minimum, relative to both
-    # flanks. The centre is kept as a comparison point: a loaded mode can sit off
-    # the ported eigenfrequency, so the true minimum need not fall on the centre.
-    direct_notch_at_minimum = notch_verdict(direct_minimum["s21_db"], flank_levels_db)
-
-    # A direct frequency outside the curve cannot be compared, so it is a failure
-    # rather than a skipped comparison. Every direct frequency is compared, not
-    # only the minimum and the edges, so a flat curve that missed the minimum
-    # fails too.
-    comparisons = []
-    for point in record["direct_points"]:
-        curve_db = curve_value_db(curve, point["frequency_ghz"])
-        # Distance to the nearest curve row, so an endpoint comparison says how
-        # far the direct point sat from the row it was read at.
-        nearest_gap_ghz = (
-            float(np.min(np.abs(curve["frequencies_ghz"] - point["frequency_ghz"])))
-            if curve["frequencies_ghz"].size
-            else None
-        )
-        comparisons.append({
-            "label": point["label"],
-            "frequency_ghz": point["frequency_ghz"],
-            "direct_db": point["s21_db"],
-            "awe_curve_db": curve_db,
-            "curve_gap_ghz": nearest_gap_ghz,
-            "difference_db": (None if curve_db is None else curve_db - point["s21_db"]),
-        })
-    outside_curve = [
-        item["label"] for item in comparisons if item["difference_db"] is None
-    ]
-    differences = [
-        abs(item["difference_db"])
-        for item in comparisons
-        if item["difference_db"] is not None
-    ]
-    curve_agrees = bool(
-        not outside_curve
-        and len(differences) == len(comparisons)
-        and max(differences) <= AWE_AGREEMENT_DB
-    )
-    # Only the direct solves carry the passivity verdict. The curve's fitted rows
-    # can sit a little outside the band, and that surplus is a property of the
-    # rational fit rather than power leaving the model, so it stays a separate
-    # diagnostic and never flips the verdict on its own.
-    power_ok = bool(
-        all(point["power_within_band"] for point in record["direct_points"])
-    )
-    verified = bool(curve_agrees and direct_notch_at_minimum["is_a_notch"] and power_ok)
-
-    # The worst power deviation over the direct solves is the largest magnitude
-    # from unity, so a slight surplus (a negative deficit) is not mistaken for the
-    # best point.
-    direct_deficits = [point["power_deficit"] for point in record["direct_points"]]
-    worst_deficit = max(direct_deficits, key=abs)
-
-    record |= {
-        "comparisons": comparisons,
-        "direct_points_outside_curve": outside_curve,
-        "max_absolute_difference_db": max(differences) if differences else None,
-        "curve_agrees": curve_agrees,
-        "power_within_band": power_ok,
-        "worst_power_deficit": worst_deficit,
-        "direct_notch_at_centre": direct_notch_at_centre,
-        "direct_notch_at_minimum": direct_notch_at_minimum,
-        "verified": verified,
-        "verified_reason": (
-            "the direct solve at the AWE minimum is a notch below both flanks, "
-            "the AWE curve reproduces every direct level at all four directly "
-            "solved frequencies within tolerance, and the directly solved "
-            "two-port power balance is near unity"
-            if verified
-            else "run did not pass every check"
-        ),
-        "convergence_claim": {
-            "claimed": False,
-            "reason": (
-                "one mesh, one enclosure, one centre frequency; no convergence "
-                "verdict is claimed for any frequency, depth or width"
-            ),
-        },
-    }
-    # The last checkpoint goes before model.save, so a save that does not finish
-    # cannot lose the verification record.
-    checkpoint()
-
-    for point in record["direct_points"]:
+    if RUN_PORTED_EIGEN_ONLY:
         print(
-            f"direct {point['label']}: {point['frequency_ghz']:.9f} GHz, "
-            f"S21 {point['s21_db']:+.3f} dB, power sum {point['power_sum']:.6f} "
-            f"(unit-power deviation {point['power_deficit']:+.2e}, "
-            f"{'in band' if point['power_within_band'] else 'OUT OF BAND'})"
-        )
-    print(
-        f"AWE curve: {curve['solved_rows']} rows of "
-        f"{curve['requested_points']} requested, minimum "
-        f"{curve['s21_db'][minimum_index]:+.3f} dB at {awe_minimum_ghz:.9f} GHz "
-        "(reconstructed)"
-    )
-    print(
-        f"Direct power balance: worst deviation from unity over the directly "
-        f"solved points {worst_deficit:+.2e}, band {POWER_SUM_MIN:g} to "
-        f"{POWER_SUM_MAX:g}"
-    )
-    print(
-        f"AWE curve power balance (diagnostic, not a passivity verdict): rows "
-        f"{curve['power_sum_min']:.6f} to {curve['power_sum_max']:.6f}, worst "
-        f"unit-power deviation {curve['worst_power_deficit']:+.2e}"
-        + (
-            ""
-            if curve["power_within_band"]
-            else "; reconstructed rows are not fully passive, which is a fitted "
-            "surplus and not physical loss"
-        )
-    )
-    print(
-        f"Direct notch at the AWE minimum: depth "
-        f"{direct_notch_at_minimum['depth_below_lower_flank_db']:+.3f} dB against "
-        f"the {NOTCH_MIN_DEPTH_DB:g} dB threshold"
-    )
-    print(
-        f"Direct centre (comparison point, not required to be the notch): depth "
-        f"{direct_notch_at_centre['depth_below_lower_flank_db']:+.3f} dB"
-    )
-    print(
-        f"Curve against direct solves: largest difference "
-        f"{max(differences) if differences else float('nan'):.3f} dB against the "
-        f"{AWE_AGREEMENT_DB:g} dB tolerance"
-        + (
-            f"; {len(outside_curve)} direct point(s) outside the curve: "
-            + ", ".join(outside_curve)
-            if outside_curve
-            else ""
-        )
-    )
-    if verified:
-        print(
-            "Verified: the direct solve at the AWE minimum is a notch below both "
-            "flanks, the AWE curve reproduces the direct levels at all four "
-            "directly solved frequencies within tolerance, and the directly solved "
-            "two-port power balance is near unity. No stage failed or was skipped, "
-            "but only those four frequencies are independent solves; the rest of "
-            "the curve is reconstructed."
+            "RUN_PORTED_EIGEN_ONLY is set, so this run stops after the eigen solve. "
+            f"The stable {PORTED_EIGEN_JSON}, the stable field {PORTED_FIELD_TXT}, "
+            "the saved driven model, and the driven curve and verification record "
+            "are all left as they were, so the driven plot on this page still "
+            "belongs to the mesh it was solved on. Clear RUN_PORTED_EIGEN_ONLY to "
+            "solve the driven window again."
         )
     else:
-        reasons = []
-        if outside_curve:
-            reasons.append(
-                "direct points outside the curve (" + ", ".join(outside_curve) + ")"
-            )
-        elif not curve_agrees:
-            reasons.append("the curve does not reproduce the direct levels")
-        if not direct_notch_at_minimum["is_a_notch"]:
-            reasons.append("no direct notch at the AWE minimum")
-        if not power_ok:
-            reasons.append(
-                "the directly solved two-port power balance is outside the band, so "
-                "power leaves through a channel this record does not see"
-            )
-        print(
-            "UNVERIFIED: "
-            + "; ".join(reasons)
-            + ". No resonance is inferred from the reconstructed curve; see the "
-            "direct points and comparisons in "
-            f"{direct_path.name}."
-        )
+        center_ghz = ported_selected.real / 1e9
+        half_span_ghz = sweep_half_span_ghz(ported_selected.imag)
+        low_ghz, high_ghz = center_ghz - half_span_ghz, center_ghz + half_span_ghz
+        # Ten requested rows per loading width over the span the range actually
+        # sweeps, so a 1.07 MHz notch inside the +/-5 MHz cap asks for ~95 rows.
+        awe_points = sweep_requested_points(ported_selected.imag)
 
-    model.save(MODEL_DIR / "comsol_cpw_resonator_driven.mph")
+        model = build_comsol_sheet_model(
+            client,
+            layout,
+            name="QPDK Coupled Quarter-Wave Resonator driven",
+            substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
+            air_height_um=AIR_HEIGHT_UM,
+        )
+        try:
+            add_cpw_rf_study(
+                model,
+                layout,
+                cpw_gap_um=CPW_GAP_UM,
+                frequency_ghz=PORTED_SHIFT_GHZ,
+                mesh_size=2,
+            )
+            create_meander_edge_selection(model)
+            driven_elements = pin_absolute_edge_mesh_sizes(
+                model,
+                edge_selection=MEANDER_EDGE_SELECTION,
+                global_hmax_um=GLOBAL_HMAX_UM,
+                global_hmin_um=GLOBAL_HMIN_UM,
+                edge_hmax_um=PORTED_EDGE_HMAX_UM,
+                edge_hmin_um=PORTED_EDGE_HMIN_UM,
+            )
+            enforce_element_budget("driven sweep", driven_elements)
+            # The run's own ID names the curve and the record, so a reader can tell a
+            # fresh curve from a stale verification record.
+            run_id = uuid.uuid4().hex[:12]
+            direct_path = MODEL_DIR / f"{DIRECT_PREFIX}-{run_id}.json"
+            awe_path = MODEL_DIR / f"{AWE_CURVE_PREFIX}-{run_id}.csv"
+            record: dict[str, Any] = {
+                "run_id": run_id,
+                "window": {
+                    "centre_ghz": center_ghz,
+                    "low_ghz": low_ghz,
+                    "high_ghz": high_ghz,
+                    "half_span_ghz": half_span_ghz,
+                    "fwhm_ghz": sweep_fwhm_ghz(ported_selected.imag),
+                },
+                "awe_points_requested": awe_points,
+                "awe_points_per_fwhm": AWE_POINTS_PER_FWHM,
+                "awe_agreement_db": AWE_AGREEMENT_DB,
+                "notch_min_depth_db": NOTCH_MIN_DEPTH_DB,
+                "power_sum_band": [POWER_SUM_MIN, POWER_SUM_MAX],
+                # Stored as a bare file name, so a saved record carries no absolute path;
+                # the reader resolves it under RESULTS_DIR or next to the record.
+                "awe_curve_csv": awe_path.name,
+                "awe_curve_rows_are_reconstructed": True,
+                "direct_points": [],
+                "verified": False,
+                "verified_reason": "run started; nothing solved yet",
+            }
+
+            def checkpoint() -> None:
+                """Write the record with whatever has been solved so far."""
+                write_json_atomically(direct_path, record)
+
+            checkpoint()
+            # The flanks are the requested grid's own endpoints, at the same formatted
+            # precision the AWE curve is built from, so a flank sits on a curve row
+            # rather than a fraction of a hertz outside it.
+            _, driven_grid_ghz = requested_frequency_grid(low_ghz, high_ghz, awe_points)
+            # Both flanks and the centre, solved directly. Each point is solved and
+            # checkpointed on its own, so an interrupted run keeps every point already
+            # solved rather than losing the batch, and stays marked unverified until the
+            # whole check passes.
+            for label, frequency in (
+                ("low flank", float(driven_grid_ghz[0])),
+                ("centre", center_ghz),
+                ("high flank", float(driven_grid_ghz[-1])),
+            ):
+                record["direct_points"].append(
+                    solve_direct_point(model, label, frequency)
+                )
+                record["verified_reason"] = (
+                    f"direct point {label!r} solved; curve and checks pending"
+                )
+                checkpoint()
+            direct_points = list(record["direct_points"])
+
+            flank_levels_db = [direct_points[0]["s21_db"], direct_points[2]["s21_db"]]
+            direct_notch_at_centre = notch_verdict(
+                direct_points[1]["s21_db"], flank_levels_db
+            )
+
+            curve = solve_awe_curve(model, low_ghz, high_ghz, awe_points, awe_path)
+            minimum_index = int(np.argmin(curve["s21_db"]))
+            awe_minimum_ghz = float(curve["frequencies_ghz"][minimum_index])
+            record |= {
+                "awe_curve_rows": curve["solved_rows"],
+                "awe_curve_requested_points": curve["requested_points"],
+                "awe_curve_requested_grid_low_ghz": curve["requested_grid_low_ghz"],
+                "awe_curve_requested_grid_high_ghz": curve["requested_grid_high_ghz"],
+                "awe_curve_requested_grid_step_ghz": curve["requested_grid_step_ghz"],
+                "awe_curve_physical_window_ghz": curve["physical_window_ghz"],
+                "awe_curve_refinement_rows": curve["refinement_rows"],
+                "awe_curve_worst_power_sum": curve["worst_power_sum"],
+                "awe_curve_worst_power_deficit": curve["worst_power_deficit"],
+                "awe_curve_power_sum_min": curve["power_sum_min"],
+                "awe_curve_power_sum_max": curve["power_sum_max"],
+                "awe_curve_power_within_band": curve["power_within_band"],
+                "awe_curve_power_balance_caveat": curve["power_balance_caveat"],
+                "awe_minimum_ghz": awe_minimum_ghz,
+            }
+            record["verified_reason"] = "curve solved; checks pending"
+            checkpoint()
+
+            # The fit can put its minimum between the direct points, so that frequency
+            # gets its own direct solve before any depth is believed.
+            direct_minimum = solve_direct_point(model, "AWE minimum", awe_minimum_ghz)
+            record["direct_points"] = [*direct_points, direct_minimum]
+            checkpoint()
+
+            # The notch is required at the directly solved AWE minimum, relative to both
+            # flanks. The centre is kept as a comparison point: a loaded mode can sit off
+            # the ported eigenfrequency, so the true minimum need not fall on the centre.
+            direct_notch_at_minimum = notch_verdict(
+                direct_minimum["s21_db"], flank_levels_db
+            )
+
+            # A direct frequency outside the curve cannot be compared, so it is a failure
+            # rather than a skipped comparison. Every direct frequency is compared, not
+            # only the minimum and the edges, so a flat curve that missed the minimum
+            # fails too.
+            comparisons = []
+            for point in record["direct_points"]:
+                curve_db = curve_value_db(curve, point["frequency_ghz"])
+                # Distance to the nearest curve row, so an endpoint comparison says how
+                # far the direct point sat from the row it was read at.
+                nearest_gap_ghz = (
+                    float(
+                        np.min(
+                            np.abs(curve["frequencies_ghz"] - point["frequency_ghz"])
+                        )
+                    )
+                    if curve["frequencies_ghz"].size
+                    else None
+                )
+                comparisons.append({
+                    "label": point["label"],
+                    "frequency_ghz": point["frequency_ghz"],
+                    "direct_db": point["s21_db"],
+                    "awe_curve_db": curve_db,
+                    "curve_gap_ghz": nearest_gap_ghz,
+                    "difference_db": (
+                        None if curve_db is None else curve_db - point["s21_db"]
+                    ),
+                })
+            outside_curve = [
+                item["label"] for item in comparisons if item["difference_db"] is None
+            ]
+            differences = [
+                abs(item["difference_db"])
+                for item in comparisons
+                if item["difference_db"] is not None
+            ]
+            curve_agrees = bool(
+                not outside_curve
+                and len(differences) == len(comparisons)
+                and max(differences) <= AWE_AGREEMENT_DB
+            )
+            # Only the direct solves carry the passivity verdict. The curve's fitted rows
+            # can sit a little outside the band, and that surplus is a property of the
+            # rational fit rather than power leaving the model, so it stays a separate
+            # diagnostic and never flips the verdict on its own.
+            power_ok = bool(
+                all(point["power_within_band"] for point in record["direct_points"])
+            )
+            verified = bool(
+                curve_agrees and direct_notch_at_minimum["is_a_notch"] and power_ok
+            )
+
+            # The worst power deviation over the direct solves is the largest magnitude
+            # from unity, so a slight surplus (a negative deficit) is not mistaken for the
+            # best point.
+            direct_deficits = [
+                point["power_deficit"] for point in record["direct_points"]
+            ]
+            worst_deficit = max(direct_deficits, key=abs)
+
+            record |= {
+                "comparisons": comparisons,
+                "direct_points_outside_curve": outside_curve,
+                "max_absolute_difference_db": max(differences) if differences else None,
+                "curve_agrees": curve_agrees,
+                "power_within_band": power_ok,
+                "worst_power_deficit": worst_deficit,
+                "direct_notch_at_centre": direct_notch_at_centre,
+                "direct_notch_at_minimum": direct_notch_at_minimum,
+                "verified": verified,
+                "verified_reason": (
+                    "the direct solve at the AWE minimum is a notch below both flanks, "
+                    "the AWE curve reproduces every direct level at all four directly "
+                    "solved frequencies within tolerance, and the directly solved "
+                    "two-port power balance is near unity"
+                    if verified
+                    else "run did not pass every check"
+                ),
+                "convergence_claim": {
+                    "claimed": False,
+                    "reason": (
+                        "one mesh, one enclosure, one centre frequency; no convergence "
+                        "verdict is claimed for any frequency, depth or width"
+                    ),
+                },
+            }
+            # The last checkpoint goes before model.save, so a save that does not finish
+            # cannot lose the verification record.
+            checkpoint()
+
+            for point in record["direct_points"]:
+                print(
+                    f"direct {point['label']}: {point['frequency_ghz']:.9f} GHz, "
+                    f"S21 {point['s21_db']:+.3f} dB, power sum {point['power_sum']:.6f} "
+                    f"(unit-power deviation {point['power_deficit']:+.2e}, "
+                    f"{'in band' if point['power_within_band'] else 'OUT OF BAND'})"
+                )
+            print(
+                f"AWE curve: {curve['solved_rows']} rows of "
+                f"{curve['requested_points']} requested, minimum "
+                f"{curve['s21_db'][minimum_index]:+.3f} dB at {awe_minimum_ghz:.9f} GHz "
+                "(reconstructed)"
+            )
+            print(
+                f"Direct power balance: worst deviation from unity over the directly "
+                f"solved points {worst_deficit:+.2e}, band {POWER_SUM_MIN:g} to "
+                f"{POWER_SUM_MAX:g}"
+            )
+            print(
+                f"AWE curve power balance (diagnostic, not a passivity verdict): rows "
+                f"{curve['power_sum_min']:.6f} to {curve['power_sum_max']:.6f}, worst "
+                f"unit-power deviation {curve['worst_power_deficit']:+.2e}"
+                + (
+                    ""
+                    if curve["power_within_band"]
+                    else "; reconstructed rows are not fully passive, which is a fitted "
+                    "surplus and not physical loss"
+                )
+            )
+            print(
+                f"Direct notch at the AWE minimum: depth "
+                f"{direct_notch_at_minimum['depth_below_lower_flank_db']:+.3f} dB against "
+                f"the {NOTCH_MIN_DEPTH_DB:g} dB threshold"
+            )
+            print(
+                f"Direct centre (comparison point, not required to be the notch): depth "
+                f"{direct_notch_at_centre['depth_below_lower_flank_db']:+.3f} dB"
+            )
+            print(
+                f"Curve against direct solves: largest difference "
+                f"{max(differences) if differences else float('nan'):.3f} dB against the "
+                f"{AWE_AGREEMENT_DB:g} dB tolerance"
+                + (
+                    f"; {len(outside_curve)} direct point(s) outside the curve: "
+                    + ", ".join(outside_curve)
+                    if outside_curve
+                    else ""
+                )
+            )
+            if verified:
+                print(
+                    "Verified: the direct solve at the AWE minimum is a notch below both "
+                    "flanks, the AWE curve reproduces the direct levels at all four "
+                    "directly solved frequencies within tolerance, and the directly solved "
+                    "two-port power balance is near unity. No stage failed or was skipped, "
+                    "but only those four frequencies are independent solves; the rest of "
+                    "the curve is reconstructed."
+                )
+            else:
+                reasons = []
+                if outside_curve:
+                    reasons.append(
+                        "direct points outside the curve ("
+                        + ", ".join(outside_curve)
+                        + ")"
+                    )
+                elif not curve_agrees:
+                    reasons.append("the curve does not reproduce the direct levels")
+                if not direct_notch_at_minimum["is_a_notch"]:
+                    reasons.append("no direct notch at the AWE minimum")
+                if not power_ok:
+                    reasons.append(
+                        "the directly solved two-port power balance is outside the band, so "
+                        "power leaves through a channel this record does not see"
+                    )
+                print(
+                    "UNVERIFIED: "
+                    + "; ".join(reasons)
+                    + ". No resonance is inferred from the reconstructed curve; see the "
+                    "direct points and comparisons in "
+                    f"{direct_path.name}."
+                )
+
+            model.save(MODEL_DIR / "comsol_cpw_resonator_driven.mph")
+            # Last, so a driven solve that fails leaves the old stable pair.
+            publish_ported_stable(ported_record, ported_field_source)
+        finally:
+            client.remove(model)
 elif not RUN_PORTED_DRIVEN:
     print(
         "The stage-2 solve is off by default. Set RUN_PORTED_DRIVEN = True with "
@@ -3103,7 +3208,9 @@ elif not RUN_PORTED_DRIVEN:
         "RUN_PORT_FREE_SERIES is also True. Every run also writes a mesh-tagged "
         "copy of its ported eigen record and rebuilds the ported mesh series, so "
         "rerunning it at tighter PORTED_EDGE_HMAX_UM / PORTED_EDGE_HMIN_UM pairs "
-        "is what produces the chart in 'Ported eigen mesh refinement'."
+        "is what produces the chart in 'Ported eigen mesh refinement'. Set "
+        "RUN_PORTED_EIGEN_ONLY = True alongside it to add a mesh-refinement row "
+        "without repeating the driven sweep; on its own that switch does nothing."
     )
 
 # %% [markdown]
@@ -3142,8 +3249,16 @@ elif not RUN_PORTED_DRIVEN:
 # The verdict is not read from the curve's own minimum either. A notch is
 # required only at the directly solved AWE minimum, relative to both flanks; the
 # centre is a comparison point, because a loaded mode can sit off the ported
-# eigenfrequency. The directly solved power balance is recomputed from the saved
-# S-parameters and checked **near unity**, not merely below one: with PEC metal
+# eigenfrequency. The label is checked against the loaded curve, not trusted: the
+# cell recomputes the curve's minimum here and requires the saved direct "AWE
+# minimum" frequency to sit at it, inside the directly solved flanks, with the
+# centre between them too. The writer solved that point at the curve row its own
+# argmin picked, so a genuine record matches to well within a kilohertz, while a
+# curve edited afterwards has an argmin somewhere else and the point that was
+# solved here is then not a direct solve at this curve's minimum. A mismatch is a
+# problem, not a caveat, and the run is reported UNVERIFIED. The directly solved
+# power balance is recomputed from the saved S-parameters and checked **near
+# unity**, not merely below one: with PEC metal
 # and a lossless dielectric, a large deficit means power is leaving through a
 # channel this two-port record does not see, and that leaves the run unverified.
 # A reconstructed row's power sum is reported as a separate diagnostic instead,
@@ -3384,6 +3499,10 @@ else:
                     # The notch is required only at the directly solved AWE
                     # minimum, relative to both direct flanks.
                     direct_notch = None
+                    # The label is not evidence: recompute where this curve
+                    # bottoms out, then check the saved point is still there.
+                    loaded_minimum_ghz = float(curve_ghz[int(np.argmin(curve_s21_db))])
+                    minimum_offset_ghz = None
                     if len(direct_values) == len(required_labels):
                         direct_notch = notch_verdict(
                             direct_values["AWE minimum"]["s21_db"],
@@ -3397,6 +3516,41 @@ else:
                                 "no direct notch at the AWE minimum: depth "
                                 f"{direct_notch['depth_below_lower_flank_db']:+.3f} dB "
                                 f"against the {NOTCH_MIN_DEPTH_DB:g} dB threshold"
+                            )
+                        low_flank_ghz = direct_values["low flank"]["frequency_ghz"]
+                        high_flank_ghz = direct_values["high flank"]["frequency_ghz"]
+                        minimum_offset_ghz = abs(
+                            direct_values["AWE minimum"]["frequency_ghz"]
+                            - loaded_minimum_ghz
+                        )
+                        if minimum_offset_ghz > DIRECT_MINIMUM_FREQUENCY_TOLERANCE_GHZ:
+                            problems.append(
+                                "the direct point labelled 'AWE minimum' is at "
+                                f"{direct_values['AWE minimum']['frequency_ghz']:.9f} "
+                                f"GHz, but the current curve's minimum is at "
+                                f"{loaded_minimum_ghz:.9f} GHz: {minimum_offset_ghz:.3e} "
+                                "GHz apart against the "
+                                f"{DIRECT_MINIMUM_FREQUENCY_TOLERANCE_GHZ:g} GHz "
+                                "tolerance, so that point was not solved at this "
+                                "curve's minimum"
+                            )
+                        if not low_flank_ghz < loaded_minimum_ghz < high_flank_ghz:
+                            problems.append(
+                                "the current curve's minimum at "
+                                f"{loaded_minimum_ghz:.9f} GHz does not sit between "
+                                "the directly solved flanks at "
+                                f"{low_flank_ghz:.9f} and {high_flank_ghz:.9f} GHz"
+                            )
+                        if not (
+                            low_flank_ghz
+                            < direct_values["centre"]["frequency_ghz"]
+                            < high_flank_ghz
+                        ):
+                            problems.append(
+                                "the directly solved centre at "
+                                f"{direct_values['centre']['frequency_ghz']:.9f} GHz "
+                                "does not sit between the directly solved flanks at "
+                                f"{low_flank_ghz:.9f} and {high_flank_ghz:.9f} GHz"
                             )
 
                     # Passivity is recomputed from the saved S-parameters too, so
@@ -3482,6 +3636,15 @@ else:
                         f"{curve_s21_db[minimum_index]:+.3f} dB at "
                         f"{curve_ghz[minimum_index]:.9f} GHz"
                     )
+                    if minimum_offset_ghz is not None:
+                        print(
+                            "Minimum check: the saved direct 'AWE minimum' at "
+                            f"{direct_values['AWE minimum']['frequency_ghz']:.9f} GHz "
+                            f"against the minimum of the curve as loaded at "
+                            f"{loaded_minimum_ghz:.9f} GHz, "
+                            f"{minimum_offset_ghz:.3e} GHz apart against the "
+                            f"{DIRECT_MINIMUM_FREQUENCY_TOLERANCE_GHZ:g} GHz tolerance"
+                        )
                     if direct_notch is not None:
                         print(
                             "Direct notch at the AWE minimum: depth "
@@ -3498,7 +3661,8 @@ else:
                     else:
                         print(
                             "Verified: the direct solve at the AWE minimum is a notch "
-                            "below both flanks, the current curve reproduces the "
+                            "below both flanks, that point still sits at the minimum "
+                            "of the curve as loaded, the current curve reproduces the "
                             "direct levels at all four directly solved frequencies "
                             "within tolerance, and the directly solved two-port power "
                             "balance is near unity. Only those four frequencies are "
@@ -3851,12 +4015,17 @@ else:
 # stable `comsol_cpw_ported_eigen.json`, then rebuilds the series from every
 # tagged record in `MODEL_DIR` that carries the same layout signature. The
 # signature covers the prepared metal polygons and feed planes, the enclosure, the
-# global mesh sizes, and the mesh-independent RF settings, so records solved on a
-# different layout or enclosure, with a different port setup, or with a different
+# global mesh sizes, the meander edge box behind the local sizing, the field cut
+# plane, and the mesh-independent RF settings, so records solved on a different
+# layout or enclosure, with a different port setup, edge selection, cut plane, or
 # search are left out and reported instead of being charted together. Only the
 # meander-edge sizes are outside it, because refining them is what the series
 # measures. A row is a record's own solved numbers or it is not written at all:
 # nothing is interpolated, corrected, or carried over from another row.
+#
+# This cell also refuses a series whose signature is not this notebook's layout
+# and setup, rather than charting rows solved for a different device. A series
+# produced elsewhere goes in through the same check as one produced here.
 #
 # To obtain the chart, set `RUN_COMSOL = True` and `RUN_PORTED_DRIVEN = True` on a
 # licensed machine and run the stage-2 cell once per meander edge size, tightening
@@ -3864,9 +4033,13 @@ else:
 # 0.4 µm, then 3 µm / 0.3 µm, then 2 µm / 0.2 µm. Each run replaces its own row if
 # that edge size was solved before and adds one if it was not, so the coarse-to-
 # fine order comes out of the element counts rather than the order the runs
-# happened in. The port-free series is not needed, and each run repeats the driven
-# sweep as well even though this chart uses only the eigen row. The cell below
-# then reads the series from `RESULTS_DIR`: `MODEL_DIR` on a licensed run, or
+# happened in. The port-free series is not needed, and a refinement row does not
+# need the driven sweep either: with `RUN_PORTED_EIGEN_ONLY = True` the run stops
+# after the eigen solve, so this chart costs one eigen solve per row instead of
+# that plus a driven window, and the stable record and the saved driven outputs
+# are left alone. With the switch off, each run repeats the driven sweep as well.
+# The cell below then reads the series from `RESULTS_DIR`: `MODEL_DIR` on a
+# licensed run, or
 # whatever `QPDK_COMSOL_RESULTS_DIR` points at on a machine with no license, so an
 # externally produced `comsol_cpw_ported_mesh_series.json` can be charted here
 # without rerunning anything. Two rows are the minimum for a delta; the cell
@@ -3900,28 +4073,48 @@ if ported_series_file is None:
         "through QPDK_COMSOL_RESULTS_DIR."
     )
 else:
-    rows = json.loads(ported_series_file.read_text()).get("rows")
+    payload = json.loads(ported_series_file.read_text())
+    rows = payload.get("rows") if isinstance(payload, dict) else None
     rows = rows if isinstance(rows, list) else []
-    problems = [] if len(rows) >= 2 else [f"{len(rows)} row(s): a delta needs two"]
-    for index, row in enumerate(rows, start=1):
-        if not isinstance(row, dict):
-            problems.append(f"row {index} is not an object")
-            continue
-        if row.get("selected_mode_identified") is not True:
-            problems.append(f"row {index}: selected_mode_identified is not True")
-        for key in SERIES_SIZES + SERIES_FIELDS:
-            value = row.get(key)
-            numeric = not isinstance(value, bool) and isinstance(value, (int, float))
-            if not numeric or not np.isfinite(value) or value <= 0.0:
-                problems.append(f"row {index}/{key}: {value!r} not finite and positive")
-    if not problems:
-        counts = np.array([row["element_count"] for row in rows], dtype=float)
-        if np.any(np.diff(counts) <= 0.0):
-            problems.append("element counts are not increasing coarse to fine")
-        for key in SERIES_SIZES:
-            sizes = np.array([row[key] for row in rows], dtype=float)
-            if np.any(np.diff(sizes) >= 0.0):
-                problems.append(f"{key} is not strictly decreasing coarse to fine")
+    # Only a series rebuilt for this layout and RF setup is charted, so rows from
+    # another device cannot pass as a mesh-only change.
+    series_signature = ported_layout_signature(layout)
+    refused = None
+    if not isinstance(payload, dict):
+        refused = f"{PORTED_MESH_SERIES_JSON} does not hold a record object"
+    elif payload.get("signature") != series_signature:
+        refused = (
+            f"{PORTED_MESH_SERIES_JSON} was built for a different layout or RF "
+            f"setup: signature {payload.get('signature', 'not recorded')!r} against "
+            f"this run's {series_signature!r}"
+        )
+    if refused is not None:
+        problems = [refused]
+    else:
+        problems = [] if len(rows) >= 2 else [f"{len(rows)} row(s): a delta needs two"]
+        for index, row in enumerate(rows, start=1):
+            if not isinstance(row, dict):
+                problems.append(f"row {index} is not an object")
+                continue
+            if row.get("selected_mode_identified") is not True:
+                problems.append(f"row {index}: selected_mode_identified is not True")
+            for key in SERIES_SIZES + SERIES_FIELDS:
+                value = row.get(key)
+                numeric = not isinstance(value, bool) and isinstance(
+                    value, (int, float)
+                )
+                if not numeric or not np.isfinite(value) or value <= 0.0:
+                    problems.append(
+                        f"row {index}/{key}: {value!r} not finite and positive"
+                    )
+        if not problems:
+            counts = np.array([row["element_count"] for row in rows], dtype=float)
+            if np.any(np.diff(counts) <= 0.0):
+                problems.append("element counts are not increasing coarse to fine")
+            for key in SERIES_SIZES:
+                sizes = np.array([row[key] for row in rows], dtype=float)
+                if np.any(np.diff(sizes) >= 0.0):
+                    problems.append(f"{key} is not strictly decreasing coarse to fine")
 
     if problems:
         print(
@@ -4095,8 +4288,10 @@ else:
 #   selects the same physical mode as the rows already solved, and read for
 #   whether the shifts start to shrink. Tighter ported eigen rows at 1.8 µm and
 #   1.7 µm meander edge sizes are in progress and have returned no result yet, so
-#   nothing is quoted for them. An extrapolated limit needs a trend that the three
-#   solved rows do not yet show.
+#   nothing is quoted for them. Those rows only need the eigen solve, so they can
+#   be run with `RUN_PORTED_EIGEN_ONLY = True`, which costs one solve per row
+#   instead of a full driven window. An extrapolated limit needs a trend that the
+#   three solved rows do not yet show.
 # - **Extend the driven check beyond the selected mesh.** The notch is verified at
 #   four directly solved frequencies on the 2 µm / 0.2 µm row only, so a driven
 #   window on a finer mesh is still open.
