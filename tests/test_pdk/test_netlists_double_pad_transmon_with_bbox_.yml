@@ -2,15 +2,41 @@ instances:
   double_pad_transmon:
     component: double_pad_transmon
     info:
+      component_semantics:
+        conductor_regions:
+        - gds_layer:
+          - 1
+          - 0
+          geometry:
+            selector_point_um:
+            - -132.5
+            - 0
+          level: M1
+          net_id: left_pad
+          semantic_id: LEFT_PAD
+        - gds_layer:
+          - 1
+          - 0
+          geometry:
+            selector_point_um:
+            - 132.5
+            - 0
+          level: M1
+          net_id: right_pad
+          semantic_id: RIGHT_PAD
+        schema_version: 1
       qubit_type: transmon
     settings:
       junction_displacement: null
+      junction_lumped_port_width: 1
       junction_spec: squid_junction
       layer_metal: M1_DRAW
+      layer_simulation: SIM_BOUNDARY
       pad_gap: 15
       pad_size:
       - 250
       - 400
+      with_junction_lumped_port: false
 nets: []
 placements:
   double_pad_transmon:

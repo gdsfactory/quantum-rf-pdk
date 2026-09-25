@@ -77,6 +77,7 @@ class LayerMapQPDK(LayerMap):
     # Simulation-only helpers (never sent to fab)
     SIM_AREA: Layer = (98, 0)
     SIM_ONLY: Layer = (99, 0)
+    SIM_BOUNDARY: Layer = (99, 1)  # Lumped-port sheets; never fabrication metal
 
     # Marker layer for waveguides
     WG: Layer = (102, 0)
@@ -88,11 +89,19 @@ class LayerMapQPDK(LayerMap):
 L = LAYER = LayerMapQPDK
 
 material_properties = {
-    "vacuum": {"relative_permittivity": 1},
-    "Nb": {"relative_permittivity": float("inf")},
+    "vacuum": {
+        "relative_permittivity": 1,
+        "loss_tangent": 0.0,
+        "material_kind": "vacuum",
+    },
+    "Nb": {"relative_permittivity": float("inf"), "material_kind": "superconductor"},
     "NbTiN": {"relative_permittivity": float("inf")},
     # Loss tangent from `checchinMeasurementLowTemperatureLoss2022`
-    "Si": {"relative_permittivity": 11.45, "loss_tangent": 2.7e-6},
+    "Si": {
+        "relative_permittivity": 11.45,
+        "loss_tangent": 2.7e-6,
+        "material_kind": "dielectric",
+    },
     "AlOx/Al": {"relative_permittivity": float("inf")},
     "TiN": {"relative_permittivity": float("inf")},
     "In": {"relative_permittivity": float("inf")},
@@ -143,6 +152,12 @@ def get_layer_stack() -> LayerStack:
                 zmin=0.0,  # top of substrate
                 material="Nb",
                 mesh_order=1,
+                info={
+                    "simulation_role": "conductor",
+                    "part_role": "face_metal",
+                    "geometry": {"geometry_source": "gds_polygon"},
+                    "host_void_semantic_id": "Vacuum",
+                },
             ),
             "NbTiN": LayerLevel(
                 name="NbTiN",
@@ -159,6 +174,10 @@ def get_layer_stack() -> LayerStack:
                 zmin=-500,  # below metal
                 material="Si",
                 mesh_order=4,
+                info={
+                    "simulation_role": "solution_region",
+                    "include_in_component_simulation": True,
+                },
             ),
             "Vacuum": LayerLevel(
                 name="Vacuum",
@@ -167,6 +186,10 @@ def get_layer_stack() -> LayerStack:
                 zmin=200e-9 * 1e6,  # above metal
                 material="vacuum",
                 mesh_order=99,
+                info={
+                    "simulation_role": "solution_region",
+                    "include_in_component_simulation": True,
+                },
             ),
             # Airbridge metal sitting above M1 (example: +300 nm)
             "Airbridge": LayerLevel(

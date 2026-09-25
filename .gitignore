@@ -162,6 +162,7 @@ docs/_generated/
 docs/makefile_help.txt
 docs/justfile_help.txt
 !notebooks/*.ipynb
+!notebooks/recorded/palace_transmon_surface_epr.ipynb
 
 # Testing
 tests/gds_ref/*.gds
@@ -176,6 +177,9 @@ scripts/
 # 3D
 *.glb
 *.stl
+
+# Local solver handoff and returned-run artifacts
+.artifacts/
 
 # Software Bill of Materials
 sbom.json
