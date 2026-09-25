@@ -269,6 +269,7 @@ def pin_absolute_mesh_sizes(
         The number of mesh elements the pinned sequence built.
 
     Raises:
+        ValueError: If a mesh size is invalid or a minimum exceeds its maximum.
         RuntimeError: If the physics-controlled build left no default ``size``
             feature, the sequence came out in an order the sizes would not apply
             in, the sequence is still physics-controlled afterwards, or COMSOL
@@ -282,6 +283,10 @@ def pin_absolute_mesh_sizes(
     for selection, (hmax_um, hmin_um) in face_sizes.items():
         _require_positive(f"face_sizes[{selection!r}] hmax", hmax_um)
         _require_positive(f"face_sizes[{selection!r}] hmin", hmin_um)
+        if hmin_um > hmax_um:
+            raise ValueError(f"face_sizes[{selection!r}] hmin must not exceed hmax")
+    if global_hmin_um > global_hmax_um:
+        raise ValueError("global_hmin_um must not exceed global_hmax_um")
     for name, value in (("hgrad", hgrad), ("hcurve", hcurve), ("hnarrow", hnarrow)):
         if value is not None:
             _require_positive(name, value)
@@ -320,6 +325,8 @@ def pin_absolute_mesh_sizes(
         sequence.create(tag, "Size")
         feature = sequence.feature(tag)
         feature.selection().named(selection)
+        if not _selection_entities(feature.selection()):
+            raise RuntimeError(f"face selection {selection!r} resolved to no faces")
         _set_size(feature, hmax_um, hmin_um)
         last_size_tag = tag
 
