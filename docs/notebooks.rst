@@ -131,17 +131,15 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
-- :doc:`notebooks/comsol_cpw_resonator` — Builds a coupled quarter-wave CPW resonator in
-  COMSOL: extends both source feeds to open port planes, extracts the QPDK metal, builds
-  the air/silicon sheet model, and adds PEC, two numeric TEM ports with voltage
-  integration lines, boundary mode analysis, and a frequency-domain study. A coarse 5-10
-  GHz sweep cannot resolve a notch that narrow, so an eigenfrequency search selects a
-  mode near 11.71 GHz and an adaptive 200 kHz sweep around it resolves a narrow dip
-  there. The diagnostics do not read that dip as a meander resonance: no
-  meander-localised field is shown, the selected frequency drifts with the mesh by more
-  than the sweep window, and the mode disappears when the outer PEC walls become
-  scattering boundaries. The feed extension changes the coupling geometry relative to
-  the unextended reference cell.
+- :doc:`notebooks/comsol_cpw_resonator` — Driven CPW resonator solve on the QPDK coupled
+  quarter-wave layout with extended feed ports and an enlarged ground: MPh builds the
+  air/silicon sheet model, PEC, two numeric TEM ports and a boundary mode analysis. The
+  ported 4 um / 0.4 um edge mesh (659682 elements) gives a localised eigenmode at
+  7.326615895 GHz with a meander-to-feed p95 field ratio of 2.824. Direct driven solves
+  show S21 = -24.193 dB at 7.326509512 GHz against near-0 dB flanks. A 95-row adaptive
+  sweep matches four direct anchors within 0.208 dB, but its reconstructed rows have a
+  maximum two-port power sum of 1.002911, so the fit is labelled approximate. A final 3
+  um / 2 um mesh-refinement run is still in progress; convergence is not claimed.
 - :doc:`notebooks/comsol_qubit_capacitance` — Solves the pad capacitance of an EM-only
   QPDK double-pad transmon in COMSOL: removes the Josephson-junction mask, extracts the
   pads and ground plane, builds the air/silicon sheet model, and adds an Electrostatics

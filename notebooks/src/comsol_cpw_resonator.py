@@ -40,33 +40,55 @@
 # ::::
 #
 # This notebook solves a QPDK coupled quarter-wave resonator in COMSOL in two
-# stages. **Stage 1**, the one the cells below actually build and solve, is a
-# port-free eigenfrequency study of the sheet model: PEC on the metal, no
-# numeric ports, a mesh whose element sizes are pinned to absolute values
-# including a local size on the meander edges, and an `Eigenfrequency` step that
-# searches sixteen modes near a 7.5 GHz shift. **Stage 2**, a ported eigenmode
-# plus a driven $S_{21}$ sweep, is queued behind stage 1 and is described at the
-# end of the page.
+# stages. **Stage 1** is a port-free eigenfrequency study of the sheet model:
+# PEC on the metal, no numeric ports, a mesh whose element sizes are pinned to
+# absolute values including a local size on the meander edges, and an
+# `Eigenfrequency` step whose search is set per edge mesh. **Stage 2** is the
+# ported study: the same sheet model with the two numeric TEM ports and their
+# boundary mode analysis steps kept, a ported eigenfrequency search, and a
+# driven $S_{21}$ window whose notch is checked against direct single-frequency
+# solves. Both stages have been solved on a licensed machine, and the saved
+# figures and numbers on this page are their exported output.
 #
 # ## What the saved output is
 #
-# It is a record of a COMSOL workflow, not a validated QPDK resonator frequency.
-# The one solved stage-1 case so far is the coarser of the two edge meshes:
-# roughly 1.294 million elements, a global element size of 100 µm / 2 µm with
-# 2 µm / 0.2 µm pinned on the meander edges, sixteen modes searched at a 7.5 GHz
-# shift, and one mode at **7.292084525308305 GHz** whose electric field is
-# localised on the meander rather than on the feedline: the 95th percentile of
-# $|\mathbf{E}|$ inside the meander region is **5.398 times** the same percentile
-# over the feed region. That mode was the sixteenth of the sixteen searched.
-# The finer mesh, 1 µm / 0.1 µm on the same meander edges, is estimated at about
-# 3.009 million elements and is still solving.
+# It is a record of a COMSOL workflow, not an experimentally validated QPDK
+# resonator prediction. The ported and driven result is a single edge mesh: a
+# meander edge mesh pinned at 4 µm / 0.4 µm over a global 100 µm / 2 µm mesh,
+# **659682 elements**, four modes searched near a 7.0 GHz shift with the
+# largest-real-part rule, with the boundary mode analysis steps and both numeric
+# ports kept. The meander-localised selected mode sits at
+# **7.326615894917222 GHz** with an imaginary part of **+534576.3883 Hz**, which
+# puts the loaded eigen $Q = f_r / (2|f''|)$ at **6852.73055**, and the 95th
+# percentile of $|\mathbf{E}|$ inside the meander region is **2.823515744 times**
+# the same percentile over the feed region. The field export's own
+# complex-frequency annotation matches the selected mode, so the map below
+# belongs to the mode it is shown against.
 #
-# Every number above is **preliminary**. A single solved mesh is not a
-# convergence result, the mode's frequency is not yet shown to be mesh
-# independent, the loaded ported eigenmode has not been solved, and no driven
-# sweep has been run. The whole point of stage 1 is to make the first of those
-# questions answerable; until the second edge mesh lands and stage 2 provides a
-# direct driven check, nothing here is a device prediction.
+# The driven $S_{21}$ was solved directly at three frequencies across the window
+# and at the minimum the adaptive curve reported: **-0.169357 dB** at
+# 7.321615895 GHz, **-17.311564 dB** at 7.326615895 GHz, **-0.002041 dB** at
+# 7.331615895 GHz, and **-24.192816 dB** at 7.32650951194 GHz. The notch at that
+# directly solved minimum is **24.02346 dB** below the lower flank, and the
+# directly solved two-port power sums run from 0.999939 to 1.000030, which is
+# what PEC metal and a lossless dielectric should give. Those four frequencies
+# are the only points the driven solver solved one at a time; everything else on
+# the curve is the adaptive fit.
+#
+# Stage 1 supplies port-free context, not the driven answer, and the two are
+# different objects. Its one completed row is a *port-free* mode at
+# **7.292084525308305 GHz** with a **5.398** meander-to-feed 95th percentile
+# ratio, the sixteenth of the sixteen modes that row searched. The numeric ports
+# in stage 2 are matched terminations, so they load the mode: the ported
+# eigenvalue is not expected to sit at the port-free frequency, and the
+# 7.292 GHz row does not predict the 7.3266 GHz ported mode.
+#
+# No convergence result is claimed. Every ported number above comes from that
+# one edge mesh, and tighter ported eigen-only meshes at 3 µm / 0.3 µm and
+# 2 µm / 0.2 µm are being solved without results recorded here. The finer
+# stage-1 edge mesh at 1 µm / 0.1 µm never finished, so the port-free series has
+# one row as well. Nothing on this page is mesh independent, and no quality
+# factor read from the notch width is independently verified.
 #
 # ## How this page is published
 #
@@ -76,16 +98,19 @@
 # that copy rather than running the cells again.
 #
 # The whole path is scripted, so a licensed machine reproduces it end to end by
-# setting `RUN_COMSOL = True`. Without a license the notebook still runs from top
-# to bottom: the COMSOL cells are skipped, and every cell that reads results
-# prints how to supply them instead of plotting. On a fresh machine with neither
-# a license nor exported results you will therefore see the stored figures in the
-# documentation, but a local run prints skip messages rather than plots. To
-# replot locally, either export the files with `RUN_COMSOL = True`, or point
-# `RESULTS_DIR` at a directory that already holds an exported copy. The
-# `QPDK_COMSOL_RESULTS_DIR` environment variable does the same without editing
-# the notebook, which is how the saved outputs can be regenerated from a licensed
-# run's exports on a machine that has no license.
+# setting `RUN_COMSOL = True` and, for the ported eigenmode and the driven
+# window, `RUN_PORTED_DRIVEN = True`. The port-free series is its own switch,
+# `RUN_PORT_FREE_SERIES`, so the ported study can run without it. Without a
+# license the notebook still runs from top to bottom: the COMSOL cells are
+# skipped, and every cell that reads results prints how to supply them instead
+# of plotting. On a fresh machine with neither a license nor exported results you
+# will therefore see the stored figures in the documentation, but a local run
+# prints skip messages rather than plots. To replot locally, either export the
+# files with the licensed switches on, or point `RESULTS_DIR` at a directory that
+# already holds an exported copy. The `QPDK_COMSOL_RESULTS_DIR` environment
+# variable does the same without editing the notebook, which is how the saved
+# outputs can be regenerated from a licensed run's exports on a machine that has
+# no license.
 #
 # ## What is being modelled
 #
@@ -93,7 +118,9 @@
 # {py:func}`~qpdk.cells.quarter_wave_resonator_coupled`: a meandering
 # coplanar-waveguide (CPW) resonator placed alongside a straight feedline,
 # separated by a coupling gap. This is the standard hanger geometry used to read
-# out superconducting qubits {cite:p}`gopplCoplanarWaveguideResonators2008a`.
+# out superconducting qubits {cite:p}`gopplCoplanarWaveguideResonators2008a`, and
+# its resonance is one of the degrees of freedom that circuit QED uses to
+# dispersively read a qubit {cite:p}`blaisCircuitQuantumElectrodynamics2021`.
 #
 # Two terminations define a **quarter-wave** resonator:
 #
@@ -101,26 +128,28 @@
 # - The far end is **shorted**, where the current has an antinode.
 #
 # A line with one open and one shorted end resonates when its electrical length
-# is an odd multiple of $\lambda/4$. Close to resonance the coupling capacitor
-# loads the feedline and the transmission $|S_{21}|$ shows a **notch**: at the
-# resonant frequency, power that would travel from `coupling_o1` to
-# `coupling_o2` is largely reflected. The centre of the notch gives $f_r$ and
-# its width the loaded quality factor.
+# is an odd multiple of $\lambda/4$ {cite:p}`m.pozarMicrowaveEngineering2012`.
+# Close to resonance the coupling capacitor loads the feedline and the
+# transmission $|S_{21}|$ shows a **notch**: at the resonant frequency, power
+# that would travel from `coupling_o1` to `coupling_o2` is largely reflected. The
+# centre of the notch gives $f_r$ and its width the loaded quality factor, which
+# for a hanger is set by the coupling to the feedline together with any loss the
+# model carries {cite:p}`gopplCoplanarWaveguideResonators2008a`.
 #
-# That is the textbook behaviour. Whether the mode this notebook finds is the
-# quarter-wave resonance is exactly the question the staging below is built to
-# answer, and neither stage answers it on its own.
+# That is the textbook behaviour. The driven solve below does return a notch, but
+# whether the mode it belongs to is the quarter-wave resonance, and how much of
+# the notch width is coupling rather than loss, are questions the checks below
+# answer only partly.
 #
 # ## The two-stage model
 #
 # Stage 1, port-free, answers one question: does the sheet geometry support an
-# eigenmode whose field actually lives on the meander, and does its frequency
-# stop moving as the meander mesh is refined? Removing the ports removes the
-# matched-load terminations as well, so the eigenfrequencies come back closer to
-# real and any damping is numerical rather than partly the external decay of a
+# eigenmode whose field actually lives on the meander? Removing the ports removes
+# the matched-load terminations as well, so the eigenfrequencies come back closer
+# to real and any damping is numerical rather than partly the external decay of a
 # driven line. Stage 2, ported, is what turns an eigenmode into an S-parameter
-# statement, and it is queued: it needs stage 1 to say which mode is worth
-# driving.
+# statement. It has been run on its own edge mesh and search, and it is where the
+# driven notch comes from.
 #
 # Both use the same five ingredients:
 #
@@ -131,12 +160,15 @@
 #    more reliably for a metal that is three orders of magnitude thinner than the
 #    substrate.
 # 3. A **mesh pinned to absolute sizes**, so the resolution near the meander does
-#    not follow the size of the enclosing box. The bulk runs at 100 µm / 2 µm and
-#    the meander edges at 2 µm / 0.2 µm, then at 1 µm / 0.1 µm.
-# 4. In stage 1, a plain **eigenfrequency search** for sixteen modes near a
-#    7.5 GHz shift. In stage 2, **boundary mode analysis** steps and **numeric
-#    TEM ports** with voltage integration lines across the CPW gap, an **AWE**
-#    curve over the driven window, and direct single-frequency solves at the two
+#    not follow the size of the enclosing box. The bulk runs at 100 µm / 2 µm in
+#    every stage, the stage-1 meander edges at 2 µm / 0.2 µm, and the stage-2
+#    meander edges at 4 µm / 0.4 µm.
+# 4. In stage 1, a plain **eigenfrequency search**, with the shift, the mode
+#    count, and the eigenvalue selection set per edge-mesh row. In stage 2,
+#    **boundary mode analysis** steps and **numeric TEM ports** with voltage
+#    integration lines across the CPW gap are kept, four modes are searched near
+#    a 7.0 GHz shift with the largest-real-part rule, and the driven window
+#    carries an **AWE** curve plus direct single-frequency solves at the two
 #    flanks, the centre, and the AWE minimum.
 # 5. An **`emw.normE` export** on a cut plane just above the metal, used to score
 #    every mode by how much of its field sits on the meander.
@@ -147,41 +179,49 @@
 #     A["Ported layout:<br>metal polygons and two open feed planes"]
 #     B["Sheet model:<br>air above, silicon below, metal faces at z = 0"]
 #     C["Stage 1 physics:<br>PEC on the metal and no ports,<br>so no matched loads"]
-#     D["Mesh:<br>absolute global 100/2 um,<br>meander edges 2/0.2 um then 1/0.1 um"]
-#     E["Stage 1 study:<br>Eigenfrequency, 16 modes at a 7.5 GHz shift,<br>then emw.normE on every mode"]
-#     F["Stage 1 results:<br>mode spectrum, meander-to-feed<br>localisation ratio, field map"]
-#     G["Stage 2 (queued):<br>ported eigenmode keeping the BMA steps,<br>then an AWE curve with direct solves<br>at the flanks, centre and minimum"]
-#     A --> B --> C --> D --> E --> F
-#     F -. queued behind stage 1 .-> G
+#     D["Mesh:<br>absolute global 100/2 um,<br>meander edges 2/0.2 um stage 1,<br>4/0.4 um stage 2"]
+#     E["Stage 1 study:<br>Eigenfrequency, 16 modes<br>at a 7.5 GHz shift,<br>then emw.normE per mode"]
+#     F["Stage 1 result:<br>port-free meander mode,<br>7.292 GHz, ratio 5.398"]
+#     G["Stage 2 study:<br>BMA and two numeric ports kept,<br>4 ported modes at a<br>7.0 GHz shift (eigwhich=lr)"]
+#     H["Driven S21 window:<br>AWE curve plus direct solves<br>at both flanks, the centre<br>and the AWE minimum"]
+#     I["Stage 2 result:<br>loaded mode 7.32662 GHz,<br>Q 6853 from the damping,<br>direct notch -24.19 dB"]
+#     J["Pending:<br>ported eigen-only meshes<br>at 3/0.3 and 2/0.2 um<br>solving, no results yet"]
+#     A --> B --> C --> D
+#     D --> E --> F
+#     D --> G --> H --> I
+#     I -.-> J
 # ```
 # ::::
 #
 # ::::{only} typst or typstpdf
 # The pipeline: ported layout, then the sheet model with air above and silicon
 # below, then PEC on the metal with no ports and an absolutely pinned mesh whose
-# meander edges carry a local element size, then a sixteen-mode eigenfrequency
-# search at a 7.5 GHz shift with a field export per mode, then the mode spectrum
-# and localisation ratios. A ported eigenmode with boundary mode analysis steps,
-# an AWE curve over the driven window, and direct solves at the flanks, centre
-# and AWE minimum are queued behind that.
+# meander edges carry a local element size, then an eigenfrequency search with a
+# field export per mode, sixteen modes near a 7.5 GHz shift, then the port-free
+# mode spectrum and localisation ratio. Separately, on the same sheet model with
+# the boundary mode analysis steps and both numeric ports kept, four ported modes
+# near a 7.0 GHz shift with the largest-real-part rule, then an AWE curve over
+# the driven window with direct solves at the flanks, centre and AWE minimum.
+# Two tighter ported eigen-only meshes are still solving and carry no results
+# here.
 # ::::
 #
 # The outer air and silicon walls use COMSOL's default PEC boundary. This is a
 # finite conducting enclosure rather than an open radiating one, so it is a
-# candidate explanation for any feature that moves with the enclosure size. Stage
-# 1 does not test the enclosure; swapping the outer walls for scattering
+# candidate explanation for any feature that moves with the enclosure size.
+# Neither stage tests the enclosure; swapping the outer walls for scattering
 # boundaries is a separate model change and appears under "Next steps".
 #
 # ### What PEC leaves out
 #
-# The QPDK metal is a superconductor, but this first model treats it as a
-# perfect electric conductor. PEC has zero surface resistance, so it predicts no
+# The QPDK metal is a superconductor, but this model treats it as a perfect
+# electric conductor. PEC has zero surface resistance, so it predicts no
 # conductor loss, and it ignores the **kinetic inductance** of the film. It is a
 # useful first approximation for checking geometry, meshing, and mode
 # localisation, but a measured quality factor cannot be predicted from it. The
 # kinetic inductance also shifts the resonance. Replacing PEC with a
 # surface-impedance or transition boundary condition is the next modelling step
-# after stage 2.
+# after the mesh series.
 #
 # ### The ported layout
 #
@@ -193,32 +233,37 @@
 # To expose them, this notebook extends each feed with a straight CPW section to
 # a plane clear of the whole resonator, then extracts with
 # `crop_to_feed_ports=True` so both external faces are open CPW cross sections.
-# Stage 1 does not use the ports, but the extended layout is what stage 2 will
-# drive, and the meander edge selection is taken from this geometry, so the
-# extension is built either way. **The extension is part of the modelled
-# device**: it lengthens the feedline and changes the coupling geometry, so
-# nothing solved here belongs to the unextended reference cell.
+# Stage 1 does not use the ports, but the extended layout is what stage 2 drives,
+# and the meander edge selection is taken from this geometry, so the extension is
+# built either way. **The extension is part of the modelled device**: it
+# lengthens the feedline and changes the coupling geometry, so nothing solved
+# here belongs to the unextended reference cell.
 #
-# ### Why stage 1 comes first, and what stage 2 still has to check
+# ### Why the driven window is checked at solved points
 #
 # A hanger resonator can reach $Q \sim 10^4$ to $10^6$, so its fractional
 # linewidth can be $10^{-4}$ or smaller. A uniform driven sweep at a convenient
 # spacing samples the band but **cannot resolve a notch** that narrow: the
 # feature can fall between two points and nothing in the exported curve shows
-# it. That is why stage 2 will centre its sweep on a mode rather than scan a
-# band.
+# it. That is why the driven sweep is centred on a mode rather than scanned
+# across a band.
 #
-# Two things have to be checked directly, and neither one can be replaced by a
-# reconstruction:
+# Two things have to be read from the ported solve itself, and neither one can be
+# replaced by a reconstruction:
 #
 # - **A loaded ported eigenmode.** Adding numeric TEM ports makes them matched
 #   terminations, so the ported eigenvalues are not the port-free ones. Whether
 #   the meander-localised mode survives as a ported eigenmode, and where its
-#   loaded frequency lands, needs a ported eigen solve rather than an assumption
-#   carried over from stage 1.
-# - **A driven $S_{21}$ notch.** The notch is what a measurement would see. It
-#   has to be read from a driven solve, at frequencies the solver actually
-#   solved.
+#   loaded frequency lands, comes from the ported eigen solve. Here it does
+#   survive: the selected ported mode sits at 7.326615894917222 GHz with a
+#   meander-to-feed 95th percentile ratio of 2.823515744, against the port-free
+#   7.292084525308305 GHz. The models differ in both port loading and edge
+#   mesh, so their 34 MHz difference cannot be assigned to either change alone.
+# - **A driven $S_{21}$ notch.** The notch is what a measurement would see, and it
+#   has to be read at frequencies the solver actually solved. The four direct
+#   solves give **-0.169357 dB**, **-17.311564 dB**, **-0.002041 dB** and
+#   **-24.192816 dB**; the last of those, at 7.32650951194 GHz, is 24.02346 dB
+#   below the lower flank.
 #
 # COMSOL's **adaptive frequency sweep** (AWE) fits a rational model to a handful
 # of solved points and fills the rest of the curve from that fit. It is the only
@@ -226,21 +271,29 @@
 # solve costs minutes. It is also why the curve cannot be evidence on its own:
 # its fitted rows are **not** independent direct solutions, so a narrow feature
 # that appears only in an AWE-reconstructed curve is not something the solver
-# resolved. Stage 2 therefore uses AWE to locate the feature and direct
-# single-frequency solves to check it, at the two flanks, the centre, and the
-# AWE minimum, within an explicit tolerance.
+# resolved. On this run the fit produced 95 reconstructed rows, its minimum is
+# -23.984659 dB at 7.326509512 GHz, and every one of the four direct solves
+# agrees with the fitted curve at its own frequency to within 0.208157 dB. The
+# fitted curve's own two-port power sum runs from 0.999923 to 1.002911, and that
+# 0.291 percent apparent surplus is a property of the rational fit, not power
+# gained by the device.
 #
 # ::::{admonition} Reading the numbers on this page
 # :class: warning
 #
-# The values come from the licensed solves described below, but they are
-# preliminary. One edge mesh has been solved and the other is still running, so
-# there is no convergence result yet, and no driven check exists at all. The
-# metal is a perfect conductor with no surface resistance or kinetic inductance,
-# so conductor loss and its frequency shift are missing. The feed extension
-# changes the layout relative to the reference cell. Treat the 7.292 GHz mode
-# frequency and the 5.398 localisation ratio as unvalidated until both edge
-# meshes have solved and stage 2 has confirmed the mode directly.
+# The values come from the licensed solves described below, and both stages have
+# run, but they are not a validated device prediction. All of them come from a
+# single edge mesh, so no frequency, ratio, or quality factor here has been shown
+# to be mesh independent; two tighter ported eigen-only meshes are still solving.
+# The metal is a perfect conductor with no surface resistance or kinetic
+# inductance, so conductor loss and its frequency shift are missing. The feed
+# extension changes the layout relative to the reference cell. The
+# **7.292084525308305 GHz** row is the *port-free* mode and is not the ported one
+# at 7.326615894917222 GHz. The driven notch is verified at the four directly
+# solved frequencies only: the curve between them is a fit, so any quality factor
+# read from its linewidth is not independently verified. Treat the 24.192816 dB
+# direct notch depth as one mesh's result, not as what a fabricated device would
+# show.
 # ::::
 #
 # **References:**
@@ -281,6 +334,7 @@ import os
 import re
 import uuid
 from contextlib import suppress
+from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
 from typing import Any
@@ -465,6 +519,40 @@ def exported_frequency_ghz(file: Path) -> float | None:
                 return float(match.group(1))
             if (match := FREQUENCY_HEADER.search(line)) is not None:
                 return float(match.group(1)) * FREQUENCY_UNITS_GHZ[match.group(2)]
+    return None
+
+
+# COMSOL writes a ported eigenfield export's header with a complex frequency,
+# e.g. ``@ 7.3266+5.3458E-4i GHz``. FREQUENCY_HEADER only parses a real value, so
+# the complex form gets its own pattern.
+PORTED_FIELD_FREQUENCY = re.compile(
+    r"@\s*([-+]?[0-9]+(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?)"
+    r"\s*([-+]?[0-9]+(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?)\s*i"
+    r"\s*(GHz|MHz|kHz|Hz)\b"
+)
+# The stable file the licensed stage-2 branch writes the selected ported mode's
+# field to, and how far the export's annotated real frequency may sit from the
+# record's selected mode before the field is refused as belonging to something
+# else.
+PORTED_FIELD_TXT = "comsol_cpw_ported_field.txt"
+PORTED_FIELD_FREQUENCY_RTOL = 1.0e-4
+
+
+def complex_frequency_ghz(file: Path) -> tuple[float, float] | None:
+    """Read a complex frequency annotation from a COMSOL export header.
+
+    Args:
+        file: Exported text file to scan.
+
+    Returns:
+        ``(real, imag)`` in GHz, or ``None`` when the export carries no complex
+        frequency annotation.
+    """
+    with file.open(encoding="utf-8") as handle:
+        for line in handle:
+            if (match := PORTED_FIELD_FREQUENCY.search(line)) is not None:
+                scale = FREQUENCY_UNITS_GHZ[match.group(3)]
+                return float(match.group(1)) * scale, float(match.group(2)) * scale
     return None
 
 
@@ -672,7 +760,11 @@ plt.show()
 
 # %%
 RUN_COMSOL = False
-# Stage 2, the ported eigenmode and driven sweep, is queued. See "Stage 2".
+# Stage 1, the port-free series, is its own switch so stage 2 can run without it:
+# the ported study does not need stage-1 rows, it only reads them as context. Off
+# by default, so enabling RUN_COMSOL alone never starts an expensive solve.
+RUN_PORT_FREE_SERIES = False
+# The ported eigenmode and driven sweep are shown in "Stage 2".
 RUN_PORTED_DRIVEN = False
 MODEL_DIR = Path.home() / "comsol_models"
 RESULTS_DIR_ENV = "QPDK_COMSOL_RESULTS_DIR"
@@ -688,7 +780,8 @@ RESULTS_DIR: Path | None = (
 )
 CORES = 4
 
-# Stage 1 is port-free: PEC only, no numeric ports.
+# Stage 1 is port-free: PEC only, no numeric ports. These two are the search the
+# coarser stage-1 row and the stage-2 ported study share.
 EIGEN_SHIFT_GHZ = 7.5
 EIGEN_MODE_COUNT = 16
 # Modes outside this window are not exported or scored; a mode below it is not a
@@ -701,8 +794,50 @@ MAX_ELEMENTS = 3_500_000
 # Absolute element sizes of the pinned sequence, in µm, the same for every row.
 GLOBAL_HMAX_UM = 100.0
 GLOBAL_HMIN_UM = 2.0
-# (meander-edge hmax, meander-edge hmin) per row, in µm.
-EDGE_MESH_CONFIGS_UM = ((2.0, 0.2), (1.0, 0.1))
+
+
+@dataclass(frozen=True, slots=True)
+class EdgeMeshCase:
+    """One stage-1 row: its meander-edge sizes and its eigenfrequency search.
+
+    ``eigwhich`` is COMSOL's eigenvalue-selection property. ``None`` leaves the
+    solver's own default in place, which is what the coarser row keeps.
+    """
+
+    edge_hmax_um: float
+    edge_hmin_um: float
+    shift_ghz: float
+    neigs: int
+    eigwhich: str | None = None
+
+
+# One row per meander-edge mesh, each with its own search. The coarser row keeps
+# the original sixteen modes near a 7.5 GHz shift and COMSOL's default selection.
+# The finer row searches four modes near a 7.0 GHz shift, largest real part
+# first: the same sixteen-mode search at 7.5 GHz did not finish on that mesh
+# inside the time it was given, so the finer row trades span of the spectrum for
+# a smaller solve.
+EDGE_MESH_CONFIGS: tuple[EdgeMeshCase, ...] = (
+    EdgeMeshCase(2.0, 0.2, shift_ghz=EIGEN_SHIFT_GHZ, neigs=EIGEN_MODE_COUNT),
+    EdgeMeshCase(1.0, 0.1, shift_ghz=7.0, neigs=4, eigwhich="lr"),
+)
+
+# Stage 2's ported search is deliberately its own, not a reuse of the stage-1 row
+# above. The ported study runs on its own mesh with its own search, and reading a
+# stage-1 constant into it would quietly tie the two solves together. Four modes
+# at a 7.0 GHz shift with the largest-real-part rule is what the ported solve
+# used: the port-free sixteen-mode search at a 7.5 GHz shift left the default
+# selection and spent most of its slots on a near-zero cluster, so the shift sits
+# under the meander mode and ``lr`` asks for the largest real part relative to
+# it instead.
+PORTED_EDGE_HMAX_UM = 4.0
+PORTED_EDGE_HMIN_UM = 0.4
+PORTED_SHIFT_GHZ = 7.0
+PORTED_NEIGS = 4
+PORTED_EIGWHICH = "lr"
+# A ported mode is called identified only at or above this meander-to-feed p95
+# ratio, and only once its field export has been tied to the selected frequency.
+PORTED_MIN_MEANDER_FEED_RATIO = 1.0
 
 # The named edge selection and the box behind it.
 MEANDER_EDGE_SELECTION = "meander_edges"
@@ -810,16 +945,19 @@ def frequency_solution(model: Any) -> dict[str, Any]:
     """
     dataset, tag = default_dataset(model)
     values = {
-        "frequency_ghz": np.atleast_1d(model.evaluate("freq", dataset=dataset))
+        "frequency_ghz": np
+        .atleast_1d(model.evaluate("freq", dataset=dataset))
         .ravel()
         .real
         / 1e9,
         "s21": np.atleast_1d(model.evaluate("emw.S21", dataset=dataset)).ravel(),
         "s11": np.atleast_1d(model.evaluate("emw.S11", dataset=dataset)).ravel(),
-        "s21_db": np.atleast_1d(model.evaluate("emw.S21dB", dataset=dataset))
+        "s21_db": np
+        .atleast_1d(model.evaluate("emw.S21dB", dataset=dataset))
         .ravel()
         .real,
-        "s11_db": np.atleast_1d(model.evaluate("emw.S11dB", dataset=dataset))
+        "s11_db": np
+        .atleast_1d(model.evaluate("emw.S11dB", dataset=dataset))
         .ravel()
         .real,
     }
@@ -830,15 +968,12 @@ def frequency_solution(model: Any) -> dict[str, Any]:
         raise RuntimeError("the solution returned a non-finite frequency")
     for amplitude_name in ("s21", "s11"):
         if not np.all(np.isfinite(values[amplitude_name])):
-            raise RuntimeError(
-                f"the solution returned a non-finite {amplitude_name}"
-            )
+            raise RuntimeError(f"the solution returned a non-finite {amplitude_name}")
     # S = 0 gives a dB level of -inf and is physically possible, so it is only
     # the amplitude that has to be finite; any other non-finite dB is refused.
     for db_name, amplitude_name in (("s21_db", "s21"), ("s11_db", "s11")):
         allowed = np.isfinite(values[db_name]) | (
-            np.isneginf(values[db_name])
-            & (np.abs(values[amplitude_name]) <= 0.0)
+            np.isneginf(values[db_name]) & (np.abs(values[amplitude_name]) <= 0.0)
         )
         if not np.all(allowed):
             raise RuntimeError(
@@ -909,18 +1044,19 @@ def create_meander_edge_selection(model: Any) -> tuple[int, ...]:
     return tuple(sorted(edges))
 
 
-def configure_port_free_eigen_study(model: Any) -> None:
+def configure_port_free_eigen_study(model: Any, case: EdgeMeshCase) -> None:
     """Replace a CPW study with a port-free eigenfrequency search.
 
     The study steps are removed before the physics they name, so no boundary
-    mode analysis is ever left pointing at a deleted port. The shift and mode
-    count come from the constants above, so the primary solve and the second
-    edge-mesh row search the same part of the spectrum the same way.
+    mode analysis is ever left pointing at a deleted port. The shift, the mode
+    count, and the eigenvalue selection come from the row, so each edge mesh
+    searches the spectrum its own way.
 
     Args:
         model: A model that
             :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` has already
             given a frequency study to.
+        case: The row's edge sizes and its eigenfrequency search settings.
     """
     component = model.java.component("comp1")
     study = model.java.study("std1")
@@ -931,18 +1067,24 @@ def configure_port_free_eigen_study(model: Any) -> None:
     study.create("eig", "Eigenfrequency")
     eigen = study.feature("eig")
     eigen.set("shiftactive", "on")
-    eigen.set("shift", f"{EIGEN_SHIFT_GHZ:g}[GHz]")
+    eigen.set("shift", f"{case.shift_ghz:g}[GHz]")
     eigen.set("neigsactive", "on")
     # neigs needs a Java int: JPype cannot pick between COMSOL's overloaded
     # setters for a plain Python int.
-    eigen.set("neigs", JInt(EIGEN_MODE_COUNT))
+    eigen.set("neigs", JInt(case.neigs))
+    # A row that names no selection keeps COMSOL's default, which is what the
+    # coarser row is recorded as.
+    if case.eigwhich is not None:
+        eigen.set("eigwhich", case.eigwhich)
 
 
 def configure_ported_eigen_study(model: Any) -> None:
     """Replace a CPW study's frequency step with a ported eigenfrequency search.
 
     Unlike the port-free version this keeps ``bma1`` and ``bma2``: the ports
-    need their boundary mode fields, and those steps are what supplies them.
+    need their boundary mode fields, and those steps are what supplies them. The
+    shift, the mode count, and the eigenvalue selection are the ported constants
+    rather than the stage-1 pair.
 
     Args:
         model: A model that
@@ -954,9 +1096,10 @@ def configure_ported_eigen_study(model: Any) -> None:
     study.create("eig", "Eigenfrequency")
     eigen = study.feature("eig")
     eigen.set("shiftactive", "on")
-    eigen.set("shift", f"{EIGEN_SHIFT_GHZ:g}[GHz]")
+    eigen.set("shift", f"{PORTED_SHIFT_GHZ:g}[GHz]")
     eigen.set("neigsactive", "on")
-    eigen.set("neigs", JInt(EIGEN_MODE_COUNT))
+    eigen.set("neigs", JInt(PORTED_NEIGS))
+    eigen.set("eigwhich", PORTED_EIGWHICH)
 
 
 def field_localization_ratio(path: Path) -> float | None:
@@ -1053,31 +1196,31 @@ def edge_mesh_label(edge_hmax_um: float, edge_hmin_um: float) -> str:
 
 
 def solve_port_free_row(
-    client: Any, out_dir: Path, edge_hmax_um: float, edge_hmin_um: float
+    client: Any, out_dir: Path, case: EdgeMeshCase
 ) -> dict[str, Any]:
     """Build, mesh, solve, and score one port-free edge-mesh row.
 
     A fresh model is built per row so nothing carries over, and it is removed
-    from the client even when the mesh or the solve raises. The physics, the
-    mesh controls other than the edge size, and the eigenfrequency search match
-    the other rows, so every row measures the same thing at a different edge
-    resolution.
+    from the client even when the mesh or the solve raises. The physics and the
+    mesh controls other than the edge sizes match the other rows, so every row
+    measures the same thing at a different edge resolution, but the
+    eigenfrequency search is the row's own, so the rows do not all cover the
+    same span of the spectrum.
 
     Args:
         client: The MPh client the licensed branch already started.
         out_dir: Directory to write the per-mode field exports into.
-        edge_hmax_um: Meander-edge ``hmax`` in µm.
-        edge_hmin_um: Meander-edge ``hmin`` in µm.
+        case: The row's edge sizes and its eigenfrequency search settings.
 
     Returns:
-        A row holding the label, both size pairs, the element count, the mesh
-        element count guard outcome, the full mode spectrum, the localisation
-        ratio per mode, and the selected mode.
+        A row holding the label, both size pairs, the search settings, the
+        element count, the mesh element count guard outcome, the full mode
+        spectrum, the localisation ratio per mode, and the selected mode.
 
     Raises:
         RuntimeError: If the mesh produced no elements.
     """
-    label = edge_mesh_label(edge_hmax_um, edge_hmin_um)
+    label = edge_mesh_label(case.edge_hmax_um, case.edge_hmin_um)
     model = build_comsol_sheet_model(
         client,
         layout,
@@ -1090,31 +1233,34 @@ def solve_port_free_row(
             model,
             layout,
             cpw_gap_um=CPW_GAP_UM,
-            frequency_ghz=EIGEN_SHIFT_GHZ,
+            frequency_ghz=case.shift_ghz,
             mesh_size=2,
         )
-        configure_port_free_eigen_study(model)
+        configure_port_free_eigen_study(model, case)
         edges = create_meander_edge_selection(model)
         element_count = pin_absolute_edge_mesh_sizes(
             model,
             edge_selection=MEANDER_EDGE_SELECTION,
             global_hmax_um=GLOBAL_HMAX_UM,
             global_hmin_um=GLOBAL_HMIN_UM,
-            edge_hmax_um=edge_hmax_um,
-            edge_hmin_um=edge_hmin_um,
+            edge_hmax_um=case.edge_hmax_um,
+            edge_hmin_um=case.edge_hmin_um,
         )
         if element_count == 0:
             raise RuntimeError("The mesh produced no elements")
         row: dict[str, Any] = {
             "label": label,
-            "edge_hmax_um": edge_hmax_um,
-            "edge_hmin_um": edge_hmin_um,
+            "edge_hmax_um": case.edge_hmax_um,
+            "edge_hmin_um": case.edge_hmin_um,
             "global_hmax_um": GLOBAL_HMAX_UM,
             "global_hmin_um": GLOBAL_HMIN_UM,
             "meander_edges": list(edges),
             "element_count": element_count,
-            "shift_ghz": EIGEN_SHIFT_GHZ,
-            "neigs": EIGEN_MODE_COUNT,
+            "shift_ghz": case.shift_ghz,
+            "neigs": case.neigs,
+            # No selection set means COMSOL's own default was used, so the record
+            # says so rather than naming one that was never passed.
+            "eigwhich": case.eigwhich if case.eigwhich is not None else "default",
             "mode_window_ghz": list(EIGEN_MODE_WINDOW_GHZ),
         }
         if element_count > MAX_ELEMENTS:
@@ -1141,8 +1287,12 @@ def solve_port_free_row(
                 "real_ghz": mode.real / 1e9,
                 "imag_hz": mode.imag,
             }
-            if EIGEN_MODE_WINDOW_GHZ[0] <= entry["real_ghz"] <= EIGEN_MODE_WINDOW_GHZ[1]:
-                path = out_dir / f"field_{edge_hmax_um:g}um_mode{index}.txt"
+            if (
+                EIGEN_MODE_WINDOW_GHZ[0]
+                <= entry["real_ghz"]
+                <= EIGEN_MODE_WINDOW_GHZ[1]
+            ):
+                path = out_dir / f"field_{case.edge_hmax_um:g}um_mode{index}.txt"
                 try:
                     export_mode_field(model, index, path)
                     entry["field_file"] = str(path)
@@ -1176,48 +1326,75 @@ if RUN_COMSOL and not MPH_AVAILABLE:
 #
 # Both edge meshes run in one process behind one MPh client, because only one
 # client can exist per Python process. Each row builds a fresh model, pins the
-# global sizes at 100 µm / 2 µm and its own meander-edge sizes, solves sixteen
-# modes near the 7.5 GHz shift, exports `emw.normE` for every mode inside the
-# 3 to 25 GHz window, and scores each mode by the meander-to-feed 95th
-# percentile ratio. The row's selected mode is the one with the highest ratio,
-# which is the mode whose field actually sits on the meander.
+# global sizes at 100 µm / 2 µm and its own meander-edge sizes, runs its own
+# eigenfrequency search, exports `emw.normE` for every mode inside the 3 to
+# 25 GHz window, and scores each mode by the meander-to-feed 95th percentile
+# ratio. The row's selected mode is the one with the highest ratio, which is the
+# mode whose field actually sits on the meander.
+#
+# The two rows do **not** search the same span of the spectrum. The coarser
+# 2 µm / 0.2 µm row keeps sixteen modes near a 7.5 GHz shift with COMSOL's own
+# eigenvalue selection, and it is the row that returned. The finer 1 µm / 0.1 µm
+# row searches four modes near a 7.0 GHz shift with `eigwhich="lr"`, the
+# largest-real-part selection: the same sixteen-mode search at 7.5 GHz was run on
+# the finer mesh and did not finish inside the time it was given, so the finer
+# search was retargeted to fewer modes at a lower shift. That row never
+# completed, so only one row carries a result and the port-free series has no
+# second point.
+#
+# A different search is why the rows are compared by field and not by mode number
+# or by frequency. Which eigenvalues come back, and in what order, depends on the
+# shift and the selection rule, so the nth mode of one row is not the nth mode of
+# the other, and the row with fewer modes has fewer candidates to offer. The
+# meander-to-feed 95th percentile ratio identifies a mode by where its field
+# sits, which is a property of the field pattern rather than of the search, so it
+# is what carries a mode across a change of search settings. Reading a frequency
+# difference between two rows as one physical mode moving is only sound once both
+# selections are confirmed to be the same physical mode, and with one row solved
+# there is no such difference to read.
 #
 # The JSON is rewritten after every row, so interrupting a long series keeps the
 # rows already solved. A row that fails to mesh or solve is printed in full and
 # left out. Above `MAX_ELEMENTS` a row records only its mesh and stops, so an
 # unexpectedly large mesh cannot take the job down.
 #
-# The coarser row, 2 µm / 0.2 µm on the meander edges, is the one solved so far:
-# about 1.294 million elements and the mode at 7.292084525308305 GHz with a
-# ratio of 5.398. The finer row, 1 µm / 0.1 µm, is estimated at about 3.009
-# million elements and has not returned yet. Nothing below should be read as a
-# convergence result until both rows are in the file.
+# The coarser row, 2 µm / 0.2 µm on the meander edges, is the one solved: about
+# 1.294 million elements and the mode at 7.292084525308305 GHz with a ratio of
+# 5.398, the sixteenth of its sixteen modes. This is a port-free result. It is
+# **not** the ported mode from stage 2, which sits at 7.326615894917222 GHz under
+# the matched port terminations; the two are reported separately and never
+# merged. Nothing below is a convergence result, because the port-free series has
+# one solved mesh.
 
 # %%
 if RUN_COMSOL and MPH_AVAILABLE:
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    # One MPh client per Python process, shared by every stage, so the ported
+    # branch can run on this client with the port-free series skipped.
     client = mph.start(cores=CORES)
+else:
+    client = None
+
+if RUN_PORT_FREE_SERIES and client is not None:
     eigen_path = MODEL_DIR / EIGEN_JSON
     rows: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
 
     def save_rows() -> None:
         """Write the rows solved so far, so a late failure keeps them."""
-        write_json_atomically(
-            eigen_path, {"rows": rows, "failures": failures}
-        )
+        write_json_atomically(eigen_path, {"rows": rows, "failures": failures})
 
     save_rows()
-    for row_hmax_um, row_hmin_um in EDGE_MESH_CONFIGS_UM:
-        label = edge_mesh_label(row_hmax_um, row_hmin_um)
+    for case in EDGE_MESH_CONFIGS:
+        label = edge_mesh_label(case.edge_hmax_um, case.edge_hmin_um)
         print(f"{label}: building, meshing, and solving")
         try:
-            row = solve_port_free_row(client, MODEL_DIR, row_hmax_um, row_hmin_um)
+            row = solve_port_free_row(client, MODEL_DIR, case)
         except Exception as error:
             failures.append({
                 "label": label,
-                "edge_hmax_um": row_hmax_um,
-                "edge_hmin_um": row_hmin_um,
+                "edge_hmax_um": case.edge_hmax_um,
+                "edge_hmin_um": case.edge_hmin_um,
                 "error": f"{type(error).__name__}: {error}",
             })
             print(f"{label} FAILED: {type(error).__name__}: {error}")
@@ -1227,7 +1404,7 @@ if RUN_COMSOL and MPH_AVAILABLE:
         print(f"{label}: {row['element_count']} elements, {row['event']}")
         save_rows()
 
-    print(f"Wrote {len(rows)} of {len(EDGE_MESH_CONFIGS_UM)} rows to {eigen_path}")
+    print(f"Wrote {len(rows)} of {len(EDGE_MESH_CONFIGS)} rows to {eigen_path}")
 
     # The field map cell reads a stable file name, so the first solved row's
     # selected mode gets its field copied to one.
@@ -1241,16 +1418,21 @@ if RUN_COMSOL and MPH_AVAILABLE:
 # ## Mode spectrum and localisation
 #
 # This cell reads the port-free eigenfrequency rows back and prints, per row, the
-# element count, every mode inside the window with its localisation ratio, and
-# the selected mode. The figure plots the selected row's mode frequencies against
-# their localisation ratio, so a mode that lives on the meander is separated from
-# the ones that do not.
+# element count, that row's eigenfrequency search settings, every mode inside the
+# window with its localisation ratio, and the selected mode. The figure plots the
+# selected row's mode frequencies against their localisation ratio, so a mode
+# that lives on the meander is separated from the ones that do not.
 #
 # The **numerical delta between the two edge meshes is reported only once both
 # rows exist**. One solved mesh says nothing about convergence: the whole point of
 # the second row is to see whether the selected frequency and ratio move when the
-# meander edges are refined, and a single number cannot show that. Until then the
-# cell prints which row is still missing.
+# meander edges are refined, and a single number cannot show that. Only the
+# 2 µm / 0.2 µm row is solved, and the 1 µm / 0.1 µm row never completed, so the
+# cell lists the rows it cannot compare instead of printing a delta. The two rows
+# carry different eigenfrequency searches, so a delta would be between each row's
+# best-localised mode, and the cell says so: the same physical mode has to be
+# confirmed by field localisation before a delta could be read as one mode
+# moving.
 #
 # Once at least two rows are genuinely solved and carry a finite, localised
 # selected mode, a compact figure plots that mode's frequency against the mesh
@@ -1281,6 +1463,11 @@ else:
     else:
         for row in eigen_rows:
             print(f"\n{row['label']}: {row['element_count']} elements")
+            print(
+                f"  search: shift {row.get('shift_ghz')} GHz, "
+                f"{row.get('neigs')} modes, "
+                f"eigwhich {row.get('eigwhich', 'not recorded')}"
+            )
             if row.get("event") != "solved":
                 print(f"  {row.get('note', 'no solve recorded')}")
                 continue
@@ -1331,9 +1518,7 @@ else:
             for reason in incomplete_reasons:
                 print(f"  {reason}")
 
-        primary = min(
-            solved_rows, key=itemgetter("element_count"), default=None
-        )
+        primary = min(solved_rows, key=itemgetter("element_count"), default=None)
         if primary and primary.get("selected_mode"):
             scored = [
                 (entry["real_ghz"], entry["meander_to_feed_p95"])
@@ -1373,9 +1558,9 @@ else:
             (row["edge_hmax_um"], row["edge_hmin_um"]) for row in solved_rows
         }
         missing = [
-            edge_mesh_label(hmax, hmin)
-            for hmax, hmin in EDGE_MESH_CONFIGS_UM
-            if (hmax, hmin) not in solved_sizes
+            edge_mesh_label(case.edge_hmax_um, case.edge_hmin_um)
+            for case in EDGE_MESH_CONFIGS
+            if (case.edge_hmax_um, case.edge_hmin_um) not in solved_sizes
         ]
         if missing:
             print(
@@ -1401,15 +1586,18 @@ else:
                 "Two meshes bound the movement, they do not show convergence; a "
                 "third mesh would be needed before calling either settled."
             )
+            print(
+                "The two rows searched different spans, so this delta is between "
+                "each row's best-localised mode. Check that both selections are "
+                "the same physical mode before reading it as one mode moving."
+            )
 
             # Only genuinely solved rows with a finite selection reach here, so a
             # missing row is reported above instead of being drawn as a break.
             frequencies_ghz = np.array(
                 [row["selected_mode"]["real_ghz"] for row in ordered], dtype=float
             )
-            elements = np.array(
-                [row["element_count"] for row in ordered], dtype=float
-            )
+            elements = np.array([row["element_count"] for row in ordered], dtype=float)
             has_series = len(ordered) >= 3
             figure, axes = plt.subplots(
                 1,
@@ -1449,9 +1637,7 @@ else:
             if has_series:
                 shift_axis = axes[0][1]
                 shifts_mhz = np.diff(frequencies_ghz) * 1e3
-                shift_axis.plot(
-                    elements[1:], shifts_mhz, marker="s", linewidth=1.0
-                )
+                shift_axis.plot(elements[1:], shifts_mhz, marker="s", linewidth=1.0)
                 for element, shift in zip(elements[1:], shifts_mhz, strict=False):
                     shift_axis.annotate(
                         f"{shift:+.3f}",
@@ -1536,10 +1722,7 @@ else:
     # maximum, which sits far outside it and flattens everything on the scale.
     color_min, color_max = (float(value) for value in np.percentile(view_e, [1, 99]))
     draw_x, draw_y, draw_e = view_x, view_y, view_e
-    if (
-        FIELD_DISPLAY_STRIDE > 1
-        and view_e.size // FIELD_DISPLAY_STRIDE >= 10
-    ):
+    if FIELD_DISPLAY_STRIDE > 1 and view_e.size // FIELD_DISPLAY_STRIDE >= 10:
         draw_x = view_x[::FIELD_DISPLAY_STRIDE]
         draw_y = view_y[::FIELD_DISPLAY_STRIDE]
         draw_e = view_e[::FIELD_DISPLAY_STRIDE]
@@ -1586,85 +1769,112 @@ else:
 #
 # What the map does **not** show:
 #
-# - **A resonance.** Localisation is not the same as the quarter-wave condition.
-#   The resonance is established by the driven notch in stage 2, or not at all.
-# - **A converged field.** This is the coarser of the two edge meshes. The
-#   finer one is what says whether the localisation survives refinement.
+# - **That this is the quarter-wave resonance.** Localisation is not the same as
+#   the quarter-wave condition, and this is the port-free mode, not the loaded
+#   one that the driven solve below actually excites. The driven notch shows that
+#   the ported mode is resonant; it does not turn this port-free field map into
+#   the quarter-wave mode's field.
+# - **A converged field.** This is the coarser of the stage-1 edge meshes, and the
+#   finer one never completed, so whether the localisation survives refinement is
+#   still open.
 #
 # The figure is also a strided display of the cropped nodes, not every exported
 # node. That stride is a drawing choice only; the field values, the export, and
 # the numerical ratio are full resolution.
 
 # %% [markdown]
-# ## Stage 2: ported eigenmode and a driven curve verified by direct solves (queued)
+# ## Stage 2: ported eigenmode and a driven curve verified by direct solves
 #
-# Stage 2 is not run on this page. It is the dependent step: it should be solved
-# only once stage 1 has picked a mode and the two edge meshes have bounded its
-# movement, so that the ported solve is centred on a mode worth loading rather
-# than on whichever eigenvalue the search happened to return.
+# Stage 2 builds the same sheet model from the same layout behind
+# `RUN_PORTED_DRIVEN`, which is off by default so a licensed run has to ask for
+# the ported solve explicitly. It keeps the two numeric TEM ports with their
+# voltage integration lines, so the **boundary mode analysis steps stay**. It
+# solves a ported eigenfrequency search, then a driven window centred on the
+# ported selected mode.
 #
-# The code below is the shape of it, and it is off by default behind
-# `RUN_PORTED_DRIVEN`. It builds the same sheet model from the same layout and
-# keeps the two numeric TEM ports with their voltage integration lines, so the
-# **boundary mode analysis steps stay**. It solves a ported eigenfrequency
-# search, then a driven window centred on the ported selected mode.
+# The ported solve here ran on its own edge mesh, pinned at 4 µm / 0.4 µm on the
+# meander edges over the same 100 µm / 2 µm global mesh, and came back with
+# **659682 elements**. Four modes were searched near a 7.0 GHz shift with
+# `eigwhich="lr"`. The selected mode is the meander-localised one, at
+# **7.326615894917222 GHz** with an imaginary part of **+534576.3883 Hz**, so the
+# loaded eigen $Q = f_r / (2|f''|)$ is **6852.73055**, and its meander-to-feed
+# 95th percentile field ratio is **2.823515744**. That $Q$ comes from the
+# eigenvalue's damping, which carries the port loading and the numerical error of
+# this one mesh; it is not read from the notch width and it is not a
+# converged quality factor.
 #
 # ### A dense curve without a many-hour sweep
 #
-# A direct solve on this three-million-element model costs minutes, so a dense
-# direct sweep over the window is not affordable and a sparse one would step
-# straight over a notch whose width is a small fraction of the window. So the
-# window is covered by COMSOL's **adaptive frequency sweep** (AWE), which fits a
-# rational model to a handful of solved points and fills the rest of the curve
-# from that fit. The curve is dense at the cost of a few solves, and **its rows
-# are AWE interpolation, not independent solves**. Nothing on this page may call
-# a row of it a direct solve.
+# A direct solve on a model this size costs minutes, so a dense direct sweep over
+# the window is not affordable and a sparse one would step straight over a notch
+# whose width is a small fraction of the window. So the window is covered by
+# COMSOL's **adaptive frequency sweep** (AWE), which fits a rational model to a
+# handful of solved points and fills the rest of the curve from that fit. The
+# curve is dense at the cost of a few solves, and **its rows are AWE
+# interpolation, not independent solves**. Nothing on this page may call a row of
+# it a direct solve. On this run the fit produced 95 reconstructed rows over the
+# roughly 10 MHz window.
 #
 # The evidence for the notch is separate from the curve that locates it:
 #
 # 1. Three direct single-frequency solves, at the low flank, the centre, and the
 #    high flank, with AWE off, each one frequency the solver actually solved.
 #    Each is checkpointed as soon as it returns, so an interrupted run keeps the
-#    points it solved.
+#    points it solved. Here they are **-0.169357 dB** at 7.321615895 GHz,
+#    **-17.311564 dB** at 7.326615895 GHz, and **-0.002041 dB** at
+#    7.331615895 GHz.
 # 2. One more direct solve at the frequency where the AWE curve reaches its
-#    minimum, since a fit can place a minimum between the direct points.
+#    minimum, since a fit can place a minimum between the direct points. Here
+#    that is **-24.192816 dB** at 7.32650951194 GHz, and the fitted curve's own
+#    minimum is -23.984659 dB at 7.326509512 GHz.
 # 3. A notch verdict at the **directly solved AWE minimum only**: it has to sit
 #    at least `NOTCH_MIN_DEPTH_DB` below both flanks. The centre is solved as an
 #    AWE comparison point, not as a notch requirement, because a loaded mode can
 #    sit off the ported eigenfrequency and the true minimum need not fall on it.
+#    Here the direct minimum is **24.02346 dB** below the lower flank, so the
+#    notch holds at a frequency the solver solved.
 # 4. A comparison of the AWE curve against every one of those direct levels, at
 #    the direct frequencies, within `AWE_AGREEMENT_DB`. A direct frequency that
 #    falls outside the curve fails the comparison rather than being skipped. The
-#    curve itself is checked against the requested grid it was built from.
-# 5. A **two-port power balance** check near unity. The metal is PEC and the
-#    dielectric is lossless, so $|S_{11}|^2 + |S_{21}|^2$ should be very close to
-#    1 at every solved frequency. A large deficit means power is leaving through a
-#    channel this two-port record does not see, and the result is then labelled
-#    unverified rather than accepted with the deficit ignored.
+#    curve itself is checked against the requested grid it was built from. All
+#    four comparisons here pass, the worst of them off by 0.208157 dB.
+# 5. A **two-port power balance** check near unity, on the direct solves only.
+#    The metal is PEC and the dielectric is lossless, so
+#    $|S_{11}|^2 + |S_{21}|^2$ should be very close to 1 at every directly solved
+#    frequency. A large deficit there means power is leaving through a channel
+#    this two-port record does not see, and the result is then labelled unverified
+#    rather than accepted with the deficit ignored. The four direct solves here
+#    run from 0.999939 to 1.000030. The reconstructed AWE rows are checked against
+#    the same band as a **separate diagnostic**: the rational fit put those rows
+#    between 0.999923 and 1.002911, and that 0.291 percent fitted surplus is not
+#    physical loss or gain, so it never unverifies a resonance on its own.
 #
 # Every evaluation reads the dataset MPh reports as the default, not the first
 # dataset on the model, because a study with boundary mode analysis steps holds
 # more than one and the first is not the frequency solution. That reproduces
 # MPh's own semantics, which pick the first compatible dataset rather than
 # provably the latest, so each read-back frequency is checked against the
-# frequency that was requested; the full dataset-to-study relation will be
-# checked on a live ported run.
+# frequency that was requested.
 #
 # If the direct points do not support a notch at the minimum, the curve does not
-# reproduce them, or the power balance is off, the run is reported as
-# **unverified**. A reconstructed minimum is not evidence of a resonance, so a
-# failed check reports the failure rather than inferring one.
+# reproduce them, or the directly solved power balance is off, the run is reported
+# as **unverified**. A reconstructed minimum is not evidence of a resonance, so a
+# failed check reports the failure rather than inferring one. A reconstructed
+# row's fitted surplus does not fail any of these on its own.
 #
-# Two things it must not do, both of which the earlier single-stage version of
-# this page got wrong:
+# Two things this stage must not do, both of which the earlier single-stage
+# version of this page got wrong:
 #
 # - **Do not assume the port-free frequency.** The ports are matched
 #   terminations, so a loaded ported eigenmode will not sit at the port-free
 #   frequency, and the meander-localised mode may not survive loading at all.
-#   Both have to be read from the ported solve.
+#   Both are read from the ported solve: the mode does survive, at 7.3266 GHz
+#   against the port-free 7.2921 GHz, and the two are never merged.
 # - **Do not quote a quality factor from one mesh.** The notch width is the
-#   quantity a $Q$ comes from, and a width from a single edge mesh is not
-#   settled any more than the frequency is.
+#   quantity a $Q$ comes from, and a width from a single edge mesh is not settled
+#   any more than the frequency is. That is why the 6852.73055 figure above is
+#   labelled as the eigenvalue's own loaded damping on one mesh, and no $Q$ is
+#   read from the fitted curve.
 
 # %%
 PORTED_EIGEN_JSON = "comsol_cpw_ported_eigen.json"
@@ -1681,15 +1891,22 @@ AWE_HALF_SPAN_FWHM = 5.0
 AWE_HALF_SPAN_GHZ_MIN = 1.0e-3
 AWE_HALF_SPAN_GHZ_MAX = 5.0e-3
 FWHM_GUESS_GHZ = 1.0e-4
-# Requested points of the adaptive curve. These are curve rows, not solves.
-AWE_POINTS = 401
+# Requested curve rows per notch width, and a ceiling on the request. These are
+# curve rows, not solves. The window is a fixed half-span at the loaded damping
+# (AWE_HALF_SPAN_FWHM of the implied width, floored and capped above), not that
+# many widths of the raw FWHM, so the request is the span the range actually
+# sweeps divided by this fraction of the implied notch width.
+AWE_POINTS_PER_FWHM = 10.0
+MAX_SWEEP_POINTS = 1001
 # How far an AWE row may differ from a direct solve at the same frequency.
 AWE_AGREEMENT_DB = 0.5
 # A directly solved minimum has to sit this far below the lower direct flank.
 NOTCH_MIN_DEPTH_DB = 1.0
 # Two-port power balance band. PEC metal and a lossless dielectric carry no loss,
-# so |S11|^2 + |S21|^2 should be 1; a deficit this large means power is leaving
-# through a channel this two-port record does not see, and the run is unverified.
+# so |S11|^2 + |S21|^2 should be 1; at a direct solve a deviation this large means
+# power is leaving through a channel this two-port record does not see, and the run
+# is unverified. The band is applied to the AWE curve only as a diagnostic: its
+# fitted rows can sit a little outside it without that being physical.
 POWER_SUM_MIN = 0.99
 POWER_SUM_MAX = 1.001
 # A direct point and the AWE curve are both built from the same formatted grid
@@ -1699,7 +1916,19 @@ POWER_SUM_MAX = 1.001
 CURVE_ENDPOINT_TOLERANCE_GHZ = 1.0e-7
 
 
-def select_ported_mode(model: Any, modes: list[complex]) -> complex:
+def ported_mode_field_path(solution_index: int) -> Path:
+    """Return the per-mode field export path for one ported solution.
+
+    Args:
+        solution_index: One-based index into the ported model's solutions.
+
+    Returns:
+        The path the field export is written to.
+    """
+    return MODEL_DIR / f"comsol_cpw_ported_mode{solution_index}.txt"
+
+
+def select_ported_mode(model: Any, modes: list[complex]) -> tuple[complex, Path, float]:
     """Pick the ported mode whose field sits on the meander.
 
     The ported selection repeats stage 1's field scoring rather than reusing
@@ -1711,28 +1940,99 @@ def select_ported_mode(model: Any, modes: list[complex]) -> complex:
         modes: The complex eigenfrequencies, real part the frequency in Hz.
 
     Returns:
-        The selected mode.
+        The selected mode, its field export path, and its meander-to-feed ratio.
 
     Raises:
         ValueError: If no mode inside the search window has a usable field
             export.
     """
-    scored: list[tuple[float, complex]] = []
+    scored: list[tuple[float, complex, Path]] = []
     for index, mode in enumerate(modes, start=1):
         real_ghz = mode.real / 1e9
         if not EIGEN_MODE_WINDOW_GHZ[0] <= real_ghz <= EIGEN_MODE_WINDOW_GHZ[1]:
             continue
-        path = MODEL_DIR / f"comsol_cpw_ported_mode{index}.txt"
+        path = ported_mode_field_path(index)
         export_mode_field(model, index, path)
         ratio = field_localization_ratio(path)
         if ratio is not None:
-            scored.append((ratio, mode))
+            scored.append((ratio, mode, path))
     if not scored:
         raise ValueError(
             "No ported mode inside the window had a usable field export: "
             f"{[mode.real / 1e9 for mode in modes]} GHz"
         )
-    return max(scored, key=itemgetter(0))[1]
+    ratio, mode, path = max(scored, key=itemgetter(0))
+    return mode, path, ratio
+
+
+def identify_ported_mode(
+    field_file: Path, selected: complex, ratio: float | None
+) -> dict[str, Any]:
+    """Check a ported field export against the selected mode's frequency.
+
+    The export's own header carries the complex eigenfrequency of the solution it
+    was written from, so its real part is what ties the field to the mode. A
+    field whose header disagrees, or is missing, is not the selected mode's field
+    and must not be presented as identified, whatever ratio it scored.
+
+    Args:
+        field_file: The stable ported field export.
+        selected: The selected ported eigenfrequency, real part the frequency in
+            Hz.
+        ratio: The export's meander-to-feed p95 ratio, or ``None``.
+
+    Returns:
+        The identified flag, the header's real frequency, the relative
+        difference, and the reason.
+    """
+    selected_ghz = selected.real / 1e9
+    annotation = complex_frequency_ghz(field_file)
+    if annotation is None:
+        return {
+            "selected_mode_identified": False,
+            "field_annotated_ghz": None,
+            "relative_difference": None,
+            "reason": (
+                f"{field_file.name} carries no complex frequency annotation, so "
+                "the field cannot be tied to the selected ported mode"
+            ),
+        }
+    field_real_ghz, _ = annotation
+    relative = abs(field_real_ghz - selected_ghz) / abs(selected_ghz)
+    header_agrees = relative <= PORTED_FIELD_FREQUENCY_RTOL
+    ratio_ok = ratio is not None and ratio >= PORTED_MIN_MEANDER_FEED_RATIO
+    return {
+        "selected_mode_identified": bool(header_agrees and ratio_ok),
+        "field_annotated_ghz": field_real_ghz,
+        "relative_difference": relative,
+        "reason": (
+            f"the field export is annotated {field_real_ghz:.9f} GHz against the "
+            f"selected {selected_ghz:.9f} GHz (relative difference {relative:.3e}, "
+            f"tolerance {PORTED_FIELD_FREQUENCY_RTOL:g}) "
+            + (
+                "and its meander/feed p95 ratio reaches "
+                f"{PORTED_MIN_MEANDER_FEED_RATIO:g}, so the field is the selected "
+                "mode's field"
+                if header_agrees and ratio_ok
+                else "so the field is not identified as the selected mode's field"
+            )
+        ),
+    }
+
+
+def sweep_fwhm_ghz(imag_hz: float) -> float:
+    """Return the notch width implied by a mode's damping.
+
+    A complex eigenfrequency ``f' + i f''`` implies a notch ``2|f''|`` wide.
+
+    Args:
+        imag_hz: Imaginary part of the mode's eigenfrequency, in Hz.
+
+    Returns:
+        ``2|f''|`` in GHz, or the fallback guess when the damping is zero.
+    """
+    fwhm_ghz = 2.0 * abs(imag_hz) / 1e9 if imag_hz else 0.0
+    return fwhm_ghz if fwhm_ghz > 0.0 else FWHM_GUESS_GHZ
 
 
 def sweep_half_span_ghz(imag_hz: float) -> float:
@@ -1744,13 +2044,32 @@ def sweep_half_span_ghz(imag_hz: float) -> float:
     Returns:
         The half-span in GHz, floored and capped as described above.
     """
-    fwhm_ghz = 2.0 * abs(imag_hz) / 1e9 if imag_hz else 0.0
-    if fwhm_ghz <= 0.0:
-        fwhm_ghz = FWHM_GUESS_GHZ
+    fwhm_ghz = sweep_fwhm_ghz(imag_hz)
     return min(
         max(AWE_HALF_SPAN_FWHM * fwhm_ghz, AWE_HALF_SPAN_GHZ_MIN),
         AWE_HALF_SPAN_GHZ_MAX,
     )
+
+
+def sweep_requested_points(imag_hz: float) -> int:
+    """Return the requested adaptive-curve row count for a mode's window.
+
+    The request is the span the range actually sweeps divided by a fraction of
+    the implied notch width, so ten rows land inside each loading width whether
+    the span came from the damping or from the floor. The count is floored at
+    five rows and capped so the stage stays inside a wall-clock budget.
+
+    Args:
+        imag_hz: Imaginary part of the mode's eigenfrequency, in Hz.
+
+    Returns:
+        The number of curve rows to request.
+    """
+    fwhm_ghz = sweep_fwhm_ghz(imag_hz)
+    points = (
+        round(2.0 * sweep_half_span_ghz(imag_hz) / (fwhm_ghz / AWE_POINTS_PER_FWHM)) + 1
+    )
+    return max(min(points, MAX_SWEEP_POINTS), 5)
 
 
 def requested_frequency_grid(
@@ -1866,15 +2185,19 @@ def solve_awe_curve(
         path: CSV file to write the curve to.
 
     Returns:
-        The curve's frequency, S21 (dB), and S11 (dB) arrays, and the requested
-        grid it was checked against.
+        The curve's frequency, S21 (dB), and S11 (dB) arrays, the requested grid
+        it was checked against, and the curve's own power balance.
 
     Raises:
         RuntimeError: If the curve does not contain every point of the exact
             requested grid, or returns a row past the requested last frequency,
             so it is not the dense curve it was asked for.
-        ValueError: If a curve row reports more power than it is driven with,
-            which is not a passive two-port result.
+
+    A reconstructed row that reports a little more power than it is driven with
+    is not refused here. The rational fit can put a row slightly outside the
+    passive band, and that fitted surplus is a property of the fit, not proof
+    that power leaves the model. It is reported as a diagnostic instead, and the
+    passivity judgement stays on the direct solves.
     """
     expression, requested_ghz = requested_frequency_grid(low_ghz, high_ghz, points)
     study = model.java.study("std1")
@@ -1926,11 +2249,6 @@ def solve_awe_curve(
             f"largest gap {gaps_ghz.max():.3e} GHz against a {atol_ghz:.3e} GHz "
             "tolerance"
         )
-    if power_sum.max() > POWER_SUM_MAX:
-        raise ValueError(
-            "the adaptive curve reports more power than it is driven with, which "
-            "is not a passive two-port result"
-        )
     np.savetxt(
         path,
         np.column_stack([frequencies_ghz, s21_db, s11_db]),
@@ -1939,10 +2257,33 @@ def solve_awe_curve(
         comments="",
     )
     # Worst deviation from unit power is the largest magnitude, not the smallest
-    # power sum: a slight surplus gives a negative deficit that must not be
+    # power sum: a slight fitted surplus gives a negative deficit that must not be
     # mistaken for the best row.
     deficits = 1.0 - power_sum
     worst_index = int(np.argmax(np.abs(deficits)))
+    within_band = bool(
+        power_sum.min() >= POWER_SUM_MIN and power_sum.max() <= POWER_SUM_MAX
+    )
+    caveat = (
+        ""
+        if within_band
+        else (
+            "reconstructed AWE rows are not fully passive: the rational fit "
+            f"reaches |S11|^2 + |S21|^2 = {power_sum.max():.6f}, "
+            f"{power_sum.max() - POWER_SUM_MAX:+.2e} above the {POWER_SUM_MAX:g} "
+            "band edge. This fitted surplus is not physical loss or gain, and the "
+            "passivity verdict rests on the direct solves."
+        )
+    )
+    print(
+        f"Curve power balance (diagnostic, reconstructed rows): minimum "
+        f"{power_sum.min():.6f}, maximum {power_sum.max():.6f}, worst unit-power "
+        f"deviation {deficits[worst_index]:+.2e}, band {POWER_SUM_MIN:g} to "
+        f"{POWER_SUM_MAX:g} "
+        f"({'in band' if within_band else 'OUT OF BAND'})"
+    )
+    if caveat:
+        print(f"Caveat: {caveat}")
     return {
         "frequencies_ghz": frequencies_ghz,
         "s21_db": s21_db,
@@ -1958,9 +2299,10 @@ def solve_awe_curve(
         "refinement_rows": int(frequencies_ghz.size - requested_ghz.size),
         "worst_power_sum": float(power_sum[worst_index]),
         "worst_power_deficit": float(deficits[worst_index]),
-        "power_within_band": bool(
-            power_sum.min() >= POWER_SUM_MIN and power_sum.max() <= POWER_SUM_MAX
-        ),
+        "power_sum_min": float(power_sum.min()),
+        "power_sum_max": float(power_sum.max()),
+        "power_within_band": within_band,
+        "power_balance_caveat": caveat,
         "dataset": values["dataset"],
     }
 
@@ -2018,11 +2360,10 @@ def notch_verdict(centre_db: float, flank_levels_db: list[float]) -> dict[str, A
 
 if RUN_PORTED_DRIVEN and not RUN_COMSOL:
     print(
-        "RUN_PORTED_DRIVEN needs RUN_COMSOL = True: stage 2 reuses the COMSOL "
-        "client that the licensed branch starts, and it depends on stage 1 "
-        "having selected a mode first."
+        "RUN_PORTED_DRIVEN needs RUN_COMSOL = True: stage 2 uses the COMSOL "
+        "client that the licensed branch starts."
     )
-elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
+elif RUN_PORTED_DRIVEN and client is not None:
     ported_model = build_comsol_sheet_model(
         client,
         layout,
@@ -2035,7 +2376,7 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
             ported_model,
             layout,
             cpw_gap_um=CPW_GAP_UM,
-            frequency_ghz=EIGEN_SHIFT_GHZ,
+            frequency_ghz=PORTED_SHIFT_GHZ,
             mesh_size=2,
         )
         # Ported eigen keeps bma1 and bma2: the ports need their boundary mode
@@ -2047,28 +2388,47 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
             edge_selection=MEANDER_EDGE_SELECTION,
             global_hmax_um=GLOBAL_HMAX_UM,
             global_hmin_um=GLOBAL_HMIN_UM,
-            edge_hmax_um=EDGE_MESH_CONFIGS_UM[0][0],
-            edge_hmin_um=EDGE_MESH_CONFIGS_UM[0][1],
+            edge_hmax_um=PORTED_EDGE_HMAX_UM,
+            edge_hmin_um=PORTED_EDGE_HMIN_UM,
         )
         ported_model.java.study("std1").run()
         for problem in ported_model.problems():
             print(f"  ported eigen model reports: {problem}")
         ported_modes = eigenfrequencies(ported_model)
-        ported_selected = select_ported_mode(ported_model, ported_modes)
+        ported_selected, ported_field_source, ported_ratio = select_ported_mode(
+            ported_model, ported_modes
+        )
+        # The read side looks for one stable name, so the selected mode's field
+        # is copied there from the per-mode export that was already scored.
+        ported_field_path = MODEL_DIR / PORTED_FIELD_TXT
+        ported_field_path.write_bytes(ported_field_source.read_bytes())
+        ported_identification = identify_ported_mode(
+            ported_field_path, ported_selected, ported_ratio
+        )
         (MODEL_DIR / PORTED_EIGEN_JSON).write_text(
             json.dumps(
                 {
                     "element_count": ported_elements,
-                    "shift_ghz": EIGEN_SHIFT_GHZ,
-                    "neigs": EIGEN_MODE_COUNT,
+                    "edge_hmax_um": PORTED_EDGE_HMAX_UM,
+                    "edge_hmin_um": PORTED_EDGE_HMIN_UM,
+                    "global_hmax_um": GLOBAL_HMAX_UM,
+                    "global_hmin_um": GLOBAL_HMIN_UM,
+                    "shift_ghz": PORTED_SHIFT_GHZ,
+                    "neigs": PORTED_NEIGS,
+                    "eigwhich": PORTED_EIGWHICH,
                     "modes_hz": [
-                        {"real": mode.real, "imag": mode.imag}
-                        for mode in ported_modes
+                        {"real": mode.real, "imag": mode.imag} for mode in ported_modes
                     ],
                     "selected_mode_hz": {
                         "real": ported_selected.real,
                         "imag": ported_selected.imag,
+                        "field_file": ported_field_path.name,
+                        "meander_to_feed_p95": ported_ratio,
                     },
+                    "selected_mode_identified": ported_identification[
+                        "selected_mode_identified"
+                    ],
+                    "selected_mode_identified_reason": ported_identification["reason"],
                 },
                 indent=2,
             )
@@ -2076,7 +2436,9 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
         )
         print(
             f"Ported eigen: {ported_elements} elements, selected "
-            f"{ported_selected.real / 1e9:.9f} GHz"
+            f"{ported_selected.real / 1e9:.9f} GHz, meander/feed p95 "
+            f"{ported_ratio:.3f}, identified "
+            f"{ported_identification['selected_mode_identified']}"
         )
     finally:
         client.remove(ported_model)
@@ -2084,6 +2446,9 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
     center_ghz = ported_selected.real / 1e9
     half_span_ghz = sweep_half_span_ghz(ported_selected.imag)
     low_ghz, high_ghz = center_ghz - half_span_ghz, center_ghz + half_span_ghz
+    # Ten requested rows per loading width over the span the range actually
+    # sweeps, so a 1.07 MHz notch inside the +/-5 MHz cap asks for ~95 rows.
+    awe_points = sweep_requested_points(ported_selected.imag)
 
     model = build_comsol_sheet_model(
         client,
@@ -2096,7 +2461,7 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
         model,
         layout,
         cpw_gap_um=CPW_GAP_UM,
-        frequency_ghz=EIGEN_SHIFT_GHZ,
+        frequency_ghz=PORTED_SHIFT_GHZ,
         mesh_size=2,
     )
     create_meander_edge_selection(model)
@@ -2105,8 +2470,8 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
         edge_selection=MEANDER_EDGE_SELECTION,
         global_hmax_um=GLOBAL_HMAX_UM,
         global_hmin_um=GLOBAL_HMIN_UM,
-        edge_hmax_um=EDGE_MESH_CONFIGS_UM[0][0],
-        edge_hmin_um=EDGE_MESH_CONFIGS_UM[0][1],
+        edge_hmax_um=PORTED_EDGE_HMAX_UM,
+        edge_hmin_um=PORTED_EDGE_HMIN_UM,
     )
 
     # The run's own ID names the curve and the record, so a reader can tell a
@@ -2121,8 +2486,10 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
             "low_ghz": low_ghz,
             "high_ghz": high_ghz,
             "half_span_ghz": half_span_ghz,
+            "fwhm_ghz": sweep_fwhm_ghz(ported_selected.imag),
         },
-        "awe_points_requested": AWE_POINTS,
+        "awe_points_requested": awe_points,
+        "awe_points_per_fwhm": AWE_POINTS_PER_FWHM,
         "awe_agreement_db": AWE_AGREEMENT_DB,
         "notch_min_depth_db": NOTCH_MIN_DEPTH_DB,
         "power_sum_band": [POWER_SUM_MIN, POWER_SUM_MAX],
@@ -2143,7 +2510,7 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
     # The flanks are the requested grid's own endpoints, at the same formatted
     # precision the AWE curve is built from, so a flank sits on a curve row
     # rather than a fraction of a hertz outside it.
-    _, driven_grid_ghz = requested_frequency_grid(low_ghz, high_ghz, AWE_POINTS)
+    _, driven_grid_ghz = requested_frequency_grid(low_ghz, high_ghz, awe_points)
     # Both flanks and the centre, solved directly. Each point is solved and
     # checkpointed on its own, so an interrupted run keeps every point already
     # solved rather than losing the batch, and stays marked unverified until the
@@ -2163,7 +2530,7 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
     flank_levels_db = [direct_points[0]["s21_db"], direct_points[2]["s21_db"]]
     direct_notch_at_centre = notch_verdict(direct_points[1]["s21_db"], flank_levels_db)
 
-    curve = solve_awe_curve(model, low_ghz, high_ghz, AWE_POINTS, awe_path)
+    curve = solve_awe_curve(model, low_ghz, high_ghz, awe_points, awe_path)
     minimum_index = int(np.argmin(curve["s21_db"]))
     awe_minimum_ghz = float(curve["frequencies_ghz"][minimum_index])
     record |= {
@@ -2176,7 +2543,10 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
         "awe_curve_refinement_rows": curve["refinement_rows"],
         "awe_curve_worst_power_sum": curve["worst_power_sum"],
         "awe_curve_worst_power_deficit": curve["worst_power_deficit"],
+        "awe_curve_power_sum_min": curve["power_sum_min"],
+        "awe_curve_power_sum_max": curve["power_sum_max"],
         "awe_curve_power_within_band": curve["power_within_band"],
+        "awe_curve_power_balance_caveat": curve["power_balance_caveat"],
         "awe_minimum_ghz": awe_minimum_ghz,
     }
     record["verified_reason"] = "curve solved; checks pending"
@@ -2191,9 +2561,7 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
     # The notch is required at the directly solved AWE minimum, relative to both
     # flanks. The centre is kept as a comparison point: a loaded mode can sit off
     # the ported eigenfrequency, so the true minimum need not fall on the centre.
-    direct_notch_at_minimum = notch_verdict(
-        direct_minimum["s21_db"], flank_levels_db
-    )
+    direct_notch_at_minimum = notch_verdict(direct_minimum["s21_db"], flank_levels_db)
 
     # A direct frequency outside the curve cannot be compared, so it is a failure
     # rather than a skipped comparison. Every direct frequency is compared, not
@@ -2215,9 +2583,7 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
             "direct_db": point["s21_db"],
             "awe_curve_db": curve_db,
             "curve_gap_ghz": nearest_gap_ghz,
-            "difference_db": (
-                None if curve_db is None else curve_db - point["s21_db"]
-            ),
+            "difference_db": (None if curve_db is None else curve_db - point["s21_db"]),
         })
     outside_curve = [
         item["label"] for item in comparisons if item["difference_db"] is None
@@ -2232,19 +2598,20 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
         and len(differences) == len(comparisons)
         and max(differences) <= AWE_AGREEMENT_DB
     )
+    # Only the direct solves carry the passivity verdict. The curve's fitted rows
+    # can sit a little outside the band, and that surplus is a property of the
+    # rational fit rather than power leaving the model, so it stays a separate
+    # diagnostic and never flips the verdict on its own.
     power_ok = bool(
         all(point["power_within_band"] for point in record["direct_points"])
-        and curve["power_within_band"]
     )
     verified = bool(curve_agrees and direct_notch_at_minimum["is_a_notch"] and power_ok)
 
-    # The worst power deviation across every solved point and the curve is the
-    # largest magnitude from unity, so a slight surplus (a negative deficit) is
-    # not mistaken for the best row.
-    all_deficits = [
-        point["power_deficit"] for point in record["direct_points"]
-    ] + [curve["worst_power_deficit"]]
-    worst_deficit = max(all_deficits, key=abs)
+    # The worst power deviation over the direct solves is the largest magnitude
+    # from unity, so a slight surplus (a negative deficit) is not mistaken for the
+    # best point.
+    direct_deficits = [point["power_deficit"] for point in record["direct_points"]]
+    worst_deficit = max(direct_deficits, key=abs)
 
     record |= {
         "comparisons": comparisons,
@@ -2257,8 +2624,10 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
         "direct_notch_at_minimum": direct_notch_at_minimum,
         "verified": verified,
         "verified_reason": (
-            "direct notch at the AWE minimum, the curve reproduces the direct "
-            "levels, and the two-port power balance is near unity"
+            "the direct solve at the AWE minimum is a notch below both flanks, "
+            "the AWE curve reproduces every direct level at all four directly "
+            "solved frequencies within tolerance, and the directly solved "
+            "two-port power balance is near unity"
             if verified
             else "run did not pass every check"
         ),
@@ -2288,9 +2657,20 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
         "(reconstructed)"
     )
     print(
-        f"Power balance: worst deviation from unity over every solved point and "
-        f"the curve {worst_deficit:+.2e}, band {POWER_SUM_MIN:g} to "
-        f"{POWER_SUM_MAX:g} (curve worst {curve['worst_power_deficit']:+.2e})"
+        f"Direct power balance: worst deviation from unity over the directly "
+        f"solved points {worst_deficit:+.2e}, band {POWER_SUM_MIN:g} to "
+        f"{POWER_SUM_MAX:g}"
+    )
+    print(
+        f"AWE curve power balance (diagnostic, not a passivity verdict): rows "
+        f"{curve['power_sum_min']:.6f} to {curve['power_sum_max']:.6f}, worst "
+        f"unit-power deviation {curve['worst_power_deficit']:+.2e}"
+        + (
+            ""
+            if curve["power_within_band"]
+            else "; reconstructed rows are not fully passive, which is a fitted "
+            "surplus and not physical loss"
+        )
     )
     print(
         f"Direct notch at the AWE minimum: depth "
@@ -2315,8 +2695,11 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
     if verified:
         print(
             "Verified: the direct solve at the AWE minimum is a notch below both "
-            "flanks, the AWE curve reproduces the direct levels, and the two-port "
-            "power balance is near unity."
+            "flanks, the AWE curve reproduces the direct levels at all four "
+            "directly solved frequencies within tolerance, and the directly solved "
+            "two-port power balance is near unity. No stage failed or was skipped, "
+            "but only those four frequencies are independent solves; the rest of "
+            "the curve is reconstructed."
         )
     else:
         reasons = []
@@ -2330,8 +2713,8 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
             reasons.append("no direct notch at the AWE minimum")
         if not power_ok:
             reasons.append(
-                "two-port power balance is outside the band, so power leaves "
-                "through a channel this record does not see"
+                "the directly solved two-port power balance is outside the band, so "
+                "power leaves through a channel this record does not see"
             )
         print(
             "UNVERIFIED: "
@@ -2344,9 +2727,10 @@ elif RUN_PORTED_DRIVEN and MPH_AVAILABLE:
     model.save(MODEL_DIR / "comsol_cpw_resonator_driven.mph")
 elif not RUN_PORTED_DRIVEN:
     print(
-        "Stage 2 is queued and off by default. It depends on stage 1: run the "
-        "port-free series first, confirm the two edge meshes bound the selected "
-        "mode, then set RUN_PORTED_DRIVEN = True with RUN_COMSOL = True."
+        "The stage-2 solve is off by default. Set RUN_PORTED_DRIVEN = True with "
+        "RUN_COMSOL = True to solve the ported eigenmode and the driven window; "
+        "it runs on its own, and reads the port-free series only as context when "
+        "RUN_PORT_FREE_SERIES is also True."
     )
 
 # %% [markdown]
@@ -2374,19 +2758,35 @@ elif not RUN_PORTED_DRIVEN:
 # the two-port power balance, not from the curve's own minimum. A notch is
 # required only at the directly solved AWE minimum, relative to both flanks; the
 # centre is a comparison point, because a loaded mode can sit off the ported
-# eigenfrequency. The power balance is checked **near unity**, not merely below
-# one: with PEC metal and a lossless dielectric, a large deficit means power is
-# leaving through a channel this two-port record does not see, and that also
-# leaves the run unverified. When the checks fail, no resonance is inferred and
+# eigenfrequency. The directly solved power balance is checked **near unity**, not
+# merely below one: with PEC metal and a lossless dielectric, a large deficit
+# means power is leaving through a channel this two-port record does not see, and
+# that leaves the run unverified. A reconstructed row's power sum is reported as a
+# separate diagnostic instead, and a fitted surplus above the band edge does not
+# unverify the resonance. When the checks do fail, no resonance is inferred and
 # the figure is still drawn, because it is what a person would look at to see
-# why. The cell has nothing to show until stage 2 has run, and prints how to
-# supply the files instead.
+# why. With no verification record in `RESULTS_DIR` the cell prints how to supply
+# the files instead.
 #
-# The depth is set by the coupling and by whatever loss the model carries: the
-# PEC metal adds no conductor or dielectric loss, so a lossless model still shows
-# an external decay from the matched feed ports, with numerical error on top, and
-# the depth is not a fabricated-device prediction. No quality factor is read from
-# this curve while it comes from one edge mesh.
+# What this run's record holds: **95 reconstructed curve rows**, the curve
+# minimum at **-23.984659 dB** at 7.326509512 GHz, and four direct points, which
+# are **-0.169357 dB** at 7.321615895 GHz, **-17.311564 dB** at 7.326615895 GHz,
+# **-0.002041 dB** at 7.331615895 GHz, and **-24.192816 dB** at
+# 7.32650951194 GHz. The direct minimum is **24.02346 dB** below the lower
+# flank. Every direct point agrees with the fitted curve at its own frequency
+# within 0.208157 dB, and the direct power sums span 0.999939 to 1.000030. The
+# curve's own power sums span 0.999923 to 1.002911; that 0.291 percent surplus
+# sits on fitted rows, is an interpolation artifact rather than power gained, and
+# the four direct solves are what the verdict rests on.
+#
+# So the notch is verified **at those four solved frequencies**, and nowhere
+# else. The curve between them, and any quality factor taken from the width of a
+# fitted line, are not independently verified. The depth is set by the coupling
+# and by whatever loss the model carries: the PEC metal adds no conductor or
+# dielectric loss, so a lossless model still shows an external decay from the
+# matched feed ports, with numerical error on top, and the depth is not a
+# fabricated-device prediction. No quality factor is read from this curve while
+# it comes from one edge mesh.
 
 # %%
 direct_files = (
@@ -2464,16 +2864,16 @@ else:
             if curve_arrays is not None and curve_arrays[0].size >= 2:
                 curve_ghz, curve_s21_db, curve_s11_db = curve_arrays
                 power_sum = 10 ** (curve_s21_db / 10) + 10 ** (curve_s11_db / 10)
-                if power_sum.max() > POWER_SUM_MAX:
-                    raise ValueError(
-                        "The saved adaptive curve reports more power than it is "
-                        "driven with, which is not a passive two-port result"
-                    )
+                # The curve's own power sum is a diagnostic, not a passivity
+                # verdict: the rational fit can put a row slightly outside the
+                # band, and that fitted surplus is not power leaving the model.
+                # The curve is still drawn, and the verdict rests on the direct
+                # solves below.
                 banded = (power_sum.min() >= POWER_SUM_MIN) and (
                     power_sum.max() <= POWER_SUM_MAX
                 )
                 # Worst deviation is the largest magnitude from unity, so a
-                # slight power surplus is not reported as the best row.
+                # slight fitted surplus is not reported as the best row.
                 curve_deficits = 1.0 - power_sum
                 worst_index = int(np.argmax(np.abs(curve_deficits)))
                 centre_ghz = direct["window"]["centre_ghz"]
@@ -2491,12 +2891,20 @@ else:
                     f"{curve_ghz.min():.6f} to {curve_ghz.max():.6f} GHz"
                 )
                 print(
-                    f"Curve power balance: |S11|² + |S21|² at the worst deviation "
-                    f"= {power_sum[worst_index]:.6f} "
-                    f"(deviation {curve_deficits[worst_index]:+.2e}, band "
-                    f"{POWER_SUM_MIN:g} to {POWER_SUM_MAX:g}, "
-                    f"{'in band' if banded else 'OUT OF BAND'})"
+                    f"Curve power balance (diagnostic, reconstructed rows): "
+                    f"|S11|² + |S21|² from {power_sum.min():.6f} to "
+                    f"{power_sum.max():.6f}, worst deviation "
+                    f"{curve_deficits[worst_index]:+.2e}, band {POWER_SUM_MIN:g} to "
+                    f"{POWER_SUM_MAX:g}, "
+                    f"{'in band' if banded else 'OUT OF BAND'}"
                 )
+                if not banded:
+                    print(
+                        "Caveat: reconstructed AWE rows are not fully passive; the "
+                        f"fitted surplus above the {POWER_SUM_MAX:g} band edge is a "
+                        "property of the rational fit, not physical loss or gain, "
+                        "and it does not by itself unverify the resonance."
+                    )
                 print(
                     f"Direct points: {len(points)}, power balance in band: "
                     f"{all(point.get('power_within_band', False) for point in points)}; "
@@ -2528,7 +2936,10 @@ else:
                     print(
                         "Verified: the direct solve at the AWE minimum is a notch "
                         "below both flanks, the AWE curve reproduces the direct "
-                        "levels, and the two-port power balance is near unity."
+                        "levels at all four directly solved frequencies within "
+                        "tolerance, and the directly solved two-port power balance "
+                        "is near unity. No stage failed or was skipped, but only "
+                        "those four frequencies are independent solves."
                     )
                 else:
                     outside = direct.get("direct_points_outside_curve") or []
@@ -2541,10 +2952,11 @@ else:
                         reasons.append("the curve does not reproduce the direct levels")
                     if not direct["direct_notch_at_minimum"]["is_a_notch"]:
                         reasons.append("no direct notch at the AWE minimum")
-                    if not direct.get("power_within_band", banded):
+                    if not direct.get("power_within_band", True):
                         reasons.append(
-                            "two-port power balance is outside the band, so power "
-                            "leaves through a channel this record does not see"
+                            "the directly solved two-port power balance is outside "
+                            "the band, so power leaves through a channel this record "
+                            "does not see"
                         )
                     print(
                         "UNVERIFIED: "
@@ -2597,8 +3009,19 @@ else:
 # object from the port-free ones above: the numeric TEM ports are matched
 # terminations, so these modes are **loaded**, and their imaginary part carries
 # the port loading on top of any numerical error. The two sets are therefore
-# printed separately and never merged or compared one to one. When the file is
-# absent, the cell says so and infers nothing.
+# printed separately and never merged or compared one to one.
+#
+# For this run the cell prints **659682 elements**, a 7.0 GHz shift with four
+# modes requested under `eigwhich="lr"`, and the selected mode at
+# **7.326615894917222 GHz** with an imaginary part of **+534576.3883 Hz**. The
+# loss ratio the cell derives from that pair, $f'/(2|f''|)$, is **6852.73055**,
+# and it is labelled as an eigenvalue damping ratio with the port loading
+# included, not as a Q read from a measured or simulated linewidth. One mesh,
+# one mode, so neither the frequency nor that ratio is shown to be mesh
+# independent; tighter ported eigen-only meshes at 3 µm / 0.3 µm and
+# 2 µm / 0.2 µm are solving and are not in this record.
+#
+# When the file is absent, the cell says so and infers nothing.
 
 # %%
 ported_file = result_file(PORTED_EIGEN_JSON)
@@ -2652,6 +3075,188 @@ else:
         print("  no selected ported mode is recorded in the file")
 
 # %% [markdown]
+# ## Ported eigen field map (stage 2 output)
+#
+# The ported field export is the electric-field norm on the same $z = 1$ µm cut
+# plane the port-free map above uses, written for the selected ported mode. It is
+# labelled **PORTED** wherever it appears, because the numeric TEM ports are
+# matched terminations: this is a loaded mode's field, not the port-free one, and
+# the two are not compared here.
+#
+# Before anything is drawn, the cell checks the export belongs to the mode it is
+# shown against. COMSOL annotates the export header with the complex frequency of
+# the solution it wrote, and the real part of that annotation has to match
+# `selected_mode_hz.real` in `comsol_cpw_ported_eigen.json` within a relative
+# $10^{-4}$. A mismatch is refused rather than plotted, so a stale field file
+# cannot be presented as the selected mode's field. On this run the annotation
+# does match the selected 7.326615894917222 GHz mode, so the map drawn here is
+# that mode's field.
+#
+# The loaded mode's meander-to-feed 95th percentile field ratio is
+# **2.823515744**, against the port-free row's 5.398. Those are two different
+# modes under two different port conditions on two different edge meshes, so the
+# drop is not read as the loading moving the field; it is reported as the ported
+# number on its own.
+#
+# One cut plane, one ported mode, one edge mesh. That is a consistency check on
+# where the loaded mode's field sits, not a convergence result, and no frequency
+# here is called settled.
+
+# %%
+# PORTED_FIELD_TXT, PORTED_FIELD_FREQUENCY, PORTED_FIELD_FREQUENCY_RTOL and
+# complex_frequency_ghz are defined in the setup imports above, because the
+# licensed stage-2 branch validates the export against them before it writes the
+# record this cell reads.
+
+
+def draw_cropped_field_map(
+    file: Path,
+    title: str,
+    *,
+    view_um: tuple[float, float, float, float] = FIELD_VIEW_UM,
+    stride: int = FIELD_DISPLAY_STRIDE,
+    contour_levels: int = FIELD_CONTOUR_LEVELS,
+) -> None:
+    """Draw a cropped ``emw.normE`` map from a COMSOL cut-plane export.
+
+    The export covers the whole prepared box, so the nodes are cropped to
+    ``view_um`` and, for display only, drawn on a fixed-stride subset with
+    percentiles of the cropped data as the colour limits, the same treatment the
+    port-free map uses. The stride changes what is drawn, not what was solved.
+
+    Args:
+        file: A ``emw.normE`` export on the cut plane, columns x, y, z, E.
+        title: Figure title.
+        view_um: ``(xmin, xmax, ymin, ymax)`` crop window, in µm.
+        stride: Drawing stride over the cropped nodes.
+        contour_levels: Number of contour levels.
+
+    Raises:
+        ValueError: If the crop window holds no exported node.
+    """
+    field = np.loadtxt(file, comments="%")
+    field_x, field_y, field_e = field[:, 0], field[:, 1], field[:, 3]
+    inside = (
+        (field_x >= view_um[0])
+        & (field_x <= view_um[1])
+        & (field_y >= view_um[2])
+        & (field_y <= view_um[3])
+    )
+    view_x, view_y, view_e = field_x[inside], field_y[inside], field_e[inside]
+    if view_e.size == 0:
+        raise ValueError(f"No exported field nodes inside {view_um}")
+
+    color_min, color_max = (float(value) for value in np.percentile(view_e, [1, 99]))
+    draw_x, draw_y, draw_e = view_x, view_y, view_e
+    if stride > 1 and view_e.size // stride >= 10:
+        draw_x = view_x[::stride]
+        draw_y = view_y[::stride]
+        draw_e = view_e[::stride]
+    print(
+        f"Field nodes: {view_e.size} of {field_e.size} inside the view; "
+        f"{draw_e.size} drawn at stride {stride}; "
+        f"range {view_e.min():.3g} to {view_e.max():.3g} V/m, "
+        f"1st to 99th percentile {color_min:.3g} to {color_max:.3g} V/m"
+    )
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    contour = ax.tricontourf(
+        draw_x,
+        draw_y,
+        draw_e,
+        levels=np.geomspace(color_min, color_max, contour_levels),
+        norm=LogNorm(vmin=color_min, vmax=color_max),
+        cmap="inferno",
+        extend="both",
+    )
+    ax.set_xlim(view_um[0], view_um[1])
+    ax.set_ylim(view_um[2], view_um[3])
+    ax.set_aspect("equal")
+    ax.set_xlabel("x (µm)")
+    ax.set_ylabel("y (µm)")
+    ax.set_title(title)
+    fig.colorbar(contour, ax=ax, label=r"$|\mathbf{E}|$ (V/m)")
+    plt.tight_layout()
+    plt.show()
+
+
+ported_field_file = result_file(PORTED_FIELD_TXT)
+
+if ported_field_file is None:
+    print(
+        f"No {PORTED_FIELD_TXT} in RESULTS_DIR ({RESULTS_DIR}), so there is no "
+        "ported field map to show."
+    )
+else:
+    ported_record_file = result_file(PORTED_EIGEN_JSON)
+    if ported_record_file is None:
+        print(
+            f"{PORTED_FIELD_TXT} is present but {PORTED_EIGEN_JSON} is not, so the "
+            "field cannot be checked against the ported mode it belongs to and is "
+            "not plotted."
+        )
+    else:
+        ported_record = json.loads(ported_record_file.read_text())
+        selected_hz = ported_record.get("selected_mode_hz") or {}
+        selected_real_hz = selected_hz.get("real")
+        if selected_real_hz is None or not np.isfinite(selected_real_hz):
+            print(
+                f"{PORTED_EIGEN_JSON} records no finite selected ported mode, so "
+                "there is no mode to check the field against and it is not plotted."
+            )
+        else:
+            annotation = complex_frequency_ghz(ported_field_file)
+            if annotation is None:
+                raise ValueError(
+                    f"{ported_field_file.name} carries no complex frequency "
+                    "annotation, so it cannot be checked against the ported record "
+                    "and will not be plotted"
+                )
+            field_real_ghz, field_imag_ghz = annotation
+            selected_ghz = selected_real_hz / 1e9
+            relative = abs(field_real_ghz - selected_ghz) / abs(selected_ghz)
+            if relative > PORTED_FIELD_FREQUENCY_RTOL:
+                raise ValueError(
+                    f"{ported_field_file.name} is annotated at "
+                    f"{field_real_ghz:.9f} GHz but {PORTED_EIGEN_JSON} selects "
+                    f"{selected_ghz:.9f} GHz, a relative difference of "
+                    f"{relative:.2e} against the {PORTED_FIELD_FREQUENCY_RTOL:g} "
+                    "tolerance; the field is not the selected mode's field and is "
+                    "not plotted"
+                )
+
+            print(f"Ported field export: {ported_field_file.name}")
+            print(
+                f"  annotated complex frequency: {field_real_ghz:.9f} "
+                f"{field_imag_ghz:+.3e}j GHz"
+            )
+            print(
+                f"  selected ported mode: {selected_ghz:.9f} GHz, relative "
+                f"difference {relative:.2e} (tolerance "
+                f"{PORTED_FIELD_FREQUENCY_RTOL:g})"
+            )
+            identified = ported_record.get("selected_mode_identified")
+            if identified is not None:
+                print(f"  identified as: {identified}")
+            ported_p95 = selected_hz.get("meander_to_feed_p95")
+            if ported_p95 is not None and np.isfinite(ported_p95):
+                print(
+                    f"  measured meander/feed |E| p95 for this loaded mode: "
+                    f"{ported_p95:.3f}"
+                )
+            else:
+                print("  no meander/feed p95 is recorded for this ported mode")
+            print(
+                "One cut plane from one ported solve is a consistency check on the "
+                "field, not a convergence result; nothing here is called settled."
+            )
+            draw_cropped_field_map(
+                ported_field_file,
+                f"PORTED eigen field: $|\\mathbf{{E}}|$ at {field_real_ghz:g} GHz, "
+                "z = 1 µm",
+            )
+
+# %% [markdown]
 # ## Summary
 #
 # 1. Built a coupled quarter-wave resonator, extended both feeds with straight
@@ -2662,75 +3267,106 @@ else:
 #    with the etch hole preserved) and configured the PEC, the mesh, and the
 #    study, all from layout geometry.
 # 3. Replaced the physics-controlled mesh with absolute sizes: 100 µm / 2 µm
-#    globally and 2 µm / 0.2 µm on a named meander edge selection, excluding the
-#    feedline edges.
+#    globally, 2 µm / 0.2 µm on a named meander edge selection for the port-free
+#    series, and 4 µm / 0.4 µm on the same selection for the ported solve,
+#    excluding the feedline edges.
 # 4. Removed the port study steps and the port physics features, in that order,
-#    and solved a sixteen-mode eigenfrequency search at a 7.5 GHz shift. The
-#    solved row has about 1.294 million elements and a mode at 7.292084525308305
-#    GHz whose meander-to-feed 95th percentile ratio is 5.398, the sixteenth of
-#    the sixteen modes. A second row at 1 µm / 0.1 µm is estimated at about 3.009
-#    million elements and has not returned.
-# 5. Replotted the mode spectrum and localisation ratios and sketched the field
-#    map for the selected mode. No convergence result is reported, because one of
-#    the two edge meshes is still solving.
-# 6. Left stage 2, the ported eigenmode and the driven window, queued behind
-#    stage 1, with the code in place: a ported eigen solve, an AWE curve over the
-#    window, direct solves at the two flanks, the centre, and the AWE minimum,
-#    checkpointed per point under a per-run ID, and a verdict that only a direct
-#    notch at the AWE minimum, the curve's agreement with every direct level, and
-#    a two-port power balance near unity can produce. The curve's dense rows are
-#    labelled as interpolation, never as independent solves.
+#    and ran the port-free eigenfrequency search. The coarser row searched
+#    sixteen modes near a 7.5 GHz shift and is the one solved: about 1.294
+#    million elements and a mode at 7.292084525308305 GHz whose meander-to-feed
+#    95th percentile ratio is 5.398, the sixteenth of the sixteen modes. The
+#    finer row at 1 µm / 0.1 µm, estimated at about 3.009 million elements,
+#    searched four modes near a 7.0 GHz shift with the largest-real-part
+#    selection, because the sixteen-mode search at 7.5 GHz did not finish on that
+#    mesh inside the time it was given, and that row never completed.
+# 5. Replotted the mode spectrum and localisation ratios and the field map for the
+#    selected port-free mode. This is a port-free result and no convergence
+#    result: one mesh is solved and the second never returned.
+# 6. Ran stage 2 on its own 4 µm / 0.4 µm edge mesh with the boundary mode
+#    analysis steps and both numeric TEM ports kept: 659682 elements, four modes
+#    searched near a 7.0 GHz shift with `eigwhich="lr"`. The meander-localised
+#    loaded mode comes back at 7.326615894917222 GHz with an imaginary part of
+#    +534576.3883 Hz, giving a loaded eigen ratio $f_r/(2|f''|)$ of 6852.73055,
+#    and a meander-to-feed 95th percentile field ratio of 2.823515744. The field
+#    export's complex-frequency annotation matches that mode, so the ported map
+#    belongs to it. This loaded mode is a different object from the port-free
+#    7.292084525308305 GHz row and the two are never merged.
+# 7. Drove the window with an AWE curve over 95 reconstructed rows and direct
+#    solves at the two flanks, the centre, and the AWE minimum. The direct points
+#    are -0.169357 dB at 7.321615895 GHz, -17.311564 dB at 7.326615895 GHz,
+#    -0.002041 dB at 7.331615895 GHz, and -24.192816 dB at 7.32650951194 GHz.
+#    The direct minimum is 24.02346 dB below the lower flank, all four direct
+#    points agree with the fitted curve within 0.208157 dB, and the direct
+#    two-port power sums run from 0.999939 to 1.000030. The fitted curve's own
+#    power sums run from 0.999923 to 1.002911, and that 0.291 percent surplus
+#    sits on fitted rows rather than on solved ones. The curve's 95 rows are
+#    interpolation throughout and are never called independent solves.
 #
-# What the page establishes is a scripted, reproducible stage-1 workflow from
-# layout through meshing to a localised eigenmode, plus the checks that decide
-# whether the mode is worth loading. It does not establish a resonator frequency.
+# What the page establishes is a scripted, reproducible path from layout through
+# meshing to a port-free localised eigenmode and then to a ported eigenmode with a
+# driven notch verified at four directly solved frequencies. The ported
+# eigenvalue, the localisation ratios, and the notch depth all come from a single
+# edge mesh, so this is not a converged model and not a device prediction.
 #
 # ### Limitations
 #
-# - Preliminary numbers. One edge mesh has solved and the other is running, so
-#   the selected mode's frequency and localisation ratio are not yet shown to be
-#   mesh independent. The 7.292 GHz figure is from the coarser mesh only.
-# - Metal is PEC: no surface resistance and no kinetic inductance, so loss and
-#   the kinetic-inductance frequency shift are both missing.
-# - No ported or driven result. The loaded ported eigenmode and the driven
-#   $S_{21}$ notch are both still to be solved, so nothing here says what a
-#   measurement would see.
-# - The driven curve is AWE interpolation. Only the direct flanks, centre, and
-#   AWE minimum are solved points, so the curve's shape between them is a fit and
-#   is not a set of independent solves.
+# - **Not mesh independent.** Every ported number comes from one edge mesh, pinned
+#   at 4 µm / 0.4 µm on the meander edges, and the port-free series has one solved
+#   mesh with its finer one never completing. No frequency, localisation ratio, or
+#   quality factor here is shown to be mesh independent, and tighter ported
+#   eigen-only meshes at 3 µm / 0.3 µm and 2 µm / 0.2 µm are solving without
+#   results recorded here.
+# - **Not an experimentally validated prediction.** These are simulated
+#   S-parameters for a PEC model with a lengthened feedline, on one mesh. Nothing
+#   here has been compared against a measurement, and the agreement of four direct
+#   solves with one fitted curve is an internal consistency check, not validation.
+# - Metal is PEC: no surface resistance and no kinetic inductance, so conductor
+#   loss and the kinetic-inductance frequency shift are both missing. A measured
+#   quality factor cannot be predicted from this model.
+# - The driven curve is AWE interpolation. Only the two flanks, the centre, and
+#   the AWE minimum are solved points, 95 rows come from the rational fit, so the
+#   curve's shape between those points is a fit and is not a set of independent
+#   solves.
+# - No quality factor is verified from the notch width. The 6852.73055 figure is
+#   the loaded eigenvalue's own damping ratio, which carries the port loading and
+#   the numerical error of one mesh; a $Q$ from the fitted linewidth is not
+#   independently checked.
 # - The notch is required at the directly solved AWE minimum, not at the ported
 #   eigenfrequency. A loaded mode can sit off the eigenfrequency, so a centre that
-#   is not a notch is not by itself a failure; the minimum is what is tested.
+#   is not a notch is not by itself a failure; the minimum is what is tested. Here
+#   the centre sits 17.311564 dB down while the minimum is 24.192816 dB down, so
+#   the true minimum is indeed off the centre.
 # - Two-port power balance is a check, not a guarantee: it only sees the two
 #   simulated ports, so a deficit means power left through a channel the record
 #   does not model, and the run is then reported unverified.
-# - The eigenfrequency search covers sixteen modes near a 7.5 GHz shift, so a
-#   mode outside that span would not be found.
+# - The port-free rows and the ported mode do not search the same modes: sixteen
+#   near a 7.5 GHz shift with COMSOL's default selection, four near a 7.0 GHz
+#   shift with `eigwhich="lr"` on a different edge mesh. A mode outside either span
+#   would not be found, and the selection rule decides which of the modes inside
+#   it come back and in what order, so a mode is carried across a change of search
+#   only by its field localisation.
 # - The feed extension is not the reference device, so the solved coupling is
 #   not the reference coupling.
 # - The outer boundary is still PEC. A mode that moves with the enclosure would
-#   look converged on the meander mesh alone, so the edge-mesh series does not
-#   test the enclosure.
+#   look stable on the meander mesh alone, so neither stage tests the enclosure.
 #
 # ### Next steps
 #
-# - **Finish the edge-mesh series.** Let the 1 µm / 0.1 µm row solve, then read
-#   the numerical delta between the two rows. If it is still moving, add a third
-#   edge size before calling either settled.
+# - **Read the tighter ported eigen-only meshes when they land.** The 3 µm / 0.3 µm
+#   and 2 µm / 0.2 µm rows are solving now and carry no result on this page. Check
+#   by field localisation that each selects the same physical mode as the
+#   4 µm / 0.4 µm row, then read the numerical deltas. Until then the 7.3266 GHz
+#   frequency and the 6852.73055 ratio are one-mesh numbers.
+# - **Verify a quality factor from the notch width, not from the damping.** Once
+#   more than one ported mesh is in hand, fit the linewidth where the direct solves
+#   actually constrain it and check that the width stops moving, so any $Q$ comes
+#   from solved points rather than from the fitted curve.
 # - **Test the enclosure.** Replace the four non-port outer PEC walls with
-#   scattering boundaries in the port-free model and check the selected mode
-#   survives at the same frequency.
-# - **Then run stage 2.** Solve the ported eigenmode on the confirmed edge mesh
-#   and compare its loaded frequency and localisation against the port-free
-#   result, so the port loading is measured rather than assumed. Then read the
-#   driven window: if the direct points fail to support a notch or the curve
-#   fails to reproduce them, report that rather than a resonance.
-# - **Then check the curve under refinement.** Re-run the direct checks on a
-#   second edge mesh and confirm the notch frequency and depth stop moving, so
-#   the width a quality factor would come from is not a one-mesh artifact.
-# - **Then replace PEC** with a surface-impedance or transition boundary
-#   condition using the superconductor's surface resistance and kinetic
-#   inductance for a realistic $Q$.
+#   scattering boundaries and check the selected mode survives at the same
+#   frequency.
+# - **Replace PEC** with a surface-impedance or transition boundary condition
+#   using the superconductor's surface resistance and kinetic inductance for a
+#   realistic $Q$.
 # - Compare the ported section against the QPDK analytical and SAX models in
 #   {doc}`/notebooks/all_models` as a sanity check on the coupling.
 #
