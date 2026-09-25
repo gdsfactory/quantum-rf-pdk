@@ -663,12 +663,51 @@ def _dollar_math_to_rst(lines):
     lines[:] = result
 
 
+# Markdown links that are not images, external URLs, or in-page anchors.
+_RELATIVE_LINK_RE = re.compile(r"(?<!!)(\[[^\]]*\])\((?!\w+:|#)([^)\s]+)\)")
+
+
+def _rewrite_readme_links(content: str, srcdir: Path) -> str:
+    """Rewrite repository-relative README links for the docs build.
+
+    README links are written relative to the repository root so they work on
+    GitHub.  The README is inlined into ``docs/index.md``, where the same paths
+    resolve relative to ``docs/`` instead, so ``docs/contributing.md`` becomes a
+    dangling ``docs/docs/contributing.md`` reference.  Point links at the page
+    in the docs tree when there is one, and at GitHub otherwise (e.g.
+    ``LICENSE``, which is not part of the documentation).
+
+    Args:
+        content: README Markdown about to be inlined into ``index``.
+        srcdir: Documentation source directory, used to tell a link to a
+            documentation page from a link to some other repository file.
+
+    Returns:
+        The same Markdown with repository-relative links resolvable from
+        ``docs/index.md``.
+    """
+    github_blob = (
+        f"https://github.com/{html_context['github_user']}"
+        f"/{html_context['github_repo']}/blob/{html_context['github_version']}"
+    )
+
+    def _rewrite(match: re.Match[str]) -> str:
+        text, target = match.groups()
+        in_docs = target.removeprefix("docs/")
+        if (srcdir / in_docs).exists():
+            return f"{text}({in_docs})"
+        return f"{text}({github_blob}/{target})"
+
+    return _RELATIVE_LINK_RE.sub(_rewrite, content)
+
+
 def replace_image_paths(app, docname, source):
     """Fix image paths and manually include README.md into index."""
     if docname == "index":
         readme = Path(app.srcdir).parent / "README.md"
         if readme.exists():
             content = readme.read_text(encoding="utf-8").split("_" * 70, 1)[-1]
+            content = _rewrite_readme_links(content, Path(app.srcdir))
             source[0] = re.sub(
                 r"```\{include\}\s+\.\./README\.md.*?```",
                 lambda _: content,
