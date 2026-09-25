@@ -742,6 +742,60 @@ def fix_notebook_edit_url(app, pagename, _templatename, context, _doctree):
     context["get_edit_provider_and_url"] = _get_edit_provider_and_url
 
 
+#: pydata-sphinx-theme's dark ``--pst-color-text-base``, hard-coded because the
+#: SVG cannot read the page's CSS custom properties (see `_svgbob_dark_mode`).
+_DARK_INK = "#ced6dd"
+#: pydata-sphinx-theme's dark ``--pst-color-background``, same caveat.
+_DARK_PAPER = "#14181e"
+
+#: Appended to the stylesheet svgbob already embeds in every diagram, which
+#: paints strokes and text black on a white backdrop.  Only the properties that
+#: are actually hard-coded to black or white are overridden; everything else
+#: (stroke widths, dash arrays, markers) is colour-agnostic and left alone.
+_SVGBOB_DARK_STYLE = f"""
+@media (prefers-color-scheme: dark) {{
+  .svgbob line, .svgbob path, .svgbob circle, .svgbob rect, .svgbob polygon {{
+    stroke: {_DARK_INK};
+  }}
+  .svgbob text {{ fill: {_DARK_INK}; }}
+  /* Arrow and diamond markers have no fill of their own and so default to black. */
+  .svgbob polygon {{ fill: {_DARK_INK}; }}
+  .svgbob .filled {{ fill: {_DARK_INK}; }}
+  /* These exist to mask the line underneath, so they take the page colour
+     rather than becoming transparent. */
+  .svgbob .bg_filled, .svgbob .nofill {{ fill: {_DARK_PAPER}; }}
+  .svgbob rect.backdrop {{ fill: none; }}
+}}
+"""
+
+
+def _svgbob_dark_mode(app, exception):
+    """Make svgbob diagrams legible against the dark theme.
+
+    sphinxcontrib-svgbob renders black-on-white diagrams, which stay black on
+    white when the page turns dark.  The diagrams are referenced as
+    ``<img src="...svg">``, so no stylesheet on the page can reach inside them;
+    the only styling that applies is the one the file itself carries.  That
+    rules out following the theme's ``html[data-theme]`` toggle and leaves the
+    OS-level ``prefers-color-scheme``, which is what the theme's default
+    ``auto`` mode resolves to anyway.
+
+    Rewriting the generated files after the build, rather than at render time,
+    keeps the upstream extension untouched.  The edit is idempotent: svgbob
+    reuses an existing output file across incremental builds.
+    """
+    if exception is not None or app.builder.format != "html":
+        return
+    for svg_path in (Path(app.outdir) / app.builder.imagedir).glob("svgbob-*.svg"):
+        source = svg_path.read_text(encoding="utf-8")
+        if "prefers-color-scheme" in source or "</style>" not in source:
+            continue
+        svg_path.write_text(
+            source.replace("</style>", f"{_SVGBOB_DARK_STYLE}</style>", 1),
+            encoding="utf-8",
+        )
+
+
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
@@ -1127,6 +1181,7 @@ def setup(app):
     # Fix Edit on GitHub URLs for notebook pages (runs after pydata-sphinx-theme's
     # setup_edit_url which is registered at the default priority of 500)
     app.connect("html-page-context", fix_notebook_edit_url, priority=600)
+    app.connect("build-finished", _svgbob_dark_mode)
 
     # NOTE: everything below reaches into typsphinx internals (the translator's
     # visitor methods, `_inline_concat_context`, `in_paragraph`), which is why
