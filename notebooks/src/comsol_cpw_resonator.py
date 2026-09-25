@@ -121,7 +121,8 @@
 # quality factor here is mesh independent, and the driven notch is verified on
 # the selected 2 µm / 0.2 µm mesh alone. One reversal does not establish a trend
 # or an uncertainty bound. The finer stage-1 edge mesh at
-# 1 µm / 0.1 µm never finished, so the port-free series has one row. No quality
+# 1 µm / 0.1 µm was attempted and never finished; a fresh run with the 1.6M guard
+# records it as mesh-only, so the port-free series has one row. No quality
 # factor read from the notch width is independently verified. A further ported
 # eigen row at 1.7 µm / 0.17 µm meander edge sizes is being solved and has
 # returned no result yet.
@@ -615,6 +616,23 @@ def complex_frequency_ghz(file: Path) -> tuple[float, float] | None:
     return None
 
 
+def field_sha256(path: Path) -> str:
+    """Return the SHA-256 hex digest of a field export's bytes.
+
+    The ported stable record and the stable field are replaced one after the
+    other, so an interrupt between the two can leave a record pointing at a
+    field it was not solved with. The digest recorded beside the mode is what
+    lets the reader catch that instead of plotting the wrong mode.
+
+    Args:
+        path: Exported field file to digest.
+
+    Returns:
+        The digest as lowercase hex.
+    """
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 prefer_svg_figures()
 STYLE_SOURCE = apply_qpdk_style()
 print("Plot style: QPDK" if STYLE_SOURCE != "matplotlib defaults" else STYLE_SOURCE)
@@ -852,11 +870,11 @@ CORES = 4
 EIGEN_SHIFT_GHZ = 7.5
 EIGEN_MODE_COUNT = 16
 # Modes outside this window are not exported or scored; a mode below it is not a
-# candidate for a quarter-wave resonance at this meander length.
+# candidate for a quarter-wave resonance at this meander length. This is the
+# stage-1 window; the ported selection has its own, narrower one below.
 EIGEN_MODE_WINDOW_GHZ = (3.0, 25.0)
-# Element count above which a row records its mesh and stops instead of solving,
-# so an unexpectedly large mesh cannot take the job down.
-MAX_ELEMENTS = 3_500_000
+# Rows above this element count record their mesh and skip the solve.
+MAX_ELEMENTS = 1_600_000
 
 # Absolute element sizes of the pinned sequence, in µm, the same for every row.
 GLOBAL_HMAX_UM = 100.0
@@ -908,6 +926,11 @@ PORTED_EDGE_HMIN_UM = 0.2
 PORTED_SHIFT_GHZ = 7.0
 PORTED_NEIGS = 4
 PORTED_EIGWHICH = "lr"
+# The ported mode selection window, in GHz. It is narrower than stage 1's 3 to
+# 25 GHz window and sits around the 7.0 GHz ported shift, so the ported scoring
+# considers only the candidates the saved batch output selected from. Stage 1
+# keeps its own window.
+PORTED_MODE_WINDOW_GHZ = (5.0, 9.0)
 # A ported mode is called identified only at or above this meander-to-feed p95
 # ratio, and only once its field export has been tied to the selected frequency.
 PORTED_MIN_MEANDER_FEED_RATIO = 1.0
@@ -1436,9 +1459,11 @@ if RUN_COMSOL and not MPH_AVAILABLE:
 # row searches four modes near a 7.0 GHz shift with `eigwhich="lr"`, the
 # largest-real-part selection: the same sixteen-mode search at 7.5 GHz was run on
 # the finer mesh and did not finish inside the time it was given, so the finer
-# search was retargeted to fewer modes at a lower shift. That row never
-# completed, so only one row carries a result and the port-free series has no
-# second point.
+# search was retargeted to fewer modes at a lower shift. That historical attempt
+# never completed, so only one row carries a result and the port-free series has
+# no second point. The 1 µm / 0.1 µm mesh runs to about 3.009 million elements,
+# above the 1.6M guard, so a fresh run meshes it and records a mesh-only row
+# without starting the solve.
 #
 # A different search is why the rows are compared by field and not by mode number
 # or by frequency. Which eigenvalues come back, and in what order, depends on the
@@ -1453,8 +1478,7 @@ if RUN_COMSOL and not MPH_AVAILABLE:
 #
 # The JSON is rewritten after every row, so interrupting a long series keeps the
 # rows already solved. A row that fails to mesh or solve is printed in full and
-# left out. Above `MAX_ELEMENTS` a row records only its mesh and stops, so an
-# unexpectedly large mesh cannot take the job down.
+# left out. Above `MAX_ELEMENTS`, a row records only its mesh and skips the solve.
 #
 # The coarser row, 2 µm / 0.2 µm on the meander edges, is the one solved: about
 # 1.294 million elements and the mode at 7.292084525308305 GHz with a ratio of
@@ -1774,6 +1798,10 @@ else:
 # sits just above it, so the map shows the field in the CPW gaps of whatever
 # metal the plane cuts through.
 #
+# The eigenfield amplitude follows the solver's eigenvector normalization, so the
+# V/m colour scale shows relative shape and localisation rather than a field
+# strength at a specified drive power; the ratios reported here are unaffected.
+#
 # The export covers the whole prepared box, and outside the device the field
 # falls to values far below the ones near the metal, so plotting all of it on a
 # colour scale wide enough to hold the whole range washes the device out. The
@@ -1923,8 +1951,10 @@ else:
 # **1293967** and **1473313** elements. The 2 µm / 0.2 µm row is the selected main
 # row that the saved outputs lead with; the finer 1.8 µm / 0.18 µm row was solved
 # eigen-only, without a driven window. Four modes were searched near a 7.0 GHz
-# shift with `eigwhich="lr"` on each. The selected mode is the meander-localised
-# one on all four, at **7.326615894917222 GHz**, **7.310673309271429 GHz**,
+# shift with `eigwhich="lr"` on each, and the ported field scoring selects from
+# the 5 to 9 GHz ported mode window (stage 1 keeps its own 3 to 25 GHz window).
+# The selected mode is the meander-localised one on all four, at
+# **7.326615894917222 GHz**, **7.310673309271429 GHz**,
 # **7.291804565419142 GHz** and **7.299221820394853 GHz**, with loaded eigen
 # $Q = f_r / (2|f''|)$ of **6852.73055**, **6808.34564731**, **6756.96810772** and
 # **6735.1965161720545** and meander-to-feed 95th percentile field ratios of
@@ -2093,7 +2123,9 @@ def select_ported_mode(model: Any, modes: list[complex]) -> tuple[complex, Path,
 
     The ported selection repeats stage 1's field scoring rather than reusing
     stage 1's answer: the ports load the mode, so the localised ported mode has
-    to be identified from the ported solve.
+    to be identified from the ported solve. Only modes inside
+    ``PORTED_MODE_WINDOW_GHZ`` are candidates, which is a narrower band than the
+    stage-1 window.
 
     Args:
         model: A solved ported eigenfrequency model.
@@ -2109,7 +2141,7 @@ def select_ported_mode(model: Any, modes: list[complex]) -> tuple[complex, Path,
     scored: list[tuple[float, complex, Path]] = []
     for index, mode in enumerate(modes, start=1):
         real_ghz = mode.real / 1e9
-        if not EIGEN_MODE_WINDOW_GHZ[0] <= real_ghz <= EIGEN_MODE_WINDOW_GHZ[1]:
+        if not PORTED_MODE_WINDOW_GHZ[0] <= real_ghz <= PORTED_MODE_WINDOW_GHZ[1]:
             continue
         path = ported_mode_field_path(index)
         export_mode_field(model, index, path)
@@ -2118,7 +2150,9 @@ def select_ported_mode(model: Any, modes: list[complex]) -> tuple[complex, Path,
             scored.append((ratio, mode, path))
     if not scored:
         raise ValueError(
-            "No ported mode inside the window had a usable field export: "
+            "No ported mode inside "
+            f"{PORTED_MODE_WINDOW_GHZ[0]:g} to {PORTED_MODE_WINDOW_GHZ[1]:g} GHz "
+            "had a usable field export: "
             f"{[mode.real / 1e9 for mode in modes]} GHz"
         )
     ratio, mode, path = max(scored, key=itemgetter(0))
@@ -2278,7 +2312,7 @@ def ported_layout_signature(layout: Any) -> str:
         "ported_neigs": PORTED_NEIGS,
         "ported_eigwhich": PORTED_EIGWHICH,
         "min_meander_feed_ratio": PORTED_MIN_MEANDER_FEED_RATIO,
-        "mode_window_ghz": list(EIGEN_MODE_WINDOW_GHZ),
+        "mode_window_ghz": list(PORTED_MODE_WINDOW_GHZ),
         "feed_y_um": list(FEED_Y_UM),
         "meander_box_um": MEANDER_BOX_UM,
         # Both change what a row measures, not just how finely it discretises.
@@ -2343,6 +2377,57 @@ def publish_ported_stable(record: dict[str, Any], field_source: Path) -> None:
     temporary.write_bytes(field_source.read_bytes())
     temporary.replace(field_path)
     write_json_atomically(MODEL_DIR / PORTED_EIGEN_JSON, record)
+
+
+def driven_pairing_problems(direct: dict[str, Any]) -> list[str]:
+    """Check a driven record is paired with the stable ported eigen row it was solved with.
+
+    The driven record is checkpointed before the stable row is published, so a save
+    that fails leaves the two from different runs.
+
+    Args:
+        direct: The driven verification record that was read.
+
+    Returns:
+        A list of reasons the record is not paired, empty when it is.
+    """
+    record_file = result_file(PORTED_EIGEN_JSON)
+    if record_file is None:
+        return [
+            (
+                f"the stable {PORTED_EIGEN_JSON} is not in RESULTS_DIR "
+                f"({RESULTS_DIR}), so the driven record cannot be paired with the "
+                "ported eigen row it was solved with"
+            )
+        ]
+    try:
+        stable = json.loads(record_file.read_text())
+    except (OSError, ValueError) as error:
+        return [f"{PORTED_EIGEN_JSON} is unreadable ({error})"]
+    if not isinstance(stable, dict):
+        return [f"{PORTED_EIGEN_JSON} does not hold a record object"]
+    problems: list[str] = []
+    for key in (
+        "run_id",
+        "edge_hmax_um",
+        "edge_hmin_um",
+        "element_count",
+        "layout_signature",
+    ):
+        stable_value = stable.get(key)
+        direct_value = direct.get(key)
+        # A value missing from either record is not agreement.
+        if stable_value is None or direct_value is None:
+            problems.append(
+                f"{key} is missing from {PORTED_EIGEN_JSON} ({stable_value!r}) or "
+                f"from the driven record ({direct_value!r})"
+            )
+        elif stable_value != direct_value:
+            problems.append(
+                f"{key} is {stable_value!r} in {PORTED_EIGEN_JSON} against "
+                f"{direct_value!r} in the driven record"
+            )
+    return problems
 
 
 def ported_series_row(
@@ -2805,6 +2890,11 @@ if RUN_PORTED_DRIVEN and not RUN_COMSOL:
         "client that the licensed branch starts."
     )
 elif RUN_PORTED_DRIVEN and client is not None:
+    # One ID for the whole stage-2 run, created here before either solve, so the
+    # ported eigen record, the driven record, and the driven curve all carry it.
+    # A reader can then tell whether a fresh driven result is paired with the
+    # stable ported eigen row solved in the same run or with an older one.
+    run_id = uuid.uuid4().hex[:12]
     ported_model = build_comsol_sheet_model(
         client,
         layout,
@@ -2853,6 +2943,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
             tagged_field_path, ported_selected, ported_ratio
         )
         ported_record = {
+            "run_id": run_id,
             "element_count": ported_elements,
             "edge_hmax_um": PORTED_EDGE_HMAX_UM,
             "edge_hmin_um": PORTED_EDGE_HMIN_UM,
@@ -2868,6 +2959,9 @@ elif RUN_PORTED_DRIVEN and client is not None:
                 "real": ported_selected.real,
                 "imag": ported_selected.imag,
                 "field_file": ported_field_path.name,
+                # Digest of the exact field bytes both the tagged and the stable
+                # copy hold, so a reader can tell an old record from a newer field.
+                "field_sha256": field_sha256(ported_field_source),
                 "meander_to_feed_p95": ported_ratio,
             },
             "selected_mode_identified": ported_identification[
@@ -2952,13 +3046,20 @@ elif RUN_PORTED_DRIVEN and client is not None:
                 edge_hmin_um=PORTED_EDGE_HMIN_UM,
             )
             enforce_element_budget("driven sweep", driven_elements)
-            # The run's own ID names the curve and the record, so a reader can tell a
-            # fresh curve from a stale verification record.
-            run_id = uuid.uuid4().hex[:12]
+            # The stage-2 run ID names the curve and the record, so a reader can
+            # tell a fresh curve from a stale verification record, and can pair
+            # the driven result with the stable ported eigen row of the same run.
             direct_path = MODEL_DIR / f"{DIRECT_PREFIX}-{run_id}.json"
             awe_path = MODEL_DIR / f"{AWE_CURVE_PREFIX}-{run_id}.csv"
             record: dict[str, Any] = {
                 "run_id": run_id,
+                # The driven mesh and device this window was solved on, so the
+                # reading side can require them to match the stable ported eigen
+                # row before it reports a verdict or plots the curve.
+                "edge_hmax_um": PORTED_EDGE_HMAX_UM,
+                "edge_hmin_um": PORTED_EDGE_HMIN_UM,
+                "element_count": driven_elements,
+                "layout_signature": ported_layout_signature(layout),
                 "window": {
                     "centre_ghz": center_ghz,
                     "low_ghz": low_ghz,
@@ -3253,7 +3354,12 @@ elif not RUN_PORTED_DRIVEN:
 # machine that solved. It carries a per-run ID that also appears in the curve's
 # file name, and the cell refuses to plot a curve that does not carry the
 # record's ID, so a fresh curve is never shown against a stale verification
-# record. A record that is still partial, or whose curve is missing or
+# record. It also carries the layout signature and the run ID, edge sizes, and
+# element count of the driven mesh, and the cell requires the signature to match
+# this notebook's layout and RF setup and those three mesh fields to match the
+# stable ported eigen record, so a driven result is never verified or plotted
+# against an eigen row from a different run or mesh. A record that is still
+# partial, or whose curve is missing or
 # unreadable, prints that and plots nothing rather than reading an unbound array.
 # The record is checkpointed after each direct solve and again after the curve,
 # before the model is saved, so an interrupted run keeps what it solved and stays
@@ -3343,7 +3449,23 @@ else:
         "direct_points",
     )
     missing_keys = [key for key in required_keys if key not in direct]
-    if not isinstance(curve_name, str):
+    ported_signature = ported_layout_signature(layout)
+    pairing_problems = driven_pairing_problems(direct)
+    if direct.get("layout_signature") != ported_signature:
+        print(
+            f"{direct_file.name} was solved for a different layout or RF setup "
+            f"(signature {direct.get('layout_signature', 'not recorded')!r} against "
+            f"this run's {ported_signature!r}), so its driven result does not "
+            "describe this device. Nothing is verified or plotted from it."
+        )
+    elif pairing_problems:
+        print(
+            "UNVERIFIED: the driven record is not paired with the stable ported "
+            "eigen row it was solved with ("
+            + "; ".join(pairing_problems)
+            + "). No resonance is inferred and the curve is not plotted."
+        )
+    elif not isinstance(curve_name, str):
         print(
             f"{direct_file.name} holds no curve file name yet, so the driven "
             "window has not produced a curve."
@@ -3770,7 +3892,9 @@ else:
 # the first two steps and then reverse to a smaller value, so none of these
 # frequencies or ratios is shown to be mesh independent.
 #
-# When the file is absent, the cell says so and infers nothing.
+# When the file is absent, the cell says so and infers nothing. A record whose
+# layout signature does not match this notebook's layout and RF setup is refused
+# and not shown, so a row solved for another device cannot be presented here.
 
 # %%
 ported_file = result_file(PORTED_EIGEN_JSON)
@@ -3783,45 +3907,54 @@ if ported_file is None:
     )
 else:
     ported = json.loads(ported_file.read_text())
-    selected_hz = ported.get("selected_mode_hz") or {}
-    print(
-        "Ported eigen solve: loaded modes, not comparable one to one with the "
-        "port-free modes above."
-    )
-    print(f"  elements: {ported.get('element_count')}")
-    print(
-        f"  shift: {ported.get('shift_ghz')} GHz, "
-        f"modes requested: {ported.get('neigs')}"
-    )
-    modes_hz = ported.get("modes_hz") or []
-    reals_ghz = [
-        mode["real"] / 1e9
-        for mode in modes_hz
-        if mode.get("real") is not None and np.isfinite(mode["real"])
-    ]
-    if reals_ghz:
+    ported_signature = ported_layout_signature(layout)
+    if ported.get("layout_signature") != ported_signature:
         print(
-            f"  {len(reals_ghz)} solved modes (GHz): "
-            + ", ".join(f"{value:.6f}" for value in reals_ghz)
+            f"{PORTED_EIGEN_JSON} was solved for a different layout or RF setup "
+            f"(signature {ported.get('layout_signature', 'not recorded')!r} "
+            f"against this run's {ported_signature!r}), so it does not describe "
+            "this device. It is refused and not shown."
         )
-    if selected_hz.get("real") is not None and np.isfinite(selected_hz["real"]):
-        imag_hz = selected_hz.get("imag")
-        damping = (
-            f"{imag_hz:+.4f} Hz"
-            if imag_hz is not None and np.isfinite(imag_hz)
-            else "not recorded"
-        )
-        print(
-            f"  selected ported mode: {selected_hz['real'] / 1e9:.9f} GHz, "
-            f"imaginary {damping}"
-        )
-        if imag_hz:
-            print(
-                "  its implied loss ratio f'/(2|f''|), port loading included: "
-                f"{abs(selected_hz['real'] / (2 * imag_hz)):.3g}"
-            )
     else:
-        print("  no selected ported mode is recorded in the file")
+        selected_hz = ported.get("selected_mode_hz") or {}
+        print(
+            "Ported eigen solve: loaded modes, not comparable one to one with the "
+            "port-free modes above."
+        )
+        print(f"  elements: {ported.get('element_count')}")
+        print(
+            f"  shift: {ported.get('shift_ghz')} GHz, "
+            f"modes requested: {ported.get('neigs')}"
+        )
+        modes_hz = ported.get("modes_hz") or []
+        reals_ghz = [
+            mode["real"] / 1e9
+            for mode in modes_hz
+            if mode.get("real") is not None and np.isfinite(mode["real"])
+        ]
+        if reals_ghz:
+            print(
+                f"  {len(reals_ghz)} solved modes (GHz): "
+                + ", ".join(f"{value:.6f}" for value in reals_ghz)
+            )
+        if selected_hz.get("real") is not None and np.isfinite(selected_hz["real"]):
+            imag_hz = selected_hz.get("imag")
+            damping = (
+                f"{imag_hz:+.4f} Hz"
+                if imag_hz is not None and np.isfinite(imag_hz)
+                else "not recorded"
+            )
+            print(
+                f"  selected ported mode: {selected_hz['real'] / 1e9:.9f} GHz, "
+                f"imaginary {damping}"
+            )
+            if imag_hz:
+                print(
+                    "  its implied loss ratio f'/(2|f''|), port loading included: "
+                    f"{abs(selected_hz['real'] / (2 * imag_hz)):.3g}"
+                )
+        else:
+            print("  no selected ported mode is recorded in the file")
 
 # %% [markdown]
 # ## Ported eigen field map (stage 2 output)
@@ -3832,12 +3965,23 @@ else:
 # matched terminations: this is a loaded mode's field, not the port-free one, and
 # the two are not compared here.
 #
+# As with the port-free map, the eigenfield amplitude follows the solver's
+# eigenvector normalization, so the V/m colour scale shows relative shape and
+# localisation rather than a field strength at a specified drive power; the
+# ratios reported here are unaffected.
+#
 # Before anything is drawn, the cell checks the export belongs to the mode it is
-# shown against. COMSOL annotates the export header with the complex frequency of
+# shown against. The record has to carry the SHA-256 digest of the field it was
+# solved with, and the bytes of the field file on disk have to hash to it: the
+# stable record and the stable field are replaced one after the other, so a run
+# interrupted between the two would otherwise leave an old record beside a newer
+# field. COMSOL annotates the export header with the complex frequency of
 # the solution it wrote, and the real part of that annotation has to match
 # `selected_mode_hz.real` in `comsol_cpw_ported_eigen.json` within a relative
 # $10^{-4}$. A mismatch is refused rather than plotted, so a stale field file
-# cannot be presented as the selected mode's field. On this run the annotation
+# cannot be presented as the selected mode's field. The ported eigen record also
+# has to carry this notebook's layout signature, so a field is never checked
+# against a record solved for another device. On this run the annotation
 # does match the selected 7.291804565419142 GHz mode, so the map drawn here is
 # that mode's field.
 #
@@ -3949,12 +4093,37 @@ else:
         )
     else:
         ported_record = json.loads(ported_record_file.read_text())
+        ported_signature = ported_layout_signature(layout)
         selected_hz = ported_record.get("selected_mode_hz") or {}
         selected_real_hz = selected_hz.get("real")
-        if selected_real_hz is None or not np.isfinite(selected_real_hz):
+        if ported_record.get("layout_signature") != ported_signature:
+            print(
+                f"{PORTED_EIGEN_JSON} was solved for a different layout or RF "
+                f"setup (signature "
+                f"{ported_record.get('layout_signature', 'not recorded')!r} against "
+                f"this run's {ported_signature!r}), so the field cannot be checked "
+                "against this device's ported mode and is not plotted."
+            )
+        elif selected_real_hz is None or not np.isfinite(selected_real_hz):
             print(
                 f"{PORTED_EIGEN_JSON} records no finite selected ported mode, so "
                 "there is no mode to check the field against and it is not plotted."
+            )
+        elif not (
+            isinstance(recorded_digest := selected_hz.get("field_sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", recorded_digest)
+        ):
+            print(
+                f"{PORTED_EIGEN_JSON} records no valid sha256 digest of the field it "
+                f"was solved with (selected_mode_hz.field_sha256 is "
+                f"{selected_hz.get('field_sha256')!r}), so it cannot be checked "
+                f"against {ported_field_file.name} and the field is not plotted."
+            )
+        elif field_sha256(ported_field_file) != recorded_digest:
+            print(
+                f"{ported_field_file.name} does not match the sha256 digest "
+                f"recorded in {PORTED_EIGEN_JSON}, so the record and the field are "
+                "not from the same solve and the field is not plotted."
             )
         else:
             annotation = complex_frequency_ghz(ported_field_file)
@@ -4230,7 +4399,9 @@ else:
 #    finer row at 1 µm / 0.1 µm, estimated at about 3.009 million elements,
 #    searched four modes near a 7.0 GHz shift with the largest-real-part
 #    selection, because the sixteen-mode search at 7.5 GHz did not finish on that
-#    mesh inside the time it was given, and that row never completed.
+#    mesh inside the time it was given, and that historical attempt never
+#    completed; at about 3.009 million elements the 1.6M guard now stops that row
+#    at its mesh, before any solve.
 # 5. Replotted the mode spectrum and localisation ratios and the field map for the
 #    selected port-free mode. This is a port-free result and no convergence
 #    result: one mesh is solved and the second never returned.
