@@ -551,6 +551,17 @@ for result in (*mesh_results, narrow):
 
 print("All checks passed.")
 
+# %% tags=["hide-input", "hide-output"]
+import hashlib
+
+from IPython import get_ipython
+
+executed_code = get_ipython().history_manager.input_hist_raw[1:-1]
+code_digest = hashlib.sha256(
+    "\0".join(source.rstrip() for source in executed_code).encode()
+).hexdigest()
+print(f"Executed code SHA256: {code_digest}")
+
 # %% [markdown]
 # ## Summary
 #

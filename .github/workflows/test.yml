@@ -310,6 +310,7 @@ jobs:
       - name: Check the saved Elmer result
         run: |
           uv run --no-sync python - <<'PY'
+          import hashlib
           import re
 
           import nbformat
@@ -328,6 +329,17 @@ jobs:
               for item in cell.outputs
               if item.output_type == "stream"
           )
+          fingerprint_cell = code_cells[-1]
+          expected_digest = hashlib.sha256(
+              "\0".join(cell.source.rstrip() for cell in code_cells[:-1]).encode()
+          ).hexdigest()
+          fingerprint_output = "\n".join(
+              str(item.text)
+              for item in fingerprint_cell.outputs
+              if item.output_type == "stream"
+          )
+          if fingerprint_output.strip() != f"Executed code SHA256: {expected_digest}":
+              raise SystemExit("Saved Elmer result does not match the notebook code")
           required = (
               "Elmer notebook run mode: high accuracy (element_order=3",
               "Final reported mutual capacitance:",
