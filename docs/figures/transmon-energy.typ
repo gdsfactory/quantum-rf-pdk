@@ -88,7 +88,7 @@
       font: heading-font,
       weight: "bold",
       fill: light-blue,
-      [$C_Σ$ sets $E_C = e^2 / (2 C_Σ)$],
+      [$C_Σ$ sets $E_upright(C) = e^2 / (2 C_Σ)$],
     ),
     anchor: "west",
   )
@@ -106,7 +106,7 @@
       font: heading-font,
       weight: "bold",
       fill: dark-blue,
-      [$I_c$ sets $E_J = Φ_0 I_c / (2 π)$],
+      [$I_upright(c)$ sets $E_upright(J) = Φ_0 I_upright(c) / (2 π)$],
     ),
     anchor: "west",
   )

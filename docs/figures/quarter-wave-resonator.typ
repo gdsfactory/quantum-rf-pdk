@@ -60,7 +60,7 @@
       font: heading-font,
       weight: "bold",
       fill: light-blue,
-      $C_c$,
+      $C_upright(c)$,
     ),
     anchor: "west",
   )

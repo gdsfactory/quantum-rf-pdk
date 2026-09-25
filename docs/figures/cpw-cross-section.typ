@@ -34,7 +34,7 @@
   rect((0.5, 1.25), (12.6, 3.55), fill: paper, stroke: 0.7pt + rule)
   content(
     (6.55, 2.0),
-    text(size: 11pt, fill: muted, [substrate  εᵣ]),
+    text(size: 11pt, fill: muted, [substrate  $ε_upright(r)$]),
     anchor: "center",
   )
   line((0.5, 3.55), (12.6, 3.55), stroke: 0.7pt + rule)
@@ -62,7 +62,7 @@
   ))
   content(
     (6.55, 5.45),
-    text(size: 8pt, font: heading-font, weight: "bold", [w: center width]),
+    text(size: 8pt, font: heading-font, weight: "bold", [$w$: center width]),
     anchor: "center",
   )
   line((3.6, 2.98), (4.65, 2.98), stroke: 0.8pt + dark-blue, mark: (
@@ -79,12 +79,12 @@
   ))
   content(
     (4.12, 2.68),
-    text(size: 8pt, font: heading-font, weight: "bold", fill: dark-blue, [s]),
+    text(size: 8pt, font: heading-font, weight: "bold", fill: dark-blue, [$s$]),
     anchor: "center",
   )
   content(
     (8.98, 2.68),
-    text(size: 8pt, font: heading-font, weight: "bold", fill: dark-blue, [s]),
+    text(size: 8pt, font: heading-font, weight: "bold", fill: dark-blue, [$s$]),
     anchor: "center",
   )
   line((9.05, 3.55), (9.05, 4.1), stroke: 0.8pt + ink, mark: (
