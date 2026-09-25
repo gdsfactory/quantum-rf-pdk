@@ -44,6 +44,7 @@ import math
 from typing import TYPE_CHECKING, Any
 
 from shapely.geometry import Point, Polygon
+from shapely.geometry.base import BaseGeometry
 
 from qpdk.simulation.comsol import _add_polygon, _format_number
 
@@ -247,14 +248,15 @@ def _face_probe(
     component: Any,
     tag: str,
     point: tuple[float, float],
-    region: Polygon,
+    region: BaseGeometry,
     z_half_extent_um: float,
 ) -> tuple[int, ...]:
     """Add a Box probe that fits inside ``region`` around ``point`` and read it back.
 
     The box stops a quarter of the way to the region's nearest boundary and no
     further than ``z_half_extent_um`` in z, so it holds the one face that region
-    became and no exterior face, however narrow the metal or the hole is.
+    became and no exterior face, however narrow the region is. ``region`` may be
+    several pieces, as a hole cut by an island is, as long as ``point`` is in it.
 
     Returns:
         The entities the selection resolved to, as COMSOL reports them.
@@ -285,15 +287,17 @@ def _check_imprint(
     """Prove the metal polygons and their holes survived the union as faces.
 
     A point inside a polygon has to pick exactly one face, otherwise the polygon
-    is degenerate or the imprint left the interface whole. A point inside a hole
-    has to pick exactly one face too, and a face other than the metal one: a hole
-    that imprints nothing leaves the metal solid there, and a hole that imprints
-    as part of the metal is not a hole at all.
+    is degenerate or the imprint left the interface whole. A hole is probed where
+    it is dielectric, past any island sitting in it, and that point has to pick
+    exactly one face too, a face other than the metal one: a hole that imprints
+    nothing leaves the metal solid there, and a hole that imprints as part of the
+    metal is not a hole at all.
 
     Raises:
         ValueError: If a polygon or hole probe does not select exactly one face,
-            or if a hole probe selects the metal face, which means the holes were
-            imprinted nowhere and the metal sheet is solid.
+            if a hole probe selects the metal face, which means the holes were
+            imprinted nowhere and the metal sheet is solid, or if a hole holds no
+            dielectric to probe because other metal polygons cover it.
     """
     z_half_extent_um = _SELECTION_Z_FRACTION * min(
         substrate_thickness_um, air_height_um
@@ -316,6 +320,18 @@ def _check_imprint(
             )
         for hole, points in enumerate(polygon.holes):
             hole_region = Polygon(points)
+            # Another island can sit inside the hole, so the probe has to aim at
+            # what is dielectric there, not at the hole's own middle.
+            for other, other_polygon in enumerate(layout.polygons):
+                if other != index:
+                    hole_region = hole_region.difference(
+                        Polygon(other_polygon.outline, other_polygon.holes)
+                    )
+            if hole_region.is_empty:
+                raise ValueError(
+                    f"hole {hole} of metal polygon {index} leaves no dielectric to "
+                    "probe: other metal polygons cover it completely"
+                )
             hole_point = hole_region.representative_point()
             hole_faces = _face_probe(
                 component,

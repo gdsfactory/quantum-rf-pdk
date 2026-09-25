@@ -134,12 +134,16 @@ currents, and substrate modes that analytical models may miss
 - :doc:`notebooks/comsol_cpw_resonator` — Driven CPW resonator solve on the QPDK coupled
   quarter-wave layout with extended feed ports and an enlarged ground: MPh builds the
   air/silicon sheet model, PEC, two numeric TEM ports and a boundary mode analysis. The
-  ported 4 um / 0.4 um edge mesh (659682 elements) gives a localised eigenmode at
-  7.326615895 GHz with a meander-to-feed p95 field ratio of 2.824. Direct driven solves
-  show S21 = -24.193 dB at 7.326509512 GHz against near-0 dB flanks. A 95-row adaptive
-  sweep matches four direct anchors within 0.208 dB, but its reconstructed rows have a
-  maximum two-port power sum of 1.002911, so the fit is labelled approximate. A final 3
-  um / 2 um mesh-refinement run is still in progress; convergence is not claimed.
+  selected ported 2 um / 0.2 um edge mesh (1293967 elements) gives a localised eigenmode
+  at 7.291804565 GHz with a meander-to-feed p95 field ratio of 5.348. Direct driven
+  solves on that mesh show S21 = -23.617 dB at 7.291698182 GHz against near-0 dB flanks.
+  A 95-row adaptive sweep matches the four direct anchors within 0.191 dB, but its
+  reconstructed rows reach a two-port power sum of 1.002849, so the fit is labelled
+  approximate. Repeating the identical geometry and physics with 4 / 0.4, 3 / 0.3 and
+  2 / 0.2 um meander-edge meshes gives 659682, 847139 and 1293967 elements and selected
+  frequencies 7.326615895, 7.310673309 and 7.291804565 GHz, i.e. signed shifts of
+  -15.943 and -18.869 MHz whose magnitudes grow, so the series does not demonstrate
+  mesh convergence and no frequency or Q is called converged.
 - :doc:`notebooks/comsol_qubit_capacitance` — Solves the pad capacitance of an EM-only
   QPDK double-pad transmon in COMSOL: removes the Josephson-junction mask, extracts the
   pads and ground plane, builds the air/silicon sheet model, and adds an Electrostatics
