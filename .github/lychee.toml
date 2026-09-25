@@ -14,6 +14,8 @@ exclude = [
   "https://git-lfs.github.com.*",
   # Matplotlib embeds this SVG DTD reference, whose endpoint no longer serves the file
   "https?://www.w3.org/Graphics/SVG/1\\.1/DTD/svg11\\.dtd/?",
+  # Matplotlib's SVG metadata uses Dublin Core schema IDs that redirect in a loop
+  "https?://purl.org/dc/.*",
   # github variables
   "\\$OWNER",
   "\\$REPOSITORY",

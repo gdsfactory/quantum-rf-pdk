@@ -96,6 +96,7 @@ if "google.colab" in sys.modules:
     )
 
 # %% tags=["hide-input", "hide-output"]
+import hashlib
 import json
 import math
 from itertools import pairwise
@@ -223,6 +224,22 @@ def explain_missing_results(name: str) -> None:
         "or set RESULTS_DIR to a directory that already holds an exported "
         f"{name}."
     )
+
+
+def file_sha256(path: Path) -> str:
+    """Hash a file's bytes without loading it into memory.
+
+    The field export runs to hundreds of megabytes, so it is streamed rather
+    than read whole just to be hashed.
+
+    Args:
+        path: File to hash.
+
+    Returns:
+        The SHA-256 digest as lowercase hexadecimal.
+    """
+    with path.open("rb") as handle:
+        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 prefer_svg_figures()
@@ -463,6 +480,8 @@ if RUN_COMSOL and MPH_AVAILABLE:
                 "substrate_thickness_um": SUBSTRATE_THICKNESS_UM,
                 "air_height_um": AIR_HEIGHT_UM,
                 "silicon_relative_permittivity": 11.7,
+                # A new solve invalidates any earlier field export.
+                "field_sha256": None,
             },
             indent=2,
         )
@@ -477,18 +496,38 @@ if RUN_COMSOL and MPH_AVAILABLE:
 
 # %%
 if RUN_COMSOL and MPH_AVAILABLE and model is not None:
-    plane = model.java.result().dataset().create("cutplane", "CutPlane")
+    result = model.java.result()
+    # Rerunning this cell must not collide with the nodes a previous run left, so
+    # an existing tag is reused and every setting is written again before export.
+    datasets = result.dataset()
+    plane = (
+        result.dataset("cutplane")
+        if datasets.hasTag("cutplane")
+        else datasets.create("cutplane", "CutPlane")
+    )
     plane.set("planetype", "quick")
     plane.set("quickplane", "xy")
     plane.set("quickz", "1[um]")
     plane.set("data", "dset1")
 
-    field_export = model.java.result().export().create("field", "Data")
+    exports = result.export()
+    field_export = (
+        result.export("field")
+        if exports.hasTag("field")
+        else exports.create("field", "Data")
+    )
     field_export.set("data", "cutplane")
     field_export.set("expr", ["V", "es.normE"])
-    field_export.set("filename", str(MODEL_DIR / "comsol_qubit_field.txt"))
+    field_path = MODEL_DIR / "comsol_qubit_field.txt"
+    field_export.set("filename", str(field_path))
     field_export.run()
-    print(f"Exported V and es.normE to {MODEL_DIR / 'comsol_qubit_field.txt'}")
+
+    # Bind the exported bytes to this solve only after export succeeds.
+    metrics_path = MODEL_DIR / "comsol_qubit_metrics.json"
+    solved_metrics = json.loads(metrics_path.read_text())
+    solved_metrics["field_sha256"] = file_sha256(field_path)
+    metrics_path.write_text(json.dumps(solved_metrics, indent=2) + "\n")
+    print(f"Exported V and es.normE to {field_path}")
 
 # %% [markdown]
 # ## Saved capacitance result
@@ -503,6 +542,7 @@ metrics_file = result_file(METRICS_JSON)
 capacitance_f: float | None = None
 stored_energy_j: float | None = None
 voltage_v: float | None = None
+field_sha256: str | None = None
 
 if metrics_file is None:
     explain_missing_results(METRICS_JSON)
@@ -511,6 +551,7 @@ else:
     capacitance_f = float(metrics["capacitance_f"])
     stored_energy_j = float(metrics["stored_energy_j"])
     voltage_v = float(metrics["voltage_v"])
+    field_sha256 = str(metrics["field_sha256"]) if metrics.get("field_sha256") else None
 
     capacitance_from_energy_f = 2.0 * stored_energy_j / voltage_v**2
     print(
@@ -569,6 +610,17 @@ field_file = result_file(FIELD_TXT)
 
 if field_file is None:
     explain_missing_results(FIELD_TXT)
+elif field_sha256 is None:
+    print(
+        f"No field digest in {METRICS_JSON}, so {FIELD_TXT} cannot be tied to a "
+        "solve and is not displayed. Rerun the field export from this solve."
+    )
+elif file_sha256(field_file) != field_sha256:
+    print(
+        f"{FIELD_TXT} does not match the digest in {METRICS_JSON}, so it belongs "
+        "to a different solve and is not displayed. Rerun the field export from "
+        "the solve whose metrics are being read."
+    )
 else:
     field = np.loadtxt(field_file, comments="%")
     field_x, field_y = field[:, 0], field[:, 1]

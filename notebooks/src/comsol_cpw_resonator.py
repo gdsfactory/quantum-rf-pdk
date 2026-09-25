@@ -2164,7 +2164,11 @@ def solve_awe_curve(
     # each requested frequency is matched to its nearest returned row. The stop
     # sits half a step past the last frequency, so a row beyond that is a range
     # that ran one point too far.
-    if frequencies_ghz.size < 2 or not np.all(np.diff(frequencies_ghz) > 0.0):
+    if (
+        frequencies_ghz.size < 2
+        or not np.all(np.isfinite(frequencies_ghz))
+        or not np.all(np.diff(frequencies_ghz) > 0.0)
+    ):
         raise RuntimeError(
             "the adaptive sweep returned frequencies that are not a finite, "
             "strictly increasing series"
@@ -2179,12 +2183,15 @@ def solve_awe_curve(
             f"the adaptive sweep returned a row at {frequencies_ghz[-1]:.9f} GHz, "
             f"past the requested last frequency {requested_ghz[-1]:.9f} GHz"
         )
-    insertion = np.clip(
-        np.searchsorted(frequencies_ghz, requested_ghz), 1, frequencies_ghz.size - 1
-    )
+    # A requested point outside the returned range must not be clipped onto an
+    # endpoint and pass as zero distance, so each side is clamped to a valid row
+    # and the gap is the absolute distance to the nearest of the two.
+    insertion = np.searchsorted(frequencies_ghz, requested_ghz)
+    left = np.clip(insertion - 1, 0, frequencies_ghz.size - 1)
+    right = np.clip(insertion, 0, frequencies_ghz.size - 1)
     gaps_ghz = np.minimum(
-        requested_ghz - frequencies_ghz[insertion - 1],
-        frequencies_ghz[insertion] - requested_ghz,
+        np.abs(requested_ghz - frequencies_ghz[left]),
+        np.abs(frequencies_ghz[right] - requested_ghz),
     )
     if gaps_ghz.max() > atol_ghz:
         missing = int(np.count_nonzero(gaps_ghz > atol_ghz))

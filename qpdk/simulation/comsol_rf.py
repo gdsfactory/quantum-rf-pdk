@@ -56,10 +56,6 @@ _EDGE_HALF_THICKNESS_UM = 0.001
 #: Slack in µm around the layout bounding box when picking a whole port face.
 _PLANE_TRANSVERSE_MARGIN_UM = 1.0
 
-#: Half-height in µm of the boxes that span the whole model in z. The box only
-#: has to enclose the domains, and anything past the geometry is ignored.
-_DOMAIN_SCAN_HALF_HEIGHT_UM = 1.0e4
-
 #: Tolerance in µm for a feed port sitting on a bounding-box face, and for two
 #: orientations pointing the same way. A cropped layout snaps its planes
 #: outwards to the database grid, so the port centre can miss the box by up to
@@ -151,6 +147,9 @@ def _box_selection(
 ) -> tuple[int, ...]:
     """Add one Box selection and read back the entities it resolved to.
 
+    An axis left out of ``spans`` keeps COMSOL's default bound, which is
+    unbounded in both directions.
+
     Returns:
         The entities the selection resolved to, as COMSOL reports them.
     """
@@ -159,8 +158,7 @@ def _box_selection(
     # entitydim is a string: an int makes JPype pick the numeric set() overload.
     selection.set("entitydim", str(entitydim))
     selection.set("condition", condition)
-    for axis in "xyz":
-        low, high = spans[axis]
+    for axis, (low, high) in spans.items():
         selection.set(f"{axis}min", _format_number(low))
         selection.set(f"{axis}max", _format_number(high))
     return tuple(selection.entities())
@@ -229,13 +227,17 @@ def _add_port_faces(
 ) -> None:
     """Select the air and silicon faces of one port cross section.
 
-    The box is a thin slab on the port plane that spans the layout sideways and
-    the whole model in z, so it holds both dielectric halves of the cross
-    section and nothing else.
+    The box is a thin slab on the port plane that spans the layout sideways, so
+    it holds both dielectric halves of the cross section and nothing else. z is
+    left unbounded rather than given a finite span: the air block can be taller
+    than any fixed height, and a capped box would then report only the silicon
+    face, a half port.
 
     Raises:
-        ValueError: If the plane carries no face, which means the model's
-            geometry does not reach the layout's bounding box.
+        ValueError: If the plane does not carry exactly two faces, one air and
+            one silicon, which means the model's geometry does not reach the
+            layout's bounding box or its two dielectric blocks are not both cut
+            by the port plane.
     """
     axial, transverse = ("x", "y") if axis == 0 else ("y", "x")
     low, high = (
@@ -255,14 +257,13 @@ def _add_port_faces(
                 low - _PLANE_TRANSVERSE_MARGIN_UM,
                 high + _PLANE_TRANSVERSE_MARGIN_UM,
             ),
-            "z": (-_DOMAIN_SCAN_HALF_HEIGHT_UM, _DOMAIN_SCAN_HALF_HEIGHT_UM),
         },
     )
-    if not entities:
+    if len(entities) != 2:
         raise ValueError(
-            f"the {tag} box selects no face on the port plane at {axial} = "
-            f"{plane} µm: the model has to hold the sheet geometry this layout "
-            "was extracted from"
+            f"the {tag} box selects {len(entities)} faces on the port plane at "
+            f"{axial} = {plane} µm, expected two, one air and one silicon: the "
+            "model has to hold the sheet geometry this layout was extracted from"
         )
 
 
