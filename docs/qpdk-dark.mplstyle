@@ -1,0 +1,86 @@
+# QPDK Matplotlib Style — dark
+# Dark counterpart of qpdk.mplstyle, used for the second render of every
+# `.. plot::` figure (see `_render_figures_for_both_themes` in docs/conf.py).
+#
+# Everything that is not a colour — fonts, sizes, grid geometry, line widths —
+# is kept identical to qpdk.mplstyle so the two renders differ only in palette
+# and swapping themes does not reflow the figure.
+#
+# Colours follow the documentation's dark palette, the same mapping used for
+# the Typst figures in docs/docs.just:
+#   #ffffff -> #14181e  page background
+#   #0e1116 -> #f0f2f6  ink (text)
+#   #5b6472 -> #c5cbd5  muted ink (ticks)
+#   #dcdfe4 -> #586272  rules (spines, grid)
+
+font.family: sans-serif
+font.sans-serif: Inter, DejaVu Sans, Helvetica, Arial, sans-serif
+font.monospace: Code New Roman, DejaVu Sans Mono, Courier New, Courier, monospace
+
+# Use Fira Math for math rendering (custom fontset, no LaTeX backend needed)
+mathtext.fontset: custom
+mathtext.rm: Fira Math
+mathtext.it: Fira Math:italic
+mathtext.bf: Fira Math:bold
+mathtext.cal: Fira Math
+mathtext.sf: Fira Math
+mathtext.fallback: cm
+axes.formatter.use_mathtext: true
+
+# Titles use Outfit bold (font family is set via monkey-patch in ipython_config.py)
+axes.titleweight: bold
+
+# Figure settings for better documentation appearance
+figure.facecolor: 14181e
+figure.edgecolor: 14181e
+figure.autolayout: true
+
+# Axes settings for cleaner plots
+axes.labelsize: 11
+axes.titlesize: 12
+axes.grid: true
+axes.xmargin: 0
+axes.facecolor: 14181e
+axes.linewidth: 1.2
+axes.edgecolor: 586272
+axes.labelcolor: f0f2f6
+axes.titlecolor: f0f2f6
+
+# The default (tab10) cycle is mixed at these luminances against a near-black
+# background, so each colour is lifted while keeping tab10's hue order: a
+# series has the same position, and roughly the same hue, in both renders.
+axes.prop_cycle: cycler('color', ['76a9ee', 'ffa95e', '5fd38d', 'ff7b7b', 'c79bf0', 'c08f74', 'f79fd0', 'a3adb8', 'd7dd5c', '5fd3d3'])
+
+text.color: f0f2f6
+
+# Grid settings
+grid.color: 586272
+grid.alpha: 0.3
+grid.linestyle: --
+grid.linewidth: 0.5
+
+# Legend settings
+legend.frameon: false
+legend.fontsize: 10
+legend.loc: best
+legend.fancybox: true
+legend.shadow: false
+legend.borderpad: 0.25
+
+# Line settings
+lines.linewidth: 1.5
+lines.markersize: 6
+
+# Tick settings
+xtick.labelsize: 10
+ytick.labelsize: 10
+xtick.color: c5cbd5
+ytick.color: c5cbd5
+xtick.labelcolor: f0f2f6
+ytick.labelcolor: f0f2f6
+
+# Save settings (for non-inline backends)
+savefig.dpi: 300
+savefig.bbox: tight
+savefig.facecolor: 14181e
+savefig.edgecolor: 14181e
