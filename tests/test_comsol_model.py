@@ -10,12 +10,33 @@ replacing that helper.
 from __future__ import annotations
 
 import importlib
+import subprocess
+import sys
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
 from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout, ComsolPolygon
+
+
+def test_module_imports_without_mph():
+    """Pytest can collect the module when the optional COMSOL extra is absent."""
+    code = (
+        "import sys; sys.modules['mph'] = None; "
+        "from qpdk.simulation.comsol_model import COMSOL; "
+        "assert COMSOL.__base__ is object; "
+        "COMSOL(None, None)"
+    )
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+        shell=False,
+    )
+    assert result.returncode != 0
+    assert "ImportError: Install qpdk[comsol]" in result.stderr
 
 
 def _layout() -> ComsolLayout:
