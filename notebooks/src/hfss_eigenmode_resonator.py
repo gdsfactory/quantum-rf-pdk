@@ -83,7 +83,12 @@ from qpdk import PDK
 from qpdk.cells.resonator import resonator
 from qpdk.config import PATH
 from qpdk.models.resonator import resonator_frequency
-from qpdk.simulation import HFSS, prepare_component_for_aedt
+from qpdk.simulation import (
+    HFSS,
+    detach_desktop_logging,
+    fit_view,
+    prepare_component_for_aedt,
+)
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -184,6 +189,8 @@ hfss = Hfss(
     new_desktop=True,
     version="2025.2",
 )
+# PyAEDT logs through the desktop by default; reading it per message can drop the session.
+detach_desktop_logging(hfss)
 hfss.modeler.model_units = "um"
 
 print(f"HFSS project created: {hfss.project_file}")
@@ -233,7 +240,7 @@ print(f"Created air region with PEC boundary: {air_region_name}")
 
 # %%
 # Ensure HFSS model fits the screen
-hfss.modeler.fit_all()
+fit_view(hfss)
 
 # Save screenshot
 img_dir = PATH.repo / "docs" / "_static" / "images"
@@ -339,7 +346,7 @@ if results["frequencies_ghz"]:
 
 # %%
 # Ensure the model fits the screen
-hfss.modeler.fit_all()
+fit_view(hfss)
 
 # Create a surface field plot of the electric field magnitude on the substrate
 plot = hfss.post.create_fieldplot_surface(

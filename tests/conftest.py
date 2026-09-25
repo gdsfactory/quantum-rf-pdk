@@ -11,6 +11,7 @@ import gdsfactory as gf
 import pytest
 
 from qpdk import PDK
+from qpdk.singleton import SingletonMeta
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -95,6 +96,26 @@ def pytest_collection_modifyitems(
 def activate_pdk() -> None:
     """Activate PDK."""
     PDK.activate()
+
+
+@pytest.fixture
+def isolated_wrapper_cache():
+    """Reset AEDT-wrapper singleton entries around each test.
+
+    The cache is process-global, so without a reset wrapper tests would
+    receive instances leaked by earlier tests or leak their own into
+    later ones. PATH and PDK entries are deliberately never touched.
+    """
+    # Imported here, not at module level: qpdk.simulation pulls in extras such as
+    # polars, and the GDSFactory+ job collects this suite without them.
+    from qpdk.simulation import HFSS, Q2D, Q3D  # ruff: ignore[import-outside-top-level]
+
+    wrappers = (HFSS, Q3D, Q2D)
+    for cls in wrappers:
+        SingletonMeta._instances.pop(cls, None)
+    yield
+    for cls in wrappers:
+        SingletonMeta._instances.pop(cls, None)
 
 
 @pytest.fixture(autouse=True)

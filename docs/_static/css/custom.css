@@ -30,6 +30,12 @@ html {
     var(--pst-font-family-monospace-system);
 }
 
+.bd-content .qpdk-figure {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* Tighten heading tracking. Outfit benefits from negative letter-spacing at display sizes. */
 h1,
 .h1 {

@@ -363,8 +363,6 @@ def quarter_wave_resonator_coupled(
     *,
     start_with_bend: bool = False,
     end_with_bend: bool = False,
-    open_start: bool = True,
-    open_end: bool = False,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
     coupling_straight_length: float = 200.0,
     coupling_gap: float = 20.0,
@@ -373,6 +371,10 @@ def quarter_wave_resonator_coupled(
 
     Uses :func:`~qpdk.cells.resonator.resonator_coupled` as the basis but
     removes the shorted end port from the output ports.
+
+    The terminations are fixed: the coupled end is open and the far end is
+    shorted. Use :func:`~qpdk.cells.resonator.resonator_coupled` if other
+    terminations are needed.
 
     .. svgbob::
 
@@ -395,8 +397,6 @@ def quarter_wave_resonator_coupled(
         cross_section: Cross-section specification for the resonator.
         start_with_bend: If True, starts the resonator with a bend.
         end_with_bend: If True, ends the resonator with a bend.
-        open_start: If True, adds an etch section at the start of the resonator.
-        open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
         coupling_straight_length: Length of the coupling waveguide section in μm.
         coupling_gap: Gap between the resonator and coupling waveguide in μm.
@@ -413,8 +413,8 @@ def quarter_wave_resonator_coupled(
         cross_section=cross_section,
         start_with_bend=start_with_bend,
         end_with_bend=end_with_bend,
-        open_start=open_start,
-        open_end=open_end,
+        open_start=True,
+        open_end=False,
         cross_section_non_resonator=cross_section_non_resonator,
         coupling_straight_length=coupling_straight_length,
         coupling_gap=coupling_gap,
@@ -425,6 +425,8 @@ def quarter_wave_resonator_coupled(
     for port in res_ref.ports:
         if port.name != "resonator_o2":  # Skip the shorted end port
             c.add_port(port=port)
+
+    c.info += res_ref.cell.info
 
     return c
 

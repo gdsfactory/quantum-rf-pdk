@@ -1,5 +1,10 @@
-info: {}
-name: quarter_wave_resonator_coupled_L4000_M6_BSbend_circular_397bfada
+info:
+  coupling_gap: 20
+  coupling_length: 200
+  cross_section_name: coplanar_waveguide
+  length: 4000
+  resonator_type: quarter_wave
+name: quarter_wave_resonator_coupled_L4000_M6_BSbend_circular_e32fad4e
 ports:
   coupling_o1:
     center:
@@ -37,6 +42,4 @@ settings:
   end_with_bend: false
   length: 4000
   meanders: 6
-  open_end: false
-  open_start: true
   start_with_bend: false

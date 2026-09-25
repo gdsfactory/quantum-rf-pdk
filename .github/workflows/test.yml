@@ -23,7 +23,11 @@ jobs:
       - run: uv sync --no-dev --no-install-project
       - name: Fetch gdsfactoryplus converter
         run: just fetch-gfp
+      # lychee's pre-commit hook installs its own binary via cargo-binstall,
+      # which needs the token to avoid 403 rate limiting from api.github.com.
       - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   get-python-versions:
     uses: ./.github/workflows/get-python-versions.yml
   test-code:

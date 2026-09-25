@@ -58,6 +58,9 @@
 #
 # These effects are critical for designing high-fidelity quantum processors
 # {cite:p}`krantzQuantumEngineersGuide2019,kjaergaardSuperconductingQubits2020`.
+#
+# ![A shaped microwave pulse drives the zero-to-one transition but may also cause leakage to the second excited state](figures/pulse-leakage.svg)
+#
 # For some recent examples of `qutip` pulse-level simulation in the context of superconducting
 # qubits, see {cite:p}`salmenkiviMitigationCoherentErrors2023a,anderssonPulselevelSimulationsFermionicsimulation2024`.
 

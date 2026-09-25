@@ -24,12 +24,18 @@ from qpdk.simulation import (
     HFSS,
     Q2D,
     Q3D,
+    detach_desktop_logging,
+    fit_view,
     layer_stack_to_gds_mapping,
     lumped_port_rectangle_from_cpw,
     object_names_to_materials,
     prepare_component_for_aedt,
 )
-from qpdk.simulation.aedt_base import _get_layer_number_from_level
+from qpdk.simulation.aedt_base import (
+    _first_real_value,
+    _get_layer_number_from_level,
+    export_component_to_gds_temp,
+)
 from qpdk.tech import LAYER_STACK_FLIP_CHIP, coplanar_waveguide
 
 # Maximum wall-clock time for a single AEDT-bound call. AEDT startup can
@@ -552,10 +558,15 @@ class MockModeler:
         """Initialize with the names of objects created by the GDS import."""
         self.object_names = list(object_names)
         self._objects = {name: MockAEDTObject(name) for name in object_names}
+        self.fit_all_calls = 0
 
     def __getitem__(self, name: str) -> MockAEDTObject:
         """Return the modeler object with the given name."""
         return self._objects[name]
+
+    def fit_all(self) -> None:
+        """Count a view-fitting call, which a headless session must not make."""
+        self.fit_all_calls += 1
 
 
 @dataclass
@@ -604,6 +615,131 @@ class MockQ3dApp:
     def assign_material(self, assignment: list, material: str) -> None:
         for obj in assignment:
             self.assigned_materials[str(obj)] = material
+
+
+class MockDesktop:
+    """Minimal stand-in for a PyAEDT desktop."""
+
+    def __init__(self, non_graphical: bool) -> None:
+        """Initialize with the mode the session was constructed in."""
+        self.non_graphical = non_graphical
+
+
+class MockLogger:
+    """Minimal stand-in for PyAEDT's logger, which holds the desktop it logs through."""
+
+    def __init__(self, desktop: MockDesktop | None = None) -> None:
+        """Initialize holding a desktop, as a real logger does."""
+        if desktop is not None:
+            self._desktop_class = desktop
+
+
+class MockApp:
+    """Minimal stand-in for a PyAEDT application, for the session helpers."""
+
+    def __init__(self, non_graphical: bool) -> None:
+        """Initialize an application with a modeler, a desktop and a logger."""
+        self.desktop_class = MockDesktop(non_graphical)
+        self.modeler = MockModeler([])
+        self.logger = MockLogger(self.desktop_class)
+
+
+class MockSolutionData:
+    """Minimal stand-in for a PyAEDT SolutionData built for one expression."""
+
+    def __init__(self, expression: str, values: list[float], unit: str = "pF") -> None:
+        """Initialize with the values that expression should read back as."""
+        self.expressions = [expression]
+        self.units_data = {expression: unit}
+        self.calls: list[tuple[str | None, str | None]] = []
+        self._values = values
+
+    def get_expression_data(
+        self, expression: str | None = None, formula: str | None = None
+    ) -> tuple[list[float], list[float]]:
+        """Return the canned values, recording how the caller asked for them."""
+        self.calls.append((expression, formula))
+        return [0.0], self._values
+
+
+class MockExpressionData:
+    """SolutionData stand-in whose real data is whatever the test hands it."""
+
+    def __init__(self, returned: tuple | None) -> None:
+        """Initialize with the pair get_expression_data should answer with."""
+        self.returned = returned
+        self.calls: list[dict] = []
+
+    def get_expression_data(self, **kwargs):
+        """Return the canned pair, recording how the caller asked for it."""
+        self.calls.append(kwargs)
+        return self.returned
+
+
+class MockPost:
+    """Minimal stand-in for a PyAEDT post processor returning canned results."""
+
+    def __init__(
+        self,
+        quantities: dict[str, dict[str, float | None]],
+        unit: str = "pF",
+        solved: bool = True,
+    ) -> None:
+        """Initialize with the value to return for each reported quantity.
+
+        An expression mapping to ``None`` stands for one AEDT lists but has no
+        samples for, which PyAEDT answers with empty arrays. ``solved=False`` stands
+        for a setup that was never solved, where ``get_solution_data`` returns False.
+        """
+        self.quantities = quantities
+        self.unit = unit
+        self.solved = solved
+        self.solutions: list[MockSolutionData] = []
+        self.requests: list[tuple[str | None, dict]] = []
+
+    def available_report_quantities(self, quantities_category: str) -> list[str]:
+        """Return the expression names a report category offers."""
+        return list(self.quantities.get(quantities_category, {}))
+
+    def get_solution_data(self, expressions: str | None = None, **kwargs):
+        """Return a SolutionData for an expression, or False as PyAEDT does."""
+        self.requests.append((expressions, kwargs))
+        if not self.solved or expressions is None:
+            return False
+        for category in self.quantities.values():
+            if expressions in category:
+                value = category[expressions]
+                values = [] if value is None else [value]
+                solution = MockSolutionData(expressions, values, self.unit)
+                self.solutions.append(solution)
+                return solution
+        return False
+
+
+class MockHfssApp:
+    """Minimal stand-in for a PyAEDT Hfss application exposing its post processor."""
+
+    def __init__(self, post: MockPost) -> None:
+        """Initialize with the canned post processor."""
+        self.post = post
+
+
+class MockBoundary:
+    """Minimal stand-in for a PyAEDT boundary."""
+
+    def __init__(self, name: str, boundary_type: str) -> None:
+        """Initialize with the name and type a real boundary reports."""
+        self.name = name
+        self.type = boundary_type
+
+
+class MockQ3dNetsApp:
+    """Minimal stand-in for a PyAEDT Q3d application with nets and a post processor."""
+
+    def __init__(self, post: MockPost, net_names: list[str]) -> None:
+        """Initialize with signal nets drawn from the given names."""
+        self.post = post
+        self.boundaries = [MockBoundary(name, "SignalNet") for name in net_names]
 
 
 def test_object_names_to_materials():
@@ -665,6 +801,168 @@ def test_q3d_import_assigns_materials_from_layer_stack(tmp_path):
     assert app.assigned_materials["Substrate"] != "pec"
 
 
+def test_fit_view_skips_a_non_graphical_session():
+    """Fitting the view is a screen operation, so a headless session must not try."""
+    graphical = MockApp(non_graphical=False)
+    headless = MockApp(non_graphical=True)
+
+    fit_view(graphical)
+    fit_view(headless)
+
+    assert graphical.modeler.fit_all_calls == 1
+    assert headless.modeler.fit_all_calls == 0
+
+
+def test_detach_desktop_logging_drops_the_desktop_reference():
+    """PyAEDT's logger reads the desktop on every message unless it is dropped."""
+    app = MockApp(non_graphical=True)
+    assert app.logger._desktop_class is app.desktop_class
+
+    detach_desktop_logging(app)
+
+    assert app.logger._desktop_class is None
+
+
+def test_detach_desktop_logging_tolerates_a_renamed_attribute():
+    """A PyAEDT that renamed the attribute must not get a dead one instead."""
+    app = MockApp(non_graphical=True)
+    app.logger = MockLogger()
+
+    messages = []
+    handler_id = logger.add(messages.append, level="WARNING")
+    try:
+        detach_desktop_logging(app)
+    finally:
+        logger.remove(handler_id)
+
+    assert not hasattr(app.logger, "_desktop_class")
+    assert any("_desktop_class" in str(message) for message in messages)
+
+
+@pytest.mark.parametrize("keep_file", [True, False])
+def test_export_component_to_gds_temp_writes_no_context_info(
+    tmp_path: Path, keep_file: bool
+):
+    """AEDT's importer fails on the context info gdsfactory writes by default."""
+    component = gf.components.rectangle(size=(10, 10), layer=LAYER.M1_DRAW)
+    gds_path = tmp_path / "component.gds" if keep_file else None
+
+    with export_component_to_gds_temp(component, gds_path) as path:
+        layout = gf.kdb.Layout()
+        layout.read(str(path))
+        context_info = [info.name for info in layout.each_meta_info()]
+
+    assert not any(name.startswith("kfactory:") for name in context_info)
+
+    # The flag is what leaves the info out: the same component written by hand
+    # carries it, which is what the export used to hand AEDT.
+    with_context_info = tmp_path / "with_context_info.gds"
+    component.write_gds(str(with_context_info), with_metadata=True)
+    layout = gf.kdb.Layout()
+    layout.read(str(with_context_info))
+
+    assert any(info.name.startswith("kfactory:") for info in layout.each_meta_info())
+
+
+@pytest.mark.usefixtures("isolated_wrapper_cache")
+def test_get_eigenmode_results_reads_real_values():
+    """The readback uses the method the pinned PyAEDT has, not data_real."""
+    post = MockPost({
+        "Eigen Modes": {"Mode 1": 4.8389e9},
+        "Eigen Q": {"Q(Mode 1)": 1234.5},
+    })
+    sim = HFSS(MockHfssApp(post))
+
+    results = sim.get_eigenmode_results("EigenmodeSetup")
+
+    assert results["frequencies"] == pytest.approx([4.8389])
+    assert results["q_factors"] == pytest.approx([1234.5])
+    assert results["setup"] == "EigenmodeSetup"
+    # No expression means the active one, which is how the removed data_real read
+    assert [solution.calls for solution in post.solutions] == [[(None, "real")]] * 2
+
+
+@pytest.mark.parametrize(
+    "returned",
+    [(None, None), ([], []), ([0.0], [])],
+    ids=["no-rows", "empty-arrays", "empty-values"],
+)
+def test_first_real_value_returns_none_without_data(returned):
+    """An expression with no data reads as None, whatever shape PyAEDT returns."""
+    solution = MockExpressionData(returned)
+
+    assert _first_real_value(solution) is None
+    assert solution.calls == [{"formula": "real"}]
+
+
+def test_first_real_value_reads_the_first_value():
+    """Real data comes back as a sweep and its values; the value is what counts."""
+    solution = MockExpressionData(([1.0, 2.0], [4.5, 5.5]))
+
+    assert _first_real_value(solution) == pytest.approx(4.5)
+
+
+@pytest.mark.usefixtures("isolated_wrapper_cache")
+def test_get_eigenmode_results_skips_a_quantity_without_samples():
+    """A quantity AEDT has no samples for is left out, not indexed into."""
+    post = MockPost({
+        "Eigen Modes": {"Mode 1": 4.8389e9, "Mode 2": None},
+        "Eigen Q": {"Q(Mode 1)": None},
+    })
+    sim = HFSS(MockHfssApp(post))
+
+    results = sim.get_eigenmode_results("EigenmodeSetup")
+
+    assert results["frequencies"] == pytest.approx([4.8389])
+    assert results["q_factors"] == []
+
+
+@pytest.mark.usefixtures("isolated_wrapper_cache")
+def test_get_eigenmode_results_handles_an_unsolved_setup():
+    """An unsolved setup returns False from get_solution_data, not an empty solution."""
+    post = MockPost(
+        {"Eigen Modes": {"Mode 1": 4.8389e9}, "Eigen Q": {"Q(Mode 1)": 1234.5}},
+        solved=False,
+    )
+    sim = HFSS(MockHfssApp(post))
+
+    results = sim.get_eigenmode_results("EigenmodeSetup")
+
+    assert results["frequencies"] == []
+    assert results["q_factors"] == []
+
+
+@pytest.mark.usefixtures("isolated_wrapper_cache")
+def test_get_capacitance_matrix_converts_the_reported_unit():
+    """Q3D reports the matrix in pF or fF, and the values must come back in farads."""
+    post = MockPost(
+        {"Capacitance": {"C(o1,o1)": 8.77, "C(o1,o2)": 1.23, "C(o2,o2)": 4.0}},
+        unit="fF",
+    )
+    sim = Q3D(MockQ3dNetsApp(post, ["o1", "o2"]))
+
+    matrix = sim.get_capacitance_matrix("Q3DSetup")
+
+    assert matrix.columns == ["C(o1,o1)", "C(o1,o2)", "C(o2,o2)"]
+    assert matrix.item(0, "C(o1,o1)") == pytest.approx(8.77e-15)
+    assert matrix.item(0, "C(o1,o2)") == pytest.approx(1.23e-15)
+    assert [solution.calls for solution in post.solutions] == [[(None, "real")]] * 3
+
+
+@pytest.mark.usefixtures("isolated_wrapper_cache")
+def test_get_capacitance_matrix_skips_an_expression_without_samples():
+    """An expression AEDT has no samples for is left out, not indexed into."""
+    post = MockPost(
+        {"Capacitance": {"C(o1,o1)": 8.77, "C(o1,o2)": None, "C(o2,o2)": 4.0}},
+        unit="fF",
+    )
+    sim = Q3D(MockQ3dNetsApp(post, ["o1", "o2"]))
+
+    matrix = sim.get_capacitance_matrix("Q3DSetup")
+
+    assert matrix.columns == ["C(o1,o1)", "C(o2,o2)"]
+
+
 @pytest.mark.hfss
 def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
     """Test creating an HFSS project and drawing a component."""
@@ -691,6 +989,12 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
         label="Hfss",
     ) as hfss_app:
         hfss_sim = HFSS(hfss_app)
+        # The helpers run against a real session here: the draw below is what proves
+        # they left it alive, and the assertion catches a PyAEDT that renamed the
+        # attribute the logger keeps the desktop in (the stub tests cannot).
+        detach_desktop_logging(hfss_app)
+        fit_view(hfss_app)
+        assert hfss_app.logger._desktop_class is None
         # Use direct draw which we know is stable on Linux
         success = _run_with_timeout(
             lambda: hfss_sim.import_component(comp), label="HFSS.import_component"
