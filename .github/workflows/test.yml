@@ -210,6 +210,12 @@ jobs:
   test-matlab:
     timeout-minutes: 90
     runs-on: ubuntu-latest
+    env:
+      # The MATLAB licence granted to open-source GitHub projects does not include the RF
+      # Toolbox, so the notebook's S-parameter sections are skipped here. They still detect
+      # the toolbox at run time; this variable just makes the skip explicit and deterministic.
+      # Remove it to exercise those sections on a runner whose licence does cover RF Toolbox.
+      QPDK_SKIP_RF_TOOLBOX: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
