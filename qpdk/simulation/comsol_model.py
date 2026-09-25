@@ -27,7 +27,9 @@ if TYPE_CHECKING:
 else:
     try:
         mph = importlib.import_module("mph")
-    except ImportError:
+    except ModuleNotFoundError as error:
+        if error.name != "mph":
+            raise
         mph = SimpleNamespace(Model=object)
 
 

@@ -39,6 +39,29 @@ def test_module_imports_without_mph():
     assert "ImportError: Install qpdk[comsol]" in result.stderr
 
 
+def test_dependency_import_failure_is_not_reported_as_missing_mph():
+    """An installed MPh with a broken dependency keeps its original error."""
+    code = """
+import importlib
+original = importlib.import_module
+def broken(name, package=None):
+    if name == "mph":
+        raise ModuleNotFoundError("JPype failed to load", name="jpype")
+    return original(name, package=package)
+importlib.import_module = broken
+import qpdk.simulation.comsol_model
+"""
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+        shell=False,
+    )
+    assert result.returncode != 0
+    assert "ModuleNotFoundError: JPype failed to load" in result.stderr
+
+
 def _layout() -> ComsolLayout:
     """A one-polygon layout to attach to a model.
 
