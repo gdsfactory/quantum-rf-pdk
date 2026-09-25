@@ -47,28 +47,28 @@
 #
 # ![Transmon circuit with a Josephson junction shunted by capacitance, setting EJ and EC](figures/transmon-energy.svg)
 #
-# The shunt capacitance sets $E_C$, while the junction critical current sets $E_J$.
+# The shunt capacitance sets $E_\text{C}$, while the junction critical current sets $E_\text{J}$.
 #
 # ```{math}
 # :label: eq:transmon-hamiltonian-netket
-# \hat{H} = 4 E_C (\hat{n} - n_g)^2 - E_J \cos\hat{\varphi},
+# \hat{H} = 4 E_\text{C} (\hat{n} - n_\text{g})^2 - E_\text{J} \cos\hat{\varphi},
 # ```
-# where $E_C$ is the charging energy, $E_J$ the Josephson energy, $\hat{n}$
-# the Cooper-pair number operator, $n_g$ the offset charge, and
+# where $E_\text{C}$ is the charging energy, $E_\text{J}$ the Josephson energy, $\hat{n}$
+# the Cooper-pair number operator, $n_\text{g}$ the offset charge, and
 # $\hat{\varphi}$ the superconducting phase.
 #
 # In the truncated charge basis $\{|n\rangle\}$ with
 # $n \in \{-n_\text{cut}, \ldots, +n_\text{cut}\}$:
 #
-# - **Diagonal elements**: $\langle n | \hat{H} | n \rangle = 4 E_C (n - n_g)^2$
-# - **Off-diagonal elements**: $\langle n \pm 1 | \hat{H} | n \rangle = -E_J / 2$
+# - **Diagonal elements**: $\langle n | \hat{H} | n \rangle = 4 E_\text{C} (n - n_\text{g})^2$
+# - **Off-diagonal elements**: $\langle n \pm 1 | \hat{H} | n \rangle = -E_\text{J} / 2$
 #
-# In the transmon regime ($E_J / E_C \gg 1$), the qubit frequency and
+# In the transmon regime ($E_\text{J} / E_\text{C} \gg 1$), the qubit frequency and
 # anharmonicity are approximately
 # {cite:p}`kochChargeinsensitiveQubitDesign2007a`:
 # ```{math}
 # :label: eq:transmon-approx-netket
-# \omega_q \approx \sqrt{8 E_J E_C} - E_C, \qquad \alpha \approx -E_C.
+# \omega_\text{q} \approx \sqrt{8 E_\text{J} E_\text{C}} - E_\text{C}, \qquad \alpha \approx -E_\text{C}.
 # ```
 
 # %% tags=["hide-input", "hide-output"]
@@ -160,7 +160,7 @@ H_transmon = nk.operator.LocalOperator(hi, np.asarray(H_mat), acting_on=[0])
 # NetKet provides
 # [`lanczos_ed`](https://netket.readthedocs.io/en/latest/api/exact.html#netket.exact.lanczos_ed)
 # for efficient sparse-matrix diagonalisation.  We extract the lowest five
-# eigenvalues and compute the qubit frequency $\omega_q = E_1 - E_0$ and
+# eigenvalues and compute the qubit frequency $\omega_\text{q} = E_1 - E_0$ and
 # the anharmonicity $\alpha = (E_2 - E_1) - (E_1 - E_0)$.
 
 # %%
@@ -178,12 +178,12 @@ omega_t_approx, _ = ej_ec_to_frequency_and_anharmonicity(EJ, EC)
 display(
     Math(rf"""
 \textbf{{Transmon Spectrum (NetKet):}} \\
-E_J/E_C = {EJ / EC:.0f} \\
-f_{{01}} = {f01:.4f}\,\mathrm{{GHz}} \quad
-(\text{{approx.}}\;\sqrt{{8 E_J E_C}} - E_C = {omega_t_approx:.4f}\,\mathrm{{GHz}}) \\
-f_{{12}} = {f12:.4f}\,\mathrm{{GHz}} \\
-\alpha = f_{{12}} - f_{{01}} = {alpha_nk:.4f}\,\mathrm{{GHz}} \quad
-(\text{{approx.}}\;-E_C = -{EC:.4f}\,\mathrm{{GHz}})
+E_\text{{J}}/E_\text{{C}} = {EJ / EC:.0f} \\
+f_{{01}} = {f01:.4f}\,\text{{GHz}} \quad
+(\text{{approx.}}\;\sqrt{{8 E_\text{{J}} E_\text{{C}}}} - E_\text{{C}} = {omega_t_approx:.4f}\,\text{{GHz}}) \\
+f_{{12}} = {f12:.4f}\,\text{{GHz}} \\
+\alpha = f_{{12}} - f_{{01}} = {alpha_nk:.4f}\,\text{{GHz}} \quad
+(\text{{approx.}}\;-E_\text{{C}} = -{EC:.4f}\,\text{{GHz}})
 """)
 )
 
@@ -310,9 +310,9 @@ e_gs_variational = float(energies[-1])
 display(
     Math(rf"""
 \textbf{{Ground State Energy Comparison:}} \\
-E_{{0, \text{{exact}}}} = {e0_exact:.6f}\,\mathrm{{GHz}} \\
-E_{{0, \text{{variational}}}} = {e_gs_variational:.6f}\,\mathrm{{GHz}} \\
-\text{{Error:}} \quad |E_\text{{exact}} - E_\text{{var}}| = {abs(e0_exact - e_gs_variational):.2e}\,\mathrm{{GHz}}
+E_{{0, \text{{exact}}}} = {e0_exact:.6f}\,\text{{GHz}} \\
+E_{{0, \text{{variational}}}} = {e_gs_variational:.6f}\,\text{{GHz}} \\
+\text{{Error:}} \quad |E_\text{{exact}} - E_\text{{var}}| = {abs(e0_exact - e_gs_variational):.2e}\,\text{{GHz}}
 """)
 )
 
@@ -321,12 +321,12 @@ E_{{0, \text{{variational}}}} = {e_gs_variational:.6f}\,\mathrm{{GHz}} \\
 # ## Charge Dispersion
 #
 # A key design criterion for the transmon is its exponential insensitivity
-# to charge noise.  As $E_J/E_C$ increases, the energy levels flatten as a
-# function of the offset charge $n_g$, suppressing dephasing from
+# to charge noise.  As $E_\text{J}/E_\text{C}$ increases, the energy levels flatten as a
+# function of the offset charge $n_\text{g}$, suppressing dephasing from
 # charge fluctuations {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
 #
-# We sweep $n_g$ across one period and compute the first three transition
-# energies for several values of $E_J/E_C$.
+# We sweep $n_\text{g}$ across one period and compute the first three transition
+# energies for several values of $E_\text{J}/E_\text{C}$.
 
 # %%
 ng_sweep = jnp.linspace(-0.5, 0.5, 101)
@@ -348,7 +348,7 @@ for ax, ratio in zip(axes, ej_ec_ratios):
 
     for j in range(1, 4):
         ax.plot(ng_sweep, levels[:, j], label=rf"$E_{j} - E_0$")
-    ax.set_xlabel(r"$n_g$")
+    ax.set_xlabel(r"$n_\text{g}$")
     ax.set_title(rf"$E_J/E_C = {ratio}$")
     ax.grid(True, alpha=0.3)
 
@@ -360,8 +360,8 @@ plt.show()
 
 # %% [markdown]
 # The plots demonstrate how the energy levels become increasingly flat with
-# respect to the offset charge $n_g$ as the ratio $E_J/E_C$ grows.  In the
-# transmon regime ($E_J/E_C \gtrsim 50$), the charge dispersion is
+# respect to the offset charge $n_\text{g}$ as the ratio $E_\text{J}/E_\text{C}$ grows.  In the
+# transmon regime ($E_\text{J}/E_\text{C} \gtrsim 50$), the charge dispersion is
 # exponentially suppressed, making the qubit insensitive to charge noise—a
 # key design advantage {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
 
@@ -448,10 +448,10 @@ chi_netket = (evals_full[idx_11] - evals_full[idx_10]) - (
 display(
     Math(rf"""
 \textbf{{Dispersive Shift (NetKet):}} \\
-g = {g_val * 1e3:.0f}\,\mathrm{{MHz}}, \quad
-\omega_r = {omega_r_val:.1f}\,\mathrm{{GHz}} \\
-\Delta = \omega_q - \omega_r = {f01 - omega_r_val:.3f}\,\mathrm{{GHz}} \\
-\chi = {chi_netket * 1e3:.3f}\,\mathrm{{MHz}}
+g = {g_val * 1e3:.0f}\,\text{{MHz}}, \quad
+\omega_\text{{r}} = {omega_r_val:.1f}\,\text{{GHz}} \\
+\Delta = \omega_\text{{q}} - \omega_\text{{r}} = {f01 - omega_r_val:.3f}\,\text{{GHz}} \\
+\chi = {chi_netket * 1e3:.3f}\,\text{{MHz}}
 """)
 )
 
@@ -493,8 +493,8 @@ ax.axhline(0, color="gray", linestyle="--", alpha=0.5)
 ax.set_xlabel("Coupling strength $g$ (MHz)")
 ax.set_ylabel(r"Dispersive shift $\chi$ (MHz)")
 ax.set_title(
-    rf"Dispersive shift vs. coupling ($\omega_q={f01:.2f}$ GHz, "
-    rf"$\omega_r={omega_r_val:.1f}$ GHz)"
+    rf"Dispersive shift vs. coupling ($\omega_\text{{q}} = {f01:.2f}\,\text{{GHz}}$, "
+    rf"$\omega_\text{{r}} = {omega_r_val:.1f}\,\text{{GHz}}$)"
 )
 ax.legend()
 ax.grid(True, alpha=0.3)
@@ -508,9 +508,9 @@ plt.show()
 # with a target dispersive shift.  The workflow is:
 #
 # 1. **Choose target $\chi$** based on readout speed requirements
-# 2. **Select $\omega_q$, $\omega_r$, $\alpha$** from qubit design goals
+# 2. **Select $\omega_\text{q}$, $\omega_\text{r}$, $\alpha$** from qubit design goals
 # 3. **Determine $g$** from target $\chi$ using qpdk helpers
-# 4. **Convert to circuit parameters** ($C_\Sigma$, $L_J$, $C_c$)
+# 4. **Convert to circuit parameters** ($C_\Sigma$, $L_\text{J}$, $C_\text{c}$)
 # 5. **Convert to layout parameters** (resonator length, capacitor geometry)
 #
 # ### Step 1–3: From target $\chi$ to coupling $g$
@@ -538,13 +538,13 @@ g_design = dispersive_shift_to_coupling(
 display(
     Math(rf"""
 \textbf{{Step 1–3: Hamiltonian Design}} \\
-\text{{Target:}}\quad \chi = {chi_target_mhz:.1f}\,\mathrm{{MHz}} \\
-E_J = {EJ_design:.1f}\,\mathrm{{GHz}}, \quad
-E_C = {EC_design:.1f}\,\mathrm{{GHz}} \\
-\omega_q = {omega_t_design:.3f}\,\mathrm{{GHz}}, \quad
-\alpha \approx -E_C = -{EC_design:.1f}\,\mathrm{{GHz}} \\
-\omega_r = {omega_r_design:.1f}\,\mathrm{{GHz}} \\
-\text{{Required coupling:}}\quad g = {float(g_design) * 1e3:.1f}\,\mathrm{{MHz}}
+\text{{Target:}}\quad \chi = {chi_target_mhz:.1f}\,\text{{MHz}} \\
+E_\text{{J}} = {EJ_design:.1f}\,\text{{GHz}}, \quad
+E_\text{{C}} = {EC_design:.1f}\,\text{{GHz}} \\
+\omega_\text{{q}} = {omega_t_design:.3f}\,\text{{GHz}}, \quad
+\alpha \approx -E_\text{{C}} = -{EC_design:.1f}\,\text{{GHz}} \\
+\omega_\text{{r}} = {omega_r_design:.1f}\,\text{{GHz}} \\
+\text{{Required coupling:}}\quad g = {float(g_design) * 1e3:.1f}\,\text{{MHz}}
 """)
 )
 
@@ -553,9 +553,9 @@ E_C = {EC_design:.1f}\,\mathrm{{GHz}} \\
 #
 # Using the qpdk helper functions, we convert the Hamiltonian parameters to
 # circuit parameters:
-# - Total qubit capacitance $C_\Sigma$ from $E_C$ via `ec_to_capacitance`
-# - Josephson inductance $L_J$ from $E_J$ via `ej_to_inductance`
-# - Coupling capacitance $C_c$ from $g$ via `coupling_strength_to_capacitance`
+# - Total qubit capacitance $C_\Sigma$ from $E_\text{C}$ via `ec_to_capacitance`
+# - Josephson inductance $L_\text{J}$ from $E_\text{J}$ via `ej_to_inductance`
+# - Coupling capacitance $C_\text{c}$ from $g$ via `coupling_strength_to_capacitance`
 
 # %%
 # Total qubit capacitance
@@ -604,10 +604,10 @@ C_c = float(
 display(
     Math(rf"""
 \textbf{{Step 4: Circuit Parameters}} \\
-C_\Sigma = {C_sigma * 1e15:.1f}\,\mathrm{{fF}} \\
-L_J = {L_J * 1e9:.2f}\,\mathrm{{nH}} \\
-C_r = {C_r * 1e15:.1f}\,\mathrm{{fF}} \\
-C_c = {C_c * 1e15:.2f}\,\mathrm{{fF}}
+C_\Sigma = {C_sigma * 1e15:.1f}\,\text{{fF}} \\
+L_\text{{J}} = {L_J * 1e9:.2f}\,\text{{nH}} \\
+C_\text{{r}} = {C_r * 1e15:.1f}\,\text{{fF}} \\
+C_\text{{c}} = {C_c * 1e15:.2f}\,\text{{fF}}
 """)
 )
 
@@ -626,11 +626,11 @@ f_resonator_achieved = resonator_frequency(
 display(
     Math(rf"""
 \textbf{{Step 5: Layout Parameters}} \\
-\text{{Resonator length:}}\quad l = {resonator_length:.0f}\,\mathrm{{\mu m}} \\
-\text{{Resonator CPW width:}}\quad w = 10\,\mathrm{{\mu m}}, \quad
-\text{{gap}} = 6\,\mathrm{{\mu m}} \\
+\text{{Resonator length:}}\quad l = {resonator_length:.0f}\,\text{{µm}} \\
+\text{{Resonator CPW width:}}\quad w = 10\,\text{{µm}}, \quad
+\text{{gap}} = 6\,\text{{µm}} \\
 \text{{Resonator frequency achieved:}}\quad
-f_r = {f_resonator_achieved / 1e9:.3f}\,\mathrm{{GHz}}
+f_\text{{r}} = {f_resonator_achieved / 1e9:.3f}\,\text{{GHz}}
 """)
 )
 
@@ -663,14 +663,14 @@ display(
     Math(rf"""
 \textbf{{Readout System Parameters:}} \\
 Q_\text{{ext}} = {Q_ext:,} \\
-\kappa = \omega_r / Q_\text{{ext}} = {kappa * 1e6:.1f}\,\mathrm{{kHz}} \\
+\kappa = \omega_\text{{r}} / Q_\text{{ext}} = {kappa * 1e6:.1f}\,\text{{kHz}} \\
 \gamma_\text{{Purcell}} = \kappa (g/\Delta)^2
-  = {gamma_purcell * 1e6:.2f}\,\mathrm{{kHz}}
+  = {gamma_purcell * 1e6:.2f}\,\text{{kHz}}
   \quad \Rightarrow \quad T_\text{{Purcell}}
-  = {T_purcell * 1e6:.0f}\,\mathrm{{\mu s}} \\
+  = {T_purcell * 1e6:.0f}\,\text{{µs}} \\
 \Gamma_\phi(\bar{{n}}={n_bar:.0f})
   = 8\chi^2 \bar{{n}} / \kappa
-  = {gamma_phi * 1e6:.2f}\,\mathrm{{kHz}} \\
+  = {gamma_phi * 1e6:.2f}\,\text{{kHz}} \\
 |\chi| / \kappa = {chi_over_kappa:.1f}
   \quad (\text{{want}} \gtrsim 1 \text{{ for high-fidelity readout}})
 """)
@@ -686,7 +686,7 @@ Q_\text{{ext}} = {Q_ext:,} \\
 #
 # Each cell exposes design parameters (pad dimensions, gap widths,
 # junction dimensions) that determine the Hamiltonian parameters
-# $E_J$, $E_C$, and $g$ through their effect on the capacitance and
+# $E_\text{J}$, $E_\text{C}$, and $g$ through their effect on the capacitance and
 # Josephson energy of the circuit.
 
 # %%
@@ -706,10 +706,10 @@ plt.show()
 #
 # | Layout parameter | Circuit parameter | Hamiltonian parameter |
 # |---|---|---|
-# | Pad dimensions, gap width | $C_\Sigma$ (total capacitance) | $E_C = e^2 / (2 C_\Sigma)$ |
-# | Junction area, critical current | $L_J$ (Josephson inductance) | $E_J = \Phi_0^2 / (4\pi^2 L_J)$ |
-# | Coupling finger length / gap | $C_c$ (coupling capacitance) | $g \propto C_c / \sqrt{C_\Sigma C_r}$ |
-# | CPW length, width, gap | $Z_0$, $\varepsilon_\text{eff}$ | $\omega_r$ (resonator frequency) |
+# | Pad dimensions, gap width | $C_\Sigma$ (total capacitance) | $E_\text{C} = e^2 / (2 C_\Sigma)$ |
+# | Junction area, critical current | $L_\text{J}$ (Josephson inductance) | $E_\text{J} = \Phi_0^2 / (4\pi^2 L_\text{J})$ |
+# | Coupling finger length / gap | $C_\text{c}$ (coupling capacitance) | $g \propto C_\text{c} / \sqrt{C_\Sigma C_\text{r}}$ |
+# | CPW length, width, gap | $Z_0$, $\varepsilon_\text{eff}$ | $\omega_\text{r}$ (resonator frequency) |
 
 # %% [markdown]
 # ## Summary: Complete Design Table
@@ -721,24 +721,24 @@ plt.show()
 # %%
 data = [
     ("Target", "Target dispersive shift $\\chi$", f"{chi_target_mhz:.1f}", "MHz"),
-    ("Hamiltonian", "$E_J$", f"{EJ_design:.1f}", "GHz"),
-    ("Hamiltonian", "$E_C$", f"{EC_design:.1f}", "GHz"),
-    ("Hamiltonian", "$\\omega_q$ (NetKet)", f"{f01:.4f}", "GHz"),
-    ("Hamiltonian", "$\\omega_q$ (approx.)", f"{omega_t_design:.4f}", "GHz"),
+    ("Hamiltonian", "$E_\\text{J}$", f"{EJ_design:.1f}", "GHz"),
+    ("Hamiltonian", "$E_\\text{C}$", f"{EC_design:.1f}", "GHz"),
+    ("Hamiltonian", "$\\omega_\\text{q}$ (NetKet)", f"{f01:.4f}", "GHz"),
+    ("Hamiltonian", "$\\omega_\\text{q}$ (approx.)", f"{omega_t_design:.4f}", "GHz"),
     ("Hamiltonian", "$\\alpha$ (NetKet)", f"{alpha_nk:.4f}", "GHz"),
-    ("Hamiltonian", "$\\omega_r$", f"{omega_r_design:.1f}", "GHz"),
+    ("Hamiltonian", "$\\omega_\\text{r}$", f"{omega_r_design:.1f}", "GHz"),
     ("Hamiltonian", "$g$", f"{float(g_design) * 1e3:.1f}", "MHz"),
     ("Circuit", "$C_\\Sigma$", f"{C_sigma * 1e15:.1f}", "fF"),
-    ("Circuit", "$L_J$", f"{L_J * 1e9:.2f}", "nH"),
-    ("Circuit", "$C_r$", f"{C_r * 1e15:.1f}", "fF"),
-    ("Circuit", "$C_c$", f"{C_c * 1e15:.2f}", "fF"),
+    ("Circuit", "$L_\\text{J}$", f"{L_J * 1e9:.2f}", "nH"),
+    ("Circuit", "$C_\\text{r}$", f"{C_r * 1e15:.1f}", "fF"),
+    ("Circuit", "$C_\\text{c}$", f"{C_c * 1e15:.2f}", "fF"),
     ("Layout", "Resonator length", f"{resonator_length:.0f}", "µm"),
     ("Layout", "Resonator CPW width", "10", "µm"),
     ("Layout", "Resonator CPW gap", "6", "µm"),
     ("Layout", "Resonator freq", f"{f_resonator_achieved / 1e9:.3f}", "GHz"),
-    ("Readout", "$Q_{\\mathrm{ext}}$", f"{Q_ext:,}", ""),
+    ("Readout", "$Q_{\\text{ext}}$", f"{Q_ext:,}", ""),
     ("Readout", "$\\kappa$", f"{kappa * 1e6:.1f}", "kHz"),
-    ("Readout", "$T_{\\mathrm{Purcell}}$", f"{T_purcell * 1e6:.0f}", "µs"),
+    ("Readout", "$T_{\\text{Purcell}}$", f"{T_purcell * 1e6:.0f}", "µs"),
     ("Readout", "$|\\chi|/\\kappa$", f"{chi_over_kappa:.1f}", ""),
 ]
 

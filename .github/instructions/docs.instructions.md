@@ -15,6 +15,13 @@ to be mergeable**, so treat a change that can break the build as blocking.
 - Links are checked by `lychee` (`.github/lychee.toml`). A new external link must be reachable and stable; if it is
   inherently flaky or rejects automated requests, it belongs in the `exclude` list with a comment explaining why.
 - Use the RST `:math:` role for math, not `$...$`.
+- Set non-variables upright, per ISO 80000-2: italic for variables only, `\text{}` for units (`\,\text{GHz}`,
+  `\,\text{fF}`, `\,\text{µm}`) and for subscripts/superscripts that name a thing rather than index one (`E_\text{J}`,
+  `\omega_\text{r}`, `Q_\text{ext}`, `\kappa_\text{Purcell}`). Numeric and mathematical indices stay italic (`S_{21}`,
+  `T_1`, `f_{01}`, `\sum_k a_k`). Prefer `\text{}` over `\mathrm{}`/`\textrm{}`; `\mathtt{}` stays for literal Python
+  identifiers. This covers `:math:` roles, `.. math::` directives, and MyST `$...$` and ```` ```{math} ```` blocks. The
+  Typst sources under `docs/figures/` follow the same intent with `upright(...)` or a quoted string in place of a bare
+  italic identifier.
 
 ## Bibliography (`docs/bibliography.bib`)
 

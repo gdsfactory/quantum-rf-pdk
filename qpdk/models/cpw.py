@@ -168,9 +168,9 @@ def cpw_parameters(
 
     .. math::
 
-        \varepsilon_{\text{eff, complex}} = \varepsilon_{\text{eff}} \left( 1 - j q \frac{\varepsilon_r}{\varepsilon_{\text{eff}}} \tan \delta \right)
+        \varepsilon_{\text{eff, complex}} = \varepsilon_{\text{eff}} \left( 1 - j q \frac{\varepsilon_\text{r}}{\varepsilon_{\text{eff}}} \tan \delta \right)
 
-    where :math:`q = (\varepsilon_{\text{eff}} - 1) / (\varepsilon_r - 1)`.
+    where :math:`q = (\varepsilon_{\text{eff}} - 1) / (\varepsilon_\text{r} - 1)`.
 
     Conductor thickness corrections follow
     Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
@@ -247,7 +247,7 @@ def cpw_ep_r_from_cross_section(
         The substrate permittivity is determined by the PDK layer stack
         (``LAYER_STACK["Substrate"]``), not by the cross-section geometry.
         All CPW cross-sections on the same substrate share the same
-        :math:`\varepsilon_r`.  The *cross_section* parameter is accepted
+        :math:`\varepsilon_\text{r}`.  The *cross_section* parameter is accepted
         for API symmetry with :func:`cpw_z0_from_cross_section`.
 
     Args:

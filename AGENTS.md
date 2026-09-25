@@ -168,6 +168,13 @@ All PRs must pass:
 1. **Write comprehensive tests**: Add tests for new functionality following existing patterns in `tests/`
 1. **Document quantum-specific behavior**: Include docstrings explaining the quantum physics and device characteristics,
    ideally with citations. Use `:math:` notation for inline LaTeX math (avoid `$` or `$$`).
+1. **Set non-variables upright in math**: Follow ISO 80000-2 — italic is for variables only, everything else is upright
+   via `\text{}`. That means units (`\,\text{GHz}`, `\,\text{fF}`, `\,\text{µm}`) and any subscript or superscript that
+   names a thing rather than an index (`E_\text{J}`, `C_\text{q}`, `\omega_\text{r}`, `Q_\text{ext}`,
+   `\kappa_\text{Purcell}`). Numeric and mathematical indices stay italic (`S_{21}`, `T_1`, `f_{01}`, `\sum_k a_k`).
+   Prefer `\text{}` over `\mathrm{}` or `\textrm{}`, and keep `\mathtt{}` for literal Python identifiers. This applies
+   to every math carrier: `:math:` roles, `.. math::` directives, `$...$` and ```` ```{math} ```` blocks in notebooks,
+   and matplotlib labels — the last need a raw string (`r"..."` / `rf"..."`), or `\text` becomes a tab character.
 1. **Expose new components to PDK**: Import new all components from new files with the form `from ... import *` in
    `qpdk/cells/__init__.py`
 1. **Use predefined layers**: Prefer predefined layers from the `LAYER` enumerable in `qpdk/tech.py`. An agent rarely
@@ -240,9 +247,9 @@ The `qpdk/models/` directory contains S-parameter and circuit models for quantum
 
 Omitting a model port from a SAX circuit applies a matched load, not an open circuit:
 
-- Matched load: $Z_L = Z_0$ and $\\Gamma = 0$, so incident power is absorbed.
-- Open circuit: $Z_L \\to \\infty$ and $\\Gamma = +1$.
-- Short circuit: $Z_L = 0$ and $\\Gamma = -1$.
+- Matched load: $Z\_\\text{L} = Z_0$ and $\\Gamma = 0$, so incident power is absorbed.
+- Open circuit: $Z\_\\text{L} \\to \\infty$ and $\\Gamma = +1$.
+- Short circuit: $Z\_\\text{L} = 0$ and $\\Gamma = -1$.
 
 Do not leave a port disconnected when the model requires an open or short boundary. For a quarter-wave coupled
 resonator, `resonator_o1` is open and `resonator_o2` is shorted. Prefer `quarter_wave_resonator_coupled`, which applies

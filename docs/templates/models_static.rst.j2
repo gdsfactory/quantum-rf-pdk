@@ -10,7 +10,7 @@
 
 {% if func_name in items[0].sax_models and func_name not in items[0].skip_plots %}
 .. plot::
-   :caption: :func:`qpdk.models.{{ func_name }}` S-parameters for :math:`f\in[1,10]\,\mathrm{GHz}`.
+   :caption: :func:`qpdk.models.{{ func_name }}` S-parameters for :math:`f\in[1,10]\,\text{GHz}`.
 
    import jax.numpy as jnp
    from qpdk.models import {{ func_name }}

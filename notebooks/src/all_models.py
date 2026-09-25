@@ -158,11 +158,11 @@ plt.axvline(
     float(f_r / 1e9),
     color="r",
     linestyle="--",
-    label=f"Theoretical $f_r$ ({float(f_r / 1e9):.2f} GHz)",
+    label=rf"Theoretical $f_\text{{r}} = {float(f_r / 1e9):.2f}\,\text{{GHz}}$",
 )
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
-plt.title(f"LC Resonator ($L={L * 1e9}$ nH, $C={C * 1e15}$ fF)")
+plt.title(rf"LC Resonator ($L={L * 1e9}\,\text{{nH}}$, $C={C * 1e15}\,\text{{fF}}$)")
 plt.grid(True)
 plt.legend()
 plt.show(block=False)
@@ -227,7 +227,7 @@ ax2.plot(
 ax2.set_ylabel("Phase [rad]")
 ax2.legend(loc="upper right")
 
-plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
+plt.title(rf"Capacitor $S$-parameters ($C={capacitance * 1e15}\,\text{{fF}}$)")
 plt.show(block=False)
 
 inductance = 1e-9
@@ -265,7 +265,7 @@ ax2.plot(
 ax2.set_ylabel("Phase [rad]")
 ax2.legend(loc="upper right")
 
-plt.title(f"Inductor $S$-parameters ($L={inductance * 1e9}\\,$nH)")
+plt.title(rf"Inductor $S$-parameters ($L={inductance * 1e9}\,\text{{nH}}$)")
 plt.show()
 
 # %%
@@ -300,7 +300,7 @@ for i, gap in enumerate(gaps_plate):
 plt.xlabel("Pad Length (µm)")
 plt.ylabel("Capacitance (fF)")
 plt.title(
-    rf"Plate Capacitor Capacitance ($\mathtt{{width}}=${width_plate} µm, $\epsilon_r={ep_r}$)"
+    rf"Plate Capacitor Capacitance ($\mathtt{{width}} = {width_plate}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
 )
 plt.grid(True)
 plt.legend()
@@ -334,7 +334,7 @@ for i, n in enumerate(finger_counts):
 plt.xlabel("Overlap Length (µm)")
 plt.ylabel("Mutual Capacitance (fF)")
 plt.title(
-    rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}}=${finger_gap} µm, $\mathtt{{thickness}}=${thickness} µm, $\epsilon_r={ep_r}$)"
+    rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}} = {finger_gap}\,\text{{µm}}$, $\mathtt{{thickness}} = {thickness}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
 )
 plt.grid(True)
 plt.legend()
@@ -476,7 +476,7 @@ for i, gap in enumerate(gaps):
 plt.xlabel("Coupling Length (µm)")
 plt.ylabel("Mutual Capacitance (fF)")
 plt.title(
-    rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}}=${width} µm, $\mathtt{{cpw\_gap}}=${cpw_gap} µm, $\epsilon_r={ep_r}$)"
+    rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}} = {width}\,\text{{µm}}$, $\mathtt{{cpw\_gap}} = {cpw_gap}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
 )
 plt.grid(True)
 plt.legend()

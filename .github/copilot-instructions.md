@@ -103,6 +103,10 @@ Comment on these in roughly this order, and stay quiet about the rest:
 
 - **Logging:** use `from qpdk import logger` (loguru), never `print()`, in library code.
 - **Math in docstrings:** use the RST `:math:` role, never `$...$`.
+- **Upright vs italic in math (ISO 80000-2):** italic is for variables only. Units and descriptive
+  subscripts/superscripts are upright with `\text{}` — `\,\text{GHz}`, `E_\text{J}`, `C_\text{q}`, `Q_\text{ext}`.
+  Numeric and mathematical indices stay italic — `S_{21}`, `T_1`, `f_{01}`, `\sum_k a_k`. Flag `\mathrm{}`/`\textrm{}`
+  in new math (use `\text{}`), and an italic unit or descriptive script. `\mathtt{}` for Python identifiers is fine.
 - **Physical constants:** import from `qpdk/models/constants.py`; never redefine locally.
 - **Layers:** use the `LAYER` map from `qpdk/tech.py`; raw layer tuples are rejected by pre-commit.
 - **Git LFS:** CSV data under `tests/models/data/` is LFS-tracked; GDS/OAS are binary per `.gitattributes`. Check new

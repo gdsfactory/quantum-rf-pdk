@@ -92,7 +92,7 @@ cross_section = coplanar_waveguide(width=10, gap=6)
 
 # %% [markdown]
 # ### Straight Waveguide
-# Simulate a $1\,\textrm{mm}$ straight waveguide
+# Simulate a $1\,\text{mm}$ straight waveguide
 
 # %%
 straight_wg = straight(f=freq, length=1000, cross_section=cross_section)
@@ -110,7 +110,7 @@ plt.show()
 
 # %% [markdown]
 # ### Capacitor
-# Simulate a $100\,\textrm{fF}$ capacitor
+# Simulate a $100\,\text{fF}$ capacitor
 
 # %%
 cap_val = 100e-15
@@ -129,7 +129,7 @@ plt.show()
 
 # %% [markdown]
 # ### Inductor
-# Simulate a $5\,\textrm{nH}$ inductor
+# Simulate a $5\,\text{nH}$ inductor
 
 # %%
 ind_val = 5e-9

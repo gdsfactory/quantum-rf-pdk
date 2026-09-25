@@ -223,7 +223,7 @@ def lumped_element_resonator(
 
     .. math::
 
-        f_r = \frac{1}{2\pi\sqrt{LC}}
+        f_\text{r} = \frac{1}{2\pi\sqrt{LC}}
 
     .. svgbob::
 

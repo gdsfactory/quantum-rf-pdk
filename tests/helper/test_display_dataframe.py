@@ -74,7 +74,7 @@ class TestDisplayDataframe:
     def test_html_converts_latex_subscripts() -> None:
         """Test that $...$ math in cells is converted to HTML subscripts."""
         with patch("IPython.display.display") as mock_display:
-            pdf = pd.DataFrame({"P": ["$E_J$", "$T_{\\mathrm{Purcell}}$"]})
+            pdf = pd.DataFrame({"P": ["$E_\\text{J}$", "$T_{\\text{Purcell}}$"]})
             display_dataframe(pdf)
 
         obj = mock_display.call_args[0][0]
@@ -87,7 +87,7 @@ class TestDisplayDataframe:
     def test_html_converts_greek_letters() -> None:
         """Test that LaTeX Greek letters in cells become Unicode in HTML."""
         with patch("IPython.display.display") as mock_display:
-            pdf = pd.DataFrame({"P": ["$\\kappa$", "$\\omega_r$"]})
+            pdf = pd.DataFrame({"P": ["$\\kappa$", "$\\omega_\\text{r}$"]})
             display_dataframe(pdf)
 
         obj = mock_display.call_args[0][0]
@@ -99,13 +99,13 @@ class TestDisplayDataframe:
     def test_latex_preserves_math_delimiters() -> None:
         """Test that $...$ math passes through to LaTeX output unchanged."""
         with patch("IPython.display.display") as mock_display:
-            pdf = pd.DataFrame({"P": ["$E_J$", "$Q_{\\mathrm{ext}}$"]})
+            pdf = pd.DataFrame({"P": ["$E_\\text{J}$", "$Q_{\\text{ext}}$"]})
             display_dataframe(pdf)
 
         obj = mock_display.call_args[0][0]
         latex = obj._repr_latex_()
-        assert "$E_J$" in latex
-        assert "$Q_{\\mathrm{ext}}$" in latex
+        assert "$E_\\text{J}$" in latex
+        assert "$Q_{\\text{ext}}$" in latex
 
     @staticmethod
     def test_plain_text_unchanged() -> None:
@@ -166,11 +166,13 @@ class TestLatexToHtml:
 
     @staticmethod
     def test_dollar_delimiters_stripped() -> None:
-        assert _latex_to_html("$E_J$") == "E<sub>J</sub>"
+        assert _latex_to_html("$E_\\text{J}$") == "E<sub>J</sub>"
 
     @staticmethod
     def test_mixed_math_and_text() -> None:
-        assert _latex_to_html("$\\omega_q$ (NetKet)") == "ω<sub>q</sub> (NetKet)"
+        assert (
+            _latex_to_html("$\\omega_\\text{q}$ (NetKet)") == "ω<sub>q</sub> (NetKet)"
+        )
 
     @staticmethod
     def test_no_math_passthrough() -> None:
@@ -178,5 +180,5 @@ class TestLatexToHtml:
 
     @staticmethod
     def test_multiple_math_expressions() -> None:
-        result = _latex_to_html("$E_J$ and $E_C$")
+        result = _latex_to_html("$E_\\text{J}$ and $E_\\text{C}$")
         assert result == "E<sub>J</sub> and E<sub>C</sub>"

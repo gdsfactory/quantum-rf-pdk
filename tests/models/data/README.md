@@ -18,7 +18,7 @@ frequency,"r S[i,j]","i S[i,j]", ...
 1000000000.0,0.00145942,0.037644, ...
 ```
 
-- **`frequency`**: Frequency points in $`\mathrm{Hz}`$
+- **`frequency`**: Frequency points in $`\text{Hz}`$
 - **`r S[i,j]`**: Real part of S-parameter $`S_{ij}`$
 - **`i S[i,j]`**: Imaginary part of S-parameter $`S_{ij}`$
 

@@ -168,7 +168,8 @@ and coupling strengths that feed back into the layout design
 **Typical use cases:**
 
 - Computing transmon qubit frequency (:math:`\omega_{01}`) and anharmonicity
-  (:math:`\alpha`) from Josephson energy :math:`E_J` and charging energy :math:`E_C`.
+  (:math:`\alpha`) from Josephson energy :math:`E_\text{J}` and charging energy
+  :math:`E_\text{C}`.
 - Calculating the dispersive shift :math:`\chi` of a transmon–resonator system for
   readout design.
 - Translating Hamiltonian-level parameters into physical layout dimensions.
