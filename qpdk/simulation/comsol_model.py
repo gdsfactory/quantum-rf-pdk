@@ -7,10 +7,10 @@ solve, save, and evaluation API. Import it from :mod:`qpdk.simulation.comsol` or
 
 from __future__ import annotations
 
+import importlib
 from collections.abc import Mapping
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Self
-
-import mph
 
 from qpdk.simulation import (
     comsol,
@@ -21,7 +21,14 @@ from qpdk.simulation import (
 )
 
 if TYPE_CHECKING:
+    import mph
+
     from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout, Point
+else:
+    try:
+        mph = importlib.import_module("mph")
+    except ImportError:
+        mph = SimpleNamespace(Model=object)
 
 
 class COMSOL(mph.Model):
@@ -40,7 +47,12 @@ class COMSOL(mph.Model):
                 :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`.
                 Its Java handle is reused as-is.
             layout: The layout that model was built from.
+
+        Raises:
+            ImportError: If the optional MPh dependency is not installed.
         """
+        if mph.Model is object:
+            raise ImportError("Install qpdk[comsol] to use the COMSOL model")
         super().__init__(model)
         self.layout = layout
 
