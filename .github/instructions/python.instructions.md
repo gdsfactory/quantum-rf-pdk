@@ -50,6 +50,18 @@ Applies to all Python in the repository. See also the path-specific files for `q
 - For physics-bearing code, the docstring should explain the device behaviour and its parameters, with a citation into
   `docs/bibliography.bib` where one exists.
 
+- Set non-variables upright, per ISO 80000-2. Italic is for variables; units and descriptive subscripts/superscripts use
+  `\text{}`. Numeric and mathematical indices (`S_{21}`, `T_1`, `f_{01}`, `\sum_k a_k`) stay italic. Prefer `\text{}`
+  over `\mathrm{}`/`\textrm{}`; `\mathtt{}` is for literal Python identifiers.
+
+  ```python
+  """Resonator with :math:`f_\\text{r} = 6.5\\,\\text{GHz}` and :math:`Q_\\text{ext}` set by the coupler."""
+  ```
+
+- The same rule applies to math in matplotlib labels and in notebook sources under `notebooks/src/`. Those need a raw
+  string — `r"..."` or `rf"..."` — because `"\text{}"` in a plain string silently becomes a tab character. In an
+  f-string, literal braces must be doubled: `rf"$f_\text{{r}} = {f / 1e9:.2f}\,\text{{GHz}}$"`.
+
 ## Lazy imports of heavy/optional dependencies
 
 These packages must only be imported inside the function that uses them — ruff's `flake8-tidy-imports.require-lazy`
