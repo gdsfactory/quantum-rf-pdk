@@ -115,14 +115,46 @@ from typing import Any
 import gdsfactory as gf
 import numpy as np
 from gplugins.elmer import run_capacitive_simulation_elmer
-from matplotlib import pyplot as plt
+from matplotlib import font_manager, pyplot as plt
 from meshwell.resolution import ConstantInField
 
 from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
+from qpdk.config import PATH
 from qpdk.tech import LAYER, material_properties
 
 PDK.activate()
+
+# %% tags=["hide-input", "hide-output"]
+# Use the checkout style when it is there, the installed style otherwise, and keep
+# matplotlib's defaults outside both so the notebook still runs.
+for style_source in (PATH.repo / "docs" / "qpdk.mplstyle", "qpdk"):
+    try:
+        plt.style.use(style_source)
+    except OSError:
+        continue
+    break
+
+# Whichever documentation fonts are installed, plus matplotlib's own fallbacks.
+installed_fonts = {font.name for font in font_manager.fontManager.ttflist}
+plt.rcParams["font.sans-serif"] = [
+    name
+    for name in ("Inter", "Outfit", "DejaVu Sans", "Helvetica", "Arial")
+    if name in installed_fonts
+] + ["sans-serif"]
+
+# Saved outputs are what the documentation renders, so ask for vector SVG alongside
+# PNG. A plain script run has no inline backend to configure.
+try:
+    from IPython import get_ipython
+
+    if get_ipython() is not None:
+        from matplotlib_inline.backend_inline import set_matplotlib_formats
+
+        plt.rcParams["svg.fonttype"] = "path"
+        set_matplotlib_formats("svg", "png")
+except ImportError:
+    pass
 
 # %% [markdown]
 # ## Simulation Geometry
@@ -206,7 +238,7 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 # quantify the effect of these vertical truncations.
 #
 # Material permittivities come from the QPDK technology definition
-# (`qpdk.tech.material_properties`): Si uses $\epsilon_{\mathrm{r}} = 11.45$, and the niobium
+# (`qpdk.tech.material_properties`): Si uses $\epsilon_{\text{r}} = 11.45$, and the niobium
 # film is treated as a perfect conductor.
 
 # %%
