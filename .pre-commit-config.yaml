@@ -288,6 +288,13 @@ repos:
         language: script
         files: ^(AGENTS\.md|pyproject\.toml)$
         pass_filenames: false
+      - id: check-changelog-version
+        priority: 10
+        name: Check CHANGELOG.md has an entry for the pyproject.toml version
+        entry: ./.github/check-changelog-version.py
+        language: script
+        files: ^(CHANGELOG\.md|pyproject\.toml)$
+        pass_filenames: false
       - id: check-schematic-sources
         priority: 20
         name: Check .gsch and .pic.yml sources match
