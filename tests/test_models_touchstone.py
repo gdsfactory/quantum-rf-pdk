@@ -123,6 +123,26 @@ def test_three_port_model_round_trips(tmp_path: Path) -> None:
     np.testing.assert_allclose(s_array, expected, atol=1e-11)
 
 
+def test_reference_keyword_overrides_the_option_line() -> None:
+    """A uniform v2 ``[Reference]`` overrides the option line's R."""
+    content = (
+        "# Hz S RI R 50\n"
+        "[Number of Ports] 2\n"
+        "[Reference] 75\n"
+        "[Network Data]\n"
+        "1e9 0 0 0 0 0 0 0 0"
+    )
+    _, _, _, z0 = parse_touchstone(content)
+    assert z0 == pytest.approx(75.0)
+
+
+def test_per_port_reference_is_rejected() -> None:
+    """The reader reports a single z0, so a per-port [Reference] is an error."""
+    content = "[Number of Ports] 2\n[Reference] 50 75\n[Network Data]"
+    with pytest.raises(ValueError, match="per-port reference"):
+        parse_touchstone(content)
+
+
 def test_reference_impedance_is_configurable(cpw_sdict: dict, tmp_path: Path) -> None:
     """``z0`` lands in the Touchstone option line and comes back out."""
     path = write_touchstone(cpw_sdict, FREQUENCIES, tmp_path / "cpw.s2p", z0=75.0)
