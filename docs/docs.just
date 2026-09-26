@@ -132,7 +132,7 @@ write-llms-txt:
 
 # Notebooks that should be copied as .ipynb because they have precalculated outputs
 # (These will have their .py counterparts removed if they exist to force MyST-NB to use .ipynb)
-precalculated_notebooks := "hfss_*.ipynb matlab_integration.ipynb"
+precalculated_notebooks := "hfss_*.ipynb matlab_integration.ipynb recorded/palace_transmon_surface_epr.ipynb"
 
 # Copy all sample scripts and notebooks to use as documentation
 [private]
@@ -146,7 +146,7 @@ copy-sample-notebooks: build-doc-figures
     # Copy notebooks with pre-calculated outputs and remove their source counterparts
     @cd notebooks && for f in {{precalculated_notebooks}}; do \
         cp -p "$f" ../docs/notebooks/; \
-        base="${f%.ipynb}"; \
+        base="$(basename "$f" .ipynb)"; \
         rm -f "../docs/notebooks/$base.py" "../docs/notebooks/$base.m"; \
     done
 

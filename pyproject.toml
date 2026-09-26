@@ -121,6 +121,9 @@ docs-models = [
 ]
 github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
+palace-notebook = [
+  "scgsim[palace,visualization] @ git+https://github.com/OrPenStrike/scgsim.git@6af444d274b633a4b5397d23ef32512856f7c11d",
+]
 stubs = ["scipy-stubs"]
 test = [
   "hypothesis",
@@ -424,6 +427,9 @@ template = ".changelog.d/changelog_template.jinja"
 
 [tool.uv]
 default-groups = ["dev", "lint", "stubs", "test"]
+
+[tool.uv.dependency-groups]
+palace-notebook = { requires-python = ">=3.12,<3.14" }
 
 [tool.uv.build-backend]
 module-root = ""

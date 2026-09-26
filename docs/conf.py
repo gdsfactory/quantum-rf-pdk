@@ -132,11 +132,11 @@ mathjax4_config = {
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
-# Exclude HFSS notebooks from execution as they depend on Ansys HFSS
-# (proprietary/licensed software) and can be slow or impossible to run
-# in typical documentation build environments.
+# Render the SCGSim-backed transmon handoff notebook without executing it during
+# docs builds; preserve the existing HFSS and MATLAB execution exclusions.
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
+    "notebooks/palace_transmon_surface_epr.ipynb",
     "notebooks/matlab_integration*",
 ]
 nb_execution_timeout = -1

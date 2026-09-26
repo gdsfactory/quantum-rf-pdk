@@ -147,6 +147,7 @@ chip.show()  # Opens in KLayout
   - Hamiltonian parameter extraction with [scqubits](https://github.com/scqubits/scqubits)
   - Pulse-level quantum gate simulation with [QuTiP](https://qutip.org/)
   - Capacitor geometry optimization with [Optuna](https://optuna.org/)
+  - Transmon eigenmode and Surface-EPR handoff with [Palace and SCGSim](notebooks/palace_transmon_surface_epr.ipynb)
   - Dispersive shift calculation with [Pymablock](https://pymablock.readthedocs.io/en/latest/)
   - Transmon design optimization with [NetKet](https://www.netket.org/)
 - **[gsim example notebooks](https://gdsfactory.github.io/gsim/)** — Electromagnetic simulation examples using Palace
