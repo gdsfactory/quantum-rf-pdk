@@ -1,22 +1,13 @@
 info: {}
-name: interdigital_capacitor_F4_FL20_FG2_T5_LMM1_DRAW_ELM1_ET_345c9ff5
+name: interdigital_capacitor_half_F4_FL20_FG2_T5_LMM1_DRAW_EL_c79579e5
 ports:
   o1:
     center:
-    - -18
+    - -14.5
     - 0
     layer: M1_DRAW
     name: o1
     orientation: 180
-    port_type: optical
-    width: 10
-  o2:
-    center:
-    - 18
-    - 0
-    layer: M1_DRAW
-    name: o2
-    orientation: 0
     port_type: optical
     width: 10
 settings:

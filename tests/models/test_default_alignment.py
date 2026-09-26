@@ -2,6 +2,9 @@
 
 When a schematic omits a property, the simulated circuit must use the same
 default the layout does. See issue #822.
+
+Cases are derived from the full analytical catalog, not the PDK registry, so
+de-registering a model cannot silently drop its guard.
 """
 
 import inspect
@@ -11,13 +14,24 @@ from typing import Any
 import pytest
 
 from qpdk import PDK
+from qpdk.models import models as sax_models
+
+
+def _model_for(component: str) -> Callable[..., Any]:
+    """Return the registered model, or the analytical catalog entry for it.
+
+    De-registered models keep their default-alignment guard through the
+    analytical catalog.
+    """
+    return PDK.models[component] if component in PDK.models else sax_models[component]
 
 
 def _shared_defaults() -> list[tuple[str, str]]:
     pairs = []
-    for component in sorted(PDK.cells.keys() & PDK.models.keys()):
+    components = PDK.cells.keys() & (PDK.models.keys() | sax_models.keys())
+    for component in sorted(components):
         layout_parameters = inspect.signature(PDK.cells[component]).parameters
-        model_parameters = inspect.signature(PDK.models[component]).parameters
+        model_parameters = inspect.signature(_model_for(component)).parameters
         shared = (layout_parameters.keys() & model_parameters.keys()) - {"f"}
         pairs.extend((component, parameter) for parameter in sorted(shared))
     return pairs
@@ -57,7 +71,7 @@ def test_layout_model_default_alignment(shared_default: tuple[str, str]) -> None
         parameter, _default(PDK.cells[component], parameter)
     )
     model_default = _comparable_default(
-        parameter, _default(PDK.models[component], parameter)
+        parameter, _default(_model_for(component), parameter)
     )
     assert model_default == layout_default, (
         f"{component}.{parameter}: model default {model_default!r} does not match "

@@ -114,7 +114,6 @@ def capacitor_simulation(
         etch_layer="M1_ETCH",
         etch_bbox_margin=5.0,
         cross_section="cpw",
-        half=False,
     )
 
     # Add straights for larger area

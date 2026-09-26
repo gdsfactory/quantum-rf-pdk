@@ -39,10 +39,36 @@ SAX_MODEL_ALIASES = {
 }
 
 
-def _add_sax_model_aliases(
+# Analytical models whose simulation ports do not correspond to the ports of
+# their same-named layout cell. They stay importable from ``qpdk.models.models``
+# but are left out of the PDK registry. Aliases in SAX_MODEL_ALIASES must stay
+# resolvable after this filtering, which tests/test_schematic.py enforces.
+MODELS_WITHOUT_LAYOUT_PORTS = frozenset({
+    "airbridge",
+    "double_pad_transmon_with_resonator",
+    "flipmon",
+    "flipmon_with_bbox",
+    "flipmon_with_resonator",
+    "indium_bump",
+    "rectangle",
+    "squid_junction",
+    "straight_double_open",
+    "transmon_with_resonator",
+    "tsv",
+    "xmon_transmon",
+})
+
+
+def _build_pdk_models(
     models: Mapping[str, Callable[..., Any]],
+    overrides: Mapping[str, Callable[..., Any]],
 ) -> dict[str, Callable[..., Any]]:
-    registered = dict(models)
+    registered = {
+        name: model
+        for name, model in models.items()
+        if name not in MODELS_WITHOUT_LAYOUT_PORTS
+    }
+    registered.update(overrides)
     registered.update({
         alias: registered[model_name] for alias, model_name in SAX_MODEL_ALIASES.items()
     })
@@ -50,7 +76,7 @@ def _add_sax_model_aliases(
 
 
 try:
-    from .models import models as _models
+    from .models import _PDK_MODEL_OVERRIDES, models as _models
 except ImportError as e:
     logger.warning(
         f"QPDK models could not be loaded ({e}). "
@@ -58,7 +84,7 @@ except ImportError as e:
     )
     _models = {}
 else:
-    _models = _add_sax_model_aliases(_models)
+    _models = _build_pdk_models(_models, _PDK_MODEL_OVERRIDES)
 
 _cells = get_cells(cells)
 _cross_sections = get_cross_sections(tech)
@@ -120,6 +146,7 @@ __all__ = [
     "LAYER",
     "LAYER_STACK",
     "LAYER_VIEWS",
+    "MODELS_WITHOUT_LAYOUT_PORTS",
     "PATH",
     "SAX_MODEL_ALIASES",
     "cells",
