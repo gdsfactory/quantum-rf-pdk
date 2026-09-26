@@ -95,6 +95,14 @@ from qpdk.models.resonator import (
     resonator_half_wave,
     resonator_quarter_wave,
 )
+from qpdk.models.transducer import (
+    electro_optic_transducer,
+    piezo_optomechanical_transducer,
+    transducer_added_noise,
+    transducer_cooperativity,
+    transduction_bandwidth,
+    transduction_efficiency,
+)
 from qpdk.models.unimon import (
     el_to_arm_inductance,
     unimon_coupled,
@@ -159,6 +167,7 @@ __all__ = [
     "electrical_open",
     "electrical_short",
     "electrical_short_2_port",
+    "electro_optic_transducer",
     "flipmon",
     "flipmon_with_bbox",
     "flipmon_with_resonator",
@@ -185,6 +194,7 @@ __all__ = [
     "models",
     "nxn",
     "open",
+    "piezo_optomechanical_transducer",
     "plate_capacitor",
     "propagation_constant",
     "purcell_decay_rate",
@@ -211,6 +221,10 @@ __all__ = [
     "straight_shorted",
     "taper_cross_section",
     "tee",
+    "transducer_added_noise",
+    "transducer_cooperativity",
+    "transduction_bandwidth",
+    "transduction_efficiency",
     "transmission_line_s_params",
     "transmon_coupled",
     "transmon_with_resonator",
