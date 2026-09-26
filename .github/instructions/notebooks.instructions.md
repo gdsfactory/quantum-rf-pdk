@@ -14,12 +14,16 @@ files at `notebooks/` are produced by `just convert-notebooks` (via the `convert
   `check-notebook-sources` hook also fails on an `.ipynb` with no source file.
 - A new notebook source that is not added to `docs/notebooks.rst`. That page describes each notebook and groups it by
   simulation approach; adding or removing a notebook requires updating it.
-- A notebook needing external tooling (HFSS, MATLAB) that is not listed in `nb_execution_excludepatterns` in
+- A notebook needing external tooling (Elmer, HFSS, MATLAB) that is not listed in `nb_execution_excludepatterns` in
   `docs/conf.py` — the docs build will try to execute it and fail.
 - A missing first cell with the Google Colab install snippet tagged `tags=["hide-input", "hide-output"]`, so the
   notebook runs online without cluttering the rendered docs.
-- Committed cell outputs. `nbstripout` strips them, except for the pre-executed HFSS notebooks (`hfss_driven_capacitor`,
-  `hfss_eigenmode_resonator`, `hfss_q2d_cpw_impedance`), which intentionally keep theirs.
+- Committed cell outputs. `nbstripout` strips them, except for the pre-executed Elmer notebook
+  (`elmer_capacitance_interdigital`) and HFSS notebooks (`hfss_driven_capacitor`, `hfss_eigenmode_resonator`,
+  `hfss_q2d_cpw_impedance`), which intentionally keep theirs.
+- After changing the Elmer notebook's simulation code, run and save its default cubic profile with
+  `jupytext --execute --to ipynb --set-kernel python3 --output notebooks/elmer_capacitance_interdigital.ipynb notebooks/src/elmer_capacitance_interdigital.py`.
+  CI executes a separate quadratic smoke run because `GITHUB_ACTIONS=true` selects the fast profile.
 
 ## Style
 
