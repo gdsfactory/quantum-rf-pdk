@@ -211,6 +211,10 @@ def parse_touchstone(
 ) -> tuple[np.ndarray, np.ndarray, tuple[str, ...] | None, float]:
     """Parse Touchstone v1 text into frequencies and an S-parameter array.
 
+    The option line is optional: when it is absent the Touchstone defaults of
+    ``GHz S MA R 50`` apply and the data section starts right after the header
+    comments.
+
     Args:
         content: The file contents.
         n_ports: Port count, normally taken from the ``.sNp`` extension.  When
@@ -224,14 +228,16 @@ def parse_touchstone(
         impedance in ohms.
 
     Raises:
-        ValueError: If the option line is missing or unsupported, or the data
-            does not divide evenly into frequency points.
+        ValueError: If the option line is unsupported, or the data does not
+            divide evenly into frequency points.
     """
     option: list[str] | None = None
     port_names: dict[int, str] = {}
     tokens: list[str] = []
     swap_two_port = True
-    in_data = False
+    # An option line is optional; without one the standard defaults apply and
+    # the v1 data section starts immediately (a keyword line ends it).
+    in_data = True
 
     for raw_line in content.splitlines():
         line = raw_line.strip()
@@ -270,10 +276,7 @@ def parse_touchstone(
         if in_data:
             tokens.append(line)
 
-    if option is None:
-        raise ValueError("no Touchstone option line ('# ...') found")
-
-    frequency_unit, parameter, data_format, z0 = _parse_option(option)
+    frequency_unit, parameter, data_format, z0 = _parse_option(option or [])
     if parameter != "s":
         raise ValueError(f"only S-parameters are supported, the file holds {parameter}")
 

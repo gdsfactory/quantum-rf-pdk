@@ -89,6 +89,25 @@ def test_touchstone_header_records_port_names(cpw_sdict: dict, tmp_path: Path) -
     assert lines[2] == "# Hz S RI R 50"
 
 
+def test_missing_option_line_applies_the_standard_defaults(tmp_path: Path) -> None:
+    """A file without an option line is read with the ``GHz S MA R 50`` defaults."""
+    content = "! no option line\n1 0.5 0.1\n2 0.4 0.2\n"
+    path = tmp_path / "default.s1p"
+    path.write_text(content)
+
+    frequency, s_array, _ports, z0 = parse_touchstone(content, n_ports=1)
+    np.testing.assert_allclose(frequency, [1e9, 2e9], rtol=1e-12)
+    np.testing.assert_allclose(
+        s_array[:, 0, 0], [0.5, 0.4] * np.exp(1j * np.deg2rad([0.1, 0.2])), atol=1e-12
+    )
+    assert z0 == pytest.approx(50.0)
+
+    # ...and scikit-rf, as the independent implementation, applies the same defaults.
+    network = skrf.Network(str(path))
+    np.testing.assert_allclose(network.f, frequency, rtol=1e-12)
+    np.testing.assert_allclose(network.s[:, 0, 0], s_array[:, 0, 0], atol=1e-12)
+
+
 def test_three_port_model_round_trips(tmp_path: Path) -> None:
     """A three-port model such as the coupled resonator writes a ``.s3p``."""
     sdict = quarter_wave_resonator_coupled(f=FREQUENCIES)
