@@ -116,12 +116,32 @@ def array_to_sdict(s_array: np.ndarray, ports: Sequence[str]) -> sax.SDict:
     is ``(input_port, output_port)`` and the value is ``S[..., out, in]``.
 
     Args:
-        s_array: ``(k, n, n)`` complex array of S-parameters.
+        s_array: ``(k, n, n)`` complex array of S-parameters.  A scalar-frequency
+            ``(n, n)`` array is accepted and read at a single point.
         ports: Port names, in index order.
 
     Returns:
         The equivalent ``SDict``, with one entry per port pair.
+
+    Raises:
+        ValueError: If the matrix is not square with one row and column per
+            port, or *ports* contains duplicate names.
     """
+    s_array = np.asarray(s_array, dtype=complex)
+    if s_array.ndim == 2:
+        s_array = s_array[np.newaxis, ...]
+    ports = tuple(ports)
+    if (
+        s_array.ndim != 3
+        or s_array.shape[1] != s_array.shape[2]
+        or (s_array.shape[1] != len(ports))
+    ):
+        raise ValueError(
+            f"expected a (k, {len(ports)}, {len(ports)}) array for ports {ports}, "
+            f"got shape {s_array.shape}"
+        )
+    if len(set(ports)) != len(ports):
+        raise ValueError(f"ports={ports} contains duplicate names")
     return {
         (p_in, p_out): s_array[..., j, i]
         for i, p_in in enumerate(ports)

@@ -10,6 +10,7 @@ import pytest
 from qpdk import PDK
 from qpdk.models.resonator import quarter_wave_resonator_coupled
 from qpdk.models.touchstone import (
+    array_to_sdict,
     format_touchstone,
     parse_touchstone,
     read_touchstone,
@@ -51,6 +52,18 @@ def test_sdict_to_array_rejects_unknown_ports(cpw_sdict: dict) -> None:
     """A port list that is not a permutation of the model's ports is an error."""
     with pytest.raises(ValueError, match="not a permutation"):
         sdict_to_array(cpw_sdict, ports=("o1", "nonexistent"))
+
+
+def test_array_to_sdict_rejects_mismatched_matrix() -> None:
+    """A matrix whose shape disagrees with the port list would drop entries."""
+    with pytest.raises(ValueError, match=r"expected a \(k, 1, 1\) array"):
+        array_to_sdict(np.zeros((3, 2, 2)), ("o1",))
+
+
+def test_array_to_sdict_rejects_duplicate_ports() -> None:
+    """Duplicate port names would silently overwrite dictionary keys."""
+    with pytest.raises(ValueError, match="duplicate names"):
+        array_to_sdict(np.zeros((3, 2, 2)), ("o1", "o1"))
 
 
 def test_format_rejects_mismatched_frequencies(cpw_sdict: dict) -> None:
