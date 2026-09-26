@@ -253,10 +253,10 @@ primary tooling lives in another environment.
   consumes them from MATLAB's `RF Toolbox
   <https://se.mathworks.com/help/rf/index.html>`_ as ``sparameters``/``nport`` boxes —
   Smith charts, group delay, cascades in a ``circuit``, rational fitting and transient
-  response. Those sections need the RF Toolbox and skip themselves when it is
-  unavailable or when ``QPDK_SKIP_RF_TOOLBOX`` is set. The notebook uses the MATLAB
-  Jupyter kernel from `jupyter-matlab-proxy
-  <https://github.com/mathworks/jupyter-matlab-proxy>`_.
+  response, and back into SAX with ``qpdk.models.touchstone.read_touchstone``. Those
+  sections need the RF Toolbox and skip themselves when it is unavailable or when
+  ``QPDK_SKIP_RF_TOOLBOX`` is set. The notebook uses the MATLAB Jupyter kernel from
+  `jupyter-matlab-proxy <https://github.com/mathworks/jupyter-matlab-proxy>`_.
 
 .. _notebook-extras:
 
