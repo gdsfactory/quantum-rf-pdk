@@ -111,10 +111,8 @@ if "google.colab" in sys.modules:
     )
 
 # %% tags=["hide-input", "hide-output"]
-import hashlib
 import json
 import os
-import re
 import uuid
 from contextlib import suppress
 from dataclasses import dataclass
@@ -125,14 +123,28 @@ from typing import Any
 import gdsfactory as gf
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import axes as mpl_axes, font_manager
-from matplotlib.colors import LogNorm
-from matplotlib.patches import Polygon as MplPolygon
 
 from qpdk import PDK
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
-from qpdk.config import PATH
 from qpdk.simulation import prepare_comsol_layout
+from qpdk.simulation.comsol.plotting import (
+    apply_qpdk_style,
+    draw_cut_plane_field,
+    draw_layout_polygons,
+    prefer_svg_figures,
+)
+from qpdk.simulation.comsol.results import (
+    complex_frequency_ghz,
+    curve_value_db,
+    explain_missing_results,
+    exported_frequency_ghz,
+    notch_verdict,
+    power_balance,
+    requested_frequency_grid,
+    resolve_record_path,
+    result_file,
+    write_json_atomically,
+)
 from qpdk.tech import coplanar_waveguide
 
 try:
@@ -151,211 +163,12 @@ PDK.activate()
 
 MPH_AVAILABLE = mph is not None
 
-
-def _outfit_titles() -> None:
-    """Draw plot titles in Outfit bold, matching the documentation headings."""
-    original_set_title = mpl_axes.Axes.set_title
-
-    def _set_title(self: mpl_axes.Axes, *args: Any, **kwargs: Any) -> Any:
-        kwargs.setdefault("fontfamily", "Outfit")
-        kwargs.setdefault("fontweight", "bold")
-        return original_set_title(self, *args, **kwargs)
-
-    mpl_axes.Axes.set_title = _set_title
-
-
-def apply_qpdk_style() -> str:
-    """Apply the QPDK plot style, falling back to matplotlib's own defaults.
-
-    The style is ``docs/qpdk.mplstyle`` in a checkout and the installed ``qpdk``
-    style in a documentation environment; a downloaded notebook outside both
-    keeps matplotlib's defaults instead of failing. The documentation fonts are
-    used when they are installed, and matplotlib's bundled families otherwise.
-
-    Returns:
-        A short description of the style that was applied.
-    """
-    for source in (PATH.repo / "docs" / "qpdk.mplstyle", "qpdk"):
-        try:
-            plt.style.use(source)
-        except OSError:
-            continue
-        applied = str(source)
-        break
-    else:
-        applied = "matplotlib defaults"
-
-    installed = {font.name for font in font_manager.fontManager.ttflist}
-    plt.rcParams["font.sans-serif"] = [
-        name
-        for name in ("Inter", "Outfit", "DejaVu Sans", "Helvetica", "Arial")
-        if name in installed
-    ] + ["sans-serif"]
-    if "Outfit" in installed:
-        _outfit_titles()
-    return applied
-
-
-def prefer_svg_figures() -> None:
-    """Save every figure as SVG as well as PNG, so stored outputs stay vector.
-
-    The saved cell outputs are what the documentation renders, and both the HTML
-    and the Typst PDF build embed the SVG ahead of the PNG. The PNG is kept as a
-    fallback for a viewer that cannot render SVG, and text is written as paths so
-    the figures carry their own glyphs instead of relying on installed fonts.
-    Outside a notebook kernel there is no inline backend to configure, so a
-    plain script run keeps matplotlib's PNG default.
-    """
-    try:
-        # Ships with ipykernel, so it is present in a notebook kernel only.
-        from matplotlib_inline.backend_inline import (  # ruff: ignore[import-outside-top-level]
-            set_matplotlib_formats,
-        )
-    except ImportError:
-        return
-    plt.rcParams["svg.fonttype"] = "path"
-    set_matplotlib_formats("svg", "png")
-
-
-def result_file(name: str) -> Path | None:
-    """Return the path of an exported solver result, if one is available.
-
-    Args:
-        name: File name to look for inside ``RESULTS_DIR``.
-
-    Returns:
-        The path, or ``None`` when ``RESULTS_DIR`` is unset or holds no such file.
-    """
-    if RESULTS_DIR is None:
-        return None
-    path = RESULTS_DIR / name
-    return path if path.exists() else None
-
-
-def resolve_record_path(base: Path, name: str) -> Path:
-    """Resolve a file name stored in a result record.
-
-    Records store the curve by bare file name so a saved notebook never embeds
-    an absolute path from the machine that solved. A bare name resolves under
-    ``RESULTS_DIR`` when that directory holds the file, otherwise next to the
-    record itself. An absolute path in an older record is still honoured.
-
-    Args:
-        base: Directory the record itself lives in.
-        name: The stored path or file name.
-
-    Returns:
-        The path to read, which may not exist yet.
-    """
-    stored = Path(name)
-    if stored.is_absolute():
-        return stored
-    under_results = RESULTS_DIR / stored if RESULTS_DIR is not None else None
-    if under_results is not None and under_results.exists():
-        return under_results
-    return base / stored
-
-
-def explain_missing_results(name: str) -> None:
-    """Print how to supply a result file that is not on disk.
-
-    Args:
-        name: File name that was looked for inside ``RESULTS_DIR``.
-    """
-    print(
-        f"No {name} in RESULTS_DIR ({RESULTS_DIR}). The figures on the "
-        "documentation page are saved outputs of a licensed solve, and the cells "
-        "here replot only from files on disk. To supply them, run with "
-        "RUN_COMSOL = True on a licensed machine, which exports into MODEL_DIR, "
-        "or set RESULTS_DIR to a directory that already holds an exported "
-        f"{name}."
-    )
-
-
-# Frequency units COMSOL may annotate an export header with, to GHz.
-FREQUENCY_UNITS_GHZ = {"GHz": 1.0, "MHz": 1.0e-3, "kHz": 1.0e-6, "Hz": 1.0e-9}
-# ``@ freq=7.5`` as written by some exports, or a bare ``@ 7.2921 GHz``.
-FREQUENCY_ANNOTATION = re.compile(
-    r"@\s*freq\s*=\s*([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)"
-)
-FREQUENCY_HEADER = re.compile(
-    r"@\s*([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\s*(GHz|MHz|kHz|Hz)\b"
-)
-
-
-def exported_frequency_ghz(file: Path) -> float | None:
-    """Read the frequency annotation COMSOL writes into a data export header.
-
-    COMSOL writes either ``@ freq=<value>`` or a bare ``@ <value> <unit>`` line,
-    and the live field exports use the second form, so both are parsed and the
-    unit is applied explicitly rather than assumed to be GHz.
-
-    Args:
-        file: Exported text file to scan.
-
-    Returns:
-        The annotated frequency in GHz, or ``None`` when the export carries no
-        frequency.
-    """
-    with file.open(encoding="utf-8") as handle:
-        for line in handle:
-            if (match := FREQUENCY_ANNOTATION.search(line)) is not None:
-                return float(match.group(1))
-            if (match := FREQUENCY_HEADER.search(line)) is not None:
-                return float(match.group(1)) * FREQUENCY_UNITS_GHZ[match.group(2)]
-    return None
-
-
-# COMSOL writes a ported eigenfield export's header with a complex frequency,
-# e.g. ``@ 7.3266+5.3458E-4i GHz``. FREQUENCY_HEADER only parses a real value, so
-# the complex form gets its own pattern.
-PORTED_FIELD_FREQUENCY = re.compile(
-    r"@\s*([-+]?[0-9]+(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?)"
-    r"\s*([-+]?[0-9]+(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?)\s*i"
-    r"\s*(GHz|MHz|kHz|Hz)\b"
-)
 # The stable file the licensed stage-2 branch writes the selected ported mode's
 # field to, and how far the export's annotated real frequency may sit from the
 # record's selected mode before the field is refused as belonging to something
 # else.
 PORTED_FIELD_TXT = "comsol_cpw_ported_field.txt"
 PORTED_FIELD_FREQUENCY_RTOL = 1.0e-4
-
-
-def complex_frequency_ghz(file: Path) -> tuple[float, float] | None:
-    """Read a complex frequency annotation from a COMSOL export header.
-
-    Args:
-        file: Exported text file to scan.
-
-    Returns:
-        ``(real, imag)`` in GHz, or ``None`` when the export carries no complex
-        frequency annotation.
-    """
-    with file.open(encoding="utf-8") as handle:
-        for line in handle:
-            if (match := PORTED_FIELD_FREQUENCY.search(line)) is not None:
-                scale = FREQUENCY_UNITS_GHZ[match.group(3)]
-                return float(match.group(1)) * scale, float(match.group(2)) * scale
-    return None
-
-
-def field_sha256(path: Path) -> str:
-    """Return the SHA-256 hex digest of a field export's bytes.
-
-    The ported stable record and the stable field are replaced one after the
-    other, so an interrupt between the two can leave a record pointing at a
-    field it was not solved with. The digest recorded beside the mode is what
-    lets the reader catch that instead of plotting the wrong mode.
-
-    Args:
-        path: Exported field file to digest.
-
-    Returns:
-        The digest as lowercase hex.
-    """
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
 
 prefer_svg_figures()
 STYLE_SOURCE = apply_qpdk_style()
@@ -432,36 +245,7 @@ for feed in layout.feed_ports:
 
 # %%
 fig, ax = plt.subplots(figsize=(7, 4))
-for polygon in sorted(
-    layout.polygons,
-    key=lambda item: (
-        -(
-            (max(x for x, _ in item.outline) - min(x for x, _ in item.outline))
-            * (max(y for _, y in item.outline) - min(y for _, y in item.outline))
-        )
-    ),
-):
-    ax.add_patch(
-        MplPolygon(
-            polygon.outline,
-            closed=True,
-            facecolor="0.78",
-            edgecolor="0.35",
-            linewidth=0.6,
-            zorder=1,
-        )
-    )
-    for hole in polygon.holes:
-        ax.add_patch(
-            MplPolygon(
-                hole,
-                closed=True,
-                facecolor="white",
-                edgecolor="0.35",
-                linewidth=0.6,
-                zorder=1,
-            )
-        )
+draw_layout_polygons(ax, layout.polygons)
 for feed in layout.feed_ports:
     ax.plot(*feed.center, marker="o", color="crimson", markersize=6, zorder=4)
     ax.annotate(
@@ -482,11 +266,12 @@ plt.show()
 # %% [markdown]
 # ## Build the COMSOL model, physics, and study
 #
-# {py:class}`~qpdk.simulation.comsol_model.COMSOL` builds the air, silicon, and metal, and
-# {py:meth}`~qpdk.simulation.comsol_model.COMSOL.add_cpw_rf_study` adds PEC metal and two CPW ports,
+# {py:class}`~qpdk.simulation.comsol.model.COMSOL` builds the air, silicon, and metal, and
+# {py:meth}`~qpdk.simulation.comsol.model.COMSOL.add_cpw_rf_study` adds PEC metal and two CPW ports,
 # which the port-free study then removes. Mesh sizes are pinned with
-# {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_edge_mesh_sizes`, the local size on the
+# {py:meth}`~qpdk.simulation.comsol.model.COMSOL.pin_absolute_edge_mesh_sizes`, the local size on the
 # meander edges where a meander mode's field concentrates, stopping short of the feedline band.
+# The saved solve explicitly uses silicon $\varepsilon_\text{r} = 11.7$.
 
 # %% tags=["hide-input"]
 RUN_COMSOL = False
@@ -535,6 +320,7 @@ GLOBAL_HMIN_UM = 2.0
 # The enclosure the sheet model is built with, in µm, the same for every row.
 SUBSTRATE_THICKNESS_UM = 200.0
 AIR_HEIGHT_UM = 200.0
+SILICON_RELATIVE_PERMITTIVITY = 11.7
 
 
 @dataclass(frozen=True, slots=True)
@@ -828,7 +614,7 @@ def configure_port_free_eigen_study(model: Any, case: EdgeMeshCase) -> None:
 
     Args:
         model: A model that
-            :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` has already
+            :func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` has already
             given a frequency study to.
         case: The row's edge sizes and its eigenfrequency search settings.
     """
@@ -862,7 +648,7 @@ def configure_ported_eigen_study(model: Any) -> None:
 
     Args:
         model: A model that
-            :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` has already
+            :func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` has already
             given a frequency study to.
     """
     study = model.java.study("std1")
@@ -937,22 +723,6 @@ def export_mode_field(model: Any, solution_index: int, path: Path) -> None:
     export.run()
 
 
-def write_json_atomically(path: Path, payload: dict[str, Any]) -> None:
-    """Write JSON through a sibling temporary file, then replace in place.
-
-    The series writes on every row, so an interrupt partway through still leaves
-    the rows already solved on disk. The temporary file is a sibling so the
-    replace stays a same-filesystem rename, which is what makes it atomic.
-
-    Args:
-        path: The JSON file to write.
-        payload: The object to serialise.
-    """
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(json.dumps(payload, indent=2) + "\n")
-    temporary.replace(path)
-
-
 def edge_mesh_label(edge_hmax_um: float, edge_hmin_um: float) -> str:
     """Name one row after the absolute sizes that produced it.
 
@@ -1001,6 +771,7 @@ def solve_port_free_row(
         name=f"QPDK CPW port-free eigen, {label}",
         substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
         air_height_um=AIR_HEIGHT_UM,
+        silicon_relative_permittivity=SILICON_RELATIVE_PERMITTIVITY,
     )
     try:
         model.add_cpw_rf_study(
@@ -1157,17 +928,17 @@ if RUN_PORT_FREE_SERIES and client is not None:
 # The two-mesh delta is printed only once both rows exist.
 
 # %%
-eigen_file = result_file(EIGEN_JSON)
+eigen_file = result_file(RESULTS_DIR, EIGEN_JSON)
 
 if eigen_file is None:
-    explain_missing_results(EIGEN_JSON)
+    print(explain_missing_results(RESULTS_DIR, EIGEN_JSON))
 else:
     eigen_payload = json.loads(eigen_file.read_text())
     eigen_rows = eigen_payload.get("rows") or []
     for failure in eigen_payload.get("failures") or []:
         print(f"{failure['label']} failed: {failure['error']}")
     if not eigen_rows:
-        explain_missing_results(EIGEN_JSON)
+        print(explain_missing_results(RESULTS_DIR, EIGEN_JSON))
         print("The file on disk carries no rows.")
     else:
         for row in eigen_rows:
@@ -1387,69 +1158,24 @@ FIELD_VIEW_UM = (-200.0, 900.0, -950.0, 150.0)
 # Drawing stride over the cropped nodes, and contour levels. Display only.
 FIELD_DISPLAY_STRIDE = 4
 FIELD_CONTOUR_LEVELS = 30
-field_file = result_file(FIELD_TXT)
+field_file = result_file(RESULTS_DIR, FIELD_TXT)
 
 if field_file is None:
-    explain_missing_results(FIELD_TXT)
+    print(explain_missing_results(RESULTS_DIR, FIELD_TXT))
 else:
-    field = np.loadtxt(field_file, comments="%")
-    field_x, field_y, field_e = field[:, 0], field[:, 1], field[:, 3]
-
-    # Crop before triangulating: only the nodes in the window reach the figure,
-    # and with them the SVG the documentation embeds.
-    field_view = (
-        (field_x >= FIELD_VIEW_UM[0])
-        & (field_x <= FIELD_VIEW_UM[1])
-        & (field_y >= FIELD_VIEW_UM[2])
-        & (field_y <= FIELD_VIEW_UM[3])
-    )
-    view_x, view_y, view_e = (
-        field_x[field_view],
-        field_y[field_view],
-        field_e[field_view],
-    )
-    if view_e.size == 0:
-        raise ValueError(f"No exported field nodes inside {FIELD_VIEW_UM}")
-
-    # Colour limits from the data in the window rather than the full-domain
-    # maximum, which sits far outside it and flattens everything on the scale.
-    color_min, color_max = (float(value) for value in np.percentile(view_e, [1, 99]))
-    draw_x, draw_y, draw_e = view_x, view_y, view_e
-    if FIELD_DISPLAY_STRIDE > 1 and view_e.size // FIELD_DISPLAY_STRIDE >= 10:
-        draw_x = view_x[::FIELD_DISPLAY_STRIDE]
-        draw_y = view_y[::FIELD_DISPLAY_STRIDE]
-        draw_e = view_e[::FIELD_DISPLAY_STRIDE]
-    print(
-        f"Field nodes: {view_e.size} of {field_e.size} inside the view; "
-        f"{draw_e.size} drawn at stride {FIELD_DISPLAY_STRIDE}; "
-        f"range {view_e.min():.3g} to {view_e.max():.3g} V/m, "
-        f"1st to 99th percentile {color_min:.3g} to {color_max:.3g} V/m"
-    )
-
+    # The export's own header names the frequency the mode was solved at, so the
+    # figure says which mode it shows rather than assuming one.
     field_frequency_ghz = exported_frequency_ghz(field_file)
     frequency_label = (
         f"{field_frequency_ghz:g} GHz, " if field_frequency_ghz is not None else ""
     )
-
-    fig, ax = plt.subplots(figsize=(7, 5))
-    contour = ax.tricontourf(
-        draw_x,
-        draw_y,
-        draw_e,
-        levels=np.geomspace(color_min, color_max, FIELD_CONTOUR_LEVELS),
-        norm=LogNorm(vmin=color_min, vmax=color_max),
-        cmap="inferno",
-        extend="both",
+    draw_cut_plane_field(
+        field_file,
+        f"Electric field norm at {frequency_label}z = 1 µm",
+        view_um=FIELD_VIEW_UM,
+        stride=FIELD_DISPLAY_STRIDE,
+        contour_levels=FIELD_CONTOUR_LEVELS,
     )
-    ax.set_xlim(FIELD_VIEW_UM[0], FIELD_VIEW_UM[1])
-    ax.set_ylim(FIELD_VIEW_UM[2], FIELD_VIEW_UM[3])
-    ax.set_aspect("equal")
-    ax.set_xlabel("x (µm)")
-    ax.set_ylabel("y (µm)")
-    ax.set_title(f"Electric field norm at {frequency_label}z = 1 µm")
-    fig.colorbar(contour, ax=ax, label=r"$|\mathbf{E}|$ (V/m)")
-    plt.tight_layout()
-    plt.show()
 
 # %% [markdown]
 # The field is concentrated on the meander, which is what a meander-localised mode should look like; the
@@ -1649,98 +1375,6 @@ def positive_number(value: Any) -> float | None:
     return number if np.isfinite(number) and number > 0.0 else None
 
 
-def rounded_coordinates(points: Any) -> list[list[float]]:
-    """Round a polygon coordinate sequence to JSON-stable floats.
-
-    Args:
-        points: A sequence of ``(x, y)`` pairs, as a prepared layout stores them.
-
-    Returns:
-        The coordinates as plain floats rounded to 6 decimals of a micrometre,
-        which is a picometre: far finer than the geometry is built at, and coarse
-        enough that two runs of the same layout produce the same numbers.
-    """
-    return [[round(float(x), 6), round(float(y), 6)] for x, y in points]
-
-
-def ported_layout_signature(layout: Any) -> str:
-    """Return a deterministic signature of the ported layout and its RF setup.
-
-    Two ported eigen solves belong beside each other in one mesh series only when
-    they discretise the same device: the same prepared metal polygons and feed
-    planes, the same enclosure, under the same mesh-independent RF settings. The
-    signature makes that check mechanical, so a record solved on a different
-    layout, in a different enclosure, with a different port setup, or with a
-    different search is left out of the series and reported rather than charted as
-    if the mesh were the only thing that changed. The meander edge box and the
-    field cut plane are in it as well, because both change which edges carry the
-    local size and which plane the mode is scored on, and a ratio from another
-    selection or another cut is not this row's. Only the meander-edge sizes are
-    outside it, because refining them is what the series measures.
-
-    Args:
-        layout: The prepared layout the ported model is built from.
-
-    Returns:
-        A short hex digest of the rounded geometry and the settings.
-    """
-    geometry = {
-        "bbox_um": [
-            round(float(value), 6)
-            for value in (
-                layout.bbox.xmin,
-                layout.bbox.ymin,
-                layout.bbox.xmax,
-                layout.bbox.ymax,
-            )
-        ],
-        # Sorted serialised entries rather than lists: a layout that hands its
-        # polygons or feeds back in another order is still the same layout.
-        "polygons": sorted(
-            json.dumps(
-                {
-                    "outline": rounded_coordinates(polygon.outline),
-                    "holes": [rounded_coordinates(hole) for hole in polygon.holes],
-                },
-                sort_keys=True,
-            )
-            for polygon in layout.polygons
-        ),
-        "feed_ports": sorted(
-            json.dumps(
-                {
-                    "name": str(feed.name),
-                    "center_um": [round(float(value), 6) for value in feed.center],
-                    "width_um": round(float(feed.width), 6),
-                    "orientation_deg": round(float(feed.orientation), 6),
-                },
-                sort_keys=True,
-            )
-            for feed in layout.feed_ports
-        ),
-    }
-    settings = {
-        "cpw_width_um": CPW_WIDTH_UM,
-        "cpw_gap_um": CPW_GAP_UM,
-        "global_hmax_um": GLOBAL_HMAX_UM,
-        "global_hmin_um": GLOBAL_HMIN_UM,
-        "substrate_thickness_um": SUBSTRATE_THICKNESS_UM,
-        "air_height_um": AIR_HEIGHT_UM,
-        "ported_shift_ghz": PORTED_SHIFT_GHZ,
-        "ported_neigs": PORTED_NEIGS,
-        "ported_eigwhich": PORTED_EIGWHICH,
-        "min_meander_feed_ratio": PORTED_MIN_MEANDER_FEED_RATIO,
-        "mode_window_ghz": list(PORTED_MODE_WINDOW_GHZ),
-        "feed_y_um": list(FEED_Y_UM),
-        "meander_box_um": MEANDER_BOX_UM,
-        # Both change what a row measures, not just how finely it discretises.
-        "meander_edge_box_um": MEANDER_EDGE_BOX_UM,
-        "field_cut_z": FIELD_CUT_Z,
-    }
-    payload = json.dumps({"geometry": geometry, "settings": settings}, sort_keys=True)
-    return hashlib.sha256(payload.encode()).hexdigest()[:16]
-
-
 def ported_eigen_record_path(edge_hmax_um: float, edge_hmin_um: float) -> Path:
     """Return the mesh-tagged ported eigen record path for one edge mesh.
 
@@ -1809,7 +1443,7 @@ def driven_pairing_problems(direct: dict[str, Any]) -> list[str]:
     Returns:
         A list of reasons the record is not paired, empty when it is.
     """
-    record_file = result_file(PORTED_EIGEN_JSON)
+    record_file = result_file(RESULTS_DIR, PORTED_EIGEN_JSON)
     if record_file is None:
         return [
             (
@@ -1830,7 +1464,6 @@ def driven_pairing_problems(direct: dict[str, Any]) -> list[str]:
         "edge_hmax_um",
         "edge_hmin_um",
         "element_count",
-        "layout_signature",
     ):
         stable_value = stable.get(key)
         direct_value = direct.get(key)
@@ -1848,30 +1481,21 @@ def driven_pairing_problems(direct: dict[str, Any]) -> list[str]:
     return problems
 
 
-def ported_series_row(
-    record: dict[str, Any], signature: str
-) -> tuple[dict[str, Any] | None, str]:
+def ported_series_row(record: dict[str, Any]) -> tuple[dict[str, Any] | None, str]:
     """Build one chart row from a solved ported eigen record.
 
     Every value comes from the record itself: nothing is interpolated, corrected,
-    or filled in from another row. A record is refused when it was not solved for
-    this layout and RF setup, when one of the fields the chart needs is not
-    finite and positive, or when the selected mode was not identified as the
-    meander mode, and the reason is returned so the read side can report it.
+    or filled in from another row. A record is refused when one of the fields the
+    chart needs is not finite and positive, or when the selected mode was not
+    identified as the meander mode, and the reason is returned so the read side
+    can report it.
 
     Args:
         record: A mesh-tagged ported eigen record.
-        signature: The signature of the layout and RF setup the series is for.
 
     Returns:
         The row, or ``None`` and the reason the record was refused.
     """
-    if record.get("layout_signature") != signature:
-        return None, (
-            "solved for a different layout or RF setup (signature "
-            f"{record.get('layout_signature', 'not recorded')!r}, this run "
-            f"{signature!r})"
-        )
     if record.get("selected_mode_identified") is not True:
         return None, (
             "the selected ported mode was not identified as the meander mode: "
@@ -1926,17 +1550,16 @@ def ported_series_row(
     )
 
 
-def update_ported_mesh_series(out_dir: Path, signature: str) -> dict[str, Any]:
+def update_ported_mesh_series(out_dir: Path) -> dict[str, Any]:
     """Rebuild the ported mesh series from every valid tagged eigen record.
 
     The file is rewritten from the records on disk rather than appended to, so
-    re-solving one edge size replaces that row instead of duplicating it, and a
-    record from another layout or RF setup is reported and left out. Rows are the
-    records' own numbers, sorted coarse to fine by element count.
+    re-solving one edge size replaces that row instead of duplicating it. Each
+    record is keyed by its explicit edge-size tag, and the rows are the records'
+    own numbers, sorted coarse to fine by element count.
 
     Args:
         out_dir: The directory holding the mesh-tagged ported eigen records.
-        signature: The signature of the layout and RF setup the series is for.
 
     Returns:
         The payload written to ``PORTED_MESH_SERIES_JSON``.
@@ -1952,13 +1575,13 @@ def update_ported_mesh_series(out_dir: Path, signature: str) -> dict[str, Any]:
         if not isinstance(record, dict):
             rejected.append(f"{path.name}: not a record object")
             continue
-        row, reason = ported_series_row(record, signature)
+        row, reason = ported_series_row(record)
         if row is None:
             rejected.append(f"{path.name}: {reason}")
             continue
         rows.append(row)
     rows.sort(key=itemgetter("element_count"))
-    payload = {"signature": signature, "rows": rows, "rejected": rejected}
+    payload = {"rows": rows, "rejected": rejected}
     write_json_atomically(out_dir / PORTED_MESH_SERIES_JSON, payload)
     return payload
 
@@ -2016,56 +1639,6 @@ def sweep_requested_points(imag_hz: float) -> int:
     return points + (points % 2 == 0)
 
 
-def requested_frequency_grid(
-    low_ghz: float, high_ghz: float, points: int
-) -> tuple[str, np.ndarray]:
-    """Return the COMSOL ``range`` for a requested grid, and that exact grid.
-
-    The start and step are formatted once and the grid is rebuilt from those
-    formatted tokens, so the grid checked here is the grid COMSOL will build.
-    Formatting all three tokens independently is what goes wrong: a rounded step
-    can make ``start + (points - 1) * step`` exceed a separately rounded stop by a
-    few millihertz, and an inclusive range then returns only ``points - 1`` rows.
-    The stop here is the intended last frequency plus half a step, so rounding
-    cannot push the last point past it, while the point one step further is still
-    beyond it, so the range returns exactly ``points`` frequencies.
-
-    Args:
-        low_ghz: Low end of the physical window, in GHz.
-        high_ghz: High end of the physical window, in GHz.
-        points: Number of grid points.
-
-    Returns:
-        The ``range`` expression, and the ``points``-long grid it should return.
-    """
-    step_ghz = (high_ghz - low_ghz) / (points - 1)
-    start_token = f"{low_ghz:.12g}"
-    step_token = f"{step_ghz:.12g}"
-    start_ghz = float(start_token)
-    step_rounded_ghz = float(step_token)
-    grid_ghz = start_ghz + step_rounded_ghz * np.arange(points)
-    stop_ghz = grid_ghz[-1] + 0.5 * step_rounded_ghz
-    expression = f"range({start_token}[GHz],{step_token}[GHz],{stop_ghz:.12g}[GHz])"
-    return expression, grid_ghz
-
-
-def power_balance(power_sum: float) -> dict[str, Any]:
-    """Judge one frequency's two-port power balance.
-
-    Args:
-        power_sum: ``|S11|^2 + |S21|^2`` at that frequency.
-
-    Returns:
-        The sum, its deficit from unity, and whether it sits inside the band.
-    """
-    deficit = 1.0 - power_sum
-    return {
-        "power_sum": float(power_sum),
-        "power_deficit": float(deficit),
-        "power_within_band": bool(POWER_SUM_MIN <= power_sum <= POWER_SUM_MAX),
-    }
-
-
 def solve_direct_point(model: Any, label: str, frequency_ghz: float) -> dict[str, Any]:
     """Solve one frequency with the adaptive sweep off and read it back.
 
@@ -2108,7 +1681,9 @@ def solve_direct_point(model: Any, label: str, frequency_ghz: float) -> dict[str
         "s21_db": float(values["s21_db"][0]),
         "s11_db": float(values["s11_db"][0]),
         "dataset": values["dataset"],
-    } | power_balance(float(values["power_sum"][0]))
+    } | power_balance(
+        float(values["power_sum"][0]), low=POWER_SUM_MIN, high=POWER_SUM_MAX
+    )
 
 
 def solve_awe_curve(
@@ -2258,57 +1833,6 @@ def solve_awe_curve(
     }
 
 
-def curve_value_db(curve: dict[str, Any], at_ghz: float) -> float | None:
-    """Interpolate the adaptive curve at one directly solved frequency.
-
-    A direct point is asked for at the same finite precision as the grid tokens,
-    but the two still differ by a fraction of a hertz from formatting, so a
-    frequency a hair outside the reconstructed rows is clamped to the nearest
-    endpoint. Materially outside the window it is ``None``, so an out-of-window
-    direct point is never accepted silently.
-
-    Args:
-        curve: The dict returned by :func:`solve_awe_curve`.
-        at_ghz: The frequency to read, in GHz.
-
-    Returns:
-        The interpolated ``S21`` level in dB, or ``None`` when the frequency is
-        outside the curve by more than the endpoint tolerance.
-    """
-    frequencies_ghz = curve["frequencies_ghz"]
-    if frequencies_ghz.size == 0:
-        return None
-    if (
-        at_ghz < frequencies_ghz[0] - CURVE_ENDPOINT_TOLERANCE_GHZ
-        or at_ghz > frequencies_ghz[-1] + CURVE_ENDPOINT_TOLERANCE_GHZ
-    ):
-        return None
-    clamped = float(np.clip(at_ghz, frequencies_ghz[0], frequencies_ghz[-1]))
-    return float(np.interp(clamped, frequencies_ghz, curve["s21_db"]))
-
-
-def notch_verdict(centre_db: float, flank_levels_db: list[float]) -> dict[str, Any]:
-    """Decide from directly solved points whether the centre is a notch.
-
-    Only direct solves count: the minimum of an adaptive curve says where to
-    look, not that a notch is there.
-
-    Args:
-        centre_db: Directly solved ``S21`` at the centre, in dB.
-        flank_levels_db: Directly solved ``S21`` at the two flanks, in dB.
-
-    Returns:
-        The depth below the lower flank and whether that clears the threshold.
-    """
-    lower = min(flank_levels_db)
-    depth = lower - centre_db
-    return {
-        "depth_below_lower_flank_db": depth,
-        "minimum_depth_db": NOTCH_MIN_DEPTH_DB,
-        "is_a_notch": bool(depth >= NOTCH_MIN_DEPTH_DB),
-    }
-
-
 if RUN_PORTED_DRIVEN and not RUN_COMSOL:
     print(
         "RUN_PORTED_DRIVEN needs RUN_COMSOL = True: stage 2 uses the COMSOL "
@@ -2326,6 +1850,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
         name="QPDK Coupled Quarter-Wave Resonator ported eigenmodes",
         substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
         air_height_um=AIR_HEIGHT_UM,
+        silicon_relative_permittivity=SILICON_RELATIVE_PERMITTIVITY,
     )
     try:
         ported_model.add_cpw_rf_study(
@@ -2381,19 +1906,12 @@ elif RUN_PORTED_DRIVEN and client is not None:
                 "real": ported_selected.real,
                 "imag": ported_selected.imag,
                 "field_file": ported_field_path.name,
-                # Digest of the exact field bytes both the tagged and the stable
-                # copy hold, so a reader can tell an old record from a newer field.
-                "field_sha256": field_sha256(ported_field_source),
                 "meander_to_feed_p95": ported_ratio,
             },
             "selected_mode_identified": ported_identification[
                 "selected_mode_identified"
             ],
             "selected_mode_identified_reason": ported_identification["reason"],
-            # Names the device and the RF setup this row was solved for, so a run
-            # at another edge size can tell whether it belongs beside this record
-            # in the mesh series.
-            "layout_signature": ported_layout_signature(layout),
         }
         # The tagged copy overrides field_file with its own field, so a later run
         # cannot leave it describing a field that has since been overwritten.
@@ -2405,9 +1923,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
                 | {"field_file": tagged_field_path.name}
             },
         )
-        ported_series = update_ported_mesh_series(
-            MODEL_DIR, ported_record["layout_signature"]
-        )
+        ported_series = update_ported_mesh_series(MODEL_DIR)
         print(
             f"Ported eigen: {ported_elements} elements, selected "
             f"{ported_selected.real / 1e9:.9f} GHz, meander/feed p95 "
@@ -2449,6 +1965,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
             name="QPDK Coupled Quarter-Wave Resonator driven",
             substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
             air_height_um=AIR_HEIGHT_UM,
+            silicon_relative_permittivity=SILICON_RELATIVE_PERMITTIVITY,
         )
         try:
             model.add_cpw_rf_study(
@@ -2472,13 +1989,12 @@ elif RUN_PORTED_DRIVEN and client is not None:
             awe_path = MODEL_DIR / f"{AWE_CURVE_PREFIX}-{run_id}.csv"
             record: dict[str, Any] = {
                 "run_id": run_id,
-                # The driven mesh and device this window was solved on, so the
-                # reading side can require them to match the stable ported eigen
-                # row before it reports a verdict or plots the curve.
+                # The driven mesh this window was solved on, so the reading side
+                # can require it to match the stable ported eigen row before it
+                # reports a verdict or plots the curve.
                 "edge_hmax_um": PORTED_EDGE_HMAX_UM,
                 "edge_hmin_um": PORTED_EDGE_HMIN_UM,
                 "element_count": driven_elements,
-                "layout_signature": ported_layout_signature(layout),
                 "window": {
                     "centre_ghz": center_ghz,
                     "low_ghz": low_ghz,
@@ -2529,7 +2045,9 @@ elif RUN_PORTED_DRIVEN and client is not None:
 
             flank_levels_db = [direct_points[0]["s21_db"], direct_points[2]["s21_db"]]
             direct_notch_at_centre = notch_verdict(
-                direct_points[1]["s21_db"], flank_levels_db
+                direct_points[1]["s21_db"],
+                flank_levels_db,
+                min_depth_db=NOTCH_MIN_DEPTH_DB,
             )
 
             curve = solve_awe_curve(model, low_ghz, high_ghz, awe_points, awe_path)
@@ -2564,7 +2082,9 @@ elif RUN_PORTED_DRIVEN and client is not None:
             # flanks. The centre is kept as a comparison point: a loaded mode can sit off
             # the ported eigenfrequency, so the true minimum need not fall on the centre.
             direct_notch_at_minimum = notch_verdict(
-                direct_minimum["s21_db"], flank_levels_db
+                direct_minimum["s21_db"],
+                flank_levels_db,
+                min_depth_db=NOTCH_MIN_DEPTH_DB,
             )
 
             # A direct frequency outside the curve cannot be compared, so it is a failure
@@ -2573,7 +2093,12 @@ elif RUN_PORTED_DRIVEN and client is not None:
             # fails too.
             comparisons = []
             for point in record["direct_points"]:
-                curve_db = curve_value_db(curve, point["frequency_ghz"])
+                curve_db = curve_value_db(
+                    curve["frequencies_ghz"],
+                    curve["s21_db"],
+                    point["frequency_ghz"],
+                    endpoint_tolerance_ghz=CURVE_ENDPOINT_TOLERANCE_GHZ,
+                )
                 # Distance to the nearest curve row, so an endpoint comparison says how
                 # far the direct point sat from the row it was read at.
                 nearest_gap_ghz = (
@@ -2763,7 +2288,7 @@ elif not RUN_PORTED_DRIVEN:
 #
 # The curve as a line with the directly solved frequencies as markers: **the line is AWE
 # interpolation**, and the markers are the only independent solves. The cell refuses a curve or eigen
-# row that does not match this notebook's layout signature, mesh, and element count, and recomputes the
+# row whose mesh and element count do not match the stable ported eigen row, and recomputes the
 # verdict from the loaded curve and saved points rather than trusting the record's own flag. The notch
 # is therefore verified at the directly solved frequencies only: the depth comes from the coupling plus
 # whatever loss the model carries, and PEC adds no conductor or dielectric loss.
@@ -2779,7 +2304,7 @@ direct_files = (
 )
 
 if not direct_files:
-    explain_missing_results(f"{DIRECT_PREFIX}-<run-id>.json")
+    print(explain_missing_results(RESULTS_DIR, f"{DIRECT_PREFIX}-<run-id>.json"))
 else:
     direct_file = direct_files[-1]
     direct = json.loads(direct_file.read_text())
@@ -2797,16 +2322,8 @@ else:
         "direct_points",
     )
     missing_keys = [key for key in required_keys if key not in direct]
-    ported_signature = ported_layout_signature(layout)
     pairing_problems = driven_pairing_problems(direct)
-    if direct.get("layout_signature") != ported_signature:
-        print(
-            f"{direct_file.name} was solved for a different layout or RF setup "
-            f"(signature {direct.get('layout_signature', 'not recorded')!r} against "
-            f"this run's {ported_signature!r}), so its driven result does not "
-            "describe this device. Nothing is verified or plotted from it."
-        )
-    elif pairing_problems:
+    if pairing_problems:
         print(
             "UNVERIFIED: the driven record is not paired with the stable ported "
             "eigen row it was solved with ("
@@ -2825,7 +2342,7 @@ else:
             + "; the verification is pending and no curve is plotted."
         )
     else:
-        awe_file = resolve_record_path(direct_file.parent, curve_name)
+        awe_file = resolve_record_path(RESULTS_DIR, direct_file.parent, curve_name)
         if not awe_file.exists():
             print(
                 f"The record {direct_file.name} names {curve_name}, but that curve "
@@ -2955,7 +2472,12 @@ else:
                         if label not in direct_values:
                             continue
                         values = direct_values[label]
-                        curve_db = curve_value_db(curve, values["frequency_ghz"])
+                        curve_db = curve_value_db(
+                            curve["frequencies_ghz"],
+                            curve["s21_db"],
+                            values["frequency_ghz"],
+                            endpoint_tolerance_ghz=CURVE_ENDPOINT_TOLERANCE_GHZ,
+                        )
                         comparisons.append({
                             "label": label,
                             "frequency_ghz": values["frequency_ghz"],
@@ -3005,6 +2527,7 @@ else:
                                 direct_values["low flank"]["s21_db"],
                                 direct_values["high flank"]["s21_db"],
                             ],
+                            min_depth_db=NOTCH_MIN_DEPTH_DB,
                         )
                         if not direct_notch["is_a_notch"]:
                             problems.append(
@@ -3053,7 +2576,9 @@ else:
                     direct_power = {
                         label: power_balance(
                             10 ** (values["s21_db"] / 10)
-                            + 10 ** (values["s11_db"] / 10)
+                            + 10 ** (values["s11_db"] / 10),
+                            low=POWER_SUM_MIN,
+                            high=POWER_SUM_MAX,
                         )
                         for label, values in direct_values.items()
                     }
@@ -3222,7 +2747,7 @@ else:
 # error; the printed ratio $f'/(2|f''|)$ is that loaded eigenvalue damping, not a $Q$ from a linewidth.
 
 # %%
-ported_file = result_file(PORTED_EIGEN_JSON)
+ported_file = result_file(RESULTS_DIR, PORTED_EIGEN_JSON)
 
 if ported_file is None:
     print(
@@ -3232,142 +2757,61 @@ if ported_file is None:
     )
 else:
     ported = json.loads(ported_file.read_text())
-    ported_signature = ported_layout_signature(layout)
-    if ported.get("layout_signature") != ported_signature:
+    selected_hz = ported.get("selected_mode_hz") or {}
+    print(
+        "Ported eigen solve: loaded modes, not comparable one to one with the "
+        "port-free modes above."
+    )
+    print(f"  elements: {ported.get('element_count')}")
+    print(
+        f"  shift: {ported.get('shift_ghz')} GHz, "
+        f"modes requested: {ported.get('neigs')}"
+    )
+    modes_hz = ported.get("modes_hz") or []
+    reals_ghz = [
+        mode["real"] / 1e9
+        for mode in modes_hz
+        if mode.get("real") is not None and np.isfinite(mode["real"])
+    ]
+    if reals_ghz:
         print(
-            f"{PORTED_EIGEN_JSON} was solved for a different layout or RF setup "
-            f"(signature {ported.get('layout_signature', 'not recorded')!r} "
-            f"against this run's {ported_signature!r}), so it does not describe "
-            "this device. It is refused and not shown."
+            f"  {len(reals_ghz)} solved modes (GHz): "
+            + ", ".join(f"{value:.6f}" for value in reals_ghz)
         )
+    if selected_hz.get("real") is not None and np.isfinite(selected_hz["real"]):
+        imag_hz = selected_hz.get("imag")
+        damping = (
+            f"{imag_hz:+.4f} Hz"
+            if imag_hz is not None and np.isfinite(imag_hz)
+            else "not recorded"
+        )
+        print(
+            f"  selected ported mode: {selected_hz['real'] / 1e9:.6f} GHz, "
+            f"imaginary {damping}"
+        )
+        if imag_hz:
+            print(
+                "  its implied loss ratio f'/(2|f''|), port loading included: "
+                f"{abs(selected_hz['real'] / (2 * imag_hz)):.3g}"
+            )
     else:
-        selected_hz = ported.get("selected_mode_hz") or {}
-        print(
-            "Ported eigen solve: loaded modes, not comparable one to one with the "
-            "port-free modes above."
-        )
-        print(f"  elements: {ported.get('element_count')}")
-        print(
-            f"  shift: {ported.get('shift_ghz')} GHz, "
-            f"modes requested: {ported.get('neigs')}"
-        )
-        modes_hz = ported.get("modes_hz") or []
-        reals_ghz = [
-            mode["real"] / 1e9
-            for mode in modes_hz
-            if mode.get("real") is not None and np.isfinite(mode["real"])
-        ]
-        if reals_ghz:
-            print(
-                f"  {len(reals_ghz)} solved modes (GHz): "
-                + ", ".join(f"{value:.6f}" for value in reals_ghz)
-            )
-        if selected_hz.get("real") is not None and np.isfinite(selected_hz["real"]):
-            imag_hz = selected_hz.get("imag")
-            damping = (
-                f"{imag_hz:+.4f} Hz"
-                if imag_hz is not None and np.isfinite(imag_hz)
-                else "not recorded"
-            )
-            print(
-                f"  selected ported mode: {selected_hz['real'] / 1e9:.6f} GHz, "
-                f"imaginary {damping}"
-            )
-            if imag_hz:
-                print(
-                    "  its implied loss ratio f'/(2|f''|), port loading included: "
-                    f"{abs(selected_hz['real'] / (2 * imag_hz)):.3g}"
-                )
-        else:
-            print("  no selected ported mode is recorded in the file")
+        print("  no selected ported mode is recorded in the file")
 
 # %% [markdown]
 # ## Ported eigen field map (stage 2 output)
 #
 # The same cut-plane field for the selected ported mode, labelled **PORTED**: matched terminations make
 # this a loaded mode's field, not the port-free one, with the same eigenvector normalization as above.
-# Nothing is drawn unless the record's SHA-256 digest matches the bytes on disk and the export header's
-# real frequency matches the selected mode, so a stale field cannot be shown.
+# Nothing is drawn unless the export header's real frequency matches the selected mode, so a field from
+# another solve cannot be shown.
 
 # %%
-# PORTED_FIELD_TXT, PORTED_FIELD_FREQUENCY, PORTED_FIELD_FREQUENCY_RTOL and
-# complex_frequency_ghz are defined in the setup imports above, because the
-# licensed stage-2 branch validates the export against them before it writes the
-# record this cell reads.
+# PORTED_FIELD_TXT, PORTED_FIELD_FREQUENCY_RTOL and complex_frequency_ghz are
+# defined in the setup imports above, because the licensed stage-2 branch
+# validates the export against them before it writes the record this cell reads.
 
 
-def draw_cropped_field_map(
-    file: Path,
-    title: str,
-    *,
-    view_um: tuple[float, float, float, float] = FIELD_VIEW_UM,
-    stride: int = FIELD_DISPLAY_STRIDE,
-    contour_levels: int = FIELD_CONTOUR_LEVELS,
-) -> None:
-    """Draw a cropped ``emw.normE`` map from a COMSOL cut-plane export.
-
-    The export covers the whole prepared box, so the nodes are cropped to
-    ``view_um`` and, for display only, drawn on a fixed-stride subset with
-    percentiles of the cropped data as the colour limits, the same treatment the
-    port-free map uses. The stride changes what is drawn, not what was solved.
-
-    Args:
-        file: A ``emw.normE`` export on the cut plane, columns x, y, z, E.
-        title: Figure title.
-        view_um: ``(xmin, xmax, ymin, ymax)`` crop window, in µm.
-        stride: Drawing stride over the cropped nodes.
-        contour_levels: Number of contour levels.
-
-    Raises:
-        ValueError: If the crop window holds no exported node.
-    """
-    field = np.loadtxt(file, comments="%")
-    field_x, field_y, field_e = field[:, 0], field[:, 1], field[:, 3]
-    inside = (
-        (field_x >= view_um[0])
-        & (field_x <= view_um[1])
-        & (field_y >= view_um[2])
-        & (field_y <= view_um[3])
-    )
-    view_x, view_y, view_e = field_x[inside], field_y[inside], field_e[inside]
-    if view_e.size == 0:
-        raise ValueError(f"No exported field nodes inside {view_um}")
-
-    color_min, color_max = (float(value) for value in np.percentile(view_e, [1, 99]))
-    draw_x, draw_y, draw_e = view_x, view_y, view_e
-    if stride > 1 and view_e.size // stride >= 10:
-        draw_x = view_x[::stride]
-        draw_y = view_y[::stride]
-        draw_e = view_e[::stride]
-    print(
-        f"Field nodes: {view_e.size} of {field_e.size} inside the view; "
-        f"{draw_e.size} drawn at stride {stride}; "
-        f"range {view_e.min():.3g} to {view_e.max():.3g} V/m, "
-        f"1st to 99th percentile {color_min:.3g} to {color_max:.3g} V/m"
-    )
-
-    fig, ax = plt.subplots(figsize=(7, 5))
-    contour = ax.tricontourf(
-        draw_x,
-        draw_y,
-        draw_e,
-        levels=np.geomspace(color_min, color_max, contour_levels),
-        norm=LogNorm(vmin=color_min, vmax=color_max),
-        cmap="inferno",
-        extend="both",
-    )
-    ax.set_xlim(view_um[0], view_um[1])
-    ax.set_ylim(view_um[2], view_um[3])
-    ax.set_aspect("equal")
-    ax.set_xlabel("x (µm)")
-    ax.set_ylabel("y (µm)")
-    ax.set_title(title)
-    fig.colorbar(contour, ax=ax, label=r"$|\mathbf{E}|$ (V/m)")
-    plt.tight_layout()
-    plt.show()
-
-
-ported_field_file = result_file(PORTED_FIELD_TXT)
+ported_field_file = result_file(RESULTS_DIR, PORTED_FIELD_TXT)
 
 if ported_field_file is None:
     print(
@@ -3375,7 +2819,7 @@ if ported_field_file is None:
         "ported field map to show."
     )
 else:
-    ported_record_file = result_file(PORTED_EIGEN_JSON)
+    ported_record_file = result_file(RESULTS_DIR, PORTED_EIGEN_JSON)
     if ported_record_file is None:
         print(
             f"{PORTED_FIELD_TXT} is present but {PORTED_EIGEN_JSON} is not, so the "
@@ -3384,37 +2828,12 @@ else:
         )
     else:
         ported_record = json.loads(ported_record_file.read_text())
-        ported_signature = ported_layout_signature(layout)
         selected_hz = ported_record.get("selected_mode_hz") or {}
         selected_real_hz = selected_hz.get("real")
-        if ported_record.get("layout_signature") != ported_signature:
-            print(
-                f"{PORTED_EIGEN_JSON} was solved for a different layout or RF "
-                f"setup (signature "
-                f"{ported_record.get('layout_signature', 'not recorded')!r} against "
-                f"this run's {ported_signature!r}), so the field cannot be checked "
-                "against this device's ported mode and is not plotted."
-            )
-        elif selected_real_hz is None or not np.isfinite(selected_real_hz):
+        if selected_real_hz is None or not np.isfinite(selected_real_hz):
             print(
                 f"{PORTED_EIGEN_JSON} records no finite selected ported mode, so "
                 "there is no mode to check the field against and it is not plotted."
-            )
-        elif not (
-            isinstance(recorded_digest := selected_hz.get("field_sha256"), str)
-            and re.fullmatch(r"[0-9a-f]{64}", recorded_digest)
-        ):
-            print(
-                f"{PORTED_EIGEN_JSON} records no valid sha256 digest of the field it "
-                f"was solved with (selected_mode_hz.field_sha256 is "
-                f"{selected_hz.get('field_sha256')!r}), so it cannot be checked "
-                f"against {ported_field_file.name} and the field is not plotted."
-            )
-        elif field_sha256(ported_field_file) != recorded_digest:
-            print(
-                f"{ported_field_file.name} does not match the sha256 digest "
-                f"recorded in {PORTED_EIGEN_JSON}, so the record and the field are "
-                "not from the same solve and the field is not plotted."
             )
         else:
             annotation = complex_frequency_ghz(ported_field_file)
@@ -3462,10 +2881,13 @@ else:
                 "One cut plane from one ported solve is a consistency check on the "
                 "field, not a convergence result; nothing here is called settled."
             )
-            draw_cropped_field_map(
+            draw_cut_plane_field(
                 ported_field_file,
                 f"PORTED eigen field: $|\\mathbf{{E}}|$ at {field_real_ghz:g} GHz, "
                 "z = 1 µm",
+                view_um=FIELD_VIEW_UM,
+                stride=FIELD_DISPLAY_STRIDE,
+                contour_levels=FIELD_CONTOUR_LEVELS,
             )
 
 # %% [markdown]
@@ -3485,7 +2907,7 @@ else:
 SERIES_SIZES = ("edge_hmax_um", "edge_hmin_um")
 SERIES_FIELDS = ("element_count", "frequency_ghz", "q", "meander_to_feed_p95")
 
-ported_series_file = result_file(PORTED_MESH_SERIES_JSON)
+ported_series_file = result_file(RESULTS_DIR, PORTED_MESH_SERIES_JSON)
 if ported_series_file is None:
     print(
         f"No {PORTED_MESH_SERIES_JSON} in RESULTS_DIR ({RESULTS_DIR}): no ported mesh "
@@ -3496,22 +2918,10 @@ if ported_series_file is None:
     )
 else:
     payload = json.loads(ported_series_file.read_text())
-    rows = payload.get("rows") if isinstance(payload, dict) else None
-    rows = rows if isinstance(rows, list) else []
-    # Only a series rebuilt for this layout and RF setup is charted, so rows from
-    # another device cannot pass as a mesh-only change.
-    series_signature = ported_layout_signature(layout)
-    refused = None
+    stored_rows = payload.get("rows") if isinstance(payload, dict) else None
+    rows = stored_rows if isinstance(stored_rows, list) else []
     if not isinstance(payload, dict):
-        refused = f"{PORTED_MESH_SERIES_JSON} does not hold a record object"
-    elif payload.get("signature") != series_signature:
-        refused = (
-            f"{PORTED_MESH_SERIES_JSON} was built for a different layout or RF "
-            f"setup: signature {payload.get('signature', 'not recorded')!r} against "
-            f"this run's {series_signature!r}"
-        )
-    if refused is not None:
-        problems = [refused]
+        problems = [f"{PORTED_MESH_SERIES_JSON} does not hold a record object"]
     else:
         problems = [] if len(rows) >= 2 else [f"{len(rows)} row(s): a delta needs two"]
         for index, row in enumerate(rows, start=1):

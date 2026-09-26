@@ -16,14 +16,14 @@ from unittest.mock import MagicMock
 import pytest
 from shapely.geometry import Point, Polygon
 
-from qpdk.simulation import comsol_rf
-from qpdk.simulation.comsol_layout import (
+from qpdk.simulation.comsol import rf as comsol_rf
+from qpdk.simulation.comsol.layout import (
     ComsolBoundingBox,
     ComsolFeedPort,
     ComsolLayout,
     ComsolPolygon,
 )
-from qpdk.simulation.comsol_rf import (
+from qpdk.simulation.comsol.rf import (
     INPUT_FACES_SELECTION,
     INPUT_GAP_SELECTION,
     METAL_FACES_SELECTION,
@@ -31,7 +31,7 @@ from qpdk.simulation.comsol_rf import (
     OUTPUT_GAP_SELECTION,
     add_cpw_rf_study,
 )
-from qpdk.simulation.comsol_sheet import AIR_SELECTION, SILICON_SELECTION
+from qpdk.simulation.comsol.sheet import AIR_SELECTION, SILICON_SELECTION
 
 
 class _Sheet:
@@ -516,6 +516,17 @@ def test_mesh_and_frequency_study_are_built_but_not_run():
     model.solve.assert_not_called()
 
 
+def test_the_effective_index_shift_reaches_both_bma_steps():
+    """An explicit shift overrides the 2.5 every saved example used."""
+    model = _study(effective_index_shift=3.4)
+    study = model.java.study("std1")
+
+    for index in (1, 2):
+        feature = study.feature(f"bma{index}")
+        assert feature.properties["shift"] == "3.4"
+        assert feature.properties["shiftactive"] == "on"
+
+
 def test_the_dielectric_selections_are_left_to_the_sheet_model():
     """The study does not re-create or re-point the air and silicon selections."""
     model = _study()
@@ -582,6 +593,10 @@ def test_a_feed_with_one_short_circuited_gap_is_refused():
         ({"mesh_size": 0}, "mesh_size"),
         ({"mesh_size": 10}, "mesh_size"),
         ({"mesh_size": "8"}, "mesh_size"),
+        ({"mesh_size": True}, "mesh_size"),
+        ({"effective_index_shift": 0.0}, "effective_index_shift"),
+        ({"effective_index_shift": -2.5}, "effective_index_shift"),
+        ({"effective_index_shift": float("inf")}, "effective_index_shift"),
     ],
 )
 def test_rejects_bad_arguments_before_touching_comsol(

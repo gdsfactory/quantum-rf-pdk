@@ -1,18 +1,28 @@
-"""Behavior tests for the result-provenance code cells of the COMSOL notebooks.
+"""Behavior tests for the result code cells of the COMSOL notebooks.
 
-The cells are executed from the Jupytext sources so the tests exercise the code
-that actually runs in the notebooks, against fakes in place of a licensed COMSOL.
+The notebook cells are executed from the Jupytext sources against fakes in place
+of a licensed COMSOL, and the shared result helpers are imported from
+:mod:`qpdk.simulation.comsol.results`.
 """
 
 import ast
-import hashlib
-import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pytest
+from matplotlib import tri as mtri
+from matplotlib.colors import LogNorm
+
+from qpdk.simulation.comsol.results import (
+    complex_frequency_ghz,
+    curve_value_db,
+    exported_frequency_ghz,
+    requested_frequency_grid,
+    resolve_record_path,
+    result_file,
+)
 
 NOTEBOOKS = Path(__file__).resolve().parents[1] / "notebooks" / "src"
 QUBIT_NOTEBOOK = NOTEBOOKS / "comsol_qubit_capacitance.py"
@@ -51,24 +61,6 @@ def _functions(source: str, names: set[str], **globals_: Any) -> dict[str, Any]:
     namespace: dict[str, Any] = dict(globals_)
     exec("\n\n".join(chunks), namespace)  # ruff: ignore[exec-builtin]
     return namespace
-
-
-_FILE_SHA256 = _functions(
-    _source(QUBIT_NOTEBOOK), {"file_sha256"}, hashlib=hashlib, Path=Path
-)["file_sha256"]
-
-
-def _sha256(path: Path) -> str:
-    """Hash a file independently of the notebook's own helper.
-
-    Args:
-        path: File to hash.
-
-    Returns:
-        The SHA-256 digest as lowercase hexadecimal.
-    """
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 class _FakeFeature:
@@ -134,69 +126,178 @@ class _FakeModel:
         self.java = _FakeJava()
 
 
-def test_export_cell_rerun_reuses_nodes_and_restamps_digest(tmp_path: Path) -> None:
+def test_export_cell_rerun_reuses_nodes(tmp_path: Path) -> None:
     cell = _cell_with(_source(QUBIT_NOTEBOOK), "field_export")
     model = _FakeModel()
-    metrics_path = tmp_path / "comsol_qubit_metrics.json"
-    metrics_path.write_text(json.dumps({"voltage_v": 1.0, "field_sha256": None}))
     namespace = {
         "RUN_COMSOL": True,
         "MPH_AVAILABLE": True,
         "model": model,
         "MODEL_DIR": tmp_path,
-        "json": json,
-        "file_sha256": _FILE_SHA256,
     }
     field_path = tmp_path / "comsol_qubit_field.txt"
 
     exec(cell, namespace)  # ruff: ignore[exec-builtin]
     first_bytes = field_path.read_bytes()
-    assert json.loads(metrics_path.read_text())["field_sha256"] == _sha256(field_path)
 
     exec(cell, namespace)  # ruff: ignore[exec-builtin]
-    assert json.loads(metrics_path.read_text())["field_sha256"] == _sha256(field_path)
     assert field_path.read_bytes() != first_bytes
     assert model.java.result().datasets.tags() == {"cutplane"}
     assert model.java.result().exports.tags() == {"field"}
 
 
-class _NoPlot:
-    """Any access to pyplot from a refusing readback is a failure."""
+class _FakeAxes:
+    def __init__(self) -> None:
+        self.contours = 0
 
-    def __getattr__(self, name: str) -> Any:
-        raise AssertionError(f"readback plotted via plt.{name}")
+    def contourf(self, *_args: Any, **_kwargs: Any) -> Any:
+        self.contours += 1
+        return object()
+
+    def set_title(self, *_args: Any, **_kwargs: Any) -> None:
+        pass
+
+    def set_aspect(self, *_args: Any, **_kwargs: Any) -> None:
+        pass
+
+    def set_xlabel(self, *_args: Any, **_kwargs: Any) -> None:
+        pass
+
+    def set_ylabel(self, *_args: Any, **_kwargs: Any) -> None:
+        pass
 
 
-@pytest.mark.parametrize(
-    ("stored_digest", "expected_message"),
-    [
-        (None, "No field digest"),
-        ("0" * 64, "does not match the digest"),
-    ],
-)
-def test_field_readback_refuses_unverified_field(
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-    stored_digest: str | None,
-    expected_message: str,
-) -> None:
-    cell = _cell_with(_source(QUBIT_NOTEBOOK), "field_file = result_file(FIELD_TXT)")
+class _FakeFigure:
+    def colorbar(self, *_args: Any, **_kwargs: Any) -> None:
+        pass
+
+
+class _FakePyplot:
+    def __init__(self) -> None:
+        self.axes: list[_FakeAxes] = []
+
+    def subplots(self, *_args: Any, **_kwargs: Any) -> tuple[_FakeFigure, list[Any]]:
+        self.axes = [_FakeAxes(), _FakeAxes()]
+        return _FakeFigure(), list(self.axes)
+
+    def tight_layout(self) -> None:
+        pass
+
+    def show(self) -> None:
+        pass
+
+
+def test_field_readback_plots_when_the_export_exists(tmp_path: Path) -> None:
+    """A saved field is drawn from disk, with no digest guarding the read."""
+    cell = _cell_with(
+        _source(QUBIT_NOTEBOOK), "field_file = result_file(RESULTS_DIR, FIELD_TXT)"
+    )
     field_path = tmp_path / "comsol_qubit_field.txt"
-    field_path.write_text("V,E\n1,2\n")
+    # COMSOL text exports are whitespace-separated, which is what the notebook's
+    # default-delimiter np.loadtxt expects.
+    field_path.write_text(
+        "-100.0 0.0 1.0 1.0 5.0\n"
+        "0.0 0.0 1.0 0.5 3.0\n"
+        "100.0 0.0 1.0 0.2 1.0\n"
+        "0.0 50.0 1.0 0.1 0.5\n",
+        encoding="utf-8",
+    )
+    pyplot = _FakePyplot()
     namespace = {
         "np": np,
-        "plt": _NoPlot(),
-        "FIELD_TXT": field_path.name,
-        "METRICS_JSON": "comsol_qubit_metrics.json",
-        "field_sha256": stored_digest,
-        "result_file": lambda _name: field_path,
-        "explain_missing_results": lambda _name: None,
-        "file_sha256": _FILE_SHA256,
+        "mtri": mtri,
+        "LogNorm": LogNorm,
+        "plt": pyplot,
+        "RESULTS_DIR": tmp_path,
+        "voltage_v": 1.0,
+        "result_file": result_file,
+        "explain_missing_results": lambda *_args: "",
     }
 
     exec(cell, namespace)  # ruff: ignore[exec-builtin]
 
-    assert expected_message in capsys.readouterr().out
+    assert [axes.contours for axes in pyplot.axes] == [1, 1]
+
+
+def test_exported_frequency_reads_bare_and_named_annotations(tmp_path: Path) -> None:
+    named = tmp_path / "named.txt"
+    named.write_text("% @ freq=7.5\nV,E\n", encoding="utf-8")
+    assert exported_frequency_ghz(named) == pytest.approx(7.5)
+
+    bare = tmp_path / "bare.txt"
+    bare.write_text("% @ 7.2921 GHz\nV,E\n", encoding="utf-8")
+    assert exported_frequency_ghz(bare) == pytest.approx(7.2921)
+
+    scaled = tmp_path / "scaled.txt"
+    scaled.write_text("% @ 750 MHz\nV,E\n", encoding="utf-8")
+    assert exported_frequency_ghz(scaled) == pytest.approx(0.75)
+
+    silent = tmp_path / "silent.txt"
+    silent.write_text("V,E\n0,1\n", encoding="utf-8")
+    assert exported_frequency_ghz(silent) is None
+
+
+def test_complex_frequency_reads_real_and_imaginary(tmp_path: Path) -> None:
+    annotated = tmp_path / "ported.txt"
+    annotated.write_text("% @ 7.3266+5.3458E-4i GHz\nx,y,z,E\n", encoding="utf-8")
+    annotation = complex_frequency_ghz(annotated)
+    assert annotation is not None
+    real_ghz, imag_ghz = annotation
+    assert real_ghz == pytest.approx(7.3266)
+    assert imag_ghz == pytest.approx(5.3458e-4)
+
+    real_only = tmp_path / "real.txt"
+    real_only.write_text("% @ 7.2921 GHz\nx,y,z,E\n", encoding="utf-8")
+    assert complex_frequency_ghz(real_only) is None
+
+
+def test_curve_value_clamps_near_the_edge_and_refuses_far_outside() -> None:
+    frequencies_ghz = np.array([4.0, 4.5, 5.0])
+    s21_db = np.array([-1.0, -3.0, -2.0])
+
+    assert curve_value_db(
+        frequencies_ghz, s21_db, 4.5, endpoint_tolerance_ghz=1e-7
+    ) == pytest.approx(-3.0)
+    assert curve_value_db(
+        frequencies_ghz, s21_db, 4.0 - 1e-9, endpoint_tolerance_ghz=1e-7
+    ) == pytest.approx(-1.0)
+    assert (
+        curve_value_db(frequencies_ghz, s21_db, 3.9, endpoint_tolerance_ghz=1e-7)
+        is None
+    )
+    assert (
+        curve_value_db(np.array([]), np.array([]), 5.0, endpoint_tolerance_ghz=1e-7)
+        is None
+    )
+
+
+def test_result_file_and_record_path_resolution(tmp_path: Path) -> None:
+    present = tmp_path / "on_disk.txt"
+    present.write_text("x\n", encoding="utf-8")
+
+    assert result_file(tmp_path, "on_disk.txt") == present
+    assert result_file(tmp_path, "absent.txt") is None
+    assert result_file(None, "on_disk.txt") is None
+
+    record_dir = tmp_path / "records"
+    record_dir.mkdir()
+    # A bare name resolves under the results directory when the file is there,
+    # else beside the record; an absolute stored path is honoured as written.
+    assert resolve_record_path(tmp_path, record_dir, "on_disk.txt") == present
+    assert (
+        resolve_record_path(tmp_path, record_dir, "only_here.txt")
+        == record_dir / "only_here.txt"
+    )
+    assert resolve_record_path(tmp_path, record_dir, str(present)) == present
+
+
+def test_requested_grid_returns_the_exact_point_count() -> None:
+    expression, grid_ghz = requested_frequency_grid(7.0, 7.002, 11)
+
+    assert grid_ghz.size == 11
+    assert grid_ghz[0] == pytest.approx(7.0)
+    assert expression.startswith("range(")
+    assert expression.endswith("[GHz])")
 
 
 class _AweStudy:
@@ -242,17 +343,16 @@ def _awe_namespace(
     """
     namespace = _functions(
         _source(RESONATOR_NOTEBOOK),
-        {"requested_frequency_grid", "solve_awe_curve"},
+        {"solve_awe_curve"},
         np=np,
         Any=Any,
         Path=Path,
         FREQUENCY_STEP="freq",
         POWER_SUM_MIN=0.99,
         POWER_SUM_MAX=1.001,
+        requested_frequency_grid=requested_frequency_grid,
     )
-    _, grid = namespace["requested_frequency_grid"](
-        AWE_LOW_GHZ, AWE_HIGH_GHZ, AWE_POINTS
-    )
+    _, grid = requested_frequency_grid(AWE_LOW_GHZ, AWE_HIGH_GHZ, AWE_POINTS)
     returned = grid if spoil is None else spoil(grid)
 
     def solution(_model: Any) -> dict[str, Any]:

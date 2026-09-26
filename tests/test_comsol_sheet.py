@@ -2,7 +2,7 @@
 
 MPh and COMSOL are not installed here, so a small fake of the Java tree stands
 in for them. The geometry, selection, and material assertions use real
-:class:`~qpdk.simulation.comsol_layout.ComsolLayout` input, so the builder's own
+:class:`~qpdk.simulation.comsol.layout.ComsolLayout` input, so the builder's own
 arithmetic is checked rather than re-implemented.
 
 Face probes are resolved against a hand-written model of the interface: for a
@@ -25,12 +25,17 @@ from shapely.geometry import Point, Polygon
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import unary_union
 
-from qpdk.simulation.comsol_layout import (
+from qpdk.simulation.comsol._util import _format_number
+from qpdk.simulation.comsol.layout import (
     ComsolBoundingBox,
     ComsolLayout,
     ComsolPolygon,
 )
-from qpdk.simulation.comsol_sheet import build_comsol_sheet_model
+from qpdk.simulation.comsol.sheet import (
+    SILICON_RELATIVE_PERMITTIVITY,
+    build_comsol_sheet_model,
+)
+from qpdk.tech import material_properties
 
 _LAYOUT = ComsolLayout(
     polygons=(
@@ -819,12 +824,47 @@ def test_dielectric_domains_are_selected_and_materialized():
     assert air_material.named_tags == ["air"]
     assert silicon_material.named_tags == ["si"]
     assert air_material.propertyGroup("def").properties["relpermittivity"] == "1"
-    assert silicon_material.propertyGroup("def").properties["relpermittivity"] == "11.7"
+    assert silicon_material.propertyGroup("def").properties[
+        "relpermittivity"
+    ] == _format_number(material_properties["Si"]["relative_permittivity"])
     for material in (air_material, silicon_material):
         properties = material.propertyGroup("def").properties
         assert properties["relpermeability"] == "1"
         assert properties["electricconductivity"] == "0"
     assert "epsilonr" not in silicon_material.propertyGroup("def").properties
+
+
+def test_silicon_permittivity_defaults_to_the_tech_value():
+    """The builder's default comes from the canonical technology property.
+
+    The saved notebooks were solved with 11.7, but tech.py is where the QPDK
+    silicon permittivity lives, so the default has to follow it.
+    """
+    component = _build(_client())
+    expected = _format_number(material_properties["Si"]["relative_permittivity"])
+
+    assert (
+        material_properties["Si"]["relative_permittivity"]
+        == SILICON_RELATIVE_PERMITTIVITY
+    )
+    assert (
+        component.material("matSi").propertyGroup("def").properties["relpermittivity"]
+        == expected
+    )
+
+
+def test_silicon_permittivity_can_be_overridden():
+    """An explicit permittivity reaches the silicon material."""
+    component = _build(_client(), silicon_relative_permittivity=11.7)
+
+    assert (
+        component.material("matSi").propertyGroup("def").properties["relpermittivity"]
+        == "11.7"
+    )
+    assert (
+        component.material("matAir").propertyGroup("def").properties["relpermittivity"]
+        == "1"
+    )
 
 
 def test_builder_adds_no_physics_mesh_or_study():
@@ -850,6 +890,12 @@ def test_builder_adds_no_physics_mesh_or_study():
         ({"air_height_um": float("inf")}, "air_height_um"),
         ({"lateral_margin_um": -1.0}, "lateral_margin_um"),
         ({"lateral_margin_um": float("nan")}, "lateral_margin_um"),
+        ({"silicon_relative_permittivity": 0.0}, "silicon_relative_permittivity"),
+        ({"silicon_relative_permittivity": -11.7}, "silicon_relative_permittivity"),
+        (
+            {"silicon_relative_permittivity": float("nan")},
+            "silicon_relative_permittivity",
+        ),
     ],
 )
 def test_rejects_bad_thicknesses_before_touching_comsol(
@@ -865,3 +911,33 @@ def test_rejects_layout_without_polygons():
     """A layout with no metal cannot make sheets."""
     with pytest.raises(ValueError, match="no metal polygons"):
         build_comsol_sheet_model(None, _EMPTY_LAYOUT, "qubit")
+
+
+def test_a_successful_build_leaves_the_model_alone():
+    """Nothing is removed when the build returns."""
+    client = _client()
+    _build(client)
+    client.remove.assert_not_called()
+
+
+def test_a_failed_build_removes_the_native_model():
+    """A failure after the model exists does not leak it in the COMSOL process."""
+    client = _client(imprint_lost=True)
+    model = client.create.return_value
+
+    with pytest.raises(ValueError, match="did not survive the imprint"):
+        build_comsol_sheet_model(client, _LAYOUT, "qubit")
+
+    client.remove.assert_called_once_with(model)
+
+
+def test_a_failing_cleanup_keeps_the_original_error():
+    """A cleanup that itself fails must not mask the build failure."""
+    client = _client(imprint_lost=True)
+    model = client.create.return_value
+    client.remove.side_effect = RuntimeError("cleanup failed")
+
+    with pytest.raises(ValueError, match="did not survive the imprint"):
+        build_comsol_sheet_model(client, _LAYOUT, "qubit")
+
+    client.remove.assert_called_once_with(model)

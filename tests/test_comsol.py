@@ -13,8 +13,13 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from qpdk import simulation
-from qpdk.simulation import build_comsol_metal_model, comsol, comsol_layout
-from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout, ComsolPolygon
+from qpdk.simulation import build_comsol_metal_model
+from qpdk.simulation.comsol import layout as comsol_layout, metal as comsol
+from qpdk.simulation.comsol.layout import (
+    ComsolBoundingBox,
+    ComsolLayout,
+    ComsolPolygon,
+)
 
 
 def _empty_layout() -> ComsolLayout:
@@ -41,7 +46,7 @@ def test_comsol_class_is_exposed_lazily():
     """The model class is public, and importing it stays the caller's choice."""
     assert "COMSOL" in simulation.__all__
     assert simulation._LAZY_IMPORTS["COMSOL"] == (
-        "qpdk.simulation.comsol_model",
+        "qpdk.simulation.comsol.model",
         "COMSOL",
     )
 
@@ -124,6 +129,45 @@ def test_build_metal_model_subtracts_each_hole_before_extrusion():
     extrude.selection.assert_called_once_with("input")
     extrude.selection.return_value.set.assert_called_once_with("wp1")
     geometry.run.assert_called_once_with()
+    client.remove.assert_not_called()
+
+
+def _one_polygon_layout() -> ComsolLayout:
+    """A layout with one metal polygon and no holes.
+
+    Returns:
+        The layout.
+    """
+    return ComsolLayout(
+        polygons=(ComsolPolygon(outline=((0, 0), (10, 0), (10, 10), (0, 10))),),
+        feed_ports=(),
+        bbox=ComsolBoundingBox(xmin=0, ymin=0, xmax=10, ymax=10),
+    )
+
+
+def test_a_failed_build_removes_the_native_model():
+    """A failure after the model exists does not leak it in the COMSOL process."""
+    client = MagicMock()
+    model = client.create.return_value
+    model.java.component.side_effect = ValueError("no geometry")
+
+    with pytest.raises(ValueError, match="no geometry"):
+        build_comsol_metal_model(client, _one_polygon_layout())
+
+    client.remove.assert_called_once_with(model)
+
+
+def test_a_failing_cleanup_keeps_the_original_error():
+    """A cleanup that itself fails must not mask the build failure."""
+    client = MagicMock()
+    model = client.create.return_value
+    model.java.component.side_effect = ValueError("no geometry")
+    client.remove.side_effect = RuntimeError("cleanup failed")
+
+    with pytest.raises(ValueError, match="no geometry"):
+        build_comsol_metal_model(client, _one_polygon_layout())
+
+    client.remove.assert_called_once_with(model)
 
 
 @pytest.mark.parametrize("thickness", [0.0, -0.2, float("nan"), float("inf")])

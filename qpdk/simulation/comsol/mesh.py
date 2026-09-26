@@ -5,8 +5,8 @@ more thing from the mesh: the element count after a local refinement at the
 metal plane, to check that a solved quantity has stopped moving with mesh size.
 The sequence is the same in both, so it lives here once.
 
-The study builders (:func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` and
-:func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`) leave
+The study builders (:func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` and
+:func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study`) leave
 ``mesh1`` physics-controlled. Running it once realizes that sizing; a ``Refine``
 feature then switches the sequence to user-controlled, and the second run meshes
 the refined box.
@@ -28,12 +28,12 @@ from collections.abc import Mapping
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
-from qpdk.simulation.comsol import _format_number
+from qpdk.simulation.comsol._util import _format_number
 
 if TYPE_CHECKING:
     import mph
 
-    from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout
+    from qpdk.simulation.comsol.layout import ComsolBoundingBox, ComsolLayout
 
 #: Tag of the default ``Size`` feature a physics-controlled build leaves in the
 #: sequence, and the one feature pinning the global sizes requires to be there.
@@ -78,8 +78,8 @@ def refine_metal_plane_mesh(
 
     Args:
         model: A model carrying ``comp1``/``mesh1`` from
-            :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` or
-            :func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`.
+            :func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` or
+            :func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study`.
         layout: The layout the model was built from. Its bounding box sets the
             refine box unless ``refine_box`` is given.
         passes: Number of refinement passes, a non-negative integer. ``0`` meshes
@@ -253,7 +253,7 @@ def pin_absolute_mesh_sizes(
 
     Args:
         model: A model carrying ``comp1``/``mesh1`` from
-            :func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`,
+            :func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study`,
             including the face selections that study creates.
         global_hmax_um: Largest element size in µm away from the metal, positive
             and finite.

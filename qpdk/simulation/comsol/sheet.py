@@ -5,31 +5,34 @@ plane and Form Union. Layouts with holes use the Design Module's
 ``ProjectToFaces`` to imprint each outline and hole onto the interface; the
 builder checks that those faces survived. Air and silicon get named selections
 and materials. Physics and studies are added separately by
-:func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` or
-:func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`.
+:func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` or
+:func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study`.
 """
 
 from __future__ import annotations
 
+import contextlib
 import math
 from typing import TYPE_CHECKING, Any
 
 from shapely.geometry import Point as ShapelyPoint, Polygon
 from shapely.geometry.base import BaseGeometry
 
-from qpdk.simulation.comsol import _add_polygon, _format_number
+from qpdk.simulation.comsol._util import _add_polygon, _format_number
+from qpdk.tech import material_properties
 
 if TYPE_CHECKING:
     import mph
 
-    from qpdk.simulation.comsol_layout import ComsolLayout, Point
+    from qpdk.simulation.comsol.layout import ComsolLayout, Point
 
 #: Domain selection tags, reused by the physics added on top of this model.
 AIR_SELECTION = "air"
 SILICON_SELECTION = "si"
 
-#: Relative permittivity of the silicon substrate and of the air above it.
-SILICON_RELATIVE_PERMITTIVITY = 11.7
+#: Canonical relative permittivity of the silicon substrate, from the QPDK
+#: technology, and of the air above it.
+SILICON_RELATIVE_PERMITTIVITY = material_properties["Si"]["relative_permittivity"]
 AIR_RELATIVE_PERMITTIVITY = 1.0
 
 #: Half-size in µm of the small boxes that pick one dielectric domain out.
@@ -334,6 +337,7 @@ def build_comsol_sheet_model(
     substrate_thickness_um: float = 200.0,
     air_height_um: float = 200.0,
     lateral_margin_um: float = 0.0,
+    silicon_relative_permittivity: float = SILICON_RELATIVE_PERMITTIVITY,
 ) -> mph.Model:
     """Create a COMSOL 3D model holding the layout's metal as interface sheets.
 
@@ -356,15 +360,19 @@ def build_comsol_sheet_model(
         air_height_um: Air height above the interface, in µm.
         lateral_margin_um: Margin around the layout bounding box for both
             blocks, in µm.
+        silicon_relative_permittivity: Relative permittivity of the silicon
+            block, positive and finite. Defaults to the QPDK technology value
+            for Si.
 
     Returns:
         The MPh model, with geometry, selections, and materials only.
 
     Raises:
         ValueError: If a thickness is not positive and finite, if the margin is
-            negative or not finite, if the layout has no polygons, or, for a
-            layout with holes, if the built geometry does not carry one face per
-            metal polygon with the holes still cut out of the metal.
+            negative or not finite, if the permittivity is not positive and
+            finite, if the layout has no polygons, or, for a layout with holes,
+            if the built geometry does not carry one face per metal polygon with
+            the holes still cut out of the metal.
     """
     for label, thickness in (
         ("substrate_thickness_um", substrate_thickness_um),
@@ -377,86 +385,104 @@ def build_comsol_sheet_model(
             "lateral_margin_um must be finite and non-negative, "
             f"got {lateral_margin_um!r}"
         )
+    if (
+        not math.isfinite(silicon_relative_permittivity)
+        or silicon_relative_permittivity <= 0.0
+    ):
+        raise ValueError(
+            "silicon_relative_permittivity must be positive and finite, "
+            f"got {silicon_relative_permittivity!r}"
+        )
     if not layout.polygons:
         raise ValueError("layout has no metal polygons to imprint")
 
     model = client.create(name)
-    model.java.component().create("comp1")
-    component = model.java.component("comp1")
-    geometry = component.geom().create("geom1", 3)
-    geometry.lengthUnit("um")
-    has_holes = any(polygon.holes for polygon in layout.polygons)
-    if has_holes:
-        # ProjectToFaces is a Design Module feature and needs the CAD kernel.
-        geometry.geomRep("cadps")
+    try:  # ruff: ignore[too-many-statements-in-try-clause]
+        model.java.component().create("comp1")
+        component = model.java.component("comp1")
+        geometry = component.geom().create("geom1", 3)
+        geometry.lengthUnit("um")
+        has_holes = any(polygon.holes for polygon in layout.polygons)
+        if has_holes:
+            # ProjectToFaces is a Design Module feature and needs the CAD kernel.
+            geometry.geomRep("cadps")
 
-    west, south = (
-        layout.bbox.xmin - lateral_margin_um,
-        layout.bbox.ymin - lateral_margin_um,
-    )
-    width = layout.bbox.width + 2.0 * lateral_margin_um
-    depth = layout.bbox.height + 2.0 * lateral_margin_um
-    _add_block(geometry, "air", (west, south, 0.0), (width, depth, air_height_um))
-    _add_block(
-        geometry,
-        "si",
-        (west, south, -substrate_thickness_um),
-        (width, depth, substrate_thickness_um),
-    )
-    if has_holes:
-        _union_blocks(geometry)
-        _add_interface_selection(
+        west, south = (
+            layout.bbox.xmin - lateral_margin_um,
+            layout.bbox.ymin - lateral_margin_um,
+        )
+        width = layout.bbox.width + 2.0 * lateral_margin_um
+        depth = layout.bbox.height + 2.0 * lateral_margin_um
+        _add_block(geometry, "air", (west, south, 0.0), (width, depth, air_height_um))
+        _add_block(
             geometry,
-            west,
-            south,
-            width,
-            depth,
-            substrate_thickness_um,
+            "si",
+            (west, south, -substrate_thickness_um),
+            (width, depth, substrate_thickness_um),
+        )
+        if has_holes:
+            _union_blocks(geometry)
+            _add_interface_selection(
+                geometry,
+                west,
+                south,
+                width,
+                depth,
+                substrate_thickness_um,
+                air_height_um,
+            )
+            metal_objects = _add_metal_sheets(geometry, layout, construction=True)
+            _project_interface(geometry, metal_objects)
+        else:
+            _add_metal_sheets(geometry, layout, construction=False)
+
+        geometry.feature("fin").set("action", "union")
+        geometry.run()
+
+        if has_holes:
+            _check_imprint(
+                component,
+                layout,
+                substrate_thickness_um=substrate_thickness_um,
+                air_height_um=air_height_um,
+            )
+
+        centre = (
+            (layout.bbox.xmin + layout.bbox.xmax) / 2.0,
+            (layout.bbox.ymin + layout.bbox.ymax) / 2.0,
+        )
+        air_domains = _add_domain_selection(
+            component,
+            AIR_SELECTION,
+            (centre[0], centre[1], 0.5 * air_height_um),
             air_height_um,
         )
-        metal_objects = _add_metal_sheets(geometry, layout, construction=True)
-        _project_interface(geometry, metal_objects)
-    else:
-        _add_metal_sheets(geometry, layout, construction=False)
-
-    geometry.feature("fin").set("action", "union")
-    geometry.run()
-
-    if has_holes:
-        _check_imprint(
+        silicon_domains = _add_domain_selection(
             component,
-            layout,
-            substrate_thickness_um=substrate_thickness_um,
-            air_height_um=air_height_um,
+            SILICON_SELECTION,
+            (centre[0], centre[1], -0.5 * substrate_thickness_um),
+            substrate_thickness_um,
         )
+        if (
+            len(air_domains) != 1
+            or len(silicon_domains) != 1
+            or air_domains == silicon_domains
+        ):
+            raise ValueError(  # ruff: ignore[raise-within-try]
+                "air and silicon selections must resolve to one distinct domain "
+                f"each, got air={air_domains} and silicon={silicon_domains}"
+            )
 
-    centre = (
-        (layout.bbox.xmin + layout.bbox.xmax) / 2.0,
-        (layout.bbox.ymin + layout.bbox.ymax) / 2.0,
-    )
-    air_domains = _add_domain_selection(
-        component,
-        AIR_SELECTION,
-        (centre[0], centre[1], 0.5 * air_height_um),
-        air_height_um,
-    )
-    silicon_domains = _add_domain_selection(
-        component,
-        SILICON_SELECTION,
-        (centre[0], centre[1], -0.5 * substrate_thickness_um),
-        substrate_thickness_um,
-    )
-    if (
-        len(air_domains) != 1
-        or len(silicon_domains) != 1
-        or air_domains == silicon_domains
-    ):
-        raise ValueError(
-            "air and silicon selections must resolve to one distinct domain each, "
-            f"got air={air_domains} and silicon={silicon_domains}"
+        _add_material(component, "matAir", AIR_SELECTION, AIR_RELATIVE_PERMITTIVITY)
+        _add_material(
+            component, "matSi", SILICON_SELECTION, silicon_relative_permittivity
         )
-
-    _add_material(component, "matAir", AIR_SELECTION, AIR_RELATIVE_PERMITTIVITY)
-    _add_material(component, "matSi", SILICON_SELECTION, SILICON_RELATIVE_PERMITTIVITY)
+    except BaseException:
+        # A half-built native model would otherwise pile up in the COMSOL
+        # process on every retry; the build failure is what matters, so a
+        # failing cleanup must not mask it.
+        with contextlib.suppress(Exception):
+            client.remove(model)
+        raise
 
     return model
