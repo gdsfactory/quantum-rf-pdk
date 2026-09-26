@@ -95,8 +95,11 @@ from qpdk.models.resonator import (
     resonator_half_wave,
     resonator_quarter_wave,
 )
+
+# touchstone.array_to_sdict is deliberately not re-exported: it is annotated
+# as returning an ``sax.SDict``, so the ``models`` dict below would pick it up
+# and the model test suite would sweep it over frequency, which it does not take.
 from qpdk.models.touchstone import (
-    array_to_sdict,
     format_touchstone,
     parse_touchstone,
     read_touchstone,
@@ -136,7 +139,6 @@ __all__ = [
     "DEFAULT_FREQUENCY",
     "admittance",
     "airbridge",
-    "array_to_sdict",
     "bend_circular",
     "bend_circular_all_angle",
     "bend_euler",
