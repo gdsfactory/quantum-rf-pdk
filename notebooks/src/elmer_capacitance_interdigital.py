@@ -154,7 +154,7 @@ try:
         plt.rcParams["svg.fonttype"] = "path"
         set_matplotlib_formats("svg", "png")
 except ImportError:
-    pass
+    pass  # Plain Python runs do not need IPython display formats.
 
 # %% [markdown]
 # ## Simulation Geometry
@@ -261,9 +261,7 @@ for polygon in component.get_polygons(by="name", layers=[LAYER.M1_DRAW])["M1_DRA
     )
     metal_shapes.append((vertices, is_signal))
 
-fig, (ax_domain, ax_device) = plt.subplots(
-    1, 2, figsize=(9.0, 4.2), layout="constrained"
-)
+_, (ax_domain, ax_device) = plt.subplots(1, 2, figsize=(9.0, 4.2), layout="constrained")
 for ax in (ax_domain, ax_device):
     for vertices, is_signal in metal_shapes:
         ax.add_patch(
