@@ -308,8 +308,8 @@ jobs:
           uv sync --locked --python 3.12 --no-dev --extra models
           uv pip install jupytext nbconvert ipykernel
       - name: Check the saved Elmer result
+        shell: uv run --no-sync python {0}
         run: |
-          uv run --no-sync python - <<'PY'
           import hashlib
           import re
 
@@ -365,7 +365,6 @@ jobs:
           )
           if plots < 2:
               raise SystemExit("Saved Elmer notebook is missing a plot")
-          PY
       - name: Execute the Elmer notebook
         run: uv run --no-sync jupytext --execute --to ipynb --set-kernel python3 --output /tmp/qpdk-elmer-ci.ipynb notebooks/elmer_capacitance_interdigital.ipynb
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
