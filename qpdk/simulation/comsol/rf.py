@@ -1,14 +1,14 @@
 r"""Add an unsolved CPW full-wave study to a COMSOL model that uses metal sheets.
 
 The model comes from
-:func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`: air and silicon
+:func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model`: air and silicon
 meeting at ``z = 0`` with the layout's metal imprinted on that plane as faces.
 This module makes those faces perfect electric conductors, turns the two feed
 cross sections into numeric ports, and adds a mesh sequence and a frequency
 study. Nothing is meshed or solved here.
 
 The port faces and the integration line are found from the feed ports and the
-bounding box of the :class:`~qpdk.simulation.comsol_layout.ComsolLayout`, never
+bounding box of the :class:`~qpdk.simulation.comsol.layout.ComsolLayout`, never
 from hard-coded entity IDs, so a layout whose feeds do not sit on opposite
 bounding-box faces is refused instead of quietly porting the wrong plane.
 
@@ -25,12 +25,12 @@ from typing import TYPE_CHECKING, Any
 
 from shapely.geometry import Point as ShapelyPoint, Polygon
 
-from qpdk.simulation.comsol import _format_number
+from qpdk.simulation.comsol._util import _format_number
 
 if TYPE_CHECKING:
     import mph
 
-    from qpdk.simulation.comsol_layout import ComsolFeedPort, ComsolLayout, Point
+    from qpdk.simulation.comsol.layout import ComsolFeedPort, ComsolLayout, Point
 
 #: Named selection holding every metal sheet face, for the PEC boundary.
 METAL_FACES_SELECTION = "metal_faces"
@@ -374,7 +374,11 @@ def _add_electromagnetic_waves(component: Any) -> None:
 
 
 def _add_mesh_and_study(
-    component: Any, model: mph.Model, frequency_ghz: float, mesh_size: int
+    component: Any,
+    model: mph.Model,
+    frequency_ghz: float,
+    mesh_size: int,
+    effective_index_shift: float,
 ) -> None:
     """Add an automatic mesh and a frequency study with one BMA step per port."""
     mesh = component.mesh().create("mesh1", "geom1")
@@ -388,7 +392,7 @@ def _add_mesh_and_study(
         feature = study.feature(tag)
         feature.set("PortName", str(index))
         feature.set("modeFreq", frequency)
-        feature.set("shift", "2.5")
+        feature.set("shift", _format_number(effective_index_shift))
         feature.set("shiftactive", "on")
     study.create("freq", "Frequency")
     study.feature("freq").set("plist", frequency)
@@ -401,22 +405,25 @@ def add_cpw_rf_study(
     cpw_gap_um: float,
     frequency_ghz: float = 7.5,
     mesh_size: int = 8,
+    effective_index_shift: float = 2.5,
 ) -> mph.Model:
     """Add an unsolved CPW full-wave study to a sheet model.
 
     Args:
         model: The MPh model from
-            :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`.
+            :func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model`.
         layout: The same layout the model was built from, extracted with
             ``crop_to_feed_ports=True`` so both feed planes are open CPW cross
             sections on the bounding box.
         cpw_gap_um: Width of the etch gap between the centre conductor and the
             ground at the ports, in µm. The voltage integration line spans it.
         frequency_ghz: Boundary mode analysis reference and initial frequency
-            in GHz. The mode search targets effective index 2.5 for the
-            silicon/air CPW section.
+            in GHz.
         mesh_size: COMSOL mesh size, an integer from 1 (finest) to 9
             (coarsest).
+        effective_index_shift: Effective-index shift both boundary mode
+            analyses search around, positive and finite. The default 2.5 suits
+            the silicon/air CPW section and reproduces the saved examples.
 
     Returns:
         The same model, with the metal and port selections, the EMW interface,
@@ -426,8 +433,9 @@ def add_cpw_rf_study(
     Raises:
         ValueError: If the gap is not positive and finite, if the frequency is
             not positive and finite, if the mesh size is not an integer in 1 to
-            9, if the layout does not carry two opposite outward-facing feeds on
-            the bounding box, or if a selection does not resolve to the faces or
+            9, if the effective-index shift is not positive and finite, if the
+            layout does not carry two opposite outward-facing feeds on the
+            bounding box, or if a selection does not resolve to the faces or
             edges the layout implies.
     """
     if not math.isfinite(cpw_gap_um) or cpw_gap_um <= 0.0:
@@ -436,10 +444,20 @@ def add_cpw_rf_study(
         raise ValueError(
             f"frequency_ghz must be positive and finite, got {frequency_ghz!r}"
         )
-    if not isinstance(mesh_size, int) or not 1 <= mesh_size <= 9:
+    # bool is an int subclass, so isinstance alone would let True through as 1.
+    if (
+        isinstance(mesh_size, bool)
+        or not isinstance(mesh_size, int)
+        or not 1 <= mesh_size <= 9
+    ):
         raise ValueError(
             "mesh_size must be an integer from 1 (finest) to 9 (coarsest), "
             f"got {mesh_size!r}"
+        )
+    if not math.isfinite(effective_index_shift) or effective_index_shift <= 0.0:
+        raise ValueError(
+            "effective_index_shift must be positive and finite, "
+            f"got {effective_index_shift!r}"
         )
 
     axis, low_feed, high_feed = _feed_pair(layout)
@@ -459,6 +477,8 @@ def add_cpw_rf_study(
         _add_gap_edge(component, name, axis, plane, feed, cpw_gap_um)
     _check_cpw_cross_sections(layout, axis, (low_feed, high_feed), cpw_gap_um)
     _add_electromagnetic_waves(component)
-    _add_mesh_and_study(component, model, frequency_ghz, mesh_size)
+    _add_mesh_and_study(
+        component, model, frequency_ghz, mesh_size, effective_index_shift
+    )
 
     return model

@@ -1,7 +1,7 @@
 """Tests for the COMSOL layout extraction.
 
 These check the pure geometry and validation in
-:mod:`qpdk.simulation.comsol_layout` on small QPDK CPW and unfed shapes. No
+:mod:`qpdk.simulation.comsol.layout` on small QPDK CPW and unfed shapes. No
 COMSOL or MPh involvement.
 """
 
@@ -13,7 +13,7 @@ import pytest
 
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
 from qpdk.simulation.aedt_base import prepare_component_for_aedt
-from qpdk.simulation.comsol_layout import ComsolLayout, prepare_comsol_layout
+from qpdk.simulation.comsol.layout import ComsolLayout, prepare_comsol_layout
 from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.tech import LAYER
 

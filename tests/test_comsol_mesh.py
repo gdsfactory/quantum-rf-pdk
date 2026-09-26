@@ -21,8 +21,8 @@ import pytest
 
 from qpdk import simulation
 from qpdk.simulation import pin_absolute_mesh_sizes, refine_metal_plane_mesh
-from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout
-from qpdk.simulation.comsol_mesh import (
+from qpdk.simulation.comsol.layout import ComsolBoundingBox, ComsolLayout
+from qpdk.simulation.comsol.mesh import (
     DEFAULT_SIZE_TAG,
     EDGE_SIZE_TAG,
     FREE_TET_TAG,

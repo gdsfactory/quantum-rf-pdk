@@ -16,17 +16,17 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from qpdk.simulation import comsol_capacitance
-from qpdk.simulation.comsol_capacitance import (
+from qpdk.simulation.comsol import capacitance as comsol_capacitance
+from qpdk.simulation.comsol.capacitance import (
     add_capacitance_study,
     add_electrostatics,
 )
-from qpdk.simulation.comsol_layout import (
+from qpdk.simulation.comsol.layout import (
     ComsolBoundingBox,
     ComsolLayout,
     ComsolPolygon,
 )
-from qpdk.simulation.comsol_sheet import AIR_SELECTION, SILICON_SELECTION
+from qpdk.simulation.comsol.sheet import AIR_SELECTION, SILICON_SELECTION
 
 _DRIVE = (-132.5, 0.0)
 _SENSE = (132.5, 0.0)
@@ -374,6 +374,7 @@ def test_returns_the_same_model():
         ({"voltage_v": float("nan")}, "voltage_v"),
         ({"mesh_size": 0}, "mesh_size"),
         ({"mesh_size": 10}, "mesh_size"),
+        ({"mesh_size": True}, "mesh_size"),
         ({"mesh_size": "7"}, "mesh_size"),
         (
             {

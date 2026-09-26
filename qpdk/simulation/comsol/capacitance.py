@@ -1,7 +1,7 @@
 r"""Add an electrostatic capacitance study to a COMSOL model that uses metal sheets.
 
 The model comes from
-:func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`, where the metal
+:func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model`, where the metal
 is a set of faces on the silicon/air interface. This module picks those faces out
 with points inside them, drives one of them with a voltage terminal, grounds the
 others, and adds a mesh sequence and a stationary study. Nothing is solved here,
@@ -10,8 +10,8 @@ one is driven, and which are grounded.
 
 A solve gives electrostatic capacitance: ``es.C11`` is the capacitance of the
 driven conductor to the grounded rest of the chip, and the stored energy agrees
-with it, since :math:`2 W_e / V^2` equals ``es.C11``. It is not an RF Josephson
-eigenmode, and turning it into a qubit frequency needs an :math:`L_J` picked
+with it, since :math:`2 W_\text{e} / V^2` equals ``es.C11``. It is not an RF Josephson
+eigenmode, and turning it into a qubit frequency needs an :math:`L_\text{J}` picked
 outside COMSOL: that LC estimate is not an eigensolve.
 """
 
@@ -22,13 +22,13 @@ from typing import TYPE_CHECKING, Any
 
 from shapely.geometry import Point as ShapelyPoint, Polygon
 
-from qpdk.simulation.comsol import _format_number
-from qpdk.simulation.comsol_sheet import SILICON_SELECTION
+from qpdk.simulation.comsol._util import _format_number
+from qpdk.simulation.comsol.sheet import SILICON_SELECTION
 
 if TYPE_CHECKING:
     import mph
 
-    from qpdk.simulation.comsol_layout import ComsolLayout, Point
+    from qpdk.simulation.comsol.layout import ComsolLayout, Point
 
 #: Half-size in µm of the boxes that pick one metal face out of the plane. The
 #: metal lives on a single plane, so the box straddles ``z = 0``.
@@ -219,7 +219,7 @@ def add_capacitance_study(
 
     Args:
         model: The MPh model from
-            :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`.
+            :func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model`.
         layout: The metal polygons used to build that model. It must hold
             exactly one polygon per conductor; a metal polygon that no point
             names is refused rather than left as a dielectric interface.
@@ -248,7 +248,11 @@ def add_capacitance_study(
     """
     if not math.isfinite(voltage_v) or voltage_v <= 0.0:
         raise ValueError(f"voltage_v must be positive and finite, got {voltage_v!r}")
-    if not isinstance(mesh_size, int) or not 1 <= mesh_size <= 9:
+    if (
+        isinstance(mesh_size, bool)
+        or not isinstance(mesh_size, int)
+        or not 1 <= mesh_size <= 9
+    ):
         raise ValueError(
             "mesh_size must be an integer from 1 (finest) to 9 (coarsest), "
             f"got {mesh_size!r}"

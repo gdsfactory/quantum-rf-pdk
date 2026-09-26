@@ -31,13 +31,13 @@
 #
 # The device is a QPDK {py:func}`~qpdk.cells.transmon.double_pad_transmon_with_bbox`: two pads joined
 # **only** through the Josephson junction, with a SQUID loop at the centre, so the qubit frequency follows
-# from $E_J$ and $E_C = e^2 / 2C$ {cite:p}`kochChargeinsensitiveQubitDesign2007a`. The sheet model cannot
+# from $E_\text{J}$ and $E_\text{C} = e^2 / 2C$ {cite:p}`kochChargeinsensitiveQubitDesign2007a`. The sheet model cannot
 # represent the junction overlap or its barrier, so the extraction uses an **EM-only copy** with the junction
 # layers removed: the SQUID loop and its leads are absent from the solved geometry.
 #
 # The solve adds **Electrostatics**, not electromagnetic waves, and returns `es.C11`, the driven pad's
 # capacitance to the grounded rest of the chip, plus `es.intWe`, which agree through
-# $2 W_e / V^2 = C_{11}$ {cite:p}`m.pozarMicrowaveEngineering2012`. It is a **quasi-static extraction**, with
+# $2 W_\text{e} / V^2 = C_{11}$ {cite:p}`m.pozarMicrowaveEngineering2012`. It is a **quasi-static extraction**, with
 # no Josephson inductance and no resonance solved.
 #
 # ::::{only} html
@@ -58,7 +58,7 @@
 #
 # The values come from licensed electrostatic solves, but they are not a validated device prediction:
 # the SQUID loop and leads are absent, and $C_{11}$ is a one-terminal value rather than the two-pad
-# differential capacitance that sets $E_C$, so the $f_{LC}$ estimate further down is neither a COMSOL
+# differential capacitance that sets $E_\text{C}$, so the $f_\text{LC}$ estimate further down is neither a COMSOL
 # eigenmode nor the transmon $f_{01}$ {cite:p}`blaisCircuitQuantumElectrodynamics2021`. The plots below show
 # how far it moves with the mesh, the lateral margin, and the air height.
 # ::::
@@ -96,7 +96,6 @@ if "google.colab" in sys.modules:
     )
 
 # %% tags=["hide-input", "hide-output"]
-import hashlib
 import json
 import math
 from itertools import pairwise
@@ -107,14 +106,22 @@ from typing import Any, NamedTuple
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
-from matplotlib import axes as mpl_axes, font_manager
+from matplotlib import axes as mpl_axes
 from matplotlib.colors import LogNorm
-from matplotlib.patches import Polygon as MplPolygon
 
 from qpdk import PDK
 from qpdk.cells.transmon import double_pad_transmon_with_bbox
-from qpdk.config import PATH
 from qpdk.simulation import prepare_comsol_layout
+from qpdk.simulation.comsol.plotting import (
+    apply_qpdk_style,
+    draw_layout_polygons,
+    prefer_svg_figures,
+)
+from qpdk.simulation.comsol.results import (
+    explain_missing_results,
+    result_file,
+    write_json_atomically,
+)
 from qpdk.tech import LAYER
 
 try:
@@ -128,119 +135,6 @@ except ImportError:
 PDK.activate()
 
 MPH_AVAILABLE = mph is not None
-
-
-def _outfit_titles() -> None:
-    """Draw plot titles in Outfit bold, matching the documentation headings."""
-    original_set_title = mpl_axes.Axes.set_title
-
-    def _set_title(self: mpl_axes.Axes, *args: Any, **kwargs: Any) -> Any:
-        kwargs.setdefault("fontfamily", "Outfit")
-        kwargs.setdefault("fontweight", "bold")
-        return original_set_title(self, *args, **kwargs)
-
-    mpl_axes.Axes.set_title = _set_title
-
-
-def apply_qpdk_style() -> str:
-    """Apply the QPDK plot style, falling back to matplotlib's own defaults.
-
-    The style is ``docs/qpdk.mplstyle`` in a checkout and the installed ``qpdk``
-    style in a documentation environment; a downloaded notebook outside both
-    keeps matplotlib's defaults instead of failing. The documentation fonts are
-    used when they are installed, and matplotlib's bundled families otherwise.
-
-    Returns:
-        A short description of the style that was applied.
-    """
-    for source in (PATH.repo / "docs" / "qpdk.mplstyle", "qpdk"):
-        try:
-            plt.style.use(source)
-        except OSError:
-            continue
-        applied = str(source)
-        break
-    else:
-        applied = "matplotlib defaults"
-
-    installed = {font.name for font in font_manager.fontManager.ttflist}
-    plt.rcParams["font.sans-serif"] = [
-        name
-        for name in ("Inter", "Outfit", "DejaVu Sans", "Helvetica", "Arial")
-        if name in installed
-    ] + ["sans-serif"]
-    if "Outfit" in installed:
-        _outfit_titles()
-    return applied
-
-
-def prefer_svg_figures() -> None:
-    """Save every figure as SVG as well as PNG, so stored outputs stay vector.
-
-    The saved cell outputs are what the documentation renders, and both the HTML
-    and the Typst PDF build embed the SVG ahead of the PNG. The PNG is kept as a
-    fallback for a viewer that cannot render SVG, and text is written as paths so
-    the figures carry their own glyphs instead of relying on installed fonts.
-    Outside a notebook kernel there is no inline backend to configure, so a
-    plain script run keeps matplotlib's PNG default.
-    """
-    try:
-        # Ships with ipykernel, so it is present in a notebook kernel only.
-        from matplotlib_inline.backend_inline import (  # ruff: ignore[import-outside-top-level]
-            set_matplotlib_formats,
-        )
-    except ImportError:
-        return
-    plt.rcParams["svg.fonttype"] = "path"
-    set_matplotlib_formats("svg", "png")
-
-
-def result_file(name: str) -> Path | None:
-    """Return the path of an exported solver result, if one is available.
-
-    Args:
-        name: File name to look for inside ``RESULTS_DIR``.
-
-    Returns:
-        The path, or ``None`` when ``RESULTS_DIR`` is unset or holds no such file.
-    """
-    if RESULTS_DIR is None:
-        return None
-    path = RESULTS_DIR / name
-    return path if path.exists() else None
-
-
-def explain_missing_results(name: str) -> None:
-    """Print how to supply a result file that is not on disk.
-
-    Args:
-        name: File name that was looked for inside ``RESULTS_DIR``.
-    """
-    print(
-        f"No {name} in RESULTS_DIR ({RESULTS_DIR}). The figures on the "
-        "documentation page are saved outputs of a licensed solve, and the cells "
-        "here replot only from files on disk. To supply them, run with "
-        "RUN_COMSOL = True on a licensed machine, which exports into MODEL_DIR, "
-        "or set RESULTS_DIR to a directory that already holds an exported "
-        f"{name}."
-    )
-
-
-def file_sha256(path: Path) -> str:
-    """Hash a file's bytes without loading it into memory.
-
-    The field export runs to hundreds of megabytes, so it is streamed rather
-    than read whole just to be hashed.
-
-    Args:
-        path: File to hash.
-
-    Returns:
-        The SHA-256 digest as lowercase hexadecimal.
-    """
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
-
 
 prefer_svg_figures()
 STYLE_SOURCE = apply_qpdk_style()
@@ -300,36 +194,7 @@ CONDUCTORS = (
 
 # %%
 fig, ax = plt.subplots(figsize=(6, 6))
-for polygon in sorted(
-    layout.polygons,
-    key=lambda item: (
-        -(
-            (max(x for x, _ in item.outline) - min(x for x, _ in item.outline))
-            * (max(y for _, y in item.outline) - min(y for _, y in item.outline))
-        )
-    ),
-):
-    ax.add_patch(
-        MplPolygon(
-            polygon.outline,
-            closed=True,
-            facecolor="0.78",
-            edgecolor="0.35",
-            linewidth=0.6,
-            zorder=1,
-        )
-    )
-    for hole in polygon.holes:
-        ax.add_patch(
-            MplPolygon(
-                hole,
-                closed=True,
-                facecolor="white",
-                edgecolor="0.35",
-                linewidth=0.6,
-                zorder=1,
-            )
-        )
+draw_layout_polygons(ax, layout.polygons)
 for point, label, offset in (
     (LEFT_PAD_POINT, "left pad", (-35, 10)),
     (RIGHT_PAD_POINT, "right pad", (8, 10)),
@@ -355,17 +220,17 @@ plt.show()
 # %% [markdown]
 # ## Build the COMSOL model and capacitance study
 #
-# Three calls configure the model: {py:meth}`~qpdk.simulation.comsol_model.COMSOL.create_sheet` makes the
+# Three calls configure the model: {py:meth}`~qpdk.simulation.comsol.model.COMSOL.create_sheet` makes the
 # air and silicon blocks meeting at $z = 0$, imprints the layout metal on that interface as faces, and
 # assigns materials;
-# {py:meth}`~qpdk.simulation.comsol_model.COMSOL.add_capacitance_study` picks the pad and ground faces from
+# {py:meth}`~qpdk.simulation.comsol.model.COMSOL.add_capacitance_study` picks the pad and ground faces from
 # the points above, drives the left pad, grounds the right pad and the ground plane, and adds the mesh and a
-# stationary study; and {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_mesh_sizes` reruns that
+# stationary study; and {py:meth}`~qpdk.simulation.comsol.model.COMSOL.pin_absolute_mesh_sizes` reruns that
 # mesh with absolute element sizes in micrometres, so the near-metal resolution no longer moves with the
 # domain.
 #
 # The constants below are the base configuration the saved metrics and field map report: 8000 µm of margin,
-# 1600 µm of silicon, 1600 µm of air, and the finest `0.625/1.25` near-metal entry.
+# 1600 µm of silicon, 1600 µm of air, silicon $\varepsilon_\text{r} = 11.7$, and the finest `0.625/1.25` near-metal entry.
 
 # %%
 RUN_COMSOL = False
@@ -375,6 +240,7 @@ MODEL_PATH = MODEL_DIR / "comsol_qubit_capacitance.mph"
 RESULTS_DIR: Path | None = MODEL_DIR if RUN_COMSOL else None
 CORES = 4
 VOLTAGE_V = 1.0
+SILICON_RELATIVE_PERMITTIVITY = 11.7
 
 # The main solve's domain and element sizes, in µm. The domain series below reads
 # these same values as its base, so the two sections describe one configuration.
@@ -422,6 +288,7 @@ if RUN_COMSOL and MPH_AVAILABLE:
         substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
         air_height_um=AIR_HEIGHT_UM,
         lateral_margin_um=LATERAL_MARGIN_UM,
+        silicon_relative_permittivity=SILICON_RELATIVE_PERMITTIVITY,
     ).add_capacitance_study(
         conductors=CONDUCTORS,
         terminal=PAD_L_SELECTION,
@@ -479,9 +346,7 @@ if RUN_COMSOL and MPH_AVAILABLE:
                 "lateral_margin_um": LATERAL_MARGIN_UM,
                 "substrate_thickness_um": SUBSTRATE_THICKNESS_UM,
                 "air_height_um": AIR_HEIGHT_UM,
-                "silicon_relative_permittivity": 11.7,
-                # A new solve invalidates any earlier field export.
-                "field_sha256": None,
+                "silicon_relative_permittivity": SILICON_RELATIVE_PERMITTIVITY,
             },
             indent=2,
         )
@@ -491,7 +356,7 @@ if RUN_COMSOL and MPH_AVAILABLE:
 # %% [markdown]
 # ### Exporting the potential and field map
 #
-# The map below came from COMSOL's Data export on a cut plane at $z = 1$ µm carrying $V$ and `es.normE`; this
+# The map below came from COMSOL's Data export on a cut plane at $z = 1\,\text{µm}$ carrying $V$ and `es.normE`; this
 # block creates that `CutPlane` dataset and the export into `MODEL_DIR`.
 
 # %%
@@ -521,37 +386,29 @@ if RUN_COMSOL and MPH_AVAILABLE and model is not None:
     field_path = MODEL_DIR / "comsol_qubit_field.txt"
     field_export.set("filename", str(field_path))
     field_export.run()
-
-    # Bind the exported bytes to this solve only after export succeeds.
-    metrics_path = MODEL_DIR / "comsol_qubit_metrics.json"
-    solved_metrics = json.loads(metrics_path.read_text())
-    solved_metrics["field_sha256"] = file_sha256(field_path)
-    metrics_path.write_text(json.dumps(solved_metrics, indent=2) + "\n")
     print(f"Exported V and es.normE to {field_path}")
 
 # %% [markdown]
 # ## Saved capacitance result
 #
-# This cell replots the exported `C11` and the stored energy checked against it through $2 W_e / V^2$, beside
+# This cell replots the exported `C11` and the stored energy checked against it through $2 W_\text{e} / V^2$, beside
 # the settings the main solve used, since $C_{11}$ moves with both the mesh and the box.
 
 # %%
 METRICS_JSON = "comsol_qubit_metrics.json"
-metrics_file = result_file(METRICS_JSON)
+metrics_file = result_file(RESULTS_DIR, METRICS_JSON)
 
 capacitance_f: float | None = None
 stored_energy_j: float | None = None
 voltage_v: float | None = None
-field_sha256: str | None = None
 
 if metrics_file is None:
-    explain_missing_results(METRICS_JSON)
+    print(explain_missing_results(RESULTS_DIR, METRICS_JSON))
 else:
     metrics = json.loads(metrics_file.read_text())
     capacitance_f = float(metrics["capacitance_f"])
     stored_energy_j = float(metrics["stored_energy_j"])
     voltage_v = float(metrics["voltage_v"])
-    field_sha256 = str(metrics["field_sha256"]) if metrics.get("field_sha256") else None
 
     capacitance_from_energy_f = 2.0 * stored_energy_j / voltage_v**2
     print(
@@ -576,7 +433,7 @@ else:
 # %% [markdown]
 # ### An LC frequency estimate
 #
-# A chosen $L_J$ turns $C_{11}$ into a rough circuit frequency. **$L_J$ is not in the COMSOL solve** and
+# A chosen $L_\text{J}$ turns $C_{11}$ into a rough circuit frequency. **$L_\text{J}$ is not in the COMSOL solve** and
 # $C_{11}$ is not the two-pad differential capacitance, so this is a scale, not an eigenfrequency.
 
 # %%
@@ -592,7 +449,7 @@ else:
 # %% [markdown]
 # ## Saved potential and field map
 #
-# The exported field is $V$ and the field norm `es.normE` on the $z = 1$ µm plane just above the metal sheet.
+# The exported field is $V$ and the field norm `es.normE` on the $z = 1\,\text{µm}$ plane just above the metal sheet.
 #
 # The export spans ±8.5 mm, where the pads are a dot, so the map is a **close-up**: `FIELD_LIMIT_X_UM` and
 # `FIELD_LIMIT_Y_UM` frame both pads, and the remaining nodes are resampled onto a display grid (**display
@@ -606,21 +463,10 @@ FIELD_GRID_X = 300
 FIELD_GRID_Y = 250
 FIELD_LEVELS = 20
 
-field_file = result_file(FIELD_TXT)
+field_file = result_file(RESULTS_DIR, FIELD_TXT)
 
 if field_file is None:
-    explain_missing_results(FIELD_TXT)
-elif field_sha256 is None:
-    print(
-        f"No field digest in {METRICS_JSON}, so {FIELD_TXT} cannot be tied to a "
-        "solve and is not displayed. Rerun the field export from this solve."
-    )
-elif file_sha256(field_file) != field_sha256:
-    print(
-        f"{FIELD_TXT} does not match the digest in {METRICS_JSON}, so it belongs "
-        "to a different solve and is not displayed. Rerun the field export from "
-        "the solve whose metrics are being read."
-    )
+    print(explain_missing_results(RESULTS_DIR, FIELD_TXT))
 else:
     field = np.loadtxt(field_file, comments="%")
     field_x, field_y = field[:, 0], field[:, 1]
@@ -688,7 +534,7 @@ else:
 # - **The near-metal element size**, which sets how well the field in the pad gap and at the pad edges is
 #   resolved.
 #
-# {py:meth}`~qpdk.simulation.comsol_model.COMSOL.pin_absolute_mesh_sizes` writes absolute sizes into the mesh
+# {py:meth}`~qpdk.simulation.comsol.model.COMSOL.pin_absolute_mesh_sizes` writes absolute sizes into the mesh
 # sequence, one per conductor face. `NEAR_METAL_SIZES` runs five settings from `5/10` to `0.625/1.25`; none is a
 # converged mesh, and the series measures the step from each setting to the next.
 #
@@ -706,22 +552,6 @@ else:
 
 # %% tags=["hide-input"]
 DOMAIN_JSON = "comsol_qubit_domain_convergence.json"
-
-
-def write_json_atomically(path: Path, payload: dict[str, Any]) -> None:
-    """Write JSON through a sibling temporary file, then replace in place.
-
-    The series writes on every case, so an interrupt partway through still
-    leaves the cases already solved on disk. The temporary file is a sibling so
-    the replace stays a same-filesystem rename, which is what makes it atomic.
-
-    Args:
-        path: The JSON file to write.
-        payload: The object to serialise.
-    """
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(json.dumps(payload, indent=2) + "\n")
-    temporary.replace(path)
 
 
 class DomainCase(NamedTuple):
@@ -813,6 +643,7 @@ def run_qubit_domain_case(client: Any, case: DomainCase) -> dict[str, Any]:
         substrate_thickness_um=case.substrate_thickness_um,
         air_height_um=case.air_height_um,
         lateral_margin_um=case.lateral_margin_um,
+        silicon_relative_permittivity=SILICON_RELATIVE_PERMITTIVITY,
     ).add_capacitance_study(
         conductors=CONDUCTORS,
         terminal=PAD_L_SELECTION,
@@ -909,7 +740,7 @@ elif RUN_DOMAIN_STUDY and not RUN_COMSOL:
 # Each line changes one setting at a time. The margin sweep fixes air at 200 µm and silicon at 1600 µm;
 # the air sweep fixes margin at 8000 µm, silicon at 1600 µm, and the near-metal mesh at 2.5/5 µm.
 # The separate mesh sweep uses the main simulation box. Flat curves suggest lower sensitivity to the
-# swept setting; the energy check $2 W_e / V^2$ tests consistency, not convergence.
+# swept setting; the energy check $2 W_\text{e} / V^2$ tests consistency, not convergence.
 
 # %% tags=["hide-input"]
 MARGIN_PANEL_AIR_UM = 200.0
@@ -1057,10 +888,10 @@ def log_axis_on_values(
     ax.set_xlabel(label)
 
 
-domain_file = result_file(DOMAIN_JSON)
+domain_file = result_file(RESULTS_DIR, DOMAIN_JSON)
 
 if domain_file is None:
-    explain_missing_results(DOMAIN_JSON)
+    print(explain_missing_results(RESULTS_DIR, DOMAIN_JSON))
 else:
     domain_payload = json.loads(domain_file.read_text())
     domain_rows = (
@@ -1073,7 +904,7 @@ else:
             print(f"{failure['label']} failed: {failure['error']}")
 
     if not domain_rows:
-        explain_missing_results(DOMAIN_JSON)
+        print(explain_missing_results(RESULTS_DIR, DOMAIN_JSON))
         print("The file on disk carries no rows.")
     else:
         voltages_v = {float(row["voltage_v"]) for row in domain_rows}

@@ -12,18 +12,18 @@ from collections.abc import Mapping
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Self
 
-from qpdk.simulation import (
-    comsol,
-    comsol_capacitance,
-    comsol_mesh,
-    comsol_rf,
-    comsol_sheet,
+from qpdk.simulation.comsol import (
+    capacitance,
+    mesh,
+    metal,
+    rf,
+    sheet,
 )
 
 if TYPE_CHECKING:
     import mph
 
-    from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout, Point
+    from qpdk.simulation.comsol.layout import ComsolBoundingBox, ComsolLayout, Point
 else:
     try:
         mph = importlib.import_module("mph")
@@ -46,7 +46,7 @@ class COMSOL(mph.Model):
 
         Args:
             model: The model a builder returned, e.g.
-                :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`.
+                :func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model`.
                 Its Java handle is reused as-is.
             layout: The layout that model was built from.
 
@@ -68,6 +68,7 @@ class COMSOL(mph.Model):
         substrate_thickness_um: float = 200.0,
         air_height_um: float = 200.0,
         lateral_margin_um: float = 0.0,
+        silicon_relative_permittivity: float = sheet.SILICON_RELATIVE_PERMITTIVITY,
     ) -> Self:
         """Build a sheet model, with the metal as faces on the z = 0 interface.
 
@@ -79,20 +80,25 @@ class COMSOL(mph.Model):
             air_height_um: Air height above the interface, in µm.
             lateral_margin_um: Margin around the layout bounding box for both
                 blocks, in µm.
+            silicon_relative_permittivity: Relative permittivity of the silicon
+                block, positive and finite. Defaults to the QPDK technology
+                value for Si.
 
         Returns:
             The built model, holding the layout it was built from. The builder
-            validates the thicknesses, the margin, and the resulting geometry,
-            and a layout with holes needs the Design Module licence.
+            validates the thicknesses, the margin, the permittivity, and the
+            resulting geometry, and a layout with holes needs the Design Module
+            licence.
         """
         return cls(
-            comsol_sheet.build_comsol_sheet_model(
+            sheet.build_comsol_sheet_model(
                 client,
                 layout,
                 name,
                 substrate_thickness_um=substrate_thickness_um,
                 air_height_um=air_height_um,
                 lateral_margin_um=lateral_margin_um,
+                silicon_relative_permittivity=silicon_relative_permittivity,
             ),
             layout,
         )
@@ -122,7 +128,7 @@ class COMSOL(mph.Model):
             validates the thickness and refuses a layout with no polygons.
         """
         return cls(
-            comsol.build_comsol_metal_model(
+            metal.build_comsol_metal_model(
                 client,
                 layout,
                 metal_thickness_um=metal_thickness_um,
@@ -137,10 +143,11 @@ class COMSOL(mph.Model):
         cpw_gap_um: float,
         frequency_ghz: float = 7.5,
         mesh_size: int = 8,
+        effective_index_shift: float = 2.5,
     ) -> Self:
         """Add an unsolved CPW full-wave study.
 
-        Calls :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` on this model
+        Calls :func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` on this model
         and its layout. The model has to be a sheet model whose layout was
         extracted with ``crop_to_feed_ports=True``.
 
@@ -151,16 +158,19 @@ class COMSOL(mph.Model):
                 frequency in GHz.
             mesh_size: COMSOL mesh size, an integer from 1 (finest) to 9
                 (coarsest).
+            effective_index_shift: Effective-index shift both boundary mode
+                analyses search around, positive and finite.
 
         Returns:
             This model, so the call chains.
         """
-        comsol_rf.add_cpw_rf_study(
+        rf.add_cpw_rf_study(
             self,
             self.layout,
             cpw_gap_um=cpw_gap_um,
             frequency_ghz=frequency_ghz,
             mesh_size=mesh_size,
+            effective_index_shift=effective_index_shift,
         )
         return self
 
@@ -176,7 +186,7 @@ class COMSOL(mph.Model):
         """Add an unsolved electrostatic capacitance study.
 
         Calls
-        :func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study` on
+        :func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study` on
         this model and its layout.
 
         Args:
@@ -193,7 +203,7 @@ class COMSOL(mph.Model):
         Returns:
             This model, so the call chains.
         """
-        comsol_capacitance.add_capacitance_study(
+        capacitance.add_capacitance_study(
             self,
             self.layout,
             conductors=conductors,
@@ -213,7 +223,7 @@ class COMSOL(mph.Model):
     ) -> int:
         """Mesh and refine around the metal plane.
 
-        Calls :func:`~qpdk.simulation.comsol_mesh.refine_metal_plane_mesh` on
+        Calls :func:`~qpdk.simulation.comsol.mesh.refine_metal_plane_mesh` on
         this model and its layout.
 
         Args:
@@ -226,7 +236,7 @@ class COMSOL(mph.Model):
         Returns:
             The number of mesh elements after meshing.
         """
-        return comsol_mesh.refine_metal_plane_mesh(
+        return mesh.refine_metal_plane_mesh(
             self, self.layout, passes, z_half_um=z_half_um, refine_box=refine_box
         )
 
@@ -242,7 +252,7 @@ class COMSOL(mph.Model):
     ) -> int:
         """Mesh at absolute element sizes.
 
-        Calls :func:`~qpdk.simulation.comsol_mesh.pin_absolute_mesh_sizes` on
+        Calls :func:`~qpdk.simulation.comsol.mesh.pin_absolute_mesh_sizes` on
         this model and its layout.
 
         Args:
@@ -258,7 +268,7 @@ class COMSOL(mph.Model):
         Returns:
             The number of mesh elements the pinned sequence built.
         """
-        return comsol_mesh.pin_absolute_mesh_sizes(
+        return mesh.pin_absolute_mesh_sizes(
             self,
             global_hmax_um=global_hmax_um,
             global_hmin_um=global_hmin_um,
@@ -280,7 +290,7 @@ class COMSOL(mph.Model):
         """Mesh at absolute element sizes on a named edge selection.
 
         Calls
-        :func:`~qpdk.simulation.comsol_mesh.pin_absolute_edge_mesh_sizes` on
+        :func:`~qpdk.simulation.comsol.mesh.pin_absolute_edge_mesh_sizes` on
         this model and its layout.
 
         Args:
@@ -293,7 +303,7 @@ class COMSOL(mph.Model):
         Returns:
             The number of mesh elements the pinned sequence built.
         """
-        return comsol_mesh.pin_absolute_edge_mesh_sizes(
+        return mesh.pin_absolute_edge_mesh_sizes(
             self,
             edge_selection=edge_selection,
             global_hmax_um=global_hmax_um,

@@ -17,14 +17,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from qpdk.simulation.comsol_layout import ComsolBoundingBox, ComsolLayout, ComsolPolygon
+from qpdk.simulation.comsol.layout import ComsolBoundingBox, ComsolLayout, ComsolPolygon
 
 
 def test_module_imports_without_mph():
     """Pytest can collect the module when the optional COMSOL extra is absent."""
     code = (
         "import sys; sys.modules['mph'] = None; "
-        "from qpdk.simulation.comsol_model import COMSOL; "
+        "from qpdk.simulation.comsol.model import COMSOL; "
         "assert COMSOL.__base__ is object; "
         "COMSOL(None, None)"
     )
@@ -49,7 +49,7 @@ def broken(name, package=None):
         raise ModuleNotFoundError("JPype failed to load", name="jpype")
     return original(name, package=package)
 importlib.import_module = broken
-import qpdk.simulation.comsol_model
+import qpdk.simulation.comsol.model
 """
     result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [sys.executable, "-c", code],
@@ -83,7 +83,7 @@ def comsol() -> tuple[Any, Any]:
         ``(mph, comsol_model)``.
     """
     mph = pytest.importorskip("mph", reason="the comsol extra is not installed")
-    return mph, pytest.importorskip("qpdk.simulation.comsol_model")
+    return mph, pytest.importorskip("qpdk.simulation.comsol.model")
 
 
 @pytest.fixture
@@ -132,13 +132,16 @@ def test_create_sheet_dispatches_to_the_sheet_builder(
         calls.append((client, layout, name, kwargs))
         return mph.Model(java)
 
-    monkeypatch.setattr(
-        comsol_model.comsol_sheet, "build_comsol_sheet_model", fake_builder
-    )
+    monkeypatch.setattr(comsol_model.sheet, "build_comsol_sheet_model", fake_builder)
     client = MagicMock()
     layout = _layout()
     model = comsol_model.COMSOL.create_sheet(
-        client, layout, "sheet", substrate_thickness_um=250.0, air_height_um=150.0
+        client,
+        layout,
+        "sheet",
+        substrate_thickness_um=250.0,
+        air_height_um=150.0,
+        silicon_relative_permittivity=11.7,
     )
 
     assert isinstance(model, comsol_model.COMSOL)
@@ -153,6 +156,7 @@ def test_create_sheet_dispatches_to_the_sheet_builder(
                 "substrate_thickness_um": 250.0,
                 "air_height_um": 150.0,
                 "lateral_margin_um": 0.0,
+                "silicon_relative_permittivity": 11.7,
             },
         )
     ]
@@ -170,7 +174,7 @@ def test_create_metal_dispatches_to_the_metal_builder(
         calls.append((client, layout, kwargs))
         return mph.Model(java)
 
-    monkeypatch.setattr(comsol_model.comsol, "build_comsol_metal_model", fake_builder)
+    monkeypatch.setattr(comsol_model.metal, "build_comsol_metal_model", fake_builder)
     client = MagicMock()
     layout = _layout()
     model = comsol_model.COMSOL.create_metal(client, layout, metal_thickness_um=0.35)
@@ -197,14 +201,19 @@ def test_add_cpw_rf_study_dispatches_and_chains(
         calls.append((study_model, study_layout, kwargs))
         return study_model
 
-    monkeypatch.setattr(comsol_model.comsol_rf, "add_cpw_rf_study", fake_study)
+    monkeypatch.setattr(comsol_model.rf, "add_cpw_rf_study", fake_study)
 
-    assert model.add_cpw_rf_study(cpw_gap_um=6.0) is model
+    assert model.add_cpw_rf_study(cpw_gap_um=6.0, effective_index_shift=3.4) is model
     assert calls == [
         (
             model,
             layout,
-            {"cpw_gap_um": 6.0, "frequency_ghz": 7.5, "mesh_size": 8},
+            {
+                "cpw_gap_um": 6.0,
+                "frequency_ghz": 7.5,
+                "mesh_size": 8,
+                "effective_index_shift": 3.4,
+            },
         )
     ]
 
@@ -224,9 +233,7 @@ def test_add_capacitance_study_dispatches_and_chains(
         calls.append((study_model, study_layout, kwargs))
         return study_model
 
-    monkeypatch.setattr(
-        comsol_model.comsol_capacitance, "add_capacitance_study", fake_study
-    )
+    monkeypatch.setattr(comsol_model.capacitance, "add_capacitance_study", fake_study)
 
     result = model.add_capacitance_study(
         conductors=conductors, terminal="pad_l", grounds=("pad_r",), voltage_v=2.0
@@ -265,9 +272,7 @@ def test_refine_metal_plane_mesh_returns_the_element_count(
         calls.append((refine_model, refine_layout, passes, kwargs))
         return 11
 
-    monkeypatch.setattr(
-        comsol_model.comsol_mesh, "refine_metal_plane_mesh", fake_refine
-    )
+    monkeypatch.setattr(comsol_model.mesh, "refine_metal_plane_mesh", fake_refine)
 
     assert model.refine_metal_plane_mesh(2, z_half_um=5.0, refine_box=box) == 11
     assert calls == [(model, layout, 2, {"z_half_um": 5.0, "refine_box": box})]
@@ -288,7 +293,7 @@ def test_pin_absolute_mesh_sizes_returns_the_element_count(
         calls.append((pin_model, kwargs))
         return 12
 
-    monkeypatch.setattr(comsol_model.comsol_mesh, "pin_absolute_mesh_sizes", fake_pin)
+    monkeypatch.setattr(comsol_model.mesh, "pin_absolute_mesh_sizes", fake_pin)
 
     result = model.pin_absolute_mesh_sizes(
         global_hmax_um=40.0, global_hmin_um=4.0, face_sizes=face_sizes, hgrad=1.3
@@ -324,9 +329,7 @@ def test_pin_absolute_edge_mesh_sizes_returns_the_element_count(
         calls.append((pin_model, kwargs))
         return 13
 
-    monkeypatch.setattr(
-        comsol_model.comsol_mesh, "pin_absolute_edge_mesh_sizes", fake_pin
-    )
+    monkeypatch.setattr(comsol_model.mesh, "pin_absolute_edge_mesh_sizes", fake_pin)
 
     result = model.pin_absolute_edge_mesh_sizes(
         edge_selection="meander_edges",

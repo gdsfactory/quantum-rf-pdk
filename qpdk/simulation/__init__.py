@@ -25,29 +25,30 @@ Extractor.
 **COMSOL workflow:**
 
 1. Extract metal polygons and optional feed ports with
-   :func:`~qpdk.simulation.comsol_layout.prepare_comsol_layout`
+   :func:`~qpdk.simulation.comsol.layout.prepare_comsol_layout`
 2. Build a 3D air/silicon model with sheet metal via
-   :func:`~qpdk.simulation.comsol_sheet.build_comsol_sheet_model`
+   :func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model`
 3. Add a CPW RF or qubit electrostatic study with
-   :func:`~qpdk.simulation.comsol_rf.add_cpw_rf_study` or
-   :func:`~qpdk.simulation.comsol_capacitance.add_capacitance_study`
+   :func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` or
+   :func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study`
 4. Mesh it, optionally refined at the metal plane, with
-   :func:`~qpdk.simulation.comsol_mesh.refine_metal_plane_mesh`, or with
+   :func:`~qpdk.simulation.comsol.mesh.refine_metal_plane_mesh`, or with
    absolute sizes at the metal via
-   :func:`~qpdk.simulation.comsol_mesh.pin_absolute_mesh_sizes`
+   :func:`~qpdk.simulation.comsol.mesh.pin_absolute_mesh_sizes`
 
 The steps above are also available as one chainable class:
-:class:`~qpdk.simulation.comsol_model.COMSOL` builds a model through
-:meth:`~qpdk.simulation.comsol_model.COMSOL.create_sheet` or
-:meth:`~qpdk.simulation.comsol_model.COMSOL.create_metal`, holds the layout, and
+:class:`~qpdk.simulation.comsol.model.COMSOL` builds a model through
+:meth:`~qpdk.simulation.comsol.model.COMSOL.create_sheet` or
+:meth:`~qpdk.simulation.comsol.model.COMSOL.create_metal`, holds the layout, and
 offers a method per study and mesh helper, so neither the model nor the layout
 has to be passed again. Solving, saving, and evaluating are MPh's own methods.
 
 Note:
     The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL builders
-    require ``uv sync --extra comsol`` and a local COMSOL installation; only
-    :class:`~qpdk.simulation.comsol_model.COMSOL` imports MPh eagerly, so the
-    helper modules and this package stay importable without it.
+    require ``uv sync --extra comsol`` and a local COMSOL installation. Only
+    :class:`~qpdk.simulation.comsol.model.COMSOL` imports MPh, and it is
+    exposed lazily, so the layout and helper modules and this package stay
+    importable without it.
 
 Example:
     >>> from ansys.aedt.core import Hfss
@@ -72,12 +73,12 @@ import importlib
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from qpdk.simulation.comsol_model import COMSOL
+    from qpdk.simulation.comsol.model import COMSOL
     from qpdk.simulation.hfss import HFSS
     from qpdk.simulation.q3d import Q2D, Q3D
 
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
-    "COMSOL": ("qpdk.simulation.comsol_model", "COMSOL"),
+    "COMSOL": ("qpdk.simulation.comsol.model", "COMSOL"),
     "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),
     "add_materials_to_aedt": ("qpdk.simulation.aedt_base", "add_materials_to_aedt"),
     "detach_desktop_logging": ("qpdk.simulation.aedt_base", "detach_desktop_logging"),
@@ -101,37 +102,37 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     ),
     "Q2D": ("qpdk.simulation.q3d", "Q2D"),
     "Q3D": ("qpdk.simulation.q3d", "Q3D"),
-    "ComsolBoundingBox": ("qpdk.simulation.comsol_layout", "ComsolBoundingBox"),
-    "ComsolFeedPort": ("qpdk.simulation.comsol_layout", "ComsolFeedPort"),
-    "ComsolLayout": ("qpdk.simulation.comsol_layout", "ComsolLayout"),
-    "ComsolPolygon": ("qpdk.simulation.comsol_layout", "ComsolPolygon"),
+    "ComsolBoundingBox": ("qpdk.simulation.comsol.layout", "ComsolBoundingBox"),
+    "ComsolFeedPort": ("qpdk.simulation.comsol.layout", "ComsolFeedPort"),
+    "ComsolLayout": ("qpdk.simulation.comsol.layout", "ComsolLayout"),
+    "ComsolPolygon": ("qpdk.simulation.comsol.layout", "ComsolPolygon"),
     "prepare_comsol_layout": (
-        "qpdk.simulation.comsol_layout",
+        "qpdk.simulation.comsol.layout",
         "prepare_comsol_layout",
     ),
     "build_comsol_metal_model": (
-        "qpdk.simulation.comsol",
+        "qpdk.simulation.comsol.metal",
         "build_comsol_metal_model",
     ),
     "build_comsol_sheet_model": (
-        "qpdk.simulation.comsol_sheet",
+        "qpdk.simulation.comsol.sheet",
         "build_comsol_sheet_model",
     ),
-    "add_cpw_rf_study": ("qpdk.simulation.comsol_rf", "add_cpw_rf_study"),
+    "add_cpw_rf_study": ("qpdk.simulation.comsol.rf", "add_cpw_rf_study"),
     "add_capacitance_study": (
-        "qpdk.simulation.comsol_capacitance",
+        "qpdk.simulation.comsol.capacitance",
         "add_capacitance_study",
     ),
     "pin_absolute_edge_mesh_sizes": (
-        "qpdk.simulation.comsol_mesh",
+        "qpdk.simulation.comsol.mesh",
         "pin_absolute_edge_mesh_sizes",
     ),
     "pin_absolute_mesh_sizes": (
-        "qpdk.simulation.comsol_mesh",
+        "qpdk.simulation.comsol.mesh",
         "pin_absolute_mesh_sizes",
     ),
     "refine_metal_plane_mesh": (
-        "qpdk.simulation.comsol_mesh",
+        "qpdk.simulation.comsol.mesh",
         "refine_metal_plane_mesh",
     ),
 }
