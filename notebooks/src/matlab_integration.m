@@ -212,8 +212,9 @@ disp(T);
 %
 % Touchstone is the bridge rather than a direct array hand-off because it is lossless for this
 % purpose, needs no complex-array marshalling between the two languages, and produces a file that
-% any other RF tool can read too. `qpdk.models.touchstone.write_touchstone` does the export; it is
-% part of the `models` extra (it uses [scikit-rf](https://scikit-rf.org/) under the hood).
+% any other RF tool can read too. `qpdk.models.touchstone.write_touchstone` does the export and
+% `qpdk.models.touchstone.read_touchstone` the import, both written straight against the Touchstone
+% grammar with NumPy alone, so no extra RF package is pulled in on the Python side.
 
 % %% [markdown]
 %
@@ -456,18 +457,22 @@ end
 % ### Back to Python
 %
 % `rfwrite` exports a MATLAB `sparameters` object as Touchstone, closing the loop: the hybrid
-% circuit — part qpdk model, part MATLAB lumped elements — becomes a file that `scikit-rf`, or any
-% other tool in the Python stack, can pick up again.
+% circuit — part qpdk model, part MATLAB lumped elements — becomes a file that SAX can pick up
+% again. `read_touchstone` is the inverse of the export above; it returns the frequency vector in Hz
+% and a SAX `SDict`, one entry per ordered port pair, ready to drop into a `sax.circuit` alongside
+% purely analytical qpdk models.
 
 % %%
 if has_rf
     hybrid_file = fullfile(results_dir, 'resonator_matched.s2p');
     rfwrite(S_hybrid, hybrid_file);
 
-    skrf = py.importlib.import_module('skrf');
-    network = skrf.Network(hybrid_file);
-    fprintf('Read back into scikit-rf: %d ports, %d frequency points\n', ...
-        int64(py.getattr(network, 'nports')), int64(py.len(py.getattr(network, 'f'))));
+    imported = py.qpdk.models.touchstone.read_touchstone(hybrid_file);
+    freq_back = double(imported{1});
+    sdict_back = imported{2};
+    fprintf('Read back into SAX: %d port pairs over %d points (%.2f-%.2f GHz)\n', ...
+        int64(py.len(sdict_back)), numel(freq_back), ...
+        min(freq_back) / 1e9, max(freq_back) / 1e9);
 end
 
 % %% [markdown]

@@ -1,4 +1,4 @@
-"""Tests for the Touchstone exporter (qpdk/models/touchstone.py)."""
+"""Tests for the Touchstone reader/writer (qpdk/models/touchstone.py)."""
 
 from __future__ import annotations
 
@@ -10,13 +10,15 @@ import pytest
 from qpdk import PDK
 from qpdk.models.resonator import quarter_wave_resonator_coupled
 from qpdk.models.touchstone import (
+    format_touchstone,
+    parse_touchstone,
+    read_touchstone,
     sdict_to_array,
-    sdict_to_network,
     write_touchstone,
 )
 from qpdk.models.waveguides import straight
 
-skrf = pytest.importorskip("skrf", reason="models extra not installed")
+skrf = pytest.importorskip("skrf", reason="scikit-rf is only used to cross-check")
 
 PDK.activate()
 
@@ -51,46 +53,97 @@ def test_sdict_to_array_rejects_unknown_ports(cpw_sdict: dict) -> None:
         sdict_to_array(cpw_sdict, ports=("o1", "nonexistent"))
 
 
-def test_sdict_to_network_rejects_mismatched_frequencies(cpw_sdict: dict) -> None:
+def test_format_rejects_mismatched_frequencies(cpw_sdict: dict) -> None:
     """Passing a different frequency vector than the model saw is an error."""
+    s_array, ports = sdict_to_array(cpw_sdict)
     with pytest.raises(ValueError, match="pass the same frequency array"):
-        sdict_to_network(cpw_sdict, FREQUENCIES[:-1])
+        format_touchstone(s_array, FREQUENCIES[:-1], ports)
 
 
-def test_network_round_trips_through_touchstone(
-    cpw_sdict: dict, tmp_path: Path
-) -> None:
+def test_round_trips_through_touchstone(cpw_sdict: dict, tmp_path: Path) -> None:
     """Writing and re-reading a ``.s2p`` preserves frequencies and S-parameters."""
     path = write_touchstone(cpw_sdict, FREQUENCIES, tmp_path / "cpw.s2p")
     assert path.exists()
 
-    expected, _ = sdict_to_array(cpw_sdict)
-    network = skrf.Network(str(path))
-    assert network.nports == 2
-    np.testing.assert_allclose(network.f, FREQUENCIES, rtol=1e-12)
-    np.testing.assert_allclose(network.s, expected, atol=1e-9)
-    np.testing.assert_allclose(network.z0, 50.0)
+    frequency, sdict = read_touchstone(path)
+    np.testing.assert_allclose(frequency, FREQUENCIES, rtol=1e-12)
+    assert set(sdict) == set(cpw_sdict)
+    for key, value in cpw_sdict.items():
+        np.testing.assert_allclose(sdict[key], np.asarray(value), atol=1e-11)
+
+
+def test_two_port_column_order_matches_the_spec(cpw_sdict: dict) -> None:
+    """The two-port layout is ``f S11 S21 S12 S22``, not row-major."""
+    s_array, ports = sdict_to_array(cpw_sdict)
+    row = format_touchstone(s_array, FREQUENCIES, ports).splitlines()[3].split()
+    written = np.array([float(value) for value in row[1:]]).reshape(4, 2)
+    expected = s_array[0].T.reshape(-1)
+    np.testing.assert_allclose(written[:, 0] + 1j * written[:, 1], expected, atol=1e-11)
 
 
 def test_touchstone_header_records_port_names(cpw_sdict: dict, tmp_path: Path) -> None:
     """The port-order comment survives, since Touchstone only stores indices."""
     path = write_touchstone(cpw_sdict, FREQUENCIES, tmp_path / "cpw.s2p")
-    header = path.read_text(encoding="utf-8")
-    assert "Port[1] = o1" in header
-    assert "Port[2] = o2" in header
-    assert header.startswith("# Hz S RI R 50")
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert "! ports: o1, o2" in lines
+    assert lines[2] == "# Hz S RI R 50"
 
 
-def test_three_port_model_exports(tmp_path: Path) -> None:
+def test_three_port_model_round_trips(tmp_path: Path) -> None:
     """A three-port model such as the coupled resonator writes a ``.s3p``."""
     sdict = quarter_wave_resonator_coupled(f=FREQUENCIES)
+    expected, ports = sdict_to_array(sdict)
     path = write_touchstone(sdict, FREQUENCIES, tmp_path / "resonator.s3p")
-    network = skrf.Network(str(path))
-    assert network.nports == 3
     assert not (tmp_path / "resonator.s3p.s3p").exists()
+
+    frequency, s_array, file_ports, z0 = parse_touchstone(path.read_text())
+    assert s_array.shape == (FREQUENCIES.size, 3, 3)
+    assert file_ports == ports
+    assert z0 == pytest.approx(50.0)
+    np.testing.assert_allclose(frequency, FREQUENCIES, rtol=1e-12)
+    np.testing.assert_allclose(s_array, expected, atol=1e-11)
 
 
 def test_reference_impedance_is_configurable(cpw_sdict: dict, tmp_path: Path) -> None:
-    """``z0`` lands in the Touchstone option line."""
+    """``z0`` lands in the Touchstone option line and comes back out."""
     path = write_touchstone(cpw_sdict, FREQUENCIES, tmp_path / "cpw.s2p", z0=75.0)
-    assert path.read_text(encoding="utf-8").startswith("# Hz S RI R 75")
+    assert "# Hz S RI R 75" in path.read_text(encoding="utf-8")
+    assert parse_touchstone(path.read_text())[3] == pytest.approx(75.0)
+
+
+@pytest.mark.parametrize("frequency_unit", ["Hz", "MHz", "GHz"])
+def test_frequency_unit_only_changes_the_numbers(
+    cpw_sdict: dict, frequency_unit: str
+) -> None:
+    """Frequencies are always Hz in Python, whatever unit the file uses."""
+    s_array, ports = sdict_to_array(cpw_sdict)
+    content = format_touchstone(
+        s_array, FREQUENCIES, ports, frequency_unit=frequency_unit
+    )
+    np.testing.assert_allclose(parse_touchstone(content)[0], FREQUENCIES, rtol=1e-12)
+
+
+@pytest.mark.parametrize("n_ports", [1, 2, 3, 5])
+def test_scikit_rf_reads_what_we_write(n_ports: int, tmp_path: Path) -> None:
+    """Cross-check the hand-rolled writer against another Touchstone reader.
+
+    scikit-rf is not a dependency of :mod:`qpdk.models.touchstone`; it is used
+    here only as an independent implementation of the same specification, which
+    is what makes the port-index conventions worth trusting.
+    """
+    rng = np.random.default_rng(n_ports)
+    shape = (FREQUENCIES.size, n_ports, n_ports)
+    expected = rng.normal(size=shape) + 1j * rng.normal(size=shape)
+    path = tmp_path / f"random.s{n_ports}p"
+    path.write_text(format_touchstone(expected, FREQUENCIES))
+
+    network = skrf.Network(str(path))
+    assert network.nports == n_ports
+    np.testing.assert_allclose(network.f, FREQUENCIES, rtol=1e-12)
+    np.testing.assert_allclose(network.s, expected, atol=1e-11)
+
+    # ...and that we read back what it writes, including its port-name comments.
+    written = tmp_path / f"skrf.s{n_ports}p"
+    network.write_touchstone(str(written.with_suffix("")), form="ri", write_z0=False)
+    _, s_array, _, _ = parse_touchstone(written.read_text())
+    np.testing.assert_allclose(s_array, expected, atol=1e-11)
