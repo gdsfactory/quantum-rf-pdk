@@ -284,6 +284,15 @@ jobs:
               for cell_output in cell.get("outputs", [])
           ):
               raise SystemExit("Saved MATLAB notebook has no inline figures")
+          # MATLAB prints console warnings wrapped in backspace characters, which the
+          # PDF/A fonts cannot display, so control characters fail the build here.
+          if any(
+              ord(character) < 32 and character not in "\n"
+              for cell in code_cells
+              for cell_output in cell.get("outputs", [])
+              for character in stream_text(cell)
+          ):
+              raise SystemExit("Saved MATLAB notebook contains console control characters")
 
           # The fingerprint cell printed during the saved run binds those outputs to the
           # committed source; recompute it to catch the two drifting apart.
