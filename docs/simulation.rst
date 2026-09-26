@@ -52,8 +52,8 @@ For new components, attach the compact model through ``schematic_function`` and 
  COMSOL
 ********
 
-The builders below return a plain MPh model. Study and local refinement helpers
-take that model and its layout; absolute mesh helpers use the model and named selections.
+The builders below return a plain MPh model. Study and local refinement helpers take
+that model and its layout; absolute mesh helpers use the model and named selections.
 :class:`~qpdk.simulation.comsol.model.COMSOL` wraps the two in one object: it subclasses
 :class:`mph.Model`, so MPh solves, saves, and evaluates it as usual, and it holds the
 layout, so a setup reads as a chain.
@@ -67,8 +67,8 @@ layout, so a setup reads as a chain.
    :meth:`~qpdk.simulation.comsol.model.COMSOL.pin_absolute_edge_mesh_sizes`
 4. Solve, save, and evaluate with MPh's own ``solve``, ``save``, and ``evaluate``
 
-Constructing the class needs the ``comsol`` extra; geometry and result helpers
-remain importable without it.
+Constructing the class needs the ``comsol`` extra; geometry and result helpers remain
+importable without it.
 
 .. automodule:: qpdk.simulation.comsol.model
     :members:

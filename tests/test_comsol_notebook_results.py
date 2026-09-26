@@ -6,9 +6,13 @@ of a licensed COMSOL, and the shared result helpers are imported from
 """
 
 import ast
+import json
 from collections.abc import Callable
+from operator import itemgetter
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -22,6 +26,7 @@ from qpdk.simulation.comsol.results import (
     requested_frequency_grid,
     resolve_record_path,
     result_file,
+    write_json_atomically,
 )
 
 NOTEBOOKS = Path(__file__).resolve().parents[1] / "notebooks" / "src"
@@ -134,6 +139,7 @@ def test_export_cell_rerun_reuses_nodes(tmp_path: Path) -> None:
         "MPH_AVAILABLE": True,
         "model": model,
         "MODEL_DIR": tmp_path,
+        "FIELD_TXT": "comsol_qubit_field.txt",
     }
     field_path = tmp_path / "comsol_qubit_field.txt"
 
@@ -144,6 +150,63 @@ def test_export_cell_rerun_reuses_nodes(tmp_path: Path) -> None:
     assert field_path.read_bytes() != first_bytes
     assert model.java.result().datasets.tags() == {"cutplane"}
     assert model.java.result().exports.tags() == {"field"}
+
+
+def test_new_qubit_solve_invalidates_the_previous_field(tmp_path: Path) -> None:
+    cell = _cell_with(_source(QUBIT_NOTEBOOK), "MODEL_PATH = MODEL_DIR /")
+    tree = ast.parse(cell)
+    solve = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.If)
+        and ast.get_source_segment(cell, node.test) == "RUN_COMSOL and MPH_AVAILABLE"
+    )
+    source = ast.get_source_segment(cell, solve)
+    assert source is not None
+
+    field = tmp_path / "field.txt"
+    field.write_text("old solve")
+    model = MagicMock()
+    model.add_capacitance_study.return_value = model
+    model.pin_absolute_mesh_sizes.return_value = 100
+    model.problems.return_value = []
+    model.evaluate.side_effect = [125e-15, 250e-15]
+    namespace = {
+        "RUN_COMSOL": True,
+        "MPH_AVAILABLE": True,
+        "MODEL_DIR": tmp_path,
+        "MODEL_PATH": tmp_path / "model.mph",
+        "FIELD_TXT": field.name,
+        "CORES": 1,
+        "mph": SimpleNamespace(start=lambda **_kwargs: object()),
+        "COMSOL": SimpleNamespace(create_sheet=lambda *_args, **_kwargs: model),
+        "layout": object(),
+        "NEAR_METAL_SIZES": {"fine": (1.0, 0.1, 2.0, 0.2)},
+        "MAIN_NEAR_METAL": "fine",
+        "PAD_L_SELECTION": "left",
+        "PAD_R_SELECTION": "right",
+        "GROUND_SELECTION": "ground",
+        "CONDUCTORS": (),
+        "VOLTAGE_V": 2.0,
+        "BASE_MESH_SIZE": 2,
+        "GLOBAL_HMAX_UM": 10.0,
+        "GLOBAL_HMIN_UM": 1.0,
+        "HGRAD": 1.4,
+        "HCURVE": 0.5,
+        "HNARROW": 0.7,
+        "LATERAL_MARGIN_UM": 100.0,
+        "SUBSTRATE_THICKNESS_UM": 200.0,
+        "AIR_HEIGHT_UM": 200.0,
+        "SILICON_RELATIVE_PERMITTIVITY": 11.7,
+        "json": json,
+    }
+
+    exec(source, namespace)  # ruff: ignore[exec-builtin]
+
+    assert not field.exists()
+    assert json.loads((tmp_path / "comsol_qubit_metrics.json").read_text())[
+        "voltage_v"
+    ] == pytest.approx(2.0)
 
 
 class _FakeAxes:
@@ -209,6 +272,7 @@ def test_field_readback_plots_when_the_export_exists(tmp_path: Path) -> None:
         "LogNorm": LogNorm,
         "plt": pyplot,
         "RESULTS_DIR": tmp_path,
+        "FIELD_TXT": field_path.name,
         "voltage_v": 1.0,
         "result_file": result_file,
         "explain_missing_results": lambda *_args: "",
@@ -423,3 +487,35 @@ def test_awe_curve_accepts_full_grid(tmp_path: Path) -> None:
     assert curve["requested_points"] == AWE_POINTS
     assert curve["solved_rows"] == AWE_POINTS
     assert path.exists()
+
+
+def test_ported_mesh_series_rejects_a_different_setup(tmp_path: Path) -> None:
+    setup = {"layout": {"bbox": [0, 1]}, "silicon_relative_permittivity": 11.7}
+    records = (
+        ("matching", {"setup": setup, "element_count": 100}),
+        ("different", {"setup": {"layout": {"bbox": [0, 2]}}, "element_count": 200}),
+        ("legacy", {"element_count": 300}),
+    )
+    for name, record in records:
+        (tmp_path / f"ported_{name}.json").write_text(json.dumps(record))
+
+    update = _functions(
+        _source(RESONATOR_NOTEBOOK),
+        {"update_ported_mesh_series"},
+        Any=Any,
+        Path=Path,
+        json=json,
+        itemgetter=itemgetter,
+        PORTED_EIGEN_TAGGED_PREFIX="ported",
+        PORTED_MESH_SERIES_JSON="series.json",
+        ported_series_row=lambda record: (
+            {"element_count": record["element_count"]},
+            "",
+        ),
+        write_json_atomically=write_json_atomically,
+    )["update_ported_mesh_series"]
+
+    payload = update(tmp_path, setup)
+
+    assert payload["rows"] == [{"element_count": 100}]
+    assert len(payload["rejected"]) == 2

@@ -115,7 +115,7 @@ import json
 import os
 import uuid
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from operator import itemgetter
 from pathlib import Path
 from typing import Any
@@ -363,6 +363,7 @@ EDGE_MESH_CONFIGS: tuple[EdgeMeshCase, ...] = (
 PORTED_EDGE_HMAX_UM = 4.0
 PORTED_EDGE_HMIN_UM = 0.4
 PORTED_SHIFT_GHZ = 7.0
+PORT_MODE_INDEX_SHIFT = 2.5
 PORTED_NEIGS = 4
 PORTED_EIGWHICH = "lr"
 # The ported mode selection window, in GHz. It is narrower than stage 1's 3 to
@@ -778,6 +779,7 @@ def solve_port_free_row(
             cpw_gap_um=CPW_GAP_UM,
             frequency_ghz=case.shift_ghz,
             mesh_size=2,
+            effective_index_shift=PORT_MODE_INDEX_SHIFT,
         )
         configure_port_free_eigen_study(model, case)
         edges = create_meander_edge_selection(model)
@@ -1375,6 +1377,35 @@ def positive_number(value: Any) -> float | None:
     return number if np.isfinite(number) and number > 0.0 else None
 
 
+def ported_mesh_setup(layout: Any) -> dict[str, Any]:
+    """Describe the geometry and fixed settings shared by mesh-series rows."""
+    return json.loads(
+        json.dumps(
+            {
+                "layout": asdict(layout),
+                "cpw_width_um": CPW_WIDTH_UM,
+                "cpw_gap_um": CPW_GAP_UM,
+                "silicon_relative_permittivity": SILICON_RELATIVE_PERMITTIVITY,
+                "substrate_thickness_um": SUBSTRATE_THICKNESS_UM,
+                "air_height_um": AIR_HEIGHT_UM,
+                "global_hmax_um": GLOBAL_HMAX_UM,
+                "global_hmin_um": GLOBAL_HMIN_UM,
+                "ported_shift_ghz": PORTED_SHIFT_GHZ,
+                "port_mode_index_shift": PORT_MODE_INDEX_SHIFT,
+                "ported_neigs": PORTED_NEIGS,
+                "ported_eigwhich": PORTED_EIGWHICH,
+                "mode_window_ghz": PORTED_MODE_WINDOW_GHZ,
+                "min_meander_feed_ratio": PORTED_MIN_MEANDER_FEED_RATIO,
+                "meander_box_um": MEANDER_BOX_UM,
+                "feed_y_um": FEED_Y_UM,
+                "meander_edge_box_um": MEANDER_EDGE_BOX_UM,
+                "field_cut_z": FIELD_CUT_Z,
+            },
+            sort_keys=True,
+        )
+    )
+
+
 def ported_eigen_record_path(edge_hmax_um: float, edge_hmin_um: float) -> Path:
     """Return the mesh-tagged ported eigen record path for one edge mesh.
 
@@ -1550,16 +1581,17 @@ def ported_series_row(record: dict[str, Any]) -> tuple[dict[str, Any] | None, st
     )
 
 
-def update_ported_mesh_series(out_dir: Path) -> dict[str, Any]:
+def update_ported_mesh_series(out_dir: Path, setup: dict[str, Any]) -> dict[str, Any]:
     """Rebuild the ported mesh series from every valid tagged eigen record.
 
     The file is rewritten from the records on disk rather than appended to, so
-    re-solving one edge size replaces that row instead of duplicating it. Each
-    record is keyed by its explicit edge-size tag, and the rows are the records'
-    own numbers, sorted coarse to fine by element count.
+    re-solving one edge size replaces that row instead of duplicating it. Rows
+    must share the geometry and fixed RF settings; older records without setup
+    metadata are excluded from a new series.
 
     Args:
         out_dir: The directory holding the mesh-tagged ported eigen records.
+        setup: Geometry and fixed RF settings for this series.
 
     Returns:
         The payload written to ``PORTED_MESH_SERIES_JSON``.
@@ -1574,6 +1606,9 @@ def update_ported_mesh_series(out_dir: Path) -> dict[str, Any]:
             continue
         if not isinstance(record, dict):
             rejected.append(f"{path.name}: not a record object")
+            continue
+        if record.get("setup") != setup:
+            rejected.append(f"{path.name}: different or missing setup")
             continue
         row, reason = ported_series_row(record)
         if row is None:
@@ -1857,6 +1892,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
             cpw_gap_um=CPW_GAP_UM,
             frequency_ghz=PORTED_SHIFT_GHZ,
             mesh_size=2,
+            effective_index_shift=PORT_MODE_INDEX_SHIFT,
         )
         # Ported eigen keeps bma1 and bma2: the ports need their boundary mode
         # fields, and only the frequency step is replaced.
@@ -1891,6 +1927,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
         )
         ported_record = {
             "run_id": run_id,
+            "setup": ported_mesh_setup(layout),
             "element_count": ported_elements,
             "edge_hmax_um": PORTED_EDGE_HMAX_UM,
             "edge_hmin_um": PORTED_EDGE_HMIN_UM,
@@ -1923,7 +1960,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
                 | {"field_file": tagged_field_path.name}
             },
         )
-        ported_series = update_ported_mesh_series(MODEL_DIR)
+        ported_series = update_ported_mesh_series(MODEL_DIR, ported_record["setup"])
         print(
             f"Ported eigen: {ported_elements} elements, selected "
             f"{ported_selected.real / 1e9:.9f} GHz, meander/feed p95 "
@@ -1972,6 +2009,7 @@ elif RUN_PORTED_DRIVEN and client is not None:
                 cpw_gap_um=CPW_GAP_UM,
                 frequency_ghz=PORTED_SHIFT_GHZ,
                 mesh_size=2,
+                effective_index_shift=PORT_MODE_INDEX_SHIFT,
             )
             create_meander_edge_selection(model)
             driven_elements = model.pin_absolute_edge_mesh_sizes(

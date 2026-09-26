@@ -237,6 +237,7 @@ RUN_COMSOL = False
 RUN_DOMAIN_STUDY = False  # domain and near-metal mesh series below; needs RUN_COMSOL
 MODEL_DIR = Path.home() / "comsol_models"
 MODEL_PATH = MODEL_DIR / "comsol_qubit_capacitance.mph"
+FIELD_TXT = "comsol_qubit_field.txt"
 RESULTS_DIR: Path | None = MODEL_DIR if RUN_COMSOL else None
 CORES = 4
 VOLTAGE_V = 1.0
@@ -321,6 +322,7 @@ if RUN_COMSOL and MPH_AVAILABLE:
     print(f"Mesh elements = {element_count}")
     print(f"Saved model to {MODEL_PATH}")
 
+    (MODEL_DIR / FIELD_TXT).unlink(missing_ok=True)
     metrics_path = MODEL_DIR / "comsol_qubit_metrics.json"
     metrics_path.write_text(
         json.dumps(
@@ -383,7 +385,7 @@ if RUN_COMSOL and MPH_AVAILABLE and model is not None:
     )
     field_export.set("data", "cutplane")
     field_export.set("expr", ["V", "es.normE"])
-    field_path = MODEL_DIR / "comsol_qubit_field.txt"
+    field_path = MODEL_DIR / FIELD_TXT
     field_export.set("filename", str(field_path))
     field_export.run()
     print(f"Exported V and es.normE to {field_path}")
@@ -456,7 +458,6 @@ else:
 # only**: it reads the solved field without re-solving it).
 
 # %%
-FIELD_TXT = "comsol_qubit_field.txt"
 FIELD_LIMIT_X_UM = 300.0
 FIELD_LIMIT_Y_UM = 250.0
 FIELD_GRID_X = 300
