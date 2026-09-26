@@ -112,8 +112,14 @@ def test_sax_stype_functions_in_models_dict():
     sax_stype_functions = set()
     import_failures: list[tuple[str, str]] = []
 
+    # I/O modules, not model modules: their helpers may return sax.SDict (e.g.
+    # touchstone.array_to_sdict) without being models the netlist can call.
+    io_modules = frozenset({"touchstone"})
+
     for _, modname, ispkg in pkgutil.iter_modules(qpdk.models.__path__):
         if not ispkg:  # Only look at modules, not packages
+            if modname in io_modules:
+                continue
             try:
                 module = importlib.import_module(f"qpdk.models.{modname}")
 
