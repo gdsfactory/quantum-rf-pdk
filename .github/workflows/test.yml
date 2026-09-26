@@ -241,6 +241,58 @@ jobs:
           echo "LIBDIR: ${PY_LIBDIR}"
       - name: Sanity-check qpdk import (Python side)
         run: uv run python -c "import qpdk; qpdk.PDK.activate(); print('qpdk activated:', qpdk.PDK.name)"
+      - name: Check the saved MATLAB notebook
+        run: |
+          uv run --no-sync python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          notebook = json.loads(Path("notebooks/matlab_integration.ipynb").read_text())
+          code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
+          if not code_cells or any(
+              cell.get("execution_count") is None
+              or any(output.get("output_type") == "error" for output in cell.get("outputs", []))
+              for cell in code_cells
+          ):
+              raise SystemExit("Saved MATLAB notebook has incomplete or failed cells")
+
+          def stream_text(cell):
+              return "\n".join(
+                  "".join(output["text"]) if isinstance(output.get("text"), list) else output.get("text", "")
+                  for output in cell.get("outputs", [])
+                  if output.get("output_type") == "stream"
+              )
+
+          output = "\n".join(stream_text(cell) for cell in code_cells)
+          # The saved run must cover the RF Toolbox sections, which the licence used for
+          # the live re-execution below does not include.
+          required = (
+              "RF Toolbox available",
+              "Group delay:",
+              "Max |S13| =",
+              "Notch:",
+              "1 mm + 1 mm vs. 2 mm:",
+              "Rational fit:",
+              "Read back into SAX:",
+          )
+          if any(string not in output for string in required):
+              raise SystemExit("Saved MATLAB notebook is missing RF Toolbox results")
+          if not any(
+              "image/png" in cell_output.get("data", {})
+              for cell in code_cells
+              for cell_output in cell.get("outputs", [])
+          ):
+              raise SystemExit("Saved MATLAB notebook has no inline figures")
+
+          # The fingerprint cell printed during the saved run binds those outputs to the
+          # committed source; recompute it to catch the two drifting apart.
+          expected = hashlib.sha256(Path("notebooks/src/matlab_integration.m").read_bytes()).hexdigest()
+          fingerprint = stream_text(code_cells[-1])
+          if fingerprint.strip() != f"Executed source SHA256: {expected}":
+              raise SystemExit("Saved MATLAB notebook does not match its source")
+          print("Saved MATLAB notebook verified: outputs match the committed source")
+          PY
       - name: Wait for MATLAB setup
         wait: matlab-setup
       - uses: nikosavola/MATLAB-language-server-pre-commit@5966190480d0a77bf731bac19df84417aabc63b2 # v0.1.1
