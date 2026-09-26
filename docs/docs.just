@@ -130,15 +130,14 @@ write-llms-txt:
     @mkdir -p docs/_extra
     @cp docs/llms.txt docs/_extra/llms.txt
 
-# Notebooks that should be copied as .ipynb because they have precalculated outputs
-# (These will have their .py counterparts removed if they exist to force MyST-NB to use .ipynb)
-precalculated_notebooks := "hfss_*.ipynb matlab_integration.ipynb"
+# Keep saved outputs for licensed-solver notebooks.
+precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb matlab_integration.ipynb"
 
 # Copy all sample scripts and notebooks to use as documentation
 [private]
 [group('docs')]
 copy-sample-notebooks: build-doc-figures
-    @mkdir -p docs/notebooks
+    @mkdir -p docs/notebooks/
     # Copy all source files from notebooks/src
     @cp -p notebooks/src/*.py notebooks/src/*.m docs/notebooks/
     @mkdir -p docs/notebooks/figures

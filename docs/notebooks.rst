@@ -131,6 +131,10 @@ currents, and substrate modes that analytical models may miss
   resonator in Ansys HFSS to find resonant frequencies and Q-factors.
 - :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
   interdigital capacitor in Ansys HFSS.
+- :doc:`notebooks/comsol_cpw_resonator` — COMSOL ported resonator layout, adaptive
+  S-parameter sweep, and field map.
+- :doc:`notebooks/comsol_qubit_capacitance` — COMSOL electrostatic extraction of
+  transmon pad capacitance and field map.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
 
@@ -155,6 +159,20 @@ currents, and substrate modes that analytical models may miss
 
     See the `gsim documentation <https://gdsfactory.github.io/gsim/>`_ for the full list
     of available notebooks.
+
+.. note::
+
+    **Notebooks that need a licensed solver are published with saved outputs**
+
+    COMSOL and Ansys AEDT are not pip-installable and do not run without a license, so
+    :doc:`notebooks/hfss_q2d_cpw_impedance`, :doc:`notebooks/hfss_eigenmode_resonator`,
+    :doc:`notebooks/hfss_driven_capacitor`, :doc:`notebooks/comsol_cpw_resonator`, and
+    :doc:`notebooks/comsol_qubit_capacitance` are published with the outputs of a real
+    solver run stored in the notebook. Those stored figures and numbers are the
+    artifact: the pages are not re-executed here, so what you see is the recorded run.
+    The two COMSOL notebooks additionally run without a license, skipping the solver
+    cells and reporting how to supply exported results, so their code can be read and
+    executed up to the point where a license is needed.
 
 **********************
  Hamiltonian analysis
@@ -279,6 +297,11 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - ``pyaedt[graphics]``, ``polars``
       - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
         local Ansys installation and a license, which are not pip-installable.
+    - - ``comsol``
+      - ``MPh``
+      - MPh-based COMSOL geometry and study builders in ``qpdk.simulation``. Building
+        and solving require a COMSOL installation and license; RF solves also need the
+        RF Module. MPh itself is only a client and installs no solver.
     - - ``circulax``
       - ``circulax``, ``optax``
       - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient
@@ -334,7 +357,7 @@ With ``pip``:
 
     pip install "qpdk[models]"
     pip install "qpdk[models,netket]"
-    pip install "qpdk[circulax,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
+    pip install "qpdk[circulax,comsol,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
 
 .. note::
 
@@ -404,6 +427,14 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - FEM electromagnetics
       - Ansys HFSS, PyAEDT
       - ``models``, ``hfss``
+    - - :doc:`notebooks/comsol_cpw_resonator`
+      - FEM electromagnetics
+      - COMSOL, MPh
+      - ``comsol``
+    - - :doc:`notebooks/comsol_qubit_capacitance`
+      - FEM electromagnetics
+      - COMSOL, MPh
+      - ``comsol``
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
