@@ -21,8 +21,8 @@ upstream into :mod:`sax` (which today has a ``sax.parsers.touchstone`` that
 delegates to scikit-rf).
 
 Files written by v2 tools are read as well, as far as the v1 data section
-allows: keyword lines are skipped, ``[Number of Ports]`` and
-``[Two-Port Data Order]`` are honoured.
+allows: keyword lines are skipped, ``[Number of Ports]``,
+``[Two-Port Data Order]`` and a uniform ``[Reference]`` are honoured.
 
 .. _Touchstone:
    https://ibis.org/touchstone_ver2.1/touchstone_ver2_1.pdf
@@ -228,13 +228,15 @@ def parse_touchstone(
         impedance in ohms.
 
     Raises:
-        ValueError: If the option line is unsupported, or the data does not
+        ValueError: If the option line is unsupported, ``[Reference]`` holds
+            values the single-z0 contract cannot express, or the data does not
             divide evenly into frequency points.
     """
     option: list[str] | None = None
     port_names: dict[int, str] = {}
     tokens: list[str] = []
     swap_two_port = True
+    reference_z0: float | None = None
     # An option line is optional; without one the standard defaults apply and
     # the v1 data section starts immediately (a keyword line ends it).
     in_data = True
@@ -262,6 +264,24 @@ def parse_touchstone(
                 n_ports = int(float(value.strip()))
             elif keyword == "two-port data order":
                 swap_two_port = value.strip().lower() != "12_21"
+            elif keyword == "reference":
+                try:
+                    reference = [float(word) for word in value.split()]
+                except ValueError:
+                    raise ValueError(
+                        f"unsupported [Reference] values {value.strip()!r}; only real "
+                        "impedances are supported"
+                    ) from None
+                # [Reference] overrides the option line's R. The reader's
+                # single-z0 contract cannot express a per-port reference, so
+                # only uniform values are accepted.
+                if len(set(reference)) != 1:
+                    raise ValueError(
+                        f"per-port reference impedances {reference} are not supported; "
+                        "the reader reports a single z0"
+                    )
+                reference_z0 = reference[0]
+                in_data = False
             elif keyword == "network data":
                 in_data, tokens = True, []
             elif keyword in {"end", "noise data"}:
@@ -277,6 +297,8 @@ def parse_touchstone(
             tokens.append(line)
 
     frequency_unit, parameter, data_format, z0 = _parse_option(option or [])
+    if reference_z0 is not None:
+        z0 = reference_z0
     if parameter != "s":
         raise ValueError(f"only S-parameters are supported, the file holds {parameter}")
 
