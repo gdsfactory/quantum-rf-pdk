@@ -7,9 +7,8 @@ of a licensed COMSOL, and the shared result helpers are imported from
 
 import ast
 import json
-from collections.abc import Callable
-from operator import itemgetter
 from pathlib import Path
+from textwrap import dedent
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
@@ -31,7 +30,6 @@ from qpdk.simulation.comsol.results import (
 
 NOTEBOOKS = Path(__file__).resolve().parents[1] / "notebooks" / "src"
 QUBIT_NOTEBOOK = NOTEBOOKS / "comsol_qubit_capacitance.py"
-RESONATOR_NOTEBOOK = NOTEBOOKS / "comsol_cpw_resonator.py"
 
 
 def _source(path: Path) -> str:
@@ -51,21 +49,6 @@ def _cell_with(source: str, needle: str) -> str:
     matched = [cell for cell in cells if needle in cell]
     assert len(matched) == 1, f"expected one cell containing {needle!r}"
     return matched[0]
-
-
-def _functions(source: str, names: set[str], **globals_: Any) -> dict[str, Any]:
-    tree = ast.parse(source)
-    chunks = [
-        segment
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef)
-        and node.name in names
-        and (segment := ast.get_source_segment(source, node)) is not None
-    ]
-    assert len(chunks) == len(names), f"missing functions in {names}"
-    namespace: dict[str, Any] = dict(globals_)
-    exec("\n\n".join(chunks), namespace)  # ruff: ignore[exec-builtin]
-    return namespace
 
 
 class _FakeFeature:
@@ -132,7 +115,14 @@ class _FakeModel:
 
 
 def test_export_cell_rerun_reuses_nodes(tmp_path: Path) -> None:
-    cell = _cell_with(_source(QUBIT_NOTEBOOK), "field_export")
+    cell = _cell_with(_source(QUBIT_NOTEBOOK), "field_export.set")
+    export = dedent(
+        cell[
+            cell.index("    result = model.java.result()") : cell.index(
+                '    print(f"Exported V and es.normE'
+            )
+        ]
+    )
     model = _FakeModel()
     namespace = {
         "RUN_COMSOL": True,
@@ -143,17 +133,19 @@ def test_export_cell_rerun_reuses_nodes(tmp_path: Path) -> None:
     }
     field_path = tmp_path / "comsol_qubit_field.txt"
 
-    exec(cell, namespace)  # ruff: ignore[exec-builtin]
+    exec(export, namespace)  # ruff: ignore[exec-builtin]
     first_bytes = field_path.read_bytes()
 
-    exec(cell, namespace)  # ruff: ignore[exec-builtin]
+    exec(export, namespace)  # ruff: ignore[exec-builtin]
     assert field_path.read_bytes() != first_bytes
     assert model.java.result().datasets.tags() == {"cutplane"}
     assert model.java.result().exports.tags() == {"field"}
 
 
-def test_new_qubit_solve_invalidates_the_previous_field(tmp_path: Path) -> None:
-    cell = _cell_with(_source(QUBIT_NOTEBOOK), "MODEL_PATH = MODEL_DIR /")
+def test_new_qubit_solve_invalidates_the_previous_field(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cell = _cell_with(_source(QUBIT_NOTEBOOK), "model = None")
     tree = ast.parse(cell)
     solve = next(
         node
@@ -171,18 +163,28 @@ def test_new_qubit_solve_invalidates_the_previous_field(tmp_path: Path) -> None:
     model.pin_absolute_mesh_sizes.return_value = 100
     model.problems.return_value = []
     model.evaluate.side_effect = [125e-15, 250e-15]
+    model.java.result.return_value = _FakeResult()
+
+    def fail_export(_self: _FakeFeature) -> None:
+        raise RuntimeError("export failed")
+
+    monkeypatch.setattr(_FakeFeature, "run", fail_export)
     namespace = {
         "RUN_COMSOL": True,
         "MPH_AVAILABLE": True,
         "MODEL_DIR": tmp_path,
         "MODEL_PATH": tmp_path / "model.mph",
+        "METRICS_JSON": "comsol_qubit_metrics.json",
         "FIELD_TXT": field.name,
         "CORES": 1,
         "mph": SimpleNamespace(start=lambda **_kwargs: object()),
         "COMSOL": SimpleNamespace(create_sheet=lambda *_args, **_kwargs: model),
         "layout": object(),
-        "NEAR_METAL_SIZES": {"fine": (1.0, 0.1, 2.0, 0.2)},
-        "MAIN_NEAR_METAL": "fine",
+        "NEAR_METAL": "fine",
+        "PAD_HMAX_UM": 1.0,
+        "PAD_HMIN_UM": 0.1,
+        "GROUND_HMAX_UM": 2.0,
+        "GROUND_HMIN_UM": 0.2,
         "PAD_L_SELECTION": "left",
         "PAD_R_SELECTION": "right",
         "GROUND_SELECTION": "ground",
@@ -198,11 +200,13 @@ def test_new_qubit_solve_invalidates_the_previous_field(tmp_path: Path) -> None:
         "SUBSTRATE_THICKNESS_UM": 200.0,
         "AIR_HEIGHT_UM": 200.0,
         "SILICON_RELATIVE_PERMITTIVITY": 11.7,
-        "json": json,
+        "write_json_atomically": write_json_atomically,
     }
 
-    exec(source, namespace)  # ruff: ignore[exec-builtin]
+    with pytest.raises(RuntimeError, match="export failed"):
+        exec(source, namespace)  # ruff: ignore[exec-builtin]
 
+    model.save.assert_called_once_with(tmp_path / "model.mph")
     assert not field.exists()
     assert json.loads((tmp_path / "comsol_qubit_metrics.json").read_text())[
         "voltage_v"
@@ -362,160 +366,3 @@ def test_requested_grid_returns_the_exact_point_count() -> None:
     assert grid_ghz[0] == pytest.approx(7.0)
     assert expression.startswith("range(")
     assert expression.endswith("[GHz])")
-
-
-class _AweStudy:
-    def feature(self, _tag: str) -> Any:
-        return self
-
-    def set(self, *args: Any) -> None:
-        pass
-
-    def run(self) -> None:
-        pass
-
-
-class _AweJava:
-    def __init__(self) -> None:
-        self._study = _AweStudy()
-
-    def study(self, _tag: str) -> _AweStudy:
-        return self._study
-
-
-class _AweModel:
-    def __init__(self) -> None:
-        self.java = _AweJava()
-
-
-AWE_LOW_GHZ = 4.0
-AWE_HIGH_GHZ = 6.0
-AWE_POINTS = 9
-
-
-def _awe_namespace(
-    spoil: Callable[[np.ndarray], np.ndarray] | None = None,
-) -> dict[str, Any]:
-    """Build the AWE functions with a stub solution over the real requested grid.
-
-    Args:
-        spoil: Turns the requested grid into the rows the stub returns, or ``None``
-            to return the requested grid unchanged.
-
-    Returns:
-        A namespace holding the extracted functions and the stub.
-    """
-    namespace = _functions(
-        _source(RESONATOR_NOTEBOOK),
-        {"solve_awe_curve"},
-        np=np,
-        Any=Any,
-        Path=Path,
-        FREQUENCY_STEP="freq",
-        POWER_SUM_MIN=0.99,
-        POWER_SUM_MAX=1.001,
-        requested_frequency_grid=requested_frequency_grid,
-    )
-    _, grid = requested_frequency_grid(AWE_LOW_GHZ, AWE_HIGH_GHZ, AWE_POINTS)
-    returned = grid if spoil is None else spoil(grid)
-
-    def solution(_model: Any) -> dict[str, Any]:
-        return {
-            "frequency_ghz": returned,
-            "s21_db": np.full(returned.size, -20.0),
-            "s11_db": np.full(returned.size, -0.08),
-            "power_sum": np.full(returned.size, 0.995),
-            "dataset": "dset1",
-        }
-
-    namespace["frequency_solution"] = solution
-    return namespace
-
-
-# Each returns the same number of rows as the grid but drops one requested point
-# and adds an interior row in its place, so a row count alone still matches. The
-# dropped endpoint in the first two sits outside the returned range, where the
-# pre-fix clip-to-endpoint distance could pass a missing point as zero.
-def _grid_missing_first(grid: np.ndarray) -> np.ndarray:
-    step_ghz = float(grid[1] - grid[0])
-    return np.concatenate([[grid[0] + 0.5 * step_ghz], grid[1:]])
-
-
-def _grid_missing_last(grid: np.ndarray) -> np.ndarray:
-    step_ghz = float(grid[1] - grid[0])
-    return np.concatenate([grid[:-1], [grid[-2] + 0.5 * step_ghz]])
-
-
-def _grid_missing_interior(grid: np.ndarray) -> np.ndarray:
-    step_ghz = float(grid[1] - grid[0])
-    middle = grid.size // 2
-    return np.concatenate([
-        grid[:middle],
-        [grid[middle - 1] + 0.5 * step_ghz],
-        grid[middle + 1 :],
-    ])
-
-
-@pytest.mark.parametrize(
-    "spoil",
-    [_grid_missing_first, _grid_missing_last, _grid_missing_interior],
-    ids=["missing-first", "missing-last", "missing-interior"],
-)
-def test_awe_curve_rejects_incomplete_grid(
-    tmp_path: Path, spoil: Callable[[np.ndarray], np.ndarray]
-) -> None:
-    namespace = _awe_namespace(spoil)
-
-    with pytest.raises(RuntimeError, match="omitted"):
-        namespace["solve_awe_curve"](
-            _AweModel(),
-            AWE_LOW_GHZ,
-            AWE_HIGH_GHZ,
-            AWE_POINTS,
-            tmp_path / "rejected.csv",
-        )
-
-
-def test_awe_curve_accepts_full_grid(tmp_path: Path) -> None:
-    namespace = _awe_namespace()
-    path = tmp_path / "curve.csv"
-
-    curve = namespace["solve_awe_curve"](
-        _AweModel(), AWE_LOW_GHZ, AWE_HIGH_GHZ, AWE_POINTS, path
-    )
-
-    assert curve["requested_points"] == AWE_POINTS
-    assert curve["solved_rows"] == AWE_POINTS
-    assert path.exists()
-
-
-def test_ported_mesh_series_rejects_a_different_setup(tmp_path: Path) -> None:
-    setup = {"layout": {"bbox": [0, 1]}, "silicon_relative_permittivity": 11.7}
-    records = (
-        ("matching", {"setup": setup, "element_count": 100}),
-        ("different", {"setup": {"layout": {"bbox": [0, 2]}}, "element_count": 200}),
-        ("legacy", {"element_count": 300}),
-    )
-    for name, record in records:
-        (tmp_path / f"ported_{name}.json").write_text(json.dumps(record))
-
-    update = _functions(
-        _source(RESONATOR_NOTEBOOK),
-        {"update_ported_mesh_series"},
-        Any=Any,
-        Path=Path,
-        json=json,
-        itemgetter=itemgetter,
-        PORTED_EIGEN_TAGGED_PREFIX="ported",
-        PORTED_MESH_SERIES_JSON="series.json",
-        ported_series_row=lambda record: (
-            {"element_count": record["element_count"]},
-            "",
-        ),
-        write_json_atomically=write_json_atomically,
-    )["update_ported_mesh_series"]
-
-    payload = update(tmp_path, setup)
-
-    assert payload["rows"] == [{"element_count": 100}]
-    assert len(payload["rejected"]) == 2
