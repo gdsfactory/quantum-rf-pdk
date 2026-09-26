@@ -67,6 +67,11 @@
 %   ```bash
 %   export QPDK_SKIP_RF_TOOLBOX=1
 %   ```
+%
+% - The version of this notebook rendered in the documentation carries the outputs of a saved run on
+%   a MATLAB that *did* include the RF Toolbox, so the RF sections are visible there. CI re-executes
+%   the notebook itself on a licence without the toolbox and checks the saved outputs against a
+%   fingerprint printed by the last cell, so they cannot silently drift from the source.
 
 % %% [markdown]
 %
@@ -473,6 +478,22 @@ if has_rf
     fprintf('Read back into SAX: %d port pairs over %d points (%.2f-%.2f GHz)\n', ...
         int64(py.len(sdict_back)), numel(freq_back), ...
         min(freq_back) / 1e9, max(freq_back) / 1e9);
+end
+
+% %% tags=["hide-input", "hide-output"]
+%
+% The rendered documentation shows the outputs of a saved run of this notebook, so the fingerprint
+% below ties them to the source: CI recomputes it from notebooks/src/matlab_integration.m and
+% rejects the saved outputs when the two have drifted apart.
+try
+    fid = fopen(fullfile('notebooks', 'src', 'matlab_integration.m'), 'rb');
+    raw = fread(fid, '*uint8');
+    fclose(fid);
+    digest = py.hashlib.sha256(py.bytes(raw));
+    fprintf('Executed source SHA256: %s\n', char(digest.hexdigest()));
+catch
+    fprintf(['Executed source SHA256: unavailable ', ...
+        '(run from the repository root to record it)\n']);
 end
 
 % %% [markdown]
