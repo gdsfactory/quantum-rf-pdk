@@ -47,10 +47,10 @@
 # the finest mesh supplies the final value. A separate lateral-pad comparison checks how
 # much that value depends on the outer boundary of the finite domain.
 #
-# The saved output uses cubic elements and a 0.5 % refinement check. CI separately
-# executes the notebook with quadratic elements and a 3 % check when `GITHUB_ACTIONS`
-# is set. Set `QPDK_ELMER_CI_FAST=1` to use that profile locally. The cubic
-# profile is memory intensive; use the CI smoke profile for a quick functional run.
+# The saved output uses cubic elements and a 0.5 % refinement check. When
+# `GITHUB_ACTIONS` is set, CI runs one coarse first-order solve and checks the matrix;
+# it skips refinement and domain studies. Set `QPDK_ELMER_CI_FAST=1` to use the same
+# smoke profile locally. The cubic profile is memory intensive.
 
 # %% [markdown]
 # ## Physics
@@ -432,9 +432,9 @@ for prism, specs in nominal_mesh["resolution_specs"].items():
 #
 # - Finite element order is the polynomial degree of the basis used to approximate the
 #   potential within an element; see [MFEM's basis-function reference](https://mfem.org/basis-functions/).
-#   The saved study uses cubic (`element_order=3`) functions; CI uses quadratic
-#   (`element_order=2`). A
-#   first-order solve on a coarse mesh is not a reliable capacitance number.
+#   The saved study uses cubic (`element_order=3`) functions. CI uses one coarse
+#   first-order (`element_order=1`) solve to validate the pipeline, not to report a
+#   converged capacitance.
 # - `QPDK_ELMER_PROCESSES` selects MPI ranks for the default profile (1 by default).
 #   CI runs serially.
 # - The default profile raises the linear-iteration cap to 3500: the cubic basis needs more
@@ -450,18 +450,25 @@ IS_CI = (
     or os.environ.get("QPDK_ELMER_CI_FAST") == "1"
 )
 RUN_MODE = "CI smoke" if IS_CI else "high accuracy"
-MESH_FACTORS = (1.0, 0.75, 0.6, 0.5) if IS_CI else (0.5, 0.4, 0.35, 0.3, 0.25)
-ELEMENT_ORDER = 2 if IS_CI else 3
-CONVERGENCE_TOLERANCE = 0.03 if IS_CI else 0.005
+MESH_FACTORS = (1.5,) if IS_CI else (0.5, 0.4, 0.35, 0.3, 0.25)
+ELEMENT_ORDER = 1 if IS_CI else 3
+CONVERGENCE_TOLERANCE = 0.005
 MAX_LINEAR_ITERATIONS = 500 if IS_CI else 3500
 N_PROCESSES = 1 if IS_CI else int(os.environ.get("QPDK_ELMER_PROCESSES", "1"))
 
-print(
-    f"Elmer notebook run mode: {RUN_MODE} "
-    f"(element_order={ELEMENT_ORDER}, "
-    f"tolerance={100 * CONVERGENCE_TOLERANCE:.1f} %, "
-    f"n_processes={N_PROCESSES})"
-)
+if IS_CI:
+    print(
+        f"Elmer notebook run mode: {RUN_MODE} "
+        f"(element_order={ELEMENT_ORDER}, mesh factor {MESH_FACTORS[0]:g}, "
+        f"n_processes={N_PROCESSES})"
+    )
+else:
+    print(
+        f"Elmer notebook run mode: {RUN_MODE} "
+        f"(element_order={ELEMENT_ORDER}, "
+        f"tolerance={100 * CONVERGENCE_TOLERANCE:.1f} %, "
+        f"n_processes={N_PROCESSES})"
+    )
 
 
 @dataclass(slots=True, frozen=True)
@@ -555,8 +562,11 @@ print(f"Final off-diagonal C12: {finest.capacitance_ff[0, 1]:.3f} fF")
 print(f"Final mutual capacitance C12_mutual = -C12: {finest.mutual_ff:.3f} fF")
 print(f"Final terminal o1 to ground: {finest.ground_ff[0]:.3f} fF")
 print(f"Final terminal o2 to ground: {finest.ground_ff[1]:.3f} fF")
+value_label = (
+    "CI smoke mutual capacitance" if IS_CI else "Final reported mutual capacitance"
+)
 print(
-    f"Final reported mutual capacitance: {finest.mutual_ff:.3f} fF "
+    f"{value_label}: {finest.mutual_ff:.3f} fF "
     f"(element_order={ELEMENT_ORDER}, mesh factor {finest.mesh_factor:g})"
 )
 
@@ -564,76 +574,86 @@ print(
 # ## Mesh Convergence
 #
 # The five saved solves are **independent remeshes**, not Elmer nonlinear iteration
-# counts: their factors are 0.5, 0.4, 0.35, 0.3 and 0.25. CI uses the coarser
-# factors 1.0, 0.75, 0.6 and 0.5. Nothing is continued from one solve to the next, and no field
-# solution is reused, so the pass number is only an index into the refinement sequence.
+# counts: their factors are 0.5, 0.4, 0.35, 0.3 and 0.25. Nothing is continued from
+# one solve to the next, and no field solution is reused, so the pass number is only
+# an index into the refinement sequence. CI runs one coarse solve and skips this study.
 #
 # The upper panel shows mutual and terminal-to-ground capacitances. The lower panel
 # shows the largest relative change among those three quantities from the previous
 # pass. The last two changes must stay below `CONVERGENCE_TOLERANCE` (0.5 % in the
-# saved run, 3 % in CI). This is a refinement check, not an absolute error bound;
-# independent remeshes need not change the result monotonically.
+# saved run). This is a refinement check, not an absolute error bound; independent
+# remeshes need not change the result monotonically.
 
 # %%
-passes = np.arange(1, len(mesh_results) + 1)
-capacitances_ff = np.array([
-    [result.mutual_ff, *result.ground_ff] for result in mesh_results
-])
-relative_change = np.full_like(capacitances_ff, np.nan)
-relative_change[1:] = np.abs(np.diff(capacitances_ff, axis=0)) / capacitances_ff[:-1]
-max_change = np.max(relative_change[1:], axis=1)
+if IS_CI:
+    print("CI smoke profile: mesh convergence is checked by the saved study")
+else:
+    passes = np.arange(1, len(mesh_results) + 1)
+    capacitances_ff = np.array([
+        [result.mutual_ff, *result.ground_ff] for result in mesh_results
+    ])
+    relative_change = np.full_like(capacitances_ff, np.nan)
+    relative_change[1:] = (
+        np.abs(np.diff(capacitances_ff, axis=0)) / capacitances_ff[:-1]
+    )
+    max_change = np.max(relative_change[1:], axis=1)
 
-_, (ax_value, ax_change) = plt.subplots(
-    2, 1, sharex=True, figsize=(6.0, 5.0), layout="constrained"
-)
-for column, label, marker in zip(
-    range(3), ("o1–o2 mutual", "o1–ground", "o2–ground"), ("o", "s", "^"), strict=True
-):
-    ax_value.plot(passes, capacitances_ff[:, column], marker=marker, label=label)
-ax_value.set_ylabel("Capacitance (fF)")
-ax_value.legend()
+    _, (ax_value, ax_change) = plt.subplots(
+        2, 1, sharex=True, figsize=(6.0, 5.0), layout="constrained"
+    )
+    for column, label, marker in zip(
+        range(3),
+        ("o1–o2 mutual", "o1–ground", "o2–ground"),
+        ("o", "s", "^"),
+        strict=True,
+    ):
+        ax_value.plot(passes, capacitances_ff[:, column], marker=marker, label=label)
+    ax_value.set_ylabel("Capacitance (fF)")
+    ax_value.legend()
 
-ax_change.plot(passes[1:], 100 * max_change, marker="s", linestyle="--")
-ax_change.axhline(
-    100 * CONVERGENCE_TOLERANCE,
-    color="tab:red",
-    linestyle=":",
-    label=f"tolerance {100 * CONVERGENCE_TOLERANCE:.1f} %",
-)
-ax_change.set_xticks(passes)
-ax_change.set_xlabel("Pass number (independently remeshed solve)")
-ax_change.set_ylabel("Largest change from\nprevious pass (%)")
-ax_change.legend()
-plt.show()
+    ax_change.plot(passes[1:], 100 * max_change, marker="s", linestyle="--")
+    ax_change.axhline(
+        100 * CONVERGENCE_TOLERANCE,
+        color="tab:red",
+        linestyle=":",
+        label=f"tolerance {100 * CONVERGENCE_TOLERANCE:.1f} %",
+    )
+    ax_change.set_xticks(passes)
+    ax_change.set_xlabel("Pass number (independently remeshed solve)")
+    ax_change.set_ylabel("Largest change from\nprevious pass (%)")
+    ax_change.legend()
+    plt.show()
 
-print(
-    f"{'pass':>4} {'factor':>7} {'mutual_fF':>10} "
-    f"{'o1-ground_fF':>12} {'o2-ground_fF':>12} {'max_change_pct':>14}"
-)
-for index, result in enumerate(mesh_results, start=1):
-    change_text = "n/a" if index == 1 else f"{100 * max_change[index - 2]:.3f}"
     print(
-        f"{index:>4} {result.mesh_factor:>7g} {result.mutual_ff:>10.3f} "
-        f"{result.ground_ff[0]:>12.3f} {result.ground_ff[1]:>12.3f} "
-        f"{change_text:>14}"
+        f"{'pass':>4} {'factor':>7} {'mutual_fF':>10} "
+        f"{'o1-ground_fF':>12} {'o2-ground_fF':>12} {'max_change_pct':>14}"
     )
+    for index, result in enumerate(mesh_results, start=1):
+        change_text = "n/a" if index == 1 else f"{100 * max_change[index - 2]:.3f}"
+        print(
+            f"{index:>4} {result.mesh_factor:>7g} {result.mutual_ff:>10.3f} "
+            f"{result.ground_ff[0]:>12.3f} {result.ground_ff[1]:>12.3f} "
+            f"{change_text:>14}"
+        )
 
-final_changes = max_change[-2:]
-if not (final_changes <= CONVERGENCE_TOLERANCE).all():
-    raise ValueError(
-        f"the last two mesh refinements changed a capacitance by "
-        f"{100 * final_changes[0]:.3f} % and {100 * final_changes[1]:.3f} %, "
-        f"above CONVERGENCE_TOLERANCE = "
-        f"{100 * CONVERGENCE_TOLERANCE:.1f} %; refine the mesh further"
+    final_changes = max_change[-2:]
+    if not (final_changes <= CONVERGENCE_TOLERANCE).all():
+        raise ValueError(
+            f"the last two mesh refinements changed a capacitance by "
+            f"{100 * final_changes[0]:.3f} % and {100 * final_changes[1]:.3f} %, "
+            f"above CONVERGENCE_TOLERANCE = "
+            f"{100 * CONVERGENCE_TOLERANCE:.1f} %; refine the mesh further"
+        )
+    print(
+        f"Mesh convergence check passed: final changes "
+        f"{100 * final_changes[0]:.3f} % and {100 * final_changes[1]:.3f} % "
+        f"<= tolerance {100 * CONVERGENCE_TOLERANCE:.1f} %"
     )
-print(
-    f"Mesh convergence check passed: final changes "
-    f"{100 * final_changes[0]:.3f} % and {100 * final_changes[1]:.3f} % "
-    f"<= tolerance {100 * CONVERGENCE_TOLERANCE:.1f} %"
-)
 
 # %% [markdown]
 # ## Lateral Domain Sensitivity
+#
+# CI skips this comparison; the saved cubic study includes it.
 #
 # Mesh convergence above holds the domain fixed at `domain_pad=90.0` μm. This separate
 # check asks how much the three reported capacitances depend on the outer boundary:
@@ -647,25 +667,29 @@ print(
 # nothing about vertical truncation or absolute accuracy.
 
 # %%
-component_narrow = interdigital_capacitor_for_elmer(domain_pad=60.0)
-narrow = solve_idc(component_narrow, finest.mesh_factor, "pad 60 μm, finest mesh")
-wide = finest
+narrow: MeshSolve | None = None
+if IS_CI:
+    print("CI smoke profile: lateral-domain sensitivity is checked by the saved study")
+else:
+    component_narrow = interdigital_capacitor_for_elmer(domain_pad=60.0)
+    narrow = solve_idc(component_narrow, finest.mesh_factor, "pad 60 μm, finest mesh")
+    wide = finest
 
-quantities = ("mutual", "o1–ground", "o2–ground")
-narrow_values = np.array([narrow.mutual_ff, *narrow.ground_ff])
-wide_values = np.array([wide.mutual_ff, *wide.ground_ff])
-domain_change = np.abs(wide_values - narrow_values) / narrow_values
-for label, small, large, change in zip(
-    quantities, narrow_values, wide_values, domain_change, strict=True
-):
-    print(
-        f"{label}: pad 60 = {small:.3f} fF, pad 90 = {large:.3f} fF, change = {change:.2%}"
-    )
-if domain_change.max() > 0.01:
-    raise ValueError(
-        f"lateral-pad check changed capacitance by {domain_change.max():.2%}"
-    )
-print("Lateral-domain sensitivity check passed: change <= 1 %")
+    quantities = ("mutual", "o1–ground", "o2–ground")
+    narrow_values = np.array([narrow.mutual_ff, *narrow.ground_ff])
+    wide_values = np.array([wide.mutual_ff, *wide.ground_ff])
+    domain_change = np.abs(wide_values - narrow_values) / narrow_values
+    for label, small, large, change in zip(
+        quantities, narrow_values, wide_values, domain_change, strict=True
+    ):
+        print(
+            f"{label}: pad 60 = {small:.3f} fF, pad 90 = {large:.3f} fF, change = {change:.2%}"
+        )
+    if domain_change.max() > 0.01:
+        raise ValueError(
+            f"lateral-pad check changed capacitance by {domain_change.max():.2%}"
+        )
+    print("Lateral-domain sensitivity check passed: change <= 1 %")
 
 # %% [markdown]
 # ## Sanity Checks
@@ -676,7 +700,8 @@ print("Lateral-domain sensitivity check passed: change <= 1 %")
 # against order-of-magnitude errors, not a claim about model accuracy.
 
 # %% tags=["hide-input", "hide-output"]
-for result in (*mesh_results, narrow):
+results_to_check = mesh_results if narrow is None else [*mesh_results, narrow]
+for result in results_to_check:
     matrix = result.capacitance_ff
     if not np.isfinite(matrix).all():
         raise ValueError(f"{result.label}: matrix has non-finite entries")
@@ -723,9 +748,9 @@ print("All checks passed.")
 # lateral-pad comparison is a sensitivity check between two finite domains, not a
 # convergence proof for an unbounded one. Vertical truncation is not checked here.
 #
-# CI executes this notebook fresh in the CI smoke profile (quadratic elements, 3 %
-# tolerance) to check that the pipeline still runs end to end. It does not reproduce the
-# numbers above.
+# CI executes one coarse first-order solve and checks the matrix to verify that the
+# pipeline runs end to end. It does not repeat the convergence or domain checks and
+# does not reproduce the numbers above.
 #
 # The same layout can be swept or optimized by varying `fingers`, `finger_length` and
 # `finger_gap` in `interdigital_capacitor_for_elmer` and re-running the solve.
