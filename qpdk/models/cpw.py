@@ -45,7 +45,6 @@ noted otherwise.  Frequency is in **Hz**.
 """
 
 from functools import cache
-from typing import cast
 
 import gdsfactory as gf
 import jax.numpy as jnp
@@ -62,7 +61,7 @@ from sax.models.rf import (
     transmission_line_s_params,
 )
 
-from qpdk.tech import LAYER_STACK, get_etch_section, material_properties
+from qpdk.tech import LAYER_STACK, get_etch_section, get_layer_material_properties
 
 __all__ = [
     "cpw_ep_r_from_cross_section",
@@ -99,9 +98,7 @@ def get_cpw_substrate_params() -> tuple[float, float, float, float]:
     """
     h = LAYER_STACK.layers["Substrate"].thickness  # µm
     t = LAYER_STACK.layers["M1"].thickness  # µm
-    substrate_mat = material_properties[
-        cast(str, LAYER_STACK.layers["Substrate"].material)
-    ]
+    substrate_mat = get_layer_material_properties("Substrate")
     ep_r = substrate_mat["relative_permittivity"]
     tand = substrate_mat.get("loss_tangent", 0.0)
     return float(h), float(t), float(ep_r), float(tand)

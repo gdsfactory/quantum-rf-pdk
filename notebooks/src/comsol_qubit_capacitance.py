@@ -117,7 +117,7 @@ from qpdk.simulation.comsol.results import (
     result_file,
     write_json_atomically,
 )
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, LAYER_STACK, get_layer_material_properties
 
 try:
     import mph
@@ -251,6 +251,11 @@ plt.show()
 # mesh with absolute element sizes in micrometres, so the near-metal resolution does not move with the
 # domain.
 #
+# The silicon thickness and permittivity are read from the `Substrate` level of the PDK layer stack and its
+# material in `qpdk.tech.material_properties`, so they match every other QPDK simulation. The metal is a
+# zero-thickness sheet, so the M1 film thickness does not enter. The air height and lateral margin only size
+# the simulation domain.
+#
 # `RUN_COMSOL` is `False` by default, so a documentation build without a license skips all of this and the
 # result cells below read saved exports instead. Set it to `True` on a licensed machine to solve and export.
 # The constants are the configuration the saved exports were produced at.
@@ -276,11 +281,14 @@ FIELD_TXT = "comsol_qubit_field.txt"
 CORES = 4
 VOLTAGE_V = 1.0
 
-# Domain and element sizes, in µm, and the silicon permittivity.
+# The substrate thickness and permittivity come from the PDK layer stack; the air
+# height and lateral margin size the simulation domain, in µm.
+SUBSTRATE_THICKNESS_UM = LAYER_STACK.layers["Substrate"].thickness
+SILICON_RELATIVE_PERMITTIVITY = get_layer_material_properties("Substrate")[
+    "relative_permittivity"
+]
 AIR_HEIGHT_UM = 1600.0
-SUBSTRATE_THICKNESS_UM = 1600.0
 LATERAL_MARGIN_UM = 8000.0
-SILICON_RELATIVE_PERMITTIVITY = 11.7
 # Element size COMSOL's physics-controlled build starts from. The pinned sizes
 # below replace it, so it only sets the sizing the sequence is materialised with.
 BASE_MESH_SIZE = 2

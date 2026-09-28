@@ -19,7 +19,7 @@ from shapely.geometry import Point as ShapelyPoint, Polygon
 from shapely.geometry.base import BaseGeometry
 
 from qpdk.simulation.comsol._util import _add_polygon, _format_number
-from qpdk.tech import material_properties
+from qpdk.tech import get_layer_material_properties
 
 if TYPE_CHECKING:
     import mph
@@ -30,10 +30,14 @@ if TYPE_CHECKING:
 AIR_SELECTION = "air"
 SILICON_SELECTION = "si"
 
-#: Canonical relative permittivity of the silicon substrate, from the QPDK
-#: technology, and of the air above it.
-SILICON_RELATIVE_PERMITTIVITY = material_properties["Si"]["relative_permittivity"]
-AIR_RELATIVE_PERMITTIVITY = 1.0
+#: Canonical relative permittivity of the silicon substrate and of the air above
+#: it, from the materials of the QPDK layer stack's substrate and vacuum levels.
+SILICON_RELATIVE_PERMITTIVITY = get_layer_material_properties("Substrate")[
+    "relative_permittivity"
+]
+AIR_RELATIVE_PERMITTIVITY = get_layer_material_properties("Vacuum")[
+    "relative_permittivity"
+]
 
 #: Half-size in µm of the small boxes that pick one dielectric domain out.
 _BOX_HALF_SIZE_UM = 0.01
