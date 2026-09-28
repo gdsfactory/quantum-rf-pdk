@@ -1,9 +1,11 @@
-"""AEDT simulation utilities using PyAEDT.
+"""AEDT and COMSOL simulation utilities.
 
-This module provides class-based interfaces for setting up HFSS simulations
-(eigenmode and driven modal) and Q3D Extractor parasitic extractions
-from gdsfactory components. It uses the PyAEDT library to interface
-with Ansys HFSS and Q3D Extractor.
+This package provides class-based interfaces for setting up HFSS simulations
+(eigenmode and driven modal) and Q3D Extractor parasitic extractions from
+gdsfactory components, plus MPh-based COMSOL geometry and study builders.
+
+The AEDT wrappers use the PyAEDT library to interface with Ansys HFSS and Q3D
+Extractor.
 
 **HFSS workflow:**
 
@@ -20,9 +22,33 @@ with Ansys HFSS and Q3D Extractor.
 4. Configure Q3D setup and analyze
 5. Extract capacitance matrix with :meth:`qpdk.simulation.q3d.Q3D.get_capacitance_matrix`
 
+**COMSOL workflow:**
+
+1. Extract metal polygons and optional feed ports with
+   :func:`~qpdk.simulation.comsol.layout.prepare_comsol_layout`
+2. Build a 3D air/silicon model with sheet metal via
+   :func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model`
+3. Add a CPW RF or qubit electrostatic study with
+   :func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` or
+   :func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study`
+4. Mesh it, optionally refined at the metal plane, with
+   :func:`~qpdk.simulation.comsol.mesh.refine_metal_plane_mesh`, or with
+   absolute sizes at the metal via
+   :func:`~qpdk.simulation.comsol.mesh.pin_absolute_mesh_sizes`
+
+The steps above are also available as one chainable class:
+:class:`~qpdk.simulation.comsol.model.COMSOL` builds a model through
+:meth:`~qpdk.simulation.comsol.model.COMSOL.create_sheet` or
+:meth:`~qpdk.simulation.comsol.model.COMSOL.create_metal`, holds the layout, and
+offers a method per study and mesh helper, so neither the model nor the layout
+has to be passed again. Solving, saving, and evaluating are MPh's own methods.
+
 Note:
-    This module requires the optional ``hfss`` dependency group.
-    Install with: ``uv sync --extra hfss`` or ``pip install qpdk[hfss]``
+    The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL builders
+    require ``uv sync --extra comsol`` and a local COMSOL installation. Only
+    :class:`~qpdk.simulation.comsol.model.COMSOL` imports MPh, and it is
+    exposed lazily, so the layout and helper modules and this package stay
+    importable without it.
 
 Example:
     >>> from ansys.aedt.core import Hfss
@@ -38,30 +64,127 @@ References:
     - PyAEDT documentation: https://aedt.docs.pyansys.com/
     - HFSS import_gds_3d: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.hfss.Hfss.import_gds_3d.html
     - Q3D Extractor: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.q3d.Q3d.html
+    - MPh: https://github.com/MPh-py/MPh
 """
 
-from qpdk.simulation.aedt_base import (
-    AEDTBase,
-    add_materials_to_aedt,
-    detach_desktop_logging,
-    fit_view,
-    layer_stack_to_gds_mapping,
-    object_names_to_materials,
-    prepare_component_for_aedt,
-)
-from qpdk.simulation.hfss import HFSS, lumped_port_rectangle_from_cpw
-from qpdk.simulation.q3d import Q2D, Q3D
+# ruff: file-ignore[undefined-export]
+
+import importlib
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from qpdk.simulation.comsol.model import COMSOL
+    from qpdk.simulation.hfss import HFSS
+    from qpdk.simulation.q3d import Q2D, Q3D
+
+_LAZY_IMPORTS: dict[str, tuple[str, str]] = {
+    "COMSOL": ("qpdk.simulation.comsol.model", "COMSOL"),
+    "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),
+    "add_materials_to_aedt": ("qpdk.simulation.aedt_base", "add_materials_to_aedt"),
+    "detach_desktop_logging": ("qpdk.simulation.aedt_base", "detach_desktop_logging"),
+    "fit_view": ("qpdk.simulation.aedt_base", "fit_view"),
+    "layer_stack_to_gds_mapping": (
+        "qpdk.simulation.aedt_base",
+        "layer_stack_to_gds_mapping",
+    ),
+    "object_names_to_materials": (
+        "qpdk.simulation.aedt_base",
+        "object_names_to_materials",
+    ),
+    "prepare_component_for_aedt": (
+        "qpdk.simulation.aedt_base",
+        "prepare_component_for_aedt",
+    ),
+    "HFSS": ("qpdk.simulation.hfss", "HFSS"),
+    "lumped_port_rectangle_from_cpw": (
+        "qpdk.simulation.hfss",
+        "lumped_port_rectangle_from_cpw",
+    ),
+    "Q2D": ("qpdk.simulation.q3d", "Q2D"),
+    "Q3D": ("qpdk.simulation.q3d", "Q3D"),
+    "ComsolBoundingBox": ("qpdk.simulation.comsol.layout", "ComsolBoundingBox"),
+    "ComsolFeedPort": ("qpdk.simulation.comsol.layout", "ComsolFeedPort"),
+    "ComsolLayout": ("qpdk.simulation.comsol.layout", "ComsolLayout"),
+    "ComsolPolygon": ("qpdk.simulation.comsol.layout", "ComsolPolygon"),
+    "prepare_comsol_layout": (
+        "qpdk.simulation.comsol.layout",
+        "prepare_comsol_layout",
+    ),
+    "build_comsol_metal_model": (
+        "qpdk.simulation.comsol.metal",
+        "build_comsol_metal_model",
+    ),
+    "build_comsol_sheet_model": (
+        "qpdk.simulation.comsol.sheet",
+        "build_comsol_sheet_model",
+    ),
+    "add_cpw_rf_study": ("qpdk.simulation.comsol.rf", "add_cpw_rf_study"),
+    "add_capacitance_study": (
+        "qpdk.simulation.comsol.capacitance",
+        "add_capacitance_study",
+    ),
+    "pin_absolute_edge_mesh_sizes": (
+        "qpdk.simulation.comsol.mesh",
+        "pin_absolute_edge_mesh_sizes",
+    ),
+    "pin_absolute_mesh_sizes": (
+        "qpdk.simulation.comsol.mesh",
+        "pin_absolute_mesh_sizes",
+    ),
+    "refine_metal_plane_mesh": (
+        "qpdk.simulation.comsol.mesh",
+        "refine_metal_plane_mesh",
+    ),
+}
 
 __all__ = [
+    "COMSOL",
     "HFSS",
     "Q2D",
     "Q3D",
     "AEDTBase",
+    "ComsolBoundingBox",
+    "ComsolFeedPort",
+    "ComsolLayout",
+    "ComsolPolygon",
+    "add_capacitance_study",
+    "add_cpw_rf_study",
     "add_materials_to_aedt",
+    "build_comsol_metal_model",
+    "build_comsol_sheet_model",
     "detach_desktop_logging",
     "fit_view",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",
+    "pin_absolute_edge_mesh_sizes",
+    "pin_absolute_mesh_sizes",
     "prepare_component_for_aedt",
+    "prepare_comsol_layout",
+    "refine_metal_plane_mesh",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Import a public name from its module on first access.
+
+    Returns:
+        The requested attribute.
+
+    Raises:
+        AttributeError: If ``name`` is not part of the public API.
+    """
+    try:
+        module_name, attribute = _LAZY_IMPORTS[name]
+    except KeyError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
+    return getattr(importlib.import_module(module_name), attribute)
+
+
+def __dir__() -> list[str]:
+    """List the public names, including the lazily imported ones.
+
+    Returns:
+        Sorted public attribute names.
+    """
+    return sorted(__all__)
