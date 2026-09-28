@@ -101,10 +101,7 @@ PDK.activate();
 fprintf('Activated PDK: %s\n', string(py.getattr(PDK, 'name')));
 sax_mod = py.importlib.import_module('sax');
 
-plot_font = 'Arial';
-if any(strcmpi(listfonts, 'Inter'))
-    plot_font = 'Inter';
-end
+plot_font = 'Inter';
 plot_colors = [31 119 180; 255 127 14; 44 160 44; 214 39 40; 148 103 189] / 255;
 set(groot, 'defaultFigureColor', 'w', 'defaultAxesColor', 'w', ...
     'defaultAxesFontName', plot_font, 'defaultAxesFontSize', 10, ...
@@ -155,7 +152,7 @@ figure;
 plot(lengths_um, freqs_hz / 1e9, 'LineWidth', 1.5); grid on;
 xlabel('Resonator length (\mum)');
 ylabel('Resonance frequency (GHz)');
-title('Quarter-wave CPW resonator: f_0(L)');
+title('Quarter-wave CPW resonator: f_0(L)', 'FontName', 'Outfit');
 hold on;
 for f = [4 6 8]
     yline(f, '--', sprintf('%d GHz', f));
@@ -338,11 +335,11 @@ if has_rf
 
     figure;
     rfplot(S_res2);
-    title('Coupled quarter-wave resonator, reduced to two ports');
+    title('Coupled quarter-wave resonator, reduced to two ports', 'FontName', 'Outfit');
 
     figure;
     smithplot(S_res2, 1, 1);
-    title('S_{11} on the Smith chart');
+    title('S_{11} on the Smith chart', 'FontName', 'Outfit');
 end
 
 % %% [markdown]
@@ -372,7 +369,7 @@ if has_rf
     rfplot(S_cascade, 2, 1); hold on;
     rfplot(S_direct, 2, 1); hold off;
     legend('cascade of two 1 mm nports', 'single 2 mm model');
-    title('Cascade identity check');
+    title('Cascade identity check', 'FontName', 'Outfit');
 end
 
 % %% [markdown]
@@ -397,7 +394,7 @@ if has_rf
     rfplot(S_hybrid, 2, 1); hold on;
     rfplot(S_res2, 2, 1); hold off;
     legend('with matching network', 'bare resonator');
-    title('SAX resonator inside a MATLAB circuit');
+    title('SAX resonator inside a MATLAB circuit', 'FontName', 'Outfit');
 end
 
 % %% [markdown]
@@ -411,9 +408,8 @@ end
 % oscillatory contribution decays on a scale set by the loaded quality factor, approximately
 % $\tau_\text{amp} = 2Q_\text{L}/\omega_0$. We subtract the final level and plot the residual
 % envelope to make that ring-down visible. This is a qualitative transient of a fit over the
-% measured band, not a calibrated DC-to-microwave step response. See the [microwave-resonator
-% ring-down study](https://arxiv.org/abs/1505.06863) for the time-domain connection between decay
-% and quality factor.
+% measured band, not a calibrated DC-to-microwave step response. The decay rate is related to the
+% loaded quality factor {cite:p}`gyureTimeDomainBased2015`.
 
 % %%
 if has_rf
@@ -428,7 +424,7 @@ if has_rf
     hold off; grid on;
     xlabel('Frequency (GHz)'); ylabel('|S_{21}| (dB)');
     legend('SAX model', 'rational fit');
-    title('Rational fit of the resonator response');
+    title('Rational fit of the resonator response', 'FontName', 'Outfit');
 
     [step_out, t_step] = stepresp(fit_s21, 2e-12, 20000, 20e-12);
     ring = step_out - step_out(end);
@@ -438,7 +434,7 @@ if has_rf
     plot(t_step * 1e9, envelope); grid on;
     xlim([0.5 35]);
     xlabel('Time (ns)'); ylabel('Residual envelope (unit step)');
-    title('Coupled-resonator ring-down after the step edge');
+    title('Coupled-resonator ring-down after the step edge', 'FontName', 'Outfit');
 end
 
 % %% [markdown]
@@ -493,3 +489,11 @@ end
 % - Export any other qpdk model with `sax.write_sdict_touchstone` and drop it into
 %   a MATLAB `circuit` the same way — the pattern is not specific to the CPW line or the
 %   resonator used here.
+
+% %% [markdown]
+%
+% ## References
+%
+%```{bibliography}
+%:filter: docname in docnames
+%```
