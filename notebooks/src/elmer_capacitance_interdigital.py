@@ -8,6 +8,15 @@
 #       jupytext_version: 1.17.3
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+#   "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@c3372b97a50cda44043603f80c955edcf028a7fb",
+# ]
+# ///
+
 # %% [markdown]
 # # Elmer Capacitance Extraction of an Interdigital Capacitor
 #

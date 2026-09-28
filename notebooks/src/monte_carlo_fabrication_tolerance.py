@@ -7,6 +7,14 @@
 #       format_version: "1.3"
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models,ray] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # %% [markdown]
 # # Monte Carlo Fabrication Tolerance Analysis
 #

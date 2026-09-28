@@ -274,6 +274,9 @@ for examples of:
 - **Conversion**: Run `just convert-notebooks` or `./.github/convert-notebooks.sh` to convert source files to `.ipynb`
 - **Pre-commit hook**: Notebooks are automatically converted when `.py` or `.m` files in `notebooks/src/` are modified
 - **Format**: Python notebooks use the "percent" format with `# %%` cell markers; MATLAB notebooks use `% %%` markers
+- **Inline script metadata**: Each Python notebook source carries a PEP 723 `# /// script` block in a
+  `# %% [raw] tags=["remove-cell"]` cell, so it can be run with `uv run --script`. Update its `dependencies` whenever
+  the Colab install cell changes
 - **Documentation**: Converted notebooks are copied to `docs/notebooks/` during documentation build. Notebooks that
   require external tooling (HFSS, MATLAB) are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the docs
   build does not try to execute them
@@ -297,11 +300,34 @@ for examples of:
 1. For notebooks: Create `.py` file in `notebooks/src/` using jupytext percent format with proper YAML header. Ensure
    the first code cell contains the Google Colab installation snippet with `tags=["hide-input", "hide-output"]` so it
    can be run online without cluttering the docs.
+
+1. For notebooks: Directly after the jupytext header, add a [PEP 723](https://peps.python.org/pep-0723/) inline script
+   metadata cell so the source runs standalone with `uv run --script notebooks/src/<name>.py`. Use a raw cell tagged
+   `remove-cell`, and list the same packages as the Colab install cell:
+
+   ```python
+   # %% [raw] tags=["remove-cell"]
+   # /// script
+   # requires-python = ">=3.12,<3.15"
+   # dependencies = [
+   #   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+   # ]
+   # ///
+   ```
+
+   Keep it a raw cell, not a code cell: a code cell would have no execution count in the pre-executed notebooks, which
+   fails the Elmer notebook check in CI. Keep it after the header, not before, or jupytext stops stripping the header.
+
 1. For samples: Create `.py` file in `qpdk/samples/` following existing examples
+
 1. Include docstrings and comments explaining the design and physics
+
 1. Add citations where appropriate using Sphinx citation syntax
+
 1. Test that the script runs without errors
+
 1. For samples, ensure the generated component is added to the test suite
+
 1. **Update `docs/notebooks.rst`** when adding or removing notebooks — this page describes each notebook and categorizes
    it by simulation approach
 

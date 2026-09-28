@@ -8,6 +8,13 @@
 #       jupytext_version: 1.17.3
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models,circulax] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
 
 # %% [markdown]
 # # Differentiable Transmon Circuit Simulation with Circulax
