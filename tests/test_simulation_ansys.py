@@ -30,11 +30,15 @@ def test_simulation_reexports_ansys_names(name: str):
 def test_old_module_paths_are_deprecated_aliases(
     monkeypatch: pytest.MonkeyPatch, old: str, new: str
 ):
-    """The pre-``ansys`` module paths warn and resolve to the moved modules."""
+    """The pre-``ansys`` module paths warn and forward to the moved modules."""
     monkeypatch.delitem(sys.modules, old, raising=False)
     with pytest.warns(DeprecationWarning, match=new):
         module = importlib.import_module(old)
-    assert module is importlib.import_module(new)
+    moved = importlib.import_module(new)
+    public = [name for name in vars(moved) if not name.startswith("__")]
+    assert public
+    for name in public:
+        assert getattr(module, name) is getattr(moved, name)
 
 
 def test_ansys_import_defers_design_wrappers():

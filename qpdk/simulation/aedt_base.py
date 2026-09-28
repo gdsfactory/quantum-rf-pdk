@@ -4,10 +4,10 @@ Import from :mod:`qpdk.simulation.ansys` (or ``qpdk.simulation.ansys.base``)
 instead. This module will be removed in a future release.
 """
 
-import sys
 import warnings
+from typing import Any
 
-from qpdk.simulation.ansys import base
+from qpdk.simulation.ansys import base as _moved
 
 warnings.warn(
     "qpdk.simulation.aedt_base is deprecated and will be removed in a future release; "
@@ -16,4 +16,11 @@ warnings.warn(
     skip_file_prefixes=("<frozen importlib",),
 )
 
-sys.modules[__name__] = base
+
+def __getattr__(name: str) -> Any:
+    """Forward attribute access to :mod:`qpdk.simulation.ansys.base`.
+
+    Returns:
+        The attribute of the moved module.
+    """
+    return getattr(_moved, name)

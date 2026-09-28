@@ -4,10 +4,10 @@ Import from :mod:`qpdk.simulation.ansys` (or ``qpdk.simulation.ansys.hfss``)
 instead. This module will be removed in a future release.
 """
 
-import sys
 import warnings
+from typing import Any
 
-from qpdk.simulation.ansys import hfss
+from qpdk.simulation.ansys import hfss as _moved
 
 warnings.warn(
     "qpdk.simulation.hfss is deprecated and will be removed in a future release; "
@@ -16,4 +16,11 @@ warnings.warn(
     skip_file_prefixes=("<frozen importlib",),
 )
 
-sys.modules[__name__] = hfss
+
+def __getattr__(name: str) -> Any:
+    """Forward attribute access to :mod:`qpdk.simulation.ansys.hfss`.
+
+    Returns:
+        The attribute of the moved module.
+    """
+    return getattr(_moved, name)
