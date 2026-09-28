@@ -23,6 +23,7 @@ on:
       - "qpdk/utils.py"
       - "notebooks/src/palace_eigenmode_qubit_resonator.py"
       - "notebooks/src/palace_flipmon_flip_chip.py"
+      - "notebooks/src/palace_tsv_transition.py"
   workflow_dispatch:
 permissions: {}
 concurrency:

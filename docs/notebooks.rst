@@ -150,6 +150,9 @@ currents, and substrate modes that analytical models may miss
 - :doc:`notebooks/palace_batched_qubit_optimization`: Batched double-pad transmon
   optimization with Palace eigenmodes, quality factor and geometry plots, interface
   participation, and a Pareto comparison.
+- :doc:`notebooks/palace_tsv_transition`: A through-silicon-via CPW transition with a
+  conductor-backed CPW seed, double-sided layer stack, mesh and port checks, and a
+  Palace-driven taper optimization.
 
 .. note::
 
@@ -466,6 +469,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - ``models``
     - - :doc:`notebooks/palace_flipmon_flip_chip`
       - FEM electromagnetics
+      - gsim, Palace
+      - ``models``
+    - - :doc:`notebooks/palace_tsv_transition`
+      - FEM optimization
       - gsim, Palace
       - ``models``
     - - :doc:`notebooks/palace_batched_qubit_optimization`

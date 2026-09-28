@@ -15,7 +15,13 @@ from sax.models.rf import (
 )
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
-from qpdk.models.cpw import get_cpw_dimensions, get_cpw_substrate_params
+from qpdk.models.cpw import (
+    cpw_parameters,
+    get_cpw_dimensions,
+    get_cpw_substrate_params,
+    propagation_constant,
+    transmission_line_s_params,
+)
 from qpdk.models.generic import shunt_admittance, tee
 from qpdk.tech import coplanar_waveguide, launcher_cross_section_big
 
@@ -24,11 +30,14 @@ def straight(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 10.0,
     cross_section: CrossSectionSpec = "cpw",
+    conductor_backed: bool = False,
 ) -> sax.SDict:
     r"""S-parameter model for a straight coplanar waveguide.
 
     Wraps :func:`sax.models.rf.coplanar_waveguide`, extracting the physical
     dimensions from the given *cross_section* and the PDK layer stack.
+    With ``conductor_backed=True`` the line is modelled as a conductor-backed
+    CPW instead, see :func:`~qpdk.models.cbcpw_parameters`.
 
     Computes S-parameters analytically using conformal-mapping CPW theory
     following Simons :cite:`simonsCoplanarWaveguideCircuits2001` (ch. 2)
@@ -43,12 +52,25 @@ def straight(
         f: Array of frequency points in Hz
         length: Physical length in µm
         cross_section: The cross-section of the waveguide.
+        conductor_backed: If True, the substrate backside is metallised, see
+            :data:`~qpdk.tech.LAYER_STACK_BACKSIDE`.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
     width, gap = get_cpw_dimensions(cross_section)
     h, t, ep_r, tand = get_cpw_substrate_params()
+
+    if conductor_backed:
+        f = jnp.asarray(f)
+        ep_eff, z0 = cpw_parameters(width, gap, tand=0.0, conductor_backed=True)
+        gamma = propagation_constant(f.ravel(), ep_eff.real, tand=tand, ep_r=ep_r)
+        s11, s21 = transmission_line_s_params(gamma, z0, jnp.asarray(length) * 1e-6)
+        return sax.reciprocal({
+            ("o1", "o1"): s11.reshape(f.shape),
+            ("o1", "o2"): s21.reshape(f.shape),
+            ("o2", "o2"): s11.reshape(f.shape),
+        })
 
     return _sax_coplanar_waveguide(
         f=f,

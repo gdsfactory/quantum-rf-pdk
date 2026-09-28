@@ -141,6 +141,9 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "single_chip_stack": ("qpdk.simulation.fem", "single_chip_stack"),
     "to_fem_regions": ("qpdk.simulation.fem", "to_fem_regions"),
     "to_flip_chip_regions": ("qpdk.simulation.fem", "to_flip_chip_regions"),
+    "TSV_FEM_LAYERS": ("qpdk.simulation.fem", "TSV_FEM_LAYERS"),
+    "to_tsv_regions": ("qpdk.simulation.fem", "to_tsv_regions"),
+    "tsv_stack": ("qpdk.simulation.fem", "tsv_stack"),
     "RAY_PORT": ("qpdk.simulation.cluster", "RAY_PORT"),
     "SlurmCluster": ("qpdk.simulation.cluster", "SlurmCluster"),
     "SlurmJobError": ("qpdk.simulation.cluster", "SlurmJobError"),
@@ -157,6 +160,7 @@ __all__ = [
     "Q2D",
     "Q3D",
     "RAY_PORT",
+    "TSV_FEM_LAYERS",
     "AEDTBase",
     "ComsolBoundingBox",
     "ComsolFeedPort",
@@ -186,6 +190,8 @@ __all__ = [
     "single_chip_stack",
     "to_fem_regions",
     "to_flip_chip_regions",
+    "to_tsv_regions",
+    "tsv_stack",
 ]
 
 

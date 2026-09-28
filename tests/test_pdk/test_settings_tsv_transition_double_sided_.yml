@@ -1,0 +1,37 @@
+info: {}
+name: tsv_transition_double_sided_CScpw_CSBcpw_backside_TL100_2cc60500
+ports:
+  o1:
+    center:
+    - -115
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 115
+    - 0
+    layer: MB_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  cross_section: cpw
+  cross_section_backside: cpw_backside
+  ground_via_distance: 15
+  ground_via_pitch: 30
+  n_ground_vias_per_side: 4
+  n_signal_vias: 2
+  pad_gap: 24
+  pad_length: 30
+  pad_width: 40
+  signal_via_pitch: 20
+  taper_length: 100
+  taper_length_backside: 100
+  via_length: 20
+  via_pad_margin: 2
+  via_width: 10

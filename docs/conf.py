@@ -209,6 +209,7 @@ nb_execution_excludepatterns = [
     "notebooks/palace_batched_qubit_optimization*",
     "notebooks/palace_eigenmode_qubit_resonator*",
     "notebooks/palace_flipmon_flip_chip*",
+    "notebooks/palace_tsv_transition*",
 ]
 nb_execution_timeout = -1
 nb_execution_allow_errors = False

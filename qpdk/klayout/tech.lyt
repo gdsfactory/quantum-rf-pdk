@@ -166,6 +166,7 @@
  </writer-options>
  <connectivity>
   <connection>M1_DRAW,TSV,M2_DRAW</connection>
+  <connection>M1_DRAW,TSV,MB_DRAW</connection>
   <connection>M1_DRAW,IND,M2_DRAW</connection>
   <connection>M1_DRAW,AB_DRAW,M1_DRAW</connection>
   <connection>M2_DRAW,AB_DRAW,M2_DRAW</connection>
@@ -173,6 +174,7 @@
   <symbols>IND='30/0'</symbols>
   <symbols>AB_DRAW='10/0'</symbols>
   <symbols>TSV='31/0'</symbols>
+  <symbols>MB_DRAW='3/0'</symbols>
   <symbols>M1_DRAW='1/0'</symbols>
  </connectivity>
 </technology>
