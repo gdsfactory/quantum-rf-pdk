@@ -48,6 +48,10 @@
 // The math font pairs with MathJax on the site, not with custom.css.
 #let math-font = ("Fira Math", "New Computer Modern Math")
 
+// Tag (or short commit hash) the PDF was built from; docs/conf.py writes
+// version.txt into the bundle next to this copy.  Empty when git is absent.
+#let version = read("version.txt").trim()
+
 #let project(
   title: "",
   authors: (),
@@ -81,6 +85,9 @@
       "S-parameters",
       "SAX",
       "JAX",
+      // Typst has no custom document-info fields, so the source version
+      // rides in the keywords (PDF /Keywords and XMP pdf:Keywords).
+      ..if version != "" { ("qpdk " + version,) },
     ),
   )
 
@@ -216,8 +223,6 @@
     v(1fr)
     set text(font: body-font, size: 10pt, fill: muted)
     // Tag (or short commit hash) the PDF was built from, bottom right.
-    // docs/conf.py writes version.txt into the bundle next to this copy.
-    let version = read("version.txt").trim()
     grid(
       columns: (1fr, auto),
       align: (left + bottom, right + bottom),
