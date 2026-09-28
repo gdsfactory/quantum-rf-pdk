@@ -11,7 +11,13 @@ from hypothesis import given, settings
 
 from qpdk.cells import waveguides as waveguide_cells
 from qpdk.models import waveguides as waveguide_models
-from qpdk.tech import LAYER_STACK, LAYER_STACK_FLIP_CHIP, _route_component
+from qpdk.tech import (
+    LAYER_STACK,
+    LAYER_STACK_FLIP_CHIP,
+    _route_component,
+    get_layer_material_properties,
+    material_properties,
+)
 
 # Expected (thickness, zmin) in µm for each level of LAYER_STACK.
 # Written as plain µm numbers (not the ``Xe-9 * 1e6`` idiom used in qpdk/tech.py)
@@ -60,6 +66,25 @@ def test_layer_stack_geometry(
         thickness, zmin = expected[name]
         assert level.thickness == pytest.approx(thickness), name
         assert level.zmin == pytest.approx(zmin), name
+
+
+@pytest.mark.parametrize(
+    "layer_stack", [LAYER_STACK, LAYER_STACK_FLIP_CHIP], ids=["default", "flip_chip"]
+)
+def test_every_layer_material_has_properties(layer_stack: LayerStack) -> None:
+    """Every level's material resolves to its ``material_properties`` entry."""
+    for name, level in layer_stack.layers.items():
+        assert (
+            get_layer_material_properties(name, layer_stack)
+            is material_properties[level.material]
+        ), name
+
+
+def test_layer_material_properties_rejects_unknown_material() -> None:
+    stack = LAYER_STACK.model_copy(deep=True)
+    stack.layers["Substrate"].material = "unobtainium"
+    with pytest.raises(KeyError, match="unobtainium"):
+        get_layer_material_properties("Substrate", stack)
 
 
 @pytest.mark.parametrize(

@@ -103,7 +103,7 @@ from qpdk.simulation.comsol.results import (
     requested_frequency_grid,
     result_file,
 )
-from qpdk.tech import coplanar_waveguide
+from qpdk.tech import LAYER_STACK, coplanar_waveguide, get_layer_material_properties
 
 try:
     import mph
@@ -152,7 +152,7 @@ else:
 # %% [markdown]
 # ## Settings
 #
-# The sweep is centred on the resonance the saved run found near 7.3265 GHz. `RUN_COMSOL` stays
+# The sweep is centred on the resonance expected near 7.3997 GHz. `RUN_COMSOL` stays
 # `False`, so no solve starts by accident; the result cells below read whatever export is on disk.
 
 # %% tags=["hide-input"]
@@ -181,9 +181,12 @@ RIGHT_EXTENSION_UM = 2000.0
 
 # One mesh, one enclosure: absolute sizes in µm, with a tighter size on the
 # meander edges where the mode's field concentrates.
-SUBSTRATE_THICKNESS_UM = 200.0
+# The substrate thickness and permittivity come from the PDK layer stack.
+SUBSTRATE_THICKNESS_UM = LAYER_STACK.layers["Substrate"].thickness
+SILICON_RELATIVE_PERMITTIVITY = get_layer_material_properties("Substrate")[
+    "relative_permittivity"
+]
 AIR_HEIGHT_UM = 200.0
-SILICON_RELATIVE_PERMITTIVITY = 11.7
 MESH_SIZE = 2
 GLOBAL_HMAX_UM = 100.0
 GLOBAL_HMIN_UM = 2.0
@@ -200,7 +203,9 @@ PORT_MODE_INDEX_SHIFT = 2.5
 # The driven window: a fixed half-span either side of the centre, swept with
 # COMSOL's adaptive frequency sweep. The request is a curve row count, not a
 # number of solves.
-SWEEP_CENTER_GHZ = 7.3265
+# Estimate from quasi-TEM scaling of an earlier run at εr = 11.7 (7.3265 GHz) to
+# the layer stack's permittivity; replace with the solved resonance after a rerun.
+SWEEP_CENTER_GHZ = 7.3997
 SWEEP_HALF_SPAN_GHZ = 5.0e-3
 SWEEP_POINTS = 101
 
@@ -289,7 +294,10 @@ plt.show()
 # {py:meth}`~qpdk.simulation.comsol.model.COMSOL.add_cpw_rf_study` adds PEC metal, two CPW ports
 # with their boundary mode analysis steps, and a frequency study. The meander edges then get a
 # tighter absolute element size before the adaptive sweep. A direct solve at the fitted minimum
-# supplies the field export. The saved run used silicon $\varepsilon_\text{r} = 11.7$.
+# supplies the field export. The substrate thickness and the silicon permittivity are not set here: they
+# come from the `Substrate` level of the PDK layer stack and its material in `qpdk.tech.material_properties`,
+# the same numbers the analytical CPW model uses. The metal is a zero-thickness sheet, so the M1 film
+# thickness does not enter. Only the air height is a choice of this simulation domain.
 #
 # The step below is off by default. Run it on a licensed machine to build, mesh, solve, save an
 # `.mph`, write the curve CSV, and export the field.
