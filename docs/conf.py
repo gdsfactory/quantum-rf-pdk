@@ -130,6 +130,70 @@ mathjax4_config = {
     },
 }
 
+# -- Mermaid configuration ---------------------------------------------------
+# QPDK diagram style, matching docs/qpdk.mplstyle and docs/_static/css/custom.css:
+# Inter labels, Outfit bold subgraph titles, the QPDK accent for outlines and
+# edges, and thin strokes (axes.linewidth / lines.linewidth).
+#
+# sphinxcontrib-mermaid only swaps the theme *name* when the page toggles
+# between light and dark, so the colours can't live in ``themeVariables``.
+# Instead ``themeCSS`` reads ``--qpdk-mermaid-*`` custom properties, which
+# custom.css defines per ``data-theme`` and the inline SVG inherits.  The
+# ``themeVariables`` below only seed mermaid's own layout and derived colours.
+mermaid_light_theme = "base"
+mermaid_dark_theme = "base"
+_mermaid_theme_css = """
+.node rect, .node circle, .node ellipse, .node polygon, .node path {
+  fill: var(--qpdk-mermaid-node-fill);
+  stroke: var(--qpdk-mermaid-node-stroke);
+  stroke-width: 1.2px;
+}
+.node rect { rx: 6px; ry: 6px; }
+.nodeLabel, .node .label, .edgeLabel, .cluster-label, .label text {
+  color: var(--qpdk-mermaid-text);
+  fill: var(--qpdk-mermaid-text);
+}
+.flowchart-link, .edgePath .path {
+  stroke: var(--qpdk-mermaid-line);
+  stroke-width: 1.5px;
+}
+.marker, .arrowheadPath {
+  fill: var(--qpdk-mermaid-line);
+  stroke: var(--qpdk-mermaid-line);
+}
+.edgeLabel, .edgeLabel p, .labelBkg {
+  background-color: var(--qpdk-mermaid-bg);
+  font-size: 12px;
+}
+.edgeLabel rect { fill: var(--qpdk-mermaid-bg); }
+.cluster rect {
+  fill: var(--qpdk-mermaid-cluster-fill);
+  stroke: var(--qpdk-mermaid-cluster-stroke);
+  stroke-dasharray: 4 3;
+  rx: 8px;
+  ry: 8px;
+}
+.cluster-label, .cluster-label span, .cluster-label p {
+  color: var(--qpdk-mermaid-text);
+  font-family: "Outfit", "Inter", sans-serif;
+  font-weight: 700;
+}
+"""
+mermaid_init_config = {
+    "startOnLoad": False,
+    "themeVariables": {
+        "fontFamily": '"Inter", "DejaVu Sans", Helvetica, Arial, sans-serif',
+        "fontSize": "14px",
+        "primaryColor": "#e8eff8",
+        "primaryBorderColor": "#2a6fb5",
+        "primaryTextColor": "#0e1116",
+        "lineColor": "#2a6fb5",
+        "clusterBkg": "#f6f4ef",
+    },
+    "themeCSS": _mermaid_theme_css,
+    "flowchart": {"curve": "basis", "padding": 12, "useMaxWidth": False},
+}
+
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
 # External-solver notebooks keep saved outputs; the docs build does not run them.

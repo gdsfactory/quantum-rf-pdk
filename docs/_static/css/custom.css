@@ -99,6 +99,52 @@ html[data-theme="dark"] {
   --pst-color-inline-code-links: var(--qpdk-accent-bright);
 }
 
+/* ---------------------------------------------------------------------------
+ * Mermaid diagrams — colours read by `themeCSS` in docs/conf.py.
+ * Defined per theme so diagrams follow the light/dark toggle.
+ * ------------------------------------------------------------------------- */
+html[data-theme="light"] {
+  --qpdk-mermaid-node-fill: #e8eff8;
+  --qpdk-mermaid-node-stroke: var(--qpdk-accent);
+  --qpdk-mermaid-text: var(--qpdk-ink);
+  --qpdk-mermaid-line: var(--qpdk-accent);
+  --qpdk-mermaid-bg: var(--pst-color-background);
+  --qpdk-mermaid-cluster-fill: var(--qpdk-paper);
+  --qpdk-mermaid-cluster-stroke: #b8b2a4;
+}
+
+html[data-theme="dark"] {
+  --qpdk-mermaid-node-fill: #16263e;
+  --qpdk-mermaid-node-stroke: var(--qpdk-accent-bright);
+  --qpdk-mermaid-text: var(--pst-color-text-base);
+  --qpdk-mermaid-line: var(--qpdk-accent-bright);
+  --qpdk-mermaid-bg: var(--pst-color-background);
+  --qpdk-mermaid-cluster-fill: #1b2230;
+  --qpdk-mermaid-cluster-stroke: #3d4a5e;
+}
+
+/* Sit on the page like a figure rather than in a grey code box, and draw at
+ * the diagram's natural size instead of sphinxcontrib-mermaid's fixed 500px. `.bd-content`
+ * outranks the stylesheet the extension injects at runtime. */
+.bd-content pre.mermaid {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.bd-content pre.mermaid > svg {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* pydata-sphinx-theme inverts mermaid SVGs in dark mode; the dark palette
+ * above already handles that, and inverting it again would undo it. */
+html[data-theme="dark"] .bd-content pre.mermaid > svg {
+  filter: none;
+}
+
 /* Propagate accent colors  */
 .bd-sidebar-primary .current > a,
 .bd-sidebar-primary .current > a:hover {
