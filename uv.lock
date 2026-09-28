@@ -5119,8 +5119,8 @@ requires-dist = [
     { name = "qutip-jax", marker = "extra == 'qutip'", specifier = ">=0.1.1" },
     { name = "qutip-qip", marker = "extra == 'qutip'", specifier = ">=0.4.1" },
     { name = "ray", extras = ["default"], marker = "extra == 'ray'" },
-    { name = "sax", marker = "extra == 'gdsfactoryplus'", git = "https://github.com/nikosavola/sax.git?rev=863b7f93e80c9f7fb27e2fdfde97e8462a5a3660" },
-    { name = "sax", marker = "extra == 'models'", git = "https://github.com/nikosavola/sax.git?rev=863b7f93e80c9f7fb27e2fdfde97e8462a5a3660" },
+    { name = "sax", marker = "extra == 'gdsfactoryplus'", git = "https://github.com/nikosavola/sax.git?rev=effc91dbc2609885171873eec87067a153a1333c" },
+    { name = "sax", marker = "extra == 'models'", git = "https://github.com/nikosavola/sax.git?rev=effc91dbc2609885171873eec87067a153a1333c" },
     { name = "scikit-rf", marker = "extra == 'models'" },
     { name = "scqubits", marker = "extra == 'scqubits'" },
     { name = "sympy", marker = "extra == 'models'" },
@@ -5164,7 +5164,7 @@ docs = [
     { name = "qutip-jax", specifier = ">=0.1.1" },
     { name = "qutip-qip", specifier = ">=0.4.1" },
     { name = "ray", extras = ["default"] },
-    { name = "sax", git = "https://github.com/nikosavola/sax.git?rev=863b7f93e80c9f7fb27e2fdfde97e8462a5a3660" },
+    { name = "sax", git = "https://github.com/nikosavola/sax.git?rev=effc91dbc2609885171873eec87067a153a1333c" },
     { name = "scikit-rf" },
     { name = "scipy" },
     { name = "scqubits" },
@@ -5195,7 +5195,7 @@ docs-models = [
     { name = "qutip-jax", specifier = ">=0.1.1" },
     { name = "qutip-qip", specifier = ">=0.4.1" },
     { name = "ray", extras = ["default"] },
-    { name = "sax", git = "https://github.com/nikosavola/sax.git?rev=863b7f93e80c9f7fb27e2fdfde97e8462a5a3660" },
+    { name = "sax", git = "https://github.com/nikosavola/sax.git?rev=effc91dbc2609885171873eec87067a153a1333c" },
     { name = "scikit-rf" },
     { name = "scqubits" },
     { name = "sympy" },
@@ -5621,7 +5621,7 @@ wheels = [
 [[package]]
 name = "sax"
 version = "0.18.2"
-source = { git = "https://github.com/nikosavola/sax.git?rev=863b7f93e80c9f7fb27e2fdfde97e8462a5a3660#863b7f93e80c9f7fb27e2fdfde97e8462a5a3660" }
+source = { git = "https://github.com/nikosavola/sax.git?rev=effc91dbc2609885171873eec87067a153a1333c#effc91dbc2609885171873eec87067a153a1333c" }
 dependencies = [
     { name = "jax" },
     { name = "jaxellip" },
