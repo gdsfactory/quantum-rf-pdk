@@ -139,7 +139,7 @@ multi-node MPI launching, domain-energy requests and port-connectivity checks.
  Common
 ********
 
-.. automodule:: qpdk.simulation.aedt_base
+.. automodule:: qpdk.simulation.ansys.base
     :members:
     :show-inheritance:
 
@@ -147,7 +147,7 @@ multi-node MPI launching, domain-energy requests and port-connectivity checks.
  HFSS
 ******
 
-.. automodule:: qpdk.simulation.hfss
+.. automodule:: qpdk.simulation.ansys.hfss
     :members:
     :show-inheritance:
 
@@ -155,6 +155,6 @@ multi-node MPI launching, domain-energy requests and port-connectivity checks.
  Q3D and Q2D
 *************
 
-.. automodule:: qpdk.simulation.q3d
+.. automodule:: qpdk.simulation.ansys.q3d
     :members:
     :show-inheritance:

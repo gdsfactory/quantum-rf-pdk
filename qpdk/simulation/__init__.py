@@ -7,18 +7,20 @@ with Ansys HFSS and Q3D Extractor.
 
 **HFSS workflow:**
 
-1. Prepare a component with :func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt`
-2. Export to GDS and import into HFSS with :meth:`qpdk.simulation.hfss.HFSS.import_component`
+1. Prepare a component with :func:`~qpdk.simulation.ansys.base.prepare_component_for_aedt`
+2. Export to GDS and import into HFSS with :meth:`qpdk.simulation.ansys.hfss.HFSS.import_component`
 3. Configure simulation setup (e.g. Eigenmode or Driven) manually via PyAEDT
-4. Extract results with :meth:`qpdk.simulation.hfss.HFSS.get_eigenmode_results` or :meth:`qpdk.simulation.hfss.HFSS.get_sparameter_results`
+4. Extract results with :meth:`qpdk.simulation.ansys.hfss.HFSS.get_eigenmode_results` or :meth:`qpdk.simulation.ansys.hfss.HFSS.get_sparameter_results`
 
 **Q3D Extractor workflow:**
 
-1. Prepare a component with :func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt`
-2. Export to GDS and import into Q3D with :meth:`qpdk.simulation.q3d.Q3D.import_component`
-3. Assign signal nets with :meth:`qpdk.simulation.q3d.Q3D.assign_nets_from_ports`
+1. Prepare a component with :func:`~qpdk.simulation.ansys.base.prepare_component_for_aedt`
+2. Export to GDS and import into Q3D with :meth:`qpdk.simulation.ansys.q3d.Q3D.import_component`
+3. Assign signal nets with :meth:`qpdk.simulation.ansys.q3d.Q3D.assign_nets_from_ports`
 4. Configure Q3D setup and analyze
-5. Extract capacitance matrix with :meth:`qpdk.simulation.q3d.Q3D.get_capacitance_matrix`
+5. Extract capacitance matrix with :meth:`qpdk.simulation.ansys.q3d.Q3D.get_capacitance_matrix`
+
+The AEDT wrappers live in :mod:`qpdk.simulation.ansys` and are re-exported here.
 
 Note:
     This module requires the optional ``hfss`` dependency group.
@@ -40,12 +42,16 @@ References:
     - Q3D Extractor: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.q3d.Q3d.html
 """
 
-from qpdk.simulation.aedt_base import (
+from qpdk.simulation.ansys import (
+    HFSS,
+    Q2D,
+    Q3D,
     AEDTBase,
     add_materials_to_aedt,
     detach_desktop_logging,
     fit_view,
     layer_stack_to_gds_mapping,
+    lumped_port_rectangle_from_cpw,
     object_names_to_materials,
     prepare_component_for_aedt,
 )
@@ -58,8 +64,6 @@ from qpdk.simulation.fem import (
     to_fem_regions,
     to_flip_chip_regions,
 )
-from qpdk.simulation.hfss import HFSS, lumped_port_rectangle_from_cpw
-from qpdk.simulation.q3d import Q2D, Q3D
 from qpdk.simulation.study import RayRunner, SlurmRunner, run_study
 
 __all__ = [

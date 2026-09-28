@@ -91,7 +91,7 @@ from qpdk import PDK
 from qpdk.cells.resonator import resonator
 from qpdk.config import PATH
 from qpdk.models.resonator import resonator_frequency
-from qpdk.simulation import (
+from qpdk.simulation.ansys import (
     HFSS,
     detach_desktop_logging,
     fit_view,

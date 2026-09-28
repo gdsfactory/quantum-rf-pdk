@@ -90,7 +90,7 @@ from IPython.display import Image, display
 from qpdk import PDK
 from qpdk.config import PATH
 from qpdk.models.cpw import cpw_parameters
-from qpdk.simulation import Q2D, detach_desktop_logging, fit_view
+from qpdk.simulation.ansys import Q2D, detach_desktop_logging, fit_view
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -155,7 +155,7 @@ print(f"Design name: {q2d.design_name}")
 # %% [markdown]
 # ## Build CPW Cross-Section Geometry
 #
-# Use {py:meth}`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section` to automatically
+# Use {py:meth}`~qpdk.simulation.ansys.q3d.Q2D.create_2d_from_cross_section` to automatically
 # build the CPW geometry (signal conductor, ground planes, substrate) from the
 # gdsfactory cross-section and QPDK layer stack.
 
@@ -319,7 +319,7 @@ print("Q2D session closed and temporary files cleaned up")
 #
 # 2. **Q2D Setup**: Initializing Ansys 2D Extractor via PyAEDT and building the
 #    cross-sectional geometry using
-#    {py:meth}`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section`
+#    {py:meth}`~qpdk.simulation.ansys.q3d.Q2D.create_2d_from_cross_section`
 #
 # 3. **Impedance Extraction**: Running the Q2D quasi-static solver to compute
 #    $Z_0$ as a function of frequency from 1 to 10 GHz

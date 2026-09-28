@@ -76,7 +76,7 @@ def layer_stack_to_gds_mapping(
 
     Vacuum levels (``material == "vacuum"``) are skipped: the AEDT background
     region is already vacuum and any vacuum box is added explicitly with
-    :meth:`qpdk.simulation.hfss.HFSS.add_air_region`, so importing vacuum as
+    :meth:`qpdk.simulation.ansys.hfss.HFSS.add_air_region`, so importing vacuum as
     GDS geometry is redundant. This also resolves the Substrate/Vacuum
     collision on ``LAYER.SIM_AREA`` (98, 0).
 

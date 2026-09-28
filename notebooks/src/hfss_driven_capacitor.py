@@ -89,7 +89,7 @@ from qpdk.cells.waveguides import straight_open
 from qpdk.config import PATH
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.cpw import cpw_ep_r_from_cross_section
-from qpdk.simulation import (
+from qpdk.simulation.ansys import (
     HFSS,
     Q3D,
     detach_desktop_logging,

@@ -9,7 +9,7 @@ import numpy as np
 import polars as pl
 
 from qpdk import LAYER_STACK
-from qpdk.simulation.aedt_base import (
+from qpdk.simulation.ansys.base import (
     AEDTBase,
     _first_real_value,
     export_component_to_gds_temp,
