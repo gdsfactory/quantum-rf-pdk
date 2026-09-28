@@ -756,6 +756,63 @@ def _render_figures_for_both_themes(*args, **kwargs):
     return light
 
 
+#: How the colours ``qpdk.mplstyle`` leaves at matplotlib's defaults map onto
+#: ``qpdk-dark.mplstyle``: background, ink, grid, and the tab10 cycle.  Used to
+#: derive the dark notebook figures, see `_write_dark_notebook_figure`.
+_NOTEBOOK_FIGURE_DARK_COLOURS = {
+    "#ffffff": "#14181e",
+    "#000000": "#f0f2f6",
+    "#333333": "#c5cbd5",
+    "#b0b0b0": "#586272",
+    "#1f77b4": "#76a9ee",
+    "#ff7f0e": "#ffa95e",
+    "#2ca02c": "#5fd38d",
+    "#d62728": "#ff7b7b",
+    "#9467bd": "#c79bf0",
+    "#8c564b": "#c08f74",
+    "#e377c2": "#f79fd0",
+    "#7f7f7f": "#a3adb8",
+    "#bcbd22": "#d7dd5c",
+    "#17becf": "#5fd3d3",
+}
+_HEX_COLOUR_RE = re.compile(r"#[0-9a-fA-F]{6}\b")
+
+
+def _write_dark_notebook_figure(light: Path, dark: Path) -> None:
+    """Derive the dark render of a notebook figure from its light SVG.
+
+    Notebook figures come out of a single kernel run, and running every
+    notebook a second time under ``qpdk-dark`` would double the slowest part of
+    the docs build.  Instead the light SVG is recoloured through
+    `_NOTEBOOK_FIGURE_DARK_COLOURS`.  That covers everything the style sets
+    (backgrounds, text, spines, grid, the default colour cycle), which is
+    nearly all of what the notebooks draw.  Colours a notebook picks for itself
+    and embedded rasters such as ``imshow`` output are left as they are.
+    """
+    svg = _HEX_COLOUR_RE.sub(
+        lambda match: _NOTEBOOK_FIGURE_DARK_COLOURS.get(
+            match.group().lower(), match.group()
+        ),
+        light.read_text(encoding="utf-8"),
+    )
+    # Matplotlib leaves out ``fill`` where it would be black, text included, so
+    # SVG's own default has to change too.  Children that set a fill still win.
+    svg = svg.replace(
+        "<svg ", f'<svg fill="{_NOTEBOOK_FIGURE_DARK_COLOURS["#000000"]}" ', 1
+    )
+    dark.write_text(svg, encoding="utf-8")
+
+
+def _is_notebook_output(node: nodes.Node) -> bool:
+    """Whether ``node`` sits in a myst-nb cell output."""
+    parent = node.parent
+    while parent is not None:
+        if parent.get("nb_element") == "mime_bundle":
+            return True
+        parent = parent.parent
+    return False
+
+
 def pair_plot_images_by_theme(app: Sphinx, doctree: nodes.document) -> None:
     """Show the light or the dark render of a plot depending on the theme.
 
@@ -764,6 +821,10 @@ def pair_plot_images_by_theme(app: Sphinx, doctree: nodes.document) -> None:
     ``only-dark``.  The theme shows whichever matches ``html[data-theme]``,
     which its default ``auto`` mode resolves from the OS colour-scheme
     preference -- so this follows both the preference and the toggle button.
+
+    ``.. plot::`` figures already have a dark render beside them (see
+    `_render_figures_for_both_themes`); SVG notebook outputs get one derived
+    here (see `_write_dark_notebook_figure`).
 
     This runs before Sphinx's asset collector (priority < 500) so the dark
     files it introduces are copied into the output alongside the light ones.
@@ -777,7 +838,17 @@ def pair_plot_images_by_theme(app: Sphinx, doctree: nodes.document) -> None:
     for image in list(doctree.findall(nodes.image)):
         uri = Path(image["uri"])
         dark_uri = uri.with_name(f"{uri.stem}{PLOT_DARK_SUFFIX}{uri.suffix}")
-        if not (document_dir / dark_uri).is_file():
+        # Sphinx resolves a leading "/" against the source directory, which is
+        # how myst-nb points at the outputs it writes beside the build.
+        base_dir = Path(app.srcdir) if uri.is_absolute() else document_dir
+        dark_path = base_dir / dark_uri.as_posix().lstrip("/")
+        if (
+            not dark_path.is_file()
+            and uri.suffix == ".svg"
+            and _is_notebook_output(image)
+        ):
+            _write_dark_notebook_figure(dark_path.with_name(uri.name), dark_path)
+        if not dark_path.is_file():
             continue
 
         dark_image = image.deepcopy()
