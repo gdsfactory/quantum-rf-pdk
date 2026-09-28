@@ -71,10 +71,14 @@
 %   export QPDK_SKIP_RF_TOOLBOX=1
 %   ```
 %
-% - The version of this notebook rendered in the documentation carries the outputs of a saved run on
-%   a MATLAB that *did* include the RF Toolbox, so the RF sections are visible there. CI re-executes
-%   the notebook itself on a licence without the toolbox and checks the saved outputs against a
-%   fingerprint printed by the last cell, so they cannot silently drift from the source.
+% - **Optional:** the [PDE Toolbox](https://se.mathworks.com/help/pde/index.html) on MATLAB
+%   R2024a or newer, for the electrostatic finite-element section. It skips itself in the same
+%   way when the toolbox is missing, and `QPDK_SKIP_PDE_TOOLBOX=1` skips it unconditionally,
+%   which CI also does.
+%
+% - The version of this notebook rendered in the documentation carries outputs from a saved run
+%   with both optional toolboxes. CI re-executes the notebook with those sections skipped and
+%   checks the saved outputs against a fingerprint printed by the last cell.
 
 % %% [markdown]
 %
@@ -460,6 +464,359 @@ if has_rf
         min(freq_back) / 1e9, max(freq_back) / 1e9);
 end
 
+% %% [markdown]
+%
+% ## Electrostatic FEM of an interdigital capacitor
+%
+% The sections above call qpdk for *models*. This one builds a small field solver in MATLAB instead.
+% MATLAB takes the interdigital capacitor (IDC) geometry and the layer stack from qpdk, then
+% extracts the capacitance matrix with a 3D electrostatic finite-element solve in the [Partial
+% Differential Equation Toolbox](https://se.mathworks.com/help/pde/index.html). The case mirrors the
+% [Elmer IDC notebook](elmer_capacitance_interdigital.ipynb): the same four-finger capacitor, with
+% the same 10 µm clearance to a grounded M1 frame and the same 90 µm lateral domain pad. The
+% substrate and vacuum are cut to 60 µm and 40 µm, as there.
+%
+% The solver finds the potential $\phi$ with $\nabla \cdot (\epsilon \nabla \phi) = 0$ in the
+% dielectrics. Each metal conductor is held at a fixed potential, and the outer faces of the box use
+% the natural zero-normal-flux condition, as in the Elmer run. Let $K$ be the assembled
+% finite-element stiffness matrix. Let $u_i$ be the nodal solution with terminal $i$ at 1 V and
+% every other conductor at 0 V. The Maxwell capacitance matrix is then the field energy form
+%
+% $$ C_{ij} = \epsilon_0 \, u_i^\mathsf{T} K u_j , $$
+%
+% which is symmetric and exact for the discretisation. The off-diagonal entry is negative. As in the
+% Elmer notebook, the mutual capacitance is $-C_{12}$ and each terminal's ground capacitance is its
+% row sum.
+%
+% Two modelling differences from Elmer should be kept in mind when comparing numbers:
+%
+% - **The 200 nm Nb film is a zero-thickness sheet** at the substrate surface. A volumetric
+%   film would force the mesh to resolve 0.2 µm near the metal. The sheet drops the finger
+%   sidewalls, so exact agreement with Elmer is not expected.
+%
+% - **Quadratic tetrahedra and a coarser mesh.** The saved Elmer study uses cubic elements with
+%   0.125 µm terminal resolution. This refinement study shows a trend, not a converged value.
+%   Close agreement between two finite meshes alone is not an error bound.
+%
+% This section needs the PDE Toolbox and MATLAB R2024a or newer, for `fegeometry` and
+% `assembleFEMatrices` on an `femodel`. Like the RF sections, it detects both at run time. Setting
+% `QPDK_SKIP_PDE_TOOLBOX=1` skips it unconditionally, and CI does that.
+
+% %%
+pde_env = getenv('QPDK_SKIP_PDE_TOOLBOX');
+pde_skipped_by_env = ~isempty(pde_env) && ...
+    ~ismember(lower(string(pde_env)), ["0", "false", "no", ""]);
+
+has_pde = ~pde_skipped_by_env && ~isMATLABReleaseOlderThan("R2024a") && ...
+    ~isempty(ver('pde')) && license('test', 'PDE_Toolbox') == 1;
+if has_pde
+    try
+        femodel(AnalysisType="electrostatic");
+    catch
+        has_pde = false;
+    end
+end
+
+if pde_skipped_by_env
+    fprintf('PDE Toolbox section skipped: QPDK_SKIP_PDE_TOOLBOX=%s\n', pde_env);
+elseif ~has_pde
+    fprintf('PDE Toolbox section skipped: needs R2024a+ with a licensed PDE Toolbox.\n');
+else
+    fprintf('PDE Toolbox available; running the electrostatic FEM section.\n');
+end
+
+% %% [markdown]
+%
+% ### Geometry and layer stack from qpdk
+%
+% [`pyrun`](https://se.mathworks.com/help/matlab/ref/pyrun.html) runs a short Python snippet and
+% returns selected variables. The snippet builds `interdigital_capacitor` without its local etch
+% box, so the two combs remain separate conductors. It then merges each comb into one outline and
+% labels it by the port it carries. The substrate permittivity comes from
+% `qpdk.tech.material_properties` through the material named in `PDK.layer_stack`. The M1 film
+% thickness also comes from there, although the sheet model only reports it.
+%
+% The grounded frame and the domain outline are plain rectangles around the capacitor bounding box.
+% They are drawn in MATLAB with the same offsets that the Elmer notebook uses.
+
+% %%
+idc_code = strjoin([
+    "import gdsfactory as gf"
+    "import numpy as np"
+    "from qpdk.cells.capacitor import interdigital_capacitor"
+    "from qpdk.tech import LAYER, material_properties"
+    "idc = interdigital_capacitor(fingers=int(fingers), finger_length=finger_length,"
+    "    finger_gap=finger_gap, thickness=finger_width, etch_layer=None)"
+    "metal = gf.kdb.Region(idc.begin_shapes_rec(idc.kcl.layer(*LAYER.M1_DRAW))).merged()"
+    "combs = [None] * len(idc.ports)"
+    "for polygon in metal.each():"
+    "    hull = polygon.to_dtype(idc.kcl.dbu)"
+    "    xy = np.array([(p.x, p.y) for p in hull.each_point_hull()])"
+    "    for k, port in enumerate(idc.ports):"
+    "        if hull.bbox().enlarged(1e-3, 1e-3).contains(gf.kdb.DPoint(*port.center)):"
+    "            combs[k] = xy"
+    "box = idc.dbbox()"
+    "bbox = np.array([box.left, box.bottom, box.right, box.top])"
+    "stack = PDK.layer_stack.layers"
+    "metal_thickness = float(stack['M1'].thickness)"
+    "eps_r = {name: props['relative_permittivity'] for name, props in material_properties.items()}"
+    "eps_substrate = float(eps_r[stack['Substrate'].material])"
+    "eps_vacuum = float(eps_r[stack['Vacuum'].material])"
+    ], newline);
+
+if has_pde
+    [py_combs, py_bbox, metal_thickness, eps_substrate, eps_vacuum] = pyrun(idc_code, ...
+        ["combs", "bbox", "metal_thickness", "eps_substrate", "eps_vacuum"], ...
+        PDK=PDK, fingers=int32(4), finger_length=20.0, finger_gap=2.0, finger_width=5.0);
+    comb_xy = cellfun(@double, cell(py_combs), 'UniformOutput', false);
+    idc_bbox = double(py_bbox);
+    metal_thickness = double(metal_thickness);
+    eps_substrate = double(eps_substrate);
+    eps_vacuum = double(eps_vacuum);
+
+    ground_clearance = 10.0;  % um, etched gap from the IDC bounding box to ground
+    ground_outer_pad = 45.0;  % um, outer edge of the grounded frame
+    domain_pad = 90.0;        % um, lateral extent of the dielectric domain
+    substrate_height = 60.0;  % um, truncated from the 500 um PDK substrate
+    vacuum_height = 40.0;     % um, truncated from the 500 um PDK vacuum
+    grow = @(pad) idc_bbox + [-pad, -pad, pad, pad];
+    ground_inner = grow(ground_clearance);
+    ground_outer = grow(ground_outer_pad);
+    domain_box = grow(domain_pad);
+
+    fprintf('IDC bounding box: (%g, %g) to (%g, %g) um\n', idc_bbox);
+    fprintf('Domain: (%g, %g) to (%g, %g) um, z = %+g ... %+g um\n', domain_box, ...
+        -substrate_height, vacuum_height);
+    fprintf('Substrate eps_r = %.2f, vacuum eps_r = %.2f\n', eps_substrate, eps_vacuum);
+    fprintf('M1 film thickness in the PDK: %.3f um (modelled as a sheet)\n', metal_thickness);
+end
+
+% %% [markdown]
+%
+% ### Build the layered 3D geometry
+%
+% The planar layout is assembled with [`decsg`](https://se.mathworks.com/help/pde/ug/decsg.html).
+% Its regions are the domain, the ground frame (outer rectangle minus inner rectangle), and the two
+% combs. `decsg` keeps the boundary of each region, so every metal outline becomes its own face.
+% `extrude` stacks a substrate layer and a vacuum layer on that planar geometry. The metal faces
+% then lie on the internal interface at $z = 0$, where the mesh conforms to them. A point inside
+% each metal outline, from a `polyshape` triangulation, identifies the matching 3D face through
+% `nearestFace`.
+
+% %%
+if has_pde
+    rect = @(b) [3; 4; b([1 3 3 1])'; b([2 2 4 4])'];
+    n_max = max([8, cellfun(@(xy) 2 + 2 * size(xy, 1), comb_xy)]);
+    pad_col = @(col) [col; zeros(n_max - numel(col), 1)];
+    shapes = [pad_col(rect(domain_box)), pad_col(rect(ground_outer)), ...
+        pad_col(rect(ground_inner))];
+    for k = 1:numel(comb_xy)
+        xy = comb_xy{k};
+        shapes = [shapes, pad_col([2; size(xy, 1); xy(:, 1); xy(:, 2)])]; %#ok<AGROW>
+    end
+    names = char('D', 'GO', 'GI', 'CA', 'CB')';
+    [dl, ~] = decsg(shapes, 'D+(GO-GI)+CA+CB', names);
+
+    gm = fegeometry(dl);
+    gm = extrude(gm, [substrate_height, vacuum_height]);
+    gm = translate(gm, [0, 0, -substrate_height]);
+
+    interior_point = @(xy) incenter(triangulation(polyshape(xy(:, 1), xy(:, 2))), 1);
+    comb_faces = zeros(1, numel(comb_xy));
+    for k = 1:numel(comb_xy)
+        comb_faces(k) = nearestFace(gm, [interior_point(comb_xy{k}), 0]);
+    end
+    ground_point = [(ground_outer(1) + ground_inner(1)) / 2, mean(ground_inner([2 4])), 0];
+    ground_face = nearestFace(gm, ground_point);
+
+    fprintf('Geometry: %d cells, %d faces\n', gm.NumCells, gm.NumFaces);
+    fprintf('Terminal faces: %s, ground face: %d\n', mat2str(comb_faces), ground_face);
+
+end
+
+% %% [markdown]
+%
+% ### Solve and extract the capacitance matrix
+%
+% Each pass meshes the geometry and assembles the stiffness matrix $K$ with
+% `assembleFEMatrices(model, "none")`, which applies no boundary conditions. It then eliminates the
+% conductor nodes itself. The nodes on each metal outline at $z = 0$ are fixed at the conductor
+% voltages, and the free nodes solve $K_{ff} u_f = -K_{fc} u_c$ for both excitations at once.
+% Because `VacuumPermittivity` is set to 1, $K$ carries only $\epsilon_\text{r}$. Multiplying by
+% $\epsilon_0 \times 10^{-6}$ converts from lengths in µm to farads.
+%
+% Doing the elimination by hand, rather than with `FaceBC` voltages and `solve`, has two advantages.
+% It avoids relying on Dirichlet conditions on internal faces, and it turns both excitations into
+% one sparse factorisation and a quadratic form.
+%
+% The mesh is refined on the terminal faces and less so on the ground frame. `mesh_factor` scales
+% every target size together, as `mesh_parameters_for_factor` does in the Elmer notebook, and
+% smaller values are finer. Each pass remeshes independently and reuses nothing. The quantity
+% printed for every pass is the largest relative change among the mutual and the two ground
+% capacitances from the previous pass. As in the Elmer notebook, this refinement check is *not* a
+% bound on the absolute error. The saved run reached about 454,000 nodes at the finest pass and used
+% about 8 GB of memory; drop the last factor if that is too much.
+
+% %%
+eps0 = 8.8541878128e-12;  % F/m
+um = 1e-6;                % m per geometry unit
+mesh_lengths_um = struct('max', 20.0, 'terminal', 1.0, 'ground', 3.0);
+mesh_factors = [1.25, 1.0, 0.75, 0.5];
+
+if has_pde
+    fem = femodel(AnalysisType="electrostatic", Geometry=gm);
+    fem.VacuumPermittivity = 1;
+
+    % Conductor membership is decided from coordinates on the z = 0 plane, which does not depend on
+    % how decsg and extrude number the faces. The small buffer absorbs round-off for nodes that sit
+    % exactly on a metal outline.
+    comb_regions = cellfun(@(xy) polybuffer(polyshape(xy(:, 1), xy(:, 2)), 1e-6), comb_xy);
+    in_rect = @(x, y, b, tol) x >= b(1) - tol & x <= b(3) + tol & ...
+        y >= b(2) - tol & y <= b(4) + tol;
+
+    n_terminals = numel(comb_xy);
+    fem_results = struct('factor', {}, 'C_fF', {}, 'n_nodes', {});
+    for pass = 1:numel(mesh_factors)
+        tic;
+        factor = mesh_factors(pass);
+        fem = generateMesh(fem, GeometricOrder="quadratic", Hgrad=1.4, ...
+            Hmax=mesh_lengths_um.max * factor, ...
+            Hface={comb_faces, mesh_lengths_um.terminal * factor, ...
+            ground_face, mesh_lengths_um.ground * factor});
+        mesh = fem.Geometry.Mesh;
+        nodes = mesh.Nodes;
+
+        % Extruding every planar face through both layers makes many cells; classify each by the
+        % height of one of its elements.
+        for cell_id = 1:gm.NumCells
+            elements = findElements(mesh, "region", Cell=cell_id);
+            eps_r = eps_vacuum;
+            if mean(nodes(3, mesh.Elements(:, elements(1)))) < 0
+                eps_r = eps_substrate;
+            end
+            fem.MaterialProperties(cell_id) = materialProperties(RelativePermittivity=eps_r);
+        end
+        K = assembleFEMatrices(fem, "none").K;
+
+        x = nodes(1, :)';
+        y = nodes(2, :)';
+        on_plane = abs(nodes(3, :)') < 1e-6;
+        fixed = on_plane & in_rect(x, y, ground_outer, 1e-6) & ...
+            ~in_rect(x, y, ground_inner, -1e-6);
+        u = zeros(size(nodes, 2), n_terminals);
+        for k = 1:n_terminals
+            terminal = on_plane & isinterior(comb_regions(k), x, y);
+            fixed = fixed | terminal;
+            u(terminal, k) = 1;
+        end
+
+        u(~fixed, :) = -K(~fixed, ~fixed) \ (K(~fixed, fixed) * u(fixed, :));
+        C = full(u' * K * u) * eps0 * um;
+        fem_results(pass) = struct('factor', factor, 'C_fF', (C + C') / 2 * 1e15, ...
+            'n_nodes', size(nodes, 2));
+        fprintf('mesh factor %.2f: %d nodes (%d on conductors), solved in %.1f s\n', ...
+            factor, size(nodes, 2), nnz(fixed), toc);
+    end
+
+    summary = zeros(numel(fem_results), 3);
+    for k = 1:numel(fem_results)
+        C = fem_results(k).C_fF;
+        summary(k, :) = [-C(1, 2), sum(C(1, :)), sum(C(2, :))];
+    end
+    max_change = [NaN; max(abs(diff(summary)) ./ summary(1:end - 1, :), [], 2)];
+
+    T_fem = table(mesh_factors(:), [fem_results.n_nodes]', summary(:, 1), summary(:, 2), ...
+        summary(:, 3), 100 * max_change, 'VariableNames', {'mesh_factor', 'nodes', ...
+        'mutual_fF', 'o1_ground_fF', 'o2_ground_fF', 'max_change_pct'});
+    disp(T_fem);
+
+    C_final = fem_results(end).C_fF;
+    fprintf('Final Maxwell capacitance matrix (fF):\n');
+    fprintf('  [%9.4f %9.4f]\n', C_final');
+    fprintf('Mutual capacitance C12_mutual = -C12: %.3f fF\n', -C_final(1, 2));
+    fprintf('Terminal o1 to ground: %.3f fF, o2 to ground: %.3f fF\n', ...
+        sum(C_final(1, :)), sum(C_final(2, :)));
+    fprintf('Matrix asymmetry |C12 - C21| / |C12|: %.1e\n', ...
+        abs(C_final(1, 2) - C_final(2, 1)) / abs(C_final(1, 2)));
+
+    elmer_mutual_fF = 5.708;  % saved cubic Elmer result with a 200 nm film
+    fprintf('Elmer (200 nm film, cubic elements) mutual: %.3f fF; difference %+.1f %%\n', ...
+        elmer_mutual_fF, 100 * (-C_final(1, 2) / elmer_mutual_fF - 1));
+
+    figure;
+    tiledlayout(2, 1, TileSpacing='compact', Padding='compact');
+    nexttile;
+    plot(1:numel(mesh_factors), summary(:, 1), '-o', Color=plot_colors(1, :));
+    hold on;
+    plot(1:numel(mesh_factors), summary(:, 2), '-s', Color=plot_colors(2, :));
+    plot(1:numel(mesh_factors), summary(:, 3), '-^', Color=plot_colors(3, :));
+    hold off;
+    ylabel('Capacitance (fF)');
+    lgd = legend('o1-o2 mutual', 'o1-ground', 'o2-ground', 'Location', 'best');
+    lgd.Box = 'off';
+    title('PDE Toolbox mesh refinement');
+    nexttile;
+    plot(2:numel(mesh_factors), 100 * max_change(2:end), '--s', ...
+        Color=plot_colors(1, :));
+    xticks(1:numel(mesh_factors));
+    xlabel('Pass (independent remesh)'); ylabel('Largest change (%)');
+
+    % The first four entries of each quadratic tetrahedron are its corner nodes.
+    corners = mesh.Elements(1:4, :);
+    faces = [corners([1 2 3], :), corners([1 2 4], :), ...
+        corners([1 3 4], :), corners([2 3 4], :)];
+    faces = faces(:, all(on_plane(faces), 1));
+    faces = unique(sort(faces, 1)', 'rows');
+    centers = (nodes(1:2, faces(:, 1)) + nodes(1:2, faces(:, 2)) + ...
+        nodes(1:2, faces(:, 3))) / 3;
+    nearby = abs(centers(1, :)) < 25 & abs(centers(2, :)) < 20;
+
+    figure;
+    triplot(faces(nearby, :), nodes(1, :), nodes(2, :), ...
+        'Color', [0.72 0.76 0.81], 'LineWidth', 0.5);
+    hold on;
+    for k = 1:numel(comb_xy)
+        xy = comb_xy{k};
+        patch(xy(:, 1), xy(:, 2), plot_colors(2, :), FaceAlpha=0.2, ...
+            EdgeColor=plot_colors(2, :), LineWidth=1.2);
+    end
+    hold off;
+    grid off;
+    axis equal; xlim([-25 25]); ylim([-20 20]);
+    xlabel('x (\mum)'); ylabel('y (\mum)');
+    title(sprintf('Interface mesh at z = 0, %.2f µm terminal target', ...
+        mesh_lengths_um.terminal * mesh_factors(end)));
+end
+
+% %% [markdown]
+%
+% ### Potential just above the metal
+%
+% The finest solution with terminal `o1` at 1 V, sampled 0.5 µm above the substrate surface. The
+% field concentrates in the 2 µm finger gaps, which is why the terminal faces carry the finest mesh.
+
+% %%
+if has_pde
+    % nodes and u still hold the finest pass from the loop above.
+    near = abs(nodes(3, :)) < 5;
+    phi = scatteredInterpolant(nodes(:, near)', u(near, 1), 'linear', 'none');
+    [xg, yg] = meshgrid(linspace(-40, 40, 321), linspace(-35, 35, 281));
+    phi_grid = phi(xg, yg, 0.5 * ones(size(xg)));
+
+    figure;
+    imagesc(xg(1, :), yg(:, 1), phi_grid); axis xy equal tight;
+    grid off;
+    colorbar; clim([0 1]);
+    hold on;
+    for k = 1:numel(comb_xy)
+        xy = comb_xy{k};
+        plot(xy([1:end 1], 1), xy([1:end 1], 2), 'w-', 'LineWidth', 1);
+    end
+    hold off;
+    xlabel('x (\mum)'); ylabel('y (\mum)');
+    title('Potential (V) at z = 0.5 \mum, o1 at 1 V');
+end
+
 % %% tags=["hide-input", "hide-output"]
 %
 % The rendered documentation shows the outputs of a saved run of this notebook, so the fingerprint
@@ -489,6 +846,10 @@ end
 % - Export any other qpdk model with `sax.write_sdict_touchstone` and drop it into
 %   a MATLAB `circuit` the same way — the pattern is not specific to the CPW line or the
 %   resonator used here.
+%
+% - Compare the PDE Toolbox capacitance with the [Elmer IDC
+%   notebook](elmer_capacitance_interdigital.ipynb), or change the `pyrun` arguments to extract a
+%   different finger count or gap.
 
 % %% [markdown]
 %
