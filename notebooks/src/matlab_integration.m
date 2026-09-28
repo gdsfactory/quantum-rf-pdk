@@ -101,7 +101,6 @@ PDK.activate();
 fprintf('Activated PDK: %s\n', string(py.getattr(PDK, 'name')));
 sax_mod = py.importlib.import_module('sax');
 
-% Match the white background, Inter labels, light dashed grid, and line palette in docs/qpdk.mplstyle.
 plot_font = 'Arial';
 if any(strcmpi(listfonts, 'Inter'))
     plot_font = 'Inter';
@@ -412,9 +411,9 @@ end
 % oscillatory contribution decays on a scale set by the loaded quality factor, approximately
 % $\tau_\text{amp} = 2Q_\text{L}/\omega_0$. We subtract the final level and plot the residual
 % envelope to make that ring-down visible. This is a qualitative transient of a fit over the
-% measured band, not a calibrated DC-to-microwave step response. See the
-% [microwave-resonator ring-down study](https://arxiv.org/abs/1505.06863) for the time-domain
-% connection between decay and quality factor.
+% measured band, not a calibrated DC-to-microwave step response. See the [microwave-resonator
+% ring-down study](https://arxiv.org/abs/1505.06863) for the time-domain connection between decay
+% and quality factor.
 
 % %%
 if has_rf

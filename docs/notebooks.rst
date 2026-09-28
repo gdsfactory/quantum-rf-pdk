@@ -269,12 +269,11 @@ primary tooling lives in another environment.
   built-in Python interface (`py.module.function(...)`). Demonstrates GDS generation,
   parameter sweeps over `resonator_frequency`, inverse design with `fzero`, and a
   parametric chip variant grid summarised in a MATLAB `table`. It then exports SAX
-  models as Touchstone files with ``sax.write_sdict_touchstone`` and
-  consumes them from MATLAB's `RF Toolbox
-  <https://se.mathworks.com/help/rf/index.html>`_ as ``sparameters``/``nport`` boxes —
-  Smith charts, cascades in a ``circuit``, rational fitting and transient
-  response, and back into SAX with ``sax.read_sdict_touchstone``. Those
-  sections need the RF Toolbox and skip themselves when it is unavailable or when
+  models as Touchstone files with ``sax.write_sdict_touchstone`` and consumes them from
+  MATLAB's `RF Toolbox <https://se.mathworks.com/help/rf/index.html>`_ as
+  ``sparameters``/``nport`` boxes — Smith charts, cascades in a ``circuit``, rational
+  fitting and transient response, and back into SAX with ``sax.read_sdict_touchstone``.
+  Those sections need the RF Toolbox and skip themselves when it is unavailable or when
   ``QPDK_SKIP_RF_TOOLBOX`` is set; the rendered page shows a saved execution that had
   the toolbox available. The notebook uses the MATLAB Jupyter kernel from
   `jupyter-matlab-proxy <https://github.com/mathworks/jupyter-matlab-proxy>`_.
