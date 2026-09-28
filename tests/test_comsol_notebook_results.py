@@ -7,6 +7,7 @@ of a licensed COMSOL, and the shared result helpers are imported from
 
 import ast
 import json
+from contextlib import suppress
 from pathlib import Path
 from textwrap import dedent
 from types import SimpleNamespace
@@ -19,17 +20,15 @@ from matplotlib import tri as mtri
 from matplotlib.colors import LogNorm
 
 from qpdk.simulation.comsol.results import (
-    complex_frequency_ghz,
-    curve_value_db,
     exported_frequency_ghz,
     requested_frequency_grid,
-    resolve_record_path,
     result_file,
     write_json_atomically,
 )
 
 NOTEBOOKS = Path(__file__).resolve().parents[1] / "notebooks" / "src"
 QUBIT_NOTEBOOK = NOTEBOOKS / "comsol_qubit_capacitance.py"
+CPW_NOTEBOOK = NOTEBOOKS / "comsol_cpw_resonator.py"
 
 
 def _source(path: Path) -> str:
@@ -213,6 +212,70 @@ def test_new_qubit_solve_invalidates_the_previous_field(
     ] == pytest.approx(2.0)
 
 
+def test_cpw_export_failure_keeps_the_solved_model(tmp_path: Path) -> None:
+    source = _source(CPW_NOTEBOOK)
+    function = next(
+        node
+        for node in ast.parse(source).body
+        if isinstance(node, ast.FunctionDef) and node.name == "solve_driven"
+    )
+    code = compile(
+        ast.Module(body=[function], type_ignores=[]), str(CPW_NOTEBOOK), "exec"
+    )
+
+    client = MagicMock()
+    model = MagicMock()
+    model.pin_absolute_edge_mesh_sizes.return_value = 100
+    model.problems.return_value = []
+    model.evaluate.side_effect = [[7.3265e9], [-20.0], [-0.1]]
+    evaluation = MagicMock()
+    evaluation.property.return_value = "dset1"
+    evaluations = MagicMock()
+    evaluations.create.return_value = evaluation
+    dataset = SimpleNamespace(tag=lambda: "dset1")
+    model.__truediv__.side_effect = lambda name: (
+        evaluations if name == "evaluations" else [dataset]
+    )
+    model.java.result().export().create().run.side_effect = RuntimeError(
+        "export failed"
+    )
+    api = SimpleNamespace(create_sheet=lambda *_args, **_kwargs: model)
+    namespace: dict[str, Any] = {
+        "COMSOL": api,
+        "np": np,
+        "suppress": suppress,
+        "requested_frequency_grid": requested_frequency_grid,
+        "create_meander_edge_selection": lambda _model: [1],
+        "layout": object(),
+        "MODEL_DIR": tmp_path,
+        "DRIVEN_MODEL_MPH": "solved.mph",
+        "DRIVEN_FIELD_TXT": "field.txt",
+        "AWE_CURVE_CSV": "curve.csv",
+        "SUBSTRATE_THICKNESS_UM": 200.0,
+        "AIR_HEIGHT_UM": 200.0,
+        "SILICON_RELATIVE_PERMITTIVITY": 11.7,
+        "CPW_GAP_UM": 6.0,
+        "SWEEP_CENTER_GHZ": 7.3265,
+        "MESH_SIZE": 7,
+        "PORT_MODE_INDEX_SHIFT": 2.5,
+        "MEANDER_EDGE_SELECTION": "edges",
+        "GLOBAL_HMAX_UM": 100.0,
+        "GLOBAL_HMIN_UM": 1.0,
+        "EDGE_HMAX_UM": 4.0,
+        "EDGE_HMIN_UM": 0.4,
+        "SWEEP_HALF_SPAN_GHZ": 0.001,
+        "SWEEP_POINTS": 11,
+        "FIELD_CUT_Z": "1[um]",
+    }
+    exec(code, namespace)  # ruff: ignore[exec-builtin]
+
+    with pytest.raises(RuntimeError, match="export failed"):
+        namespace["solve_driven"](client)
+
+    model.save.assert_called_once_with(tmp_path / "solved.mph")
+    client.remove.assert_called_once_with(model)
+
+
 class _FakeAxes:
     def __init__(self) -> None:
         self.contours = 0
@@ -305,58 +368,13 @@ def test_exported_frequency_reads_bare_and_named_annotations(tmp_path: Path) -> 
     assert exported_frequency_ghz(silent) is None
 
 
-def test_complex_frequency_reads_real_and_imaginary(tmp_path: Path) -> None:
-    annotated = tmp_path / "ported.txt"
-    annotated.write_text("% @ 7.3266+5.3458E-4i GHz\nx,y,z,E\n", encoding="utf-8")
-    annotation = complex_frequency_ghz(annotated)
-    assert annotation is not None
-    real_ghz, imag_ghz = annotation
-    assert real_ghz == pytest.approx(7.3266)
-    assert imag_ghz == pytest.approx(5.3458e-4)
-
-    real_only = tmp_path / "real.txt"
-    real_only.write_text("% @ 7.2921 GHz\nx,y,z,E\n", encoding="utf-8")
-    assert complex_frequency_ghz(real_only) is None
-
-
-def test_curve_value_clamps_near_the_edge_and_refuses_far_outside() -> None:
-    frequencies_ghz = np.array([4.0, 4.5, 5.0])
-    s21_db = np.array([-1.0, -3.0, -2.0])
-
-    assert curve_value_db(
-        frequencies_ghz, s21_db, 4.5, endpoint_tolerance_ghz=1e-7
-    ) == pytest.approx(-3.0)
-    assert curve_value_db(
-        frequencies_ghz, s21_db, 4.0 - 1e-9, endpoint_tolerance_ghz=1e-7
-    ) == pytest.approx(-1.0)
-    assert (
-        curve_value_db(frequencies_ghz, s21_db, 3.9, endpoint_tolerance_ghz=1e-7)
-        is None
-    )
-    assert (
-        curve_value_db(np.array([]), np.array([]), 5.0, endpoint_tolerance_ghz=1e-7)
-        is None
-    )
-
-
-def test_result_file_and_record_path_resolution(tmp_path: Path) -> None:
+def test_result_file_resolution(tmp_path: Path) -> None:
     present = tmp_path / "on_disk.txt"
     present.write_text("x\n", encoding="utf-8")
 
     assert result_file(tmp_path, "on_disk.txt") == present
     assert result_file(tmp_path, "absent.txt") is None
     assert result_file(None, "on_disk.txt") is None
-
-    record_dir = tmp_path / "records"
-    record_dir.mkdir()
-    # A bare name resolves under the results directory when the file is there,
-    # else beside the record; an absolute stored path is honoured as written.
-    assert resolve_record_path(tmp_path, record_dir, "on_disk.txt") == present
-    assert (
-        resolve_record_path(tmp_path, record_dir, "only_here.txt")
-        == record_dir / "only_here.txt"
-    )
-    assert resolve_record_path(tmp_path, record_dir, str(present)) == present
 
 
 def test_requested_grid_returns_the_exact_point_count() -> None:

@@ -6,37 +6,13 @@ from types import SimpleNamespace
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from matplotlib import font_manager
-from matplotlib_inline import backend_inline
 
 from qpdk.simulation.comsol.plotting import (
-    apply_qpdk_style,
     draw_cut_plane_field,
     draw_layout_polygons,
-    prefer_svg_figures,
 )
 
 plt.switch_backend("Agg")
-
-
-def test_notebook_uses_the_checkout_plot_style(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(font_manager.fontManager, "ttflist", [])
-    with plt.rc_context():
-        assert Path(apply_qpdk_style()).name == "qpdk.mplstyle"
-        assert plt.rcParams["font.sans-serif"] == ["sans-serif"]
-
-
-def test_notebook_plot_style_has_a_portable_fallback(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def unavailable(_source: object) -> None:
-        raise OSError
-
-    monkeypatch.setattr(plt.style, "use", unavailable)
-    monkeypatch.setattr(font_manager.fontManager, "ttflist", [])
-    with plt.rc_context():
-        assert apply_qpdk_style() == "matplotlib defaults"
-        assert plt.rcParams["font.sans-serif"] == ["sans-serif"]
 
 
 def test_layout_plot_keeps_the_ground_holes_and_small_pads_visible() -> None:
@@ -93,13 +69,3 @@ def test_field_plot_rejects_a_crop_without_nodes(tmp_path: Path) -> None:
     np.savetxt(export, [[0, 0, 0, 1], [1, 0, 0, 2]])
     with pytest.raises(ValueError, match="No exported field nodes"):
         draw_cut_plane_field(export, "Outside", view_um=(10, 20, 10, 20))
-
-
-def test_notebook_requests_svg_output(monkeypatch: pytest.MonkeyPatch) -> None:
-    formats: list[str] = []
-    monkeypatch.setattr(
-        backend_inline, "set_matplotlib_formats", lambda *args: formats.extend(args)
-    )
-    prefer_svg_figures()
-    assert formats == ["svg", "png"]
-    assert plt.rcParams["svg.fonttype"] == "path"

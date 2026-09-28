@@ -66,6 +66,7 @@ __all__ = [
 ]
 
 
+# TODO(Python 3.15): lazy from-import of COMSOL (PEP 810) replaces this hook.
 def __getattr__(name: str) -> Any:
     """Import a public name that needs MPh only when it is asked for.
 

@@ -1,8 +1,8 @@
 """Matplotlib helpers shared by the COMSOL notebooks.
 
-Matplotlib, numpy, and the QPDK style only: importing this module needs neither
-MPh nor a COMSOL license, so the result cells still draw saved exports where no
-solver is installed.
+Matplotlib and numpy only: importing this module needs neither MPh nor a COMSOL
+license, so the result cells still draw saved exports where no solver is
+installed.
 """
 
 from __future__ import annotations
@@ -13,76 +13,9 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import axes as mpl_axes, font_manager
+from matplotlib import axes as mpl_axes
 from matplotlib.colors import LogNorm
 from matplotlib.patches import Polygon as MplPolygon
-
-from qpdk.config import PATH
-
-
-def _outfit_titles() -> None:
-    """Draw plot titles in Outfit bold, matching the documentation headings."""
-    original_set_title = mpl_axes.Axes.set_title
-
-    def _set_title(self: mpl_axes.Axes, *args: Any, **kwargs: Any) -> Any:
-        kwargs.setdefault("fontfamily", "Outfit")
-        kwargs.setdefault("fontweight", "bold")
-        return original_set_title(self, *args, **kwargs)
-
-    mpl_axes.Axes.set_title = _set_title
-
-
-def apply_qpdk_style() -> str:
-    """Apply the QPDK plot style, falling back to matplotlib's own defaults.
-
-    The style is ``docs/qpdk.mplstyle`` in a checkout and the installed ``qpdk``
-    style in a documentation environment; a downloaded notebook outside both
-    keeps matplotlib's defaults instead of failing. The documentation fonts are
-    used when they are installed, and matplotlib's bundled families otherwise.
-
-    Returns:
-        A short description of the style that was applied.
-    """
-    for source in (PATH.repo / "docs" / "qpdk.mplstyle", "qpdk"):
-        try:
-            plt.style.use(source)
-        except OSError:
-            continue
-        applied = str(source)
-        break
-    else:
-        applied = "matplotlib defaults"
-
-    installed = {font.name for font in font_manager.fontManager.ttflist}
-    plt.rcParams["font.sans-serif"] = [
-        name
-        for name in ("Inter", "Outfit", "DejaVu Sans", "Helvetica", "Arial")
-        if name in installed
-    ] + ["sans-serif"]
-    if "Outfit" in installed:
-        _outfit_titles()
-    return applied
-
-
-def prefer_svg_figures() -> None:
-    """Save every figure as SVG as well as PNG, so stored outputs stay vector.
-
-    The saved cell outputs are what the documentation renders, and both the HTML
-    and the Typst PDF build embed the SVG ahead of the PNG. The PNG is kept as a
-    fallback for a viewer that cannot render SVG, and text is written as paths so
-    the figures carry their own glyphs instead of relying on installed fonts.
-    Outside a notebook kernel there is no inline backend to configure, so a
-    plain script run keeps matplotlib's PNG default.
-    """
-    try:
-        # Ships with ipykernel, so it is present in a notebook kernel only.
-        from matplotlib_inline.backend_inline import (  # ruff: ignore[import-outside-top-level]
-            set_matplotlib_formats,
-        )
-    except ImportError:
-        return
-    plt.rcParams["svg.fonttype"] = "path"
-    set_matplotlib_formats("svg", "png")
 
 
 def draw_layout_polygons(ax: mpl_axes.Axes, polygons: Iterable[Any]) -> None:

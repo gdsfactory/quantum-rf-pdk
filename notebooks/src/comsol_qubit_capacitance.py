@@ -99,20 +99,19 @@ if "google.colab" in sys.modules:
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
+from matplotlib import axes as mpl_axes, font_manager
 from matplotlib.colors import LogNorm
 
 from qpdk import PDK
 from qpdk.cells.transmon import double_pad_transmon_with_bbox
+from qpdk.config import PATH
 from qpdk.simulation import prepare_comsol_layout
-from qpdk.simulation.comsol.plotting import (
-    apply_qpdk_style,
-    draw_layout_polygons,
-    prefer_svg_figures,
-)
+from qpdk.simulation.comsol.plotting import draw_layout_polygons
 from qpdk.simulation.comsol.results import (
     explain_missing_results,
     result_file,
@@ -132,9 +131,36 @@ PDK.activate()
 
 MPH_AVAILABLE = mph is not None
 
-prefer_svg_figures()
-STYLE_SOURCE = apply_qpdk_style()
-print("Plot style: QPDK" if STYLE_SOURCE != "matplotlib defaults" else STYLE_SOURCE)
+# The checkout stylesheet is absent from installed wheels.
+for _style in (PATH.docs / "qpdk.mplstyle", "qpdk"):
+    try:
+        plt.style.use(_style)
+    except OSError:
+        continue
+    break
+
+# Re-running setup must not wrap Axes.set_title again.
+if "Outfit" in {font.name for font in font_manager.fontManager.ttflist} and not getattr(
+    mpl_axes.Axes, "_qpdk_outfit_titles", False
+):
+    _original_set_title = mpl_axes.Axes.set_title
+
+    def _qpdk_set_title(self: mpl_axes.Axes, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("fontfamily", "Outfit")
+        kwargs.setdefault("fontweight", "bold")
+        return _original_set_title(self, *args, **kwargs)
+
+    mpl_axes.Axes.set_title = _qpdk_set_title
+    mpl_axes.Axes._qpdk_outfit_titles = True
+
+# Keep glyphs in the SVG for viewers without the documentation fonts.
+plt.rcParams["svg.fonttype"] = "path"
+try:
+    from matplotlib_inline.backend_inline import set_matplotlib_formats
+except ImportError:
+    pass
+else:
+    set_matplotlib_formats("svg", "png")
 
 # %% [markdown]
 # ## Build the transmon cell and an EM-only copy

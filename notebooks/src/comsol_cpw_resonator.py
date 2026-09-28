@@ -82,19 +82,20 @@ if "google.colab" in sys.modules:
 import os
 from contextlib import suppress
 from pathlib import Path
+from typing import Any
 
 import gdsfactory as gf
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import axes as mpl_axes, font_manager
 
 from qpdk import PDK
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
+from qpdk.config import PATH
 from qpdk.simulation import prepare_comsol_layout
 from qpdk.simulation.comsol.plotting import (
-    apply_qpdk_style,
     draw_cut_plane_field,
     draw_layout_polygons,
-    prefer_svg_figures,
 )
 from qpdk.simulation.comsol.results import (
     explain_missing_results,
@@ -117,9 +118,36 @@ except ImportError:
 
 PDK.activate()
 
-prefer_svg_figures()
-STYLE_SOURCE = apply_qpdk_style()
-print("Plot style: QPDK" if STYLE_SOURCE != "matplotlib defaults" else STYLE_SOURCE)
+# The checkout stylesheet is absent from installed wheels.
+for _style in (PATH.docs / "qpdk.mplstyle", "qpdk"):
+    try:
+        plt.style.use(_style)
+    except OSError:
+        continue
+    break
+
+# Re-running setup must not wrap Axes.set_title again.
+if "Outfit" in {font.name for font in font_manager.fontManager.ttflist} and not getattr(
+    mpl_axes.Axes, "_qpdk_outfit_titles", False
+):
+    _original_set_title = mpl_axes.Axes.set_title
+
+    def _qpdk_set_title(self: mpl_axes.Axes, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("fontfamily", "Outfit")
+        kwargs.setdefault("fontweight", "bold")
+        return _original_set_title(self, *args, **kwargs)
+
+    mpl_axes.Axes.set_title = _qpdk_set_title
+    mpl_axes.Axes._qpdk_outfit_titles = True
+
+# Keep glyphs in the SVG for viewers without the documentation fonts.
+plt.rcParams["svg.fonttype"] = "path"
+try:
+    from matplotlib_inline.backend_inline import set_matplotlib_formats
+except ImportError:
+    pass
+else:
+    set_matplotlib_formats("svg", "png")
 
 # %% [markdown]
 # ## Settings
@@ -398,9 +426,8 @@ def solve_driven(client) -> None:
         export.set("innerinput", "manual")
         export.set("solnum", "1")
         export.set("filename", str(MODEL_DIR / DRIVEN_FIELD_TXT))
-        export.run()
-
         model.save(MODEL_DIR / DRIVEN_MODEL_MPH)
+        export.run()
         print(
             f"Wrote {AWE_CURVE_CSV}, {DRIVEN_FIELD_TXT} at "
             f"{field_frequency_ghz:.6f} GHz, and "
