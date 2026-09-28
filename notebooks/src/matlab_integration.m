@@ -468,39 +468,31 @@ end
 %
 % ## Electrostatic FEM of an interdigital capacitor
 %
-% The sections above call qpdk for *models*. This one builds a small field solver in MATLAB instead.
-% MATLAB takes the interdigital capacitor (IDC) geometry and the layer stack from qpdk, then
-% extracts the capacitance matrix with a 3D electrostatic finite-element solve in the [Partial
-% Differential Equation Toolbox](https://se.mathworks.com/help/pde/index.html). The case mirrors the
-% [Elmer IDC notebook](elmer_capacitance_interdigital.ipynb): the same four-finger capacitor, with
-% the same 10 µm clearance to a grounded M1 frame and the same 90 µm lateral domain pad. The
-% substrate and vacuum are cut to 60 µm and 40 µm, as there.
+% Here MATLAB uses qpdk's interdigital capacitor (IDC) layout and layer stack for a 3D electrostatic
+% solve. The geometry matches the [Elmer IDC notebook](elmer_capacitance_interdigital.ipynb): four
+% fingers, a grounded M1 frame 10 µm away, a 90 µm lateral pad, and 60 µm of substrate below 40 µm
+% of vacuum.
 %
 % The solver finds the potential $\phi$ with $\nabla \cdot (\epsilon \nabla \phi) = 0$ in the
-% dielectrics. Each metal conductor is held at a fixed potential, and the outer faces of the box use
-% the natural zero-normal-flux condition, as in the Elmer run. Let $K$ be the assembled
-% finite-element stiffness matrix. Let $u_i$ be the nodal solution with terminal $i$ at 1 V and
-% every other conductor at 0 V. The Maxwell capacitance matrix is then the field energy form
+% dielectrics. The conductors have fixed potentials; the outer box has natural zero-flux boundaries.
+% For the assembled stiffness matrix $K$, let $u_i$ be the nodal solution with terminal $i$ at 1 V
+% and the other conductors grounded. The discrete field energy gives the Maxwell capacitance matrix
+% {cite:p}`jinFiniteElementMethod2014`:
 %
 % $$ C_{ij} = \epsilon_0 \, u_i^\mathsf{T} K u_j , $$
 %
-% which is symmetric and exact for the discretisation. The off-diagonal entry is negative. As in the
-% Elmer notebook, the mutual capacitance is $-C_{12}$ and each terminal's ground capacitance is its
-% row sum.
+% Its off-diagonal entry is negative: mutual capacitance is $-C_{12}$, and each terminal's ground
+% capacitance is its row sum.
 %
-% Two modelling differences from Elmer should be kept in mind when comparing numbers:
+% The comparison with Elmer has two limits:
 %
-% - **The 200 nm Nb film is a zero-thickness sheet** at the substrate surface. A volumetric
-%   film would force the mesh to resolve 0.2 µm near the metal. The sheet drops the finger
-%   sidewalls, so exact agreement with Elmer is not expected.
+% - The 200 nm Nb film is a zero-thickness sheet, so finger sidewalls are absent.
 %
-% - **Quadratic tetrahedra and a coarser mesh.** The saved Elmer study uses cubic elements with
-%   0.125 µm terminal resolution. This refinement study shows a trend, not a converged value.
-%   Close agreement between two finite meshes alone is not an error bound.
+% - This study uses quadratic tetrahedra; Elmer uses cubic elements and a finer terminal mesh.
+%   Agreement between finite meshes is not an error bound.
 %
-% This section needs the PDE Toolbox and MATLAB R2024a or newer, for `fegeometry` and
-% `assembleFEMatrices` on an `femodel`. Like the RF sections, it detects both at run time. Setting
-% `QPDK_SKIP_PDE_TOOLBOX=1` skips it unconditionally, and CI does that.
+% This section needs PDE Toolbox and MATLAB R2024a or newer. Set `QPDK_SKIP_PDE_TOOLBOX=1` to skip
+% it; CI does this.
 
 % %%
 pde_env = getenv('QPDK_SKIP_PDE_TOOLBOX');
@@ -529,39 +521,19 @@ end
 %
 % ### Geometry and layer stack from qpdk
 %
-% [`pyrun`](https://se.mathworks.com/help/matlab/ref/pyrun.html) runs a short Python snippet and
-% returns selected variables. The snippet builds `interdigital_capacitor` without its local etch
-% box, so the two combs remain separate conductors. It then merges each comb into one outline and
-% labels it by the port it carries. The substrate permittivity comes from
-% `qpdk.tech.material_properties` through the material named in `PDK.layer_stack`. The M1 film
-% thickness also comes from there, although the sheet model only reports it.
+% `qpdk.simulation.matlab.interdigital_capacitor_fem_geometry` returns the two metal outlines in
+% port order, the layout bounds, and material values from the PDK layer stack. The IDC has no local
+% etch box so its combs remain separate conductors.
 %
 % The grounded frame and the domain outline are plain rectangles around the capacitor bounding box.
 % They are drawn in MATLAB with the same offsets that the Elmer notebook uses.
 
 % %%
 idc_code = strjoin([
-    "import gdsfactory as gf"
-    "import numpy as np"
-    "from qpdk.cells.capacitor import interdigital_capacitor"
-    "from qpdk.tech import LAYER, material_properties"
-    "idc = interdigital_capacitor(fingers=int(fingers), finger_length=finger_length,"
-    "    finger_gap=finger_gap, thickness=finger_width, etch_layer=None)"
-    "metal = gf.kdb.Region(idc.begin_shapes_rec(idc.kcl.layer(*LAYER.M1_DRAW))).merged()"
-    "combs = [None] * len(idc.ports)"
-    "for polygon in metal.each():"
-    "    hull = polygon.to_dtype(idc.kcl.dbu)"
-    "    xy = np.array([(p.x, p.y) for p in hull.each_point_hull()])"
-    "    for k, port in enumerate(idc.ports):"
-    "        if hull.bbox().enlarged(1e-3, 1e-3).contains(gf.kdb.DPoint(*port.center)):"
-    "            combs[k] = xy"
-    "box = idc.dbbox()"
-    "bbox = np.array([box.left, box.bottom, box.right, box.top])"
-    "stack = PDK.layer_stack.layers"
-    "metal_thickness = float(stack['M1'].thickness)"
-    "eps_r = {name: props['relative_permittivity'] for name, props in material_properties.items()}"
-    "eps_substrate = float(eps_r[stack['Substrate'].material])"
-    "eps_vacuum = float(eps_r[stack['Vacuum'].material])"
+    "from qpdk.simulation.matlab import interdigital_capacitor_fem_geometry"
+    "combs, bbox, metal_thickness, eps_substrate, eps_vacuum = interdigital_capacitor_fem_geometry("
+    "    PDK, fingers=int(fingers), finger_length=finger_length, finger_gap=finger_gap,"
+    "    finger_width=finger_width)"
     ], newline);
 
 if has_pde
@@ -595,13 +567,9 @@ end
 %
 % ### Build the layered 3D geometry
 %
-% The planar layout is assembled with [`decsg`](https://se.mathworks.com/help/pde/ug/decsg.html).
-% Its regions are the domain, the ground frame (outer rectangle minus inner rectangle), and the two
-% combs. `decsg` keeps the boundary of each region, so every metal outline becomes its own face.
-% `extrude` stacks a substrate layer and a vacuum layer on that planar geometry. The metal faces
-% then lie on the internal interface at $z = 0$, where the mesh conforms to them. A point inside
-% each metal outline, from a `polyshape` triangulation, identifies the matching 3D face through
-% `nearestFace`.
+% `decsg` combines the domain, ground frame, and two combs while preserving conductor outlines.
+% `extrude` places them on the substrate-vacuum interface at $z=0$. An interior point of each
+% outline identifies its 3D face with `nearestFace`.
 
 % %%
 if has_pde
@@ -638,24 +606,15 @@ end
 %
 % ### Solve and extract the capacitance matrix
 %
-% Each pass meshes the geometry and assembles the stiffness matrix $K$ with
-% `assembleFEMatrices(model, "none")`, which applies no boundary conditions. It then eliminates the
-% conductor nodes itself. The nodes on each metal outline at $z = 0$ are fixed at the conductor
-% voltages, and the free nodes solve $K_{ff} u_f = -K_{fc} u_c$ for both excitations at once.
-% Because `VacuumPermittivity` is set to 1, $K$ carries only $\epsilon_\text{r}$. Multiplying by
-% $\epsilon_0 \times 10^{-6}$ converts from lengths in µm to farads.
+% Each pass refines the conductor faces and assembles $K$ without boundary conditions using
+% `assembleFEMatrices(fem, "none")` {cite:p}`mathworksAssembleFEMatrices`. We fix the conductor
+% nodes and solve $K_{ff}u_f=-K_{fc}u_c$ for both excitations with one sparse factorisation,
+% following the standard Dirichlet elimination {cite:p}`jinFiniteElementMethod2014`.
+% `VacuumPermittivity=1` leaves only $\epsilon_\text{r}$ in $K$; multiplying by
+% $\epsilon_0\times10^{-6}$ converts micrometres to farads.
 %
-% Doing the elimination by hand, rather than with `FaceBC` voltages and `solve`, has two advantages.
-% It avoids relying on Dirichlet conditions on internal faces, and it turns both excitations into
-% one sparse factorisation and a quadratic form.
-%
-% The mesh is refined on the terminal faces and less so on the ground frame. `mesh_factor` scales
-% every target size together, as `mesh_parameters_for_factor` does in the Elmer notebook, and
-% smaller values are finer. Each pass remeshes independently and reuses nothing. The quantity
-% printed for every pass is the largest relative change among the mutual and the two ground
-% capacitances from the previous pass. As in the Elmer notebook, this refinement check is *not* a
-% bound on the absolute error. The saved run reached about 454,000 nodes at the finest pass and used
-% about 8 GB of memory; drop the last factor if that is too much.
+% Each pass remeshes independently. The table reports the largest relative change in the mutual and
+% ground capacitances between passes. This is a refinement check, not an absolute error bound.
 
 % %%
 eps0 = 8.8541878128e-12;  % F/m
@@ -754,7 +713,7 @@ if has_pde
     ylabel('Capacitance (fF)');
     lgd = legend('o1-o2 mutual', 'o1-ground', 'o2-ground', 'Location', 'best');
     lgd.Box = 'off';
-    title('PDE Toolbox mesh refinement');
+    title('PDE Toolbox mesh refinement', 'FontName', 'Outfit');
     nexttile;
     plot(2:numel(mesh_factors), 100 * max_change(2:end), '--s', ...
         Color=plot_colors(1, :));
@@ -785,7 +744,7 @@ if has_pde
     axis equal; xlim([-25 25]); ylim([-20 20]);
     xlabel('x (\mum)'); ylabel('y (\mum)');
     title(sprintf('Interface mesh at z = 0, %.2f µm terminal target', ...
-        mesh_lengths_um.terminal * mesh_factors(end)));
+        mesh_lengths_um.terminal * mesh_factors(end)), 'FontName', 'Outfit');
 end
 
 % %% [markdown]
@@ -814,7 +773,7 @@ if has_pde
     end
     hold off;
     xlabel('x (\mum)'); ylabel('y (\mum)');
-    title('Potential (V) at z = 0.5 \mum, o1 at 1 V');
+    title('Potential (V) at z = 0.5 \mum, o1 at 1 V', 'FontName', 'Outfit');
 end
 
 % %% tags=["hide-input", "hide-output"]
