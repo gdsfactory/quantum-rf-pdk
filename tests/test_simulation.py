@@ -219,11 +219,19 @@ def test_to_fem_regions_rejects_fully_etched_area():
         to_fem_regions(component)
 
 
-def test_fem_layers_do_not_collide_with_mask_layers():
-    """FEM regions must not land on real mask layers (M1_DRAW is (1,0) ...)."""
+@pytest.mark.parametrize(
+    "fem_layers",
+    [
+        pytest.param(FEM_LAYERS, id="single_chip"),
+        pytest.param(FLIP_CHIP_FEM_LAYERS, id="flip_chip"),
+        pytest.param(TSV_FEM_LAYERS, id="tsv"),
+    ],
+)
+def test_fem_layers_do_not_collide_with_mask_layers(fem_layers):
+    """FEM regions must not land on real mask layers."""
     mask_layers = {tuple(layer) for layer in LAYER}
     assert mask_layers, "no mask layers found; the check would be vacuous"
-    for name, layer in {**FEM_LAYERS, **FLIP_CHIP_FEM_LAYERS, **TSV_FEM_LAYERS}.items():
+    for name, layer in fem_layers.items():
         assert layer not in mask_layers, f"{name} collides with a mask layer"
 
 
