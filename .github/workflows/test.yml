@@ -89,7 +89,7 @@ jobs:
           merge-multiple: true
       - parallel:
           - name: Upload code coverage to GitHub
-            uses: actions/upload-code-coverage@d8e329117199404bba6fc81efe8093dc7c015e34 # v1
+            uses: actions/upload-code-coverage@d8e329117199404bba6fc81efe8093dc7c015e34 # v1.4.2
             with:
               file: coverage.xml
               language: Python
