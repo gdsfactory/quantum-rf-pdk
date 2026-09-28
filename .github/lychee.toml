@@ -25,6 +25,8 @@ exclude = [
   "https?://urn.fi/.*",
   # KLayout homepage rejects some automated checks with 415 in CI
   "https://www.klayout.de/",
+  # PyPI project pages intermittently return 503 to CI link checks
+  "pypi\\.org/project/qpdk/",
   # Generated PDF can be unavailable while GitHub Pages deploys it
   "https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf",
   # VS Code Marketplace gallery API (POST-only; rejects lychee's GET with 405)

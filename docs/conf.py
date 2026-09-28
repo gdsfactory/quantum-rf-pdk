@@ -132,11 +132,13 @@ mathjax4_config = {
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
-# Exclude HFSS notebooks from execution as they depend on Ansys HFSS
-# (proprietary/licensed software) and can be slow or impossible to run
-# in typical documentation build environments.
+# Exclude the notebooks that drive external solvers from execution: Ansys HFSS
+# (proprietary/licensed) and Elmer FEM (``ElmerGrid``/``ElmerSolver`` on PATH), plus
+# MATLAB. These can be slow or impossible to run in typical documentation build
+# environments.
 nb_execution_excludepatterns = [
     "notebooks/hfss*",
+    "notebooks/elmer*",
     "notebooks/matlab_integration*",
 ]
 nb_execution_timeout = -1

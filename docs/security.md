@@ -25,7 +25,7 @@ disclosure.
 ### Direct Contact
 
 If you prefer, you may contact the maintainers directly via the email addresses listed in the project's
-[PyPI page](https://pypi.org/p/qpdk) or in `pyproject.toml`
+[PyPI page](https://pypi.org/project/qpdk/) or in `pyproject.toml`
 
 ## What to Include
 

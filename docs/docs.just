@@ -132,7 +132,7 @@ write-llms-txt:
 
 # Notebooks that should be copied as .ipynb because they have precalculated outputs
 # (These will have their .py counterparts removed if they exist to force MyST-NB to use .ipynb)
-precalculated_notebooks := "hfss_*.ipynb matlab_integration.ipynb"
+precalculated_notebooks := "hfss_*.ipynb elmer_capacitance_interdigital.ipynb matlab_integration.ipynb"
 
 # Copy all sample scripts and notebooks to use as documentation
 [private]
