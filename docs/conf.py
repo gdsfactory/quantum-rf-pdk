@@ -3,6 +3,7 @@
 import json
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from html import escape
@@ -323,6 +324,30 @@ def _rename_ipython_fences(root):
         typ_path.write_text(src.replace("```ipython3", "```python"))
 
 
+def _source_version():
+    """Return the git tag at HEAD, else the short commit hash, else ``""``.
+
+    Shown on the PDF cover so a downloaded copy can be traced back to the
+    source it was built from.
+    """
+
+    def git(*args):
+        try:
+            out = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+                ["git", *args],
+                cwd=Path(__file__).parent,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout
+        except (OSError, subprocess.CalledProcessError):
+            return ""
+        return out.strip()
+
+    tags = git("tag", "--points-at", "HEAD", "--sort=-v:refname").splitlines()
+    return tags[0] if tags else git("rev-parse", "--short=12", "HEAD")
+
+
 def _stage_template_assets(root):
     """Copy template-referenced docs/_static assets into the template bundle."""
     # These files live in docs/_static/ but are referenced only by the
@@ -336,6 +361,7 @@ def _stage_template_assets(root):
             shutil.copy(
                 Path(__file__).parent / "_static" / name, bundle / Path(name).name
             )
+        (bundle / "version.txt").write_text(_source_version())
 
 
 # Text column is 164mm wide (A4 minus the template margins); keep a hair of

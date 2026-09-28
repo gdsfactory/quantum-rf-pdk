@@ -215,8 +215,18 @@
     block[Superconducting Quantum Process Design Kit]
     v(1fr)
     set text(font: body-font, size: 10pt, fill: muted)
-    block[#authors.join(", ")]
-    if date != none and date != "" { block[#date] }
+    // Tag (or short commit hash) the PDF was built from, bottom right.
+    // docs/conf.py writes version.txt into the bundle next to this copy.
+    let version = read("version.txt").trim()
+    grid(
+      columns: (1fr, auto),
+      align: (left + bottom, right + bottom),
+      {
+        block[#authors.join(", ")]
+        if date != none and date != "" { block[#date] }
+      },
+      if version != "" { block[#version] },
+    )
   })
   counter(page).update(1)
 
