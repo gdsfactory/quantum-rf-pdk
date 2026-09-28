@@ -16,6 +16,9 @@ applyTo: "pyproject.toml,uv.lock,Dockerfile,.pre-commit-config.yaml"
   (`dev`, `lint`, `test`, `docs`, `docs-models`, `stubs`, `github`).
 - A package added to an extra that is heavy or optional should usually also be added to ruff's
   `[tool.ruff.lint.flake8-tidy-imports] require-lazy` list, so it stays lazily imported.
+- Raising the `requires-python` floor unblocks every `# TODO(Python 3.X)` marker at or below the new minimum. Check the
+  PR resolves them (`rg "TODO\(Python"`) or says why not. The CI matrix is derived from `requires-python`, so it moves
+  on its own.
 - `gdsfactory` is pinned with a compatible-release specifier (`~=`). Bumping it commonly shifts GDS regression
   references — check the PR regenerates them and says so.
 - Version numbers are checked by the `check-version-sync` hook: `pyproject.toml`, `qpdk/__init__.py` and `README.md`

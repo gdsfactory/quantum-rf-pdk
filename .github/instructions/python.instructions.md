@@ -76,6 +76,43 @@ def simulate() -> None:
 Flag any of them appearing in a module-level import block. Guard the import behind a clear error message if the extra
 may not be installed (`uv sync --extra models`).
 
+## Modernization
+
+The supported range is `requires-python` in `pyproject.toml` (currently 3.12–3.14). Review new or changed code for
+idioms that range already allows, and for ones it does not yet allow:
+
+- **Available now — suggest it.** Ruff's `UP` (pyupgrade) rules already rewrite the mechanical cases — `Optional`/
+  `Union`, `typing.List`/`Dict`, `typing` vs `collections.abc`, PEP 695 type parameters, dead `sys.version_info`
+  branches — so do not repeat them. Flag what a linter cannot see: hand-rolled equivalents of `itertools.batched`,
+  `itertools.pairwise`, `functools.cache`, `contextlib.chdir`, `typing.override`, `typing.Self`, or `match`; `os.path`
+  string juggling where `pathlib` is clearer; and `typing_extensions` imports of names `typing` already has at the
+  floor.
+
+- **Blocked by the floor — ask for a marker.** When a newer Python would delete a workaround but the minimum version
+  rules it out, the code should carry a one-line marker next to the workaround (two lines at most), as `AGENTS.md`
+  requires:
+
+  ```python
+  # TODO(Python 3.13): @warnings.deprecated (PEP 702) - replaces this, and type checkers flag call sites statically.
+  def deprecated(msg: str | Callable | None = None) -> Any: ...
+  ```
+
+  If a PR adds or touches such a workaround without the marker, suggest the exact comment, with the version, the feature
+  (and PEP where there is one), and what to change. `rg "TODO\(Python"` is how the cleanups are found when the floor
+  moves, so an unmarked workaround is one nobody removes.
+
+- **Check existing markers.** Flag a `TODO(Python 3.X)` whose version is at or below the current floor — the upgrade is
+  no longer blocked and should be done, not left as a comment. Flag a malformed marker (missing version, feature, or
+  action) and one that cites a feature from the wrong release.
+
+- **Do not suggest syntax above the floor.** Code must run on every version in the range; suggesting e.g. PEP 810
+  `lazy import` or PEP 758 unparenthesized `except` in live code is a bug while 3.12 is supported. Do not ask for a
+  marker on a swap that would change behaviour — for example a deferred optional import wrapped in
+  `try/except ModuleNotFoundError`, where `lazy import` would move the failure past the handler.
+
+Keep these comments low priority: one comment per pattern, never above correctness, breaking-change, or test findings,
+and only on code the PR adds or touches.
+
 ## Security
 
 - `flake8-bandit` (`S`) is enabled. Flag `subprocess` calls built from untrusted input, `eval`/`exec`, and hard-coded

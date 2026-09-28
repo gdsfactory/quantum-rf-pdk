@@ -98,6 +98,8 @@ Comment on these in roughly this order, and stay quiet about the rest:
 1. **Missing tests** for new public behaviour.
 1. **Missing or wrong docstrings** on new public API — `interrogate` fails CI at anything under 100% coverage.
 1. **Security**, per the rules in the path-specific files.
+1. **Modernization**, per `python.instructions.md`: idioms the supported Python range already allows, and a
+   `# TODO(Python 3.X): <feature> - <what to change>` marker on workarounds a newer Python would delete.
 
 ## Cross-cutting rules
 
