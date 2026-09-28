@@ -9,6 +9,7 @@ from numpy.testing import assert_allclose
 
 from qpdk.models.constants import c_0
 from qpdk.models.cpw import (
+    cbcpw_parameters,
     cpw_epsilon_eff,
     cpw_parameters,
     cpw_thickness_correction,
@@ -331,3 +332,48 @@ class TestGetCpwDimensions:
         )
         with pytest.raises(ValueError, match="etch gap"):
             get_cpw_dimensions(xs)
+
+
+class TestConductorBackedCPW:
+    """Tests for the conductor-backed CPW model."""
+
+    @staticmethod
+    def test_thick_substrate_reduces_to_cpw() -> None:
+        """For h >> w + 2s the backside metal has no effect."""
+        w, s, t, ep_r = 10e-6, 6e-6, 0.2e-6, 11.45
+        ep_eff_cb, z0_cb = cbcpw_parameters(w, s, 1.0, t, ep_r)
+        ep_eff, z0 = cpw_thickness_correction(w, s, t, cpw_epsilon_eff(w, s, 1.0, ep_r))
+        assert_allclose(float(ep_eff_cb), float(ep_eff), rtol=1e-6)
+        assert_allclose(float(z0_cb), float(z0), rtol=1e-6)
+
+    @staticmethod
+    def test_backside_metal_lowers_impedance() -> None:
+        """A backside ground adds capacitance, so Z0 drops for wide lines."""
+        w, s, t, ep_r = 100e-6, 60e-6, 0.2e-6, 11.45
+        _, z0_thick = cbcpw_parameters(w, s, 1.0, t, ep_r)
+        _, z0_thin = cbcpw_parameters(w, s, 200e-6, t, ep_r)
+        assert float(z0_thin) < float(z0_thick)
+
+    @staticmethod
+    def test_jittable() -> None:
+        """The model traces under jax.jit and matches the eager result."""
+        args = (40e-6, 24e-6, 200e-6, 0.2e-6, 11.45)
+        eager = cbcpw_parameters(*args)
+        jitted = jax.jit(cbcpw_parameters)(*args)
+        assert_allclose(jnp.array(jitted), jnp.array(eager), rtol=1e-12)
+
+    @staticmethod
+    def test_cpw_parameters_toggle() -> None:
+        """``conductor_backed`` switches to the conductor-backed model."""
+        _, z0 = cpw_parameters(100.0, 60.0)
+        _, z0_cb = cpw_parameters(100.0, 60.0, conductor_backed=True)
+        assert float(z0_cb) != pytest.approx(float(z0))
+
+    @staticmethod
+    def test_straight_toggle() -> None:
+        """The straight model forwards ``conductor_backed``."""
+        f = jnp.array([5e9])
+        xs = coplanar_waveguide(width=100.0, gap=60.0)
+        s = straight(f=f, length=1000.0, cross_section=xs)
+        s_cb = straight(f=f, length=1000.0, cross_section=xs, conductor_backed=True)
+        assert not jnp.allclose(s["o1", "o2"], s_cb["o1", "o2"])

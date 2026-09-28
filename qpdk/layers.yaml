@@ -25,6 +25,18 @@ LayerViews:
         hatch_pattern: dotted
         width: 1
         color: "#FE5F55"
+      MB_DRAW:
+        layer: [3, 0]
+        layer_in_name: true
+        width: 1
+        hatch_pattern: lightly left-hatched
+        color: "#C9B6F2"
+      MB_ETCH:
+        layer: [3, 1]
+        layer_in_name: true
+        hatch_pattern: dotted
+        width: 1
+        color: "#8E6FD8"
   Airbridge:
     hatch_pattern: lightly right-hatched
     group_members:

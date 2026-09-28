@@ -1,5 +1,5 @@
 info: {}
-name: tsv_D15
+name: tsv_W10_L20_PM2_LTSV_LPTM1_DRAW_LPBMB_DRAW
 ports:
   center:
     center:
@@ -9,6 +9,11 @@ ports:
     name: center
     orientation: 0
     port_type: placement
-    width: 15
+    width: 10
 settings:
-  diameter: 15
+  layer: TSV
+  layer_pad_bottom: MB_DRAW
+  layer_pad_top: M1_DRAW
+  length: 20
+  pad_margin: 2
+  width: 10
