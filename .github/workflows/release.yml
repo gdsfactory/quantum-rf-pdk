@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/qpdk
+      url: https://pypi.org/project/qpdk/
     permissions:
       id-token: write
     steps:
