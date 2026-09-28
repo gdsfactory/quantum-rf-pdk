@@ -251,6 +251,8 @@ filterwarnings = [
   # Equinox uses deprecated JAX core internals; nothing we can fix upstream
   "ignore:jax\\.core\\.mapped_aval is deprecated:DeprecationWarning",
   "ignore:jax\\.core\\.unmapped_aval is deprecated:DeprecationWarning",
+  # Collecting qpdk/ imports the pre-ansys alias modules; their own test checks the warning.
+  "ignore:qpdk\\.simulation\\.[a-z0-9_]+ is deprecated:DeprecationWarning",
 ]
 markers = [
   "gfp: mark test as requiring GDSFactory+ (gdsfactoryplus)",

@@ -20,7 +20,7 @@ from numpy.testing import assert_allclose
 from qpdk import LAYER, LAYER_STACK, PDK, logger
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.resonator import resonator
-from qpdk.simulation import (
+from qpdk.simulation.ansys import (
     HFSS,
     Q2D,
     Q3D,
@@ -31,7 +31,7 @@ from qpdk.simulation import (
     object_names_to_materials,
     prepare_component_for_aedt,
 )
-from qpdk.simulation.aedt_base import (
+from qpdk.simulation.ansys.base import (
     _first_real_value,
     _get_layer_number_from_level,
     export_component_to_gds_temp,
