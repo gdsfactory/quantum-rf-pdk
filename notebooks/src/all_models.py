@@ -8,7 +8,7 @@
 #       jupytext_version: 1.19.1
 # ---
 
-# %% tags=["remove-cell"]
+# %% [raw] tags=["remove-cell"]
 # /// script
 # requires-python = ">=3.12,<3.15"
 # dependencies = [

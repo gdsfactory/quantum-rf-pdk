@@ -16,8 +16,13 @@ files at `notebooks/` are produced by `just convert-notebooks` (via the `convert
   simulation approach; adding or removing a notebook requires updating it.
 - A notebook needing external tooling (Elmer, HFSS, MATLAB) that is not listed in `nb_execution_excludepatterns` in
   `docs/conf.py` — the docs build will try to execute it and fail.
-- A missing first cell with the Google Colab install snippet tagged `tags=["hide-input", "hide-output"]`, so the
+- A missing first code cell with the Google Colab install snippet tagged `tags=["hide-input", "hide-output"]`, so the
   notebook runs online without cluttering the rendered docs.
+- A notebook source without a [PEP 723](https://peps.python.org/pep-0723/) inline script metadata cell directly after
+  the jupytext header, or one whose `dependencies` have drifted from the Colab install cell. The cell must be
+  `# %% [raw] tags=["remove-cell"]` followed by the `# /// script` block, so `uv run --script` can read it, the docs
+  hide it, and the pre-executed notebooks gain no unexecuted code cell. A code cell, or a block placed before the
+  jupytext header, is wrong.
 - Committed cell outputs. `nbstripout` strips them, except for the pre-executed Elmer notebook
   (`elmer_capacitance_interdigital`) and HFSS notebooks (`hfss_driven_capacitor`, `hfss_eigenmode_resonator`,
   `hfss_q2d_cpw_impedance`), which intentionally keep theirs.

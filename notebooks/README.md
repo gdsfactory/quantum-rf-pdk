@@ -31,8 +31,8 @@ can also be run directly without a project environment:
 uv run --script src/<script>.py
 ```
 
-The metadata lives in a cell tagged `remove-cell`, which keeps it out of the rendered documentation. Keep its dependency
-list in sync with the notebook's Google Colab install cell.
+The metadata lives in a raw cell tagged `remove-cell`, which keeps it out of the rendered documentation. Keep its
+dependency list in sync with the notebook's Google Colab install cell.
 
 ## Documentation figures
 
