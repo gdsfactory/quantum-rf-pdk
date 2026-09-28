@@ -22,9 +22,9 @@
 # pip install "qpdk[models]" "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@c3372b97a50cda44043603f80c955edcf028a7fb"
 # ```
 #
-# The Elmer driver changes are currently in the companion
-# [gplugins pull request](https://github.com/gdsfactory/gplugins/pull/781); the install
-# commands pin the revision tested with this notebook until a release includes it.
+# The driver was merged in [gplugins PR #781](https://github.com/gdsfactory/gplugins/pull/781).
+# These commands pin the revision used for the saved result until a release includes
+# the `elmer` extra.
 #
 # **Elmer is an external solver.** `ElmerGrid` and `ElmerSolver` must be available on your
 # `PATH`; `ElmerSolver_mpi` is also needed when `QPDK_ELMER_PROCESSES` exceeds 1. They

@@ -409,7 +409,7 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
     - - :doc:`notebooks/elmer_capacitance_interdigital`
       - FEM electromagnetics
       - Elmer, meshwell
-      - ``models`` (+ ``gplugins[elmer]``)
+      - ``models`` (+ ``gplugins[elmer]`` from Git until release)
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
