@@ -42,6 +42,9 @@
 %   uv pip install "qpdk[models]"
 %   ```
 %
+%   Until the SAX Touchstone helpers are released upstream, use `uv sync --extra models` from this
+%   checkout so the pinned SAX fork commit is installed.
+%
 % - MATLAB R2024a or newer (older releases may also work with `pyenv`).
 %
 % - `jupyter-matlab-proxy` installed alongside Jupyter:
@@ -87,7 +90,7 @@ if isempty(qpdk_python)
 end
 
 pe = pyenv('Version', qpdk_python, 'ExecutionMode', 'OutOfProcess');
-disp(pe);
+fprintf('Python %s (%s)\n', string(pe.Version), string(pe.ExecutionMode));
 
 % MATLAB parses ``py.qpdk.PDK`` as a function reference (PDK is a module variable, not a callable),
 % so we fetch the attribute explicitly via py.getattr — see the *Limitations to Indexing into Python
@@ -96,6 +99,20 @@ qpdk_mod = py.importlib.import_module('qpdk');
 PDK = py.getattr(qpdk_mod, 'PDK');
 PDK.activate();
 fprintf('Activated PDK: %s\n', string(py.getattr(PDK, 'name')));
+sax_mod = py.importlib.import_module('sax');
+
+% Match the white background, Inter labels, light dashed grid, and line palette in docs/qpdk.mplstyle.
+plot_font = 'Arial';
+if any(strcmpi(listfonts, 'Inter'))
+    plot_font = 'Inter';
+end
+plot_colors = [31 119 180; 255 127 14; 44 160 44; 214 39 40; 148 103 189] / 255;
+set(groot, 'defaultFigureColor', 'w', 'defaultAxesColor', 'w', ...
+    'defaultAxesFontName', plot_font, 'defaultAxesFontSize', 10, ...
+    'defaultAxesLineWidth', 1.2, 'defaultAxesXGrid', 'on', ...
+    'defaultAxesYGrid', 'on', 'defaultAxesGridAlpha', 0.3, ...
+    'defaultAxesGridLineStyle', '--', 'defaultAxesColorOrder', plot_colors, ...
+    'defaultLineLineWidth', 1.5);
 
 % %% [markdown]
 %
@@ -215,11 +232,9 @@ disp(T);
 % elements in a `circuit`, plots on a Smith chart, gets rational-fitted for a transient response,
 % and can be written back out with `rfwrite`.
 %
-% Touchstone is the bridge rather than a direct array hand-off because it is lossless for this
-% purpose, needs no complex-array marshalling between the two languages, and produces a file that
-% any other RF tool can read too. `qpdk.models.touchstone.write_touchstone` does the export and
-% `qpdk.models.touchstone.read_touchstone` the import, both written straight against the Touchstone
-% grammar with NumPy alone, so no extra RF package is pulled in on the Python side.
+% Touchstone avoids manual complex-array marshalling between the two languages and produces a file
+% that other RF tools can read too. SAX's `write_sdict_touchstone` exports model results directly;
+% `read_sdict_touchstone` brings a MATLAB-written file back into a SAX S-dictionary.
 
 % %% [markdown]
 %
@@ -227,7 +242,7 @@ disp(T);
 %
 % Two exports, both driven from MATLAB. The frequency grid is built with `linspace` in MATLAB and
 % pushed into Python with `py.numpy.asarray`, so the *same* vector is used to evaluate the model and
-% to label the Touchstone file — `write_touchstone` rejects a mismatch rather than silently
+% to label the Touchstone file — `write_sdict_touchstone` rejects a mismatch rather than silently
 % misaligning the sweep.
 %
 % - A coplanar-waveguide `straight`, at 1 mm and 2 mm, is a two-port: `.s2p`.
@@ -241,10 +256,10 @@ freq_py = py.numpy.asarray(freq_matlab);
 
 s2p_1mm = fullfile(results_dir, 'cpw_1mm.s2p');
 s2p_2mm = fullfile(results_dir, 'cpw_2mm.s2p');
-py.qpdk.models.touchstone.write_touchstone( ...
+sax_mod.write_sdict_touchstone( ...
     py.qpdk.models.waveguides.straight(pyargs('f', freq_py, 'length', 1000)), ...
     freq_py, s2p_1mm);
-py.qpdk.models.touchstone.write_touchstone( ...
+sax_mod.write_sdict_touchstone( ...
     py.qpdk.models.waveguides.straight(pyargs('f', freq_py, 'length', 2000)), ...
     freq_py, s2p_2mm);
 
@@ -252,7 +267,7 @@ py.qpdk.models.touchstone.write_touchstone( ...
 freq_res = linspace(6.5e9, 8.0e9, 3001);
 freq_res_py = py.numpy.asarray(freq_res);
 s3p_res = fullfile(results_dir, 'resonator_coupled.s3p');
-py.qpdk.models.touchstone.write_touchstone( ...
+sax_mod.write_sdict_touchstone( ...
     py.qpdk.models.resonator.quarter_wave_resonator_coupled(pyargs( ...
         'f', freq_res_py, 'length', 4000, ...
         'coupling_gap', 4.0, 'coupling_straight_length', 400.0)), ...
@@ -295,45 +310,6 @@ elseif ~has_rf
     fprintf('RF Toolbox sections skipped: toolbox not installed or no licence available.\n');
 else
     fprintf('RF Toolbox available; running the S-parameter sections.\n');
-end
-
-% %% [markdown]
-%
-% ### A CPW line as an `sparameters` object
-%
-% `sparameters` reads the Touchstone file directly. `rfplot` gives the magnitude/phase view and
-% `rfparam` extracts an individual $S_{ij}$ vector.
-%
-% The physical check is the group delay. `groupdelay` is computed by the toolbox from the imported
-% data; the analytical value comes from the same CPW parameters qpdk used to build the model, so the
-% two should agree to the resolution of the frequency grid.
-
-% %%
-if has_rf
-    S_line = sparameters(s2p_2mm);
-    disp(S_line);
-
-    figure;
-    rfplot(S_line);
-    title('2 mm CPW line, exported from SAX');
-
-    gd = groupdelay(S_line, S_line.Frequencies, 2, 1);
-
-    % cpw_parameters returns (complex effective permittivity, characteristic impedance) for the
-    % cross-section the model was built from; the imaginary part is the dielectric loss.
-    dims = py.qpdk.models.cpw.get_cpw_dimensions('cpw');
-    cpw = py.qpdk.models.cpw.cpw_parameters(dims{1}, dims{2});
-    eps_eff = double(py.getattr(py.complex(cpw{1}), 'real'));
-    gd_analytic = 2e-3 * sqrt(eps_eff) / 299792458;
-
-    fprintf('Group delay: %.3f ps measured, %.3f ps analytic (eps_eff = %.3f)\n', ...
-        mean(gd) * 1e12, gd_analytic * 1e12, eps_eff);
-
-    figure;
-    plot(S_line.Frequencies / 1e9, gd * 1e12, 'LineWidth', 1.5); grid on;
-    yline(gd_analytic * 1e12, '--', 'analytic');
-    xlabel('Frequency (GHz)'); ylabel('Group delay (ps)');
-    title('S_{21} group delay of the 2 mm CPW line');
 end
 
 % %% [markdown]
@@ -429,11 +405,16 @@ end
 %
 % ### Rational fitting and transient response
 %
-% `rationalfit` turns the sampled $S_{21}$ into a pole-residue model, which is what makes a
-% time-domain answer possible: `freqresp` evaluates the fit back in frequency (a sanity check
-% against the data it came from) and `stepresp` propagates a step edge through it. A SAX model is
-% defined only in the frequency domain, so this is genuinely new information the RF Toolbox adds on
-% top of qpdk.
+% `rationalfit` turns the sampled $S_{21}$ into a pole-residue model; `freqresp` checks the fit
+% against the sampled data and [`stepresp`](https://www.mathworks.com/help/rf/ref/stepresp.html)
+% propagates a step edge through it. The prompt feedline response dominates the raw step plot. The
+% resonator also stores energy and re-radiates it into the feedline; after the edge, its smaller
+% oscillatory contribution decays on a scale set by the loaded quality factor, approximately
+% $\tau_\text{amp} = 2Q_\text{L}/\omega_0$. We subtract the final level and plot the residual
+% envelope to make that ring-down visible. This is a qualitative transient of a fit over the
+% measured band, not a calibrated DC-to-microwave step response. See the
+% [microwave-resonator ring-down study](https://arxiv.org/abs/1505.06863) for the time-domain
+% connection between decay and quality factor.
 
 % %%
 if has_rf
@@ -451,10 +432,14 @@ if has_rf
     title('Rational fit of the resonator response');
 
     [step_out, t_step] = stepresp(fit_s21, 2e-12, 20000, 20e-12);
+    ring = step_out - step_out(end);
+    period_samples = max(1, round(1 / (S_res2.Frequencies(idx) * (t_step(2) - t_step(1)))));
+    envelope = movmax(abs(ring), period_samples);
     figure;
-    plot(t_step * 1e9, step_out, 'LineWidth', 1.5); grid on;
-    xlabel('Time (ns)'); ylabel('Step response');
-    title('Transient ring-down of the coupled resonator');
+    plot(t_step * 1e9, envelope); grid on;
+    xlim([0.5 35]);
+    xlabel('Time (ns)'); ylabel('Residual envelope (unit step)');
+    title('Coupled-resonator ring-down after the step edge');
 end
 
 % %% [markdown]
@@ -463,7 +448,7 @@ end
 %
 % `rfwrite` exports a MATLAB `sparameters` object as Touchstone, closing the loop: the hybrid
 % circuit — part qpdk model, part MATLAB lumped elements — becomes a file that SAX can pick up
-% again. `read_touchstone` is the inverse of the export above; it returns the frequency vector in Hz
+% again. `read_sdict_touchstone` is the inverse of the export above; it returns frequencies in Hz
 % and a SAX `SDict`, one entry per ordered port pair, ready to drop into a `sax.circuit` alongside
 % purely analytical qpdk models.
 
@@ -472,7 +457,7 @@ if has_rf
     hybrid_file = fullfile(results_dir, 'resonator_matched.s2p');
     rfwrite(S_hybrid, hybrid_file);
 
-    imported = py.qpdk.models.touchstone.read_touchstone(hybrid_file);
+    imported = sax_mod.read_sdict_touchstone(hybrid_file);
     freq_back = double(imported{1});
     sdict_back = imported{2};
     fprintf('Read back into SAX: %d port pairs over %d points (%.2f-%.2f GHz)\n', ...
@@ -506,6 +491,6 @@ end
 % - Browse the qpdk [model catalog](all_models.ipynb) for additional
 %   analytical models that compose nicely with MATLAB-driven sweeps.
 %
-% - Export any other qpdk model with `qpdk.models.touchstone.write_touchstone` and drop it into
+% - Export any other qpdk model with `sax.write_sdict_touchstone` and drop it into
 %   a MATLAB `circuit` the same way — the pattern is not specific to the CPW line or the
 %   resonator used here.
