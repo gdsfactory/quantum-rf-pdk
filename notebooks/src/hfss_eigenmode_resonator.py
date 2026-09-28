@@ -8,6 +8,14 @@
 #       jupytext_version: 1.17.3
 # ---
 
+# %% tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # %% [markdown]
 # # HFSS Eigenmode Simulation of a CPW Resonator
 #

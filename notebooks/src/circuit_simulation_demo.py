@@ -22,6 +22,14 @@
 #     version: 3.12.9
 # ---
 
+# %% tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # %% [markdown]
 # # Circuit Simulation with QPDK
 #

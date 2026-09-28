@@ -24,6 +24,16 @@ just convert-notebooks
 
 There is also a pre-commit hook checking that the notebooks are in-sync with the source files.
 
+Each script carries [PEP 723](https://peps.python.org/pep-0723/) inline script metadata listing its dependencies, so it
+can also be run directly without a project environment:
+
+```bash
+uv run --script src/<script>.py
+```
+
+The metadata lives in a cell tagged `remove-cell`, which keeps it out of the rendered documentation. Keep its dependency
+list in sync with the notebook's Google Colab install cell.
+
 ## Documentation figures
 
 Figures in `figures/` are generated from `docs/figures/*.typ` with `just build-doc-figures`. Run it before opening the
