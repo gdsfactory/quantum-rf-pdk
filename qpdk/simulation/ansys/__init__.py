@@ -10,11 +10,18 @@ Extractor (Q2D).
 Note:
     Running a design needs the optional ``hfss`` extra
     (``uv sync --extra hfss``) and a local AEDT installation. PyAEDT is only
-    imported for type checking and inside the methods that talk to AEDT, so
-    importing this package works without it.
+    imported for type checking and inside the methods that talk to AEDT, and
+    the design wrappers (which also need polars) are exposed lazily, so
+    importing this package and :mod:`~qpdk.simulation.ansys.base` works
+    without the extra.
 
 See the `PyAEDT documentation <https://aedt.docs.pyansys.com/>`_.
 """
+
+from __future__ import annotations
+
+import importlib
+from typing import TYPE_CHECKING, Any
 
 from qpdk.simulation.ansys.base import (
     AEDTBase,
@@ -25,8 +32,17 @@ from qpdk.simulation.ansys.base import (
     object_names_to_materials,
     prepare_component_for_aedt,
 )
-from qpdk.simulation.ansys.hfss import HFSS, lumped_port_rectangle_from_cpw
-from qpdk.simulation.ansys.q3d import Q2D, Q3D
+
+if TYPE_CHECKING:
+    from qpdk.simulation.ansys.hfss import HFSS, lumped_port_rectangle_from_cpw
+    from qpdk.simulation.ansys.q3d import Q2D, Q3D
+
+_LAZY_IMPORTS: dict[str, str] = {
+    "HFSS": "qpdk.simulation.ansys.hfss",
+    "lumped_port_rectangle_from_cpw": "qpdk.simulation.ansys.hfss",
+    "Q2D": "qpdk.simulation.ansys.q3d",
+    "Q3D": "qpdk.simulation.ansys.q3d",
+}
 
 __all__ = [
     "HFSS",
@@ -41,3 +57,28 @@ __all__ = [
     "object_names_to_materials",
     "prepare_component_for_aedt",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Import a design wrapper only when it is asked for.
+
+    Returns:
+        The requested attribute.
+
+    Raises:
+        AttributeError: If ``name`` is not part of the public API.
+    """
+    try:
+        module_name = _LAZY_IMPORTS[name]
+    except KeyError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
+    return getattr(importlib.import_module(module_name), name)
+
+
+def __dir__() -> list[str]:
+    """List the public names, including the lazily imported ones.
+
+    Returns:
+        Sorted public attribute names.
+    """
+    return sorted(__all__)

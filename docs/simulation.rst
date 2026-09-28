@@ -135,9 +135,11 @@ multi-node MPI launching, domain-energy requests and port-connectivity checks.
     :members:
     :show-inheritance:
 
-********
- Common
-********
+************
+ Ansys AEDT
+************
+
+.. automodule:: qpdk.simulation.ansys
 
 .. automodule:: qpdk.simulation.ansys.base
     :members:

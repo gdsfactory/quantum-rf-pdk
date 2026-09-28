@@ -42,16 +42,17 @@ References:
     - Q3D Extractor: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.q3d.Q3d.html
 """
 
+from __future__ import annotations
+
+import importlib
+from typing import TYPE_CHECKING, Any
+
 from qpdk.simulation.ansys import (
-    HFSS,
-    Q2D,
-    Q3D,
     AEDTBase,
     add_materials_to_aedt,
     detach_desktop_logging,
     fit_view,
     layer_stack_to_gds_mapping,
-    lumped_port_rectangle_from_cpw,
     object_names_to_materials,
     prepare_component_for_aedt,
 )
@@ -65,6 +66,21 @@ from qpdk.simulation.fem import (
     to_flip_chip_regions,
 )
 from qpdk.simulation.study import RayRunner, SlurmRunner, run_study
+
+if TYPE_CHECKING:
+    from qpdk.simulation.ansys import (
+        HFSS,
+        Q2D,
+        Q3D,
+        lumped_port_rectangle_from_cpw,
+    )
+
+_ANSYS_LAZY_IMPORTS = frozenset({
+    "HFSS",
+    "Q2D",
+    "Q3D",
+    "lumped_port_rectangle_from_cpw",
+})
 
 __all__ = [
     "FEM_LAYERS",
@@ -91,3 +107,26 @@ __all__ = [
     "to_fem_regions",
     "to_flip_chip_regions",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Forward the AEDT design wrappers from :mod:`qpdk.simulation.ansys`.
+
+    Returns:
+        The requested attribute.
+
+    Raises:
+        AttributeError: If ``name`` is not part of the public API.
+    """
+    if name in _ANSYS_LAZY_IMPORTS:
+        return getattr(importlib.import_module("qpdk.simulation.ansys"), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    """List the public names, including the lazily imported ones.
+
+    Returns:
+        Sorted public attribute names.
+    """
+    return sorted(__all__)
