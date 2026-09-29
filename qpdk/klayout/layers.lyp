@@ -84,6 +84,40 @@
    <name>M2_ETCH 2/1</name>
    <source>2/1@1</source>
   </group-members>
+  <group-members>
+   <frame-color>#c9b6f2</frame-color>
+   <fill-color>#c9b6f2</fill-color>
+   <frame-brightness>0</frame-brightness>
+   <fill-brightness>0</fill-brightness>
+   <dither-pattern>I5</dither-pattern>
+   <line-style/>
+   <valid>true</valid>
+   <visible>true</visible>
+   <transparent>false</transparent>
+   <width>1</width>
+   <marked>false</marked>
+   <xfill>false</xfill>
+   <animation>0</animation>
+   <name>MB_DRAW 3/0</name>
+   <source>3/0@1</source>
+  </group-members>
+  <group-members>
+   <frame-color>#8e6fd8</frame-color>
+   <fill-color>#8e6fd8</fill-color>
+   <frame-brightness>0</frame-brightness>
+   <fill-brightness>0</fill-brightness>
+   <dither-pattern>I2</dither-pattern>
+   <line-style/>
+   <valid>true</valid>
+   <visible>true</visible>
+   <transparent>false</transparent>
+   <width>1</width>
+   <marked>false</marked>
+   <xfill>false</xfill>
+   <animation>0</animation>
+   <name>MB_ETCH 3/1</name>
+   <source>3/1@1</source>
+  </group-members>
  </properties>
  <properties>
   <frame-color/>

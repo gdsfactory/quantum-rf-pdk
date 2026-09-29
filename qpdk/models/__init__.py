@@ -27,6 +27,7 @@ from qpdk.models.couplers import (
     cpw_cpw_coupling_capacitance,
 )
 from qpdk.models.cpw import (
+    cbcpw_parameters,
     cpw_epsilon_eff,
     cpw_parameters,
     cpw_thickness_correction,
@@ -134,6 +135,7 @@ __all__ = [
     "bend_euler_all_angle",
     "bend_s",
     "capacitor",
+    "cbcpw_parameters",
     "coupler_ring",
     "coupler_straight",
     "coupling_strength_to_capacitance",

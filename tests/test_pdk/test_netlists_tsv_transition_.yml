@@ -1,0 +1,176 @@
+instances:
+  taper_cross_section:
+    component: taper_cross_section
+    info:
+      route_info_coplanar_waveguide_length: 100
+      route_info_coplanar_waveguide_taper_length: 100
+      route_info_length: 100
+      route_info_type: coplanar_waveguide
+      route_info_weight: 100
+    settings:
+      cross_section1: cpw
+      cross_section2: xs_fd8b2868
+      exclude_layers: null
+      length: 100
+      linear: true
+      npoints: 100
+      width_type: sine
+  tsv:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv10:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv2:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv3:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv4:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv5:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv6:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv7:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv8:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+  tsv9:
+    component: tsv
+    info: {}
+    settings:
+      layer: TSV
+      layer_pad_bottom: MB_DRAW
+      layer_pad_top: M1_DRAW
+      length: 20
+      pad_margin: 2
+      width: 10
+nets: []
+placements:
+  taper_cross_section:
+    mirror: false
+    rotation: 0
+    x: -115
+    y: 0
+  tsv:
+    mirror: false
+    rotation: 0
+    x: -15
+    y: -59
+  tsv10:
+    mirror: false
+    rotation: 0
+    x: 45
+    y: 59
+  tsv2:
+    mirror: false
+    rotation: 0
+    x: -15
+    y: 59
+  tsv3:
+    mirror: false
+    rotation: 0
+    x: -45
+    y: -59
+  tsv4:
+    mirror: false
+    rotation: 0
+    x: -45
+    y: 59
+  tsv5:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: -10
+  tsv6:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 10
+  tsv7:
+    mirror: false
+    rotation: 0
+    x: 15
+    y: -59
+  tsv8:
+    mirror: false
+    rotation: 0
+    x: 15
+    y: 59
+  tsv9:
+    mirror: false
+    rotation: 0
+    x: 45
+    y: -59
+ports:
+  o1: taper_cross_section,o1

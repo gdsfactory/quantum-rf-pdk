@@ -44,6 +44,10 @@ class LayerMapQPDK(LayerMap):
     M2_DRAW: Layer = (2, 0)
     M2_ETCH: Layer = (2, 1)
 
+    # Backside (side B) metal, connected to M1 through TSVs
+    MB_DRAW: Layer = (3, 0)
+    MB_ETCH: Layer = (3, 1)
+
     # Airbridges
     AB_DRAW: Layer = (10, 0)  # Bridge metal
     AB_VIA: Layer = (10, 1)  # Landing pads / contacts
@@ -103,6 +107,8 @@ NON_METADATA_LAYERS = {
     LAYER.M1_ETCH,
     LAYER.M2_DRAW,
     LAYER.M2_ETCH,
+    LAYER.MB_DRAW,
+    LAYER.MB_ETCH,
     LAYER.AB_DRAW,
     LAYER.AB_VIA,
     LAYER.JJ_AREA,
@@ -223,6 +229,7 @@ LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp)
 
 LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
     ("M1_DRAW", "TSV", "M2_DRAW"),
+    ("M1_DRAW", "TSV", "MB_DRAW"),
     ("M1_DRAW", "IND", "M2_DRAW"),
     ("M1_DRAW", "AB_DRAW", "M1_DRAW"),
     ("M2_DRAW", "AB_DRAW", "M2_DRAW"),
@@ -264,6 +271,47 @@ LAYER_STACK_FLIP_CHIP_NO_VACUUM = LayerStack(
         name: level
         for name, level in LAYER_STACK_FLIP_CHIP.layers.items()
         if name != "Vacuum"
+    }
+)
+
+
+LAYER_STACK_BACKSIDE = LayerStack(
+    layers={
+        **LAYER_STACK.layers,
+        # Backside (side B) metal on the bottom face of the substrate, see
+        # :cite:`mallekFabricationSuperconductingThroughsilicon2021`
+        "MB": LayerLevel(
+            name="MB",
+            layer=DerivedLayer(
+                layer1=LogicalLayer(layer=L.SIM_AREA),
+                layer2=DerivedLayer(
+                    layer1=LogicalLayer(layer=L.MB_ETCH),
+                    layer2=LogicalLayer(layer=L.MB_DRAW),
+                    operation="-",
+                ),
+                operation="-",
+            ),
+            derived_layer=LogicalLayer(layer=L.MB_DRAW),
+            thickness=0.2,
+            zmin=-500.2,  # bottom of substrate
+            material="Nb",
+            mesh_order=1,
+        ),
+        "Vacuum_bottom": LayerLevel(
+            name="Vacuum_bottom",
+            layer=L.SIM_AREA,
+            thickness=500,  # 500 microns of vacuum below backside metal
+            zmin=-1000.2,
+            material="vacuum",
+            mesh_order=99,
+        ),
+    }
+)
+LAYER_STACK_BACKSIDE_NO_VACUUM = LayerStack(
+    layers={
+        name: level
+        for name, level in LAYER_STACK_BACKSIDE.layers.items()
+        if not name.startswith("Vacuum")
     }
 )
 
@@ -428,6 +476,20 @@ etch = etch_only = partial(
     coplanar_waveguide,
     waveguide_layer=LAYER.M1_ETCH,
 )
+
+
+@xsection
+def coplanar_waveguide_backside() -> CrossSection:
+    """Return a coplanar waveguide cross-section on the backside (side B) metal.
+
+    Same default dimensions as :func:`coplanar_waveguide`, drawn on ``MB_DRAW`` and
+    ``MB_ETCH``. Connects to front-side ``M1`` through TSVs, see
+    :func:`~qpdk.cells.tsv_transition_double_sided`.
+    """
+    return coplanar_waveguide(waveguide_layer=LAYER.MB_DRAW, etch_layer=LAYER.MB_ETCH)
+
+
+cpw_backside = coplanar_waveguide_backside
 
 
 @xsection
