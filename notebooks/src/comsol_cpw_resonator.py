@@ -152,7 +152,7 @@ else:
 # %% [markdown]
 # ## Settings
 #
-# The sweep is centred on the resonance expected near 7.3997 GHz. `RUN_COMSOL` stays
+# The sweep is centred on the resonance the saved run found near 7.4022 GHz. `RUN_COMSOL` stays
 # `False`, so no solve starts by accident; the result cells below read whatever export is on disk.
 
 # %% tags=["hide-input"]
@@ -203,9 +203,9 @@ PORT_MODE_INDEX_SHIFT = 2.5
 # The driven window: a fixed half-span either side of the centre, swept with
 # COMSOL's adaptive frequency sweep. The request is a curve row count, not a
 # number of solves.
-# Estimate from quasi-TEM scaling of an earlier run at εr = 11.7 (7.3265 GHz) to
-# the layer stack's permittivity; replace with the solved resonance after a rerun.
-SWEEP_CENTER_GHZ = 7.3997
+# The centre is the resonance the licensed rerun located with direct solves
+# before this sweep ran.
+SWEEP_CENTER_GHZ = 7.4022
 SWEEP_HALF_SPAN_GHZ = 5.0e-3
 SWEEP_POINTS = 101
 
