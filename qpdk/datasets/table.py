@@ -22,7 +22,10 @@ sweep appends a new part file per batch instead of rewriting a single large
 LFS object.
 """
 
+import os
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import cached_property
@@ -176,27 +179,63 @@ class Dataset:
         """Validate ``frame`` and write it as a new ``results/<part>.parquet``.
 
         Existing parts are never rewritten. Duplicates against earlier parts are
-        rejected, so re-running a sweep cannot silently double a point.
+        rejected, so re-running a sweep cannot silently double a point. Concurrent
+        appends to the same dataset are serialized by a ``results/.append.lock``
+        file, and each part is published atomically under its final name.
 
         Returns:
             Path of the written part.
 
         Raises:
-            FileExistsError: if the part already exists.
+            FileExistsError: if the part already exists, or another append holds
+                the lock.
         """
         frame = frame.select(schema(self.manifest).names()).cast(schema(self.manifest))  # pyrefly: ignore[bad-argument-type]
-        existing = [self.scan().collect()] if self.result_files else []
-        validate(pl.concat([*existing, frame]), self.manifest)
-        target = self.path / "results" / f"{part or uuid.uuid4().hex}.parquet"
-        if target.exists():
-            msg = f"{target} already exists; result parts are append-only."
-            raise FileExistsError(msg)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        frame.sort(_key_columns(self.manifest), nulls_last=True).write_parquet(
-            target, compression="zstd", statistics=True
-        )
+        results = self.path / "results"
+        results.mkdir(parents=True, exist_ok=True)
+        target = results / f"{part or uuid.uuid4().hex}.parquet"
+        with _append_lock(results / ".append.lock"):
+            if target.exists():
+                msg = f"{target} already exists; result parts are append-only."
+                raise FileExistsError(msg)
+            existing = [self.scan().collect()] if self.result_files else []
+            validate(pl.concat([*existing, frame]), self.manifest)
+            staging = results / f".{target.name}.{uuid.uuid4().hex}.tmp"
+            try:
+                frame.sort(_key_columns(self.manifest), nulls_last=True).write_parquet(
+                    staging, compression="zstd", statistics=True
+                )
+                # A hard link publishes atomically and, unlike a rename, never
+                # replaces an existing part.
+                os.link(staging, target)
+            finally:
+                staging.unlink(missing_ok=True)
         self.__dict__.pop("table", None)
         return target
+
+
+@contextmanager
+def _append_lock(path: Path) -> Iterator[None]:
+    """Hold an exclusive lock file for the duration of an append.
+
+    Yields:
+        Nothing; the lock is released on exit.
+
+    Raises:
+        FileExistsError: if another append holds the lock.
+    """
+    try:
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError as error:
+        msg = (
+            f"Another append holds {path}; retry, or delete it if no append is running."
+        )
+        raise FileExistsError(msg) from error
+    try:
+        os.close(fd)
+        yield
+    finally:
+        path.unlink(missing_ok=True)
 
 
 def _key_columns(manifest: Manifest) -> list[str]:
@@ -252,8 +291,8 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
     for column in required:
         report(pl.col(column).is_null(), f"have a null {column!r}", ["run_id"])
     report(
-        pl.col("value").is_nan() | pl.col("value_imag").is_nan(),
-        "have a NaN value; record a failed solve with its status and a null value",
+        ~pl.col("value").is_finite() | ~pl.col("value_imag").is_finite(),
+        "have a non-finite value; record a failed solve with its status and a null value",
         ["run_id", "status"],
     )
 
@@ -279,8 +318,11 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
         if quantity.matrix:
             report(
                 is_q
-                & ~(pl.col("row").is_in(terminals) & pl.col("col").is_in(terminals)),
-                f"of {name!r} have terminals outside {terminals}",
+                & ~(
+                    pl.col("row").is_in(terminals).fill_null(False)
+                    & pl.col("col").is_in(terminals).fill_null(False)
+                ),
+                f"of {name!r} have null terminals or terminals outside {terminals}",
                 ["row", "col"],
             )
         else:
@@ -314,7 +356,7 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
     ok = pl.col("status") == RunStatus.OK
     report(ok & pl.col("value").is_null(), "are 'ok' but have no value", ["run_id"])
     report(
-        ~ok & pl.col("value").is_not_null(),
+        ~ok & (pl.col("value").is_not_null() | pl.col("value_imag").is_not_null()),
         "are not 'ok' but carry a value",
         ["run_id", "status"],
     )

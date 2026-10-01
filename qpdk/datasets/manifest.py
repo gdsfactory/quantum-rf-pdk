@@ -44,6 +44,14 @@ class QuantityKind(StrEnum):
     """Reduced scalar circuit parameter, e.g. a coupling capacitance."""
 
 
+_CANONICAL_UNITS = {
+    QuantityKind.MAXWELL_CAPACITANCE: "F",
+    QuantityKind.MUTUAL_CAPACITANCE: "F",
+    QuantityKind.INDUCTANCE: "H",
+    QuantityKind.S_PARAMETERS: "1",
+}
+"""SI unit each physical kind is stored in; lookups apply no unit conversion."""
+
 _MATRIX_KINDS = frozenset({
     QuantityKind.MAXWELL_CAPACITANCE,
     QuantityKind.MUTUAL_CAPACITANCE,
@@ -66,7 +74,10 @@ class Quantity(_Frozen):
 
     @model_validator(mode="after")
     def _check_kind(self) -> Self:
-        """Require terminal matrices for capacitance and inductance kinds."""
+        """Require canonical SI units, and matrices for capacitance and inductance."""
+        if (unit := _CANONICAL_UNITS.get(self.kind)) and self.unit != unit:
+            msg = f"Quantity {self.name!r} of kind {self.kind.value!r} must be stored in {unit!r}, not {self.unit!r}."
+            raise ValueError(msg)
         if self.kind in _MATRIX_KINDS and not self.matrix:
             msg = (
                 f"Quantity {self.name!r} of kind {self.kind.value!r} must be a matrix."
@@ -89,8 +100,11 @@ class Axis(_Frozen):
 
     @model_validator(mode="after")
     def _check_values(self) -> Self:
-        """Require increasing values and a validated range inside the grid."""
+        """Require finite increasing values and a validated range inside the grid."""
         values = np.asarray(self.values)
+        if not np.isfinite([*values, *self.domain]).all():
+            msg = f"Axis {self.name!r} values and validated domain must be finite."
+            raise ValueError(msg)
         if np.any(np.diff(values) <= 0):
             msg = f"Axis {self.name!r} values must be strictly increasing."
             raise ValueError(msg)
@@ -226,6 +240,10 @@ class Manifest(_Frozen):
         names = [a.name for a in self.axes] + [v.name for v in self.variants]
         if len(set(names)) != len(names):
             msg = f"Axis and variant names must be unique, got {names}."
+            raise ValueError(msg)
+        quantities = [q.name for q in self.quantities]
+        if len(set(quantities)) != len(quantities):
+            msg = f"Quantity names must be unique, got {quantities}."
             raise ValueError(msg)
         if reserved := set(names) & set(RESERVED_COLUMNS):
             msg = f"Axis or variant names collide with reserved columns: {sorted(reserved)}."
