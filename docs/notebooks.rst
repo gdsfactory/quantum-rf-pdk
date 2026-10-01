@@ -313,6 +313,18 @@ models miss
         :bdg-secondary-line:`Optuna` :bdg-secondary-line:`Palace` :bdg-primary:`models`
         :bdg-success:`open source`
 
+    .. grid-item-card:: FEM dataset lookups
+        :link: notebooks/fem_dataset_lookup
+        :link-type: doc
+        :class-card: notebook-card
+
+        Palace plate-capacitor and CPW datasets, lazy queries, multidimensional
+        interpolation and SAX models.
+
+        +++
+
+        :bdg-secondary-line:`JAX` :bdg-secondary-line:`Polars` :bdg-primary:`models`
+
     .. grid-item-card:: More FEM and FDTD in gsim
         :link: https://gdsfactory.github.io/gsim/
         :class-card: notebook-card notebook-card-external
