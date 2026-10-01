@@ -81,7 +81,7 @@
 %   of those sections skips itself when its toolbox is missing, like the RF and PDE sections.
 %
 % - The version of this notebook rendered in the documentation carries outputs from a saved run
-%   with both optional toolboxes. CI re-executes the notebook with those sections skipped and
+%   with the optional toolboxes. CI re-executes the notebook with RF and PDE sections skipped and
 %   checks the saved outputs against a fingerprint printed by the last cell.
 
 % %% [markdown]
@@ -144,17 +144,15 @@ fprintf('  size: %.1f x %.1f um\n', width_um, height_um);
 %
 % ## Frequency sweep using `qpdk.models.resonator.resonator_frequency`
 %
-% MATLAB drives a `linspace` of resonator lengths, calls the analytical Python model for each value,
-% and plots the resulting fundamental frequency. This is the basic pattern of *MATLAB driving the
-% parameter sweep, Python providing the physics*.
+% MATLAB drives a `linspace` of resonator lengths and plots the fundamental frequency. For this
+% fixed CPW cross-section, the phase velocity is constant and $f_0$ scales as $1/L$. One Python
+% model call sets that scale; MATLAB evaluates the whole sweep with element-wise division.
 
 % %%
 lengths_um = linspace(2000, 10000, 81);
-freqs_hz = zeros(size(lengths_um));
-for k = 1:numel(lengths_um)
-    freqs_hz(k) = double(py.qpdk.models.resonator.resonator_frequency( ...
-        pyargs('length', lengths_um(k), 'is_quarter_wave', true)));
-end
+reference_freq_hz = double(py.qpdk.models.resonator.resonator_frequency( ...
+    pyargs('length', lengths_um(1), 'is_quarter_wave', true)));
+freqs_hz = reference_freq_hz * lengths_um(1) ./ lengths_um;
 
 figure;
 plot(lengths_um, freqs_hz / 1e9, 'LineWidth', 1.5); grid on;
@@ -458,6 +456,9 @@ end
 % %%
 if has_rf
     hybrid_file = fullfile(results_dir, 'resonator_matched.s2p');
+    if isfile(hybrid_file)
+        delete(hybrid_file);
+    end
     rfwrite(S_hybrid, hybrid_file);
 
     imported = sax_mod.read_sdict_touchstone(hybrid_file);
@@ -810,7 +811,7 @@ end
 % %%
 toolbox_checks = struct( ...
     'key', {'OPTIM', 'STATS', 'GADS', 'PARALLEL'}, ...
-    'ver_name', {'optim', 'stats', 'globaloptim', 'parallel'}, ...
+    'ver_name', {'optim', 'stats', 'globaloptim', 'distcomp'}, ...
     'feature', {'Optimization_Toolbox', 'Statistics_Toolbox', 'GADS_Toolbox', ...
     'Distrib_Computing_Toolbox'}, ...
     'label', {'Optimization Toolbox', 'Statistics and Machine Learning Toolbox', ...
@@ -838,7 +839,7 @@ perturbation = py.importlib.import_module('qpdk.models.perturbation');
 qubit_models = py.importlib.import_module('qpdk.models.qubit');
 % JAX returns its own array type; numpy.asarray turns it into something double() understands.
 as_double = @(x) double(py.numpy.asarray(x));
-as_numpy = @(v) py.numpy.asarray(v(:)');
+as_numpy = @(v) py.numpy.asarray(v(:).');
 % MATLAB cannot index a function call's result directly, as in f(x){1}.
 tuple_item = @(t, k) t{k};
 
@@ -875,21 +876,12 @@ design = struct('ej_ghz', ej0, 'ec_ghz', ec0, 'g_ghz', g0, 'length_um', length0)
 
 if has_toolbox.optim
     % p = [E_J (GHz), E_C (GHz), g (GHz), length (um)]; each residual is a relative error.
-    wq_of = @(ej, ec) as_double(tuple_item( ...
-        perturbation.ej_ec_to_frequency_and_anharmonicity(ej, ec), 1));
-    chi_mhz_of = @(p) 1e3 * abs(as_double(perturbation.dispersive_shift( ...
-        wq_of(p(1), p(2)), resonator_f_ghz(p(4)), p(2), p(3))));
-    design_residuals = @(p) [
-        (wq_of(p(1), p(2)) - target.wq_ghz) / target.wq_ghz
-        (p(2) - target.alpha_ghz) / target.alpha_ghz
-        (resonator_f_ghz(p(4)) - target.fr_ghz) / target.fr_ghz
-        (chi_mhz_of(p) - target.chi_mhz) / target.chi_mhz
-        ];
+    design_residuals = @(p) designResiduals(p, target, perturbation, resonator_f_ghz);
     p0 = [ej0, ec0, g0, length0];
     lb = [5, 0.1, 0.01, 1000];
     ub = [50, 0.4, 0.3, 20000];
-    opts = optimoptions('lsqnonlin', 'Display', 'final', 'FunctionTolerance', 1e-14, ...
-        'StepTolerance', 1e-12, 'TypicalX', p0);
+    opts = optimoptions("lsqnonlin", Display="final", FunctionTolerance=1e-14, ...
+        StepTolerance=1e-12, TypicalX=p0);
     [p_opt, resnorm] = lsqnonlin(design_residuals, p0, lb, ub, opts);
     design = struct('ej_ghz', p_opt(1), 'ec_ghz', p_opt(2), 'g_ghz', p_opt(3), ...
         'length_um', p_opt(4));
@@ -902,9 +894,21 @@ end
 c_sigma_ff = 1e15 * as_double(qubit_models.ec_to_capacitance(design.ec_ghz));
 l_j_nh = 1e9 * as_double(qubit_models.ej_to_inductance(design.ej_ghz));
 T_design = table(design.ej_ghz, design.ec_ghz, 1e3 * design.g_ghz, design.length_um, ...
-    c_sigma_ff, l_j_nh, 'VariableNames', {'EJ_GHz', 'EC_GHz', 'g_MHz', 'length_um', ...
-    'C_sigma_fF', 'L_J_nH'});
+    c_sigma_ff, l_j_nh, VariableNames=["EJ_GHz", "EC_GHz", "g_MHz", "length_um", ...
+    "C_sigma_fF", "L_J_nH"]);
 disp(T_design);
+
+function residuals = designResiduals(p, target, perturbation, resonatorFrequency)
+    wq_alpha = perturbation.ej_ec_to_frequency_and_anharmonicity(p(1), p(2));
+    wq_ghz = double(py.numpy.asarray(wq_alpha{1}));
+    fr_ghz = resonatorFrequency(p(4));
+    chi_mhz = 1e3 * abs(double(py.numpy.asarray( ...
+        perturbation.dispersive_shift(wq_ghz, fr_ghz, p(2), p(3)))));
+    residuals = [(wq_ghz - target.wq_ghz) / target.wq_ghz;
+        (p(2) - target.alpha_ghz) / target.alpha_ghz;
+        (fr_ghz - target.fr_ghz) / target.fr_ghz;
+        (chi_mhz - target.chi_mhz) / target.chi_mhz];
+end
 
 % %% [markdown]
 %
@@ -929,12 +933,11 @@ disp(T_design);
 if has_toolbox.stats
     rng(0);
     n_mc = 2000;
-    u_lhs = lhsdesign(n_mc, 3, 'Criterion', 'maximin', 'Iterations', 20);
+    u_lhs = lhsdesign(n_mc, 3, Criterion="maximin", Iterations=20);
     sigma_ln = 0.03;
-    ej_dist = makedist('Lognormal', 'mu', log(design.ej_ghz) - sigma_ln^2 / 2, ...
-        'sigma', sigma_ln);
-    ec_dist = makedist('Normal', 'mu', design.ec_ghz, 'sigma', 0.015 * design.ec_ghz);
-    g_dist = makedist('Normal', 'mu', design.g_ghz, 'sigma', 0.03 * design.g_ghz);
+    ej_dist = makedist("Lognormal", mu=log(design.ej_ghz) - sigma_ln^2 / 2, sigma=sigma_ln);
+    ec_dist = makedist("Normal", mu=design.ec_ghz, sigma=0.015 * design.ec_ghz);
+    g_dist = makedist("Normal", mu=design.g_ghz, sigma=0.03 * design.g_ghz);
     ej_mc = icdf(ej_dist, u_lhs(:, 1));
     ec_mc = icdf(ec_dist, u_lhs(:, 2));
     g_mc = icdf(g_dist, u_lhs(:, 3));
@@ -953,13 +956,13 @@ if has_toolbox.stats
         100 * mean(in_spec));
 
     mc_inputs = table(zscore(ej_mc), zscore(ec_mc), zscore(g_mc), ...
-        'VariableNames', {'EJ', 'EC', 'g'});
-    mdl_wq = fitlm([mc_inputs, table(1e3 * wq_mc, 'VariableNames', {'wq_MHz'})]);
-    mdl_chi = fitlm([mc_inputs, table(chi_mc, 'VariableNames', {'chi_MHz'})]);
+        VariableNames=["EJ", "EC", "g"]);
+    mdl_wq = fitlm([mc_inputs, table(1e3 * wq_mc, VariableNames="wq_MHz")]);
+    mdl_chi = fitlm([mc_inputs, table(chi_mc, VariableNames="chi_MHz")]);
     T_sens = table(mdl_wq.Coefficients.Estimate(2:end), ...
         mdl_chi.Coefficients.Estimate(2:end), ...
-        'RowNames', {'EJ', 'EC', 'g'}, ...
-        'VariableNames', {'d_wq_MHz_per_sigma', 'd_chi_MHz_per_sigma'});
+        RowNames=["EJ", "EC", "g"], ...
+        VariableNames=["d_wq_MHz_per_sigma", "d_chi_MHz_per_sigma"]);
     disp(T_sens);
     fprintf('Linear fit R^2: omega_q %.4f, |chi| %.4f\n', mdl_wq.Rsquared.Ordinary, ...
         mdl_chi.Rsquared.Ordinary);
@@ -996,8 +999,8 @@ end
 % limit, so it overstates the rate for $r$ near 1; read the front as a comparison between designs,
 % not as absolute readout times.
 %
-% `UseVectorized` hands the objective a whole batch of candidates, so each poll costs a single round
-% trip to Python.
+% `UseVectorized` hands the objective a whole batch of candidates. Each Python model evaluates the
+% batch in one call; the objective reuses the dispersive shift for both decay rates.
 
 % %%
 if has_toolbox.gads
@@ -1009,17 +1012,12 @@ if has_toolbox.gads
     chi_of = @(x) as_double(perturbation.dispersive_shift(wq_ghz, as_numpy(x(:, 2)), ...
         alpha_ghz, as_numpy(x(:, 1))));
     kappa_of = @(x) 2 * x(:, 3) .* abs(reshape(chi_of(x), [], 1));
-    readout_objectives = @(x) [
-        reshape(as_double(perturbation.purcell_decay_rate(as_numpy(x(:, 1)), wq_ghz, ...
-        as_numpy(x(:, 2)), as_numpy(kappa_of(x)))), [], 1), ...
-        -reshape(as_double(perturbation.measurement_induced_dephasing(as_numpy(chi_of(x)), ...
-        as_numpy(kappa_of(x)), n_bar)), [], 1)];
+    readout_objectives = @(x) readoutObjectives(x, perturbation, wq_ghz, alpha_ghz, n_bar);
 
     lb = [0.02, 6.0, 1.0];
     ub = [0.20, 8.0, 4.0];
     rng(0);
-    opts = optimoptions('paretosearch', 'UseVectorized', true, 'UseCompletePoll', true, ...
-        'ParetoSetSize', 60, 'Display', 'off');
+    opts = optimoptions("paretosearch", UseVectorized=true, ParetoSetSize=60, Display="off");
     [x_front, f_front] = paretosearch(readout_objectives, 3, [], [], [], [], lb, ub, [], opts);
 
     t_purcell_us = 1 ./ (f_front(:, 1) * 1e9) * 1e6;
@@ -1059,6 +1057,19 @@ if has_toolbox.gads
     title('Readout speed vs. Purcell decay', 'FontName', 'Outfit');
 end
 
+function objectives = readoutObjectives(x, perturbation, wq_ghz, alpha_ghz, n_bar)
+    g_py = py.numpy.asarray(x(:, 1).');
+    fr_py = py.numpy.asarray(x(:, 2).');
+    chi_py = perturbation.dispersive_shift(wq_ghz, fr_py, alpha_ghz, g_py);
+    chi_ghz = reshape(double(py.numpy.asarray(chi_py)), [], 1);
+    kappa_ghz = 2 * x(:, 3) .* abs(chi_ghz);
+    kappa_py = py.numpy.asarray(kappa_ghz.');
+    purcell_py = perturbation.purcell_decay_rate(g_py, wq_ghz, fr_py, kappa_py);
+    dephasing_py = perturbation.measurement_induced_dephasing(chi_py, kappa_py, n_bar);
+    objectives = [reshape(double(py.numpy.asarray(purcell_py)), [], 1), ...
+        -reshape(double(py.numpy.asarray(dephasing_py)), [], 1)];
+end
+
 % %% [markdown]
 %
 % ### Layout variants on a parallel pool
@@ -1070,23 +1081,37 @@ end
 % PDK activated once per worker with `parfevalOnAll` before the loop. Python objects cannot cross
 % between workers and the client, so each iteration builds its chip, writes the GDS on the worker
 % and returns only plain MATLAB numbers. Thread-based pools (`parpool('Threads')`) cannot call
-% Python at all, which is why this uses `'Processes'`.
+% Python at all, so an existing thread pool is replaced. The example creates at most four workers
+% and closes its own pool even if a build fails. Setup is timed separately from the builds; a small
+% grid may finish sooner serially when worker startup is included.
 
 % %%
 if has_toolbox.parallel
-    pool = gcp('nocreate');
-    created_pool = isempty(pool);
-    if created_pool
-        pool = parpool('Processes');
-    end
-    fetchOutputs(parfevalOnAll(pool, @pyenv, 0, 'Version', qpdk_python, ...
-        'ExecutionMode', 'OutOfProcess'));
-    fetchOutputs(parfevalOnAll(pool, @pyrun, 0, "import qpdk; qpdk.PDK.activate()"));
-
     [GG_par, LL_par] = ndgrid([8, 12, 16, 20], [3000, 3500, 4000, 4500]);
+    disp(buildChipVariants(qpdk_python, results_dir, GG_par, LL_par));
+end
+
+function variants = buildChipVariants(qpdk_python, results_dir, GG_par, LL_par)
+    setup_timer = tic;
+    pool = gcp("nocreate");
+    if isa(pool, "parallel.ThreadPool")
+        fprintf('Replacing thread pool: Python needs process workers.\n');
+        delete(pool);
+        pool = [];
+    end
+    if isempty(pool)
+        local_cluster = parcluster("Processes");
+        pool = parpool(local_cluster, min(4, local_cluster.NumWorkers));
+        pool_cleanup = onCleanup(@() delete(pool)); %#ok<NASGU>
+    end
+    fetchOutputs(parfevalOnAll(pool, @pyenv, 0, Version=qpdk_python, ...
+        ExecutionMode="OutOfProcess"));
+    fetchOutputs(parfevalOnAll(pool, @pyrun, 0, "import qpdk; qpdk.PDK.activate()"));
+    fprintf('Worker setup: %.1f s\n', toc(setup_timer));
+
     n_par = numel(GG_par);
     areas_par_mm2 = zeros(n_par, 1);
-    tic;
+    build_timer = tic;
     parfor k = 1:n_par
         chip = py.qpdk.samples.resonator_test_chip.resonator_test_chip_python( ...
             pyargs('coupling_gap', GG_par(k), 'resonator_length', LL_par(k)));
@@ -1095,12 +1120,9 @@ if has_toolbox.parallel
         chip.write_gds(fullfile(results_dir, ...
             sprintf('par_chip_gap%g_len%g.gds', GG_par(k), LL_par(k))));
     end
-    fprintf('Built %d chips on %d workers in %.1f s\n', n_par, pool.NumWorkers, toc);
-    disp(table(GG_par(:), LL_par(:), areas_par_mm2, ...
-        'VariableNames', {'coupling_gap_um', 'resonator_length_um', 'area_mm2'}));
-    if created_pool
-        delete(pool);
-    end
+    fprintf('Built %d chips on %d workers in %.1f s\n', n_par, pool.NumWorkers, toc(build_timer));
+    variants = table(GG_par(:), LL_par(:), areas_par_mm2, ...
+        VariableNames=["coupling_gap_um", "resonator_length_um", "area_mm2"]);
 end
 
 % %% tags=["hide-input", "hide-output"]
