@@ -110,8 +110,8 @@ def _check_not_lfs_pointer(path: Path) -> None:
         head = file.read(len(_LFS_POINTER_PREFIX))
     if head == _LFS_POINTER_PREFIX:
         msg = (
-            f"{path} is a Git LFS pointer, not Parquet data. In a source checkout run "
-            f"`git lfs install && git lfs pull --include '{path.parent}/*'`. "
+            f"{path} is a Git LFS pointer, not Parquet data. From the root of a source "
+            'checkout run `git lfs install && git lfs pull --include "qpdk/datasets/data/**"`. '
             "Installed qpdk wheels already contain the data."
         )
         raise LFSPointerError(msg)
@@ -155,7 +155,12 @@ class Dataset:
     @cached_property
     def table(self) -> pl.DataFrame:
         """The full results table, validated against the manifest."""
-        frame = self.scan().collect()
+        try:
+            frame = self.scan().collect()
+        except (pl.exceptions.SchemaError, pl.exceptions.ColumnNotFoundError) as error:
+            raise DatasetError(
+                self.manifest.name, [f"Result parts do not match the schema: {error}"]
+            ) from error
         validate(frame, self.manifest)
         return frame
 
@@ -235,6 +240,22 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
         if bad.height:
             sample = bad.select(columns).unique(maintain_order=True).head(5).rows()
             problems.append(f"{bad.height} rows {what}, e.g. {sample}.")
+
+    required = [
+        "run_id",
+        "status",
+        "quantity",
+        "unit",
+        *(v.name for v in manifest.variants),
+        *(a.name for a in manifest.axes),
+    ]
+    for column in required:
+        report(pl.col(column).is_null(), f"have a null {column!r}", ["run_id"])
+    report(
+        pl.col("value").is_nan() | pl.col("value_imag").is_nan(),
+        "have a NaN value; record a failed solve with its status and a null value",
+        ["run_id", "status"],
+    )
 
     quantities = {q.name: q for q in manifest.quantities}
     report(
