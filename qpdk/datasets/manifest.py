@@ -6,6 +6,7 @@ manifest defines everything a row in the results table cannot carry on its own:
 units, axis order, terminal conventions, geometry, stack, solver, and accuracy.
 """
 
+import hashlib
 import tomllib
 from enum import StrEnum
 from pathlib import Path
@@ -43,6 +44,13 @@ class QuantityKind(StrEnum):
     """Reduced scalar circuit parameter, e.g. a coupling capacitance."""
 
 
+_MATRIX_KINDS = frozenset({
+    QuantityKind.MAXWELL_CAPACITANCE,
+    QuantityKind.MUTUAL_CAPACITANCE,
+    QuantityKind.INDUCTANCE,
+})
+
+
 class Quantity(_Frozen):
     """A quantity stored in the results table."""
 
@@ -55,6 +63,16 @@ class Quantity(_Frozen):
         description="Matrix quantities use 'row'/'col' terminals; scalars leave them null.",
     )
     description: str = ""
+
+    @model_validator(mode="after")
+    def _check_kind(self) -> Self:
+        """Require terminal matrices for capacitance and inductance kinds."""
+        if self.kind in _MATRIX_KINDS and not self.matrix:
+            msg = (
+                f"Quantity {self.name!r} of kind {self.kind.value!r} must be a matrix."
+            )
+            raise ValueError(msg)
+        return self
 
 
 class Axis(_Frozen):
@@ -163,6 +181,20 @@ class Artifact(_Frozen):
     uri: str
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     description: str = ""
+
+    def verify(self, path: Path) -> None:
+        """Check that a local copy of the artifact matches its checksum.
+
+        Raises:
+            ValueError: if the SHA-256 of ``path`` differs.
+        """
+        digest = hashlib.sha256()
+        with Path(path).open("rb") as file:
+            for chunk in iter(lambda: file.read(1 << 20), b""):
+                digest.update(chunk)
+        if digest.hexdigest() != self.sha256:
+            msg = f"{path} does not match the checksum of {self.uri!r}."
+            raise ValueError(msg)
 
 
 class Manifest(_Frozen):

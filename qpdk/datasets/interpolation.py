@@ -6,22 +6,24 @@ arrays, so calling it under :func:`jax.jit`, :func:`jax.vmap`, or
 :func:`jax.grad` involves no Polars, file I/O, or data-dependent Python
 control flow.
 
-Interpolation is multilinear on the rectilinear grid, using the same
-:func:`jax.scipy.ndimage.map_coordinates` core as :func:`sax.interpolate_xarray`.
-Unlike that function, axes are never filled in silently and queries outside the
-validated domain return NaN instead of the nearest edge value.
+Interpolation is multilinear on the rectilinear grid and gives the same values
+as :func:`sax.interpolate_xarray` inside the domain. Unlike that function, axes
+are never filled in silently, queries outside the validated domain return NaN
+instead of the nearest edge value, and the gradient on the upper edge of an axis
+is the one-sided slope of the last cell rather than zero.
 
 Values keep the dtype JAX gives float64 data: float64 when ``jax_enable_x64`` is
 on (importing :mod:`sax` turns it on), float32 otherwise.
 """
 
-from itertools import starmap
+import operator
+from functools import reduce
+from itertools import product, starmap
 from typing import Literal
 
 import jax
 import jax.numpy as jnp
 import numpy as np
-from jax.scipy.ndimage import map_coordinates
 
 from qpdk.datasets.table import Grid
 
@@ -91,14 +93,11 @@ class GridInterpolator:
                 jnp.clip(x, lo, hi)
                 for x, (lo, hi) in zip(xs, self._domain, strict=True)
             ]
-        index = list(starmap(_fractional_index, zip(self._coords, xs, strict=True)))
-        flat = jax.vmap(
-            lambda component: map_coordinates(
-                component, index, order=1, mode="nearest"
-            ),
-            in_axes=-1,
-            out_axes=-1,
-        )(self._values)
+        cells = list(starmap(_cell, zip(self._coords, xs, strict=True)))
+        flat = reduce(
+            operator.add,
+            (self._corner(cells, c) for c in product((0, 1), repeat=len(cells))),
+        )
         result = flat.reshape(*xs[0].shape, *self.component_shape)
         if self.out_of_range == "nan":
             inside = jnp.ones(xs[0].shape, dtype=bool)
@@ -111,6 +110,23 @@ class GridInterpolator:
             )
         return result
 
+    def _corner(
+        self, cells: list[tuple[jax.Array, jax.Array]], corner: tuple[int, ...]
+    ) -> jax.Array:
+        """Weighted values at one corner of the cells containing the query points."""
+        weight = reduce(
+            operator.mul,
+            (
+                t if upper else 1 - t
+                for (_, t), upper in zip(cells, corner, strict=True)
+            ),
+        )
+        index = tuple(
+            jnp.minimum(i + upper, c.shape[0] - 1)
+            for (i, _), upper, c in zip(cells, corner, self._coords, strict=True)
+        )
+        return weight[..., None] * self._values[index]
+
     def in_domain(self, **params: np.typing.ArrayLike) -> np.ndarray:
         """Eagerly check which query points lie inside the validated domain."""
         xs = np.broadcast_arrays(
@@ -122,11 +138,19 @@ class GridInterpolator:
         return inside
 
 
-def _fractional_index(coords: jax.Array, x: jax.Array) -> jax.Array:
-    """Map values to fractional grid indices, linearly within each cell."""
+def _cell(coords: jax.Array, x: jax.Array) -> tuple[jax.Array, jax.Array]:
+    """Lower grid index of the cell containing ``x``, and the position within it.
+
+    The last cell is closed on the right, so ``x == coords[-1]`` sits at position 1
+    of cell ``n - 2`` and keeps that cell's slope. Points outside the grid
+    extrapolate from the edge cell; the caller masks or clips them.
+
+    Returns:
+        Integer cell index and fractional position, both shaped like ``x``.
+    """
     n = coords.shape[0]
     if n == 1:
-        return jnp.zeros_like(x)
+        return jnp.zeros(x.shape, dtype=int), jnp.zeros_like(x)
     i = jnp.clip(jnp.searchsorted(coords, x, side="right") - 1, 0, n - 2)
     lo, hi = coords[i], coords[i + 1]
-    return i + (x - lo) / (hi - lo)
+    return i, (x - lo) / (hi - lo)
