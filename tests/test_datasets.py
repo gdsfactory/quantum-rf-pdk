@@ -82,8 +82,9 @@ def test_grid_layout_is_deterministic(dataset: Dataset) -> None:
     assert grid.values.shape == (8, 4, 6, 2, 2)
     for idx in [(0, 0, 0), (3, 1, 4), (7, 3, 5)]:
         length, width, gap = (a.values[i] for a, i in zip(axes, idx, strict=True))
-        np.testing.assert_array_equal(
-            grid.values[idx], synthetic_maxwell(length, width, gap, EP_R)
+        # Shipped values were generated on one platform; libm may differ by an ulp.
+        np.testing.assert_allclose(
+            grid.values[idx], synthetic_maxwell(length, width, gap, EP_R), rtol=1e-12
         )
 
 
@@ -339,7 +340,7 @@ def test_append_writes_new_part_and_rejects_duplicates(dataset_copy: Dataset) ->
         value=pl.col("value") * 1.1,
     )
     path = dataset_copy.append(new, part="part-0001")
-    assert path.name == "part-0001.parquet"
+    assert Path(path).name == "part-0001.parquet"
     assert len(dataset_copy.result_files) == 2
     assert dataset_copy.table.height == 2 * original.height
     np.testing.assert_allclose(
