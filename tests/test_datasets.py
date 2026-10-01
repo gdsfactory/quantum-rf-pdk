@@ -120,7 +120,17 @@ def test_grid_is_independent_of_row_order(dataset: Dataset) -> None:
         ),
         (lambda f: f.with_columns(value_imag=pl.lit(0.0)), "imaginary part"),
         (lambda f: f.with_columns(run_id=pl.lit("same")), "mix parameter points"),
-        (lambda f: f.with_columns(value=pl.lit(float("nan"))), "NaN value"),
+        (lambda f: f.with_columns(value=pl.lit(float("nan"))), "non-finite value"),
+        (lambda f: f.with_columns(value=pl.lit(float("inf"))), "non-finite value"),
+        (lambda f: f.with_columns(row=pl.lit(None, pl.String)), "null terminals"),
+        (
+            lambda f: f.with_columns(
+                status=pl.lit("failed"),
+                value=pl.lit(None, pl.Float64),
+                value_imag=pl.lit(0.0),
+            ),
+            "not 'ok' but carry a value",
+        ),
         (lambda f: f.with_columns(status=pl.lit(None, pl.String)), "null 'status'"),
         (lambda f: f.with_columns(unit=pl.lit(None, pl.String)), "null 'unit'"),
         (lambda f: f.with_columns(quantity=pl.lit(None, pl.String)), "null 'quantity'"),
@@ -236,6 +246,48 @@ def test_variant_must_be_selected(dataset: Dataset) -> None:
             },
             "must be a matrix",
         ),
+        (
+            {
+                "quantities": [
+                    {"name": "c", "kind": "maxwell_capacitance", "unit": "pF"}
+                ]
+            },
+            "must be stored in 'F'",
+        ),
+        (
+            {"quantities": [{"name": "l", "kind": "inductance", "unit": "F"}]},
+            "must be stored in 'H'",
+        ),
+        (
+            {
+                "quantities": [
+                    {"name": "c", "kind": "maxwell_capacitance", "unit": "F"},
+                    {"name": "c", "kind": "circuit_parameter", "unit": "F"},
+                ]
+            },
+            "Quantity names must be unique",
+        ),
+        (
+            {
+                "axes": [
+                    {"name": "length", "unit": "um", "values": [1.0, float("nan"), 2.0]}
+                ]
+            },
+            "must be finite",
+        ),
+        (
+            {
+                "axes": [
+                    {
+                        "name": "length",
+                        "unit": "um",
+                        "values": [1.0, 2.0],
+                        "validated": [1.0, float("nan")],
+                    }
+                ]
+            },
+            "must be finite",
+        ),
     ],
 )
 def test_manifest_rejects(dataset: Dataset, change: dict, message: str) -> None:
@@ -298,6 +350,19 @@ def test_append_writes_new_part_and_rejects_duplicates(dataset_copy: Dataset) ->
         dataset_copy.append(new.head(4), part="part-0002")
     with pytest.raises(FileExistsError):
         dataset_copy.append(new.head(0), part="part-0001")
+    assert sorted(p.name for p in (dataset_copy.path / "results").iterdir()) == [
+        "part-0000.parquet",
+        "part-0001.parquet",
+    ]
+
+
+def test_append_is_serialized_by_a_lock(dataset_copy: Dataset) -> None:
+    lock = dataset_copy.path / "results" / ".append.lock"
+    lock.touch()
+    with pytest.raises(FileExistsError, match="Another append holds"):
+        dataset_copy.append(dataset_copy.table.head(0), part="part-0001")
+    assert lock.exists()
+    assert not (dataset_copy.path / "results" / "part-0001.parquet").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -339,6 +404,13 @@ def test_interpolated_matrix_is_physical(
     interp: GridInterpolator, point: dict[str, float]
 ) -> None:
     assert maxwell_violations(interp(**point)) == []
+
+
+@pytest.mark.parametrize("bad", [float("inf"), float("nan")])
+def test_maxwell_violations_rejects_non_finite(bad: float) -> None:
+    assert maxwell_violations([[bad, -1.0], [-1.0, bad]]) == [
+        "contains non-finite entries"
+    ]
 
 
 def test_mutual_conversion(interp: GridInterpolator) -> None:
