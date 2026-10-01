@@ -31,7 +31,7 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${HOME}
-USER ${USER}
+USER ${NB_UID}
 
 # First install only dependencies with cache mount
 RUN --mount=type=cache,uid=${NB_UID},gid=${NB_UID},target=${HOME}/.cache/uv \
