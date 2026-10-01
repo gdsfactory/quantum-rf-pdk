@@ -226,6 +226,11 @@ jobs:
         uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3.1.0
         with:
           cache: true
+          products: >-
+            Optimization_Toolbox
+            Statistics_and_Machine_Learning_Toolbox
+            Global_Optimization_Toolbox
+            Parallel_Computing_Toolbox
         background: true # runs alongside the Python setup below, MATLAB install is the slower branch
       - name: Install qpdk with models extra
         run: uv sync --extra models
@@ -265,8 +270,7 @@ jobs:
               )
 
           output = "\n".join(stream_text(cell) for cell in code_cells)
-          # The saved run must cover the RF Toolbox sections, which the licence used for
-          # the live re-execution below does not include.
+          # The saved run also covers RF Toolbox, which the CI licence excludes.
           required = (
               "RF Toolbox available",
               "Max |S13| =",
@@ -274,9 +278,13 @@ jobs:
               "1 mm + 1 mm vs. 2 mm:",
               "Rational fit:",
               "Read back into SAX:",
+              "Residual norm",
+              "Linear fit R^2:",
+              "Pareto front:",
+              "Built 16 chips on",
           )
           if any(string not in output for string in required):
-              raise SystemExit("Saved MATLAB notebook is missing RF Toolbox results")
+              raise SystemExit("Saved MATLAB notebook is missing toolbox results")
           if not any(
               "image/png" in cell_output.get("data", {})
               for cell in code_cells
@@ -324,6 +332,8 @@ jobs:
             diary('/tmp/matlab_script.log'); diary on;
             addpath('notebooks/src');
             matlab_integration;
+            assert(all(structfun(@(available) available, has_toolbox)), ...
+              'The four optional toolbox sections must execute in CI.');
             diary off;
       - name: Print MATLAB diary on failure
         if: failure()
