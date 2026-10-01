@@ -56,7 +56,13 @@ _RESONATOR_COUPLED = [
     {"name": "resonator_o2", "side": "bottom", "type": "photonic"},
 ]
 
-_QUARTER_WAVE_RESONATOR_COUPLED = _RESONATOR_COUPLED[:3]
+# The resonator end shares the left side with the coupling input, below it,
+# matching the layout cell (``resonator_o1`` faces west, under ``coupling_o1``).
+_QUARTER_WAVE_RESONATOR_COUPLED = [
+    {"name": "coupling_o1", "side": "left", "type": "photonic"},
+    {"name": "resonator_o1", "side": "left", "type": "photonic"},
+    {"name": "coupling_o2", "side": "right", "type": "photonic"},
+]
 
 # Transmon qubit
 _TRANSMON = [
@@ -123,8 +129,10 @@ def _make_schematic(
         seen_sides[side] = idx + 1
         total = side_counts[side]
         offset = (idx - (total - 1) / 2) * spacing
+        # Same-side ports run top-to-bottom and left-to-right in list order,
+        # the order the GDSFactory+ schematic editor lays them out in.
         if side in {"left", "right"}:
-            x, y = bx, by + offset
+            x, y = bx, by - offset
         else:
             x, y = bx + offset, by
 
