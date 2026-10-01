@@ -3,6 +3,7 @@ instances:
     component: flipmon
     info: {}
     settings:
+      bump_diameter: 15
       inner_circle_radius: 60
       junction_displacement: null
       junction_position_rotation: 0

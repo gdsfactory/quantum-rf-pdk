@@ -1,5 +1,5 @@
 info: {}
-name: flipmon_ICR60_ORR110_ORW60_TCR110_JSsquid_junction_long_02362bf3
+name: flipmon_ICR60_ORR110_ORW60_TCR110_BD15_JSsquid_junction_12ab9f80
 ports:
   center:
     center:
@@ -47,6 +47,7 @@ ports:
     port_type: optical
     width: 60
 settings:
+  bump_diameter: 15
   inner_circle_radius: 60
   junction_position_rotation: 0
   junction_spec: squid_junction_long

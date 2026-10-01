@@ -232,6 +232,7 @@ def flipmon(
     outer_ring_radius: float = 110.0,
     outer_ring_width: float = 60.0,
     top_circle_radius: float = 110.0,
+    bump_diameter: float = 15.0,
     junction_spec: ComponentSpec = squid_junction_long,
     junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
@@ -265,6 +266,7 @@ def flipmon(
         outer_ring_width: Width of the outer circular capacitor pad in μm.
         top_circle_radius: Central radius of the top circular capacitor pad in μm.
             There is no separate width as the filled circle is not a ring.
+        bump_diameter: Diameter of the central indium bump in μm.
         junction_spec: Component specification for the Josephson junction component.
         junction_displacement: Optional complex transformation, or in-place
             rotation in degrees, to apply to the junction.
@@ -321,7 +323,7 @@ def flipmon(
     top_circle_ref.dcenter = c.dcenter
 
     # Add indium bump to flip-chip
-    bump = gf.get_component(indium_bump)
+    bump = indium_bump(diameter=bump_diameter)
     bump_ref = c.add_ref(bump)
     bump_ref.dcenter = c.dcenter
     c.add_ports(bump_ref.ports)
@@ -368,6 +370,7 @@ def flipmon_with_bbox(
     outer_ring_radius: float = 110.0,
     outer_ring_width: float = 60.0,
     top_circle_radius: float = 110.0,
+    bump_diameter: float = 15.0,
     junction_spec: ComponentSpec = squid_junction_long,
     junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
@@ -387,6 +390,7 @@ def flipmon_with_bbox(
         outer_ring_radius: Central radius of the outer circular capacitor pad in μm.
         outer_ring_width: Width of the outer circular capacitor pad in μm.
         top_circle_radius: Central radius of the top circular capacitor pad in μm.
+        bump_diameter: Diameter of the central indium bump in μm.
         junction_spec: Component specification for the Josephson junction component.
         junction_displacement: Optional complex transformation, or in-place
             rotation in degrees, to apply to the junction.
@@ -408,6 +412,7 @@ def flipmon_with_bbox(
         outer_ring_radius=outer_ring_radius,
         outer_ring_width=outer_ring_width,
         top_circle_radius=top_circle_radius,
+        bump_diameter=bump_diameter,
         junction_spec=junction_spec,
         junction_displacement=junction_displacement,
         junction_position_rotation=junction_position_rotation,
