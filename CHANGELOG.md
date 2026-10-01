@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Added `qpdk.datasets`: a Parquet + TOML-manifest format for FEM extraction results with validation, and a jittable,
   differentiable grid lookup that returns NaN outside the validated domain.
+- Added pluggable dataset result stores: Delta Lake tables on local disk or object stores such as Google Cloud Storage,
+  S3, and Azure (`delta` extra), with versioned appends and version pinning from the manifest.
 - Added the synthetic `plate_capacitor_synthetic` dataset and a notebook that uses it in a SAX model.
 
 ## [0.4.0] - 2026-09-18

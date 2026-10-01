@@ -10,7 +10,7 @@ import hashlib
 import tomllib
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -211,6 +211,31 @@ class Artifact(_Frozen):
             raise ValueError(msg)
 
 
+class Storage(_Frozen):
+    """Where the results table lives, if not in the dataset's ``results/`` directory.
+
+    Credentials are never stored here; they are passed when opening the dataset.
+    """
+
+    format: Literal["parquet", "delta"]
+    uri: str = Field(
+        description="Object-store URI, e.g. 'gs://bucket/dataset', or a path relative to the dataset directory."
+    )
+    version: int | None = Field(
+        default=None,
+        ge=0,
+        description="Delta table version to read; pins the exact rows a model uses.",
+    )
+
+    @model_validator(mode="after")
+    def _check_version(self) -> Self:
+        """Only Delta tables have versions."""
+        if self.version is not None and self.format != "delta":
+            msg = "Only a 'delta' storage can pin a version."
+            raise ValueError(msg)
+        return self
+
+
 class Manifest(_Frozen):
     """Top-level dataset manifest (``manifest.toml``)."""
 
@@ -230,6 +255,10 @@ class Manifest(_Frozen):
     variants: tuple[Variant, ...] = ()
     quantities: tuple[Quantity, ...] = Field(min_length=1)
     artifacts: tuple[Artifact, ...] = ()
+    storage: Storage | None = Field(
+        default=None,
+        description="Results location; defaults to the Parquet parts in 'results/'.",
+    )
 
     @model_validator(mode="after")
     def _check_names(self) -> Self:
