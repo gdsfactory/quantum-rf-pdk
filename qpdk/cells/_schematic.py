@@ -8,6 +8,10 @@ __all__ = [
     "bend_circular_schematic",
     "bend_s_schematic",
     "double_pad_transmon_schematic",
+    "double_pad_transmon_with_bbox_schematic",
+    "fluxonium_schematic",
+    "fluxonium_with_bbox_schematic",
+    "josephson_junction_schematic",
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
@@ -23,6 +27,7 @@ __all__ = [
     "straight_open_schematic",
     "straight_schematic",
     "straight_shorted_schematic",
+    "unimon_coupled_schematic",
 ]
 
 # ---------------------------------------------------------------------------
@@ -62,6 +67,17 @@ _QUARTER_WAVE_RESONATOR_COUPLED = _RESONATOR_COUPLED[:3]
 _TRANSMON = [
     {"name": "left_pad", "side": "left", "type": "photonic"},
     {"name": "right_pad", "side": "right", "type": "photonic"},
+]
+
+# Josephson junction
+_JUNCTION = [
+    {"name": "left_wide", "side": "left", "type": "photonic"},
+    {"name": "right_wide", "side": "right", "type": "photonic"},
+]
+
+# Unimon readout coupling port
+_UNIMON_COUPLED = [
+    {"name": "coupling_o3", "side": "left", "type": "photonic"},
 ]
 
 # ---------------------------------------------------------------------------
@@ -340,6 +356,71 @@ double_pad_transmon_schematic = schematic(
             name="double_pad_transmon",
             module="qpdk.models.qubit",
             port_order=["left_pad", "right_pad"],
+        )
+    ],
+)
+
+double_pad_transmon_with_bbox_schematic = schematic(
+    symbol="double_pad_transmon_with_bbox",
+    tags=["qubits", "transmons"],
+    ports=_TRANSMON,
+    models=[
+        sax_model(
+            name="double_pad_transmon_with_bbox",
+            module="qpdk.models.pdk_bindings",
+            port_order=["left_pad", "right_pad"],
+        )
+    ],
+)
+
+fluxonium_schematic = schematic(
+    symbol="fluxonium",
+    tags=["qubits", "inductors"],
+    ports=_TRANSMON,
+    models=[
+        sax_model(
+            name="fluxonium",
+            module="qpdk.models.pdk_bindings",
+            port_order=["left_pad", "right_pad"],
+        )
+    ],
+)
+
+fluxonium_with_bbox_schematic = schematic(
+    symbol="fluxonium_with_bbox",
+    tags=["qubits", "inductors"],
+    ports=_TRANSMON,
+    models=[
+        sax_model(
+            name="fluxonium_with_bbox",
+            module="qpdk.models.pdk_bindings",
+            port_order=["left_pad", "right_pad"],
+        )
+    ],
+)
+
+josephson_junction_schematic = schematic(
+    symbol="josephson_junction",
+    tags=["junctions"],
+    ports=_JUNCTION,
+    models=[
+        sax_model(
+            name="josephson_junction",
+            module="qpdk.models.pdk_bindings",
+            port_order=["left_wide", "right_wide"],
+        )
+    ],
+)
+
+unimon_coupled_schematic = schematic(
+    symbol="unimon_coupled",
+    tags=["qubits", "couplers"],
+    ports=_UNIMON_COUPLED,
+    models=[
+        sax_model(
+            name="unimon_coupled",
+            module="qpdk.models.pdk_bindings",
+            port_order=["coupling_o3"],
         )
     ],
 )

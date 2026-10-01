@@ -20,7 +20,7 @@ from conftest import import_gfp_module
 from hypothesis import given, settings, strategies as st
 
 from qpdk import PDK
-from qpdk.models import models
+from qpdk.models import _PDK_MODEL_OVERRIDES, models
 
 sax_sim = import_gfp_module("gdsfactoryplus.sim.sax")
 factory_metadata = import_gfp_module("gdsfactoryplus.factory_metadata")
@@ -51,6 +51,42 @@ def test_one_port_termination_models_resolve(component: str) -> None:
 
     assert model is not None
     assert set(model(f=np.asarray([5e9]))) == {("o1", "o1")}
+
+
+@pytest.mark.gfp
+def test_metadata_resolved_models_model_their_layout_ports() -> None:
+    """Models resolved through v2 metadata must match their layout cell ports.
+
+    ``resolve_factory_model`` returns ``None`` for cells gdsfactoryplus has no
+    SAX binding for, so only the names it does resolve are compared. Those are
+    the names whose schematic declares a model.
+    """
+    resolved: set[str] = set()
+
+    for name in sorted(PDK.cells.keys() & PDK.models.keys()):
+        model = factory_metadata.resolve_factory_model(name, "sax")
+        if model is None:
+            continue
+        resolved.add(name)
+
+        layout_ports = {
+            port.name
+            for port in PDK.cells[name]().ports
+            if port.port_type != "placement"
+        }
+        s_params = model(f=np.asarray([5e9]))
+        model_ports = {port for pair in s_params for port in pair}
+
+        assert model_ports == layout_ports, (
+            f"{name}: model ports {sorted(model_ports)} do not match layout "
+            f"ports {sorted(layout_ports)}"
+        )
+
+    unresolved_overrides = set(_PDK_MODEL_OVERRIDES) - resolved
+    assert not unresolved_overrides, (
+        "v2 metadata did not resolve PDK model overrides: "
+        f"{sorted(unresolved_overrides)}"
+    )
 
 
 @cache
