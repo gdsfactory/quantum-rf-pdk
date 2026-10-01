@@ -217,7 +217,7 @@ jobs:
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       - name: Set up MATLAB
         id: matlab-setup
-        uses: matlab-actions/setup-matlab@2323adb8243827ea460b0def4c413545aaec46a9 # v3.0.2
+        uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3.1.0
         with:
           cache: true
         background: true # runs alongside the Python setup below, MATLAB install is the slower branch
