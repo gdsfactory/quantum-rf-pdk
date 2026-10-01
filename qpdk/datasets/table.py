@@ -17,15 +17,12 @@ Column         Type         Meaning
 ``unit``       String       SI unit; must equal the manifest unit of the quantity.
 =============  ===========  ===========================================================
 
-Results live in ``results/*.parquet`` and are scanned together, so a resumable
-sweep appends a new part file per batch instead of rewriting a single large
-LFS object.
+By default results live in ``results/*.parquet`` and are scanned together, so a
+resumable sweep appends a new part file per batch instead of rewriting a single
+large LFS object. :mod:`qpdk.datasets.store` provides the alternatives, such as
+a Delta Lake table in a cloud bucket.
 """
 
-import os
-import uuid
-from collections.abc import Iterator
-from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import cached_property
@@ -36,11 +33,15 @@ import numpy as np
 import polars as pl
 
 from qpdk.datasets.manifest import Axis, Manifest, Quantity, load_manifest
+from qpdk.datasets.store import (
+    DeltaStore,
+    ParquetParts,
+    ResultStore,
+    is_uri,
+)
 
 DATASETS_PATH = Path(__file__).parent / "data"
 """Curated datasets shipped with qpdk."""
-
-_LFS_POINTER_PREFIX = b"version https://git-lfs"
 
 
 class RunStatus(StrEnum):
@@ -61,10 +62,6 @@ class DatasetError(ValueError):
             f"Dataset {dataset!r} failed validation:\n"
             + "\n".join(f"  - {p}" for p in problems)
         )
-
-
-class LFSPointerError(FileNotFoundError):
-    """A results file is an unresolved Git LFS pointer instead of Parquet data."""
 
 
 @dataclass(frozen=True)
@@ -107,53 +104,52 @@ def schema(manifest: Manifest) -> pl.Schema:
     })
 
 
-def _check_not_lfs_pointer(path: Path) -> None:
-    """Raise :class:`LFSPointerError` if ``path`` holds an unresolved LFS pointer."""
-    with path.open("rb") as file:
-        head = file.read(len(_LFS_POINTER_PREFIX))
-    if head == _LFS_POINTER_PREFIX:
-        msg = (
-            f"{path} is a Git LFS pointer, not Parquet data. From the root of a source "
-            'checkout run `git lfs install && git lfs pull --include "qpdk/datasets/data/**"`. '
-            "Installed qpdk wheels already contain the data."
-        )
-        raise LFSPointerError(msg)
-
-
 class Dataset:
-    """A FEM extraction dataset: ``manifest.toml`` plus ``results/*.parquet``.
+    """A FEM extraction dataset: a ``manifest.toml`` and its results table.
+
+    The results are read from, in order of precedence, ``store``, the manifest's
+    ``[storage]`` section, or the Parquet parts in ``results/`` next to the
+    manifest.
 
     Args:
         path: Dataset directory, or the name of a dataset shipped in
             :data:`DATASETS_PATH`.
+        store: Where the results live; see :mod:`qpdk.datasets.store`.
+        storage_options: Object-store options (credentials, endpoints) for the
+            manifest's ``[storage]`` URI. Never written to the manifest.
     """
 
-    def __init__(self, path: Path | str) -> None:
+    def __init__(
+        self,
+        path: Path | str,
+        *,
+        store: ResultStore | None = None,
+        storage_options: dict[str, str] | None = None,
+    ) -> None:
         """Open the dataset and validate its manifest."""
         path = Path(path)
         if not path.is_dir() and (DATASETS_PATH / path).is_dir():
             path = DATASETS_PATH / path
         self.path = path
         self.manifest = load_manifest(path / "manifest.toml")
+        self.store = store or _store_from_manifest(self.manifest, path, storage_options)
 
     def __repr__(self) -> str:
-        """Show the dataset directory."""
-        return f"Dataset({self.path!s})"
+        """Show the dataset directory and store."""
+        return f"Dataset({self.path!s}, store={self.store!r})"
 
     @property
     def result_files(self) -> list[Path]:
-        """Parquet part files, in a deterministic order."""
-        return sorted((self.path / "results").glob("*.parquet"))
+        """Local Parquet part files, in a deterministic order; empty for other stores."""
+        return self.store.files if isinstance(self.store, ParquetParts) else []
 
     def scan(self) -> pl.LazyFrame:
-        """Lazily scan all result parts."""
-        files = self.result_files
-        if not files:
-            msg = f"No results/*.parquet files in {self.path}."
-            raise FileNotFoundError(msg)
-        for file in files:
-            _check_not_lfs_pointer(file)
-        return pl.scan_parquet(files, schema=schema(self.manifest))
+        """Lazily scan the results with the manifest schema.
+
+        Returns:
+            Lazy frame over all results; not validated.
+        """
+        return self.store.scan(schema(self.manifest), self.manifest)
 
     @cached_property
     def table(self) -> pl.DataFrame:
@@ -175,67 +171,50 @@ class Dataset:
             self.table, self.manifest, quantity, allow_missing=allow_missing, **variant
         )
 
-    def append(self, frame: pl.DataFrame, *, part: str | None = None) -> Path:
-        """Validate ``frame`` and write it as a new ``results/<part>.parquet``.
+    def append(self, frame: pl.DataFrame, *, part: str | None = None) -> str:
+        """Validate ``frame`` together with the stored results, then store it.
 
-        Existing parts are never rewritten. Duplicates against earlier parts are
-        rejected, so re-running a sweep cannot silently double a point. Concurrent
-        appends to the same dataset are serialized by a ``results/.append.lock``
-        file, and each part is published atomically under its final name.
+        Stored rows are never rewritten. Duplicates against earlier results are
+        rejected, so re-running a sweep cannot silently double a point. With
+        :class:`~qpdk.datasets.store.ParquetParts` the write is a new
+        ``<part>.parquet``; with :class:`~qpdk.datasets.store.DeltaStore` it is
+        one Delta commit, and the first append creates the table.
 
         Returns:
-            Path of the written part.
-
-        Raises:
-            FileExistsError: if the part already exists, or another append holds
-                the lock.
+            What was written: a part path, or a Delta URI and version.
         """
         frame = frame.select(schema(self.manifest).names()).cast(schema(self.manifest))  # pyrefly: ignore[bad-argument-type]
-        results = self.path / "results"
-        results.mkdir(parents=True, exist_ok=True)
-        target = results / f"{part or uuid.uuid4().hex}.parquet"
-        with _append_lock(results / ".append.lock"):
-            if target.exists():
-                msg = f"{target} already exists; result parts are append-only."
-                raise FileExistsError(msg)
-            existing = [self.scan().collect()] if self.result_files else []
-            validate(pl.concat([*existing, frame]), self.manifest)
-            staging = results / f".{target.name}.{uuid.uuid4().hex}.tmp"
+        with self.store.lock():
             try:
-                frame.sort(_key_columns(self.manifest), nulls_last=True).write_parquet(
-                    staging, compression="zstd", statistics=True
-                )
-                # A hard link publishes atomically and, unlike a rename, never
-                # replaces an existing part.
-                os.link(staging, target)
-            finally:
-                staging.unlink(missing_ok=True)
+                existing = [self.scan().collect()]
+            except FileNotFoundError:
+                existing = []
+            validate(pl.concat([*existing, frame]), self.manifest)
+            written = self.store.write(
+                frame.sort(_key_columns(self.manifest), nulls_last=True),
+                self.manifest,
+                part,
+            )
         self.__dict__.pop("table", None)
-        return target
+        return written
 
 
-@contextmanager
-def _append_lock(path: Path) -> Iterator[None]:
-    """Hold an exclusive lock file for the duration of an append.
+def _store_from_manifest(
+    manifest: Manifest, path: Path, storage_options: dict[str, str] | None
+) -> ResultStore:
+    """Build the store declared in the manifest, or the default ``results/`` parts.
 
-    Yields:
-        Nothing; the lock is released on exit.
-
-    Raises:
-        FileExistsError: if another append holds the lock.
+    Returns:
+        The results store.
     """
-    try:
-        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError as error:
-        msg = (
-            f"Another append holds {path}; retry, or delete it if no append is running."
+    if (storage := manifest.storage) is None:
+        return ParquetParts(path / "results")
+    location = storage.uri if is_uri(storage.uri) else path / storage.uri
+    if storage.format == "delta":
+        return DeltaStore(
+            location, storage_options=storage_options, version=storage.version
         )
-        raise FileExistsError(msg) from error
-    try:
-        os.close(fd)
-        yield
-    finally:
-        path.unlink(missing_ok=True)
+    return ParquetParts(location, storage_options=storage_options)
 
 
 def _key_columns(manifest: Manifest) -> list[str]:
