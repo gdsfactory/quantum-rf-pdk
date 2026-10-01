@@ -145,7 +145,7 @@ repos:
         # citation style stops abbreviating and emits the whole name.
         args: ['--align=1', '--curly', '--months', '--sort', '--duplicates', '--strip-enclosing-braces', '--no-escape']
   - repo: https://github.com/AleksaC/hadolint-py
-    rev: v2.14.0
+    rev: v2.15.1
     hooks:
       - id: hadolint
         priority: 10
