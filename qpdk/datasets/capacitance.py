@@ -30,14 +30,15 @@ def maxwell_violations(maxwell: ArrayLike, *, rtol: float = 1e-9) -> list[str]:
 
     Checks symmetry, positive diagonal, non-positive off-diagonal entries, and
     diagonal dominance (non-negative capacitance to ground), each up to ``rtol``
-    relative to the largest diagonal entry. NaN entries are reported.
+    relative to the largest diagonal entry. Non-finite entries are reported
+    before any other check, since they make the tolerance meaningless.
 
     Returns:
         Descriptions of the violated properties; empty if the matrix is physical.
     """
     c = np.asarray(maxwell, dtype=float)
-    if np.isnan(c).any():
-        return ["contains NaN"]
+    if not np.isfinite(c).all():
+        return ["contains non-finite entries"]
     n = c.shape[-1]
     off = ~np.eye(n, dtype=bool)
     tol = rtol * np.abs(np.diagonal(c, axis1=-2, axis2=-1)).max()
