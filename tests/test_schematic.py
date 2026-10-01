@@ -136,6 +136,20 @@ def test_simulation_cells_have_sax_models() -> None:
     assert bend_s_model["params"] == {}
 
 
+def test_quarter_wave_resonator_coupled_symbol_port_sides() -> None:
+    """Put the resonator end bottom-left, below the coupling input."""
+    schematic = _get_schematic(quarter_wave_resonator_coupled)
+    assert schematic is not None
+
+    assert [(p["name"], p["side"]) for p in schematic.info["ports"]] == [
+        ("coupling_o1", "left"),
+        ("resonator_o1", "left"),
+        ("coupling_o2", "right"),
+    ]
+    assert schematic.ports["coupling_o1"].y > schematic.ports["resonator_o1"].y
+    assert schematic.ports["resonator_o1"].orientation == 180
+
+
 @pytest.mark.parametrize(
     "cell",
     [open_cell, short_cell, straight_open, straight_shorted],
