@@ -17,9 +17,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: just build
+      - name: Check that packaged datasets are not Git LFS pointers
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys, zipfile
+
+          (wheel,) = pathlib.Path("dist").glob("*.whl")
+          with zipfile.ZipFile(wheel) as zf:
+              parquet = [n for n in zf.namelist() if n.endswith(".parquet")]
+              bad = [n for n in parquet if not zf.read(n).startswith(b"PAR1")]
+          print(f"{len(parquet)} parquet files in {wheel.name}")
+          if not parquet or bad:
+              sys.exit(f"Missing or unresolved LFS parquet files: {bad}")
+          PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist

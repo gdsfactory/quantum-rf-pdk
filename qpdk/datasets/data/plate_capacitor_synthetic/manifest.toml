@@ -1,0 +1,66 @@
+# Synthetic stand-in for a Palace electrostatic sweep of `plate_capacitor`.
+# The values come from an analytical formula, not a solver; see generate.py.
+# Do not design against this dataset.
+
+schema_version = 1
+name = "plate_capacitor_synthetic"
+description = "Two-pad Maxwell capacitance of plate_capacitor over length, width, and gap (synthetic placeholder)."
+synthetic = true
+
+[recipe]
+name = "plate_capacitor_electrostatic"
+version = "0.1.0"
+
+[geometry]
+cell = "plate_capacitor"
+fixed_parameters = { cross_section = "cpw" }
+qpdk_version = "0.4.0"
+gdsfactory_version = "9.51.0"
+
+[stack]
+layer_stack = "qpdk.tech.LAYER_STACK"
+substrate = { material = "Si", relative_permittivity = 11.45, thickness_um = 500.0 }
+metal = { material = "Al", thickness_um = 0.2 }
+
+[solver]
+name = "analytical-placeholder"
+version = "qpdk 0.4.0"
+problem = "electrostatic"
+
+[accuracy]
+relative_tolerance = 1e-12
+refinement = "none; closed-form values"
+notes = "Exact for the placeholder formula. Real Palace datasets record mesh refinement and the convergence of the matrix entries here."
+
+[conventions]
+terminals = ["o1", "o2"]
+reference_ground = "ground_plane"
+terminal_descriptions = { o1 = "pad at port o1", o2 = "pad at port o2" }
+
+[[axes]]
+name = "length"
+unit = "um"
+values = [20.0, 40.0, 80.0, 120.0, 160.0, 200.0, 250.0, 300.0]
+description = "Pad length along the gap."
+
+[[axes]]
+name = "width"
+unit = "um"
+values = [5.0, 10.0, 15.0, 20.0]
+description = "Pad width perpendicular to the gap."
+
+[[axes]]
+name = "gap"
+unit = "um"
+values = [2.0, 4.0, 7.0, 10.0, 15.0, 20.0]
+description = "Gap between the pads."
+
+[[variants]]
+name = "cross_section"
+values = ["cpw"]
+
+[[quantities]]
+name = "maxwell_capacitance"
+kind = "maxwell_capacitance"
+unit = "F"
+description = "Maxwell capacitance matrix of the two pads w.r.t. the ground plane."

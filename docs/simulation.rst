@@ -93,3 +93,29 @@ importable without it.
 
 .. automodule:: qpdk.simulation.comsol.mesh
     :members:
+
+**************
+ FEM datasets
+**************
+
+Reusable FEM extraction results: a ``manifest.toml`` in Git plus Parquet results in Git
+LFS, read with Polars and looked up in jittable SAX models. Requires the ``models``
+extra. See :doc:`notebooks/fem_dataset_lookup`.
+
+From a checkout, fetch only the dataset files with ``git lfs pull
+--include="qpdk/datasets/data/**"``. Wheels on PyPI ship the resolved Parquet files, so
+installed users need no Git LFS.
+
+.. automodule:: qpdk.datasets
+
+.. automodule:: qpdk.datasets.manifest
+    :members:
+
+.. automodule:: qpdk.datasets.table
+    :members:
+
+.. automodule:: qpdk.datasets.interpolation
+    :members:
+
+.. automodule:: qpdk.datasets.capacitance
+    :members:
