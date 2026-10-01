@@ -209,7 +209,7 @@ repos:
         priority: 10
         types_or: [css, javascript]
   - repo: https://github.com/thibaudcolas/pre-commit-stylelint
-    rev: v17.14.1
+    rev: v17.15.0
     hooks:
       - id: stylelint
         priority: 20
