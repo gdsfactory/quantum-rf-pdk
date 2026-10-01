@@ -135,10 +135,14 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "qpdk.simulation.comsol.mesh",
         "refine_metal_plane_mesh",
     ),
+    "FEM_LAYERS": ("qpdk.simulation.fem", "FEM_LAYERS"),
+    "single_chip_stack": ("qpdk.simulation.fem", "single_chip_stack"),
+    "to_fem_regions": ("qpdk.simulation.fem", "to_fem_regions"),
 }
 
 __all__ = [
     "COMSOL",
+    "FEM_LAYERS",
     "HFSS",
     "Q2D",
     "Q3D",
@@ -162,6 +166,8 @@ __all__ = [
     "prepare_component_for_aedt",
     "prepare_comsol_layout",
     "refine_metal_plane_mesh",
+    "single_chip_stack",
+    "to_fem_regions",
 ]
 
 
