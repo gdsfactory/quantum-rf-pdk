@@ -139,6 +139,8 @@ currents, and substrate modes that analytical models may miss
   transmon pad capacitance and field map.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
+- :doc:`notebooks/fem_dataset_lookup` — Stores FEM extraction results as a
+  Polars/Parquet dataset and looks up capacitance matrices in jittable SAX models.
 
 .. note::
 
