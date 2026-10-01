@@ -23,6 +23,7 @@ from .junction import *
 from .launcher import *
 from .resonator import *
 from .snspd import *
+from .transducer import *
 from .transmon import *
 from .tsv import *
 from .unimon import *
