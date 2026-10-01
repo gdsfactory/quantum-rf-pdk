@@ -427,7 +427,7 @@ template = ".changelog.d/changelog_template.jinja"
 default-groups = ["dev", "lint", "stubs", "test"]
 
 [tool.uv.sources]
-sax = { git = "https://github.com/nikosavola/sax.git", rev = "effc91dbc2609885171873eec87067a153a1333c" }
+sax = { git = "https://github.com/gdsfactory/sax.git", rev = "de4a5b71eddbadc4b8f749e716f0bb3bd1a86240" }
 
 [tool.uv.build-backend]
 module-root = ""
