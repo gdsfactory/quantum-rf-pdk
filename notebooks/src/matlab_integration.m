@@ -61,7 +61,7 @@
 %   ```
 %
 % - **Optional:** the [RF Toolbox](https://se.mathworks.com/help/rf/index.html) for the
-%   S-parameter sections at the end. Everything before them runs on base MATLAB. The RF
+%   S-parameter examples. The introductory layout and frequency examples run on base MATLAB. The RF
 %   sections detect the toolbox at runtime and skip themselves if it is missing, and setting
 %   `QPDK_SKIP_RF_TOOLBOX=1` skips them unconditionally — which is what the CI job does,
 %   because the free MATLAB licence granted to open-source GitHub projects does not
@@ -77,8 +77,10 @@
 %   which CI also does.
 %
 % - **Optional:** the Optimization, Statistics and Machine Learning, Global Optimization and
-%   Parallel Computing toolboxes, one per section in *MATLAB toolboxes on top of qpdk models*. Each
-%   of those sections skips itself when its toolbox is missing, like the RF and PDE sections.
+%   Parallel Computing toolboxes for joint design targets, fabrication spread, readout trade-offs
+%   and parallel layout builds, respectively. Each example skips itself when its toolbox is missing
+%   or unlicensed. Set `QPDK_SKIP_<KEY>_TOOLBOX=1` to skip an example unconditionally, with `<KEY>`
+%   one of `OPTIM`, `STATS`, `GADS` or `PARALLEL`.
 %
 % - The version of this notebook rendered in the documentation carries outputs from a saved run
 %   with the optional toolboxes. CI re-executes the notebook with RF and PDE sections skipped and
@@ -117,6 +119,41 @@ set(groot, 'defaultFigureColor', 'w', 'defaultAxesColor', 'w', ...
     'defaultAxesYGrid', 'on', 'defaultAxesGridAlpha', 0.3, ...
     'defaultAxesGridLineStyle', '--', 'defaultAxesColorOrder', plot_colors, ...
     'defaultLineLineWidth', 1.5);
+
+% %%
+toolbox_checks = struct( ...
+    'key', {'OPTIM', 'STATS', 'GADS', 'PARALLEL'}, ...
+    'ver_name', {'optim', 'stats', 'globaloptim', 'parallel'}, ...
+    'feature', {'Optimization_Toolbox', 'Statistics_Toolbox', 'GADS_Toolbox', ...
+    'Distrib_Computing_Toolbox'}, ...
+    'label', {'Optimization Toolbox', 'Statistics and Machine Learning Toolbox', ...
+    'Global Optimization Toolbox', 'Parallel Computing Toolbox'});
+has_toolbox = struct();
+for check = toolbox_checks
+    env_value = getenv(sprintf('QPDK_SKIP_%s_TOOLBOX', check.key));
+    skipped_by_env = ~isempty(env_value) && ...
+        ~ismember(lower(string(env_value)), ["0", "false", "no", ""]);
+    % license('checkout') catches an installed toolbox whose licence cannot be checked out.
+    available = ~skipped_by_env && ~isempty(ver(check.ver_name)) && ...
+        license('test', check.feature) == 1 && license('checkout', check.feature) == 1;
+    has_toolbox.(lower(check.key)) = available;
+    if skipped_by_env
+        fprintf('%s sections skipped: QPDK_SKIP_%s_TOOLBOX=%s\n', check.label, check.key, env_value);
+    elseif ~available
+        fprintf('%s sections skipped: toolbox not installed or no licence available.\n', ...
+            check.label);
+    else
+        fprintf('%s available.\n', check.label);
+    end
+end
+
+perturbation = py.importlib.import_module('qpdk.models.perturbation');
+qubit_models = py.importlib.import_module('qpdk.models.qubit');
+% JAX returns its own array type; numpy.asarray turns it into something double() understands.
+as_double = @(x) double(py.numpy.asarray(x));
+as_numpy = @(v) py.numpy.asarray(v(:).');
+% MATLAB cannot index a function call's result directly, as in f(x){1}.
+tuple_item = @(t, k) t{k};
 
 % %% [markdown]
 %
@@ -783,73 +820,12 @@ end
 
 % %% [markdown]
 %
-% ## MATLAB toolboxes on top of qpdk models
+% ## Joint design targets with the Optimization Toolbox
 %
-% The remaining sections pair qpdk's analytical models with four MATLAB toolboxes. Each one answers
-% a question that comes up when designing a transmon read out through a CPW resonator:
-%
-% - [Optimization Toolbox](https://se.mathworks.com/help/optim/index.html): which junction, island,
-%   coupling and resonator length hit a set of target frequencies?
-%
-% - [Statistics and Machine Learning Toolbox](https://se.mathworks.com/help/stats/index.html): how
-%   much of that design survives fabrication spread, and which parameter dominates?
-%
-% - [Global Optimization Toolbox](https://se.mathworks.com/help/gads/index.html): what does fast
-%   readout cost in Purcell-limited lifetime?
-%
-% - [Parallel Computing Toolbox](https://se.mathworks.com/help/parallel-computing/index.html): build
-%   a grid of chip layouts on a pool of workers.
-%
-% The physics stays in Python. `qpdk.models.perturbation` and `qpdk.models.qubit` are JAX functions,
-% so they accept whole arrays: passing one `numpy` array per argument evaluates a full population or
-% Monte Carlo sample in a single Python call, instead of one call per point.
-%
-% Every section detects its toolbox the same way as the RF and PDE sections and skips itself if the
-% toolbox is missing or unlicensed. `QPDK_SKIP_<KEY>_TOOLBOX=1` skips one unconditionally, with
-% `<KEY>` one of `OPTIM`, `STATS`, `GADS` or `PARALLEL`.
-
-% %%
-toolbox_checks = struct( ...
-    'key', {'OPTIM', 'STATS', 'GADS', 'PARALLEL'}, ...
-    'ver_name', {'optim', 'stats', 'globaloptim', 'parallel'}, ...
-    'feature', {'Optimization_Toolbox', 'Statistics_Toolbox', 'GADS_Toolbox', ...
-    'Distrib_Computing_Toolbox'}, ...
-    'label', {'Optimization Toolbox', 'Statistics and Machine Learning Toolbox', ...
-    'Global Optimization Toolbox', 'Parallel Computing Toolbox'});
-has_toolbox = struct();
-for check = toolbox_checks
-    env_value = getenv(sprintf('QPDK_SKIP_%s_TOOLBOX', check.key));
-    skipped_by_env = ~isempty(env_value) && ...
-        ~ismember(lower(string(env_value)), ["0", "false", "no", ""]);
-    % license('checkout') catches an installed toolbox whose licence cannot be checked out.
-    available = ~skipped_by_env && ~isempty(ver(check.ver_name)) && ...
-        license('test', check.feature) == 1 && license('checkout', check.feature) == 1;
-    has_toolbox.(lower(check.key)) = available;
-    if skipped_by_env
-        fprintf('%s sections skipped: QPDK_SKIP_%s_TOOLBOX=%s\n', check.label, check.key, env_value);
-    elseif ~available
-        fprintf('%s sections skipped: toolbox not installed or no licence available.\n', ...
-            check.label);
-    else
-        fprintf('%s available.\n', check.label);
-    end
-end
-
-perturbation = py.importlib.import_module('qpdk.models.perturbation');
-qubit_models = py.importlib.import_module('qpdk.models.qubit');
-% JAX returns its own array type; numpy.asarray turns it into something double() understands.
-as_double = @(x) double(py.numpy.asarray(x));
-as_numpy = @(v) py.numpy.asarray(v(:).');
-% MATLAB cannot index a function call's result directly, as in f(x){1}.
-tuple_item = @(t, k) t{k};
-
-% %% [markdown]
-%
-% ### Joint design targets with `lsqnonlin`
-%
-% Four targets — qubit frequency $\omega_\text{q}$, anharmonicity $\alpha$, resonator frequency
-% $f_\text{r}$ and dispersive shift $|\chi|$ — and four unknowns: $E_\text{J}$, $E_\text{C}$, the
-% coupling $g$ and the resonator length.
+% The [Optimization Toolbox](https://se.mathworks.com/help/optim/index.html) uses `lsqnonlin` to
+% find a transmon and resonator design that meets four targets: qubit frequency $\omega_\text{q}$,
+% anharmonicity $\alpha$, resonator frequency $f_\text{r}$ and dispersive shift $|\chi|$. The four
+% unknowns are $E_\text{J}$, $E_\text{C}$, the coupling $g$ and the resonator length.
 %
 % The closed forms get most of the way. $\alpha \approx E_\text{C}$ and $\omega_\text{q} \approx
 % \sqrt{8E_\text{J}E_\text{C}} - E_\text{C}$ fix the qubit
@@ -912,7 +888,7 @@ end
 
 % %% [markdown]
 %
-% ### Fabrication spread with the Statistics and Machine Learning Toolbox
+% ## Fabrication spread with the Statistics and Machine Learning Toolbox
 %
 % Josephson junctions are the least reproducible part of a transmon: a few per cent spread in
 % normal-state resistance, and so in $E_\text{J}$, is typical. Island and coupler geometry is better
@@ -922,9 +898,11 @@ end
 %
 % - $E_\text{C}$ and $g$: normal, 1.5 % and 3 %
 %
-% `lhsdesign` draws a Latin hypercube in the unit cube, and `icdf` maps each column onto its
-% distribution. The hypercube covers the tails more evenly than plain `rand` at the same sample
-% count. All 2000 samples go through the qpdk models in one call per model.
+% The [Statistics and Machine Learning Toolbox](https://se.mathworks.com/help/stats/index.html)
+% provides the sampling and regression tools. `lhsdesign` draws a Latin hypercube in the unit cube,
+% and `icdf` maps each column onto its distribution. The hypercube covers the tails more evenly than
+% plain `rand` at the same sample count. The qpdk models accept NumPy arrays, so all 2000 samples
+% are evaluated in one Python call per model rather than one call per sample.
 %
 % `fitlm` on the standardised inputs then reads off which spread drives $\omega_\text{q}$ and
 % $\chi$. The coefficients are the change in each output per standard deviation of each input.
@@ -983,13 +961,14 @@ end
 
 % %% [markdown]
 %
-% ### Readout speed against Purcell decay with `paretosearch`
+% ## Readout speed against Purcell decay with the Global Optimization Toolbox
 %
 % Faster readout and a longer qubit lifetime pull the resonator design in opposite directions. A
 % larger coupling $g$ and a broader resonator linewidth $\kappa$ measure faster but also let the
 % qubit decay through the resonator, at the Purcell rate $\gamma = \kappa (g/\Delta)^2$
 % {cite:p}`blaisCircuitQuantumElectrodynamics2021`. There is no single optimum, only a trade-off
-% curve, which is what `paretosearch` returns.
+% curve, which `paretosearch` from the [Global Optimization
+% Toolbox](https://se.mathworks.com/help/gads/index.html) returns.
 %
 % The decision variables are $g$, $f_\text{r}$ and the ratio $r = \kappa / 2|\chi|$. Parametrising
 % $\kappa$ through $r$ keeps every candidate near the $\kappa \approx 2|\chi|$ point that maximises
@@ -1072,10 +1051,11 @@ end
 
 % %% [markdown]
 %
-% ### Layout variants on a parallel pool
+% ## Layout variants with the Parallel Computing Toolbox
 %
-% Evaluating a model is cheap; building and writing a layout is not. `parfor` spreads the GDS builds
-% from the parametric-variants section over a pool of worker processes.
+% The [Parallel Computing Toolbox](https://se.mathworks.com/help/parallel-computing/index.html)
+% provides `parfor` for independent layout builds. It spreads the GDS builds from the
+% parametric-variants section over a pool of worker processes.
 %
 % Each worker runs its own MATLAB with its own Python, so the interpreter has to be selected and the
 % PDK activated once per worker with `parfevalOnAll` before the loop. Python objects cannot cross
