@@ -76,6 +76,10 @@
 %   way when the toolbox is missing, and `QPDK_SKIP_PDE_TOOLBOX=1` skips it unconditionally,
 %   which CI also does.
 %
+% - **Optional:** the Optimization, Statistics and Machine Learning, Global Optimization and
+%   Parallel Computing toolboxes, one per section in *MATLAB toolboxes on top of qpdk models*. Each
+%   of those sections skips itself when its toolbox is missing, like the RF and PDE sections.
+%
 % - The version of this notebook rendered in the documentation carries outputs from a saved run
 %   with both optional toolboxes. CI re-executes the notebook with those sections skipped and
 %   checks the saved outputs against a fingerprint printed by the last cell.
@@ -776,6 +780,329 @@ if has_pde
     title('Potential (V) at z = 0.5 \mum, o1 at 1 V', 'FontName', 'Outfit');
 end
 
+% %% [markdown]
+%
+% ## MATLAB toolboxes on top of qpdk models
+%
+% The remaining sections pair qpdk's analytical models with four MATLAB toolboxes. Each one answers
+% a question that comes up when designing a transmon read out through a CPW resonator:
+%
+% - [Optimization Toolbox](https://se.mathworks.com/help/optim/index.html): which junction, island,
+%   coupling and resonator length hit a set of target frequencies?
+%
+% - [Statistics and Machine Learning Toolbox](https://se.mathworks.com/help/stats/index.html): how
+%   much of that design survives fabrication spread, and which parameter dominates?
+%
+% - [Global Optimization Toolbox](https://se.mathworks.com/help/gads/index.html): what does fast
+%   readout cost in Purcell-limited lifetime?
+%
+% - [Parallel Computing Toolbox](https://se.mathworks.com/help/parallel-computing/index.html): build
+%   a grid of chip layouts on a pool of workers.
+%
+% The physics stays in Python. `qpdk.models.perturbation` and `qpdk.models.qubit` are JAX functions,
+% so they accept whole arrays: passing one `numpy` array per argument evaluates a full population or
+% Monte Carlo sample in a single Python call, instead of one call per point.
+%
+% Every section detects its toolbox the same way as the RF and PDE sections and skips itself if the
+% toolbox is missing or unlicensed. `QPDK_SKIP_<KEY>_TOOLBOX=1` skips one unconditionally, with
+% `<KEY>` one of `OPTIM`, `STATS`, `GADS` or `PARALLEL`.
+
+% %%
+toolbox_checks = struct( ...
+    'key', {'OPTIM', 'STATS', 'GADS', 'PARALLEL'}, ...
+    'ver_name', {'optim', 'stats', 'globaloptim', 'parallel'}, ...
+    'feature', {'Optimization_Toolbox', 'Statistics_Toolbox', 'GADS_Toolbox', ...
+    'Distrib_Computing_Toolbox'}, ...
+    'label', {'Optimization Toolbox', 'Statistics and Machine Learning Toolbox', ...
+    'Global Optimization Toolbox', 'Parallel Computing Toolbox'});
+has_toolbox = struct();
+for check = toolbox_checks
+    env_value = getenv(sprintf('QPDK_SKIP_%s_TOOLBOX', check.key));
+    skipped_by_env = ~isempty(env_value) && ...
+        ~ismember(lower(string(env_value)), ["0", "false", "no", ""]);
+    % license('checkout') catches an installed toolbox whose licence cannot be checked out.
+    available = ~skipped_by_env && ~isempty(ver(check.ver_name)) && ...
+        license('test', check.feature) == 1 && license('checkout', check.feature) == 1;
+    has_toolbox.(lower(check.key)) = available;
+    if skipped_by_env
+        fprintf('%s sections skipped: QPDK_SKIP_%s_TOOLBOX=%s\n', check.label, check.key, env_value);
+    elseif ~available
+        fprintf('%s sections skipped: toolbox not installed or no licence available.\n', ...
+            check.label);
+    else
+        fprintf('%s available.\n', check.label);
+    end
+end
+
+perturbation = py.importlib.import_module('qpdk.models.perturbation');
+qubit_models = py.importlib.import_module('qpdk.models.qubit');
+% JAX returns its own array type; numpy.asarray turns it into something double() understands.
+as_double = @(x) double(py.numpy.asarray(x));
+as_numpy = @(v) py.numpy.asarray(v(:)');
+% MATLAB cannot index a function call's result directly, as in f(x){1}.
+tuple_item = @(t, k) t{k};
+
+% %% [markdown]
+%
+% ### Joint design targets with `lsqnonlin`
+%
+% Four targets — qubit frequency $\omega_\text{q}$, anharmonicity $\alpha$, resonator frequency
+% $f_\text{r}$ and dispersive shift $|\chi|$ — and four unknowns: $E_\text{J}$, $E_\text{C}$, the
+% coupling $g$ and the resonator length.
+%
+% The closed forms get most of the way. $\alpha \approx E_\text{C}$ and $\omega_\text{q} \approx
+% \sqrt{8E_\text{J}E_\text{C}} - E_\text{C}$ fix the qubit
+% {cite:p}`kochChargeinsensitiveQubitDesign2007a`, `fzero` fixes the length as above, and
+% `dispersive_shift_to_coupling` inverts the rotating-wave approximation for $g$. That last step is
+% approximate: `dispersive_shift` also keeps the counter-rotating terms. `lsqnonlin` starts from the
+% closed-form point and solves all four residuals together against the full model, within bounds
+% that keep every parameter physical.
+%
+% Without the Optimization Toolbox the closed-form point is kept, so the sections below still have a
+% design to work from.
+
+% %%
+target = struct('wq_ghz', 5.0, 'alpha_ghz', 0.21, 'fr_ghz', 7.0, 'chi_mhz', 1.0);
+
+resonator_f_ghz = @(L) double(py.qpdk.models.resonator.resonator_frequency( ...
+    pyargs('length', L, 'is_quarter_wave', true))) / 1e9;
+ec0 = target.alpha_ghz;
+ej0 = (target.wq_ghz + ec0)^2 / (8 * ec0);
+g0 = as_double(perturbation.dispersive_shift_to_coupling( ...
+    -target.chi_mhz * 1e-3, target.wq_ghz, target.fr_ghz, target.alpha_ghz));
+length0 = fzero(@(L) resonator_f_ghz(L) - target.fr_ghz, [500, 50000]);
+design = struct('ej_ghz', ej0, 'ec_ghz', ec0, 'g_ghz', g0, 'length_um', length0);
+
+if has_toolbox.optim
+    % p = [E_J (GHz), E_C (GHz), g (GHz), length (um)]; each residual is a relative error.
+    wq_of = @(ej, ec) as_double(tuple_item( ...
+        perturbation.ej_ec_to_frequency_and_anharmonicity(ej, ec), 1));
+    chi_mhz_of = @(p) 1e3 * abs(as_double(perturbation.dispersive_shift( ...
+        wq_of(p(1), p(2)), resonator_f_ghz(p(4)), p(2), p(3))));
+    design_residuals = @(p) [
+        (wq_of(p(1), p(2)) - target.wq_ghz) / target.wq_ghz
+        (p(2) - target.alpha_ghz) / target.alpha_ghz
+        (resonator_f_ghz(p(4)) - target.fr_ghz) / target.fr_ghz
+        (chi_mhz_of(p) - target.chi_mhz) / target.chi_mhz
+        ];
+    p0 = [ej0, ec0, g0, length0];
+    lb = [5, 0.1, 0.01, 1000];
+    ub = [50, 0.4, 0.3, 20000];
+    opts = optimoptions('lsqnonlin', 'Display', 'final', 'FunctionTolerance', 1e-14, ...
+        'StepTolerance', 1e-12, 'TypicalX', p0);
+    [p_opt, resnorm] = lsqnonlin(design_residuals, p0, lb, ub, opts);
+    design = struct('ej_ghz', p_opt(1), 'ec_ghz', p_opt(2), 'g_ghz', p_opt(3), ...
+        'length_um', p_opt(4));
+    fprintf('Residual norm %.1e\n', resnorm);
+    fprintf('g: RWA estimate %.2f MHz -> full model %.2f MHz (%+.1f %%)\n', ...
+        1e3 * g0, 1e3 * design.g_ghz, 100 * (design.g_ghz / g0 - 1));
+end
+
+% The same models give the circuit values a layout has to realise.
+c_sigma_ff = 1e15 * as_double(qubit_models.ec_to_capacitance(design.ec_ghz));
+l_j_nh = 1e9 * as_double(qubit_models.ej_to_inductance(design.ej_ghz));
+T_design = table(design.ej_ghz, design.ec_ghz, 1e3 * design.g_ghz, design.length_um, ...
+    c_sigma_ff, l_j_nh, 'VariableNames', {'EJ_GHz', 'EC_GHz', 'g_MHz', 'length_um', ...
+    'C_sigma_fF', 'L_J_nH'});
+disp(T_design);
+
+% %% [markdown]
+%
+% ### Fabrication spread with the Statistics and Machine Learning Toolbox
+%
+% Josephson junctions are the least reproducible part of a transmon: a few per cent spread in
+% normal-state resistance, and so in $E_\text{J}$, is typical. Island and coupler geometry is better
+% controlled. The spreads below are illustrative rather than taken from a specific process:
+%
+% - $E_\text{J}$: lognormal, 3 % standard deviation
+%
+% - $E_\text{C}$ and $g$: normal, 1.5 % and 3 %
+%
+% `lhsdesign` draws a Latin hypercube in the unit cube, and `icdf` maps each column onto its
+% distribution. The hypercube covers the tails more evenly than plain `rand` at the same sample
+% count. All 2000 samples go through the qpdk models in one call per model.
+%
+% `fitlm` on the standardised inputs then reads off which spread drives $\omega_\text{q}$ and
+% $\chi$. The coefficients are the change in each output per standard deviation of each input.
+
+% %%
+if has_toolbox.stats
+    rng(0);
+    n_mc = 2000;
+    u_lhs = lhsdesign(n_mc, 3, 'Criterion', 'maximin', 'Iterations', 20);
+    sigma_ln = 0.03;
+    ej_dist = makedist('Lognormal', 'mu', log(design.ej_ghz) - sigma_ln^2 / 2, ...
+        'sigma', sigma_ln);
+    ec_dist = makedist('Normal', 'mu', design.ec_ghz, 'sigma', 0.015 * design.ec_ghz);
+    g_dist = makedist('Normal', 'mu', design.g_ghz, 'sigma', 0.03 * design.g_ghz);
+    ej_mc = icdf(ej_dist, u_lhs(:, 1));
+    ec_mc = icdf(ec_dist, u_lhs(:, 2));
+    g_mc = icdf(g_dist, u_lhs(:, 3));
+
+    wq_alpha = perturbation.ej_ec_to_frequency_and_anharmonicity(as_numpy(ej_mc), ...
+        as_numpy(ec_mc));
+    wq_mc = reshape(as_double(wq_alpha{1}), [], 1);
+    chi_mc = reshape(1e3 * abs(as_double(perturbation.dispersive_shift(wq_alpha{1}, ...
+        target.fr_ghz, wq_alpha{2}, as_numpy(g_mc)))), [], 1);
+
+    tolerance_mhz = 50;
+    in_spec = abs(wq_mc - target.wq_ghz) * 1e3 <= tolerance_mhz;
+    fprintf('omega_q 5/50/95th percentile: %s GHz\n', mat2str(prctile(wq_mc, [5 50 95]), 4));
+    fprintf('|chi|   5/50/95th percentile: %s MHz\n', mat2str(prctile(chi_mc, [5 50 95]), 3));
+    fprintf('Within +/-%d MHz of the target qubit frequency: %.1f %%\n', tolerance_mhz, ...
+        100 * mean(in_spec));
+
+    mc_inputs = table(zscore(ej_mc), zscore(ec_mc), zscore(g_mc), ...
+        'VariableNames', {'EJ', 'EC', 'g'});
+    mdl_wq = fitlm([mc_inputs, table(1e3 * wq_mc, 'VariableNames', {'wq_MHz'})]);
+    mdl_chi = fitlm([mc_inputs, table(chi_mc, 'VariableNames', {'chi_MHz'})]);
+    T_sens = table(mdl_wq.Coefficients.Estimate(2:end), ...
+        mdl_chi.Coefficients.Estimate(2:end), ...
+        'RowNames', {'EJ', 'EC', 'g'}, ...
+        'VariableNames', {'d_wq_MHz_per_sigma', 'd_chi_MHz_per_sigma'});
+    disp(T_sens);
+    fprintf('Linear fit R^2: omega_q %.4f, |chi| %.4f\n', mdl_wq.Rsquared.Ordinary, ...
+        mdl_chi.Rsquared.Ordinary);
+
+    figure;
+    tiledlayout(1, 2, TileSpacing='compact', Padding='compact');
+    nexttile;
+    histfit(wq_mc, 40, 'normal');
+    xline(target.wq_ghz + [-1 1] * tolerance_mhz / 1e3, '--');
+    xlabel('\omega_q (GHz)'); ylabel('Samples');
+    title('Qubit frequency', 'FontName', 'Outfit');
+    nexttile;
+    scatter(wq_mc, chi_mc, 6, double(in_spec), 'filled');
+    colormap(gca, plot_colors([4 3], :));
+    xlabel('\omega_q (GHz)'); ylabel('|\chi| (MHz)');
+    title('Dispersive shift follows the qubit', 'FontName', 'Outfit');
+end
+
+% %% [markdown]
+%
+% ### Readout speed against Purcell decay with `paretosearch`
+%
+% Faster readout and a longer qubit lifetime pull the resonator design in opposite directions. A
+% larger coupling $g$ and a broader resonator linewidth $\kappa$ measure faster but also let the
+% qubit decay through the resonator, at the Purcell rate $\gamma = \kappa (g/\Delta)^2$
+% {cite:p}`blaisCircuitQuantumElectrodynamics2021`. There is no single optimum, only a trade-off
+% curve, which is what `paretosearch` returns.
+%
+% The decision variables are $g$, $f_\text{r}$ and the ratio $r = \kappa / 2|\chi|$. Parametrising
+% $\kappa$ through $r$ keeps every candidate near the $\kappa \approx 2|\chi|$ point that maximises
+% readout signal-to-noise, using bounds alone and no nonlinear constraint. The two objectives are
+% the Purcell rate and the negative measurement rate $8\chi^2\bar{n}/\kappa$ at $\bar{n}=5$ photons
+% {cite:p}`gambettaQubitphotonInteractionsCavity2006`. That expression is the $|\chi| \ll \kappa$
+% limit, so it overstates the rate for $r$ near 1; read the front as a comparison between designs,
+% not as absolute readout times.
+%
+% `UseVectorized` hands the objective a whole batch of candidates, so each poll costs a single round
+% trip to Python.
+
+% %%
+if has_toolbox.gads
+    wq_ghz = as_double(tuple_item(perturbation.ej_ec_to_frequency_and_anharmonicity( ...
+        design.ej_ghz, design.ec_ghz), 1));
+    alpha_ghz = design.ec_ghz;
+    n_bar = 5;
+    % x = [g (GHz), f_r (GHz), r]; one row per candidate.
+    chi_of = @(x) as_double(perturbation.dispersive_shift(wq_ghz, as_numpy(x(:, 2)), ...
+        alpha_ghz, as_numpy(x(:, 1))));
+    kappa_of = @(x) 2 * x(:, 3) .* abs(reshape(chi_of(x), [], 1));
+    readout_objectives = @(x) [
+        reshape(as_double(perturbation.purcell_decay_rate(as_numpy(x(:, 1)), wq_ghz, ...
+        as_numpy(x(:, 2)), as_numpy(kappa_of(x)))), [], 1), ...
+        -reshape(as_double(perturbation.measurement_induced_dephasing(as_numpy(chi_of(x)), ...
+        as_numpy(kappa_of(x)), n_bar)), [], 1)];
+
+    lb = [0.02, 6.0, 1.0];
+    ub = [0.20, 8.0, 4.0];
+    rng(0);
+    opts = optimoptions('paretosearch', 'UseVectorized', true, 'UseCompletePoll', true, ...
+        'ParetoSetSize', 60, 'Display', 'off');
+    [x_front, f_front] = paretosearch(readout_objectives, 3, [], [], [], [], lb, ub, [], opts);
+
+    t_purcell_us = 1 ./ (f_front(:, 1) * 1e9) * 1e6;
+    t_meas_ns = 1 ./ (-f_front(:, 2) * 1e9) * 1e9;
+    fprintf('Pareto front: %d designs, T_Purcell %.0f-%.0f us, 1/Gamma_m %.1f-%.1f ns\n', ...
+        size(x_front, 1), min(t_purcell_us), max(t_purcell_us), min(t_meas_ns), ...
+        max(t_meas_ns));
+
+    % Pick the fastest design that still leaves the Purcell limit above 1 ms, then size it.
+    candidates = find(t_purcell_us >= 1000);
+    if isempty(candidates)
+        fprintf('No design on the front reaches T_Purcell >= 1 ms with these bounds.\n');
+    else
+        [~, best] = min(t_meas_ns(candidates));
+        pick = candidates(best);
+        x_pick = x_front(pick, :);
+        kappa_pick = kappa_of(x_pick);
+        length_pick = fzero(@(L) resonator_f_ghz(L) - x_pick(2), [500, 50000]);
+        fprintf(['Chosen: g = %.1f MHz, f_r = %.3f GHz, kappa = %.2f MHz (Q_ext = %.0f), ', ...
+            'length = %.1f um\n'], 1e3 * x_pick(1), x_pick(2), 1e3 * kappa_pick, ...
+            x_pick(2) / kappa_pick, length_pick);
+        fprintf('  T_Purcell = %.0f us, 1/Gamma_m = %.1f ns\n', t_purcell_us(pick), ...
+            t_meas_ns(pick));
+    end
+
+    figure;
+    scatter(t_meas_ns, t_purcell_us / 1e3, 24, x_front(:, 1) * 1e3, 'filled');
+    set(gca, 'XScale', 'log', 'YScale', 'log');
+    cb = colorbar; cb.Label.String = 'g (MHz)';
+    if ~isempty(candidates)
+        hold on;
+        plot(t_meas_ns(pick), t_purcell_us(pick) / 1e3, 'ko', 'MarkerSize', 10);
+        hold off;
+    end
+    yline(1, '--', 'T_{Purcell} = 1 ms');
+    xlabel('Measurement time 1/\Gamma_m (ns)'); ylabel('Purcell limit T_{Purcell} (ms)');
+    title('Readout speed vs. Purcell decay', 'FontName', 'Outfit');
+end
+
+% %% [markdown]
+%
+% ### Layout variants on a parallel pool
+%
+% Evaluating a model is cheap; building and writing a layout is not. `parfor` spreads the GDS builds
+% from the parametric-variants section over a pool of worker processes.
+%
+% Each worker runs its own MATLAB with its own Python, so the interpreter has to be selected and the
+% PDK activated once per worker with `parfevalOnAll` before the loop. Python objects cannot cross
+% between workers and the client, so each iteration builds its chip, writes the GDS on the worker
+% and returns only plain MATLAB numbers. Thread-based pools (`parpool('Threads')`) cannot call
+% Python at all, which is why this uses `'Processes'`.
+
+% %%
+if has_toolbox.parallel
+    pool = gcp('nocreate');
+    created_pool = isempty(pool);
+    if created_pool
+        pool = parpool('Processes');
+    end
+    fetchOutputs(parfevalOnAll(pool, @pyenv, 0, 'Version', qpdk_python, ...
+        'ExecutionMode', 'OutOfProcess'));
+    fetchOutputs(parfevalOnAll(pool, @pyrun, 0, "import qpdk; qpdk.PDK.activate()"));
+
+    [GG_par, LL_par] = ndgrid([8, 12, 16, 20], [3000, 3500, 4000, 4500]);
+    n_par = numel(GG_par);
+    areas_par_mm2 = zeros(n_par, 1);
+    tic;
+    parfor k = 1:n_par
+        chip = py.qpdk.samples.resonator_test_chip.resonator_test_chip_python( ...
+            pyargs('coupling_gap', GG_par(k), 'resonator_length', LL_par(k)));
+        sz = chip.size_info;
+        areas_par_mm2(k) = double(sz.width) * double(sz.height) / 1e6;
+        chip.write_gds(fullfile(results_dir, ...
+            sprintf('par_chip_gap%g_len%g.gds', GG_par(k), LL_par(k))));
+    end
+    fprintf('Built %d chips on %d workers in %.1f s\n', n_par, pool.NumWorkers, toc);
+    disp(table(GG_par(:), LL_par(:), areas_par_mm2, ...
+        'VariableNames', {'coupling_gap_um', 'resonator_length_um', 'area_mm2'}));
+    if created_pool
+        delete(pool);
+    end
+end
+
 % %% tags=["hide-input", "hide-output"]
 %
 % The rendered documentation shows the outputs of a saved run of this notebook, so the fingerprint
@@ -805,6 +1132,9 @@ end
 % - Export any other qpdk model with `sax.write_sdict_touchstone` and drop it into
 %   a MATLAB `circuit` the same way — the pattern is not specific to the CPW line or the
 %   resonator used here.
+%
+% - Swap the illustrative fabrication spreads in the Monte Carlo section for measured ones from your
+%   own process, or move the design targets and rerun `lsqnonlin` and `paretosearch`.
 %
 % - Compare the PDE Toolbox capacitance with the [Elmer IDC
 %   notebook](elmer_capacitance_interdigital.ipynb), or change the `pyrun` arguments to extract a
