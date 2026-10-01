@@ -9,7 +9,13 @@ Requires the ``models`` extra.
 
 from qpdk.datasets.capacitance import maxwell_to_mutual, maxwell_violations
 from qpdk.datasets.interpolation import GridInterpolator
-from qpdk.datasets.manifest import SCHEMA_VERSION, Manifest, QuantityKind, load_manifest
+from qpdk.datasets.manifest import (
+    SCHEMA_VERSION,
+    Artifact,
+    Manifest,
+    QuantityKind,
+    load_manifest,
+)
 from qpdk.datasets.table import (
     DATASETS_PATH,
     Dataset,
@@ -25,6 +31,7 @@ from qpdk.datasets.table import (
 __all__ = [
     "DATASETS_PATH",
     "SCHEMA_VERSION",
+    "Artifact",
     "Dataset",
     "DatasetError",
     "Grid",

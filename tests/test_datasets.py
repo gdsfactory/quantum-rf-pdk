@@ -1,6 +1,7 @@
 """Tests for qpdk.datasets: FEM dataset format, validation, and JAX lookup."""
 
 import dataclasses
+import hashlib
 import shutil
 from itertools import product
 from pathlib import Path
@@ -18,6 +19,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 from qpdk.datasets import (
     DATASETS_PATH,
+    Artifact,
     Dataset,
     DatasetError,
     GridInterpolator,
@@ -118,6 +120,15 @@ def test_grid_is_independent_of_row_order(dataset: Dataset) -> None:
         ),
         (lambda f: f.with_columns(value_imag=pl.lit(0.0)), "imaginary part"),
         (lambda f: f.with_columns(run_id=pl.lit("same")), "mix parameter points"),
+        (lambda f: f.with_columns(value=pl.lit(float("nan"))), "NaN value"),
+        (lambda f: f.with_columns(status=pl.lit(None, pl.String)), "null 'status'"),
+        (lambda f: f.with_columns(unit=pl.lit(None, pl.String)), "null 'unit'"),
+        (lambda f: f.with_columns(quantity=pl.lit(None, pl.String)), "null 'quantity'"),
+        (lambda f: f.with_columns(length=pl.lit(None, pl.Float64)), "null 'length'"),
+        (
+            lambda f: f.with_columns(cross_section=pl.lit(None, pl.String)),
+            "null 'cross_section'",
+        ),
         (lambda f: f.drop("unit"), r"missing \['unit'\]"),
     ],
 )
@@ -212,6 +223,19 @@ def test_variant_must_be_selected(dataset: Dataset) -> None:
             "reserved columns",
         ),
         ({"surprise": 1}, "Extra inputs"),
+        (
+            {
+                "quantities": [
+                    {
+                        "name": "c",
+                        "kind": "maxwell_capacitance",
+                        "unit": "F",
+                        "matrix": False,
+                    }
+                ]
+            },
+            "must be a matrix",
+        ),
     ],
 )
 def test_manifest_rejects(dataset: Dataset, change: dict, message: str) -> None:
@@ -239,7 +263,9 @@ def test_unresolved_lfs_pointer_has_useful_error(dataset_copy: Dataset) -> None:
         + "0" * 64
         + "\nsize 9733\n"
     )
-    with pytest.raises(LFSPointerError, match="git lfs pull"):
+    with pytest.raises(
+        LFSPointerError, match=r"git lfs pull --include \"qpdk/datasets/data/\*\*\""
+    ):
         dataset_copy.scan()
 
 
@@ -484,3 +510,39 @@ def test_sax_model_with_dataset_lookup(interp: GridInterpolator) -> None:
     analytical = plate_capacitor(f=f, length=120.0, width=10.0, gap=7.0)
     for key in [("o1", "o2"), ("o1", "o1")]:
         np.testing.assert_allclose(looked_up[key], analytical[key], rtol=1e-9)
+
+
+def test_parts_with_wrong_schema_raise_dataset_error(dataset_copy: Dataset) -> None:
+    (part,) = dataset_copy.result_files
+    pl.read_parquet(part).with_columns(pl.col("gap").cast(pl.Int64)).write_parquet(part)
+    with pytest.raises(DatasetError, match="do not match the schema"):
+        _ = dataset_copy.table
+
+
+def test_artifact_checksum(tmp_path: Path) -> None:
+    payload = tmp_path / "mesh.msh"
+    payload.write_bytes(b"mesh")
+    artifact = Artifact(
+        uri="s3://bucket/mesh.msh", sha256=hashlib.sha256(b"mesh").hexdigest()
+    )
+    artifact.verify(payload)
+    payload.write_bytes(b"other")
+    with pytest.raises(ValueError, match="does not match the checksum"):
+        artifact.verify(payload)
+
+
+@pytest.mark.parametrize("axis", ["length", "width", "gap"])
+def test_gradient_at_domain_edges(interp: GridInterpolator, axis: str) -> None:
+    """The gradient at both ends of an axis is the slope of the edge cell, not zero."""
+    point = {"length": 120.0, "width": 10.0, "gap": 7.0}
+
+    def c12(x):
+        return interp(**{**point, axis: x})[0, 1]
+
+    values = dict(
+        zip(interp.axis_names, (a.values for a in interp.grid.axes), strict=True)
+    )[axis]
+    for edge, neighbour in [(values[0], values[1]), (values[-1], values[-2])]:
+        slope = (c12(edge) - c12(neighbour)) / (edge - neighbour)
+        np.testing.assert_allclose(jax.grad(c12)(edge), slope, rtol=1e-9)
+        assert slope != 0
