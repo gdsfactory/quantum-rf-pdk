@@ -1,6 +1,7 @@
 """Tests for qpdk.models.datasets: metadata, results table, generator, and JAX lookup."""
 
 import dataclasses
+import json
 import shutil
 from pathlib import Path
 
@@ -15,10 +16,6 @@ from hypothesis import given, settings, strategies as st
 from pydantic import ValidationError
 from scipy.interpolate import RegularGridInterpolator
 
-from qpdk.models.capacitor import (
-    plate_capacitor,
-    plate_capacitor_capacitance_analytical,
-)
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.cpw import cpw_z0_from_cross_section
 from qpdk.models.datasets import (
@@ -30,6 +27,7 @@ from qpdk.models.datasets import (
     GridInterpolator,
     LFSPointerError,
     NonPhysicalMatrixError,
+    ParquetParts,
     Quantity,
     QuantityKind,
     RunStatus,
@@ -41,15 +39,10 @@ from qpdk.models.datasets import (
 )
 from qpdk.models.datasets.generate import write
 from qpdk.models.datasets.metadata import METADATA_KEY
-from qpdk.models.datasets.synthetic import (
-    PLATE_CAPACITOR,
-    PLATE_CAPACITOR_GRID,
-    plate_capacitor_maxwell,
-)
+from qpdk.models.datasets.plate_capacitor import GRID as PLATE_CAPACITOR_GRID, NAME
 from qpdk.models.generic import capacitor
 
-NAME = PLATE_CAPACITOR.name
-EP_R = 11.45
+PLATE_CAPACITOR = Dataset(NAME).metadata
 CENTER = {"length": 120.0, "width": 10.0, "gap": 7.0}
 
 
@@ -77,9 +70,8 @@ POINTS = st.fixed_dictionaries({
 
 
 def _maxwell(**point: float) -> np.ndarray:
-    return plate_capacitor_maxwell(**point, cross_section="cpw", ep_r=EP_R)[
-        "maxwell_capacitance"
-    ]
+    rows = Dataset(NAME).table.filter(_at(**point)).sort("row", "col")
+    return rows["value"].to_numpy().reshape(2, 2)
 
 
 def _at(**point: float) -> pl.Expr:
@@ -91,9 +83,10 @@ class TestMetadata:
     """The metadata lives in the results files and is validated on load."""
 
     @staticmethod
-    def test_shipped_dataset_is_labelled_synthetic(dataset: Dataset) -> None:
+    def test_shipped_dataset_is_palace_output(dataset: Dataset) -> None:
         assert dataset.metadata == PLATE_CAPACITOR
-        assert dataset.metadata.synthetic
+        assert not dataset.metadata.synthetic
+        assert dataset.metadata.provenance["solver"] == "Palace"
 
     @staticmethod
     def test_every_part_carries_the_metadata(dataset: Dataset) -> None:
@@ -147,7 +140,10 @@ class TestMetadata:
             ({"variants": ("gap",)}, "must be unique"),
             ({"variants": ("value",)}, "reserved columns"),
             ({"terminals": ("o1", "o1")}, "Duplicate terminal"),
-            ({"terminals": ("o1", "ground_plane")}, "reference ground"),
+            (
+                {"terminals": ("o1", PLATE_CAPACITOR.reference_ground)},
+                "reference ground",
+            ),
             ({"terminals": ()}, "need terminals"),
             ({"schema_version": 2}, "Unsupported schema_version"),
         ]:
@@ -172,7 +168,7 @@ class TestValidation:
     @staticmethod
     def test_shipped_table_is_valid(dataset: Dataset) -> None:
         validate(dataset.table, dataset.metadata)
-        assert dataset.table.height == 8 * 4 * 6 * 2 * 2
+        assert dataset.table.height == 3 * 3 * 3 * 2 * 2
 
     def test_rejects_wrong_columns(self, dataset: Dataset) -> None:
         self._rejects(
@@ -279,17 +275,16 @@ class TestGrid:
     def test_layout_is_deterministic(dataset: Dataset) -> None:
         """Axes in metadata order with ascending values, then terminals in order."""
         grid = dataset.grid("maxwell_capacitance", cross_section="cpw")
-        assert grid.values.shape == (8, 4, 6, 2, 2)
+        assert grid.values.shape == (3, 3, 3, 2, 2)
         for coords, values in zip(
             grid.coords, PLATE_CAPACITOR_GRID.values(), strict=True
         ):
             np.testing.assert_array_equal(coords, values)
-        for idx in [(0, 0, 0), (3, 1, 4), (7, 3, 5)]:
+        for idx in [(0, 0, 0), (1, 1, 1), (2, 2, 2)]:
             point = {
                 a: float(c[i])
                 for a, c, i in zip(grid.axis_names, grid.coords, idx, strict=True)
             }
-            # Shipped values were generated on one platform; libm may differ by an ulp.
             np.testing.assert_allclose(grid.values[idx], _maxwell(**point), rtol=1e-12)
 
     @staticmethod
@@ -314,9 +309,9 @@ class TestGrid:
             allow_missing=True,
             cross_section="cpw",
         )
-        assert np.isnan(grid.values[1, 1, 2]).all()
+        assert np.isnan(grid.values[0, 1, 1]).all()
         assert np.isfinite(
-            np.delete(grid.values.reshape(-1, 4), 1 * 24 + 1 * 6 + 2, axis=0)
+            np.delete(grid.values.reshape(-1, 4), 1 * 3 + 1, axis=0)
         ).all()
 
     @staticmethod
@@ -332,7 +327,7 @@ class TestGrid:
 
     @staticmethod
     def test_failed_runs_are_never_interpolated(dataset: Dataset) -> None:
-        point = _at(length=300.0, width=20.0, gap=20.0)
+        point = _at(length=120.0, width=20.0, gap=10.0)
         frame = dataset.table.with_columns(
             status=pl
             .when(point)
@@ -351,7 +346,7 @@ class TestGrid:
             cross_section="cpw",
         )
         f = GridInterpolator(grid)
-        assert np.isnan(f(length=290.0, width=19.0, gap=19.0)).all()
+        assert np.isnan(f(length=110.0, width=19.0, gap=9.0)).all()
         assert np.isfinite(f(length=100.0, width=10.0, gap=5.0)).all()
 
     @staticmethod
@@ -364,7 +359,7 @@ class TestGrid:
     @staticmethod
     def test_validated_domain_must_lie_in_the_grid(dataset: Dataset) -> None:
         axes = list(PLATE_CAPACITOR.axes)
-        axes[0] = axes[0].model_copy(update={"validated": (10.0, 250.0)})
+        axes[0] = axes[0].model_copy(update={"validated": (10.0, 100.0)})
         metadata = PLATE_CAPACITOR.model_copy(update={"axes": tuple(axes)})
         with pytest.raises(DatasetError, match="leaves the grid"):
             to_grid(dataset.table, metadata, "maxwell_capacitance", cross_section="cpw")
@@ -427,26 +422,45 @@ class TestGenerate:
     """``sweep`` and ``write`` produce the shipped dataset and any other."""
 
     @staticmethod
-    def test_regenerating_reproduces_the_shipped_table(
-        dataset: Dataset, tmp_path: Path
+    def test_invalid_regeneration_preserves_existing_parts(
+        dataset_copy: Dataset,
     ) -> None:
+        store = dataset_copy.store
+        assert isinstance(store, ParquetParts)
+        parts = {path: path.read_bytes() for path in store.files}
+        invalid = dataset_copy.table.with_columns(value=pl.lit(float("nan")))
+        with pytest.raises(DatasetError, match="non-finite value"):
+            write(store.location, dataset_copy.metadata, invalid)
+        assert {path: path.read_bytes() for path in store.files} == parts
+        assert Dataset(store.location).table.equals(dataset_copy.table)
+
+    @staticmethod
+    def test_sweep_round_trips_stored_solves(dataset: Dataset, tmp_path: Path) -> None:
         frame = sweep(
             PLATE_CAPACITOR,
-            plate_capacitor_maxwell,
+            lambda **point: {
+                "maxwell_capacitance": _maxwell(**{
+                    k: v for k, v in point.items() if k != "cross_section"
+                })
+            },
             PLATE_CAPACITOR_GRID,
             {"cross_section": ["cpw"]},
         )
         regenerated = write(tmp_path / NAME, PLATE_CAPACITOR, frame)
-        key = ["run_id", "row", "col"]
-        expected, actual = dataset.table.sort(key), regenerated.table.sort(key)
-        assert actual.drop("value").equals(expected.drop("value"))
-        np.testing.assert_allclose(actual["value"], expected["value"], rtol=1e-12)
+        np.testing.assert_array_equal(
+            regenerated.grid("maxwell_capacitance", cross_section="cpw").values,
+            dataset.grid("maxwell_capacitance", cross_section="cpw").values,
+        )
 
     @staticmethod
     def test_failed_solve_is_recorded() -> None:
         def solve(length, width, gap, cross_section):  # ruff: ignore[unused-function-argument]
             return (
-                None if gap > 15 else plate_capacitor_maxwell(length, width, gap, "cpw")
+                None
+                if gap > 7
+                else {
+                    "maxwell_capacitance": _maxwell(length=length, width=width, gap=gap)
+                }
             )
 
         frame = sweep(
@@ -454,13 +468,13 @@ class TestGenerate:
         )
         validate(frame, PLATE_CAPACITOR)
         failed = frame.filter(pl.col("status") == RunStatus.FAILED)
-        assert failed.height == 8 * 4 * 4
+        assert failed.height == 3 * 3 * 4
         assert failed["value"].is_null().all()
 
     @staticmethod
     def test_grid_must_match_the_axes() -> None:
         with pytest.raises(ValueError, match="Sweep needs values"):
-            sweep(PLATE_CAPACITOR, plate_capacitor_maxwell, {"length": [1.0]})
+            sweep(PLATE_CAPACITOR, lambda **_point: None, {"length": [1.0]})
 
     @staticmethod
     def test_complex_scalar_quantity() -> None:
@@ -498,7 +512,7 @@ class TestGridInterpolator:
 
     @staticmethod
     @settings(deadline=None, max_examples=25)
-    @given(idx=st.tuples(st.integers(0, 7), st.integers(0, 3), st.integers(0, 5)))
+    @given(idx=st.tuples(st.integers(0, 2), st.integers(0, 2), st.integers(0, 2)))
     def test_reproduces_grid_points(
         interp: GridInterpolator, idx: tuple[int, int, int]
     ) -> None:
@@ -519,15 +533,15 @@ class TestGridInterpolator:
         np.testing.assert_allclose(ours, reference, rtol=1e-12)
 
     @staticmethod
-    def test_held_out_points_against_formula(interp: GridInterpolator) -> None:
-        """Off-grid lookups stay close to the generating formula (trilinear error only)."""
-        rng = np.random.default_rng(1)
-        for _ in range(50):
-            point = {
-                a: float(rng.uniform(c[0], c[-1]))
-                for a, c in zip(interp.axis_names, interp.grid.coords, strict=True)
-            }
-            np.testing.assert_allclose(interp(**point), _maxwell(**point), rtol=0.05)
+    def test_held_out_points_against_palace(interp: GridInterpolator) -> None:
+        evidence = json.loads(
+            (
+                Path(__file__).parent / "data/plate_capacitor_palace_validation.json"
+            ).read_text(encoding="utf-8")
+        )
+        for solved in evidence["heldout"]:
+            point = {name: solved[name] for name in PLATE_CAPACITOR_GRID}
+            np.testing.assert_allclose(interp(**point), solved["actual_F"], rtol=0.06)
 
     @staticmethod
     @settings(deadline=None, max_examples=25)
@@ -561,7 +575,7 @@ class TestGridInterpolator:
     def test_clip_is_opt_in(interp: GridInterpolator) -> None:
         f = GridInterpolator(interp.grid, out_of_range="clip")
         np.testing.assert_allclose(
-            f(length=400.0, width=10.0, gap=5.0), f(length=300.0, width=10.0, gap=5.0)
+            f(length=400.0, width=10.0, gap=5.0), f(length=120.0, width=10.0, gap=5.0)
         )
         with pytest.raises(ValueError, match="out_of_range"):
             GridInterpolator(f.grid, out_of_range="extrapolate")  # pyrefly: ignore[bad-argument-type]
@@ -569,11 +583,11 @@ class TestGridInterpolator:
     @staticmethod
     def test_validated_domain_narrower_than_grid(interp: GridInterpolator) -> None:
         axes = list(interp.grid.axes)
-        axes[0] = axes[0].model_copy(update={"validated": (40.0, 250.0)})
+        axes[0] = axes[0].model_copy(update={"validated": (50.0, 110.0)})
         f = GridInterpolator(dataclasses.replace(interp.grid, axes=tuple(axes)))
-        assert f.domain["length"] == (40.0, 250.0)
+        assert f.domain["length"] == (50.0, 110.0)
         assert np.isnan(f(length=30.0, width=10.0, gap=5.0)).all()
-        assert np.isfinite(f(length=40.0, width=10.0, gap=5.0)).all()
+        assert np.isfinite(f(length=50.0, width=10.0, gap=5.0)).all()
 
     @staticmethod
     def test_single_point_axis(dataset: Dataset) -> None:
@@ -596,19 +610,19 @@ class TestGridInterpolator:
         def c_mutual(length, width, gap):
             return -interp(length=length, width=width, gap=gap)[..., 0, 1]
 
-        batch = jnp.linspace(25.0, 290.0, 7)
+        batch = jnp.linspace(45.0, 115.0, 7)
         jitted = jax.jit(c_mutual)(batch, 10.0, 5.0)
         np.testing.assert_allclose(jitted, c_mutual(batch, 10.0, 5.0), rtol=1e-12)
         vmapped = jax.vmap(c_mutual, in_axes=(0, None, None))(batch, 10.0, 5.0)
         np.testing.assert_allclose(vmapped, jitted, rtol=1e-12)
         assert jitted.dtype == jnp.float64
 
-        grad = jax.jit(jax.grad(c_mutual, argnums=(0, 2)))(130.0, 10.0, 5.0)
+        grad = jax.jit(jax.grad(c_mutual, argnums=(0, 2)))(90.0, 10.0, 5.0)
         h = 1e-3
-        fd_length = (
-            c_mutual(130.0 + h, 10.0, 5.0) - c_mutual(130.0 - h, 10.0, 5.0)
-        ) / (2 * h)
-        fd_gap = (c_mutual(130.0, 10.0, 5.0 + h) - c_mutual(130.0, 10.0, 5.0 - h)) / (
+        fd_length = (c_mutual(90.0 + h, 10.0, 5.0) - c_mutual(90.0 - h, 10.0, 5.0)) / (
+            2 * h
+        )
+        fd_gap = (c_mutual(90.0, 10.0, 5.0 + h) - c_mutual(90.0, 10.0, 5.0 - h)) / (
             2 * h
         )
         np.testing.assert_allclose(grad, (fd_length, fd_gap), rtol=1e-6)
@@ -627,7 +641,7 @@ class TestGridInterpolator:
                 "targets": np.array(["c11", "c12", "c21", "c22"], dtype=object),
             },
         )
-        point = {"length": 133.0, "width": 12.5, "gap": 8.2}
+        point = {"length": 93.0, "width": 12.5, "gap": 8.2}
         sax_out = sax.interpolate_xarray(xarr, **point)
         np.testing.assert_allclose(
             interp(**point).reshape(4),
@@ -681,11 +695,7 @@ class TestCapacitance:
     @staticmethod
     def test_mutual_conversion(interp: GridInterpolator) -> None:
         mutual = maxwell_to_mutual(interp(**CENTER))
-        np.testing.assert_allclose(
-            mutual[0, 1],
-            plate_capacitor_capacitance_analytical(ep_r=EP_R, **CENTER),
-            rtol=1e-12,
-        )
+        np.testing.assert_allclose(mutual[0, 1], -_maxwell(**CENTER)[0, 1], rtol=1e-12)
         np.testing.assert_allclose(
             mutual[0, 0], _maxwell(**CENTER).sum(axis=-1)[0], rtol=1e-12
         )
@@ -711,6 +721,10 @@ class TestCapacitance:
         looked_up = jax.jit(
             lambda gap: plate_capacitor_lookup(f=f, length=120.0, width=10.0, gap=gap)
         )(7.0)
-        analytical = plate_capacitor(f=f, length=120.0, width=10.0, gap=7.0)
+        expected = capacitor(
+            f=f,
+            capacitance=-_maxwell(**CENTER)[0, 1],
+            z0=cpw_z0_from_cross_section("cpw", f),
+        )
         for key in [("o1", "o2"), ("o1", "o1")]:
-            np.testing.assert_allclose(looked_up[key], analytical[key], rtol=1e-9)
+            np.testing.assert_allclose(looked_up[key], expected[key], rtol=1e-9)

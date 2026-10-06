@@ -125,6 +125,37 @@ Requires the ``delta`` extra.
         "gs://my-bucket/plate_capacitor", delta=True, version=3, storage_options=options
     )
 
+Generating Palace datasets
+==========================
+
+The bundled ``plate_capacitor_palace`` dataset contains real electrostatic extractions.
+Regenerate it with a local Palace installation:
+
+::
+
+    just generate-plate-capacitor
+
+Or use the package CLI outside a checkout:
+
+::
+
+    python -m qpdk.models.datasets.plate_capacitor --output results/plate-capacitor
+
+The default sweep has 27 geometries. Set ``--length``, ``--width`` and ``--gap`` to
+choose the grid, with values in µm. Each geometry gets its own mesh, config, solver log
+and results beneath ``--workdir``. Running the same command resumes completed solves;
+geometry, solver and mesh changes get separate run directories. The dataset is published
+after all solves and validation succeed. A failed solve raises with its log path and
+preserves the existing dataset.
+
+``--palace-command`` accepts a command prefix, so the same workflow works with MPI or a
+container, for example ``"palace -np 4"``. The config filename is appended without
+invoking a shell. Use ``--save-fields`` for ParaView outputs. ``--mesh-size`` and
+``--domain-pad`` control mesh and domain refinement; compare representative points
+before using a new parameter range. The bundled recipe uses zero-thickness perfect
+conductor sheets on silicon and a separate coplanar ground frame, not a finite-thickness
+process-stack extraction.
+
 .. automodule:: qpdk.models.datasets
 
 .. automodule:: qpdk.models.datasets.metadata
@@ -136,7 +167,7 @@ Requires the ``delta`` extra.
 .. automodule:: qpdk.models.datasets.generate
     :members:
 
-.. automodule:: qpdk.models.datasets.synthetic
+.. automodule:: qpdk.models.datasets.plate_capacitor
     :members:
 
 .. automodule:: qpdk.models.datasets.store
@@ -146,4 +177,7 @@ Requires the ``delta`` extra.
     :members:
 
 .. automodule:: qpdk.models.datasets.capacitance
+    :members:
+
+.. automodule:: qpdk.simulation.palace
     :members:

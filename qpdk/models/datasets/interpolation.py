@@ -36,7 +36,7 @@ class GridInterpolator:
             of the domain; use it only where a deliberate clamp is acceptable.
 
     Example:
-        >>> grid = Dataset("plate_capacitor_synthetic").grid(
+        >>> grid = Dataset("plate_capacitor_palace").grid(
         ...     "maxwell_capacitance", cross_section="cpw"
         ... )
         >>> c = GridInterpolator(grid)(length=100.0, width=10.0, gap=5.0)  # (2, 2) in F
