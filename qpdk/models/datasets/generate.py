@@ -19,7 +19,7 @@ import numpy as np
 from jax.typing import ArrayLike
 
 from qpdk.models.datasets.metadata import DatasetMetadata
-from qpdk.models.datasets.table import Dataset, RunStatus, schema
+from qpdk.models.datasets.table import Dataset, RunStatus, schema, validate
 
 if TYPE_CHECKING:
     import polars as pl
@@ -111,6 +111,7 @@ def write(
     Returns:
         The written dataset.
     """
+    validate(frame, metadata)
     for part in Path(location).glob("*.parquet"):
         part.unlink()
     dataset = Dataset(location, metadata)

@@ -13,11 +13,11 @@ import pytest
 
 from qpdk.models.datasets import Dataset, DatasetError, DeltaStore
 from qpdk.models.datasets.metadata import METADATA_KEY
-from qpdk.models.datasets.synthetic import PLATE_CAPACITOR
+from qpdk.models.datasets.plate_capacitor import NAME
 
 deltalake = pytest.importorskip("deltalake")
 
-NAME = PLATE_CAPACITOR.name
+PLATE_CAPACITOR = Dataset(NAME).metadata
 BUCKET = "qpdk-results"
 
 
@@ -28,7 +28,7 @@ def source() -> Dataset:
 
 def _halves(source: Dataset) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Split the source table into two batches of whole runs."""
-    first = pl.col("gap") < 10.0
+    first = pl.col("gap") < 7.0
     return source.table.filter(first), source.table.filter(~first)
 
 

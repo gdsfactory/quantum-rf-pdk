@@ -176,3 +176,7 @@ show component_name="":
 [group('all')]
 [parallel]
 all: test run-pre build docs
+
+# Generate or resume a real Palace plate-capacitor dataset.
+generate-plate-capacitor *args:
+    uv run --frozen --extra models python -m qpdk.models.datasets.plate_capacitor {{args}}

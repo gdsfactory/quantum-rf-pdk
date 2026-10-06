@@ -70,10 +70,32 @@
 # {func}`jax.jit`, and replaces the analytical capacitance of a SAX model with the
 # lookup.
 #
-# ```{warning}
-# `plate_capacitor_synthetic` is generated from an analytical formula as a
-# placeholder for Palace output. It demonstrates the format, not the physics.
+# The bundled data comes from Palace electrostatic solves of the actual QPDK
+# metal polygons, including their short leads, as perfect conductor sheets on
+# silicon. A separate coplanar ground frame surrounds the device. The geometry
+# and mesh settings travel with the data. It covers lengths 40–120 µm, widths
+# 5–20 µm and gaps 4–10 µm; these results apply to that geometry and stack.
+#
+# ## Generate or extend a dataset
+#
+# With Palace installed, run the default 27-point sweep from the repository root:
+#
+# ```bash
+# just generate-plate-capacitor
 # ```
+#
+# Change the grid with `--length 40 60 80`, `--width 5 10`, or `--gap 4 6 8`.
+# `--output` chooses the Parquet directory and `--workdir` keeps each geometry
+# alongside its mesh, solver inputs and log. Run the same command again after an
+# interruption: completed solves are reused. Solver failures stop the sweep
+# before replacing a dataset. `--palace-command` accepts an MPI or container
+# command prefix; `python -m qpdk.models.datasets.plate_capacitor --help` lists
+# the options.
+#
+# For convergence, solve a representative point with `--mesh-size 0.38`, then
+# compare it with a run using `--domain-pad 150`. Keep their outputs separate.
+# `--save-fields` writes terminal fields for ParaView. Open a generated dataset
+# with `Dataset("build/datasets/plate_capacitor_palace")`; queries need no solver.
 
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -122,10 +144,11 @@ from qpdk.models.generic import capacitor
 # be filtered and aggregated without loading anything into JAX.
 
 # %%
-dataset = Dataset("plate_capacitor_synthetic")
+dataset = Dataset("plate_capacitor_palace")
 metadata = dataset.metadata
 logger.info(f"{dataset!r}: synthetic={metadata.synthetic}")
-logger.info(f"provenance: {metadata.provenance}")
+logger.info(f"solver: {metadata.provenance['solver']}")
+logger.info(f"extraction settings: {metadata.provenance['settings']}")
 logger.info(f"terminals {metadata.terminals} w.r.t. {metadata.reference_ground!r}")
 for axis in metadata.axes:
     logger.info(
@@ -193,7 +216,7 @@ check_maxwell(C)  # raises NonPhysicalMatrixError if C is not physical
 # Outside the validated domain the lookup returns NaN. {func}`sax.interpolate_xarray`
 # clamps to the nearest edge instead, which hides an out-of-range design.
 
-# %%
+# %% tags=["keep_output"]
 lengths = jnp.linspace(0.0, 400.0, 401)
 ours = -c_maxwell(length=lengths, width=10.0, gap=5.0)[:, 0, 1]
 
@@ -224,15 +247,17 @@ plt.show()
 #
 # {func}`~qpdk.models.capacitor.plate_capacitor` computes its capacitance from a
 # closed-form expression. The same circuit can take the mutual capacitance from
-# the dataset instead. Because the synthetic dataset was generated from that
-# expression, both models agree at grid points.
+# the dataset instead. The analytical formula and FEM model include different
+# geometry and ground assumptions, so their disagreement is visible here. The
+# lookup uses only the mutual branch; a complete circuit can also include the
+# extracted pad-to-ground capacitances.
 
 
-# %%
+# %% tags=["keep_output"]
 def plate_capacitor_lookup(
     *,
     f=DEFAULT_FREQUENCY,
-    length: float = 26.0,
+    length: float = 80.0,
     width: float = 5.0,
     gap: float = 7.0,
     cross_section="cpw",
@@ -247,9 +272,9 @@ def plate_capacitor_lookup(
 
 f = jnp.linspace(1e9, 10e9, 201)
 s_lookup = jax.jit(
-    lambda gap: plate_capacitor_lookup(f=f, length=120.0, width=10.0, gap=gap)
+    lambda gap: plate_capacitor_lookup(f=f, length=80.0, width=10.0, gap=gap)
 )(7.0)
-s_analytical = plate_capacitor(f=f, length=120.0, width=10.0, gap=7.0)
+s_analytical = plate_capacitor(f=f, length=80.0, width=10.0, gap=7.0)
 
 fig, ax = plt.subplots()
 ax.plot(f / 1e9, 20 * np.log10(np.abs(s_analytical["o1", "o2"])), label="analytical")
@@ -269,7 +294,7 @@ plt.show()
 d_s21_d_gap = jax.jit(
     jax.grad(
         lambda gap: jnp.abs(
-            plate_capacitor_lookup(f=5e9, length=120.0, width=10.0, gap=gap)["o1", "o2"]
+            plate_capacitor_lookup(f=5e9, length=80.0, width=10.0, gap=gap)["o1", "o2"]
         )
     )
 )
