@@ -3,7 +3,7 @@
 Every dataset, synthetic or produced by a FEM solver, is built the same way: a
 ``solve`` function maps one parameter point to its quantities, and
 :func:`sweep` runs it over the grid and lays the results out as the long-format
-table of :mod:`qpdk.datasets.table`. :func:`write` then stores the table with
+table of :mod:`qpdk.models.datasets.table`. :func:`write` then stores the table with
 its metadata.
 """
 
@@ -18,8 +18,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 from jax.typing import ArrayLike
 
-from qpdk.datasets.metadata import DatasetMetadata
-from qpdk.datasets.table import Dataset, RunStatus, schema
+from qpdk.models.datasets.metadata import DatasetMetadata
+from qpdk.models.datasets.table import Dataset, RunStatus, schema
 
 if TYPE_CHECKING:
     import polars as pl
@@ -106,7 +106,7 @@ def write(
     """Replace the Parquet parts at ``location`` with ``frame`` as one part.
 
     Meant for regenerating a curated dataset from scratch; use
-    :meth:`~qpdk.datasets.Dataset.append` to grow an existing one.
+    :meth:`~qpdk.models.datasets.Dataset.append` to grow an existing one.
 
     Returns:
         The written dataset.

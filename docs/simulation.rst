@@ -103,9 +103,10 @@ A dataset is nothing but its files: Parquet parts, or a Delta Lake table, each c
 the dataset metadata (units, terminals, quantities, provenance) inside it. Requires the
 ``models`` extra. See :doc:`notebooks/fem_dataset_lookup`.
 
-Curated datasets ship in ``qpdk/datasets/data/`` as Parquet in Git LFS. From a checkout,
-fetch only these with ``git lfs pull --include="qpdk/datasets/data/**"``. Wheels on PyPI
-ship the resolved Parquet files, so installed users need no Git LFS.
+Curated datasets ship in ``qpdk/models/datasets/data/`` as Parquet in Git LFS. From a
+checkout, fetch only these with ``git lfs pull
+--include="qpdk/models/datasets/data/**"``. Wheels on PyPI ship the resolved Parquet
+files, so installed users need no Git LFS.
 
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
 cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
@@ -114,7 +115,7 @@ Requires the ``delta`` extra.
 
 .. code-block:: python
 
-    from qpdk.datasets import Dataset
+    from qpdk.models.datasets import Dataset
 
     options = {"google_service_account": "key.json"}
     dataset = Dataset("gs://my-bucket/plate_capacitor", delta=True, storage_options=options)
@@ -124,25 +125,25 @@ Requires the ``delta`` extra.
         "gs://my-bucket/plate_capacitor", delta=True, version=3, storage_options=options
     )
 
-.. automodule:: qpdk.datasets
+.. automodule:: qpdk.models.datasets
 
-.. automodule:: qpdk.datasets.metadata
+.. automodule:: qpdk.models.datasets.metadata
     :members:
 
-.. automodule:: qpdk.datasets.table
+.. automodule:: qpdk.models.datasets.table
     :members:
 
-.. automodule:: qpdk.datasets.generate
+.. automodule:: qpdk.models.datasets.generate
     :members:
 
-.. automodule:: qpdk.datasets.synthetic
+.. automodule:: qpdk.models.datasets.synthetic
     :members:
 
-.. automodule:: qpdk.datasets.store
+.. automodule:: qpdk.models.datasets.store
     :members:
 
-.. automodule:: qpdk.datasets.interpolation
+.. automodule:: qpdk.models.datasets.interpolation
     :members:
 
-.. automodule:: qpdk.datasets.capacitance
+.. automodule:: qpdk.models.datasets.capacitance
     :members:

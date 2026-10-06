@@ -17,8 +17,8 @@ Column           Type         Meaning
 ``unit``         String       SI unit; must equal the metadata unit of the quantity.
 ===============  ===========  ===========================================================
 
-The :class:`~qpdk.datasets.metadata.DatasetMetadata` is stored inside the files
-(see :mod:`qpdk.datasets.store`), so a dataset is self-describing and nothing
+The :class:`~qpdk.models.datasets.metadata.DatasetMetadata` is stored inside the files
+(see :mod:`qpdk.models.datasets.store`), so a dataset is self-describing and nothing
 but its Parquet parts or Delta table.
 """
 
@@ -33,8 +33,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from qpdk.datasets.metadata import Axis, DatasetMetadata, Quantity
-from qpdk.datasets.store import DeltaStore, ParquetParts
+from qpdk.models.datasets.metadata import Axis, DatasetMetadata, Quantity
+from qpdk.models.datasets.store import DeltaStore, ParquetParts
 
 if TYPE_CHECKING:
     import polars as pl
@@ -70,7 +70,7 @@ class Grid:
     ``values`` has shape ``(*axis sizes, *component shape)`` where the component
     shape is ``(n_terminals, n_terminals)`` for matrix quantities and ``()`` for
     scalars. Axes follow metadata order with ascending ``coords``, terminals
-    follow :attr:`~qpdk.datasets.metadata.DatasetMetadata.terminals`. Missing or
+    follow :attr:`~qpdk.models.datasets.metadata.DatasetMetadata.terminals`. Missing or
     failed points are NaN, never zero.
     """
 

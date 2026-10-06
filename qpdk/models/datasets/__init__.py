@@ -2,24 +2,28 @@
 
 A dataset is a directory of Parquet parts (Git LFS for curated datasets) or a
 Delta Lake table, with its :class:`DatasetMetadata` stored inside the files. See
-:mod:`qpdk.datasets.table` for the table layout, :mod:`qpdk.datasets.generate`
-for producing one, and :mod:`qpdk.datasets.store` for where it lives.
+:mod:`qpdk.models.datasets.table` for the table layout, :mod:`qpdk.models.datasets.generate`
+for producing one, and :mod:`qpdk.models.datasets.store` for where it lives.
 
 Requires the ``models`` extra; Delta Lake also needs the ``delta`` extra.
 """
 
-from qpdk.datasets.capacitance import maxwell_to_mutual, maxwell_violations
-from qpdk.datasets.generate import sweep
-from qpdk.datasets.interpolation import GridInterpolator
-from qpdk.datasets.metadata import (
+from qpdk.models.datasets.capacitance import (
+    NonPhysicalMatrixError,
+    check_maxwell,
+    maxwell_to_mutual,
+)
+from qpdk.models.datasets.generate import sweep
+from qpdk.models.datasets.interpolation import GridInterpolator
+from qpdk.models.datasets.metadata import (
     SCHEMA_VERSION,
     Axis,
     DatasetMetadata,
     Quantity,
     QuantityKind,
 )
-from qpdk.datasets.store import DeltaStore, LFSPointerError, ParquetParts
-from qpdk.datasets.table import (
+from qpdk.models.datasets.store import DeltaStore, LFSPointerError, ParquetParts
+from qpdk.models.datasets.table import (
     DATASETS_PATH,
     Dataset,
     DatasetError,
@@ -41,12 +45,13 @@ __all__ = [
     "Grid",
     "GridInterpolator",
     "LFSPointerError",
+    "NonPhysicalMatrixError",
     "ParquetParts",
     "Quantity",
     "QuantityKind",
     "RunStatus",
+    "check_maxwell",
     "maxwell_to_mutual",
-    "maxwell_violations",
     "schema",
     "sweep",
     "to_grid",

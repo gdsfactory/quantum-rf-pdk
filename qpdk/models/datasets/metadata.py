@@ -17,7 +17,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 1
 """Version of the metadata and results-table schema implemented here."""
 
 METADATA_KEY = "qpdk.dataset"
