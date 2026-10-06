@@ -23,9 +23,14 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: just build
       - name: Check that packaged datasets are not Git LFS pointers
+        shell: uv run --script {0}
         run: |
-          python3 - <<'PY'
-          import pathlib, sys, zipfile
+          # /// script
+          # requires-python = ">=3.12"
+          # ///
+          import pathlib
+          import sys
+          import zipfile
 
           (wheel,) = pathlib.Path("dist").glob("*.whl")
           with zipfile.ZipFile(wheel) as zf:
@@ -34,7 +39,6 @@ jobs:
           print(f"{len(parquet)} parquet files in {wheel.name}")
           if not parquet or bad:
               sys.exit(f"Missing or unresolved LFS parquet files: {bad}")
-          PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist

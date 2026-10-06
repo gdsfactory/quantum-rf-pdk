@@ -1,30 +1,24 @@
 """Reusable FEM extraction datasets and their JAX lookup.
 
-A dataset is a directory with a ``manifest.toml`` (ordinary Git) and, by
-default, ``results/*.parquet`` (Git LFS). See :mod:`qpdk.datasets.table` for the
-table layout, :mod:`qpdk.datasets.manifest` for the metadata, and
-:mod:`qpdk.datasets.store` for keeping results in a Delta Lake table or an
-object store instead.
+A dataset is a directory of Parquet parts (Git LFS for curated datasets) or a
+Delta Lake table, with its :class:`DatasetMetadata` stored inside the files. See
+:mod:`qpdk.datasets.table` for the table layout, :mod:`qpdk.datasets.generate`
+for producing one, and :mod:`qpdk.datasets.store` for where it lives.
 
 Requires the ``models`` extra; Delta Lake also needs the ``delta`` extra.
 """
 
 from qpdk.datasets.capacitance import maxwell_to_mutual, maxwell_violations
+from qpdk.datasets.generate import sweep
 from qpdk.datasets.interpolation import GridInterpolator
-from qpdk.datasets.manifest import (
+from qpdk.datasets.metadata import (
     SCHEMA_VERSION,
-    Artifact,
-    Manifest,
+    Axis,
+    DatasetMetadata,
+    Quantity,
     QuantityKind,
-    Storage,
-    load_manifest,
 )
-from qpdk.datasets.store import (
-    DeltaStore,
-    LFSPointerError,
-    ParquetParts,
-    ResultStore,
-)
+from qpdk.datasets.store import DeltaStore, LFSPointerError, ParquetParts
 from qpdk.datasets.table import (
     DATASETS_PATH,
     Dataset,
@@ -39,23 +33,22 @@ from qpdk.datasets.table import (
 __all__ = [
     "DATASETS_PATH",
     "SCHEMA_VERSION",
-    "Artifact",
+    "Axis",
     "Dataset",
     "DatasetError",
+    "DatasetMetadata",
     "DeltaStore",
     "Grid",
     "GridInterpolator",
     "LFSPointerError",
-    "Manifest",
     "ParquetParts",
+    "Quantity",
     "QuantityKind",
-    "ResultStore",
     "RunStatus",
-    "Storage",
-    "load_manifest",
     "maxwell_to_mutual",
     "maxwell_violations",
     "schema",
+    "sweep",
     "to_grid",
     "validate",
 ]

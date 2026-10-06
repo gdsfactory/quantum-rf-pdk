@@ -1,9 +1,7 @@
-"""Tests for qpdk.datasets: FEM dataset format, validation, and JAX lookup."""
+"""Tests for qpdk.datasets: metadata, results table, generator, and JAX lookup."""
 
 import dataclasses
-import hashlib
 import shutil
-from itertools import product
 from pathlib import Path
 
 import jax
@@ -19,20 +17,28 @@ from scipy.interpolate import RegularGridInterpolator
 
 from qpdk.datasets import (
     DATASETS_PATH,
-    Artifact,
+    Axis,
     Dataset,
     DatasetError,
+    DatasetMetadata,
     GridInterpolator,
     LFSPointerError,
-    Manifest,
+    Quantity,
+    QuantityKind,
     RunStatus,
     maxwell_to_mutual,
     maxwell_violations,
-    schema,
+    sweep,
     to_grid,
     validate,
 )
-from qpdk.datasets.data.plate_capacitor_synthetic.generate import synthetic_maxwell
+from qpdk.datasets.generate import write
+from qpdk.datasets.metadata import METADATA_KEY
+from qpdk.datasets.synthetic import (
+    PLATE_CAPACITOR,
+    PLATE_CAPACITOR_GRID,
+    plate_capacitor_maxwell,
+)
 from qpdk.models.capacitor import (
     plate_capacitor,
     plate_capacitor_capacitance_analytical,
@@ -41,8 +47,9 @@ from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.cpw import cpw_z0_from_cross_section
 from qpdk.models.generic import capacitor
 
-NAME = "plate_capacitor_synthetic"
+NAME = PLATE_CAPACITOR.name
 EP_R = 11.45
+CENTER = {"length": 120.0, "width": 10.0, "gap": 7.0}
 
 
 @pytest.fixture(scope="module")
@@ -55,253 +62,6 @@ def interp(dataset: Dataset) -> GridInterpolator:
     return GridInterpolator(dataset.grid("maxwell_capacitance", cross_section="cpw"))
 
 
-def _domain_points(manifest: Manifest) -> st.SearchStrategy[dict[str, float]]:
-    return st.fixed_dictionaries({
-        a.name: st.floats(*a.domain, allow_nan=False) for a in manifest.axes
-    })
-
-
-POINTS = _domain_points(Dataset(NAME).manifest)
-
-
-# ---------------------------------------------------------------------------
-# Format and validation
-# ---------------------------------------------------------------------------
-
-
-def test_shipped_dataset_is_valid_and_labelled_synthetic(dataset: Dataset) -> None:
-    assert dataset.manifest.synthetic
-    validate(dataset.table, dataset.manifest)
-    assert dataset.table.height == 8 * 4 * 6 * 2 * 2
-
-
-def test_grid_layout_is_deterministic(dataset: Dataset) -> None:
-    """Axes in manifest order with ascending values, then terminals in manifest order."""
-    grid = dataset.grid("maxwell_capacitance", cross_section="cpw")
-    axes = dataset.manifest.axes
-    assert grid.values.shape == (8, 4, 6, 2, 2)
-    for idx in [(0, 0, 0), (3, 1, 4), (7, 3, 5)]:
-        length, width, gap = (a.values[i] for a, i in zip(axes, idx, strict=True))
-        # Shipped values were generated on one platform; libm may differ by an ulp.
-        np.testing.assert_allclose(
-            grid.values[idx], synthetic_maxwell(length, width, gap, EP_R), rtol=1e-12
-        )
-
-
-def test_grid_is_independent_of_row_order(dataset: Dataset) -> None:
-    shuffled = dataset.table.sample(fraction=1.0, shuffle=True, seed=1)
-    a = to_grid(shuffled, dataset.manifest, "maxwell_capacitance", cross_section="cpw")
-    b = dataset.grid("maxwell_capacitance", cross_section="cpw")
-    np.testing.assert_array_equal(a.values, b.values)
-
-
-@pytest.mark.parametrize(
-    ("mutate", "message"),
-    [
-        (lambda f: pl.concat([f, f.head(1)]), "duplicate"),
-        (lambda f: f.with_columns(unit=pl.lit("pF")), "not in 'F'"),
-        (lambda f: f.with_columns(row=pl.lit("o3")), "terminals outside"),
-        (
-            lambda f: f.with_columns(length=pl.col("length") + 0.5),
-            "off the manifest grid",
-        ),
-        (
-            lambda f: f.with_columns(cross_section=pl.lit("xs_wide")),
-            "undeclared 'cross_section'",
-        ),
-        (lambda f: f.with_columns(quantity=pl.lit("capacitance")), "unknown quantity"),
-        (lambda f: f.with_columns(status=pl.lit("done")), "unknown status"),
-        (
-            lambda f: f.with_columns(value=pl.lit(None, pl.Float64)),
-            "'ok' but have no value",
-        ),
-        (
-            lambda f: f.with_columns(status=pl.lit("failed")),
-            "not 'ok' but carry a value",
-        ),
-        (lambda f: f.with_columns(value_imag=pl.lit(0.0)), "imaginary part"),
-        (lambda f: f.with_columns(run_id=pl.lit("same")), "mix parameter points"),
-        (lambda f: f.with_columns(value=pl.lit(float("nan"))), "non-finite value"),
-        (lambda f: f.with_columns(value=pl.lit(float("inf"))), "non-finite value"),
-        (lambda f: f.with_columns(row=pl.lit(None, pl.String)), "null terminals"),
-        (
-            lambda f: f.with_columns(
-                status=pl.lit("failed"),
-                value=pl.lit(None, pl.Float64),
-                value_imag=pl.lit(0.0),
-            ),
-            "not 'ok' but carry a value",
-        ),
-        (lambda f: f.with_columns(status=pl.lit(None, pl.String)), "null 'status'"),
-        (lambda f: f.with_columns(unit=pl.lit(None, pl.String)), "null 'unit'"),
-        (lambda f: f.with_columns(quantity=pl.lit(None, pl.String)), "null 'quantity'"),
-        (lambda f: f.with_columns(length=pl.lit(None, pl.Float64)), "null 'length'"),
-        (
-            lambda f: f.with_columns(cross_section=pl.lit(None, pl.String)),
-            "null 'cross_section'",
-        ),
-        (lambda f: f.drop("unit"), r"missing \['unit'\]"),
-    ],
-)
-def test_validation_rejects(dataset: Dataset, mutate, message: str) -> None:
-    with pytest.raises(DatasetError, match=message):
-        validate(mutate(dataset.table), dataset.manifest)
-
-
-def _at(**point: float) -> pl.Expr:
-    """Select one grid point; grid values are stored exactly, so ``is_in`` is safe."""
-    return pl.all_horizontal(pl.col(k).is_in([v]) for k, v in point.items())
-
-
-def test_incomplete_grid_is_explicit(dataset: Dataset) -> None:
-    drop = _at(length=40.0, width=10.0, gap=7.0)
-    frame = dataset.table.filter(~drop)
-    validate(frame, dataset.manifest)
-    with pytest.raises(DatasetError, match=r"1 grid points .* missing or failed"):
-        to_grid(frame, dataset.manifest, "maxwell_capacitance", cross_section="cpw")
-    grid = to_grid(
-        frame,
-        dataset.manifest,
-        "maxwell_capacitance",
-        allow_missing=True,
-        cross_section="cpw",
-    )
-    assert np.isnan(grid.values[1, 1, 2]).all()
-    assert np.isfinite(
-        np.delete(grid.values.reshape(-1, 4), 1 * 24 + 1 * 6 + 2, axis=0)
-    ).all()
-
-
-def test_failed_runs_are_never_interpolated(dataset: Dataset) -> None:
-    point = _at(length=300.0, width=20.0, gap=20.0)
-    frame = dataset.table.with_columns(
-        status=pl.when(point).then(pl.lit(RunStatus.FAILED.value)).otherwise("status"),
-        value=pl.when(point).then(None).otherwise("value"),
-    )
-    validate(frame, dataset.manifest)
-    with pytest.raises(DatasetError, match="'status': 'failed'"):
-        to_grid(frame, dataset.manifest, "maxwell_capacitance", cross_section="cpw")
-    grid = to_grid(
-        frame,
-        dataset.manifest,
-        "maxwell_capacitance",
-        allow_missing=True,
-        cross_section="cpw",
-    )
-    f = GridInterpolator(grid)
-    assert np.isnan(f(length=290.0, width=19.0, gap=19.0)).all()
-    assert np.isfinite(f(length=100.0, width=10.0, gap=5.0)).all()
-
-
-def test_variant_must_be_selected(dataset: Dataset) -> None:
-    with pytest.raises(DatasetError, match="Select one value of each variant"):
-        dataset.grid("maxwell_capacitance")
-    with pytest.raises(DatasetError, match="Select one value of each variant"):
-        dataset.grid("maxwell_capacitance", cross_section="nope")
-
-
-@pytest.mark.parametrize(
-    ("change", "message"),
-    [
-        ({"schema_version": 99}, "Unsupported schema_version"),
-        (
-            {"conventions": {"terminals": ["o1", "o1"], "reference_ground": "g"}},
-            "Duplicate terminal",
-        ),
-        (
-            {"conventions": {"terminals": ["o1", "g"], "reference_ground": "g"}},
-            "reference ground",
-        ),
-        (
-            {"axes": [{"name": "length", "unit": "um", "values": [2.0, 1.0]}]},
-            "strictly increasing",
-        ),
-        (
-            {
-                "axes": [
-                    {
-                        "name": "length",
-                        "unit": "um",
-                        "values": [1.0, 2.0],
-                        "validated": [0.0, 2.0],
-                    }
-                ]
-            },
-            "within its grid",
-        ),
-        (
-            {"axes": [{"name": "value", "unit": "um", "values": [1.0]}]},
-            "reserved columns",
-        ),
-        ({"surprise": 1}, "Extra inputs"),
-        (
-            {
-                "quantities": [
-                    {
-                        "name": "c",
-                        "kind": "maxwell_capacitance",
-                        "unit": "F",
-                        "matrix": False,
-                    }
-                ]
-            },
-            "must be a matrix",
-        ),
-        (
-            {
-                "quantities": [
-                    {"name": "c", "kind": "maxwell_capacitance", "unit": "pF"}
-                ]
-            },
-            "must be stored in 'F'",
-        ),
-        (
-            {"quantities": [{"name": "l", "kind": "inductance", "unit": "F"}]},
-            "must be stored in 'H'",
-        ),
-        (
-            {
-                "quantities": [
-                    {"name": "c", "kind": "maxwell_capacitance", "unit": "F"},
-                    {"name": "c", "kind": "circuit_parameter", "unit": "F"},
-                ]
-            },
-            "Quantity names must be unique",
-        ),
-        (
-            {
-                "axes": [
-                    {"name": "length", "unit": "um", "values": [1.0, float("nan"), 2.0]}
-                ]
-            },
-            "must be finite",
-        ),
-        (
-            {
-                "axes": [
-                    {
-                        "name": "length",
-                        "unit": "um",
-                        "values": [1.0, 2.0],
-                        "validated": [1.0, float("nan")],
-                    }
-                ]
-            },
-            "must be finite",
-        ),
-    ],
-)
-def test_manifest_rejects(dataset: Dataset, change: dict, message: str) -> None:
-    data = dataset.manifest.model_dump(mode="json") | change
-    with pytest.raises(ValidationError, match=message):
-        Manifest.model_validate(data)
-
-
-# ---------------------------------------------------------------------------
-# Storage: LFS and append-only parts
-# ---------------------------------------------------------------------------
-
-
 @pytest.fixture
 def dataset_copy(tmp_path: Path) -> Dataset:
     target = tmp_path / NAME
@@ -309,313 +69,630 @@ def dataset_copy(tmp_path: Path) -> Dataset:
     return Dataset(target)
 
 
-def test_unresolved_lfs_pointer_has_useful_error(dataset_copy: Dataset) -> None:
-    (part,) = dataset_copy.result_files
-    part.write_text(
-        "version https://git-lfs.github.com/spec/v1\noid sha256:"
-        + "0" * 64
-        + "\nsize 9733\n"
-    )
-    with pytest.raises(
-        LFSPointerError, match=r"git lfs pull --include \"qpdk/datasets/data/\*\*\""
-    ):
-        dataset_copy.scan()
+POINTS = st.fixed_dictionaries({
+    name: st.floats(min(values), max(values), allow_nan=False)
+    for name, values in PLATE_CAPACITOR_GRID.items()
+})
 
 
-def test_append_writes_new_part_and_rejects_duplicates(dataset_copy: Dataset) -> None:
-    manifest = dataset_copy.manifest.model_copy(
-        update={
-            "variants": (
-                dataset_copy.manifest.variants[0].model_copy(
-                    update={"values": ("cpw", "cpw_wide")}
-                ),
-            )
-        }
-    )
-    dataset_copy.manifest = manifest
-    original = dataset_copy.table
-    new = original.with_columns(
-        run_id=pl.col("run_id") + "-wide",
-        cross_section=pl.lit("cpw_wide"),
-        value=pl.col("value") * 1.1,
-    )
-    path = dataset_copy.append(new, part="part-0001")
-    assert Path(path).name == "part-0001.parquet"
-    assert len(dataset_copy.result_files) == 2
-    assert dataset_copy.table.height == 2 * original.height
-    np.testing.assert_allclose(
-        dataset_copy.grid("maxwell_capacitance", cross_section="cpw_wide").values,
-        1.1 * dataset_copy.grid("maxwell_capacitance", cross_section="cpw").values,
-    )
-    with pytest.raises(DatasetError, match="duplicate"):
-        dataset_copy.append(new.head(4), part="part-0002")
-    with pytest.raises(FileExistsError):
-        dataset_copy.append(new.head(0), part="part-0001")
-    assert sorted(p.name for p in (dataset_copy.path / "results").iterdir()) == [
-        "part-0000.parquet",
-        "part-0001.parquet",
+def _maxwell(**point: float) -> np.ndarray:
+    return plate_capacitor_maxwell(**point, cross_section="cpw", ep_r=EP_R)[
+        "maxwell_capacitance"
     ]
 
 
-def test_append_is_serialized_by_a_lock(dataset_copy: Dataset) -> None:
-    lock = dataset_copy.path / "results" / ".append.lock"
-    lock.touch()
-    with pytest.raises(FileExistsError, match="Another append holds"):
-        dataset_copy.append(dataset_copy.table.head(0), part="part-0001")
-    assert lock.exists()
-    assert not (dataset_copy.path / "results" / "part-0001.parquet").exists()
+def _at(**point: float) -> pl.Expr:
+    """Select one grid point; grid values are stored exactly, so ``is_in`` is safe."""
+    return pl.all_horizontal(pl.col(k).is_in([v]) for k, v in point.items())
 
 
-# ---------------------------------------------------------------------------
-# Interpolation
-# ---------------------------------------------------------------------------
+class TestMetadata:
+    """The metadata lives in the results files and is validated on load."""
+
+    @staticmethod
+    def test_shipped_dataset_is_labelled_synthetic(dataset: Dataset) -> None:
+        assert dataset.metadata == PLATE_CAPACITOR
+        assert dataset.metadata.synthetic
+
+    @staticmethod
+    def test_every_part_carries_the_metadata(dataset: Dataset) -> None:
+        for part in dataset.store.files:  # pyrefly: ignore[missing-attribute]
+            stored = pl.read_parquet_metadata(part)[METADATA_KEY]
+            assert DatasetMetadata.from_json(stored) == PLATE_CAPACITOR
+
+    @staticmethod
+    def test_json_round_trip() -> None:
+        assert DatasetMetadata.from_json(PLATE_CAPACITOR.to_json()) == PLATE_CAPACITOR
+
+    @staticmethod
+    def test_given_metadata_must_match_stored(dataset_copy: Dataset) -> None:
+        other = PLATE_CAPACITOR.model_copy(update={"description": "changed"})
+        with pytest.raises(DatasetError, match="differs from the metadata stored"):
+            Dataset(dataset_copy.store.location, other)  # pyrefly: ignore[missing-attribute]
+
+    @staticmethod
+    def test_new_dataset_needs_metadata(tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError, match="pass metadata"):
+            Dataset(tmp_path / "empty")
+
+    @staticmethod
+    def test_delta_options_need_delta(tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="pass delta=True"):
+            Dataset(tmp_path, PLATE_CAPACITOR, version=0)
+
+    @staticmethod
+    def test_parts_with_different_metadata_are_rejected(dataset_copy: Dataset) -> None:
+        location = dataset_copy.store.location  # pyrefly: ignore[missing-attribute]
+        other = PLATE_CAPACITOR.model_copy(update={"description": "changed"})
+        dataset_copy.table.head(0).write_parquet(
+            location / "part-0001.parquet", metadata={METADATA_KEY: other.to_json()}
+        )
+        with pytest.raises(ValueError, match="different dataset metadata"):
+            Dataset(location)
+
+    @staticmethod
+    def test_rejects_wrong_unit() -> None:
+        with pytest.raises(ValidationError, match="must be stored in 'F'"):
+            Quantity(name="c", kind=QuantityKind.MAXWELL_CAPACITANCE, unit="pF")
+
+    @staticmethod
+    def test_rejects_unordered_domain() -> None:
+        with pytest.raises(ValidationError, match="not ordered"):
+            Axis(name="gap", unit="um", validated=(10.0, 2.0))
+
+    @staticmethod
+    def test_rejects_inconsistent_names() -> None:
+        for update, message in [
+            ({"variants": ("gap",)}, "must be unique"),
+            ({"variants": ("value",)}, "reserved columns"),
+            ({"terminals": ("o1", "o1")}, "Duplicate terminal"),
+            ({"terminals": ("o1", "ground_plane")}, "reference ground"),
+            ({"terminals": ()}, "need terminals"),
+            ({"schema_version": 1}, "Unsupported schema_version"),
+        ]:
+            with pytest.raises(ValidationError, match=message):
+                DatasetMetadata.model_validate(PLATE_CAPACITOR.model_dump() | update)
+
+    @staticmethod
+    def test_unknown_quantity() -> None:
+        with pytest.raises(KeyError, match="no quantity 'capacitance'"):
+            PLATE_CAPACITOR.quantity("capacitance")
 
 
-@settings(deadline=None, max_examples=25)
-@given(idx=st.tuples(st.integers(0, 7), st.integers(0, 3), st.integers(0, 5)))
-def test_reproduces_grid_points(
-    interp: GridInterpolator, idx: tuple[int, int, int]
-) -> None:
-    point = {a.name: a.values[i] for a, i in zip(interp.grid.axes, idx, strict=True)}
-    np.testing.assert_allclose(interp(**point), interp.grid.values[idx], rtol=1e-12)
+class TestValidation:
+    """``validate`` reports every inconsistency between table and metadata."""
 
+    @staticmethod
+    def _rejects(dataset: Dataset, cases: list) -> None:
+        for mutate, message in cases:
+            with pytest.raises(DatasetError, match=message):
+                validate(mutate(dataset.table), dataset.metadata)
 
-def test_matches_scipy_reference(interp: GridInterpolator) -> None:
-    rng = np.random.default_rng(0)
-    pts = np.column_stack([rng.uniform(*a.domain, 200) for a in interp.grid.axes])
-    reference = RegularGridInterpolator(
-        [np.asarray(a.values) for a in interp.grid.axes], interp.grid.values
-    )(pts)
-    ours = interp(**{a.name: pts[:, i] for i, a in enumerate(interp.grid.axes)})
-    np.testing.assert_allclose(ours, reference, rtol=1e-12)
+    @staticmethod
+    def test_shipped_table_is_valid(dataset: Dataset) -> None:
+        validate(dataset.table, dataset.metadata)
+        assert dataset.table.height == 8 * 4 * 6 * 2 * 2
 
-
-def test_held_out_points_against_formula(interp: GridInterpolator) -> None:
-    """Off-grid lookups stay close to the generating formula (trilinear error only)."""
-    rng = np.random.default_rng(1)
-    for _ in range(50):
-        point = {a.name: float(rng.uniform(*a.domain)) for a in interp.grid.axes}
-        expected = synthetic_maxwell(**point, ep_r=EP_R)
-        np.testing.assert_allclose(interp(**point), expected, rtol=0.05)
-
-
-@settings(deadline=None, max_examples=25)
-@given(point=POINTS)
-def test_interpolated_matrix_is_physical(
-    interp: GridInterpolator, point: dict[str, float]
-) -> None:
-    assert maxwell_violations(interp(**point)) == []
-
-
-@pytest.mark.parametrize("bad", [float("inf"), float("nan")])
-def test_maxwell_violations_rejects_non_finite(bad: float) -> None:
-    assert maxwell_violations([[bad, -1.0], [-1.0, bad]]) == [
-        "contains non-finite entries"
-    ]
-
-
-def test_mutual_conversion(interp: GridInterpolator) -> None:
-    point = {"length": 120.0, "width": 10.0, "gap": 7.0}
-    mutual = maxwell_to_mutual(interp(**point))
-    np.testing.assert_allclose(
-        mutual[0, 1],
-        plate_capacitor_capacitance_analytical(ep_r=EP_R, **point),
-        rtol=1e-12,
-    )
-    maxwell = synthetic_maxwell(**point, ep_r=EP_R)
-    np.testing.assert_allclose(mutual[0, 0], maxwell.sum(axis=-1)[0], rtol=1e-12)
-
-
-def test_out_of_range_is_nan_not_clamped(interp: GridInterpolator) -> None:
-    out = interp(length=jnp.array([10.0, 100.0, 400.0]), width=10.0, gap=5.0)
-    assert out.shape == (3, 2, 2)
-    assert np.isnan(out[0]).all()
-    assert np.isfinite(out[1]).all()
-    assert np.isnan(out[2]).all()
-    np.testing.assert_array_equal(
-        interp.in_domain(length=[10.0, 100.0, 400.0], width=10.0, gap=5.0),
-        [False, True, False],
-    )
-
-
-def test_clip_is_opt_in(dataset: Dataset) -> None:
-    f = GridInterpolator(
-        dataset.grid("maxwell_capacitance", cross_section="cpw"), out_of_range="clip"
-    )
-    np.testing.assert_allclose(
-        f(length=400.0, width=10.0, gap=5.0), f(length=300.0, width=10.0, gap=5.0)
-    )
-    with pytest.raises(ValueError, match="out_of_range"):
-        GridInterpolator(f.grid, out_of_range="extrapolate")  # pyrefly: ignore[bad-argument-type]
-
-
-def test_validated_domain_narrower_than_grid(dataset: Dataset) -> None:
-    axes = list(dataset.manifest.axes)
-    axes[0] = axes[0].model_copy(update={"validated": (40.0, 250.0)})
-    grid = dataset.grid("maxwell_capacitance", cross_section="cpw")
-    f = GridInterpolator(dataclasses.replace(grid, axes=tuple(axes)))
-    assert f.domain["length"] == (40.0, 250.0)
-    assert np.isnan(f(length=30.0, width=10.0, gap=5.0)).all()
-
-
-def test_requires_every_axis(interp: GridInterpolator) -> None:
-    with pytest.raises(TypeError, match="Expected exactly the axes"):
-        interp(length=100.0, width=10.0)
-
-
-def test_jit_vmap_grad(interp: GridInterpolator) -> None:
-    def c_mutual(length, width, gap):
-        return -interp(length=length, width=width, gap=gap)[..., 0, 1]
-
-    batch = jnp.linspace(25.0, 290.0, 7)
-    jitted = jax.jit(c_mutual)(batch, 10.0, 5.0)
-    np.testing.assert_allclose(jitted, c_mutual(batch, 10.0, 5.0), rtol=1e-12)
-    vmapped = jax.vmap(c_mutual, in_axes=(0, None, None))(batch, 10.0, 5.0)
-    np.testing.assert_allclose(vmapped, jitted, rtol=1e-12)
-    assert jitted.dtype == jnp.float64
-
-    grad = jax.jit(jax.grad(c_mutual, argnums=(0, 2)))(130.0, 10.0, 5.0)
-    h = 1e-3
-    fd_length = (c_mutual(130.0 + h, 10.0, 5.0) - c_mutual(130.0 - h, 10.0, 5.0)) / (
-        2 * h
-    )
-    fd_gap = (c_mutual(130.0, 10.0, 5.0 + h) - c_mutual(130.0, 10.0, 5.0 - h)) / (2 * h)
-    np.testing.assert_allclose(grad, (fd_length, fd_gap), rtol=1e-6)
-    assert grad[1] < 0  # wider gap, less capacitance
-
-
-def test_agrees_with_sax_interpolate_xarray_in_domain(interp: GridInterpolator) -> None:
-    """Same numbers as SAX inside the domain; SAX clamps outside, which we do not."""
-    grid = interp.grid
-    coords = {a.name: np.asarray(a.values) for a in grid.axes}
-    flat = grid.values.reshape(*grid.values.shape[:3], 4)
-    xarr = xr.DataArray(
-        flat,
-        coords={
-            **coords,
-            "targets": np.array(["c11", "c12", "c21", "c22"], dtype=object),
-        },
-    )
-    point = {"length": 133.0, "width": 12.5, "gap": 8.2}
-    sax_out = sax.interpolate_xarray(xarr, **point)
-    np.testing.assert_allclose(
-        interp(**point).reshape(4),
-        [sax_out[k] for k in ["c11", "c12", "c21", "c22"]],
-        rtol=1e-12,
-    )
-
-    outside = {**point, "length": 1000.0}
-    sax_clamped = sax.interpolate_xarray(xarr, **outside)["c12"]
-    assert np.isfinite(sax_clamped)
-    assert np.isnan(interp(**outside)[0, 1])
-
-
-def test_complex_scalar_quantity(dataset: Dataset) -> None:
-    """Complex quantities and scalar quantities round-trip through the same path."""
-    manifest = Manifest.model_validate(
-        dataset.manifest.model_dump(mode="json")
-        | {
-            "name": "s21_toy",
-            "axes": [
-                {"name": "frequency", "unit": "Hz", "values": [4e9, 5e9, 6e9]},
-                {"name": "gap", "unit": "um", "values": [2.0, 4.0]},
+    def test_rejects_wrong_columns(self, dataset: Dataset) -> None:
+        self._rejects(
+            dataset,
+            [
+                (lambda f: f.drop("unit"), r"missing \['unit'\]"),
+                (lambda f: f.with_columns(pl.col("gap").cast(pl.Int64)), "wrong dtype"),
             ],
-            "variants": [],
-            "quantities": [
-                {
-                    "name": "s21",
-                    "kind": "s_parameters",
-                    "unit": "1",
-                    "complex": True,
-                    "matrix": False,
-                }
-            ],
-        }
-    )
-    rows = [
-        {
-            "run_id": f"{f}-{g}",
-            "status": "ok",
-            "frequency": f,
-            "gap": g,
-            "quantity": "s21",
-            "row": None,
-            "col": None,
-            "value": np.cos(f / 1e9 * g),
-            "value_imag": np.sin(f / 1e9 * g),
-            "unit": "1",
-        }
-        for f, g in product([4e9, 5e9, 6e9], [2.0, 4.0])
-    ]
-    frame = pl.DataFrame(rows, schema=schema(manifest))
-    validate(frame, manifest)
-    grid = to_grid(frame, manifest, "s21")
-    assert grid.values.shape == (3, 2)
-    assert np.iscomplexobj(grid.values)
-    f = GridInterpolator(grid)
-    np.testing.assert_allclose(f(frequency=5e9, gap=4.0), np.exp(20j), rtol=1e-12)
-    np.testing.assert_allclose(
-        f(frequency=4.5e9, gap=2.0), (np.exp(8j) + np.exp(10j)) / 2, rtol=1e-12
-    )
-
-
-# ---------------------------------------------------------------------------
-# SAX-facing use
-# ---------------------------------------------------------------------------
-
-
-def test_sax_model_with_dataset_lookup(interp: GridInterpolator) -> None:
-    """A capacitance looked up from the dataset drops into an existing SAX model."""
-
-    def plate_capacitor_lookup(
-        *, f=DEFAULT_FREQUENCY, length=26.0, width=5.0, gap=7.0, cross_section="cpw"
-    ):
-        f = jnp.asarray(f)
-        c_mutual = maxwell_to_mutual(interp(length=length, width=width, gap=gap))[0, 1]
-        return capacitor(
-            f=f, capacitance=c_mutual, z0=cpw_z0_from_cross_section(cross_section, f)
         )
 
-    f = jnp.linspace(4e9, 8e9, 5)
-    looked_up = jax.jit(
-        lambda gap: plate_capacitor_lookup(f=f, length=120.0, width=10.0, gap=gap)
-    )(7.0)
-    analytical = plate_capacitor(f=f, length=120.0, width=10.0, gap=7.0)
-    for key in [("o1", "o2"), ("o1", "o1")]:
-        np.testing.assert_allclose(looked_up[key], analytical[key], rtol=1e-9)
+    def test_rejects_nulls(self, dataset: Dataset) -> None:
+        self._rejects(
+            dataset,
+            [
+                (
+                    lambda f, c=c, t=t: f.with_columns(pl.lit(None, t).alias(c)),
+                    f"null '{c}'",
+                )
+                for c, t in [
+                    ("status", pl.String),
+                    ("unit", pl.String),
+                    ("quantity", pl.String),
+                    ("length", pl.Float64),
+                    ("cross_section", pl.String),
+                ]
+            ],
+        )
+
+    def test_rejects_bad_values(self, dataset: Dataset) -> None:
+        self._rejects(
+            dataset,
+            [
+                (lambda f: f.with_columns(unit=pl.lit("pF")), "not in 'F'"),
+                (
+                    lambda f: f.with_columns(value=pl.lit(float("nan"))),
+                    "non-finite value",
+                ),
+                (
+                    lambda f: f.with_columns(value=pl.lit(float("inf"))),
+                    "non-finite value",
+                ),
+                (
+                    lambda f: f.with_columns(length=pl.lit(float("inf"))),
+                    "non-finite 'length'",
+                ),
+                (lambda f: f.with_columns(value_imag=pl.lit(0.0)), "imaginary part"),
+                (lambda f: f.with_columns(quantity=pl.lit("c")), "unknown quantity"),
+            ],
+        )
+
+    def test_rejects_bad_terminals(self, dataset: Dataset) -> None:
+        self._rejects(
+            dataset,
+            [
+                (lambda f: f.with_columns(row=pl.lit("o3")), "terminals outside"),
+                (
+                    lambda f: f.with_columns(row=pl.lit(None, pl.String)),
+                    "null terminals",
+                ),
+            ],
+        )
+
+    def test_rejects_inconsistent_status(self, dataset: Dataset) -> None:
+        self._rejects(
+            dataset,
+            [
+                (lambda f: f.with_columns(status=pl.lit("done")), "unknown status"),
+                (
+                    lambda f: f.with_columns(value=pl.lit(None, pl.Float64)),
+                    "'ok' but have no value",
+                ),
+                (
+                    lambda f: f.with_columns(status=pl.lit("failed")),
+                    "not 'ok' but carry a value",
+                ),
+                (
+                    lambda f: f.with_columns(
+                        status=pl.lit("failed"),
+                        value=pl.lit(None, pl.Float64),
+                        value_imag=pl.lit(0.0),
+                    ),
+                    "not 'ok' but carry a value",
+                ),
+            ],
+        )
+
+    def test_rejects_inconsistent_runs(self, dataset: Dataset) -> None:
+        self._rejects(
+            dataset,
+            [
+                (lambda f: pl.concat([f, f.head(1)]), "duplicate"),
+                (
+                    lambda f: f.with_columns(run_id=pl.lit("same")),
+                    "mix parameter points",
+                ),
+            ],
+        )
 
 
-def test_parts_with_wrong_schema_raise_dataset_error(dataset_copy: Dataset) -> None:
-    (part,) = dataset_copy.result_files
-    pl.read_parquet(part).with_columns(pl.col("gap").cast(pl.Int64)).write_parquet(part)
-    with pytest.raises(DatasetError, match="do not match the schema"):
-        _ = dataset_copy.table
+class TestGrid:
+    """``to_grid`` derives the grid from the data and refuses to guess."""
+
+    @staticmethod
+    def test_layout_is_deterministic(dataset: Dataset) -> None:
+        """Axes in metadata order with ascending values, then terminals in order."""
+        grid = dataset.grid("maxwell_capacitance", cross_section="cpw")
+        assert grid.values.shape == (8, 4, 6, 2, 2)
+        for coords, values in zip(
+            grid.coords, PLATE_CAPACITOR_GRID.values(), strict=True
+        ):
+            np.testing.assert_array_equal(coords, values)
+        for idx in [(0, 0, 0), (3, 1, 4), (7, 3, 5)]:
+            point = {
+                a: float(c[i])
+                for a, c, i in zip(grid.axis_names, grid.coords, idx, strict=True)
+            }
+            # Shipped values were generated on one platform; libm may differ by an ulp.
+            np.testing.assert_allclose(grid.values[idx], _maxwell(**point), rtol=1e-12)
+
+    @staticmethod
+    def test_independent_of_row_order(dataset: Dataset) -> None:
+        shuffled = dataset.table.sample(fraction=1.0, shuffle=True, seed=1)
+        a = to_grid(
+            shuffled, dataset.metadata, "maxwell_capacitance", cross_section="cpw"
+        )
+        b = dataset.grid("maxwell_capacitance", cross_section="cpw")
+        np.testing.assert_array_equal(a.values, b.values)
+
+    @staticmethod
+    def test_incomplete_grid_is_explicit(dataset: Dataset) -> None:
+        frame = dataset.table.filter(~_at(length=40.0, width=10.0, gap=7.0))
+        validate(frame, dataset.metadata)
+        with pytest.raises(DatasetError, match=r"1 grid points .* missing or failed"):
+            to_grid(frame, dataset.metadata, "maxwell_capacitance", cross_section="cpw")
+        grid = to_grid(
+            frame,
+            dataset.metadata,
+            "maxwell_capacitance",
+            allow_missing=True,
+            cross_section="cpw",
+        )
+        assert np.isnan(grid.values[1, 1, 2]).all()
+        assert np.isfinite(
+            np.delete(grid.values.reshape(-1, 4), 1 * 24 + 1 * 6 + 2, axis=0)
+        ).all()
+
+    @staticmethod
+    def test_off_grid_point_makes_the_grid_incomplete(dataset: Dataset) -> None:
+        frame = dataset.table.with_columns(
+            length=pl
+            .when(_at(length=40.0, width=10.0, gap=7.0))
+            .then(41.0)
+            .otherwise("length")
+        )
+        with pytest.raises(DatasetError, match="missing or failed"):
+            to_grid(frame, dataset.metadata, "maxwell_capacitance", cross_section="cpw")
+
+    @staticmethod
+    def test_failed_runs_are_never_interpolated(dataset: Dataset) -> None:
+        point = _at(length=300.0, width=20.0, gap=20.0)
+        frame = dataset.table.with_columns(
+            status=pl
+            .when(point)
+            .then(pl.lit(RunStatus.FAILED.value))
+            .otherwise("status"),
+            value=pl.when(point).then(None).otherwise("value"),
+        )
+        validate(frame, dataset.metadata)
+        with pytest.raises(DatasetError, match="'status': 'failed'"):
+            to_grid(frame, dataset.metadata, "maxwell_capacitance", cross_section="cpw")
+        grid = to_grid(
+            frame,
+            dataset.metadata,
+            "maxwell_capacitance",
+            allow_missing=True,
+            cross_section="cpw",
+        )
+        f = GridInterpolator(grid)
+        assert np.isnan(f(length=290.0, width=19.0, gap=19.0)).all()
+        assert np.isfinite(f(length=100.0, width=10.0, gap=5.0)).all()
+
+    @staticmethod
+    def test_variant_must_be_selected(dataset: Dataset) -> None:
+        with pytest.raises(DatasetError, match="Select one value of each variant"):
+            dataset.grid("maxwell_capacitance")
+        with pytest.raises(DatasetError, match="No rows"):
+            dataset.grid("maxwell_capacitance", cross_section="nope")
+
+    @staticmethod
+    def test_validated_domain_must_lie_in_the_grid(dataset: Dataset) -> None:
+        axes = list(PLATE_CAPACITOR.axes)
+        axes[0] = axes[0].model_copy(update={"validated": (10.0, 250.0)})
+        metadata = PLATE_CAPACITOR.model_copy(update={"axes": tuple(axes)})
+        with pytest.raises(DatasetError, match="leaves the grid"):
+            to_grid(dataset.table, metadata, "maxwell_capacitance", cross_section="cpw")
 
 
-def test_artifact_checksum(tmp_path: Path) -> None:
-    payload = tmp_path / "mesh.msh"
-    payload.write_bytes(b"mesh")
-    artifact = Artifact(
-        uri="s3://bucket/mesh.msh", sha256=hashlib.sha256(b"mesh").hexdigest()
-    )
-    artifact.verify(payload)
-    payload.write_bytes(b"other")
-    with pytest.raises(ValueError, match="does not match the checksum"):
-        artifact.verify(payload)
+class TestStorage:
+    """Append-only Parquet parts and Git LFS."""
+
+    @staticmethod
+    def test_unresolved_lfs_pointer_has_useful_error(dataset_copy: Dataset) -> None:
+        (part,) = dataset_copy.store.files  # pyrefly: ignore[missing-attribute]
+        part.write_text(
+            "version https://git-lfs.github.com/spec/v1\noid sha256:"
+            + "0" * 64
+            + "\nsize 9733\n"
+        )
+        with pytest.raises(
+            LFSPointerError, match=r"git lfs pull --include \"qpdk/datasets/data/\*\*\""
+        ):
+            dataset_copy.scan()
+
+    @staticmethod
+    def test_append_writes_new_part_and_rejects_duplicates(
+        dataset_copy: Dataset,
+    ) -> None:
+        original = dataset_copy.table
+        new = original.with_columns(
+            run_id=pl.col("run_id") + "-wide",
+            cross_section=pl.lit("cpw_wide"),
+            value=pl.col("value") * 1.1,
+        )
+        path = dataset_copy.append(new, part="part-0001")
+        assert Path(path).name == "part-0001.parquet"
+        assert dataset_copy.table.height == 2 * original.height
+        np.testing.assert_allclose(
+            dataset_copy.grid("maxwell_capacitance", cross_section="cpw_wide").values,
+            1.1 * dataset_copy.grid("maxwell_capacitance", cross_section="cpw").values,
+        )
+        with pytest.raises(DatasetError, match="duplicate"):
+            dataset_copy.append(new.head(4), part="part-0002")
+        with pytest.raises(FileExistsError):
+            dataset_copy.append(new.head(0), part="part-0001")
+        assert [p.name for p in dataset_copy.store.files] == [  # pyrefly: ignore[missing-attribute]
+            "part-0000.parquet",
+            "part-0001.parquet",
+        ]
+
+    @staticmethod
+    def test_parts_with_wrong_schema_raise_dataset_error(dataset_copy: Dataset) -> None:
+        (part,) = dataset_copy.store.files  # pyrefly: ignore[missing-attribute]
+        pl.read_parquet(part).with_columns(pl.col("gap").cast(pl.Int64)).write_parquet(
+            part, metadata={METADATA_KEY: PLATE_CAPACITOR.to_json()}
+        )
+        with pytest.raises(DatasetError, match="do not match the schema"):
+            _ = Dataset(part.parent).table
 
 
-@pytest.mark.parametrize("axis", ["length", "width", "gap"])
-def test_gradient_at_domain_edges(interp: GridInterpolator, axis: str) -> None:
-    """The gradient at both ends of an axis is the slope of the edge cell, not zero."""
-    point = {"length": 120.0, "width": 10.0, "gap": 7.0}
+class TestGenerate:
+    """``sweep`` and ``write`` produce the shipped dataset and any other."""
 
-    def c12(x):
-        return interp(**{**point, axis: x})[0, 1]
+    @staticmethod
+    def test_regenerating_reproduces_the_shipped_table(
+        dataset: Dataset, tmp_path: Path
+    ) -> None:
+        frame = sweep(
+            PLATE_CAPACITOR,
+            plate_capacitor_maxwell,
+            PLATE_CAPACITOR_GRID,
+            {"cross_section": ["cpw"]},
+        )
+        regenerated = write(tmp_path / NAME, PLATE_CAPACITOR, frame)
+        key = ["run_id", "row", "col"]
+        expected, actual = dataset.table.sort(key), regenerated.table.sort(key)
+        assert actual.drop("value").equals(expected.drop("value"))
+        np.testing.assert_allclose(actual["value"], expected["value"], rtol=1e-12)
 
-    values = dict(
-        zip(interp.axis_names, (a.values for a in interp.grid.axes), strict=True)
-    )[axis]
-    for edge, neighbour in [(values[0], values[1]), (values[-1], values[-2])]:
-        slope = (c12(edge) - c12(neighbour)) / (edge - neighbour)
-        np.testing.assert_allclose(jax.grad(c12)(edge), slope, rtol=1e-9)
-        assert slope != 0
+    @staticmethod
+    def test_failed_solve_is_recorded() -> None:
+        def solve(length, width, gap, cross_section):  # ruff: ignore[unused-function-argument]
+            return (
+                None if gap > 15 else plate_capacitor_maxwell(length, width, gap, "cpw")
+            )
+
+        frame = sweep(
+            PLATE_CAPACITOR, solve, PLATE_CAPACITOR_GRID, {"cross_section": ["cpw"]}
+        )
+        validate(frame, PLATE_CAPACITOR)
+        failed = frame.filter(pl.col("status") == RunStatus.FAILED)
+        assert failed.height == 8 * 4 * 4
+        assert failed["value"].is_null().all()
+
+    @staticmethod
+    def test_grid_must_match_the_axes() -> None:
+        with pytest.raises(ValueError, match="Sweep needs values"):
+            sweep(PLATE_CAPACITOR, plate_capacitor_maxwell, {"length": [1.0]})
+
+    @staticmethod
+    def test_complex_scalar_quantity() -> None:
+        """Complex scalars round-trip through the same path as matrices."""
+        metadata = DatasetMetadata(
+            name="s21_toy",
+            axes=(Axis(name="frequency", unit="Hz"), Axis(name="gap", unit="um")),
+            quantities=(
+                Quantity(
+                    name="s21",
+                    kind=QuantityKind.CIRCUIT_PARAMETER,
+                    unit="1",
+                    complex=True,
+                ),
+            ),
+        )
+        frame = sweep(
+            metadata,
+            lambda frequency, gap: {"s21": np.exp(1j * frequency / 1e9 * gap)},
+            {"frequency": [4e9, 5e9, 6e9], "gap": [2.0, 4.0]},
+        )
+        validate(frame, metadata)
+        grid = to_grid(frame, metadata, "s21")
+        assert grid.values.shape == (3, 2)
+        assert np.iscomplexobj(grid.values)
+        f = GridInterpolator(grid)
+        np.testing.assert_allclose(f(frequency=5e9, gap=4.0), np.exp(20j), rtol=1e-12)
+        np.testing.assert_allclose(
+            f(frequency=4.5e9, gap=2.0), (np.exp(8j) + np.exp(10j)) / 2, rtol=1e-12
+        )
+
+
+class TestGridInterpolator:
+    """The lookup wraps ``jax.scipy.interpolate.RegularGridInterpolator``."""
+
+    @staticmethod
+    @settings(deadline=None, max_examples=25)
+    @given(idx=st.tuples(st.integers(0, 7), st.integers(0, 3), st.integers(0, 5)))
+    def test_reproduces_grid_points(
+        interp: GridInterpolator, idx: tuple[int, int, int]
+    ) -> None:
+        point = {
+            a: float(c[i])
+            for a, c, i in zip(interp.axis_names, interp.grid.coords, idx, strict=True)
+        }
+        np.testing.assert_allclose(interp(**point), interp.grid.values[idx], rtol=1e-12)
+
+    @staticmethod
+    def test_matches_scipy_reference(interp: GridInterpolator) -> None:
+        rng = np.random.default_rng(0)
+        pts = np.column_stack([
+            rng.uniform(c[0], c[-1], 200) for c in interp.grid.coords
+        ])
+        reference = RegularGridInterpolator(interp.grid.coords, interp.grid.values)(pts)
+        ours = interp(**{a: pts[:, i] for i, a in enumerate(interp.axis_names)})
+        np.testing.assert_allclose(ours, reference, rtol=1e-12)
+
+    @staticmethod
+    def test_held_out_points_against_formula(interp: GridInterpolator) -> None:
+        """Off-grid lookups stay close to the generating formula (trilinear error only)."""
+        rng = np.random.default_rng(1)
+        for _ in range(50):
+            point = {
+                a: float(rng.uniform(c[0], c[-1]))
+                for a, c in zip(interp.axis_names, interp.grid.coords, strict=True)
+            }
+            np.testing.assert_allclose(interp(**point), _maxwell(**point), rtol=0.05)
+
+    @staticmethod
+    @settings(deadline=None, max_examples=25)
+    @given(point=POINTS)
+    def test_interpolated_matrix_is_physical(
+        interp: GridInterpolator, point: dict[str, float]
+    ) -> None:
+        assert maxwell_violations(interp(**point)) == []
+
+    @staticmethod
+    def test_shapes_broadcast(interp: GridInterpolator) -> None:
+        assert interp(**CENTER).shape == (2, 2)
+        out = interp(
+            length=jnp.ones((3, 1)) * 100.0, width=jnp.array([5.0, 10.0]), gap=7.0
+        )
+        assert out.shape == (3, 2, 2, 2)
+
+    @staticmethod
+    def test_out_of_range_is_nan_not_clamped(interp: GridInterpolator) -> None:
+        out = interp(length=jnp.array([10.0, 100.0, 400.0]), width=10.0, gap=5.0)
+        assert out.shape == (3, 2, 2)
+        assert np.isnan(out[0]).all()
+        assert np.isfinite(out[1]).all()
+        assert np.isnan(out[2]).all()
+        np.testing.assert_array_equal(
+            interp.in_domain(length=[10.0, 100.0, 400.0], width=10.0, gap=5.0),
+            [False, True, False],
+        )
+
+    @staticmethod
+    def test_clip_is_opt_in(interp: GridInterpolator) -> None:
+        f = GridInterpolator(interp.grid, out_of_range="clip")
+        np.testing.assert_allclose(
+            f(length=400.0, width=10.0, gap=5.0), f(length=300.0, width=10.0, gap=5.0)
+        )
+        with pytest.raises(ValueError, match="out_of_range"):
+            GridInterpolator(f.grid, out_of_range="extrapolate")  # pyrefly: ignore[bad-argument-type]
+
+    @staticmethod
+    def test_validated_domain_narrower_than_grid(interp: GridInterpolator) -> None:
+        axes = list(interp.grid.axes)
+        axes[0] = axes[0].model_copy(update={"validated": (40.0, 250.0)})
+        f = GridInterpolator(dataclasses.replace(interp.grid, axes=tuple(axes)))
+        assert f.domain["length"] == (40.0, 250.0)
+        assert np.isnan(f(length=30.0, width=10.0, gap=5.0)).all()
+        assert np.isfinite(f(length=40.0, width=10.0, gap=5.0)).all()
+
+    @staticmethod
+    def test_single_point_axis(dataset: Dataset) -> None:
+        """An axis swept at one value is matched exactly and NaN elsewhere."""
+        frame = dataset.table.filter(pl.col("width").is_between(9.5, 10.5))
+        grid = to_grid(
+            frame, dataset.metadata, "maxwell_capacitance", cross_section="cpw"
+        )
+        f = GridInterpolator(grid)
+        np.testing.assert_allclose(f(**CENTER), _maxwell(**CENTER), rtol=1e-12)
+        assert np.isnan(f(**{**CENTER, "width": 11.0})).all()
+
+    @staticmethod
+    def test_requires_every_axis(interp: GridInterpolator) -> None:
+        with pytest.raises(TypeError, match="Expected exactly the axes"):
+            interp(length=100.0, width=10.0)
+
+    @staticmethod
+    def test_jit_vmap_grad(interp: GridInterpolator) -> None:
+        def c_mutual(length, width, gap):
+            return -interp(length=length, width=width, gap=gap)[..., 0, 1]
+
+        batch = jnp.linspace(25.0, 290.0, 7)
+        jitted = jax.jit(c_mutual)(batch, 10.0, 5.0)
+        np.testing.assert_allclose(jitted, c_mutual(batch, 10.0, 5.0), rtol=1e-12)
+        vmapped = jax.vmap(c_mutual, in_axes=(0, None, None))(batch, 10.0, 5.0)
+        np.testing.assert_allclose(vmapped, jitted, rtol=1e-12)
+        assert jitted.dtype == jnp.float64
+
+        grad = jax.jit(jax.grad(c_mutual, argnums=(0, 2)))(130.0, 10.0, 5.0)
+        h = 1e-3
+        fd_length = (
+            c_mutual(130.0 + h, 10.0, 5.0) - c_mutual(130.0 - h, 10.0, 5.0)
+        ) / (2 * h)
+        fd_gap = (c_mutual(130.0, 10.0, 5.0 + h) - c_mutual(130.0, 10.0, 5.0 - h)) / (
+            2 * h
+        )
+        np.testing.assert_allclose(grad, (fd_length, fd_gap), rtol=1e-6)
+        assert grad[1] < 0  # wider gap, less capacitance
+
+    @staticmethod
+    def test_agrees_with_sax_interpolate_xarray_in_domain(
+        interp: GridInterpolator,
+    ) -> None:
+        """Same numbers as SAX inside the domain; SAX clamps outside, which we do not."""
+        grid = interp.grid
+        xarr = xr.DataArray(
+            grid.values.reshape(*grid.values.shape[:3], 4),
+            coords={
+                **dict(zip(grid.axis_names, grid.coords, strict=True)),
+                "targets": np.array(["c11", "c12", "c21", "c22"], dtype=object),
+            },
+        )
+        point = {"length": 133.0, "width": 12.5, "gap": 8.2}
+        sax_out = sax.interpolate_xarray(xarr, **point)
+        np.testing.assert_allclose(
+            interp(**point).reshape(4),
+            [sax_out[k] for k in ["c11", "c12", "c21", "c22"]],
+            rtol=1e-12,
+        )
+        outside = {**point, "length": 1000.0}
+        assert np.isfinite(sax.interpolate_xarray(xarr, **outside)["c12"])
+        assert np.isnan(interp(**outside)[0, 1])
+
+    @staticmethod
+    def test_gradient_at_domain_edges(interp: GridInterpolator) -> None:
+        """The gradient at both ends of an axis is the slope of the edge cell, not zero."""
+        for axis, values in zip(interp.axis_names, interp.grid.coords, strict=True):
+
+            def c12(x, axis=axis):
+                return interp(**{**CENTER, axis: x})[0, 1]
+
+            for edge, neighbour in [(values[0], values[1]), (values[-1], values[-2])]:
+                slope = (c12(edge) - c12(neighbour)) / (edge - neighbour)
+                np.testing.assert_allclose(jax.grad(c12)(edge), slope, rtol=1e-9)
+                assert slope != 0
+
+
+class TestCapacitance:
+    """Maxwell matrix checks and conversion."""
+
+    @staticmethod
+    def test_violations_reject_non_finite() -> None:
+        for bad in (float("inf"), float("nan")):
+            assert maxwell_violations([[bad, -1.0], [-1.0, bad]]) == [
+                "contains non-finite entries"
+            ]
+
+    @staticmethod
+    def test_mutual_conversion(interp: GridInterpolator) -> None:
+        mutual = maxwell_to_mutual(interp(**CENTER))
+        np.testing.assert_allclose(
+            mutual[0, 1],
+            plate_capacitor_capacitance_analytical(ep_r=EP_R, **CENTER),
+            rtol=1e-12,
+        )
+        np.testing.assert_allclose(
+            mutual[0, 0], _maxwell(**CENTER).sum(axis=-1)[0], rtol=1e-12
+        )
+
+    @staticmethod
+    def test_sax_model_with_dataset_lookup(interp: GridInterpolator) -> None:
+        """A capacitance looked up from the dataset drops into an existing SAX model."""
+
+        def plate_capacitor_lookup(
+            *, f=DEFAULT_FREQUENCY, length=26.0, width=5.0, gap=7.0, cross_section="cpw"
+        ):
+            f = jnp.asarray(f)
+            c_mutual = maxwell_to_mutual(interp(length=length, width=width, gap=gap))[
+                0, 1
+            ]
+            return capacitor(
+                f=f,
+                capacitance=c_mutual,
+                z0=cpw_z0_from_cross_section(cross_section, f),
+            )
+
+        f = jnp.linspace(4e9, 8e9, 5)
+        looked_up = jax.jit(
+            lambda gap: plate_capacitor_lookup(f=f, length=120.0, width=10.0, gap=gap)
+        )(7.0)
+        analytical = plate_capacitor(f=f, length=120.0, width=10.0, gap=7.0)
+        for key in [("o1", "o2"), ("o1", "o1")]:
+            np.testing.assert_allclose(looked_up[key], analytical[key], rtol=1e-9)

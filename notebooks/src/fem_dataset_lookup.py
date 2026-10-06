@@ -34,13 +34,37 @@
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# FEM extractions are expensive, so a sweep is run once and stored as a reusable
-# dataset. {mod}`qpdk.datasets` stores each dataset as a directory with
+# Circuit models of superconducting layouts need electrostatic quantities such as
+# capacitance matrices, which for realistic geometries come from finite-element
+# (FEM) solvers {cite:p}`jinFiniteElementMethod2014`. One solve takes minutes to
+# hours, far too slow to call inside a circuit simulation or an optimisation loop.
+# So a sweep over the design parameters is solved once, stored as a dataset, and
+# the circuit model interpolates between the stored points.
 #
-# - `manifest.toml`: units, terminal and ground conventions, stack, geometry and
-#   solver revisions, accuracy, and the parameter grid, kept in ordinary Git;
-# - `results/*.parquet`: one long-format table per batch of solves, kept in Git LFS
-#   and read lazily with [Polars](https://pola.rs).
+# ::::{only} html
+# :::{mermaid}
+# flowchart LR
+#     A["FEM solve<br/>per geometry"] --> B["Sweep over<br/>parameter grid"]
+#     B --> C["Parquet parts or<br/>Delta table + metadata"]
+#     C --> D["Dataset.grid<br/>dense array"]
+#     D --> E["GridInterpolator<br/>jittable lookup"]
+#     E --> F["SAX model"]
+# :::
+# ::::
+#
+# ::::{only} typst or typstpdf
+# A FEM solve per geometry is swept over a parameter grid and stored as Parquet parts or a Delta table carrying its metadata; the dataset is arranged into a dense grid, wrapped in a jittable interpolator, and called from a SAX model.
+# ::::
+#
+# {mod}`qpdk.datasets` stores the results as a long-format
+# [Polars](https://pola.rs) table with one row per matrix entry. Each Parquet
+# file (or the Delta table schema) also carries the dataset metadata: units,
+# terminal and ground conventions, whether the data is synthetic, and free-form
+# provenance such as the layer stack and solver. A file is therefore
+# self-describing, and the parameter grid is read off the data rather than
+# declared separately. Curated datasets ship in the package as Parquet parts in
+# Git LFS; shared, growing datasets can live in a Delta Lake table on a cloud
+# bucket.
 #
 # This notebook inspects the bundled dataset, looks up a capacitance matrix inside
 # {func}`jax.jit`, and replaces the analytical capacitance of a SAX model with the
@@ -93,21 +117,20 @@ from qpdk.models.generic import capacitor
 # %% [markdown]
 # ## Inspect the dataset
 #
-# The manifest is validated when the dataset opens. The results table is a plain
-# Polars frame with one row per matrix entry, so it can be filtered and
-# aggregated without loading anything into JAX.
+# The metadata is read from the files and validated when the dataset opens. The
+# results table is a plain Polars frame with one row per matrix entry, so it can
+# be filtered and aggregated without loading anything into JAX.
 
 # %%
 dataset = Dataset("plate_capacitor_synthetic")
-manifest = dataset.manifest
-logger.info(
-    f"{dataset!r}: synthetic={manifest.synthetic}, solver={manifest.solver.name}"
-)
-logger.info(
-    f"terminals {manifest.conventions.terminals} w.r.t. {manifest.conventions.reference_ground!r}"
-)
-for axis in manifest.axes:
-    logger.info(f"{axis.name} [{axis.unit}]: {axis.values}")
+metadata = dataset.metadata
+logger.info(f"{dataset!r}: synthetic={metadata.synthetic}")
+logger.info(f"provenance: {metadata.provenance}")
+logger.info(f"terminals {metadata.terminals} w.r.t. {metadata.reference_ground!r}")
+for axis in metadata.axes:
+    logger.info(
+        f"{axis.name} [{axis.unit}]: validated domain {axis.validated or 'grid span'}"
+    )
 
 # %%
 dataset.table.head(8)
@@ -126,11 +149,34 @@ dataset.table.head(8)
 # %% [markdown]
 # ## Look up a Maxwell capacitance matrix
 #
+# For conductors $1, \dots, n$ at potentials $V_j$ above a reference ground, the
+# charges are linear in the potentials, $Q_i = \sum_j C_{ij} V_j$. The
+# *Maxwell* capacitance matrix $C$ is what an electrostatic FEM solver returns:
+# it is symmetric, its diagonal is positive, and its off-diagonal entries are
+# non-positive. The *mutual* capacitance between conductors $i \neq j$ is
+# $C^{\text{m}}_{ij} = -C_{ij}$, and the capacitance of conductor $i$ to ground
+# is the row sum $C^{\text{m}}_{ii} = \sum_j C_{ij}$. The mutual form is what
+# appears as branch capacitances in a lumped circuit, and the Maxwell form is the
+# capacitance matrix of circuit quantization
+# {cite:p}`voolIntroductionQuantumElectromagnetic2017`.
+# {func}`~qpdk.datasets.maxwell_to_mutual` converts between them, and
+# {func}`~qpdk.datasets.maxwell_violations` checks the properties above.
+#
+# Between the solved points the lookup is multilinear: inside the grid cell
+# containing a query, the result is a weighted mean of the $2^n$ cell corners,
+# with weights that are products of the 1D linear weights along each axis
+# {cite:p}`weiserNotePiecewiseLinear1988`. It reproduces the data exactly at grid
+# points, is continuous everywhere, and needs no tuning. Outside the validated
+# domain there is no data to weigh, so the result is NaN.
+#
+# ![Rectilinear grid of solved points; a query inside a cell is a weighted mean of the cell corners, a query outside the grid returns NaN](figures/fem-dataset-lookup.svg)
+#
 # {meth}`~qpdk.datasets.Dataset.grid` arranges the table into a dense
 # `(length, width, gap, 2, 2)` array and raises if a grid point is missing or
 # failed. Discrete variants such as the cross-section are chosen explicitly
-# here and never interpolated. {class}`~qpdk.datasets.GridInterpolator` holds plain
-# JAX arrays, so it works inside {func}`jax.jit`, {func}`jax.vmap`, and
+# here and never interpolated. {class}`~qpdk.datasets.GridInterpolator` wraps
+# {class}`jax.scipy.interpolate.RegularGridInterpolator` and holds plain JAX
+# arrays, so it works inside {func}`jax.jit`, {func}`jax.vmap`, and
 # {func}`jax.grad`.
 
 # %%
@@ -154,7 +200,7 @@ ours = -c_maxwell(length=lengths, width=10.0, gap=5.0)[:, 0, 1]
 xarr = xr.DataArray(
     grid.values.reshape(*grid.values.shape[:3], 4),
     coords={
-        **{a.name: np.asarray(a.values) for a in grid.axes},
+        **dict(zip(grid.axis_names, grid.coords, strict=True)),
         "targets": np.array(["c11", "c12", "c21", "c22"], dtype=object),
     },
 )
@@ -250,7 +296,10 @@ def benchmark(fn, *args, repeats: int = 50) -> tuple[float, float]:
 
 
 rng = np.random.default_rng(0)
-batch = {a.name: jnp.asarray(rng.uniform(*a.domain, 10_000)) for a in grid.axes}
+batch = {
+    name: jnp.asarray(rng.uniform(lo, hi, 10_000))
+    for name, (lo, hi) in c_maxwell.domain.items()
+}
 single = {name: x[0] for name, x in batch.items()}
 
 rows = []
@@ -267,3 +316,10 @@ for label, point in [("1 point", single), ("10 000 points", batch)]:
             "query_ms": query_ms,
         })
 pl.DataFrame(rows)
+
+# %% [markdown]
+# ## References
+#
+# ```{bibliography}
+# :filter: docname in docnames
+# ```

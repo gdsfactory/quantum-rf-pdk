@@ -5,7 +5,6 @@ interpolated lookups pass straight through.
 """
 
 import jax.numpy as jnp
-import numpy as np
 from jax.typing import ArrayLike
 
 
@@ -31,24 +30,22 @@ def maxwell_violations(maxwell: ArrayLike, *, rtol: float = 1e-9) -> list[str]:
     Checks symmetry, positive diagonal, non-positive off-diagonal entries, and
     diagonal dominance (non-negative capacitance to ground), each up to ``rtol``
     relative to the largest diagonal entry. Non-finite entries are reported
-    before any other check, since they make the tolerance meaningless.
+    before any other check, since they make the tolerance meaningless. Runs
+    eagerly on concrete arrays; it is a check, not a model, and is not jittable.
 
     Returns:
         Descriptions of the violated properties; empty if the matrix is physical.
     """
-    c = np.asarray(maxwell, dtype=float)
-    if not np.isfinite(c).all():
+    c = jnp.asarray(maxwell, dtype=float)
+    if not jnp.isfinite(c).all():
         return ["contains non-finite entries"]
-    n = c.shape[-1]
-    off = ~np.eye(n, dtype=bool)
-    tol = rtol * np.abs(np.diagonal(c, axis1=-2, axis2=-1)).max()
-    problems = []
-    if np.abs(c - np.swapaxes(c, -1, -2)).max() > tol:
-        problems.append("not symmetric")
-    if (np.diagonal(c, axis1=-2, axis2=-1) <= 0).any():
-        problems.append("non-positive diagonal")
-    if (c[..., off] > tol).any():
-        problems.append("positive off-diagonal")
-    if (c.sum(axis=-1) < -tol).any():
-        problems.append("negative capacitance to ground")
-    return problems
+    diagonal = jnp.diagonal(c, axis1=-2, axis2=-1)
+    off = ~jnp.eye(c.shape[-1], dtype=bool)
+    tol = rtol * jnp.abs(diagonal).max()
+    checks = {
+        "not symmetric": jnp.abs(c - jnp.swapaxes(c, -1, -2)).max() > tol,
+        "non-positive diagonal": (diagonal <= 0).any(),
+        "positive off-diagonal": jnp.where(off, c, 0).max() > tol,
+        "negative capacitance to ground": (c.sum(axis=-1) < -tol).any(),
+    }
+    return [problem for problem, violated in checks.items() if violated]

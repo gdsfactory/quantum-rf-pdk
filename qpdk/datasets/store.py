@@ -1,66 +1,47 @@
 """Where the results table of a dataset is stored.
 
-The manifest always stays a small ``manifest.toml`` in Git; only the results
-table moves. Two stores are provided:
+The heavy lifting is left to the dependencies: Polars reads and writes Parquet,
+including its key-value metadata, and ``deltalake`` provides atomic, versioned,
+concurrent appends on local disks and object stores. The two stores here only
+add what those do not: carrying the :class:`~qpdk.datasets.metadata.DatasetMetadata`
+in the files, and a readable error for an unresolved Git LFS pointer.
 
 :class:`ParquetParts`
-    A directory of append-only ``*.parquet`` parts. The default, used for curated
-    datasets in Git LFS. Reads also work from any Polars-compatible URI such as
-    ``s3://``, ``gs://``, ``az://``, or ``https://``; appends are local only.
+    A local directory of append-only ``*.parquet`` parts, each carrying the
+    metadata in its footer. The default, used for curated datasets in Git LFS.
+    One writer at a time; use a Delta table for concurrent writers.
 
 :class:`DeltaStore`
-    A `Delta Lake <https://delta.io>`_ table at a local path or object-store URI.
-    Each append is an atomic, versioned commit, so a team can write sweep results
-    straight to a cloud bucket and pin a model to an exact table version.
-    Requires the ``delta`` extra.
+    A `Delta Lake <https://delta.io>`_ table at a local path or an object-store
+    URI such as ``gs://``, ``s3://``, or ``az://``. Each append is one atomic
+    commit and a new table version, so a team can write sweep results straight to
+    a cloud bucket and pin a model to an exact version. The metadata is kept on
+    the ``value`` column of the table schema, since Delta tables accept no
+    free-form table properties. Requires the ``delta`` extra.
 
-Credentials never go in the manifest. Pass them as ``storage_options``, in the
-same keys Polars and ``deltalake`` accept (for example ``aws_endpoint_url``,
-``google_service_account``, ``azure_storage_account_name``), or rely on the
+Credentials are passed as ``storage_options``, in the keys Polars and
+``deltalake`` accept (for example ``aws_endpoint_url``,
+``google_service_account``, ``azure_storage_account_name``), or come from the
 environment and application-default credentials of the cloud SDKs.
 """
 
+from __future__ import annotations
+
 import os
 import uuid
-from collections.abc import Iterator
-from contextlib import contextmanager, nullcontext
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any
 
-import polars as pl
+from qpdk.datasets.metadata import METADATA_KEY, DatasetMetadata
 
-from qpdk.datasets.manifest import SCHEMA_VERSION, Manifest
+if TYPE_CHECKING:
+    import polars as pl
 
 _LFS_POINTER_PREFIX = b"version https://git-lfs"
 
 
 class LFSPointerError(FileNotFoundError):
     """A results file is an unresolved Git LFS pointer instead of Parquet data."""
-
-
-class ResultStore(Protocol):
-    """Storage backend for the results table of one dataset."""
-
-    def scan(self, schema: pl.Schema, manifest: Manifest) -> pl.LazyFrame:
-        """Lazily read every stored row with ``schema``."""
-        ...
-
-    def lock(self) -> Any:
-        """Context manager held while an append validates and writes."""
-        ...
-
-    def write(self, frame: pl.DataFrame, manifest: Manifest, part: str | None) -> str:
-        """Durably add ``frame``; return a description of what was written."""
-        ...
-
-
-def is_uri(location: str | Path) -> bool:
-    """Whether ``location`` is a URI such as ``s3://bucket/key`` rather than a path.
-
-    Returns:
-        True for ``scheme://`` locations.
-    """
-    return "://" in str(location)
 
 
 def _check_not_lfs_pointer(path: Path) -> None:
@@ -77,19 +58,15 @@ def _check_not_lfs_pointer(path: Path) -> None:
 
 
 class ParquetParts:
-    """Append-only directory of Parquet parts.
+    """Local, append-only directory of Parquet parts.
 
     Args:
-        location: Local directory or Polars-compatible URI of the parts.
-        storage_options: Object-store options for a URI, passed to Polars.
+        location: Directory of the parts.
     """
 
-    def __init__(
-        self, location: str | Path, *, storage_options: dict[str, str] | None = None
-    ) -> None:
+    def __init__(self, location: str | Path) -> None:
         """Point at a directory of parts; nothing is read yet."""
-        self.location = location if is_uri(location) else Path(location)
-        self.storage_options = storage_options
+        self.location = Path(location)
 
     def __repr__(self) -> str:
         """Show the location."""
@@ -97,48 +74,52 @@ class ParquetParts:
 
     @property
     def files(self) -> list[Path]:
-        """Local part files in a deterministic order; empty for a URI."""
-        if isinstance(self.location, Path):
-            return sorted(self.location.glob("*.parquet"))
-        return []
+        """Part files in a deterministic order."""
+        return sorted(self.location.glob("*.parquet"))
 
-    def scan(self, schema: pl.Schema, manifest: Manifest) -> pl.LazyFrame:
+    def metadata(self) -> DatasetMetadata | None:
+        """Metadata stored in the parts, or ``None`` if there are none yet.
+
+        Returns:
+            The metadata shared by every part.
+
+        Raises:
+            ValueError: if the parts disagree or a part has no metadata.
+        """
+        import polars as pl  # ruff: ignore[import-outside-top-level]
+
+        texts = set()
+        for file in self.files:
+            _check_not_lfs_pointer(file)
+            if (text := pl.read_parquet_metadata(file).get(METADATA_KEY)) is None:
+                msg = f"{file} has no {METADATA_KEY!r} metadata."
+                raise ValueError(msg)
+            texts.add(text)
+        if len(texts) > 1:
+            msg = f"Parts in {self.location} carry different dataset metadata."
+            raise ValueError(msg)
+        return DatasetMetadata.from_json(texts.pop()) if texts else None
+
+    def scan(self, schema: pl.Schema) -> pl.LazyFrame:
         """Scan all parts with ``schema``.
 
         Returns:
             Lazy frame over every part.
 
         Raises:
-            FileNotFoundError: if a local directory has no parts.
+            FileNotFoundError: if there are no parts.
         """
-        if not isinstance(self.location, Path):
-            return pl.scan_parquet(
-                f"{str(self.location).rstrip('/')}/*.parquet",
-                schema=schema,
-                storage_options=self.storage_options,
-            )
+        import polars as pl  # ruff: ignore[import-outside-top-level]
+
         if not (files := self.files):
-            msg = f"No results/*.parquet files for dataset {manifest.name!r} in {self.location}."
+            msg = f"No *.parquet parts in {self.location}."
             raise FileNotFoundError(msg)
         for file in files:
             _check_not_lfs_pointer(file)
         return pl.scan_parquet(files, schema=schema)
 
-    def lock(self) -> Any:
-        """Hold ``.append.lock`` in the parts directory.
-
-        Returns:
-            Context manager for the lock.
-        """
-        location = self._local("append to")
-        location.mkdir(parents=True, exist_ok=True)
-        return _lock_file(location / ".append.lock")
-
     def write(
-        self,
-        frame: pl.DataFrame,
-        manifest: Manifest,  # ruff: ignore[unused-method-argument]
-        part: str | None,
+        self, frame: pl.DataFrame, metadata: DatasetMetadata, part: str | None
     ) -> str:
         """Publish ``frame`` as a new part without ever replacing an existing one.
 
@@ -148,14 +129,16 @@ class ParquetParts:
         Raises:
             FileExistsError: if the part already exists.
         """
-        location = self._local("append to")
-        target = location / f"{part or uuid.uuid4().hex}.parquet"
+        self.location.mkdir(parents=True, exist_ok=True)
+        target = self.location / f"{part or uuid.uuid4().hex}.parquet"
         if target.exists():
             msg = f"{target} already exists; result parts are append-only."
             raise FileExistsError(msg)
-        staging = location / f".{target.name}.{uuid.uuid4().hex}.tmp"
+        staging = self.location / f".{target.name}.{uuid.uuid4().hex}.tmp"
         try:
-            frame.write_parquet(staging, compression="zstd", statistics=True)
+            frame.write_parquet(
+                staging, statistics=True, metadata={METADATA_KEY: metadata.to_json()}
+            )
             # A hard link publishes atomically and, unlike a rename, never
             # replaces an existing part.
             os.link(staging, target)
@@ -163,57 +146,12 @@ class ParquetParts:
             staging.unlink(missing_ok=True)
         return str(target)
 
-    def _local(self, action: str) -> Path:
-        """The parts directory, if it is local.
-
-        Returns:
-            Local directory.
-
-        Raises:
-            NotImplementedError: for a URI; use :class:`DeltaStore` to write remotely.
-        """
-        if not isinstance(self.location, Path):
-            msg = (
-                f"Cannot {action} Parquet parts at {self.location}: plain object stores "
-                "give no atomic, non-overwriting publish. Use a DeltaStore to "
-                "write results to a bucket."
-            )
-            raise NotImplementedError(msg)
-        return self.location
-
-
-@contextmanager
-def _lock_file(path: Path) -> Iterator[None]:
-    """Hold an exclusive lock file for the duration of an append.
-
-    Yields:
-        Nothing; the lock is released on exit.
-
-    Raises:
-        FileExistsError: if another append holds the lock.
-    """
-    try:
-        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError as error:
-        msg = (
-            f"Another append holds {path}; retry, or delete it if no append is running."
-        )
-        raise FileExistsError(msg) from error
-    try:
-        os.close(fd)
-        yield
-    finally:
-        path.unlink(missing_ok=True)
-
 
 class DeltaStore:
     """Results stored as a Delta Lake table.
 
     Every append is one atomic commit and creates a new table version. Reading a
     pinned ``version`` reproduces exactly the rows a model was built from.
-
-    The table records the dataset name, and a store refuses to read or write a
-    table created for a different dataset.
 
     Concurrent appends are committed atomically on local disks, Google Cloud
     Storage, and Azure. On S3, pass ``{"conditional_put": "etag"}`` (S3 and most
@@ -245,94 +183,110 @@ class DeltaStore:
         pinned = "" if self.version is None else f", version={self.version}"
         return f"DeltaStore({self.uri!r}{pinned})"
 
-    def _open(self, manifest: Manifest) -> Any:
-        """Open the table and check that it belongs to ``manifest``.
+    def _table(self) -> Any:
+        """Open the table.
 
         Returns:
-            The ``deltalake.DeltaTable``.
-
-        Raises:
-            FileNotFoundError: if there is no table at the URI.
-            ValueError: if the table belongs to another dataset.
+            The ``deltalake.DeltaTable``, or ``None`` if there is none yet.
         """
         import deltalake  # ruff: ignore[import-outside-top-level]
 
         try:
-            table = deltalake.DeltaTable(
+            return deltalake.DeltaTable(
                 self.uri, version=self.version, storage_options=self.storage_options
             )
-        except deltalake.exceptions.TableNotFoundError as error:
-            msg = f"No Delta table for dataset {manifest.name!r} at {self.uri}."
-            raise FileNotFoundError(msg) from error
-        if (name := table.metadata().name) != manifest.name:
-            msg = f"Delta table at {self.uri} holds dataset {name!r}, not {manifest.name!r}."
-            raise ValueError(msg)
-        return table
+        except deltalake.exceptions.TableNotFoundError:
+            return None
 
-    def table_version(self, manifest: Manifest) -> int:
-        """Version of the table that :meth:`scan` reads.
+    def metadata(self) -> DatasetMetadata | None:
+        """Metadata stored in the table schema, or ``None`` if there is no table.
 
         Returns:
-            Delta table version.
-        """
-        return self._open(manifest).version()
+            The table's dataset metadata.
 
-    def scan(self, schema: pl.Schema, manifest: Manifest) -> pl.LazyFrame:
+        Raises:
+            ValueError: if the table has no dataset metadata.
+        """
+        if (table := self._table()) is None:
+            return None
+        for field in table.schema().fields:
+            if field.name == "value" and METADATA_KEY in (field.metadata or {}):
+                return DatasetMetadata.from_json(field.metadata[METADATA_KEY])
+        msg = f"Delta table at {self.uri} has no {METADATA_KEY!r} metadata."
+        raise ValueError(msg)
+
+    @property
+    def table_version(self) -> int:
+        """Version of the table that :meth:`scan` reads."""
+        if (table := self._table()) is None:
+            msg = f"No Delta table at {self.uri}."
+            raise FileNotFoundError(msg)
+        return table.version()
+
+    def scan(self, schema: pl.Schema) -> pl.LazyFrame:
         """Scan the table, cast to ``schema``.
 
         Returns:
             Lazy frame over the table.
-        """
-        frame = pl.scan_delta(self._open(manifest))
-        return frame.select(schema.names()).cast(schema)  # pyrefly: ignore[bad-argument-type]
 
-    def lock(self) -> Any:
-        """No client-side lock: commits are atomic in the Delta log.
+        Raises:
+            FileNotFoundError: if there is no table.
+        """
+        import polars as pl  # ruff: ignore[import-outside-top-level]
+
+        if (table := self._table()) is None:
+            msg = f"No Delta table at {self.uri}."
+            raise FileNotFoundError(msg)
+        return pl.scan_delta(table).select(schema.names()).cast(schema)  # pyrefly: ignore[bad-argument-type]
+
+    def write(
+        self, frame: pl.DataFrame, metadata: DatasetMetadata, part: str | None
+    ) -> str:
+        """Commit ``frame`` as one append, creating the table if needed.
+
+        New tables are partitioned by the variants, which are always selected
+        exactly and never interpolated, and carry ``metadata`` on the ``value``
+        column.
 
         Returns:
-            A no-op context manager.
+            The URI and the committed table version.
 
         Raises:
             ValueError: if the store is pinned to a version.
         """
+        import deltalake  # ruff: ignore[import-outside-top-level]
+        from arro3.core import Table  # ruff: ignore[import-outside-top-level]
+
         if self.version is not None:
             msg = f"{self!r} is pinned to a version and read-only."
             raise ValueError(msg)
-        return nullcontext()
-
-    def write(self, frame: pl.DataFrame, manifest: Manifest, part: str | None) -> str:
-        """Commit ``frame`` as one append, creating the table if needed.
-
-        New tables are partitioned by the manifest variants, which are always
-        selected exactly and never interpolated.
-
-        Returns:
-            The URI and the committed table version.
-        """
-        import deltalake  # ruff: ignore[import-outside-top-level]
-
-        exists = deltalake.DeltaTable.is_deltatable(self.uri, self.storage_options)
-        if exists:
-            self._open(manifest)
+        exists = self._table() is not None
+        data: Any = frame
+        if not exists:
+            table = Table.from_arrow(frame)
+            index = table.schema.get_field_index("value")
+            field = table.schema.field(index).with_metadata({
+                METADATA_KEY: metadata.to_json()
+            })
+            data = Table.from_batches(
+                table.to_batches(), schema=table.schema.set(index, field)
+            )
         deltalake.write_deltalake(
             self.uri,
-            frame,
+            data,
             mode="append",
             storage_options=self.storage_options,
             **(
                 {}
                 if exists
                 else {
-                    "name": manifest.name,
-                    "description": manifest.description,
-                    "partition_by": [v.name for v in manifest.variants] or None,
+                    "name": metadata.name,
+                    "description": metadata.description,
+                    "partition_by": list(metadata.variants) or None,
                 }
             ),
             commit_properties=deltalake.CommitProperties(
-                custom_metadata={
-                    "qpdk.schema_version": str(SCHEMA_VERSION),
-                    "qpdk.part": part or "",
-                }
+                custom_metadata={"qpdk.part": part or ""}
             ),
         )
-        return f"{self.uri}@v{self.table_version(manifest)}"
+        return f"{self.uri}@v{self.table_version}"
