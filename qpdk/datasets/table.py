@@ -2,20 +2,20 @@
 
 The table is long-format: one row per parameter point, quantity, and matrix entry.
 
-=============  ===========  ===========================================================
-Column         Type         Meaning
-=============  ===========  ===========================================================
-``run_id``     String       Identity of the solver run that produced the row.
-``status``     String       ``ok``, ``failed``, or ``not_converged`` (see :class:`RunStatus`).
-<axis>         Float64      One column per metadata axis, in the axis' unit.
-<variant>      String       One column per metadata variant.
-``quantity``   String       Name of a metadata quantity.
-``row``        String       Row terminal label; null for scalar quantities.
-``col``        String       Column terminal label; null for scalar quantities.
-``value``      Float64      Value (real part for complex quantities); null unless ``ok``.
-``value_imag`` Float64      Imaginary part; null for real quantities.
-``unit``       String       SI unit; must equal the metadata unit of the quantity.
-=============  ===========  ===========================================================
+===============  ===========  ===========================================================
+Column           Type         Meaning
+===============  ===========  ===========================================================
+``run_id``       String       Identity of the solver run that produced the row.
+``status``       String       ``ok``, ``failed``, or ``not_converged`` (see :class:`RunStatus`).
+<axis>           Float64      One column per metadata axis, in the axis' unit.
+<variant>        String       One column per metadata variant.
+``quantity``     String       Name of a metadata quantity.
+``row``          String       Row terminal label; null for scalar quantities.
+``col``          String       Column terminal label; null for scalar quantities.
+``value``        Float64      Value (real part for complex quantities); null unless ``ok``.
+``value_imag``   Float64      Imaginary part; null for real quantities.
+``unit``         String       SI unit; must equal the metadata unit of the quantity.
+===============  ===========  ===========================================================
 
 The :class:`~qpdk.datasets.metadata.DatasetMetadata` is stored inside the files
 (see :mod:`qpdk.datasets.store`), so a dataset is self-describing and nothing
