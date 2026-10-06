@@ -1,0 +1,16 @@
+generator = "qpdk.models.datasets.plate_capacitor:generate"
+output = "../build/datasets/plate_capacitor_palace"
+workdir = "../build/palace/plate-capacitor"
+
+[grid]
+length = [40.0, 80.0, 120.0]
+width = [5.0, 10.0, 20.0]
+gap = [4.0, 7.0, 10.0]
+
+[palace]
+command = ["palace", "-np", "4"]
+
+[palace.settings]
+near_mesh = 0.55
+domain_pad = 100.0
+save_fields = false

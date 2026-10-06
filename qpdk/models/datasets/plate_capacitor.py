@@ -1,13 +1,11 @@
 """Generate the plate-capacitor dataset with Palace electrostatic solves.
 
-Run ``python -m qpdk.models.datasets.plate_capacitor --help`` for the sweep CLI.
+Run ``just generate-dataset datasets/plate_capacitor.toml`` from a checkout.
 Lookups need only the bundled Parquet data; regeneration needs Gmsh and Palace.
 """
 
 from __future__ import annotations
 
-import argparse
-import shlex
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
@@ -16,7 +14,7 @@ from qpdk.cells import plate_capacitor
 from qpdk.models.datasets.generate import sweep, write
 from qpdk.models.datasets.metadata import Axis, DatasetMetadata, Quantity, QuantityKind
 from qpdk.models.datasets.table import Dataset
-from qpdk.simulation.palace import ElectrostaticSettings, Palace
+from qpdk.simulation.palace import Palace
 
 NAME = "plate_capacitor_palace"
 GRID = {
@@ -87,64 +85,3 @@ def generate(
     dataset.grid("maxwell_capacitance", cross_section="cpw")
     logger.info(f"Wrote {dataset!r} to {output}")
     return dataset
-
-
-def main() -> None:
-    """Generate a dataset using a local Palace installation or container command."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=Path("build/datasets") / NAME,
-        help="Directory for the complete Parquet dataset",
-    )
-    parser.add_argument(
-        "--workdir",
-        type=Path,
-        default=Path("build/palace/plate-capacitor"),
-        help="Retained geometry inputs, results and logs; reuse to resume",
-    )
-    parser.add_argument(
-        "--palace-command",
-        default="palace -np 4",
-        help="Command prefix, including MPI/container options; config filename is appended",
-    )
-    for name, values in GRID.items():
-        parser.add_argument(
-            f"--{name}",
-            type=float,
-            nargs="+",
-            default=values,
-            help=f"{name.capitalize()} grid in µm",
-        )
-    parser.add_argument(
-        "--mesh-size", type=float, default=0.55, help="Near-metal mesh size in µm"
-    )
-    parser.add_argument(
-        "--domain-pad",
-        type=float,
-        default=100.0,
-        help="Lateral pad, air height and substrate depth in µm",
-    )
-    parser.add_argument(
-        "--save-fields",
-        action="store_true",
-        help="Save each terminal's fields for ParaView",
-    )
-    args = parser.parse_args()
-    runner = Palace(
-        workdir=args.workdir,
-        command=tuple(shlex.split(args.palace_command)),
-        settings=ElectrostaticSettings(
-            near_mesh=args.mesh_size,
-            domain_pad=args.domain_pad,
-            save_fields=args.save_fields,
-        ),
-    )
-    generate(
-        runner, output=args.output, grid={name: getattr(args, name) for name in GRID}
-    )
-
-
-if __name__ == "__main__":
-    main()

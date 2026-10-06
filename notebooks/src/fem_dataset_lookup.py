@@ -76,27 +76,6 @@
 # and mesh settings travel with the data. It covers lengths 40–120 µm, widths
 # 5–20 µm and gaps 4–10 µm; these results apply to that geometry and stack.
 #
-# ## Generate or extend a dataset
-#
-# With Palace installed, run the default 27-point sweep from the repository root:
-#
-# ```bash
-# just generate-plate-capacitor
-# ```
-#
-# Change the grid with `--length 40 60 80`, `--width 5 10`, or `--gap 4 6 8`.
-# `--output` chooses the Parquet directory and `--workdir` keeps each geometry
-# alongside its mesh, solver inputs and log. Run the same command again after an
-# interruption: completed solves are reused. Solver failures stop the sweep
-# before replacing a dataset. `--palace-command` accepts an MPI or container
-# command prefix; `python -m qpdk.models.datasets.plate_capacitor --help` lists
-# the options.
-#
-# For convergence, solve a representative point with `--mesh-size 0.38`, then
-# compare it with a run using `--domain-pad 150`. Keep their outputs separate.
-# `--save-fields` writes terminal fields for ParaView. Open a generated dataset
-# with `Dataset("build/datasets/plate_capacitor_palace")`; queries need no solver.
-
 # %% tags=["hide-input", "hide-output"]
 import sys
 
@@ -115,6 +94,7 @@ if "google.colab" in sys.modules:
 
 # %% tags=["hide-input", "hide-output"]
 import time
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
@@ -134,6 +114,8 @@ from qpdk.models.datasets import (
     check_maxwell,
     maxwell_to_mutual,
 )
+from qpdk.models.datasets.generate import write
+from qpdk.models.datasets.recipe import load_recipe
 from qpdk.models.generic import capacitor
 
 # %% [markdown]
@@ -168,6 +150,178 @@ dataset.table.head(8)
     .sort("gap")
     .collect()
 )
+
+# %% [markdown]
+# ## Define a generation recipe
+#
+# A TOML recipe records the parameter grid and solver settings. It is an input
+# to generation, not a manifest that must travel with the dataset: the output
+# Parquet file contains its own units, terminals, solver and geometry provenance.
+#
+# Start with six geometries before investing in a larger sweep. Paths in the
+# recipe are relative to the recipe file, so this example keeps its data and
+# solver runs together. Numeric geometry axes here are in µm; the selected
+# generator defines their units and the fixed CPW cross-section.
+
+# %%
+recipe_path = Path("build/dataset-example/plate-capacitor.toml")
+recipe_path.parent.mkdir(parents=True, exist_ok=True)
+recipe_path.write_text(
+    """generator = "qpdk.models.datasets.plate_capacitor:generate"
+output = "coarse"
+workdir = "palace-runs"
+
+[grid]
+length = [40.0, 80.0]
+width = [10.0]
+gap = [4.0, 7.0, 10.0]
+
+[palace]
+command = ["palace", "-np", "4"]
+
+[palace.settings]
+near_mesh = 0.55
+domain_pad = 100.0
+""",
+    encoding="utf-8",
+)
+recipe = load_recipe(recipe_path)
+logger.info(f"Recipe: {recipe.points} geometries, grid={recipe.grid}")
+logger.info(
+    f"Output: {recipe.output.relative_to(Path.cwd())}; "
+    f"retained runs: {recipe.workdir.relative_to(Path.cwd())}"
+)
+
+# %% [markdown]
+# ## Run a small sweep and inspect its output
+#
+# With Palace installed, set `RUN_PALACE = True` below to solve the six
+# geometries. The default instead selects these six points from the bundled
+# real Palace results and writes a small dataset, so the entire example also
+# runs on machines without a solver. This selection performs no new FEM solves.
+#
+# For MPI or a container, replace the command before running, for example
+# `recipe = replace(recipe, command=("palace", "-np", "8"))`. A container
+# command is also an argument tuple; the config filename is appended without a
+# shell. `--palace-command` provides the same override in the CLI.
+
+# %% tags=["keep_output"]
+RUN_PALACE = False
+
+if RUN_PALACE:
+    generated = recipe.run()
+else:
+    selection = dataset.table.filter(
+        *(pl.col(axis).is_in(values) for axis, values in recipe.grid.items())
+    )
+    generated = write(recipe.output, dataset.metadata, selection)
+    logger.info("Selected existing Palace solves; no simulator was run")
+
+coarse = generated.grid("maxwell_capacitance", cross_section="cpw")
+logger.info(
+    f"Generated table: {generated.table.height} rows for {recipe.points} geometries"
+)
+logger.info(
+    f"Dense grid: {coarse.values.shape}, terminals={generated.metadata.terminals}"
+)
+
+coarse_lookup = GridInterpolator(coarse)
+logger.info(
+    f"Small-sweep lookup at 60/10/7 µm [fF]:\n"
+    f"{coarse_lookup(length=60.0, width=10.0, gap=7.0) * 1e15}"
+)
+
+# %% [markdown]
+# A complete two-terminal matrix has four entries per geometry, so this sweep
+# has 24 rows. Open the result in a separate session with
+# `Dataset("build/dataset-example/coarse")`; loading and interpolation need no
+# Palace installation. The table below verifies that every geometry has four
+# successful entries.
+
+# %% tags=["keep_output"]
+(
+    generated
+    .scan()
+    .group_by("length", "width", "gap", "status")
+    .len(name="matrix_entries")
+    .sort("length", "gap")
+    .collect()
+)
+
+# %% [markdown]
+# ## Generate from the command line and resume
+#
+# Run the exact recipe from the repository root:
+#
+# ```bash
+# just generate-dataset build/dataset-example/plate-capacitor.toml --dry-run
+# just generate-dataset build/dataset-example/plate-capacitor.toml
+# ```
+#
+# The dry run previews the grid, geometry count, resolved paths and settings
+# without invoking the solver. Outside a checkout, use
+# `python -m qpdk.models.datasets.recipe recipe.toml`.
+# `datasets/plate_capacitor.toml` is the repository's full 27-point recipe.
+#
+# Run the same command again after an interruption. A geometry directory holds
+# `inputs.json`, `mesh.msh`, `config.json`, `solver.log` and `result.json`.
+# Completed matching solves are reused; failed ones run again. Changing the
+# geometry, mesh, solver fingerprint or thread settings creates a different
+# directory. The output dataset is replaced only after all solves and validation
+# succeed. If a solve fails, follow the log path in the error message.
+#
+# To extend this example, add `120.0` to `length` in the recipe and rerun it:
+# the six old geometries are reused and only three new ones are solved. Keep
+# the same work directory. `--output` and `--workdir` can redirect results to
+# another disk; CLI path overrides are relative to the current directory.
+
+# %% [markdown]
+# ## Check mesh and domain sensitivity
+#
+# A denser parameter grid improves interpolation, but it cannot repair a coarse
+# FEM mesh. Before expanding a sweep, compare one representative geometry at
+# successively finer mesh sizes, then enlarge the exterior domain. The Python
+# API uses the same recipe as the command line:
+#
+# ```python
+# center = replace(recipe, grid={"length": [80.0], "width": [10.0], "gap": [7.0]})
+# matrices = []
+# for size in [0.8, 0.55, 0.38]:
+#     refined = replace(
+#         center,
+#         output=recipe.output.parent / f"mesh-{size}",
+#         settings=replace(center.settings, near_mesh=size, save_fields=True),
+#     )
+#     solved = refined.run().grid("maxwell_capacitance", cross_section="cpw")
+#     matrices.append(np.asarray(solved.values).reshape(2, 2))
+# relative_change = np.max(np.abs((matrices[-1] - matrices[-2]) / matrices[-1]))
+# logger.info(f"Last mesh refinement changed the matrix by {relative_change:.2%}")
+# expanded = replace(
+#     center,
+#     output=recipe.output.parent / "larger-domain",
+#     settings=replace(center.settings, domain_pad=150.0),
+# ).run()
+# ```
+#
+# `save_fields=True` retains each terminal's fields for ParaView. Inspect the
+# metal edges and gaps where the electric field concentrates. Keep refinement
+# outputs separate, and check points near both ends of a new geometry range.
+# The bundled extraction was checked at 80/10/7 µm: its final 0.55-to-0.38 µm
+# refinement changed matrix entries by at most 0.57%, and enlarging the domain
+# changed them by 0.25%. Four held-out solves at width 10 µm differed from the
+# interpolated matrices by at most 2.68%. These checks do not establish a
+# uniform error bound over every width or an expanded design range.
+#
+# ## Add another dataset generator
+#
+# A recipe's `generator` is a `module:function`, not a capacitor-specific CLI
+# option. To extract another geometry, provide an importable function accepting
+# `runner`, `grid` and `output` keyword arguments. It defines the cell, axes,
+# units and terminal conventions, then uses {func}`qpdk.models.datasets.generate.sweep`
+# and {func}`qpdk.models.datasets.generate.write`. The existing
+# {func}`qpdk.models.datasets.plate_capacitor.generate` is a complete example.
+# This Palace recipe supports independently ported metal polygons on silicon;
+# a different process stack or solver needs its own extraction implementation.
 
 # %% [markdown]
 # ## Look up a Maxwell capacitance matrix
