@@ -129,32 +129,42 @@ Generating Palace datasets
 ==========================
 
 The bundled ``plate_capacitor_palace`` dataset contains real electrostatic extractions.
-Regenerate it with a local Palace installation:
+A TOML generation recipe selects an importable Python generator, its parameter grid and
+Palace settings. It is a generation input, not a dataset manifest: the output Parquet
+files remain self-describing and need no recipe to be read.
+
+Preview or run the bundled 27-point sweep:
 
 ::
 
-    just generate-plate-capacitor
+    just generate-dataset datasets/plate_capacitor.toml --dry-run
+    just generate-dataset datasets/plate_capacitor.toml
 
-Or use the package CLI outside a checkout:
+Outside a checkout, use ``python -m qpdk.models.datasets.recipe recipe.toml``. Copy and
+edit the recipe to choose a different grid or mesh. Its output and work paths are
+relative to the recipe file; ``--output`` and ``--workdir`` overrides are relative to
+the current directory. ``--palace-command "palace -np 8"`` overrides the MPI or
+container command without changing the file. Commands are argument vectors, and the
+config filename is appended without invoking a shell.
 
-::
+The recipe's ``generator`` is a ``module:function`` accepting ``runner``, ``grid`` and
+``output`` keyword arguments. That function owns the geometry, units, terminal
+conventions and metadata, and returns a :class:`~qpdk.models.datasets.Dataset`. Use
+:func:`~qpdk.models.datasets.plate_capacitor.generate` as a starting point for another
+geometry. No generator registry or separate command target is needed.
 
-    python -m qpdk.models.datasets.plate_capacitor --output results/plate-capacitor
+Each geometry gets its own mesh, config, solver log and results beneath ``workdir``.
+Running the same command resumes completed solves; geometry, solver and mesh changes get
+separate run directories. Extend a grid while retaining its work directory to solve only
+new points. The dataset is published after all solves and validation succeed. A failed
+solve raises with its log path and preserves the existing dataset.
 
-The default sweep has 27 geometries. Set ``--length``, ``--width`` and ``--gap`` to
-choose the grid, with values in µm. Each geometry gets its own mesh, config, solver log
-and results beneath ``--workdir``. Running the same command resumes completed solves;
-geometry, solver and mesh changes get separate run directories. The dataset is published
-after all solves and validation succeed. A failed solve raises with its log path and
-preserves the existing dataset.
-
-``--palace-command`` accepts a command prefix, so the same workflow works with MPI or a
-container, for example ``"palace -np 4"``. The config filename is appended without
-invoking a shell. Use ``--save-fields`` for ParaView outputs. ``--mesh-size`` and
-``--domain-pad`` control mesh and domain refinement; compare representative points
+Set ``save_fields = true`` in ``[palace.settings]`` for ParaView outputs. ``near_mesh``
+and ``domain_pad`` control mesh and domain refinement; compare representative points
 before using a new parameter range. The bundled recipe uses zero-thickness perfect
 conductor sheets on silicon and a separate coplanar ground frame, not a finite-thickness
-process-stack extraction.
+process-stack extraction. The notebook demonstrates a small recipe, optional live
+solving, inspecting the output and refinement checks.
 
 .. automodule:: qpdk.models.datasets
 
@@ -180,4 +190,7 @@ process-stack extraction.
     :members:
 
 .. automodule:: qpdk.simulation.palace
+    :members:
+
+.. automodule:: qpdk.models.datasets.recipe
     :members:
