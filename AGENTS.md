@@ -127,8 +127,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
   cloning or testing: <https://git-lfs.github.com/>
 - **Binary files**: GDS and OAS files are tracked as binary in `.gitattributes` to prevent merge conflicts
 - **Test data with LFS**: CSV files in `tests/models/data/` are stored with Git LFS (`filter=lfs diff=lfs merge=lfs`)
-- **Datasets with LFS**: Parquet results in `qpdk/datasets/data/*/results/` are stored with Git LFS; manifests stay in
-  ordinary Git. Fetch only these with `git lfs pull --include="qpdk/datasets/data/**"`
+- **Datasets with LFS**: Parquet parts in `qpdk/datasets/data/*/` are stored with Git LFS and carry their own dataset
+  metadata. Fetch only these with `git lfs pull --include="qpdk/datasets/data/**"`
 - **Branching**: Work on feature branches, not directly on `main`. Pull requests are required for merging to `main`
 - **Commit messages**: Write clear, concise commit messages. Use imperative mood (e.g., "Add component" not "Added
   component")

@@ -7,38 +7,37 @@ Column         Type         Meaning
 =============  ===========  ===========================================================
 ``run_id``     String       Identity of the solver run that produced the row.
 ``status``     String       ``ok``, ``failed``, or ``not_converged`` (see :class:`RunStatus`).
-<axis>         Float64      One column per manifest axis, in the axis' unit.
-<variant>      String       One column per manifest variant.
-``quantity``   String       Name of a manifest quantity.
+<axis>         Float64      One column per metadata axis, in the axis' unit.
+<variant>      String       One column per metadata variant.
+``quantity``   String       Name of a metadata quantity.
 ``row``        String       Row terminal label; null for scalar quantities.
 ``col``        String       Column terminal label; null for scalar quantities.
 ``value``      Float64      Value (real part for complex quantities); null unless ``ok``.
 ``value_imag`` Float64      Imaginary part; null for real quantities.
-``unit``       String       SI unit; must equal the manifest unit of the quantity.
+``unit``       String       SI unit; must equal the metadata unit of the quantity.
 =============  ===========  ===========================================================
 
-By default results live in ``results/*.parquet`` and are scanned together, so a
-resumable sweep appends a new part file per batch instead of rewriting a single
-large LFS object. :mod:`qpdk.datasets.store` provides the alternatives, such as
-a Delta Lake table in a cloud bucket.
+The :class:`~qpdk.datasets.metadata.DatasetMetadata` is stored inside the files
+(see :mod:`qpdk.datasets.store`), so a dataset is self-describing and nothing
+but its Parquet parts or Delta table.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import cached_property
 from itertools import product
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-import polars as pl
 
-from qpdk.datasets.manifest import Axis, Manifest, Quantity, load_manifest
-from qpdk.datasets.store import (
-    DeltaStore,
-    ParquetParts,
-    ResultStore,
-    is_uri,
-)
+from qpdk.datasets.metadata import Axis, DatasetMetadata, Quantity
+from qpdk.datasets.store import DeltaStore, ParquetParts
+
+if TYPE_CHECKING:
+    import polars as pl
 
 DATASETS_PATH = Path(__file__).parent / "data"
 """Curated datasets shipped with qpdk."""
@@ -53,7 +52,7 @@ class RunStatus(StrEnum):
 
 
 class DatasetError(ValueError):
-    """The dataset is inconsistent with its manifest or cannot be gridded."""
+    """The dataset is inconsistent with its metadata or cannot be gridded."""
 
     def __init__(self, dataset: str, problems: list[str]) -> None:
         """Collect every problem into one message."""
@@ -70,14 +69,15 @@ class Grid:
 
     ``values`` has shape ``(*axis sizes, *component shape)`` where the component
     shape is ``(n_terminals, n_terminals)`` for matrix quantities and ``()`` for
-    scalars. Axes follow manifest order, terminals follow
-    :attr:`~qpdk.datasets.manifest.Conventions.terminals`. Missing or failed
-    points are NaN, never zero.
+    scalars. Axes follow metadata order with ascending ``coords``, terminals
+    follow :attr:`~qpdk.datasets.metadata.DatasetMetadata.terminals`. Missing or
+    failed points are NaN, never zero.
     """
 
     dataset: str
     quantity: Quantity
     axes: tuple[Axis, ...]
+    coords: tuple[np.ndarray, ...]
     terminals: tuple[str, ...]
     variant: dict[str, str]
     values: np.ndarray
@@ -87,14 +87,28 @@ class Grid:
         """Axis names in tensor order."""
         return tuple(axis.name for axis in self.axes)
 
+    @property
+    def domain(self) -> dict[str, tuple[float, float]]:
+        """Validated domain of each axis; defaults to the span of its grid values."""
+        return {
+            axis.name: axis.validated or (float(c[0]), float(c[-1]))
+            for axis, c in zip(self.axes, self.coords, strict=True)
+        }
 
-def schema(manifest: Manifest) -> pl.Schema:
-    """Column schema of the results table for ``manifest``."""
+
+def schema(metadata: DatasetMetadata) -> pl.Schema:
+    """Column schema of the results table for ``metadata``.
+
+    Returns:
+        The Polars schema.
+    """
+    import polars as pl  # ruff: ignore[import-outside-top-level]
+
     return pl.Schema({
         "run_id": pl.String,
         "status": pl.String,
-        **{axis.name: pl.Float64 for axis in manifest.axes},
-        **{variant.name: pl.String for variant in manifest.variants},
+        **{axis.name: pl.Float64 for axis in metadata.axes},
+        **dict.fromkeys(metadata.variants, pl.String),
         "quantity": pl.String,
         "row": pl.String,
         "col": pl.String,
@@ -105,141 +119,159 @@ def schema(manifest: Manifest) -> pl.Schema:
 
 
 class Dataset:
-    """A FEM extraction dataset: a ``manifest.toml`` and its results table.
-
-    The results are read from, in order of precedence, ``store``, the manifest's
-    ``[storage]`` section, or the Parquet parts in ``results/`` next to the
-    manifest.
+    """A FEM extraction dataset: Parquet parts or a Delta table with its metadata.
 
     Args:
-        path: Dataset directory, or the name of a dataset shipped in
-            :data:`DATASETS_PATH`.
-        store: Where the results live; see :mod:`qpdk.datasets.store`.
-        storage_options: Object-store options (credentials, endpoints) for the
-            manifest's ``[storage]`` URI. Never written to the manifest.
+        location: Directory of Parquet parts, the name of a dataset shipped in
+            :data:`DATASETS_PATH`, or with ``delta=True`` a Delta table path or
+            object-store URI such as ``gs://bucket/dataset``.
+        metadata: Metadata for a new dataset. For an existing one it is read
+            from the files and, if given, must match.
+        delta: Store results as a Delta Lake table (``delta`` extra).
+        version: Delta table version to read; a pinned dataset is read-only.
+        storage_options: Object-store options (credentials, endpoints) for a
+            Delta URI. Never written to the dataset.
+
+    Raises:
+        FileNotFoundError: if nothing is stored yet and no ``metadata`` is given.
+        DatasetError: if ``metadata`` differs from the stored metadata.
     """
 
     def __init__(
         self,
-        path: Path | str,
+        location: Path | str,
+        metadata: DatasetMetadata | None = None,
         *,
-        store: ResultStore | None = None,
+        delta: bool = False,
+        version: int | None = None,
         storage_options: dict[str, str] | None = None,
     ) -> None:
-        """Open the dataset and validate its manifest."""
-        path = Path(path)
-        if not path.is_dir() and (DATASETS_PATH / path).is_dir():
-            path = DATASETS_PATH / path
-        self.path = path
-        self.manifest = load_manifest(path / "manifest.toml")
-        self.store = store or _store_from_manifest(self.manifest, path, storage_options)
+        """Open the dataset and read its metadata."""
+        if delta:
+            self.store: ParquetParts | DeltaStore = DeltaStore(
+                location, storage_options=storage_options, version=version
+            )
+        else:
+            if version is not None or storage_options is not None:
+                msg = "version and storage_options apply to Delta tables only; pass delta=True."
+                raise ValueError(msg)
+            path = Path(location)
+            if not path.is_dir() and (DATASETS_PATH / path).is_dir():
+                path = DATASETS_PATH / path
+            self.store = ParquetParts(path)
+        stored = self.store.metadata()
+        if stored is not None and metadata is not None and stored != metadata:
+            raise DatasetError(
+                stored.name,
+                ["The given metadata differs from the metadata stored in the files."],
+            )
+        if (resolved := stored or metadata) is None:
+            msg = f"No dataset at {self.store!r}; pass metadata to create one."
+            raise FileNotFoundError(msg)
+        self.metadata: DatasetMetadata = resolved
 
     def __repr__(self) -> str:
-        """Show the dataset directory and store."""
-        return f"Dataset({self.path!s}, store={self.store!r})"
-
-    @property
-    def result_files(self) -> list[Path]:
-        """Local Parquet part files, in a deterministic order; empty for other stores."""
-        return self.store.files if isinstance(self.store, ParquetParts) else []
+        """Show the dataset name and store."""
+        return f"Dataset({self.metadata.name!r}, store={self.store!r})"
 
     def scan(self) -> pl.LazyFrame:
-        """Lazily scan the results with the manifest schema.
+        """Lazily scan the results with the metadata schema.
 
         Returns:
             Lazy frame over all results; not validated.
         """
-        return self.store.scan(schema(self.manifest), self.manifest)
+        return self.store.scan(schema(self.metadata))
 
     @cached_property
     def table(self) -> pl.DataFrame:
-        """The full results table, validated against the manifest."""
+        """The full results table, validated against the metadata.
+
+        Raises:
+            DatasetError: if the stored results do not match the schema.
+        """
+        import polars as pl  # ruff: ignore[import-outside-top-level]
+
         try:
             frame = self.scan().collect()
         except (pl.exceptions.SchemaError, pl.exceptions.ColumnNotFoundError) as error:
             raise DatasetError(
-                self.manifest.name, [f"Result parts do not match the schema: {error}"]
+                self.metadata.name, [f"Results do not match the schema: {error}"]
             ) from error
-        validate(frame, self.manifest)
+        validate(frame, self.metadata)
         return frame
 
     def grid(
         self, quantity: str, *, allow_missing: bool = False, **variant: str
     ) -> Grid:
-        """Arrange ``quantity`` on its grid; see :func:`to_grid`."""
+        """Arrange ``quantity`` on its grid; see :func:`to_grid`.
+
+        Returns:
+            The dense grid of ``quantity``.
+        """
         return to_grid(
-            self.table, self.manifest, quantity, allow_missing=allow_missing, **variant
+            self.table, self.metadata, quantity, allow_missing=allow_missing, **variant
         )
 
     def append(self, frame: pl.DataFrame, *, part: str | None = None) -> str:
         """Validate ``frame`` together with the stored results, then store it.
 
         Stored rows are never rewritten. Duplicates against earlier results are
-        rejected, so re-running a sweep cannot silently double a point. With
-        :class:`~qpdk.datasets.store.ParquetParts` the write is a new
-        ``<part>.parquet``; with :class:`~qpdk.datasets.store.DeltaStore` it is
-        one Delta commit, and the first append creates the table.
+        rejected, so re-running a sweep cannot silently double a point. Parquet
+        parts take one writer at a time; a Delta append is one atomic commit and
+        the first append creates the table.
 
         Returns:
             What was written: a part path, or a Delta URI and version.
         """
-        frame = frame.select(schema(self.manifest).names()).cast(schema(self.manifest))  # pyrefly: ignore[bad-argument-type]
-        with self.store.lock():
-            try:
-                existing = [self.scan().collect()]
-            except FileNotFoundError:
-                existing = []
-            validate(pl.concat([*existing, frame]), self.manifest)
-            written = self.store.write(
-                frame.sort(_key_columns(self.manifest), nulls_last=True),
-                self.manifest,
-                part,
-            )
+        import polars as pl  # ruff: ignore[import-outside-top-level]
+
+        frame = frame.select(schema(self.metadata).names()).cast(
+            schema(self.metadata)  # pyrefly: ignore[bad-argument-type]
+        )
+        try:
+            existing = [self.scan().collect()]
+        except FileNotFoundError:
+            existing = []
+        validate(pl.concat([*existing, frame]), self.metadata)
+        written = self.store.write(
+            frame.sort(_key_columns(self.metadata), nulls_last=True),
+            self.metadata,
+            part,
+        )
         self.__dict__.pop("table", None)
         return written
 
 
-def _store_from_manifest(
-    manifest: Manifest, path: Path, storage_options: dict[str, str] | None
-) -> ResultStore:
-    """Build the store declared in the manifest, or the default ``results/`` parts.
+def _key_columns(metadata: DatasetMetadata) -> list[str]:
+    """Columns that identify one value: variants, axes, quantity, row, col.
 
     Returns:
-        The results store.
+        Column names.
     """
-    if (storage := manifest.storage) is None:
-        return ParquetParts(path / "results")
-    location = storage.uri if is_uri(storage.uri) else path / storage.uri
-    if storage.format == "delta":
-        return DeltaStore(
-            location, storage_options=storage_options, version=storage.version
-        )
-    return ParquetParts(location, storage_options=storage_options)
-
-
-def _key_columns(manifest: Manifest) -> list[str]:
-    """Columns that identify one value: variants, axes, quantity, row, col."""
     return [
-        *(v.name for v in manifest.variants),
-        *(a.name for a in manifest.axes),
+        *metadata.variants,
+        *(a.name for a in metadata.axes),
         "quantity",
         "row",
         "col",
     ]
 
 
-def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
-    """Check a results table against its manifest.
+def validate(frame: pl.DataFrame, metadata: DatasetMetadata) -> None:
+    """Check a results table against its metadata.
 
     Detects wrong columns, unknown quantities or statuses, unit mismatches,
-    terminals outside the declared conventions, parameter values off the declared
-    grid, inconsistent runs, duplicate points, and missing or spurious values.
+    terminals outside the declared ones, non-finite values, inconsistent runs,
+    duplicate points, and missing or spurious values. Grid completeness is
+    checked per selection by :func:`to_grid`.
 
     Raises:
         DatasetError: listing every problem found.
     """
+    import polars as pl  # ruff: ignore[import-outside-top-level]
+
     problems: list[str] = []
-    expected = schema(manifest)
+    expected = schema(metadata)
     if dict(frame.schema) != dict(expected):
         missing = sorted(set(expected) - set(frame.columns))
         extra = sorted(set(frame.columns) - set(expected))
@@ -251,7 +283,7 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
         problems.append(
             f"Columns do not match the schema (missing {missing}, unexpected {extra}, wrong dtype {wrong})."
         )
-        raise DatasetError(manifest.name, problems)
+        raise DatasetError(metadata.name, problems)
 
     def report(mask: pl.Expr, what: str, columns: list[str]) -> None:
         bad = frame.filter(mask)
@@ -259,23 +291,18 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
             sample = bad.select(columns).unique(maintain_order=True).head(5).rows()
             problems.append(f"{bad.height} rows {what}, e.g. {sample}.")
 
-    required = [
-        "run_id",
-        "status",
-        "quantity",
-        "unit",
-        *(v.name for v in manifest.variants),
-        *(a.name for a in manifest.axes),
-    ]
-    for column in required:
+    axes = [a.name for a in metadata.axes]
+    for column in ["run_id", "status", "quantity", "unit", *metadata.variants, *axes]:
         report(pl.col(column).is_null(), f"have a null {column!r}", ["run_id"])
+    for column in axes:
+        report(~pl.col(column).is_finite(), f"have a non-finite {column!r}", [column])
     report(
         ~pl.col("value").is_finite() | ~pl.col("value_imag").is_finite(),
         "have a non-finite value; record a failed solve with its status and a null value",
         ["run_id", "status"],
     )
 
-    quantities = {q.name: q for q in manifest.quantities}
+    quantities = {q.name: q for q in metadata.quantities}
     report(
         ~pl.col("quantity").is_in(list(quantities)),
         "have an unknown quantity",
@@ -286,7 +313,7 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
         "have an unknown status",
         ["status"],
     )
-    terminals = list(manifest.conventions.terminals)
+    terminals = list(metadata.terminals)
     for name, quantity in quantities.items():
         is_q = pl.col("quantity") == name
         report(
@@ -319,19 +346,6 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
             ["run_id"],
         )
 
-    for axis in manifest.axes:
-        report(
-            ~pl.col(axis.name).is_in(list(axis.values)),
-            f"have {axis.name!r} off the manifest grid",
-            [axis.name],
-        )
-    for variant in manifest.variants:
-        report(
-            ~pl.col(variant.name).is_in(list(variant.values)),
-            f"have an undeclared {variant.name!r}",
-            [variant.name],
-        )
-
     ok = pl.col("status") == RunStatus.OK
     report(ok & pl.col("value").is_null(), "are 'ok' but have no value", ["run_id"])
     report(
@@ -340,11 +354,7 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
         ["run_id", "status"],
     )
 
-    point = [
-        *(v.name for v in manifest.variants),
-        *(a.name for a in manifest.axes),
-        "status",
-    ]
+    point = [*metadata.variants, *axes, "status"]
     runs = (
         frame
         .group_by("run_id")
@@ -356,19 +366,19 @@ def validate(frame: pl.DataFrame, manifest: Manifest) -> None:
             f"Runs mix parameter points or statuses: {runs['run_id'].head(5).to_list()}."
         )
 
-    dupes = frame.group_by(_key_columns(manifest)).len().filter(pl.col("len") > 1)
+    dupes = frame.group_by(_key_columns(metadata)).len().filter(pl.col("len") > 1)
     if dupes.height:
         problems.append(
             f"{dupes.height} duplicate entries, e.g. {dupes.drop('len').head(3).rows()}."
         )
 
     if problems:
-        raise DatasetError(manifest.name, problems)
+        raise DatasetError(metadata.name, problems)
 
 
 def to_grid(
     frame: pl.DataFrame,
-    manifest: Manifest,
+    metadata: DatasetMetadata,
     quantity: str,
     *,
     allow_missing: bool = False,
@@ -376,41 +386,59 @@ def to_grid(
 ) -> Grid:
     """Arrange one quantity of one variant on its complete rectilinear grid.
 
-    The tensor layout is deterministic: axes in manifest order with ascending
-    values, then row and column terminals in manifest order.
+    The grid of each axis is the sorted set of values in the selected rows, and
+    every combination of them must be present. The layout is deterministic:
+    axes in metadata order with ascending values, then row and column terminals
+    in metadata order.
 
     Args:
         frame: Validated results table.
-        manifest: Dataset manifest.
+        metadata: Dataset metadata.
         quantity: Quantity name.
         allow_missing: Return NaN for missing or failed points instead of raising.
-        **variant: Value for every manifest variant; discrete variants are
+        **variant: Value for every metadata variant; discrete variants are
             selected explicitly and never interpolated.
 
     Returns:
         The dense grid of ``quantity``.
 
     Raises:
-        DatasetError: if the selection is ambiguous or the grid is incomplete.
+        DatasetError: if the selection is ambiguous or empty, a validated domain
+            leaves the grid, or the grid is incomplete.
     """
-    q = manifest.quantity(quantity)
-    declared = {v.name: v.values for v in manifest.variants}
-    if set(variant) != set(declared) or any(
-        variant[k] not in declared[k] for k in variant
-    ):
-        raise DatasetError(
-            manifest.name,
-            [f"Select one value of each variant {declared}, got {variant}."],
-        )
+    import polars as pl  # ruff: ignore[import-outside-top-level]
 
-    terminals = manifest.conventions.terminals if q.matrix else ()
+    q = metadata.quantity(quantity)
+    if set(variant) != set(metadata.variants):
+        raise DatasetError(
+            metadata.name,
+            [
+                f"Select one value of each variant {list(metadata.variants)}, got {variant}."
+            ],
+        )
     selected = frame.filter(
         pl.col("quantity") == quantity,
         *(pl.col(k) == v for k, v in variant.items()),
     )
-    axis_names = [a.name for a in manifest.axes]
+    if not selected.height:
+        raise DatasetError(
+            metadata.name, [f"No rows of {quantity!r} for variant {variant}."]
+        )
+
+    axis_names = [a.name for a in metadata.axes]
+    coords = tuple(selected[name].unique().sort().to_numpy() for name in axis_names)
+    problems = [
+        f"Axis {axis.name!r} validated domain {axis.validated} leaves the grid [{c[0]}, {c[-1]}]."
+        for axis, c in zip(metadata.axes, coords, strict=True)
+        if axis.validated
+        and not c[0] <= axis.validated[0] <= axis.validated[1] <= c[-1]
+    ]
+    if problems:
+        raise DatasetError(metadata.name, problems)
+
+    terminals = metadata.terminals if q.matrix else ()
     full = pl.DataFrame(
-        list(product(*(a.values for a in manifest.axes))),
+        list(product(*coords)),
         schema=dict.fromkeys(axis_names, pl.Float64),
         orient="row",
     )
@@ -432,7 +460,7 @@ def to_grid(
     if bad.height and not allow_missing:
         sample = bad.select([*axis_names, "status"]).unique(maintain_order=True)
         raise DatasetError(
-            manifest.name,
+            metadata.name,
             [
                 (
                     f"{sample.height} grid points of {quantity!r} are missing or failed, e.g. "
@@ -447,14 +475,12 @@ def to_grid(
         if q.complex
         else real
     )
-    shape = (
-        *(len(a.values) for a in manifest.axes),
-        *(len(terminals),) * (2 if q.matrix else 0),
-    )
+    shape = (*(len(c) for c in coords), *(len(terminals),) * (2 if q.matrix else 0))
     return Grid(
-        dataset=manifest.name,
+        dataset=metadata.name,
         quantity=q,
-        axes=manifest.axes,
+        axes=metadata.axes,
+        coords=coords,
         terminals=tuple(terminals),
         variant=dict(variant),
         values=values.reshape(shape),

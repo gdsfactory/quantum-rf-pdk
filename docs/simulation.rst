@@ -98,43 +98,44 @@ importable without it.
  FEM datasets
 **************
 
-Reusable FEM extraction results: a ``manifest.toml`` in Git plus Parquet results in Git
-LFS, read with Polars and looked up in jittable SAX models. Requires the ``models``
-extra. See :doc:`notebooks/fem_dataset_lookup`.
+Reusable FEM extraction results, read with Polars and looked up in jittable SAX models.
+A dataset is nothing but its files: Parquet parts, or a Delta Lake table, each carrying
+the dataset metadata (units, terminals, quantities, provenance) inside it. Requires the
+``models`` extra. See :doc:`notebooks/fem_dataset_lookup`.
 
-From a checkout, fetch only the dataset files with ``git lfs pull
---include="qpdk/datasets/data/**"``. Wheels on PyPI ship the resolved Parquet files, so
-installed users need no Git LFS.
+Curated datasets ship in ``qpdk/datasets/data/`` as Parquet in Git LFS. From a checkout,
+fetch only these with ``git lfs pull --include="qpdk/datasets/data/**"``. Wheels on PyPI
+ship the resolved Parquet files, so installed users need no Git LFS.
 
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
-cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path. The manifest stays in
-Git and points at the table, optionally pinned to a table version; credentials are
-passed when opening the dataset, never stored in the manifest. Requires the ``delta``
-extra.
-
-.. code-block:: toml
-
-    # manifest.toml
-    [storage]
-    format = "delta"
-    uri = "gs://my-bucket/plate_capacitor"
-    version = 3  # optional: read exactly this commit
+cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
+table version. Credentials are passed when opening the dataset and never stored in it.
+Requires the ``delta`` extra.
 
 .. code-block:: python
 
     from qpdk.datasets import Dataset
 
-    dataset = Dataset(
-        "path/to/plate_capacitor", storage_options={"google_service_account": "key.json"}
-    )
+    options = {"google_service_account": "key.json"}
+    dataset = Dataset("gs://my-bucket/plate_capacitor", delta=True, storage_options=options)
     dataset.append(new_rows)  # one atomic Delta commit
+
+    pinned = Dataset(
+        "gs://my-bucket/plate_capacitor", delta=True, version=3, storage_options=options
+    )
 
 .. automodule:: qpdk.datasets
 
-.. automodule:: qpdk.datasets.manifest
+.. automodule:: qpdk.datasets.metadata
     :members:
 
 .. automodule:: qpdk.datasets.table
+    :members:
+
+.. automodule:: qpdk.datasets.generate
+    :members:
+
+.. automodule:: qpdk.datasets.synthetic
     :members:
 
 .. automodule:: qpdk.datasets.store
