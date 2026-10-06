@@ -16,13 +16,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
+from jax.typing import ArrayLike
 
 from qpdk.datasets.metadata import DatasetMetadata
 from qpdk.datasets.table import Dataset, RunStatus, schema
 
 if TYPE_CHECKING:
     import polars as pl
-    from jax.typing import ArrayLike
 
 type Solve = Callable[..., Mapping[str, ArrayLike] | None]
 """Solver for one point: keyword axis and variant values in, quantities out.
