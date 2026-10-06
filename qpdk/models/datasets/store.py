@@ -3,7 +3,7 @@
 The heavy lifting is left to the dependencies: Polars reads and writes Parquet,
 including its key-value metadata, and ``deltalake`` provides atomic, versioned,
 concurrent appends on local disks and object stores. The two stores here only
-add what those do not: carrying the :class:`~qpdk.datasets.metadata.DatasetMetadata`
+add what those do not: carrying the :class:`~qpdk.models.datasets.metadata.DatasetMetadata`
 in the files, and a readable error for an unresolved Git LFS pointer.
 
 :class:`ParquetParts`
@@ -32,7 +32,7 @@ import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from qpdk.datasets.metadata import METADATA_KEY, DatasetMetadata
+from qpdk.models.datasets.metadata import METADATA_KEY, DatasetMetadata
 
 if TYPE_CHECKING:
     import polars as pl
@@ -51,7 +51,7 @@ def _check_not_lfs_pointer(path: Path) -> None:
     if head == _LFS_POINTER_PREFIX:
         msg = (
             f"{path} is a Git LFS pointer, not Parquet data. From the root of a source "
-            'checkout run `git lfs install && git lfs pull --include "qpdk/datasets/data/**"`. '
+            'checkout run `git lfs install && git lfs pull --include "qpdk/models/datasets/data/**"`. '
             "Installed qpdk wheels already contain the data."
         )
         raise LFSPointerError(msg)

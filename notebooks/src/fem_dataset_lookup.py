@@ -56,7 +56,7 @@
 # A FEM solve per geometry is swept over a parameter grid and stored as Parquet parts or a Delta table carrying its metadata; the dataset is arranged into a dense grid, wrapped in a jittable interpolator, and called from a SAX model.
 # ::::
 #
-# {mod}`qpdk.datasets` stores the results as a long-format
+# {mod}`qpdk.models.datasets` stores the results as a long-format
 # [Polars](https://pola.rs) table with one row per matrix entry. Each Parquet
 # file (or the Delta table schema) also carries the dataset metadata: units,
 # terminal and ground conventions, whether the data is synthetic, and free-form
@@ -103,15 +103,15 @@ import sax
 import xarray as xr
 
 from qpdk import logger
-from qpdk.datasets import (
-    Dataset,
-    GridInterpolator,
-    maxwell_to_mutual,
-    maxwell_violations,
-)
 from qpdk.models.capacitor import plate_capacitor
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.cpw import cpw_z0_from_cross_section
+from qpdk.models.datasets import (
+    Dataset,
+    GridInterpolator,
+    check_maxwell,
+    maxwell_to_mutual,
+)
 from qpdk.models.generic import capacitor
 
 # %% [markdown]
@@ -159,8 +159,8 @@ dataset.table.head(8)
 # appears as branch capacitances in a lumped circuit, and the Maxwell form is the
 # capacitance matrix of circuit quantization
 # {cite:p}`voolIntroductionQuantumElectromagnetic2017`.
-# {func}`~qpdk.datasets.maxwell_to_mutual` converts between them, and
-# {func}`~qpdk.datasets.maxwell_violations` checks the properties above.
+# {func}`~qpdk.models.datasets.maxwell_to_mutual` converts between them, and
+# {func}`~qpdk.models.datasets.check_maxwell` raises if any property above is violated.
 #
 # Between the solved points the lookup is multilinear: inside the grid cell
 # containing a query, the result is a weighted mean of the $2^n$ cell corners,
@@ -171,10 +171,10 @@ dataset.table.head(8)
 #
 # ![Rectilinear grid of solved points; a query inside a cell is a weighted mean of the cell corners, a query outside the grid returns NaN](figures/fem-dataset-lookup.svg)
 #
-# {meth}`~qpdk.datasets.Dataset.grid` arranges the table into a dense
+# {meth}`~qpdk.models.datasets.Dataset.grid` arranges the table into a dense
 # `(length, width, gap, 2, 2)` array and raises if a grid point is missing or
 # failed. Discrete variants such as the cross-section are chosen explicitly
-# here and never interpolated. {class}`~qpdk.datasets.GridInterpolator` wraps
+# here and never interpolated. {class}`~qpdk.models.datasets.GridInterpolator` wraps
 # {class}`jax.scipy.interpolate.RegularGridInterpolator` and holds plain JAX
 # arrays, so it works inside {func}`jax.jit`, {func}`jax.vmap`, and
 # {func}`jax.grad`.
@@ -187,7 +187,7 @@ logger.info(repr(c_maxwell))
 C = c_maxwell(length=100.0, width=10.0, gap=5.0)
 logger.info(f"Maxwell matrix [fF]:\n{np.asarray(C) * 1e15}")
 logger.info(f"Mutual matrix [fF]:\n{np.asarray(maxwell_to_mutual(C)) * 1e15}")
-logger.info(f"Physical checks: {maxwell_violations(C) or 'ok'}")
+check_maxwell(C)  # raises NonPhysicalMatrixError if C is not physical
 
 # %% [markdown]
 # Outside the validated domain the lookup returns NaN. {func}`sax.interpolate_xarray`

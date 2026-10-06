@@ -1,7 +1,7 @@
 """Jittable N-dimensional lookup of gridded FEM datasets.
 
 Data is loaded, validated, and arranged once, outside tracing (see
-:meth:`qpdk.datasets.Dataset.grid`). The interpolation itself is
+:meth:`qpdk.models.datasets.Dataset.grid`). The interpolation itself is
 :class:`jax.scipy.interpolate.RegularGridInterpolator`, so calling the lookup
 under :func:`jax.jit`, :func:`jax.vmap`, or :func:`jax.grad` involves no Polars,
 file I/O, or data-dependent Python control flow.
@@ -18,19 +18,19 @@ import jax.numpy as jnp
 import numpy as np
 from jax.scipy.interpolate import RegularGridInterpolator
 
-from qpdk.datasets.table import Grid
+from qpdk.models.datasets.table import Grid
 
 type OutOfRange = Literal["nan", "clip"]
 
 
 class GridInterpolator:
-    """Multilinear interpolation of a :class:`~qpdk.datasets.table.Grid`.
+    """Multilinear interpolation of a :class:`~qpdk.models.datasets.table.Grid`.
 
     Call with one keyword argument per axis. Arguments broadcast against each
     other; the result has shape ``(*broadcast shape, *component shape)``.
 
     Args:
-        grid: Complete grid from :meth:`qpdk.datasets.Dataset.grid`.
+        grid: Complete grid from :meth:`qpdk.models.datasets.Dataset.grid`.
         out_of_range: ``"nan"`` (default) returns NaN for any query outside the
             validated domain of an axis. ``"clip"`` evaluates at the nearest point
             of the domain; use it only where a deliberate clamp is acceptable.

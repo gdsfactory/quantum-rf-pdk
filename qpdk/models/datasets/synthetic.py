@@ -1,21 +1,21 @@
 """Synthetic placeholder datasets, shipped until real Palace extractions exist.
 
-Each dataset is a :class:`~qpdk.datasets.metadata.DatasetMetadata`, a grid, and
-a ``solve`` function passed to :func:`qpdk.datasets.generate.sweep`; a real FEM
+Each dataset is a :class:`~qpdk.models.datasets.metadata.DatasetMetadata`, a grid, and
+a ``solve`` function passed to :func:`qpdk.models.datasets.generate.sweep`; a real FEM
 dataset swaps only the ``solve`` function. Regenerate all of them from the
 repository root with::
 
-    uv run --extra models python -m qpdk.datasets.synthetic
+    uv run --extra models python -m qpdk.models.datasets.synthetic
 """
 
 import numpy as np
 
 from qpdk import logger
-from qpdk.datasets.generate import sweep, write
-from qpdk.datasets.metadata import Axis, DatasetMetadata, Quantity, QuantityKind
-from qpdk.datasets.table import DATASETS_PATH
 from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
 from qpdk.models.constants import ε_0
+from qpdk.models.datasets.generate import sweep, write
+from qpdk.models.datasets.metadata import Axis, DatasetMetadata, Quantity, QuantityKind
+from qpdk.models.datasets.table import DATASETS_PATH
 from qpdk.models.math import epsilon_eff
 
 PLATE_CAPACITOR = DatasetMetadata(
@@ -84,7 +84,7 @@ def plate_capacitor_maxwell(
 
 
 def main() -> None:
-    """Regenerate every synthetic dataset in :data:`~qpdk.datasets.table.DATASETS_PATH`."""
+    """Regenerate every synthetic dataset in :data:`~qpdk.models.datasets.table.DATASETS_PATH`."""
     frame = sweep(
         PLATE_CAPACITOR,
         plate_capacitor_maxwell,

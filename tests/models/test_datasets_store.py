@@ -1,4 +1,4 @@
-"""Tests for qpdk.datasets.store: results in Delta Lake tables and object stores."""
+"""Tests for qpdk.models.datasets.store: results in Delta Lake tables and object stores."""
 
 import socket
 import subprocess
@@ -11,9 +11,9 @@ import numpy as np
 import polars as pl
 import pytest
 
-from qpdk.datasets import Dataset, DatasetError, DeltaStore
-from qpdk.datasets.metadata import METADATA_KEY
-from qpdk.datasets.synthetic import PLATE_CAPACITOR
+from qpdk.models.datasets import Dataset, DatasetError, DeltaStore
+from qpdk.models.datasets.metadata import METADATA_KEY
+from qpdk.models.datasets.synthetic import PLATE_CAPACITOR
 
 deltalake = pytest.importorskip("deltalake")
 

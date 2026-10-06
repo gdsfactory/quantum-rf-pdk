@@ -24,8 +24,17 @@ def maxwell_to_mutual(maxwell: ArrayLike) -> jnp.ndarray:
     return jnp.where(eye, c.sum(axis=-1)[..., None] * jnp.ones(n), -c)
 
 
-def maxwell_violations(maxwell: ArrayLike, *, rtol: float = 1e-9) -> list[str]:
-    """List the physical properties a Maxwell capacitance matrix violates.
+class NonPhysicalMatrixError(ValueError):
+    """A Maxwell capacitance matrix violates a physical property."""
+
+    def __init__(self, problems: list[str]) -> None:
+        """Store the violated properties and list them in the message."""
+        self.problems = problems
+        super().__init__(f"Non-physical Maxwell matrix: {'; '.join(problems)}.")
+
+
+def check_maxwell(maxwell: ArrayLike, *, rtol: float = 1e-9) -> None:
+    """Check that a Maxwell capacitance matrix is physical.
 
     Checks symmetry, positive diagonal, non-positive off-diagonal entries, and
     diagonal dominance (non-negative capacitance to ground), each up to ``rtol``
@@ -33,12 +42,12 @@ def maxwell_violations(maxwell: ArrayLike, *, rtol: float = 1e-9) -> list[str]:
     before any other check, since they make the tolerance meaningless. Runs
     eagerly on concrete arrays; it is a check, not a model, and is not jittable.
 
-    Returns:
-        Descriptions of the violated properties; empty if the matrix is physical.
+    Raises:
+        NonPhysicalMatrixError: Listing every violated property.
     """
     c = jnp.asarray(maxwell, dtype=float)
     if not jnp.isfinite(c).all():
-        return ["contains non-finite entries"]
+        raise NonPhysicalMatrixError(["contains non-finite entries"])
     diagonal = jnp.diagonal(c, axis1=-2, axis2=-1)
     off = ~jnp.eye(c.shape[-1], dtype=bool)
     tol = rtol * jnp.abs(diagonal).max()
@@ -48,4 +57,5 @@ def maxwell_violations(maxwell: ArrayLike, *, rtol: float = 1e-9) -> list[str]:
         "positive off-diagonal": jnp.where(off, c, 0).max() > tol,
         "negative capacitance to ground": (c.sum(axis=-1) < -tol).any(),
     }
-    return [problem for problem, violated in checks.items() if violated]
+    if problems := [problem for problem, violated in checks.items() if violated]:
+        raise NonPhysicalMatrixError(problems)

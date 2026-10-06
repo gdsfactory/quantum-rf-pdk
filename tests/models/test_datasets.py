@@ -1,4 +1,4 @@
-"""Tests for qpdk.datasets: metadata, results table, generator, and JAX lookup."""
+"""Tests for qpdk.models.datasets: metadata, results table, generator, and JAX lookup."""
 
 import dataclasses
 import shutil
@@ -15,7 +15,13 @@ from hypothesis import given, settings, strategies as st
 from pydantic import ValidationError
 from scipy.interpolate import RegularGridInterpolator
 
-from qpdk.datasets import (
+from qpdk.models.capacitor import (
+    plate_capacitor,
+    plate_capacitor_capacitance_analytical,
+)
+from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.cpw import cpw_z0_from_cross_section
+from qpdk.models.datasets import (
     DATASETS_PATH,
     Axis,
     Dataset,
@@ -23,28 +29,23 @@ from qpdk.datasets import (
     DatasetMetadata,
     GridInterpolator,
     LFSPointerError,
+    NonPhysicalMatrixError,
     Quantity,
     QuantityKind,
     RunStatus,
+    check_maxwell,
     maxwell_to_mutual,
-    maxwell_violations,
     sweep,
     to_grid,
     validate,
 )
-from qpdk.datasets.generate import write
-from qpdk.datasets.metadata import METADATA_KEY
-from qpdk.datasets.synthetic import (
+from qpdk.models.datasets.generate import write
+from qpdk.models.datasets.metadata import METADATA_KEY
+from qpdk.models.datasets.synthetic import (
     PLATE_CAPACITOR,
     PLATE_CAPACITOR_GRID,
     plate_capacitor_maxwell,
 )
-from qpdk.models.capacitor import (
-    plate_capacitor,
-    plate_capacitor_capacitance_analytical,
-)
-from qpdk.models.constants import DEFAULT_FREQUENCY
-from qpdk.models.cpw import cpw_z0_from_cross_section
 from qpdk.models.generic import capacitor
 
 NAME = PLATE_CAPACITOR.name
@@ -148,7 +149,7 @@ class TestMetadata:
             ({"terminals": ("o1", "o1")}, "Duplicate terminal"),
             ({"terminals": ("o1", "ground_plane")}, "reference ground"),
             ({"terminals": ()}, "need terminals"),
-            ({"schema_version": 1}, "Unsupported schema_version"),
+            ({"schema_version": 2}, "Unsupported schema_version"),
         ]:
             with pytest.raises(ValidationError, match=message):
                 DatasetMetadata.model_validate(PLATE_CAPACITOR.model_dump() | update)
@@ -381,7 +382,8 @@ class TestStorage:
             + "\nsize 9733\n"
         )
         with pytest.raises(
-            LFSPointerError, match=r"git lfs pull --include \"qpdk/datasets/data/\*\*\""
+            LFSPointerError,
+            match=r"git lfs pull --include \"qpdk/models/datasets/data/\*\*\"",
         ):
             dataset_copy.scan()
 
@@ -533,7 +535,7 @@ class TestGridInterpolator:
     def test_interpolated_matrix_is_physical(
         interp: GridInterpolator, point: dict[str, float]
     ) -> None:
-        assert maxwell_violations(interp(**point)) == []
+        check_maxwell(interp(**point))
 
     @staticmethod
     def test_shapes_broadcast(interp: GridInterpolator) -> None:
@@ -654,11 +656,27 @@ class TestCapacitance:
     """Maxwell matrix checks and conversion."""
 
     @staticmethod
-    def test_violations_reject_non_finite() -> None:
-        for bad in (float("inf"), float("nan")):
-            assert maxwell_violations([[bad, -1.0], [-1.0, bad]]) == [
-                "contains non-finite entries"
-            ]
+    @pytest.mark.parametrize(
+        ("maxwell", "problems"),
+        [
+            ([[jnp.inf, -1.0], [-1.0, jnp.inf]], ["contains non-finite entries"]),
+            ([[jnp.nan, -1.0], [-1.0, 2.0]], ["contains non-finite entries"]),
+            ([[2.0, -1.0], [-0.5, 2.0]], ["not symmetric"]),
+            ([[2.0, 0.0], [0.0, 0.0]], ["non-positive diagonal"]),
+            ([[2.0, 0.5], [0.5, 2.0]], ["positive off-diagonal"]),
+            ([[1.0, -2.0], [-2.0, 1.0]], ["negative capacitance to ground"]),
+        ],
+    )
+    def test_check_maxwell_rejects(
+        maxwell: list[list[float]], problems: list[str]
+    ) -> None:
+        with pytest.raises(NonPhysicalMatrixError) as error:
+            check_maxwell(maxwell)
+        assert error.value.problems == problems
+
+    @staticmethod
+    def test_check_maxwell_accepts_physical() -> None:
+        check_maxwell([[2.0, -1.0], [-1.0, 2.0]])
 
     @staticmethod
     def test_mutual_conversion(interp: GridInterpolator) -> None:
