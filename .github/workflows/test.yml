@@ -440,3 +440,45 @@ jobs:
             /tmp/qpdk_elmer_interdigital_capacitor_*/*.log
             /tmp/qpdk_elmer_interdigital_capacitor_*/*.sif
           if-no-files-found: warn
+
+  test-vacask:
+    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    env:
+      MPLBACKEND: Agg
+      VACASK_VERSION: 0.3.4
+      VACASK_SHA256: 780949fc75181d5839cc8c8091e05c2ca2e70a73c9f920e88553228061c44027
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          lfs: true
+      - name: Install VACASK
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libklu2 libopenblas0
+          archive="vacask_${VACASK_VERSION}_linux-x86_64"
+          curl --fail --silent --show-error --location --output /tmp/vacask.tar.gz \
+            "https://codeberg.org/arpadbuermen/VACASK/releases/download/_${VACASK_VERSION}/${archive}.tar.gz"
+          echo "${VACASK_SHA256}  /tmp/vacask.tar.gz" | sha256sum --check
+          tar -xzf /tmp/vacask.tar.gz -C /opt
+          prefix="/opt/${archive}"
+          {
+            echo "SIM_MODULE_PATH=${prefix}/lib/vacask/mod"
+            echo "SIM_INCLUDE_PATH=${prefix}/lib/vacask/inc"
+            echo "SIM_OPENVAF=${prefix}/bin/openvaf-r"
+          } >> "$GITHUB_ENV"
+          echo "${prefix}/bin" >> "$GITHUB_PATH"
+      - name: Check VACASK
+        run: vacask --version
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+      - name: Install QPDK with the models extra
+        run: |
+          uv sync --locked --python 3.12 --no-dev --group test --extra models
+          uv pip install jupytext nbconvert ipykernel
+      - name: Run the VACASK tests
+        run: uv run --no-sync pytest tests/test_vacask.py -m vacask
+      - name: Execute the VACASK notebook
+        run: uv run --no-sync jupytext --execute --to ipynb --set-kernel python3 --output /tmp/qpdk-vacask-ci.ipynb notebooks/vacask_josephson_parametric_amplifier.ipynb

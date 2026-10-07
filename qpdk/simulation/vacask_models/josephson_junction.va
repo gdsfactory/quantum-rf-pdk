@@ -1,4 +1,4 @@
-// RCSJ Josephson junction for VACASK, written for qpdk (MIT licence).
+// RCSJ Josephson junction for VACASK.
 //
 // The internal node ``ph`` carries the gauge-invariant phase as a voltage
 // (1 V = 1 rad). Its two contributions solve V(p, n) = phi0/(2 pi) d(phase)/dt,

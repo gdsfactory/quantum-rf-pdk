@@ -33,7 +33,11 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Typing :: Typed",
 ]
-dependencies = ["gdsfactory~=9.51.0", "typing-extensions>=4.12.0"]
+dependencies = [
+  "gdsfactory~=9.51.0",
+  "jinja2>=3.1",
+  "typing-extensions>=4.12.0"
+]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/gdsfactory/quantum-rf-pdk/issues"
@@ -237,7 +241,7 @@ project-includes = ["**/*.py"]
 no-matching-overload = "ignore"
 
 [tool.pytest]
-addopts = ["--tb=short"]
+addopts = ["--tb=short", "-m", "not vacask"]
 filterwarnings = [
   # gdsfactory internally warns about bend_euler for non-90/180 angles even
   # when the user calls bend_circular; suppress until upstream fixes this.
@@ -250,6 +254,7 @@ markers = [
   "gfp: mark test as requiring GDSFactory+ (gdsfactoryplus)",
   "hfss: mark test as requiring HFSS",
   "skip_windows: skip test on Windows",
+  "vacask: mark test as requiring the VACASK simulator (deselected by default)",
 ]
 norecursedirs = [
   "*.egg",

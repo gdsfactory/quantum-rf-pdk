@@ -48,16 +48,26 @@ Note:
     require ``uv sync --extra comsol`` and a local COMSOL installation. Only
     :class:`~qpdk.simulation.comsol.model.COMSOL` imports MPh, and it is
     exposed lazily, so the layout and helper modules and this package stay
-    importable without it. The VACASK wrapper needs only NumPy and the
-    external ``vacask`` binary.
+    importable without it.
+
+    The VACASK netlist classes, runner and raw-file reader need only the base
+    install and the external ``vacask`` binary. The model-conversion helpers,
+    :meth:`~qpdk.simulation.vacask.RationalModel.fit` and
+    :func:`~qpdk.simulation.vacask.cpw_tline_params`, also need
+    ``uv sync --extra models``.
 
 **VACASK workflow:**
 
-1. Write a VACASK netlist, loading the junction models from
-   :func:`~qpdk.simulation.vacask.vacask_model_path`
-2. Run it with :func:`~qpdk.simulation.vacask.run_vacask`, which calls the
+1. Describe the circuit as a :class:`~qpdk.simulation.vacask.Netlist` of
+   :class:`~qpdk.simulation.vacask.Instance`,
+   :class:`~qpdk.simulation.vacask.Sweep` and
+   :class:`~qpdk.simulation.vacask.Analysis` objects. Loading
+   ``josephson_junction.va`` or ``squid.va`` uses the models shipped with qpdk.
+2. Run it with :meth:`~qpdk.simulation.vacask.Vacask.run`, which calls the
    external ``vacask`` binary and returns one
-   :class:`~qpdk.simulation.vacask.RawPlot` per analysis
+   :class:`~qpdk.simulation.vacask.RawPlot` per analysis.
+3. Optionally embed any linear SAX model as a vector-fitted subcircuit from
+   :meth:`~qpdk.simulation.vacask.RationalModel.subckt`.
 
 Example:
     >>> from ansys.aedt.core import Hfss
@@ -144,14 +154,16 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "qpdk.simulation.comsol.mesh",
         "refine_metal_plane_mesh",
     ),
+    "Analysis": ("qpdk.simulation.vacask", "Analysis"),
+    "Instance": ("qpdk.simulation.vacask", "Instance"),
+    "Netlist": ("qpdk.simulation.vacask", "Netlist"),
+    "RationalModel": ("qpdk.simulation.vacask", "RationalModel"),
+    "RawFile": ("qpdk.simulation.vacask", "RawFile"),
     "RawPlot": ("qpdk.simulation.vacask", "RawPlot"),
+    "Sweep": ("qpdk.simulation.vacask", "Sweep"),
+    "Vacask": ("qpdk.simulation.vacask", "Vacask"),
     "VacaskError": ("qpdk.simulation.vacask", "VacaskError"),
-    "find_vacask": ("qpdk.simulation.vacask", "find_vacask"),
-    "read_raw": ("qpdk.simulation.vacask", "read_raw"),
-    "run_vacask": ("qpdk.simulation.vacask", "run_vacask"),
-    "vacask_model_path": ("qpdk.simulation.vacask", "vacask_model_path"),
     "cpw_tline_params": ("qpdk.simulation.vacask", "cpw_tline_params"),
-    "vector_fit_subckt": ("qpdk.simulation.vacask", "vector_fit_subckt"),
 }
 
 __all__ = [
@@ -160,11 +172,18 @@ __all__ = [
     "Q2D",
     "Q3D",
     "AEDTBase",
+    "Analysis",
     "ComsolBoundingBox",
     "ComsolFeedPort",
     "ComsolLayout",
     "ComsolPolygon",
+    "Instance",
+    "Netlist",
+    "RationalModel",
+    "RawFile",
     "RawPlot",
+    "Sweep",
+    "Vacask",
     "VacaskError",
     "add_capacitance_study",
     "add_cpw_rf_study",
@@ -173,7 +192,6 @@ __all__ = [
     "build_comsol_sheet_model",
     "cpw_tline_params",
     "detach_desktop_logging",
-    "find_vacask",
     "fit_view",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
@@ -182,11 +200,7 @@ __all__ = [
     "pin_absolute_mesh_sizes",
     "prepare_component_for_aedt",
     "prepare_comsol_layout",
-    "read_raw",
     "refine_metal_plane_mesh",
-    "run_vacask",
-    "vacask_model_path",
-    "vector_fit_subckt",
 ]
 
 

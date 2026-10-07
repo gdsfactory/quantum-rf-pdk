@@ -1,0 +1,25 @@
+{{ title }}
+{% for file in loads %}
+load "{{ file }}"
+{% endfor %}
+{% for name, module in models.items() %}
+model {{ name }} {{ module }}
+{% endfor %}
+{% for subckt in subckts %}
+{{ subckt }}
+{% endfor %}
+{% for inst in instances %}
+{{ inst.name }} ({{ inst.nodes | join(" ") }}) {{ inst.model }}{{ inst.params | params }}
+{% endfor %}
+control
+  abort always
+{% if options %}
+  options{{ options | params }}
+{% endif %}
+{% for sweep in sweeps %}
+  sweep {{ sweep.name }}{{ {"instance": sweep.instance, "parameter": sweep.parameter} | params }}{{ sweep.params | params }}
+{% endfor %}
+{% for analysis in analyses %}
+  analysis {{ analysis.name }} {{ analysis.kind }}{{ analysis.params | params }}
+{% endfor %}
+endc

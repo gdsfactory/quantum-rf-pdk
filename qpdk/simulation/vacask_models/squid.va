@@ -1,4 +1,4 @@
-// Symmetric dc SQUID as a flux-tunable junction for VACASK, written for qpdk (MIT licence).
+// Symmetric dc SQUID as a flux-tunable junction for VACASK.
 //
 // The node voltage V(fl) is the external flux in units of the flux quantum
 // (1 V = 1 Phi_0). The SQUID acts as a single junction with critical current
