@@ -110,6 +110,11 @@ test-models-force: (_pytest "-s tests/test_models_regression.py --force-regen")
 test-hfss *args: check-lfs
     uv run --all-extras --group dev pytest -m hfss {{ args }}
 
+# Run VACASK simulation tests (requires VACASK, see qpdk/simulation/vacask.py)
+[group('test')]
+test-vacask *args: check-lfs
+    uv run --extra models --group dev pytest tests/test_vacask.py -m vacask {{ args }}
+
 # Query the latest version of the public GDSFactory+ VS Code extension.
 # Output contract (used by .github/workflows/test.yml and test-gfp-upstream.yml):
 #   line 1: JSON array of Python versions for the gfp test matrix

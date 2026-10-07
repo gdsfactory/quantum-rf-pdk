@@ -3,3 +3,8 @@
 *.oas binary
 tests/models/data/*.csv filter=lfs diff=lfs merge=lfs -text
 tests/test_models_regression/*.npz filter=lfs diff=lfs merge=lfs -text
+# VACASK Verilog-A models (linguist has no Verilog-A grammar; Verilog is closest)
+*.va linguist-language=Verilog
+# VACASK netlists (linguist has no SPICE-netlist grammar)
+*.sim linguist-language=Text
+tests/data/vacask/*.raw filter=lfs diff=lfs merge=lfs -text

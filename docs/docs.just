@@ -132,7 +132,7 @@ write-llms-txt:
     @cp docs/llms.txt docs/_extra/llms.txt
 
 # Keep saved outputs for external-solver notebooks.
-precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb elmer_capacitance_interdigital.ipynb matlab_integration.ipynb"
+precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb elmer_capacitance_interdigital.ipynb matlab_integration.ipynb vacask_*.ipynb"
 
 # Copy all sample scripts and notebooks to use as documentation
 [private]

@@ -5,6 +5,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import sax
 from sax.models.rf import admittance
 
@@ -12,8 +13,12 @@ from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0
 
 
 def _warn_if_overbiased(ib: float, ic: float) -> None:
-    """Host callback to warn if bias current exceeds critical current."""
-    if jnp.any(jnp.abs(ib) >= ic):
+    """Host callback to warn if bias current exceeds critical current.
+
+    Uses NumPy, not JAX: dispatching JAX operations from inside a host callback
+    can deadlock against the computation that invoked it.
+    """
+    if np.any(np.abs(np.asarray(ib)) >= np.asarray(ic)):
         warnings.warn(
             "DC bias |I_b| >= I_c detected. Linearized RCSJ model is invalid in the voltage state. "
             "Please check your 'ib' and 'ic' ('ic_tot', 'flux', 'asymmetry') inputs.",

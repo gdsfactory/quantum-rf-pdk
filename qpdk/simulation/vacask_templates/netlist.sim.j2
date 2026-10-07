@@ -1,0 +1,15 @@
+{{ title }}
+{% for file in loads %}
+load "{{ file }}"
+{% endfor %}
+{% for subckt in subckts %}
+
+{{ subckt | dedent }}
+{% endfor %}
+
+{{ circuit | dedent }}
+
+control
+  abort always
+  {{ control | dedent | indent(2) }}
+endc

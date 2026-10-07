@@ -22,6 +22,8 @@ exclude = [
   "\\$NUMBER",
   "\\$PREVIOUS_TAG",
   "\\$RESOLVED_VERSION",
+  # shell variables in workflow download URLs
+  "\\$%7BVACASK_VERSION%7D",
   # pyansys broken parsed URLs
   "https://.*\\.pyansys\\.com.*/n",
   "https://.*\\.pyansys\\.com.*//n",

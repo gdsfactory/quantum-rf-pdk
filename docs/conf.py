@@ -216,6 +216,7 @@ nb_execution_excludepatterns = [
     "notebooks/hfss*",
     "notebooks/elmer*",
     "notebooks/matlab_integration*",
+    "notebooks/vacask*",
 ]
 nb_execution_timeout = -1
 nb_execution_allow_errors = False

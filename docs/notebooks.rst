@@ -256,6 +256,30 @@ outputs—without finite-difference approximations.
   parameters via ``jax.grad`` and simulates crosstalk between coupled qubits, analyzing
   its sensitivity to the coupling capacitance.
 
+*************************************
+ Harmonic-balance circuit simulation
+*************************************
+
+SPICE-class simulators with harmonic balance (HB) find the periodic steady state of a
+nonlinear circuit under a strong drive and, with a small-signal analysis around that
+state, the frequency conversion between sidebands. This is what parametric amplifiers
+need.
+
+**Typical use cases:**
+
+- Gain, bandwidth and compression of Josephson parametric amplifiers.
+- Checking a resonator design for unwanted up-conversion into higher modes.
+
+**Notebooks:**
+
+- :doc:`notebooks/vacask_josephson_parametric_amplifier` — Runs the external `VACASK
+  <https://codeberg.org/arpadbuermen/VACASK>`_ simulator as a separate program on
+  Verilog-A Josephson junction and SQUID models shipped with qpdk. Simulates a
+  current-pumped Kerr JPA, a lumped and a quarter-wave CPW flux-pumped JPA (with
+  ``tline_ideal`` and vector-fitted SAX models for the line), and a JJ-ladder TWPA,
+  comparing against SAX and single-mode theory. The docs build does not run it; the
+  rendered page shows a saved execution.
+
 **********************
  External integration
 **********************
@@ -369,7 +393,7 @@ With ``pip``:
 
 .. note::
 
-    Two notebook dependencies are deliberately *not* extras:
+    Three notebook dependencies are deliberately *not* extras:
 
     - ``openvino``, used by :doc:`notebooks/jax_backend_comparison` for the NPU
       benchmark, is optional and platform-specific — install it with ``pip install
@@ -377,6 +401,9 @@ With ``pip``:
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
+    - The `VACASK <https://codeberg.org/arpadbuermen/VACASK>`_ circuit simulator, needed
+      by :doc:`notebooks/vacask_josephson_parametric_amplifier`, is a separate program
+      (AGPL-3.0) that qpdk runs as a subprocess; install it from its release page.
 
     If you only want to reproduce the rendered documentation, ``uv sync --group docs``
     installs the ``docs`` dependency group, which already pulls in every backend the
@@ -471,6 +498,10 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - Differentiable circuit simulation
       - Circulax, JAX, Optax
       - ``models``, ``circulax``
+    - - :doc:`notebooks/vacask_josephson_parametric_amplifier`
+      - Harmonic-balance circuit simulation
+      - VACASK (external program)
+      - ``models``
     - - :doc:`notebooks/matlab_integration`
       - External integration
       - MATLAB, RF Toolbox (optional), jupyter-matlab-proxy
