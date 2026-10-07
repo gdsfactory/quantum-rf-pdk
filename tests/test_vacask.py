@@ -1,13 +1,18 @@
-"""Tests for the VACASK netlist builder, runner, raw-file reader and rational fit.
+"""Tests for the VACASK netlist template, runner, raw-file reader and vector fit.
 
 Tests that run the VACASK binary carry the ``vacask`` marker and are deselected
 by default; run them with ``just test-vacask`` (or ``pytest -m vacask``).
 """
 
+from __future__ import annotations
+
+import copy
 import shutil
 from functools import cache
 from pathlib import Path
+from typing import TYPE_CHECKING
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -15,18 +20,19 @@ from qpdk import PDK
 from qpdk.models.waveguides import straight
 from qpdk.simulation.vacask import (
     VACASK_MODELS_DIR,
-    Analysis,
-    Instance,
     Netlist,
-    RationalModel,
     RawFile,
     RawPlot,
-    Sweep,
     Vacask,
     VacaskError,
     cpw_tline_params,
     format_value,
+    vector_fit,
+    vector_fit_subckt,
 )
+
+if TYPE_CHECKING:
+    from skrf.vectorFitting import VectorFitting
 
 DATA = Path(__file__).parent / "data" / "vacask"
 PHI_0 = 2.067833848e-15  # Wb
@@ -139,6 +145,8 @@ def test_plot_missing_variable() -> None:
         (1 / 3, repr(1 / 3)),
         ([1, 2.5], "[1, 2.5]"),
         (np.array([0.0, 1e-6]), "[0, 1e-06]"),
+        (jnp.array([0.0, 1e-6]), "[0, 1e-06]"),
+        (jnp.float64(2e-12), "2e-12"),
         (["vp1", "rp1"], '["vp1", "rp1"]'),
         ([[1], [-1]], "{[1],[-1]}"),
     ],
@@ -159,33 +167,64 @@ def test_format_value_rejects_unknown() -> None:
 
 
 def test_netlist_render() -> None:
+    """User blocks are dedented and filled into the template as given."""
     netlist = Netlist(
         "JJ resonance",
         loads=["josephson_junction.va", "capacitor.osdi"],
-        models={"isource": "isource", "jj": "jj"},
-        instances=[
-            Instance("iin", ("0", "1"), "isource", {"dc": 0, "mag": 1e-9}),
-            Instance("j1", ("1", "0"), "jj", {"ic": 1e-6}),
+        subckts=[
+            """
+            subckt shunt (a)
+              c1 (a 0) capacitor c=1p
+            ends
+            """
         ],
-        options={"reltol": 1e-6},
-        sweeps=[Sweep("bias", "iin", "dc", {"values": [0, 5e-7]})],
-        analyses=[Analysis("ac1", "ac", {"from": 1e9, "to": 1e10, "mode": "lin"})],
+        circuit="""
+            model isource isource
+            model jj jj
+            iin (0 1) isource dc=0 mag=1n
+            j1 (1 0) jj ic=1u
+        """,
+        control="""
+            options reltol=1e-6
+            sweep bias instance="iin" parameter="dc" values=[0, 5e-07]
+            analysis ac1 ac from=1G to=10G mode="lin"
+        """,
     )
     assert netlist.render() == (
         "JJ resonance\n"
         'load "josephson_junction.va"\n'
         'load "capacitor.osdi"\n'
+        "\n"
+        "subckt shunt (a)\n"
+        "  c1 (a 0) capacitor c=1p\n"
+        "ends\n"
+        "\n"
         "model isource isource\n"
         "model jj jj\n"
-        "iin (0 1) isource dc=0 mag=1e-09\n"
-        "j1 (1 0) jj ic=1e-06\n"
+        "iin (0 1) isource dc=0 mag=1n\n"
+        "j1 (1 0) jj ic=1u\n"
+        "\n"
         "control\n"
         "  abort always\n"
-        "  options reltol=1e-06\n"
+        "  options reltol=1e-6\n"
         '  sweep bias instance="iin" parameter="dc" values=[0, 5e-07]\n'
-        '  analysis ac1 ac from=1e+09 to=1e+10 mode="lin"\n'
+        '  analysis ac1 ac from=1G to=10G mode="lin"\n'
         "endc\n"
     )
+
+
+def test_netlist_analyses() -> None:
+    netlist = Netlist(
+        "t",
+        control="""
+            options reltol=1e-6
+            sweep s instance="i" parameter="dc" values=[0, 1]
+            analysis op1 op
+              analysis ac1 ac from=1 to=2
+            // analysis is a word in a comment, not an analysis
+        """,
+    )
+    assert netlist.analyses == ["op1", "ac1"]
 
 
 def test_netlist_copies_qpdk_models_only(tmp_path: Path) -> None:
@@ -223,8 +262,18 @@ def test_find_missing(monkeypatch: pytest.MonkeyPatch) -> None:
         Vacask.find()
 
 
+def test_run_reports_missing_output(tmp_path: Path) -> None:
+    """An analysis that wrote no raw file is an error naming that analysis."""
+    script = tmp_path / "fake-vacask"
+    script.write_text("#!/bin/sh\nexit 0\n")
+    script.chmod(0o755)
+    netlist = Netlist("t", control="analysis op1 op")
+    with pytest.raises(VacaskError, match="op1"):
+        Vacask(script).run(netlist)
+
+
 # --------------------------------------------------------------------------- #
-# CPW conversion and rational fit (need the ``models`` extra)
+# CPW conversion and vector fit (need the ``models`` extra)
 # --------------------------------------------------------------------------- #
 
 
@@ -275,6 +324,18 @@ def _coupled_line() -> tuple[np.ndarray, dict[tuple[str, str], np.ndarray]]:
     return f, s
 
 
+def _model_s(vf: VectorFitting, f: np.ndarray) -> np.ndarray:
+    """S-matrix ``(len(f), n, n)`` of a fitted model."""
+    n = vf.network.nports
+    return np.stack(
+        [
+            np.stack([vf.get_model_response(i, j, f) for j in range(n)], -1)
+            for i in range(n)
+        ],
+        -2,
+    )
+
+
 def _dense(sdict: dict, ports: tuple[str, ...]) -> np.ndarray:
     return np.stack(
         [np.stack([np.asarray(sdict[i, j]) for j in ports], -1) for i in ports], -2
@@ -282,57 +343,44 @@ def _dense(sdict: dict, ports: tuple[str, ...]) -> np.ndarray:
 
 
 @cache
-def _coupled_fit() -> RationalModel:
+def _coupled_fit() -> VectorFitting:
     pytest.importorskip("skrf")
     pytest.importorskip("sax")
     f, sdict = _coupled_line()
-    return RationalModel.fit(sdict, f)
+    return vector_fit(sdict, f)
 
 
 def test_fit_accuracy() -> None:
-    model = _coupled_fit()
+    vf = _coupled_fit()
     f, sdict = _coupled_line()
-    np.testing.assert_allclose(
-        model.s_matrix(f), _dense(sdict, ("o1", "o2")), atol=1e-2
-    )
-    assert model.ports == ("o1", "o2")
-    assert model.residues.shape == (2, 2, len(model.poles))
-    assert model.constant.shape == (2, 2)
+    np.testing.assert_allclose(_model_s(vf, f), _dense(sdict, ("o1", "o2")), atol=1e-2)
+    assert vf.network.port_names == ["o1", "o2"]
+    assert not np.any(vf.proportional_coeff)
 
 
 def test_fit_is_stable_and_passive() -> None:
-    model = _coupled_fit()
-    assert model.is_stable()
-    assert np.all(model.poles.real < 0)
+    vf = _coupled_fit()
+    assert np.all(vf.poles.real < 0)
+    assert vf.is_passive()
     # Passive: no singular value of S exceeds 1, also far outside the fit band.
     f = np.geomspace(1e3, 1e13, 4000)
-    sigma = np.linalg.svd(model.s_matrix(f), compute_uv=False)
+    sigma = np.linalg.svd(_model_s(vf, f), compute_uv=False)
     assert sigma.max() <= 1 + 1e-6
-
-
-def test_fit_sdict_roundtrip() -> None:
-    model = _coupled_fit()
-    f = np.linspace(1e9, 2e9, 3)
-    sdict = model.sdict(f)
-    assert set(sdict) == {(i, j) for i in ("o1", "o2") for j in ("o1", "o2")}
-    np.testing.assert_array_equal(sdict["o2", "o1"], model.s_matrix(f)[:, 1, 0])
 
 
 def test_fit_port_order() -> None:
     pytest.importorskip("skrf")
     f, sdict = _coupled_line()
-    model = RationalModel.fit(sdict, f, ports=("o2", "o1"))
-    assert model.ports == ("o2", "o1")
-    np.testing.assert_allclose(
-        model.s_matrix(f), _dense(sdict, ("o2", "o1")), atol=1e-2
-    )
+    vf = vector_fit(sdict, f, ports=("o2", "o1"))
+    assert vf.network.port_names == ["o2", "o1"]
+    np.testing.assert_allclose(_model_s(vf, f), _dense(sdict, ("o2", "o1")), atol=1e-2)
 
 
 def test_fit_missing_port() -> None:
     pytest.importorskip("skrf")
     f, sdict = _coupled_line()
     with pytest.raises(ValueError, match="o3"):
-        RationalModel.fit(sdict, f, ports=("o1", "o3"))
+        vector_fit(sdict, f, ports=("o1", "o3"))
 
 
 def test_fit_sparse_sdict() -> None:
@@ -340,8 +388,7 @@ def test_fit_sparse_sdict() -> None:
     pytest.importorskip("skrf")
     f, sdict = _coupled_line()
     sparse = {**sdict, ("o3", "o3"): 0.0}
-    model = RationalModel.fit(sparse, f, ports=("o1", "o2", "o3"))
-    s = model.s_matrix(f)
+    s = _model_s(vector_fit(sparse, f, ports=("o1", "o2", "o3")), f)
     np.testing.assert_allclose(s[:, :2, :2], _dense(sdict, ("o1", "o2")), atol=1e-2)
     np.testing.assert_allclose(s[:, 2, :], 0, atol=1e-2)
     np.testing.assert_allclose(s[:, :, 2], 0, atol=1e-2)
@@ -354,14 +401,53 @@ def test_fit_rejects_non_passive_result() -> None:
     # S21 = 1.2: an amplifier, which no passive model can represent.
     sdict = {("o1", "o2"): 1.2, ("o2", "o1"): 1.2}
     with pytest.raises(ValueError, match="not passive"):
-        RationalModel.fit(sdict, f, ports=("o1", "o2"))
+        vector_fit(sdict, f, ports=("o1", "o2"))
+
+
+def test_subckt_terminals_follow_ports() -> None:
+    vf = _coupled_fit()
+    text = vector_fit_subckt(vf, "fit")
+    assert text.splitlines()[:2] == [
+        "// Rational model of ports o1, o2, 11 poles",
+        "subckt fit (p1 p2)",
+    ]
+    assert text.rstrip().endswith("ends")
+
+
+@pytest.mark.parametrize(
+    ("attribute", "value", "match"),
+    [
+        ("proportional_coeff", 1e-12, "proportional"),
+        ("poles", 1e13, "unstable"),
+    ],
+)
+def test_subckt_rejects_unsupported_fit(
+    attribute: str, value: float, match: str
+) -> None:
+    vf = copy.deepcopy(_coupled_fit())
+    setattr(vf, attribute, getattr(vf, attribute) + value)
+    with pytest.raises(ValueError, match=match):
+        vector_fit_subckt(vf, "fit")
+
+
+def test_subckt_rejects_complex_reference() -> None:
+    vf = copy.deepcopy(_coupled_fit())
+    vf.network.z0 = vf.network.z0 * (1 + 0.1j)
+    with pytest.raises(ValueError, match="reference impedance"):
+        vector_fit_subckt(vf, "fit")
 
 
 # --------------------------------------------------------------------------- #
 # Simulations (need the VACASK binary)
 # --------------------------------------------------------------------------- #
 
-JJ_MODELS = {"isource": "isource", "capacitor": "capacitor", "jj": "jj"}
+JJ_MODELS = """
+    model isource isource
+    model resistor resistor
+    model capacitor capacitor
+    model jj jj
+"""
+OPTIONS = "options tolscale=1e-6 reltol=1e-6"
 
 
 @pytest.mark.vacask
@@ -369,20 +455,18 @@ def test_jj_resonance_vs_bias() -> None:
     """Junction plus capacitor resonates at 1/(2 pi sqrt(L_J C)), L_J = Phi_0/(2 pi Ic cos phi)."""
     netlist = Netlist(
         "JJ LC resonance vs DC bias",
-        loads=["josephson_junction.va", "capacitor.osdi"],
-        models=JJ_MODELS,
-        instances=[
-            Instance("iin", ("0", "1"), "isource", {"dc": 0, "mag": 1e-9}),
-            Instance("j1", ("1", "0"), "jj", {"ic": 1e-6, "r": 1e6}),
-            Instance("c1", ("1", "0"), "capacitor", {"c": 2e-12}),
-        ],
-        options={"tolscale": 1e-6, "reltol": 1e-6},
-        sweeps=[Sweep("bias", "iin", "dc", {"values": [0, 0.3e-6, 0.5e-6, 0.8e-6]})],
-        analyses=[
-            Analysis(
-                "ac1", "ac", {"from": 1e9, "to": 10e9, "mode": "lin", "points": 90000}
-            )
-        ],
+        loads=["josephson_junction.va", "capacitor.osdi", "resistor.osdi"],
+        circuit=JJ_MODELS
+        + """
+            iin (0 1) isource dc=0 mag=1n
+            j1 (1 0) jj ic=1u r=1e6
+            c1 (1 0) capacitor c=2p
+        """,
+        control=f"""
+            {OPTIONS}
+            sweep bias instance="iin" parameter="dc" values=[0, 0.3u, 0.5u, 0.8u]
+            analysis ac1 ac from=1G to=10G mode="lin" points=90000
+        """,
     )
     plot = Vacask.find().run(netlist)["ac1"]
     peaks = [
@@ -399,42 +483,20 @@ def test_kerr_jpa_gain() -> None:
     netlist = Netlist(
         "Kerr JPA",
         loads=["josephson_junction.va", "capacitor.osdi", "resistor.osdi"],
-        models={**JJ_MODELS, "resistor": "resistor"},
-        instances=[
-            Instance(
-                "ipump",
-                ("0", "in"),
-                "isource",
-                {
-                    "type": "sine",
-                    "sinedc": 0,
-                    "ampl": 40e-9,
-                    "freq": 5.84e9,
-                    "spur": [[1]],
-                    "smag": [1e-9],
-                },
-            ),
-            Instance("rp", ("in", "0"), "resistor", {"r": 50}),
-            Instance("cc", ("in", "1"), "capacitor", {"c": 0.185e-12}),
-            Instance("j1", ("1", "0"), "jj", {"ic": 1e-6}),
-            Instance("c1", ("1", "0"), "capacitor", {"c": 2e-12}),
-        ],
-        options={"tolscale": 1e-6, "reltol": 1e-6},
-        analyses=[
-            Analysis(
-                "hbac1",
-                "hbac",
-                {
-                    "freq": [5.84e9],
-                    "nharm": 7,
-                    "outspur": [[1], [-1]],
-                    "from": 0.5e6,
-                    "to": 5e6,
-                    "mode": "lin",
-                    "points": 9,
-                },
-            )
-        ],
+        circuit=JJ_MODELS
+        + """
+            ipump (0 in) isource dc=0 type="sine" sinedc=0 ampl=40n freq=5.84G \\
+                spur={[1]} smag=[1n]
+            rp (in 0) resistor r=50
+            cc (in 1) capacitor c=0.185p
+            j1 (1 0) jj ic=1u
+            c1 (1 0) capacitor c=2p
+        """,
+        control=f"""
+            {OPTIONS}
+            analysis hbac1 hbac freq=[5.84G] nharm=7 outspur={{[1],[-1]}} \\
+                from=0.5M to=5M mode="lin" points=9
+        """,
     )
     plot = Vacask.find().run(netlist)["hbac1"]
     source_current, resistance = 1e-9, 50
@@ -458,14 +520,18 @@ def test_squid_inductance_vs_flux() -> None:
     netlist = Netlist(
         "SQUID inductance vs flux",
         loads=["squid.va"],
-        models={"isource": "isource", "vsource": "vsource", "squid": "squid"},
-        instances=[
-            Instance("iin", ("0", "1"), "isource", {"dc": 0, "mag": 1}),
-            Instance("vfl", ("fl", "0"), "vsource", {"dc": 0}),
-            Instance("s1", ("1", "0", "fl"), "squid", {"ic_tot": ic}),
-        ],
-        sweeps=[Sweep("flux", "vfl", "dc", {"values": flux})],
-        analyses=[Analysis("ac1", "ac", {"values": [1e9, 2e9]})],
+        circuit=f"""
+            model isource isource
+            model vsource vsource
+            model squid squid
+            iin (0 1) isource dc=0 mag=1
+            vfl (fl 0) vsource dc=0
+            s1 (1 0 fl) squid ic_tot={ic}
+        """,
+        control=f"""
+            sweep flux instance="vfl" parameter="dc" values={format_value(flux)}
+            analysis ac1 ac values=[1G, 2G]
+        """,
     )
     plot = Vacask.find().run(netlist)["ac1"]
     groups = plot.split("flux")
@@ -479,28 +545,28 @@ def test_squid_inductance_vs_flux() -> None:
 
 
 @pytest.mark.vacask
-def test_rational_subckt_matches_model() -> None:
+def test_vector_fit_subckt_matches_model() -> None:
     """VACASK's S-parameters of the emitted subcircuit equal the fit's own."""
-    model = _coupled_fit()
+    vf = _coupled_fit()
     f = np.linspace(1e9, 20e9, 191)
     netlist = Netlist(
         "Rational model",
         loads=["resistor.osdi", "capacitor.osdi"],
-        models={"resistor": "resistor", "capacitor": "capacitor", "vsource": "vsource"},
-        subckts=[model.subckt("fit")],
-        instances=[
-            Instance("x1", ("1", "2"), "fit"),
-            Instance("vp1", ("a1", "0"), "vsource", {"dc": 0}),
-            Instance("rp1", ("a1", "1"), "resistor", {"r": 50}),
-            Instance("vp2", ("a2", "0"), "vsource", {"dc": 0}),
-            Instance("rp2", ("a2", "2"), "resistor", {"r": 50}),
-        ],
-        analyses=[
-            Analysis("sp", "acsp", {"ports": ["vp1", "rp1", "vp2", "rp2"], "values": f})
-        ],
+        subckts=[vector_fit_subckt(vf, "fit")],
+        circuit="""
+            model resistor resistor
+            model capacitor capacitor
+            model vsource vsource
+            x1 (1 2) fit
+            vp1 (a1 0) vsource dc=0
+            rp1 (a1 1) resistor r=50
+            vp2 (a2 0) vsource dc=0
+            rp2 (a2 2) resistor r=50
+        """,
+        control=f'analysis sp acsp ports=["vp1", "rp1", "vp2", "rp2"] values={format_value(f)}',
     )
     plot = Vacask.find().run(netlist)["sp"]
-    s = model.s_matrix(f)
+    s = _model_s(vf, f)
     for i in range(2):
         for j in range(2):
             np.testing.assert_allclose(
@@ -514,14 +580,17 @@ def test_singular_dc_loop_raises() -> None:
     netlist = Netlist(
         "Inductor loop",
         loads=["josephson_junction.va", "capacitor.osdi", "inductor.osdi"],
-        models={**JJ_MODELS, "inductor": "inductor"},
-        instances=[
-            Instance("iin", ("0", "1"), "isource", {"dc": 0.5e-6}),
-            Instance("l1", ("1", "0"), "inductor", {"l": 100e-12}),
-            Instance("j1", ("1", "0"), "jj", {"ic": 1e-6}),
-            Instance("c1", ("1", "0"), "capacitor", {"c": 1e-12}),
-        ],
-        analyses=[Analysis("op1", "op")],
+        circuit="""
+            model isource isource
+            model capacitor capacitor
+            model inductor inductor
+            model jj jj
+            iin (0 1) isource dc=0.5u
+            l1 (1 0) inductor l=100p
+            j1 (1 0) jj ic=1u
+            c1 (1 0) capacitor c=1p
+        """,
+        control="analysis op1 op",
     )
     with pytest.raises(VacaskError, match="zero pivot"):
         Vacask.find().run(netlist)

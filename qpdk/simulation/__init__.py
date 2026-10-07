@@ -52,22 +52,22 @@ Note:
 
     The VACASK netlist classes, runner and raw-file reader need only the base
     install and the external ``vacask`` binary. The model-conversion helpers,
-    :meth:`~qpdk.simulation.vacask.RationalModel.fit` and
+    :func:`~qpdk.simulation.vacask.vector_fit` and
     :func:`~qpdk.simulation.vacask.cpw_tline_params`, also need
     ``uv sync --extra models``.
 
 **VACASK workflow:**
 
-1. Describe the circuit as a :class:`~qpdk.simulation.vacask.Netlist` of
-   :class:`~qpdk.simulation.vacask.Instance`,
-   :class:`~qpdk.simulation.vacask.Sweep` and
-   :class:`~qpdk.simulation.vacask.Analysis` objects. Loading
-   ``josephson_junction.va`` or ``squid.va`` uses the models shipped with qpdk.
+1. Write the circuit and its analyses in VACASK's own netlist language and
+   pass the blocks to a :class:`~qpdk.simulation.vacask.Netlist`, which fills
+   them into a Jinja2 template. Loading ``josephson_junction.va`` or
+   ``squid.va`` uses the models shipped with qpdk.
 2. Run it with :meth:`~qpdk.simulation.vacask.Vacask.run`, which calls the
    external ``vacask`` binary and returns one
    :class:`~qpdk.simulation.vacask.RawPlot` per analysis.
-3. Optionally embed any linear SAX model as a vector-fitted subcircuit from
-   :meth:`~qpdk.simulation.vacask.RationalModel.subckt`.
+3. Optionally embed any linear SAX model as a subcircuit: fit it with
+   :func:`~qpdk.simulation.vacask.vector_fit` and emit the fit with
+   :func:`~qpdk.simulation.vacask.vector_fit_subckt`.
 
 Example:
     >>> from ansys.aedt.core import Hfss
@@ -154,16 +154,15 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "qpdk.simulation.comsol.mesh",
         "refine_metal_plane_mesh",
     ),
-    "Analysis": ("qpdk.simulation.vacask", "Analysis"),
-    "Instance": ("qpdk.simulation.vacask", "Instance"),
     "Netlist": ("qpdk.simulation.vacask", "Netlist"),
-    "RationalModel": ("qpdk.simulation.vacask", "RationalModel"),
     "RawFile": ("qpdk.simulation.vacask", "RawFile"),
     "RawPlot": ("qpdk.simulation.vacask", "RawPlot"),
-    "Sweep": ("qpdk.simulation.vacask", "Sweep"),
     "Vacask": ("qpdk.simulation.vacask", "Vacask"),
     "VacaskError": ("qpdk.simulation.vacask", "VacaskError"),
     "cpw_tline_params": ("qpdk.simulation.vacask", "cpw_tline_params"),
+    "format_value": ("qpdk.simulation.vacask", "format_value"),
+    "vector_fit": ("qpdk.simulation.vacask", "vector_fit"),
+    "vector_fit_subckt": ("qpdk.simulation.vacask", "vector_fit_subckt"),
 }
 
 __all__ = [
@@ -172,17 +171,13 @@ __all__ = [
     "Q2D",
     "Q3D",
     "AEDTBase",
-    "Analysis",
     "ComsolBoundingBox",
     "ComsolFeedPort",
     "ComsolLayout",
     "ComsolPolygon",
-    "Instance",
     "Netlist",
-    "RationalModel",
     "RawFile",
     "RawPlot",
-    "Sweep",
     "Vacask",
     "VacaskError",
     "add_capacitance_study",
@@ -193,6 +188,7 @@ __all__ = [
     "cpw_tline_params",
     "detach_desktop_logging",
     "fit_view",
+    "format_value",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",
@@ -201,6 +197,8 @@ __all__ = [
     "prepare_component_for_aedt",
     "prepare_comsol_layout",
     "refine_metal_plane_mesh",
+    "vector_fit",
+    "vector_fit_subckt",
 ]
 
 

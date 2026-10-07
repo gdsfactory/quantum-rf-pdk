@@ -9,33 +9,30 @@ VACASK is AGPL-3.0 licensed. This module only calls the ``vacask`` binary as a
 separate process and parses the SPICE raw files it writes; it does not import,
 link or copy any VACASK code.
 
-The module has four parts:
+Circuits and analyses are written directly in VACASK's netlist syntax. The
+module only adds what is awkward to do by hand:
 
-- :class:`Netlist`, with :class:`Instance`, :class:`Sweep` and
-  :class:`Analysis`, describes a circuit and renders it from a Jinja2 template.
+- :class:`Netlist` fills raw VACASK text into a Jinja2 template and copies the
+  Verilog-A models shipped with qpdk next to it.
 - :class:`Vacask` runs a netlist and returns one :class:`RawPlot` per analysis.
 - :class:`RawFile` reads the SPICE raw files that VACASK writes.
-- :class:`RationalModel` fits S-parameters with a rational function and emits
-  it as a VACASK subcircuit. It needs the ``models`` extra.
+- :func:`vector_fit` and :func:`vector_fit_subckt` turn S-parameters into a
+  VACASK subcircuit. They need the ``models`` extra.
 
 Example:
-    >>> from qpdk.simulation.vacask import Analysis, Instance, Netlist, Vacask
+    >>> from qpdk.simulation.vacask import Netlist, Vacask
     >>> netlist = Netlist(
     ...     "JJ resonance",
     ...     loads=["josephson_junction.va", "capacitor.osdi"],
-    ...     models={"isource": "isource", "capacitor": "capacitor", "jj": "jj"},
-    ...     instances=[
-    ...         Instance("iin", ("0", "1"), "isource", {"dc": 0, "mag": 1e-9}),
-    ...         Instance("j1", ("1", "0"), "jj", {"ic": 1e-6}),
-    ...         Instance("c1", ("1", "0"), "capacitor", {"c": 2e-12}),
-    ...     ],
-    ...     analyses=[
-    ...         Analysis(
-    ...             "ac1",
-    ...             "ac",
-    ...             {"from": 1e9, "to": 10e9, "mode": "lin", "points": 1000},
-    ...         )
-    ...     ],
+    ...     circuit='''
+    ...         model isource isource
+    ...         model capacitor capacitor
+    ...         model jj jj
+    ...         iin (0 1) isource dc=0 mag=1n
+    ...         j1 (1 0) jj ic=1u
+    ...         c1 (1 0) capacitor c=2p
+    ...     ''',
+    ...     control='analysis ac1 ac from=1G to=10G mode="lin" points=1000',
     ... )
     >>> results = Vacask.find().run(netlist)
     >>> results["ac1"]["1"]  # complex node voltage
@@ -46,9 +43,11 @@ from __future__ import annotations
 import itertools
 import numbers
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+import textwrap
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cache
@@ -64,6 +63,7 @@ from qpdk.models.constants import c_0
 if TYPE_CHECKING:
     import sax
     from gdsfactory.typings import CrossSectionSpec
+    from skrf.vectorFitting import VectorFitting
 
 VACASK_MODELS_DIR = Path(__file__).parent / "vacask_models"
 VACASK_TEMPLATES_DIR = Path(__file__).parent / "vacask_templates"
@@ -79,6 +79,8 @@ MODELS_EXTRA_HINT = (
     "Install it with `uv sync --extra models` or `pip install 'qpdk[models]'`."
 )
 
+_ANALYSIS = re.compile(r"^\s*analysis\s+(\S+)", re.MULTILINE)
+
 
 class VacaskError(RuntimeError):
     """Raised when VACASK is missing, a simulation fails, or a raw file is malformed."""
@@ -92,9 +94,11 @@ class VacaskError(RuntimeError):
 def format_value(value: Any) -> str:
     """Format a Python value as a VACASK parameter value.
 
-    Strings are quoted, numbers use the shortest exact representation,
-    sequences become vectors ``[a, b]`` and sequences of sequences become
-    lists of vectors ``{[a],[b]}``, as used by ``spur`` and ``outspur``.
+    Useful for writing long vectors into netlist text, e.g.
+    ``f"values={format_value(frequencies)}"``. Strings are quoted, numbers use
+    the shortest exact representation, sequences become vectors ``[a, b]`` and
+    sequences of sequences become lists of vectors ``{[a],[b]}``, as used by
+    ``spur`` and ``outspur``.
 
     Returns:
         The value as VACASK netlist text.
@@ -112,10 +116,13 @@ def format_value(value: Any) -> str:
         short = f"{float(value):g}"
         exact = float(short) == float(value)  # ruff: ignore[float-equality-comparison]
         return short if exact else repr(float(value))
-    if isinstance(value, Sequence | np.ndarray):
+    if hasattr(value, "__array__") and np.ndim(value) == 0:
+        return format_value(np.asarray(value).item())
+    if isinstance(value, Sequence) or hasattr(value, "__array__"):
         items = list(value)
         if items and all(
-            isinstance(item, Sequence | np.ndarray) and not isinstance(item, str)
+            (isinstance(item, Sequence) and not isinstance(item, str))
+            or np.ndim(item) > 0
             for item in items
         ):
             return "{" + ",".join(format_value(item) for item in items) + "}"
@@ -123,9 +130,9 @@ def format_value(value: Any) -> str:
     raise TypeError(f"Cannot format {value!r} as a VACASK value")
 
 
-def _format_params(params: Mapping[str, Any]) -> str:
-    """Format parameters as `` name=value`` pairs, each with a leading space."""
-    return "".join(f" {name}={format_value(value)}" for name, value in params.items())
+def _dedent(text: str) -> str:
+    """Remove common indentation and surrounding blank lines."""
+    return textwrap.dedent(text).strip()
 
 
 @cache
@@ -139,71 +146,46 @@ def _templates() -> jinja2.Environment:
         keep_trailing_newline=True,
         autoescape=False,  # ruff: ignore[jinja2-autoescape-false]  # netlists, not HTML
     )
-    env.filters["params"] = _format_params
+    env.filters["dedent"] = _dedent
     env.filters["number"] = format_value
     return env
-
-
-@dataclass(frozen=True)
-class Instance:
-    """A device instance, ``name (nodes) model params``."""
-
-    name: str
-    nodes: Sequence[str]
-    model: str
-    params: Mapping[str, Any] = field(default_factory=dict)
-
-
-@dataclass(frozen=True)
-class Sweep:
-    """A parameter sweep applied to the analyses that follow it."""
-
-    name: str
-    instance: str
-    parameter: str
-    params: Mapping[str, Any] = field(default_factory=dict)
-
-
-@dataclass(frozen=True)
-class Analysis:
-    """An analysis, e.g. ``Analysis("ac1", "ac", {"from": 1e9, ...})``."""
-
-    name: str
-    kind: str
-    params: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class Netlist:
     """A VACASK netlist, rendered from ``vacask_templates/netlist.sim.j2``.
 
-    The control block always starts with ``abort always``, so that a failed
-    analysis gives a nonzero exit code. Sweeps are applied to every analysis.
+    ``circuit``, ``control`` and ``subckts`` are VACASK netlist text and are
+    inserted as-is, after removing their common indentation. The control block always
+    starts with ``abort always``, so that a failed analysis gives a nonzero
+    exit code.
 
     Attributes:
         title: First line of the netlist.
-        instances: Device instances.
+        circuit: Models and instances, in VACASK syntax.
+        control: Contents of the ``control`` block: options, sweeps and
+            analyses. Each ``analysis <name> ...`` line produces a result.
         loads: Files to load, e.g. ``"capacitor.osdi"`` from the VACASK
             installation or ``"josephson_junction.va"``. Verilog-A models
             shipped with qpdk are copied next to the netlist automatically.
-        models: ``{model name: module}``.
-        subckts: Subcircuit definitions, e.g. from :meth:`RationalModel.subckt`.
-        options: Simulator options.
-        sweeps: Sweeps applied to all analyses.
-        analyses: Analyses to run.
+        subckts: Subcircuit definitions, e.g. from :func:`vector_fit_subckt`.
+            Each one is dedented on its own, so they can come from different
+            sources.
         files: Extra files to place next to the netlist, as ``{name: content}``.
             A :class:`~pathlib.Path` value is copied; a string is written as text.
     """
 
     title: str
-    instances: Sequence[Instance] = ()
+    circuit: str = ""
+    control: str = ""
     loads: Sequence[str] = ()
-    models: Mapping[str, str] = field(default_factory=dict)
     subckts: Sequence[str] = ()
-    options: Mapping[str, Any] = field(default_factory=dict)
-    sweeps: Sequence[Sweep] = ()
-    analyses: Sequence[Analysis] = ()
     files: Mapping[str, str | Path] = field(default_factory=dict)
+
+    @property
+    def analyses(self) -> list[str]:
+        """Names of the analyses in :attr:`control`, in order."""
+        return _ANALYSIS.findall(self.control)
 
     def render(self) -> str:
         """Return the netlist text."""
@@ -458,7 +440,8 @@ class Vacask:
             timeout: Timeout in seconds.
 
         Returns:
-            ``{analysis name: plot}``, read from ``<analysis name>.raw``.
+            ``{analysis name: plot}``, read from ``<analysis name>.raw``. Swept
+            analyses hold all sweep points; see :meth:`RawPlot.split`.
 
         Raises:
             VacaskError: If VACASK exits with an error or a result is missing.
@@ -497,13 +480,13 @@ class Vacask:
                 )
 
             results: dict[str, RawPlot] = {}
-            for analysis in netlist.analyses:
-                raw_file = cwd / f"{analysis.name}.raw"
+            for name in netlist.analyses:
+                raw_file = cwd / f"{name}.raw"
                 if not raw_file.exists():
                     raise VacaskError(
-                        f"Analysis {analysis.name!r} wrote no {raw_file.name}:\n{output}"
+                        f"Analysis {name!r} wrote no {raw_file.name}:\n{output}"
                     )
-                results[analysis.name] = RawFile(raw_file)[0]
+                results[name] = RawFile(raw_file)[0]
         return results
 
 
@@ -547,220 +530,185 @@ def cpw_tline_params(
     return float(np.real(z0)), float(td)
 
 
-@dataclass(frozen=True)
-class RationalModel:
-    r"""A rational S-parameter model and its VACASK subcircuit.
+def vector_fit(
+    sdict: sax.SDict,
+    f: np.ndarray,
+    *,
+    ports: Sequence[str] | None = None,
+    z0: float = 50.0,
+    n_poles_real: int = 1,
+    n_poles_cmplx: int = 10,
+    enforce_passivity: bool = True,
+    n_samples: int = 1000,
+) -> VectorFitting:
+    """Fit S-parameters with :class:`skrf.vectorFitting.VectorFitting`.
 
-    The S-matrix is
+    A thin wrapper that builds the :class:`skrf.Network` from an SDict and
+    checks that the result can be used as a circuit: every pole stable and the
+    model passive. Evaluate the fit with
+    :meth:`~skrf.vectorFitting.VectorFitting.get_model_response` and turn it
+    into a VACASK subcircuit with :func:`vector_fit_subckt`.
+
+    Args:
+        sdict: S-parameters on ``f``, referenced to ``z0``. Missing entries
+            of a sparse SDict are zero.
+        f: Frequencies in Hz. Cover every frequency the circuit will see,
+            e.g. up to ``nharm`` times the pump frequency for harmonic balance.
+        ports: Port order. Defaults to the order in which ``sdict`` names them.
+            Stored as the network's ``port_names``.
+        z0: Reference impedance in Ω.
+        n_poles_real: Number of initial real poles.
+        n_poles_cmplx: Number of initial complex-conjugate pole pairs.
+        enforce_passivity: Make the model passive if the fit is not.
+        n_samples: Frequency samples for the passivity enforcement.
+
+    Returns:
+        The fitted :class:`~skrf.vectorFitting.VectorFitting` object.
+
+    Raises:
+        ImportError: If the ``models`` extra is not installed.
+        ValueError: If a port is missing from ``sdict``, the fit has an
+            unstable pole, or it is still not passive after enforcement.
+    """
+    try:
+        import sax  # ruff: ignore[import-outside-top-level]
+        import skrf  # ruff: ignore[import-outside-top-level]
+        from skrf.vectorFitting import (  # ruff: ignore[import-outside-top-level]
+            VectorFitting,
+        )
+    except ImportError as error:
+        raise ImportError(
+            f"vector_fit needs sax and scikit-rf. {MODELS_EXTRA_HINT}"
+        ) from error
+
+    f = np.asarray(f, dtype=float)
+    dense, port_map = sax.sdense({
+        k: np.broadcast_to(v, f.shape) for k, v in sdict.items()
+    })
+    ports = tuple(ports) if ports is not None else tuple(port_map)
+    missing = set(ports) - set(port_map)
+    if missing:
+        raise ValueError(f"Ports {sorted(missing)} are not in the SDict")
+    order = [port_map[p] for p in ports]
+    s = np.asarray(dense)[:, order][:, :, order]
+
+    network = skrf.Network(frequency=skrf.Frequency.from_f(f, unit="hz"), s=s, z0=z0)
+    network.port_names = list(ports)
+    vf = VectorFitting(network)
+    vf.vector_fit(n_poles_real=n_poles_real, n_poles_cmplx=n_poles_cmplx)
+    if enforce_passivity and not vf.is_passive():
+        vf.passivity_enforce(n_samples=n_samples, f_max=float(f.max()))
+        if not vf.is_passive():
+            raise ValueError(
+                "Vector fit is still not passive after passivity enforcement; "
+                "try fewer poles or a wider frequency range"
+            )
+    if np.any(vf.poles.real >= 0):
+        raise ValueError("Vector fit has unstable poles")
+    logger.info(
+        "Vector fit: {} poles, RMS error {:.2e}", len(vf.poles), vf.get_rms_error()
+    )
+    return vf
+
+
+def vector_fit_subckt(vf: VectorFitting, name: str) -> str:
+    r"""Emit a vector fit as a VACASK subcircuit.
+
+    The fitted S-matrix is
 
     .. math::
 
         S(s) = D + \sum_k \frac{R_k}{s - p_k},
 
-    where each complex pole stands for itself and its conjugate. Create one
-    with :meth:`fit`.
+    where each complex pole stands for itself and its conjugate.
 
-    Attributes:
-        ports: Port names, in matrix order.
-        poles: Poles in rad/s, one per real pole or complex-conjugate pair.
-        residues: Residues, shape ``(n_ports, n_ports, n_poles)``.
-        constant: Constant term :math:`D`, shape ``(n_ports, n_ports)``.
-        z0: Reference impedance in Ω.
+    Each port is a resistor :math:`Z_0` to ground in parallel with a current
+    source :math:`2 b / \sqrt{Z_0}`, which gives the port voltage
+    :math:`\sqrt{Z_0}(a + b)`. The incident waves :math:`a` drive one
+    first-order state per real pole and two per complex pair, and the
+    reflected waves :math:`b` are weighted sums of the states. Waves and
+    states are node voltages scaled by :math:`\sqrt{Z_0}`; each state
+    capacitor is :math:`1/|p_k|`, so all conductances and gains are of order
+    one.
+
+    The subcircuit uses the builtin ``vccs`` and the ``resistor`` and
+    ``capacitor`` models, so the netlist must load ``resistor.osdi`` and
+    ``capacitor.osdi`` and define models of those names.
+
+    Args:
+        vf: A fit from :func:`vector_fit`, with a constant term and no
+            proportional term, referenced to one real impedance.
+        name: Subcircuit name.
+
+    Returns:
+        The subcircuit text, with terminals ``p1``, ``p2``, ... in port order.
+
+    Raises:
+        ValueError: If the fit has a proportional term, an unstable pole, or
+            port-dependent or complex reference impedances.
     """
+    network = vf.network
+    n = network.nports
+    z0_all = np.asarray(network.z0)
+    z0 = float(z0_all.flat[0].real)
+    if not np.allclose(z0_all, z0):
+        raise ValueError("vector_fit_subckt needs one real reference impedance")
+    if np.any(np.asarray(vf.proportional_coeff) != 0):
+        raise ValueError("vector_fit_subckt does not support a proportional term")
+    poles = np.asarray(vf.poles)
+    if np.any(poles.real >= 0):
+        raise ValueError("Vector fit has unstable poles")
+    residues = np.asarray(vf.residues).reshape(n, n, -1)
+    constant = np.asarray(vf.constant_coeff).reshape(n, n)
 
-    ports: tuple[str, ...]
-    poles: np.ndarray
-    residues: np.ndarray
-    constant: np.ndarray
-    z0: float = 50.0
-
-    @classmethod
-    def fit(
-        cls,
-        sdict: sax.SDict,
-        f: np.ndarray,
-        *,
-        ports: Sequence[str] | None = None,
-        z0: float = 50.0,
-        n_poles_real: int = 1,
-        n_poles_cmplx: int = 10,
-        enforce_passivity: bool = True,
-        n_samples: int = 1000,
-    ) -> Self:
-        """Fit an S-parameter model with :class:`skrf.vectorFitting.VectorFitting`.
-
-        Args:
-            sdict: S-parameters on ``f``, referenced to ``z0``. Missing entries
-                of a sparse SDict are zero.
-            f: Frequencies in Hz. Cover every frequency the circuit will see,
-                e.g. up to ``nharm`` times the pump frequency for harmonic balance.
-            ports: Port order. Defaults to the order in which ``sdict`` names them.
-            z0: Reference impedance in Ω.
-            n_poles_real: Number of initial real poles.
-            n_poles_cmplx: Number of initial complex-conjugate pole pairs.
-            enforce_passivity: Make the model passive if the fit is not.
-            n_samples: Frequency samples for the passivity enforcement.
-
-        Returns:
-            The fitted, stable and passive rational model.
-
-        Raises:
-            ImportError: If the ``models`` extra is not installed.
-            ValueError: If the fit has an unstable pole, or is still not passive
-                after passivity enforcement.
-        """
-        try:
-            import sax  # ruff: ignore[import-outside-top-level]
-            import skrf  # ruff: ignore[import-outside-top-level]
-            from skrf.vectorFitting import (  # ruff: ignore[import-outside-top-level]
-                VectorFitting,
-            )
-        except ImportError as error:
-            raise ImportError(
-                f"RationalModel.fit needs sax and scikit-rf. {MODELS_EXTRA_HINT}"
-            ) from error
-
-        f = np.asarray(f, dtype=float)
-        dense, port_map = sax.sdense({
-            k: np.broadcast_to(v, f.shape) for k, v in sdict.items()
-        })
-        ports = tuple(ports) if ports is not None else tuple(port_map)
-        missing = set(ports) - set(port_map)
-        if missing:
-            raise ValueError(f"Ports {sorted(missing)} are not in the SDict")
-        order = [port_map[p] for p in ports]
-        s = np.asarray(dense)[:, order][:, :, order]
-
-        network = skrf.Network(
-            frequency=skrf.Frequency.from_f(f, unit="hz"), s=s, z0=z0
-        )
-        vf = VectorFitting(network)
-        vf.vector_fit(n_poles_real=n_poles_real, n_poles_cmplx=n_poles_cmplx)
-        if enforce_passivity and not vf.is_passive():
-            vf.passivity_enforce(n_samples=n_samples, f_max=float(f.max()))
-            if not vf.is_passive():
-                raise ValueError(
-                    "Vector fit is still not passive after passivity enforcement; "
-                    "try fewer poles or a wider frequency range"
-                )
-        if np.any(vf.poles.real >= 0):
-            raise ValueError("Vector fit has unstable poles")
-
-        n = len(ports)
-        model = cls(
-            ports=ports,
-            poles=np.asarray(vf.poles),
-            residues=np.asarray(vf.residues).reshape(n, n, -1),
-            constant=np.asarray(vf.constant_coeff).reshape(n, n),
-            z0=z0,
-        )
-        logger.info(
-            "Vector fit: {} poles, max |ΔS| {:.2e}",
-            len(model.poles),
-            np.max(np.abs(model.s_matrix(f) - s)),
-        )
-        return model
-
-    def s_matrix(self, f: np.ndarray) -> np.ndarray:
-        """S-matrix of the model, shape ``(len(f), n_ports, n_ports)``."""
-        s = 2j * np.pi * np.asarray(f, dtype=float)[:, None]
-        poles = self.poles[None, :]
-        terms = 1 / (s - poles)
-        conjugate = 1 / (s - poles.conj())
-        complex_pole = self.poles.imag != 0
-        result = np.einsum("ijk,fk->fij", self.residues, terms)
-        result += np.einsum(
-            "ijk,fk->fij",
-            self.residues.conj()[..., complex_pole],
-            conjugate[:, complex_pole],
-        )
-        return result + self.constant[None]
-
-    def sdict(self, f: np.ndarray) -> dict[tuple[str, str], np.ndarray]:
-        """S-parameters of the model as an SDict."""
-        s = self.s_matrix(f)
-        return {
-            (pi, pj): s[:, i, j]
-            for i, pi in enumerate(self.ports)
-            for j, pj in enumerate(self.ports)
-        }
-
-    def is_stable(self) -> bool:
-        """Whether every pole is in the left half-plane."""
-        return bool(np.all(self.poles.real < 0))
-
-    def subckt(self, name: str) -> str:
-        r"""Emit the model as a VACASK subcircuit.
-
-        Each port is a resistor :math:`Z_0` to ground in parallel with a current
-        source :math:`2 b / \sqrt{Z_0}`, which gives the port voltage
-        :math:`\sqrt{Z_0}(a + b)`. The incident waves :math:`a` drive one
-        first-order state per real pole and two per complex pair, and the
-        reflected waves :math:`b` are weighted sums of the states. Waves and
-        states are node voltages scaled by :math:`\sqrt{Z_0}`; each state
-        capacitor is :math:`1/|p_k|`, so all conductances and gains are of
-        order one.
-
-        The subcircuit uses the builtin ``vccs`` and the ``resistor`` and
-        ``capacitor`` models, so the netlist must load ``resistor.osdi`` and
-        ``capacitor.osdi`` and define models of those names.
-
-        Returns:
-            The subcircuit text, with terminals ``p1``, ``p2``, ... in
-            :attr:`ports` order.
-        """
-        n = len(self.ports)
-        terminals = [f"p{i + 1}" for i in range(n)]
-        elements: list[tuple[str, tuple[str, ...], float]] = []
-        for i in range(n):
-            # Port: V = Z0 I + 2 sqrt(Z0) b
+    terminals = [f"p{i + 1}" for i in range(n)]
+    elements: list[tuple[str, tuple[str, ...], float]] = []
+    for i in range(n):
+        # Port: V = Z0 I + 2 sqrt(Z0) b
+        elements += [
+            ("r", (terminals[i],), z0),
+            ("g", (terminals[i], f"b{i}"), 2 / z0),
+            # Incident wave: sqrt(Z0) a = V - sqrt(Z0) b
+            ("r", (f"a{i}",), 1.0),
+            ("g", (f"a{i}", terminals[i]), 1.0),
+            ("g", (f"a{i}", f"b{i}"), -1.0),
+            ("r", (f"b{i}",), 1.0),
+        ]
+    for j in range(n):
+        for k, pole in enumerate(poles):
+            mag = abs(pole)
+            u, v = f"x{j}_{k}", f"y{j}_{k}"
+            # Scaled state |p| a / (s - p), split into real and imaginary parts
             elements += [
-                ("r", (terminals[i],), self.z0),
-                ("g", (terminals[i], f"b{i}"), 2 / self.z0),
-                # Incident wave: sqrt(Z0) a = V - sqrt(Z0) b
-                ("r", (f"a{i}",), 1.0),
-                ("g", (f"a{i}", terminals[i]), 1.0),
-                ("g", (f"a{i}", f"b{i}"), -1.0),
-                ("r", (f"b{i}",), 1.0),
+                ("c", (u,), 1 / mag),
+                ("r", (u,), mag / -pole.real),
+                ("g", (u, f"a{j}"), 1.0),
             ]
-        for j in range(n):
-            for k, pole in enumerate(self.poles):
-                mag = abs(pole)
-                u, v = f"x{j}_{k}", f"y{j}_{k}"
-                # Scaled state |p| a / (s - p), split into real and imaginary parts
+            if pole.imag != 0:
                 elements += [
-                    ("c", (u,), 1 / mag),
-                    ("r", (u,), mag / -pole.real),
-                    ("g", (u, f"a{j}"), 1.0),
+                    ("g", (u, v), -pole.imag / mag),
+                    ("c", (v,), 1 / mag),
+                    ("r", (v,), mag / -pole.real),
+                    ("g", (v, u), pole.imag / mag),
                 ]
-                if pole.imag != 0:
-                    elements += [
-                        ("g", (u, v), -pole.imag / mag),
-                        ("c", (v,), 1 / mag),
-                        ("r", (v,), mag / -pole.real),
-                        ("g", (v, u), pole.imag / mag),
-                    ]
-                scale = 2 / mag if pole.imag != 0 else 1 / mag
-                for i in range(n):
-                    residue = self.residues[i, j, k]
-                    elements.append(("g", (f"b{i}", u), scale * residue.real))
-                    if pole.imag != 0:
-                        elements.append(("g", (f"b{i}", v), -scale * residue.imag))
+            scale = 2 / mag if pole.imag != 0 else 1 / mag
             for i in range(n):
-                elements.append((
-                    "g",
-                    (f"b{i}", f"a{j}"),
-                    float(self.constant[i, j].real),
-                ))
+                residue = residues[i, j, k]
+                elements.append(("g", (f"b{i}", u), scale * residue.real))
+                if pole.imag != 0:
+                    elements.append(("g", (f"b{i}", v), -scale * residue.imag))
+        for i in range(n):
+            elements.append(("g", (f"b{i}", f"a{j}"), float(constant[i, j].real)))
 
-        return (
-            _templates()
-            .get_template("subckt.sim.j2")
-            .render(
-                name=name,
-                ports=self.ports,
-                terminals=terminals,
-                n_poles=len(self.poles),
-                elements=elements,
-            )
+    port_names = network.port_names or terminals
+    return (
+        _templates()
+        .get_template("subckt.sim.j2")
+        .render(
+            name=name,
+            ports=port_names,
+            terminals=terminals,
+            n_poles=len(poles),
+            elements=elements,
         )
+    )
