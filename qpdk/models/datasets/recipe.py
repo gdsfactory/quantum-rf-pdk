@@ -12,6 +12,7 @@ import json
 import math
 import shlex
 import tomllib
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
@@ -26,7 +27,8 @@ class GenerationRecipe:
 
     A generator is a ``module:function`` accepting ``runner``, ``grid`` and
     ``output`` keyword arguments and returning a :class:`Dataset`. It owns
-    the geometry, units, terminal conventions and dataset metadata.
+    the geometry, units, terminal conventions and dataset metadata. If its
+    module defines a default ``GRID``, the recipe must sweep the same axes.
     """
 
     generator: str
@@ -74,14 +76,38 @@ class GenerationRecipe:
         """Number of geometries in the Cartesian product of the axes."""
         return math.prod(len(values) for values in self.grid.values())
 
+    def resolve(self) -> Callable[..., Dataset]:
+        """Import the generator and check the grid axes against its ``GRID``.
+
+        Returns:
+            The generator function.
+
+        Raises:
+            ValueError: If the generator cannot be imported or the axes differ.
+        """
+        name, function = self.generator.split(":")
+        try:
+            module = importlib.import_module(name)
+            generate: Callable[..., Dataset] = getattr(module, function)
+        except (ImportError, AttributeError) as error:
+            raise ValueError(
+                f"Cannot load generator {self.generator}: {error}"
+            ) from error
+        expected = getattr(module, "GRID", None)
+        if expected is not None and set(self.grid) != set(expected):
+            raise ValueError(
+                f"Grid axes {sorted(self.grid)} differ from {self.generator} axes"
+                f" {sorted(expected)}"
+            )
+        return generate
+
     def run(self) -> Dataset:
         """Run the generator, reusing the completed Palace geometry directories.
 
         Returns:
             The complete dataset written by the generator.
         """
-        module, function = self.generator.split(":")
-        generate = getattr(importlib.import_module(module), function)
+        generate = self.resolve()
         runner = Palace(
             workdir=self.workdir, command=self.command, settings=self.settings
         )
@@ -149,6 +175,7 @@ def main() -> None:
             if args.palace_command is not None
             else recipe.command,
         )
+        recipe.resolve()
     except (OSError, ValueError, TypeError) as error:
         parser.error(str(error))
     logger.info(

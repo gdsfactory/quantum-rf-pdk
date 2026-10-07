@@ -2,19 +2,28 @@
 
 Run ``just generate-dataset datasets/plate_capacitor.toml`` from a checkout.
 Lookups need only the bundled Parquet data; regeneration needs Gmsh and Palace.
+
+Accuracy is set by the mesh, not by the 1e-9 checks applied to the stored
+matrices. The two plates are mirror images, so :math:`C_{11} = C_{22}` exactly;
+the bundled data differ by up to 0.55%, and refining ``near_mesh`` at the grid
+center changed the matrix by 0.6-1.7% per step. Treat entries as accurate to
+about 1% and check convergence before relying on finer differences.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from qpdk import PDK, __version__, logger
 from qpdk.cells import plate_capacitor
 from qpdk.models.datasets.generate import sweep, write
 from qpdk.models.datasets.metadata import Axis, DatasetMetadata, Quantity, QuantityKind
 from qpdk.models.datasets.table import Dataset
-from qpdk.simulation.palace import Palace
+
+if TYPE_CHECKING:
+    from qpdk.simulation.palace import Palace
 
 NAME = "plate_capacitor_palace"
 GRID = {

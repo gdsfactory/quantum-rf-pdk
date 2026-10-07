@@ -4,6 +4,7 @@ import dataclasses
 import subprocess
 from pathlib import Path
 
+import gmsh
 import numpy as np
 import pytest
 
@@ -104,7 +105,6 @@ def test_thread_environment_changes_resume_key(
 
 
 def test_mesh_preserves_caller_model(tmp_path: Path) -> None:
-    gmsh = palace.gmsh
     PDK.activate()
     component = plate_capacitor(length=40, width=10, gap=7)
     gmsh.initialize()

@@ -1,5 +1,7 @@
 """Generation recipes, previews and generator dispatch."""
 
+import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 from unittest.mock import Mock
@@ -80,7 +82,7 @@ def test_dispatch_custom_generator(
 ) -> None:
     loaded = replace(recipe.load_recipe(config), generator="custom_dataset:generate")
     generate = Mock(return_value=object())
-    module = Mock(generate=generate)
+    module = Mock(generate=generate, GRID=loaded.grid)
     imported = Mock(return_value=module)
     monkeypatch.setattr(recipe.importlib, "import_module", imported)
     assert loaded.run() is generate.return_value
@@ -118,3 +120,38 @@ def test_cli_preview_does_not_run_and_preserves_quoted_args(
     assert "6 geometries" in message
     assert str(tmp_path / "output with spaces") in message
     assert "'image with spaces.sif'" in message
+
+
+@pytest.mark.parametrize(
+    ("before", "after", "error"),
+    [
+        (
+            "qpdk.models.datasets.plate_capacitor:generate",
+            "qpdk.models.datasets.plate_capacitr:generate",
+            "Cannot load generator",
+        ),
+        ("length = [40.0, 80.0]", "lengths = [40.0, 80.0]", "differ from"),
+    ],
+)
+def test_cli_preview_rejects_unrunnable_recipe(
+    config: Path,
+    before: str,
+    after: str,
+    error: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    config.write_text(RECIPE.replace(before, after), encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["recipe", str(config), "--dry-run"])
+    with pytest.raises(SystemExit):
+        recipe.main()
+    assert error in capsys.readouterr().err
+
+
+def test_lookup_and_preview_import_without_gmsh() -> None:
+    """Lookups and recipe previews must not load gmsh's native libraries."""
+    code = (
+        "import sys; sys.modules['gmsh'] = None; "
+        "import qpdk.models.datasets.plate_capacitor, qpdk.models.datasets.recipe"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True)  # ruff: ignore[subprocess-without-shell-equals-true]

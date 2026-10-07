@@ -10,6 +10,8 @@ its metadata.
 from __future__ import annotations
 
 import hashlib
+import shutil
+import uuid
 from collections.abc import Callable, Mapping, Sequence
 from itertools import product
 from pathlib import Path
@@ -19,6 +21,7 @@ import numpy as np
 from jax.typing import ArrayLike
 
 from qpdk.models.datasets.metadata import DatasetMetadata
+from qpdk.models.datasets.store import ParquetParts
 from qpdk.models.datasets.table import Dataset, RunStatus, schema, validate
 
 if TYPE_CHECKING:
@@ -103,17 +106,50 @@ def sweep(
 def write(
     location: Path | str, metadata: DatasetMetadata, frame: pl.DataFrame
 ) -> Dataset:
-    """Replace the Parquet parts at ``location`` with ``frame`` as one part.
+    """Replace the dataset at ``location`` with ``frame`` as one part.
 
     Meant for regenerating a curated dataset from scratch; use
-    :meth:`~qpdk.models.datasets.Dataset.append` to grow an existing one.
+    :meth:`~qpdk.models.datasets.Dataset.append` to grow an existing one. The
+    new part is written to a sibling staging directory and swapped in only once
+    it is complete, so a failure leaves the existing dataset untouched.
 
     Returns:
         The written dataset.
+
+    Raises:
+        FileExistsError: if ``location`` holds anything other than dataset parts.
+        OSError: if publishing fails; the existing dataset is then kept.
     """
     validate(frame, metadata)
-    for part in Path(location).glob("*.parquet"):
-        part.unlink()
-    dataset = Dataset(location, metadata)
-    dataset.append(frame, part="part-0000")
-    return dataset
+    location = Path(location)
+    if location.exists():
+        foreign = [
+            p.name for p in location.iterdir() if p.suffix != ".parquet" or p.is_dir()
+        ]
+        try:
+            ParquetParts(location).metadata()
+        except ValueError:
+            foreign.append("*.parquet without dataset metadata")
+        if foreign:
+            msg = (
+                f"{location} is not a dataset directory; refusing to replace {foreign}."
+            )
+            raise FileExistsError(msg)
+    location.parent.mkdir(parents=True, exist_ok=True)
+    tag = uuid.uuid4().hex
+    staging = location.with_name(f".{location.name}.{tag}.tmp")
+    backup = location.with_name(f".{location.name}.{tag}.old")
+    try:
+        Dataset(staging, metadata).append(frame, part="part-0000")
+        if location.exists():
+            location.rename(backup)
+        try:
+            staging.rename(location)
+        except OSError:
+            if backup.exists():
+                backup.rename(location)
+            raise
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+    shutil.rmtree(backup, ignore_errors=True)
+    return Dataset(location, metadata)
