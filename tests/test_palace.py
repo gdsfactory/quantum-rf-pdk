@@ -4,9 +4,13 @@ import dataclasses
 import subprocess
 from pathlib import Path
 
-import gmsh
 import numpy as np
 import pytest
+
+try:
+    import gmsh
+except OSError:  # gmsh loads native OpenGL libraries such as libGLU
+    pytest.skip("gmsh's native libraries are missing", allow_module_level=True)
 
 from qpdk import PDK
 from qpdk.cells import plate_capacitor
