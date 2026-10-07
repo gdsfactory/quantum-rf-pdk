@@ -1,0 +1,27 @@
+// Symmetric dc SQUID as a flux-tunable junction for VACASK, written for qpdk (MIT licence).
+//
+// The node voltage V(fl) is the external flux in units of the flux quantum
+// (1 V = 1 Phi_0). The SQUID acts as a single junction with critical current
+// ic_tot*|cos(pi*Phi/Phi_0)|; the loop inductance and junction asymmetry are
+// neglected, so the model only holds for symmetric SQUIDs with small
+// screening parameter. The sign of cos() is kept so that the phase solution
+// stays continuous across half a flux quantum. The flux port draws no current.
+`include "constants.vams"
+`include "disciplines.vams"
+
+module squid(p, n, fl);
+    inout p, n;
+    input fl;
+    electrical p, n, fl;
+    electrical ph;
+    (* desc = "Total critical current of both junctions [A]", type = "instance" *) parameter real ic_tot = 2e-6 from (0:inf);
+    (* desc = "Total junction capacitance [F]", type = "instance" *) parameter real c = 0 from [0:inf);
+    (* desc = "Shunt resistance [Ohm]", type = "instance" *) parameter real r = 1e9 from (0:inf);
+    real phi0;
+    analog begin
+        phi0 = `P_H / (2 * `P_Q);
+        I(ph) <+ V(p, n);
+        I(ph) <+ ddt(-phi0 / (2 * `M_PI) * V(ph));
+        I(p, n) <+ ic_tot * cos(`M_PI * V(fl)) * sin(V(ph)) + V(p, n) / r + ddt(c * V(p, n));
+    end
+endmodule

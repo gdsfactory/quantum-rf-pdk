@@ -48,7 +48,16 @@ Note:
     require ``uv sync --extra comsol`` and a local COMSOL installation. Only
     :class:`~qpdk.simulation.comsol.model.COMSOL` imports MPh, and it is
     exposed lazily, so the layout and helper modules and this package stay
-    importable without it.
+    importable without it. The VACASK wrapper needs only NumPy and the
+    external ``vacask`` binary.
+
+**VACASK workflow:**
+
+1. Write a VACASK netlist, loading the junction models from
+   :func:`~qpdk.simulation.vacask.vacask_model_path`
+2. Run it with :func:`~qpdk.simulation.vacask.run_vacask`, which calls the
+   external ``vacask`` binary and returns one
+   :class:`~qpdk.simulation.vacask.RawPlot` per analysis
 
 Example:
     >>> from ansys.aedt.core import Hfss
@@ -135,6 +144,14 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
         "qpdk.simulation.comsol.mesh",
         "refine_metal_plane_mesh",
     ),
+    "RawPlot": ("qpdk.simulation.vacask", "RawPlot"),
+    "VacaskError": ("qpdk.simulation.vacask", "VacaskError"),
+    "find_vacask": ("qpdk.simulation.vacask", "find_vacask"),
+    "read_raw": ("qpdk.simulation.vacask", "read_raw"),
+    "run_vacask": ("qpdk.simulation.vacask", "run_vacask"),
+    "vacask_model_path": ("qpdk.simulation.vacask", "vacask_model_path"),
+    "cpw_tline_params": ("qpdk.simulation.vacask", "cpw_tline_params"),
+    "vector_fit_subckt": ("qpdk.simulation.vacask", "vector_fit_subckt"),
 }
 
 __all__ = [
@@ -147,12 +164,16 @@ __all__ = [
     "ComsolFeedPort",
     "ComsolLayout",
     "ComsolPolygon",
+    "RawPlot",
+    "VacaskError",
     "add_capacitance_study",
     "add_cpw_rf_study",
     "add_materials_to_aedt",
     "build_comsol_metal_model",
     "build_comsol_sheet_model",
+    "cpw_tline_params",
     "detach_desktop_logging",
+    "find_vacask",
     "fit_view",
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
@@ -161,7 +182,11 @@ __all__ = [
     "pin_absolute_mesh_sizes",
     "prepare_component_for_aedt",
     "prepare_comsol_layout",
+    "read_raw",
     "refine_metal_plane_mesh",
+    "run_vacask",
+    "vacask_model_path",
+    "vector_fit_subckt",
 ]
 
 

@@ -1,0 +1,24 @@
+// RCSJ Josephson junction for VACASK, written for qpdk (MIT licence).
+//
+// The internal node ``ph`` carries the gauge-invariant phase as a voltage
+// (1 V = 1 rad). Its two contributions solve V(p, n) = phi0/(2 pi) d(phase)/dt,
+// so the phase is a state variable and the supercurrent ic*sin(phase) is
+// algebraic in it, which harmonic balance handles without a flux integral.
+`include "constants.vams"
+`include "disciplines.vams"
+
+module jj(p, n);
+    inout p, n;
+    electrical p, n;
+    electrical ph;
+    (* desc = "Critical current [A]", type = "instance" *) parameter real ic = 1e-6 from (0:inf);
+    (* desc = "Junction capacitance [F]", type = "instance" *) parameter real c = 0 from [0:inf);
+    (* desc = "Shunt resistance [Ohm]", type = "instance" *) parameter real r = 1e9 from (0:inf);
+    real phi0;
+    analog begin
+        phi0 = `P_H / (2 * `P_Q);
+        I(ph) <+ V(p, n);
+        I(ph) <+ ddt(-phi0 / (2 * `M_PI) * V(ph));
+        I(p, n) <+ ic * sin(V(ph)) + V(p, n) / r + ddt(c * V(p, n));
+    end
+endmodule

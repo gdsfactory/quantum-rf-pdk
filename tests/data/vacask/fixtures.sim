@@ -1,0 +1,20 @@
+Raw-file fixtures
+load "josephson_junction.va"
+load "capacitor.osdi"
+load "resistor.osdi"
+model isource isource
+model capacitor capacitor
+model resistor resistor
+model jj jj
+iin (0 1) isource dc=0.5u mag=1n
+j1 (1 0) jj ic=1u
+c1 (1 0) capacitor c=2p
+r1 (1 0) resistor r=10
+control
+  abort always
+  options tolscale=1e-6 reltol=1e-6
+  analysis tran1 tran stop=20p step=2p icmode="uic"
+  analysis ac1 ac from=5G to=7G mode="lin" points=4
+  sweep bias instance="iin" parameter="dc" values=[0, 0.5u]
+  analysis acsw ac from=5G to=7G mode="lin" points=2
+endc
