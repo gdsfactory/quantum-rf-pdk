@@ -38,7 +38,7 @@ def check_maxwell(maxwell: ArrayLike, *, rtol: float = 1e-9) -> None:
 
     Checks symmetry, positive diagonal, non-positive off-diagonal entries, and
     diagonal dominance (non-negative capacitance to ground), each up to ``rtol``
-    relative to the largest diagonal entry. Non-finite entries are reported
+    relative to the largest diagonal entry of each matrix. Non-finite entries are reported
     before any other check, since they make the tolerance meaningless. Runs
     eagerly on concrete arrays; it is a check, not a model, and is not jittable.
 
@@ -50,11 +50,12 @@ def check_maxwell(maxwell: ArrayLike, *, rtol: float = 1e-9) -> None:
         raise NonPhysicalMatrixError(["contains non-finite entries"])
     diagonal = jnp.diagonal(c, axis1=-2, axis2=-1)
     off = ~jnp.eye(c.shape[-1], dtype=bool)
-    tol = rtol * jnp.abs(diagonal).max()
+    # Per-matrix tolerance, so a large matrix in a batch cannot hide a small one.
+    tol = rtol * jnp.abs(diagonal).max(axis=-1, keepdims=True)
     checks = {
-        "not symmetric": jnp.abs(c - jnp.swapaxes(c, -1, -2)).max() > tol,
+        "not symmetric": (jnp.abs(c - jnp.swapaxes(c, -1, -2)) > tol[..., None]).any(),
         "non-positive diagonal": (diagonal <= 0).any(),
-        "positive off-diagonal": jnp.where(off, c, 0).max() > tol,
+        "positive off-diagonal": (jnp.where(off, c, 0) > tol[..., None]).any(),
         "negative capacitance to ground": (c.sum(axis=-1) < -tol).any(),
     }
     if problems := [problem for problem, violated in checks.items() if violated]:

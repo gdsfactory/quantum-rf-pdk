@@ -435,6 +435,35 @@ class TestGenerate:
         assert Dataset(store.location).table.equals(dataset_copy.table)
 
     @staticmethod
+    def test_write_refuses_unrelated_files(dataset: Dataset, tmp_path: Path) -> None:
+        unrelated = tmp_path / "my_results.parquet"
+        pl.DataFrame({"x": [1]}).write_parquet(unrelated)
+        (tmp_path / "notes.txt").write_text("keep")
+        with pytest.raises(FileExistsError, match="not a dataset directory"):
+            write(tmp_path, dataset.metadata, dataset.table)
+        assert sorted(p.name for p in tmp_path.iterdir()) == [
+            "my_results.parquet",
+            "notes.txt",
+        ]
+
+    @staticmethod
+    def test_failed_publish_preserves_existing_parts(
+        dataset_copy: Dataset, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        store = dataset_copy.store
+        assert isinstance(store, ParquetParts)
+        parts = {path.name: path.read_bytes() for path in store.files}
+
+        def no_hard_links(*_: object) -> None:
+            raise PermissionError(1, "Operation not permitted")
+
+        monkeypatch.setattr("qpdk.models.datasets.store.os.link", no_hard_links)
+        with pytest.raises(PermissionError):
+            write(store.location, dataset_copy.metadata, dataset_copy.table)
+        assert {path.name: path.read_bytes() for path in store.files} == parts
+        assert sorted(p.name for p in store.location.parent.iterdir()) == [NAME]
+
+    @staticmethod
     def test_sweep_round_trips_stored_solves(dataset: Dataset, tmp_path: Path) -> None:
         frame = sweep(
             PLATE_CAPACITOR,
@@ -691,6 +720,13 @@ class TestCapacitance:
     @staticmethod
     def test_check_maxwell_accepts_physical() -> None:
         check_maxwell([[2.0, -1.0], [-1.0, 2.0]])
+
+    @staticmethod
+    def test_check_maxwell_tolerance_is_per_matrix() -> None:
+        big = [[1e-12, -1e-13], [-1e-13, 1e-12]]
+        small = [[1e-15, 5e-22], [5e-22, 1e-15]]
+        with pytest.raises(NonPhysicalMatrixError, match="positive off-diagonal"):
+            check_maxwell(np.stack([big, small]))
 
     @staticmethod
     def test_mutual_conversion(interp: GridInterpolator) -> None:

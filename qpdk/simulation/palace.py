@@ -21,7 +21,6 @@ from typing import Any
 from uuid import uuid4
 
 import gdsfactory as gf
-import gmsh
 import numpy as np
 from gdsfactory.component import Component
 from numpy.typing import NDArray
@@ -89,6 +88,9 @@ def _mesh(
     Returns:
         Number of tetrahedra.
     """
+    # gmsh loads native OpenGL libraries; import it only when meshing.
+    import gmsh  # ruff: ignore[import-outside-top-level]
+
     owned = not gmsh.isInitialized()
     if owned:
         gmsh.initialize()
@@ -241,9 +243,15 @@ class Palace:
     def provenance(self) -> dict[str, Any]:
         """Describe the solver and recipe used by the dataset and resume keys.
 
+        Host paths are reduced to file names, since the provenance ships with
+        the dataset. Some Palace builds report ``UNKNOWN`` as their version, so
+        the SHA-256 of each file named in ``command`` is what identifies a build.
+
         Returns:
             Solver version, command, file fingerprints, mesh settings and recipe hash.
         """
+        import gmsh  # ruff: ignore[import-outside-top-level]
+
         version = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
             [*self.command, "--version"], capture_output=True, text=True, check=True
         )
@@ -252,13 +260,14 @@ class Palace:
             path = Path(shutil.which(argument) or argument)
             if path.is_file():
                 with path.open("rb") as stream:
-                    files[str(path.resolve())] = hashlib.file_digest(
-                        stream, "sha256"
-                    ).hexdigest()
+                    files[path.name] = hashlib.file_digest(stream, "sha256").hexdigest()
         return {
             "solver": "Palace",
             "version": (version.stdout + version.stderr).strip(),
-            "command": list(self.command),
+            "command": [
+                Path(arg).name if Path(arg).is_absolute() else arg
+                for arg in self.command
+            ],
             "thread_environment": {
                 key: os.environ.get(key)
                 for key in (
