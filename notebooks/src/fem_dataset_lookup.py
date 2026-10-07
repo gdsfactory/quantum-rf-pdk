@@ -200,9 +200,15 @@ logger.info(
 # real Palace results and writes a small dataset, so the entire example also
 # runs on machines without a solver. This selection performs no new FEM solves.
 #
-# For MPI or a container, replace the command before running, for example
-# `recipe = replace(recipe, command=("palace", "-np", "8"))`. A container
-# command is also an argument tuple; the config filename is appended without a
+# For MPI or a container, replace the command before running, for example:
+#
+# ```python
+# from dataclasses import replace
+#
+# recipe = replace(recipe, command=("palace", "-np", "8"))
+# ```
+#
+# A container command is also an argument tuple; the config filename is appended without a
 # shell. `--palace-command` provides the same override in the CLI.
 
 # %% tags=["keep_output"]
@@ -284,6 +290,8 @@ logger.info(
 # API uses the same recipe as the command line:
 #
 # ```python
+# from dataclasses import replace
+#
 # center = replace(recipe, grid={"length": [80.0], "width": [10.0], "gap": [7.0]})
 # matrices = []
 # for size in [0.8, 0.55, 0.38]:
