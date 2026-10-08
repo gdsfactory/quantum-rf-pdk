@@ -18,6 +18,7 @@ import operator
 import pathlib
 import warnings
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -86,12 +87,11 @@ def test_tolerance_margin(model_name: str) -> None:
     with np.load(reference_path) as reference:
         for key, value in sorted(s_params.items()):
             key_str = f"s_{key[0]}_{key[1]}"
-            value_np = np.array(value)
             for suffix, component in (
-                ("real", np.real(value_np)),
-                ("imag", np.imag(value_np)),
+                ("real", jnp.real(value)),
+                ("imag", jnp.imag(value)),
             ):
-                actual = np.atleast_1d(component)
+                actual = jnp.atleast_1d(component)
                 array_key = f"{key_str}_{suffix}"
                 if array_key not in reference:
                     pytest.fail(
@@ -100,7 +100,7 @@ def test_tolerance_margin(model_name: str) -> None:
                         "generated",
                         pytrace=False,
                     )
-                ref = np.atleast_1d(reference[array_key])
+                ref = jnp.atleast_1d(reference[array_key])
                 if actual.shape != ref.shape:
                     pytest.fail(
                         f"{array_key} shape {actual.shape} does not match "
@@ -113,12 +113,12 @@ def test_tolerance_margin(model_name: str) -> None:
                 # test uses: NaN == NaN passes, but NaN vs finite must fail (a
                 # plain ratio would be NaN and silently compare False against
                 # the 1.0 gate).
-                nan_mismatch = np.isnan(actual) ^ np.isnan(ref)
-                actual_f = np.where(np.isnan(actual), 0.0, actual)
-                ref_f = np.where(np.isnan(ref), 0.0, ref)
-                ratios = np.abs(actual_f - ref_f) / (ATOL + RTOL * np.abs(ref_f))
-                ratios = np.where(nan_mismatch, np.inf, ratios)
-                index = int(np.argmax(ratios))
+                nan_mismatch = jnp.isnan(actual) ^ jnp.isnan(ref)
+                actual_f = jnp.where(jnp.isnan(actual), 0.0, actual)
+                ref_f = jnp.where(jnp.isnan(ref), 0.0, ref)
+                ratios = jnp.abs(actual_f - ref_f) / (ATOL + RTOL * jnp.abs(ref_f))
+                ratios = jnp.where(nan_mismatch, jnp.inf, ratios)
+                index = int(jnp.argmax(ratios))
                 ratio = float(ratios[index])
                 # Frequency-independent (0-d) references have no frequency
                 # point to report.
@@ -130,7 +130,7 @@ def test_tolerance_margin(model_name: str) -> None:
                         message = f"{array_key}: NaN mismatch vs reference{freq_label}"
                     else:
                         diff = abs(actual_f[index] - ref_f[index])
-                        budget = ATOL + RTOL * np.abs(ref_f[index])
+                        budget = ATOL + RTOL * jnp.abs(ref_f[index])
                         message = (
                             f"{array_key}: {ratio:.0%} of budget (|actual - ref| = "
                             f"{diff:.3e} vs allowed {budget:.3e}){freq_label}"
