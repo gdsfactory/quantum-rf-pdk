@@ -28,7 +28,7 @@ factory_metadata = import_gfp_module("gdsfactoryplus.factory_metadata")
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-_SAMPLE_DIR = Path(__file__).parents[1] / "qpdk/samples"
+_SAMPLE_DIR = Path(__file__).parents[2] / "qpdk/samples"
 _GSCH_PATH = _SAMPLE_DIR / "resonator_test_chip_yaml.gsch"
 _PIC_YAML_PATH = _SAMPLE_DIR / "resonator_test_chip_yaml.pic.yml"
 _SPEED_OF_LIGHT_UM_PER_S = 299_792_458_000_000.0

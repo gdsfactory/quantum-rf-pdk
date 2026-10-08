@@ -34,7 +34,7 @@ def test_cpw_impedance(width: float) -> None: ...
 ## Regression tests
 
 - GDS/settings/netlist references live in `tests/gds_ref/` and `tests/test_pdk/`; regenerate with `just test-gds-force`.
-- Model references live in `tests/test_models_regression/`; regenerate with `just test-models-force`.
+- Model references live in `tests/models/test_models_regression/`; regenerate with `just test-models-force`.
 - Regenerated references must be committed in the same PR as the code change that caused them.
 - **Never accept a regenerated reference as a fix for a failing test without an explanation.** Ask what physically or
   geometrically changed. A reference diff that is larger than the code change suggests an unintended side effect (these

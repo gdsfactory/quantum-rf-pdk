@@ -97,13 +97,13 @@ test-gds-force: (_pytest "-s tests/test_pdk.py --force-regen")
 [group('test')]
 test-gds-fail-fast: (_pytest "-s tests/test_pdk.py -x")
 
-# Run model regression tests (tests/test_models_regression.py)
+# Run model regression tests (tests/models/test_models_regression.py)
 [group('test')]
-test-models: (_pytest "-s tests/test_models_regression.py")
+test-models: (_pytest "-s tests/models/test_models_regression.py")
 
 # Regenerate model regression reference files
 [group('test')]
-test-models-force: (_pytest "-s tests/test_models_regression.py --force-regen")
+test-models-force: (_pytest "-s tests/models/test_models_regression.py --force-regen")
 
 # Run HFSS simulation tests (requires HFSS to be installed)
 [group('test')]
@@ -423,4 +423,4 @@ test-gfp *args:
     fi
     probe_gfp_v2
     GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
-        tests/test_gfp_lvs.py tests/test_gfp_sax.py tests/test_gfp_server.py "$@"
+        tests/gfp/test_gfp_lvs.py tests/gfp/test_gfp_sax.py tests/gfp/test_gfp_server.py "$@"

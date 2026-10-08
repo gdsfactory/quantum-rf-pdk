@@ -31,7 +31,7 @@ FREQUENCIES = [5e9, 6e9, 7e9]
 def _require_lfs_reference_files() -> None:
     """Fail with a clear message if the LFS-stored reference files are not pulled.
 
-    The ``.npz`` reference files in ``tests/test_models_regression/`` are stored
+    The ``.npz`` reference files in ``tests/models/test_models_regression/`` are stored
     in Git LFS. In a fresh clone or worktree whose LFS objects have not been
     downloaded, they contain pointer text instead of binary data, which makes
     the regression comparison fail with a confusing npz parse error.
@@ -80,7 +80,7 @@ def test_models_with_frequency_sweep(
         # vintage (the stored values were produced by earlier model code and
         # JAX versions), amplified by sharp resonator features; disabling x64
         # moves it by under one percentage point.
-        # tests/test_models_tolerance_matrix.py re-measures this margin on
+        # tests/models/test_models_tolerance_matrix.py re-measures this margin on
         # every platform and warns as it shrinks.
         default_tolerance={"atol": ATOL, "rtol": RTOL},
     )

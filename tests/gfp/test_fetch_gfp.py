@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-_JUSTFILE = Path(__file__).parents[1] / "justfile"
+_JUSTFILE = Path(__file__).parents[2] / "justfile"
 
 
 def _write_vsix(path: Path, *extra_members: str) -> None:
