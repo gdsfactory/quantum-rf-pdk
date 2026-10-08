@@ -153,7 +153,8 @@ Each geometry retains its inputs, mesh, config, solver log and results under
 ``--workdir``. Rerunning reuses matching completed solves. Extend the grid while
 retaining the work directory to solve only new points. ``--output`` is replaced only
 after the sweep succeeds. The output Parquet files contain all dataset metadata, so
-lookups need no generator or solver.
+lookups need no generator or solver. Container runs fingerprint the complete SIF; native
+runs fingerprint only the supplied executable.
 
 Set ``save_fields=True`` for ParaView outputs. Compare representative geometries at
 finer ``near_mesh`` sizes and larger ``domain_pad`` before relying on small differences.
