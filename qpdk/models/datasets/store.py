@@ -128,7 +128,12 @@ class ParquetParts:
 
         Raises:
             FileExistsError: if the part already exists.
+            ValueError: if the part is not a filename stem.
         """
+        if part is not None and (
+            not part or Path(part).name != part or part in {".", ".."} or "\\" in part
+        ):
+            raise ValueError("Part must be a filename stem without path separators")
         self.location.mkdir(parents=True, exist_ok=True)
         target = self.location / f"{part or uuid.uuid4().hex}.parquet"
         if target.exists():
@@ -246,7 +251,8 @@ class DeltaStore:
 
         New tables are partitioned by the variants, which are always selected
         exactly and never interpolated, and carry ``metadata`` on the ``value``
-        column.
+        column. Initial creation is exclusive; retry an append if another
+        writer creates the table first.
 
         Returns:
             The URI and the committed table version.
@@ -260,7 +266,8 @@ class DeltaStore:
         if self.version is not None:
             msg = f"{self!r} is pinned to a version and read-only."
             raise ValueError(msg)
-        exists = self._table() is not None
+        table = self._table()
+        exists = table is not None
         data: Any = frame
         if not exists:
             table = Table.from_arrow(frame)
@@ -272,9 +279,9 @@ class DeltaStore:
                 table.to_batches(), schema=table.schema.set(index, field)
             )
         deltalake.write_deltalake(
-            self.uri,
+            table if exists else self.uri,
             data,
-            mode="append",
+            mode="append" if exists else "error",
             storage_options=self.storage_options,
             **(
                 {}
@@ -289,4 +296,5 @@ class DeltaStore:
                 custom_metadata={"qpdk.part": part or ""}
             ),
         )
-        return f"{self.uri}@v{self.table_version}"
+        # The writer updates this snapshot to its own commit, not a later append.
+        return f"{self.uri}@v{table.version() if exists else 0}"

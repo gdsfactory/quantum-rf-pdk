@@ -176,3 +176,45 @@ class TestObjectStore:
         np.testing.assert_array_equal(_grid(reader), _grid(source))
         assert isinstance(reader.store, DeltaStore)
         assert reader.store.table_version == 1
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_append_returns_own_version_during_competing_write(
+    source: Dataset,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    existing: bool,
+) -> None:
+    uri = tmp_path / "table"
+    dataset = Dataset(uri, source.metadata, delta=True)
+    if existing:
+        dataset.append(source.table.filter(pl.col("gap").is_in([4.0])))
+        own = source.table.filter(pl.col("gap").is_in([7.0]))
+        other = source.table.filter(pl.col("gap").is_in([10.0]))
+    else:
+        own, other = _halves(source)
+    write = deltalake.write_deltalake
+
+    def competing_write(*args, **kwargs):
+        write(*args, **kwargs)
+        write(uri, other, mode="append")
+
+    monkeypatch.setattr(deltalake, "write_deltalake", competing_write)
+    version = 1 if existing else 0
+    assert dataset.append(own) == f"{uri}@v{version}"
+    assert deltalake.DeltaTable(uri).version() == version + 1
+    pinned = Dataset(uri, delta=True, version=version).table
+    assert not pinned["gap"].is_in(other["gap"].unique().implode()).any()
+
+
+def test_stale_delta_handle_rechecks_metadata(source: Dataset, tmp_path: Path) -> None:
+    uri = tmp_path / "table"
+    original = Dataset(uri, source.metadata, delta=True)
+    stale = Dataset(
+        uri, source.metadata.model_copy(update={"name": "other"}), delta=True
+    )
+    first, second = _halves(source)
+    original.append(first)
+    with pytest.raises(DatasetError, match="differs from the metadata stored"):
+        stale.append(second)
+    assert Dataset(uri, delta=True).table.equals(original.table)
