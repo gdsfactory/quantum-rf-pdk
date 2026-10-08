@@ -129,42 +129,35 @@ Generating Palace datasets
 ==========================
 
 The bundled ``plate_capacitor_palace`` dataset contains real electrostatic extractions.
-A TOML generation recipe selects an importable Python generator, its parameter grid and
-Palace settings. It is a generation input, not a dataset manifest: the output Parquet
-files remain self-describing and need no recipe to be read.
+``datasets/plate_capacitor.py`` defines a complete experiment with its grid, settings,
+metadata and solver function. Its inline dependencies select the Python 3.12 environment
+required by gsim; generation code is not installed with QPDK.
 
-Preview or run the bundled 27-point sweep:
+Preview or run the bundled 27-point sweep from a checkout:
 
 ::
 
-    just generate-dataset datasets/plate_capacitor.toml --dry-run
-    just generate-dataset datasets/plate_capacitor.toml
+    uv run --script datasets/plate_capacitor.py --dry-run
+    uv run --script datasets/plate_capacitor.py --processes 4
+    uv run --script datasets/plate_capacitor.py --sif /path/to/palace.sif
 
-Outside a checkout, use ``python -m qpdk.models.datasets.recipe recipe.toml``. Copy and
-edit the recipe to choose a different grid or mesh. Its output and work paths are
-relative to the recipe file; ``--output`` and ``--workdir`` overrides are relative to
-the current directory. ``--palace-command "palace -np 8"`` overrides the MPI or
-container command without changing the file. Commands are argument vectors, and the
-config filename is appended without invoking a shell.
+Copy the script beside the original in ``datasets/`` and edit ``GRID`` and ``SETTINGS``
+for another experiment. It uses gsim's ``ElectrostaticSim`` for execution and
+``load_capacitance`` for reading results. A small geometry-specific Gmsh mesher in the
+script preserves separate terminals on the same physical layer and the coplanar ground
+frame. The current gsim layer-based terminal API cannot distinguish these electrodes,
+and its planar mesher fails on this geometry. The reusable dataset package contains no
+solver wrapper.
 
-The recipe's ``generator`` is a ``module:function`` accepting ``runner``, ``grid`` and
-``output`` keyword arguments. That function owns the geometry, units, terminal
-conventions and metadata, and returns a :class:`~qpdk.models.datasets.Dataset`. Use
-:func:`~qpdk.models.datasets.plate_capacitor.generate` as a starting point for another
-geometry. No generator registry or separate command target is needed.
+Each geometry retains its inputs, mesh, config, solver log and results under
+``--workdir``. Rerunning reuses matching completed solves. Extend the grid while
+retaining the work directory to solve only new points. ``--output`` is replaced only
+after the sweep succeeds. The output Parquet files contain all dataset metadata, so
+lookups need no generator or solver.
 
-Each geometry gets its own mesh, config, solver log and results beneath ``workdir``.
-Running the same command resumes completed solves; geometry, solver and mesh changes get
-separate run directories. Extend a grid while retaining its work directory to solve only
-new points. The dataset is published after all solves and validation succeed. A failed
-solve raises with its log path and preserves the existing dataset.
-
-Set ``save_fields = true`` in ``[palace.settings]`` for ParaView outputs. ``near_mesh``
-and ``domain_pad`` control mesh and domain refinement; compare representative points
-before using a new parameter range. The bundled recipe uses zero-thickness perfect
-conductor sheets on silicon and a separate coplanar ground frame, not a finite-thickness
-process-stack extraction. The notebook demonstrates a small recipe, optional live
-solving, inspecting the output and refinement checks.
+Set ``save_fields=True`` for ParaView outputs. Compare representative geometries at
+finer ``near_mesh`` sizes and larger ``domain_pad`` before relying on small differences.
+This example models perfect conductor sheets on silicon with a separate ground frame.
 
 .. automodule:: qpdk.models.datasets
 
@@ -177,9 +170,6 @@ solving, inspecting the output and refinement checks.
 .. automodule:: qpdk.models.datasets.generate
     :members:
 
-.. automodule:: qpdk.models.datasets.plate_capacitor
-    :members:
-
 .. automodule:: qpdk.models.datasets.store
     :members:
 
@@ -187,10 +177,4 @@ solving, inspecting the output and refinement checks.
     :members:
 
 .. automodule:: qpdk.models.datasets.capacitance
-    :members:
-
-.. automodule:: qpdk.simulation.palace
-    :members:
-
-.. automodule:: qpdk.models.datasets.recipe
     :members:
