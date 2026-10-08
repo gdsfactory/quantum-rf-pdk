@@ -108,6 +108,7 @@ import xarray as xr
 from matplotlib_inline.backend_inline import set_matplotlib_formats
 
 from qpdk import logger
+from qpdk.config import PATH
 from qpdk.models.capacitor import plate_capacitor
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.cpw import cpw_z0_from_cross_section
@@ -115,12 +116,19 @@ from qpdk.models.datasets import (
     Dataset,
     GridInterpolator,
     check_maxwell,
+    cpw_coupling_model,
     maxwell_to_mutual,
 )
 from qpdk.models.datasets.generate import write
 from qpdk.models.generic import capacitor
 
 set_matplotlib_formats("svg")
+for style_source in (PATH.repo / "docs" / "qpdk.mplstyle", "qpdk"):
+    try:
+        plt.style.use(style_source)
+    except OSError:
+        continue
+    break
 
 # %% [markdown]
 # ## Inspect the dataset
@@ -173,7 +181,7 @@ dataset.table.head(8)
 # ```
 #
 # The script uses gsim's `ElectrostaticSim` for execution and matrix loading.
-# Its sheet mesher preserves the terminal and ground geometry. The output
+# Meshwell builds the sheet geometry, and gsim writes the Palace configuration. The output
 # carries its metadata; reading it needs neither the script nor Palace. Generator scripts stay outside the installed QPDK package.
 
 # %%
@@ -254,6 +262,26 @@ logger.info(
 # `--workdir`: six geometries are reused and three are added. Use `--output`
 # and `--workdir` to select locations; paths are relative to your current directory.
 
+# ## Parallel sweeps
+#
+# Both experiments accept `--shard INDEX --shards COUNT`. The longest axis is
+# split into disjoint rectangular grids, with unchanged solver inputs and run
+# identities. Workers write separate outputs and run directories; merging
+# checks provenance, coverage and successful results before publication.
+# Choose at most as many tasks as points on the longest axis. For the CPW grid:
+#
+# ```bash
+# sbatch --array=0-9 datasets/slurm_array.sh datasets/cpw_coupling.py \
+#   build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
+# # After every array task succeeds:
+# uv run --script datasets/cpw_coupling.py \
+#   --merge-shards build/cpw-shards/shard-* --output build/datasets/cpw_coupling_palace
+# ```
+#
+# Keep the script, settings, runtime and array size fixed while resuming.
+# The reusable `partition_grid` and `merge` functions also work with other
+# experiment scripts and schedulers.
+#
 # ## Check mesh and domain sensitivity
 #
 # A denser parameter grid cannot repair a coarse FEM mesh. In a copy of the
@@ -272,10 +300,10 @@ logger.info(
 # representative checks near the ends of any expanded geometry range.
 #
 # For the bundled extraction at 80/10/7 µm, the final mesh refinement changed
-# entries by at most 0.57%; enlarging the domain changed them by 0.25%. Four
-# held-out solves at width 10 µm differed from interpolation by at most 2.68%.
-# These are checks of the bundled extraction, not a uniform accuracy bound for
-# every geometry or a validation of a different mesher.
+# entries by at most 0.49%; enlarging the domain changed them by 0.19%. Across
+# the center and eight corners, these changes reached 0.87% and 0.36%. Four
+# held-out solves at width 10 µm differed from interpolation by at most 2.70%.
+# These checks do not establish a uniform accuracy bound for every geometry.
 
 # ## Query a shared Delta table
 #
@@ -433,7 +461,7 @@ logger.info(f"d|S21|/d gap at 5 GHz, gap = 7 µm: {float(d_s21_d_gap(7.0)):.3e} 
 # point and for a batch of 10 000 points.
 
 
-# %%
+# %% tags=["keep_output"]
 def benchmark(fn, *args, repeats: int = 50) -> tuple[float, float]:
     """Return (compile time, steady-state time per call) in ms."""
     jitted = jax.jit(fn)
@@ -467,6 +495,142 @@ for label, point in [("1 point", single), ("10 000 points", batch)]:
             "query_ms": query_ms,
         })
 pl.DataFrame(rows)
+
+# %% [markdown]
+# ## Symmetric CPW coupling: a three-dimensional dataset
+#
+# `datasets/cpw_coupling.py` follows the same workflow, sweeping trace width,
+# outer CPW slot width and the gap between two identical traces. The inner gap
+# is fully etched; there is no ground strip between the traces. Both conductors
+# and the outer ground rails span a uniform slice, whose end faces have natural
+# boundaries to remove end fringing. Stored capacitances are in F for that slice.
+#
+# ```bash
+# uv run --script datasets/cpw_coupling.py --dry-run
+# uv run --script datasets/cpw_coupling.py --sif /path/to/palace.sif
+# ```
+#
+# Mesh refinement and domain enlargement at the center and eight corners
+# changed matrix entries by at most 0.61% and 0.89%. Three vacuum comparisons
+# agreed with dielectric scaling within 0.11%. Sixteen fresh solves between grid
+# points differed from interpolation by at most 2.08%. These are representative
+# checks, not a uniform accuracy bound.
+# At a geometry with 0.68% trace-to-trace self-capacitance mismatch, refinement
+# reduced it to 0.0007%. The symmetric average changed by 0.13%, supporting the
+# model's 1% numerical symmetry tolerance. The stored solver matrices stay raw.
+#
+# The following cells read the bundled Palace results and run no simulator.
+# The same interpolator handles all three axes; fixing an axis only chooses a
+# view of that three-dimensional lookup.
+
+# %% tags=["keep_output"]
+cpw_dataset = Dataset("cpw_coupling_palace")
+cpw_grid = cpw_dataset.grid("maxwell_capacitance")
+cpw_lookup = GridInterpolator(cpw_grid)
+slice_length = cpw_dataset.metadata.provenance["settings"]["slice_length_um"] * 1e-6
+logger.info(f"CPW grid: {cpw_grid.values.shape}; domain: {cpw_lookup.domain}")
+
+# %% [markdown]
+# ### A two-dimensional heatmap
+#
+# At a fixed outer slot width, vary trace width and inter-trace gap together.
+# The black dots mark solved geometries; colours between them are interpolation.
+
+# %% tags=["keep_output"]
+width_axis = jnp.linspace(*cpw_lookup.domain["width"], 101)
+gap_axis = jnp.linspace(*cpw_lookup.domain["gap"], 151)
+W, G = jnp.meshgrid(width_axis, gap_axis, indexing="ij")
+mutual_per_length = -cpw_lookup(width=W, cpw_gap=6.0, gap=G)[..., 0, 1] / slice_length
+fig, ax = plt.subplots(constrained_layout=True)
+image = ax.pcolormesh(
+    gap_axis, width_axis, mutual_per_length * 1e12, shading="auto", rasterized=True
+)
+solved_width, solved_gap = np.meshgrid(
+    cpw_grid.coords[0], cpw_grid.coords[2], indexing="ij"
+)
+ax.scatter(solved_gap, solved_width, s=8, color="black")
+ax.set_xlabel(r"Inter-trace gap ($\text{µm}$)")
+ax.set_ylabel(r"Trace width ($\text{µm}$)")
+ax.set_title(r"Outer slot width $6\,\text{µm}$")
+fig.colorbar(image, ax=ax, label=r"Mutual capacitance per length ($\text{pF/m}$)")
+plt.show()
+
+# %% [markdown]
+# ### Slices through the three-dimensional lookup
+#
+# These three heatmaps vary all three parameters: the outer slot width changes
+# between panels, while each panel scans trace width and inter-trace gap. A
+# shared colour scale makes the effect of the third axis visible. The middle
+# panel's slot width lies between stored grid points.
+
+# %% tags=["keep_output"]
+outer_slots = jnp.array([3.0, 7.0, 12.0])
+volume_slices = (
+    -cpw_lookup(
+        width=W[None, ...], cpw_gap=outer_slots[:, None, None], gap=G[None, ...]
+    )[..., 0, 1]
+    / slice_length
+    * 1e12
+)
+fig, axes = plt.subplots(
+    1, 3, figsize=(12, 3.8), sharex=True, sharey=True, constrained_layout=True
+)
+for i, ax in enumerate(axes):
+    image = ax.pcolormesh(
+        gap_axis,
+        width_axis,
+        volume_slices[i],
+        shading="auto",
+        rasterized=True,
+        vmin=float(volume_slices.min()),
+        vmax=float(volume_slices.max()),
+    )
+    ax.set_title(rf"Outer slot ${float(outer_slots[i]):g}\,\text{{µm}}$")
+    ax.set_xlabel(r"Inter-trace gap ($\text{µm}$)")
+axes[0].set_ylabel(r"Trace width ($\text{µm}$)")
+fig.colorbar(
+    image, ax=list(axes), label=r"Mutual capacitance per length ($\text{pF/m}$)"
+)
+plt.show()
+
+# %% [markdown]
+# ## A distributed four-port SAX model
+#
+# {func}`~qpdk.models.datasets.models.cpw_coupling_model` loads and validates the grid
+# once, then returns a jittable model of the uniform coupled section. The slice
+# capacitances determine even- and odd-mode impedances. Geometric inductance
+# follows the quasi-TEM dielectric half-space relation; kinetic inductance,
+# finite substrate thickness, dispersion and loss are omitted.
+#
+# Ports are `o1` lower-left, `o2` upper-left, `o3` upper-right and `o4` lower-right.
+# Reference planes lie at the section ends. All four ports below use 50 ohm
+# reference impedances. The remaining ports are matched when reading a single
+# scattering entry; an open or short circuit must be connected explicitly in SAX.
+
+# %% tags=["keep_output"]
+cpw_model = cpw_coupling_model(cpw_dataset)
+frequencies = jnp.linspace(0.1e9, 12e9, 301)
+fig, axes = plt.subplots(1, 2, figsize=(10, 3.8), constrained_layout=True)
+for gap in (2.0, 8.0, 25.0):
+    scattering = jax.jit(cpw_model)(
+        f=frequencies, length=1000.0, width=10.0, cpw_gap=6.0, gap=gap
+    )
+    axes[0].plot(
+        frequencies / 1e9,
+        20 * jnp.log10(jnp.abs(scattering["o1", "o2"])),
+        label=rf"${gap:g}\,\text{{µm}}$",
+    )
+    axes[1].plot(
+        frequencies / 1e9,
+        20 * jnp.log10(jnp.abs(scattering["o1", "o4"])),
+        label=rf"${gap:g}\,\text{{µm}}$",
+    )
+axes[0].set_ylabel(r"Near-end coupling $|S_{21}|$ ($\text{dB}$)")
+axes[1].set_ylabel(r"Through $|S_{41}|$ ($\text{dB}$)")
+for ax in axes:
+    ax.set_xlabel(r"Frequency ($\text{GHz}$)")
+    ax.legend(title="Inter-trace gap")
+plt.show()
 
 # %% [markdown]
 # ## References
