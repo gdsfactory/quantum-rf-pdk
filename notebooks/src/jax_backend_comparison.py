@@ -83,7 +83,6 @@ import warnings
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-import numpy as np
 import sax
 from tqdm.auto import tqdm, trange
 
@@ -473,18 +472,18 @@ plt.show()
 # factorisation inside the circuit solver).
 
 # %%
-_sizes_arr = np.array(_BENCHMARK_SIZES, dtype=float)
-_cpu_arr = np.array(cpu_times, dtype=float)
+_sizes_arr = jnp.array(_BENCHMARK_SIZES, dtype=float)
+_cpu_arr = jnp.array(cpu_times, dtype=float)
 
 # Fit log(t) = log(a) + b*log(N) via linear regression
-_log_n = np.log(_sizes_arr)
-_log_t = np.log(_cpu_arr)
-_b, _log_a = np.polyfit(_log_n, _log_t, 1)
-_a = np.exp(_log_a)
+_log_n = jnp.log(_sizes_arr)
+_log_t = jnp.log(_cpu_arr)
+_b, _log_a = jnp.polyfit(_log_n, _log_t, 1)
+_a = jnp.exp(_log_a)
 
 print(f"CPU scaling fit:  t ≈ {_a * 1e6:.2f} µs · N^{_b:.3f}")
 
-_n_fit = np.logspace(np.log10(_sizes_arr[0]), np.log10(_sizes_arr[-1]), 200)
+_n_fit = jnp.logspace(jnp.log10(_sizes_arr[0]), jnp.log10(_sizes_arr[-1]), 200)
 _t_fit = _a * _n_fit**_b
 
 fig, ax = plt.subplots()

@@ -3,7 +3,6 @@
 from typing import final
 
 import jax.numpy as jnp
-import numpy as np
 from numpy.testing import assert_array_less
 
 from qpdk.models.capacitor import (
@@ -78,7 +77,7 @@ def test_interdigital_capacitor_scaling() -> None:
     c8 = interdigital_capacitor_capacitance_analytical(fingers=8, **kwargs)
     diff1 = c6 - c4
     diff2 = c8 - c6
-    assert np.isclose(diff1, diff2, rtol=1e-10)
+    assert jnp.isclose(diff1, diff2, rtol=1e-10)
 
 
 def test_plate_capacitor_capacitance_analytical_monotonicity() -> None:
@@ -115,4 +114,4 @@ def test_plate_capacitor_capacitance_analytical_consistency() -> None:
 
     c_ff = float(c) * 1e15
     # The expected capacitance for this geometry is ~2 fF.
-    assert np.isclose(c_ff, 2.0734, rtol=1e-3)
+    assert jnp.isclose(c_ff, 2.0734, rtol=1e-3)

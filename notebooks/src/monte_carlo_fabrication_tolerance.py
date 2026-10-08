@@ -283,7 +283,7 @@ plt.show(block=False)
 #    these quantities.
 
 # %%
-widths_sweep = np.linspace(6, 16, 200)
+widths_sweep = jnp.linspace(6, 16, 200)
 gaps_sweep = [4.0, 5.0, 6.0, 7.0, 8.0]
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))

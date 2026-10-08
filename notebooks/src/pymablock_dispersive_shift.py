@@ -88,7 +88,7 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
-import numpy as np
+import jax.numpy as jnp
 import polars as pl
 import scipy
 import sympy
@@ -260,8 +260,8 @@ print(
 # visible.
 
 # %%
-g_sweep = np.linspace(0.01, 0.3, 200)
-chi_sweep = np.array([
+g_sweep = jnp.linspace(0.01, 0.3, 200)
+chi_sweep = jnp.array([
     dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep
 ])
 
@@ -352,7 +352,7 @@ def _resonator_objective(length: float) -> float:
     """
     freq = resonator_frequency(
         length=length,
-        epsilon_eff=float(np.real(ep_eff)),
+        epsilon_eff=float(jnp.real(ep_eff)),
         is_quarter_wave=True,
     )
     return (freq - omega_r_design * 1e9) ** 2
@@ -362,7 +362,7 @@ result = scipy.optimize.minimize(_resonator_objective, 4000.0, bounds=[(1000, 20
 resonator_length = result.x[0]
 
 # Total resonator capacitance from CPW impedance and phase velocity
-C_r = 1 / np.real(z0 * (c_0 / np.sqrt(ep_eff))) * resonator_length * 1e-6  # F
+C_r = 1 / jnp.real(z0 * (c_0 / jnp.sqrt(ep_eff))) * resonator_length * 1e-6  # F
 
 # Coupling capacitance
 C_c = float(
@@ -393,7 +393,7 @@ C_\text{{c}} = {C_c * 1e15:.2f}\,\text{{fF}}
 # %%
 f_resonator_achieved = resonator_frequency(
     length=resonator_length,
-    epsilon_eff=float(np.real(ep_eff)),
+    epsilon_eff=float(jnp.real(ep_eff)),
     is_quarter_wave=True,
 )
 

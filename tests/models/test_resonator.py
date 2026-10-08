@@ -199,7 +199,7 @@ class TestResonatorFrequency:
         ep_eff = 6.0
         f = resonator_frequency(length=length_um, epsilon_eff=ep_eff)
         # v_p = c₀/sqrt(6.0), f = v_p / (4 * 5e-3)
-        expected = 3e8 / np.sqrt(6.0) / (4 * 5e-3)
+        expected = 3e8 / jnp.sqrt(6.0) / (4 * 5e-3)
         # Allow for numerical tolerance due to constant precision differences
         np.testing.assert_allclose(f, expected, rtol=1e-2)
 

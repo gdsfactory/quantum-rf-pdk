@@ -110,6 +110,7 @@ if not hasattr(np, "complex_"):
 if not hasattr(np, "float_"):
     np.float_ = np.float64  # ruff: ignore[numpy2-deprecation]
 
+import jax.numpy as jnp
 import polars as pl
 import scipy
 import scqubits as scq
@@ -303,8 +304,8 @@ display(
 
 # %%
 _a_plus_adag = resonator.annihilation_operator() + resonator.creation_operator()
-g_sweep = np.linspace(0.01, 0.3, 200)
-chi_sweep_analytical = np.array([
+g_sweep = jnp.linspace(0.01, 0.3, 200)
+chi_sweep_analytical = jnp.array([
     dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi) for gi in g_sweep
 ])
 
@@ -481,7 +482,7 @@ def _resonator_objective(length: float) -> float:
     """
     freq = resonator_frequency(
         length=length,
-        epsilon_eff=float(np.real(ep_eff)),
+        epsilon_eff=float(jnp.real(ep_eff)),
         is_quarter_wave=True,
     )
     return (freq - omega_r_design * 1e9) ** 2
@@ -493,7 +494,7 @@ resonator_length = result.x[0]
 # Total resonator capacitance from CPW impedance and phase velocity
 # {cite:p}`gopplCoplanarWaveguideResonators2008a`:
 # C_r = l / Re(Z_0 * v_p)
-C_r = 1 / np.real(z0 * (c_0 / np.sqrt(ep_eff))) * resonator_length * 1e-6  # F
+C_r = 1 / jnp.real(z0 * (c_0 / jnp.sqrt(ep_eff))) * resonator_length * 1e-6  # F
 
 # Coupling capacitance
 C_c = float(
@@ -524,7 +525,7 @@ C_\text{{c}} = {C_c * 1e15:.2f}\,\text{{fF}}
 # %%
 f_resonator_achieved = resonator_frequency(
     length=resonator_length,
-    epsilon_eff=float(np.real(ep_eff)),
+    epsilon_eff=float(jnp.real(ep_eff)),
     is_quarter_wave=True,
 )
 

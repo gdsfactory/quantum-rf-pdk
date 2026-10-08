@@ -4,7 +4,6 @@ from typing import final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
-import numpy as np
 from hypothesis import given, settings
 from numpy.testing import assert_allclose
 
@@ -36,8 +35,8 @@ class TestElToArmInductance:
         L = el_to_arm_inductance(el_ghz)
 
         # L = Φ_0² / (8π² E_L)
-        expected_L = Φ_0**2 / (8 * np.pi**2 * el_ghz * 1e9 * h)
-        assert np.isclose(L, expected_L, rtol=1e-10)
+        expected_L = Φ_0**2 / (8 * jnp.pi**2 * el_ghz * 1e9 * h)
+        assert jnp.isclose(L, expected_L, rtol=1e-10)
         # Typical unimon inductance is ~10-20 nH
         assert 1e-9 < L < 100e-9, f"Inductance {L * 1e9:.2f} nH out of range"
 

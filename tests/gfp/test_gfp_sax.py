@@ -12,6 +12,7 @@ from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 import sax
@@ -50,7 +51,7 @@ def test_one_port_termination_models_resolve(component: str) -> None:
     model = factory_metadata.resolve_factory_model(component, "sax")
 
     assert model is not None
-    assert set(model(f=np.asarray([5e9]))) == {("o1", "o1")}
+    assert set(model(f=jnp.asarray([5e9]))) == {("o1", "o1")}
 
 
 @cache
@@ -76,7 +77,7 @@ def _assert_model_boundaries(info: dict[str, Any]) -> None:
 
 def _assert_sweep_matches_reference(result: dict[str, Any]) -> None:
     """Compare a gdsfactoryplus sweep with the flat leaf-model circuit."""
-    wavelengths = np.asarray(result["wavelengths"], dtype=float)
+    wavelengths = jnp.asarray(result["wavelengths"], dtype=float)
     assert len(wavelengths) == 3
     assert wavelengths[0] == pytest.approx(299_792.458 / 4)
     assert wavelengths[-1] == pytest.approx(299_792.458 / 10)
@@ -87,19 +88,19 @@ def _assert_sweep_matches_reference(result: dict[str, Any]) -> None:
 
     frequencies = _SPEED_OF_LIGHT_UM_PER_S / wavelengths
     expected = _reference_chip_circuit()(f=frequencies)
-    zero = np.zeros(len(wavelengths), dtype=complex)
+    zero = jnp.zeros(len(wavelengths), dtype=complex)
     simulated_keys = {tuple(key.split(",")) for key in sdict}
 
     for key in set(expected) | simulated_keys:
         entry = sdict.get(f"{key[0]},{key[1]}")
         expected_value = expected.get(key, zero)
         if entry is None:
-            assert np.abs(np.asarray(expected_value)).max() < 1e-5, (
+            assert jnp.abs(jnp.asarray(expected_value)).max() < 1e-5, (
                 f"S[{key}] is missing but is not negligible in the reference"
             )
             continue
 
-        actual = np.asarray(entry["real"]) + 1j * np.asarray(entry["imag"])
+        actual = jnp.asarray(entry["real"]) + 1j * jnp.asarray(entry["imag"])
         np.testing.assert_allclose(
             actual,
             expected_value,
@@ -150,7 +151,7 @@ def test_straight_descriptor_preserves_nondefault_settings(
 
     assert model is not None
     settings = {
-        "f": np.array([frequency]),
+        "f": jnp.array([frequency]),
         "length": length,
         "cross_section": "coplanar_waveguide",
     }
