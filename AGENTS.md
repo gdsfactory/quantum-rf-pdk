@@ -186,6 +186,11 @@ All PRs must pass:
 1. **Use JAX for analytical models**: When implementing analytical models for S-parameters, prefer using JAX-compatible
    functions (e.g., `jnp` instead of `np`, `jaxellip` for elliptic integrals) and enable JIT compilation with
    `@partial(jax.jit, inline=True)` for helper functions.
+1. **Prefer JAX over numpy**: Outside the models too, reach for `jax.numpy` (`jnp`) or `jax.*` instead of `numpy` in
+   tests, notebooks, and any code that already depends on jax. Keep `numpy` only where JAX has no equivalent or would
+   break things: `qpdk/` code that must import without jax (it is not a core dependency), `np.testing`, file I/O
+   (`np.loadtxt`, `np.savetxt`, `np.load`), `np.random.default_rng`, in-place array mutation, and arrays handed to tools
+   that need real numpy (MATLAB, HFSS, COMSOL, scqubits, netket).
 1. **Keep SAX models jittable**: S-parameter (SAX) models must always support JAX JIT compilation. Avoid Python features
    that break jitting, e.g. control flow that depends on traced values (`if`/`for`/`while` on array values), in-place
    array mutation, or data-dependent shapes. Use `jnp` operations and `jax.lax` control flow (`lax.cond`, `lax.scan`,
