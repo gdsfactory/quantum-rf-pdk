@@ -17,6 +17,26 @@ from qpdk.models.datasets import GridInterpolator
 
 
 @pytest.mark.skipif(
+    os.environ.get("QPDK_RUN_PALACE") != "1",
+    reason="Requires the experiment dependencies",
+)
+def test_container_launcher_replacement(tmp_path: Path) -> None:
+    generator = runpy.run_path(
+        str(Path(__file__).resolve().parents[2] / "datasets/plate_capacitor.py")
+    )
+    image = tmp_path / "palace.sif"
+    image.write_bytes(b"launcher test")
+    wrapper = tmp_path / "palace-container"
+    wrapper.write_text("old launcher", encoding="utf-8")
+    with wrapper.open(encoding="utf-8") as original:
+        executable, _ = generator["runtime"](tmp_path, None, image, "palace")
+        assert original.read() == "old launcher"
+    assert executable == wrapper
+    assert "apptainer exec --cleanenv" in wrapper.read_text(encoding="utf-8")
+    assert os.access(wrapper, os.X_OK)
+
+
+@pytest.mark.skipif(
     os.environ.get("QPDK_RUN_PALACE") != "1", reason="Requires a real Palace runtime"
 )
 def test_interpolation_against_fresh_palace(tmp_path: Path) -> None:
