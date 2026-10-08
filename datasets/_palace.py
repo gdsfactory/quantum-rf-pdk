@@ -10,6 +10,7 @@ import logging
 import shlex
 import shutil
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import gmsh
 import numpy as np
@@ -53,15 +54,19 @@ def runtime(
     if sif is not None:
         workdir.mkdir(parents=True, exist_ok=True)
         executable = workdir.resolve() / "palace-container"
-        executable.write_text(
+        wrapper = (
             '#!/bin/sh\nset -eu\nranks=1\nwhile [ "$#" -gt 0 ]; do\n'
             '  case "$1" in\n    -np) ranks="$2"; shift 2 ;;\n'
             "    -nt) shift 2 ;;\n    *) break ;;\n  esac\ndone\n"
             f"exec apptainer exec --cleanenv {shlex.quote(str(sif.resolve()))} "
-            f'mpirun --oversubscribe -np "$ranks" {shlex.quote(binary)} "$@"\n',
-            encoding="utf-8",
+            f'mpirun --oversubscribe -np "$ranks" {shlex.quote(binary)} "$@"\n'
         )
-        executable.chmod(0o755)
+        # Replace the inode; a completed launcher can still be open on another node.
+        with TemporaryDirectory(dir=workdir) as staging:
+            staged = Path(staging) / executable.name
+            staged.write_text(wrapper, encoding="utf-8")
+            staged.chmod(0o755)
+            staged.replace(executable)
     return executable.resolve(), {
         "runtime_sha256": digest,
         "container_binary": binary if sif else None,
