@@ -62,6 +62,14 @@ Applies to all Python in the repository. See also the path-specific files for `q
   string — `r"..."` or `rf"..."` — because `"\text{}"` in a plain string silently becomes a tab character. In an
   f-string, literal braces must be doubled: `rf"$f_\text{{r}} = {f / 1e9:.2f}\,\text{{GHz}}$"`.
 
+## JAX over numpy
+
+- Prefer `jax.numpy` (`jnp`) or `jax.*` over `numpy` in new or changed code, notably tests and notebooks. Flag a new
+  `np.` call where a `jnp` equivalent would do.
+- Do not flag `numpy` where it is required: `qpdk/` code that must import without jax (jax is not a core dependency),
+  `np.testing`, file I/O (`np.loadtxt`, `np.savetxt`, `np.load`), `np.random.default_rng`, in-place array mutation, and
+  arrays passed to tools that need real numpy (MATLAB, HFSS, COMSOL, scqubits, netket).
+
 ## Lazy imports of heavy/optional dependencies
 
 These packages must only be imported inside the function that uses them — ruff's `flake8-tidy-imports.require-lazy`
