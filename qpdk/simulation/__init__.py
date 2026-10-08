@@ -24,11 +24,8 @@ Extractor.
 
 **Palace workflow:**
 
-1. Configure :class:`~qpdk.simulation.palace.Palace` with a work directory and
-   a local or container command.
-2. Extract a Maxwell capacitance matrix with
-   :meth:`~qpdk.simulation.palace.Palace.capacitance`.
-3. Generate a reusable sweep with :mod:`qpdk.models.datasets.plate_capacitor`.
+Run ``uv run --script datasets/plate_capacitor.py`` from a checkout. The script
+uses gsim's electrostatic APIs and writes a self-describing dataset for lookup.
 
 **COMSOL workflow:**
 
@@ -83,12 +80,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from qpdk.simulation.comsol.model import COMSOL
     from qpdk.simulation.hfss import HFSS
-    from qpdk.simulation.palace import ElectrostaticSettings, Palace
     from qpdk.simulation.q3d import Q2D, Q3D
 
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
-    "Palace": ("qpdk.simulation.palace", "Palace"),
-    "ElectrostaticSettings": ("qpdk.simulation.palace", "ElectrostaticSettings"),
     "COMSOL": ("qpdk.simulation.comsol.model", "COMSOL"),
     "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),
     "add_materials_to_aedt": ("qpdk.simulation.aedt_base", "add_materials_to_aedt"),
@@ -158,8 +152,6 @@ __all__ = [
     "ComsolFeedPort",
     "ComsolLayout",
     "ComsolPolygon",
-    "ElectrostaticSettings",
-    "Palace",
     "add_capacitance_study",
     "add_cpw_rf_study",
     "add_materials_to_aedt",
