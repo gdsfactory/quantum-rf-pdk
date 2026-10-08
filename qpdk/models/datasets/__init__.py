@@ -22,6 +22,7 @@ from qpdk.models.datasets.metadata import (
     Quantity,
     QuantityKind,
 )
+from qpdk.models.datasets.models import cpw_coupling_model
 from qpdk.models.datasets.store import DeltaStore, LFSPointerError, ParquetParts
 from qpdk.models.datasets.table import (
     DATASETS_PATH,
@@ -51,6 +52,7 @@ __all__ = [
     "QuantityKind",
     "RunStatus",
     "check_maxwell",
+    "cpw_coupling_model",
     "maxwell_to_mutual",
     "schema",
     "sweep",

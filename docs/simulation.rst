@@ -128,10 +128,11 @@ Requires the ``delta`` extra.
 Generating Palace datasets
 ==========================
 
-The bundled ``plate_capacitor_palace`` dataset contains real electrostatic extractions.
-``datasets/plate_capacitor.py`` defines a complete experiment with its grid, settings,
-metadata and solver function. Its inline dependencies select the Python 3.12 environment
-required by gsim; generation code is not installed with QPDK.
+The bundled ``plate_capacitor_palace`` and ``cpw_coupling_palace`` datasets contain real
+Palace electrostatic extractions. Their standalone scripts in ``datasets/`` define the
+grid, settings, metadata and solver function. Inline dependencies select the Python 3.12
+environment required by gsim; generation scripts are excluded from the installed
+package.
 
 Preview or run the bundled 27-point sweep from a checkout:
 
@@ -142,12 +143,10 @@ Preview or run the bundled 27-point sweep from a checkout:
     uv run --script datasets/plate_capacitor.py --sif /path/to/palace.sif
 
 Copy the script beside the original in ``datasets/`` and edit ``GRID`` and ``SETTINGS``
-for another experiment. It uses gsim's ``ElectrostaticSim`` for execution and
-``load_capacitance`` for reading results. A small geometry-specific Gmsh mesher in the
-script preserves separate terminals on the same physical layer and the coplanar ground
-frame. The current gsim layer-based terminal API cannot distinguish these electrodes,
-and its planar mesher fails on this geometry. The reusable dataset package contains no
-solver wrapper.
+for another experiment. Meshwell meshes labelled conductor sheets and the surrounding
+air and silicon volumes. The shared experiment helper uses gsim to write the Palace
+configuration, run ``ElectrostaticSim`` and load capacitance matrices. Lookup models
+need none of these simulation dependencies.
 
 Each geometry retains its inputs, mesh, config, solver log and results under
 ``--workdir``. Rerunning reuses matching completed solves. Extend the grid while
@@ -158,7 +157,24 @@ runs fingerprint only the supplied executable.
 
 Set ``save_fields=True`` for ParaView outputs. Compare representative geometries at
 finer ``near_mesh`` sizes and larger ``domain_pad`` before relying on small differences.
-This example models perfect conductor sheets on silicon with a separate ground frame.
+The plate example has a separate ground frame. The CPW example is a uniform slice of two
+identical traces with outer ground rails, sweeping trace width, outer slot width and
+inter-trace gap. ``cpw_coupling_model()`` converts its capacitance lookup into a
+jittable four-port quasi-TEM SAX model; see the notebook for geometry heatmaps and
+S-parameters.
+
+Both scripts support disjoint rectangular shards with ``--shard INDEX --shards COUNT``.
+Use separate output and work directories for each worker, then merge after all succeed.
+For the CPW grid, the generic Slurm helper groups 36 geometries per task:
+
+::
+
+    sbatch --array=0-9 datasets/slurm_array.sh datasets/cpw_coupling.py build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
+    uv run --script datasets/cpw_coupling.py --merge-shards build/cpw-shards/shard-* --output build/datasets/cpw_coupling_palace
+
+Supply your scheduler's partition and resource options to ``sbatch``. Merging checks
+matching provenance, successful results and exact coverage before publishing. Keep the
+experiment, runtime and array size fixed when resuming.
 
 .. automodule:: qpdk.models.datasets
 
@@ -178,4 +194,7 @@ This example models perfect conductor sheets on silicon with a separate ground f
     :members:
 
 .. automodule:: qpdk.models.datasets.capacitance
+    :members:
+
+.. automodule:: qpdk.models.datasets.models
     :members:
