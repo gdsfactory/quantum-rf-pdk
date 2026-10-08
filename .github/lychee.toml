@@ -1,5 +1,7 @@
 # .github/lychee.toml
 
+user_agent = "QPDK documentation link checker"
+
 # Exclude some common patterns
 exclude = [
   # localhost
