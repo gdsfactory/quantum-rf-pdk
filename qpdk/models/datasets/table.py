@@ -20,6 +20,18 @@ Column           Type         Meaning
 The :class:`~qpdk.models.datasets.metadata.DatasetMetadata` is stored inside the files
 (see :mod:`qpdk.models.datasets.store`), so a dataset is self-describing and nothing
 but its Parquet parts or Delta table.
+
+.. only:: html
+
+    .. mermaid::
+
+        flowchart LR
+            A["Python generator: metadata + grid"] --> B["Palace solves"]
+            B --> C["Validated Parquet parts or Delta table"]
+            C --> D["Lazy scan: filter + select"]
+            D --> E["Dense grid for one quantity and variant"]
+            E --> F["JAX interpolation"]
+            F --> G["SAX circuit model"]
 """
 
 from __future__ import annotations
@@ -207,9 +219,32 @@ class Dataset:
 
         Returns:
             The dense grid of ``quantity``.
+
+        Raises:
+            DatasetError: If the selected rows are invalid or variants are ambiguous.
         """
+        self.metadata.quantity(quantity)
+        if set(variant) != set(self.metadata.variants):
+            raise DatasetError(
+                self.metadata.name,
+                [
+                    f"Select one value of each variant {list(self.metadata.variants)}, got {variant}."
+                ],
+            )
+        import polars as pl  # ruff: ignore[import-outside-top-level]
+
+        selected = (
+            self
+            .scan()
+            .filter(
+                pl.col("quantity") == quantity,
+                *(pl.col(name) == value for name, value in variant.items()),
+            )
+            .collect()
+        )
+        validate(selected, self.metadata)
         return to_grid(
-            self.table, self.metadata, quantity, allow_missing=allow_missing, **variant
+            selected, self.metadata, quantity, allow_missing=allow_missing, **variant
         )
 
     def append(self, frame: pl.DataFrame, *, part: str | None = None) -> str:
@@ -222,17 +257,62 @@ class Dataset:
 
         Returns:
             What was written: a part path, or a Delta URI and version.
+
+        Raises:
+            DatasetError: If rows duplicate existing entries or mix run identities.
         """
         import polars as pl  # ruff: ignore[import-outside-top-level]
 
         frame = frame.select(schema(self.metadata).names()).cast(
             schema(self.metadata)  # pyrefly: ignore[bad-argument-type]
         )
+        validate(frame, self.metadata)
+        point_columns = [*self.metadata.variants, *(a.name for a in self.metadata.axes)]
         try:
-            existing = [self.scan().collect()]
+            existing = self.scan()
         except FileNotFoundError:
-            existing = []
-        validate(pl.concat([*existing, frame]), self.metadata)
+            existing = None
+        if existing is not None:
+            keys = _key_columns(self.metadata)
+            overlaps = (
+                existing
+                .filter(
+                    *(
+                        pl.col(name).is_in(frame[name].unique().implode())
+                        for name in point_columns
+                    ),
+                )
+                .select(keys)
+                .join(frame.lazy().select(keys), on=keys, how="semi", nulls_equal=True)
+                .limit(5)
+                .collect()
+            )
+            if overlaps.height:
+                raise DatasetError(
+                    self.metadata.name, [f"duplicate entries, e.g. {overlaps.rows()}."]
+                )
+            run_columns = ["run_id", "status", *point_columns]
+            runs = (
+                pl
+                .concat([
+                    existing.filter(
+                        pl.col("run_id").is_in(frame["run_id"].unique().implode())
+                    ).select(run_columns),
+                    frame.lazy().select(run_columns),
+                ])
+                .group_by("run_id")
+                .agg(pl.struct(["status", *point_columns]).n_unique().alias("points"))
+                .filter(pl.col("points") > 1)
+                .limit(5)
+                .collect()
+            )
+            if runs.height:
+                raise DatasetError(
+                    self.metadata.name,
+                    [
+                        f"Runs mix parameter points or statuses: {runs['run_id'].to_list()}."
+                    ],
+                )
         written = self.store.write(
             frame.sort(_key_columns(self.metadata), nulls_last=True),
             self.metadata,

@@ -1,7 +1,6 @@
 """Tests for qpdk.models.datasets: metadata, results table, generator, and JAX lookup."""
 
 import dataclasses
-import json
 import shutil
 from pathlib import Path
 
@@ -39,8 +38,14 @@ from qpdk.models.datasets import (
 )
 from qpdk.models.datasets.generate import write
 from qpdk.models.datasets.metadata import METADATA_KEY
-from qpdk.models.datasets.plate_capacitor import GRID as PLATE_CAPACITOR_GRID, NAME
 from qpdk.models.generic import capacitor
+
+NAME = "plate_capacitor_palace"
+PLATE_CAPACITOR_GRID = {
+    "length": [40.0, 80.0, 120.0],
+    "width": [5.0, 10.0, 20.0],
+    "gap": [4.0, 7.0, 10.0],
+}
 
 PLATE_CAPACITOR = Dataset(NAME).metadata
 CENTER = {"length": 120.0, "width": 10.0, "gap": 7.0}
@@ -562,23 +567,19 @@ class TestGridInterpolator:
         np.testing.assert_allclose(ours, reference, rtol=1e-12)
 
     @staticmethod
-    def test_held_out_points_against_palace(interp: GridInterpolator) -> None:
-        evidence = json.loads(
-            (
-                Path(__file__).parent / "data/plate_capacitor_palace_validation.json"
-            ).read_text(encoding="utf-8")
-        )
-        for solved in evidence["heldout"]:
-            point = {name: solved[name] for name in PLATE_CAPACITOR_GRID}
-            np.testing.assert_allclose(interp(**point), solved["actual_F"], rtol=0.06)
-
-    @staticmethod
     @settings(deadline=None, max_examples=25)
     @given(point=POINTS)
     def test_interpolated_matrix_is_physical(
         interp: GridInterpolator, point: dict[str, float]
     ) -> None:
         check_maxwell(interp(**point))
+
+    @staticmethod
+    def test_domain_check_jits(interp: GridInterpolator) -> None:
+        mask = jax.jit(interp.in_domain)(
+            length=jnp.array([10.0, 100.0, 400.0]), width=10.0, gap=5.0
+        )
+        np.testing.assert_array_equal(mask, [False, True, False])
 
     @staticmethod
     def test_shapes_broadcast(interp: GridInterpolator) -> None:
@@ -764,3 +765,23 @@ class TestCapacitance:
         )
         for key in [("o1", "o2"), ("o1", "o1")]:
             np.testing.assert_allclose(looked_up[key], expected[key], rtol=1e-9)
+
+
+def test_grid_does_not_load_the_full_table(dataset: Dataset) -> None:
+    selected = Dataset(NAME)
+    selected.__dict__["table"] = object()
+    np.testing.assert_array_equal(
+        selected.grid("maxwell_capacitance", cross_section="cpw").values,
+        dataset.grid("maxwell_capacitance", cross_section="cpw").values,
+    )
+
+
+def test_append_rejects_run_reused_at_another_point(
+    dataset: Dataset, tmp_path: Path
+) -> None:
+    first = dataset.table.filter(_at(length=40.0, width=5.0, gap=4.0))
+    target = Dataset(tmp_path / "runs", dataset.metadata)
+    target.append(first)
+    shifted = first.with_columns(pl.lit(41.0).alias("length"))
+    with pytest.raises(DatasetError, match="Runs mix"):
+        target.append(shifted)

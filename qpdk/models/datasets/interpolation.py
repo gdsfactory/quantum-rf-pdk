@@ -15,7 +15,6 @@ from typing import Literal
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 from jax.scipy.interpolate import RegularGridInterpolator
 
 from qpdk.models.datasets.table import Grid
@@ -55,10 +54,13 @@ class GridInterpolator:
         # A single-valued axis has no cell to interpolate in; drop it from the
         # interpolator and keep only its domain check.
         self._varying = tuple(i for i, c in enumerate(grid.coords) if len(c) > 1)
-        values = grid.values.reshape(*grid.values.shape[: len(grid.axes)], -1)
-        values = values.reshape(*(values.shape[i] for i in self._varying), -1)
         with jax.ensure_compile_time_eval():
-            self._values = jnp.asarray(values)
+            values = jnp.reshape(
+                jnp.asarray(grid.values), (*grid.values.shape[: len(grid.axes)], -1)
+            )
+            self._values = jnp.reshape(
+                values, (*(values.shape[i] for i in self._varying), -1)
+            )
             self._interpolate = (
                 RegularGridInterpolator(
                     tuple(jnp.asarray(grid.coords[i]) for i in self._varying),
@@ -113,16 +115,16 @@ class GridInterpolator:
             )
         return result
 
-    def in_domain(self, **params: np.typing.ArrayLike) -> np.ndarray:
-        """Eagerly check which query points lie inside the validated domain.
+    def in_domain(self, **params: jax.typing.ArrayLike) -> jax.Array:
+        """Check which query points lie inside the validated domain.
 
         Returns:
             Boolean mask of the broadcast shape.
         """
-        xs = np.broadcast_arrays(
-            *(np.asarray(params[name], dtype=float) for name in self.axis_names)
+        xs = jnp.broadcast_arrays(
+            *(jnp.asarray(params[name], dtype=float) for name in self.axis_names)
         )
-        inside = np.ones(xs[0].shape, dtype=bool)
+        inside = jnp.ones(xs[0].shape, dtype=bool)
         for x, name in zip(xs, self.axis_names, strict=True):
             lo, hi = self.domain[name]
             inside &= (x >= lo) & (x <= hi)

@@ -45,7 +45,7 @@ repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
 circulax = ["circulax>=0.2.3", "optax"]
 comsol = ["MPh>=1.4,<2"]
 # Delta Lake storage for FEM datasets (Dataset(..., delta=True)).
-delta = ["deltalake>=1.1", "polars"]
+delta = ["deltalake>=1.1", "polars>=2,<3"]
 # Dependencies of the gdsfactoryplus v2 SDK exercised by the gfp test suite.
 # The SDK itself is not on PyPI: gdsfactoryplus >= 2.0 ships bundled inside
 # the public GDSFactory+ VS Code extension, and `just test-gfp` extracts it
@@ -61,7 +61,7 @@ gdsfactoryplus = [
   "sax>=0.18.2,<1",
 ]
 graphics = ["trimesh", "pyglet<3"]
-hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
+hfss = ["polars>=2,<3", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]~=2.1.0",
   "jaxellip",
@@ -70,7 +70,7 @@ models = [
   "sax>=0.18.2,<1",
   "scikit-rf",
   "sympy",
-  "polars",
+  "polars>=2,<3",
   "pandas[parquet]",
 ]
 netket = ["netket>=3.12", "flax", "optax"]
@@ -110,7 +110,7 @@ docs-models = [
   "optax",
   "optuna",
   "pandas[parquet]",
-  "polars",
+  "polars>=2,<3",
   "pyaedt[graphics]>=0.15.0",
   "pymablock>=2.2.1",
   "qutip-jax>=0.1.1",
@@ -225,6 +225,7 @@ project-excludes = [
   "docs/**",
   "build/**",
   "dist/**",
+  "datasets/**",
   "*.egg-info/**",
   ".venv/**",
   # Exclude samples that may have experimental code
