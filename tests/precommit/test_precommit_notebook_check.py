@@ -51,7 +51,7 @@ def _load_header_check() -> t.Any:
     Returns:
         The imported module.
     """
-    path = Path(__file__).resolve().parent.parent / HEADER_CHECK_REL_PATH
+    path = Path(__file__).resolve().parents[2] / HEADER_CHECK_REL_PATH
     spec = importlib.util.spec_from_file_location("check_jupytext_header", path)
     assert spec is not None, f"Cannot load {path}"
     assert spec.loader is not None, f"No loader for {path}"
@@ -88,7 +88,7 @@ def _script_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
     Returns:
         Path to the temporary git repository root.
     """
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(__file__).resolve().parents[2]
     script = repo_root / SCRIPT_REL_PATH
     assert script.exists(), f"Script not found at {script}"
     if shutil.which("git") is None:
@@ -180,7 +180,7 @@ def test_all_existing_notebooks_have_sources() -> None:
     MATLAB-kernel notebooks; either is accepted. This is a read-only filesystem
     check against the real notebooks/ directory.
     """
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(__file__).resolve().parents[2]
     notebooks_dir = repo_root / "notebooks"
     src_dir = notebooks_dir / "src"
     assert notebooks_dir.is_dir(), f"notebooks/ directory not found at {notebooks_dir}"
@@ -238,7 +238,7 @@ def test_leaked_jupytext_header_detection(tmp_path: Path) -> None:
 def test_existing_notebooks_do_not_leak_jupytext_header() -> None:
     """No notebook in notebooks/ renders its jupytext YAML header as a cell."""
     module = _load_header_check()
-    notebooks_dir = Path(__file__).resolve().parent.parent / "notebooks"
+    notebooks_dir = Path(__file__).resolve().parents[2] / "notebooks"
 
     for ipynb_file in sorted(notebooks_dir.glob("*.ipynb")):
         assert not module.has_leaked_header(ipynb_file), (
@@ -256,7 +256,7 @@ def test_matlab_sources_have_reflow_safe_headers() -> None:
     inner indent of zero or of two-or-more spaces are passed through untouched, so every
     header line must use one of those.
     """
-    sources_dir = Path(__file__).resolve().parent.parent / "notebooks" / "src"
+    sources_dir = Path(__file__).resolve().parents[2] / "notebooks" / "src"
 
     for matlab_file in sorted(sources_dir.glob("*.m")):
         lines = matlab_file.read_text(encoding="utf-8").splitlines()

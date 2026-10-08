@@ -17,7 +17,7 @@ def _load_check() -> t.Any:
     Returns:
         The imported module.
     """
-    path = Path(__file__).resolve().parent.parent / SCRIPT_REL_PATH
+    path = Path(__file__).resolve().parents[2] / SCRIPT_REL_PATH
     spec = importlib.util.spec_from_file_location("check_changelog_version", path)
     assert spec is not None, f"Cannot load {path}"
     assert spec.loader is not None, f"No loader for {path}"

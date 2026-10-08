@@ -62,5 +62,5 @@ uses them, not at module level.
 ## Tests that must accompany a model change
 
 - Unit tests in `tests/models/` covering behaviour, passivity, and reciprocity.
-- Model regression references are regenerated with `just test-models-force` into `tests/test_models_regression/` and
-  committed alongside the change. A numeric reference diff needs an explanation in the PR.
+- Model regression references are regenerated with `just test-models-force` into `tests/models/test_models_regression/`
+  and committed alongside the change. A numeric reference diff needs an explanation in the PR.

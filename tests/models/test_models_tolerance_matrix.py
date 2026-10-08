@@ -24,7 +24,7 @@ import pytest
 from qpdk import logger
 from qpdk.models import models
 
-# Kept consistent with tests/test_models_regression.py, which owns the
+# Kept consistent with tests/models/test_models_regression.py, which owns the
 # tolerance settings and frequency grid for the regression references.
 # Duplicated here because importing constants across top-level test modules
 # is fragile under pytest's importlib import mode.

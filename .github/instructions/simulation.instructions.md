@@ -27,7 +27,7 @@ carry more weight than usual here.
 
 ## Tests
 
-- New simulation code needs a test marked `@pytest.mark.hfss` in `tests/test_hfss.py`, even though it will be skipped in
-  CI.
+- New simulation code needs a test marked `@pytest.mark.hfss` in `tests/hfss/test_hfss.py`, even though it will be
+  skipped in CI.
 - Pure logic (setup construction, result parsing, unit conversion) should be factored out and tested **without** AEDT so
   that something is actually exercised in CI. Flag a change where all new logic is unreachable without a licence.

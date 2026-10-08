@@ -26,7 +26,7 @@ from qpdk.simulation.comsol.results import (
     write_json_atomically,
 )
 
-NOTEBOOKS = Path(__file__).resolve().parents[1] / "notebooks" / "src"
+NOTEBOOKS = Path(__file__).resolve().parents[2] / "notebooks" / "src"
 QUBIT_NOTEBOOK = NOTEBOOKS / "comsol_qubit_capacitance.py"
 CPW_NOTEBOOK = NOTEBOOKS / "comsol_cpw_resonator.py"
 

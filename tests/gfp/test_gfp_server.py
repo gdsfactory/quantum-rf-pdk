@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from conftest import GFP_REQUIRED_ENV
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _find_gfp_binary() -> str:

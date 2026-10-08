@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.gfp
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SAMPLE_STEM = "resonator_test_chip_yaml"
 SAMPLE_DIR = PROJECT_ROOT / "qpdk/samples"
 GSCH_PATH = SAMPLE_DIR / f"{SAMPLE_STEM}.gsch"

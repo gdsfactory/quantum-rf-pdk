@@ -75,8 +75,14 @@ qpdk/                   Core Python package
 tests/                  pytest suite
   gds_ref/              GDS regression reference files
   test_pdk/             Settings and netlist regression YAML
-  test_models_regression/ Model regression reference data
-  models/               Model unit tests
+  models/               Model unit and regression tests
+    test_models_regression/ Model regression reference data
+  helper/               Helper function tests
+  comsol/               COMSOL integration tests
+  matlab/               MATLAB integration tests
+  hfss/                 HFSS integration tests
+  gfp/                  GDSFactory+ integration tests
+  precommit/            Tests for repo pre-commit scripts
 docs/                   Sphinx documentation source
 notebooks/src/          Jupytext notebook sources (.py percent format, .m for MATLAB)
 pyproject.toml          Metadata, dependencies, ruff/pyrefly/pytest/interrogate config
