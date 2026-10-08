@@ -136,7 +136,8 @@ def sweep(
         Long-format results table, not yet validated or stored.
 
     Raises:
-        ValueError: if ``grid`` or ``variants`` do not match the metadata.
+        ValueError: If the grid or variants differ from metadata, a quantity has
+            the wrong shape, or a real quantity contains imaginary values.
     """
     import polars as pl  # ruff: ignore[import-outside-top-level]
 
@@ -156,6 +157,16 @@ def sweep(
         status = RunStatus.OK if result is not None else RunStatus.FAILED
         for quantity in metadata.quantities:
             value = None if result is None else np.asarray(result[quantity.name])
+            if value is not None:
+                shape = (len(metadata.terminals),) * 2 if quantity.matrix else ()
+                if value.shape != shape:
+                    raise ValueError(
+                        f"{quantity.name} at {point}: expected shape {shape}, got {value.shape}"
+                    )
+                if not quantity.complex and np.any(value.imag != 0):
+                    raise ValueError(
+                        f"{quantity.name} at {point}: imaginary values require complex=True"
+                    )
             pairs = (
                 list(product(enumerate(metadata.terminals), repeat=2))
                 if quantity.matrix

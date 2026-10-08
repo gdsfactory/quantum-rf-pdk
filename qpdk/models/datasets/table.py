@@ -263,6 +263,12 @@ class Dataset:
         """
         import polars as pl  # ruff: ignore[import-outside-top-level]
 
+        stored = self.store.metadata()
+        if stored is not None and stored != self.metadata:
+            raise DatasetError(
+                self.metadata.name,
+                ["The given metadata differs from the metadata stored in the files."],
+            )
         frame = frame.select(schema(self.metadata).names()).cast(
             schema(self.metadata)  # pyrefly: ignore[bad-argument-type]
         )
