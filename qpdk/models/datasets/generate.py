@@ -14,6 +14,7 @@ import shutil
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from itertools import product
+from math import prod
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -22,7 +23,7 @@ from jax.typing import ArrayLike
 
 from qpdk.models.datasets.metadata import DatasetMetadata
 from qpdk.models.datasets.store import ParquetParts
-from qpdk.models.datasets.table import Dataset, RunStatus, schema, validate
+from qpdk.models.datasets.table import Dataset, RunStatus, schema, to_grid, validate
 
 if TYPE_CHECKING:
     import polars as pl
@@ -33,6 +34,85 @@ type Solve = Callable[..., Mapping[str, ArrayLike] | None]
 Matrix quantities are ``(n, n)`` arrays in terminal order, scalars are numbers,
 and ``None`` records the run as failed.
 """
+
+
+def partition_grid(
+    grid: Mapping[str, Sequence[float]], *, shard: int, shards: int
+) -> dict[str, list[float]]:
+    """Select one disjoint rectangular shard of a parameter grid.
+
+    Split the longest axis in round-robin order. Each shard remains a complete
+    Cartesian grid, so it can be generated and checked independently. Use the
+    same grid and shard count for every worker; shard indices start at zero.
+    Scheduling does not change geometry, solver inputs or run identities.
+
+    Returns:
+        A grid for one worker, without modifying the input.
+
+    Raises:
+        ValueError: If the grid is empty, an axis is empty, or shard settings
+            would create an empty worker or an invalid index.
+    """
+    if not grid or any(not len(values) for values in grid.values()):
+        raise ValueError("Every grid axis must contain at least one value")
+    axis = max(sorted(grid), key=lambda name: len(grid[name]))
+    if not 0 <= shard < shards <= len(grid[axis]):
+        raise ValueError(f"Require 0 <= shard < shards <= {len(grid[axis])}")
+    return {
+        name: list(values[shard::shards] if name == axis else values)
+        for name, values in grid.items()
+    }
+
+
+def merge(
+    parts: Sequence[Path | str],
+    output: Path | str,
+    *,
+    grid: Mapping[str, Sequence[float]],
+    variants: Mapping[str, Sequence[str]] | None = None,
+) -> Dataset:
+    """Publish independently generated shards after checking the entire sweep.
+
+    Workers write separate dataset directories. Only this single coordinator
+    writes the final directory. Metadata must match, points must occur exactly
+    once, and every requested point and quantity must have successful results.
+
+    Returns:
+        The complete published dataset.
+
+    Raises:
+        ValueError: If shards are absent, disagree, overlap, fail, or do not
+            cover the requested grid and variants.
+    """
+    import polars as pl  # ruff: ignore[import-outside-top-level]
+
+    if not parts:
+        raise ValueError("At least one shard is required")
+    datasets = [Dataset(part) for part in parts]
+    metadata = datasets[0].metadata
+    if any(dataset.metadata != metadata for dataset in datasets):
+        raise ValueError("Shard metadata differs")
+    frame = pl.concat([dataset.scan() for dataset in datasets]).collect()
+    validate(frame, metadata)
+    keys = [*(axis.name for axis in metadata.axes), *metadata.variants]
+    values = {**grid, **(variants or {})}
+    if set(values) != set(keys):
+        raise ValueError(f"Expected grid and variant columns {keys}")
+    if any(
+        frame[name].unique().sort().to_list() != sorted(axis)
+        for name, axis in values.items()
+    ) or frame.select(keys).unique().height != prod(
+        len(axis) for axis in values.values()
+    ):
+        raise ValueError("Shards do not cover exactly the requested grid and variants")
+    selections = (
+        product(*(variants[name] for name in metadata.variants)) if variants else [()]
+    )
+    for selection in selections:
+        selected = dict(zip(metadata.variants, selection, strict=True))
+        for quantity in metadata.quantities:
+            to_grid(frame, metadata, quantity.name, allow_missing=False, **selected)
+    return write(output, metadata, frame)
 
 
 def sweep(
