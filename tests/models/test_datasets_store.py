@@ -13,7 +13,8 @@ import pytest
 
 from qpdk.models.datasets import Dataset, DatasetError, DeltaStore
 from qpdk.models.datasets.metadata import METADATA_KEY
-from qpdk.models.datasets.plate_capacitor import NAME
+
+NAME = "plate_capacitor_palace"
 
 deltalake = pytest.importorskip("deltalake")
 
