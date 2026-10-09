@@ -324,13 +324,14 @@ def test_rejects_a_floating_pair(dataset: Dataset, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "dataset_name", ["cpw_coupling_palace", "cpw_coupling_ground_strip_palace"]
+    ("dataset_name", "separations"),
+    [("cpw_coupling_palace", 35), ("cpw_coupling_ground_strip_palace", 27)],
 )
-def test_bundled_palace_grid_and_default_model(dataset_name: str) -> None:
+def test_bundled_palace_grid_and_model(dataset_name: str, separations: int) -> None:
     data = Dataset(dataset_name)
     assert not data.metadata.synthetic
     grid = data.grid("maxwell_capacitance")
-    assert grid.values.shape == (15, 13, 35, 2, 2)
+    assert grid.values.shape == (15, 13, separations, 2, 2)
     convergence = data.metadata.provenance["mesh_convergence"]
     change = data.grid("mesh_relative_change").values
     level = data.grid("mesh_refinement_level").values
@@ -352,9 +353,12 @@ def test_bundled_palace_grid_and_default_model(dataset_name: str) -> None:
     ).all()
     mutual = -np.asarray(grid.values)[..., 0, 1]
     assert (np.diff(mutual, axis=2) < 0).all()
-    model = cpw_coupling_model()
+    model = cpw_coupling_model(data)
     result = jax.jit(model)(
-        f=jnp.array([1e9, 5e9, 12e9]), width=9.0, cpw_gap=7.0, gap=10.0
+        f=jnp.array([1e9, 5e9, 12e9]),
+        width=9.0,
+        cpw_gap=7.0,
+        gap=jnp.array([10.0, 18.0, 35.0]),
     )
     ports = ("o1", "o2", "o3", "o4")
     s = np.stack(
