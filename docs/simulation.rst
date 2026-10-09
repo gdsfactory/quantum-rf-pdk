@@ -169,7 +169,14 @@ and the accepted ``mesh_near_size`` / ``mesh_far_size`` in SI units. Exhausting
 domains separately. Check interpolation with held-out geometries separately. The
 notebook demonstrates a lazy diagnostic scan and outlier flag. The plate example has a
 separate ground frame. The CPW example is a uniform slice of two identical traces with
-outer ground rails, sweeping trace width, outer slot width and inter-trace gap.
+outer ground rails, sweeping trace width, outer slot width and inter-trace gap. Select
+``--topology as-drawn`` to retain the ground strip of width ``max(gap - 2 * cpw_gap,
+0)`` left between the component's CPW etch masks. This produces
+``cpw_coupling_ground_strip_palace``, used by ``coupler_straight`` and the default
+distributed model. The default ``fully-etched`` experiment produces
+``cpw_coupling_palace`` for comparison with the unshielded analytical ECCPW formula. The
+two geometries agree when the CPW slots touch or overlap. Above that gap, their
+difference measures the shielding from the intervening ground strip.
 ``cpw_coupling_model()`` converts its capacitance lookup into a jittable four-port
 quasi-TEM SAX model; see the notebook for geometry heatmaps and S-parameters.
 

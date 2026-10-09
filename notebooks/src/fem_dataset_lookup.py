@@ -550,6 +550,7 @@ pl.DataFrame(rows)
 # ```bash
 # uv run --script qpdk/models/datasets/data/cpw_coupling.py --dry-run
 # uv run --script qpdk/models/datasets/data/cpw_coupling.py --sif /path/to/palace.sif
+# uv run --script qpdk/models/datasets/data/cpw_coupling.py --topology as-drawn --sif /path/to/palace.sif
 # ```
 #
 # The generator refines every geometry until each raw Maxwell entry changes by
@@ -728,9 +729,34 @@ for ax in axes:
 plt.show()
 
 # %% [markdown]
+# ### Ground left between the CPW slots
+#
+# `coupler_straight` etches a slot on each side of each trace. When the inter-trace
+# gap exceeds twice the slot width, a ground strip remains between the slots.
+# The `as-drawn` experiment keeps this strip. It matches the fully etched geometry
+# while the slots touch or overlap; beyond that point, the ground shields the traces.
+# The analytical ECCPW formula assumes a fully etched inner gap, so its difference
+# from the shielded result measures a geometry change as well as numerical error.
+#
+# %% tags=["keep_output"]
+layout_dataset = Dataset("cpw_coupling_ground_strip_palace")
+layout_lookup = GridInterpolator(layout_dataset.grid("maxwell_capacitance"))
+layout_mutual = (
+    -layout_lookup(width=10.0, cpw_gap=6.0, gap=gap_axis)[..., 0, 1] / slice_length
+)
+fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
+ax.loglog(gap_axis, fem * 1e12, label="Fully etched inner gap")
+ax.loglog(gap_axis, layout_mutual * 1e12, label="Drawn CPW slots")
+ax.axvline(12.0, color="gray", linestyle=":", label="Slots touch")
+ax.set_xlabel(r"Inter-trace gap ($\text{µm}$)")
+ax.set_ylabel(r"Mutual capacitance per length ($\text{pF/m}$)")
+ax.legend()
+plt.show()
+
+# %% [markdown]
 # ## A distributed four-port SAX model
 #
-# {func}`~qpdk.models.couplers.cpw_cpw_coupling_capacitance` uses this lookup in
+# {func}`~qpdk.models.couplers.cpw_cpw_coupling_capacitance` uses the layout-matching lookup in
 # {func}`~qpdk.models.couplers.coupler_straight`. For a distributed section,
 # {func}`~qpdk.models.couplers.cpw_coupling_model` loads and validates the grid
 # once, then returns a jittable model of the uniform coupled section. The slice
@@ -744,7 +770,7 @@ plt.show()
 # scattering entry; an open or short circuit must be connected explicitly in SAX.
 
 # %% tags=["keep_output"]
-cpw_model = cpw_coupling_model(cpw_dataset)
+cpw_model = cpw_coupling_model(layout_dataset)
 frequencies = jnp.linspace(0.1e9, 12e9, 301)
 fig, axes = plt.subplots(1, 2, figsize=(10, 3.8), constrained_layout=True)
 for gap in (2.0, 8.0, 25.0):
