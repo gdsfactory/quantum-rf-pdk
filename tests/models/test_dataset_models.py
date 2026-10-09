@@ -221,7 +221,26 @@ def test_bundled_palace_grid_and_default_model() -> None:
     data = Dataset("cpw_coupling_palace")
     assert not data.metadata.synthetic
     grid = data.grid("maxwell_capacitance")
-    assert grid.values.shape == (6, 6, 10, 2, 2)
+    assert grid.values.shape == (15, 13, 35, 2, 2)
+    convergence = data.metadata.provenance["mesh_convergence"]
+    change = data.grid("mesh_relative_change").values
+    level = data.grid("mesh_refinement_level").values
+    assert jnp.isfinite(change).all()
+    assert (change <= convergence["relative_tolerance"]).all()
+    assert (level >= 1).all()
+    assert (level == level.astype(int)).all()
+    for name, field in [("mesh_near_size", "near_mesh"), ("mesh_far_size", "far_mesh")]:
+        sizes = jnp.asarray([
+            settings[field] * 1e-6 for settings in convergence["settings_by_level"]
+        ])
+        np.testing.assert_allclose(
+            data.grid(name).values, sizes[level.astype(int)], rtol=1e-12
+        )
+    residual = data.grid("solver_relative_residual").values
+    assert jnp.isfinite(residual).all()
+    assert (
+        residual <= data.metadata.provenance["settings"]["tolerance"] * 1.00001
+    ).all()
     mutual = -np.asarray(grid.values)[..., 0, 1]
     assert (np.diff(mutual, axis=2) < 0).all()
     model = cpw_coupling_model()
