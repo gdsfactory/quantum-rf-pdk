@@ -10,16 +10,21 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 from qpdk.models.constants import ε_0, μ_0
-from qpdk.models.couplers import cpw_coupling_model
+from qpdk.models.couplers import (
+    cpw_coupling_model,
+    cpw_cpw_coupling_capacitance,
+)
 from qpdk.models.datasets import (
     Axis,
     Dataset,
     DatasetMetadata,
+    GridInterpolator,
     Quantity,
     QuantityKind,
     sweep,
 )
 from qpdk.models.datasets.generate import write
+from qpdk.tech import coplanar_waveguide
 
 
 @pytest.fixture(scope="module")
@@ -87,6 +92,29 @@ def test_reciprocal_and_lossless(dataset: Dataset, **point: float) -> None:
     np.testing.assert_allclose(
         s @ s.conj().swapaxes(-1, -2), np.broadcast_to(np.eye(4), s.shape), atol=1e-10
     )
+
+
+def test_coupling_capacitance_uses_the_drawn_ground_geometry() -> None:
+    layout = Dataset("cpw_coupling_ground_strip_palace")
+    unshielded = Dataset("cpw_coupling_palace")
+    gaps = jnp.array([8.0, 12.0, 16.0, 25.0, 250.0])
+    dimensions = dict(width=10.0, cpw_gap=6.0, gap=gaps)
+    actual_slice = GridInterpolator(layout.grid("maxwell_capacitance"))(**dimensions)
+    etched_slice = GridInterpolator(unshielded.grid("maxwell_capacitance"))(
+        **dimensions
+    )
+    slice_length = layout.metadata.provenance["settings"]["slice_length_um"]
+    cross_section = coplanar_waveguide(width=10.0, gap=6.0)
+    lookup = jax.jit(
+        lambda gap: cpw_cpw_coupling_capacitance(
+            f=5e9, length=500.0, gap=gap, cross_section=cross_section
+        )
+    )
+    np.testing.assert_allclose(
+        lookup(gaps), -actual_slice[..., 0, 1] * 500.0 / slice_length, rtol=1e-12
+    )
+    np.testing.assert_array_equal(actual_slice[:2], etched_slice[:2])
+    assert (-actual_slice[2:, 0, 1] < -etched_slice[2:, 0, 1]).all()
 
 
 def test_jit_vmap_and_geometry_derivatives(dataset: Dataset) -> None:
