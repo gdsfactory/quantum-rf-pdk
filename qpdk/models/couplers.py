@@ -10,7 +10,7 @@ import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
-from sax.models.rf import capacitor, tee
+from sax.models.rf import tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, μ_0
 from qpdk.models.cpw import (
@@ -379,9 +379,18 @@ def coupler_straight(
     """
     f = jnp.asarray(f)
     straight_settings = {"length": length / 2, "cross_section": cross_section}
-    capacitor_settings = {
-        "capacitance": cpw_cpw_coupling_capacitance(f, length, gap, cross_section),
-        "z0": cpw_z0_from_cross_section(cross_section, f),
+    capacitance = cpw_cpw_coupling_capacitance(f, length, gap, cross_section)
+    normalized_admittance = (
+        2j * jnp.pi * f * capacitance * cpw_z0_from_cross_section(cross_section, f)
+    )
+    # Admittance avoids the capacitor's infinite impedance at DC.
+    reflection = 1 / (1 + 2 * normalized_admittance)
+    transmission = 2 * normalized_admittance * reflection
+    capacitor = {
+        ("o1", "o1"): reflection,
+        ("o2", "o2"): reflection,
+        ("o1", "o2"): transmission,
+        ("o2", "o1"): transmission,
     }
 
     # Create straight instances with shared settings
@@ -395,7 +404,7 @@ def coupler_straight(
     instances = {
         **straight_instances,
         **tee_instances,
-        "capacitor": capacitor(f=f, **capacitor_settings),
+        "capacitor": capacitor,
     }
     connections = {
         "straight_1_1,o1": "tee_1,o1",
