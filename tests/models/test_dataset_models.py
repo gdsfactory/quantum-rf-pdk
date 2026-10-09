@@ -13,6 +13,7 @@ from hypothesis import given, settings, strategies as st
 from qpdk.models.constants import ε_0, μ_0
 from qpdk.models.couplers import (
     _GroundStripLookup,
+    coupler_straight,
     cpw_coupling_model,
     cpw_cpw_coupling_capacitance,
 )
@@ -78,6 +79,18 @@ def test_zero_length_connections(dataset: Dataset) -> None:
     expected = np.fliplr(np.eye(4))
     np.testing.assert_allclose(
         matrix(cpw_coupling_model(dataset), length=0), expected, atol=1e-12
+    )
+
+
+def test_layout_coupler_dc_limit() -> None:
+    actual = matrix(jax.jit(coupler_straight), f=jnp.array([0.0, 1e9, 5e9]))
+    assert jnp.isfinite(actual).all()
+    np.testing.assert_allclose(actual[0], np.fliplr(np.eye(4)), atol=1e-12)
+    np.testing.assert_allclose(actual, actual.swapaxes(-1, -2), atol=1e-12)
+    np.testing.assert_allclose(
+        actual @ actual.conj().swapaxes(-1, -2),
+        np.broadcast_to(np.eye(4), actual.shape),
+        atol=1e-10,
     )
 
 
