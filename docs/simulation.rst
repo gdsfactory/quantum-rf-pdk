@@ -161,14 +161,17 @@ Every solve stores ``solver_relative_residual``, ``solver_iterations`` and
 ``fem_error_indicator_norm`` alongside its capacitance. Missing diagnostics and
 unconverged terminal solves prevent publication. The FEM indicator is Palace's
 energy-normalized recovered-flux estimate, not a capacitance error bound. Scan and rank
-it to select refinement candidates; establish accuracy by comparing the capacitances
-from successively finer meshes and larger domains. Check interpolation with held-out
-geometries separately. The notebook demonstrates a lazy diagnostic scan and outlier
-flag. The plate example has a separate ground frame. The CPW example is a uniform slice
-of two identical traces with outer ground rails, sweeping trace width, outer slot width
-and inter-trace gap. ``cpw_coupling_model()`` converts its capacitance lookup into a
-jittable four-port quasi-TEM SAX model; see the notebook for geometry heatmaps and
-S-parameters.
+it to select refinement candidates. The CPW script also refines every geometry until all
+raw matrix entries change by at most ``--mesh-tolerance`` (default 1%) and the identical
+traces agree within 1%. It stores ``mesh_relative_change``, ``mesh_refinement_level``
+and the accepted ``mesh_near_size`` / ``mesh_far_size`` in SI units. Exhausting
+``--max-refinements`` blocks publication. This measures mesh sensitivity; compare larger
+domains separately. Check interpolation with held-out geometries separately. The
+notebook demonstrates a lazy diagnostic scan and outlier flag. The plate example has a
+separate ground frame. The CPW example is a uniform slice of two identical traces with
+outer ground rails, sweeping trace width, outer slot width and inter-trace gap.
+``cpw_coupling_model()`` converts its capacitance lookup into a jittable four-port
+quasi-TEM SAX model; see the notebook for geometry heatmaps and S-parameters.
 
 Both scripts support disjoint rectangular shards with ``--shard INDEX --shards COUNT``.
 Use separate output and work directories for each worker, then merge after all succeed.
@@ -212,7 +215,7 @@ experiment, runtime and array size fixed when resuming.
 Without Slurm, run the generator directly to solve the full grid sequentially. The
 notebook also shows a local shard loop with the same merge step. Each Palace solve
 defaults to four MPI ranks; the Slurm helper reserves four CPUs and sets one thread per
-rank. Its default array has eight tasks and can be overridden at submission.
+rank. Supply the array range explicitly at submission, starting at zero.
 
 ``qpdk.models.datasets.s_parameters_model`` loads a stored complex scattering matrix as
 a jittable SAX model with any number of labelled ports. ``capacitance_model`` converts a
