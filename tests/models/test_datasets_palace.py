@@ -72,6 +72,16 @@ def test_fractional_cross_section_conductors_belong_to_domain_mesh(
         segments = gmsh.model.mesh.getElementsByType(1)[1].reshape(-1, 2)
         assert len(segments) > 0
         assert all(tuple(sorted(map(int, segment))) in edges for segment in segments)
+        if topology == "as-drawn" and gap > 2 * cpw_gap:
+            strip = gap - 2 * cpw_gap
+            nodes, coordinates, _ = gmsh.model.mesh.getNodes()
+            positions = dict(zip(nodes, coordinates.reshape(-1, 3), strict=True))
+            inner = [
+                segment
+                for segment in segments
+                if all(abs(positions[node][0]) <= strip / 2 + 1e-8 for node in segment)
+            ]
+            assert len(inner) >= 4
     finally:
         gmsh.finalize()
 
