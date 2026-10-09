@@ -15,6 +15,11 @@ between separated CPW slots, matching ``coupler_straight``. The default
 ``fully-etched`` gap supplies a comparison with the analytical ECCPW formula.
 Perfect conductor sheets lie between air and silicon.
 
+The grounded experiment samples ``ground_strip_width = gap - 2 * cpw_gap``
+on a logarithmic grid. Its validated strip widths start at 0.01 µm; narrower
+positive strips require additional simulations. Logarithmic interpolation of
+coordinates and capacitance magnitudes resolves the rapid shielding onset.
+
 A uniform slice with natural end boundaries eliminates end fringing. Values
 are slice capacitances in F; divide by ``slice_length_um * 1e-6`` for F/m.
 The dataset-backed SAX model uses the quasi-TEM approximation and excludes
@@ -106,6 +111,39 @@ GRID = {
     ],
 }
 TERMINALS = ("lower", "upper")
+GROUND_GRID = {
+    "width": GRID["width"],
+    "cpw_gap": GRID["cpw_gap"],
+    "ground_strip_width": [
+        0.01,
+        0.015,
+        0.022,
+        0.033,
+        0.05,
+        0.075,
+        0.11,
+        0.16,
+        0.24,
+        0.36,
+        0.54,
+        0.8,
+        1.2,
+        1.8,
+        2.7,
+        4.0,
+        6.0,
+        9.0,
+        13.0,
+        16.0,
+        24.0,
+        36.0,
+        54.0,
+        81.0,
+        128.0,
+        180.0,
+        248.0,
+    ],
+}
 
 
 class Topology(StrEnum):
@@ -148,6 +186,7 @@ class Settings:
 
 
 SETTINGS = Settings()
+GROUND_SETTINGS = replace(SETTINGS, domain_pad=2025.0)
 
 
 def mesh_settings(settings: Settings, refinements: int) -> tuple[Settings, ...]:
@@ -250,10 +289,10 @@ def geometry(
 
 def generate(
     *,
-    grid: Mapping[str, Sequence[float]] = GRID,
+    grid: Mapping[str, Sequence[float]] | None = None,
     output: Path | None = None,
     workdir: Path = Path("build/palace/cpw-coupling"),
-    settings: Settings = SETTINGS,
+    settings: Settings | None = None,
     executable: Path | None = None,
     sif: Path | None = None,
     processes: int = 4,
@@ -271,6 +310,10 @@ def generate(
 
     if not 0 < mesh_tolerance < 1 or max_refinements < 1:
         raise ValueError("Require 0 < mesh tolerance < 1 and at least one refinement")
+    grid = grid if grid is not None else experiment_grid(topology)
+    settings = settings or (
+        GROUND_SETTINGS if topology == Topology.AS_DRAWN else SETTINGS
+    )
     name = GROUND_STRIP_NAME if topology == Topology.AS_DRAWN else NAME
     output = output or Path("build/datasets") / name
     executable, files = runtime(workdir, executable, sif, container_binary)
@@ -298,6 +341,12 @@ def generate(
         },
         "metal": "zero-thickness perfect conductor sheets",
         "topology": topology.value,
+        "geometry_coordinates": "gap = 2 * cpw_gap + ground_strip_width"
+        if "ground_strip_width" in grid
+        else "gap between conductor edges",
+        "interpolation": "logarithmic coordinates and signed capacitance magnitudes"
+        if "ground_strip_width" in grid
+        else "multilinear",
         "inner_ground": "Ground strip of width max(gap - 2 * cpw_gap, 0) between CPW slots"
         if topology == Topology.AS_DRAWN
         else "Fully etched gap between traces",
@@ -308,7 +357,7 @@ def generate(
     metadata = DatasetMetadata(
         name=name,
         description="Palace Maxwell capacitance of a uniform symmetric edge-coupled CPW slice on silicon.",
-        axes=tuple(Axis(name=name, unit="um") for name in GRID),
+        axes=tuple(Axis(name=name, unit="um") for name in grid),
         quantities=(
             Quantity(
                 name="maxwell_capacitance",
@@ -380,6 +429,11 @@ def generate(
         return result
 
     def solve(**point: float) -> dict[str, ArrayLike]:
+        if "ground_strip_width" in point:
+            strip = point.pop("ground_strip_width")
+            if strip <= 0:
+                raise ValueError("Ground-strip width must be positive")
+            point["gap"] = 2 * point["cpw_gap"] + strip
         return converge_mesh(
             lambda config: solve_once(point, config),
             settings,
@@ -391,6 +445,11 @@ def generate(
     result = write(output, metadata, sweep(metadata, solve, grid))
     result.grid("maxwell_capacitance")
     return result
+
+
+def experiment_grid(topology: Topology) -> dict[str, list[float]]:
+    """Keep the shielding transition on its own strip-width axis."""
+    return GROUND_GRID if topology == Topology.AS_DRAWN else GRID
 
 
 def main(
@@ -434,17 +493,20 @@ def main(
         raise typer.BadParameter("Choose --executable or --sif, not both")
     name = GROUND_STRIP_NAME if topology == Topology.AS_DRAWN else NAME
     output = output or Path("build/datasets") / name
+    complete_grid = experiment_grid(topology)
     if merge_shards:
-        merge(merge_shards, output, grid=GRID, variants=None)
+        merge(merge_shards, output, grid=complete_grid, variants=None)
         return
     try:
-        grid = partition_grid(GRID, shard=shard, shards=shards)
+        grid = partition_grid(complete_grid, shard=shard, shards=shards)
     except ValueError as error:
         raise typer.BadParameter(str(error)) from error
-    logger.info(f"Grid: {grid}; settings: {SETTINGS}; output: {output}")
+    settings = GROUND_SETTINGS if topology == Topology.AS_DRAWN else SETTINGS
+    logger.info(f"Grid: {grid}; settings: {settings}; output: {output}")
     if not dry_run:
         generate(
             grid=grid,
+            settings=settings,
             output=output,
             workdir=workdir,
             executable=executable,

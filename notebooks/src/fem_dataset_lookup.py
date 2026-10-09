@@ -113,6 +113,7 @@ from qpdk.models.capacitor import plate_capacitor
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.couplers import (
     cpw_coupling_model,
+    cpw_cpw_coupling_capacitance,
     cpw_cpw_coupling_capacitance_per_length_analytical,
 )
 from qpdk.models.cpw import cpw_z0_from_cross_section
@@ -125,6 +126,7 @@ from qpdk.models.datasets import (
 )
 from qpdk.models.datasets.generate import write
 from qpdk.models.generic import capacitor
+from qpdk.tech import coplanar_waveguide
 
 set_matplotlib_formats("png", "svg")
 for style_source in (PATH.repo / "docs" / "qpdk.mplstyle", "qpdk"):
@@ -737,12 +739,16 @@ plt.show()
 # while the slots touch or overlap; beyond that point, the ground shields the traces.
 # The analytical ECCPW formula assumes a fully etched inner gap, so its difference
 # from the shielded result measures a geometry change as well as numerical error.
+# Positive strip widths are sampled logarithmically from 0.01 µm. Logarithmic
+# interpolation follows the rapid shielding onset; narrower strips return NaN.
 #
 # %% tags=["keep_output"]
 layout_dataset = Dataset("cpw_coupling_ground_strip_palace")
-layout_lookup = GridInterpolator(layout_dataset.grid("maxwell_capacitance"))
-layout_mutual = (
-    -layout_lookup(width=10.0, cpw_gap=6.0, gap=gap_axis)[..., 0, 1] / slice_length
+layout_mutual = cpw_cpw_coupling_capacitance(
+    f=5e9,
+    length=1e6,
+    gap=gap_axis,
+    cross_section=coplanar_waveguide(width=10.0, gap=6.0),
 )
 fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
 ax.loglog(gap_axis, fem * 1e12, label="Fully etched inner gap")

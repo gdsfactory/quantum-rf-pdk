@@ -76,7 +76,8 @@ def fingerprint(script: Path) -> dict:
         if not (
             isinstance(node, ast.Assign)
             and any(
-                isinstance(target, ast.Name) and target.id == "GRID"
+                isinstance(target, ast.Name)
+                and (target.id == "GRID" or target.id.endswith("_GRID"))
                 for target in node.targets
             )
         )

@@ -1,5 +1,6 @@
 """Distributed CPW model algebra, units and JAX transformations."""
 
+from dataclasses import replace
 from pathlib import Path
 
 import jax
@@ -11,6 +12,7 @@ from hypothesis import given, settings, strategies as st
 
 from qpdk.models.constants import ε_0, μ_0
 from qpdk.models.couplers import (
+    _GroundStripLookup,
     cpw_coupling_model,
     cpw_cpw_coupling_capacitance,
 )
@@ -97,11 +99,16 @@ def test_reciprocal_and_lossless(dataset: Dataset, **point: float) -> None:
 def test_coupling_capacitance_uses_the_drawn_ground_geometry() -> None:
     layout = Dataset("cpw_coupling_ground_strip_palace")
     unshielded = Dataset("cpw_coupling_palace")
-    gaps = jnp.array([8.0, 12.0, 16.0, 25.0, 250.0])
-    dimensions = dict(width=10.0, cpw_gap=6.0, gap=gaps)
-    actual_slice = GridInterpolator(layout.grid("maxwell_capacitance"))(**dimensions)
+    gaps = jnp.array([16.0, 25.0, 140.0])
+    actual_slice = GridInterpolator(layout.grid("maxwell_capacitance"))(
+        width=10.0,
+        cpw_gap=6.0,
+        ground_strip_width=gaps - 12.0,
+    )
     etched_slice = GridInterpolator(unshielded.grid("maxwell_capacitance"))(
-        **dimensions
+        width=10.0,
+        cpw_gap=6.0,
+        gap=gaps,
     )
     slice_length = layout.metadata.provenance["settings"]["slice_length_um"]
     cross_section = coplanar_waveguide(width=10.0, gap=6.0)
@@ -113,8 +120,56 @@ def test_coupling_capacitance_uses_the_drawn_ground_geometry() -> None:
     np.testing.assert_allclose(
         lookup(gaps), -actual_slice[..., 0, 1] * 500.0 / slice_length, rtol=1e-12
     )
-    np.testing.assert_array_equal(actual_slice[:2], etched_slice[:2])
-    assert (-actual_slice[2:, 0, 1] < -etched_slice[2:, 0, 1]).all()
+    assert (-actual_slice[..., 0, 1] < -etched_slice[..., 0, 1]).all()
+    unchanged_gaps = jnp.array([8.0, 12.0])
+    unchanged = GridInterpolator(unshielded.grid("maxwell_capacitance"))(
+        width=10.0,
+        cpw_gap=6.0,
+        gap=unchanged_gaps,
+    )
+    np.testing.assert_allclose(
+        lookup(unchanged_gaps), -unchanged[..., 0, 1] * 500.0 / slice_length, rtol=1e-12
+    )
+
+
+def test_ground_strip_log_interpolation_and_regime_switch(dataset: Dataset) -> None:
+    grid = dataset.grid("maxwell_capacitance")
+    coords = (*grid.coords[:2], jnp.array([0.01, 4.0, 248.0]))
+    width, slot, strip = jnp.meshgrid(*coords, indexing="ij")
+    diagonal = 1e-16 * width**0.1 * slot**-0.2 * strip**0.01
+    mutual = -1e-18 * width**0.15 * slot**0.25 * strip**-0.2
+    values = jnp.stack(
+        (
+            jnp.stack((diagonal, mutual), axis=-1),
+            jnp.stack((mutual, diagonal), axis=-1),
+        ),
+        axis=-2,
+    )
+    grounded = replace(
+        grid,
+        axes=(*grid.axes[:2], Axis(name="ground_strip_width", unit="um")),
+        coords=tuple(np.asarray(c) for c in coords),
+        values=np.asarray(values),
+    )
+    lookup = _GroundStripLookup(grounded, grid)
+
+    def query(g):
+        return lookup(width=10.0, cpw_gap=6.0, gap=g)[0, 1]
+
+    actual = jax.jit(jax.vmap(query))(jnp.array([12.02, 13.0, 25.0, 140.0]))
+    expected = (
+        -1e-18 * 10.0**0.15 * 6.0**0.25 * jnp.array([0.02, 1.0, 13.0, 128.0]) ** -0.2
+    )
+    np.testing.assert_allclose(actual, expected, rtol=1e-12)
+    gradient = jax.jit(jax.grad(query))(13.0)
+    np.testing.assert_allclose(gradient, -0.2 * expected[1], rtol=1e-12)
+    np.testing.assert_allclose(
+        jax.jit(query)(8.0),
+        GridInterpolator(grid)(width=10.0, cpw_gap=6.0, gap=8.0)[0, 1],
+    )
+    assert jnp.isfinite(jax.jit(jax.grad(query))(8.0))
+    assert jnp.isnan(jax.jit(query)(12.001))
+    assert jnp.isfinite(jax.jit(query)(12.01))
 
 
 def test_jit_vmap_and_geometry_derivatives(dataset: Dataset) -> None:

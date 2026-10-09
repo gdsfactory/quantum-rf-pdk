@@ -176,7 +176,11 @@ outer ground rails, sweeping trace width, outer slot width and inter-trace gap. 
 distributed model. The default ``fully-etched`` experiment produces
 ``cpw_coupling_palace`` for comparison with the unshielded analytical ECCPW formula. The
 two geometries agree when the CPW slots touch or overlap. Above that gap, their
-difference measures the shielding from the intervening ground strip.
+difference measures the shielding from the intervening ground strip. The grounded sweep
+uses ``ground_strip_width = gap - 2 * cpw_gap`` as its third axis, with logarithmic
+sampling from 0.01 to 248 µm. The CPW models interpolate coordinates and capacitance
+magnitudes logarithmically in this regime and use the fully etched grid where the slots
+touch or overlap. Positive strips narrower than the sampled minimum return NaN.
 ``cpw_coupling_model()`` converts its capacitance lookup into a jittable four-port
 quasi-TEM SAX model; see the notebook for geometry heatmaps and S-parameters.
 
