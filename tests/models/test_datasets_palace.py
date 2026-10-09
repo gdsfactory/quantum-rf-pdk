@@ -11,6 +11,7 @@ import runpy
 from pathlib import Path
 
 import numpy as np
+import polars as pl
 import pytest
 
 from qpdk.models.datasets import GridInterpolator
@@ -20,16 +21,23 @@ from qpdk.models.datasets import GridInterpolator
     os.environ.get("QPDK_RUN_PALACE") != "1",
     reason="Requires the experiment dependencies",
 )
-def test_container_launcher_replacement(tmp_path: Path) -> None:
-    generator = runpy.run_path(
-        str(Path(__file__).resolve().parents[2] / "datasets/plate_capacitor.py")
+def test_container_launcher_replacement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.syspath_prepend(
+        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data")
+    )
+    helper = runpy.run_path(
+        str(
+            Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data/_palace.py"
+        )
     )
     image = tmp_path / "palace.sif"
     image.write_bytes(b"launcher test")
     wrapper = tmp_path / "palace-container"
     wrapper.write_text("old launcher", encoding="utf-8")
     with wrapper.open(encoding="utf-8") as original:
-        executable, _ = generator["runtime"](tmp_path, None, image, "palace")
+        executable, _ = helper["runtime"](tmp_path, None, image, "palace")
         assert original.read() == "old launcher"
     assert executable == wrapper
     assert "apptainer exec --cleanenv" in wrapper.read_text(encoding="utf-8")
@@ -39,9 +47,17 @@ def test_container_launcher_replacement(tmp_path: Path) -> None:
 @pytest.mark.skipif(
     os.environ.get("QPDK_RUN_PALACE") != "1", reason="Requires a real Palace runtime"
 )
-def test_interpolation_against_fresh_palace(tmp_path: Path) -> None:
+def test_interpolation_against_fresh_palace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.syspath_prepend(
+        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data")
+    )
     generator = runpy.run_path(
-        str(Path(__file__).resolve().parents[2] / "datasets/plate_capacitor.py")
+        str(
+            Path(__file__).resolve().parents[2]
+            / "qpdk/models/datasets/data/plate_capacitor.py"
+        )
     )
     generate = generator["generate"]
     runtime = {
@@ -78,8 +94,16 @@ def test_interpolation_against_fresh_palace(tmp_path: Path) -> None:
 @pytest.mark.skipif(
     os.environ.get("QPDK_RUN_PALACE") != "1", reason="Requires a real Palace runtime"
 )
-def test_editing_grid_reuses_completed_solves(tmp_path: Path) -> None:
-    original = Path(__file__).resolve().parents[2] / "datasets/plate_capacitor.py"
+def test_editing_grid_reuses_completed_solves(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.syspath_prepend(
+        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data")
+    )
+    original = (
+        Path(__file__).resolve().parents[2]
+        / "qpdk/models/datasets/data/plate_capacitor.py"
+    )
     source = original.read_text(encoding="utf-8")
     copied = tmp_path / "plate_capacitor.py"
     runtime = {
@@ -105,7 +129,15 @@ def test_editing_grid_reuses_completed_solves(tmp_path: Path) -> None:
         lines[node.lineno - 1 : node.end_lineno] = [f"GRID = {grid!r}\n"]
         copied.write_text("".join(lines), encoding="utf-8")
         dataset = runpy.run_path(str(copied))["generate"](**runtime)
-        assert dataset.table.height == expected * 4
+        rows = (
+            dataset
+            .scan()
+            .filter(pl.col("quantity") == "maxwell_capacitance")
+            .select(pl.len())
+            .collect()
+            .item()
+        )
+        assert rows == expected * 4
         current = {
             path: path.stat().st_mtime_ns
             for path in runtime["workdir"].glob("*/solver.log")
