@@ -172,6 +172,29 @@ def test_ground_strip_log_interpolation_and_regime_switch(dataset: Dataset) -> N
     assert jnp.isfinite(jax.jit(query)(12.01))
 
 
+@pytest.mark.parametrize("fixed_axes", [(0,), (0, 1), (0, 1, 2)])
+def test_ground_strip_lookup_with_single_valued_axes(
+    dataset: Dataset, fixed_axes: tuple[int, ...]
+) -> None:
+    grid = dataset.grid("maxwell_capacitance")
+    selection = tuple(slice(1, 2) if i in fixed_axes else slice(None) for i in range(3))
+    grounded = replace(
+        grid,
+        axes=(*grid.axes[:2], Axis(name="ground_strip_width", unit="um")),
+        coords=tuple(
+            axis[part] for axis, part in zip(grid.coords, selection, strict=True)
+        ),
+        values=grid.values[selection],
+    )
+    lookup = _GroundStripLookup(grounded, grid)
+    width, slot, strip = (float(axis[0]) for axis in grounded.coords)
+    query = jax.jit(lambda gap: lookup(width=width, cpw_gap=slot, gap=gap))
+    np.testing.assert_allclose(
+        query(2 * slot + strip), grounded.values[0, 0, 0], rtol=1e-12
+    )
+    assert jnp.isnan(lookup(width=width + 1, cpw_gap=slot, gap=2 * slot + strip)).all()
+
+
 def test_jit_vmap_and_geometry_derivatives(dataset: Dataset) -> None:
     model = cpw_coupling_model(dataset)
 

@@ -1,5 +1,6 @@
 """Coupler models."""
 
+from dataclasses import replace
 from functools import cache, partial
 from pathlib import Path
 from typing import cast
@@ -8,7 +9,6 @@ import jax
 import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec
-from jax.scipy.interpolate import RegularGridInterpolator
 from jax.typing import ArrayLike
 from sax.models.rf import capacitor, tee
 
@@ -114,11 +114,15 @@ class _GroundStripLookup:
                 "Log interpolation requires positive self and negative mutual capacitances"
             )
         self._signs = signs
-        self._interpolate = RegularGridInterpolator(
-            tuple(jnp.log(jnp.asarray(axis)) for axis in grid.coords),
-            jnp.log(jnp.abs(values)),
-            bounds_error=False,
-            fill_value=jnp.nan,
+        self._interpolate = GridInterpolator(
+            replace(
+                grid,
+                axes=tuple(
+                    axis.model_copy(update={"validated": None}) for axis in grid.axes
+                ),
+                coords=tuple(jnp.log(jnp.asarray(axis)) for axis in grid.coords),
+                values=jnp.log(jnp.abs(values)),
+            )
         )
 
     def __call__(
@@ -130,11 +134,16 @@ class _GroundStripLookup:
         lo_strip, hi_strip = self._domain["ground_strip_width"]
         # Subtracting the slot widths loses a few ulps at the thinnest strip.
         tolerance = 8 * jnp.finfo(float).eps * jnp.maximum(jnp.abs(gap), 1)
-        points = jnp.stack(
-            (width, cpw_gap, jnp.clip(strip, lo_strip, hi_strip)), axis=-1
-        )
+        points = (width, cpw_gap, jnp.clip(strip, lo_strip, hi_strip))
         grounded = (
-            jnp.exp(self._interpolate(jnp.log(points))).reshape(*width.shape, 2, 2)
+            jnp.exp(
+                self._interpolate(**{
+                    name: jnp.log(value)
+                    for name, value in zip(
+                        self._interpolate.axis_names, points, strict=True
+                    )
+                })
+            )
             * self._signs
         )
         inside = jnp.ones(width.shape, dtype=bool)
