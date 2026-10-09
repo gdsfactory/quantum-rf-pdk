@@ -8,6 +8,7 @@ are self-describing datasets and solver logs, with no validation JSON fixture.
 import ast
 import os
 import runpy
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -15,6 +16,94 @@ import polars as pl
 import pytest
 
 from qpdk.models.datasets import GridInterpolator
+
+
+@pytest.mark.skipif(
+    os.environ.get("QPDK_RUN_PALACE") != "1",
+    reason="Requires the experiment dependencies",
+)
+@pytest.mark.parametrize(
+    ("width", "cpw_gap", "gap", "topology"),
+    [
+        (2.5, 1.25, 1.125, "fully-etched"),
+        (2.449489743, 1.224744871, 2.461737191, "as-drawn"),
+    ],
+)
+def test_fractional_cross_section_conductors_belong_to_domain_mesh(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    width: float,
+    cpw_gap: float,
+    gap: float,
+    topology: str,
+) -> None:
+    """Detached boundary edges make the Palace mesh reader crash."""
+    import gmsh  # ruff: ignore[import-outside-top-level]
+
+    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    monkeypatch.syspath_prepend(str(source))
+    generator = runpy.run_path(str(source / "cpw_coupling.py"))
+    helper = runpy.run_path(str(source / "_palace.py"))
+    settings = generator["SETTINGS"]
+    sheets, footprint = generator["geometry"](
+        width=width,
+        cpw_gap=cpw_gap,
+        gap=gap,
+        topology=generator["Topology"](topology),
+        settings=settings,
+    )
+    mesh = helper["mesh_cross_section"](
+        sheets,
+        footprint,
+        height=settings.domain_pad,
+        near_mesh=settings.near_mesh,
+        far_mesh=settings.far_mesh,
+        path=tmp_path / "section.msh",
+    )
+    gmsh.initialize()
+    try:
+        gmsh.open(str(mesh.mesh_path))
+        triangles = gmsh.model.mesh.getElementsByType(2)[1].reshape(-1, 3)
+        edges = {
+            tuple(sorted((int(a), int(b))))
+            for triangle in triangles
+            for a, b in zip(triangle, (*triangle[1:], triangle[0]), strict=True)
+        }
+        segments = gmsh.model.mesh.getElementsByType(1)[1].reshape(-1, 2)
+        assert len(segments) > 0
+        assert all(tuple(sorted(map(int, segment))) in edges for segment in segments)
+    finally:
+        gmsh.finalize()
+
+
+@pytest.mark.skipif(
+    os.environ.get("QPDK_RUN_PALACE") != "1", reason="Requires a real Palace runtime"
+)
+def test_cpw_cross_section_normalization_depth(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The implicit 2D depth changes total capacitance, never capacitance per length."""
+    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    monkeypatch.syspath_prepend(str(source))
+    generator = runpy.run_path(str(source / "cpw_coupling.py"))
+    runtime = {
+        "workdir": tmp_path / "runs",
+        "sif": Path(value) if (value := os.environ.get("PALACE_SIF")) else None,
+        "container_binary": os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
+        "processes": 4,
+    }
+    matrices = []
+    for depth in (1.0, 4.0):
+        data = generator["generate"](
+            grid={"width": [10.0], "cpw_gap": [6.0], "gap": [8.0]},
+            settings=replace(generator["SETTINGS"], slice_length_um=depth),
+            output=tmp_path / f"depth-{depth}",
+            **runtime,
+        )
+        assert data.metadata.provenance["mesh_dimension"] == 2
+        assert data.grid("mesh_relative_change").values.item() <= 0.01
+        matrices.append(data.grid("maxwell_capacitance").values / depth)
+    np.testing.assert_allclose(matrices[0], matrices[1], rtol=1e-7, atol=0)
 
 
 @pytest.mark.skipif(

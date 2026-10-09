@@ -546,8 +546,9 @@ pl.DataFrame(rows)
 # `qpdk/models/datasets/data/cpw_coupling.py` follows the same workflow, sweeping trace width,
 # outer CPW slot width and the gap between two identical traces. The inner gap
 # is fully etched; there is no ground strip between the traces. Both conductors
-# and the outer ground rails span a uniform slice, whose end faces have natural
-# boundaries to remove end fringing. Stored capacitances are in F for that slice.
+# and the outer ground rails define a two-dimensional transverse Palace mesh,
+# eliminating end fringing. `Model.Lc` sets the implicit slice depth; stored
+# capacitances are in F for that depth. The lookup has three geometry axes.
 #
 # ```bash
 # uv run --script qpdk/models/datasets/data/cpw_coupling.py --dry-run

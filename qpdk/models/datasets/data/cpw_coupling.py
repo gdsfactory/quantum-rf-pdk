@@ -20,8 +20,10 @@ on a logarithmic grid. Its validated strip widths start at 0.01 µm; narrower
 positive strips require additional simulations. Logarithmic interpolation of
 coordinates and capacitance magnitudes resolves the rapid shielding onset.
 
-A uniform slice with natural end boundaries eliminates end fringing. Values
-are slice capacitances in F; divide by ``slice_length_um * 1e-6`` for F/m.
+A two-dimensional transverse mesh eliminates end fringing and longitudinal
+mesh overhead. Palace's ``Model.Lc`` sets the implicit depth to
+``slice_length_um * 1e-6``. Values are slice capacitances in F; divide by this
+depth for F/m. The physical result is independent of that normalization depth.
 The dataset-backed SAX model uses the quasi-TEM approximation and excludes
 kinetic inductance, conductor loss, finite substrate thickness and dispersion.
 
@@ -350,7 +352,9 @@ def generate(
         "inner_ground": "Ground strip of width max(gap - 2 * cpw_gap, 0) between CPW slots"
         if topology == Topology.AS_DRAWN
         else "Fully etched gap between traces",
-        "outer_boundary": "natural zero normal electric displacement, including both slice ends",
+        "mesh_dimension": 2,
+        "normalization": "Model.Lc equals slice_length_um; 2D capacitance is reported in F for that implicit depth",
+        "outer_boundary": "natural zero normal electric displacement at the transverse domain boundary",
         "slice_length_um": settings.slice_length_um,
         "analytical_reference": "Conformal mapping for an unshielded symmetric edge-coupled CPW with dielectric half-spaces; relative difference = FEM mutual / unshielded analytical mutual - 1. With an inner ground strip this measures shielding as well as numerical differences",
     }
@@ -413,6 +417,7 @@ def generate(
             order=config.order,
             tolerance=config.tolerance,
             save_fields=config.save_fields,
+            normalization_depth_um=config.slice_length_um,
         )
         reference = (
             float(
