@@ -108,6 +108,7 @@ import xarray as xr
 from matplotlib_inline.backend_inline import set_matplotlib_formats
 
 from qpdk import logger
+from qpdk.colormaps import QPDK
 from qpdk.config import PATH
 from qpdk.models.capacitor import plate_capacitor
 from qpdk.models.constants import DEFAULT_FREQUENCY
@@ -653,7 +654,12 @@ W, G = jnp.meshgrid(width_axis, gap_axis, indexing="ij")
 mutual_per_length = -cpw_lookup(width=W, cpw_gap=6.0, gap=G)[..., 0, 1] / slice_length
 fig, ax = plt.subplots(constrained_layout=True)
 image = ax.pcolormesh(
-    gap_axis, width_axis, mutual_per_length * 1e12, shading="auto", rasterized=True
+    gap_axis,
+    width_axis,
+    mutual_per_length * 1e12,
+    cmap=QPDK,
+    shading="auto",
+    rasterized=True,
 )
 solved_width, solved_gap = jnp.meshgrid(
     cpw_grid.coords[0], cpw_grid.coords[2], indexing="ij"
@@ -691,6 +697,7 @@ for i, ax in enumerate(axes):
         gap_axis,
         width_axis,
         volume_slices[i],
+        cmap=QPDK,
         shading="auto",
         rasterized=True,
         vmin=float(volume_slices.min()),
