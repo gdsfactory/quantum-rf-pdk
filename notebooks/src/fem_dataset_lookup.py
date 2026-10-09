@@ -105,6 +105,7 @@ import numpy as np
 import polars as pl
 import sax
 import xarray as xr
+from matplotlib.colors import LogNorm
 from matplotlib_inline.backend_inline import set_matplotlib_formats
 
 from qpdk import logger
@@ -646,6 +647,7 @@ indicator = pl.col("fem_error_indicator_norm")
 #
 # At a fixed outer slot width, vary trace width and inter-trace gap together.
 # The black dots mark solved geometries; colours between them are interpolation.
+# The logarithmic colour scale resolves weak coupling at large separations.
 
 # %% tags=["keep_output"]
 width_axis = jnp.linspace(*cpw_lookup.domain["width"], 101)
@@ -658,6 +660,7 @@ image = ax.pcolormesh(
     width_axis,
     mutual_per_length * 1e12,
     cmap=QPDK,
+    norm=LogNorm(),
     shading="auto",
     rasterized=True,
 )
@@ -692,16 +695,16 @@ volume_slices = (
 fig, axes = plt.subplots(
     1, 3, figsize=(12, 3.8), sharex=True, sharey=True, constrained_layout=True
 )
+heatmap_norm = LogNorm(vmin=float(volume_slices.min()), vmax=float(volume_slices.max()))
 for i, ax in enumerate(axes):
     image = ax.pcolormesh(
         gap_axis,
         width_axis,
         volume_slices[i],
         cmap=QPDK,
+        norm=heatmap_norm,
         shading="auto",
         rasterized=True,
-        vmin=float(volume_slices.min()),
-        vmax=float(volume_slices.max()),
     )
     ax.set_title(rf"Outer slot ${float(outer_slots[i]):g}\,\text{{µm}}$")
     ax.set_xlabel(r"Inter-trace gap ($\text{µm}$)")
