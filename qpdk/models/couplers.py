@@ -8,6 +8,7 @@ import jax
 import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec
+from jax.scipy.interpolate import RegularGridInterpolator
 from jax.typing import ArrayLike
 from sax.models.rf import capacitor, tee
 
@@ -21,7 +22,7 @@ from qpdk.models.cpw import (
 from qpdk.models.datasets.capacitance import check_maxwell
 from qpdk.models.datasets.interpolation import GridInterpolator
 from qpdk.models.datasets.metadata import QuantityKind
-from qpdk.models.datasets.table import Dataset
+from qpdk.models.datasets.table import Dataset, Grid
 from qpdk.models.math import (
     capacitance_per_length_conformal,
     ellipk_ratio,
@@ -97,13 +98,88 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
     return (c_odd_pul - c_even_pul) / 2
 
 
+class _GroundStripLookup:
+    """Resolve shielding onset without interpolating across a geometry change."""
+
+    def __init__(self, grid: Grid, unshielded: Grid) -> None:
+        """Prepare the two independent geometry regimes outside JAX tracing."""
+        if any(not bool(jnp.all(jnp.asarray(axis) > 0)) for axis in grid.coords):
+            raise ValueError("Log interpolation requires positive geometry coordinates")
+        self._etched = GridInterpolator(unshielded)
+        self._domain = grid.domain
+        values = jnp.asarray(grid.values)
+        signs = jnp.array([[1, -1], [-1, 1]])
+        if not bool(jnp.all(values * signs > 0)):
+            raise ValueError(
+                "Log interpolation requires positive self and negative mutual capacitances"
+            )
+        self._signs = signs
+        self._interpolate = RegularGridInterpolator(
+            tuple(jnp.log(jnp.asarray(axis)) for axis in grid.coords),
+            jnp.log(jnp.abs(values)),
+            bounds_error=False,
+            fill_value=jnp.nan,
+        )
+
+    def __call__(
+        self, *, width: ArrayLike, cpw_gap: ArrayLike, gap: ArrayLike
+    ) -> jax.Array:
+        """Return the raw slice matrix; unsupported positive strips yield NaN."""
+        width, cpw_gap, gap = jnp.broadcast_arrays(width, cpw_gap, gap)
+        strip = gap - 2 * cpw_gap
+        lo_strip, hi_strip = self._domain["ground_strip_width"]
+        # Subtracting the slot widths loses a few ulps at the thinnest strip.
+        tolerance = 8 * jnp.finfo(float).eps * jnp.maximum(jnp.abs(gap), 1)
+        points = jnp.stack(
+            (width, cpw_gap, jnp.clip(strip, lo_strip, hi_strip)), axis=-1
+        )
+        grounded = (
+            jnp.exp(self._interpolate(jnp.log(points))).reshape(*width.shape, 2, 2)
+            * self._signs
+        )
+        inside = jnp.ones(width.shape, dtype=bool)
+        for name, value in zip(
+            ("width", "cpw_gap", "ground_strip_width"),
+            (width, cpw_gap, strip),
+            strict=True,
+        ):
+            lo, hi = self._domain[name]
+            if name == "ground_strip_width":
+                lo, hi = lo - tolerance, hi + tolerance
+            inside &= (value >= lo) & (value <= hi)
+        grounded = jnp.where(inside[..., None, None], grounded, jnp.nan)
+        etched = self._etched(width=width, cpw_gap=cpw_gap, gap=gap)
+        return jnp.where((strip <= 0)[..., None, None], etched, grounded)
+
+
+def _cpw_matrix_lookup(
+    data: Dataset, grid: Grid
+) -> GridInterpolator | _GroundStripLookup:
+    """Select interpolation for a continuous geometry regime."""
+    if grid.axis_names == ("width", "cpw_gap", "ground_strip_width"):
+        etched = Dataset("cpw_coupling_palace")
+        for name in ("slice_length_um", "permittivity"):
+            if (
+                data.metadata.provenance["settings"][name]
+                != etched.metadata.provenance["settings"][name]
+            ):
+                raise ValueError(
+                    f"Grounded and fully etched datasets disagree on {name}"
+                )
+        return _GroundStripLookup(grid, etched.grid("maxwell_capacitance"))
+    return GridInterpolator(grid)
+
+
 def cpw_coupling_model(
     dataset: Dataset | Path | str = "cpw_coupling_ground_strip_palace",
 ) -> sax.Model:
     r"""Load a symmetric CPW dataset once and return a jittable four-port model.
 
     The dataset contains slice capacitances in F, swept over ``width``,
-    ``cpw_gap`` and ``gap`` in µm. The generator's ``slice_length_um`` and
+    ``cpw_gap`` and ``gap`` or ``ground_strip_width`` in µm. Grounded cases use
+    logarithmic coordinates and capacitance magnitudes, with the fully etched
+    dataset used where the slots touch or overlap. Positive ground strips below
+    the sampled minimum return NaN. The generator's ``slice_length_um`` and
     substrate ``permittivity`` must be present in the provenance. Ports are
     ``o1`` lower-left, ``o2`` upper-left, ``o3`` upper-right, ``o4`` lower-right.
     The reference planes are the two ends of the uniform coupled section.
@@ -137,8 +213,15 @@ def cpw_coupling_model(
     grid = data.grid("maxwell_capacitance")
     if grid.quantity.kind != QuantityKind.MAXWELL_CAPACITANCE or grid.quantity.complex:
         raise ValueError("Expected real Maxwell capacitances")
-    if grid.axis_names != ("width", "cpw_gap", "gap") or len(grid.terminals) != 2:
-        raise ValueError("Expected a two-conductor grid over width, cpw_gap and gap")
+    if (
+        grid.axis_names
+        not in {
+            ("width", "cpw_gap", "gap"),
+            ("width", "cpw_gap", "ground_strip_width"),
+        }
+        or len(grid.terminals) != 2
+    ):
+        raise ValueError("Expected a symmetric two-conductor CPW geometry grid")
     if any(axis.unit != "um" for axis in grid.axes):
         raise ValueError("CPW geometry axes must be in um")
     check_maxwell(grid.values)
@@ -153,7 +236,7 @@ def cpw_coupling_model(
     effective_permittivity = (1 + float(settings["permittivity"])) / 2
     if slice_length <= 0 or effective_permittivity <= 0:
         raise ValueError("Slice length and effective permittivity must be positive")
-    lookup = GridInterpolator(grid)
+    lookup = _cpw_matrix_lookup(data, grid)
 
     @jax.jit
     def model(
@@ -199,7 +282,7 @@ def cpw_coupling_model(
 
 
 @cache
-def _cpw_lookup() -> tuple[GridInterpolator, float, float]:
+def _cpw_lookup() -> tuple[GridInterpolator | _GroundStripLookup, float, float]:
     """Cache the grid, slice length and simulated substrate permittivity.
 
     Returns:
@@ -208,7 +291,7 @@ def _cpw_lookup() -> tuple[GridInterpolator, float, float]:
     data = Dataset("cpw_coupling_ground_strip_palace")
     settings = data.metadata.provenance["settings"]
     return (
-        GridInterpolator(data.grid("maxwell_capacitance")),
+        _cpw_matrix_lookup(data, data.grid("maxwell_capacitance")),
         float(settings["slice_length_um"]) * 1e-6,
         float(settings["permittivity"]),
     )
