@@ -64,8 +64,21 @@ class TestDeltaStore:
         reopened = Dataset(uri, delta=True)
         assert reopened.metadata == PLATE_CAPACITOR
         assert deltalake.DeltaTable(uri).metadata().partition_columns == [
-            "cross_section"
+            "quantity",
+            "cross_section",
         ]
+
+    @staticmethod
+    def test_grid_does_not_read_other_quantity_files(
+        source: Dataset, tmp_path: Path
+    ) -> None:
+        uri = tmp_path / "table"
+        Dataset(uri, PLATE_CAPACITOR, delta=True).append(source.table)
+        unselected = list(uri.glob("quantity=fem_error_indicator_norm/**/*.parquet"))
+        assert unselected
+        for path in unselected:
+            path.write_bytes(b"unreadable diagnostic part")
+        np.testing.assert_array_equal(_grid(Dataset(uri, delta=True)), _grid(source))
 
     @staticmethod
     def test_rejects_duplicates_across_commits(source: Dataset, tmp_path: Path) -> None:
