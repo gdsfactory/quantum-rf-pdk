@@ -364,11 +364,11 @@ for name, level in layer_stack.layers.items():
 # %% [markdown]
 # ## Mesh Settings
 #
-# `mesh_parameters` is forwarded to [meshwell's mesh function](https://simbilod.github.io/meshwell/02_intro_meshwell.html#cad-mesh).
-# Its [`resolution_specs` API](https://simbilod.github.io/meshwell/21_resolution_advanced.html)
+# `mesh_parameters` is forwarded to [meshwell's mesh function](https://github.com/simbilod/meshwell/blob/main/docs/02_intro_meshwell.md#2-cad----mesh).
+# Its [`resolution_specs` API](https://github.com/simbilod/meshwell/blob/main/docs/21_resolution_advanced.py)
 # maps each physical prism name to a list of resolution objects. The driver splits
 # the ported metal into `M1@o1` and `M1@o2`; the unported `M1` frame is ground.
-# [`ConstantInField`](https://simbilod.github.io/meshwell/20_resolution_basic.html)
+# [`ConstantInField`](https://github.com/simbilod/meshwell/blob/main/docs/20_resolution_basic.py)
 # pins an element size. The terminal surfaces resolve the 2 µm finger gaps, while
 # ground edges and the bulk dielectric can be coarser.
 #
