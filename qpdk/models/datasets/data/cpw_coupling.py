@@ -10,8 +10,10 @@
 
 Run ``uv run --script qpdk/models/datasets/data/cpw_coupling.py --help`` from a checkout.
 Edit GRID and SETTINGS to define the experiment. Both traces have the same
-width and outer slot width; the gap between them is fully etched, with no
-intervening ground strip. Perfect conductor sheets lie between air and silicon.
+width and outer slot width. ``--topology as-drawn`` retains the ground strip
+between separated CPW slots, matching ``coupler_straight``. The default
+``fully-etched`` gap supplies a comparison with the analytical ECCPW formula.
+Perfect conductor sheets lie between air and silicon.
 
 A uniform slice with natural end boundaries eliminates end fringing. Values
 are slice capacitances in F; divide by ``slice_length_um * 1e-6`` for F/m.
@@ -29,6 +31,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -44,6 +47,7 @@ from qpdk.models.datasets.generate import merge, partition_grid, sweep, write
 from qpdk.tech import material_properties
 
 NAME = "cpw_coupling_palace"
+GROUND_STRIP_NAME = "cpw_coupling_ground_strip_palace"
 GRID = {
     "width": [
         2.0,
@@ -102,6 +106,13 @@ GRID = {
     ],
 }
 TERMINALS = ("lower", "upper")
+
+
+class Topology(StrEnum):
+    """Ground left between two CPW etch masks, or a fully etched inner gap."""
+
+    FULLY_ETCHED = "fully-etched"
+    AS_DRAWN = "as-drawn"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -207,9 +218,14 @@ def converge_mesh(
 
 
 def geometry(
-    width: float, cpw_gap: float, gap: float, settings: Settings
+    width: float,
+    cpw_gap: float,
+    gap: float,
+    settings: Settings,
+    *,
+    topology: Topology = Topology.FULLY_ETCHED,
 ) -> tuple[dict[str, Polygon], Polygon]:
-    """Two identical traces and outer ground rails spanning the whole slice."""
+    """Uniform traces with outer ground rails and the selected inner ground."""
     if min(width, cpw_gap, gap) <= 0:
         raise ValueError("Trace width, outer slot and inter-trace gap must be positive")
     length = settings.slice_length_um
@@ -224,13 +240,18 @@ def geometry(
             box(0, edge + cpw_gap, length, extent),
         ]),
     }
+    if topology == Topology.AS_DRAWN and gap > 2 * cpw_gap:
+        sheets["ground"] = union_all([
+            sheets["ground"],
+            box(0, -inner + cpw_gap, length, inner - cpw_gap),
+        ])
     return sheets, box(0, -extent, length, extent)
 
 
 def generate(
     *,
     grid: Mapping[str, Sequence[float]] = GRID,
-    output: Path = Path("build/datasets") / NAME,
+    output: Path | None = None,
     workdir: Path = Path("build/palace/cpw-coupling"),
     settings: Settings = SETTINGS,
     executable: Path | None = None,
@@ -239,6 +260,7 @@ def generate(
     container_binary: str = "palace",
     mesh_tolerance: float = 0.01,
     max_refinements: int = 4,
+    topology: Topology = Topology.FULLY_ETCHED,
 ) -> Dataset:
     """Solve every geometry, resume matching results and publish complete data."""
     from _palace import (  # ruff: ignore[import-outside-top-level]
@@ -249,6 +271,8 @@ def generate(
 
     if not 0 < mesh_tolerance < 1 or max_refinements < 1:
         raise ValueError("Require 0 < mesh tolerance < 1 and at least one refinement")
+    name = GROUND_STRIP_NAME if topology == Topology.AS_DRAWN else NAME
+    output = output or Path("build/datasets") / name
     executable, files = runtime(workdir, executable, sif, container_binary)
     provenance = {
         **fingerprint(Path(__file__)),
@@ -273,13 +297,16 @@ def generate(
             )
         },
         "metal": "zero-thickness perfect conductor sheets",
-        "topology": "symmetric edge-coupled CPW; fully etched gap between traces",
+        "topology": topology.value,
+        "inner_ground": "Ground strip of width max(gap - 2 * cpw_gap, 0) between CPW slots"
+        if topology == Topology.AS_DRAWN
+        else "Fully etched gap between traces",
         "outer_boundary": "natural zero normal electric displacement, including both slice ends",
         "slice_length_um": settings.slice_length_um,
-        "analytical_reference": "Conformal mapping for symmetric edge-coupled CPW dielectric half-spaces; relative difference = FEM mutual / analytical mutual - 1",
+        "analytical_reference": "Conformal mapping for an unshielded symmetric edge-coupled CPW with dielectric half-spaces; relative difference = FEM mutual / unshielded analytical mutual - 1. With an inner ground strip this measures shielding as well as numerical differences",
     }
     metadata = DatasetMetadata(
-        name=NAME,
+        name=name,
         description="Palace Maxwell capacitance of a uniform symmetric edge-coupled CPW slice on silicon.",
         axes=tuple(Axis(name=name, unit="um") for name in GRID),
         quantities=(
@@ -305,12 +332,14 @@ def generate(
             ),
         ),
         terminals=TERMINALS,
-        reference_ground="outer_coplanar_ground_rails",
+        reference_ground="outer_rails_and_inner_ground_strip"
+        if topology == Topology.AS_DRAWN
+        else "outer_coplanar_ground_rails",
         provenance=provenance,
     )
 
     def solve_once(point: dict[str, float], config: Settings) -> dict[str, ArrayLike]:
-        sheets, footprint = geometry(**point, settings=config)
+        sheets, footprint = geometry(**point, settings=config, topology=topology)
         inputs = {
             "point": point,
             "terminals": TERMINALS,
@@ -358,7 +387,7 @@ def generate(
             max_refinements=max_refinements,
         )
 
-    logger.info(f"Generating {NAME}: grid={grid}; settings={settings}")
+    logger.info(f"Generating {name}: grid={grid}; settings={settings}")
     result = write(output, metadata, sweep(metadata, solve, grid))
     result.grid("maxwell_capacitance")
     return result
@@ -374,7 +403,7 @@ def main(
         list[Path] | None,
         typer.Option(help="Completed shard directory; repeat for each shard."),
     ] = None,
-    output: Path = Path("build/datasets") / NAME,
+    output: Path | None = None,
     workdir: Path = Path("build/palace/cpw-coupling"),
     executable: Path | None = None,
     sif: Path | None = None,
@@ -395,10 +424,16 @@ def main(
             help="Fail rather than publish if this many refinements do not converge.",
         ),
     ] = 4,
+    topology: Annotated[
+        Topology,
+        typer.Option(help="Use as-drawn for the ground left by coupler_straight."),
+    ] = Topology.FULLY_ETCHED,
 ) -> None:
     """Generate this experiment, preview it, or merge completed shards."""
     if executable is not None and sif is not None:
         raise typer.BadParameter("Choose --executable or --sif, not both")
+    name = GROUND_STRIP_NAME if topology == Topology.AS_DRAWN else NAME
+    output = output or Path("build/datasets") / name
     if merge_shards:
         merge(merge_shards, output, grid=GRID, variants=None)
         return
@@ -418,6 +453,7 @@ def main(
             container_binary=container_binary,
             mesh_tolerance=mesh_tolerance,
             max_refinements=max_refinements,
+            topology=topology,
         )
 
 
