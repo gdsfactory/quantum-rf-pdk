@@ -275,15 +275,16 @@ logger.info(
 # split into disjoint rectangular grids, with unchanged solver inputs and run
 # identities. Workers write separate outputs and run directories; merging
 # checks provenance, coverage and successful results before publication.
-# Choose at most as many tasks as points on the longest axis. For the CPW grid:
+# Use a small array of longer shards, with no more tasks than points on the
+# longest axis. For the CPW grid:
 #
 # ```bash
 # generator=qpdk/models/datasets/data/cpw_coupling.py
-# sbatch --array=0-34 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" \
+# sbatch --array=0-7 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" \
 #   build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
 # # After every task succeeds, pass each shard as a repeated option:
 # shards=()
-# for i in {0..34}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
+# for i in {0..7}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
 # uv run --script "$generator" "${shards[@]}" --output build/datasets/cpw_coupling_palace
 # ```
 #
