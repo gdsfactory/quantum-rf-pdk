@@ -769,6 +769,26 @@ ax.legend()
 plt.show()
 
 # %% [markdown]
+# Compare both lookups with reference solves refined to a 0.1% successive-mesh
+# change, larger domains, vacuum scaling and independent held-out geometries.
+# These finite checks estimate sensitivity; they do not prove a uniform error bound.
+
+# %% tags=["keep_output"]
+quality_rows = []
+for label, data in (("Etched gap", cpw_dataset), ("Ground strip", layout_dataset)):
+    checks = data.metadata.provenance["validation"]
+    quality_rows.append({
+        "Geometry": label,
+        "Mesh (%)": 100 * checks["maximum_mesh_relative_change"],
+        "Reference (%)": 100 * checks["representative_stricter_mesh_max_relative"],
+        "Domain (%)": 100 * max(c["domain_relative"] for c in checks["mesh_domain"]),
+        "Vacuum (%)": 100
+        * max(c.get("vacuum_scaling_relative", 0) for c in checks["mesh_domain"]),
+        "Lookup (%)": 100 * checks["held_out_max_relative"],
+    })
+pl.DataFrame(quality_rows)
+
+# %% [markdown]
 # ## A distributed four-port SAX model
 #
 # {func}`~qpdk.models.couplers.cpw_cpw_coupling_capacitance` uses the layout-matching lookup in
