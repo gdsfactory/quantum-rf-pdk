@@ -16,12 +16,14 @@ import shlex
 import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
 if TYPE_CHECKING:
     from gsim.palace.mesh.generator import MeshResult
+    from meshwell.geometry_entity import GeometryEntity
+    from meshwell.model import ModelManager
     from shapely import Polygon
 
 from qpdk import logger
@@ -135,16 +137,10 @@ def mesh_sheets(
 ) -> MeshResult:
     """Mesh zero-thickness conductors between equal-height air and substrate volumes."""
     import gmsh
-    from gsim.palace.mesh.generator import (
-        MeshResult,
-    )
     from meshwell.model import ModelManager
     from meshwell.polyprism import PolyPrism
     from meshwell.polysurface import (
         PolySurface,
-    )
-    from meshwell.resolution import (
-        ThresholdField,
     )
 
     if gmsh.isInitialized():
@@ -157,17 +153,93 @@ def mesh_sheets(
         PolyPrism(footprint, {-height: 0, 0: 0}, physical_name="silicon"),
         *(PolySurface(polygon, physical_name=name) for name, polygon in sheets.items()),
     ]
+    return _mesh_entities(
+        model,
+        entities,
+        sheets,
+        dim=3,
+        near_mesh=near_mesh,
+        far_mesh=far_mesh,
+        path=path,
+    )
+
+
+def mesh_cross_section(
+    sheets: dict[str, Polygon],
+    footprint: Polygon,
+    *,
+    height: float,
+    near_mesh: float,
+    far_mesh: float,
+    path: Path,
+) -> MeshResult:
+    """Mesh the transverse section of a uniform line with meshwell curves."""
+    import gmsh
+    from meshwell.model import ModelManager
+    from meshwell.polyline import PolyLine
+    from meshwell.polysurface import PolySurface
+    from shapely import LineString, box
+
+    if gmsh.isInitialized():
+        raise RuntimeError(
+            "Meshwell requires its own Gmsh session; finalize the existing session first"
+        )
+    lower, upper = footprint.bounds[1], footprint.bounds[3]
+    model = ModelManager(n_threads=1, filename=str(path.with_suffix("")))
+    # Different snapping grids leave conductor edges outside the dielectric mesh.
+    entities = [
+        PolySurface(
+            box(lower, 0, upper, height), physical_name="air", point_tolerance=1e-8
+        ),
+        PolySurface(
+            box(lower, -height, upper, 0),
+            physical_name="silicon",
+            point_tolerance=1e-8,
+        ),
+    ]
+    for name, polygon in sheets.items():
+        polygons = list(polygon.geoms) if hasattr(polygon, "geoms") else [polygon]
+        lines = [
+            LineString([(part.bounds[1], 0), (part.bounds[3], 0)]) for part in polygons
+        ]
+        entities.append(PolyLine(lines, physical_name=name, point_tolerance=1e-8))
+    return _mesh_entities(
+        model,
+        entities,
+        sheets,
+        dim=2,
+        near_mesh=near_mesh,
+        far_mesh=far_mesh,
+        path=path,
+    )
+
+
+def _mesh_entities(
+    model: ModelManager,
+    entities: list[GeometryEntity],
+    sheets: dict[str, Polygon],
+    *,
+    dim: Literal[2, 3],
+    near_mesh: float,
+    far_mesh: float,
+    path: Path,
+) -> MeshResult:
+    """Keep meshing, physical groups and Palace export consistent across dimensions."""
+    import gmsh
+    from gsim.palace.mesh.generator import MeshResult
+    from meshwell.resolution import ThresholdField
+
     try:
         model.cad.process_entities(entities, interface_delimiter="___")
         field = ThresholdField(
-            apply_to="surfaces",
+            apply_to="surfaces" if dim == 3 else "curves",
             sizemin=near_mesh,
             sizemax=far_mesh,
             distmin=1,
             distmax=25,
         )
         model.mesh.process_geometry(
-            dim=3,
+            dim=dim,
             default_characteristic_length=far_mesh,
             resolution_specs={name: [field] for name in sheets if name != "ground"},
             verbosity=0,
@@ -181,13 +253,13 @@ def mesh_sheets(
         }
         # Palace rejects faces exported twice as conductor and dielectric interface.
         gmsh.model.removePhysicalGroups([
-            (dim, tag)
-            for dim, tag in gmsh.model.getPhysicalGroups(2)
-            if gmsh.model.getPhysicalName(dim, tag) not in sheets
+            (group_dim, tag)
+            for group_dim, tag in gmsh.model.getPhysicalGroups(dim - 1)
+            if gmsh.model.getPhysicalName(group_dim, tag) not in sheets
         ])
-        for dim, tag in gmsh.model.getPhysicalGroups():
-            name = gmsh.model.getPhysicalName(dim, tag)
-            if dim == 3:
+        for group_dim, tag in gmsh.model.getPhysicalGroups():
+            name = gmsh.model.getPhysicalName(group_dim, tag)
+            if group_dim == dim:
                 groups["volumes"][name] = {"phys_group": tag}
             elif name in sheets:
                 groups["pec_surfaces"][name] = {"phys_group": tag}
@@ -198,14 +270,14 @@ def mesh_sheets(
             raise ValueError(
                 "Mesh physical groups do not match the conductors and dielectric domains"
             )
-        count = sum(len(elements) for elements in gmsh.model.mesh.getElements(3)[1])
+        count = sum(len(elements) for elements in gmsh.model.mesh.getElements(dim)[1])
         gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
         model.save_to_mesh(path)
         return MeshResult(
             mesh_path=path,
             output_dir=path.parent,
             groups=groups,
-            mesh_stats={"tetrahedra": count},
+            mesh_stats={"tetrahedra" if dim == 3 else "triangles": count},
         )
     finally:
         model.finalize()
@@ -226,6 +298,7 @@ def extract(
     order: int,
     tolerance: float,
     save_fields: bool = False,
+    normalization_depth_um: float | None = None,
 ) -> dict[str, np.ndarray | float]:
     """Resume a matching solve and return capacitance with numerical diagnostics."""
     from gsim.common.stack import LayerStack
@@ -255,7 +328,10 @@ def extract(
     else:
         run.mkdir(parents=True, exist_ok=True)
         (run / "inputs.json").write_text(json.dumps(inputs, indent=2), encoding="utf-8")
-        mesh = mesh_sheets(
+        mesh_function = (
+            mesh_sheets if normalization_depth_um is None else mesh_cross_section
+        )
+        mesh = mesh_function(
             sheets,
             footprint,
             height=height,
@@ -285,6 +361,9 @@ def extract(
         # Warm starts change the norm used to normalize the logged residuals.
         config = json.loads(config_path.read_text(encoding="utf-8"))
         config["Solver"]["Linear"]["InitialGuess"] = False
+        if normalization_depth_um is not None:
+            # Palace reports 2D capacitance for an implicit depth equal to Model.Lc.
+            config["Model"]["Lc"] = normalization_depth_um
         config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
         shutil.rmtree(run / "output", ignore_errors=True)
         handler = logging.FileHandler(run / "solver.log", mode="w")
