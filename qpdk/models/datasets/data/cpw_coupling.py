@@ -17,17 +17,24 @@ A uniform slice with natural end boundaries eliminates end fringing. Values
 are slice capacitances in F; divide by ``slice_length_um * 1e-6`` for F/m.
 The dataset-backed SAX model uses the quasi-TEM approximation and excludes
 kinetic inductance, conductor loss, finite substrate thickness and dispersion.
+
+Each geometry is solved on successively finer meshes until every raw matrix
+entry changes by at most 1% and the equal traces agree within 1%. The accepted
+finer result records its mesh sizes, refinement level and measured change.
+Domain truncation and interpolation need separate checks.
 """
 
 from __future__ import annotations
 
 import os
-from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Annotated
 
+import jax.numpy as jnp
 import typer
+from jax.typing import ArrayLike
 from shapely import Polygon, box, union_all
 
 from qpdk import logger
@@ -132,6 +139,73 @@ class Settings:
 SETTINGS = Settings()
 
 
+def mesh_settings(settings: Settings, refinements: int) -> tuple[Settings, ...]:
+    """Refine near-conductor and far-field sizes together."""
+    return (
+        settings,
+        *(
+            replace(
+                settings,
+                near_mesh=round(settings.near_mesh * (0.1 / 0.14) * 0.7**level, 12),
+                far_mesh=round(settings.far_mesh * (20 / 30) * 0.7**level, 12),
+            )
+            for level in range(refinements)
+        ),
+    )
+
+
+def converge_mesh(
+    solve: Callable[[Settings], dict[str, ArrayLike]],
+    settings: Settings,
+    *,
+    tolerance: float = 0.01,
+    max_refinements: int = 4,
+) -> dict[str, ArrayLike]:
+    """Accept a finer solve only after every matrix entry changes by at most tolerance.
+
+    Compare raw entries, including small mutual capacitances. The equal traces
+    must also agree within 1%. This measures successive-mesh sensitivity, not
+    a rigorous error bound or domain/interpolation convergence.
+
+    Returns:
+        Accepted solver quantities and measured mesh diagnostics.
+
+    Raises:
+        ValueError: If the tolerance or refinement limit is invalid.
+        RuntimeError: If a matrix is invalid or the refinement limit is exhausted.
+    """
+    if not 0 < tolerance < 1 or max_refinements < 1:
+        raise ValueError("Require 0 < mesh tolerance < 1 and at least one refinement")
+    previous = None
+    change = float("inf")
+    for level, config in enumerate(mesh_settings(settings, max_refinements)):
+        result = solve(config)
+        matrix = jnp.asarray(result["maxwell_capacitance"])
+        if matrix.shape != (2, 2) or not bool(jnp.all(jnp.isfinite(matrix))):
+            raise RuntimeError(
+                "Mesh convergence requires a finite 2x2 capacitance matrix"
+            )
+        if previous is not None:
+            change = float(jnp.max(jnp.abs((matrix - previous) / matrix)))
+            symmetric = bool(jnp.isclose(matrix[0, 0], matrix[1, 1], rtol=0.01, atol=0))
+            logger.info(
+                f"Mesh refinement {level}: maximum relative change={change:.3%}"
+            )
+            if change <= tolerance and symmetric:
+                return {
+                    **result,
+                    "mesh_relative_change": change,
+                    "mesh_refinement_level": float(level),
+                    "mesh_near_size": config.near_mesh * 1e-6,
+                    "mesh_far_size": config.far_mesh * 1e-6,
+                }
+        previous = matrix
+    raise RuntimeError(
+        f"Capacitance did not converge after {max_refinements} mesh refinements; "
+        f"last relative change={change:.3%}"
+    )
+
+
 def geometry(
     width: float, cpw_gap: float, gap: float, settings: Settings
 ) -> tuple[dict[str, Polygon], Polygon]:
@@ -163,6 +237,8 @@ def generate(
     sif: Path | None = None,
     processes: int = 4,
     container_binary: str = "palace",
+    mesh_tolerance: float = 0.01,
+    max_refinements: int = 4,
 ) -> Dataset:
     """Solve every geometry, resume matching results and publish complete data."""
     from _palace import (  # ruff: ignore[import-outside-top-level]
@@ -171,12 +247,22 @@ def generate(
         runtime,
     )
 
+    if not 0 < mesh_tolerance < 1 or max_refinements < 1:
+        raise ValueError("Require 0 < mesh tolerance < 1 and at least one refinement")
     executable, files = runtime(workdir, executable, sif, container_binary)
     provenance = {
         **fingerprint(Path(__file__)),
         **files,
         "settings": asdict(settings),
         "processes": processes,
+        "mesh_convergence": {
+            "relative_tolerance": mesh_tolerance,
+            "criterion": "Maximum relative change of every raw Maxwell matrix entry between successive meshes; equal-trace self-capacitances must also agree within 1%",
+            "settings_by_level": [
+                asdict(config) for config in mesh_settings(settings, max_refinements)
+            ],
+            "limitations": "Successive-mesh sensitivity is not a rigorous error bound; domain and interpolation accuracy require separate checks",
+        },
         "thread_environment": {
             name: os.environ.get(name)
             for name in (
@@ -209,7 +295,13 @@ def generate(
                     "solver_relative_residual",
                     "solver_iterations",
                     "analytical_mutual_relative_difference",
+                    "mesh_relative_change",
+                    "mesh_refinement_level",
                 )
+            ),
+            *(
+                Quantity(name=name, kind=QuantityKind.CIRCUIT_PARAMETER, unit="m")
+                for name in ("mesh_near_size", "mesh_far_size")
             ),
         ),
         terminals=TERMINALS,
@@ -217,31 +309,32 @@ def generate(
         provenance=provenance,
     )
 
-    def solve(**point: float) -> dict:
-        sheets, footprint = geometry(**point, settings=settings)
+    def solve_once(point: dict[str, float], config: Settings) -> dict[str, ArrayLike]:
+        sheets, footprint = geometry(**point, settings=config)
         inputs = {
             "point": point,
             "terminals": TERMINALS,
             "provenance": {
                 key: value
                 for key, value in provenance.items()
-                if key != "generator_sha256"
-            },
+                if key not in {"generator_sha256", "mesh_convergence"}
+            }
+            | {"settings": asdict(config)},
         }
         result = extract(
             sheets,
             footprint,
-            height=settings.domain_pad,
+            height=config.domain_pad,
             inputs=inputs,
             workdir=workdir,
             executable=executable,
             processes=processes,
-            near_mesh=settings.near_mesh,
-            far_mesh=settings.far_mesh,
-            permittivity=settings.permittivity,
-            order=settings.order,
-            tolerance=settings.tolerance,
-            save_fields=settings.save_fields,
+            near_mesh=config.near_mesh,
+            far_mesh=config.far_mesh,
+            permittivity=config.permittivity,
+            order=config.order,
+            tolerance=config.tolerance,
+            save_fields=config.save_fields,
         )
         reference = (
             float(
@@ -256,6 +349,14 @@ def generate(
             -result["maxwell_capacitance"][0, 1] / reference - 1
         )
         return result
+
+    def solve(**point: float) -> dict[str, ArrayLike]:
+        return converge_mesh(
+            lambda config: solve_once(point, config),
+            settings,
+            tolerance=mesh_tolerance,
+            max_refinements=max_refinements,
+        )
 
     logger.info(f"Generating {NAME}: grid={grid}; settings={settings}")
     result = write(output, metadata, sweep(metadata, solve, grid))
@@ -281,6 +382,19 @@ def main(
         int, typer.Option(min=1, help="MPI ranks per Palace solve.")
     ] = 4,
     container_binary: str = "palace",
+    mesh_tolerance: Annotated[
+        float,
+        typer.Option(
+            min=0, max=1, help="Maximum relative change between successive meshes."
+        ),
+    ] = 0.01,
+    max_refinements: Annotated[
+        int,
+        typer.Option(
+            min=1,
+            help="Fail rather than publish if this many refinements do not converge.",
+        ),
+    ] = 4,
 ) -> None:
     """Generate this experiment, preview it, or merge completed shards."""
     if executable is not None and sif is not None:
@@ -302,6 +416,8 @@ def main(
             sif=sif,
             processes=processes,
             container_binary=container_binary,
+            mesh_tolerance=mesh_tolerance,
+            max_refinements=max_refinements,
         )
 
 
