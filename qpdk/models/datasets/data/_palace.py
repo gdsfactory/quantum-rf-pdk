@@ -238,10 +238,29 @@ def _mesh_entities(
             distmin=1,
             distmax=25,
         )
+        resolutions = {name: [field] for name in sheets if name != "ground"}
+        ground_parts = (
+            list(sheets["ground"].geoms)
+            if hasattr(sheets["ground"], "geoms")
+            else [sheets["ground"]]
+        )
+        if dim == 2 and len(ground_parts) == 3:
+            strip = min(part.bounds[3] - part.bounds[1] for part in ground_parts)
+            # Refine the inner strip without refining the long outer ground rails.
+            resolutions["ground"] = [
+                ThresholdField(
+                    apply_to="curves",
+                    max_mass=strip * 1.001,
+                    sizemin=min(near_mesh, strip * near_mesh / (4 * 0.14)),
+                    sizemax=far_mesh,
+                    distmin=min(1, strip / 4),
+                    distmax=25,
+                )
+            ]
         model.mesh.process_geometry(
             dim=dim,
             default_characteristic_length=far_mesh,
-            resolution_specs={name: [field] for name in sheets if name != "ground"},
+            resolution_specs=resolutions,
             verbosity=0,
         )
         groups = {
