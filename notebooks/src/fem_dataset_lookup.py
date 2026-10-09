@@ -179,6 +179,10 @@ dataset.table.head(8)
 # let `uv run --script` create the Python 3.12 environment required by gsim.
 # Copy the script beside the original in `qpdk/models/datasets/data/` and edit it for another dataset.
 #
+# Meshing runs on the host, including when Palace uses `--sif`. Gmsh needs its native
+# libraries there; on Linux this includes `libGLU.so.1`. The container needs
+# a Palace binary with MPI support; select its executable with `--container-binary`.
+#
 # Preview the full sweep or run it from a checkout:
 #
 # ```bash
