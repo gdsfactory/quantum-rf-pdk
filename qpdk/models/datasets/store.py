@@ -249,7 +249,7 @@ class DeltaStore:
     ) -> str:
         """Commit ``frame`` as one append, creating the table if needed.
 
-        New tables are partitioned by the variants, which are always selected
+        New tables are partitioned by quantity and variants, which are selected
         exactly and never interpolated, and carry ``metadata`` on the ``value``
         column. Initial creation is exclusive; retry an append if another
         writer creates the table first.
@@ -289,7 +289,7 @@ class DeltaStore:
                 else {
                     "name": metadata.name,
                     "description": metadata.description,
-                    "partition_by": list(metadata.variants) or None,
+                    "partition_by": ["quantity", *metadata.variants],
                 }
             ),
             commit_properties=deltalake.CommitProperties(
