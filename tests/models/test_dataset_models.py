@@ -10,13 +10,13 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 from qpdk.models.constants import ε_0, μ_0
+from qpdk.models.couplers import cpw_coupling_model
 from qpdk.models.datasets import (
     Axis,
     Dataset,
     DatasetMetadata,
     Quantity,
     QuantityKind,
-    cpw_coupling_model,
     sweep,
 )
 from qpdk.models.datasets.generate import write

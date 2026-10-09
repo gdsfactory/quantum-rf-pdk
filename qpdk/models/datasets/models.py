@@ -1,114 +1,112 @@
-"""SAX models using capacitance extracted from uniform CPW slices."""
+"""Generic SAX models from stored N-port scattering or Maxwell matrices."""
 
 from pathlib import Path
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import sax
 from jax.typing import ArrayLike
 
-from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, μ_0
-from qpdk.models.cpw import transmission_line_s_params
+from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.datasets.capacitance import check_maxwell
 from qpdk.models.datasets.interpolation import GridInterpolator
 from qpdk.models.datasets.metadata import QuantityKind
 from qpdk.models.datasets.table import Dataset
 
 
-def cpw_coupling_model(
-    dataset: Dataset | Path | str = "cpw_coupling_palace",
+def s_parameters_model(
+    dataset: Dataset | Path | str,
+    quantity: str = "s_parameters",
+    *,
+    frequency_axis: str = "frequency",
+    **variants: str,
 ) -> sax.Model:
-    r"""Load a symmetric CPW dataset once and return a jittable four-port model.
+    """Load stored N-port S-parameters and return a jittable SAX lookup.
 
-    The dataset contains slice capacitances in F, swept over ``width``,
-    ``cpw_gap`` and ``gap`` in µm. The generator's ``slice_length_um`` and
-    substrate ``permittivity`` must be present in the provenance. Ports are
-    ``o1`` lower-left, ``o2`` upper-left, ``o3`` upper-right, ``o4`` lower-right.
-    The reference planes are the two ends of the uniform coupled section.
-
-    For sheets between two dielectric half-spaces,
-    :math:`C = (1 + \epsilon_\text{r}) C_0 / 2`. The quasi-TEM geometric
-    inductance per length is :math:`L = \mu_0 \epsilon_0 C_0^{-1}`. Even and
-    odd modes form a lossless distributed line, transformed back into the
-    physical ports. Finite substrate thickness, kinetic inductance, conductor
-    loss and dispersion are outside this model; see
-    :cite:`simonsCoplanarWaveguideCircuits2001` for coupled-line theory. Check
-    dielectric scaling with separate vacuum solves when changing the geometry
-    or boundaries.
-
-    Self-capacitances may differ by up to 1% from numerical meshing; their
-    mean defines the symmetric model. Larger differences are rejected.
-    File reads and grid validation happen here, outside JAX tracing. The
-    returned model supports ``jit``, ``vmap`` and geometry derivatives; queries
-    outside the dataset domain yield NaN.
+    ``f`` is in Hz and supplies ``frequency_axis``. Other continuous grid axes
+    are passed by name; discrete variants are fixed when creating the model.
+    Terminals become port names. Reference impedances and planes are those of
+    the stored simulation, without renormalization. Out-of-domain values are
+    NaN. Multilinear interpolation does not enforce losslessness between points.
+    Unspecified geometry axes use their middle stored coordinates.
 
     Returns:
-        SAX model for the uniform four-port coupled section.
+        SAX model with the dataset terminal names.
 
     Raises:
-        ValueError: If the grid or slice settings do not describe symmetric CPWs.
+        ValueError: If the quantity or frequency axis has the wrong convention.
     """
     data = dataset if isinstance(dataset, Dataset) else Dataset(dataset)
-    grid = data.grid("maxwell_capacitance")
+    grid = data.grid(quantity, allow_missing=False, **variants)
+    if grid.quantity.kind != QuantityKind.S_PARAMETERS or not grid.quantity.complex:
+        raise ValueError("Expected complex S-parameters")
+    if not any(axis.name == frequency_axis and axis.unit == "Hz" for axis in grid.axes):
+        raise ValueError("The frequency axis must be present and in Hz")
+    lookup = GridInterpolator(grid)
+    defaults = {
+        name: float(values[len(values) // 2])
+        for name, values in zip(grid.axis_names, grid.coords, strict=True)
+        if name != frequency_axis
+    }
+
+    def model(f: ArrayLike = DEFAULT_FREQUENCY, **params: ArrayLike) -> sax.SDict:
+        values = lookup(**{**defaults, frequency_axis: f, **params})
+        return {
+            (a, b): values[..., i, j]
+            for i, a in enumerate(grid.terminals)
+            for j, b in enumerate(grid.terminals)
+        }
+
+    sax.replace_kwargs(model, f=DEFAULT_FREQUENCY, **defaults)
+    return jax.jit(model)
+
+
+def capacitance_model(
+    dataset: Dataset | Path | str,
+    quantity: str = "maxwell_capacitance",
+    **variants: str,
+) -> sax.Model:
+    r"""Return a lumped N-port SAX model from a Maxwell capacitance dataset.
+
+    Continuous geometry axes are passed by name; discrete variants are fixed
+    here. ``f`` is in Hz and ``z_ref`` is a common real port impedance in ohms.
+    The admittance is :math:`Y = j 2 \pi f C`; all terminals reference the
+    dataset ground. This model includes terminal-to-ground capacitances and
+    mutual branches, with no distributed propagation or inductance.
+    Unspecified geometry axes use their middle stored coordinates.
+
+    Returns:
+        SAX model with the dataset terminal names.
+
+    Raises:
+        ValueError: If the quantity is not a physical real Maxwell matrix.
+    """
+    data = dataset if isinstance(dataset, Dataset) else Dataset(dataset)
+    grid = data.grid(quantity, allow_missing=False, **variants)
     if grid.quantity.kind != QuantityKind.MAXWELL_CAPACITANCE or grid.quantity.complex:
         raise ValueError("Expected real Maxwell capacitances")
-    if grid.axis_names != ("width", "cpw_gap", "gap") or len(grid.terminals) != 2:
-        raise ValueError("Expected a two-conductor grid over width, cpw_gap and gap")
-    if any(axis.unit != "um" for axis in grid.axes):
-        raise ValueError("CPW geometry axes must be in um")
     check_maxwell(grid.values)
-    if np.any(grid.values.sum(axis=-1) <= 0):
-        raise ValueError("Both traces must have positive capacitance to ground")
-    if not np.allclose(
-        grid.values[..., 0, 0], grid.values[..., 1, 1], rtol=0.01, atol=0
-    ):
-        raise ValueError("The CPW model requires symmetric traces and ground rails")
-    settings = data.metadata.provenance["settings"]
-    slice_length = float(settings["slice_length_um"]) * 1e-6
-    effective_permittivity = (1 + float(settings["permittivity"])) / 2
-    if slice_length <= 0 or effective_permittivity <= 0:
-        raise ValueError("Slice length and effective permittivity must be positive")
     lookup = GridInterpolator(grid)
+    identity = jnp.eye(len(grid.terminals))
+    defaults = {
+        name: float(values[len(values) // 2])
+        for name, values in zip(grid.axis_names, grid.coords, strict=True)
+    }
 
-    @jax.jit
     def model(
         f: ArrayLike = DEFAULT_FREQUENCY,
-        length: ArrayLike = 1000.0,
-        width: ArrayLike = 10.0,
-        cpw_gap: ArrayLike = 6.0,
-        gap: ArrayLike = 8.0,
         z_ref: ArrayLike = 50.0,
+        **params: ArrayLike,
     ) -> sax.SDict:
-        """Uniform section; f in Hz, dimensions in µm, port impedance in ohms."""
-        capacitance = lookup(width=width, cpw_gap=cpw_gap, gap=gap) / slice_length
-        c_self = (capacitance[..., 0, 0] + capacitance[..., 1, 1]) / 2
-        c_mutual = (capacitance[..., 0, 1] + capacitance[..., 1, 0]) / 2
-        modal_c = jnp.stack((c_self + c_mutual, c_self - c_mutual), axis=-1)
-        modal_l = μ_0 * ε_0 * effective_permittivity / modal_c
-        gamma = 2j * jnp.pi * jnp.asarray(f)[..., None] * jnp.sqrt(modal_l * modal_c)
-        impedance = jnp.sqrt(modal_l / modal_c)
-        reflection, transmission = transmission_line_s_params(
-            gamma,
-            impedance,
-            jnp.asarray(length)[..., None] * 1e-6,
-            jnp.asarray(z_ref)[..., None],
-        )
-        r_same = (reflection[..., 0] + reflection[..., 1]) / 2
-        r_other = (reflection[..., 0] - reflection[..., 1]) / 2
-        t_same = (transmission[..., 0] + transmission[..., 1]) / 2
-        t_other = (transmission[..., 0] - transmission[..., 1]) / 2
-        return sax.reciprocal({
-            ("o1", "o1"): r_same,
-            ("o2", "o2"): r_same,
-            ("o3", "o3"): r_same,
-            ("o4", "o4"): r_same,
-            ("o1", "o2"): r_other,
-            ("o3", "o4"): r_other,
-            ("o1", "o4"): t_same,
-            ("o2", "o3"): t_same,
-            ("o1", "o3"): t_other,
-            ("o2", "o4"): t_other,
-        })
+        capacitance = lookup(**{**defaults, **params})
+        admittance = 2j * jnp.pi * jnp.asarray(f)[..., None, None] * capacitance
+        normalized = jnp.asarray(z_ref)[..., None, None] * admittance
+        values = jnp.linalg.solve(identity + normalized, identity - normalized)
+        return {
+            (a, b): values[..., i, j]
+            for i, a in enumerate(grid.terminals)
+            for j, b in enumerate(grid.terminals)
+        }
 
-    return model
+    sax.replace_kwargs(model, f=DEFAULT_FREQUENCY, z_ref=50.0, **defaults)
+    return jax.jit(model)
