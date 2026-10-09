@@ -58,7 +58,7 @@ class QuantityKind(StrEnum):
     S_PARAMETERS = "s_parameters"
     """Complex scattering matrix at the reference planes recorded in the provenance."""
     CIRCUIT_PARAMETER = "circuit_parameter"
-    """Reduced scalar circuit parameter, e.g. a coupling capacitance."""
+    """Scalar circuit parameter or numerical diagnostic, e.g. coupling capacitance or a solver residual."""
 
 
 _CANONICAL_UNITS = {

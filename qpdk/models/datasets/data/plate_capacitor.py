@@ -1,15 +1,14 @@
 # /// script
 # requires-python = "~=3.12.0"
 # dependencies = [
-#   "qpdk[models]",
+#   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@92b65f5f71e5764e750c0abcf5e1bd12aa10eb53",
+#   "typer>=0.24,<1",
 #   "gsim @ git+https://github.com/gdsfactory/gsim.git@05c6c93cc14522f8a6a78a08b28116e242cdf1c0",
 # ]
-# [tool.uv.sources]
-# qpdk = { path = "..", editable = true }
 # ///
 """Generate Maxwell capacitance data with gsim and Palace.
 
-Run ``uv run --script datasets/plate_capacitor.py --help`` from a checkout.
+Run ``uv run --script qpdk/models/datasets/data/plate_capacitor.py --help`` from a checkout.
 Edit GRID and SETTINGS to define your experiment. The electrodes are perfect
 conductor sheets on silicon with a separate coplanar ground frame. Mesh and
 domain sensitivity must be checked before relying on small differences.
@@ -17,17 +16,17 @@ domain sensitivity must be checked before relying on small differences.
 
 from __future__ import annotations
 
-import argparse
 import os
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Annotated
 
 import gdsfactory as gf
 import numpy as np
+import typer
 from shapely import Point, Polygon, box
 
-from datasets._palace import extract, fingerprint, runtime
 from qpdk import PDK, logger
 from qpdk.cells import plate_capacitor
 from qpdk.models.datasets import Axis, Dataset, DatasetMetadata, Quantity, QuantityKind
@@ -108,6 +107,12 @@ def generate(
 ) -> Dataset:
     """Solve the grid, resume completed matching runs, and publish validated data."""
     PDK.activate()
+    from _palace import (  # ruff: ignore[import-outside-top-level]
+        extract,
+        fingerprint,
+        runtime,
+    )
+
     executable, files = runtime(workdir, executable, sif, container_binary)
     provenance = {
         **fingerprint(Path(__file__)),
@@ -136,6 +141,14 @@ def generate(
                 name="maxwell_capacitance",
                 kind=QuantityKind.MAXWELL_CAPACITANCE,
                 unit="F",
+            ),
+            *(
+                Quantity(name=name, kind=QuantityKind.CIRCUIT_PARAMETER, unit="1")
+                for name in (
+                    "fem_error_indicator_norm",
+                    "solver_relative_residual",
+                    "solver_iterations",
+                )
             ),
         ),
         terminals=TERMINALS,
@@ -168,7 +181,7 @@ def generate(
                 if name != "generator_sha256"
             },
         }
-        matrix = extract(
+        return extract(
             sheets,
             rectangle(settings.domain_pad),
             height=settings.domain_pad,
@@ -183,7 +196,6 @@ def generate(
             tolerance=settings.tolerance,
             save_fields=settings.save_fields,
         )
-        return {"maxwell_capacitance": matrix}
 
     logger.info(f"Generating {NAME}: grid={grid}; settings={settings}")
     result = write(
@@ -193,46 +205,47 @@ def generate(
     return result
 
 
-def main() -> None:
-    """Preview or run this experiment; edit the constants for another sweep."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--shard", type=int, default=0)
-    parser.add_argument("--shards", type=int, default=1)
-    parser.add_argument("--merge-shards", type=Path, nargs="+")
-    parser.add_argument("--output", type=Path, default=Path("build/datasets") / NAME)
-    parser.add_argument(
-        "--workdir", type=Path, default=Path("build/palace/plate-capacitor")
-    )
-    runtime = parser.add_mutually_exclusive_group()
-    runtime.add_argument("--executable", type=Path)
-    runtime.add_argument("--sif", type=Path)
-    parser.add_argument("--processes", type=int, default=4)
-    parser.add_argument("--container-binary", default="palace")
-    args = parser.parse_args()
-    if args.merge_shards is not None:
-        merge(
-            args.merge_shards,
-            args.output,
-            grid=GRID,
-            variants={"cross_section": ["cpw"]},
-        )
+def main(
+    dry_run: Annotated[
+        bool, typer.Option(help="Preview the selected grid without running Palace.")
+    ] = False,
+    shard: Annotated[int, typer.Option(min=0, help="Zero-based worker index.")] = 0,
+    shards: Annotated[int, typer.Option(min=1, help="Total number of workers.")] = 1,
+    merge_shards: Annotated[
+        list[Path] | None,
+        typer.Option(help="Completed shard directory; repeat for each shard."),
+    ] = None,
+    output: Path = Path("build/datasets") / NAME,
+    workdir: Path = Path("build/palace/plate-capacitor"),
+    executable: Path | None = None,
+    sif: Path | None = None,
+    processes: Annotated[
+        int, typer.Option(min=1, help="MPI ranks per Palace solve.")
+    ] = 4,
+    container_binary: str = "palace",
+) -> None:
+    """Generate this experiment, preview it, or merge completed shards."""
+    if executable is not None and sif is not None:
+        raise typer.BadParameter("Choose --executable or --sif, not both")
+    if merge_shards:
+        merge(merge_shards, output, grid=GRID, variants={"cross_section": ["cpw"]})
         return
-    grid = partition_grid(GRID, shard=args.shard, shards=args.shards)
-    logger.info(
-        f"Grid: {grid}; settings: {SETTINGS}; output: {args.output}; runs: {args.workdir}"
-    )
-    if not args.dry_run:
+    try:
+        grid = partition_grid(GRID, shard=shard, shards=shards)
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
+    logger.info(f"Grid: {grid}; settings: {SETTINGS}; output: {output}")
+    if not dry_run:
         generate(
             grid=grid,
-            output=args.output,
-            workdir=args.workdir,
-            executable=args.executable,
-            sif=args.sif,
-            processes=args.processes,
-            container_binary=args.container_binary,
+            output=output,
+            workdir=workdir,
+            executable=executable,
+            sif=sif,
+            processes=processes,
+            container_binary=container_binary,
         )
 
 
 if __name__ == "__main__":
-    main()
+    typer.run(main)

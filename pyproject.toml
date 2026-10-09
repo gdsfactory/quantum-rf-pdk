@@ -225,7 +225,7 @@ project-excludes = [
   "docs/**",
   "build/**",
   "dist/**",
-  "datasets/**",
+  "qpdk/models/datasets/data/*.py",
   "*.egg-info/**",
   ".venv/**",
   # Exclude samples that may have experimental code
@@ -241,7 +241,7 @@ project-includes = ["**/*.py"]
 no-matching-overload = "ignore"
 
 [tool.pytest]
-addopts = ["--tb=short"]
+addopts = ["--tb=short", "--ignore=qpdk/models/datasets/data"]
 filterwarnings = [
   # gdsfactory internally warns about bend_euler for non-90/180 angles even
   # when the user calls bend_circular; suppress until upstream fixes this.
@@ -434,5 +434,14 @@ default-groups = ["dev", "lint", "stubs", "test"]
 sax = { git = "https://github.com/gdsfactory/sax.git", rev = "de4a5b71eddbadc4b8f749e716f0bb3bd1a86240" }
 
 [tool.uv.build-backend]
+wheel-exclude = [
+  "qpdk/models/datasets/data/*.py",
+  "qpdk/models/datasets/data/*.sh"
+]
 module-root = ""
-source-exclude = ["tests/**", "docs/**"]
+source-exclude = [
+  "qpdk/models/datasets/data/*.py",
+  "qpdk/models/datasets/data/*.sh",
+  "tests/**",
+  "docs/**"
+]

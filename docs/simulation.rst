@@ -129,24 +129,24 @@ Generating Palace datasets
 ==========================
 
 The bundled ``plate_capacitor_palace`` and ``cpw_coupling_palace`` datasets contain real
-Palace electrostatic extractions. Their standalone scripts in ``datasets/`` define the
-grid, settings, metadata and solver function. Inline dependencies select the Python 3.12
-environment required by gsim; generation scripts are excluded from the installed
-package.
+Palace electrostatic extractions. Their standalone scripts in
+``qpdk/models/datasets/data/`` define the grid, settings, metadata and solver function.
+Inline dependencies select the Python 3.12 environment required by gsim; generation
+scripts are excluded from the installed package.
 
 Preview or run the bundled 27-point sweep from a checkout:
 
 ::
 
-    uv run --script datasets/plate_capacitor.py --dry-run
-    uv run --script datasets/plate_capacitor.py --processes 4
-    uv run --script datasets/plate_capacitor.py --sif /path/to/palace.sif
+    uv run --script qpdk/models/datasets/data/plate_capacitor.py --dry-run
+    uv run --script qpdk/models/datasets/data/plate_capacitor.py --processes 4
+    uv run --script qpdk/models/datasets/data/plate_capacitor.py --sif /path/to/palace.sif
 
-Copy the script beside the original in ``datasets/`` and edit ``GRID`` and ``SETTINGS``
-for another experiment. Meshwell meshes labelled conductor sheets and the surrounding
-air and silicon volumes. The shared experiment helper uses gsim to write the Palace
-configuration, run ``ElectrostaticSim`` and load capacitance matrices. Lookup models
-need none of these simulation dependencies.
+Copy the script beside the original in ``qpdk/models/datasets/data/`` and edit ``GRID``
+and ``SETTINGS`` for another experiment. Meshwell meshes labelled conductor sheets and
+the surrounding air and silicon volumes. The shared experiment helper uses gsim to write
+the Palace configuration, run ``ElectrostaticSim`` and load capacitance matrices. Lookup
+models need none of these simulation dependencies.
 
 Each geometry retains its inputs, mesh, config, solver log and results under
 ``--workdir``. Rerunning reuses matching completed solves. Extend the grid while
@@ -157,20 +157,30 @@ runs fingerprint only the supplied executable.
 
 Set ``save_fields=True`` for ParaView outputs. Compare representative geometries at
 finer ``near_mesh`` sizes and larger ``domain_pad`` before relying on small differences.
-The plate example has a separate ground frame. The CPW example is a uniform slice of two
-identical traces with outer ground rails, sweeping trace width, outer slot width and
-inter-trace gap. ``cpw_coupling_model()`` converts its capacitance lookup into a
+Every solve stores ``solver_relative_residual``, ``solver_iterations`` and
+``fem_error_indicator_norm`` alongside its capacitance. Missing diagnostics and
+unconverged terminal solves prevent publication. The FEM indicator is Palace's
+energy-normalized recovered-flux estimate, not a capacitance error bound. Scan and rank
+it to select refinement candidates; establish accuracy by comparing the capacitances
+from successively finer meshes and larger domains. Check interpolation with held-out
+geometries separately. The notebook demonstrates a lazy diagnostic scan and outlier
+flag. The plate example has a separate ground frame. The CPW example is a uniform slice
+of two identical traces with outer ground rails, sweeping trace width, outer slot width
+and inter-trace gap. ``cpw_coupling_model()`` converts its capacitance lookup into a
 jittable four-port quasi-TEM SAX model; see the notebook for geometry heatmaps and
 S-parameters.
 
 Both scripts support disjoint rectangular shards with ``--shard INDEX --shards COUNT``.
 Use separate output and work directories for each worker, then merge after all succeed.
-For the CPW grid, the generic Slurm helper groups 36 geometries per task:
+For the CPW grid, the generic Slurm helper groups 195 geometries per task:
 
 ::
 
-    sbatch --array=0-9 datasets/slurm_array.sh datasets/cpw_coupling.py build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
-    uv run --script datasets/cpw_coupling.py --merge-shards build/cpw-shards/shard-* --output build/datasets/cpw_coupling_palace
+    generator=qpdk/models/datasets/data/cpw_coupling.py
+    sbatch --array=0-34 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
+    shards=()
+    for i in {0..34}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
+    uv run --script "$generator" "${shards[@]}" --output build/datasets/cpw_coupling_palace
 
 Supply your scheduler's partition and resource options to ``sbatch``. Merging checks
 matching provenance, successful results and exact coverage before publishing. Keep the
@@ -198,3 +208,15 @@ experiment, runtime and array size fixed when resuming.
 
 .. automodule:: qpdk.models.datasets.models
     :members:
+
+Without Slurm, run the generator directly to solve the full grid sequentially. The
+notebook also shows a local shard loop with the same merge step. Each Palace solve
+defaults to four MPI ranks; the Slurm helper reserves four CPUs and sets one thread per
+rank. Its default array has eight tasks and can be overridden at submission.
+
+``qpdk.models.datasets.s_parameters_model`` loads a stored complex scattering matrix as
+a jittable SAX model with any number of labelled ports. ``capacitance_model`` converts a
+real Maxwell matrix into a lumped N-port model, including capacitances to ground.
+Distributed CPW physics lives in ``qpdk.models.couplers.cpw_coupling_model``;
+``coupler_straight`` uses the same Palace mutual-capacitance lookup through
+``cpw_cpw_coupling_capacitance``.

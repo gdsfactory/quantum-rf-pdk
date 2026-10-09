@@ -1,15 +1,14 @@
 # /// script
 # requires-python = "~=3.12.0"
 # dependencies = [
-#   "qpdk[models]",
+#   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@92b65f5f71e5764e750c0abcf5e1bd12aa10eb53",
+#   "typer>=0.24,<1",
 #   "gsim @ git+https://github.com/gdsfactory/gsim.git@05c6c93cc14522f8a6a78a08b28116e242cdf1c0",
 # ]
-# [tool.uv.sources]
-# qpdk = { path = "..", editable = true }
 # ///
 """Generate symmetric edge-coupled CPW capacitance with meshwell and Palace.
 
-Run ``uv run --script datasets/cpw_coupling.py --help`` from a checkout.
+Run ``uv run --script qpdk/models/datasets/data/cpw_coupling.py --help`` from a checkout.
 Edit GRID and SETTINGS to define the experiment. Both traces have the same
 width and outer slot width; the gap between them is fully etched, with no
 intervening ground strip. Perfect conductor sheets lie between air and silicon.
@@ -22,25 +21,78 @@ kinetic inductance, conductor loss, finite substrate thickness and dispersion.
 
 from __future__ import annotations
 
-import argparse
 import os
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Annotated
 
+import typer
 from shapely import Polygon, box, union_all
 
-from datasets._palace import extract, fingerprint, runtime
 from qpdk import logger
+from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
 from qpdk.models.datasets import Axis, Dataset, DatasetMetadata, Quantity, QuantityKind
 from qpdk.models.datasets.generate import merge, partition_grid, sweep, write
 from qpdk.tech import material_properties
 
 NAME = "cpw_coupling_palace"
 GRID = {
-    "width": [4.0, 6.0, 8.0, 10.0, 14.0, 20.0],
-    "cpw_gap": [3.0, 4.0, 6.0, 8.0, 10.0, 12.0],
-    "gap": [2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 18.0, 25.0, 35.0, 50.0],
+    "width": [
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0,
+        12.0,
+        14.0,
+        16.0,
+        20.0,
+        25.0,
+        30.0,
+    ],
+    "cpw_gap": [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 16.0, 20.0],
+    "gap": [
+        1.0,
+        1.25,
+        1.5,
+        1.75,
+        2.0,
+        2.5,
+        3.0,
+        3.5,
+        4.0,
+        5.0,
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0,
+        12.0,
+        14.0,
+        16.0,
+        18.0,
+        20.0,
+        25.0,
+        30.0,
+        35.0,
+        40.0,
+        50.0,
+        60.0,
+        75.0,
+        90.0,
+        100.0,
+        125.0,
+        150.0,
+        175.0,
+        200.0,
+        225.0,
+        250.0,
+    ],
 }
 TERMINALS = ("lower", "upper")
 
@@ -50,8 +102,8 @@ class Settings:
     """Mesh and slice dimensions in µm; substrate relative permittivity."""
 
     slice_length_um: float = 4.0
-    domain_pad: float = 450.0
-    near_mesh: float = 0.2
+    domain_pad: float = 1350.0
+    near_mesh: float = 0.14
     far_mesh: float = 30.0
     permittivity: float = material_properties["Si"]["relative_permittivity"]
     order: int = 2
@@ -113,6 +165,12 @@ def generate(
     container_binary: str = "palace",
 ) -> Dataset:
     """Solve every geometry, resume matching results and publish complete data."""
+    from _palace import (  # ruff: ignore[import-outside-top-level]
+        extract,
+        fingerprint,
+        runtime,
+    )
+
     executable, files = runtime(workdir, executable, sif, container_binary)
     provenance = {
         **fingerprint(Path(__file__)),
@@ -132,6 +190,7 @@ def generate(
         "topology": "symmetric edge-coupled CPW; fully etched gap between traces",
         "outer_boundary": "natural zero normal electric displacement, including both slice ends",
         "slice_length_um": settings.slice_length_um,
+        "analytical_reference": "Conformal mapping for symmetric edge-coupled CPW dielectric half-spaces; relative difference = FEM mutual / analytical mutual - 1",
     }
     metadata = DatasetMetadata(
         name=NAME,
@@ -142,6 +201,15 @@ def generate(
                 name="maxwell_capacitance",
                 kind=QuantityKind.MAXWELL_CAPACITANCE,
                 unit="F",
+            ),
+            *(
+                Quantity(name=name, kind=QuantityKind.CIRCUIT_PARAMETER, unit="1")
+                for name in (
+                    "fem_error_indicator_norm",
+                    "solver_relative_residual",
+                    "solver_iterations",
+                    "analytical_mutual_relative_difference",
+                )
             ),
         ),
         terminals=TERMINALS,
@@ -160,7 +228,7 @@ def generate(
                 if key != "generator_sha256"
             },
         }
-        matrix = extract(
+        result = extract(
             sheets,
             footprint,
             height=settings.domain_pad,
@@ -175,7 +243,19 @@ def generate(
             tolerance=settings.tolerance,
             save_fields=settings.save_fields,
         )
-        return {"maxwell_capacitance": matrix}
+        reference = (
+            float(
+                cpw_cpw_coupling_capacitance_per_length_analytical(
+                    **point, ep_r=settings.permittivity
+                )
+            )
+            * settings.slice_length_um
+            * 1e-6
+        )
+        result["analytical_mutual_relative_difference"] = (
+            -result["maxwell_capacitance"][0, 1] / reference - 1
+        )
+        return result
 
     logger.info(f"Generating {NAME}: grid={grid}; settings={settings}")
     result = write(output, metadata, sweep(metadata, solve, grid))
@@ -183,39 +263,47 @@ def generate(
     return result
 
 
-def main() -> None:
-    """Preview or run this experiment."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--shard", type=int, default=0)
-    parser.add_argument("--shards", type=int, default=1)
-    parser.add_argument("--merge-shards", type=Path, nargs="+")
-    parser.add_argument("--output", type=Path, default=Path("build/datasets") / NAME)
-    parser.add_argument(
-        "--workdir", type=Path, default=Path("build/palace/cpw-coupling")
-    )
-    selected = parser.add_mutually_exclusive_group()
-    selected.add_argument("--executable", type=Path)
-    selected.add_argument("--sif", type=Path)
-    parser.add_argument("--processes", type=int, default=4)
-    parser.add_argument("--container-binary", default="palace")
-    args = parser.parse_args()
-    if args.merge_shards is not None:
-        merge(args.merge_shards, args.output, grid=GRID, variants=None)
+def main(
+    dry_run: Annotated[
+        bool, typer.Option(help="Preview the selected grid without running Palace.")
+    ] = False,
+    shard: Annotated[int, typer.Option(min=0, help="Zero-based worker index.")] = 0,
+    shards: Annotated[int, typer.Option(min=1, help="Total number of workers.")] = 1,
+    merge_shards: Annotated[
+        list[Path] | None,
+        typer.Option(help="Completed shard directory; repeat for each shard."),
+    ] = None,
+    output: Path = Path("build/datasets") / NAME,
+    workdir: Path = Path("build/palace/cpw-coupling"),
+    executable: Path | None = None,
+    sif: Path | None = None,
+    processes: Annotated[
+        int, typer.Option(min=1, help="MPI ranks per Palace solve.")
+    ] = 4,
+    container_binary: str = "palace",
+) -> None:
+    """Generate this experiment, preview it, or merge completed shards."""
+    if executable is not None and sif is not None:
+        raise typer.BadParameter("Choose --executable or --sif, not both")
+    if merge_shards:
+        merge(merge_shards, output, grid=GRID, variants=None)
         return
-    grid = partition_grid(GRID, shard=args.shard, shards=args.shards)
-    logger.info(f"Grid: {grid}; settings: {SETTINGS}; output: {args.output}")
-    if not args.dry_run:
+    try:
+        grid = partition_grid(GRID, shard=shard, shards=shards)
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
+    logger.info(f"Grid: {grid}; settings: {SETTINGS}; output: {output}")
+    if not dry_run:
         generate(
             grid=grid,
-            output=args.output,
-            workdir=args.workdir,
-            executable=args.executable,
-            sif=args.sif,
-            processes=args.processes,
-            container_binary=args.container_binary,
+            output=output,
+            workdir=workdir,
+            executable=executable,
+            sif=sif,
+            processes=processes,
+            container_binary=container_binary,
         )
 
 
 if __name__ == "__main__":
-    main()
+    typer.run(main)

@@ -31,7 +31,7 @@ over geometry) and looks them up from JAX models. A dataset is nothing but its f
   single-writer; concurrent or remote writers use a Delta table. Only `generate.write` replaces a dataset, and only by
   swapping in a complete staged directory; it refuses directories holding anything but dataset parts.
 - **Synthetic data is labelled.** Any dataset not produced by a real solver sets `synthetic=True` and says so in its
-  description. Experiment scripts in `datasets/` supply a `solve` callback to the reusable
+  description. Experiment scripts in `qpdk/models/datasets/data/` supply a `solve` callback to the reusable
   `qpdk.models.datasets.generate.sweep` and `write` functions.
 
 ## Data files
@@ -39,8 +39,8 @@ over geometry) and looks them up from JAX models. A dataset is nothing but its f
 - `qpdk/models/datasets/data/**/*.parquet` is tracked by Git LFS (`.gitattributes`). Flag a Parquet file committed as a
   regular blob, and a regenerated dataset committed without the code change that produced it.
 - Regenerate a shipped dataset with its standalone Python experiment, e.g.
-  `uv run --script datasets/plate_capacitor.py`. Inline dependencies define the generation environment; scripts stay
-  outside wheels.
+  `uv run --script qpdk/models/datasets/data/plate_capacitor.py`. Inline dependencies define the generation environment;
+  scripts stay outside wheels.
 - Lookups must not import gsim or Gmsh. Script previews import the experiment dependencies but never run Palace.
 - Provenance ships in wheels: flag absolute host paths, user names, or other machine-specific details in it.
 

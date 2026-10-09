@@ -75,11 +75,29 @@ POINTS = st.fixed_dictionaries({
 
 
 def _maxwell(**point: float) -> np.ndarray:
-    rows = Dataset(NAME).table.filter(_at(**point)).sort("row", "col")
+    rows = (
+        Dataset(NAME)
+        .scan()
+        .filter(_at(**point), pl.col("quantity") == "maxwell_capacitance")
+        .sort("row", "col")
+        .collect()
+    )
     return rows["value"].to_numpy().reshape(2, 2)
 
 
-def _at(**point: float) -> pl.Expr:
+def _stored_quantities(**point: float | str) -> dict:
+    rows = Dataset(NAME).scan().filter(_at(**point)).collect()
+    return {
+        quantity.name: rows
+        .filter(pl.col("quantity") == quantity.name)
+        .sort("row", "col")["value"]
+        .to_numpy()
+        .reshape((2, 2) if quantity.matrix else ())
+        for quantity in PLATE_CAPACITOR.quantities
+    }
+
+
+def _at(**point: float | str) -> pl.Expr:
     """Select one grid point; grid values are stored exactly, so ``is_in`` is safe."""
     return pl.all_horizontal(pl.col(k).is_in([v]) for k, v in point.items())
 
@@ -173,7 +191,8 @@ class TestValidation:
     @staticmethod
     def test_shipped_table_is_valid(dataset: Dataset) -> None:
         validate(dataset.table, dataset.metadata)
-        assert dataset.table.height == 3 * 3 * 3 * 2 * 2
+        entries = sum(4 if q.matrix else 1 for q in PLATE_CAPACITOR.quantities)
+        assert dataset.table.height == 3 * 3 * 3 * entries
 
     def test_rejects_wrong_columns(self, dataset: Dataset) -> None:
         self._rejects(
@@ -472,11 +491,7 @@ class TestGenerate:
     def test_sweep_round_trips_stored_solves(dataset: Dataset, tmp_path: Path) -> None:
         frame = sweep(
             PLATE_CAPACITOR,
-            lambda **point: {
-                "maxwell_capacitance": _maxwell(**{
-                    k: v for k, v in point.items() if k != "cross_section"
-                })
-            },
+            _stored_quantities,
             PLATE_CAPACITOR_GRID,
             {"cross_section": ["cpw"]},
         )
@@ -488,13 +503,13 @@ class TestGenerate:
 
     @staticmethod
     def test_failed_solve_is_recorded() -> None:
-        def solve(length, width, gap, cross_section):  # ruff: ignore[unused-function-argument]
+        def solve(length, width, gap, cross_section):
             return (
                 None
                 if gap > 7
-                else {
-                    "maxwell_capacitance": _maxwell(length=length, width=width, gap=gap)
-                }
+                else _stored_quantities(
+                    length=length, width=width, gap=gap, cross_section=cross_section
+                )
             )
 
         frame = sweep(
@@ -502,7 +517,8 @@ class TestGenerate:
         )
         validate(frame, PLATE_CAPACITOR)
         failed = frame.filter(pl.col("status") == RunStatus.FAILED)
-        assert failed.height == 3 * 3 * 4
+        entries = sum(4 if q.matrix else 1 for q in PLATE_CAPACITOR.quantities)
+        assert failed.height == 3 * 3 * entries
         assert failed["value"].is_null().all()
 
     @staticmethod
