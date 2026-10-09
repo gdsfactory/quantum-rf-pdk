@@ -129,11 +129,17 @@ class _GroundStripLookup:
         self, *, width: ArrayLike, cpw_gap: ArrayLike, gap: ArrayLike
     ) -> jax.Array:
         """Return the raw slice matrix; unsupported positive strips yield NaN."""
-        width, cpw_gap, gap = jnp.broadcast_arrays(width, cpw_gap, gap)
+        epsilon = max(
+            jnp.finfo(jnp.result_type(cpw_gap, 0.0)).eps,
+            jnp.finfo(jnp.result_type(gap, 0.0)).eps,
+        )
+        width, cpw_gap, gap = jnp.broadcast_arrays(
+            *(jnp.asarray(value, dtype=float) for value in (width, cpw_gap, gap))
+        )
         strip = gap - 2 * cpw_gap
         lo_strip, hi_strip = self._domain["ground_strip_width"]
         # Subtracting the slot widths loses a few ulps at the thinnest strip.
-        tolerance = 8 * jnp.finfo(float).eps * jnp.maximum(jnp.abs(gap), 1)
+        tolerance = 8 * epsilon * jnp.maximum(jnp.abs(gap), 1)
         points = (width, cpw_gap, jnp.clip(strip, lo_strip, hi_strip))
         grounded = (
             jnp.exp(

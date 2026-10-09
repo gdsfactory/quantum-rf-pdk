@@ -170,6 +170,17 @@ def test_ground_strip_log_interpolation_and_regime_switch(dataset: Dataset) -> N
     assert jnp.isfinite(jax.jit(jax.grad(query))(8.0))
     assert jnp.isnan(jax.jit(query)(12.001))
     assert jnp.isfinite(jax.jit(query)(12.01))
+    for dtype in (jnp.float32, jnp.float64):
+        boundary = jax.jit(lookup)(
+            width=jnp.array([4.0, 20.0], dtype=dtype),
+            cpw_gap=jnp.array([3.0, 12.0], dtype=dtype),
+            gap=jnp.array([6.01, 272.0], dtype=dtype),
+        )
+        np.testing.assert_allclose(
+            boundary, grounded.values[[0, -1], [0, -1], [0, -1]], rtol=1e-5
+        )
+        assert jnp.isnan(jax.jit(query)(jnp.asarray(12.001, dtype=dtype)))
+        assert jnp.isfinite(jax.jit(query)(jnp.asarray(12.01, dtype=dtype)))
 
 
 @pytest.mark.parametrize("fixed_axes", [(0,), (0, 1), (0, 1, 2)])
