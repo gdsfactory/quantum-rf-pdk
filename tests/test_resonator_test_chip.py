@@ -59,11 +59,19 @@ def test_resonator_test_chip_has_distinct_resonances() -> None:
     for probe_ports in (("o1", "o2"), ("o3", "o4")):
         s21_db = 20 * jnp.log10(jnp.abs(s_params[probe_ports]) + 1e-30)
         center = s21_db[1:-1]
-        is_dip = (center <= s21_db[:-2]) & (center < s21_db[2:]) & (center < -0.3)
-        dips = jnp.flatnonzero(is_dip)
+        is_dip = (center <= s21_db[:-2]) & (center < s21_db[2:])
+        dips = jnp.flatnonzero(is_dip) + 1
         assert len(dips) == 8, (
             f"Probeline {probe_ports}: expected 8 distinct resonances, got {len(dips)}"
         )
+        # Ground shielding narrows the resonances below the coarse sweep spacing.
+        spacing = frequencies[1] - frequencies[0]
+        refined = (
+            frequencies[dips, None] + spacing * jnp.linspace(-1, 1, 257)[None, :]
+        ).ravel()
+        refined_s = _simulate_yaml_chip(refined)
+        refined_db = 20 * jnp.log10(jnp.abs(refined_s[probe_ports]) + 1e-30)
+        assert (refined_db.reshape(8, -1).min(axis=1) < -0.3).all()
 
 
 def test_resonator_test_chip_yaml_simulates_from_leaf_models() -> None:
