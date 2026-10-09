@@ -552,14 +552,12 @@ pl.DataFrame(rows)
 # uv run --script qpdk/models/datasets/data/cpw_coupling.py --sif /path/to/palace.sif
 # ```
 #
-# Mesh refinement and domain enlargement at the center and eight corners
-# changed matrix entries by at most 0.61% and 0.89%. Three vacuum comparisons
-# agreed with dielectric scaling within 0.11%. Sixteen fresh solves between grid
-# points differed from interpolation by at most 2.08%. These are representative
-# checks, not a uniform accuracy bound.
-# At a geometry with 0.68% trace-to-trace self-capacitance mismatch, refinement
-# reduced it to 0.0007%. The symmetric average changed by 0.13%, supporting the
-# model's 1% numerical symmetry tolerance. The stored solver matrices stay raw.
+# The generator refines every geometry until each raw Maxwell entry changes by
+# at most 1% between successive meshes and identical traces agree within 1%.
+# It stores the accepted finer matrix, mesh sizes, refinement level and measured
+# change. This measures mesh sensitivity; it does not bound domain truncation or
+# interpolation error. Separate domain, vacuum and held-out checks travel in the
+# bundled dataset's provenance. Solver matrices remain raw.
 #
 # The following cells read the bundled Palace results and run no simulator.
 # The same interpolator handles all three axes; fixing an axis only chooses a
@@ -575,22 +573,21 @@ logger.info(f"CPW grid: {cpw_grid.values.shape}; domain: {cpw_lookup.domain}")
 # %% [markdown]
 # ### Find simulations to refine
 #
-# This scan selects the diagnostics before collecting any data. The table prioritises
-# ten refinement candidates using an upper-IQR FEM flag, 1% trace mismatch and 3%
-# difference from conformal mapping. The analytical comparison also detects domain
-# truncation and errors in small mutual capacitances that a total-energy indicator can miss.
-# Geometry can change the indicator systematically, so flagged results need finer
-# solves and capacitance comparisons before they can be judged inaccurate. Also
-# inspect abrupt changes between neighbouring geometries and the equal traces'
-# self-capacitance mismatch. Repeat refinement until the quantities used by your
-# model meet its accuracy requirement; check interpolation separately with held-out solves.
-
+# Filter and project before collecting. The mesh change is the measured refinement
+# check; the FEM norm ranks results to inspect and is not a capacitance error bound.
+# Trace mismatch and comparison with conformal mapping provide independent flags.
+# A flagged result needs investigation, even when its linear solve converged.
+#
 # %% tags=["keep_output"]
 diagnostic_names = (
     "fem_error_indicator_norm",
     "solver_relative_residual",
     "solver_iterations",
     "analytical_mutual_relative_difference",
+    "mesh_relative_change",
+    "mesh_refinement_level",
+    "mesh_near_size",
+    "mesh_far_size",
 )
 diagnostics = (
     cpw_dataset
@@ -624,6 +621,7 @@ indicator = pl.col("fem_error_indicator_norm")
             > indicator.quantile(0.75)
             + 1.5 * (indicator.quantile(0.75) - indicator.quantile(0.25))
         )
+        | (pl.col("mesh_relative_change") > 0.01)
         | (pl.col("trace_mismatch") > 0.01)
         | (pl.col("analytical_mutual_relative_difference").abs() > 0.03)
     )
