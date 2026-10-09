@@ -217,8 +217,11 @@ def test_rejects_a_floating_pair(dataset: Dataset, tmp_path: Path) -> None:
         cpw_coupling_model(wrong)
 
 
-def test_bundled_palace_grid_and_default_model() -> None:
-    data = Dataset("cpw_coupling_palace")
+@pytest.mark.parametrize(
+    "dataset_name", ["cpw_coupling_palace", "cpw_coupling_ground_strip_palace"]
+)
+def test_bundled_palace_grid_and_default_model(dataset_name: str) -> None:
+    data = Dataset(dataset_name)
     assert not data.metadata.synthetic
     grid = data.grid("maxwell_capacitance")
     assert grid.values.shape == (15, 13, 35, 2, 2)

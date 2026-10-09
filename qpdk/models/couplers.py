@@ -58,6 +58,9 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
     where :math:`s_\text{c}` is the separation (gap) between inner edges, :math:`W` is the
     center conductor width, and :math:`G` is the gap to the ground plane.
 
+    The entire inner gap is etched. This expression excludes the ground strip
+    left by ``coupler_straight`` when its gap exceeds twice the CPW slot width.
+
     See :cite:`simonsCoplanarWaveguideCircuits2001`.
 
     Args:
@@ -95,7 +98,7 @@ def cpw_cpw_coupling_capacitance_per_length_analytical(
 
 
 def cpw_coupling_model(
-    dataset: Dataset | Path | str = "cpw_coupling_palace",
+    dataset: Dataset | Path | str = "cpw_coupling_ground_strip_palace",
 ) -> sax.Model:
     r"""Load a symmetric CPW dataset once and return a jittable four-port model.
 
@@ -104,6 +107,9 @@ def cpw_coupling_model(
     substrate ``permittivity`` must be present in the provenance. Ports are
     ``o1`` lower-left, ``o2`` upper-left, ``o3`` upper-right, ``o4`` lower-right.
     The reference planes are the two ends of the uniform coupled section.
+    The default dataset retains the ground strip between separated CPW slots,
+    matching ``coupler_straight``. Select ``cpw_coupling_palace`` explicitly for
+    a fully etched inner gap and comparison with the analytical ECCPW formula.
 
     For sheets between two dielectric half-spaces,
     :math:`C = (1 + \epsilon_\text{r}) C_0 / 2`. The quasi-TEM geometric
@@ -199,7 +205,7 @@ def _cpw_lookup() -> tuple[GridInterpolator, float, float]:
     Returns:
         Lookup and the dimensions needed to normalize its capacitances.
     """
-    data = Dataset("cpw_coupling_palace")
+    data = Dataset("cpw_coupling_ground_strip_palace")
     settings = data.metadata.provenance["settings"]
     return (
         GridInterpolator(data.grid("maxwell_capacitance")),
@@ -218,6 +224,8 @@ def cpw_cpw_coupling_capacitance(
 
     The uniform sheet dataset supplies mutual capacitance per length. Values
     outside its width, outer-slot and inter-trace-gap domain return NaN.
+    Its inner ground strip has width ``max(gap - 2 * cpw_gap, 0)``, matching
+    the etch masks of ``coupler_straight``.
     Dielectric half-space scaling accounts for cross-section permittivity;
     kinetic inductance, thickness and fringing are omitted.
 
