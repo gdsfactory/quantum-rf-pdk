@@ -111,18 +111,22 @@ from qpdk import logger
 from qpdk.config import PATH
 from qpdk.models.capacitor import plate_capacitor
 from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.couplers import (
+    cpw_coupling_model,
+    cpw_cpw_coupling_capacitance_per_length_analytical,
+)
 from qpdk.models.cpw import cpw_z0_from_cross_section
 from qpdk.models.datasets import (
     Dataset,
     GridInterpolator,
+    capacitance_model,
     check_maxwell,
-    cpw_coupling_model,
     maxwell_to_mutual,
 )
 from qpdk.models.datasets.generate import write
 from qpdk.models.generic import capacitor
 
-set_matplotlib_formats("svg")
+set_matplotlib_formats("png", "svg")
 for style_source in (PATH.repo / "docs" / "qpdk.mplstyle", "qpdk"):
     try:
         plt.style.use(style_source)
@@ -166,18 +170,18 @@ dataset.table.head(8)
 # %% [markdown]
 # ## Define a generation script
 #
-# `datasets/plate_capacitor.py` is a complete experiment: its `GRID`, `SETTINGS`,
+# `qpdk/models/datasets/data/plate_capacitor.py` is a complete experiment: its `GRID`, `SETTINGS`,
 # metadata and `solve` function describe what to extract. Its inline dependencies
 # let `uv run --script` create the Python 3.12 environment required by gsim.
-# Copy the script beside the original in `datasets/` and edit it for another dataset.
+# Copy the script beside the original in `qpdk/models/datasets/data/` and edit it for another dataset.
 #
 # Preview the full sweep or run it from a checkout:
 #
 # ```bash
-# uv run --script datasets/plate_capacitor.py --dry-run
-# uv run --script datasets/plate_capacitor.py --processes 4
+# uv run --script qpdk/models/datasets/data/plate_capacitor.py --dry-run
+# uv run --script qpdk/models/datasets/data/plate_capacitor.py --processes 4
 # # A local Palace container:
-# uv run --script datasets/plate_capacitor.py --sif /path/to/palace.sif
+# uv run --script qpdk/models/datasets/data/plate_capacitor.py --sif /path/to/palace.sif
 # ```
 #
 # The script uses gsim's `ElectrostaticSim` for execution and matrix loading.
@@ -187,7 +191,7 @@ dataset.table.head(8)
 # %%
 small_grid = {"length": [40.0, 80.0], "width": [10.0], "gap": [4.0, 7.0, 10.0]}
 output = Path("build/dataset-example/coarse")
-generator_script = Path("datasets/plate_capacitor.py")
+generator_script = Path("qpdk/models/datasets/data/plate_capacitor.py")
 
 # %% [markdown]
 # ## Run a small sweep and inspect its output
@@ -202,7 +206,7 @@ generator_script = Path("datasets/plate_capacitor.py")
 # Set `RUN_PALACE=True` to execute the generator from a checkout. It runs the
 # grid defined in `generator_script`; point this path to your edited copy.
 # The default selects six existing Palace results and performs no new solves.
-# Both paths produce a self-describing table with four entries per matrix.
+# Both paths produce a self-describing table with four matrix entries and scalar diagnostics per solve.
 
 # %% tags=["keep_output"]
 RUN_PALACE = False
@@ -244,6 +248,7 @@ logger.info(
 (
     generated
     .scan()
+    .filter(pl.col("quantity") == "maxwell_capacitance")
     .group_by("length", "width", "gap", "status")
     .len(name="matrix_entries")
     .sort("length", "gap")
@@ -271,11 +276,32 @@ logger.info(
 # Choose at most as many tasks as points on the longest axis. For the CPW grid:
 #
 # ```bash
-# sbatch --array=0-9 datasets/slurm_array.sh datasets/cpw_coupling.py \
+# generator=qpdk/models/datasets/data/cpw_coupling.py
+# sbatch --array=0-34 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" \
 #   build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
-# # After every array task succeeds:
-# uv run --script datasets/cpw_coupling.py \
-#   --merge-shards build/cpw-shards/shard-* --output build/datasets/cpw_coupling_palace
+# # After every task succeeds, pass each shard as a repeated option:
+# shards=()
+# for i in {0..34}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
+# uv run --script "$generator" "${shards[@]}" --output build/datasets/cpw_coupling_palace
+# ```
+#
+# Each task runs one solve at a time with four MPI ranks, one thread per rank.
+# Specify the array size with `--array`; `--cpus-per-task` sets MPI ranks per solve.
+#
+# Without Slurm, run the entire script directly or use a local loop. This
+# sequential loop needs four cores; independent shard commands can also run
+# concurrently if each has its own four-core allocation:
+#
+# ```bash
+# generator=qpdk/models/datasets/data/cpw_coupling.py
+# export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+# shards=()
+# for i in {0..7}; do
+#   uv run --script "$generator" --shard "$i" --shards 8 --processes 4 \
+#     --output "build/cpw-shards/shard-$i" --workdir "build/cpw-runs/shard-$i"
+#   shards+=(--merge-shards "build/cpw-shards/shard-$i")
+# done
+# uv run --script "$generator" "${shards[@]}" --output build/datasets/cpw_coupling_palace
 # ```
 #
 # Keep the script, settings, runtime and array size fixed while resuming.
@@ -284,6 +310,12 @@ logger.info(
 #
 # ## Check mesh and domain sensitivity
 #
+# Each result stores the worst terminal's linear-solver residual and iteration count,
+# plus Palace's energy-normalized recovered-flux FEM error indicator. The generator
+# rejects missing diagnostics or a linear solve that exceeds `SETTINGS.tolerance`.
+# Linear convergence alone does not establish mesh accuracy. The FEM indicator ranks
+# candidates for refinement; it is not a percentage error in capacitance.
+#
 # A denser parameter grid cannot repair a coarse FEM mesh. In a copy of the
 # generator, select one geometry and vary the settings:
 #
@@ -291,13 +323,15 @@ logger.info(
 # from dataclasses import replace
 #
 # GRID = {"length": [80.0], "width": [10.0], "gap": [7.0]}
-# SETTINGS = replace(SETTINGS, near_mesh=0.38, save_fields=True)
+# SETTINGS = replace(SETTINGS, near_mesh=0.38, far_mesh=17.0, save_fields=True)
 # ```
 #
-# Run at mesh sizes 0.8, 0.55 and 0.38 µm with separate output directories,
+# Reduce both near and far mesh sizes with separate output directories,
 # then increase `domain_pad` to 150 µm. Compare the Maxwell matrices and inspect
 # the saved fields in ParaView, especially near metal edges and gaps. Repeat
 # representative checks near the ends of any expanded geometry range.
+# For each quantity of interest, compare successive solves using
+# $|C_{\text{fine}}-C_{\text{coarse}}|/|C_{\text{fine}}|$, checking mesh and domain changes separately.
 #
 # For the bundled extraction at 80/10/7 µm, the final mesh refinement changed
 # entries by at most 0.49%; enlarging the domain changed them by 0.19%. Across
@@ -362,8 +396,8 @@ c_maxwell = GridInterpolator(grid)
 logger.info(repr(c_maxwell))
 
 C = c_maxwell(length=100.0, width=10.0, gap=5.0)
-logger.info(f"Maxwell matrix [fF]:\n{np.asarray(C) * 1e15}")
-logger.info(f"Mutual matrix [fF]:\n{np.asarray(maxwell_to_mutual(C)) * 1e15}")
+logger.info(f"Maxwell matrix [fF]:\n{C * 1e15}")
+logger.info(f"Mutual matrix [fF]:\n{maxwell_to_mutual(C) * 1e15}")
 check_maxwell(C)  # raises NonPhysicalMatrixError if C is not physical
 
 # %% [markdown]
@@ -371,7 +405,7 @@ check_maxwell(C)  # raises NonPhysicalMatrixError if C is not physical
 # clamps to the nearest edge instead, which hides an out-of-range design.
 
 # %% tags=["keep_output"]
-lengths = jnp.linspace(0.0, 400.0, 401)
+lengths = jnp.linspace(0.0, 250.0, 251)
 ours = -c_maxwell(length=lengths, width=10.0, gap=5.0)[:, 0, 1]
 
 xarr = xr.DataArray(
@@ -404,7 +438,9 @@ plt.show()
 # the dataset instead. The analytical formula and FEM model include different
 # geometry and ground assumptions, so their disagreement is visible here. The
 # lookup uses only the mutual branch; a complete circuit can also include the
-# extracted pad-to-ground capacitances.
+# extracted pad-to-ground capacitances. `capacitance_model` supplies that complete lumped
+# N-port network for any number of terminals; `s_parameters_model` directly interpolates
+# stored N-port scattering data.
 
 
 # %% tags=["keep_output"]
@@ -424,6 +460,12 @@ def plate_capacitor_lookup(
     )
 
 
+complete_plate = capacitance_model(dataset, cross_section="cpw")
+logger.info(
+    f"Complete two-terminal network at 5 GHz: "
+    f"{complete_plate(f=5e9, length=80.0, width=10.0, gap=7.0)}"
+)
+
 f = jnp.linspace(1e9, 10e9, 201)
 s_lookup = jax.jit(
     lambda gap: plate_capacitor_lookup(f=f, length=80.0, width=10.0, gap=gap)
@@ -431,9 +473,9 @@ s_lookup = jax.jit(
 s_analytical = plate_capacitor(f=f, length=80.0, width=10.0, gap=7.0)
 
 fig, ax = plt.subplots()
-ax.plot(f / 1e9, 20 * np.log10(np.abs(s_analytical["o1", "o2"])), label="analytical")
+ax.plot(f / 1e9, 20 * jnp.log10(jnp.abs(s_analytical["o1", "o2"])), label="analytical")
 ax.plot(
-    f / 1e9, 20 * np.log10(np.abs(s_lookup["o1", "o2"])), "--", label="dataset lookup"
+    f / 1e9, 20 * jnp.log10(jnp.abs(s_lookup["o1", "o2"])), "--", label="dataset lookup"
 )
 ax.set_xlabel(r"Frequency $f$ ($\text{GHz}$)")
 ax.set_ylabel(r"$|S_{21}|$ ($\text{dB}$)")
@@ -499,15 +541,15 @@ pl.DataFrame(rows)
 # %% [markdown]
 # ## Symmetric CPW coupling: a three-dimensional dataset
 #
-# `datasets/cpw_coupling.py` follows the same workflow, sweeping trace width,
+# `qpdk/models/datasets/data/cpw_coupling.py` follows the same workflow, sweeping trace width,
 # outer CPW slot width and the gap between two identical traces. The inner gap
 # is fully etched; there is no ground strip between the traces. Both conductors
 # and the outer ground rails span a uniform slice, whose end faces have natural
 # boundaries to remove end fringing. Stored capacitances are in F for that slice.
 #
 # ```bash
-# uv run --script datasets/cpw_coupling.py --dry-run
-# uv run --script datasets/cpw_coupling.py --sif /path/to/palace.sif
+# uv run --script qpdk/models/datasets/data/cpw_coupling.py --dry-run
+# uv run --script qpdk/models/datasets/data/cpw_coupling.py --sif /path/to/palace.sif
 # ```
 #
 # Mesh refinement and domain enlargement at the center and eight corners
@@ -531,6 +573,71 @@ slice_length = cpw_dataset.metadata.provenance["settings"]["slice_length_um"] * 
 logger.info(f"CPW grid: {cpw_grid.values.shape}; domain: {cpw_lookup.domain}")
 
 # %% [markdown]
+# ### Find simulations to refine
+#
+# This scan selects the diagnostics before collecting any data. The table prioritises
+# ten refinement candidates using an upper-IQR FEM flag, 1% trace mismatch and 3%
+# difference from conformal mapping. The analytical comparison also detects domain
+# truncation and errors in small mutual capacitances that a total-energy indicator can miss.
+# Geometry can change the indicator systematically, so flagged results need finer
+# solves and capacitance comparisons before they can be judged inaccurate. Also
+# inspect abrupt changes between neighbouring geometries and the equal traces'
+# self-capacitance mismatch. Repeat refinement until the quantities used by your
+# model meet its accuracy requirement; check interpolation separately with held-out solves.
+
+# %% tags=["keep_output"]
+diagnostic_names = (
+    "fem_error_indicator_norm",
+    "solver_relative_residual",
+    "solver_iterations",
+    "analytical_mutual_relative_difference",
+)
+diagnostics = (
+    cpw_dataset
+    .scan()
+    .filter(pl.col("quantity").is_in(diagnostic_names))
+    .select("width", "cpw_gap", "gap", "quantity", "value")
+    .group_by("width", "cpw_gap", "gap")
+    .agg(
+        pl.col("value").filter(pl.col("quantity") == name).first().alias(name)
+        for name in diagnostic_names
+    )
+)
+symmetry = (
+    cpw_dataset
+    .scan()
+    .filter(pl.col("quantity") == "maxwell_capacitance", pl.col("row") == pl.col("col"))
+    .select("width", "cpw_gap", "gap", "value")
+    .group_by("width", "cpw_gap", "gap")
+    .agg(
+        trace_mismatch=(pl.col("value").max() - pl.col("value").min())
+        / pl.col("value").mean()
+    )
+)
+indicator = pl.col("fem_error_indicator_norm")
+(
+    diagnostics
+    .join(symmetry, on=["width", "cpw_gap", "gap"])
+    .with_columns(
+        flag_for_refinement=(
+            indicator
+            > indicator.quantile(0.75)
+            + 1.5 * (indicator.quantile(0.75) - indicator.quantile(0.25))
+        )
+        | (pl.col("trace_mismatch") > 0.01)
+        | (pl.col("analytical_mutual_relative_difference").abs() > 0.03)
+    )
+    .sort(
+        pl.col("flag_for_refinement"),
+        pl.col("analytical_mutual_relative_difference").abs(),
+        pl.col("fem_error_indicator_norm"),
+        descending=True,
+    )
+    .head(10)
+    .collect()
+)
+
+# %% [markdown]
 # ### A two-dimensional heatmap
 #
 # At a fixed outer slot width, vary trace width and inter-trace gap together.
@@ -538,18 +645,19 @@ logger.info(f"CPW grid: {cpw_grid.values.shape}; domain: {cpw_lookup.domain}")
 
 # %% tags=["keep_output"]
 width_axis = jnp.linspace(*cpw_lookup.domain["width"], 101)
-gap_axis = jnp.linspace(*cpw_lookup.domain["gap"], 151)
+gap_axis = jnp.geomspace(*cpw_lookup.domain["gap"], 151)
 W, G = jnp.meshgrid(width_axis, gap_axis, indexing="ij")
 mutual_per_length = -cpw_lookup(width=W, cpw_gap=6.0, gap=G)[..., 0, 1] / slice_length
 fig, ax = plt.subplots(constrained_layout=True)
 image = ax.pcolormesh(
     gap_axis, width_axis, mutual_per_length * 1e12, shading="auto", rasterized=True
 )
-solved_width, solved_gap = np.meshgrid(
+solved_width, solved_gap = jnp.meshgrid(
     cpw_grid.coords[0], cpw_grid.coords[2], indexing="ij"
 )
 ax.scatter(solved_gap, solved_width, s=8, color="black")
 ax.set_xlabel(r"Inter-trace gap ($\text{µm}$)")
+ax.set_xscale("log")
 ax.set_ylabel(r"Trace width ($\text{µm}$)")
 ax.set_title(r"Outer slot width $6\,\text{µm}$")
 fig.colorbar(image, ax=ax, label=r"Mutual capacitance per length ($\text{pF/m}$)")
@@ -564,7 +672,7 @@ plt.show()
 # panel's slot width lies between stored grid points.
 
 # %% tags=["keep_output"]
-outer_slots = jnp.array([3.0, 7.0, 12.0])
+outer_slots = jnp.array([3.0, 7.5, 12.0])
 volume_slices = (
     -cpw_lookup(
         width=W[None, ...], cpw_gap=outer_slots[:, None, None], gap=G[None, ...]
@@ -587,6 +695,7 @@ for i, ax in enumerate(axes):
     )
     ax.set_title(rf"Outer slot ${float(outer_slots[i]):g}\,\text{{µm}}$")
     ax.set_xlabel(r"Inter-trace gap ($\text{µm}$)")
+    ax.set_xscale("log")
 axes[0].set_ylabel(r"Trace width ($\text{µm}$)")
 fig.colorbar(
     image, ax=list(axes), label=r"Mutual capacitance per length ($\text{pF/m}$)"
@@ -594,9 +703,38 @@ fig.colorbar(
 plt.show()
 
 # %% [markdown]
+# ### Compare with conformal mapping
+#
+# The analytical edge-coupled CPW expression assumes the same conductor sheets
+# and dielectric half-spaces. Compare mutual capacitance per length directly,
+# before turning either result into a circuit model.
+
+# %% tags=["keep_output"]
+analytical = cpw_cpw_coupling_capacitance_per_length_analytical(
+    gap=gap_axis,
+    width=10.0,
+    cpw_gap=6.0,
+    ep_r=cpw_dataset.metadata.provenance["settings"]["permittivity"],
+)
+fem = -cpw_lookup(width=10.0, cpw_gap=6.0, gap=gap_axis)[..., 0, 1] / slice_length
+fig, axes = plt.subplots(1, 2, figsize=(10, 3.8), constrained_layout=True)
+axes[0].plot(gap_axis, fem * 1e12, label="Palace interpolation")
+axes[0].plot(gap_axis, analytical * 1e12, "--", label="Conformal mapping")
+axes[0].set_ylabel(r"Mutual capacitance per length ($\text{pF/m}$)")
+axes[0].legend()
+axes[1].plot(gap_axis, 100 * (fem / analytical - 1))
+axes[1].set_ylabel(r"Difference from analytical ($\text{%}$)")
+for ax in axes:
+    ax.set_xlabel(r"Inter-trace gap ($\text{µm}$)")
+    ax.set_xscale("log")
+plt.show()
+
+# %% [markdown]
 # ## A distributed four-port SAX model
 #
-# {func}`~qpdk.models.datasets.models.cpw_coupling_model` loads and validates the grid
+# {func}`~qpdk.models.couplers.cpw_cpw_coupling_capacitance` uses this lookup in
+# {func}`~qpdk.models.couplers.coupler_straight`. For a distributed section,
+# {func}`~qpdk.models.couplers.cpw_coupling_model` loads and validates the grid
 # once, then returns a jittable model of the uniform coupled section. The slice
 # capacitances determine even- and odd-mode impedances. Geometric inductance
 # follows the quasi-TEM dielectric half-space relation; kinetic inductance,
