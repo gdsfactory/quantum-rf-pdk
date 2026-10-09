@@ -50,6 +50,9 @@ legend.fancybox: true
 legend.shadow: false
 legend.borderpad: 0.25
 
+# Sequential colormap for heatmaps, registered by importing qpdk.colormaps
+image.cmap: qpdk
+
 # Line settings
 lines.linewidth: 1.5
 lines.markersize: 6

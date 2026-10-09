@@ -30,6 +30,7 @@ c.InteractiveShellApp.exec_lines = [  # ruff: ignore[undefined-name]
     "plt.rcParams['pdf.fonttype'] = 42",
     "plt.rcParams['ps.fonttype'] = 42",
     # Load custom matplotlib style for QPDK documentation
+    "import qpdk.colormaps",  # registers the style's ``image.cmap``
     "plt.style.use('qpdk')",
     # Monkey-patch Axes.set_title so figure titles use Outfit (bold) to match
     # the Sphinx documentation heading font (see docs/_static/css/custom.css).

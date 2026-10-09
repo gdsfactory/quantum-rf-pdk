@@ -12,12 +12,15 @@ from pathlib import Path
 
 import typst
 from docutils import nodes
+from matplotlib.colors import to_hex
 from matplotlib.sphinxext import plot_directive
 from sphinx.application import Sphinx
 from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
 from sphinxcontrib.svgbob._svgbob import to_svg
 from typsphinx.translator import TypstTranslator, escape_typst_string
+
+from qpdk.colormaps import QPDK, QPDK_DARK
 
 # Local Sphinx extensions live in ``docs/_ext`` and are imported by name below.
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
@@ -67,6 +70,7 @@ plot_pre_code = """
 import os
 from matplotlib import pyplot as plt
 from qpdk import PDK
+import qpdk.colormaps  # registers the ``image.cmap`` of both styles
 import matplotlib.font_manager as _fm
 _fm._load_fontmanager(try_read_cache=False)
 
@@ -892,7 +896,7 @@ def _render_figures_for_both_themes(*args, **kwargs):
 
 
 #: How the colours ``qpdk.mplstyle`` leaves at matplotlib's defaults map onto
-#: ``qpdk-dark.mplstyle``: background, ink, grid, and the tab10 cycle.  Used to
+#: ``qpdk-dark.mplstyle``: background, ink, grid, the tab10 cycle, and the colormap.  Used to
 #: derive the dark notebook figures, see `_write_dark_notebook_figure`.
 _NOTEBOOK_FIGURE_DARK_COLOURS = {
     "#ffffff": "#14181e",
@@ -909,6 +913,13 @@ _NOTEBOOK_FIGURE_DARK_COLOURS = {
     "#7f7f7f": "#a3adb8",
     "#bcbd22": "#d7dd5c",
     "#17becf": "#5fd3d3",
+}
+#: Vector heatmaps (``pcolormesh``, ``contourf``) drawn with the ``qpdk`` colormap
+#: take the matching ``qpdk-dark`` colour.  Rasters (``imshow``) are not recoloured.
+_NOTEBOOK_FIGURE_DARK_COLOURS |= {
+    light: to_hex(dark)
+    for light, dark in zip(map(to_hex, QPDK(range(QPDK.N))), QPDK_DARK(range(QPDK.N)))
+    if light not in _NOTEBOOK_FIGURE_DARK_COLOURS
 }
 _HEX_COLOUR_RE = re.compile(r"#[0-9a-fA-F]{6}\b")
 
