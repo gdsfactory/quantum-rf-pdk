@@ -6,11 +6,16 @@ defaults the layer stack and materials to QPDK's and keeps one instance per clas
 
 from __future__ import annotations
 
-from gplugins.ansys.hfss import (
-    HFSS as _HFSS,
-    LumpedPortConfig,
-    lumped_port_rectangle_from_cpw,
-)
+from qpdk.simulation.aedt_base import MISSING_HFSS_EXTRA
+
+try:
+    from gplugins.ansys.hfss import (
+        HFSS as _HFSS,
+        LumpedPortConfig,
+        lumped_port_rectangle_from_cpw,
+    )
+except ModuleNotFoundError as error:
+    raise ImportError(MISSING_HFSS_EXTRA) from error
 
 from qpdk.simulation._aedt import AEDTBase
 

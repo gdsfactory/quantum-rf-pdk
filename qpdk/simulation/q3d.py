@@ -9,9 +9,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from gplugins.ansys.q3d import Q2D as _Q2D, Q3D as _Q3D
-
 from qpdk.models.cpw import get_cpw_dimensions
+from qpdk.simulation.aedt_base import MISSING_HFSS_EXTRA
+
+try:
+    from gplugins.ansys.q3d import Q2D as _Q2D, Q3D as _Q3D
+except ModuleNotFoundError as error:
+    raise ImportError(MISSING_HFSS_EXTRA) from error
+
 from qpdk.simulation._aedt import AEDTBase
 
 if TYPE_CHECKING:
@@ -69,14 +74,19 @@ class Q2D(_Q2D, AEDTBase):
         Raises:
             ValueError: If the units are not ``"um"``, or the cross-section is not a
                 valid CPW.
+            KeyError: If the layer stack has no ``Substrate`` or ``M1`` level.
         """
         if units != "um":
             raise ValueError("Q2D cross-section expects units='um'")
         cpw_width, cpw_gap = get_cpw_dimensions(cross_section)
+        stack = self.resolve_layer_stack(layer_stack)
+        for level in ("Substrate", "M1"):
+            if level not in stack.layers:
+                raise KeyError(level)
         return self.create_2d_cpw(
             cpw_width,
             cpw_gap,
-            layer_stack,
+            stack,
             substrate_level="Substrate",
             conductor_level="M1",
             ground_width=ground_width,
