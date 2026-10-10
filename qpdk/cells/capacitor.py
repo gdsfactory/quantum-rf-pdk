@@ -208,6 +208,8 @@ def interdigital_capacitor(
         (thickness + finger_length, height),
         (thickness + finger_length, height - thickness),
         (thickness, height - thickness),
+        # TODO(Python 3.15): `*(*pts for i in ...)` (PEP 798) replaces chain.from_iterable here
+        # and below; drop the itertools import.
         *chain.from_iterable(
             (
                 (thickness, height - (2 * i) * (thickness + finger_gap)),

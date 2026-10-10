@@ -101,6 +101,7 @@ def show_components(
     Returns:
         Components after :func:`gdsfactory.get_component`.
     """
+    # TODO(Python 3.15): `lazy from qpdk import PDK` (PEP 810) at module scope breaks the cycle.
     from qpdk import PDK  # ruff: ignore[import-outside-top-level]
 
     PDK.activate()

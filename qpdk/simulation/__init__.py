@@ -77,6 +77,8 @@ if TYPE_CHECKING:
     from qpdk.simulation.hfss import HFSS
     from qpdk.simulation.q3d import Q2D, Q3D
 
+# TODO(Python 3.15): `lazy from ... import` (PEP 810) - replaces _LAZY_IMPORTS, __getattr__,
+# __dir__, the TYPE_CHECKING block and the undefined-export ignore. Keep them lazy, not eager.
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "COMSOL": ("qpdk.simulation.comsol.model", "COMSOL"),
     "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),

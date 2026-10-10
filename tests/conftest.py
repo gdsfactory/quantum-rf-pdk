@@ -108,6 +108,7 @@ def isolated_wrapper_cache():
     """
     # Imported here, not at module level: qpdk.simulation pulls in extras such as
     # polars, and the GDSFactory+ job collects this suite without them.
+    # TODO(Python 3.15): `lazy from qpdk.simulation import ...` (PEP 810) - hoist to module scope.
     from qpdk.simulation import HFSS, Q2D, Q3D  # ruff: ignore[import-outside-top-level]
 
     wrappers = (HFSS, Q3D, Q2D)
