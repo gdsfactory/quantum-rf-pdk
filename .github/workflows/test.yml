@@ -452,6 +452,7 @@ jobs:
       - name: Check the saved JAX backend notebook
         shell: python
         run: |
+          import hashlib
           import json
           from pathlib import Path
 
@@ -476,3 +477,14 @@ jobs:
           for required in ("GPU  : ✓", "GPU: t0 ="):
               if required not in output:
                   raise SystemExit(f"Saved JAX backend notebook is missing {required!r}")
+          if not any(
+              "image/png" in output.get("data", {}) for cell in code_cells for output in cell.get("outputs", [])
+          ):
+              raise SystemExit("Saved JAX backend notebook is missing a plot")
+
+          # The fingerprint cell printed during the saved run binds those outputs to the
+          # committed source; recompute it to catch the two drifting apart.
+          expected = hashlib.sha256(Path("notebooks/src/jax_backend_comparison.py").read_bytes()).hexdigest()
+          if f"Executed source SHA256: {expected}" not in output:
+              raise SystemExit("Saved JAX backend notebook does not match its source; re-run just run-jax-backend-notebook")
+          print("Saved JAX backend notebook verified: GPU run matches the committed source")
