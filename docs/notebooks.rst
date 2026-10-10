@@ -13,7 +13,6 @@ method, so pick the one that fits your question and tooling.
 
     .. grid:: 1 2 3 3
         :gutter: 3
-        :class-container: notebook-categories
 
         .. grid-item-card:: :octicon:`graph;1.5em;sd-text-primary` S-parameter models
             :link: notebooks-sparameter
@@ -22,20 +21,12 @@ method, so pick the one that fits your question and tooling.
 
             Fast JAX/SAX circuit models for resonators, capacitors, and couplers.
 
-            +++
-
-            :bdg-primary-line:`6 notebooks`
-
         .. grid-item-card:: :octicon:`zap;1.5em;sd-text-primary` FEM electromagnetics
             :link: notebooks-fem
             :link-type: ref
             :class-card: notebook-category
 
             Full-wave and quasi-static solvers: HFSS, Q2D, COMSOL, Elmer, Palace.
-
-            +++
-
-            :bdg-primary-line:`7 notebooks`
 
         .. grid-item-card:: :octicon:`beaker;1.5em;sd-text-primary` Hamiltonian analysis
             :link: notebooks-hamiltonian
@@ -45,20 +36,12 @@ method, so pick the one that fits your question and tooling.
             Qubit frequency, anharmonicity, and dispersive shift from the circuit
             Hamiltonian.
 
-            +++
-
-            :bdg-primary-line:`3 notebooks`
-
         .. grid-item-card:: :octicon:`pulse;1.5em;sd-text-primary` Pulse-level simulation
             :link: notebooks-pulse
             :link-type: ref
             :class-card: notebook-category
 
             Gate fidelity, leakage, and decoherence under realistic control pulses.
-
-            +++
-
-            :bdg-primary-line:`1 notebook`
 
         .. grid-item-card:: :octicon:`workflow;1.5em;sd-text-primary` Differentiable circuits
             :link: notebooks-differentiable
@@ -67,10 +50,6 @@ method, so pick the one that fits your question and tooling.
 
             Harmonic-balance and transient solvers with gradients through ``jax.grad``.
 
-            +++
-
-            :bdg-primary-line:`1 notebook`
-
         .. grid-item-card:: :octicon:`plug;1.5em;sd-text-primary` External integration
             :link: notebooks-external
             :link-type: ref
@@ -78,15 +57,23 @@ method, so pick the one that fits your question and tooling.
 
             Drive qpdk from MATLAB and its RF Toolbox.
 
-            +++
+.. only:: typst or typstpdf
 
-            :bdg-primary-line:`1 notebook`
+    The notebooks fall into six groups: S-parameter circuit models, FEM electromagnetics
+    (HFSS, Q2D, COMSOL, Elmer, Palace), Hamiltonian analysis, pulse-level simulation,
+    differentiable circuits, and external integration (MATLAB).
 
 .. tip::
 
     Each backend sits behind an optional *extra*, so ``pip install qpdk`` stays light.
-    The badges on every notebook card name the extras it needs; see
-    :ref:`notebook-extras` for how to install them.
+    See :ref:`notebook-extras` for how to install them and :ref:`notebook-summary` for
+    every notebook's full dependency list.
+
+    .. only:: html
+
+        On the cards, outlined badges are the main tools a notebook uses and filled
+        badges are what you need to install (``qpdk`` extras, plus anything outside
+        them).
 
 *******************************************
  Where each method fits in the design flow
@@ -286,6 +273,7 @@ models miss
         +++
 
         :bdg-secondary-line:`Elmer` :bdg-secondary-line:`meshwell` :bdg-primary:`models`
+        :bdg-primary:`gplugins[elmer] from Git`
         :bdg-success:`open source`
 
     .. grid-item-card:: COMSOL CPW resonator
@@ -324,11 +312,11 @@ models miss
         :bdg-secondary-line:`Optuna` :bdg-secondary-line:`Palace` :bdg-primary:`models`
         :bdg-success:`open source`
 
-    .. grid-item-card:: :octicon:`link-external` More FEM and FDTD in gsim
+    .. grid-item-card:: More FEM and FDTD in gsim
         :link: https://gdsfactory.github.io/gsim/
         :class-card: notebook-card notebook-card-external
 
-        The `gsim <https://gdsfactory.github.io/gsim/>`_ notebooks take a GDSFactory
+        The gsim notebooks take a GDSFactory
         layout to a 3-D simulation with open-source solvers: Palace eigenmode and
         driven-port runs, Meep FDTD with S-parameter extraction, meshing, and field
         post-processing.
