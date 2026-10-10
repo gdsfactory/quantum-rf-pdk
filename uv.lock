@@ -1522,7 +1522,7 @@ wheels = [
 [[package]]
 name = "gplugins"
 version = "2.1.5"
-source = { git = "https://github.com/jackgdsf/gplugins?branch=comsol-plugin#e3f34af94f285dfb9672607794ee01e9c39c9819" }
+source = { git = "https://github.com/jackgdsf/gplugins?branch=comsol-plugin#53e488b814655eec5db79d38ba3885ed0e20bec6" }
 dependencies = [
     { name = "gdsfactory" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },

@@ -525,7 +525,7 @@ field_path = result_file(RESULTS_DIR, DRIVEN_FIELD_TXT)
 if field_path is None:
     print(explain_missing_results(RESULTS_DIR, DRIVEN_FIELD_TXT))
 else:
-    field_frequency_ghz = exported_frequency_ghz(field_path)
+    field_frequency_ghz = exported_frequency_ghz(field_path, bare_unit="GHz")
     draw_cut_plane_field(
         field_path,
         f"Driven $|\\mathbf{{E}}|$ at {field_frequency_ghz:g} GHz, z = 1 µm"
