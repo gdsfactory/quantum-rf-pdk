@@ -161,13 +161,15 @@ def converge_mesh(
     settings: Settings,
     *,
     tolerance: float = 0.01,
+    min_refinements: int = 1,
     max_refinements: int = 4,
 ) -> dict[str, ArrayLike]:
     """Accept a finer solve only after every matrix entry changes by at most tolerance.
 
     Compare raw entries, including small mutual capacitances. The equal traces
     must also agree within 1%. This measures successive-mesh sensitivity, not
-    a rigorous error bound or domain/interpolation convergence.
+    a rigorous error bound or domain/interpolation convergence. Use
+    ``min_refinements`` to continue past an early small change at a flagged point.
 
     Returns:
         Accepted solver quantities and measured mesh diagnostics.
@@ -176,8 +178,10 @@ def converge_mesh(
         ValueError: If the tolerance or refinement limit is invalid.
         RuntimeError: If a matrix is invalid or the refinement limit is exhausted.
     """
-    if not 0 < tolerance < 1 or max_refinements < 1:
-        raise ValueError("Require 0 < mesh tolerance < 1 and at least one refinement")
+    if not 0 < tolerance < 1 or not 1 <= min_refinements <= max_refinements:
+        raise ValueError(
+            "Require 0 < mesh tolerance < 1 and 1 <= min refinements <= max refinements"
+        )
     previous = None
     change = float("inf")
     for level, config in enumerate(mesh_settings(settings, max_refinements)):
@@ -193,7 +197,7 @@ def converge_mesh(
             logger.info(
                 f"Mesh refinement {level}: maximum relative change={change:.3%}"
             )
-            if change <= tolerance and symmetric:
+            if level >= min_refinements and change <= tolerance and symmetric:
                 return {
                     **result,
                     "mesh_relative_change": change,
@@ -274,6 +278,7 @@ def generate(
     processes: int = 4,
     container_binary: str = "palace",
     mesh_tolerance: float = 0.01,
+    min_refinements: int = 1,
     max_refinements: int = 4,
     topology: Topology = Topology.FULLY_ETCHED,
 ) -> Dataset:
@@ -284,8 +289,10 @@ def generate(
         runtime,
     )
 
-    if not 0 < mesh_tolerance < 1 or max_refinements < 1:
-        raise ValueError("Require 0 < mesh tolerance < 1 and at least one refinement")
+    if not 0 < mesh_tolerance < 1 or not 1 <= min_refinements <= max_refinements:
+        raise ValueError(
+            "Require 0 < mesh tolerance < 1 and 1 <= min refinements <= max refinements"
+        )
     grid = grid if grid is not None else experiment_grid(topology)
     settings = settings or (
         GROUND_SETTINGS if topology == Topology.AS_DRAWN else SETTINGS
@@ -300,6 +307,7 @@ def generate(
         "processes": processes,
         "mesh_convergence": {
             "relative_tolerance": mesh_tolerance,
+            "minimum_refinements": min_refinements,
             "criterion": "Maximum relative change of every raw Maxwell matrix entry between successive meshes; equal-trace self-capacitances must also agree within 1%",
             "settings_by_level": [
                 asdict(config) for config in mesh_settings(settings, max_refinements)
@@ -425,6 +433,7 @@ def generate(
             lambda config: solve_once(point, config),
             settings,
             tolerance=mesh_tolerance,
+            min_refinements=min_refinements,
             max_refinements=max_refinements,
         )
 
@@ -463,6 +472,13 @@ def main(
             min=0, max=1, help="Maximum relative change between successive meshes."
         ),
     ] = 0.01,
+    min_refinements: Annotated[
+        int,
+        typer.Option(
+            min=1,
+            help="Refine at least this many times, even if the change target passes earlier.",
+        ),
+    ] = 1,
     max_refinements: Annotated[
         int,
         typer.Option(
@@ -478,6 +494,8 @@ def main(
     """Generate this experiment, preview it, or merge completed shards."""
     if executable is not None and sif is not None:
         raise typer.BadParameter("Choose --executable or --sif, not both")
+    if min_refinements > max_refinements:
+        raise typer.BadParameter("--min-refinements must not exceed --max-refinements")
     name = GROUND_STRIP_NAME if topology == Topology.AS_DRAWN else NAME
     output = output or Path("build/datasets") / name
     complete_grid = experiment_grid(topology)
@@ -501,6 +519,7 @@ def main(
             processes=processes,
             container_binary=container_binary,
             mesh_tolerance=mesh_tolerance,
+            min_refinements=min_refinements,
             max_refinements=max_refinements,
             topology=topology,
         )

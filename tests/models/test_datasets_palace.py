@@ -116,9 +116,12 @@ def test_cpw_cross_section_normalization_depth(
             grid={"width": [10.0], "cpw_gap": [6.0], "gap": [8.0]},
             settings=replace(generator["SETTINGS"], slice_length_um=depth),
             output=tmp_path / f"depth-{depth}",
+            min_refinements=2,
             **runtime,
         )
         assert data.metadata.provenance["mesh_dimension"] == 2
+        assert data.metadata.provenance["mesh_convergence"]["minimum_refinements"] == 2
+        assert data.grid("mesh_refinement_level").values.item() >= 2
         assert data.grid("mesh_relative_change").values.item() <= 0.01
         matrices.append(data.grid("maxwell_capacitance").values / depth)
     np.testing.assert_allclose(matrices[0], matrices[1], rtol=1e-7, atol=0)

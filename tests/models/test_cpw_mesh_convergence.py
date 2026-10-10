@@ -71,6 +71,33 @@ def test_nonfinite_mesh_results_are_rejected() -> None:
         EXPERIMENT["converge_mesh"](solve, EXPERIMENT["SETTINGS"])
 
 
+def test_requested_refinement_continues_past_an_early_small_change() -> None:
+    settings, solve = solve_sequence([
+        [[5e-16, -4e-18], [-4e-18, 5e-16]],
+        [[5e-16, -3.99e-18], [-3.99e-18, 5e-16]],
+        [[5e-16, -3.8e-18], [-3.8e-18, 5e-16]],
+        [[5e-16, -3.79e-18], [-3.79e-18, 5e-16]],
+    ])
+    result = EXPERIMENT["converge_mesh"](
+        solve, EXPERIMENT["SETTINGS"], min_refinements=2
+    )
+    assert len(settings) == 4
+    assert result["mesh_refinement_level"] == 3
+    assert result["mesh_relative_change"] < 0.01
+    assert result["maxwell_capacitance"][0, 1] == pytest.approx(
+        -3.79e-18, rel=1e-8, abs=0
+    )
+
+
+@pytest.mark.parametrize("min_refinements", [0, 5])
+def test_invalid_minimum_refinements(min_refinements: int) -> None:
+    _, solve = solve_sequence([])
+    with pytest.raises(ValueError, match="min refinements"):
+        EXPERIMENT["converge_mesh"](
+            solve, EXPERIMENT["SETTINGS"], min_refinements=min_refinements
+        )
+
+
 @pytest.mark.parametrize(("tolerance", "max_refinements"), [(0, 4), (1, 4), (0.01, 0)])
 def test_invalid_acceptance_settings(tolerance: float, max_refinements: int) -> None:
     _, solve = solve_sequence([])
