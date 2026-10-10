@@ -59,7 +59,7 @@ gdsfactoryplus = [
   "sax>=0.18.2,<1",
 ]
 graphics = ["trimesh", "pyglet<3"]
-hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
+hfss = ["gplugins[ansys]~=2.1.0", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]~=2.1.0",
   "jaxellip",
@@ -427,6 +427,8 @@ template = ".changelog.d/changelog_template.jinja"
 default-groups = ["dev", "lint", "stubs", "test"]
 
 [tool.uv.sources]
+# Temporary: gplugins.ansys is not in a gplugins release yet. Drop this pin once one ships it.
+gplugins = { git = "https://github.com/jackgdsf/gplugins", branch = "ansys-plugin" }
 sax = { git = "https://github.com/gdsfactory/sax.git", rev = "de4a5b71eddbadc4b8f749e716f0bb3bd1a86240" }
 
 [tool.uv.build-backend]

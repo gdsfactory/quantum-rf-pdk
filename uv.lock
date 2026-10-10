@@ -1521,8 +1521,8 @@ wheels = [
 
 [[package]]
 name = "gplugins"
-version = "2.1.0"
-source = { registry = "https://pypi.org/simple" }
+version = "2.1.5"
+source = { git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin#c4bc6e936e5d31d1e8126671b08ce399695f05e6" }
 dependencies = [
     { name = "gdsfactory" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
@@ -1531,12 +1531,12 @@ dependencies = [
     { name = "tqdm" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/42/94/32a33f76ac08326dfd77d6f4a08db0d4d9a1a856fd675a7cc8d418c75976/gplugins-2.1.0.tar.gz", hash = "sha256:54706afb16f40e569a1a3579f152636a3f980cf640db91d113963e4c1754f9ae", size = 531505, upload-time = "2026-05-17T18:48:17.174Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/38/e1a03d6dbc3c1883f31bd73c180cc141fe39347395e544533816b42703cd/gplugins-2.1.0-py3-none-any.whl", hash = "sha256:6a96ee1e5957d0e9d29897eddee999524ce26fed1275083c53ecfa6b2e4dafdc", size = 653163, upload-time = "2026-05-17T18:48:15.833Z" },
-]
 
 [package.optional-dependencies]
+ansys = [
+    { name = "polars" },
+    { name = "pyaedt" },
+]
 meshwell = [
     { name = "meshwell" },
     { name = "shapely" },
@@ -4302,7 +4302,7 @@ wheels = [
 
 [[package]]
 name = "pyaedt"
-version = "1.3.0"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ansys-tools-common" },
@@ -4316,10 +4316,11 @@ dependencies = [
     { name = "pyedb" },
     { name = "pyyaml" },
     { name = "tomli-w" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/af/37387d6b4183157d94f98c8e7067a6c44d4fe9f277057ce1c2d22b228326/pyaedt-1.3.0.tar.gz", hash = "sha256:97e26349a79dc53ea3b06fc40aa4b1683442104397f90bf7fae27e1deea454df", size = 27245286, upload-time = "2026-07-17T13:16:28.755Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/73/52f17699a55b22d6dc7f6a13a43a0d2189ef3d55ecde722ec197ab9cd839/pyaedt-1.8.0.tar.gz", hash = "sha256:e9c5a15266d594f69ab429a85853d097c97f628c16317e13a185ded3c8678958", size = 27678453, upload-time = "2026-10-02T14:14:25.017Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/af/8b615f93d49ac6c98ff1e707a3170ef768fd9c40aadfdb529503236591c4/pyaedt-1.3.0-py3-none-any.whl", hash = "sha256:a318f94ed1dcb1607b153d6db23c087ab77bd386104c73c7f9dc47c3be65708f", size = 7557191, upload-time = "2026-07-17T13:16:25.855Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/0a/d7e68718419dede25799b1dd758bf354274fa2ca89578ddacef2ac70c202/pyaedt-1.8.0-py3-none-any.whl", hash = "sha256:b6c120f9d68bcfc87a8d9827bfa6f6c34483386686ae66f1ecdf0d47b5d64736", size = 7669689, upload-time = "2026-10-02T14:14:22.626Z" },
 ]
 
 [package.optional-dependencies]
@@ -4961,7 +4962,7 @@ graphics = [
     { name = "trimesh" },
 ]
 hfss = [
-    { name = "polars" },
+    { name = "gplugins", extra = ["ansys"] },
     { name = "pyaedt", extra = ["graphics"] },
 ]
 models = [
@@ -5097,7 +5098,8 @@ requires-dist = [
     { name = "elvis-lvs", marker = "extra == 'gdsfactoryplus'" },
     { name = "flax", marker = "extra == 'netket'" },
     { name = "gdsfactory", specifier = "~=9.51.0" },
-    { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = "~=2.1.0" },
+    { name = "gplugins", extras = ["ansys"], marker = "extra == 'hfss'", git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
+    { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
     { name = "httpx", marker = "extra == 'gdsfactoryplus'" },
     { name = "inspice", marker = "extra == 'gdsfactoryplus'" },
     { name = "jaxellip", marker = "extra == 'gdsfactoryplus'" },
@@ -5110,7 +5112,6 @@ requires-dist = [
     { name = "optax", marker = "extra == 'netket'" },
     { name = "optuna", marker = "extra == 'models'" },
     { name = "pandas", extras = ["parquet"], marker = "extra == 'models'" },
-    { name = "polars", marker = "extra == 'hfss'" },
     { name = "polars", marker = "extra == 'models'" },
     { name = "pyaedt", extras = ["graphics"], marker = "extra == 'hfss'", specifier = ">=0.15.0" },
     { name = "pyglet", marker = "extra == 'graphics'", specifier = "<3" },
@@ -5144,7 +5145,7 @@ dev = [
 docs = [
     { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
-    { name = "gplugins", extras = ["meshwell"], specifier = "~=2.1.0" },
+    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
     { name = "jaxellip" },
     { name = "jinja2" },
     { name = "jupytext" },
@@ -5182,7 +5183,7 @@ docs = [
 docs-models = [
     { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
-    { name = "gplugins", extras = ["meshwell"], specifier = "~=2.1.0" },
+    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
     { name = "jaxellip" },
     { name = "netket", specifier = ">=3.12" },
     { name = "optax" },

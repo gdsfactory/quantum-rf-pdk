@@ -10,10 +10,19 @@ from pydantic import BaseModel
 
 from qpdk import PDK, QPdk, get_pdk
 from qpdk.config import PATH, Path
-from qpdk.simulation import HFSS, Q2D, Q3D
 from qpdk.singleton import SingletonMeta
 
-WRAPPERS = (HFSS, Q3D, Q2D)
+# Names, not classes: importing the wrappers needs the hfss extra, and the PATH and
+# PDK tests here must still collect and run without it.
+WRAPPERS = ("HFSS", "Q3D", "Q2D")
+
+
+def _wrapper(name: str) -> type:
+    """Return the named AEDT wrapper, skipping the test without the hfss extra."""
+    pytest.importorskip("gplugins.ansys", reason="needs the hfss extra")
+    import qpdk.simulation  # ruff: ignore[import-outside-top-level]
+
+    return getattr(qpdk.simulation, name)
 
 
 def test_path_is_singleton() -> None:
@@ -73,8 +82,9 @@ def test_pdk_repeated_construction_returns_same_instance(n: int) -> None:
 
 
 @pytest.mark.usefixtures("isolated_wrapper_cache")
-@pytest.mark.parametrize("cls", WRAPPERS)
-def test_wrapper_class_is_singleton(cls: type) -> None:
+@pytest.mark.parametrize("name", WRAPPERS)
+def test_wrapper_class_is_singleton(name: str) -> None:
+    cls = _wrapper(name)
     app_first, app_later = object(), object()
     sim = cls(app_first)
     assert cls(app_later) is sim
@@ -83,20 +93,22 @@ def test_wrapper_class_is_singleton(cls: type) -> None:
     assert sim.app is app_first
 
 
-@pytest.mark.parametrize("cls", WRAPPERS)
-def test_wrappers_inherit_singleton_metaclass(cls: type) -> None:
+@pytest.mark.parametrize("name", WRAPPERS)
+def test_wrappers_inherit_singleton_metaclass(name: str) -> None:
+    cls = _wrapper(name)
     assert type(cls) is SingletonMeta
 
 
 @pytest.mark.usefixtures("isolated_wrapper_cache")
-@pytest.mark.parametrize(("cls_a", "cls_b"), list(combinations(WRAPPERS, 2)))
-def test_wrapper_classes_have_distinct_singletons(cls_a: type, cls_b: type) -> None:
-    assert cls_a(object()) is not cls_b(object())
+@pytest.mark.parametrize(("name_a", "name_b"), list(combinations(WRAPPERS, 2)))
+def test_wrapper_classes_have_distinct_singletons(name_a: str, name_b: str) -> None:
+    assert _wrapper(name_a)(object()) is not _wrapper(name_b)(object())
 
 
 @pytest.mark.usefixtures("isolated_wrapper_cache")
-@pytest.mark.parametrize("cls", WRAPPERS)
-def test_wrapper_singleton_thread_safety(cls: type) -> None:
+@pytest.mark.parametrize("name", WRAPPERS)
+def test_wrapper_singleton_thread_safety(name: str) -> None:
+    cls = _wrapper(name)
     instances: list[object] = []
     barrier = threading.Barrier(8)
 
@@ -121,5 +133,6 @@ def test_wrapper_singleton_thread_safety(cls: type) -> None:
 def test_hfss_construction_is_app_independent(apps: list[int]) -> None:
     # The identity property holds from any starting cache state, so the
     # fixture only cleans up afterwards; per-example resets would weaken it
-    sims = [HFSS(app) for app in apps]
+    hfss = _wrapper("HFSS")
+    sims = [hfss(app) for app in apps]
     assert all(sim is sims[0] for sim in sims)

@@ -4,16 +4,21 @@ applyTo: "qpdk/simulation/**/*.py"
 
 # Simulation automation review instructions
 
-`qpdk/simulation/` drives Ansys HFSS and Q3D through `pyaedt` (`aedt_base.py`, `hfss.py`, `q3d.py`). None of this runs
-in normal CI — the `hfss` pytest marker gates it and `just test-hfss` needs a licensed local install — so review has to
-carry more weight than usual here.
+`qpdk/simulation/` drives Ansys HFSS and Q3D through `gplugins.ansys`, which wraps `pyaedt`. The generic AEDT code lives
+in gplugins; `aedt_base.py`, `hfss.py` and `q3d.py` are thin wrappers that add QPDK defaults (layer stack, materials,
+singleton classes) and QPDK-only helpers. Fix generic AEDT behaviour in gplugins, not here. None of this runs in normal
+CI — the `hfss` pytest marker gates it and `just test-hfss` needs a licensed local install — so review has to carry more
+weight than usual here.
 
 ## What to check
 
-- `pyaedt` and `polars` are in ruff's `require-lazy` list. Import them inside functions, never at module level, so
-  `import qpdk` works without the `hfss` extra installed.
-- Guard the optional import with an actionable message pointing at `uv sync --extra hfss`, rather than letting a bare
-  `ModuleNotFoundError` escape.
+- `import qpdk` and `import qpdk.simulation` must work without the `hfss` extra. `qpdk.simulation` and `aedt_base.py`
+  expose the AEDT names lazily through `__getattr__`; keep it that way. `hfss.py`, `q3d.py` and `_aedt.py` subclass
+  gplugins classes, so they import gplugins at module level, which is fine only because nothing imports them eagerly.
+  Anywhere else, import `gplugins`, `pyaedt` and `polars` inside functions. Ruff does not check this: its `require-lazy`
+  setting only covers PEP 810 `lazy import` statements, so review has to.
+- Guard every gplugins import with an `ImportError` carrying `aedt_base.MISSING_HFSS_EXTRA`, which points at
+  `uv sync --extra hfss`, rather than letting a bare `ModuleNotFoundError` escape.
 - AEDT sessions and projects are external resources. Verify they are released on every path — prefer a context manager
   or `try`/`finally` over a bare `close()` at the end of a happy path.
 - Non-graphical mode must stay the default for anything that could run unattended. Flag a hard-coded
@@ -27,7 +32,6 @@ carry more weight than usual here.
 
 ## Tests
 
-- New simulation code needs a test marked `@pytest.mark.hfss` in `tests/hfss/test_hfss.py`, even though it will be
-  skipped in CI.
+- New simulation code needs a test marked `@pytest.mark.hfss` in `tests/hfss/`, even though it will be skipped in CI.
 - Pure logic (setup construction, result parsing, unit conversion) should be factored out and tested **without** AEDT so
   that something is actually exercised in CI. Flag a change where all new logic is unreachable without a licence.

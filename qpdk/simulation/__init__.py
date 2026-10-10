@@ -4,8 +4,14 @@ This package provides class-based interfaces for setting up HFSS simulations
 (eigenmode and driven modal) and Q3D Extractor parasitic extractions from
 gdsfactory components, plus MPh-based COMSOL geometry and study builders.
 
-The AEDT wrappers use the PyAEDT library to interface with Ansys HFSS and Q3D
-Extractor.
+The generic AEDT code (GDS import, materials, ports, result extraction) lives in
+:mod:`gplugins.ansys`, which drives Ansys HFSS and Q3D Extractor through PyAEDT.
+:mod:`qpdk.simulation.aedt_base`, :mod:`qpdk.simulation.hfss` and
+:mod:`qpdk.simulation.q3d` wrap it with QPDK defaults: the
+:data:`~qpdk.tech.LAYER_STACK` layer stack, :data:`~qpdk.tech.material_properties`,
+singleton wrapper classes, and QPDK-specific helpers such as
+:func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt` and
+:meth:`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section`.
 
 **HFSS workflow:**
 

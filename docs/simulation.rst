@@ -28,6 +28,10 @@ For new components, attach the compact model through ``schematic_function`` and 
 .. automodule:: qpdk.simulation.layout
     :members:
 
+The AEDT modules below are thin wrappers over :mod:`gplugins.ansys`, which holds the
+generic HFSS, Q3D and Q2D code. They default to QPDK's layer stack and materials and add
+QPDK-only helpers.
+
 .. automodule:: qpdk.simulation.aedt_base
     :members:
     :show-inheritance:
