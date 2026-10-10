@@ -220,6 +220,8 @@ nb_execution_excludepatterns = [
     "notebooks/hfss*",
     "notebooks/elmer*",
     "notebooks/matlab_integration*",
+    # Needs a CUDA GPU; run with `just run-jax-backend-notebook`.
+    "notebooks/jax_backend_comparison*",
 ]
 nb_execution_timeout = -1
 nb_execution_allow_errors = False
