@@ -3,6 +3,36 @@
 {% block title %}
 Samples
 =======
+
+Gallery
+-------
+
+.. grid:: 1 2 2 3
+   :gutter: 2
+   :class-container: gallery-grid
+
+{% for item in items %}
+{%     if item.name not in skip_plot %}
+   .. grid-item-card:: {{ item.name.rpartition(".")[2] }}
+      :link: #{{ item.name }}
+      :text-align: center
+      :class-card: gallery-card
+
+      .. plot::
+
+         import {{ item.import_path }}
+         from qpdk import PDK
+
+         PDK.activate()
+         c = {{ item.name }}({{ item.kwargs }}).copy()
+         c.draw_ports()
+         c.plot()
+
+{%     endif %}
+{% endfor %}
+
+API Reference
+-------------
 {% endblock %}
 
 {% block autofunction_path scoped -%}
