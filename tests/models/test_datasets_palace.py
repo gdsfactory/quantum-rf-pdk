@@ -5,6 +5,7 @@ PALACE_SIF selects a container; otherwise gsim resolves a native runtime.
 """
 
 import ast
+import hashlib
 import os
 import runpy
 from dataclasses import replace
@@ -125,6 +126,47 @@ def test_cpw_cross_section_normalization_depth(
         assert data.grid("mesh_relative_change").values.item() <= 0.01
         matrices.append(data.grid("maxwell_capacitance").values / depth)
     np.testing.assert_allclose(matrices[0], matrices[1], rtol=1e-7, atol=0)
+
+
+def test_changing_ground_strip_resolution_invalidates_cached_mesh(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
+) -> None:
+    """Changing the feature resolution must solve a new mesh at the same point."""
+    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    monkeypatch.syspath_prepend(str(source))
+    generator = runpy.run_path(str(source / "cpw_coupling.py"))
+    helper = runpy.run_path(str(source / "_palace.py"))
+    settings = replace(generator["SETTINGS"], domain_pad=100, far_mesh=10)
+    point = {"width": 2.45, "cpw_gap": 1.225, "gap": 2.462}
+    component, bounds = generator["geometry"](
+        **point, settings=settings, topology=generator["Topology"].AS_DRAWN
+    )
+    execution, _ = helper["runtime"](
+        None,
+        Path(value) if (value := os.environ.get("PALACE_SIF")) else None,
+        os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
+    )
+    for resolution in (4, 8):
+        helper["extract"](
+            component,
+            bounds,
+            {name: name for name in generator["TERMINALS"]},
+            height=settings.domain_pad,
+            inputs={"point": point},
+            workdir=tmp_path / "runs",
+            execution=execution,
+            processes=palace_processes,
+            near_mesh=settings.near_mesh,
+            far_mesh=settings.far_mesh,
+            permittivity=settings.permittivity,
+            order=settings.order,
+            tolerance=settings.tolerance,
+            normalization_depth_um=settings.slice_length_um,
+            minimum_feature_elements=resolution,
+        )
+    meshes = list((tmp_path / "runs").glob("*/palace.msh"))
+    assert len(meshes) == 2
+    assert len({hashlib.sha256(path.read_bytes()).digest() for path in meshes}) == 2
 
 
 def test_container_runtime_configuration(
