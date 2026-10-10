@@ -189,14 +189,14 @@ S-parameters.
 
 Both scripts support disjoint rectangular shards with ``--shard INDEX --shards COUNT``.
 Use separate output and work directories for each worker, then merge after all succeed.
-For the CPW grid, the generic Slurm helper groups 195 geometries per task:
+For the smaller CPW development grid, use two workers with the generic Slurm helper:
 
 ::
 
     generator=qpdk/models/datasets/data/cpw_coupling.py
-    sbatch --array=0-34 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
+    sbatch --array=0-1 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
     shards=()
-    for i in {0..34}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
+    for i in {0..1}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
     uv run --script "$generator" "${shards[@]}" --output build/datasets/cpw_coupling_palace
 
 Supply your scheduler's partition and resource options to ``sbatch``. Merging checks
