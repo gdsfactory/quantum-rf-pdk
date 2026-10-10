@@ -6,7 +6,8 @@ layer stacks default to QPDK's :data:`~qpdk.tech.LAYER_STACK` and materials to
 holds the QPDK-specific :func:`prepare_component_for_aedt`.
 
 gplugins is imported on first use, so :func:`prepare_component_for_aedt` works
-without the ``hfss`` extra installed.
+without the ``hfss`` extra installed. Using anything that needs gplugins without
+it raises :class:`ImportError` saying how to install it.
 """
 
 from __future__ import annotations
@@ -19,11 +20,14 @@ from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.tech import material_properties as _qpdk_material_properties
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     from ansys.aedt.core import Hfss, Q2d
     from ansys.aedt.core.q3d import Q3d
     from gdsfactory.component import Component
     from gdsfactory.technology import LayerStack
     from gplugins.ansys.base import (
+        MaterialProperties,
         detach_desktop_logging,
         export_component_to_gds_temp,
         fit_view,
@@ -43,6 +47,11 @@ __all__ = [
     "prepare_component_for_aedt",
     "rename_imported_objects",
 ]
+
+MISSING_HFSS_EXTRA = (
+    "The QPDK AEDT wrappers need the gplugins Ansys plugin. Install it with "
+    "`uv sync --extra hfss` (or `pip install qpdk[hfss]`)."
+)
 
 _LAZY_IMPORTS: dict[str, str] = {
     "AEDTBase": "qpdk.simulation._aedt",
@@ -66,7 +75,22 @@ def __getattr__(name: str) -> Any:
         module_name = _LAZY_IMPORTS[name]
     except KeyError:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
-    return getattr(importlib.import_module(module_name), name)
+    return getattr(_import_gplugins_backed(module_name), name)
+
+
+def _import_gplugins_backed(module_name: str) -> ModuleType:
+    """Import a module that needs gplugins, with an actionable error if it is missing.
+
+    Returns:
+        The imported module.
+
+    Raises:
+        ImportError: If gplugins or its Ansys plugin is not installed.
+    """
+    try:
+        return importlib.import_module(module_name)
+    except ModuleNotFoundError as error:
+        raise ImportError(MISSING_HFSS_EXTRA) from error
 
 
 def __dir__() -> list[str]:
@@ -90,8 +114,7 @@ def layer_stack_to_gds_mapping(
     Returns:
         Dictionary mapping layer number to (elevation, thickness) tuple.
     """
-    import gplugins.ansys.base as gp_base  # ruff: ignore[import-outside-top-level]
-
+    gp_base = _import_gplugins_backed("gplugins.ansys.base")
     return gp_base.layer_stack_to_gds_mapping(
         LAYER_STACK if layer_stack is None else layer_stack,
         thickness_override=thickness_override,
@@ -125,24 +148,41 @@ def prepare_component_for_aedt(
 def object_names_to_materials(
     object_names: list[str],
     layer_stack: LayerStack,
+    material_properties: MaterialProperties | None = None,
 ) -> dict[str, str]:
-    """Map imported object names to AEDT material names using QPDK's materials.
+    """Map imported object names to AEDT material names.
 
-    See :func:`gplugins.ansys.object_names_to_materials`; this looks materials up in
-    QPDK's ``material_properties``.
+    See :func:`gplugins.ansys.object_names_to_materials`; this only defaults
+    ``material_properties`` to QPDK's. To match a wrapper built with its own
+    table, pass that wrapper's ``material_properties``.
 
     Returns:
         Dictionary mapping object names to AEDT material names.
     """
-    import gplugins.ansys.base as gp_base  # ruff: ignore[import-outside-top-level]
-
+    gp_base = _import_gplugins_backed("gplugins.ansys.base")
     return gp_base.object_names_to_materials(
-        object_names, layer_stack, _qpdk_material_properties
+        object_names,
+        layer_stack,
+        _qpdk_material_properties
+        if material_properties is None
+        else material_properties,
     )
 
 
-def add_materials_to_aedt(app: Hfss | Q2d | Q3d) -> None:
-    """Add QPDK materials to the PyAEDT application."""
-    import gplugins.ansys.base as gp_base  # ruff: ignore[import-outside-top-level]
+def add_materials_to_aedt(
+    app: Hfss | Q2d | Q3d,
+    material_properties: MaterialProperties | None = None,
+) -> None:
+    """Add materials to the PyAEDT application.
 
-    gp_base.add_materials_to_aedt(app, _qpdk_material_properties)
+    See :func:`gplugins.ansys.add_materials_to_aedt`; this only defaults
+    ``material_properties`` to QPDK's. To match a wrapper built with its own
+    table, pass that wrapper's ``material_properties``.
+    """
+    gp_base = _import_gplugins_backed("gplugins.ansys.base")
+    gp_base.add_materials_to_aedt(
+        app,
+        _qpdk_material_properties
+        if material_properties is None
+        else material_properties,
+    )

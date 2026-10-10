@@ -1,8 +1,7 @@
-"""Tests for the QPDK HFSS, Q3D and Q2D wrappers over gplugins.ansys.
+"""Tests for QPDK's AEDT test helpers, ``prepare_component_for_aedt`` and live AEDT.
 
-The generic AEDT logic is tested in gplugins; these cover what QPDK adds: its
-default layer stack and materials, the singleton wrappers,
-``prepare_component_for_aedt`` and ``Q2D.create_2d_from_cross_section``.
+Everything here except the ``hfss``-marked live tests runs without the ``hfss``
+extra. The wrapper tests that need gplugins are in ``test_aedt_wrappers.py``.
 """
 
 import contextlib
@@ -17,32 +16,14 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
-import gdsfactory as gf
 import pytest
 from gdsfactory.component import Component
-from gdsfactory.technology import LayerStack
-from gplugins.ansys._mocks import MockMaterials, MockQ2dApp, MockQ3dApp
-from gplugins.ansys.base import _get_layer_number_from_level
-from numpy.testing import assert_allclose
 
-from qpdk import LAYER, LAYER_STACK, PDK, logger
+from qpdk import PDK, logger
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.resonator import resonator
-from qpdk.models.cpw import get_cpw_dimensions
-from qpdk.simulation import (
-    HFSS,
-    Q2D,
-    Q3D,
-    AEDTBase,
-    add_materials_to_aedt,
-    detach_desktop_logging,
-    fit_view,
-    layer_stack_to_gds_mapping,
-    lumped_port_rectangle_from_cpw,
-    object_names_to_materials,
-    prepare_component_for_aedt,
-)
-from qpdk.tech import LAYER_STACK_FLIP_CHIP, coplanar_waveguide, material_properties
+from qpdk.simulation.aedt_base import prepare_component_for_aedt
+from qpdk.tech import coplanar_waveguide
 
 # Maximum wall-clock time for a single AEDT-bound call. AEDT startup can
 # legitimately take minutes, so this is generous. The budget is per call, not
@@ -361,80 +342,6 @@ def test_ansys_install_path_preserves_existing(ansys_install_path: Path):
     assert ansys_install_path == Path("/custom/ansys")
 
 
-def test_layer_stack_to_gds_mapping():
-    """Test generating GDS mapping from a LayerStack."""
-    mapping = layer_stack_to_gds_mapping(LAYER_STACK)
-
-    # Without a stack, QPDK's LAYER_STACK is used
-    assert layer_stack_to_gds_mapping() == mapping
-
-    # Check that it returns a dictionary
-    assert isinstance(mapping, dict)
-
-    # Check a known layer from qpdk
-    # For example, layer 1 should be in the mapping
-    # The structure is {layer_number: (elevation, thickness)}
-    assert 1 in mapping
-    assert isinstance(mapping[1], tuple)
-    assert len(mapping[1]) == 2
-
-    elevation, thickness = mapping[1]
-    assert isinstance(elevation, float)
-    assert isinstance(thickness, float)
-
-
-def test_layer_stack_to_gds_mapping_default_stack_collision_free():
-    """Test that the default LAYER_STACK maps every level to a distinct entry.
-
-    pyaedt's ``import_gds_3d`` keys on GDS layer number only, so the Vacuum
-    level (which shares ``LAYER.SIM_AREA`` (98, 0) with Substrate) must be
-    skipped, and the contiguous Nb spans of Airbridge (10, 0) and
-    Airbridge_Via (10, 1) must merge into a single box.
-    """
-    mapping = layer_stack_to_gds_mapping(LAYER_STACK)
-
-    # Vacuum (98, 0) is skipped, so Substrate keeps layer 98 at its own
-    # elevation/thickness instead of being overwritten by vacuum values.
-    assert mapping[98] == pytest.approx((-500.0, 500.0))
-
-    # Airbridge (0.3-0.5 um) and Airbridge_Via (0.2-0.3 um) merge to one box.
-    assert mapping[10] == pytest.approx((0.2, 0.3))
-
-    # Every non-vacuum level with a resolvable layer number is mapped exactly
-    # once (Airbridge and Airbridge_Via share one merged entry on layer 10).
-    expected_layers = set()
-    for level in LAYER_STACK.layers.values():
-        if level.material == "vacuum":
-            continue
-        layer_number = _get_layer_number_from_level(level)
-        if layer_number is not None:
-            expected_layers.add(layer_number)
-    assert set(mapping) == expected_layers
-
-    # Sheets mode keeps the lowest elevation for colliding levels.
-    sheets_mapping = layer_stack_to_gds_mapping(LAYER_STACK, thickness_override=0.0)
-    assert sheets_mapping[10] == pytest.approx((0.2, 0.0))
-    assert sheets_mapping[98] == pytest.approx((-500.0, 0.0))
-
-
-def test_layer_stack_to_gds_mapping_flip_chip_raises():
-    """Test that the flip-chip stack raises on its Substrate collision.
-
-    ``LAYER_STACK_FLIP_CHIP`` has ``Substrate`` (Si, span [-500, 0] um) and
-    ``Substrate_top`` (Si, span [10.2, 510.2] um) sharing GDS layer 98 with a
-    10.2 um vacuum gap between the chips. The two disjoint bodies cannot be
-    represented by the single (elevation, thickness) box pyaedt's
-    ``import_gds_3d`` allows per layer number, and merging would fill the
-    inter-chip gap with silicon — so the mapping raises instead of silently
-    producing wrong geometry. Flip-chip EM import is not currently supported;
-    this test documents that contract.
-    """
-    with pytest.raises(
-        ValueError, match=r"'Substrate' and 'Substrate_top' share GDS layer 98"
-    ):
-        layer_stack_to_gds_mapping(LAYER_STACK_FLIP_CHIP)
-
-
 def test_prepare_component_for_aedt():
     """Test component preparation for AEDT."""
     comp = resonator()
@@ -478,127 +385,34 @@ def test_prepare_component_for_aedt_imports_without_gplugins():
     )
 
 
-def test_object_names_to_materials():
-    """Test mapping imported object names to materials from the layer stack."""
-    # Layer 1 -> M1 (Nb, a metal -> pec); layer 98 -> Substrate (Si); layer 31 -> TSV (TiN)
-    result = object_names_to_materials(
-        ["signal1", "signal25", "signal98", "signal31", "Substrate", "M1_offset"],
-        LAYER_STACK,
+def test_missing_extra_raises_actionable_import_error():
+    """Without gplugins, the AEDT names raise ``ImportError`` naming the extra."""
+    code = """
+import sys
+sys.modules["gplugins"] = None
+import qpdk.simulation.aedt_base as aedt_base
+from qpdk.simulation.aedt_base import MISSING_HFSS_EXTRA
+
+def check(get):
+    try:
+        get()
+    except ModuleNotFoundError:
+        raise AssertionError("bare ModuleNotFoundError escaped")
+    except ImportError as error:
+        assert str(error) == MISSING_HFSS_EXTRA, error
+        assert "uv sync --extra hfss" in str(error)
+    else:
+        raise AssertionError("no ImportError")
+
+check(lambda: aedt_base.AEDTBase)
+check(lambda: aedt_base.fit_view)
+check(aedt_base.layer_stack_to_gds_mapping)
+check(lambda: __import__("qpdk.simulation.hfss"))
+check(lambda: __import__("qpdk.simulation.q3d"))
+"""
+    subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code], check=True
     )
-
-    # Metals are PEC
-    assert result["signal1"] == "pec"
-    assert result["signal25"] == "pec"  # NbTiN
-    assert result["signal31"] == "pec"
-    assert result["M1_offset"] == "pec"
-    # Substrate and other dielectrics get their real material, not pec
-    assert result["signal98"] == "Si"
-    assert result["Substrate"] == "Si"
-    assert result["Substrate"] != "pec"
-
-    # Objects that cannot be resolved to a layer level fail closed
-    with pytest.raises(ValueError, match="Could not resolve"):
-        object_names_to_materials(["signal7", "unknown_object"], LAYER_STACK)
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-def test_q3d_import_assigns_materials_from_layer_stack(tmp_path):
-    """Q3D import must not blanket-assign pec: substrate gets its real material."""
-    comp = gf.components.rectangle(size=(10, 10), layer=LAYER.M1_DRAW)
-
-    # Simulate a GDS import that creates the M1 metal and the Substrate objects
-    app = MockQ3dApp(["signal1", "signal98"])
-    sim = Q3D(app)
-
-    renamed = sim.import_component(comp, gds_path=tmp_path / "comp.gds")
-
-    # Only conductor objects are returned for downstream net assignment
-    assert renamed == ["M1"]
-    # Metal level becomes PEC, substrate gets silicon from the layer stack
-    assert app.assigned_materials == {"M1": "pec", "Substrate": "Si"}
-    # The import maps layers through QPDK's stack, not the active PDK's
-    assert app.import_kwargs["mapping_layers"] == layer_stack_to_gds_mapping()
-    # QPDK's materials are added to the project
-    assert set(material_properties) <= set(app.materials.material_names)
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-@pytest.mark.parametrize("cls", [HFSS, Q3D, Q2D])
-def test_wrappers_default_to_qpdk_stack_and_materials(cls: type):
-    """The wrappers use QPDK's layer stack and materials unless told otherwise."""
-    sim = cls(object())
-
-    assert sim.layer_stack is LAYER_STACK
-    assert sim.material_properties is material_properties
-    assert sim.resolve_layer_stack() is LAYER_STACK
-    assert isinstance(sim, AEDTBase)
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-@pytest.mark.parametrize("cls", [HFSS, Q3D, Q2D])
-def test_wrappers_accept_a_custom_stack_and_materials(cls: type):
-    """Explicit arguments still override the QPDK defaults."""
-    stack = LayerStack(layers={})
-    table = {"Nb": {"relative_permittivity": float("inf")}}
-
-    sim = cls(object(), layer_stack=stack, material_properties=table)
-
-    assert sim.layer_stack is stack
-    assert sim.material_properties is table
-
-
-def test_add_materials_to_aedt_adds_qpdk_materials():
-    """The module-level helper registers every QPDK material."""
-
-    class App:
-        materials = MockMaterials()
-
-    app = App()
-    add_materials_to_aedt(app)
-
-    assert app.materials.material_names == list(material_properties)
-
-
-def test_lumped_port_rectangle_from_cpw_is_exported():
-    """The lumped port helper stays importable from ``qpdk.simulation``."""
-    result = lumped_port_rectangle_from_cpw(
-        center=(10.0, 20.0, 0.0), orientation=0, cpw_gap=6.0, cpw_width=2.0
-    )
-
-    assert_allclose(result["origin"], [10.0, 19.0, 0.0])
-    assert_allclose(result["sizes"], [6.0, 2.0])
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-def test_create_2d_from_cross_section_uses_qpdk_levels():
-    """A QPDK CPW cross-section is drawn on the Substrate and M1 levels."""
-    app = MockQ2dApp()
-    width, gap = get_cpw_dimensions(coplanar_waveguide(width=10, gap=6))
-
-    names = Q2D(app).create_2d_from_cross_section(
-        coplanar_waveguide(width=10, gap=6), ground_width=30
-    )
-
-    rectangles = app.modeler.rectangles
-    assert names == {n: n for n in ("signal", "gnd_left", "gnd_right", "substrate")}
-    assert rectangles["signal"].origin == [30 + gap, 0, 0]
-    # The 0.2 um M1 film is thickened to 2 um for Q2D stability
-    assert rectangles["signal"].sizes == [width, 2.0]
-    assert rectangles["signal"].material == LAYER_STACK.layers["M1"].material
-    assert rectangles["substrate"].material == LAYER_STACK.layers["Substrate"].material
-    assert rectangles["substrate"].sizes[1] == LAYER_STACK.layers["Substrate"].thickness
-    assert app.conductors["signal"]["conductor_type"] == "SignalLine"
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-def test_create_2d_from_cross_section_rejects_other_units():
-    """Only micrometres are supported, checked before anything is drawn."""
-    app = MockQ2dApp()
-
-    with pytest.raises(ValueError, match="units='um'"):
-        Q2D(app).create_2d_from_cross_section(coplanar_waveguide(), units="mm")
-
-    assert app.modeler.rectangles == {}
 
 
 @pytest.mark.hfss
@@ -608,6 +422,12 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
         pytest.skip(f"HFSS installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
+
+    from qpdk.simulation import (  # ruff: ignore[import-outside-top-level]
+        HFSS,
+        detach_desktop_logging,
+        fit_view,
+    )
 
     settings.use_grpc_uds = False
 
@@ -647,6 +467,8 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
         pytest.skip(f"HFSS installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
+
+    from qpdk.simulation import HFSS  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
@@ -700,6 +522,8 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
 
     from ansys.aedt.core import Q3d, settings  # ruff: ignore[import-outside-top-level]
 
+    from qpdk.simulation import Q3D  # ruff: ignore[import-outside-top-level]
+
     settings.use_grpc_uds = False
 
     PDK.activate()
@@ -737,6 +561,8 @@ def test_create_2d_from_cross_section(tmp_path: Path, ansys_install_path: Path):
         pytest.skip(f"HFSS installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Q2d, settings  # ruff: ignore[import-outside-top-level]
+
+    from qpdk.simulation import Q2D  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
