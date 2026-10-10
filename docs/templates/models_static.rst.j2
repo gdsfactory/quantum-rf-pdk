@@ -1,14 +1,61 @@
-{{ items[0].title }}
-{{ "=" * items[0].title | length }}
+Models
+======
 
-{% for func_name in items[0].functions %}
+:mod:`qpdk.models` contains frequency-domain circuit models for the QPDK
+components, built on `SAX <https://gdsfactory.github.io/sax/>`_, together with
+the analytical helpers used to design them. Install them with
+``pip install qpdk[models]``.
 
+{% for section in sections %}
+.. rubric:: {{ section.title }}
+
+.. grid:: 1 2 2 3
+   :gutter: 2
+
+{%     for category in section.categories %}
+   .. grid-item-card:: {{ category.title }}
+      :link: models-{{ category.key }}
+      :link-type: ref
+
+      {{ category.description }}
+      +++
+      {{ category.functions | length }} function{{ "s" if category.functions | length != 1 }}
+{%     endfor %}
+
+{% endfor %}
+
+{% for section in sections %}
+.. _models-{{ section.key }}:
+
+{{ section.title }}
+{{ "-" * section.title | length }}
+
+{{ section.intro }}
+
+{%     for category in section.categories %}
+.. _models-{{ category.key }}:
+
+{{ category.title }}
+{{ "^" * category.title | length }}
+
+{%         if category.description %}
+{{ category.description }}
+
+{%         endif %}
+.. autosummary::
+   :nosignatures:
+
+{%         for func_name in category.functions %}
+   ~qpdk.models.{{ func_name }}
+{%         endfor %}
+
+{%         for func_name in category.functions %}
 {{ func_name }}
-{{ "-" * func_name | length }}
+{{ '"' * func_name | length }}
 
 .. autofunction:: qpdk.models.{{ func_name }}
 
-{% if func_name in items[0].sax_models and func_name not in items[0].skip_plots %}
+{%             if func_name in sax_models and func_name not in skip_plots %}
 .. plot::
    :caption: :func:`qpdk.models.{{ func_name }}` S-parameters for :math:`f\in[1,10]\,\text{GHz}`.
 
@@ -26,7 +73,7 @@
       if i >= j:
           plt.plot(
               freq_ghz,
-              20 * jnp.log10(jnp.abs(sij)),
+              20 * jnp.log10(jnp.abs(jnp.broadcast_to(sij, freq.shape))),
               label = "$S_{" + str(i) + str(j) + "}$"
           )
    plt.xlabel("Frequency [GHz]", fontsize=12)
@@ -34,10 +81,11 @@
    plt.grid(True)
    plt.legend()
    plt.show()
-{% endif %}
+{%             endif %}
 
+{%         endfor %}
+{%     endfor %}
 {% endfor %}
-
 References
 ----------
 
