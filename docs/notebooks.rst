@@ -306,10 +306,11 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
         local Ansys installation and a license, which are not pip-installable.
     - - ``comsol``
-      - ``MPh``
-      - MPh-based COMSOL geometry and study builders in ``qpdk.simulation``. Building
-        and solving require a COMSOL installation and license; RF solves also need the
-        RF Module. MPh itself is only a client and installs no solver.
+      - ``gplugins[comsol]``
+      - QPDK wrappers in ``qpdk.simulation`` around the MPh-based COMSOL geometry and
+        study builders of ``gplugins.comsol``. Building and solving require a COMSOL
+        installation and license; RF solves also need the RF Module. MPh itself is only
+        a client and installs no solver.
     - - ``circulax``
       - ``circulax``, ``optax``
       - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient

@@ -52,6 +52,13 @@ For new components, attach the compact model through ``schematic_function`` and 
  COMSOL
 ********
 
+The generic COMSOL code lives in :mod:`gplugins.comsol`; the modules below are thin QPDK
+wrappers around it. :mod:`~qpdk.simulation.comsol.layout` inverts the QPDK mask into
+metal before the gplugins extraction, the sheet builder and
+:class:`~qpdk.simulation.comsol.model.COMSOL` default to the QPDK technology
+permittivities, and the study, mesh, plotting, and result modules re-export gplugins
+unchanged.
+
 The builders below return a plain MPh model. Study and local refinement helpers take
 that model and its layout; absolute mesh helpers use the model and named selections.
 :class:`~qpdk.simulation.comsol.model.COMSOL` wraps the two in one object: it subclasses
@@ -72,6 +79,7 @@ importable without it.
 
 .. automodule:: qpdk.simulation.comsol.model
     :members:
+    :inherited-members: Model
     :show-inheritance:
 
 .. automodule:: qpdk.simulation.comsol.layout
