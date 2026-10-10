@@ -1,24 +1,26 @@
-"""QPDK COMSOL models built on MPh.
+"""QPDK wrappers around the COMSOL models of :mod:`gplugins.comsol`.
 
-:mod:`qpdk.simulation.comsol.layout` extracts metal polygons and feed ports from
-a gdsfactory component. :func:`~qpdk.simulation.comsol.metal.build_comsol_metal_model`
-extrudes that metal, and
-:func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model` places it as faces
-on an air/silicon interface. Studies are added on top with
-:func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` or
-:func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study`, and
-:mod:`qpdk.simulation.comsol.mesh` holds the mesh helpers.
+The generic COMSOL code (polygon extraction, sheet and metal builders, the RF
+and electrostatic studies, the mesh, plotting, and result helpers, and the
+chainable :class:`COMSOL` model) lives in :mod:`gplugins.comsol`. QPDK keeps
+only what depends on its technology:
 
-The pieces are also available as one chainable class:
-:class:`COMSOL` builds a model through its ``create_sheet`` or ``create_metal``
-method, holds the layout, and offers a method per study and mesh helper, so
-neither the model nor the layout has to be passed again. Solving, saving, and
-evaluating are MPh's own methods.
+- :func:`~qpdk.simulation.comsol.layout.prepare_comsol_layout` inverts the
+  M1_ETCH mask into M1_DRAW metal with a ground margin, rejects unsupported
+  layers, and defaults to the ``coupling_o1``/``coupling_o2`` feeds.
+- :func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model` and
+  :class:`COMSOL` default to the QPDK technology permittivities.
+
+:mod:`~qpdk.simulation.comsol.rf`, :mod:`~qpdk.simulation.comsol.capacitance`,
+:mod:`~qpdk.simulation.comsol.mesh`, :mod:`~qpdk.simulation.comsol.plotting`,
+and :mod:`~qpdk.simulation.comsol.results` re-export the gplugins helpers.
+Solving, saving, and evaluating are MPh's own methods.
 
 Note:
-    The builders need the optional ``comsol`` extra and a local COMSOL
-    installation. Only :class:`COMSOL` imports MPh, and lazily, so importing
-    this package or the layout and helper modules stays possible without it.
+    The builders need the optional ``comsol`` extra, which installs
+    ``gplugins[comsol]``, and a local COMSOL installation. Only
+    :class:`COMSOL` imports MPh, and lazily, so importing this package or the
+    layout and helper modules stays possible without it.
 
 See the `MPh repository <https://github.com/MPh-py/MPh>`_ and
 `MPh documentation <https://mph.readthedocs.io/en/stable/>`_.
@@ -29,7 +31,14 @@ from __future__ import annotations
 import importlib
 from typing import TYPE_CHECKING, Any
 
-from qpdk.simulation.comsol.capacitance import add_capacitance_study
+from gplugins.comsol.capacitance import add_capacitance_study
+from gplugins.comsol.mesh import (
+    pin_absolute_edge_mesh_sizes,
+    pin_absolute_mesh_sizes,
+    refine_metal_plane_mesh,
+)
+from gplugins.comsol.rf import add_cpw_rf_study
+
 from qpdk.simulation.comsol.layout import (
     ComsolBoundingBox,
     ComsolFeedPort,
@@ -37,13 +46,7 @@ from qpdk.simulation.comsol.layout import (
     ComsolPolygon,
     prepare_comsol_layout,
 )
-from qpdk.simulation.comsol.mesh import (
-    pin_absolute_edge_mesh_sizes,
-    pin_absolute_mesh_sizes,
-    refine_metal_plane_mesh,
-)
 from qpdk.simulation.comsol.metal import build_comsol_metal_model
-from qpdk.simulation.comsol.rf import add_cpw_rf_study
 from qpdk.simulation.comsol.sheet import build_comsol_sheet_model
 
 if TYPE_CHECKING:
