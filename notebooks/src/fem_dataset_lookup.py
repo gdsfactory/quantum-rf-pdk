@@ -11,9 +11,11 @@
 # /// script
 # requires-python = ">=3.12,<3.15"
 # dependencies = [
-#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+#   "qpdk[models]",
 #   "matplotlib-inline",
 # ]
+# [tool.uv.sources]
+# qpdk = { git = "https://github.com/jackgdsf/quantum-rf-pdk.git", rev = "c5dc19af770c11f61e6dffb5e233726e0ebb2524", lfs = true }
 # ///
 
 # %% [markdown]
@@ -69,6 +71,8 @@
 #
 # This notebook follows generation, storage, lazy queries and JAX interpolation,
 # then uses the capacitance lookup in a SAX model.
+# Run `uv run --script notebooks/src/fem_dataset_lookup.py` with Git LFS installed
+# to use the pinned QPDK revision and fetch its bundled results automatically.
 #
 # The bundled data comes from Palace electrostatic solves of the actual QPDK
 # metal polygons, including their short leads, as perfect conductor sheets on
@@ -83,13 +87,15 @@ if "google.colab" in sys.modules:
     import subprocess
 
     print("Running in Google Colab. Installing QPDK...")
+    subprocess.check_call(["apt-get", "install", "-y", "-qq", "git-lfs"])
+    subprocess.check_call(["git", "lfs", "install", "--skip-repo"])
     subprocess.check_call([
         sys.executable,
         "-m",
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+        "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@c5dc19af770c11f61e6dffb5e233726e0ebb2524",
         "matplotlib-inline",
     ])
 
