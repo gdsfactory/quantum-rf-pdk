@@ -18,9 +18,10 @@
 # ::::{admonition} Required extras
 # :class: tip
 #
-# Needs the `comsol` extra (`uv sync --extra comsol`), which installs `MPh` only. COMSOL, its license,
-# the RF Module, and the Design Module CAD kernel that `ProjectToFaces` needs are separate. See the
-# {ref}`extras reference <notebook-extras>`.
+# Needs the `comsol` extra (`uv sync --extra comsol`), which installs `gplugins[comsol]` and
+# `MPh`. The layout, plotting, and result helpers come from gplugins, so every cell needs the extra.
+# COMSOL, its license, the RF Module, and the Design Module CAD kernel that `ProjectToFaces` needs
+# are separate. See the {ref}`extras reference <notebook-extras>`.
 # ::::
 #
 # The shortest path from a QPDK layout to a driven COMSOL result: build a coupled quarter-wave
@@ -109,8 +110,9 @@ try:
     import mph
 
     # The COMSOL class imports MPh eagerly, so it comes in with the same guard:
-    # without the extra the licensed branch stays off and the rest of the
-    # notebook still reads exported results back from disk.
+    # without MPh the licensed branch stays off and the rest of the notebook
+    # still reads exported results back from disk. Those result helpers need
+    # gplugins from the extra, but neither MPh nor COMSOL.
     from qpdk.simulation import COMSOL
 except ImportError:
     mph = None

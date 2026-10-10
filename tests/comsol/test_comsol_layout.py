@@ -271,6 +271,32 @@ def test_rejects_non_cardinal_feed_port():
         prepare_comsol_layout(comp, feed_ports=("o1", "o2"), ground_margin=50.0)
 
 
+@pytest.mark.parametrize("orientation", [89.9999999, 179.9999999])
+def test_accepts_roundoff_below_cardinal_angle(orientation: float):
+    """Roundoff on either side of a cardinal angle is accepted."""
+    comp = gf.Component()
+    comp << gf.components.straight(length=200, cross_section="cpw")
+    comp.add_port(
+        name="near_cardinal",
+        center=(0, 0),
+        width=10,
+        orientation=orientation,
+        layer=LAYER.M1_DRAW,
+    )
+    comp.add_port(
+        name="other",
+        center=(200, 0),
+        width=10,
+        orientation=0,
+        layer=LAYER.M1_DRAW,
+    )
+
+    layout = prepare_comsol_layout(
+        comp, feed_ports=("near_cardinal", "other"), ground_margin=50.0
+    )
+    assert layout.feed_ports[0].orientation == pytest.approx(orientation)
+
+
 def test_rejects_unsupported_fabrication_layer():
     """Geometry on a layer other than M1 is refused, not silently dropped."""
     comp = gf.Component()
@@ -394,8 +420,10 @@ def test_crop_to_feed_ports_rejects_metal_beyond_the_planes():
     """A resonator wider than its coupling feeds must not be sliced."""
     comp = quarter_wave_resonator_coupled(length=1000, meanders=2)
 
-    with pytest.raises(ValueError, match="cut component geometry"):
+    with pytest.raises(ValueError, match="cut component geometry") as error:
         prepare_comsol_layout(comp, ground_margin=50.0, crop_to_feed_ports=True)
+    # The QPDK layer name, not the gplugins (layer, datatype) tuple.
+    assert "M1_DRAW extends beyond" in str(error.value)
 
 
 def test_crop_to_feed_ports_rejects_etch_stopping_short():

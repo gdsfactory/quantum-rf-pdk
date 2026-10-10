@@ -23,23 +23,22 @@ import math
 import uuid
 from typing import TYPE_CHECKING
 
-from gplugins.comsol.layout import (
-    ComsolBoundingBox,
-    ComsolFeedPort,
-    ComsolLayout,
-    ComsolPolygon,
-    Point,
-    crop_planes,
-    feed_port,
-    prepare_comsol_layout as _extract_metal,
-    validate_crop_containment,
-)
-
+from qpdk.simulation.comsol._gplugins import import_gplugins_comsol, reexport
 from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.tech import LAYER, NON_METADATA_LAYERS
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     from gdsfactory.component import Component
+    from gplugins.comsol.layout import (
+        ComsolBoundingBox,
+        ComsolFeedPort,
+        ComsolLayout,
+        ComsolPolygon,
+        CropPlanes,
+        Point,
+    )
 
 __all__ = [
     "ComsolBoundingBox",
@@ -49,6 +48,12 @@ __all__ = [
     "Point",
     "prepare_comsol_layout",
 ]
+
+__getattr__ = reexport(
+    __name__,
+    "layout",
+    ["ComsolBoundingBox", "ComsolFeedPort", "ComsolLayout", "ComsolPolygon", "Point"],
+)
 
 #: Input layers that the extraction understands. Everything else in
 #: :data:`~qpdk.tech.NON_METADATA_LAYERS` is rejected rather than dropped.
@@ -103,6 +108,7 @@ def prepare_comsol_layout(
             if ``crop_to_feed_ports`` is set but the feeds are not a valid
             opposite pair or the component does not fit between the planes.
     """
+    gplugins_layout = import_gplugins_comsol("layout")
     if not math.isfinite(ground_margin) or ground_margin <= 0.0:
         raise ValueError(
             f"ground_margin must be positive and finite, got {ground_margin!r}"
@@ -121,14 +127,14 @@ def prepare_comsol_layout(
             )
         # Validate feeds before preparation: preparing registers a new cell and
         # we do not want invalid input to leave that side effect behind.
-        ports = tuple(feed_port(component, name) for name in feed_ports)
+        ports = tuple(gplugins_layout.feed_port(component, name) for name in feed_ports)
 
     if crop_to_feed_ports and not ports:
         raise ValueError(
             "crop_to_feed_ports=True needs two feed ports to define the "
             "crop planes, but feed_ports is None"
         )
-    planes = crop_planes(ports) if crop_to_feed_ports else None
+    planes = gplugins_layout.crop_planes(ports) if crop_to_feed_ports else None
 
     _reject_unsupported_layers(component)
     if not any(component.get_polygons(by="tuple", layers=[LAYER.M1_ETCH]).values()):
@@ -138,23 +144,44 @@ def prepare_comsol_layout(
         )
     if planes is not None:
         # Checked on the drawn mask: after inversion the ground spans the margin.
-        validate_crop_containment(
-            component,
-            planes,
-            layers=(LAYER.M1_DRAW, LAYER.M1_ETCH),
-            gap_layer=LAYER.M1_ETCH,
-        )
+        _validate_crop_containment(gplugins_layout, component, planes)
 
     prepared = prepare_metal_layout(
         component,
         margin_draw=ground_margin,
         name=f"{component.name}_comsol_{uuid.uuid4().hex}",
     )
-    return _extract_metal(
+    return gplugins_layout.prepare_comsol_layout(
         prepared,
         LAYER.M1_DRAW,
         feed_ports,
         crop_to_feed_ports=crop_to_feed_ports,
+    )
+
+
+def _validate_crop_containment(
+    gplugins_layout: ModuleType, component: Component, planes: CropPlanes
+) -> None:
+    """Check the input mask fits between the crop planes, naming QPDK layers.
+
+    :func:`gplugins.comsol.layout.validate_crop_containment` reports a layer
+    as its ``(layer, datatype)`` tuple. Each layer is checked on its own so the
+    error can name it as a :data:`~qpdk.tech.LAYER` member instead.
+
+    Raises:
+        ValueError: If M1_DRAW or M1_ETCH geometry extends beyond a plane, or
+            the etch gaps do not reach both planes.
+    """
+    for layer in (LAYER.M1_DRAW, LAYER.M1_ETCH):
+        try:
+            gplugins_layout.validate_crop_containment(
+                component, planes, layers=(layer,)
+            )
+        except ValueError as error:
+            message = str(error).replace(f"{tuple(layer)} extends", f"{layer} extends")
+            raise ValueError(message) from error
+    gplugins_layout.validate_crop_containment(
+        component, planes, layers=(), gap_layer=LAYER.M1_ETCH
     )
 
 

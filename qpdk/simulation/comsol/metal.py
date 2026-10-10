@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from gplugins.comsol.metal import build_comsol_metal_model as _build_metal_model
+from qpdk.simulation.comsol._gplugins import import_gplugins_comsol
 
 if TYPE_CHECKING:
     import mph
@@ -42,6 +42,6 @@ def build_comsol_metal_model(
         The MPh model. Geometry only: no physics, materials, ports, or studies
         have been added, and the model has not been saved.
     """
-    return _build_metal_model(
+    return import_gplugins_comsol("metal").build_comsol_metal_model(
         client, layout, metal_thickness_um=metal_thickness_um, name=name
     )

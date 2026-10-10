@@ -11,16 +11,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from gplugins.comsol.sheet import (
-    AIR_SELECTION,
-    SILICON_SELECTION,
-    build_comsol_sheet_model as _build_sheet_model,
-)
-
+from qpdk.simulation.comsol._gplugins import import_gplugins_comsol, reexport
 from qpdk.tech import get_layer_material_properties
 
 if TYPE_CHECKING:
     import mph
+    from gplugins.comsol.sheet import AIR_SELECTION, SILICON_SELECTION
 
     from qpdk.simulation.comsol.layout import ComsolLayout
 
@@ -40,6 +36,8 @@ SILICON_RELATIVE_PERMITTIVITY = get_layer_material_properties("Substrate")[
 AIR_RELATIVE_PERMITTIVITY = get_layer_material_properties("Vacuum")[
     "relative_permittivity"
 ]
+
+__getattr__ = reexport(__name__, "sheet", ["AIR_SELECTION", "SILICON_SELECTION"])
 
 
 def build_comsol_sheet_model(
@@ -77,7 +75,7 @@ def build_comsol_sheet_model(
     Returns:
         The MPh model, with geometry, selections, and materials only.
     """
-    return _build_sheet_model(
+    return import_gplugins_comsol("sheet").build_comsol_sheet_model(
         client,
         layout,
         name,
