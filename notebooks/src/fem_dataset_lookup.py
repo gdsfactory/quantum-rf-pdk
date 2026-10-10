@@ -198,9 +198,9 @@ dataset.table.head(8)
 # uv run --script qpdk/models/datasets/data/plate_capacitor.py --sif /path/to/palace.sif
 # ```
 #
-# The script uses gsim's `ElectrostaticSim` for execution and matrix loading.
-# Meshwell builds the sheet geometry, and gsim writes the Palace configuration. The output
-# carries its metadata; reading it needs neither the script nor Palace. Generator scripts stay outside the installed QPDK package.
+# The script builds a QPDK component. gsim meshes its electrodes with meshwell,
+# writes the configuration and runs Palace. Results carry their metadata; lookup
+# needs neither the generator nor the simulator. Generator scripts stay outside wheels.
 
 # %%
 small_grid = {"length": [40.0, 80.0], "width": [10.0], "gap": [4.0, 7.0, 10.0]}
@@ -292,11 +292,11 @@ logger.info(
 #
 # ```bash
 # generator=qpdk/models/datasets/data/cpw_coupling.py
-# sbatch --array=0-7 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" \
+# sbatch --array=0-1 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" \
 #   build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
 # # After every task succeeds, pass each shard as a repeated option:
 # shards=()
-# for i in {0..7}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
+# for i in {0..1}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
 # uv run --script "$generator" "${shards[@]}" --output build/datasets/cpw_coupling_palace
 # ```
 #
@@ -311,8 +311,8 @@ logger.info(
 # generator=qpdk/models/datasets/data/cpw_coupling.py
 # export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 # shards=()
-# for i in {0..7}; do
-#   uv run --script "$generator" --shard "$i" --shards 8 --processes 4 \
+# for i in {0..1}; do
+#   uv run --script "$generator" --shard "$i" --shards 2 --processes 4 \
 #     --output "build/cpw-shards/shard-$i" --workdir "build/cpw-runs/shard-$i"
 #   shards+=(--merge-shards "build/cpw-shards/shard-$i")
 # done
@@ -575,6 +575,8 @@ pl.DataFrame(rows)
 # change. This measures mesh sensitivity; it does not bound domain truncation or
 # interpolation error. Separate domain, vacuum and held-out checks travel in the
 # bundled dataset's provenance. Solver matrices remain raw.
+# The smaller development grid trades lookup resolution for faster regeneration;
+# check its measured interpolation error before extending a design sweep.
 #
 # The following cells read the bundled Palace results and run no simulator.
 # The same interpolator handles all three axes; fixing an axis only chooses a
@@ -755,10 +757,14 @@ plt.show()
 # %% [markdown]
 # ### Ground left between the CPW slots
 #
+# ![Fully etched inner gap compared with QPDK slots retaining a central ground strip.](figures/cpw-coupling-ground.svg)
+#
 # `coupler_straight` etches a slot on each side of each trace. When the inter-trace
 # gap exceeds twice the slot width, a ground strip remains between the slots.
-# The `as-drawn` experiment keeps this strip. It matches the fully etched geometry
+# The `as-drawn` experiment keeps this strip at reference ground. It matches the fully etched geometry
 # while the slots touch or overlap; beyond that point, the ground shields the traces.
+# The FEM capacitances are solved independently; the analytical expression is used
+# only for comparison. Both models share ideal sheets and dielectric half-spaces.
 # The analytical ECCPW formula assumes a fully etched inner gap, so its difference
 # from the shielded result measures a geometry change as well as numerical error.
 # Positive strip widths are sampled logarithmically from 0.01 µm. Logarithmic
