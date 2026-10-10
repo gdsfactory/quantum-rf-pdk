@@ -57,7 +57,7 @@ gdsfactoryplus = [
   "polars>=2,<3",
 ]
 graphics = ["trimesh", "pyglet<3"]
-hfss = ["polars>=2,<3", "pyaedt[graphics]>=0.15.0"]
+hfss = ["gplugins[ansys]~=2.1.0", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]~=2.1.0",
   "jaxellip",
@@ -465,9 +465,8 @@ default-groups = ["dev", "lint", "stubs", "test"]
 palace = { requires-python = "~=3.12.0" }
 
 [tool.uv.sources]
-# Temporary: gplugins.comsol is merged on gplugins main but not released yet.
-# Drop this source once a gplugins release ships gplugins.comsol.
-gplugins = { git = "https://github.com/gdsfactory/gplugins", rev = "3de427ddf02d3e3c93558cdf47ff2af0018b9268" }
+# Temporary: gplugins.ansys is not in a gplugins release yet. Drop this pin once one ships it.
+gplugins = { git = "https://github.com/jackgdsf/gplugins", branch = "ansys-plugin" }
 gsim = { git = "https://github.com/nikosavola/gsim.git", rev = "946c3973b6311f0a4a3cf3bd601336ad7a186dfb" }
 sax = { git = "https://github.com/gdsfactory/sax.git", rev = "de4a5b71eddbadc4b8f749e716f0bb3bd1a86240" }
 

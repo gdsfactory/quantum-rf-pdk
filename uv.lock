@@ -1409,20 +1409,6 @@ wheels = [
 ]
 
 [[package]]
-name = "fpdf2"
-version = "2.8.7"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "defusedxml" },
-    { name = "fonttools" },
-    { name = "pillow" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/27/f2/72feae0b2827ed38013e4307b14f95bf0b3d124adfef4d38a7d57533f7be/fpdf2-2.8.7.tar.gz", hash = "sha256:7060ccee5a9c7ab0a271fb765a36a23639f83ef8996c34e3d46af0a17ede57f9", size = 362351, upload-time = "2026-02-28T05:39:16.456Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/0a/cf50ecffa1e3747ed9380a3adfc829259f1f86b3fdbd9e505af789003141/fpdf2-2.8.7-py3-none-any.whl", hash = "sha256:d391fc508a3ce02fc43a577c830cda4fe6f37646f2d143d489839940932fbc19", size = 327056, upload-time = "2026-02-28T05:39:14.619Z" },
-]
-
-[[package]]
 name = "freetype-py"
 version = "2.5.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1742,7 +1728,7 @@ wheels = [
 [[package]]
 name = "gplugins"
 version = "2.1.5"
-source = { git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268#3de427ddf02d3e3c93558cdf47ff2af0018b9268" }
+source = { git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin#e77f2662832071005d859d35342df843cbf7e334" }
 dependencies = [
     { name = "gdsfactory" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
@@ -1753,6 +1739,10 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+ansys = [
+    { name = "polars" },
+    { name = "pyaedt" },
+]
 comsol = [
     { name = "mph" },
     { name = "shapely" },
@@ -4374,6 +4364,22 @@ wheels = [
 ]
 
 [[package]]
+name = "pdf-oxide"
+version = "0.3.78"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/99/52/202c81a0ff60e64309dd7fc4682029f88d3fb07c827f4eaf78b53a7552ee/pdf_oxide-0.3.78.tar.gz", hash = "sha256:18fb43c7b4e390400aab51f546a7b8c6ee471b5cbec88f4cf3dd74f6c43c49f2", size = 6930468, upload-time = "2026-09-08T17:24:28.544Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7a/e0/955517da3f8249239573ecafd756f7c647984b6c2a7c67701333556cf3ce/pdf_oxide-0.3.78-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:a0c98d7753ec8593bd7e79ee41ad813b22a55fdd321cae85138e791802eac92b", size = 11084145, upload-time = "2026-09-08T17:24:11.702Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/51/cf844ffab595c22d181f219e786d7c0f80e8d2bfbee8d15a0f1b0cc88406/pdf_oxide-0.3.78-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:538a809d35d9dec07e2e7a7568352bcf4114a8fb66d12f7452c802b2304d6946", size = 10506402, upload-time = "2026-09-08T17:24:13.905Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/e9/4774d28d8a0325809e3c4b1903d777c761b9058fa5dedd47c08caf1f5253/pdf_oxide-0.3.78-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:dda4a7fb93f3b68a4b9bf52d0d314891d777c417f41993a0c2d8937325a59f2b", size = 10817714, upload-time = "2026-09-08T17:24:15.885Z" },
+    { url = "https://files.pythonhosted.org/packages/df/6c/6b5957c884fb73582851810b5f1e4660da1d414c692ab77c2e784aecd9e0/pdf_oxide-0.3.78-cp38-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:0b7e03008ca441e9183ef8f3c5d895424aca8119d5a860a205e1d16649f4f6a8", size = 11462221, upload-time = "2026-09-08T17:24:17.869Z" },
+    { url = "https://files.pythonhosted.org/packages/91/68/f3b875b44c844970ca7bb727ea417d313a89c176b0d43733267102b871f7/pdf_oxide-0.3.78-cp38-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:119c45cc16e1763440e438ab3e2d0a59ff406ed4c5bf6b78716bd2dfb2083b05", size = 11012429, upload-time = "2026-09-08T17:24:20.128Z" },
+    { url = "https://files.pythonhosted.org/packages/59/14/b0a37b598af5f57bea25e130e1f3c1bbac549ec6dd00960c14d951e865ea/pdf_oxide-0.3.78-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:e290619267875256d310ea692f2a748ddb9575d3c35ade61db51f3aaade1ddac", size = 11703260, upload-time = "2026-09-08T17:24:21.946Z" },
+    { url = "https://files.pythonhosted.org/packages/95/61/700cb40f9806df302e085a2d3b1133c21a95a54f2375bad3a04c419223ca/pdf_oxide-0.3.78-cp38-abi3-win_amd64.whl", hash = "sha256:3c2800d15e60ce1d2ec5de5ff9a605c167e0c9964bb9f6143862d282ef6b46d0", size = 11612909, upload-time = "2026-09-08T17:24:24.031Z" },
+    { url = "https://files.pythonhosted.org/packages/06/cb/ebd9574ec3a984b347347dc0e9c370ae38ad26dfafcb99e2253c9823bb8b/pdf_oxide-0.3.78-cp38-abi3-win_arm64.whl", hash = "sha256:f05e894c5d984284f56694f03a9351ea18d8c1ea081b4445007dfaa5c11dce85", size = 10813605, upload-time = "2026-09-08T17:24:26.267Z" },
+]
+
+[[package]]
 name = "pdk-schema"
 version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4872,7 +4878,7 @@ wheels = [
 
 [[package]]
 name = "pyaedt"
-version = "1.3.0"
+version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ansys-tools-common" },
@@ -4886,17 +4892,18 @@ dependencies = [
     { name = "pyedb" },
     { name = "pyyaml" },
     { name = "tomli-w" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/af/37387d6b4183157d94f98c8e7067a6c44d4fe9f277057ce1c2d22b228326/pyaedt-1.3.0.tar.gz", hash = "sha256:97e26349a79dc53ea3b06fc40aa4b1683442104397f90bf7fae27e1deea454df", size = 27245286, upload-time = "2026-07-17T13:16:28.755Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/33/4fd61364e4f7f474de0bb0b48d1d9246f18122adf04a806c12e70e202e29/pyaedt-1.9.0.tar.gz", hash = "sha256:9ae9d9ae03f9bd185c7a274670bdda1c0fc74de81c76c8385493a27d2e046dd8", size = 27683795, upload-time = "2026-10-10T15:36:44.718Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/af/8b615f93d49ac6c98ff1e707a3170ef768fd9c40aadfdb529503236591c4/pyaedt-1.3.0-py3-none-any.whl", hash = "sha256:a318f94ed1dcb1607b153d6db23c087ab77bd386104c73c7f9dc47c3be65708f", size = 7557191, upload-time = "2026-07-17T13:16:25.855Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/3f/947318898b5597accd24e072c5f6468cc6b81d8a94bf50fa5ab994c3f32c/pyaedt-1.9.0-py3-none-any.whl", hash = "sha256:2db03d1e4c70c14fed8eb05f91cc68506932c173107c220f901a1a8b1b44cbc8", size = 7675096, upload-time = "2026-10-10T15:36:41.083Z" },
 ]
 
 [package.optional-dependencies]
 graphics = [
     { name = "ansys-tools-visualization-interface" },
-    { name = "fpdf2" },
     { name = "matplotlib" },
+    { name = "pdf-oxide" },
     { name = "pillow" },
     { name = "pyvista", extra = ["io"] },
     { name = "vtk" },
@@ -5560,7 +5567,7 @@ graphics = [
     { name = "trimesh", version = "5.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
 ]
 hfss = [
-    { name = "polars" },
+    { name = "gplugins", extra = ["ansys"] },
     { name = "pyaedt", extra = ["graphics"] },
 ]
 models = [
@@ -5720,8 +5727,9 @@ requires-dist = [
     { name = "flax", marker = "extra == 'netket'" },
     { name = "gdsfactory", specifier = "~=9.51.0" },
     { name = "gdsfactoryplus", marker = "python_full_version == '3.12.*' and extra == 'gdsfactoryplus'", specifier = ">=2.1.467" },
-    { name = "gplugins", extras = ["comsol"], marker = "extra == 'comsol'", git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
-    { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
+    { name = "gplugins", extras = ["ansys"], marker = "extra == 'hfss'", git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
+    { name = "gplugins", extras = ["comsol"], marker = "extra == 'comsol'", git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
+    { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
     { name = "jaxellip", marker = "extra == 'gdsfactoryplus'" },
     { name = "jaxellip", marker = "extra == 'models'" },
     { name = "netket", marker = "extra == 'netket'", specifier = ">=3.12" },
@@ -5732,7 +5740,6 @@ requires-dist = [
     { name = "pandas", extras = ["parquet"], marker = "extra == 'models'" },
     { name = "polars", marker = "extra == 'delta'", specifier = ">=2,<3" },
     { name = "polars", marker = "extra == 'gdsfactoryplus'", specifier = ">=2,<3" },
-    { name = "polars", marker = "extra == 'hfss'", specifier = ">=2,<3" },
     { name = "polars", marker = "extra == 'models'", specifier = ">=2,<3" },
     { name = "pyaedt", extras = ["graphics"], marker = "extra == 'hfss'", specifier = ">=0.15.0" },
     { name = "pyglet", marker = "extra == 'graphics'", specifier = "<3" },
@@ -5771,7 +5778,7 @@ dev = [
 docs = [
     { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
-    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
+    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
     { name = "jaxellip" },
     { name = "jinja2" },
     { name = "jupytext" },
@@ -5810,7 +5817,7 @@ docs = [
 docs-models = [
     { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
-    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
+    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/jackgdsf/gplugins?branch=ansys-plugin" },
     { name = "jaxellip" },
     { name = "netket", specifier = ">=3.12" },
     { name = "optax" },
