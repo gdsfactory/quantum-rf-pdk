@@ -224,6 +224,10 @@ fetch-docs-fonts:
     INTER_FILES = {
         "InterVariable.ttf": "4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf",
         "InterVariable-Italic.ttf": "d6f1f6a172d9e588438db9f986fd5cfad7b30f644374080a8a9d4d91e344586f",
+        # Static faces for matplotlib, which reads a variable font as a single
+        # weight-400 face and so cannot draw bold Inter from InterVariable.ttf.
+        "extras/ttf/Inter-Regular.ttf": "40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82",
+        "extras/ttf/Inter-Bold.ttf": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f",
     }
     VERSION = hashlib.sha256(repr((FILES, INTER_ZIP, INTER_FILES)).encode()).hexdigest()
 
@@ -251,7 +255,7 @@ fetch-docs-fonts:
             (OUT / name).write_bytes(fetch(url, expected_hash))
         with zipfile.ZipFile(io.BytesIO(fetch(*INTER_ZIP))) as z:
             for name, expected_hash in INTER_FILES.items():
-                (OUT / name).write_bytes(
+                (OUT / Path(name).name).write_bytes(
                     verify(z.read(name), expected_hash, f"{INTER_ZIP[0]}!{name}")
                 )
         STAMP.write_text(VERSION)

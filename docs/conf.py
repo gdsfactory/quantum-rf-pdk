@@ -12,9 +12,11 @@ from pathlib import Path
 
 import typst
 from docutils import nodes
+from matplotlib import font_manager
 from matplotlib.colors import to_hex
 from matplotlib.sphinxext import plot_directive
 from sphinx.application import Sphinx
+from sphinx.transforms.post_transforms import SphinxPostTransform
 from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
 from sphinxcontrib.svgbob._svgbob import to_svg
@@ -367,6 +369,32 @@ typst_template = "typst/qpdk.typ"
 # font_paths is only needed when the families are not installed system-wide;
 # docs.just fetches them into build/docs-fonts, CI installs them via fc-cache.
 _local_fonts = Path(__file__).parent.parent / "build" / "docs-fonts"
+
+#: Tells notebook kernels where the local docs font cache is, so
+#: ``docs/ipython_config.py`` can register it with matplotlib.  Kernels inherit
+#: this process's environment.
+DOCS_FONTS_ENV = "QPDK_DOCS_FONTS_DIR"
+
+
+def _register_docs_fonts_with_matplotlib():
+    """Make the local docs font cache visible to matplotlib.
+
+    Only the HTML CI job installs the docs fonts system-wide; the PDF job and
+    local builds have nothing but ``build/docs-fonts``.  Without this, every
+    figure falls back to DejaVu Sans and each plotting cell prints
+    ``findfont: Font family 'Outfit' not found`` into its output, which the PDF
+    then reproduces.  Registering here covers the ``.. plot::`` directive (it
+    runs in this process); the environment variable covers notebook kernels.
+    """
+    if not _local_fonts.is_dir():
+        return
+    os.environ[DOCS_FONTS_ENV] = str(_local_fonts.resolve())
+    for font in sorted(_local_fonts.iterdir()):
+        if font.suffix in {".otf", ".ttf"}:
+            font_manager.fontManager.addfont(str(font))
+
+
+_register_docs_fonts_with_matplotlib()
 
 _typst_compile = typst.compile
 
@@ -1098,6 +1126,88 @@ def _typst_strip_ansi(app, doctree, _docname):
             node.parent.replace(node, nodes.Text(stripped))
 
 
+def _typst_drop_hidden_cell_parts(app, doctree, _docname):
+    """Drop the notebook cell parts that HTML collapses behind a toggle.
+
+    ``hide-input`` / ``hide-output`` cells (Colab install blocks, imports,
+    helper code) render collapsed in HTML via myst-nb's ``HideInputCells``
+    transform, which only runs for HTML.  A PDF cannot expand a toggle, so
+    without this the Typst builders print every hidden cell in full.  Leaving
+    the hidden parts out is the PDF equivalent of the collapsed default.
+    """
+    if app.builder.name not in {"typst", "typstpdf"}:
+        return
+    for cell in list(doctree.findall(nodes.container)):
+        hide_mode = cell.get("hide_mode")
+        if cell.get("nb_element") != "cell_code" or not hide_mode:
+            continue
+        hidden = {
+            "all": {"cell_code_source", "cell_code_output"},
+            "input+output": {"cell_code_source", "cell_code_output"},
+            "input": {"cell_code_source"},
+            "output": {"cell_code_output"},
+        }.get(hide_mode, set())
+        for child in list(cell.children):
+            if child.get("nb_element") not in hidden:
+                continue
+            # Keep parts that carry a reference target (e.g. a named figure):
+            # references to it are already resolved, and Typst fails to
+            # compile a link to a missing label.
+            if any(n["ids"] for n in child.findall(nodes.Element)):
+                continue
+            cell.remove(child)
+        if not cell.children:
+            cell.parent.remove(cell)
+
+
+def _typst_unlabel_cell_outputs(app, doctree, _docname):
+    """Drop the ``myst-ansi`` language from notebook output blocks.
+
+    myst-nb marks stream and ``text/plain`` outputs with its ``myst-ansi``
+    lexer.  codly prints the language as a badge on every block, so each cell
+    output in the PDF was labelled "myst-ansi"; HTML shows them unlabelled.
+    """
+    if app.builder.name not in {"typst", "typstpdf"}:
+        return
+    for block in doctree.findall(nodes.literal_block):
+        if block.get("language") == "myst-ansi":
+            block["language"] = ""
+
+
+_WIDGET_MIME = "application/vnd.jupyter.widget-view+json"
+
+
+class _TypstDropWidgetOutputs(SphinxPostTransform):
+    """Drop Jupyter widget outputs from the PDF.
+
+    tqdm progress bars (``tqdm.auto``) are widgets: HTML renders them from the
+    saved widget state (``100%``), but the Typst builders cannot, so myst-nb
+    falls back to the bundle's ``text/plain`` -- the bar's *initial* repr,
+    ``0%| | 0/200 [00:00<?, ?it/s]``.  Runs just before myst-nb's
+    ``SelectMimeType`` (priority 4), while the bundle still lists every mime
+    type.
+    """
+
+    default_priority = 3
+    builders = ("typst", "typstpdf")
+
+    def run(self, **_kwargs):
+        """Remove widget bundles that would fall back to their initial repr."""
+        for bundle in list(self.document.findall(nodes.container)):
+            if bundle.get("nb_element") != "mime_bundle":
+                continue
+            mime_types = {child.get("mime_type") for child in bundle.children}
+            # Only drop bundles whose sole fallback is the stale text repr; a
+            # widget with an HTML or image fallback still has real output.
+            if mime_types == {_WIDGET_MIME, "text/plain"}:
+                output = bundle.parent
+                output.remove(bundle)
+                if not output.children and output.get("nb_element") == (
+                    "cell_code_output"
+                ):
+                    output.parent.remove(output)
+
+
 def _typst_drop_unresolved_myst_xrefs(app, doctree, _docname):
     """Render MyST cross-references that did not resolve as plain text.
 
@@ -1461,6 +1571,9 @@ def setup(app):
     app.connect("doctree-read", pair_plot_images_by_theme, priority=400)
     plot_directive.render_figures = _render_figures_for_both_themes
     app.connect("doctree-resolved", inline_figures)
+    app.add_post_transform(_TypstDropWidgetOutputs)
+    app.connect("doctree-resolved", _typst_drop_hidden_cell_parts)
+    app.connect("doctree-resolved", _typst_unlabel_cell_outputs)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
     app.connect("doctree-resolved", _typst_strip_ansi)
     app.connect("doctree-resolved", _typst_lift_block_images)
