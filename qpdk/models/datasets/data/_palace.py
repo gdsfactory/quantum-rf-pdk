@@ -153,15 +153,15 @@ def extract(
             normalization_depth_um=normalization_depth_um,
             minimum_feature_elements=minimum_feature_elements,
         )
+        # Warm starts change the norm used to normalize the logged residuals.
         sim.set_solver(
             order=order,
             tolerance=tolerance,
             max_iterations=1000,
             preconditioner="BoomerAMG",
+            initial_guess=False,
         )
         sim.set_electrostatic(save_fields=len(terminals) if save_fields else 0)
-        # Warm starts change the norm used to normalize the logged residuals.
-        sim.solver.linear.initial_guess = False
         sim.write_config()
         shutil.rmtree(run / "output", ignore_errors=True)
         sim.run_local(
