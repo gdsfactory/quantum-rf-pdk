@@ -14,8 +14,7 @@ the analytical helpers used to design them. Install them with
 
 {%     for category in section.categories %}
    .. grid-item-card:: {{ category.title }}
-      :link: models-{{ category.key }}
-      :link-type: ref
+      :link: #models-{{ category.key }}
 
       {{ category.description }}
       +++
@@ -42,11 +41,13 @@ the analytical helpers used to design them. Install them with
 {{ category.description }}
 
 {%         endif %}
-.. autosummary::
-   :nosignatures:
+.. only:: html
+
+   .. autosummary::
+      :nosignatures:
 
 {%         for func_name in category.functions %}
-   ~qpdk.models.{{ func_name }}
+      ~qpdk.models.{{ func_name }}
 {%         endfor %}
 
 {%         for func_name in category.functions %}

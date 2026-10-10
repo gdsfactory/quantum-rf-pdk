@@ -1,5 +1,6 @@
 """Write model documentation."""
 
+import warnings
 from dataclasses import dataclass, field
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -80,7 +81,7 @@ sax_categories = [
     Category(
         "waveguides",
         "Waveguides and interconnects",
-        "Straights, bends, tapers, launchers, airbridges, bumps and TSVs.",
+        "Straights, bends, tapers, launchers, airbridges, bumps, TSVs, rectangles and generic N-port blocks.",
         ("qpdk.models.waveguides",),
     ),
     Category(
@@ -109,7 +110,7 @@ helper_categories = [
     Category(
         "perturbation",
         "Perturbation theory",
-        "Dispersive shifts, Purcell decay, linewidths and dephasing.",
+        "Transmon frequency and anharmonicity, dispersive shifts, Purcell decay, linewidths and dephasing.",
         ("qpdk.models.perturbation",),
     ),
     Category(
@@ -139,6 +140,12 @@ def _assign(categories: list[Category], names: list[str], group: str) -> list[Ca
     for name in sorted(names):
         module = getattr(models[name], "__module__", "")
         by_module.get(module, other).functions.append(name)
+    if other.functions:
+        warnings.warn(
+            f"{other.functions} are not in any {group} category; "
+            "add their module to a Category in .github/write_models.py",
+            stacklevel=2,
+        )
     return [c for c in [*categories, other] if c.functions]
 
 
