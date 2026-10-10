@@ -12,9 +12,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
-from gplugins.comsol import model as _gplugins_model
-
 from qpdk.simulation.comsol import sheet
+from qpdk.simulation.comsol._gplugins import INSTALL_HINT, is_missing
+
+try:
+    from gplugins.comsol import model as _gplugins_model
+except ModuleNotFoundError as error:
+    if not is_missing(error, "gplugins.comsol.model"):
+        raise
+    raise ImportError(f"{__name__} {INSTALL_HINT}") from error
 
 if TYPE_CHECKING:
     import mph

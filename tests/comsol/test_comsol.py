@@ -9,10 +9,13 @@ Nothing needs MPh or a COMSOL licence: the gplugins builders are replaced.
 from __future__ import annotations
 
 import importlib
+import subprocess
+import sys
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from gplugins.comsol import metal as gplugins_metal, sheet as gplugins_sheet
 
 from qpdk import simulation
 from qpdk.simulation import build_comsol_metal_model, build_comsol_sheet_model
@@ -129,7 +132,7 @@ def test_sheet_builder_defaults_to_the_tech_permittivities(
         calls.append((client, layout, name, kwargs))
         return "model"
 
-    monkeypatch.setattr(comsol_sheet, "_build_sheet_model", fake_builder)
+    monkeypatch.setattr(gplugins_sheet, "build_comsol_sheet_model", fake_builder)
     client = MagicMock()
     layout = _empty_layout()
 
@@ -160,7 +163,7 @@ def test_metal_builder_defaults_to_the_qpdk_name(monkeypatch: pytest.MonkeyPatch
         calls.append((client, layout, kwargs))
         return "model"
 
-    monkeypatch.setattr(comsol_metal, "_build_metal_model", fake_builder)
+    monkeypatch.setattr(gplugins_metal, "build_comsol_metal_model", fake_builder)
     client = MagicMock()
     layout = _empty_layout()
 
@@ -168,3 +171,36 @@ def test_metal_builder_defaults_to_the_qpdk_name(monkeypatch: pytest.MonkeyPatch
     assert calls == [
         (client, layout, {"metal_thickness_um": 0.35, "name": "QPDK metal"})
     ]
+
+
+def test_modules_import_without_gplugins_comsol():
+    """Without the extra the modules import and using a helper names the fix."""
+    code = """
+import sys
+sys.modules["gplugins.comsol"] = None
+import qpdk.simulation.comsol
+from qpdk.simulation.comsol import (
+    capacitance, layout, mesh, metal, plotting, results, rf, sheet,
+)
+assert sheet.SILICON_RELATIVE_PERMITTIVITY > 1
+try:
+    results.result_file
+except ImportError as error:
+    assert "uv sync --extra comsol" in str(error), error
+else:
+    raise AssertionError("expected ImportError")
+from qpdk.simulation.comsol.model import COMSOL
+"""
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+        shell=False,
+    )
+    assert result.returncode != 0, result.stderr
+    last_line = result.stderr.strip().splitlines()[-1]
+    assert last_line.startswith("ImportError: qpdk.simulation.comsol.model"), (
+        result.stderr
+    )
+    assert "uv sync --extra comsol" in last_line

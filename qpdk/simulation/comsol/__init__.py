@@ -17,10 +17,12 @@ and :mod:`~qpdk.simulation.comsol.results` re-export the gplugins helpers.
 Solving, saving, and evaluating are MPh's own methods.
 
 Note:
-    The builders need the optional ``comsol`` extra, which installs
-    ``gplugins[comsol]``, and a local COMSOL installation. Only
-    :class:`COMSOL` imports MPh, and lazily, so importing this package or the
-    layout and helper modules stays possible without it.
+    Using any of these names needs the optional ``comsol`` extra, which
+    installs ``gplugins[comsol]``; building and solving models also needs a
+    local COMSOL installation. Every module here imports gplugins only when
+    one of its names is used, so importing this package and its modules stays
+    possible without the extra, and a missing extra fails with an
+    :class:`ImportError` naming ``uv sync --extra comsol``.
 
 See the `MPh repository <https://github.com/MPh-py/MPh>`_ and
 `MPh documentation <https://mph.readthedocs.io/en/stable/>`_.
@@ -31,26 +33,40 @@ from __future__ import annotations
 import importlib
 from typing import TYPE_CHECKING, Any
 
-from gplugins.comsol.capacitance import add_capacitance_study
-from gplugins.comsol.mesh import (
-    pin_absolute_edge_mesh_sizes,
-    pin_absolute_mesh_sizes,
-    refine_metal_plane_mesh,
-)
-from gplugins.comsol.rf import add_cpw_rf_study
-
-from qpdk.simulation.comsol.layout import (
-    ComsolBoundingBox,
-    ComsolFeedPort,
-    ComsolLayout,
-    ComsolPolygon,
-    prepare_comsol_layout,
-)
-from qpdk.simulation.comsol.metal import build_comsol_metal_model
-from qpdk.simulation.comsol.sheet import build_comsol_sheet_model
-
 if TYPE_CHECKING:
+    from qpdk.simulation.comsol.capacitance import add_capacitance_study
+    from qpdk.simulation.comsol.layout import (
+        ComsolBoundingBox,
+        ComsolFeedPort,
+        ComsolLayout,
+        ComsolPolygon,
+        prepare_comsol_layout,
+    )
+    from qpdk.simulation.comsol.mesh import (
+        pin_absolute_edge_mesh_sizes,
+        pin_absolute_mesh_sizes,
+        refine_metal_plane_mesh,
+    )
+    from qpdk.simulation.comsol.metal import build_comsol_metal_model
     from qpdk.simulation.comsol.model import COMSOL
+    from qpdk.simulation.comsol.rf import add_cpw_rf_study
+    from qpdk.simulation.comsol.sheet import build_comsol_sheet_model
+
+_LAZY_IMPORTS: dict[str, str] = {
+    "COMSOL": "model",
+    "ComsolBoundingBox": "layout",
+    "ComsolFeedPort": "layout",
+    "ComsolLayout": "layout",
+    "ComsolPolygon": "layout",
+    "add_capacitance_study": "capacitance",
+    "add_cpw_rf_study": "rf",
+    "build_comsol_metal_model": "metal",
+    "build_comsol_sheet_model": "sheet",
+    "pin_absolute_edge_mesh_sizes": "mesh",
+    "pin_absolute_mesh_sizes": "mesh",
+    "prepare_comsol_layout": "layout",
+    "refine_metal_plane_mesh": "mesh",
+}
 
 __all__ = [
     "COMSOL",
@@ -69,9 +85,9 @@ __all__ = [
 ]
 
 
-# TODO(Python 3.15): lazy from-import of COMSOL (PEP 810) replaces this hook.
+# TODO(Python 3.15): lazy from-imports (PEP 810) replace this hook.
 def __getattr__(name: str) -> Any:
-    """Import a public name that needs MPh only when it is asked for.
+    """Import a public name, and gplugins with it, only when it is asked for.
 
     Returns:
         The requested attribute.
@@ -79,13 +95,15 @@ def __getattr__(name: str) -> Any:
     Raises:
         AttributeError: If ``name`` is not part of the public API.
     """
-    if name == "COMSOL":
-        return importlib.import_module("qpdk.simulation.comsol.model").COMSOL
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    try:
+        submodule = _LAZY_IMPORTS[name]
+    except KeyError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
+    return getattr(importlib.import_module(f"{__name__}.{submodule}"), name)
 
 
 def __dir__() -> list[str]:
-    """List the public names, including the lazily imported one.
+    """List the public names, including the lazily imported ones.
 
     Returns:
         Sorted public attribute names.
