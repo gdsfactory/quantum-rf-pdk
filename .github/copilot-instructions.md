@@ -65,7 +65,7 @@ qpdk/                   Core Python package
     derived/             Composite cells (e.g. transmon_with_resonator_and_probeline)
   models/               S-parameter and circuit models
     constants.py         Centralized physical constants (e, h, Φ_0, ε_0, …)
-  simulation/           HFSS/Q3D automation (aedt_base, hfss, q3d)
+  simulation/           HFSS/Q3D wrappers over gplugins.ansys (aedt_base, hfss, q3d)
   klayout/              KLayout technology files
   samples/              Example designs (.py, .pic.yml, .gsch)
   tech.py               Layer map, layer stack, cross sections
