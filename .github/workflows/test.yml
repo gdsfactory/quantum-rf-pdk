@@ -443,3 +443,36 @@ jobs:
             /tmp/qpdk_elmer_interdigital_capacitor_*/*.log
             /tmp/qpdk_elmer_interdigital_capacitor_*/*.sif
           if-no-files-found: warn
+
+  test-palace:
+    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    env:
+      MPLBACKEND: Agg
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+      - name: Install mesh libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libglu1-mesa
+      - name: Install Palace experiment dependencies
+        run: uv sync --locked --python 3.12 --no-dev --extra models --group palace --group test
+      - name: Run real Palace tests
+        run: uv run --no-sync pytest -m palace tests/models/test_datasets_palace.py --basetemp=build/palace-tests
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: palace-test-logs
+          path: |
+            build/palace-tests/**/solver.log
+            build/palace-tests/**/inputs.json
+            build/palace-tests/**/config.json
+          if-no-files-found: warn

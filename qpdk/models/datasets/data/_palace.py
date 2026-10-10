@@ -1,4 +1,4 @@
-"""Sheet meshing and Palace execution shared by the dataset experiments."""
+"""Palace provenance, resumable extraction and quality checks for dataset experiments."""
 
 # Native mesh imports need system libraries; keep previews independent of them.
 # ruff: file-ignore[import-outside-top-level]
@@ -9,37 +9,29 @@ import ast
 import hashlib
 import importlib.metadata
 import json
-import logging
 import math
 import re
-import shlex
 import shutil
 from pathlib import Path
-from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
-    from gsim.palace.mesh.generator import MeshResult
-    from meshwell.geometry_entity import GeometryEntity
-    from meshwell.model import ModelManager
-    from shapely import Polygon
+    from gdsfactory import Component
 
 from qpdk import logger
 from qpdk.models.datasets.capacitance import check_maxwell
 
 
 def runtime(
-    workdir: Path, executable: Path | None, sif: Path | None, binary: str
-) -> tuple[Path, dict]:
+    executable: Path | None, sif: Path | None, binary: str
+) -> tuple[dict, dict]:
     """Resolve a runtime, recording its content hash rather than its host path."""
     if executable is not None and sif is not None:
         raise ValueError("Choose an executable or a container, not both")
     if executable is None and sif is None:
-        from gsim.palace.runtime import (
-            resolve_palace_binary,
-        )
+        from gsim.palace.runtime import resolve_palace_binary
 
         executable = resolve_palace_binary()
         if executable is None:
@@ -47,26 +39,12 @@ def runtime(
     selected = sif if sif is not None else executable
     with selected.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
-    if sif is not None:
-        workdir.mkdir(parents=True, exist_ok=True)
-        executable = workdir.resolve() / "palace-container"
-        wrapper = (
-            '#!/bin/sh\nset -eu\nranks=1\nwhile [ "$#" -gt 0 ]; do\n'
-            '  case "$1" in\n    -np) ranks="$2"; shift 2 ;;\n'
-            "    -nt) shift 2 ;;\n    *) break ;;\n  esac\ndone\n"
-            f"exec apptainer exec --cleanenv {shlex.quote(str(sif.resolve()))} "
-            f'mpirun --oversubscribe -np "$ranks" {shlex.quote(binary)} "$@"\n'
-        )
-        # Replace the inode; a completed launcher can still be open on another node.
-        with TemporaryDirectory(dir=workdir) as staging:
-            staged = Path(staging) / executable.name
-            staged.write_text(wrapper, encoding="utf-8")
-            staged.chmod(0o755)
-            staged.replace(executable)
-    return executable.resolve(), {
-        "runtime_sha256": digest,
+    return {
+        "palace_executable": executable.resolve() if executable else None,
+        "palace_sif_path": sif.resolve() if sif else None,
+        "use_apptainer": sif is not None,
         "container_binary": binary if sif else None,
-    }
+    }, {"runtime_sha256": digest, "container_binary": binary if sif else None}
 
 
 def fingerprint(script: Path) -> dict:
@@ -126,190 +104,15 @@ def fingerprint(script: Path) -> dict:
     }
 
 
-def mesh_sheets(
-    sheets: dict[str, Polygon],
-    footprint: Polygon,
-    *,
-    height: float,
-    near_mesh: float,
-    far_mesh: float,
-    path: Path,
-) -> MeshResult:
-    """Mesh zero-thickness conductors between equal-height air and substrate volumes."""
-    import gmsh
-    from meshwell.model import ModelManager
-    from meshwell.polyprism import PolyPrism
-    from meshwell.polysurface import (
-        PolySurface,
-    )
-
-    if gmsh.isInitialized():
-        raise RuntimeError(
-            "Meshwell requires its own Gmsh session; finalize the existing session first"
-        )
-    model = ModelManager(n_threads=1, filename=str(path.with_suffix("")))
-    entities = [
-        PolyPrism(footprint, {0: 0, height: 0}, physical_name="air"),
-        PolyPrism(footprint, {-height: 0, 0: 0}, physical_name="silicon"),
-        *(PolySurface(polygon, physical_name=name) for name, polygon in sheets.items()),
-    ]
-    return _mesh_entities(
-        model,
-        entities,
-        sheets,
-        dim=3,
-        near_mesh=near_mesh,
-        far_mesh=far_mesh,
-        path=path,
-    )
-
-
-def mesh_cross_section(
-    sheets: dict[str, Polygon],
-    footprint: Polygon,
-    *,
-    height: float,
-    near_mesh: float,
-    far_mesh: float,
-    path: Path,
-) -> MeshResult:
-    """Mesh the transverse section of a uniform line with meshwell curves."""
-    import gmsh
-    from meshwell.model import ModelManager
-    from meshwell.polyline import PolyLine
-    from meshwell.polysurface import PolySurface
-    from shapely import LineString, box
-
-    if gmsh.isInitialized():
-        raise RuntimeError(
-            "Meshwell requires its own Gmsh session; finalize the existing session first"
-        )
-    lower, upper = footprint.bounds[1], footprint.bounds[3]
-    model = ModelManager(n_threads=1, filename=str(path.with_suffix("")))
-    # Different snapping grids leave conductor edges outside the dielectric mesh.
-    entities = [
-        PolySurface(
-            box(lower, 0, upper, height), physical_name="air", point_tolerance=1e-8
-        ),
-        PolySurface(
-            box(lower, -height, upper, 0),
-            physical_name="silicon",
-            point_tolerance=1e-8,
-        ),
-    ]
-    for name, polygon in sheets.items():
-        polygons = list(polygon.geoms) if hasattr(polygon, "geoms") else [polygon]
-        lines = [
-            LineString([(part.bounds[1], 0), (part.bounds[3], 0)]) for part in polygons
-        ]
-        entities.append(PolyLine(lines, physical_name=name, point_tolerance=1e-8))
-    return _mesh_entities(
-        model,
-        entities,
-        sheets,
-        dim=2,
-        near_mesh=near_mesh,
-        far_mesh=far_mesh,
-        path=path,
-    )
-
-
-def _mesh_entities(
-    model: ModelManager,
-    entities: list[GeometryEntity],
-    sheets: dict[str, Polygon],
-    *,
-    dim: Literal[2, 3],
-    near_mesh: float,
-    far_mesh: float,
-    path: Path,
-) -> MeshResult:
-    """Keep meshing, physical groups and Palace export consistent across dimensions."""
-    import gmsh
-    from gsim.palace.mesh.generator import MeshResult
-    from meshwell.resolution import ThresholdField
-
-    try:
-        model.cad.process_entities(entities, interface_delimiter="___")
-        field = ThresholdField(
-            apply_to="surfaces" if dim == 3 else "curves",
-            sizemin=near_mesh,
-            sizemax=far_mesh,
-            distmin=1,
-            distmax=25,
-        )
-        resolutions = {name: [field] for name in sheets if name != "ground"}
-        ground_parts = (
-            list(sheets["ground"].geoms)
-            if hasattr(sheets["ground"], "geoms")
-            else [sheets["ground"]]
-        )
-        if dim == 2 and len(ground_parts) == 3:
-            strip = min(part.bounds[3] - part.bounds[1] for part in ground_parts)
-            # Refine the inner strip without refining the long outer ground rails.
-            resolutions["ground"] = [
-                ThresholdField(
-                    apply_to="curves",
-                    max_mass=strip * 1.001,
-                    sizemin=min(near_mesh, strip * near_mesh / (4 * 0.14)),
-                    sizemax=far_mesh,
-                    distmin=min(1, strip / 4),
-                    distmax=25,
-                )
-            ]
-        model.mesh.process_geometry(
-            dim=dim,
-            default_characteristic_length=far_mesh,
-            resolution_specs=resolutions,
-            verbosity=0,
-        )
-        groups = {
-            "volumes": {},
-            "pec_surfaces": {},
-            "conductor_surfaces": {},
-            "port_surfaces": {},
-            "boundary_surfaces": {},
-        }
-        # Palace rejects faces exported twice as conductor and dielectric interface.
-        gmsh.model.removePhysicalGroups([
-            (group_dim, tag)
-            for group_dim, tag in gmsh.model.getPhysicalGroups(dim - 1)
-            if gmsh.model.getPhysicalName(group_dim, tag) not in sheets
-        ])
-        for group_dim, tag in gmsh.model.getPhysicalGroups():
-            name = gmsh.model.getPhysicalName(group_dim, tag)
-            if group_dim == dim:
-                groups["volumes"][name] = {"phys_group": tag}
-            elif name in sheets:
-                groups["pec_surfaces"][name] = {"phys_group": tag}
-        if set(groups["pec_surfaces"]) != set(sheets) or set(groups["volumes"]) != {
-            "air",
-            "silicon",
-        }:
-            raise ValueError(
-                "Mesh physical groups do not match the conductors and dielectric domains"
-            )
-        count = sum(len(elements) for elements in gmsh.model.mesh.getElements(dim)[1])
-        gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
-        model.save_to_mesh(path)
-        return MeshResult(
-            mesh_path=path,
-            output_dir=path.parent,
-            groups=groups,
-            mesh_stats={"tetrahedra" if dim == 3 else "triangles": count},
-        )
-    finally:
-        model.finalize()
-
-
 def extract(
-    sheets: dict[str, Polygon],
-    footprint: Polygon,
+    component: Component,
+    domain_bounds: tuple[float, float, float, float],
+    terminal_ports: dict[str, str],
     *,
     height: float,
     inputs: dict,
     workdir: Path,
-    executable: Path,
+    execution: dict,
     processes: int,
     near_mesh: float,
     far_mesh: float,
@@ -320,25 +123,13 @@ def extract(
     normalization_depth_um: float | None = None,
 ) -> dict[str, np.ndarray | float]:
     """Resume a matching solve and return capacitance with numerical diagnostics."""
-    from gsim.common.stack import LayerStack
+    import gdsfactory as gf
     from gsim.palace import ElectrostaticSim
-    from gsim.palace.capacitance import (
-        load_capacitance,
-    )
-    from gsim.palace.mesh.generator import (
-        write_config,
-    )
-    from gsim.palace.models.ports import (
-        TerminalConfig,
-    )
-    from pydantic import PrivateAttr
+    from gsim.palace.capacitance import load_capacitance
 
-    class SheetSimulation(ElectrostaticSim):
-        """Use gsim execution with an externally generated mesh."""
+    from qpdk.tech import LAYER
 
-        _last_mesh_result: MeshResult | None = PrivateAttr(default=None)
-
-    terminals = tuple(name for name in sheets if name != "ground")
+    terminals = tuple(terminal_ports)
     key = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:20]
     run = workdir.resolve() / key
     complete = run / "complete.json"
@@ -347,19 +138,20 @@ def extract(
     else:
         run.mkdir(parents=True, exist_ok=True)
         (run / "inputs.json").write_text(json.dumps(inputs, indent=2), encoding="utf-8")
-        mesh_function = (
-            mesh_sheets if normalization_depth_um is None else mesh_cross_section
-        )
-        mesh = mesh_function(
-            sheets,
-            footprint,
+        sim = ElectrostaticSim()
+        sim.set_geometry(component)
+        sim.set_output_dir(run)
+        sim.mesh_sheets(
+            conductor_layer=gf.get_layer_tuple(LAYER.M1_DRAW),
+            terminal_ports=terminal_ports,
+            domain_bounds=domain_bounds,
             height=height,
             near_mesh=near_mesh,
             far_mesh=far_mesh,
-            path=run / "palace.msh",
+            permittivity=permittivity,
+            normalization_depth_um=normalization_depth_um,
+            minimum_feature_elements=4 * 0.14 / near_mesh,
         )
-        sim = SheetSimulation()
-        sim.set_output_dir(run)
         sim.set_solver(
             order=order,
             tolerance=tolerance,
@@ -367,38 +159,17 @@ def extract(
             preconditioner="BoomerAMG",
         )
         sim.set_electrostatic(save_fields=len(terminals) if save_fields else 0)
-        config_path = write_config(
-            mesh,
-            LayerStack(materials={"silicon": {"permittivity": permittivity}}),
-            [],
-            simulation_type="electrostatic",
-            numerical_config=sim.solver,
-            electrostatic_config=sim.solver.electrostatic,
-            terminals=[TerminalConfig(name=name, layer=name) for name in terminals],
-            absorbing_boundary=False,
-        )
         # Warm starts change the norm used to normalize the logged residuals.
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-        config["Solver"]["Linear"]["InitialGuess"] = False
-        if normalization_depth_um is not None:
-            # Palace reports 2D capacitance for an implicit depth equal to Model.Lc.
-            config["Model"]["Lc"] = normalization_depth_um
-        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+        sim.solver.linear.initial_guess = False
+        sim.write_config()
         shutil.rmtree(run / "output", ignore_errors=True)
-        handler = logging.FileHandler(run / "solver.log", mode="w")
-        palace_logger = logging.getLogger("gsim.palace.base")
-        palace_logger.addHandler(handler)
-        try:
-            sim.run_local(
-                palace_executable=executable,
-                use_apptainer=False,
-                num_processes=processes,
-                num_threads=1,
-                verbose=True,
-            )
-        finally:
-            palace_logger.removeHandler(handler)
-            handler.close()
+        sim.run_local(
+            **execution,
+            num_processes=processes,
+            num_threads=1,
+            verbose=True,
+            log_path=run / "solver.log",
+        )
     quality = diagnostics(run, terminals=len(terminals), tolerance=tolerance)
     matrices = load_capacitance(run, terminal_names=terminals)
     check_maxwell(matrices.maxwell)
