@@ -56,16 +56,17 @@
 #
 # :::{note}
 # The documentation build does not execute this notebook, since CI runners have no GPU.
-# The outputs shown here were saved from a run on a CUDA machine with
-# `just run-jax-backend-notebook`.  On a CPU-only machine the GPU sections are skipped.
+# The page shows the outputs saved by the last `just run-jax-backend-notebook` run on a
+# CUDA machine; if no such run has been saved yet, it shows the code only.  On a CPU-only
+# machine the GPU sections are skipped.
 # :::
 #
 # :::{note}
 # An earlier version of this notebook also benchmarked Intel NPUs through
 # [OpenVINO](https://docs.openvino.ai/2026/).  That section was removed: OpenVINO's
 # JAX/Flax conversion is experimental, its JAX conversion notebook was deleted from the
-# OpenVINO notebooks in the
-# [2026.4 release](https://docs.openvino.ai/2026/about-openvino/release-notes-openvino.html#jupyter-notebooks),
+# OpenVINO notebooks in the 2026.0 release
+# ([release notes](https://docs.openvino.ai/2026/about-openvino/release-notes-openvino.html#previous-2026-releases)),
 # and the conversion could not handle the complex-valued SAX circuit.
 # :::
 
@@ -86,16 +87,18 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
+import hashlib
 import os
 import time
 import warnings
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 import sax
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from qpdk import PDK
 from qpdk.models.generic import capacitor, tee
@@ -318,9 +321,8 @@ else:
 # %% [markdown]
 # ## Scaling Analysis
 #
-# The cost of one evaluation has two parts: a fixed overhead per call (dispatch,
-# kernel launches, and for the GPU the transfer of the small result back to the host)
-# and a cost per frequency point.  We therefore model the median time as
+# The cost of one evaluation has two parts: a fixed overhead per call (dispatch and
+# kernel launches) and a cost per frequency point.  We therefore model the median time as
 #
 # $$
 # t(N) = t_0 + c \, N ,
@@ -334,7 +336,8 @@ else:
 # The timings span several decades, so an ordinary least-squares fit would only follow
 # the largest sizes.  We minimise the *relative* residuals instead, which is still a
 # linear problem: dividing $t_0 + c N_i \approx t_i$ by $t_i$ gives
-# $t_0 / t_i + c \, N_i / t_i \approx 1$.
+# $t_0 / t_i + c \, N_i / t_i \approx 1$.  Both parameters are physically non-negative;
+# if the unconstrained solution makes one of them negative, we drop that term and refit.
 
 
 # %%
@@ -352,6 +355,12 @@ def fit_overhead_model(sizes: list[int], times: list[float]) -> tuple[float, flo
     t = np.asarray(times, dtype=float)
     design = np.column_stack([1 / t, n / t])
     (t0, c), *_ = np.linalg.lstsq(design, np.ones_like(t), rcond=None)
+    if t0 < 0:  # pure per-point cost: minimise sum((c * N / t - 1) ** 2)
+        x = n / t
+        t0, c = 0.0, x.sum() / (x**2).sum()
+    elif c < 0:  # pure overhead
+        x = 1 / t
+        t0, c = x.sum() / (x**2).sum(), 0.0
     return float(t0), float(c)
 
 
@@ -369,7 +378,8 @@ for name, (t0, c) in fits.items():
     max_error = np.max(np.abs(t_model / np.asarray(backend_times[name]) - 1))
     print(
         f"{name}: t0 = {t0 * 1e6:8.1f} µs, c = {c * 1e9:8.2f} ns/point, "
-        f"N* = t0/c ≈ {t0 / c:,.0f} points, max relative error {max_error:.0%}"
+        f"N* = t0/c ≈ {t0 / c if c > 0 else float('inf'):,.0f} points, "
+        f"max relative error {max_error:.0%}"
     )
 
 # %% [markdown]
@@ -415,7 +425,7 @@ plt.show()
 # | Backend | Notes |
 # |---------|-------|
 # | **CPU** | Always available; good baseline, with the lowest fixed overhead per call. |
-# | **GPU** | Requires a CUDA build of JAX (e.g. `jax[cuda12]`) and a CUDA-capable GPU.  The higher per-call overhead pays off for large frequency sweeps or batched optimisation, where the per-point cost dominates. |
+# | **GPU** | Requires a CUDA build of JAX (e.g. `jax[cuda12]`) and a CUDA-capable GPU.  Compare the fitted per-point costs to see whether it pays off: SAX evaluates in `complex128`, and many consumer GPUs run 64-bit floating point at a small fraction of their 32-bit rate. |
 #
 # ### SAX / JAX integration notes
 #
@@ -428,3 +438,27 @@ plt.show()
 # * **Fixed input shape**: `jax.jit` compiles for a concrete input shape.  Each
 #   distinct frequency-array length triggers a new compilation, so reuse one size where
 #   you can.
+
+# %% tags=["hide-input", "hide-output"]
+# The documentation shows the outputs of a saved run of this notebook, so the fingerprint below
+# ties them to the source: CI recomputes it from notebooks/src/jax_backend_comparison.py and
+# rejects the saved outputs when the two have drifted apart.
+_source = next(
+    (
+        path
+        # The kernel starts in the directory of the notebook it writes
+        for path in (
+            Path("src/jax_backend_comparison.py"),
+            Path("notebooks/src/jax_backend_comparison.py"),
+            Path("jax_backend_comparison.py"),
+        )
+        if path.is_file()
+    ),
+    None,
+)
+if _source is not None:
+    print(f"Executed source SHA256: {hashlib.sha256(_source.read_bytes()).hexdigest()}")
+else:
+    print(
+        "Executed source SHA256: unavailable (run from the repository root to record it)"
+    )

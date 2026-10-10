@@ -101,8 +101,7 @@ implemented with `JAX <https://jax.readthedocs.io/>`_ and composed into circuits
 - :doc:`notebooks/model_comparison_to_qucs` — Validates qpdk S-parameter models against
   Qucs-S reference data for various passive components.
 - :doc:`notebooks/jax_backend_comparison` — Benchmarks jit-compiled SAX circuit
-  evaluation on the CPU and GPU (CUDA) backends of JAX, with outputs saved from a GPU
-  run.
+  evaluation on the CPU and GPU (CUDA) backends of JAX; it runs on a GPU outside CI.
 
 ***************************************
  FEM-based electromagnetic simulations
