@@ -21,6 +21,12 @@ from qpdk.tech import LAYER
 pytestmark = pytest.mark.palace
 
 
+@pytest.fixture
+def palace_processes() -> int:
+    """Fit the solver ranks within the CPUs provided by a test runner."""
+    return min(4, os.cpu_count() or 1)
+
+
 @pytest.mark.parametrize(
     ("width", "cpw_gap", "gap", "topology"),
     [
@@ -92,7 +98,7 @@ def test_fractional_cross_section_conductors_belong_to_domain_mesh(
 
 
 def test_cpw_cross_section_normalization_depth(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
 ) -> None:
     """The implicit 2D depth changes total capacitance, never capacitance per length."""
     source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
@@ -102,7 +108,7 @@ def test_cpw_cross_section_normalization_depth(
         "workdir": tmp_path / "runs",
         "sif": Path(value) if (value := os.environ.get("PALACE_SIF")) else None,
         "container_binary": os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
-        "processes": 4,
+        "processes": palace_processes,
     }
     matrices = []
     for depth in (1.0, 4.0):
@@ -143,7 +149,7 @@ def test_container_runtime_configuration(
 
 
 def test_interpolation_against_fresh_palace(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
 ) -> None:
     monkeypatch.syspath_prepend(
         str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data")
@@ -157,6 +163,7 @@ def test_interpolation_against_fresh_palace(
     generate = generator["generate"]
     runtime = {
         "workdir": tmp_path / "runs",
+        "processes": palace_processes,
         "sif": Path(value) if (value := os.environ.get("PALACE_SIF")) else None,
         "container_binary": os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
     }
@@ -187,7 +194,7 @@ def test_interpolation_against_fresh_palace(
 
 
 def test_editing_grid_reuses_completed_solves(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
 ) -> None:
     monkeypatch.syspath_prepend(
         str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data")
@@ -201,6 +208,7 @@ def test_editing_grid_reuses_completed_solves(
     runtime = {
         "workdir": tmp_path / "runs",
         "output": tmp_path / "data",
+        "processes": palace_processes,
         "sif": Path(value) if (value := os.environ.get("PALACE_SIF")) else None,
         "container_binary": os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
     }
