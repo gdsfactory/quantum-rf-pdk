@@ -21,6 +21,17 @@ c.InteractiveShellApp.exec_lines = [  # ruff: ignore[undefined-name]
     "from matplotlib import pyplot as plt",
     # Rebuild the matplotlib font cache so newly-installed fonts are discovered
     "import matplotlib.font_manager as _fm; _fm._load_fontmanager(try_read_cache=False)",
+    # Register the local docs font cache (build/docs-fonts, exported by
+    # docs/conf.py).  The PDF build and local builds have no system-wide copy
+    # of Outfit/Inter/Fira Math, so without this every figure falls back to
+    # DejaVu Sans and logs "findfont: Font family ... not found".
+    (
+        "import os as _os, pathlib as _pl\n"
+        "_fonts = _os.environ.get('QPDK_DOCS_FONTS_DIR')\n"
+        "for _font in sorted(_pl.Path(_fonts).iterdir()) if _fonts else ():\n"
+        "    if _font.suffix in {'.otf', '.ttf'}:\n"
+        "        _fm.fontManager.addfont(str(_font))"
+    ),
     # Configure matplotlib font embedding for better PDF/SVG compatibility
     # 'path' converts text to paths in SVG (more compatible, but larger files)
     "plt.rcParams['svg.fonttype'] = 'path'",
