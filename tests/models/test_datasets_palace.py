@@ -24,7 +24,7 @@ pytestmark = pytest.mark.palace
 @pytest.fixture
 def palace_processes() -> int:
     """Fit the solver ranks within the CPUs provided by a test runner."""
-    return min(4, os.cpu_count() or 1)
+    return min(2, os.cpu_count() or 1)
 
 
 @pytest.mark.parametrize(
