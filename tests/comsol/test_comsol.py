@@ -1,29 +1,35 @@
-"""Tests for the COMSOL metal geometry builder's public surface.
+"""Tests for the QPDK COMSOL wrappers' public surface.
 
-The builder talks to COMSOL through MPh, which is not installed here. These
-tests cover only what runs before the client is touched (argument validation)
-plus what the package exposes, so nothing needs to mock MPh or the Java API.
+The generic COMSOL code lives in :mod:`gplugins.comsol` and is tested there.
+These tests cover what QPDK adds or keeps: the public names, the re-exports of
+the gplugins helpers, and the QPDK defaults the builder wrappers pass through.
+Nothing needs MPh or a COMSOL licence: the gplugins builders are replaced.
 """
 
 from __future__ import annotations
 
+import importlib
+import subprocess
+import sys
 from typing import Any
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
+from gplugins.comsol import metal as gplugins_metal, sheet as gplugins_sheet
 
 from qpdk import simulation
-from qpdk.simulation import build_comsol_metal_model
-from qpdk.simulation.comsol import layout as comsol_layout, metal as comsol
-from qpdk.simulation.comsol.layout import (
-    ComsolBoundingBox,
-    ComsolLayout,
-    ComsolPolygon,
+from qpdk.simulation import build_comsol_metal_model, build_comsol_sheet_model
+from qpdk.simulation.comsol import (
+    layout as comsol_layout,
+    metal as comsol_metal,
+    sheet as comsol_sheet,
 )
+from qpdk.simulation.comsol.layout import ComsolBoundingBox, ComsolLayout
+from qpdk.tech import material_properties
 
 
 def _empty_layout() -> ComsolLayout:
-    """A layout with a bounding box but no metal to extrude.
+    """A layout with a bounding box but no metal.
 
     Returns:
         The empty layout.
@@ -38,7 +44,7 @@ def _empty_layout() -> ComsolLayout:
 def test_historical_cpw_alias_is_gone():
     """The builder is named for what it does; the old CPW alias was removed."""
     assert not hasattr(simulation, "build_comsol_cpw_model")
-    assert not hasattr(comsol, "build_comsol_cpw_model")
+    assert not hasattr(comsol_metal, "build_comsol_cpw_model")
     assert build_comsol_metal_model.__name__ == "build_comsol_metal_model"
 
 
@@ -66,120 +72,135 @@ def test_comsol_layout_public_exports(name: str):
     assert getattr(simulation, name) is getattr(comsol_layout, name)
 
 
-def test_build_metal_model_subtracts_each_hole_before_extrusion():
-    """The Java geometry calls retain both etched voids in the metal solid."""
-    layout = ComsolLayout(
-        polygons=(
-            ComsolPolygon(
-                outline=((0, 0), (10, 0), (10, 10), (0, 10)),
-                holes=(
-                    ((1, 1), (2, 1), (2, 2), (1, 2)),
-                    ((3, 3), (4, 3), (4, 4), (3, 4)),
+@pytest.mark.parametrize(
+    "name", ["ComsolBoundingBox", "ComsolFeedPort", "ComsolLayout", "ComsolPolygon"]
+)
+def test_layout_types_are_the_gplugins_types(name: str):
+    """QPDK layouts are gplugins layouts, so the gplugins builders accept them."""
+    gplugins_layout = importlib.import_module("gplugins.comsol.layout")
+    assert getattr(comsol_layout, name) is getattr(gplugins_layout, name)
+
+
+@pytest.mark.parametrize(
+    "module",
+    ["rf", "capacitance", "mesh", "plotting", "results"],
+)
+def test_helper_modules_reexport_gplugins(module: str):
+    """The study, mesh, plotting, and result modules re-export gplugins as-is."""
+    qpdk_module = importlib.import_module(f"qpdk.simulation.comsol.{module}")
+    gplugins_module = importlib.import_module(f"gplugins.comsol.{module}")
+    assert qpdk_module.__all__
+    for name in qpdk_module.__all__:
+        assert getattr(qpdk_module, name) is getattr(gplugins_module, name), name
+
+
+@pytest.mark.parametrize(
+    ("name", "module"),
+    [
+        ("add_capacitance_study", "capacitance"),
+        ("add_cpw_rf_study", "rf"),
+        ("pin_absolute_edge_mesh_sizes", "mesh"),
+        ("pin_absolute_mesh_sizes", "mesh"),
+        ("refine_metal_plane_mesh", "mesh"),
+    ],
+)
+def test_package_exports_the_gplugins_helpers(name: str, module: str):
+    """The lazy package exports resolve to the gplugins helpers."""
+    gplugins_module = importlib.import_module(f"gplugins.comsol.{module}")
+    assert getattr(simulation, name) is getattr(gplugins_module, name)
+
+
+def test_permittivities_come_from_the_tech():
+    """The QPDK sheet defaults are the technology values, not the gplugins ones."""
+    assert (
+        material_properties["Si"]["relative_permittivity"]
+        == comsol_sheet.SILICON_RELATIVE_PERMITTIVITY
+    )
+    assert (
+        material_properties["vacuum"]["relative_permittivity"]
+        == comsol_sheet.AIR_RELATIVE_PERMITTIVITY
+    )
+
+
+def test_sheet_builder_defaults_to_the_tech_permittivities(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """The sheet wrapper passes the QPDK permittivities to the gplugins builder."""
+    calls: list[tuple[Any, ...]] = []
+
+    def fake_builder(client: Any, layout: Any, name: str, **kwargs: Any) -> str:
+        calls.append((client, layout, name, kwargs))
+        return "model"
+
+    monkeypatch.setattr(gplugins_sheet, "build_comsol_sheet_model", fake_builder)
+    client = MagicMock()
+    layout = _empty_layout()
+
+    assert build_comsol_sheet_model(client, layout, "sheet") == "model"
+    assert calls == [
+        (
+            client,
+            layout,
+            "sheet",
+            {
+                "substrate_thickness_um": 200.0,
+                "air_height_um": 200.0,
+                "lateral_margin_um": 0.0,
+                "silicon_relative_permittivity": (
+                    comsol_sheet.SILICON_RELATIVE_PERMITTIVITY
                 ),
-            ),
-        ),
-        feed_ports=(),
-        bbox=ComsolBoundingBox(xmin=0, ymin=0, xmax=10, ymax=10),
-    )
-    client = MagicMock()
-    model = client.create.return_value
-    geometry = model.java.component.return_value.geom.return_value.create.return_value
-    work_plane_feature = MagicMock()
-    extrude = MagicMock()
-    geometry.feature.side_effect = {"wp1": work_plane_feature, "ext1": extrude}.get
-    work_plane = work_plane_feature.geom.return_value
-    features = {
-        tag: MagicMock() for tag in ("pol0", "hole0_0", "hole0_1", "dif0_0", "dif0_1")
-    }
-    work_plane.feature.side_effect = features.get
-    for tag in ("dif0_0", "dif0_1"):
-        features[tag].selection.side_effect = {
-            "input": MagicMock(),
-            "input2": MagicMock(),
-        }.get
-
-    result = build_comsol_metal_model(client, layout, metal_thickness_um=0.35)
-
-    assert result is model
-    client.create.assert_called_once_with("QPDK metal")
-    geometry.lengthUnit.assert_called_once_with("um")
-    assert geometry.create.call_args_list == [
-        call("wp1", "WorkPlane"),
-        call("ext1", "Extrude"),
+                "air_relative_permittivity": comsol_sheet.AIR_RELATIVE_PERMITTIVITY,
+            },
+        )
     ]
-    assert work_plane.create.call_args_list == [
-        call("pol0", "Polygon"),
-        call("hole0_0", "Polygon"),
-        call("dif0_0", "Difference"),
-        call("hole0_1", "Polygon"),
-        call("dif0_1", "Difference"),
+
+
+def test_metal_builder_defaults_to_the_qpdk_name(monkeypatch: pytest.MonkeyPatch):
+    """The metal wrapper names the COMSOL model after QPDK."""
+    calls: list[tuple[Any, ...]] = []
+
+    def fake_builder(client: Any, layout: Any, **kwargs: Any) -> str:
+        calls.append((client, layout, kwargs))
+        return "model"
+
+    monkeypatch.setattr(gplugins_metal, "build_comsol_metal_model", fake_builder)
+    client = MagicMock()
+    layout = _empty_layout()
+
+    assert build_comsol_metal_model(client, layout, metal_thickness_um=0.35) == "model"
+    assert calls == [
+        (client, layout, {"metal_thickness_um": 0.35, "name": "QPDK metal"})
     ]
-    features["pol0"].set.assert_any_call("x", "0,10,10,0")
-    features["pol0"].set.assert_any_call("y", "0,0,10,10")
-    features["hole0_0"].set.assert_any_call("x", "1,2,2,1")
-    features["hole0_0"].set.assert_any_call("y", "1,1,2,2")
-    features["hole0_1"].set.assert_any_call("x", "3,4,4,3")
-    features["hole0_1"].set.assert_any_call("y", "3,3,4,4")
-    features["dif0_0"].selection("input").set.assert_called_once_with("pol0")
-    features["dif0_0"].selection("input2").set.assert_called_once_with("hole0_0")
-    features["dif0_1"].selection("input").set.assert_called_once_with("dif0_0")
-    features["dif0_1"].selection("input2").set.assert_called_once_with("hole0_1")
-    extrude.set.assert_any_call("workplane", "wp1")
-    extrude.set.assert_any_call("distance", "0.35")
-    extrude.selection.assert_called_once_with("input")
-    extrude.selection.return_value.set.assert_called_once_with("wp1")
-    geometry.run.assert_called_once_with()
-    client.remove.assert_not_called()
 
 
-def _one_polygon_layout() -> ComsolLayout:
-    """A layout with one metal polygon and no holes.
-
-    Returns:
-        The layout.
-    """
-    return ComsolLayout(
-        polygons=(ComsolPolygon(outline=((0, 0), (10, 0), (10, 10), (0, 10))),),
-        feed_ports=(),
-        bbox=ComsolBoundingBox(xmin=0, ymin=0, xmax=10, ymax=10),
+def test_modules_import_without_gplugins_comsol():
+    """Without the extra the modules import and using a helper names the fix."""
+    code = """
+import sys
+sys.modules["gplugins.comsol"] = None
+import qpdk.simulation.comsol
+from qpdk.simulation.comsol import (
+    capacitance, layout, mesh, metal, plotting, results, rf, sheet,
+)
+assert sheet.SILICON_RELATIVE_PERMITTIVITY > 1
+try:
+    results.result_file
+except ImportError as error:
+    assert "uv sync --extra comsol" in str(error), error
+else:
+    raise AssertionError("expected ImportError")
+from qpdk.simulation.comsol.model import COMSOL
+"""
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+        shell=False,
     )
-
-
-def test_a_failed_build_removes_the_native_model():
-    """A failure after the model exists does not leak it in the COMSOL process."""
-    client = MagicMock()
-    model = client.create.return_value
-    model.java.component.side_effect = ValueError("no geometry")
-
-    with pytest.raises(ValueError, match="no geometry"):
-        build_comsol_metal_model(client, _one_polygon_layout())
-
-    client.remove.assert_called_once_with(model)
-
-
-def test_a_failing_cleanup_keeps_the_original_error():
-    """A cleanup that itself fails must not mask the build failure."""
-    client = MagicMock()
-    model = client.create.return_value
-    model.java.component.side_effect = ValueError("no geometry")
-    client.remove.side_effect = RuntimeError("cleanup failed")
-
-    with pytest.raises(ValueError, match="no geometry"):
-        build_comsol_metal_model(client, _one_polygon_layout())
-
-    client.remove.assert_called_once_with(model)
-
-
-@pytest.mark.parametrize("thickness", [0.0, -0.2, float("nan"), float("inf")])
-def test_rejects_bad_thickness_before_touching_comsol(thickness: float):
-    """Thickness is validated before any MPh/COMSOL call."""
-    client: Any = None
-    with pytest.raises(ValueError, match="metal_thickness_um"):
-        build_comsol_metal_model(client, _empty_layout(), metal_thickness_um=thickness)
-
-
-def test_rejects_layout_without_polygons_before_touching_comsol():
-    """An empty layout is refused before any MPh/COMSOL call."""
-    client: Any = None
-    with pytest.raises(ValueError, match="no polygons"):
-        build_comsol_metal_model(client, _empty_layout())
+    assert result.returncode != 0, result.stderr
+    last_line = result.stderr.strip().splitlines()[-1]
+    assert last_line.startswith("ImportError: qpdk.simulation.comsol.model"), (
+        result.stderr
+    )
+    assert "uv sync --extra comsol" in last_line
