@@ -399,6 +399,7 @@ def generate(
             tolerance=config.tolerance,
             save_fields=config.save_fields,
             normalization_depth_um=config.slice_length_um,
+            minimum_feature_elements=4 * settings.near_mesh / config.near_mesh,
         )
         reference = (
             float(

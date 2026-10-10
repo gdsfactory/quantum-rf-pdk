@@ -121,6 +121,7 @@ def extract(
     tolerance: float,
     save_fields: bool = False,
     normalization_depth_um: float | None = None,
+    minimum_feature_elements: float = 4,
 ) -> dict[str, np.ndarray | float]:
     """Resume a matching solve and return capacitance with numerical diagnostics."""
     import gdsfactory as gf
@@ -150,7 +151,7 @@ def extract(
             far_mesh=far_mesh,
             permittivity=permittivity,
             normalization_depth_um=normalization_depth_um,
-            minimum_feature_elements=4 * 0.14 / near_mesh,
+            minimum_feature_elements=minimum_feature_elements,
         )
         sim.set_solver(
             order=order,
