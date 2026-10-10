@@ -17,5 +17,5 @@ QPDK gives researchers, engineers, and students a scriptable, version-controlled
 ## Optional
 
 - [PDF documentation](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf): Full documentation as a single PDF
-- [Changelog](https://github.com/gdsfactory/quantum-rf-pdk/blob/main/docs/changelog.md): Release history
+- [Changelog](https://raw.githubusercontent.com/gdsfactory/quantum-rf-pdk/main/CHANGELOG.md): Release history
 - [Code of conduct](https://gdsfactory.github.io/quantum-rf-pdk/code_of_conduct.html)
