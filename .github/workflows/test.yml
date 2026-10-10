@@ -440,3 +440,39 @@ jobs:
             /tmp/qpdk_elmer_interdigital_capacitor_*/*.log
             /tmp/qpdk_elmer_interdigital_capacitor_*/*.sif
           if-no-files-found: warn
+  check-jax-gpu-notebook:
+    # The JAX backend notebook needs a CUDA GPU, so CI does not execute it. Once its outputs
+    # have been saved with `just run-jax-backend-notebook`, check that the run completed on a GPU.
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check the saved JAX backend notebook
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          notebook = json.loads(Path("notebooks/jax_backend_comparison.ipynb").read_text())
+          code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
+          if all(cell.get("execution_count") is None for cell in code_cells):
+              print("::notice::JAX backend notebook has no saved GPU run yet")
+              raise SystemExit(0)
+          if any(
+              cell.get("execution_count") is None
+              or any(output.get("output_type") == "error" for output in cell.get("outputs", []))
+              for cell in code_cells
+          ):
+              raise SystemExit("Saved JAX backend notebook has incomplete or failed cells")
+
+          output = "\n".join(
+              "".join(output.get("text", ""))
+              for cell in code_cells
+              for output in cell.get("outputs", [])
+              if output.get("output_type") == "stream"
+          )
+          for required in ("GPU  : ✓", "GPU: t0 ="):
+              if required not in output:
+                  raise SystemExit(f"Saved JAX backend notebook is missing {required!r}")

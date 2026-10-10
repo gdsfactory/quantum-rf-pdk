@@ -193,11 +193,12 @@ Microwave components as linear, frequency-dependent scattering matrices, impleme
         :link-type: doc
         :class-card: notebook-card
 
-        SAX circuit evaluation on CPU, GPU (CUDA), and NPU (OpenVINO).
+        SAX circuit evaluation on the CPU and GPU (CUDA) backends of JAX; the GPU run
+        happens outside CI.
 
         +++
 
-        :bdg-secondary-line:`JAX` :bdg-secondary-line:`OpenVINO` :bdg-primary:`models`
+        :bdg-secondary-line:`JAX` :bdg-secondary-line:`CUDA` :bdg-primary:`models`
 
 .. _notebooks-fem:
 
@@ -599,9 +600,9 @@ them as globs.
 
     Two notebook dependencies are deliberately *not* extras:
 
-    - ``openvino``, used by :doc:`notebooks/jax_backend_comparison` for the NPU
-      benchmark, is optional and platform-specific — install it with ``pip install
-      openvino``. The notebook skips that section if it is missing.
+    - A CUDA build of JAX, used by :doc:`notebooks/jax_backend_comparison` for the GPU
+      benchmark, is hardware-specific — install it with ``pip install "jax[cuda12]"``.
+      The notebook skips that section if no GPU is found.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
@@ -647,8 +648,8 @@ Every notebook at a glance; the **Extras** column links back to :ref:`notebook-e
       - ``models``
     - - :doc:`notebooks/jax_backend_comparison`
       - S-parameter models
-      - SAX, JAX, OpenVINO
-      - ``models`` (+ ``openvino``)
+      - SAX, JAX
+      - ``models`` (+ ``jax[cuda12]``)
     - - :doc:`notebooks/hfss_q2d_cpw_impedance`
       - FEM electromagnetics
       - Ansys Q2D, PyAEDT
