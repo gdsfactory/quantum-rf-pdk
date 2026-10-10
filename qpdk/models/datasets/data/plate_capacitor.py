@@ -1,9 +1,9 @@
 # /// script
 # requires-python = "~=3.12.0"
 # dependencies = [
-#   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@92b65f5f71e5764e750c0abcf5e1bd12aa10eb53",
+#   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@a6bdc3e7f4bb38145f3e112c08f1c4dad4dc5b66",
 #   "typer>=0.24,<1",
-#   "gsim @ git+https://github.com/gdsfactory/gsim.git@05c6c93cc14522f8a6a78a08b28116e242cdf1c0",
+#   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@d387f3a8809e10cea32bc058581b747567688438",
 # ]
 # ///
 """Generate Maxwell capacitance data with gsim and Palace.
@@ -23,9 +23,7 @@ from pathlib import Path
 from typing import Annotated
 
 import gdsfactory as gf
-import numpy as np
 import typer
-from shapely import Point, Polygon, box
 
 from qpdk import PDK, logger
 from qpdk.cells import plate_capacitor
@@ -69,29 +67,17 @@ class Settings:
 SETTINGS = Settings()
 
 
-def _terminal_polygons(
-    component: gf.Component, terminals: tuple[str, ...]
-) -> list[np.ndarray]:
-    """Return metal polygons in port order, rejecting floating or shorted terminals."""
-    polygons = component.get_polygons_points(by="tuple")[
-        gf.get_layer_tuple(LAYER.M1_DRAW)
-    ]
-    ordered = []
-    indices = []
-    for name in terminals:
-        point = Point(component.ports[name].center)
-        matches = [
-            i
-            for i, p in enumerate(polygons)
-            if Polygon(p).distance(point) <= component.kcl.dbu
-        ]
-        if len(matches) != 1:
-            raise ValueError(f"Terminal {name!r} must touch exactly one metal polygon")
-        indices.append(matches[0])
-        ordered.append(polygons[matches[0]])
-    if len(set(indices)) != len(polygons) or len(indices) != len(polygons):
-        raise ValueError("Every metal polygon must have exactly one terminal")
-    return ordered
+def geometry(
+    **point: float | str,
+) -> tuple[gf.Component, tuple[float, float, float, float]]:
+    """QPDK electrodes inside a separate coplanar ground frame."""
+    device = plate_capacitor(**point)
+    bounds = device.dbbox(gf.get_layer(LAYER.M1_DRAW))
+    left, bottom, right, top = bounds.left, bounds.bottom, bounds.right, bounds.top
+    component = gf.Component()
+    component.add_ref(device)
+    component.add_ports(device.ports)
+    return component, (left, bottom, right, top)
 
 
 def generate(
@@ -113,7 +99,7 @@ def generate(
         runtime,
     )
 
-    executable, files = runtime(workdir, executable, sif, container_binary)
+    execution, files = runtime(executable, sif, container_binary)
     provenance = {
         **fingerprint(Path(__file__)),
         **files,
@@ -157,24 +143,44 @@ def generate(
     )
 
     def solve(**point: float | str) -> dict:
-        component = plate_capacitor(**point)
-        polygons = [Polygon(p) for p in _terminal_polygons(component, TERMINALS)]
-        left = min(p.bounds[0] for p in polygons)
-        bottom = min(p.bounds[1] for p in polygons)
-        right = max(p.bounds[2] for p in polygons)
-        top = max(p.bounds[3] for p in polygons)
+        component, (left, bottom, right, top) = geometry(**point)
 
-        def rectangle(pad: float) -> Polygon:
-            return box(left - pad, bottom - pad, right + pad, top + pad)
+        def rectangle(pad: float) -> gf.Component:
+            result = gf.Component()
+            result.add_polygon(
+                [
+                    (left - pad, bottom - pad),
+                    (right + pad, bottom - pad),
+                    (right + pad, top + pad),
+                    (left - pad, top + pad),
+                ],
+                layer=LAYER.M1_DRAW,
+            )
+            return result
 
-        sheets = dict(zip(TERMINALS, polygons, strict=True))
-        sheets["ground"] = rectangle(settings.ground_pad).difference(
-            rectangle(settings.ground_clearance)
+        component.add_ref(
+            gf.boolean(
+                rectangle(settings.ground_pad),
+                rectangle(settings.ground_clearance),
+                operation="not",
+                layer=LAYER.M1_DRAW,
+            )
+        )
+        domain_bounds = (
+            left - settings.domain_pad,
+            bottom - settings.domain_pad,
+            right + settings.domain_pad,
+            top + settings.domain_pad,
         )
         inputs = {
             "point": point,
             "terminals": TERMINALS,
-            "polygons_um": [np.asarray(p.exterior.coords).tolist() for p in polygons],
+            "polygons_um": [
+                p.tolist()
+                for p in component.get_polygons_points(by="tuple")[
+                    gf.get_layer_tuple(LAYER.M1_DRAW)
+                ]
+            ],
             "provenance": {
                 name: value
                 for name, value in provenance.items()
@@ -182,12 +188,13 @@ def generate(
             },
         }
         return extract(
-            sheets,
-            rectangle(settings.domain_pad),
+            component,
+            domain_bounds,
+            {name: name for name in TERMINALS},
             height=settings.domain_pad,
             inputs=inputs,
             workdir=workdir,
-            executable=executable,
+            execution=execution,
             processes=processes,
             near_mesh=settings.near_mesh,
             far_mesh=settings.far_mesh,

@@ -124,6 +124,7 @@ docs-models = [
 ]
 github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
+palace = ["gsim[meshwell]>=0.7.0"]
 stubs = ["scipy-stubs"]
 test = [
   "hypothesis",
@@ -241,7 +242,12 @@ project-includes = ["**/*.py"]
 no-matching-overload = "ignore"
 
 [tool.pytest]
-addopts = ["--tb=short", "--ignore=qpdk/models/datasets/data"]
+addopts = [
+  "--tb=short",
+  "--ignore=qpdk/models/datasets/data",
+  "-m",
+  "not palace"
+]
 filterwarnings = [
   # gdsfactory internally warns about bend_euler for non-90/180 angles even
   # when the user calls bend_circular; suppress until upstream fixes this.
@@ -253,6 +259,7 @@ filterwarnings = [
 markers = [
   "gfp: mark test as requiring GDSFactory+ (gdsfactoryplus)",
   "hfss: mark test as requiring HFSS",
+  "palace: require the Palace experiment dependencies and a real solver",
   "skip_windows: skip test on Windows",
 ]
 norecursedirs = [
@@ -430,7 +437,11 @@ template = ".changelog.d/changelog_template.jinja"
 [tool.uv]
 default-groups = ["dev", "lint", "stubs", "test"]
 
+[tool.uv.dependency-groups]
+palace = { requires-python = "~=3.12.0" }
+
 [tool.uv.sources]
+gsim = { git = "https://github.com/nikosavola/gsim.git", rev = "d387f3a8809e10cea32bc058581b747567688438" }
 sax = { git = "https://github.com/gdsfactory/sax.git", rev = "de4a5b71eddbadc4b8f749e716f0bb3bd1a86240" }
 
 [tool.uv.build-backend]

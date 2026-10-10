@@ -1,8 +1,7 @@
-"""Opt-in comparison of interpolation with fresh Palace solves.
+"""Fresh Palace solves, interpolation and cache reuse.
 
-Run under Python 3.12 with gsim installed and QPDK_RUN_PALACE=1. PALACE_SIF
-selects a container; PALACE_CONTAINER_BINARY defaults to palace. All outputs
-are self-describing datasets and solver logs, with no validation JSON fixture.
+Run with ``uv run --group palace --python 3.12 pytest -m palace``.
+PALACE_SIF selects a container; otherwise gsim resolves a native runtime.
 """
 
 import ast
@@ -11,22 +10,22 @@ import runpy
 from dataclasses import replace
 from pathlib import Path
 
+import gdsfactory as gf
 import numpy as np
 import polars as pl
 import pytest
 
 from qpdk.models.datasets import GridInterpolator
+from qpdk.tech import LAYER
+
+pytestmark = pytest.mark.palace
 
 
-@pytest.mark.skipif(
-    os.environ.get("QPDK_RUN_PALACE") != "1",
-    reason="Requires the experiment dependencies",
-)
 @pytest.mark.parametrize(
     ("width", "cpw_gap", "gap", "topology"),
     [
         (2.5, 1.25, 1.125, "fully-etched"),
-        (2.449489743, 1.224744871, 2.461737191, "as-drawn"),
+        (2.450, 1.225, 2.462, "as-drawn"),
     ],
 )
 def test_fractional_cross_section_conductors_belong_to_domain_mesh(
@@ -43,21 +42,27 @@ def test_fractional_cross_section_conductors_belong_to_domain_mesh(
     source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
     monkeypatch.syspath_prepend(str(source))
     generator = runpy.run_path(str(source / "cpw_coupling.py"))
-    helper = runpy.run_path(str(source / "_palace.py"))
     settings = generator["SETTINGS"]
-    sheets, footprint = generator["geometry"](
+    component, domain_bounds = generator["geometry"](
         width=width,
         cpw_gap=cpw_gap,
         gap=gap,
         topology=generator["Topology"](topology),
         settings=settings,
     )
-    mesh = helper["mesh_cross_section"](
-        sheets,
-        footprint,
+    from gsim.palace.mesh.meshwell import (  # ruff: ignore[import-outside-top-level]
+        mesh_sheets,
+    )
+
+    mesh = mesh_sheets(
+        component,
+        conductor_layer=gf.get_layer_tuple(LAYER.M1_DRAW),
+        terminal_ports={name: name for name in generator["TERMINALS"]},
+        domain_bounds=domain_bounds,
         height=settings.domain_pad,
         near_mesh=settings.near_mesh,
         far_mesh=settings.far_mesh,
+        cross_section=True,
         path=tmp_path / "section.msh",
     )
     gmsh.initialize()
@@ -86,9 +91,6 @@ def test_fractional_cross_section_conductors_belong_to_domain_mesh(
         gmsh.finalize()
 
 
-@pytest.mark.skipif(
-    os.environ.get("QPDK_RUN_PALACE") != "1", reason="Requires a real Palace runtime"
-)
 def test_cpw_cross_section_normalization_depth(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -116,11 +118,7 @@ def test_cpw_cross_section_normalization_depth(
     np.testing.assert_allclose(matrices[0], matrices[1], rtol=1e-7, atol=0)
 
 
-@pytest.mark.skipif(
-    os.environ.get("QPDK_RUN_PALACE") != "1",
-    reason="Requires the experiment dependencies",
-)
-def test_container_launcher_replacement(
+def test_container_runtime_configuration(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.syspath_prepend(
@@ -132,20 +130,18 @@ def test_container_launcher_replacement(
         )
     )
     image = tmp_path / "palace.sif"
-    image.write_bytes(b"launcher test")
-    wrapper = tmp_path / "palace-container"
-    wrapper.write_text("old launcher", encoding="utf-8")
-    with wrapper.open(encoding="utf-8") as original:
-        executable, _ = helper["runtime"](tmp_path, None, image, "palace")
-        assert original.read() == "old launcher"
-    assert executable == wrapper
-    assert "apptainer exec --cleanenv" in wrapper.read_text(encoding="utf-8")
-    assert os.access(wrapper, os.X_OK)
+    image.write_bytes(b"runtime test")
+    options, provenance = helper["runtime"](None, image, "palace-custom")
+    assert options == {
+        "palace_executable": None,
+        "palace_sif_path": image,
+        "use_apptainer": True,
+        "container_binary": "palace-custom",
+    }
+    assert len(provenance["runtime_sha256"]) == 64
+    assert not (tmp_path / "palace-container").exists()
 
 
-@pytest.mark.skipif(
-    os.environ.get("QPDK_RUN_PALACE") != "1", reason="Requires a real Palace runtime"
-)
 def test_interpolation_against_fresh_palace(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -190,9 +186,6 @@ def test_interpolation_against_fresh_palace(
     }
 
 
-@pytest.mark.skipif(
-    os.environ.get("QPDK_RUN_PALACE") != "1", reason="Requires a real Palace runtime"
-)
 def test_editing_grid_reuses_completed_solves(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

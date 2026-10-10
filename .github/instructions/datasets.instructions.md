@@ -49,5 +49,5 @@ over geometry) and looks them up from JAX models. A dataset is nothing but its f
 - Lookup and storage tests live in `tests/models/test_datasets.py` and `tests/models/test_datasets_store.py`.
   Interpolation changes need agreement with `scipy` and the generating formula, plus a `jit`/`vmap`/`grad` check.
 - `tests/models/test_datasets_palace.py` checks fresh Palace solves, interpolation and cache reuse when
-  `QPDK_RUN_PALACE=1`; use Python 3.12 with gsim and a real Palace runtime. Keep mesh/domain sensitivity evidence
-  separate from algebraic matrix checks.
+  `uv run --group palace --python 3.12 pytest -m palace`; default tests exclude this marker, and the `test-palace` CI
+  job runs it with a real runtime. Keep mesh/domain sensitivity evidence separate from algebraic matrix checks.

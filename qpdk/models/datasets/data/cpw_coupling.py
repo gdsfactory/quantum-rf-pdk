@@ -1,9 +1,9 @@
 # /// script
 # requires-python = "~=3.12.0"
 # dependencies = [
-#   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@92b65f5f71e5764e750c0abcf5e1bd12aa10eb53",
+#   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@a6bdc3e7f4bb38145f3e112c08f1c4dad4dc5b66",
 #   "typer>=0.24,<1",
-#   "gsim @ git+https://github.com/gdsfactory/gsim.git@05c6c93cc14522f8a6a78a08b28116e242cdf1c0",
+#   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@d387f3a8809e10cea32bc058581b747567688438",
 # ]
 # ///
 """Generate symmetric edge-coupled CPW capacitance with meshwell and Palace.
@@ -42,107 +42,57 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
+import gdsfactory as gf
 import jax.numpy as jnp
 import typer
 from jax.typing import ArrayLike
-from shapely import Polygon, box, union_all
 
-from qpdk import logger
+from qpdk import PDK, logger
+from qpdk.cells import coupler_straight
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance_per_length_analytical
 from qpdk.models.datasets import Axis, Dataset, DatasetMetadata, Quantity, QuantityKind
 from qpdk.models.datasets.generate import merge, partition_grid, sweep, write
-from qpdk.tech import material_properties
+from qpdk.tech import LAYER, coplanar_waveguide, material_properties
 
 NAME = "cpw_coupling_palace"
 GROUND_STRIP_NAME = "cpw_coupling_ground_strip_palace"
 GRID = {
-    "width": [
-        2.0,
-        3.0,
-        4.0,
-        5.0,
-        6.0,
-        7.0,
-        8.0,
-        9.0,
-        10.0,
-        12.0,
-        14.0,
-        16.0,
-        20.0,
-        25.0,
-        30.0,
-    ],
-    "cpw_gap": [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 16.0, 20.0],
+    "width": [2.0, 6.0, 10.0, 30.0],
+    "cpw_gap": [1.0, 3.0, 6.0, 20.0],
     "gap": [
         1.0,
-        1.25,
         1.5,
-        1.75,
         2.0,
-        2.5,
         3.0,
-        3.5,
         4.0,
-        5.0,
         6.0,
-        7.0,
         8.0,
-        9.0,
-        10.0,
         12.0,
-        14.0,
         16.0,
-        18.0,
-        20.0,
         25.0,
-        30.0,
-        35.0,
-        40.0,
         50.0,
-        60.0,
         75.0,
-        90.0,
         100.0,
-        125.0,
-        150.0,
         175.0,
-        200.0,
-        225.0,
         250.0,
     ],
 }
 TERMINALS = ("lower", "upper")
 GROUND_GRID = {
-    "width": GRID["width"],
-    "cpw_gap": GRID["cpw_gap"],
+    "width": [2.0, 3.0, 6.0, 10.0, 20.0, 30.0],
+    "cpw_gap": [1.0, 2.0, 3.0, 6.0, 10.0, 20.0],
     "ground_strip_width": [
         0.01,
-        0.015,
-        0.022,
         0.033,
-        0.05,
-        0.075,
         0.11,
-        0.16,
-        0.24,
         0.36,
-        0.54,
-        0.8,
         1.2,
-        1.8,
-        2.7,
         4.0,
-        6.0,
         9.0,
         13.0,
-        16.0,
         24.0,
-        36.0,
         54.0,
-        81.0,
         128.0,
-        180.0,
         248.0,
     ],
 }
@@ -265,28 +215,52 @@ def geometry(
     settings: Settings,
     *,
     topology: Topology = Topology.FULLY_ETCHED,
-) -> tuple[dict[str, Polygon], Polygon]:
-    """Uniform traces with outer ground rails and the selected inner ground."""
+) -> tuple[gf.Component, tuple[float, float, float, float]]:
+    """Mesh the QPDK coupler layout, optionally etching the whole inner gap."""
     if min(width, cpw_gap, gap) <= 0:
         raise ValueError("Trace width, outer slot and inter-trace gap must be positive")
+    PDK.activate()
     length = settings.slice_length_um
-    inner = gap / 2
-    edge = inner + width
-    extent = edge + cpw_gap + settings.domain_pad
-    sheets = {
-        "lower": box(0, -edge, length, -inner),
-        "upper": box(0, inner, length, edge),
-        "ground": union_all([
-            box(0, -extent, length, -edge - cpw_gap),
-            box(0, edge + cpw_gap, length, extent),
-        ]),
-    }
-    if topology == Topology.AS_DRAWN and gap > 2 * cpw_gap:
-        sheets["ground"] = union_all([
-            sheets["ground"],
-            box(0, -inner + cpw_gap, length, inner - cpw_gap),
-        ])
-    return sheets, box(0, -extent, length, extent)
+    extent = gap / 2 + width + cpw_gap + settings.domain_pad
+    device = gf.Component()
+    reference = device.add_ref(
+        coupler_straight(
+            length=length,
+            gap=gap,
+            cross_section=coplanar_waveguide(width=width, gap=cpw_gap),
+        )
+    )
+    reference.dmovey(-(width + gap) / 2)
+    slots = device.extract([LAYER.M1_ETCH])
+    if topology == Topology.FULLY_ETCHED:
+        slots.add_polygon(
+            [(0, -gap / 2), (length, -gap / 2), (length, gap / 2), (0, gap / 2)],
+            layer=LAYER.M1_ETCH,
+        )
+    background = gf.Component()
+    background.add_polygon(
+        [(0, -extent), (length, -extent), (length, extent), (0, extent)],
+        layer=LAYER.M1_DRAW,
+    )
+    component = gf.Component()
+    component.add_ref(
+        gf.boolean(
+            background,
+            slots,
+            operation="not",
+            layer=LAYER.M1_DRAW,
+            layer1=LAYER.M1_DRAW,
+            layer2=LAYER.M1_ETCH,
+        )
+    )
+    # Preserve signal metal where the neighbouring CPW slot overlaps it.
+    component.add_ref(device.extract([LAYER.M1_DRAW]))
+    left_ports = sorted(
+        reference.ports, key=lambda port: (port.center[0], port.center[1])
+    )[:2]
+    for name, port in zip(TERMINALS, left_ports, strict=True):
+        component.add_port(name=name, port=port, port_type="electrical")
+    return component, (0, -extent, length, extent)
 
 
 def generate(
@@ -318,7 +292,7 @@ def generate(
     )
     name = GROUND_STRIP_NAME if topology == Topology.AS_DRAWN else NAME
     output = output or Path("build/datasets") / name
-    executable, files = runtime(workdir, executable, sif, container_binary)
+    execution, files = runtime(executable, sif, container_binary)
     provenance = {
         **fingerprint(Path(__file__)),
         **files,
@@ -392,9 +366,15 @@ def generate(
     )
 
     def solve_once(point: dict[str, float], config: Settings) -> dict[str, ArrayLike]:
-        sheets, footprint = geometry(**point, settings=config, topology=topology)
+        component, domain_bounds = geometry(**point, settings=config, topology=topology)
         inputs = {
             "point": point,
+            "polygons_um": [
+                p.tolist()
+                for p in component.get_polygons_points(by="tuple")[
+                    gf.get_layer_tuple(LAYER.M1_DRAW)
+                ]
+            ],
             "terminals": TERMINALS,
             "provenance": {
                 key: value
@@ -404,12 +384,13 @@ def generate(
             | {"settings": asdict(config)},
         }
         result = extract(
-            sheets,
-            footprint,
+            component,
+            domain_bounds,
+            {name: name for name in TERMINALS},
             height=config.domain_pad,
             inputs=inputs,
             workdir=workdir,
-            executable=executable,
+            execution=execution,
             processes=processes,
             near_mesh=config.near_mesh,
             far_mesh=config.far_mesh,
