@@ -29,7 +29,6 @@ from qpdk.tech import (
 gf.CONF.layer_error_path = LAYER.ERROR_PATH
 
 # Add a cell factory here when it uses another cell's SAX model unchanged.
-# TODO(Python 3.15): frozendict (PEP 814) - edits after import never reach the registry.
 SAX_MODEL_ALIASES = {
     "resonator_quarter_wave_bend_start": "resonator_quarter_wave",
     "resonator_quarter_wave_bend_end": "resonator_quarter_wave",
