@@ -466,7 +466,9 @@ jobs:
       - name: Install Palace experiment dependencies
         run: uv sync --locked --python 3.12 --no-dev --extra models --group palace --group test
       - name: Run real Palace tests
-        run: uv run --no-sync pytest -m palace tests/models/test_datasets_palace.py --basetemp=build/palace-tests
+        run: |
+          mkdir -p build
+          uv run --no-sync pytest -m palace tests/models/test_datasets_palace.py --basetemp=build/palace-tests
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
