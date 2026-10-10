@@ -441,7 +441,7 @@ default-groups = ["dev", "lint", "stubs", "test"]
 palace = { requires-python = "~=3.12.0" }
 
 [tool.uv.sources]
-gsim = { git = "https://github.com/nikosavola/gsim.git", rev = "d387f3a8809e10cea32bc058581b747567688438" }
+gsim = { git = "https://github.com/nikosavola/gsim.git", rev = "d600af1d81e67b7721b0c46caeba60021a4a8c42" }
 sax = { git = "https://github.com/gdsfactory/sax.git", rev = "de4a5b71eddbadc4b8f749e716f0bb3bd1a86240" }
 
 [tool.uv.build-backend]
