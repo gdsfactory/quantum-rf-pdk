@@ -77,6 +77,8 @@ if TYPE_CHECKING:
     from qpdk.simulation.hfss import HFSS
     from qpdk.simulation.q3d import Q2D, Q3D
 
+# TODO(Python 3.15): `lazy from` imports (PEP 810) - replace _LAZY_IMPORTS, __getattr__
+# and __dir__ with plain module-scope imports.
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "COMSOL": ("qpdk.simulation.comsol.model", "COMSOL"),
     "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),

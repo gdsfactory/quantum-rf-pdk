@@ -121,6 +121,7 @@ def get_cpw_dimensions(
             no etch section is found.
     """
     # Make sure a PDK is activated
+    # TODO(Python 3.15): `lazy from qpdk import PDK` (PEP 810) at module scope breaks the cycle.
     from qpdk import PDK  # ruff: ignore[import-outside-top-level]
 
     PDK.activate()

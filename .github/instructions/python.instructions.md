@@ -116,7 +116,9 @@ idioms that range already allows, and for ones it does not yet allow:
 - **Do not suggest syntax above the floor.** Code must run on every version in the range; suggesting e.g. PEP 810
   `lazy import` or PEP 758 unparenthesized `except` in live code is a bug while 3.12 is supported. Do not ask for a
   marker on a swap that would change behaviour — for example a deferred optional import wrapped in
-  `try/except ModuleNotFoundError`, where `lazy import` would move the failure past the handler.
+  `try/except ModuleNotFoundError`, where `lazy import` would move the failure past the handler. `lazy` is also a
+  `SyntaxError` inside a function or class body, so a PEP 810 marker on a function-local import must say to hoist it to
+  module scope.
 
 Keep these comments low priority: one comment per pattern, never above correctness, breaking-change, or test findings,
 and only on code the PR adds or touches.
