@@ -27,6 +27,18 @@ write-justfile-help:
 convert-notebooks:
     @./.github/convert-notebooks.sh notebooks/src/*.py
 
+# Execute the JAX backend notebook on a CUDA GPU and save its outputs for the docs
+[group('docs')]
+run-jax-backend-notebook cuda="cuda12":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    nvidia-smi --query-gpu=name,driver_version --format=csv,noheader
+    jax_version="$(uv run --extra models python -c 'import jax; print(jax.__version__)')"
+    QPDK_REQUIRE_GPU=1 uv run --extra models \
+        --with "jax[{{ cuda }}]==${jax_version}" --with jupytext --with nbconvert --with ipykernel \
+        jupytext --execute --to ipynb --set-kernel python3 \
+        --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
+
 # Build SVG figures from docs/figures/*.typ
 [group('docs')]
 [script('uv', 'run', '--script')]
@@ -131,8 +143,8 @@ write-llms-txt:
     @mkdir -p docs/_extra
     @cp docs/llms.txt docs/_extra/llms.txt
 
-# Keep saved outputs for external-solver notebooks.
-precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb elmer_capacitance_interdigital.ipynb matlab_integration.ipynb"
+# Keep saved outputs for external-solver and GPU notebooks.
+precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb elmer_capacitance_interdigital.ipynb jax_backend_comparison.ipynb matlab_integration.ipynb"
 
 # Copy all sample scripts and notebooks to use as documentation
 [private]

@@ -31,14 +31,14 @@
 # pip install "qpdk[models]"
 # ```
 #
-# The OpenVINO benchmark additionally needs `pip install openvino`, and is skipped if it is missing.
+# The GPU benchmark additionally needs a CUDA-capable GPU and a CUDA build of JAX, e.g.
+# `pip install "jax[cuda12]"`. It is skipped if no GPU is found.
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# This notebook benchmarks a SAX-based quantum circuit simulation across available
-# JAX compute backends: **CPU**, **GPU** (CUDA), and **NPU** via
-# [OpenVINO](https://docs.openvino.ai/2025/openvino-workflow/model-preparation/convert-model-jax.html).
+# This notebook benchmarks a SAX-based quantum circuit simulation on the **CPU** and
+# **GPU** (CUDA) backends of JAX.
 #
 # JAX provides a unified programming model that can transparently target different
 # hardware accelerators.  For large-scale circuit sweeps — e.g. sweeping thousands of
@@ -49,15 +49,25 @@
 #
 # 1. Build a coupled resonator circuit with the QPDK model library and SAX.
 # 2. Detect which compute backends are available on the current system.
-# 3. Benchmark the circuit evaluation at a range of frequency-resolution sizes on
+# 3. Benchmark the jit-compiled circuit at a range of frequency-resolution sizes on
 #    every available backend.
-# 4. For the OpenVINO (NPU) backend, export the circuit as a JAX expression (JAXPR)
-#    and compile it with the OpenVINO runtime.
-# 5. Plot and compare performance.
+# 4. Plot and compare performance, and fit a fixed-overhead plus per-point cost model
+#    to each backend.
 #
-# > **Note** – GPU and NPU sections are skipped automatically when the corresponding
-# > hardware or software is not present, so the notebook runs cleanly on any CI or
-# > CPU-only machine.
+# :::{note}
+# The documentation build does not execute this notebook, since CI runners have no GPU.
+# The outputs shown here were saved from a run on a CUDA machine with
+# `just run-jax-backend-notebook`.  On a CPU-only machine the GPU sections are skipped.
+# :::
+#
+# :::{note}
+# An earlier version of this notebook also benchmarked Intel NPUs through
+# [OpenVINO](https://docs.openvino.ai/2026/).  That section was removed: OpenVINO's
+# JAX/Flax conversion is experimental, its JAX conversion notebook was deleted from the
+# OpenVINO notebooks in the
+# [2026.4 release](https://docs.openvino.ai/2026/about-openvino/release-notes-openvino.html#jupyter-notebooks),
+# and the conversion could not handle the complex-valued SAX circuit.
+# :::
 
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -76,15 +86,16 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
-import math
+import os
 import time
 import warnings
 
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+import numpy as np
 import sax
-from tqdm.auto import tqdm, trange
+from tqdm.auto import tqdm
 
 from qpdk import PDK
 from qpdk.models.generic import capacitor, tee
@@ -98,37 +109,32 @@ PDK.activate()
 # %% [markdown]
 # ## Backend Detection
 #
-# We probe each backend and record its availability.  Unavailable backends are
-# skipped gracefully throughout the notebook.
+# We probe each backend and record its availability.  The GPU sections are skipped
+# when no GPU is found, unless `QPDK_REQUIRE_GPU=1` is set, which turns a missing GPU
+# into an error.  `just run-jax-backend-notebook` sets it, so a saved run can never
+# silently lack the GPU results.
 
 # %%
 # --- CPU (always available) ---
 cpu_device = jax.devices("cpu")[0]
-HAS_CPU = True
 
 # --- GPU ---
 try:
-    _gpu_devices = jax.devices("gpu")
-    HAS_GPU = len(_gpu_devices) > 0
-    gpu_device = _gpu_devices[0] if HAS_GPU else None
-except Exception:
-    HAS_GPU = False
+    gpu_device = jax.devices("gpu")[0]
+except RuntimeError:
     gpu_device = None
+HAS_GPU = gpu_device is not None
 
-# --- OpenVINO (NPU / CPU via OpenVINO runtime) ---
-try:
-    import openvino as ov
+if os.environ.get("QPDK_REQUIRE_GPU") == "1" and not HAS_GPU:
+    raise RuntimeError(
+        "QPDK_REQUIRE_GPU=1 but JAX found no GPU. Install a CUDA build of JAX, "
+        'e.g. `pip install "jax[cuda12]"`, and check `nvidia-smi`.'
+    )
 
-    HAS_OPENVINO = True
-    _ov_version_str = f"v{ov.__version__}"
-except ImportError:
-    HAS_OPENVINO = False
-    _ov_version_str = "not installed"
-
-print(f"CPU  : {'✓' if HAS_CPU else '✗'}")
-print(f"GPU  : {'✓  (' + str(gpu_device) + ')' if HAS_GPU else '✗  (not available)'}")
+print(f"JAX  : {jax.__version__}")
+print(f"CPU  : ✓  ({cpu_device.device_kind})")
 print(
-    f"OpenVINO: {'✓  (' + _ov_version_str + ')' if HAS_OPENVINO else '✗  (' + _ov_version_str + ')'}"
+    f"GPU  : {'✓  (' + gpu_device.device_kind + ')' if HAS_GPU else '✗  (not available)'}"
 )
 print(f"\nDefault JAX backend: {jax.default_backend()}")
 
@@ -148,9 +154,11 @@ print(f"\nDefault JAX backend: {jax.default_backend()}")
 #
 # The resonance frequency of a shorted λ/4 stub of length *L* is approximately
 #
-# :math:`f_0 = v_\phi / (4 L)`
+# $$
+# f_0 = v_\phi / (4 L)
+# $$
 #
-# where :math:`v_\phi` is the phase velocity on the CPW.
+# where $v_\phi$ is the phase velocity on the CPW.
 
 # %%
 cross_section = coplanar_waveguide(width=10, gap=6)
@@ -231,21 +239,21 @@ plt.show()
 # %% [markdown]
 # ## Benchmarking Helper
 #
-# JAX dispatches computation asynchronously.  We call `jax.block_until_ready` to
-# ensure all pending work has completed before stopping the clock.  The first call
-# for each new input shape triggers JIT compilation; we exclude this from the
-# reported times by warming up before measuring.
+# `sax.circuit` returns a plain Python function, so every call re-dispatches each
+# primitive from Python.  Timing it directly would mostly measure that dispatch
+# overhead, so we wrap it in `jax.jit` first.  The first call for each new input shape
+# compiles the function for the target device; we exclude it from the reported times by
+# warming up before measuring.
 #
-# ### Note on SAX output type
-#
-# `circuit_fn` returns a `sax.SDict`, which is a plain Python `dict` mapping
-# port-pair tuples to JAX arrays.  `jax.block_until_ready` accepts any JAX
-# *pytree*, including dicts of arrays, so it works directly on the SAX output.
+# JAX dispatches computation asynchronously.  We call `jax.block_until_ready` to ensure
+# all pending work has completed before stopping the clock.  `circuit_fn` returns a
+# `sax.SDict`, a plain `dict` mapping port-pair tuples to JAX arrays, and
+# `jax.block_until_ready` accepts any such pytree.
 
 # %%
-_BENCHMARK_SIZES = jnp.geomspace(
-    100, 100_000, 10, dtype=int
-).tolist()  # number of frequency points
+circuit_jit = jax.jit(circuit_fn)
+
+_BENCHMARK_SIZES = np.geomspace(100, 100_000, 10, dtype=int).tolist()
 _N_REPEATS = 10  # number of timed runs per size
 
 
@@ -266,26 +274,20 @@ def benchmark_circuit(
     """
     times: list[float] = []
     for n in tqdm(sizes, desc=f"Benchmarking on {device}"):
-        freq = jnp.linspace(2e9, 8e9, n)
-        with jax.default_device(device):
-            # Move the frequency array to the target device
-            freq_d = jax.device_put(freq, device)
-            # JIT warmup — first call compiles the function for this shape
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                warmup = circuit_fn(f=freq_d)
-                jax.block_until_ready(warmup)
+        # Committing the input to the device makes the jitted function run there
+        freq = jax.device_put(jnp.linspace(2e9, 8e9, n), device)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # Warmup: compiles the function for this shape and device
+            jax.block_until_ready(circuit_jit(f=freq))
 
-                # Timed runs
-                run_times: list[float] = []
-                for _ in range(n_repeats):
-                    t0 = time.perf_counter()
-                    s = circuit_fn(f=freq_d)
-                    jax.block_until_ready(s)
-                    t1 = time.perf_counter()
-                    run_times.append(t1 - t0)
-        # Use the median to reduce noise from JIT re-traces / OS scheduling
-        times.append(sorted(run_times)[n_repeats // 2])
+            run_times: list[float] = []
+            for _ in range(n_repeats):
+                t0 = time.perf_counter()
+                jax.block_until_ready(circuit_jit(f=freq))
+                run_times.append(time.perf_counter() - t0)
+        # Use the median to reduce noise from OS scheduling
+        times.append(float(np.median(run_times)))
     return times
 
 
@@ -314,144 +316,88 @@ else:
     print("GPU not available on this system — skipping GPU benchmark.")
 
 # %% [markdown]
-# ## OpenVINO / NPU Backend
+# ## Scaling Analysis
 #
-# [OpenVINO](https://docs.openvino.ai/2025/) is Intel's inference runtime that
-# targets CPUs, integrated GPUs, and — most importantly — dedicated Neural
-# Processing Units (NPUs) available in recent Intel Core Ultra processors.
+# The cost of one evaluation has two parts: a fixed overhead per call (dispatch,
+# kernel launches, and for the GPU the transfer of the small result back to the host)
+# and a cost per frequency point.  We therefore model the median time as
 #
-# ### Conversion workflow
+# $$
+# t(N) = t_0 + c \, N ,
+# $$
 #
-# 1. **Wrap** the SAX circuit function so that it accepts a plain array and
-#    returns a plain array (OpenVINO cannot consume Python dicts).
-# 2. **Trace** the wrapper with `jax.make_jaxpr` to obtain a closed JAXPR.
-# 3. **Convert** the JAXPR to an OpenVINO IR model with `ov.convert_model`.
-# 4. **Compile** for the preferred device (NPU → GPU → CPU, in that priority
-#    order).
-# 5. **Benchmark** with the compiled model.
+# where $t_0$ is the overhead and $c$ the cost per point.  A single power law
+# $t = a N^b$ cannot describe this: the overhead dominates at small $N$, so the
+# curve is flat there and only becomes linear once $c N \gg t_0$, near the
+# crossover size $N^\ast = t_0 / c$.
 #
-# ### Known SAX / JAX-to-OpenVINO considerations
-#
-# * SAX models use **complex128** arithmetic internally.  The OpenVINO runtime
-#   may not expose complex128 directly; `ov.convert_model` translates complex
-#   operations into pairs of real operations (real, imag) automatically.
-# * The JAXPR is traced for a **fixed input shape** (the reference frequency
-#   array).  A separate compiled model is therefore needed for each benchmark
-#   size.  For production use, prefer a single representative size or use
-#   OpenVINO dynamic shapes.
-# * On systems without a physical NPU the OpenVINO runtime falls back to the
-#   CPU plugin, which still validates the full conversion and compilation path.
+# The timings span several decades, so an ordinary least-squares fit would only follow
+# the largest sizes.  We minimise the *relative* residuals instead, which is still a
+# linear problem: dividing $t_0 + c N_i \approx t_i$ by $t_i$ gives
+# $t_0 / t_i + c \, N_i / t_i \approx 1$.
+
 
 # %%
-ov_times: list[float] | None = None
-ov_device_name: str = "unknown"
+def fit_overhead_model(sizes: list[int], times: list[float]) -> tuple[float, float]:
+    """Fit ``t = t0 + c * N`` to timings, minimising the relative residuals.
 
-if HAS_OPENVINO:
-    import openvino as ov
+    Args:
+        sizes: Number of frequency points per measurement.
+        times: Median evaluation time [s] per measurement.
 
-    core = ov.Core()
-    available_ov_devices = core.available_devices
-    print("Available OpenVINO devices:", available_ov_devices)
+    Returns:
+        Fixed overhead ``t0`` [s] and cost per frequency point ``c`` [s].
+    """
+    n = np.asarray(sizes, dtype=float)
+    t = np.asarray(times, dtype=float)
+    design = np.column_stack([1 / t, n / t])
+    (t0, c), *_ = np.linalg.lstsq(design, np.ones_like(t), rcond=None)
+    return float(t0), float(c)
 
-    # Select the best available device: NPU > GPU > CPU
-    for _pref in ("NPU", "GPU", "CPU"):
-        if _pref in available_ov_devices:
-            ov_device_name = _pref
-            break
 
-    print(f"Selected OpenVINO device: {ov_device_name}")
+backend_times = {"CPU": cpu_times}
+if gpu_times is not None:
+    backend_times["GPU"] = gpu_times
 
-    # ------------------------------------------------------------------
-    # Wrapper: SAX SDict → plain JAX array
-    # SAX returns a dict of complex S-parameters; we expose the magnitude
-    # of S21 and S11 as a stacked real-valued array so that OpenVINO can
-    # consume the output without encountering Python-dict outputs.
-    # ------------------------------------------------------------------
-    def _s_magnitudes(freq: jax.Array) -> jax.Array:
-        """Return |S21|, |S11| stacked into a real-valued array."""
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            s = circuit_fn(f=freq)
-        return jnp.stack([jnp.abs(s["o1", "o2"]), jnp.abs(s["o1", "o1"])])
+fits = {
+    name: fit_overhead_model(_BENCHMARK_SIZES, times)
+    for name, times in backend_times.items()
+}
 
-    ov_times = []
-    for _n in _BENCHMARK_SIZES:
-        _freq = jnp.linspace(2e9, 8e9, _n)
-
-        # 1. Trace the function for this specific input shape
-        try:
-            _jaxpr = jax.make_jaxpr(_s_magnitudes)(_freq)
-        except Exception as exc:
-            print(f"  n={_n}: make_jaxpr failed — {exc}")
-            ov_times.append(float("nan"))
-            continue
-
-        # 2. Convert to OpenVINO IR
-        try:
-            _ov_model = ov.convert_model(_jaxpr)
-        except Exception as exc:
-            print(f"  n={_n}: ov.convert_model failed — {exc}")
-            ov_times.append(float("nan"))
-            continue
-
-        # 3. Compile for the selected device
-        try:
-            _compiled = core.compile_model(_ov_model, ov_device_name)
-        except Exception as exc:
-            print(f"  n={_n}: compile_model failed — {exc}")
-            ov_times.append(float("nan"))
-            continue
-
-        # 4. Benchmark: create one infer request and reuse it
-        _infer = _compiled.create_infer_request()
-        _freq_np = jax.device_get(_freq)  # copy to host as a NumPy array
-
-        # Warmup
-        _infer.infer([_freq_np])
-
-        _run_times: list[float] = []
-        for _ in trange(
-            _N_REPEATS, desc=f"Timing OpenVINO on {ov_device_name} for n={_n}"
-        ):
-            _t0 = time.perf_counter()
-            _infer.infer([_freq_np])
-            _t1 = time.perf_counter()
-            _run_times.append(_t1 - _t0)
-
-        _median_t = sorted(_run_times)[_N_REPEATS // 2]
-        ov_times.append(_median_t)
-        print(f"  n={_n:>6d}: {_median_t * 1_000:.3f} ms")
-
-else:
+for name, (t0, c) in fits.items():
+    t_model = t0 + c * np.asarray(_BENCHMARK_SIZES)
+    max_error = np.max(np.abs(t_model / np.asarray(backend_times[name]) - 1))
     print(
-        "OpenVINO is not installed on this system — skipping NPU/OpenVINO benchmark.\n"
-        "Install it with:  uv pip install openvino"
+        f"{name}: t0 = {t0 * 1e6:8.1f} µs, c = {c * 1e9:8.2f} ns/point, "
+        f"N* = t0/c ≈ {t0 / c:,.0f} points, max relative error {max_error:.0%}"
     )
 
 # %% [markdown]
 # ## Performance Comparison
 #
-# The plot below shows median evaluation time as a function of the number of
-# frequency points swept.  A linear relationship on a log–log scale indicates
-# :math:`O(N)` scaling; super-linear growth suggests memory-bandwidth or
-# kernel-launch overhead is significant.
+# The plot below shows the median evaluation time against the number of frequency
+# points, with the fitted model as a dashed line for each backend.  On log–log axes the
+# model is flat below $N^\ast$ and has slope 1 above it.
 
 # %%
+_n_fit = np.geomspace(_BENCHMARK_SIZES[0], _BENCHMARK_SIZES[-1], 200)
+
 fig, ax = plt.subplots()
-ax.plot(_BENCHMARK_SIZES, [t * 1_000 for t in cpu_times], "o-", label="CPU (JAX)")
-
-if gpu_times is not None:
-    ax.plot(
-        _BENCHMARK_SIZES, [t * 1_000 for t in gpu_times], "s-", label="GPU (JAX/CUDA)"
+for (name, times), marker in zip(backend_times.items(), "os"):
+    t0, c = fits[name]
+    (line,) = ax.plot(
+        _BENCHMARK_SIZES,
+        np.asarray(times) * 1_000,
+        marker,
+        label=f"{name} (JAX{'/CUDA' if name == 'GPU' else ''})",
     )
-
-if ov_times is not None:
-    _valid = [(n, t) for n, t in zip(_BENCHMARK_SIZES, ov_times) if not math.isnan(t)]
-    if _valid:
-        _ns, _ts = zip(*_valid)
-        ax.plot(
-            _ns, [t * 1_000 for t in _ts], "^-", label=f"OpenVINO ({ov_device_name})"
-        )
+    ax.plot(
+        _n_fit,
+        (t0 + c * _n_fit) * 1_000,
+        "--",
+        color=line.get_color(),
+        label=f"{name} fit: {t0 * 1e6:.0f} µs + {c * 1e9:.0f} ns · N",
+    )
 
 ax.set_xscale("log")
 ax.set_yscale("log")
@@ -464,61 +410,21 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ## Scaling Analysis
-#
-# We fit a power-law model :math:`t = a \cdot N^b` to the CPU timing data to
-# characterise the asymptotic scaling exponent *b*.  Perfect vectorised code has
-# :math:`b = 1`; values above 1 indicate super-linear overhead (e.g. matrix
-# factorisation inside the circuit solver).
-
-# %%
-_sizes_arr = jnp.array(_BENCHMARK_SIZES, dtype=float)
-_cpu_arr = jnp.array(cpu_times, dtype=float)
-
-# Fit log(t) = log(a) + b*log(N) via linear regression
-_log_n = jnp.log(_sizes_arr)
-_log_t = jnp.log(_cpu_arr)
-_b, _log_a = jnp.polyfit(_log_n, _log_t, 1)
-_a = jnp.exp(_log_a)
-
-print(f"CPU scaling fit:  t ≈ {_a * 1e6:.2f} µs · N^{_b:.3f}")
-
-_n_fit = jnp.logspace(jnp.log10(_sizes_arr[0]), jnp.log10(_sizes_arr[-1]), 200)
-_t_fit = _a * _n_fit**_b
-
-fig, ax = plt.subplots()
-ax.scatter(_sizes_arr, _cpu_arr * 1_000, zorder=5, label="CPU measurements")
-ax.plot(_n_fit, _t_fit * 1_000, "--", label=f"fit: $N^{{{_b:.2f}}}$")
-ax.set_xscale("log")
-ax.set_yscale("log")
-ax.set_xlabel("Number of frequency points")
-ax.set_ylabel("Median time per evaluation [ms]")
-ax.set_title("CPU scaling behaviour")
-ax.legend()
-ax.grid(True, which="both", ls="--", alpha=0.5)
-plt.tight_layout()
-plt.show()
-
-# %% [markdown]
 # ## Summary
 #
 # | Backend | Notes |
 # |---------|-------|
-# | **CPU** | Always available; good baseline.  JAX JIT provides substantial speed-up over NumPy equivalents. |
-# | **GPU** | Requires `jax[cuda]` and a CUDA-capable GPU.  Beneficial for very large frequency sweeps or batched optimisation. |
-# | **OpenVINO (NPU)** | Requires `openvino` package.  Converts the JAX trace to an IR model, then compiles for the best available device (NPU > GPU > CPU).  Most beneficial on Intel Core Ultra platforms with a dedicated NPU. |
+# | **CPU** | Always available; good baseline, with the lowest fixed overhead per call. |
+# | **GPU** | Requires a CUDA build of JAX (e.g. `jax[cuda12]`) and a CUDA-capable GPU.  The higher per-call overhead pays off for large frequency sweeps or batched optimisation, where the per-point cost dominates. |
 #
 # ### SAX / JAX integration notes
 #
+# * **Jit the circuit**: `sax.circuit` returns an un-jitted function.  Wrap it in
+#   `jax.jit` before calling it repeatedly, or Python dispatch overhead dominates the
+#   runtime of small and medium sweeps.
 # * **Output type**: `sax.circuit` returns an `SDict` (a plain `dict` mapping
-#   port-pair tuples to JAX arrays).  To use the circuit with `jax.make_jaxpr`
-#   or any system that expects *array* outputs, wrap it in a helper function that
-#   extracts or combines the relevant entries.
-# * **Complex arithmetic**: SAX models default to `complex128`.  JAX handles this
-#   natively; OpenVINO decomposes complex ops into real/imaginary pairs during
-#   conversion.  If conversion fails due to dtype issues, consider calling
-#   `jax.config.update("jax_enable_x64", True)` early and/or lowering precision
-#   with `freq.astype(jnp.complex64)`.
-# * **Fixed input shape**: `jax.make_jaxpr` traces for a concrete shape.  Each
-#   distinct frequency-array length produces a separate compiled artefact.  Use a
-#   single canonical size in production or explore OpenVINO dynamic-shape support.
+#   port-pair tuples to JAX arrays), which `jax.jit` and `jax.block_until_ready`
+#   accept as a pytree.
+# * **Fixed input shape**: `jax.jit` compiles for a concrete input shape.  Each
+#   distinct frequency-array length triggers a new compilation, so reuse one size where
+#   you can.

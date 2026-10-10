@@ -24,8 +24,11 @@ files at `notebooks/` are produced by `just convert-notebooks` (via the `convert
   hide it, and the pre-executed notebooks gain no unexecuted code cell. A code cell, or a block placed before the
   jupytext header, is wrong.
 - Committed cell outputs. `nbstripout` strips them, except for the pre-executed Elmer notebook
-  (`elmer_capacitance_interdigital`) and HFSS notebooks (`hfss_driven_capacitor`, `hfss_eigenmode_resonator`,
-  `hfss_q2d_cpw_impedance`), which intentionally keep theirs.
+  (`elmer_capacitance_interdigital`), HFSS notebooks (`hfss_driven_capacitor`, `hfss_eigenmode_resonator`,
+  `hfss_q2d_cpw_impedance`) and GPU notebook (`jax_backend_comparison`), which intentionally keep theirs.
+- After changing the JAX backend notebook, re-run it on a machine with a CUDA GPU with `just run-jax-backend-notebook`,
+  which saves the outputs to `notebooks/jax_backend_comparison.ipynb`. CI does not execute it; the
+  `check-jax-gpu-notebook` job only checks that a saved run completed on a GPU.
 - After changing the Elmer notebook's simulation code, run and save its default cubic profile with
   `jupytext --execute --to ipynb --set-kernel python3 --output notebooks/elmer_capacitance_interdigital.ipynb notebooks/src/elmer_capacitance_interdigital.py`.
   CI executes a separate quadratic smoke run because `GITHUB_ACTIONS=true` selects the fast profile.

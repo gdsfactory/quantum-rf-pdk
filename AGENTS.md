@@ -283,8 +283,10 @@ for examples of:
   `# %% [raw] tags=["remove-cell"]` cell, so it can be run with `uv run --script`. Update its `dependencies` whenever
   the Colab install cell changes
 - **Documentation**: Converted notebooks are copied to `docs/notebooks/` during documentation build. Notebooks that
-  require external tooling (HFSS, MATLAB) are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the docs
-  build does not try to execute them
+  require external tooling (HFSS, MATLAB) or a GPU are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the
+  docs build does not try to execute them
+- **GPU notebook**: `jax_backend_comparison` needs a CUDA GPU. On such a machine, run `just run-jax-backend-notebook` to
+  execute it and save its outputs to `notebooks/jax_backend_comparison.ipynb`, then commit that file
 
 ### Samples Directory
 
