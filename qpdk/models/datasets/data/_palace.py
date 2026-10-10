@@ -131,6 +131,7 @@ def extract(
     from qpdk.tech import LAYER
 
     terminals = tuple(terminal_ports)
+    inputs = {**inputs, "minimum_feature_elements": minimum_feature_elements}
     key = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:20]
     run = workdir.resolve() / key
     complete = run / "complete.json"
