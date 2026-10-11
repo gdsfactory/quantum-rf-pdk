@@ -10,7 +10,6 @@ import hashlib
 import importlib.metadata
 import json
 import math
-import re
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -230,31 +229,18 @@ def solver_diagnostics(
     Raises:
         RuntimeError: If terminal solves are missing or fail the requested tolerance.
     """
-    blocks = re.split(r"\nIt \d+/\d+: Index = \d+[^\n]*\n", log)[1:]
-    ratios, iterations = [], []
-    if len(blocks) != terminals:
+    from gsim.palace.results import load_static_solver_metrics
+
+    try:
+        metrics = load_static_solver_metrics(log)
+    except ValueError as error:
+        raise RuntimeError("Missing solver convergence in Palace log") from error
+    if [item["index"] for item in metrics] != list(range(1, terminals + 1)):
         raise RuntimeError("Missing terminal solves in Palace log")
-    for block in blocks:
-        solver_log = block.split("Updating solution error estimates")[0]
-        residuals = [
-            float(value) for value in re.findall(r"KSP residual norm (\S+)", solver_log)
-        ]
-        converged = re.findall(r"solver converged in (\d+) iterations?", solver_log)
-        if (
-            len(residuals) < 2
-            or len(converged) != 1
-            or not all(math.isfinite(v) and v >= 0 for v in residuals)
-            or residuals[0] <= 0
-        ):
-            raise RuntimeError("Missing solver convergence in Palace log")
-        ratio = residuals[-1] / residuals[0]
-        if not math.isfinite(ratio) or ratio > tolerance * 1.00001:
-            raise RuntimeError(
-                f"Solver residual {ratio:g} exceeds tolerance {tolerance:g}"
-            )
-        ratios.append(ratio)
-        iterations.append(int(converged[-1]))
+    ratio = max(item["relative_residual"] for item in metrics)
+    if ratio > tolerance * 1.00001:
+        raise RuntimeError(f"Solver residual {ratio:g} exceeds tolerance {tolerance:g}")
     return {
-        "solver_relative_residual": max(ratios),
-        "solver_iterations": float(max(iterations)),
+        "solver_relative_residual": ratio,
+        "solver_iterations": float(max(item["iterations"] for item in metrics)),
     }

@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.palace
+
 CHECK = runpy.run_path(
     str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data/_palace.py")
 )["solver_diagnostics"]
@@ -46,6 +48,8 @@ def test_worst_terminal_and_estimator_solve_is_separate() -> None:
     ("log", "message"),
     [
         (terminal(1), "Missing terminal"),
+        ("", "Missing terminal"),
+        (terminal(1) + terminal(1), "Missing terminal"),
         (terminal(1) + terminal(2, converged=False), "Missing solver convergence"),
         (terminal(1) + terminal(2, final="3.1e-07"), "exceeds tolerance"),
         (terminal(1) + terminal(2, final="nan"), "Missing solver convergence"),
