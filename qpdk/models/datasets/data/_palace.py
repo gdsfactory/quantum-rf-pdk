@@ -130,7 +130,11 @@ def extract(
     from qpdk.tech import LAYER
 
     terminals = tuple(terminal_ports)
-    inputs = {**inputs, "minimum_feature_elements": minimum_feature_elements}
+    inputs = {
+        **inputs,
+        "minimum_feature_elements": minimum_feature_elements,
+        "mesh_threads": processes,
+    }
     key = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:20]
     run = workdir.resolve() / key
     complete = run / "complete.json"
@@ -153,6 +157,7 @@ def extract(
             normalization_depth_um=normalization_depth_um,
             minimum_feature_elements=minimum_feature_elements,
             verbose=True,
+            num_threads=processes,
         )
         # Warm starts change the norm used to normalize the logged residuals.
         sim.set_solver(
