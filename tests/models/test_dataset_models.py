@@ -348,14 +348,19 @@ def test_rejects_a_floating_pair(dataset: Dataset, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("dataset_name", "separations"),
-    [("cpw_coupling_palace", 35), ("cpw_coupling_ground_strip_palace", 27)],
+    ("dataset_name", "shape"),
+    [
+        ("cpw_coupling_palace", (4, 4, 15)),
+        ("cpw_coupling_ground_strip_palace", (6, 6, 12)),
+    ],
 )
-def test_bundled_palace_grid_and_model(dataset_name: str, separations: int) -> None:
+def test_bundled_palace_grid_and_model(
+    dataset_name: str, shape: tuple[int, int, int]
+) -> None:
     data = Dataset(dataset_name)
     assert not data.metadata.synthetic
     grid = data.grid("maxwell_capacitance")
-    assert grid.values.shape == (15, 13, separations, 2, 2)
+    assert grid.values.shape == (*shape, 2, 2)
     convergence = data.metadata.provenance["mesh_convergence"]
     change = data.grid("mesh_relative_change").values
     level = data.grid("mesh_refinement_level").values
@@ -364,19 +369,27 @@ def test_bundled_palace_grid_and_model(dataset_name: str, separations: int) -> N
     assert (level >= 1).all()
     assert (level == level.astype(int)).all()
     for name, field in [("mesh_near_size", "near_mesh"), ("mesh_far_size", "far_mesh")]:
-        sizes = jnp.asarray([
-            settings[field] * 1e-6 for settings in convergence["settings_by_level"]
-        ])
-        np.testing.assert_allclose(
-            data.grid(name).values, sizes[level.astype(int)], rtol=1e-12
-        )
+        expected = jnp.zeros_like(level)
+        for level_index, config in enumerate(convergence["settings_by_level"]):
+            expected = jnp.where(level == level_index, config[field] * 1e-6, expected)
+        for refinement in data.metadata.provenance.get("curated_refinements", []):
+            point_index = tuple(
+                axis.tolist().index(refinement["point"][axis_name])
+                for axis_name, axis in zip(grid.axis_names, grid.coords, strict=True)
+            )
+            assert level[point_index] == refinement["accepted_refinement_level"]
+            expected = expected.at[point_index].set(
+                refinement["source_provenance"]["settings"][field] * 1e-6
+            )
+        assert (expected > 0).all()
+        np.testing.assert_allclose(data.grid(name).values, expected, rtol=1e-12)
     residual = data.grid("solver_relative_residual").values
     assert jnp.isfinite(residual).all()
     assert (
         residual <= data.metadata.provenance["settings"]["tolerance"] * 1.00001
     ).all()
-    mutual = -np.asarray(grid.values)[..., 0, 1]
-    assert (np.diff(mutual, axis=2) < 0).all()
+    mutual = -jnp.asarray(grid.values)[..., 0, 1]
+    assert (jnp.diff(mutual, axis=2) < 0).all()
     model = cpw_coupling_model(data)
     result = jax.jit(model)(
         f=jnp.array([1e9, 5e9, 12e9]),
