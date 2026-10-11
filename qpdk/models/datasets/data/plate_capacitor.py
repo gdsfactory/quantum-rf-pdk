@@ -3,7 +3,7 @@
 # dependencies = [
 #   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@a6bdc3e7f4bb38145f3e112c08f1c4dad4dc5b66",
 #   "typer>=0.24,<1",
-#   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@575e5cbb800994a66d90c2bcbcc82a30fe78a51f",
+#   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@7b70ba416501af84c76603e41bc5ccfc9bcbbda8",
 # ]
 # ///
 """Generate Maxwell capacitance data with gsim and Palace.
@@ -228,7 +228,10 @@ def main(
     executable: Path | None = None,
     sif: Path | None = None,
     processes: Annotated[
-        int, typer.Option(min=1, help="MPI ranks per Palace solve.")
+        int,
+        typer.Option(
+            min=1, help="CPU threads for meshing and MPI ranks per Palace solve."
+        ),
     ] = 4,
     container_binary: str = "palace",
 ) -> None:
