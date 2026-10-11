@@ -44,6 +44,8 @@ repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
 [project.optional-dependencies]
 circulax = ["circulax>=0.2.3", "optax"]
 comsol = ["MPh>=1.4,<2"]
+# Delta Lake storage for FEM datasets (Dataset(..., delta=True)).
+delta = ["deltalake>=1.1", "polars>=2,<3"]
 # Dependencies of the gdsfactoryplus v2 SDK exercised by the gfp test suite.
 # The SDK itself is not on PyPI: gdsfactoryplus >= 2.0 ships bundled inside
 # the public GDSFactory+ VS Code extension, and `just test-gfp` extracts it
@@ -59,7 +61,7 @@ gdsfactoryplus = [
   "sax>=0.18.2,<1",
 ]
 graphics = ["trimesh", "pyglet<3"]
-hfss = ["polars", "pyaedt[graphics]>=0.15.0"]
+hfss = ["polars>=2,<3", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]~=2.1.0",
   "jaxellip",
@@ -68,7 +70,7 @@ models = [
   "sax>=0.18.2,<1",
   "scikit-rf",
   "sympy",
-  "polars",
+  "polars>=2,<3",
   "pandas[parquet]",
 ]
 netket = ["netket>=3.12", "flax", "optax"]
@@ -108,7 +110,7 @@ docs-models = [
   "optax",
   "optuna",
   "pandas[parquet]",
-  "polars",
+  "polars>=2,<3",
   "pyaedt[graphics]>=0.15.0",
   "pymablock>=2.2.1",
   "qutip-jax>=0.1.1",
@@ -122,10 +124,12 @@ docs-models = [
 ]
 github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
+palace = ["gsim[meshwell]>=0.7.0"]
 stubs = ["scipy-stubs"]
 test = [
   "hypothesis",
   "jsondiff",
+  "moto[server]>=5",
   "pytest>=9.0.0",
   "pytest-cov",
   "pytest-github-actions-annotate-failures",
@@ -222,6 +226,7 @@ project-excludes = [
   "docs/**",
   "build/**",
   "dist/**",
+  "qpdk/models/datasets/data/*.py",
   "*.egg-info/**",
   ".venv/**",
   # Exclude samples that may have experimental code
@@ -237,7 +242,12 @@ project-includes = ["**/*.py"]
 no-matching-overload = "ignore"
 
 [tool.pytest]
-addopts = ["--tb=short"]
+addopts = [
+  "--tb=short",
+  "--ignore=qpdk/models/datasets/data",
+  "-m",
+  "not palace"
+]
 filterwarnings = [
   # gdsfactory internally warns about bend_euler for non-90/180 angles even
   # when the user calls bend_circular; suppress until upstream fixes this.
@@ -249,6 +259,7 @@ filterwarnings = [
 markers = [
   "gfp: mark test as requiring GDSFactory+ (gdsfactoryplus)",
   "hfss: mark test as requiring HFSS",
+  "palace: require the Palace experiment dependencies and a real solver",
   "skip_windows: skip test on Windows",
 ]
 norecursedirs = [
@@ -426,9 +437,22 @@ template = ".changelog.d/changelog_template.jinja"
 [tool.uv]
 default-groups = ["dev", "lint", "stubs", "test"]
 
+[tool.uv.dependency-groups]
+palace = { requires-python = "~=3.12.0" }
+
 [tool.uv.sources]
+gsim = { git = "https://github.com/nikosavola/gsim.git", rev = "40d10d86dcef68be92913bb63823b1ea7ac9faf1" }
 sax = { git = "https://github.com/gdsfactory/sax.git", rev = "de4a5b71eddbadc4b8f749e716f0bb3bd1a86240" }
 
 [tool.uv.build-backend]
+wheel-exclude = [
+  "qpdk/models/datasets/data/*.py",
+  "qpdk/models/datasets/data/*.sh"
+]
 module-root = ""
-source-exclude = ["tests/**", "docs/**"]
+source-exclude = [
+  "qpdk/models/datasets/data/*.py",
+  "qpdk/models/datasets/data/*.sh",
+  "tests/**",
+  "docs/**"
+]

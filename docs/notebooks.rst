@@ -139,6 +139,9 @@ currents, and substrate modes that analytical models may miss
   transmon pad capacitance and field map.
 - :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
   Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
+- :doc:`notebooks/fem_dataset_lookup` — Generates Palace datasets for plate capacitors
+  and symmetric CPW coupling, queries them lazily, and demonstrates multidimensional
+  heatmaps and jittable SAX models.
 
 .. note::
 

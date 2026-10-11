@@ -20,6 +20,7 @@ Detailed rules in `.github/instructions/` apply automatically to the areas below
 - `tech-layers.instructions.md` — `qpdk/tech.py`, `qpdk/layers.yaml`, `qpdk/klayout/**`
 - `models.instructions.md` — `qpdk/models/**`
 - `simulation.instructions.md` — `qpdk/simulation/**`
+- `datasets.instructions.md` — `qpdk/models/datasets/**`
 - `samples.instructions.md` — `qpdk/samples/**`
 - `tests.instructions.md` — `tests/**`
 - `notebooks.instructions.md` — `notebooks/**`
