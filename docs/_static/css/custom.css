@@ -179,3 +179,50 @@ div.admonition.note {
 .gallery-card .sd-card-body > p:has(.download) {
   display: none;
 }
+
+/* ---------------------------------------------------------------------------
+ * Notebook landing page (docs/notebooks.rst)
+ * ------------------------------------------------------------------------- */
+.notebook-category,
+.notebook-card {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.notebook-category:hover,
+.notebook-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--pst-color-primary);
+  box-shadow: 0 0.5rem 1.25rem rgb(0 0 0 / 12%);
+}
+
+.notebook-category .sd-card-title {
+  font-family: "Outfit", "Inter", sans-serif;
+}
+
+.notebook-category .sd-card-title .sd-octicon {
+  margin-right: 0.35em;
+  vertical-align: -0.3em;
+}
+
+.notebook-card .sd-card-footer .sd-badge {
+  margin: 0.1rem 0.15rem 0.1rem 0;
+}
+
+.notebook-card-external {
+  border-style: dashed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notebook-category,
+  .notebook-card {
+    transition: none;
+  }
+
+  .notebook-category:hover,
+  .notebook-card:hover {
+    transform: none;
+  }
+}
