@@ -56,8 +56,8 @@
 #
 # :::{note}
 # The documentation build does not execute this notebook, since CI runners have no GPU.
-# The page shows the outputs saved by the last `just run-jax-backend-notebook` run on a
-# CUDA machine; if no such run has been saved yet, it shows the code only.  On a CPU-only
+# The page shows the outputs saved by the last run on a CUDA machine (see `AGENTS.md`);
+# if no such run has been saved yet, it shows the code only.  On a CPU-only
 # machine the GPU sections are skipped.
 # :::
 #
@@ -87,11 +87,9 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
-import hashlib
 import os
 import time
 import warnings
-from pathlib import Path
 
 import jax
 import jax.numpy as jnp
@@ -114,7 +112,7 @@ PDK.activate()
 #
 # We probe each backend and record its availability.  The GPU sections are skipped
 # when no GPU is found, unless `QPDK_REQUIRE_GPU=1` is set, which turns a missing GPU
-# into an error.  `just run-jax-backend-notebook` sets it, so a saved run can never
+# into an error.  Set it when saving outputs for the docs, so a saved run can never
 # silently lack the GPU results.
 
 # %%
@@ -438,27 +436,3 @@ plt.show()
 # * **Fixed input shape**: `jax.jit` compiles for a concrete input shape.  Each
 #   distinct frequency-array length triggers a new compilation, so reuse one size where
 #   you can.
-
-# %% tags=["hide-input", "hide-output"]
-# The documentation shows the outputs of a saved run of this notebook, so the fingerprint below
-# ties them to the source: CI recomputes it from notebooks/src/jax_backend_comparison.py and
-# rejects the saved outputs when the two have drifted apart.
-_source = next(
-    (
-        path
-        # The kernel starts in the directory of the notebook it writes
-        for path in (
-            Path("src/jax_backend_comparison.py"),
-            Path("notebooks/src/jax_backend_comparison.py"),
-            Path("jax_backend_comparison.py"),
-        )
-        if path.is_file()
-    ),
-    None,
-)
-if _source is not None:
-    print(f"Executed source SHA256: {hashlib.sha256(_source.read_bytes()).hexdigest()}")
-else:
-    print(
-        "Executed source SHA256: unavailable (run from the repository root to record it)"
-    )

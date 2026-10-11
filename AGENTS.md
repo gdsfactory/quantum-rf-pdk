@@ -276,17 +276,31 @@ for examples of:
 
 - **Notebook source**: Notebook source files live in `notebooks/src/`. Python notebooks use `.py`; the MATLAB-kernel
   notebook uses `.m` (see `notebooks/src/matlab_integration.m`)
+
 - **Conversion**: Run `just convert-notebooks` or `./.github/convert-notebooks.sh` to convert source files to `.ipynb`
+
 - **Pre-commit hook**: Notebooks are automatically converted when `.py` or `.m` files in `notebooks/src/` are modified
+
 - **Format**: Python notebooks use the "percent" format with `# %%` cell markers; MATLAB notebooks use `% %%` markers
+
 - **Inline script metadata**: Each Python notebook source carries a PEP 723 `# /// script` block in a
   `# %% [raw] tags=["remove-cell"]` cell, so it can be run with `uv run --script`. Update its `dependencies` whenever
   the Colab install cell changes
+
 - **Documentation**: Converted notebooks are copied to `docs/notebooks/` during documentation build. Notebooks that
   require external tooling (HFSS, MATLAB) or a GPU are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the
   docs build does not try to execute them
-- **GPU notebook**: `jax_backend_comparison` needs a CUDA GPU. On such a machine, run `just run-jax-backend-notebook` to
-  execute it and save its outputs to `notebooks/jax_backend_comparison.ipynb`, then commit that file
+
+- **GPU notebook**: `jax_backend_comparison` needs a CUDA GPU, so CI does not execute it. On such a machine, execute it
+  and save its outputs, then commit `notebooks/jax_backend_comparison.ipynb`:
+
+  ```bash
+  jax_version="$(uv run --extra models python -c 'import jax; print(jax.__version__)')"
+  QPDK_REQUIRE_GPU=1 uv run --extra models --with "jax[cuda12]==${jax_version}" \
+      --with jupytext --with nbconvert --with ipykernel \
+      jupytext --execute --to ipynb --set-kernel python3 \
+      --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
+  ```
 
 ### Samples Directory
 

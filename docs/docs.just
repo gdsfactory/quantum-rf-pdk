@@ -27,18 +27,6 @@ write-justfile-help:
 convert-notebooks:
     @./.github/convert-notebooks.sh notebooks/src/*.py
 
-# Execute the JAX backend notebook on a CUDA GPU and save its outputs for the docs
-[group('docs')]
-run-jax-backend-notebook cuda="cuda12":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    nvidia-smi --query-gpu=name,driver_version --format=csv,noheader
-    jax_version="$(uv run --extra models python -c 'import jax; print(jax.__version__)')"
-    QPDK_REQUIRE_GPU=1 uv run --extra models \
-        --with "jax[{{ cuda }}]==${jax_version}" --with jupytext --with nbconvert --with ipykernel \
-        jupytext --execute --to ipynb --set-kernel python3 \
-        --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
-
 # Build SVG figures from docs/figures/*.typ
 [group('docs')]
 [script('uv', 'run', '--script')]
