@@ -1,42 +1,29 @@
-"""Tests for HFSS and Q3D simulation integration."""
+"""Tests for QPDK's AEDT test helpers, ``prepare_component_for_aedt`` and live AEDT.
+
+Everything here except the ``hfss``-marked live tests runs without the ``hfss``
+extra. The wrapper tests that need gplugins are in ``test_aedt_wrappers.py``.
+"""
 
 import contextlib
 import os
 import shutil
+import subprocess
+import sys
 import threading
 import time
 import uuid
-from collections.abc import Callable, Iterator, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
-import gdsfactory as gf
 import pytest
 from gdsfactory.component import Component
-from gdsfactory.technology import LayerLevel, LayerStack
-from numpy.testing import assert_allclose
 
-from qpdk import LAYER, LAYER_STACK, PDK, logger
+from qpdk import PDK, logger
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.resonator import resonator
-from qpdk.simulation import (
-    HFSS,
-    Q2D,
-    Q3D,
-    detach_desktop_logging,
-    fit_view,
-    layer_stack_to_gds_mapping,
-    lumped_port_rectangle_from_cpw,
-    object_names_to_materials,
-    prepare_component_for_aedt,
-)
-from qpdk.simulation.aedt_base import (
-    _first_real_value,
-    _get_layer_number_from_level,
-    export_component_to_gds_temp,
-)
-from qpdk.tech import LAYER_STACK_FLIP_CHIP, coplanar_waveguide
+from qpdk.simulation.aedt_base import prepare_component_for_aedt
+from qpdk.tech import coplanar_waveguide
 
 # Maximum wall-clock time for a single AEDT-bound call. AEDT startup can
 # legitimately take minutes, so this is generous. The budget is per call, not
@@ -355,142 +342,6 @@ def test_ansys_install_path_preserves_existing(ansys_install_path: Path):
     assert ansys_install_path == Path("/custom/ansys")
 
 
-def test_layer_stack_to_gds_mapping():
-    """Test generating GDS mapping from a LayerStack."""
-    mapping = layer_stack_to_gds_mapping(LAYER_STACK)
-
-    # Check that it returns a dictionary
-    assert isinstance(mapping, dict)
-
-    # Check a known layer from qpdk
-    # For example, layer 1 should be in the mapping
-    # The structure is {layer_number: (elevation, thickness)}
-    assert 1 in mapping
-    assert isinstance(mapping[1], tuple)
-    assert len(mapping[1]) == 2
-
-    elevation, thickness = mapping[1]
-    assert isinstance(elevation, float)
-    assert isinstance(thickness, float)
-
-
-def test_layer_stack_to_gds_mapping_default_stack_collision_free():
-    """Test that the default LAYER_STACK maps every level to a distinct entry.
-
-    pyaedt's ``import_gds_3d`` keys on GDS layer number only, so the Vacuum
-    level (which shares ``LAYER.SIM_AREA`` (98, 0) with Substrate) must be
-    skipped, and the contiguous Nb spans of Airbridge (10, 0) and
-    Airbridge_Via (10, 1) must merge into a single box.
-    """
-    mapping = layer_stack_to_gds_mapping(LAYER_STACK)
-
-    # Vacuum (98, 0) is skipped, so Substrate keeps layer 98 at its own
-    # elevation/thickness instead of being overwritten by vacuum values.
-    assert mapping[98] == pytest.approx((-500.0, 500.0))
-
-    # Airbridge (0.3-0.5 um) and Airbridge_Via (0.2-0.3 um) merge to one box.
-    assert mapping[10] == pytest.approx((0.2, 0.3))
-
-    # Every non-vacuum level with a resolvable layer number is mapped exactly
-    # once (Airbridge and Airbridge_Via share one merged entry on layer 10).
-    expected_layers = set()
-    for level in LAYER_STACK.layers.values():
-        if level.material == "vacuum":
-            continue
-        layer_number = _get_layer_number_from_level(level)
-        if layer_number is not None:
-            expected_layers.add(layer_number)
-    assert set(mapping) == expected_layers
-
-    # Sheets mode keeps the lowest elevation for colliding levels.
-    sheets_mapping = layer_stack_to_gds_mapping(LAYER_STACK, thickness_override=0.0)
-    assert sheets_mapping[10] == pytest.approx((0.2, 0.0))
-    assert sheets_mapping[98] == pytest.approx((-500.0, 0.0))
-
-
-def test_layer_stack_to_gds_mapping_unmergeable_collision_raises():
-    """Test that unmergeable layer-number collisions raise a clear error."""
-    stack = LayerStack(
-        layers={
-            "A": LayerLevel(
-                name="A", layer=(7, 0), thickness=1.0, zmin=0.0, material="Nb"
-            ),
-            # Gap between spans: union is not a single box.
-            "B": LayerLevel(
-                name="B", layer=(7, 1), thickness=1.0, zmin=5.0, material="Nb"
-            ),
-        }
-    )
-    with pytest.raises(ValueError, match="do not join into a single box"):
-        layer_stack_to_gds_mapping(stack)
-
-    stack_different_material = LayerStack(
-        layers={
-            "A": LayerLevel(
-                name="A", layer=(7, 0), thickness=1.0, zmin=0.0, material="Nb"
-            ),
-            "C": LayerLevel(
-                name="C", layer=(7, 1), thickness=1.0, zmin=1.0, material="SiO2"
-            ),
-        }
-    )
-    with pytest.raises(ValueError, match="different materials"):
-        layer_stack_to_gds_mapping(stack_different_material)
-
-    # A material mismatch raises even in sheets mode (thickness_override set):
-    # the colliding levels would still be imported as one object with a single
-    # material.
-    with pytest.raises(ValueError, match="different materials"):
-        layer_stack_to_gds_mapping(stack_different_material, thickness_override=0.0)
-
-
-def test_layer_stack_to_gds_mapping_order_independent():
-    """Test that merged spans do not depend on layer stack insertion order.
-
-    Three Nb levels on the same layer number whose z-spans chain into one
-    contiguous box must merge to the same entry regardless of the order the
-    levels appear in the ``LayerStack``.
-    """
-
-    def make_stack(names: Sequence[str]) -> LayerStack:
-        spans = {"A": (0.0, 1.0), "B": (1.0, 3.0), "C": (3.0, 4.0)}
-        return LayerStack(
-            layers={
-                name: LayerLevel(
-                    name=name,
-                    layer=(7, index),
-                    thickness=spans[name][1] - spans[name][0],
-                    zmin=spans[name][0],
-                    material="Nb",
-                )
-                for index, name in enumerate(names)
-            }
-        )
-
-    expected = layer_stack_to_gds_mapping(make_stack(("A", "B", "C")))
-    assert expected[7] == pytest.approx((0.0, 4.0))
-    assert layer_stack_to_gds_mapping(make_stack(("A", "C", "B"))) == expected
-    assert layer_stack_to_gds_mapping(make_stack(("C", "B", "A"))) == expected
-
-
-def test_layer_stack_to_gds_mapping_flip_chip_raises():
-    """Test that the flip-chip stack raises on its Substrate collision.
-
-    ``LAYER_STACK_FLIP_CHIP`` has ``Substrate`` (Si, span [-500, 0] um) and
-    ``Substrate_top`` (Si, span [10.2, 510.2] um) sharing GDS layer 98 with a
-    10.2 um vacuum gap between the chips. The two disjoint bodies cannot be
-    represented by the single (elevation, thickness) box pyaedt's
-    ``import_gds_3d`` allows per layer number, and merging would fill the
-    inter-chip gap with silicon — so the mapping raises instead of silently
-    producing wrong geometry. Flip-chip EM import is not currently supported;
-    this test documents that contract.
-    """
-    with pytest.raises(
-        ValueError, match=r"'Substrate' and 'Substrate_top' share GDS layer 98"
-    ):
-        layer_stack_to_gds_mapping(LAYER_STACK_FLIP_CHIP)
-
-
 def test_prepare_component_for_aedt():
     """Test component preparation for AEDT."""
     comp = resonator()
@@ -521,446 +372,47 @@ def test_prepare_component_for_aedt_margin():
     assert bbox_new.top >= bbox_orig.top
 
 
-def test_get_layer_number_from_level():
-    """Test layer number extraction from various layer definitions."""
-
-    # Test with a regular LayerLevel that has a direct tuple
-    class MockLevelTuple:
-        layer = (1, 0)
-
-    assert _get_layer_number_from_level(MockLevelTuple()) == 1
-
-    # Test with a derived layer structure
-    class MockLogicalLayerInner:
-        layer = (2, 0)
-
-    class MockLogicalLayer:
-        layer = MockLogicalLayerInner()
-
-    class MockDerivedLevel:
-        layer = None
-        derived_layer = MockLogicalLayer()
-
-    assert _get_layer_number_from_level(MockDerivedLevel()) == 2
-
-
-@dataclass
-class MockAEDTObject:
-    """Minimal stand-in for a PyAEDT modeler object."""
-
-    name: str
-
-
-class MockModeler:
-    """Minimal stand-in for a PyAEDT modeler."""
-
-    def __init__(self, object_names: list[str]):
-        """Initialize with the names of objects created by the GDS import."""
-        self.object_names = list(object_names)
-        self._objects = {name: MockAEDTObject(name) for name in object_names}
-        self.fit_all_calls = 0
-
-    def __getitem__(self, name: str) -> MockAEDTObject:
-        """Return the modeler object with the given name."""
-        return self._objects[name]
-
-    def fit_all(self) -> None:
-        """Count a view-fitting call, which a headless session must not make."""
-        self.fit_all_calls += 1
-
-
-@dataclass
-class MockMaterial:
-    """Minimal stand-in for a PyAEDT material."""
-
-    permittivity: float | None = None
-    conductivity: float | None = None
-
-
-class MockMaterials:
-    """Minimal stand-in for a PyAEDT materials manager."""
-
-    def __init__(self) -> None:
-        """Initialize an empty materials database."""
-        self.material_names: list[str] = []
-
-    def exists_material(self, name: str) -> bool:
-        """Return whether the material exists in the project."""
-        return name in self.material_names
-
-    def add_material(self, name: str) -> MockMaterial:
-        """Add a material to the project."""
-        self.material_names.append(name)
-        return MockMaterial()
-
-
-class MockQ3dApp:
-    """Minimal stand-in for a PyAEDT Q3d application."""
-
-    def __init__(self, object_names: list[str]):
-        """Initialize with the names of objects created by the GDS import."""
-        self.imported_object_names = list(object_names)
-        self.modeler = MockModeler([])
-        self.materials = MockMaterials()
-        self.assigned_materials: dict[str, str] = {}
-
-    def import_gds_3d(self, **kwargs: object) -> bool:
-        """Simulate a successful 3D GDS import creating the objects."""
-        self.import_kwargs = kwargs
-        self.modeler.object_names.extend(self.imported_object_names)
-        for name in self.imported_object_names:
-            self.modeler._objects[name] = MockAEDTObject(name)
-        return True
-
-    def assign_material(self, assignment: list, material: str) -> None:
-        for obj in assignment:
-            self.assigned_materials[str(obj)] = material
-
-
-class MockDesktop:
-    """Minimal stand-in for a PyAEDT desktop."""
-
-    def __init__(self, non_graphical: bool) -> None:
-        """Initialize with the mode the session was constructed in."""
-        self.non_graphical = non_graphical
-
-
-class MockLogger:
-    """Minimal stand-in for PyAEDT's logger, which holds the desktop it logs through."""
-
-    def __init__(self, desktop: MockDesktop | None = None) -> None:
-        """Initialize holding a desktop, as a real logger does."""
-        if desktop is not None:
-            self._desktop_class = desktop
-
-
-class MockApp:
-    """Minimal stand-in for a PyAEDT application, for the session helpers."""
-
-    def __init__(self, non_graphical: bool) -> None:
-        """Initialize an application with a modeler, a desktop and a logger."""
-        self.desktop_class = MockDesktop(non_graphical)
-        self.modeler = MockModeler([])
-        self.logger = MockLogger(self.desktop_class)
-
-
-class MockSolutionData:
-    """Minimal stand-in for a PyAEDT SolutionData built for one expression."""
-
-    def __init__(self, expression: str, values: list[float], unit: str = "pF") -> None:
-        """Initialize with the values that expression should read back as."""
-        self.expressions = [expression]
-        self.units_data = {expression: unit}
-        self.calls: list[tuple[str | None, str | None]] = []
-        self._values = values
-
-    def get_expression_data(
-        self, expression: str | None = None, formula: str | None = None
-    ) -> tuple[list[float], list[float]]:
-        """Return the canned values, recording how the caller asked for them."""
-        self.calls.append((expression, formula))
-        return [0.0], self._values
-
-
-class MockExpressionData:
-    """SolutionData stand-in whose real data is whatever the test hands it."""
-
-    def __init__(self, returned: tuple | None) -> None:
-        """Initialize with the pair get_expression_data should answer with."""
-        self.returned = returned
-        self.calls: list[dict] = []
-
-    def get_expression_data(self, **kwargs):
-        """Return the canned pair, recording how the caller asked for it."""
-        self.calls.append(kwargs)
-        return self.returned
-
-
-class MockPost:
-    """Minimal stand-in for a PyAEDT post processor returning canned results."""
-
-    def __init__(
-        self,
-        quantities: dict[str, dict[str, float | None]],
-        unit: str = "pF",
-        solved: bool = True,
-    ) -> None:
-        """Initialize with the value to return for each reported quantity.
-
-        An expression mapping to ``None`` stands for one AEDT lists but has no
-        samples for, which PyAEDT answers with empty arrays. ``solved=False`` stands
-        for a setup that was never solved, where ``get_solution_data`` returns False.
-        """
-        self.quantities = quantities
-        self.unit = unit
-        self.solved = solved
-        self.solutions: list[MockSolutionData] = []
-        self.requests: list[tuple[str | None, dict]] = []
-
-    def available_report_quantities(self, quantities_category: str) -> list[str]:
-        """Return the expression names a report category offers."""
-        return list(self.quantities.get(quantities_category, {}))
-
-    def get_solution_data(self, expressions: str | None = None, **kwargs):
-        """Return a SolutionData for an expression, or False as PyAEDT does."""
-        self.requests.append((expressions, kwargs))
-        if not self.solved or expressions is None:
-            return False
-        for category in self.quantities.values():
-            if expressions in category:
-                value = category[expressions]
-                values = [] if value is None else [value]
-                solution = MockSolutionData(expressions, values, self.unit)
-                self.solutions.append(solution)
-                return solution
-        return False
-
-
-class MockHfssApp:
-    """Minimal stand-in for a PyAEDT Hfss application exposing its post processor."""
-
-    def __init__(self, post: MockPost) -> None:
-        """Initialize with the canned post processor."""
-        self.post = post
-
-
-class MockBoundary:
-    """Minimal stand-in for a PyAEDT boundary."""
-
-    def __init__(self, name: str, boundary_type: str) -> None:
-        """Initialize with the name and type a real boundary reports."""
-        self.name = name
-        self.type = boundary_type
-
-
-class MockQ3dNetsApp:
-    """Minimal stand-in for a PyAEDT Q3d application with nets and a post processor."""
-
-    def __init__(self, post: MockPost, net_names: list[str]) -> None:
-        """Initialize with signal nets drawn from the given names."""
-        self.post = post
-        self.boundaries = [MockBoundary(name, "SignalNet") for name in net_names]
-
-
-def test_object_names_to_materials():
-    """Test mapping imported object names to materials from the layer stack."""
-    # Layer 1 -> M1 (Nb, a metal -> pec); layer 98 -> Substrate (Si); layer 31 -> TSV (TiN)
-    result = object_names_to_materials(
-        ["signal1", "signal25", "signal98", "signal31", "Substrate", "M1_offset"],
-        LAYER_STACK,
+def test_prepare_component_for_aedt_imports_without_gplugins():
+    """``prepare_component_for_aedt`` must not need gplugins at import time."""
+    code = (
+        "import sys; sys.modules['gplugins'] = None; "
+        "from qpdk.simulation.aedt_base import prepare_component_for_aedt; "
+        "from qpdk.simulation import prepare_component_for_aedt as wrapped; "
+        "assert wrapped is prepare_component_for_aedt"
+    )
+    subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code], check=True
     )
 
-    # Metals are PEC
-    assert result["signal1"] == "pec"
-    assert result["signal25"] == "pec"  # NbTiN
-    assert result["signal31"] == "pec"
-    assert result["M1_offset"] == "pec"
-    # Substrate and other dielectrics get their real material, not pec
-    assert result["signal98"] == "Si"
-    assert result["Substrate"] == "Si"
-    assert result["Substrate"] != "pec"
 
-    # Objects that cannot be resolved to a layer level fail closed
-    with pytest.raises(ValueError, match="Could not resolve"):
-        object_names_to_materials(["signal7", "unknown_object"], LAYER_STACK)
+def test_missing_extra_raises_actionable_import_error():
+    """Without gplugins, the AEDT names raise ``ImportError`` naming the extra."""
+    code = """
+import sys
+sys.modules["gplugins"] = None
+import qpdk.simulation.aedt_base as aedt_base
+from qpdk.simulation.aedt_base import MISSING_HFSS_EXTRA
 
-
-def test_object_names_to_materials_unregistered_material():
-    """Levels with materials missing from material_properties fail closed."""
-    stack = LayerStack(
-        layers={
-            "Custom": LayerLevel(
-                name="Custom",
-                layer=(50, 0),
-                thickness=1,
-                zmin=0.0,
-                material="unobtainium",
-            )
-        }
-    )
-
-    with pytest.raises(ValueError, match="not registered in material_properties"):
-        object_names_to_materials(["signal50"], stack)
-
-
-def test_q3d_import_assigns_materials_from_layer_stack(tmp_path):
-    """Q3D import must not blanket-assign pec: substrate gets its real material."""
-    comp = gf.components.rectangle(size=(10, 10), layer=LAYER.M1_DRAW)
-
-    # Simulate a GDS import that creates the M1 metal and the Substrate objects
-    app = MockQ3dApp(["signal1", "signal98"])
-    sim = Q3D(app)
-
-    renamed = sim.import_component(comp, gds_path=tmp_path / "comp.gds")
-
-    # Only conductor objects are returned for downstream net assignment
-    assert renamed == ["M1"]
-    # Metal level becomes PEC, substrate gets silicon from the layer stack
-    assert app.assigned_materials["M1"] == "pec"
-    assert app.assigned_materials["Substrate"] == "Si"
-    assert app.assigned_materials["Substrate"] != "pec"
-
-
-def test_fit_view_skips_a_non_graphical_session():
-    """Fitting the view is a screen operation, so a headless session must not try."""
-    graphical = MockApp(non_graphical=False)
-    headless = MockApp(non_graphical=True)
-
-    fit_view(graphical)
-    fit_view(headless)
-
-    assert graphical.modeler.fit_all_calls == 1
-    assert headless.modeler.fit_all_calls == 0
-
-
-def test_detach_desktop_logging_drops_the_desktop_reference():
-    """PyAEDT's logger reads the desktop on every message unless it is dropped."""
-    app = MockApp(non_graphical=True)
-    assert app.logger._desktop_class is app.desktop_class
-
-    detach_desktop_logging(app)
-
-    assert app.logger._desktop_class is None
-
-
-def test_detach_desktop_logging_tolerates_a_renamed_attribute():
-    """A PyAEDT that renamed the attribute must not get a dead one instead."""
-    app = MockApp(non_graphical=True)
-    app.logger = MockLogger()
-
-    messages = []
-    handler_id = logger.add(messages.append, level="WARNING")
+def check(get):
     try:
-        detach_desktop_logging(app)
-    finally:
-        logger.remove(handler_id)
+        get()
+    except ModuleNotFoundError:
+        raise AssertionError("bare ModuleNotFoundError escaped")
+    except ImportError as error:
+        assert str(error) == MISSING_HFSS_EXTRA, error
+        assert "uv sync --extra hfss" in str(error)
+    else:
+        raise AssertionError("no ImportError")
 
-    assert not hasattr(app.logger, "_desktop_class")
-    assert any("_desktop_class" in str(message) for message in messages)
-
-
-@pytest.mark.parametrize("keep_file", [True, False])
-def test_export_component_to_gds_temp_writes_no_context_info(
-    tmp_path: Path, keep_file: bool
-):
-    """AEDT's importer fails on the context info gdsfactory writes by default."""
-    component = gf.components.rectangle(size=(10, 10), layer=LAYER.M1_DRAW)
-    gds_path = tmp_path / "component.gds" if keep_file else None
-
-    with export_component_to_gds_temp(component, gds_path) as path:
-        layout = gf.kdb.Layout()
-        layout.read(str(path))
-        context_info = [info.name for info in layout.each_meta_info()]
-
-    assert not any(name.startswith("kfactory:") for name in context_info)
-
-    # The flag is what leaves the info out: the same component written by hand
-    # carries it, which is what the export used to hand AEDT.
-    with_context_info = tmp_path / "with_context_info.gds"
-    component.write_gds(str(with_context_info), with_metadata=True)
-    layout = gf.kdb.Layout()
-    layout.read(str(with_context_info))
-
-    assert any(info.name.startswith("kfactory:") for info in layout.each_meta_info())
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-def test_get_eigenmode_results_reads_real_values():
-    """The readback uses the method the pinned PyAEDT has, not data_real."""
-    post = MockPost({
-        "Eigen Modes": {"Mode 1": 4.8389e9},
-        "Eigen Q": {"Q(Mode 1)": 1234.5},
-    })
-    sim = HFSS(MockHfssApp(post))
-
-    results = sim.get_eigenmode_results("EigenmodeSetup")
-
-    assert results["frequencies"] == pytest.approx([4.8389])
-    assert results["q_factors"] == pytest.approx([1234.5])
-    assert results["setup"] == "EigenmodeSetup"
-    # No expression means the active one, which is how the removed data_real read
-    assert [solution.calls for solution in post.solutions] == [[(None, "real")]] * 2
-
-
-@pytest.mark.parametrize(
-    "returned",
-    [(None, None), ([], []), ([0.0], [])],
-    ids=["no-rows", "empty-arrays", "empty-values"],
-)
-def test_first_real_value_returns_none_without_data(returned):
-    """An expression with no data reads as None, whatever shape PyAEDT returns."""
-    solution = MockExpressionData(returned)
-
-    assert _first_real_value(solution) is None
-    assert solution.calls == [{"formula": "real"}]
-
-
-def test_first_real_value_reads_the_first_value():
-    """Real data comes back as a sweep and its values; the value is what counts."""
-    solution = MockExpressionData(([1.0, 2.0], [4.5, 5.5]))
-
-    assert _first_real_value(solution) == pytest.approx(4.5)
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-def test_get_eigenmode_results_skips_a_quantity_without_samples():
-    """A quantity AEDT has no samples for is left out, not indexed into."""
-    post = MockPost({
-        "Eigen Modes": {"Mode 1": 4.8389e9, "Mode 2": None},
-        "Eigen Q": {"Q(Mode 1)": None},
-    })
-    sim = HFSS(MockHfssApp(post))
-
-    results = sim.get_eigenmode_results("EigenmodeSetup")
-
-    assert results["frequencies"] == pytest.approx([4.8389])
-    assert results["q_factors"] == []
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-def test_get_eigenmode_results_handles_an_unsolved_setup():
-    """An unsolved setup returns False from get_solution_data, not an empty solution."""
-    post = MockPost(
-        {"Eigen Modes": {"Mode 1": 4.8389e9}, "Eigen Q": {"Q(Mode 1)": 1234.5}},
-        solved=False,
+check(lambda: aedt_base.AEDTBase)
+check(lambda: aedt_base.fit_view)
+check(aedt_base.layer_stack_to_gds_mapping)
+check(lambda: __import__("qpdk.simulation.hfss"))
+check(lambda: __import__("qpdk.simulation.q3d"))
+"""
+    subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code], check=True
     )
-    sim = HFSS(MockHfssApp(post))
-
-    results = sim.get_eigenmode_results("EigenmodeSetup")
-
-    assert results["frequencies"] == []
-    assert results["q_factors"] == []
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-def test_get_capacitance_matrix_converts_the_reported_unit():
-    """Q3D reports the matrix in pF or fF, and the values must come back in farads."""
-    post = MockPost(
-        {"Capacitance": {"C(o1,o1)": 8.77, "C(o1,o2)": 1.23, "C(o2,o2)": 4.0}},
-        unit="fF",
-    )
-    sim = Q3D(MockQ3dNetsApp(post, ["o1", "o2"]))
-
-    matrix = sim.get_capacitance_matrix("Q3DSetup")
-
-    assert matrix.columns == ["C(o1,o1)", "C(o1,o2)", "C(o2,o2)"]
-    assert matrix.item(0, "C(o1,o1)") == pytest.approx(8.77e-15)
-    assert matrix.item(0, "C(o1,o2)") == pytest.approx(1.23e-15)
-    assert [solution.calls for solution in post.solutions] == [[(None, "real")]] * 3
-
-
-@pytest.mark.usefixtures("isolated_wrapper_cache")
-def test_get_capacitance_matrix_skips_an_expression_without_samples():
-    """An expression AEDT has no samples for is left out, not indexed into."""
-    post = MockPost(
-        {"Capacitance": {"C(o1,o1)": 8.77, "C(o1,o2)": None, "C(o2,o2)": 4.0}},
-        unit="fF",
-    )
-    sim = Q3D(MockQ3dNetsApp(post, ["o1", "o2"]))
-
-    matrix = sim.get_capacitance_matrix("Q3DSetup")
-
-    assert matrix.columns == ["C(o1,o1)", "C(o2,o2)"]
 
 
 @pytest.mark.hfss
@@ -970,6 +422,12 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
         pytest.skip(f"HFSS installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
+
+    from qpdk.simulation import (  # ruff: ignore[import-outside-top-level]
+        HFSS,
+        detach_desktop_logging,
+        fit_view,
+    )
 
     settings.use_grpc_uds = False
 
@@ -1009,6 +467,8 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
         pytest.skip(f"HFSS installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
+
+    from qpdk.simulation import HFSS  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
@@ -1054,52 +514,6 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
         assert setup is not None, "Failed to setup eigenmode simulation"
 
 
-@pytest.fixture
-def mock_port_dimensions():
-    """Provides a standardized set of dimensions for testing."""
-    return {"center": [10.0, 20.0, 0.0], "cpw_gap": 6.0, "cpw_width": 2.0}
-
-
-@pytest.mark.parametrize(
-    ("orientation", "expected_origin", "expected_sizes", "expected_int_line"),
-    [
-        (0, [10.0, 19.0, 0.0], [6.0, 2.0], [[16.0, 20.0, 0.0], [10.0, 20.0, 0.0]]),
-        (90, [9.0, 20.0, 0.0], [2.0, 6.0], [[10.0, 26.0, 0.0], [10.0, 20.0, 0.0]]),
-        (180, [4.0, 19.0, 0.0], [6.0, 2.0], [[4.0, 20.0, 0.0], [10.0, 20.0, 0.0]]),
-        (270, [9.0, 14.0, 0.0], [2.0, 6.0], [[10.0, 14.0, 0.0], [10.0, 20.0, 0.0]]),
-    ],
-)
-def test_lumped_port_rectangle_from_cpw_valid_angles(
-    mock_port_dimensions,
-    orientation,
-    expected_origin,
-    expected_sizes,
-    expected_int_line,
-):
-    """Verifies that the vectorized geometry perfectly matches the expected dictionary values."""
-    result = lumped_port_rectangle_from_cpw(
-        center=mock_port_dimensions["center"],
-        orientation=orientation,
-        cpw_gap=mock_port_dimensions["cpw_gap"],
-        cpw_width=mock_port_dimensions["cpw_width"],
-    )
-
-    assert_allclose(result["origin"], expected_origin)
-    assert_allclose(result["sizes"], expected_sizes)
-    assert_allclose(result["integration_line"], expected_int_line)
-
-
-def test_lumped_port_rectangle_from_cpw_invalid_angle(mock_port_dimensions):
-    """Ensures the function throws a ValueError if passed an unaligned angle."""
-    with pytest.raises(ValueError, match="Unsupported port orientation: 45°"):
-        lumped_port_rectangle_from_cpw(
-            center=mock_port_dimensions["center"],
-            orientation=45,
-            cpw_gap=mock_port_dimensions["cpw_gap"],
-            cpw_width=mock_port_dimensions["cpw_width"],
-        )
-
-
 @pytest.mark.hfss
 def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path):
     """Test creating a Q3D project, importing a component, and assigning nets."""
@@ -1107,6 +521,8 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
         pytest.skip(f"HFSS/Q3D installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Q3d, settings  # ruff: ignore[import-outside-top-level]
+
+    from qpdk.simulation import Q3D  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
@@ -1145,6 +561,8 @@ def test_create_2d_from_cross_section(tmp_path: Path, ansys_install_path: Path):
         pytest.skip(f"HFSS installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Q2d, settings  # ruff: ignore[import-outside-top-level]
+
+    from qpdk.simulation import Q2D  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
