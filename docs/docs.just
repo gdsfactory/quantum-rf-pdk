@@ -174,7 +174,7 @@ setup-ipython-config-temporary-after:
 # Local cache of the docs fonts (Inter, Outfit, Code New Roman, Fira Math).
 # CI installs the same families system-wide (see .github/workflows/pages.yml),
 # so this only exists to give local Typst builds identical rendering instead of
-# DejaVu fallbacks. docs/conf.py picks the dir up as extra Typst font paths.
+# DejaVu fallbacks. docs/_ext/qpdk_typst_compile.py adds it to the Typst font paths.
 docs-fonts-dir := "build/docs-fonts"
 
 # Download the pinned docs fonts into build/docs-fonts/ (stamp-cached).
