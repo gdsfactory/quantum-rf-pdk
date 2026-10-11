@@ -160,6 +160,13 @@ print(f"\nDefault JAX backend: {jax.default_backend()}")
 # $$
 #
 # where $v_\phi$ is the phase velocity on the CPW.
+#
+# We solve the circuit with the `filipsson_gunnar` backend instead of sax's
+# default `klu` backend: the latter routes the solve through
+# [klujax](https://github.com/gdsfactory/klujax), whose FFI kernels are only
+# registered for the CPU platform, so a circuit built with it cannot run on the
+# GPU at all.  `filipsson_gunnar` is pure JAX and yields the same
+# S-parameters (differences at the level of machine epsilon).
 
 # %%
 cross_section = coplanar_waveguide(width=10, gap=6)
@@ -207,7 +214,9 @@ netlist = {
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    circuit_fn, circuit_info = sax.circuit(netlist=netlist, models=circuit_models)
+    circuit_fn, circuit_info = sax.circuit(
+        netlist=netlist, models=circuit_models, backend="filipsson_gunnar"
+    )
 
 print("Circuit built successfully.")
 print("External ports:", list(netlist["ports"].keys()))
