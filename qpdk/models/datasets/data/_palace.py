@@ -152,6 +152,7 @@ def extract(
             permittivity=permittivity,
             normalization_depth_um=normalization_depth_um,
             minimum_feature_elements=minimum_feature_elements,
+            verbose=True,
         )
         # Warm starts change the norm used to normalize the logged residuals.
         sim.set_solver(

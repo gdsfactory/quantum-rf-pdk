@@ -3,7 +3,7 @@
 # dependencies = [
 #   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@a6bdc3e7f4bb38145f3e112c08f1c4dad4dc5b66",
 #   "typer>=0.24,<1",
-#   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@b0d685511786d443b224a12f3616f83cb2b60c32",
+#   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@68b60812dceb34b07d00cbaeb508c5f971b9831a",
 # ]
 # ///
 """Generate symmetric edge-coupled CPW capacitance with meshwell and Palace.
@@ -110,7 +110,7 @@ class Settings:
     """Mesh and slice dimensions in µm; substrate relative permittivity."""
 
     slice_length_um: float = 4.0
-    domain_pad: float = 1350.0
+    domain_pad: float = 2700.0
     near_mesh: float = 0.14
     far_mesh: float = 30.0
     permittivity: float = material_properties["Si"]["relative_permittivity"]
@@ -138,7 +138,7 @@ class Settings:
 
 
 SETTINGS = Settings()
-GROUND_SETTINGS = replace(SETTINGS, domain_pad=2025.0)
+GROUND_SETTINGS = replace(SETTINGS, domain_pad=4050.0)
 
 
 def mesh_settings(settings: Settings, refinements: int) -> tuple[Settings, ...]:

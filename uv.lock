@@ -2023,7 +2023,7 @@ wheels = [
 [[package]]
 name = "gsim"
 version = "0.7.0"
-source = { git = "https://github.com/nikosavola/gsim.git?rev=b0d685511786d443b224a12f3616f83cb2b60c32#b0d685511786d443b224a12f3616f83cb2b60c32" }
+source = { git = "https://github.com/nikosavola/gsim.git?rev=68b60812dceb34b07d00cbaeb508c5f971b9831a#68b60812dceb34b07d00cbaeb508c5f971b9831a" }
 dependencies = [
     { name = "gdsfactory" },
     { name = "gdsfactoryplus" },
@@ -6129,7 +6129,7 @@ lint = [
     { name = "prek" },
     { name = "scipy-stubs" },
 ]
-palace = [{ name = "gsim", extras = ["meshwell"], marker = "python_full_version == '3.12.*'", git = "https://github.com/nikosavola/gsim.git?rev=b0d685511786d443b224a12f3616f83cb2b60c32" }]
+palace = [{ name = "gsim", extras = ["meshwell"], marker = "python_full_version == '3.12.*'", git = "https://github.com/nikosavola/gsim.git?rev=68b60812dceb34b07d00cbaeb508c5f971b9831a" }]
 stubs = [{ name = "scipy-stubs" }]
 test = [
     { name = "hypothesis" },
