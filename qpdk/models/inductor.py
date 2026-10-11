@@ -177,6 +177,7 @@ def _get_wire_width_and_gap(
     Returns:
         tuple[float, float]: Wire width and run-to-run gap in µm.
     """
+    # TODO(Python 3.15): `lazy from qpdk import PDK` (PEP 810) at module scope breaks the cycle.
     # Local import: qpdk/__init__.py imports the models before defining PDK.
     from qpdk import PDK  # ruff: ignore[import-outside-top-level]
 
