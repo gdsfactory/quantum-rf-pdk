@@ -1,12 +1,12 @@
 // QPDK brand template for the Typst PDF documentation.
 //
 // Colors and font families are parsed straight from the HTML theme's
-// custom.css (docs/_static/css/custom.css), which docs/conf.py stages next to
-// this copy, so the PDF and the site share one source of truth.  The page is
-// pure white rather than the site's warm --qpdk-paper (#f6f4ef): that
-// off-white reads as a deliberate screen surface, but in print it looks like
-// a scanning artefact, and a tinted background costs ink on every page of a
-// 400-page manual.
+// custom.css (docs/_static/css/custom.css), which
+// docs/_ext/qpdk_typst_compile.py stages next to this copy, so the PDF and the
+// site share one source of truth.  The page is pure white rather than the
+// site's warm --qpdk-paper (#f6f4ef): that off-white reads as a deliberate
+// screen surface, but in print it looks like a scanning artefact, and a tinted
+// background costs ink on every page of a 400-page manual.
 //
 // The `project` signature is fixed by typsphinx: it passes title, authors,
 // date, toctree_* (from the master toctree) and the `typst_elements` keys.
@@ -48,8 +48,9 @@
 // The math font pairs with MathJax on the site, not with custom.css.
 #let math-font = ("Fira Math", "New Computer Modern Math")
 
-// Tag (or short commit hash) the PDF was built from; docs/conf.py writes
-// version.txt into the bundle next to this copy.  Empty when git is absent.
+// Tag (or short commit hash) the PDF was built from;
+// docs/_ext/qpdk_typst_compile.py writes version.txt into the bundle next to
+// this copy.  Empty when git is absent.
 #let version = read("version.txt").trim()
 
 #let project(
@@ -212,8 +213,9 @@
   page(header: none, numbering: none, {
     v(52mm)
     // Project logo instead of typeset title text, as on the README.  The path
-    // resolves against this template copy; docs/conf.py stages the SVG into
-    // the bundle because typsphinx does not copy unreferenced _static assets.
+    // resolves against this template copy; docs/_ext/qpdk_typst_compile.py
+    // stages the SVG into the bundle because typsphinx does not copy
+    // unreferenced _static assets.
     block(width: 100%, stroke: (bottom: 2.5pt + accent), inset: (bottom: 10pt))[
       #image("qpdk_logo.svg", width: 80mm)
     ]
