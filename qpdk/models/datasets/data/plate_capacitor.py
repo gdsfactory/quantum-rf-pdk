@@ -3,7 +3,7 @@
 # dependencies = [
 #   "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@a6bdc3e7f4bb38145f3e112c08f1c4dad4dc5b66",
 #   "typer>=0.24,<1",
-#   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@8242d3e48963cf4c67f35c15f4b72064b2d08ec4",
+#   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@946c3973b6311f0a4a3cf3bd601336ad7a186dfb",
 # ]
 # ///
 """Generate Maxwell capacitance data with gsim and Palace.
