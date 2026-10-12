@@ -445,7 +445,7 @@ jobs:
           if-no-files-found: warn
 
   test-palace:
-    timeout-minutes: 60
+    timeout-minutes: 20
     runs-on: ubuntu-24.04
     env:
       MPLBACKEND: Agg
@@ -469,7 +469,7 @@ jobs:
       - name: Run real Palace tests
         run: |
           mkdir -p build
-          uv run --no-sync pytest -m palace tests/models --basetemp=build/palace-tests
+          uv run --no-sync pytest -m palace tests/models --basetemp=build/palace-tests --durations=0
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:

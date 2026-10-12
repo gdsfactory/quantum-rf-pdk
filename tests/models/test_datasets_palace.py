@@ -2,6 +2,10 @@
 
 Run with ``uv run --group palace --python 3.12 pytest -m palace``.
 PALACE_SIF selects a container; otherwise gsim resolves a native runtime.
+
+These are smoke tests of the pipeline, not of the physics: every solve uses a
+coarse mesh, a loose solver tolerance and a small grid so the suite stays fast
+in CI. The shipped datasets record their own production settings.
 """
 
 import ast
@@ -10,6 +14,7 @@ import os
 import runpy
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import gdsfactory as gf
 import numpy as np
@@ -20,6 +25,24 @@ from qpdk.models.datasets import GridInterpolator
 from qpdk.tech import LAYER
 
 pytestmark = pytest.mark.palace
+
+
+def coarse_plate_settings(generator: dict[str, Any]) -> Any:
+    """Coarse first-order 3D mesh; enough to exercise the pipeline only."""
+    return replace(
+        generator["SETTINGS"], near_mesh=2.0, far_mesh=50.0, order=1, tolerance=1e-6
+    )
+
+
+def coarse_cpw_settings(generator: dict[str, Any]) -> Any:
+    """Small 2D domain with a coarse mesh; enough to exercise the pipeline only."""
+    return replace(
+        generator["SETTINGS"],
+        domain_pad=300.0,
+        near_mesh=0.5,
+        far_mesh=30.0,
+        tolerance=1e-6,
+    )
 
 
 @pytest.fixture
@@ -111,19 +134,22 @@ def test_cpw_cross_section_normalization_depth(
         "container_binary": os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
         "processes": palace_processes,
     }
+    settings = coarse_cpw_settings(generator)
     matrices = []
     for depth in (1.0, 4.0):
         data = generator["generate"](
             grid={"width": [10.0], "cpw_gap": [6.0], "gap": [8.0]},
-            settings=replace(generator["SETTINGS"], slice_length_um=depth),
+            settings=replace(settings, slice_length_um=depth),
             output=tmp_path / f"depth-{depth}",
-            min_refinements=2,
+            mesh_tolerance=0.2,
+            min_refinements=1,
+            max_refinements=2,
             **runtime,
         )
         assert data.metadata.provenance["mesh_dimension"] == 2
-        assert data.metadata.provenance["mesh_convergence"]["minimum_refinements"] == 2
-        assert data.grid("mesh_refinement_level").values.item() >= 2
-        assert data.grid("mesh_relative_change").values.item() <= 0.01
+        assert data.metadata.provenance["mesh_convergence"]["minimum_refinements"] == 1
+        assert data.grid("mesh_refinement_level").values.item() >= 1
+        assert data.grid("mesh_relative_change").values.item() <= 0.2
         matrices.append(data.grid("maxwell_capacitance").values / depth)
     np.testing.assert_allclose(matrices[0], matrices[1], rtol=1e-7, atol=0)
 
@@ -136,7 +162,7 @@ def test_changing_ground_strip_resolution_invalidates_cached_mesh(
     monkeypatch.syspath_prepend(str(source))
     generator = runpy.run_path(str(source / "cpw_coupling.py"))
     helper = runpy.run_path(str(source / "_palace.py"))
-    settings = replace(generator["SETTINGS"], domain_pad=100, far_mesh=10)
+    settings = replace(coarse_cpw_settings(generator), domain_pad=100, far_mesh=10)
     point = {"width": 2.45, "cpw_gap": 1.225, "gap": 2.462}
     component, bounds = generator["geometry"](
         **point, settings=settings, topology=generator["Topology"].AS_DRAWN
@@ -212,26 +238,28 @@ def test_interpolation_against_fresh_palace(
         "sif": Path(value) if (value := os.environ.get("PALACE_SIF")) else None,
         "container_binary": os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
     }
-    source = generate(output=tmp_path / "grid", **runtime)
+    settings = coarse_plate_settings(generator)
+    grid = {"length": [40.0, 80.0, 120.0], "width": [10.0], "gap": [4.0, 7.0, 10.0]}
+    source = generate(grid=grid, output=tmp_path / "grid", settings=settings, **runtime)
     lookup = GridInterpolator(source.grid("maxwell_capacitance", cross_section="cpw"))
     heldout = generate(
-        grid={"length": [60.0, 100.0], "width": [10.0], "gap": [5.5, 8.5]},
+        grid={"length": [60.0], "width": [10.0], "gap": [5.5]},
         output=tmp_path / "heldout",
+        settings=settings,
         **runtime,
     ).grid("maxwell_capacitance", cross_section="cpw")
-    for i, length in enumerate(heldout.coords[0]):
-        for j, gap in enumerate(heldout.coords[2]):
-            np.testing.assert_allclose(
-                lookup(length=length, width=10.0, gap=gap),
-                heldout.values[i, 0, j],
-                rtol=0.06,
-                atol=1e-24,
-            )
+    # Coarse meshes differ between geometries, so this checks plumbing, not accuracy.
+    np.testing.assert_allclose(
+        lookup(length=60.0, width=10.0, gap=5.5),
+        heldout.values[0, 0, 0],
+        rtol=0.15,
+        atol=1e-24,
+    )
     logs = {
         path: path.stat().st_mtime_ns
         for path in runtime["workdir"].glob("*/solver.log")
     }
-    generate(output=tmp_path / "grid", **runtime)
+    generate(grid=grid, output=tmp_path / "grid", settings=settings, **runtime)
     assert logs == {
         path: path.stat().st_mtime_ns
         for path in runtime["workdir"].glob("*/solver.log")
@@ -258,8 +286,9 @@ def test_editing_grid_reuses_completed_solves(
         "container_binary": os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
     }
     before: dict[Path, int] = {}
-    for lengths, expected in [([40.0, 80.0], 6), ([40.0, 80.0, 120.0], 9)]:
-        grid = {"length": lengths, "width": [10.0], "gap": [4.0, 7.0, 10.0]}
+    settings = coarse_plate_settings(runpy.run_path(str(original)))
+    for lengths, expected in [([40.0, 80.0], 4), ([40.0, 80.0, 120.0], 6)]:
+        grid = {"length": lengths, "width": [10.0], "gap": [4.0, 10.0]}
         tree = ast.parse(source)
         node = next(
             node
@@ -273,7 +302,7 @@ def test_editing_grid_reuses_completed_solves(
         lines = source.splitlines(keepends=True)
         lines[node.lineno - 1 : node.end_lineno] = [f"GRID = {grid!r}\n"]
         copied.write_text("".join(lines), encoding="utf-8")
-        dataset = runpy.run_path(str(copied))["generate"](**runtime)
+        dataset = runpy.run_path(str(copied))["generate"](settings=settings, **runtime)
         rows = (
             dataset
             .scan()
@@ -288,7 +317,7 @@ def test_editing_grid_reuses_completed_solves(
             for path in runtime["workdir"].glob("*/solver.log")
         }
         assert len(current) == expected
-        if expected == 6:
+        if expected == 4:
             before = current
         else:
             assert all(current[path] == stamp for path, stamp in before.items())

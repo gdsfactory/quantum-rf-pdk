@@ -58,6 +58,7 @@ gdsfactoryplus = [
   "inspice",
   "jaxellip",
   "kfnetlist",
+  "polars>=2,<3",
   "sax>=0.18.2,<1",
 ]
 graphics = ["trimesh", "pyglet<3"]

@@ -5861,6 +5861,7 @@ gdsfactoryplus = [
     { name = "inspice" },
     { name = "jaxellip" },
     { name = "kfnetlist" },
+    { name = "polars" },
     { name = "sax" },
 ]
 graphics = [
@@ -6029,6 +6030,7 @@ requires-dist = [
     { name = "optuna", marker = "extra == 'models'" },
     { name = "pandas", extras = ["parquet"], marker = "extra == 'models'" },
     { name = "polars", marker = "extra == 'delta'", specifier = ">=2,<3" },
+    { name = "polars", marker = "extra == 'gdsfactoryplus'", specifier = ">=2,<3" },
     { name = "polars", marker = "extra == 'hfss'", specifier = ">=2,<3" },
     { name = "polars", marker = "extra == 'models'", specifier = ">=2,<3" },
     { name = "pyaedt", extras = ["graphics"], marker = "extra == 'hfss'", specifier = ">=0.15.0" },
