@@ -24,6 +24,12 @@ Extractor.
 
 **COMSOL workflow:**
 
+The generic COMSOL code lives in :mod:`gplugins.comsol`.
+:mod:`qpdk.simulation.comsol` wraps it with the QPDK specifics: mask inversion
+and feed-port defaults for the layout, and the technology permittivities for
+the sheet model. The study, mesh, plotting, and result helpers are re-exported
+unchanged.
+
 1. Extract metal polygons and optional feed ports with
    :func:`~qpdk.simulation.comsol.layout.prepare_comsol_layout`
 2. Build a 3D air/silicon model with sheet metal via
