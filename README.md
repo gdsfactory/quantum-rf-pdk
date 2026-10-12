@@ -115,34 +115,33 @@ documentation. Click a title to open the full notebook.
 
 ### Circuit & Network Models
 
-| [Resonator Test Chip Transmission](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/monte_carlo_fabrication_tolerance.html) | [Fabrication Tolerance Monte Carlo](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/monte_carlo_fabrication_tolerance.html) |
-| :------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------: |
-|                           Both probelines of the 16-resonator chip, simulated as a SAX circuit netlist                           |                           Resonance frequency spread from CPW width and gap variations across the chip                            |
-|                   ![Resonator test chip transmission](docs/_static/images/sim_resonator_chip_transmission.png)                   |                ![Monte Carlo resonance frequency spread](docs/_static/images/sim_monte_carlo_frequency_spread.png)                |
+|     [Resonator Test Chip Transmission][nb-mc]     |     [Fabrication Tolerance Monte Carlo][nb-mc]     |
+| :-----------------------------------------------: | :------------------------------------------------: |
+| Both probelines of the 16-resonator chip, via SAX | Resonance spread from CPW width and gap variations |
+|   ![Resonator test chip transmission][img-s21]    |      ![Monte Carlo frequency spread][img-mc]       |
 
 ### Quantum Dynamics & Hamiltonians
 
-| [Flux-Tunable Transmon Spectrum](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/scqubits_parameter_calculation.html) | [Pulse-Level Gate Simulation](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/qutip_qip_pulse_simulation.html) |
-| :-------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------: |
-|                                 Energy levels versus external flux, computed with scQubits                                  |                            X-gate population dynamics with leakage tracking in QuTiP-QIP                             |
-|                    ![Flux-tunable transmon spectrum](docs/_static/images/sim_scqubits_flux_spectrum.png)                    |                    ![QuTiP X-gate population dynamics](docs/_static/images/sim_qutip_x_gate.png)                     |
+|     [Flux-Tunable Transmon Spectrum][nb-scq]     |    [Pulse-Level Gate Simulation][nb-qutip]     |
+| :----------------------------------------------: | :--------------------------------------------: |
+| Energy levels versus external flux with scQubits |  X-gate populations and leakage in QuTiP-QIP   |
+|    ![Flux-tunable transmon spectrum][img-scq]    | ![QuTiP X-gate population dynamics][img-qutip] |
 
-| [Dispersive Shift](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/pymablock_dispersive_shift.html) | [Differentiable Transmon Optimization](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/circulax_transmon_optimization.html) |
-| :-------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------: |
-|               Transmon–resonator dispersive shift from block-diagonalization with Pymablock               |        JAX-gradient tuning of junction and shunt parameters toward target qubit frequency and anharmonicity with Circulax         |
-|           ![Pymablock dispersive shift](docs/_static/images/sim_pymablock_dispersive_shift.png)           |                      ![Circulax optimization convergence](docs/_static/images/sim_circulax_optimization.png)                      |
+|             [Dispersive Shift][nb-pmb]             |    [Differentiable Transmon Optimization][nb-clx]    |
+| :------------------------------------------------: | :--------------------------------------------------: |
+| Block-diagonalized dispersive shift with Pymablock | Circulax JAX gradients to target f and anharmonicity |
+|       ![Pymablock dispersive shift][img-pmb]       |    ![Circulax optimization convergence][img-clx]     |
 
 ### Electromagnetic Field Solvers
 
-| [COMSOL Full-Wave Resonator](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/comsol_cpw_resonator.html) | [HFSS Eigenmode Resonator](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/hfss_eigenmode_resonator.html) | [Elmer Capacitance Extraction](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/elmer_capacitance_interdigital.html) |
-| :-----------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------: |
-|                   Driven electric-field magnitude of a quarter-wave resonator at resonance                    |                           Eigenmode field of a meandered CPW resonator in Ansys HFSS                            |                Interdigital capacitor capacitances converging over independently remeshed Elmer FEM solves                |
-|                 ![COMSOL resonator field](docs/_static/images/sim_comsol_resonator_field.png)                 |            ![HFSS eigenmode resonator field](docs/_static/images/hfss_eigenmode_resonator_field.jpg)            |              ![Elmer interdigital capacitor convergence](docs/_static/images/sim_elmer_idc_convergence.png)               |
+|     [COMSOL Resonator][nb-cres]     |     [HFSS Eigenmode][nb-hfss]     |    [Elmer Capacitance][nb-elmer]    |
+| :---------------------------------: | :-------------------------------: | :---------------------------------: |
+|     Driven E-field at resonance     |   Meandered CPW eigenmode field   |  IDC capacitance vs. FEM remeshing  |
+| ![COMSOL resonator field][img-cres] | ![HFSS eigenmode field][img-hfss] | ![Elmer IDC convergence][img-elmer] |
 
-**[COMSOL Transmon Capacitance](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/comsol_qubit_capacitance.html)** —
-Electrostatic potential and field around the double-pad transmon:
+**[COMSOL Transmon Capacitance][nb-cqub]** — Electrostatic potential and field around the double-pad transmon:
 
-![COMSOL transmon potential](docs/_static/images/sim_comsol_qubit_potential.png)
+![COMSOL transmon potential][img-cqub]
 
 The same workflows extend to
 [HFSS driven-modal](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/hfss_driven_capacitor.html) and
@@ -276,3 +275,23 @@ For commercial support, training, and custom PDK development, please visit
 ## License
 
 QPDK is released under the [MIT License](LICENSE).
+
+[img-clx]: docs/_static/images/sim_circulax_optimization.svg
+[img-cqub]: docs/_static/images/sim_comsol_qubit_potential.webp
+[img-cres]: docs/_static/images/sim_comsol_resonator_field.webp
+[img-elmer]: docs/_static/images/sim_elmer_idc_convergence.svg
+[img-hfss]: docs/_static/images/hfss_eigenmode_resonator_field.jpg
+[img-mc]: docs/_static/images/sim_monte_carlo_frequency_spread.svg
+[img-pmb]: docs/_static/images/sim_pymablock_dispersive_shift.svg
+[img-qutip]: docs/_static/images/sim_qutip_x_gate.svg
+[img-s21]: docs/_static/images/sim_resonator_chip_transmission.svg
+[img-scq]: docs/_static/images/sim_scqubits_flux_spectrum.svg
+[nb-clx]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/circulax_transmon_optimization.html
+[nb-cqub]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/comsol_qubit_capacitance.html
+[nb-cres]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/comsol_cpw_resonator.html
+[nb-elmer]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/elmer_capacitance_interdigital.html
+[nb-hfss]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/hfss_eigenmode_resonator.html
+[nb-mc]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/monte_carlo_fabrication_tolerance.html
+[nb-pmb]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/pymablock_dispersive_shift.html
+[nb-qutip]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/qutip_qip_pulse_simulation.html
+[nb-scq]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/scqubits_parameter_calculation.html
