@@ -1,0 +1,43 @@
+info:
+  pad_gap: 30
+  pad_height: 200
+  pad_width: 300
+  transducer_type: piezo_optomechanical
+name: piezo_transducer_coupler_PS300_200_PG30_FL200_CScpw_LMM_50775381
+ports:
+  o1:
+    center:
+    - 350
+    - 115
+    layer: M1_DRAW
+    name: o1
+    orientation: 0
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - -350
+    - -115
+    layer: M1_DRAW
+    name: o2
+    orientation: 180
+    port_type: optical
+    width: 10
+  piezo_coupler:
+    center:
+    - 0
+    - 0
+    layer: IND
+    name: piezo_coupler
+    orientation: 90
+    port_type: placement
+    width: 300
+settings:
+  cross_section: cpw
+  feedline_length: 200
+  layer_metal: M1_DRAW
+  layer_piezo: IND
+  pad_gap: 30
+  pad_size:
+  - 300
+  - 200
