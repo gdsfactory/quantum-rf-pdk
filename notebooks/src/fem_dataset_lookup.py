@@ -15,7 +15,7 @@
 #   "matplotlib-inline",
 # ]
 # [tool.uv.sources]
-# qpdk = { git = "https://github.com/jackgdsf/quantum-rf-pdk.git", rev = "c5dc19af770c11f61e6dffb5e233726e0ebb2524", lfs = true }
+# qpdk = { git = "https://github.com/jackgdsf/quantum-rf-pdk.git", rev = "b9acce2774c9cdbcc20ad280916ed76265a7a74a", lfs = true }
 # ///
 
 # %% [markdown]
@@ -95,7 +95,7 @@ if "google.colab" in sys.modules:
         "pip",
         "install",
         "-q",
-        "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@c5dc19af770c11f61e6dffb5e233726e0ebb2524",
+        "qpdk[models] @ git+https://github.com/jackgdsf/quantum-rf-pdk.git@b9acce2774c9cdbcc20ad280916ed76265a7a74a",
         "matplotlib-inline",
     ])
 
@@ -198,6 +198,7 @@ dataset.table.head(8)
 # uv run --script qpdk/models/datasets/data/plate_capacitor.py --sif /path/to/palace.sif
 # ```
 #
+# `--processes` sets CPU threads for meshing and MPI ranks for Palace.
 # The script builds a QPDK component. gsim meshes its electrodes with meshwell,
 # writes the configuration and runs Palace. Results carry their metadata; lookup
 # needs neither the generator nor the simulator. Generator scripts stay outside wheels.
@@ -348,12 +349,31 @@ logger.info(
 # For each quantity of interest, compare successive solves using
 # $|C_{\text{fine}}-C_{\text{coarse}}|/|C_{\text{fine}}|$, checking mesh and domain changes separately.
 #
-# For the bundled extraction at 80/10/7 µm, the final mesh refinement changed
-# entries by at most 0.49%; enlarging the domain changed them by 0.19%. Across
-# the center and eight corners, these changes reached 0.87% and 0.36%. Four
-# held-out solves at width 10 µm differed from interpolation by at most 2.70%.
-# These checks do not establish a uniform accuracy bound for every geometry.
+# The bundled plate dataset records representative finer-mesh and larger-domain
+# comparisons, a native-runtime cross-check and fresh off-grid references in its
+# provenance. These finite checks do not establish a uniform accuracy bound.
 
+# %% tags=["keep_output"]
+plate_checks = metadata.provenance["validation"]
+logger.info(
+    f"Native runtime grid comparison: {plate_checks['native_grid_max_relative']:.3%}; "
+    f"{plate_checks['held_out_points']} off-grid references: "
+    f"maximum lookup difference {plate_checks['held_out_max_relative']:.2%}"
+)
+(
+    pl
+    .DataFrame(plate_checks["mesh_domain"])
+    .unnest("point")
+    .select(
+        "length",
+        "width",
+        "gap",
+        (100 * pl.col("refined_relative")).alias("Finer mesh (%)"),
+        (100 * pl.col("domain_relative")).alias("Larger domain (%)"),
+    )
+)
+
+# %% [markdown]
 # ## Query a shared Delta table
 #
 # Cloud datasets use the same interface. Select the quantity and variant before
@@ -596,6 +616,12 @@ logger.info(f"CPW grid: {cpw_grid.values.shape}; domain: {cpw_lookup.domain}")
 # check; the FEM norm ranks results to inspect and is not a capacitance error bound.
 # Trace mismatch and comparison with conformal mapping provide independent flags.
 # A flagged result needs investigation, even when its linear solve converged.
+# Copy the CPW experiment beside the original, keep only flagged geometries in
+# `GRID` or `GROUND_GRID`, and rerun with `--min-refinements 2`. This continues
+# past an early small change. Use `--topology as-drawn` for the ground-strip grid.
+# Keep the same `--workdir` and execution options to reuse matching completed
+# solves. `--mesh-tolerance` and `--max-refinements` control
+# the acceptance target and computation budget.
 #
 # %% tags=["keep_output"]
 diagnostic_names = (
@@ -790,6 +816,7 @@ plt.show()
 # %% [markdown]
 # Compare both lookups with reference solves refined to a 0.1% successive-mesh
 # change, larger domains, vacuum scaling and independent held-out geometries.
+# Vacuum scaling uses byte-identical meshes to separate material scaling from refinement choices.
 # These finite checks estimate sensitivity; they do not prove a uniform error bound.
 
 # %% tags=["keep_output"]
@@ -800,12 +827,42 @@ for label, data in (("Etched gap", cpw_dataset), ("Ground strip", layout_dataset
         "Geometry": label,
         "Mesh (%)": 100 * checks["maximum_mesh_relative_change"],
         "Reference (%)": 100 * checks["representative_stricter_mesh_max_relative"],
+        "Initial domain (%)": 100
+        * max(
+            c["original_domain_relative"]
+            for c in checks["mesh_domain"]
+            if "original_domain_relative" in c
+        ),
         "Domain (%)": 100 * max(c["domain_relative"] for c in checks["mesh_domain"]),
-        "Vacuum (%)": 100
-        * max(c.get("vacuum_scaling_relative", 0) for c in checks["mesh_domain"]),
+        "Same-mesh vacuum (%)": 100
+        * max(c["vacuum_scaling_relative"] for c in checks["mesh_domain"]),
         "Lookup (%)": 100 * checks["held_out_max_relative"],
     })
 pl.DataFrame(quality_rows)
+
+# %% [markdown]
+# The widest gaps needed larger domains and finer meshes. Each correction records
+# its raw solver source and the comparison with a separate finer reference.
+
+# %% tags=["keep_output"]
+pl.DataFrame([
+    {
+        "Geometry": label,
+        "Width (µm)": report["point"]["width"],
+        "Slot (µm)": report["point"]["cpw_gap"],
+        "Inner span (µm)": report["point"][
+            "gap" if label == "Etched gap" else "ground_strip_width"
+        ],
+        "Original pad (µm)": report["previous_domain_pad_um"],
+        "Accepted pad (µm)": report["accepted_domain_pad_um"],
+        "Original mesh": report["previous_refinement_level"],
+        "Accepted mesh": report["accepted_refinement_level"],
+        "Original/reference (%)": 100 * report["reference_max_relative_before"],
+        "Accepted/reference (%)": 100 * report["reference_max_relative_after"],
+    }
+    for label, data in (("Etched gap", cpw_dataset), ("Ground strip", layout_dataset))
+    for report in data.metadata.provenance["curated_refinements"]
+])
 
 # %% [markdown]
 # ## A distributed four-port SAX model
