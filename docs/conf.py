@@ -29,6 +29,7 @@ extensions = [
     "sphinxcontrib.bibtex",
     "sphinxcontrib_bibtex_urn",
     "typsphinx",
+    "sphinx_llm.txt",
     # local, see docs/_ext/
     "alias_typehints",
     "qpdk_source_fixes",
@@ -190,6 +191,10 @@ mermaid_init_config = {
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
+# myst-nb's default cache is ``<outdir>/../.jupyter_cache``.  Pin it to that same
+# path for every build so the sphinx-llm Markdown pass (whose outdir is nested
+# inside the HTML one) hits the cache filled by the HTML pass.
+nb_execution_cache_path = str(Path(__file__).parent / "_build" / ".jupyter_cache")
 # External-solver notebooks keep saved outputs; the docs build does not run them.
 nb_execution_excludepatterns = [
     "notebooks/comsol*",
@@ -223,6 +228,12 @@ nb_mime_priority_overrides = [
         ("text/markdown", 50),
         ("text/plain", 60),
     )
+]
+# The sphinx-llm Markdown builder has no myst-nb entry either; keep the text
+# representation of each output so llms-full.txt carries printed results.
+nb_mime_priority_overrides += [
+    ("llms-markdown", "text/markdown", 10),
+    ("llms-markdown", "text/plain", 20),
 ]
 
 # -- Autodoc configuration ---------------------------------------------------
@@ -316,6 +327,36 @@ html_extra_path = ["_extra"]
 html_css_files = [
     "css/custom.css",
 ]
+
+# -- llms.txt (sphinx-llm) -----------------------------------------------------
+# sphinx_llm.txt runs a second, Markdown-builder pass after the HTML build and
+# writes ``llms.txt`` (https://llmstxt.org/), ``llms-full.txt`` and a ``.md``
+# copy of every page into the HTML output.  It is a no-op for other builders.
+# The pass runs sequentially on the HTML doctree directory, so it reuses the
+# pickled environment and reads no notebook again (``nb_execution_cache_path``
+# above covers the case where it does).  In parallel mode it would get a fresh
+# doctree directory and execute every notebook a second time.
+llms_txt_build_parallel = False
+# sphinx-markdown-builder has no writer for these nodes and omits them from the
+# Markdown output; don't warn about it on every build.
+llms_txt_suppress_unknown_node_warnings = [
+    "PassthroughTextElement",
+    "abbreviation",
+    "admonition",
+    "caption",
+    "citation",
+    "mermaid",
+    "meta",
+]
+llms_txt_full_build = True
+llms_txt_description = (
+    "QPDK is an open-source process design kit (PDK) for superconducting quantum RF "
+    "applications built on gdsfactory. It provides parametric quantum circuit "
+    "components (transmon qubits, CPW resonators, Josephson junctions, etc.), "
+    "analytical S-parameter models, routing utilities, and test-chip examples. "
+    "Source: https://github.com/gdsfactory/quantum-rf-pdk; published as `qpdk` on PyPI."
+)
+markdown_http_base = "https://gdsfactory.github.io/quantum-rf-pdk"
 
 # -- Typst / PDF output (typsphinx) -------------------------------------------
 # The fifth tuple element is a typsphinx *template registry key*, not a LaTeX

@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: QPDK, an open-source gdsfactory process design kit for superconducting quantum RF circuits; overview, installation and key components.
+---
+
 <!--
 This file serves as the documentation homepage.
 It includes the README.md but skips SVG badges which cannot be rendered in LaTeX/PDF.

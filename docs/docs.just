@@ -124,13 +124,6 @@ build-doc-figures: fetch-docs-fonts
         if stale.stem not in sources:
             stale.unlink()
 
-# Copy llms.txt (https://llmstxt.org/) into the built site root
-[private]
-[group('docs')]
-write-llms-txt:
-    @mkdir -p docs/_extra
-    @cp docs/llms.txt docs/_extra/llms.txt
-
 # Keep saved outputs for external-solver notebooks.
 precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb elmer_capacitance_interdigital.ipynb matlab_integration.ipynb"
 
@@ -264,7 +257,7 @@ fetch-docs-fonts:
 [private]
 [parallel]
 [group('docs')]
-docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks write-llms-txt
+docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
 
 # Build documentation with the given Sphinx builder into docs/_build/<builder>
 [private]

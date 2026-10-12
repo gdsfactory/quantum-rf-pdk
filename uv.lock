@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12, <3.15"
 resolution-markers = [
     "python_full_version >= '3.14' and platform_machine == 'ARM64' and sys_platform == 'win32'",
@@ -3223,6 +3223,9 @@ dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0e/76/7bc801796dee752c1ce9cd6935564a6ee79d5c9d9ef9192f57b156495a35/netcdf4-1.7.3.tar.gz", hash = "sha256:83f122fc3415e92b1d4904fd6a0898468b5404c09432c34beb6b16c533884673", size = 836095, upload-time = "2025-10-13T18:38:00.76Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/f8/a5509bc46faedae2b71df29c57e6525b7eb47aee44000fd43e2927a9a3a9/netcdf4-1.7.3-cp311-abi3-win_amd64.whl", hash = "sha256:1b6c646fa179fb1e5e8d6e8231bc78cc0311eceaa1241256b5a853f1d04055b9", size = 7149328, upload-time = "2025-10-13T18:37:59.242Z" },
+]
 
 [[package]]
 name = "netcdf4"
@@ -4929,6 +4932,7 @@ wheels = [
 name = "qpdk"
 version = "0.4.0"
 source = { editable = "." }
+default-groups = ["dev", "lint", "stubs", "test"]
 dependencies = [
     { name = "gdsfactory" },
     { name = "typing-extensions" },
@@ -5034,6 +5038,7 @@ docs = [
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
     { name = "sphinx-github-alerts" },
+    { name = "sphinx-llm" },
     { name = "sphinxcontrib-bibtex" },
     { name = "sphinxcontrib-bibtex-urn" },
     { name = "sphinxcontrib-mermaid" },
@@ -5166,6 +5171,7 @@ docs = [
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
     { name = "sphinx-github-alerts", specifier = ">=1.0" },
+    { name = "sphinx-llm", specifier = ">=1.1,<1.2" },
     { name = "sphinxcontrib-bibtex" },
     { name = "sphinxcontrib-bibtex-urn" },
     { name = "sphinxcontrib-mermaid", specifier = ">=2.0.1" },
@@ -6106,6 +6112,34 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/da/6b/38ecddb6faa15a8ca359afcabaa728df66a2559a68e98851bdc38adbd898/sphinx_github_alerts-1.1.tar.gz", hash = "sha256:6e3065e613b089e6e86821927f70cf4b7af92b038854c693ef44e495cf76121f", size = 6244, upload-time = "2026-04-18T07:05:20.063Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/19/a5/ec4c322063caff100c15415a48facc1501083e81ebf7a01426c1167d63bc/sphinx_github_alerts-1.1-py3-none-any.whl", hash = "sha256:57ff740d461c1670386c40aa4dd1e42794b5b7d48eabb6889b680ef1a17a1602", size = 5785, upload-time = "2026-04-18T07:05:18.822Z" },
+]
+
+[[package]]
+name = "sphinx-llm"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown-it-py" },
+    { name = "sphinx" },
+    { name = "sphinx-markdown-builder" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9b/2b/2529cb0b1acb85489167904649387ea7b17e3172ac3286fc0c8af2887bc5/sphinx_llm-1.1.0.tar.gz", hash = "sha256:5f3b41c0d7888c75a6fe9f92b1a965c50ee233eaf38673c0ef3501072599c617", size = 408770, upload-time = "2026-09-21T10:15:26.81Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/06/8db70029d13ae3b5ef4dabd7496e15941f0f700b9e2f1fb77859bef97263/sphinx_llm-1.1.0-py3-none-any.whl", hash = "sha256:40cfadbfeb4483f4fd5b6c1c0b1a48152847f30febfa94fc413bbbe09c137953", size = 85878, upload-time = "2026-09-21T10:15:25.627Z" },
+]
+
+[[package]]
+name = "sphinx-markdown-builder"
+version = "0.6.11"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "docutils" },
+    { name = "sphinx" },
+    { name = "tabulate" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ad/13/102d7134743120db25e636ffb57a30818e95a416583dca83aadac9c5dd87/sphinx_markdown_builder-0.6.11.tar.gz", hash = "sha256:ba3bf33e0e42ff30ae686ac73957a95e6d045790dcfbaca012dd8ae01794e577", size = 24020, upload-time = "2026-08-16T06:51:38.158Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/71/06b415631c2e494c80546073b46013d1715dceb3abe30bd63b34b4e7d9ca/sphinx_markdown_builder-0.6.11-py3-none-any.whl", hash = "sha256:acfb94d6ee66c7a47da0ca0420578fa16f115812af25b8fd21755d5909aacf51", size = 18088, upload-time = "2026-08-16T06:51:36.81Z" },
 ]
 
 [[package]]
