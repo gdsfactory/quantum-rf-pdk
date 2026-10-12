@@ -124,8 +124,8 @@ build-doc-figures: fetch-docs-fonts
         if stale.stem not in sources:
             stale.unlink()
 
-# Keep saved outputs for external-solver notebooks.
-precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb elmer_capacitance_interdigital.ipynb matlab_integration.ipynb"
+# Keep saved outputs for external-solver and GPU notebooks.
+precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb elmer_capacitance_interdigital.ipynb jax_backend_comparison.ipynb matlab_integration.ipynb"
 
 # Copy all sample scripts and notebooks to use as documentation
 [private]
