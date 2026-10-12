@@ -19,6 +19,8 @@
 # %% [markdown]
 # ## QPDK Models
 #
+# This notebook evaluates and plots a selection of the S-parameter models in `qpdk.models`.
+#
 # ::::{admonition} Required extras
 # :class: tip
 #
