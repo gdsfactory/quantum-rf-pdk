@@ -1,4 +1,4 @@
-"""AEDT and COMSOL simulation utilities.
+"""AEDT, COMSOL and Palace simulation utilities.
 
 This package provides class-based interfaces for setting up HFSS simulations
 (eigenmode and driven modal) and Q3D Extractor parasitic extractions from
@@ -21,6 +21,11 @@ Extractor.
 3. Assign signal nets with :meth:`qpdk.simulation.q3d.Q3D.assign_nets_from_ports`
 4. Configure Q3D setup and analyze
 5. Extract capacitance matrix with :meth:`qpdk.simulation.q3d.Q3D.get_capacitance_matrix`
+
+**Palace workflow:**
+
+Run ``uv run --script datasets/plate_capacitor.py`` from a checkout. The script
+uses gsim's electrostatic APIs and writes a self-describing dataset for lookup.
 
 **COMSOL workflow:**
 

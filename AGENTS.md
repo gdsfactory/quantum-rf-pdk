@@ -8,8 +8,8 @@ these guidelines when contributing:
 
 Behavioral guidelines to reduce common LLM coding mistakes. Adapted from
 [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls
-([source](https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md)). These guidelines bias toward
-caution over speed — for trivial tasks, use judgment.
+([source](https://raw.githubusercontent.com/multica-ai/andrej-karpathy-skills/main/CLAUDE.md)). These guidelines bias
+toward caution over speed — for trivial tasks, use judgment.
 
 ### Think Before Coding
 
@@ -127,6 +127,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
   cloning or testing: <https://git-lfs.github.com/>
 - **Binary files**: GDS and OAS files are tracked as binary in `.gitattributes` to prevent merge conflicts
 - **Test data with LFS**: CSV files in `tests/models/data/` are stored with Git LFS (`filter=lfs diff=lfs merge=lfs`)
+- **Datasets with LFS**: Parquet parts in `qpdk/models/datasets/data/*/` are stored with Git LFS and carry their own
+  dataset metadata. Fetch only these with `git lfs pull --include="qpdk/models/datasets/data/**"`
 - **Branching**: Work on feature branches, not directly on `main`. Pull requests are required for merging to `main`
 - **Commit messages**: Write clear, concise commit messages. Use imperative mood (e.g., "Add component" not "Added
   component")

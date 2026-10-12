@@ -1,5 +1,7 @@
 # .github/lychee.toml
 
+user_agent = "QPDK documentation link checker"
+
 # Exclude some common patterns
 exclude = [
   # localhost
@@ -12,6 +14,8 @@ exclude = [
   "https://example.com/.*",
   # git lfs
   "https://git-lfs.github.com.*",
+  # prefix of the Git LFS pointer format, not a link (slashes escaped so lychee does not check this line)
+  "^https:\\/\\/git-lfs\\/?$",
   # Matplotlib embeds this SVG DTD reference, whose endpoint no longer serves the file
   "https?://www.w3.org/Graphics/SVG/1\\.1/DTD/svg11\\.dtd/?",
   # Matplotlib's SVG metadata uses Dublin Core schema IDs that redirect in a loop

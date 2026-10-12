@@ -66,7 +66,7 @@ if "google.colab" in sys.modules:
 # %% tags=["hide-input", "hide-output"]
 import os
 import warnings
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import gdsfactory as gf
@@ -435,6 +435,36 @@ print(f"{len(cpw_instance_names)} CPW instances found for MC perturbation.")
 
 
 # %%
+def find_resonance_dips(
+    freq_hz: np.ndarray,
+    s21_db: np.ndarray,
+    evaluate: Callable[[jnp.ndarray], jnp.ndarray],
+    n_resonators: int = 8,
+    prominence: float = 0.3,
+    min_distance_idx: int = 30,
+) -> np.ndarray:
+    """Refine candidate notches before selecting the deepest resonances."""
+    result = np.full(n_resonators, np.nan)
+    peaks, _ = find_peaks(-np.asarray(s21_db), distance=min_distance_idx)
+    if not len(peaks):
+        return result
+    frequencies = jnp.asarray(freq_hz)
+    spacing = frequencies[1] - frequencies[0]
+    refined = frequencies[peaks, None] + spacing * jnp.linspace(-1, 1, 257)
+    values = jnp.asarray(evaluate(refined.ravel())).reshape(len(peaks), -1)
+    minima = jnp.argmin(values, axis=1)
+    depths = (
+        jnp.maximum(values[:, 0], values[:, -1])
+        - values[jnp.arange(len(peaks)), minima]
+    )
+    selected = jnp.argsort(depths)[::-1][:n_resonators]
+    selected = selected[depths[selected] >= prominence]
+    dips = jnp.sort(refined[selected, minima[selected]])
+    result[: len(dips)] = np.asarray(dips)
+    return result
+
+
+# %%
 @ray.remote(num_cpus=1)
 def simulate_global_tolerance(
     dw: float,
@@ -443,8 +473,8 @@ def simulate_global_tolerance(
     netlist: dict[str, Any] | ray.ObjectRef,
     models: dict[str, Any] | ray.ObjectRef,
     instance_names: list[str],
-) -> np.ndarray:
-    """Ray task for a single global tolerance trial."""
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return transmission and refined resonances for a global trial."""
     # ruff: disable[import-outside-top-level]
     import jax.numpy as jnp
     import numpy as np
@@ -461,8 +491,14 @@ def simulate_global_tolerance(
 
     xs = coplanar_waveguide(width=10.0 + dw, gap=6.0 + dg)
     overrides = {name: {"cross_section": xs} for name in instance_names}
-    s_trial = circuit_fn(f=freq, **overrides)
-    return np.asarray(20 * jnp.log10(jnp.abs(s_trial["o1", "o2"])))
+
+    def evaluate(frequencies):
+        scattering = circuit_fn(f=frequencies, **overrides)
+        return 20 * jnp.log10(jnp.abs(scattering["o1", "o2"]))
+
+    transmission = np.asarray(evaluate(freq))
+    dips = find_resonance_dips(freq, transmission, evaluate)
+    return transmission, dips
 
 
 # %%
@@ -493,7 +529,8 @@ futures = [
 print("Waiting for global trials to complete…")
 results_global = ray_get_with_progress(futures, desc="Global trials", timeout=1200)
 print("Global trials completed.")
-s21_global_db = np.array(results_global).T
+s21_global_db = np.array([spectrum for spectrum, _ in results_global]).T
+mc_dips = np.array([dips for _, dips in results_global])
 
 # %% [markdown]
 # ### Transmission overlay – global tolerance
@@ -522,72 +559,27 @@ plt.show(block=False)
 # %% [markdown]
 # ## Resonance frequency extraction
 #
-# We locate the dip positions in each $|S_{21}|$ trace to track how
-# the resonance frequencies shift across Monte Carlo trials.
-
-
-# %%
-def find_resonance_dips(
-    freq_hz: np.ndarray,
-    s21_db: np.ndarray,
-    n_resonators: int = 8,
-    prominence: float = 0.3,
-    min_distance_idx: int = 30,
-) -> np.ndarray:
-    """Find resonance dip frequencies by detecting peaks in −|S₂₁| (dB).
-
-    Returns:
-        an array of shape ``(n_resonators,)`` with the dip frequencies
-        in Hz, sorted in ascending order. If fewer dips are found, the missing
-        entries are filled with ``NaN``.
-    """
-    s21_np = np.asarray(s21_db)
-    peaks, properties = find_peaks(
-        -s21_np, prominence=prominence, distance=min_distance_idx
-    )
-
-    if len(peaks) == 0:
-        return np.full(n_resonators, np.nan)
-
-    # Sort by prominence (deepest dips first) and keep up to n_resonators
-    order = np.argsort(properties["prominences"])[::-1][:n_resonators]
-    peak_idx = np.sort(peaks[order])
-
-    freqs_out = np.full(n_resonators, np.nan)
-    freqs_out[: len(peak_idx)] = np.asarray(freq_hz)[peak_idx]
-    return freqs_out
-
-
-# %%
-@ray.remote(num_cpus=1)
-def find_resonance_dips_task(
-    freq_hz: np.ndarray, s21_db: np.ndarray, n_resonators: int
-) -> np.ndarray:
-    """Ray task wrapper for find_resonance_dips."""
-    return find_resonance_dips(freq_hz, s21_db, n_resonators=n_resonators)
+# We refine each candidate dip on a local frequency grid before applying the
+# depth threshold. Ground shielding can make a resonance narrower than the
+# coarse sweep spacing. The refined positions track frequency shifts across trials.
 
 
 # %%
 # Extract resonance frequencies for the nominal and all MC trials
 freq_np = np.asarray(freq)
 
-nominal_dips = find_resonance_dips(freq_np, s21_nom_db)
+nominal_dips = find_resonance_dips(
+    freq_np,
+    s21_nom_db,
+    lambda frequencies: 20 * jnp.log10(jnp.abs(circuit_fn(f=frequencies)["o1", "o2"])),
+)
+if not np.isfinite(nominal_dips).all():
+    raise ValueError("The nominal sweep must resolve all eight resonators")
 n_res = int(np.sum(~np.isnan(nominal_dips)))
 print(f"Nominal resonance frequencies ({n_res} detected):")
 for i, f_dip in enumerate(nominal_dips):
     if not np.isnan(f_dip):
         print(f"  Resonator {i + 1}: {f_dip / 1e9:.4f} GHz")
-
-# %%
-# MC dip extraction
-print(f"Extracting dips for {N_TRIALS} global trials…")
-futures_dips = [
-    find_resonance_dips_task.remote(freq_np, s21_global_db[:, trial], n_res)
-    for trial in range(N_TRIALS)
-]
-mc_dips = np.array(
-    ray_get_with_progress(futures_dips, desc="Extracting global dips", timeout=1200)
-)
 
 # %% [markdown]
 # ### Resonance frequency distributions (global tolerance)
@@ -665,8 +657,8 @@ def simulate_local_tolerance(
     models: dict[str, Any] | ray.ObjectRef,
     res_names: list[str],
     non_res_names: list[str],
-) -> np.ndarray:
-    """Ray task for a single per-resonator tolerance trial."""
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return transmission and refined resonances for a local trial."""
     # ruff: disable[import-outside-top-level]
     import numpy as np
     import sax
@@ -691,8 +683,13 @@ def simulate_local_tolerance(
     for name in non_res_names:
         overrides[name] = {"cross_section": xs_nominal}
 
-    s_trial = circuit_fn(f=freq, **overrides)
-    return np.asarray(20 * jnp.log10(jnp.abs(s_trial["o1", "o2"])))
+    def evaluate(frequencies):
+        scattering = circuit_fn(f=frequencies, **overrides)
+        return 20 * jnp.log10(jnp.abs(scattering["o1", "o2"]))
+
+    transmission = np.asarray(evaluate(freq))
+    dips = find_resonance_dips(freq, transmission, evaluate)
+    return transmission, dips
 
 
 # %%
@@ -732,7 +729,8 @@ futures_local = [
 results_local = ray_get_with_progress(
     futures_local, desc="Per-resonator trials", timeout=1200
 )
-s21_local_db = np.array(results_local).T
+s21_local_db = np.array([spectrum for spectrum, _ in results_local]).T
+mc_dips_local = np.array([dips for _, dips in results_local])
 
 # %% [markdown]
 # ### Transmission overlay – per-resonator tolerance
@@ -759,17 +757,6 @@ plt.show(block=False)
 # ### Compare global vs per-resonator spread
 
 # %%
-print("Extracting dips for local tolerance trials…")
-futures_dips_local = [
-    find_resonance_dips_task.remote(freq_np, s21_local_db[:, trial], n_res)
-    for trial in range(N_TRIALS)
-]
-mc_dips_local = np.array(
-    ray_get_with_progress(
-        futures_dips_local, desc="Extracting local dips", timeout=1200
-    )
-)
-
 shifts_local = (mc_dips_local - nominal_dips[None, :n_res]) / 1e6
 std_local = np.nanstd(shifts_local, axis=0)
 
@@ -819,7 +806,7 @@ futures_w = [
     for i in range(N_TRIALS)
 ]
 results_w = ray_get_with_progress(futures_w, desc="Width-only trials", timeout=1200)
-s21_w_db = np.array(results_w).T
+mc_dips_w = np.array([dips for _, dips in results_w])
 
 # Gap-only variation
 dg_only = rng.normal(0, GAP_SIGMA, N_TRIALS)
@@ -831,26 +818,9 @@ futures_g = [
     for i in range(N_TRIALS)
 ]
 results_g = ray_get_with_progress(futures_g, desc="Gap-only trials", timeout=1200)
-s21_g_db = np.array(results_g).T
+mc_dips_g = np.array([dips for _, dips in results_g])
 
 # %%
-print("Extracting dips for sensitivity analysis trials…")
-futures_dips_w = [
-    find_resonance_dips_task.remote(freq_np, s21_w_db[:, trial], n_res)
-    for trial in range(N_TRIALS)
-]
-mc_dips_w = np.array(
-    ray_get_with_progress(futures_dips_w, desc="Extracting width dips", timeout=1200)
-)
-
-futures_dips_g = [
-    find_resonance_dips_task.remote(freq_np, s21_g_db[:, trial], n_res)
-    for trial in range(N_TRIALS)
-]
-mc_dips_g = np.array(
-    ray_get_with_progress(futures_dips_g, desc="Extracting gap dips", timeout=1200)
-)
-
 std_w_only = np.nanstd((mc_dips_w - nominal_dips[None, :n_res]) / 1e6, axis=0)
 std_g_only = np.nanstd((mc_dips_g - nominal_dips[None, :n_res]) / 1e6, axis=0)
 

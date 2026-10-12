@@ -1,4 +1,4 @@
-PYTEST_COMMAND := "uv run --extra models --extra graphics --extra hfss --extra qutip --group dev pytest -n auto --dist loadgroup"
+PYTEST_COMMAND := "uv run --extra models --extra delta --extra graphics --extra hfss --extra qutip --group dev pytest -n auto --dist loadgroup"
 
 # Check if Git LFS is available and pull LFS files
 [private]

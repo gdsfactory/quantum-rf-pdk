@@ -8,6 +8,9 @@ applyTo: "qpdk/models/**/*.py"
 junctions, qubit Hamiltonians, perturbation theory). Media definitions for coplanar waveguides live in
 `qpdk/models/cpw.py`.
 
+`qpdk/models/datasets/` stores and looks up FEM extraction results rather than defining SAX models, and is reviewed
+against `datasets.instructions.md`; its lookups must still trace under `jax.jit`.
+
 ## JAX and jittability
 
 - SAX models **must** stay JIT-compilable. Flag anything that breaks tracing:
