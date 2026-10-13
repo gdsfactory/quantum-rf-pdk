@@ -409,7 +409,17 @@ ignore-one-line-docstrings = true
 ignore-overlong-task-comments = true
 
 [tool.setuptools.package-data]
-"*" = ["*.yaml", "*.yml", "*.lyp", "*.lyt", "*.csv", "*.gds", "*.oas"]
+"*" = [
+  "*.yaml",
+  "*.yml",
+  "*.lyp",
+  "*.lyt",
+  "*.csv",
+  "*.gds",
+  "*.gsch",
+  "*.svg",
+  "*.oas"
+]
 
 [tool.tbump]
 [[tool.tbump.file]]

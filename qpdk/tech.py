@@ -134,9 +134,9 @@ def get_layer_stack() -> LayerStack:
                     layer2=DerivedLayer(
                         layer1=LogicalLayer(layer=L.M1_ETCH),
                         layer2=LogicalLayer(layer=L.M1_DRAW),
-                        operation="-",
+                        operation="not",
                     ),
-                    operation="-",
+                    operation="not",
                 ),
                 derived_layer=LogicalLayer(layer=L.M1_DRAW),
                 thickness=200e-9 * 1e6,
@@ -266,9 +266,9 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
                 layer2=DerivedLayer(
                     layer1=LogicalLayer(layer=L.M2_ETCH),
                     layer2=LogicalLayer(layer=L.M2_DRAW),
-                    operation="-",
+                    operation="not",
                 ),
-                operation="-",
+                operation="not",
             ),
             derived_layer=LogicalLayer(layer=L.M2_DRAW),
             thickness=0.2,

@@ -171,9 +171,6 @@ tests/gds_run/*.gds
 tests/gds_run/*.oas
 test_diffs/
 
-# gdsfactory+
-scripts/
-
 # 3D
 *.glb
 *.stl

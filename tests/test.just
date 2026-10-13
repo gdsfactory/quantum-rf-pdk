@@ -71,14 +71,14 @@ check-lfs:
 # Shared pytest invocation for internal callers passing pre-split argument strings (ensures LFS data first)
 [private]
 [group('test')]
-_pytest *args: check-lfs
+_pytest *args: check-lfs fetch-gfp
     {{ PYTEST_COMMAND }} {{ args }}
 
 # Run the full test suite in parallel using pytest
 # Uses positional arguments so quoted args survive, e.g. `just test -k "some name"`
 [positional-arguments]
 [group('test')]
-test *args: check-lfs
+test *args: check-lfs fetch-gfp
     {{ PYTEST_COMMAND }} "$@"
 
 # Run optical port position tests (tests/test_pdk.py::test_optical_port_positions)

@@ -5,12 +5,12 @@ from pathlib import Path
 import jax.numpy as jnp
 import numpy as np
 import sax
-import yaml
 
 from qpdk.models import models
+from qpdk.read import read_gsch
 
-YAML_SAMPLE = (
-    Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_yaml.pic.yml"
+SCHEMATIC_SAMPLE = (
+    Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_yaml.gsch"
 )
 
 
@@ -27,9 +27,9 @@ def _simulate_netlist(
     return circuit(f=frequencies)
 
 
-def _simulate_yaml_chip(frequencies: sax.FloatArrayLike) -> sax.SDict:
+def _simulate_schematic_chip(frequencies: sax.FloatArrayLike) -> sax.SDict:
     """Evaluate the declarative sample without a whole-chip model."""
-    document = yaml.safe_load(YAML_SAMPLE.read_text())
+    document = read_gsch(SCHEMATIC_SAMPLE)
     netlist = {key: document[key] for key in ("instances", "connections", "ports")}
     return _simulate_netlist(netlist, frequencies)
 
@@ -37,7 +37,7 @@ def _simulate_yaml_chip(frequencies: sax.FloatArrayLike) -> sax.SDict:
 def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
     """Check basic physical constraints across the intended RF band."""
     frequencies = jnp.linspace(4e9, 10e9, 101)
-    s_params = _simulate_yaml_chip(frequencies)
+    s_params = _simulate_schematic_chip(frequencies)
     port_names = ("o1", "o2", "o3", "o4")
     matrix = jnp.zeros((len(frequencies), 4, 4), dtype=complex)
 
@@ -54,7 +54,7 @@ def test_resonator_test_chip_sax_model_is_reciprocal_and_passive() -> None:
 def test_resonator_test_chip_has_distinct_resonances() -> None:
     """Keep all eight designed resonances distinct on each probeline."""
     frequencies = jnp.linspace(4e9, 10e9, 4001)
-    s_params = _simulate_yaml_chip(frequencies)
+    s_params = _simulate_schematic_chip(frequencies)
 
     for probe_ports in (("o1", "o2"), ("o3", "o4")):
         s21_db = 20 * jnp.log10(jnp.abs(s_params[probe_ports]) + 1e-30)
@@ -69,14 +69,14 @@ def test_resonator_test_chip_has_distinct_resonances() -> None:
         refined = (
             frequencies[dips, None] + spacing * jnp.linspace(-1, 1, 257)[None, :]
         ).ravel()
-        refined_s = _simulate_yaml_chip(refined)
+        refined_s = _simulate_schematic_chip(refined)
         refined_db = 20 * jnp.log10(jnp.abs(refined_s[probe_ports]) + 1e-30)
         assert (refined_db.reshape(8, -1).min(axis=1) < -0.3).all()
 
 
-def test_resonator_test_chip_yaml_simulates_from_leaf_models() -> None:
-    """Keep the YAML sample usable without a registered chip model."""
-    s_params = _simulate_yaml_chip([7e9])
+def test_resonator_test_chip_schematic_simulates_from_leaf_models() -> None:
+    """Keep the schematic sample usable without a registered chip model."""
+    s_params = _simulate_schematic_chip([7e9])
 
     # sax.circuit emits the full 4x4 key set; the cross-probeline entries
     # (e.g. ("o1", "o3")) are zero because the two probelines are independent.

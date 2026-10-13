@@ -24,22 +24,9 @@
       }
     },
     "net": "net7",
-    "radius": 100,
     "cross_section": "coplanar_waveguide",
-    "width": 10,
     "layer": "M1_DRAW",
-    "waypoints": [
-      [818.0, 400.0],
-      [1151.5, 400.0],
-      [1151.5, 399.0],
-      [1485.0, 399.0]
-    ],
-    "sbend_segments": {
-      "1": {
-        "factory": "bend_s",
-        "size": [333.5, -1.0]
-      }
-    }
+    "routing_strategy": "route_bundle_sbend_cpw"
   },
   "probeline_qubit1_to_qubit2": {
     "type": "polyline",
@@ -56,10 +43,9 @@
       }
     },
     "net": "net10",
-    "radius": 100,
     "cross_section": "coplanar_waveguide",
-    "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "routing_strategy": "route_bundle_sbend_cpw"
   },
   "tee_bot_straight_2": {
     "type": "ckt",
@@ -145,12 +131,7 @@
     "cross_section": "coplanar_waveguide",
     "width": 10,
     "layer": "M1_DRAW",
-    "waypoints": [
-      [3515.0, 399.0],
-      [3700.0, 399.0],
-      [3700.0, -401.421],
-      [3515.0, -401.421]
-    ]
+    "routing_strategy": "route_bundle_cpw"
   },
   "qubit3": {
     "type": "ckt",
@@ -357,22 +338,9 @@
       }
     },
     "net": "net12",
-    "radius": 100,
     "cross_section": "coplanar_waveguide",
-    "width": 10,
     "layer": "M1_DRAW",
-    "waypoints": [
-      [2715.0, -401.421],
-      [2500.0, -401.421],
-      [2500.0, -402.351],
-      [2285.0, -402.351]
-    ],
-    "sbend_segments": {
-      "1": {
-        "factory": "bend_s",
-        "size": [-215.0, -0.93]
-      }
-    }
+    "routing_strategy": "route_bundle_sbend_cpw"
   },
   "launcher_in": {
     "type": "ckt",
@@ -450,7 +418,8 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "routing_strategy": "route_bundle_cpw"
   },
   "launcher_out": {
     "type": "ckt",
@@ -595,7 +564,8 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "routing_strategy": "route_bundle_cpw"
   },
   "launcher_top": {
     "type": "ckt",
@@ -809,22 +779,9 @@
       }
     },
     "net": "net13",
-    "radius": 100,
     "cross_section": "coplanar_waveguide",
-    "width": 10,
     "layer": "M1_DRAW",
-    "waypoints": [
-      [1485.0, -402.351],
-      [1151.5, -402.351],
-      [1151.5, -400.0],
-      [818.0, -400.0]
-    ],
-    "sbend_segments": {
-      "1": {
-        "factory": "bend_s",
-        "size": [-333.5, 2.351]
-      }
-    }
+    "routing_strategy": "route_bundle_sbend_cpw"
   },
   "tee_top": {
     "type": "ckt",
@@ -1012,7 +969,8 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "routing_strategy": "route_bundle_cpw"
   },
   "W_probeline_qubit1_to_qubit2_0_0": {
     "type": "wire",
@@ -1312,6 +1270,7 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "width": 10,
-    "layer": "M1_DRAW"
+    "layer": "M1_DRAW",
+    "routing_strategy": "route_bundle_cpw"
   }
 }

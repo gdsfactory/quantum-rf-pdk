@@ -16,12 +16,12 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 import sax
-import yaml
 from conftest import import_gfp_module
 from hypothesis import given, settings, strategies as st
 
 from qpdk import PDK
 from qpdk.models import models
+from qpdk.read import read_gsch
 
 sax_sim = import_gfp_module("gdsfactoryplus.sim.sax")
 factory_metadata = import_gfp_module("gdsfactoryplus.factory_metadata")
@@ -31,7 +31,6 @@ if TYPE_CHECKING:
 
 _SAMPLE_DIR = Path(__file__).parents[2] / "qpdk/samples"
 _GSCH_PATH = _SAMPLE_DIR / "resonator_test_chip_yaml.gsch"
-_PIC_YAML_PATH = _SAMPLE_DIR / "resonator_test_chip_yaml.pic.yml"
 _SPEED_OF_LIGHT_UM_PER_S = 299_792_458_000_000.0
 _F_MIN_HZ = 4e9
 _F_MAX_HZ = 10e9
@@ -57,7 +56,7 @@ def test_one_port_termination_models_resolve(component: str) -> None:
 @cache
 def _reference_chip_circuit() -> Callable[..., sax.SDict]:
     """Build the flat declarative chip circuit from registered leaf models."""
-    document = yaml.safe_load(_PIC_YAML_PATH.read_text())
+    document = read_gsch(_GSCH_PATH)
     netlist = {key: document[key] for key in ("instances", "connections", "ports")}
     circuit, _ = sax.circuit(
         netlist,

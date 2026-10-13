@@ -7,9 +7,6 @@ from qpdk.samples.qubit_test_chip import qubit_test_chip as qubit_test_chip
 from qpdk.samples.resonator_test_chip import (
     resonator_test_chip_python as resonator_test_chip_python,
 )
-from qpdk.samples.resonator_test_chip_yaml import (
-    resonator_test_chip_yaml as resonator_test_chip_yaml,
-)
 
 from ._schematic import *
 from .airbridge import *

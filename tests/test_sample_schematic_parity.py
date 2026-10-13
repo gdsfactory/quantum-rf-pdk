@@ -1,19 +1,23 @@
-"""Checks for the license-free sample layout fallbacks."""
+"""Checks for layouts materialized from the sample schematics."""
 
 from pathlib import Path
 
-import gdsfactory as gf
 import pytest
 
 from qpdk import PDK
+from qpdk.read import from_gsch
 
 SAMPLE_DIR = Path(__file__).parents[1] / "qpdk/samples"
 SAMPLE_STEMS = tuple(path.stem for path in sorted(SAMPLE_DIR.glob("*.gsch")))
 
 
+@pytest.mark.filterwarnings("error:Routing failed:UserWarning")
 @pytest.mark.parametrize("stem", SAMPLE_STEMS)
-def test_sample_resolves_from_pdk(stem: str) -> None:
-    """Resolve every checked-in schematic sample by its short name."""
+def test_sample_materializes_from_schematic(stem: str) -> None:
+    """Materialize every checked-in schematic without a YAML fallback."""
     PDK.activate()
 
-    assert gf.get_component(stem).name == stem
+    component = from_gsch(SAMPLE_DIR / f"{stem}.gsch")
+    assert component.name == stem
+    assert len(component.insts) > 0
+    assert len(component.ports) > 0

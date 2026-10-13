@@ -1,20 +1,19 @@
-"""Qubit test chip sample, materialized from its ``.pic.yml`` netlist."""
+"""Qubit test chip sample, materialized from its ``.gsch`` netlist."""
 
 from pathlib import Path
 
 import gdsfactory as gf
-from gdsfactory.read import from_yaml
 
-YAML_SAMPLE = Path(__file__).parent / "qubit_test_chip.pic.yml"
+from qpdk.read import from_gsch
+
+SCHEMATIC_SAMPLE = Path(__file__).parent / "qubit_test_chip.gsch"
 
 
 @gf.cell(tags=["samples", "qubits"])
 def qubit_test_chip() -> gf.Component:
-    """Layout of the qubit test chip, read from its ``.pic.yml`` netlist.
-
-    The matching ``.gsch`` remains the source for licensed schematic flows.
+    """Layout of the qubit test chip, read from its ``.gsch`` netlist.
 
     Returns:
         The materialized sample component.
     """
-    return from_yaml(YAML_SAMPLE, name="qubit_test_chip")
+    return from_gsch(SCHEMATIC_SAMPLE)

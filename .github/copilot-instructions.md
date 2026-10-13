@@ -68,7 +68,7 @@ qpdk/                   Core Python package
     constants.py         Centralized physical constants (e, h, Φ_0, ε_0, …)
   simulation/           HFSS/Q3D automation (aedt_base, hfss, q3d)
   klayout/              KLayout technology files
-  samples/              Example designs (.py, .pic.yml, .gsch)
+  samples/              Example designs (.py, .gsch)
   tech.py               Layer map, layer stack, cross sections
   layers.yaml           Layer views (must stay in sync with tech.py)
   logger.py             Centralized loguru logger
