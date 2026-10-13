@@ -325,6 +325,19 @@ models miss
 
         :bdg-secondary-line:`JAX` :bdg-secondary-line:`Polars` :bdg-primary:`models`
 
+    .. grid-item-card:: Palace driven resonator
+        :link: notebooks/palace_driven_resonator
+        :link-type: doc
+        :class-card: notebook-card
+
+        S21 of a coupled CPW resonator, loaded Q from a Lorentzian fit, and the field at
+        resonance.
+
+        +++
+
+        :bdg-secondary-line:`Palace` :bdg-secondary-line:`gsim` :bdg-primary:`models`
+        :bdg-primary:`gsim` :bdg-warning:`GDSFactory+ account`
+
     .. grid-item-card:: More FEM and FDTD in gsim
         :link: https://gdsfactory.github.io/gsim/
         :class-card: notebook-card notebook-card-external
@@ -622,6 +635,11 @@ them as globs.
     The Elmer notebook also needs ``gplugins[elmer]`` installed from Git until the next
     gplugins release.
 
+    The Palace driven-resonator notebook needs `gsim
+    <https://gdsfactory.github.io/gsim/>`_ (``pip install "gsim[meshwell]"``, Python
+    3.12) and a GDSFactory+ account for the cloud solve. From a checkout, ``uv sync
+    --group palace`` installs gsim.
+
 .. _notebook-summary:
 
 ***************
@@ -690,6 +708,10 @@ Every notebook at a glance; the **Extras** column links back to :ref:`notebook-e
       - FEM optimization
       - Optuna, Palace
       - ``models``
+    - - :doc:`notebooks/palace_driven_resonator`
+      - FEM electromagnetics
+      - Palace, gsim
+      - ``models`` (+ ``gsim[meshwell]``)
     - - :doc:`notebooks/scqubits_parameter_calculation`
       - Hamiltonian analysis
       - scQubits
