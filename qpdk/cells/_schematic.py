@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from importlib.resources import files
+
 from kfactory.schematic import DSchematic
 
 __all__ = [
@@ -74,6 +76,9 @@ _TRANSMON = [
 # Schematic builder
 # ---------------------------------------------------------------------------
 
+_SYMBOLS_PACKAGE = "qpdk.symbols"
+_SYMBOLS = files(_SYMBOLS_PACKAGE)
+
 _SIDE_XY = {
     "left": (-1, 0, 180),
     "right": (1, 0, 0),
@@ -90,8 +95,13 @@ def _make_schematic(
 ) -> DSchematic:
     """Build a DSchematic from port patterns.
 
+    GDSFactory+ draws artwork only for the generic ``"ckt"`` device type, so
+    every schematic declares it. Packaged artwork in ``qpdk/symbols`` named
+    ``<symbol>.svg`` is attached through ``display.symbol``; without one,
+    GDSFactory+ renders the layout geometry instead.
+
     Args:
-        symbol: Name of the symbol.
+        symbol: Name of the symbol, matching ``qpdk/symbols/<symbol>.svg``.
         tags: List of tags for the symbol.
         ports: List of port definitions.
         models: List of model definitions.
@@ -105,7 +115,9 @@ def _make_schematic(
     # Deep-copy ports and models: both are lists of dicts shared across all
     # calls via module-level constants and closure variables.
     s = DSchematic()
-    s.info["symbol"] = symbol
+    s.info["symbol"] = "ckt"
+    if (_SYMBOLS / f"{symbol}.svg").is_file():
+        s.info["display"] = {"symbol": f"{_SYMBOLS_PACKAGE}:{symbol}.svg"}
     s.info["tags"] = list(tags)
     s.info["ports"] = [dict(p) for p in ports]
     s.info["models"] = [dict(m) for m in models or []]
