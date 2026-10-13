@@ -2,12 +2,34 @@
 
 import gdsfactory as gf
 import pytest
+from gdsfactory.technology import LayerStack
 
 import qpdk
 from qpdk.cells import quarter_wave_resonator_coupled
-from qpdk.tech import LAYER, LAYER_STACK
+from qpdk.tech import LAYER, LAYER_STACK, LAYER_STACK_FLIP_CHIP
 
 pytest.importorskip("trimesh")
+
+
+@pytest.mark.parametrize(
+    ("stack", "substrate"),
+    [(LAYER_STACK, "Substrate"), (LAYER_STACK_FLIP_CHIP, "Substrate_top")],
+)
+def test_serialized_stack_supplies_background_die(
+    stack: LayerStack, substrate: str
+) -> None:
+    """Viewers using serialized stack data need no Python subclass or die polygon."""
+    component = quarter_wave_resonator_coupled()
+    assert stack.model_dump()["layers"][substrate]["background"]
+    # A plain LayerStack bypasses QPDK's Python-only bounds preparation.
+    viewer_stack = LayerStack(layers={substrate: stack.layers[substrate]})
+    scene = component.to_3d(layer_stack=viewer_stack)
+
+    bbox = component.bbox()
+    assert scene.geometry[f"{substrate}_0"].volume == pytest.approx(
+        bbox.width() * bbox.height() * 500
+    )
+    assert component.get_region(LAYER.SIM_AREA).is_empty()
 
 
 def test_component_to_3d_without_simulation_area() -> None:

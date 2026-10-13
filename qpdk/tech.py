@@ -192,6 +192,7 @@ def get_layer_stack() -> LayerStack:
             "Substrate": LayerLevel(
                 name="Substrate",
                 layer=L.SIM_AREA,
+                background=True,  # Die exists even without a SIM_AREA polygon in GDS.
                 thickness=500,  # 500 microns of silicon
                 zmin=-500,  # below metal
                 material="Si",
@@ -316,6 +317,7 @@ LAYER_STACK_FLIP_CHIP = LayerStackQPDK(
         "Substrate_top": LayerLevel(
             name="Substrate_top",
             layer=L.SIM_AREA,
+            background=True,
             thickness=500,  # 500 microns of silicon
             zmin=10.2,  # below metal
             material="Si",
