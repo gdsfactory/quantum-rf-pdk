@@ -174,8 +174,8 @@ chip = from_gsch("qpdk/samples/qubit_test_chip.gsch")
 chip.show()  # Opens in KLayout
 ```
 
-For 3D visualization of negative-tone CPW cells, use the QPDK helper. It adds a bounded simulation area on a copy and
-excludes the vacuum volume:
+Ordinary cells support `qubit.to_3d().show()`: the QPDK layer stack adds missing simulation bounds on a copy, preserving
+the fabrication layout. To omit vacuum and select the flip-chip stack automatically for M2 geometry, use the helper:
 
 ```python
 from qpdk import to_3d

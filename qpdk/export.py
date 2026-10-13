@@ -14,6 +14,7 @@ from qpdk.tech import (
     LAYER_STACK_FLIP_CHIP_NO_VACUUM,
     LAYER_STACK_NO_VACUUM,
     LAYER_VIEWS,
+    _with_simulation_area,
 )
 
 if TYPE_CHECKING:
@@ -69,20 +70,7 @@ def to_3d(
             LAYER_STACK_FLIP_CHIP_NO_VACUUM if has_m2 else LAYER_STACK_NO_VACUUM
         )
 
-    if component.get_region(LAYER.SIM_AREA).is_empty():
-        component = component.dup()
-        bbox = component.bbox()
-        component.add_polygon(
-            [
-                (bbox.left - margin, bbox.bottom - margin),
-                (bbox.right + margin, bbox.bottom - margin),
-                (bbox.right + margin, bbox.top + margin),
-                (bbox.left - margin, bbox.top + margin),
-            ],
-            layer=LAYER.SIM_AREA,
-        )
-
-    return component.to_3d(
+    return _with_simulation_area(component, margin).to_3d(
         layer_views=layer_views or LAYER_VIEWS,
         layer_stack=layer_stack,
         exclude_layers=exclude_layers,

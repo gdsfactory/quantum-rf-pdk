@@ -10,6 +10,18 @@ from qpdk.tech import LAYER, LAYER_STACK
 pytest.importorskip("trimesh")
 
 
+def test_component_to_3d_without_simulation_area() -> None:
+    """The standard gdsfactory method works for an ordinary QPDK cell."""
+    component = quarter_wave_resonator_coupled()
+    original_layers = component.layers
+
+    scene = component.to_3d()
+
+    assert {"M1_0", "Substrate_0"} <= scene.geometry.keys()
+    assert component.layers == original_layers
+    assert LAYER.SIM_AREA not in component.layers
+
+
 def test_to_3d_resonator_without_simulation_area() -> None:
     """A normal locked cell exports metal without modifying its mask."""
     component = quarter_wave_resonator_coupled()
