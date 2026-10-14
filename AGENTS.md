@@ -112,7 +112,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Technology and Tools
 
-- **Python versions**: Specified in `pyproject.toml` (currently >=3.12,\<3.15)
+- **Python versions**: Specified in `pyproject.toml` (currently >=3.12,\<3.16)
 - **Package manager**: `uv` (preferred over pip/conda)
 - **Main dependencies**: gdsfactory (~=9.51.0)
 - **Testing**: pytest with regression testing using `pytest_regressions`, hypothesis for property-based testing
@@ -331,7 +331,7 @@ for examples of:
    ```python
    # %% [raw] tags=["remove-cell"]
    # /// script
-   # requires-python = ">=3.12,<3.15"
+   # requires-python = ">=3.12,<3.16"
    # dependencies = [
    #   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
    # ]
