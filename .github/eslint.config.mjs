@@ -5,15 +5,15 @@ export default [
         console: "readonly",
         document: "readonly",
         DOMParser: "readonly",
-        fetch: "readonly",
-      },
+        fetch: "readonly"
+      }
     },
     rules: {
       "no-constant-condition": "error",
       "no-debugger": "error",
       "no-undef": "error",
       "no-unreachable": "error",
-      "no-unused-vars": "error",
-    },
-  },
+      "no-unused-vars": "error"
+    }
+  }
 ];

@@ -16,7 +16,7 @@
 # %%
 import gdsfactory as gf
 
-from qpdk import PDK, cells, tech
+from qpdk import PDK, cells, tech, to_3d
 from qpdk.utils import apply_additive_metals, fill_magnetic_vortices
 
 # %% [markdown]
@@ -85,5 +85,8 @@ if __name__ == "__main__":
 
     c = sample_to_3d()
     c.show()
-    s = c.to_3d(layer_stack=tech.LAYER_STACK_NO_VACUUM)
+    # to_3d preserves the explicit SIM_AREA above and omits vacuum by default.
+    # For a bare device cell it supplies bounds automatically:
+    # to_3d(cells.quarter_wave_resonator_coupled()).show()
+    s = to_3d(c)
     s.show()

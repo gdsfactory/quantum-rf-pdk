@@ -116,13 +116,50 @@ NON_METADATA_LAYERS = {
 }
 
 
+def _with_simulation_area(
+    component: gf.Component, margin: float = 10.0
+) -> gf.Component:
+    """Return a bounded copy when a negative-tone mask lacks simulation bounds."""
+    if not component.get_region(LAYER.SIM_AREA).is_empty():
+        return component
+    bounded = component.dup()
+    bbox = component.bbox()
+    bounded.add_polygon(
+        [
+            (bbox.left - margin, bbox.bottom - margin),
+            (bbox.right + margin, bbox.bottom - margin),
+            (bbox.right + margin, bbox.top + margin),
+            (bbox.left - margin, bbox.top + margin),
+        ],
+        layer=LAYER.SIM_AREA,
+    )
+    return bounded
+
+
+class LayerStackQPDK(LayerStack):
+    """Derive physical layers from bounded negative-tone masks.
+
+    Standard gdsfactory exports, including ``Component.to_3d()``, call this
+    method. Supply missing bounds here so they also work for bare device cells
+    without adding simulation geometry to the fabrication layout.
+    """
+
+    def get_component_with_derived_layers(
+        self, component: gf.Component, **kwargs: Any
+    ) -> gf.Component:
+        """Return derived layers, supplying missing simulation bounds on a copy."""
+        return super().get_component_with_derived_layers(
+            _with_simulation_area(component), **kwargs
+        )
+
+
 @cache
 def get_layer_stack() -> LayerStack:
     """Returns a LayerStack corresponding to the PDK.
 
     The stack roughly corresponds to that of :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
     """
-    return LayerStack(
+    return LayerStackQPDK(
         layers={
             # Base metal film (e.g., 200 nm of Nb)
             "M1": LayerLevel(
@@ -134,9 +171,9 @@ def get_layer_stack() -> LayerStack:
                     layer2=DerivedLayer(
                         layer1=LogicalLayer(layer=L.M1_ETCH),
                         layer2=LogicalLayer(layer=L.M1_DRAW),
-                        operation="-",
+                        operation="not",
                     ),
-                    operation="-",
+                    operation="not",
                 ),
                 derived_layer=LogicalLayer(layer=L.M1_DRAW),
                 thickness=200e-9 * 1e6,
@@ -155,6 +192,7 @@ def get_layer_stack() -> LayerStack:
             "Substrate": LayerLevel(
                 name="Substrate",
                 layer=L.SIM_AREA,
+                background=True,  # Die exists even without a SIM_AREA polygon in GDS.
                 thickness=500,  # 500 microns of silicon
                 zmin=-500,  # below metal
                 material="Si",
@@ -241,7 +279,7 @@ def get_layer_material_properties(
 
 
 # Nicer for 3D visualization
-LAYER_STACK_NO_VACUUM = LayerStack(
+LAYER_STACK_NO_VACUUM = LayerStackQPDK(
     layers={
         name: level for name, level in LAYER_STACK.layers.items() if name != "Vacuum"
     }
@@ -256,7 +294,7 @@ LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
 ]
 
 
-LAYER_STACK_FLIP_CHIP = LayerStack(
+LAYER_STACK_FLIP_CHIP = LayerStackQPDK(
     layers={
         **LAYER_STACK.layers,
         "M2": LayerLevel(
@@ -266,9 +304,9 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
                 layer2=DerivedLayer(
                     layer1=LogicalLayer(layer=L.M2_ETCH),
                     layer2=LogicalLayer(layer=L.M2_DRAW),
-                    operation="-",
+                    operation="not",
                 ),
-                operation="-",
+                operation="not",
             ),
             derived_layer=LogicalLayer(layer=L.M2_DRAW),
             thickness=0.2,
@@ -279,6 +317,7 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
         "Substrate_top": LayerLevel(
             name="Substrate_top",
             layer=L.SIM_AREA,
+            background=True,
             thickness=500,  # 500 microns of silicon
             zmin=10.2,  # below metal
             material="Si",
@@ -286,7 +325,7 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
         ),
     }
 )
-LAYER_STACK_FLIP_CHIP_NO_VACUUM = LayerStack(
+LAYER_STACK_FLIP_CHIP_NO_VACUUM = LayerStackQPDK(
     layers={
         name: level
         for name, level in LAYER_STACK_FLIP_CHIP.layers.items()

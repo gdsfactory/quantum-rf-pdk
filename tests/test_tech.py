@@ -80,6 +80,23 @@ def test_every_layer_material_has_properties(layer_stack: LayerStack) -> None:
         ), name
 
 
+@pytest.mark.parametrize("layer_stack", [LAYER_STACK, LAYER_STACK_FLIP_CHIP])
+def test_layer_stack_operations_supported_by_viewer(layer_stack: LayerStack) -> None:
+    """The WASM viewer accepts named Boolean operations in serialized stacks."""
+
+    def check(value: object) -> None:
+        if isinstance(value, dict):
+            if "operation" in value:
+                assert value["operation"] in {"not", "and", "or", "xor"}
+            for child in value.values():
+                check(child)
+        elif isinstance(value, list):
+            for child in value:
+                check(child)
+
+    check(layer_stack.model_dump(mode="json"))
+
+
 def test_layer_material_properties_rejects_unknown_material() -> None:
     stack = LAYER_STACK.model_copy(deep=True)
     stack.layers["Substrate"].material = "unobtainium"

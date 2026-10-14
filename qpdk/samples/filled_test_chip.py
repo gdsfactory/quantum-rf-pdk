@@ -13,11 +13,11 @@ from functools import partial
 from pathlib import Path
 
 import gdsfactory as gf
-from gdsfactory.read import from_yaml
 
 from qpdk import PDK, tech
 from qpdk.cells.chip import chip_edge
 from qpdk.helper import layerenum_to_tuple
+from qpdk.read import from_gsch
 from qpdk.utils import apply_additive_metals, fill_magnetic_vortices
 
 # %% [markdown]
@@ -31,34 +31,22 @@ from qpdk.utils import apply_additive_metals, fill_magnetic_vortices
 # %% [markdown]
 # ## Filled Qubit Test Chip Function
 #
-# Creates a qubit test chip from a YAML configuration and fills it with magnetic vortex trapping rectangles.
+# Creates a qubit test chip from a schematic and fills it with magnetic vortex trapping rectangles.
 #
-# See the YAML file for the original test chip layout.
-
-# %% [rst]
-#
-# .. note::
-#
-#    See the YAML file for the original test chip layout.
-#
-# .. include:: ./qubit_test_chip.pic.yml
-#
+# See the schematic for the original test chip layout.
 
 
 # %%
 @gf.cell
 def filled_qubit_test_chip(
-    yaml_path: str | Path = Path(__file__).parent / "qubit_test_chip.pic.yml",
+    schematic_path: str | Path = Path(__file__).parent / "qubit_test_chip.gsch",
 ):
     """Returns a qubit test chip filled with magnetic vortex trapping rectangles.
 
     Roughly corresponds to the sample in :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
     """
     c = gf.Component()
-    test_chip = from_yaml(
-        yaml_path,
-        routing_strategies=tech.routing_strategies,
-    )
+    test_chip = from_gsch(schematic_path)
     c << fill_magnetic_vortices(
         component=test_chip,
         rectangle_size=(15.0, 15.0),
@@ -104,14 +92,14 @@ def filled_qubit_test_chip(
 # %% [markdown]
 # ## Filled Flipmon Test Chip Function
 #
-# Creates a flipmon test chip from a similar YAML configuration and fills it as well.
+# Creates a flipmon test chip from a similar schematic and fills it as well.
 # This version uses flipmon qubits for flip-chip applications.
 # See {cite:p}`liVacuumgapTransmonQubits2021` for more details.
 
 
 # %%
 filled_flipmon_test_chip = partial(
-    filled_qubit_test_chip, Path(__file__).parent / "flipmon_test_chip.pic.yml"
+    filled_qubit_test_chip, Path(__file__).parent / "flipmon_test_chip.gsch"
 )
 
 # %% [markdown]

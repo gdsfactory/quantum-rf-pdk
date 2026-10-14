@@ -166,16 +166,24 @@ qubit.plot()
 ```
 
 ```python
-# Build a complete test chip from YAML
-from gdsfactory.read import from_yaml
-from qpdk import tech
+# Build a complete test chip from its schematic.
+# Run `just fetch-gfp` first, or set GFP_BIN to the GDSFactory+ converter.
+from qpdk.read import from_gsch
 
-chip = from_yaml(
-    "qpdk/samples/qubit_test_chip.pic.yml",
-    routing_strategies=tech.routing_strategies,
-)
+chip = from_gsch("qpdk/samples/qubit_test_chip.gsch")
 chip.show()  # Opens in KLayout
 ```
+
+Ordinary cells support `qubit.to_3d().show()`: the QPDK layer stack adds missing simulation bounds on a copy, preserving
+the fabrication layout. To omit vacuum and select the flip-chip stack automatically for M2 geometry, use the helper:
+
+```python
+from qpdk import to_3d
+
+to_3d(qubit).show()
+```
+
+Install the `graphics` extra for 3D export (`uv sync --extra graphics`).
 
 ## Examples & Notebooks
 

@@ -31,15 +31,21 @@
 # pip install "qpdk[models,ray]"
 # ```
 #
+# The schematic loader also requires the GDSFactory+ `gfp` converter, which
+# is not installed by these Python extras. In a source checkout, run
+# `just fetch-gfp`. For a standalone script or Colab runtime, provide the
+# converter executable for that platform and set `GFP_BIN` to its full path
+# before loading the chip. Installing the Python package alone is insufficient.
+#
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
 # This notebook demonstrates how to run a circuit-level SAX simulation of the
-# `resonator_test_chip_yaml` component, which is defined via a `.pic.yml` netlist
-# file and a corresponding gdsfactory+ schematic.
+# `resonator_test_chip_yaml.gsch` schematic. Run `just fetch-gfp` from the
+# repository checkout, or set `GFP_BIN` to the GDSFactory+ converter executable.
 #
 # The workflow is:
-# 1. Load the component from the YAML netlist with gdsfactory.
+# 1. Load the component from the schematic with `qpdk.read.from_gsch`.
 # 2. Extract the netlist for circuit simulation.
 # 3. Build a SAX circuit using the QPDK model library.
 # 4. Evaluate the S-parameters over a frequency range.
@@ -54,6 +60,9 @@ if "google.colab" in sys.modules:
     import subprocess
 
     print("Running in Google Colab. Installing QPDK...")
+    print(
+        "Also provide the Linux gfp converter and set GFP_BIN before loading the chip."
+    )
     subprocess.check_call([
         sys.executable,
         "-m",
@@ -69,7 +78,6 @@ import warnings
 from collections.abc import Callable, Sequence
 from typing import Any
 
-import gdsfactory as gf
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
@@ -84,6 +92,7 @@ from qpdk import PATH, PDK
 from qpdk.helper import display_dataframe
 from qpdk.models import models
 from qpdk.models.cpw import cpw_parameters
+from qpdk.read import from_gsch
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -122,13 +131,13 @@ def ray_get_with_progress(
 # %% [markdown]
 # ## Load the component
 #
-# The resonator test chip is defined in a `.pic.yml` file that lives alongside
+# The resonator test chip is defined in a `.gsch` file that lives alongside
 # the QPDK sample scripts.  It contains 16 quarter-wave coupled resonators
 # (8 per probeline), four launchers, and CPW routing between all elements.
 
 # %%
-yaml_path = PATH.samples / "resonator_test_chip_yaml.pic.yml"
-chip = gf.read.from_yaml(yaml_path)
+schematic_path = PATH.samples / "resonator_test_chip_yaml.gsch"
+chip = from_gsch(schematic_path)
 chip.plot()
 
 # %% [markdown]

@@ -257,7 +257,7 @@ fetch-docs-fonts:
 [private]
 [parallel]
 [group('docs')]
-docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
+docs-prerequisites: fetch-gfp write-cells write-models write-justfile-help copy-sample-notebooks
 
 # Build documentation with the given Sphinx builder into docs/_build/<builder>
 [private]

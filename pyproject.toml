@@ -61,7 +61,7 @@ gdsfactoryplus = [
   "polars>=2,<3",
   "sax>=0.18.2,<1",
 ]
-graphics = ["trimesh", "pyglet<3"]
+graphics = ["trimesh", "pyglet<2"]
 hfss = ["polars>=2,<3", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]~=2.1.0",
@@ -409,7 +409,17 @@ ignore-one-line-docstrings = true
 ignore-overlong-task-comments = true
 
 [tool.setuptools.package-data]
-"*" = ["*.yaml", "*.yml", "*.lyp", "*.lyt", "*.csv", "*.gds", "*.oas"]
+"*" = [
+  "*.yaml",
+  "*.yml",
+  "*.lyp",
+  "*.lyt",
+  "*.csv",
+  "*.gds",
+  "*.gsch",
+  "*.svg",
+  "*.oas"
+]
 
 [tool.tbump]
 [[tool.tbump.file]]

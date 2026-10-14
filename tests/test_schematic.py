@@ -1,7 +1,9 @@
 """Tests for schematic symbols."""
 
 import importlib
+import importlib.resources
 from typing import Any, cast
+from xml.etree import ElementTree  # ruff: ignore[suspicious-xml-etree-import]
 
 import gdsfactory as gf
 import pytest
@@ -13,10 +15,16 @@ from qpdk.cells import (
     bend_circular,
     bend_s,
     double_pad_transmon,
+    half_circle_coupler,
+    interdigital_capacitor,
+    josephson_junction,
+    josephson_junction_long,
     launcher,
     lumped_element_resonator,
     meander_inductor,
     open as open_cell,
+    plate_capacitor,
+    plate_capacitor_single,
     quarter_wave_resonator_coupled,
     resonator,
     resonator_coupled,
@@ -73,6 +81,10 @@ def test_schematic_functions():
         launcher,
         lumped_element_resonator,
         double_pad_transmon,
+        half_circle_coupler,
+        interdigital_capacitor,
+        josephson_junction,
+        josephson_junction_long,
         meander_inductor,
     ]
 
@@ -224,3 +236,54 @@ def test_test_chip_does_not_declare_a_whole_chip_model() -> None:
     schematic = cast(Any, cell).schematic_function()
 
     assert schematic.info["models"] == []
+
+
+@pytest.mark.parametrize(
+    ("cell", "settings", "ports", "artwork"),
+    [
+        (interdigital_capacitor, {}, {"o1", "o2"}, "capacitor.svg"),
+        (interdigital_capacitor, {"half": True}, {"o1"}, "capacitor_single.svg"),
+        (plate_capacitor, {}, {"o1", "o2"}, "capacitor.svg"),
+        (plate_capacitor_single, {}, {"o1"}, "capacitor_single.svg"),
+        (half_circle_coupler, {}, {"o3"}, "capacitor_single.svg"),
+        (meander_inductor, {}, {"o1", "o2"}, "inductor.svg"),
+        (
+            josephson_junction,
+            {},
+            {"left_wide", "right_wide"},
+            "josephson_junction.svg",
+        ),
+        (
+            josephson_junction_long,
+            {},
+            {"left_wide", "right_wide"},
+            "josephson_junction.svg",
+        ),
+    ],
+)
+def test_circuit_primitives_have_packaged_symbols(
+    cell: ComponentFactory,
+    settings: dict[str, Any],
+    ports: set[str],
+    artwork: str,
+) -> None:
+    """Render circuit artwork without replacing named layout pins with P/N."""
+    factory = gf.kcl.factories[cell.__name__]
+    schematic = factory.get_schematic(**settings)
+
+    assert schematic.info["symbol"] == "ckt"
+    assert set(schematic.ports) == ports
+    assert {p["name"] for p in schematic.info["ports"]} == ports
+    assert {
+        p.name for p in cell(**settings).ports if p.port_type != "placement"
+    } == ports
+
+    resource = schematic.info["display"]["symbol"]
+    assert resource == f"qpdk.cells:symbols/{artwork}"
+    package, path = resource.split(":", 1)
+    svg = importlib.resources.files(package).joinpath(path)
+    # These are trusted package resources authored in this repository.
+    root = ElementTree.fromstring(svg.read_text())  # ruff: ignore[suspicious-xml-element-tree-usage]
+    assert root.tag == "{http://www.w3.org/2000/svg}svg"
+    assert "viewBox" in root.attrib
+    assert len(root) > 0

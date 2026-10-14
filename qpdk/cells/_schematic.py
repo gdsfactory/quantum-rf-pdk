@@ -7,7 +7,12 @@ from kfactory.schematic import DSchematic
 __all__ = [
     "bend_circular_schematic",
     "bend_s_schematic",
+    "capacitor_schematic",
+    "capacitor_single_schematic",
     "double_pad_transmon_schematic",
+    "half_circle_coupler_schematic",
+    "interdigital_capacitor_schematic",
+    "josephson_junction_schematic",
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
@@ -87,6 +92,7 @@ def _make_schematic(
     tags: list[str],
     ports: list[dict],
     models: list[dict] | None,
+    display_symbol: str | None = None,
 ) -> DSchematic:
     """Build a DSchematic from port patterns.
 
@@ -95,6 +101,7 @@ def _make_schematic(
         tags: List of tags for the symbol.
         ports: List of port definitions.
         models: List of model definitions.
+        display_symbol: Package-qualified SVG resource for circuit artwork.
 
     Returns:
         DSchematic: The built schematic.
@@ -109,6 +116,8 @@ def _make_schematic(
     s.info["tags"] = list(tags)
     s.info["ports"] = [dict(p) for p in ports]
     s.info["models"] = [dict(m) for m in models or []]
+    if display_symbol is not None:
+        s.info["display"] = {"symbol": display_symbol}
 
     side_counts: dict[str, int] = {}
     for port in ports:
@@ -154,11 +163,12 @@ def schematic(
     tags: list[str],
     ports: list[dict],
     models: list[dict] | None = None,
+    display_symbol: str | None = None,
 ):
     """Return a ``schematic_function`` closure for use with ``@gf.cell``."""
 
     def _schematic_fn(**_kwargs) -> DSchematic:
-        return _make_schematic(symbol, tags, ports, models)
+        return _make_schematic(symbol, tags, ports, models, display_symbol)
 
     return _schematic_fn
 
@@ -353,9 +363,10 @@ double_pad_transmon_schematic = schematic(
 )
 
 meander_inductor_schematic = schematic(
-    symbol="meander_inductor",
+    symbol="ckt",
     tags=["inductors"],
     ports=_2PORT,
+    display_symbol="qpdk.cells:symbols/inductor.svg",
 )
 
 lumped_element_resonator_schematic = schematic(
@@ -385,4 +396,44 @@ launcher_schematic = schematic(
             port_order=["waveport", "o1"],
         )
     ],
+)
+
+
+# Packaged artwork preserves QPDK's named CPW ports. The editor's native
+# electrical capacitor/inductor types instead supply fixed P/N pins.
+capacitor_schematic = schematic(
+    symbol="ckt",
+    tags=["capacitors"],
+    ports=_2PORT,
+    display_symbol="qpdk.cells:symbols/capacitor.svg",
+)
+
+capacitor_single_schematic = schematic(
+    symbol="ckt",
+    tags=["capacitors", "couplers"],
+    ports=_1PORT,
+    display_symbol="qpdk.cells:symbols/capacitor_single.svg",
+)
+
+half_circle_coupler_schematic = schematic(
+    symbol="ckt",
+    tags=["capacitors", "couplers"],
+    ports=[{"name": "o3", "side": "left", "type": "photonic"}],
+    display_symbol="qpdk.cells:symbols/capacitor_single.svg",
+)
+
+
+def interdigital_capacitor_schematic(half: bool = False, **_kwargs) -> DSchematic:
+    """Match the single-sided capacitor's one-port boundary when ``half=True``."""
+    return capacitor_single_schematic() if half else capacitor_schematic()
+
+
+josephson_junction_schematic = schematic(
+    symbol="ckt",
+    tags=["junctions"],
+    ports=[
+        {"name": "left_wide", "side": "left", "type": "photonic"},
+        {"name": "right_wide", "side": "right", "type": "photonic"},
+    ],
+    display_symbol="qpdk.cells:symbols/josephson_junction.svg",
 )

@@ -936,16 +936,6 @@
   },
   "poly_1": {
     "y": 7,
-    "vertices": [
-      [
-        685.322998046875,
-        -193.75840759277344
-      ],
-      [
-        685.322998046875,
-        638.566162109375
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "launcher_top",
@@ -962,7 +952,8 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_cpw"
   },
   "group_1": {
     "x": 0,
@@ -1248,16 +1239,6 @@
   },
   "poly_2": {
     "y": 11,
-    "vertices": [
-      [
-        686.365234375,
-        4581.0498046875
-      ],
-      [
-        686.3645629882812,
-        3748.80908203125
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "launcher_bot",
@@ -1274,7 +1255,8 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_cpw"
   },
   "group_2": {
     "x": 0,
@@ -1290,16 +1272,6 @@
   },
   "poly_3": {
     "y": 5,
-    "vertices": [
-      [
-        -1774.310791015625,
-        1841.06591796875
-      ],
-      [
-        -1521.0440673828125,
-        1841.06591796875
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "launcher_in",
@@ -1316,20 +1288,11 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_cpw"
   },
   "poly_4": {
     "y": 0,
-    "vertices": [
-      [
-        -1774.310791015625,
-        2464.790771484375
-      ],
-      [
-        -1522.402099609375,
-        2464.790771484375
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "launcher_out",
@@ -1346,20 +1309,11 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_cpw"
   },
   "poly_5": {
     "y": 9,
-    "vertices": [
-      [
-        -1485.0440673828125,
-        1841.06591796875
-      ],
-      [
-        -975.2411499023438,
-        1841.06591796875
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "input_cap1",
@@ -1371,25 +1325,14 @@
       }
     },
     "name": "poly_5",
-    "width": 10,
     "type": "polyline",
-    "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_sbend_cpw"
   },
   "poly_6": {
     "y": 8,
-    "vertices": [
-      [
-        -175.2411346435547,
-        1841.06591796875
-      ],
-      [
-        584.815185546875,
-        1841.06591796875
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "qubit1",
@@ -1401,12 +1344,11 @@
       }
     },
     "name": "poly_6",
-    "width": 10,
     "type": "polyline",
-    "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_sbend_cpw"
   },
   "group_3": {
     "x": 0,
@@ -1420,24 +1362,6 @@
   },
   "poly_7": {
     "y": 3,
-    "vertices": [
-      [
-        984.815185546875,
-        2464.790771484375
-      ],
-      [
-        1112.9373779296875,
-        2464.790771484375
-      ],
-      [
-        1112.9373779296875,
-        1841.06591796875
-      ],
-      [
-        984.815185546875,
-        1841.06591796875
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "qubit3",
@@ -1454,20 +1378,11 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_cpw"
   },
   "poly_11": {
     "y": 2,
-    "vertices": [
-      [
-        -1486.402099609375,
-        2464.790771484375
-      ],
-      [
-        -977.0819091796875,
-        2464.790771484375
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "input_cap2",
@@ -1479,25 +1394,14 @@
       }
     },
     "name": "poly_11",
-    "width": 10,
     "type": "polyline",
-    "radius": 11,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_sbend_cpw"
   },
   "poly_12": {
     "y": 6,
-    "vertices": [
-      [
-        -177.08187866210938,
-        2464.790771484375
-      ],
-      [
-        584.815185546875,
-        2464.790771484375
-      ]
-    ],
     "terminals": {
       "start": {
         "component_id": "qubit4",
@@ -1509,11 +1413,10 @@
       }
     },
     "name": "poly_12",
-    "width": 10,
     "type": "polyline",
-    "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "routing_strategy": "route_bundle_sbend_cpw"
   }
 }

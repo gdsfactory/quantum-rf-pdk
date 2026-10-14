@@ -1,4 +1,4 @@
-"""LVS checks for the checked-in schematic and layout fallback."""
+"""LVS checks for the checked-in schematic and schematic-derived layout."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ import pytest
 from conftest import import_gfp_module
 
 from qpdk import PDK
+from qpdk.read import read_gsch
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -25,7 +26,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SAMPLE_STEM = "resonator_test_chip_yaml"
 SAMPLE_DIR = PROJECT_ROOT / "qpdk/samples"
 GSCH_PATH = SAMPLE_DIR / f"{SAMPLE_STEM}.gsch"
-PIC_YML_PATH = SAMPLE_DIR / f"{SAMPLE_STEM}.pic.yml"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -93,11 +93,15 @@ def _strip_cross_section_settings(circuit: gf.Component) -> None:
     walk(circuit)
 
 
-def _write_layout(pic_yml: Path, output_dir: Path) -> Path:
-    """Materialize a fallback using the schematic's top-cell name."""
+def _write_layout(output_dir: Path, *, drop_port: str | None = None) -> Path:
+    """Materialize distinct LVS cases without overwriting shared SAX cells."""
     PDK.activate()
-    gds_path = output_dir / f"{SAMPLE_STEM}.gds"
-    circuit = gf.read.from_yaml(pic_yml, name=SAMPLE_STEM)
+    name = f"{SAMPLE_STEM}_" + (f"missing_{drop_port}" if drop_port else "matched")
+    gds_path = output_dir / f"{name}.gds"
+    netlist = read_gsch(GSCH_PATH)
+    if drop_port is not None:
+        del netlist["ports"][drop_port]
+    circuit = gf.read.from_yaml(netlist, name=name)
     _strip_cross_section_settings(circuit)
     circuit.write_gds(gds_path)
     return gds_path
@@ -121,9 +125,9 @@ def test_lvs_matches_checked_in_sources(
     schematic_project: SchematicProject,
     tmp_path: Path,
 ) -> None:
-    """Match the real schematic against its generated layout fallback."""
+    """Match the real schematic against its generated schematic-derived layout."""
     xml = gfp_check.check_lvs(
-        str(_write_layout(PIC_YML_PATH, tmp_path)),
+        str(_write_layout(tmp_path)),
         str(schematic_project.gsch),
         "qpdk",
         project_root=str(schematic_project.root),
@@ -134,18 +138,14 @@ def test_lvs_matches_checked_in_sources(
     assert not list(root.iter("item"))
 
 
-def test_lvs_rejects_broken_layout_fallback(
+def test_lvs_rejects_broken_layout(
     gfp_check: ModuleType,
     schematic_project: SchematicProject,
     tmp_path: Path,
 ) -> None:
-    """Catch a top-level connection dropped from the layout fallback."""
-    broken_pic_yml = tmp_path / PIC_YML_PATH.name
-    broken_pic_yml.write_text(
-        PIC_YML_PATH.read_text().replace("  o4: probe_east_bot,waveport\n", "")
-    )
+    """Catch a top-level connection dropped from the schematic-derived layout."""
     xml = gfp_check.check_lvs(
-        str(_write_layout(broken_pic_yml, tmp_path)),
+        str(_write_layout(tmp_path, drop_port="o4")),
         str(schematic_project.gsch),
         "qpdk",
         project_root=str(schematic_project.root),

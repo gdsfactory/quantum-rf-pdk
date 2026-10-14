@@ -20,13 +20,9 @@ anywhere else in the package.
 - Prefer composing PDK cells over drawing raw geometry — a sample that reaches for polygons is usually a sign a cell is
   missing.
 
-## Schematic and netlist sources (`.gsch`, `.pic.yml`)
+## Schematic sources (`.gsch`)
 
-- A sample may exist in three linked forms: a Python script, a `.pic.yml` layout netlist, and a `.gsch` schematic. The
-  `check-schematic-sources` pre-commit hook converts the `.gsch` and asserts it matches its `.pic.yml` fallback.
-- **When one of the pair changes, the other must change with it.** A `.pic.yml` edited alone (or vice versa) fails the
-  hook. Flag it.
-- `.pic.yml` files are excluded from the `check-yaml` hook, so a syntax error there will not be caught until the test
-  suite runs. Read new YAML carefully: instance names, port references, and routing settings.
-- Instance and port names in the netlist must match the cell definitions in `qpdk/cells/`. A renamed port in a cell is a
-  breaking change for every sample netlist that references it.
+- `.gsch` files are the source of truth for schematic samples. Do not check in generated YAML fallbacks.
+- Python samples use `qpdk.read.from_gsch`; simulation tests use `qpdk.read.read_gsch` for an in-memory netlist.
+- Run `just fetch-gfp` or set `GFP_BIN` to the converter bundled with GDSFactory+ before building these samples.
+- Instance and port names must match the cell definitions in `qpdk/cells/`.

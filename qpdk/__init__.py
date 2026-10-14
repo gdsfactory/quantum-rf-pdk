@@ -16,6 +16,7 @@ from gdsfactory.typings import ComponentFactory
 import qpdk.samples
 from qpdk import cells, config, helper, tech
 from qpdk.config import PATH
+from qpdk.export import to_3d
 from qpdk.logger import logger
 from qpdk.singleton import SingletonMeta
 from qpdk.tech import (
@@ -128,5 +129,6 @@ __all__ = [
     "helper",
     "logger",
     "tech",
+    "to_3d",
 ]
 __version__ = "0.4.0"
