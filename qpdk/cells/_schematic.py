@@ -51,11 +51,13 @@ _3PORT = [
 
 # Coupled resonator model ports. The resonator endpoint is intentionally
 # retained in the SAX model boundary even though it is not a chip-level port.
+# The coupling line runs above the resonator, matching the layout cell
+# (``resonator_o1`` faces west under ``coupling_o1``, ``resonator_o2`` east).
 _RESONATOR_COUPLED = [
     {"name": "coupling_o1", "side": "left", "type": "photonic"},
+    {"name": "resonator_o1", "side": "left", "type": "photonic"},
     {"name": "coupling_o2", "side": "right", "type": "photonic"},
-    {"name": "resonator_o1", "side": "top", "type": "photonic"},
-    {"name": "resonator_o2", "side": "bottom", "type": "photonic"},
+    {"name": "resonator_o2", "side": "right", "type": "photonic"},
 ]
 
 # The resonator end shares the left side with the coupling input, below it,
@@ -64,6 +66,12 @@ _QUARTER_WAVE_RESONATOR_COUPLED = [
     {"name": "coupling_o1", "side": "left", "type": "photonic"},
     {"name": "resonator_o1", "side": "left", "type": "photonic"},
     {"name": "coupling_o2", "side": "right", "type": "photonic"},
+]
+
+# 90° bend: ``o1`` faces west, ``o2`` north, as in the layout cell.
+_BEND = [
+    {"name": "o1", "side": "left", "type": "photonic"},
+    {"name": "o2", "side": "top", "type": "photonic"},
 ]
 
 # Transmon qubit
@@ -265,7 +273,7 @@ straight_shorted_schematic = schematic(
 bend_circular_schematic = schematic(
     symbol="bend_circular",
     tags=["waveguides"],
-    ports=_2PORT,
+    ports=_BEND,
 )
 
 bend_s_schematic = schematic(

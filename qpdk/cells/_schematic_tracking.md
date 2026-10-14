@@ -5,7 +5,7 @@ This file tracks the status of schematic symbols for PDK cells.
 | Symbol Name         | Status | Icon / Pattern                             |
 | ------------------- | ------ | ------------------------------------------ |
 | straight            | ✅     | straight_schematic (\_2PORT)               |
-| bend_circular       | ✅     | bend_circular_schematic (\_2PORT)          |
+| bend_circular       | ✅     | bend_circular_schematic (\_BEND)           |
 | resonator           | ✅     | resonator_schematic (\_2PORT)              |
 | double_pad_transmon | ✅     | double_pad_transmon_schematic (\_TRANSMON) |
 | meander_inductor    | ✅     | meander_inductor_schematic (\_2PORT)       |
