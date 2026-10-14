@@ -1,6 +1,8 @@
 """Tests for schematic symbols."""
 
 import importlib
+import re
+from importlib.resources import files
 from typing import Any, cast
 
 import gdsfactory as gf
@@ -86,15 +88,75 @@ def test_schematic_factory():
     """Verify that schematic factory returns correct DSchematic objects."""
     s = straight_schematic()
     assert isinstance(s, DSchematic)
-    assert s.info["symbol"] == "straight"
+    assert s.info["symbol"] == "ckt"
+    assert s.info["display"] == {"symbol": "qpdk.symbols:straight.svg"}
     assert "o1" in s.ports
     assert "o2" in s.ports
 
     s = double_pad_transmon_schematic()
     assert isinstance(s, DSchematic)
-    assert s.info["symbol"] == "double_pad_transmon"
+    assert s.info["symbol"] == "ckt"
+    assert s.info["display"] == {"symbol": "qpdk.symbols:double_pad_transmon.svg"}
     assert "left_pad" in s.ports
     assert "right_pad" in s.ports
+
+
+_SIDES = ("left", "right", "top", "bottom")
+
+
+def _mosaic_box(ports: list[dict]) -> tuple[int, int]:
+    """Grid size of the GDSFactory+ schematic symbol box for ``ports``.
+
+    Mirrors ``port-perimeter`` in GDSFactory+'s Mosaic editor (``common.cljc``),
+    which scales the SVG into this box.
+
+    Returns:
+        ``(width, height)`` of the box in grid units.
+    """
+    n = {side: sum(p["side"] == side for p in ports) for side in _SIDES}
+    height = max(1, n["left"], n["right"])
+    if n["left"] % 2 != n["right"] % 2 and height % 2 == 0:
+        height += 1
+    width = max(1, n["top"], n["bottom"])
+    if n["top"] % 2 != n["bottom"] % 2 and width % 2 == 0:
+        width += 1
+    return width, height
+
+
+def _pdk_schematics() -> dict[str, DSchematic]:
+    schematics = {}
+    for name, cell in PDK.cells.items():
+        if (schematic := _get_schematic(cell)) is not None:
+            schematics[name] = schematic
+    return schematics
+
+
+def test_schematics_use_packaged_symbols() -> None:
+    """Draw every schematic as a GDSFactory+ ``ckt`` with fitting artwork.
+
+    Any other ``symbol`` value makes GDSFactory+ show an empty box.
+    """
+    referenced = set()
+    for name, schematic in _pdk_schematics().items():
+        assert schematic.info["symbol"] == "ckt", name
+        if "display" not in schematic.info:
+            continue
+        package, resource = schematic.info["display"]["symbol"].split(":")
+        svg = files(package) / resource
+        assert svg.is_file(), name
+        referenced.add(resource)
+
+        match = re.search(r'viewBox="([^"]+)"', svg.read_text())
+        assert match, f"{resource} has no viewBox"
+        view_box = match.group(1)
+        _, _, width, height = map(float, re.split(r"[\s,]+", view_box))
+        box_width, box_height = _mosaic_box(schematic.info["ports"])
+        assert width / height == pytest.approx(box_width / box_height), name
+
+    packaged = {
+        p.name for p in files("qpdk.symbols").iterdir() if p.name.endswith(".svg")
+    }
+    assert referenced == packaged
 
 
 def test_simulation_cells_have_sax_models() -> None:
