@@ -231,7 +231,7 @@ def unimon_hamiltonian(
     phi_ext: float = jnp.pi,
     n_max: int = 30,
 ) -> jax.Array:
-    r"""Build the unimon Hamiltonian matrix in the charge basis.
+    r"""Build the unimon Hamiltonian matrix in the harmonic-oscillator basis.
 
     The effective single-mode unimon Hamiltonian is
 
@@ -262,11 +262,15 @@ def unimon_hamiltonian(
     conjugate charge variable :math:`n` is continuous, rather than taking discrete
     integer values as it does for a transmon.
 
-    *Note on this implementation*: To evaluate the Hamiltonian, we use a standard
-    truncated discrete charge basis approximation
-    (:math:`n \in \{-n_{\max}, \ldots, +n_{\max}\}`). The charge operator is derived
-    from `qutip.charge`, and the non-compact phase space operators are approximated
-    as nearest-neighbor hopping matrices.
+    *Note on this implementation*: The Hamiltonian is represented in the
+    eigenbasis of the harmonic part :math:`4 E_\text{C} \hat{n}^2
+    + \tfrac{1}{2} E_\text{L} \hat{\varphi}^2`, truncated to
+    :math:`2 n_{\max} + 1` states, with
+    :math:`\hat{\varphi} = \varphi_\text{zpf} (\hat{a} + \hat{a}^\dagger)`,
+    :math:`\hat{n} = \tfrac{i}{2 \varphi_\text{zpf}} (\hat{a}^\dagger - \hat{a})` and
+    :math:`\varphi_\text{zpf} = (2 E_\text{C} / E_\text{L})^{1/4}`.
+    :math:`\cos\hat{\varphi}` is evaluated from the eigendecomposition of the
+    truncated :math:`\hat{\varphi}`.
 
     See :cite:`hyyppaUnimonQubit2022` and :cite:`tuohinoMultimodePhysicsUnimon2024`.
 
@@ -277,45 +281,29 @@ def unimon_hamiltonian(
         phi_ext: External flux bias :math:`\varphi_{\text{ext}}`
             in radians (reduced flux-quantum units).
             The optimal operating point is :math:`\pi`.
-        n_max: Charge-basis truncation; Hilbert-space dimension is
+        n_max: Basis truncation; Hilbert-space dimension is
             :math:`2 n_{\max} + 1`.
 
     Returns:
         A ``(2*n_max+1, 2*n_max+1)`` Hermitian matrix (in GHz).
-
-    Raises:
-        ImportError: If the QuTiP extra is not installed.
-        ModuleNotFoundError: If a dependency other than QuTiP fails to import.
     """
     n_states = 2 * n_max + 1
 
-    try:
-        import qutip  # ruff: ignore[import-outside-top-level]
-        import qutip_jax  # ruff: ignore[import-outside-top-level]
-    except ModuleNotFoundError as e:
-        # Only treat missing top-level qutip/qutip_jax as an extra dependency issue.
-        # Re-raise any other import-time errors (including nested ones) unchanged.
-        if e.name in {"qutip", "qutip_jax"}:
-            raise ImportError(
-                "The QuTiP extra is required for Hamiltonian models. "
-                "Please install it with `pip install qpdk[qutip]`."
-            ) from e
-        raise
+    a = jnp.diag(jnp.sqrt(jnp.arange(1, n_states, dtype=float)), k=1)
+    phi_zpf = (2 * ec_ghz / el_ghz) ** 0.25
+    phi_hat = phi_zpf * (a + a.T)
 
-    # Extract raw JAX arrays from qutip-jax
-    n_hat = qutip.charge(n_max).to(qutip_jax.JaxArray).data._jxa
+    # Build cos(phi) from the truncated phi operator rather than truncating cos(phi)
+    phi_eigvals, phi_eigvecs = jnp.linalg.eigh(phi_hat)
+    cos_phi = (phi_eigvecs * jnp.cos(phi_eigvals)) @ phi_eigvecs.T
 
-    ones = jnp.ones(n_states - 1)
-    phi_hat = qutip.qdiags([ones, ones], [1, -1]).to(qutip_jax.JaxArray).data._jxa
-    cos_phi = (qutip.qdiags([ones, ones], [1, -1]) / 2).to(qutip_jax.JaxArray).data._jxa
+    harmonic = jnp.diag(jnp.sqrt(8 * ec_ghz * el_ghz) * (jnp.arange(n_states) + 0.5))
 
     # H = 4 E_C n^2 + 0.5 E_L (phi - phi_ext)^2 - E_J cos(phi)
-    # Expand the quadratic: (phi - phi_ext)^2 = phi^2 - 2*phi_ext*phi + phi_ext^2
     return (
-        4 * ec_ghz * n_hat @ n_hat
-        + 0.5
-        * el_ghz
-        * (phi_hat @ phi_hat - 2 * phi_ext * phi_hat + phi_ext**2 * jnp.eye(n_states))
+        harmonic
+        - el_ghz * phi_ext * phi_hat
+        + 0.5 * el_ghz * phi_ext**2 * jnp.eye(n_states)
         - ej_ghz * cos_phi
     )
 
@@ -339,7 +327,7 @@ def unimon_energies(
         el_ghz: Inductive energy :math:`E_\text{L}` in GHz.
         ej_ghz: Josephson energy :math:`E_\text{J}` in GHz.
         phi_ext: External flux :math:`\varphi_{\text{ext}}` in radians.
-        n_max: Charge-basis truncation.
+        n_max: Basis truncation, see :func:`unimon_hamiltonian`.
         n_levels: Number of lowest energy levels to return.
 
     Returns:
@@ -392,7 +380,7 @@ def unimon_frequency_and_anharmonicity(
         el_ghz: Inductive energy :math:`E_\text{L}` in GHz.
         ej_ghz: Josephson energy :math:`E_\text{J}` in GHz.
         phi_ext: External flux :math:`\varphi_{\text{ext}}` in radians.
-        n_max: Charge-basis truncation.
+        n_max: Basis truncation, see :func:`unimon_hamiltonian`.
 
     Returns:
         Tuple of (frequency_ghz, anharmonicity_ghz).

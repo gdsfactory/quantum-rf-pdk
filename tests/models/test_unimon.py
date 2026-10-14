@@ -4,6 +4,7 @@ from typing import final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
+import pytest
 from hypothesis import given, settings
 from numpy.testing import assert_allclose
 
@@ -135,6 +136,26 @@ class TestUnimonEnergies:
         )
         assert f01 > 0, "Qubit frequency should be positive"
         assert alpha > 0, "Anharmonicity should be positive at phi_ext = pi"
+
+    @staticmethod
+    def test_harmonic_limit() -> None:
+        """Test that E_J = 0 gives the LC oscillator ladder sqrt(8 E_C E_L) * k."""
+        energies = unimon_energies(ec_ghz=1.0, el_ghz=5.0, ej_ghz=0.0, n_levels=4)
+        assert_allclose(energies, jnp.sqrt(8 * 1.0 * 5.0) * jnp.arange(4), atol=1e-9)
+
+    @staticmethod
+    def test_matches_scqubits_fluxonium() -> None:
+        """Test against the scqubits fluxonium, which has the same single-mode Hamiltonian."""
+        scq = pytest.importorskip("scqubits")
+        for ec, el, ej, phi_ext in [(1.0, 5.0, 10.0, jnp.pi), (0.3, 2.0, 8.0, 1.0)]:
+            fluxonium = scq.Fluxonium(
+                EJ=ej, EC=ec, EL=el, flux=-phi_ext / (2 * jnp.pi), cutoff=150
+            )
+            expected = fluxonium.eigenvals(4)
+            energies = unimon_energies(
+                ec_ghz=ec, el_ghz=el, ej_ghz=ej, phi_ext=phi_ext, n_levels=4
+            )
+            assert_allclose(energies, expected - expected[0], atol=1e-6)
 
     @staticmethod
     def test_convergence_with_n_max() -> None:
