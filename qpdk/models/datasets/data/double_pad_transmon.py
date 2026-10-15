@@ -38,7 +38,7 @@ GRID = {
     "pad_gap": [10.0, 20.0, 40.0],
     "ground_clearance": [100.0, 200.0, 300.0],
 }
-SETTINGS = Settings(near_mesh=5.0, far_mesh=120.0, domain_pad=800.0)
+SETTINGS = Settings(near_mesh=3.5, far_mesh=120.0, domain_pad=1600.0, order=3)
 TERMINALS = ("left_pad", "right_pad")
 
 
