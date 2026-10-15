@@ -201,6 +201,8 @@ nb_execution_excludepatterns = [
     "notebooks/hfss*",
     "notebooks/elmer*",
     "notebooks/matlab_integration*",
+    # Solves on the GDSFactory+ cloud, which needs an account.
+    "notebooks/palace_driven_resonator*",
     # Needs a CUDA GPU; outputs are saved from a manual run (see AGENTS.md).
     "notebooks/jax_backend_comparison*",
 ]
