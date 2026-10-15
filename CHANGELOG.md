@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-10-15
+
+### Added
+
+- Added an FEM dataset format with JAX grid-lookup models, Delta Lake and object-store result stores, dataset generation
+  recipes and a notebook walkthrough, along with Palace CPW coupling datasets and SAX lookup models (the new `delta` and
+  `palace` extras).
+- Added COMSOL sheet simulations and solved CPW resonator and transmon notebooks, with a new `comsol` extra.
+- Added an Elmer interdigital-capacitor capacitance notebook.
+- Added a JAX backend notebook comparing CPU, CUDA and Apple Silicon.
+- Added MATLAB examples for consuming SAX models from the RF Toolbox, electrostatic FEM of an interdigital capacitor
+  with the PDE Toolbox, and the Optimization, Statistics, Global Optimization and Parallel Computing toolboxes.
+- Added schematic symbol artwork for GDSFactory+.
+- Added Typst concept figures explaining microwave models, readout and fabrication variation.
+- Added dark renders for plot-directive figures and svgbob diagrams.
+- Added `llms.txt` to the documentation site with sphinx-llm.
+- Added `qpdk` and `qpdk-dark` sequential colormaps as the default plotting colormaps.
+- Added a picture gallery to the Samples page and redesigned the notebooks page with sphinx-design cards.
+- Added PEP 723 inline script metadata to notebook sources.
+- Added a Touchstone reader and writer that does not depend on scikit-rf.
+
+### Changed
+
+- Replaced numpy with JAX in tests and notebooks where possible.
+- Organized the tests into subfolders by tool.
+- Installed the GDSFactory+ v2 SDK from PyPI instead of the VS Code extension.
+- Read simulation notebook stack parameters from the `LayerStack`.
+- Set units and descriptive scripts upright in math mode and in the Typst figures.
+- Showed the source tag or commit hash on the PDF cover and hid the noise that only affects PDF builds.
+
+### Fixed
+
+- Kept taper and launcher SAX models JAX-jittable, fixed the analytical airbridge network and the quarter-wave resonator
+  termination contract, and passed the meander wire gap to the SAX model.
+- Fixed the unimon Hamiltonian phase operator.
+- Fixed the GDSFactory+ 3D view by spelling derived-layer boolean operations as `not`.
+- Fixed Codecov reporting 0% coverage.
+- Fixed README links to the contributing guide.
+- Kept bibliography names as UTF-8 so citation labels abbreviate.
+- Hid notebook folders from the GDSFactory+ sidebar.
+- Made the HFSS notebooks survive a headless AEDT session.
+- Put `quarter_wave_resonator_coupled` `resonator_o1` bottom-left in the schematic.
+
 ## [0.4.0] - 2026-09-18
 
 ### Added
