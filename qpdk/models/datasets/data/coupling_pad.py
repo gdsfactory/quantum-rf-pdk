@@ -73,6 +73,7 @@ RECIPE = Recipe(
     reference_ground="coplanar_ground_frame",
     provenance={
         "recipe_version": 1,
+        "qpdk_geometry_revision": "5dbc4a0d7ccb50f777191575383f689b53555305",
         "issue": 929,
         "numerical_accuracy": "Nominal p3 refinement from 1/30 um to 0.49/14.7 um changes Maxwell and ground capacitances by less than 1.1%. Representative sensitivity, not a global error bound.",
         "metal": "PEC sheets on a silicon half-domain; no kinetic inductance or junction physics",
