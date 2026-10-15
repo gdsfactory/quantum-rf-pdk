@@ -218,6 +218,23 @@ class TestQuarterWaveResonatorCoupled:
     """Test the fixed three-port quarter-wave coupled resonator."""
 
     @staticmethod
+    @pytest.mark.parametrize(("meanders", "start_with_bend"), [(0, False), (2, True)])
+    def test_non_nested_quarter_wave_layouts(
+        meanders: int, start_with_bend: bool
+    ) -> None:
+        """Layouts without a coupling straight retain their three public ports."""
+        component = quarter_wave_resonator_coupled(
+            length=4000, meanders=meanders, start_with_bend=start_with_bend
+        )
+
+        assert {port.name for port in component.ports} == {
+            "coupling_o1",
+            "coupling_o2",
+            "resonator_o1",
+        }
+        assert component.info["resonator_type"] == "quarter_wave"
+
+    @staticmethod
     def test_terminations_are_not_public_settings() -> None:
         """Terminations are fixed, so the layout factory hides them."""
         parameters = inspect.signature(quarter_wave_resonator_coupled).parameters
