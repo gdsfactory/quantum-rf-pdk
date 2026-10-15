@@ -170,6 +170,8 @@ launcher = [["o1", "waveport"]]
 
 [tool.gdsfactoryplus]
 name = "qpdk"
+# Keep notebook-only components out of the GDSFactory+ sidebar library list.
+ignore = ["notebooks/**", "docs/notebooks/**"]
 
 [tool.gdsfactoryplus.drc]
 pdk = "quantum_rf"
