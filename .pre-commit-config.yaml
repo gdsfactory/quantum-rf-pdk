@@ -55,7 +55,7 @@ repos:
       - id: nbstripout
         priority: 10
         files: ".ipynb"
-        exclude: ^notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|jax_backend_comparison|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration)\.ipynb$
+        exclude: ^notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration)\.ipynb$
       - id: nbstripout
         name: Preserve FEM notebook execution counts
         priority: 10
@@ -66,7 +66,7 @@ repos:
     hooks:
       - id: codespell
         priority: 10
-        exclude: ^(docs/bibliography\.bib|notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|jax_backend_comparison|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration)\.ipynb)$
+        exclude: ^(docs/bibliography\.bib|notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration)\.ipynb)$
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit

@@ -293,16 +293,17 @@ for examples of:
   require external tooling (HFSS, MATLAB) or a GPU are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the
   docs build does not try to execute them
 
-- **GPU notebook**: `jax_backend_comparison` needs a CUDA GPU, so CI does not execute it. On such a machine, execute it
-  and save its outputs, then commit `notebooks/jax_backend_comparison.ipynb`:
+- **JAX benchmark notebook**: `jax_backend_comparison` loads Parquet records and renders its plots during documentation
+  CI. Strip notebook outputs and keep raw machine measurements in `notebooks/data/jax_backend_comparison/*.parquet`,
+  tracked with Git LFS. Each file is one typed nested machine record, including all repetitions, reference traces,
+  workload settings, hardware, and package versions.
 
-  ```bash
-  jax_version="$(uv run --extra models python -c 'import jax; print(jax.__version__)')"
-  QPDK_REQUIRE_GPU=1 uv run --extra models --with "jax[cuda12]==${jax_version}" \
-      --with jupytext --with nbconvert --with ipykernel \
-      jupytext --execute --to ipynb --set-kernel python3 \
-      --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
-  ```
+- **Recording benchmarks**: Run
+  `uv run --extra models --with "jax[cuda12]" python -m qpdk.samples.benchmark_jax_backends notebooks/data/jax_backend_comparison/cuda.parquet`
+  on CUDA hardware with `QPDK_REQUIRE_GPU=1`. The recorder checks precision and device, warms up JIT compilation, and
+  synchronizes every timed evaluation. Use `QPDK_REQUIRE_MPS=1` for Apple Silicon after SAX allows the JAX 0.11 version
+  required by `jax-mps` (gdsfactory/sax#133); do not override the dependency constraint. Changing only the analysis or
+  styling does not require new hardware measurements.
 
 ### Samples Directory
 
@@ -341,7 +342,11 @@ for examples of:
    Keep it a raw cell, not a code cell: a code cell would have no execution count in the pre-executed notebooks, which
    fails the Elmer notebook check in CI. Keep it after the header, not before, or jupytext stops stripping the header.
 
-1. For samples: Create `.py` file in `qpdk/samples/` following existing examples
+1. For samples: Create `.py` file in `qpdk/samples/` following existing examples. New or substantively changed
+   standalone Python scripts must start with a PEP 723 `# /// script` block (after an optional shebang), declaring
+   `requires-python` consistent with the project's supported range and `dependencies` including the QPDK extras they
+   use. This lets `uv run --script qpdk/samples/<name>.py` install the required environment. Library modules and
+   `__init__.py` do not need script metadata.
 
 1. Include docstrings and comments explaining the design and physics
 

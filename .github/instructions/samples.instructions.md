@@ -10,13 +10,22 @@ anywhere else in the package.
 
 ## Python samples
 
+- Flag new or substantively changed standalone Python scripts without a PEP 723 `# /// script` block at the top (after
+  an optional shebang). It must declare `requires-python` consistent with `pyproject.toml` and `dependencies` covering
+  the script's imports, including the QPDK extras it uses, so `uv run --script qpdk/samples/<name>.py` can prepare its
+  environment. Library modules and `__init__.py` do not need script metadata.
+
 - `qpdk/samples/*.py` is exempt from `D100`, `T201` and `PLW0717`, and is excluded from `pyrefly` — do not flag a
   missing module docstring, `print()`, or missing type hints.
+
 - A sample is still expected to run end to end. Flag code that cannot execute as written (undefined names, a component
   that was renamed, a missing `PDK.activate()`).
+
 - Comment the *design intent* and the physics, not the gdsfactory mechanics. A reader should learn why the chip is laid
   out this way.
+
 - Samples are tested to produce valid GDS (`tests/test_pdk.py`). A new sample should be reachable from that coverage.
+
 - Prefer composing PDK cells over drawing raw geometry — a sample that reaches for polygons is usually a sign a cell is
   missing.
 

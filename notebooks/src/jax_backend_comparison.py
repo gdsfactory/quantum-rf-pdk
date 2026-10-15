@@ -18,57 +18,49 @@
 # %% [markdown]
 # # JAX Backend Comparison for Quantum Circuit Simulation
 #
-# ::::{admonition} Required extras
-# :class: tip
+# This notebook loads recorded CPU, CUDA, and Apple Silicon (MPS) measurements
+# from Parquet files in `notebooks/data/jax_backend_comparison/`. Documentation CI
+# executes the analysis and renders the plots; no GPU or live benchmark is needed.
+# The sweeps cover 100 to 30 million frequency points.
+# Each curve identifies its hardware and precision. These are different machines,
+# so the plot compares complete systems, with a CPU baseline for each machine.
 #
-# This notebook needs the `models` extra:
+# ## Recording measurements
+#
+# Install the `models` extra and fetch the data with Git LFS from a checkout:
 #
 # ```bash
-# uv add "qpdk[models]"
-# # or, from a checkout of this repository:
 # uv sync --extra models
-# # or with pip:
-# pip install "qpdk[models]"
+# git lfs pull --include="notebooks/data/jax_backend_comparison/*.parquet"
 # ```
 #
-# The GPU benchmark additionally needs a CUDA-capable GPU and a CUDA build of JAX, e.g.
-# `pip install "jax[cuda12]"`. It is skipped if no GPU is found.
+# The recorder builds a capacitively coupled quarter-wave resonator with 500 µm
+# feedlines, a 20 fF coupling capacitor, and a 4000 µm shorted CPW stub (width
+# 10 µm, gap 6 µm). SAX's pure-JAX `filipsson_gunnar` solver runs on every device;
+# the default KLU solver's FFI kernels are CPU-only. For each sweep size it warms
+# up `jax.jit`, checks output precision and device, then times ten evaluations,
+# synchronizing the entire output with `jax.block_until_ready` on each call.
 #
-# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
-# ::::
+# ```bash
+# QPDK_REQUIRE_GPU=1 uv run --extra models --with "jax[cuda12]" \
+#   python -m qpdk.samples.benchmark_jax_backends \
+#   notebooks/data/jax_backend_comparison/cuda.parquet
+# ```
 #
-# This notebook benchmarks a SAX-based quantum circuit simulation on the **CPU** and
-# **GPU** (CUDA) backends of JAX.
+# Apple Silicon uses experimental [jax-mps](https://github.com/tillahoffmann/jax-mps),
+# which requires JAX 0.11.x. Installing a new environment with normal dependency
+# resolution requires [SAX to allow that version](https://github.com/gdsfactory/sax/pull/133).
+# The saved MPS measurements use an existing experimental JAX 0.11 environment.
+# Once compatible SAX is available, install `jax-mps` alongside `qpdk[models]`
+# and use `QPDK_REQUIRE_MPS=1` with the same recorder, saving `apple-m5.parquet`.
+# MPS supports float32/complex64 only; compare it with CPU and CUDA float32.
+# The saved runs retain their original package versions and model source hash.
 #
-# JAX provides a unified programming model that can transparently target different
-# hardware accelerators.  For large-scale circuit sweeps — e.g. sweeping thousands of
-# frequency points or running optimisation loops — hardware acceleration can give
-# significant speed-ups.
-#
-# ## Workflow
-#
-# 1. Build a coupled resonator circuit with the QPDK model library and SAX.
-# 2. Detect which compute backends are available on the current system.
-# 3. Benchmark the jit-compiled circuit at a range of frequency-resolution sizes on
-#    every available backend.
-# 4. Plot and compare performance, and fit a fixed-overhead plus per-point cost model
-#    to each backend.
-#
-# :::{note}
-# The documentation build does not execute this notebook, since CI runners have no GPU.
-# The page shows the outputs saved by the last run on a CUDA machine (see `AGENTS.md`);
-# if no such run has been saved yet, it shows the code only.  On a CPU-only
-# machine the GPU sections are skipped.
-# :::
-#
-# :::{note}
-# An earlier version of this notebook also benchmarked Intel NPUs through
-# [OpenVINO](https://docs.openvino.ai/2026/).  That section was removed: OpenVINO's
-# JAX/Flax conversion is experimental, its JAX conversion notebook was deleted from the
-# OpenVINO notebooks in the 2026.0 release
-# ([release notes](https://docs.openvino.ai/2026/about-openvino/release-notes-openvino.html#previous-2026-releases)),
-# and the conversion could not handle the complex-valued SAX circuit.
-# :::
+# Parquet stores typed nested records: one machine run per file, with all raw
+# repetitions, workload settings, software versions, errors, and real/imaginary
+# CPU reference arrays. Commit these files through Git LFS. Notebook outputs are
+# stripped; changing plot styling only requires rerendering this analysis.
+# See the {ref}`extras reference <notebook-extras>` for the model dependencies.
 
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -88,242 +80,89 @@ if "google.colab" in sys.modules:
 
 # %% tags=["hide-input", "hide-output"]
 import os
-import time
-import warnings
 
-import jax
-import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
-import sax
-from tqdm import tqdm
+import pyarrow.parquet as pq
 
-from qpdk import PDK
-from qpdk.models.generic import capacitor, tee
-from qpdk.models.waveguides import straight, straight_shorted
-from qpdk.tech import coplanar_waveguide
+import qpdk.colormaps  # ruff: ignore[unused-import] - registers the style colormap
+from qpdk.config import PATH
 
-jax.config.update("jax_enable_x64", True)
-
-PDK.activate()
-
-# %% [markdown]
-# ## Backend Detection
-#
-# We probe each backend and record its availability.  The GPU sections are skipped
-# when no GPU is found, unless `QPDK_REQUIRE_GPU=1` is set, which turns a missing GPU
-# into an error.  Set it when saving outputs for the docs, so a saved run can never
-# silently lack the GPU results.
-
-# %%
-# --- CPU (always available) ---
-cpu_device = jax.devices("cpu")[0]
-
-# --- GPU ---
-try:
-    gpu_device = jax.devices("gpu")[0]
-except RuntimeError:
-    gpu_device = None
-HAS_GPU = gpu_device is not None
-
-if os.environ.get("QPDK_REQUIRE_GPU") == "1" and not HAS_GPU:
-    raise RuntimeError(
-        "QPDK_REQUIRE_GPU=1 but JAX found no GPU. Install a CUDA build of JAX, "
-        'e.g. `pip install "jax[cuda12]"`, and check `nvidia-smi`.'
-    )
-
-print(f"JAX  : {jax.__version__}")
-print(f"CPU  : ✓  ({cpu_device.device_kind})")
-print(
-    f"GPU  : {'✓  (' + gpu_device.device_kind + ')' if HAS_GPU else '✗  (not available)'}"
+plt.style.use(
+    PATH.repo / "docs" / f"{os.environ.get('QPDK_MPL_STYLE', 'qpdk')}.mplstyle"
 )
-print(f"\nDefault JAX backend: {jax.default_backend()}")
 
 # %% [markdown]
-# ## Circuit Setup
+# ## Recorded Runs
 #
-# We build a capacitively-coupled quarter-wave resonator on a coplanar waveguide
-# (CPW) feed-line.  The topology is:
-#
-# ```
-# port o1 ──[feedline1]──[tee]──[feedline2]── port o2
-#                         │
-#                        [cap]
-#                         │
-#                        [res]  (shorted stub ≈ λ/4)
-# ```
-#
-# The resonance frequency of a shorted λ/4 stub of length *L* is approximately
-#
-# $$
-# f_0 = v_\phi / (4 L)
-# $$
-#
-# where $v_\phi$ is the phase velocity on the CPW.
-#
-# We solve the circuit with the `filipsson_gunnar` backend instead of sax's
-# default `klu` backend: the latter routes the solve through
-# [klujax](https://github.com/gdsfactory/klujax), whose FFI kernels are only
-# registered for the CPU platform, so a circuit built with it cannot run on the
-# GPU at all.  `filipsson_gunnar` is pure JAX and yields the same
-# S-parameters (differences at the level of machine epsilon).
+# Runs must share the same workload and CPU float64 reference before their
+# timings can be compared. The reference uses 1001 points from 2 to 8 GHz.
+# All errors below are absolute linear transmission errors, not dB errors or
+# relative errors near the resonance dip.
 
 # %%
-cross_section = coplanar_waveguide(width=10, gap=6)
-
-# Component models available to the SAX circuit solver
-circuit_models = {
-    "straight": straight,
-    "capacitor": capacitor,
-    "straight_shorted": straight_shorted,
-    "tee": tee,
-}
-
-# Netlist: component instances with their physical parameters
-netlist = {
-    "instances": {
-        "feedline1": {
-            "component": "straight",
-            "settings": {"length": 500, "media": cross_section},
-        },
-        "feedline2": {
-            "component": "straight",
-            "settings": {"length": 500, "media": cross_section},
-        },
-        "cap": {
-            "component": "capacitor",
-            "settings": {"capacitance": 20e-15, "z0": 50},
-        },
-        "res": {
-            "component": "straight_shorted",
-            "settings": {"length": 4000, "media": cross_section},
-        },
-        "tee": "tee",
-    },
-    "connections": {
-        "feedline1,o2": "tee,o1",
-        "tee,o2": "feedline2,o1",
-        "tee,o3": "cap,o1",
-        "cap,o2": "res,o1",
-    },
-    "ports": {
-        "o1": "feedline1,o1",
-        "o2": "feedline2,o2",
-    },
-}
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    circuit_fn, circuit_info = sax.circuit(
-        netlist=netlist, models=circuit_models, backend="filipsson_gunnar"
+result_paths = sorted(
+    (PATH.repo / "notebooks/data/jax_backend_comparison").glob("*.parquet")
+)
+if not result_paths:
+    raise FileNotFoundError(
+        "No benchmark records found. Fetch the Parquet files with Git LFS."
+    )
+runs = [pq.read_table(path).to_pylist()[0] for path in result_paths]
+workload = runs[0]["workload"]
+_BENCHMARK_SIZES = workload["sizes"]
+_N_REPEATS = workload["n_repeats"]
+reference = np.asarray(runs[0]["reference_s21"]["real"]) + 1j * np.asarray(
+    runs[0]["reference_s21"]["imag"]
+)
+for result_path, run in zip(result_paths, runs, strict=True):
+    if run["workload"] != workload:
+        raise ValueError(f"Recorded workload differs in {result_path.name}.")
+    trace = run["reference_s21"]
+    np.testing.assert_allclose(
+        np.asarray(trace["real"]) + 1j * np.asarray(trace["imag"]),
+        reference,
+        rtol=1e-10,
+        atol=1e-12,
+        err_msg=f"CPU reference differs in {result_path.name}",
     )
 
-print("Circuit built successfully.")
-print("External ports:", list(netlist["ports"].keys()))
+combined_results = {}
+for run in runs:
+    for result in run["results"]:
+        name = f"{result['hardware']} / {result['backend']}"
+        combined_results.setdefault(name, (run, result))
+
+print(
+    f"{'Hardware / backend':<60} {'JAX':<8} {'Max |S21| error':>17} {'Max complex error':>19}"
+)
+for name, (run, result) in combined_results.items():
+    samples = np.asarray(result["samples_s"])
+    if samples.shape != (len(_BENCHMARK_SIZES), _N_REPEATS) or not np.all(
+        np.isfinite(samples) & (samples > 0)
+    ):
+        raise ValueError(f"Invalid timing samples for {name}.")
+    print(
+        f"{name:<60} {run['versions']['jax']:<8} {result['magnitude_error']:17.6g} {result['complex_error']:19.6g}"
+    )
+    print(
+        f"  {run['system']}; Python {run['python']}; packages {run['versions']}; recorded {run['recorded_at']}"
+    )
 
 # %% [markdown]
-# ### Verify the Simulation
+# ## Reference Transmission
 #
-# Run the circuit at moderate resolution and plot the transmission to confirm
-# the expected resonance dip appears.
+# The saved CPU float64 trace shows the resonance of the coupled resonator.
 
 # %%
-freq_ref = jnp.linspace(2e9, 8e9, 1001)
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    s_ref = circuit_fn(f=freq_ref)
-
-freq_ghz = freq_ref / 1e9
-s21_ref = s_ref["o1", "o2"]
-
+freq_ghz = np.linspace(*workload["frequency_hz"], len(reference)) / 1e9
 fig, ax = plt.subplots()
-ax.plot(freq_ghz, 20 * jnp.log10(jnp.abs(s21_ref)), label="$S_{21}$")
+ax.plot(freq_ghz, 20 * np.log10(np.abs(reference)), label="$S_{21}$")
 ax.set_xlabel("Frequency [GHz]")
 ax.set_ylabel("Magnitude [dB]")
-ax.set_title("Coupled resonator — reference simulation")
+ax.set_title("Coupled resonator reference")
 ax.legend()
-ax.grid(True)
-plt.tight_layout()
 plt.show()
-
-# %% [markdown]
-# ## Benchmarking Helper
-#
-# `sax.circuit` returns a plain Python function, so every call re-dispatches each
-# primitive from Python.  Timing it directly would mostly measure that dispatch
-# overhead, so we wrap it in `jax.jit` first.  The first call for each new input shape
-# compiles the function for the target device; we exclude it from the reported times by
-# warming up before measuring.
-#
-# JAX dispatches computation asynchronously.  We call `jax.block_until_ready` to ensure
-# all pending work has completed before stopping the clock.  `circuit_fn` returns a
-# `sax.SDict`, a plain `dict` mapping port-pair tuples to JAX arrays, and
-# `jax.block_until_ready` accepts any such pytree.
-
-# %%
-circuit_jit = jax.jit(circuit_fn)
-
-_BENCHMARK_SIZES = np.geomspace(100, 100_000, 10, dtype=int).tolist()
-_N_REPEATS = 10  # number of timed runs per size
-
-
-def benchmark_circuit(
-    device: jax.Device,
-    sizes: list[int] = _BENCHMARK_SIZES,
-    n_repeats: int = _N_REPEATS,
-) -> list[float]:
-    """Return median wall-clock time [s] per circuit evaluation on *device*.
-
-    Args:
-        device: JAX device on which to run the circuit.
-        sizes: List of frequency-array lengths to sweep.
-        n_repeats: Number of timed repetitions per size.
-
-    Returns:
-        List of median evaluation times in seconds, one per entry in *sizes*.
-    """
-    times: list[float] = []
-    for n in tqdm(sizes, desc=f"Benchmarking on {device}"):
-        # Committing the input to the device makes the jitted function run there
-        freq = jax.device_put(jnp.linspace(2e9, 8e9, n), device)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            # Warmup: compiles the function for this shape and device
-            jax.block_until_ready(circuit_jit(f=freq))
-
-            run_times: list[float] = []
-            for _ in range(n_repeats):
-                t0 = time.perf_counter()
-                jax.block_until_ready(circuit_jit(f=freq))
-                run_times.append(time.perf_counter() - t0)
-        # Use the median to reduce noise from OS scheduling
-        times.append(float(np.median(run_times)))
-    return times
-
-
-# %% [markdown]
-# ## CPU Backend
-
-# %%
-cpu_times = benchmark_circuit(cpu_device)
-for n, t in zip(_BENCHMARK_SIZES, cpu_times):
-    print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
-
-# %% [markdown]
-# ## GPU Backend
-#
-# This section requires a CUDA-capable GPU.  It is skipped automatically when
-# no GPU is detected.
-
-# %%
-gpu_times: list[float] | None = None
-
-if HAS_GPU:
-    gpu_times = benchmark_circuit(gpu_device)
-    for n, t in zip(_BENCHMARK_SIZES, gpu_times):
-        print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
-else:
-    print("GPU not available on this system — skipping GPU benchmark.")
 
 # %% [markdown]
 # ## Scaling Analysis
@@ -371,9 +210,10 @@ def fit_overhead_model(sizes: list[int], times: list[float]) -> tuple[float, flo
     return float(t0), float(c)
 
 
-backend_times = {"CPU": cpu_times}
-if gpu_times is not None:
-    backend_times["GPU"] = gpu_times
+backend_times = {
+    name: np.median(result["samples_s"], axis=1).tolist()
+    for name, (_, result) in combined_results.items()
+}
 
 fits = {
     name: fit_overhead_model(_BENCHMARK_SIZES, times)
@@ -394,35 +234,65 @@ for name, (t0, c) in fits.items():
 #
 # The plot below shows the median evaluation time against the number of frequency
 # points, with the fitted model as a dashed line for each backend.  On log–log axes the
-# model is flat below $N^\ast$ and has slope 1 above it.
+# model is flat below $N^\ast$ and has slope 1 above it. Hardware and precision
+# are shown for every curve; the CPU rows are the baselines for their own machines.
+# Points show measured medians. Error bars span the 25th to 75th percentiles
+# of the repetitions, while dashed lines show the overhead fit.
+#
+# The lower panel compares each accelerator with the CPU on its own machine at
+# matching precision. Values above 1 mean the GPU is faster. These ratios use
+# measured medians; the fitted lines do not establish a crossover on their own.
 
 # %%
 _n_fit = np.geomspace(_BENCHMARK_SIZES[0], _BENCHMARK_SIZES[-1], 200)
 
-fig, ax = plt.subplots()
-for (name, times), marker in zip(backend_times.items(), "os"):
+fig, (ax, speedup_ax) = plt.subplots(
+    2, 1, sharex=True, figsize=(11, 10), gridspec_kw={"height_ratios": [2, 1]}
+)
+for name, times in backend_times.items():
     t0, c = fits[name]
-    (line,) = ax.plot(
+    samples = np.asarray(combined_results[name][1]["samples_s"])
+    medians = np.asarray(times)
+    lower, upper = np.percentile(samples, [25, 75], axis=1)
+    line = ax.errorbar(
         _BENCHMARK_SIZES,
-        np.asarray(times) * 1_000,
-        marker,
-        label=f"{name} (JAX{'/CUDA' if name == 'GPU' else ''})",
-    )
+        medians * 1_000,
+        yerr=np.asarray([medians - lower, upper - medians]) * 1_000,
+        fmt="o",
+        capsize=2,
+        label=name,
+    )[0]
     ax.plot(
         _n_fit,
         (t0 + c * _n_fit) * 1_000,
         "--",
         color=line.get_color(),
-        label=f"{name} fit: {t0 * 1e6:.0f} µs + {c * 1e9:.0f} ns · N",
     )
+
+    run, result = combined_results[name]
+    backend, precision = result["backend"].split()
+    if backend != "CPU":
+        cpu = next(
+            row for row in run["results"] if row["backend"] == f"CPU {precision}"
+        )
+        speedup = np.median(cpu["samples_s"], axis=1) / medians
+        speedup_ax.plot(
+            _BENCHMARK_SIZES, speedup, "o-", color=line.get_color(), label=name
+        )
 
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel("Number of frequency points")
+speedup_ax.set_xlabel("Number of frequency points")
 ax.set_ylabel("Median time per evaluation [ms]")
 ax.set_title("JAX backend performance — coupled resonator circuit")
 ax.legend()
 ax.grid(True, which="both", ls="--", alpha=0.5)
+speedup_ax.set_yscale("log")
+speedup_ax.set_ylabel("Speedup over matching CPU")
+speedup_ax.axhline(1, color="0.4", ls=":", label="CPU baseline")
+speedup_ax.legend(fontsize=9)
+speedup_ax.grid(True, which="both", ls="--", alpha=0.5)
+speedup_ax.set_xlim(_BENCHMARK_SIZES[0] / 1.2, _BENCHMARK_SIZES[-1] * 1.2)
 plt.tight_layout()
 plt.show()
 
@@ -431,8 +301,9 @@ plt.show()
 #
 # | Backend | Notes |
 # |---------|-------|
-# | **CPU** | Always available; good baseline, with the lowest fixed overhead per call. |
-# | **GPU** | Requires a CUDA build of JAX (e.g. `jax[cuda12]`) and a CUDA-capable GPU.  Compare the fitted per-point costs to see whether it pays off: SAX evaluates in `complex128`, and many consumer GPUs run 64-bit floating point at a small fraction of their 32-bit rate. |
+# | **CPU** | Float64 reference and float32 baseline for comparisons at matching precision. |
+# | **GPU** | CUDA runs at both float64/complex128 and float32/complex64. Compare float32 against MPS and float64 against the CPU reference; consumer GPUs often have much lower float64 throughput. |
+# | **MPS** | Apple Silicon via experimental jax-mps; float32/complex64 only. New environments await SAX support for JAX 0.11. |
 #
 # ### SAX / JAX integration notes
 #
