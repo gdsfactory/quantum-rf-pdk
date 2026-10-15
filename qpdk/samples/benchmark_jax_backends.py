@@ -161,7 +161,7 @@ def _main() -> None:
 
     circuit_jit = jax.jit(circuit_fn)
 
-    benchmark_sizes = np.geomspace(100, 100_000, 10, dtype=int).tolist()
+    benchmark_sizes = np.geomspace(100, 30_000_000, 19, dtype=int).tolist()
     n_repeats = 10
 
     def benchmark_circuit(
@@ -206,6 +206,7 @@ def _main() -> None:
                             "Circuit output precision or device is incorrect."
                         )
 
+                    del result
                     run_times: list[float] = []
                     for _ in range(n_repeats):
                         t0 = time.perf_counter()

@@ -615,8 +615,8 @@ them as globs.
 
     - A CUDA build of JAX or experimental ``jax-mps`` is needed only to record new
       measurements for :doc:`notebooks/jax_backend_comparison`. The notebook itself
-      renders saved Parquet records without a GPU. New MPS recordings wait for SAX to
-      allow the JAX 0.11 version required by the plugin.
+      renders saved Parquet records without a GPU. Installing a new MPS environment
+      requires SAX to allow the JAX 0.11 version required by the plugin.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.

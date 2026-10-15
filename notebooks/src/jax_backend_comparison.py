@@ -21,6 +21,7 @@
 # This notebook loads recorded CPU, CUDA, and Apple Silicon (MPS) measurements
 # from Parquet files in `notebooks/data/jax_backend_comparison/`. Documentation CI
 # executes the analysis and renders the plots; no GPU or live benchmark is needed.
+# The sweeps cover 100 to 30 million frequency points.
 # Each curve identifies its hardware and precision. These are different machines,
 # so the plot compares complete systems, with a CPU baseline for each machine.
 #
@@ -47,8 +48,9 @@
 # ```
 #
 # Apple Silicon uses experimental [jax-mps](https://github.com/tillahoffmann/jax-mps),
-# which requires JAX 0.11.x. New MPS recordings wait for
-# [SAX to allow that version](https://github.com/gdsfactory/sax/pull/133).
+# which requires JAX 0.11.x. Installing a new environment with normal dependency
+# resolution requires [SAX to allow that version](https://github.com/gdsfactory/sax/pull/133).
+# The saved MPS measurements use an existing experimental JAX 0.11 environment.
 # Once compatible SAX is available, install `jax-mps` alongside `qpdk[models]`
 # and use `QPDK_REQUIRE_MPS=1` with the same recorder, saving `apple-m5.parquet`.
 # MPS supports float32/complex64 only; compare it with CPU and CUDA float32.
@@ -236,11 +238,17 @@ for name, (t0, c) in fits.items():
 # are shown for every curve; the CPU rows are the baselines for their own machines.
 # Points show measured medians. Error bars span the 25th to 75th percentiles
 # of the repetitions, while dashed lines show the overhead fit.
+#
+# The lower panel compares each accelerator with the CPU on its own machine at
+# matching precision. Values above 1 mean the GPU is faster. These ratios use
+# measured medians; the fitted lines do not establish a crossover on their own.
 
 # %%
 _n_fit = np.geomspace(_BENCHMARK_SIZES[0], _BENCHMARK_SIZES[-1], 200)
 
-fig, ax = plt.subplots(figsize=(11, 7))
+fig, (ax, speedup_ax) = plt.subplots(
+    2, 1, sharex=True, figsize=(11, 10), gridspec_kw={"height_ratios": [2, 1]}
+)
 for name, times in backend_times.items():
     t0, c = fits[name]
     samples = np.asarray(combined_results[name][1]["samples_s"])
@@ -261,13 +269,30 @@ for name, times in backend_times.items():
         color=line.get_color(),
     )
 
+    run, result = combined_results[name]
+    backend, precision = result["backend"].split()
+    if backend != "CPU":
+        cpu = next(
+            row for row in run["results"] if row["backend"] == f"CPU {precision}"
+        )
+        speedup = np.median(cpu["samples_s"], axis=1) / medians
+        speedup_ax.plot(
+            _BENCHMARK_SIZES, speedup, "o-", color=line.get_color(), label=name
+        )
+
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel("Number of frequency points")
+speedup_ax.set_xlabel("Number of frequency points")
 ax.set_ylabel("Median time per evaluation [ms]")
 ax.set_title("JAX backend performance — coupled resonator circuit")
 ax.legend()
 ax.grid(True, which="both", ls="--", alpha=0.5)
+speedup_ax.set_yscale("log")
+speedup_ax.set_ylabel("Speedup over matching CPU")
+speedup_ax.axhline(1, color="0.4", ls=":", label="CPU baseline")
+speedup_ax.legend(fontsize=9)
+speedup_ax.grid(True, which="both", ls="--", alpha=0.5)
+speedup_ax.set_xlim(_BENCHMARK_SIZES[0] / 1.2, _BENCHMARK_SIZES[-1] * 1.2)
 plt.tight_layout()
 plt.show()
 
@@ -278,7 +303,7 @@ plt.show()
 # |---------|-------|
 # | **CPU** | Float64 reference and float32 baseline for comparisons at matching precision. |
 # | **GPU** | CUDA runs at both float64/complex128 and float32/complex64. Compare float32 against MPS and float64 against the CPU reference; consumer GPUs often have much lower float64 throughput. |
-# | **MPS** | Apple Silicon via experimental jax-mps; float32/complex64 only. New recordings await SAX support for JAX 0.11. |
+# | **MPS** | Apple Silicon via experimental jax-mps; float32/complex64 only. New environments await SAX support for JAX 0.11. |
 #
 # ### SAX / JAX integration notes
 #
