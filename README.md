@@ -43,7 +43,8 @@ in minutes.
   pulse-level simulation, and optimization.
 - **[GDSFactory+](https://gdsfactory.com/plus/) integration** — Seamlessly design, verify, and validate chips with the
   enhanced commercial extension. Includes access to 43+ foundry PDKs, graphical layout and schematic editors directly in
-  VSCode, an AI assistant, and comprehensive verification tools (DRC, LVS, Connectivity checks).
+  VSCode, an AI assistant, and comprehensive verification tools (DRC, LVS, Connectivity checks). See the
+  [QPDK graphical workflow tutorial](https://gdsfactory.com/plus/v2/tutorial/design/graphical-workflow/design-quantum-rf/#explore-and-simulate-a-resonator).
 
 ## Notable Components
 
@@ -177,6 +178,13 @@ chip = from_yaml(
 chip.show()  # Opens in KLayout
 ```
 
+### Graphical Workflow with GDSFactory+
+
+Prefer a visual workflow? QPDK runs in [GDSFactory+](https://gdsfactory.com/plus/), where you can place components in
+the schematic editor, inspect the layout, and run circuit simulations without leaving VSCode. The
+[Quantum-RF graphical workflow tutorial](https://gdsfactory.com/plus/v2/tutorial/design/graphical-workflow/design-quantum-rf/#explore-and-simulate-a-resonator)
+walks through exploring and simulating a resonator with QPDK step by step.
+
 ## Examples & Notebooks
 
 - **[PDK cells in the documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html)** — Collection of all
@@ -192,6 +200,8 @@ chip.show()  # Opens in KLayout
   - Capacitor geometry optimization with [Optuna](https://optuna.org/)
   - Dispersive shift calculation with [Pymablock](https://pymablock.readthedocs.io/en/latest/)
   - Transmon design optimization with [NetKet](https://www.netket.org/)
+- **[GDSFactory+ Quantum-RF tutorial](https://gdsfactory.com/plus/v2/tutorial/design/graphical-workflow/design-quantum-rf/#explore-and-simulate-a-resonator)**
+  — Graphical design and simulation of a resonator with QPDK in GDSFactory+.
 - **[gsim example notebooks](https://gdsfactory.github.io/gsim/)** — Electromagnetic simulation examples using Palace
   and Meep with gdsfactory.
 
