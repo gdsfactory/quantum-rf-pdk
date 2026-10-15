@@ -26,8 +26,8 @@ def _write_vsix(path: Path, *extra_members: str) -> None:
             f"extension/bin/{executable}": b"development binary"
             for executable in executables
         },
+        # The bundled SDK is skipped; the PyPI package provides it.
         "extension/bin/python/gdsfactoryplus/gdsfactoryplus/__init__.py": b"",
-        "extension/bin/python/nyancad/nyancad/__init__.py": b"",
         **dict.fromkeys(extra_members, b"must not escape"),
     }
     with zipfile.ZipFile(path, "w") as archive:
@@ -71,8 +71,7 @@ def test_fetch_gfp_accepts_local_path_with_spaces(tmp_path: Path) -> None:
         assert executable.is_file()
         if platform.system() != "Windows":
             assert os.access(executable, os.X_OK)
-    assert (tmp_path / "build/gfp-vsix/bin/python/gdsfactoryplus").is_dir()
-    assert (tmp_path / "build/gfp-vsix/bin/python/nyancad").is_dir()
+    assert not (tmp_path / "build/gfp-vsix/bin/python").exists()
 
 
 @pytest.mark.parametrize(

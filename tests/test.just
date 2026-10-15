@@ -110,82 +110,16 @@ test-models-force: (_pytest "-s tests/models/test_models_regression.py --force-r
 test-hfss *args: check-lfs
     uv run --all-extras --group dev pytest -m hfss {{ args }}
 
-# Query the latest version of the public GDSFactory+ VS Code extension.
-# Output contract (used by .github/workflows/test.yml and test-gfp-upstream.yml):
-#   line 1: JSON array of Python versions for the gfp test matrix
-#   line 2: latest=<latest extension version> (empty when unknown)
-#   line 3: major=<major version of that release> (empty when unknown)
-[group('test')]
-[script('uv', 'run', '--script')]
-get-gfp-versions:
-    import json, urllib.request
-
-    # The extension bundles a cp312-only SDK and runtime, so the gfp
-    # matrix is pinned to Python 3.12 regardless of the main matrix.
-    print(json.dumps(["3.12"]))
-
-    def print_version_info(latest):
-        major = ""
-        if latest:
-            head = latest.split(".")[0]
-            if head.isdigit():
-                major = head
-        print(f"latest={latest or ''}")
-        print(f"major={major}")
-
-    def version_key(v):
-        # Split off any prerelease suffix and add a release flag so a
-        # stable release beats prereleases at equal version numbers
-        # ("2.1.0" over "2.1.0-beta.1"): without splitting, the "1" in
-        # "2.1.0-beta.1" parses as an extra numeric component and sorts
-        # after the stable release.
-        nums = v.split("-")[0].split(".")
-        return ([int(x) if x.isdigit() else 0 for x in nums], "-" not in v)
-
-    try:
-        body = json.dumps({
-            "filters": [{
-                "criteria": [{"filterType": 7, "value": "gdsfactory.gdsfactoryplus"}],
-                "pageNumber": 1,
-                "pageSize": 1,
-                "sortBy": 0,
-                "sortOrder": 0,
-            }],
-            "assetTypes": [],
-            "flags": 1,  # IncludeVersions
-        }).encode()
-        req = urllib.request.Request(
-            "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery?api-version=7.2-preview.1",
-            data=body,
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json;api-version=7.2-preview.1",
-                "User-Agent": "quantum-rf-pdk-ci",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=30) as r:
-            data = json.loads(r.read())
-        extensions = data.get("results", [{}])[0].get("extensions", [])
-        versions = (
-            [v["version"] for v in extensions[0].get("versions", [])]
-            if extensions
-            else []
-        )
-        print_version_info(max(versions, key=version_key) if versions else None)
-    except Exception:
-        # Unknown version → empty latest/major so consumers skip the gfp job
-        print_version_info(None)
-
 # Download the public GDSFactory+ VS Code extension, or accept a local VSIX
-# path as the argument, and extract the bundled gdsfactoryplus SDK and `gfp`
-# binary into build/gfp-vsix/ (neither is pip-installable: gdsfactoryplus >=
-# 2.0 ships only inside the extension).
-# Writes build/gfp-vsix/env.sh exporting PYTHONPATH (SDK + bundled nyancad)
-# and GFP_BIN (binary) for `just test-gfp` to source.
+# path as the argument, and extract its bundled `gfp` binary into
+# build/gfp-vsix/. The Python SDK comes from PyPI (the `gdsfactoryplus` extra);
+# only the binary, used by the server smoke test and the
+# check-schematic-sources hook, ships solely inside the extension.
+# Writes build/gfp-vsix/env.sh exporting GFP_BIN for `just test-gfp` to source.
 [group('test')]
 [script('uv', 'run', '--script')]
 fetch-gfp $version="latest":
-    import gzip, hashlib, io, json, os, platform, shlex, shutil, stat, subprocess, sys, tempfile, urllib.request, zipfile
+    import gzip, hashlib, io, json, os, platform, shlex, shutil, stat, tempfile, urllib.request, zipfile
     from pathlib import Path
 
     PUBLISHER = "gdsfactory"
@@ -315,6 +249,8 @@ fetch-gfp $version="latest":
                 member
                 for member in vsix.infolist()
                 if member.filename.startswith("extension/bin/")
+                # The bundled SDK duplicates the PyPI package; skip it.
+                and not member.filename.startswith("extension/bin/python/")
                 and not member.is_dir()
             ]
             if sum(member.file_size for member in members) > MAX_EXTRACTED_BYTES:
@@ -339,46 +275,20 @@ fetch-gfp $version="latest":
         ["gfp.exe", "uv.exe", "rg.exe"] if IS_WINDOWS else ["gfp", "uv", "rg"]
     )
     executables = [extract_root / "bin" / name for name in executable_names]
-    sdk_dirs = [
-        extract_root / "bin" / "python" / "gdsfactoryplus",
-        extract_root / "bin" / "python" / "nyancad",
-    ]
     missing_executables = [str(path) for path in executables if not path.is_file()]
     if missing_executables:
         raise SystemExit(
             f"extraction incomplete: executables missing: {missing_executables}"
         )
-    missing_dirs = [str(d) for d in sdk_dirs if not d.is_dir()]
-    if missing_dirs:
-        raise SystemExit(f"extraction incomplete: SDK dirs missing: {missing_dirs}")
     if not IS_WINDOWS:
         for executable in executables:
             executable.chmod(
                 executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
             )
-    import_env = dict(os.environ)
-    import_env["PYTHONPATH"] = os.pathsep.join(str(path) for path in sdk_dirs)
-    import_check = subprocess.run(
-        [sys.executable, "-c", "import gdsfactoryplus, nyancad"],
-        capture_output=True,
-        env=import_env,
-        text=True,
-    )
-    if import_check.returncode:
-        raise SystemExit(f"extracted SDK import failed: {import_check.stderr.strip()}")
-
     final_gfp_bin = OUT / "bin" / executable_names[0]
-    final_sdk_dirs = [
-        OUT / "bin" / "python" / "gdsfactoryplus",
-        OUT / "bin" / "python" / "nyancad",
-    ]
     (extract_root / "VERSION").write_text(wanted)
-    sep = os.pathsep
     env_sh = extract_root / "env.sh"
-    env_sh.write_text(
-        f"export PYTHONPATH={shlex.quote(sep.join(str(d.resolve()) for d in final_sdk_dirs))}\n"
-        f"export GFP_BIN={shlex.quote(str(final_gfp_bin.resolve()))}\n"
-    )
+    env_sh.write_text(f"export GFP_BIN={shlex.quote(str(final_gfp_bin.resolve()))}\n")
 
     if staged:
         backup = OUT.with_name(f".{OUT.name}-previous-{os.getpid()}")
@@ -393,13 +303,14 @@ fetch-gfp $version="latest":
         if backup.exists():
             shutil.rmtree(backup)
         staging_dir.cleanup()
-    print(f"extracted to {OUT}; source {OUT / 'env.sh'} for PYTHONPATH and GFP_BIN")
+    print(f"extracted to {OUT}; source {OUT / 'env.sh'} for GFP_BIN")
 
 # Run GDSFactory+ tests (pytest-based suite marked `gfp`; replaces the `gfp test` CLI removed in v2).
 # GFP_REQUIRED=1: gdsfactoryplus and its v2 API must be present (no silent skips).
-# The SDK and the `gfp` binary are not pip-installable: gdsfactoryplus >= 2.0
-# ships bundled in the public GDSFactory+ VS Code extension, so when the SDK is
-# not importable this recipe first extracts both from the extension (fetch-gfp).
+# The SDK comes from the `gdsfactoryplus` extra, whose wheels are cp312-only,
+# hence Python 3.12. The `gfp` binary still ships only in the VS Code
+# extension: GFP_BIN, else a previous fetch-gfp's env.sh, else fetch-gfp now.
+# `--python 3.12` recreates .venv if it was on another interpreter.
 # The gfp-marked tests live in the three files listed below; naming them
 # explicitly avoids collecting the whole repo under the minimal gfp extras.
 # --dist loadgroup keeps the server tests (xdist_group "gfp-server", which
@@ -409,18 +320,13 @@ fetch-gfp $version="latest":
 test-gfp *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    uv sync --extra gdsfactoryplus --group dev
-    probe_gfp_v2() {
-        uv run --no-sync python -c \
-            "from gdsfactoryplus.factory_metadata import resolve_factory_model; from gdsfactoryplus.sim.sax import simulate_mosaic_sax"
-    }
-    if [[ -f build/gfp-vsix/env.sh ]]; then
+    uv sync --python 3.12 --extra gdsfactoryplus --group dev
+    if [[ -z "${GFP_BIN:-}" && -f build/gfp-vsix/env.sh ]]; then
         source build/gfp-vsix/env.sh
     fi
-    if ! probe_gfp_v2 >/dev/null 2>&1 || [[ -z "${GFP_BIN:-}" || ! -x "${GFP_BIN:-}" ]]; then
+    if [[ -z "${GFP_BIN:-}" || ! -x "${GFP_BIN}" ]]; then
         just fetch-gfp
         source build/gfp-vsix/env.sh
     fi
-    probe_gfp_v2
     GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
         tests/gfp/test_gfp_lvs.py tests/gfp/test_gfp_sax.py tests/gfp/test_gfp_server.py "$@"

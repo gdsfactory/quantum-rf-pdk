@@ -31,7 +31,7 @@ class Circuit:
 
 
 def _gfp_bin() -> Path:
-    """Find the converter bundled with gdsfactoryplus."""
+    """Find the converter bundled in the GDSFactory+ VS Code extension."""
     executable = "gfp.exe" if os.name == "nt" else "gfp"
     candidates = (
         os.environ.get("GFP_BIN"),

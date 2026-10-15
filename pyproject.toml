@@ -46,20 +46,13 @@ circulax = ["circulax>=0.2.3", "optax"]
 comsol = ["MPh>=1.4,<2"]
 # Delta Lake storage for FEM datasets (Dataset(..., delta=True)).
 delta = ["deltalake>=1.1", "polars>=2,<3"]
-# Dependencies of the gdsfactoryplus v2 SDK exercised by the gfp test suite.
-# The SDK itself is not on PyPI: gdsfactoryplus >= 2.0 ships bundled inside
-# the public GDSFactory+ VS Code extension, and `just test-gfp` extracts it
-# from there onto PYTHONPATH (see tests/test.just). Listed here are only the
-# SDK's own dependencies that the suite imports.
+# The GDSFactory+ v2 SDK exercised by the gfp test suite (`just test-gfp`),
+# plus the qpdk modules' own imports the suite reaches. The SDK wheels are
+# cp312-only, hence the marker.
 gdsfactoryplus = [
-  "doroutes>=1.4.0,<2.0.0",
-  "elvis-lvs",
-  "httpx",
-  "inspice",
+  "gdsfactoryplus>=2.1.467; python_version == '3.12'",
   "jaxellip",
-  "kfnetlist",
   "polars>=2,<3",
-  "sax>=0.18.2,<1",
 ]
 graphics = ["trimesh", "pyglet<3"]
 hfss = ["polars>=2,<3", "pyaedt[graphics]>=0.15.0"]

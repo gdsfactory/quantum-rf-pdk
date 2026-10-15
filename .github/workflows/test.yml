@@ -21,7 +21,9 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - run: uv sync --no-dev --no-install-project
-      - name: Fetch gdsfactoryplus converter
+      # The check-schematic-sources hook needs the `gfp` binary, which ships
+      # only in the VS Code extension.
+      - name: Fetch gfp binary
         run: just fetch-gfp
       # lychee's pre-commit hook installs its own binary via cargo-binstall,
       # which needs the token to avoid 403 rate limiting from api.github.com.
@@ -118,40 +120,9 @@ jobs:
             echo "One or more test jobs failed"
             exit 1
           fi
-  filter-gdsfactoryplus-versions:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-latest
-    outputs:
-      python-versions: ${{ steps.filter.outputs.python-versions }}
-      gfp-major: ${{ steps.filter.outputs.gfp-major }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - name: Resolve GDSFactory+ extension version
-        id: filter
-        run: |
-          # `just get-gfp-versions` prints the gfp matrix Python versions as a
-          # JSON array first, then latest=<version> and major=<major> lines of
-          # the public GDSFactory+ VS Code extension.
-          OUTPUT="$(just get-gfp-versions)"
-          echo "python-versions=$(echo "$OUTPUT" | head -n1)" >> "$GITHUB_OUTPUT"
-          MAJOR="$(echo "$OUTPUT" | sed -n 's/^major=//p')"
-          # Empty major (Marketplace unreachable / unknown version) counts as 0
-          # so the gate reliably skips instead of comparing an empty string.
-          echo "gfp-major=${MAJOR:-0}" >> "$GITHUB_OUTPUT"
-  # Gate: the pytest gfp suite targets the gdsfactoryplus v2 SDK, which ships
-  # bundled in the public GDSFactory+ VS Code extension (not on PyPI). Run the
-  # suite only when the latest extension release is v2+; the gate also skips
-  # the job gracefully when the Marketplace cannot be reached.
   test-gdsfactoryplus:
     runs-on: ubuntu-latest
-    needs: filter-gdsfactoryplus-versions
-    if: ${{ needs.filter-gdsfactoryplus-versions.outputs.gfp-major >= 2 && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJson(needs.filter-gdsfactoryplus-versions.outputs.python-versions) }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -160,39 +131,28 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          python-version: ${{ matrix.python-version }}
+          # The gdsfactoryplus wheels are cp312-only.
+          python-version: "3.12"
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Test GDSFactory+
         run: just test-gfp
   test-gdsfactoryplus-result:
     runs-on: ubuntu-latest
     name: GDSFactory+ test result
-    needs: [test-gdsfactoryplus, filter-gdsfactoryplus-versions]
+    needs: [test-gdsfactoryplus]
     # always() suppresses the implicit success(), so the fork gate alone decides:
     # on fork PRs this job is skipped, which makes the required check neutral
     # ("skipped") for branch protection; on the main repo it must run, and the
-    # check below then fails on any failed or cancelled matrix leg or gate
-    # job (a version-gate skip still passes).
+    # check below then fails on any failed, cancelled or skipped test job.
     if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
-      - name: Check GDSFactory+ test matrix results
+      - name: Check GDSFactory+ test result
         run: |
-          # A non-success gate maps the test job to "skipped"; without this
-          # check a broken gate would show up green as "skipped".
-          GATE="${{ needs.filter-gdsfactoryplus-versions.result }}"
-          if [[ "$GATE" != "success" ]]; then
-            echo "GDSFactory+ version gate did not succeed (result: $GATE); the test job did not run meaningfully"
-            exit 1
-          fi
           RESULT="${{ needs.test-gdsfactoryplus.result }}"
           if [[ "$RESULT" == "success" ]]; then
-            echo "All GDSFactory+ test jobs succeeded"
-            exit 0
-          elif [[ "$RESULT" == "skipped" ]]; then
-            echo "GDSFactory+ test job skipped: latest extension release is < 2.0 or the Marketplace was unreachable"
-            exit 0
+            echo "GDSFactory+ tests succeeded"
           else
-            echo "One or more GDSFactory+ test jobs failed"
+            echo "GDSFactory+ tests did not succeed (result: $RESULT)"
             exit 1
           fi
   code-coverage:
