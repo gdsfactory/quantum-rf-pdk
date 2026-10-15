@@ -304,6 +304,16 @@ for examples of:
       --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
   ```
 
+  The Apple Silicon (MPS) section runs only on a Mac with the experimental `jax-mps` plugin, which needs `jax`/`jaxlib`
+  0.11.x. On such a machine:
+
+  ```bash
+  QPDK_REQUIRE_MPS=1 uv run --extra models --with jax-mps \
+      --with jupytext --with nbconvert --with ipykernel \
+      jupytext --execute --to ipynb --set-kernel python3 \
+      --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
+  ```
+
 ### Samples Directory
 
 - **Location**: `qpdk/samples/` contains example layout and simulation scripts

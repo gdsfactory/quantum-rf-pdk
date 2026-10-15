@@ -34,11 +34,16 @@
 # The GPU benchmark additionally needs a CUDA-capable GPU and a CUDA build of JAX, e.g.
 # `pip install "jax[cuda12]"`. It is skipped if no GPU is found.
 #
+# The Apple Silicon benchmark needs a Mac with an Apple GPU and the experimental
+# [jax-mps](https://github.com/tillahoffmann/jax-mps) plugin (`pip install jax-mps`,
+# Python ≥ 3.12).  jax-mps is built for `jax`/`jaxlib` 0.11.x only.  It is skipped if
+# no MPS device is found.
+#
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# This notebook benchmarks a SAX-based quantum circuit simulation on the **CPU** and
-# **GPU** (CUDA) backends of JAX.
+# This notebook benchmarks a SAX-based quantum circuit simulation on the **CPU**,
+# **GPU** (CUDA) and **Apple Silicon GPU** (Metal, through jax-mps) backends of JAX.
 #
 # JAX provides a unified programming model that can transparently target different
 # hardware accelerators.  For large-scale circuit sweeps — e.g. sweeping thousands of
@@ -56,9 +61,9 @@
 #
 # :::{note}
 # The documentation build does not execute this notebook, since CI runners have no GPU.
-# The page shows the outputs saved by the last run on a CUDA machine (see `AGENTS.md`);
-# if no such run has been saved yet, it shows the code only.  On a CPU-only
-# machine the GPU sections are skipped.
+# The page shows the outputs saved by the last run on an accelerator machine (see
+# `AGENTS.md`); if no such run has been saved yet, it shows the code only.  Sections
+# for accelerators that are not present are skipped.
 # :::
 #
 # :::{note}
@@ -113,7 +118,12 @@ PDK.activate()
 # We probe each backend and record its availability.  The GPU sections are skipped
 # when no GPU is found, unless `QPDK_REQUIRE_GPU=1` is set, which turns a missing GPU
 # into an error.  Set it when saving outputs for the docs, so a saved run can never
-# silently lack the GPU results.
+# silently lack the GPU results.  `QPDK_REQUIRE_MPS=1` does the same for the Apple
+# Silicon GPU.
+#
+# Once installed, jax-mps registers itself as a JAX platform and may become the default
+# backend.  We pin the default device to the CPU so that only the benchmark sections
+# run on an accelerator.
 
 # %%
 # --- CPU (always available) ---
@@ -132,10 +142,28 @@ if os.environ.get("QPDK_REQUIRE_GPU") == "1" and not HAS_GPU:
         'e.g. `pip install "jax[cuda12]"`, and check `nvidia-smi`.'
     )
 
+# --- Apple Silicon GPU (jax-mps) ---
+try:
+    mps_device = jax.devices("mps")[0]
+except RuntimeError:
+    mps_device = None
+HAS_MPS = mps_device is not None
+
+if os.environ.get("QPDK_REQUIRE_MPS") == "1" and not HAS_MPS:
+    raise RuntimeError(
+        "QPDK_REQUIRE_MPS=1 but JAX found no MPS device. Install the jax-mps plugin "
+        "(`pip install jax-mps`) on a Mac with Apple Silicon."
+    )
+
+jax.config.update("jax_default_device", cpu_device)
+
 print(f"JAX  : {jax.__version__}")
 print(f"CPU  : ✓  ({cpu_device.device_kind})")
 print(
     f"GPU  : {'✓  (' + gpu_device.device_kind + ')' if HAS_GPU else '✗  (not available)'}"
+)
+print(
+    f"MPS  : {'✓  (' + mps_device.device_kind + ')' if HAS_MPS else '✗  (not available)'}"
 )
 print(f"\nDefault JAX backend: {jax.default_backend()}")
 
@@ -259,6 +287,10 @@ plt.show()
 # all pending work has completed before stopping the clock.  `circuit_fn` returns a
 # `sax.SDict`, a plain `dict` mapping port-pair tuples to JAX arrays, and
 # `jax.block_until_ready` accepts any such pytree.
+#
+# With `single_precision=True` the benchmark runs inside `jax.enable_x64(False)`, so
+# the frequency array is `float32` and the circuit evaluates in `complex64`.  Metal has
+# no 64-bit floating point, so this is the only precision the MPS backend can run.
 
 # %%
 circuit_jit = jax.jit(circuit_fn)
@@ -271,6 +303,7 @@ def benchmark_circuit(
     device: jax.Device,
     sizes: list[int] = _BENCHMARK_SIZES,
     n_repeats: int = _N_REPEATS,
+    single_precision: bool = False,
 ) -> list[float]:
     """Return median wall-clock time [s] per circuit evaluation on *device*.
 
@@ -278,15 +311,18 @@ def benchmark_circuit(
         device: JAX device on which to run the circuit.
         sizes: List of frequency-array lengths to sweep.
         n_repeats: Number of timed repetitions per size.
+        single_precision: Evaluate in ``float32``/``complex64`` instead of
+            ``float64``/``complex128``.
 
     Returns:
         List of median evaluation times in seconds, one per entry in *sizes*.
     """
     times: list[float] = []
-    for n in tqdm(sizes, desc=f"Benchmarking on {device}"):
-        # Committing the input to the device makes the jitted function run there
-        freq = jax.device_put(jnp.linspace(2e9, 8e9, n), device)
-        with warnings.catch_warnings():
+    precision = "float32" if single_precision else "float64"
+    for n in tqdm(sizes, desc=f"Benchmarking on {device} ({precision})"):
+        with jax.enable_x64(not single_precision), warnings.catch_warnings():
+            # Committing the input to the device makes the jitted function run there
+            freq = jax.device_put(jnp.linspace(2e9, 8e9, n), device)
             warnings.simplefilter("ignore")
             # Warmup: compiles the function for this shape and device
             jax.block_until_ready(circuit_jit(f=freq))
@@ -324,6 +360,57 @@ if HAS_GPU:
         print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
 else:
     print("GPU not available on this system — skipping GPU benchmark.")
+
+# %% [markdown]
+# ## Single Precision
+#
+# Apple GPUs have no 64-bit floating point, and jax-mps narrows `complex128` arrays to
+# `complex64` (with a warning).  Before benchmarking the MPS backend we therefore
+# check how much accuracy the circuit loses in single precision, by evaluating the
+# reference sweep on the CPU at `float32` and comparing it with the `float64` result.
+
+# %%
+with jax.enable_x64(False), warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    s_ref_f32 = circuit_jit(f=jnp.linspace(2e9, 8e9, freq_ref.size))
+
+s21_f64 = np.asarray(s21_ref)
+s21_f32 = np.asarray(s_ref_f32["o1", "o2"])
+print(f"dtype                 : {s21_f32.dtype} (vs {s21_f64.dtype})")
+print(f"max |ΔS21|            : {np.max(np.abs(s21_f32 - s21_f64)):.2e}")
+print(
+    "max |Δ|S21|| [dB]     : "
+    f"{np.max(np.abs(20 * np.log10(np.abs(s21_f32)) - 20 * np.log10(np.abs(s21_f64)))):.2e}"
+)
+
+# %% [markdown]
+# The MPS timings below are compared with a `float32` CPU baseline, so that
+# both sides do the same arithmetic.
+
+# %%
+cpu_f32_times = benchmark_circuit(cpu_device, single_precision=True)
+for n, t in zip(_BENCHMARK_SIZES, cpu_f32_times):
+    print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
+
+# %% [markdown]
+# ## Apple Silicon GPU Backend (MPS)
+#
+# This section requires a Mac with Apple Silicon and the
+# [jax-mps](https://github.com/tillahoffmann/jax-mps) plugin.  It is skipped
+# automatically when no MPS device is detected.  jax-mps is experimental: it maps
+# StableHLO to [MLX](https://github.com/ml-explore/mlx) operations, and not every JAX
+# feature is supported.  The `filipsson_gunnar` backend used here needs only complex
+# element-wise arithmetic, which jax-mps supports.
+
+# %%
+mps_times: list[float] | None = None
+
+if HAS_MPS:
+    mps_times = benchmark_circuit(mps_device, single_precision=True)
+    for n, t in zip(_BENCHMARK_SIZES, mps_times):
+        print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
+else:
+    print("MPS not available on this system — skipping Apple Silicon benchmark.")
 
 # %% [markdown]
 # ## Scaling Analysis
@@ -374,6 +461,9 @@ def fit_overhead_model(sizes: list[int], times: list[float]) -> tuple[float, flo
 backend_times = {"CPU": cpu_times}
 if gpu_times is not None:
     backend_times["GPU"] = gpu_times
+backend_times["CPU (float32)"] = cpu_f32_times
+if mps_times is not None:
+    backend_times["MPS (float32)"] = mps_times
 
 fits = {
     name: fit_overhead_model(_BENCHMARK_SIZES, times)
@@ -398,15 +488,16 @@ for name, (t0, c) in fits.items():
 
 # %%
 _n_fit = np.geomspace(_BENCHMARK_SIZES[0], _BENCHMARK_SIZES[-1], 200)
+_runtime_labels = {"GPU": "JAX/CUDA", "MPS (float32)": "JAX/jax-mps"}
 
 fig, ax = plt.subplots()
-for (name, times), marker in zip(backend_times.items(), "os"):
+for (name, times), marker in zip(backend_times.items(), "os^v"):
     t0, c = fits[name]
     (line,) = ax.plot(
         _BENCHMARK_SIZES,
         np.asarray(times) * 1_000,
         marker,
-        label=f"{name} (JAX{'/CUDA' if name == 'GPU' else ''})",
+        label=f"{name} ({_runtime_labels.get(name, 'JAX')})",
     )
     ax.plot(
         _n_fit,
@@ -433,6 +524,8 @@ plt.show()
 # |---------|-------|
 # | **CPU** | Always available; good baseline, with the lowest fixed overhead per call. |
 # | **GPU** | Requires a CUDA build of JAX (e.g. `jax[cuda12]`) and a CUDA-capable GPU.  Compare the fitted per-point costs to see whether it pays off: SAX evaluates in `complex128`, and many consumer GPUs run 64-bit floating point at a small fraction of their 32-bit rate. |
+# | **CPU (float32)** | Same circuit in `complex64`.  Baseline for the MPS backend; see the single-precision section for the accuracy cost. |
+# | **MPS** | Requires Apple Silicon and the experimental jax-mps plugin (`jax`/`jaxlib` 0.11.x).  Single precision only, since Metal has no 64-bit floating point. |
 #
 # ### SAX / JAX integration notes
 #
