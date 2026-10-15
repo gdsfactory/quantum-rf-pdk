@@ -603,10 +603,9 @@ them as globs.
       - ``trimesh``, ``pyglet``
       - Interactive 3-D viewing of component meshes. Not needed by any notebook.
     - - ``gdsfactoryplus``
-      - ``doroutes``, ``elvis-lvs``, ``httpx``, ``inspice``, ``jaxellip``,
-        ``kfnetlist``, ``sax``
-      - Dependencies of the GDSFactory+ v2 SDK exercised by ``just test-gfp``. Not
-        needed by any notebook.
+      - ``gdsfactoryplus`` (Python 3.12 only), ``jaxellip``, ``polars``
+      - The GDSFactory+ v2 SDK exercised by ``just test-gfp``. Not needed by any
+        notebook.
 
 .. note::
 

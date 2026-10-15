@@ -62,7 +62,7 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - name: Generate SBOM
         run: |
-          uv run --all-extras --with cyclonedx-bom cyclonedx-py environment --pyproject pyproject.toml --output-format JSON --output-file sbom.json
+          uv run --all-extras --no-extra gdsfactoryplus --with cyclonedx-bom cyclonedx-py environment --pyproject pyproject.toml --output-format JSON --output-file sbom.json
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

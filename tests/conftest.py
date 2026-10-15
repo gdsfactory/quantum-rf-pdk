@@ -31,9 +31,8 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
     everything); otherwise a silently missing dependency would green the CI
     with the SAX/LVS coverage gone.
 
-    gdsfactoryplus >= 2.0 is not on PyPI; it ships bundled in the public
-    GDSFactory+ VS Code extension. ``just test-gfp`` provisions it from the
-    extension automatically (see ``fetch-gfp`` in ``tests/test.just``).
+    gdsfactoryplus comes from the ``gdsfactoryplus`` extra (Python 3.12 only);
+    ``just test-gfp`` installs it.
 
     Returns:
         The imported module.
@@ -48,7 +47,7 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
         missing = exc.name or ""
         required = os.environ.get(GFP_REQUIRED_ENV) == "1"
         if missing == "gdsfactoryplus":
-            hint = "run `just fetch-gfp` and source build/gfp-vsix/env.sh"
+            hint = "install the gdsfactoryplus extra on Python 3.12"
             if required:
                 pytest.fail(
                     f"gdsfactoryplus is required (GFP_REQUIRED=1) but not "
@@ -71,8 +70,7 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
             pytest.fail(
                 f"gdsfactoryplus is required (GFP_REQUIRED=1) but its "
                 f"dependency {missing!r} is not importable — the SDK "
-                "provisioning is broken; run `just fetch-gfp` and source "
-                "build/gfp-vsix/env.sh, or install the gdsfactoryplus extra"
+                "provisioning is broken; install the gdsfactoryplus extra"
             )
         pytest.skip(
             f"optional dependency {missing!r} not installed", allow_module_level=True
