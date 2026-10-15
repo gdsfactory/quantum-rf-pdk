@@ -118,6 +118,7 @@ celerybeat.pid
 .env
 .venv
 .venv-mps/
+.venv-cuda/
 env/
 venv/
 ENV/

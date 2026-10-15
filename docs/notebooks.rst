@@ -194,7 +194,8 @@ Microwave components as linear, frequency-dependent scattering matrices, impleme
         :class-card: notebook-card
 
         SAX circuit evaluation on CPU, CUDA, and Apple Silicon (MPS), with matching
-        precision baselines and accuracy checks. Accelerator runs happen outside CI.
+        precision baselines and accuracy checks. Recorded runs from both machines share
+        a scaling plot; accelerator runs happen outside CI.
 
         +++
 
