@@ -293,8 +293,8 @@ for examples of:
   require external tooling (HFSS, MATLAB) or a GPU are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the
   docs build does not try to execute them
 
-- **GPU notebook**: `jax_backend_comparison` needs a CUDA GPU, so CI does not execute it. On such a machine, execute it
-  and save its outputs, then commit `notebooks/jax_backend_comparison.ipynb`:
+- **GPU notebook**: `jax_backend_comparison` needs a CUDA or Apple Silicon GPU, so CI does not execute it. On a CUDA
+  machine, execute it and save its outputs, then commit `notebooks/jax_backend_comparison.ipynb`:
 
   ```bash
   jax_version="$(uv run --extra models python -c 'import jax; print(jax.__version__)')"
@@ -303,6 +303,26 @@ for examples of:
       jupytext --execute --to ipynb --set-kernel python3 \
       --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
   ```
+
+### Apple Silicon benchmark outputs
+
+`jax_backend_comparison` also supports Apple Silicon through experimental `jax-mps`. SAX currently caps JAX below the
+plugin's required 0.11.x, so use a separate environment with a scoped override instead of changing the project lockfile:
+
+```bash
+uv venv --python 3.13 .venv-mps
+uv pip install --python .venv-mps/bin/python -e ".[models]" \
+    --override .github/jax-mps-overrides.txt jax-mps==0.11.0 jupytext nbconvert ipykernel
+QPDK_REQUIRE_MPS=1 JAX_PLATFORMS=cpu,mps .venv-mps/bin/jupytext \
+    --execute --to ipynb --set-kernel python3 \
+    --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
+```
+
+Use that environment's executables directly; `uv run` would sync back to the locked JAX version. The notebook records
+the chip, macOS and package versions, checks output precision and device, and compares CPU float32 and MPS complex64
+results against the CPU float64 reference. CUDA and MPS outputs are saved from separate machines; regenerate the whole
+notebook so the recorded environment describes every timing row. The override does not establish general SAX or KLU
+compatibility with JAX 0.11.
 
 ### Samples Directory
 
