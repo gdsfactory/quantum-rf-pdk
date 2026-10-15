@@ -1,32 +1,52 @@
 instances:
-  resonator_coupled:
-    component: resonator_coupled
+  resonator_coupling_region:
+    component: resonator_coupling_region
     info:
       coupling_gap: 20
       coupling_length: 200
-      cross_section_name: coplanar_waveguide
-      length: 4000
-      resonator_type: quarter_wave
+      length: 302.204
     settings:
-      bend_spec: bend_circular
       coupling_gap: 20
       coupling_straight_length: 200
       cross_section: cpw
       cross_section_non_resonator: cpw
+      length: 302.204
+  resonator_meander:
+    component: resonator_meander
+    info:
+      length: 3697.796
+    settings:
+      bend_spec: bend_circular
+      cross_section: cpw
       end_with_bend: false
-      length: 4000
+      length: 3697.796
       meanders: 6
-      open_end: false
-      open_start: true
-      start_with_bend: false
-nets: []
+  short:
+    component: short
+    info: {}
+    settings: {}
+nets:
+- p1: resonator_coupling_region,resonator_o2
+  p2: resonator_meander,o1
+- p1: resonator_meander,o2
+  p2: short,o1
 placements:
-  resonator_coupled:
+  resonator_coupling_region:
     mirror: false
     rotation: 0
     x: 6
     y: -30
+  resonator_meander:
+    mirror: false
+    rotation: 90
+    x: 308.204
+    y: -30
+  short:
+    mirror: false
+    rotation: 0
+    x: 308.204
+    y: -1230
 ports:
-  coupling_o1: resonator_coupled,coupling_o1
-  coupling_o2: resonator_coupled,coupling_o2
-  resonator_o1: resonator_coupled,resonator_o1
+  coupling_o1: resonator_coupling_region,coupling_o1
+  coupling_o2: resonator_coupling_region,coupling_o2
+  resonator_o1: resonator_coupling_region,resonator_o1

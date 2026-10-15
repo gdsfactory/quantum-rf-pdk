@@ -1,0 +1,28 @@
+info:
+  length: 3700
+name: resonator_meander_L3700_M6_BSbend_circular_CScpw_EWBFalse
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 90
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - -1200
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 270
+    port_type: optical
+    width: 10
+settings:
+  bend_spec: bend_circular
+  cross_section: cpw
+  end_with_bend: false
+  length: 3700
+  meanders: 6

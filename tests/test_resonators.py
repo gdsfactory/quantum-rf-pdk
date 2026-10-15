@@ -237,11 +237,20 @@ class TestQuarterWaveResonatorCoupled:
         }
 
         netlist = c.get_netlist()
-        (instance,) = netlist["instances"].values()
-
-        assert instance["component"] == "resonator_coupled"
-        assert instance["settings"]["open_start"] is True
-        assert instance["settings"]["open_end"] is False
+        assert {
+            instance["component"] for instance in netlist["instances"].values()
+        } == {
+            "resonator_coupling_region",
+            "resonator_meander",
+            "short",
+        }
+        assert {frozenset(net.values()) for net in netlist["nets"]} == {
+            frozenset({
+                "resonator_coupling_region,resonator_o2",
+                "resonator_meander,o1",
+            }),
+            frozenset({"resonator_meander,o2", "short,o1"}),
+        }
         assert c.info["resonator_type"] == "quarter_wave"
 
         # Pin the etch geometry, not just the settings literals above: an
