@@ -1,6 +1,6 @@
 {
   "probeline_sbend_west_top": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -10,8 +10,8 @@
     "irl_x": 550,
     "bbox_height": 22,
     "nets": {
-      "o1": "net5",
-      "o2": "net7"
+      "o1": "top_wire_01",
+      "o2": "top_wire_02"
     },
     "ports": [
       {
@@ -50,7 +50,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 2.278,
+    "x": 6,
     "texture_key": "qpdk.cells.waveguides.bend_s_0b896fad",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.bend_s",
@@ -65,7 +65,7 @@
     }
   },
   "resonator_top_2": {
-    "y": 6.681,
+    "y": 1,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -75,9 +75,9 @@
     "irl_x": 2149.9595,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net20",
-      "resonator_o1": "net23",
-      "coupling_o2": "net26"
+      "coupling_o1": "top_wire_05",
+      "resonator_o1": "net14",
+      "coupling_o2": "top_wire_06"
     },
     "ports": [
       {
@@ -132,7 +132,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 8.905,
+    "x": 24,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_ebab9b15",
     "mirror": true,
     "irl_y": -1613,
@@ -150,7 +150,7 @@
     }
   },
   "probe_west_bot": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -210,
@@ -160,8 +160,8 @@
     "irl_x": 150,
     "bbox_height": 420,
     "nets": {
-      "waveport": "net0",
-      "o1": "net4"
+      "waveport": "o3",
+      "o1": "bot_wire_01"
     },
     "ports": [
       {
@@ -200,7 +200,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 0.621,
+    "x": 2,
     "texture_key": "qpdk.cells.launcher.launcher_0c517617",
     "irl_y": 0,
     "model": "qpdk.cells.launcher.launcher",
@@ -212,7 +212,7 @@
     }
   },
   "resonator_bot_2": {
-    "y": -2.539,
+    "y": 15,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -222,9 +222,9 @@
     "irl_x": 2142.8165,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net19",
-      "resonator_o1": "net22",
-      "coupling_o2": "net25"
+      "coupling_o1": "bot_wire_05",
+      "resonator_o1": "net15",
+      "coupling_o2": "bot_wire_06"
     },
     "ports": [
       {
@@ -279,7 +279,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 8.876,
+    "x": 24,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_d8736614",
     "irl_y": 613,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -296,7 +296,7 @@
     }
   },
   "probe_east_bot": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "transform": [
       -1,
@@ -315,8 +315,8 @@
     "irl_x": 8850,
     "bbox_height": 420,
     "nets": {
-      "o1": "net90",
-      "waveport": "net94"
+      "o1": "bot_wire_20",
+      "waveport": "o4"
     },
     "ports": [
       {
@@ -355,7 +355,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 36.657,
+    "x": 98,
     "texture_key": "qpdk.cells.launcher.launcher_0c517617",
     "mirror": true,
     "irl_y": 0,
@@ -368,7 +368,7 @@
     }
   },
   "resonator_top_6": {
-    "y": 6.681,
+    "y": 1,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -378,9 +378,9 @@
     "irl_x": 6207.102,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net59",
-      "resonator_o1": "net65",
-      "coupling_o2": "net64"
+      "coupling_o1": "top_wire_13",
+      "resonator_o1": "net38",
+      "coupling_o2": "top_wire_14"
     },
     "ports": [
       {
@@ -435,7 +435,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 25.71,
+    "x": 64,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_3f7a0634",
     "mirror": true,
     "irl_y": -1613,
@@ -453,7 +453,7 @@
     }
   },
   "probe_east_top": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "transform": [
       -1,
@@ -472,8 +472,8 @@
     "irl_x": 8850,
     "bbox_height": 420,
     "nets": {
-      "o1": "net91",
-      "waveport": "net95"
+      "o1": "top_wire_20",
+      "waveport": "o2"
     },
     "ports": [
       {
@@ -512,7 +512,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 36.657,
+    "x": 98,
     "texture_key": "qpdk.cells.launcher.launcher_0c517617",
     "mirror": true,
     "irl_y": -1000,
@@ -525,7 +525,7 @@
     }
   },
   "o4": {
-    "y": 0,
+    "y": 17,
     "transform": [
       6.123233995736766e-17,
       -1,
@@ -543,15 +543,15 @@
     "irl_x": 9000,
     "nature": "photonic",
     "nets": {
-      "P": "port_net_o4"
+      "P": "o4"
     },
     "id": null,
-    "x": 37.279,
+    "x": 100,
     "irl_y": 0,
     "port_type": "optical"
   },
   "probeline_sbend_west_bot": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -561,8 +561,8 @@
     "irl_x": 550,
     "bbox_height": 22,
     "nets": {
-      "o1": "net4",
-      "o2": "net6"
+      "o1": "bot_wire_01",
+      "o2": "bot_wire_02"
     },
     "ports": [
       {
@@ -601,7 +601,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 2.278,
+    "x": 6,
     "texture_key": "qpdk.cells.waveguides.bend_s_0b896fad",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.bend_s",
@@ -616,7 +616,7 @@
     }
   },
   "probeline_straight_top_1": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -626,8 +626,8 @@
     "irl_x": 1600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net16",
-      "o2": "net20"
+      "o1": "top_wire_04",
+      "o2": "top_wire_05"
     },
     "ports": [
       {
@@ -666,7 +666,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 6.627,
+    "x": 20,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -677,7 +677,7 @@
     }
   },
   "resonator_bot_4": {
-    "y": -2.539,
+    "y": 15,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -687,9 +687,9 @@
     "irl_x": 4171.388,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net39",
-      "resonator_o1": "net42",
-      "coupling_o2": "net45"
+      "coupling_o1": "bot_wire_09",
+      "resonator_o1": "net27",
+      "coupling_o2": "bot_wire_10"
     },
     "ports": [
       {
@@ -744,7 +744,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 17.278,
+    "x": 44,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_df60fd2f",
     "irl_y": 613,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -761,7 +761,7 @@
     }
   },
   "resonator_bot_8": {
-    "y": -2.539,
+    "y": 15,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -771,9 +771,9 @@
     "irl_x": 8228.5305,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net78",
-      "resonator_o1": "net82",
-      "coupling_o2": "net83"
+      "coupling_o1": "bot_wire_17",
+      "resonator_o1": "net51",
+      "coupling_o2": "bot_wire_18"
     },
     "ports": [
       {
@@ -828,7 +828,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 34.083,
+    "x": 84,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_332f684e",
     "irl_y": 613,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -845,7 +845,7 @@
     }
   },
   "o1": {
-    "y": 4.142,
+    "y": 3,
     "transform": [
       6.123233995736766e-17,
       -1,
@@ -863,15 +863,15 @@
     "irl_x": 0,
     "nature": "photonic",
     "nets": {
-      "P": "port_net_o1"
+      "P": "o1"
     },
     "id": null,
-    "x": 0,
+    "x": 2,
     "irl_y": -1000,
     "port_type": "optical"
   },
   "probeline_straight_west_bot": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "transform": [
       -1,
@@ -890,8 +890,8 @@
     "irl_x": 900,
     "bbox_height": 22,
     "nets": {
-      "o2": "net6",
-      "o1": "net11"
+      "o2": "bot_wire_02",
+      "o1": "bot_wire_03"
     },
     "ports": [
       {
@@ -930,7 +930,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 3.728,
+    "x": 10,
     "texture_key": "qpdk.cells.waveguides.straight_d1154dd7",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -941,7 +941,7 @@
     }
   },
   "probeline_straight_bot_6": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -951,8 +951,8 @@
     "irl_x": 6600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net63",
-      "o2": "net68"
+      "o1": "bot_wire_14",
+      "o2": "bot_wire_15"
     },
     "ports": [
       {
@@ -991,7 +991,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 27.338,
+    "x": 70,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -1002,7 +1002,7 @@
     }
   },
   "resonator_bot_5": {
-    "y": -2.539,
+    "y": 15,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -1012,9 +1012,9 @@
     "irl_x": 5185.6735,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net49",
-      "resonator_o1": "net51",
-      "coupling_o2": "net54"
+      "coupling_o1": "bot_wire_11",
+      "resonator_o1": "net33",
+      "coupling_o2": "bot_wire_12"
     },
     "ports": [
       {
@@ -1069,7 +1069,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 21.479,
+    "x": 54,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_05d16731",
     "irl_y": 613,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -1086,7 +1086,7 @@
     }
   },
   "probeline_straight_top_6": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -1096,8 +1096,8 @@
     "irl_x": 6600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net64",
-      "o2": "net69"
+      "o1": "top_wire_14",
+      "o2": "top_wire_15"
     },
     "ports": [
       {
@@ -1136,7 +1136,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 27.338,
+    "x": 70,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -1147,7 +1147,7 @@
     }
   },
   "resonator_bot_3": {
-    "y": -2.539,
+    "y": 15,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -1157,9 +1157,9 @@
     "irl_x": 3157.102,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net29",
-      "resonator_o1": "net32",
-      "coupling_o2": "net35"
+      "coupling_o1": "bot_wire_07",
+      "resonator_o1": "net21",
+      "coupling_o2": "bot_wire_08"
     },
     "ports": [
       {
@@ -1214,7 +1214,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 13.077,
+    "x": 34,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_b8f0932d",
     "irl_y": 613,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -1231,7 +1231,7 @@
     }
   },
   "probeline_straight_bot_4": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -1241,8 +1241,8 @@
     "irl_x": 4600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net45",
-      "o2": "net49"
+      "o1": "bot_wire_10",
+      "o2": "bot_wire_11"
     },
     "ports": [
       {
@@ -1281,7 +1281,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 19.054,
+    "x": 50,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -1292,7 +1292,7 @@
     }
   },
   "probeline_straight_bot_7": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -1302,8 +1302,8 @@
     "irl_x": 7600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net73",
-      "o2": "net78"
+      "o1": "bot_wire_16",
+      "o2": "bot_wire_17"
     },
     "ports": [
       {
@@ -1342,7 +1342,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 31.48,
+    "x": 80,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -1353,7 +1353,7 @@
     }
   },
   "probeline_straight_east_bot": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -1363,8 +1363,8 @@
     "irl_x": 8400,
     "bbox_height": 22,
     "nets": {
-      "o1": "net83",
-      "o2": "net87"
+      "o1": "bot_wire_18",
+      "o2": "bot_wire_19"
     },
     "ports": [
       {
@@ -1403,7 +1403,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 34.793,
+    "x": 90,
     "texture_key": "qpdk.cells.waveguides.straight_7d4d24d9",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -1414,7 +1414,7 @@
     }
   },
   "probeline_straight_top_3": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -1424,8 +1424,8 @@
     "irl_x": 3600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net36",
-      "o2": "net40"
+      "o1": "top_wire_08",
+      "o2": "top_wire_09"
     },
     "ports": [
       {
@@ -1464,7 +1464,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 14.911,
+    "x": 40,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -1475,7 +1475,7 @@
     }
   },
   "probeline_sbend_east_top": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -1485,8 +1485,8 @@
     "irl_x": 8650,
     "bbox_height": 22,
     "nets": {
-      "o1": "net88",
-      "o2": "net91"
+      "o1": "top_wire_19",
+      "o2": "top_wire_20"
     },
     "ports": [
       {
@@ -1525,7 +1525,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 35.829,
+    "x": 94,
     "texture_key": "qpdk.cells.waveguides.bend_s_5330e729",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.bend_s",
@@ -1540,7 +1540,7 @@
     }
   },
   "resonator_bot_6": {
-    "y": -2.539,
+    "y": 15,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -1550,9 +1550,9 @@
     "irl_x": 6199.9595,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net58",
-      "resonator_o1": "net62",
-      "coupling_o2": "net63"
+      "coupling_o1": "bot_wire_13",
+      "resonator_o1": "net39",
+      "coupling_o2": "bot_wire_14"
     },
     "ports": [
       {
@@ -1607,7 +1607,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 25.681,
+    "x": 64,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_2c41d133",
     "irl_y": 613,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -1624,7 +1624,7 @@
     }
   },
   "resonator_bot_7": {
-    "y": -2.539,
+    "y": 15,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -1634,9 +1634,9 @@
     "irl_x": 7214.245,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net68",
-      "resonator_o1": "net72",
-      "coupling_o2": "net73"
+      "coupling_o1": "bot_wire_15",
+      "resonator_o1": "net45",
+      "coupling_o2": "bot_wire_16"
     },
     "ports": [
       {
@@ -1691,7 +1691,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 29.882,
+    "x": 74,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_52b23b35",
     "irl_y": 613,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -1708,7 +1708,7 @@
     }
   },
   "resonator_top_3": {
-    "y": 6.681,
+    "y": 1,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -1718,9 +1718,9 @@
     "irl_x": 3164.245,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net30",
-      "resonator_o1": "net33",
-      "coupling_o2": "net36"
+      "coupling_o1": "top_wire_07",
+      "resonator_o1": "net20",
+      "coupling_o2": "top_wire_08"
     },
     "ports": [
       {
@@ -1775,7 +1775,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 13.107,
+    "x": 34,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_cc28c82e",
     "mirror": true,
     "irl_y": -1613,
@@ -1793,7 +1793,7 @@
     }
   },
   "resonator_top_8": {
-    "y": 6.681,
+    "y": 1,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -1803,9 +1803,9 @@
     "irl_x": 8235.6735,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net79",
-      "resonator_o1": "net85",
-      "coupling_o2": "net84"
+      "coupling_o1": "top_wire_17",
+      "resonator_o1": "net50",
+      "coupling_o2": "top_wire_18"
     },
     "ports": [
       {
@@ -1860,7 +1860,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 34.113,
+    "x": 84,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_46679d4f",
     "mirror": true,
     "irl_y": -1613,
@@ -1878,7 +1878,7 @@
     }
   },
   "probeline_straight_bot_3": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -1888,8 +1888,8 @@
     "irl_x": 3600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net35",
-      "o2": "net39"
+      "o1": "bot_wire_08",
+      "o2": "bot_wire_09"
     },
     "ports": [
       {
@@ -1928,7 +1928,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 14.911,
+    "x": 40,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -1939,7 +1939,7 @@
     }
   },
   "probeline_straight_bot_5": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -1949,8 +1949,8 @@
     "irl_x": 5600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net54",
-      "o2": "net58"
+      "o1": "bot_wire_12",
+      "o2": "bot_wire_13"
     },
     "ports": [
       {
@@ -1989,7 +1989,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 23.196,
+    "x": 60,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -2000,7 +2000,7 @@
     }
   },
   "probeline_straight_east_top": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -2010,8 +2010,8 @@
     "irl_x": 8400,
     "bbox_height": 22,
     "nets": {
-      "o1": "net84",
-      "o2": "net88"
+      "o1": "top_wire_18",
+      "o2": "top_wire_19"
     },
     "ports": [
       {
@@ -2050,7 +2050,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 34.793,
+    "x": 90,
     "texture_key": "qpdk.cells.waveguides.straight_7d4d24d9",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -2061,7 +2061,7 @@
     }
   },
   "probeline_straight_top_4": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -2071,8 +2071,8 @@
     "irl_x": 4600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net46",
-      "o2": "net50"
+      "o1": "top_wire_10",
+      "o2": "top_wire_11"
     },
     "ports": [
       {
@@ -2111,7 +2111,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 19.054,
+    "x": 50,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -2122,7 +2122,7 @@
     }
   },
   "o3": {
-    "y": 0,
+    "y": 17,
     "transform": [
       6.123233995736766e-17,
       -1,
@@ -2140,15 +2140,15 @@
     "irl_x": 0,
     "nature": "photonic",
     "nets": {
-      "P": "port_net_o3"
+      "P": "o3"
     },
     "id": null,
-    "x": 0,
+    "x": 2,
     "irl_y": 0,
     "port_type": "optical"
   },
   "resonator_top_5": {
-    "y": 6.681,
+    "y": 1,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -2158,9 +2158,9 @@
     "irl_x": 5192.8165,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net50",
-      "resonator_o1": "net56",
-      "coupling_o2": "net55"
+      "coupling_o1": "top_wire_11",
+      "resonator_o1": "net32",
+      "coupling_o2": "top_wire_12"
     },
     "ports": [
       {
@@ -2215,7 +2215,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 21.509,
+    "x": 54,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_19099c32",
     "mirror": true,
     "irl_y": -1613,
@@ -2233,7 +2233,7 @@
     }
   },
   "probeline_straight_bot_1": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -2243,8 +2243,8 @@
     "irl_x": 1600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net15",
-      "o2": "net19"
+      "o1": "bot_wire_04",
+      "o2": "bot_wire_05"
     },
     "ports": [
       {
@@ -2283,7 +2283,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 6.627,
+    "x": 20,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -2294,7 +2294,7 @@
     }
   },
   "probeline_straight_top_2": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -2304,8 +2304,8 @@
     "irl_x": 2600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net26",
-      "o2": "net30"
+      "o1": "top_wire_06",
+      "o2": "top_wire_07"
     },
     "ports": [
       {
@@ -2344,7 +2344,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 10.769,
+    "x": 30,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -2355,7 +2355,7 @@
     }
   },
   "probe_west_top": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -210,
@@ -2365,8 +2365,8 @@
     "irl_x": 150,
     "bbox_height": 420,
     "nets": {
-      "waveport": "net1",
-      "o1": "net5"
+      "waveport": "o1",
+      "o1": "top_wire_01"
     },
     "ports": [
       {
@@ -2405,7 +2405,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 0.621,
+    "x": 2,
     "texture_key": "qpdk.cells.launcher.launcher_0c517617",
     "irl_y": -1000,
     "model": "qpdk.cells.launcher.launcher",
@@ -2417,7 +2417,7 @@
     }
   },
   "probeline_straight_bot_2": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -2427,8 +2427,8 @@
     "irl_x": 2600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net25",
-      "o2": "net29"
+      "o1": "bot_wire_06",
+      "o2": "bot_wire_07"
     },
     "ports": [
       {
@@ -2467,7 +2467,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 10.769,
+    "x": 30,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
@@ -2478,7 +2478,7 @@
     }
   },
   "o2": {
-    "y": 4.142,
+    "y": 3,
     "transform": [
       6.123233995736766e-17,
       -1,
@@ -2496,15 +2496,15 @@
     "irl_x": 9000,
     "nature": "photonic",
     "nets": {
-      "P": "port_net_o2"
+      "P": "o2"
     },
     "id": null,
-    "x": 37.279,
+    "x": 100,
     "irl_y": -1000,
     "port_type": "optical"
   },
   "probeline_straight_west_top": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "transform": [
       -1,
@@ -2523,8 +2523,8 @@
     "irl_x": 900,
     "bbox_height": 22,
     "nets": {
-      "o2": "net7",
-      "o1": "net12"
+      "o2": "top_wire_02",
+      "o1": "top_wire_03"
     },
     "ports": [
       {
@@ -2563,7 +2563,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 3.728,
+    "x": 10,
     "texture_key": "qpdk.cells.waveguides.straight_d1154dd7",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -2574,7 +2574,7 @@
     }
   },
   "probeline_straight_top_7": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -2584,8 +2584,8 @@
     "irl_x": 7600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net74",
-      "o2": "net79"
+      "o1": "top_wire_16",
+      "o2": "top_wire_17"
     },
     "ports": [
       {
@@ -2624,7 +2624,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 31.48,
+    "x": 80,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -2635,7 +2635,7 @@
     }
   },
   "probeline_straight_top_5": {
-    "y": 4.142,
+    "y": 2,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -2645,8 +2645,8 @@
     "irl_x": 5600,
     "bbox_height": 22,
     "nets": {
-      "o1": "net55",
-      "o2": "net59"
+      "o1": "top_wire_12",
+      "o2": "top_wire_13"
     },
     "ports": [
       {
@@ -2685,7 +2685,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 23.196,
+    "x": 60,
     "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
@@ -2696,7 +2696,7 @@
     }
   },
   "resonator_top_1": {
-    "y": 6.681,
+    "y": 1,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -2706,9 +2706,9 @@
     "irl_x": 1135.6735,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net12",
-      "resonator_o1": "net13",
-      "coupling_o2": "net16"
+      "coupling_o1": "top_wire_03",
+      "resonator_o1": "net8",
+      "coupling_o2": "top_wire_04"
     },
     "ports": [
       {
@@ -2763,7 +2763,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 4.704,
+    "x": 14,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_c53b3113",
     "mirror": true,
     "irl_y": -1613,
@@ -2781,7 +2781,7 @@
     }
   },
   "resonator_bot_1": {
-    "y": -2.539,
+    "y": 15,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -2791,9 +2791,9 @@
     "irl_x": 1128.5305,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net11",
-      "resonator_o1": "net10",
-      "coupling_o2": "net15"
+      "coupling_o1": "bot_wire_03",
+      "resonator_o1": "net9",
+      "coupling_o2": "bot_wire_04"
     },
     "ports": [
       {
@@ -2848,7 +2848,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 4.674,
+    "x": 14,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_b202fc12",
     "irl_y": 613,
     "model": "qpdk.cells.resonator.quarter_wave_resonator_coupled",
@@ -2865,7 +2865,7 @@
     }
   },
   "resonator_top_4": {
-    "y": 6.681,
+    "y": 1,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -2875,9 +2875,9 @@
     "irl_x": 4178.5305,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net40",
-      "resonator_o1": "net43",
-      "coupling_o2": "net46"
+      "coupling_o1": "top_wire_09",
+      "resonator_o1": "net26",
+      "coupling_o2": "top_wire_10"
     },
     "ports": [
       {
@@ -2932,7 +2932,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 17.308,
+    "x": 44,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_f2993230",
     "mirror": true,
     "irl_y": -1613,
@@ -2950,7 +2950,7 @@
     }
   },
   "probeline_sbend_east_bot": {
-    "y": 0,
+    "y": 16,
     "bbox_xmin": 0,
     "irl_orientation": 0,
     "bbox_ymin": -11,
@@ -2960,8 +2960,8 @@
     "irl_x": 8650,
     "bbox_height": 22,
     "nets": {
-      "o1": "net87",
-      "o2": "net90"
+      "o1": "bot_wire_19",
+      "o2": "bot_wire_20"
     },
     "ports": [
       {
@@ -3000,7 +3000,7 @@
       }
     ],
     "irl_flip": false,
-    "x": 35.829,
+    "x": 94,
     "texture_key": "qpdk.cells.waveguides.bend_s_5330e729",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.bend_s",
@@ -3015,7 +3015,7 @@
     }
   },
   "resonator_top_7": {
-    "y": 6.681,
+    "y": 1,
     "bbox_xmin": -104.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -3025,9 +3025,9 @@
     "irl_x": 7221.388,
     "bbox_height": 1248,
     "nets": {
-      "coupling_o1": "net69",
-      "resonator_o1": "net75",
-      "coupling_o2": "net74"
+      "coupling_o1": "top_wire_15",
+      "resonator_o1": "net44",
+      "coupling_o2": "top_wire_16"
     },
     "ports": [
       {
@@ -3082,7 +3082,7 @@
       }
     ],
     "irl_flip": true,
-    "x": 29.911,
+    "x": 74,
     "texture_key": "qpdk.cells.resonator.quarter_wave_resonator_coupled_65ea7036",
     "mirror": true,
     "irl_y": -1613,
@@ -3098,5 +3098,405 @@
       "length": 4900,
       "coupling_straight_length": 200
     }
+  },
+  "top_wire_01": {
+    "type": "wire",
+    "x": 4,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_01",
+    "net": "top_wire_01"
+  },
+  "top_wire_02": {
+    "type": "wire",
+    "x": 8,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_02",
+    "net": "top_wire_02"
+  },
+  "top_wire_03": {
+    "type": "wire",
+    "x": 12,
+    "y": 3,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "top_wire_03",
+    "net": "top_wire_03"
+  },
+  "top_wire_04": {
+    "type": "wire",
+    "x": 16,
+    "y": 3,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_04",
+    "net": "top_wire_04"
+  },
+  "top_wire_05": {
+    "type": "wire",
+    "x": 22,
+    "y": 3,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "top_wire_05",
+    "net": "top_wire_05"
+  },
+  "top_wire_06": {
+    "type": "wire",
+    "x": 26,
+    "y": 3,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_06",
+    "net": "top_wire_06"
+  },
+  "top_wire_07": {
+    "type": "wire",
+    "x": 32,
+    "y": 3,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "top_wire_07",
+    "net": "top_wire_07"
+  },
+  "top_wire_08": {
+    "type": "wire",
+    "x": 36,
+    "y": 3,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_08",
+    "net": "top_wire_08"
+  },
+  "top_wire_09": {
+    "type": "wire",
+    "x": 42,
+    "y": 3,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "top_wire_09",
+    "net": "top_wire_09"
+  },
+  "top_wire_10": {
+    "type": "wire",
+    "x": 46,
+    "y": 3,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_10",
+    "net": "top_wire_10"
+  },
+  "top_wire_11": {
+    "type": "wire",
+    "x": 52,
+    "y": 3,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "top_wire_11",
+    "net": "top_wire_11"
+  },
+  "top_wire_12": {
+    "type": "wire",
+    "x": 56,
+    "y": 3,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_12",
+    "net": "top_wire_12"
+  },
+  "top_wire_13": {
+    "type": "wire",
+    "x": 62,
+    "y": 3,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "top_wire_13",
+    "net": "top_wire_13"
+  },
+  "top_wire_14": {
+    "type": "wire",
+    "x": 66,
+    "y": 3,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_14",
+    "net": "top_wire_14"
+  },
+  "top_wire_15": {
+    "type": "wire",
+    "x": 72,
+    "y": 3,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "top_wire_15",
+    "net": "top_wire_15"
+  },
+  "top_wire_16": {
+    "type": "wire",
+    "x": 76,
+    "y": 3,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_16",
+    "net": "top_wire_16"
+  },
+  "top_wire_17": {
+    "type": "wire",
+    "x": 82,
+    "y": 3,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "top_wire_17",
+    "net": "top_wire_17"
+  },
+  "top_wire_18": {
+    "type": "wire",
+    "x": 86,
+    "y": 3,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_18",
+    "net": "top_wire_18"
+  },
+  "top_wire_19": {
+    "type": "wire",
+    "x": 92,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_19",
+    "net": "top_wire_19"
+  },
+  "top_wire_20": {
+    "type": "wire",
+    "x": 96,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "top_wire_20",
+    "net": "top_wire_20"
+  },
+  "bot_wire_01": {
+    "type": "wire",
+    "x": 4,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_01",
+    "net": "bot_wire_01"
+  },
+  "bot_wire_02": {
+    "type": "wire",
+    "x": 8,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_02",
+    "net": "bot_wire_02"
+  },
+  "bot_wire_03": {
+    "type": "wire",
+    "x": 12,
+    "y": 17,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "bot_wire_03",
+    "net": "bot_wire_03"
+  },
+  "bot_wire_04": {
+    "type": "wire",
+    "x": 16,
+    "y": 17,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_04",
+    "net": "bot_wire_04"
+  },
+  "bot_wire_05": {
+    "type": "wire",
+    "x": 22,
+    "y": 17,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "bot_wire_05",
+    "net": "bot_wire_05"
+  },
+  "bot_wire_06": {
+    "type": "wire",
+    "x": 26,
+    "y": 17,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_06",
+    "net": "bot_wire_06"
+  },
+  "bot_wire_07": {
+    "type": "wire",
+    "x": 32,
+    "y": 17,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "bot_wire_07",
+    "net": "bot_wire_07"
+  },
+  "bot_wire_08": {
+    "type": "wire",
+    "x": 36,
+    "y": 17,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_08",
+    "net": "bot_wire_08"
+  },
+  "bot_wire_09": {
+    "type": "wire",
+    "x": 42,
+    "y": 17,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "bot_wire_09",
+    "net": "bot_wire_09"
+  },
+  "bot_wire_10": {
+    "type": "wire",
+    "x": 46,
+    "y": 17,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_10",
+    "net": "bot_wire_10"
+  },
+  "bot_wire_11": {
+    "type": "wire",
+    "x": 52,
+    "y": 17,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "bot_wire_11",
+    "net": "bot_wire_11"
+  },
+  "bot_wire_12": {
+    "type": "wire",
+    "x": 56,
+    "y": 17,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_12",
+    "net": "bot_wire_12"
+  },
+  "bot_wire_13": {
+    "type": "wire",
+    "x": 62,
+    "y": 17,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "bot_wire_13",
+    "net": "bot_wire_13"
+  },
+  "bot_wire_14": {
+    "type": "wire",
+    "x": 66,
+    "y": 17,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_14",
+    "net": "bot_wire_14"
+  },
+  "bot_wire_15": {
+    "type": "wire",
+    "x": 72,
+    "y": 17,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "bot_wire_15",
+    "net": "bot_wire_15"
+  },
+  "bot_wire_16": {
+    "type": "wire",
+    "x": 76,
+    "y": 17,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_16",
+    "net": "bot_wire_16"
+  },
+  "bot_wire_17": {
+    "type": "wire",
+    "x": 82,
+    "y": 17,
+    "rx": 2,
+    "ry": 1,
+    "variant": "hv",
+    "name": "bot_wire_17",
+    "net": "bot_wire_17"
+  },
+  "bot_wire_18": {
+    "type": "wire",
+    "x": 86,
+    "y": 17,
+    "rx": 4,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_18",
+    "net": "bot_wire_18"
+  },
+  "bot_wire_19": {
+    "type": "wire",
+    "x": 92,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_19",
+    "net": "bot_wire_19"
+  },
+  "bot_wire_20": {
+    "type": "wire",
+    "x": 96,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "variant": "d",
+    "name": "bot_wire_20",
+    "net": "bot_wire_20"
   }
 }
