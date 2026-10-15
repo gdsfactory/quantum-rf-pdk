@@ -1,16 +1,15 @@
-"""Check the saved hardware comparison that documentation CI cannot execute."""
+"""Check the saved hardware comparison used to render the backend comparison in documentation CI."""
 
-import json
 from pathlib import Path
 
 import jax.numpy as jnp
+import pyarrow.parquet as pq
 import pytest
 from numpy.testing import assert_allclose
 
 RESULT_DIR = Path(__file__).parents[1] / "notebooks/data/jax_backend_comparison"
 RUNS = [
-    json.loads(path.read_text(encoding="utf-8"))
-    for path in sorted(RESULT_DIR.glob("*.json"))
+    pq.read_table(path).to_pylist()[0] for path in sorted(RESULT_DIR.glob("*.parquet"))
 ]
 
 
