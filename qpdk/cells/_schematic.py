@@ -22,7 +22,9 @@ __all__ = [
     "open_schematic",
     "quarter_wave_resonator_coupled_schematic",
     "resonator_coupled_schematic",
+    "resonator_coupling_region_schematic",
     "resonator_half_wave_schematic",
+    "resonator_meander_schematic",
     "resonator_quarter_wave_schematic",
     "resonator_schematic",
     "sax_model",
@@ -359,6 +361,37 @@ resonator_coupled_schematic = schematic(
                 "resonator_o1",
                 "resonator_o2",
             ],
+        )
+    ],
+)
+
+resonator_coupling_region_schematic = schematic(
+    symbol="resonator_coupled",
+    tags=["resonators", "couplers"],
+    ports=_RESONATOR_COUPLED,
+    models=[
+        sax_model(
+            name="resonator_coupling_region",
+            module="qpdk.models.resonator_sections",
+            port_order=[
+                "coupling_o1",
+                "coupling_o2",
+                "resonator_o1",
+                "resonator_o2",
+            ],
+        )
+    ],
+)
+
+resonator_meander_schematic = schematic(
+    symbol="resonator",
+    tags=["resonators"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="resonator_meander",
+            module="qpdk.models.resonator_sections",
+            port_order=["o1", "o2"],
         )
     ],
 )

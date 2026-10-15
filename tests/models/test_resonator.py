@@ -5,6 +5,7 @@ from collections.abc import Callable
 from importlib import import_module
 from unittest.mock import Mock
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -18,6 +19,10 @@ from qpdk.models.resonator import (
     resonator_frequency,
     resonator_half_wave,
     resonator_quarter_wave,
+)
+from qpdk.models.resonator_sections import (
+    resonator_coupling_region,
+    resonator_meander,
 )
 from qpdk.tech import coplanar_waveguide
 
@@ -117,6 +122,46 @@ def test_explicit_open_and_short_match_quarter_wave_model() -> None:
 
     for key in explicit:
         np.testing.assert_allclose(explicit[key], expected[key], rtol=1e-10, atol=1e-10)
+
+
+def test_coupling_region_meander_and_short_match_quarter_wave_model() -> None:
+    """The recursive layout sections retain the whole-device RF response."""
+    frequencies = jnp.linspace(4e9, 10e9, 101)
+    total_length = 4000.0
+    coupling_region_length = 302.204
+    instances = {
+        "coupling_region": resonator_coupling_region(
+            f=frequencies, length=coupling_region_length, coupling_gap=4.0
+        ),
+        "meander": resonator_meander(
+            f=frequencies, length=total_length - coupling_region_length
+        ),
+        "short": short_model(f=frequencies),
+    }
+    connections = {
+        "coupling_region,resonator_o2": "meander,o1",
+        "meander,o2": "short,o1",
+    }
+    ports = {
+        "coupling_o1": "coupling_region,coupling_o1",
+        "coupling_o2": "coupling_region,coupling_o2",
+        "resonator_o1": "coupling_region,resonator_o1",
+    }
+
+    section_response = sax.evaluate_circuit_fg((connections, ports), instances)
+    whole_response = quarter_wave_resonator_coupled(
+        f=frequencies, length=total_length, coupling_gap=4.0
+    )
+    for key in whole_response:
+        np.testing.assert_allclose(
+            section_response[key], whole_response[key], rtol=1e-10, atol=1e-10
+        )
+
+
+@pytest.mark.parametrize("model", [resonator_coupling_region, resonator_meander])
+def test_resonator_section_models_jit(model: Callable[..., sax.SDict]) -> None:
+    response = jax.jit(model)(f=jnp.array([5e9]))
+    assert all(jnp.isfinite(value).all() for value in response.values())
 
 
 class TestResonatorCoupled:

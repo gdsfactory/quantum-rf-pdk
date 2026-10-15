@@ -17,7 +17,8 @@ from qpdk.cells._schematic import (
     resonator_quarter_wave_schematic,
     resonator_schematic,
 )
-from qpdk.cells.waveguides import bend_circular, straight
+from qpdk.cells.resonator_sections import resonator_coupling_region, resonator_meander
+from qpdk.cells.waveguides import bend_circular, short, straight
 from qpdk.tech import get_etch_section
 
 
@@ -407,28 +408,62 @@ def quarter_wave_resonator_coupled(
         The coupled quarter-wave resonator component.
     """
     c = Component()
+    if start_with_bend or meanders == 0:
+        res_ref = c << resonator_coupled(
+            length=length,
+            meanders=meanders,
+            bend_spec=bend_spec,
+            cross_section=cross_section,
+            start_with_bend=start_with_bend,
+            end_with_bend=end_with_bend,
+            open_start=True,
+            open_end=False,
+            cross_section_non_resonator=cross_section_non_resonator,
+            coupling_straight_length=coupling_straight_length,
+            coupling_gap=coupling_gap,
+        )
+        res_ref.move(tuple(-np.array(res_ref.ports["coupling_o1"].center)))
+        for port in res_ref.ports:
+            if port.name != "resonator_o2":
+                c.add_port(port=port)
+        c.info += res_ref.cell.info
+        return c
 
-    res_ref = c << resonator_coupled(
-        length=length,
+    bend = gf.get_component(
+        bend_spec,
+        cross_section=gf.get_cross_section(cross_section),
+        angle=180,
+        angular_step=4,
+    )
+    straight_count = meanders + 1 - int(end_with_bend)
+    first_straight_length = (length - meanders * bend.info["length"]) / straight_count
+    coupling_ref = c << resonator_coupling_region(
+        length=first_straight_length,
+        coupling_straight_length=coupling_straight_length,
+        coupling_gap=coupling_gap,
+        cross_section=cross_section,
+        cross_section_non_resonator=cross_section_non_resonator,
+    )
+    coupling_ref.move(tuple(-np.array(coupling_ref.ports["coupling_o1"].center)))
+    meander_ref = c << resonator_meander(
+        length=length - first_straight_length,
         meanders=meanders,
         bend_spec=bend_spec,
         cross_section=cross_section,
-        start_with_bend=start_with_bend,
         end_with_bend=end_with_bend,
-        open_start=True,
-        open_end=False,
-        cross_section_non_resonator=cross_section_non_resonator,
-        coupling_straight_length=coupling_straight_length,
-        coupling_gap=coupling_gap,
     )
-    movement = np.array(res_ref.ports["coupling_o1"].center)
-    res_ref.move(tuple(-movement))
+    meander_ref.connect("o1", coupling_ref.ports["resonator_o2"])
 
-    for port in res_ref.ports:
-        if port.name != "resonator_o2":  # Skip the shorted end port
-            c.add_port(port=port)
-
-    c.info += res_ref.cell.info
+    short_ref = c << short()
+    short_ref.connect("o1", meander_ref.ports["o2"], allow_width_mismatch=True)
+    c.add_port("coupling_o1", port=coupling_ref.ports["coupling_o1"])
+    c.add_port("coupling_o2", port=coupling_ref.ports["coupling_o2"])
+    c.add_port("resonator_o1", port=coupling_ref.ports["resonator_o1"])
+    c.info["length"] = length
+    c.info["resonator_type"] = "quarter_wave"
+    c.info["cross_section_name"] = gf.get_cross_section(cross_section).name
+    c.info["coupling_length"] = coupling_straight_length
+    c.info["coupling_gap"] = coupling_gap
 
     return c
 

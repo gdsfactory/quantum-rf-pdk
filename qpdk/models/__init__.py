@@ -95,6 +95,10 @@ from qpdk.models.resonator import (
     resonator_half_wave,
     resonator_quarter_wave,
 )
+from qpdk.models.resonator_sections import (
+    resonator_coupling_region,
+    resonator_meander,
+)
 from qpdk.models.unimon import (
     el_to_arm_inductance,
     unimon_coupled,
@@ -193,9 +197,11 @@ __all__ = [
     "rectangle",
     "resonator",
     "resonator_coupled",
+    "resonator_coupling_region",
     "resonator_frequency",
     "resonator_half_wave",
     "resonator_linewidth_from_q",
+    "resonator_meander",
     "resonator_quarter_wave",
     "series_impedance",
     "short",
