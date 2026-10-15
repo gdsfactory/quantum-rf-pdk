@@ -34,10 +34,9 @@ def resonator_coupling_region(
         cross_section: Resonator cross section.
         cross_section_non_resonator: Bus cross section.
     """
-    from qpdk.cells.resonator import resonator
-
     component = Component()
-    resonator_ref = component << resonator(
+    resonator_ref = component << gf.get_component(
+        "resonator",
         length=length,
         meanders=0,
         cross_section=cross_section,
@@ -82,10 +81,9 @@ def resonator_meander(
         cross_section: Resonator cross section.
         end_with_bend: Whether the path ends with a bend.
     """
-    from qpdk.cells.resonator import resonator
-
     component = Component()
-    meander_ref = component << resonator(
+    meander_ref = component << gf.get_component(
+        "resonator",
         length=length,
         meanders=meanders,
         bend_spec=bend_spec,
