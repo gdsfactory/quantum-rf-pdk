@@ -293,22 +293,24 @@ for examples of:
   require external tooling (HFSS, MATLAB) or a GPU are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the
   docs build does not try to execute them
 
-- **GPU notebook**: `jax_backend_comparison` needs a CUDA GPU, so CI does not execute it. On such a machine, execute it
-  and save its outputs, then commit `notebooks/jax_backend_comparison.ipynb`:
+- **GPU notebook**: `jax_backend_comparison` needs a CUDA GPU or an Apple Silicon GPU, so CI does not execute it. Each
+  accelerator run saves its timings to `notebooks/data/jax_backend_comparison/{cuda,mps}.json` (Git LFS), and the
+  notebook plots every saved run. On a CUDA machine, execute it and commit both `notebooks/jax_backend_comparison.ipynb`
+  and `cuda.json`:
 
   ```bash
   jax_version="$(uv run --extra models python -c 'import jax; print(jax.__version__)')"
-  QPDK_REQUIRE_GPU=1 uv run --extra models --with "jax[cuda12]==${jax_version}" \
+  QPDK_REQUIRE_GPU=1 QPDK_SAVE_BENCHMARKS=1 uv run --extra models --with "jax[cuda12]==${jax_version}" \
       --with jupytext --with nbconvert --with ipykernel \
       jupytext --execute --to ipynb --set-kernel python3 \
       --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
   ```
 
   The Apple Silicon (MPS) section runs only on a Mac with the experimental `jax-mps` plugin, which needs `jax`/`jaxlib`
-  0.11.x. On such a machine:
+  0.11.x. On such a machine, execute it and commit `mps.json` and the notebook:
 
   ```bash
-  QPDK_REQUIRE_MPS=1 uv run --extra models --with jax-mps \
+  QPDK_REQUIRE_MPS=1 QPDK_SAVE_BENCHMARKS=1 uv run --extra models --with jax-mps \
       --with jupytext --with nbconvert --with ipykernel \
       jupytext --execute --to ipynb --set-kernel python3 \
       --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py

@@ -92,7 +92,10 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
+import datetime
+import json
 import os
+import platform
 import time
 import warnings
 
@@ -104,6 +107,7 @@ import sax
 from tqdm import tqdm
 
 from qpdk import PDK
+from qpdk.config import PATH
 from qpdk.models.generic import capacitor, tee
 from qpdk.models.waveguides import straight, straight_shorted
 from qpdk.tech import coplanar_waveguide
@@ -413,6 +417,68 @@ else:
     print("MPS not available on this system — skipping Apple Silicon benchmark.")
 
 # %% [markdown]
+# ## Saved Accelerator Runs
+#
+# No single machine has both a CUDA GPU and an Apple Silicon GPU, so each accelerator
+# run is saved as a JSON file in `notebooks/data/jax_backend_comparison/` (tracked with
+# Git LFS) and the comparison below loads every saved run.  A run stores the
+# accelerator timings together with the CPU timings measured on the same machine, as
+# timings from different machines are not directly comparable.
+#
+# Set `QPDK_SAVE_BENCHMARKS=1` to save this machine's run.  It is written to
+# `cuda.json` or `mps.json`, depending on the accelerator; a machine without one does
+# not save anything.  Runs measured in this session replace saved runs for the same
+# accelerator.
+
+# %%
+RESULTS_DIR = PATH.repo / "notebooks" / "data" / "jax_backend_comparison"
+
+live_times = {"CPU": cpu_times, "CPU (float32)": cpu_f32_times}
+if gpu_times is not None:
+    live_times["GPU"] = gpu_times
+if mps_times is not None:
+    live_times["MPS (float32)"] = mps_times
+
+if HAS_GPU:
+    live_key, accelerator = "cuda", gpu_device.device_kind
+elif HAS_MPS:
+    live_key, accelerator = "mps", mps_device.device_kind
+else:
+    live_key, accelerator = "cpu", None
+
+live_run = {
+    "accelerator": accelerator,
+    "cpu": platform.processor() or platform.machine(),
+    "platform": platform.platform(),
+    "jax": jax.__version__,
+    "date": datetime.date.today().isoformat(),
+    "sizes": _BENCHMARK_SIZES,
+    "times": live_times,
+}
+
+if os.environ.get("QPDK_SAVE_BENCHMARKS") == "1" and accelerator is not None:
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = RESULTS_DIR / f"{live_key}.json"
+    out_path.write_text(json.dumps(live_run, indent=2) + "\n")
+    print(f"Saved this run to {out_path.relative_to(PATH.repo)}")
+
+runs: dict[str, dict] = {}
+for path in sorted(RESULTS_DIR.glob("*.json")):
+    try:
+        runs[path.stem] = json.loads(path.read_text())
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        # An un-fetched Git LFS pointer file is not JSON
+        print(f"Skipping {path.name}: not valid JSON (run `git lfs pull`?)")
+runs[live_key] = live_run
+
+for key, run in runs.items():
+    source = "this session" if key == live_key else f"saved {run['date']}"
+    print(
+        f"{key:>4}: {run['accelerator'] or 'no accelerator'} + {run['cpu']} "
+        f"(JAX {run['jax']}, {source})"
+    )
+
+# %% [markdown]
 # ## Scaling Analysis
 #
 # The cost of one evaluation has two parts: a fixed overhead per call (dispatch and
@@ -458,62 +524,65 @@ def fit_overhead_model(sizes: list[int], times: list[float]) -> tuple[float, flo
     return float(t0), float(c)
 
 
-backend_times = {"CPU": cpu_times}
-if gpu_times is not None:
-    backend_times["GPU"] = gpu_times
-backend_times["CPU (float32)"] = cpu_f32_times
-if mps_times is not None:
-    backend_times["MPS (float32)"] = mps_times
-
 fits = {
-    name: fit_overhead_model(_BENCHMARK_SIZES, times)
-    for name, times in backend_times.items()
+    key: {
+        name: fit_overhead_model(run["sizes"], times)
+        for name, times in run["times"].items()
+    }
+    for key, run in runs.items()
 }
 
-for name, (t0, c) in fits.items():
-    t_model = t0 + c * np.asarray(_BENCHMARK_SIZES)
-    max_error = np.max(np.abs(t_model / np.asarray(backend_times[name]) - 1))
-    print(
-        f"{name}: t0 = {t0 * 1e6:8.1f} µs, c = {c * 1e9:8.2f} ns/point, "
-        f"N* = t0/c ≈ {t0 / c if c > 0 else float('inf'):,.0f} points, "
-        f"max relative error {max_error:.0%}"
-    )
+for key, run in runs.items():
+    print(f"[{key}] {run['accelerator'] or 'no accelerator'} + {run['cpu']}")
+    for name, (t0, c) in fits[key].items():
+        t_model = t0 + c * np.asarray(run["sizes"])
+        max_error = np.max(np.abs(t_model / np.asarray(run["times"][name]) - 1))
+        print(
+            f"  {name}: t0 = {t0 * 1e6:8.1f} µs, c = {c * 1e9:8.2f} ns/point, "
+            f"N* = t0/c ≈ {t0 / c if c > 0 else float('inf'):,.0f} points, "
+            f"max relative error {max_error:.0%}"
+        )
 
 # %% [markdown]
 # ## Performance Comparison
 #
 # The plot below shows the median evaluation time against the number of frequency
-# points, with the fitted model as a dashed line for each backend.  On log–log axes the
-# model is flat below $N^\ast$ and has slope 1 above it.
+# points, with the fitted model as a dashed line for each backend, in one panel per
+# machine.  On log–log axes the model is flat below $N^\ast$ and has slope 1 above it.
 
 # %%
-_n_fit = np.geomspace(_BENCHMARK_SIZES[0], _BENCHMARK_SIZES[-1], 200)
 _runtime_labels = {"GPU": "JAX/CUDA", "MPS (float32)": "JAX/jax-mps"}
 
-fig, ax = plt.subplots()
-for (name, times), marker in zip(backend_times.items(), "os^v"):
-    t0, c = fits[name]
-    (line,) = ax.plot(
-        _BENCHMARK_SIZES,
-        np.asarray(times) * 1_000,
-        marker,
-        label=f"{name} ({_runtime_labels.get(name, 'JAX')})",
-    )
-    ax.plot(
-        _n_fit,
-        (t0 + c * _n_fit) * 1_000,
-        "--",
-        color=line.get_color(),
-        label=f"{name} fit: {t0 * 1e6:.0f} µs + {c * 1e9:.0f} ns · N",
-    )
+fig, axes = plt.subplots(
+    1, len(runs), figsize=(6.4 * len(runs), 4.8), sharey=True, squeeze=False
+)
+for ax, (key, run) in zip(axes[0], runs.items()):
+    sizes = np.asarray(run["sizes"])
+    n_fit = np.geomspace(sizes[0], sizes[-1], 200)
+    for (name, times), marker in zip(run["times"].items(), "os^v"):
+        t0, c = fits[key][name]
+        (line,) = ax.plot(
+            sizes,
+            np.asarray(times) * 1_000,
+            marker,
+            label=f"{name} ({_runtime_labels.get(name, 'JAX')})",
+        )
+        ax.plot(
+            n_fit,
+            (t0 + c * n_fit) * 1_000,
+            "--",
+            color=line.get_color(),
+            label=f"{name} fit: {t0 * 1e6:.0f} µs + {c * 1e9:.0f} ns · N",
+        )
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Number of frequency points")
+    ax.set_title(f"{run['accelerator'] or 'CPU only'}\n{run['cpu']}", fontsize="medium")
+    ax.legend(fontsize="small")
+    ax.grid(True, which="both", ls="--", alpha=0.5)
 
-ax.set_xscale("log")
-ax.set_yscale("log")
-ax.set_xlabel("Number of frequency points")
-ax.set_ylabel("Median time per evaluation [ms]")
-ax.set_title("JAX backend performance — coupled resonator circuit")
-ax.legend()
-ax.grid(True, which="both", ls="--", alpha=0.5)
+axes[0, 0].set_ylabel("Median time per evaluation [ms]")
+fig.suptitle("JAX backend performance — coupled resonator circuit")
 plt.tight_layout()
 plt.show()
 
