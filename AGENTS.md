@@ -342,7 +342,11 @@ for examples of:
    Keep it a raw cell, not a code cell: a code cell would have no execution count in the pre-executed notebooks, which
    fails the Elmer notebook check in CI. Keep it after the header, not before, or jupytext stops stripping the header.
 
-1. For samples: Create `.py` file in `qpdk/samples/` following existing examples
+1. For samples: Create `.py` file in `qpdk/samples/` following existing examples. New or substantively changed
+   standalone Python scripts must start with a PEP 723 `# /// script` block (after an optional shebang), declaring
+   `requires-python` consistent with the project's supported range and `dependencies` including the QPDK extras they
+   use. This lets `uv run --script qpdk/samples/<name>.py` install the required environment. Library modules and
+   `__init__.py` do not need script metadata.
 
 1. Include docstrings and comments explaining the design and physics
 

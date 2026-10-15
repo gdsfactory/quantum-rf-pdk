@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
 """Record synchronized CPU, CUDA, or MPS circuit timings to a Parquet file."""
 
 import argparse
@@ -30,9 +36,7 @@ from qpdk.tech import coplanar_waveguide
 def _main() -> None:
     """Benchmark available devices and save raw timings with their provenance."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "output", type=Path, help="Parquet path, relative to the checkout"
-    )
+    parser.add_argument("output", type=Path, help="Parquet output path")
     args = parser.parse_args()
     jax.config.update("jax_enable_x64", True)
     jax.config.update("jax_default_device", jax.devices("cpu")[0])
@@ -321,9 +325,7 @@ def _main() -> None:
             **accuracy[name],
         })
 
-    pq.write_table(
-        pa.Table.from_pylist([local_run]), PATH.repo / args.output, compression="zstd"
-    )
+    pq.write_table(pa.Table.from_pylist([local_run]), args.output, compression="zstd")
 
 
 if __name__ == "__main__":
