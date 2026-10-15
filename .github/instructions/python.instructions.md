@@ -86,7 +86,7 @@ may not be installed (`uv sync --extra models`).
 
 ## Modernization
 
-The supported range is `requires-python` in `pyproject.toml` (currently 3.12–3.14). Review new or changed code for
+The supported range is `requires-python` in `pyproject.toml` (currently 3.12–3.15). Review new or changed code for
 idioms that range already allows, and for ones it does not yet allow:
 
 - **Available now — suggest it.** Ruff's `UP` (pyupgrade) rules already rewrite the mechanical cases — `Optional`/
