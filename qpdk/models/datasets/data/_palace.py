@@ -17,7 +17,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from gdsfactory import Component
+    from gsim.palace import ElectrostaticSim
 
 from qpdk import logger
 from qpdk.models.datasets.capacitance import check_maxwell
@@ -121,6 +124,7 @@ def extract(
     save_fields: bool = False,
     normalization_depth_um: float | None = None,
     minimum_feature_elements: float = 4,
+    mesh: Callable[[ElectrostaticSim], None] | None = None,
 ) -> dict[str, np.ndarray | float]:
     """Resume a matching solve and return capacitance with numerical diagnostics."""
     import gdsfactory as gf
@@ -146,19 +150,22 @@ def extract(
         sim = ElectrostaticSim()
         sim.set_geometry(component)
         sim.set_output_dir(run)
-        sim.mesh_sheets(
-            conductor_layer=gf.get_layer_tuple(LAYER.M1_DRAW),
-            terminal_ports=terminal_ports,
-            domain_bounds=domain_bounds,
-            height=height,
-            near_mesh=near_mesh,
-            far_mesh=far_mesh,
-            permittivity=permittivity,
-            normalization_depth_um=normalization_depth_um,
-            minimum_feature_elements=minimum_feature_elements,
-            verbose=True,
-            num_threads=processes,
-        )
+        if mesh is not None:
+            mesh(sim)
+        else:
+            sim.mesh_sheets(
+                conductor_layer=gf.get_layer_tuple(LAYER.M1_DRAW),
+                terminal_ports=terminal_ports,
+                domain_bounds=domain_bounds,
+                height=height,
+                near_mesh=near_mesh,
+                far_mesh=far_mesh,
+                permittivity=permittivity,
+                normalization_depth_um=normalization_depth_um,
+                minimum_feature_elements=minimum_feature_elements,
+                verbose=True,
+                num_threads=processes,
+            )
         # Warm starts change the norm used to normalize the logged residuals.
         sim.set_solver(
             order=order,

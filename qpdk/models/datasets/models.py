@@ -110,3 +110,105 @@ def capacitance_model(
 
     sax.replace_kwargs(model, f=DEFAULT_FREQUENCY, z_ref=50.0, **defaults)
     return jax.jit(model)
+
+
+def junction_model(
+    dataset: Dataset | Path | str,
+    *,
+    junction: tuple[str, str],
+    inductance: float,
+    junction_capacitance: float = 0.0,
+    terminal_groups: tuple[tuple[str, ...], ...] | None = None,
+    **variants: str,
+) -> sax.Model:
+    r"""Add an explicit linearized Josephson branch to a Maxwell dataset.
+
+    ``inductance`` is in H and ``junction_capacitance`` in F. Neither is inferred
+    from electrostatics. ``terminal_groups`` optionally bonds named electrodes
+    at equal potential; the first name of each group becomes its SAX port.
+    Groups must partition all dataset terminals. This applies :math:`B^{\text{T}} C B`
+    and retains every ground branch. An ideal bond excludes the bond's own
+    fringing field and inductance. All ports still reference dataset ground.
+
+    Returns:
+        Jittable small-signal SAX model, with geometry in dataset axis units.
+
+    Raises:
+        ValueError: If terminals, grouping, matrix type or explicit inputs are invalid.
+    """
+    if inductance <= 0 or junction_capacitance < 0:
+        raise ValueError(
+            "Require positive inductance and nonnegative junction capacitance"
+        )
+    data = dataset if isinstance(dataset, Dataset) else Dataset(dataset)
+    grid = data.grid("maxwell_capacitance", allow_missing=False, **variants)
+    if grid.quantity.kind != QuantityKind.MAXWELL_CAPACITANCE or grid.quantity.complex:
+        raise ValueError("Expected real Maxwell capacitances")
+    check_maxwell(grid.values)
+    groups = (
+        tuple((name,) for name in grid.terminals)
+        if terminal_groups is None
+        else terminal_groups
+    )
+    members = [name for group in groups for name in group]
+    if any(not group for group in groups) or sorted(members) != sorted(grid.terminals):
+        raise ValueError(
+            "Terminal groups must partition every dataset terminal exactly once"
+        )
+    ports = tuple(group[0] for group in groups)
+    if len(set(junction)) != 2 or not set(junction) <= set(ports):
+        raise ValueError("The junction must name two distinct grouped ports")
+    connection = jnp.asarray([
+        [float(name in group) for group in groups] for name in grid.terminals
+    ])
+    d = jnp.asarray([
+        float(name == junction[0]) - float(name == junction[1]) for name in ports
+    ])
+    branch = d[:, None] * d[None, :]
+    lookup = GridInterpolator(grid)
+    identity = jnp.eye(len(ports))
+    defaults = {
+        name: float(values[len(values) // 2])
+        for name, values in zip(grid.axis_names, grid.coords, strict=True)
+    }
+
+    def model(
+        f: ArrayLike = DEFAULT_FREQUENCY,
+        z_ref: ArrayLike = 50.0,
+        inductance: ArrayLike = inductance,
+        junction_capacitance: ArrayLike = junction_capacitance,
+        **params: ArrayLike,
+    ) -> sax.SDict:
+        """Evaluate a lossless linearized junction circuit at positive frequencies."""
+        capacitance = connection.T @ lookup(**{**defaults, **params}) @ connection
+        omega = 2 * jnp.pi * jnp.asarray(f)
+        y_junction = 1j * omega * jnp.asarray(junction_capacitance) + 1 / (
+            1j * omega * jnp.asarray(inductance)
+        )
+        admittance = (
+            1j * omega[..., None, None] * capacitance
+            + y_junction[..., None, None] * branch
+        )
+        normalized = jnp.asarray(z_ref)[..., None, None] * admittance
+        values = jnp.linalg.solve(identity + normalized, identity - normalized)
+        valid = (
+            (jnp.asarray(f) > 0)
+            & (jnp.asarray(inductance) > 0)
+            & (jnp.asarray(junction_capacitance) >= 0)
+        )
+        values = jnp.where(valid[..., None, None], values, jnp.nan)
+        return {
+            (a, b): values[..., i, j]
+            for i, a in enumerate(ports)
+            for j, b in enumerate(ports)
+        }
+
+    sax.replace_kwargs(
+        model,
+        f=DEFAULT_FREQUENCY,
+        z_ref=50.0,
+        inductance=inductance,
+        junction_capacitance=junction_capacitance,
+        **defaults,
+    )
+    return jax.jit(model)

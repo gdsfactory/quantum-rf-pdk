@@ -60,3 +60,28 @@ def check_maxwell(maxwell: ArrayLike, *, rtol: float = 1e-9) -> None:
     }
     if problems := [problem for problem, violated in checks.items() if violated]:
         raise NonPhysicalMatrixError(problems)
+
+
+def differential_capacitance(
+    maxwell: ArrayLike, positive: int = 0, negative: int = 1
+) -> jnp.ndarray:
+    r"""Charging capacitance for equal and opposite island charges.
+
+    All other named conductors float with zero incremental charge. The reference
+    ground remains at zero voltage. For :math:`d = e_p - e_n`, this returns
+    :math:`(d^{\text{T}} C^{-1} d)^{-1}`. Grounding another conductor instead requires
+    deleting its row and column before this reduction. Junction capacitance
+    is a separate parallel contribution.
+
+    Returns:
+        Differential capacitance in F, preserving leading batch dimensions.
+    """
+    c = jnp.asarray(maxwell)
+    d = (
+        jnp.eye(c.shape[-1], dtype=c.dtype)[positive]
+        - jnp.eye(c.shape[-1], dtype=c.dtype)[negative]
+    )
+    potentials = jnp.linalg.solve(
+        c, jnp.broadcast_to(d, (*c.shape[:-2], c.shape[-1]))[..., None]
+    )[..., 0]
+    return 1 / jnp.sum(d * potentials, axis=-1)
