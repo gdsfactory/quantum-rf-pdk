@@ -36,7 +36,7 @@ GRID = {
     "gap": [4.0, 7.0, 10.0],
     "offset": [-12.0, 0.0, 12.0],
 }
-SETTINGS = Settings(near_mesh=1.0, far_mesh=30.0, domain_pad=200.0)
+SETTINGS = Settings(near_mesh=1.0, far_mesh=30.0, domain_pad=200.0, order=3)
 TERMINALS = ("o1", "o2")
 
 
@@ -74,6 +74,7 @@ RECIPE = Recipe(
     provenance={
         "recipe_version": 1,
         "issue": 929,
+        "numerical_accuracy": "Nominal p3 refinement from 1/30 um to 0.49/14.7 um changes Maxwell and ground capacitances by less than 1.1%. Representative sensitivity, not a global error bound.",
         "metal": "PEC sheets on a silicon half-domain; no kinetic inductance or junction physics",
         "ground": "Frame 45 um wide, 10 um from the electrode bounding box",
         "terminals": {
