@@ -122,9 +122,13 @@ def test_fractional_cross_section_conductors_belong_to_domain_mesh(
 
 
 def test_cpw_cross_section_normalization_depth(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The implicit 2D depth changes total capacitance, never capacitance per length."""
+    """The implicit 2D depth changes total capacitance, never capacitance per length.
+
+    One process keeps both depths on the same mesh: multithreaded Gmsh meshing
+    is not reproducible. Identical meshes give identical solves.
+    """
     source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
     monkeypatch.syspath_prepend(str(source))
     generator = runpy.run_path(str(source / "cpw_coupling.py"))
@@ -132,7 +136,7 @@ def test_cpw_cross_section_normalization_depth(
         "workdir": tmp_path / "runs",
         "sif": Path(value) if (value := os.environ.get("PALACE_SIF")) else None,
         "container_binary": os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
-        "processes": palace_processes,
+        "processes": 1,
     }
     settings = coarse_cpw_settings(generator)
     matrices = []
