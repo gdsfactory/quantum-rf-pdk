@@ -1,0 +1,4 @@
+# SAX currently caps JAX below the version required by jax-mps.
+# Use only in isolated experimental backend benchmark environments.
+jax==0.11.1
+jaxlib==0.11.1

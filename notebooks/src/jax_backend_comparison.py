@@ -34,16 +34,26 @@
 # The GPU benchmark additionally needs a CUDA-capable GPU and a CUDA build of JAX, e.g.
 # `pip install "jax[cuda12]"`. It is skipped if no GPU is found.
 #
-# The Apple Silicon benchmark needs a Mac with an Apple GPU and the experimental
-# [jax-mps](https://github.com/tillahoffmann/jax-mps) plugin (`pip install jax-mps`,
-# Python ≥ 3.12).  jax-mps is built for `jax`/`jaxlib` 0.11.x only.  It is skipped if
-# no MPS device is found.
+# Apple Silicon GPUs use the experimental [jax-mps](https://github.com/tillahoffmann/jax-mps)
+# plugin (macOS, Python >=3.12, jaxlib 0.11.x). SAX currently requires JAX <0.10,
+# so this needs a separate environment with an explicit dependency override:
+#
+# ```bash
+# uv venv --python 3.13 .venv-mps
+# uv pip install --python .venv-mps/bin/python -e ".[models]" \
+#   --override .github/jax-mps-overrides.txt jax-mps==0.11.0 jupytext nbconvert ipykernel
+# ```
+#
+# This override is experimental and does not change the project lockfile. Use the
+# environment's Python directly; `uv run` would restore the locked JAX version.
+# MPS supports single precision only. Compare it with the CPU float32 row, and
+# check the accuracy table against the CPU float64 reference before using timings.
 #
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
 # This notebook benchmarks a SAX-based quantum circuit simulation on the **CPU**,
-# **GPU** (CUDA) and **Apple Silicon GPU** (Metal, through jax-mps) backends of JAX.
+# **GPU** (CUDA), and **Apple Silicon** (MPS) backends of JAX.
 #
 # JAX provides a unified programming model that can transparently target different
 # hardware accelerators.  For large-scale circuit sweeps — e.g. sweeping thousands of
@@ -61,9 +71,11 @@
 #
 # :::{note}
 # The documentation build does not execute this notebook, since CI runners have no GPU.
-# The page shows the outputs saved by the last run on an accelerator machine (see
-# `AGENTS.md`); if no such run has been saved yet, it shows the code only.  Sections
-# for accelerators that are not present are skipped.
+# The page shows outputs saved by the last accelerator run (see `AGENTS.md`).
+# Unavailable accelerator sections are skipped. Recorded runs in
+# `notebooks/data/jax_backend_comparison/` keep CUDA and MPS results together in
+# the scaling plot. Each curve identifies its hardware and precision. These runs
+# come from different machines, so they compare complete systems, not just backends.
 # :::
 #
 # :::{note}
@@ -92,12 +104,16 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
-import datetime
+import hashlib
 import json
 import os
 import platform
+import subprocess
 import time
 import warnings
+from datetime import UTC, datetime
+from importlib.metadata import version
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
@@ -113,6 +129,7 @@ from qpdk.models.waveguides import straight, straight_shorted
 from qpdk.tech import coplanar_waveguide
 
 jax.config.update("jax_enable_x64", True)
+jax.config.update("jax_default_device", jax.devices("cpu")[0])
 
 PDK.activate()
 
@@ -121,13 +138,8 @@ PDK.activate()
 #
 # We probe each backend and record its availability.  The GPU sections are skipped
 # when no GPU is found, unless `QPDK_REQUIRE_GPU=1` is set, which turns a missing GPU
-# into an error.  Set it when saving outputs for the docs, so a saved run can never
-# silently lack the GPU results.  `QPDK_REQUIRE_MPS=1` does the same for the Apple
-# Silicon GPU.
-#
-# Once installed, jax-mps registers itself as a JAX platform and may become the default
-# backend.  We pin the default device to the CPU so that only the benchmark sections
-# run on an accelerator.
+# into an error. `QPDK_REQUIRE_MPS=1` does the same for Apple Silicon. Set the
+# appropriate flag when saving outputs for the docs.
 
 # %%
 # --- CPU (always available) ---
@@ -146,7 +158,6 @@ if os.environ.get("QPDK_REQUIRE_GPU") == "1" and not HAS_GPU:
         'e.g. `pip install "jax[cuda12]"`, and check `nvidia-smi`.'
     )
 
-# --- Apple Silicon GPU (jax-mps) ---
 try:
     mps_device = jax.devices("mps")[0]
 except RuntimeError:
@@ -155,20 +166,38 @@ HAS_MPS = mps_device is not None
 
 if os.environ.get("QPDK_REQUIRE_MPS") == "1" and not HAS_MPS:
     raise RuntimeError(
-        "QPDK_REQUIRE_MPS=1 but JAX found no MPS device. Install the jax-mps plugin "
-        "(`pip install jax-mps`) on a Mac with Apple Silicon."
+        "QPDK_REQUIRE_MPS=1 but JAX found no MPS device. "
+        "Install jax-mps in the separate environment described above."
     )
 
-jax.config.update("jax_default_device", cpu_device)
-
-print(f"JAX  : {jax.__version__}")
+cpu_kind = platform.processor()
+if platform.system() == "Linux":
+    cpu_kind = next(
+        line.split(":", 1)[1].strip()
+        for line in Path("/proc/cpuinfo").read_text(encoding="utf-8").splitlines()
+        if line.startswith("model name")
+    )
+print(f"System: {platform.system()} {platform.release()} ({platform.machine()})")
+if platform.system() == "Darwin":
+    chip = subprocess.check_output(
+        ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
+    ).strip()
+    cpu_kind = chip
+    print(f"Chip : {chip}; macOS {platform.mac_ver()[0]}")
+else:
+    print(f"CPU model: {cpu_kind}")
+print(f"Python: {platform.python_version()}")
+print(f"JAX  : {jax.__version__}; jaxlib {version('jaxlib')}; SAX {sax.__version__}")
 print(f"CPU  : ✓  ({cpu_device.device_kind})")
 print(
     f"GPU  : {'✓  (' + gpu_device.device_kind + ')' if HAS_GPU else '✗  (not available)'}"
 )
 print(
-    f"MPS  : {'✓  (' + mps_device.device_kind + ')' if HAS_MPS else '✗  (not available)'}"
+    f"MPS  : {'available (' + mps_device.device_kind + ')' if HAS_MPS else 'not available'}"
 )
+if HAS_MPS:
+    print(f"jax-mps: {version('jax-mps')}")
+    print(f"JAX_MPS_ASYNC_DISPATCH={os.environ.get('JAX_MPS_ASYNC_DISPATCH', '0')}")
 print(f"\nDefault JAX backend: {jax.default_backend()}")
 
 # %% [markdown]
@@ -216,11 +245,11 @@ netlist = {
     "instances": {
         "feedline1": {
             "component": "straight",
-            "settings": {"length": 500, "media": cross_section},
+            "settings": {"length": 500, "cross_section": cross_section},
         },
         "feedline2": {
             "component": "straight",
-            "settings": {"length": 500, "media": cross_section},
+            "settings": {"length": 500, "cross_section": cross_section},
         },
         "cap": {
             "component": "capacitor",
@@ -228,7 +257,7 @@ netlist = {
         },
         "res": {
             "component": "straight_shorted",
-            "settings": {"length": 4000, "media": cross_section},
+            "settings": {"length": 4000, "cross_section": cross_section},
         },
         "tee": "tee",
     },
@@ -260,7 +289,8 @@ print("External ports:", list(netlist["ports"].keys()))
 # the expected resonance dip appears.
 
 # %%
-freq_ref = jnp.linspace(2e9, 8e9, 1001)
+_FREQUENCY_RANGE = (2e9, 8e9)
+freq_ref = jnp.linspace(*_FREQUENCY_RANGE, 1001, dtype=jnp.float64)
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     s_ref = circuit_fn(f=freq_ref)
@@ -285,16 +315,13 @@ plt.show()
 # primitive from Python.  Timing it directly would mostly measure that dispatch
 # overhead, so we wrap it in `jax.jit` first.  The first call for each new input shape
 # compiles the function for the target device; we exclude it from the reported times by
-# warming up before measuring.
+# warming up before measuring. Each row reports the median and standard deviation
+# of ten timed evaluations.
 #
 # JAX dispatches computation asynchronously.  We call `jax.block_until_ready` to ensure
 # all pending work has completed before stopping the clock.  `circuit_fn` returns a
 # `sax.SDict`, a plain `dict` mapping port-pair tuples to JAX arrays, and
 # `jax.block_until_ready` accepts any such pytree.
-#
-# With `single_precision=True` the benchmark runs inside `jax.enable_x64(False)`, so
-# the frequency array is `float32` and the circuit evaluates in `complex64`.  Metal has
-# no 64-bit floating point, so this is the only precision the MPS backend can run.
 
 # %%
 circuit_jit = jax.jit(circuit_fn)
@@ -307,175 +334,240 @@ def benchmark_circuit(
     device: jax.Device,
     sizes: list[int] = _BENCHMARK_SIZES,
     n_repeats: int = _N_REPEATS,
+    *,
     single_precision: bool = False,
-) -> list[float]:
-    """Return median wall-clock time [s] per circuit evaluation on *device*.
+) -> list[list[float]]:
+    """Return raw wall-clock samples [s] per circuit evaluation on *device*.
 
     Args:
         device: JAX device on which to run the circuit.
         sizes: List of frequency-array lengths to sweep.
         n_repeats: Number of timed repetitions per size.
-        single_precision: Evaluate in ``float32``/``complex64`` instead of
-            ``float64``/``complex128``.
+        single_precision: Use float32 inputs and complex64 arithmetic.
 
     Returns:
-        List of median evaluation times in seconds, one per entry in *sizes*.
-    """
-    times: list[float] = []
-    precision = "float32" if single_precision else "float64"
-    for n in tqdm(sizes, desc=f"Benchmarking on {device} ({precision})"):
-        with jax.enable_x64(not single_precision), warnings.catch_warnings():
-            # Committing the input to the device makes the jitted function run there
-            freq = jax.device_put(jnp.linspace(2e9, 8e9, n), device)
-            warnings.simplefilter("ignore")
-            # Warmup: compiles the function for this shape and device
-            jax.block_until_ready(circuit_jit(f=freq))
+        Timed repetitions, grouped by frequency-array size.
 
-            run_times: list[float] = []
-            for _ in range(n_repeats):
-                t0 = time.perf_counter()
-                jax.block_until_ready(circuit_jit(f=freq))
-                run_times.append(time.perf_counter() - t0)
-        # Use the median to reduce noise from OS scheduling
-        times.append(float(np.median(run_times)))
-    return times
+    Raises:
+        RuntimeError: If the circuit runs at the wrong precision or on the wrong device.
+    """
+    samples: list[list[float]] = []
+    with jax.enable_x64(not single_precision), jax.default_device(device):
+        dtype = jnp.float32 if single_precision else jnp.float64
+        for n in tqdm(sizes, desc=f"Benchmarking on {device}, {dtype}"):
+            freq = jax.device_put(
+                jnp.linspace(*_FREQUENCY_RANGE, n, dtype=dtype), device
+            )
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                result = jax.block_until_ready(circuit_jit(f=freq))
+                expected_dtype = jnp.complex64 if single_precision else jnp.complex128
+                if any(
+                    value.dtype != expected_dtype or value.device != device
+                    for value in result.values()
+                ):
+                    raise RuntimeError(
+                        "Circuit output precision or device is incorrect."
+                    )
+
+                run_times: list[float] = []
+                for _ in range(n_repeats):
+                    t0 = time.perf_counter()
+                    jax.block_until_ready(circuit_jit(f=freq))
+                    run_times.append(time.perf_counter() - t0)
+            median = float(np.median(run_times))
+            spread = float(np.std(run_times, ddof=1))
+            samples.append(run_times)
+            tqdm.write(
+                f"  n={n:>6d}: median {median * 1_000:.3f} ms, std {spread * 1_000:.3f} ms"
+            )
+    return samples
 
 
 # %% [markdown]
 # ## CPU Backend
 
 # %%
-cpu_times = benchmark_circuit(cpu_device)
-for n, t in zip(_BENCHMARK_SIZES, cpu_times):
-    print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
+cpu_samples = benchmark_circuit(cpu_device)
+cpu_float32_samples = benchmark_circuit(cpu_device, single_precision=True)
 
 # %% [markdown]
 # ## GPU Backend
 #
 # This section requires a CUDA-capable GPU.  It is skipped automatically when
-# no GPU is detected.
+# no GPU is detected. Recorded CUDA measurements from another machine are
+# included in the combined table and scaling plot below.
 
 # %%
-gpu_times: list[float] | None = None
-
 if HAS_GPU:
-    gpu_times = benchmark_circuit(gpu_device)
-    for n, t in zip(_BENCHMARK_SIZES, gpu_times):
-        print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
+    gpu_samples = benchmark_circuit(gpu_device)
+    gpu_float32_samples = benchmark_circuit(gpu_device, single_precision=True)
 else:
-    print("GPU not available on this system — skipping GPU benchmark.")
+    print("CUDA unavailable locally; see Recorded Runs for saved GPU measurements.")
 
 # %% [markdown]
-# ## Single Precision
+# ## Apple Silicon (MPS)
 #
-# Apple GPUs have no 64-bit floating point, and jax-mps narrows `complex128` arrays to
-# `complex64` (with a warning).  Before benchmarking the MPS backend we therefore
-# check how much accuracy the circuit loses in single precision, by evaluating the
-# reference sweep on the CPU at `float32` and comparing it with the `float64` result.
+# Metal has no float64 arithmetic. We disable x64 while tracing and running this
+# section, rather than allowing the plugin to silently downcast an x64 program.
 
 # %%
-with jax.enable_x64(False), warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    s_ref_f32 = circuit_jit(f=jnp.linspace(2e9, 8e9, freq_ref.size))
-
-s21_f64 = np.asarray(s21_ref)
-s21_f32 = np.asarray(s_ref_f32["o1", "o2"])
-print(f"dtype                 : {s21_f32.dtype} (vs {s21_f64.dtype})")
-print(f"max |ΔS21|            : {np.max(np.abs(s21_f32 - s21_f64)):.2e}")
-print(
-    "max |Δ|S21|| [dB]     : "
-    f"{np.max(np.abs(20 * np.log10(np.abs(s21_f32)) - 20 * np.log10(np.abs(s21_f64)))):.2e}"
-)
-
-# %% [markdown]
-# The MPS timings below are compared with a `float32` CPU baseline, so that
-# both sides do the same arithmetic.
-
-# %%
-cpu_f32_times = benchmark_circuit(cpu_device, single_precision=True)
-for n, t in zip(_BENCHMARK_SIZES, cpu_f32_times):
-    print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
-
-# %% [markdown]
-# ## Apple Silicon GPU Backend (MPS)
-#
-# This section requires a Mac with Apple Silicon and the
-# [jax-mps](https://github.com/tillahoffmann/jax-mps) plugin.  It is skipped
-# automatically when no MPS device is detected.  jax-mps is experimental: it maps
-# StableHLO to [MLX](https://github.com/ml-explore/mlx) operations, and not every JAX
-# feature is supported.  The `filipsson_gunnar` backend used here needs only complex
-# element-wise arithmetic, which jax-mps supports.
-
-# %%
-mps_times: list[float] | None = None
-
 if HAS_MPS:
-    mps_times = benchmark_circuit(mps_device, single_precision=True)
-    for n, t in zip(_BENCHMARK_SIZES, mps_times):
-        print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
+    mps_samples = benchmark_circuit(mps_device, single_precision=True)
 else:
-    print("MPS not available on this system — skipping Apple Silicon benchmark.")
+    print("MPS not available on this system; skipping Apple Silicon benchmark.")
 
 # %% [markdown]
-# ## Saved Accelerator Runs
+# ## Accuracy Against the CPU Float64 Reference
 #
-# No single machine has both a CUDA GPU and an Apple Silicon GPU, so each accelerator
-# run is saved as a JSON file in `notebooks/data/jax_backend_comparison/` (tracked with
-# Git LFS) and the comparison below loads every saved run.  A run stores the
-# accelerator timings together with the CPU timings measured on the same machine, as
-# timings from different machines are not directly comparable.
-#
-# Set `QPDK_SAVE_BENCHMARKS=1` to save this machine's run.  It is written to
-# `cuda.json` or `mps.json`, depending on the accelerator; a machine without one does
-# not save anything.  Runs measured in this session replace saved runs for the same
-# accelerator.
+# All rows use the same 1001-point sweep. The table reports the maximum absolute
+# error in transmission magnitude, $\lvert S_{21}\rvert$, and in complex
+# transmission. These are absolute linear errors, not dB or relative errors near
+# the resonance dip. This check is outside the timed region.
 
 # %%
-RESULTS_DIR = PATH.repo / "notebooks" / "data" / "jax_backend_comparison"
-
-live_times = {"CPU": cpu_times, "CPU (float32)": cpu_f32_times}
-if gpu_times is not None:
-    live_times["GPU"] = gpu_times
-if mps_times is not None:
-    live_times["MPS (float32)"] = mps_times
-
-if HAS_GPU:
-    live_key, accelerator = "cuda", gpu_device.device_kind
-elif HAS_MPS:
-    live_key, accelerator = "mps", mps_device.device_kind
-else:
-    live_key, accelerator = "cpu", None
-
-live_run = {
-    "accelerator": accelerator,
-    "cpu": platform.processor() or platform.machine(),
-    "platform": platform.platform(),
-    "jax": jax.__version__,
-    "date": datetime.date.today().isoformat(),
-    "sizes": _BENCHMARK_SIZES,
-    "times": live_times,
+backend_devices = {
+    "CPU float64": (cpu_device, False),
+    "CPU float32": (cpu_device, True),
 }
+if HAS_GPU:
+    backend_devices["CUDA float64"] = (gpu_device, False)
+    backend_devices["CUDA float32"] = (gpu_device, True)
+if HAS_MPS:
+    backend_devices["MPS float32"] = (mps_device, True)
 
-if os.environ.get("QPDK_SAVE_BENCHMARKS") == "1" and accelerator is not None:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = RESULTS_DIR / f"{live_key}.json"
-    out_path.write_text(json.dumps(live_run, indent=2) + "\n")
-    print(f"Saved this run to {out_path.relative_to(PATH.repo)}")
+reference = np.asarray(s21_ref)
+accuracy = {}
+for name, (device, single_precision) in backend_devices.items():
+    with jax.enable_x64(not single_precision), jax.default_device(device):
+        freq = jax.device_put(
+            jnp.asarray(
+                np.asarray(freq_ref),
+                dtype=jnp.float32 if single_precision else jnp.float64,
+            ),
+            device,
+        )
+        result = np.asarray(jax.block_until_ready(circuit_jit(f=freq))["o1", "o2"])
+    if not np.isfinite(result).all():
+        raise RuntimeError(f"{name} produced non-finite transmission.")
+    magnitude_error = np.max(np.abs(np.abs(result) - np.abs(reference)))
+    complex_error = np.max(np.abs(result - reference))
+    accuracy[name] = {
+        "output_dtype": str(result.dtype),
+        "magnitude_error": float(magnitude_error),
+        "complex_error": float(complex_error),
+    }
 
-runs: dict[str, dict] = {}
-for path in sorted(RESULTS_DIR.glob("*.json")):
-    try:
-        runs[path.stem] = json.loads(path.read_text())
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        # An un-fetched Git LFS pointer file is not JSON
-        print(f"Skipping {path.name}: not valid JSON (run `git lfs pull`?)")
-runs[live_key] = live_run
+# %% [markdown]
+# ## Recorded Runs
+#
+# Set `QPDK_BENCHMARK_OUTPUT` to a JSON path to record this machine's results.
+# Relative paths are rooted at the checkout, independent of the notebook directory.
+# Raw repetitions, the reference transmission, workload settings, hardware and
+# software versions are saved. Re-run on each machine after changing the workload.
+#
+# From a checkout, the notebook also reads the recorded runs in
+# `notebooks/data/jax_backend_comparison/`. It checks the workload and CPU reference
+# before combining them, and prefers live measurements for the current hardware.
+# The table and plot include the CPU baseline from each machine. A CUDA float32
+# row allows comparison with MPS at the same precision.
 
-for key, run in runs.items():
-    source = "this session" if key == live_key else f"saved {run['date']}"
+# %%
+local_samples = {"CPU float64": cpu_samples, "CPU float32": cpu_float32_samples}
+if HAS_GPU:
+    local_samples["CUDA float64"] = gpu_samples
+    local_samples["CUDA float32"] = gpu_float32_samples
+if HAS_MPS:
+    local_samples["MPS float32"] = mps_samples
+
+workload = {
+    "sizes": _BENCHMARK_SIZES,
+    "n_repeats": _N_REPEATS,
+    "frequency_hz": list(_FREQUENCY_RANGE),
+    "solver": "filipsson_gunnar",
+    "netlist": json.loads(
+        json.dumps(netlist, default=lambda value: value.model_dump(mode="json"))
+    ),
+    "model_sha256": hashlib.sha256(
+        b"".join(
+            (PATH.module / name).read_bytes()
+            for name in (
+                "models/waveguides.py",
+                "models/cpw.py",
+                "models/generic.py",
+                "models/constants.py",
+                "tech.py",
+            )
+        )
+    ).hexdigest(),
+}
+local_run = {
+    "recorded_at": datetime.now(UTC).isoformat(),
+    "system": platform.system(),
+    "cpu": cpu_kind,
+    "macos": platform.mac_ver()[0],
+    "python": platform.python_version(),
+    "versions": {name: version(name) for name in ("jax", "jaxlib", "sax", "jaxellip")},
+    "workload": workload,
+    "reference_s21": {"real": reference.real.tolist(), "imag": reference.imag.tolist()},
+    "results": [],
+}
+if HAS_MPS:
+    local_run["versions"]["jax-mps"] = version("jax-mps")
+    local_run["mps_async_dispatch"] = os.environ.get("JAX_MPS_ASYNC_DISPATCH", "0")
+for name, samples in local_samples.items():
+    device = backend_devices[name][0]
+    local_run["results"].append({
+        "backend": name,
+        "hardware": cpu_kind
+        if device.platform == "cpu"
+        else (cpu_kind + " GPU" if device.platform == "mps" else device.device_kind),
+        "samples_s": samples,
+        **accuracy[name],
+    })
+
+if output_path := os.environ.get("QPDK_BENCHMARK_OUTPUT"):
+    (PATH.repo / output_path).write_text(
+        json.dumps(local_run, indent=2) + "\n", encoding="utf-8"
+    )
+
+runs = [local_run]
+for result_path in sorted(
+    (PATH.repo / "notebooks/data/jax_backend_comparison").glob("*.json")
+):
+    saved_run = json.loads(result_path.read_text(encoding="utf-8"))
+    if saved_run["workload"] != workload:
+        raise ValueError(f"Recorded workload differs; regenerate {result_path.name}.")
+    saved_reference = saved_run["reference_s21"]
+    np.testing.assert_allclose(
+        np.asarray(saved_reference["real"]) + 1j * np.asarray(saved_reference["imag"]),
+        reference,
+        rtol=1e-10,
+        atol=1e-12,
+        err_msg=f"CPU reference differs in {result_path.name}",
+    )
+    runs.append(saved_run)
+
+combined_results = {}
+for run in runs:
+    for result in run["results"]:
+        name = f"{result['hardware']} / {result['backend']}"
+        combined_results.setdefault(name, (run, result))
+
+print(
+    f"{'Hardware / backend':<60} {'JAX':<8} {'Max |S21| error':>17} {'Max complex error':>19}"
+)
+for name, (run, result) in combined_results.items():
+    samples = np.asarray(result["samples_s"])
+    if samples.shape != (len(_BENCHMARK_SIZES), _N_REPEATS) or not np.all(
+        np.isfinite(samples) & (samples > 0)
+    ):
+        raise ValueError(f"Invalid timing samples for {name}.")
     print(
-        f"{key:>4}: {run['accelerator'] or 'no accelerator'} + {run['cpu']} "
-        f"(JAX {run['jax']}, {source})"
+        f"{name:<60} {run['versions']['jax']:<8} {result['magnitude_error']:17.6g} {result['complex_error']:19.6g}"
+    )
+    print(
+        f"  {run['system']}; Python {run['python']}; packages {run['versions']}; recorded {run['recorded_at']}"
     )
 
 # %% [markdown]
@@ -524,65 +616,66 @@ def fit_overhead_model(sizes: list[int], times: list[float]) -> tuple[float, flo
     return float(t0), float(c)
 
 
-fits = {
-    key: {
-        name: fit_overhead_model(run["sizes"], times)
-        for name, times in run["times"].items()
-    }
-    for key, run in runs.items()
+backend_times = {
+    name: np.median(result["samples_s"], axis=1).tolist()
+    for name, (_, result) in combined_results.items()
 }
 
-for key, run in runs.items():
-    print(f"[{key}] {run['accelerator'] or 'no accelerator'} + {run['cpu']}")
-    for name, (t0, c) in fits[key].items():
-        t_model = t0 + c * np.asarray(run["sizes"])
-        max_error = np.max(np.abs(t_model / np.asarray(run["times"][name]) - 1))
-        print(
-            f"  {name}: t0 = {t0 * 1e6:8.1f} µs, c = {c * 1e9:8.2f} ns/point, "
-            f"N* = t0/c ≈ {t0 / c if c > 0 else float('inf'):,.0f} points, "
-            f"max relative error {max_error:.0%}"
-        )
+fits = {
+    name: fit_overhead_model(_BENCHMARK_SIZES, times)
+    for name, times in backend_times.items()
+}
+
+for name, (t0, c) in fits.items():
+    t_model = t0 + c * np.asarray(_BENCHMARK_SIZES)
+    max_error = np.max(np.abs(t_model / np.asarray(backend_times[name]) - 1))
+    print(
+        f"{name}: t0 = {t0 * 1e6:8.1f} µs, c = {c * 1e9:8.2f} ns/point, "
+        f"N* = t0/c ≈ {t0 / c if c > 0 else float('inf'):,.0f} points, "
+        f"max relative error {max_error:.0%}"
+    )
 
 # %% [markdown]
 # ## Performance Comparison
 #
 # The plot below shows the median evaluation time against the number of frequency
-# points, with the fitted model as a dashed line for each backend, in one panel per
-# machine.  On log–log axes the model is flat below $N^\ast$ and has slope 1 above it.
+# points, with the fitted model as a dashed line for each backend.  On log–log axes the
+# model is flat below $N^\ast$ and has slope 1 above it. Hardware and precision
+# are shown for every curve; the CPU rows are the baselines for their own machines.
+# Points show measured medians. Error bars span the 25th to 75th percentiles
+# of the repetitions, while dashed lines show the overhead fit.
 
 # %%
-_runtime_labels = {"GPU": "JAX/CUDA", "MPS (float32)": "JAX/jax-mps"}
+_n_fit = np.geomspace(_BENCHMARK_SIZES[0], _BENCHMARK_SIZES[-1], 200)
 
-fig, axes = plt.subplots(
-    1, len(runs), figsize=(6.4 * len(runs), 4.8), sharey=True, squeeze=False
-)
-for ax, (key, run) in zip(axes[0], runs.items()):
-    sizes = np.asarray(run["sizes"])
-    n_fit = np.geomspace(sizes[0], sizes[-1], 200)
-    for (name, times), marker in zip(run["times"].items(), "os^v"):
-        t0, c = fits[key][name]
-        (line,) = ax.plot(
-            sizes,
-            np.asarray(times) * 1_000,
-            marker,
-            label=f"{name} ({_runtime_labels.get(name, 'JAX')})",
-        )
-        ax.plot(
-            n_fit,
-            (t0 + c * n_fit) * 1_000,
-            "--",
-            color=line.get_color(),
-            label=f"{name} fit: {t0 * 1e6:.0f} µs + {c * 1e9:.0f} ns · N",
-        )
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel("Number of frequency points")
-    ax.set_title(f"{run['accelerator'] or 'CPU only'}\n{run['cpu']}", fontsize="medium")
-    ax.legend(fontsize="small")
-    ax.grid(True, which="both", ls="--", alpha=0.5)
+fig, ax = plt.subplots(figsize=(11, 7))
+for name, times in backend_times.items():
+    t0, c = fits[name]
+    samples = np.asarray(combined_results[name][1]["samples_s"])
+    medians = np.asarray(times)
+    lower, upper = np.percentile(samples, [25, 75], axis=1)
+    line = ax.errorbar(
+        _BENCHMARK_SIZES,
+        medians * 1_000,
+        yerr=np.asarray([medians - lower, upper - medians]) * 1_000,
+        fmt="o",
+        capsize=2,
+        label=name,
+    )[0]
+    ax.plot(
+        _n_fit,
+        (t0 + c * _n_fit) * 1_000,
+        "--",
+        color=line.get_color(),
+    )
 
-axes[0, 0].set_ylabel("Median time per evaluation [ms]")
-fig.suptitle("JAX backend performance — coupled resonator circuit")
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel("Number of frequency points")
+ax.set_ylabel("Median time per evaluation [ms]")
+ax.set_title("JAX backend performance — coupled resonator circuit")
+ax.legend()
+ax.grid(True, which="both", ls="--", alpha=0.5)
 plt.tight_layout()
 plt.show()
 
@@ -591,10 +684,9 @@ plt.show()
 #
 # | Backend | Notes |
 # |---------|-------|
-# | **CPU** | Always available; good baseline, with the lowest fixed overhead per call. |
-# | **GPU** | Requires a CUDA build of JAX (e.g. `jax[cuda12]`) and a CUDA-capable GPU.  Compare the fitted per-point costs to see whether it pays off: SAX evaluates in `complex128`, and many consumer GPUs run 64-bit floating point at a small fraction of their 32-bit rate. |
-# | **CPU (float32)** | Same circuit in `complex64`.  Baseline for the MPS backend; see the single-precision section for the accuracy cost. |
-# | **MPS** | Requires Apple Silicon and the experimental jax-mps plugin (`jax`/`jaxlib` 0.11.x).  Single precision only, since Metal has no 64-bit floating point. |
+# | **CPU** | Float64 reference and float32 baseline for comparisons at matching precision. |
+# | **GPU** | CUDA runs at both float64/complex128 and float32/complex64. Compare float32 against MPS and float64 against the CPU reference; consumer GPUs often have much lower float64 throughput. |
+# | **MPS** | Apple Silicon via experimental jax-mps; float32/complex64 only. Requires the separate JAX 0.11 environment above. |
 #
 # ### SAX / JAX integration notes
 #

@@ -293,28 +293,42 @@ for examples of:
   require external tooling (HFSS, MATLAB) or a GPU are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the
   docs build does not try to execute them
 
-- **GPU notebook**: `jax_backend_comparison` needs a CUDA GPU or an Apple Silicon GPU, so CI does not execute it. Each
-  accelerator run saves its timings to `notebooks/data/jax_backend_comparison/{cuda,mps}.json` (Git LFS), and the
-  notebook plots every saved run. On a CUDA machine, execute it and commit both `notebooks/jax_backend_comparison.ipynb`
-  and `cuda.json`:
+- **GPU notebook**: `jax_backend_comparison` needs a CUDA or Apple Silicon GPU, so CI does not execute it. On a CUDA
+  machine, use the same experimental JAX 0.11 version as the MPS run, record its results, and save the notebook outputs:
 
   ```bash
-  jax_version="$(uv run --extra models python -c 'import jax; print(jax.__version__)')"
-  QPDK_REQUIRE_GPU=1 QPDK_SAVE_BENCHMARKS=1 uv run --extra models --with "jax[cuda12]==${jax_version}" \
-      --with jupytext --with nbconvert --with ipykernel \
-      jupytext --execute --to ipynb --set-kernel python3 \
+  uv venv --python 3.13 .venv-cuda
+  uv pip install --python .venv-cuda/bin/python -e ".[models]" \
+      --override .github/jax-mps-overrides.txt \
+      "jax-cuda12-plugin[with-cuda]==0.11.1" jupytext nbconvert ipykernel
+  QPDK_BENCHMARK_OUTPUT=notebooks/data/jax_backend_comparison/cuda.json \
+      QPDK_REQUIRE_GPU=1 JAX_PLATFORMS=cpu,cuda .venv-cuda/bin/jupytext \
+      --execute --to ipynb --set-kernel python3 \
       --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
   ```
 
-  The Apple Silicon (MPS) section runs only on a Mac with the experimental `jax-mps` plugin, which needs `jax`/`jaxlib`
-  0.11.x. On such a machine, execute it and commit `mps.json` and the notebook:
+### Apple Silicon benchmark outputs
 
-  ```bash
-  QPDK_REQUIRE_MPS=1 QPDK_SAVE_BENCHMARKS=1 uv run --extra models --with jax-mps \
-      --with jupytext --with nbconvert --with ipykernel \
-      jupytext --execute --to ipynb --set-kernel python3 \
-      --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
-  ```
+`jax_backend_comparison` also supports Apple Silicon through experimental `jax-mps`. SAX currently caps JAX below the
+plugin's required 0.11.x, so use a separate environment with a scoped override instead of changing the project lockfile:
+
+```bash
+uv venv --python 3.13 .venv-mps
+uv pip install --python .venv-mps/bin/python -e ".[models]" \
+    --override .github/jax-mps-overrides.txt jax-mps==0.11.0 jupytext nbconvert ipykernel
+QPDK_BENCHMARK_OUTPUT=notebooks/data/jax_backend_comparison/apple-m5.json \
+    QPDK_REQUIRE_MPS=1 JAX_PLATFORMS=cpu,mps .venv-mps/bin/jupytext \
+    --execute --to ipynb --set-kernel python3 \
+    --output notebooks/jax_backend_comparison.ipynb notebooks/src/jax_backend_comparison.py
+```
+
+Use that environment's executables directly; `uv run` would sync back to the locked JAX version. The notebook records
+the chip, macOS and package versions, checks output precision and device, and compares CPU float32 and MPS complex64
+results against the CPU float64 reference. Keep both machine records in `notebooks/data/jax_backend_comparison/` and
+commit the JSON files with the notebook. The notebook validates their workload and CPU reference traces, then includes
+both CPU baselines, CUDA float32/float64, and MPS float32 in the scaling plot. It prefers live measurements for the
+current hardware and labels every curve with its hardware and precision. The override does not establish general SAX or
+KLU compatibility with JAX 0.11.
 
 ### Samples Directory
 

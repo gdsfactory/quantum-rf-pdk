@@ -193,12 +193,13 @@ Microwave components as linear, frequency-dependent scattering matrices, impleme
         :link-type: doc
         :class-card: notebook-card
 
-        SAX circuit evaluation on the CPU and GPU (CUDA) backends of JAX; the GPU run
-        happens outside CI.
+        SAX circuit evaluation on CPU, CUDA, and Apple Silicon (MPS), with matching
+        precision baselines and accuracy checks. Recorded runs from both machines share
+        a scaling plot; accelerator runs happen outside CI.
 
         +++
 
-        :bdg-secondary-line:`JAX` :bdg-secondary-line:`CUDA` :bdg-primary:`models`
+        :bdg-secondary-line:`JAX` :bdg-secondary-line:`CUDA` :bdg-secondary-line:`MPS` :bdg-primary:`models`
 
 .. _notebooks-fem:
 
@@ -610,11 +611,14 @@ them as globs.
 
 .. note::
 
-    Two notebook dependencies are deliberately *not* extras:
+    These notebook dependencies are deliberately *not* extras:
 
     - A CUDA build of JAX, used by :doc:`notebooks/jax_backend_comparison` for the GPU
       benchmark, is hardware-specific — install it with ``pip install "jax[cuda12]"``.
       The notebook skips that section if no GPU is found.
+    - Apple Silicon uses experimental ``jax-mps`` in a separate JAX 0.11 environment
+      while SAX still requires JAX <0.10. See the benchmark notebook for the scoped
+      dependency override and single-precision caveat.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
@@ -661,7 +665,7 @@ Every notebook at a glance; the **Extras** column links back to :ref:`notebook-e
     - - :doc:`notebooks/jax_backend_comparison`
       - S-parameter models
       - SAX, JAX
-      - ``models`` (+ ``jax[cuda12]``)
+      - ``models`` (+ ``jax[cuda12]`` or experimental ``jax-mps``)
     - - :doc:`notebooks/hfss_q2d_cpw_impedance`
       - FEM electromagnetics
       - Ansys Q2D, PyAEDT
