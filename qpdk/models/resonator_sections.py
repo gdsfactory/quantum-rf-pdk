@@ -21,6 +21,9 @@ def resonator_coupling_region(
     The section has two bus ports and two resonator ports. Its lumped mutual
     capacitance and transmission-line sections match the existing whole-device
     model; the meander and far-end short are connected outside this section.
+
+    Returns:
+        Four-port SAX S-parameters for the coupling region.
     """
     return resonator_coupled(
         f=f,
@@ -39,5 +42,9 @@ def resonator_meander(
     length: float = 3700.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
-    """Model the meander by its total CPW electrical length."""
+    """Model the meander by its total CPW electrical length.
+
+    Returns:
+        Two-port SAX S-parameters for the meander path.
+    """
     return straight(f=f, length=length, cross_section=cross_section)
