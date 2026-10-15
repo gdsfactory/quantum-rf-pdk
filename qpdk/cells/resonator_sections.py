@@ -10,6 +10,8 @@ from qpdk.cells._schematic import (
 )
 from qpdk.cells.waveguides import bend_circular, straight
 
+__all__ = ["resonator_coupling_region", "resonator_meander"]
+
 
 @gf.cell(
     tags=("resonators", "couplers"),
