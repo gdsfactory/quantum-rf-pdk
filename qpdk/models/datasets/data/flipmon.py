@@ -37,7 +37,7 @@ from qpdk.cells import flipmon_with_bbox
 from qpdk.tech import LAYER
 
 GRID = {
-    "chip_gap": [5.0, 7.5, 10.0, 15.0, 20.0],
+    "chip_gap": [5.0, 6.25, 7.5, 8.75, 10.0, 12.5, 15.0, 17.5, 20.0],
     "alignment": [-15.0, 15.0],
     "inner_radius": [50.0, 60.0],
     "top_radius": [100.0, 120.0],
