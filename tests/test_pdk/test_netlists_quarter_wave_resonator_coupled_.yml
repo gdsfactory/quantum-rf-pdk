@@ -1,32 +1,81 @@
 instances:
-  resonator_coupled:
-    component: resonator_coupled
-    info:
-      coupling_gap: 20
-      coupling_length: 200
-      cross_section_name: coplanar_waveguide
-      length: 4000
-      resonator_type: quarter_wave
+  coupler_straight:
+    component: coupler_straight
+    info: {}
     settings:
-      bend_spec: bend_circular
-      coupling_gap: 20
-      coupling_straight_length: 200
       cross_section: cpw
       cross_section_non_resonator: cpw
+      gap: 20
+      length: 200
+      resonator_offset: 6
+  open_2_port:
+    component: open_2_port
+    info: {}
+    settings:
+      cross_section: cpw
+  resonator_meander:
+    component: resonator_meander
+    info:
+      length: 3697.794
+    settings:
+      bend_spec: bend_circular
+      cross_section: cpw
       end_with_bend: false
-      length: 4000
+      length: 3697.794
       meanders: 6
-      open_end: false
-      open_start: true
-      start_with_bend: false
-nets: []
+  short:
+    component: short
+    info: {}
+    settings: {}
+  straight:
+    component: straight
+    info:
+      length: 102.204
+      route_info_coplanar_waveguide_length: 102.204
+      route_info_length: 102.204
+      route_info_type: coplanar_waveguide
+      route_info_weight: 102.204
+      width: 10
+    settings:
+      cross_section: cpw
+      length: 102.204
+      npoints: 2
+nets:
+- p1: coupler_straight,o1
+  p2: open_2_port,o1
+- p1: coupler_straight,o4
+  p2: straight,o1
+- p1: resonator_meander,o1
+  p2: straight,o2
+- p1: resonator_meander,o2
+  p2: short,o1
 placements:
-  resonator_coupled:
+  coupler_straight:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: -30
+  open_2_port:
     mirror: false
     rotation: 0
     x: 6
     y: -30
+  resonator_meander:
+    mirror: false
+    rotation: 90
+    x: 308.204
+    y: -30
+  short:
+    mirror: false
+    rotation: 0
+    x: 308.204
+    y: -1230
+  straight:
+    mirror: false
+    rotation: 0
+    x: 206
+    y: -30
 ports:
-  coupling_o1: resonator_coupled,coupling_o1
-  coupling_o2: resonator_coupled,coupling_o2
-  resonator_o1: resonator_coupled,resonator_o1
+  coupling_o1: coupler_straight,o2
+  coupling_o2: coupler_straight,o3
+  resonator_o1: open_2_port,o2

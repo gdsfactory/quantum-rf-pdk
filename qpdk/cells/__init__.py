@@ -22,6 +22,7 @@ from .inductor import *
 from .junction import *
 from .launcher import *
 from .resonator import *
+from .resonator_sections import *
 from .snspd import *
 from .transmon import *
 from .tsv import *

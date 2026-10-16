@@ -9,14 +9,17 @@ from kfactory.schematic import DSchematic
 __all__ = [
     "bend_circular_schematic",
     "bend_s_schematic",
+    "coupler_straight_schematic",
     "double_pad_transmon_schematic",
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
+    "open_2_port_schematic",
     "open_schematic",
     "quarter_wave_resonator_coupled_schematic",
     "resonator_coupled_schematic",
     "resonator_half_wave_schematic",
+    "resonator_meander_schematic",
     "resonator_quarter_wave_schematic",
     "resonator_schematic",
     "sax_model",
@@ -58,6 +61,13 @@ _RESONATOR_COUPLED = [
     {"name": "resonator_o1", "side": "left", "type": "photonic"},
     {"name": "coupling_o2", "side": "right", "type": "photonic"},
     {"name": "resonator_o2", "side": "right", "type": "photonic"},
+]
+
+_COUPLER_STRAIGHT = [
+    {"name": "o1", "side": "left", "type": "photonic"},
+    {"name": "o2", "side": "left", "type": "photonic"},
+    {"name": "o3", "side": "right", "type": "photonic"},
+    {"name": "o4", "side": "right", "type": "photonic"},
 ]
 
 # The resonator end shares the left side with the coupling input, below it,
@@ -218,6 +228,19 @@ straight_schematic = schematic(
     ],
 )
 
+coupler_straight_schematic = schematic(
+    symbol="coupler_straight",
+    tags=["waveguides", "couplers"],
+    ports=_COUPLER_STRAIGHT,
+    models=[
+        sax_model(
+            name="coupler_straight",
+            module="qpdk.models.couplers",
+            port_order=["o1", "o2", "o3", "o4"],
+        )
+    ],
+)
+
 open_schematic = schematic(
     symbol="open",
     tags=["terminations"],
@@ -227,6 +250,22 @@ open_schematic = schematic(
             name="open",
             module="qpdk.models.generic",
             port_order=["o1"],
+        )
+    ],
+)
+
+open_2_port_schematic = schematic(
+    symbol="open",
+    tags=["terminations"],
+    ports=[
+        {"name": "o1", "side": "right", "type": "photonic"},
+        {"name": "o2", "side": "left", "type": "photonic"},
+    ],
+    models=[
+        sax_model(
+            name="open_2_port",
+            module="qpdk.models.generic",
+            port_order=["o1", "o2"],
         )
     ],
 )
@@ -342,6 +381,19 @@ resonator_coupled_schematic = schematic(
                 "resonator_o1",
                 "resonator_o2",
             ],
+        )
+    ],
+)
+
+resonator_meander_schematic = schematic(
+    symbol="resonator",
+    tags=["resonators"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="resonator_meander",
+            module="qpdk.models.resonator_sections",
+            port_order=["o1", "o2"],
         )
     ],
 )

@@ -138,6 +138,11 @@ def open(  # ruff: ignore[builtin-variable-shadowing]
     return electrical_open(f=f)
 
 
+def open_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SDict:
+    """Return two isolated ports with ideal open reflections."""
+    return electrical_open(f=f, n_ports=2)
+
+
 short_2_port = electrical_short_2_port
 
 
