@@ -283,8 +283,6 @@ def stack_geometry(
     processes: int,
 ) -> Geometry:
     """Assign disconnected electrodes to extraction layers in a finite gsim stack."""
-    from gsim.common import Layer, LayerStack  # ruff: ignore[import-outside-top-level]
-
     component = gf.Component()
     layers = {}
     # gsim selects terminals by layer, so disconnected electrodes need separate layers.
@@ -307,7 +305,7 @@ def stack_geometry(
                 layer=layer,
                 port_type="electrical",
             )
-        layers[name] = Layer(
+        layers[name] = dict(
             name=name,
             gds_layer=layer,
             zmin=bottom,
@@ -316,7 +314,7 @@ def stack_geometry(
             material="pec",
             layer_type="conductor",
         )
-    stack = LayerStack(
+    stack = dict(
         pdk_name="qpdk-extraction",
         layers=layers,
         materials={
@@ -345,7 +343,9 @@ def stack_geometry(
 
     def mesh(sim: ElectrostaticSim) -> None:
         """Use the public gsim stack mesher and electrostatic terminals."""
-        sim.set_stack(stack)
+        from gsim.common import LayerStack  # ruff: ignore[import-outside-top-level]
+
+        sim.set_stack(LayerStack.model_validate(stack))
         for name in terminals:
             sim.add_terminal(name, layer=name)
         sim.set_airbox(**airbox)
@@ -364,7 +364,7 @@ def stack_geometry(
         terminal_ports={name: name for name in terminals},
         mesh=mesh,
         mesh_inputs={
-            "stack": stack.model_dump(mode="json"),
+            "stack": stack,
             "airbox": airbox,
             "mesh": mesh_options,
         },

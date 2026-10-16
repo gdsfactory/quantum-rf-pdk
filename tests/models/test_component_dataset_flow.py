@@ -5,6 +5,7 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
+from typing import Self
 from unittest.mock import Mock, call
 
 import gdsfactory as gf
@@ -209,14 +210,17 @@ def test_stack_maps_electrodes_without_exciting_ground(
     experiment, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     common = ModuleType("gsim.common")
-    monkeypatch.setattr(common, "Layer", SimpleNamespace, raising=False)
 
     class Stack(SimpleNamespace):
-        def model_dump(self, **_kwargs) -> dict:
-            return {
-                **vars(self),
-                "layers": {name: vars(layer) for name, layer in self.layers.items()},
-            }
+        @classmethod
+        def model_validate(cls, values: dict) -> Self:
+            return cls(**{
+                **values,
+                "layers": {
+                    name: SimpleNamespace(**layer)
+                    for name, layer in values["layers"].items()
+                },
+            })
 
     monkeypatch.setattr(common, "LayerStack", Stack, raising=False)
     monkeypatch.setitem(sys.modules, "gsim", ModuleType("gsim"))
