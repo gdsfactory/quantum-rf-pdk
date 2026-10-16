@@ -1,6 +1,6 @@
 """Inductor and lumped-element resonator models."""
 
-from functools import partial
+from functools import cache, partial
 
 import jax
 import jax.numpy as jnp
@@ -14,8 +14,51 @@ from qpdk.models.cpw import (
     get_cpw_dimensions,
     get_cpw_substrate_params,
 )
+from qpdk.models.datasets import Dataset, GridInterpolator
 from qpdk.models.generic import inductor, lc_resonator
 from qpdk.tech import get_meander_wire_gap
+
+
+@cache
+def _meander_ground_lookup(n_turns: int) -> GridInterpolator:
+    """Load one turn-count variant outside numerical evaluation."""
+    return GridInterpolator(
+        Dataset("meander_ground_capacitance_palace").grid(
+            "maxwell_capacitance", n_turns=str(n_turns), allow_missing=False
+        )
+    )
+
+
+def meander_inductor_ground_capacitance(
+    *,
+    turn_length: float = 200.0,
+    wire_width: float = 2.0,
+    wire_gap: float = 4.0,
+    n_turns: int = 3,
+) -> jax.Array:
+    """Look up the capacitance of an equipotential winding to its ground frame.
+
+    Dimensions are in micrometres. The Palace coupon uses a silicon substrate
+    and a 100 um wide coplanar frame, 20 um from the winding bounding box.
+    Both winding ends share one potential. This common-mode capacitance does
+    not describe a voltage varying along the winding, its inductance or its
+    self-resonance. Use the analytical inductance model separately.
+
+    Args:
+        turn_length: Horizontal run length, between 100 and 300 um.
+        wire_width: Winding width, between 1 and 2 um.
+        wire_gap: Gap between runs, between 2 and 8 um.
+        n_turns: Discrete variant: 3, 5 or 7; static when using JIT.
+
+    Returns:
+        Common-mode winding-to-ground capacitance in F. Dimensions outside
+        the stored grid return NaN.
+    """
+    with jax.ensure_compile_time_eval():
+        lookup = _meander_ground_lookup(n_turns)
+    return lookup(turn_length=turn_length, wire_width=wire_width, wire_gap=wire_gap)[
+        ..., 0, 0
+    ]
 
 
 @partial(jax.jit, inline=True)
