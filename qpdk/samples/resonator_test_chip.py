@@ -74,7 +74,7 @@ def resonator_test_chip_python(
     probeline_separation: float = 1000.0,
     resonator_length: float = 4000.0,
     coupling_length: float = 200.0,
-    coupling_gap: float = 16.0,
+    coupling_gap: float = 4.0,
 ) -> gf.Component:
     """Creates a resonator test chip with two probelines and 16 resonators.
 
@@ -89,6 +89,8 @@ def resonator_test_chip_python(
             varied around this value to separate their resonance frequencies.
         coupling_length: Length of coupling region between resonator and probeline in µm.
         coupling_gap: Gap between resonator and probeline for coupling in µm.
+            The 4 µm default broadens the resonance notches enough for a
+            1001-point SAX sweep from 4 to 10 GHz to resolve all eight per line.
 
     Returns:
         Component: A gdsfactory component containing the complete test chip layout.

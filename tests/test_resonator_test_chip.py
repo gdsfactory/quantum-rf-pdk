@@ -1,5 +1,6 @@
 """Tests for resonator test-chip samples."""
 
+import warnings
 from pathlib import Path
 
 import jax.numpy as jnp
@@ -8,6 +9,7 @@ import sax
 import yaml
 
 from qpdk.models import models
+from qpdk.samples.resonator_test_chip import resonator_test_chip_python
 
 YAML_SAMPLE = (
     Path(__file__).parents[1] / "qpdk/samples/resonator_test_chip_yaml.pic.yml"
@@ -96,3 +98,23 @@ def test_resonator_test_chip_yaml_simulates_from_leaf_models() -> None:
 
     for key in (("o1", "o2"), ("o2", "o1"), ("o3", "o4"), ("o4", "o3")):
         assert jnp.abs(s_params[key]).min() > 0.9
+
+
+def test_python_chip_resonances_are_visible_in_coarse_sweep() -> None:
+    """Resolve all eight notches per probeline in a typical SAX plot."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        netlist = resonator_test_chip_python().get_netlist()
+
+    frequencies = jnp.linspace(4e9, 10e9, 1001)
+    s_params = _simulate_netlist(netlist, frequencies)
+
+    for probe_ports in (("o1", "o2"), ("o3", "o4")):
+        transmission_db = 20 * jnp.log10(jnp.abs(s_params[probe_ports]) + 1e-30)
+        interior = transmission_db[1:-1]
+        visible_notches = (
+            (interior <= transmission_db[:-2])
+            & (interior < transmission_db[2:])
+            & (interior < -1)
+        )
+        assert int(visible_notches.sum()) == 8, probe_ports
