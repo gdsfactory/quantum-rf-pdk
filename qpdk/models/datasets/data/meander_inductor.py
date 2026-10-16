@@ -1,7 +1,7 @@
 # /// script
 # requires-python = "~=3.12.0"
 # dependencies = [
-#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git@5dbc4a0d7ccb50f777191575383f689b53555305",
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git@c00764bc18cbcb0e58ccb5c7dfb880d550455d35",
 #   "typer>=0.24,<1",
 #   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@946c3973b6311f0a4a3cf3bd601336ad7a186dfb",
 # ]
@@ -18,6 +18,10 @@ but no MagnetostaticSim, current-loop mesher or inductance-matrix loader.
 Geometric inductance extraction therefore remains an upstream prerequisite.
 No geometric or total superconducting inductance is fabricated by this script.
 Sheet kinetic inductance remains an independently specified model input.
+
+Look up the common-mode capacitance with
+``qpdk.models.meander_inductor_ground_capacitance(n_turns=5, turn_length=150,
+wire_width=1.5, wire_gap=3)``. The returned value is in F.
 
 Preview with ``uv run --script qpdk/models/datasets/data/meander_inductor.py --dry-run``.
 Edit GRID and SETTINGS to define a new sweep; validate representative meshes first.
@@ -38,7 +42,7 @@ GRID = {
     "wire_width": [1.0, 2.0],
     "wire_gap": [2.0, 4.0, 8.0],
 }
-SETTINGS = Settings(near_mesh=0.7, far_mesh=40.0, domain_pad=300.0)
+SETTINGS = Settings(near_mesh=0.49, far_mesh=28.0, domain_pad=300.0, order=3)
 TERMINALS = ("winding",)
 
 
@@ -77,6 +81,7 @@ RECIPE = Recipe(
     reference_ground="coplanar_return_frame",
     provenance={
         "recipe_version": 1,
+        "qpdk_geometry_revision": "5dbc4a0d7ccb50f777191575383f689b53555305",
         "issue": 932,
         "metal": "Zero-thickness PEC winding at the air/silicon interface",
         "return_geometry": "100 um wide coplanar frame, 20 um from the winding bounding box",

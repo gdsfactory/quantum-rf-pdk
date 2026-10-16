@@ -254,6 +254,13 @@ coupling. The generation recipe uses this same layout cell. The closed-form
 approximation without ground branches remains available as
 ``qpdk.models.plate_capacitor_analytical``.
 
+``meander_inductor_ground_capacitance(turn_length=200, wire_width=2, wire_gap=4,
+n_turns=3)`` returns the winding-to-ground capacitance in F from 54 Palace extractions.
+Dimensions are in um; turn counts 3, 5 and 7 are separate variants. Both winding ends
+share one potential, so this lookup does not determine differential parasitics,
+inductance or self-resonance. The generation recipe is
+``qpdk/models/datasets/data/meander_inductor.py``.
+
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
 cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
 table version. Credentials are passed when opening the dataset and never stored in it.
