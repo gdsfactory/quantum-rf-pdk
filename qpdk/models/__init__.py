@@ -6,6 +6,7 @@ import jax
 import sax
 
 from qpdk.models.capacitor import (
+    coupling_pad_pair,
     interdigital_capacitor,
     plate_capacitor,
 )
@@ -136,6 +137,7 @@ __all__ = [
     "capacitor",
     "coupler_ring",
     "coupler_straight",
+    "coupling_pad_pair",
     "coupling_strength_to_capacitance",
     "cpw_cpw_coupling_capacitance",
     "cpw_epsilon_eff",
