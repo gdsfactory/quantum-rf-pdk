@@ -1,6 +1,6 @@
 [project]
 name = "qpdk"
-version = "0.4.0"
+version = "0.4.1"
 description = "Generic Superconducting Quantum Process Design Kit"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -421,7 +421,7 @@ message_template = "Bump to {new_version}"
 tag_template = "v{new_version}"
 
 [tool.tbump.version]
-current = "0.4.0"
+current = "0.4.1"
 
 [tool.tombi.schema]
 strict = false
