@@ -104,6 +104,7 @@ from qpdk.models.qubit import (
     qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
+    transmon_readout_coupon_model,
     transmon_with_resonator,
     xmon_transmon,
 )
@@ -255,6 +256,7 @@ __all__ = [
     "tee",
     "transmission_line_s_params",
     "transmon_coupled",
+    "transmon_readout_coupon_model",
     "transmon_with_resonator",
     "tsv",
     "unimon_coupled",
