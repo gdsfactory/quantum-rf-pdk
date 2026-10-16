@@ -106,6 +106,15 @@ an ideal wire and adds a linearized Josephson junction. This reduction omits fin
 fields and inductance. The generation recipe is
 ``qpdk/models/datasets/data/flipmon.py``.
 
+``double_pad_transmon_capacitance`` looks up the differential pad capacitance in F,
+including the two pad-to-ground branches. With junction capacitance :math:`C_\text{J}`,
+the charging frequency is :math:`E_\text{C}/h = e^2/[2h(C_\text{diff}+C_\text{J})]` in
+Hz. For a linearized circuit, create ``double_pad_transmon_fem_model(inductance=10e-9,
+junction_capacitance=2e-15)`` and pass geometry dimensions in um to the returned SAX
+model. Both ports reference the coupon's finite ground frame. The dataset omits the
+readout, package and Josephson junction; its recipe is
+``qpdk/models/datasets/data/double_pad_transmon.py``.
+
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
 cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
 table version. Credentials are passed when opening the dataset and never stored in it.

@@ -1,7 +1,7 @@
 # /// script
 # requires-python = "~=3.12.0"
 # dependencies = [
-#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git@5dbc4a0d7ccb50f777191575383f689b53555305",
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git@c00764bc18cbcb0e58ccb5c7dfb880d550455d35",
 #   "typer>=0.24,<1",
 #   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@946c3973b6311f0a4a3cf3bd601336ad7a186dfb",
 # ]
@@ -35,10 +35,10 @@ from qpdk.tech import LAYER
 GRID = {
     "pad_width": [150.0, 250.0, 350.0],
     "pad_height": [250.0, 400.0, 550.0],
-    "pad_gap": [10.0, 20.0, 40.0],
+    "pad_gap": [10.0, 15.0, 20.0, 30.0, 40.0],
     "ground_clearance": [100.0, 200.0, 300.0],
 }
-SETTINGS = Settings(near_mesh=3.5, far_mesh=120.0, domain_pad=1600.0, order=3)
+SETTINGS = Settings(near_mesh=2.0, far_mesh=75.6, domain_pad=1600.0, order=4)
 TERMINALS = ("left_pad", "right_pad")
 
 
@@ -79,6 +79,7 @@ RECIPE = Recipe(
     reference_ground="coplanar_chip_ground_frame",
     provenance={
         "recipe_version": 1,
+        "qpdk_geometry_revision": "5dbc4a0d7ccb50f777191575383f689b53555305",
         "issue": 930,
         "metal": "Zero-thickness PEC sheets at the air/silicon interface",
         "ground": "300 um wide frame outside the boxed cell clearance; finite chip environment",

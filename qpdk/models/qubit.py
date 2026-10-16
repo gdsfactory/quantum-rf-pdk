@@ -18,6 +18,7 @@ References:
 """
 
 import math
+from functools import cache
 
 import jax
 import jax.numpy as jnp
@@ -26,7 +27,13 @@ from jax.typing import ArrayLike
 from sax.models.rf import capacitor, electrical_short, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
-from qpdk.models.datasets import capacitance_model, junction_model
+from qpdk.models.datasets import (
+    Dataset,
+    GridInterpolator,
+    capacitance_model,
+    differential_capacitance,
+    junction_model,
+)
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
 from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
@@ -73,6 +80,75 @@ def flipmon_ideal_bond_model(
         inductance=inductance,
         junction_capacitance=junction_capacitance,
         terminal_groups=(("inner_pad", "top_pad"), ("outer_ring",)),
+    )
+
+
+@cache
+def _double_pad_capacitance_lookup() -> GridInterpolator:
+    """Load the finite-ground pad dataset outside numerical evaluation."""
+    return GridInterpolator(
+        Dataset("double_pad_transmon_palace").grid(
+            "maxwell_capacitance", allow_missing=False
+        )
+    )
+
+
+def double_pad_transmon_capacitance(
+    *,
+    pad_width: float = 250.0,
+    pad_height: float = 400.0,
+    pad_gap: float = 20.0,
+    ground_clearance: float = 200.0,
+) -> jax.Array:
+    r"""Return the capacitance seen by charge moving between the two pads, in F.
+
+    Both pads float inside a 300 um wide coplanar ground frame on silicon.
+    Dimensions are in um. The stored Palace matrix includes pad-to-pad and
+    pad-to-ground fields; :func:`~qpdk.models.datasets.differential_capacitance`
+    combines them for equal and opposite pad charges.
+
+    The junction and neighbouring devices are omitted. Add the junction's
+    capacitance in parallel before computing :math:`E_\text{C}=e^2/(2C)`.
+    Dimensions outside the stored grid return NaN. Supports JIT, vmap and grad.
+
+    Returns:
+        Differential pad capacitance in F, excluding the junction capacitance.
+    """
+    with jax.ensure_compile_time_eval():
+        lookup = _double_pad_capacitance_lookup()
+    return differential_capacitance(
+        lookup(
+            pad_width=pad_width,
+            pad_height=pad_height,
+            pad_gap=pad_gap,
+            ground_clearance=ground_clearance,
+        )
+    )
+
+
+def double_pad_transmon_fem_model(
+    *, inductance: float, junction_capacitance: float = 0.0
+) -> sax.Model:
+    """Build a linearized transmon circuit from the stored two-pad Palace matrix.
+
+    Supply the Josephson inductance in H and additional junction capacitance
+    in F. The returned JAX model accepts frequency in Hz, ``z_ref`` in ohms,
+    and ``pad_width``, ``pad_height``, ``pad_gap``, ``ground_clearance`` in um.
+    Its ``left_pad`` and ``right_pad`` ports both reference the finite ground
+    frame. All pad-to-ground and mutual capacitances are retained.
+
+    This describes small oscillations, not the nonlinear qubit spectrum.
+    No readout, feedline, package lid or backside ground is included.
+    See :func:`~qpdk.models.datasets.junction_model` for the circuit convention.
+
+    Returns:
+        Jittable two-port SAX model with explicit junction parameters.
+    """
+    return junction_model(
+        "double_pad_transmon_palace",
+        junction=("left_pad", "right_pad"),
+        inductance=inductance,
+        junction_capacitance=junction_capacitance,
     )
 
 
