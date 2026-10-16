@@ -26,9 +26,54 @@ from jax.typing import ArrayLike
 from sax.models.rf import capacitor, electrical_short, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
+from qpdk.models.datasets import capacitance_model, junction_model
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
 from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
+
+
+def flipmon_unbonded_model() -> sax.Model:
+    """Return the three-electrode electrostatic coupon as a JAX SAX model.
+
+    ``inner_pad``, ``outer_ring`` and ``top_pad`` remain separate ports, all
+    referenced to the two chip ground frames. The coupon has two 300 um
+    silicon chips and 0.2 um metal. It omits the junction and bonding bump.
+    The returned model accepts ``chip_gap``, ``alignment``, ``inner_radius``
+    and ``top_radius`` in um, frequency ``f`` in Hz and ``z_ref`` in ohms.
+    Alignment shifts the top pad horizontally while ground frames stay fixed.
+    Dimensions outside the stored grid return NaN.
+
+    Returns:
+        Jittable three-port model retaining all Maxwell capacitances.
+    """
+    return capacitance_model("flipmon_unbonded_palace")
+
+
+def flipmon_ideal_bond_model(
+    *, inductance: float, junction_capacitance: float = 0.0
+) -> sax.Model:
+    """Join inner and top pads with an ideal wire, then add a linearized junction.
+
+    Supply the Josephson inductance in H and additional junction capacitance
+    in F. The returned JAX model accepts the same geometry and frequency
+    arguments as :func:`flipmon_unbonded_model`. Its ports are ``inner_pad``
+    and ``outer_ring``, both referenced to chip ground.
+
+    The ideal wire preserves capacitance to ground but adds no bump field or
+    inductance. This reduction has no finite-bump validation and describes
+    small oscillations, not the nonlinear qubit spectrum. See
+    :func:`~qpdk.models.datasets.junction_model` for the circuit convention.
+
+    Returns:
+        Jittable two-port model with explicit junction parameters.
+    """
+    return junction_model(
+        "flipmon_unbonded_palace",
+        junction=("inner_pad", "outer_ring"),
+        inductance=inductance,
+        junction_capacitance=junction_capacitance,
+        terminal_groups=(("inner_pad", "top_pad"), ("outer_ring",)),
+    )
 
 
 @jit(inline=True)
