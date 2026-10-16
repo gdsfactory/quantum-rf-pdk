@@ -36,6 +36,12 @@ html {
   height: auto;
 }
 
+/* Notebook images have pixel dimensions that must scale together. */
+.bd-content .cell_output img {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Tighten heading tracking. Outfit benefits from negative letter-spacing at display sizes. */
 h1,
 .h1 {
