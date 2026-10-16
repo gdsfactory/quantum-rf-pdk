@@ -108,6 +108,14 @@ checkout, fetch only these with ``git lfs pull
 --include="qpdk/models/datasets/data/**"``. Wheels on PyPI ship the resolved Parquet
 files, so installed users need no Git LFS.
 
+``flipmon_unbonded_model()`` returns a three-port SAX model for separate inner, ring and
+top electrodes between two silicon chips. The returned model accepts ``chip_gap``,
+``alignment``, ``inner_radius`` and ``top_radius`` in um, and frequency ``f`` in Hz.
+``flipmon_ideal_bond_model(inductance=10e-9)`` joins the inner and top electrodes with
+an ideal wire and adds a linearized Josephson junction. This reduction omits finite bump
+fields and inductance. The generation recipe is
+``qpdk/models/datasets/data/flipmon.py``.
+
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
 cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
 table version. Credentials are passed when opening the dataset and never stored in it.
