@@ -359,6 +359,8 @@ def coupler_straight(
     length: int | float = 10,
     gap: int | float = 16,
     cross_section: CrossSectionSpec = "cpw",
+    cross_section_non_resonator: CrossSectionSpec | None = None,
+    resonator_offset: float = 0.0,
 ) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides, :func:`~qpdk.cells.waveguides.coupler_straight`.
 
@@ -367,6 +369,9 @@ def coupler_straight(
         length: Physical length of coupling section in µm
         gap: Gap between the coupled waveguides in µm
         cross_section: The cross-section of the CPW.
+        cross_section_non_resonator: Optional cross section of the upper bus.
+        resonator_offset: Lower trace layout offset in µm; the legacy model
+            retains the full nominal coupling length.
 
     Returns:
         sax.SDict: S-parameters dictionary
@@ -377,8 +382,11 @@ def coupler_straight(
                 │gap
         o1──────▼───────o4
     """
+    # The offset positions the drawn open end; the legacy RF model treats
+    # both coupled traces as having the full nominal length.
+    _ = resonator_offset
     f = jnp.asarray(f)
-    straight_settings = {"length": length / 2, "cross_section": cross_section}
+    bus_cross_section = cross_section_non_resonator or cross_section
     capacitance = cpw_cpw_coupling_capacitance(f, length, gap, cross_section)
     normalized_admittance = (
         2j * jnp.pi * f * capacitance * cpw_z0_from_cross_section(cross_section, f)
@@ -395,7 +403,11 @@ def coupler_straight(
 
     # Create straight instances with shared settings
     straight_instances = {
-        f"straight_{i}_{j}": straight(f=f, **straight_settings)
+        f"straight_{i}_{j}": straight(
+            f=f,
+            length=length / 2,
+            cross_section=bus_cross_section if i == 1 else cross_section,
+        )
         for i in [1, 2]
         for j in [1, 2]
     }

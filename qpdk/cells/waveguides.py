@@ -11,6 +11,8 @@ from qpdk import tech
 from qpdk.cells._schematic import (
     bend_circular_schematic,
     bend_s_schematic,
+    coupler_straight_schematic,
+    open_2_port_schematic,
     open_schematic,
     short_schematic,
     straight_open_schematic,
@@ -92,6 +94,54 @@ def open() -> gf.Component:  # ruff: ignore[builtin-variable-shadowing]
 
 
 open.schematic_function = open_schematic
+
+
+@gf.cell(tags=("terminations",), schematic_function=open_2_port_schematic)
+def open_2_port(
+    cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
+) -> gf.Component:
+    """Return an etched open end with an isolated external model port.
+
+    Args:
+        cross_section: Cross section of the connected resonator trace.
+    """
+    component = gf.Component()
+    cross_section_obj = gf.get_cross_section(cross_section)
+    section = get_etch_section(cross_section_obj)
+    etch_ref = component << rectangle(
+        size=(section.width, cross_section_obj.width + 2 * section.width),
+        layer=section.layer,
+        centered=True,
+        port_type=None,
+    )
+    etch_ref.dmovex(-section.width / 2)
+    # This trace end gives the internal port a real edge on the conductor
+    # layer. It lies under the etch patch and adds no fabricated metal.
+    stub = component << rectangle(
+        size=(1.0, cross_section_obj.width),
+        layer=cross_section_obj.layer,
+        centered=True,
+        port_type=None,
+    )
+    stub.dmovex(-0.5)
+    component.add_port(
+        "o1",
+        center=(0, 0),
+        orientation=0,
+        cross_section=cross_section,
+    )
+    component.add_port(
+        "o2",
+        center=(-section.width, 0),
+        orientation=180,
+        width=cross_section_obj.width + 2 * section.width,
+        layer=section.layer,
+        port_type="optical",
+    )
+    return component
+
+
+open_2_port.schematic_function = open_2_port_schematic
 
 
 @gf.cell(tags=("terminations",), schematic_function=short_schematic)
@@ -393,11 +443,13 @@ def bend_s(
     )
 
 
-@gf.cell(tags=("waveguides", "couplers"))
+@gf.cell(tags=("waveguides", "couplers"), schematic_function=coupler_straight_schematic)
 def coupler_straight(
     length: float = 10,
     gap: float = 16,
     cross_section: CrossSectionSpec = "cpw",
+    cross_section_non_resonator: CrossSectionSpec | None = None,
+    resonator_offset: float = 0.0,
 ) -> gf.Component:
     """Return two parallel coupled waveguides.
 
@@ -405,15 +457,22 @@ def coupler_straight(
         length: Coupling length in μm.
         gap: Edge-to-edge conductor gap in μm.
         cross_section: Cross-section specification.
+        cross_section_non_resonator: Optional cross section for the upper bus.
+        resonator_offset: Shift the lower trace to the right, in µm.
     """
     component = gf.Component()
     lower = component << straight(length=length, cross_section=cross_section)
-    upper = component << straight(length=length, cross_section=cross_section)
-    upper.dmovey(gf.get_cross_section(cross_section).width + gap)
+    lower.dmovex(resonator_offset)
+    bus_cross_section = cross_section_non_resonator or cross_section
+    upper = component << straight(length=length, cross_section=bus_cross_section)
+    upper.dmovey(gf.get_cross_section(bus_cross_section).width + gap)
     component.add_ports(lower.ports, prefix="lower_")
     component.add_ports(upper.ports, prefix="upper_")
     component.auto_rename_ports()
     return component
+
+
+coupler_straight.schematic_function = coupler_straight_schematic
 
 
 coupler_ring = partial(
