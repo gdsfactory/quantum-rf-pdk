@@ -929,6 +929,27 @@ def flipmon_readout_coupon_model() -> sax.Model:
     return capacitance_model("flipmon_readout_coupon_palace")
 
 
+def transmon_readout_coupon_model() -> sax.Model:
+    """Return the complete static readout coupon as a JAX SAX model.
+
+    The ports are
+    ``island_a``, ``island_b``, ``readout`` and ``feedline``. Each port
+    references chip ground. The returned model accepts ``pad_length``,
+    ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um,
+    frequency ``f`` in Hz and ``z_ref`` in ohms.
+    Feedline gaps from 14 to 20 um retain a ground strip between the coupled lines.
+
+    The feedline ends are cut open and the entire readout conductor shares
+    one potential. This does not describe a shorted resonator mode. Adding
+    it to a distributed circuit would duplicate route and ground capacitance.
+    No driven/eigenmode or resonance validation is implied.
+
+    Returns:
+        Jittable four-port static coupon model; out-of-grid inputs return NaN.
+    """
+    return capacitance_model("transmon_readout_coupon_palace")
+
+
 if __name__ == "__main__":
     from typing import TypedDict
 
