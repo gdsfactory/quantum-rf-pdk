@@ -1,0 +1,23 @@
+info: {}
+name: open_2_port_CScoplanar_waveguide
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 0
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - -6
+    - 0
+    layer: M1_ETCH
+    name: o2
+    orientation: 180
+    port_type: optical
+    width: 22
+settings:
+  cross_section: coplanar_waveguide

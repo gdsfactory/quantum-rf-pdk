@@ -218,6 +218,37 @@ class TestQuarterWaveResonatorCoupled:
     """Test the fixed three-port quarter-wave coupled resonator."""
 
     @staticmethod
+    def test_nested_layout_matches_unsplit_resonator() -> None:
+        """Splitting at the first straight preserves the snapped GDS geometry."""
+        component = quarter_wave_resonator_coupled(meanders=1)
+        reference = gf.Component()
+        reference_ref = reference << resonator_coupled(meanders=1)
+        x, y = reference_ref.ports["coupling_o1"].center
+        reference_ref.move((-x, -y))
+
+        draw_layer = gf.get_layer(LAYER.M1_DRAW)
+        etch_layer = gf.get_layer(LAYER.M1_ETCH)
+        actual_etch = gf.kdb.Region(component.begin_shapes_rec(etch_layer)).merged()
+        expected_etch = gf.kdb.Region(reference.begin_shapes_rec(etch_layer)).merged()
+        actual_metal = (
+            gf.kdb.Region(component.begin_shapes_rec(draw_layer)) - actual_etch
+        )
+        expected_metal = (
+            gf.kdb.Region(reference.begin_shapes_rec(draw_layer)) - expected_etch
+        )
+        assert (actual_etch ^ expected_etch).is_empty()
+        assert (actual_metal ^ expected_metal).is_empty()
+        assert component.info["length"] == reference_ref.cell.info["length"]
+
+    @staticmethod
+    def test_short_resonator_reports_original_length() -> None:
+        """Validation refers to the requested device rather than a sub-section."""
+        with pytest.raises(
+            ValueError, match="Resonator length 1800 is too short for 6 meanders"
+        ):
+            quarter_wave_resonator_coupled(length=1800, meanders=6)
+
+    @staticmethod
     @pytest.mark.parametrize(("meanders", "start_with_bend"), [(0, False), (2, True)])
     def test_non_nested_quarter_wave_layouts(
         meanders: int, start_with_bend: bool
@@ -233,6 +264,13 @@ class TestQuarterWaveResonatorCoupled:
             "resonator_o1",
         }
         assert component.info["resonator_type"] == "quarter_wave"
+        netlist = component.get_netlist()
+        assert {
+            instance["component"] for instance in netlist["instances"].values()
+        } == {"resonator_coupled", "short"}
+        assert {frozenset(net.values()) for net in netlist["nets"]} == {
+            frozenset({"resonator_coupled,resonator_o2", "short,o1"})
+        }
 
     @staticmethod
     def test_terminations_are_not_public_settings() -> None:
@@ -257,13 +295,23 @@ class TestQuarterWaveResonatorCoupled:
         assert {
             instance["component"] for instance in netlist["instances"].values()
         } == {
-            "resonator_coupling_region",
+            "coupler_straight",
+            "open_2_port",
+            "straight",
             "resonator_meander",
             "short",
         }
         assert {frozenset(net.values()) for net in netlist["nets"]} == {
             frozenset({
-                "resonator_coupling_region,resonator_o2",
+                "coupler_straight,o4",
+                "straight,o1",
+            }),
+            frozenset({
+                "coupler_straight,o1",
+                "open_2_port,o1",
+            }),
+            frozenset({
+                "straight,o2",
                 "resonator_meander,o1",
             }),
             frozenset({"resonator_meander,o2", "short,o1"}),

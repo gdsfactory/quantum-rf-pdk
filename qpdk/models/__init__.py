@@ -50,6 +50,7 @@ from qpdk.models.generic import (
     lc_resonator,
     lc_resonator_coupled,
     open,
+    open_2_port,
     series_impedance,
     short,
     short_2_port,
@@ -96,7 +97,6 @@ from qpdk.models.resonator import (
     resonator_quarter_wave,
 )
 from qpdk.models.resonator_sections import (
-    resonator_coupling_region,
     resonator_meander,
 )
 from qpdk.models.unimon import (
@@ -189,6 +189,7 @@ __all__ = [
     "models",
     "nxn",
     "open",
+    "open_2_port",
     "plate_capacitor",
     "propagation_constant",
     "purcell_decay_rate",
@@ -197,7 +198,6 @@ __all__ = [
     "rectangle",
     "resonator",
     "resonator_coupled",
-    "resonator_coupling_region",
     "resonator_frequency",
     "resonator_half_wave",
     "resonator_linewidth_from_q",
