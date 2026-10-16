@@ -1,16 +1,19 @@
 """Coupon reference cuts leave distinct electrodes at every grid corner."""
 
 import importlib
+import sys
 from itertools import product
 from pathlib import Path
 
+import gdsfactory as gf
 import pytest
+
+from qpdk.tech import LAYER
 
 
 @pytest.mark.parametrize("flip", [False, True])
 def test_readout_corners(flip: bool, monkeypatch: pytest.MonkeyPatch) -> None:
-    if flip:
-        pytest.importorskip("gsim")
+    monkeypatch.setitem(sys.modules, "gsim.common", None)
     scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
     monkeypatch.syspath_prepend(str(scripts))
     helper = importlib.import_module("_readout")
@@ -29,3 +32,34 @@ def test_readout_corners(flip: bool, monkeypatch: pytest.MonkeyPatch) -> None:
         assert len(geometry.component.ports) == len(terminals)
         if flip:
             assert geometry.mesh_inputs
+
+
+def test_invalid_geometry_and_terminal_selection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    monkeypatch.syspath_prepend(str(scripts))
+    helper = importlib.import_module("_readout")
+    settings = importlib.import_module("_experiment").Settings()
+    with pytest.raises(ValueError, match="dimensions must be positive"):
+        helper.geometry(
+            dict(
+                pad_length=0.0,
+                pad_offset=35.0,
+                feedline_gap=12.0,
+                coupling_length=500.0,
+            ),
+            settings,
+            1,
+        )
+    component = gf.Component()
+    component.add_polygon([(0, 0), (10, 0), (10, 10), (0, 10)], layer=LAYER.M1_DRAW)
+    component.add_port(
+        "missing", center=(20, 20), width=1, orientation=0, layer=LAYER.M1_DRAW
+    )
+    with pytest.raises(ValueError, match="exactly one electrode"):
+        helper.select_metal(
+            component.get_region(LAYER.M1_DRAW),
+            component.ports["missing"],
+            component.kcl.dbu,
+        )
