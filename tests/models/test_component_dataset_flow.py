@@ -14,6 +14,7 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
+from qpdk.models.datasets.generate import merge, partition_grid
 from qpdk.tech import LAYER
 
 
@@ -78,6 +79,9 @@ def test_sweep_retains_quantities_and_variant_grids(
         recipe, grid=recipe.grid, output=tmp_path / "data", workdir=tmp_path / "runs"
     )
     assert extract.call_count == 4
+    inputs = extract.call_args.kwargs["inputs"]
+    assert "experiment_sha256" not in inputs["provenance"]
+    assert "experiment_sha256" in data.metadata.provenance
     assert data.metadata.terminals == recipe.terminals
     assert {q.name for q in data.metadata.quantities} == {
         "maxwell_capacitance",
@@ -107,6 +111,47 @@ def test_sweep_retains_quantities_and_variant_grids(
             workdir=tmp_path / "invalid-runs",
         )
     extract.assert_not_called()
+
+
+def test_shards_merge_with_explicit_axis_units(
+    experiment, recipe, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    helper = importlib.import_module("_palace")
+    monkeypatch.setattr(helper, "runtime", lambda *_args: ({}, {}))
+    monkeypatch.setattr(helper, "fingerprint", lambda _path: {})
+    monkeypatch.setattr(
+        helper,
+        "extract",
+        lambda *_args, **_kwargs: {
+            "maxwell_capacitance": jnp.array([[3.0, -1.0], [-1.0, 3.0]]) * 1e-15,
+            "fem_error_indicator_norm": 0.1,
+            "solver_relative_residual": 1e-10,
+            "solver_iterations": 3.0,
+        },
+    )
+    recipe = replace(
+        recipe,
+        grid={**recipe.grid, "rotation": [0.0, 90.0]},
+        axis_units={"rotation": "deg"},
+    )
+    paths = [tmp_path / str(shard) for shard in range(2)]
+    for shard, path in enumerate(paths):
+        experiment.generate(
+            recipe,
+            grid=partition_grid(recipe.grid, shard=shard, shards=2),
+            output=path,
+            workdir=tmp_path / "runs",
+        )
+    merged = merge(
+        paths, tmp_path / "merged", grid=recipe.grid, variants=recipe.variants
+    )
+    assert [(axis.name, axis.unit) for axis in merged.metadata.axes] == [
+        ("width", "um"),
+        ("rotation", "deg"),
+    ]
+    assert merged.grid(
+        "maxwell_capacitance", allow_missing=False, scale="1"
+    ).values.shape == (2, 2, 2, 2)
 
 
 @pytest.mark.parametrize("mode", ["preview", "generate", "merge", "invalid-runtime"])
@@ -165,7 +210,15 @@ def test_stack_maps_electrodes_without_exciting_ground(
 ) -> None:
     common = ModuleType("gsim.common")
     monkeypatch.setattr(common, "Layer", SimpleNamespace, raising=False)
-    monkeypatch.setattr(common, "LayerStack", SimpleNamespace, raising=False)
+
+    class Stack(SimpleNamespace):
+        def model_dump(self, **_kwargs) -> dict:
+            return {
+                **vars(self),
+                "layers": {name: vars(layer) for name, layer in self.layers.items()},
+            }
+
+    monkeypatch.setattr(common, "LayerStack", Stack, raising=False)
     monkeypatch.setitem(sys.modules, "gsim", ModuleType("gsim"))
     monkeypatch.setitem(sys.modules, "gsim.common", common)
     rectangle = gf.kdb.Region(gf.kdb.Box(0, 0, 1000, 1000))
@@ -194,3 +247,19 @@ def test_stack_maps_electrodes_without_exciting_ground(
     assert sim.mesh.call_args.kwargs["planar_conductors"] is False
     assert stack.layers["b"].zmin == pytest.approx(1.0)
     assert stack.layers["b"].zmax == pytest.approx(1.2)
+    assert geometry.mesh_inputs["stack"]["layers"]["b"]["zmin"] == pytest.approx(1.0)
+    assert geometry.mesh_inputs["mesh"] == sim.mesh.call_args.kwargs
+
+    for region, bottom, top in [
+        (gf.kdb.Region(), 0, 1),
+        (rectangle, 1, 1),
+        (rectangle, 2, 1),
+    ]:
+        with pytest.raises(ValueError, match="Electrode 'bad'"):
+            experiment.stack_geometry(
+                {"bad": (region, bottom, top)},
+                terminals=("bad",),
+                dielectrics=[],
+                settings=experiment.Settings(),
+                processes=1,
+            )

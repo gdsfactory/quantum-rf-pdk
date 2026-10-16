@@ -121,14 +121,35 @@ def junction_model(
     terminal_groups: tuple[tuple[str, ...], ...] | None = None,
     **variants: str,
 ) -> sax.Model:
-    r"""Add an explicit linearized Josephson branch to a Maxwell dataset.
+    r"""Build a small-signal circuit from electrode capacitances and one junction.
 
-    ``inductance`` is in H and ``junction_capacitance`` in F. Neither is inferred
-    from electrostatics. ``terminal_groups`` optionally bonds named electrodes
-    at equal potential; the first name of each group becomes its SAX port.
-    Groups must partition all dataset terminals. This applies :math:`B^{\text{T}} C B`
-    and retains every ground branch. An ideal bond excludes the bond's own
-    fringing field and inductance. All ports still reference dataset ground.
+    The dataset supplies capacitances between electrodes and to ground. Between
+    the two ``junction`` ports, this adds an inductor in parallel with an optional
+    junction capacitor. The inductor approximates the Josephson junction for
+    small oscillations around its operating point; it does not model nonlinear
+    dynamics or qubit anharmonicity. See :cite:`voolIntroductionQuantumElectromagnetic2017`,
+    sections 2.1.6 and 4.1, for this linearization and the Josephson element.
+
+    The branch admittance is :math:`Y_\text{J}=1/(j\omega L_\text{J})+j\omega C_\text{J}`.
+    Its inductance and capacitance are explicit inputs, since an electrostatic
+    dataset cannot determine the Josephson inductance. Only add junction
+    capacitance that is not already included in the dataset.
+
+    ``terminal_groups`` optionally connects electrodes with ideal wires. For
+    example, ``(("island", "top"), ("ring",))`` joins ``island`` and ``top`` and
+    leaves ``ring`` separate. Each group's first name becomes its SAX port.
+    Every dataset terminal must appear exactly once. This applies
+    :math:`B^{\text{T}} C B`, with :math:`B` mapping group voltages to electrodes,
+    and retains capacitance to ground. The wires add no field or inductance.
+    All SAX ports reference dataset ground, and frequency is in Hz.
+
+    Args:
+        dataset: Dataset or path containing real Maxwell capacitance matrices in F.
+        junction: Names of the two ports connected by the junction, after grouping.
+        inductance: Positive small-signal Josephson inductance in H.
+        junction_capacitance: Additional parallel junction capacitance in F.
+        terminal_groups: Electrodes to connect together; defaults to separate ports.
+        **variants: Discrete dataset selections.
 
     Returns:
         Jittable small-signal SAX model, with geometry in dataset axis units.

@@ -12,13 +12,18 @@ import pytest
 
 
 @pytest.mark.parametrize("mesh_fails", [False, True])
+@pytest.mark.parametrize("terminal_order", [("a", "b"), ("b", "a"), ("a",)])
 def test_custom_mesh_controls_solver_and_completion(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mesh_fails: bool
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mesh_fails: bool,
+    terminal_order: tuple[str, ...],
 ) -> None:
     scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
     monkeypatch.syspath_prepend(str(scripts))
     helper = importlib.import_module("_palace")
     sim = Mock()
+    sim.terminals = [SimpleNamespace(name=name) for name in terminal_order]
     constructor = Mock(return_value=sim)
     matrix = jnp.array([[3.0, -1.0], [-1.0, 3.0]]) * 1e-15
     gsim = ModuleType("gsim")
@@ -71,6 +76,11 @@ def test_custom_mesh_controls_solver_and_completion(
             helper.extract(**kwargs)
         assert not list(tmp_path.rglob("complete.json"))
         sim.run_local.assert_not_called()
+    elif terminal_order != ("a", "b"):
+        with pytest.raises(ValueError, match="Mesh callback terminals"):
+            helper.extract(**kwargs)
+        assert not list(tmp_path.rglob("complete.json"))
+        sim.run_local.assert_not_called()
     else:
         for _ in range(2):
             result = helper.extract(**kwargs)
@@ -78,5 +88,13 @@ def test_custom_mesh_controls_solver_and_completion(
         assert len(list(tmp_path.rglob("complete.json"))) == 1
         constructor.assert_called_once()
         sim.run_local.assert_called_once()
-    mesh.assert_called_once_with(sim)
+        sim.reset_mock()
+        kwargs["terminal_ports"] = {"b": "o2", "a": "o1"}
+        sim.terminals.reverse()
+        helper.extract(**kwargs)
+        assert constructor.call_count == 2
+        assert len(list(tmp_path.rglob("complete.json"))) == 2
+    assert mesh.call_count == (
+        2 if not mesh_fails and terminal_order == ("a", "b") else 1
+    )
     sim.mesh_sheets.assert_not_called()

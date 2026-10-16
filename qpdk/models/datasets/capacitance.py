@@ -65,18 +65,36 @@ def check_maxwell(maxwell: ArrayLike, *, rtol: float = 1e-9) -> None:
 def differential_capacitance(
     maxwell: ArrayLike, positive: int = 0, negative: int = 1
 ) -> jnp.ndarray:
-    r"""Charging capacitance for equal and opposite island charges.
+    r"""Return the capacitance seen when moving charge between two floating islands.
 
-    All other named conductors float with zero incremental charge. The reference
-    ground remains at zero voltage. For :math:`d = e_p - e_n`, this returns
-    :math:`(d^{\text{T}} C^{-1} d)^{-1}`. Grounding another conductor instead requires
-    deleting its row and column before this reduction. Junction capacitance
-    is a separate parallel contribution.
+    Put charge :math:`+Q` on ``positive`` and :math:`-Q` on ``negative``. This
+    returns :math:`Q/(V_\text{positive}-V_\text{negative})`, including the effect
+    of capacitances to ground. Neither island is held at ground voltage.
+    For two islands, their mutual capacitance is in parallel with the series
+    combination of their two capacitances to ground.
+
+    Other named conductors float with no added charge; the reference ground
+    stays at zero voltage. To ground a named conductor, first remove its row
+    and column. Add any junction capacitance separately in parallel.
+    The calculation is :math:`(d^{\text{T}} C^{-1} d)^{-1}`, where
+    :math:`d = e_\text{positive} - e_\text{negative}`; see the node-charge energy
+    in :cite:`voolIntroductionQuantumElectromagnetic2017`, section 2.1.10.
+
+    Args:
+        maxwell: Maxwell capacitance matrix in F, with optional leading batch axes.
+        positive: First terminal index; a static Python integer when using JIT.
+        negative: Second terminal index; a static Python integer when using JIT.
 
     Returns:
         Differential capacitance in F, preserving leading batch dimensions.
+
+    Raises:
+        ValueError: If the terminal indices are equal or outside the matrix.
     """
     c = jnp.asarray(maxwell)
+    n = c.shape[-1]
+    if not (0 <= positive < n and 0 <= negative < n) or positive == negative:
+        raise ValueError(f"Need two distinct terminal indices in [0, {n})")
     d = (
         jnp.eye(c.shape[-1], dtype=c.dtype)[positive]
         - jnp.eye(c.shape[-1], dtype=c.dtype)[negative]

@@ -48,17 +48,18 @@ class Settings:
 
 @dataclass(slots=True, kw_only=True)
 class Geometry:
-    """Resolved electrodes and domain; stacked recipes supply a gsim mesh setup."""
+    """Resolved electrodes and domain; custom meshes record their inputs in mesh_inputs."""
 
     component: gf.Component
     bounds: tuple[float, float, float, float]
     terminal_ports: dict[str, str]
     mesh: Callable[[ElectrostaticSim], None] | None = None
+    mesh_inputs: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Recipe:
-    """The explicit inputs of one component experiment."""
+    """One component experiment; axis units default to um unless axis_units overrides them."""
 
     name: str
     script: Path
@@ -70,6 +71,7 @@ class Recipe:
     settings: Settings = Settings()
     reference_ground: str = "chip_ground"
     variants: dict[str, list[str]] = field(default_factory=dict)
+    axis_units: dict[str, str] = field(default_factory=dict)
 
 
 def generate(
@@ -105,7 +107,10 @@ def generate(
     metadata = DatasetMetadata(
         name=recipe.name,
         description=recipe.description,
-        axes=tuple(Axis(name=name, unit="um") for name in recipe.grid),
+        axes=tuple(
+            Axis(name=name, unit=recipe.axis_units.get(name, "um"))
+            for name in recipe.grid
+        ),
         variants=tuple(recipe.variants),
         terminals=recipe.terminals,
         reference_ground=recipe.reference_ground,
@@ -136,8 +141,13 @@ def generate(
         geometry = recipe.geometry(point, settings, processes)
         if tuple(geometry.terminal_ports) != recipe.terminals:
             raise ValueError("Geometry terminal order differs from the recipe")
+        if geometry.mesh is not None and not geometry.mesh_inputs:
+            raise ValueError(
+                "Custom meshes must record their geometry and meshing inputs"
+            )
         inputs = {
             "point": point,
+            "mesh_inputs": geometry.mesh_inputs,
             "bounds_um": geometry.bounds,
             "terminals": {
                 name: list(geometry.component.ports[port].center)
@@ -152,7 +162,7 @@ def generate(
             "provenance": {
                 name: value
                 for name, value in provenance.items()
-                if name != "generator_sha256"
+                if name not in {"generator_sha256", "experiment_sha256"}
             },
         }
         result = extract(
@@ -279,6 +289,10 @@ def stack_geometry(
     layers = {}
     # gsim selects terminals by layer, so disconnected electrodes need separate layers.
     for i, (name, (region, bottom, top)) in enumerate(electrodes.items()):
+        if region.is_empty() or not top > bottom:
+            raise ValueError(
+                f"Electrode {name!r} needs a nonempty region and top > bottom"
+            )
         layer = (900 + i, 0)
         for polygon in region.merged().each():
             component.add_polygon(polygon.to_dtype(component.kcl.dbu), layer=layer)
@@ -313,26 +327,29 @@ def stack_geometry(
         dielectrics=dielectrics,
     )
 
+    airbox = dict(
+        margin_x=settings.domain_pad,
+        margin_y=settings.domain_pad,
+        z_above=settings.domain_pad,
+        z_below=settings.domain_pad,
+    )
+    mesh_options = dict(
+        refined_mesh_size=settings.near_mesh,
+        max_mesh_size=settings.far_mesh,
+        margin=0,
+        planar_conductors=False,
+        threads=processes,
+        surface_threads=1,
+        verbose=True,
+    )
+
     def mesh(sim: ElectrostaticSim) -> None:
         """Use the public gsim stack mesher and electrostatic terminals."""
         sim.set_stack(stack)
         for name in terminals:
             sim.add_terminal(name, layer=name)
-        sim.set_airbox(
-            margin_x=settings.domain_pad,
-            margin_y=settings.domain_pad,
-            z_above=settings.domain_pad,
-            z_below=settings.domain_pad,
-        )
-        sim.mesh(
-            refined_mesh_size=settings.near_mesh,
-            max_mesh_size=settings.far_mesh,
-            margin=0,
-            planar_conductors=False,
-            threads=processes,
-            surface_threads=1,
-            verbose=True,
-        )
+        sim.set_airbox(**airbox)
+        sim.mesh(**mesh_options)
 
     bounds = component.dbbox()
     pad = settings.domain_pad
@@ -346,4 +363,9 @@ def stack_geometry(
         ),
         terminal_ports={name: name for name in terminals},
         mesh=mesh,
+        mesh_inputs={
+            "stack": stack.model_dump(mode="json"),
+            "airbox": airbox,
+            "mesh": mesh_options,
+        },
     )
