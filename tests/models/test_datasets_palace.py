@@ -10,6 +10,8 @@ in CI. The shipped datasets record their own production settings.
 
 import ast
 import hashlib
+import importlib
+import json
 import os
 import runpy
 from dataclasses import replace
@@ -49,6 +51,78 @@ def coarse_cpw_settings(generator: dict[str, Any]) -> Any:
 def palace_processes() -> int:
     """Fit the solver ranks within the CPUs provided by a test runner."""
     return min(2, os.cpu_count() or 1)
+
+
+def test_stacked_extraction_and_cache_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
+) -> None:
+    """Solve thick stacked electrodes and invalidate changed heights and dielectrics."""
+    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    monkeypatch.syspath_prepend(str(source))
+    experiment = importlib.import_module("_experiment")
+    settings = experiment.Settings(
+        near_mesh=2, far_mesh=10, domain_pad=20, order=2, tolerance=1e-6
+    )
+    rectangle = gf.kdb.Region(gf.kdb.Box(0, 0, 10_000, 10_000))
+    ground = gf.kdb.Region(gf.kdb.Box(-5_000, -5_000, 15_000, 15_000))
+    height = 2.0
+    dielectric = "air"
+
+    def geometry(_point: dict, config, processes: int):
+        return experiment.stack_geometry(
+            {
+                "a": (rectangle, 0, 0.5),
+                "b": (rectangle, height, height + 0.5),
+                "ground": (ground, -2, -1.5),
+            },
+            terminals=("a", "b"),
+            settings=config,
+            processes=processes,
+            dielectrics=[
+                {"name": "spacer", "zmin": -2, "zmax": 5, "material": dielectric}
+            ],
+        )
+
+    recipe = experiment.Recipe(
+        name="stack-smoke",
+        script=Path(__file__),
+        grid={"sample": [1.0]},
+        axis_units={"sample": "1"},
+        terminals=("a", "b"),
+        geometry=geometry,
+        description="Coarse solver integration test, not a converged device dataset.",
+        provenance={"test_fixture": True},
+        settings=settings,
+    )
+    kwargs = dict(
+        grid=recipe.grid,
+        output=tmp_path / "data",
+        workdir=tmp_path / "runs",
+        processes=palace_processes,
+        sif=Path(value) if (value := os.environ.get("PALACE_SIF")) else None,
+        container_binary=os.environ.get("PALACE_CONTAINER_BINARY", "palace"),
+    )
+    data = experiment.generate(recipe, **kwargs)
+    matrix = data.grid("maxwell_capacitance").values[0]
+    assert matrix.shape == (2, 2)
+    assert np.all(np.linalg.eigvalsh(matrix) > 0)
+    assert matrix[0, 1] < 0
+    assert np.all(matrix.sum(axis=-1) > 0)
+    config = json.loads(next(kwargs["workdir"].glob("*/config.json")).read_text())
+    assert config["Boundaries"]["Ground"]["Attributes"]
+    logs = {
+        path: path.stat().st_mtime_ns for path in kwargs["workdir"].glob("*/solver.log")
+    }
+    experiment.generate(recipe, **kwargs)
+    assert logs == {
+        path: path.stat().st_mtime_ns for path in kwargs["workdir"].glob("*/solver.log")
+    }
+    height = 3.0
+    experiment.generate(recipe, **kwargs)
+    dielectric = "silicon"
+    experiment.generate(recipe, **kwargs)
+    assert len(list(kwargs["workdir"].glob("*/complete.json"))) == 3
+    assert all(path.stat().st_mtime_ns == stamp for path, stamp in logs.items())
 
 
 @pytest.mark.parametrize(

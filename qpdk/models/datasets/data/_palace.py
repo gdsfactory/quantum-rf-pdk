@@ -136,6 +136,7 @@ def extract(
     terminals = tuple(terminal_ports)
     inputs = {
         **inputs,
+        "terminal_order": terminals,
         "minimum_feature_elements": minimum_feature_elements,
         "mesh_threads": processes,
     }
@@ -152,6 +153,11 @@ def extract(
         sim.set_output_dir(run)
         if mesh is not None:
             mesh(sim)
+            actual = [terminal.name for terminal in sim.terminals]
+            if actual != list(terminals):
+                raise ValueError(
+                    f"Mesh callback terminals {actual} != {list(terminals)}"
+                )
         else:
             sim.mesh_sheets(
                 conductor_layer=gf.get_layer_tuple(LAYER.M1_DRAW),

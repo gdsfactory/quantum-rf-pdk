@@ -22,14 +22,26 @@ def test_differential_reduction_floats_common_mode_and_other_islands() -> None:
     # Unequal island-ground branches are in series across a floating qubit.
     matrix = jnp.array([[8.0, -2.0], [-2.0, 5.0]]) * 1e-15
     value = jax.jit(differential_capacitance)(matrix)
-    assert float(value) == pytest.approx((2 + 6 * 3 / (6 + 3)) * 1e-15)
+    expected = (2 + 6 * 3 / (6 + 3)) * 1e-15
+    assert float(value) == pytest.approx(expected, rel=1e-12, abs=0)
     assert float(
         jax.grad(lambda scale: differential_capacitance(matrix * scale))(1.0)
-    ) == pytest.approx(float(value))
+    ) == pytest.approx(expected, rel=1e-12, abs=0)
     np.testing.assert_allclose(
         jax.vmap(differential_capacitance)(jnp.stack([matrix, 2 * matrix])),
-        [value, 2 * value],
+        [expected, 2 * expected],
+        atol=0,
     )
+
+
+@pytest.mark.parametrize(("positive", "negative"), [(0, 0), (0, 3), (7, 1), (-1, 1)])
+def test_differential_rejects_invalid_terminal_indices(
+    positive: int, negative: int
+) -> None:
+    with pytest.raises(ValueError, match="two distinct terminal indices"):
+        jax.jit(differential_capacitance, static_argnums=(1, 2))(
+            jnp.eye(3) * 1e-15, positive, negative
+        )
 
 
 def test_junction_model_bonds_electrodes_without_dropping_ground(
