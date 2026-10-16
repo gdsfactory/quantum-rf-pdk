@@ -115,6 +115,13 @@ model. Both ports reference the coupon's finite ground frame. The dataset omits 
 readout, package and Josephson junction; its recipe is
 ``qpdk/models/datasets/data/double_pad_transmon.py``.
 
+``flipmon_readout_coupon_model()`` creates a 5-port static SAX coupon model. Pass
+``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
+frequency ``f`` in Hz. The whole readout conductor shares one potential, and feedline
+reference cuts are open. This dataset requires RF validation before replacing a
+distributed resonator circuit. Its recipe is
+``qpdk/models/datasets/data/flipmon_readout_assembly.py``.
+
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
 cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
 table version. Credentials are passed when opening the dataset and never stored in it.
