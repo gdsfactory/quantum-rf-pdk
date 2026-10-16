@@ -13,11 +13,8 @@ common-mode capacitance to the specified return frame, not inter-turn
 capacitance under a varying voltage or a self-resonance model. The two ends
 must never be assigned separate electrostatic terminal potentials.
 
-gsim at the pinned revision has MagnetostaticConfig and static solver metrics,
-but no MagnetostaticSim, current-loop mesher or inductance-matrix loader.
-Geometric inductance extraction therefore remains an upstream prerequisite.
-No geometric or total superconducting inductance is fabricated by this script.
-Sheet kinetic inductance remains an independently specified model input.
+Geometric inductance needs a magnetostatic solve with a defined current return
+path, pending upstream solver support. Supply sheet kinetic inductance separately.
 
 Look up the common-mode capacitance with
 ``qpdk.models.meander_inductor_ground_capacitance(n_turns=5, turn_length=150,
