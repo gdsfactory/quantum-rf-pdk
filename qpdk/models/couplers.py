@@ -7,6 +7,7 @@ from typing import cast
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
@@ -120,8 +121,8 @@ class _GroundStripLookup:
                 axes=tuple(
                     axis.model_copy(update={"validated": None}) for axis in grid.axes
                 ),
-                coords=tuple(jnp.log(jnp.asarray(axis)) for axis in grid.coords),
-                values=jnp.log(jnp.abs(values)),
+                coords=tuple(np.log(np.asarray(axis)) for axis in grid.coords),
+                values=np.log(np.abs(np.asarray(grid.values))),
             )
         )
 
@@ -130,8 +131,8 @@ class _GroundStripLookup:
     ) -> jax.Array:
         """Return the raw slice matrix; unsupported positive strips yield NaN."""
         epsilon = max(
-            jnp.finfo(jnp.result_type(cpw_gap, 0.0)).eps,
-            jnp.finfo(jnp.result_type(gap, 0.0)).eps,
+            float(jnp.finfo(jnp.result_type(cpw_gap, 0.0)).eps),
+            float(jnp.finfo(jnp.result_type(gap, 0.0)).eps),
         )
         width, cpw_gap, gap = jnp.broadcast_arrays(
             *(jnp.asarray(value, dtype=float) for value in (width, cpw_gap, gap))
@@ -401,7 +402,7 @@ def coupler_straight(
     }
     tee_instances = {f"tee_{i}": tee(f=f) for i in [1, 2]}
 
-    instances = {
+    instances: dict[str, sax.SType] = {
         **straight_instances,
         **tee_instances,
         "capacitor": capacitor,

@@ -204,7 +204,7 @@ def lc_resonator(
     y_lc = 1j * omega * capacitance + 1.0 / (1j * omega * inductance + 1e-25)
     z_lc = 1.0 / (y_lc + 1e-25)
 
-    instances = {
+    instances: dict[str, sax.SType] = {
         "cg1": shunt_admittance(f=f, y=y_g, z0=z0),
         "lc": series_impedance(f=f, z=z_lc, z0=z0),
         "cg2": shunt_admittance(f=f, y=y_g, z0=z0),
@@ -337,7 +337,7 @@ if __name__ == "__main__":
     plt.title("S-parameters capacitor")
     plt.legend()
     # Magnitude and phase vs frequency
-    ax1 = plt.subplot(122)
+    ax1 = plt.gcf().add_subplot(122)
     ax1.plot(f / 1e9, abs(S_cap["o1", "o1"]), label="|S11|", color="C0")
     ax1.plot(f / 1e9, abs(S_cap["o1", "o2"]), label="|S21|", color="C1")
     ax1.set_xlabel("Frequency [GHz]")
@@ -374,7 +374,7 @@ if __name__ == "__main__":
     plt.plot(jnp.angle(S_ind["o1", "o2"]), abs(S_ind["o2", "o1"]), label="$S_{21}$")
     plt.title("S-parameters inductor")
     plt.legend()
-    ax1 = plt.subplot(122)
+    ax1 = plt.gcf().add_subplot(122)
     ax1.plot(f / 1e9, abs(S_ind["o1", "o1"]), label="|S11|", color="C0")
     ax1.plot(f / 1e9, abs(S_ind["o1", "o2"]), label="|S21|", color="C1")
     ax1.set_xlabel("Frequency [GHz]")

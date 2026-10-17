@@ -6,7 +6,6 @@ import jax
 import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec, Size
-from jax.typing import ArrayLike
 from sax.models.rf import (
     coplanar_waveguide as _sax_coplanar_waveguide,
     electrical_open,
@@ -143,7 +142,7 @@ def straight_shorted(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
         "short": electrical_short(f=f),
     }
@@ -171,7 +170,7 @@ def straight_open(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
         "open": electrical_open(f=f),
     }
@@ -203,7 +202,7 @@ def straight_double_open(
     Returns:
         sax.SType: S-parameters dictionary
     """
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
         "open1": electrical_open(f=f, n_ports=2),
         "open2": electrical_open(f=f, n_ports=2),
@@ -255,7 +254,7 @@ def nxn(
     if n_ports == 2:
         return electrical_short(f=f, n_ports=2)
 
-    instances = {f"tee_{i}": tee(f=f) for i in range(n_ports - 2)}
+    instances: dict[str, sax.SType] = {f"tee_{i}": tee(f=f) for i in range(n_ports - 2)}
     connections = {f"tee_{i},o3": f"tee_{i + 1},o1" for i in range(n_ports - 3)}
 
     ports = {
@@ -321,7 +320,7 @@ def airbridge(
 
 
 def tsv(
-    f: ArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     via_height: float = 1000.0,
 ) -> sax.SDict:
     """S-parameter model for a through-silicon via (TSV), wrapped to :func:`~straight`.
@@ -339,7 +338,7 @@ def tsv(
 
 
 def indium_bump(
-    f: ArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     bump_height: float = 10.0,
 ) -> sax.SType:
     """S-parameter model for an indium bump, wrapped to :func:`~straight`.
@@ -505,7 +504,7 @@ def _static_linspace(start: float, stop: float, npoints: int) -> list[float]:
 
 
 def taper_cross_section(
-    f: ArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 10,
     cross_section1: CrossSectionSpec = "cpw",
     cross_section2: CrossSectionSpec = "cpw",
@@ -538,7 +537,7 @@ def taper_cross_section(
     widths = _static_linspace(w1, w2, npoints)
     gaps = _static_linspace(g1, g2, npoints)
 
-    instances = {
+    instances: dict[str, sax.SType] = {
         f"straight_{i}": straight(
             f=f,
             length=segment_length,
@@ -557,7 +556,7 @@ def taper_cross_section(
 
 
 def launcher(
-    f: ArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     straight_length: sax.Float = 200.0,
     taper_length: sax.Float = 100.0,
     cross_section_big: CrossSectionSpec = launcher_cross_section_big,
@@ -576,7 +575,7 @@ def launcher(
         sax.SDict: S-parameters dictionary
     """
     f = jnp.asarray(f)
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(
             f=f,
             length=straight_length,

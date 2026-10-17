@@ -3,6 +3,7 @@
 from functools import partial
 
 import jax
+import jax.numpy as jnp
 import jaxellip
 from jax.typing import ArrayLike
 
@@ -18,7 +19,7 @@ def ellipk_ratio(m: ArrayLike) -> jax.Array:
 @partial(jax.jit, inline=True)
 def epsilon_eff(ep_r: ArrayLike) -> jax.Array:
     """Effective permittivity for a substrate with relative permittivity ep_r."""
-    return (ep_r + 1) / 2
+    return (jnp.asarray(ep_r) + 1) / 2
 
 
 @partial(jax.jit, inline=True)
