@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from importlib.resources import files
+from typing import Literal
 
 from kfactory.schematic import DSchematic
 
@@ -87,7 +88,7 @@ _TRANSMON = [
 _SYMBOLS_PACKAGE = "qpdk.symbols"
 _SYMBOLS = files(_SYMBOLS_PACKAGE)
 
-_SIDE_XY = {
+_SIDE_XY: dict[str, tuple[int, int, Literal[0, 90, 180, 270]]] = {
     "left": (-1, 0, 180),
     "right": (1, 0, 0),
     "top": (0, 1, 90),

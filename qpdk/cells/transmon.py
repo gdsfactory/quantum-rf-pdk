@@ -17,6 +17,7 @@ from qpdk.cells.bump import indium_bump
 from qpdk.cells.junction import squid_junction, squid_junction_long
 from qpdk.tech import LAYER
 from qpdk.utils import (
+    PortConfig,
     subtract_draw_from_etch as _subtract_draw_from_etch,
     transform_component,
 )
@@ -110,7 +111,7 @@ def double_pad_transmon(
     junction_orientation = _transform_junction(junction_ref, junction_displacement)
 
     # Add ports for easy reference
-    ports_config = [
+    ports_config: list[PortConfig] = [
         {
             "name": "left_pad",
             "center": (-pad_width - pad_gap / 2, 0),

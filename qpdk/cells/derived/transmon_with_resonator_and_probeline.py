@@ -157,7 +157,7 @@ def _transmon_with_resonator_base(
         open_end=resonator_open_end,
     )
 
-    if with_probeline:
+    if resonator_connect_port is not None:
         # Connect the resonator's shorted end to the coupler_straight's top-left port.
         resonator_ref.connect("o1", resonator_connect_port)
     else:

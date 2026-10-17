@@ -124,6 +124,7 @@ def resonator(
             if i == 0:
                 first_ref = straight_ref
             else:
+                assert previous_port is not None
                 straight_ref.connect("o1", previous_port)
 
             bend_ref = c.add_ref(bend)

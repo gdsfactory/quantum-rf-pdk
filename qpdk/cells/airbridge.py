@@ -13,6 +13,7 @@ from gdsfactory.typings import LayerSpec
 
 from qpdk import tech
 from qpdk.tech import LAYER
+from qpdk.utils import PortConfig
 
 
 @gf.cell(tags=("interconnects",))
@@ -90,7 +91,7 @@ def airbridge(
     right_pad.move((bridge_length / 2 + pad_length / 2, 0))
 
     # Port configuration data
-    port_configs = [
+    port_configs: list[PortConfig] = [
         {
             "name": "o1",
             "center": (0, bridge_width / 2),

@@ -17,7 +17,7 @@ from qpdk.tech import (
     get_etch_section,
     superinductor_cross_section,
 )
-from qpdk.utils import add_rect, transform_component
+from qpdk.utils import PortConfig, add_rect, transform_component
 
 __all__ = ["fluxonium", "fluxonium_with_bbox"]
 
@@ -232,7 +232,7 @@ def fluxonium(
     )
 
     # Ports
-    ports_config = [
+    ports_config: list[PortConfig] = [
         {
             "name": "left_pad",
             "center": (-pad_width - pad_gap / 2, 0),

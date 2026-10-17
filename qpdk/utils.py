@@ -2,15 +2,27 @@
 
 from collections.abc import Iterable, Sequence
 from itertools import starmap
+from typing import TypedDict
 
 import gdsfactory as gf
 import klayout.db as kdb
 from gdsfactory.component import Component
-from gdsfactory.typings import Layer, LayerSpec
+from gdsfactory.typings import Layer, LayerSpec, Position
 from klayout.db import DCplxTrans, Region
 
 from qpdk.logger import logger
 from qpdk.tech import LAYER, NON_METADATA_LAYERS
+
+
+class PortConfig(TypedDict, total=False):
+    """Keyword arguments for :meth:`gdsfactory.Component.add_port`."""
+
+    name: str
+    center: Position | kdb.DPoint
+    width: float
+    orientation: float
+    layer: LayerSpec
+    port_type: str
 
 
 def transform_component(component: gf.Component, transform: DCplxTrans) -> gf.Component:
