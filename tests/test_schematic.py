@@ -8,7 +8,7 @@ from typing import Any, cast
 import gdsfactory as gf
 import pytest
 from gdsfactory.typings import ComponentFactory
-from kfactory.schematic import DSchematic
+from kfactory.schematic import DSchematic, Port, TSchematic
 
 from qpdk import PDK, SAX_MODEL_ALIASES
 from qpdk.cells import (
@@ -42,7 +42,12 @@ from qpdk.cells._schematic import (
 from qpdk.models import models as sax_models
 
 
-def _get_schematic(cell: Any) -> DSchematic | None:
+def _info(schematic: TSchematic[Any], key: str) -> Any:
+    """Return a free-form ``info`` entry; the tests assert its JSON shape."""
+    return schematic.info[key]
+
+
+def _get_schematic(cell: Any) -> TSchematic[Any] | None:
     if schematic_function := getattr(cell, "schematic_function", None):
         return schematic_function()
     try:
@@ -123,7 +128,7 @@ def _mosaic_box(ports: list[dict]) -> tuple[int, int]:
     return width, height
 
 
-def _pdk_schematics() -> dict[str, DSchematic]:
+def _pdk_schematics() -> dict[str, TSchematic[Any]]:
     schematics = {}
     for name, cell in PDK.cells.items():
         if (schematic := _get_schematic(cell)) is not None:
@@ -141,7 +146,7 @@ def test_schematics_use_packaged_symbols() -> None:
         assert schematic.info["symbol"] == "ckt", name
         if "display" not in schematic.info:
             continue
-        package, resource = schematic.info["display"]["symbol"].split(":")
+        package, resource = _info(schematic, "display")["symbol"].split(":")
         svg = files(package) / resource
         assert svg.is_file(), name
         referenced.add(resource)
@@ -150,7 +155,7 @@ def test_schematics_use_packaged_symbols() -> None:
         assert match, f"{resource} has no viewBox"
         view_box = match.group(1)
         _, _, width, height = map(float, re.split(r"[\s,]+", view_box))
-        box_width, box_height = _mosaic_box(schematic.info["ports"])
+        box_width, box_height = _mosaic_box(_info(schematic, "ports"))
         assert width / height == pytest.approx(box_width / box_height), name
 
     packaged = {
@@ -189,27 +194,33 @@ def test_simulation_cells_have_sax_models() -> None:
         assert schematic is not None
 
         assert set(schematic.ports) == ports
-        assert schematic.info["models"][0]["module"] == module
-        assert set(schematic.info["models"][0]["port_order"]) == ports
+        assert _info(schematic, "models")[0]["module"] == module
+        assert set(_info(schematic, "models")[0]["port_order"]) == ports
 
     bend_s_schematic = _get_schematic(bend_s)
     assert bend_s_schematic is not None
-    bend_s_model = bend_s_schematic.info["models"][0]
+    bend_s_model = _info(bend_s_schematic, "models")[0]
     assert bend_s_model["params"] == {}
 
 
 def test_quarter_wave_resonator_coupled_symbol_port_sides() -> None:
     """Put the resonator end bottom-left, below the coupling input."""
     schematic = _get_schematic(quarter_wave_resonator_coupled)
-    assert schematic is not None
+    assert isinstance(schematic, DSchematic)
 
-    assert [(p["name"], p["side"]) for p in schematic.info["ports"]] == [
+    assert [(p["name"], p["side"]) for p in _info(schematic, "ports")] == [
         ("coupling_o1", "left"),
         ("resonator_o1", "left"),
         ("coupling_o2", "right"),
     ]
-    assert schematic.ports["coupling_o1"].y > schematic.ports["resonator_o1"].y
-    assert schematic.ports["resonator_o1"].orientation == 180
+    coupling_o1 = schematic.ports["coupling_o1"]
+    resonator_o1 = schematic.ports["resonator_o1"]
+    assert isinstance(coupling_o1, Port)
+    assert isinstance(resonator_o1, Port)
+    assert isinstance(coupling_o1.y, float)
+    assert isinstance(resonator_o1.y, float)
+    assert coupling_o1.y > resonator_o1.y
+    assert resonator_o1.orientation == 180
 
 
 @pytest.mark.parametrize(
@@ -246,7 +257,7 @@ def test_sax_model_descriptors_resolve_from_the_pdk_registry() -> None:
         if schematic is None:
             continue
 
-        for descriptor in schematic.info["models"]:
+        for descriptor in _info(schematic, "models"):
             descriptor_count += 1
             assert required_fields <= descriptor.keys()
             assert descriptor["language"] == "sax"
@@ -277,7 +288,7 @@ def test_coupled_resonators_declare_model_boundaries() -> None:
     for cell in (resonator_coupled, quarter_wave_resonator_coupled):
         schematic = cast(Any, cell).schematic_function()
 
-        assert schematic.info["models"][0]["name"] == cell.__name__
+        assert _info(schematic, "models")[0]["name"] == cell.__name__
 
 
 def test_test_chip_does_not_declare_a_whole_chip_model() -> None:
@@ -285,4 +296,4 @@ def test_test_chip_does_not_declare_a_whole_chip_model() -> None:
     cell = PDK.cells["resonator_test_chip_python"]
     schematic = cast(Any, cell).schematic_function()
 
-    assert schematic.info["models"] == []
+    assert _info(schematic, "models") == []
