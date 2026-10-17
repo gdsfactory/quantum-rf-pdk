@@ -24,6 +24,7 @@ from qpdk.tech import material_properties
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss, Q2d
+    from ansys.aedt.core.modeler.modeler_3d import Modeler3D
     from ansys.aedt.core.q3d import Q3d
     from gdsfactory.component import Component
     from gdsfactory.technology import LayerStack
@@ -398,6 +399,21 @@ class AEDTBase(metaclass=SingletonMeta):
         """The AEDT modeler instance."""
         return self.app.modeler
 
+    def _modeler_3d(self) -> Modeler3D:
+        """Return the modeler, rejecting the 2D one (Q2D) that cannot draw solids.
+
+        Raises:
+            TypeError: If the application has a 2D modeler.
+        """
+        from ansys.aedt.core.modeler.modeler_3d import (  # ruff: ignore[import-outside-top-level]
+            Modeler3D,
+        )
+
+        modeler = self.modeler
+        if not isinstance(modeler, Modeler3D):
+            raise TypeError(f"{type(self.app).__name__} has no 3D modeler")
+        return modeler
+
     def add_materials(self) -> None:
         """Add QPDK materials to the AEDT project."""
         add_materials_to_aedt(self.app)
@@ -418,7 +434,7 @@ class AEDTBase(metaclass=SingletonMeta):
         x_min, y_min = bounds.p1.x, bounds.p1.y
         dx, dy = bounds.p2.x - x_min, bounds.p2.y - y_min
 
-        substrate = self.modeler.create_box(
+        substrate = self._modeler_3d().create_box(
             origin=[x_min, y_min, -thickness],
             sizes=[dx, dy, thickness],
             name=name,

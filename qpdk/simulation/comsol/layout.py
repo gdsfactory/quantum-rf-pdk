@@ -37,7 +37,7 @@ type Point = tuple[float, float]
 
 #: Input layers that the extraction understands. Everything else in
 #: :data:`~qpdk.tech.NON_METADATA_LAYERS` is rejected rather than dropped.
-_SUPPORTED_LAYERS: frozenset[tuple[int, int]] = frozenset({
+_SUPPORTED_LAYERS: frozenset[tuple[int, ...]] = frozenset({
     tuple(LAYER.M1_DRAW),
     tuple(LAYER.M1_ETCH),
 })

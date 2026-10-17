@@ -320,7 +320,8 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
     def decorated_cross_section(**kwargs: Any) -> CrossSection:
         cross_section = func(**kwargs)
         if cross_section.name in _cross_section_default_names:
-            cross_section._name = _cross_section_default_names[cross_section.name]
+            # Pydantic private attributes stay writable on frozen models.
+            cross_section._name = _cross_section_default_names[cross_section.name]  # pyrefly: ignore[read-only]
         return cross_section
 
     cross_sections[func.__name__] = decorated_cross_section
