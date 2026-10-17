@@ -219,7 +219,8 @@ strict = true
 [tool.pyrefly]
 # Use the project venv (`uv sync`) instead of the isolated pre-commit hook env.
 python-interpreter-path = ".venv/bin/python"
-baseline = "pyrefly-baseline.json"
+# pytest puts tests/ on sys.path for `from conftest import ...`.
+search-path = [".", "tests"]
 project-excludes = [
   "**/__pycache__",
   "**/.*",
