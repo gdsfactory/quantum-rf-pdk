@@ -12,7 +12,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import gdsfactory as gf
 from gdsfactory.technology.layer_stack import LayerLevel
@@ -400,19 +400,8 @@ class AEDTBase(metaclass=SingletonMeta):
         return self.app.modeler
 
     def _modeler_3d(self) -> Modeler3D:
-        """Return the modeler, rejecting the 2D one (Q2D) that cannot draw solids.
-
-        Raises:
-            TypeError: If the application has a 2D modeler.
-        """
-        from ansys.aedt.core.modeler.modeler_3d import (  # ruff: ignore[import-outside-top-level]
-            Modeler3D,
-        )
-
-        modeler = self.modeler
-        if not isinstance(modeler, Modeler3D):
-            raise TypeError(f"{type(self.app).__name__} has no 3D modeler")
-        return modeler
+        """The modeler, typed as 3D for the solid-drawing calls (not valid for Q2D)."""
+        return cast("Modeler3D", self.modeler)
 
     def add_materials(self) -> None:
         """Add QPDK materials to the AEDT project."""
