@@ -671,6 +671,8 @@ plt.show()
 # :label: eq:coupled-qubits
 # \text{Drive} \to Q_1 \overset{C_\text{m}}{\longleftrightarrow} Q_2 \to \text{GND}
 # ```
+#
+# ![A 50 ohm pulse source drives qubit 1, and qubit 2 sees an induced response only through the coupling capacitance](figures/coupled-qubit-crosstalk.svg)
 
 # %%
 
