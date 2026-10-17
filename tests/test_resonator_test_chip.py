@@ -76,7 +76,7 @@ def test_resonator_test_chip_has_distinct_resonances() -> None:
 
 def test_resonator_test_chip_yaml_simulates_from_leaf_models() -> None:
     """Keep the YAML sample usable without a registered chip model."""
-    s_params = _simulate_yaml_chip([7e9])
+    s_params = _simulate_yaml_chip(jnp.array([7e9]))
 
     # sax.circuit emits the full 4x4 key set; the cross-probeline entries
     # (e.g. ("o1", "o3")) are zero because the two probelines are independent.

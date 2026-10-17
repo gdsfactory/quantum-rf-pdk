@@ -20,7 +20,7 @@ def s_parameters_model(
     *,
     frequency_axis: str = "frequency",
     **variants: str,
-) -> sax.Model:
+) -> sax.SDictModel:
     """Load stored N-port S-parameters and return a jittable SAX lookup.
 
     ``f`` is in Hz and supplies ``frequency_axis``. Other continuous grid axes
@@ -65,7 +65,7 @@ def capacitance_model(
     dataset: Dataset | Path | str,
     quantity: str = "maxwell_capacitance",
     **variants: str,
-) -> sax.Model:
+) -> sax.SDictModel:
     r"""Return a lumped N-port SAX model from a Maxwell capacitance dataset.
 
     Continuous geometry axes are passed by name; discrete variants are fixed
@@ -120,7 +120,7 @@ def junction_model(
     junction_capacitance: float = 0.0,
     terminal_groups: tuple[tuple[str, ...], ...] | None = None,
     **variants: str,
-) -> sax.Model:
+) -> sax.SDictModel:
     r"""Build a small-signal circuit from electrode capacitances and one junction.
 
     The dataset supplies capacitances between electrodes and to ground. Between

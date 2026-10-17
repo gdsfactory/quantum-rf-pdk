@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import gdsfactory as gf
+import kfactory as kf
 import pytest
 from conftest import import_gfp_module
 
@@ -80,13 +81,13 @@ def _strip_cross_section_settings(circuit: gf.Component) -> None:
     """
     visited: set[str] = set()
 
-    def walk(cell: gf.Component) -> None:
+    def walk(cell: kf.DKCell) -> None:
         if cell.name in visited:
             return
         visited.add(cell.name)
         for port in cell.ports:
             if "cross_section_settings" in port.info.model_dump(exclude_defaults=True):
-                del port.info.cross_section_settings
+                del port.info.cross_section_settings  # pyrefly: ignore[missing-attribute]  # Info allows extra fields
         for instance in cell.insts:
             walk(instance.cell)
 

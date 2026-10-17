@@ -451,7 +451,7 @@ def bend_s(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float | None = None,
     size: Size = (20.0, 3.0),
-    npoints: int = 99,
+    npoints: int | jax.Array = 99,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     """S-parameter model for an S-bend, wrapped to :func:`~straight`.
@@ -460,7 +460,8 @@ def bend_s(
         f: Array of frequency points in Hz
         length: Physical length in µm. When omitted, it is derived from ``size``.
         size: Layout S-bend extent in µm.
-        npoints: Number of points used to discretize the layout Bézier curve.
+        npoints: Number of points used to discretize the layout Bézier curve;
+            a scalar array (as gdsfactoryplus model binding emits) is accepted.
         cross_section: The cross-section of the waveguide.
 
     Returns:

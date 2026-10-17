@@ -188,7 +188,7 @@ def _cpw_matrix_lookup(
 
 def cpw_coupling_model(
     dataset: Dataset | Path | str = "cpw_coupling_ground_strip_palace",
-) -> sax.Model:
+) -> sax.SDictModel:
     r"""Load a symmetric CPW dataset once and return a jittable four-port model.
 
     The dataset contains slice capacitances in F, swept over ``width``,

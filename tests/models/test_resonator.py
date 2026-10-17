@@ -93,7 +93,7 @@ def test_explicit_open_and_short_match_quarter_wave_model() -> None:
     """Compose the coupled resonator from explicit one-port terminations."""
     f = jnp.linspace(3e9, 5e9, 101)
     length = 8000.0
-    instances = {
+    instances: dict[str, sax.SType] = {
         "resonator": resonator_coupled(
             f=f,
             length=length,

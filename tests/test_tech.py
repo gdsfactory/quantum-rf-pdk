@@ -77,6 +77,7 @@ def test_layer_stack_geometry(
 def test_every_layer_material_has_properties(layer_stack: LayerStack) -> None:
     """Every level's material resolves to its ``material_properties`` entry."""
     for name, level in layer_stack.layers.items():
+        assert level.material is not None, name
         assert (
             get_layer_material_properties(name, layer_stack)
             is material_properties[level.material]

@@ -909,8 +909,9 @@ def test_rejects_bad_thicknesses_before_touching_comsol(
 
 def test_rejects_layout_without_polygons():
     """A layout with no metal cannot make sheets."""
+    client: Any = None
     with pytest.raises(ValueError, match="no metal polygons"):
-        build_comsol_sheet_model(None, _EMPTY_LAYOUT, "qubit")
+        build_comsol_sheet_model(client, _EMPTY_LAYOUT, "qubit")
 
 
 def test_a_successful_build_leaves_the_model_alone():

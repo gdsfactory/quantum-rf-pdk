@@ -576,7 +576,8 @@ def _pin_edges(mesh: Any, **overrides: Any) -> int:
         "edge_hmax_um": 2.0,
         "edge_hmin_um": 0.2,
     }
-    return pin_absolute_edge_mesh_sizes(_Model(mesh), **(sizes | overrides))
+    model: Any = _Model(mesh)
+    return pin_absolute_edge_mesh_sizes(model, **(sizes | overrides))
 
 
 def test_the_edge_sizes_land_between_the_default_size_and_the_generator():

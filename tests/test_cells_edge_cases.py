@@ -318,9 +318,7 @@ class TestUnimonMeanderRadius:
 def _m1_draw_region(inst) -> kdb.Region:
     """Return the M1_DRAW polygons of an instance transformed to top-level coordinates."""
     reg = kdb.Region()
-    layer_index = inst.cell.kdb_cell.layout().layer(
-        kdb.LayerInfo(LAYER.M1_DRAW.layer, LAYER.M1_DRAW.datatype)
-    )
+    layer_index = inst.cell.kdb_cell.layout().layer(kdb.LayerInfo(*LAYER.M1_DRAW))
     it = inst.cell.kdb_cell.begin_shapes_rec(layer_index)
     while not it.at_end():
         reg.insert(it.shape().polygon.transformed(it.trans()))

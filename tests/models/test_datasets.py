@@ -613,7 +613,9 @@ class TestGridInterpolator:
         assert np.isfinite(out[1]).all()
         assert np.isnan(out[2]).all()
         np.testing.assert_array_equal(
-            interp.in_domain(length=[10.0, 100.0, 400.0], width=10.0, gap=5.0),
+            interp.in_domain(
+                length=jnp.array([10.0, 100.0, 400.0]), width=10.0, gap=5.0
+            ),
             [False, True, False],
         )
 
@@ -687,14 +689,18 @@ class TestGridInterpolator:
                 "targets": np.array(["c11", "c12", "c21", "c22"], dtype=object),
             },
         )
-        point = {"length": 93.0, "width": 12.5, "gap": 8.2}
+        point = {
+            "length": jnp.asarray(93.0),
+            "width": jnp.asarray(12.5),
+            "gap": jnp.asarray(8.2),
+        }
         sax_out = sax.interpolate_xarray(xarr, **point)
         np.testing.assert_allclose(
             interp(**point).reshape(4),
             [sax_out[k] for k in ["c11", "c12", "c21", "c22"]],
             rtol=1e-12,
         )
-        outside = {**point, "length": 1000.0}
+        outside = {**point, "length": jnp.asarray(1000.0)}
         assert np.isfinite(sax.interpolate_xarray(xarr, **outside)["c12"])
         assert np.isnan(interp(**outside)[0, 1])
 
@@ -731,12 +737,12 @@ class TestCapacitance:
         maxwell: list[list[float]], problems: list[str]
     ) -> None:
         with pytest.raises(NonPhysicalMatrixError) as error:
-            check_maxwell(maxwell)
+            check_maxwell(np.array(maxwell))
         assert error.value.problems == problems
 
     @staticmethod
     def test_check_maxwell_accepts_physical() -> None:
-        check_maxwell([[2.0, -1.0], [-1.0, 2.0]])
+        check_maxwell(np.array([[2.0, -1.0], [-1.0, 2.0]]))
 
     @staticmethod
     def test_check_maxwell_tolerance_is_per_matrix() -> None:

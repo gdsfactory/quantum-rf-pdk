@@ -172,19 +172,21 @@ def test_fractional_cross_section_conductors_belong_to_domain_mesh(
     gmsh.initialize()
     try:
         gmsh.open(str(mesh.mesh_path))
-        triangles = gmsh.model.mesh.getElementsByType(2)[1].reshape(-1, 3)
+        triangles = np.asarray(gmsh.model.mesh.getElementsByType(2)[1]).reshape(-1, 3)
         edges = {
             tuple(sorted((int(a), int(b))))
             for triangle in triangles
             for a, b in zip(triangle, (*triangle[1:], triangle[0]), strict=True)
         }
-        segments = gmsh.model.mesh.getElementsByType(1)[1].reshape(-1, 2)
+        segments = np.asarray(gmsh.model.mesh.getElementsByType(1)[1]).reshape(-1, 2)
         assert len(segments) > 0
         assert all(tuple(sorted(map(int, segment))) in edges for segment in segments)
         if topology == "as-drawn" and gap > 2 * cpw_gap:
             strip = gap - 2 * cpw_gap
             nodes, coordinates, _ = gmsh.model.mesh.getNodes()
-            positions = dict(zip(nodes, coordinates.reshape(-1, 3), strict=True))
+            positions = dict(
+                zip(nodes, np.asarray(coordinates).reshape(-1, 3), strict=True)
+            )
             inner = [
                 segment
                 for segment in segments
