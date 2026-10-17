@@ -38,6 +38,8 @@
 # multiple of $\lambda/4$ {cite:p}`m.pozarMicrowaveEngineering2012`, and the coupling capacitor loads
 # the feedline into a **notch** in $|S_{21}|$.
 #
+# ![Voltage maximum at the open end and current maximum at the shorted end of a quarter-wave resonator, with f equal to the phase velocity over four times the length](figures/quarter-wave-mode.svg)
+#
 # ::::{admonition} Reading the numbers on this page
 # :class: warning
 #

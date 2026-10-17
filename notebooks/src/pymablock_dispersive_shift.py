@@ -290,6 +290,8 @@ plt.show()
 # 4. **Convert to circuit parameters** ($C_\Sigma$, $L_\text{J}$, $C_\text{c}$) using qpdk helpers
 # 5. **Convert to layout parameters** (resonator length, capacitor geometry)
 #
+# ![Design targets give the coupling g, which gives the circuit parameters, which give the layout geometry](figures/qubit-design-workflow.svg)
+#
 # ### Step 1–3: From target $\chi$ to coupling $g$
 
 # %%

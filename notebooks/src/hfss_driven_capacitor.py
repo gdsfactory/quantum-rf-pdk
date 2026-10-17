@@ -448,7 +448,7 @@ display(Image(filename=str(hfss_field_img_path)))
 #
 # Relying only on the magnitude of $S_{21}$ assumes the geometry behaves identically
 # to a single perfect capacitor floating in a vacuum. In reality, the structure has
-# shunt parasitic capacitances to ground ($C_{11}$ and $C_{22}$) that skew the
+# shunt parasitic capacitances to ground ($C_{1\text{g}}$ and $C_{2\text{g}}$) that skew the
 # $S_{21}$ magnitude.
 #
 # The robust way to extract mutual capacitance is using Y-parameters (Admittance), see {cite:p}`m.pozarMicrowaveEngineering2012`.
@@ -459,6 +459,11 @@ display(Image(filename=str(hfss_field_img_path)))
 # Therefore, the exact mutual capacitance is:
 #
 # $$ C_{12} = -\frac{\text{Im}(Y_{12})}{\omega} $$
+#
+# ![Pi network with a series mutual capacitance and a shunt capacitance to ground at each port, and how the Maxwell matrix and the admittance relate to it](figures/capacitor-pi-network.svg)
+#
+# On this page $C_{12}$ denotes the mutual capacitance, $C_{12}^\text{mutual}$ in the figure.
+# A Maxwell matrix, such as the Q3D result below, stores it with a negative sign off the diagonal.
 
 # %%
 # Extract Y21 parameter manually using PyAEDT's solution data
