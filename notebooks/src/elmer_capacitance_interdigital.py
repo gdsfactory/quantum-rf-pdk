@@ -82,6 +82,8 @@
 # other terminal and to ground. All Elmer output is in SI units (farads); we convert
 # to femtofarads below.
 #
+# ![Pi network with a series mutual capacitance and a shunt capacitance to ground at each port, and how the Maxwell matrix and the admittance relate to it](figures/capacitor-pi-network.svg)
+#
 # This is a 3D FEM result only. It is **not benchmarked against an analytic IDC model**,
 # and no analytic formula is evaluated here. The check below compares the last two
 # mesh results; their difference is not a bound on absolute model error.

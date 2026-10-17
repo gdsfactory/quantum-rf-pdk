@@ -86,6 +86,8 @@ from scipy.optimize import minimize_scalar
 #
 # First, let's create a simple quarter-wave resonator using QPDK's component library.
 # We will use the `resonator_frequency` helper to find the length needed for a 5 GHz resonance.
+#
+# ![Voltage maximum at the open end and current maximum at the shorted end of a quarter-wave resonator, with f equal to the phase velocity over four times the length](figures/quarter-wave-mode.svg)
 # %%
 from qpdk import PDK
 from qpdk.cells.resonator import resonator
