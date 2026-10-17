@@ -138,7 +138,8 @@ repos:
         priority: 30
         name: Pyrefly
         pass_filenames: false
-        # Pre-commit may not have access to all deps.
+        # Types resolve from `.venv` (see `[tool.pyrefly]` in pyproject.toml);
+        # dev-only test imports are absent there after `uv sync --no-dev`.
         args: ["--ignore", "missing-import"]
   - repo: https://github.com/FlamingTempura/bibtex-tidy
     rev: v1.14.0
