@@ -449,6 +449,5 @@ match exactly.
 1. Add type hints where missing
 1. Use `cast()` for type conversions only when absolutely necessary
 1. Check `pyproject.toml` for any type checking configuration that may be ignoring specific errors
-1. Pyrefly reads third-party types from `.venv`, so run `uv sync` first. Pre-existing errors live in
-   `pyrefly-baseline.json`; after fixing some, regenerate it with
-   `pyrefly check --baseline pyrefly-baseline.json --update-baseline`
+1. Pyrefly reads third-party types from `.venv`; run `uv sync --all-extras --group palace` first to match CI, then
+   `uv run prek run pyrefly-check --all-files`

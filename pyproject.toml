@@ -217,15 +217,9 @@ live_mode = true
 strict = true
 
 [tool.pyrefly]
-# Errors that predate checking against the project environment. New errors
-# still fail; regenerate after fixing some with
-# `pyrefly check --baseline pyrefly-baseline.json --update-baseline`.
-baseline = "pyrefly-baseline.json"
-# Resolve third-party types from the project venv rather than the isolated
-# pre-commit hook environment, which has none of our dependencies installed.
-# Needs `uv sync` first; without `.venv` pyrefly warns and falls back to
-# checking without site-packages.
+# Use the project venv (`uv sync`) instead of the isolated pre-commit hook env.
 python-interpreter-path = ".venv/bin/python"
+baseline = "pyrefly-baseline.json"
 project-excludes = [
   "**/__pycache__",
   "**/.*",
