@@ -90,6 +90,7 @@ if "google.colab" in sys.modules:
 
 # %% tags=["hide-input", "hide-output"]
 import warnings
+from typing import cast
 
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
@@ -103,8 +104,11 @@ from qpdk import PDK
 from qpdk.cells.transmon import xmon_transmon
 from qpdk.models.perturbation import ej_ec_to_frequency_and_anharmonicity
 
-qutip.settings.core["numpy_backend"] = jnp
-qutip.settings.core["default_dtype"] = "jax"
+core_options = qutip.settings.core
+if core_options is None:
+    raise RuntimeError("qutip.settings.core is set when qutip.core is imported")
+core_options["numpy_backend"] = jnp
+core_options["default_dtype"] = "jax"
 
 PDK.activate()
 
@@ -124,7 +128,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="qutip")
 # which sets the charging energy $E_\text{C} = e^2 / (2 C_\Sigma)$.
 
 # %%
-c_transmon = xmon_transmon(arm_width=[10.0] * 4, arm_lengths=[100.0] * 4)
+c_transmon = xmon_transmon(arm_width=(10.0,) * 4, arm_lengths=(100.0,) * 4)
 c_transmon.plot()
 plt.title("Xmon Transmon Layout (qpdk)")
 plt.show()
@@ -188,7 +192,7 @@ processor_x = SCQubits(2, wq=wq, alpha=alpha, g=g_coupling, wr=wr)
 processor_x.load_circuit(qc_x)
 
 init_state = qutip.basis([3, 3], [0, 0])
-result_x = processor_x.run_state(init_state)
+result_x = cast(qutip.Result, processor_x.run_state(init_state))
 
 # %% [markdown]
 # ### Population Dynamics and Leakage
@@ -236,7 +240,7 @@ qc_bell.add_gate("CNOT", controls=0, targets=1)
 processor_bell = SCQubits(2, wq=wq, alpha=alpha, g=g_coupling, wr=wr)
 processor_bell.load_circuit(qc_bell)
 
-result_bell = processor_bell.run_state(init_state)
+result_bell = cast(qutip.Result, processor_bell.run_state(init_state))
 
 # %%
 fig, axes = processor_bell.plot_pulses(figsize=(10, 8))
@@ -289,7 +293,7 @@ for t2 in t2_values_ns:
         2, wq=wq, alpha=alpha, g=g_coupling, wr=wr, t1=t1_fixed, t2=float(t2)
     )
     proc.load_circuit(qc_bell)
-    res = proc.run_state(init_state)
+    res = cast(qutip.Result, proc.run_state(init_state))
     f = qutip.fidelity(res.states[-1], bell_ideal)
     fidelities_t2.append(f)
 

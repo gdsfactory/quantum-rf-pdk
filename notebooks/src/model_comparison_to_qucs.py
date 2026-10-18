@@ -74,6 +74,8 @@ _spec = importlib.util.spec_from_file_location(
     "test_compare_to_qucs",
     QPDK_PATH.tests / "models" / "test_compare_to_qucs.py",
 )
+if _spec is None or _spec.loader is None:
+    raise ImportError("Cannot load test_compare_to_qucs.py")
 _test_module = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_test_module)
 BaseCompareToQucs = _test_module.BaseCompareToQucs

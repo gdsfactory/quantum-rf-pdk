@@ -5847,6 +5847,7 @@ dev = [
     { name = "scipy-stubs" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
+    { name = "types-tqdm" },
 ]
 docs = [
     { name = "circulax" },
@@ -5921,6 +5922,7 @@ lint = [
     { name = "scipy-stubs" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
+    { name = "types-tqdm" },
 ]
 palace = [
     { name = "gsim", extra = ["meshwell"], marker = "python_full_version < '3.13'" },
@@ -5931,6 +5933,7 @@ stubs = [
     { name = "scipy-stubs" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
+    { name = "types-tqdm" },
 ]
 test = [
     { name = "hypothesis" },
@@ -5999,6 +6002,7 @@ dev = [
     { name = "scipy-stubs" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
+    { name = "types-tqdm" },
 ]
 docs = [
     { name = "circulax", specifier = ">=0.2.3" },
@@ -6071,6 +6075,7 @@ lint = [
     { name = "scipy-stubs" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
+    { name = "types-tqdm" },
 ]
 palace = [{ name = "gsim", extras = ["meshwell"], marker = "python_full_version == '3.12.*'", git = "https://github.com/nikosavola/gsim.git?rev=946c3973b6311f0a4a3cf3bd601336ad7a186dfb" }]
 stubs = [
@@ -6079,6 +6084,7 @@ stubs = [
     { name = "scipy-stubs" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
+    { name = "types-tqdm" },
 ]
 test = [
     { name = "hypothesis" },
@@ -7617,6 +7623,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/be/cf/1ea740a3532b6e4cdeae8ba121618eb58a543eba2721016d358e4c0992e3/types_shapely-2.1.0.20260728.tar.gz", hash = "sha256:8ec23a5aa484c1ec7bbc56aa353cc230ae63e38e0f35a6e4b79a011d99bcfcc2", size = 27501, upload-time = "2026-07-28T04:51:41.724Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/8d/2e6c38118cc6b20075ccd1609840314aa8a694a255a09149b185d8a608e1/types_shapely-2.1.0.20260728-py3-none-any.whl", hash = "sha256:7299a62025528b3f0cc5af37095f05fbe7d76d399bdc8d7ea9b3d395e988f547", size = 38539, upload-time = "2026-07-28T04:51:40.638Z" },
+]
+
+[[package]]
+name = "types-tqdm"
+version = "4.70.0.20260906"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/92/517d71d5a399cd2f8ead3b4328d987262478f22fbbe7f8312360d4c321d0/types_tqdm-4.70.0.20260906.tar.gz", hash = "sha256:6581dc996152a87d51ce2ea169169187ffc0a96dacdb8adbdef29cbee8c1e631", size = 19309, upload-time = "2026-09-06T06:35:31.916Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/ea/d12697988ab2c672877796ecaea69666e2379ee7b40f01f4540250d5a97b/types_tqdm-4.70.0.20260906-py3-none-any.whl", hash = "sha256:c3b88c694928515d601f73fa6646aa43adc0ef735bedbeebf0cc543f6a201ae8", size = 25181, upload-time = "2026-09-06T06:35:30.931Z" },
 ]
 
 [[package]]

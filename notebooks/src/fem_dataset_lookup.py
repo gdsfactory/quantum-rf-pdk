@@ -451,9 +451,9 @@ xarr = xr.DataArray(
     },
 )
 theirs = -jax.vmap(
-    lambda length: sax.interpolate_xarray(xarr, length=length, width=10.0, gap=5.0)[
-        "c12"
-    ]
+    lambda length: sax.interpolate_xarray(
+        xarr, length=length, width=jnp.asarray(10.0), gap=jnp.asarray(5.0)
+    )["c12"]
 )(lengths)
 
 fig, ax = plt.subplots()

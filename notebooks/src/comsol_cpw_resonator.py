@@ -337,9 +337,11 @@ def solve_driven(client) -> None:
     """Build, mesh, solve, and export the driven model into ``MODEL_DIR``.
 
     Raises:
-        RuntimeError: If the mesh produces no elements, or the model reports no
-            default dataset to read the frequency solution from.
+        RuntimeError: If MPh is not installed, the mesh produces no elements, or
+            the model reports no default dataset to read the frequency solution from.
     """
+    if COMSOL is None:
+        raise RuntimeError("solve_driven needs MPh and a licensed COMSOL installation")
     model = COMSOL.create_sheet(
         client,
         layout,
@@ -385,7 +387,7 @@ def solve_driven(client) -> None:
         # solution is read from the default dataset, not the first tag.
         evaluation = (model / "evaluations").create("Eval")
         try:
-            dataset_tag = str(evaluation.property("data"))
+            dataset_tag = str(evaluation.property("data", None))
         finally:
             with suppress(Exception):
                 evaluation.remove()

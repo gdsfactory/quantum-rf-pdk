@@ -199,7 +199,7 @@ resonator_length = 4000  # um
 coupling_cap_val = 20e-15  # F
 
 # Define models for sax circuit
-models = {
+models: sax.Models = {
     "straight": straight,
     "capacitor": capacitor,
     "straight_shorted": straight_shorted,

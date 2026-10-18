@@ -104,9 +104,12 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input"]
+from typing import cast
+
 import jax
 import jax.numpy as jnp
 import optax
+from jax.typing import ArrayLike
 from matplotlib import pyplot as plt
 
 from qpdk import PDK
@@ -440,7 +443,7 @@ for k in range(min(5, len(V_harmonics))):
 
 
 # %%
-def transmon_anharmonicity(Ic: float, Cs: float) -> float:  # ruff: ignore[unused-function-argument]
+def transmon_anharmonicity(Ic: ArrayLike, Cs: ArrayLike) -> jax.Array:  # ruff: ignore[unused-function-argument]
     """Compute transmon anharmonicity α ≈ -E_C/h.
 
     Args:
@@ -450,11 +453,11 @@ def transmon_anharmonicity(Ic: float, Cs: float) -> float:  # ruff: ignore[unuse
     Returns:
         Anharmonicity in Hz (negative).
     """
-    E_C_val = e**2 / (2.0 * Cs)
+    E_C_val = e**2 / (2.0 * jnp.asarray(Cs))
     return -E_C_val / h
 
 
-def transmon_frequency(Ic: float, Cs: float) -> float:
+def transmon_frequency(Ic: ArrayLike, Cs: ArrayLike) -> jax.Array:
     """Compute transmon frequency f01 ≈ (sqrt(8*Ej*Ec) - Ec) / h.
 
     Args:
@@ -464,12 +467,12 @@ def transmon_frequency(Ic: float, Cs: float) -> float:
     Returns:
         Transition frequency in Hz.
     """
-    E_C_val = e**2 / (2.0 * Cs)
-    E_J_val = Φ_0 * Ic / (2.0 * jnp.pi)
+    E_C_val = e**2 / (2.0 * jnp.asarray(Cs))
+    E_J_val = Φ_0 * jnp.asarray(Ic) / (2.0 * jnp.pi)
     return (jnp.sqrt(8.0 * E_J_val * E_C_val) - E_C_val) / h
 
 
-def hb_loss_fn(params_vec: jnp.ndarray) -> float:
+def hb_loss_fn(params_vec: jax.Array) -> jax.Array:
     """Loss for the HB optimization of Ic and Cs.
 
     The dominant terms are squared relative errors of the analytic transmon
@@ -551,7 +554,7 @@ n_steps = 150
 for step in range(n_steps):
     grads = grad_fn(params_opt)
     updates, opt_state = optimizer.update(grads, opt_state)
-    params_opt = optax.apply_updates(params_opt, updates)
+    params_opt = cast(jax.Array, optax.apply_updates(params_opt, updates))
 
     loss_val = float(loss_jit(params_opt))
     losses.append(loss_val)
@@ -619,7 +622,7 @@ pad_gap_inv_um = 15.0  # keep gap fixed
 aspect = 5.0 / 8.0  # keep aspect ratio ≈ 250:400 = 5:8 (width:height)
 
 
-def capacitance_for_height(pad_height_um: float) -> float:
+def capacitance_for_height(pad_height_um: float) -> jax.Array:
     """Forward-model capacitance of pads with the given height and fixed aspect."""
     return plate_capacitor_capacitance_analytical(
         length=pad_height_um,
@@ -870,7 +873,7 @@ plt.show()
 # %%
 
 
-def crosstalk_metric(log_Cm: float) -> float:
+def crosstalk_metric(log_Cm: ArrayLike) -> jax.Array:
     """Compute peak crosstalk voltage as a function of coupling capacitance.
 
     This function is differentiable w.r.t. log_Cm via JAX autodiff.

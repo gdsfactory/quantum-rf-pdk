@@ -89,6 +89,7 @@ if "google.colab" in sys.modules:
 
 # %% tags=["hide-input", "hide-output"]
 import jax.numpy as jnp
+import numpy as np
 import polars as pl
 import scipy
 import sympy
@@ -159,7 +160,7 @@ display_eq("H_{p}", H_p)
 # [pymablock documentation](https://pymablock.readthedocs.io/).
 
 # %%
-H_tilde, U, U_adj = block_diagonalize(H_0 + H_p, symbols=[g])
+H_tilde, U, U_adj = block_diagonalize(sympy.Add(H_0, H_p), symbols=[g])
 
 E_eff = H_tilde[0, 0, 2]
 display_eq("E_{eff}^{(2)}", E_eff)
@@ -346,14 +347,14 @@ L_J = float(ej_to_inductance(EJ_design))
 ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
-def _resonator_objective(length: float) -> float:
+def _resonator_objective(x: np.ndarray) -> float:
     """Minimize the squared frequency error.
 
     Returns:
         The squared error between the calculated and target frequency.
     """
     freq = resonator_frequency(
-        length=length,
+        length=float(x[0]),
         epsilon_eff=float(jnp.real(ep_eff)),
         is_quarter_wave=True,
     )

@@ -76,11 +76,13 @@ import os
 import tempfile
 import time
 from pathlib import Path
+from typing import cast
 
 import gdsfactory as gf
 import matplotlib.pyplot as plt
 import numpy as np
 from ansys.aedt.core import Hfss, Q3d, settings
+from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
 from IPython.display import Image, display
 
 from qpdk import PDK
@@ -167,7 +169,7 @@ C_estimate = interdigital_capacitor_capacitance_analytical(
     finger_length=20.0,
     finger_gap=2.0,
     thickness=5.0,
-    ep_r=float(ep_r),
+    ep_r=ep_r,
 )
 print(f"Estimated capacitance: {float(C_estimate) * 1e15:.2f} fF")
 
@@ -211,7 +213,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
 
 # Create temporary directory for project
@@ -423,7 +425,8 @@ plt.tight_layout()
 fit_view(hfss)
 
 # Create a surface field plot of the electric field magnitude on the substrate
-plot = hfss.post.create_fieldplot_surface(
+# `post` is typed as a union of every application's post-processor.
+plot = cast(PostProcessor3D, hfss.post).create_fieldplot_surface(
     assignment=[substrate_name], quantity="Mag_E", setup=f"{setup.name} : LastAdaptive"
 )
 

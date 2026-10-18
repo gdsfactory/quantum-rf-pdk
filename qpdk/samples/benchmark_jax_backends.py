@@ -91,19 +91,19 @@ def _main() -> None:
     )
     print(f"CPU  : ✓  ({cpu_device.device_kind})")
     print(
-        f"GPU  : {'✓  (' + gpu_device.device_kind + ')' if HAS_GPU else '✗  (not available)'}"
+        f"GPU  : {'✓  (' + gpu_device.device_kind + ')' if gpu_device is not None else '✗  (not available)'}"
     )
     print(
-        f"MPS  : {'available (' + mps_device.device_kind + ')' if HAS_MPS else 'not available'}"
+        f"MPS  : {'available (' + mps_device.device_kind + ')' if mps_device is not None else 'not available'}"
     )
-    if HAS_MPS:
+    if mps_device is not None:
         print(f"jax-mps: {version('jax-mps')}")
         print(f"JAX_MPS_ASYNC_DISPATCH={os.environ.get('JAX_MPS_ASYNC_DISPATCH', '0')}")
     print(f"\nDefault JAX backend: {jax.default_backend()}")
 
     cross_section = coplanar_waveguide(width=10, gap=6)
 
-    circuit_models = {
+    circuit_models: sax.Models = {
         "straight": straight,
         "capacitor": capacitor,
         "straight_shorted": straight_shorted,
@@ -222,15 +222,20 @@ def _main() -> None:
 
     cpu_samples = benchmark_circuit(cpu_device)
     cpu_float32_samples = benchmark_circuit(cpu_device, single_precision=True)
+    local_samples = {"CPU float64": cpu_samples, "CPU float32": cpu_float32_samples}
 
-    if HAS_GPU:
-        gpu_samples = benchmark_circuit(gpu_device)
-        gpu_float32_samples = benchmark_circuit(gpu_device, single_precision=True)
+    if gpu_device is not None:
+        local_samples["CUDA float64"] = benchmark_circuit(gpu_device)
+        local_samples["CUDA float32"] = benchmark_circuit(
+            gpu_device, single_precision=True
+        )
     else:
         print("CUDA unavailable; recording CPU measurements only.")
 
-    if HAS_MPS:
-        mps_samples = benchmark_circuit(mps_device, single_precision=True)
+    if mps_device is not None:
+        local_samples["MPS float32"] = benchmark_circuit(
+            mps_device, single_precision=True
+        )
     else:
         print("MPS not available on this system; skipping Apple Silicon benchmark.")
 
@@ -238,10 +243,10 @@ def _main() -> None:
         "CPU float64": (cpu_device, False),
         "CPU float32": (cpu_device, True),
     }
-    if HAS_GPU:
+    if gpu_device is not None:
         backend_devices["CUDA float64"] = (gpu_device, False)
         backend_devices["CUDA float32"] = (gpu_device, True)
-    if HAS_MPS:
+    if mps_device is not None:
         backend_devices["MPS float32"] = (mps_device, True)
 
     reference = np.asarray(s21_ref)
@@ -265,13 +270,6 @@ def _main() -> None:
             "magnitude_error": float(magnitude_error),
             "complex_error": float(complex_error),
         }
-
-    local_samples = {"CPU float64": cpu_samples, "CPU float32": cpu_float32_samples}
-    if HAS_GPU:
-        local_samples["CUDA float64"] = gpu_samples
-        local_samples["CUDA float32"] = gpu_float32_samples
-    if HAS_MPS:
-        local_samples["MPS float32"] = mps_samples
 
     workload = {
         "sizes": benchmark_sizes,
@@ -310,7 +308,7 @@ def _main() -> None:
         },
         "results": [],
     }
-    if HAS_MPS:
+    if mps_device is not None:
         local_run["versions"]["jax-mps"] = version("jax-mps")
         local_run["mps_async_dispatch"] = os.environ.get("JAX_MPS_ASYNC_DISPATCH", "0")
     for name, samples in local_samples.items():

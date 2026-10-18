@@ -23,6 +23,7 @@ from gdsfactory.typings import (
     CrossSectionSpec,
     Layer,
     LayerSpec,
+    RoutingStrategies,
 )
 
 from qpdk.config import PATH
@@ -598,7 +599,7 @@ route_bundle_sbend = route_bundle_sbend_cpw = partial(
     bend_s=partial(_route_component, "bend_s", allow_min_radius_violation=True),
 )
 
-routing_strategies = {
+routing_strategies: RoutingStrategies = {
     "route_bundle": route_bundle,
     "route_bundle_cpw": route_bundle_cpw,
     "route_bundle_all_angle": route_bundle_all_angle,
