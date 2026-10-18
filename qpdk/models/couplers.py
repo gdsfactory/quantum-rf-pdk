@@ -7,7 +7,6 @@ from typing import cast
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import sax
 from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
@@ -121,8 +120,9 @@ class _GroundStripLookup:
                 axes=tuple(
                     axis.model_copy(update={"validated": None}) for axis in grid.axes
                 ),
-                coords=tuple(np.log(np.asarray(axis)) for axis in grid.coords),
-                values=np.log(np.abs(np.asarray(grid.values))),
+                # Grid is typed as numpy; GridInterpolator jnp.asarray's it anyway.
+                coords=tuple(jnp.log(jnp.asarray(axis)) for axis in grid.coords),  # pyrefly: ignore[bad-argument-type]
+                values=jnp.log(jnp.abs(values)),  # pyrefly: ignore[bad-argument-type]
             )
         )
 

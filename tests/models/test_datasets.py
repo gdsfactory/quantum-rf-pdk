@@ -737,12 +737,12 @@ class TestCapacitance:
         maxwell: list[list[float]], problems: list[str]
     ) -> None:
         with pytest.raises(NonPhysicalMatrixError) as error:
-            check_maxwell(np.array(maxwell))
+            check_maxwell(jnp.array(maxwell))
         assert error.value.problems == problems
 
     @staticmethod
     def test_check_maxwell_accepts_physical() -> None:
-        check_maxwell(np.array([[2.0, -1.0], [-1.0, 2.0]]))
+        check_maxwell(jnp.array([[2.0, -1.0], [-1.0, 2.0]]))
 
     @staticmethod
     def test_check_maxwell_tolerance_is_per_matrix() -> None:
