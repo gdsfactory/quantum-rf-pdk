@@ -371,7 +371,9 @@ def test_bundled_palace_grid_and_model(
     for name, field in [("mesh_near_size", "near_mesh"), ("mesh_far_size", "far_mesh")]:
         expected = jnp.zeros_like(level)
         for level_index, config in enumerate(convergence["settings_by_level"]):
-            expected = jnp.where(level == level_index, config[field] * 1e-6, expected)
+            expected = jnp.where(
+                level == level_index, float(config[field]) * 1e-6, expected
+            )
         for refinement in data.metadata.provenance.get("curated_refinements", []):
             point_index = tuple(
                 axis.tolist().index(refinement["point"][axis_name])

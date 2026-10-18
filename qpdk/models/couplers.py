@@ -1,9 +1,8 @@
 """Coupler models."""
 
 from dataclasses import replace
-from functools import cache, partial
+from functools import cache
 from pathlib import Path
-from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -23,6 +22,7 @@ from qpdk.models.datasets.capacitance import check_maxwell
 from qpdk.models.datasets.interpolation import GridInterpolator
 from qpdk.models.datasets.metadata import QuantityKind
 from qpdk.models.datasets.table import Dataset, Grid
+from qpdk.models.jit import jit
 from qpdk.models.math import (
     capacitance_per_length_conformal,
     ellipk_ratio,
@@ -31,13 +31,13 @@ from qpdk.models.math import (
 from qpdk.models.waveguides import straight
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def cpw_cpw_coupling_capacitance_per_length_analytical(
     gap: float | ArrayLike,
     width: float | ArrayLike,
     cpw_gap: float | ArrayLike,
     ep_r: float | ArrayLike,
-) -> float | jax.Array:
+) -> jax.Array:
     r"""Analytical formula for ECCPW mutual capacitance per unit length.
 
     The model follows the edge-coupled coplanar waveguide (ECCPW) formula
@@ -120,9 +120,8 @@ class _GroundStripLookup:
                 axes=tuple(
                     axis.model_copy(update={"validated": None}) for axis in grid.axes
                 ),
-                # Grid is typed as numpy; GridInterpolator jnp.asarray's it anyway.
-                coords=tuple(jnp.log(jnp.asarray(axis)) for axis in grid.coords),  # pyrefly: ignore[bad-argument-type]
-                values=jnp.log(jnp.abs(values)),  # pyrefly: ignore[bad-argument-type]
+                coords=tuple(jnp.log(jnp.asarray(axis)) for axis in grid.coords),
+                values=jnp.log(jnp.abs(values)),
             )
         )
 
@@ -254,7 +253,7 @@ def cpw_coupling_model(
         raise ValueError("Slice length and effective permittivity must be positive")
     lookup = _cpw_matrix_lookup(data, grid)
 
-    @jax.jit
+    @jit
     def model(
         f: ArrayLike = DEFAULT_FREQUENCY,
         length: ArrayLike = 1000.0,
@@ -461,11 +460,8 @@ if __name__ == "__main__":
     plt.figure(figsize=(10, 6))
 
     # Calculate capacitance per unit length for all gaps simultaneously (shape: (6,))
-    c_pul = cast(
-        jax.Array,
-        cpw_cpw_coupling_capacitance_per_length_analytical(
-            gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
-        ),
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
     )
 
     # Broadcast to compute total capacitance for all lengths and gaps (shape: (6, 1000))

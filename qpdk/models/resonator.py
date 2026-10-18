@@ -215,7 +215,7 @@ def resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a simple transmission line resonator.
 
     Args:
@@ -224,7 +224,7 @@ def resonator(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return straight(f=f, length=length, cross_section=cross_section)
 
@@ -233,7 +233,7 @@ def resonator_half_wave(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a half-wave resonator (open at both ends).
 
     Args:
@@ -242,7 +242,7 @@ def resonator_half_wave(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return straight(f=f, length=length, cross_section=cross_section)
 
@@ -251,7 +251,7 @@ def resonator_quarter_wave(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a quarter-wave resonator (shorted at one end).
 
     Args:
@@ -260,7 +260,7 @@ def resonator_quarter_wave(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),

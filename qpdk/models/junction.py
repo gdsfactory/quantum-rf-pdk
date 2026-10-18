@@ -1,7 +1,6 @@
 """Josephson junction Models."""
 
 import warnings
-from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -9,6 +8,7 @@ import sax
 from sax.models.rf import admittance
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0
+from qpdk.models.jit import jit
 
 
 def _warn_if_overbiased(ib: float, ic: float) -> None:
@@ -22,7 +22,7 @@ def _warn_if_overbiased(ib: float, ic: float) -> None:
         )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def josephson_junction(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
@@ -74,7 +74,7 @@ def josephson_junction(
     return admittance(f=f, y=Y_JJ)
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def squid_junction(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
@@ -83,7 +83,7 @@ def squid_junction(
     capacitance: sax.Float = 10e-15,
     resistance: sax.Float = 5e3,
     ib: sax.Float = 0.0,
-    flux: sax.Float = 0.0,
+    flux: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     r"""DC SQUID small-signal Sax model in the zero-screening limit.
 

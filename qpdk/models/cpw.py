@@ -101,7 +101,7 @@ def get_cpw_substrate_params() -> tuple[float, float, float, float]:
     substrate_mat = get_layer_material_properties("Substrate")
     ep_r = substrate_mat["relative_permittivity"]
     tand = substrate_mat.get("loss_tangent", 0.0)
-    return float(h), float(t), float(ep_r), float(tand)
+    return h, t, ep_r, tand
 
 
 def get_cpw_dimensions(
@@ -183,9 +183,6 @@ def cpw_parameters(
         ``(ep_eff, z0)`` — complex effective permittivity (dimensionless) and
         characteristic impedance (Ω).
     """
-    width = float(width)
-    gap = float(gap)
-
     h_um, t_um, ep_r, tand_default = get_cpw_substrate_params()
     if tand is None:
         tand = tand_default

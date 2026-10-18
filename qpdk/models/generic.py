@@ -1,8 +1,5 @@
 """Generic Models."""
 
-from functools import partial
-
-import jax
 import jax.numpy as jnp
 import sax
 from matplotlib import pyplot as plt
@@ -18,6 +15,7 @@ from sax.models.rf import (
 )
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.jit import jit
 
 __all__ = [
     "admittance",
@@ -39,10 +37,10 @@ __all__ = [
 ]
 
 
-@jax.jit
+@jit
 def series_impedance(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # ruff: ignore[unused-function-argument]
-    z: sax.Float = 0.0,
+    z: sax.ComplexArrayLike = 0.0,
     z0: float = 50.0,
 ) -> sax.SDict:
     r"""Two-port series impedance Sax model.
@@ -74,10 +72,10 @@ def series_impedance(
     return sdict
 
 
-@jax.jit
+@jit
 def shunt_admittance(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # ruff: ignore[unused-function-argument]
-    y: sax.Float = 0.0,
+    y: sax.ComplexArrayLike = 0.0,
     z0: float = 50.0,
 ) -> sax.SDict:
     r"""Two-port shunt admittance Sax model.
@@ -113,7 +111,7 @@ def shunt_admittance(
     return sdict
 
 
-@jax.jit
+@jit
 def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SDict:
     """Electrical short 2-port connection Sax model.
 
@@ -141,13 +139,13 @@ def open(  # ruff: ignore[builtin-variable-shadowing]
 short_2_port = electrical_short_2_port
 
 
-@partial(jax.jit, static_argnames=["grounded"])
+@jit(static_argnames=["grounded"])
 def lc_resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 1e-9,
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 1e-9,
     grounded: bool = False,
-    ground_capacitance: float = 0.0,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     r"""LC resonator Sax model with capacitor and inductor in parallel.
 
@@ -234,15 +232,15 @@ def lc_resonator(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
-@partial(jax.jit, static_argnames=["grounded"])
+@jit(static_argnames=["grounded"])
 def lc_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 1e-9,
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 1e-9,
     grounded: bool = False,
-    ground_capacitance: float = 0.0,
-    coupling_capacitance: float = 10e-15,
-    coupling_inductance: float = 0.0,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
+    coupling_capacitance: sax.FloatArrayLike = 10e-15,
+    coupling_inductance: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     r"""Coupled LC resonator Sax model.
 

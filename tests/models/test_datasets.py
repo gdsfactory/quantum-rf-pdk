@@ -51,6 +51,12 @@ PLATE_CAPACITOR = Dataset(NAME).metadata
 CENTER = {"length": 120.0, "width": 10.0, "gap": 7.0}
 
 
+def _parts(dataset: Dataset) -> ParquetParts:
+    """Return the Parquet store of a dataset that is not backed by Delta Lake."""
+    assert isinstance(dataset.store, ParquetParts)
+    return dataset.store
+
+
 @pytest.fixture(scope="module")
 def dataset() -> Dataset:
     return Dataset(NAME)
@@ -113,7 +119,7 @@ class TestMetadata:
 
     @staticmethod
     def test_every_part_carries_the_metadata(dataset: Dataset) -> None:
-        for part in dataset.store.files:  # pyrefly: ignore[missing-attribute]
+        for part in _parts(dataset).files:
             stored = pl.read_parquet_metadata(part)[METADATA_KEY]
             assert DatasetMetadata.from_json(stored) == PLATE_CAPACITOR
 
@@ -125,7 +131,7 @@ class TestMetadata:
     def test_given_metadata_must_match_stored(dataset_copy: Dataset) -> None:
         other = PLATE_CAPACITOR.model_copy(update={"description": "changed"})
         with pytest.raises(DatasetError, match="differs from the metadata stored"):
-            Dataset(dataset_copy.store.location, other)  # pyrefly: ignore[missing-attribute]
+            Dataset(_parts(dataset_copy).location, other)
 
     @staticmethod
     def test_new_dataset_needs_metadata(tmp_path: Path) -> None:
@@ -139,7 +145,7 @@ class TestMetadata:
 
     @staticmethod
     def test_parts_with_different_metadata_are_rejected(dataset_copy: Dataset) -> None:
-        location = dataset_copy.store.location  # pyrefly: ignore[missing-attribute]
+        location = _parts(dataset_copy).location
         other = PLATE_CAPACITOR.model_copy(update={"description": "changed"})
         dataset_copy.table.head(0).write_parquet(
             location / "part-0001.parquet", metadata={METADATA_KEY: other.to_json()}
@@ -394,7 +400,7 @@ class TestStorage:
 
     @staticmethod
     def test_unresolved_lfs_pointer_has_useful_error(dataset_copy: Dataset) -> None:
-        (part,) = dataset_copy.store.files  # pyrefly: ignore[missing-attribute]
+        (part,) = _parts(dataset_copy).files
         part.write_text(
             "version https://git-lfs.github.com/spec/v1\noid sha256:"
             + "0" * 64
@@ -427,14 +433,14 @@ class TestStorage:
             dataset_copy.append(new.head(4), part="part-0002")
         with pytest.raises(FileExistsError):
             dataset_copy.append(new.head(0), part="part-0001")
-        assert [p.name for p in dataset_copy.store.files] == [  # pyrefly: ignore[missing-attribute]
+        assert [p.name for p in _parts(dataset_copy).files] == [
             "part-0000.parquet",
             "part-0001.parquet",
         ]
 
     @staticmethod
     def test_parts_with_wrong_schema_raise_dataset_error(dataset_copy: Dataset) -> None:
-        (part,) = dataset_copy.store.files  # pyrefly: ignore[missing-attribute]
+        (part,) = _parts(dataset_copy).files
         pl.read_parquet(part).with_columns(pl.col("gap").cast(pl.Int64)).write_parquet(
             part, metadata={METADATA_KEY: PLATE_CAPACITOR.to_json()}
         )
@@ -626,7 +632,10 @@ class TestGridInterpolator:
             f(length=400.0, width=10.0, gap=5.0), f(length=120.0, width=10.0, gap=5.0)
         )
         with pytest.raises(ValueError, match="out_of_range"):
-            GridInterpolator(f.grid, out_of_range="extrapolate")  # pyrefly: ignore[bad-argument-type]
+            GridInterpolator(
+                f.grid,
+                out_of_range="extrapolate",  # pyrefly: ignore[bad-argument-type]  # invalid on purpose
+            )
 
     @staticmethod
     def test_validated_domain_narrower_than_grid(interp: GridInterpolator) -> None:

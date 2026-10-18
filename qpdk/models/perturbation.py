@@ -31,14 +31,14 @@ References:
 
 from __future__ import annotations
 
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import sympy
 from jax.typing import ArrayLike
 from sympy.physics.quantum import Dagger
 from sympy.physics.quantum.boson import BosonOp
+
+from qpdk.models.jit import jit
 
 
 def transmon_resonator_hamiltonian() -> tuple[
@@ -80,18 +80,18 @@ def transmon_resonator_hamiltonian() -> tuple[
     )
 
     # sympy's `sympify_return` wrapper hides `Expr.__sub__` from type checkers.
-    H_p = -g * (Dagger(a_t) - a_t) * (Dagger(a_r) - a_r)  # pyrefly: ignore[unsupported-operation]
+    H_p = -g * sympy.Add(Dagger(a_t), -a_t) * sympy.Add(Dagger(a_r), -a_r)
 
     return H_0, H_p, (omega_t, omega_r, alpha, g)
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def dispersive_shift(
     ω_t_ghz: float | ArrayLike,
     ω_r_ghz: float | ArrayLike,
     α_ghz: float | ArrayLike,
     g_ghz: float | ArrayLike,
-) -> float | jax.Array:
+) -> jax.Array:
     r"""Compute the dispersive shift numerically.
 
     Evaluates the second-order dispersive shift for a transmon coupled
@@ -147,7 +147,7 @@ def dispersive_shift(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def dispersive_shift_to_coupling(
     χ_ghz: float | ArrayLike,
     ω_t_ghz: float | ArrayLike,
@@ -203,7 +203,7 @@ def dispersive_shift_to_coupling(
     return jnp.sqrt(jnp.abs(g_squared))
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def ej_ec_to_frequency_and_anharmonicity(
     ej_ghz: float | ArrayLike, ec_ghz: float | ArrayLike
 ) -> tuple[float | jax.Array, float | jax.Array]:
@@ -239,7 +239,7 @@ def ej_ec_to_frequency_and_anharmonicity(
     return jnp.sqrt(8 * ej_ghz * ec_ghz) - ec_ghz, ec_ghz
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def purcell_decay_rate(
     g_ghz: float | ArrayLike,
     ω_t_ghz: float | ArrayLike,
@@ -283,7 +283,7 @@ def purcell_decay_rate(
     return κ_ghz * (g_ghz / Δ) ** 2
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def resonator_linewidth_from_q(
     ω_r_ghz: float | ArrayLike, q_ext: float | ArrayLike
 ) -> float | jax.Array:
@@ -311,7 +311,7 @@ def resonator_linewidth_from_q(
     return ω_r_ghz / q_ext
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def measurement_induced_dephasing(
     χ_ghz: float | ArrayLike, κ_ghz: float | ArrayLike, n_bar: float | ArrayLike
 ) -> float | jax.Array:

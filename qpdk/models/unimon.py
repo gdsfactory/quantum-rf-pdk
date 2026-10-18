@@ -31,7 +31,6 @@ References:
 """
 
 import math
-from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -40,6 +39,7 @@ from sax.models.rf import capacitor, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, h
 from qpdk.models.generic import lc_resonator
+from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
 
 # ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ from qpdk.models.waveguides import straight_shorted
 # ---------------------------------------------------------------------------
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def el_to_arm_inductance(el_ghz: float) -> float:
     r"""Convert inductive energy :math:`E_\text{L}` to geometric inductance of one arm :math:`L`.
 

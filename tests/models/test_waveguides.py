@@ -1,7 +1,7 @@
 """Tests for qpdk.models.waveguides module."""
 
 import inspect
-from typing import final
+from typing import final, override
 
 import hypothesis.strategies as st
 import jax
@@ -40,6 +40,7 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
 
     model_function = straight
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
@@ -164,6 +165,7 @@ class TestStraightOpen(OnePortModelTestSuite):
 
     model_function = straight_open
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 1000}
@@ -175,6 +177,7 @@ class TestStraightShorted(OnePortModelTestSuite):
 
     model_function = straight_shorted
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 1000}
@@ -186,6 +189,7 @@ class TestStraightDoubleOpen(TwoPortModelTestSuite):
 
     model_function = straight_double_open
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 1000}
@@ -197,6 +201,7 @@ class TestTSV(TwoPortModelTestSuite):
 
     model_function = tsv
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"via_height": 500.0}
@@ -208,6 +213,7 @@ class TestIndiumBump(TwoPortModelTestSuite):
 
     model_function = indium_bump
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"bump_height": 10.0}
@@ -219,6 +225,7 @@ class TestBendCircular(TwoPortModelTestSuite):
 
     model_function = bend_circular
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
@@ -230,6 +237,7 @@ class TestBendEuler(TwoPortModelTestSuite):
 
     model_function = bend_euler
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
@@ -241,6 +249,7 @@ class TestBendS(TwoPortModelTestSuite):
 
     model_function = bend_s
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
@@ -336,6 +345,7 @@ class TestRectangle(TwoPortModelTestSuite):
 
     model_function = rectangle
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
@@ -476,6 +486,7 @@ class TestAirbridge(TwoPortModelTestSuite):
 
     model_function = airbridge
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""

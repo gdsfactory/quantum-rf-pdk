@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import jax
 import jax.numpy as jnp
 import sax
 from jax.typing import ArrayLike
@@ -12,6 +11,7 @@ from qpdk.models.datasets.capacitance import check_maxwell
 from qpdk.models.datasets.interpolation import GridInterpolator
 from qpdk.models.datasets.metadata import QuantityKind
 from qpdk.models.datasets.table import Dataset
+from qpdk.models.jit import jit
 
 
 def s_parameters_model(
@@ -58,7 +58,7 @@ def s_parameters_model(
         }
 
     sax.replace_kwargs(model, f=DEFAULT_FREQUENCY, **defaults)
-    return jax.jit(model)
+    return jit(model)
 
 
 def capacitance_model(
@@ -109,7 +109,7 @@ def capacitance_model(
         }
 
     sax.replace_kwargs(model, f=DEFAULT_FREQUENCY, z_ref=50.0, **defaults)
-    return jax.jit(model)
+    return jit(model)
 
 
 def junction_model(
@@ -232,4 +232,4 @@ def junction_model(
         junction_capacitance=junction_capacitance,
         **defaults,
     )
-    return jax.jit(model)
+    return jit(model)

@@ -1,7 +1,5 @@
 """Waveguides."""
 
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import sax
@@ -16,12 +14,13 @@ from sax.models.rf import (
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import get_cpw_dimensions, get_cpw_substrate_params
 from qpdk.models.generic import shunt_admittance, tee
+from qpdk.models.jit import jit
 from qpdk.tech import coplanar_waveguide, launcher_cross_section_big
 
 
 def straight(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 10.0,
+    length: sax.FloatArrayLike = 10.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     r"""S-parameter model for a straight coplanar waveguide.
@@ -187,7 +186,7 @@ def straight_double_open(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 10.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a straight waveguide with open ends.
 
     Note:
@@ -200,7 +199,7 @@ def straight_double_open(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
@@ -218,14 +217,14 @@ def straight_double_open(
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
 
 
-@partial(jax.jit, static_argnames=["west", "east", "north", "south"])
+@jit(static_argnames=["west", "east", "north", "south"])
 def nxn(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     west: int = 1,
     east: int = 1,
     north: int = 1,
     south: int = 1,
-) -> sax.SType:
+) -> sax.SDict:
     """NxN junction model using tee components.
 
     This model creates an N-port divider/combiner by chaining 3-port tee
@@ -239,7 +238,7 @@ def nxn(
         south: Number of ports on the south side.
 
     Returns:
-        sax.SType: S-parameters dictionary with ports o1, o2, ..., oN.
+        sax.SDict: S-parameters dictionary with ports o1, o2, ..., oN.
 
     Raises:
         ValueError: If total number of ports is not positive.
@@ -270,14 +269,14 @@ def nxn(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def airbridge(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     cpw_width: sax.Float = 10.0,
     bridge_width: sax.Float = 8.0,
     airgap_height: sax.Float = 3.0,
     loss_tangent: sax.Float = 1.2e-8,
-) -> sax.SType:
+) -> sax.SDict:
     r"""S-parameter model for a superconducting CPW airbridge.
 
     The airbridge is modeled as a lumped lossy shunt admittance to ground
@@ -340,7 +339,7 @@ def tsv(
 def indium_bump(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     bump_height: float = 10.0,
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for an indium bump, wrapped to :func:`~straight`.
 
     TODO: add a constant loss channel for indium bumps.
@@ -350,7 +349,7 @@ def indium_bump(
         bump_height: Physical height (length) of the indium bump in µm.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return straight(f=f, length=bump_height)
 
@@ -427,7 +426,7 @@ def bend_euler_all_angle(
     return straight(f=f, length=length, cross_section=cross_section)
 
 
-@partial(jax.jit, static_argnames=["npoints"], inline=True)
+@jit(static_argnames=["npoints"], inline=True)
 def _bend_s_length(size: Size, npoints: int = 99) -> jax.Array:
     """Return the layout S-bend length with JAX-compatible operations.
 
@@ -525,7 +524,7 @@ def taper_cross_section(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    npoints = max(int(npoints), 1)
+    npoints = max(npoints, 1)
     w1, g1 = get_cpw_dimensions(cross_section1)
     w2, g2 = get_cpw_dimensions(cross_section2)
 
