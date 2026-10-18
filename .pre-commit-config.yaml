@@ -138,9 +138,8 @@ repos:
         priority: 30
         name: Pyrefly
         pass_filenames: false
-        # Types resolve from `.venv` (see `[tool.pyrefly]` in pyproject.toml).
-        # A default `uv sync` installs no extras, so their imports may be absent.
-        args: ["--ignore", "missing-import"]
+        # Types resolve from `.venv` (see `[tool.pyrefly]` in pyproject.toml),
+        # so install every extra first (`just install`), as CI does.
   - repo: https://github.com/FlamingTempura/bibtex-tidy
     rev: v1.14.0
     hooks:
