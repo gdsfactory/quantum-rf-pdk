@@ -6,7 +6,7 @@ import shutil
 import threading
 import time
 import uuid
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -115,7 +115,7 @@ def _aedt_project(
     *,
     release_timeout: float = _RELEASE_TIMEOUT_SECONDS,
     label: str | None = None,
-) -> Iterator[Any]:
+) -> Generator[Any, None, None]:
     """Construct an AEDT app and guarantee release plus project cleanup.
 
     The constructor runs inside the guarded region so that a hung startup
@@ -601,6 +601,7 @@ class MockQ3dApp:
 
     def __init__(self, object_names: list[str]):
         """Initialize with the names of objects created by the GDS import."""
+        self.import_kwargs: dict[str, object] = {}
         self.imported_object_names = list(object_names)
         self.modeler = MockModeler([])
         self.materials = MockMaterials()

@@ -320,8 +320,11 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
     def decorated_cross_section(**kwargs: Any) -> CrossSection:
         cross_section = func(**kwargs)
         if cross_section.name in _cross_section_default_names:
-            # Pydantic private attributes stay writable on frozen models.
-            cross_section._name = _cross_section_default_names[cross_section.name]  # pyrefly: ignore[read-only]
+            # Pydantic private attributes stay writable on frozen models (gdsfactory
+            # does the same); pyrefly treats every field of a frozen model as read-only.
+            cross_section._name = _cross_section_default_names[  # pyrefly: ignore[read-only]
+                cross_section.name
+            ]
         return cross_section
 
     cross_sections[func.__name__] = decorated_cross_section

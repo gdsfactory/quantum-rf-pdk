@@ -40,7 +40,7 @@ def interdigital_capacitor_fem_geometry(
 ) -> tuple[list[np.ndarray], np.ndarray, float, float, float]:
     """Return IDC conductors, bounds, film thickness, and dielectric constants."""
     idc = interdigital_capacitor(
-        fingers=int(fingers),
+        fingers=fingers,
         finger_length=finger_length,
         finger_gap=finger_gap,
         thickness=finger_width,
@@ -57,12 +57,12 @@ def interdigital_capacitor_fem_geometry(
         material = stack[level].material
         if material is None:
             raise ValueError(f"Layer stack level {level!r} has no material")
-        return float(eps_r[material])
+        return eps_r[material]
 
     return (
         component_to_terminal_polygons(idc),
         np.array([box.left, box.bottom, box.right, box.top]),
-        float(stack["M1"].thickness),
+        stack["M1"].thickness,
         permittivity("Substrate"),
         permittivity("Vacuum"),
     )

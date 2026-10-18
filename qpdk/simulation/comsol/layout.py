@@ -32,6 +32,7 @@ from qpdk.tech import LAYER, NON_METADATA_LAYERS
 
 if TYPE_CHECKING:
     from gdsfactory.component import Component
+    from gdsfactory.typings import Layer
 
 type Point = tuple[float, float]
 
@@ -292,6 +293,12 @@ def _reject_unsupported_layers(component: Component) -> None:
         )
 
 
+def _layer_key(layer: Layer) -> tuple[int, int]:
+    """Return the key of ``layer`` in ``get_polygons(by="tuple")``."""
+    layer_number, datatype = layer
+    return layer_number, datatype
+
+
 def _polygons_from_shapes(
     shapes: Iterable[kdb.Polygon], dbu: float
 ) -> tuple[ComsolPolygon, ...]:
@@ -324,7 +331,7 @@ def _extract_metal_polygons(component: Component) -> tuple[ComsolPolygon, ...]:
         The metal polygons, holes included.
     """
     shapes = component.get_polygons(merge=True, by="tuple", layers=[LAYER.M1_DRAW]).get(
-        tuple(LAYER.M1_DRAW), []
+        _layer_key(LAYER.M1_DRAW), []
     )
     return _polygons_from_shapes(shapes, component.kcl.dbu)
 
@@ -340,7 +347,7 @@ def _crop_metal_polygons(
     """
     region = kdb.Region()
     shapes = component.get_polygons(merge=True, by="tuple", layers=[LAYER.M1_DRAW]).get(
-        tuple(LAYER.M1_DRAW), []
+        _layer_key(LAYER.M1_DRAW), []
     )
     if shapes:
         region.insert(shapes)
@@ -451,7 +458,7 @@ def _validate_crop_containment(
     """
     for spec in (LAYER.M1_DRAW, LAYER.M1_ETCH):
         for shape in component.get_polygons(by="tuple", layers=[spec]).get(
-            tuple(spec), []
+            _layer_key(spec), []
         ):
             low, high = _axial_bounds(shape.bbox(), planes.axis)
             if low < low_dbu or high > high_dbu:
@@ -463,7 +470,7 @@ def _validate_crop_containment(
                 )
 
     etch_shapes = component.get_polygons(by="tuple", layers=[LAYER.M1_ETCH]).get(
-        tuple(LAYER.M1_ETCH), []
+        _layer_key(LAYER.M1_ETCH), []
     )
     if not etch_shapes:
         raise ValueError("crop_to_feed_ports requires etch gaps at both feed planes")
@@ -496,9 +503,9 @@ def _feed_port(component: Component, name: str) -> ComsolFeedPort:
             f"Feed port {name!r} is not available; component has {available}"
         ) from exc
 
-    center: Point = (float(port.center[0]), float(port.center[1]))
-    width = float(port.width)
-    orientation = float(port.orientation)
+    center: Point = (port.center[0], port.center[1])
+    width = port.width
+    orientation = port.orientation
 
     for label, value in (
         ("x coordinate", center[0]),

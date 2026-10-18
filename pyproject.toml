@@ -245,8 +245,12 @@ project-excludes = [
 project-includes = ["**/*.py"]
 
 [tool.pyrefly.errors]
-# Not all gdsfactory overloads are properly typed
-no-matching-overload = "ignore"
+unused-ignore = "error"
+implicitly-defined-attribute = "error"
+missing-override-decorator = "error"
+unnecessary-type-conversion = "error"
+implicit-import = "error"
+deprecated = "error"
 
 [tool.pytest]
 addopts = [

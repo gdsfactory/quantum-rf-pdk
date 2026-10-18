@@ -67,7 +67,9 @@ def prepare_metal_layout(
                 (LAYER.M2_DRAW, margin_draw),
             ],
         )
-    c = c.remove_layers(layer for layer in LAYER if str(layer).endswith("_ETCH"))  # type: ignore[attr-defined]
+    c = c.remove_layers([
+        layer for layer in LAYER.__members__.values() if str(layer).endswith("_ETCH")
+    ])
     c = remove_metadata_layers(c)
     c.add_ports(component.ports)
     return c
