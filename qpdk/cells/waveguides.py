@@ -9,6 +9,7 @@ from klayout.db import DCplxTrans
 
 from qpdk import tech
 from qpdk.cells._schematic import (
+    attach_schematic,
     bend_circular_schematic,
     bend_s_schematic,
     open_schematic,
@@ -23,7 +24,7 @@ from qpdk.tech import get_etch_section
 _DEFAULT_CROSS_SECTION = tech.cpw
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(tags=["waveguides"])
 def rectangle(
     size: Size = (4.0, 2.0),
     layer: LayerSpec = "M1_DRAW",
@@ -59,7 +60,7 @@ taper_cross_section = partial(
 )
 
 
-@gf.cell(tags=("waveguides",), schematic_function=straight_schematic)
+@gf.cell(tags=["waveguides"], schematic_function=straight_schematic)
 def straight(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
@@ -75,10 +76,10 @@ def straight(
     return gf.c.straight(length=length, cross_section=cross_section, npoints=npoints)
 
 
-straight.schematic_function = straight_schematic
+attach_schematic(straight, straight_schematic)
 
 
-@gf.cell(tags=("terminations",), schematic_function=open_schematic)
+@gf.cell(tags=["terminations"], schematic_function=open_schematic)
 def open() -> gf.Component:  # ruff: ignore[builtin-variable-shadowing]
     """Return a layout-free ideal one-port open for schematic simulation."""
     c = gf.Component()
@@ -91,10 +92,10 @@ def open() -> gf.Component:  # ruff: ignore[builtin-variable-shadowing]
     return c
 
 
-open.schematic_function = open_schematic
+attach_schematic(open, open_schematic)
 
 
-@gf.cell(tags=("terminations",), schematic_function=short_schematic)
+@gf.cell(tags=["terminations"], schematic_function=short_schematic)
 def short() -> gf.Component:
     """Return a layout-free ideal one-port short for schematic simulation."""
     c = gf.Component()
@@ -107,11 +108,11 @@ def short() -> gf.Component:
     return c
 
 
-short.schematic_function = short_schematic
+attach_schematic(short, short_schematic)
 
 
 @gf.cell(
-    tags=("waveguides", "resonators", "terminations"),
+    tags=["waveguides", "resonators", "terminations"],
     schematic_function=straight_shorted_schematic,
 )
 def straight_shorted(
@@ -137,11 +138,11 @@ def straight_shorted(
     return c
 
 
-straight_shorted.schematic_function = straight_shorted_schematic
+attach_schematic(straight_shorted, straight_shorted_schematic)
 
 
 @gf.cell(
-    tags=("waveguides", "resonators", "terminations"),
+    tags=["waveguides", "resonators", "terminations"],
     schematic_function=straight_open_schematic,
 )
 def straight_open(
@@ -166,10 +167,10 @@ def straight_open(
     return c
 
 
-straight_open.schematic_function = straight_open_schematic
+attach_schematic(straight_open, straight_open_schematic)
 
 
-@gf.cell(tags=("waveguides", "resonators"))
+@gf.cell(tags=["waveguides", "resonators"])
 def straight_double_open(
     length: float = 10.0,
     cross_section: CrossSectionSpec = _DEFAULT_CROSS_SECTION,
@@ -195,7 +196,7 @@ def straight_double_open(
     return c
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(tags=["waveguides"])
 def nxn(
     xsize: float = 10.0,
     ysize: float = 10.0,
@@ -236,7 +237,7 @@ def nxn(
     )
 
 
-@gf.cell(tags=("waveguides",))
+@gf.cell(tags=["waveguides"])
 def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     """Returns a three-way tee waveguide.
 
@@ -279,7 +280,7 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     return c
 
 
-@gf.cell(tags=("waveguides", "bend", "euler"))
+@gf.cell(tags=["waveguides", "bend", "euler"])
 def bend_euler(
     angle: float = 90.0,
     p: float = 0.5,
@@ -315,7 +316,7 @@ def bend_euler(
 
 
 @gf.cell(
-    tags=("waveguides", "bend", "circular"), schematic_function=bend_circular_schematic
+    tags=["waveguides", "bend", "circular"], schematic_function=bend_circular_schematic
 )
 def bend_circular(
     angle: float = 90.0,
@@ -358,11 +359,11 @@ def bend_circular(
     )
 
 
-bend_circular.schematic_function = bend_circular_schematic
+attach_schematic(bend_circular, bend_circular_schematic)
 
 
 @gf.cell(
-    tags=("waveguides", "bend", "s"),
+    tags=["waveguides", "bend", "s"],
     schematic_function=bend_s_schematic,
 )
 def bend_s(
@@ -393,7 +394,7 @@ def bend_s(
     )
 
 
-@gf.cell(tags=("waveguides", "couplers"))
+@gf.cell(tags=["waveguides", "couplers"])
 def coupler_straight(
     length: float = 10,
     gap: float = 16,

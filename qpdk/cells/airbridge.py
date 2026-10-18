@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from qpdk.utils import PortConfig
 
 
-@gf.cell(tags=("interconnects",))
+@gf.cell(tags=["interconnects"])
 def airbridge(
     bridge_length: float = 30.0,
     bridge_width: float = 8.0,

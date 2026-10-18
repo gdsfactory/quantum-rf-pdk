@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 from importlib.resources import files
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from kfactory.schematic import DSchematic
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from typing import Literal
 
 __all__ = [
+    "attach_schematic",
     "bend_circular_schematic",
     "bend_s_schematic",
     "double_pad_transmon_schematic",
@@ -178,13 +180,24 @@ def schematic(
     tags: list[str],
     ports: list[dict],
     models: list[dict] | None = None,
-):
+) -> Callable[..., DSchematic]:
     """Return a ``schematic_function`` closure for use with ``@gf.cell``."""
 
-    def _schematic_fn(**_kwargs) -> DSchematic:
+    def _schematic_fn(**_kwargs: Any) -> DSchematic:
         return _make_schematic(symbol, tags, ports, models)
 
     return _schematic_fn
+
+
+def attach_schematic(
+    cell: Callable[..., Any], schematic_function: Callable[..., DSchematic]
+) -> None:
+    """Expose ``schematic_function`` as an attribute of a ``@gf.cell`` factory.
+
+    ``@gf.cell(schematic_function=...)`` keeps the function on the inner
+    kfactory object only; this attribute makes it reachable from the factory.
+    """
+    cast(Any, cell).schematic_function = schematic_function
 
 
 def sax_model(

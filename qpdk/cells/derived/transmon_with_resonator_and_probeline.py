@@ -182,7 +182,7 @@ def _transmon_with_resonator_base(
     return c
 
 
-@gf.cell(tags=("qubits", "transmons", "resonators", "couplers"))
+@gf.cell(tags=["qubits", "transmons", "resonators", "couplers"])
 def transmon_with_resonator_and_probeline(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(
@@ -250,7 +250,7 @@ def transmon_with_resonator_and_probeline(
     )
 
 
-@gf.cell(tags=("qubits", "transmons", "resonators"))
+@gf.cell(tags=["qubits", "transmons", "resonators"])
 def transmon_with_resonator(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(

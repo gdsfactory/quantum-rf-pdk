@@ -11,9 +11,10 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, LayerSpec
 from kfactory import kdb
+from kfactory.conf import CheckInstances
 from klayout.db import DCplxTrans, Region
 
-from qpdk.cells._schematic import double_pad_transmon_schematic
+from qpdk.cells._schematic import attach_schematic, double_pad_transmon_schematic
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.junction import squid_junction, squid_junction_long
 from qpdk.tech import LAYER
@@ -52,8 +53,8 @@ def _transform_junction(
 
 
 @gf.cell(
-    check_instances=False,
-    tags=("qubits", "transmons"),
+    check_instances=CheckInstances.IGNORE,
+    tags=["qubits", "transmons"],
     schematic_function=double_pad_transmon_schematic,
 )
 def double_pad_transmon(
@@ -163,10 +164,10 @@ def double_pad_transmon(
     return c
 
 
-double_pad_transmon.schematic_function = double_pad_transmon_schematic
+attach_schematic(double_pad_transmon, double_pad_transmon_schematic)
 
 
-@gf.cell(tags=("qubits", "transmons"))
+@gf.cell(tags=["qubits", "transmons"])
 def double_pad_transmon_with_bbox(
     bbox_extension: float = 200.0,
     pad_size: tuple[float, float] = (250.0, 400.0),
@@ -230,7 +231,9 @@ def double_pad_transmon_with_bbox(
     return c
 
 
-@gf.cell(check_instances=False, tags=("qubits", "transmons", "flip-chip"))
+@gf.cell(
+    check_instances=CheckInstances.IGNORE, tags=["qubits", "transmons", "flip-chip"]
+)
 def flipmon(
     inner_circle_radius: float = 60.0,
     outer_ring_radius: float = 110.0,
@@ -366,7 +369,7 @@ def flipmon(
     return c
 
 
-@gf.cell(tags=("qubits", "transmons", "flip-chip"))
+@gf.cell(tags=["qubits", "transmons", "flip-chip"])
 def flipmon_with_bbox(
     inner_circle_radius: float = 60.0,
     outer_ring_radius: float = 110.0,
@@ -439,7 +442,7 @@ def flipmon_with_bbox(
     return c
 
 
-@gf.cell(check_instances=False, tags=("qubits", "transmons"))
+@gf.cell(check_instances=CheckInstances.IGNORE, tags=["qubits", "transmons"])
 def xmon_transmon(
     arm_width: tuple[float, float, float, float] = (30.0, 20.0, 30.0, 20.0),
     arm_lengths: tuple[float, float, float, float] = (160.0, 120.0, 160.0, 120.0),

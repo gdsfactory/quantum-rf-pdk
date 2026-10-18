@@ -20,6 +20,7 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 from kfactory import kdb
+from kfactory.conf import CheckInstances
 
 from qpdk.cells.capacitor import half_circle_coupler
 from qpdk.cells.junction import josephson_junction, squid_junction
@@ -29,7 +30,7 @@ from qpdk.logger import logger
 from qpdk.tech import LAYER, get_etch_section
 
 
-@gf.cell(tags=("qubits", "resonators"))
+@gf.cell(tags=["qubits", "resonators"])
 def unimon_arm(
     arm_length: float = 3000.0,
     arm_meanders: int = 6,
@@ -132,7 +133,7 @@ def unimon_arm(
     return c
 
 
-@gf.cell(check_instances=False, tags=("qubits",))
+@gf.cell(check_instances=CheckInstances.IGNORE, tags=["qubits"])
 def unimon(
     arm_length: float = 3000.0,
     arm_meanders: int = 6,
@@ -267,7 +268,7 @@ def unimon(
     return c
 
 
-@gf.cell(tags=("qubits", "couplers"))
+@gf.cell(tags=["qubits", "couplers"])
 def unimon_coupled(
     arm_length: float = 3000.0,
     arm_meanders: int = 6,
