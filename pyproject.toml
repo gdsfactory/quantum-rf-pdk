@@ -120,7 +120,13 @@ docs-models = [
 github = ["genbadge[coverage]", "setuptools"]
 lint = ["prek", { include-group = "stubs" }]
 palace = ["gsim[meshwell]>=0.7.0"]
-stubs = ["scipy-stubs"]
+stubs = [
+  "pandas-stubs",
+  "pyarrow-stubs",
+  "scipy-stubs",
+  "types-pyyaml",
+  "types-shapely"
+]
 test = [
   "hypothesis",
   "jsondiff",
