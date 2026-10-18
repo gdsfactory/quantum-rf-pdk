@@ -1,17 +1,22 @@
 """Helper functions for QPDK cells."""
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
 from itertools import starmap
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 import gdsfactory as gf
 import klayout.db as kdb
 from gdsfactory.component import Component
-from gdsfactory.typings import Layer, LayerSpec, Position
+from gdsfactory.typings import Layer, LayerSpec
 from klayout.db import DCplxTrans, Region
 
 from qpdk.logger import logger
 from qpdk.tech import LAYER, NON_METADATA_LAYERS
+
+if TYPE_CHECKING:
+    from gdsfactory.typings import Position
 
 
 class PortConfig(TypedDict, total=False):

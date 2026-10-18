@@ -1,14 +1,16 @@
 """Tests for schematic symbols."""
 
+from __future__ import annotations
+
 import importlib
 import re
 from importlib.resources import files
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import gdsfactory as gf
 import pytest
 from gdsfactory.typings import ComponentFactory
-from kfactory.schematic import DSchematic, Port, TSchematic
+from kfactory.schematic import DSchematic, Port
 
 from qpdk import PDK, SAX_MODEL_ALIASES
 from qpdk.cells import (
@@ -40,6 +42,9 @@ from qpdk.cells._schematic import (
     straight_schematic,
 )
 from qpdk.models import models as sax_models
+
+if TYPE_CHECKING:
+    from kfactory.schematic import TSchematic
 
 
 def _info(schematic: TSchematic[Any], key: str) -> Any:

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from importlib.resources import files
-from typing import Literal
+from typing import TYPE_CHECKING
 
 from kfactory.schematic import DSchematic
+
+if TYPE_CHECKING:
+    from typing import Literal
 
 __all__ = [
     "bend_circular_schematic",

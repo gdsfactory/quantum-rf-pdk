@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from functools import partial
+from typing import TYPE_CHECKING
 
 import gdsfactory as gf
 from gdsfactory.component import Component
@@ -17,7 +18,10 @@ from qpdk.tech import (
     get_etch_section,
     superinductor_cross_section,
 )
-from qpdk.utils import PortConfig, add_rect, transform_component
+from qpdk.utils import add_rect, transform_component
+
+if TYPE_CHECKING:
+    from qpdk.utils import PortConfig
 
 __all__ = ["fluxonium", "fluxonium_with_bbox"]
 

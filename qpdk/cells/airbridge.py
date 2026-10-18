@@ -7,13 +7,17 @@ Airbridges are elevated metal structures that span over underlying circuits.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 
 from qpdk import tech
 from qpdk.tech import LAYER
-from qpdk.utils import PortConfig
+
+if TYPE_CHECKING:
+    from qpdk.utils import PortConfig
 
 
 @gf.cell(tags=("interconnects",))

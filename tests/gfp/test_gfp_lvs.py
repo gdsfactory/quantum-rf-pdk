@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import gdsfactory as gf
-import kfactory as kf
 import pytest
 from conftest import import_gfp_module
 
@@ -19,6 +18,8 @@ from qpdk import PDK
 
 if TYPE_CHECKING:
     from types import ModuleType
+
+    import kfactory as kf
 
 pytestmark = pytest.mark.gfp
 

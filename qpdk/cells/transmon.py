@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import operator
 from functools import partial, reduce
+from typing import TYPE_CHECKING
 
 import gdsfactory as gf
 from gdsfactory.component import Component
@@ -17,10 +18,12 @@ from qpdk.cells.bump import indium_bump
 from qpdk.cells.junction import squid_junction, squid_junction_long
 from qpdk.tech import LAYER
 from qpdk.utils import (
-    PortConfig,
     subtract_draw_from_etch as _subtract_draw_from_etch,
     transform_component,
 )
+
+if TYPE_CHECKING:
+    from qpdk.utils import PortConfig
 
 
 def _transform_junction(
