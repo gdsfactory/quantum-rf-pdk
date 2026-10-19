@@ -34,7 +34,7 @@ def _halves(source: Dataset) -> tuple[pl.DataFrame, pl.DataFrame]:
 
 
 def _grid(dataset: Dataset) -> np.ndarray:
-    return dataset.grid("maxwell_capacitance", cross_section="cpw").values
+    return np.asarray(dataset.grid("maxwell_capacitance", cross_section="cpw").values)
 
 
 class TestDeltaStore:

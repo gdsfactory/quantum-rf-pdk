@@ -18,7 +18,7 @@ class TestDeprecatedDecorator:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            result = old_function()
+            result = old_function()  # pyrefly: ignore[deprecated]  # exercises the deprecation warning
             assert result == 42
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
@@ -50,7 +50,7 @@ class TestDeprecatedDecorator:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            result = old_function()
+            result = old_function()  # pyrefly: ignore[deprecated]  # exercises the deprecation warning
             assert result == 7
             assert len(w) == 1
             assert "old_function is deprecated" in str(w[0].message)
@@ -63,7 +63,7 @@ class TestDeprecatedDecorator:
         def my_func():
             pass
 
-        assert my_func.__name__ == "my_func"
+        assert my_func.__name__ == "my_func"  # pyrefly: ignore[deprecated]  # exercises the deprecation warning
 
     @staticmethod
     def test_deprecated_preserves_arguments() -> None:
@@ -87,4 +87,4 @@ class TestDeprecatedDecorator:
 
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
-            assert greet(name="test") == "hello test"
+            assert greet(name="test") == "hello test"  # pyrefly: ignore[deprecated]  # exercises the deprecation warning

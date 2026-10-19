@@ -54,7 +54,7 @@ def test_sax_model_annotations_collapse_to_aliases(aliases: Any) -> None:
         "bridge_width": "~sax.Float",
         "airgap_height": "~sax.Float",
         "loss_tangent": "~sax.Float",
-        "return": "~sax.SType",
+        "return": "~sax.SDict",
     }
 
 

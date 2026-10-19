@@ -6,7 +6,7 @@ import shutil
 import threading
 import time
 import uuid
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -115,7 +115,7 @@ def _aedt_project(
     *,
     release_timeout: float = _RELEASE_TIMEOUT_SECONDS,
     label: str | None = None,
-) -> Iterator[Any]:
+) -> Generator[Any, None, None]:
     """Construct an AEDT app and guarantee release plus project cleanup.
 
     The constructor runs inside the guarded region so that a hung startup
@@ -528,7 +528,8 @@ def test_get_layer_number_from_level():
     class MockLevelTuple:
         layer = (1, 0)
 
-    assert _get_layer_number_from_level(MockLevelTuple()) == 1
+    level: Any = MockLevelTuple()
+    assert _get_layer_number_from_level(level) == 1
 
     # Test with a derived layer structure
     class MockLogicalLayerInner:
@@ -541,7 +542,8 @@ def test_get_layer_number_from_level():
         layer = None
         derived_layer = MockLogicalLayer()
 
-    assert _get_layer_number_from_level(MockDerivedLevel()) == 2
+    derived: Any = MockDerivedLevel()
+    assert _get_layer_number_from_level(derived) == 2
 
 
 @dataclass
@@ -599,6 +601,7 @@ class MockQ3dApp:
 
     def __init__(self, object_names: list[str]):
         """Initialize with the names of objects created by the GDS import."""
+        self.import_kwargs: dict[str, object] = {}
         self.imported_object_names = list(object_names)
         self.modeler = MockModeler([])
         self.materials = MockMaterials()
@@ -971,7 +974,7 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
     PDK.activate()
     comp = resonator(length=1000, meanders=1)
@@ -1010,7 +1013,7 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
     PDK.activate()
     comp = resonator(length=1000, meanders=1)
@@ -1108,7 +1111,7 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
 
     from ansys.aedt.core import Q3d, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
     PDK.activate()
     comp = interdigital_capacitor(fingers=4, finger_length=20)
@@ -1146,7 +1149,7 @@ def test_create_2d_from_cross_section(tmp_path: Path, ansys_install_path: Path):
 
     from ansys.aedt.core import Q2d, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
     PDK.activate()
     cross_section = coplanar_waveguide(width=10, gap=6)

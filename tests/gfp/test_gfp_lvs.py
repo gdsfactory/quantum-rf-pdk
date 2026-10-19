@@ -19,6 +19,8 @@ from qpdk import PDK
 if TYPE_CHECKING:
     from types import ModuleType
 
+    import kfactory as kf
+
 pytestmark = pytest.mark.gfp
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -80,13 +82,13 @@ def _strip_cross_section_settings(circuit: gf.Component) -> None:
     """
     visited: set[str] = set()
 
-    def walk(cell: gf.Component) -> None:
+    def walk(cell: kf.DKCell) -> None:
         if cell.name in visited:
             return
         visited.add(cell.name)
         for port in cell.ports:
             if "cross_section_settings" in port.info.model_dump(exclude_defaults=True):
-                del port.info.cross_section_settings
+                del port.info.cross_section_settings  # pyrefly: ignore[missing-attribute]  # Info allows extra fields
         for instance in cell.insts:
             walk(instance.cell)
 

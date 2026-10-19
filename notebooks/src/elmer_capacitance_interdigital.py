@@ -254,9 +254,9 @@ def interdigital_capacitor_for_elmer(
         (ground_inner.right, ground_inner.bottom, ground_outer.right, ground_inner.top),
     )
     for section in ground_sections:
-        c.kdb_cell.shapes(LAYER.M1_DRAW).insert(gf.kdb.DBox(*section))
-    c.kdb_cell.shapes(LAYER.SIM_AREA).insert(domain)
-    c.kdb_cell.shapes(LAYER.M1_ETCH).insert(domain)
+        c.kdb_cell.shapes(gf.get_layer(LAYER.M1_DRAW)).insert(gf.kdb.DBox(*section))
+    c.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(domain)
+    c.kdb_cell.shapes(gf.get_layer(LAYER.M1_ETCH)).insert(domain)
     return c
 
 
@@ -341,7 +341,7 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 SUBSTRATE_DOMAIN_UM = 60.0
 VACUUM_DOMAIN_UM = 40.0
 
-layer_stack = PDK.layer_stack.model_copy(deep=True)
+layer_stack = PDK.get_layer_stack().model_copy(deep=True)
 layer_stack.layers = {
     name: layer_stack.layers[name] for name in ("M1", "Substrate", "Vacuum")
 }
@@ -359,7 +359,7 @@ for name, level in layer_stack.layers.items():
     ]
     print(
         f"  {name:>9}: z = {level.zmin:+.2f} … {level.zmin + level.thickness:+.2f} µm "
-        f"({PDK.layer_stack.layers[name].thickness:g} µm), "
+        f"({PDK.get_layer_stack().layers[name].thickness:g} µm), "
         f"material = {level.material}, εr = {epsilon_r:g}"
     )
 

@@ -9,6 +9,7 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells._schematic import (
+    attach_schematic,
     lumped_element_resonator_schematic,
     meander_inductor_schematic,
 )
@@ -20,7 +21,7 @@ from qpdk.tech import (
 )
 
 
-@gf.cell(tags=("inductors",), schematic_function=meander_inductor_schematic)
+@gf.cell(tags=["inductors"], schematic_function=meander_inductor_schematic)
 def meander_inductor(
     n_turns: int = 5,
     turn_length: float = 200.0,
@@ -198,11 +199,11 @@ def meander_inductor(
     return c
 
 
-meander_inductor.schematic_function = meander_inductor_schematic
+attach_schematic(meander_inductor, meander_inductor_schematic)
 
 
 @gf.cell(
-    tags=("resonators", "inductors", "capacitors"),
+    tags=["resonators", "inductors", "capacitors"],
     schematic_function=lumped_element_resonator_schematic,
 )
 def lumped_element_resonator(
@@ -482,7 +483,7 @@ def lumped_element_resonator(
     return c
 
 
-lumped_element_resonator.schematic_function = lumped_element_resonator_schematic
+attach_schematic(lumped_element_resonator, lumped_element_resonator_schematic)
 
 
 def _draw_interdigital_fingers_left(

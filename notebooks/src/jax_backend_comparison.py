@@ -155,7 +155,8 @@ for name, (run, result) in combined_results.items():
 # The saved CPU float64 trace shows the resonance of the coupled resonator.
 
 # %%
-freq_ghz = np.linspace(*workload["frequency_hz"], len(reference)) / 1e9
+f_start, f_stop = workload["frequency_hz"]
+freq_ghz = np.linspace(f_start, f_stop, len(reference)) / 1e9
 fig, ax = plt.subplots()
 ax.plot(freq_ghz, 20 * np.log10(np.abs(reference)), label="$S_{21}$")
 ax.set_xlabel("Frequency [GHz]")

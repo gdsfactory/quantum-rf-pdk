@@ -50,7 +50,7 @@ def test_real_quantity_rejects_imaginary_values() -> None:
     assert result["value"].item() == 2
     assert result["value_imag"].item() == 3
     with pytest.raises(ValueError, match="expected shape"):
-        sweep(metadata, lambda **_: {"q": [2.0]}, {"width": [1.0]})
+        sweep(metadata, lambda **_: {"q": np.array([2.0])}, {"width": [1.0]})
 
 
 @pytest.mark.parametrize(

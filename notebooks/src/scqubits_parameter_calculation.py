@@ -106,8 +106,10 @@ import numpy as np
 # TODO: Remove once the minimum required scqubits version officially supports
 # NumPy 2.x without relying on np.complex_ / np.float_ aliases.
 if not hasattr(np, "complex_"):
+    # pyrefly: ignore[missing-attribute]  # alias removed in NumPy 2
     np.complex_ = np.complex128  # ruff: ignore[numpy2-deprecation]
 if not hasattr(np, "float_"):
+    # pyrefly: ignore[missing-attribute]  # alias removed in NumPy 2
     np.float_ = np.float64  # ruff: ignore[numpy2-deprecation]
 
 import jax.numpy as jnp
@@ -227,8 +229,6 @@ display(
 # corresponding bare states $|i_\text{t}, j_\text{r}\rangle$.
 
 # %%
-hilbert_space = scq.HilbertSpace([transmon, resonator])
-
 interaction = scq.InteractionTerm(
     g_strength=g_val,
     operator_list=[
@@ -236,7 +236,7 @@ interaction = scq.InteractionTerm(
         (1, resonator.annihilation_operator() + resonator.creation_operator()),
     ],
 )
-hilbert_space.interaction_list = [interaction]
+hilbert_space = scq.HilbertSpace([transmon, resonator], interaction_list=[interaction])
 
 # Diagonalize the full Hamiltonian
 evals, evecs = hilbert_space.eigensys(evals_count=12)
@@ -316,13 +316,15 @@ def chi_scqubits_at_g(g: float) -> float:
     Returns:
         The dispersive shift value.
     """
-    hs = scq.HilbertSpace([transmon, resonator])
-    hs.interaction_list = [
-        scq.InteractionTerm(
-            g_strength=g,
-            operator_list=[(0, transmon.n_operator), (1, _a_plus_adag)],
-        )
-    ]
+    hs = scq.HilbertSpace(
+        [transmon, resonator],
+        interaction_list=[
+            scq.InteractionTerm(
+                g_strength=g,
+                operator_list=[(0, transmon.n_operator), (1, _a_plus_adag)],
+            )
+        ],
+    )
     ev, evc = hs.eigensys(evals_count=12)
     # Stack into (evals_count, hilbert_dim) matrix where each row is an eigenvector
     evc = np.array([np.array(v.full()).flatten() for v in evc])
@@ -476,14 +478,14 @@ L_J = float(ej_to_inductance(EJ_design))
 ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
-def _resonator_objective(length: float) -> float:
+def _resonator_objective(x: np.ndarray) -> float:
     """Minimize the squared frequency error.
 
     Returns:
         The squared error between the calculated and target frequency.
     """
     freq = resonator_frequency(
-        length=length,
+        length=float(x[0]),
         epsilon_eff=float(jnp.real(ep_eff)),
         is_quarter_wave=True,
     )

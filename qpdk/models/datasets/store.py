@@ -195,6 +195,7 @@ class DeltaStore:
             The ``deltalake.DeltaTable``, or ``None`` if there is none yet.
         """
         import deltalake  # ruff: ignore[import-outside-top-level]
+        import deltalake.exceptions  # ruff: ignore[import-outside-top-level]
 
         try:
             return deltalake.DeltaTable(
@@ -242,7 +243,7 @@ class DeltaStore:
         if (table := self._table()) is None:
             msg = f"No Delta table at {self.uri}."
             raise FileNotFoundError(msg)
-        return pl.scan_delta(table).select(schema.names()).cast(schema)  # pyrefly: ignore[bad-argument-type]
+        return pl.scan_delta(table).select(schema.names()).cast(schema)
 
     def write(
         self, frame: pl.DataFrame, metadata: DatasetMetadata, part: str | None
@@ -283,15 +284,10 @@ class DeltaStore:
             data,
             mode="append" if exists else "error",
             storage_options=self.storage_options,
-            **(
-                {}
-                if exists
-                else {
-                    "name": metadata.name,
-                    "description": metadata.description,
-                    "partition_by": ["quantity", *metadata.variants],
-                }
-            ),
+            # Table name, description and partitioning are set on creation only.
+            name=None if exists else metadata.name,
+            description=None if exists else metadata.description,
+            partition_by=None if exists else ["quantity", *metadata.variants],
             commit_properties=deltalake.CommitProperties(
                 custom_metadata={"qpdk.part": part or ""}
             ),

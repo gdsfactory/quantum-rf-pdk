@@ -36,7 +36,7 @@ class LumpedPortConfig(TypedDict):
 
 
 def lumped_port_rectangle_from_cpw(
-    center: tuple[float, float, float],
+    center: tuple[float, float] | tuple[float, float, float],
     orientation: float,
     cpw_gap: float,
     cpw_width: float,
@@ -44,7 +44,7 @@ def lumped_port_rectangle_from_cpw(
     """Calculates parameters for a lumped port based on its orientation.
 
     Args:
-        center: [x, y, z] coordinates of the port face center.
+        center: [x, y] or [x, y, z] coordinates of the port face center; z is ignored.
         orientation: Angle in degrees (must be a multiple of 90).
         cpw_gap: The length of the port along the axis of propagation.
         cpw_width: The width of the port perpendicular to propagation.
@@ -206,7 +206,7 @@ class HFSS(AEDTBase):
         x_min, y_min = bounds.p1.x, bounds.p1.y
         dx, dy = bounds.p2.x - x_min, bounds.p2.y - y_min
 
-        region = self.modeler.create_box(
+        region = self._modeler_3d().create_box(
             origin=[x_min, y_min, -substrate_thickness],
             sizes=[dx, dy, height + substrate_thickness],
             name=name,

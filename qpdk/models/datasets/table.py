@@ -49,6 +49,7 @@ from qpdk.models.datasets.metadata import Axis, DatasetMetadata, Quantity
 from qpdk.models.datasets.store import DeltaStore, ParquetParts
 
 if TYPE_CHECKING:
+    import jax
     import polars as pl
 
 DATASETS_PATH = Path(__file__).parent / "data"
@@ -89,10 +90,10 @@ class Grid:
     dataset: str
     quantity: Quantity
     axes: tuple[Axis, ...]
-    coords: tuple[np.ndarray, ...]
+    coords: tuple[np.ndarray | jax.Array, ...]
     terminals: tuple[str, ...]
     variant: dict[str, str]
-    values: np.ndarray
+    values: np.ndarray | jax.Array
 
     @property
     def axis_names(self) -> tuple[str, ...]:
@@ -269,9 +270,7 @@ class Dataset:
                 self.metadata.name,
                 ["The given metadata differs from the metadata stored in the files."],
             )
-        frame = frame.select(schema(self.metadata).names()).cast(
-            schema(self.metadata)  # pyrefly: ignore[bad-argument-type]
-        )
+        frame = frame.select(schema(self.metadata).names()).cast(schema(self.metadata))
         validate(frame, self.metadata)
         point_columns = [*self.metadata.variants, *(a.name for a in self.metadata.axes)]
         try:

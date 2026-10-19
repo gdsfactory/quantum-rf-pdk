@@ -40,22 +40,29 @@ def interdigital_capacitor_fem_geometry(
 ) -> tuple[list[np.ndarray], np.ndarray, float, float, float]:
     """Return IDC conductors, bounds, film thickness, and dielectric constants."""
     idc = interdigital_capacitor(
-        fingers=int(fingers),
+        fingers=fingers,
         finger_length=finger_length,
         finger_gap=finger_gap,
         thickness=finger_width,
         etch_layer=None,
     )
     box = idc.dbbox()
-    stack = pdk.layer_stack.layers
+    stack = pdk.get_layer_stack().layers
     eps_r = {
         name: props["relative_permittivity"]
         for name, props in material_properties.items()
     }
+
+    def permittivity(level: str) -> float:
+        material = stack[level].material
+        if material is None:
+            raise ValueError(f"Layer stack level {level!r} has no material")
+        return eps_r[material]
+
     return (
         component_to_terminal_polygons(idc),
         np.array([box.left, box.bottom, box.right, box.top]),
-        float(stack["M1"].thickness),
-        float(eps_r[stack["Substrate"].material]),
-        float(eps_r[stack["Vacuum"].material]),
+        stack["M1"].thickness,
+        permittivity("Substrate"),
+        permittivity("Vacuum"),
     )

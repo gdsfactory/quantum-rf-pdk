@@ -304,7 +304,7 @@ class BaseCompareToQucs(ABC):
         plt.legend()
 
         # Magnitude and phase vs frequency
-        ax1 = plt.subplot(122)
+        ax1 = plt.gcf().add_subplot(122)
 
         _reset_queue(color_queue)
         for s_param in s_params_to_plot:

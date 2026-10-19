@@ -487,7 +487,7 @@ for i, g_i in enumerate(g_sweep):
     si = jnp.argsort(ev_i)
     ev_i, evc_i = ev_i[si], evc_i[:, si]
 
-    def _fd(qi: int, ri: int, _evc: jax.Array = evc_i) -> int:
+    def _fd(qi: int, ri: int, _evc: np.ndarray = evc_i) -> int:
         bv = jnp.zeros(n_levels**2)
         bv = bv.at[qi * n_levels + ri].set(1.0)
         return int(jnp.argmax(jnp.abs(_evc.T @ bv) ** 2))
@@ -578,14 +578,14 @@ L_J = float(ej_to_inductance(EJ_design))
 ep_eff, z0 = cpw_parameters(width=10, gap=6)
 
 
-def _resonator_objective(length: float) -> float:
+def _resonator_objective(x: np.ndarray) -> float:
     """Minimise the squared frequency error.
 
     Returns:
         The squared error between the calculated and design frequency.
     """
     freq = resonator_frequency(
-        length=length,
+        length=float(x[0]),
         epsilon_eff=float(jnp.real(ep_eff)),
         is_quarter_wave=True,
     )

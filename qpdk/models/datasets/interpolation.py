@@ -98,6 +98,7 @@ class GridInterpolator:
         if self.out_of_range == "clip":
             xs = [jnp.clip(x, lo, hi) for x, (lo, hi) in zip(xs, domain, strict=True)]
         shape = xs[0].shape
+        flat: jax.Array  # RegularGridInterpolator.__call__ is unannotated
         if self._interpolate is None:
             flat = jnp.broadcast_to(self._values, (*shape, self._values.shape[-1]))
         else:

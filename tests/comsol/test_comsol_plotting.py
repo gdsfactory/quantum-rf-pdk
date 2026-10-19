@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.patches import Polygon
 
 from qpdk.simulation.comsol.plotting import (
     draw_cut_plane_field,
@@ -27,7 +28,9 @@ def test_layout_plot_keeps_the_ground_holes_and_small_pads_visible() -> None:
         assert len(ax.patches) == 3
         assert ax.patches[0].get_facecolor() == pytest.approx((0.78, 0.78, 0.78, 1))
         assert ax.patches[1].get_facecolor() == pytest.approx((1, 1, 1, 1))
-        assert np.ptp(ax.patches[2].get_xy()[:, 0]) == pytest.approx(2)
+        polygon = ax.patches[2]
+        assert isinstance(polygon, Polygon)
+        assert np.ptp(polygon.get_xy()[:, 0]) == pytest.approx(2)
     finally:
         plt.close(fig)
 

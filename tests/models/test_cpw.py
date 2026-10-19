@@ -167,7 +167,7 @@ class TestPropagationConstant:
         gamma = propagation_constant(f, ep_eff)
         beta = float(jnp.imag(gamma))
         v_p = 2 * jnp.pi * f / beta
-        assert_allclose(float(v_p), c_0 / jnp.sqrt(ep_eff), rtol=1e-8)
+        assert_allclose(v_p, c_0 / jnp.sqrt(ep_eff), rtol=1e-8)
 
     @staticmethod
     def test_lossy_has_real_part() -> None:

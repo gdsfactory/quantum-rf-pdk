@@ -1,7 +1,7 @@
 """Tests for qpdk.models.waveguides.taper_cross_section function."""
 
 from functools import partial
-from typing import ClassVar, final
+from typing import ClassVar, final, override
 
 import hypothesis.strategies as st
 import jax
@@ -24,6 +24,7 @@ class TestTaperWaveguide(TwoPortModelTestSuite):
 
     model_function = taper_cross_section
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
@@ -195,6 +196,7 @@ class TestLauncher(BaseModelTestSuite):
     model_function = launcher
     expected_ports: ClassVar[set[str]] = {"waveport", "o1"}
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""

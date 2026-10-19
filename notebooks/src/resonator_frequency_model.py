@@ -92,7 +92,7 @@ res_freq = resonator_frequency(
     epsilon_eff=float(jnp.real(ep_eff)),
     is_quarter_wave=True,
 )
-logger.info(f"Resonance frequency (quarter-wave): {float(res_freq) / 1e9} GHz")
+logger.info(f"Resonance frequency (quarter-wave): {res_freq / 1e9} GHz")
 
 circuit, info = sax.circuit(
     netlist={
@@ -121,7 +121,7 @@ plt.xlabel("f [GHz]")
 plt.ylabel("$S_{21}$")
 
 
-def _mark_resonance_frequency(x_value: float, color: str, label: str):
+def _mark_resonance_frequency(x_value: float | jax.Array, color: str, label: str):
     """Draws a vertical dashed line on the current matplotlib plot to mark a resonance frequency.
 
     Args:
@@ -179,7 +179,7 @@ logger.info(f"Loss at 4000 um: {float(loss_fn({'length': jnp.array(4000.0)}))}")
 logger.info(f"Loss at 5900 um: {float(loss_fn({'length': jnp.array(5900.0)}))}")
 
 # To ensure we start within the narrow resonance dip, we first evaluate a coarse array of lengths
-expected_length = float(4000.0 * (res_freq / TARGET_FREQUENCY))
+expected_length = 4000.0 * (res_freq / TARGET_FREQUENCY)
 coarse_lengths = jnp.linspace(expected_length - 1000, expected_length + 1000, 2001)
 
 

@@ -106,7 +106,10 @@ def show_components(
 
     PDK.activate()
 
-    components = [get_component(component_spec) for component_spec in args]
+    # get_component is typed for ComponentSpec only but also builds all-angle specs.
+    components = [
+        get_component(cast(ComponentSpec, component_spec)) for component_spec in args
+    ]
     any_all_angle = any(
         isinstance(component, ComponentAllAngle) for component in components
     )
@@ -248,7 +251,7 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
     from IPython.display import display  # ruff: ignore[import-outside-top-level]
 
     # Convert polars DataFrame to pandas if needed
-    pdf: pd.DataFrame = df.to_pandas() if hasattr(df, "to_pandas") else df
+    pdf = df if isinstance(df, pd.DataFrame) else df.to_pandas()
 
     class _DualFormatTable:
         """Table object providing both HTML and LaTeX representations."""
@@ -261,7 +264,7 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
                     html_df[col] = html_df[col].map(
                         lambda x: _latex_to_html(x) if isinstance(x, str) else x
                     )
-            return html_df.style.hide(axis="index")._repr_html_()
+            return html_df.style.hide(axis="index").to_html()
 
         @staticmethod
         def _repr_latex_() -> str:  # ruff: ignore[bad-dunder-method-name]

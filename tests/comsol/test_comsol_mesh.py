@@ -337,6 +337,7 @@ class _SequenceMesh:
 class _MisorderingMesh(_SequenceMesh):
     """A sequence that inserts every new feature right after the default size."""
 
+    @override
     def _insert_at(self) -> int:
         """Return the index just after the default size feature."""
         return self.order.index(DEFAULT_SIZE_TAG) + 1
@@ -541,6 +542,7 @@ def test_the_package_export_resolves_to_the_absolute_size_helper():
 class _PrependingMesh(_SequenceMesh):
     """A sequence that puts every new feature before the current one."""
 
+    @override
     def _insert_at(self) -> int:
         """Return the index of the current feature, so new ones precede it."""
         if self._cursor is None:
@@ -551,6 +553,7 @@ class _PrependingMesh(_SequenceMesh):
 class _EdgelessMesh(_SequenceMesh):
     """A sequence whose created features resolve to no entity."""
 
+    @override
     def create(self, tag: str, feature_type: str) -> _MeshFeature:
         """Create the feature with a selection that resolved to nothing."""
         feature = super().create(tag, feature_type)
@@ -576,7 +579,8 @@ def _pin_edges(mesh: Any, **overrides: Any) -> int:
         "edge_hmax_um": 2.0,
         "edge_hmin_um": 0.2,
     }
-    return pin_absolute_edge_mesh_sizes(_Model(mesh), **(sizes | overrides))
+    model: Any = _Model(mesh)
+    return pin_absolute_edge_mesh_sizes(model, **(sizes | overrides))
 
 
 def test_the_edge_sizes_land_between_the_default_size_and_the_generator():

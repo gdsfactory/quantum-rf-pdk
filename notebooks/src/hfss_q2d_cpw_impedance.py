@@ -132,7 +132,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
 # Create temporary directory for project
 temp_dir = tempfile.TemporaryDirectory(suffix=".ansys_qpdk")
@@ -266,7 +266,7 @@ ax.plot(frequencies_ghz, z0_q2d, "b-", linewidth=2, label="Q2D (quasi-static)")
 
 # Analytical estimate as a horizontal line
 ax.axhline(
-    y=z0_analytical,
+    y=float(z0_analytical),
     color="r",
     linestyle="--",
     linewidth=1.5,

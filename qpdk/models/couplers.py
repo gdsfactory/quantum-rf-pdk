@@ -1,9 +1,8 @@
 """Coupler models."""
 
 from dataclasses import replace
-from functools import cache, partial
+from functools import cache
 from pathlib import Path
-from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -23,6 +22,7 @@ from qpdk.models.datasets.capacitance import check_maxwell
 from qpdk.models.datasets.interpolation import GridInterpolator
 from qpdk.models.datasets.metadata import QuantityKind
 from qpdk.models.datasets.table import Dataset, Grid
+from qpdk.models.jit import jit
 from qpdk.models.math import (
     capacitance_per_length_conformal,
     ellipk_ratio,
@@ -31,13 +31,13 @@ from qpdk.models.math import (
 from qpdk.models.waveguides import straight
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def cpw_cpw_coupling_capacitance_per_length_analytical(
     gap: float | ArrayLike,
     width: float | ArrayLike,
     cpw_gap: float | ArrayLike,
     ep_r: float | ArrayLike,
-) -> float | jax.Array:
+) -> jax.Array:
     r"""Analytical formula for ECCPW mutual capacitance per unit length.
 
     The model follows the edge-coupled coplanar waveguide (ECCPW) formula
@@ -130,8 +130,8 @@ class _GroundStripLookup:
     ) -> jax.Array:
         """Return the raw slice matrix; unsupported positive strips yield NaN."""
         epsilon = max(
-            jnp.finfo(jnp.result_type(cpw_gap, 0.0)).eps,
-            jnp.finfo(jnp.result_type(gap, 0.0)).eps,
+            float(jnp.finfo(jnp.result_type(cpw_gap, 0.0)).eps),
+            float(jnp.finfo(jnp.result_type(gap, 0.0)).eps),
         )
         width, cpw_gap, gap = jnp.broadcast_arrays(
             *(jnp.asarray(value, dtype=float) for value in (width, cpw_gap, gap))
@@ -187,7 +187,7 @@ def _cpw_matrix_lookup(
 
 def cpw_coupling_model(
     dataset: Dataset | Path | str = "cpw_coupling_ground_strip_palace",
-) -> sax.Model:
+) -> sax.SDictModel:
     r"""Load a symmetric CPW dataset once and return a jittable four-port model.
 
     The dataset contains slice capacitances in F, swept over ``width``,
@@ -253,7 +253,7 @@ def cpw_coupling_model(
         raise ValueError("Slice length and effective permittivity must be positive")
     lookup = _cpw_matrix_lookup(data, grid)
 
-    @jax.jit
+    @jit
     def model(
         f: ArrayLike = DEFAULT_FREQUENCY,
         length: ArrayLike = 1000.0,
@@ -401,7 +401,7 @@ def coupler_straight(
     }
     tee_instances = {f"tee_{i}": tee(f=f) for i in [1, 2]}
 
-    instances = {
+    instances: dict[str, sax.SType] = {
         **straight_instances,
         **tee_instances,
         "capacitor": capacitor,
@@ -460,11 +460,8 @@ if __name__ == "__main__":
     plt.figure(figsize=(10, 6))
 
     # Calculate capacitance per unit length for all gaps simultaneously (shape: (6,))
-    c_pul = cast(
-        jax.Array,
-        cpw_cpw_coupling_capacitance_per_length_analytical(
-            gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
-        ),
+    c_pul = cpw_cpw_coupling_capacitance_per_length_analytical(
+        gap=gaps, width=width, cpw_gap=cpw_gap, ep_r=ep_r
     )
 
     # Broadcast to compute total capacitance for all lengths and gaps (shape: (6, 1000))

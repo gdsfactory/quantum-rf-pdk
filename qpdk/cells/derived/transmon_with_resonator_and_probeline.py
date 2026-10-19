@@ -157,7 +157,7 @@ def _transmon_with_resonator_base(
         open_end=resonator_open_end,
     )
 
-    if with_probeline:
+    if resonator_connect_port is not None:
         # Connect the resonator's shorted end to the coupler_straight's top-left port.
         resonator_ref.connect("o1", resonator_connect_port)
     else:
@@ -182,7 +182,7 @@ def _transmon_with_resonator_base(
     return c
 
 
-@gf.cell(tags=("qubits", "transmons", "resonators", "couplers"))
+@gf.cell(tags=["qubits", "transmons", "resonators", "couplers"])
 def transmon_with_resonator_and_probeline(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(
@@ -250,7 +250,7 @@ def transmon_with_resonator_and_probeline(
     )
 
 
-@gf.cell(tags=("qubits", "transmons", "resonators"))
+@gf.cell(tags=["qubits", "transmons", "resonators"])
 def transmon_with_resonator(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(

@@ -76,8 +76,10 @@ import os
 import tempfile
 import time
 from pathlib import Path
+from typing import cast
 
 from ansys.aedt.core import Hfss, settings
+from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
 from IPython.display import Image, display
 from scipy.optimize import minimize_scalar
 
@@ -183,7 +185,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
 
 # Create temporary directory for project
@@ -359,7 +361,8 @@ if results["frequencies_ghz"]:
 fit_view(hfss)
 
 # Create a surface field plot of the electric field magnitude on the substrate
-plot = hfss.post.create_fieldplot_surface(
+# `post` is typed as a union of every application's post-processor.
+plot = cast(PostProcessor3D, hfss.post).create_fieldplot_surface(
     assignment=[substrate_name], quantity="Mag_E", setup=f"{setup.name} : LastAdaptive"
 )
 

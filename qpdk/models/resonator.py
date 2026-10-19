@@ -42,7 +42,7 @@ def quarter_wave_resonator_coupled(
     """
     f_arr = jnp.asarray(f)
 
-    instances = {
+    instances: dict[str, sax.SType] = {
         "resonator": resonator_coupled(
             f=f_arr,
             length=length,
@@ -106,7 +106,7 @@ def resonator_coupled(
         "z0": cpw_z0_from_cross_section(cross_section, f_arr),
     }
 
-    instances = {
+    instances: dict[str, sax.SType] = {
         "coupling_1": straight(
             f=f_arr,
             length=coupling_straight_length / 2,
@@ -203,7 +203,8 @@ def resonator_frequency(
             epsilon_eff = float(jnp.real(jnp.mean(media.ep_r)))
         else:
             width, gap = get_cpw_dimensions(cross_section)
-            epsilon_eff, _z0 = cpw_parameters(width, gap)
+            ep_eff, _z0 = cpw_parameters(width, gap)
+            epsilon_eff = float(jnp.real(ep_eff))
 
     v_p = c_0 / jnp.sqrt(jnp.real(epsilon_eff))
     coefficient = 4 if is_quarter_wave else 2
@@ -214,7 +215,7 @@ def resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a simple transmission line resonator.
 
     Args:
@@ -223,7 +224,7 @@ def resonator(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return straight(f=f, length=length, cross_section=cross_section)
 
@@ -232,7 +233,7 @@ def resonator_half_wave(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a half-wave resonator (open at both ends).
 
     Args:
@@ -241,7 +242,7 @@ def resonator_half_wave(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return straight(f=f, length=length, cross_section=cross_section)
 
@@ -250,7 +251,7 @@ def resonator_quarter_wave(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 4000.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a quarter-wave resonator (shorted at one end).
 
     Args:
@@ -259,9 +260,9 @@ def resonator_quarter_wave(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
         "short": electrical_short(f=f, n_ports=2),
     }

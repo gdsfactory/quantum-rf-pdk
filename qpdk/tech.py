@@ -23,6 +23,7 @@ from gdsfactory.typings import (
     CrossSectionSpec,
     Layer,
     LayerSpec,
+    RoutingStrategies,
 )
 
 from qpdk.config import PATH
@@ -320,7 +321,11 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
     def decorated_cross_section(**kwargs: Any) -> CrossSection:
         cross_section = func(**kwargs)
         if cross_section.name in _cross_section_default_names:
-            cross_section._name = _cross_section_default_names[cross_section.name]
+            # Pydantic private attributes stay writable on frozen models (gdsfactory
+            # does the same); pyrefly treats every field of a frozen model as read-only.
+            cross_section._name = _cross_section_default_names[  # pyrefly: ignore[read-only]
+                cross_section.name
+            ]
         return cross_section
 
     cross_sections[func.__name__] = decorated_cross_section
@@ -594,7 +599,7 @@ route_bundle_sbend = route_bundle_sbend_cpw = partial(
     bend_s=partial(_route_component, "bend_s", allow_min_radius_violation=True),
 )
 
-routing_strategies = {
+routing_strategies: RoutingStrategies = {
     "route_bundle": route_bundle,
     "route_bundle_cpw": route_bundle_cpw,
     "route_bundle_all_angle": route_bundle_all_angle,

@@ -1,11 +1,10 @@
 """Inductor and lumped-element resonator models."""
 
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec
+from jax.typing import ArrayLike
 
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.constants import DEFAULT_FREQUENCY, μ_0, π
@@ -15,10 +14,11 @@ from qpdk.models.cpw import (
     get_cpw_substrate_params,
 )
 from qpdk.models.generic import inductor, lc_resonator
+from qpdk.models.jit import jit
 from qpdk.tech import get_meander_wire_gap
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def self_inductance_strip(length: float, width: float, thickness: float) -> jax.Array:
     r"""Analytical formula for the self-inductance of a rectangular metal strip.
 
@@ -43,8 +43,8 @@ def self_inductance_strip(length: float, width: float, thickness: float) -> jax.
     )
 
 
-@partial(jax.jit, inline=True)
-def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
+@jit(inline=True)
+def mutual_inductance_parallel_strips(length: ArrayLike, d: ArrayLike) -> jax.Array:
     r"""Analytical formula for the mutual inductance between two parallel metal strips.
 
     Uses the formula from :cite:`chenCompactInductorcapacitorResonators2023`:
@@ -60,6 +60,7 @@ def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
     Returns:
         Mutual inductance in Henries.
     """
+    length, d = jnp.asarray(length), jnp.asarray(d)
     return (μ_0 * length / (2 * π)) * (
         jnp.log(length / d + jnp.sqrt(1 + (length / d) ** 2))
         - jnp.sqrt(1 + (d / length) ** 2)
@@ -67,7 +68,7 @@ def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def meander_inductor_inductance_analytical(
     n_turns: int,
     turn_length: float,

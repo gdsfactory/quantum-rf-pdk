@@ -12,7 +12,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import gdsfactory as gf
 from gdsfactory.technology.layer_stack import LayerLevel
@@ -24,6 +24,7 @@ from qpdk.tech import material_properties
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss, Q2d
+    from ansys.aedt.core.modeler.modeler_3d import Modeler3D
     from ansys.aedt.core.q3d import Q3d
     from gdsfactory.component import Component
     from gdsfactory.technology import LayerStack
@@ -398,6 +399,10 @@ class AEDTBase(metaclass=SingletonMeta):
         """The AEDT modeler instance."""
         return self.app.modeler
 
+    def _modeler_3d(self) -> Modeler3D:
+        """The modeler, typed as 3D for the solid-drawing calls (not valid for Q2D)."""
+        return cast("Modeler3D", self.modeler)
+
     def add_materials(self) -> None:
         """Add QPDK materials to the AEDT project."""
         add_materials_to_aedt(self.app)
@@ -418,7 +423,7 @@ class AEDTBase(metaclass=SingletonMeta):
         x_min, y_min = bounds.p1.x, bounds.p1.y
         dx, dy = bounds.p2.x - x_min, bounds.p2.y - y_min
 
-        substrate = self.modeler.create_box(
+        substrate = self._modeler_3d().create_box(
             origin=[x_min, y_min, -thickness],
             sizes=[dx, dy, thickness],
             name=name,

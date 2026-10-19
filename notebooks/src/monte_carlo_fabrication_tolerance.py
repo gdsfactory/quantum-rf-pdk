@@ -67,7 +67,7 @@ if "google.colab" in sys.modules:
 import os
 import warnings
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, cast
 
 import gdsfactory as gf
 import jax.numpy as jnp
@@ -76,6 +76,8 @@ import numpy as np
 import polars as pl
 import ray
 import sax
+from jax.typing import ArrayLike
+from matplotlib.collections import PolyCollection
 from matplotlib.lines import Line2D
 from scipy.signal import find_peaks
 from tqdm.auto import tqdm
@@ -292,7 +294,7 @@ for gap_val in gaps_sweep:
     ep_vals = []
     z0_vals = []
     for w in widths_sweep:
-        ep, z0 = cpw_parameters(float(w), float(gap_val))
+        ep, z0 = cpw_parameters(float(w), gap_val)
         ep_vals.append(float(jnp.real(ep)))
         z0_vals.append(float(jnp.real(z0)))
     ax1.plot(widths_sweep, z0_vals, label=f"gap = {gap_val:.0f} µm")
@@ -436,7 +438,7 @@ print(f"{len(cpw_instance_names)} CPW instances found for MC perturbation.")
 
 # %%
 def find_resonance_dips(
-    freq_hz: np.ndarray,
+    freq_hz: ArrayLike,
     s21_db: np.ndarray,
     evaluate: Callable[[jnp.ndarray], jnp.ndarray],
     n_resonators: int = 8,
@@ -469,9 +471,9 @@ def find_resonance_dips(
 def simulate_global_tolerance(
     dw: float,
     dg: float,
-    freq: jnp.ndarray | ray.ObjectRef,
-    netlist: dict[str, Any] | ray.ObjectRef,
-    models: dict[str, Any] | ray.ObjectRef,
+    freq: jnp.ndarray,
+    netlist: dict[str, Any],
+    models: dict[str, Any],
     instance_names: list[str],
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return transmission and refined resonances for a global trial."""
@@ -596,7 +598,7 @@ data_to_plot = [shifts_mhz[~np.isnan(shifts_mhz[:, i]), i] for i in range(n_res)
 vparts = ax.violinplot(data_to_plot, showmeans=True, showmedians=False)
 
 # Customise violin appearance
-for pc in vparts["bodies"]:
+for pc in cast(list[PolyCollection], vparts["bodies"]):
     pc.set_facecolor("C0")
     pc.set_edgecolor("black")
     pc.set_alpha(0.7)
@@ -650,11 +652,11 @@ display_dataframe(df_stats)
 @ray.remote(num_cpus=1)
 def simulate_local_tolerance(
     trial_idx: int,
-    dw_per_res: np.ndarray | ray.ObjectRef,
-    dg_per_res: np.ndarray | ray.ObjectRef,
-    freq: jnp.ndarray | ray.ObjectRef,
-    netlist: dict[str, Any] | ray.ObjectRef,
-    models: dict[str, Any] | ray.ObjectRef,
+    dw_per_res: np.ndarray,
+    dg_per_res: np.ndarray,
+    freq: jnp.ndarray,
+    netlist: dict[str, Any],
+    models: dict[str, Any],
     res_names: list[str],
     non_res_names: list[str],
 ) -> tuple[np.ndarray, np.ndarray]:

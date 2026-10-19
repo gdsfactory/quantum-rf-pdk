@@ -31,15 +31,16 @@ References:
 """
 
 import math
-from functools import partial
 
 import jax
 import jax.numpy as jnp
 import sax
+from jax.typing import ArrayLike
 from sax.models.rf import capacitor, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, h
 from qpdk.models.generic import lc_resonator
+from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
 
 # ---------------------------------------------------------------------------
@@ -47,8 +48,8 @@ from qpdk.models.waveguides import straight_shorted
 # ---------------------------------------------------------------------------
 
 
-@partial(jax.jit, inline=True)
-def el_to_arm_inductance(el_ghz: float) -> float:
+@jit(inline=True)
+def el_to_arm_inductance(el_ghz: ArrayLike) -> jax.Array:
     r"""Convert inductive energy :math:`E_\text{L}` to geometric inductance of one arm :math:`L`.
 
     The total inductive energy :math:`E_\text{L}` of the unimon is related to the
@@ -75,7 +76,7 @@ def el_to_arm_inductance(el_ghz: float) -> float:
         >>> L = el_to_arm_inductance(5.0)  # 5 GHz inductive energy
         >>> print(f"{L * 1e9:.2f} nH")
     """
-    el_joules = el_ghz * 1e9 * h
+    el_joules = jnp.asarray(el_ghz) * 1e9 * h
     return Φ_0**2 / (8 * math.pi**2 * el_joules)
 
 

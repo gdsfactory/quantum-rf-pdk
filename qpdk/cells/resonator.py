@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, cast
 
 import gdsfactory as gf
 import numpy as np
@@ -11,6 +10,7 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
 from qpdk.cells._schematic import (
+    attach_schematic,
     quarter_wave_resonator_coupled_schematic,
     resonator_coupled_schematic,
     resonator_half_wave_schematic,
@@ -21,7 +21,7 @@ from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.tech import get_etch_section
 
 
-@gf.cell(tags=("resonators",), schematic_function=resonator_schematic)
+@gf.cell(tags=["resonators"], schematic_function=resonator_schematic)
 def resonator(
     length: float = 4000.0,
     meanders: int = 6,
@@ -124,6 +124,8 @@ def resonator(
             if i == 0:
                 first_ref = straight_ref
             else:
+                if previous_port is None:
+                    raise ValueError("previous_port is required but not initialized.")
                 straight_ref.connect("o1", previous_port)
 
             bend_ref = c.add_ref(bend)
@@ -207,7 +209,7 @@ def resonator(
     return c
 
 
-resonator.schematic_function = resonator_schematic
+attach_schematic(resonator, resonator_schematic)
 
 
 # A quarter-wave resonator is shorted at one end and has maximum electric field
@@ -241,7 +243,7 @@ for _resonator_factory in (
     resonator_quarter_wave_bend_end,
     resonator_quarter_wave_bend_both,
 ):
-    cast(Any, _resonator_factory).schematic_function = resonator_quarter_wave_schematic
+    attach_schematic(_resonator_factory, resonator_quarter_wave_schematic)
 
 for _resonator_factory in (
     resonator_half_wave,
@@ -249,11 +251,11 @@ for _resonator_factory in (
     resonator_half_wave_bend_end,
     resonator_half_wave_bend_both,
 ):
-    cast(Any, _resonator_factory).schematic_function = resonator_half_wave_schematic
+    attach_schematic(_resonator_factory, resonator_half_wave_schematic)
 
 
 @gf.cell(
-    tags=("resonators", "couplers"),
+    tags=["resonators", "couplers"],
     schematic_function=resonator_coupled_schematic,
 )
 def resonator_coupled(
@@ -348,11 +350,11 @@ def resonator_coupled(
     return c
 
 
-resonator_coupled.schematic_function = resonator_coupled_schematic
+attach_schematic(resonator_coupled, resonator_coupled_schematic)
 
 
 @gf.cell(
-    tags=("resonators", "couplers"),
+    tags=["resonators", "couplers"],
     schematic_function=quarter_wave_resonator_coupled_schematic,
 )
 def quarter_wave_resonator_coupled(
@@ -431,6 +433,6 @@ def quarter_wave_resonator_coupled(
     return c
 
 
-quarter_wave_resonator_coupled.schematic_function = (
-    quarter_wave_resonator_coupled_schematic
+attach_schematic(
+    quarter_wave_resonator_coupled, quarter_wave_resonator_coupled_schematic
 )

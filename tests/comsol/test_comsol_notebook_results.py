@@ -150,7 +150,8 @@ def test_new_qubit_solve_invalidates_the_previous_field(
         node
         for node in tree.body
         if isinstance(node, ast.If)
-        and ast.get_source_segment(cell, node.test) == "RUN_COMSOL and MPH_AVAILABLE"
+        and ast.get_source_segment(cell, node.test)
+        == "RUN_COMSOL and mph is not None and COMSOL is not None"
     )
     source = ast.get_source_segment(cell, solve)
     assert source is not None
@@ -200,6 +201,7 @@ def test_new_qubit_solve_invalidates_the_previous_field(
         "AIR_HEIGHT_UM": 200.0,
         "SILICON_RELATIVE_PERMITTIVITY": 11.7,
         "write_json_atomically": write_json_atomically,
+        "np": np,
     }
 
     with pytest.raises(RuntimeError, match="export failed"):

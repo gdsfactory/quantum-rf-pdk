@@ -131,7 +131,8 @@ def test_etch_margin_widens_the_cpw_gap():
 
     def contains(component: gf.Component) -> bool:
         shapes = component.get_polygons(merge=True, by="tuple", layers=[LAYER.M1_DRAW])
-        return any(shape.inside(point) for shape in shapes[tuple(LAYER.M1_DRAW)])
+        layer, datatype = LAYER.M1_DRAW
+        return any(shape.inside(point) for shape in shapes[layer, datatype])
 
     assert contains(plain)
     assert not contains(widened)

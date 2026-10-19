@@ -1,6 +1,6 @@
 """Tests for qpdk.models.capacitor module."""
 
-from typing import final
+from typing import final, override
 
 import jax.numpy as jnp
 from numpy.testing import assert_array_less
@@ -21,6 +21,7 @@ class TestPlateCapacitor(TwoPortModelTestSuite):
 
     model_function = staticmethod(plate_capacitor)
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 26.0, "width": 5.0, "gap": 7.0}

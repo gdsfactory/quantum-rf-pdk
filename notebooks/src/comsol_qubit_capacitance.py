@@ -172,7 +172,8 @@ else:
 component = double_pad_transmon_with_bbox(bbox_extension=200.0)
 
 junction_port = component.ports["junction"]
-JUNCTION_CENTER_UM = tuple(junction_port.center)
+junction_x, junction_y = junction_port.center
+JUNCTION_CENTER_UM = (junction_x, junction_y)
 
 em_component = component.copy()
 em_component.remove_layers(layers=[LAYER.JJ_AREA, LAYER.JJ_PATCH])
@@ -316,7 +317,7 @@ if RUN_COMSOL and not MPH_AVAILABLE:
 # %%
 model = None
 
-if RUN_COMSOL and MPH_AVAILABLE:
+if RUN_COMSOL and mph is not None and COMSOL is not None:
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     client = mph.start(cores=CORES)
     model = COMSOL.create_sheet(
@@ -353,8 +354,8 @@ if RUN_COMSOL and MPH_AVAILABLE:
     (MODEL_DIR / FIELD_TXT).unlink(missing_ok=True)
     model.save(MODEL_PATH)
 
-    capacitance_f = float(model.evaluate("es.C11"))
-    stored_energy_j = float(model.evaluate("es.intWe"))
+    capacitance_f = float(np.asarray(model.evaluate("es.C11")))
+    stored_energy_j = float(np.asarray(model.evaluate("es.intWe")))
     print(f"es.C11 = {capacitance_f:.6e} F")
     print(f"es.intWe = {stored_energy_j:.6e} J")
     print(f"2*intWe/V^2 = {2.0 * stored_energy_j / VOLTAGE_V**2:.6e} F")

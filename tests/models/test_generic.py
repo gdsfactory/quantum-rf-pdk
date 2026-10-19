@@ -1,7 +1,7 @@
 """Tests for qpdk.models.generic module - LC resonator models."""
 
 from collections.abc import Callable
-from typing import final
+from typing import final, override
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
@@ -46,6 +46,7 @@ class TestLCResonator(TwoPortModelTestSuite):
     model_function = lc_resonator
     freq_range = (1e9, 30e9)
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
@@ -170,6 +171,7 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
     model_function = lc_resonator_coupled
     freq_range = (1e9, 30e9)
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""

@@ -18,20 +18,21 @@ References:
 """
 
 import math
-from functools import partial
 
 import jax
 import jax.numpy as jnp
 import sax
+from jax.typing import ArrayLike
 from sax.models.rf import capacitor, electrical_short, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
+from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
 
 
-@partial(jax.jit, inline=True)
-def ec_to_capacitance(ec_ghz: float) -> float:
+@jit(inline=True)
+def ec_to_capacitance(ec_ghz: ArrayLike) -> jax.Array:
     r"""Convert charging energy :math:`E_\text{C}` to total capacitance :math:`C_\Sigma`.
 
     The charging energy is related to capacitance by:
@@ -52,12 +53,12 @@ def ec_to_capacitance(ec_ghz: float) -> float:
         >>> C = ec_to_capacitance(0.2)  # 0.2 GHz (200 MHz) charging energy
         >>> print(f"{C * 1e15:.1f} fF")  # ~96 fF
     """
-    ec_joules = ec_ghz * 1e9 * h  # Convert GHz to Joules
+    ec_joules = jnp.asarray(ec_ghz) * 1e9 * h  # Convert GHz to Joules
     return e**2 / (2 * ec_joules)
 
 
-@partial(jax.jit, inline=True)
-def ej_to_inductance(ej_ghz: float) -> float:
+@jit(inline=True)
+def ej_to_inductance(ej_ghz: ArrayLike) -> jax.Array:
     r"""Convert Josephson energy :math:`E_\text{J}` to Josephson inductance :math:`L_\text{J}`.
 
     The Josephson energy is related to inductance by:
@@ -84,20 +85,20 @@ def ej_to_inductance(ej_ghz: float) -> float:
         >>> L = ej_to_inductance(20.0)  # 20 GHz Josephson energy
         >>> print(f"{L * 1e9:.2f} nH")  # ~1.0 nH
     """
-    ej_joules = ej_ghz * 1e9 * h  # Convert GHz to Joules
+    ej_joules = jnp.asarray(ej_ghz) * 1e9 * h  # Convert GHz to Joules
     return Φ_0**2 / (4 * math.pi**2 * ej_joules)
 
 
 el_to_inductance = ej_to_inductance
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def coupling_strength_to_capacitance(
-    g_ghz: float,
-    c_sigma: float,
-    c_r: float,
-    f_q_ghz: float,
-    f_r_ghz: float,
+    g_ghz: ArrayLike,
+    c_sigma: ArrayLike,
+    c_r: ArrayLike,
+    f_q_ghz: ArrayLike,
+    f_r_ghz: ArrayLike,
 ) -> jax.Array:
     r"""Convert coupling strength :math:`g` to coupling capacitance :math:`C_\text{c}`.
 
@@ -139,10 +140,10 @@ def coupling_strength_to_capacitance(
     # Use frequencies directly (already in GHz, ratio is dimensionless)
     sqrt_freq = jnp.sqrt(f_q_ghz * f_r_ghz)
     sqrt_c = jnp.sqrt(c_sigma * c_r)
-    return 2 * g_ghz / sqrt_freq * sqrt_c
+    return 2 * jnp.asarray(g_ghz) / sqrt_freq * sqrt_c
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def fluxonium(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 10e-15,
@@ -199,20 +200,20 @@ def fluxonium(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def fluxonium_with_bbox(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 10e-15,
     josephson_inductance: float = 10e-9,
     superinductance: float = 500e-9,
     ground_capacitance: float = 0.0,
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a fluxonium qubit with bounding box ports.
 
     This model is the same as :func:`fluxonium`.
 
     Returns:
-        sax.SType: S-parameters dictionary.
+        sax.SDict: S-parameters dictionary.
     """
     return fluxonium(
         f=f,
@@ -223,12 +224,12 @@ def fluxonium_with_bbox(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def double_island_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 7e-9,
-    ground_capacitance: float = 0.0,
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     r"""LC resonator model for a double-island transmon qubit.
 
@@ -275,19 +276,19 @@ def double_island_transmon(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def double_island_transmon_with_bbox(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 7e-9,
-    ground_capacitance: float = 0.0,
-) -> sax.SType:
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
+) -> sax.SDict:
     """LC resonator model for a double-island transmon qubit with bounding box ports.
 
     This model is the same as :func:`double_island_transmon`.
 
     Returns:
-        sax.SType: S-parameters dictionary.
+        sax.SDict: S-parameters dictionary.
     """
     return double_island_transmon(
         f=f,
@@ -297,19 +298,19 @@ def double_island_transmon_with_bbox(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def flipmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 7e-9,
-    ground_capacitance: float = 0.0,
-) -> sax.SType:
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
+) -> sax.SDict:
     r"""LC resonator model for a flipmon qubit.
 
     This model is identical to :func:`double_island_transmon`.
 
     Returns:
-        sax.SType: S-parameters dictionary.
+        sax.SDict: S-parameters dictionary.
     """
     return double_island_transmon(
         f=f,
@@ -319,19 +320,19 @@ def flipmon(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def flipmon_with_bbox(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 7e-9,
-    ground_capacitance: float = 0.0,
-) -> sax.SType:
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
+) -> sax.SDict:
     """LC resonator model for a flipmon qubit with bounding box ports.
 
     This model is the same as :func:`flipmon`.
 
     Returns:
-        sax.SType: S-parameters dictionary.
+        sax.SDict: S-parameters dictionary.
     """
     return flipmon(
         f=f,
@@ -341,12 +342,12 @@ def flipmon_with_bbox(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def shunted_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 7e-9,
-    ground_capacitance: float = 0.0,
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     r"""LC resonator model for a shunted transmon qubit.
 
@@ -393,15 +394,15 @@ def shunted_transmon(
     )
 
 
-@partial(jax.jit, static_argnames=["grounded"])
+@jit(static_argnames=["grounded"])
 def transmon_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 1e-9,
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 1e-9,
     grounded: bool = False,
-    ground_capacitance: float = 0.0,
-    coupling_capacitance: float = 10e-15,
-    coupling_inductance: float = 0.0,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
+    coupling_capacitance: sax.FloatArrayLike = 10e-15,
+    coupling_inductance: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     r"""Coupled transmon qubit model.
 
@@ -454,7 +455,7 @@ def transmon_coupled(
     )
 
 
-@partial(jax.jit)
+@jit
 def fluxonium_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: float = 10e-15,
@@ -736,18 +737,18 @@ def transmon_with_resonator(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def xmon_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 7e-9,
-) -> sax.SType:
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+) -> sax.SDict:
     """LC resonator model for an Xmon style transmon qubit.
 
     An Xmon transmon is typically shunted, so this model wraps :func:`shunted_transmon`.
 
     Returns:
-        sax.SType: S-parameters dictionary.
+        sax.SDict: S-parameters dictionary.
     """
     return shunted_transmon(
         f=f,
@@ -756,12 +757,12 @@ def xmon_transmon(
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def double_pad_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 7e-9,
-    ground_capacitance: float = 0.0,
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     """LC resonator model for a double-pad transmon qubit.
 
