@@ -17,8 +17,47 @@ from qpdk.cells._schematic import (
     resonator_quarter_wave_schematic,
     resonator_schematic,
 )
-from qpdk.cells.waveguides import bend_circular, straight
+from qpdk.cells.resonator_sections import resonator_meander
+from qpdk.cells.waveguides import (
+    bend_circular,
+    coupler_straight,
+    open_2_port,
+    short,
+    straight,
+)
 from qpdk.tech import get_etch_section
+
+
+def _resonator_straight(
+    length: float,
+    meanders: int,
+    bend: Component,
+    cross_section: CrossSectionSpec,
+    *,
+    start_with_bend: bool,
+    end_with_bend: bool,
+) -> tuple[int, Component | None, float]:
+    """Return the snapped straight section and realized resonator length."""
+    straight_count = meanders + 1 - int(start_with_bend) - int(end_with_bend)
+    if straight_count < 0:
+        raise ValueError(
+            "Cannot have fewer than 0 straight sections. Reduce meanders or adjust bend start/end settings."
+        )
+
+    bend_length = meanders * bend.info["length"]
+    if straight_count == 0:
+        return straight_count, None, bend_length
+
+    straight_length = (length - bend_length) / straight_count
+    if straight_length <= 0:
+        raise ValueError(
+            f"Resonator length {length} is too short for {meanders} meanders with current bend spec {bend}. "
+            "Increase length, reduce meanders, or change the bend spec."
+        )
+
+    straight_comp = straight(length=straight_length, cross_section=cross_section)
+    actual_length = bend_length + straight_count * straight_comp.info["length"]
+    return straight_count, straight_comp, actual_length
 
 
 @gf.cell(tags=["resonators"], schematic_function=resonator_schematic)
@@ -74,33 +113,14 @@ def resonator(
         bend_spec, cross_section=cross_section, angle=180, angular_step=4
     )
 
-    num_straights = meanders + 1
-    if start_with_bend:
-        num_straights -= 1
-    if end_with_bend:
-        num_straights -= 1
-
-    if num_straights < 0:
-        raise ValueError(
-            "Cannot have fewer than 0 straight sections. Reduce meanders or adjust bend start/end settings."
-        )
-
-    straight_comp = None
-    if num_straights > 0:
-        length_per_one_straight = (
-            length - meanders * bend.info["length"]
-        ) / num_straights
-
-        if length_per_one_straight <= 0:
-            raise ValueError(
-                f"Resonator length {length} is too short for {meanders} meanders with current bend spec {bend}. "
-                f"Increase length, reduce meanders, or change the bend spec."
-            )
-
-        straight_comp = straight(
-            length=length_per_one_straight,
-            cross_section=cross_section,
-        )
+    _, straight_comp, actual_length = _resonator_straight(
+        length,
+        meanders,
+        bend,
+        cross_section,
+        start_with_bend=start_with_bend,
+        end_with_bend=end_with_bend,
+    )
 
     # Route meandering quarter-wave resonator
     previous_port = None
@@ -151,12 +171,6 @@ def resonator(
 
     if first_ref is None or last_ref is None:
         raise ValueError("Resonator could not be generated correctly.")
-
-    actual_length = meanders * bend.info["length"]
-    if num_straights > 0:
-        if straight_comp is None:
-            raise ValueError("straight_comp is required but not initialized.")
-        actual_length += num_straights * straight_comp.info["length"]
 
     # Etch at the open end
     if open_end or open_start:
@@ -371,8 +385,10 @@ def quarter_wave_resonator_coupled(
 ) -> Component:
     """Creates a quarter-wave resonator with a coupling waveguide.
 
-    Uses :func:`~qpdk.cells.resonator.resonator_coupled` as the basis but
-    removes the shorted end port from the output ports.
+    Composes a straight coupler, the meander, and explicit open and short
+    terminations. The meander starts at the coupler output so that the trace
+    leaves the coupling gap at ``coupling_straight_length``. Layouts with no
+    usable first straight section retain the unsplit coupled-resonator cell.
 
     The terminations are fixed: the coupled end is open and the far end is
     shorted. Use :func:`~qpdk.cells.resonator.resonator_coupled` if other
@@ -405,30 +421,91 @@ def quarter_wave_resonator_coupled(
 
     Returns:
         The coupled quarter-wave resonator component.
+
+    Raises:
+        ValueError: If the requested length is too short for its meanders.
     """
     c = Component()
+    cross_section_obj = gf.get_cross_section(cross_section)
+    bend = gf.get_component(
+        bend_spec,
+        cross_section=cross_section_obj,
+        angle=180,
+        angular_step=4,
+    )
+    first_straight_length = 0.0
+    actual_length = length
+    if not start_with_bend and meanders > 0:
+        _, first_straight, actual_length = _resonator_straight(
+            length,
+            meanders,
+            bend,
+            cross_section_obj,
+            start_with_bend=False,
+            end_with_bend=end_with_bend,
+        )
+        if first_straight is None:
+            raise ValueError("A coupling section requires a first straight section.")
+        first_straight_length = gf.snap.snap_to_grid(first_straight.info["length"])
 
-    res_ref = c << resonator_coupled(
-        length=length,
+    if (
+        start_with_bend
+        or meanders == 0
+        or coupling_straight_length >= first_straight_length
+    ):
+        res_ref = c << resonator_coupled(
+            length=length,
+            meanders=meanders,
+            bend_spec=bend_spec,
+            cross_section=cross_section,
+            start_with_bend=start_with_bend,
+            end_with_bend=end_with_bend,
+            open_start=True,
+            open_end=False,
+            cross_section_non_resonator=cross_section_non_resonator,
+            coupling_straight_length=coupling_straight_length,
+            coupling_gap=coupling_gap,
+        )
+        res_ref.move(tuple(-np.array(res_ref.ports["coupling_o1"].center)))
+        short_ref = c << short()
+        short_ref.connect("o1", res_ref.ports["resonator_o2"])
+        for port in res_ref.ports:
+            if port.name != "resonator_o2":
+                c.add_port(port=port)
+        c.info += res_ref.cell.info
+        return c
+
+    coupling_ref = c << coupler_straight(
+        length=coupling_straight_length,
+        gap=coupling_gap,
+        cross_section=cross_section,
+        cross_section_non_resonator=cross_section_non_resonator,
+        resonator_offset=get_etch_section(cross_section_obj).width,
+    )
+    coupling_ref.move(tuple(-np.array(coupling_ref.ports["o2"].center)))
+    open_ref = c << open_2_port(cross_section=cross_section)
+    open_ref.connect("o1", coupling_ref.ports["o1"])
+    # A straight lead-out here would run parallel to the probeline and make
+    # the coupled length longer than ``coupling_straight_length``.
+    meander_ref = c << resonator_meander(
+        length=actual_length - coupling_straight_length,
         meanders=meanders,
         bend_spec=bend_spec,
         cross_section=cross_section,
-        start_with_bend=start_with_bend,
         end_with_bend=end_with_bend,
-        open_start=True,
-        open_end=False,
-        cross_section_non_resonator=cross_section_non_resonator,
-        coupling_straight_length=coupling_straight_length,
-        coupling_gap=coupling_gap,
     )
-    movement = np.array(res_ref.ports["coupling_o1"].center)
-    res_ref.move(tuple(-movement))
+    meander_ref.connect("o1", coupling_ref.ports["o4"])
 
-    for port in res_ref.ports:
-        if port.name != "resonator_o2":  # Skip the shorted end port
-            c.add_port(port=port)
-
-    c.info += res_ref.cell.info
+    short_ref = c << short()
+    short_ref.connect("o1", meander_ref.ports["o2"])
+    c.add_port("coupling_o1", port=coupling_ref.ports["o2"])
+    c.add_port("coupling_o2", port=coupling_ref.ports["o3"])
+    c.add_port("resonator_o1", port=open_ref.ports["o2"])
+    c.info["length"] = coupling_straight_length + meander_ref.cell.info["length"]
+    c.info["resonator_type"] = "quarter_wave"
+    c.info["cross_section_name"] = gf.get_cross_section(cross_section).name
+    c.info["coupling_length"] = coupling_straight_length
+    c.info["coupling_gap"] = coupling_gap
 
     return c
 

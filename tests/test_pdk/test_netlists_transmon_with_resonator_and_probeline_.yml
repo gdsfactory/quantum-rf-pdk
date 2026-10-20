@@ -23,8 +23,10 @@ instances:
     info: {}
     settings:
       cross_section: cpw
+      cross_section_non_resonator: null
       gap: 16
       length: 800
+      resonator_offset: 0
   double_pad_transmon_with_bbox:
     component: double_pad_transmon_with_bbox
     info: {}

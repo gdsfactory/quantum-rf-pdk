@@ -5,11 +5,16 @@ from collections.abc import Callable
 from importlib import import_module
 from unittest.mock import Mock
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
 import sax
 
+from qpdk.cells.resonator import (
+    quarter_wave_resonator_coupled as quarter_wave_resonator_coupled_cell,
+)
+from qpdk.models import models
 from qpdk.models.generic import open as open_model, short as short_model
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
@@ -19,6 +24,7 @@ from qpdk.models.resonator import (
     resonator_half_wave,
     resonator_quarter_wave,
 )
+from qpdk.models.resonator_sections import resonator_meander
 from qpdk.tech import coplanar_waveguide
 
 resonator_models = import_module("qpdk.models.resonator")
@@ -117,6 +123,55 @@ def test_explicit_open_and_short_match_quarter_wave_model() -> None:
 
     for key in explicit:
         np.testing.assert_allclose(explicit[key], expected[key], rtol=1e-10, atol=1e-10)
+
+
+@pytest.mark.parametrize(
+    "layout_settings",
+    [
+        {},
+        {"end_with_bend": True, "meanders": 3},
+        {"start_with_bend": True},
+        {"meanders": 0},
+        {"meanders": 1},
+        {"coupling_straight_length": 500.0},
+    ],
+)
+def test_layout_netlist_matches_whole_device_model(
+    layout_settings: dict[str, int | bool | float],
+) -> None:
+    """The extracted layout netlist retains the whole-device RF response."""
+    frequencies = jnp.linspace(4e9, 10e9, 101)
+    layout = quarter_wave_resonator_coupled_cell(**layout_settings)
+    netlist = layout.get_netlist()
+    circuit, _ = sax.circuit(
+        netlist, models=models, ignore_impossible_connections=False
+    )
+    section_response = circuit(f=frequencies)
+    modeled_length = sum(
+        instance["settings"]["length"]
+        for instance in netlist["instances"].values()
+        if instance["component"]
+        in {"resonator_coupled", "resonator_meander", "straight"}
+        or (instance["component"] == "coupler_straight")
+    )
+    assert abs(modeled_length - layout.info["length"]) <= 0.003
+    whole_response = quarter_wave_resonator_coupled(
+        f=frequencies,
+        length=modeled_length,
+        coupling_straight_length=float(
+            layout_settings.get("coupling_straight_length", 200.0)
+        ),
+    )
+    for key in whole_response:
+        np.testing.assert_allclose(
+            section_response[key], whole_response[key], rtol=1e-10, atol=1e-10
+        )
+
+
+@pytest.mark.parametrize("model", [resonator_meander])
+def test_resonator_section_models_jit(model: Callable[..., sax.SDict]) -> None:
+    response = jax.jit(model)(f=jnp.array([5e9]))
+    assert all(jnp.isfinite(value).all() for value in response.values())
 
 
 class TestResonatorCoupled:

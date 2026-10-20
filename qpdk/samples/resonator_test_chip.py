@@ -128,21 +128,33 @@ def resonator_test_chip_python(
         # Add resonators along the probeline
         lengths = resonator_lengths[probeline_idx::2]
         resonator_spacing = probeline_length / (n_resonators_per_probeline + 1)
-
-        previous_port = launcher_west.ports["o1"]
-        for res_idx in range(n_resonators_per_probeline):
-            # Calculate resonator position along probeline
-            x_position = (res_idx + 1) * resonator_spacing
-
-            # Create quarter-wave resonator with unique length.
-            coupled_resonator = quarter_wave_resonator_coupled(
-                length=float(lengths[res_idx]),
+        resonators = [
+            quarter_wave_resonator_coupled(
+                length=float(length),
                 meanders=6,
                 cross_section=cross_section,
                 cross_section_non_resonator=cross_section,
                 coupling_straight_length=coupling_length,
                 coupling_gap=coupling_gap,
             )
+            for length in lengths
+        ]
+        # The meander is asymmetric around its port, so shift the uniform grid
+        # to balance the clearance at both launchers.
+        west_edge = launcher_west.ports["o1"].center[0]
+        east_edge = launcher_east.ports["o1"].center[0]
+        first_x = (
+            west_edge
+            + east_edge
+            - (n_resonators_per_probeline - 1) * resonator_spacing
+            - resonators[0].dbbox().p1.x
+            - resonators[-1].dbbox().p2.x
+        ) / 2
+
+        previous_port = launcher_west.ports["o1"]
+        for res_idx, coupled_resonator in enumerate(resonators):
+            # Calculate resonator position along probeline
+            x_position = first_x + res_idx * resonator_spacing
             resonator_ref = c.add_ref(
                 coupled_resonator,
                 name=f"resonator_{probeline_name}_{res_idx + 1}",

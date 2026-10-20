@@ -13,6 +13,7 @@ from qpdk.models.couplers import (
     cpw_cpw_coupling_capacitance,
     cpw_cpw_coupling_capacitance_per_length_analytical,
 )
+from qpdk.tech import coplanar_waveguide
 
 from .base import FourPortModelTestSuite
 
@@ -29,6 +30,18 @@ class TestCouplerStraight(FourPortModelTestSuite):
     """Tests for coupler_straight model."""
 
     model_function = coupler_straight
+
+    @staticmethod
+    def test_upper_bus_cross_section_changes_response() -> None:
+        """The bus override changes the upper path while keeping the resonator path."""
+        frequencies = jnp.array([5e9, 6e9])
+        baseline = coupler_straight(f=frequencies, length=200)
+        modified = coupler_straight(
+            f=frequencies,
+            length=200,
+            cross_section_non_resonator=coplanar_waveguide(width=20, gap=10),
+        )
+        assert not jnp.allclose(modified["o3", "o2"], baseline["o3", "o2"])
 
 
 class TestCPWCouplingCapacitanceAnalytical:

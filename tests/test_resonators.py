@@ -218,6 +218,67 @@ class TestQuarterWaveResonatorCoupled:
     """Test the fixed three-port quarter-wave coupled resonator."""
 
     @staticmethod
+    def test_coupling_region_ends_at_coupler() -> None:
+        """The meander starts at the coupler output, with no lead-out straight.
+
+        A straight there would run parallel to the probeline at the same gap
+        and become the effective coupled length.
+        """
+        component = quarter_wave_resonator_coupled(
+            length=4000.0, coupling_straight_length=200.0, coupling_gap=16.0
+        )
+        netlist = component.get_netlist()
+
+        assert "straight" not in {
+            instance["component"] for instance in netlist["instances"].values()
+        }
+        assert frozenset({"coupler_straight,o4", "resonator_meander,o1"}) in {
+            frozenset(net.values()) for net in netlist["nets"]
+        }
+
+        meander = next(
+            instance
+            for instance in netlist["instances"].values()
+            if instance["component"] == "resonator_meander"
+        )
+        assert component.info["length"] == pytest.approx(4000.0, abs=1.0)
+        assert meander["settings"]["length"] == pytest.approx(
+            component.info["length"] - 200.0, abs=0.01
+        )
+
+    @staticmethod
+    def test_short_resonator_reports_original_length() -> None:
+        """Validation refers to the requested device rather than a sub-section."""
+        with pytest.raises(
+            ValueError, match="Resonator length 1800 is too short for 6 meanders"
+        ):
+            quarter_wave_resonator_coupled(length=1800, meanders=6)
+
+    @staticmethod
+    @pytest.mark.parametrize(("meanders", "start_with_bend"), [(0, False), (2, True)])
+    def test_non_nested_quarter_wave_layouts(
+        meanders: int, start_with_bend: bool
+    ) -> None:
+        """Layouts without a coupling straight retain their three public ports."""
+        component = quarter_wave_resonator_coupled(
+            length=4000, meanders=meanders, start_with_bend=start_with_bend
+        )
+
+        assert {port.name for port in component.ports} == {
+            "coupling_o1",
+            "coupling_o2",
+            "resonator_o1",
+        }
+        assert component.info["resonator_type"] == "quarter_wave"
+        netlist = component.get_netlist()
+        assert {
+            instance["component"] for instance in netlist["instances"].values()
+        } == {"resonator_coupled", "short"}
+        assert {frozenset(net.values()) for net in netlist["nets"]} == {
+            frozenset({"resonator_coupled,resonator_o2", "short,o1"})
+        }
+
+    @staticmethod
     def test_terminations_are_not_public_settings() -> None:
         """Terminations are fixed, so the layout factory hides them."""
         parameters = inspect.signature(quarter_wave_resonator_coupled).parameters
@@ -237,11 +298,25 @@ class TestQuarterWaveResonatorCoupled:
         }
 
         netlist = c.get_netlist()
-        (instance,) = netlist["instances"].values()
-
-        assert instance["component"] == "resonator_coupled"
-        assert instance["settings"]["open_start"] is True
-        assert instance["settings"]["open_end"] is False
+        assert {
+            instance["component"] for instance in netlist["instances"].values()
+        } == {
+            "coupler_straight",
+            "open_2_port",
+            "resonator_meander",
+            "short",
+        }
+        assert {frozenset(net.values()) for net in netlist["nets"]} == {
+            frozenset({
+                "coupler_straight,o4",
+                "resonator_meander,o1",
+            }),
+            frozenset({
+                "coupler_straight,o1",
+                "open_2_port,o1",
+            }),
+            frozenset({"resonator_meander,o2", "short,o1"}),
+        }
         assert c.info["resonator_type"] == "quarter_wave"
 
         # Pin the etch geometry, not just the settings literals above: an
