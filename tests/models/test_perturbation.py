@@ -42,9 +42,9 @@ class TestDispersiveShift:
     def test_sign_for_negative_detuning() -> None:
         """Test sign convention for ω_t < ω_r (typical case)."""
         chi = dispersive_shift(5.0, 7.0, 0.2, 0.1)
-        # For negative detuning (ω_t < ω_r), χ should be positive
-        # since the dominant term has Δ < 0 and α > 0
-        assert chi > 0
+        # χ = ω_r(|1⟩) - ω_r(|0⟩), so for negative detuning (ω_t < ω_r) the
+        # dominant term -2g²α / (Δ(Δ-α)) is negative
+        assert chi < 0
 
     @staticmethod
     def test_quadratic_in_g() -> None:
@@ -88,7 +88,7 @@ class TestDispersiveShiftToCoupling:
         # Compute χ from g using only the dominant RWA term
         # (matching the inversion formula used in dispersive_shift_to_coupling)
         delta = omega_t - omega_r
-        chi_rwa = 2 * g_original**2 * alpha / (delta * (delta - alpha))
+        chi_rwa = -2 * g_original**2 * alpha / (delta * (delta - alpha))
 
         g_recovered = dispersive_shift_to_coupling(chi_rwa, omega_t, omega_r, alpha)
         assert math.isclose(g_recovered, g_original, rel_tol=1e-8)

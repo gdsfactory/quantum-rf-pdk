@@ -370,8 +370,11 @@ coupling strengths that feed back into the layout
     - Computing transmon qubit frequency (:math:`\omega_{01}`) and anharmonicity
       (:math:`\alpha`) from Josephson energy :math:`E_\text{J}` and charging energy
       :math:`E_\text{C}`.
-    - Calculating the dispersive shift :math:`\chi` of a transmon–resonator system for
+    - Analyzing fluxonium qubit spectra from :math:`E_\text{J}`, :math:`E_\text{C}`,
+      :math:`E_\text{L}`, and external flux.
+    - Calculating the dispersive shift :math:`\chi` of a qubit–resonator system for
       readout design.
+    - Comparing design trade-offs between transmon and fluxonium qubits.
     - Translating Hamiltonian-level parameters into physical layout dimensions.
 
 .. grid:: 1 1 3 3
@@ -382,8 +385,9 @@ coupling strengths that feed back into the layout
         :link-type: doc
         :class-card: notebook-card
 
-        Full numerical diagonalization of the transmon–resonator Hamiltonian
-        :cite:`groszkowskiScqubitsPythonPackage2021`, against perturbation theory.
+        Full numerical diagonalization of transmon– and fluxonium–resonator
+        Hamiltonians :cite:`groszkowskiScqubitsPythonPackage2021`, with a side-by-side
+        comparison of the two qubit modalities.
 
         +++
 

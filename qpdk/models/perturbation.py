@@ -101,19 +101,20 @@ def dispersive_shift(
 
     .. math::
 
-        \chi = \frac{2g^2}{\Delta - \alpha}
-             - \frac{2g^2}{\Delta}
-             - \frac{2g^2}{\omega_\text{t} + \omega_\text{r} + \alpha}
-             + \frac{2g^2}{\omega_\text{t} + \omega_\text{r}}
+        \chi = \frac{2g^2}{\Delta}
+             - \frac{2g^2}{\Delta - \alpha}
+             - \frac{2g^2}{\omega_\text{t} + \omega_\text{r}}
+             + \frac{2g^2}{\omega_\text{t} + \omega_\text{r} + \alpha}
 
     where :math:`\Delta = \omega_\text{t} - \omega_\text{r}`.  The first two terms give
     the rotating-wave-approximation (RWA) contribution
 
     .. math::
 
-        \chi_\text{RWA} = \frac{2 \alpha g^2}{\Delta(\Delta - \alpha)}
+        \chi_\text{RWA} = \frac{-2 \alpha g^2}{\Delta(\Delta - \alpha)}
 
     and the last two are corrections from the counter-rotating terms.
+    The sign follows the convention :math:`\chi = \omega_{r, |1\rangle} - \omega_{r, |0\rangle}`.
 
     All parameters are in GHz, and the returned value is also in GHz.
 
@@ -139,11 +140,12 @@ def dispersive_shift(
     Δ = ω_t_ghz - ω_r_ghz
 
     # Full expression including counter-rotating terms
+    # Convention: chi = omega_r(1) - omega_r(0)
     return (
-        2 * g_ghz**2 / (Δ - α_ghz)
-        - 2 * g_ghz**2 / Δ
-        - 2 * g_ghz**2 / (ω_t_ghz + ω_r_ghz + α_ghz)
-        + 2 * g_ghz**2 / (ω_t_ghz + ω_r_ghz)
+        2 * g_ghz**2 / Δ
+        - 2 * g_ghz**2 / (Δ - α_ghz)
+        - 2 * g_ghz**2 / (ω_t_ghz + ω_r_ghz)
+        + 2 * g_ghz**2 / (ω_t_ghz + ω_r_ghz + α_ghz)
     )
 
 
