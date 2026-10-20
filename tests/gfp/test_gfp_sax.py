@@ -181,7 +181,7 @@ def test_resonator_test_chip_sax_simulation(source: str, tmp_path: Path) -> None
             wl_max=_SPEED_OF_LIGHT_UM_PER_S / _F_MIN_HZ,
             wl_num=3,
             project_root=str(tmp_path),
-            sweep_frequency=True,
+            sweep_axis="f",
         )
     else:
         info = sax_sim.inspect_layout_sax_models(str(_GSCH_PATH), "qpdk.PDK")
@@ -191,7 +191,7 @@ def test_resonator_test_chip_sax_simulation(source: str, tmp_path: Path) -> None
             wl_min=_SPEED_OF_LIGHT_UM_PER_S / _F_MAX_HZ,
             wl_max=_SPEED_OF_LIGHT_UM_PER_S / _F_MIN_HZ,
             wl_num=3,
-            sweep_frequency=True,
+            sweep_axis="f",
         )
 
     _assert_model_boundaries(info)
