@@ -44,7 +44,7 @@
 #
 # ```{mermaid}
 # :alt: The pipeline: transmon cell, EM-only copy with the junction layers removed, extracted layout of pads and ground plane, sheet model with air over silicon, Electrostatics solve driving the left pad, mesh, and the capacitance, energy, and field results.
-# flowchart LR
+# flowchart TB
 #     A["Transmon cell"] --> B["EM-only copy"] --> C["Extracted layout"] --> D["Sheet model"] --> E["Electrostatics"] --> F["Mesh, stationary solve"] --> G["C11, intWe, V, normE"]
 # ```
 #

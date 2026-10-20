@@ -46,7 +46,7 @@
 #
 # :::{mermaid}
 # :alt: A FEM solve per geometry is swept over a parameter grid and stored as Parquet parts or a Delta table carrying its metadata; the dataset is arranged into a dense grid, wrapped in a jittable interpolator, and called from a SAX model.
-# flowchart LR
+# flowchart TB
 #     A["FEM solve<br/>per geometry"] --> B["Sweep over<br/>parameter grid"]
 #     B --> C["Parquet parts or<br/>Delta table + metadata"]
 #     C --> D["Dataset.grid<br/>dense array"]
