@@ -277,6 +277,9 @@ quantum-rf-pdk/
 We welcome contributions of all sizes: new components, improved models, bug fixes, documentation, and notebook
 tutorials. Please see the [contributing guide](docs/contributing.md) to get started.
 
+To build a PDK for your own fabrication process on top of QPDK, see
+[Customizing QPDK for Your Process](docs/customizing.md).
+
 ## Support
 
 For commercial support, training, and custom PDK development, please visit

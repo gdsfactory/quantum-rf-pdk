@@ -9,6 +9,9 @@ models. Please keep pull requests focused, documented, and easy to review.
 - Keep changeset size reasonable; split large efforts into smaller, reviewable chunks.
 - Add or update tests and documentation alongside code changes.
 
+To adapt QPDK to your own fabrication process rather than contribute to it, see
+[Customizing QPDK for Your Process](customizing.md).
+
 ## Installation for Contributors
 
 This project uses [uv](https://github.com/astral-sh/uv) for Python package management and
