@@ -303,6 +303,10 @@ display(
 
 # %%
 _a_plus_adag = resonator.annihilation_operator() + resonator.creation_operator()
+g_sweep = jnp.linspace(0.01, 0.3, 200)
+# Use effective coupling g_01 for analytical sweep
+chi_sweep_analytical = jnp.array([
+    dispersive_shift(omega_t_val, omega_r_val, alpha_val, gi * n_01) for gi in g_sweep
 ])
 
 
@@ -521,7 +525,7 @@ interaction_flx = scq.InteractionTerm(
         (1, _a_plus_adag_flx),
     ],
 )
-hilbert_space_flx.interaction_list = [interaction_flx]
+hilbert_space_flx.interaction_list = (interaction_flx,)
 
 evals_flx, evecs_flx = hilbert_space_flx.eigensys(evals_count=20)
 evecs_flx = np.array([np.array(v.full()).flatten() for v in evecs_flx])
