@@ -68,14 +68,15 @@ def _repair_svgbob_svgs(root):
     # typsphinx rewrites image URIs source-root-relative, so the SVGs end up
     # nested one _build/typstpdf deeper than the compile root.
     for svg_path in root.rglob("*.svg"):
-        src = svg_path.read_text()
+        src = svg_path.read_text(encoding="utf-8")
         if "Iosevka Fixed" not in src:
             continue
         svg_path.write_text(
             src.replace(
                 "font-family: Iosevka Fixed, monospace;",
                 "font-family: DejaVu Sans Mono;",
-            )
+            ),
+            encoding="utf-8",
         )
 
 
@@ -84,10 +85,10 @@ def _rename_ipython_fences(root):
     # Notebook code cells carry the kernel language ipython3, which
     # codly-languages has no lexer for, so they would render unhighlighted.
     for typ_path in root.rglob("*.typ"):
-        src = typ_path.read_text()
+        src = typ_path.read_text(encoding="utf-8")
         if "```ipython3" not in src:
             continue
-        typ_path.write_text(src.replace("```ipython3", "```python"))
+        typ_path.write_text(src.replace("```ipython3", "```python"), encoding="utf-8")
 
 
 def _source_version():
@@ -125,7 +126,7 @@ def _stage_template_assets(root):
         # itself, so the css/ subpath from _static is dropped.
         for name in ("qpdk_logo.svg", "css/custom.css"):
             shutil.copy(_DOCS_DIR / "_static" / name, bundle / Path(name).name)
-        (bundle / "version.txt").write_text(_source_version())
+        (bundle / "version.txt").write_text(_source_version(), encoding="utf-8")
 
 
 # Text column is 164mm wide (A4 minus the template margins); keep a hair of
@@ -162,7 +163,8 @@ def _math_widths(bodies, font_paths):
             f"#let eqs = ({', '.join(json.dumps(b, ensure_ascii=False) for b in bodies)},)\n"
             "#context for eq in eqs {\n"
             "  metadata(measure(block(math.equation(block: true, mitex(eq)))).width / 1mm)\n"
-            "}\n"
+            "}\n",
+            encoding="utf-8",
         )
         result = typst.query(str(probe), "metadata", font_paths=font_paths or [])
     return [row["value"] for row in json.loads(result)]
@@ -255,7 +257,7 @@ def _wrap_wide_math(root, font_paths):
     for typ_path in root.rglob("*.typ"):
         entries.extend(
             (typ_path, m.start(1), m.end(1), m.group(1))
-            for m in _mitex_re.finditer(typ_path.read_text())
+            for m in _mitex_re.finditer(typ_path.read_text(encoding="utf-8"))
             if not any(s in m.group(1) for s in _MATH_SKIP)
         )
     if not entries:
@@ -315,10 +317,10 @@ def _wrap_wide_math(root, font_paths):
         if width <= _MATH_COLUMN_MM:
             rewrites.setdefault(entry[0], []).append((entry[1], entry[2], split))
     for typ_path, spans in rewrites.items():
-        src = typ_path.read_text()
+        src = typ_path.read_text(encoding="utf-8")
         for start, end, split in sorted(spans, reverse=True):
             src = src[:start] + split + src[end:]
-        typ_path.write_text(src)
+        typ_path.write_text(src, encoding="utf-8")
 
 
 def _check_docs_fonts(font_paths):
@@ -338,7 +340,8 @@ def _check_docs_fonts(font_paths):
             "".join(
                 f'#text(font: ("{family}",), weight: {weight})[a]\n'
                 for family, weight in fonts
-            )
+            ),
+            encoding="utf-8",
         )
         _, warnings = typst.compile_with_warnings(
             str(probe), font_paths=font_paths or []

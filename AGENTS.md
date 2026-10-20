@@ -424,7 +424,8 @@ match exactly.
 **Solution**:
 
 1. Ensure all dependencies are installed: `just install`
-1. Run `just setup-ipython-config` to set up IPython configuration
+1. Build through `just docs` (or `just docs-pdf`), which points `IPYTHONDIR` and `MPLCONFIGDIR` at the docs config in
+   `build/docs-config`
 1. Check that all components are properly registered in `qpdk/cells/__init__.py`
 1. Verify that notebooks in `notebooks/src/` are valid Python files with correct jupytext format
 
