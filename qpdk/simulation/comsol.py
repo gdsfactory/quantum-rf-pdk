@@ -59,14 +59,14 @@ __all__ = [
 
 #: Relative permittivity of the silicon substrate, from the material of the
 #: QPDK layer stack's substrate level.
-SILICON_RELATIVE_PERMITTIVITY = float(
-    get_layer_material_properties("Substrate")["relative_permittivity"]
-)
+SILICON_RELATIVE_PERMITTIVITY = get_layer_material_properties("Substrate")[
+    "relative_permittivity"
+]
 #: Relative permittivity of the air above the chip, from the material of the
 #: QPDK layer stack's vacuum level.
-AIR_RELATIVE_PERMITTIVITY = float(
-    get_layer_material_properties("Vacuum")["relative_permittivity"]
-)
+AIR_RELATIVE_PERMITTIVITY = get_layer_material_properties("Vacuum")[
+    "relative_permittivity"
+]
 
 #: Input layers that the extraction understands. Everything else in
 #: :data:`~qpdk.tech.NON_METADATA_LAYERS` is rejected rather than dropped.
