@@ -147,9 +147,9 @@ copy-sample-notebooks: build-doc-figures
 [private]
 [group('docs')]
 docs-config:
-    @mkdir -p "{{ docs_config_dir }}/ipython/profile_default" "{{ docs_config_dir }}/matplotlib/stylelib"
-    @cp docs/ipython_config.py "{{ docs_config_dir }}/ipython/profile_default/"
-    @cp docs/qpdk.mplstyle docs/qpdk-dark.mplstyle "{{ docs_config_dir }}/matplotlib/stylelib/"
+    @mkdir -p {{ quote(docs_config_dir / "ipython/profile_default") }} {{ quote(docs_config_dir / "matplotlib/stylelib") }}
+    @cp docs/ipython_config.py {{ quote(docs_config_dir / "ipython/profile_default") }}
+    @cp docs/qpdk.mplstyle docs/qpdk-dark.mplstyle {{ quote(docs_config_dir / "matplotlib/stylelib") }}
 
 # Local cache of the docs fonts (Inter, Outfit, Code New Roman, Fira Math).
 # CI installs the same families system-wide (see .github/workflows/pages.yml),
@@ -250,7 +250,7 @@ docs-prerequisites: write-cells write-models write-justfile-help copy-sample-not
 [private]
 [group('docs')]
 _sphinx builder: check-lfs docs-prerequisites docs-config
-    @IPYTHONDIR="{{ docs_config_dir }}/ipython" MPLCONFIGDIR="{{ docs_config_dir }}/matplotlib" \
+    @IPYTHONDIR={{ quote(docs_config_dir / "ipython") }} MPLCONFIGDIR={{ quote(docs_config_dir / "matplotlib") }} \
     uv run --group docs sphinx-build -b {{ builder }} docs docs/_build/{{ builder }}
 
 # Build the HTML documentation
