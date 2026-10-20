@@ -10,9 +10,38 @@ import 'docs/docs.just'
 default:
     @just --list
 
+# Download Git LFS data (FEM datasets and model test references)
+[group('setup')]
+[unix]
+install-data:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! git lfs version >/dev/null 2>&1; then
+        echo "Error: git-lfs is not installed, so the LFS data cannot be pulled." >&2
+        echo "The FEM datasets and model test references are stored in Git LFS." >&2
+        echo "Install git-lfs (https://git-lfs.github.com/), then re-run 'just install-data'." >&2
+        exit 1
+    fi
+    git lfs pull
+
+# Download Git LFS data (FEM datasets and model test references)
+[group('setup')]
+[windows]
+[script('powershell.exe')]
+install-data:
+    git lfs version 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: git-lfs is not installed, so the LFS data cannot be pulled." -ForegroundColor Red
+        Write-Host "The FEM datasets and model test references are stored in Git LFS." -ForegroundColor Red
+        Write-Host "Install git-lfs (https://git-lfs.github.com/), then re-run 'just install-data'." -ForegroundColor Red
+        exit 1
+    }
+    git lfs pull
+    exit $LASTEXITCODE
+
 # Install the package and all development dependencies
 [group('setup')]
-install extras="--all-extras":
+install extras="--all-extras": install-data
     @uv sync {{ extras }}
 
 # Install KLayout technology files for the PDK
