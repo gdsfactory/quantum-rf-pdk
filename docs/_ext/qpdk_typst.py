@@ -6,13 +6,8 @@ the translator overrides add Typst output for nodes typsphinx does not handle,
 or handles badly.
 """
 
-import hashlib
 import json
 import re
-import shlex
-import shutil
-import subprocess
-import tempfile
 from pathlib import Path
 
 from docutils import nodes
@@ -183,116 +178,86 @@ def _typst_lift_block_images(app, doctree, _docname):
             par.replace_self(replacement)
 
 
-# Light-theme values of the ``--qpdk-mermaid-*`` custom properties that
-# ``themeCSS`` in conf.py reads (``html[data-theme="light"]`` in
-# docs/_static/css/custom.css).  A standalone SVG has no page to inherit them
-# from, so the print render substitutes them.
-_MERMAID_PRINT_COLOURS = {
-    "node-fill": "#e8eff8",
-    "node-stroke": "#2a6fb5",  # --qpdk-accent
-    "text": "#0e1116",  # --qpdk-ink
-    "line": "#2a6fb5",  # --qpdk-accent
-    "bg": "#ffffff",  # --pst-color-background
-    "cluster-fill": "#f6f4ef",  # --qpdk-paper
-    "cluster-stroke": "#b8b2a4",
-}
+# Typst package that lays out and draws Mermaid diagrams inside the compiler.
+_MERMAN = "@preview/merman:0.5.0"
+# Colours ``themeCSS`` in conf.py reads, as ``--qpdk-mermaid-<name>``.
+_MERMAID_COLOURS = (
+    "node-fill",
+    "node-stroke",
+    "text",
+    "line",
+    "bg",
+    "cluster-fill",
+    "cluster-stroke",
+)
+_CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+_CSS_BLOCK_RE = re.compile(r"([^{}]+)\{([^{}]*)\}")
+_CSS_PROPERTY_RE = re.compile(r"--([\w-]+)\s*:\s*([^;]+);")
+_CSS_VAR_RE = re.compile(r"var\(--([\w-]+)\)")
 
 
-def _mermaid_print_config(config):
+def _css_light_properties(path, names):
+    """Return the values custom properties ``names`` take in the light theme.
+
+    Only ``:root`` and ``html[data-theme="light"]`` rules of ``path`` are read,
+    in file order, and ``var()`` references between them are resolved.  An
+    undefined property, or one it references, raises ``ExtensionError``.
+
+    Returns:
+        A dict from each of ``names``, without the leading ``--``, to its value.
+    """
+    # pydata-sphinx-theme defines this one, not custom.css; the PDF page is
+    # white (docs/typst/qpdk.typ).
+    found = {"pst-color-background": "#ffffff"}
+    css = _CSS_COMMENT_RE.sub("", path.read_text(encoding="utf-8"))
+    for prelude, body in _CSS_BLOCK_RE.findall(css):
+        # Drop any preceding @import statements caught up in the selector.
+        selector = prelude.rsplit(";", 1)[-1].strip()
+        if selector in {":root", 'html[data-theme="light"]'}:
+            found.update(_CSS_PROPERTY_RE.findall(body))
+
+    def resolve(name, seen=()):
+        if name in seen or name not in found:
+            raise ExtensionError(f"cannot resolve --{name} from {path}")
+        return _CSS_VAR_RE.sub(
+            lambda match: resolve(match.group(1), (*seen, name)),
+            found[name].strip(),
+        )
+
+    return {name: resolve(name) for name in names}
+
+
+def _mermaid_print_config(config, srcdir):
     """Return the mermaid config for print, derived from ``mermaid_init_config``.
 
+    ``themeCSS`` reads the light-theme ``--qpdk-mermaid-*`` colours from
+    custom.css, which a diagram drawn into the PDF has no page to inherit, so
+    their values are substituted in.
+
     Raises:
-        ExtensionError: If ``themeCSS`` reads a custom property with no
-            print value in ``_MERMAID_PRINT_COLOURS``.
+        ExtensionError: If ``themeCSS`` still reads a custom property after
+            the substitution.
     """
     init = json.loads(json.dumps(config.mermaid_init_config))
     init.pop("startOnLoad", None)
     init["theme"] = config.mermaid_light_theme
-    # Typst's SVG renderer ignores <foreignObject>, where mermaid puts HTML
-    # labels, so every label must be SVG <text>.
+    # Plain SVG <text> labels; merman would otherwise have to strip the HTML
+    # labels mermaid puts in <foreignObject>, which Typst cannot draw.
     init["htmlLabels"] = False
+    colours = _css_light_properties(
+        Path(srcdir) / "_static" / "css" / "custom.css",
+        [f"qpdk-mermaid-{name}" for name in _MERMAID_COLOURS],
+    )
     css = init.get("themeCSS", "")
-    for name, colour in _MERMAID_PRINT_COLOURS.items():
-        css = css.replace(f"var(--qpdk-mermaid-{name})", colour)
+    for name, colour in colours.items():
+        css = css.replace(f"var(--{name})", colour)
     if "var(" in css:
         raise ExtensionError(
             "mermaid themeCSS uses a custom property with no print colour; "
-            "add it to _MERMAID_PRINT_COLOURS in docs/_ext/qpdk_typst.py"
+            "add it to _MERMAID_COLOURS in docs/_ext/qpdk_typst.py"
         )
     init["themeCSS"] = css
     return init
-
-
-def _render_mermaid_svg(app, code):
-    """Render one diagram to an SVG under the doctree directory, cached by hash.
-
-    Returns:
-        The absolute path of the SVG.
-
-    Raises:
-        ExtensionError: If mermaid-cli cannot be run or fails.
-    """
-    config = json.dumps(_mermaid_print_config(app.config), sort_keys=True)
-    digest = hashlib.sha256(f"{config}\n{code}".encode()).hexdigest()
-    svg = Path(app.doctreedir) / "images" / "mermaid" / f"mermaid-{digest}.svg"
-    if svg.is_file():
-        return svg
-    svg.parent.mkdir(parents=True, exist_ok=True)
-    cmd = app.config.mermaid_cmd
-    cmd = shlex.split(cmd) if isinstance(cmd, str) else list(cmd)
-    with tempfile.TemporaryDirectory() as tmp:
-        config_file = Path(tmp) / "config.json"
-        config_file.write_text(config, encoding="utf-8")
-        source = Path(tmp) / "diagram.mmd"
-        source.write_text(code, encoding="utf-8")
-        # Render into the temp dir so a failed run never leaves a cache entry.
-        output = Path(tmp) / "diagram.svg"
-        args = [
-            *cmd,
-            *app.config.mermaid_params,
-            *("--quiet", "--backgroundColor", "transparent"),
-            *("--configFile", str(config_file)),
-            *("--input", str(source), "--output", str(output)),
-        ]
-        try:
-            result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-                args, capture_output=True, text=True, check=False
-            )
-        except FileNotFoundError as exc:
-            raise ExtensionError(
-                f"cannot run mermaid_cmd {cmd!r} to render Mermaid for the PDF; "
-                "it needs Node.js >= 22.13"
-            ) from exc
-        if result.returncode != 0 or not output.is_file():
-            raise ExtensionError(
-                f"mermaid-cli failed on:\n{code}\n[stderr]\n{result.stderr}"
-            )
-        partial = svg.with_suffix(".svg.part")
-        shutil.copyfile(output, partial)
-        partial.replace(svg)
-    return svg
-
-
-def _typst_render_mermaid(app, doctree, _docname):
-    """Replace Mermaid diagrams with SVG images rendered by mermaid-cli.
-
-    typsphinx has no visitor for sphinxcontrib-mermaid's node and drops it
-    with only an ``unknown node type`` warning.  HTML renders diagrams in the
-    browser, so for print they are rendered at build time, in the light
-    palette.  A diagram that fails to render fails the build rather than
-    vanishing from the PDF.
-    """
-    if app.builder.name not in {"typst", "typstpdf"}:
-        return
-    for node in list(doctree.findall(mermaid)):
-        svg = str(_render_mermaid_svg(app, node["code"]))
-        # `candidates` is what typsphinx's post_process_images reads; an
-        # absolute path under the doctree directory is copied to the output
-        # like the images Sphinx's own converters write there.
-        image = nodes.image(uri=svg, candidates={"*": svg})
-        if "alt" in node:
-            image["alt"] = node["alt"]
-        node.replace_self(image)
 
 
 def _typst_string(text):
@@ -578,6 +543,45 @@ def _typst_visit_doctest_block(self, node):
     raise nodes.SkipNode
 
 
+def _typst_visit_mermaid(self, node):
+    """Draw a sphinxcontrib-mermaid diagram with the merman Typst package.
+
+    typsphinx has no visitor for this node and drops it with only an
+    ``unknown node type`` warning.  HTML renders diagrams in the browser; for
+    print, merman lays them out and draws them inside the Typst compiler, in
+    the light palette, with real (selectable) text.  A diagram wider than the
+    text column is shrunk to fit; narrower ones keep their natural size.  A
+    diagram merman cannot parse fails the build rather than vanishing.
+
+    Raises:
+        nodes.SkipNode: Always, the diagram is emitted here in full.
+    """
+    config = json.dumps(
+        _mermaid_print_config(self.config, self.builder.srcdir), sort_keys=True
+    )
+    args = [
+        f'"{_typst_string(node["code"])}"',
+        f'site-config: json(bytes("{_typst_string(config)}"))',
+    ]
+    if node.get("alt"):
+        args.append(f'alt: "{_typst_string(node["alt"])}"')
+    align = node.get("align") if node.get("align") in {"left", "right"} else "center"
+    _typst_add_block_separator(self)
+    self.add_text(
+        f'{{\n  import "{_MERMAN}": mermaid\n'
+        f"  let args = arguments({', '.join(args)})\n"
+        f"  align({align}, layout(size => {{\n"
+        "    let diagram = mermaid(..args)\n"
+        "    if measure(diagram).width > size.width {\n"
+        "      mermaid(..args, width: size.width)\n"
+        "    } else { diagram }\n"
+        "  }))\n}\n"
+    )
+    if self.in_list_item:
+        self.list_item_needs_separator = True
+    raise nodes.SkipNode
+
+
 def _typst_visit_meta(_self, _node):
     """Drop docutils ``meta`` nodes, which carry HTML ``<meta>`` tags only.
 
@@ -590,7 +594,6 @@ def _typst_visit_meta(_self, _node):
 def setup(app: Sphinx) -> None:
     """Register the extension."""
     app.add_post_transform(_TypstDropWidgetOutputs)
-    app.connect("doctree-resolved", _typst_render_mermaid)
     app.connect("doctree-resolved", _typst_drop_hidden_cell_parts)
     app.connect("doctree-resolved", _typst_unlabel_cell_outputs)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
@@ -615,6 +618,7 @@ def setup(app: Sphinx) -> None:
         (PassthroughTextElement, _typst_visit_passthrough, _typst_depart_passthrough),
         (nodes.doctest_block, _typst_visit_doctest_block, None),
         (nodes.meta, _typst_visit_meta, None),
+        (mermaid, _typst_visit_mermaid, None),
     ):
         name = node_class.__name__
         if hasattr(TypstTranslator, f"visit_{name}"):
