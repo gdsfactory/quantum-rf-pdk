@@ -29,15 +29,16 @@ jobs:
         run: just install "--all-extras --no-extra gdsfactoryplus"
       # typsphinx compiles the PDF with the Typst compiler bundled in typst-py,
       # so there is nothing to install for it -- but the Typst packages the
-      # template imports (codly, mitex, gentle-clues) are downloaded on first
-      # use and cached here.
+      # template imports (codly, mitex, gentle-clues) and merman, which
+      # docs/_ext/qpdk_typst.py uses for Mermaid diagrams, are downloaded on
+      # first use and cached here.
       - name: Cache Typst packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/typst
             build/docs-fonts
-          key: ${{ runner.os }}-typst-${{ hashFiles('docs/docs.just', 'docs/typst/**/*.typ') }}
+          key: ${{ runner.os }}-typst-${{ hashFiles('docs/docs.just', 'docs/typst/**/*.typ', 'docs/_ext/qpdk_typst.py') }}
           restore-keys: |
             ${{ runner.os }}-typst-
       - name: Build PDF documentation

@@ -188,6 +188,8 @@ mermaid_init_config = {
     "themeCSS": _mermaid_theme_css,
     "flowchart": {"curve": "basis", "padding": 12, "useMaxWidth": False},
 }
+# HTML renders diagrams in the browser; the Typst builders draw them with the
+# merman Typst package (docs/_ext/qpdk_typst.py).
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"
