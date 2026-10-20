@@ -72,9 +72,10 @@ Applies to all Python in the repository. See also the path-specific files for `q
 
 ## Lazy imports of heavy/optional dependencies
 
-These packages must only be imported inside the function that uses them — ruff's `flake8-tidy-imports.require-lazy`
-enforces it: `trimesh`, `polars`, `pyaedt`, `gplugins`, `jaxellip`, `optax`, `optuna`, `sax`, `sympy`, `pandas`,
-`netket`, `flax`, `pymablock`, `qutip-jax`, `qutip-qip`, `scqubits`.
+These packages must only be imported inside the function that uses them. Ruff's `flake8-tidy-imports.require-lazy` lists
+them but only covers PEP 810 `lazy import` statements, so it does not flag a module-level import; review has to:
+`trimesh`, `polars`, `pyaedt`, `gplugins`, `jaxellip`, `optax`, `optuna`, `sax`, `sympy`, `pandas`, `netket`, `flax`,
+`pymablock`, `qutip-jax`, `qutip-qip`, `scqubits`.
 
 ```python
 def simulate() -> None:

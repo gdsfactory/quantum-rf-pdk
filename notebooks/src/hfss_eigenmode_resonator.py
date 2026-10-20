@@ -215,7 +215,7 @@ print(f"Solution type: {hfss.solution_type}")
 # Prepare component for export
 res_component = prepare_metal_layout(res_component, margin_draw=200)
 
-# Initialize HFSS wrapper
+# Initialize the HFSS simulation
 hfss_sim = HFSS(hfss, material_properties=material_properties)
 
 # Import the component geometry using native GDS import
@@ -313,7 +313,7 @@ else:
 # Get the eigenmode frequencies and Q-factors from the simulation.
 
 # %%
-# Extract results using the wrapper
+# Extract results
 sim_results = hfss_sim.get_eigenmode_results("EigenmodeSetup")
 
 print("\n=== Eigenmode Results ===")

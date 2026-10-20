@@ -241,7 +241,7 @@ print(f"Solution type: {hfss.solution_type}")
 # Prepare component for export
 prepared_component = prepare_metal_layout(idc_component, margin_draw=50)
 
-# Initialize HFSS wrapper
+# Initialize the HFSS simulation
 hfss_sim = HFSS(hfss, material_properties=material_properties)
 
 # Import the component geometry using native GDS import
@@ -370,20 +370,24 @@ else:
 # Get the S-parameters from the simulation and visualize the results.
 
 # %%
-# Extract results using the wrapper
+# Extract results; gplugins returns each S-parameter as re(...) and im(...) columns
 df_results = hfss_sim.get_sparameter_results(setup.name, sweep.name)
 
 frequencies_ghz = df_results["frequency_ghz"].to_numpy()
 
+
+def complex_trace(trace: str) -> np.ndarray:
+    """Rebuild a complex S-parameter trace from its real and imaginary columns."""
+    re_col = next(c for c in df_results.columns if c.startswith("re(") and trace in c)
+    im_col = next(c for c in df_results.columns if c.startswith("im(") and trace in c)
+    return df_results[re_col].to_numpy() + 1j * df_results[im_col].to_numpy()
+
+
 # Plot S-parameters
 fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
-# Filter for S11 and S21 type traces
-s11_col = next(col for col in df_results.columns if "S(o1:1,o1:1)" in col)
-s21_col = next(col for col in df_results.columns if "S(o2:1,o1:1)" in col)
-
-s11_trace = df_results[s11_col].to_numpy().astype(np.complex128)
-s21_trace = df_results[s21_col].to_numpy().astype(np.complex128)
+s11_trace = complex_trace("S(o1:1,o1:1)")
+s21_trace = complex_trace("S(o2:1,o1:1)")
 
 s11_mag_db = 20 * np.log10(np.abs(s11_trace))
 s21_mag_db = 20 * np.log10(np.abs(s21_trace))
@@ -558,7 +562,7 @@ q3d = Q3d(
 detach_desktop_logging(q3d)
 q3d.modeler.model_units = "um"
 
-# Initialize Q3D wrapper
+# Initialize the Q3D simulation
 q3d_sim = Q3D(q3d, material_properties=material_properties)
 
 print(f"Q3D project created: {q3d.project_file}")
@@ -668,7 +672,7 @@ print(f"Q3D analysis completed in {elapsed_q3d:.1f} seconds")
 # corresponds to the coupling capacitance of the interdigital capacitor.
 
 # %%
-# Extract the capacitance matrix using the wrapper
+# Extract the capacitance matrix
 cap_df = q3d_sim.get_capacitance_matrix(setup_name="Q3DSetup")
 print("Q3D Capacitance Matrix (F):")
 print(cap_df)

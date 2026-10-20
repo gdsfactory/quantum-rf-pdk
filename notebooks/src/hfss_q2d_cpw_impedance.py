@@ -163,7 +163,7 @@ print(f"Design name: {q2d.design_name}")
 
 # %%
 
-# Create the Q2D wrapper
+# Create the Q2D simulation
 q2d_sim = Q2D(q2d, material_properties=material_properties)
 
 # Create the 2D cross-section geometry
