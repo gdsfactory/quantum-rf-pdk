@@ -1,14 +1,13 @@
-"""Tests for QPDK's AEDT test helpers, ``prepare_component_for_aedt`` and live AEDT.
+"""Tests for QPDK's AEDT test helpers and live AEDT runs with QPDK's stack.
 
-Everything here except the ``hfss``-marked live tests runs without the ``hfss``
-extra. The wrapper tests that need gplugins are in ``test_aedt_wrappers.py``.
+The AEDT classes come straight from :mod:`gplugins.ansys`, whose own tests cover
+the generic code. The ``hfss``-marked tests drive a real AEDT session with QPDK
+cells, layer stack and materials, and are skipped without a local install.
 """
 
 import contextlib
 import os
 import shutil
-import subprocess
-import sys
 import threading
 import time
 import uuid
@@ -18,12 +17,14 @@ from typing import Any
 
 import pytest
 from gdsfactory.component import Component
+from gplugins.ansys import HFSS, Q2D, Q3D, detach_desktop_logging, fit_view
 
 from qpdk import PDK, logger
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.resonator import resonator
-from qpdk.simulation.aedt_base import prepare_component_for_aedt
-from qpdk.tech import coplanar_waveguide
+from qpdk.models.cpw import get_cpw_dimensions
+from qpdk.simulation.layout import prepare_metal_layout
+from qpdk.tech import LAYER_STACK, coplanar_waveguide, material_properties
 
 # Maximum wall-clock time for a single AEDT-bound call. AEDT startup can
 # legitimately take minutes, so this is generous. The budget is per call, not
@@ -342,77 +343,19 @@ def test_ansys_install_path_preserves_existing(ansys_install_path: Path):
     assert ansys_install_path == Path("/custom/ansys")
 
 
-def test_prepare_component_for_aedt():
-    """Test component preparation for AEDT."""
-    comp = resonator()
-    prepared = prepare_component_for_aedt(comp)
-
-    assert isinstance(prepared, Component)
-    # The prepared component should be different if additive metals are applied
-    # or at least it should return a valid component
-    assert prepared.name is not None
-
-
-def test_prepare_component_for_aedt_margin():
-    """Test component preparation for AEDT with margin."""
+def test_prepare_metal_layout_margin():
+    """``prepare_metal_layout``, which the AEDT notebooks use, grows the bbox by the margin."""
     comp = resonator(length=3000)
 
-    # Original bbox
     bbox_orig = comp.bbox()
-    prepared = prepare_component_for_aedt(comp, margin_draw=200)
+    prepared = prepare_metal_layout(comp, margin_draw=200)
 
     assert isinstance(prepared, Component)
-    assert prepared.name is not None
-
-    # Prepared bbox might be larger
     bbox_new = prepared.bbox()
     assert bbox_new.left <= bbox_orig.left
     assert bbox_new.right >= bbox_orig.right
     assert bbox_new.bottom <= bbox_orig.bottom
     assert bbox_new.top >= bbox_orig.top
-
-
-def test_prepare_component_for_aedt_imports_without_gplugins():
-    """``prepare_component_for_aedt`` must not need gplugins at import time."""
-    code = (
-        "import sys; sys.modules['gplugins'] = None; "
-        "from qpdk.simulation.aedt_base import prepare_component_for_aedt; "
-        "from qpdk.simulation import prepare_component_for_aedt as wrapped; "
-        "assert wrapped is prepare_component_for_aedt"
-    )
-    subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-        [sys.executable, "-c", code], check=True
-    )
-
-
-def test_missing_extra_raises_actionable_import_error():
-    """Without gplugins, the AEDT names raise ``ImportError`` naming the extra."""
-    code = """
-import sys
-sys.modules["gplugins"] = None
-import qpdk.simulation.aedt_base as aedt_base
-from qpdk.simulation.aedt_base import MISSING_HFSS_EXTRA
-
-def check(get):
-    try:
-        get()
-    except ModuleNotFoundError:
-        raise AssertionError("bare ModuleNotFoundError escaped")
-    except ImportError as error:
-        assert str(error) == MISSING_HFSS_EXTRA, error
-        assert "uv sync --extra hfss" in str(error)
-    else:
-        raise AssertionError("no ImportError")
-
-check(lambda: aedt_base.AEDTBase)
-check(lambda: aedt_base.fit_view)
-check(aedt_base.layer_stack_to_gds_mapping)
-check(lambda: __import__("qpdk.simulation.hfss"))
-check(lambda: __import__("qpdk.simulation.q3d"))
-"""
-    subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-        [sys.executable, "-c", code], check=True
-    )
 
 
 @pytest.mark.hfss
@@ -422,12 +365,6 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
         pytest.skip(f"HFSS installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
-
-    from qpdk.simulation import (  # ruff: ignore[import-outside-top-level]
-        HFSS,
-        detach_desktop_logging,
-        fit_view,
-    )
 
     settings.use_grpc_uds = False
 
@@ -446,7 +383,7 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
         project_dir,
         label="Hfss",
     ) as hfss_app:
-        hfss_sim = HFSS(hfss_app)
+        hfss_sim = HFSS(hfss_app, material_properties=material_properties)
         # The helpers run against a real session here: the draw below is what proves
         # they left it alive, and the assertion catches a PyAEDT that renamed the
         # attribute the logger keeps the desktop in (the stub tests cannot).
@@ -468,8 +405,6 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
-    from qpdk.simulation import HFSS  # ruff: ignore[import-outside-top-level]
-
     settings.use_grpc_uds = False
 
     PDK.activate()
@@ -487,7 +422,7 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
         project_dir,
         label="Hfss",
     ) as hfss_app:
-        hfss_sim = HFSS(hfss_app)
+        hfss_sim = HFSS(hfss_app, material_properties=material_properties)
         _run_with_timeout(
             lambda: hfss_sim.import_component(comp), label="HFSS.import_component"
         )
@@ -522,8 +457,6 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
 
     from ansys.aedt.core import Q3d, settings  # ruff: ignore[import-outside-top-level]
 
-    from qpdk.simulation import Q3D  # ruff: ignore[import-outside-top-level]
-
     settings.use_grpc_uds = False
 
     PDK.activate()
@@ -541,7 +474,7 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
         project_dir,
         label="Q3d",
     ) as q3d_app:
-        q3d_sim = Q3D(q3d_app)
+        q3d_sim = Q3D(q3d_app, material_properties=material_properties)
         conductor_objects = _run_with_timeout(
             lambda: q3d_sim.import_component(comp), label="Q3D.import_component"
         )
@@ -555,14 +488,12 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
 
 
 @pytest.mark.hfss
-def test_create_2d_from_cross_section(tmp_path: Path, ansys_install_path: Path):
-    """Test creating a Q2D model from a CPW cross-section."""
+def test_q2d_cpw_from_qpdk_cross_section(tmp_path: Path, ansys_install_path: Path):
+    """Test creating a Q2D CPW model from a QPDK cross-section and layer stack."""
     if not ansys_install_path.exists():
         pytest.skip(f"HFSS installation not found at {ansys_install_path}")
 
     from ansys.aedt.core import Q2d, settings  # ruff: ignore[import-outside-top-level]
-
-    from qpdk.simulation import Q2D  # ruff: ignore[import-outside-top-level]
 
     settings.use_grpc_uds = False
 
@@ -581,10 +512,15 @@ def test_create_2d_from_cross_section(tmp_path: Path, ansys_install_path: Path):
         project_dir,
         label="Q2d",
     ) as q2d_app:
-        q2d_sim = Q2D(q2d_app)
+        q2d_sim = Q2D(q2d_app, material_properties=material_properties)
         result = _run_with_timeout(
-            lambda: q2d_sim.create_2d_from_cross_section(cross_section),
-            label="Q2D.create_2d_from_cross_section",
+            lambda: q2d_sim.create_2d_cpw(
+                *get_cpw_dimensions(cross_section),
+                LAYER_STACK,
+                substrate_level="Substrate",
+                conductor_level="M1",
+            ),
+            label="Q2D.create_2d_cpw",
         )
 
         assert isinstance(result, dict)

@@ -85,13 +85,13 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from ansys.aedt.core import Q2d, settings
+from gplugins.ansys import Q2D, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 
 from qpdk import PDK
 from qpdk.config import PATH
-from qpdk.models.cpw import cpw_parameters
-from qpdk.simulation import Q2D, detach_desktop_logging, fit_view
-from qpdk.tech import coplanar_waveguide
+from qpdk.models.cpw import cpw_parameters, get_cpw_dimensions
+from qpdk.tech import LAYER_STACK, coplanar_waveguide, material_properties
 
 PDK.activate()
 
@@ -155,17 +155,27 @@ print(f"Design name: {q2d.design_name}")
 # %% [markdown]
 # ## Build CPW Cross-Section Geometry
 #
-# Use {py:meth}`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section` to automatically
-# build the CPW geometry (signal conductor, ground planes, substrate) from the
-# gdsfactory cross-section and QPDK layer stack.
+# Read the CPW width and gap back from the gdsfactory cross-section with
+# {py:func}`~qpdk.models.cpw.get_cpw_dimensions`, then build the CPW geometry
+# (signal conductor, ground planes, substrate) with
+# {py:meth}`~gplugins.ansys.Q2D.create_2d_cpw` on the `Substrate` and `M1`
+# levels of the QPDK layer stack.
 
 # %%
 
 # Create the Q2D wrapper
-q2d_sim = Q2D(q2d)
+q2d_sim = Q2D(q2d, material_properties=material_properties)
 
 # Create the 2D cross-section geometry
-object_names = q2d_sim.create_2d_from_cross_section(cross_section, ground_width=30)
+xs_width, xs_gap = get_cpw_dimensions(cross_section)
+object_names = q2d_sim.create_2d_cpw(
+    xs_width,
+    xs_gap,
+    LAYER_STACK,
+    substrate_level="Substrate",
+    conductor_level="M1",
+    ground_width=30,
+)
 
 print("Created Q2D geometry:")
 for role, name in object_names.items():
@@ -319,7 +329,7 @@ print("Q2D session closed and temporary files cleaned up")
 #
 # 2. **Q2D Setup**: Initializing Ansys 2D Extractor via PyAEDT and building the
 #    cross-sectional geometry using
-#    {py:meth}`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section`
+#    {py:meth}`~gplugins.ansys.Q2D.create_2d_cpw`
 #
 # 3. **Impedance Extraction**: Running the Q2D quasi-static solver to compute
 #    $Z_0$ as a function of frequency from 1 to 10 GHz

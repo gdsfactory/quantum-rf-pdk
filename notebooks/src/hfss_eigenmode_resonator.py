@@ -79,7 +79,7 @@ from pathlib import Path
 from typing import cast
 
 from ansys.aedt.core import Hfss, settings
-from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
+from gplugins.ansys import HFSS, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 from scipy.optimize import minimize_scalar
 
@@ -95,13 +95,8 @@ from qpdk import PDK
 from qpdk.cells.resonator import resonator
 from qpdk.config import PATH
 from qpdk.models.resonator import resonator_frequency
-from qpdk.simulation import (
-    HFSS,
-    detach_desktop_logging,
-    fit_view,
-    prepare_component_for_aedt,
-)
-from qpdk.tech import coplanar_waveguide
+from qpdk.simulation.layout import prepare_metal_layout
+from qpdk.tech import coplanar_waveguide, material_properties
 
 PDK.activate()
 
@@ -218,10 +213,10 @@ print(f"Solution type: {hfss.solution_type}")
 
 # %%
 # Prepare component for export
-res_component = prepare_component_for_aedt(res_component, margin_draw=200)
+res_component = prepare_metal_layout(res_component, margin_draw=200)
 
 # Initialize HFSS wrapper
-hfss_sim = HFSS(hfss)
+hfss_sim = HFSS(hfss, material_properties=material_properties)
 
 # Import the component geometry using native GDS import
 success = hfss_sim.import_component(res_component, import_as_sheets=True)

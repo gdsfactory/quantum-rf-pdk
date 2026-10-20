@@ -1,32 +1,22 @@
-"""AEDT, COMSOL, Palace and VACASK simulation utilities.
+"""Simulation utilities: shared layout preparation and solver inputs.
 
-This package provides class-based interfaces for setting up HFSS simulations
-(eigenmode and driven modal) and Q3D Extractor parasitic extractions from
-gdsfactory components, plus MPh-based COMSOL geometry and study builders.
+:func:`~qpdk.simulation.layout.prepare_metal_layout` folds a QPDK mask into
+positive metal geometry for a field solver. This package also holds
+QPDK-specific inputs for :mod:`gplugins.comsol`.
 
-The generic AEDT code (GDS import, materials, ports, result extraction) lives in
-:mod:`gplugins.ansys`, which drives Ansys HFSS and Q3D Extractor through PyAEDT.
-:mod:`qpdk.simulation.aedt_base`, :mod:`qpdk.simulation.hfss` and
-:mod:`qpdk.simulation.q3d` wrap it with QPDK defaults: the
-:data:`~qpdk.tech.LAYER_STACK` layer stack, :data:`~qpdk.tech.material_properties`,
-singleton wrapper classes, and QPDK-specific helpers such as
-:func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt` and
-:meth:`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section`.
+**Ansys AEDT (HFSS, Q3D Extractor, Q2D):** use :mod:`gplugins.ansys` directly.
+QPDK activates itself as the gdsfactory PDK, so the gplugins classes pick up
+:data:`~qpdk.tech.LAYER_STACK` by default; pass
+``material_properties=qpdk.tech.material_properties`` to use QPDK's material
+table instead of the gplugins default:
 
-**HFSS workflow:**
-
-1. Prepare a component with :func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt`
-2. Export to GDS and import into HFSS with :meth:`qpdk.simulation.hfss.HFSS.import_component`
-3. Configure simulation setup (e.g. Eigenmode or Driven) manually via PyAEDT
-4. Extract results with :meth:`qpdk.simulation.hfss.HFSS.get_eigenmode_results` or :meth:`qpdk.simulation.hfss.HFSS.get_sparameter_results`
-
-**Q3D Extractor workflow:**
-
-1. Prepare a component with :func:`~qpdk.simulation.aedt_base.prepare_component_for_aedt`
-2. Export to GDS and import into Q3D with :meth:`qpdk.simulation.q3d.Q3D.import_component`
-3. Assign signal nets with :meth:`qpdk.simulation.q3d.Q3D.assign_nets_from_ports`
-4. Configure Q3D setup and analyze
-5. Extract capacitance matrix with :meth:`qpdk.simulation.q3d.Q3D.get_capacitance_matrix`
+1. Prepare a component with :func:`~qpdk.simulation.layout.prepare_metal_layout`
+2. Wrap a PyAEDT ``Hfss``, ``Q3d`` or ``Q2d`` app in ``gplugins.ansys.HFSS``,
+   ``Q3D`` or ``Q2D`` and import the component with ``import_component``
+3. Configure the setup through PyAEDT, solve, and read the results through the
+   gplugins helpers. For a CPW cross-section in Q2D, pass the width and gap from
+   :func:`~qpdk.models.cpw.get_cpw_dimensions` to ``Q2D.create_2d_cpw`` with
+   ``substrate_level="Substrate"`` and ``conductor_level="M1"``.
 
 **Palace workflow:**
 
@@ -46,7 +36,7 @@ The COMSOL models come from :mod:`gplugins.comsol`; import them from there.
    dielectrics, then add a study and mesh it with its methods
 
 Note:
-    The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL module
+    :mod:`gplugins.ansys` requires ``uv sync --extra hfss``. The COMSOL module
     requires ``uv sync --extra comsol`` and, to build and solve models, a local
     COMSOL installation. It is not imported by this package, so
     :mod:`qpdk.simulation` stays importable without the extra.
@@ -74,13 +64,14 @@ Note:
 
 Example:
     >>> from ansys.aedt.core import Hfss
-    >>> from qpdk.simulation import HFSS, prepare_component_for_aedt
+    >>> from gplugins.ansys import HFSS
     >>> from qpdk.cells import resonator
-    >>> comp = resonator(length=4000, meanders=4)
-    >>> prepared_comp = prepare_component_for_aedt(comp)
+    >>> from qpdk.simulation.layout import prepare_metal_layout
+    >>> from qpdk.tech import material_properties
+    >>> comp = prepare_metal_layout(resonator(length=4000, meanders=4))
     >>> hfss_app = Hfss(project="resonator_sim", solution_type="Eigenmode")
-    >>> hfss_sim = HFSS(hfss_app)
-    >>> hfss_sim.import_component(prepared_comp)
+    >>> hfss_sim = HFSS(hfss_app, material_properties=material_properties)
+    >>> hfss_sim.import_component(comp)
 
 References:
     - PyAEDT documentation: https://aedt.docs.pyansys.com/
@@ -92,38 +83,11 @@ References:
 # ruff: file-ignore[undefined-export]
 
 import importlib
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from qpdk.simulation.hfss import HFSS
-    from qpdk.simulation.q3d import Q2D, Q3D
+from typing import Any
 
 # TODO(Python 3.15): `lazy from ... import` (PEP 810) - replaces _LAZY_IMPORTS, __getattr__,
-# __dir__, the TYPE_CHECKING block and the undefined-export ignore. Keep them lazy, not eager.
+# __dir__ and the undefined-export ignore. Keep them lazy, not eager.
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
-    "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),
-    "add_materials_to_aedt": ("qpdk.simulation.aedt_base", "add_materials_to_aedt"),
-    "detach_desktop_logging": ("qpdk.simulation.aedt_base", "detach_desktop_logging"),
-    "fit_view": ("qpdk.simulation.aedt_base", "fit_view"),
-    "layer_stack_to_gds_mapping": (
-        "qpdk.simulation.aedt_base",
-        "layer_stack_to_gds_mapping",
-    ),
-    "object_names_to_materials": (
-        "qpdk.simulation.aedt_base",
-        "object_names_to_materials",
-    ),
-    "prepare_component_for_aedt": (
-        "qpdk.simulation.aedt_base",
-        "prepare_component_for_aedt",
-    ),
-    "HFSS": ("qpdk.simulation.hfss", "HFSS"),
-    "lumped_port_rectangle_from_cpw": (
-        "qpdk.simulation.hfss",
-        "lumped_port_rectangle_from_cpw",
-    ),
-    "Q2D": ("qpdk.simulation.q3d", "Q2D"),
-    "Q3D": ("qpdk.simulation.q3d", "Q3D"),
     "Netlist": ("qpdk.simulation.vacask", "Netlist"),
     "RawFile": ("qpdk.simulation.vacask", "RawFile"),
     "RawPlot": ("qpdk.simulation.vacask", "RawPlot"),
@@ -136,24 +100,13 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
 }
 
 __all__ = [
-    "HFSS",
-    "Q2D",
-    "Q3D",
-    "AEDTBase",
     "Netlist",
     "RawFile",
     "RawPlot",
     "Vacask",
     "VacaskError",
-    "add_materials_to_aedt",
     "cpw_tline_params",
-    "detach_desktop_logging",
-    "fit_view",
     "format_value",
-    "layer_stack_to_gds_mapping",
-    "lumped_port_rectangle_from_cpw",
-    "object_names_to_materials",
-    "prepare_component_for_aedt",
     "vector_fit",
     "vector_fit_subckt",
 ]

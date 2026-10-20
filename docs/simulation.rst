@@ -3,7 +3,7 @@
 ############
 
 .. meta::
-    :description: Circuit-model hierarchy and AEDT simulation wrappers for QPDK components.
+    :description: Circuit-model hierarchy and field-solver simulation helpers for QPDK components.
 
 *******************************
  Circuit-level model hierarchy
@@ -28,29 +28,16 @@ For new components, attach the compact model through ``schematic_function`` and 
 .. automodule:: qpdk.simulation.layout
     :members:
 
-The AEDT modules below are thin wrappers over :mod:`gplugins.ansys`, which holds the
-generic HFSS, Q3D and Q2D code. They default to QPDK's layer stack and materials and add
-QPDK-only helpers.
+*************************
+ Ansys HFSS, Q3D and Q2D
+*************************
 
-.. automodule:: qpdk.simulation.aedt_base
-    :members:
-    :show-inheritance:
-
-******
- HFSS
-******
-
-.. automodule:: qpdk.simulation.hfss
-    :members:
-    :show-inheritance:
-
-*************
- Q3D and Q2D
-*************
-
-.. automodule:: qpdk.simulation.q3d
-    :members:
-    :show-inheritance:
+QPDK does not wrap Ansys AEDT. Use :mod:`gplugins.ansys` (installed by the ``hfss``
+extra) directly: its ``HFSS``, ``Q3D`` and ``Q2D`` classes default to the active PDK's
+layer stack, which is QPDK's :data:`~qpdk.tech.LAYER_STACK` once QPDK is active. Pass
+``material_properties=qpdk.tech.material_properties`` to use QPDK's material table, and
+prepare components with :func:`~qpdk.simulation.layout.prepare_metal_layout`. The HFSS
+notebooks show the full workflow.
 
 ********
  VACASK

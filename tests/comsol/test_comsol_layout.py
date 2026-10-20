@@ -15,7 +15,6 @@ import pytest
 from gplugins.comsol.layout import ComsolLayout
 
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
-from qpdk.simulation.aedt_base import prepare_component_for_aedt
 from qpdk.simulation.comsol import prepare_comsol_layout
 from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.tech import LAYER
@@ -51,26 +50,6 @@ def _metal_area(layout: ComsolLayout) -> float:
     )
 
 
-def _geometry_signature(component: gf.Component) -> dict:
-    """Canonical per-layer polygon outlines and holes of a component.
-
-    Returns:
-        Layer specs mapped to sorted polygon outlines and holes.
-    """
-    signature = {}
-    for layer, shapes in component.get_polygons(by="tuple", merge=True).items():
-        polys = []
-        for shape in shapes:
-            outline = tuple((point.x, point.y) for point in shape.each_point_hull())
-            holes = tuple(
-                tuple((point.x, point.y) for point in shape.each_point_hole(hole))
-                for hole in range(shape.holes())
-            )
-            polys.append((outline, holes))
-        signature[layer] = sorted(polys)
-    return signature
-
-
 def _kdb_polygon(points: tuple[tuple[float, float], ...], dbu: float) -> kdb.Polygon:
     """Rebuild a µm vertex list as a KLayout polygon in database units.
 
@@ -94,33 +73,6 @@ def _in_metal(layout: ComsolLayout, point: tuple[float, float], dbu: float) -> b
             continue
         return True
     return False
-
-
-def test_aedt_wrapper_matches_shared_helper():
-    """The AEDT wrapper forwards both margins and ports to the shared helper."""
-    comp = gf.components.straight(length=200, cross_section="cpw")
-
-    via_wrapper = prepare_component_for_aedt(
-        comp, margin_draw=40, margin_etch=5, name="equiv_aedt"
-    )
-    via_helper = prepare_metal_layout(
-        comp, margin_draw=40, margin_etch=5, name="equiv_metal"
-    )
-
-    assert _geometry_signature(via_wrapper) == _geometry_signature(via_helper)
-    wrapper_bbox, helper_bbox = via_wrapper.bbox(), via_helper.bbox()
-    assert (
-        wrapper_bbox.left,
-        wrapper_bbox.bottom,
-        wrapper_bbox.right,
-        wrapper_bbox.top,
-    ) == (
-        helper_bbox.left,
-        helper_bbox.bottom,
-        helper_bbox.right,
-        helper_bbox.top,
-    )
-    assert {p.name for p in via_wrapper.ports} == {p.name for p in via_helper.ports}
 
 
 def test_etch_margin_widens_the_cpw_gap():

@@ -82,7 +82,7 @@ import gdsfactory as gf
 import matplotlib.pyplot as plt
 import numpy as np
 from ansys.aedt.core import Hfss, Q3d, settings
-from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
+from gplugins.ansys import HFSS, Q3D, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 
 from qpdk import PDK
@@ -91,14 +91,8 @@ from qpdk.cells.waveguides import straight_open
 from qpdk.config import PATH
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.cpw import cpw_ep_r_from_cross_section
-from qpdk.simulation import (
-    HFSS,
-    Q3D,
-    detach_desktop_logging,
-    fit_view,
-    prepare_component_for_aedt,
-)
-from qpdk.tech import coplanar_waveguide
+from qpdk.simulation.layout import prepare_metal_layout
+from qpdk.tech import coplanar_waveguide, material_properties
 
 PDK.activate()
 
@@ -245,10 +239,10 @@ print(f"Solution type: {hfss.solution_type}")
 
 # %%
 # Prepare component for export
-prepared_component = prepare_component_for_aedt(idc_component, margin_draw=50)
+prepared_component = prepare_metal_layout(idc_component, margin_draw=50)
 
 # Initialize HFSS wrapper
-hfss_sim = HFSS(hfss)
+hfss_sim = HFSS(hfss, material_properties=material_properties)
 
 # Import the component geometry using native GDS import
 success = hfss_sim.import_component(prepared_component, import_as_sheets=True)
@@ -565,7 +559,7 @@ detach_desktop_logging(q3d)
 q3d.modeler.model_units = "um"
 
 # Initialize Q3D wrapper
-q3d_sim = Q3D(q3d)
+q3d_sim = Q3D(q3d, material_properties=material_properties)
 
 print(f"Q3D project created: {q3d.project_file}")
 print(f"Design name: {q3d.design_name}")
