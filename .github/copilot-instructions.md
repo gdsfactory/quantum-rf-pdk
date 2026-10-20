@@ -124,6 +124,10 @@ Comment on these in roughly this order, and stay quiet about the rest:
 - **Release notes:** drafted automatically by release-drafter from PR titles and labels, so a PR title should read as a
   changelog entry on its own. `CHANGELOG.md` follows Keep a Changelog and is updated at release time, not per PR.
 - **Secrets:** never approve a committed key, token, or licence file.
+- **Fork guide:** `docs/customizing.md` documents QPDK's identity locations, cell and model registration, LFS and
+  regression-reference layout, and release tagging for downstream forks. Flag a PR that changes any of these (a new
+  hardcoded `qpdk` name, `get_pdk()` or `qpdk/cells/__init__.py` registration, `SAX_MODEL_ALIASES`, `.gitattributes`
+  patterns, the `release.yml` tag scheme) without updating that page's identity table or ownership map.
 
 ## What not to flag
 

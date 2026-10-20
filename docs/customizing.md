@@ -35,19 +35,13 @@ top of it, depend on `qpdk` and merge its registries into your own `Pdk` (for ex
 `cells={**qpdk.PDK.cells, **my_cells}`). You never have to merge anything, and you upgrade by bumping a version. The
 project-template work in [#376](https://github.com/gdsfactory/quantum-rf-pdk/issues/376) covers this path.
 
-````{only} html
 ```{mermaid}
+:alt: If you change the layers, layer stack, or materials, fork. If you only add cells, samples, or chips, compose.
 flowchart LR
     Q1["New layers, stack,<br/>or materials?"] -->|yes| F["Fork:<br/>own the process"]
     Q1 -->|no| Q2["Only adding cells,<br/>samples, or chips?"]
     Q2 -->|no| F
     Q2 -->|yes| C["Compose:<br/>depend on qpdk"]
-```
-````
-
-```{only} typst or typstpdf
-If you change the layers, layer stack, or materials, fork. If you only add cells, samples,
-or chips, compose. If you change upstream behaviour, fork.
 ```
 
 The rest of this page assumes a fork.
@@ -56,10 +50,10 @@ The rest of this page assumes a fork.
 
 ## Setting up the fork
 
-Create the fork, then add QPDK as a second remote. `origin` is your fork; `upstream` is QPDK.
+Create the fork on your Git host, then add QPDK as a second remote. `origin` is your fork; `upstream` is QPDK.
 
 ```bash
-git clone https://github.com/<your-org>/<your-pdk>.git
+git clone <your-fork-url> <your-pdk>
 cd <your-pdk>
 git remote add upstream https://github.com/gdsfactory/quantum-rf-pdk.git
 
@@ -71,6 +65,7 @@ git fetch upstream
 git tag -l 'upstream/*'   # upstream/v0.4.0, upstream/v0.4.1, ...
 
 # Remember how you resolved a conflict, so the next merge reuses it.
+# See https://git-scm.com/book/en/v2/Git-Tools-Rerere
 git config rerere.enabled true
 ```
 
@@ -85,28 +80,25 @@ These names are hardcoded to QPDK. Change all of them in **one commit** (or two 
 commit. It becomes the single known conflict point for every later upstream merge, and its diff is your checklist when a
 conflict shows up.
 
-| What                | Where                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Package directory   | `qpdk/`, and every `import qpdk` / `from qpdk` (`git grep -l qpdk`: most of the repo)   |
-| Name and version    | `[project]` in `pyproject.toml`, `__version__` in `qpdk/__init__.py`, `[tool.tbump]`    |
-| Tooling paths       | `pyproject.toml`: coverage `source`, pytest `testpaths`, ruff per-file ignores          |
-| GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries       |
-| Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                        |
-| PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py`  |
-| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`; `KLayoutTechnology(name=...)` in `qpdk/tech.py`    |
-| KLayout install     | `src` and `dest` in `qpdk/install_tech.py` (both spell out `qpdk`)                      |
-| Docs                | `docs/conf.py`: `project`, logos, HTML/PDF/PyPI/source URLs; badges in README and index |
-| Workflows           | `pages.yml` (`qpdk.pdf`), `release.yml` (PyPI URL), `test.yml` (`--cov=qpdk`, imports)  |
-| Repo metadata       | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`   |
+| What                | Where                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Package directory   | `qpdk/`, and every `import qpdk` / `from qpdk` (`git grep -l qpdk`: most of the repo)  |
+| Name and version    | `[project]` in `pyproject.toml`, `__version__` in `qpdk/__init__.py`, `[tool.tbump]`   |
+| Tooling paths       | `pyproject.toml`: coverage `source`, pytest `testpaths`, ruff per-file ignores         |
+| GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries      |
+| Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                       |
+| PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py` |
+| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`; `KLayoutTechnology(name=...)` in `qpdk/tech.py`   |
+| KLayout install     | `src` and `dest` in `qpdk/install_tech.py` (both spell out `qpdk`)                     |
+| Docs                | `docs/conf.py`: `project`, logos, and URLs; badges in README and index                 |
+| Workflows           | `test.yml` (`--cov=qpdk`, imports)                                                     |
+| Repo metadata       | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`  |
 
 The `justfile` reads the package name from `pdk := env('pdk', 'qpdk')`, so set `pdk=<your_pdk>` in `.env` or change the
 default. Only the `install-tech` and `show` recipes read that variable.
 
 Internal names that never reach a user, such as `docs/_ext/qpdk_*.py` and the `qpdk.mplstyle` figure style, can stay.
 Every one you leave alone is one fewer line that can conflict.
-
-Your fork also needs its own PyPI trusted publisher, Codecov token, and GitHub Pages site before the release, test, and
-pages workflows succeed.
 
 ## Process replacement
 
@@ -213,19 +205,14 @@ at least monthly, so each merge stays small.
 
 Your fork's `main` is a chain of your own work with one merge per upstream tag:
 
-````{only} html
 ```{mermaid}
+:alt: The fork starts from an upstream tag, adds its own commits, and merges each later tag via a sync pull request.
 flowchart LR
     U1["upstream<br/>v0.4.0"] --> U2["upstream<br/>v0.4.1"] --> U3["upstream<br/>v0.5.0"]
-    U1 -->|fork| F1["Rename, process,<br/>pruning"] --> M1["Merge<br/>v0.4.1"] --> F2["Your<br/>changes"] --> M2["Merge<br/>v0.5.0"]
+    U1 -->|fork| F1["Rename, process,<br/>pruning"] --> M1["Merge<br/>v0.4.1"]
+    M1 --> F2["Your<br/>changes"] --> M2["Merge<br/>v0.5.0"]
     U2 -->|sync PR| M1
     U3 -->|sync PR| M2
-```
-````
-
-```{only} typst or typstpdf
-Your fork starts from an upstream tag, adds the identity rename, process replacement, and
-pruning commits, and then takes one merge commit per later upstream tag, each through its own sync pull request.
 ```
 
 Before merging, see what came in and how far you have diverged:
@@ -249,7 +236,7 @@ Every path is owned by one side. This table tells you what will conflict and how
 
 | Path                                                   | Owner    | On merge                                         |
 | ------------------------------------------------------ | -------- | ------------------------------------------------ |
-| [Identity files](#identity-rename), version            | Fork     | Keep yours; rename any new upstream identity     |
+| [Identity files](#identity-rename), version            | Fork     | Keep your names; take upstream's other changes   |
 | `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork     | Keep yours; add wanted upstream layers, regen    |
 | `qpdk/tech.py`                                         | Shared   | Keep your values; take new upstream definitions  |
 | `qpdk/models/` (except datasets)                       | Upstream | Take upstream                                    |
@@ -275,6 +262,8 @@ adding files:
   `qpdk/tech.py`.
 - To add tests, add new test files instead of extending upstream ones.
 
+(resolving-conflicts)=
+
 ### Resolving conflicts
 
 Do the merge on a branch, so the result is reviewed and CI-tested like any other change:
@@ -286,33 +275,36 @@ git merge upstream/v0.4.1
 
 During the merge, `--ours` is your fork and `--theirs` is upstream. Handle conflicts by file class:
 
-- **Identity and version files**: keep yours (`git checkout --ours -- <path>`), then check whether upstream's side added
-  a new identity line you also need to rename.
+- **Identity and version files**: resolve by hand. In each conflict, keep your names and version and take everything
+  else from upstream's side. Do not `git checkout --ours` the whole file: files such as `pyproject.toml` also carry
+  upstream's dependency and tooling changes, and that would drop them. Then check whether upstream added a new identity
+  line you also need to rename.
 - **`qpdk/tech.py` and `qpdk/layers.yaml`**: resolve by hand. Keep your process values and take upstream's additions. If
   the layers changed, rerun `uv run python qpdk/tech.py`.
 - **Cells and models**: merge normally.
 - **Regression references** (`tests/gds_ref/*.gds`, `tests/test_pdk/*.yml`, `.npz`): do not resolve them by hand.
-  `*.gds` is marked `binary` in `.gitattributes`, so any file both sides changed is a hard conflict. Keep yours, finish
-  the merge, then regenerate with `just test-gds-force` (and `just test-models-force` if models changed). Commit the
-  regenerated references separately and review that diff on its own.
-- **Git LFS files** (`tests/models/data/*.csv`, `qpdk/models/datasets/data/**/*.parquet`, and
-  `notebooks/data/jax_backend_comparison/*.parquet`; the `.npz` references are LFS too but follow the rule above):
-  `.gitattributes` sets `merge=lfs`, but Git LFS does not define a merge driver by that name, so Git falls back to a
-  text merge of the pointer files. If both sides changed a file, the conflict markers appear inside the LFS pointer.
-  Never edit them; pick one side with `git checkout --theirs -- <path>` (upstream, the usual choice unless you changed
-  that model) or `--ours`, then `git add` it.
+  `*.gds` is marked `binary` in `.gitattributes`, so any file both sides changed is a hard conflict. Keep yours
+  (`git checkout --ours -- <path>`, then `git add` it), finish the merge, then regenerate with `just test-gds-force`
+  (and `just test-models-force` if models changed). Commit the regenerated references separately and review that diff on
+  its own.
+- **Other Git LFS files** (`tests/models/data/*.csv`, `qpdk/models/datasets/data/**/*.parquet`, and
+  `notebooks/data/jax_backend_comparison/*.parquet`): `.gitattributes` sets `merge=lfs`, but Git LFS does not define a
+  merge driver by that name, so Git falls back to a text merge of the pointer files. If both sides changed a file, the
+  conflict markers appear inside the LFS pointer. Never edit them; pick one side with `git checkout --theirs -- <path>`
+  (upstream, the usual choice for these datasets unless you regenerated them) or `--ours`, then `git add` it. The `.npz`
+  model references are LFS files too, but they are regression references: keep yours and regenerate them as above, never
+  take upstream's.
 
-````{only} html
 ```{mermaid}
+:alt: Conflicts are resolved by file class, as listed above, and every merge ends with just test and just run-pre.
 flowchart LR
-    S["Conflicted<br/>path"] --> I["Identity,<br/>version"] --> A1["Keep ours,<br/>rename new lines"]
+    S["Conflicted<br/>path"] --> I["Identity,<br/>version"] --> A1["Keep your names,<br/>take the rest"]
     S --> P["tech.py,<br/>layers.yaml"] --> A2["Merge by hand,<br/>regen KLayout"]
     S --> C["Cells,<br/>models"] --> A3["Merge normally"]
     S --> R["Regression<br/>references"] --> A4["Keep ours,<br/>regenerate"]
     S --> L["Other Git<br/>LFS files"] --> A5["Take one side,<br/>never edit pointer"]
     A1 & A2 & A3 & A4 & A5 --> T["just test,<br/>just run-pre"]
 ```
-````
 
 Then run `just test` and `just run-pre`, and open a pull request for the merge.
 
@@ -340,9 +332,28 @@ forever. See the [contributing guide](contributing.md).
 
 ### Optional: automated sync pull requests
 
-A scheduled workflow can do the bookkeeping. It pushes the latest upstream tag to a `sync/upstream` branch and opens a
-pull request from it, so you review a diff instead of starting a merge by hand. If the merge conflicts, the pull request
-shows it, and you resolve it locally as described above.
+A scheduled CI job can do the bookkeeping. It pushes the latest upstream tag to a `sync/upstream` branch and opens a
+pull (or merge) request from it, so you review a diff instead of starting a merge by hand. The examples below are for
+GitHub Actions, GitLab CI, and Forgejo Actions. All three skip the run when your `main` already contains the tag, or
+when `sync/upstream` already does, so a resolved merge you pushed there is kept until a newer upstream tag replaces it.
+
+If the merge conflicts, the pull request shows it. Resolve it locally on a branch as described in
+[Resolving conflicts](#resolving-conflicts), then push the result to the sync branch so the open pull request picks it
+up:
+
+```bash
+git push origin HEAD:sync/upstream
+```
+
+The merge commit has the upstream tag as a parent, so this is a fast-forward of `sync/upstream`. Merge the pull request
+before the next upstream tag: the next run force-pushes that tag over the branch.
+
+Merge these pull requests with a merge commit, never squash or rebase. A squash discards the link to upstream history,
+and the next sync then conflicts on everything again.
+
+#### GitHub Actions
+
+Save this as `.github/workflows/sync-upstream.yml`:
 
 ```yaml
 name: Sync upstream
@@ -372,6 +383,11 @@ jobs:
             echo "Already up to date with $tag"
             exit 0
           fi
+          if git rev-parse -q --verify origin/sync/upstream >/dev/null &&
+            git merge-base --is-ancestor "$tag" origin/sync/upstream; then
+            echo "sync/upstream already has $tag"
+            exit 0
+          fi
           git push --force origin "$tag^{commit}:refs/heads/sync/upstream"
           if [ -z "$(gh pr list -R "$GITHUB_REPOSITORY" --head sync/upstream --json number --jq '.[].number')" ]; then
             gh pr create -R "$GITHUB_REPOSITORY" --base main --head sync/upstream \
@@ -384,10 +400,88 @@ jobs:
 GitHub rejects `GITHUB_TOKEN` pushes that add or change files under `.github/workflows/`, and upstream releases usually
 do, and pull requests opened with `GITHUB_TOKEN` do not trigger your CI. A fine-grained token needs contents, pull
 requests, and workflows write access on the fork. Pin the action to a commit SHA, as QPDK's own workflows do.
+`.github/workflows/test-gfp-upstream.yml` uses the same scheduled-check pattern to test against the latest GDSFactory+
+release.
 
-Merge these pull requests with a merge commit, never squash or rebase. A squash discards the link to upstream history,
-and the next sync then conflicts on everything again. `.github/workflows/test-gfp-upstream.yml` uses the same
-scheduled-check pattern to test against the latest GDSFactory+ release.
+#### GitLab CI
+
+Add this job to `.gitlab-ci.yml`, and create a pipeline schedule for `main` under **Build > Pipeline schedules**:
+
+```yaml
+sync-upstream:
+  image:
+    name: alpine/git
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - git fetch --no-tags https://github.com/gdsfactory/quantum-rf-pdk.git '+refs/tags/v*:refs/tags/upstream/v*'
+    - tag=$(git for-each-ref --sort=-v:refname --count=1 --format='%(refname:short)' 'refs/tags/upstream/v*')
+    - if git merge-base --is-ancestor "$tag" HEAD; then echo "Already up to date with $tag"; exit 0; fi
+    - remote="https://oauth2:${SYNC_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - |
+      if git fetch -q "$remote" sync/upstream 2>/dev/null && git merge-base --is-ancestor "$tag" FETCH_HEAD; then
+        echo "sync/upstream already has $tag"
+        exit 0
+      fi
+    - >-
+      git push --force
+      -o merge_request.create -o merge_request.target=main
+      -o merge_request.title="Merge upstream ${tag#upstream/}"
+      "$remote" "$tag^{commit}:refs/heads/sync/upstream"
+```
+
+The `merge_request.*` push options open the merge request on the first push; later pushes update the open one. Store a
+project access token with the `write_repository` scope as the masked CI/CD variable `SYNC_TOKEN`; by default
+`CI_JOB_TOKEN` cannot push.
+
+#### Forgejo Actions
+
+Save this as `.forgejo/workflows/sync-upstream.yml`. Set `runs-on` to a label your runner provides; the job needs `git`
+and `curl` in its image.
+
+```yaml
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: docker
+    steps:
+      - name: Push the latest upstream tag to sync/upstream and open a pull request
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+          SERVER: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
+        run: |
+          host=${SERVER#*://}
+          git clone -q "https://oauth2:${SYNC_TOKEN}@${host}/${REPO}.git" fork
+          cd fork
+          git fetch --no-tags https://github.com/gdsfactory/quantum-rf-pdk.git '+refs/tags/v*:refs/tags/upstream/v*'
+          tag=$(git for-each-ref --sort=-v:refname --count=1 --format='%(refname:short)' 'refs/tags/upstream/v*')
+          if git merge-base --is-ancestor "$tag" origin/main; then
+            echo "Already up to date with $tag"
+            exit 0
+          fi
+          if git rev-parse -q --verify origin/sync/upstream >/dev/null &&
+            git merge-base --is-ancestor "$tag" origin/sync/upstream; then
+            echo "sync/upstream already has $tag"
+            exit 0
+          fi
+          git push --force origin "$tag^{commit}:refs/heads/sync/upstream"
+          # 201: pull request opened. 409: one is already open for sync/upstream.
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$SERVER/api/v1/repos/$REPO/pulls" \
+            -H "Authorization: token $SYNC_TOKEN" -H 'Content-Type: application/json' \
+            -d "{\"base\":\"main\",\"head\":\"sync/upstream\",\"title\":\"Merge upstream ${tag#upstream/}\"}")
+          [ "$code" = 201 ] || [ "$code" = 409 ]
+```
+
+`SYNC_TOKEN` is an access token with read and write access to the repository, stored as an Actions secret. Use it rather
+than the automatic token, which may not be allowed to trigger CI on the pull request the job opens.
 
 ## Your first merge
 

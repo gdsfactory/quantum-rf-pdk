@@ -202,6 +202,11 @@ All PRs must pass:
    information.
 1. **Python imports**: Place imports at the top of the file, not inside functions, unless the dependency is missing from
    `pyproject.toml` or is exceptionally heavy without lazy loading.
+1. **Keep the fork guide current**: `docs/customizing.md` tells downstream forks where QPDK hardcodes its identity, how
+   cells and models are registered, and which paths conflict on an upstream merge. Update its identity table and
+   ownership map when you add a new hardcoded `qpdk` name, change how `get_pdk()`, `qpdk/cells/__init__.py`, or
+   `SAX_MODEL_ALIASES` register things, move the process definition or regression references, change the Git LFS or
+   `binary` patterns in `.gitattributes`, or change how `release.yml` tags releases.
 1. **Mark blocked Python upgrades**: When a newer Python feature would simplify the code but the minimum supported
    version in `pyproject.toml` rules it out, leave a marker instead of silently working around it. Use
    `# TODO(Python 3.X): <feature> - <what to change>`, keep it to one line (two at most), and let the adjacent code
