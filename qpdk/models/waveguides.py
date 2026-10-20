@@ -1,12 +1,9 @@
 """Waveguides."""
 
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec, Size
-from jax.typing import ArrayLike
 from sax.models.rf import (
     coplanar_waveguide as _sax_coplanar_waveguide,
     electrical_open,
@@ -16,13 +13,14 @@ from sax.models.rf import (
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0, π
 from qpdk.models.cpw import get_cpw_dimensions, get_cpw_substrate_params
-from qpdk.models.generic import admittance, tee
+from qpdk.models.generic import shunt_admittance, tee
+from qpdk.models.jit import jit
 from qpdk.tech import coplanar_waveguide, launcher_cross_section_big
 
 
 def straight(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    length: sax.Float = 10.0,
+    length: sax.FloatArrayLike = 10.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     r"""S-parameter model for a straight coplanar waveguide.
@@ -143,7 +141,7 @@ def straight_shorted(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
         "short": electrical_short(f=f),
     }
@@ -171,7 +169,7 @@ def straight_open(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
         "open": electrical_open(f=f),
     }
@@ -188,7 +186,7 @@ def straight_double_open(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 10.0,
     cross_section: CrossSectionSpec = "cpw",
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for a straight waveguide with open ends.
 
     Note:
@@ -201,9 +199,9 @@ def straight_double_open(
         cross_section: The cross-section of the waveguide.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(f=f, length=length, cross_section=cross_section),
         "open1": electrical_open(f=f, n_ports=2),
         "open2": electrical_open(f=f, n_ports=2),
@@ -219,14 +217,14 @@ def straight_double_open(
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
 
 
-@partial(jax.jit, static_argnames=["west", "east", "north", "south"])
+@jit(static_argnames=["west", "east", "north", "south"])
 def nxn(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     west: int = 1,
     east: int = 1,
     north: int = 1,
     south: int = 1,
-) -> sax.SType:
+) -> sax.SDict:
     """NxN junction model using tee components.
 
     This model creates an N-port divider/combiner by chaining 3-port tee
@@ -240,7 +238,7 @@ def nxn(
         south: Number of ports on the south side.
 
     Returns:
-        sax.SType: S-parameters dictionary with ports o1, o2, ..., oN.
+        sax.SDict: S-parameters dictionary with ports o1, o2, ..., oN.
 
     Raises:
         ValueError: If total number of ports is not positive.
@@ -255,7 +253,7 @@ def nxn(
     if n_ports == 2:
         return electrical_short(f=f, n_ports=2)
 
-    instances = {f"tee_{i}": tee(f=f) for i in range(n_ports - 2)}
+    instances: dict[str, sax.SType] = {f"tee_{i}": tee(f=f) for i in range(n_ports - 2)}
     connections = {f"tee_{i},o3": f"tee_{i + 1},o1" for i in range(n_ports - 3)}
 
     ports = {
@@ -271,19 +269,26 @@ def nxn(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def airbridge(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     cpw_width: sax.Float = 10.0,
     bridge_width: sax.Float = 8.0,
     airgap_height: sax.Float = 3.0,
     loss_tangent: sax.Float = 1.2e-8,
-) -> sax.SType:
+) -> sax.SDict:
     r"""S-parameter model for a superconducting CPW airbridge.
 
-    The airbridge is modeled as a lumped lossy shunt admittance (accounting for
-    dielectric loss and shunt capacitance) embedded between two sections of
-    transmission line that represent the physical footprint of the bridge.
+    The airbridge is modeled as a lumped lossy shunt admittance to ground
+    (shunt capacitance plus dielectric loss) across the CPW at the bridge
+    location.
+
+    Ports ``o1`` and ``o2`` are the CPW reference planes immediately either
+    side of the bridge, both referenced to :math:`Z_0 = 50\,\Omega`. The
+    bridge footprint adds no transmission line length, so the two reference
+    planes coincide. The landing pads of the layout cell (``e1`` and ``e2``,
+    on the ``AB_VIA`` layer) contact the ground plane and are *not* RF ports
+    of this model.
 
     Parallel plate capacitor model is as done in :cite:`chenFabricationCharacterizationAluminum2014`
     The default value for the loss tangent :math:`\tan\,\delta` is also taken from there.
@@ -310,11 +315,11 @@ def airbridge(
     # Admittance of the bridge (Conductance from dielectric loss + Susceptance)
     Y_bridge = ω * c_bridge * (loss_tangent + 1j)
 
-    return admittance(f=f, y=Y_bridge)
+    return shunt_admittance(f=f, y=Y_bridge)
 
 
 def tsv(
-    f: ArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     via_height: float = 1000.0,
 ) -> sax.SDict:
     """S-parameter model for a through-silicon via (TSV), wrapped to :func:`~straight`.
@@ -332,9 +337,9 @@ def tsv(
 
 
 def indium_bump(
-    f: ArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     bump_height: float = 10.0,
-) -> sax.SType:
+) -> sax.SDict:
     """S-parameter model for an indium bump, wrapped to :func:`~straight`.
 
     TODO: add a constant loss channel for indium bumps.
@@ -344,7 +349,7 @@ def indium_bump(
         bump_height: Physical height (length) of the indium bump in µm.
 
     Returns:
-        sax.SType: S-parameters dictionary
+        sax.SDict: S-parameters dictionary
     """
     return straight(f=f, length=bump_height)
 
@@ -421,7 +426,7 @@ def bend_euler_all_angle(
     return straight(f=f, length=length, cross_section=cross_section)
 
 
-@partial(jax.jit, static_argnames=["npoints"], inline=True)
+@jit(static_argnames=["npoints"], inline=True)
 def _bend_s_length(size: Size, npoints: int = 99) -> jax.Array:
     """Return the layout S-bend length with JAX-compatible operations.
 
@@ -445,7 +450,7 @@ def bend_s(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float | None = None,
     size: Size = (20.0, 3.0),
-    npoints: int = 99,
+    npoints: int | jax.Array = 99,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     """S-parameter model for an S-bend, wrapped to :func:`~straight`.
@@ -454,7 +459,8 @@ def bend_s(
         f: Array of frequency points in Hz
         length: Physical length in µm. When omitted, it is derived from ``size``.
         size: Layout S-bend extent in µm.
-        npoints: Number of points used to discretize the layout Bézier curve.
+        npoints: Number of points used to discretize the layout Bézier curve;
+            a scalar array (as gdsfactoryplus model binding emits) is accepted.
         cross_section: The cross-section of the waveguide.
 
     Returns:
@@ -485,8 +491,20 @@ def rectangle(
     return straight(f=f, length=length, cross_section=cross_section)
 
 
+def _static_linspace(start: float, stop: float, npoints: int) -> list[float]:
+    """Return ``jnp.linspace`` values as plain scalars matching its endpoints.
+
+    Cross-section dimensions are static geometry, and gdsfactory cross-sections
+    cannot receive JAX tracers.
+    """
+    if npoints < 2:
+        return [start]
+    step = (stop - start) / (npoints - 1)
+    return [start + i * step for i in range(npoints - 1)] + [stop]
+
+
 def taper_cross_section(
-    f: ArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: sax.Float = 10,
     cross_section1: CrossSectionSpec = "cpw",
     cross_section2: CrossSectionSpec = "cpw",
@@ -500,25 +518,30 @@ def taper_cross_section(
         cross_section1: Cross-section for the start of the taper.
         cross_section2: Cross-section for the end of the taper.
         npoints: Number of segments to divide the taper into for simulation.
+            Clamped to a minimum of one segment. Ignored when both
+            cross-sections have identical dimensions.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    npoints = int(npoints)
+    npoints = max(npoints, 1)
     w1, g1 = get_cpw_dimensions(cross_section1)
     w2, g2 = get_cpw_dimensions(cross_section2)
+
+    if (w1, g1) == (w2, g2):
+        return straight(f=f, length=length, cross_section=cross_section1)
 
     f = jnp.asarray(f)
     segment_length = length / npoints
 
-    ws = jnp.linspace(w1, w2, npoints)
-    gs = jnp.linspace(g1, g2, npoints)
+    widths = _static_linspace(w1, w2, npoints)
+    gaps = _static_linspace(g1, g2, npoints)
 
-    instances = {
+    instances: dict[str, sax.SType] = {
         f"straight_{i}": straight(
             f=f,
             length=segment_length,
-            cross_section=coplanar_waveguide(width=float(ws[i]), gap=float(gs[i])),
+            cross_section=coplanar_waveguide(width=widths[i], gap=gaps[i]),
         )
         for i in range(npoints)
     }
@@ -533,7 +556,7 @@ def taper_cross_section(
 
 
 def launcher(
-    f: ArrayLike = DEFAULT_FREQUENCY,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     straight_length: sax.Float = 200.0,
     taper_length: sax.Float = 100.0,
     cross_section_big: CrossSectionSpec = launcher_cross_section_big,
@@ -552,7 +575,7 @@ def launcher(
         sax.SDict: S-parameters dictionary
     """
     f = jnp.asarray(f)
-    instances = {
+    instances: dict[str, sax.SType] = {
         "straight": straight(
             f=f,
             length=straight_length,

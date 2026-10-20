@@ -117,6 +117,8 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venv-mps/
+.venv-cuda/
 env/
 venv/
 ENV/
@@ -161,6 +163,7 @@ docs/_extra/
 docs/_generated/
 docs/makefile_help.txt
 docs/justfile_help.txt
+notebooks/figures/*.svg
 !notebooks/*.ipynb
 
 # Testing

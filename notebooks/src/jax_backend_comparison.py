@@ -7,49 +7,60 @@
 #       format_version: "1.3"
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # %% [markdown]
 # # JAX Backend Comparison for Quantum Circuit Simulation
 #
-# ::::{admonition} Required extras
-# :class: tip
+# This notebook loads recorded CPU, CUDA, and Apple Silicon (MPS) measurements
+# from Parquet files in `notebooks/data/jax_backend_comparison/`. Documentation CI
+# executes the analysis and renders the plots; no GPU or live benchmark is needed.
+# The sweeps cover 100 to 30 million frequency points.
+# Each curve identifies its hardware and precision. These are different machines,
+# so the plot compares complete systems, with a CPU baseline for each machine.
 #
-# This notebook needs the `models` extra:
+# ## Recording measurements
+#
+# Install the `models` extra and fetch the data with Git LFS from a checkout:
 #
 # ```bash
-# uv add "qpdk[models]"
-# # or, from a checkout of this repository:
 # uv sync --extra models
-# # or with pip:
-# pip install "qpdk[models]"
+# git lfs pull --include="notebooks/data/jax_backend_comparison/*.parquet"
 # ```
 #
-# The OpenVINO benchmark additionally needs `pip install openvino`, and is skipped if it is missing.
+# The recorder builds a capacitively coupled quarter-wave resonator with 500 µm
+# feedlines, a 20 fF coupling capacitor, and a 4000 µm shorted CPW stub (width
+# 10 µm, gap 6 µm). SAX's pure-JAX `filipsson_gunnar` solver runs on every device;
+# the default KLU solver's FFI kernels are CPU-only. For each sweep size it warms
+# up `jax.jit`, checks output precision and device, then times ten evaluations,
+# synchronizing the entire output with `jax.block_until_ready` on each call.
 #
-# See the {ref}`extras reference <notebook-extras>` for what each extra installs.
-# ::::
+# ```bash
+# QPDK_REQUIRE_GPU=1 uv run --extra models --with "jax[cuda12]" \
+#   python -m qpdk.samples.benchmark_jax_backends \
+#   notebooks/data/jax_backend_comparison/cuda.parquet
+# ```
 #
-# This notebook benchmarks a SAX-based quantum circuit simulation across available
-# JAX compute backends: **CPU**, **GPU** (CUDA), and **NPU** via
-# [OpenVINO](https://docs.openvino.ai/2025/openvino-workflow/model-preparation/convert-model-jax.html).
+# Apple Silicon uses experimental [jax-mps](https://github.com/tillahoffmann/jax-mps),
+# which requires JAX 0.11.x. Installing a new environment with normal dependency
+# resolution requires [SAX to allow that version](https://github.com/gdsfactory/sax/pull/133).
+# The saved MPS measurements use an existing experimental JAX 0.11 environment.
+# Once compatible SAX is available, install `jax-mps` alongside `qpdk[models]`
+# and use `QPDK_REQUIRE_MPS=1` with the same recorder, saving `apple-m5.parquet`.
+# MPS supports float32/complex64 only; compare it with CPU and CUDA float32.
+# The saved runs retain their original package versions and model source hash.
 #
-# JAX provides a unified programming model that can transparently target different
-# hardware accelerators.  For large-scale circuit sweeps — e.g. sweeping thousands of
-# frequency points or running optimisation loops — hardware acceleration can give
-# significant speed-ups.
-#
-# ## Workflow
-#
-# 1. Build a coupled resonator circuit with the QPDK model library and SAX.
-# 2. Detect which compute backends are available on the current system.
-# 3. Benchmark the circuit evaluation at a range of frequency-resolution sizes on
-#    every available backend.
-# 4. For the OpenVINO (NPU) backend, export the circuit as a JAX expression (JAXPR)
-#    and compile it with the OpenVINO runtime.
-# 5. Plot and compare performance.
-#
-# > **Note** – GPU and NPU sections are skipped automatically when the corresponding
-# > hardware or software is not present, so the notebook runs cleanly on any CI or
-# > CPU-only machine.
+# Parquet stores typed nested records: one machine run per file, with all raw
+# repetitions, workload settings, software versions, errors, and real/imaginary
+# CPU reference arrays. Commit these files through Git LFS. Notebook outputs are
+# stripped; changing plot styling only requires rerendering this analysis.
+# See the {ref}`extras reference <notebook-extras>` for the model dependencies.
 
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -68,427 +79,221 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input", "hide-output"]
-import math
-import time
-import warnings
+import os
 
-import jax
-import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
-import sax
-from tqdm.auto import tqdm, trange
+import pyarrow.parquet as pq
 
-from qpdk import PDK
-from qpdk.models.generic import capacitor, tee
-from qpdk.models.waveguides import straight, straight_shorted
-from qpdk.tech import coplanar_waveguide
+import qpdk.colormaps  # ruff: ignore[unused-import] - registers the style colormap
+from qpdk.config import PATH
 
-jax.config.update("jax_enable_x64", True)
-
-PDK.activate()
-
-# %% [markdown]
-# ## Backend Detection
-#
-# We probe each backend and record its availability.  Unavailable backends are
-# skipped gracefully throughout the notebook.
-
-# %%
-# --- CPU (always available) ---
-cpu_device = jax.devices("cpu")[0]
-HAS_CPU = True
-
-# --- GPU ---
-try:
-    _gpu_devices = jax.devices("gpu")
-    HAS_GPU = len(_gpu_devices) > 0
-    gpu_device = _gpu_devices[0] if HAS_GPU else None
-except Exception:
-    HAS_GPU = False
-    gpu_device = None
-
-# --- OpenVINO (NPU / CPU via OpenVINO runtime) ---
-try:
-    import openvino as ov
-
-    HAS_OPENVINO = True
-    _ov_version_str = f"v{ov.__version__}"
-except ImportError:
-    HAS_OPENVINO = False
-    _ov_version_str = "not installed"
-
-print(f"CPU  : {'✓' if HAS_CPU else '✗'}")
-print(f"GPU  : {'✓  (' + str(gpu_device) + ')' if HAS_GPU else '✗  (not available)'}")
-print(
-    f"OpenVINO: {'✓  (' + _ov_version_str + ')' if HAS_OPENVINO else '✗  (' + _ov_version_str + ')'}"
+plt.style.use(
+    PATH.repo / "docs" / f"{os.environ.get('QPDK_MPL_STYLE', 'qpdk')}.mplstyle"
 )
-print(f"\nDefault JAX backend: {jax.default_backend()}")
 
 # %% [markdown]
-# ## Circuit Setup
+# ## Recorded Runs
 #
-# We build a capacitively-coupled quarter-wave resonator on a coplanar waveguide
-# (CPW) feed-line.  The topology is:
-#
-# ```
-# port o1 ──[feedline1]──[tee]──[feedline2]── port o2
-#                         │
-#                        [cap]
-#                         │
-#                        [res]  (shorted stub ≈ λ/4)
-# ```
-#
-# The resonance frequency of a shorted λ/4 stub of length *L* is approximately
-#
-# :math:`f_0 = v_\phi / (4 L)`
-#
-# where :math:`v_\phi` is the phase velocity on the CPW.
+# Runs must share the same workload and CPU float64 reference before their
+# timings can be compared. The reference uses 1001 points from 2 to 8 GHz.
+# All errors below are absolute linear transmission errors, not dB errors or
+# relative errors near the resonance dip.
 
 # %%
-cross_section = coplanar_waveguide(width=10, gap=6)
+result_paths = sorted(
+    (PATH.repo / "notebooks/data/jax_backend_comparison").glob("*.parquet")
+)
+if not result_paths:
+    raise FileNotFoundError(
+        "No benchmark records found. Fetch the Parquet files with Git LFS."
+    )
+runs = [pq.read_table(path).to_pylist()[0] for path in result_paths]
+workload = runs[0]["workload"]
+_BENCHMARK_SIZES = workload["sizes"]
+_N_REPEATS = workload["n_repeats"]
+reference = np.asarray(runs[0]["reference_s21"]["real"]) + 1j * np.asarray(
+    runs[0]["reference_s21"]["imag"]
+)
+for result_path, run in zip(result_paths, runs, strict=True):
+    if run["workload"] != workload:
+        raise ValueError(f"Recorded workload differs in {result_path.name}.")
+    trace = run["reference_s21"]
+    np.testing.assert_allclose(
+        np.asarray(trace["real"]) + 1j * np.asarray(trace["imag"]),
+        reference,
+        rtol=1e-10,
+        atol=1e-12,
+        err_msg=f"CPU reference differs in {result_path.name}",
+    )
 
-# Component models available to the SAX circuit solver
-circuit_models = {
-    "straight": straight,
-    "capacitor": capacitor,
-    "straight_shorted": straight_shorted,
-    "tee": tee,
-}
+combined_results = {}
+for run in runs:
+    for result in run["results"]:
+        name = f"{result['hardware']} / {result['backend']}"
+        combined_results.setdefault(name, (run, result))
 
-# Netlist: component instances with their physical parameters
-netlist = {
-    "instances": {
-        "feedline1": {
-            "component": "straight",
-            "settings": {"length": 500, "media": cross_section},
-        },
-        "feedline2": {
-            "component": "straight",
-            "settings": {"length": 500, "media": cross_section},
-        },
-        "cap": {
-            "component": "capacitor",
-            "settings": {"capacitance": 20e-15, "z0": 50},
-        },
-        "res": {
-            "component": "straight_shorted",
-            "settings": {"length": 4000, "media": cross_section},
-        },
-        "tee": "tee",
-    },
-    "connections": {
-        "feedline1,o2": "tee,o1",
-        "tee,o2": "feedline2,o1",
-        "tee,o3": "cap,o1",
-        "cap,o2": "res,o1",
-    },
-    "ports": {
-        "o1": "feedline1,o1",
-        "o2": "feedline2,o2",
-    },
-}
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    circuit_fn, circuit_info = sax.circuit(netlist=netlist, models=circuit_models)
-
-print("Circuit built successfully.")
-print("External ports:", list(netlist["ports"].keys()))
+print(
+    f"{'Hardware / backend':<60} {'JAX':<8} {'Max |S21| error':>17} {'Max complex error':>19}"
+)
+for name, (run, result) in combined_results.items():
+    samples = np.asarray(result["samples_s"])
+    if samples.shape != (len(_BENCHMARK_SIZES), _N_REPEATS) or not np.all(
+        np.isfinite(samples) & (samples > 0)
+    ):
+        raise ValueError(f"Invalid timing samples for {name}.")
+    print(
+        f"{name:<60} {run['versions']['jax']:<8} {result['magnitude_error']:17.6g} {result['complex_error']:19.6g}"
+    )
+    print(
+        f"  {run['system']}; Python {run['python']}; packages {run['versions']}; recorded {run['recorded_at']}"
+    )
 
 # %% [markdown]
-# ### Verify the Simulation
+# ## Reference Transmission
 #
-# Run the circuit at moderate resolution and plot the transmission to confirm
-# the expected resonance dip appears.
+# The saved CPU float64 trace shows the resonance of the coupled resonator.
 
 # %%
-freq_ref = jnp.linspace(2e9, 8e9, 1001)
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    s_ref = circuit_fn(f=freq_ref)
-
-freq_ghz = freq_ref / 1e9
-s21_ref = s_ref["o1", "o2"]
-
+f_start, f_stop = workload["frequency_hz"]
+freq_ghz = np.linspace(f_start, f_stop, len(reference)) / 1e9
 fig, ax = plt.subplots()
-ax.plot(freq_ghz, 20 * jnp.log10(jnp.abs(s21_ref)), label="$S_{21}$")
+ax.plot(freq_ghz, 20 * np.log10(np.abs(reference)), label="$S_{21}$")
 ax.set_xlabel("Frequency [GHz]")
 ax.set_ylabel("Magnitude [dB]")
-ax.set_title("Coupled resonator — reference simulation")
+ax.set_title("Coupled resonator reference")
 ax.legend()
-ax.grid(True)
-plt.tight_layout()
-plt.show()
-
-# %% [markdown]
-# ## Benchmarking Helper
-#
-# JAX dispatches computation asynchronously.  We call `jax.block_until_ready` to
-# ensure all pending work has completed before stopping the clock.  The first call
-# for each new input shape triggers JIT compilation; we exclude this from the
-# reported times by warming up before measuring.
-#
-# ### Note on SAX output type
-#
-# `circuit_fn` returns a `sax.SDict`, which is a plain Python `dict` mapping
-# port-pair tuples to JAX arrays.  `jax.block_until_ready` accepts any JAX
-# *pytree*, including dicts of arrays, so it works directly on the SAX output.
-
-# %%
-_BENCHMARK_SIZES = jnp.geomspace(
-    100, 100_000, 10, dtype=int
-).tolist()  # number of frequency points
-_N_REPEATS = 10  # number of timed runs per size
-
-
-def benchmark_circuit(
-    device: jax.Device,
-    sizes: list[int] = _BENCHMARK_SIZES,
-    n_repeats: int = _N_REPEATS,
-) -> list[float]:
-    """Return median wall-clock time [s] per circuit evaluation on *device*.
-
-    Args:
-        device: JAX device on which to run the circuit.
-        sizes: List of frequency-array lengths to sweep.
-        n_repeats: Number of timed repetitions per size.
-
-    Returns:
-        List of median evaluation times in seconds, one per entry in *sizes*.
-    """
-    times: list[float] = []
-    for n in tqdm(sizes, desc=f"Benchmarking on {device}"):
-        freq = jnp.linspace(2e9, 8e9, n)
-        with jax.default_device(device):
-            # Move the frequency array to the target device
-            freq_d = jax.device_put(freq, device)
-            # JIT warmup — first call compiles the function for this shape
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                warmup = circuit_fn(f=freq_d)
-                jax.block_until_ready(warmup)
-
-                # Timed runs
-                run_times: list[float] = []
-                for _ in range(n_repeats):
-                    t0 = time.perf_counter()
-                    s = circuit_fn(f=freq_d)
-                    jax.block_until_ready(s)
-                    t1 = time.perf_counter()
-                    run_times.append(t1 - t0)
-        # Use the median to reduce noise from JIT re-traces / OS scheduling
-        times.append(sorted(run_times)[n_repeats // 2])
-    return times
-
-
-# %% [markdown]
-# ## CPU Backend
-
-# %%
-cpu_times = benchmark_circuit(cpu_device)
-for n, t in zip(_BENCHMARK_SIZES, cpu_times):
-    print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
-
-# %% [markdown]
-# ## GPU Backend
-#
-# This section requires a CUDA-capable GPU.  It is skipped automatically when
-# no GPU is detected.
-
-# %%
-gpu_times: list[float] | None = None
-
-if HAS_GPU:
-    gpu_times = benchmark_circuit(gpu_device)
-    for n, t in zip(_BENCHMARK_SIZES, gpu_times):
-        print(f"  n={n:>6d}: {t * 1_000:.3f} ms")
-else:
-    print("GPU not available on this system — skipping GPU benchmark.")
-
-# %% [markdown]
-# ## OpenVINO / NPU Backend
-#
-# [OpenVINO](https://docs.openvino.ai/2025/) is Intel's inference runtime that
-# targets CPUs, integrated GPUs, and — most importantly — dedicated Neural
-# Processing Units (NPUs) available in recent Intel Core Ultra processors.
-#
-# ### Conversion workflow
-#
-# 1. **Wrap** the SAX circuit function so that it accepts a plain array and
-#    returns a plain array (OpenVINO cannot consume Python dicts).
-# 2. **Trace** the wrapper with `jax.make_jaxpr` to obtain a closed JAXPR.
-# 3. **Convert** the JAXPR to an OpenVINO IR model with `ov.convert_model`.
-# 4. **Compile** for the preferred device (NPU → GPU → CPU, in that priority
-#    order).
-# 5. **Benchmark** with the compiled model.
-#
-# ### Known SAX / JAX-to-OpenVINO considerations
-#
-# * SAX models use **complex128** arithmetic internally.  The OpenVINO runtime
-#   may not expose complex128 directly; `ov.convert_model` translates complex
-#   operations into pairs of real operations (real, imag) automatically.
-# * The JAXPR is traced for a **fixed input shape** (the reference frequency
-#   array).  A separate compiled model is therefore needed for each benchmark
-#   size.  For production use, prefer a single representative size or use
-#   OpenVINO dynamic shapes.
-# * On systems without a physical NPU the OpenVINO runtime falls back to the
-#   CPU plugin, which still validates the full conversion and compilation path.
-
-# %%
-ov_times: list[float] | None = None
-ov_device_name: str = "unknown"
-
-if HAS_OPENVINO:
-    import openvino as ov
-
-    core = ov.Core()
-    available_ov_devices = core.available_devices
-    print("Available OpenVINO devices:", available_ov_devices)
-
-    # Select the best available device: NPU > GPU > CPU
-    for _pref in ("NPU", "GPU", "CPU"):
-        if _pref in available_ov_devices:
-            ov_device_name = _pref
-            break
-
-    print(f"Selected OpenVINO device: {ov_device_name}")
-
-    # ------------------------------------------------------------------
-    # Wrapper: SAX SDict → plain JAX array
-    # SAX returns a dict of complex S-parameters; we expose the magnitude
-    # of S21 and S11 as a stacked real-valued array so that OpenVINO can
-    # consume the output without encountering Python-dict outputs.
-    # ------------------------------------------------------------------
-    def _s_magnitudes(freq: jax.Array) -> jax.Array:
-        """Return |S21|, |S11| stacked into a real-valued array."""
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            s = circuit_fn(f=freq)
-        return jnp.stack([jnp.abs(s["o1", "o2"]), jnp.abs(s["o1", "o1"])])
-
-    ov_times = []
-    for _n in _BENCHMARK_SIZES:
-        _freq = jnp.linspace(2e9, 8e9, _n)
-
-        # 1. Trace the function for this specific input shape
-        try:
-            _jaxpr = jax.make_jaxpr(_s_magnitudes)(_freq)
-        except Exception as exc:
-            print(f"  n={_n}: make_jaxpr failed — {exc}")
-            ov_times.append(float("nan"))
-            continue
-
-        # 2. Convert to OpenVINO IR
-        try:
-            _ov_model = ov.convert_model(_jaxpr)
-        except Exception as exc:
-            print(f"  n={_n}: ov.convert_model failed — {exc}")
-            ov_times.append(float("nan"))
-            continue
-
-        # 3. Compile for the selected device
-        try:
-            _compiled = core.compile_model(_ov_model, ov_device_name)
-        except Exception as exc:
-            print(f"  n={_n}: compile_model failed — {exc}")
-            ov_times.append(float("nan"))
-            continue
-
-        # 4. Benchmark: create one infer request and reuse it
-        _infer = _compiled.create_infer_request()
-        _freq_np = jax.device_get(_freq)  # copy to host as a NumPy array
-
-        # Warmup
-        _infer.infer([_freq_np])
-
-        _run_times: list[float] = []
-        for _ in trange(
-            _N_REPEATS, desc=f"Timing OpenVINO on {ov_device_name} for n={_n}"
-        ):
-            _t0 = time.perf_counter()
-            _infer.infer([_freq_np])
-            _t1 = time.perf_counter()
-            _run_times.append(_t1 - _t0)
-
-        _median_t = sorted(_run_times)[_N_REPEATS // 2]
-        ov_times.append(_median_t)
-        print(f"  n={_n:>6d}: {_median_t * 1_000:.3f} ms")
-
-else:
-    print(
-        "OpenVINO is not installed on this system — skipping NPU/OpenVINO benchmark.\n"
-        "Install it with:  uv pip install openvino"
-    )
-
-# %% [markdown]
-# ## Performance Comparison
-#
-# The plot below shows median evaluation time as a function of the number of
-# frequency points swept.  A linear relationship on a log–log scale indicates
-# :math:`O(N)` scaling; super-linear growth suggests memory-bandwidth or
-# kernel-launch overhead is significant.
-
-# %%
-fig, ax = plt.subplots()
-ax.plot(_BENCHMARK_SIZES, [t * 1_000 for t in cpu_times], "o-", label="CPU (JAX)")
-
-if gpu_times is not None:
-    ax.plot(
-        _BENCHMARK_SIZES, [t * 1_000 for t in gpu_times], "s-", label="GPU (JAX/CUDA)"
-    )
-
-if ov_times is not None:
-    _valid = [(n, t) for n, t in zip(_BENCHMARK_SIZES, ov_times) if not math.isnan(t)]
-    if _valid:
-        _ns, _ts = zip(*_valid)
-        ax.plot(
-            _ns, [t * 1_000 for t in _ts], "^-", label=f"OpenVINO ({ov_device_name})"
-        )
-
-ax.set_xscale("log")
-ax.set_yscale("log")
-ax.set_xlabel("Number of frequency points")
-ax.set_ylabel("Median time per evaluation [ms]")
-ax.set_title("JAX backend performance — coupled resonator circuit")
-ax.legend()
-ax.grid(True, which="both", ls="--", alpha=0.5)
-plt.tight_layout()
 plt.show()
 
 # %% [markdown]
 # ## Scaling Analysis
 #
-# We fit a power-law model :math:`t = a \cdot N^b` to the CPU timing data to
-# characterise the asymptotic scaling exponent *b*.  Perfect vectorised code has
-# :math:`b = 1`; values above 1 indicate super-linear overhead (e.g. matrix
-# factorisation inside the circuit solver).
+# The cost of one evaluation has two parts: a fixed overhead per call (dispatch and
+# kernel launches) and a cost per frequency point.  We therefore model the median time as
+#
+# $$
+# t(N) = t_0 + c \, N ,
+# $$
+#
+# where $t_0$ is the overhead and $c$ the cost per point.  A single power law
+# $t = a N^b$ cannot describe this: the overhead dominates at small $N$, so the
+# curve is flat there and only becomes linear once $c N \gg t_0$, near the
+# crossover size $N^\ast = t_0 / c$.
+#
+# The timings span several decades, so an ordinary least-squares fit would only follow
+# the largest sizes.  We minimise the *relative* residuals instead, which is still a
+# linear problem: dividing $t_0 + c N_i \approx t_i$ by $t_i$ gives
+# $t_0 / t_i + c \, N_i / t_i \approx 1$.  Both parameters are physically non-negative;
+# if the unconstrained solution makes one of them negative, we drop that term and refit.
+
 
 # %%
-_sizes_arr = np.array(_BENCHMARK_SIZES, dtype=float)
-_cpu_arr = np.array(cpu_times, dtype=float)
+def fit_overhead_model(sizes: list[int], times: list[float]) -> tuple[float, float]:
+    """Fit ``t = t0 + c * N`` to timings, minimising the relative residuals.
 
-# Fit log(t) = log(a) + b*log(N) via linear regression
-_log_n = np.log(_sizes_arr)
-_log_t = np.log(_cpu_arr)
-_b, _log_a = np.polyfit(_log_n, _log_t, 1)
-_a = np.exp(_log_a)
+    Args:
+        sizes: Number of frequency points per measurement.
+        times: Median evaluation time [s] per measurement.
 
-print(f"CPU scaling fit:  t ≈ {_a * 1e6:.2f} µs · N^{_b:.3f}")
+    Returns:
+        Fixed overhead ``t0`` [s] and cost per frequency point ``c`` [s].
+    """
+    n = np.asarray(sizes, dtype=float)
+    t = np.asarray(times, dtype=float)
+    design = np.column_stack([1 / t, n / t])
+    (t0, c), *_ = np.linalg.lstsq(design, np.ones_like(t), rcond=None)
+    if t0 < 0:  # pure per-point cost: minimise sum((c * N / t - 1) ** 2)
+        x = n / t
+        t0, c = 0.0, x.sum() / (x**2).sum()
+    elif c < 0:  # pure overhead
+        x = 1 / t
+        t0, c = x.sum() / (x**2).sum(), 0.0
+    return float(t0), float(c)
 
-_n_fit = np.logspace(np.log10(_sizes_arr[0]), np.log10(_sizes_arr[-1]), 200)
-_t_fit = _a * _n_fit**_b
 
-fig, ax = plt.subplots()
-ax.scatter(_sizes_arr, _cpu_arr * 1_000, zorder=5, label="CPU measurements")
-ax.plot(_n_fit, _t_fit * 1_000, "--", label=f"fit: $N^{{{_b:.2f}}}$")
+backend_times = {
+    name: np.median(result["samples_s"], axis=1).tolist()
+    for name, (_, result) in combined_results.items()
+}
+
+fits = {
+    name: fit_overhead_model(_BENCHMARK_SIZES, times)
+    for name, times in backend_times.items()
+}
+
+for name, (t0, c) in fits.items():
+    t_model = t0 + c * np.asarray(_BENCHMARK_SIZES)
+    max_error = np.max(np.abs(t_model / np.asarray(backend_times[name]) - 1))
+    print(
+        f"{name}: t0 = {t0 * 1e6:8.1f} µs, c = {c * 1e9:8.2f} ns/point, "
+        f"N* = t0/c ≈ {t0 / c if c > 0 else float('inf'):,.0f} points, "
+        f"max relative error {max_error:.0%}"
+    )
+
+# %% [markdown]
+# ## Performance Comparison
+#
+# The plot below shows the median evaluation time against the number of frequency
+# points, with the fitted model as a dashed line for each backend.  On log–log axes the
+# model is flat below $N^\ast$ and has slope 1 above it. Hardware and precision
+# are shown for every curve; the CPU rows are the baselines for their own machines.
+# Points show measured medians. Error bars span the 25th to 75th percentiles
+# of the repetitions, while dashed lines show the overhead fit.
+#
+# The lower panel compares each accelerator with the CPU on its own machine at
+# matching precision. Values above 1 mean the GPU is faster. These ratios use
+# measured medians; the fitted lines do not establish a crossover on their own.
+
+# %%
+_n_fit = np.geomspace(_BENCHMARK_SIZES[0], _BENCHMARK_SIZES[-1], 200)
+
+fig, (ax, speedup_ax) = plt.subplots(
+    2, 1, sharex=True, figsize=(11, 10), gridspec_kw={"height_ratios": [2, 1]}
+)
+for name, times in backend_times.items():
+    t0, c = fits[name]
+    samples = np.asarray(combined_results[name][1]["samples_s"])
+    medians = np.asarray(times)
+    lower, upper = np.percentile(samples, [25, 75], axis=1)
+    line = ax.errorbar(
+        _BENCHMARK_SIZES,
+        medians * 1_000,
+        yerr=np.asarray([medians - lower, upper - medians]) * 1_000,
+        fmt="o",
+        capsize=2,
+        label=name,
+    )[0]
+    ax.plot(
+        _n_fit,
+        (t0 + c * _n_fit) * 1_000,
+        "--",
+        color=line.get_color(),
+    )
+
+    run, result = combined_results[name]
+    backend, precision = result["backend"].split()
+    if backend != "CPU":
+        cpu = next(
+            row for row in run["results"] if row["backend"] == f"CPU {precision}"
+        )
+        speedup = np.median(cpu["samples_s"], axis=1) / medians
+        speedup_ax.plot(
+            _BENCHMARK_SIZES, speedup, "o-", color=line.get_color(), label=name
+        )
+
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel("Number of frequency points")
+speedup_ax.set_xlabel("Number of frequency points")
 ax.set_ylabel("Median time per evaluation [ms]")
-ax.set_title("CPU scaling behaviour")
+ax.set_title("JAX backend performance — coupled resonator circuit")
 ax.legend()
 ax.grid(True, which="both", ls="--", alpha=0.5)
+speedup_ax.set_yscale("log")
+speedup_ax.set_ylabel("Speedup over matching CPU")
+speedup_ax.axhline(1, color="0.4", ls=":", label="CPU baseline")
+speedup_ax.legend(fontsize=9)
+speedup_ax.grid(True, which="both", ls="--", alpha=0.5)
+speedup_ax.set_xlim(_BENCHMARK_SIZES[0] / 1.2, _BENCHMARK_SIZES[-1] * 1.2)
 plt.tight_layout()
 plt.show()
 
@@ -497,21 +302,18 @@ plt.show()
 #
 # | Backend | Notes |
 # |---------|-------|
-# | **CPU** | Always available; good baseline.  JAX JIT provides substantial speed-up over NumPy equivalents. |
-# | **GPU** | Requires `jax[cuda]` and a CUDA-capable GPU.  Beneficial for very large frequency sweeps or batched optimisation. |
-# | **OpenVINO (NPU)** | Requires `openvino` package.  Converts the JAX trace to an IR model, then compiles for the best available device (NPU > GPU > CPU).  Most beneficial on Intel Core Ultra platforms with a dedicated NPU. |
+# | **CPU** | Float64 reference and float32 baseline for comparisons at matching precision. |
+# | **GPU** | CUDA runs at both float64/complex128 and float32/complex64. Compare float32 against MPS and float64 against the CPU reference; consumer GPUs often have much lower float64 throughput. |
+# | **MPS** | Apple Silicon via experimental jax-mps; float32/complex64 only. New environments await SAX support for JAX 0.11. |
 #
 # ### SAX / JAX integration notes
 #
+# * **Jit the circuit**: `sax.circuit` returns an un-jitted function.  Wrap it in
+#   `jax.jit` before calling it repeatedly, or Python dispatch overhead dominates the
+#   runtime of small and medium sweeps.
 # * **Output type**: `sax.circuit` returns an `SDict` (a plain `dict` mapping
-#   port-pair tuples to JAX arrays).  To use the circuit with `jax.make_jaxpr`
-#   or any system that expects *array* outputs, wrap it in a helper function that
-#   extracts or combines the relevant entries.
-# * **Complex arithmetic**: SAX models default to `complex128`.  JAX handles this
-#   natively; OpenVINO decomposes complex ops into real/imaginary pairs during
-#   conversion.  If conversion fails due to dtype issues, consider calling
-#   `jax.config.update("jax_enable_x64", True)` early and/or lowering precision
-#   with `freq.astype(jnp.complex64)`.
-# * **Fixed input shape**: `jax.make_jaxpr` traces for a concrete shape.  Each
-#   distinct frequency-array length produces a separate compiled artefact.  Use a
-#   single canonical size in production or explore OpenVINO dynamic-shape support.
+#   port-pair tuples to JAX arrays), which `jax.jit` and `jax.block_until_ready`
+#   accept as a pytree.
+# * **Fixed input shape**: `jax.jit` compiles for a concrete input shape.  Each
+#   distinct frequency-array length triggers a new compilation, so reuse one size where
+#   you can.

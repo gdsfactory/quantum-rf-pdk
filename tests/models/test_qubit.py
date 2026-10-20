@@ -4,7 +4,6 @@ from typing import ClassVar, final
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
-import numpy as np
 import pytest
 from hypothesis import given, settings
 from numpy.testing import assert_allclose, assert_array_less
@@ -53,7 +52,7 @@ class TestEcToCapacitance:
         # C_Σ = e² / (2 * E_C)
         # For E_C = 0.2 GHz, C_Σ ≈ 96 fF
         expected_C = e**2 / (2 * ec_ghz * 1e9 * h)
-        assert np.isclose(C, expected_C, rtol=1e-10)
+        assert jnp.isclose(C, expected_C, rtol=1e-10)
         # Check reasonable range
         assert 50e-15 < C < 200e-15, f"Capacitance {C * 1e15:.1f} fF out of range"
 
@@ -84,8 +83,8 @@ class TestEjToInductance:
         L = ej_to_inductance(ej_ghz)
 
         # L_J = Φ_0² / (4π² E_J)
-        expected_L = Φ_0**2 / (4 * np.pi**2 * ej_ghz * 1e9 * h)
-        assert np.isclose(L, expected_L, rtol=1e-10)
+        expected_L = Φ_0**2 / (4 * jnp.pi**2 * ej_ghz * 1e9 * h)
+        assert jnp.isclose(L, expected_L, rtol=1e-10)
         # Check reasonable range (~ 1 nH for 20 GHz)
         assert 0.1e-9 < L < 10e-9, f"Inductance {L * 1e9:.2f} nH out of range"
 
@@ -116,8 +115,8 @@ class TestElToInductance:
         L = el_to_inductance(el_ghz)
 
         # L = Φ_0² / (4π² E_L)
-        expected_L = Φ_0**2 / (4 * np.pi**2 * el_ghz * 1e9 * h)
-        assert np.isclose(L, expected_L, rtol=1e-10)
+        expected_L = Φ_0**2 / (4 * jnp.pi**2 * el_ghz * 1e9 * h)
+        assert jnp.isclose(L, expected_L, rtol=1e-10)
         # For E_L = 0.5 GHz, L ≈ 327 nH
         assert 100e-9 < L < 1000e-9, f"Inductance {L * 1e9:.2f} nH out of range"
 
@@ -221,7 +220,7 @@ class TestDoubleIslandTransmon(TwoPortModelTestSuite):
         """Test that the resonance frequency matches expected f_r = 1/(2*pi*sqrt(LC))."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
-        f_r_expected = 1 / (2 * np.pi * np.sqrt(L * C))
+        f_r_expected = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
 
         # Fine frequency sweep around resonance
         f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 1000)
@@ -297,7 +296,7 @@ class TestFluxonium(TwoPortModelTestSuite):
         LS = 500e-9
         C = 10e-15
         L_total = (LJ * LS) / (LJ + LS)
-        f_r_expected = 1 / (2 * np.pi * np.sqrt(L_total * C))
+        f_r_expected = 1 / (2 * jnp.pi * jnp.sqrt(L_total * C))
 
         f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 1000)
         result = self._call_model(
@@ -463,7 +462,7 @@ class TestIntegration:
         C_r = 50e-15  # Resonator capacitance
 
         # Calculate qubit frequency (simplified)
-        f_r = 1 / (2 * np.pi * np.sqrt(L * C))
+        f_r = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
         f_q_ghz = f_r / 1e9
 
         C_c = coupling_strength_to_capacitance(

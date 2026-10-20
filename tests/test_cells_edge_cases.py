@@ -124,7 +124,7 @@ class TestSNSPDEdgeCases:
     def test_default_port_type_electrical() -> None:
         """Test that the default port_type produces electrical ports."""
         c = snspd()
-        assert {p.name: str(p.port_type) for p in c.ports} == {
+        assert {p.name: p.port_type for p in c.ports} == {
             "e1": "electrical",
             "e2": "electrical",
         }
@@ -133,7 +133,7 @@ class TestSNSPDEdgeCases:
     def test_port_type_optical() -> None:
         """Test that port_type="optical" produces optical ports."""
         c = snspd(port_type="optical")
-        assert {p.name: str(p.port_type) for p in c.ports} == {
+        assert {p.name: p.port_type for p in c.ports} == {
             "o1": "optical",
             "o2": "optical",
         }
@@ -154,7 +154,7 @@ class TestSNSPDEdgeCases:
 
         yaml_str = c.write_netlist(netlist)
         c2 = gf.read.from_yaml(yaml_str)
-        assert {p.name: str(p.port_type) for p in c2.ports} == {
+        assert {p.name: p.port_type for p in c2.ports} == {
             "o1": "optical",
             "o2": "optical",
         }
@@ -318,9 +318,7 @@ class TestUnimonMeanderRadius:
 def _m1_draw_region(inst) -> kdb.Region:
     """Return the M1_DRAW polygons of an instance transformed to top-level coordinates."""
     reg = kdb.Region()
-    layer_index = inst.cell.kdb_cell.layout().layer(
-        kdb.LayerInfo(LAYER.M1_DRAW.layer, LAYER.M1_DRAW.datatype)
-    )
+    layer_index = inst.cell.kdb_cell.layout().layer(kdb.LayerInfo(*LAYER.M1_DRAW))
     it = inst.cell.kdb_cell.begin_shapes_rec(layer_index)
     while not it.at_end():
         reg.insert(it.shape().polygon.transformed(it.trans()))

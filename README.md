@@ -8,15 +8,13 @@
 [![HTML Docs](https://img.shields.io/badge/%F0%9F%93%84_HTML-Docs-blue?style=flat)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![PDF Docs](https://img.shields.io/badge/%F0%9F%93%84_PDF-Docs-blue?style=flat&logo=adobeacrobatreader)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD)
-[![PyPI - Version](https://img.shields.io/pypi/v/qpdk?color=blue)](https://pypi.org/p/qpdk)
+[![PyPI - Version](https://img.shields.io/pypi/v/qpdk?color=blue)](https://pypi.org/project/qpdk/)
 [![MIT](https://img.shields.io/github/license/gdsfactory/quantum-rf-pdk)](https://choosealicense.com/licenses/mit/)
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
 [![DRC](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/drc.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/drc.yml)
 [![Code Coverage](https://codecov.io/github/gdsfactory/quantum-rf-pdk/branch/main/graph/badge.svg)](https://codecov.io/github/gdsfactory/quantum-rf-pdk)
 [![Model Coverage](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/model_coverage.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
-[![Issues](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/issues.svg)](https://github.com/gdsfactory/quantum-rf-pdk/issues)
-[![PRs](https://github.com/gdsfactory/quantum-rf-pdk/raw/badges/prs.svg)](https://github.com/gdsfactory/quantum-rf-pdk/pulls)
 
 <!-- BADGES:END -->
 
@@ -45,7 +43,8 @@ in minutes.
   pulse-level simulation, and optimization.
 - **[GDSFactory+](https://gdsfactory.com/plus/) integration** — Seamlessly design, verify, and validate chips with the
   enhanced commercial extension. Includes access to 43+ foundry PDKs, graphical layout and schematic editors directly in
-  VSCode, an AI assistant, and comprehensive verification tools (DRC, LVS, Connectivity checks).
+  VSCode, an AI assistant, and comprehensive verification tools (DRC, LVS, Connectivity checks). See the
+  [QPDK graphical workflow tutorial](https://gdsfactory.com/plus/v2/tutorial/design/graphical-workflow/design-quantum-rf/#explore-and-simulate-a-resonator).
 
 ## Notable Components
 
@@ -109,6 +108,49 @@ extracting loss tangents and kinetic inductance. Also check
 
 ![Resonator Test Chip](docs/_static/images/resonator_test_chip.png)
 
+## Simulation Showcase
+
+QPDK comes with worked examples for circuit, quantum, and electromagnetic simulation. Every figure below is taken from
+one of the [example notebooks](https://gdsfactory.github.io/quantum-rf-pdk/notebooks.html) as rendered in the
+documentation. Click a title to open the full notebook.
+
+### Circuit & Network Models
+
+|     [Resonator Test Chip Transmission][nb-mc]     |     [Fabrication Tolerance Monte Carlo][nb-mc]     |
+| :-----------------------------------------------: | :------------------------------------------------: |
+| Both probelines of the 16-resonator chip, via SAX | Resonance spread from CPW width and gap variations |
+|   ![Resonator test chip transmission][img-s21]    |      ![Monte Carlo frequency spread][img-mc]       |
+
+### Quantum Dynamics & Hamiltonians
+
+|     [Flux-Tunable Transmon Spectrum][nb-scq]     |    [Pulse-Level Gate Simulation][nb-qutip]     |
+| :----------------------------------------------: | :--------------------------------------------: |
+| Energy levels versus external flux with scQubits |  X-gate populations and leakage in QuTiP-QIP   |
+|    ![Flux-tunable transmon spectrum][img-scq]    | ![QuTiP X-gate population dynamics][img-qutip] |
+
+|             [Dispersive Shift][nb-pmb]             |    [Differentiable Transmon Optimization][nb-clx]    |
+| :------------------------------------------------: | :--------------------------------------------------: |
+| Block-diagonalized dispersive shift with Pymablock | Circulax JAX gradients to target f and anharmonicity |
+|       ![Pymablock dispersive shift][img-pmb]       |    ![Circulax optimization convergence][img-clx]     |
+
+### Electromagnetic Field Solvers
+
+|     [COMSOL Resonator][nb-cres]     |     [HFSS Eigenmode][nb-hfss]     |    [Elmer Capacitance][nb-elmer]    |
+| :---------------------------------: | :-------------------------------: | :---------------------------------: |
+|     Driven E-field at resonance     |   Meandered CPW eigenmode field   |  IDC capacitance vs. FEM remeshing  |
+| ![COMSOL resonator field][img-cres] | ![HFSS eigenmode field][img-hfss] | ![Elmer IDC convergence][img-elmer] |
+
+**[COMSOL Transmon Capacitance][nb-cqub]** — Electrostatic potential and field around the double-pad transmon:
+
+![COMSOL transmon potential][img-cqub]
+
+The same workflows extend to
+[HFSS driven-modal](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/hfss_driven_capacitor.html) and
+[Q2D impedance](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/hfss_q2d_cpw_impedance.html) analyses,
+[Qucs-S model validation](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/model_comparison_to_qucs.html), and
+[NetKet](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/netket_transmon_design.html) and
+[Optuna](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/optimize_capacitor_optuna.html) optimization.
+
 ## Quick Start
 
 ```python
@@ -136,6 +178,13 @@ chip = from_yaml(
 chip.show()  # Opens in KLayout
 ```
 
+### Graphical Workflow with GDSFactory+
+
+Prefer a visual workflow? QPDK runs in [GDSFactory+](https://gdsfactory.com/plus/), where you can place components in
+the schematic editor, inspect the layout, and run circuit simulations without leaving VSCode. The
+[Quantum-RF graphical workflow tutorial](https://gdsfactory.com/plus/v2/tutorial/design/graphical-workflow/design-quantum-rf/#explore-and-simulate-a-resonator)
+walks through exploring and simulating a resonator with QPDK step by step.
+
 ## Examples & Notebooks
 
 - **[PDK cells in the documentation](https://gdsfactory.github.io/quantum-rf-pdk/cells.html)** — Collection of all
@@ -151,6 +200,8 @@ chip.show()  # Opens in KLayout
   - Capacitor geometry optimization with [Optuna](https://optuna.org/)
   - Dispersive shift calculation with [Pymablock](https://pymablock.readthedocs.io/en/latest/)
   - Transmon design optimization with [NetKet](https://www.netket.org/)
+- **[GDSFactory+ Quantum-RF tutorial](https://gdsfactory.com/plus/v2/tutorial/design/graphical-workflow/design-quantum-rf/#explore-and-simulate-a-resonator)**
+  — Graphical design and simulation of a resonator with QPDK in GDSFactory+.
 - **[gsim example notebooks](https://gdsfactory.github.io/gsim/)** — Electromagnetic simulation examples using Palace
   and Meep with gdsfactory.
 
@@ -234,3 +285,23 @@ For commercial support, training, and custom PDK development, please visit
 ## License
 
 QPDK is released under the [MIT License](LICENSE).
+
+[img-clx]: docs/_static/images/sim_circulax_optimization.svg
+[img-cqub]: docs/_static/images/sim_comsol_qubit_potential.webp
+[img-cres]: docs/_static/images/sim_comsol_resonator_field.webp
+[img-elmer]: docs/_static/images/sim_elmer_idc_convergence.svg
+[img-hfss]: docs/_static/images/hfss_eigenmode_resonator_field.jpg
+[img-mc]: docs/_static/images/sim_monte_carlo_frequency_spread.svg
+[img-pmb]: docs/_static/images/sim_pymablock_dispersive_shift.svg
+[img-qutip]: docs/_static/images/sim_qutip_x_gate.svg
+[img-s21]: docs/_static/images/sim_resonator_chip_transmission.svg
+[img-scq]: docs/_static/images/sim_scqubits_flux_spectrum.svg
+[nb-clx]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/circulax_transmon_optimization.html
+[nb-cqub]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/comsol_qubit_capacitance.html
+[nb-cres]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/comsol_cpw_resonator.html
+[nb-elmer]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/elmer_capacitance_interdigital.html
+[nb-hfss]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/hfss_eigenmode_resonator.html
+[nb-mc]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/monte_carlo_fabrication_tolerance.html
+[nb-pmb]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/pymablock_dispersive_shift.html
+[nb-qutip]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/qutip_qip_pulse_simulation.html
+[nb-scq]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/scqubits_parameter_calculation.html

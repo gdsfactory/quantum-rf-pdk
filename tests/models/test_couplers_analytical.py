@@ -15,7 +15,7 @@ def is_valid_geometry(gap: float, width: float, cpw_gap: float) -> bool:
     x2 = x1 + width
     x3 = x2 + cpw_gap
     ko_sq = (x1**2 / x2**2) * ((x3**2 - x2**2) / (x3**2 - x1**2))
-    return float(ko_sq) < 0.95
+    return ko_sq < 0.95
 
 
 @st.composite

@@ -8,6 +8,14 @@
 #       jupytext_version: 1.17.3
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # %% [markdown]
 # # Optuna Optimization of Interdigital Capacitor
 #
@@ -32,6 +40,20 @@
 # This example demonstrates using [Optuna](https://optuna.readthedocs.io/en/stable/index.html) to optimize an interdigital capacitor
 # to achieve a target capacitance of 40 fF. The optimization is constrained to
 # use exactly 5 interdigital fingers.
+#
+# ::::{only} html
+# :::{mermaid}
+# flowchart LR
+#     A["Optuna suggests<br/>finger geometry"] --> B["Build and mesh<br/>the capacitor"]
+#     B --> C["Palace solves<br/>capacitance"]
+#     C --> D["Score against<br/>40 fF target"]
+#     D -->|next trial| A
+# :::
+# ::::
+#
+# ::::{only} typst or typstpdf
+# Optuna suggests the finger geometry, Palace solves its capacitance, and the result is scored against 40 fF before the next trial.
+# ::::
 
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -116,7 +138,7 @@ def capacitor_simulation(
     etch_right.connect("o1", straight_right.ports["o2"], allow_layer_mismatch=True)
 
     # Add simulation area layer around the layout
-    c.kdb_cell.shapes(LAYER.SIM_AREA).insert(c.bbox().enlarged(50, 50))
+    c.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(c.bbox().enlarged(50, 50))
 
     # Add ports for marking capacitor terminals
     c.add_port(name="M1_left", port=straight_left.ports["o1"])
@@ -263,7 +285,8 @@ def _run_capacitive_simulation(
 
     config = _setup_palace_simulation(simulation_folder=simulation_folder)
     results = run_capacitive_simulation_palace(component, n_processes=4, **config)
-    return results.capacitance_matrix[tuple(p.name for p in component.ports)] * 1e15
+    port_a, port_b = (p.name for p in component.ports)
+    return results.capacitance_matrix[port_a, port_b] * 1e15
 
 
 # %% [markdown]
@@ -305,8 +328,11 @@ if __name__ == "__main__":
     study.optimize(_objective_function, n_trials=5, n_jobs=1, show_progress_bar=True)
 
     # Check if we have any successful trials
-    successful_trials = [t for t in study.trials if t.value < 1000.0]
+    successful_trials = [
+        t for t in study.trials if t.value is not None and t.value < 1000.0
+    ]
 
+    component_to_show: gf.Component | None = None
     if successful_trials:
         print(f"Best trial: {study.best_trial.number}")
         print(f"Best objective value: {study.best_value:.3f} fF difference from target")
@@ -329,6 +355,7 @@ if __name__ == "__main__":
             finger_gap=best_params["finger_gap"],
             thickness=best_params["thickness"],
         )
+        component_to_show = optimized_component
 
         print("\nOptimized component created with:")
         print("  - 5 fingers (fixed)")
@@ -345,17 +372,15 @@ if __name__ == "__main__":
         # Still try to create a component with default parameters for debugging
         print("\nTrying to create component with default parameters for debugging...")
         try:
-            test_component = capacitor_simulation()
+            component_to_show = capacitor_simulation()
             print("Default component created successfully")
         except Exception as e:
             print(f"Error creating default component: {e}")
 
     # Display the component (optional - requires display backend)
     try:
-        if successful_trials:
-            optimized_component.show()
-        else:
-            test_component.show()
+        if component_to_show is not None:
+            component_to_show.show()
     except Exception:
         print("(Component display not available in this environment)")
 

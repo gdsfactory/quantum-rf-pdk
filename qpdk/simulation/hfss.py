@@ -11,6 +11,7 @@ import polars as pl
 from qpdk import LAYER_STACK
 from qpdk.simulation.aedt_base import (
     AEDTBase,
+    _first_real_value,
     export_component_to_gds_temp,
     layer_stack_to_gds_mapping,
     object_names_to_materials,
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
     from gdsfactory.typings import Ports
 
 
+# TODO(Python 3.13): wrap each key in typing.ReadOnly (PEP 705); never mutated.
+# TODO(Python 3.15): add `closed=True` (PEP 728) so type checkers reject misspelled keys.
 class LumpedPortConfig(TypedDict):
     """Configuration for defining a lumped port rectangle in HFSS."""
 
@@ -33,7 +36,7 @@ class LumpedPortConfig(TypedDict):
 
 
 def lumped_port_rectangle_from_cpw(
-    center: tuple[float, float, float],
+    center: tuple[float, float] | tuple[float, float, float],
     orientation: float,
     cpw_gap: float,
     cpw_width: float,
@@ -41,7 +44,7 @@ def lumped_port_rectangle_from_cpw(
     """Calculates parameters for a lumped port based on its orientation.
 
     Args:
-        center: [x, y, z] coordinates of the port face center.
+        center: [x, y] or [x, y, z] coordinates of the port face center; z is ignored.
         orientation: Angle in degrees (must be a multiple of 90).
         cpw_gap: The length of the port along the axis of propagation.
         cpw_width: The width of the port perpendicular to propagation.
@@ -203,7 +206,7 @@ class HFSS(AEDTBase):
         x_min, y_min = bounds.p1.x, bounds.p1.y
         dx, dy = bounds.p2.x - x_min, bounds.p2.y - y_min
 
-        region = self.modeler.create_box(
+        region = self._modeler_3d().create_box(
             origin=[x_min, y_min, -substrate_thickness],
             sizes=[dx, dy, height + substrate_thickness],
             name=name,
@@ -243,16 +246,14 @@ class HFSS(AEDTBase):
             solution = self.hfss.post.get_solution_data(
                 expressions=f_name, report_category="Eigenmode"
             )
-            if solution:
-                freq_hz = float(solution.data_real()[0])
+            if solution and (freq_hz := _first_real_value(solution)) is not None:
                 results["frequencies"].append(freq_hz / 1e9)
 
         for q_name in q_names:
             solution = self.hfss.post.get_solution_data(
                 expressions=q_name, report_category="Eigenmode"
             )
-            if solution:
-                q = float(solution.data_real()[0])
+            if solution and (q := _first_real_value(solution)) is not None:
                 results["q_factors"].append(q)
 
         return results

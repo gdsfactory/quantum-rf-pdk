@@ -13,6 +13,7 @@ from qpdk import LAYER_STACK
 from qpdk.models.cpw import get_cpw_dimensions
 from qpdk.simulation.aedt_base import (
     AEDTBase,
+    _first_real_value,
     export_component_to_gds_temp,
     layer_stack_to_gds_mapping,
     object_names_to_materials,
@@ -146,7 +147,7 @@ class Q3D(AEDTBase):
             return assigned_nets
 
         first_port = next(iter(ports))
-        px0, py0 = float(first_port.center[0]), float(first_port.center[1])
+        px0, py0 = first_port.center[0], first_port.center[1]
 
         def dist_to_bbox(
             px: float, py: float, bbox: list[float], s: float = 1.0
@@ -161,7 +162,7 @@ class Q3D(AEDTBase):
         )
 
         for port in ports:
-            px, py = float(port.center[0]), float(port.center[1])
+            px, py = port.center[0], port.center[1]
             available_objs = [obj for obj in bboxes if obj not in used_objects]
             if not available_objs:
                 break
@@ -218,8 +219,7 @@ class Q3D(AEDTBase):
                 expressions=expr,
                 setup_sweep_name=f"{setup_name} : LastAdaptive",
             )
-            if solution:
-                val = float(solution.data_real()[0])
+            if solution and (val := _first_real_value(solution)) is not None:
                 unit = solution.units_data.get(expr, "pF")
                 multiplier = {
                     "fF": 1e-15,
@@ -286,11 +286,11 @@ class Q2D(AEDTBase):
 
         cpw_width, cpw_gap = get_cpw_dimensions(cross_section)
         substrate_level = layer_stack.layers["Substrate"]
-        substrate_thickness = float(substrate_level.thickness)
+        substrate_thickness = substrate_level.thickness
         substrate_material = cast(str, substrate_level.material)
 
         conductor_level = layer_stack.layers["M1"]
-        conductor_thickness = float(conductor_level.thickness)
+        conductor_thickness = conductor_level.thickness
         if conductor_thickness < 2.0:
             gf.logger.warning(
                 "Setting conductor_thickness to 2.0 um for Q2D stability."

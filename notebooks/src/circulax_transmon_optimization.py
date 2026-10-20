@@ -8,6 +8,13 @@
 #       jupytext_version: 1.17.3
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models,circulax] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
 
 # %% [markdown]
 # # Differentiable Transmon Circuit Simulation with Circulax
@@ -44,8 +51,8 @@
 #
 # 1. **Harmonic-Balance (HB) Optimization** — Find the periodic steady-state
 #    response of a nonlinear transmon circuit under a microwave drive and use
-#    `jax.grad` to optimize the junction critical current $I_c$ and shunt
-#    capacitance $C_s$ toward target qubit parameters.
+#    `jax.grad` to optimize the junction critical current $I_\text{c}$ and shunt
+#    capacitance $C_\text{s}$ toward target qubit parameters.
 #
 # 2. **Transient Pulse Analysis** — Simulate the time-domain response of a
 #    coupled two-qubit system to a voltage pulse and differentiate a crosstalk
@@ -56,22 +63,25 @@
 # A transmon qubit is a weakly anharmonic oscillator formed by shunting a
 # Josephson junction (JJ) with a large capacitance
 # {cite:p}`kochChargeinsensitiveQubitDesign2007a,krantzQuantumEngineersGuide2019`.
+#
+# ![Transmon circuit with shunt capacitance and Josephson junction controlling EC and EJ](figures/transmon-energy.svg)
+#
 # Following the node-flux formulation of quantum electromagnetic circuits
 # {cite:p}`voolIntroductionQuantumElectromagnetic2017`, the circuit Hamiltonian
 # in the phase basis reads:
 #
 # ```{math}
 # :label: eq:transmon-hamiltonian-circulax
-# \mathcal{H} = 4 E_C \hat{n}^2 - E_J \cos\hat{\varphi},
+# \mathcal{H} = 4 E_\text{C} \hat{n}^2 - E_\text{J} \cos\hat{\varphi},
 # ```
 #
-# where the charging energy $E_C = e^2 / (2 C_\Sigma)$ and Josephson
-# energy $E_J = \Phi_0 I_c / (2\pi)$.  In the classical circuit
+# where the charging energy $E_\text{C} = e^2 / (2 C_\Sigma)$ and Josephson
+# energy $E_\text{J} = \Phi_0 I_\text{c} / (2\pi)$.  In the classical circuit
 # picture the junction behaves as a nonlinear inductance:
 #
 # ```{math}
 # :label: eq:josephson-inductance
-# L_J(\varphi) = \frac{\Phi_0}{2\pi I_c \cos\varphi},
+# L_\text{J}(\varphi) = \frac{\Phi_0}{2\pi I_\text{c} \cos\varphi},
 # ```
 #
 # which Circulax handles naturally through automatic differentiation of the
@@ -94,9 +104,12 @@ if "google.colab" in sys.modules:
     ])
 
 # %% tags=["hide-input"]
+from typing import cast
+
 import jax
 import jax.numpy as jnp
 import optax
+from jax.typing import ArrayLike
 from matplotlib import pyplot as plt
 
 from qpdk import PDK
@@ -113,14 +126,14 @@ PDK.activate()
 #
 # We model a transmon qubit as an LC oscillator with a **nonlinear**
 # Josephson inductance driven by a weak microwave tone. The goal is to
-# optimize the junction critical current $I_c$ and shunt capacitance
-# $C_s$ so that the circuit's transition frequency and anharmonicity
+# optimize the junction critical current $I_\text{c}$ and shunt capacitance
+# $C_\text{s}$ so that the circuit's transition frequency and anharmonicity
 # match target values.
 #
 # The Josephson junction's constitutive relation is:
 #
 # ```{math}
-# I(\varphi) = I_c \sin\varphi,
+# I(\varphi) = I_\text{c} \sin\varphi,
 # ```
 #
 # where $\varphi = 2\pi\Phi/\Phi_0$ is the dimensionless
@@ -204,13 +217,13 @@ def JosephsonJunction(  # ruff: ignore[invalid-function-name]
 # parameters using simple analytical estimates:
 #
 # - **Shunt capacitance** from the coplanar conformal-mapping formula
-#   $C_s = \varepsilon_0\, \varepsilon_{\mathrm{eff}}\, L\, K(k')/K(k)$
+#   $C_\text{s} = \varepsilon_0\, \varepsilon_{\text{eff}}\, L\, K(k')/K(k)$
 #   with $k = s/(s + 2W)$, where $s$ is the pad gap, $W$ the
 #   pad width and $L$ the pad length
 #   {cite:p}`chenCompactInductorcapacitorResonators2023`.
 # - **Critical current** from the process critical-current density and the JJ
-#   area: $I_c = J_c \cdot A_{JJ}$, with
-#   $J_c \sim 100\;\text{A/cm}^2$ for Al/AlOx/Al junctions.
+#   area: $I_\text{c} = J_\text{c} \cdot A_{\text{JJ}}$, with
+#   $J_\text{c} \sim 100\;\text{A/cm}^2$ for Al/AlOx/Al junctions.
 
 # %%
 from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
@@ -277,7 +290,7 @@ print(f"E_J / E_C = {E_J / E_C:.1f} (transmon regime: >> 1)")
 #
 # ```{math}
 # :label: eq:driven-transmon-circuit
-# \text{Drive} \xrightarrow{R_{drive}} \text{JJ} \parallel C_s
+# \text{Drive} \xrightarrow{R_{\text{drive}}} \text{JJ} \parallel C_\text{s}
 # \xrightarrow{\text{GND}}
 # ```
 
@@ -415,13 +428,13 @@ for k in range(min(5, len(V_harmonics))):
 #
 # ```{math}
 # :label: eq:transmon-frequency
-# f_{01} \approx \frac{\sqrt{8 E_J E_C} - E_C}{h},
+# f_{01} \approx \frac{\sqrt{8 E_\text{J} E_\text{C}} - E_\text{C}}{h},
 # ```
 #
-# where $E_J = \Phi_0 I_c/(2\pi)$ and $E_C = e^2/(2C_\Sigma)$.
+# where $E_\text{J} = \Phi_0 I_\text{c}/(2\pi)$ and $E_\text{C} = e^2/(2C_\Sigma)$.
 # These closed-form estimates assume a purely sinusoidal current-phase
 # relation, so the junction's 2nd harmonic is set to zero for this workflow
-# ($E_{J2}/E_{J1} = 0$ in `layout_to_circuit_params`). The component
+# ($E_{\text{J}2}/E_{\text{J}1} = 0$ in `layout_to_circuit_params`). The component
 # does support a nonzero ratio $r$
 # {cite:p}`willschObservationJosephsonHarmonics2024`, but at leading order such
 # a term rescales the potential's quadratic coefficient by $(1+4r)$ and the
@@ -430,7 +443,7 @@ for k in range(min(5, len(V_harmonics))):
 
 
 # %%
-def transmon_anharmonicity(Ic: float, Cs: float) -> float:  # ruff: ignore[unused-function-argument]
+def transmon_anharmonicity(Ic: ArrayLike, Cs: ArrayLike) -> jax.Array:  # ruff: ignore[unused-function-argument]
     """Compute transmon anharmonicity α ≈ -E_C/h.
 
     Args:
@@ -440,11 +453,11 @@ def transmon_anharmonicity(Ic: float, Cs: float) -> float:  # ruff: ignore[unuse
     Returns:
         Anharmonicity in Hz (negative).
     """
-    E_C_val = e**2 / (2.0 * Cs)
+    E_C_val = e**2 / (2.0 * jnp.asarray(Cs))
     return -E_C_val / h
 
 
-def transmon_frequency(Ic: float, Cs: float) -> float:
+def transmon_frequency(Ic: ArrayLike, Cs: ArrayLike) -> jax.Array:
     """Compute transmon frequency f01 ≈ (sqrt(8*Ej*Ec) - Ec) / h.
 
     Args:
@@ -454,12 +467,12 @@ def transmon_frequency(Ic: float, Cs: float) -> float:
     Returns:
         Transition frequency in Hz.
     """
-    E_C_val = e**2 / (2.0 * Cs)
-    E_J_val = Φ_0 * Ic / (2.0 * jnp.pi)
+    E_C_val = e**2 / (2.0 * jnp.asarray(Cs))
+    E_J_val = Φ_0 * jnp.asarray(Ic) / (2.0 * jnp.pi)
     return (jnp.sqrt(8.0 * E_J_val * E_C_val) - E_C_val) / h
 
 
-def hb_loss_fn(params_vec: jnp.ndarray) -> float:
+def hb_loss_fn(params_vec: jax.Array) -> jax.Array:
     """Loss for the HB optimization of Ic and Cs.
 
     The dominant terms are squared relative errors of the analytic transmon
@@ -541,7 +554,7 @@ n_steps = 150
 for step in range(n_steps):
     grads = grad_fn(params_opt)
     updates, opt_state = optimizer.update(grads, opt_state)
-    params_opt = optax.apply_updates(params_opt, updates)
+    params_opt = cast(jax.Array, optax.apply_updates(params_opt, updates))
 
     loss_val = float(loss_jit(params_opt))
     losses.append(loss_val)
@@ -592,11 +605,11 @@ plt.show()
 # ### 1.10 Updated Layout Visualization
 #
 # We can now visualize the transmon layout with the optimized dimensions. The
-# inversion below targets the shunt capacitance $C_s$ only: the pads are
-# resized so the conformal-mapping model reproduces $C_s^{\text{opt}}$,
+# inversion below targets the shunt capacitance $C_\text{s}$ only: the pads are
+# resized so the conformal-mapping model reproduces $C_\text{s}^{\text{opt}}$,
 # while the junction keeps the default SQUID spec used throughout the PDK.
-# Realizing $I_c^{\text{opt}}$ in layout would additionally require sizing
-# the junction overlap area $A = I_c^{\text{opt}} / J_c$ for the process
+# Realizing $I_\text{c}^{\text{opt}}$ in layout would additionally require sizing
+# the junction overlap area $A = I_\text{c}^{\text{opt}} / J_\text{c}$ for the process
 # critical-current density, which is a process-level decision outside the scope
 # of this conformal-mapping inversion.
 
@@ -609,7 +622,7 @@ pad_gap_inv_um = 15.0  # keep gap fixed
 aspect = 5.0 / 8.0  # keep aspect ratio ≈ 250:400 = 5:8 (width:height)
 
 
-def capacitance_for_height(pad_height_um: float) -> float:
+def capacitance_for_height(pad_height_um: float) -> jax.Array:
     """Forward-model capacitance of pads with the given height and fixed aspect."""
     return plate_capacitor_capacitance_analytical(
         length=pad_height_um,
@@ -650,7 +663,7 @@ plt.show()
 # ### 2.1 Coupled Qubit Model
 #
 # We model two adjacent transmon qubits coupled through a parasitic mutual
-# capacitance $C_m$
+# capacitance $C_\text{m}$
 # {cite:p}`krantzQuantumEngineersGuide2019,voolIntroductionQuantumElectromagnetic2017`.
 # A voltage pulse is applied to qubit 1, and we observe the induced response on
 # qubit 2 (crosstalk).
@@ -659,8 +672,10 @@ plt.show()
 #
 # ```{math}
 # :label: eq:coupled-qubits
-# \text{Drive} \to Q_1 \overset{C_m}{\longleftrightarrow} Q_2 \to \text{GND}
+# \text{Drive} \to Q_1 \overset{C_\text{m}}{\longleftrightarrow} Q_2 \to \text{GND}
 # ```
+#
+# ![A 50 ohm pulse source drives qubit 1, and qubit 2 sees an induced response only through the coupling capacitance](figures/coupled-qubit-crosstalk.svg)
 
 # %%
 
@@ -845,10 +860,10 @@ plt.show()
 # ### 2.5 Crosstalk Sensitivity Analysis
 #
 # We use `jax.grad` to differentiate the peak crosstalk voltage with respect
-# to $\log C_m$. The resulting sensitivity
+# to $\log C_\text{m}$. The resulting sensitivity
 # $\partial V_{\text{peak}}/\partial \log C_m = C_m \, \partial
 # V_{\text{peak}}/\partial C_m$ has units of volts: it is the absolute
-# change in peak victim voltage per unit fractional change in $C_m$,
+# change in peak victim voltage per unit fractional change in $C_\text{m}$,
 # which in a real design is set by the physical spacing between qubits.
 #
 # Since Circulax runs entirely in JAX, the gradient flows through the ODE
@@ -858,7 +873,7 @@ plt.show()
 # %%
 
 
-def crosstalk_metric(log_Cm: float) -> float:
+def crosstalk_metric(log_Cm: ArrayLike) -> jax.Array:
     """Compute peak crosstalk voltage as a function of coupling capacitance.
 
     This function is differentiable w.r.t. log_Cm via JAX autodiff.

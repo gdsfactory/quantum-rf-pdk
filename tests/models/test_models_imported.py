@@ -1,5 +1,6 @@
 """Tests for imports of qpdk.models module."""
 
+import functools
 import importlib
 import inspect
 import pkgutil
@@ -89,16 +90,16 @@ def test_has_sax_stype_return():
     def wrapper_func(*args, **kwargs):
         return original_func(*args, **kwargs)
 
-    # Manually set __wrapped__ to simulate a decorator that doesn't preserve annotations
-    wrapper_func.__wrapped__ = original_func  # pyrefly: ignore
+    # Set only __wrapped__ to simulate a decorator that doesn't preserve annotations
+    wrapped = functools.update_wrapper(wrapper_func, original_func, assigned=())
 
     # Direct detection should fail
-    assert not has_sax_stype_return(wrapper_func), (
+    assert not has_sax_stype_return(wrapped), (
         "Wrapper without annotations should not be detected directly"
     )
 
     # But __wrapped__ should be detectable
-    assert has_sax_stype_return(wrapper_func.__wrapped__), (  # pyrefly: ignore
+    assert has_sax_stype_return(wrapped.__wrapped__), (
         "Should detect __wrapped__ function with sax.SType"
     )
 

@@ -1,11 +1,10 @@
 """Inductor and lumped-element resonator models."""
 
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec
+from jax.typing import ArrayLike
 
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.constants import DEFAULT_FREQUENCY, μ_0, π
@@ -15,9 +14,11 @@ from qpdk.models.cpw import (
     get_cpw_substrate_params,
 )
 from qpdk.models.generic import inductor, lc_resonator
+from qpdk.models.jit import jit
+from qpdk.tech import get_meander_wire_gap
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def self_inductance_strip(length: float, width: float, thickness: float) -> jax.Array:
     r"""Analytical formula for the self-inductance of a rectangular metal strip.
 
@@ -25,7 +26,7 @@ def self_inductance_strip(length: float, width: float, thickness: float) -> jax.
 
     .. math::
 
-        L_s = \frac{\mu_0 l}{2\pi} \left[ \ln\left(\frac{2l}{w+t}\right) + 0.5 + \frac{w+t}{3l} \right]
+        L_\text{s} = \frac{\mu_0 l}{2\pi} \left[ \ln\left(\frac{2l}{w+t}\right) + 0.5 + \frac{w+t}{3l} \right]
 
     Args:
         length: Length of the strip in m.
@@ -42,15 +43,15 @@ def self_inductance_strip(length: float, width: float, thickness: float) -> jax.
     )
 
 
-@partial(jax.jit, inline=True)
-def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
+@jit(inline=True)
+def mutual_inductance_parallel_strips(length: ArrayLike, d: ArrayLike) -> jax.Array:
     r"""Analytical formula for the mutual inductance between two parallel metal strips.
 
     Uses the formula from :cite:`chenCompactInductorcapacitorResonators2023`:
 
     .. math::
 
-        L_m(d) = \frac{\mu_0 l}{2\pi} \left[ \ln \left( \frac{l}{d} + \sqrt{1 + \frac{l^2}{d^2}} \right) - \sqrt{1 + \frac{d^2}{l^2}} + \frac{d}{l} \right]
+        L_\text{m}(d) = \frac{\mu_0 l}{2\pi} \left[ \ln \left( \frac{l}{d} + \sqrt{1 + \frac{l^2}{d^2}} \right) - \sqrt{1 + \frac{d^2}{l^2}} + \frac{d}{l} \right]
 
     Args:
         length: Length of the strips in m.
@@ -59,6 +60,7 @@ def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
     Returns:
         Mutual inductance in Henries.
     """
+    length, d = jnp.asarray(length), jnp.asarray(d)
     return (μ_0 * length / (2 * π)) * (
         jnp.log(length / d + jnp.sqrt(1 + (length / d) ** 2))
         - jnp.sqrt(1 + (d / length) ** 2)
@@ -66,7 +68,7 @@ def mutual_inductance_parallel_strips(length: float, d: float) -> jax.Array:
     )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def meander_inductor_inductance_analytical(
     n_turns: int,
     turn_length: float,
@@ -81,25 +83,25 @@ def meander_inductor_inductance_analytical(
 
     .. math::
 
-        L_{\text{total}} = L_g + L_k
+        L_{\text{total}} = L_\text{g} + L_\text{k}
 
-    The geometric inductance :math:`L_g` is calculated by summing the
+    The geometric inductance :math:`L_\text{g}` is calculated by summing the
     self-inductances of all horizontal segments and the mutual inductances
     between all pairs of parallel segments, following
     :cite:`chenCompactInductorcapacitorResonators2023`:
 
     .. math::
 
-        L_g = N L_s + 2 \sum_{k=1}^{N-1} (N-k) (-1)^k L_m(k p)
+        L_\text{g} = N L_\text{s} + 2 \sum_{k=1}^{N-1} (N-k) (-1)^k L_\text{m}(k p)
 
     where :math:`N` is the number of turns and :math:`p` is the pitch.
 
-    The kinetic inductance :math:`L_k` is calculated from the sheet
+    The kinetic inductance :math:`L_\text{k}` is calculated from the sheet
     inductance :math:`L_\square`:
 
     .. math::
 
-        L_k = L_\square \cdot \frac{\ell_{\text{total}}}{w}
+        L_\text{k} = L_\square \cdot \frac{\ell_{\text{total}}}{w}
 
     Args:
         n_turns: Number of horizontal meander runs.
@@ -163,12 +165,36 @@ def meander_inductor_inductance_analytical(
     return L_g + L_k
 
 
+def _get_wire_width_and_gap(
+    cross_section: CrossSectionSpec,
+    wire_gap: float | None,
+) -> tuple[float, float]:
+    """Resolve the wire width and the run-to-run gap from a cross-section.
+
+    Args:
+        cross_section: Cross-section specification for the meander wire.
+        wire_gap: Explicit gap between adjacent meander runs in µm, if given.
+
+    Returns:
+        tuple[float, float]: Wire width and run-to-run gap in µm.
+    """
+    # TODO(Python 3.15): `lazy from qpdk import PDK` (PEP 810) at module scope breaks the cycle.
+    # Local import: qpdk/__init__.py imports the models before defining PDK.
+    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
+
+    # Scoped lookup: activating the PDK would repoint gf.get_cross_section
+    # for every later name-based lookup in the process.
+    xs = PDK.get_cross_section(cross_section)
+    return xs.width, get_meander_wire_gap(xs, wire_gap)
+
+
 def meander_inductor(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     n_turns: int = 5,
     turn_length: float = 200.0,
     cross_section: CrossSectionSpec = "meander_inductor_cross_section",
+    wire_gap: float | None = None,
     sheet_inductance: float = 0.4e-12,
 ) -> sax.SDict:
     r"""Meander inductor SAX model.
@@ -177,16 +203,18 @@ def meander_inductor(
     S-parameters of an equivalent lumped inductor.
 
     The model extracts the center conductor width and gap from the provided
-    cross-section. To ensure the etched regions of adjacent meander runs
-    do not overlap and interfere with the characteristic impedance of each other,
-    the vertical pitch is calculated as:
+    cross-section. The vertical pitch is calculated as:
 
     .. math::
 
-        p = w + 2 \cdot g
+        p = w + \text{wire gap}
 
-    where :math:`w` is the center conductor width and :math:`g` is the gap
-    width. This corresponds to a metal-to-metal spacing of :math:`2g`.
+    where :math:`w` is the center conductor width. Without an explicit
+    :code:`wire_gap`, the gap defaults to twice the etch-section width so
+    that the etched regions of adjacent meander runs do not overlap and
+    interfere with the characteristic impedance of each other, or to
+    :math:`w` for cross-sections without an etch section such as a plain
+    microstrip.
 
     Args:
         f: Array of frequency points in Hz.
@@ -194,14 +222,18 @@ def meander_inductor(
         turn_length: Length of each horizontal run in µm.
         cross_section: Cross-section specification for the meander wire.
             Used to determine the wire width and the gap between runs.
+        wire_gap: Optional explicit gap between adjacent meander runs in µm.
+            If None (default), it is inferred from the cross-section the same
+            way the meander inductor cell does it. An explicit gap is used
+            as is, whether or not the cross-section defines an etch section,
+            and must be positive.
         sheet_inductance: Sheet inductance per square in H/□.
 
     Returns:
         sax.SDict: S-parameters dictionary.
     """
     f_arr = jnp.asarray(f)
-    wire_width, wire_gap_half = get_cpw_dimensions(cross_section)
-    wire_gap = 2 * wire_gap_half
+    wire_width, wire_gap = _get_wire_width_and_gap(cross_section, wire_gap)
 
     inductance = meander_inductor_inductance_analytical(
         n_turns=n_turns,
@@ -232,7 +264,7 @@ def lumped_element_resonator(
 
     .. math::
 
-        f_r = \frac{1}{2\pi\sqrt{LC}}
+        f_\text{r} = \frac{1}{2\pi\sqrt{LC}}
 
     where :math:`C` is computed from the interdigital capacitor geometry
     using :func:`~qpdk.models.capacitor.interdigital_capacitor_capacitance_analytical`

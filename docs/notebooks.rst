@@ -5,46 +5,85 @@
 .. meta::
     :description: Jupyter notebooks demonstrating simulation approaches for superconducting quantum devices.
 
-These notebooks demonstrate integration with relevant tools for design and simulation of
-superconducting quantum devices. Each notebook addresses a different stage of the design
-flow and uses a different simulation method, allowing users to choose the tools that
-best fit their needs.
+Worked, executable examples that take a **qpdk** component from requirements to a
+simulated result. Each notebook covers one stage of the design flow with one simulation
+method, so pick the one that fits your question and tooling.
 
-Because each notebook pulls in a different simulation backend, ``qpdk`` keeps those
-backends behind optional dependencies rather than installing all of them by default. The
-:ref:`summary table <notebook-summary>` at the bottom lists which :ref:`extras
-<notebook-extras>` each notebook needs, and how to install them.
+.. only:: html
 
-*************************************
- Why multiple simulation approaches?
-*************************************
+    .. grid:: 1 2 3 3
+        :gutter: 3
 
-Designing a superconducting quantum chip involves physics at many scales. No single
-simulation tool covers all of them efficiently, so a practical design flow combines
-several complementary methods
-:cite:`krantzQuantumEngineersGuide2019,blaisCircuitQuantumElectrodynamics2021`.
+        .. grid-item-card:: :octicon:`graph;1.5em;sd-text-primary` S-parameter models
+            :link: notebooks-sparameter
+            :link-type: ref
+            :class-card: notebook-category
 
-The notebooks in this collection are organized around **four simulation categories**:
+            Fast JAX/SAX circuit models for resonators, capacitors, and couplers.
 
-1. **Scattering-parameter (S-parameter) circuit models** — fast, analytical or
-   semi-analytical models for passive microwave components.
-2. **FEM-based electromagnetic simulations** — full-wave or quasi-static solvers that
-   capture geometry-dependent effects beyond simple analytical formulas.
-3. **Hamiltonian analysis** — numerical or perturbative diagonalization of the quantum
-   Hamiltonian to extract qubit parameters such as frequency, anharmonicity, and
-   dispersive shift.
-4. **Pulse-level simulations** — time-domain simulation of control pulses acting on the
-   quantum system, including gate fidelity, leakage, and decoherence.
+        .. grid-item-card:: :octicon:`zap;1.5em;sd-text-primary` FEM electromagnetics
+            :link: notebooks-fem
+            :link-type: ref
+            :class-card: notebook-category
 
-Any of these methods can be wrapped in an automated optimization loop (e.g. with `Optuna
-<https://optuna.org/>`_) for design-space exploration.
+            Full-wave and quasi-static solvers: HFSS, Q2D, COMSOL, Elmer, Palace.
+
+        .. grid-item-card:: :octicon:`beaker;1.5em;sd-text-primary` Hamiltonian analysis
+            :link: notebooks-hamiltonian
+            :link-type: ref
+            :class-card: notebook-category
+
+            Qubit frequency, anharmonicity, and dispersive shift from the circuit
+            Hamiltonian.
+
+        .. grid-item-card:: :octicon:`pulse;1.5em;sd-text-primary` Pulse-level simulation
+            :link: notebooks-pulse
+            :link-type: ref
+            :class-card: notebook-category
+
+            Gate fidelity, leakage, and decoherence under realistic control pulses.
+
+        .. grid-item-card:: :octicon:`workflow;1.5em;sd-text-primary` Differentiable circuits
+            :link: notebooks-differentiable
+            :link-type: ref
+            :class-card: notebook-category
+
+            Harmonic-balance and transient solvers with gradients through ``jax.grad``.
+
+        .. grid-item-card:: :octicon:`plug;1.5em;sd-text-primary` External integration
+            :link: notebooks-external
+            :link-type: ref
+            :class-card: notebook-category
+
+            Drive qpdk from MATLAB and its RF Toolbox.
+
+.. only:: typst or typstpdf
+
+    The notebooks fall into six groups: S-parameter circuit models, FEM electromagnetics
+    (HFSS, Q2D, COMSOL, Elmer, Palace), Hamiltonian analysis, pulse-level simulation,
+    differentiable circuits, and external integration (MATLAB).
+
+.. tip::
+
+    Each backend sits behind an optional *extra*, so ``pip install qpdk`` stays light.
+    See :ref:`notebook-extras` for how to install them and :ref:`notebook-summary` for
+    every notebook's full dependency list.
+
+    .. only:: html
+
+        On the cards, outlined badges are the main tools a notebook uses and filled
+        badges are what you need to install (``qpdk`` extras, plus anything outside
+        them).
 
 *******************************************
  Where each method fits in the design flow
 *******************************************
 
-The typical workflow when creating a chip with **qpdk / gdsfactory** can be summarized
-as follows. Each stage may loop back to earlier stages as the design is refined.
+No single tool covers every physical scale of a superconducting chip, so a practical
+flow combines complementary methods
+:cite:`krantzQuantumEngineersGuide2019,blaisCircuitQuantumElectrodynamics2021`. Each
+stage may loop back as the design is refined, and any of them can sit inside an
+optimization loop (e.g. with `Optuna <https://optuna.org/>`_).
 
 .. only:: html
 
@@ -68,192 +107,411 @@ as follows. Each stage may loop back to earlier stages as the design is refined.
     → Layout (gdsfactory/qpdk) → FEM verification → Pulse-level simulation → Fabrication.
     FEM results feed back to circuit models; pulse simulations feed back to requirements.
 
+.. _notebooks-sparameter:
+
 ****************************
  S-parameter circuit models
 ****************************
 
-S-parameter circuit models treat microwave components as linear, frequency-dependent
-networks described by their scattering matrices. In **qpdk** these models are
-implemented with `JAX <https://jax.readthedocs.io/>`_ and composed into circuits using
-`SAX <https://gdsfactory.github.io/sax/>`_
+Microwave components as linear, frequency-dependent scattering matrices, implemented in
+`JAX <https://jax.readthedocs.io/>`_ and composed into circuits with `SAX
+<https://gdsfactory.github.io/sax/>`_
 :cite:`blaisCircuitQuantumElectrodynamics2021,gopplCoplanarWaveguideResonators2008a`.
 
-**Typical use cases:**
+.. dropdown:: Typical use cases
+    :icon: light-bulb
+    :color: primary
 
-- Choosing coplanar-waveguide (CPW) resonator, capacitor, and coupling structure
-  geometries to meet target parameters.
-- Predicting resonance frequencies and quality factors of passive components.
-- Simulating complete test chips with many resonators from a gdsfactory netlist.
+    - Choosing coplanar-waveguide (CPW) resonator, capacitor, and coupling structure
+      geometries to meet target parameters.
+    - Predicting resonance frequencies and quality factors of passive components.
+    - Simulating complete test chips with many resonators from a gdsfactory netlist.
 
-**Notebooks:**
+.. grid:: 1 1 2 2
+    :gutter: 3
 
-- :doc:`notebooks/all_models` — Comprehensive overview of all S-parameter models
-  available in the qpdk model library (capacitors, inductors, waveguides, couplers,
-  resonators).
-- :doc:`notebooks/circuit_simulation_demo` — Builds and simulates composite circuits
-  with SAX, starting from individual components and assembling a quarter-wave resonator.
-- :doc:`notebooks/resonator_frequency_model` — Compares analytical resonance-frequency
-  estimates with SAX circuit simulations.
-- :doc:`notebooks/monte_carlo_fabrication_tolerance` — Monte Carlo fabrication tolerance
-  analysis that loads a multi-resonator test chip from a YAML netlist, simulates the
-  full S₂₁ response with SAX, and varies CPW width and gap to quantify resonance
-  frequency spread.
-- :doc:`notebooks/model_comparison_to_qucs` — Validates qpdk S-parameter models against
-  Qucs-S reference data for various passive components.
-- :doc:`notebooks/jax_backend_comparison` — Benchmarks SAX circuit evaluation on CPU,
-  GPU (CUDA), and NPU (OpenVINO) backends.
+    .. grid-item-card:: Model library tour
+        :link: notebooks/all_models
+        :link-type: doc
+        :class-card: notebook-card
+
+        Every S-parameter model in ``qpdk.models``: capacitors, inductors, waveguides,
+        couplers, resonators.
+
+        +++
+
+        :bdg-secondary-line:`qpdk` :bdg-secondary-line:`JAX` :bdg-primary:`models`
+
+    .. grid-item-card:: Circuit simulation with SAX
+        :link: notebooks/circuit_simulation_demo
+        :link-type: doc
+        :class-card: notebook-card
+
+        From single components to an assembled quarter-wave resonator.
+
+        +++
+
+        :bdg-secondary-line:`SAX` :bdg-secondary-line:`JAX` :bdg-primary:`models`
+
+    .. grid-item-card:: Resonator frequency model
+        :link: notebooks/resonator_frequency_model
+        :link-type: doc
+        :class-card: notebook-card
+
+        Analytical resonance-frequency estimates against SAX circuit simulation.
+
+        +++
+
+        :bdg-secondary-line:`SAX` :bdg-primary:`models`
+
+    .. grid-item-card:: Monte Carlo fabrication tolerance
+        :link: notebooks/monte_carlo_fabrication_tolerance
+        :link-type: doc
+        :class-card: notebook-card
+
+        Vary CPW width and gap on a YAML-netlist test chip and measure the spread in
+        S₂₁ resonances.
+
+        +++
+
+        :bdg-secondary-line:`SAX` :bdg-secondary-line:`gdsfactory` :bdg-primary:`models`
+        :bdg-primary:`ray`
+
+    .. grid-item-card:: Validation against Qucs-S
+        :link: notebooks/model_comparison_to_qucs
+        :link-type: doc
+        :class-card: notebook-card
+
+        qpdk models checked against Qucs-S reference data for passive components.
+
+        +++
+
+        :bdg-secondary-line:`SAX` :bdg-secondary-line:`Qucs-S` :bdg-primary:`models`
+
+    .. grid-item-card:: JAX backend benchmark
+        :link: notebooks/jax_backend_comparison
+        :link-type: doc
+        :class-card: notebook-card
+
+        SAX circuit evaluation on CPU, CUDA, and Apple Silicon (MPS), with matching
+        precision baselines and accuracy checks. Recorded runs from both machines share
+        a scaling plot rendered from Parquet records in CI. Recording requires the corresponding hardware.
+
+        +++
+
+        :bdg-secondary-line:`JAX` :bdg-secondary-line:`CUDA` :bdg-secondary-line:`MPS` :bdg-primary:`models`
+
+.. _notebooks-fem:
 
 ***************************************
  FEM-based electromagnetic simulations
 ***************************************
 
-Finite-element method (FEM) and full-wave solvers discretize Maxwell's equations over
-the physical geometry of the device. They capture effects such as radiation, surface
-currents, and substrate modes that analytical models may miss
+Finite-element and full-wave solvers discretize Maxwell's equations over the real
+geometry, capturing radiation, surface currents, and substrate modes that analytical
+models miss
 :cite:`gopplCoplanarWaveguideResonators2008a,chenCompactInductorcapacitorResonators2023`.
 
-**Typical use cases:**
+.. dropdown:: Typical use cases
+    :icon: light-bulb
+    :color: primary
 
-- Extracting characteristic impedance and effective permittivity of CPW cross-sections.
-- Computing eigenmode frequencies and quality factors of resonators from their physical
-  geometry.
-- Running driven-modal (port-based) S-parameter simulations of capacitors and other
-  structures.
-- Optimizing component geometry against a target specification (e.g. a desired
-  capacitance value).
+    - Extracting characteristic impedance and effective permittivity of CPW
+      cross-sections.
+    - Computing eigenmode frequencies and quality factors of resonators from their
+      physical geometry.
+    - Running driven-modal (port-based) S-parameter simulations of capacitors and other
+      structures.
+    - Optimizing component geometry against a target specification (e.g. a desired
+      capacitance value).
 
-**Notebooks:**
+.. grid:: 1 1 2 2
+    :gutter: 3
 
-- :doc:`notebooks/hfss_q2d_cpw_impedance` — Uses the Ansys Q2D quasi-static solver to
-  extract CPW impedance from the cross-section geometry and compares the result with
-  analytical conformal-mapping estimates.
-- :doc:`notebooks/hfss_eigenmode_resonator` — Eigenmode analysis of a meandering CPW
-  resonator in Ansys HFSS to find resonant frequencies and Q-factors.
-- :doc:`notebooks/hfss_driven_capacitor` — Driven-modal S-parameter simulation of an
-  interdigital capacitor in Ansys HFSS.
-- :doc:`notebooks/optimize_capacitor_optuna` — Couples Optuna optimization with the
-  Palace FEM solver to optimize an interdigital capacitor towards a target capacitance.
+    .. grid-item-card:: Q2D CPW impedance
+        :link: notebooks/hfss_q2d_cpw_impedance
+        :link-type: doc
+        :class-card: notebook-card
 
-.. note::
+        CPW impedance from the cross-section, against conformal-mapping estimates.
 
-    **gsim — additional FEM and FDTD simulation examples**
+        +++
 
-    The `gsim <https://gdsfactory.github.io/gsim/>`_ project provides a collection of
-    example notebooks that demonstrate FEM (finite-element method) and FDTD
-    (finite-difference time-domain) electromagnetic simulations built on top of
-    GDSFactory. These notebooks cover solvers such as **Palace** (FEM) and **Meep**
-    (FDTD), showing how to go from a GDSFactory layout to a full 3-D electromagnetic
-    simulation. They are a valuable complement to the Ansys-based notebooks above and
-    are especially useful for users looking for open-source solver workflows.
+        :bdg-secondary-line:`Ansys Q2D` :bdg-primary:`models` :bdg-primary:`hfss`
+        :bdg-warning:`licensed solver`
 
-    Topics covered in the gsim notebooks include:
+    .. grid-item-card:: HFSS eigenmode resonator
+        :link: notebooks/hfss_eigenmode_resonator
+        :link-type: doc
+        :class-card: notebook-card
 
-    - Eigenmode and driven-port simulations with Palace.
-    - FDTD simulations with Meep, including S-parameter extraction.
-    - Geometry preparation and meshing pipelines starting from GDSFactory components.
-    - Post-processing and visualization of electromagnetic field results.
+        Resonant frequencies and Q-factors of a meandering CPW resonator.
 
-    See the `gsim documentation <https://gdsfactory.github.io/gsim/>`_ for the full list
-    of available notebooks.
+        +++
+
+        :bdg-secondary-line:`Ansys HFSS` :bdg-primary:`models` :bdg-primary:`hfss`
+        :bdg-warning:`licensed solver`
+
+    .. grid-item-card:: HFSS driven capacitor
+        :link: notebooks/hfss_driven_capacitor
+        :link-type: doc
+        :class-card: notebook-card
+
+        Driven-modal S-parameters of an interdigital capacitor.
+
+        +++
+
+        :bdg-secondary-line:`Ansys HFSS` :bdg-primary:`models` :bdg-primary:`hfss`
+        :bdg-warning:`licensed solver`
+
+    .. grid-item-card:: Elmer capacitance extraction
+        :link: notebooks/elmer_capacitance_interdigital
+        :link-type: doc
+        :class-card: notebook-card
+
+        Quasi-static capacitance of an interdigital capacitor with the open-source Elmer
+        solver.
+
+        +++
+
+        :bdg-secondary-line:`Elmer` :bdg-secondary-line:`meshwell` :bdg-primary:`models`
+        :bdg-primary:`gplugins[elmer] from Git`
+        :bdg-success:`open source`
+
+    .. grid-item-card:: COMSOL CPW resonator
+        :link: notebooks/comsol_cpw_resonator
+        :link-type: doc
+        :class-card: notebook-card
+
+        Ported resonator layout, adaptive S-parameter sweep, and field map.
+
+        +++
+
+        :bdg-secondary-line:`COMSOL` :bdg-secondary-line:`MPh` :bdg-primary:`comsol`
+        :bdg-warning:`licensed solver`
+
+    .. grid-item-card:: COMSOL qubit capacitance
+        :link: notebooks/comsol_qubit_capacitance
+        :link-type: doc
+        :class-card: notebook-card
+
+        Electrostatic extraction of transmon pad capacitance, with field map.
+
+        +++
+
+        :bdg-secondary-line:`COMSOL` :bdg-secondary-line:`MPh` :bdg-primary:`comsol`
+        :bdg-warning:`licensed solver`
+
+    .. grid-item-card:: Capacitor optimization with Optuna
+        :link: notebooks/optimize_capacitor_optuna
+        :link-type: doc
+        :class-card: notebook-card
+
+        Optuna drives the Palace FEM solver towards a target capacitance.
+
+        +++
+
+        :bdg-secondary-line:`Optuna` :bdg-secondary-line:`Palace` :bdg-primary:`models`
+        :bdg-success:`open source`
+
+    .. grid-item-card:: FEM dataset lookups
+        :link: notebooks/fem_dataset_lookup
+        :link-type: doc
+        :class-card: notebook-card
+
+        Palace plate-capacitor and CPW datasets, lazy queries, multidimensional
+        interpolation and SAX models.
+
+        +++
+
+        :bdg-secondary-line:`JAX` :bdg-secondary-line:`Polars` :bdg-primary:`models`
+
+    .. grid-item-card:: More FEM and FDTD in gsim
+        :link: https://gdsfactory.github.io/gsim/
+        :class-card: notebook-card notebook-card-external
+
+        The gsim notebooks take a GDSFactory
+        layout to a 3-D simulation with open-source solvers: Palace eigenmode and
+        driven-port runs, Meep FDTD with S-parameter extraction, meshing, and field
+        post-processing.
+
+        +++
+
+        :bdg-secondary-line:`Palace` :bdg-secondary-line:`Meep` :bdg-success:`open source`
+
+.. dropdown:: Why the licensed-solver notebooks show a recorded run
+    :icon: info
+    :color: warning
+
+    COMSOL and Ansys AEDT are not pip-installable and do not run without a license, so
+    :doc:`notebooks/hfss_q2d_cpw_impedance`, :doc:`notebooks/hfss_eigenmode_resonator`,
+    :doc:`notebooks/hfss_driven_capacitor`, :doc:`notebooks/comsol_cpw_resonator`, and
+    :doc:`notebooks/comsol_qubit_capacitance` are published with the outputs of a real
+    solver run stored in the notebook. Those stored figures and numbers are the
+    artifact: the pages are not re-executed here, so what you see is the recorded run.
+    The two COMSOL notebooks additionally run without a license, skipping the solver
+    cells and reporting how to supply exported results, so their code can be read and
+    executed up to the point where a license is needed.
+
+.. _notebooks-hamiltonian:
 
 **********************
  Hamiltonian analysis
 **********************
 
-Superconducting qubits are nonlinear quantum circuits whose behavior is governed by a
-Hamiltonian. Diagonalizing this Hamiltonian yields qubit frequencies, anharmonicities,
-and coupling strengths that feed back into the layout design
+Diagonalizing the circuit Hamiltonian yields qubit frequencies, anharmonicities, and
+coupling strengths that feed back into the layout
 :cite:`kochChargeinsensitiveQubitDesign2007a,blaisCircuitQuantumElectrodynamics2021`.
 
-**Typical use cases:**
+.. dropdown:: Typical use cases
+    :icon: light-bulb
+    :color: primary
 
-- Computing transmon qubit frequency (:math:`\omega_{01}`) and anharmonicity
-  (:math:`\alpha`) from Josephson energy :math:`E_J` and charging energy :math:`E_C`.
-- Analyzing fluxonium qubit spectra from :math:`E_J`, :math:`E_C`, :math:`E_L`, and
-  external flux.
-- Calculating the dispersive shift :math:`\chi` of a qubit–resonator system for readout
-  design.
-- Comparing design trade-offs between transmon and fluxonium qubits.
-- Translating Hamiltonian-level parameters into physical layout dimensions.
+    - Computing transmon qubit frequency (:math:`\omega_{01}`) and anharmonicity
+      (:math:`\alpha`) from Josephson energy :math:`E_\text{J}` and charging energy
+      :math:`E_\text{C}`.
+    - Analyzing fluxonium qubit spectra from :math:`E_\text{J}`, :math:`E_\text{C}`,
+      :math:`E_\text{L}`, and external flux.
+    - Calculating the dispersive shift :math:`\chi` of a qubit–resonator system for
+      readout design.
+    - Comparing design trade-offs between transmon and fluxonium qubits.
+    - Translating Hamiltonian-level parameters into physical layout dimensions.
 
-**Notebooks:**
+.. grid:: 1 1 3 3
+    :gutter: 3
 
-- :doc:`notebooks/scqubits_parameter_calculation` — Numerical diagonalization of
-  transmon– and fluxonium–resonator Hamiltonians with scQubits
-  :cite:`groszkowskiScqubitsPythonPackage2021`, including a side-by-side comparison of
-  anharmonicity, dispersive shift, and design trade-offs between the two qubit
-  modalities.
-- :doc:`notebooks/pymablock_dispersive_shift` — Perturbative block-diagonalization with
-  Pymablock :cite:`arayaDayPymablockAlgorithmPackage2025` to compute the dispersive
-  shift symbolically and map the result to layout parameters.
-- :doc:`notebooks/netket_transmon_design` — Transmon Hamiltonian analysis with NetKet
-  (exact diagonalization and variational methods) including extraction of qubit
-  parameters and conversion to layout dimensions.
+    .. grid-item-card:: scQubits parameters
+        :link: notebooks/scqubits_parameter_calculation
+        :link-type: doc
+        :class-card: notebook-card
+
+        Full numerical diagonalization of transmon– and fluxonium–resonator
+        Hamiltonians :cite:`groszkowskiScqubitsPythonPackage2021`, with a side-by-side
+        comparison of the two qubit modalities.
+
+        +++
+
+        :bdg-secondary-line:`scQubits` :bdg-primary:`models` :bdg-primary:`scqubits`
+
+    .. grid-item-card:: Dispersive shift with Pymablock
+        :link: notebooks/pymablock_dispersive_shift
+        :link-type: doc
+        :class-card: notebook-card
+
+        Symbolic block-diagonalization :cite:`arayaDayPymablockAlgorithmPackage2025`
+        mapped to layout parameters.
+
+        +++
+
+        :bdg-secondary-line:`Pymablock` :bdg-secondary-line:`SymPy`
+        :bdg-primary:`models` :bdg-primary:`pymablock`
+
+    .. grid-item-card:: Transmon design with NetKet
+        :link: notebooks/netket_transmon_design
+        :link-type: doc
+        :class-card: notebook-card
+
+        Exact diagonalization and variational methods, converted to layout dimensions.
+
+        +++
+
+        :bdg-secondary-line:`NetKet` :bdg-secondary-line:`JAX` :bdg-primary:`models`
+        :bdg-primary:`netket`
+
+.. _notebooks-pulse:
 
 *************************
  Pulse-level simulations
 *************************
 
-Once the qubit parameters are known, pulse-level simulations model the time-domain
-evolution of the quantum state under microwave control pulses. These simulations predict
-gate fidelities, leakage to non-computational states, and the impact of decoherence
-:cite:`liBoshlomQutipqipPulselevel2022,motzoi2009DRAGpulse`.
+With qubit parameters in hand, time-domain simulation under microwave control pulses
+predicts gate fidelity, leakage to non-computational states, and the impact of
+decoherence :cite:`liBoshlomQutipqipPulselevel2022,motzoi2009DRAGpulse`.
 
-**Typical use cases:**
+.. grid:: 1 1 2 2
+    :gutter: 3
 
-- Simulating single-qubit gates (e.g. X, Y) and two-qubit gates (e.g. Bell-state
-  preparation) with realistic pulse shapes.
-- Estimating leakage to higher transmon levels.
-- Evaluating the effect of :math:`T_1` and :math:`T_2` decoherence on gate fidelity.
-- Connecting physical layout parameters (frequency, anharmonicity) to gate performance.
+    .. grid-item-card:: Transmon gates with QuTiP-QIP
+        :link: notebooks/qutip_qip_pulse_simulation
+        :link-type: doc
+        :class-card: notebook-card
 
-**Notebooks:**
+        Single-qubit (X, Y) and two-qubit (Bell-state) gates with realistic pulse
+        shapes: population dynamics, leakage to higher levels, and :math:`T_1`/:math:`T_2`
+        effects on fidelity.
 
-- :doc:`notebooks/qutip_qip_pulse_simulation` — Pulse-level simulation of transmon gates
-  with QuTiP-QIP :cite:`liBoshlomQutipqipPulselevel2022`, including population dynamics,
-  leakage analysis, and decoherence effects.
+        +++
+
+        :bdg-secondary-line:`QuTiP-QIP` :bdg-secondary-line:`JAX` :bdg-primary:`models`
+        :bdg-primary:`qutip`
+
+.. _notebooks-differentiable:
 
 ***********************************
  Differentiable circuit simulation
 ***********************************
 
-Differentiable circuit simulators formulate the circuit as a system of Differential
-Algebraic Equations (DAEs) and solve them with automatic differentiation support. This
-enables gradient-based optimization of physical parameters directly from simulation
-outputs—without finite-difference approximations.
+The circuit as a system of differential-algebraic equations, solved with automatic
+differentiation: gradients of any simulated output with respect to physical parameters,
+without finite differences.
 
-**Typical use cases:**
+.. grid:: 1 1 2 2
+    :gutter: 3
 
-- Optimizing Josephson junction parameters (critical current, shunt capacitance) to meet
-  target qubit frequency and anharmonicity.
-- Simulating time-domain response of coupled qubit circuits to fast control pulses.
-- Computing gradients of crosstalk metrics with respect to layout geometry for automated
-  design refinement.
-- Harmonic-balance analysis of nonlinear superconducting circuits under periodic
-  microwave drives.
+    .. grid-item-card:: Transmon optimization with Circulax
+        :link: notebooks/circulax_transmon_optimization
+        :link-type: doc
+        :class-card: notebook-card
 
-**Notebooks:**
+        Harmonic-balance and transient solvers on a transmon: optimize junction
+        parameters with ``jax.grad`` and trace crosstalk sensitivity to the coupling
+        capacitance.
 
-- :doc:`notebooks/circulax_transmon_optimization` — Demonstrates Circulax's harmonic
-  balance and transient solvers applied to a transmon qubit circuit: optimizes junction
-  parameters via ``jax.grad`` and simulates crosstalk between coupled qubits, analyzing
-  its sensitivity to the coupling capacitance.
+        +++
+
+        :bdg-secondary-line:`Circulax` :bdg-secondary-line:`Optax`
+        :bdg-primary:`models` :bdg-primary:`circulax`
+
+.. _notebooks-external:
 
 **********************
  External integration
 **********************
 
-Notebooks that demonstrate driving qpdk from outside Python — useful for users whose
-primary tooling lives in another environment.
+Driving qpdk from outside Python, for teams whose primary tooling lives elsewhere.
 
-**Notebooks:**
+.. grid:: 1 1 2 2
+    :gutter: 3
 
-- :doc:`notebooks/matlab_integration` — Calls qpdk **directly from MATLAB** via MATLAB's
-  built-in Python interface (`py.module.function(...)`). Demonstrates GDS generation,
-  parameter sweeps over `resonator_frequency`, inverse design with `fzero`, and a
-  parametric chip variant grid summarised in a MATLAB `table`. The notebook uses the
-  MATLAB Jupyter kernel from `jupyter-matlab-proxy
-  <https://github.com/mathworks/jupyter-matlab-proxy>`_.
+    .. grid-item-card:: qpdk from MATLAB
+        :link: notebooks/matlab_integration
+        :link-type: doc
+        :class-card: notebook-card
+
+        GDS generation, parameter sweeps, inverse design with ``fzero``, and Touchstone
+        round-trips through the RF Toolbox, via MATLAB's built-in Python interface.
+
+        +++
+
+        :bdg-secondary-line:`MATLAB` :bdg-secondary-line:`RF Toolbox`
+        :bdg-primary:`models`
+
+.. dropdown:: How the MATLAB notebook calls qpdk
+    :icon: code
+
+    The notebook calls qpdk **directly from MATLAB** via its built-in Python interface
+    (``py.module.function(...)``): GDS generation, parameter sweeps over
+    ``resonator_frequency``, inverse design with ``fzero``, and a parametric chip variant
+    grid summarised in a MATLAB ``table``. It then exports SAX models as Touchstone files
+    with ``sax.write_sdict_touchstone`` and consumes them from MATLAB's `RF Toolbox
+    <https://se.mathworks.com/help/rf/index.html>`_ as ``sparameters``/``nport`` boxes —
+    Smith charts, cascades in a ``circuit``, rational fitting and transient response, and
+    back into SAX with ``sax.read_sdict_touchstone``.
+
+    Those sections need the RF Toolbox and skip themselves when it is unavailable or when
+    ``QPDK_SKIP_RF_TOOLBOX`` is set; the rendered page shows a saved execution that had
+    the toolbox available. The notebook uses the MATLAB Jupyter kernel from
+    `jupyter-matlab-proxy <https://github.com/mathworks/jupyter-matlab-proxy>`_.
 
 .. _notebook-extras:
 
@@ -263,7 +521,47 @@ primary tooling lives in another environment.
 
 ``pip install qpdk`` gives you the layout PDK and nothing else: the analytical models,
 FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
-``[project.optional-dependencies]`` in ``pyproject.toml``.
+``[project.optional-dependencies]`` in ``pyproject.toml``. Extras compose, so install
+them together in one command, and always quote the brackets — ``zsh`` and ``fish`` treat
+them as globs.
+
+.. tab-set::
+    :sync-group: installer
+
+    .. tab-item:: uv
+        :sync: uv
+
+        .. code-block:: bash
+
+            # add qpdk with extras to the current project (writes pyproject.toml)
+            uv add "qpdk[models,netket]"
+
+            # install into the active environment without touching pyproject.toml
+            uv pip install "qpdk[models,netket]"
+
+            # run a notebook in a throwaway environment, no install step
+            uvx --with "qpdk[models,netket]" --from jupyterlab jupyter lab
+
+    .. tab-item:: pip
+        :sync: pip
+
+        .. code-block:: bash
+
+            pip install "qpdk[models]"
+            pip install "qpdk[models,netket]"
+            pip install "qpdk[circulax,comsol,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
+
+    .. tab-item:: From a checkout
+        :sync: checkout
+
+        .. code-block:: bash
+
+            # sync the locked environment with the extras you need
+            uv sync --extra models --extra netket
+            uv sync --all-extras
+
+            # or reproduce the rendered documentation, every backend included
+            uv sync --group docs
 
 .. list-table::
     :header-rows: 1
@@ -282,6 +580,11 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - ``pyaedt[graphics]``, ``polars``
       - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
         local Ansys installation and a license, which are not pip-installable.
+    - - ``comsol``
+      - ``MPh``
+      - MPh-based COMSOL geometry and study builders in ``qpdk.simulation``. Building
+        and solving require a COMSOL installation and license; RF solves also need the
+        RF Module. MPh itself is only a client and installs no solver.
     - - ``circulax``
       - ``circulax``, ``optax``
       - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient
@@ -305,54 +608,24 @@ FEM drivers, and Hamiltonian/pulse solvers all live in *extras*, declared under
       - ``trimesh``, ``pyglet``
       - Interactive 3-D viewing of component meshes. Not needed by any notebook.
     - - ``gdsfactoryplus``
-      - ``doroutes``, ``elvis-lvs``, ``httpx``, ``inspice``, ``jaxellip``,
-        ``kfnetlist``, ``sax``
-      - Dependencies of the GDSFactory+ v2 SDK exercised by ``just test-gfp``. Not
-        needed by any notebook.
-
-Extras compose, so install them together in one command. Always quote the brackets —
-``zsh`` and ``fish`` treat them as globs.
-
-With `uv <https://docs.astral.sh/uv/>`_:
-
-.. code-block:: bash
-
-    # add qpdk with extras to the current project (writes pyproject.toml)
-    uv add "qpdk[models]"
-    uv add "qpdk[models,netket]"
-
-    # install into the active environment without touching pyproject.toml
-    uv pip install "qpdk[models,netket]"
-
-    # in a checkout of this repository, sync the locked environment
-    uv sync --extra models --extra netket
-    uv sync --all-extras
-
-    # run a notebook in a throwaway environment, no install step
-    uvx --with "qpdk[models,netket]" --from jupyterlab jupyter lab
-
-With ``pip``:
-
-.. code-block:: bash
-
-    pip install "qpdk[models]"
-    pip install "qpdk[models,netket]"
-    pip install "qpdk[circulax,graphics,hfss,models,netket,pymablock,qutip,ray,scqubits]"
+      - ``gdsfactoryplus`` (Python 3.12 only), ``jaxellip``, ``polars``
+      - The GDSFactory+ v2 SDK exercised by ``just test-gfp``. Not needed by any
+        notebook.
 
 .. note::
 
-    Two notebook dependencies are deliberately *not* extras:
+    These notebook dependencies are deliberately *not* extras:
 
-    - ``openvino``, used by :doc:`notebooks/jax_backend_comparison` for the NPU
-      benchmark, is optional and platform-specific — install it with ``pip install
-      openvino``. The notebook skips that section if it is missing.
+    - A CUDA build of JAX or experimental ``jax-mps`` is needed only to record new
+      measurements for :doc:`notebooks/jax_backend_comparison`. The notebook itself
+      renders saved Parquet records without a GPU. Installing a new MPS environment
+      requires SAX to allow the JAX 0.11 version required by the plugin.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
 
-    If you only want to reproduce the rendered documentation, ``uv sync --group docs``
-    installs the ``docs`` dependency group, which already pulls in every backend the
-    notebooks execute with.
+    The Elmer notebook also needs ``gplugins[elmer]`` installed from Git until the next
+    gplugins release.
 
 .. _notebook-summary:
 
@@ -360,8 +633,7 @@ With ``pip``:
  Summary table
 ***************
 
-The **Extras** column lists the ``qpdk`` extras required to run each notebook; see
-:ref:`notebook-extras` for what each one installs.
+Every notebook at a glance; the **Extras** column links back to :ref:`notebook-extras`.
 
 .. list-table::
     :header-rows: 1
@@ -393,8 +665,8 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - ``models``
     - - :doc:`notebooks/jax_backend_comparison`
       - S-parameter models
-      - SAX, JAX, OpenVINO
-      - ``models`` (+ ``openvino``)
+      - SAX, JAX
+      - ``models`` (GPU plugins only for recording)
     - - :doc:`notebooks/hfss_q2d_cpw_impedance`
       - FEM electromagnetics
       - Ansys Q2D, PyAEDT
@@ -407,6 +679,18 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - FEM electromagnetics
       - Ansys HFSS, PyAEDT
       - ``models``, ``hfss``
+    - - :doc:`notebooks/elmer_capacitance_interdigital`
+      - FEM electromagnetics
+      - Elmer, meshwell
+      - ``models`` (+ ``gplugins[elmer]`` from Git until release)
+    - - :doc:`notebooks/comsol_cpw_resonator`
+      - FEM electromagnetics
+      - COMSOL, MPh
+      - ``comsol``
+    - - :doc:`notebooks/comsol_qubit_capacitance`
+      - FEM electromagnetics
+      - COMSOL, MPh
+      - ``comsol``
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
@@ -433,7 +717,7 @@ The **Extras** column lists the ``qpdk`` extras required to run each notebook; s
       - ``models``, ``circulax``
     - - :doc:`notebooks/matlab_integration`
       - External integration
-      - MATLAB, jupyter-matlab-proxy
+      - MATLAB, RF Toolbox (optional), jupyter-matlab-proxy
       - ``models``
 
 ************

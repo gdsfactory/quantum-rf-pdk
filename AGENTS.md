@@ -8,8 +8,8 @@ these guidelines when contributing:
 
 Behavioral guidelines to reduce common LLM coding mistakes. Adapted from
 [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls
-([source](https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md)). These guidelines bias toward
-caution over speed — for trivial tasks, use judgment.
+([source](https://raw.githubusercontent.com/multica-ai/andrej-karpathy-skills/main/CLAUDE.md)). These guidelines bias
+toward caution over speed — for trivial tasks, use judgment.
 
 ### Think Before Coding
 
@@ -127,6 +127,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
   cloning or testing: <https://git-lfs.github.com/>
 - **Binary files**: GDS and OAS files are tracked as binary in `.gitattributes` to prevent merge conflicts
 - **Test data with LFS**: CSV files in `tests/models/data/` are stored with Git LFS (`filter=lfs diff=lfs merge=lfs`)
+- **Datasets with LFS**: Parquet parts in `qpdk/models/datasets/data/*/` are stored with Git LFS and carry their own
+  dataset metadata. Fetch only these with `git lfs pull --include="qpdk/models/datasets/data/**"`
 - **Branching**: Work on feature branches, not directly on `main`. Pull requests are required for merging to `main`
 - **Commit messages**: Write clear, concise commit messages. Use imperative mood (e.g., "Add component" not "Added
   component")
@@ -168,6 +170,13 @@ All PRs must pass:
 1. **Write comprehensive tests**: Add tests for new functionality following existing patterns in `tests/`
 1. **Document quantum-specific behavior**: Include docstrings explaining the quantum physics and device characteristics,
    ideally with citations. Use `:math:` notation for inline LaTeX math (avoid `$` or `$$`).
+1. **Set non-variables upright in math**: Follow ISO 80000-2 — italic is for variables only, everything else is upright
+   via `\text{}`. That means units (`\,\text{GHz}`, `\,\text{fF}`, `\,\text{µm}`) and any subscript or superscript that
+   names a thing rather than an index (`E_\text{J}`, `C_\text{q}`, `\omega_\text{r}`, `Q_\text{ext}`,
+   `\kappa_\text{Purcell}`). Numeric and mathematical indices stay italic (`S_{21}`, `T_1`, `f_{01}`, `\sum_k a_k`).
+   Prefer `\text{}` over `\mathrm{}` or `\textrm{}`, and keep `\mathtt{}` for literal Python identifiers. This applies
+   to every math carrier: `:math:` roles, `.. math::` directives, `$...$` and ```` ```{math} ```` blocks in notebooks,
+   and matplotlib labels — the last need a raw string (`r"..."` / `rf"..."`), or `\text` becomes a tab character.
 1. **Expose new components to PDK**: Import new all components from new files with the form `from ... import *` in
    `qpdk/cells/__init__.py`
 1. **Use predefined layers**: Prefer predefined layers from the `LAYER` enumerable in `qpdk/tech.py`. An agent rarely
@@ -179,6 +188,11 @@ All PRs must pass:
 1. **Use JAX for analytical models**: When implementing analytical models for S-parameters, prefer using JAX-compatible
    functions (e.g., `jnp` instead of `np`, `jaxellip` for elliptic integrals) and enable JIT compilation with
    `@partial(jax.jit, inline=True)` for helper functions.
+1. **Prefer JAX over numpy**: Outside the models too, reach for `jax.numpy` (`jnp`) or `jax.*` instead of `numpy` in
+   tests, notebooks, and any code that already depends on jax. Keep `numpy` only where JAX has no equivalent or would
+   break things: `qpdk/` code that must import without jax (it is not a core dependency), `np.testing`, file I/O
+   (`np.loadtxt`, `np.savetxt`, `np.load`), `np.random.default_rng`, in-place array mutation, and arrays handed to tools
+   that need real numpy (MATLAB, HFSS, COMSOL, scqubits, netket).
 1. **Keep SAX models jittable**: S-parameter (SAX) models must always support JAX JIT compilation. Avoid Python features
    that break jitting, e.g. control flow that depends on traced values (`if`/`for`/`while` on array values), in-place
    array mutation, or data-dependent shapes. Use `jnp` operations and `jax.lax` control flow (`lax.cond`, `lax.scan`,
@@ -188,6 +202,10 @@ All PRs must pass:
    information.
 1. **Python imports**: Place imports at the top of the file, not inside functions, unless the dependency is missing from
    `pyproject.toml` or is exceptionally heavy without lazy loading.
+1. **Mark blocked Python upgrades**: When a newer Python feature would simplify the code but the minimum supported
+   version in `pyproject.toml` rules it out, leave a marker instead of silently working around it. Use
+   `# TODO(Python 3.X): <feature> - <what to change>`, keep it to one line (two at most), and let the adjacent code
+   imply the rest. Then `rg "TODO\(Python"` lists the cleanups unlocked by a version bump.
 
 ## Testing Guidelines
 
@@ -236,9 +254,9 @@ The `qpdk/models/` directory contains S-parameter and circuit models for quantum
 
 Omitting a model port from a SAX circuit applies a matched load, not an open circuit:
 
-- Matched load: $Z_L = Z_0$ and $\\Gamma = 0$, so incident power is absorbed.
-- Open circuit: $Z_L \\to \\infty$ and $\\Gamma = +1$.
-- Short circuit: $Z_L = 0$ and $\\Gamma = -1$.
+- Matched load: $Z\_\\text{L} = Z_0$ and $\\Gamma = 0$, so incident power is absorbed.
+- Open circuit: $Z\_\\text{L} \\to \\infty$ and $\\Gamma = +1$.
+- Short circuit: $Z\_\\text{L} = 0$ and $\\Gamma = -1$.
 
 Do not leave a port disconnected when the model requires an open or short boundary. For a quarter-wave coupled
 resonator, `resonator_o1` is open and `resonator_o2` is shorted. Prefer `quarter_wave_resonator_coupled`, which applies
@@ -260,12 +278,32 @@ for examples of:
 
 - **Notebook source**: Notebook source files live in `notebooks/src/`. Python notebooks use `.py`; the MATLAB-kernel
   notebook uses `.m` (see `notebooks/src/matlab_integration.m`)
+
 - **Conversion**: Run `just convert-notebooks` or `./.github/convert-notebooks.sh` to convert source files to `.ipynb`
+
 - **Pre-commit hook**: Notebooks are automatically converted when `.py` or `.m` files in `notebooks/src/` are modified
+
 - **Format**: Python notebooks use the "percent" format with `# %%` cell markers; MATLAB notebooks use `% %%` markers
+
+- **Inline script metadata**: Each Python notebook source carries a PEP 723 `# /// script` block in a
+  `# %% [raw] tags=["remove-cell"]` cell, so it can be run with `uv run --script`. Update its `dependencies` whenever
+  the Colab install cell changes
+
 - **Documentation**: Converted notebooks are copied to `docs/notebooks/` during documentation build. Notebooks that
-  require external tooling (HFSS, MATLAB) are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the docs
-  build does not try to execute them
+  require external tooling (HFSS, MATLAB) or a GPU are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the
+  docs build does not try to execute them
+
+- **JAX benchmark notebook**: `jax_backend_comparison` loads Parquet records and renders its plots during documentation
+  CI. Strip notebook outputs and keep raw machine measurements in `notebooks/data/jax_backend_comparison/*.parquet`,
+  tracked with Git LFS. Each file is one typed nested machine record, including all repetitions, reference traces,
+  workload settings, hardware, and package versions.
+
+- **Recording benchmarks**: Run
+  `uv run --extra models --with "jax[cuda12]" python -m qpdk.samples.benchmark_jax_backends notebooks/data/jax_backend_comparison/cuda.parquet`
+  on CUDA hardware with `QPDK_REQUIRE_GPU=1`. The recorder checks precision and device, warms up JIT compilation, and
+  synchronizes every timed evaluation. Use `QPDK_REQUIRE_MPS=1` for Apple Silicon after SAX allows the JAX 0.11 version
+  required by `jax-mps` (gdsfactory/sax#133); do not override the dependency constraint. Changing only the analysis or
+  styling does not require new hardware measurements.
 
 ### Samples Directory
 
@@ -286,11 +324,38 @@ for examples of:
 1. For notebooks: Create `.py` file in `notebooks/src/` using jupytext percent format with proper YAML header. Ensure
    the first code cell contains the Google Colab installation snippet with `tags=["hide-input", "hide-output"]` so it
    can be run online without cluttering the docs.
-1. For samples: Create `.py` file in `qpdk/samples/` following existing examples
+
+1. For notebooks: Directly after the jupytext header, add a [PEP 723](https://peps.python.org/pep-0723/) inline script
+   metadata cell so the source runs standalone with `uv run --script notebooks/src/<name>.py`. Use a raw cell tagged
+   `remove-cell`, and list the same packages as the Colab install cell:
+
+   ```python
+   # %% [raw] tags=["remove-cell"]
+   # /// script
+   # requires-python = ">=3.12,<3.15"
+   # dependencies = [
+   #   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+   # ]
+   # ///
+   ```
+
+   Keep it a raw cell, not a code cell: a code cell would have no execution count in the pre-executed notebooks, which
+   fails the Elmer notebook check in CI. Keep it after the header, not before, or jupytext stops stripping the header.
+
+1. For samples: Create `.py` file in `qpdk/samples/` following existing examples. New or substantively changed
+   standalone Python scripts must start with a PEP 723 `# /// script` block (after an optional shebang), declaring
+   `requires-python` consistent with the project's supported range and `dependencies` including the QPDK extras they
+   use. This lets `uv run --script qpdk/samples/<name>.py` install the required environment. Library modules and
+   `__init__.py` do not need script metadata.
+
 1. Include docstrings and comments explaining the design and physics
+
 1. Add citations where appropriate using Sphinx citation syntax
+
 1. Test that the script runs without errors
+
 1. For samples, ensure the generated component is added to the test suite
+
 1. **Update `docs/notebooks.rst`** when adding or removing notebooks — this page describes each notebook and categorizes
    it by simulation approach
 
@@ -384,3 +449,5 @@ match exactly.
 1. Add type hints where missing
 1. Use `cast()` for type conversions only when absolutely necessary
 1. Check `pyproject.toml` for any type checking configuration that may be ignoring specific errors
+1. Pyrefly reads third-party types from `.venv`; run `uv sync --all-extras --group palace` first to match CI, then
+   `uv run prek run pyrefly-check --all-files`

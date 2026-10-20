@@ -23,3 +23,22 @@ just convert-notebooks
 ```
 
 There is also a pre-commit hook checking that the notebooks are in-sync with the source files.
+
+Each script carries [PEP 723](https://peps.python.org/pep-0723/) inline script metadata listing its dependencies, so it
+can also be run directly without a project environment:
+
+```bash
+uv run --script src/<script>.py
+```
+
+The metadata lives in a raw cell tagged `remove-cell`, which keeps it out of the rendered documentation. Keep its
+dependency list in sync with the notebook's Google Colab install cell.
+
+## Documentation figures
+
+Figures in `figures/` are generated from `docs/figures/*.typ` with `just build-doc-figures`. Run it before opening the
+notebooks locally. Documentation builds generate the figures automatically. The recipe uses the same pinned Inter and
+Outfit fonts as the docs PDF, and the colors come from the HTML theme in `docs/_static/css/custom.css`. Only commit the
+Typst source. Notebook Markdown uses `figures/<name>.svg`, and the docs build copies the generated figures into
+`docs/notebooks/`. GitHub's notebook preview cannot display these uncommitted figures; use the built docs or generate
+them locally.

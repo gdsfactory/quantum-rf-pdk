@@ -383,8 +383,6 @@ instances:
       end_with_bend: false
       length: 3600
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_bot_2:
     component: quarter_wave_resonator_coupled
@@ -398,8 +396,6 @@ instances:
       end_with_bend: false
       length: 3800
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_bot_3:
     component: quarter_wave_resonator_coupled
@@ -413,8 +409,6 @@ instances:
       end_with_bend: false
       length: 4000
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_bot_4:
     component: quarter_wave_resonator_coupled
@@ -428,8 +422,6 @@ instances:
       end_with_bend: false
       length: 4200
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_bot_5:
     component: quarter_wave_resonator_coupled
@@ -443,8 +435,6 @@ instances:
       end_with_bend: false
       length: 4400
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_bot_6:
     component: quarter_wave_resonator_coupled
@@ -458,8 +448,6 @@ instances:
       end_with_bend: false
       length: 4600
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_bot_7:
     component: quarter_wave_resonator_coupled
@@ -473,8 +461,6 @@ instances:
       end_with_bend: false
       length: 4800
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_bot_8:
     component: quarter_wave_resonator_coupled
@@ -488,8 +474,6 @@ instances:
       end_with_bend: false
       length: 5000
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_top_1:
     component: quarter_wave_resonator_coupled
@@ -503,8 +487,6 @@ instances:
       end_with_bend: false
       length: 3700
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_top_2:
     component: quarter_wave_resonator_coupled
@@ -518,8 +500,6 @@ instances:
       end_with_bend: false
       length: 3900
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_top_3:
     component: quarter_wave_resonator_coupled
@@ -533,8 +513,6 @@ instances:
       end_with_bend: false
       length: 4100
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_top_4:
     component: quarter_wave_resonator_coupled
@@ -548,8 +526,6 @@ instances:
       end_with_bend: false
       length: 4300
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_top_5:
     component: quarter_wave_resonator_coupled
@@ -563,8 +539,6 @@ instances:
       end_with_bend: false
       length: 4500
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_top_6:
     component: quarter_wave_resonator_coupled
@@ -578,8 +552,6 @@ instances:
       end_with_bend: false
       length: 4700
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_top_7:
     component: quarter_wave_resonator_coupled
@@ -593,8 +565,6 @@ instances:
       end_with_bend: false
       length: 4900
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
   resonator_top_8:
     component: quarter_wave_resonator_coupled
@@ -608,8 +578,6 @@ instances:
       end_with_bend: false
       length: 5100
       meanders: 6
-      open_end: false
-      open_start: true
       start_with_bend: false
 placements:
   probe_east_bot:

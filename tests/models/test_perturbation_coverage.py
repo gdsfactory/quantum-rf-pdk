@@ -39,8 +39,8 @@ class TestTransmonResonatorHamiltonian:
         """Test that all symbols are declared positive and real."""
         _, _, symbols = transmon_resonator_hamiltonian()
         for s in symbols:
-            assert s.is_positive
-            assert s.is_real
+            assert s.assumptions0["positive"]
+            assert s.assumptions0["real"]
 
     @staticmethod
     def test_h0_is_nontrivial() -> None:

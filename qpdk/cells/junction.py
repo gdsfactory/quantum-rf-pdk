@@ -15,7 +15,7 @@ from qpdk.tech import (
 )
 
 
-@gf.cell(tags=("junctions",))
+@gf.cell(tags=["junctions"])
 def single_josephson_junction_wire(
     wide_straight_length: float = 8.3,
     narrow_straight_length: float = 0.5,
@@ -97,7 +97,7 @@ def single_josephson_junction_wire(
     return c
 
 
-@gf.cell(tags=("junctions",))
+@gf.cell(tags=["junctions"])
 def josephson_junction(
     junction_overlap_displacement: float = 1.8,
     wide_straight_length: float = 8.3,
@@ -203,7 +203,7 @@ def josephson_junction(
     return c
 
 
-@gf.cell(tags=("junctions",))
+@gf.cell(tags=["junctions"])
 def josephson_junction_long(**kwargs) -> Component:
     """Josephson junction with wide_straight_length=12.
 
@@ -213,7 +213,7 @@ def josephson_junction_long(**kwargs) -> Component:
     return josephson_junction(wide_straight_length=12, **kwargs)
 
 
-@gf.cell(tags=("junctions",))
+@gf.cell(tags=["junctions"])
 def squid_junction_long(**kwargs) -> Component:
     """SQUID junction with josephson_junction_long.
 
@@ -223,7 +223,7 @@ def squid_junction_long(**kwargs) -> Component:
     return squid_junction(junction_spec=josephson_junction_long, **kwargs)
 
 
-@gf.cell(tags=("junctions",))
+@gf.cell(tags=["junctions"])
 def squid_junction(
     junction_spec: ComponentSpec = josephson_junction,
     loop_area: float = 4,
@@ -262,7 +262,7 @@ def squid_junction(
 
     # Start adding area by displacing junctions
     displacement_xy = loop_area**0.5
-    right_junction.dcplx_trans *= DCplxTrans((displacement_xy,) * 2)
+    right_junction.dcplx_trans *= DCplxTrans(displacement_xy, displacement_xy)
 
     # Add ports from junctions with descriptive names
     for junction_name, junction in [("left", left_junction), ("right", right_junction)]:

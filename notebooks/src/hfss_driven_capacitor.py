@@ -8,6 +8,14 @@
 #       jupytext_version: 1.17.3
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # %% [markdown]
 # # HFSS Driven Modal Simulation of an Interdigital Capacitor
 #
@@ -68,11 +76,13 @@ import os
 import tempfile
 import time
 from pathlib import Path
+from typing import cast
 
 import gdsfactory as gf
 import matplotlib.pyplot as plt
 import numpy as np
 from ansys.aedt.core import Hfss, Q3d, settings
+from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
 from IPython.display import Image, display
 
 from qpdk import PDK
@@ -81,7 +91,13 @@ from qpdk.cells.waveguides import straight_open
 from qpdk.config import PATH
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.cpw import cpw_ep_r_from_cross_section
-from qpdk.simulation import HFSS, Q3D, prepare_component_for_aedt
+from qpdk.simulation import (
+    HFSS,
+    Q3D,
+    detach_desktop_logging,
+    fit_view,
+    prepare_component_for_aedt,
+)
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -135,13 +151,13 @@ for port in idc_component.ports:
 # capacitances per unit length are derived using the complete elliptic integrals
 # of the first kind $K(k)$:
 #
-# $$ \eta = \frac{w}{w + g}, \quad k_i = \sin\left(\frac{\pi \eta}{2}\right), \quad k_e = \frac{2\sqrt{\eta}}{1 + \eta} $$
+# $$ \eta = \frac{w}{w + g}, \quad k_\text{i} = \sin\left(\frac{\pi \eta}{2}\right), \quad k_\text{e} = \frac{2\sqrt{\eta}}{1 + \eta} $$
 #
-# $$ C_i = \epsilon_0 (\epsilon_r + 1) \frac{K(k_i)}{K(k_i')}, \quad C_e = \epsilon_0 (\epsilon_r + 1) \frac{K(k_e)}{K(k_e')} $$
+# $$ C_\text{i} = \epsilon_0 (\epsilon_\text{r} + 1) \frac{K(k_\text{i})}{K(k_\text{i}')}, \quad C_\text{e} = \epsilon_0 (\epsilon_\text{r} + 1) \frac{K(k_\text{e})}{K(k_\text{e}')} $$
 #
 # The total mutual capacitance for $n$ fingers is then:
 #
-# $$ C = \begin{cases} C_e L / 2 & \text{if } n=2 \\ (n - 3) \frac{C_i L}{2} + 2 \frac{C_i C_e L}{C_i + C_e} & \text{if } n > 2 \end{cases} $$
+# $$ C = \begin{cases} C_\text{e} L / 2 & \text{if } n=2 \\ (n - 3) \frac{C_\text{i} L}{2} + 2 \frac{C_\text{i} C_\text{e} L}{C_\text{i} + C_\text{e}} & \text{if } n > 2 \end{cases} $$
 
 # %%
 # Get substrate permittivity from cross-section
@@ -153,7 +169,7 @@ C_estimate = interdigital_capacitor_capacitance_analytical(
     finger_length=20.0,
     finger_gap=2.0,
     thickness=5.0,
-    ep_r=float(ep_r),
+    ep_r=ep_r,
 )
 print(f"Estimated capacitance: {float(C_estimate) * 1e15:.2f} fF")
 
@@ -197,7 +213,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
 
 # Create temporary directory for project
@@ -213,6 +229,8 @@ hfss = Hfss(
     new_desktop=True,
     version="2025.2",
 )
+# PyAEDT logs through the desktop by default; reading it per message can drop the session.
+detach_desktop_logging(hfss)
 hfss.modeler.model_units = "um"
 
 print(f"HFSS project created: {hfss.project_file}")
@@ -265,7 +283,7 @@ print("Assigned radiation boundary to air region")
 
 # %%
 # Ensure HFSS model fits the screen
-hfss.modeler.fit_all()
+fit_view(hfss)
 
 # Save screenshot
 img_dir = PATH.repo / "docs" / "_static" / "images"
@@ -404,10 +422,11 @@ plt.tight_layout()
 
 # %%
 # Ensure the model fits the screen
-hfss.modeler.fit_all()
+fit_view(hfss)
 
 # Create a surface field plot of the electric field magnitude on the substrate
-plot = hfss.post.create_fieldplot_surface(
+# `post` is typed as a union of every application's post-processor.
+plot = cast(PostProcessor3D, hfss.post).create_fieldplot_surface(
     assignment=[substrate_name], quantity="Mag_E", setup=f"{setup.name} : LastAdaptive"
 )
 
@@ -432,7 +451,7 @@ display(Image(filename=str(hfss_field_img_path)))
 #
 # Relying only on the magnitude of $S_{21}$ assumes the geometry behaves identically
 # to a single perfect capacitor floating in a vacuum. In reality, the structure has
-# shunt parasitic capacitances to ground ($C_{11}$ and $C_{22}$) that skew the
+# shunt parasitic capacitances to ground ($C_{1\text{g}}$ and $C_{2\text{g}}$) that skew the
 # $S_{21}$ magnitude.
 #
 # The robust way to extract mutual capacitance is using Y-parameters (Admittance), see {cite:p}`m.pozarMicrowaveEngineering2012`.
@@ -443,6 +462,11 @@ display(Image(filename=str(hfss_field_img_path)))
 # Therefore, the exact mutual capacitance is:
 #
 # $$ C_{12} = -\frac{\text{Im}(Y_{12})}{\omega} $$
+#
+# ![Pi network with a series mutual capacitance and a shunt capacitance to ground at each port, and how the Maxwell matrix and the admittance relate to it](figures/capacitor-pi-network.svg)
+#
+# On this page $C_{12}$ denotes the mutual capacitance, $C_{12}^\text{mutual}$ in the figure.
+# A Maxwell matrix, such as the Q3D result below, stores it with a negative sign off the diagonal.
 
 # %%
 # Extract Y21 parameter manually using PyAEDT's solution data
@@ -537,6 +561,7 @@ q3d = Q3d(
     new_desktop=True,
     version="2025.2",
 )
+detach_desktop_logging(q3d)
 q3d.modeler.model_units = "um"
 
 # Initialize Q3D wrapper
@@ -586,7 +611,7 @@ print(f"Assigned signal nets: {signal_nets}")
 
 # %%
 # Ensure Q3D model fits the screen
-q3d.modeler.fit_all()
+fit_view(q3d)
 
 # Save screenshot
 img_dir = PATH.repo / "docs" / "_static" / "images"
@@ -633,12 +658,13 @@ success_q3d = q3d.analyze_setup("Q3DSetup", cores=4)
 elapsed_q3d = time.time() - start_time_q3d
 
 if not success_q3d:
-    print("\nERROR: Q3D simulation failed!")
-    m = q3d.desktop_class.odesktop.GetMessages(q3d.project_name, q3d.design_name, 0)
-    for msg in m:
-        print(f"Desktop Msg: {msg}")
-else:
-    print(f"Q3D analysis completed in {elapsed_q3d:.1f} seconds")
+    # Collecting the AEDT messages would mean reading the desktop of a session that
+    # may already be gone, which releases the plugin's AEDT handle and takes the
+    # capacitance readback below with it. The messages are in the PyAEDT log beside
+    # the project instead.
+    raise RuntimeError("Q3D simulation failed. Check the AEDT log for details.")
+
+print(f"Q3D analysis completed in {elapsed_q3d:.1f} seconds")
 
 # %% [markdown]
 # ### Extract Q3D Capacitance Matrix

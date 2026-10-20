@@ -5,6 +5,130 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-10-15
+
+### Added
+
+- Added an FEM dataset format with JAX grid-lookup models, Delta Lake and object-store result stores, dataset generation
+  recipes and a notebook walkthrough, along with Palace CPW coupling datasets and SAX lookup models (the new `delta` and
+  `palace` extras).
+- Added COMSOL sheet simulations and solved CPW resonator and transmon notebooks, with a new `comsol` extra.
+- Added an Elmer interdigital-capacitor capacitance notebook.
+- Added a JAX backend notebook comparing CPU, CUDA and Apple Silicon.
+- Added MATLAB examples for consuming SAX models from the RF Toolbox, electrostatic FEM of an interdigital capacitor
+  with the PDE Toolbox, and the Optimization, Statistics, Global Optimization and Parallel Computing toolboxes.
+- Added schematic symbol artwork for GDSFactory+.
+- Added Typst concept figures explaining microwave models, readout and fabrication variation.
+- Added dark renders for plot-directive figures and svgbob diagrams.
+- Added `llms.txt` to the documentation site with sphinx-llm.
+- Added `qpdk` and `qpdk-dark` sequential colormaps as the default plotting colormaps.
+- Added a picture gallery to the Samples page and redesigned the notebooks page with sphinx-design cards.
+- Added PEP 723 inline script metadata to notebook sources.
+- Added a Touchstone reader and writer that does not depend on scikit-rf.
+
+### Changed
+
+- Replaced numpy with JAX in tests and notebooks where possible.
+- Organized the tests into subfolders by tool.
+- Installed the GDSFactory+ v2 SDK from PyPI instead of the VS Code extension.
+- Read simulation notebook stack parameters from the `LayerStack`.
+- Set units and descriptive scripts upright in math mode and in the Typst figures.
+- Showed the source tag or commit hash on the PDF cover and hid the noise that only affects PDF builds.
+
+### Fixed
+
+- Kept taper and launcher SAX models JAX-jittable, fixed the analytical airbridge network and the quarter-wave resonator
+  termination contract, and passed the meander wire gap to the SAX model.
+- Fixed the unimon Hamiltonian phase operator.
+- Fixed the GDSFactory+ 3D view by spelling derived-layer boolean operations as `not`.
+- Fixed Codecov reporting 0% coverage.
+- Fixed README links to the contributing guide.
+- Kept bibliography names as UTF-8 so citation labels abbreviate.
+- Hid notebook folders from the GDSFactory+ sidebar.
+- Made the HFSS notebooks survive a headless AEDT session.
+- Put `quarter_wave_resonator_coupled` `resonator_o1` bottom-left in the schematic.
+
+## [0.4.0] - 2026-09-18
+
+### Added
+
+- Added schematic-symbol capability to cells.
+- Added Static/Dynamic layout viewer tabs to the cells page, served through the kwasm viewer.
+- Added a Circulax transmon optimization notebook with harmonic-balance and transient analysis.
+- Added `llms.txt` to the documentation site per llmstxt.org.
+- Added Python 3.14 to the test matrix and Codecov upload of coverage and test results.
+
+### Changed
+
+- Built the PDF documentation with Typst (typsphinx) instead of LaTeX, and made PDF build failures fail CI.
+- Modernized chip-level schematics and simulation for GDSFactory+ v2.
+- Updated `gdsfactory` to `~=9.51.0`.
+- Bounded the caches in models to prevent unbounded memory growth during sweeps.
+
+### Removed
+
+- Removed the `doroutes` dependency and the A\* routing strategies.
+
+### Fixed
+
+- Preserved RF resonances in recursive SAX simulations.
+- Removed the silent gap fallback in the CPW coupling capacitance model.
+- Fixed `JosephsonJunction` layer thickness units and added a `LAYER_STACK` thickness range test.
+- Fixed the `snspd` cell to honour `port_type` and validate `num_meanders`.
+- Made `lumped_element_resonator` port types consistent with the rest of the PDK.
+- Fixed the unimon `meander_radius` metadata fallback and forwarded `cross_section` to the nxn junction in `tee`.
+- Fixed Q3D assigning PEC to all renamed objects including the substrate.
+- Fixed the resonator test chip schematic simulation.
+
+## [0.3.8] - 2026-05-21
+
+### Added
+
+- Added a MATLAB integration notebook demonstrating `qpdk` usage from MATLAB.
+- Added a PCells gallery section to the cells page with clickable card thumbnails.
+- Added dielectric loss tangent to the CPW models.
+- Added HFSS field plots and improved Q2D geometry visualization.
+- Added SBOM generation to the release workflow and a `lychee` link-checking pre-commit hook.
+
+### Changed
+
+- Updated branding to QPDK across the codebase, with a new documentation theme and logo.
+- Enabled `sbend="bend_s"` in `route_bundle` strategies.
+- Updated `gdsfactory` to `~=9.43.0`, `gplugins` to `~=2.1.0`, and `doroutes` to `~=0.6.0`.
+- Matched matplotlib figure fonts to the Sphinx theme and used Fira Math for math rendering.
+- Added fzf caching and background loading to component selection.
+
+### Fixed
+
+- Fixed the "Edit on GitHub" links for notebook pages pointing to the wrong path.
+- Fixed Sphinx image paths programmatically in `conf.py`.
+- Resolved pyright errors and the `jnp.clip` `a_min` TypeError.
+- Avoided an artifact name collision in the docs deployment job.
+
+## [0.3.7] - 2026-04-28
+
+### Added
+
+- Added a DRC workflow and DRC configuration.
+- Implemented model regression tests for SAX S-parameter models.
+- Added metric badges, an auto-label workflow, and labeler coverage for all repository labels.
+- Added a test for GDSFactory+ integration.
+
+### Changed
+
+- Centralized the pre-commit hooks and standardized the project configuration.
+- Migrated CI to the centralized reusable PDK workflows and reduced the Makefile to a thin shim for `just`.
+- Refactored the documentation index and expanded the README with a component gallery and test chip images.
+- Lazy-loaded the `sample_functions` dictionary in `qpdk/__init__.py`.
+
+### Fixed
+
+- Fixed the meander inductor monotonicity test tolerance.
+- Improved `install-tech` output and fixed its symlink logic.
+- Fixed deprecated `jnp.clip` arguments and suppressed third-party warnings.
+- Fixed math rendering in the API docs for `sax` re-exported functions.
+- Removed the `virtual` flag from `launcher_top` in the qubit test chip YAML.
+
 ## [0.3.6] - 2026-04-14
 
 ### Fixed

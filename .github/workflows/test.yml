@@ -18,12 +18,20 @@ jobs:
       PREK_SKIP: matlab-diagnostics,matlab-format,matlab-quickfix  # No license
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - run: uv sync --no-dev --no-install-project
-      - name: Fetch gdsfactoryplus converter
+      # Pyrefly resolves types from this venv, so install every extra. The
+      # palace group and the gdsfactoryplus extra need Python 3.12.
+      - run: uv sync --all-extras --group palace --no-install-project --python 3.12
+      # The check-schematic-sources hook needs the `gfp` binary, which ships
+      # only in the VS Code extension.
+      - name: Fetch gfp binary
         run: just fetch-gfp
+      # lychee's pre-commit hook installs its own binary via cargo-binstall,
+      # which needs the token to avoid 403 rate limiting from api.github.com.
       - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   get-python-versions:
     uses: ./.github/workflows/get-python-versions.yml
   test-code:
@@ -40,17 +48,20 @@ jobs:
         with:
           lfs: true
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      - name: Install gmsh's native libraries
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install --yes libglu1-mesa
       - name: Test with pytest
         run: just test ${{ matrix.os == 'ubuntu-latest' && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }} --junitxml=junit.xml -o junit_family=legacy
       # `!cancelled()` so test results still upload when pytest fails, which
       # is exactly when the failed-test report is useful.
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
@@ -79,20 +90,20 @@ jobs:
       code-quality: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: coverage-xml-*
           merge-multiple: true
       - parallel:
           - name: Upload code coverage to GitHub
-            uses: actions/upload-code-coverage@d8e329117199404bba6fc81efe8093dc7c015e34 # v1
+            uses: actions/upload-code-coverage@d8e329117199404bba6fc81efe8093dc7c015e34 # v1.4.2
             with:
               file: coverage.xml
               language: Python
               label: code-coverage/pytest
               fail-on-error: false
           - name: Upload coverage to Codecov
-            uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+            uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
             with:
               token: ${{ secrets.CODECOV_TOKEN }}
               fail_ci_if_error: false
@@ -111,78 +122,39 @@ jobs:
             echo "One or more test jobs failed"
             exit 1
           fi
-  filter-gdsfactoryplus-versions:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-latest
-    outputs:
-      python-versions: ${{ steps.filter.outputs.python-versions }}
-      gfp-major: ${{ steps.filter.outputs.gfp-major }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - name: Resolve GDSFactory+ extension version
-        id: filter
-        run: |
-          # `just get-gfp-versions` prints the gfp matrix Python versions as a
-          # JSON array first, then latest=<version> and major=<major> lines of
-          # the public GDSFactory+ VS Code extension.
-          OUTPUT="$(just get-gfp-versions)"
-          echo "python-versions=$(echo "$OUTPUT" | head -n1)" >> "$GITHUB_OUTPUT"
-          MAJOR="$(echo "$OUTPUT" | sed -n 's/^major=//p')"
-          # Empty major (Marketplace unreachable / unknown version) counts as 0
-          # so the gate reliably skips instead of comparing an empty string.
-          echo "gfp-major=${MAJOR:-0}" >> "$GITHUB_OUTPUT"
-  # Gate: the pytest gfp suite targets the gdsfactoryplus v2 SDK, which ships
-  # bundled in the public GDSFactory+ VS Code extension (not on PyPI). Run the
-  # suite only when the latest extension release is v2+; the gate also skips
-  # the job gracefully when the Marketplace cannot be reached.
   test-gdsfactoryplus:
     runs-on: ubuntu-latest
-    needs: filter-gdsfactoryplus-versions
-    if: ${{ needs.filter-gdsfactoryplus-versions.outputs.gfp-major >= 2 && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJson(needs.filter-gdsfactoryplus-versions.outputs.python-versions) }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: ${{ matrix.python-version }}
+          lfs: true
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          # The gdsfactoryplus wheels are cp312-only.
+          python-version: "3.12"
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Test GDSFactory+
         run: just test-gfp
   test-gdsfactoryplus-result:
     runs-on: ubuntu-latest
     name: GDSFactory+ test result
-    needs: [test-gdsfactoryplus, filter-gdsfactoryplus-versions]
+    needs: [test-gdsfactoryplus]
     # always() suppresses the implicit success(), so the fork gate alone decides:
     # on fork PRs this job is skipped, which makes the required check neutral
     # ("skipped") for branch protection; on the main repo it must run, and the
-    # check below then fails on any failed or cancelled matrix leg or gate
-    # job (a version-gate skip still passes).
+    # check below then fails on any failed, cancelled or skipped test job.
     if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
-      - name: Check GDSFactory+ test matrix results
+      - name: Check GDSFactory+ test result
         run: |
-          # A non-success gate maps the test job to "skipped"; without this
-          # check a broken gate would show up green as "skipped".
-          GATE="${{ needs.filter-gdsfactoryplus-versions.result }}"
-          if [[ "$GATE" != "success" ]]; then
-            echo "GDSFactory+ version gate did not succeed (result: $GATE); the test job did not run meaningfully"
-            exit 1
-          fi
           RESULT="${{ needs.test-gdsfactoryplus.result }}"
           if [[ "$RESULT" == "success" ]]; then
-            echo "All GDSFactory+ test jobs succeeded"
-            exit 0
-          elif [[ "$RESULT" == "skipped" ]]; then
-            echo "GDSFactory+ test job skipped: latest extension release is < 2.0 or the Marketplace was unreachable"
-            exit 0
+            echo "GDSFactory+ tests succeeded"
           else
-            echo "One or more GDSFactory+ test jobs failed"
+            echo "GDSFactory+ tests did not succeed (result: $RESULT)"
             exit 1
           fi
   code-coverage:
@@ -206,16 +178,27 @@ jobs:
   test-matlab:
     timeout-minutes: 90
     runs-on: ubuntu-latest
+    env:
+      # The MATLAB licence granted to open-source GitHub projects does not include the RF
+      # Toolbox, so the notebook's S-parameter sections are skipped here. They still detect
+      # the toolbox at run time; this variable just makes the skip explicit and deterministic.
+      # Remove it to exercise those sections on a runner whose licence does cover RF Toolbox.
+      QPDK_SKIP_RF_TOOLBOX: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - name: Set up MATLAB
         id: matlab-setup
-        uses: matlab-actions/setup-matlab@2323adb8243827ea460b0def4c413545aaec46a9 # v3.0.2
+        uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3.1.0
         with:
           cache: true
+          products: >-
+            Optimization_Toolbox
+            Statistics_and_Machine_Learning_Toolbox
+            Global_Optimization_Toolbox
+            Parallel_Computing_Toolbox
         background: true # runs alongside the Python setup below, MATLAB install is the slower branch
       - name: Install qpdk with models extra
         run: uv sync --extra models
@@ -231,6 +214,68 @@ jobs:
           echo "LIBDIR: ${PY_LIBDIR}"
       - name: Sanity-check qpdk import (Python side)
         run: uv run python -c "import qpdk; qpdk.PDK.activate(); print('qpdk activated:', qpdk.PDK.name)"
+      - name: Check the saved MATLAB notebook
+        shell: uv run --no-sync python {0}
+        run: |
+          import hashlib
+          import json
+          from pathlib import Path
+
+          notebook = json.loads(Path("notebooks/matlab_integration.ipynb").read_text())
+          code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
+          if not code_cells or any(
+              cell.get("execution_count") is None
+              or any(output.get("output_type") == "error" for output in cell.get("outputs", []))
+              for cell in code_cells
+          ):
+              raise SystemExit("Saved MATLAB notebook has incomplete or failed cells")
+
+          def stream_text(cell):
+              return "\n".join(
+                  "".join(output["text"]) if isinstance(output.get("text"), list) else output.get("text", "")
+                  for output in cell.get("outputs", [])
+                  if output.get("output_type") == "stream"
+              )
+
+          output = "\n".join(stream_text(cell) for cell in code_cells)
+          # The saved run also covers RF Toolbox, which the CI licence excludes.
+          required = (
+              "RF Toolbox available",
+              "Max |S13| =",
+              "Notch:",
+              "1 mm + 1 mm vs. 2 mm:",
+              "Rational fit:",
+              "Read back into SAX:",
+              "Residual norm",
+              "Linear fit R^2:",
+              "Pareto front:",
+              "Built 16 chips on",
+          )
+          if any(string not in output for string in required):
+              raise SystemExit("Saved MATLAB notebook is missing toolbox results")
+          if not any(
+              "image/png" in cell_output.get("data", {})
+              for cell in code_cells
+              for cell_output in cell.get("outputs", [])
+          ):
+              raise SystemExit("Saved MATLAB notebook has no inline figures")
+          # MATLAB prints console warnings wrapped in backspace characters, which the
+          # PDF/A fonts cannot display, so control characters fail the build here.
+          if any(
+              ord(character) < 32 and character not in "\n"
+              for cell in code_cells
+              for cell_output in cell.get("outputs", [])
+              for character in stream_text(cell)
+          ):
+              raise SystemExit("Saved MATLAB notebook contains console control characters")
+
+          # The fingerprint cell printed during the saved run binds those outputs to the
+          # committed source; recompute it to catch the two drifting apart.
+          expected = hashlib.sha256(Path("notebooks/src/matlab_integration.m").read_bytes()).hexdigest()
+          fingerprint = stream_text(code_cells[-1])
+          if fingerprint.strip() != f"Executed source SHA256: {expected}":
+              raise SystemExit("Saved MATLAB notebook does not match its source")
+          print("Saved MATLAB notebook verified: outputs match the committed source")
       - name: Wait for MATLAB setup
         wait: matlab-setup
       - uses: nikosavola/MATLAB-language-server-pre-commit@5966190480d0a77bf731bac19df84417aabc63b2 # v0.1.1
@@ -255,6 +300,8 @@ jobs:
             diary('/tmp/matlab_script.log'); diary on;
             addpath('notebooks/src');
             matlab_integration;
+            assert(all(structfun(@(available) available, has_toolbox)), ...
+              'The four optional toolbox sections must execute in CI.');
             diary off;
       - name: Print MATLAB diary on failure
         if: failure()
@@ -271,4 +318,129 @@ jobs:
             /tmp/qpdk_matlab_demo/**
             /tmp/matlab_bridge.log
             /tmp/matlab_script.log
+          if-no-files-found: warn
+  # Docs skip solver notebooks, so exercise this one in its own job.
+  test-elmer-notebook:
+    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    env:
+      MPLBACKEND: Agg
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Elmer FEM
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes software-properties-common
+          sudo add-apt-repository --yes ppa:elmer-csc-ubuntu/elmer-csc-ppa
+          sudo apt-get update
+          sudo apt-get install --yes elmerfem-csc libglu1-mesa
+          command -v ElmerGrid
+          command -v ElmerSolver
+          dpkg-query -W --showformat='${Package} ${Version}\n' elmerfem-csc
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+      - name: Install QPDK with the models extra and the Elmer driver
+        run: |
+          uv add --no-sync "gplugins[elmer] @ git+https://github.com/gdsfactory/gplugins.git@c3372b97a50cda44043603f80c955edcf028a7fb"
+          uv sync --locked --python 3.12 --no-dev --extra models
+          uv pip install jupytext nbconvert ipykernel
+      - name: Check the saved Elmer result
+        shell: uv run --no-sync python {0}
+        run: |
+          import re
+
+          import nbformat
+
+          notebook = nbformat.read("notebooks/elmer_capacitance_interdigital.ipynb", as_version=4)
+          code_cells = [cell for cell in notebook.cells if cell.cell_type == "code"]
+          if not code_cells or any(
+              cell.execution_count is None
+              or any(output.output_type == "error" for output in cell.outputs)
+              for cell in code_cells
+          ):
+              raise SystemExit("Saved Elmer notebook has incomplete or failed cells")
+          output = "\n".join(
+              str(item.text)
+              for cell in code_cells
+              for item in cell.outputs
+              if item.output_type == "stream"
+          )
+          required = (
+              "Elmer notebook run mode: high accuracy (element_order=3",
+              "Final reported mutual capacitance:",
+              "Final terminal o1 to ground:",
+              "Final terminal o2 to ground:",
+              "(element_order=3, mesh factor 0.25)",
+              "Lateral-domain sensitivity check passed: change <= 1 %",
+              "All checks passed.",
+          )
+          if any(marker not in output for marker in required):
+              raise SystemExit("Saved Elmer notebook is missing the high accuracy result")
+          if output.count("MAIN: *** Elmer Solver: ALL DONE ***") != 6:
+              raise SystemExit("Saved Elmer notebook is missing a completed solve")
+          match = re.search(
+              r"Mesh convergence check passed: final changes ([\d.]+) % and "
+              r"([\d.]+) % <= tolerance 0\.5 %",
+              output,
+          )
+          if match is None or any(float(value) > 0.5 for value in match.groups()):
+              raise SystemExit("Saved Elmer notebook does not meet 0.5 % convergence")
+          plots = sum(
+              "image/png" in item.get("data", {})
+              for cell in code_cells
+              for item in cell.outputs
+          )
+          if plots < 2:
+              raise SystemExit("Saved Elmer notebook is missing a plot")
+      - name: Execute the Elmer notebook
+        run: uv run --no-sync jupytext --execute --to ipynb --set-kernel python3 --output /tmp/qpdk-elmer-ci.ipynb notebooks/elmer_capacitance_interdigital.ipynb
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: elmer-notebook-logs
+          path: |
+            /tmp/qpdk_elmer_interdigital_capacitor_*/*.log
+            /tmp/qpdk_elmer_interdigital_capacitor_*/*.sif
+          if-no-files-found: warn
+
+  test-palace:
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    env:
+      MPLBACKEND: Agg
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+      - name: Install mesh libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libglu1-mesa
+      - name: Install Palace experiment dependencies
+        run: uv sync --locked --python 3.12 --no-dev --extra models --group palace --group test
+      - name: Run real Palace tests
+        run: |
+          mkdir -p build
+          uv run --no-sync pytest -m palace tests/models --basetemp=build/palace-tests --durations=0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: palace-test-logs
+          path: |
+            build/palace-tests/**/solver.log
+            build/palace-tests/**/inputs.json
+            build/palace-tests/**/config.json
           if-no-files-found: warn

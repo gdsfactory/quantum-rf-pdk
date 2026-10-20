@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+from importlib.resources import files
+from typing import TYPE_CHECKING, Any, cast
+
 from kfactory.schematic import DSchematic
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Literal
+
 __all__ = [
+    "attach_schematic",
     "bend_circular_schematic",
     "bend_s_schematic",
     "double_pad_transmon_schematic",
@@ -49,14 +57,28 @@ _3PORT = [
 
 # Coupled resonator model ports. The resonator endpoint is intentionally
 # retained in the SAX model boundary even though it is not a chip-level port.
+# The coupling line runs above the resonator, matching the layout cell
+# (``resonator_o1`` faces west under ``coupling_o1``, ``resonator_o2`` east).
 _RESONATOR_COUPLED = [
     {"name": "coupling_o1", "side": "left", "type": "photonic"},
+    {"name": "resonator_o1", "side": "left", "type": "photonic"},
     {"name": "coupling_o2", "side": "right", "type": "photonic"},
-    {"name": "resonator_o1", "side": "top", "type": "photonic"},
-    {"name": "resonator_o2", "side": "bottom", "type": "photonic"},
+    {"name": "resonator_o2", "side": "right", "type": "photonic"},
 ]
 
-_QUARTER_WAVE_RESONATOR_COUPLED = _RESONATOR_COUPLED[:3]
+# The resonator end shares the left side with the coupling input, below it,
+# matching the layout cell (``resonator_o1`` faces west, under ``coupling_o1``).
+_QUARTER_WAVE_RESONATOR_COUPLED = [
+    {"name": "coupling_o1", "side": "left", "type": "photonic"},
+    {"name": "resonator_o1", "side": "left", "type": "photonic"},
+    {"name": "coupling_o2", "side": "right", "type": "photonic"},
+]
+
+# 90° bend: ``o1`` faces west, ``o2`` north, as in the layout cell.
+_BEND = [
+    {"name": "o1", "side": "left", "type": "photonic"},
+    {"name": "o2", "side": "top", "type": "photonic"},
+]
 
 # Transmon qubit
 _TRANSMON = [
@@ -68,7 +90,10 @@ _TRANSMON = [
 # Schematic builder
 # ---------------------------------------------------------------------------
 
-_SIDE_XY = {
+_SYMBOLS_PACKAGE = "qpdk.symbols"
+_SYMBOLS = files(_SYMBOLS_PACKAGE)
+
+_SIDE_XY: dict[str, tuple[int, int, Literal[0, 90, 180, 270]]] = {
     "left": (-1, 0, 180),
     "right": (1, 0, 0),
     "top": (0, 1, 90),
@@ -84,8 +109,13 @@ def _make_schematic(
 ) -> DSchematic:
     """Build a DSchematic from port patterns.
 
+    GDSFactory+ draws artwork only for the generic ``"ckt"`` device type, so
+    every schematic declares it. Packaged artwork in ``qpdk/symbols`` named
+    ``<symbol>.svg`` is attached through ``display.symbol``; without one,
+    GDSFactory+ renders the layout geometry instead.
+
     Args:
-        symbol: Name of the symbol.
+        symbol: Name of the symbol, matching ``qpdk/symbols/<symbol>.svg``.
         tags: List of tags for the symbol.
         ports: List of port definitions.
         models: List of model definitions.
@@ -99,7 +129,9 @@ def _make_schematic(
     # Deep-copy ports and models: both are lists of dicts shared across all
     # calls via module-level constants and closure variables.
     s = DSchematic()
-    s.info["symbol"] = symbol
+    s.info["symbol"] = "ckt"
+    if (_SYMBOLS / f"{symbol}.svg").is_file():
+        s.info["display"] = {"symbol": f"{_SYMBOLS_PACKAGE}:{symbol}.svg"}
     s.info["tags"] = list(tags)
     s.info["ports"] = [dict(p) for p in ports]
     s.info["models"] = [dict(m) for m in models or []]
@@ -123,8 +155,10 @@ def _make_schematic(
         seen_sides[side] = idx + 1
         total = side_counts[side]
         offset = (idx - (total - 1) / 2) * spacing
+        # Same-side ports run top-to-bottom and left-to-right in list order,
+        # the order the GDSFactory+ schematic editor lays them out in.
         if side in {"left", "right"}:
-            x, y = bx, by + offset
+            x, y = bx, by - offset
         else:
             x, y = bx + offset, by
 
@@ -146,13 +180,24 @@ def schematic(
     tags: list[str],
     ports: list[dict],
     models: list[dict] | None = None,
-):
+) -> Callable[..., DSchematic]:
     """Return a ``schematic_function`` closure for use with ``@gf.cell``."""
 
-    def _schematic_fn(**_kwargs) -> DSchematic:
+    def _schematic_fn(**_kwargs: Any) -> DSchematic:
         return _make_schematic(symbol, tags, ports, models)
 
     return _schematic_fn
+
+
+def attach_schematic(
+    cell: Callable[..., Any], schematic_function: Callable[..., DSchematic]
+) -> None:
+    """Expose ``schematic_function`` as an attribute of a ``@gf.cell`` factory.
+
+    ``@gf.cell(schematic_function=...)`` keeps the function on the inner
+    kfactory object only; this attribute makes it reachable from the factory.
+    """
+    cast(Any, cell).schematic_function = schematic_function
 
 
 def sax_model(
@@ -245,7 +290,7 @@ straight_shorted_schematic = schematic(
 bend_circular_schematic = schematic(
     symbol="bend_circular",
     tags=["waveguides"],
-    ports=_2PORT,
+    ports=_BEND,
 )
 
 bend_s_schematic = schematic(

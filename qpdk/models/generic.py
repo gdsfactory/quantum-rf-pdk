@@ -1,8 +1,5 @@
 """Generic Models."""
 
-from functools import partial
-
-import jax
 import jax.numpy as jnp
 import sax
 from matplotlib import pyplot as plt
@@ -18,6 +15,7 @@ from sax.models.rf import (
 )
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.jit import jit
 
 __all__ = [
     "admittance",
@@ -39,10 +37,10 @@ __all__ = [
 ]
 
 
-@jax.jit
+@jit
 def series_impedance(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # ruff: ignore[unused-function-argument]
-    z: sax.Float = 0.0,
+    z: sax.ComplexArrayLike = 0.0,
     z0: float = 50.0,
 ) -> sax.SDict:
     r"""Two-port series impedance Sax model.
@@ -74,10 +72,10 @@ def series_impedance(
     return sdict
 
 
-@jax.jit
+@jit
 def shunt_admittance(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # ruff: ignore[unused-function-argument]
-    y: sax.Float = 0.0,
+    y: sax.ComplexArrayLike = 0.0,
     z0: float = 50.0,
 ) -> sax.SDict:
     r"""Two-port shunt admittance Sax model.
@@ -113,7 +111,7 @@ def shunt_admittance(
     return sdict
 
 
-@jax.jit
+@jit
 def electrical_short_2_port(f: sax.FloatArrayLike = DEFAULT_FREQUENCY) -> sax.SDict:
     """Electrical short 2-port connection Sax model.
 
@@ -141,13 +139,13 @@ def open(  # ruff: ignore[builtin-variable-shadowing]
 short_2_port = electrical_short_2_port
 
 
-@partial(jax.jit, static_argnames=["grounded"])
+@jit(static_argnames=["grounded"])
 def lc_resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 1e-9,
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 1e-9,
     grounded: bool = False,
-    ground_capacitance: float = 0.0,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     r"""LC resonator Sax model with capacitor and inductor in parallel.
 
@@ -181,7 +179,7 @@ def lc_resonator(
 
     .. math::
 
-        f_r = \frac{1}{2 \pi \sqrt{LC}}
+        f_\text{r} = \frac{1}{2 \pi \sqrt{LC}}
 
     For theory and relation to superconductors, see :cite:`gaoPhysicsSuperconductingMicrowave2008`.
 
@@ -204,7 +202,7 @@ def lc_resonator(
     y_lc = 1j * omega * capacitance + 1.0 / (1j * omega * inductance + 1e-25)
     z_lc = 1.0 / (y_lc + 1e-25)
 
-    instances = {
+    instances: dict[str, sax.SType] = {
         "cg1": shunt_admittance(f=f, y=y_g, z0=z0),
         "lc": series_impedance(f=f, z=z_lc, z0=z0),
         "cg2": shunt_admittance(f=f, y=y_g, z0=z0),
@@ -234,15 +232,15 @@ def lc_resonator(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
-@partial(jax.jit, static_argnames=["grounded"])
+@jit(static_argnames=["grounded"])
 def lc_resonator_coupled(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: float = 100e-15,
-    inductance: float = 1e-9,
+    capacitance: sax.FloatArrayLike = 100e-15,
+    inductance: sax.FloatArrayLike = 1e-9,
     grounded: bool = False,
-    ground_capacitance: float = 0.0,
-    coupling_capacitance: float = 10e-15,
-    coupling_inductance: float = 0.0,
+    ground_capacitance: sax.FloatArrayLike = 0.0,
+    coupling_capacitance: sax.FloatArrayLike = 10e-15,
+    coupling_inductance: sax.FloatArrayLike = 0.0,
 ) -> sax.SDict:
     r"""Coupled LC resonator Sax model.
 
@@ -254,7 +252,7 @@ def lc_resonator_coupled(
 
     .. math::
 
-        f_r = \frac{1}{2 \pi \sqrt{LC}}
+        f_\text{r} = \frac{1}{2 \pi \sqrt{LC}}
 
     The coupling network modifies the effective coupling to the resonator.
 
@@ -337,7 +335,7 @@ if __name__ == "__main__":
     plt.title("S-parameters capacitor")
     plt.legend()
     # Magnitude and phase vs frequency
-    ax1 = plt.subplot(122)
+    ax1 = plt.gcf().add_subplot(122)
     ax1.plot(f / 1e9, abs(S_cap["o1", "o1"]), label="|S11|", color="C0")
     ax1.plot(f / 1e9, abs(S_cap["o1", "o2"]), label="|S21|", color="C1")
     ax1.set_xlabel("Frequency [GHz]")
@@ -363,7 +361,7 @@ if __name__ == "__main__":
     ax2.set_ylabel("Phase [rad]")
     ax2.legend(loc="upper right")
 
-    plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
+    plt.title(rf"Capacitor $S$-parameters ($C={capacitance * 1e15}\,\text{{fF}}$)")
     plt.show(block=False)
 
     S_ind = inductor(f=f, inductance=(inductance := 1e-9))
@@ -374,7 +372,7 @@ if __name__ == "__main__":
     plt.plot(jnp.angle(S_ind["o1", "o2"]), abs(S_ind["o2", "o1"]), label="$S_{21}$")
     plt.title("S-parameters inductor")
     plt.legend()
-    ax1 = plt.subplot(122)
+    ax1 = plt.gcf().add_subplot(122)
     ax1.plot(f / 1e9, abs(S_ind["o1", "o1"]), label="|S11|", color="C0")
     ax1.plot(f / 1e9, abs(S_ind["o1", "o2"]), label="|S21|", color="C1")
     ax1.set_xlabel("Frequency [GHz]")
@@ -400,5 +398,5 @@ if __name__ == "__main__":
     ax2.set_ylabel("Phase [rad]")
     ax2.legend(loc="upper right")
 
-    plt.title(f"Inductor $S$-parameters ($L={inductance * 1e9}\\,$nH)")
+    plt.title(rf"Inductor $S$-parameters ($L={inductance * 1e9}\,\text{{nH}}$)")
     plt.show()

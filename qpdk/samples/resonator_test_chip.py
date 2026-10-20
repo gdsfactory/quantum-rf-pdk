@@ -20,7 +20,7 @@ import gdsfactory as gf
 import numpy as np
 
 from qpdk import tech
-from qpdk.cells._schematic import schematic
+from qpdk.cells._schematic import attach_schematic, schematic
 from qpdk.cells.chip import chip_edge
 from qpdk.cells.launcher import launcher
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
@@ -139,7 +139,6 @@ def resonator_test_chip_python(
                 length=float(lengths[res_idx]),
                 meanders=6,
                 cross_section=cross_section,
-                open_start=True,
                 cross_section_non_resonator=cross_section,
                 coupling_straight_length=coupling_length,
                 coupling_gap=coupling_gap,
@@ -216,7 +215,7 @@ def resonator_test_chip_python(
     return c
 
 
-resonator_test_chip_python.schematic_function = resonator_test_chip_python_schematic
+attach_schematic(resonator_test_chip_python, resonator_test_chip_python_schematic)
 
 
 # %% [markdown]

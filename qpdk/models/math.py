@@ -1,27 +1,27 @@
 """Mathematical helper functions for models."""
 
-from functools import partial
-
 import jax
+import jax.numpy as jnp
 import jaxellip
 from jax.typing import ArrayLike
 
 from qpdk.models.constants import ε_0
+from qpdk.models.jit import jit
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def ellipk_ratio(m: ArrayLike) -> jax.Array:
     """Ratio of complete elliptic integrals of the first kind K(m) / K(1-m)."""
     return jaxellip.ellipk(m) / jaxellip.ellipk(1 - m)
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def epsilon_eff(ep_r: ArrayLike) -> jax.Array:
     """Effective permittivity for a substrate with relative permittivity ep_r."""
-    return (ep_r + 1) / 2
+    return (jnp.asarray(ep_r) + 1) / 2
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def capacitance_per_length_conformal(
     m: ArrayLike,
     ep_r: ArrayLike,

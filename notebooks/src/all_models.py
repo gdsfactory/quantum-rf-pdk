@@ -8,8 +8,18 @@
 #       jupytext_version: 1.19.1
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # %% [markdown]
 # ## QPDK Models
+#
+# This notebook evaluates and plots a selection of the S-parameter models in `qpdk.models`.
 #
 # ::::{admonition} Required extras
 # :class: tip
@@ -61,8 +71,12 @@ PDK.activate()
 # %%
 from qpdk.models.constants import TEST_FREQUENCY
 
+test_frequency = jnp.asarray(TEST_FREQUENCY)
+
 # %% [markdown]
 # ## Media
+#
+# ![CPW cross-section showing the width, gap, and substrate](figures/cpw-cross-section.svg)
 # %%
 from qpdk.models.cpw import cpw_parameters, get_cpw_dimensions
 
@@ -74,32 +88,32 @@ cpw_parameters(*get_cpw_dimensions("cpw"))
 # %%
 from qpdk.models.generic import gamma_0_load
 
-gamma_0_load(f=TEST_FREQUENCY, gamma_0=1, n_ports=2)
+gamma_0_load(f=test_frequency, gamma_0=1, n_ports=2)
 
 # %%
 from qpdk.models.generic import short
 
-short(f=TEST_FREQUENCY)
+short(f=test_frequency)
 
 # %%
 from qpdk.models.generic import short_2_port
 
-short_2_port(f=TEST_FREQUENCY)
+short_2_port(f=test_frequency)
 
 # %%
 from qpdk.models.generic import open
 
-open(f=TEST_FREQUENCY)
+open(f=test_frequency)
 
 # %%
 from qpdk.models.generic import tee
 
-tee(f=TEST_FREQUENCY)
+tee(f=test_frequency)
 
 # %%
 from qpdk.models.generic import impedance
 
-impedance(f=TEST_FREQUENCY)
+impedance(f=test_frequency)
 
 # %%
 from qpdk.models.generic import admittance
@@ -109,27 +123,27 @@ admittance()
 # %%
 from qpdk.models.generic import capacitor
 
-capacitor(f=TEST_FREQUENCY)
+capacitor(f=test_frequency)
 
 # %%
 from qpdk.models.generic import inductor
 
-inductor(f=TEST_FREQUENCY)
+inductor(f=test_frequency)
 
 # %%
 from qpdk.models.generic import lc_resonator
 
-lc_resonator(f=TEST_FREQUENCY)
+lc_resonator(f=test_frequency)
 
 # %%
 from qpdk.models.generic import lc_resonator_coupled
 
-lc_resonator_coupled(f=TEST_FREQUENCY, coupling_capacitance=10e-15)
+lc_resonator_coupled(f=test_frequency, coupling_capacitance=10e-15)
 
 # %%
 from qpdk.models.junction import josephson_junction
 
-josephson_junction(f=TEST_FREQUENCY)
+josephson_junction(f=test_frequency)
 
 # %%
 f = jnp.linspace(1e9, 25e9, 201)
@@ -156,11 +170,11 @@ plt.axvline(
     float(f_r / 1e9),
     color="r",
     linestyle="--",
-    label=f"Theoretical $f_r$ ({float(f_r / 1e9):.2f} GHz)",
+    label=rf"Theoretical $f_\text{{r}} = {float(f_r / 1e9):.2f}\,\text{{GHz}}$",
 )
 plt.xlabel("Frequency [GHz]")
 plt.ylabel("Magnitude [dB]")
-plt.title(f"LC Resonator ($L={L * 1e9}$ nH, $C={C * 1e15}$ fF)")
+plt.title(rf"LC Resonator ($L={L * 1e9}\,\text{{nH}}$, $C={C * 1e15}\,\text{{fF}}$)")
 plt.grid(True)
 plt.legend()
 plt.show(block=False)
@@ -191,7 +205,7 @@ plt.show(block=False)
 capacitance = 100e-15
 S_cap = capacitor(f=f, capacitance=capacitance)
 # print(S_cap)
-plt.figure()
+fig = plt.figure()
 # Polar plot of S21 and S11
 plt.subplot(121, projection="polar")
 plt.plot(jnp.angle(S_cap["o1", "o1"]), abs(S_cap["o1", "o1"]), label="$S_{11}$")
@@ -199,7 +213,7 @@ plt.plot(jnp.angle(S_cap["o1", "o2"]), abs(S_cap["o2", "o1"]), label="$S_{21}$")
 plt.title("S-parameters capacitor")
 plt.legend()
 # Magnitude and phase vs frequency
-ax1 = plt.subplot(122)
+ax1 = fig.add_subplot(122)
 ax1.plot(f / 1e9, abs(S_cap["o1", "o1"]), label="|S11|", color="C0")
 ax1.plot(f / 1e9, abs(S_cap["o1", "o2"]), label="|S21|", color="C1")
 ax1.set_xlabel("Frequency [GHz]")
@@ -225,19 +239,19 @@ ax2.plot(
 ax2.set_ylabel("Phase [rad]")
 ax2.legend(loc="upper right")
 
-plt.title(f"Capacitor $S$-parameters ($C={capacitance * 1e15}\\,$fF)")
+plt.title(rf"Capacitor $S$-parameters ($C={capacitance * 1e15}\,\text{{fF}}$)")
 plt.show(block=False)
 
 inductance = 1e-9
 S_ind = inductor(f=f, inductance=inductance)
 # print(S_ind)
-plt.figure()
+fig = plt.figure()
 plt.subplot(121, projection="polar")
 plt.plot(jnp.angle(S_ind["o1", "o1"]), abs(S_ind["o1", "o1"]), label="$S_{11}$")
 plt.plot(jnp.angle(S_ind["o1", "o2"]), abs(S_ind["o2", "o1"]), label="$S_{21}$")
 plt.title("S-parameters inductor")
 plt.legend()
-ax1 = plt.subplot(122)
+ax1 = fig.add_subplot(122)
 ax1.plot(f / 1e9, abs(S_ind["o1", "o1"]), label="|S11|", color="C0")
 ax1.plot(f / 1e9, abs(S_ind["o1", "o2"]), label="|S21|", color="C1")
 ax1.set_xlabel("Frequency [GHz]")
@@ -263,7 +277,7 @@ ax2.plot(
 ax2.set_ylabel("Phase [rad]")
 ax2.legend(loc="upper right")
 
-plt.title(f"Inductor $S$-parameters ($L={inductance * 1e9}\\,$nH)")
+plt.title(rf"Inductor $S$-parameters ($L={inductance * 1e9}\,\text{{nH}}$)")
 plt.show()
 
 # %%
@@ -298,7 +312,7 @@ for i, gap in enumerate(gaps_plate):
 plt.xlabel("Pad Length (µm)")
 plt.ylabel("Capacitance (fF)")
 plt.title(
-    rf"Plate Capacitor Capacitance ($\mathtt{{width}}=${width_plate} µm, $\epsilon_r={ep_r}$)"
+    rf"Plate Capacitor Capacitance ($\mathtt{{width}} = {width_plate}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
 )
 plt.grid(True)
 plt.legend()
@@ -332,7 +346,7 @@ for i, n in enumerate(finger_counts):
 plt.xlabel("Overlap Length (µm)")
 plt.ylabel("Mutual Capacitance (fF)")
 plt.title(
-    rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}}=${finger_gap} µm, $\mathtt{{thickness}}=${thickness} µm, $\epsilon_r={ep_r}$)"
+    rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}} = {finger_gap}\,\text{{µm}}$, $\mathtt{{thickness}} = {thickness}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
 )
 plt.grid(True)
 plt.legend()
@@ -345,42 +359,42 @@ plt.show()
 # %%
 from qpdk.models.waveguides import straight
 
-straight(f=TEST_FREQUENCY)
+straight(f=test_frequency)
 
 # %%
 from qpdk.models.waveguides import straight_shorted
 
-straight_shorted(f=TEST_FREQUENCY)
+straight_shorted(f=test_frequency)
 
 # %%
 from qpdk.models.waveguides import bend_circular
 
-bend_circular(f=TEST_FREQUENCY)
+bend_circular(f=test_frequency)
 
 # %%
 from qpdk.models.waveguides import bend_euler
 
-bend_euler(f=TEST_FREQUENCY)
+bend_euler(f=test_frequency)
 
 # %%
 from qpdk.models.waveguides import bend_s
 
-bend_s(f=TEST_FREQUENCY)
+bend_s(f=test_frequency)
 
 # %%
 from qpdk.models.waveguides import rectangle
 
-rectangle(f=TEST_FREQUENCY)
+rectangle(f=test_frequency)
 
 # %%
 from qpdk.models.waveguides import taper_cross_section
 
-taper_cross_section(f=TEST_FREQUENCY)
+taper_cross_section(f=test_frequency)
 
 # %%
 from qpdk.models.waveguides import launcher
 
-launcher(f=TEST_FREQUENCY)
+launcher(f=test_frequency)
 
 # %% [markdown]
 # ## Couplers
@@ -388,12 +402,12 @@ launcher(f=TEST_FREQUENCY)
 # %%
 from qpdk.models.couplers import cpw_cpw_coupling_capacitance
 
-cpw_cpw_coupling_capacitance(f=TEST_FREQUENCY, length=100, gap=100, cross_section="cpw")
+cpw_cpw_coupling_capacitance(f=test_frequency, length=100, gap=100, cross_section="cpw")
 
 # %%
 from qpdk.models.couplers import coupler_straight
 
-coupler_straight(f=TEST_FREQUENCY)
+coupler_straight(f=test_frequency)
 
 # %%
 # Define frequency range from 1 GHz to 10 GHz with 201 points
@@ -414,9 +428,9 @@ s_params = [
 ]
 
 # Plot each S-parameter for both coupler implementations
-default_color_cycler = plt.cm.tab10.colors
+tab10 = plt.get_cmap("tab10")
 for idx, (ports, label) in enumerate(s_params):
-    color = default_color_cycler[idx % len(default_color_cycler)]
+    color = tab10(idx % tab10.N)
     # Plot both implementations with same color but different linestyles
     ax.plot(
         f / 1e9,
@@ -474,7 +488,7 @@ for i, gap in enumerate(gaps):
 plt.xlabel("Coupling Length (µm)")
 plt.ylabel("Mutual Capacitance (fF)")
 plt.title(
-    rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}}=${width} µm, $\mathtt{{cpw\_gap}}=${cpw_gap} µm, $\epsilon_r={ep_r}$)"
+    rf"CPW-CPW Coupling Capacitance ($\mathtt{{width}} = {width}\,\text{{µm}}$, $\mathtt{{cpw\_gap}} = {cpw_gap}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
 )
 plt.grid(True)
 plt.legend()
@@ -487,7 +501,7 @@ plt.show()
 # %%
 from qpdk.models.resonator import quarter_wave_resonator_coupled
 
-quarter_wave_resonator_coupled(f=TEST_FREQUENCY)
+quarter_wave_resonator_coupled(f=test_frequency)
 
 # %%
 from qpdk.models.resonator import resonator_frequency

@@ -1,7 +1,7 @@
 """Tests for qpdk.models.waveguides module."""
 
 import inspect
-from typing import final
+from typing import final, override
 
 import hypothesis.strategies as st
 import jax
@@ -40,6 +40,7 @@ class TestStraightWaveguide(TwoPortModelTestSuite):
 
     model_function = straight
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
@@ -164,6 +165,7 @@ class TestStraightOpen(OnePortModelTestSuite):
 
     model_function = straight_open
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 1000}
@@ -175,6 +177,7 @@ class TestStraightShorted(OnePortModelTestSuite):
 
     model_function = straight_shorted
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 1000}
@@ -186,6 +189,7 @@ class TestStraightDoubleOpen(TwoPortModelTestSuite):
 
     model_function = straight_double_open
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 1000}
@@ -197,6 +201,7 @@ class TestTSV(TwoPortModelTestSuite):
 
     model_function = tsv
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"via_height": 500.0}
@@ -208,6 +213,7 @@ class TestIndiumBump(TwoPortModelTestSuite):
 
     model_function = indium_bump
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"bump_height": 10.0}
@@ -219,6 +225,7 @@ class TestBendCircular(TwoPortModelTestSuite):
 
     model_function = bend_circular
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
@@ -230,6 +237,7 @@ class TestBendEuler(TwoPortModelTestSuite):
 
     model_function = bend_euler
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
@@ -241,6 +249,7 @@ class TestBendS(TwoPortModelTestSuite):
 
     model_function = bend_s
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
@@ -336,6 +345,7 @@ class TestRectangle(TwoPortModelTestSuite):
 
     model_function = rectangle
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"length": 500}
@@ -467,13 +477,91 @@ class TestNxNEdgeCases:
         assert len(ports) == 2
 
 
+_compiled_airbridge = jax.jit(airbridge)
+
+
 @final
 class TestAirbridge(TwoPortModelTestSuite):
     """Tests for airbridge model."""
 
     model_function = airbridge
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
         return {"cpw_width": 10.0, "bridge_width": 10.0, "airgap_height": 3.0}
+
+    @staticmethod
+    def test_zero_capacitance_is_matched_through() -> None:
+        """A vanishing shunt admittance leaves both reference planes connected."""
+        f = jnp.linspace(1e9, 10e9, 11)
+        s = airbridge(f=f, cpw_width=0.0, loss_tangent=0.0)
+
+        assert_allclose(s["o1", "o1"], 0.0, atol=1e-15)
+        assert_allclose(s["o2", "o2"], 0.0, atol=1e-15)
+        assert_allclose(s["o1", "o2"], 1.0, atol=1e-15)
+        assert_allclose(s["o2", "o1"], 1.0, atol=1e-15)
+
+    @staticmethod
+    def test_small_capacitance_approaches_through() -> None:
+        """Shrinking the bridge capacitance drives |S11| to zero and |S21| to unity."""
+        f = jnp.array([5e9])
+        results = [airbridge(f=f, cpw_width=width) for width in (10.0, 1.0, 0.1, 0.01)]
+        s11 = jnp.array([jnp.abs(result["o1", "o1"][0]) for result in results])
+        s21 = jnp.array([jnp.abs(result["o1", "o2"][0]) for result in results])
+
+        assert jnp.all(jnp.diff(s11) < 0), f"|S11| should shrink to 0, got {s11}"
+        assert s11[-1] < 1e-4
+        assert_allclose(s21, 1.0, atol=1e-4)
+
+    @staticmethod
+    def test_jax_jit() -> None:
+        """The model is JAX-jittable and matches the eager result."""
+        f = jnp.linspace(1e9, 10e9, 5)
+        kwargs = TestAirbridge.get_model_kwargs()
+        with jax.disable_jit():
+            eager = airbridge(f=f, **kwargs)
+        compiled = _compiled_airbridge(f=f, **kwargs)
+
+        for key in eager:
+            assert_allclose(compiled[key], eager[key], rtol=1e-6, atol=1e-8)
+
+
+# (cpw_width, bridge_width, airgap_height) in µm, spanning small to large shunt
+# capacitance, crossed with lossless, typical and heavily lossy bridges.
+_AIRBRIDGE_GEOMETRIES = [(2.0, 2.0, 10.0), (10.0, 8.0, 3.0), (50.0, 40.0, 0.5)]
+
+
+@pytest.mark.parametrize(
+    ("cpw_width", "bridge_width", "airgap_height", "loss_tangent"),
+    [
+        (*geometry, loss_tangent)
+        for geometry in _AIRBRIDGE_GEOMETRIES
+        for loss_tangent in (0.0, 1.2e-8, 1e-3)
+    ],
+)
+def test_airbridge_is_a_reciprocal_passive_shunt(
+    cpw_width: float,
+    bridge_width: float,
+    airgap_height: float,
+    loss_tangent: float,
+) -> None:
+    """Bridge S-parameters behave as a two-port shunt admittance, for any C and loss."""
+    f = jnp.linspace(1e9, 12e9, 21)
+    s = airbridge(
+        f=f,
+        cpw_width=cpw_width,
+        bridge_width=bridge_width,
+        airgap_height=airgap_height,
+        loss_tangent=loss_tangent,
+    )
+
+    assert_allclose(s["o1", "o2"], s["o2", "o1"], atol=1e-15)
+    assert_allclose(s["o1", "o1"], s["o2", "o2"], atol=1e-15)
+
+    assert_allclose(s["o1", "o2"] - s["o1", "o1"], 1.0, atol=1e-5)
+
+    for incident in ("o1", "o2"):
+        power = sum(jnp.abs(s[port, incident]) ** 2 for port in ("o1", "o2"))
+        assert_array_less(power, 1.0 + 1e-6)

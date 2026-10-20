@@ -45,7 +45,6 @@ noted otherwise.  Frequency is in **Hz**.
 """
 
 from functools import cache
-from typing import cast
 
 import gdsfactory as gf
 import jax.numpy as jnp
@@ -62,7 +61,7 @@ from sax.models.rf import (
     transmission_line_s_params,
 )
 
-from qpdk.tech import LAYER_STACK, get_etch_section, material_properties
+from qpdk.tech import LAYER_STACK, get_etch_section, get_layer_material_properties
 
 __all__ = [
     "cpw_ep_r_from_cross_section",
@@ -99,12 +98,10 @@ def get_cpw_substrate_params() -> tuple[float, float, float, float]:
     """
     h = LAYER_STACK.layers["Substrate"].thickness  # µm
     t = LAYER_STACK.layers["M1"].thickness  # µm
-    substrate_mat = material_properties[
-        cast(str, LAYER_STACK.layers["Substrate"].material)
-    ]
+    substrate_mat = get_layer_material_properties("Substrate")
     ep_r = substrate_mat["relative_permittivity"]
     tand = substrate_mat.get("loss_tangent", 0.0)
-    return float(h), float(t), float(ep_r), float(tand)
+    return h, t, ep_r, tand
 
 
 def get_cpw_dimensions(
@@ -124,6 +121,7 @@ def get_cpw_dimensions(
             no etch section is found.
     """
     # Make sure a PDK is activated
+    # TODO(Python 3.15): `lazy from qpdk import PDK` (PEP 810) at module scope breaks the cycle.
     from qpdk import PDK  # ruff: ignore[import-outside-top-level]
 
     PDK.activate()
@@ -168,9 +166,9 @@ def cpw_parameters(
 
     .. math::
 
-        \varepsilon_{\text{eff, complex}} = \varepsilon_{\text{eff}} \left( 1 - j q \frac{\varepsilon_r}{\varepsilon_{\text{eff}}} \tan \delta \right)
+        \varepsilon_{\text{eff, complex}} = \varepsilon_{\text{eff}} \left( 1 - j q \frac{\varepsilon_\text{r}}{\varepsilon_{\text{eff}}} \tan \delta \right)
 
-    where :math:`q = (\varepsilon_{\text{eff}} - 1) / (\varepsilon_r - 1)`.
+    where :math:`q = (\varepsilon_{\text{eff}} - 1) / (\varepsilon_\text{r} - 1)`.
 
     Conductor thickness corrections follow
     Gupta, Garg, Bahl & Bhartia :cite:`guptaMicrostripLinesSlotlines1996`
@@ -185,9 +183,6 @@ def cpw_parameters(
         ``(ep_eff, z0)`` — complex effective permittivity (dimensionless) and
         characteristic impedance (Ω).
     """
-    width = float(width)
-    gap = float(gap)
-
     h_um, t_um, ep_r, tand_default = get_cpw_substrate_params()
     if tand is None:
         tand = tand_default
@@ -247,7 +242,7 @@ def cpw_ep_r_from_cross_section(
         The substrate permittivity is determined by the PDK layer stack
         (``LAYER_STACK["Substrate"]``), not by the cross-section geometry.
         All CPW cross-sections on the same substrate share the same
-        :math:`\varepsilon_r`.  The *cross_section* parameter is accepted
+        :math:`\varepsilon_\text{r}`.  The *cross_section* parameter is accepted
         for API symmetry with :func:`cpw_z0_from_cross_section`.
 
     Args:

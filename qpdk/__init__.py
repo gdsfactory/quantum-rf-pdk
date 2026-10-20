@@ -64,9 +64,7 @@ _cells = get_cells(cells)
 _cross_sections = get_cross_sections(tech)
 
 
-# Under the pre-commit hook's --ignore missing-import, pyrefly cannot resolve
-# type(Pdk) and rejects it as a base class
-class _QPdkMeta(SingletonMeta, type(Pdk)):  # pyrefly: ignore[invalid-inheritance]
+class _QPdkMeta(SingletonMeta, type(Pdk)):
     """Singleton semantics layered on pydantic's model metaclass."""
 
 
@@ -79,7 +77,7 @@ def get_pdk() -> Pdk:
     return QPdk(
         name="qpdk",
         cells=_cells,
-        cross_sections=_cross_sections,  # type: ignore[arg-type]
+        cross_sections=_cross_sections,
         layers=LAYER,
         layer_stack=LAYER_STACK,
         layer_views=LAYER_VIEWS,
@@ -129,4 +127,4 @@ __all__ = [
     "logger",
     "tech",
 ]
-__version__ = "0.4.0"
+__version__ = "0.4.1"

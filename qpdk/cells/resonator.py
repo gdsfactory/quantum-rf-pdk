@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, cast
 
 import gdsfactory as gf
 import numpy as np
@@ -11,6 +10,7 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
 from qpdk.cells._schematic import (
+    attach_schematic,
     quarter_wave_resonator_coupled_schematic,
     resonator_coupled_schematic,
     resonator_half_wave_schematic,
@@ -21,7 +21,7 @@ from qpdk.cells.waveguides import bend_circular, straight
 from qpdk.tech import get_etch_section
 
 
-@gf.cell(tags=("resonators",), schematic_function=resonator_schematic)
+@gf.cell(tags=["resonators"], schematic_function=resonator_schematic)
 def resonator(
     length: float = 4000.0,
     meanders: int = 6,
@@ -124,6 +124,8 @@ def resonator(
             if i == 0:
                 first_ref = straight_ref
             else:
+                if previous_port is None:
+                    raise ValueError("previous_port is required but not initialized.")
                 straight_ref.connect("o1", previous_port)
 
             bend_ref = c.add_ref(bend)
@@ -207,7 +209,7 @@ def resonator(
     return c
 
 
-resonator.schematic_function = resonator_schematic
+attach_schematic(resonator, resonator_schematic)
 
 
 # A quarter-wave resonator is shorted at one end and has maximum electric field
@@ -241,7 +243,7 @@ for _resonator_factory in (
     resonator_quarter_wave_bend_end,
     resonator_quarter_wave_bend_both,
 ):
-    cast(Any, _resonator_factory).schematic_function = resonator_quarter_wave_schematic
+    attach_schematic(_resonator_factory, resonator_quarter_wave_schematic)
 
 for _resonator_factory in (
     resonator_half_wave,
@@ -249,11 +251,11 @@ for _resonator_factory in (
     resonator_half_wave_bend_end,
     resonator_half_wave_bend_both,
 ):
-    cast(Any, _resonator_factory).schematic_function = resonator_half_wave_schematic
+    attach_schematic(_resonator_factory, resonator_half_wave_schematic)
 
 
 @gf.cell(
-    tags=("resonators", "couplers"),
+    tags=["resonators", "couplers"],
     schematic_function=resonator_coupled_schematic,
 )
 def resonator_coupled(
@@ -348,11 +350,11 @@ def resonator_coupled(
     return c
 
 
-resonator_coupled.schematic_function = resonator_coupled_schematic
+attach_schematic(resonator_coupled, resonator_coupled_schematic)
 
 
 @gf.cell(
-    tags=("resonators", "couplers"),
+    tags=["resonators", "couplers"],
     schematic_function=quarter_wave_resonator_coupled_schematic,
 )
 def quarter_wave_resonator_coupled(
@@ -363,8 +365,6 @@ def quarter_wave_resonator_coupled(
     *,
     start_with_bend: bool = False,
     end_with_bend: bool = False,
-    open_start: bool = True,
-    open_end: bool = False,
     cross_section_non_resonator: CrossSectionSpec = "cpw",
     coupling_straight_length: float = 200.0,
     coupling_gap: float = 20.0,
@@ -373,6 +373,10 @@ def quarter_wave_resonator_coupled(
 
     Uses :func:`~qpdk.cells.resonator.resonator_coupled` as the basis but
     removes the shorted end port from the output ports.
+
+    The terminations are fixed: the coupled end is open and the far end is
+    shorted. Use :func:`~qpdk.cells.resonator.resonator_coupled` if other
+    terminations are needed.
 
     .. svgbob::
 
@@ -395,8 +399,6 @@ def quarter_wave_resonator_coupled(
         cross_section: Cross-section specification for the resonator.
         start_with_bend: If True, starts the resonator with a bend.
         end_with_bend: If True, ends the resonator with a bend.
-        open_start: If True, adds an etch section at the start of the resonator.
-        open_end: If True, adds an etch section at the end of the resonator.
         cross_section_non_resonator: Cross-section specification for the coupling waveguide.
         coupling_straight_length: Length of the coupling waveguide section in μm.
         coupling_gap: Gap between the resonator and coupling waveguide in μm.
@@ -413,8 +415,8 @@ def quarter_wave_resonator_coupled(
         cross_section=cross_section,
         start_with_bend=start_with_bend,
         end_with_bend=end_with_bend,
-        open_start=open_start,
-        open_end=open_end,
+        open_start=True,
+        open_end=False,
         cross_section_non_resonator=cross_section_non_resonator,
         coupling_straight_length=coupling_straight_length,
         coupling_gap=coupling_gap,
@@ -426,9 +428,11 @@ def quarter_wave_resonator_coupled(
         if port.name != "resonator_o2":  # Skip the shorted end port
             c.add_port(port=port)
 
+    c.info += res_ref.cell.info
+
     return c
 
 
-quarter_wave_resonator_coupled.schematic_function = (
-    quarter_wave_resonator_coupled_schematic
+attach_schematic(
+    quarter_wave_resonator_coupled, quarter_wave_resonator_coupled_schematic
 )

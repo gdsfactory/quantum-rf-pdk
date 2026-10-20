@@ -9,17 +9,19 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
 from qpdk.cells._schematic import (
+    attach_schematic,
     lumped_element_resonator_schematic,
     meander_inductor_schematic,
 )
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
     get_etch_section,
+    get_meander_wire_gap,
     meander_inductor_cross_section,
 )
 
 
-@gf.cell(tags=("inductors",), schematic_function=meander_inductor_schematic)
+@gf.cell(tags=["inductors"], schematic_function=meander_inductor_schematic)
 def meander_inductor(
     n_turns: int = 5,
     turn_length: float = 200.0,
@@ -55,13 +57,13 @@ def meander_inductor(
         turn_length: Length of each horizontal run in µm.
         cross_section: Cross-section specification for the meander wire.
             The center conductor width and etch gap are derived from this
-            specification. The meander's vertical pitch is set to ensure that
-            the etched regions of adjacent runs do not overlap, maintaining
-            the characteristic impedance of each run. Specifically, the pitch
-            is calculated as :math:`w + 2g`, where :math:`w` is the wire width
-            and :math:`g` is the etch gap.
+            specification. The meander's vertical pitch is the wire width
+            plus the run-to-run gap, which defaults to twice the etch gap
+            so that the etched regions of adjacent runs do not overlap,
+            maintaining the characteristic impedance of each run.
         wire_gap: Optional explicit gap between adjacent inductor runs in µm.
-            If None (default), it's inferred as 2x the etch gap from the cross-section.
+            If None (default), it's inferred as 2x the etch gap from the
+            cross-section, or the wire width if it has no etch section.
         etch_bbox_margin: Extra margin around the inductor for the etch bounding box in µm.
             This margin is added in addition to the etch region defined in the cross-section.
         add_etch: Whether to add the etch bounding box. Defaults to True.
@@ -71,7 +73,8 @@ def meander_inductor(
             and two ports ('o1' and 'o2').
 
     Raises:
-        ValueError: If `n_turns` < 1 or `turn_length` <= 0.
+        ValueError: If `n_turns` < 1, `turn_length` <= 0, or `wire_gap` is
+            not positive.
     """
     if n_turns < 1:
         raise ValueError("Must have at least 1 turn")
@@ -90,18 +93,9 @@ def meander_inductor(
         etch_section = None
         etch_layer = None
 
-    # For CPW-like structures, we assume a pitch that allows for non-overlapping etches
-    # i.e. pitch = width + 2 * gap, which means wire_gap = 2 * etch_width
-    # If no etch section is found, we use a default gap equal to the wire width
-    if wire_gap is None:
-        if etch_section is not None:
-            if etch_section.width is None:
-                raise ValueError("Etch section must define a width")
-            wire_gap = 2 * etch_section.width
-        else:
-            wire_gap = wire_width
-    if wire_gap is None:
-        raise ValueError("wire_gap could not be inferred from the cross-section")
+    # Same rule as the SAX model: explicit gap wins, else 2x etch width,
+    # else the wire width when there is no etch section
+    wire_gap = get_meander_wire_gap(xs, wire_gap)
 
     c = Component()
     pitch = wire_width + wire_gap
@@ -205,11 +199,11 @@ def meander_inductor(
     return c
 
 
-meander_inductor.schematic_function = meander_inductor_schematic
+attach_schematic(meander_inductor, meander_inductor_schematic)
 
 
 @gf.cell(
-    tags=("resonators", "inductors", "capacitors"),
+    tags=["resonators", "inductors", "capacitors"],
     schematic_function=lumped_element_resonator_schematic,
 )
 def lumped_element_resonator(
@@ -230,7 +224,7 @@ def lumped_element_resonator(
 
     .. math::
 
-        f_r = \frac{1}{2\pi\sqrt{LC}}
+        f_\text{r} = \frac{1}{2\pi\sqrt{LC}}
 
     .. svgbob::
 
@@ -489,7 +483,7 @@ def lumped_element_resonator(
     return c
 
 
-lumped_element_resonator.schematic_function = lumped_element_resonator_schematic
+attach_schematic(lumped_element_resonator, lumped_element_resonator_schematic)
 
 
 def _draw_interdigital_fingers_left(

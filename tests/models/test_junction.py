@@ -1,7 +1,7 @@
 """Tests for junction models."""
 
 import warnings
-from typing import final
+from typing import final, override
 
 import hypothesis.strategies as st
 import jax
@@ -23,6 +23,7 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
 
     model_function = josephson_junction
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {"ic": 1e-6, "capacitance": 5e-15, "resistance": 10e3}
@@ -70,6 +71,7 @@ class TestSQUIDJunction(TwoPortModelTestSuite):
 
     model_function = squid_junction
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         return {

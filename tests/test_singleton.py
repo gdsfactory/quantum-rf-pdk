@@ -16,21 +16,6 @@ from qpdk.singleton import SingletonMeta
 WRAPPERS = (HFSS, Q3D, Q2D)
 
 
-@pytest.fixture
-def isolated_wrapper_cache():
-    """Reset AEDT-wrapper singleton entries around each test.
-
-    The cache is process-global, so without a reset wrapper tests would
-    receive instances leaked by earlier tests or leak their own into
-    later ones. PATH and PDK entries are deliberately never touched.
-    """
-    for cls in WRAPPERS:
-        SingletonMeta._instances.pop(cls, None)
-    yield
-    for cls in WRAPPERS:
-        SingletonMeta._instances.pop(cls, None)
-
-
 def test_path_is_singleton() -> None:
     assert Path() is PATH
     assert Path() is Path()

@@ -69,7 +69,7 @@ def resonator_simulation(coupling_gap: float = 12.0) -> gf.Component:
         ),
     )
 
-    c.kdb_cell.shapes(LAYER.SIM_AREA).insert(c.bbox().enlarged(0, 100))
+    c.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(c.bbox().enlarged(0, 100))
 
     c.add_ports(launcher_left.ports, prefix="left_")
     c.add_ports(launcher_right.ports, prefix="right_")

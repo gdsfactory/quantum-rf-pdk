@@ -23,6 +23,7 @@ from gdsfactory.typings import (
     CrossSectionSpec,
     Layer,
     LayerSpec,
+    RoutingStrategies,
 )
 
 from qpdk.config import PATH
@@ -87,7 +88,7 @@ class LayerMapQPDK(LayerMap):
 
 L = LAYER = LayerMapQPDK
 
-material_properties = {
+material_properties: dict[str, dict[str, float]] = {
     "vacuum": {"relative_permittivity": 1},
     "Nb": {"relative_permittivity": float("inf")},
     "NbTiN": {"relative_permittivity": float("inf")},
@@ -134,9 +135,9 @@ def get_layer_stack() -> LayerStack:
                     layer2=DerivedLayer(
                         layer1=LogicalLayer(layer=L.M1_ETCH),
                         layer2=LogicalLayer(layer=L.M1_DRAW),
-                        operation="-",
+                        operation="not",
                     ),
-                    operation="-",
+                    operation="not",
                 ),
                 derived_layer=LogicalLayer(layer=L.M1_DRAW),
                 thickness=200e-9 * 1e6,
@@ -213,6 +214,33 @@ def get_layer_stack() -> LayerStack:
 
 
 LAYER_STACK = get_layer_stack()
+
+
+def get_layer_material_properties(
+    layer_name: str, layer_stack: LayerStack | None = None
+) -> dict[str, float]:
+    """Returns the ``material_properties`` entry for a layer stack level's material.
+
+    Simulation setups should read physical constants through this function so the
+    numbers stay defined once, by the layer stack and ``material_properties``.
+
+    Args:
+        layer_name: Name of the level in the layer stack, e.g. ``"Substrate"``.
+        layer_stack: Layer stack to look the level up in. Defaults to ``LAYER_STACK``.
+
+    Raises:
+        KeyError: If the level is not in the layer stack, or its material is not
+            in ``material_properties``.
+    """
+    stack = layer_stack or LAYER_STACK
+    material = stack.layers[layer_name].material
+    if material not in material_properties:
+        raise KeyError(
+            f"Material {material!r} of layer {layer_name!r} is not in material_properties"
+        )
+    return material_properties[material]
+
+
 # Nicer for 3D visualization
 LAYER_STACK_NO_VACUUM = LayerStack(
     layers={
@@ -239,9 +267,9 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
                 layer2=DerivedLayer(
                     layer1=LogicalLayer(layer=L.M2_ETCH),
                     layer2=LogicalLayer(layer=L.M2_DRAW),
-                    operation="-",
+                    operation="not",
                 ),
-                operation="-",
+                operation="not",
             ),
             derived_layer=LogicalLayer(layer=L.M2_DRAW),
             thickness=0.2,
@@ -293,7 +321,11 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
     def decorated_cross_section(**kwargs: Any) -> CrossSection:
         cross_section = func(**kwargs)
         if cross_section.name in _cross_section_default_names:
-            cross_section._name = _cross_section_default_names[cross_section.name]
+            # Pydantic private attributes stay writable on frozen models (gdsfactory
+            # does the same); pyrefly treats every field of a frozen model as read-only.
+            cross_section._name = _cross_section_default_names[  # pyrefly: ignore[read-only]
+                cross_section.name
+            ]
         return cross_section
 
     cross_sections[func.__name__] = decorated_cross_section
@@ -340,6 +372,40 @@ def get_etch_section(
             f"Found sections: {[s.name for s in xs.sections]}"
         )
         raise ValueError(msg) from e
+
+
+def get_meander_wire_gap(
+    cross_section: CrossSection,
+    wire_gap: float | None = None,
+) -> float:
+    """Resolve the run-to-run gap of a meander inductor.
+
+    An explicit gap wins. Otherwise the gap is twice the etch section width,
+    so the etched regions of adjacent runs do not overlap, falling back to
+    the wire width for cross-sections without an etch section.
+
+    Shared by the meander inductor cell and its SAX model so the two cannot
+    drift apart.
+
+    Args:
+        cross_section: Resolved cross-section of the meander wire.
+        wire_gap: Explicit gap between adjacent meander runs in µm, if given.
+
+    Returns:
+        Gap between adjacent meander runs in µm.
+
+    Raises:
+        ValueError: If an explicit wire_gap is not positive.
+    """
+    if wire_gap is not None:
+        # Concrete scalars only: branching on a jax tracer would break jit.
+        if isinstance(wire_gap, int | float) and not wire_gap > 0:
+            raise ValueError(f"wire_gap must be positive, got {wire_gap}")
+        return wire_gap
+    try:
+        return 2 * get_etch_section(cross_section).width
+    except ValueError:
+        return cross_section.width
 
 
 @xsection
@@ -533,7 +599,7 @@ route_bundle_sbend = route_bundle_sbend_cpw = partial(
     bend_s=partial(_route_component, "bend_s", allow_min_radius_violation=True),
 )
 
-routing_strategies = {
+routing_strategies: RoutingStrategies = {
     "route_bundle": route_bundle,
     "route_bundle_cpw": route_bundle_cpw,
     "route_bundle_all_angle": route_bundle_all_angle,

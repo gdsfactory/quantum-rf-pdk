@@ -8,6 +8,14 @@
 #       jupytext_version: 1.17.3
 # ---
 
+# %% [raw] tags=["remove-cell"]
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # %% [markdown]
 # # HFSS Eigenmode Simulation of a CPW Resonator
 #
@@ -68,8 +76,10 @@ import os
 import tempfile
 import time
 from pathlib import Path
+from typing import cast
 
 from ansys.aedt.core import Hfss, settings
+from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
 from IPython.display import Image, display
 from scipy.optimize import minimize_scalar
 
@@ -78,12 +88,19 @@ from scipy.optimize import minimize_scalar
 #
 # First, let's create a simple quarter-wave resonator using QPDK's component library.
 # We will use the `resonator_frequency` helper to find the length needed for a 5 GHz resonance.
+#
+# ![Voltage maximum at the open end and current maximum at the shorted end of a quarter-wave resonator, with f equal to the phase velocity over four times the length](figures/quarter-wave-mode.svg)
 # %%
 from qpdk import PDK
 from qpdk.cells.resonator import resonator
 from qpdk.config import PATH
 from qpdk.models.resonator import resonator_frequency
-from qpdk.simulation import HFSS, prepare_component_for_aedt
+from qpdk.simulation import (
+    HFSS,
+    detach_desktop_logging,
+    fit_view,
+    prepare_component_for_aedt,
+)
 from qpdk.tech import coplanar_waveguide
 
 PDK.activate()
@@ -168,7 +185,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
 
 # Create temporary directory for project
@@ -184,6 +201,8 @@ hfss = Hfss(
     new_desktop=True,
     version="2025.2",
 )
+# PyAEDT logs through the desktop by default; reading it per message can drop the session.
+detach_desktop_logging(hfss)
 hfss.modeler.model_units = "um"
 
 print(f"HFSS project created: {hfss.project_file}")
@@ -233,7 +252,7 @@ print(f"Created air region with PEC boundary: {air_region_name}")
 
 # %%
 # Ensure HFSS model fits the screen
-hfss.modeler.fit_all()
+fit_view(hfss)
 
 # Save screenshot
 img_dir = PATH.repo / "docs" / "_static" / "images"
@@ -339,10 +358,11 @@ if results["frequencies_ghz"]:
 
 # %%
 # Ensure the model fits the screen
-hfss.modeler.fit_all()
+fit_view(hfss)
 
 # Create a surface field plot of the electric field magnitude on the substrate
-plot = hfss.post.create_fieldplot_surface(
+# `post` is typed as a union of every application's post-processor.
+plot = cast(PostProcessor3D, hfss.post).create_fieldplot_surface(
     assignment=[substrate_name], quantity="Mag_E", setup=f"{setup.name} : LastAdaptive"
 )
 

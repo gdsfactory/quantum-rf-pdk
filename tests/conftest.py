@@ -11,6 +11,7 @@ import gdsfactory as gf
 import pytest
 
 from qpdk import PDK
+from qpdk.singleton import SingletonMeta
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -30,9 +31,8 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
     everything); otherwise a silently missing dependency would green the CI
     with the SAX/LVS coverage gone.
 
-    gdsfactoryplus >= 2.0 is not on PyPI; it ships bundled in the public
-    GDSFactory+ VS Code extension. ``just test-gfp`` provisions it from the
-    extension automatically (see ``fetch-gfp`` in ``tests/test.just``).
+    gdsfactoryplus comes from the ``gdsfactoryplus`` extra (Python 3.12 only);
+    ``just test-gfp`` installs it.
 
     Returns:
         The imported module.
@@ -47,7 +47,7 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
         missing = exc.name or ""
         required = os.environ.get(GFP_REQUIRED_ENV) == "1"
         if missing == "gdsfactoryplus":
-            hint = "run `just fetch-gfp` and source build/gfp-vsix/env.sh"
+            hint = "install the gdsfactoryplus extra on Python 3.12"
             if required:
                 pytest.fail(
                     f"gdsfactoryplus is required (GFP_REQUIRED=1) but not "
@@ -70,8 +70,7 @@ def import_gfp_module(module: str = "gdsfactoryplus") -> ModuleType:
             pytest.fail(
                 f"gdsfactoryplus is required (GFP_REQUIRED=1) but its "
                 f"dependency {missing!r} is not importable — the SDK "
-                "provisioning is broken; run `just fetch-gfp` and source "
-                "build/gfp-vsix/env.sh, or install the gdsfactoryplus extra"
+                "provisioning is broken; install the gdsfactoryplus extra"
             )
         pytest.skip(
             f"optional dependency {missing!r} not installed", allow_module_level=True
@@ -95,6 +94,27 @@ def pytest_collection_modifyitems(
 def activate_pdk() -> None:
     """Activate PDK."""
     PDK.activate()
+
+
+@pytest.fixture
+def isolated_wrapper_cache():
+    """Reset AEDT-wrapper singleton entries around each test.
+
+    The cache is process-global, so without a reset wrapper tests would
+    receive instances leaked by earlier tests or leak their own into
+    later ones. PATH and PDK entries are deliberately never touched.
+    """
+    # Imported here, not at module level: qpdk.simulation pulls in extras such as
+    # polars, and the GDSFactory+ job collects this suite without them.
+    # TODO(Python 3.15): `lazy from qpdk.simulation import ...` (PEP 810) - hoist to module scope.
+    from qpdk.simulation import HFSS, Q2D, Q3D  # ruff: ignore[import-outside-top-level]
+
+    wrappers = (HFSS, Q3D, Q2D)
+    for cls in wrappers:
+        SingletonMeta._instances.pop(cls, None)
+    yield
+    for cls in wrappers:
+        SingletonMeta._instances.pop(cls, None)
 
 
 @pytest.fixture(autouse=True)

@@ -11,18 +11,18 @@ a Josephson junction (SQUID).
 
 .. math::
 
-    \hat{H} = 4 E_C \hat{n}^2
-             + \tfrac{1}{2} E_L (\hat{\varphi} - \varphi_{\text{ext}})^2
-             - E_J \cos\hat{\varphi}
+    \hat{H} = 4 E_\text{C} \hat{n}^2
+             + \tfrac{1}{2} E_\text{L} (\hat{\varphi} - \varphi_{\text{ext}})^2
+             - E_\text{J} \cos\hat{\varphi}
 
-where :math:`E_C` is the charging energy, :math:`E_L` the inductive energy
-from the geometric inductance of the resonator arms, :math:`E_J` the
+where :math:`E_\text{C}` is the charging energy, :math:`E_\text{L}` the inductive energy
+from the geometric inductance of the resonator arms, :math:`E_\text{J}` the
 Josephson energy, and :math:`\varphi_{\text{ext}}` the external flux bias
 (in units of the reduced flux quantum).
 
-The unimon operates in the regime :math:`E_L \sim E_J`, which is distinct
-from both the transmon (:math:`E_J \gg E_C`, no geometric inductance) and
-the fluxonium (:math:`E_L \ll E_J`).
+The unimon operates in the regime :math:`E_\text{L} \sim E_\text{J}`, which is distinct
+from both the transmon (:math:`E_\text{J} \gg E_\text{C}`, no geometric inductance) and
+the fluxonium (:math:`E_\text{L} \ll E_\text{J}`).
 
 References:
     - :cite:`hyyppaUnimonQubit2022`
@@ -31,15 +31,16 @@ References:
 """
 
 import math
-from functools import partial
 
 import jax
 import jax.numpy as jnp
 import sax
+from jax.typing import ArrayLike
 from sax.models.rf import capacitor, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, h
 from qpdk.models.generic import lc_resonator
+from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
 
 # ---------------------------------------------------------------------------
@@ -47,23 +48,23 @@ from qpdk.models.waveguides import straight_shorted
 # ---------------------------------------------------------------------------
 
 
-@partial(jax.jit, inline=True)
-def el_to_arm_inductance(el_ghz: float) -> float:
-    r"""Convert inductive energy :math:`E_L` to geometric inductance of one arm :math:`L`.
+@jit(inline=True)
+def el_to_arm_inductance(el_ghz: ArrayLike) -> jax.Array:
+    r"""Convert inductive energy :math:`E_\text{L}` to geometric inductance of one arm :math:`L`.
 
-    The total inductive energy :math:`E_L` of the unimon is related to the
+    The total inductive energy :math:`E_\text{L}` of the unimon is related to the
     geometric inductance of its two arms (in series) by:
 
     .. math::
 
-        E_L = \frac{\Phi_0^2}{4 \pi^2 \cdot 2 L}
+        E_\text{L} = \frac{\Phi_0^2}{4 \pi^2 \cdot 2 L}
             = \frac{(\hbar / 2e)^2}{2 L}
 
     Solving for the inductance :math:`L` of a single arm:
 
     .. math::
 
-        L = \frac{\Phi_0^2}{8 \pi^2 E_L}
+        L = \frac{\Phi_0^2}{8 \pi^2 E_\text{L}}
 
     Args:
         el_ghz: Inductive energy in GHz.
@@ -75,7 +76,7 @@ def el_to_arm_inductance(el_ghz: float) -> float:
         >>> L = el_to_arm_inductance(5.0)  # 5 GHz inductive energy
         >>> print(f"{L * 1e9:.2f} nH")
     """
-    el_joules = el_ghz * 1e9 * h
+    el_joules = jnp.asarray(el_ghz) * 1e9 * h
     return Φ_0**2 / (8 * math.pi**2 * el_joules)
 
 
@@ -112,8 +113,8 @@ def _unimon_internal(
         f: Array of frequency points in Hz.
         arm_length: Length of each quarter-wave resonator arm in µm.
         cross_section: Cross-section specification for the CPW arms.
-        junction_capacitance: Junction capacitance :math:`C_J` in Farads.
-        junction_inductance: Junction inductance :math:`L_J` in Henries.
+        junction_capacitance: Junction capacitance :math:`C_\text{J}` in Farads.
+        junction_inductance: Junction inductance :math:`L_\text{J}` in Henries.
 
     Returns:
         sax.SDict: S-parameters dictionary with internal ports ``o1`` and ``o2``.
@@ -188,9 +189,9 @@ def unimon_coupled(
         f: Array of frequency points in Hz.
         arm_length: Length of each quarter-wave resonator arm in µm.
         cross_section: Cross-section specification for the CPW arms.
-        junction_capacitance: Junction capacitance :math:`C_J` in Farads.
-        junction_inductance: Junction inductance :math:`L_J` in Henries.
-        coupling_capacitance: Coupling capacitance :math:`C_c` in Farads.
+        junction_capacitance: Junction capacitance :math:`C_\text{J}` in Farads.
+        junction_inductance: Junction inductance :math:`L_\text{J}` in Henries.
+        coupling_capacitance: Coupling capacitance :math:`C_\text{c}` in Farads.
 
     Returns:
         sax.SDict: S-parameters dictionary with a single port ``o1``.
@@ -231,22 +232,22 @@ def unimon_hamiltonian(
     phi_ext: float = jnp.pi,
     n_max: int = 30,
 ) -> jax.Array:
-    r"""Build the unimon Hamiltonian matrix in the charge basis.
+    r"""Build the unimon Hamiltonian matrix in the harmonic-oscillator basis.
 
     The effective single-mode unimon Hamiltonian is
 
     .. math::
 
-        \hat{H} = 4 E_C \hat{n}^2
-                 + \tfrac{1}{2} E_L (\hat{\varphi} - \varphi_{\text{ext}})^2
-                 - E_J \cos\hat{\varphi}
+        \hat{H} = 4 E_\text{C} \hat{n}^2
+                 + \tfrac{1}{2} E_\text{L} (\hat{\varphi} - \varphi_{\text{ext}})^2
+                 - E_\text{J} \cos\hat{\varphi}
 
     **Energy Scales and Physics**:
-    - :math:`E_J`: The Josephson energy of the single non-linear junction.
-    - :math:`E_C`: The effective charging energy. The large geometric capacitance
+    - :math:`E_\text{J}`: The Josephson energy of the single non-linear junction.
+    - :math:`E_\text{C}`: The effective charging energy. The large geometric capacitance
       of the CPW resonator means this is lower than typical transmons.
-    - :math:`E_L`: The inductive energy provided by the CPW resonator shunting
-      the junction. The unimon operates in the regime :math:`E_L \sim E_J`.
+    - :math:`E_\text{L}`: The inductive energy provided by the CPW resonator shunting
+      the junction. The unimon operates in the regime :math:`E_\text{L} \sim E_\text{J}`.
 
     **Similarities to Fluxonium**:
     The effective single-mode circuit model of the unimon is mathematically identical
@@ -256,66 +257,54 @@ def unimon_hamiltonian(
 
     **Phase and Charge Operators**:
     Because the unimon is inductively shunted, its potential energy features a
-    quadratic term :math:`\tfrac{1}{2} E_L \hat{\varphi}^2`, meaning the potential
+    quadratic term :math:`\tfrac{1}{2} E_\text{L} \hat{\varphi}^2`, meaning the potential
     is **not** :math:`2\pi`-periodic. Thus, the phase operator :math:`\hat{\varphi}`
     must be treated as an extended, non-compact variable. Consequently, the
     conjugate charge variable :math:`n` is continuous, rather than taking discrete
     integer values as it does for a transmon.
 
-    *Note on this implementation*: To evaluate the Hamiltonian, we use a standard
-    truncated discrete charge basis approximation
-    (:math:`n \in \{-n_{\max}, \ldots, +n_{\max}\}`). The charge operator is derived
-    from `qutip.charge`, and the non-compact phase space operators are approximated
-    as nearest-neighbor hopping matrices.
+    *Note on this implementation*: The Hamiltonian is represented in the
+    eigenbasis of the harmonic part :math:`4 E_\text{C} \hat{n}^2
+    + \tfrac{1}{2} E_\text{L} \hat{\varphi}^2`, truncated to
+    :math:`2 n_{\max} + 1` states, with
+    :math:`\hat{\varphi} = \varphi_\text{zpf} (\hat{a} + \hat{a}^\dagger)`,
+    :math:`\hat{n} = \tfrac{i}{2 \varphi_\text{zpf}} (\hat{a}^\dagger - \hat{a})` and
+    :math:`\varphi_\text{zpf} = (2 E_\text{C} / E_\text{L})^{1/4}`.
+    :math:`\cos\hat{\varphi}` is evaluated from the eigendecomposition of the
+    truncated :math:`\hat{\varphi}`.
 
     See :cite:`hyyppaUnimonQubit2022` and :cite:`tuohinoMultimodePhysicsUnimon2024`.
 
     Args:
-        ec_ghz: Charging energy :math:`E_C` in GHz.
-        el_ghz: Inductive energy :math:`E_L` in GHz.
-        ej_ghz: Josephson energy :math:`E_J` in GHz.
+        ec_ghz: Charging energy :math:`E_\text{C}` in GHz.
+        el_ghz: Inductive energy :math:`E_\text{L}` in GHz.
+        ej_ghz: Josephson energy :math:`E_\text{J}` in GHz.
         phi_ext: External flux bias :math:`\varphi_{\text{ext}}`
             in radians (reduced flux-quantum units).
             The optimal operating point is :math:`\pi`.
-        n_max: Charge-basis truncation; Hilbert-space dimension is
+        n_max: Basis truncation; Hilbert-space dimension is
             :math:`2 n_{\max} + 1`.
 
     Returns:
         A ``(2*n_max+1, 2*n_max+1)`` Hermitian matrix (in GHz).
-
-    Raises:
-        ImportError: If the QuTiP extra is not installed.
-        ModuleNotFoundError: If a dependency other than QuTiP fails to import.
     """
     n_states = 2 * n_max + 1
 
-    try:
-        import qutip  # ruff: ignore[import-outside-top-level]
-        import qutip_jax  # ruff: ignore[import-outside-top-level]
-    except ModuleNotFoundError as e:
-        # Only treat missing top-level qutip/qutip_jax as an extra dependency issue.
-        # Re-raise any other import-time errors (including nested ones) unchanged.
-        if e.name in {"qutip", "qutip_jax"}:
-            raise ImportError(
-                "The QuTiP extra is required for Hamiltonian models. "
-                "Please install it with `pip install qpdk[qutip]`."
-            ) from e
-        raise
+    a = jnp.diag(jnp.sqrt(jnp.arange(1, n_states, dtype=float)), k=1)
+    phi_zpf = (2 * ec_ghz / el_ghz) ** 0.25
+    phi_hat = phi_zpf * (a + a.T)
 
-    # Extract raw JAX arrays from qutip-jax
-    n_hat = qutip.charge(n_max).to(qutip_jax.JaxArray).data._jxa
+    # Build cos(phi) from the truncated phi operator rather than truncating cos(phi)
+    phi_eigvals, phi_eigvecs = jnp.linalg.eigh(phi_hat)
+    cos_phi = (phi_eigvecs * jnp.cos(phi_eigvals)) @ phi_eigvecs.T
 
-    ones = jnp.ones(n_states - 1)
-    phi_hat = qutip.qdiags([ones, ones], [1, -1]).to(qutip_jax.JaxArray).data._jxa
-    cos_phi = (qutip.qdiags([ones, ones], [1, -1]) / 2).to(qutip_jax.JaxArray).data._jxa
+    harmonic = jnp.diag(jnp.sqrt(8 * ec_ghz * el_ghz) * (jnp.arange(n_states) + 0.5))
 
     # H = 4 E_C n^2 + 0.5 E_L (phi - phi_ext)^2 - E_J cos(phi)
-    # Expand the quadratic: (phi - phi_ext)^2 = phi^2 - 2*phi_ext*phi + phi_ext^2
     return (
-        4 * ec_ghz * n_hat @ n_hat
-        + 0.5
-        * el_ghz
-        * (phi_hat @ phi_hat - 2 * phi_ext * phi_hat + phi_ext**2 * jnp.eye(n_states))
+        harmonic
+        - el_ghz * phi_ext * phi_hat
+        + 0.5 * el_ghz * phi_ext**2 * jnp.eye(n_states)
         - ej_ghz * cos_phi
     )
 
@@ -335,11 +324,11 @@ def unimon_energies(
     state energy is zero.
 
     Args:
-        ec_ghz: Charging energy :math:`E_C` in GHz.
-        el_ghz: Inductive energy :math:`E_L` in GHz.
-        ej_ghz: Josephson energy :math:`E_J` in GHz.
+        ec_ghz: Charging energy :math:`E_\text{C}` in GHz.
+        el_ghz: Inductive energy :math:`E_\text{L}` in GHz.
+        ej_ghz: Josephson energy :math:`E_\text{J}` in GHz.
         phi_ext: External flux :math:`\varphi_{\text{ext}}` in radians.
-        n_max: Charge-basis truncation.
+        n_max: Basis truncation, see :func:`unimon_hamiltonian`.
         n_levels: Number of lowest energy levels to return.
 
     Returns:
@@ -388,11 +377,11 @@ def unimon_frequency_and_anharmonicity(
     (since :math:`E_0 = 0` after shifting).
 
     Args:
-        ec_ghz: Charging energy :math:`E_C` in GHz.
-        el_ghz: Inductive energy :math:`E_L` in GHz.
-        ej_ghz: Josephson energy :math:`E_J` in GHz.
+        ec_ghz: Charging energy :math:`E_\text{C}` in GHz.
+        el_ghz: Inductive energy :math:`E_\text{L}` in GHz.
+        ej_ghz: Josephson energy :math:`E_\text{J}` in GHz.
         phi_ext: External flux :math:`\varphi_{\text{ext}}` in radians.
-        n_max: Charge-basis truncation.
+        n_max: Basis truncation, see :func:`unimon_hamiltonian`.
 
     Returns:
         Tuple of (frequency_ghz, anharmonicity_ghz).

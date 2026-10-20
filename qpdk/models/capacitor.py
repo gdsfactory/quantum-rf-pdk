@@ -1,15 +1,15 @@
 """Capacitor Models."""
 
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import sax
 from gdsfactory.typings import CrossSectionSpec
+from jax.typing import ArrayLike
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
 from qpdk.models.cpw import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
 from qpdk.models.generic import capacitor
+from qpdk.models.jit import jit
 from qpdk.models.math import (
     capacitance_per_length_conformal,
     ellipk_ratio,
@@ -17,13 +17,13 @@ from qpdk.models.math import (
 )
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def plate_capacitor_capacitance_analytical(
-    length: float,
-    width: float,
-    gap: float,
-    ep_r: float,
-) -> float:
+    length: ArrayLike,
+    width: ArrayLike,
+    gap: ArrayLike,
+    ep_r: ArrayLike,
+) -> jax.Array:
     r"""Analytical formula for plate capacitor capacitance.
 
     The model assumes two coplanar rectangular pads on a substrate.
@@ -33,7 +33,7 @@ def plate_capacitor_capacitance_analytical(
 
         k &= \frac{s}{s + 2W} \\
         k' &= \sqrt{1 - k^2} \\
-        \epsilon_{\text{eff}} &= \frac{\epsilon_r + 1}{2} \\
+        \epsilon_{\text{eff}} &= \frac{\epsilon_\text{r} + 1}{2} \\
         C &= \epsilon_0 \epsilon_{\text{eff}} L \frac{K(k')}{K(k)}
 
     where :math:`s` is the gap, :math:`W` is the pad width, and :math:`L` is the pad length.
@@ -44,22 +44,22 @@ def plate_capacitor_capacitance_analytical(
         The calculated capacitance in Farads.
     """
     # Conformal mapping for coplanar pads
-    k_sq = (gap / (gap + 2 * width)) ** 2
+    k_sq = (jnp.asarray(gap) / (jnp.asarray(gap) + 2 * jnp.asarray(width))) ** 2
 
     # C = ε_0 * ε_eff * L * K(k') / K(k)
     # Uses K(1-m)/K(m) which is the inverse of ellipk_ratio(m)
     c_pul = ε_0 * epsilon_eff(ep_r) / ellipk_ratio(k_sq)
 
-    return (length * 1e-6) * c_pul
+    return (jnp.asarray(length) * 1e-6) * c_pul
 
 
-@partial(jax.jit, inline=True)
+@jit(inline=True)
 def interdigital_capacitor_capacitance_analytical(
-    fingers: int,
-    finger_length: float,
-    finger_gap: float,
-    thickness: float,
-    ep_r: float,
+    fingers: ArrayLike,
+    finger_length: ArrayLike,
+    finger_gap: ArrayLike,
+    thickness: ArrayLike,
+    ep_r: ArrayLike,
 ) -> jax.Array:
     r"""Analytical formula for interdigital capacitor capacitance.
 
@@ -69,18 +69,18 @@ def interdigital_capacitor_capacitance_analytical(
     .. math::
 
         \eta &= \frac{w}{w + g} \\
-        k_i &= \sin\left(\frac{\pi \eta}{2}\right) \\
-        k_e &= \frac{2\sqrt{\eta}}{1 + \eta} \\
-        C_i &= \epsilon_0 L (\epsilon_r + 1) \frac{K(k_i)}{K(k_i')} \\
-        C_e &= \epsilon_0 L (\epsilon_r + 1) \frac{K(k_e)}{K(k_e')}
+        k_\text{i} &= \sin\left(\frac{\pi \eta}{2}\right) \\
+        k_\text{e} &= \frac{2\sqrt{\eta}}{1 + \eta} \\
+        C_\text{i} &= \epsilon_0 L (\epsilon_\text{r} + 1) \frac{K(k_\text{i})}{K(k_\text{i}')} \\
+        C_\text{e} &= \epsilon_0 L (\epsilon_\text{r} + 1) \frac{K(k_\text{e})}{K(k_\text{e}')}
 
     The total mutual capacitance for :math:`n` fingers is:
 
     .. math::
 
         C = \begin{cases}
-            C_e / 2 & \text{if } n=2 \\
-            (n - 3) \frac{C_i}{2} + 2 \frac{C_i C_e}{C_i + C_e} & \text{if } n > 2
+            C_\text{e} / 2 & \text{if } n=2 \\
+            (n - 3) \frac{C_\text{i}}{2} + 2 \frac{C_\text{i} C_\text{e}}{C_\text{i} + C_\text{e}} & \text{if } n > 2
         \end{cases}
 
     where :math:`w` is the finger thickness (width), :math:`g` is the finger gap, and
@@ -92,10 +92,10 @@ def interdigital_capacitor_capacitance_analytical(
         The calculated mutual capacitance in Farads.
     """
     # Geometric parameters
-    n = fingers
-    l_overlap = finger_length * 1e-6  # Overlap length in m
-    w = thickness  # Finger width
-    g = finger_gap  # Finger gap
+    n = jnp.asarray(fingers)
+    l_overlap = jnp.asarray(finger_length) * 1e-6  # Overlap length in m
+    w = jnp.asarray(thickness)  # Finger width
+    g = jnp.asarray(finger_gap)  # Finger gap
     η = w / (w + g)  # Metallization ratio
 
     # Elliptic integral moduli squared
@@ -109,7 +109,7 @@ def interdigital_capacitor_capacitance_analytical(
 
     # Total mutual capacitance
     # Simplifies to c_e/2 for n=2
-    return jnp.where(  # pyrefly: ignore[bad-return]
+    return jnp.where(
         n == 2,
         c_e / 2,
         (n - 3) * c_i / 2 + 2 * (c_i * c_e) / (c_i + c_e),
@@ -204,12 +204,12 @@ if __name__ == "__main__":
     )  # Convert to fF
 
     for i, gap in enumerate(gaps_plate):
-        plt.plot(lengths, capacitances_plate[i], label=f"gap = {gap:.1f} µm")  # type: ignore[index]
+        plt.plot(lengths, capacitances_plate[i], label=f"gap = {gap:.1f} µm")
 
     plt.xlabel("Pad Length (µm)")
     plt.ylabel("Capacitance (fF)")
     plt.title(
-        rf"Plate Capacitor Capacitance ($\mathtt{{width}}=${width_plate} µm, $\epsilon_r={ep_r}$)"
+        rf"Plate Capacitor Capacitance ($\mathtt{{width}} = {width_plate}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
     )
     plt.grid(True)
     plt.legend()
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     plt.xlabel("Overlap Length (µm)")
     plt.ylabel("Mutual Capacitance (fF)")
     plt.title(
-        rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}}=${finger_gap} µm, $\mathtt{{thickness}}=${thickness} µm, $\epsilon_r={ep_r}$)"
+        rf"Interdigital Capacitor Capacitance ($\mathtt{{finger\_gap}} = {finger_gap}\,\text{{µm}}$, $\mathtt{{thickness}} = {thickness}\,\text{{µm}}$, $\epsilon_\text{{r}} = {ep_r}$)"
     )
     plt.grid(True)
     plt.legend()

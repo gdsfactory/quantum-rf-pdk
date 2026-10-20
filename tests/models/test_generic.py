@@ -1,11 +1,10 @@
 """Tests for qpdk.models.generic module - LC resonator models."""
 
 from collections.abc import Callable
-from typing import final
+from typing import final, override
 
 import hypothesis.strategies as st
 import jax.numpy as jnp
-import numpy as np
 import pytest
 import sax
 from hypothesis import assume, given, settings
@@ -47,6 +46,7 @@ class TestLCResonator(TwoPortModelTestSuite):
     model_function = lc_resonator
     freq_range = (1e9, 30e9)
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
@@ -57,7 +57,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         """Test that the resonance frequency matches the expected value f_r = 1/(2*pi*sqrt(LC))."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
-        f_r_expected = 1 / (2 * np.pi * np.sqrt(L * C))
+        f_r_expected = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
 
         f = jnp.linspace(f_r_expected * 0.8, f_r_expected * 1.2, 1000)
         result = lc_resonator(f=f, capacitance=C, inductance=L)
@@ -78,7 +78,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         """Test that |S21| approaches zero at resonance for parallel LC."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
-        f_r_expected = 1 / (2 * np.pi * np.sqrt(L * C))
+        f_r_expected = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
 
         f = jnp.array([f_r_expected])
         result = lc_resonator(f=f, capacitance=C, inductance=L)
@@ -93,7 +93,7 @@ class TestLCResonator(TwoPortModelTestSuite):
         """Test that |S11| approaches 1 at resonance for parallel LC."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
-        f_r_expected = 1 / (2 * np.pi * np.sqrt(L * C))
+        f_r_expected = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
 
         f = jnp.array([f_r_expected])
         result = lc_resonator(f=f, capacitance=C, inductance=L)
@@ -146,7 +146,7 @@ class TestLCResonator(TwoPortModelTestSuite):
             L: Inductance in Henries
             C: Capacitance in Farads
         """
-        f_r_expected = 1 / (2 * np.pi * np.sqrt(L * C))
+        f_r_expected = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
 
         assume(1e9 <= f_r_expected <= 50e9)
 
@@ -171,6 +171,7 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
     model_function = lc_resonator_coupled
     freq_range = (1e9, 30e9)
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Get model-specific keyword arguments."""
@@ -238,7 +239,7 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
         """Test that the main resonance frequency is still approximately f_r = 1/(2*pi*sqrt(LC))."""
         L = 1e-9  # 1 nH
         C = 100e-15  # 100 fF
-        f_r_expected = 1 / (2 * np.pi * np.sqrt(L * C))
+        f_r_expected = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
 
         f = jnp.linspace(f_r_expected * 0.7, f_r_expected * 1.3, 1000)
         result = lc_resonator_coupled(
