@@ -211,7 +211,7 @@ fetch-docs-fonts:
     }
     VERSION = hashlib.sha256(repr((FILES, INTER_ZIP, INTER_FILES)).encode()).hexdigest()
 
-    if STAMP.exists() and STAMP.read_text().strip() == VERSION:
+    if STAMP.exists() and STAMP.read_text(encoding="utf-8").strip() == VERSION:
         print(f"docs fonts already cached in {OUT}")
     else:
         print(f"downloading docs fonts into {OUT}")
@@ -238,7 +238,7 @@ fetch-docs-fonts:
                 (OUT / Path(name).name).write_bytes(
                     verify(z.read(name), expected_hash, f"{INTER_ZIP[0]}!{name}")
                 )
-        STAMP.write_text(VERSION)
+        STAMP.write_text(VERSION, encoding="utf-8")
 
 # Shared prerequisites for building documentation (runs in parallel)
 [private]
