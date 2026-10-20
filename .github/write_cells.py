@@ -65,7 +65,7 @@ def _setup_kwasm_viewer() -> None:
     template = template.replace("KWASM_LYP_B64", "")
     template = template.replace("KWASM_LYRDB_B64", "")
     template = template.replace("KWASM_NETLIST_B64", "")
-    viewer_path.write_text(template)
+    viewer_path.write_text(template, encoding="utf-8")
 
 
 def _generate_artifacts(c, name: str) -> None:

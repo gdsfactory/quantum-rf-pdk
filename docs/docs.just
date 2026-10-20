@@ -120,7 +120,7 @@ build-doc-figures: fetch-docs-fonts
         svg = svg.replace("<svg ", '<svg class="qpdk-figure" ', 1)
         opening_tag_end = svg.index(">") + 1
         svg = svg[:opening_tag_end] + "<style>" + "".join(faces) + theme + "</style>" + svg[opening_tag_end:]
-        (output_dir / f"{name}.svg").write_text(svg + "\n")
+        (output_dir / f"{name}.svg").write_text(svg + "\n", encoding="utf-8")
 
     for stale in output_dir.glob("*.svg"):
         if stale.stem not in sources:
