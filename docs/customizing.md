@@ -6,34 +6,32 @@ myst:
 
 # Customizing QPDK for Your Process
 
-QPDK describes a generic superconducting process. If you have a real fabrication process, you will want your own PDK
-with your layer map, layer stack, and cell library, while still picking up model, cell, and tooling improvements from
-QPDK. This page describes the recommended way to do that and how to keep the result healthy over time.
+QPDK describes a generic superconducting process. For a real fabrication process, you need your own PDK with your own
+layers, layer stack, and cells. You also want to keep getting fixes and new features from QPDK. This page shows how to
+do both.
 
-The short version:
+In short:
 
-1. Fork the repository and rename its identity in one commit.
-1. Replace the process definition (`qpdk/layers.yaml` and `qpdk/tech.py`) in one more commit.
-1. Prune or override cells, then regenerate the regression references.
-1. Merge upstream release tags regularly, using the [ownership map](#ownership-map) to resolve conflicts.
+1. Fork the repository and rename it in one commit.
+1. Replace the process (`qpdk/layers.yaml` and `qpdk/tech.py`) in one more commit.
+1. Remove or override cells, then regenerate the regression references.
+1. Merge new QPDK release tags often. Use the [ownership map](#ownership-map) to resolve conflicts.
 
 ## Fork or compose
 
-There are two ways to build on QPDK:
+You can build on QPDK in two ways:
 
-- **Fork**: copy the repository, own the process definition, and merge upstream changes into it over time.
-- **Compose**: keep `qpdk` as a normal dependency, and build your own `gdsfactory.Pdk` in a separate package that reuses
-  selected QPDK cells and models.
+- **Fork.** Copy the repository, own the process, and merge new QPDK changes into it over time.
+- **Compose.** Keep `qpdk` as a dependency. Build your own `gdsfactory.Pdk` in a separate package that reuses QPDK cells
+  and models.
 
-**Fork if you change the layer stack, layer numbers, or materials.** Almost everything in QPDK reads the process through
-`qpdk.tech`: cells draw on `LAYER.*`, cross-sections are defined there, and the analytical CPW models read substrate and
-metal thickness from `LAYER_STACK` (see `qpdk/models/cpw.py`). A composed package cannot swap those without
-monkeypatching, so a fork is simpler and more honest.
+**Fork if you change the layers, the layer stack, or the materials.** Almost all QPDK code reads the process from
+`qpdk.tech`. Cells draw on `LAYER.*`, cross-sections are defined there, and the CPW models read thicknesses from
+`LAYER_STACK` (see `qpdk/models/cpw.py`). A separate package cannot change these without patching QPDK internals.
 
-**Compose if you only add things.** If the QPDK process is close enough and you want extra cells, samples, or chips on
-top of it, depend on `qpdk` and merge its registries into your own `Pdk` (for example
-`cells={**qpdk.PDK.cells, **my_cells}`). You never have to merge anything, and you upgrade by bumping a version. The
-project-template work in [#376](https://github.com/gdsfactory/quantum-rf-pdk/issues/376) covers this path.
+**Compose if you only add things.** If the QPDK process is close enough, depend on `qpdk` and add your cells to its
+registries, for example `cells={**qpdk.PDK.cells, **my_cells}`. You never merge anything. You upgrade by changing the
+version. Issue [#376](https://github.com/gdsfactory/quantum-rf-pdk/issues/376) tracks a project template for this.
 
 ```{mermaid}
 :alt: If you change the layers, layer stack, or materials, fork. If you only add cells, samples, or chips, compose.
@@ -44,41 +42,40 @@ flowchart LR
     Q2 -->|yes| C["Compose:<br/>depend on qpdk"]
 ```
 
-The rest of this page assumes a fork.
+The rest of this page is about forks.
 
 (setting-up-the-fork)=
 
 ## Setting up the fork
 
-Create the fork on your Git host, then add QPDK as a second remote. `origin` is your fork; `upstream` is QPDK.
+Create the fork on your Git host. Then add QPDK as a second remote. Here `origin` is your fork and `upstream` is QPDK.
 
 ```bash
 git clone <your-fork-url> <your-pdk>
 cd <your-pdk>
 git remote add upstream https://github.com/gdsfactory/quantum-rf-pdk.git
 
-# Keep upstream tags out of your own tag namespace: your release workflow creates
-# v<version> tags too, and the two series must not collide.
+# Your releases also create v<version> tags.
+# Fetch the QPDK tags as upstream/v<version> so the two do not collide.
 git config remote.upstream.tagOpt --no-tags
 git config --add remote.upstream.fetch '+refs/tags/*:refs/tags/upstream/*'
 git fetch upstream
 git tag -l 'upstream/*'   # upstream/v0.4.0, upstream/v0.4.1, ...
 
-# Remember how you resolved a conflict, so the next merge reuses it.
+# Let Git reuse your earlier conflict resolutions.
 # See https://git-scm.com/book/en/v2/Git-Tools-Rerere
 git config rerere.enabled true
 ```
 
-Do your work on branches off your fork's `main` and merge them through pull requests. Do not develop directly on `main`;
-it is the branch you merge upstream into.
+Work on branches and merge them into `main` through pull requests. Do not work on `main` directly. It is the branch you
+merge QPDK into.
 
 (identity-rename)=
 
 ## Identity rename
 
-These names are hardcoded to QPDK. Change all of them in **one commit** (or two at most) and touch nothing else in that
-commit. It becomes the single known conflict point for every later upstream merge, and its diff is your checklist when a
-conflict shows up.
+The places below contain the QPDK name. Change all of them in **one commit** and change nothing else in it. Later merges
+then conflict here in a known way, and the diff of this commit is your checklist.
 
 | What                | Where                                                                                  |
 | ------------------- | -------------------------------------------------------------------------------------- |
@@ -88,122 +85,113 @@ conflict shows up.
 | GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries      |
 | Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                       |
 | PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py` |
-| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`; `KLayoutTechnology(name=...)` in `qpdk/tech.py`   |
-| KLayout install     | `src` and `dest` in `qpdk/install_tech.py` (both spell out `qpdk`)                     |
-| Docs                | `docs/conf.py`: `project`, logos, and URLs; badges in README and index                 |
+| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`   |
+| KLayout install     | `src` and `dest` in `qpdk/install_tech.py`                                             |
+| Docs                | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                 |
 | Workflows           | `test.yml` (`--cov=qpdk`, imports)                                                     |
 | Repo metadata       | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`  |
 
-The `justfile` reads the package name from `pdk := env('pdk', 'qpdk')`, so set `pdk=<your_pdk>` in `.env` or change the
-default. Only the `install-tech` and `show` recipes read that variable.
+The `justfile` reads the package name from `pdk := env('pdk', 'qpdk')`. Set `pdk=<your_pdk>` in `.env` or change the
+default. Only the `install-tech` and `show` recipes read this variable.
 
-Internal names that never reach a user, such as `docs/_ext/qpdk_*.py` and the `qpdk.mplstyle` figure style, can stay.
-Every one you leave alone is one fewer line that can conflict.
+Internal names that users never see can stay, for example `docs/_ext/qpdk_*.py` and the `qpdk.mplstyle` figure style.
+Each name you keep is one less line that can conflict.
 
 ## Process replacement
 
-The process definition lives in two files that must agree:
+The process is defined in two files, and they must agree:
 
 - `qpdk/layers.yaml`: layer names, GDS numbers, and how KLayout draws them.
-- `qpdk/tech.py`: everything else about the process.
+- `qpdk/tech.py`: everything else.
 
-`tests/test_pdk.py::test_yaml_matches_layers` fails if the layer names or `(layer, datatype)` pairs in the two files
-differ. After editing `layers.yaml`, regenerate the KLayout files and commit them with your change:
+`tests/test_pdk.py::test_yaml_matches_layers` fails if the two files have different layer names or `(layer, datatype)`
+pairs. After you edit `layers.yaml`, regenerate the KLayout files and commit them too:
 
 ```bash
 uv run python qpdk/tech.py   # rewrites qpdk/klayout/layers.lyp and tech.lyt
 ```
 
-At runtime `LAYER_VIEWS` is read from the generated `layers.lyp`, not from the YAML. If you skip this step, the YAML
-test passes but KLayout and GDSFactory+ keep showing the old layers.
-
-Even with no changes, the regenerated files do not match the committed ones exactly: the connectivity `<symbols>`
-entries can come out in a different order, and the layer names can lose their `1/0` suffix. Review the diff and keep
-only the changes you meant.
+QPDK reads `LAYER_VIEWS` from the generated `layers.lyp`, not from the YAML. If you skip this step, the test passes but
+KLayout and GDSFactory+ still show the old layers. The generated files differ from the committed ones even if you
+changed nothing. For example, `<symbols>` entries change order and layer names lose their `1/0` suffix. Check the diff
+and keep only your changes.
 
 What a foundry PDK usually changes in `qpdk/tech.py`:
 
-- **`LayerMapQPDK`**: the foundry's GDS layer numbers and any extra mask layers. Keep the non-fabrication layers
-  (`SIM_AREA`, `SIM_ONLY`, `LABEL_*`, `WG`, `ERROR_PATH`): cells, routing, and the simulation tooling use them.
-- **`get_layer_stack()`**: film thicknesses, `zmin`, and materials (for example Al instead of Nb, or sapphire instead of
-  Si). Keep the level names `M1`, `Substrate`, and `Vacuum`, or update their users: the CPW models read
-  `LAYER_STACK.layers["Substrate"]` and `["M1"]`, and `LAYER_STACK_NO_VACUUM` filters on `"Vacuum"`.
-- **`material_properties`**: permittivity and loss tangent of your substrate. The analytical CPW models pick this up
-  through `get_layer_material_properties`.
+- **`LayerMapQPDK`**: the GDS layer numbers and any extra mask layers. Keep the non-fabrication layers (`SIM_AREA`,
+  `SIM_ONLY`, `LABEL_*`, `WG`, `ERROR_PATH`). Cells, routing, and simulation use them.
+- **`get_layer_stack()`**: thicknesses, `zmin`, and materials, for example Al instead of Nb. Keep the level names `M1`,
+  `Substrate`, and `Vacuum`. The CPW models and `LAYER_STACK_NO_VACUUM` look them up by name.
+- **`material_properties`**: permittivity and loss tangent of your substrate. The CPW models read these.
 - **`LAYER_CONNECTIVITY`**: which layers connect through vias, bumps, and bridges.
 - **Cross-sections** such as `coplanar_waveguide`: default width, gap, and bend radius for 50 Ω on your substrate.
-- **`routing_strategies`**: the cross-sections your routers default to.
+- **`routing_strategies`**: the default cross-sections for routing.
 
-QPDK has no central design-rules table. Minimum widths, gaps, and spacings live as parameter defaults in the
-cross-sections and in each cell's signature, so check the cells you keep against your rules. For hosted DRC, point
-`[tool.gdsfactoryplus.drc] pdk` in `pyproject.toml` at your own rule deck.
+QPDK has no table of design rules. Minimum widths and gaps are default parameter values in the cross-sections and cells.
+Check the cells you keep against your rules. For hosted DRC, set `[tool.gdsfactoryplus.drc] pdk` in `pyproject.toml` to
+your own rule deck.
 
-The FEM datasets under `qpdk/models/datasets/` were simulated on the QPDK stack. Unlike the analytical models, they do
-not follow your stack automatically. Regenerate them with the scripts in `qpdk/models/datasets/data/`, or treat the
-models built on them as approximate.
+The FEM datasets in `qpdk/models/datasets/` were simulated on the QPDK stack. The analytical models follow your stack,
+but these datasets do not. Regenerate them with the scripts in `qpdk/models/datasets/data/`, or treat the models that
+use them as approximate.
 
 (cell-library)=
 
 ## Cell library
 
-`qpdk/cells/__init__.py` star-imports every cell module, and `get_pdk()` collects the cells from it with
-`gdsfactory.get_factories.get_cells`, which keeps the public callables decorated with `@gf.cell` (or annotated to return
-a `Component`). The registry key is the **attribute name in `qpdk.cells`**, so:
+`qpdk/cells/__init__.py` star-imports every cell module. `get_pdk()` then collects every public function decorated with
+`@gf.cell` or annotated to return a `Component`. A cell is registered under its **name in `qpdk.cells`**. So:
 
-- **Add a cell**: put it in a new module under `qpdk/cells/`, decorate it with `@gf.cell`, and star-import it in
-  `qpdk/cells/__init__.py`. Prefix fork-specific names (for example `acme_transmon`) so they never collide with a cell
-  QPDK adds later.
+- **To add a cell**, write it in a new module in `qpdk/cells/`, decorate it with `@gf.cell`, and star-import the module
+  in `qpdk/cells/__init__.py`. Give it a prefix, for example `acme_transmon`, so it never clashes with a future QPDK
+  cell.
 
-- **Override a cell by name**: define a function with the same name in a module that is star-imported **after** the
-  upstream one. The later binding wins. This changes what YAML netlists, `gf.get_component("name")`, and GDSFactory+
-  resolve to. It does **not** change upstream cells that import the original directly. For example,
-  `qpdk/cells/capacitor.py` does `from qpdk.cells.waveguides import straight`, so overriding `straight` leaves the
-  capacitor using the upstream one.
+- **To override a cell**, define a function with the same name in a module that is star-imported **after** the QPDK one.
+  The last import wins. YAML netlists, `gf.get_component("name")`, and GDSFactory+ then use your version. QPDK cells
+  that import the original directly still use the original. For example, `qpdk/cells/capacitor.py` imports `straight`
+  directly, so it ignores your `straight`.
 
-  `@gf.cell` names a cell after its function name and arguments, so the override and the upstream function produce
-  different cells with the **same name**, and both can end up in one layout. Either override only cells that no other
-  cell imports, or give your version a new name (`acme_straight`) and change the callers in your fork. Pass the same
-  `tags=` as the upstream cell so the override is grouped the same way.
+  Your version and the original also produce different cells with the **same name**, and both can end up in one layout.
+  So only override cells that no other cell imports. Otherwise give your version a new name, such as `acme_straight`,
+  and update the callers. Use the same `tags=` as the original cell.
 
-- **Remove a cell you have no process for**: delete its star import or the function, then delete its tests (several
-  tests import cells directly) and its regression references.
+- **To remove a cell**, delete its import or its function. Then delete its tests and regression references. Several
+  tests import cells directly.
 
-Cells call each other through these direct imports, so check what depends on a cell before removing it, for example with
-`git grep -n "import.*\bjosephson_junction\b"`.
+Before you remove a cell, check which cells import it, for example with `git grep -n "import.*\bjosephson_junction\b"`.
 
-SAX models are matched to cells by name as well. `SAX_MODEL_ALIASES` in `qpdk/__init__.py` maps a few cells onto another
-cell's model. If you remove a model that an alias points to, `import qpdk` raises a `KeyError` when the models load. If
-you remove an aliased cell, delete its entry too.
+SAX models are also matched to cells by name. `SAX_MODEL_ALIASES` in `qpdk/__init__.py` lets some cells use another
+cell's model. If you remove a model that an alias points to, `import qpdk` fails with a `KeyError`. If you remove a cell
+that has an alias, remove the alias too.
 
 ## Pruning
 
-Several parts of the repository describe the generic process, not yours:
+These parts describe the generic QPDK process. Remove or replace them:
 
 - `qpdk/samples/` and the test chips imported at the top of `qpdk/cells/__init__.py`
-- `notebooks/`, and the docs pages that include them (`docs/notebooks.rst`, `docs/simulation.rst`)
+- `notebooks/` and the docs pages that include them (`docs/notebooks.rst`, `docs/simulation.rst`)
 - README sections such as the component list, sample chips, and simulation showcase
-- Regression references: `tests/gds_ref/*.gds`, `tests/test_pdk/*.yml`, and `tests/models/test_models_regression/*.npz`
+- Regression references in `tests/gds_ref/`, `tests/test_pdk/`, and `tests/models/test_models_regression/`
 
-After the process and cells are in place, regenerate the references and review the diff before you commit it:
+When your process and cells are ready, regenerate the references. Check the diff before you commit.
 
 ```bash
 just test-gds-force      # GDS, settings, and netlist references
-just test-models-force   # model references, if your stack changes model outputs
-just test                # everything should now pass
+just test-models-force   # model references, if your stack changes model results
+just test                # everything should pass now
 ```
 
 ## Staying current with upstream
 
-A fork that stops merging upstream stops getting model fixes, new cells, and tooling updates. After a year it cannot
-catch up without a rewrite. Most of the advice below is about keeping each merge small and predictable.
+A fork that stops merging QPDK stops getting model fixes, new cells, and tool updates. After a year it is very hard to
+catch up. So merge often and keep each merge small.
 
 ### Merge release tags, not `main`
 
-QPDK's `release.yml` creates a tag `v<version>` whenever the version in `pyproject.toml` changes on `main`. A tag is a
-coherent snapshot with a changelog, which makes it easier to reason about than a moving `main`. Merge every new tag, or
-at least monthly, so each merge stays small.
+QPDK creates a `v<version>` tag each time the version changes on `main`. A tag is a tested state with a changelog. Merge
+each new tag, or at least one tag per month.
 
-Your fork's `main` is a chain of your own work with one merge per upstream tag:
+Your `main` is your own work plus one merge for each QPDK tag:
 
 ```{mermaid}
 :alt: The fork starts from an upstream tag, adds its own commits, and merges each later tag via a sync pull request.
@@ -215,88 +203,81 @@ flowchart LR
     U3 -->|sync PR| M2
 ```
 
-Before merging, see what came in and how far you have diverged:
+Before you merge, check what is new and how far you have diverged:
 
 ```bash
 git fetch upstream
 git for-each-ref --sort=-v:refname --count=1 --format='%(refname:short)' 'refs/tags/upstream/v*'  # latest tag
 git log --oneline upstream/v0.4.0..upstream/v0.4.1   # what the new tag adds
-git log --oneline upstream/v0.4.1..main              # what your fork carries on top
-git diff --stat upstream/v0.4.1 main                 # where you differ, file by file
+git log --oneline upstream/v0.4.1..main              # what your fork adds
+git diff --stat upstream/v0.4.1 main                 # files that differ
 ```
 
-Read the release notes and [changelog](changelog.md) for the tags you are skipping over, especially for renamed cells or
-changed defaults.
+Read the release notes and the [changelog](changelog.md) for every tag since your last merge, including tags you skip.
+Look for renamed cells and changed defaults.
 
 (ownership-map)=
 
 ### Ownership map
 
-Every path is owned by one side. This table tells you what will conflict and how to resolve it.
+Each path belongs to your fork, to QPDK, or to both. The table shows what to do when it conflicts.
 
-| Path                                                   | Owner    | On merge                                         |
-| ------------------------------------------------------ | -------- | ------------------------------------------------ |
-| [Identity files](#identity-rename), version            | Fork     | Keep your names; take upstream's other changes   |
-| `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork     | Keep yours; add wanted upstream layers, regen    |
-| `qpdk/tech.py`                                         | Shared   | Keep your values; take new upstream definitions  |
-| `qpdk/models/` (except datasets)                       | Upstream | Take upstream                                    |
-| `qpdk/models/datasets/data/`                           | Upstream | Take upstream unless you regenerated it          |
-| Upstream modules in `qpdk/cells/`                      | Upstream | Merge; new upstream cells usually apply cleanly  |
-| Fork cell and override modules, fork test chips        | Fork     | Upstream never touches them                      |
-| `qpdk/samples/`, `notebooks/`                          | Depends  | Keep pruned files pruned; take upstream for rest |
-| `tests/gds_ref/`, `tests/test_pdk/`, model `.npz` refs | Fork     | Never merge; keep yours, then regenerate         |
-| Other tests, `justfile`, `*.just`                      | Upstream | Take upstream                                    |
-| `docs/conf.py`, `docs/index.md`, `README.md`           | Shared   | Keep identity lines; take structural changes     |
-| `.github/workflows/`, `.pre-commit-config.yaml`        | Upstream | Take upstream, reapply identity lines            |
-| `uv.lock`                                              | Upstream | Take upstream, then `uv lock` to match yours     |
+| Path                                                   | Owner | On merge                                         |
+| ------------------------------------------------------ | ----- | ------------------------------------------------ |
+| [Identity files](#identity-rename), version            | Fork  | Keep your names. Take the other QPDK changes     |
+| `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork  | Keep yours. Add QPDK layers you want, regenerate |
+| `qpdk/tech.py`                                         | Both  | Keep your values. Take new QPDK definitions      |
+| `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
+| `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
+| QPDK modules in `qpdk/cells/`                          | QPDK  | Merge. New QPDK cells usually merge cleanly      |
+| Your cell modules, override modules, and test chips    | Fork  | QPDK never changes them                          |
+| `qpdk/samples/`, `notebooks/`                          | Both  | Keep removed files removed. Take QPDK for others |
+| `tests/gds_ref/`, `tests/test_pdk/`, model `.npz` refs | Fork  | Never merge. Keep yours, then regenerate         |
+| Other tests, `justfile`, `*.just`                      | QPDK  | Take QPDK                                        |
+| `docs/conf.py`, `docs/index.md`, `README.md`           | Both  | Keep your names. Take structure changes          |
+| `.github/workflows/`, `.pre-commit-config.yaml`        | QPDK  | Take QPDK, then rename again                     |
+| `uv.lock`                                              | QPDK  | Take QPDK, then run `uv lock`                    |
 
-### Keep your edits out of upstream files
+### Add files, do not edit QPDK files
 
-Every line you edit in an upstream-owned file is a conflict you may have to resolve again on every future merge. Prefer
-adding files:
+Each line you change in a QPDK file can conflict again on every later merge. Add new files instead:
 
-- To change a cell, write a fork module that defines a cell with the same name and star-import it last (see
-  [Cell library](#cell-library)). Do not edit `qpdk/cells/transmon.py` in place.
-- To add cross-sections, put them in a fork module and register them in `get_pdk()`, for example
-  `cross_sections={**get_cross_sections(tech), **get_cross_sections(my_tech)}`, rather than adding them inside
-  `qpdk/tech.py`.
-- To add tests, add new test files instead of extending upstream ones.
+- To change a cell, override it in your own module (see [Cell library](#cell-library)). Do not edit
+  `qpdk/cells/transmon.py`.
+- To add cross-sections, define them in your own module and register them in `get_pdk()`, for example
+  `cross_sections={**get_cross_sections(tech), **get_cross_sections(my_tech)}`.
+- To add tests, add new test files. Do not extend the QPDK ones.
 
 (resolving-conflicts)=
 
 ### Resolving conflicts
 
-Do the merge on a branch, so the result is reviewed and CI-tested like any other change:
+Merge on a branch, so the result gets a review and CI like any other change:
 
 ```bash
 git switch -c sync/upstream-v0.4.1 main
 git merge upstream/v0.4.1
 ```
 
-During the merge, `--ours` is your fork and `--theirs` is upstream. Handle conflicts by file class:
+In a merge, `--ours` is your fork and `--theirs` is QPDK. Resolve conflicts by file type:
 
-- **Identity and version files**: resolve by hand. In each conflict, keep your names and version and take everything
-  else from upstream's side. Do not `git checkout --ours` the whole file: files such as `pyproject.toml` also carry
-  upstream's dependency and tooling changes, and that would drop them. Then check whether upstream added a new identity
-  line you also need to rename.
-- **`qpdk/tech.py` and `qpdk/layers.yaml`**: resolve by hand. Keep your process values and take upstream's additions. If
-  the layers changed, rerun `uv run python qpdk/tech.py`.
-- **Cells and models**: merge normally.
-- **Regression references** (`tests/gds_ref/*.gds`, `tests/test_pdk/*.yml`, `.npz`): do not resolve them by hand.
-  `*.gds` is marked `binary` in `.gitattributes`, so any file both sides changed is a hard conflict. Keep yours
-  (`git checkout --ours -- <path>`, then `git add` it), finish the merge, then regenerate with `just test-gds-force`
-  (and `just test-models-force` if models changed). Commit the regenerated references separately and review that diff on
-  its own.
-- **Other Git LFS files** (`tests/models/data/*.csv`, `qpdk/models/datasets/data/**/*.parquet`, and
-  `notebooks/data/jax_backend_comparison/*.parquet`): `.gitattributes` sets `merge=lfs`, but Git LFS does not define a
-  merge driver by that name, so Git falls back to a text merge of the pointer files. If both sides changed a file, the
-  conflict markers appear inside the LFS pointer. Never edit them; pick one side with `git checkout --theirs -- <path>`
-  (upstream, the usual choice for these datasets unless you regenerated them) or `--ours`, then `git add` it. The `.npz`
-  model references are LFS files too, but they are regression references: keep yours and regenerate them as above, never
-  take upstream's.
+- **Identity and version files.** Resolve by hand. Keep your names and version, and take all other QPDK changes. Do not
+  use `git checkout --ours` on the whole file. Files such as `pyproject.toml` also contain QPDK dependency updates, and
+  you would lose them. Then check if QPDK added a new line with its name that you must rename.
+- **`qpdk/tech.py` and `qpdk/layers.yaml`.** Resolve by hand. Keep your process values and take the QPDK additions. If
+  the layers changed, run `uv run python qpdk/tech.py` again.
+- **Cells and models.** Merge as usual.
+- **Regression references** (`tests/gds_ref/*.gds`, `tests/test_pdk/*.yml`, `.npz`). Do not merge them by hand. Keep
+  yours with `git checkout --ours -- <path>` and `git add <path>`. After the merge, regenerate them with
+  `just test-gds-force`, and with `just test-models-force` if models changed. Commit them separately so the diff is easy
+  to review.
+- **Other Git LFS files** (`tests/models/data/*.csv` and the `.parquet` datasets). Git merges the LFS pointer files as
+  text, so a conflict puts markers inside the pointer. Never edit the pointer. Pick one side and run `git add <path>`.
+  Usually take QPDK with `git checkout --theirs -- <path>`. Take `--ours` only if you regenerated the data. The `.npz`
+  files are also in LFS, but they are regression references. Always keep yours.
 
 ```{mermaid}
-:alt: Conflicts are resolved by file class, as listed above, and every merge ends with just test and just run-pre.
+:alt: Conflicts are resolved by file type, as listed above, and every merge ends with just test and just run-pre.
 flowchart LR
     S["Conflicted<br/>path"] --> I["Identity,<br/>version"] --> A1["Keep your names,<br/>take the rest"]
     S --> P["tech.py,<br/>layers.yaml"] --> A2["Merge by hand,<br/>regen KLayout"]
@@ -306,50 +287,45 @@ flowchart LR
     A1 & A2 & A3 & A4 & A5 --> T["just test,<br/>just run-pre"]
 ```
 
-Then run `just test` and `just run-pre`, and open a pull request for the merge.
+Then run `just test` and `just run-pre`, and open a pull request for the merge. Merge it with a merge commit. Never
+squash or rebase it, or the next merge conflicts on everything again.
 
 ### Taking a single change
 
-To take one upstream fix without merging a whole tag, cherry-pick it (`-x` records where it came from):
+To take one QPDK fix without a full merge, cherry-pick it. The `-x` flag records where it came from.
 
 ```bash
 git cherry-pick -x <commit>
 ```
 
-To reset one file to upstream's version, for example a model you never meant to diverge:
+To reset one file to the QPDK version:
 
 ```bash
 git checkout upstream/v0.4.1 -- qpdk/models/cpw.py
 ```
 
-The next tag merge sees the same content on both sides, so neither of these causes a conflict later.
+Neither of these causes a conflict at the next merge.
 
-### Contribute generic fixes back
+### Send generic fixes to QPDK
 
-If you fix a bug in a model or write a cell that would work in any process, open a pull request to QPDK first and let it
-reach your fork with the next tag merge. Each fix carried only in your fork is a difference you have to maintain
-forever. See the [contributing guide](contributing.md).
+If you fix a model bug or write a cell that works in any process, open a pull request to QPDK. You then get it back with
+the next merge and do not have to maintain it yourself. See the [contributing guide](contributing.md).
 
 ### Optional: automated sync pull requests
 
-A scheduled CI job can do the bookkeeping. It pushes the latest upstream tag to a `sync/upstream` branch and opens a
-pull (or merge) request from it, so you review a diff instead of starting a merge by hand. The examples below are for
-GitHub Actions, GitLab CI, and Forgejo Actions. All three skip the run when your `main` already contains the tag, or
-when `sync/upstream` already does, so a resolved merge you pushed there is kept until a newer upstream tag replaces it.
+A scheduled CI job can prepare each merge for you. It pushes the latest QPDK tag to a `sync/upstream` branch and opens a
+pull request from it. Below are examples for GitHub Actions, GitLab CI, and Forgejo Actions. The job does nothing if
+`main` or `sync/upstream` already contains the tag.
 
-If the merge conflicts, the pull request shows it. Resolve it locally on a branch as described in
-[Resolving conflicts](#resolving-conflicts), then push the result to the sync branch so the open pull request picks it
-up:
+If the pull request has conflicts, resolve them locally as in [Resolving conflicts](#resolving-conflicts). Then push the
+result to the sync branch. The open pull request updates.
 
 ```bash
 git push origin HEAD:sync/upstream
 ```
 
-The merge commit has the upstream tag as a parent, so this is a fast-forward of `sync/upstream`. Merge the pull request
-before the next upstream tag: the next run force-pushes that tag over the branch.
-
-Merge these pull requests with a merge commit, never squash or rebase. A squash discards the link to upstream history,
-and the next sync then conflicts on everything again.
+Merge that pull request before the next QPDK tag. The next run force-pushes the new tag to `sync/upstream` and replaces
+your resolution. Merge the sync pull request with a merge commit. Never squash or rebase it.
 
 #### GitHub Actions
 
@@ -396,16 +372,14 @@ jobs:
           fi
 ```
 
-`SYNC_TOKEN` must be a personal access token or GitHub App token, not the default `GITHUB_TOKEN`, for two reasons:
-GitHub rejects `GITHUB_TOKEN` pushes that add or change files under `.github/workflows/`, and upstream releases usually
-do, and pull requests opened with `GITHUB_TOKEN` do not trigger your CI. A fine-grained token needs contents, pull
-requests, and workflows write access on the fork. Pin the action to a commit SHA, as QPDK's own workflows do.
-`.github/workflows/test-gfp-upstream.yml` uses the same scheduled-check pattern to test against the latest GDSFactory+
-release.
+Use a personal access token or GitHub App token as `SYNC_TOKEN`, not `GITHUB_TOKEN`. GitHub rejects `GITHUB_TOKEN`
+pushes that change `.github/workflows/`, and QPDK releases often do. Also, pull requests opened with `GITHUB_TOKEN` do
+not start your CI. A fine-grained token needs write access to contents, pull requests, and workflows. Pin the action to
+a commit SHA, as QPDK does.
 
 #### GitLab CI
 
-Add this job to `.gitlab-ci.yml`, and create a pipeline schedule for `main` under **Build > Pipeline schedules**:
+Add this job to `.gitlab-ci.yml`. Then create a pipeline schedule for `main` in **Build > Pipeline schedules**.
 
 ```yaml
 sync-upstream:
@@ -433,14 +407,14 @@ sync-upstream:
       "$remote" "$tag^{commit}:refs/heads/sync/upstream"
 ```
 
-The `merge_request.*` push options open the merge request on the first push; later pushes update the open one. Store a
-project access token with the `write_repository` scope as the masked CI/CD variable `SYNC_TOKEN`; by default
-`CI_JOB_TOKEN` cannot push.
+The `merge_request.*` push options open a merge request on the first push and update it later. Store a project access
+token with the `write_repository` scope as the masked CI/CD variable `SYNC_TOKEN`. By default `CI_JOB_TOKEN` cannot
+push.
 
 #### Forgejo Actions
 
-Save this as `.forgejo/workflows/sync-upstream.yml`. Set `runs-on` to a label your runner provides; the job needs `git`
-and `curl` in its image.
+Save this as `.forgejo/workflows/sync-upstream.yml`. Set `runs-on` to a label of your runner. The image needs `git` and
+`curl`.
 
 ```yaml
 on:
@@ -480,15 +454,15 @@ jobs:
           [ "$code" = 201 ] || [ "$code" = 409 ]
 ```
 
-`SYNC_TOKEN` is an access token with read and write access to the repository, stored as an Actions secret. Use it rather
-than the automatic token, which may not be allowed to trigger CI on the pull request the job opens.
+Store an access token with write access to the repository as the Actions secret `SYNC_TOKEN`. The automatic token may
+not start CI on the pull request.
 
 ## Your first merge
 
-Once your fork has its identity and process commits, you can do a complete first sync:
+After your identity and process commits:
 
-1. Configure the `upstream` remote with namespaced tags ([Setting up the fork](#setting-up-the-fork)).
+1. Set up the `upstream` remote ([Setting up the fork](#setting-up-the-fork)).
 1. Write down which paths you own, starting from the [ownership map](#ownership-map).
-1. Find the latest `upstream/v*` tag, and check `git diff --stat <tag> main` for surprises.
-1. Merge it on a branch and resolve conflicts by file class.
-1. Run `just test-gds-force` and `just test`, commit the regenerated references separately, and open a pull request.
+1. Find the latest `upstream/v*` tag and look at `git diff --stat <tag> main`.
+1. Merge it on a branch and resolve conflicts by file type.
+1. Run `just test-gds-force` and `just test`, commit the new references separately, and open a pull request.
