@@ -1,0 +1,13 @@
+# Notebooks published with the outputs of a real solver run instead of being
+# executed at docs build time. One notebook name per line, without the .ipynb
+# extension; blank lines and lines starting with # are ignored.
+#
+# docs/docs.just copies the .ipynb instead of the jupytext source for these,
+# and docs/conf.py turns them into nb_execution_excludepatterns.
+hfss_q2d_cpw_impedance
+hfss_eigenmode_resonator
+hfss_driven_capacitor
+comsol_cpw_resonator
+comsol_qubit_capacitance
+elmer_capacitance_interdigital
+matlab_integration

@@ -14,8 +14,9 @@ files at `notebooks/` are produced by `just convert-notebooks` (via the `convert
   `check-notebook-sources` hook also fails on an `.ipynb` with no source file.
 - A new notebook source that is not added to `docs/notebooks.rst`. That page describes each notebook and groups it by
   simulation approach; adding or removing a notebook requires updating it.
-- A notebook needing external tooling (Elmer, HFSS, MATLAB) that is not listed in `nb_execution_excludepatterns` in
-  `docs/conf.py` — the docs build will try to execute it and fail.
+- A notebook needing external tooling (Elmer, HFSS, MATLAB) that is not listed in `docs/precalculated_notebooks.txt` —
+  that file feeds `nb_execution_excludepatterns` in `docs/conf.py`, so an unlisted one gets executed by the docs build
+  and fails.
 - A missing first code cell with the Google Colab install snippet tagged `tags=["hide-input", "hide-output"]`, so the
   notebook runs online without cluttering the rendered docs.
 - A notebook source without a [PEP 723](https://peps.python.org/pep-0723/) inline script metadata cell directly after

@@ -196,11 +196,16 @@ nb_execution_mode = "cache"
 # inside the HTML one) hits the cache filled by the HTML pass.
 nb_execution_cache_path = str(Path(__file__).parent / "_build" / ".jupyter_cache")
 # External-solver notebooks keep saved outputs; the docs build does not run them.
+# docs.just reads the same list to copy the .ipynb instead of the source.
+_precalculated_notebooks = [
+    line.strip()
+    for line in (Path(__file__).parent / "precalculated_notebooks.txt")
+    .read_text(encoding="utf-8")
+    .splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+]
 nb_execution_excludepatterns = [
-    "notebooks/comsol*",
-    "notebooks/hfss*",
-    "notebooks/elmer*",
-    "notebooks/matlab_integration*",
+    f"notebooks/{name}*" for name in _precalculated_notebooks
 ]
 nb_execution_timeout = -1
 nb_execution_allow_errors = False
