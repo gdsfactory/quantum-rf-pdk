@@ -35,6 +35,21 @@ top of it, depend on `qpdk` and merge its registries into your own `Pdk` (for ex
 `cells={**qpdk.PDK.cells, **my_cells}`). You never have to merge anything, and you upgrade by bumping a version. The
 project-template work in [#376](https://github.com/gdsfactory/quantum-rf-pdk/issues/376) covers this path.
 
+````{only} html
+```{mermaid}
+flowchart TD
+    Q1{"Change layers, layer stack,<br>or materials?"} -->|Yes| F["Fork: own the process,<br>merge upstream release tags"]
+    Q1 -->|No| Q2{"Only adding cells,<br>samples, or chips?"}
+    Q2 -->|Yes| C["Compose: depend on qpdk,<br>extend its registries"]
+    Q2 -->|"No, changing upstream behaviour"| F
+```
+````
+
+```{only} typst or typstpdf
+If you change the layers, layer stack, or materials, fork. If you only add cells, samples,
+or chips, compose. If you change upstream behaviour, fork.
+```
+
 The rest of this page assumes a fork.
 
 (setting-up-the-fork)=
@@ -196,6 +211,30 @@ QPDK's `release.yml` creates a tag `v<version>` whenever the version in `pyproje
 coherent snapshot with a changelog, which makes it easier to reason about than a moving `main`. Merge every new tag, or
 at least monthly, so each merge stays small.
 
+Your fork's `main` is a chain of your own work with one merge per upstream tag:
+
+````{only} html
+```{mermaid}
+flowchart TB
+    subgraph UP["upstream: gdsfactory/quantum-rf-pdk"]
+        direction LR
+        U1["v0.4.0"] --> U2["v0.4.1"] --> U3["v0.5.0"]
+    end
+    subgraph FK["origin: your fork's main"]
+        direction LR
+        F1["Identity rename,<br>process, pruning"] --> M1["Merge<br>upstream/v0.4.1"] --> F4["Your<br>changes"] --> M2["Merge<br>upstream/v0.5.0"]
+    end
+    U1 -->|fork| F1
+    U2 -->|"sync PR"| M1
+    U3 -->|"sync PR"| M2
+```
+````
+
+```{only} typst or typstpdf
+Your fork starts from an upstream tag, adds the identity rename, process replacement, and
+pruning commits, and then takes one merge commit per later upstream tag, each through its own sync pull request.
+```
+
 Before merging, see what came in and how far you have diverged:
 
 ```bash
@@ -269,6 +308,19 @@ During the merge, `--ours` is your fork and `--theirs` is upstream. Handle confl
   text merge of the pointer files. If both sides changed a file, the conflict markers appear inside the LFS pointer.
   Never edit them; pick one side with `git checkout --theirs -- <path>` (upstream, the usual choice unless you changed
   that model) or `--ours`, then `git add` it.
+
+````{only} html
+```{mermaid}
+flowchart TD
+    S["Conflicted path"] --> K{"File class?"}
+    K -->|"Identity, version"| A1["Keep ours, then rename any<br>new upstream identity lines"]
+    K -->|"tech.py, layers.yaml"| A2["Resolve by hand,<br>regenerate KLayout files"]
+    K -->|"Cells, models"| A3["Merge normally"]
+    K -->|"Regression references"| A4["Keep ours, regenerate after<br>the merge, commit separately"]
+    K -->|"Other Git LFS files"| A5["Take one side whole,<br>never edit the pointer"]
+    A1 & A2 & A3 & A4 & A5 --> T["just test, just run-pre,<br>open the merge PR"]
+```
+````
 
 Then run `just test` and `just run-pre`, and open a pull request for the merge.
 
