@@ -11,7 +11,7 @@ import shutil
 import threading
 import time
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from pathlib import Path
 from typing import Any
 

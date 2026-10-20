@@ -82,6 +82,8 @@ import gdsfactory as gf
 import matplotlib.pyplot as plt
 import numpy as np
 from ansys.aedt.core import Hfss, Q3d, settings
+from ansys.aedt.core.modules.solve_setup import SetupHFSS
+from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
 from gplugins.ansys import HFSS, Q3D, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 
@@ -283,7 +285,7 @@ fit_view(hfss)
 img_dir = PATH.repo / "docs" / "_static" / "images"
 img_dir.mkdir(parents=True, exist_ok=True)
 hfss_img_path = img_dir / "hfss_driven_capacitor_geom.jpg"
-hfss.post.export_model_picture(
+cast(PostProcessor3D, hfss.post).export_model_picture(
     full_name=str(hfss_img_path), show_axis=True, show_grid=False, show_ruler=True
 )
 
@@ -314,9 +316,13 @@ for port in prepared_component.ports:
 
 # %%
 # Create driven modal setup
-setup = hfss.create_setup(
-    name="DrivenSetup",
-    Frequency=f"{HFSS_CONFIG['solution_frequency_ghz']}GHz",
+# `create_setup` is typed as returning either setup class; a driven modal one is a SetupHFSS.
+setup = cast(
+    SetupHFSS,
+    hfss.create_setup(
+        name="DrivenSetup",
+        Frequency=f"{HFSS_CONFIG['solution_frequency_ghz']}GHz",
+    ),
 )
 
 setup.props["MaxDeltaS"] = HFSS_CONFIG["max_delta_s"]
@@ -334,6 +340,8 @@ sweep = setup.create_frequency_sweep(
     sweep_type="Interpolating",
     num_of_freq_points=HFSS_CONFIG["sweep_points"],
 )
+if isinstance(sweep, bool):
+    raise TypeError(f"AEDT returned {sweep!r} instead of a frequency sweep")
 
 print("Driven modal setup configured:")
 print(f"  - Solution frequency: {HFSS_CONFIG['solution_frequency_ghz']} GHz")
@@ -431,7 +439,7 @@ plot = cast(PostProcessor3D, hfss.post).create_fieldplot_surface(
 # Export the field plot picture
 hfss_field_img_path = img_dir / "hfss_driven_capacitor_field.jpg"
 if plot:
-    hfss.post.export_model_picture(
+    cast(PostProcessor3D, hfss.post).export_model_picture(
         full_name=str(hfss_field_img_path),
         show_axis=True,
         show_grid=False,
@@ -471,6 +479,9 @@ display(Image(filename=str(hfss_field_img_path)))
 solution_y = hfss.post.get_solution_data(
     expressions="Y(o2:1,o1:1)", setup_sweep_name=f"{setup.name} : {sweep.name}"
 )
+
+if isinstance(solution_y, bool):
+    raise TypeError(f"AEDT returned {solution_y!r} instead of the Y(o2:1,o1:1) data")
 
 # Parse complex Y-parameters
 _, y_real = solution_y.get_expression_data(formula="real")
@@ -615,7 +626,7 @@ fit_view(q3d)
 img_dir = PATH.repo / "docs" / "_static" / "images"
 img_dir.mkdir(parents=True, exist_ok=True)
 q3d_img_path = img_dir / "q3d_driven_capacitor_geom.jpg"
-q3d.post.export_model_picture(
+cast(PostProcessor3D, q3d.post).export_model_picture(
     full_name=str(q3d_img_path), show_axis=True, show_grid=False, show_ruler=True
 )
 

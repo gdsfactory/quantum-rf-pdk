@@ -253,7 +253,7 @@ fit_view(hfss)
 img_dir = PATH.repo / "docs" / "_static" / "images"
 img_dir.mkdir(parents=True, exist_ok=True)
 hfss_img_path = img_dir / "hfss_eigenmode_resonator_geom.jpg"
-hfss.post.export_model_picture(
+cast(PostProcessor3D, hfss.post).export_model_picture(
     full_name=str(hfss_img_path), show_axis=True, show_grid=False, show_ruler=True
 )
 
@@ -364,7 +364,7 @@ plot = cast(PostProcessor3D, hfss.post).create_fieldplot_surface(
 # Export the field plot picture
 hfss_field_img_path = img_dir / "hfss_eigenmode_resonator_field.jpg"
 if plot:
-    hfss.post.export_model_picture(
+    cast(PostProcessor3D, hfss.post).export_model_picture(
         full_name=str(hfss_field_img_path),
         show_axis=True,
         show_grid=False,

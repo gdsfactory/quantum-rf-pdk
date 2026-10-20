@@ -81,10 +81,12 @@ import os
 import tempfile
 import time
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
 from ansys.aedt.core import Q2d, settings
+from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
 from gplugins.ansys import Q2D, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 
@@ -195,7 +197,7 @@ fit_view(q2d)
 img_dir = PATH.repo / "docs" / "_static" / "images"
 img_dir.mkdir(parents=True, exist_ok=True)
 q2d_img_path = img_dir / "q2d_cpw_impedance_geom.jpg"
-q2d.post.export_model_picture(
+cast(PostProcessor3D, q2d.post).export_model_picture(
     full_name=str(q2d_img_path), show_axis=True, show_grid=False, show_ruler=True
 )
 
@@ -263,6 +265,8 @@ data = q2d.post.get_solution_data(
     context="Original",
     setup_sweep_name="Q2DSetup : FrequencySweep",
 )
+if isinstance(data, bool):
+    raise TypeError(f"AEDT returned {data!r} instead of the Z0(signal,signal) data")
 
 frequencies_ghz = np.array(data.primary_sweep_values)
 _, z0_real = data.get_expression_data(formula="real")
