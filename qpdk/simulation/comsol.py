@@ -1,20 +1,39 @@
-"""Extract a QPDK component into COMSOL-ready metal polygons and ports.
+"""QPDK-specific inputs for the COMSOL models of :mod:`gplugins.comsol`.
 
-The generic extraction lives in :mod:`gplugins.comsol.layout`, which reads
-positive metal from one layer. This module adds what QPDK needs on top: it
-validates the M1_ETCH mask, inverts it into physical M1_DRAW metal with the
-neutral :func:`~qpdk.simulation.layout.prepare_metal_layout`, and only then
-hands the prepared metal to :func:`gplugins.comsol.layout.prepare_comsol_layout`.
-No COMSOL or MPh imports live here.
+The COMSOL geometry builders, studies, mesh, plotting, and result helpers, and
+the chainable :class:`gplugins.comsol.COMSOL` model live in
+:mod:`gplugins.comsol`; use them from there. This module holds only what depends
+on the QPDK technology:
 
-The negative-mask trick folds the additive metal into the etch layer, then
-inverts the mask around the component bounding box and applies the ground
-margin. The result exchanged here has positive M1_DRAW metal, no etch layers,
-and the original ports re-added.
+- :func:`prepare_comsol_layout` validates the M1_ETCH mask, inverts it into
+  physical M1_DRAW metal with a ground margin, rejects layers the extraction
+  would silently drop, and defaults to the ``coupling_o1``/``coupling_o2``
+  feeds, before handing the metal to
+  :func:`gplugins.comsol.layout.prepare_comsol_layout`.
+- :data:`SILICON_RELATIVE_PERMITTIVITY` and :data:`AIR_RELATIVE_PERMITTIVITY`
+  are the QPDK technology permittivities. The gplugins builders default to
+  their own values, so pass these explicitly.
 
-Optionally the prepared metal can be cropped at the two feed-port planes so a
-component whose CPW conductors and both etch-gap strips reach those planes ends
-in open CPW cross sections instead of solid ground.
+Note:
+    Needs the optional ``comsol`` extra (``uv sync --extra comsol``), which
+    installs ``gplugins[comsol]``. Building and solving models also needs a
+    local COMSOL installation.
+
+Example:
+    >>> from gplugins.comsol import COMSOL
+    >>> from qpdk.simulation.comsol import (
+    ...     AIR_RELATIVE_PERMITTIVITY,
+    ...     SILICON_RELATIVE_PERMITTIVITY,
+    ...     prepare_comsol_layout,
+    ... )
+    >>> layout = prepare_comsol_layout(component)
+    >>> model = COMSOL.create_sheet(
+    ...     client,
+    ...     layout,
+    ...     "resonator",
+    ...     silicon_relative_permittivity=SILICON_RELATIVE_PERMITTIVITY,
+    ...     air_relative_permittivity=AIR_RELATIVE_PERMITTIVITY,
+    ... )
 """
 
 from __future__ import annotations
@@ -23,37 +42,31 @@ import math
 import uuid
 from typing import TYPE_CHECKING
 
-from qpdk.simulation.comsol._gplugins import import_gplugins_comsol, reexport
+from gplugins.comsol import layout as gplugins_layout
+
 from qpdk.simulation.layout import prepare_metal_layout
-from qpdk.tech import LAYER, NON_METADATA_LAYERS
+from qpdk.tech import LAYER, NON_METADATA_LAYERS, get_layer_material_properties
 
 if TYPE_CHECKING:
-    from types import ModuleType
-
     from gdsfactory.component import Component
-    from gplugins.comsol.layout import (
-        ComsolBoundingBox,
-        ComsolFeedPort,
-        ComsolLayout,
-        ComsolPolygon,
-        CropPlanes,
-        Point,
-    )
+    from gplugins.comsol.layout import ComsolFeedPort, ComsolLayout, CropPlanes
 
 __all__ = [
-    "ComsolBoundingBox",
-    "ComsolFeedPort",
-    "ComsolLayout",
-    "ComsolPolygon",
-    "Point",
+    "AIR_RELATIVE_PERMITTIVITY",
+    "SILICON_RELATIVE_PERMITTIVITY",
     "prepare_comsol_layout",
 ]
 
-__getattr__ = reexport(
-    __name__,
-    "layout",
-    ["ComsolBoundingBox", "ComsolFeedPort", "ComsolLayout", "ComsolPolygon", "Point"],
-)
+#: Relative permittivity of the silicon substrate, from the material of the
+#: QPDK layer stack's substrate level.
+SILICON_RELATIVE_PERMITTIVITY: float = get_layer_material_properties("Substrate")[
+    "relative_permittivity"
+]
+#: Relative permittivity of the air above the chip, from the material of the
+#: QPDK layer stack's vacuum level.
+AIR_RELATIVE_PERMITTIVITY: float = get_layer_material_properties("Vacuum")[
+    "relative_permittivity"
+]
 
 #: Input layers that the extraction understands. Everything else in
 #: :data:`~qpdk.tech.NON_METADATA_LAYERS` is rejected rather than dropped.
@@ -71,6 +84,11 @@ def prepare_comsol_layout(
     crop_to_feed_ports: bool = False,
 ) -> ComsolLayout:
     """Extract M1_DRAW metal polygons and optional feed ports from a component.
+
+    The M1_ETCH mask is inverted into positive M1_DRAW metal around the
+    component bounding box grown by ``ground_margin``, with
+    :func:`~qpdk.simulation.layout.prepare_metal_layout`, and the result is
+    extracted with :func:`gplugins.comsol.layout.prepare_comsol_layout`.
 
     Args:
         component: The gdsfactory component to extract. It must contain an
@@ -95,9 +113,9 @@ def prepare_comsol_layout(
             Defaults to ``False``, which leaves the prepared ground untouched.
 
     Returns:
-        A :class:`ComsolLayout` with metal polygons (holes preserved), the
-        selected feed ports (empty when ``feed_ports`` is ``None``), and the
-        prepared bounding box, all in µm.
+        A :class:`gplugins.comsol.layout.ComsolLayout` with metal polygons
+        (holes preserved), the selected feed ports (empty when ``feed_ports``
+        is ``None``), and the prepared bounding box, all in µm.
 
     Raises:
         ValueError: If ``ground_margin`` is not positive and finite, if
@@ -108,7 +126,6 @@ def prepare_comsol_layout(
             if ``crop_to_feed_ports`` is set but the feeds are not a valid
             opposite pair or the component does not fit between the planes.
     """
-    gplugins_layout = import_gplugins_comsol("layout")
     if not math.isfinite(ground_margin) or ground_margin <= 0.0:
         raise ValueError(
             f"ground_margin must be positive and finite, got {ground_margin!r}"
@@ -144,7 +161,7 @@ def prepare_comsol_layout(
         )
     if planes is not None:
         # Checked on the drawn mask: after inversion the ground spans the margin.
-        _validate_crop_containment(gplugins_layout, component, planes)
+        _validate_crop_containment(component, planes)
 
     prepared = prepare_metal_layout(
         component,
@@ -159,9 +176,7 @@ def prepare_comsol_layout(
     )
 
 
-def _validate_crop_containment(
-    gplugins_layout: ModuleType, component: Component, planes: CropPlanes
-) -> None:
+def _validate_crop_containment(component: Component, planes: CropPlanes) -> None:
     """Check the input mask fits between the crop planes, naming QPDK layers.
 
     :func:`gplugins.comsol.layout.validate_crop_containment` reports a layer

@@ -29,37 +29,21 @@ uses gsim's electrostatic APIs and writes a self-describing dataset for lookup.
 
 **COMSOL workflow:**
 
-The generic COMSOL code lives in :mod:`gplugins.comsol`.
-:mod:`qpdk.simulation.comsol` wraps it with the QPDK specifics: mask inversion
-and feed-port defaults for the layout, and the technology permittivities for
-the sheet model. The study, mesh, plotting, and result helpers are re-exported
-unchanged.
+The COMSOL models come from :mod:`gplugins.comsol`; import them from there.
+:mod:`qpdk.simulation.comsol` adds only the QPDK-specific inputs:
 
 1. Extract metal polygons and optional feed ports with
-   :func:`~qpdk.simulation.comsol.layout.prepare_comsol_layout`
-2. Build a 3D air/silicon model with sheet metal via
-   :func:`~qpdk.simulation.comsol.sheet.build_comsol_sheet_model`
-3. Add a CPW RF or qubit electrostatic study with
-   :func:`~qpdk.simulation.comsol.rf.add_cpw_rf_study` or
-   :func:`~qpdk.simulation.comsol.capacitance.add_capacitance_study`
-4. Mesh it, optionally refined at the metal plane, with
-   :func:`~qpdk.simulation.comsol.mesh.refine_metal_plane_mesh`, or with
-   absolute sizes at the metal via
-   :func:`~qpdk.simulation.comsol.mesh.pin_absolute_mesh_sizes`
-
-The steps above are also available as one chainable class:
-:class:`~qpdk.simulation.comsol.model.COMSOL` builds a model through
-:meth:`~qpdk.simulation.comsol.model.COMSOL.create_sheet` or
-:meth:`~qpdk.simulation.comsol.model.COMSOL.create_metal`, holds the layout, and
-offers a method per study and mesh helper, so neither the model nor the layout
-has to be passed again. Solving, saving, and evaluating are MPh's own methods.
+   :func:`qpdk.simulation.comsol.prepare_comsol_layout`
+2. Build a model with :class:`gplugins.comsol.COMSOL`, passing
+   :data:`~qpdk.simulation.comsol.SILICON_RELATIVE_PERMITTIVITY` and
+   :data:`~qpdk.simulation.comsol.AIR_RELATIVE_PERMITTIVITY` for the sheet
+   dielectrics, then add a study and mesh it with its methods
 
 Note:
-    The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL builders
-    require ``uv sync --extra comsol`` and a local COMSOL installation. Only
-    :class:`~qpdk.simulation.comsol.model.COMSOL` imports MPh, and it is
-    exposed lazily, so the layout and helper modules and this package stay
-    importable without it.
+    The AEDT wrappers require ``uv sync --extra hfss``. The COMSOL module
+    requires ``uv sync --extra comsol`` and, to build and solve models, a local
+    COMSOL installation. It is not imported by this package, so
+    :mod:`qpdk.simulation` stays importable without the extra.
 
     The VACASK netlist classes, runner and raw-file reader need only the base
     install and the external ``vacask`` binary. The model-conversion helpers,
@@ -105,14 +89,12 @@ import importlib
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from qpdk.simulation.comsol.model import COMSOL
     from qpdk.simulation.hfss import HFSS
     from qpdk.simulation.q3d import Q2D, Q3D
 
 # TODO(Python 3.15): `lazy from ... import` (PEP 810) - replaces _LAZY_IMPORTS, __getattr__,
 # __dir__, the TYPE_CHECKING block and the undefined-export ignore. Keep them lazy, not eager.
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
-    "COMSOL": ("qpdk.simulation.comsol.model", "COMSOL"),
     "AEDTBase": ("qpdk.simulation.aedt_base", "AEDTBase"),
     "add_materials_to_aedt": ("qpdk.simulation.aedt_base", "add_materials_to_aedt"),
     "detach_desktop_logging": ("qpdk.simulation.aedt_base", "detach_desktop_logging"),
@@ -136,39 +118,6 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     ),
     "Q2D": ("qpdk.simulation.q3d", "Q2D"),
     "Q3D": ("qpdk.simulation.q3d", "Q3D"),
-    "ComsolBoundingBox": ("qpdk.simulation.comsol.layout", "ComsolBoundingBox"),
-    "ComsolFeedPort": ("qpdk.simulation.comsol.layout", "ComsolFeedPort"),
-    "ComsolLayout": ("qpdk.simulation.comsol.layout", "ComsolLayout"),
-    "ComsolPolygon": ("qpdk.simulation.comsol.layout", "ComsolPolygon"),
-    "prepare_comsol_layout": (
-        "qpdk.simulation.comsol.layout",
-        "prepare_comsol_layout",
-    ),
-    "build_comsol_metal_model": (
-        "qpdk.simulation.comsol.metal",
-        "build_comsol_metal_model",
-    ),
-    "build_comsol_sheet_model": (
-        "qpdk.simulation.comsol.sheet",
-        "build_comsol_sheet_model",
-    ),
-    "add_cpw_rf_study": ("qpdk.simulation.comsol.rf", "add_cpw_rf_study"),
-    "add_capacitance_study": (
-        "qpdk.simulation.comsol.capacitance",
-        "add_capacitance_study",
-    ),
-    "pin_absolute_edge_mesh_sizes": (
-        "qpdk.simulation.comsol.mesh",
-        "pin_absolute_edge_mesh_sizes",
-    ),
-    "pin_absolute_mesh_sizes": (
-        "qpdk.simulation.comsol.mesh",
-        "pin_absolute_mesh_sizes",
-    ),
-    "refine_metal_plane_mesh": (
-        "qpdk.simulation.comsol.mesh",
-        "refine_metal_plane_mesh",
-    ),
     "Netlist": ("qpdk.simulation.vacask", "Netlist"),
     "RawFile": ("qpdk.simulation.vacask", "RawFile"),
     "RawPlot": ("qpdk.simulation.vacask", "RawPlot"),
@@ -181,25 +130,16 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
 }
 
 __all__ = [
-    "COMSOL",
     "HFSS",
     "Q2D",
     "Q3D",
     "AEDTBase",
-    "ComsolBoundingBox",
-    "ComsolFeedPort",
-    "ComsolLayout",
-    "ComsolPolygon",
     "Netlist",
     "RawFile",
     "RawPlot",
     "Vacask",
     "VacaskError",
-    "add_capacitance_study",
-    "add_cpw_rf_study",
     "add_materials_to_aedt",
-    "build_comsol_metal_model",
-    "build_comsol_sheet_model",
     "cpw_tline_params",
     "detach_desktop_logging",
     "fit_view",
@@ -207,11 +147,7 @@ __all__ = [
     "layer_stack_to_gds_mapping",
     "lumped_port_rectangle_from_cpw",
     "object_names_to_materials",
-    "pin_absolute_edge_mesh_sizes",
-    "pin_absolute_mesh_sizes",
     "prepare_component_for_aedt",
-    "prepare_comsol_layout",
-    "refine_metal_plane_mesh",
     "vector_fit",
     "vector_fit_subckt",
 ]

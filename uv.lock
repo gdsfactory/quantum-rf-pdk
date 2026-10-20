@@ -1742,7 +1742,7 @@ wheels = [
 [[package]]
 name = "gplugins"
 version = "2.1.5"
-source = { git = "https://github.com/jackgdsf/gplugins?branch=comsol-plugin#53e488b814655eec5db79d38ba3885ed0e20bec6" }
+source = { git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268#3de427ddf02d3e3c93558cdf47ff2af0018b9268" }
 dependencies = [
     { name = "gdsfactory" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
@@ -5707,8 +5707,8 @@ requires-dist = [
     { name = "deltalake", marker = "extra == 'delta'", specifier = ">=1.1" },
     { name = "flax", marker = "extra == 'netket'" },
     { name = "gdsfactory", specifier = "~=9.51.0" },
-    { name = "gplugins", extras = ["comsol"], marker = "extra == 'comsol'", git = "https://github.com/jackgdsf/gplugins?branch=comsol-plugin" },
-    { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", git = "https://github.com/jackgdsf/gplugins?branch=comsol-plugin" },
+    { name = "gplugins", extras = ["comsol"], marker = "extra == 'comsol'", git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
+    { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
     { name = "httpx", marker = "extra == 'gdsfactoryplus'" },
     { name = "inspice", marker = "extra == 'gdsfactoryplus'" },
     { name = "jaxellip", marker = "extra == 'gdsfactoryplus'" },
@@ -5761,7 +5761,7 @@ dev = [
 docs = [
     { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
-    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/jackgdsf/gplugins?branch=comsol-plugin" },
+    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
     { name = "jaxellip" },
     { name = "jinja2" },
     { name = "jupytext" },
@@ -5800,7 +5800,7 @@ docs = [
 docs-models = [
     { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
-    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/jackgdsf/gplugins?branch=comsol-plugin" },
+    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
     { name = "jaxellip" },
     { name = "netket", specifier = ">=3.12" },
     { name = "optax" },

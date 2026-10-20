@@ -18,9 +18,9 @@
 # ::::{admonition} Required extras
 # :class: tip
 #
-# This notebook needs the `comsol` extra (`uv sync --extra comsol`). It installs `MPh`, the Python client for
-# COMSOL, and nothing else: not COMSOL and not a license, so the build and solve cells need a local
-# installation and cannot run on Colab. See the {ref}`extras reference <notebook-extras>`.
+# This notebook needs the `comsol` extra (`uv sync --extra comsol`). It installs `gplugins[comsol]`, which
+# brings the COMSOL model builder and `MPh`, the Python client for COMSOL. It does not install COMSOL or a
+# license, so the build and solve cells need a local installation and cannot run on Colab. See the {ref}`extras reference <notebook-extras>`.
 # ::::
 #
 # This tutorial walks the path end to end: build a QPDK double-pad
@@ -96,33 +96,29 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
+import mph
 import numpy as np
+from gplugins.comsol import COMSOL
+from gplugins.comsol.plotting import draw_layout_polygons
+from gplugins.comsol.results import (
+    explain_missing_results,
+    result_file,
+    write_json_atomically,
+)
 from matplotlib import axes as mpl_axes, font_manager
 from matplotlib.colors import LogNorm
 
 from qpdk import PDK
 from qpdk.cells.transmon import double_pad_transmon_with_bbox
 from qpdk.config import PATH
-from qpdk.simulation import prepare_comsol_layout
-from qpdk.simulation.comsol.plotting import draw_layout_polygons
-from qpdk.simulation.comsol.results import (
-    explain_missing_results,
-    result_file,
-    write_json_atomically,
+from qpdk.simulation.comsol import (
+    AIR_RELATIVE_PERMITTIVITY,
+    SILICON_RELATIVE_PERMITTIVITY,
+    prepare_comsol_layout,
 )
-from qpdk.tech import LAYER, LAYER_STACK, get_layer_material_properties
-
-try:
-    import mph
-
-    from qpdk.simulation import COMSOL
-except ImportError:
-    mph = None
-    COMSOL = None
+from qpdk.tech import LAYER, LAYER_STACK
 
 PDK.activate()
-
-MPH_AVAILABLE = mph is not None
 
 # The checkout stylesheet is absent from installed wheels.
 for _style in (PATH.docs / "qpdk.mplstyle", "qpdk"):
@@ -236,12 +232,12 @@ plt.show()
 # %% [markdown]
 # ## Build the COMSOL model and capacitance study
 #
-# Three calls configure the model: {py:meth}`~qpdk.simulation.comsol.model.COMSOL.create_sheet` makes the
+# Three calls configure the model: `gplugins.comsol.COMSOL.create_sheet` makes the
 # air and silicon blocks meeting at $z = 0$, imprints the layout metal on that interface as faces, and
 # assigns materials;
-# {py:meth}`~qpdk.simulation.comsol.model.COMSOL.add_capacitance_study` picks the pad and ground faces from
+# `add_capacitance_study` picks the pad and ground faces from
 # the points above, drives the left pad, grounds the right pad and the ground plane, and adds the mesh and a
-# stationary study; and {py:meth}`~qpdk.simulation.comsol.model.COMSOL.pin_absolute_mesh_sizes` reruns that
+# stationary study; and `pin_absolute_mesh_sizes` reruns that
 # mesh with absolute element sizes in micrometres, so the near-metal resolution does not move with the
 # domain.
 #
@@ -275,12 +271,10 @@ FIELD_TXT = "comsol_qubit_field.txt"
 CORES = 4
 VOLTAGE_V = 1.0
 
-# The substrate thickness and permittivity come from the PDK layer stack; the air
-# height and lateral margin size the simulation domain, in µm.
+# The substrate thickness comes from the PDK layer stack and the permittivities
+# from `qpdk.simulation.comsol`; the air height and lateral margin size the
+# simulation domain, in µm.
 SUBSTRATE_THICKNESS_UM = LAYER_STACK.layers["Substrate"].thickness
-SILICON_RELATIVE_PERMITTIVITY = get_layer_material_properties("Substrate")[
-    "relative_permittivity"
-]
 AIR_HEIGHT_UM = 1600.0
 LATERAL_MARGIN_UM = 8000.0
 # Element size COMSOL's physics-controlled build starts from. The pinned sizes
@@ -297,9 +291,6 @@ NEAR_METAL = "0.625/1.25"
 PAD_HMAX_UM, PAD_HMIN_UM = 0.625, 0.0625
 GROUND_HMAX_UM, GROUND_HMIN_UM = 1.25, 0.125
 
-if RUN_COMSOL and not MPH_AVAILABLE:
-    raise RuntimeError("RUN_COMSOL needs MPh and a licensed COMSOL installation")
-
 # %% [markdown]
 # ### Solve, save, and export
 #
@@ -310,7 +301,7 @@ if RUN_COMSOL and not MPH_AVAILABLE:
 # %%
 model = None
 
-if RUN_COMSOL and mph is not None and COMSOL is not None:
+if RUN_COMSOL:
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     client = mph.start(cores=CORES)
     model = COMSOL.create_sheet(
@@ -321,6 +312,7 @@ if RUN_COMSOL and mph is not None and COMSOL is not None:
         air_height_um=AIR_HEIGHT_UM,
         lateral_margin_um=LATERAL_MARGIN_UM,
         silicon_relative_permittivity=SILICON_RELATIVE_PERMITTIVITY,
+        air_relative_permittivity=AIR_RELATIVE_PERMITTIVITY,
     ).add_capacitance_study(
         conductors=CONDUCTORS,
         terminal=PAD_L_SELECTION,

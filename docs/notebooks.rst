@@ -613,10 +613,10 @@ them as globs.
         local Ansys installation and a license, which are not pip-installable.
     - - ``comsol``
       - ``gplugins[comsol]``
-      - QPDK wrappers in ``qpdk.simulation`` around the MPh-based COMSOL geometry and
-        study builders of ``gplugins.comsol``. Building and solving require a COMSOL
-        installation and license; RF solves also need the RF Module. MPh itself is only
-        a client and installs no solver.
+      - The MPh-based COMSOL geometry and study builders of ``gplugins.comsol``, used
+        with ``qpdk.simulation.comsol`` for the QPDK layout and materials. Building and
+        solving require a COMSOL installation and license; RF solves also need the RF
+        Module. MPh itself is only a client and installs no solver.
     - - ``circulax``
       - ``circulax``, ``optax``
       - Differentiable (JAX/DAE) circuit simulation: harmonic-balance and transient

@@ -28,22 +28,21 @@ carry more weight than usual here.
 ## COMSOL
 
 The generic COMSOL code (polygon extraction, sheet and metal builders, RF and electrostatic studies, mesh, plotting, and
-result helpers, and the `COMSOL` model class) lives in `gplugins.comsol`. `qpdk/simulation/comsol/` keeps only thin
-wrappers:
+result helpers, and the `COMSOL` model class) lives in `gplugins.comsol`, and the notebooks import it from there
+directly. `qpdk/simulation/comsol.py` is a single module that keeps only the QPDK-specific inputs:
 
-- `layout.py` inverts the M1_ETCH mask into M1_DRAW metal with a ground margin, rejects unsupported layers, defaults the
-  feeds to `coupling_o1`/`coupling_o2`, and then calls the gplugins extraction.
-- `sheet.py`, `metal.py`, and `model.py` only change defaults (the technology permittivities, the model name).
-- `rf.py`, `capacitance.py`, `mesh.py`, `plotting.py`, and `results.py` are plain re-exports.
+- `prepare_comsol_layout` inverts the M1_ETCH mask into M1_DRAW metal with a ground margin, rejects unsupported layers,
+  defaults the feeds to `coupling_o1`/`coupling_o2`, and then calls the gplugins extraction.
+- `SILICON_RELATIVE_PERMITTIVITY` and `AIR_RELATIVE_PERMITTIVITY` come from `qpdk.tech`; callers pass them to
+  `COMSOL.create_sheet` explicitly.
 
-Flag generic COMSOL logic added here; it belongs in `gplugins.comsol`. `gplugins` is in ruff's `require-lazy` list, so
-`qpdk/simulation/__init__.py` must keep reaching the COMSOL modules through `_LAZY_IMPORTS`, never a module-level
-import.
+Flag re-exports, subclasses, or wrappers of gplugins COMSOL APIs added here, and flag generic COMSOL logic: it belongs
+in `gplugins.comsol`. `qpdk/simulation/__init__.py` must not import the COMSOL module, so `qpdk.simulation` stays
+importable without the `comsol` extra.
 
 ## Tests
 
-- COMSOL wrapper tests live in `tests/comsol/` and cover only the QPDK side; the generic behaviour is tested in
-  gplugins.
+- COMSOL tests live in `tests/comsol/` and cover only the QPDK side; the generic behaviour is tested in gplugins.
 - New simulation code needs a test marked `@pytest.mark.hfss` in `tests/hfss/test_hfss.py`, even though it will be
   skipped in CI.
 - Pure logic (setup construction, result parsing, unit conversion) should be factored out and tested **without** AEDT so

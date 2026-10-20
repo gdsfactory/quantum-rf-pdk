@@ -1,7 +1,7 @@
 """Tests for the COMSOL layout extraction.
 
 These check the QPDK side of the extraction in
-:mod:`qpdk.simulation.comsol.layout` (mask inversion, ground margin, layer
+:func:`qpdk.simulation.comsol.prepare_comsol_layout` (mask inversion, ground margin, layer
 checks, and default feeds) on small QPDK CPW and unfed shapes. The generic
 polygon extraction and crop-plane rules are tested in :mod:`gplugins.comsol`.
 No COMSOL or MPh involvement.
@@ -12,10 +12,11 @@ from __future__ import annotations
 import gdsfactory as gf
 import klayout.db as kdb
 import pytest
+from gplugins.comsol.layout import ComsolLayout
 
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
 from qpdk.simulation.aedt_base import prepare_component_for_aedt
-from qpdk.simulation.comsol.layout import ComsolLayout, prepare_comsol_layout
+from qpdk.simulation.comsol import prepare_comsol_layout
 from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.tech import LAYER
 

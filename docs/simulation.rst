@@ -65,56 +65,23 @@ cold-network and subprocess checks also use the release. The TWPA notebook,
  COMSOL
 ********
 
-The generic COMSOL code lives in :mod:`gplugins.comsol`; the modules below are thin QPDK
-wrappers around it. :mod:`~qpdk.simulation.comsol.layout` inverts the QPDK mask into
-metal before the gplugins extraction, the sheet builder and
-:class:`~qpdk.simulation.comsol.model.COMSOL` default to the QPDK technology
-permittivities, and the study, mesh, plotting, and result modules re-export gplugins
-unchanged.
+COMSOL models are built with :mod:`gplugins.comsol` directly: its ``COMSOL`` class
+subclasses :class:`mph.Model`, holds the layout, and chains the sheet or metal builder,
+the RF or electrostatic study, and the mesh helpers. Plotting and result helpers live in
+``gplugins.comsol.plotting`` and ``gplugins.comsol.results``.
 
-The builders below return a plain MPh model. Study and local refinement helpers take
-that model and its layout; absolute mesh helpers use the model and named selections.
-:class:`~qpdk.simulation.comsol.model.COMSOL` wraps the two in one object: it subclasses
-:class:`mph.Model`, so MPh solves, saves, and evaluates it as usual, and it holds the
-layout, so a setup reads as a chain.
+:mod:`qpdk.simulation.comsol` adds only what is specific to QPDK:
+:func:`~qpdk.simulation.comsol.prepare_comsol_layout`, which inverts the QPDK
+``M1_ETCH`` mask into metal with a ground margin before the gplugins extraction, and the
+technology permittivities :data:`~qpdk.simulation.comsol.SILICON_RELATIVE_PERMITTIVITY`
+and :data:`~qpdk.simulation.comsol.AIR_RELATIVE_PERMITTIVITY`, which are passed
+explicitly to ``COMSOL.create_sheet``.
 
-1. Build with :meth:`~qpdk.simulation.comsol.model.COMSOL.create_sheet` or
-   :meth:`~qpdk.simulation.comsol.model.COMSOL.create_metal`
-2. Add a study with :meth:`~qpdk.simulation.comsol.model.COMSOL.add_cpw_rf_study` or
-   :meth:`~qpdk.simulation.comsol.model.COMSOL.add_capacitance_study`
-3. Mesh it with :meth:`~qpdk.simulation.comsol.model.COMSOL.refine_metal_plane_mesh`,
-   :meth:`~qpdk.simulation.comsol.model.COMSOL.pin_absolute_mesh_sizes`, or
-   :meth:`~qpdk.simulation.comsol.model.COMSOL.pin_absolute_edge_mesh_sizes`
-4. Solve, save, and evaluate with MPh's own ``solve``, ``save``, and ``evaluate``
+The module needs the ``comsol`` extra, which installs ``gplugins[comsol]``; building and
+solving a model also needs COMSOL. :mod:`qpdk.simulation` does not import it, so the
+rest of the package works without the extra.
 
-Every helper here, including the layout, plotting, and result helpers, needs the
-``comsol`` extra, which installs ``gplugins[comsol]``; building and solving a model also
-needs COMSOL. The modules import without the extra and raise an :class:`ImportError`
-naming ``uv sync --extra comsol`` when a helper is used.
-
-.. automodule:: qpdk.simulation.comsol.model
-    :members:
-    :inherited-members: Model
-    :show-inheritance:
-
-.. automodule:: qpdk.simulation.comsol.layout
-    :members:
-    :show-inheritance:
-
-.. automodule:: qpdk.simulation.comsol.metal
-    :members:
-    :show-inheritance:
-
-.. automodule:: qpdk.simulation.comsol.sheet
-    :members:
-
-.. automodule:: qpdk.simulation.comsol.rf
-    :members:
-
-.. automodule:: qpdk.simulation.comsol.capacitance
-    :members:
-
-.. automodule:: qpdk.simulation.comsol.mesh
+.. automodule:: qpdk.simulation.comsol
     :members:
 
 **************
