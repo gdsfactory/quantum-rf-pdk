@@ -218,27 +218,33 @@ class TestQuarterWaveResonatorCoupled:
     """Test the fixed three-port quarter-wave coupled resonator."""
 
     @staticmethod
-    def test_nested_layout_matches_unsplit_resonator() -> None:
-        """Splitting at the first straight preserves the snapped GDS geometry."""
-        component = quarter_wave_resonator_coupled(meanders=1)
-        reference = gf.Component()
-        reference_ref = reference << resonator_coupled(meanders=1)
-        x, y = reference_ref.ports["coupling_o1"].center
-        reference_ref.move((-x, -y))
+    def test_coupling_region_ends_at_coupler() -> None:
+        """The meander starts at the coupler output, with no lead-out straight.
 
-        draw_layer = gf.get_layer(LAYER.M1_DRAW)
-        etch_layer = gf.get_layer(LAYER.M1_ETCH)
-        actual_etch = gf.kdb.Region(component.begin_shapes_rec(etch_layer)).merged()
-        expected_etch = gf.kdb.Region(reference.begin_shapes_rec(etch_layer)).merged()
-        actual_metal = (
-            gf.kdb.Region(component.begin_shapes_rec(draw_layer)) - actual_etch
+        A straight there would run parallel to the probeline at the same gap
+        and become the effective coupled length.
+        """
+        component = quarter_wave_resonator_coupled(
+            length=4000.0, coupling_straight_length=200.0, coupling_gap=16.0
         )
-        expected_metal = (
-            gf.kdb.Region(reference.begin_shapes_rec(draw_layer)) - expected_etch
+        netlist = component.get_netlist()
+
+        assert "straight" not in {
+            instance["component"] for instance in netlist["instances"].values()
+        }
+        assert frozenset({"coupler_straight,o4", "resonator_meander,o1"}) in {
+            frozenset(net.values()) for net in netlist["nets"]
+        }
+
+        meander = next(
+            instance
+            for instance in netlist["instances"].values()
+            if instance["component"] == "resonator_meander"
         )
-        assert (actual_etch ^ expected_etch).is_empty()
-        assert (actual_metal ^ expected_metal).is_empty()
-        assert component.info["length"] == reference_ref.cell.info["length"]
+        assert component.info["length"] == pytest.approx(4000.0, abs=1.0)
+        assert meander["settings"]["length"] == pytest.approx(
+            component.info["length"] - 200.0, abs=0.01
+        )
 
     @staticmethod
     def test_short_resonator_reports_original_length() -> None:
@@ -297,22 +303,17 @@ class TestQuarterWaveResonatorCoupled:
         } == {
             "coupler_straight",
             "open_2_port",
-            "straight",
             "resonator_meander",
             "short",
         }
         assert {frozenset(net.values()) for net in netlist["nets"]} == {
             frozenset({
                 "coupler_straight,o4",
-                "straight,o1",
+                "resonator_meander,o1",
             }),
             frozenset({
                 "coupler_straight,o1",
                 "open_2_port,o1",
-            }),
-            frozenset({
-                "straight,o2",
-                "resonator_meander,o1",
             }),
             frozenset({"resonator_meander,o2", "short,o1"}),
         }

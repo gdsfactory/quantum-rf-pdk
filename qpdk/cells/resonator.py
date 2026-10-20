@@ -385,9 +385,10 @@ def quarter_wave_resonator_coupled(
 ) -> Component:
     """Creates a quarter-wave resonator with a coupling waveguide.
 
-    Composes a straight coupler, the remaining resonator trace, the meander,
-    and explicit open and short terminations. Layouts with no usable first
-    straight section retain the unsplit coupled-resonator cell.
+    Composes a straight coupler, the meander, and explicit open and short
+    terminations. The meander starts at the coupler output so that the trace
+    leaves the coupling gap at ``coupling_straight_length``. Layouts with no
+    usable first straight section retain the unsplit coupled-resonator cell.
 
     The terminations are fixed: the coupled end is open and the far end is
     shorted. Use :func:`~qpdk.cells.resonator.resonator_coupled` if other
@@ -433,10 +434,9 @@ def quarter_wave_resonator_coupled(
         angular_step=4,
     )
     first_straight_length = 0.0
-    straight_count = 0
     actual_length = length
     if not start_with_bend and meanders > 0:
-        straight_count, first_straight, actual_length = _resonator_straight(
+        _, first_straight, actual_length = _resonator_straight(
             length,
             meanders,
             bend,
@@ -485,27 +485,23 @@ def quarter_wave_resonator_coupled(
     coupling_ref.move(tuple(-np.array(coupling_ref.ports["o2"].center)))
     open_ref = c << open_2_port(cross_section=cross_section)
     open_ref.connect("o1", coupling_ref.ports["o1"])
-    remaining_straight_ref = c << straight(
-        length=first_straight_length - coupling_straight_length,
-        cross_section=cross_section,
-    )
-    remaining_straight_ref.connect("o1", coupling_ref.ports["o4"])
+    # A straight lead-out here would run parallel to the probeline and make
+    # the coupled length longer than ``coupling_straight_length``.
     meander_ref = c << resonator_meander(
-        length=meanders * bend.info["length"]
-        + (straight_count - 1) * first_straight_length,
+        length=actual_length - coupling_straight_length,
         meanders=meanders,
         bend_spec=bend_spec,
         cross_section=cross_section,
         end_with_bend=end_with_bend,
     )
-    meander_ref.connect("o1", remaining_straight_ref.ports["o2"])
+    meander_ref.connect("o1", coupling_ref.ports["o4"])
 
     short_ref = c << short()
     short_ref.connect("o1", meander_ref.ports["o2"])
     c.add_port("coupling_o1", port=coupling_ref.ports["o2"])
     c.add_port("coupling_o2", port=coupling_ref.ports["o3"])
     c.add_port("resonator_o1", port=open_ref.ports["o2"])
-    c.info["length"] = actual_length
+    c.info["length"] = coupling_straight_length + meander_ref.cell.info["length"]
     c.info["resonator_type"] = "quarter_wave"
     c.info["cross_section_name"] = gf.get_cross_section(cross_section).name
     c.info["coupling_length"] = coupling_straight_length
