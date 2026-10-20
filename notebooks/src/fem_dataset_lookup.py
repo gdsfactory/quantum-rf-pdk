@@ -44,8 +44,8 @@
 # So a sweep over the design parameters is solved once, stored as a dataset, and
 # the circuit model interpolates between the stored points.
 #
-# ::::{only} html
 # :::{mermaid}
+# :alt: A FEM solve per geometry is swept over a parameter grid and stored as Parquet parts or a Delta table carrying its metadata; the dataset is arranged into a dense grid, wrapped in a jittable interpolator, and called from a SAX model.
 # flowchart LR
 #     A["FEM solve<br/>per geometry"] --> B["Sweep over<br/>parameter grid"]
 #     B --> C["Parquet parts or<br/>Delta table + metadata"]
@@ -53,11 +53,6 @@
 #     D --> E["GridInterpolator<br/>jittable lookup"]
 #     E --> F["SAX model"]
 # :::
-# ::::
-#
-# ::::{only} typst or typstpdf
-# A FEM solve per geometry is swept over a parameter grid and stored as Parquet parts or a Delta table carrying its metadata; the dataset is arranged into a dense grid, wrapped in a jittable interpolator, and called from a SAX model.
-# ::::
 #
 # {mod}`qpdk.models.datasets` stores the results as a long-format
 # [Polars](https://pola.rs) table with one row per matrix entry. Each Parquet

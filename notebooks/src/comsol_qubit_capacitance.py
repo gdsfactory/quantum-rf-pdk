@@ -42,18 +42,11 @@
 # $2 W_\text{e} / V^2 = C_{11}$ {cite:p}`m.pozarMicrowaveEngineering2012`. It is a **quasi-static extraction**,
 # with no Josephson inductance and no resonance solved.
 #
-# ::::{only} html
 # ```{mermaid}
+# :alt: The pipeline: transmon cell, EM-only copy with the junction layers removed, extracted layout of pads and ground plane, sheet model with air over silicon, Electrostatics solve driving the left pad, mesh, and the capacitance, energy, and field results.
 # flowchart LR
 #     A["Transmon cell"] --> B["EM-only copy"] --> C["Extracted layout"] --> D["Sheet model"] --> E["Electrostatics"] --> F["Mesh, stationary solve"] --> G["C11, intWe, V, normE"]
 # ```
-# ::::
-#
-# ::::{only} typst or typstpdf
-# The pipeline: transmon cell, EM-only copy with the junction layers removed, extracted layout of pads and
-# ground plane, sheet model with air over silicon, Electrostatics solve driving the left pad, mesh, and the
-# capacitance, energy, and field results.
-# ::::
 #
 # ::::{admonition} Reading the numbers on this page
 # :class: warning

@@ -188,6 +188,14 @@ mermaid_init_config = {
     "themeCSS": _mermaid_theme_css,
     "flowchart": {"curve": "basis", "padding": 12, "useMaxWidth": False},
 }
+# HTML renders diagrams in the browser; the Typst builders render them to SVG
+# with mermaid-cli (docs/_ext/qpdk_typst.py), which needs Node.js >= 22.13.
+# Chromium's sandbox is unavailable as root and on Ubuntu 24.04 runners.
+mermaid_cmd = "npx --yes @mermaid-js/mermaid-cli@12.0.0"
+mermaid_params = [
+    "--puppeteerConfigFile",
+    str(Path(__file__).parent / "_ext" / "mermaid_puppeteer.json"),
+]
 
 # -- Notebook execution (myst-nb) --------------------------------------------
 nb_execution_mode = "cache"

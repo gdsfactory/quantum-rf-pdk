@@ -6,13 +6,22 @@ the translator overrides add Typst output for nodes typsphinx does not handle,
 or handles badly.
 """
 
+import hashlib
+import json
 import re
+import shlex
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 
 from docutils import nodes
 from sphinx.application import Sphinx
+from sphinx.errors import ExtensionError
 from sphinx.transforms.post_transforms import SphinxPostTransform
 from sphinx.util import logging
 from sphinx_design.shared import PassthroughTextElement
+from sphinxcontrib.mermaid import mermaid
 from typsphinx.translator import TypstTranslator, escape_typst_string
 
 _TYPST_VISIT_MATH_BLOCK = TypstTranslator.visit_math_block
@@ -172,6 +181,118 @@ def _typst_lift_block_images(app, doctree, _docname):
             if inline:
                 replacement.append(nodes.paragraph("", *inline))
             par.replace_self(replacement)
+
+
+# Light-theme values of the ``--qpdk-mermaid-*`` custom properties that
+# ``themeCSS`` in conf.py reads (``html[data-theme="light"]`` in
+# docs/_static/css/custom.css).  A standalone SVG has no page to inherit them
+# from, so the print render substitutes them.
+_MERMAID_PRINT_COLOURS = {
+    "node-fill": "#e8eff8",
+    "node-stroke": "#2a6fb5",  # --qpdk-accent
+    "text": "#0e1116",  # --qpdk-ink
+    "line": "#2a6fb5",  # --qpdk-accent
+    "bg": "#ffffff",  # --pst-color-background
+    "cluster-fill": "#f6f4ef",  # --qpdk-paper
+    "cluster-stroke": "#b8b2a4",
+}
+
+
+def _mermaid_print_config(config):
+    """Return the mermaid config for print, derived from ``mermaid_init_config``.
+
+    Raises:
+        ExtensionError: If ``themeCSS`` reads a custom property with no
+            print value in ``_MERMAID_PRINT_COLOURS``.
+    """
+    init = json.loads(json.dumps(config.mermaid_init_config))
+    init.pop("startOnLoad", None)
+    init["theme"] = config.mermaid_light_theme
+    # Typst's SVG renderer ignores <foreignObject>, where mermaid puts HTML
+    # labels, so every label must be SVG <text>.
+    init["htmlLabels"] = False
+    css = init.get("themeCSS", "")
+    for name, colour in _MERMAID_PRINT_COLOURS.items():
+        css = css.replace(f"var(--qpdk-mermaid-{name})", colour)
+    if "var(" in css:
+        raise ExtensionError(
+            "mermaid themeCSS uses a custom property with no print colour; "
+            "add it to _MERMAID_PRINT_COLOURS in docs/_ext/qpdk_typst.py"
+        )
+    init["themeCSS"] = css
+    return init
+
+
+def _render_mermaid_svg(app, code):
+    """Render one diagram to an SVG under the doctree directory, cached by hash.
+
+    Returns:
+        The absolute path of the SVG.
+
+    Raises:
+        ExtensionError: If mermaid-cli cannot be run or fails.
+    """
+    config = json.dumps(_mermaid_print_config(app.config), sort_keys=True)
+    digest = hashlib.sha256(f"{config}\n{code}".encode()).hexdigest()
+    svg = Path(app.doctreedir) / "images" / "mermaid" / f"mermaid-{digest}.svg"
+    if svg.is_file():
+        return svg
+    svg.parent.mkdir(parents=True, exist_ok=True)
+    cmd = app.config.mermaid_cmd
+    cmd = shlex.split(cmd) if isinstance(cmd, str) else list(cmd)
+    with tempfile.TemporaryDirectory() as tmp:
+        config_file = Path(tmp) / "config.json"
+        config_file.write_text(config, encoding="utf-8")
+        source = Path(tmp) / "diagram.mmd"
+        source.write_text(code, encoding="utf-8")
+        # Render into the temp dir so a failed run never leaves a cache entry.
+        output = Path(tmp) / "diagram.svg"
+        args = [
+            *cmd,
+            *app.config.mermaid_params,
+            *("--quiet", "--backgroundColor", "transparent"),
+            *("--configFile", str(config_file)),
+            *("--input", str(source), "--output", str(output)),
+        ]
+        try:
+            result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+                args, capture_output=True, text=True, check=False
+            )
+        except FileNotFoundError as exc:
+            raise ExtensionError(
+                f"cannot run mermaid_cmd {cmd!r} to render Mermaid for the PDF; "
+                "it needs Node.js >= 22.13"
+            ) from exc
+        if result.returncode != 0 or not output.is_file():
+            raise ExtensionError(
+                f"mermaid-cli failed on:\n{code}\n[stderr]\n{result.stderr}"
+            )
+        partial = svg.with_suffix(".svg.part")
+        shutil.copyfile(output, partial)
+        partial.replace(svg)
+    return svg
+
+
+def _typst_render_mermaid(app, doctree, _docname):
+    """Replace Mermaid diagrams with SVG images rendered by mermaid-cli.
+
+    typsphinx has no visitor for sphinxcontrib-mermaid's node and drops it
+    with only an ``unknown node type`` warning.  HTML renders diagrams in the
+    browser, so for print they are rendered at build time, in the light
+    palette.  A diagram that fails to render fails the build rather than
+    vanishing from the PDF.
+    """
+    if app.builder.name not in {"typst", "typstpdf"}:
+        return
+    for node in list(doctree.findall(mermaid)):
+        svg = str(_render_mermaid_svg(app, node["code"]))
+        # `candidates` is what typsphinx's post_process_images reads; an
+        # absolute path under the doctree directory is copied to the output
+        # like the images Sphinx's own converters write there.
+        image = nodes.image(uri=svg, candidates={"*": svg})
+        if "alt" in node:
+            image["alt"] = node["alt"]
+        node.replace_self(image)
 
 
 def _typst_string(text):
@@ -469,6 +590,7 @@ def _typst_visit_meta(_self, _node):
 def setup(app: Sphinx) -> None:
     """Register the extension."""
     app.add_post_transform(_TypstDropWidgetOutputs)
+    app.connect("doctree-resolved", _typst_render_mermaid)
     app.connect("doctree-resolved", _typst_drop_hidden_cell_parts)
     app.connect("doctree-resolved", _typst_unlabel_cell_outputs)
     app.connect("doctree-resolved", _typst_drop_unresolved_myst_xrefs)
