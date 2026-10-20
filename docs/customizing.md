@@ -37,11 +37,11 @@ project-template work in [#376](https://github.com/gdsfactory/quantum-rf-pdk/iss
 
 ````{only} html
 ```{mermaid}
-flowchart TD
-    Q1{"Change layers, layer stack,<br>or materials?"} -->|Yes| F["Fork: own the process,<br>merge upstream release tags"]
-    Q1 -->|No| Q2{"Only adding cells,<br>samples, or chips?"}
-    Q2 -->|Yes| C["Compose: depend on qpdk,<br>extend its registries"]
-    Q2 -->|"No, changing upstream behaviour"| F
+flowchart LR
+    Q1["New layers, stack,<br/>or materials?"] -->|yes| F["Fork:<br/>own the process"]
+    Q1 -->|no| Q2["Only adding cells,<br/>samples, or chips?"]
+    Q2 -->|no| F
+    Q2 -->|yes| C["Compose:<br/>depend on qpdk"]
 ```
 ````
 
@@ -215,18 +215,11 @@ Your fork's `main` is a chain of your own work with one merge per upstream tag:
 
 ````{only} html
 ```{mermaid}
-flowchart TB
-    subgraph UP["upstream: gdsfactory/quantum-rf-pdk"]
-        direction LR
-        U1["v0.4.0"] --> U2["v0.4.1"] --> U3["v0.5.0"]
-    end
-    subgraph FK["origin: your fork's main"]
-        direction LR
-        F1["Identity rename,<br>process, pruning"] --> M1["Merge<br>upstream/v0.4.1"] --> F4["Your<br>changes"] --> M2["Merge<br>upstream/v0.5.0"]
-    end
-    U1 -->|fork| F1
-    U2 -->|"sync PR"| M1
-    U3 -->|"sync PR"| M2
+flowchart LR
+    U1["upstream<br/>v0.4.0"] --> U2["upstream<br/>v0.4.1"] --> U3["upstream<br/>v0.5.0"]
+    U1 -->|fork| F1["Rename, process,<br/>pruning"] --> M1["Merge<br/>v0.4.1"] --> F2["Your<br/>changes"] --> M2["Merge<br/>v0.5.0"]
+    U2 -->|sync PR| M1
+    U3 -->|sync PR| M2
 ```
 ````
 
@@ -311,14 +304,13 @@ During the merge, `--ours` is your fork and `--theirs` is upstream. Handle confl
 
 ````{only} html
 ```{mermaid}
-flowchart TD
-    S["Conflicted path"] --> K{"File class?"}
-    K -->|"Identity, version"| A1["Keep ours, then rename any<br>new upstream identity lines"]
-    K -->|"tech.py, layers.yaml"| A2["Resolve by hand,<br>regenerate KLayout files"]
-    K -->|"Cells, models"| A3["Merge normally"]
-    K -->|"Regression references"| A4["Keep ours, regenerate after<br>the merge, commit separately"]
-    K -->|"Other Git LFS files"| A5["Take one side whole,<br>never edit the pointer"]
-    A1 & A2 & A3 & A4 & A5 --> T["just test, just run-pre,<br>open the merge PR"]
+flowchart LR
+    S["Conflicted<br/>path"] --> I["Identity,<br/>version"] --> A1["Keep ours,<br/>rename new lines"]
+    S --> P["tech.py,<br/>layers.yaml"] --> A2["Merge by hand,<br/>regen KLayout"]
+    S --> C["Cells,<br/>models"] --> A3["Merge normally"]
+    S --> R["Regression<br/>references"] --> A4["Keep ours,<br/>regenerate"]
+    S --> L["Other Git<br/>LFS files"] --> A5["Take one side,<br/>never edit pointer"]
+    A1 & A2 & A3 & A4 & A5 --> T["just test,<br/>just run-pre"]
 ```
 ````
 
