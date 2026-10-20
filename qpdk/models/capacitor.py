@@ -1,6 +1,7 @@
 """Capacitor Models."""
 
 from functools import cache
+from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -180,7 +181,10 @@ def coupling_pad_pair(
     """
     with jax.ensure_compile_time_eval():
         model = _coupling_pad_pair_model()
-    return model(f=f, length=length, width=width, gap=gap, offset=offset, z_ref=z_ref)
+    return cast(
+        sax.SDict,
+        model(f=f, length=length, width=width, gap=gap, offset=offset, z_ref=z_ref),
+    )
 
 
 def interdigital_capacitor(

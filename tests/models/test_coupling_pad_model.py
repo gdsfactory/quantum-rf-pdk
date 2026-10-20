@@ -15,7 +15,7 @@ def test_refinement_and_held_out_evidence() -> None:
     lookup = GridInterpolator(data.grid("maxwell_capacitance", allow_missing=False))
     evidence = data.metadata.provenance["validation"]
     assert data.metadata.terminals == ("o1", "o2")
-    assert len(evidence["samples"]) == 4
+    assert len(evidence["samples"]) == 7
     for sample in evidence["samples"]:
         actual = lookup(**sample["point"])
         reference = jnp.asarray(sample["reference_maxwell_F"])
