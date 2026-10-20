@@ -1,6 +1,8 @@
-ipython_config := home_directory() / ".ipython/profile_default/ipython_config.py"
-mpl_style := home_directory() / ".config/matplotlib/stylelib/qpdk.mplstyle"
-mpl_style_dark := home_directory() / ".config/matplotlib/stylelib/qpdk-dark.mplstyle"
+# IPython and matplotlib config for the docs build, pointed at through IPYTHONDIR
+# and MPLCONFIGDIR so nothing is written to the home directory, whose config
+# locations differ per platform. Forward slashes keep the path intact when a
+# Windows path is interpolated into an `sh` recipe.
+docs_config_dir := replace(justfile_directory(), '\', '/') / "build/docs-config"
 
 # Write cell outputs into documentation notebooks
 [private]
@@ -134,32 +136,20 @@ copy-sample-notebooks: build-doc-figures
     @mkdir -p docs/notebooks/figures
     @cp -p notebooks/figures/*.svg docs/notebooks/figures/
     # Copy notebooks with pre-calculated outputs and remove their source counterparts
-    @cd notebooks && while read -r f; do \
+    # (CRs stripped: a Windows checkout gives the list CRLF line endings)
+    @cd notebooks && tr -d '\r' < ../docs/precalculated_notebooks.txt | while read -r f; do \
         case "$f" in ''|'#'*) continue ;; esac; \
-        cp -p "$f.ipynb" ../docs/notebooks/; \
+        cp -p "$f.ipynb" ../docs/notebooks/ || exit 1; \
         rm -f "../docs/notebooks/$f.py" "../docs/notebooks/$f.m"; \
-    done < ../docs/precalculated_notebooks.txt
+    done
 
-# Temporarily setup IPython configuration for documentation build
+# Write the IPython configuration and matplotlib styles for the documentation build
 [private]
 [group('docs')]
-setup-ipython-config-temporary-before:
-    @mkdir -p ~/.ipython/profile_default
-    @{{ if path_exists(ipython_config) == "TRUE" { "mv " + ipython_config + " " + ipython_config + ".bak" } else { "true" } }}
-    @cp docs/ipython_config.py {{ ipython_config }}
-    @mkdir -p ~/.config/matplotlib/stylelib/
-    @{{ if path_exists(mpl_style) == "TRUE" { "mv " + mpl_style + " " + mpl_style + ".bak" } else { "true" } }}
-    @cp docs/qpdk.mplstyle {{ mpl_style }}
-    @{{ if path_exists(mpl_style_dark) == "TRUE" { "mv " + mpl_style_dark + " " + mpl_style_dark + ".bak" } else { "true" } }}
-    @cp docs/qpdk-dark.mplstyle {{ mpl_style_dark }}
-
-# Restore original IPython configuration
-[private]
-[group('docs')]
-setup-ipython-config-temporary-after:
-    @{{ if path_exists(ipython_config + ".bak") == "TRUE" { "mv " + ipython_config + ".bak " + ipython_config } else { "rm -f " + ipython_config } }}
-    @{{ if path_exists(mpl_style + ".bak") == "TRUE" { "mv " + mpl_style + ".bak " + mpl_style } else { "rm -f " + mpl_style } }}
-    @{{ if path_exists(mpl_style_dark + ".bak") == "TRUE" { "mv " + mpl_style_dark + ".bak " + mpl_style_dark } else { "rm -f " + mpl_style_dark } }}
+docs-config:
+    @mkdir -p "{{ docs_config_dir }}/ipython/profile_default" "{{ docs_config_dir }}/matplotlib/stylelib"
+    @cp docs/ipython_config.py "{{ docs_config_dir }}/ipython/profile_default/"
+    @cp docs/qpdk.mplstyle docs/qpdk-dark.mplstyle "{{ docs_config_dir }}/matplotlib/stylelib/"
 
 # Local cache of the docs fonts (Inter, Outfit, Code New Roman, Fira Math).
 # CI installs the same families system-wide (see .github/workflows/pages.yml),
@@ -259,8 +249,8 @@ docs-prerequisites: write-cells write-models write-justfile-help copy-sample-not
 # Build documentation with the given Sphinx builder into docs/_build/<builder>
 [private]
 [group('docs')]
-_sphinx builder: check-lfs docs-prerequisites setup-ipython-config-temporary-before
-    @trap 'just setup-ipython-config-temporary-after' EXIT INT TERM; \
+_sphinx builder: check-lfs docs-prerequisites docs-config
+    @IPYTHONDIR="{{ docs_config_dir }}/ipython" MPLCONFIGDIR="{{ docs_config_dir }}/matplotlib" \
     uv run --group docs sphinx-build -b {{ builder }} docs docs/_build/{{ builder }}
 
 # Build the HTML documentation
