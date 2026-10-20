@@ -290,8 +290,9 @@ for examples of:
   the Colab install cell changes
 
 - **Documentation**: Converted notebooks are copied to `docs/notebooks/` during documentation build. Notebooks that
-  require external tooling (HFSS, MATLAB) or a GPU are listed in `nb_execution_excludepatterns` in `docs/conf.py` so the
-  docs build does not try to execute them
+  require external tooling (HFSS, MATLAB) or a GPU are listed in `docs/precalculated_notebooks.txt`, which feeds
+  `nb_execution_excludepatterns` in `docs/conf.py` and the copy step in `docs/docs.just` so the docs build does not try
+  to execute them
 
 - **JAX benchmark notebook**: `jax_backend_comparison` loads Parquet records and renders its plots during documentation
   CI. Strip notebook outputs and keep raw machine measurements in `notebooks/data/jax_backend_comparison/*.parquet`,

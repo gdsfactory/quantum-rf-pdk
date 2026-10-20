@@ -124,9 +124,6 @@ build-doc-figures: fetch-docs-fonts
         if stale.stem not in sources:
             stale.unlink()
 
-# Keep saved outputs for external-solver and GPU notebooks.
-precalculated_notebooks := "hfss_*.ipynb comsol_*.ipynb elmer_capacitance_interdigital.ipynb matlab_integration.ipynb"
-
 # Copy all sample scripts and notebooks to use as documentation
 [private]
 [group('docs')]
@@ -137,11 +134,11 @@ copy-sample-notebooks: build-doc-figures
     @mkdir -p docs/notebooks/figures
     @cp -p notebooks/figures/*.svg docs/notebooks/figures/
     # Copy notebooks with pre-calculated outputs and remove their source counterparts
-    @cd notebooks && for f in {{precalculated_notebooks}}; do \
-        cp -p "$f" ../docs/notebooks/; \
-        base="${f%.ipynb}"; \
-        rm -f "../docs/notebooks/$base.py" "../docs/notebooks/$base.m"; \
-    done
+    @cd notebooks && while read -r f; do \
+        case "$f" in ''|'#'*) continue ;; esac; \
+        cp -p "$f.ipynb" ../docs/notebooks/; \
+        rm -f "../docs/notebooks/$f.py" "../docs/notebooks/$f.m"; \
+    done < ../docs/precalculated_notebooks.txt
 
 # Temporarily setup IPython configuration for documentation build
 [private]
