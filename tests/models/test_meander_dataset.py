@@ -11,13 +11,16 @@ from qpdk.models.datasets import Dataset, GridInterpolator, check_maxwell
 
 def test_complete_grid_and_independent_references() -> None:
     data = Dataset("meander_ground_capacitance_palace")
+    samples = data.metadata.provenance["validation"]["samples"]
+    assert len(samples) == 14
+    assert {sample["reference_settings"]["order"] for sample in samples} == {3, 4}
     assert data.metadata.terminals == ("winding",)
     assert "meander_inductor_ground_capacitance" not in models
     for turns in ("3", "5", "7"):
         grid = data.grid("maxwell_capacitance", n_turns=turns, allow_missing=False)
         assert grid.values.shape == (3, 2, 3, 1, 1)
         check_maxwell(grid.values)
-    for sample in data.metadata.provenance["validation"]["samples"]:
+    for sample in samples:
         point = sample["point"]
         lookup = GridInterpolator(
             data.grid("maxwell_capacitance", n_turns=point["n_turns"])
