@@ -101,13 +101,15 @@ def _script_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
     shutil.copy2(script, repo / SCRIPT_REL_PATH)
     shutil.copy2(repo_root / HEADER_CHECK_REL_PATH, repo / HEADER_CHECK_REL_PATH)
 
-    # Known-good fixtures: a Python-kernel notebook with its source and a
-    # MATLAB-kernel notebook with its source.
+    # Known-good fixtures: Python-, MATLAB- and Julia-kernel notebooks with their
+    # sources.
     (repo / "notebooks" / "src").mkdir(parents=True)
     (repo / "notebooks" / "python_notebook.ipynb").write_text(MINIMAL_NOTEBOOK)
     (repo / "notebooks" / "src" / "python_notebook.py").write_text("")
     (repo / "notebooks" / "matlab_notebook.ipynb").write_text(MINIMAL_NOTEBOOK)
     (repo / "notebooks" / "src" / "matlab_notebook.m").write_text("")
+    (repo / "notebooks" / "julia_notebook.ipynb").write_text(MINIMAL_NOTEBOOK)
+    (repo / "notebooks" / "src" / "julia_notebook.jl").write_text("")
 
     try:
         subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
@@ -176,9 +178,9 @@ def test_check_notebook_sources_logic(script_repo: Path) -> None:
 def test_all_existing_notebooks_have_sources() -> None:
     """Verify that all existing .ipynb files have a corresponding jupytext source.
 
-    Source files use ``.py`` for Python-kernel notebooks and ``.m`` for
-    MATLAB-kernel notebooks; either is accepted. This is a read-only filesystem
-    check against the real notebooks/ directory.
+    Source files use ``.py`` for Python-kernel notebooks, ``.m`` for
+    MATLAB-kernel notebooks and ``.jl`` for Julia-kernel notebooks. This is a
+    read-only filesystem check against the real notebooks/ directory.
     """
     repo_root = Path(__file__).resolve().parents[2]
     notebooks_dir = repo_root / "notebooks"
@@ -190,11 +192,10 @@ def test_all_existing_notebooks_have_sources() -> None:
     assert ipynb_files, f"No .ipynb files found in {notebooks_dir}"
 
     for ipynb_file in ipynb_files:
-        py_source = src_dir / f"{ipynb_file.stem}.py"
-        m_source = src_dir / f"{ipynb_file.stem}.m"
-        assert py_source.exists() or m_source.exists(), (
+        sources = [src_dir / f"{ipynb_file.stem}.{ext}" for ext in ("py", "m", "jl")]
+        assert any(source.exists() for source in sources), (
             f"Notebook {ipynb_file.name} is missing its source file "
-            f"(expected {py_source} or {m_source})"
+            f"(expected one of {[str(source) for source in sources]})"
         )
 
 

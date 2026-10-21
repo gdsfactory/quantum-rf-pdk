@@ -35,7 +35,7 @@ def test_listed_notebook_and_source_exist(name: str) -> None:
     assert (NOTEBOOKS_DIR / f"{name}.ipynb").is_file(), (
         f"{name} is listed in {LIST_FILE} but notebooks/{name}.ipynb does not exist"
     )
-    sources = [(NOTEBOOKS_DIR / "src" / f"{name}.{ext}") for ext in ("py", "m")]
+    sources = [(NOTEBOOKS_DIR / "src" / f"{name}.{ext}") for ext in ("py", "m", "jl")]
     assert any(source.is_file() for source in sources), (
         f"{name} is listed in {LIST_FILE} but has no source in notebooks/src/"
     )
