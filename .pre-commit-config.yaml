@@ -44,8 +44,10 @@ repos:
         priority: 10
         exclude: ^(conda\.recipe/meta\.yaml|conda_build/templates/.*\.yaml|docs/click/meta\.yaml|conda/meta\.yaml|conda/construct.yaml|.*\.pic\.yml|conda/constructor/Miniforge3/construct.yaml)
       - id: end-of-file-fixer
+        exclude: ^tests/data/vacask/.*\.raw$
         priority: 40
       - id: trailing-whitespace
+        exclude: ^tests/data/vacask/.*\.raw$
         priority: 50
       - id: detect-private-key
         priority: 10
@@ -55,7 +57,7 @@ repos:
       - id: nbstripout
         priority: 10
         files: ".ipynb"
-        exclude: ^notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration)\.ipynb$
+        exclude: ^notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration|vacask_(josephson|lumped|cpw)_parametric_amplifier)\.ipynb$
       - id: nbstripout
         name: Preserve FEM notebook execution counts
         priority: 10
@@ -66,7 +68,7 @@ repos:
     hooks:
       - id: codespell
         priority: 10
-        exclude: ^(docs/bibliography\.bib|notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration)\.ipynb)$
+        exclude: ^(docs/bibliography\.bib|notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration|vacask_(josephson|lumped|cpw)_parametric_amplifier)\.ipynb)$
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -265,6 +267,18 @@ repos:
         additional_dependencies:
           - eslint@9.39.2
         types_or: [javascript]
+      - id: julia-format
+        priority: 20
+        name: Format Julia files
+        entry: julia --startup-file=no --project=.github/julia .github/julia/format.jl
+        language: system
+        files: \.jl$
+      - id: julia-lint
+        priority: 30
+        name: Lint Julia files
+        entry: julia --startup-file=no --project=.github/julia .github/julia/lint.jl
+        language: system
+        files: \.jl$|(^|/)JuliaLint\.toml$
       # - id: just-fmt
       #   priority: 10
       #   name: Format justfiles

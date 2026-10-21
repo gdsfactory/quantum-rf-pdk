@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Julia simulation environment",
+  "description": "Julia Pkg environment fields used by the notebook and development tools.",
+  "$comment": "Field definitions follow https://pkgdocs.julialang.org/v1/toml-files/.",
+  "type": "object",
+  "properties": {
+    "deps": {"$ref": "#/definitions/dependencies"},
+    "extras": {"$ref": "#/definitions/dependencies"},
+    "compat": {"type": "object", "additionalProperties": {"type": "string"}}
+  },
+  "definitions": {
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      }
+    }
+  }
+}
