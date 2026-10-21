@@ -470,6 +470,41 @@ without finite differences.
 
 .. _notebooks-external:
 
+*************************************
+ Harmonic-balance circuit simulation
+*************************************
+
+SPICE-class simulators with harmonic balance (HB) find the periodic steady state of a
+nonlinear circuit under a strong drive and, with a small-signal analysis around that
+state, the frequency conversion between sidebands. This is what parametric amplifiers
+need.
+
+**Typical use cases:**
+
+- Gain, bandwidth and compression of Josephson parametric amplifiers.
+- Checking a resonator design for unwanted up-conversion into higher modes.
+
+**Notebooks:**
+
+- :doc:`notebooks/vacask_josephson_parametric_amplifier` - Explains how VACASK analyses
+  differ, then compares loaded and uniform Josephson TWPAs at the same incident pump.
+  Cold dispersion and the pump Kerr shift explain resonant phase matching, and recorded
+  2047-junction JosephsonCircuits results show the gain and the idler sideband balance.
+  No solver is needed to render it. A layout table connects circuit targets to QPDK
+  cells and extraction steps.
+- :doc:`notebooks/vacask_lumped_parametric_amplifier` - Runs a current-pumped Kerr JPA
+  and a lumped flux-pumped JPA in released VACASK. Compares gain and gain-bandwidth with
+  single-mode theory, shows compression, and explains which layout values need
+  calibration or extraction.
+- :doc:`notebooks/vacask_cpw_parametric_amplifier` - Builds a QPDK meander and uses its
+  realized length and cross-section in the SAX and VACASK line models. Checks resonance,
+  gain, higher-mode conversion and rational-fit error. A Manley-Rowe photon balance over
+  all sidebands shows where the gain missing from single-mode theory goes.
+
+The pages retain saved executions for documentation builds. The JPA companions need the
+external `VACASK <https://codeberg.org/arpadbuermen/VACASK>`_ simulator, which runs as a
+separate program on the Verilog-A junction and SQUID models shipped with qpdk.
+
 **********************
  External integration
 **********************
@@ -619,6 +654,9 @@ them as globs.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
+    - The `VACASK <https://codeberg.org/arpadbuermen/VACASK>`_ circuit simulator, needed
+      by the lumped and CPW parametric-amplifier notebooks, is a separate program
+      (AGPL-3.0) that qpdk runs as a subprocess; install it from its release page.
 
     The Elmer notebook also needs ``gplugins[elmer]`` installed from Git until the next
     gplugins release.
@@ -711,6 +749,18 @@ Every notebook at a glance; the **Extras** column links back to :ref:`notebook-e
       - Differentiable circuit simulation
       - Circulax, JAX, Optax
       - ``models``, ``circulax``
+    - - :doc:`notebooks/vacask_josephson_parametric_amplifier`
+      - TWPA phase matching
+      - Recorded JosephsonCircuits results
+      - ``models``
+    - - :doc:`notebooks/vacask_lumped_parametric_amplifier`
+      - Lumped JPA harmonic balance
+      - VACASK (external program)
+      - ``models``
+    - - :doc:`notebooks/vacask_cpw_parametric_amplifier`
+      - CPW JPA model qualification
+      - VACASK (external program), SAX
+      - ``models``
     - - :doc:`notebooks/matlab_integration`
       - External integration
       - MATLAB, RF Toolbox (optional), jupyter-matlab-proxy
