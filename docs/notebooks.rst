@@ -486,16 +486,16 @@ need.
 
 **Notebooks:**
 
-- :doc:`notebooks/vacask_josephson_parametric_amplifier` - Explains how VACASK analyses
-  differ, then compares loaded and uniform Josephson TWPAs at the same incident pump.
-  Cold dispersion and the pump Kerr shift explain resonant phase matching, and recorded
-  2047-junction JosephsonCircuits results show the gain and the idler sideband balance.
-  No solver is needed to render it. A layout table connects circuit targets to QPDK
-  cells and extraction steps.
-- :doc:`notebooks/vacask_lumped_parametric_amplifier` - Runs a current-pumped Kerr JPA
-  and a lumped flux-pumped JPA in released VACASK. Compares gain and gain-bandwidth with
-  single-mode theory, shows compression, and explains which layout values need
-  calibration or extraction.
+- :doc:`notebooks/josephsoncircuits_twpa` - A Julia notebook that compares loaded and
+  uniform 2047-junction TWPAs with JosephsonCircuits.jl at the same incident pump. Cold
+  dispersion and the pump Kerr shift explain resonant phase matching. Live
+  harmonic-balance solves give the gain, the photon balance over all sidebands and the
+  quantum efficiency, with a harmonic-basis check. Calls QPDK through PythonCall to show
+  a junction layout and its critical-current targets.
+- :doc:`notebooks/vacask_lumped_parametric_amplifier` - Explains how VACASK analyses
+  differ, then runs a current-pumped Kerr JPA and a lumped flux-pumped JPA in released
+  VACASK. Compares gain and gain-bandwidth with single-mode theory, shows compression,
+  and explains which layout values need calibration or extraction.
 - :doc:`notebooks/vacask_cpw_parametric_amplifier` - Builds a QPDK meander and uses its
   realized length and cross-section in the SAX and VACASK line models. Checks resonance,
   gain, higher-mode conversion and rational-fit error. A Manley-Rowe photon balance over
@@ -749,9 +749,9 @@ Every notebook at a glance; the **Extras** column links back to :ref:`notebook-e
       - Differentiable circuit simulation
       - Circulax, JAX, Optax
       - ``models``, ``circulax``
-    - - :doc:`notebooks/vacask_josephson_parametric_amplifier`
-      - TWPA phase matching
-      - Recorded JosephsonCircuits results
+    - - :doc:`notebooks/josephsoncircuits_twpa`
+      - TWPA harmonic balance and quantum efficiency
+      - JosephsonCircuits.jl, PythonCall (Julia kernel)
       - ``models``
     - - :doc:`notebooks/vacask_lumped_parametric_amplifier`
       - Lumped JPA harmonic balance

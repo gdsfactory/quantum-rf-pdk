@@ -45,9 +45,9 @@ jobs:
       - uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9 # v2.7.0
         with:
           version: "min"
-          project: notebooks/data/vacask_twpa/julia/checks
+          project: notebooks/data/josephsoncircuits_twpa/julia/checks
       - name: Check Julia simulation helpers
-        run: julia --startup-file=no --project=notebooks/data/vacask_twpa/julia/checks notebooks/data/vacask_twpa/julia/checks/checks.jl
+        run: julia --startup-file=no --project=notebooks/data/josephsoncircuits_twpa/julia/checks notebooks/data/josephsoncircuits_twpa/julia/checks/checks.jl
   get-python-versions:
     uses: ./.github/workflows/get-python-versions.yml
   test-code:

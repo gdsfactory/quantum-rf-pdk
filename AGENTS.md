@@ -282,13 +282,16 @@ for examples of:
 ### Jupytext Workflow
 
 - **Notebook source**: Notebook source files live in `notebooks/src/`. Python notebooks use `.py`; the MATLAB-kernel
-  notebook uses `.m` (see `notebooks/src/matlab_integration.m`)
+  notebook uses `.m` (see `notebooks/src/matlab_integration.m`) and the Julia-kernel notebook uses `.jl` (see
+  `notebooks/src/josephsoncircuits_twpa.jl`). The PEP 723 and Colab cells below apply to Python notebooks only
 
 - **Conversion**: Run `just convert-notebooks` or `./.github/convert-notebooks.sh` to convert source files to `.ipynb`
 
-- **Pre-commit hook**: Notebooks are automatically converted when `.py` or `.m` files in `notebooks/src/` are modified
+- **Pre-commit hook**: Notebooks are automatically converted when `.py`, `.m` or `.jl` files in `notebooks/src/` are
+  modified
 
-- **Format**: Python notebooks use the "percent" format with `# %%` cell markers; MATLAB notebooks use `% %%` markers
+- **Format**: Python and Julia notebooks use the "percent" format with `# %%` cell markers; MATLAB notebooks use `% %%`
+  markers
 
 - **Inline script metadata**: Each Python notebook source carries a PEP 723 `# /// script` block in a
   `# %% [raw] tags=["remove-cell"]` cell, so it can be run with `uv run --script`. Update its `dependencies` whenever
@@ -298,6 +301,10 @@ for examples of:
   require external tooling (HFSS, MATLAB) or a GPU are listed in `docs/precalculated_notebooks.txt`, which feeds
   `nb_execution_excludepatterns` in `docs/conf.py` and the copy step in `docs/docs.just` so the docs build does not try
   to execute them
+
+- **Julia notebook**: `josephsoncircuits_twpa` runs on a Julia 1.12 kernel with the environment in
+  `notebooks/data/josephsoncircuits_twpa/julia/`, and reaches QPDK through PythonCall using the checkout's `.venv`. The
+  `test-julia` CI job executes it; the docs use its committed outputs. Re-execute it after changing the source
 
 - **JAX benchmark notebook**: `jax_backend_comparison` loads Parquet records and renders its plots during documentation
   CI. Strip notebook outputs and keep raw machine measurements in `notebooks/data/jax_backend_comparison/*.parquet`,

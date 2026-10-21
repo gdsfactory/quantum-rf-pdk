@@ -11,6 +11,6 @@ comsol_cpw_resonator
 comsol_qubit_capacitance
 elmer_capacitance_interdigital
 matlab_integration
-vacask_josephson_parametric_amplifier
+josephsoncircuits_twpa
 vacask_lumped_parametric_amplifier
 vacask_cpw_parametric_amplifier

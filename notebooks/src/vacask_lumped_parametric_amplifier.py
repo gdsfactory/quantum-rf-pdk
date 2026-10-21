@@ -45,13 +45,13 @@
 # {cite:p}`kundertSimulationNonlinearCircuits1986`. Then find the small-signal
 # waves around that state. In VACASK the second step is `hbac`, a
 # conversion-matrix analysis {cite:p}`maasNonlinearMicrowaveRF2003`. The
-# {ref}`vacask-analysis-guide` in the main tutorial compares these analyses.
+# {ref}`vacask-analysis-guide` below compares these analyses.
 #
 # This notebook runs the two lumped examples in released VACASK: a
 # current-pumped Kerr junction with four-wave mixing, and a flux-pumped SQUID
 # with three-wave mixing. It ends with signal compression. The
-# {doc}`TWPA tutorial <vacask_josephson_parametric_amplifier>`
-# covers the traveling-wave circuit. The
+# {doc}`TWPA notebook <josephsoncircuits_twpa>` covers the traveling-wave
+# circuit with JosephsonCircuits.jl. The
 # {doc}`CPW companion <vacask_cpw_parametric_amplifier>` qualifies
 # the distributed resonator model.
 #
@@ -60,6 +60,33 @@
 # example replaces the line with a shunt capacitor.
 #
 # ![A current-pumped Kerr JPA (junction and shunt capacitor coupled to a 50 Ω port) and a flux-pumped JPA (quarter-wave CPW terminated in a SQUID whose flux is modulated)](figures/vacask-jpa-circuits.svg)
+
+# %% [markdown]
+# (vacask-analysis-guide)=
+# ## Choose a VACASK analysis
+#
+# An analysis chooses the circuit problem to solve. VACASK then uses numerical
+# methods such as Newton iteration or time stepping to solve it. The manual
+# groups the analyses by the state they use {cite:p}`vacaskCircuitAnalyses`.
+#
+# | Question | Analysis | State and result |
+# | --- | --- | --- |
+# | What is the DC state? | `op` | Solve the nonlinear DC equations. |
+# | What is the unpumped response? | `ac`, `acsp` | Linearize at a DC state. `ac` returns voltages and currents; `acsp` returns port S-parameters. |
+# | What happens in time? | `tran` | Integrate the nonlinear equations, including startup and transients. |
+# | What periodic state repeats in time? | `pss` | Use shooting to match the state after one period to its initial state. |
+# | What weak signal responds to that state? | `pac` | Linearize around a shooting-based periodic state. |
+# | What is the periodic pump spectrum? | `hb` | Solve for Fourier coefficients using harmonic balance. |
+# | What weak signal and idlers respond to the pump? | `hbac` | Linearize around an HB state and couple its frequency sidebands. |
+#
+# The manual also covers transfer functions, feedback-loop analysis and noise.
+# `noise` uses a DC state and `hbnoise` uses an HB state. Those are classical
+# device-noise calculations. They do not by themselves give quantum added
+# noise. The current manual includes features that an installed release may
+# lack.
+#
+# For a parametric amplifier, use `hb` for the pump, then `hbac` for the weak
+# probe. `hbac` labels the response at $f_\text{s}+k f_\text{p}$.
 
 # %% tags=["hide-input", "hide-output"]
 import sys

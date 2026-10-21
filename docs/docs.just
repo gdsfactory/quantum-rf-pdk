@@ -132,7 +132,7 @@ build-doc-figures: fetch-docs-fonts
 copy-sample-notebooks: build-doc-figures
     @mkdir -p docs/notebooks/
     # Copy all source files from notebooks/src
-    @cp -p notebooks/src/*.py notebooks/src/*.m docs/notebooks/
+    @cp -p notebooks/src/*.py notebooks/src/*.m notebooks/src/*.jl docs/notebooks/
     @mkdir -p docs/notebooks/figures
     @cp -p notebooks/figures/*.svg docs/notebooks/figures/
     # Copy notebooks with pre-calculated outputs and remove their source counterparts
@@ -140,7 +140,7 @@ copy-sample-notebooks: build-doc-figures
     @cd notebooks && tr -d '\r' < ../docs/precalculated_notebooks.txt | while read -r f; do \
         case "$f" in ''|'#'*) continue ;; esac; \
         cp -p "$f.ipynb" ../docs/notebooks/ || exit 1; \
-        rm -f "../docs/notebooks/$f.py" "../docs/notebooks/$f.m"; \
+        rm -f "../docs/notebooks/$f.py" "../docs/notebooks/$f.m" "../docs/notebooks/$f.jl"; \
     done
 
 # Write the IPython configuration and matplotlib styles for the documentation build

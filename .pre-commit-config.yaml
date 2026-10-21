@@ -57,7 +57,7 @@ repos:
       - id: nbstripout
         priority: 10
         files: ".ipynb"
-        exclude: ^notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration|vacask_(josephson|lumped|cpw)_parametric_amplifier)\.ipynb$
+        exclude: ^notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|josephsoncircuits_twpa|matlab_integration|vacask_(lumped|cpw)_parametric_amplifier)\.ipynb$
       - id: nbstripout
         name: Preserve FEM notebook execution counts
         priority: 10
@@ -68,7 +68,7 @@ repos:
     hooks:
       - id: codespell
         priority: 10
-        exclude: ^(docs/bibliography\.bib|notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|matlab_integration|vacask_(josephson|lumped|cpw)_parametric_amplifier)\.ipynb)$
+        exclude: ^(docs/bibliography\.bib|notebooks/(comsol_.*|elmer_capacitance_interdigital|fem_dataset_lookup|hfss_driven_capacitor|hfss_eigenmode_resonator|hfss_q2d_cpw_impedance|josephsoncircuits_twpa|matlab_integration|vacask_(lumped|cpw)_parametric_amplifier)\.ipynb)$
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -291,7 +291,7 @@ repos:
         name: Convert jupytext notebooks
         entry: ./.github/convert-notebooks.sh
         language: script
-        files: ^notebooks/src/.*\.(py|m)$
+        files: ^notebooks/src/.*\.(py|m|jl)$
         pass_filenames: true
       - id: check-notebook-sources
         priority: 10

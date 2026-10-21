@@ -1,15 +1,10 @@
 """Independent cold-network checks for the resonantly phase-matched TWPA."""
 
-import ast
-from collections.abc import Callable
-from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
-import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from jax.typing import ArrayLike
 
 from qpdk.simulation.vacask import RawPlot, Vacask
 from qpdk.simulation.vacask_twpa import rpm_twpa_netlist, twpa_pump_residual
@@ -108,52 +103,6 @@ def test_twpa_cold_native_scattering_matches_abcd(
         for incident in range(2):
             np.testing.assert_allclose(
                 result[f"s({output + 1},{incident + 1})"],
-                expected[:, output, incident],
-                rtol=2e-7,
-                atol=2e-9,
-            )
-
-
-@pytest.fixture
-def notebook_cold_scattering() -> Callable[..., jax.Array]:
-    source = (
-        Path(__file__).parents[1]
-        / "notebooks/src/vacask_josephson_parametric_amplifier.py"
-    )
-    tree = ast.parse(source.read_text())
-    function = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == "cold_scattering"
-    )
-    namespace: dict[str, Any] = {"jnp": jnp, "jax": jax, "ArrayLike": ArrayLike}
-    exec(  # ruff: ignore[exec-builtin]
-        compile(ast.Module(body=[function], type_ignores=[]), str(source), "exec"),
-        namespace,
-    )
-    return namespace["cold_scattering"]
-
-
-@pytest.mark.vacask
-@pytest.mark.parametrize("phase_matching", [True, False])
-def test_notebook_cold_dispersion_matches_native(
-    phase_matching: bool, notebook_cold_scattering: Callable[..., jax.Array]
-) -> None:
-    deck = rpm_twpa_netlist(
-        4,
-        "options reltol=1e-9 tolscale=1e-6\n"
-        'analysis cold acsp ports=["vp1","rs","vp2","rl"] from=3G to=12G mode="lin" points=900',
-        pump_current=0,
-        phase_matching=phase_matching,
-    )
-    cold = Vacask.find().run(deck)["cold"]
-    expected = notebook_cold_scattering(
-        cold["frequency"].real, 4, phase_matching=phase_matching
-    )
-    for output in range(2):
-        for incident in range(2):
-            np.testing.assert_allclose(
-                cold[f"s({output + 1},{incident + 1})"],
                 expected[:, output, incident],
                 rtol=2e-7,
                 atol=2e-9,

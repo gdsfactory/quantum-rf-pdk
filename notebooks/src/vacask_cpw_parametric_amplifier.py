@@ -45,7 +45,7 @@
 # line models against SAX. It then uses them to measure resonance against flux,
 # the single-mode threshold, gain against pump amplitude, and the higher-mode
 # conversion that breaks the simple signal-idler balance. The
-# {doc}`main tutorial <vacask_josephson_parametric_amplifier>`
+# {doc}`TWPA notebook <josephsoncircuits_twpa>`
 # covers traveling-wave amplification. The
 # {doc}`lumped companion <vacask_lumped_parametric_amplifier>`
 # runs lumped Kerr and SQUID examples.
@@ -53,7 +53,7 @@
 # The analyses differ in what they assume. AC linearizes the circuit around its
 # DC operating point. ACSP returns S-parameters with the pump off. HB finds the
 # nonlinear periodic pump. HBAC finds infinitesimal signal and idler waves
-# around that pump. The {ref}`vacask-analysis-guide` in the main tutorial
+# around that pump. The {ref}`vacask-analysis-guide` in the lumped companion
 # compares them in detail.
 
 # %% tags=["hide-input", "hide-output"]
