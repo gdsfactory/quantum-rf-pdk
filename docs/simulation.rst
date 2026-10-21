@@ -61,9 +61,6 @@ cold-network and subprocess checks also use the release. The TWPA notebook,
     :members:
     :imported-members:
 
-.. automodule:: qpdk.simulation.vacask_twpa
-    :members:
-
 ********
  COMSOL
 ********

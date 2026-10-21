@@ -72,12 +72,7 @@ Note:
    :class:`~qpdk.simulation.vacask.RawPlot` per analysis.
 3. Use :meth:`~qpdk.simulation.vacask.Vacask.run_record` with a work directory
    to retain decks, logs, raw results and input/binary/compiler hashes.
-4. :func:`~qpdk.simulation.vacask_twpa.rpm_twpa_netlist` builds a resonantly
-   phase-matched JJ ladder with raw analysis controls. Its terminations also
-   define ``acsp`` scattering ports; ``probe_port`` selects either separately
-   driven column. Check the saved pump with
-   :func:`~qpdk.simulation.vacask_twpa.twpa_pump_residual` before using its response.
-5. Optionally embed any linear SAX model as a subcircuit: fit it with
+4. Optionally embed any linear SAX model as a subcircuit: fit it with
    :func:`~qpdk.simulation.vacask.vector_fit` and emit the fit with
    :func:`~qpdk.simulation.vacask.vector_fit_subckt`.
 

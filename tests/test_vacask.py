@@ -690,8 +690,7 @@ def test_runner_imports_without_models_extra() -> None:
 import sys
 sys.modules.update({name: None for name in ("jax", "sax", "skrf")})
 from qpdk.simulation.vacask import Netlist
-from qpdk.simulation.vacask_twpa import rpm_twpa_netlist
-rpm_twpa_netlist(2, "").render()
+Netlist("demo").render()
 """
     subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [sys.executable, "-c", code], check=True, capture_output=True, text=True

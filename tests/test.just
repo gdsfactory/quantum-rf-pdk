@@ -334,4 +334,4 @@ test-gfp *args:
 # Run VACASK simulation tests (requires VACASK, see qpdk/simulation/vacask.py)
 [group('test')]
 test-vacask *args: check-lfs
-    uv run --extra models --group dev pytest tests/test_vacask.py tests/test_vacask_twpa.py -m vacask {{ args }}
+    uv run --extra models --group dev pytest tests/test_vacask.py -m vacask {{ args }}

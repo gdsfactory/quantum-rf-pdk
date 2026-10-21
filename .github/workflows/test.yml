@@ -511,10 +511,10 @@ jobs:
           uv sync --locked --python 3.12 --no-dev --group test --extra models
           uv pip install jupytext nbconvert ipykernel
       - name: Run the VACASK tests
-        run: uv run --no-sync pytest tests/test_vacask.py tests/test_vacask_twpa.py -m vacask
+        run: uv run --no-sync pytest tests/test_vacask.py -m vacask
       - name: Execute the VACASK notebooks
         run: |
-          for example in josephson lumped cpw; do
+          for example in lumped cpw; do
             uv run --no-sync jupytext --execute --to ipynb --set-kernel python3 \
               --output "/tmp/qpdk-vacask-${example}.ipynb" \
               "notebooks/vacask_${example}_parametric_amplifier.ipynb"
@@ -526,7 +526,6 @@ jobs:
           from pathlib import Path
 
           expected = {
-              "josephson": {"twpa-dispersion", "twpa-reference", "twpa-pump-power"},
               "lumped": {"jpa-kerr", "jpa-flux", "jpa-compression"},
               "cpw": {"cpw-layout", "cpw-passive", "cpw-flux", "cpw-gain", "cpw-photon-balance", "cpw-fit-residual"},
           }
