@@ -55,6 +55,10 @@ get!(ENV, "JULIA_CONDAPKG_BACKEND", "Null")
 get!(ENV, "JULIA_PYTHONCALL_EXE",
     joinpath(REPO, ".venv", Sys.iswindows() ? "Scripts\\python.exe" : "bin/python"))
 get!(ENV, "MPLBACKEND", "Agg")
+# A system Python on Linux picks up Julia's libssl and its build-time CA paths,
+# which breaks the pygit2 import inside gdsfactory.
+import NetworkOptions
+get!(ENV, "SSL_CERT_FILE", NetworkOptions.ca_roots_path())
 
 using JosephsonCircuits, PythonCall, Printf
 include(joinpath(pwd(), "data", "josephsoncircuits_twpa", "julia", "twpa.jl"))
