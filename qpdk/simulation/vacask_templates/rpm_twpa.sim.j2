@@ -1,0 +1,29 @@
+model isource isource
+model resistor resistor
+model capacitor capacitor
+model inductor inductor
+model vsource vsource
+model jj jj
+ip (0 n0) isource type="sine" sinedc=0 ampl={{ pump_current | number }} freq=7.12G tdphase=90 mag={{ "1n" if probe_port == "input" else "0" }} spur={[0]} smag=[{{ "1n" if probe_port == "input" else "0" }}]
+{% if probe_port == "output" %}
+iq (0 n{{ cells }}) isource dc=0 mag=1n spur={[0]} smag=[1n]
+{% endif %}
+vp1 (a1 0) vsource dc=0
+rs (a1 n0) resistor r=50
+vp2 (a2 0) vsource dc=0
+rl (a2 n{{ cells }}) resistor r=50
+cg0 (n0 0) capacitor c=22.5f
+cg{{ cells }} (n{{ cells }} 0) capacitor c=22.5f
+{% for i in range(cells) %}
+j{{ i }} (n{{ i }} n{{ i + 1 }}) jj ic=3.4u c=55f r=1G
+{% endfor %}
+{% for i in range(1, cells) %}
+{% if phase_matching and i % 4 == 1 %}
+cg{{ i }} (n{{ i }} 0) capacitor c=15f
+cc{{ i }} (n{{ i }} r{{ i }}) capacitor c=30f
+cr{{ i }} (r{{ i }} 0) capacitor c=2.8153p
+lr{{ i }} (r{{ i }} 0) inductor l=170p
+{% else %}
+cg{{ i }} (n{{ i }} 0) capacitor c=45f
+{% endif %}
+{% endfor %}

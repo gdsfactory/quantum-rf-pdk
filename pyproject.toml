@@ -254,7 +254,7 @@ addopts = [
   "--tb=short",
   "--ignore=qpdk/models/datasets/data",
   "-m",
-  "not palace"
+  "not palace and not vacask and not hfss and not gfp"
 ]
 filterwarnings = [
   # gdsfactory internally warns about bend_euler for non-90/180 angles even
@@ -269,6 +269,7 @@ markers = [
   "hfss: mark test as requiring HFSS",
   "palace: require the Palace experiment dependencies and a real solver",
   "skip_windows: skip test on Windows",
+  "vacask: require the external VACASK circuit simulator",
 ]
 norecursedirs = [
   "*.egg",

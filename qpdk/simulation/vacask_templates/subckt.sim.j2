@@ -1,0 +1,13 @@
+// Rational model of ports {{ ports | join(", ") }}, {{ n_poles }} poles
+subckt {{ name }} ({{ terminals | join(" ") }})
+  model vccs vccs
+{% for kind, nodes, value in elements %}
+{% if kind == "g" %}
+  g{{ loop.index }} (0 {{ nodes[0] }} {{ nodes[1] }} 0) vccs gain={{ value | number }}
+{% elif kind == "r" %}
+  r{{ loop.index }} ({{ nodes[0] }} 0) resistor r={{ value | number }}
+{% else %}
+  c{{ loop.index }} ({{ nodes[0] }} 0) capacitor c={{ value | number }}
+{% endif %}
+{% endfor %}
+ends

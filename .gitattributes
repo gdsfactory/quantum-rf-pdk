@@ -5,3 +5,7 @@ tests/models/data/*.csv filter=lfs diff=lfs merge=lfs -text
 tests/models/test_models_regression/*.npz filter=lfs diff=lfs merge=lfs -text
 qpdk/models/datasets/data/**/*.parquet filter=lfs diff=lfs merge=lfs -text
 notebooks/data/jax_backend_comparison/*.parquet filter=lfs diff=lfs merge=lfs -text
+*.va linguist-language=Verilog
+qpdk/simulation/vacask_models/*.va text eol=lf
+*.sim linguist-language=Text
+tests/data/vacask/*.raw filter=lfs diff=lfs merge=lfs -text
