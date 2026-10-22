@@ -79,6 +79,7 @@ from pathlib import Path
 from typing import cast
 
 from ansys.aedt.core import Hfss, settings
+from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
 from gplugins.ansys import HFSS, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 from scipy.optimize import minimize_scalar

@@ -57,7 +57,7 @@ gdsfactoryplus = [
   "polars>=2,<3",
 ]
 graphics = ["trimesh", "pyglet<3"]
-hfss = ["gplugins[ansys]~=2.1.0", "pyaedt[graphics]>=0.15.0"]
+hfss = ["gplugins[ansys]~=2.1.0", "polars>=2,<3", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]~=2.1.0",
   "jaxellip",

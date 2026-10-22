@@ -366,7 +366,7 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
     PDK.activate()
     comp = resonator(length=1000, meanders=1)
@@ -405,7 +405,7 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
     PDK.activate()
     comp = resonator(length=1000, meanders=1)
@@ -457,7 +457,7 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
 
     from ansys.aedt.core import Q3d, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
     PDK.activate()
     comp = interdigital_capacitor(fingers=4, finger_length=20)
@@ -495,7 +495,7 @@ def test_q2d_cpw_from_qpdk_cross_section(tmp_path: Path, ansys_install_path: Pat
 
     from ansys.aedt.core import Q2d, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
 
     PDK.activate()
     cross_section = coplanar_waveguide(width=10, gap=6)
