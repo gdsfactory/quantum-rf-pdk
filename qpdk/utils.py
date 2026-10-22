@@ -101,10 +101,6 @@ _EXCLUDE_LAYERS_DEFAULT_M1 = [
     (LAYER.M1_DRAW, 80),
     (LAYER.WG, 80),
 ]
-_EXCLUDE_LAYERS_DEFAULT_M2 = [
-    (LAYER.M2_ETCH, 80),
-    (LAYER.M2_DRAW, 80),
-]
 
 
 def fill_magnetic_vortices(

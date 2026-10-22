@@ -8,8 +8,6 @@ from typing import ClassVar, final
 
 from qpdk.singleton import SingletonMeta
 
-cwd = pathlib.Path.cwd()
-cwd_config = cwd / "config.yml"
 module = pathlib.Path(__file__).parent.absolute()
 repo = module.parent
 

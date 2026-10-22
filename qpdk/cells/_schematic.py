@@ -51,13 +51,6 @@ _1PORT = [
     {"name": "o1", "side": "left", "type": "photonic"},
 ]
 
-# 3-port (couplers, tees)
-_3PORT = [
-    {"name": "o1", "side": "left", "type": "photonic"},
-    {"name": "o2", "side": "right", "type": "photonic"},
-    {"name": "o3", "side": "top", "type": "photonic"},
-]
-
 # Coupled resonator model ports. The resonator endpoint is intentionally
 # retained in the SAX model boundary even though it is not a chip-level port.
 # The coupling line runs above the resonator, matching the layout cell
