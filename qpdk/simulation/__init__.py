@@ -5,8 +5,9 @@ positive metal geometry for a field solver. This package also holds
 QPDK-specific inputs for :mod:`gplugins.comsol`.
 
 **Ansys AEDT (HFSS, Q3D Extractor, Q2D):** use :mod:`gplugins.ansys` directly.
-QPDK activates itself as the gdsfactory PDK, so the gplugins classes pick up
-:data:`~qpdk.tech.LAYER_STACK` by default; pass
+Activate QPDK first (``qpdk.PDK.activate()``); importing :mod:`qpdk` does not.
+The gplugins classes then pick up :data:`~qpdk.tech.LAYER_STACK` from the active
+PDK; pass
 ``material_properties=qpdk.tech.material_properties`` to use QPDK's material
 table instead of the gplugins default:
 
@@ -65,9 +66,11 @@ Note:
 Example:
     >>> from ansys.aedt.core import Hfss
     >>> from gplugins.ansys import HFSS
+    >>> from qpdk import PDK
     >>> from qpdk.cells import resonator
     >>> from qpdk.simulation.layout import prepare_metal_layout
     >>> from qpdk.tech import material_properties
+    >>> PDK.activate()
     >>> comp = prepare_metal_layout(resonator(length=4000, meanders=4))
     >>> hfss_app = Hfss(project="resonator_sim", solution_type="Eigenmode")
     >>> hfss_sim = HFSS(hfss_app, material_properties=material_properties)

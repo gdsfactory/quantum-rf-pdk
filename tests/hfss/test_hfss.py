@@ -348,14 +348,15 @@ def test_prepare_metal_layout_margin():
     comp = resonator(length=3000)
 
     bbox_orig = comp.bbox()
-    prepared = prepare_metal_layout(comp, margin_draw=200)
+    margin = 200
+    prepared = prepare_metal_layout(comp, margin_draw=margin)
 
     assert isinstance(prepared, Component)
     bbox_new = prepared.bbox()
-    assert bbox_new.left <= bbox_orig.left
-    assert bbox_new.right >= bbox_orig.right
-    assert bbox_new.bottom <= bbox_orig.bottom
-    assert bbox_new.top >= bbox_orig.top
+    assert bbox_new.left == pytest.approx(bbox_orig.left - margin)
+    assert bbox_new.right == pytest.approx(bbox_orig.right + margin)
+    assert bbox_new.bottom == pytest.approx(bbox_orig.bottom - margin)
+    assert bbox_new.top == pytest.approx(bbox_orig.top + margin)
 
 
 @pytest.mark.hfss
@@ -524,7 +525,9 @@ def test_q2d_cpw_from_qpdk_cross_section(tmp_path: Path, ansys_install_path: Pat
         )
 
         assert isinstance(result, dict)
-        assert "signal" in result
-        assert "gnd_left" in result
-        assert "gnd_right" in result
-        assert "substrate" in result
+        assert set(result) == {"signal", "gnd_left", "gnd_right", "substrate"}
+        object_names = q2d_app.modeler.object_names
+        for role, object_name in result.items():
+            assert object_name in object_names, (
+                f"{role} object {object_name!r} not drawn"
+            )
