@@ -13,6 +13,8 @@
 # requires-python = ">=3.12,<3.15"
 # dependencies = [
 #   "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+#   # Temporary: gplugins.ansys is not in a gplugins release yet (see [tool.uv.sources]).
+#   "gplugins[ansys] @ git+https://github.com/gdsfactory/gplugins.git@3de427ddf02d3e3c93558cdf47ff2af0018b9268",
 # ]
 # ///
 
@@ -80,6 +82,7 @@ from typing import cast
 
 from ansys.aedt.core import Hfss, settings
 from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
+from gplugins.ansys import HFSS, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 from scipy.optimize import minimize_scalar
 
@@ -95,13 +98,8 @@ from qpdk import PDK
 from qpdk.cells.resonator import resonator
 from qpdk.config import PATH
 from qpdk.models.resonator import resonator_frequency
-from qpdk.simulation import (
-    HFSS,
-    detach_desktop_logging,
-    fit_view,
-    prepare_component_for_aedt,
-)
-from qpdk.tech import coplanar_waveguide
+from qpdk.simulation.layout import prepare_metal_layout
+from qpdk.tech import coplanar_waveguide, material_properties
 
 PDK.activate()
 
@@ -185,7 +183,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.9
 
 
 # Create temporary directory for project
@@ -218,14 +216,13 @@ print(f"Solution type: {hfss.solution_type}")
 
 # %%
 # Prepare component for export
-res_component = prepare_component_for_aedt(res_component, margin_draw=200)
+res_component = prepare_metal_layout(res_component, margin_draw=200)
 
-# Initialize HFSS wrapper
-hfss_sim = HFSS(hfss)
+# Initialize the HFSS simulation
+hfss_sim = HFSS(hfss, material_properties=material_properties)
 
-# Import the component geometry using native GDS import
-success = hfss_sim.import_component(res_component, import_as_sheets=True)
-print(f"GDS import successful: {success}")
+# Import the component geometry using native GDS import (raises on failure)
+hfss_sim.import_component(res_component, import_as_sheets=True)
 
 # Add substrate below the component
 substrate_name = hfss_sim.add_substrate(
@@ -258,7 +255,7 @@ fit_view(hfss)
 img_dir = PATH.repo / "docs" / "_static" / "images"
 img_dir.mkdir(parents=True, exist_ok=True)
 hfss_img_path = img_dir / "hfss_eigenmode_resonator_geom.jpg"
-hfss.post.export_model_picture(
+cast(PostProcessor3D, hfss.post).export_model_picture(
     full_name=str(hfss_img_path), show_axis=True, show_grid=False, show_ruler=True
 )
 
@@ -318,7 +315,7 @@ else:
 # Get the eigenmode frequencies and Q-factors from the simulation.
 
 # %%
-# Extract results using the wrapper
+# Extract results
 sim_results = hfss_sim.get_eigenmode_results("EigenmodeSetup")
 
 print("\n=== Eigenmode Results ===")
@@ -369,7 +366,7 @@ plot = cast(PostProcessor3D, hfss.post).create_fieldplot_surface(
 # Export the field plot picture
 hfss_field_img_path = img_dir / "hfss_eigenmode_resonator_field.jpg"
 if plot:
-    hfss.post.export_model_picture(
+    cast(PostProcessor3D, hfss.post).export_model_picture(
         full_name=str(hfss_field_img_path),
         show_axis=True,
         show_grid=False,

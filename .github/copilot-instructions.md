@@ -19,7 +19,7 @@ Detailed rules in `.github/instructions/` apply automatically to the areas below
 - `cells.instructions.md` — `qpdk/cells/**`
 - `tech-layers.instructions.md` — `qpdk/tech.py`, `qpdk/layers.yaml`, `qpdk/klayout/**`
 - `models.instructions.md` — `qpdk/models/**`
-- `simulation.instructions.md` — `qpdk/simulation/**`
+- `simulation.instructions.md` — `qpdk/simulation/**`, `notebooks/src/hfss*.py`, `tests/hfss/**`
 - `datasets.instructions.md` — `qpdk/models/datasets/**`
 - `samples.instructions.md` — `qpdk/samples/**`
 - `tests.instructions.md` — `tests/**`
@@ -66,7 +66,7 @@ qpdk/                   Core Python package
     derived/             Composite cells (e.g. transmon_with_resonator_and_probeline)
   models/               S-parameter and circuit models
     constants.py         Centralized physical constants (e, h, Φ_0, ε_0, …)
-  simulation/           HFSS/Q3D automation (aedt_base, hfss, q3d)
+  simulation/           Solver layout prep and COMSOL/MATLAB helpers (AEDT: use gplugins.ansys)
   klayout/              KLayout technology files
   samples/              Example designs (.py, .pic.yml, .gsch)
   tech.py               Layer map, layer stack, cross sections

@@ -608,8 +608,8 @@ them as globs.
         simulation, meshing, and the DataFrame display helpers. **This is the baseline
         extra — nearly every notebook needs it.**
     - - ``hfss``
-      - ``pyaedt[graphics]``, ``polars``
-      - Ansys AEDT drivers (HFSS, Q2D, Q3D) behind ``qpdk.simulation``. Also requires a
+      - ``gplugins[ansys]``, ``pyaedt[graphics]``
+      - Ansys AEDT drivers (HFSS, Q2D, Q3D) from ``gplugins.ansys``. Also requires a
         local Ansys installation and a license, which are not pip-installable.
     - - ``comsol``
       - ``gplugins[comsol]``

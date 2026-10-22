@@ -4,8 +4,8 @@ ansys-aedt:
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - 'qpdk/simulation/**/*'
               - 'notebooks/src/hfss*.py'
+              - 'tests/hfss/**/*'
 ci:
   - any:
       - changed-files:

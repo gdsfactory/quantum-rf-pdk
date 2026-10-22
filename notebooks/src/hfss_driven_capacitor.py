@@ -13,6 +13,8 @@
 # requires-python = ">=3.12,<3.15"
 # dependencies = [
 #   "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+#   # Temporary: gplugins.ansys is not in a gplugins release yet (see [tool.uv.sources]).
+#   "gplugins[ansys] @ git+https://github.com/gdsfactory/gplugins.git@3de427ddf02d3e3c93558cdf47ff2af0018b9268",
 # ]
 # ///
 
@@ -82,7 +84,9 @@ import gdsfactory as gf
 import matplotlib.pyplot as plt
 import numpy as np
 from ansys.aedt.core import Hfss, Q3d, settings
+from ansys.aedt.core.modules.solve_setup import SetupHFSS
 from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
+from gplugins.ansys import HFSS, Q3D, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 
 from qpdk import PDK
@@ -91,14 +95,8 @@ from qpdk.cells.waveguides import straight_open
 from qpdk.config import PATH
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.cpw import cpw_ep_r_from_cross_section
-from qpdk.simulation import (
-    HFSS,
-    Q3D,
-    detach_desktop_logging,
-    fit_view,
-    prepare_component_for_aedt,
-)
-from qpdk.tech import coplanar_waveguide
+from qpdk.simulation.layout import prepare_metal_layout
+from qpdk.tech import coplanar_waveguide, material_properties
 
 PDK.activate()
 
@@ -213,7 +211,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.9
 
 
 # Create temporary directory for project
@@ -245,14 +243,13 @@ print(f"Solution type: {hfss.solution_type}")
 
 # %%
 # Prepare component for export
-prepared_component = prepare_component_for_aedt(idc_component, margin_draw=50)
+prepared_component = prepare_metal_layout(idc_component, margin_draw=50)
 
-# Initialize HFSS wrapper
-hfss_sim = HFSS(hfss)
+# Initialize the HFSS simulation
+hfss_sim = HFSS(hfss, material_properties=material_properties)
 
-# Import the component geometry using native GDS import
-success = hfss_sim.import_component(prepared_component, import_as_sheets=True)
-print(f"GDS import successful: {success}")
+# Import the component geometry using native GDS import (raises on failure)
+hfss_sim.import_component(prepared_component, import_as_sheets=True)
 
 # Add substrate below the component
 substrate_name = hfss_sim.add_substrate(
@@ -289,7 +286,7 @@ fit_view(hfss)
 img_dir = PATH.repo / "docs" / "_static" / "images"
 img_dir.mkdir(parents=True, exist_ok=True)
 hfss_img_path = img_dir / "hfss_driven_capacitor_geom.jpg"
-hfss.post.export_model_picture(
+cast(PostProcessor3D, hfss.post).export_model_picture(
     full_name=str(hfss_img_path), show_axis=True, show_grid=False, show_ruler=True
 )
 
@@ -320,9 +317,13 @@ for port in prepared_component.ports:
 
 # %%
 # Create driven modal setup
-setup = hfss.create_setup(
-    name="DrivenSetup",
-    Frequency=f"{HFSS_CONFIG['solution_frequency_ghz']}GHz",
+# `create_setup` is typed as returning either setup class; a driven modal one is a SetupHFSS.
+setup = cast(
+    SetupHFSS,
+    hfss.create_setup(
+        name="DrivenSetup",
+        Frequency=f"{HFSS_CONFIG['solution_frequency_ghz']}GHz",
+    ),
 )
 
 setup.props["MaxDeltaS"] = HFSS_CONFIG["max_delta_s"]
@@ -340,6 +341,8 @@ sweep = setup.create_frequency_sweep(
     sweep_type="Interpolating",
     num_of_freq_points=HFSS_CONFIG["sweep_points"],
 )
+if isinstance(sweep, bool):
+    raise TypeError(f"AEDT returned {sweep!r} instead of a frequency sweep")
 
 print("Driven modal setup configured:")
 print(f"  - Solution frequency: {HFSS_CONFIG['solution_frequency_ghz']} GHz")
@@ -376,20 +379,24 @@ else:
 # Get the S-parameters from the simulation and visualize the results.
 
 # %%
-# Extract results using the wrapper
+# Extract results; gplugins returns each S-parameter as re(...) and im(...) columns
 df_results = hfss_sim.get_sparameter_results(setup.name, sweep.name)
 
 frequencies_ghz = df_results["frequency_ghz"].to_numpy()
 
+
+def complex_trace(trace: str) -> np.ndarray:
+    """Rebuild a complex S-parameter trace from its real and imaginary columns."""
+    re_col = next(c for c in df_results.columns if c.startswith("re(") and trace in c)
+    im_col = next(c for c in df_results.columns if c.startswith("im(") and trace in c)
+    return df_results[re_col].to_numpy() + 1j * df_results[im_col].to_numpy()
+
+
 # Plot S-parameters
 fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
-# Filter for S11 and S21 type traces
-s11_col = next(col for col in df_results.columns if "S(o1:1,o1:1)" in col)
-s21_col = next(col for col in df_results.columns if "S(o2:1,o1:1)" in col)
-
-s11_trace = df_results[s11_col].to_numpy().astype(np.complex128)
-s21_trace = df_results[s21_col].to_numpy().astype(np.complex128)
+s11_trace = complex_trace("S(o1:1,o1:1)")
+s21_trace = complex_trace("S(o2:1,o1:1)")
 
 s11_mag_db = 20 * np.log10(np.abs(s11_trace))
 s21_mag_db = 20 * np.log10(np.abs(s21_trace))
@@ -433,7 +440,7 @@ plot = cast(PostProcessor3D, hfss.post).create_fieldplot_surface(
 # Export the field plot picture
 hfss_field_img_path = img_dir / "hfss_driven_capacitor_field.jpg"
 if plot:
-    hfss.post.export_model_picture(
+    cast(PostProcessor3D, hfss.post).export_model_picture(
         full_name=str(hfss_field_img_path),
         show_axis=True,
         show_grid=False,
@@ -473,6 +480,9 @@ display(Image(filename=str(hfss_field_img_path)))
 solution_y = hfss.post.get_solution_data(
     expressions="Y(o2:1,o1:1)", setup_sweep_name=f"{setup.name} : {sweep.name}"
 )
+
+if isinstance(solution_y, bool):
+    raise TypeError(f"AEDT returned {solution_y!r} instead of the Y(o2:1,o1:1) data")
 
 # Parse complex Y-parameters
 _, y_real = solution_y.get_expression_data(formula="real")
@@ -564,8 +574,8 @@ q3d = Q3d(
 detach_desktop_logging(q3d)
 q3d.modeler.model_units = "um"
 
-# Initialize Q3D wrapper
-q3d_sim = Q3D(q3d)
+# Initialize the Q3D simulation
+q3d_sim = Q3D(q3d, material_properties=material_properties)
 
 print(f"Q3D project created: {q3d.project_file}")
 print(f"Design name: {q3d.design_name}")
@@ -617,7 +627,7 @@ fit_view(q3d)
 img_dir = PATH.repo / "docs" / "_static" / "images"
 img_dir.mkdir(parents=True, exist_ok=True)
 q3d_img_path = img_dir / "q3d_driven_capacitor_geom.jpg"
-q3d.post.export_model_picture(
+cast(PostProcessor3D, q3d.post).export_model_picture(
     full_name=str(q3d_img_path), show_axis=True, show_grid=False, show_ruler=True
 )
 
@@ -674,7 +684,7 @@ print(f"Q3D analysis completed in {elapsed_q3d:.1f} seconds")
 # corresponds to the coupling capacitance of the interdigital capacitor.
 
 # %%
-# Extract the capacitance matrix using the wrapper
+# Extract the capacitance matrix
 cap_df = q3d_sim.get_capacitance_matrix(setup_name="Q3DSetup")
 print("Q3D Capacitance Matrix (F):")
 print(cap_df)

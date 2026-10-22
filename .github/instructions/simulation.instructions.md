@@ -1,19 +1,22 @@
 ---
-applyTo: "qpdk/simulation/**/*.py"
+applyTo: "qpdk/simulation/**/*.py,notebooks/src/hfss*.py,tests/hfss/**/*.py"
 ---
 
 # Simulation automation review instructions
 
-`qpdk/simulation/` drives Ansys HFSS and Q3D through `pyaedt` (`aedt_base.py`, `hfss.py`, `q3d.py`). None of this runs
-in normal CI — the `hfss` pytest marker gates it and `just test-hfss` needs a licensed local install — so review has to
-carry more weight than usual here.
+QPDK does not wrap Ansys AEDT. The HFSS notebooks and `tests/hfss/` use `gplugins.ansys` (which drives `pyaedt`)
+directly, with `qpdk.simulation.layout.prepare_metal_layout` for geometry and `qpdk.tech.material_properties` passed as
+`material_properties`. Fix generic AEDT behaviour in gplugins, not here, and do not add QPDK subclasses, re-exports or
+default-wrappers around gplugins classes. `qpdk/simulation/` holds the shared layout preparation and the COMSOL and
+MATLAB helpers. None of the solver code runs in normal CI — the `hfss` pytest marker gates the AEDT tests and
+`just test-hfss` needs a licensed local install — so review has to carry more weight than usual here.
 
 ## What to check
 
-- `pyaedt` and `polars` are in ruff's `require-lazy` list. Import them inside functions, never at module level, so
-  `import qpdk` works without the `hfss` extra installed.
-- Guard the optional import with an actionable message pointing at `uv sync --extra hfss`, rather than letting a bare
-  `ModuleNotFoundError` escape.
+- `import qpdk` and `import qpdk.simulation` must work without the `hfss` extra, so nothing under `qpdk/` imports
+  `gplugins.ansys` or `pyaedt`. Ruff does not check this: its `require-lazy` setting only covers PEP 810 `lazy import`
+  statements, so review has to. Tests and notebooks import `gplugins.ansys` directly; the test environment installs the
+  `hfss` extra, so do not guard them with `pytest.importorskip`.
 - AEDT sessions and projects are external resources. Verify they are released on every path — prefer a context manager
   or `try`/`finally` over a bare `close()` at the end of a happy path.
 - Non-graphical mode must stay the default for anything that could run unattended. Flag a hard-coded
@@ -43,7 +46,6 @@ importable without the `comsol` extra.
 ## Tests
 
 - COMSOL tests live in `tests/comsol/` and cover only the QPDK side; the generic behaviour is tested in gplugins.
-- New simulation code needs a test marked `@pytest.mark.hfss` in `tests/hfss/test_hfss.py`, even though it will be
-  skipped in CI.
+- New AEDT workflow code needs a test marked `@pytest.mark.hfss` in `tests/hfss/`, even though it will be skipped in CI.
 - Pure logic (setup construction, result parsing, unit conversion) should be factored out and tested **without** AEDT so
   that something is actually exercised in CI. Flag a change where all new logic is unreachable without a licence.

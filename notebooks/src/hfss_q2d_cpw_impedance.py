@@ -13,6 +13,8 @@
 # requires-python = ">=3.12,<3.15"
 # dependencies = [
 #   "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+#   # Temporary: gplugins.ansys is not in a gplugins release yet (see [tool.uv.sources]).
+#   "gplugins[ansys] @ git+https://github.com/gdsfactory/gplugins.git@3de427ddf02d3e3c93558cdf47ff2af0018b9268",
 # ]
 # ///
 
@@ -81,17 +83,19 @@ import os
 import tempfile
 import time
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
 from ansys.aedt.core import Q2d, settings
+from ansys.aedt.core.visualization.post.post_common_3d import PostProcessor3D
+from gplugins.ansys import Q2D, detach_desktop_logging, fit_view
 from IPython.display import Image, display
 
 from qpdk import PDK
 from qpdk.config import PATH
-from qpdk.models.cpw import cpw_parameters
-from qpdk.simulation import Q2D, detach_desktop_logging, fit_view
-from qpdk.tech import coplanar_waveguide
+from qpdk.models.cpw import cpw_parameters, get_cpw_dimensions
+from qpdk.tech import LAYER_STACK, coplanar_waveguide, material_properties
 
 PDK.activate()
 
@@ -132,7 +136,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.9
 
 # Create temporary directory for project
 temp_dir = tempfile.TemporaryDirectory(suffix=".ansys_qpdk")
@@ -155,17 +159,27 @@ print(f"Design name: {q2d.design_name}")
 # %% [markdown]
 # ## Build CPW Cross-Section Geometry
 #
-# Use {py:meth}`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section` to automatically
-# build the CPW geometry (signal conductor, ground planes, substrate) from the
-# gdsfactory cross-section and QPDK layer stack.
+# Read the CPW width and gap back from the gdsfactory cross-section with
+# {py:func}`~qpdk.models.cpw.get_cpw_dimensions`, then build the CPW geometry
+# (signal conductor, ground planes, substrate) with
+# {py:meth}`~gplugins.ansys.Q2D.create_2d_cpw` on the `Substrate` and `M1`
+# levels of the QPDK layer stack.
 
 # %%
 
-# Create the Q2D wrapper
-q2d_sim = Q2D(q2d)
+# Create the Q2D simulation
+q2d_sim = Q2D(q2d, material_properties=material_properties)
 
 # Create the 2D cross-section geometry
-object_names = q2d_sim.create_2d_from_cross_section(cross_section, ground_width=30)
+xs_width, xs_gap = get_cpw_dimensions(cross_section)
+object_names = q2d_sim.create_2d_cpw(
+    xs_width,
+    xs_gap,
+    LAYER_STACK,
+    substrate_level="Substrate",
+    conductor_level="M1",
+    ground_width=30,
+)
 
 print("Created Q2D geometry:")
 for role, name in object_names.items():
@@ -185,7 +199,7 @@ fit_view(q2d)
 img_dir = PATH.repo / "docs" / "_static" / "images"
 img_dir.mkdir(parents=True, exist_ok=True)
 q2d_img_path = img_dir / "q2d_cpw_impedance_geom.jpg"
-q2d.post.export_model_picture(
+cast(PostProcessor3D, q2d.post).export_model_picture(
     full_name=str(q2d_img_path), show_axis=True, show_grid=False, show_ruler=True
 )
 
@@ -253,6 +267,8 @@ data = q2d.post.get_solution_data(
     context="Original",
     setup_sweep_name="Q2DSetup : FrequencySweep",
 )
+if isinstance(data, bool):
+    raise TypeError(f"AEDT returned {data!r} instead of the Z0(signal,signal) data")
 
 frequencies_ghz = np.array(data.primary_sweep_values)
 _, z0_real = data.get_expression_data(formula="real")
@@ -319,7 +335,7 @@ print("Q2D session closed and temporary files cleaned up")
 #
 # 2. **Q2D Setup**: Initializing Ansys 2D Extractor via PyAEDT and building the
 #    cross-sectional geometry using
-#    {py:meth}`~qpdk.simulation.q3d.Q2D.create_2d_from_cross_section`
+#    {py:meth}`~gplugins.ansys.Q2D.create_2d_cpw`
 #
 # 3. **Impedance Extraction**: Running the Q2D quasi-static solver to compute
 #    $Z_0$ as a function of frequency from 1 to 10 GHz
