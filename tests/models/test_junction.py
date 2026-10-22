@@ -65,6 +65,34 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
         )
 
 
+def _series_impedance_from_s11(s11: jax.Array, z0: float = 50.0) -> jax.Array:
+    """Invert the series-element relation ``S11 = Z / (Z + 2 Z0)``."""
+    return 2 * z0 * s11 / (1 - s11)
+
+
+@pytest.mark.parametrize("ic", [0.5e-6, 1e-6, 10e-6])
+def test_josephson_junction_impedance_is_referenced_to_50_ohm(ic: float) -> None:
+    """In the lossless, capacitance-free limit the junction is a pure ``jωL_J`` in series."""
+    f = jnp.array([4e9, 6e9, 8e9])
+    s = josephson_junction(f=f, ic=ic, capacitance=1e-24, resistance=1e18)
+    z = _series_impedance_from_s11(s["o1", "o1"])
+    expected = 1j * 2 * jnp.pi * f * Φ_0 / (2 * jnp.pi * ic)
+    assert jnp.allclose(z, expected, rtol=1e-4), (z, expected)
+    assert jnp.allclose(
+        jnp.abs(s["o1", "o1"]) ** 2 + jnp.abs(s["o1", "o2"]) ** 2, 1.0, atol=1e-9
+    )
+
+
+def test_squid_junction_impedance_is_referenced_to_50_ohm() -> None:
+    """A symmetric SQUID at zero flux is ``jωΦ_0 / (2π I_c,tot)`` in series."""
+    f = jnp.array([4e9, 6e9, 8e9])
+    ic_tot = 4.8e-6
+    s = squid_junction(f=f, ic_tot=ic_tot, flux=0.0, capacitance=1e-24, resistance=1e18)
+    z = _series_impedance_from_s11(s["o1", "o1"])
+    expected = 1j * 2 * jnp.pi * f * Φ_0 / (2 * jnp.pi * ic_tot)
+    assert jnp.allclose(z, expected, rtol=1e-4), (z, expected)
+
+
 @final
 class TestSQUIDJunction(TwoPortModelTestSuite):
     """Tests for squid_junction S-parameter model."""

@@ -559,7 +559,9 @@ def sax_reflection(f: jax.Array, flux: float) -> jax.Array:
     squid = squid_junction(
         f=f, ic_tot=IC_SQUID, capacitance=0.0, resistance=1e12, flux=flux * Φ_0
     )
-    y_load = 1 / squid["o1", "o1"] - 1
+    # Series element referenced to 50 Ω: S11 = Z / (Z + 2 Z0).
+    s11 = squid["o1", "o1"]
+    y_load = (1 - s11) / (2 * 50.0 * s11)
     z_in = (abcd[:, 0, 0] / y_load + abcd[:, 0, 1]) / (
         abcd[:, 1, 0] / y_load + abcd[:, 1, 1]
     )
