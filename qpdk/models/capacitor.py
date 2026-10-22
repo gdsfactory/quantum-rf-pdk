@@ -166,7 +166,7 @@ def coupling_pad_pair(
 ) -> sax.SDict:
     r"""Facing coupling pads with their finite-frame ground capacitances.
 
-    The two :func:`qpdk.cells.plate_capacitor_single` electrodes map to
+    Matches :func:`qpdk.cells.coupling_pad_pair`. Its two electrodes map to
     ``o1`` and ``o2``. Dimensions are in micrometres, frequency in Hz and
     reference impedance in ohms. Both ports reference the same 45 um wide
     ground frame, 10 um from the pad bounding box. The substrate is silicon.

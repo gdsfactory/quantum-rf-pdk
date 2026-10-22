@@ -16,6 +16,7 @@ from .airbridge import *
 from .bump import *
 from .capacitor import *
 from .chip import *
+from .coupling_pad import *
 from .derived import *
 from .fluxonium import *
 from .inductor import *
