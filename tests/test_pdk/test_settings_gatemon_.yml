@@ -1,10 +1,10 @@
 info:
   qubit_type: gatemon
-name: gatemon_IS150_150_PG60_PGT40_ES40_10_ES60_LW2_JL1_JW0p2_a781716d
+name: gatemon_IS150_150_PG60_PGT40_ES40_10_ES60_LW2_JL1_JW0p2_5a8b9eca
 ports:
   gate:
     center:
-    - 40
+    - 60
     - -205
     layer: M1_DRAW
     name: gate
@@ -13,7 +13,7 @@ ports:
     width: 10
   junction:
     center:
-    - 0
+    - -40
     - -115
     layer: JJ_AREA
     name: junction
@@ -30,13 +30,14 @@ ports:
     port_type: optical
     width: 150
 settings:
+  electrode_offset: -40
   electrode_size:
   - 40
   - 10
   electrode_spacing: 60
   gate_cross_section: cpw
   gate_length: 50
-  gate_offset: 40
+  gate_offset: 100
   gate_tip_gap: 5
   gate_tip_width: 2
   island_size:
