@@ -118,7 +118,12 @@ n_turns=3)`` returns the winding-to-ground capacitance in F from 54 Palace extra
 Dimensions are in um; turn counts 3, 5 and 7 are separate variants. Both winding ends
 share one potential, so this lookup does not determine differential parasitics,
 inductance or self-resonance. The generation recipe is
-``qpdk/models/datasets/data/meander_inductor.py``.
+``qpdk/models/datasets/data/meander_ground_capacitance.py``.
+
+The driven recipe ``qpdk/models/datasets/data/meander_inductor.py`` prepares a two-port
+full-wave sweep from 0.5 to 20 GHz. It includes a fixed kinetic sheet inductance and the
+finite ground frame. Its mesh, domain and interpolation checks must pass before these
+new results can be curated.
 
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
 cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
@@ -249,3 +254,23 @@ real Maxwell matrix into a lumped N-port model, including capacitances to ground
 Distributed CPW physics lives in ``qpdk.models.couplers.cpw_coupling_model``;
 ``coupler_straight`` uses the same Palace mutual-capacitance lookup through
 ``cpw_cpw_coupling_capacitance``.
+
+For a full-wave dataset, copy ``meander_inductor.py`` and use the shared
+``_driven.Recipe`` and ``_driven.run_cli`` helpers. Supply your geometry grid,
+frequencies in Hz and port names in matrix order. The ``prepare`` function builds and
+meshes a driven simulation, sets an independent excitation at each port, writes the
+config, and returns the simulation. Record the reference impedances, reference planes
+and materials in the recipe provenance.
+
+The helper runs the complete frequency sweep once per geometry, retains all complex
+matrix entries and resumes completed solves. Geometry shards retain the full frequency
+axis. Missing ports, frequencies or failed solves cannot be merged into a complete
+dataset. Passivity and optional reciprocity checks apply to any number of ports. These
+checks do not replace mesh refinement or held-out interpolation checks. For
+nonreciprocal media, set ``reciprocal=False`` in the recipe.
+
+Load the results with ``s_parameters_model(path, **variants)``. The returned SAX model
+interpolates frequency and continuous geometry axes together and returns NaN outside the
+stored domain. Discrete variants are selected when loading. Complex linear interpolation
+can introduce apparent loss between sample points, so check withheld frequencies near
+resonances before choosing the frequency spacing.

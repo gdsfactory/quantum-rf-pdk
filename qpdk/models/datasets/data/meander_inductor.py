@@ -1,54 +1,97 @@
 # /// script
-# requires-python = "~=3.12.0"
+# requires-python = ">=3.12,<3.15"
 # dependencies = [
 #   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git@c00764bc18cbcb0e58ccb5c7dfb880d550455d35",
 #   "typer>=0.24,<1",
 #   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@946c3973b6311f0a4a3cf3bd601336ad7a186dfb",
 # ]
 # ///
-"""Equipotential meander-to-ground capacitance, with discrete turn counts.
+"""Generate two-port meander S-parameters with a driven Palace solve.
 
-The entire connected winding is one electrostatic terminal. This measures its
-common-mode capacitance to the specified return frame, not inter-turn
-capacitance under a varying voltage or a self-resonance model. The two ends
-must never be assigned separate electrostatic terminal potentials.
+The winding lies between air and silicon, inside a coplanar ground frame
+100 um wide and 20 um from its bounding box. Each 50 ohm lumped port spans
+the gap from one wire end to the frame. The reference planes are the wire
+ends, with no added feedlines or de-embedding. Both ports are excited
+independently. The frame is part of the device environment.
 
-Geometric inductance needs a magnetostatic solve with a defined current return
-path, pending upstream solver support. Supply sheet kinetic inductance separately.
+The thin film has a fixed sheet kinetic inductance of 0.4 pH per square,
+including the ground frame. This is a material assumption, not a measured
+film property. Geometric inductance and distributed capacitance come from
+the field solve. Dielectric and conductor loss are omitted, while the outer
+boundary absorbs radiation. The impedance convention follows
+https://awslabs.github.io/palace/stable/guide/boundaries/#Impedance-boundary.
 
-Look up the common-mode capacitance with
-``qpdk.models.meander_inductor_ground_capacitance(n_turns=5, turn_length=150,
-wire_width=1.5, wire_gap=3)``. The returned value is in F.
+Use ``s_parameters_model(path, n_turns="5")`` to interpolate the complex
+matrix in frequency and geometry. Turn count is a discrete selection.
+The equipotential diagnostic remains in ``meander_ground_capacitance.py``.
 
 Preview with ``uv run --script qpdk/models/datasets/data/meander_inductor.py --dry-run``.
-Edit GRID and SETTINGS to define a new sweep; validate representative meshes first.
-Generate disjoint grids with ``--shard``/``--shards`` and merge with repeated
-``--merge-shards`` arguments only after every shard succeeds.
+Check mesh, element order, domain and held-out frequencies before generating
+the full grid. Each geometry solves the whole frequency sweep once.
 """
 
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import gdsfactory as gf
-from _experiment import Geometry, Recipe, Settings, ground_frame, run_cli
+import jax.numpy as jnp
+from _driven import Recipe, run_cli
+from _experiment import ground_frame
 
 from qpdk.cells import meander_inductor
-from qpdk.tech import coplanar_waveguide
+from qpdk.tech import LAYER, coplanar_waveguide, material_properties
+
+if TYPE_CHECKING:
+    from gsim.palace import DrivenSim
 
 GRID = {
     "turn_length": [100.0, 200.0, 300.0],
     "wire_width": [1.0, 2.0],
     "wire_gap": [2.0, 4.0, 8.0],
 }
-SETTINGS = Settings(near_mesh=0.49, far_mesh=28.0, domain_pad=300.0, order=3)
-TERMINALS = ("winding",)
+VARIANTS = {"n_turns": ["3", "5", "7"]}
+NAME = "meander_sparameters_palace"
+TERMINALS = ("o1", "o2")
+CLEARANCE = 20.0
 
 
-def geometry(
-    point: dict[str, float | str], settings: Settings, _processes: int
-) -> Geometry:
-    """Keep the winding continuous and give it one voltage terminal."""
-    if min(float(point[name]) for name in GRID) <= 0:
-        raise ValueError("Winding dimensions must be positive")
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Settings:
+    """Lengths in um, frequencies in Hz, sheet inductance in H per square."""
+
+    near_mesh: float = 0.5
+    far_mesh: float = 100.0
+    domain_pad: float = 300.0
+    order: int = 2
+    tolerance: float = 1e-8
+    sheet_inductance: float = 0.4e-12
+    fmin: float = 0.5e9
+    fmax: float = 20e9
+    points: int = 40
+
+    def __post_init__(self) -> None:
+        """Reject invalid mesh and material inputs before starting a solve."""
+        if not 0 < self.near_mesh <= self.far_mesh or self.domain_pad <= 0:
+            raise ValueError("Require positive domain and 0 < near_mesh <= far_mesh")
+        if self.sheet_inductance < 0 or self.order < 1 or not 0 < self.tolerance < 1:
+            raise ValueError("Invalid film or solver settings")
+        if not 0 < self.fmin < self.fmax or self.points < 2:
+            raise ValueError(
+                "Require positive increasing frequencies and at least two points"
+            )
+
+
+SETTINGS = Settings()
+
+
+def geometry(point: dict[str, float | str]) -> gf.Component:
+    """Reuse the winding cell and add the specified return conductor."""
+    if int(point["n_turns"]) < 1 or min(float(point[name]) for name in GRID) <= 0:
+        raise ValueError("Turn count and winding dimensions must be positive")
     device = meander_inductor(
         n_turns=int(point["n_turns"]),
         turn_length=float(point["turn_length"]),
@@ -57,35 +100,145 @@ def geometry(
     )
     component = gf.Component()
     component.add_ref(device)
-    component.add_port("winding", port=device.ports["o1"], port_type="electrical")
-    bounds = ground_frame(
-        component, clearance=20.0, width=100.0, domain_pad=settings.domain_pad
+    component.add_ports(device.ports)
+    ground_frame(component, clearance=CLEARANCE, width=100.0, domain_pad=0.0)
+    return component
+
+
+def simulation(
+    point: dict[str, float | str], settings: Settings, output: Path, processes: int
+) -> DrivenSim:
+    """Set up a thin-film driven solve without a volume mesh inside the metal."""
+    from gsim.common import Layer, LayerStack  # ruff: ignore[import-outside-top-level]
+    from gsim.palace import DrivenSim  # ruff: ignore[import-outside-top-level]
+
+    component = geometry(point)
+    sim = DrivenSim()
+    sim.set_geometry(component)
+    sim.set_stack(
+        LayerStack(
+            layers={
+                "metal": Layer(
+                    name="metal",
+                    gds_layer=gf.get_layer_tuple(LAYER.M1_DRAW),
+                    zmin=0.0,
+                    zmax=0.2,
+                    thickness=0.2,
+                    material="aluminum",
+                    layer_type="conductor",
+                )
+            },
+            dielectrics=[
+                dict(
+                    name="substrate",
+                    zmin=-settings.domain_pad,
+                    zmax=0.0,
+                    material="coupon_silicon",
+                ),
+                dict(name="air", zmin=0.0, zmax=settings.domain_pad, material="air"),
+            ],
+            materials={
+                "coupon_silicon": dict(
+                    permittivity=material_properties["Si"]["relative_permittivity"],
+                    permeability=1.0,
+                    loss_tangent=0.0,
+                    conductivity=0.0,
+                ),
+                "air": dict(permittivity=1.0, permeability=1.0),
+            },
+        )
     )
-    return Geometry(
-        component=component, bounds=bounds, terminal_ports={"winding": "winding"}
+    sim.set_airbox(
+        margin_x=settings.domain_pad,
+        margin_y=settings.domain_pad,
+        z_above=settings.domain_pad,
+        z_below=settings.domain_pad,
     )
+    for name in TERMINALS:
+        # Inplane ports are centered on their sheet, halfway across the gap.
+        sim.add_port(
+            name,
+            layer="metal",
+            length=CLEARANCE,
+            offset=-CLEARANCE / 2,
+            impedance=50.0,
+            excited=True,
+        )
+    sim.set_output_dir(output)
+    sim.set_solver(
+        order=settings.order,
+        tolerance=settings.tolerance,
+        max_iterations=1000,
+        preconditioner="AMS",
+        initial_guess=False,
+    )
+    sim.set_driven(
+        fmin=settings.fmin,
+        fmax=settings.fmax,
+        num_points=settings.points,
+        adaptive_tol=0.0,
+        save_step=0,
+    )
+    sim.mesh(
+        refined_mesh_size=min(settings.near_mesh, float(point["wire_width"]) / 2),
+        max_mesh_size=settings.far_mesh,
+        planar_conductors=True,
+        threads=processes,
+        surface_threads=1,
+        verbose=False,
+    )
+    tetrahedra = sim._last_mesh_result.mesh_stats["tetrahedra"]
+    if tetrahedra > (600_000 if settings.order >= 3 else 1_500_000):
+        raise ValueError(f"Calibration mesh budget exceeded: {tetrahedra} tetrahedra")
+    return sim
+
+
+def write_config(sim: DrivenSim, settings: Settings) -> Path:
+    """Apply the film's per-square inductance to the planar metal attributes."""
+    path = sim.write_config()
+    config = json.loads(path.read_text())
+    boundaries = config["Boundaries"]
+    if boundaries.get("Conductivity") or not boundaries.get("Absorbing"):
+        raise ValueError("Expected planar metal and an absorbing outer boundary")
+    if len(boundaries["LumpedPort"]) != 2 or {
+        p["Excitation"] for p in boundaries["LumpedPort"]
+    } != {1, 2}:
+        raise ValueError("Both ports must be excited independently")
+    if settings.sheet_inductance > 0:
+        attributes = boundaries.pop("PEC")["Attributes"]
+        boundaries["Impedance"] = [
+            {"Attributes": attributes, "Ls": settings.sheet_inductance}
+        ]
+    path.write_text(json.dumps(config, indent=2))
+    return path
+
+
+def prepare(point: dict[str, float | str], output: Path, processes: int) -> DrivenSim:
+    """Prepare the meshed winding with its film impedance boundary."""
+    sim = simulation(point, SETTINGS, output, processes)
+    write_config(sim, SETTINGS)
+    return sim
 
 
 RECIPE = Recipe(
-    name="meander_ground_capacitance_palace",
+    name=NAME,
     script=Path(__file__),
     grid=GRID,
-    variants={"n_turns": ["3", "5", "7"]},
+    frequencies=[
+        float(f) for f in jnp.linspace(SETTINGS.fmin, SETTINGS.fmax, SETTINGS.points)
+    ],
+    variants=VARIANTS,
     terminals=TERMINALS,
-    settings=SETTINGS,
-    geometry=geometry,
-    description="Equipotential winding-to-ground capacitance of QPDK meanders; not a self-resonance extraction.",
+    prepare=prepare,
+    description="Driven meander S-parameters with a fixed kinetic sheet inductance and finite coplanar ground",
     reference_ground="coplanar_return_frame",
     provenance={
-        "recipe_version": 1,
-        "qpdk_geometry_revision": "5dbc4a0d7ccb50f777191575383f689b53555305",
-        "issue": 932,
-        "metal": "Zero-thickness PEC winding at the air/silicon interface",
-        "return_geometry": "100 um wide coplanar frame, 20 um from the winding bounding box",
-        "electrostatic_terminal": "o1 and o2 are one connected winding; one equipotential terminal",
-        "magnetostatic_status": "Not available through the pinned gsim simulation/mesh/result API; requires upstream support and an explicit closed excitation/return loop",
-        "kinetic_inductance": "Not extracted; specify sheet kinetic inductance independently",
-        "limitations": "No differential parasitic capacitance, geometric inductance or validated self-resonance frequency is inferred from this common-mode solve",
+        "settings": asdict(SETTINGS),
+        "reference_impedance_ohm": 50.0,
+        "reference_planes": "Wire ends, each excited across the 20 um gap to the ground frame, without de-embedding",
+        "ground": "100 um wide coplanar frame, 20 um from the winding bounding box",
+        "film": "Uniform lossless kinetic sheet inductance on winding and ground; geometric inductance from the field solve",
+        "validation": "Mesh, order, domain and interpolation checks are required before curation",
     },
 )
 
