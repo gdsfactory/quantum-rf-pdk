@@ -7,8 +7,8 @@ instances:
       etch_bbox_margin: 2
       etch_layer: M1_ETCH
       layer_metal: M1_DRAW
-      length: 26
-      width: 5
+      length: 80
+      width: 10
   plate_capacitor_single2:
     component: plate_capacitor_single
     info: {}
@@ -17,19 +17,19 @@ instances:
       etch_bbox_margin: 2
       etch_layer: M1_ETCH
       layer_metal: M1_DRAW
-      length: 26
-      width: 5
+      length: 80
+      width: 10
 nets: []
 placements:
   plate_capacitor_single:
     mirror: false
     rotation: 0
-    x: -6
+    x: 0
     y: 0
   plate_capacitor_single2:
     mirror: false
     rotation: 180
-    x: 6
+    x: 17
     y: 0
 ports:
   o1: plate_capacitor_single,o1

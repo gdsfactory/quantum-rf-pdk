@@ -317,81 +317,62 @@ def interdigital_capacitor(
     return c
 
 
-@gf.cell(tags=["capacitors"])
+@gf.cell(tags=["capacitors", "couplers"])
 def plate_capacitor(
-    length: float = 26.0,
-    width: float = 5.0,
+    length: float = 80.0,
+    width: float = 10.0,
     gap: float = 7.0,
-    etch_layer: LayerSpec | None = "M1_ETCH",
-    etch_bbox_margin: float = 2.0,
-    cross_section: CrossSectionSpec = "cpw",
+    offset: float = 0.0,
 ) -> Component:
-    """Creates a plate capacitor.
+    """Two facing plate capacitor pads with the dataset's coplanar ground frame.
 
-    A capacitive coupler consists of two metal pads separated by a small gap,
-    providing capacitive coupling between circuit elements like qubits and resonators.
+    Reuses two :func:`plate_capacitor_single` cells. The first pad is centered
+    at the origin and the second is shifted vertically by ``offset``. Ports
+    ``o1`` and ``o2`` lie at the outer ends of the pads' short CPW necks.
+    A grounded frame, 45 um wide and 10 um from the electrode bounding box,
+    matches :func:`qpdk.models.plate_capacitor` on silicon. The frame is
+    part of the modeled environment and surrounds both port reference planes.
 
-    .. svgbob::
-
-                  ______               ______
-        _________|      |             |      |________
-       |                |             |               |
-       |  o1       pad1 | ====gap==== | pad2      o2  |
-       |                |             |               |
-       |_________       |             |      _________|
-                 |______|             |______|
+    The model includes the coupling and both capacitances to ground. Its
+    validated dimensions are length 40 to 120 um, width 5 to 20 um, gap 4 to
+    10 um and offset -12 to 12 um. The lookup returns NaN outside that range.
 
     Args:
-        length: Length (vertical extent) of the capacitor pad in μm.
-        width: Width (horizontal extent) of the capacitor pad in μm.
-        gap: Gap between plates in μm.
-        etch_layer: Optional layer for etching around the capacitor.
-        etch_bbox_margin: Margin around the capacitor for the etch layer in μm.
-        cross_section: Cross-section for the short straight from the etch box capacitor.
+        length: Vertical pad length in um.
+        width: Horizontal pad width in um.
+        gap: Horizontal separation between facing pad edges in um.
+        offset: Vertical displacement of the second pad in um.
 
     Returns:
-        A gdsfactory component with the plate capacitor geometry and two ports ('o1' and 'o2') on opposing sides.
+        Component with two signal ports and an implicit common ground.
 
     Raises:
-        ValueError: If width or length is not positive.
+        ValueError: If length, width or gap is not positive.
     """
     if width <= 0:
         raise ValueError(f"width must be positive, got {width}")
     if length <= 0:
         raise ValueError(f"length must be positive, got {length}")
+    if gap <= 0:
+        raise ValueError(f"gap must be positive, got {gap}")
+    component = Component()
+    pad = plate_capacitor_single(length=length, width=width)
+    first = component.add_ref(pad)
+    second = component.add_ref(pad)
+    second.drotate(180)
+    second.dmove((width + gap, offset))
+    component.add_port("o1", port=first.ports["o1"])
+    component.add_port("o2", port=second.ports["o1"])
 
-    c = Component()
-    single_capacitor = plate_capacitor_single(
-        length=length,
-        width=width,
-        etch_layer=etch_layer,
-        etch_bbox_margin=etch_bbox_margin,
-        cross_section=cross_section,
-    )
-
-    pad1 = c.add_ref(single_capacitor)
-    pad2 = c.add_ref(single_capacitor)
-    pad2.rotate(180)
-    pad2.move((width + gap, 0))
-    c.center = (0.0, 0.0)
-
-    # Add ports
-    c.add_port(name="o1", port=pad1.ports["o1"])
-    c.add_port(name="o2", port=pad2.ports["o1"])
-
-    # Ensure etch box between pads
-    if etch_layer is not None:
-        missing_width = gap - 2 * etch_bbox_margin
-        if missing_width > 0:
-            etch_bbox = [
-                (-missing_width / 2, -length / 2 - etch_bbox_margin),
-                (missing_width / 2, -length / 2 - etch_bbox_margin),
-                (missing_width / 2, length / 2 + etch_bbox_margin),
-                (-missing_width / 2, length / 2 + etch_bbox_margin),
-            ]
-            c.add_polygon(etch_bbox, layer=etch_layer)
-
-    return c
+    dbu = component.kcl.dbu
+    electrodes = component.get_region(LAYER.M1_DRAW).merged()
+    inner = gf.kdb.Region(electrodes.bbox().enlarged(round(10.0 / dbu)))
+    outer = gf.kdb.Region(inner.bbox().enlarged(round(45.0 / dbu)))
+    for polygon in (outer - inner).each():
+        component.add_polygon(polygon.to_dtype(dbu), layer=LAYER.M1_DRAW)
+    for polygon in (inner - electrodes).each():
+        component.add_polygon(polygon.to_dtype(dbu), layer=LAYER.M1_ETCH)
+    return component
 
 
 @gf.cell(tags=["capacitors", "couplers"])

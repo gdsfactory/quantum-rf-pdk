@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from hypothesis import given, settings, strategies as st
 
-from qpdk.models import coupling_pad_pair
+from qpdk.models import plate_capacitor
 from qpdk.models.datasets import Dataset, GridInterpolator
 
 
@@ -43,7 +43,7 @@ def test_full_admittance_and_jax(**point: float) -> None:
         Dataset("coupling_pad_palace").grid("maxwell_capacitance")
     )
     frequencies = jnp.asarray([1e9, 5e9, 10e9])
-    values = jax.jit(coupling_pad_pair)(f=frequencies, z_ref=75.0, **point)
+    values = jax.jit(plate_capacitor)(f=frequencies, z_ref=75.0, **point)
     ports = ("o1", "o2")
     assert set(values) == {(a, b) for a in ports for b in ports}
     matrix = jnp.asarray([[values[a, b] for b in ports] for a in ports]).transpose(
@@ -62,9 +62,9 @@ def test_full_admittance_and_jax(**point: float) -> None:
 
 def test_gradient_vmap_and_domain() -> None:
     def reflection(length: float) -> jax.Array:
-        return jnp.imag(coupling_pad_pair(f=5e9, length=length)["o1", "o1"])
+        return jnp.imag(plate_capacitor(f=5e9, length=length)["o1", "o1"])
 
     assert jnp.isfinite(jax.jit(jax.grad(reflection))(60.0))
     assert jax.jit(jax.vmap(reflection))(jnp.asarray([60.0, 100.0])).shape == (2,)
     assert float(reflection(60.0)) != pytest.approx(float(reflection(100.0)))
-    assert jnp.isnan(coupling_pad_pair(length=39.0)["o1", "o1"])
+    assert jnp.isnan(plate_capacitor(length=39.0)["o1", "o1"])

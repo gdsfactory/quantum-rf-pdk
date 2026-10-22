@@ -9,6 +9,7 @@ from qpdk.models.capacitor import (
     interdigital_capacitor,
     interdigital_capacitor_capacitance_analytical,
     plate_capacitor,
+    plate_capacitor_analytical,
     plate_capacitor_capacitance_analytical,
 )
 
@@ -20,6 +21,18 @@ class TestPlateCapacitor(TwoPortModelTestSuite):
     """Test plate_capacitor model."""
 
     model_function = staticmethod(plate_capacitor)
+
+    @override
+    @staticmethod
+    def get_model_kwargs() -> dict:
+        return {"length": 80.0, "width": 10.0, "gap": 7.0}
+
+
+@final
+class TestPlateCapacitorAnalytical(TwoPortModelTestSuite):
+    """Test the closed-form model independently of the dataset."""
+
+    model_function = staticmethod(plate_capacitor_analytical)
 
     @override
     @staticmethod
