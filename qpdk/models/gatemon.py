@@ -109,8 +109,8 @@ def andreev_bound_state_energies(
         Array of shape ``(*jnp.shape(phi), n_channels)`` with the energies in GHz.
     """
     phi = jnp.asarray(phi)[..., None]
-    tau = jnp.atleast_1d(jnp.asarray(transmissions, dtype=float))
-    return delta_ghz * jnp.sqrt(1 - tau * jnp.sin(phi / 2) ** 2)
+    tau = jnp.ravel(jnp.asarray(transmissions, dtype=float))
+    return jnp.asarray(delta_ghz) * jnp.sqrt(1 - tau * jnp.sin(phi / 2) ** 2)
 
 
 @jit(inline=True)
@@ -161,8 +161,8 @@ def gatemon_josephson_energy(
     Returns:
         Effective Josephson energy in GHz.
     """
-    tau = jnp.atleast_1d(jnp.asarray(transmissions, dtype=float))
-    return delta_ghz * jnp.sum(tau) / 4
+    tau = jnp.ravel(jnp.asarray(transmissions, dtype=float))
+    return jnp.asarray(delta_ghz) * jnp.sum(tau) / 4
 
 
 @jit(inline=True)
@@ -182,7 +182,9 @@ def gatemon_supercurrent(
 
     At :math:`T = 0` this is :math:`(2e/\hbar)\,\partial U/\partial\varphi`.
     The critical current of a single ballistic channel
-    (:math:`\tau = 1`, :math:`T = 0`) is :math:`e\Delta/\hbar`.
+    (:math:`\tau = 1`, :math:`T = 0`) is :math:`e\Delta/\hbar`, reached as
+    :math:`\varphi \to \pi`. Exactly at :math:`\tau = 1`, :math:`\varphi = \pi`
+    the current is discontinuous and this function returns 0.
 
     Args:
         phi: Superconducting phase difference :math:`\varphi` in radians.
@@ -195,11 +197,13 @@ def gatemon_supercurrent(
     """
     energies = andreev_bound_state_energies(phi, delta_ghz, transmissions)
     phi = jnp.asarray(phi)[..., None]
-    tau = jnp.atleast_1d(jnp.asarray(transmissions, dtype=float))
+    tau = jnp.ravel(jnp.asarray(transmissions, dtype=float))
     # dE_p/dφ = -Δ τ_p sin φ / (4 sqrt(1 - τ_p sin²(φ/2))) = -Δ² τ_p sin φ / (4 E_p)
     safe_energies = jnp.where(energies > 0, energies, 1.0)
     d_energies = jnp.where(
-        energies > 0, -(delta_ghz**2) * tau * jnp.sin(phi) / (4 * safe_energies), 0.0
+        energies > 0,
+        -(jnp.asarray(delta_ghz) ** 2) * tau * jnp.sin(phi) / (4 * safe_energies),
+        0.0,
     )
     # tanh(E / 2 k_B T) with E in GHz, equal to 1 at T = 0
     temperature = jnp.asarray(temperature, dtype=float)

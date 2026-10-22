@@ -17,9 +17,11 @@ def gatemon_test_chip() -> gf.Component:
     interdigital coupling capacitors, with a gate line routed to its own
     launcher. Follows the chip layout of :cite:`riechertCarbonNanotubeGatemon2025`
     (Fig. 1c). Device ``a`` targets :math:`f_r = 5.056` GHz (device A of the
-    reference) and device ``b`` 5.3 GHz; the resonator lengths are
-    :math:`c / (2 f_r \sqrt{\varepsilon_\text{eff}})` for the default CPW,
-    ignoring the loading by the coupling capacitors.
+    reference) and device ``b`` 5.3 GHz. The cap-to-cap electrical length
+    (600 µm coupler + ``resonator`` + 1400 µm tail) is
+    :math:`c / (2 f_r \sqrt{\varepsilon_\text{eff}})` for the default CPW, so
+    the ``resonator`` instance length is that value minus 2000 µm. Loading by
+    the coupling capacitors is ignored.
 
     The materialized name matches the ``.pic.yml``/GDS stem because elvis
     resolves the top cell from the GDS file name.
