@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 """Component that instantiates and displays all available cells in the PDK.
 
 This module provides a component that creates an efficient layout containing all cells
@@ -64,7 +71,8 @@ def all_cells(
             p
             for p in sig.parameters.values()
             if p.default == inspect.Parameter.empty
-            and p.kind != inspect.Parameter.VAR_KEYWORD
+            and p.kind
+            not in {inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL}
         ]
 
         if required_params:
@@ -89,7 +97,8 @@ def all_cells(
                     )
                     continue
                 c_wrap = gf.Component(name=f"{name}_wrap")
-                c_wrap.add_ref_off_grid(cell)
+                reference = c_wrap.add_ref(cell.cell)
+                reference.dcplx_trans = cell.dcplx_trans
                 cell = c_wrap
 
             cells.append(cell)
