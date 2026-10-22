@@ -3,6 +3,7 @@
 import gdsfactory as gf
 
 from qpdk.samples.flipmon_test_chip import flipmon_test_chip as flipmon_test_chip
+from qpdk.samples.gatemon_test_chip import gatemon_test_chip as gatemon_test_chip
 from qpdk.samples.qubit_test_chip import qubit_test_chip as qubit_test_chip
 from qpdk.samples.resonator_test_chip import (
     resonator_test_chip_python as resonator_test_chip_python,
