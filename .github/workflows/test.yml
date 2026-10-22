@@ -18,11 +18,16 @@ jobs:
       PREK_SKIP: matlab-diagnostics,matlab-format,matlab-quickfix  # No license
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      # Pyrefly resolves types from this venv, so install every extra. The
-      # palace group and the gdsfactoryplus extra need Python 3.12.
-      - run: uv sync --all-extras --group palace --no-install-project --python 3.12
+      - parallel:
+          - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+          - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      - parallel:
+          - uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9 # v2.7.0
+            with:
+              version: "min"
+              project: .github/julia
+          # Pyrefly needs the project extras, including the Python 3.12 SDK wheels.
+          - run: uv sync --all-extras --group palace --no-install-project --python 3.12
       # The check-schematic-sources hook needs the `gfp` binary, which ships
       # only in the VS Code extension.
       - name: Fetch gfp binary
@@ -32,6 +37,29 @@ jobs:
       - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  test-julia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # PythonCall uses the uv environment, which has QPDK, instead of CondaPkg.
+      JULIA_CONDAPKG_BACKEND: "Null"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - parallel:
+          # The notebook Manifest is resolved with the latest 1.12 release.
+          - uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9 # v2.7.0
+            with:
+              version: "1.12"
+          - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+      - parallel:
+          - run: uv sync --extra models
+          - name: Install the notebook environment and kernel
+            run: julia --startup-file=no --project=notebooks/data/josephsoncircuits_twpa/julia -e 'using Pkg; Pkg.instantiate(); using IJulia; installkernel("Julia", "--project=$(dirname(Base.active_project()))"; specname="julia-1.12")'
+      - name: Check Julia simulation helpers
+        run: julia --startup-file=no --project=notebooks/data/josephsoncircuits_twpa/julia/checks notebooks/data/josephsoncircuits_twpa/julia/checks/checks.jl
+      - name: Execute the JosephsonCircuits notebook
+        run: uvx --with nbconvert==7.17.2 --with ipykernel==7.4.0 jupytext@1.19.6 --to ipynb --execute --run-path notebooks -o "$RUNNER_TEMP/josephsoncircuits_twpa.ipynb" notebooks/src/josephsoncircuits_twpa.jl
   get-python-versions:
     uses: ./.github/workflows/get-python-versions.yml
   test-code:
@@ -444,3 +472,73 @@ jobs:
             build/palace-tests/**/inputs.json
             build/palace-tests/**/config.json
           if-no-files-found: warn
+
+  test-vacask:
+    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    env:
+      MPLBACKEND: Agg
+      VACASK_VERSION: 0.3.4
+      VACASK_SHA256: 780949fc75181d5839cc8c8091e05c2ca2e70a73c9f920e88553228061c44027
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          lfs: true
+      - name: Install VACASK
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes binutils libklu2 libopenblas0
+          archive="vacask_${VACASK_VERSION}_linux-x86_64"
+          curl --fail --silent --show-error --location --output /tmp/vacask.tar.gz \
+            "https://codeberg.org/arpadbuermen/VACASK/releases/download/_${VACASK_VERSION}/${archive}.tar.gz"
+          echo "${VACASK_SHA256}  /tmp/vacask.tar.gz" | sha256sum --check
+          tar -xzf /tmp/vacask.tar.gz -C /opt
+          prefix="/opt/${archive}"
+          {
+            echo "SIM_MODULE_PATH=${prefix}/lib/vacask/mod"
+            echo "SIM_INCLUDE_PATH=${prefix}/lib/vacask/inc"
+            echo "SIM_OPENVAF=${prefix}/bin/openvaf-r"
+          } >> "$GITHUB_ENV"
+          echo "${prefix}/bin" >> "$GITHUB_PATH"
+      - name: Check VACASK
+        run: vacask -h
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+      - name: Install QPDK with the models extra
+        run: |
+          uv sync --locked --python 3.12 --no-dev --group test --extra models
+          uv pip install jupytext nbconvert ipykernel
+      - name: Run the VACASK tests
+        run: uv run --no-sync pytest tests/test_vacask.py -m vacask
+      - name: Execute the VACASK notebooks
+        run: |
+          for example in lumped cpw; do
+            uv run --no-sync jupytext --execute --to ipynb --set-kernel python3 \
+              --output "/tmp/qpdk-vacask-${example}.ipynb" \
+              "notebooks/vacask_${example}_parametric_amplifier.ipynb"
+          done
+      - name: Check scientific results are embedded
+        shell: uv run --no-sync python {0}
+        run: |
+          import json
+          from pathlib import Path
+
+          expected = {
+              "lumped": {"jpa-kerr", "jpa-flux", "jpa-compression"},
+              "cpw": {"cpw-layout", "cpw-passive", "cpw-flux", "cpw-gain", "cpw-photon-balance", "cpw-fit-residual"},
+          }
+          for example, required in expected.items():
+              notebook = json.loads(Path(f"/tmp/qpdk-vacask-{example}.ipynb").read_text())
+              cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
+              if not cells or any(cell["execution_count"] is None for cell in cells):
+                  raise SystemExit(f"Incomplete execution: {example}")
+              plotted = set()
+              for cell in cells:
+                  if any(output["output_type"] == "error" for output in cell.get("outputs", [])):
+                      raise SystemExit(f"Failed simulation: {example}")
+                  if any("image/png" in output.get("data", {}) for output in cell.get("outputs", [])):
+                      plotted.update(cell["metadata"].get("tags", []))
+              if missing := required - plotted:
+                  raise SystemExit(f"Missing scientific results in {example}: {sorted(missing)}")

@@ -5,8 +5,9 @@ applyTo: "notebooks/**"
 # Notebook review instructions
 
 Notebooks are generated artifacts. The **source of truth is `notebooks/src/`**: jupytext `.py` files in percent format
-(`# %%` cell markers), plus `notebooks/src/matlab_integration.m` for the MATLAB kernel (`% %%` markers). The `.ipynb`
-files at `notebooks/` are produced by `just convert-notebooks` (via the `convert-notebooks` pre-commit hook).
+(`# %%` cell markers), plus `notebooks/src/matlab_integration.m` for the MATLAB kernel (`% %%` markers) and
+`notebooks/src/josephsoncircuits_twpa.jl` for the Julia kernel (`# %%` markers). The `.ipynb` files at `notebooks/` are
+produced by `just convert-notebooks` (via the `convert-notebooks` pre-commit hook).
 
 ## What to flag
 

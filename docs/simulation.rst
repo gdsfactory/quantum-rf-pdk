@@ -49,6 +49,19 @@ For new components, attach the compact model through ``schematic_function`` and 
     :show-inheritance:
 
 ********
+ VACASK
+********
+
+The external simulator runs :doc:`notebooks/vacask_lumped_parametric_amplifier` and
+:doc:`notebooks/vacask_cpw_parametric_amplifier` with released VACASK. Native
+cold-network and subprocess checks also use the release. The TWPA notebook,
+:doc:`notebooks/josephsoncircuits_twpa`, uses JosephsonCircuits.jl instead.
+
+.. automodule:: qpdk.simulation.vacask
+    :members:
+    :imported-members:
+
+********
  COMSOL
 ********
 

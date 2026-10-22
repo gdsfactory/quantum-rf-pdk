@@ -1,0 +1,8 @@
+# The hook does not index external package names.
+preset = "default"
+
+[rules]
+nan_comparison = "error"
+duplicate_branch_condition = "error"
+missing_reference = "off"
+unresolved_import = "off"

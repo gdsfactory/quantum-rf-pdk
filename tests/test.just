@@ -330,3 +330,8 @@ test-gfp *args:
     fi
     GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
         tests/gfp/test_gfp_lvs.py tests/gfp/test_gfp_sax.py tests/gfp/test_gfp_server.py "$@"
+
+# Run VACASK simulation tests (requires VACASK, see qpdk/simulation/vacask.py)
+[group('test')]
+test-vacask *args: check-lfs
+    uv run --extra models --group dev pytest tests/test_vacask.py -m vacask {{ args }}

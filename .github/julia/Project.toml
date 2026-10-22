@@ -1,0 +1,10 @@
+#:schema ../schemas/julia-project.schema.json
+
+[deps]
+JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
+JuliaWorkspaces = "e554591c-7f10-434f-9f27-2097f62a04fd"
+
+[compat]
+JuliaFormatter = "=2.14.0"
+JuliaWorkspaces = "=13.5.0"
+julia = "~1.12.0"
