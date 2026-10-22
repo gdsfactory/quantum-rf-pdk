@@ -6,6 +6,8 @@ from gdsfactory.component import Component
 from qpdk.cells.capacitor import plate_capacitor_single
 from qpdk.tech import LAYER
 
+__all__ = ["coupling_pad_pair"]
+
 
 @gf.cell(tags=["capacitors", "couplers"])
 def coupling_pad_pair(
