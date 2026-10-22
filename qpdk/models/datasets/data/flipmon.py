@@ -38,11 +38,11 @@ from qpdk.tech import LAYER
 
 GRID = {
     "chip_gap": [5.0, 6.25, 7.5, 8.75, 10.0, 12.5, 15.0, 17.5, 20.0],
-    "alignment": [-15.0, 15.0],
+    "alignment": [-15.0, 0.0, 15.0],
     "inner_radius": [50.0, 55.0, 60.0],
     "top_radius": [100.0, 110.0, 120.0],
 }
-SETTINGS = Settings(near_mesh=2.8, far_mesh=70.0, domain_pad=400.0)
+SETTINGS = Settings(near_mesh=2.8, far_mesh=70.0, domain_pad=400.0, order=3)
 TERMINALS = ("inner_pad", "outer_ring", "top_pad")
 
 
@@ -109,7 +109,7 @@ RECIPE = Recipe(
         "recipe_version": 1,
         "qpdk_geometry_revision": "c00764bc18cbcb0e58ccb5c7dfb880d550455d35",
         "issue": 931,
-        "numerical_accuracy": "Nominal p2 at 2.8/70 um agrees with the 4/100 um p3 comparison within 1.5% for Maxwell and ground branches. The coarse p2 doubled-domain check changes less than 0.1%. Representative sensitivity, not a global error bound.",
+        "numerical_accuracy": "Representative p3 refinement, p4 order, domain and off-grid comparisons within 2% plus 0.01 fF; not a global error bound.",
         "metal_thickness_um": 0.2,
         "substrate_thickness_um": 300.0,
         "outer_ring": "Radius 110 um, width 60 um; inner pad and top pad from flipmon_with_bbox",

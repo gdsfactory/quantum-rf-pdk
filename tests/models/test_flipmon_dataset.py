@@ -15,10 +15,13 @@ from qpdk.models.datasets import Dataset, GridInterpolator, check_maxwell
 def test_grid_and_independent_references() -> None:
     data = Dataset("flipmon_unbonded_palace")
     grid = data.grid("maxwell_capacitance", allow_missing=False)
-    assert grid.values.shape == (9, 2, 3, 3, 3, 3)
+    assert grid.values.shape == (9, 3, 3, 3, 3, 3)
     check_maxwell(grid.values)
     lookup = GridInterpolator(grid)
-    for sample in data.metadata.provenance["validation"]["samples"]:
+    samples = data.metadata.provenance["validation"]["samples"]
+    assert len(samples) == 12
+    assert {sample["reference_settings"]["order"] for sample in samples} == {3, 4}
+    for sample in samples:
         actual = lookup(**sample["point"])
         reference = jnp.asarray(sample["reference_maxwell_F"])
         np.testing.assert_allclose(actual, reference, rtol=0.02, atol=1e-17)
