@@ -106,6 +106,18 @@ model. Both ports reference the coupon's finite ground frame. The dataset omits 
 readout, package and Josephson junction; its recipe is
 ``qpdk/models/datasets/data/double_pad_transmon.py``.
 
+``gatemon_capacitances`` looks up the island's total capacitance :math:`C_\Sigma`, its
+gate capacitance :math:`C_\text{g}` and its readout coupling :math:`C_\text{c}` in F,
+from ``island_size``, ``pocket_gap``, ``pocket_gap_top`` and ``gate_tip_gap`` in um.
+:math:`C_\Sigma` sets :math:`E_\text{C}` for ``gatemon_frequency_and_anharmonicity`` and
+:math:`C_\text{g}` the lever arm :math:`n_\text{g} = C_\text{g} V_\text{g}/2e`.
+``gatemon_fem_model(delta_ghz=50.0, transmissions=(0.8,))`` returns a three-port SAX
+model (``island``, ``gate``, ``readout``) with the Andreev-bound-state junction
+linearized between the island and ground. The readout port is an open CPW segment, so do
+not add its self-capacitance to a distributed resonator. The recipe is
+``qpdk/models/datasets/data/gatemon.py``; it is an electrostatic solve because the
+device is lumped and :math:`E_\text{J}` is gate-tuned rather than fixed by the geometry.
+
 ``flipmon_readout_coupon_model()`` creates a 5-port static SAX coupon model. Pass
 ``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
 frequency ``f`` in Hz. The whole readout conductor shares one potential, and feedline
