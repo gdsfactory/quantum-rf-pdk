@@ -54,6 +54,13 @@ class TestPlateCapacitorValidation:
         with pytest.raises(ValueError, match="length must be positive"):
             plate_capacitor(length=0)
 
+    @staticmethod
+    @pytest.mark.parametrize("gap", [0.0, -5.0])
+    def test_touching_or_overlapping_plates_raise(gap: float) -> None:
+        """The two signal electrodes must remain electrically isolated."""
+        with pytest.raises(ValueError, match="gap must be positive"):
+            plate_capacitor(gap=gap)
+
 
 class TestPlateCapacitorSingleValidation:
     """Tests for plate_capacitor_single validation (lines 313, 315)."""
