@@ -112,7 +112,7 @@ from matplotlib_inline.backend_inline import set_matplotlib_formats
 from qpdk import logger
 from qpdk.colormaps import QPDK
 from qpdk.config import PATH
-from qpdk.models.capacitor import plate_capacitor
+from qpdk.models.capacitor import plate_capacitor_analytical
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.couplers import (
     cpw_coupling_model,
@@ -463,7 +463,7 @@ plt.show()
 # %% [markdown]
 # ## Replace an explicit capacitance in a SAX model
 #
-# {func}`~qpdk.models.capacitor.plate_capacitor` computes its capacitance from a
+# {func}`~qpdk.models.capacitor.plate_capacitor_analytical` computes its capacitance from a
 # closed-form expression. The same circuit can take the mutual capacitance from
 # the dataset instead. The analytical formula and FEM model include different
 # geometry and ground assumptions, so their disagreement is visible here. The
@@ -500,7 +500,7 @@ f = jnp.linspace(1e9, 10e9, 201)
 s_lookup = jax.jit(
     lambda gap: plate_capacitor_lookup(f=f, length=80.0, width=10.0, gap=gap)
 )(7.0)
-s_analytical = plate_capacitor(f=f, length=80.0, width=10.0, gap=7.0)
+s_analytical = plate_capacitor_analytical(f=f, length=80.0, width=10.0, gap=7.0)
 
 fig, ax = plt.subplots()
 ax.plot(f / 1e9, 20 * jnp.log10(jnp.abs(s_analytical["o1", "o2"])), label="analytical")

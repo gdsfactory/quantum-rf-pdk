@@ -120,7 +120,7 @@ def interdigital_capacitor_capacitance_analytical(
     )
 
 
-def plate_capacitor(
+def plate_capacitor_analytical(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: float = 26.0,
@@ -128,7 +128,7 @@ def plate_capacitor(
     gap: float = 7.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
-    r"""Plate capacitor Sax model.
+    r"""Closed-form series capacitance of two coplanar pads, without ground branches.
 
     Args:
         f: Array of frequency points in Hz
@@ -150,12 +150,12 @@ def plate_capacitor(
 
 
 @cache
-def _coupling_pad_pair_model() -> sax.Model:
+def _plate_capacitor_model() -> sax.Model:
     """Load the finite-ground coupon outside numerical evaluation."""
     return capacitance_model("coupling_pad_palace")
 
 
-def coupling_pad_pair(
+def plate_capacitor(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: float = 80.0,
@@ -166,7 +166,7 @@ def coupling_pad_pair(
 ) -> sax.SDict:
     r"""Facing coupling pads with their finite-frame ground capacitances.
 
-    Matches :func:`qpdk.cells.coupling_pad_pair`. Its two electrodes map to
+    Matches :func:`qpdk.cells.plate_capacitor`. Its two electrodes map to
     ``o1`` and ``o2``. Dimensions are in micrometres, frequency in Hz and
     reference impedance in ohms. Both ports reference the same 45 um wide
     ground frame, 10 um from the pad bounding box. The substrate is silicon.
@@ -180,7 +180,7 @@ def coupling_pad_pair(
         Jittable SAX S-parameters with ports ``o1`` and ``o2``.
     """
     with jax.ensure_compile_time_eval():
-        model = _coupling_pad_pair_model()
+        model = _plate_capacitor_model()
     return cast(
         sax.SDict,
         model(f=f, length=length, width=width, gap=gap, offset=offset, z_ref=z_ref),

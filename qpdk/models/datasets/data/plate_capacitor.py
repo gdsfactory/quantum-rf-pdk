@@ -26,7 +26,7 @@ import gdsfactory as gf
 import typer
 
 from qpdk import PDK, logger
-from qpdk.cells import plate_capacitor
+from qpdk.cells import plate_capacitor_single
 from qpdk.models.datasets import Axis, Dataset, DatasetMetadata, Quantity, QuantityKind
 from qpdk.models.datasets.generate import merge, partition_grid, sweep, write
 from qpdk.tech import LAYER, material_properties
@@ -71,7 +71,20 @@ def geometry(
     **point: float | str,
 ) -> tuple[gf.Component, tuple[float, float, float, float]]:
     """QPDK electrodes inside a separate coplanar ground frame."""
-    device = plate_capacitor(**point)
+    # Keep the original benchmark electrodes and its separately added ground.
+    device = gf.Component()
+    pad = plate_capacitor_single(
+        length=float(point["length"]),
+        width=float(point["width"]),
+        cross_section=str(point.get("cross_section", "cpw")),
+    )
+    first = device.add_ref(pad)
+    second = device.add_ref(pad)
+    second.drotate(180)
+    second.dmove((float(point["width"]) + float(point["gap"]), 0.0))
+    device.center = (0.0, 0.0)
+    device.add_port("o1", port=first.ports["o1"])
+    device.add_port("o2", port=second.ports["o1"])
     bounds = device.dbbox(gf.get_layer(LAYER.M1_DRAW))
     left, bottom, right, top = bounds.left, bounds.bottom, bounds.right, bounds.top
     component = gf.Component()

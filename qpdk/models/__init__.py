@@ -6,9 +6,9 @@ import jax
 import sax
 
 from qpdk.models.capacitor import (
-    coupling_pad_pair,
     interdigital_capacitor,
     plate_capacitor,
+    plate_capacitor_analytical,
 )
 from qpdk.models.inductor import (
     lumped_element_resonator,
@@ -146,7 +146,6 @@ __all__ = [
     "capacitor",
     "coupler_ring",
     "coupler_straight",
-    "coupling_pad_pair",
     "coupling_strength_to_capacitance",
     "cpw_cpw_coupling_capacitance",
     "cpw_epsilon_eff",
@@ -203,6 +202,7 @@ __all__ = [
     "open",
     "open_2_port",
     "plate_capacitor",
+    "plate_capacitor_analytical",
     "propagation_constant",
     "purcell_decay_rate",
     "quarter_wave_resonator_coupled",

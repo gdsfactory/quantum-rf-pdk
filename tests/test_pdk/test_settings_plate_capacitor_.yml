@@ -1,9 +1,9 @@
 info: {}
-name: plate_capacitor_L26_W5_G7_ELM1_ETCH_EBM2_CScpw
+name: plate_capacitor_L80_W10_G7_O0
 ports:
   o1:
     center:
-    - -10.5
+    - -7
     - 0
     layer: M1_DRAW
     name: o1
@@ -12,7 +12,7 @@ ports:
     width: 10
   o2:
     center:
-    - 10.5
+    - 24
     - 0
     layer: M1_DRAW
     name: o2
@@ -20,9 +20,7 @@ ports:
     port_type: optical
     width: 10
 settings:
-  cross_section: cpw
-  etch_bbox_margin: 2
-  etch_layer: M1_ETCH
   gap: 7
-  length: 26
-  width: 5
+  length: 80
+  offset: 0
+  width: 10

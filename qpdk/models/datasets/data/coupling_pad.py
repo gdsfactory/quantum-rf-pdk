@@ -28,7 +28,7 @@ from pathlib import Path
 import gdsfactory as gf
 from _experiment import Geometry, Recipe, Settings, run_cli
 
-from qpdk.cells import coupling_pad_pair
+from qpdk.cells import plate_capacitor
 from qpdk.tech import LAYER
 
 GRID = {
@@ -44,7 +44,7 @@ TERMINALS = ("o1", "o2")
 def geometry(point: dict[str, float], settings: Settings, _processes: int) -> Geometry:
     """Simulate the same paired-pad cell used in layouts."""
     component = gf.Component()
-    device = component.add_ref(coupling_pad_pair(**point))
+    device = component.add_ref(plate_capacitor(**point))
     for name in TERMINALS:
         component.add_port(name, port=device.ports[name], port_type="electrical")
     box = component.dbbox(gf.get_layer(LAYER.M1_DRAW))
