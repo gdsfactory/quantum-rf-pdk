@@ -172,8 +172,12 @@ class TestGatemonSpectrum:
                 assert_allclose(alpha, alpha_ref, rtol=2e-3)
 
     @staticmethod
-    def test_default_device_a_like() -> None:
-        """Test the default spectrum: f01 ≈ 4.45 GHz, |α| ≈ 127 MHz < E_C."""
+    def test_default_spectrum_regression() -> None:
+        """Pin the default spectrum (f01 ≈ 4.45 GHz, α ≈ -127 MHz).
+
+        Regression values from this implementation, cross-checked against an
+        independent phase-basis solver; not a literature value.
+        """
         f01, alpha = gatemon_frequency_and_anharmonicity()
         assert_allclose(f01, 4.447, atol=5e-3)
         assert_allclose(alpha, -0.127, atol=2e-3)
