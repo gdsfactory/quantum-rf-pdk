@@ -36,12 +36,47 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Recipe:
-    """A passive N-port experiment; frequencies are in Hz, geometry defaults to um.
+    """Describe a passive N-port experiment and how to prepare each geometry.
 
-    ``prepare(point, output, processes)`` returns a meshed simulation with its
-    config already written. Assign one independent excitation per port, with
-    a real positive reference impedance, and record impedances and reference
-    planes in ``provenance``. Set ``reciprocal=False`` for nonreciprocal media.
+    The generator runs one complete frequency sweep per geometry and stores
+    every complex S-parameter in the requested terminal order. Each port needs
+    its own independent excitation and a real, positive reference impedance.
+
+    Args:
+        name: Dataset identifier, also used for the default output directory.
+        script: Recipe source path, usually ``Path(__file__)``. Its checksum is
+            recorded with the dataset to identify the code that generated it.
+        grid: Numeric geometry parameters and their sampled values. All
+            combinations are simulated, with lengths in um unless overridden
+            by ``axis_units``. These axes are interpolated by the dataset model.
+        frequencies: Full frequency grid in Hz, finite, positive and strictly
+            increasing. The prepared solver sweep must return these frequencies
+            for every geometry and excitation.
+        terminals: Port names in matrix row and column order. These must match
+            the names configured by ``prepare`` and become the SAX model ports.
+        prepare: Callable ``prepare(point, output, processes)`` returning a
+            meshed ``DrivenSim`` with its ports, sweep and final config written
+            in ``output``. ``point`` contains one value from each grid axis and
+            variant, and ``processes`` is the requested MPI process count. The
+            generator runs the returned simulation and collects its results.
+        description: Short description of the device and its physical setting,
+            stored with the dataset for users loading it later.
+        provenance: JSON-serializable settings and assumptions, including mesh,
+            materials, port reference impedances and reference planes. Include
+            every setting that affects the solve. These values form part of the
+            cache key, so changing them starts new simulations.
+        reference_ground: Name of the common reference conductor in the dataset
+            metadata. Configure the actual ground geometry and boundaries in
+            ``prepare``.
+        variants: Discrete choices sampled alongside the numeric grid, such as
+            ``{"n_turns": ["3", "5"]}``. Values are strings and are selected
+            explicitly when loading a model, rather than interpolated.
+        axis_units: Unit labels for numeric grid axes, defaulting to ``"um"``.
+            These labels do not convert values; ``prepare`` must interpret them
+            consistently. Frequency is always stored in Hz.
+        reciprocal: Whether to check that exchanging input and output ports
+            leaves the response unchanged. Set False for nonreciprocal media.
+            Passivity is checked in either case.
     """
 
     name: str
