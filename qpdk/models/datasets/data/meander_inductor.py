@@ -188,7 +188,7 @@ def simulation(
         verbose=False,
     )
     tetrahedra = sim._last_mesh_result.mesh_stats["tetrahedra"]
-    if tetrahedra > (600_000 if settings.order >= 3 else 1_500_000):
+    if tetrahedra > (800_000 if settings.order >= 3 else 1_500_000):
         raise ValueError(f"Calibration mesh budget exceeded: {tetrahedra} tetrahedra")
     return sim
 
