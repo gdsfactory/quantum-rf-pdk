@@ -24,6 +24,7 @@ from qpdk.models.qubit import (
     flipmon_with_resonator,
     fluxonium,
     fluxonium_with_bbox,
+    gatemon,
     qubit_with_resonator,
     shunted_transmon,
     transmon_coupled,
@@ -282,6 +283,35 @@ class TestXmonTransmon(TwoPortModelTestSuite):
     """Tests for xmon_transmon wrapper."""
 
     model_function = staticmethod(xmon_transmon)
+
+
+@final
+class TestGatemon(TwoPortModelTestSuite):
+    """Tests for gatemon model."""
+
+    model_function = staticmethod(gatemon)
+
+    def test_matches_shunted_transmon(self) -> None:
+        """Test that gatemon equals shunted_transmon with L_J from E_J."""
+        f = self.get_frequency_array(50)
+        ej_ghz = 12.0
+        result = self._call_model(f=f, ej_ghz=ej_ghz)
+        expected = shunted_transmon(f=f, inductance=ej_to_inductance(ej_ghz))
+        for key, value in expected.items():
+            assert_allclose(result[key], value, atol=1e-12)
+
+    def test_resonance_tracks_ej(self) -> None:
+        """Test that a higher E_J moves the LC resonance up as sqrt(E_J)."""
+        C = 100e-15
+        f_r = []
+        for ej_ghz in (5.0, 20.0):
+            L = float(ej_to_inductance(ej_ghz))
+            f_expected = 1 / (2 * jnp.pi * jnp.sqrt(L * C))
+            f = jnp.linspace(f_expected * 0.8, f_expected * 1.2, 2001)
+            s11 = self._call_model(f=f, capacitance=C, ej_ghz=ej_ghz)["o1", "o1"]
+            f_r.append(float(f[jnp.argmin(jnp.abs(s11 - 1.0))]))
+            assert abs(f_r[-1] - float(f_expected)) / float(f_expected) < 0.01
+        assert_allclose(f_r[1] / f_r[0], 2.0, rtol=0.01)
 
 
 @final

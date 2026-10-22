@@ -51,7 +51,7 @@ sax_categories = [
     Category(
         "qubits",
         "Qubits",
-        "Transmon, fluxonium, flipmon and unimon circuits, bare or coupled to a resonator.",
+        "Transmon, fluxonium, flipmon, unimon and gatemon circuits, bare or coupled to a resonator.",
         ("qpdk.models.qubit", "qpdk.models.unimon"),
     ),
     Category(

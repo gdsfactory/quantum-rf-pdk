@@ -30,8 +30,8 @@ in minutes.
 
 ## Key Features
 
-- **Rich component library** — Transmons, fluxonium, unimon qubits, CPW resonators, interdigital capacitors, SQUID
-  junctions, launchers, bump bonds, TSVs, and more.
+- **Rich component library** — Transmons, fluxonium, unimon and gatemon qubits, CPW resonators, interdigital capacitors,
+  SQUID junctions, launchers, bump bonds, TSVs, and more.
 - **Parametric & composable** — Combine Python functions (`@gf.cell`) into hierarchical designs or define full chips in
   YAML.
 - **Analytical circuit models** — Fast, differentiable S-parameter simulations powered by
