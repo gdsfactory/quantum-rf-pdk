@@ -183,7 +183,7 @@ ansys_default_path = "/usr/ansys_inc/v252/AnsysEM"
 if "ANSYSEM_ROOT252" not in os.environ and Path(ansys_default_path).exists():
     os.environ["ANSYSEM_ROOT252"] = ansys_default_path
 
-settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
+settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.9
 
 
 # Create temporary directory for project
@@ -221,9 +221,8 @@ res_component = prepare_metal_layout(res_component, margin_draw=200)
 # Initialize the HFSS simulation
 hfss_sim = HFSS(hfss, material_properties=material_properties)
 
-# Import the component geometry using native GDS import
-success = hfss_sim.import_component(res_component, import_as_sheets=True)
-print(f"GDS import successful: {success}")
+# Import the component geometry using native GDS import (raises on failure)
+hfss_sim.import_component(res_component, import_as_sheets=True)
 
 # Add substrate below the component
 substrate_name = hfss_sim.add_substrate(

@@ -17,14 +17,27 @@ from typing import Any
 
 import pytest
 from gdsfactory.component import Component
-from gplugins.ansys import HFSS, Q2D, Q3D, detach_desktop_logging, fit_view
+from gplugins.ansys import (
+    HFSS,
+    Q2D,
+    Q3D,
+    detach_desktop_logging,
+    fit_view,
+    layer_stack_to_gds_mapping,
+    object_names_to_materials,
+)
 
 from qpdk import PDK, logger
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.resonator import resonator
 from qpdk.models.cpw import get_cpw_dimensions
 from qpdk.simulation.layout import prepare_metal_layout
-from qpdk.tech import LAYER_STACK, coplanar_waveguide, material_properties
+from qpdk.tech import (
+    LAYER_STACK,
+    LAYER_STACK_FLIP_CHIP,
+    coplanar_waveguide,
+    material_properties,
+)
 
 # Maximum wall-clock time for a single AEDT-bound call. AEDT startup can
 # legitimately take minutes, so this is generous. The budget is per call, not
@@ -359,6 +372,65 @@ def test_prepare_metal_layout_margin():
     assert bbox_new.top == pytest.approx(bbox_orig.top + margin)
 
 
+# The tests below run gplugins' AEDT-free helpers on QPDK's own layer stack and
+# material table, so a change to either fails in CI rather than only in AEDT.
+
+
+def test_layer_stack_materials_are_registered():
+    """Every material in ``LAYER_STACK`` has an entry in ``material_properties``."""
+    stack_materials = {level.material for level in LAYER_STACK.layers.values()}
+    assert stack_materials <= set(material_properties)
+
+
+def test_layer_stack_gds_mapping():
+    """QPDK's stack maps to one AEDT import box per GDS layer number.
+
+    Vacuum shares SIM_AREA (98) with Substrate and is skipped, and the
+    contiguous Airbridge and Airbridge_Via spans merge on layer 10.
+    """
+    conductors = {
+        name
+        for name, props in material_properties.items()
+        if props["relative_permittivity"] == float("inf")
+    }
+    solids = layer_stack_to_gds_mapping(LAYER_STACK)
+    sheets = layer_stack_to_gds_mapping(
+        LAYER_STACK, thickness_override=0.0, override_materials=conductors
+    )
+
+    assert set(solids) == set(sheets) == {1, 10, 20, 25, 30, 31, 98}
+    assert solids[98] == pytest.approx((-500.0, 500.0))
+    assert solids[10] == pytest.approx((0.2, 0.3))
+    # As HFSS.import_component(import_as_sheets=True) maps it: the conductors
+    # become sheets, the substrate keeps its thickness.
+    assert sheets[98] == pytest.approx((-500.0, 500.0))
+    assert all(sheets[number][1] == pytest.approx(0.0) for number in set(sheets) - {98})
+
+
+def test_layer_stack_flip_chip_gds_mapping_raises():
+    """The flip-chip substrates share GDS layer 98 with a gap, so import refuses."""
+    with pytest.raises(ValueError, match="'Substrate' and 'Substrate_top'"):
+        layer_stack_to_gds_mapping(LAYER_STACK_FLIP_CHIP)
+
+
+def test_object_names_to_materials_with_qpdk_stack():
+    """Imported metals become ``pec`` and the substrate stays QPDK's ``Si``."""
+    result = object_names_to_materials(
+        ["signal1", "signal10", "signal25", "signal31", "signal98", "Substrate"],
+        LAYER_STACK,
+        material_properties,
+    )
+
+    assert result == {
+        "signal1": "pec",
+        "signal10": "pec",
+        "signal25": "pec",
+        "signal31": "pec",
+        "signal98": "Si",
+        "Substrate": "Si",
+    }
+
+
 @pytest.mark.hfss
 def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
     """Test creating an HFSS project and drawing a component."""
@@ -367,7 +439,7 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.9
 
     PDK.activate()
     comp = resonator(length=1000, meanders=1)
@@ -392,10 +464,11 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
         fit_view(hfss_app)
         assert hfss_app.logger._desktop_class is None
         # Use direct draw which we know is stable on Linux
-        success = _run_with_timeout(
+        # import_component raises on failure; the object check proves it drew.
+        _run_with_timeout(
             lambda: hfss_sim.import_component(comp), label="HFSS.import_component"
         )
-        assert success, "Failed to draw component in HFSS"
+        assert hfss_app.modeler.object_names, "HFSS import drew no objects"
 
 
 @pytest.mark.hfss
@@ -406,7 +479,7 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
 
     from ansys.aedt.core import Hfss, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.9
 
     PDK.activate()
     comp = resonator(length=1000, meanders=1)
@@ -458,7 +531,7 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
 
     from ansys.aedt.core import Q3d, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.9
 
     PDK.activate()
     comp = interdigital_capacitor(fingers=4, finger_length=20)
@@ -496,7 +569,7 @@ def test_q2d_cpw_from_qpdk_cross_section(tmp_path: Path, ansys_install_path: Pat
 
     from ansys.aedt.core import Q2d, settings  # ruff: ignore[import-outside-top-level]
 
-    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.3
+    settings.use_grpc_uds = False  # pyrefly: ignore[missing-attribute]  # not in pyaedt 1.9
 
     PDK.activate()
     cross_section = coplanar_waveguide(width=10, gap=6)
