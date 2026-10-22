@@ -1,8 +1,10 @@
 """Tests for the COMSOL layout extraction.
 
-These check the pure geometry and validation in
-:mod:`qpdk.simulation.comsol.layout` on small QPDK CPW and unfed shapes. No
-COMSOL or MPh involvement.
+These check the QPDK side of the extraction in
+:func:`qpdk.simulation.comsol.prepare_comsol_layout` (mask inversion, ground margin, layer
+checks, and default feeds) on small QPDK CPW and unfed shapes. The generic
+polygon extraction and crop-plane rules are tested in :mod:`gplugins.comsol`.
+No COMSOL or MPh involvement.
 """
 
 from __future__ import annotations
@@ -10,10 +12,11 @@ from __future__ import annotations
 import gdsfactory as gf
 import klayout.db as kdb
 import pytest
+from gplugins.comsol.layout import ComsolLayout
 
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
 from qpdk.simulation.aedt_base import prepare_component_for_aedt
-from qpdk.simulation.comsol.layout import ComsolLayout, prepare_comsol_layout
+from qpdk.simulation.comsol import prepare_comsol_layout
 from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.tech import LAYER
 
@@ -419,8 +422,10 @@ def test_crop_to_feed_ports_rejects_metal_beyond_the_planes():
     """A resonator wider than its coupling feeds must not be sliced."""
     comp = quarter_wave_resonator_coupled(length=1000, meanders=2)
 
-    with pytest.raises(ValueError, match="cut component geometry"):
+    with pytest.raises(ValueError, match="cut component geometry") as error:
         prepare_comsol_layout(comp, ground_margin=50.0, crop_to_feed_ports=True)
+    # The QPDK layer name, not the gplugins (layer, datatype) tuple.
+    assert "M1_DRAW extends beyond" in str(error.value)
 
 
 def test_crop_to_feed_ports_rejects_etch_stopping_short():
@@ -436,7 +441,7 @@ def test_crop_to_feed_ports_rejects_etch_stopping_short():
         name="o2", center=(200, 0), width=10, orientation=0, layer=LAYER.M1_DRAW
     )
 
-    with pytest.raises(ValueError, match="etch gaps to reach both"):
+    with pytest.raises(ValueError, match="gaps to reach both"):
         prepare_comsol_layout(
             comp, feed_ports=("o1", "o2"), ground_margin=50.0, crop_to_feed_ports=True
         )
@@ -449,67 +454,4 @@ def test_crop_to_feed_ports_requires_feeds():
     with pytest.raises(ValueError, match="needs two feed ports"):
         prepare_comsol_layout(
             comp, feed_ports=None, ground_margin=50.0, crop_to_feed_ports=True
-        )
-
-
-def test_crop_to_feed_ports_rejects_inward_feeds():
-    """Both feeds facing the same way is not a valid opposite pair."""
-    comp = gf.Component()
-    ref = comp << gf.components.straight(length=200, cross_section="cpw")
-    comp.add_ports(ref.ports)
-    comp.add_port(
-        name="inward", center=(0, 0), width=10, orientation=0, layer=LAYER.M1_DRAW
-    )
-    comp.add_port(
-        name="outward", center=(200, 0), width=10, orientation=0, layer=LAYER.M1_DRAW
-    )
-
-    with pytest.raises(ValueError, match="face outwards"):
-        prepare_comsol_layout(
-            comp,
-            feed_ports=("inward", "outward"),
-            ground_margin=50.0,
-            crop_to_feed_ports=True,
-        )
-
-
-def test_crop_to_feed_ports_rejects_mixed_axes():
-    """Feeds on different axes do not define a single crop plane pair."""
-    comp = gf.Component()
-    ref = comp << gf.components.straight(length=200, cross_section="cpw")
-    comp.add_ports(ref.ports)
-    comp.add_port(
-        name="o1", center=(0, 0), width=10, orientation=180, layer=LAYER.M1_DRAW
-    )
-    comp.add_port(
-        name="vertical", center=(200, 0), width=10, orientation=90, layer=LAYER.M1_DRAW
-    )
-
-    with pytest.raises(ValueError, match="same axis"):
-        prepare_comsol_layout(
-            comp,
-            feed_ports=("o1", "vertical"),
-            ground_margin=50.0,
-            crop_to_feed_ports=True,
-        )
-
-
-def test_crop_to_feed_ports_rejects_misaligned_feeds():
-    """Feeds that do not share a transverse coordinate cannot bound a strip."""
-    comp = gf.Component()
-    ref = comp << gf.components.straight(length=200, cross_section="cpw")
-    comp.add_ports(ref.ports)
-    comp.add_port(
-        name="o1", center=(0, 0), width=10, orientation=180, layer=LAYER.M1_DRAW
-    )
-    comp.add_port(
-        name="raised", center=(200, 5), width=10, orientation=0, layer=LAYER.M1_DRAW
-    )
-
-    with pytest.raises(ValueError, match="transverse coordinate"):
-        prepare_comsol_layout(
-            comp,
-            feed_ports=("o1", "raised"),
-            ground_margin=50.0,
-            crop_to_feed_ports=True,
         )

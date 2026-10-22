@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12, <3.15"
 resolution-markers = [
     "python_full_version >= '3.14' and platform_machine == 'ARM64' and sys_platform == 'win32'",
@@ -1741,8 +1741,8 @@ wheels = [
 
 [[package]]
 name = "gplugins"
-version = "2.1.0"
-source = { registry = "https://pypi.org/simple" }
+version = "2.1.5"
+source = { git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268#3de427ddf02d3e3c93558cdf47ff2af0018b9268" }
 dependencies = [
     { name = "gdsfactory" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
@@ -1751,12 +1751,12 @@ dependencies = [
     { name = "tqdm" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/42/94/32a33f76ac08326dfd77d6f4a08db0d4d9a1a856fd675a7cc8d418c75976/gplugins-2.1.0.tar.gz", hash = "sha256:54706afb16f40e569a1a3579f152636a3f980cf640db91d113963e4c1754f9ae", size = 531505, upload-time = "2026-05-17T18:48:17.174Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/38/e1a03d6dbc3c1883f31bd73c180cc141fe39347395e544533816b42703cd/gplugins-2.1.0-py3-none-any.whl", hash = "sha256:6a96ee1e5957d0e9d29897eddee999524ce26fed1275083c53ecfa6b2e4dafdc", size = 653163, upload-time = "2026-05-17T18:48:15.833Z" },
-]
 
 [package.optional-dependencies]
+comsol = [
+    { name = "mph" },
+    { name = "shapely" },
+]
 meshwell = [
     { name = "meshwell" },
     { name = "shapely" },
@@ -3618,6 +3618,9 @@ dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0e/76/7bc801796dee752c1ce9cd6935564a6ee79d5c9d9ef9192f57b156495a35/netcdf4-1.7.3.tar.gz", hash = "sha256:83f122fc3415e92b1d4904fd6a0898468b5404c09432c34beb6b16c533884673", size = 836095, upload-time = "2025-10-13T18:38:00.76Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/f8/a5509bc46faedae2b71df29c57e6525b7eb47aee44000fd43e2927a9a3a9/netcdf4-1.7.3-cp311-abi3-win_amd64.whl", hash = "sha256:1b6c646fa179fb1e5e8d6e8231bc78cc0311eceaa1241256b5a853f1d04055b9", size = 7149328, upload-time = "2025-10-13T18:37:59.242Z" },
+]
 
 [[package]]
 name = "netcdf4"
@@ -5528,6 +5531,7 @@ wheels = [
 name = "qpdk"
 version = "0.4.1"
 source = { editable = "." }
+default-groups = ["dev", "lint", "stubs", "test"]
 dependencies = [
     { name = "gdsfactory" },
     { name = "typing-extensions" },
@@ -5539,7 +5543,7 @@ circulax = [
     { name = "optax" },
 ]
 comsol = [
-    { name = "mph" },
+    { name = "gplugins", extra = ["comsol"] },
 ]
 delta = [
     { name = "deltalake" },
@@ -5706,6 +5710,9 @@ test = [
     { name = "pytest-xdist" },
 ]
 
+[package.group-requires-python]
+palace = "~=3.12.0"
+
 [package.metadata]
 requires-dist = [
     { name = "circulax", marker = "extra == 'circulax'", specifier = ">=0.2.3" },
@@ -5713,10 +5720,10 @@ requires-dist = [
     { name = "flax", marker = "extra == 'netket'" },
     { name = "gdsfactory", specifier = "~=9.51.0" },
     { name = "gdsfactoryplus", marker = "python_full_version == '3.12.*' and extra == 'gdsfactoryplus'", specifier = ">=2.1.467" },
-    { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", specifier = "~=2.1.0" },
+    { name = "gplugins", extras = ["comsol"], marker = "extra == 'comsol'", git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
+    { name = "gplugins", extras = ["meshwell"], marker = "extra == 'models'", git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
     { name = "jaxellip", marker = "extra == 'gdsfactoryplus'" },
     { name = "jaxellip", marker = "extra == 'models'" },
-    { name = "mph", marker = "extra == 'comsol'", specifier = ">=1.4,<2" },
     { name = "netket", marker = "extra == 'netket'", specifier = ">=3.12" },
     { name = "optax", marker = "extra == 'circulax'" },
     { name = "optax", marker = "extra == 'models'" },
@@ -5764,7 +5771,7 @@ dev = [
 docs = [
     { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
-    { name = "gplugins", extras = ["meshwell"], specifier = "~=2.1.0" },
+    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
     { name = "jaxellip" },
     { name = "jinja2" },
     { name = "jupytext" },
@@ -5803,7 +5810,7 @@ docs = [
 docs-models = [
     { name = "circulax", specifier = ">=0.2.3" },
     { name = "flax" },
-    { name = "gplugins", extras = ["meshwell"], specifier = "~=2.1.0" },
+    { name = "gplugins", extras = ["meshwell"], git = "https://github.com/gdsfactory/gplugins?rev=3de427ddf02d3e3c93558cdf47ff2af0018b9268" },
     { name = "jaxellip" },
     { name = "netket", specifier = ">=3.12" },
     { name = "optax" },

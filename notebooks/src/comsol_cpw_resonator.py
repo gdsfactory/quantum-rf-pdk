@@ -18,9 +18,10 @@
 # ::::{admonition} Required extras
 # :class: tip
 #
-# Needs the `comsol` extra (`uv sync --extra comsol`), which installs `MPh` only. COMSOL, its license,
-# the RF Module, and the Design Module CAD kernel that `ProjectToFaces` needs are separate. See the
-# {ref}`extras reference <notebook-extras>`.
+# Needs the `comsol` extra (`uv sync --extra comsol`), which installs `gplugins[comsol]` and
+# `MPh`. The layout, plotting, and result helpers come from gplugins, so every cell needs the extra.
+# COMSOL, its license, the RF Module, and the Design Module CAD kernel that `ProjectToFaces` needs
+# are separate. See the {ref}`extras reference <notebook-extras>`.
 # ::::
 #
 # The shortest path from a QPDK layout to a driven COMSOL result: build a coupled quarter-wave
@@ -88,35 +89,27 @@ from typing import Any
 
 import gdsfactory as gf
 import matplotlib.pyplot as plt
+import mph
 import numpy as np
-from matplotlib import axes as mpl_axes, font_manager
-
-from qpdk import PDK
-from qpdk.cells.resonator import quarter_wave_resonator_coupled
-from qpdk.config import PATH
-from qpdk.simulation import prepare_comsol_layout
-from qpdk.simulation.comsol.plotting import (
-    draw_cut_plane_field,
-    draw_layout_polygons,
-)
-from qpdk.simulation.comsol.results import (
+from gplugins.comsol import COMSOL
+from gplugins.comsol.plotting import draw_cut_plane_field, draw_layout_polygons
+from gplugins.comsol.results import (
     explain_missing_results,
     exported_frequency_ghz,
     requested_frequency_grid,
     result_file,
 )
-from qpdk.tech import LAYER_STACK, coplanar_waveguide, get_layer_material_properties
+from matplotlib import axes as mpl_axes, font_manager
 
-try:
-    import mph
-
-    # The COMSOL class imports MPh eagerly, so it comes in with the same guard:
-    # without the extra the licensed branch stays off and the rest of the
-    # notebook still reads exported results back from disk.
-    from qpdk.simulation import COMSOL
-except ImportError:
-    mph = None
-    COMSOL = None
+from qpdk import PDK
+from qpdk.cells.resonator import quarter_wave_resonator_coupled
+from qpdk.config import PATH
+from qpdk.simulation.comsol import (
+    AIR_RELATIVE_PERMITTIVITY,
+    SILICON_RELATIVE_PERMITTIVITY,
+    prepare_comsol_layout,
+)
+from qpdk.tech import LAYER_STACK, coplanar_waveguide
 
 PDK.activate()
 
@@ -183,11 +176,9 @@ RIGHT_EXTENSION_UM = 2000.0
 
 # One mesh, one enclosure: absolute sizes in µm, with a tighter size on the
 # meander edges where the mode's field concentrates.
-# The substrate thickness and permittivity come from the PDK layer stack.
+# The substrate thickness comes from the PDK layer stack; the permittivities
+# come from `qpdk.simulation.comsol`.
 SUBSTRATE_THICKNESS_UM = LAYER_STACK.layers["Substrate"].thickness
-SILICON_RELATIVE_PERMITTIVITY = get_layer_material_properties("Substrate")[
-    "relative_permittivity"
-]
 AIR_HEIGHT_UM = 200.0
 MESH_SIZE = 2
 GLOBAL_HMAX_UM = 100.0
@@ -292,8 +283,8 @@ plt.show()
 # %% [markdown]
 # ## Build and solve the driven model
 #
-# {py:class}`~qpdk.simulation.comsol.model.COMSOL` builds the air, silicon, and metal sheet, and
-# {py:meth}`~qpdk.simulation.comsol.model.COMSOL.add_cpw_rf_study` adds PEC metal, two CPW ports
+# `gplugins.comsol.COMSOL` builds the air, silicon, and metal sheet, and
+# `add_cpw_rf_study` adds PEC metal, two CPW ports
 # with their boundary mode analysis steps, and a frequency study. The meander edges then get a
 # tighter absolute element size before the adaptive sweep. A direct solve at the fitted minimum
 # supplies the field export. The substrate thickness and the silicon permittivity are not set here: they
@@ -349,6 +340,7 @@ def solve_driven(client) -> None:
         substrate_thickness_um=SUBSTRATE_THICKNESS_UM,
         air_height_um=AIR_HEIGHT_UM,
         silicon_relative_permittivity=SILICON_RELATIVE_PERMITTIVITY,
+        air_relative_permittivity=AIR_RELATIVE_PERMITTIVITY,
     )
     try:
         model.add_cpw_rf_study(
@@ -450,8 +442,6 @@ def solve_driven(client) -> None:
 
 
 if RUN_COMSOL:
-    if mph is None or COMSOL is None:
-        raise RuntimeError("RUN_COMSOL needs MPh and a licensed COMSOL installation")
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     client = mph.start(cores=CORES)
     solve_driven(client)
@@ -527,7 +517,7 @@ field_path = result_file(RESULTS_DIR, DRIVEN_FIELD_TXT)
 if field_path is None:
     print(explain_missing_results(RESULTS_DIR, DRIVEN_FIELD_TXT))
 else:
-    field_frequency_ghz = exported_frequency_ghz(field_path)
+    field_frequency_ghz = exported_frequency_ghz(field_path, bare_unit="GHz")
     draw_cut_plane_field(
         field_path,
         f"Driven $|\\mathbf{{E}}|$ at {field_frequency_ghz:g} GHz, z = 1 µm"

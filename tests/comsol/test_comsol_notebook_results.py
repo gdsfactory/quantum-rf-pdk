@@ -2,7 +2,7 @@
 
 The notebook cells are executed from the Jupytext sources against fakes in place
 of a licensed COMSOL, and the shared result helpers are imported from
-:mod:`qpdk.simulation.comsol.results`.
+:mod:`gplugins.comsol.results`, as the notebooks do.
 """
 
 import ast
@@ -16,15 +16,13 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-from matplotlib import tri as mtri
-from matplotlib.colors import LogNorm
-
-from qpdk.simulation.comsol.results import (
-    exported_frequency_ghz,
+from gplugins.comsol.results import (
     requested_frequency_grid,
     result_file,
     write_json_atomically,
 )
+from matplotlib import tri as mtri
+from matplotlib.colors import LogNorm
 
 NOTEBOOKS = Path(__file__).resolve().parents[2] / "notebooks" / "src"
 QUBIT_NOTEBOOK = NOTEBOOKS / "comsol_qubit_capacitance.py"
@@ -125,7 +123,6 @@ def test_export_cell_rerun_reuses_nodes(tmp_path: Path) -> None:
     model = _FakeModel()
     namespace = {
         "RUN_COMSOL": True,
-        "MPH_AVAILABLE": True,
         "model": model,
         "MODEL_DIR": tmp_path,
         "FIELD_TXT": "comsol_qubit_field.txt",
@@ -150,8 +147,7 @@ def test_new_qubit_solve_invalidates_the_previous_field(
         node
         for node in tree.body
         if isinstance(node, ast.If)
-        and ast.get_source_segment(cell, node.test)
-        == "RUN_COMSOL and mph is not None and COMSOL is not None"
+        and ast.get_source_segment(cell, node.test) == "RUN_COMSOL"
     )
     source = ast.get_source_segment(cell, solve)
     assert source is not None
@@ -171,7 +167,6 @@ def test_new_qubit_solve_invalidates_the_previous_field(
     monkeypatch.setattr(_FakeFeature, "run", fail_export)
     namespace = {
         "RUN_COMSOL": True,
-        "MPH_AVAILABLE": True,
         "MODEL_DIR": tmp_path,
         "MODEL_PATH": tmp_path / "model.mph",
         "METRICS_JSON": "comsol_qubit_metrics.json",
@@ -200,6 +195,7 @@ def test_new_qubit_solve_invalidates_the_previous_field(
         "SUBSTRATE_THICKNESS_UM": 200.0,
         "AIR_HEIGHT_UM": 200.0,
         "SILICON_RELATIVE_PERMITTIVITY": 11.7,
+        "AIR_RELATIVE_PERMITTIVITY": 1.0,
         "write_json_atomically": write_json_atomically,
         "np": np,
     }
@@ -256,6 +252,7 @@ def test_cpw_export_failure_keeps_the_solved_model(tmp_path: Path) -> None:
         "SUBSTRATE_THICKNESS_UM": 200.0,
         "AIR_HEIGHT_UM": 200.0,
         "SILICON_RELATIVE_PERMITTIVITY": 11.7,
+        "AIR_RELATIVE_PERMITTIVITY": 1.0,
         "CPW_GAP_UM": 6.0,
         "SWEEP_CENTER_GHZ": 7.3265,
         "MESH_SIZE": 7,
@@ -350,39 +347,3 @@ def test_field_readback_plots_when_the_export_exists(tmp_path: Path) -> None:
     exec(cell, namespace)  # ruff: ignore[exec-builtin]
 
     assert [axes.contours for axes in pyplot.axes] == [1, 1]
-
-
-def test_exported_frequency_reads_bare_and_named_annotations(tmp_path: Path) -> None:
-    named = tmp_path / "named.txt"
-    named.write_text("% @ freq=7.5\nV,E\n", encoding="utf-8")
-    assert exported_frequency_ghz(named) == pytest.approx(7.5)
-
-    bare = tmp_path / "bare.txt"
-    bare.write_text("% @ 7.2921 GHz\nV,E\n", encoding="utf-8")
-    assert exported_frequency_ghz(bare) == pytest.approx(7.2921)
-
-    scaled = tmp_path / "scaled.txt"
-    scaled.write_text("% @ 750 MHz\nV,E\n", encoding="utf-8")
-    assert exported_frequency_ghz(scaled) == pytest.approx(0.75)
-
-    silent = tmp_path / "silent.txt"
-    silent.write_text("V,E\n0,1\n", encoding="utf-8")
-    assert exported_frequency_ghz(silent) is None
-
-
-def test_result_file_resolution(tmp_path: Path) -> None:
-    present = tmp_path / "on_disk.txt"
-    present.write_text("x\n", encoding="utf-8")
-
-    assert result_file(tmp_path, "on_disk.txt") == present
-    assert result_file(tmp_path, "absent.txt") is None
-    assert result_file(None, "on_disk.txt") is None
-
-
-def test_requested_grid_returns_the_exact_point_count() -> None:
-    expression, grid_ghz = requested_frequency_grid(7.0, 7.002, 11)
-
-    assert grid_ghz.size == 11
-    assert grid_ghz[0] == pytest.approx(7.0)
-    assert expression.startswith("range(")
-    assert expression.endswith("[GHz])")
