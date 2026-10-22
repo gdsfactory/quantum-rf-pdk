@@ -1,0 +1,160 @@
+# yaml-language-server: $schema=../../build/schemas/gatemon_test_chip.json
+instances:
+  cap_in_a:
+    component: interdigital_capacitor
+    settings: {}
+  cap_in_b:
+    component: interdigital_capacitor
+    settings: {}
+  cap_out_a:
+    component: interdigital_capacitor
+    settings: {}
+  cap_out_b:
+    component: interdigital_capacitor
+    settings: {}
+  coupler_a:
+    component: straight
+    settings:
+      length: 600
+  coupler_b:
+    component: straight
+    settings:
+      length: 600
+  gatemon_a:
+    component: gatemon
+    settings: {}
+  gatemon_b:
+    component: gatemon
+    settings: {}
+  launcher_gate_a:
+    component: launcher
+    settings: {}
+  launcher_gate_b:
+    component: launcher
+    settings: {}
+  launcher_in_a:
+    component: launcher
+    settings: {}
+  launcher_in_b:
+    component: launcher
+    settings: {}
+  launcher_out_a:
+    component: launcher
+    settings: {}
+  launcher_out_b:
+    component: launcher
+    settings: {}
+  resonator_a:
+    component: resonator
+    settings:
+      length: 10038
+      meanders: 4
+      open_start: false
+      open_end: false
+  resonator_b:
+    component: resonator
+    settings:
+      length: 9484
+      meanders: 4
+      open_start: false
+      open_end: false
+  tail_a:
+    component: straight
+    settings:
+      length: 1400
+  tail_b:
+    component: straight
+    settings:
+      length: 1400
+connections:
+  coupler_a,o1: cap_in_a,o2
+  coupler_b,o1: cap_in_b,o2
+  resonator_a,o1: coupler_a,o2
+  resonator_b,o1: coupler_b,o2
+  tail_a,o1: resonator_a,o2
+  tail_b,o1: resonator_b,o2
+  cap_out_a,o1: tail_a,o2
+  cap_out_b,o1: tail_b,o2
+routes:
+  gate_line_a:
+    links:
+      gatemon_a,gate: launcher_gate_a,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  gate_line_b:
+    links:
+      gatemon_b,gate: launcher_gate_b,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_input_a:
+    links:
+      launcher_in_a,o1: cap_in_a,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_input_b:
+    links:
+      launcher_in_b,o1: cap_in_b,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_output_a:
+    links:
+      cap_out_a,o2: launcher_out_a,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  probeline_output_b:
+    links:
+      cap_out_b,o2: launcher_out_b,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+nets: []
+ports:
+  o1: launcher_in_a,waveport
+  o2: launcher_out_a,waveport
+  o3: launcher_in_b,waveport
+  o4: launcher_out_b,waveport
+  gate_a: launcher_gate_a,waveport
+  gate_b: launcher_gate_b,waveport
+placements:
+  cap_in_a:
+    x: -2000
+    y: -2000
+  cap_in_b:
+    x: -2000
+    y: 2000
+  gatemon_a:
+    x: -1782
+    y: -2120
+  gatemon_b:
+    x: -1782
+    y: 2120
+    mirror: true
+  launcher_gate_a:
+    x: -2400
+    y: -4850
+    rotation: 90
+  launcher_gate_b:
+    x: -2400
+    y: 4850
+    rotation: -90
+  launcher_in_a:
+    x: -4850
+    y: -2000
+  launcher_in_b:
+    x: -4850
+    y: 2000
+  launcher_out_a:
+    x: 4850
+    y: -2000
+    rotation: 180
+  launcher_out_b:
+    x: 4850
+    y: 2000
+    rotation: 180
+  resonator_b:
+    mirror: true

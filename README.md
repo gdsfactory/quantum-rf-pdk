@@ -100,6 +100,14 @@ capacitor inputs, probeline routing, and flux lines — shown here with ground-p
 
 ![Flipmon Test Chip](docs/_static/images/flipmon_test_chip.png)
 
+### Gatemon Test Chip
+
+A two-gatemon test chip after Riechert et al. (2025): each gatemon sits at the input end of a half-wave meander
+resonator between two series coupling capacitors, with its gate electrode routed to a dedicated launcher. Shown here
+with ground-plane filling and chip edges.
+
+![Gatemon Test Chip](docs/_static/images/gatemon_test_chip.png)
+
 ### Resonator Test Chip
 
 A 16-resonator characterization chip with systematically varied CPW widths and gaps across two probelines. Ideal for

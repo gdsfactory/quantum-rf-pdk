@@ -115,6 +115,18 @@ filled_flipmon_test_chip = partial(
 )
 
 # %% [markdown]
+# ## Filled Gatemon Test Chip Function
+#
+# Creates the two-gatemon test chip from its YAML configuration and fills it as well.
+# See {cite:p}`riechertCarbonNanotubeGatemon2025` for the reference chip layout.
+
+
+# %%
+filled_gatemon_test_chip = partial(
+    filled_qubit_test_chip, Path(__file__).parent / "gatemon_test_chip.pic.yml"
+)
+
+# %% [markdown]
 # ## Examples
 
 # %%
@@ -128,3 +140,8 @@ if __name__ == "__main__":
 
     # Show new filled flipmon test chip
     filled_flipmon_test_chip().show()
+
+    # %%
+
+    # Show filled gatemon test chip
+    filled_gatemon_test_chip().show()
