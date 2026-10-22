@@ -6,10 +6,13 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import sax
+from gdsfactory.typings import CrossSectionSpec
+from sax.models.rf import electrical_short
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0
 from qpdk.models.generic import series_impedance
 from qpdk.models.jit import jit
+from qpdk.models.waveguides import straight
 
 
 def _warn_if_overbiased(ib: float, ic: float) -> None:
@@ -142,6 +145,63 @@ def squid_junction(
     Y_SQUID = Y_R + Y_C + Y_L
 
     return series_impedance(f=f, z=1 / Y_SQUID)
+
+
+def squid_termination(
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 10.0,
+    cross_section: CrossSectionSpec = "cpw",
+    ic_tot: sax.Float = 4.8e-6,
+    asymmetry: sax.Float = 0.0,
+    capacitance: sax.Float = 10e-15,
+    resistance: sax.Float = 5e3,
+    flux: sax.FloatArrayLike = 0.0,
+) -> sax.SDict:
+    r"""One-port Sax model of a CPW lead shorted to ground through a DC SQUID.
+
+    This is the termination of a flux-driven :math:`\lambda/4` Josephson
+    parametric amplifier (JPA): a CPW lead of ``length``, then the
+    :func:`~qpdk.models.junction.squid_junction` admittance in series with an
+    ideal short. It models the :func:`~qpdk.cells.squid_termination` cell. The flux-tunable SQUID inductance
+    :math:`L_\text{s}(\Phi) = \Phi_0 / (2 \pi I_\text{c,tot} |\cos(\pi \Phi / \Phi_0)|)`
+    pulls the resonance below :math:`\omega_{\lambda/4}`
+    :cite:`yamamotoFluxdrivenJosephsonParametric2008`.
+
+    The loop geometric inductance is neglected, which holds for
+    :math:`\beta_\text{L} = 2 L_\text{loop} I_\text{c} / \Phi_0 \lesssim 0.1`.
+    The default :math:`I_\text{c,tot} = 2 \times 2.4\,\text{µA}` follows the
+    low-:math:`\beta_\text{L}` WMI devices :cite:`pogorzalekHystereticFluxResponse2017`.
+    It is an assumption, not a value extracted from the layout.
+
+    Args:
+        f: Array of frequency points in Hz
+        length: Length of the CPW lead in µm
+        cross_section: Cross-section of the CPW lead
+        ic_tot: Total critical current :math:`I_{\text{c}1} + I_{\text{c}2}` in Amperes
+        asymmetry: Junction asymmetry :math:`(I_{\text{c}1} - I_{\text{c}2}) / I_{\text{c,tot}}`
+        capacitance: Total SQUID capacitance :math:`C_1 + C_2` in Farads
+        resistance: Total SQUID shunt resistance :math:`R_1 || R_2` in Ohms
+        flux: External magnetic flux :math:`\Phi_{\text{ext}}` in Webers
+
+    Returns:
+        sax.SDict: S-parameters dictionary with the single port ``o1``
+    """
+    instances: dict[str, sax.SType] = {
+        "lead": straight(f=f, length=length, cross_section=cross_section),
+        "squid": squid_junction(
+            f=f,
+            ic_tot=ic_tot,
+            asymmetry=asymmetry,
+            capacitance=capacitance,
+            resistance=resistance,
+            flux=flux,
+        ),
+        "short": electrical_short(f=f),
+    }
+    connections = {"lead,o2": "squid,o1", "squid,o2": "short,o1"}
+    ports = {"o1": "lead,o1"}
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 if __name__ == "__main__":

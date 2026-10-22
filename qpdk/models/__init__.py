@@ -14,7 +14,7 @@ from qpdk.models.inductor import (
     meander_inductor,
     meander_inductor_inductance_analytical,
 )
-from qpdk.models.junction import josephson_junction, squid_junction
+from qpdk.models.junction import josephson_junction, squid_junction, squid_termination
 
 sax.set_port_naming_strategy("optical")
 
@@ -219,6 +219,7 @@ __all__ = [
     "shunt_admittance",
     "shunted_transmon",
     "squid_junction",
+    "squid_termination",
     "straight",
     "straight_all_angle",
     "straight_double_open",
