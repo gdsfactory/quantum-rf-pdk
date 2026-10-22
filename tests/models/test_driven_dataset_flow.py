@@ -137,6 +137,20 @@ def test_native_matrix_order_and_quality(
     write_csv(expected)
     matrix = driven.response(tmp_path, terminals[::-1], [1e9])
     np.testing.assert_allclose(matrix[0], expected[::-1, ::-1], atol=1e-12)
+    for missing_column in (1, 2):
+        write_csv(expected)
+        path = tmp_path / "port-S.csv"
+        rows = [line.split(",") for line in path.read_text().splitlines()]
+        path.write_text(
+            "\n".join(
+                ",".join(row[:missing_column] + row[missing_column + 1 :])
+                for row in rows
+            )
+            + "\n"
+        )
+        with pytest.raises(ValueError, match="Incomplete complex"):
+            driven.response(tmp_path, terminals, [1e9])
+    write_csv(expected)
     with pytest.raises(ValueError, match="ports"):
         driven.response(tmp_path, (*terminals, "absent"), [1e9])
     with pytest.raises(AssertionError):

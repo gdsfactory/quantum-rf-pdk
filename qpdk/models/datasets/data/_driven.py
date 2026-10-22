@@ -14,12 +14,13 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable
+from csv import reader
 from dataclasses import dataclass, field
 from functools import cache
 from itertools import product
 from math import prod
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, cast
 
 import numpy as np
 import typer
@@ -91,6 +92,8 @@ def response(
         solver_checks,
     )
     from gsim.palace.results import (
+        _parse_sparam_col,
+        _resolve_source,
         load_sparams,
     )
 
@@ -102,6 +105,19 @@ def response(
     data = load_sparams(run)
     if set(data.port_names) != set(terminals):
         raise ValueError(f"Unexpected ports in {run}: {data.port_names}")
+    csv_path = cast(Path, _resolve_source(run)[0])
+    with csv_path.open(newline="") as stream:
+        columns = next(reader(stream))
+    parts: dict[tuple[int, int], set[str]] = {}
+    for column in columns:
+        if (parsed := _parse_sparam_col(column.strip())) is not None:
+            i, j, kind = parsed
+            parts.setdefault((i, j), set()).add(kind)
+    # The result reader supplies zero phase for a missing column.
+    if len(parts) != len(terminals) ** 2 or any(
+        kinds != {"db", "deg"} for kinds in parts.values()
+    ):
+        raise ValueError(f"Incomplete complex S-parameter columns in {run}")
     np.testing.assert_allclose(
         np.asarray(data.freq) * 1e9, frequencies, rtol=1e-8, atol=1e-3
     )
