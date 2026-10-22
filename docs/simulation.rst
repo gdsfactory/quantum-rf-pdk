@@ -246,6 +246,12 @@ between the coupled lines. This dataset requires RF validation before replacing 
 distributed resonator circuit. Its recipe is
 ``qpdk/models/datasets/data/readout_assembly.py``.
 
+``qpdk.cells.coupling_pad_pair`` combines two ``plate_capacitor_single`` pads with an
+optional vertical offset. It includes the finite ground frame used by the
+``coupling_pad_palace`` dataset. Its matching SAX model is registered as
+``qpdk.models.coupling_pad_pair`` and retains both pad-to-ground branches as well as the
+coupling. The generation recipe uses this same layout cell.
+
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
 cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
 table version. Credentials are passed when opening the dataset and never stored in it.

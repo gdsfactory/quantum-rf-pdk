@@ -26,9 +26,10 @@ Generate disjoint grids with ``--shard``/``--shards`` and merge with repeated
 from pathlib import Path
 
 import gdsfactory as gf
-from _experiment import Geometry, Recipe, Settings, ground_frame, run_cli
+from _experiment import Geometry, Recipe, Settings, run_cli
 
-from qpdk.cells import plate_capacitor_single
+from qpdk.cells import coupling_pad_pair
+from qpdk.tech import LAYER
 
 GRID = {
     "length": [40.0, 80.0, 120.0],
@@ -41,19 +42,17 @@ TERMINALS = ("o1", "o2")
 
 
 def geometry(point: dict[str, float], settings: Settings, _processes: int) -> Geometry:
-    """Assemble the actual single-pad cells and keep both electrode identities."""
-    if min(point[name] for name in ("length", "width", "gap")) <= 0:
-        raise ValueError("Pad dimensions and gap must be positive")
+    """Simulate the same paired-pad cell used in layouts."""
     component = gf.Component()
-    pad = plate_capacitor_single(length=point["length"], width=point["width"])
-    first = component.add_ref(pad)
-    second = component.add_ref(pad)
-    second.drotate(180)
-    second.dmove((point["width"] + point["gap"], point["offset"]))
-    component.add_port("o1", port=first.ports["o1"], port_type="electrical")
-    component.add_port("o2", port=second.ports["o1"], port_type="electrical")
-    bounds = ground_frame(
-        component, clearance=10, width=45, domain_pad=settings.domain_pad
+    device = component.add_ref(coupling_pad_pair(**point))
+    for name in TERMINALS:
+        component.add_port(name, port=device.ports[name], port_type="electrical")
+    box = component.dbbox(gf.get_layer(LAYER.M1_DRAW))
+    bounds = (
+        box.left - settings.domain_pad,
+        box.bottom - settings.domain_pad,
+        box.right + settings.domain_pad,
+        box.top + settings.domain_pad,
     )
     return Geometry(
         component=component,
