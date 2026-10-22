@@ -28,6 +28,7 @@ from qpdk.models.junction import (
     josephson_junction,
     josephson_junction_array,
     squid_junction,
+    squid_termination,
 )
 from qpdk.models.nanowire import (
     grounded_pad_capacitance_analytical,
@@ -303,6 +304,7 @@ __all__ = [
     "shunt_admittance",
     "shunted_transmon",
     "squid_junction",
+    "squid_termination",
     "straight",
     "straight_all_angle",
     "straight_double_open",

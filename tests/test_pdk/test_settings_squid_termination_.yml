@@ -1,0 +1,29 @@
+info:
+  junction_gap: 10.005
+  length: 10
+  loop_area: 4
+  pocket_width: 22
+name: squid_termination_L10_CScpw_JSFsquid_junction_Mqpdkpcel_85f42d31
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  squid:
+    center:
+    - 15.002
+    - 0
+    layer: JJ_AREA
+    name: squid
+    orientation: 0
+    port_type: placement
+    width: 19.304
+settings:
+  cross_section: cpw
+  junction_spec: Fsquid_junction_Mqpdkpcellspjunction_SJSFjosephson_junction_Mqpdkpcellspjunction_SJOD1p8_WSL4_NSL0p5_TL4
+  length: 10

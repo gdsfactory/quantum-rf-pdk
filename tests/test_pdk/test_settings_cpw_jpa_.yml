@@ -1,0 +1,41 @@
+info:
+  coupling_finger_gap: 2
+  coupling_finger_length: 50
+  coupling_fingers: 8
+  coupling_thickness: 5
+  cross_section: coplanar_waveguide
+  length: 4680
+  pump_gap: 5
+  pump_offset: 5
+  resonator_type: quarter_wave
+  squid_loop_area: 4
+name: cpw_jpa_L4680_M6_BSbend_circular_CScpw_CCSFinterdigital_fc65a10c
+ports:
+  o1:
+    center:
+    - -33
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 450.921
+    - -1416
+    layer: M1_DRAW
+    name: o2
+    orientation: 270
+    port_type: optical
+    width: 10
+settings:
+  bend_spec: bend_circular
+  coupling_capacitor_spec: Finterdigital_capacitor_Mqpdkpcellspcapacitor_SF8_FL50
+  cross_section: cpw
+  length: 4680
+  meanders: 6
+  pump_gap: 5
+  pump_length: 200
+  pump_offset: 5
+  termination_spec: squid_termination
