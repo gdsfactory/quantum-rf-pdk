@@ -879,46 +879,6 @@ def xmon_transmon(
 
 
 @jit(inline=True)
-def gatemon(
-    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: sax.FloatArrayLike = 100e-15,
-    ej_ghz: sax.FloatArrayLike = 10.0,
-    ground_capacitance: sax.FloatArrayLike = 0.0,
-) -> sax.SDict:
-    r"""LC resonator model for a grounded gatemon qubit.
-
-    A gatemon is a transmon whose junction is a gate-tunable weak link
-    :cite:`riechertCarbonNanotubeGatemon2025`. The gate voltage sets the
-    Josephson energy :math:`E_\text{J}(V_\text{g})`, which this model takes
-    directly as an input. The mapping from gate voltage to
-    :math:`E_\text{J}` depends on the weak link and is not modelled here.
-
-    The island is shunted to ground through the junction, so this model wraps
-    :func:`shunted_transmon` with the Josephson inductance from
-    :func:`ej_to_inductance`. Use
-    :func:`~qpdk.models.perturbation.ej_ec_to_frequency_and_anharmonicity`
-    for the transmon qubit frequency and anharmonicity at a given
-    :math:`E_\text{J}`.
-
-    Args:
-        f: Array of frequency points in Hz.
-        capacitance: Total capacitance :math:`C_\Sigma` of the island in Farads.
-        ej_ghz: Gate-tuned Josephson energy :math:`E_\text{J}` in GHz.
-        ground_capacitance: Parasitic capacitance to ground :math:`C_\text{g}`
-            at the floating port in Farads.
-
-    Returns:
-        sax.SDict: S-parameters dictionary with ports o1 and o2.
-    """
-    return shunted_transmon(
-        f=f,
-        capacitance=capacitance,
-        inductance=ej_to_inductance(ej_ghz),
-        ground_capacitance=ground_capacitance,
-    )
-
-
-@jit(inline=True)
 def double_pad_transmon(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     capacitance: sax.FloatArrayLike = 100e-15,
