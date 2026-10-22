@@ -13,6 +13,8 @@
 # requires-python = ">=3.12,<3.15"
 # dependencies = [
 #   "qpdk[models,hfss] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+#   # Temporary: gplugins.ansys is not in a gplugins release yet (see [tool.uv.sources]).
+#   "gplugins[ansys] @ git+https://github.com/gdsfactory/gplugins.git@3de427ddf02d3e3c93558cdf47ff2af0018b9268",
 # ]
 # ///
 
