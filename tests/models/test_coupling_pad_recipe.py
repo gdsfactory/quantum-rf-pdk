@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from qpdk import PDK
-from qpdk.cells import coupling_pad_pair, plate_capacitor_single
+from qpdk.cells import plate_capacitor, plate_capacitor_single
 from qpdk.tech import LAYER
 
 
@@ -45,7 +45,7 @@ def test_cell_preserves_simulated_geometry(
     ground_frame = importlib.import_module("_experiment").ground_frame
 
     point = dict(length=length, width=width, gap=gap, offset=offset)
-    cell = coupling_pad_pair(**point)
+    cell = plate_capacitor(**point)
     original = gf.Component()
     pad = plate_capacitor_single(length=length, width=width)
     first = original.add_ref(pad)
@@ -66,5 +66,5 @@ def test_cell_preserves_simulated_geometry(
 
 
 def test_paired_cell_uses_dataset_model() -> None:
-    assert PDK.cells["coupling_pad_pair"] is coupling_pad_pair
-    assert PDK.models["coupling_pad_pair"].__module__ == "qpdk.models.capacitor"
+    assert PDK.cells["plate_capacitor"] is plate_capacitor
+    assert PDK.models["plate_capacitor"].__module__ == "qpdk.models.capacitor"
