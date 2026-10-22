@@ -58,11 +58,11 @@ def test_gatemon_no_shorts() -> None:
     assert metal.count() == 3
 
     island = _net_of(metal, dbu, 0, 0)
-    upper_lead = _net_of(metal, dbu, 0, -100)
-    gate_tip = _net_of(metal, dbu, 10, -115)
-    gate_port = _net_of(metal, dbu, 40, -204)
+    upper_lead = _net_of(metal, dbu, -40, -100)
+    gate_tip = _net_of(metal, dbu, -30, -115)
+    gate_port = _net_of(metal, dbu, 60, -204)
     ground = _net_of(metal, dbu, -150, 0)
-    lower_electrode = _net_of(metal, dbu, 0, -150)
+    lower_electrode = _net_of(metal, dbu, -40, -150)
 
     assert island == upper_lead
     assert gate_tip == gate_port
@@ -77,17 +77,51 @@ def test_gatemon_junction_bridges_lead_gap() -> None:
     draw = Region(c.begin_shapes_rec(layout.layer(*LAYER.M1_DRAW)))
     jj = Region(c.begin_shapes_rec(layout.layer(*LAYER.JJ_AREA)))
     x, y = c.ports["junction"].center
-    assert (x, y) == pytest.approx((0, -115))
+    assert (x, y) == pytest.approx((-40, -115))
 
     assert len(list(jj.each_merged())) == 1
     # Junction marker overlaps the lead on both sides of the gap
     assert len(list((draw & jj).each_merged())) == 2
     # No M1 in the gap itself
-    gap = DBox(-0.05, y - 0.4, 0.05, y + 0.4).to_itype(layout.dbu)
+    gap = DBox(x - 0.05, y - 0.4, x + 0.05, y + 0.4).to_itype(layout.dbu)
     assert (draw & Region(gap)).is_empty()
+
+
+def test_gatemon_electrodes_under_left_half_of_island() -> None:
+    """Test that the default electrodes sit under the island's left half.
+
+    The gate line enters to the right of the electrodes, as in Fig. 1b of
+    Riechert et al. (2025).
+    """
+    c = gatemon()
+    junction_x = c.ports["junction"].x
+    assert -75 < junction_x < 0
+    assert c.ports["gate"].x > junction_x
+
+
+@pytest.mark.parametrize(
+    "electrode_offset",
+    [-40.0, 0.0, 30.0],
+)
+def test_gatemon_no_shorts_for_electrode_offsets(electrode_offset: float) -> None:
+    """Test that moving the electrodes keeps island, gate and ground separate."""
+    metal, _ = _metal_nets(electrode_offset=electrode_offset, gate_offset=60.0)
+    assert metal.count() == 3
 
 
 def test_gatemon_gate_overlapping_electrode_raises() -> None:
     """Test that a gate line on top of the junction electrodes is rejected."""
-    with pytest.raises(ValueError, match="gate_offset"):
+    with pytest.raises(ValueError, match="junction electrodes"):
         gatemon(gate_offset=20)
+
+
+def test_gatemon_gate_outside_pocket_raises() -> None:
+    """Test that a gate line running outside the pocket is rejected."""
+    with pytest.raises(ValueError, match="outside the pocket"):
+        gatemon(gate_offset=170)
+
+
+def test_gatemon_electrodes_outside_island_raises() -> None:
+    """Test that electrodes beyond the island edge are rejected."""
+    with pytest.raises(ValueError, match="outside the island"):
+        gatemon(electrode_offset=-60)

@@ -40,7 +40,8 @@ def gatemon(
     junction_length: float = 1.0,
     junction_width: float = 0.2,
     size_patch: tuple[float, float] = (1.5, 1.0),
-    gate_offset: float = 40.0,
+    electrode_offset: float = -40.0,
+    gate_offset: float = 100.0,
     gate_tip_width: float = 2.0,
     gate_tip_gap: float = 5.0,
     gate_length: float = 50.0,
@@ -54,10 +55,13 @@ def gatemon(
     implements the shunt capacitor that sets :math:`E_\text{C}`. Below the
     island, two junction electrodes are joined by a thin lead containing the
     weak link. The upper electrode connects to the island and the lower
-    electrode to the ground plane at the bottom edge of the pocket. A gate
-    line enters through the bottom of the pocket as a coplanar line and ends
-    in a narrow tip next to the junction. A readout resonator couples to the
-    island across the top gap of the pocket.
+    electrode to the ground plane at the bottom edge of the pocket. By
+    default the electrodes sit under the left half of the island, as in
+    Fig. 1b of :cite:`riechertCarbonNanotubeGatemon2025`. A gate line enters
+    through the bottom of the pocket to the right of the electrodes as a
+    coplanar line, then turns left and ends in a narrow tip next to the
+    junction. A readout resonator couples to the island across the top gap
+    of the pocket.
 
     .. svgbob::
 
@@ -67,17 +71,17 @@ def gatemon(
         |      |                 |      |
         |      |     island      |      |
         |      |                 |      |
-        |      +-------+---------+      |
-        |          +---+---+            |
-        |          +---+---+  electrode |
-        |              |                |
-        |              X  <---+         |
-        |              |      |  gate   |
-        |          +---+---+  |         |
-        +----------+-------+--+  +------+
-          ground plane        |  |
-                              |  |
-                              gate
+        |      +-----------------+      |
+        |      +---+---+                |
+        |      +---+---+  electrode     |
+        |          |                    |
+        |          X  <------+          |
+        |          |         |  gate    |
+        |      +---+---+     |          |
+        +------+-------+-----+  +-------+
+          ground plane       |  |
+                             |  |
+                             gate
 
     Note:
         Only the M1 metal and the junction marker layers are drawn. The
@@ -102,8 +106,12 @@ def gatemon(
         junction_width: Width of the junction marker on ``JJ_AREA`` in µm.
         size_patch: (width, height) of the ``JJ_PATCH`` contact patches at the
             two ends of the weak link in µm.
+        electrode_offset: Horizontal position of the junction electrodes and
+            lead relative to the island centre in µm. Negative values move
+            them to the left. The electrodes must lie under the island.
         gate_offset: Horizontal distance from the lead to the centre line of
-            the gate line in µm.
+            the gate line in µm. The gate line runs to the right of the
+            electrodes and must stay inside the pocket.
         gate_tip_width: Width of the gate tip pointing at the junction in µm.
         gate_tip_gap: Gap between the gate tip and the lead in µm.
         gate_length: Length of the gate line beyond the bottom edge of the
@@ -117,7 +125,9 @@ def gatemon(
         Component: A gdsfactory component with the gatemon geometry.
 
     Raises:
-        ValueError: If the gate line would overlap the junction electrodes.
+        ValueError: If the electrodes would not lie under the island, or the
+            gate line would overlap the junction electrodes or leave the
+            pocket.
     """
     c = Component()
 
@@ -125,10 +135,29 @@ def gatemon(
     electrode_width, electrode_height = electrode_size
     xs_gate = gf.get_cross_section(gate_cross_section)
 
+    pocket_half_width = island_width / 2 + pocket_gap
+    # Outer edge of the gate line including its coplanar gap
+    gate_half_extent = max(
+        abs(section.offset) + section.width / 2 for section in xs_gate.sections
+    )
+    gate_x = electrode_offset + gate_offset
+
+    if abs(electrode_offset) + electrode_width / 2 > island_width / 2:
+        raise ValueError(
+            f"electrode_offset={electrode_offset} µm places the junction "
+            "electrodes outside the island; its magnitude must not exceed "
+            f"{island_width / 2 - electrode_width / 2} µm"
+        )
     if gate_offset - xs_gate.width / 2 <= electrode_width / 2:
         raise ValueError(
             f"gate_offset={gate_offset} µm places the gate line on the junction "
             f"electrodes; it must exceed {electrode_width / 2 + xs_gate.width / 2} µm"
+        )
+    if gate_x + gate_half_extent >= pocket_half_width:
+        raise ValueError(
+            f"gate_offset={gate_offset} µm places the gate line outside the "
+            "pocket; it must be less than "
+            f"{pocket_half_width - gate_half_extent - electrode_offset} µm"
         )
 
     # Vertical stack below the island, from top to bottom
@@ -153,13 +182,20 @@ def gatemon(
         (upper_electrode_y0, upper_electrode_y1),
         (pocket_bottom, lower_electrode_y1),
     ):
-        add_rect(c, layer=layer_metal, x_center=0, width=electrode_width, y0=y0, y1=y1)
+        add_rect(
+            c,
+            layer=layer_metal,
+            x_center=electrode_offset,
+            width=electrode_width,
+            y0=y0,
+            y1=y1,
+        )
 
     # Lead between the electrodes, interrupted by the weak link
     add_rect(
         c,
         layer=layer_metal,
-        x_center=0,
+        x_center=electrode_offset,
         width=lead_width,
         y0=junction_y + junction_length / 2,
         y1=upper_electrode_y0,
@@ -167,7 +203,7 @@ def gatemon(
     add_rect(
         c,
         layer=layer_metal,
-        x_center=0,
+        x_center=electrode_offset,
         width=lead_width,
         y0=lower_electrode_y1,
         y1=junction_y - junction_length / 2,
@@ -178,7 +214,7 @@ def gatemon(
     add_rect(
         c,
         layer=LAYER.JJ_AREA,
-        x_center=0,
+        x_center=electrode_offset,
         width=junction_width,
         y_center=junction_y,
         height=junction_marker_height,
@@ -187,18 +223,18 @@ def gatemon(
         add_rect(
             c,
             layer=LAYER.JJ_PATCH,
-            x_center=0,
+            x_center=electrode_offset,
             width=size_patch[0],
             y_center=junction_y + sign * junction_length / 2,
             height=size_patch[1],
         )
 
     # Gate line inside the pocket, ending in a tip next to the junction
-    gate_x0 = gate_offset - xs_gate.width / 2
+    gate_x0 = gate_x - xs_gate.width / 2
     add_rect(
         c,
         layer=layer_metal,
-        x_center=gate_offset,
+        x_center=gate_x,
         width=xs_gate.width,
         y0=pocket_bottom,
         y1=junction_y + gate_tip_width / 2,
@@ -206,7 +242,7 @@ def gatemon(
     add_rect(
         c,
         layer=layer_metal,
-        x0=lead_width / 2 + gate_tip_gap,
+        x0=electrode_offset + lead_width / 2 + gate_tip_gap,
         x1=gate_x0,
         y_center=junction_y,
         height=gate_tip_width,
@@ -218,7 +254,7 @@ def gatemon(
         pocket,
         layer=layer_etch,
         x_center=0,
-        width=island_width + 2 * pocket_gap,
+        width=2 * pocket_half_width,
         y0=pocket_bottom,
         y1=island_height / 2 + pocket_gap_top,
     )
@@ -233,7 +269,7 @@ def gatemon(
     gate_ref = c.add_ref(straight(length=gate_length, cross_section=xs_gate))
     gate_ref.rotate(-90)
     gate_ref.move((
-        gate_offset - gate_ref.ports["o1"].x,
+        gate_x - gate_ref.ports["o1"].x,
         pocket_bottom - gate_ref.ports["o1"].y,
     ))
     gate_port = gate_ref.ports["o2"].copy()
@@ -249,7 +285,7 @@ def gatemon(
     c.add_port(name="gate", port=gate_port)
     c.add_port(
         name="junction",
-        center=(0, junction_y),
+        center=(electrode_offset, junction_y),
         width=gf.snap.snap_to_grid(junction_marker_height, grid_factor=2),
         orientation=90,
         layer=LAYER.JJ_AREA,
