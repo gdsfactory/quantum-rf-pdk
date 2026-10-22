@@ -11,6 +11,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+import typer
+from typer.testing import CliRunner
 
 from qpdk.models.datasets import s_parameters_model
 from qpdk.models.datasets.generate import merge, partition_grid
@@ -21,6 +23,70 @@ def driven(monkeypatch: pytest.MonkeyPatch):
     scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
     monkeypatch.syspath_prepend(str(scripts))
     return importlib.import_module("_driven")
+
+
+@pytest.mark.parametrize(
+    "frequencies",
+    [[], [0.0], [-1.0], [float("nan")], [float("inf")], [2e9, 1e9], [1e9, 1e9]],
+)
+def test_invalid_frequency_grids_fail_before_preparation(
+    driven, frequencies: list[float]
+) -> None:
+    prepare = Mock()
+    with pytest.raises(ValueError, match="Frequencies"):
+        driven.Recipe(
+            name="fixture",
+            script=Path(__file__),
+            grid={"width": [2.0]},
+            frequencies=frequencies,
+            terminals=("o1",),
+            prepare=prepare,
+            description="Preflight fixture",
+            provenance={},
+        )
+    prepare.assert_not_called()
+
+
+def test_cli_preview_generation_and_merge(
+    driven, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    recipe = driven.Recipe(
+        name="fixture",
+        script=Path(__file__),
+        grid={"width": [2.0, 4.0]},
+        frequencies=[1e9, 2e9],
+        terminals=("o1",),
+        prepare=Mock(),
+        description="CLI fixture",
+        provenance={},
+    )
+    app = typer.Typer()
+    monkeypatch.setattr(driven.typer, "run", app.command())
+    generate, merge = Mock(), Mock()
+    monkeypatch.setattr(driven, "generate", generate)
+    monkeypatch.setattr(driven, "merge", merge)
+    driven.run_cli(recipe)
+    runner = CliRunner()
+    assert runner.invoke(app, ["--dry-run"]).exit_code == 0
+    generate.assert_not_called()
+    result = runner.invoke(app, ["--shard", "1", "--shards", "2", "--processes", "8"])
+    assert result.exit_code == 0, result.output
+    assert generate.call_args.kwargs["grid"] == {"width": [4.0]}
+    assert generate.call_args.kwargs["processes"] == 8
+    assert generate.call_args.kwargs["output"] == Path("build/datasets/fixture")
+    result = runner.invoke(app, ["--executable", "palace", "--sif", "palace.sif"])
+    assert result.exit_code != 0
+    assert "Choose --executable or --sif" in result.output
+    result = runner.invoke(
+        app,
+        ["--merge-shards", str(tmp_path / "a"), "--merge-shards", str(tmp_path / "b")],
+    )
+    assert result.exit_code == 0, result.output
+    assert merge.call_args.args[0] == [tmp_path / "a", tmp_path / "b"]
+    assert merge.call_args.kwargs["grid"] == {
+        "width": [2.0, 4.0],
+        "frequency": [1e9, 2e9],
+    }
 
 
 @pytest.mark.parametrize("ports", [1, 3, 5])
@@ -158,9 +224,19 @@ def test_native_matrix_order_and_quality(
     write_csv(jnp.eye(ports) * 1.1)
     with pytest.raises(ValueError, match="passivity"):
         driven.response(tmp_path, terminals, [1e9])
+    write_csv(expected.at[0, 0].set(jnp.nan))
+    with pytest.raises(ValueError, match="Invalid numeric value"):
+        driven.response(tmp_path, terminals, [1e9])
     if ports > 1:
         asymmetric = expected.at[0, 1].set(0.03j)
         write_csv(asymmetric)
         with pytest.raises(ValueError, match="reciprocity"):
             driven.response(tmp_path, terminals, [1e9])
         driven.response(tmp_path, terminals, [1e9], reciprocal=False)
+    monkeypatch.setattr(
+        checks,
+        "solver_checks",
+        lambda *_args, **_kwargs: (SimpleNamespace(status="failed"), None),
+    )
+    with pytest.raises(ValueError, match="did not converge"):
+        driven.response(tmp_path, terminals, [1e9])
