@@ -85,6 +85,27 @@ def test_loaded_readout_targets_reported_device_a_frequency(suffix: str) -> None
     assert float(power[peak]) > 10 * float(jnp.maximum(power[0], power[-1]))
 
 
+def test_nominal_readout_coupling_matches_device_a_target() -> None:
+    """The minimum mode splitting is twice the linear coupling strength."""
+    document = yaml.safe_load(SAMPLE.read_text())
+    target = document["info"]["readout_target_hz"]
+    frequencies = jnp.linspace(target - 150e6, target + 150e6, 6001)
+    circuit = _readout_circuit("a")
+    response = jax.jit(
+        jax.vmap(
+            lambda transmission: circuit(
+                f=frequencies, qubit={"transmissions": (transmission,)}
+            )
+        )
+    )(jnp.linspace(0.97, 0.995, 11))
+    power = jnp.abs(response["o2", "o1"]) ** 2
+    midpoint = len(frequencies) // 2
+    lower = frequencies[jnp.argmax(power[:, :midpoint], axis=1)]
+    upper = frequencies[midpoint + 1 + jnp.argmax(power[:, midpoint + 1 :], axis=1)]
+    coupling = float(jnp.min(upper - lower) / 2)
+    assert coupling == pytest.approx(document["info"]["coupling_target_hz"], rel=0.05)
+
+
 @pytest.mark.parametrize("suffix", ["a", "b"])
 def test_qubit_changes_the_readout_response(suffix: str) -> None:
     """The drawn capacitive branch must affect RF transmission and gate transfer."""
