@@ -201,7 +201,7 @@ plt.show()
 #   electron-phonon coupling. The two reservoirs equilibrate in nanoseconds, four
 #   orders of magnitude faster than the measured $18\,\text{µs}$.
 # - **Slow time.** This is the single-reservoir electron-phonon time. It reaches
-#   $150\,\text{µs}$ only near $T_\text{e} \approx 52\,\text{mK}$, which the paper does
+#   $150\,\text{µs}$ only near $T_\text{e} \approx 64\,\text{mK}$, which the paper does
 #   not report, so the agreement is not a test.
 # - **Calorimeter.** The dominant mode is again the electron-phonon time, about eight
 #   times faster than measured (the paper's own heat-capacity excess). The layout

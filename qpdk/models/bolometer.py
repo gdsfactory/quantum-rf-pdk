@@ -103,9 +103,10 @@ From :cite:`goveniusDetectionZeptojouleMicrowave2016`.
 AUPD_RESISTIVITY: float = 1e-7
 r"""Low-temperature resistivity of AuPd in Ω m.
 
-From the :math:`24.4\,\Omega` per :math:`1\,\text{µm}` heater of
-:cite:`girardCryogenicSensorEnabling2023`, assuming the
-:math:`135\,\text{nm} \times 30\,\text{nm}` wire cross-section of the default cell.
+Rounded from the :math:`24.4\,\Omega` per :math:`1\,\text{µm}` heater of
+:cite:`girardCryogenicSensorEnabling2023`, which gives :math:`9.9 \times 10^{-8}`
+for the :math:`135\,\text{nm} \times 30\,\text{nm}` wire cross-section of the
+default cell.
 """
 
 CU_RESISTIVITY: float = 4.5e-8
@@ -282,6 +283,10 @@ def two_reservoir_relaxation(
         q2 / (2 * d * (d + half)),
         (d - half) / (2 * d),
     )
+    # Uncoupled reservoirs with equal rates: one degenerate mode at reservoir 1
+    degenerate = (q2 == 0) & (half == 0)
+    a_fast = jnp.where(degenerate, 1.0, a_fast)
+    a_slow = jnp.where(degenerate, 0.0, a_slow)
     return 1 / lambda_fast, 1 / lambda_slow, a_fast, a_slow
 
 
@@ -371,9 +376,19 @@ def nanobolometer_thermal_modes(
         ``(taus, amplitudes)`` from the fastest to the slowest mode: two modes, or
         three with the material reservoir. The amplitudes are normalised to sum to
         one at the absorber.
+
+    Raises:
+        ValueError: If ``contact_overlap + extension_length`` is not positive.
     """
-    area = absorber_width * normal_metal_thickness * _UM**2
     side_length = contact_overlap + extension_length
+    # Only concrete inputs can be checked; a traced zero still gives NaN
+    if isinstance(side_length, int | float) and side_length <= 0:
+        msg = (
+            f"contact_overlap + extension_length = {side_length} µm must be "
+            "positive; the second reservoir needs a volume."
+        )
+        raise ValueError(msg)
+    area = absorber_width * normal_metal_thickness * _UM**2
     v1 = absorber_length * absorber_width * normal_metal_thickness * _UM3
     v2 = 2 * side_length * absorber_width * normal_metal_thickness * _UM3
     c1 = electron_heat_capacity(v1, temperature, heat_capacity_coefficient)

@@ -9,8 +9,10 @@ from hypothesis import given, settings, strategies as st
 
 from qpdk.cells import nanobolometer as nanobolometer_cell
 from qpdk.models.bolometer import (
+    AL_GAP,
     AUPD_ELECTRON_PHONON_COUPLING,
     AUPD_HEAT_CAPACITY_COEFFICIENT,
+    AUPD_RESISTIVITY,
     LORENZ_NUMBER,
     andreev_heat_suppression,
     electron_heat_capacity,
@@ -126,13 +128,53 @@ def test_layout_material_reservoir() -> None:
     assert jnp.allclose(jnp.sort(taus_0)[:2], taus_2, rtol=1e-6)
 
 
-def test_layout_matches_cell_volumes() -> None:
-    """The model's reservoir volumes match the cell's geometry-derived ``info``."""
-    c = nanobolometer_cell()
-    width, thickness = 0.135, 0.03
-    assert c.info["absorber_volume"] == pytest.approx(1.0 * width * thickness)
-    assert c.info["reservoir_volume"] == pytest.approx(2 * 0.5 * width * thickness)
-    assert c.info["link_length"] == pytest.approx(0.25)
+@pytest.mark.parametrize(
+    "geometry",
+    [
+        {},
+        {"absorber_length": 3.4, "contact_overlap": 1.5, "extension_length": 0.0},
+        {
+            "absorber_width": 0.1,
+            "normal_metal_thickness": 0.025,
+            "extension_length": 1.0,
+        },
+    ],
+)
+def test_layout_matches_cell_volumes(geometry: dict) -> None:
+    """The model gives the same modes when built from the cell's ``info`` volumes."""
+    temperature = 0.05
+    info = nanobolometer_cell(**geometry).info
+    um3 = 1e-18
+    v1 = info["absorber_volume"] * um3
+    v2 = info["reservoir_volume"] * um3
+    area = info["link_cross_section"] * 1e-12
+    link_resistance = AUPD_RESISTIVITY * info["link_length"] * 1e-6 / area
+    g_ns = andreev_heat_suppression(temperature, AL_GAP) * wiedemann_franz_conductance(
+        1.0, temperature
+    )
+    tau_1, tau_2, _, _ = two_reservoir_relaxation(
+        electron_heat_capacity(v1, temperature),
+        electron_heat_capacity(v2, temperature),
+        electron_phonon_conductance(v1, temperature),
+        electron_phonon_conductance(v2, temperature) + 2 * g_ns,
+        2 * wiedemann_franz_conductance(link_resistance, temperature),
+    )
+    taus, _ = nanobolometer_thermal_modes(**geometry, temperature=temperature)
+    assert jnp.allclose(taus, jnp.array([tau_1, tau_2]), rtol=1e-9)
+
+
+def test_layout_rejects_missing_reservoir() -> None:
+    """A zero second-reservoir volume is rejected instead of returning NaN."""
+    with pytest.raises(ValueError, match="must be positive"):
+        nanobolometer_thermal_modes(contact_overlap=0.0, extension_length=0.0)
+
+
+def test_degenerate_uncoupled_reservoirs() -> None:
+    """Uncoupled reservoirs with equal rates give one mode of unit weight, not NaN."""
+    tau_1, tau_2, a_1, a_2 = two_reservoir_relaxation(1.0, 2.0, 1.0, 2.0, 0.0)
+    assert tau_1 == pytest.approx(1.0)
+    assert tau_2 == pytest.approx(1.0)
+    assert a_1 + a_2 == pytest.approx(1.0)
 
 
 def test_layout_modes_are_jittable() -> None:
@@ -155,7 +197,7 @@ def test_rf_model_is_passive(length: float, resistivity: float) -> None:
 
 
 def test_rf_model_matched_load() -> None:
-    """R = Z0 gives no reflection; the default 24.7 Ω absorber reflects -0.34."""
+    """R = Z0 gives no reflection; the default absorber (24.7 Ω with the rounded ρ) reflects -0.34."""
     width, thickness = 0.135, 0.03
     matched_length = 50.0 * width * thickness * 1e-6 / 1e-7
     s = nanobolometer(f=6e9, absorber_length=matched_length)
@@ -202,7 +244,7 @@ def test_reference_device_gunyho() -> None:
     The amplitude ratio a_slow/a_fast = C1/C2 ≈ 1.13 is the right order of the
     measured 1.5, but the Wiedemann-Franz link equilibrates the two reservoirs
     in ~1 ns instead of the measured 18 µs. The slow mode is the plain
-    electron-phonon time γ/(5ΣT³), which matches 150 µs only near 52 mK.
+    electron-phonon time γ/(5ΣT³), which matches 150 µs only near 64 mK.
     """
     taus, amplitudes = nanobolometer_thermal_modes(**GUNYHO_2026, temperature=0.05)
     assert taus[0] == pytest.approx(1.42e-9, rel=0.01)

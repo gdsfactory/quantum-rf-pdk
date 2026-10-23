@@ -14,8 +14,9 @@ oxidised NIS probe junctions apart. Both are Al on ``JJ_AREA`` overlapping
 ``NM_DRAW``, and the oxidation step is set by the process, not the drawing.
 
 Normal metal beneath and beyond the leads is drawn explicitly. Its volume is
-reported in ``info`` and feeds the two-reservoir thermal model
-:func:`qpdk.models.bolometer.nanobolometer_thermal_modes`.
+reported in ``info``. The two-reservoir thermal model
+:func:`qpdk.models.bolometer.nanobolometer_thermal_modes` takes the same
+geometry parameters and derives the same volumes.
 """
 
 from __future__ import annotations
@@ -94,9 +95,11 @@ def nanobolometer(
     geometry follows the AuPd nanowire bolometers of
     :cite:`kokkoniemiNanobolometerUltralowNoise2019`,
     :cite:`girardCryogenicSensorEnabling2023` and
-    :cite:`gunyhoSingleshotReadoutSuperconducting2024`. The width and thickness are a
-    :math:`135\,\text{nm} \times 30\,\text{nm}` cross-section and the absorber is
-    :math:`1\,\text{µm}` long. Their SNS thermometer islands are not drawn; NIS
+    :cite:`gunyhoSingleshotReadoutSuperconducting2024`, with a
+    :math:`1\,\text{µm}` absorber and a :math:`30\,\text{nm}` film. Those papers
+    do not report the wire width. The :math:`135\,\text{nm}` default is chosen to
+    reproduce the volume :math:`V_0 \approx (240\,\text{nm})^3` of
+    :cite:`goveniusDetectionZeptojouleMicrowave2016`. Their SNS thermometer islands are not drawn; NIS
     probes stand in for them.
 
     .. svgbob::
@@ -191,8 +194,8 @@ def nanobolometer(
     cpw = c << straight(length=cpw_length, cross_section=cross_section)
     cpw.dmove((x_tip - cpw_length, y_hot))
     xs = gf.get_cross_section(cross_section)
-    cpw_half_extent = xs.width / 2 + max(
-        (abs(s.offset) + s.width / 2 for s in xs.sections), default=0
+    cpw_half_extent = max(
+        (abs(s.offset) + s.width / 2 for s in xs.sections), default=xs.width / 2
     )
 
     # Probes: route right, then fan out to pads stacked along y
