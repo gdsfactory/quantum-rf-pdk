@@ -1,0 +1,33 @@
+info:
+  cross_section_name: coplanar_waveguide
+  length: 4000
+  neck_length: 325
+  neck_trapping_threshold: 0.001
+  neck_width: 2
+  resonator_type: quarter_wave
+  taper_length: 100
+  taper_shape: linear
+  window_length: 425
+  window_width: 380
+name: resonator_quarter_wave_neck_L4000_M6_BSbend_circular_CS_5f9594d6
+ports:
+  o1:
+    center:
+    - 285.764
+    - -1200
+    layer: M1_ETCH
+    name: o1
+    orientation: 0
+    port_type: optical
+    width: 22
+settings:
+  bend_spec: bend_circular
+  cross_section: cpw
+  length: 4000
+  meanders: 6
+  neck_length: 325
+  neck_width: 2
+  taper_length: 100
+  taper_shape: linear
+  trap_hole_rows: 4
+  window_width: 380

@@ -1,0 +1,31 @@
+info:
+  neck_length: 325
+  neck_trapping_threshold: 0.001
+  neck_width: 2
+  taper_length: 100
+  taper_shape: linear
+  window_length: 425
+  window_width: 380
+name: neck_termination_CScpw_TL100_TSlinear_NW2_NL325_WW380_T_7bf92c9a
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+settings:
+  cross_section: cpw
+  neck_length: 325
+  neck_width: 2
+  taper_length: 100
+  taper_shape: linear
+  trap_hole_keepout: 24
+  trap_hole_offset: 6
+  trap_hole_pitch: 5.5
+  trap_hole_rows: 4
+  trap_hole_size: 4
+  window_width: 380
