@@ -14,6 +14,7 @@ TEST_FREQUENCY: tuple[tuple[float, float, float], tuple[float, float, float]] = 
 c_0 = scipy.constants.speed_of_light
 e = scipy.constants.e
 h = scipy.constants.h
+k_B = scipy.constants.k
 μ_0 = scipy.constants.mu_0
 ε_0 = scipy.constants.epsilon_0
 π = scipy.constants.pi

@@ -5,6 +5,17 @@
 import jax
 import sax
 
+from qpdk.models.bolometer import (
+    andreev_heat_suppression,
+    electron_heat_capacity,
+    electron_phonon_conductance,
+    nanobolometer,
+    nanobolometer_thermal_modes,
+    nanocalorimeter,
+    thermal_relaxation_modes,
+    two_reservoir_relaxation,
+    wiedemann_franz_conductance,
+)
 from qpdk.models.capacitor import (
     interdigital_capacitor,
     plate_capacitor,
@@ -137,6 +148,7 @@ __all__ = [
     "DEFAULT_FREQUENCY",
     "admittance",
     "airbridge",
+    "andreev_heat_suppression",
     "bend_circular",
     "bend_circular_all_angle",
     "bend_euler",
@@ -170,6 +182,8 @@ __all__ = [
     "electrical_open",
     "electrical_short",
     "electrical_short_2_port",
+    "electron_heat_capacity",
+    "electron_phonon_conductance",
     "flipmon",
     "flipmon_ideal_bond_model",
     "flipmon_readout_coupon_model",
@@ -197,6 +211,9 @@ __all__ = [
     "microstrip_thickness_correction",
     "microstrip_z0",
     "models",
+    "nanobolometer",
+    "nanobolometer_thermal_modes",
+    "nanocalorimeter",
     "nxn",
     "open",
     "open_2_port",
@@ -227,14 +244,17 @@ __all__ = [
     "straight_shorted",
     "taper_cross_section",
     "tee",
+    "thermal_relaxation_modes",
     "transmission_line_s_params",
     "transmon_coupled",
     "transmon_with_resonator",
     "tsv",
+    "two_reservoir_relaxation",
     "unimon_coupled",
     "unimon_energies",
     "unimon_frequency_and_anharmonicity",
     "unimon_hamiltonian",
+    "wiedemann_franz_conductance",
     "xmon_transmon",
 ]
 
