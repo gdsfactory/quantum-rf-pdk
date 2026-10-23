@@ -120,8 +120,17 @@ def _neck_sections(
     window_width: float,
     npoints: int,
 ) -> list[tuple[float, float, float]]:
-    """Return the CPW sections of the taper and neck inside the window."""
+    """Return the CPW sections of the taper and neck inside the window.
+
+    Raises:
+        ValueError: If the strip does not fit inside the window.
+    """
     width, _ = get_cpw_dimensions(cross_section)
+    if not 0 < neck_width < width < window_width:
+        raise ValueError(
+            "Need 0 < neck_width < CPW width < window_width, got "
+            f"{neck_width}, {width} and {window_width}."
+        )
     npoints = max(npoints, 1)
     taper = [
         (taper_length / npoints, w, (window_width - w) / 2)
@@ -208,8 +217,8 @@ def cpw_bulge(
     r"""S-parameter model for a CPW with a locally widened centre conductor.
 
     Linear tapers to and from a section of width ``bulge_width``, all with the
-    gap of ``cross_section``, as in
-    :cite:`nsanzinezaTrappingSingleVortex2014`.
+    gap of ``cross_section``, matching :func:`qpdk.cells.vortex.cpw_bulge`.
+    See :cite:`nsanzinezaTrappingSingleVortex2014` for the measurement.
 
     Args:
         f: Array of frequency points in Hz.

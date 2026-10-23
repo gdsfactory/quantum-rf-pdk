@@ -5,8 +5,8 @@ Two layouts from the literature are provided:
 * :func:`neck_termination` follows Shulga *et al.*
   :cite:`shulgaObservationIndividualVortex2026`: the grounded end of a
   quarter-wave resonator is a linear taper into a narrow "neck" inside an
-  etched, flux-focusing window, with an optional band of flux-trapping holes
-  next to the window.
+  etched, flux-focusing window, with an optional ring of flux-trapping holes
+  around the window.
 * :func:`cpw_bulge` follows Nsanzineza and Plourde
   :cite:`nsanzinezaTrappingSingleVortex2014`: a short, wider section
   of centre conductor at the current antinode of a half-wave resonator lowers
@@ -111,26 +111,34 @@ def neck_termination(
     gap. The ground plane around the window focuses the applied field
     unevenly onto the taper and neck, and the neck sits at the
     current antinode, so a single trapped vortex shifts the resonance by a
-    measurable amount. Behind the window an optional band of square etched
-    holes traps vortices in the ground plane, with a hole-free column where
-    the neck current enters the ground.
+    measurable amount. An optional ring of square etched holes along the two
+    long sides and the far end of the window traps vortices in the ground
+    plane, with a hole-free column where the neck current enters the ground.
+    The ring is left open at the port end, where the CPW enters. Holes in the
+    rest of the ground plane are left to
+    :func:`qpdk.utils.fill_magnetic_vortices`.
 
     The paper states the 325 µm neck length and the 1-10 µm neck widths: 1 µm
     showed single-vortex frequency steps, 5 µm did not, and a 2 µm neck stayed
     free of vortices after cooling in 113 µT. The taper length (about
     100 µm) and the window size (about 380 µm by 425 µm) are estimated from
-    its figures. In the paper vortices sit preferentially in the taper.
-    ``taper_shape="smooth"`` uses a raised-cosine profile without corners,
-    where current crowding lowers the vortex-entry current
-    :cite:`clemGeometrydependentCriticalCurrents2011`.
+    its figures, and the paper does not describe the taper profile. In the
+    paper vortices sit preferentially in the taper. The default linear taper
+    has corners at both ends, where current crowding lowers the vortex-entry
+    current :cite:`clemGeometrydependentCriticalCurrents2011`;
+    ``taper_shape="smooth"`` uses a raised-cosine profile without them.
 
     The hole defaults follow the usual rules for flux-trap arrays: the
     superconducting web between holes (1.5 µm) is narrower than the neck, so
     the holes trap before the neck does
     :cite:`nsanzinezaTrappingSingleVortex2014`, and the first row
-    is 6 µm from the window edge, where holes add no measurable dielectric
-    loss :cite:`chiaroDielectricSurfaceLoss2016`. Use a narrower web for
-    1 µm necks.
+    is 6 µm from the window edge. Chiaro *et al.* found that holes 6 µm or
+    more from a CPW gap edge add no measurable dielectric loss
+    :cite:`chiaroDielectricSurfaceLoss2016`; the same margin is used here
+    around the window, whose edges carry the electric field of the taper and
+    neck. At the far end the ground return current crowds around the
+    junction with the neck, so the hole-free column ``trap_hole_keepout``
+    must stay wider than the neck. Use a narrower web for 1 µm necks.
 
     Thresholds from :func:`vortex_trapping_threshold` are field-cooled
     estimates. Zero-field-cooled entry and microwave drive can trap vortices
@@ -140,31 +148,32 @@ def neck_termination(
 
     .. svgbob::
 
-                    ┌─────────────────────────┐ ▫ ▫ ▫ ▫
-                    │                         │ ▫ ▫ ▫ ▫
-                    │ ─────┐                  │ ▫ ▫ ▫ ▫
+                    ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫
+                    ┌─────────────────────────┐ ▫ ▫
+                    │ ─────┐                  │ ▫ ▫
         o1 ─────────┤      ├──────────────────┤  (keepout)
-                    │ ─────┘   neck           │ ▫ ▫ ▫ ▫
-                    │ taper                   │ ▫ ▫ ▫ ▫
-                    └─────────────────────────┘ ▫ ▫ ▫ ▫
+                    │ ─────┘   neck           │ ▫ ▫
+                    │ taper                   │ ▫ ▫
+                    └─────────────────────────┘ ▫ ▫
+                    ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫ ▫
 
     Args:
         cross_section: CPW cross-section at port ``o1``.
         taper_length: Length of the taper in µm.
-        taper_shape: ``"linear"`` for a straight-sided taper as in the paper,
+        taper_shape: ``"linear"`` for a straight-sided taper,
             ``"smooth"`` for a raised-cosine width profile with no corners.
         neck_width: Width of the neck in µm.
         neck_length: Length of the neck in µm.
         window_width: Width of the etched window across the line in µm.
             The window length is ``taper_length + neck_length``.
-        trap_hole_rows: Number of rows of flux-trapping holes behind the
-            window. Zero disables the holes.
+        trap_hole_rows: Number of rows in the ring of flux-trapping holes
+            around the window. Zero disables the holes.
         trap_hole_size: Side of each square hole in µm.
         trap_hole_pitch: Centre-to-centre hole spacing in µm.
         trap_hole_offset: Width of the ground strip between the window and the
             first row of holes in µm.
         trap_hole_keepout: Width of the hole-free column centred on the neck
-            in µm.
+            at the far end of the window in µm.
 
     Returns:
         Component with a single port ``o1``.
@@ -181,9 +190,9 @@ def neck_termination(
     }.items():
         if not value > 0:
             raise ValueError(f"{name} must be positive, got {value}.")
-    if neck_width > width:
+    if neck_width >= width:
         raise ValueError(
-            f"neck_width ({neck_width}) must not exceed the CPW width ({width})."
+            f"neck_width ({neck_width}) must be smaller than the CPW width ({width})."
         )
     if window_width < width + 2 * gap:
         raise ValueError(
@@ -199,6 +208,11 @@ def neck_termination(
     if trap_hole_rows and not 0 < trap_hole_size < trap_hole_pitch:
         raise ValueError(
             "trap_hole_size must be positive and smaller than trap_hole_pitch."
+        )
+    if trap_hole_rows and (trap_hole_offset < 0 or trap_hole_keepout <= neck_width):
+        raise ValueError(
+            "trap_hole_offset must be >= 0 and trap_hole_keepout must exceed "
+            "neck_width."
         )
 
     c = Component()
@@ -233,24 +247,35 @@ def neck_termination(
     c.add_polygon(conductor, layer=LAYER.WG)
 
     if trap_hole_rows:
-        n_columns = math.floor((window_width - trap_hole_size) / trap_hole_pitch) + 1
-        y_first = -(n_columns - 1) * trap_hole_pitch / 2
+        # One square grid, anchored so that the innermost rows sit
+        # ``trap_hole_offset`` from the far end and from both long sides.
         half = trap_hole_size / 2
-        for row in range(trap_hole_rows):
-            x = window_length + trap_hole_offset + half + row * trap_hole_pitch
-            for column in range(n_columns):
-                y = y_first + column * trap_hole_pitch
-                if abs(y) < (trap_hole_keepout + trap_hole_size) / 2:
-                    continue
-                c.add_polygon(
-                    [
-                        (x - half, y - half),
-                        (x + half, y - half),
-                        (x + half, y + half),
-                        (x - half, y + half),
-                    ],
-                    layer=LAYER.M1_ETCH,
-                )
+        x0 = window_length + trap_hole_offset + half
+        y0 = window_width / 2 + trap_hole_offset + half
+        n_inner_x = math.floor((x0 - half) / trap_hole_pitch)
+        n_inner_y = math.floor((y0 - half) / trap_hole_pitch)
+        xs_grid = [
+            (i, x0 + i * trap_hole_pitch) for i in range(-n_inner_x, trap_hole_rows)
+        ]
+        ys_grid = [
+            (k, y0 + k * trap_hole_pitch) for k in range(-n_inner_y, trap_hole_rows)
+        ]
+        for i, x in xs_grid:
+            for k, y_abs in ys_grid:
+                if i < 0 and k < 0:
+                    continue  # inside the window's footprint
+                if i >= 0 and y_abs < (trap_hole_keepout + trap_hole_size) / 2:
+                    continue  # current path from the neck into the ground
+                for y in (y_abs, -y_abs):
+                    c.add_polygon(
+                        [
+                            (x - half, y - half),
+                            (x + half, y - half),
+                            (x + half, y + half),
+                            (x - half, y + half),
+                        ],
+                        layer=LAYER.M1_ETCH,
+                    )
 
     c.add_port(
         name="o1",
@@ -286,7 +311,7 @@ def cpw_bulge(
     (:func:`vortex_trapping_threshold` scales as :math:`1/w^2`) so that,
     placed at the current antinode of a resonator, it is where vortices are
     trapped first. The gap is kept constant, so the ground-plane edges flare
-    with the conductor.
+    with the conductor; the paper does not state how its gap behaves.
 
     The paper used a 3 µm line widened to 8 µm over 50 µm. It observed the
     first vortex at 42 µT and then one more for every 5 µT, which matches one
