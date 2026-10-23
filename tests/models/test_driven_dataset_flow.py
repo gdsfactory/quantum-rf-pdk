@@ -12,6 +12,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 import typer
+from click import unstyle
 from typer.testing import CliRunner
 
 from qpdk.models.datasets import s_parameters_model
@@ -76,7 +77,7 @@ def test_cli_preview_generation_and_merge(
     assert generate.call_args.kwargs["output"] == Path("build/datasets/fixture")
     result = runner.invoke(app, ["--executable", "palace", "--sif", "palace.sif"])
     assert result.exit_code != 0
-    assert "Choose --executable or --sif" in result.output
+    assert "Choose --executable or --sif" in unstyle(result.output)
     result = runner.invoke(
         app,
         ["--merge-shards", str(tmp_path / "a"), "--merge-shards", str(tmp_path / "b")],
