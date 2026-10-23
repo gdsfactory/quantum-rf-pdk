@@ -104,7 +104,10 @@ capacitor inputs, probeline routing, and flux lines — shown here with ground-p
 
 A two-gatemon test chip after Riechert et al. (2025): each gatemon sits at the input end of a half-wave meander
 resonator between two series coupling capacitors, with its gate electrode routed to a dedicated launcher. Shown here
-with ground-plane filling and chip edges.
+with ground-plane filling and chip edges. Both independent readout channels target the reported device A frequency of
+5.056 GHz using QPDK's analytical CPW and capacitor models, including the nominal island load with its Josephson
+junction open. The physical lengths and capacitor dimensions are design estimates, and the qubit coupling still needs
+electromagnetic calibration.
 
 ![Gatemon Test Chip](docs/_static/images/gatemon_test_chip.png)
 
