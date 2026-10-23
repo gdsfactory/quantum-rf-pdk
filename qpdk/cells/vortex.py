@@ -27,6 +27,7 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
 from qpdk.cells.resonator import resonator
 from qpdk.cells.waveguides import bend_circular, straight, taper_cross_section
+from qpdk.logger import logger
 from qpdk.tech import LAYER, coplanar_waveguide, get_etch_section
 
 __all__ = [
@@ -123,10 +124,12 @@ def neck_termination(
     free of vortices after cooling in 113 µT. The taper length (about
     100 µm) and the window size (about 380 µm by 425 µm) are estimated from
     its figures, and the paper does not describe the taper profile. In the
-    paper vortices sit preferentially in the taper. The default linear taper
-    has corners at both ends, where current crowding lowers the vortex-entry
-    current :cite:`clemGeometrydependentCriticalCurrents2011`;
-    ``taper_shape="smooth"`` uses a raised-cosine profile without them.
+    paper vortices sit preferentially in the taper. Sharp corners crowd the
+    current and lower the vortex-entry current
+    :cite:`clemGeometrydependentCriticalCurrents2011`. The default linear
+    taper only has shallow kinks at its ends (about 2° for the defaults), so
+    the effect is small; ``taper_shape="smooth"`` removes them with a
+    raised-cosine profile, which matters for short tapers.
 
     The hole defaults follow the usual rules for flux-trap arrays: the
     superconducting web between holes (1.5 µm) is narrower than the neck, so
@@ -134,11 +137,14 @@ def neck_termination(
     :cite:`nsanzinezaTrappingSingleVortex2014`, and the first row
     is 6 µm from the window edge. Chiaro *et al.* found that holes 6 µm or
     more from a CPW gap edge add no measurable dielectric loss
-    :cite:`chiaroDielectricSurfaceLoss2016`; the same margin is used here
-    around the window, whose edges carry the electric field of the taper and
-    neck. At the far end the ground return current crowds around the
+    :cite:`chiaroDielectricSurfaceLoss2016`. The window sits near the voltage
+    node of the resonator, so its edges see a weaker electric field than a
+    CPW gap at the open end, and the same margin is conservative here. At the
+    far end the ground return current crowds around the
     junction with the neck, so the hole-free column ``trap_hole_keepout``
-    must stay wider than the neck. Use a narrower web for 1 µm necks.
+    must stay wider than the neck. For 1 µm necks use a narrower web
+    (``trap_hole_pitch - trap_hole_size``); the cell logs a warning when the
+    web is not narrower than the neck.
 
     Thresholds from :func:`vortex_trapping_threshold` are field-cooled
     estimates. Zero-field-cooled entry and microwave drive can trap vortices
@@ -172,8 +178,9 @@ def neck_termination(
         trap_hole_pitch: Centre-to-centre hole spacing in µm.
         trap_hole_offset: Width of the ground strip between the window and the
             first row of holes in µm.
-        trap_hole_keepout: Width of the hole-free column centred on the neck
-            at the far end of the window in µm.
+        trap_hole_keepout: Minimum width of the hole-free column centred on
+            the neck at the far end of the window in µm. The grid can make the
+            column wider.
 
     Returns:
         Component with a single port ``o1``.
@@ -213,6 +220,13 @@ def neck_termination(
         raise ValueError(
             "trap_hole_offset must be >= 0 and trap_hole_keepout must exceed "
             "neck_width."
+        )
+    if trap_hole_rows and trap_hole_pitch - trap_hole_size >= neck_width:
+        logger.warning(
+            "Flux-trap web ({} µm) is not narrower than the neck ({} µm), so "
+            "the ground plane may trap vortices before the neck does.",
+            trap_hole_pitch - trap_hole_size,
+            neck_width,
         )
 
     c = Component()
@@ -317,8 +331,8 @@ def cpw_bulge(
     first vortex at 42 µT and then one more for every 5 µT, which matches one
     flux quantum per bulge area. The cell reports this step as
     ``bulge_flux_step`` :math:`= \Phi_0 / (w_\text{b} l_\text{b})`. The taper
-    length is not given in the paper. The default ``bulge_width`` keeps the
-    paper's width ratio on the PDK's 10 µm CPW. To reproduce the paper use
+    length is not given in the paper. The default ``bulge_width`` is close
+    to the paper's width ratio (8/3) on the PDK's 10 µm CPW. To reproduce the paper use
     ``cross_section=coplanar_waveguide(width=3, gap=2)`` and ``bulge_width=8``.
 
     For the bulge to trap first it must be the widest conductor in the
@@ -404,6 +418,10 @@ def resonator_quarter_wave_neck(
     neck_length: float = 325.0,
     window_width: float = 380.0,
     trap_hole_rows: int = 4,
+    trap_hole_size: float = 4.0,
+    trap_hole_pitch: float = 5.5,
+    trap_hole_offset: float = 6.0,
+    trap_hole_keepout: float = 24.0,
 ) -> Component:
     """Quarter-wave resonator grounded through a :func:`neck_termination`.
 
@@ -425,6 +443,10 @@ def resonator_quarter_wave_neck(
         neck_length: See :func:`neck_termination`.
         window_width: See :func:`neck_termination`.
         trap_hole_rows: See :func:`neck_termination`.
+        trap_hole_size: See :func:`neck_termination`.
+        trap_hole_pitch: See :func:`neck_termination`.
+        trap_hole_offset: See :func:`neck_termination`.
+        trap_hole_keepout: See :func:`neck_termination`.
 
     Returns:
         Component with the open-end port ``o1``.
@@ -454,6 +476,10 @@ def resonator_quarter_wave_neck(
         neck_length=neck_length,
         window_width=window_width,
         trap_hole_rows=trap_hole_rows,
+        trap_hole_size=trap_hole_size,
+        trap_hole_pitch=trap_hole_pitch,
+        trap_hole_offset=trap_hole_offset,
+        trap_hole_keepout=trap_hole_keepout,
     )
     neck.connect("o1", turn_ref.ports["o2"])
     c.add_port("o1", port=body.ports["o2"])

@@ -93,6 +93,11 @@ class TestNeckTermination:
         assert hole_box.left >= box.left
         # Every hole keeps the offset from the window.
         assert (holes & window.sized(offset - 1)).is_empty()
+        # Both long sides carry holes along the middle of the window.
+        for sign in (1, -1):
+            y_lo = box.top + offset if sign > 0 else box.bottom - offset - 30_000
+            side = gf.kdb.Region(gf.kdb.Box(100_000, y_lo, 300_000, y_lo + 30_000))
+            assert (holes & side).count() >= 4 * 30
 
     @staticmethod
     def test_hole_web_narrower_than_neck() -> None:

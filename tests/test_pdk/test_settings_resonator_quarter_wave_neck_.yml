@@ -9,7 +9,7 @@ info:
   taper_shape: linear
   window_length: 425
   window_width: 380
-name: resonator_quarter_wave_neck_L4000_M6_BSbend_circular_CS_5f9594d6
+name: resonator_quarter_wave_neck_L4000_M6_BSbend_circular_CS_a83887a9
 ports:
   o1:
     center:
@@ -29,5 +29,9 @@ settings:
   neck_width: 2
   taper_length: 100
   taper_shape: linear
+  trap_hole_keepout: 24
+  trap_hole_offset: 6
+  trap_hole_pitch: 5.5
   trap_hole_rows: 4
+  trap_hole_size: 4
   window_width: 380
