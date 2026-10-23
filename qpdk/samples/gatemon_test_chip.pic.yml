@@ -13,13 +13,14 @@ instances:
     component: interdigital_capacitor
     settings: {}
   coupler_a:
-    component: straight
+    component: gatemon_coupler
     settings:
       length: 600
   coupler_b:
-    component: straight
+    component: gatemon_coupler
     settings:
       length: 600
+      qubit_side: top
   gatemon_a:
     component: gatemon
     settings: {}
@@ -47,14 +48,14 @@ instances:
   resonator_a:
     component: resonator
     settings:
-      length: 10038
+      length: 9946.135
       meanders: 4
       open_start: false
       open_end: false
   resonator_b:
     component: resonator
     settings:
-      length: 9484
+      length: 9946.135
       meanders: 4
       open_start: false
       open_end: false
@@ -67,6 +68,8 @@ instances:
     settings:
       length: 1400
 connections:
+  gatemon_a,readout: coupler_a,qubit
+  gatemon_b,readout: coupler_b,qubit
   coupler_a,o1: cap_in_a,o2
   coupler_b,o1: cap_in_b,o2
   resonator_a,o1: coupler_a,o2
@@ -79,39 +82,59 @@ routes:
   gate_line_a:
     links:
       gatemon_a,gate: launcher_gate_a,o1
-    routing_strategy: route_bundle_cpw
+    routing_strategy: route_single_cpw
     settings:
       auto_taper: false
+      waypoints:
+      - - -1722
+        - -3200
+      - - -2400
+        - -3200
   gate_line_b:
     links:
       gatemon_b,gate: launcher_gate_b,o1
-    routing_strategy: route_bundle_cpw
+    routing_strategy: route_single_cpw
     settings:
       auto_taper: false
+      waypoints:
+      - - -1722
+        - 3200
+      - - -2400
+        - 3200
   probeline_input_a:
     links:
       launcher_in_a,o1: cap_in_a,o1
-    routing_strategy: route_bundle_cpw
+    routing_strategy: route_single_cpw
     settings:
       auto_taper: false
   probeline_input_b:
     links:
       launcher_in_b,o1: cap_in_b,o1
-    routing_strategy: route_bundle_cpw
+    routing_strategy: route_single_cpw
     settings:
       auto_taper: false
   probeline_output_a:
     links:
       cap_out_a,o2: launcher_out_a,o1
-    routing_strategy: route_bundle_cpw
+    routing_strategy: route_single_cpw
     settings:
       auto_taper: false
+      waypoints:
+      - - 3300
+        - -2800
+      - - 3300
+        - -2000
   probeline_output_b:
     links:
       cap_out_b,o2: launcher_out_b,o1
-    routing_strategy: route_bundle_cpw
+    routing_strategy: route_single_cpw
     settings:
       auto_taper: false
+      waypoints:
+      - - 3300
+        - 2800
+      - - 3300
+        - 2000
 nets: []
 ports:
   o1: launcher_in_a,waveport
@@ -158,3 +181,10 @@ placements:
     rotation: 180
   resonator_b:
     mirror: true
+info:
+  reference: https://doi.org/10.1038/s41467-025-62283-y
+  readout_target_hz: 5056000000
+  readout_target_source: Device A bare cavity frequency, used for both independent channels
+  charging_energy_target_hz: 260000000
+  coupling_target_hz: 50000000
+  calibration: Analytical CPW, end capacitors and nominal qubit capacitances, with the Josephson junction open. Not a geometry extraction or full electromagnetic solve.

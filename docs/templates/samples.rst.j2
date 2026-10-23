@@ -33,6 +33,50 @@ Gallery
 
 {%     endif %}
 {% endfor %}
+{% for name in schematic_samples %}
+   .. grid-item-card:: {{ name }}
+      :link: {{ name }}
+      :link-type: ref
+      :text-align: center
+      :class-card: gallery-card
+
+      .. plot::
+
+         import gdsfactory as gf
+         from qpdk import PDK
+
+         PDK.activate()
+         c = gf.get_component("{{ name }}").copy()
+         c.draw_ports()
+         c.plot()
+
+{% endfor %}
+{% if schematic_samples %}
+Schematic samples
+-----------------
+
+{% for name in schematic_samples %}
+.. _{{ name }}:
+
+{{ name }}
+{{ '^' * (name | length) }}
+
+Open the :download:`GDSFactory+ schematic <../qpdk/samples/{{ name }}.gsch>` or
+load the :download:`YAML layout <../qpdk/samples/{{ name }}.pic.yml>` with
+``gf.get_component("{{ name }}")`` after activating QPDK.
+
+.. plot::
+
+   import gdsfactory as gf
+   from qpdk import PDK
+
+   PDK.activate()
+   c = gf.get_component("{{ name }}").copy()
+   c.draw_ports()
+   c.plot()
+
+{% endfor %}
+{% endif %}
 
 API Reference
 -------------
