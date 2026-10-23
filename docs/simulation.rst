@@ -151,6 +151,16 @@ not extracted from the layout. The complete schematic simulation includes the qu
 loading and gate-tuned readout response. It uses a linearized junction, so it does not
 predict the nonlinear qubit spectrum or decoherence.
 
+The nonlinear ABS Hamiltonian uses the short-junction, even-parity approximation, with
+channel transmissions supplied as inputs. Reproducing the paper's quantum-dot parity
+transitions and anharmonicities below the short-junction bound requires an extended
+Hamiltonian :cite:`riechertCarbonNanotubeGatemon2025`.
+
+The exported gate ports use a 50 ohm S-parameter reference. For comparison with
+measurements, connect the experimental bias network to those ports. The paper's setup
+uses a bias tee with its RF branch grounded as a reflective filter
+:cite:`riechertCarbonNanotubeGatemon2025`.
+
 ``flipmon_readout_coupon_model()`` creates a 5-port static SAX coupon model. Pass
 ``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
 frequency ``f`` in Hz. The whole readout conductor shares one potential, and feedline
