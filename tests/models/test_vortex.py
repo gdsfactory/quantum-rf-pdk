@@ -87,7 +87,7 @@ class TestPhysics:
             resonator_quarter_wave_neck(f=_F, neck_width=1)["o1", "o1"]
         )
         f_wide = _shorted_resonance(
-            resonator_quarter_wave_neck(f=_F, neck_width=10)["o1", "o1"]
+            resonator_quarter_wave_neck(f=_F, neck_width=8)["o1", "o1"]
         )
         assert f_narrow < f_wide
 
@@ -112,3 +112,13 @@ class TestPhysics:
         """A half-wave resonator shorter than the bulge is rejected."""
         with pytest.raises(ValueError, match="must exceed the bulge length"):
             resonator_half_wave_bulge(f=jnp.array([5e9]), length=50)
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{"neck_width": 10}, {"neck_width": 0}, {"window_width": 8}],
+    )
+    def test_neck_outside_window_raises(kwargs: dict) -> None:
+        """A strip that does not fit inside the window is rejected."""
+        with pytest.raises(ValueError, match="neck_width < CPW width"):
+            neck_termination(f=jnp.array([5e9]), **kwargs)

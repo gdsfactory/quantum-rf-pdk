@@ -10,7 +10,7 @@ from qpdk.cells.vortex import (
     resonator_quarter_wave_neck,
     vortex_trapping_threshold,
 )
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, coplanar_waveguide
 
 _FLUX_QUANTUM = 2.067833848e-15
 
@@ -80,14 +80,40 @@ class TestNeckTermination:
         assert probe.bbox().height() == pytest.approx(3000, abs=2)
 
     @staticmethod
-    def test_hole_band_web_narrower_than_neck() -> None:
-        """Default hole web is narrower than the default neck width."""
+    def test_hole_ring_surrounds_window() -> None:
+        """Holes run along both long sides and the far end, not the port end."""
+        c = neck_termination()
+        window = _region(neck_termination(trap_hole_rows=0), LAYER.M1_ETCH)
+        holes = _region(c, LAYER.M1_ETCH) - window
+        box, hole_box = window.bbox(), holes.bbox()
+        offset = 6000  # trap_hole_offset in dbu
+        assert hole_box.top == box.top + offset + 4 * 5500 - 1500
+        assert hole_box.bottom == -hole_box.top
+        assert hole_box.right == box.right + offset + 4 * 5500 - 1500
+        assert hole_box.left >= box.left
+        # Every hole keeps the offset from the window.
+        assert (holes & window.sized(offset - 1)).is_empty()
+
+    @staticmethod
+    def test_hole_web_narrower_than_neck() -> None:
+        """The measured web between neighbouring holes is narrower than the neck."""
         c = neck_termination()
         holes = _region(c, LAYER.M1_ETCH) - _region(
             neck_termination(trap_hole_rows=0), LAYER.M1_ETCH
         )
-        assert holes.count() > 0
-        assert c.info["neck_width"] > 5.5 - 4.0
+        # Growing each hole by half the neck width merges neighbours.
+        neck = round(c.info["neck_width"] * 1000)
+        assert holes.sized(neck // 2).merged().count() < holes.count() / 10
+
+    @staticmethod
+    def test_keepout_column_is_hole_free() -> None:
+        """No hole sits in the column where the neck current enters the ground."""
+        c = neck_termination(trap_hole_keepout=30)
+        holes = _region(c, LAYER.M1_ETCH) - _region(
+            neck_termination(trap_hole_rows=0), LAYER.M1_ETCH
+        )
+        column = gf.kdb.Region(gf.kdb.Box(425_000, -15_000, 500_000, 15_000))
+        assert (holes & column).is_empty()
 
     @staticmethod
     def test_smooth_taper_differs_from_linear() -> None:
@@ -105,11 +131,14 @@ class TestNeckTermination:
             ({"neck_width": 0}, "neck_width must be positive"),
             ({"neck_length": -1}, "neck_length must be positive"),
             ({"taper_length": 0}, "taper_length must be positive"),
-            ({"neck_width": 20}, "must not exceed the CPW width"),
+            ({"neck_width": 20}, "smaller than the CPW width"),
+            ({"neck_width": 10}, "smaller than the CPW width"),
             ({"window_width": 10}, "at least the CPW footprint"),
             ({"taper_shape": "cubic"}, "taper_shape"),
             ({"trap_hole_rows": -1}, "trap_hole_rows"),
             ({"trap_hole_size": 6.0}, "trap_hole_size"),
+            ({"trap_hole_offset": -1}, "trap_hole_offset"),
+            ({"trap_hole_keepout": 2}, "trap_hole_keepout"),
         ],
     )
     def test_invalid_arguments_raise(kwargs: dict, match: str) -> None:
@@ -132,8 +161,13 @@ class TestCpwBulge:
 
     @staticmethod
     def test_paper_flux_step() -> None:
-        """An 8 µm x 50 µm bulge gives the ~5 µT step of Nsanzineza and Plourde."""
-        assert pytest.approx(5.17e-6, rel=1e-2) == _FLUX_QUANTUM / (8 * 50e-12)
+        """The 8 µm x 50 µm bulge on a 3 µm line steps by ~5 µT per vortex."""
+        c = cpw_bulge(
+            cross_section=coplanar_waveguide(width=3, gap=2),
+            bulge_width=8,
+            bulge_length=50,
+        )
+        assert c.info["bulge_flux_step"] == pytest.approx(5.17e-6, rel=1e-2)
 
     @staticmethod
     @pytest.mark.parametrize(
