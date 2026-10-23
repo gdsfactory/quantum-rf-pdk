@@ -181,6 +181,15 @@ def test_fem_model_jit(dataset: Dataset) -> None:
     assert np.isnan(model(f=0.0)["island", "island"])
 
 
+def test_fem_model_defaults_match_nominal_device(dataset: Dataset) -> None:
+    """Grid spacing must not silently change the model's nominal geometry."""
+    model = gatemon_fem_model(dataset=dataset)
+    default = model()
+    explicit = model(**POINT)
+    for ports in explicit:
+        np.testing.assert_allclose(default[ports], explicit[ports], rtol=1e-6)
+
+
 def test_rejects_wrong_terminals(tmp_path: Path) -> None:
     meta = metadata("test_wrong", ("a", "b", "c"))
     data = write(

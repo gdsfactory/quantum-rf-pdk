@@ -545,9 +545,10 @@ def gatemon_capacitances(
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
     r"""Return the island capacitances of a :func:`~qpdk.cells.gatemon` layout, in F.
 
-    Dimensions are in µm and follow the dataset recipe's layout rule (junction
-    electrodes 15 µm inside the island edge, gate line at 0.4 ×
-    ``island_size``). The Palace Maxwell matrix gives
+    Dimensions are in µm and follow the dataset recipe's layout rule. The
+    nominal point matches the default device. Below 150 µm, the contact and
+    gate-tip dimensions scale with the island. The gate feed moves right as
+    needed to retain its hBN landing clearance. The Palace Maxwell matrix gives
 
     - :math:`C_\Sigma = C_{ii}`, the total island capacitance, so
       :math:`E_\text{C} = e^2 / 2 C_\Sigma`,
@@ -623,10 +624,9 @@ def gatemon_fem_model(
         Jittable three-port SAX model.
     """
     lookup = _gatemon_lookup(dataset)
-    defaults = {
-        name: float(values[len(values) // 2])
-        for name, values in zip(lookup.axis_names, lookup.grid.coords, strict=True)
-    }
+    defaults = dict(
+        island_size=150.0, pocket_gap=60.0, pocket_gap_top=40.0, gate_tip_gap=5.0
+    )
     island = jnp.zeros((3, 3)).at[0, 0].set(1.0)
     identity = jnp.eye(3)
 
