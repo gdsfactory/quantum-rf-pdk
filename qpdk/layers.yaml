@@ -49,6 +49,33 @@ LayerViews:
         layer: [20, 1]
         layer_in_name: true
         color: "#947DA1"
+  Gatemon:
+    group_members:
+      CNT_CONTACT:
+        layer: [21, 0]
+        layer_in_name: true
+        color: "#F3CF8E"
+        width: 1
+        hatch_pattern: lightly left-hatched
+      TOP_GATE:
+        layer: [22, 0]
+        layer_in_name: true
+        color: "#A9BEE8"
+        width: 1
+        hatch_pattern: lightly right-hatched
+      HBN:
+        layer: [23, 0]
+        layer_in_name: true
+        color: "#B8D9A4"
+        width: 1
+        transparent: true
+        hatch_pattern: coarsely dotted
+      CNT:
+        layer: [24, 0]
+        layer_in_name: true
+        color: "#FE5F55"
+        width: 2
+        hatch_pattern: solid
   NbTiN:
     layer: [25, 0]
     layer_in_name: true

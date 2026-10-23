@@ -210,6 +210,7 @@ def test_sample_generates(sample: ComponentFactory):
 
 
 _skip_port_tests = {
+    "gatemon_coupler",  # Island reference plane spans a dielectric gap; tested separately.
     "flipmon",
     "flipmon_with_bbox",
 }
