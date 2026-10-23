@@ -556,6 +556,10 @@ def gatemon_capacitances(
       :math:`n_\text{g} = C_\text{g} V_\text{g} / 2e`,
     - :math:`C_\text{c} = -C_{ir}` to the readout CPW over the pocket.
 
+    The bundled recipe extracts only M1 sheets. Contact leads, the local top
+    gate, hBN and thermal oxide need a separate calculation. Its
+    :math:`C_\text{g}` is coupling to the M1 feed, not the nanotube gate lever arm.
+
     :math:`C_\Sigma` already includes :math:`C_\text{g}` and
     :math:`C_\text{c}`. The junction is omitted; add its capacitance to
     :math:`C_\Sigma` before computing :math:`E_\text{C}`, then pass
@@ -613,6 +617,10 @@ def gatemon_fem_model(
     nonlinear spectrum. The ``readout`` port is an open CPW segment: drive it
     for the coupling, but its self-capacitance belongs to the segment, so do not
     add it to a distributed resonator model.
+
+    The bundled recipe includes only M1 sheets. Its matrix omits the contact
+    leads, local top gate, hBN and thermal oxide, so it does not determine the
+    nanotube's gate lever arm or the complete capacitance of the hybrid device.
 
     Args:
         delta_ghz: Default induced gap :math:`\Delta` in GHz.
