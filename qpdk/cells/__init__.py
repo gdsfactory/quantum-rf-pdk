@@ -13,6 +13,7 @@ from qpdk.samples.resonator_test_chip_yaml import (
 
 from ._schematic import *
 from .airbridge import *
+from .bolometer import *
 from .bump import *
 from .capacitor import *
 from .chip import *

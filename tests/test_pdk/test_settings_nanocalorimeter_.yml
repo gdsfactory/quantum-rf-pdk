@@ -1,0 +1,37 @@
+info:
+  absorber_squares: 200
+  absorber_volume: 0.05
+  covered_volume: 0.001
+  extension_volume: 0.001
+  link_cross_section: 0.003
+  link_length: 0.2
+  probe_junction_area: 0.01
+  reservoir_volume: 0.002
+name: nanocalorimeter_AL20_AW0p1_NMT0p025_CO0p2_EL0p2_PP0
+ports:
+  e1:
+    center:
+    - 8.4
+    - 0
+    layer: M1_DRAW
+    name: e1
+    orientation: 0
+    port_type: electrical
+    width: 4
+  o1:
+    center:
+    - -25
+    - 10.1
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+settings:
+  absorber_length: 20
+  absorber_width: 0.1
+  contact_overlap: 0.2
+  extension_length: 0.2
+  normal_metal_thickness: 0.025
+  probe_positions:
+  - 0
