@@ -56,6 +56,9 @@ class LayerMapQPDK(LayerMap):
     # Nanowire
     NbTiN: Layer = (25, 0)
 
+    # Normal metal (e.g. AuPd or Cu) for hot-electron bolometer absorbers
+    NM_DRAW: Layer = (26, 0)
+
     # Packaging / 3D integration / backside / misc.
     IND: Layer = (30, 0)
     TSV: Layer = (31, 0)  # Throughs / vias / backside features
@@ -114,6 +117,7 @@ NON_METADATA_LAYERS = {
     LAYER.ALN_TOP,
     LAYER.ALN_BOT,
     LAYER.NbTiN,
+    LAYER.NM_DRAW,
 }
 
 
