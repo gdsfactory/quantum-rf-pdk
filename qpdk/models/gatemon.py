@@ -58,22 +58,27 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import sax
+from gdsfactory.typings import CrossSectionSpec
 from jax.typing import ArrayLike
 from scipy.constants import Boltzmann
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, e, h
 from qpdk.models.datasets import Dataset, GridInterpolator, check_maxwell
+from qpdk.models.generic import tee
 from qpdk.models.jit import jit
 from qpdk.models.qubit import ej_to_inductance, shunted_transmon
+from qpdk.models.waveguides import straight
 
 __all__ = [
     "andreev_bound_state_energies",
     "gatemon",
     "gatemon_capacitances",
+    "gatemon_coupler",
     "gatemon_energies",
     "gatemon_fem_model",
     "gatemon_frequency_and_anharmonicity",
     "gatemon_hamiltonian",
+    "gatemon_island",
     "gatemon_josephson_energy",
     "gatemon_potential",
     "gatemon_supercurrent",
@@ -406,6 +411,97 @@ def gatemon(
     )
 
 
+@jit(inline=True)
+def gatemon_island(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: sax.FloatArrayLike = 69e-15,
+    gate_capacitance: sax.FloatArrayLike = 0.1e-15,
+    delta_ghz: sax.FloatArrayLike = DEFAULT_DELTA_GHZ,
+    transmissions: TransmissionsLike = DEFAULT_TRANSMISSIONS,
+) -> sax.SDict:
+    r"""Model the island and gate terminals used by the gatemon layout.
+
+    The ``readout`` port touches the island itself. Its coupling capacitor is
+    in :func:`gatemon_coupler`, not in this model. The island has a grounded
+    Josephson inductance and a shunt capacitance, with a mutual capacitance
+    to ``gate``. The nominal 69 fF shunt, 0.1 fF gate and external 5.4 fF
+    readout capacitance give :math:`E_\text{C}/h \approx 260\,\text{MHz}`.
+    These are circuit estimates, not extracted from the drawn geometry.
+
+    Args:
+        f: Positive frequency in Hz.
+        capacitance: Island capacitance to ground in F, excluding mutual terms.
+        gate_capacitance: Island-to-gate capacitance in F.
+        delta_ghz: Induced superconducting gap in GHz.
+        transmissions: Gate-tuned channel transmissions. Zero opens the junction.
+
+    Returns:
+        Jittable two-port S-parameters named readout and gate, referenced to 50 ohm.
+    """
+    omega = 2 * jnp.pi * jnp.asarray(f)
+    mutual = 1j * omega * gate_capacitance
+    inverse_l = 1 / ej_to_inductance(gatemon_josephson_energy(delta_ghz, transmissions))
+    island = 1j * omega * capacitance + inverse_l / (1j * omega)
+    y = jnp.stack(
+        [jnp.stack([island + mutual, -mutual], -1), jnp.stack([-mutual, mutual], -1)],
+        -2,
+    )
+    eye = jnp.eye(2)
+    values = jnp.linalg.solve(eye + 50 * y, eye - 50 * y)
+    ports = ("readout", "gate")
+    return {
+        (a, b): values[..., i, j]
+        for i, a in enumerate(ports)
+        for j, b in enumerate(ports)
+    }
+
+
+def gatemon_coupler(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: sax.Float = 600.0,
+    coupling_position: sax.Float = 200.0,
+    coupling_capacitance: sax.FloatArrayLike = 5.4e-15,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SDict:
+    r"""Model a complete CPW section with a capacitive branch to the island.
+
+    Split the distributed line at ``coupling_position`` and connect the
+    lumped coupling capacitor there. Both line lengths contribute to the
+    resonator. The nominal capacitance gives roughly 50 MHz coupling near
+    the paper's readout frequency; it is not a geometric extraction.
+
+    Args:
+        f: Frequency in Hz.
+        length: Complete coupling CPW length in µm.
+        coupling_position: Capacitive tap measured from o1 in µm.
+        coupling_capacitance: CPW-to-island capacitance in F.
+        cross_section: Cross-section of the CPW.
+
+    Returns:
+        Three-port S-parameters named o1, o2 and qubit.
+    """
+    normalized = 2j * jnp.pi * jnp.asarray(f) * coupling_capacitance * 50
+    reflection = 1 / (1 + 2 * normalized)
+    transmission = 2 * normalized * reflection
+    branch = {
+        ("o1", "o1"): reflection,
+        ("o2", "o2"): reflection,
+        ("o1", "o2"): transmission,
+        ("o2", "o1"): transmission,
+    }
+    instances: dict[str, sax.SType] = {
+        "left": straight(f=f, length=coupling_position, cross_section=cross_section),
+        "right": straight(
+            f=f, length=length - coupling_position, cross_section=cross_section
+        ),
+        "tap": tee(f=f),
+        "cap": branch,
+    }
+    connections = {"left,o2": "tap,o1", "tap,o2": "right,o1", "tap,o3": "cap,o1"}
+    ports = {"o1": "left,o1", "o2": "right,o2", "qubit": "cap,o2"}
+    return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
 # ---------------------------------------------------------------------------
 # Layout-backed model from the Palace electrostatic dataset
 # ---------------------------------------------------------------------------
@@ -455,7 +551,7 @@ def gatemon_capacitances(
 
     - :math:`C_\Sigma = C_{ii}`, the total island capacitance, so
       :math:`E_\text{C} = e^2 / 2 C_\Sigma`,
-    - :math:`C_\text{g} = -C_{ig}` to the gate line, which sets the lever arm
+    - :math:`C_\text{g} = -C_{ig}` to the gate line, which sets the island offset charge
       :math:`n_\text{g} = C_\text{g} V_\text{g} / 2e`,
     - :math:`C_\text{c} = -C_{ir}` to the readout CPW over the pocket.
 
@@ -470,7 +566,7 @@ def gatemon_capacitances(
         island_size: Side of the square island in µm.
         pocket_gap: Etched gap around the island sides and bottom in µm.
         pocket_gap_top: Etched gap between the island and the readout in µm.
-        gate_tip_gap: Gap between the gate tip and the island in µm.
+        gate_tip_gap: Lateral gap from hBN to the M1 gate landing in µm.
         dataset: Dataset or path with terminals ``island``, ``gate``, ``readout``.
 
     Returns:

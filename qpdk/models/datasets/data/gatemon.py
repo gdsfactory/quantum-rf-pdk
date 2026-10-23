@@ -17,7 +17,7 @@ instead of being frozen into an eigenmode or driven solve. The three
 terminals give
 
 - ``island``: total capacitance :math:`C_\Sigma`, hence :math:`E_\text{C}`,
-- ``gate``: gate capacitance :math:`C_\text{g}`, which sets the lever arm
+- ``gate``: gate capacitance :math:`C_\text{g}`, which sets the island offset charge
   :math:`n_\text{g} = C_\text{g} V_\text{g} / 2e` and the qubit decay
   through the gate line,
 - ``readout``: coupling capacitance :math:`C_\text{c}` to the resonator.
@@ -28,7 +28,11 @@ open, so its self-capacitance includes the segment's own capacitance to
 ground. Do not add that to a distributed resonator model; use only the island
 row. The gate line is cut open at the cell's gate port. The junction is open
 and omitted: the lower electrode is ground, the upper electrode is island.
-Only M1 metal enters the solve, as zero-thickness sheets on silicon.
+Only M1 metal enters the solve, as zero-thickness sheets on silicon. This is
+a coarse estimate of the island's remote capacitances. The Nb/Au contact
+leads, Al top gate, hBN and thermal oxide are omitted, so this recipe cannot
+predict the nanotube's gate lever arm or local junction capacitance. A full
+stack calculation needs a mesh resolving the transferred flake and gate.
 
 The junction electrodes stay 15 µm inside the island's left edge and the gate
 line at 0.4 × ``island_size`` from the centre, so every grid point is a valid
@@ -78,7 +82,11 @@ def device_settings(point: dict[str, float]) -> dict:
         island_size=(size, size),
         pocket_gap=point["pocket_gap"],
         pocket_gap_top=point["pocket_gap_top"],
-        electrode_size=(electrode_width, 10.0),
+        electrode_size=(electrode_width, 40.0),
+        size_patch=(electrode_width, 30.0),
+        hbn_size=(30.0, 40.0),
+        junction_offset=10.0,
+        gate_tip_width=6.0,
         electrode_offset=electrode_offset,
         gate_offset=GATE_POSITION * size - electrode_offset,
         gate_tip_gap=point["gate_tip_gap"],
@@ -202,7 +210,7 @@ RECIPE = Recipe(
     description="Grounded QPDK gatemon island, gate line and passing readout CPW in a finite coplanar ground.",
     reference_ground="coplanar_chip_ground",
     provenance={
-        "recipe_version": 1,
+        "recipe_version": 2,
         "issue": 1030,
         "metal": "Zero-thickness PEC sheets at the air/silicon interface",
         "ground": f"Coplanar ground {GROUND_MARGIN:g} um beyond the device and readout segment",
@@ -211,7 +219,7 @@ RECIPE = Recipe(
         "junction": "Open and omitted; lower electrode grounded, upper electrode part of the island. E_J and any junction capacitance are explicit circuit inputs",
         "layout_rule": f"electrode_offset = -(island_size/2 - {ELECTRODE_INSET:g} - 20) um; gate line at {GATE_POSITION:g} * island_size from the island centre",
         "reduction": "C_sigma = C[island, island] (Maxwell); C_g = -C[island, gate]; C_c = -C[island, readout]. Do not add the readout self-capacitance to a distributed resonator model.",
-        "excluded_environment": "No top-gate dielectric or electrode, resonator mode, feedline, package lid or backside ground",
+        "excluded_environment": "M1-only approximation. No Nb/Au contact leads, top-gate dielectric or electrode, thermal oxide, resonator mode, feedline, package lid or backside ground. Does not determine the nanotube gate lever arm",
     },
 )
 

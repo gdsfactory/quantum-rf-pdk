@@ -9,6 +9,10 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
+from qpdk.cells._schematic import (
+    attach_schematic,
+    interdigital_capacitor_schematic,
+)
 from qpdk.cells.waveguides import add_etch_gap, bend_circular, straight
 from qpdk.tech import LAYER, get_etch_section, get_etch_sections
 from qpdk.utils import merge_layers_with_etch as _merge_layers_with_etch
@@ -137,7 +141,7 @@ def half_circle_coupler(
     return c
 
 
-@gf.cell(tags=["capacitors"])
+@gf.cell(tags=["capacitors"], schematic_function=interdigital_capacitor_schematic)
 def interdigital_capacitor(
     fingers: int = 4,
     finger_length: float = 20.0,
@@ -479,3 +483,6 @@ def plate_capacitor_single(
     c.move((-width / 2, -length / 2))
 
     return c
+
+
+attach_schematic(interdigital_capacitor, interdigital_capacitor_schematic)

@@ -17,6 +17,9 @@ __all__ = [
     "bend_s_schematic",
     "coupler_straight_schematic",
     "double_pad_transmon_schematic",
+    "gatemon_coupler_schematic",
+    "gatemon_schematic",
+    "interdigital_capacitor_schematic",
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
@@ -419,6 +422,30 @@ quarter_wave_resonator_coupled_schematic = schematic(
             port_order=["coupling_o1", "coupling_o2", "resonator_o1"],
         )
     ],
+)
+
+gatemon_schematic = schematic(
+    symbol="gatemon",
+    tags=["qubits", "gatemons"],
+    ports=[
+        {"name": "readout", "side": "top", "type": "photonic", "aliases": ["RF"]},
+        {"name": "gate", "side": "left", "type": "photonic", "aliases": ["Vg"]},
+    ],
+    models=[sax_model("gatemon_island", "qpdk.models.gatemon", ["readout", "gate"])],
+)
+
+gatemon_coupler_schematic = schematic(
+    symbol="gatemon_coupler",
+    tags=["couplers", "gatemons"],
+    ports=[*_2PORT, {"name": "qubit", "side": "bottom", "type": "photonic"}],
+    models=[sax_model("gatemon_coupler", "qpdk.models.gatemon", ["o1", "o2", "qubit"])],
+)
+
+interdigital_capacitor_schematic = schematic(
+    symbol="interdigital_capacitor",
+    tags=["capacitors"],
+    ports=_2PORT,
+    models=[sax_model("interdigital_capacitor", "qpdk.models.capacitor", ["o1", "o2"])],
 )
 
 double_pad_transmon_schematic = schematic(

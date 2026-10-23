@@ -1,0 +1,40 @@
+info:
+  coupling_capacitance: 0
+  length: 600
+name: gatemon_coupler_L600_CP200_IW150_PGT40_QSbottom_CC5p4em15_CScpw
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 600
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+  qubit:
+    center:
+    - 200
+    - -45
+    layer: M1_DRAW
+    name: qubit
+    orientation: 270
+    port_type: optical
+    width: 150
+settings:
+  coupling_capacitance: 0
+  coupling_position: 200
+  cross_section: cpw
+  island_width: 150
+  length: 600
+  pocket_gap_top: 40
+  qubit_side: bottom
