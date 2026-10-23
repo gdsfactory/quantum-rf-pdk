@@ -1,0 +1,38 @@
+info:
+  bulge_flux_step: 0
+  bulge_length: 50
+  bulge_trapping_threshold: 0
+  bulge_width: 25
+  cross_section_name: coplanar_waveguide
+  length: 8000
+  line_trapping_threshold: 0
+  resonator_type: half_wave
+  taper_length: 20
+name: resonator_half_wave_bulge_L8000_M6_BSbend_circular_CScp_7e8c6cc1
+ports:
+  o1:
+    center:
+    - -6
+    - 0
+    layer: M1_ETCH
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 22
+  o2:
+    center:
+    - 879.634
+    - -1200
+    layer: M1_ETCH
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 22
+settings:
+  bend_spec: bend_circular
+  bulge_length: 50
+  bulge_width: 25
+  cross_section: cpw
+  length: 8000
+  meanders: 6
+  taper_length: 20

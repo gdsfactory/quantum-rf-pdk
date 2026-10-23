@@ -29,6 +29,7 @@ from .snspd import *
 from .transmon import *
 from .tsv import *
 from .unimon import *
+from .vortex import *
 from .waveguides import *
 
 circle = gf.components.circle

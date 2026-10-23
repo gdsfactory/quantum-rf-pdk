@@ -1,0 +1,33 @@
+info:
+  bulge_flux_step: 0
+  bulge_length: 50
+  bulge_trapping_threshold: 0
+  bulge_width: 25
+  length: 90
+  line_trapping_threshold: 0
+  taper_length: 20
+name: cpw_bulge_CScpw_BW25_BL50_TL20
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 90
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  bulge_length: 50
+  bulge_width: 25
+  cross_section: cpw
+  taper_length: 20
