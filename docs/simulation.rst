@@ -155,11 +155,15 @@ The sample's ``gatemon_coupler`` is a three-port model of the complete coupling 
 a lumped 5.4 fF branch to the island. Its third layout port references the island edge
 across the etched gap, without adding metal there. The schematic wires this port to the
 gatemon's ``readout`` terminal. The ``gatemon_island`` model adds a grounded Josephson
-inductance, a 69 fF island shunt and a 0.1 fF gate capacitance. These nominal circuit
-values give about 260 MHz charging energy including both mutual capacitances. They are
-not extracted from the layout. The complete schematic simulation includes the qubit's
-loading and gate-tuned readout response. It uses a linearized junction, so it does not
-predict the nonlinear qubit spectrum or decoherence.
+inductance, a 49.1 fF island shunt, a 20 fF island-to-gate capacitance and a 35 fF
+gate-to-ground capacitance. Each contact overlaps the top gate by 18 µm². The nominal 30
+nm hBN with relative permittivity 3.4 gives about 18 fF per contact in a parallel-plate
+estimate. The gate capacitances include this overlap and the M1 feed's contribution. The
+island shunt retains the 260 MHz charging-energy target including both mutual
+capacitances. These are nominal hybrid estimates that still need measured flake
+thickness and full-stack extraction. The complete schematic simulation includes the
+qubit's loading and gate-tuned readout response. It uses a linearized junction, so it
+does not predict the nonlinear qubit spectrum or decoherence.
 
 The nonlinear ABS Hamiltonian uses the short-junction, even-parity approximation, with
 channel transmissions supplied as inputs. Reproducing the paper's quantum-dot parity
@@ -169,7 +173,9 @@ Hamiltonian :cite:`riechertCarbonNanotubeGatemon2025`.
 The exported gate ports use a 50 ohm S-parameter reference. For comparison with
 measurements, connect the experimental bias network to those ports. The paper's setup
 uses a bias tee with its RF branch grounded as a reflective filter
-:cite:`riechertCarbonNanotubeGatemon2025`.
+:cite:`riechertCarbonNanotubeGatemon2025`. The sample's frequency and coupling checks
+use an ideal RF-grounded gate. A matched 50 ohm gate loads the qubit and gives a
+different transmission spectrum.
 
 ``flipmon_readout_coupon_model()`` creates a 5-port static SAX coupon model. Pass
 ``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
