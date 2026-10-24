@@ -414,19 +414,25 @@ def gatemon(
 @jit(inline=True)
 def gatemon_island(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    capacitance: sax.FloatArrayLike = 69e-15,
-    gate_capacitance: sax.FloatArrayLike = 0.1e-15,
+    capacitance: sax.FloatArrayLike = 49.1e-15,
+    gate_capacitance: sax.FloatArrayLike = 20e-15,
     delta_ghz: sax.FloatArrayLike = DEFAULT_DELTA_GHZ,
     transmissions: TransmissionsLike = DEFAULT_TRANSMISSIONS,
+    gate_ground_capacitance: sax.FloatArrayLike = 35e-15,
 ) -> sax.SDict:
     r"""Model the island and gate terminals used by the gatemon layout.
 
     The ``readout`` port touches the island itself. Its coupling capacitor is
     in :func:`gatemon_coupler`, not in this model. The island has a grounded
     Josephson inductance and a shunt capacitance, with a mutual capacitance
-    to ``gate``. The nominal 69 fF shunt, 0.1 fF gate and external 5.4 fF
+    to ``gate``. The nominal 49.1 fF shunt, 20 fF gate and external 5.4 fF
     readout capacitance give :math:`E_\text{C}/h \approx 260\,\text{MHz}`.
-    These are circuit estimates, not extracted from the drawn geometry.
+    Each contact has 18 square micrometres of top-gate overlap. With the
+    nominal 30 nm hBN and relative permittivity 3.4, the parallel-plate
+    estimate is about 18 fF per contact. Including the M1 feed gives rounded
+    estimates of 20 fF to the island and 35 fF to ground. The island shunt
+    retains the charging-energy target. A full hybrid extraction and measured
+    flake thickness are needed to replace these estimates.
 
     Args:
         f: Positive frequency in Hz.
@@ -434,6 +440,7 @@ def gatemon_island(
         gate_capacitance: Island-to-gate capacitance in F.
         delta_ghz: Induced superconducting gap in GHz.
         transmissions: Gate-tuned channel transmissions. Zero opens the junction.
+        gate_ground_capacitance: Gate capacitance to ground in F, excluding the mutual term.
 
     Returns:
         Jittable two-port S-parameters named readout and gate, referenced to 50 ohm.
@@ -443,7 +450,10 @@ def gatemon_island(
     inverse_l = 1 / ej_to_inductance(gatemon_josephson_energy(delta_ghz, transmissions))
     island = 1j * omega * capacitance + inverse_l / (1j * omega)
     y = jnp.stack(
-        [jnp.stack([island + mutual, -mutual], -1), jnp.stack([-mutual, mutual], -1)],
+        [
+            jnp.stack([island + mutual, -mutual], -1),
+            jnp.stack([-mutual, mutual + 1j * omega * gate_ground_capacitance], -1),
+        ],
         -2,
     )
     eye = jnp.eye(2)
