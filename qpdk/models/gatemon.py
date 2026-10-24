@@ -447,7 +447,9 @@ def gatemon_island(
     """
     omega = 2 * jnp.pi * jnp.asarray(f)
     mutual = 1j * omega * gate_capacitance
-    inverse_l = 1 / ej_to_inductance(gatemon_josephson_energy(delta_ghz, transmissions))
+    inverse_l = gatemon_josephson_energy(delta_ghz, transmissions) / ej_to_inductance(
+        1.0
+    )
     island = 1j * omega * capacitance + inverse_l / (1j * omega)
     y = jnp.stack(
         [
@@ -658,12 +660,12 @@ def gatemon_fem_model(
     ) -> sax.SDict:
         """Evaluate the lossless linearised gatemon at positive frequencies."""
         capacitance = lookup(**{**defaults, **params})
-        inductance = ej_to_inductance(
-            gatemon_josephson_energy(delta_ghz, transmissions)
-        )
+        energy = gatemon_josephson_energy(delta_ghz, transmissions)
         omega = 2 * jnp.pi * jnp.asarray(f)
-        y_junction = 1j * omega * jnp.asarray(junction_capacitance) + 1 / (
-            1j * omega * inductance
+        # Avoid differentiating an infinite inductance when the junction opens.
+        inverse_l = energy / ej_to_inductance(1.0)
+        y_junction = 1j * omega * jnp.asarray(junction_capacitance) + inverse_l / (
+            1j * omega
         )
         admittance = (
             1j * omega[..., None, None] * capacitance
@@ -673,7 +675,7 @@ def gatemon_fem_model(
         values = jnp.linalg.solve(identity + normalized, identity - normalized)
         valid = (
             (jnp.asarray(f) > 0)
-            & (inductance > 0)
+            & (energy >= 0)
             & (jnp.asarray(junction_capacitance) >= 0)
         )
         values = jnp.where(valid[..., None, None], values, jnp.nan)

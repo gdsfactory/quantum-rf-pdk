@@ -21,6 +21,7 @@ from qpdk.models.gatemon import (
     gatemon_capacitances,
     gatemon_fem_model,
     gatemon_frequency_and_anharmonicity,
+    gatemon_island,
     gatemon_josephson_energy,
 )
 from qpdk.models.qubit import ej_to_inductance
@@ -174,11 +175,43 @@ def test_fem_model_gate_tuning(dataset: Dataset) -> None:
     assert resonance((0.4,)) < resonance((0.8,))
 
 
+def test_open_junction_matches_capacitive_network(dataset: Dataset) -> None:
+    """Zero transmission leaves the extracted capacitance matrix in the circuit."""
+    model = gatemon_fem_model(dataset=dataset)
+    frequencies = jnp.array([1e9, 5e9, 10e9])
+    result = jax.jit(lambda f: model(f=f, transmissions=(0.0,), **POINT))(frequencies)
+    actual = jnp.stack(
+        [jnp.stack([result[a, b] for b in PORTS], -1) for a in PORTS], -2
+    )
+    assert bool(jnp.all(jnp.isfinite(actual)))
+    admittance = 2j * jnp.pi * frequencies[:, None, None] * maxwell(**POINT)
+    identity = jnp.eye(3)
+    expected = jnp.linalg.solve(identity + 50 * admittance, identity - 50 * admittance)
+    np.testing.assert_allclose(actual, expected, rtol=1e-10, atol=1e-12)
+
+
 def test_fem_model_jit(dataset: Dataset) -> None:
     model = gatemon_fem_model(dataset=dataset)
     s11 = jax.jit(lambda size: model(island_size=size)["island", "island"])(150.0)
     assert np.isfinite(s11)
     assert np.isnan(model(f=0.0)["island", "island"])
+
+
+@pytest.mark.parametrize("kind", ["nominal", "fem"])
+def test_open_junction_gate_gradient(kind: str, dataset: Dataset) -> None:
+    """Gate sensitivity stays finite as transmission reaches zero."""
+    model = gatemon_island if kind == "nominal" else gatemon_fem_model(dataset=dataset)
+
+    def transfer(tau: jax.Array | float) -> jax.Array:
+        return jnp.real(
+            model(f=5e9, transmissions=jnp.atleast_1d(tau))["gate", "readout"]
+        )
+
+    slope = jax.jit(jax.grad(transfer))(0.0)
+    assert bool(jnp.isfinite(slope))
+    step = 1e-6
+    expected = (transfer(step) - transfer(0.0)) / step
+    np.testing.assert_allclose(slope, expected, rtol=1e-4, atol=1e-10)
 
 
 def test_fem_model_defaults_match_nominal_device(dataset: Dataset) -> None:

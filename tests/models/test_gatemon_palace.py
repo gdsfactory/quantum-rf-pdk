@@ -72,11 +72,14 @@ def test_shipped_interpolation_against_direct_solves(holdout: dict) -> None:
     assert holdout["direct_solver_relative_residual"] <= 1e-9
 
 
-def test_shipped_model_over_the_full_grid(data: Dataset) -> None:
+@pytest.mark.parametrize("transmissions", [(0.0,), (0.8,)])
+def test_shipped_model_over_the_full_grid(
+    data: Dataset, transmissions: tuple[float, ...]
+) -> None:
     """Every real matrix must produce a finite, lossless reciprocal circuit."""
     points = jnp.asarray(list(product(*REPORT["grid"].values())))
     frequencies = jnp.linspace(1e9, 10e9, 101)
-    model = gatemon_fem_model()
+    model = gatemon_fem_model(transmissions=transmissions)
     response = jax.jit(
         jax.vmap(
             lambda point: model(
