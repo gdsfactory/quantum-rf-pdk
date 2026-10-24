@@ -23,6 +23,7 @@ from .hyperbolic import *
 from .inductor import *
 from .junction import *
 from .launcher import *
+from .nanowire import *
 from .resonator import *
 from .resonator_sections import *
 from .snspd import *
