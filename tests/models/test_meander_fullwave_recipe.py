@@ -4,11 +4,12 @@ import importlib
 import json
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
 
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, material_properties
 
 
 @pytest.fixture
@@ -59,3 +60,73 @@ def test_film_config_and_independent_excitations(recipe, tmp_path: Path) -> None
     path.write_text(json.dumps(config))
     with pytest.raises(ValueError, match="independently"):
         recipe.write_config(sim, recipe.SETTINGS)
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        {"near_mesh": 0.0},
+        {"near_mesh": 2.0, "far_mesh": 1.0},
+        {"domain_pad": 0.0},
+        {"sheet_inductance": -1e-12},
+        {"order": 0},
+        {"tolerance": 1.0},
+        {"fmin": 0.0},
+        {"fmin": 2e9, "fmax": 1e9},
+        {"points": 1},
+    ],
+)
+def test_invalid_settings(recipe, settings: dict[str, float]) -> None:
+    with pytest.raises(ValueError, match=r"Require|Invalid"):
+        replace(recipe.SETTINGS, **settings)
+
+
+@pytest.mark.parametrize(
+    "point", [{"n_turns": "0"}, {"turn_length": 0.0}, {"wire_gap": -1.0}]
+)
+def test_invalid_winding(recipe, point: dict[str, float | str]) -> None:
+    with pytest.raises(ValueError, match="positive"):
+        recipe.geometry(
+            dict(n_turns="3", turn_length=100.0, wire_width=1.0, wire_gap=2.0) | point
+        )
+
+
+def test_lossless_materials_and_mesh_budget(
+    recipe, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    palace = pytest.importorskip("gsim.palace")
+    mesh_options = {}
+    tetrahedra = 100_000
+
+    def mesh(sim, **options) -> None:
+        mesh_options.update(options)
+        sim._last_mesh_result = SimpleNamespace(mesh_stats={"tetrahedra": tetrahedra})
+
+    monkeypatch.setattr(palace.DrivenSim, "mesh", mesh)
+    point = dict(n_turns="3", turn_length=100.0, wire_width=0.6, wire_gap=2.0)
+    sim = recipe.simulation(point, recipe.SETTINGS, tmp_path, 8)
+    silicon = sim.stack.materials["coupon_silicon"]
+    assert silicon["permittivity"] == material_properties["Si"]["relative_permittivity"]
+    assert silicon["loss_tangent"] == pytest.approx(0.0)
+    assert silicon["conductivity"] == pytest.approx(0.0)
+    assert sim.solver.order == 2
+    assert sim.solver.linear.initial_guess is False
+    assert sim.solver.driven.adaptive_tol == pytest.approx(0.0)
+    assert mesh_options["refined_mesh_size"] == pytest.approx(0.3)
+    assert mesh_options["planar_conductors"] is True
+    for order, maximum in ((2, 1_500_000), (3, 800_000)):
+        tetrahedra = maximum + 1
+        with pytest.raises(ValueError, match="mesh budget"):
+            recipe.simulation(point, replace(recipe.SETTINGS, order=order), tmp_path, 8)
+
+
+@pytest.mark.parametrize(
+    "boundary", [{"Conductivity": [{"Attributes": [2]}]}, {"Absorbing": None}]
+)
+def test_invalid_film_boundaries(recipe, tmp_path: Path, boundary: dict) -> None:
+    path = tmp_path / "config.json"
+    path.write_text(
+        json.dumps({"Boundaries": {"Absorbing": {"Attributes": [9]}} | boundary})
+    )
+    with pytest.raises(ValueError, match="planar metal"):
+        recipe.write_config(Mock(write_config=Mock(return_value=path)), recipe.SETTINGS)

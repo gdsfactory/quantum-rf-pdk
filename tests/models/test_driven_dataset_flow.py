@@ -162,6 +162,41 @@ def test_full_sweep_shards_and_resume(
     assert prepare.call_count == 4
 
 
+def test_interrupted_sweep_resumes_only_unfinished_geometry(
+    driven, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sim = Mock()
+    sim.run_local.side_effect = [None, RuntimeError("solver interrupted"), None]
+    prepare = Mock(return_value=sim)
+    recipe = driven.Recipe(
+        name="interrupted-fixture",
+        script=Path(__file__),
+        grid={"width": [2.0, 4.0]},
+        frequencies=[1e9, 2e9],
+        terminals=("o1",),
+        prepare=prepare,
+        description="Recovery fixture, not simulated data",
+        provenance={"test_fixture": True, "linear_initial_guess": False},
+    )
+    monkeypatch.setattr(driven, "runtime", lambda *_args: ({}, {}))
+    monkeypatch.setattr(driven, "fingerprint", lambda _path: {})
+    monkeypatch.setattr(
+        driven,
+        "response",
+        lambda *_args, **_kwargs: jnp.zeros((2, 1, 1), dtype=complex),
+    )
+    arguments = dict(
+        grid=recipe.grid, output=tmp_path / "data", workdir=tmp_path / "runs"
+    )
+    with pytest.raises(RuntimeError, match="interrupted"):
+        driven.generate(recipe, **arguments)
+    assert len(list((tmp_path / "runs").glob("*/complete.json"))) == 1
+    data = driven.generate(recipe, **arguments)
+    assert prepare.call_count == 3
+    assert len(list((tmp_path / "runs").glob("*/complete.json"))) == 2
+    assert data.grid("s_parameters", allow_missing=False).values.shape == (2, 2, 1, 1)
+
+
 @pytest.mark.parametrize("ports", [1, 3, 5])
 def test_native_matrix_order_and_quality(
     driven, ports: int, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
