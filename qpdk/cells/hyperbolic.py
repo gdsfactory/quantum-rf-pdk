@@ -627,7 +627,8 @@ def hyperbolic_lattice(
     for v, (rotation, _) in enumerate(tiling.pins):
         ref = c << hyperbolic_vertex_coupler(
             q=q,
-            rotation=math.degrees(rotation),
+            # Rounded so cell names do not depend on platform float noise.
+            rotation=round(math.degrees(rotation), 6),
             pin_radius=pin_radius,
             pin_gap=pin_gap,
             ground_gap=ground_gap,
@@ -679,9 +680,12 @@ def hyperbolic_lattice(
         try:
             resonator = hyperbolic_edge_resonator(
                 length=edge_length,
-                end=(b.center[0] - origin[0], b.center[1] - origin[1]),
-                start_angle=a.orientation,
-                end_angle=b.orientation + 180,
+                end=(
+                    round(b.center[0] - origin[0], 3),
+                    round(b.center[1] - origin[1], 3),
+                ),
+                start_angle=round(a.orientation, 6),
+                end_angle=round(b.orientation + 180, 6),
                 region=tuple(
                     (round(float(x - origin[0]), 3), round(float(y - origin[1]), 3))
                     for x, y in region
