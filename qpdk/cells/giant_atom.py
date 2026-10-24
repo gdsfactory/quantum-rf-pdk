@@ -22,9 +22,9 @@ from kfactory import kdb
 from kfactory.conf import CheckInstances
 from klayout.db import Region
 
+from qpdk.cells.airbridge import airbridge
 from qpdk.cells.junction import squid_junction
 from qpdk.tech import LAYER
-from qpdk.utils import subtract_draw_from_etch as _subtract_draw_from_etch
 
 __all__ = ["braided_giant_atoms", "giant_atom_transmon"]
 
@@ -71,7 +71,7 @@ def _meander_points(
         if depth >= 2 * bend_radius:
             break
         n_excursions -= 1
-    if n_excursions == 0:
+    if n_excursions <= 0:
         msg = (
             f"Cannot meander {path_length} µm into a spacing of {span} µm with "
             f"bend_radius={bend_radius} µm and meander_pitch={meander_pitch} µm. "
@@ -113,6 +113,7 @@ def _giant_atoms(
     junction_spec: ComponentSpec,
     layer_metal: LayerSpec,
     layer_etch: LayerSpec,
+    airbridges: bool,
 ) -> Component:
     """Draw transmons that share one meandered CPW.
 
@@ -137,6 +138,21 @@ def _giant_atoms(
         raise ValueError(msg)
     if meander_pitch < 2 * bend_radius:
         msg = f"meander_pitch={meander_pitch} must be at least 2 * bend_radius."
+        raise ValueError(msg)
+    for k in range(n_points - 1):
+        if (coupler_lengths[k] + coupler_lengths[k + 1]) / 2 >= point_spacing:
+            msg = (
+                f"Coupling pads {k} and {k + 1} overlap; point_spacing="
+                f"{point_spacing} µm must exceed half their summed lengths."
+            )
+            raise ValueError(msg)
+    bridge = airbridge(bridge_length=arm_width + 2 * gap_width + 10.0)
+    bridge_pad = bridge.dbbox().width()  # Landing-pad width across the arm.
+    if airbridges and arm_length < bridge_pad + 2 * gap_width:
+        msg = (
+            f"arm_length={arm_length} µm is too short for the airbridges; it "
+            f"must be at least {bridge_pad + 2 * gap_width} µm."
+        )
         raise ValueError(msg)
 
     xs = gf.get_cross_section(cross_section)
@@ -178,6 +194,8 @@ def _giant_atoms(
 
     c = Component()
     line_ref = c.add_ref(gf.path.extrude(path, cross_section=xs))
+    qubit_metal = Region()  # Qubit metal only; the CPW keeps its own gap.
+    bridge_positions: list[tuple[float, float]] = []
 
     junction_positions: dict[str, tuple[float, float, int]] = {}
     pad_inner = xs.width / 2 + coupler_gap
@@ -191,6 +209,28 @@ def _giant_atoms(
             for k in range(n_points - 1)
             if meander_sides[k] == side and x_min <= positions[k] < x_max
         ]
+        island_x = (
+            x_min - island_extension - gap_width,
+            x_max + island_extension + gap_width,
+        )
+        for k in range(n_points - 1):
+            meander_x = (
+                positions[k] + coupler_lengths[k] / 2,
+                positions[k + 1] - coupler_lengths[k + 1] / 2,
+            )
+            if (
+                meander_sides[k] == side
+                and depths[k] > 0
+                and not x_min <= positions[k] < x_max
+                and meander_x[0] < island_x[1]
+                and island_x[0] < meander_x[1]
+            ):
+                msg = (
+                    f"The meander of segment {k} lies under the island of "
+                    f"{name!r}. Reduce island_extension or increase "
+                    "point_spacing."
+                )
+                raise ValueError(msg)
         arm = arm_length
         if enclosed:
             clearance = max(enclosed) + line_half_extent + 2 * gap_width
@@ -229,6 +269,12 @@ def _giant_atoms(
                 [(x0, ys[0]), (x1, ys[0]), (x1, ys[1]), (x0, ys[1])],
                 layer=layer_metal,
             )
+            qubit_metal.insert(kdb.DBox(x0, ys[0], x1, ys[1]).to_itype(c.kcl.dbu))
+        if len(atom_points) > 1:
+            # The arms and the waveguide enclose a ground patch; bridge each
+            # arm to tie it to the surrounding ground plane.
+            arm_centre = side * (pad_inner + pad_width + arm / 2)
+            bridge_positions += [(positions[k], arm_centre) for k in atom_points]
         junction_positions[name] = (
             (x_min + x_max) / 2,
             side * (island_inner + island_width + gap_width / 2),
@@ -238,26 +284,23 @@ def _giant_atoms(
     c.add_ports(line_ref.ports)
     c.flatten(merge=True)
 
-    # Qubit etch: grow the metal by gap_width; keep every drawn metal shape.
-    layer_metal_tuple = gf.get_layer_tuple(layer_metal)
-    etch_region = gf.component.size(
-        Region(
-            kdb.RecursiveShapeIterator(
-                c.kcl.layout,
-                c._base.kdb_cell,  # pyright: ignore[reportPrivateUsage]
-                c.kcl.layout.layer(*layer_metal_tuple),
-            )
-        ),
-        gap_width,
-    )
-    etch_component = gf.Component()
-    etch_component.add_polygon(etch_region, layer=layer_etch)
-    _subtract_draw_from_etch(
-        component=c,
-        etch_shape=etch_component,
-        etch_layer=layer_etch,
-        draw_layer=layer_metal,
-    )
+    # Qubit etch: grow only the qubit metal by gap_width, then keep every
+    # drawn metal shape. The waveguide keeps the gap of its cross-section.
+    etch_region = gf.component.size(qubit_metal, gap_width)
+    # Merge with the waveguide etch and clear any etch left on drawn metal,
+    # including sub-grid slivers where the bend discretisations differ.
+    metal_index = c.kcl.layout.layer(*gf.get_layer_tuple(layer_metal))
+    etch_index = c.kcl.layout.layer(*gf.get_layer_tuple(layer_etch))
+    draw_region = Region(c.shapes(metal_index)).merged()
+    etch_region = (Region(c.shapes(etch_index)) + etch_region).merged() - draw_region
+    c.shapes(etch_index).clear()
+    c.shapes(etch_index).insert(etch_region)
+
+    if airbridges:
+        for x, y in bridge_positions:
+            bridge_ref = c.add_ref(bridge)
+            bridge_ref.rotate(90)
+            bridge_ref.dcenter = (x, y)
 
     for name, (x, y, side) in junction_positions.items():
         junction_ref = c.add_ref(gf.get_component(junction_spec))
@@ -296,6 +339,7 @@ def giant_atom_transmon(
     junction_spec: ComponentSpec = squid_junction,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
+    airbridges: bool = True,
 ) -> Component:
     r"""Grounded transmon coupled capacitively to a CPW at :math:`K` points.
 
@@ -355,6 +399,9 @@ def giant_atom_transmon(
         junction_spec: Component specification of the Josephson junction.
         layer_metal: Layer for the qubit metal.
         layer_etch: Layer for the etched gap around the qubit.
+        airbridges: Bridge each arm with an
+            :func:`~qpdk.cells.airbridge.airbridge` to tie the ground patch
+            that the arms and the waveguide enclose to the ground plane.
 
     Returns:
         Component: Ports ``o1`` and ``o2`` at the waveguide ends and a
@@ -380,6 +427,7 @@ def giant_atom_transmon(
         junction_spec=junction_spec,
         layer_metal=layer_metal,
         layer_etch=layer_etch,
+        airbridges=airbridges,
     )
 
 
@@ -402,6 +450,7 @@ def braided_giant_atoms(
     junction_spec: ComponentSpec = squid_junction,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
+    airbridges: bool = True,
 ) -> Component:
     r"""Two giant transmons in the braided configuration.
 
@@ -442,6 +491,9 @@ def braided_giant_atoms(
         junction_spec: Component specification of the Josephson junctions.
         layer_metal: Layer for the qubit metal.
         layer_etch: Layer for the etched gaps around the qubits.
+        airbridges: Bridge each arm with an
+            :func:`~qpdk.cells.airbridge.airbridge` to tie the ground patches
+            that the arms and the waveguide enclose to the ground plane.
 
     Returns:
         Component: Ports ``o1`` and ``o2`` at the waveguide ends and the
@@ -467,4 +519,5 @@ def braided_giant_atoms(
         junction_spec=junction_spec,
         layer_metal=layer_metal,
         layer_etch=layer_etch,
+        airbridges=airbridges,
     )

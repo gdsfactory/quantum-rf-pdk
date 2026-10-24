@@ -2,7 +2,7 @@ info:
   line_length: 13459.999
   meander_depths:
   - 2059.587
-name: giant_atom_transmon_CL160_160_SL13100_PS1000_CG8_PW10_A_264dcaf6
+name: giant_atom_transmon_CL160_160_SL13100_PS1000_CG8_PW10_A_7e92feee
 ports:
   junction:
     center:
@@ -32,6 +32,7 @@ ports:
     port_type: optical
     width: 10
 settings:
+  airbridges: true
   arm_length: 200
   arm_width: 10
   bend_radius: 50

@@ -4,7 +4,7 @@ info:
   - 968.254
   - 968.254
   - 968.254
-name: braided_giant_atoms_CL160_160_SL6552_PS1000_CG8_PW10_AL_80676d1c
+name: braided_giant_atoms_CL160_160_SL6552_PS1000_CG8_PW10_AL_8f08a9d3
 ports:
   junction_a:
     center:
@@ -43,6 +43,7 @@ ports:
     port_type: optical
     width: 10
 settings:
+  airbridges: true
   arm_length: 200
   arm_width: 10
   bend_radius: 50

@@ -2,13 +2,23 @@
 
 import math
 
+import gdsfactory as gf
 import pytest
+from klayout.db import DBox, Region
 
 from qpdk import PDK
 from qpdk.cells.giant_atom import braided_giant_atoms, giant_atom_transmon
 from qpdk.samples.giant_atom_chip import giant_atom_chip
+from qpdk.tech import LAYER
 
 PDK.activate()
+
+
+def _region(component: gf.Component, layer) -> Region:
+    """Return the merged shapes of ``layer`` in ``component``."""
+    layout = component.kcl.layout
+    index = layout.layer(*gf.get_layer_tuple(layer))
+    return Region(component._base.kdb_cell.begin_shapes_rec(index)).merged()
 
 
 def test_giant_atom_transmon_ports() -> None:
@@ -68,6 +78,8 @@ def test_braided_ports_and_symmetry() -> None:
         ({"segment_lengths": (500.0,)}, "shorter than their spacing"),
         ({"meander_pitch": 60.0}, "meander_pitch"),
         ({"segment_lengths": (1050.0,)}, "Cannot meander"),
+        ({"coupler_lengths": (1200.0, 1200.0)}, "overlap"),
+        ({"arm_length": 20.0}, "too short for the airbridges"),
     ],
 )
 def test_invalid_inputs(kwargs: dict, match: str) -> None:
@@ -82,3 +94,48 @@ def test_giant_atom_chip_builds() -> None:
     names = {inst.cell.name for inst in c.insts}
     assert any("braided_giant_atoms" in name for name in names)
     assert sum("launcher" in name for name in (i.cell.name for i in c.insts)) == 2
+
+
+@pytest.mark.parametrize("cell", [giant_atom_transmon, braided_giant_atoms])
+def test_waveguide_keeps_cross_section_gap(cell) -> None:
+    """The qubit etch does not widen the CPW gap set by the cross-section."""
+    c = cell()
+    xs = gf.get_cross_section("cpw")
+    etch_sections = [s for s in xs.sections if s.layer == LAYER.M1_ETCH]
+    gap = etch_sections[0].width
+    dbu = c.kcl.layout.dbu
+    etch = _region(c, LAYER.M1_ETCH)
+    # Cuts across the straight feed sections, beside the first pad and at
+    # both ends.
+    for x in (c.ports["o1"].center[0] + 10, -100.0, c.ports["o2"].center[0] - 10):
+        cut = etch & Region(DBox(x - 0.5, -40, x + 0.5, 40).to_itype(dbu))
+        heights = sorted(round(p.bbox().height() * dbu, 3) for p in cut.each())
+        assert heights == [gap, gap], (x, heights)
+    # No etch on drawn metal anywhere.
+    assert (etch & _region(c, LAYER.M1_DRAW)).is_empty()
+
+
+@pytest.mark.parametrize(
+    ("cell", "n_bridges"), [(giant_atom_transmon, 2), (braided_giant_atoms, 4)]
+)
+def test_enclosed_ground_is_bridged(cell, n_bridges: int) -> None:
+    """Every arm of a multi-point atom carries an airbridge to tie the ground."""
+    c = cell()
+    bridge_spans = _region(c, LAYER.AB_DRAW)
+    assert bridge_spans.count() == n_bridges
+    assert _region(c, LAYER.AB_VIA).count() == 2 * n_bridges
+    # Landing pads sit on ground metal, never on an etched gap.
+    assert (_region(c, LAYER.AB_VIA) & _region(c, LAYER.M1_ETCH)).is_empty()
+    assert _region(cell(airbridges=False), LAYER.AB_DRAW).is_empty()
+
+
+def test_single_point_has_no_airbridge() -> None:
+    """With one coupling point there is no enclosed ground and no bridge."""
+    c = giant_atom_transmon(coupler_lengths=(160.0,), segment_lengths=())
+    assert _region(c, LAYER.AB_DRAW).is_empty()
+
+
+def test_braided_island_over_meander_raises() -> None:
+    """An island that would cover another atom's meander is rejected."""
+    with pytest.raises(ValueError, match="lies under the island"):
+        braided_giant_atoms(island_extension=110.0)

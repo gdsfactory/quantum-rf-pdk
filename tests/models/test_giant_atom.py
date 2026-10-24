@@ -198,19 +198,23 @@ def test_frequency_dependent_rate_shape() -> None:
 
 
 @pytest.mark.parametrize(
-    ("coupling_capacitances", "segment_lengths"),
-    [((8e-15, 8e-15), ()), ((8e-15,), (100.0,)), (((8e-15,),), ())],
+    ("coupling_capacitances", "segment_lengths", "match"),
+    [
+        ((8e-15, 8e-15), (), "one segment fewer"),
+        ((8e-15,), (100.0,), "one segment fewer"),
+        (((8e-15, 8e-15),), (), "one-dimensional"),
+    ],
 )
-def test_invalid_segment_count(
-    coupling_capacitances: tuple, segment_lengths: tuple
+def test_invalid_inputs(
+    coupling_capacitances: tuple, segment_lengths: tuple, match: str
 ) -> None:
-    """The segment count must be one less than the coupling-point count."""
-    with pytest.raises(ValueError, match="one"):
+    """Inputs must be 1D with one segment fewer than coupling points."""
+    with pytest.raises(ValueError, match=match):
         giant_atom_transmon(
             coupling_capacitances=coupling_capacitances,
             segment_lengths=segment_lengths,
         )
-    with pytest.raises(ValueError, match="one"):
+    with pytest.raises(ValueError, match=match):
         giant_atom_decay_rate_and_lamb_shift(
             5e9, coupling_capacitances, segment_lengths
         )
