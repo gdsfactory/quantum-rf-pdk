@@ -326,9 +326,10 @@ def _draw_round_meander(
     middle = turn_length - w - 2 * r
     vertical = pitch - 2 * r
     if n_turns > 1 and (first_last < 0 or (n_turns > 2 and middle < 0)):
+        minimum = w + 2 * r if n_turns > 2 else w / 2 + r
         raise ValueError(
             f"turn_length={turn_length} is too short for round corners of "
-            f"radius {r}; need at least {w + 2 * r}"
+            f"radius {r}; need at least {minimum}"
         )
 
     def _straight(path: gf.Path, length: float) -> gf.Path:

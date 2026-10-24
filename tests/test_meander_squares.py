@@ -133,6 +133,40 @@ def test_drawn_squares_match_fem(corner_style: str) -> None:
     assert fem == pytest.approx(c.info["n_squares_drawn"], rel=3e-3)
 
 
+def test_chamfer_corner_value_from_fem() -> None:
+    """FEM recovers the chamfer-minus-sharp corner difference, 0.577 - 0.559.
+
+    The difference of two solves on the same mesh size cancels most of the
+    discretisation error, so it resolves the 0.018 squares per corner that the
+    absolute comparison above cannot.
+    """
+    n = 5
+    fem = {}
+    for style in ("sharp", "chamfer"):
+        c = meander_inductor(
+            n_turns=n,
+            turn_length=6.0,
+            cross_section=_wire_xs(1.0),
+            wire_gap=1.0,
+            add_etch=False,
+            corner_style=style,
+        )
+        polys = [Polygon(p) for v in c.get_polygons_points().values() for p in v]
+        poly = shapely.unary_union(polys).buffer(0)
+        contacts = [
+            LineString([
+                (p.center[0], p.center[1] - 0.5),
+                (p.center[0], p.center[1] + 0.5),
+            ])
+            for p in c.ports
+        ]
+        fem[style] = _fem_squares(poly, *contacts, h=0.05)
+    per_corner = (fem["chamfer"] - fem["sharp"]) / (2 * (n - 1))
+    assert per_corner == pytest.approx(
+        CHAMFER_CORNER_SQUARES - SHARP_CORNER_SQUARES, abs=3e-3
+    )
+
+
 @pytest.mark.parametrize(
     ("kwargs", "match"),
     [
