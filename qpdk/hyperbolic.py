@@ -29,6 +29,7 @@ import numpy as np
 __all__ = [
     "HyperbolicTiling",
     "central_polygon_radius",
+    "geodesic_tangent_angle",
     "hyperbolic_tiling",
     "tight_binding_hamiltonian",
 ]
@@ -88,7 +89,22 @@ def _reflect(z: np.ndarray, a: complex, b: complex) -> np.ndarray:
     return center + radius_sq / np.conj(z - center)
 
 
+def geodesic_tangent_angle(a: complex, b: complex) -> float:
+    r"""Direction (radians) in which the Poincaré geodesic from ``a`` to ``b`` leaves ``a``.
+
+    The Möbius map :math:`z \mapsto (z - a)/(1 - \bar a z)` sends ``a`` to the
+    origin with a positive real derivative, so the geodesic leaves ``a`` along
+    the ray towards the image of ``b``. The disk model is conformal, which
+    makes these directions exactly :math:`2\pi/q` apart at a tiling vertex.
+
+    Returns:
+        Angle in radians.
+    """
+    return float(np.angle((b - a) / (1 - np.conj(a) * b)))
+
+
 def _key(z: complex) -> tuple[float, float]:
+    """Rounded coordinates of ``z`` for deduplicating vertices."""
     return (round(z.real, _KEY_DECIMALS), round(z.imag, _KEY_DECIMALS))
 
 
@@ -172,6 +188,45 @@ class HyperbolicTiling:
         z = self.vertices
         return np.abs(z[self.edges[:, 1]] - z[self.edges[:, 0]])
 
+    @cached_property
+    def pins(self) -> tuple[tuple[float, tuple[int, ...]], ...]:
+        """Vertex coupler orientation and pin wiring at each vertex.
+
+        Each vertex gets a ``q``-pin coupler. Pin ``k`` points along
+        ``rotation + 2πk/q`` (radians), which are the geodesic directions of the
+        infinite tiling at that vertex. Entry ``k`` of the wiring tuple is the
+        edge index on pin ``k``, or ``-1`` for a free pin on the flake boundary.
+        Pin 0 carries the lowest-index edge at the vertex.
+
+        Raises:
+            RuntimeError: If two edges at a vertex map to the same pin.
+        """
+        out = []
+        step = 2 * math.pi / self.q
+        for v, edges in enumerate(self.neighbors):
+            z = self.vertices[v]
+            others = [int(self.edges[e].sum() - v) for e in edges]
+            angles = [geodesic_tangent_angle(z, self.vertices[o]) for o in others]
+            rotation = angles[0]
+            wiring = [-1] * self.q
+            for e, angle in zip(edges, angles, strict=True):
+                k = round((angle - rotation) / step) % self.q
+                if wiring[k] != -1:
+                    raise RuntimeError(f"Two edges map to pin {k} at vertex {v}.")
+                wiring[k] = e
+            out.append((rotation, tuple(wiring)))
+        return tuple(out)
+
+    @cached_property
+    def free_pins(self) -> tuple[tuple[int, int], ...]:
+        """``(vertex, pin)`` of every unconnected coupler pin, in vertex order."""
+        return tuple(
+            (v, k)
+            for v, (_, wiring) in enumerate(self.pins)
+            for k, e in enumerate(wiring)
+            if e == -1
+        )
+
     def distance_weighted_adjacency(self) -> np.ndarray:
         r"""Vertex adjacency weighted by :math:`d_\text{ref} / d_{ij}`, shape ``(V, V)``.
 
@@ -179,6 +234,10 @@ class HyperbolicTiling:
         Poincaré disk and :math:`d_\text{ref}` the central-polygon edge, so the
         central edges have weight 1 and outer edges grow as they shrink
         :cite:`xuHyperbolicSuperconductingResonator2025`.
+
+        Returns:
+            Symmetric weight matrix, zero on the diagonal and between
+            unconnected vertices.
         """
         d_ref = 2 * central_polygon_radius(self.p, self.q) * math.sin(math.pi / self.p)
         a = np.zeros((self.num_vertices, self.num_vertices))
@@ -248,7 +307,7 @@ def hyperbolic_tiling(p: int = 7, q: int = 3, shells: int = 1) -> HyperbolicTili
     for face in faces:
         for k in range(p):
             i, j = face[k], face[(k + 1) % p]
-            edge_set[(min(i, j), max(i, j))] = None
+            edge_set[min(i, j), max(i, j)] = None
 
     return HyperbolicTiling(
         p=p,

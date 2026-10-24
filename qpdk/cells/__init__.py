@@ -18,6 +18,7 @@ from .capacitor import *
 from .chip import *
 from .derived import *
 from .fluxonium import *
+from .hyperbolic import *
 from .inductor import *
 from .junction import *
 from .launcher import *

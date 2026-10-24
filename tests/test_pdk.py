@@ -259,7 +259,10 @@ def test_optical_port_positions(component_name: str) -> None:
 
 MANHATTAN_ORIENTATIONS = (0.0, 90.0, 180.0, 270.0)
 
-skip_test_manhattan_ports: set[str] = set()
+skip_test_manhattan_ports: set[str] = {
+    # q-fold symmetric: pins point along the hyperbolic tiling's geodesics.
+    "hyperbolic_vertex_coupler",
+}
 manhattan_test_cell_names = [
     name for name in cell_names if name not in skip_test_manhattan_ports
 ]
