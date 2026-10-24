@@ -14,6 +14,7 @@ from qpdk.cells.capacitor import (
 from qpdk.cells.derived.transmon_with_resonator_and_probeline import (
     flipmon_with_resonator_and_probeline,
 )
+from qpdk.cells.drum import drum_lc_resonator, vacuum_gap_capacitor
 from qpdk.cells.snspd import snspd
 from qpdk.cells.transmon import (
     double_pad_transmon,
@@ -157,3 +158,31 @@ def test_flipmon_resonator_places_junction_away_from_probeline() -> None:
 
     assert junction_port.dcenter == pytest.approx(expected_center)
     assert junction_port.orientation == pytest.approx(180)
+
+
+class TestVacuumGapCapacitorValidation:
+    """Tests for vacuum_gap_capacitor and drum_lc_resonator validation."""
+
+    @staticmethod
+    def test_non_positive_radius_raises() -> None:
+        """Test that a non-positive drum radius raises ValueError."""
+        with pytest.raises(ValueError, match="radius must be positive"):
+            vacuum_gap_capacitor(radius=0)
+
+    @staticmethod
+    def test_unknown_support_raises() -> None:
+        """Test that an unknown support style raises ValueError."""
+        with pytest.raises(ValueError, match="support must be"):
+            vacuum_gap_capacitor(support="posts")  # pyrefly: ignore[bad-argument-type]
+
+    @staticmethod
+    def test_leg_on_lead_slot_raises() -> None:
+        """Test that a support leg landing on the lead slot raises ValueError."""
+        with pytest.raises(ValueError, match="lead slot"):
+            vacuum_gap_capacitor(support="legs", n_legs=12)
+
+    @staticmethod
+    def test_even_turns_raises() -> None:
+        """Test that an even meander turn count raises ValueError."""
+        with pytest.raises(ValueError, match="n_turns must be odd"):
+            drum_lc_resonator(n_turns=70)

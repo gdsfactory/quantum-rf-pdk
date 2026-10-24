@@ -38,6 +38,20 @@ LayerViews:
         layer: [10, 1]
         layer_in_name: true
         color: "#FEBB5D"
+  VacuumGap:
+    hatch_pattern: lightly right-hatched
+    group_members:
+      VG_TOP:
+        layer: [40, 0]
+        layer_in_name: true
+        transparent: true
+        width: 1
+        color: "#8E7DBE"
+      VG_SAC:
+        layer: [40, 1]
+        layer_in_name: true
+        color: "#C5BAE0"
+        hatch_pattern: dotted
   Junction:
     hatch_pattern: lightly right-hatched
     group_members:

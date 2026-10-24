@@ -17,6 +17,7 @@ from .bump import *
 from .capacitor import *
 from .chip import *
 from .derived import *
+from .drum import *
 from .fluxonium import *
 from .inductor import *
 from .junction import *

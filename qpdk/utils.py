@@ -414,7 +414,7 @@ def remove_metadata_layers(component: Component) -> Component:
 
     Retains only physical and base layers:
     M1_DRAW, M1_ETCH, M2_DRAW, M2_ETCH, AB_DRAW, AB_VIA,
-    JJ_AREA, JJ_PATCH, IND, TSV, DICE, ALN_TOP, ALN_BOT.
+    JJ_AREA, JJ_PATCH, VG_TOP, VG_SAC, IND, TSV, DICE, ALN_TOP, ALN_BOT.
 
     All other layers are stripped out.
 
