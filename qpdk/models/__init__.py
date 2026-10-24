@@ -10,6 +10,12 @@ from qpdk.models.capacitor import (
     plate_capacitor,
     plate_capacitor_analytical,
 )
+from qpdk.models.hyperbolic import (
+    hyperbolic_edge_resonator,
+    hyperbolic_lattice,
+    hyperbolic_vertex_coupler,
+    hyperbolic_vertex_coupler_capacitances,
+)
 from qpdk.models.inductor import (
     lumped_element_resonator,
     meander_inductor,
@@ -211,6 +217,10 @@ __all__ = [
     "gatemon_josephson_energy",
     "gatemon_potential",
     "gatemon_supercurrent",
+    "hyperbolic_edge_resonator",
+    "hyperbolic_lattice",
+    "hyperbolic_vertex_coupler",
+    "hyperbolic_vertex_coupler_capacitances",
     "impedance",
     "indium_bump",
     "inductor",

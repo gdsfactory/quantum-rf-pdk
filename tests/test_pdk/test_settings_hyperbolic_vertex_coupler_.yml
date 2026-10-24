@@ -1,0 +1,39 @@
+info:
+  q: 3
+name: hyperbolic_vertex_coupler_Q3_R0_PR40_PG4_GG6_LL20_CScpw
+ports:
+  o1:
+    center:
+    - 60
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 0
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - -30
+    - 51.962
+    layer: M1_DRAW
+    name: o2
+    orientation: 120
+    port_type: optical
+    width: 10
+  o3:
+    center:
+    - -30
+    - -51.962
+    layer: M1_DRAW
+    name: o3
+    orientation: 240
+    port_type: optical
+    width: 10
+settings:
+  cross_section: cpw
+  ground_gap: 6
+  lead_length: 20
+  pin_gap: 4
+  pin_radius: 40
+  q: 3
+  rotation: 0

@@ -1,0 +1,245 @@
+r"""Tests for qpdk.models.hyperbolic.
+
+The lattice tests check the full-wave circuit against the tight-binding model
+of :cite:`kollarHyperbolicLatticesCircuit2019`: a closed-circuit nodal
+analysis of the default {7,3} flake gives one resonance per edge resonator
+near the full-wave (second-harmonic) mode, with the line-graph spectrum,
+hopping :math:`t < 0` and a flat band at :math:`\omega_0 - 2|t|`. The
+lattice model is checked against a SAX netlist of the same circuit and
+against those eigenfrequencies through a probe.
+"""
+
+from typing import ClassVar, final
+
+import jax.numpy as jnp
+import numpy as np
+import pytest
+import sax
+from scipy.signal import find_peaks
+
+from qpdk.hyperbolic import hyperbolic_tiling
+from qpdk.models.constants import c_0
+from qpdk.models.cpw import cpw_parameters, get_cpw_dimensions
+from qpdk.models.generic import electrical_short
+from qpdk.models.hyperbolic import (
+    hyperbolic_edge_resonator,
+    hyperbolic_lattice,
+    hyperbolic_vertex_coupler,
+    hyperbolic_vertex_coupler_capacitances,
+)
+from qpdk.models.waveguides import straight
+
+from .base import BaseModelTestSuite
+
+RESONATOR_LENGTH = 7500.0
+STUB_LENGTH = 400.0
+# Window around the full-wave mode of the default resonators (bare 16.24 GHz,
+# pulled down by the coupler capacitance), clear of the open-line poles.
+F_MIN, F_MAX = 15.5e9, 16.0e9
+
+
+@final
+class TestHyperbolicVertexCoupler(BaseModelTestSuite):
+    """Generic S-matrix checks for the three-pin coupler."""
+
+    model_function = staticmethod(hyperbolic_vertex_coupler)
+    expected_ports: ClassVar[set[str]] = {"o1", "o2", "o3"}
+
+
+@final
+class TestHyperbolicEdgeResonator(BaseModelTestSuite):
+    """Generic S-matrix checks for the edge resonator."""
+
+    model_function = staticmethod(hyperbolic_edge_resonator)
+    expected_ports: ClassVar[set[str]] = {"o1", "o2"}
+
+
+@final
+class TestHyperbolicLatticeSParameters(BaseModelTestSuite):
+    """Generic S-matrix checks for the default two-probe lattice."""
+
+    model_function = staticmethod(hyperbolic_lattice)
+    expected_ports: ClassVar[set[str]] = {"o1", "o2"}
+
+
+def test_coupler_capacitances_positive() -> None:
+    """Coupling and ground capacitances are positive and scale with pin size."""
+    c_c, c_g = hyperbolic_vertex_coupler_capacitances()
+    assert c_c > 0
+    assert c_g > 0
+    c_c_big, _ = hyperbolic_vertex_coupler_capacitances(pin_radius=80.0)
+    assert c_c_big > c_c
+
+
+@pytest.mark.parametrize("q", [3, 4, 5])
+def test_coupler_is_lossless_and_reciprocal(q: int) -> None:
+    """A lumped capacitance network is lossless and reciprocal."""
+    f = jnp.array([5e9, 16e9])
+    s = hyperbolic_vertex_coupler(f=f, q=q)
+    pins = range(1, q + 1)
+    matrix = jnp.stack(
+        [jnp.stack([s[f"o{i}", f"o{j}"] for j in pins], -1) for i in pins], -2
+    )
+    np.testing.assert_allclose(matrix, jnp.swapaxes(matrix, -1, -2), atol=1e-12)
+    product = jnp.einsum("fki,fkj->fij", matrix.conj(), matrix)
+    np.testing.assert_allclose(
+        product, np.broadcast_to(np.eye(q), product.shape), atol=1e-9
+    )
+
+
+@pytest.mark.parametrize("probe_pins", [(), (0, 0), (21,)])
+def test_lattice_rejects_bad_probe_pins(probe_pins: tuple[int, ...]) -> None:
+    """Probe pins must be distinct, in range and non-empty."""
+    with pytest.raises(ValueError, match="probe_pins"):
+        hyperbolic_lattice(f=jnp.array([16e9]), probe_pins=probe_pins)
+
+
+def _nodal_susceptance(f: float) -> np.ndarray:
+    """Nodal susceptance matrix of the closed default lattice (no probes).
+
+    One node per coupler pin. Lines contribute the exact transmission-line
+    admittance matrix, couplers ``ω C`` and boundary pins a shorted stub.
+    The circuit resonates where an eigenvalue crosses zero.
+
+    Returns:
+        Real symmetric susceptance matrix in siemens.
+    """
+    tiling = hyperbolic_tiling(7, 3, 1)
+    q = tiling.q
+    width, gap = get_cpw_dimensions("cpw")
+    ep_eff, z0 = (float(np.real(x)) for x in cpw_parameters(width, gap))
+    c_c, c_g = hyperbolic_vertex_coupler_capacitances()
+    omega = 2 * np.pi * f
+    beta = omega * np.sqrt(ep_eff) / c_0
+    theta = beta * RESONATOR_LENGTH * 1e-6
+    theta_stub = beta * STUB_LENGTH * 1e-6
+
+    size = tiling.num_vertices * q
+    b = np.zeros((size, size))
+    for v in range(tiling.num_vertices):
+        for i in range(q):
+            b[v * q + i, v * q + i] += omega * (c_g + 2 * c_c)
+            for j in ((i + 1) % q, (i - 1) % q):
+                b[v * q + i, v * q + j] -= omega * c_c
+    for e, (i, j) in enumerate(tiling.edges.tolist()):
+        n_i = i * q + tiling.pins[i][1].index(e)
+        n_j = j * q + tiling.pins[j][1].index(e)
+        b[n_i, n_i] -= 1 / (np.tan(theta) * z0)
+        b[n_j, n_j] -= 1 / (np.tan(theta) * z0)
+        b[n_i, n_j] += 1 / (np.sin(theta) * z0)
+        b[n_j, n_i] += 1 / (np.sin(theta) * z0)
+    for v, k in tiling.free_pins:
+        b[v * q + k, v * q + k] -= 1 / (np.tan(theta_stub) * z0)
+    return b
+
+
+@pytest.fixture(scope="module")
+def nodal_modes() -> np.ndarray:
+    """Eigenfrequencies of the closed lattice, repeated by degeneracy."""
+    fs = np.linspace(F_MIN, F_MAX, 1001)
+    negative = np.array([
+        np.sum(np.linalg.eigvalsh(_nodal_susceptance(f)) < 0) for f in fs
+    ])
+    steps = np.nonzero(np.diff(negative))[0]
+    return np.sort(
+        np.concatenate([
+            np.full(abs(negative[i + 1] - negative[i]), (fs[i] + fs[i + 1]) / 2)
+            for i in steps
+        ])
+    )
+
+
+def test_full_wave_spectrum_matches_line_graph(nodal_modes: np.ndarray) -> None:
+    """One mode per resonator, ordered like the line-graph TB with ``t < 0``."""
+    tiling = hyperbolic_tiling(7, 3, 1)
+    assert len(nodal_modes) == tiling.num_edges
+
+    lam = np.sort(np.linalg.eigvalsh(tiling.line_graph_adjacency))
+    # H = ω0 - t A with t < 0 maps eigenvalue λ of A to ω0 + |t| λ.
+    abs_t, f0 = np.polyfit(lam, nodal_modes, 1)
+    assert abs_t > 0, "hopping must be negative"
+    residual = nodal_modes - (abs_t * lam + f0)
+    assert np.max(np.abs(residual)) < 0.1 * abs_t
+
+
+def test_flat_band_at_minus_two_t(nodal_modes: np.ndarray) -> None:
+    """The lowest E - V modes are degenerate at ω0 - 2|t|."""
+    tiling = hyperbolic_tiling(7, 3, 1)
+    n_flat = tiling.num_edges - tiling.num_vertices
+    lam = np.sort(np.linalg.eigvalsh(tiling.line_graph_adjacency))
+    abs_t, f0 = np.polyfit(lam, nodal_modes, 1)
+
+    flat = nodal_modes[:n_flat]
+    assert np.ptp(flat) == 0, "flat band must be exactly degenerate"
+    assert nodal_modes[n_flat] - flat[0] > 0.1 * abs_t
+    assert abs(flat[0] - (f0 - 2 * abs_t)) < 0.1 * abs_t
+
+
+def test_sax_probe_resonances_match_nodal_modes(nodal_modes: np.ndarray) -> None:
+    """Group-delay peaks of the SAX model sit on the dispersive eigenmodes.
+
+    Flat-band states have zero summed amplitude at every coupler, so a probe on
+    a free pin cannot excite them; no peak may appear there.
+    """
+    tiling = hyperbolic_tiling(7, 3, 1)
+    n_flat = tiling.num_edges - tiling.num_vertices
+    f = np.linspace(F_MIN, F_MAX, 2001)
+    s = hyperbolic_lattice(
+        f=jnp.asarray(f),
+        resonator_length=RESONATOR_LENGTH,
+        stub_length=STUB_LENGTH,
+        probe_pins=(0,),
+    )
+    phase = np.unwrap(np.angle(np.asarray(s["o1", "o1"])))
+    group_delay = -np.gradient(phase, f)
+    peaks, _ = find_peaks(group_delay, prominence=1e-3 * group_delay.max())
+    peak_f = f[peaks]
+
+    assert len(peak_f) >= 10
+    dispersive = nodal_modes[n_flat:]
+    distance = np.min(np.abs(peak_f[:, None] - dispersive[None, :]), axis=1)
+    np.testing.assert_array_less(distance, 1e6)
+    assert np.min(np.abs(peak_f - nodal_modes[0])) > 5e6
+
+
+def _sax_netlist_lattice(f: jnp.ndarray, probe_pins: tuple[int, ...]) -> sax.SDict:
+    """The default lattice wired as a SAX netlist of its component models.
+
+    Returns:
+        S-parameters between the probe ports.
+    """
+    tiling = hyperbolic_tiling(7, 3, 1)
+    free = tiling.free_pins
+    line = straight(f=f, length=RESONATOR_LENGTH)
+    stub = straight(f=f, length=STUB_LENGTH)
+    instances: dict[str, sax.SType] = {
+        f"c{v}": hyperbolic_vertex_coupler(f=f) for v in range(tiling.num_vertices)
+    }
+    connections: dict[str, str] = {}
+    ports: dict[str, str] = {}
+    for e, (i, j) in enumerate(tiling.edges.tolist()):
+        instances[f"r{e}"] = line
+        for end, v in (("o1", i), ("o2", j)):
+            connections[f"r{e},{end}"] = f"c{v},o{tiling.pins[v][1].index(e) + 1}"
+    probe_index = {free[k]: n for n, k in enumerate(probe_pins)}
+    for v, k in free:
+        pin = f"c{v},o{k + 1}"
+        if (v, k) in probe_index:
+            ports[f"o{probe_index[v, k] + 1}"] = pin
+            continue
+        instances[f"s{v}_{k}"] = stub
+        instances[f"s{v}_{k}_short"] = electrical_short(f=f)
+        connections[pin] = f"s{v}_{k},o1"
+        connections[f"s{v}_{k},o2"] = f"s{v}_{k}_short,o1"
+    return sax.evaluate_circuit_fg((connections, ports), instances)
+
+
+def test_nodal_model_matches_sax_netlist() -> None:
+    """The nodal solution equals SAX evaluating the netlist of component models."""
+    f = jnp.linspace(F_MIN, F_MAX, 7)
+    probe_pins = (11, 0)
+    nodal = hyperbolic_lattice(f=f, probe_pins=probe_pins)
+    netlist = _sax_netlist_lattice(f, probe_pins)
+    assert nodal.keys() == netlist.keys()
+    for key, value in nodal.items():
+        np.testing.assert_allclose(value, netlist[key], atol=1e-9)
