@@ -1,0 +1,45 @@
+instances:
+  airbridge:
+    component: airbridge
+    info: {}
+    settings:
+      bridge_layer: AB_DRAW
+      bridge_length: 40
+      bridge_width: 8
+      pad_layer: AB_VIA
+      pad_length: 12
+      pad_width: 15
+  airbridge2:
+    component: airbridge
+    info: {}
+    settings:
+      bridge_layer: AB_DRAW
+      bridge_length: 40
+      bridge_width: 8
+      pad_layer: AB_VIA
+      pad_length: 12
+      pad_width: 15
+  squid_junction:
+    component: squid_junction
+    info: {}
+    settings:
+      junction_spec: josephson_junction
+      loop_area: 4
+nets: []
+placements:
+  airbridge:
+    mirror: false
+    rotation: 90
+    x: 0
+    y: 123
+  airbridge2:
+    mirror: false
+    rotation: 90
+    x: 1000
+    y: 123
+  squid_junction:
+    mirror: false
+    rotation: 135
+    x: 508.132
+    y: 248.454
+ports: {}
