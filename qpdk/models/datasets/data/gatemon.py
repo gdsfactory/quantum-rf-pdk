@@ -62,7 +62,7 @@ GRID = {
     "pocket_gap_top": [20.0, 30.0, 40.0, 60.0],
     "gate_tip_gap": [2.0, 5.0, 10.0],
 }
-SETTINGS = Settings(near_mesh=2.0, far_mesh=80.0, domain_pad=1200.0, order=3)
+SETTINGS = Settings(near_mesh=0.8, far_mesh=60.0, domain_pad=1200.0, order=3)
 TERMINALS = ("island", "gate", "readout")
 GROUND_MARGIN = 300.0
 """Coplanar ground kept around the device and readout segment, in µm."""

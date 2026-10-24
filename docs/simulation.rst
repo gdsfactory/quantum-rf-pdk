@@ -123,6 +123,16 @@ island, not the nanotube's gate lever arm. Use ``qpdk.tech.LAYER_STACK_GATEMON``
 hybrid process and measure the flake thickness before constructing a mesh for local
 electrostatics.
 
+The gatemon recipe uses 0.8 µm near-metal and 60 µm far-field mesh sizes, a 1200 µm
+domain padding and height, third-order elements and a :math:`10^{-9}` linear solver
+tolerance. The :download:`representative convergence study
+<../qpdk/models/datasets/data/gatemon_palace.convergence.json>` records four geometries
+with a finer 0.6 µm / 40 µm mesh, fourth-order elements and a larger 1800 µm domain. The
+largest relative changes in :math:`C_\Sigma`, :math:`C_\text{g}` and :math:`C_\text{c}`
+were 0.652%, 0.736% and 0.476%, within the respective 1%, 5% and 1% tolerances. These
+checks apply to the M1 island row. Full-grid coverage and interpolation are validated
+separately.
+
 The ``gatemon_test_chip`` sample uses two independent transmission resonators with
 series coupling capacitors at both ends, as drawn in Fig. 1a of
 :cite:`riechertCarbonNanotubeGatemon2025`. Both channels target device A's reported
