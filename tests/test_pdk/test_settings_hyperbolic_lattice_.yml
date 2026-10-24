@@ -1,0 +1,43 @@
+info:
+  num_couplers: 35
+  num_resonators: 42
+name: hyperbolic_lattice_P7_Q3_S1_DR6000_RL7500_SL400_PP11_0__bd170c16
+ports:
+  o1:
+    center:
+    - -5823.936
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 200
+  o2:
+    center:
+    - 5481.406
+    - 631.238
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 200
+settings:
+  bend_radius: 25
+  boundary_apex: 0.6
+  cross_section: cpw
+  disk_radius: 6000
+  feed_length: 1000
+  ground_gap: 6
+  lead_length: 20
+  margin: 25
+  p: 7
+  pin_gap: 4
+  pin_radius: 40
+  pitch: 60
+  probe_pins:
+  - 11
+  - 0
+  q: 3
+  resonator_length: 7500
+  shells: 1
+  stub_length: 400
