@@ -49,6 +49,11 @@ from qpdk.models.cpw import (
     propagation_constant,
     transmission_line_s_params,
 )
+from qpdk.models.esr import (
+    esr_lc_resonator,
+    esr_mode_volume,
+    thin_strip_magnetic_field,
+)
 from qpdk.models.gatemon import (
     andreev_bound_state_energies,
     gatemon,
@@ -201,6 +206,8 @@ __all__ = [
     "electrical_open",
     "electrical_short",
     "electrical_short_2_port",
+    "esr_lc_resonator",
+    "esr_mode_volume",
     "flipmon",
     "flipmon_ideal_bond_model",
     "flipmon_readout_coupon_model",
@@ -277,6 +284,7 @@ __all__ = [
     "straight_shorted",
     "taper_cross_section",
     "tee",
+    "thin_strip_magnetic_field",
     "transmission_line_s_params",
     "transmon_coupled",
     "transmon_readout_coupon_model",
