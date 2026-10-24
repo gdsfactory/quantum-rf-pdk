@@ -198,7 +198,20 @@ def hyperbolic_vertex_coupler(
 
 
 def _half_planes(polygon: np.ndarray) -> list[tuple[np.ndarray, float]]:
-    """Outward normals ``n`` and offsets ``b`` with ``n·x <= b`` inside."""
+    """Outward normals ``n`` and offsets ``b`` with ``n·x <= b`` inside.
+
+    Returns:
+        One ``(n, b)`` pair per polygon side.
+
+    Raises:
+        ValueError: If the polygon is not convex.
+    """
+    edges = np.roll(polygon, -1, axis=0) - polygon
+    turns = edges[:, 0] * np.roll(edges[:, 1], -1) - edges[:, 1] * np.roll(
+        edges[:, 0], -1
+    )
+    if not (np.all(turns >= -1e-9) or np.all(turns <= 1e-9)):
+        raise ValueError("region must be a convex polygon.")
     area = 0.5 * np.sum(
         polygon[:, 0] * np.roll(polygon[:, 1], -1)
         - np.roll(polygon[:, 0], -1) * polygon[:, 1]
@@ -282,6 +295,8 @@ def _meander_points(
     q1 = end - end_dir * end_straight
     axis = q1 - p1
     span = float(np.linalg.norm(axis))
+    if span < 1e-6:
+        raise ValueError("end is too close to the start for the end straights.")
     ux = axis / span
     uy = np.array([-ux[1], ux[0]])
     # Room needed between a lead corner and the first leg.
@@ -477,6 +492,43 @@ def _edge_faces(faces: Sequence[Sequence[int]], i: int, j: int) -> list[int]:
     return out
 
 
+def _far(edge: Sequence[int], v: int) -> int:
+    """The end of ``edge`` that is not vertex ``v``."""
+    return edge[1] if edge[0] == v else edge[0]
+
+
+def _clip_to_bisector(
+    apex: np.ndarray,
+    mid: np.ndarray,
+    vertex: np.ndarray,
+    own: np.ndarray,
+    other: np.ndarray,
+) -> np.ndarray:
+    """Pull ``apex`` towards ``mid`` until it lies on the ``own`` side of a bisector.
+
+    The bisector of the edges ``vertex``–``own`` and ``vertex``–``other``
+    splits the plane between two boundary edges that meet at ``vertex``.
+    Keeping each outer apex on its own side keeps the two outer triangles
+    disjoint, so their resonators stay ``2 margin`` apart.
+
+    Returns:
+        The clipped apex.
+    """
+    u1 = (own - vertex) / np.linalg.norm(own - vertex)
+    u2 = (other - vertex) / np.linalg.norm(other - vertex)
+    w = u1 + u2
+    if np.linalg.norm(w) < 1e-9:
+        w = np.array([-u1[1], u1[0]])
+    normal = np.array([-w[1], w[0]])
+    if normal @ u1 < 0:
+        normal = -normal
+    side_apex = normal @ (apex - vertex)
+    if side_apex >= 0:
+        return apex
+    side_mid = normal @ (mid - vertex)
+    return mid + (apex - mid) * side_mid / (side_mid - side_apex)
+
+
 @gf.cell(tags=["resonators", "lattices", "chips"])
 def hyperbolic_lattice(
     p: int = 7,
@@ -517,7 +569,17 @@ def hyperbolic_lattice(
     Each resonator meanders inside the quadrilateral of its two vertices and
     the centroids of the two adjacent faces. A boundary edge has only one
     face; its outer apex is that centroid mirrored across the edge and
-    pulled in by ``boundary_apex``.
+    pulled in by ``boundary_apex`` and clipped to the bisector with each
+    neighbouring boundary edge.
+
+    The defaults fit {7,3} and {5,4} with one shell. More shells or larger
+    ``p`` need a larger ``disk_radius`` (two shells of {7,3} fit at
+    12000 µm), and the default ``probe_pins`` need at least 12 free pins.
+
+    The stubs and probe feeds are drawn as flat polygons, so the extracted
+    netlist shows the free pins as open. Use
+    :func:`qpdk.models.hyperbolic.hyperbolic_lattice` to simulate the lattice
+    instead of the netlist.
 
     Args:
         p: Polygon side count of the tiling.
@@ -580,21 +642,39 @@ def hyperbolic_lattice(
         return couplers[v].ports[f"o{k + 1}"]
 
     edge_length = resonator_length - 2 * lead_length
-    for e, (i, j) in enumerate(tiling.edges.tolist()):
+    edges = tiling.edges.tolist()
+    edge_faces = [_edge_faces(tiling.faces, i, j) for i, j in edges]
+    boundary_at: dict[int, list[int]] = {}
+    for e, (i, j) in enumerate(edges):
+        if len(edge_faces[e]) == 1:
+            boundary_at.setdefault(i, []).append(e)
+            boundary_at.setdefault(j, []).append(e)
+    for e, (i, j) in enumerate(edges):
         ki = tiling.pins[i][1].index(e)
         kj = tiling.pins[j][1].index(e)
         a, b = pin_port(i, ki), pin_port(j, kj)
         origin = np.array(a.center)
         apexes = [
             np.mean([centres[w] for w in tiling.faces[f]], axis=0)
-            for f in _edge_faces(tiling.faces, i, j)
+            for f in edge_faces[e]
         ]
         if len(apexes) == 1:
             mid = (centres[i] + centres[j]) / 2
             chord = centres[j] - centres[i]
             n = np.array([-chord[1], chord[0]]) / np.linalg.norm(chord)
             inward = (apexes[0] - mid) @ n
-            apexes.append(mid - n * inward * boundary_apex)
+            apex = mid - n * inward * boundary_apex
+            for v, w in ((i, j), (j, i)):
+                for other in boundary_at[v]:
+                    if other != e:
+                        apex = _clip_to_bisector(
+                            apex,
+                            mid,
+                            centres[v],
+                            centres[w],
+                            centres[_far(edges[other], v)],
+                        )
+            apexes.append(apex)
         region = [centres[i], apexes[0], centres[j], apexes[1]]
         try:
             resonator = hyperbolic_edge_resonator(

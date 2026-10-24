@@ -23,6 +23,7 @@ import math
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import sax
 from gdsfactory.typings import CrossSectionSpec
 
@@ -31,6 +32,8 @@ from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.cpw import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
 from qpdk.models.waveguides import straight
+
+_BATCH_SIZE = 32  # frequencies solved at once by the lattice model
 
 __all__ = [
     "hyperbolic_edge_resonator",
@@ -201,7 +204,8 @@ def hyperbolic_lattice(
       (a :math:`\lambda/4` resonator far above the band) so boundary
       resonators see the same end capacitance as interior ones;
     - probe ports in place of the stubs on the free pins listed in
-      ``probe_pins``.
+      ``probe_pins``. Their reference plane is the coupler pin, so the feed
+      lines and launchers of the layout are not included.
 
     The circuit is solved exactly by nodal analysis rather than with
     :func:`sax.evaluate_circuit_fg`, whose JIT compilation does not scale to
@@ -248,49 +252,56 @@ def hyperbolic_lattice(
     f_in = jnp.asarray(f, dtype=float)
     f_arr = jnp.atleast_1d(f_in)
     z0 = cpw_z0_from_cross_section(cross_section, f_arr)
-    omega = 2 * jnp.pi * f_arr
 
-    # Node v * q + k is pin k of coupler v.
+    # Pin k of coupler v is node v * q + k, renumbered so the probes come first.
     n_nodes = tiling.num_vertices * q
+    probes = [free[k][0] * q + free[k][1] for k in probe_pins]
+    order = probes + [n for n in range(n_nodes) if n not in probes]
+    position = np.empty(n_nodes, dtype=int)
+    position[order] = np.arange(n_nodes)
+    n_p = len(probes)
+
     c_c, c_g = hyperbolic_vertex_coupler_capacitances(
         q, pin_radius, pin_gap, ground_gap, cross_section
     )
-    y = jnp.kron(jnp.eye(tiling.num_vertices), _coupler_capacitance_matrix(q, c_c, c_g))
-    y = 1j * omega[:, None, None] * y
+    c_nodes = jnp.kron(
+        jnp.eye(tiling.num_vertices), _coupler_capacitance_matrix(q, c_c, c_g)
+    )[np.ix_(order, order)]
+    ends = position[
+        np.array([
+            [i * q + tiling.pins[i][1].index(e), j * q + tiling.pins[j][1].index(e)]
+            for e, (i, j) in enumerate(tiling.edges.tolist())
+        ])
+    ]
+    stubs = position[[v * q + k for v, k in free if v * q + k not in probes]]
 
     line = _two_port_admittance(
         straight(f=f_arr, length=resonator_length, cross_section=cross_section), z0
     )
-    ends = jnp.array([
-        [i * q + tiling.pins[i][1].index(e), j * q + tiling.pins[j][1].index(e)]
-        for e, (i, j) in enumerate(tiling.edges.tolist())
-    ])
-    for a in range(2):
-        for b in range(2):
-            y = y.at[:, ends[:, a], ends[:, b]].add(line[:, a, b][:, None])
+    stub = straight(f=f_arr, length=stub_length, cross_section=cross_section)
+    # A short (reflection -1) behind a matched line of transmission S21.
+    s_in = stub["o1", "o1"] - stub["o1", "o2"] * stub["o2", "o1"] / (
+        1 + stub["o2", "o2"]
+    )
+    y_stub = _one_port_admittance(s_in, z0)
 
-    probes = [free[k][0] * q + free[k][1] for k in probe_pins]
-    stubs = [v * q + k for v, k in free if v * q + k not in probes]
-    if stubs:
-        stub = straight(f=f_arr, length=stub_length, cross_section=cross_section)
-        # A short (reflection -1) behind a matched line of transmission S21.
-        s_in = stub["o1", "o1"] - stub["o1", "o2"] * stub["o2", "o1"] / (
-            1 + stub["o2", "o2"]
+    def solve_one(args: tuple[jax.Array, ...]) -> jax.Array:
+        """Probe S-matrix at one frequency; mapped so memory stays O(N²)."""
+        omega_k, line_k, y_stub_k, z0_k = args
+        y = 1j * omega_k * c_nodes
+        for a in range(2):
+            for b in range(2):
+                y = y.at[ends[:, a], ends[:, b]].add(line_k[a, b])
+        y = y.at[stubs, stubs].add(y_stub_k)
+        y_ports = y[:n_p, :n_p] - y[:n_p, n_p:] @ jnp.linalg.solve(
+            y[n_p:, n_p:], y[n_p:, :n_p]
         )
-        stubs_arr = jnp.array(stubs)
-        y = y.at[:, stubs_arr, stubs_arr].add(_one_port_admittance(s_in, z0)[:, None])
+        eye = jnp.eye(n_p)
+        return jnp.linalg.solve(eye + z0_k * y_ports, eye - z0_k * y_ports)
 
-    probes_arr = jnp.array(probes)
-    inner = jnp.array([n for n in range(n_nodes) if n not in probes])
-    y_pp = y[:, probes_arr][:, :, probes_arr]
-    y_pi = y[:, probes_arr][:, :, inner]
-    y_ip = y[:, inner][:, :, probes_arr]
-    y_ii = y[:, inner][:, :, inner]
-    y_ports = y_pp - y_pi @ jnp.linalg.solve(y_ii, y_ip)
-
-    z0_y = z0[:, None, None] * y_ports
-    eye = jnp.eye(len(probes))
-    s = jnp.linalg.solve(eye + z0_y, eye - z0_y)
+    s = jax.lax.map(
+        solve_one, (2 * jnp.pi * f_arr, line, y_stub, z0), batch_size=_BATCH_SIZE
+    )
     s = s.reshape(*f_in.shape, len(probes), len(probes))
     names = [f"o{n + 1}" for n in range(len(probes))]
     return {

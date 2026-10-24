@@ -103,6 +103,15 @@ def test_edge_resonator_too_long_raises() -> None:
         hyperbolic_edge_resonator(length=500.0)
     with pytest.raises(ValueError, match="pitch"):
         hyperbolic_edge_resonator(pitch=40.0, bend_radius=25.0)
+    with pytest.raises(ValueError, match="too close"):
+        hyperbolic_edge_resonator(length=200.0, end=(120.0, 0.0))
+
+
+def test_edge_resonator_rejects_concave_region() -> None:
+    """A non-convex region is an error rather than a silently different region."""
+    region = ((0.0, 0.0), (500.0, 300.0), (1000.0, 0.0), (500.0, 600.0))
+    with pytest.raises(ValueError, match="convex"):
+        hyperbolic_edge_resonator(length=3000.0, region=region)
 
 
 @pytest.fixture(scope="module")
@@ -138,9 +147,21 @@ def test_lattice_wiring_matches_tiling(lattice) -> None:
             )
 
 
-def test_lattice_has_no_overlaps(lattice) -> None:
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {},
+        {"p": 5, "q": 4},
+        {"shells": 2, "disk_radius": 12000.0},
+    ],
+    ids=["7-3", "5-4", "7-3-two-shells"],
+)
+def test_lattice_has_no_overlaps(kwargs: dict) -> None:
     """Resonators keep at least 20 µm of ground between them away from couplers."""
-    tiling = hyperbolic_tiling(7, 3, 1)
+    lattice = hyperbolic_lattice(**kwargs)
+    tiling = hyperbolic_tiling(
+        kwargs.get("p", 7), kwargs.get("q", 3), kwargs.get("shells", 1)
+    )
     dbu = lattice.kcl.dbu
     regions = {inst.name: _region(inst.cell, inst.trans) for inst in lattice.insts}
     centres = {
