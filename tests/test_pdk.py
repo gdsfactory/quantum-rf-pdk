@@ -142,6 +142,15 @@ def test_gds(component_name: str) -> None:
     difftest(component, test_name=component_name, dirpath=dirpath)
 
 
+@pytest.mark.parametrize("corner_style", ["sharp", "chamfer", "round", "optimal"])
+def test_gds_meander_corner_styles(corner_style: str) -> None:
+    """Avoid regressions in the meander_inductor geometry of each corner style."""
+    component = cells["meander_inductor"](corner_style=corner_style)
+    difftest(
+        component, test_name=f"meander_inductor_corner_{corner_style}", dirpath=dirpath
+    )
+
+
 @pytest.mark.parametrize("component_name", cell_names)
 def test_settings(component_name: str, data_regression: DataRegressionFixture) -> None:
     """Avoid regressions when exporting settings."""

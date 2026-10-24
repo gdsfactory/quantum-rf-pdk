@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from math import ceil, floor
+from math import ceil, floor, sqrt
 
 import gdsfactory as gf
 from gdsfactory.component import Component
@@ -15,9 +15,14 @@ from qpdk.cells._schematic import (
 )
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
+    MEANDER_SQUARES_CONVENTIONS,
+    MeanderCornerStyle,
     get_etch_section,
     get_meander_wire_gap,
     meander_inductor_cross_section,
+    meander_n_squares_drawn,
+    meander_round_radius,
+    optimal_hairpin_arm_length,
 )
 
 
@@ -29,6 +34,8 @@ def meander_inductor(
     wire_gap: float | None = None,
     etch_bbox_margin: float = 2.0,
     add_etch: bool = True,
+    corner_style: MeanderCornerStyle = "sharp",
+    radius: float | None = None,
 ) -> Component:
     r"""Creates a meander inductor with Manhattan routing using a narrow wire.
 
@@ -67,14 +74,38 @@ def meander_inductor(
         etch_bbox_margin: Extra margin around the inductor for the etch bounding box in µm.
             This margin is added in addition to the etch region defined in the cross-section.
         add_etch: Whether to add the etch bounding box. Defaults to True.
+        corner_style: Shape of the U-turn corners, all within the same bounding box:
+
+            * ``"sharp"``: Manhattan corners (the original geometry).
+            * ``"chamfer"``: the outer corner of each 90° bend is cut at 45° so
+              the wire keeps its width :math:`w` along the diagonal.
+            * ``"round"``: circular arcs of centreline radius ``radius``.
+            * ``"optimal"``: the current-crowding-free hairpin contour of
+              :cite:`clemGeometrydependentCriticalCurrents2011`, drawn with
+              :func:`gdsfactory.components.optimal_hairpin`. Each hairpin spans
+              half a run.
+        radius: Centreline radius of ``"round"`` corners in µm, with
+            :math:`w/2 < R \\le p/2` for pitch :math:`p`. Defaults to :math:`p/2`,
+            which makes each U-turn a semicircle. Ignored for other styles.
 
     Returns:
         Component: A gdsfactory component with the meander inductor geometry
-            and two ports ('o1' and 'o2').
+            and two ports ('o1' and 'o2'). ``info`` holds
+
+            * ``total_wire_length``: centreline length of the sharp meander in µm.
+            * ``n_squares``: ``total_wire_length / w``, which counts every corner
+              square as one square. The SAX model uses this value.
+            * ``n_squares_drawn``: squares of the drawn polygon for the chosen
+              ``corner_style``, from :func:`qpdk.tech.meander_n_squares_drawn`.
+              A sharp 90° corner counts 0.559 squares
+              :cite:`hagedornRightAngleBendsThin1963`.
+            * ``n_squares_convention``: the corner rule used for
+              ``n_squares_drawn``.
 
     Raises:
-        ValueError: If `n_turns` < 1, `turn_length` <= 0, or `wire_gap` is
-            not positive.
+        ValueError: If `n_turns` < 1, `turn_length` <= 0, `wire_gap` is
+            not positive, `radius` is out of range, the runs are too short for
+            the chosen corners, or `corner_style` is unknown.
     """
     if n_turns < 1:
         raise ValueError("Must have at least 1 turn")
@@ -101,36 +132,20 @@ def meander_inductor(
     pitch = wire_width + wire_gap
     total_height = n_turns * wire_width + max(0, n_turns - 1) * wire_gap
 
-    for i in range(n_turns):
-        y0 = i * pitch
-        c.add_polygon(
-            [
-                (0, y0),
-                (turn_length, y0),
-                (turn_length, y0 + wire_width),
-                (0, y0 + wire_width),
-            ],
-            layer=layer,
-        )
-
-    for i in range(n_turns - 1):
-        y0 = i * pitch + wire_width
-        y1 = (i + 1) * pitch
-        if i % 2 == 0:
-            c.add_polygon(
-                [
-                    (turn_length - wire_width, y0),
-                    (turn_length, y0),
-                    (turn_length, y1),
-                    (turn_length - wire_width, y1),
-                ],
-                layer=layer,
-            )
-        else:
-            c.add_polygon(
-                [(0, y0), (wire_width, y0), (wire_width, y1), (0, y1)],
-                layer=layer,
-            )
+    match corner_style:
+        case "sharp":
+            _draw_sharp_meander(c, n_turns, turn_length, wire_width, pitch, layer)
+        case "chamfer":
+            _draw_chamfer_meander(c, n_turns, turn_length, wire_width, pitch, layer)
+        case "round":
+            r = meander_round_radius(wire_width, wire_gap, radius)
+            _draw_round_meander(c, n_turns, turn_length, wire_width, pitch, r, layer)
+        case "optimal":
+            _draw_optimal_meander(c, n_turns, turn_length, wire_width, pitch, layer)
+        case _:
+            raise ValueError(f"Unknown corner_style {corner_style!r}")
+    if corner_style != "sharp":
+        c.flatten()
 
     if add_etch and etch_section is not None:
         # Extra margin on top of the implicit etch margin from the cross-section
@@ -194,9 +209,196 @@ def meander_inductor(
     total_wire_length = n_turns * turn_length + max(0, n_turns - 1) * wire_gap
     c.info["total_wire_length"] = total_wire_length
     c.info["n_squares"] = total_wire_length / wire_width
+    c.info["n_squares_drawn"] = meander_n_squares_drawn(
+        n_turns, turn_length, wire_width, wire_gap, corner_style, radius
+    )
+    c.info["n_squares_convention"] = MEANDER_SQUARES_CONVENTIONS[corner_style]
     c.info["cross_section_name"] = xs.name
 
     return c
+
+
+def _draw_sharp_meander(
+    c: Component,
+    n_turns: int,
+    turn_length: float,
+    wire_width: float,
+    pitch: float,
+    layer: LayerSpec,
+) -> None:
+    """Draws Manhattan runs and vertical connectors, run 0 at y = 0."""
+    for i in range(n_turns):
+        y0 = i * pitch
+        c.add_polygon(
+            [
+                (0, y0),
+                (turn_length, y0),
+                (turn_length, y0 + wire_width),
+                (0, y0 + wire_width),
+            ],
+            layer=layer,
+        )
+
+    for i in range(n_turns - 1):
+        y0 = i * pitch + wire_width
+        y1 = (i + 1) * pitch
+        if i % 2 == 0:
+            c.add_polygon(
+                [
+                    (turn_length - wire_width, y0),
+                    (turn_length, y0),
+                    (turn_length, y1),
+                    (turn_length - wire_width, y1),
+                ],
+                layer=layer,
+            )
+        else:
+            c.add_polygon(
+                [(0, y0), (wire_width, y0), (wire_width, y1), (0, y1)],
+                layer=layer,
+            )
+
+
+def _draw_chamfer_meander(
+    c: Component,
+    n_turns: int,
+    turn_length: float,
+    wire_width: float,
+    pitch: float,
+    layer: LayerSpec,
+) -> None:
+    r"""Draws the sharp meander with each outer bend corner cut at 45°.
+
+    The cut triangle has legs :math:`(2 - \sqrt{2})\,w`, so the wire width
+    across the diagonal stays :math:`w`.
+    """
+    cut = (2 - sqrt(2)) * wire_width
+    length, w = turn_length, wire_width
+    for i in range(n_turns):
+        y0 = i * pitch
+        y1 = y0 + w
+        bend_right_below = i % 2 == 0 and i < n_turns - 1
+        bend_right_above = i % 2 == 1
+        bend_left_below = i % 2 == 1 and i < n_turns - 1
+        bend_left_above = i % 2 == 0 and i >= 2
+        pts = [(0.0, y0)] if not bend_left_below else [(cut, y0)]
+        if bend_right_below:
+            pts += [(length - cut, y0), (length, y0 + cut)]
+        else:
+            pts += [(length, y0)]
+        if bend_right_above:
+            pts += [(length, y1 - cut), (length - cut, y1)]
+        else:
+            pts += [(length, y1)]
+        if bend_left_above:
+            pts += [(cut, y1), (0.0, y1 - cut)]
+        else:
+            pts += [(0.0, y1)]
+        if bend_left_below:
+            pts += [(0.0, y0 + cut)]
+        c.add_polygon(pts, layer=layer)
+
+    for i in range(n_turns - 1):
+        y0 = i * pitch + w
+        y1 = (i + 1) * pitch
+        x0 = length - w if i % 2 == 0 else 0.0
+        c.add_polygon([(x0, y0), (x0 + w, y0), (x0 + w, y1), (x0, y1)], layer=layer)
+
+
+def _draw_round_meander(
+    c: Component,
+    n_turns: int,
+    turn_length: float,
+    wire_width: float,
+    pitch: float,
+    radius: float,
+    layer: LayerSpec,
+) -> None:
+    """Draws the meander as one extruded path with circular U-turns.
+
+    The arcs are placed so that the outer wire edges stay on the bounding box of
+    the sharp meander.
+
+    Raises:
+        ValueError: If the runs are too short for the radius.
+    """
+    w, r = wire_width, radius
+    first_last = turn_length - w / 2 - r
+    middle = turn_length - w - 2 * r
+    vertical = pitch - 2 * r
+    if n_turns > 1 and (first_last < 0 or (n_turns > 2 and middle < 0)):
+        minimum = w + 2 * r if n_turns > 2 else w / 2 + r
+        raise ValueError(
+            f"turn_length={turn_length} is too short for round corners of "
+            f"radius {r}; need at least {minimum}"
+        )
+
+    def _straight(path: gf.Path, length: float) -> gf.Path:
+        return path + gf.path.straight(length=length) if length > 0 else path
+
+    path = gf.Path([(0, 0)])
+    if n_turns == 1:
+        path = _straight(path, turn_length)
+    else:
+        for i in range(n_turns):
+            run = first_last if i in {0, n_turns - 1} else middle
+            path = _straight(path, run)
+            if i == n_turns - 1:
+                break
+            angle = 90 if i % 2 == 0 else -90
+            path += gf.path.arc(radius=r, angle=angle)
+            path = _straight(path, vertical)
+            path += gf.path.arc(radius=r, angle=angle)
+    wire = gf.path.extrude(path, layer=layer, width=w)
+    ref = c << wire
+    ref.move((0, w / 2))
+
+
+def _draw_optimal_meander(
+    c: Component,
+    n_turns: int,
+    turn_length: float,
+    wire_width: float,
+    pitch: float,
+    layer: LayerSpec,
+) -> None:
+    """Draws the meander from chained Clem-Berggren hairpins.
+
+    Each U-turn is one :func:`gdsfactory.components.optimal_hairpin` spanning
+    half a run. Adjacent hairpins meet at the middle of the shared run.
+    """
+    w = wire_width
+    if n_turns == 1:
+        c.add_polygon([(0, 0), (turn_length, 0), (turn_length, w), (0, w)], layer=layer)
+        return
+
+    # Validates that the hairpin fits; raises ValueError otherwise.
+    optimal_hairpin_arm_length(turn_length, w, pitch)
+    hairpin = gf.c.optimal_hairpin(
+        width=w,
+        pitch=pitch,
+        length=turn_length / 2,
+        turn_ratio=(pitch + w) / w,
+        layer=layer,
+    )
+    refs = []
+    for i in range(n_turns - 1):
+        ref = c << hairpin
+        if i == 0:
+            ref.move(ref.ports["e2"].center, (turn_length / 2, w / 2))
+        elif i % 2 == 1:
+            ref.connect("e1", refs[-1].ports["e1"])
+        else:
+            ref.connect("e2", refs[-1].ports["e2"])
+        refs.append(ref)
+
+    half = turn_length / 2
+    c.add_polygon([(0, 0), (half, 0), (half, w), (0, w)], layer=layer)
+    y0 = (n_turns - 1) * pitch
+    x0 = 0.0 if n_turns % 2 == 0 else half
+    c.add_polygon(
+        [(x0, y0), (x0 + half, y0), (x0 + half, y0 + w), (x0, y0 + w)], layer=layer
+    )
 
 
 attach_schematic(meander_inductor, meander_inductor_schematic)
