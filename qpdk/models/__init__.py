@@ -24,7 +24,11 @@ from qpdk.models.inductor import (
     meander_inductor_ground_capacitance,
     meander_inductor_inductance_analytical,
 )
-from qpdk.models.junction import josephson_junction, squid_junction
+from qpdk.models.junction import (
+    josephson_junction,
+    josephson_junction_array,
+    squid_junction,
+)
 from qpdk.models.nanowire import (
     grounded_pad_capacitance_analytical,
     nanowire_pad_capacitances_analytical,
@@ -255,6 +259,7 @@ __all__ = [
     "inductor",
     "interdigital_capacitor",
     "josephson_junction",
+    "josephson_junction_array",
     "launcher",
     "lc_resonator",
     "lc_resonator_coupled",
