@@ -116,12 +116,16 @@ def test_waveguide_keeps_cross_section_gap(cell) -> None:
     gap = etch_sections[0].width
     dbu = c.kcl.layout.dbu
     etch = _region(c, LAYER.M1_ETCH)
-    # Cuts across the straight feed sections, beside the first pad and at
+    # Cuts across the feed line just outside the first pad etch and at
     # both ends.
     for x in (c.ports["o1"].center[0] + 10, -100.0, c.ports["o2"].center[0] - 10):
         cut = etch & Region(DBox(x - 0.5, -40, x + 0.5, 40).to_itype(dbu))
         heights = sorted(round(p.bbox().height() * dbu, 3) for p in cut.each())
         assert heights == [gap, gap], (x, heights)
+    # Under a coupling pad the far side of the line keeps its gap too.
+    cut = etch & Region(DBox(-0.5, -40, 0.5, 0).to_itype(dbu))
+    heights = [round(p.bbox().height() * dbu, 3) for p in cut.each()]
+    assert heights == [gap]
     # No etch on drawn metal anywhere.
     assert (etch & _region(c, LAYER.M1_DRAW)).is_empty()
 
@@ -169,6 +173,8 @@ def test_single_point_has_no_airbridge() -> None:
     """With one coupling point there is no enclosed ground and no bridge."""
     c = giant_atom_transmon(coupler_lengths=(160.0,), segment_lengths=())
     assert _region(c, LAYER.AB_DRAW).is_empty()
+    # Short arms are fine without bridges.
+    giant_atom_transmon(coupler_lengths=(160.0,), segment_lengths=(), arm_length=20.0)
 
 
 def test_braided_island_over_meander_raises() -> None:

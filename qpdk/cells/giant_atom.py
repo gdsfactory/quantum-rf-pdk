@@ -147,9 +147,9 @@ def _giant_atoms(
             )
             raise ValueError(msg)
     bridge = None
-    if airbridges:
+    if airbridges and any(len(points) > 1 for _, points, _ in atoms):
         bridge = airbridge(bridge_length=arm_width + 2 * gap_width + 10.0)
-        bridge_pad = bridge.dbbox().width()  # Landing-pad width across the arm.
+        bridge_pad = bridge.dbbox().width()  # Landing-pad extent along the arm.
         if arm_length < bridge_pad + 2 * gap_width:
             msg = (
                 f"arm_length={arm_length} µm is too short for the airbridges; it "
@@ -378,19 +378,20 @@ def giant_atom_transmon(
     which the giant atoms of :cite:`kannanWaveguideQuantumElectrodynamics2020`
     decouple from the waveguide.
 
-    Use :func:`~qpdk.models.couplers.cpw_cpw_coupling_capacitance` with
-    ``length=coupler_lengths[k]`` and ``gap=coupler_gap`` to estimate the
-    coupling capacitance :math:`C_k` of each pad for
-    :func:`~qpdk.models.giant_atom.giant_atom_transmon`. The default
+    For a rough coupling capacitance :math:`C_k` of each pad for
+    :func:`~qpdk.models.giant_atom.giant_atom_transmon`, call
+    :func:`~qpdk.models.couplers.cpw_cpw_coupling_capacitance` with ``f``,
+    ``length=coupler_lengths[k]``, ``gap=coupler_gap`` and
+    ``cross_section``. It models two parallel CPWs rather than a pad with
+    etch on one side, so it is an estimate only. The default
     :math:`160\,\text{µm}` pad at :math:`8\,\text{µm}` gives about
     :math:`8\,\text{fF}`. The island capacitance to ground depends on the
     geometry and is not extracted here.
 
     For :math:`K \ge 2` the arms and the waveguide enclose a ground patch,
     which includes the inside of each meander turn. With ``airbridges=True``
-    one bridge per arm ties it to the ground plane. Further bridges across
-    the meander, as in :func:`~qpdk.cells.airbridge.cpw_with_airbridges`,
-    are left to the designer.
+    one bridge per arm ties it to the ground plane. No bridges are drawn
+    across the meander itself.
 
     Args:
         coupler_lengths: Length of each coupling pad along the waveguide in µm.
