@@ -14,6 +14,13 @@ gap is :math:`(W - w)/2` for window width :math:`W` and local strip width
 the impedance of trapped vortices nor the kinetic inductance of the narrow
 neck, which raises its inductance per unit length by a few percent for a
 2 µm Nb strip.
+
+The quasi-TEM CPW description of the strip inside the window is an
+approximation: the window is only about as long as it is wide, so the far
+wall is as close to the strip as the side walls. The predicted frequency
+shift of :func:`resonator_quarter_wave_neck` (about 1 GHz for the defaults)
+has the right sign and trend but has not been checked against an EM solver
+or the measured resonance, so treat its magnitude as an estimate.
 """
 
 import math
@@ -125,11 +132,15 @@ def _neck_sections(
     Raises:
         ValueError: If the strip does not fit inside the window.
     """
-    width, _ = get_cpw_dimensions(cross_section)
-    if not 0 < neck_width < width < window_width:
+    width, gap = get_cpw_dimensions(cross_section)
+    if not 0 < neck_width < width:
         raise ValueError(
-            "Need 0 < neck_width < CPW width < window_width, got "
-            f"{neck_width}, {width} and {window_width}."
+            f"Need 0 < neck_width < CPW width, got {neck_width} and {width}."
+        )
+    if window_width < width + 2 * gap:
+        raise ValueError(
+            f"window_width ({window_width}) must be at least the CPW footprint "
+            f"({width + 2 * gap})."
         )
     npoints = max(npoints, 1)
     taper = [

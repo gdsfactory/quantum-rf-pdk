@@ -147,7 +147,11 @@ def neck_termination(
     web is not narrower than the neck.
 
     Thresholds from :func:`vortex_trapping_threshold` are field-cooled
-    estimates. Zero-field-cooled entry and microwave drive can trap vortices
+    estimates for an isolated strip. They ignore the flux focusing of the
+    nearby ground planes, which lowers the real threshold (the 8 µm bulge of
+    :cite:`nsanzinezaTrappingSingleVortex2014` trapped at 42 µT against the
+    53 µT the formula gives), so use them to compare widths, not as absolute
+    fields. Zero-field-cooled entry and microwave drive can trap vortices
     at much lower fields, and similar frequency jumps have been seen in
     resonators without a neck :cite:`kalashnikovEquidistantResonanceJumps2026`,
     so measure a resonator without a neck on the same chip as a control.
