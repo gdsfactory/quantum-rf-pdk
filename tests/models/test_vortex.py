@@ -115,10 +115,39 @@ class TestPhysics:
 
     @staticmethod
     @pytest.mark.parametrize(
-        "kwargs",
-        [{"neck_width": 10}, {"neck_width": 0}, {"window_width": 8}],
+        ("kwargs", "match"),
+        [
+            ({"neck_width": 10}, "neck_width < CPW width"),
+            ({"neck_width": 0}, "neck_width < CPW width"),
+            ({"window_width": 15}, "CPW footprint"),
+        ],
     )
-    def test_neck_outside_window_raises(kwargs: dict) -> None:
-        """A strip that does not fit inside the window is rejected."""
-        with pytest.raises(ValueError, match="neck_width < CPW width"):
+    def test_neck_outside_window_raises(kwargs: dict, match: str) -> None:
+        """Geometries the layout cell refuses are refused by the model too."""
+        with pytest.raises(ValueError, match=match):
             neck_termination(f=jnp.array([5e9]), **kwargs)
+
+    @staticmethod
+    def test_bulge_raises_half_wave_resonance() -> None:
+        """A low-inductance bulge at the current antinode raises f0."""
+        f = np.linspace(6e9, 9e9, 30001)
+
+        def open_open_resonance(s: dict) -> float:
+            # Leave o2 open and find where the input admittance at o1 vanishes.
+            s11, s21, s12, s22 = (
+                np.asarray(s[k])
+                for k in [("o1", "o1"), ("o2", "o1"), ("o1", "o2"), ("o2", "o2")]
+            )
+            gamma = s11 + s12 * s21 / (1 - s22)
+            y = (1 - gamma) / (1 + gamma)
+            b = np.imag(y)
+            # Zeros, not poles: the sign flips while |B| stays small.
+            idx = np.flatnonzero(
+                (np.diff(np.sign(b)) != 0) & (np.abs(b[:-1]) < 1) & (np.abs(b[1:]) < 1)
+            )
+            assert idx.size, "no resonance found in the sweep"
+            return float(f[idx[0]])
+
+        f_plain = open_open_resonance(straight(f=jnp.asarray(f), length=8000))
+        f_bulge = open_open_resonance(resonator_half_wave_bulge(f=jnp.asarray(f)))
+        assert f_plain < f_bulge < 1.01 * f_plain

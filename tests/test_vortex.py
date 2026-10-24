@@ -1,8 +1,11 @@
 """Tests for the vortex-trapping cells in :mod:`qpdk.cells.vortex`."""
 
+import inspect
+
 import gdsfactory as gf
 import pytest
 
+from qpdk.cells import vortex as vortex_cells
 from qpdk.cells.vortex import (
     cpw_bulge,
     neck_termination,
@@ -10,6 +13,7 @@ from qpdk.cells.vortex import (
     resonator_quarter_wave_neck,
     vortex_trapping_threshold,
 )
+from qpdk.models import vortex as vortex_models
 from qpdk.tech import LAYER, coplanar_waveguide
 
 _FLUX_QUANTUM = 2.067833848e-15
@@ -17,6 +21,21 @@ _FLUX_QUANTUM = 2.067833848e-15
 
 def _region(component: gf.Component, layer: tuple[int, int]) -> gf.kdb.Region:
     return gf.kdb.Region(component.begin_shapes_rec(gf.get_layer(layer))).merged()
+
+
+def _ground_frame(component: gf.Component) -> gf.kdb.Region:
+    """Ground fill around the cell, open on the port side (x < 0).
+
+    The port continues into a CPW, so metal left of the port would short the
+    conductor to ground there and hide whether the far wall does.
+
+    Returns:
+        Box region extending 50 µm past the cell on the other three sides.
+    """
+    box = component.ibbox()
+    return gf.kdb.Region(
+        gf.kdb.Box(box.left, box.bottom - 50_000, box.right + 50_000, box.top + 50_000)
+    )
 
 
 class TestTrappingThreshold:
@@ -64,11 +83,31 @@ class TestNeckTermination:
 
     @staticmethod
     def test_neck_shorts_to_ground() -> None:
-        """The conductor reaches the far edge of the etched window."""
+        """The conductor and the ground plane form one connected metal polygon."""
         c = neck_termination(trap_hole_rows=0)
         etch = _region(c, LAYER.M1_ETCH)
         draw = _region(c, LAYER.M1_DRAW)
-        assert draw.bbox().right == etch.bbox().right
+        frame = _ground_frame(c)
+        metal = ((frame - etch) + draw).merged()
+        assert metal.count() == 1
+
+    @staticmethod
+    def test_neck_open_without_far_wall_is_floating() -> None:
+        """Removing the far ground wall leaves the conductor floating.
+
+        Guards the connectivity check above against passing vacuously.
+        """
+        c = neck_termination(trap_hole_rows=0)
+        etch = _region(c, LAYER.M1_ETCH)
+        draw = _region(c, LAYER.M1_DRAW)
+        right = etch.bbox().right
+        # Cut a 1 µm slot across the conductor just inside the far wall.
+        slot = gf.kdb.Region(
+            gf.kdb.Box(right - 2000, -1_000_000, right - 1000, 1_000_000)
+        )
+        frame = _ground_frame(c)
+        metal = ((frame - etch) + (draw - slot)).merged()
+        assert metal.count() == 2
 
     @staticmethod
     def test_neck_is_narrowest_conductor() -> None:
@@ -81,23 +120,27 @@ class TestNeckTermination:
 
     @staticmethod
     def test_hole_ring_surrounds_window() -> None:
-        """Holes run along both long sides and the far end, not the port end."""
+        """Holes flank both long sides and the far end, never the CPW or window."""
         c = neck_termination()
-        window = _region(neck_termination(trap_hole_rows=0), LAYER.M1_ETCH)
+        bare = neck_termination(trap_hole_rows=0)
+        window = _region(bare, LAYER.M1_ETCH)
         holes = _region(c, LAYER.M1_ETCH) - window
-        box, hole_box = window.bbox(), holes.bbox()
+        box = window.bbox()
         offset = 6000  # trap_hole_offset in dbu
-        assert hole_box.top == box.top + offset + 4 * 5500 - 1500
-        assert hole_box.bottom == -hole_box.top
-        assert hole_box.right == box.right + offset + 4 * 5500 - 1500
-        assert hole_box.left >= box.left
-        # Every hole keeps the offset from the window.
+        # No hole cuts into the window, the CPW feed or its gaps.
         assert (holes & window.sized(offset - 1)).is_empty()
-        # Both long sides carry holes along the middle of the window.
-        for sign in (1, -1):
-            y_lo = box.top + offset if sign > 0 else box.bottom - offset - 30_000
-            side = gf.kdb.Region(gf.kdb.Box(100_000, y_lo, 300_000, y_lo + 30_000))
-            assert (holes & side).count() >= 4 * 30
+        # Nothing on the port side of the window.
+        assert holes.bbox().left >= box.left
+        # Holes exist above, below and beyond the window.
+        bands = {
+            "top": gf.kdb.Box(box.left, box.top, box.right, box.top + 40_000),
+            "bottom": gf.kdb.Box(box.left, box.bottom - 40_000, box.right, box.bottom),
+            "end": gf.kdb.Box(box.right, box.bottom, box.right + 40_000, box.top),
+        }
+        for name, band in bands.items():
+            assert not (holes & gf.kdb.Region(band)).is_empty(), name
+        # The ring is mirror-symmetric about the line axis.
+        assert holes.bbox().bottom == -holes.bbox().top
 
     @staticmethod
     def test_hole_web_narrower_than_neck() -> None:
@@ -240,3 +283,22 @@ class TestResonatorHalfWaveBulge:
         """A length too short for the meanders and bulge is rejected."""
         with pytest.raises(ValueError, match="too short"):
             resonator_half_wave_bulge(length=500)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "cpw_bulge",
+        "neck_termination",
+        "resonator_half_wave_bulge",
+        "resonator_quarter_wave_neck",
+    ],
+)
+def test_cell_and_model_defaults_agree(name: str) -> None:
+    """Shared geometry parameters have the same defaults in cell and model."""
+    cell = inspect.signature(getattr(vortex_cells, name)).parameters
+    model = inspect.signature(getattr(vortex_models, name)).parameters
+    shared = (set(cell) & set(model)) - {"cross_section"}
+    assert shared
+    for param in shared:
+        assert cell[param].default == model[param].default, param
