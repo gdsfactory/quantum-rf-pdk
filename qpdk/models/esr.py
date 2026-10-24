@@ -48,25 +48,31 @@ def thin_strip_magnetic_field(
     :math:`B_y` unchanged.
 
     Uniform-current approximation: a superconducting strip carries most of its
-    current near the edges, so the real field is larger near the edges and
-    smaller above the centre than this formula gives at heights below about
-    :math:`w` :cite:`bienfaitReachingQuantumLimit2016`. The strip thickness is
-    neglected.
+    current near the edges :cite:`bienfaitReachingQuantumLimit2016`, so close
+    to the strip the real field is larger near the edges and smaller above the
+    centre than this formula gives. The strip thickness is neglected.
 
     Args:
         current: Current :math:`I` in A.
         width: Strip width :math:`w` in µm.
-        height: Distance :math:`y` from the strip plane in µm, positive.
+        height: Position :math:`y` relative to the strip plane in µm, nonzero.
+            Negative values are below the strip.
         x: Lateral position measured from the strip centre in µm.
 
     Returns:
         Tuple ``(B_x, B_y)`` in T.
     """
     w = jnp.asarray(width) * 1e-6
-    y = jnp.asarray(height) * 1e-6
+    y_signed = jnp.asarray(height) * 1e-6
+    # Evaluate at |y| and mirror B_x, so both half-spaces use the same branch.
+    y = jnp.abs(y_signed)
     x_m = jnp.asarray(x) * 1e-6
     prefactor = μ_0 * jnp.asarray(current) / (2 * π * w)
-    b_x = -prefactor * (jnp.arctan2(x_m + w / 2, y) - jnp.arctan2(x_m - w / 2, y))
+    b_x = (
+        -jnp.sign(y_signed)
+        * prefactor
+        * (jnp.arctan2(x_m + w / 2, y) - jnp.arctan2(x_m - w / 2, y))
+    )
     b_y = (
         prefactor
         / 2
@@ -100,8 +106,14 @@ def esr_mode_volume(wire_width: ArrayLike, inductance: ArrayLike) -> jax.Array:
     :cite:`bienfaitReachingQuantumLimit2016,ranjanElectronSpinResonance2020`.
     With their own :math:`L = Z_\text{c}/\omega_0` this estimate gives 0.077 nL
     against "~0.02 nl" and 10.5 fL against "~6 fL": the same order of
-    magnitude, not a reproduction. The uniform-current approximation of
-    :func:`thin_strip_magnetic_field` applies.
+    magnitude, not a reproduction. The derivation counts :math:`L` as
+    magnetic-field energy, so pass the geometric inductance: kinetic inductance
+    stores energy in the electrons, not the field. The comparison with the
+    papers' :math:`Z_\text{c}/\omega_0` therefore overstates the volume where
+    kinetic inductance contributes, and for Ranjan's 10 µm wire most of that
+    :math:`L` is stray inductance of the capacitor rather than of the wire.
+    The uniform-current approximation of :func:`thin_strip_magnetic_field`
+    applies.
 
     Args:
         wire_width: Wire width :math:`w` in µm.
@@ -166,10 +178,12 @@ def esr_lc_resonator_parameters(
       driven by antennas.
     * Capacitance from the electrodes to the side ground planes is neglected.
     * :math:`C_\text{c}` is a parameter, not derived from ``coupling_gap``. The
-      4 fF default gives :math:`Q_\text{c} \approx 3 \times 10^4`, the external
-      quality factor of :cite:`ranjanElectronSpinResonance2020`. The default
-      cell runs its 1.15 mm bus bar along the feedline, which gives tens of fF,
-      so set :math:`C_\text{c}` from a capacitance extraction of the layout.
+      4 fF default is chosen to give :math:`Q_\text{c} \approx 3 \times 10^4`,
+      the external quality factor of :cite:`ranjanElectronSpinResonance2020`;
+      it does not describe the default cell. That cell runs its 1.15 mm bus
+      bar 50 µm from the feedline, which a coplanar-strip estimate puts at
+      order 0.1 pF, giving :math:`Q_\text{c}` of order 10–100. Set
+      :math:`C_\text{c}` from a capacitance extraction of the layout.
     * The 0.4 pH/□ sheet inductance is the PDK default for the base metal; the
       references do not state one for their 50 nm Al films.
 

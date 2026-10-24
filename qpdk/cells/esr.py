@@ -124,7 +124,8 @@ def esr_lc_resonator(
     Raises:
         ValueError: If the wire width is out of range, ``fingers`` is below 2,
             a length is not positive, the wire is wider than a finger is long,
-            or the feedline is shorter than the etch window.
+            the bus-bar length is off the 2 nm grid, or the feedline is
+            shorter than the etch window.
     """
     w_min, w_max = ESR_WIRE_WIDTH_RANGE
     if not w_min <= wire_width <= w_max:
@@ -158,6 +159,14 @@ def esr_lc_resonator(
     # thicken each bus bar by one finger thickness.
     bar_length = fingers * finger_thickness + (fingers - 1) * finger_gap
     idc_height = 4 * finger_thickness + finger_length + finger_gap
+
+    # The bus-bar length becomes a port width, which must be a 2 nm multiple.
+    bar_nm = bar_length * 1e3
+    if abs(bar_nm - 2 * round(bar_nm / 2)) > 1e-6:
+        raise ValueError(
+            f"fingers*finger_thickness + (fingers-1)*finger_gap = {bar_length} µm "
+            "must be a multiple of 0.002 µm"
+        )
 
     right_gap = max(wire_length, ground_gap)
     window_width = ground_gap + bar_length + right_gap

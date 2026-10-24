@@ -105,7 +105,10 @@ def test_ranjan_wire_squares() -> None:
 
 
 def test_default_q_c_matches_ranjan_qext() -> None:
-    """The 4 fF default coupling gives Q_c of order 3e4, Ranjan's Q_ext."""
+    """The 4 fF default gives Q_c of order 3e4, Ranjan's Q_ext.
+
+    The default is a chosen parameter, not the coupling of the default layout.
+    """
     q_c = esr_lc_resonator_parameters()["coupling_quality_factor"]
     assert 2e4 < q_c < 4e4
 
@@ -119,7 +122,8 @@ def test_mode_volume_order_of_magnitude(design: dict, volume_paper: float) -> No
     """With the paper's own L, V_m is within a factor 4 of the simulated value.
 
     The papers quote EM-simulated volumes (~0.02 nl, ~6 fL); the closed form is
-    an estimate of the same order, not a reproduction.
+    an estimate of the same order, not a reproduction. Z_c/ω0 includes
+    inductance outside the wire's field, so this is a loose consistency check.
     """
     inductance = design["zc"] / (2 * π * design["f0"])
     volume = esr_mode_volume(design["wire_width"], inductance)
@@ -196,6 +200,10 @@ def test_strip_field_symmetry(width: float, height: float, x: float) -> None:
     assert_allclose(b_y, -b_y_m, rtol=1e-9, atol=1e-20)
     b_x_0, _ = thin_strip_magnetic_field(1e-3, width, height)
     assert jnp.abs(b_x) <= jnp.abs(b_x_0) * (1 + 1e-12)
+    # Mirror image below the strip: B_x reverses, B_y is unchanged.
+    b_x_below, b_y_below = thin_strip_magnetic_field(1e-3, width, -height, x)
+    assert_allclose(b_x_below, -b_x, rtol=1e-9)
+    assert_allclose(b_y_below, b_y, rtol=1e-9, atol=1e-20)
 
 
 @pytest.mark.parametrize(
@@ -207,6 +215,7 @@ def test_strip_field_symmetry(width: float, height: float, x: float) -> None:
         ({"coupling_gap": 0.0}, "coupling_gap"),
         ({"wire_width": 5.0, "finger_length": 4.0}, "finger_length"),
         ({"feedline_length": 100.0}, "feedline_length"),
+        ({"fingers": 7, "finger_gap": 50.001, "finger_thickness": 49.999}, "0.002"),
     ],
 )
 def test_cell_rejects_invalid_geometry(kwargs: dict, match: str) -> None:
