@@ -1,0 +1,38 @@
+info:
+  lattice_constant: 600
+  n_sites: 8
+name: ssh_resonator_chain_NC4_SS300_Rlumped_element_resonator_59877616
+ports:
+  o1:
+    center:
+    - -97
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 2197
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  cross_section: cpw
+  finger_length: 20
+  inter_cell_fingers: 4
+  intra_cell_fingers: 8
+  n_cells: 4
+  port_fingers: 4
+  port_length: 50
+  resonator: lumped_element_resonator
+  resonator_cross_section: meander_inductor_cross_section
+  resonator_taper_length: 10
+  site_spacing: 300
+  tap_fingers: 2
+  tap_length: 100
+  tap_sites: []
