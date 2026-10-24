@@ -214,3 +214,13 @@ def test_invalid_segment_count(
         giant_atom_decay_rate_and_lamb_shift(
             5e9, coupling_capacitances, segment_lengths
         )
+
+
+def test_default_spacing_is_kannan_decoherence_free_point() -> None:
+    """The default segment is λ/2 at 4.645 GHz, Kannan et al.'s design point."""
+    f_df = 4.645e9
+    gamma, _ = giant_atom_decay_rate_and_lamb_shift(f_df)
+    gamma_max, _ = giant_atom_decay_rate_and_lamb_shift(
+        f_df, segment_lengths=(26200.0,)
+    )
+    assert float(gamma) < 1e-4 * float(gamma_max)
