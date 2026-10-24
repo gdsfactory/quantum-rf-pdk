@@ -84,3 +84,10 @@ def test_grounded_pad_reduces_to_cross_ratio_modulus() -> None:
         plate_capacitor_capacitance_analytical(300.0, w_eq, s_eq, 11.45),
         rtol=1e-6,
     )
+
+
+@pytest.mark.parametrize("n_turns", [0, 2])
+def test_parameters_reject_even_turns(n_turns: int) -> None:
+    """The model accepts the same odd turn counts as the cell."""
+    with pytest.raises(ValueError, match="n_turns"):
+        nanowire_resonator_parameters(n_turns=n_turns)

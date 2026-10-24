@@ -49,6 +49,10 @@ def grounded_pad_capacitance_analytical(
     evaluates :cite:`chenCompactInductorcapacitorResonators2023`. Fringe fields
     at the two ends of the pad are neglected.
 
+    The cross-ratio mapping above is derived here from conformal invariance,
+    not quoted from a reference; ``tests/models/test_nanowire.py`` checks it
+    against the symmetric-pad formula.
+
     Args:
         pad_width: Pad length :math:`\ell` along the ground edge in µm.
         pad_height: Pad width :math:`W` across the gap in µm.
@@ -107,6 +111,12 @@ def nanowire_resonator_parameters(
     * Capacitance from the upper pad to the side ground and to the feedline
       ground is neglected, and so are the fringe fields at the pad ends.
     * :math:`C_\text{c}` is a parameter, not derived from ``coupling_gap``.
+      The 2 fF default is a weak-coupling design value. The default cell couples
+      its whole 300 µm pad edge to the feedline, which gives tens of fF, so set
+      :math:`C_\text{c}` from a capacitance extraction of the drawn layout.
+    * Because the side-ground capacitance is neglected, :math:`C` is lower and
+      :math:`f_\text{r}` higher than for the drawn cell, by tens of percent at
+      the default ``pad_ground_gap`` of 50 µm.
     * Losses are not modelled: the internal quality factor is infinite.
 
     Args:
@@ -131,7 +141,14 @@ def nanowire_resonator_parameters(
         ``geometric_inductance``, ``inductance`` (H), ``capacitance`` (F),
         ``coupling_capacitance`` (F), ``z0`` (Ω), ``resonance_frequency`` (Hz)
         and ``coupling_quality_factor``.
+
+    Raises:
+        ValueError: If ``n_turns`` is not a positive odd number.
     """
+    if n_turns < 1 or n_turns % 2 == 0:
+        raise ValueError(
+            f"n_turns must be a positive odd number, as in the cell, got {n_turns}"
+        )
     wire_gap = wire_width if wire_gap is None else wire_gap
     n_squares = meander_n_squares_drawn(
         n_turns, wire_length, wire_width, wire_gap, corner_style, radius
