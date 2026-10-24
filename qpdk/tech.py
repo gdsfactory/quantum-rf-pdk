@@ -738,7 +738,7 @@ The outer corner is cut by a triangle with legs :math:`(2 - \\sqrt{2})\\,w`, so 
 diagonal width equals :math:`w`. There is no standard published value for this
 corner; 0.577 comes from a 2D Laplace solve on the mitred corner, which gives
 0.559 for the sharp corner with the same solver. ``tests/test_meander_squares.py``
-re-checks it on the drawn polygon.
+re-checks its difference from the sharp value on the drawn polygon.
 """
 
 MEANDER_SQUARES_CONVENTIONS: dict[str, str] = {
