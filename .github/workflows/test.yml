@@ -459,10 +459,18 @@ jobs:
           sudo apt-get install --yes libglu1-mesa
       - name: Install Palace experiment dependencies
         run: uv sync --locked --python 3.12 --no-dev --extra models --group palace --group test
+      - name: Test dataset flow with native result readers
+        run: uv run --no-sync pytest tests/models/test_driven_dataset_flow.py tests/models/test_meander_fullwave_recipe.py --cov=qpdk --cov-report=xml:build/palace-dataset-coverage.xml
       - name: Run real Palace tests
         run: |
           mkdir -p build
           uv run --no-sync pytest -m palace tests/models --basetemp=build/palace-tests --durations=0
+      - name: Upload native dataset coverage
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: build/palace-dataset-coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
