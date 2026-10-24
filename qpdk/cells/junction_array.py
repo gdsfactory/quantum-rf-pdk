@@ -2,20 +2,27 @@
 
 from __future__ import annotations
 
+import itertools
 import math
 from typing import Literal
 
 import gdsfactory as gf
+import scipy.constants
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 from klayout import db as kdb
 
-from qpdk.models.constants import Φ_0
 from qpdk.tech import LAYER
 
 __all__ = ["josephson_junction_array", "josephson_junction_array_compact"]
 
 LayoutStyle = Literal["dolan", "manhattan"]
+
+_DBU = gf.kcl.dbu
+# Not qpdk.models.constants: importing qpdk.models pulls in jax, which the
+# cells must not need.
+_Φ_0 = scipy.constants.physical_constants["mag. flux quantum"][0]
+"""Database unit in µm."""
 
 
 def _rectangle(x0: float, x1: float, y0: float, y1: float) -> kdb.DPolygon:
@@ -23,9 +30,7 @@ def _rectangle(x0: float, x1: float, y0: float, y1: float) -> kdb.DPolygon:
     return kdb.DPolygon(kdb.DBox(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)))
 
 
-def _dolan_island(
-    island_length: float, island_width: float, *, first: bool, last: bool
-) -> list[kdb.DPolygon]:
+def _dolan_island(island_length: float, island_width: float) -> list[kdb.DPolygon]:
     """Island of a Dolan chain, centred at the origin, chain along +x.
 
     End islands are drawn as interior islands. The leads are added separately.
@@ -33,7 +38,6 @@ def _dolan_island(
     Returns:
         The island polygons.
     """
-    del first, last
     return [
         _rectangle(
             -island_length / 2, island_length / 2, -island_width / 2, island_width / 2
@@ -96,6 +100,54 @@ def _manhattan_island(
     return [rotation * polygon for polygon in polygons]
 
 
+def _merged(polygons: list[kdb.DPolygon]) -> kdb.Region:
+    """Merge polygons in µm into a database-unit region.
+
+    Returns:
+        The merged region.
+    """
+    region = kdb.Region()
+    for polygon in polygons:
+        region.insert(polygon.to_itype(_DBU))
+    return region.merged()
+
+
+def _check_island_contacts(islands: list[kdb.Region], *, junction_area: float) -> None:
+    """Check that islands only touch their chain neighbours, as intended.
+
+    Neighbouring islands must overlap by exactly ``junction_area`` (µm², 0 for
+    a Dolan chain, where they must not touch at all), and islands further apart
+    in the chain must not overlap. A row of the chain can only touch the rows
+    next to it, so the non-neighbour check compares the sum of the island areas,
+    less the neighbour overlaps, with the area of their union.
+
+    Raises:
+        ValueError: If islands short each other or a junction is malformed.
+    """
+    expected = junction_area / _DBU**2
+    tolerance = 0.05 * expected + 4
+    overlap_total = 0.0
+    for index, (left, right) in enumerate(itertools.pairwise(islands)):
+        overlap = (left & right).area()
+        touching = not left.merged().interacting(right).is_empty()
+        if (expected == 0 and touching) or abs(overlap - expected) > tolerance:
+            raise ValueError(
+                f"Junction {index} is malformed: islands {index} and {index + 1} "
+                f"overlap by {overlap * _DBU**2:g} µm² instead of {junction_area:g} µm²"
+            )
+        overlap_total += overlap
+    union = kdb.Region()
+    for island in islands:
+        union += island
+    union_area = union.merged().area()
+    disjoint_area = sum(island.area() for island in islands) - overlap_total
+    if union_area < disjoint_area - tolerance:
+        raise ValueError(
+            "Islands that are not neighbours in the chain overlap: increase "
+            "pitch or fold_spacing, or reduce island_length or island_width"
+        )
+
+
 def _junctions_per_row(n_junctions: int, n_rows: int) -> list[int]:
     """Split ``n_junctions`` over ``n_rows`` rows, earlier rows taking the remainder."""
     base, extra = divmod(n_junctions, n_rows)
@@ -124,8 +176,8 @@ def josephson_junction_array(
     The array is used as a superinductance, for example in the fluxonium
     :cite:`manucharyan_fluxonium_2009,maslukMicrowaveCharacterizationJosephson2012`,
     or as a junction-chain transmission line. Island :math:`i` (:math:`i = 0, \dots, N`)
-    sits at :math:`i p` along the chain and junction :math:`k` sits between islands
-    :math:`k` and :math:`k + 1`.
+    sits at :math:`i p` along the unfolded chain and junction :math:`k` sits between
+    islands :math:`k` and :math:`k + 1`.
 
     .. svgbob::
 
@@ -149,14 +201,18 @@ def josephson_junction_array(
     With ``n_folds > 0`` the chain zig-zags in ``n_folds + 1`` rows spaced by
     ``fold_spacing``. The junctions are split as evenly as possible over the rows,
     and the island at each row end is joined to the first island of the next row
-    by a vertical connector.
+    by a vertical connector (``island_length`` wide for Dolan, :math:`\sqrt{A}` for
+    Manhattan). The drawn islands are checked for unintended contact: Dolan
+    islands must not touch, and Manhattan islands may overlap only their chain
+    neighbours, in exactly the junction area.
 
     The ``info`` dictionary reports the number of junctions, the total junction
     area :math:`N A`, the area and perimeter of one interior island (as drawn), the
-    chain length :math:`N p`, and the estimated inductances
+    chain length :math:`N p`, the critical current :math:`I_\text{c} = J_\text{c} A`
+    in nA, and the estimated inductances
     :math:`L_\text{J} = \Phi_0 / (2 \pi J_\text{c} A)` and
-    :math:`L_\text{array} = N L_\text{J}`, which neglect the kinetic and geometric
-    inductance of the islands.
+    :math:`L_\text{array} = N L_\text{J}` in nH, which neglect the kinetic and
+    geometric inductance of the islands.
 
     Defaults reproduce the array of :cite:`manucharyan_fluxonium_2009`:
     :math:`N = 43` junctions of :math:`0.25 \times 2\,\mu\text{m}^2` in a
@@ -231,7 +287,7 @@ def josephson_junction_array(
 
     def island(index: int, *, first: bool, last: bool) -> list[kdb.DPolygon]:
         if layout_style == "dolan":
-            return _dolan_island(island_length, island_width, first=first, last=last)
+            return _dolan_island(island_length, island_width)
         return _manhattan_island(
             index, pitch, island_length, island_width, tip_width, first=first, last=last
         )
@@ -243,8 +299,12 @@ def josephson_junction_array(
         for polygon in island(0, first=False, last=False)
         for point in polygon.each_point_hull()
     )
-    row_height = max(
-        polygon.bbox().height() for polygon in island(0, first=False, last=False)
+    row_height = (
+        max(
+            _merged(island(index, first=False, last=False)).bbox().height()
+            for index in (0, 1)
+        )
+        * _DBU
     )
     if n_folds and fold_spacing <= max(row_height, island_width):
         raise ValueError(
@@ -252,12 +312,13 @@ def josephson_junction_array(
             f"{max(row_height, island_width):g} µm"
         )
 
-    polygons: list[kdb.DPolygon] = []
     patches: list[kdb.DPolygon] = []
     island_index = 0
     x_start = 0.0
     port_specs: list[tuple[str, float, float, float]] = []
-    connector_width = island_length if layout_style == "dolan" else island_width
+    connector_width = island_length if layout_style == "dolan" else tip_width
+    # Polygons of each island, for the contact check below.
+    island_polygons: list[list[kdb.DPolygon]] = [[] for _ in range(n_junctions + 1)]
 
     for row, n_row in enumerate(_junctions_per_row(n_junctions, n_rows)):
         direction = 1 if row % 2 == 0 else -1
@@ -275,7 +336,7 @@ def josephson_junction_array(
             first = local == 0
             last = local == n_row
             shift = kdb.DCplxTrans(local * pitch, 0.0)
-            polygons.extend(
+            island_polygons[global_index].extend(
                 mirror * shift * polygon
                 for polygon in island(global_index, first=first, last=last)
             )
@@ -286,7 +347,7 @@ def josephson_junction_array(
                 lead = _rectangle(
                     x_island, x_outer, -island_width / 2, island_width / 2
                 )
-                polygons.append(mirror * lead)
+                island_polygons[global_index].append(mirror * lead)
                 patch = _rectangle(
                     x_outer - outward * lead_length,
                     x_outer + outward * lead_length / 4,
@@ -299,7 +360,7 @@ def josephson_junction_array(
                 port_specs.append(("o1" if is_first else "o2", x_port, y, orientation))
         x_end = x_start + direction * n_row * pitch
         if row < n_rows - 1:
-            polygons.append(
+            island_polygons[island_index + n_row].append(
                 _rectangle(
                     x_end - connector_width / 2,
                     x_end + connector_width / 2,
@@ -310,18 +371,21 @@ def josephson_junction_array(
         island_index += n_row
         x_start = x_end
 
+    islands = [_merged(polygons) for polygons in island_polygons]
+    _check_island_contacts(
+        islands, junction_area=junction_area if layout_style == "manhattan" else 0.0
+    )
     c = Component()
-    dbu = c.kcl.dbu
     region = kdb.Region()
-    for polygon in polygons:
-        region.insert(polygon.to_itype(dbu))
+    for island_region in islands:
+        region += island_region
     region.merge()
     c.add_polygon(region, layer=layer_junction)
 
     if layer_patch is not None:
         patch_region = kdb.Region()
         for polygon in patches:
-            patch_region.insert(polygon.to_itype(dbu))
+            patch_region.insert(polygon.to_itype(_DBU))
         patch_region.merge()
         c.add_polygon(patch_region, layer=layer_patch)
 
@@ -342,15 +406,12 @@ def josephson_junction_array(
         bbox = c.dbbox().enlarged(ground_plane_distance, ground_plane_distance)
         c.add_polygon(kdb.DPolygon(bbox), layer=layer_etch)
 
-    interior_region = kdb.Region()
-    for polygon in interior:
-        interior_region.insert(polygon.to_itype(dbu))
-    interior_region.merge()
-    island_area = interior_region.area() * dbu**2
-    island_perimeter = interior_region.perimeter() * dbu
+    interior_region = _merged(interior)
+    island_area = interior_region.area() * _DBU**2
+    island_perimeter = interior_region.perimeter() * _DBU
 
     critical_current = critical_current_density * 1e-6 * junction_area  # A
-    junction_inductance = Φ_0 / (2 * math.pi * critical_current)
+    junction_inductance = _Φ_0 / (2 * math.pi * critical_current)
 
     c.info["n_junctions"] = n_junctions
     c.info["layout_style"] = layout_style
@@ -359,9 +420,9 @@ def josephson_junction_array(
     c.info["island_area"] = round(island_area, 6)
     c.info["island_perimeter"] = round(island_perimeter, 6)
     c.info["chain_length"] = round(n_junctions * pitch, 6)
-    c.info["critical_current"] = critical_current
-    c.info["junction_inductance"] = junction_inductance
-    c.info["array_inductance"] = n_junctions * junction_inductance
+    c.info["critical_current_nA"] = round(critical_current * 1e9, 6)
+    c.info["junction_inductance_nH"] = round(junction_inductance * 1e9, 6)
+    c.info["array_inductance_nH"] = round(n_junctions * junction_inductance * 1e9, 6)
     return c
 
 

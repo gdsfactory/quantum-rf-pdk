@@ -1,11 +1,11 @@
 info:
-  array_inductance: 0
+  array_inductance_nH: 314.479
   chain_length: 19.995
-  critical_current: 0
+  critical_current_nA: 45
   island_area: 0.6
   island_perimeter: 4.6
   junction_area: 0.5
-  junction_inductance: 0
+  junction_inductance_nH: 7.313
   layout_style: dolan
   n_junctions: 43
   total_junction_area: 21.5

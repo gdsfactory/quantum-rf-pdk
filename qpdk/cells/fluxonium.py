@@ -80,7 +80,9 @@ def fluxonium(
             :cite:`manucharyan_fluxonium_2009`.
         inductor_array_spec: Component specification for the junction array, used
             when ``inductor="array"``. Its port ``o1`` must face west and ``o2``
-            east, i.e. an even number of folds.
+            east, i.e. an even number of folds. The metal wires overlap half of
+            the array's ``lead_length`` (0.5 µm if it has none), so they never
+            reach the end islands.
 
     Returns:
         The fluxonium component.
@@ -358,6 +360,7 @@ def _add_array_inductor(
         -(array_ref.ports["o1"].dcenter[0] + array_ref.ports["o2"].dcenter[0]) / 2,
         0,
     ))
+    lead_overlap = 0.5 * float(array.settings.model_dump().get("lead_length", 1.0))
     ind_o1 = array_ref.ports["o1"].dcenter
     ind_o2 = array_ref.ports["o2"].dcenter
 
@@ -372,8 +375,9 @@ def _add_array_inductor(
             y0=min(junction_center_y, port_center[1]) - connection_wire_width / 2,
             y1=bus_top_y,
         )
-        # Stub from the bus bar onto the array lead, 1 um overlap for contact
-        x_inner = port_center[0] - sign * 1.0
+        # Stub from the bus bar onto half of the array lead, so it cannot reach
+        # past the end island and short the first or last junction.
+        x_inner = port_center[0] - sign * lead_overlap
         add_rect(
             c,
             layer=layer_metal,
@@ -386,7 +390,7 @@ def _add_array_inductor(
     return {
         "inductor": "array",
         "n_junctions": array.info["n_junctions"],
-        "array_inductance": array.info["array_inductance"],
+        "array_inductance_nH": array.info["array_inductance_nH"],
     }
 
 
