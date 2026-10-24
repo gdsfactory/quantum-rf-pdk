@@ -158,6 +158,23 @@ def _transmission_peaks(
     return np.asarray(f)[peaks]
 
 
+class TestSSHResonatorChainGradient:
+    """Reverse-mode gradients through the SAX model."""
+
+    @staticmethod
+    def test_grad_wrt_coupling() -> None:
+        """jax.grad of the transmission w.r.t. C_v is finite and nonzero."""
+        f = jnp.linspace(6e9, 7e9, 51)
+
+        def power(c_v: float) -> jax.Array:
+            s21 = ssh_resonator_chain(f=f, intra_cell_capacitance=c_v)["o2", "o1"]
+            return jnp.sum(jnp.abs(s21) ** 2)
+
+        grad = jax.grad(power)(C_LARGE)
+        assert jnp.isfinite(grad)
+        assert grad != 0
+
+
 class TestSSHChainBandEdges:
     """Compare SAX transmission peaks with analytical band edges."""
 
@@ -190,7 +207,12 @@ class TestSSHChainBandEdges:
 
 
 class TestSSHChainEdgeModes:
-    """Edge modes in the SAX model appear only in the topological phase."""
+    """Edge modes in the SAX model appear only in the topological phase.
+
+    The ports are compensated (``port_capacitance`` = :math:`C_w`), so the end
+    sites are not detuned. A detuned end site can pull a trivial-phase mode
+    into the gap or push the edge mode out of it.
+    """
 
     @staticmethod
     def _gap_reflection_winding(n_cells: int, c_v: float, c_w: float) -> float:
@@ -240,6 +262,7 @@ class TestSSHResonatorChainValidation:
             {"n_cells": 2, "tap_sites": (4,)},
             {"n_cells": 2, "tap_sites": (-1,)},
             {"n_cells": 2, "tap_sites": (1, 1)},
+            {"n_cells": 2, "tap_sites": (1.5,)},
         ],
     )
     def test_invalid(kwargs: dict) -> None:

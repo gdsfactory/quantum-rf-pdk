@@ -41,6 +41,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import sax
 from jax.typing import ArrayLike
 
@@ -319,8 +320,8 @@ def ssh_resonator_chain(
     are numbered in the order given in ``tap_sites``.
 
     The defaults are the test-structure values of
-    :cite:`kimQuantumElectrodynamicsTopological2021` (App. C, trivial phase,
-    8 unit cells). Swap ``intra_cell_capacitance`` and
+    :cite:`kimQuantumElectrodynamicsTopological2021` (App. C, trivial phase),
+    except for ``n_cells``, which matches the layout cell (the paper uses 8). Swap ``intra_cell_capacitance`` and
     ``inter_cell_capacitance`` for the topological phase.
 
     An end site lacks one coupling capacitor of the bulk sites. Setting
@@ -353,12 +354,15 @@ def ssh_resonator_chain(
         the taps.
 
     Raises:
-        ValueError: If ``n_cells`` < 1 or ``tap_sites`` holds duplicate or
-            out-of-range site indices.
+        ValueError: If ``n_cells`` < 1 or ``tap_sites`` holds non-integer,
+            duplicate or out-of-range site indices.
     """
-    tap_sites = tuple(
-        int(site) for site in jnp.atleast_1d(jnp.asarray(tap_sites, dtype=int))
-    )
+    # Static topology, so plain numpy: jnp would trace it under an outer jit.
+    sites = np.atleast_1d(np.asarray(tap_sites)).tolist()
+    if not all(float(site).is_integer() for site in sites):
+        msg = f"tap_sites must be integer site indices, got {tap_sites}."
+        raise ValueError(msg)
+    tap_sites = tuple(int(site) for site in sites)
     if n_cells < 1:
         msg = f"n_cells must be at least 1, got {n_cells}."
         raise ValueError(msg)
@@ -382,5 +386,7 @@ def ssh_resonator_chain(
         "port_capacitor": partial(capacitor, capacitance=port_capacitance),
         "tap_capacitor": partial(capacitor, capacitance=tap_capacitance),
     }
-    circuit, _ = sax.circuit(_ssh_netlist(n_cells, tap_sites), models, backend="klu")
+    circuit, _ = sax.circuit(
+        _ssh_netlist(n_cells, tap_sites), models, backend="filipsson_gunnar"
+    )
     return circuit(f=jnp.asarray(f))
