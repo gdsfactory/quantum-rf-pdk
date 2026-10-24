@@ -1,0 +1,384 @@
+instances:
+  bend_circular:
+    component: bend_circular
+    info:
+      dy: 0
+      length: 314.095
+      radius: 100
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
+      route_info_min_bend_radius: 100
+      route_info_n_bend_90: 2
+      route_info_type: coplanar_waveguide
+      route_info_weight: 314.095
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      angle: 180
+      angular_step: 4
+      cross_section: coplanar_waveguide
+      npoints: null
+      radius: 100
+  bend_circular2:
+    component: bend_circular
+    info:
+      dy: 0
+      length: 314.095
+      radius: 100
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
+      route_info_min_bend_radius: 100
+      route_info_n_bend_90: 2
+      route_info_type: coplanar_waveguide
+      route_info_weight: 314.095
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      angle: 180
+      angular_step: 4
+      cross_section: coplanar_waveguide
+      npoints: null
+      radius: 100
+  bend_circular3:
+    component: bend_circular
+    info:
+      dy: 0
+      length: 314.095
+      radius: 100
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
+      route_info_min_bend_radius: 100
+      route_info_n_bend_90: 2
+      route_info_type: coplanar_waveguide
+      route_info_weight: 314.095
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      angle: 180
+      angular_step: 4
+      cross_section: coplanar_waveguide
+      npoints: null
+      radius: 100
+  bend_circular4:
+    component: bend_circular
+    info:
+      dy: 0
+      length: 314.095
+      radius: 100
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
+      route_info_min_bend_radius: 100
+      route_info_n_bend_90: 2
+      route_info_type: coplanar_waveguide
+      route_info_weight: 314.095
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      angle: 180
+      angular_step: 4
+      cross_section: coplanar_waveguide
+      npoints: null
+      radius: 100
+  bend_circular5:
+    component: bend_circular
+    info:
+      dy: 0
+      length: 314.095
+      radius: 100
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
+      route_info_min_bend_radius: 100
+      route_info_n_bend_90: 2
+      route_info_type: coplanar_waveguide
+      route_info_weight: 314.095
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      angle: 180
+      angular_step: 4
+      cross_section: coplanar_waveguide
+      npoints: null
+      radius: 100
+  bend_circular6:
+    component: bend_circular
+    info:
+      dy: 0
+      length: 314.095
+      radius: 100
+      route_info_coplanar_waveguide_length: 314.095
+      route_info_length: 314.095
+      route_info_min_bend_radius: 100
+      route_info_n_bend_90: 2
+      route_info_type: coplanar_waveguide
+      route_info_weight: 314.095
+      width: 10
+    settings:
+      allow_min_radius_violation: true
+      angle: 180
+      angular_step: 4
+      cross_section: coplanar_waveguide
+      npoints: null
+      radius: 100
+  cpw_bulge:
+    component: cpw_bulge
+    info:
+      bulge_flux_step: 0
+      bulge_length: 50
+      bulge_trapping_threshold: 0
+      bulge_width: 25
+      length: 90
+      line_trapping_threshold: 0
+      taper_length: 20
+    settings:
+      bulge_length: 50
+      bulge_width: 25
+      cross_section: coplanar_waveguide
+      taper_length: 20
+  rectangle:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_ETCH
+      port_orientations:
+      - 0
+      - 180
+      port_type: optical
+      size:
+      - 6
+      - 22
+  rectangle2:
+    component: rectangle
+    info: {}
+    settings:
+      centered: true
+      layer: M1_ETCH
+      port_orientations:
+      - 0
+      - 180
+      port_type: optical
+      size:
+      - 6
+      - 22
+  straight:
+    component: straight
+    info:
+      length: 391.816
+      route_info_coplanar_waveguide_length: 391.816
+      route_info_length: 391.816
+      route_info_type: coplanar_waveguide
+      route_info_weight: 391.816
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 391.816
+      npoints: 2
+  straight2:
+    component: straight
+    info:
+      length: 391.816
+      route_info_coplanar_waveguide_length: 391.816
+      route_info_length: 391.816
+      route_info_type: coplanar_waveguide
+      route_info_weight: 391.816
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 391.816
+      npoints: 2
+  straight3:
+    component: straight
+    info:
+      length: 873.633
+      route_info_coplanar_waveguide_length: 873.633
+      route_info_length: 873.633
+      route_info_type: coplanar_waveguide
+      route_info_weight: 873.633
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 873.633
+      npoints: 2
+  straight4:
+    component: straight
+    info:
+      length: 873.633
+      route_info_coplanar_waveguide_length: 873.633
+      route_info_length: 873.633
+      route_info_type: coplanar_waveguide
+      route_info_weight: 873.633
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 873.633
+      npoints: 2
+  straight5:
+    component: straight
+    info:
+      length: 873.633
+      route_info_coplanar_waveguide_length: 873.633
+      route_info_length: 873.633
+      route_info_type: coplanar_waveguide
+      route_info_weight: 873.633
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 873.633
+      npoints: 2
+  straight6:
+    component: straight
+    info:
+      length: 873.633
+      route_info_coplanar_waveguide_length: 873.633
+      route_info_length: 873.633
+      route_info_type: coplanar_waveguide
+      route_info_weight: 873.633
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 873.633
+      npoints: 2
+  straight7:
+    component: straight
+    info:
+      length: 873.633
+      route_info_coplanar_waveguide_length: 873.633
+      route_info_length: 873.633
+      route_info_type: coplanar_waveguide
+      route_info_weight: 873.633
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 873.633
+      npoints: 2
+  straight8:
+    component: straight
+    info:
+      length: 873.633
+      route_info_coplanar_waveguide_length: 873.633
+      route_info_length: 873.633
+      route_info_type: coplanar_waveguide
+      route_info_weight: 873.633
+      width: 10
+    settings:
+      cross_section: coplanar_waveguide
+      length: 873.633
+      npoints: 2
+nets:
+- p1: bend_circular2,o1
+  p2: straight8,o2
+- p1: bend_circular2,o2
+  p2: straight5,o1
+- p1: bend_circular3,o1
+  p2: straight,o2
+- p1: bend_circular3,o2
+  p2: straight6,o1
+- p1: bend_circular4,o1
+  p2: straight3,o2
+- p1: bend_circular4,o2
+  p2: straight2,o1
+- p1: bend_circular5,o1
+  p2: straight4,o2
+- p1: bend_circular5,o2
+  p2: straight7,o1
+- p1: bend_circular6,o1
+  p2: straight6,o2
+- p1: bend_circular6,o2
+  p2: straight8,o1
+- p1: bend_circular,o1
+  p2: straight7,o2
+- p1: bend_circular,o2
+  p2: straight3,o1
+- p1: cpw_bulge,o1
+  p2: straight2,o2
+- p1: cpw_bulge,o2
+  p2: straight,o1
+placements:
+  bend_circular:
+    mirror: false
+    rotation: 180
+    x: 0
+    y: -200
+  bend_circular2:
+    mirror: false
+    rotation: 180
+    x: 0.001
+    y: -1000
+  bend_circular3:
+    mirror: false
+    rotation: 180
+    x: 0.001
+    y: -600
+  bend_circular4:
+    mirror: true
+    rotation: 0
+    x: 873.633
+    y: -400
+  bend_circular5:
+    mirror: true
+    rotation: 0
+    x: 873.633
+    y: 0
+  bend_circular6:
+    mirror: true
+    rotation: 0
+    x: 873.634
+    y: -800
+  cpw_bulge:
+    mirror: false
+    rotation: 180
+    x: 481.817
+    y: -600
+  rectangle:
+    mirror: false
+    rotation: 0
+    x: -3
+    y: 0
+  rectangle2:
+    mirror: false
+    rotation: 0
+    x: 876.634
+    y: -1200
+  straight:
+    mirror: false
+    rotation: 180
+    x: 391.817
+    y: -600
+  straight2:
+    mirror: false
+    rotation: 180
+    x: 873.633
+    y: -600
+  straight3:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: -400
+  straight4:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  straight5:
+    mirror: false
+    rotation: 0
+    x: 0.001
+    y: -1200
+  straight6:
+    mirror: false
+    rotation: 0
+    x: 0.001
+    y: -800
+  straight7:
+    mirror: false
+    rotation: 180
+    x: 873.633
+    y: -200
+  straight8:
+    mirror: false
+    rotation: 180
+    x: 873.634
+    y: -1000
+ports:
+  o1: rectangle,o1
+  o2: rectangle2,o2
