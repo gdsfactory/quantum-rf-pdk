@@ -2,7 +2,7 @@
 
 import itertools
 from functools import partial
-from typing import final, override
+from typing import Any, final, override
 
 import hypothesis.strategies as st
 import jax
@@ -13,9 +13,10 @@ from hypothesis import given, settings
 from numpy.testing import assert_allclose
 from scipy.optimize import brentq
 
+from qpdk import PDK
 from qpdk.models.constants import Φ_0
 from qpdk.models.generic import series_impedance, shunt_admittance
-from qpdk.models.junction import josephson_junction_array
+from qpdk.models.junction import _abcd_power, josephson_junction_array
 
 from .base import TwoPortModelTestSuite
 
@@ -176,9 +177,63 @@ def test_large_array_is_jittable_and_finite() -> None:
     assert all(jnp.all(jnp.isfinite(value)) for value in result.values())
 
 
-def test_invalid_n_junctions() -> None:
+@pytest.mark.parametrize("n_junctions", [0, -3, 2**24])
+def test_invalid_n_junctions(n_junctions: int) -> None:
     with pytest.raises(ValueError, match="n_junctions"):
-        josephson_junction_array(n_junctions=0)
+        josephson_junction_array(n_junctions=n_junctions)
+
+
+def test_traced_n_junctions() -> None:
+    """``n_junctions`` can be traced: one compilation serves every N."""
+    f = jnp.array([5e9, 15e9])
+    model = jax.jit(lambda n: josephson_junction_array(f=f, n_junctions=n))
+    for n in (1, 7, 43):
+        expected = josephson_junction_array(f=f, n_junctions=n)
+        result = model(jnp.asarray(n))
+        assert_allclose(result["o2", "o1"], expected["o2", "o1"], rtol=1e-12)
+    assert jnp.all(jnp.isnan(model(jnp.asarray(0))["o2", "o1"]))
+
+
+@pytest.mark.parametrize(
+    "component", ["josephson_junction_array", "josephson_junction_array_compact"]
+)
+def test_usable_in_sax_circuit(component: str) -> None:
+    """The registered model runs from a SAX netlist, which passes settings as arrays."""
+    f = jnp.array([5e9, 15e9])
+    cases: list[dict[str, Any]] = [{}, {"n_junctions": 10, "ground_capacitance": 1e-15}]
+    for settings_ in cases:
+        circuit, _ = sax.circuit(
+            netlist={
+                "instances": {"a": {"component": component, "settings": settings_}},
+                "connections": {},
+                "ports": {"o1": "a,o1", "o2": "a,o2"},
+            },
+            models=PDK.models,
+        )
+        s = circuit(f=f)
+        expected = josephson_junction_array(f=f, **settings_)
+        assert_allclose(s["o2", "o1"], expected["o2", "o1"], rtol=1e-9)
+
+
+def test_reciprocity_of_long_cascade() -> None:
+    """A 1000-junction cascade keeps det(T) = 1, the basis for setting S12 = S21.
+
+    Checked in the passband below the plasma frequency, where the lossless chain's
+    ABCD entries stay bounded.
+    """
+    f = jnp.linspace(1e9, 15e9, 29)
+    z_j = _rcsj_impedance(f, IC, C_J, jnp.inf)
+    y_g = 2j * jnp.pi * f * 0.04e-15
+    t_cell = jnp.stack(
+        [
+            jnp.stack([1 + z_j * y_g, z_j], axis=-1),
+            jnp.stack([y_g, jnp.ones_like(z_j)], axis=-1),
+        ],
+        axis=-2,
+    )
+    t = _abcd_power(t_cell, jnp.asarray(999))
+    det = t[..., 0, 0] * t[..., 1, 1] - t[..., 0, 1] * t[..., 1, 0]
+    assert_allclose(det, 1, atol=1e-6)
 
 
 @given(
@@ -187,15 +242,12 @@ def test_invalid_n_junctions() -> None:
     resistance=st.floats(min_value=1e3, max_value=1e9),
 )
 @settings(deadline=None, max_examples=20)
-def test_passive_and_reciprocal_hypothesis(
-    n_junctions: int, c_g: float, resistance: float
-) -> None:
-    """The chain is reciprocal and passive for any lossy or lossless parameters."""
+def test_passive_hypothesis(n_junctions: int, c_g: float, resistance: float) -> None:
+    """The chain is passive for any lossy or lossless parameters."""
     f = jnp.linspace(1e9, 30e9, 15)
     s = josephson_junction_array(
         f=f, n_junctions=n_junctions, ground_capacitance=c_g, resistance=resistance
     )
-    assert_allclose(s["o1", "o2"], s["o2", "o1"])
     for port in ("o1", "o2"):
         power = jnp.abs(s[port, "o1"]) ** 2 + jnp.abs(s[port, "o2"]) ** 2
         assert jnp.all(power <= 1 + 1e-9)

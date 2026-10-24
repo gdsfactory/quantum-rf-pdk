@@ -10,6 +10,7 @@ from kfactory import kdb
 
 from qpdk.cells.fluxonium import fluxonium, fluxonium_with_bbox
 from qpdk.cells.junction_array import (
+    _check_island_contacts,
     josephson_junction_array,
     josephson_junction_array_compact,
 )
@@ -29,6 +30,10 @@ def _junction_region(component) -> kdb.Region:
     return kdb.Region(component.begin_shapes_rec(component.kcl.layer(*LAYER.JJ_AREA)))
 
 
+def _box_region(x0: float, x1: float, y0: float, y1: float) -> kdb.Region:
+    return kdb.Region(kdb.DBox(x0, y0, x1, y1).to_itype(0.001))
+
+
 def _port_on_polygon_edge(component, port_name: str) -> bool:
     region = _junction_region(component).merged()
     port = component.ports[port_name]
@@ -44,7 +49,7 @@ class TestJosephsonJunctionArrayCell:
         """The default chain gives E_L ≈ 0.52 GHz as in Manucharyan et al. (2009)."""
         c = josephson_junction_array()
         e_l = (scipy.constants.hbar / (2 * scipy.constants.e)) ** 2 / (
-            c.info["array_inductance"] * scipy.constants.h
+            c.info["array_inductance_nH"] * 1e-9 * scipy.constants.h
         )
         assert e_l / 1e9 == pytest.approx(0.52, rel=0.01)
         assert c.info["chain_length"] == pytest.approx(20, rel=0.01)
@@ -97,12 +102,15 @@ class TestJosephsonJunctionArrayCell:
 
     @staticmethod
     def test_ground_plane_distance() -> None:
+        """The etch clears the drawn chain by ``ground_plane_distance`` on all sides."""
         c = josephson_junction_array(ground_plane_distance=5.0)
         etch = kdb.Region(c.begin_shapes_rec(c.kcl.layer(*LAYER.M1_ETCH)))
         assert etch.count() == 1
-        box = etch.bbox().to_dtype(c.kcl.dbu)
-        assert box.width() == pytest.approx(c.dxsize)
-        assert c.dxsize == pytest.approx(josephson_junction_array().dxsize + 10)
+        drawn = _junction_region(c) + kdb.Region(
+            c.begin_shapes_rec(c.kcl.layer(*LAYER.JJ_PATCH))
+        )
+        expected = drawn.bbox().to_dtype(c.kcl.dbu).enlarged(5.0, 5.0)
+        assert etch.bbox().to_dtype(c.kcl.dbu) == expected
 
     @staticmethod
     def test_manhattan_island_info() -> None:
@@ -141,6 +149,39 @@ class TestJosephsonJunctionArrayCell:
             josephson_junction_array(**kwargs)
 
 
+class TestIslandContactCheck:
+    """The geometry check behind every drawn chain."""
+
+    @staticmethod
+    def test_accepts_intended_overlaps() -> None:
+        islands = [_box_region(0, 1, 0, 1), _box_region(0.8, 2, 0, 1)]
+        _check_island_contacts(islands, junction_area=0.2)
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        ("islands", "area"),
+        [
+            ([_box_region(0, 1, 0, 1), _box_region(0.5, 2, 0, 1)], 0.2),
+            ([_box_region(0, 1, 0, 1), _box_region(1.5, 2, 0, 1)], 0.2),
+            ([_box_region(0, 1, 0, 1), _box_region(1, 2, 0, 1)], 0.0),
+        ],
+        ids=["too-large", "open", "dolan-touching"],
+    )
+    def test_malformed_junction(islands: list[kdb.Region], area: float) -> None:
+        with pytest.raises(ValueError, match="Junction 0 is malformed"):
+            _check_island_contacts(islands, junction_area=area)
+
+    @staticmethod
+    def test_non_neighbours_short() -> None:
+        islands = [
+            _box_region(0, 1, 0, 1),
+            _box_region(0.8, 2, 0, 1),
+            _box_region(1.8, 3, 0, 1) + _box_region(0, 0.5, 0.5, 1),
+        ]
+        with pytest.raises(ValueError, match="not neighbours"):
+            _check_island_contacts(islands, junction_area=0.2)
+
+
 class TestFluxoniumArrayInductor:
     """The ``inductor="array"`` option of :func:`fluxonium`."""
 
@@ -151,8 +192,8 @@ class TestFluxoniumArrayInductor:
         assert "inductor_n_turns" in meander.info
         assert array.info["inductor"] == "array"
         assert array.info["n_junctions"] == 43
-        assert array.info["array_inductance"] == pytest.approx(
-            josephson_junction_array().info["array_inductance"]
+        assert array.info["array_inductance_nH"] == pytest.approx(
+            josephson_junction_array().info["array_inductance_nH"]
         )
         assert not _junction_region(array).is_empty()
         assert {p.name for p in array.ports} == {p.name for p in meander.ports}
@@ -162,6 +203,21 @@ class TestFluxoniumArrayInductor:
         meander = fluxonium_with_bbox()
         array = fluxonium_with_bbox(inductor="array")
         assert _junction_region(array).count() > _junction_region(meander).count()
+
+    @staticmethod
+    @pytest.mark.parametrize("lead_length", [0.2, 0.5, 1.0])
+    def test_stubs_do_not_short_the_array(lead_length: float) -> None:
+        """The M1 stubs touch only the two end islands, whatever ``lead_length``."""
+        c = fluxonium(
+            inductor="array",
+            inductor_array_spec=partial(
+                josephson_junction_array, lead_length=lead_length
+            ),
+        )
+        m1 = kdb.Region(c.begin_shapes_rec(c.kcl.layer(*LAYER.M1_DRAW)))
+        touched = _junction_region(c).merged().interacting(m1)
+        # The two chain ends plus the single junction of the fluxonium loop.
+        assert touched.count() == 3
 
     @staticmethod
     def test_unknown_inductor_raises() -> None:
