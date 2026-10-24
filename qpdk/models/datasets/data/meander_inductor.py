@@ -20,6 +20,8 @@ film property. Geometric inductance and distributed capacitance come from
 the field solve. Dielectric and conductor loss are omitted, while the outer
 boundary absorbs radiation. The impedance convention follows
 https://awslabs.github.io/palace/stable/guide/boundaries/#Impedance-boundary.
+The terminal response includes the ground return's sheet inductance. A
+uniform-current estimate for the strip alone omits that contribution.
 
 Use ``s_parameters_model(path, n_turns="5")`` to interpolate the complex
 matrix in frequency and geometry. Turn count is a discrete selection.

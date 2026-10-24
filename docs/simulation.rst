@@ -266,6 +266,13 @@ full-wave sweep from 0.5 to 20 GHz. It includes a fixed kinetic sheet inductance
 finite ground frame. Its mesh, domain and interpolation checks must pass before these
 new results can be curated.
 
+The winding and ground frame share the specified sheet inductance, so the terminal
+response includes both contributions. For a straight strip with nearly uniform current,
+sheet inductance times length divided by width estimates only the strip's contribution.
+To check the material units against that estimate, use a PEC ground return in the
+control simulation. Keep the ground frame's sheet inductance enabled when generating the
+device dataset.
+
 Results can also live outside Git, in a `Delta Lake <https://delta.io>`_ table on a
 cloud bucket (``gs://``, ``s3://``, ``az://``) or a local path, optionally pinned to a
 table version. Credentials are passed when opening the dataset and never stored in it.
