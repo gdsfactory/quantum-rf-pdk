@@ -133,6 +133,17 @@ were 0.652%, 0.736% and 0.476%, within the respective 1%, 5% and 1% tolerances. 
 checks apply to the M1 island row. Full-grid coverage and interpolation are validated
 separately.
 
+The bundled ``gatemon_palace`` dataset contains all 144 geometries and 3024 records,
+including the complete three-terminal Maxwell matrices and solver diagnostics. The
+:download:`production verification report
+<../qpdk/models/datasets/data/gatemon_palace.verification.json>` includes three
+independent holdout solves. Their largest interpolation errors in :math:`C_\Sigma`,
+:math:`C_\text{g}` and :math:`C_\text{c}` are 1.65%, 2.61% and 1.39%, below the
+respective 3%, 10% and 5% limits. All matrices produce finite, reciprocal, lossless SAX
+responses over 1 to 10 GHz. At the default geometry, the M1 values are 51.93 fF, 1.582
+fF and 5.731 fF. These values describe the finite extraction coupon and do not include
+the hybrid process's local capacitances.
+
 The ``gatemon_test_chip`` sample uses two independent transmission resonators with
 series coupling capacitors at both ends, as drawn in Fig. 1a of
 :cite:`riechertCarbonNanotubeGatemon2025`. Both channels target device A's reported
