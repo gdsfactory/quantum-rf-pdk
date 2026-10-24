@@ -1,8 +1,10 @@
 info:
   cross_section_name: meander_inductor_cross_section
   n_squares: 508
+  n_squares_convention: 'Hagedorn-Hall: a w x w sharp 90 deg corner counts 0.559 squares'
+  n_squares_drawn: 504.472
   total_wire_length: 1016
-name: meander_inductor_NT5_TL200_CSmeander_inductor_cross_sec_b066afaa
+name: meander_inductor_NT5_TL200_CSmeander_inductor_cross_sec_4dd04d40
 ports:
   o1:
     center:
@@ -24,6 +26,7 @@ ports:
     width: 2
 settings:
   add_etch: true
+  corner_style: sharp
   cross_section: meander_inductor_cross_section
   etch_bbox_margin: 2
   n_turns: 5
