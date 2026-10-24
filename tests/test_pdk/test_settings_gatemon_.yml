@@ -1,0 +1,60 @@
+info:
+  qubit_type: gatemon
+name: gatemon_IS150_150_PG60_PGT40_ES60_60_ES100_LW2_JL1_JW0p_8458f2e0
+ports:
+  gate:
+    center:
+    - 60
+    - -246
+    layer: M1_DRAW
+    name: gate
+    orientation: 270
+    port_type: optical
+    width: 10
+  junction:
+    center:
+    - -20
+    - -134
+    layer: CNT
+    name: junction
+    orientation: 90
+    port_type: placement
+    width: 0.002
+  readout:
+    center:
+    - 0
+    - 75
+    layer: M1_DRAW
+    name: readout
+    orientation: 90
+    port_type: optical
+    width: 150
+settings:
+  electrode_offset: -40
+  electrode_size:
+  - 60
+  - 60
+  electrode_spacing: 100
+  gate_cross_section: cpw
+  gate_length: 50
+  gate_offset: 100
+  gate_tip_gap: 5
+  gate_tip_width: 16
+  hbn_size:
+  - 80
+  - 80
+  island_size:
+  - 150
+  - 150
+  junction_length: 1
+  junction_offset: 20
+  junction_width: 0.002
+  layer_etch: M1_ETCH
+  layer_metal: M1_DRAW
+  lead_width: 2
+  nanotube_contact_overlap: 0.5
+  pocket_gap: 60
+  pocket_gap_top: 40
+  size_patch:
+  - 60
+  - 50

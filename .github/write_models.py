@@ -51,8 +51,8 @@ sax_categories = [
     Category(
         "qubits",
         "Qubits",
-        "Transmon, fluxonium, flipmon and unimon circuits, bare or coupled to a resonator.",
-        ("qpdk.models.qubit", "qpdk.models.unimon"),
+        "Transmon, fluxonium, flipmon, unimon and gatemon circuits, bare or coupled to a resonator.",
+        ("qpdk.models.qubit", "qpdk.models.unimon", "qpdk.models.gatemon"),
     ),
     Category(
         "resonators",
@@ -104,8 +104,8 @@ helper_categories = [
         "qubit-parameters",
         "Qubit parameters",
         "Conversions between circuit energies, capacitances and inductances, "
-        "and unimon spectra.",
-        ("qpdk.models.qubit", "qpdk.models.unimon"),
+        "and unimon and gatemon spectra.",
+        ("qpdk.models.qubit", "qpdk.models.unimon", "qpdk.models.gatemon"),
     ),
     Category(
         "perturbation",

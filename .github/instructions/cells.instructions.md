@@ -5,7 +5,8 @@ applyTo: "qpdk/cells/**/*.py"
 # Cell (component) review instructions
 
 `qpdk/cells/` holds the gdsfactory component definitions — transmons, resonators, couplers, airbridges, SNSPDs,
-fluxoniums, unimons, launchers, junctions, TSVs, bumps. `qpdk/cells/derived/` holds composites built from them.
+fluxoniums, unimons, gatemons, launchers, junctions, TSVs, bumps. `qpdk/cells/derived/` holds composites built from
+them.
 
 ## Registration
 

@@ -122,6 +122,10 @@ What a foundry PDK usually changes in `qpdk/tech.py`:
   `SIM_ONLY`, `LABEL_*`, `WG`, `ERROR_PATH`). Cells, routing, and simulation use them.
 - **`get_layer_stack()`**: thicknesses, `zmin`, and materials, for example Al instead of Nb. Keep the level names `M1`,
   `Substrate`, and `Vacuum`. The CPW models and `LAYER_STACK_NO_VACUUM` look them up by name.
+- **`get_gatemon_layer_stack()`**: the separate hybrid process with thermal oxide, Nb/Au contacts, hBN and an Al top
+  gate. Set the hBN thickness from your measured flake. `CNT` records a transferred nanotube's position and is not a
+  metal mask or a PEC extrusion. `CNT_CONTACT`, `TOP_GATE` and `JJ_PATCH` define the conductors, and `HBN` records the
+  transferred dielectric footprint. Keep these definitions and their layer views together when merging process changes.
 - **`material_properties`**: permittivity and loss tangent of your substrate. The CPW models read these.
 - **`LAYER_CONNECTIVITY`**: which layers connect through vias, bumps, and bridges.
 - **Cross-sections** such as `coplanar_waveguide`: default width, gap, and bend radius for 50 Ω on your substrate.
@@ -140,7 +144,11 @@ use them as approximate.
 ## Cell library
 
 `qpdk/cells/__init__.py` star-imports every cell module. `get_pdk()` then collects every public function decorated with
-`@gf.cell` or annotated to return a `Component`. A cell is registered under its **name in `qpdk.cells`**. So:
+`@gf.cell` or annotated to return a `Component`. A cell is registered under its **name in `qpdk.cells`**.
+
+Sample layouts in `qpdk/samples/*.pic.yml` are also registered by filename when no Python cell already owns that name. A
+paired `.gsch` and `.pic.yml` sample needs no Python wrapper. The docs include these samples with links to both source
+files.
 
 - **To add a cell**, write it in a new module in `qpdk/cells/`, decorate it with `@gf.cell`, and star-import the module
   in `qpdk/cells/__init__.py`. Give it a prefix, for example `acme_transmon`, so it never clashes with a future QPDK
@@ -230,6 +238,7 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
 | `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
 | QPDK modules in `qpdk/cells/`                          | QPDK  | Merge. New QPDK cells usually merge cleanly      |
+| `qpdk/__init__.py`                                     | Both  | Keep Python cells ahead of YAML sample fallbacks |
 | Your cell modules, override modules, and test chips    | Fork  | QPDK never changes them                          |
 | `qpdk/samples/`, `notebooks/`                          | Both  | Keep removed files removed. Take QPDK for others |
 | `tests/gds_ref/`, `tests/test_pdk/`, model `.npz` refs | Fork  | Never merge. Keep yours, then regenerate         |

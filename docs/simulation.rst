@@ -106,6 +106,77 @@ model. Both ports reference the coupon's finite ground frame. The dataset omits 
 readout, package and Josephson junction; its recipe is
 ``qpdk/models/datasets/data/double_pad_transmon.py``.
 
+``gatemon_capacitances`` looks up the island's total capacitance :math:`C_\Sigma`, its
+gate capacitance :math:`C_\text{g}` and its readout coupling :math:`C_\text{c}` in F,
+from ``island_size``, ``pocket_gap``, ``pocket_gap_top`` and ``gate_tip_gap`` in um.
+:math:`C_\Sigma` sets :math:`E_\text{C}` for ``gatemon_frequency_and_anharmonicity`` and
+:math:`C_\text{g}` the induced island offset charge :math:`n_\text{g} = C_\text{g}
+V_\text{g}/2e`. ``gatemon_fem_model(delta_ghz=50.0, transmissions=(0.8,))`` returns a
+three-port SAX model (``island``, ``gate``, ``readout``) with the Andreev-bound-state
+junction linearized between the island and ground. The readout port is an open CPW
+segment, so do not add its self-capacitance to a distributed resonator. The recipe is
+``qpdk/models/datasets/data/gatemon.py``; it is an electrostatic solve because the
+device is lumped and :math:`E_\text{J}` is gate-tuned rather than fixed by the geometry.
+The current recipe includes only M1 sheets. It omits the Nb/Au contacts, local top gate,
+hBN and thermal oxide, so its gate capacitance describes the M1 feed's coupling to the
+island, not the nanotube's gate lever arm. Use ``qpdk.tech.LAYER_STACK_GATEMON`` for the
+hybrid process and measure the flake thickness before constructing a mesh for local
+electrostatics.
+
+The gatemon recipe uses 0.8 µm near-metal and 60 µm far-field mesh sizes, a 1200 µm
+domain padding and height, third-order elements and a :math:`10^{-9}` linear solver
+tolerance. The :download:`representative convergence study
+<../qpdk/models/datasets/data/gatemon_palace.convergence.json>` records four geometries
+with a finer 0.6 µm / 40 µm mesh, fourth-order elements and a larger 1800 µm domain. The
+largest relative changes in :math:`C_\Sigma`, :math:`C_\text{g}` and :math:`C_\text{c}`
+were 0.652%, 0.736% and 0.476%, within the respective 1%, 5% and 1% tolerances. These
+checks apply to the M1 island row. Full-grid coverage and interpolation are validated
+separately.
+
+The ``gatemon_test_chip`` sample uses two independent transmission resonators with
+series coupling capacitors at both ends, as drawn in Fig. 1a of
+:cite:`riechertCarbonNanotubeGatemon2025`. Both channels target device A's reported
+bare-cavity frequency of 5.056 GHz. The paper does not specify an exact resonance
+frequency for device B, so the second channel is an A-style companion.
+
+Each capacitor-to-capacitor CPW path contains a 600 µm coupling straight, a 9946.135 µm
+meander and a 1400 µm tail. The lengths include the loading of the default interdigital
+capacitors and the nominal island with its Josephson junction open. The estimated end
+capacitance is about 5.14 fF each. The capacitor geometry and 10 µm / 6 µm CPW width/gap
+are QPDK design choices, not dimensions reported by the paper.
+
+The reported device A targets are :math:`E_\text{C}/h = 260\,\text{MHz}` and :math:`g
+\approx 50\,\text{MHz}`. Device B has 330 MHz and about 120 MHz, respectively. These
+remain targets for electromagnetic calibration of the island and readout gap. The
+sample's analytical frequency check excludes the package and the hybrid process's
+detailed dielectric topography.
+
+The sample's ``gatemon_coupler`` is a three-port model of the complete coupling CPW and
+a lumped 5.4 fF branch to the island. Its third layout port references the island edge
+across the etched gap, without adding metal there. The schematic wires this port to the
+gatemon's ``readout`` terminal. The ``gatemon_island`` model adds a grounded Josephson
+inductance, a 49.1 fF island shunt, a 20 fF island-to-gate capacitance and a 35 fF
+gate-to-ground capacitance. Each contact overlaps the top gate by 18 µm². The nominal 30
+nm hBN with relative permittivity 3.4 gives about 18 fF per contact in a parallel-plate
+estimate. The gate capacitances include this overlap and the M1 feed's contribution. The
+island shunt retains the 260 MHz charging-energy target including both mutual
+capacitances. These are nominal hybrid estimates that still need measured flake
+thickness and full-stack extraction. The complete schematic simulation includes the
+qubit's loading and gate-tuned readout response. It uses a linearized junction, so it
+does not predict the nonlinear qubit spectrum or decoherence.
+
+The nonlinear ABS Hamiltonian uses the short-junction, even-parity approximation, with
+channel transmissions supplied as inputs. Reproducing the paper's quantum-dot parity
+transitions and anharmonicities below the short-junction bound requires an extended
+Hamiltonian :cite:`riechertCarbonNanotubeGatemon2025`.
+
+The exported gate ports use a 50 ohm S-parameter reference. For comparison with
+measurements, connect the experimental bias network to those ports. The paper's setup
+uses a bias tee with its RF branch grounded as a reflective filter
+:cite:`riechertCarbonNanotubeGatemon2025`. The sample's frequency and coupling checks
+use an ideal RF-grounded gate. A matched 50 ohm gate loads the qubit and gives a
+different transmission spectrum.
+
 ``flipmon_readout_coupon_model()`` creates a 5-port static SAX coupon model. Pass
 ``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
 frequency ``f`` in Hz. The whole readout conductor shares one potential, and feedline

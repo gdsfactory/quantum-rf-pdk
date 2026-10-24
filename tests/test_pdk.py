@@ -48,6 +48,7 @@ skip_test = {
     "transform_component",
     # Registered for schematic-editor lookup; sample behavior is tested separately.
     "flipmon_test_chip",
+    "gatemon_test_chip",
     "qubit_test_chip",
     "resonator_test_chip_python",
     "resonator_test_chip_yaml",
@@ -209,6 +210,7 @@ def test_sample_generates(sample: ComponentFactory):
 
 
 _skip_port_tests = {
+    "gatemon_coupler",  # Island reference plane spans a dielectric gap; tested separately.
     "flipmon",
     "flipmon_with_bbox",
 }
