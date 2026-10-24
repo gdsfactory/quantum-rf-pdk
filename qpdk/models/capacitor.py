@@ -1,5 +1,8 @@
 """Capacitor Models."""
 
+from functools import cache
+from typing import cast
+
 import jax
 import jax.numpy as jnp
 import sax
@@ -8,6 +11,7 @@ from jax.typing import ArrayLike
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, ε_0
 from qpdk.models.cpw import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
+from qpdk.models.datasets import capacitance_model
 from qpdk.models.generic import capacitor
 from qpdk.models.jit import jit
 from qpdk.models.math import (
@@ -116,7 +120,7 @@ def interdigital_capacitor_capacitance_analytical(
     )
 
 
-def plate_capacitor(
+def plate_capacitor_analytical(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     length: float = 26.0,
@@ -124,7 +128,7 @@ def plate_capacitor(
     gap: float = 7.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
-    r"""Plate capacitor Sax model.
+    r"""Closed-form series capacitance of two coplanar pads, without ground branches.
 
     Args:
         f: Array of frequency points in Hz
@@ -143,6 +147,44 @@ def plate_capacitor(
         length=length, width=width, gap=gap, ep_r=ep_r
     )
     return capacitor(f=f_arr, capacitance=capacitance, z0=z0)
+
+
+@cache
+def _plate_capacitor_model() -> sax.Model:
+    """Load the finite-ground coupon outside numerical evaluation."""
+    return capacitance_model("coupling_pad_palace")
+
+
+def plate_capacitor(
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    length: float = 80.0,
+    width: float = 10.0,
+    gap: float = 7.0,
+    offset: float = 0.0,
+    z_ref: float = 50.0,
+) -> sax.SDict:
+    r"""Facing coupling pads with their finite-frame ground capacitances.
+
+    Matches :func:`qpdk.cells.plate_capacitor`. Its two electrodes map to
+    ``o1`` and ``o2``. Dimensions are in micrometres, frequency in Hz and
+    reference impedance in ohms. Both ports reference the same 45 um wide
+    ground frame, 10 um from the pad bounding box. The substrate is silicon.
+
+    Uses the complete Palace Maxwell matrix, including both pad-ground
+    branches. Connect this pair directly in the circuit without adding
+    those capacitances again. An isolated single pad is not this two-port
+    environment. Out-of-domain dimensions return NaN.
+
+    Returns:
+        Jittable SAX S-parameters with ports ``o1`` and ``o2``.
+    """
+    with jax.ensure_compile_time_eval():
+        model = _plate_capacitor_model()
+    return cast(
+        sax.SDict,
+        model(f=f, length=length, width=width, gap=gap, offset=offset, z_ref=z_ref),
+    )
 
 
 def interdigital_capacitor(

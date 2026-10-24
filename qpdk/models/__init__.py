@@ -8,6 +8,7 @@ import sax
 from qpdk.models.capacitor import (
     interdigital_capacitor,
     plate_capacitor,
+    plate_capacitor_analytical,
 )
 from qpdk.models.inductor import (
     lumped_element_resonator,
@@ -201,6 +202,7 @@ __all__ = [
     "open",
     "open_2_port",
     "plate_capacitor",
+    "plate_capacitor_analytical",
     "propagation_constant",
     "purcell_decay_rate",
     "quarter_wave_resonator_coupled",
