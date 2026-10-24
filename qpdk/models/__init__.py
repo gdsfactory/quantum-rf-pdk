@@ -14,7 +14,11 @@ from qpdk.models.inductor import (
     meander_inductor,
     meander_inductor_inductance_analytical,
 )
-from qpdk.models.junction import josephson_junction, squid_junction
+from qpdk.models.junction import (
+    josephson_junction,
+    josephson_junction_array,
+    squid_junction,
+)
 
 sax.set_port_naming_strategy("optical")
 
@@ -186,6 +190,7 @@ __all__ = [
     "inductor",
     "interdigital_capacitor",
     "josephson_junction",
+    "josephson_junction_array",
     "launcher",
     "lc_resonator",
     "lc_resonator_coupled",

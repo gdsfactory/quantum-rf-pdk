@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import gdsfactory as gf
 from gdsfactory.component import Component
@@ -14,6 +14,7 @@ from klayout.db import DCplxTrans
 
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.junction import josephson_junction
+from qpdk.cells.junction_array import josephson_junction_array
 from qpdk.tech import (
     LAYER,
     get_etch_section,
@@ -39,6 +40,8 @@ def fluxonium(
     inductor_cross_section: CrossSectionSpec = superinductor_cross_section,
     connection_wire_width: float = 2.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
+    inductor: Literal["meander", "array"] = "meander",
+    inductor_array_spec: ComponentSpec = josephson_junction_array,
 ) -> Component:
     r"""Creates a fluxonium qubit with capacitor pads, Josephson junction, and superinductor.
 
@@ -71,14 +74,24 @@ def fluxonium(
         inductor_cross_section: Cross-section for the meander inductor.
         connection_wire_width: Width of the connecting wires in µm.
         layer_metal: Layer for the metal pads and connection wires.
+        inductor: Superinductor implementation. ``"meander"`` draws a
+            kinetic-inductance meander. ``"array"`` draws a Josephson junction
+            array from ``inductor_array_spec`` instead, as in
+            :cite:`manucharyan_fluxonium_2009`.
+        inductor_array_spec: Component specification for the junction array, used
+            when ``inductor="array"``. Its port ``o1`` must face west and ``o2``
+            east, i.e. an even number of folds.
 
     Returns:
         The fluxonium component.
 
     Raises:
-        ValueError: If inductor_n_turns is even or if pad_gap is too small.
+        ValueError: If inductor_n_turns is even, if pad_gap is too small, or if
+            the junction array does not fit between the pads.
     """
-    if inductor_n_turns % 2 == 0:
+    if inductor not in {"meander", "array"}:
+        raise ValueError(f"Unknown inductor {inductor!r}")
+    if inductor == "meander" and inductor_n_turns % 2 == 0:
         raise ValueError("inductor_n_turns must be odd")
 
     xs = gf.get_cross_section(inductor_cross_section)
@@ -120,95 +133,113 @@ def fluxonium(
         junction_ref.transform(junction_displacement)
 
     # Superinductor
-    inductor = meander_inductor(
-        n_turns=inductor_n_turns,
-        turn_length=inductor_turn_length,
-        cross_section=inductor_cross_section,
-        wire_gap=inductor_wire_gap,
-        etch_bbox_margin=0,
-        add_etch=False,
-    )
-    inductor_ref = c.add_ref(inductor)
-    inductor_y = (
-        junction_ref.dcenter[1]
-        - junction_rotated_height / 2
-        - junction_margin
-        - inductor_total_height / 2
-    )
-    inductor_ref.dcenter = (0, inductor_y)
+    if inductor == "array":
+        inductor_info = _add_array_inductor(
+            c,
+            junction_bottom=junction_ref.dymin,
+            junction_center_y=junction_ref.dcenter[1],
+            pad_height=pad_height,
+            pad_gap=pad_gap,
+            junction_margin=junction_margin,
+            inductor_margin_x=inductor_margin_x,
+            inductor_array_spec=inductor_array_spec,
+            connection_wire_width=connection_wire_width,
+            layer_metal=layer_metal,
+        )
+    else:
+        meander = meander_inductor(
+            n_turns=inductor_n_turns,
+            turn_length=inductor_turn_length,
+            cross_section=inductor_cross_section,
+            wire_gap=inductor_wire_gap,
+            etch_bbox_margin=0,
+            add_etch=False,
+        )
+        inductor_ref = c.add_ref(meander)
+        inductor_y = (
+            junction_ref.dcenter[1]
+            - junction_rotated_height / 2
+            - junction_margin
+            - inductor_total_height / 2
+        )
+        inductor_ref.dcenter = (0, inductor_y)
 
-    # Connection wires
-    ind_o1 = inductor_ref.ports["o1"]
-    ind_o2 = inductor_ref.ports["o2"]
+        # Connection wires
+        ind_o1 = inductor_ref.ports["o1"]
+        ind_o2 = inductor_ref.ports["o2"]
 
-    bus_left_x = -pad_gap / 2 - connection_wire_width / 2
-    bus_right_x = pad_gap / 2 + connection_wire_width / 2
-    bus_top_y = -pad_height / 2 + 5.0  # 5 um overlap with pads
-    jj_conn_y0 = junction_ref.dcenter[1] - connection_wire_width / 2
+        bus_left_x = -pad_gap / 2 - connection_wire_width / 2
+        bus_right_x = pad_gap / 2 + connection_wire_width / 2
+        bus_top_y = -pad_height / 2 + 5.0  # 5 um overlap with pads
+        jj_conn_y0 = junction_ref.dcenter[1] - connection_wire_width / 2
 
-    # Left bus bar
-    add_rect(
-        c,
-        layer=layer_metal,
-        x_center=bus_left_x,
-        width=connection_wire_width,
-        y0=jj_conn_y0,
-        y1=bus_top_y,
-    )
-    # Tapered vertical NbTiN lead
-    c.add_polygon(
-        [
-            (-pad_gap / 2, jj_conn_y0),
-            (-pad_gap / 2 - connection_wire_width, jj_conn_y0),
-            (
-                -pad_gap / 2 - inductor_wire_width,
-                ind_o1.dcenter[1] - inductor_wire_width / 2,
-            ),
-            (-pad_gap / 2, ind_o1.dcenter[1] - inductor_wire_width / 2),
-        ],
-        layer=LAYER.NbTiN,
-    )
+        # Left bus bar
+        add_rect(
+            c,
+            layer=layer_metal,
+            x_center=bus_left_x,
+            width=connection_wire_width,
+            y0=jj_conn_y0,
+            y1=bus_top_y,
+        )
+        # Tapered vertical NbTiN lead
+        c.add_polygon(
+            [
+                (-pad_gap / 2, jj_conn_y0),
+                (-pad_gap / 2 - connection_wire_width, jj_conn_y0),
+                (
+                    -pad_gap / 2 - inductor_wire_width,
+                    ind_o1.dcenter[1] - inductor_wire_width / 2,
+                ),
+                (-pad_gap / 2, ind_o1.dcenter[1] - inductor_wire_width / 2),
+            ],
+            layer=LAYER.NbTiN,
+        )
 
-    # Right bus bar
-    add_rect(
-        c,
-        layer=layer_metal,
-        x_center=bus_right_x,
-        width=connection_wire_width,
-        y0=jj_conn_y0,
-        y1=bus_top_y,
-    )
-    # Tapered vertical NbTiN lead
-    c.add_polygon(
-        [
-            (pad_gap / 2, jj_conn_y0),
-            (pad_gap / 2 + connection_wire_width, jj_conn_y0),
-            (
-                pad_gap / 2 + inductor_wire_width,
-                ind_o2.dcenter[1] - inductor_wire_width / 2,
-            ),
-            (pad_gap / 2, ind_o2.dcenter[1] - inductor_wire_width / 2),
-        ],
-        layer=LAYER.NbTiN,
-    )
+        # Right bus bar
+        add_rect(
+            c,
+            layer=layer_metal,
+            x_center=bus_right_x,
+            width=connection_wire_width,
+            y0=jj_conn_y0,
+            y1=bus_top_y,
+        )
+        # Tapered vertical NbTiN lead
+        c.add_polygon(
+            [
+                (pad_gap / 2, jj_conn_y0),
+                (pad_gap / 2 + connection_wire_width, jj_conn_y0),
+                (
+                    pad_gap / 2 + inductor_wire_width,
+                    ind_o2.dcenter[1] - inductor_wire_width / 2,
+                ),
+                (pad_gap / 2, ind_o2.dcenter[1] - inductor_wire_width / 2),
+            ],
+            layer=LAYER.NbTiN,
+        )
 
-    # Inductor stubs - fixed height to prevent shorting
-    add_rect(
-        c,
-        layer=LAYER.NbTiN,
-        x0=-pad_gap / 2,
-        x1=ind_o1.dcenter[0],
-        y_center=ind_o1.dcenter[1],
-        height=inductor_wire_width,
-    )
-    add_rect(
-        c,
-        layer=LAYER.NbTiN,
-        x0=ind_o2.dcenter[0],
-        x1=pad_gap / 2,
-        y_center=ind_o2.dcenter[1],
-        height=inductor_wire_width,
-    )
+        # Inductor stubs - fixed height to prevent shorting
+        add_rect(
+            c,
+            layer=LAYER.NbTiN,
+            x0=-pad_gap / 2,
+            x1=ind_o1.dcenter[0],
+            y_center=ind_o1.dcenter[1],
+            height=inductor_wire_width,
+        )
+        add_rect(
+            c,
+            layer=LAYER.NbTiN,
+            x0=ind_o2.dcenter[0],
+            x1=pad_gap / 2,
+            y_center=ind_o2.dcenter[1],
+            height=inductor_wire_width,
+        )
+        inductor_info: dict[str, int | float | str] = {
+            "inductor_n_turns": inductor_n_turns,
+            "inductor_total_wire_length": meander.info["total_wire_length"],
+        }
 
     # Junction leads
     jj_ports = sorted(
@@ -281,10 +312,82 @@ def fluxonium(
         c.add_port(**port_config)
 
     c.info["qubit_type"] = "fluxonium"
-    c.info["inductor_n_turns"] = inductor_n_turns
-    c.info["inductor_total_wire_length"] = inductor.info["total_wire_length"]
+    for key, value in inductor_info.items():
+        c.info[key] = value
 
     return c
+
+
+def _add_array_inductor(
+    c: Component,
+    *,
+    junction_bottom: float,
+    junction_center_y: float,
+    pad_height: float,
+    pad_gap: float,
+    junction_margin: float,
+    inductor_margin_x: float,
+    inductor_array_spec: ComponentSpec,
+    connection_wire_width: float,
+    layer_metal: LayerSpec,
+) -> dict[str, int | float | str]:
+    """Place a Josephson junction array below the junction and wire it to the pads.
+
+    Returns:
+        The ``info`` entries describing the array.
+
+    Raises:
+        ValueError: If the array ports do not face west and east, or if the array
+            does not fit between the pads.
+    """
+    array = gf.get_component(inductor_array_spec)
+    if (array.ports["o1"].orientation, array.ports["o2"].orientation) != (180, 0):
+        raise ValueError(
+            "inductor_array_spec must have o1 facing west and o2 facing east "
+            "(use an even number of folds)"
+        )
+    array_ref = c.add_ref(array)
+    array_ref.dymax = junction_bottom - junction_margin
+    port_span = array.ports["o2"].dcenter[0] - array.ports["o1"].dcenter[0]
+    if port_span > pad_gap - 2 * inductor_margin_x:
+        raise ValueError(
+            f"Junction array port span {port_span:g} µm does not fit in "
+            f"pad_gap={pad_gap} with inductor_margin_x={inductor_margin_x}"
+        )
+    array_ref.dmove((
+        -(array_ref.ports["o1"].dcenter[0] + array_ref.ports["o2"].dcenter[0]) / 2,
+        0,
+    ))
+    ind_o1 = array_ref.ports["o1"].dcenter
+    ind_o2 = array_ref.ports["o2"].dcenter
+
+    bus_top_y = -pad_height / 2 + 5.0  # 5 um overlap with pads
+    for sign, port_center in ((-1, ind_o1), (1, ind_o2)):
+        bus_x = sign * (pad_gap / 2 + connection_wire_width / 2)
+        add_rect(
+            c,
+            layer=layer_metal,
+            x_center=bus_x,
+            width=connection_wire_width,
+            y0=min(junction_center_y, port_center[1]) - connection_wire_width / 2,
+            y1=bus_top_y,
+        )
+        # Stub from the bus bar onto the array lead, 1 um overlap for contact
+        x_inner = port_center[0] - sign * 1.0
+        add_rect(
+            c,
+            layer=layer_metal,
+            x0=min(sign * pad_gap / 2, x_inner),
+            x1=max(sign * pad_gap / 2, x_inner),
+            y_center=port_center[1],
+            height=connection_wire_width,
+        )
+
+    return {
+        "inductor": "array",
+        "n_junctions": array.info["n_junctions"],
+        "array_inductance": array.info["array_inductance"],
+    }
 
 
 def _snap_to_grid(value: float, grid: float = 0.002) -> float:
@@ -305,6 +408,8 @@ def fluxonium_with_bbox(
     inductor_cross_section: CrossSectionSpec = superinductor_cross_section,
     connection_wire_width: float = 2.0,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
+    inductor: Literal["meander", "array"] = "meander",
+    inductor_array_spec: ComponentSpec = josephson_junction_array,
 ) -> Component:
     """Fluxonium with an etched bounding box.
 
@@ -320,6 +425,13 @@ def fluxonium_with_bbox(
         inductor_cross_section: Cross-section for the meander inductor.
         connection_wire_width: Width of the connecting wires in µm.
         layer_metal: Layer for the metal pads and connection wires.
+        inductor: Superinductor implementation. ``"meander"`` draws a
+            kinetic-inductance meander. ``"array"`` draws a Josephson junction
+            array from ``inductor_array_spec`` instead, as in
+            :cite:`manucharyan_fluxonium_2009`.
+        inductor_array_spec: Component specification for the junction array, used
+            when ``inductor="array"``. Its port ``o1`` must face west and ``o2``
+            east, i.e. an even number of folds.
 
     Returns:
         The fluxonium component with a bounding box.
@@ -336,6 +448,8 @@ def fluxonium_with_bbox(
         inductor_cross_section=inductor_cross_section,
         connection_wire_width=connection_wire_width,
         layer_metal=layer_metal,
+        inductor=inductor,
+        inductor_array_spec=inductor_array_spec,
     )
     flux_size = (flux_ref.size_info.width, flux_ref.size_info.height)
     bbox_size = (
