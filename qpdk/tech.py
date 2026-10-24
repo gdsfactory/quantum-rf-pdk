@@ -2,9 +2,10 @@
 
 # ruff: file-ignore[print]
 
+import math
 from collections.abc import Callable, Generator, Sequence
 from functools import cache, partial, wraps
-from typing import Any
+from typing import Any, Literal
 
 import gdsfactory as gf
 from gdsfactory.cross_section import (
@@ -406,6 +407,185 @@ def get_meander_wire_gap(
         return 2 * get_etch_section(cross_section).width
     except ValueError:
         return cross_section.width
+
+
+MeanderCornerStyle = Literal["sharp", "chamfer", "round", "optimal"]
+"""Corner treatment of the meander inductor's U-turns."""
+
+SHARP_CORNER_SQUARES = 0.559
+"""Squares of a sharp 90° corner square :cite:`hagedornRightAngleBendsThin1963`."""
+
+CHAMFER_CORNER_SQUARES = 0.577
+"""Squares of a 90° corner with a constant-width 45° mitre.
+
+The outer corner is cut by a triangle with legs :math:`(2 - \\sqrt{2})\\,w`, so the
+diagonal width equals :math:`w`. There is no standard published value for this
+corner; 0.577 comes from a 2D Laplace solve on the mitred corner, which gives
+0.559 for the sharp corner with the same solver. ``tests/test_meander_squares.py``
+re-checks it on the drawn polygon.
+"""
+
+MEANDER_SQUARES_CONVENTIONS: dict[str, str] = {
+    "sharp": "Hagedorn-Hall: a w x w sharp 90 deg corner counts 0.559 squares",
+    "chamfer": "constant-width 45 deg mitre: a w x w mitred corner counts 0.577 squares",
+    "round": "annular sector: (pi/2)/ln((2R+w)/(2R-w)) per quarter arc",
+    "optimal": "Clem-Berggren hairpin: 2d/w + 2(p+w)ln(2)/(pi w) per hairpin",
+}
+"""Short description of the corner rule behind ``n_squares_drawn`` per style."""
+
+
+def meander_round_radius(
+    wire_width: float, wire_gap: float, radius: float | None = None
+) -> float:
+    """Resolve and validate the centreline radius of rounded meander corners.
+
+    Args:
+        wire_width: Wire width in µm.
+        wire_gap: Gap between adjacent runs in µm.
+        radius: Centreline radius in µm. ``None`` gives half the pitch, which
+            makes each U-turn a semicircle.
+
+    Returns:
+        Centreline radius in µm.
+
+    Raises:
+        ValueError: If the radius is not in ``(wire_width / 2, pitch / 2]``.
+    """
+    pitch = wire_width + wire_gap
+    if radius is None:
+        return pitch / 2
+    if not wire_width / 2 < radius <= pitch / 2:
+        raise ValueError(
+            f"radius must satisfy wire_width/2 < radius <= pitch/2 "
+            f"({wire_width / 2} < radius <= {pitch / 2}), got {radius}"
+        )
+    return radius
+
+
+def optimal_hairpin_tip_x(wire_width: float, pitch: float) -> float:
+    r"""Position of the Clem-Berggren hairpin contour on its symmetry axis.
+
+    The optimal contour of :cite:`clemGeometrydependentCriticalCurrents2011`
+    is the streamline of the flow in a strip :math:`|y| < a`,
+    :math:`a = (p + w)/2`, around a slit along the negative real axis with
+    its tip at the origin. The complex potential is
+    :math:`W = \ln\bigl((t - 1)/(t + 1)\bigr)` with
+    :math:`t = \sqrt{1 - \text{e}^{\pi s / a}}`. The streamline that carries the
+    fraction :math:`w/a` of the current crosses the symmetry axis at
+
+    .. math::
+
+        x_\text{tip} = -\frac{2a}{\pi} \ln \sin \frac{\pi w}{2a}.
+
+    Args:
+        wire_width: Wire width :math:`w` in µm.
+        pitch: Centre-to-centre pitch :math:`p` of the hairpin arms in µm.
+
+    Returns:
+        :math:`x_\text{tip}` in µm, measured from the slit tip.
+    """
+    a = (pitch + wire_width) / 2
+    return -2 * a / math.pi * math.log(math.sin(math.pi * wire_width / (2 * a)))
+
+
+def meander_n_squares_drawn(
+    n_turns: int,
+    turn_length: float,
+    wire_width: float,
+    wire_gap: float,
+    corner_style: MeanderCornerStyle = "sharp",
+    radius: float | None = None,
+) -> float:
+    r"""Number of squares of the drawn meander inductor polygon.
+
+    With :math:`N` runs of length :math:`\ell`, width :math:`w`, gap :math:`g`,
+    pitch :math:`p = w + g` and centreline length
+    :math:`\ell_\text{c} = N \ell + (N - 1) g`, each U-turn has two 90° corners:
+
+    * ``"sharp"``: :math:`\ell_\text{c}/w - 2(N - 1)(1 - 0.559)`, the corner value of
+      :cite:`hagedornRightAngleBendsThin1963`.
+    * ``"chamfer"``: :math:`\ell_\text{c}/w - 2(N - 1)(1 - 0.577)`, see
+      :data:`CHAMFER_CORNER_SQUARES`.
+    * ``"round"``: straight segments count :math:`\ell/w` and each quarter arc of
+      centreline radius :math:`R` counts the exact annular-sector value
+      :math:`(\pi/2)/\ln\bigl((2R + w)/(2R - w)\bigr)`. Straight-to-arc junction
+      corrections are neglected.
+    * ``"optimal"``: each Clem-Berggren hairpin counts
+      :math:`2d/w + 2(p + w)\ln 2/(\pi w)` from the conformal map of
+      :func:`optimal_hairpin_tip_x`, where :math:`d` is the distance from its ports
+      to the slit tip, and the two half-run leads count :math:`\ell/w`.
+
+    Corners are treated as independent, which holds when the gap is not much
+    smaller than the width.
+
+    Args:
+        n_turns: Number of horizontal runs :math:`N`.
+        turn_length: Length of each run :math:`\ell` in µm.
+        wire_width: Wire width :math:`w` in µm.
+        wire_gap: Gap between adjacent runs :math:`g` in µm.
+        corner_style: Corner treatment of the U-turns.
+        radius: Centreline radius for ``"round"`` corners in µm.
+
+    Returns:
+        Number of squares between the two ports.
+
+    Raises:
+        ValueError: If ``corner_style`` is unknown, or the geometry does not fit.
+    """
+    n_bends = max(0, n_turns - 1)
+    pitch = wire_width + wire_gap
+    centreline = n_turns * turn_length + n_bends * wire_gap
+    match corner_style:
+        case "sharp":
+            return centreline / wire_width - 2 * n_bends * (1 - SHARP_CORNER_SQUARES)
+        case "chamfer":
+            return centreline / wire_width - 2 * n_bends * (1 - CHAMFER_CORNER_SQUARES)
+        case "round":
+            r = meander_round_radius(wire_width, wire_gap, radius)
+            straight = n_turns * turn_length + n_bends * (wire_gap - 4 * r)
+            arc = (math.pi / 2) / math.log((2 * r + wire_width) / (2 * r - wire_width))
+            return straight / wire_width + 2 * n_bends * arc
+        case "optimal":
+            arm = optimal_hairpin_arm_length(turn_length, wire_width, pitch)
+            hairpin = 2 * arm / wire_width + 2 * (pitch + wire_width) * math.log(2) / (
+                math.pi * wire_width
+            )
+            return n_bends * hairpin + turn_length / wire_width
+        case _:
+            raise ValueError(f"Unknown corner_style {corner_style!r}")
+
+
+def optimal_hairpin_arm_length(
+    turn_length: float, wire_width: float, pitch: float
+) -> float:
+    r"""Distance from a meander hairpin's ports to the slit tip of its contour.
+
+    The hairpin spans half a run, ``turn_length / 2``, and its outer box extends
+    ``pitch + wire_width`` beyond the contour tip, which leaves a truncation
+    error of order :math:`\text{e}^{-2\pi}` in the square count.
+
+    Args:
+        turn_length: Length of each meander run in µm.
+        wire_width: Wire width in µm.
+        pitch: Centre-to-centre pitch in µm.
+
+    Returns:
+        Arm length :math:`d` in µm.
+
+    Raises:
+        ValueError: If the hairpin does not fit in half a run.
+    """
+    tip = optimal_hairpin_tip_x(wire_width, pitch)
+    arm = turn_length / 2 - tip - (pitch + wire_width)
+    # The contour starts at x = -pitch; keep one extra width of margin because
+    # the drawn contour tip sits slightly beyond the analytic one.
+    if arm < pitch + wire_width:
+        min_length = 2 * (tip + 2 * (pitch + wire_width))
+        raise ValueError(
+            f"turn_length={turn_length} is too short for optimal corners; "
+            f"need at least {min_length:.4g} µm"
+        )
+    return arm
 
 
 @xsection

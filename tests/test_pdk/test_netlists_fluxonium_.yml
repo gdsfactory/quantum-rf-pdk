@@ -18,12 +18,17 @@ instances:
     info:
       cross_section_name: superinductor_cross_section
       n_squares: 89818
+      n_squares_convention: 'Hagedorn-Hall: a w x w sharp 90 deg corner counts 0.559
+        squares'
+      n_squares_drawn: 89682.172
       total_wire_length: 3592.72
     settings:
       add_etch: false
+      corner_style: sharp
       cross_section: superinductor_cross_section
       etch_bbox_margin: 0
       n_turns: 155
+      radius: null
       turn_length: 23
       wire_gap: 0.18
   rectangle:
