@@ -34,21 +34,28 @@ def test_giant_atom_transmon_ports() -> None:
 
 
 @pytest.mark.parametrize(
-    ("coupler_lengths", "segment_lengths"),
+    ("coupler_lengths", "segment_lengths", "point_spacing"),
     [
-        ((160.0,), ()),
-        ((160.0, 160.0), (13100.0,)),
-        ((120.0, 160.0, 200.0), (6000.0, 9000.0)),
+        ((160.0,), (), 1000.0),
+        ((160.0, 160.0), (13100.0,), 1000.0),
+        ((120.0, 160.0, 200.0), (6000.0, 9000.0), 1000.0),
+        ((160.0, 160.0), (50000.0,), 5000.0),
     ],
 )
 def test_waveguide_length(
-    coupler_lengths: tuple[float, ...], segment_lengths: tuple[float, ...]
+    coupler_lengths: tuple[float, ...],
+    segment_lengths: tuple[float, ...],
+    point_spacing: float,
 ) -> None:
-    """The drawn waveguide has the requested length between coupling points."""
+    """The drawn waveguide has the requested length between coupling points.
+
+    The length is measured from the drawn ``WG`` layer as area over width.
+    """
     end_length = 100.0
     c = giant_atom_transmon(
         coupler_lengths=coupler_lengths,
         segment_lengths=segment_lengths,
+        point_spacing=point_spacing,
         end_length=end_length,
     )
     expected = (
@@ -56,7 +63,11 @@ def test_waveguide_length(
         + (coupler_lengths[0] + coupler_lengths[-1]) / 2
         + 2 * end_length
     )
-    assert math.isclose(c.info["line_length"], expected, abs_tol=1e-2)
+    xs = gf.get_cross_section("cpw")
+    waveguide = _region(c, LAYER.WG)
+    assert waveguide.count() == 1
+    drawn = waveguide.area() * c.kcl.layout.dbu**2 / xs.width
+    assert math.isclose(drawn, expected, abs_tol=0.1)
     assert len(c.info["meander_depths"]) == len(segment_lengths)
 
 
@@ -119,13 +130,38 @@ def test_waveguide_keeps_cross_section_gap(cell) -> None:
     ("cell", "n_bridges"), [(giant_atom_transmon, 2), (braided_giant_atoms, 4)]
 )
 def test_enclosed_ground_is_bridged(cell, n_bridges: int) -> None:
-    """Every arm of a multi-point atom carries an airbridge to tie the ground."""
+    """The airbridges join every ground patch into one ground plane."""
     c = cell()
-    bridge_spans = _region(c, LAYER.AB_DRAW)
-    assert bridge_spans.count() == n_bridges
-    assert _region(c, LAYER.AB_VIA).count() == 2 * n_bridges
-    # Landing pads sit on ground metal, never on an etched gap.
-    assert (_region(c, LAYER.AB_VIA) & _region(c, LAYER.M1_ETCH)).is_empty()
+    dbu = c.kcl.layout.dbu
+    # Ground is everything not etched or drawn, inside a frame that joins the
+    # ground on both sides of the waveguide beyond its ends.
+    frame = Region(c.dbbox().enlarged(50, 50).to_itype(dbu))
+    ground = frame - _region(c, LAYER.M1_ETCH) - _region(c, LAYER.M1_DRAW)
+    patches = list(ground.each())
+    assert len(patches) > 1  # The arms enclose ground patches.
+    vias = _region(c, LAYER.AB_VIA)
+    bridges = list(_region(c, LAYER.AB_DRAW).each())
+    assert len(bridges) == n_bridges
+    assert vias.count() == 2 * n_bridges
+
+    parent = list(range(len(patches)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            i = parent[i]
+        return i
+
+    for bridge in bridges:
+        pads = vias.interacting(Region(bridge))
+        landed = [
+            i
+            for i, patch in enumerate(patches)
+            if not (Region(patch) & pads).is_empty()
+        ]
+        # Each bridge lands on ground at both ends, on two different patches.
+        assert len(landed) == 2
+        parent[find(landed[0])] = find(landed[1])
+    assert len({find(i) for i in range(len(patches))}) == 1
     assert _region(cell(airbridges=False), LAYER.AB_DRAW).is_empty()
 
 

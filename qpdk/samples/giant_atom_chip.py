@@ -40,7 +40,7 @@ from qpdk.cells.giant_atom import braided_giant_atoms
 # %%
 @gf.cell
 def giant_atom_chip(
-    segment_length: float = 6552.0,
+    segment_length: float = 6550.0,
     launcher_distance: float = 400.0,
     edge_margin: float = 300.0,
 ) -> gf.Component:

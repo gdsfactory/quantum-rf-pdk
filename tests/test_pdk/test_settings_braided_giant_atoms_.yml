@@ -1,10 +1,10 @@
 info:
-  line_length: 20016.002
+  line_length: 20009.99
   meander_depths:
-  - 968.254
-  - 968.254
-  - 968.254
-name: braided_giant_atoms_CL160_160_SL6552_PS1000_CG8_PW10_AL_8f08a9d3
+  - 967.92
+  - 967.92
+  - 967.92
+name: braided_giant_atoms_CL160_160_SL6550_PS1000_CG8_PW10_AL_7639fa6c
 ports:
   junction_a:
     center:
@@ -18,7 +18,7 @@ ports:
   junction_b:
     center:
     - 2000
-    - -1034.254
+    - -1033.92
     layer: JJ_AREA
     name: junction_b
     orientation: 90
@@ -62,4 +62,4 @@ settings:
   meander_pitch: 120
   pad_width: 10
   point_spacing: 1000
-  segment_length: 6552
+  segment_length: 6550

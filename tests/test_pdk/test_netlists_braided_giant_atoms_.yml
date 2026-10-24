@@ -62,7 +62,7 @@ placements:
     mirror: false
     rotation: 90
     x: 1000
-    y: -511.127
+    y: -510.96
   airbridge3:
     mirror: false
     rotation: 90
@@ -72,7 +72,7 @@ placements:
     mirror: false
     rotation: 90
     x: 3000
-    y: -511.127
+    y: -510.96
   squid_junction:
     mirror: false
     rotation: 135
@@ -82,5 +82,5 @@ placements:
     mirror: false
     rotation: 315
     x: 1991.868
-    y: -1024.708
+    y: -1024.374
 ports: {}

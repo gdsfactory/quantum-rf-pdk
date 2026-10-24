@@ -146,14 +146,16 @@ def _giant_atoms(
                 f"{point_spacing} µm must exceed half their summed lengths."
             )
             raise ValueError(msg)
-    bridge = airbridge(bridge_length=arm_width + 2 * gap_width + 10.0)
-    bridge_pad = bridge.dbbox().width()  # Landing-pad width across the arm.
-    if airbridges and arm_length < bridge_pad + 2 * gap_width:
-        msg = (
-            f"arm_length={arm_length} µm is too short for the airbridges; it "
-            f"must be at least {bridge_pad + 2 * gap_width} µm."
-        )
-        raise ValueError(msg)
+    bridge = None
+    if airbridges:
+        bridge = airbridge(bridge_length=arm_width + 2 * gap_width + 10.0)
+        bridge_pad = bridge.dbbox().width()  # Landing-pad width across the arm.
+        if arm_length < bridge_pad + 2 * gap_width:
+            msg = (
+                f"arm_length={arm_length} µm is too short for the airbridges; it "
+                f"must be at least {bridge_pad + 2 * gap_width} µm."
+            )
+            raise ValueError(msg)
 
     xs = gf.get_cross_section(cross_section)
     line_half_extent = max(abs(s.offset) + s.width / 2 for s in xs.sections)
@@ -185,7 +187,10 @@ def _giant_atoms(
         + (coupler_lengths[0] + coupler_lengths[-1]) / 2
         + 2 * end_length
     )
-    if not math.isclose(path.length(), expected_length, abs_tol=1e-2):
+    # Each discretised bend is shorter than its arc by well under 1 nm.
+    if not math.isclose(
+        path.length(), expected_length, abs_tol=1e-2 + 1e-3 * len(points)
+    ):
         msg = (
             f"Drawn waveguide is {path.length():.3f} µm long, expected "
             f"{expected_length:.3f} µm."
@@ -292,11 +297,16 @@ def _giant_atoms(
     metal_index = c.kcl.layout.layer(*gf.get_layer_tuple(layer_metal))
     etch_index = c.kcl.layout.layer(*gf.get_layer_tuple(layer_etch))
     draw_region = Region(c.shapes(metal_index)).merged()
-    etch_region = (Region(c.shapes(etch_index)) + etch_region).merged() - draw_region
+    etch_region = (Region(c.shapes(etch_index)) + etch_region).merged()
+    # Close sub-grid ground slivers left between the qubit etch and the
+    # discretised bends of the waveguide, then clear the drawn metal.
+    closing = 10  # Database units.
+    etch_region = (etch_region + draw_region).sized(closing).sized(-closing)
+    etch_region -= draw_region
     c.shapes(etch_index).clear()
     c.shapes(etch_index).insert(etch_region)
 
-    if airbridges:
+    if bridge is not None:
         for x, y in bridge_positions:
             bridge_ref = c.add_ref(bridge)
             bridge_ref.rotate(90)
@@ -376,11 +386,20 @@ def giant_atom_transmon(
     :math:`8\,\text{fF}`. The island capacitance to ground depends on the
     geometry and is not extracted here.
 
+    For :math:`K \ge 2` the arms and the waveguide enclose a ground patch,
+    which includes the inside of each meander turn. With ``airbridges=True``
+    one bridge per arm ties it to the ground plane. Further bridges across
+    the meander, as in :func:`~qpdk.cells.airbridge.cpw_with_airbridges`,
+    are left to the designer.
+
     Args:
         coupler_lengths: Length of each coupling pad along the waveguide in µm.
             Sets the number of coupling points :math:`K`.
         segment_lengths: Waveguide length between the centres of consecutive
-            coupling points in µm, :math:`K - 1` values.
+            coupling points in µm, :math:`K - 1` values. A segment must equal
+            the straight distance between the pads or exceed it by enough for
+            at least one meander excursion of depth ``2 * bend_radius``;
+            lengths in between raise ``ValueError``.
         point_spacing: Straight-line distance between consecutive coupling
             points in µm.
         coupler_gap: Edge-to-edge distance between pad and waveguide centre
@@ -434,7 +453,7 @@ def giant_atom_transmon(
 @gf.cell(check_instances=CheckInstances.IGNORE, tags=["qubits", "transmons"])
 def braided_giant_atoms(
     coupler_lengths: tuple[float, float] = (160.0, 160.0),
-    segment_length: float = 6552.0,
+    segment_length: float = 6550.0,
     point_spacing: float = 1000.0,
     coupler_gap: float = 8.0,
     pad_width: float = 10.0,
@@ -459,14 +478,20 @@ def braided_giant_atoms(
     x_{\text{b}2}` with equal waveguide length ``segment_length`` between
     neighbouring points :cite:`kannanWaveguideQuantumElectrodynamics2020`.
     Qubit a sits above the waveguide and qubit b below. The arms of qubit b
-    are lengthened past the meander that lies between its coupling points.
+    are lengthened past the meander that lies between its coupling points;
+    with the defaults that meander is about :math:`1\,\text{mm}` deep, so
+    qubit b has :math:`1\,\text{mm}` arms and a :math:`2.1\,\text{mm}`
+    island. A larger ``point_spacing`` gives shallower meanders and shorter
+    arms. The island geometry, and so its capacitance, is not matched to the
+    ``qubit_capacitance`` of :func:`~qpdk.models.giant_atom.giant_atom_transmon`.
 
     The default ``segment_length`` is :math:`\lambda/4` at
     :math:`4.645\,\text{GHz}` on the ``cpw`` cross-section, so each qubit is
     decoherence-free there while the qubits stay coupled through the
     waveguide :cite:`kannanWaveguideQuantumElectrodynamics2020`. Each qubit
     on its own is a :func:`giant_atom_transmon` with
-    ``segment_lengths=(2 * segment_length,)``.
+    ``segment_lengths=(2 * segment_length,)``, which for the defaults of both
+    cells is the same :math:`13100\,\text{µm}`.
 
     Args:
         coupler_lengths: Pad length of qubit a and of qubit b in µm, the same
