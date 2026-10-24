@@ -196,14 +196,16 @@ def test_strip_field_symmetry(width: float, height: float, x: float) -> None:
     """B_x is even and B_y odd in x, and |B_x| above the centre is the maximum."""
     b_x, b_y = thin_strip_magnetic_field(1e-3, width, height, x)
     b_x_m, b_y_m = thin_strip_magnetic_field(1e-3, width, height, -x)
-    assert_allclose(b_x, b_x_m, rtol=1e-9)
-    assert_allclose(b_y, -b_y_m, rtol=1e-9, atol=1e-20)
     b_x_0, _ = thin_strip_magnetic_field(1e-3, width, height)
+    # B_y vanishes at x = 0, so compare it on the scale of the peak field.
+    atol = 1e-9 * float(jnp.abs(b_x_0))
+    assert_allclose(b_x, b_x_m, rtol=1e-9)
+    assert_allclose(b_y, -b_y_m, rtol=1e-9, atol=atol)
     assert jnp.abs(b_x) <= jnp.abs(b_x_0) * (1 + 1e-12)
     # Mirror image below the strip: B_x reverses, B_y is unchanged.
     b_x_below, b_y_below = thin_strip_magnetic_field(1e-3, width, -height, x)
     assert_allclose(b_x_below, -b_x, rtol=1e-9)
-    assert_allclose(b_y_below, b_y, rtol=1e-9, atol=1e-20)
+    assert_allclose(b_y_below, b_y, rtol=1e-9, atol=atol)
 
 
 @pytest.mark.parametrize(
