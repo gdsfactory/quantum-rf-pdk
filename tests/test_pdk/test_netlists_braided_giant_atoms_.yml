@@ -1,0 +1,26 @@
+instances:
+  squid_junction:
+    component: squid_junction
+    info: {}
+    settings:
+      junction_spec: josephson_junction
+      loop_area: 4
+  squid_junction2:
+    component: squid_junction
+    info: {}
+    settings:
+      junction_spec: josephson_junction
+      loop_area: 4
+nets: []
+placements:
+  squid_junction:
+    mirror: false
+    rotation: 135
+    x: 1008.132
+    y: 248.454
+  squid_junction2:
+    mirror: false
+    rotation: 315
+    x: 1991.868
+    y: -1024.708
+ports: {}

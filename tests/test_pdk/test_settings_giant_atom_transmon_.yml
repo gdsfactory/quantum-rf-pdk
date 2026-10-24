@@ -1,0 +1,54 @@
+info:
+  line_length: 13459.999
+  meander_depths:
+  - 2059.587
+name: giant_atom_transmon_CL160_160_SL13100_PS1000_CG8_PW10_A_264dcaf6
+ports:
+  junction:
+    center:
+    - 500
+    - 258
+    layer: JJ_AREA
+    name: junction
+    orientation: 270
+    port_type: placement
+    width: 33.446
+  o1:
+    center:
+    - -180
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 1180
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  arm_length: 200
+  arm_width: 10
+  bend_radius: 50
+  coupler_gap: 8
+  coupler_lengths:
+  - 160
+  - 160
+  cross_section: cpw
+  end_length: 100
+  gap_width: 10
+  island_extension: 50
+  island_width: 30
+  junction_spec: squid_junction
+  layer_etch: M1_ETCH
+  layer_metal: M1_DRAW
+  meander_pitch: 120
+  pad_width: 10
+  point_spacing: 1000
+  segment_lengths:
+  - 13100
