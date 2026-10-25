@@ -7,6 +7,7 @@ import hypothesis.strategies as st
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pytest
 from hypothesis import given, settings
 from numpy.testing import assert_allclose
 
@@ -244,11 +245,21 @@ class TestGatemon(TwoPortModelTestSuite):
 
     model_function = staticmethod(gatemon)
 
-    def test_matches_shunted_transmon(self) -> None:
+    @pytest.mark.parametrize("ground_capacitance", [0.0, 20e-15])
+    def test_matches_shunted_transmon(self, ground_capacitance: float) -> None:
         """Test that gatemon equals shunted_transmon with L_J from E_J = Δ Σ τ / 4."""
         f = self.get_frequency_array(50)
-        result = self._call_model(f=f, delta_ghz=60.0, transmissions=(0.5, 0.3))
-        expected = shunted_transmon(f=f, inductance=ej_to_inductance(12.0))
+        result = self._call_model(
+            f=f,
+            delta_ghz=60.0,
+            transmissions=(0.5, 0.3),
+            ground_capacitance=ground_capacitance,
+        )
+        expected = shunted_transmon(
+            f=f,
+            inductance=ej_to_inductance(12.0),
+            ground_capacitance=ground_capacitance,
+        )
         for key, value in expected.items():
             assert_allclose(result[key], value, atol=1e-12)
 
@@ -258,6 +269,31 @@ class TestGatemon(TwoPortModelTestSuite):
         expected = shunted_transmon(f=f, inductance=ej_to_inductance(10.0))
         for key, value in self._call_model(f=f).items():
             assert_allclose(value, expected[key], atol=1e-12)
+
+    def test_open_junction_is_capacitive_and_differentiable(self) -> None:
+        """Opening the weak link preserves its capacitance and tuning slope."""
+        f = self.get_frequency_array(20)
+        result = self._call_model(f=f, transmissions=(0.0,), ground_capacitance=20e-15)
+        normalized = 2j * jnp.pi * f * 120e-15 * 50
+        expected = {
+            ("o1", "o1"): (1 - normalized) / (1 + normalized),
+            ("o1", "o2"): 0.0,
+            ("o2", "o1"): 0.0,
+            ("o2", "o2"): -1.0,
+        }
+        for key, value in result.items():
+            assert bool(jnp.all(jnp.isfinite(value)))
+            assert_allclose(value, expected[key], atol=1e-12)
+
+        def reflection(tau: jax.Array | float) -> jax.Array:
+            return jnp.real(
+                gatemon(f=f, transmissions=jnp.atleast_1d(tau))["o1", "o1"]
+            ).sum()
+
+        slope = jax.jit(jax.grad(reflection))(0.0)
+        assert bool(jnp.isfinite(slope))
+        step = 1e-6
+        assert_allclose(slope, (reflection(step) - reflection(0.0)) / step, rtol=1e-4)
 
     def test_resonance_tracks_transmission(self) -> None:
         """Test that quadrupling Σ τ doubles the LC resonance frequency."""

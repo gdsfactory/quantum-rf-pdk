@@ -66,7 +66,7 @@ from qpdk.models.constants import DEFAULT_FREQUENCY, e, h
 from qpdk.models.datasets import Dataset, GridInterpolator, check_maxwell
 from qpdk.models.generic import tee
 from qpdk.models.jit import jit
-from qpdk.models.qubit import ej_to_inductance, shunted_transmon
+from qpdk.models.qubit import ej_to_inductance
 from qpdk.models.waveguides import straight
 
 __all__ = [
@@ -377,8 +377,8 @@ def gatemon(
 ) -> sax.SDict:
     r"""LC resonator model for a grounded gatemon qubit.
 
-    The island is shunted to ground through the junction, so this model wraps
-    :func:`~qpdk.models.qubit.shunted_transmon`. The junction is linearised
+    The island is shunted to ground through the junction, using the same circuit
+    as :func:`~qpdk.models.qubit.shunted_transmon`. The junction is linearised
     around :math:`\varphi = 0`: its inductance is
 
     .. math::
@@ -403,12 +403,21 @@ def gatemon(
     Returns:
         sax.SDict: S-parameters dictionary with ports o1 and o2.
     """
-    return shunted_transmon(
-        f=f,
-        capacitance=capacitance,
-        inductance=ej_to_inductance(gatemon_josephson_energy(delta_ghz, transmissions)),
-        ground_capacitance=ground_capacitance,
+    omega = 2 * jnp.pi * jnp.asarray(f)
+    # Differentiate inverse inductance directly so zero transmission stays finite.
+    inverse_l = gatemon_josephson_energy(delta_ghz, transmissions) / ej_to_inductance(
+        1.0
     )
+    admittance = 1j * omega * (capacitance + ground_capacitance) + inverse_l / (
+        1j * omega
+    )
+    reflection = (1 - 50 * admittance) / (1 + 50 * admittance)
+    return {
+        ("o1", "o1"): reflection,
+        ("o1", "o2"): jnp.zeros_like(reflection),
+        ("o2", "o1"): jnp.zeros_like(reflection),
+        ("o2", "o2"): -jnp.ones_like(reflection),
+    }
 
 
 @jit(inline=True)
