@@ -20,12 +20,14 @@ Mesh settings are provisional until independent numerical controls pass.
 Preview with --dry-run before generating a new grid.
 """
 
-import hashlib
-from functools import partial
 from pathlib import Path
 
-from _experiment import Recipe, Settings, run_cli
-from _planar_qubit import geometry
+import gdsfactory as gf
+from _experiment import Geometry, Recipe, Settings, run_cli
+from _readout import select_metal
+
+from qpdk.cells import plate_capacitor_single, xmon_transmon
+from qpdk.tech import LAYER
 
 GRID = {
     "arm_scale": [0.8, 1.0, 1.2],
@@ -34,13 +36,77 @@ GRID = {
     "paddle_length": [30.0, 60.0, 90.0],
 }
 SETTINGS = Settings(near_mesh=1.0, far_mesh=60.0, domain_pad=1200.0, order=3)
+
+
+def geometry(point: dict[str, float], settings: Settings, _processes: int) -> Geometry:
+    """Retain the local qubit and readout paddle without a resonator route."""
+    if min(point.values()) <= 0:
+        raise ValueError("All device dimensions and scales must be positive")
+    scale = point["arm_scale"]
+    device = xmon_transmon(
+        arm_lengths=tuple(scale * value for value in (160.0, 120.0, 160.0, 120.0)),
+        gap_width=point["gap_width"],
+    )
+    names = ("island",)
+    ports = (device.ports["left_arm"],)
+    local = gf.Component()
+    local.add_ref(device)
+    paddle = local.add_ref(
+        plate_capacitor_single(length=point["paddle_length"], width=20)
+    )
+    paddle.dmove((
+        ports[0].dx - point["coupling_gap"] - 10,
+        ports[0].dy,
+    ))
+    bounds = local.dbbox()
+    dbu = local.kcl.dbu
+    frame = gf.kdb.Region(
+        gf.kdb.DBox(
+            bounds.left - 300,
+            bounds.bottom - 300,
+            bounds.right + 300,
+            bounds.top + 300,
+        ).to_itype(dbu)
+    )
+    etch = local.get_region(LAYER.M1_ETCH)
+    # The CPW is external to this coupon; keep its port cut electrically open.
+    pin = paddle.ports["o1"]
+    cut = gf.kdb.DBox(pin.dx - 8, pin.dy - 20, pin.dx, pin.dy + 20)
+    etch |= gf.kdb.Region(cut.to_itype(dbu))
+    metal = ((frame - etch) | local.get_region(LAYER.M1_DRAW)).merged()
+    terminals = (*names, "readout")
+    terminal_ports = (*ports, pin)
+    electrodes = [select_metal(metal, port, dbu) for port in terminal_ports]
+    box = frame.bbox()
+    ground = metal.interacting(
+        gf.kdb.Region(gf.kdb.Box(box.left, box.bottom, box.left + 2, box.bottom + 2))
+    )
+    for i, electrode in enumerate(electrodes):
+        if not (electrode & ground).is_empty():
+            raise ValueError(f"{terminals[i]} touches reference ground")
+        if any(not (electrode & other).is_empty() for other in electrodes[:i]):
+            raise ValueError("Local qubit electrodes are shorted")
+    component = gf.Component()
+    for polygon in metal.each():
+        component.add_polygon(polygon.to_dtype(dbu), layer=LAYER.M1_DRAW)
+    for name, port in zip(terminals, terminal_ports, strict=True):
+        component.add_port(name, port=port, port_type="electrical")
+    pad = settings.domain_pad
+    box = frame.bbox().to_dtype(dbu)
+    return Geometry(
+        component=component,
+        bounds=(box.left - pad, box.bottom - pad, box.right + pad, box.top + pad),
+        terminal_ports={name: name for name in terminals},
+    )
+
+
 RECIPE = Recipe(
     name="xmon_readout_palace",
     script=Path(__file__),
     grid=GRID,
     axis_units={"arm_scale": "1"},
     terminals=("island", "readout"),
-    geometry=partial(geometry, xmon=True),
+    geometry=geometry,
     settings=SETTINGS,
     description="Local Xmon island and readout paddle, excluding external CPW.",
     reference_ground="finite_coplanar_chip_ground",
@@ -50,9 +116,6 @@ RECIPE = Recipe(
         "reference_planes": "Paddle CPW pin, open cut at its left edge",
         "junction": "Open and omitted, circuit junction connects island to ground",
         "scope": "Equipotential cross, no distributed arm or resonator modes",
-        "geometry_helper_sha256": hashlib.sha256(
-            Path(__file__).with_name("_planar_qubit.py").read_bytes()
-        ).hexdigest(),
     },
 )
 
