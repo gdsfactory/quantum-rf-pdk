@@ -128,18 +128,26 @@ def get_layer_stack() -> LayerStack:
             # Base metal film (e.g., 200 nm of Nb)
             "M1": LayerLevel(
                 name="M1",
-                # Generate base metal by subtracting (modified) etch from sim. area
+                layer=L.M1_DRAW,
+                thickness=200e-9 * 1e6,
+                zmin=0.0,
+                material="Nb",
+                mesh_order=1,
+            ),
+            "M1_ground": LayerLevel(
+                name="M1_ground",
+                # An implicit ground would fill gaps in positive solver geometry.
                 layer=DerivedLayer(
                     layer1=LogicalLayer(layer=L.SIM_AREA),
-                    # additive wins over substractive etch
                     layer2=DerivedLayer(
                         layer1=LogicalLayer(layer=L.M1_ETCH),
                         layer2=LogicalLayer(layer=L.M1_DRAW),
-                        operation="not",
+                        operation="or",
                     ),
                     operation="not",
                 ),
-                derived_layer=LogicalLayer(layer=L.M1_DRAW),
+                # Separate outputs keep the ground and additive faces disjoint.
+                derived_layer=LogicalLayer(layer=L.M1_ETCH),
                 thickness=200e-9 * 1e6,
                 zmin=0.0,  # top of substrate
                 material="Nb",
@@ -160,6 +168,7 @@ def get_layer_stack() -> LayerStack:
                 zmin=-500,  # below metal
                 material="Si",
                 mesh_order=4,
+                background=True,
             ),
             "Vacuum": LayerLevel(
                 name="Vacuum",
@@ -262,16 +271,24 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
         **LAYER_STACK.layers,
         "M2": LayerLevel(
             name="M2",
+            layer=L.M2_DRAW,
+            thickness=0.2,
+            zmin=10.0,
+            material="Nb",
+            mesh_order=1,
+        ),
+        "M2_ground": LayerLevel(
+            name="M2_ground",
             layer=DerivedLayer(
                 layer1=LogicalLayer(layer=L.SIM_AREA),
                 layer2=DerivedLayer(
                     layer1=LogicalLayer(layer=L.M2_ETCH),
                     layer2=LogicalLayer(layer=L.M2_DRAW),
-                    operation="not",
+                    operation="or",
                 ),
                 operation="not",
             ),
-            derived_layer=LogicalLayer(layer=L.M2_DRAW),
+            derived_layer=LogicalLayer(layer=L.M2_ETCH),
             thickness=0.2,
             zmin=10.0,
             material="Nb",
@@ -284,6 +301,7 @@ LAYER_STACK_FLIP_CHIP = LayerStack(
             zmin=10.2,  # below metal
             material="Si",
             mesh_order=4,
+            background=True,
         ),
     }
 )
@@ -575,7 +593,7 @@ def _route_component(
 
 route_bundle = route_bundle_cpw = partial(
     gf.routing.route_bundle,
-    cross_section=cpw,
+    cross_section="coplanar_waveguide",
     bend=partial(_route_component, "bend_circular", allow_min_radius_violation=True),
     collision_check_layers=[LAYER.WG],
     on_collision="error",
@@ -584,7 +602,7 @@ route_bundle = route_bundle_cpw = partial(
 )
 route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     gf.routing.route_bundle_all_angle,
-    cross_section=cpw,
+    cross_section="coplanar_waveguide",
     separation=3,
     bend=partial(
         _route_component,
@@ -595,7 +613,7 @@ route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
 )
 route_bundle_sbend = route_bundle_sbend_cpw = partial(
     gf.routing.route_bundle_sbend,
-    cross_section=cpw,
+    cross_section="coplanar_waveguide",
     bend_s=partial(_route_component, "bend_s", allow_min_radius_violation=True),
 )
 

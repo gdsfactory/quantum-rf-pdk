@@ -127,6 +127,16 @@ What a foundry PDK usually changes in `qpdk/tech.py`:
 - **Cross-sections** such as `coplanar_waveguide`: default width, gap, and bend radius for 50 Ω on your substrate.
 - **`routing_strategies`**: the default cross-sections for routing.
 
+The default layer stack also drives gdsfactory and GDSFactory+ 3D views. Background substrates use the layout bounds.
+Drawn metal renders directly, while ground extraction uses `SIM_AREA` and excludes the draw and etch masks. These metal
+regions are disjoint and preserve additive priority. Ground is not a background level, so viewing prepared solver
+geometry does not fill its intentional gaps. `SIM_AREA` is hidden in the layer views so vacuum does not obscure the
+device, while background substrates remain visible. Keep these rules in step when changing the process.
+
+For standalone 3D viewing, run `uv run --extra graphics python qpdk/samples/sample_to_3d.py`. The sample uses
+gdsfactory's `component.to_3d()` and `scene.show()` to open a trimesh window. The same call embeds the view in Jupyter.
+The sample scales the camera clipping range with the scene size so micrometre chip coordinates stay visible.
+
 QPDK has no table of design rules. Minimum widths and gaps are default parameter values in the cross-sections and cells.
 Check the cells you keep against your rules. For hosted DRC, set `[tool.gdsfactoryplus.drc] pdk` in `pyproject.toml` to
 your own rule deck.

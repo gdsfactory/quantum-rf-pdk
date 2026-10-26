@@ -101,6 +101,7 @@ LayerViews:
         layer_in_name: true
         color: "green"
         hatch_pattern: hollow
+        visible: false
       SIM_ONLY:
         layer: [99, 0]
         layer_in_name: true

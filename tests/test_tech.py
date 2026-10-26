@@ -27,6 +27,7 @@ from qpdk.tech import (
 # so a transcription slip in either file shows up as a mismatch.
 _EXPECTED_GEOMETRY_UM: dict[str, tuple[float, float]] = {
     "M1": (0.2, 0.0),  # 200 nm Nb film
+    "M1_ground": (0.2, 0.0),
     "NbTiN": (0.015, 0.0),  # 15 nm
     "Substrate": (500, -500),
     "Vacuum": (500, 0.2),  # 500 microns of vacuum above metal
@@ -40,6 +41,7 @@ _EXPECTED_GEOMETRY_UM: dict[str, tuple[float, float]] = {
 # Levels unique to the flip-chip stack (the rest are shared with LAYER_STACK).
 _FLIP_CHIP_EXTRA_GEOMETRY_UM: dict[str, tuple[float, float]] = {
     "M2": (0.2, 10.0),
+    "M2_ground": (0.2, 10.0),
     "Substrate_top": (500, 10.2),
 }
 
