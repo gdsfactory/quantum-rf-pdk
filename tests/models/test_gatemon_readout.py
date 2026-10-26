@@ -1,6 +1,5 @@
 """Check the loaded transmission resonators in the declarative gatemon sample."""
 
-import json
 from functools import cache
 from inspect import signature
 from pathlib import Path
@@ -15,6 +14,7 @@ import yaml
 
 from qpdk.models.capacitor import interdigital_capacitor
 from qpdk.models.constants import e, h, ε_0
+from qpdk.models.datasets import Dataset
 from qpdk.models.gatemon import gatemon_coupler, gatemon_island
 from qpdk.models.generic import short
 from qpdk.models.waveguides import straight
@@ -134,12 +134,9 @@ def test_nominal_gate_capacitances_include_contact_overlap() -> None:
         for contact in contacts
     ]
     local = [ε_0 * permittivity * area / thickness for area in overlaps]
-    evidence = json.loads(
-        (
-            SAMPLE.parent.parent
-            / "models/datasets/data/gatemon_palace.convergence.json"
-        ).read_text()
-    )
+    evidence = Dataset("gatemon_palace").metadata.provenance["validation"][
+        "convergence"
+    ]
     matrix = evidence["cases"]["nominal"]["profiles"]["fine"]["maxwell_capacitance_f"]
     defaults = signature(gatemon_island).parameters
     mutual = defaults["gate_capacitance"].default

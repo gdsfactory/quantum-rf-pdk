@@ -125,9 +125,8 @@ electrostatics.
 
 The gatemon recipe uses 0.8 µm near-metal and 60 µm far-field mesh sizes, a 1200 µm
 domain padding and height, third-order elements and a :math:`10^{-9}` linear solver
-tolerance. The :download:`representative convergence study
-<../qpdk/models/datasets/data/gatemon_palace.convergence.json>` records four geometries
-with a finer 0.6 µm / 40 µm mesh, fourth-order elements and a larger 1800 µm domain. The
+tolerance. The embedded representative convergence study records four geometries with a
+finer 0.6 µm / 40 µm mesh, fourth-order elements and a larger 1800 µm domain. The
 largest relative changes in :math:`C_\Sigma`, :math:`C_\text{g}` and :math:`C_\text{c}`
 were 0.652%, 0.736% and 0.476%, within the respective 1%, 5% and 1% tolerances. These
 checks apply to the M1 island row. Full-grid coverage and interpolation are validated
@@ -135,14 +134,28 @@ separately.
 
 The bundled ``gatemon_palace`` dataset contains all 144 geometries and 3024 records,
 including the complete three-terminal Maxwell matrices and solver diagnostics. The
-:download:`production verification report
-<../qpdk/models/datasets/data/gatemon_palace.verification.json>` includes three
-independent holdout solves. Their largest interpolation errors in :math:`C_\Sigma`,
-:math:`C_\text{g}` and :math:`C_\text{c}` are 1.65%, 2.61% and 1.39%, below the
-respective 3%, 10% and 5% limits. All matrices produce finite, reciprocal, lossless SAX
-responses over 1 to 10 GHz. At the default geometry, the M1 values are 51.93 fF, 1.582
-fF and 5.731 fF. These values describe the finite extraction coupon and do not include
-the hybrid process's local capacitances.
+embedded production verification report includes three independent holdout solves. Their
+largest interpolation errors in :math:`C_\Sigma`, :math:`C_\text{g}` and
+:math:`C_\text{c}` are 1.65%, 2.61% and 1.39%, below the respective 3%, 10% and 5%
+limits. All matrices produce finite, reciprocal, lossless SAX responses over 1 to 10
+GHz. At the default geometry, the M1 values are 51.93 fF, 1.582 fF and 5.731 fF. These
+values describe the finite extraction coupon and do not include the hybrid process's
+local capacitances.
+
+Both reports are stored in each Parquet part's ``qpdk.dataset`` metadata under
+``provenance.validation``. Read them through the dataset API without separate files:
+
+.. code-block:: python
+
+    from qpdk.models.datasets import Dataset
+
+    validation = Dataset("gatemon_palace").metadata.provenance["validation"]
+    convergence = validation["convergence"]
+    verification = validation["verification"]
+
+The verification report hashes the result rows independently of the metadata. Its source
+provenance retains the original solver-file hashes, while Git LFS identifies the
+published Parquet file including the embedded reports.
 
 The ``gatemon_test_chip`` sample uses two independent transmission resonators with
 series coupling capacitors at both ends, as drawn in Fig. 1a of
