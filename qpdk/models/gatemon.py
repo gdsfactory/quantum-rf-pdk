@@ -279,6 +279,27 @@ def gatemon_hamiltonian(
 
     Returns:
         A ``(2*n_max+1, 2*n_max+1)`` real symmetric matrix in GHz.
+
+    Notes:
+        JAX supplies the FFT and Hermitian eigensolver; only the junction
+        potential and its charge-basis mapping are specific to this model.
+        For eigenstates, tensor products or time evolution, pass this matrix
+        to QuTiP with its optional JAX backend. Install ``qpdk[models,qutip]``.
+        Setting ``isherm=True`` keeps the Hermiticity check static under JIT.
+
+    Example:
+        Build a JAX-backed QuTiP operator without changing the global backend:
+
+        .. code-block:: python
+
+            import qutip as qt
+            import qutip_jax
+
+            H = qt.Qobj(gatemon_hamiltonian(), dtype="jax", isherm=True)
+            energies, states = H.eigenstates(eigvals=3)
+
+        ``H`` is in GHz. QuTiP time evolution uses angular frequencies, so
+        use ``2 * jnp.pi * H`` with times in ns.
     """
     n_phi = _n_phi(n_max)
     phi = 2 * jnp.pi * jnp.arange(n_phi) / n_phi
