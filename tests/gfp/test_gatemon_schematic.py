@@ -6,10 +6,13 @@ from pathlib import Path
 
 import gdsfactory as gf
 import jax.numpy as jnp
+import numpy as np
 import pytest
 from conftest import import_gfp_module
 
 from qpdk import PDK
+from qpdk.models.constants import c_0
+from qpdk.samples.simulate_gatemon_test_chip import _circuit
 from qpdk.tech import LAYER
 
 converter = import_gfp_module("gdsfactoryplus.nyancir_to_dschematic")
@@ -126,6 +129,14 @@ def test_gatemon_schematic_simulates_capacitive_readout(
         sweep_axis="f",
         **kwargs,
     )
+    circuit, _ = _circuit("schematic" if source == "mosaic" else "layout")
+    frequencies = c_0 * 1e6 / jnp.asarray(result["wavelengths"])
+    standalone = circuit(f=frequencies)
+    assert set(result["sdict"]) == {f"{a},{b}" for a, b in standalone}
+    for (a, b), expected in standalone.items():
+        entry = result["sdict"][f"{a},{b}"]
+        actual = jnp.asarray(entry["real"]) + 1j * jnp.asarray(entry["imag"])
+        np.testing.assert_allclose(actual, expected, atol=1e-8, rtol=1e-8)
     for gate, rf in [("gate_a", "o1"), ("gate_b", "o3")]:
         entry = result["sdict"][f"{gate},{rf}"]
         values = jnp.asarray(entry["real"]) + 1j * jnp.asarray(entry["imag"])

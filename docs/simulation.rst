@@ -201,6 +201,44 @@ uses a bias tee with its RF branch grounded as a reflective filter
 use an ideal RF-grounded gate. A matched 50 ohm gate loads the qubit and gives a
 different transmission spectrum.
 
+The complete test chip can also be simulated without GDSFactory+ using
+``qpdk.samples.simulate_gatemon_test_chip``. After installing the models extra and
+matplotlib, run either source and refine the frequency window around a narrow peak:
+
+.. code-block:: console
+
+    uv run --no-sync python -m qpdk.samples.simulate_gatemon_test_chip --source schematic --output build/gatemon-sax/schematic
+    uv run --no-sync python -m qpdk.samples.simulate_gatemon_test_chip --source layout --output build/gatemon-sax/layout
+    uv run --no-sync python -m qpdk.samples.simulate_gatemon_test_chip --source layout --f-min-ghz 5.05 --f-max-ghz 5.07 --points 4001 --output build/gatemon-sax/cavity
+
+The schematic source reads the YAML connections and treats routed links as ideal wires.
+The layout source builds the YAML geometry and calls
+``get_netlist(serialization_max_digits=18)`` to include every routed CPW segment. The
+precision preserves SI capacitances such as the 5.4 fF coupling, which default netlist
+rounding would erase. Both sources bind the ``gatemon`` layout to ``gatemon_island``,
+whose ports are ``readout`` and ``gate``. The older standalone ``gatemon`` SAX model has
+different ports. Both responses are checked against their corresponding GFP simulation
+paths.
+
+The script writes all complex S-parameters to CSV and selected transmission traces to
+PNG and SVG. Its sweep is uniform in frequency. With default transmissions and matched
+gates, the schematic cavity is near 5.06033 GHz, its next harmonic near 10.11284 GHz and
+the broad qubit feature in gate transfer near 4.55891 GHz. Opening the Josephson
+junction with ``--transmission 0`` returns the fundamental to 5.05600 GHz. Tuning
+transmission to 0.98 gives two hybrid peaks about 100 MHz apart, consistent with the
+nominal 50 MHz coupling. Setting the coupling capacitance to zero removes the qubit's
+effect on RF transmission. The nonlinear ABS Hamiltonian instead gives an isolated
+:math:`f_{01}` near 4.447 GHz for the nominal charging energy and default junction. That
+quantum transition is distinct from the linear oscillator resonance plotted by SAX.
+
+``--gate-load short`` places an ideal RF short at each gate launcher's external
+reference plane. The layout source retains the intervening gate CPW, so this differs
+from grounding the island model's gate terminal directly. The matched default is a
+six-port device characterization, not the complete bias network used in the paper. Power
+sent to a matched gate port reduces RF transmission, and the CPW model also includes the
+substrate's dielectric loss. Broad sweeps can miss the maxima of narrow resonances; use
+a local frequency sweep before interpreting their heights.
+
 ``flipmon_readout_coupon_model()`` creates a 5-port static SAX coupon model. Pass
 ``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
 frequency ``f`` in Hz. The whole readout conductor shares one potential, and feedline
