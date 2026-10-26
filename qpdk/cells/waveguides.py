@@ -485,7 +485,7 @@ coupler_ring = partial(
 )
 
 
-@gf.vcell
+@gf.vcell(tags=["waveguides"])
 def straight_all_angle(
     length: float = 10.0,
     npoints: int = 2,
@@ -508,7 +508,7 @@ def straight_all_angle(
     )
 
 
-@gf.vcell
+@gf.vcell(tags=["waveguides", "bend", "euler"])
 def bend_euler_all_angle(
     radius: float | None = None,
     angle: float = 90.0,
@@ -543,7 +543,7 @@ def bend_euler_all_angle(
     )
 
 
-@gf.vcell
+@gf.vcell(tags=["waveguides", "bend", "circular"])
 def bend_circular_all_angle(
     radius: float | None = 100.0,
     angle: float = 90.0,
