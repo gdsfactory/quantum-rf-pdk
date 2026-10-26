@@ -86,7 +86,6 @@ then conflict here in a known way, and the diff of this commit is your checklist
 | Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                       |
 | PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py` |
 | KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`   |
-| Viewer PDK          | `qpdk/viewer.py`, copied from `qpdk.PDK`                                               |
 | KLayout install     | `src` and `dest` in `qpdk/install_tech.py`                                             |
 | Docs                | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                 |
 | Workflows           | `test.yml` (`--cov=qpdk`, imports)                                                     |
@@ -128,11 +127,15 @@ What a foundry PDK usually changes in `qpdk/tech.py`:
 - **Cross-sections** such as `coplanar_waveguide`: default width, gap, and bend radius for 50 Ω on your substrate.
 - **`routing_strategies`**: the default cross-sections for routing.
 
-GDSFactory+ uses `qpdk.viewer.PDK`, selected by `pdk.name` in `pyproject.toml`. It copies the normal PDK and uses
-`background` layers for the substrate and etched metal, with separate additive metal regions. The 3D view always uses
-the layout bounds, even when `SIM_AREA` is present, and omits vacuum. Layout polygons and the simulation stack in
-`qpdk.PDK` are unchanged. Keep using `qpdk.PDK` for simulations. `qpdk/viewer.py` builds its display stack from the
-process stack, so thickness and material changes carry over automatically.
+The default layer stack also drives gdsfactory and GDSFactory+ 3D views. Background substrates use the layout bounds.
+Drawn metal renders directly, while ground extraction uses `SIM_AREA` and excludes the draw and etch masks. These metal
+regions are disjoint and preserve additive priority. Ground is not a background level, so viewing prepared solver
+geometry does not fill its intentional gaps. `SIM_AREA` is hidden in the layer views so vacuum does not obscure the
+device, while background substrates remain visible. Keep these rules in step when changing the process.
+
+For standalone 3D viewing, run `uv run --extra graphics python qpdk/samples/sample_to_3d.py`. The sample uses
+gdsfactory's `component.to_3d()` and `scene.show()` to open a trimesh window. The same call embeds the view in Jupyter.
+The sample scales the camera clipping range with the scene size so micrometre chip coordinates stay visible.
 
 QPDK has no table of design rules. Minimum widths and gaps are default parameter values in the cross-sections and cells.
 Check the cells you keep against your rules. For hosted DRC, set `[tool.gdsfactoryplus.drc] pdk` in `pyproject.toml` to
@@ -234,7 +237,6 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | [Identity files](#identity-rename), version            | Fork  | Keep your names. Take the other QPDK changes     |
 | `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork  | Keep yours. Add QPDK layers you want, regenerate |
 | `qpdk/tech.py`                                         | Both  | Keep your values. Take new QPDK definitions      |
-| `qpdk/viewer.py`                                       | Both  | Keep preview rules in step with your process     |
 | `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
 | `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
 | QPDK modules in `qpdk/cells/`                          | QPDK  | Merge. New QPDK cells usually merge cleanly      |

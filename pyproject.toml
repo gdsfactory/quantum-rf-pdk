@@ -56,7 +56,8 @@ gdsfactoryplus = [
   "jaxellip",
   "polars>=2,<3",
 ]
-graphics = ["trimesh", "pyglet<3"]
+# trimesh's OpenGL viewer does not support pyglet 2.
+graphics = ["trimesh", "pyglet<2"]
 hfss = ["gplugins[ansys]~=2.1.0", "polars>=2,<3", "pyaedt[graphics]>=0.15.0"]
 models = [
   "gplugins[meshwell]~=2.1.0",
@@ -187,7 +188,7 @@ num = 4001
 unit = "GHz"
 
 [tool.gdsfactoryplus.pdk]
-name = "qpdk.viewer"
+name = "qpdk"
 
 # Read directly from this file by the gdsfactoryplus >= 2.0 sidebar webview
 # (not part of the v2 settings schema; the "Make default" sidebar action

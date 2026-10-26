@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[graphics] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # ---
 # jupyter:
 #   jupytext:
@@ -11,7 +18,15 @@
 # %% [markdown]
 # # Sample 3D Visualization
 #
-# This sample demonstrates how to create a 3D visualization of a layout with different cross-sections.
+# Use gdsfactory's standalone trimesh viewer without GDSFactory+:
+#
+# ```sh
+# uv run --extra graphics python qpdk/samples/sample_to_3d.py
+# ```
+#
+# Gdsfactory recommends `component.to_3d()` followed by `scene.show()`:
+# https://gdsfactory.github.io/gdsfactory/notebooks/03_layer_stack/#3d-rendering
+# QPDK's default stack supplies a background substrate and hides vacuum.
 
 # %%
 import gdsfactory as gf
@@ -56,9 +71,7 @@ def sample_to_3d() -> gf.Component:
     # since we are inside a @cell-decorated function and the result of fill_magnetic_vortices is also a cell.
     c = c.dup()
 
-    # For 3D visualization, we need to add the SIM_AREA layer which acts as the bulk metal/substrate
-    # from which etched regions are subtracted in the LayerStack.
-    # We match the SIM_AREA to the chip edge area.
+    # This domain bounds the ground plane when extracting physical simulation geometry.
     bbox_total = c.bbox()
     c.add_polygon(
         [
@@ -77,13 +90,15 @@ def sample_to_3d() -> gf.Component:
 # %% [markdown]
 # ## Visualization
 #
-# Shows the component in 2D (KLayout) and 3D.
+# Opens a standalone 3D window. In a Jupyter notebook, `scene.show()` embeds the view.
 
 # %%
 if __name__ == "__main__":
     PDK.activate()
 
     c = sample_to_3d()
-    c.show()
-    s = c.to_3d(layer_stack=tech.LAYER_STACK_NO_VACUUM)
-    s.show()
+    scene = c.to_3d()
+    # Chip coordinates in micrometres exceed trimesh's default clipping range.
+    scene.camera.z_near = scene.scale / 100
+    scene.camera.z_far = scene.scale * 10
+    scene.show()
