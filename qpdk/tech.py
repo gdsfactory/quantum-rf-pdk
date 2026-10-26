@@ -261,17 +261,21 @@ def get_vacuum_gap(layer_stack: LayerStack | None = None) -> float:
         layer_stack: Layer stack to read. Defaults to ``LAYER_STACK``.
 
     Raises:
-        ValueError: If the membrane does not sit above the top of ``M1``.
+        ValueError: If the stack lacks the ``M1`` or ``VacuumGap_Top`` level,
+            or the membrane does not sit above the top of ``M1``.
     """
     stack = layer_stack or LAYER_STACK
-    m1 = stack.layers["M1"]
-    top = stack.layers["VacuumGap_Top"]
-    gap = top.zmin - (m1.zmin + m1.thickness)
+    try:
+        m1 = stack.layers["M1"]
+        top = stack.layers["VacuumGap_Top"]
+    except KeyError as err:
+        raise ValueError(f"Layer stack has no {err} level") from err
+    gap = round(top.zmin - (m1.zmin + m1.thickness), 9)
     if gap <= 0:
         raise ValueError(
             f"VacuumGap_Top must sit above the top of M1, got a gap of {gap} µm"
         )
-    return round(gap, 9)
+    return gap
 
 
 def get_layer_material_properties(

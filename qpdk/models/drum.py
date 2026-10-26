@@ -76,7 +76,9 @@ def vacuum_gap_capacitance_analytical(
 
     Assumptions: zero-thickness plates of equal radius in vacuum, no ground
     plane nearby. For a 15 µm diameter drum with a 50 nm gap the fringing term
-    adds 1.7 %.
+    adds 1.7 %. The :func:`~qpdk.cells.drum.vacuum_gap_capacitor` cell draws a
+    membrane larger than the bottom electrode, with a grounded ring a few µm
+    away, so this term is only an estimate of the fringing there.
 
     Args:
         radius: Radius :math:`a` of the overlapping plates in µm.
@@ -118,7 +120,9 @@ def drum_effective_mass(
 
     A clamped-membrane mode shape would change both :math:`m_\text{eff}` and
     :math:`\partial C/\partial x`. That correction is not part of the cited
-    model; ``mass_factor`` only scales the mass.
+    model; ``mass_factor`` only scales the mass. For the fundamental
+    :math:`J_0` mode of a clamped circular membrane it would lower
+    :math:`g_0` by about 17 %.
 
     Args:
         radius: Drum radius :math:`a` in µm.
@@ -309,6 +313,21 @@ def drum_lc_resonator(
     :math:`C_\text{d}` comes from :func:`vacuum_gap_capacitance_analytical`
     and :math:`L` from :func:`~qpdk.models.inductor.meander_inductor_inductance_analytical`.
     Losses are neglected.
+
+    Limits of this lumped model:
+
+    - The meander's own capacitance to ground is not included. With a drum of
+      only some tens of fF it can be of the same order as :math:`C_\text{d}`,
+      which lowers :math:`\omega_\text{r}` and the participation
+      :math:`\eta` of :func:`drum_electromechanical_coupling`. Pass an
+      extracted value as ``parasitic_capacitance``.
+    - The default meander is about 21 mm of wire, which is not short compared
+      with the wavelength at the resonance. Distributed effects are neglected.
+    - ``coupling_capacitance`` is an input. It is not derived from the
+      coupling pad of :func:`~qpdk.cells.drum.drum_lc_resonator`.
+
+    Extract :math:`C_\text{p}` and :math:`C_\text{c}` with an EM solver
+    before relying on the resonance frequency of a layout.
 
     Args:
         f: Array of frequency points in Hz.

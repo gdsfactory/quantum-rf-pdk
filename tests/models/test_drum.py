@@ -20,7 +20,7 @@ from qpdk.models.drum import (
     vacuum_gap_capacitor,
 )
 from qpdk.models.inductor import meander_inductor_inductance_analytical
-from qpdk.tech import get_vacuum_gap
+from qpdk.tech import LAYER_STACK, get_vacuum_gap
 
 from .base import TwoPortModelTestSuite
 
@@ -52,6 +52,17 @@ def test_default_gap_comes_from_layer_stack() -> None:
     """The default gap is the 50 nm VacuumGap level of the layer stack."""
     assert get_vacuum_gap() == pytest.approx(0.05)
     assert pytest.approx(0.05) == VACUUM_GAP
+
+
+def test_get_vacuum_gap_rejects_bad_stacks() -> None:
+    """A missing level or a membrane at or below the top of M1 is a ValueError."""
+    stack = LAYER_STACK.model_copy(deep=True)
+    stack.layers["VacuumGap_Top"].zmin = 0.2
+    with pytest.raises(ValueError, match="above the top of M1"):
+        get_vacuum_gap(stack)
+    del stack.layers["VacuumGap_Top"]
+    with pytest.raises(ValueError, match="VacuumGap_Top"):
+        get_vacuum_gap(stack)
 
 
 def test_parallel_plate_capacitance() -> None:
@@ -129,11 +140,26 @@ def test_resonator_dip_at_lc_frequency() -> None:
     assert float(s21[2]) > 0.99
 
 
+def _dip_frequency(gap: float = VACUUM_GAP, parasitic: float = 0.0) -> float:
+    """Return the frequency of the |S21| minimum of the drum resonator."""
+    f = jnp.linspace(2e9, 12e9, 20001)
+    s21 = jnp.abs(
+        drum_lc_resonator(f=f, gap=gap, parasitic_capacitance=parasitic)["o2", "o1"]
+    )
+    return float(f[jnp.argmin(s21)])
+
+
 def test_smaller_gap_lowers_resonance() -> None:
     """A smaller gap raises the drum capacitance and lowers the resonance."""
     c_wide = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.06)
     c_narrow = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.04)
     assert float(c_narrow) > float(c_wide)
+    assert _dip_frequency(gap=0.04) < _dip_frequency(gap=0.06)
+
+
+def test_parasitic_capacitance_lowers_resonance() -> None:
+    """Parasitic capacitance in parallel with the drum lowers the resonance."""
+    assert _dip_frequency(parasitic=30e-15) < _dip_frequency()
 
 
 def test_helpers_jit_and_differentiate() -> None:

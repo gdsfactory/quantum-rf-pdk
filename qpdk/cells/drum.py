@@ -223,8 +223,13 @@ def drum_lc_resonator(
                  +------------+
                  GND
 
-    The resonance is :math:`\omega_\text{r} = 1/\sqrt{L (C_\text{d} + C_\text{c})}`,
-    see :func:`qpdk.models.drum.drum_lc_resonator`.
+    The etched window sits below the feedline's lower ground plane, which is
+    kept intact except for a notch around the pad. The notch leaves
+    ``coupling_gap`` of clearance to the ground on the sides of the pad.
+
+    The resonance is :math:`\omega_\text{r} = 1/\sqrt{L (C_\text{d} + C_\text{c})}`
+    in the lumped model, see :func:`qpdk.models.drum.drum_lc_resonator`, which
+    also lists what that model leaves out.
 
     Args:
         radius: Drum bottom-electrode radius in µm.
@@ -287,7 +292,16 @@ def drum_lc_resonator(
     x_left = ind.ports["o1"].dcenter[0] - margin
     x_right = drum.ports["o2"].dcenter[0]
     y_bottom = ind.dbbox().bottom - margin
-    window_top = -feed_xs.width / 2 - feed_etch.width
+    # The window stops at the pad bottom so the feedline keeps its lower ground
+    # plane. Only a notch around the pad opens onto the feedline gap.
+    feed_gap_edge = -feed_xs.width / 2 - feed_etch.width
+    window_top = pad_bottom
+    notch = _box(
+        node_x - coupling_pad_size - coupling_gap,
+        pad_bottom,
+        node_x + coupling_gap,
+        max(feed_gap_edge, pad_top),
+    )
 
     feed = tmp << straight(
         length=x_right - x_left + 2 * margin, cross_section=cross_section
@@ -310,7 +324,9 @@ def drum_lc_resonator(
         )
     ).merged()
     etch = (
-        _layer_region(tmp, LAYER.M1_ETCH) + _box(x_left, y_bottom, x_right, window_top)
+        _layer_region(tmp, LAYER.M1_ETCH)
+        + _box(x_left, y_bottom, x_right, window_top)
+        + notch
     ) - metal
 
     c = Component()
@@ -318,6 +334,8 @@ def drum_lc_resonator(
     c.add_polygon(etch, layer=LAYER.M1_ETCH)
     c.add_polygon(_layer_region(tmp, LAYER.VG_TOP), layer=LAYER.VG_TOP)
     c.add_polygon(_layer_region(tmp, LAYER.VG_SAC), layer=LAYER.VG_SAC)
+    # Keep the feedline routing-collision layer
+    c.add_polygon(_layer_region(tmp, LAYER.WG), layer=LAYER.WG)
     c.add_ports(feed.ports)
 
     c.info["vacuum_gap"] = get_vacuum_gap()
