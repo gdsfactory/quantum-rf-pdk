@@ -9,10 +9,10 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 from conftest import import_gfp_module
+from models.gatemon_test_chip import _circuit
 
 from qpdk import PDK
 from qpdk.models.constants import c_0
-from qpdk.samples.simulate_gatemon_test_chip import _circuit
 from qpdk.tech import LAYER
 
 converter = import_gfp_module("gdsfactoryplus.nyancir_to_dschematic")

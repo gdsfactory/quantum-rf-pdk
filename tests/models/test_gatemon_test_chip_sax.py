@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+from pathlib import Path
 from typing import Literal
 
 import jax.numpy as jnp
@@ -9,7 +10,7 @@ import numpy as np
 import pytest
 from scipy.signal import find_peaks
 
-from qpdk.samples.simulate_gatemon_test_chip import _circuit, _netlist
+from .gatemon_test_chip import _circuit, _netlist
 
 
 def _settings(
@@ -139,11 +140,12 @@ def test_standalone_path_without_gdsfactoryplus() -> None:
             "-c",
             (
                 "import sys; sys.modules['gdsfactoryplus'] = None; "
-                "from qpdk.samples.simulate_gatemon_test_chip import _circuit; "
+                "from models.gatemon_test_chip import _circuit; "
                 "assert all(len(_circuit(source)[0](f=5.06e9)) == 36 "
                 "for source in ('schematic', 'layout'))"
             ),
         ],
+        cwd=Path(__file__).resolve().parents[1],
         check=True,
         capture_output=True,
         text=True,
