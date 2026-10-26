@@ -30,8 +30,8 @@ from _planar_qubit import geometry
 GRID = {
     "pad_width": [200.0, 250.0, 300.0],
     "ground_clearance": [100.0, 200.0, 300.0],
-    "coupling_gap": [5.0, 10.0, 20.0],
-    "paddle_length": [100.0, 200.0, 300.0],
+    "coupling_gap": [5.0, 10.0, 20.0, 35.0],
+    "paddle_length": [100.0, 200.0, 394.0],
 }
 SETTINGS = Settings(near_mesh=1.5, far_mesh=75.0, domain_pad=1600.0, order=3)
 RECIPE = Recipe(
@@ -49,6 +49,12 @@ RECIPE = Recipe(
         "reference_planes": "Paddle CPW pin, open cut at its left edge",
         "junction": "Open and omitted, L_J and additional C_J remain circuit inputs",
         "scope": "Local capacitance only, no resonator, propagation or package",
+        "nominal_layout": {
+            "pad_width": 250.0,
+            "ground_clearance": 200.0,
+            "coupling_gap": 35.0,
+            "paddle_length": 394.0,
+        },
         "geometry_helper_sha256": hashlib.sha256(
             Path(__file__).with_name("_planar_qubit.py").read_bytes()
         ).hexdigest(),

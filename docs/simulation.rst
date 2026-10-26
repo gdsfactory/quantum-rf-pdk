@@ -394,6 +394,9 @@ full local Maxwell matrix includes both coupling and capacitances to ground. The
 distributed readout line starts outside this boundary, so its capacitance is counted
 once. A full-resonator electrostatic coupon cannot replace this local block.
 
+The double-pad grid includes the default assembly's 394 um paddle and 35 um coupling
+gap. Its nominal point is explicit rather than inferred from the middle grid coordinate.
+
 Once a local dataset has passed numerical validation, ``junction_model`` can keep its
 qubit electrodes internal and expose just the readout pin:
 
@@ -480,3 +483,10 @@ interpolates frequency and continuous geometry axes together and returns NaN out
 stored domain. Discrete variants are selected when loading. Complex linear interpolation
 can introduce apparent loss between sample points, so check withheld frequencies near
 resonances before choosing the frequency spacing.
+
+************
+ References
+************
+
+.. bibliography::
+    :filter: docname in docnames

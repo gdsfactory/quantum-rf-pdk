@@ -7,6 +7,7 @@ from pathlib import Path
 import gdsfactory as gf
 import pytest
 
+from qpdk.cells import transmon_with_resonator_and_probeline
 from qpdk.tech import LAYER
 
 
@@ -51,3 +52,33 @@ def test_invalid_geometry(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     point = {key: values[1] for key, values in recipe.grid.items()}
     with pytest.raises(ValueError, match="positive"):
         recipe.geometry({**point, "coupling_gap": 0}, recipe.settings, 4)
+
+
+def test_nominal_transmon_matches_assembly_electrodes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    monkeypatch.syspath_prepend(str(scripts))
+    recipe = importlib.import_module("double_pad_readout").RECIPE
+    select_metal = importlib.import_module("_readout").select_metal
+    point = recipe.provenance["nominal_layout"]
+    assert all(point[name] in values for name, values in recipe.grid.items())
+    geometry = recipe.geometry(point, recipe.settings, 4)
+    metal = geometry.component.get_region(LAYER.M1_DRAW)
+    local = gf.kdb.Region()
+    for port in geometry.component.ports:
+        local |= select_metal(metal, port, geometry.component.kcl.dbu)
+    local.transform(gf.kdb.Trans(1, False, 0, 0))
+
+    assembly = transmon_with_resonator_and_probeline()
+    reference = gf.kdb.Region()
+    for instance in assembly.insts:
+        if instance.cell.function_name in {
+            "double_pad_transmon_with_bbox",
+            "plate_capacitor_single",
+        }:
+            reference |= gf.kdb.Region(
+                instance.cell.begin_shapes_rec(gf.get_layer(LAYER.M1_DRAW))
+            ).transformed(instance.cplx_trans)
+    assert not reference.is_empty()
+    assert (local ^ reference).is_empty()
