@@ -593,7 +593,7 @@ def _route_component(
 
 route_bundle = route_bundle_cpw = partial(
     gf.routing.route_bundle,
-    cross_section=cpw,
+    cross_section="coplanar_waveguide",
     bend=partial(_route_component, "bend_circular", allow_min_radius_violation=True),
     collision_check_layers=[LAYER.WG],
     on_collision="error",
@@ -602,7 +602,7 @@ route_bundle = route_bundle_cpw = partial(
 )
 route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     gf.routing.route_bundle_all_angle,
-    cross_section=cpw,
+    cross_section="coplanar_waveguide",
     separation=3,
     bend=partial(
         _route_component,
@@ -613,7 +613,7 @@ route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
 )
 route_bundle_sbend = route_bundle_sbend_cpw = partial(
     gf.routing.route_bundle_sbend,
-    cross_section=cpw,
+    cross_section="coplanar_waveguide",
     bend_s=partial(_route_component, "bend_s", allow_min_radius_violation=True),
 )
 
