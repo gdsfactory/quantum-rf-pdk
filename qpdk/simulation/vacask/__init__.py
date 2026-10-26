@@ -7,7 +7,9 @@ and compiled on the fly by OpenVAF-Reloaded (``openvaf-r``).
 
 VACASK is AGPL-3.0 licensed. This package only calls the ``vacask`` binary as a
 separate process and parses the SPICE raw files it writes; it does not import,
-link or copy any VACASK code.
+link or copy any VACASK code. The VACASK maintainer reads out-of-process use as
+staying outside the AGPL's combined work rule
+(`issue #161 <https://codeberg.org/arpadbuermen/VACASK/issues/161>`_).
 
 Circuits and analyses are written directly in VACASK's netlist syntax. The
 package only adds what is awkward to do by hand:

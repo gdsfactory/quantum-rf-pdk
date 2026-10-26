@@ -503,7 +503,10 @@ need.
 
 The pages retain saved executions for documentation builds. The JPA companions need the
 external `VACASK <https://codeberg.org/arpadbuermen/VACASK>`_ simulator, which runs as a
-separate program on the Verilog-A junction and SQUID models shipped with qpdk.
+separate program on the Verilog-A junction and SQUID models shipped with qpdk. qpdk does
+not import or link VACASK, which is what keeps it outside the AGPL's combined work rule
+under the maintainer's reading in `VACASK issue #161
+<https://codeberg.org/arpadbuermen/VACASK/issues/161>`_.
 
 **********************
  External integration
@@ -657,7 +660,10 @@ them as globs.
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
     - The `VACASK <https://codeberg.org/arpadbuermen/VACASK>`_ circuit simulator, needed
       by the lumped and CPW parametric-amplifier notebooks, is a separate program
-      (AGPL-3.0) that qpdk runs as a subprocess; install it from its release page.
+      (AGPL-3.0) that qpdk runs as a subprocess rather than importing or linking;
+      install it from its release page. This separation follows the maintainer's reading
+      of the AGPL in `VACASK issue #161
+      <https://codeberg.org/arpadbuermen/VACASK/issues/161>`_.
 
     The Elmer notebook also needs ``gplugins[elmer]`` installed from Git until the next
     gplugins release.
