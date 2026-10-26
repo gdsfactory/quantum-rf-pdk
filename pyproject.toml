@@ -187,7 +187,7 @@ num = 4001
 unit = "GHz"
 
 [tool.gdsfactoryplus.pdk]
-name = "qpdk"
+name = "qpdk.viewer"
 
 # Read directly from this file by the gdsfactoryplus >= 2.0 sidebar webview
 # (not part of the v2 settings schema; the "Make default" sidebar action
