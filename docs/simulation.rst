@@ -261,10 +261,18 @@ share one potential, so this lookup does not determine differential parasitics,
 inductance or self-resonance. The generation recipe is
 ``qpdk/models/datasets/data/meander_ground_capacitance.py``.
 
-The driven recipe ``qpdk/models/datasets/data/meander_inductor.py`` prepares a two-port
-full-wave sweep from 0.5 to 20 GHz. It includes a fixed kinetic sheet inductance and the
-finite ground frame. Its mesh, domain and interpolation checks must pass before these
-new results can be curated.
+``meander_inductor_fullwave_model(n_turns=5)`` creates a two-port SAX model from 243
+Palace frequency sweeps. The returned model accepts ``f`` from 0.5 to 20 GHz in Hz,
+``turn_length`` from 100 to 300 um, ``wire_width`` from 1 to 2 um and ``wire_gap`` from
+2 to 8 um. Turn counts 3, 5 and 7 are separate variants. Omitted geometry arguments use
+the middle stored coordinates, and values outside the grid return NaN. Its ports are the
+winding ends, with 50 ohm reference impedance and no de-embedding. The generation recipe
+is ``qpdk/models/datasets/data/meander_inductor.py``.
+
+The full-wave coupon includes the finite ground frame and a fixed kinetic sheet
+inductance of 0.4 pH per square. It omits material loss and allows radiation through the
+outer boundary. Use ``meander_inductor`` for the analytical lumped model with adjustable
+film properties.
 
 The winding and ground frame share the specified sheet inductance, so the terminal
 response includes both contributions. For a straight strip with nearly uniform current,
