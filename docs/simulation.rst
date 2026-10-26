@@ -376,6 +376,56 @@ Supply your scheduler's partition and resource options to ``sbatch``. Merging ch
 matching provenance, successful results and exact coverage before publishing. Keep the
 experiment, runtime and array size fixed when resuming.
 
+Qubit capacitance boundaries
+----------------------------
+
+The stored double-pad transmon matrix describes two floating islands and a finite
+coplanar ground frame. The flipmon matrix describes three unbonded electrodes between
+two silicon chips. Its ideal-bond reduction preserves capacitance but omits finite-bump
+fields. Neither table includes a readout coupler. Their independent mesh, element-order,
+domain and off-grid references are stored in the Parquet provenance, under
+``Dataset(name).metadata.provenance["validation"]``.
+
+``double_pad_readout.py`` and ``xmon_readout.py`` define new local coupling experiments.
+They keep the qubit and a separate coupling paddle, ending at the paddle's CPW pin. They
+vary the qubit geometry, coupling gap and paddle length. The proposed grids and mesh
+settings are provisional; no validated table for either experiment is bundled yet. The
+full local Maxwell matrix includes both coupling and capacitances to ground. The
+distributed readout line starts outside this boundary, so its capacitance is counted
+once. A full-resonator electrostatic coupon cannot replace this local block.
+
+Once a local dataset has passed numerical validation, ``junction_model`` can keep its
+qubit electrodes internal and expose just the readout pin:
+
+.. code-block:: python
+
+    from qpdk.models.datasets import junction_model
+
+    model = junction_model(
+        "build/datasets/double_pad_readout_palace",
+        junction=("left_pad", "right_pad"),
+        inductance=10e-9,
+        junction_capacitance=2e-15,
+        exposed_ports=("readout",),
+    )
+
+Internal electrodes have zero injected current. They are not omitted SAX ports with
+implicit matched loads. For an Xmon, the four arms share one island potential, and
+``junction=("island", None)`` connects the junction to reference ground. These are
+small-signal Josephson inductances, not nonlinear qubit transition models. Josephson
+energy, operating flux and additional junction capacitance remain explicit circuit
+inputs. The nonlinear Hamiltonian uses the same capacitance network with the chosen
+physical boundary conditions :cite:`voolIntroductionQuantumElectromagnetic2017`.
+
+Fluxonium and unimon need additional inductive and distributed validation. A connected
+fluxonium meander is a DC short in an electrostatic solve; assigning separate pad
+potentials requires an explicit cut or a distributed winding model. A unimon's grounded
+CPW arms have a position-dependent mode voltage, so a static total capacitance cannot
+determine its charging energy or coupling by itself
+:cite:`hyyppaUnimonQubit2022,tuohinoMultimodePhysicsUnimon2024`. The qubit and readout
+reference planes, arm modes and film inductance must agree before such a model is
+registered for layout or schematic simulation.
+
 .. automodule:: qpdk.models.datasets
 
 .. automodule:: qpdk.models.datasets.metadata
