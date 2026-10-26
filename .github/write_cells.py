@@ -2,6 +2,7 @@
 
 # ruff: file-ignore[jinja2-autoescape-false, print]
 
+import base64
 import inspect
 import traceback
 from pathlib import Path
@@ -54,15 +55,18 @@ env = Environment(loader=FileSystemLoader(template_dir), autoescape=False)
 
 
 def _setup_kwasm_viewer() -> None:
-    """Create the kwasm viewer HTML and GDS output directory."""
+    """Create the kwasm viewer HTML and GDS output directory.
+
+    The QPDK layer properties are embedded in the viewer so the Dynamic tab
+    shows the same layer names and colours as KLayout and GDSFactory+.
+    """
     gds_dir.mkdir(parents=True, exist_ok=True)
     png_dir.mkdir(parents=True, exist_ok=True)
     viewer_path = kwasm_dir / "viewer.html"
-    if viewer_path.exists():
-        return
+    lyp_b64 = base64.b64encode(PATH.lyp.read_bytes()).decode("ascii")
     template = kwasm.embed._read_artifacts()
     template = template.replace("KWASM_GDS_B64", "")
-    template = template.replace("KWASM_LYP_B64", "")
+    template = template.replace("KWASM_LYP_B64", lyp_b64)
     template = template.replace("KWASM_LYRDB_B64", "")
     template = template.replace("KWASM_NETLIST_B64", "")
     viewer_path.write_text(template, encoding="utf-8")
