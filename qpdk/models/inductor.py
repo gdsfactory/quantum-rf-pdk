@@ -15,10 +15,34 @@ from qpdk.models.cpw import (
     get_cpw_dimensions,
     get_cpw_substrate_params,
 )
-from qpdk.models.datasets import Dataset, GridInterpolator
+from qpdk.models.datasets import Dataset, GridInterpolator, s_parameters_model
 from qpdk.models.generic import inductor, lc_resonator
 from qpdk.models.jit import jit
 from qpdk.tech import get_meander_wire_gap
+
+
+def meander_inductor_fullwave_model(n_turns: int = 5) -> sax.Model:
+    """Build a two-port model from the stored Palace frequency sweeps.
+
+    Select 3, 5 or 7 turns when creating the model. The returned JAX model
+    accepts ``f`` in Hz from 0.5 to 20 GHz, ``turn_length`` from 100 to 300 um,
+    ``wire_width`` from 1 to 2 um and ``wire_gap`` from 2 to 8 um. Omitted
+    geometry arguments use the middle grid coordinates. Values outside the
+    stored ranges return NaN.
+
+    The ``o1`` and ``o2`` reference planes are the winding ends, normalized
+    to 50 ohms. A finite ground frame is 100 um wide and 20 um from the
+    winding. Both winding and frame have a fixed sheet inductance of
+    0.4 pH per square. The silicon coupon omits material loss and allows
+    radiation through its outer boundary.
+
+    Args:
+        n_turns: Number of horizontal runs, selected before JIT compilation.
+
+    Returns:
+        Jittable SAX model interpolating the complex scattering matrix.
+    """
+    return s_parameters_model("meander_sparameters_palace", n_turns=str(n_turns))
 
 
 @cache

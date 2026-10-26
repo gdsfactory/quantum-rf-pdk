@@ -51,8 +51,8 @@ if TYPE_CHECKING:
     from gsim.palace import DrivenSim
 
 GRID = {
-    "turn_length": [100.0, 200.0, 300.0],
-    "wire_width": [1.0, 2.0],
+    "turn_length": [100.0 + 25.0 * index for index in range(9)],
+    "wire_width": [1.0, 1.5, 2.0],
     "wire_gap": [2.0, 4.0, 8.0],
 }
 VARIANTS = {"n_turns": ["3", "5", "7"]}

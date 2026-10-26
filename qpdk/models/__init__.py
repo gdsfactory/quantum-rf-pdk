@@ -13,6 +13,7 @@ from qpdk.models.capacitor import (
 from qpdk.models.inductor import (
     lumped_element_resonator,
     meander_inductor,
+    meander_inductor_fullwave_model,
     meander_inductor_ground_capacitance,
     meander_inductor_inductance_analytical,
 )
@@ -220,6 +221,7 @@ __all__ = [
     "lc_resonator_coupled",
     "lumped_element_resonator",
     "meander_inductor",
+    "meander_inductor_fullwave_model",
     "meander_inductor_ground_capacitance",
     "meander_inductor_inductance_analytical",
     "measurement_induced_dephasing",
