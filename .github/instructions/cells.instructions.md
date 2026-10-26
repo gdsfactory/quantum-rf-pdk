@@ -16,6 +16,15 @@ fluxoniums, unimons, launchers, junctions, TSVs, bumps. `qpdk/cells/derived/` ho
   def transmon(...) -> gf.Component: ...
   ```
 
+  The tags also decide where the cell appears on the docs PCells page: `.github/write_cells.py` lists it under the first
+  tag in its `SECTIONS` list that the cell carries (`qubits`, `resonators`, `waveguides`, ...), and subsection tags such
+  as `transmons` or `bend` give it a sub-heading. Flag a cell whose tags match no section: it lands under "Other
+  Components" and the docs build prints a warning. A new category or subsection belongs in `SECTIONS` (and
+  `SUBSECTION_TITLES`) rather than in a one-off tag.
+
+- `functools.partial` variants of a cell inherit its tags on the docs page; `@gf.vcell` cells need their own
+  `tags=[...]`.
+
 - A new module **must** be re-exported from `qpdk/cells/__init__.py` with `from qpdk.cells.<module> import *`, otherwise
   the component never reaches the PDK cell registry. Flag a new cell file that is not added there.
 

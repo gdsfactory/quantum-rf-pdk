@@ -100,6 +100,15 @@ def cell_tags(factory) -> list[str]:
     return _tags_by_function.get(id(inspect.unwrap(factory)), [])
 
 
+def _subsection_title(tag: str) -> str:
+    """Return the heading for a subsection tag, title-casing tags missing a title.
+
+    Returns:
+        Heading text such as ``"Transmons"`` or ``"Flip Chip"``.
+    """
+    return SUBSECTION_TITLES.get(tag) or tag.replace("-", " ").title()
+
+
 def group_by_section(items: list[dict]) -> list[dict]:
     """Group cell items into the sections and subsections defined in ``SECTIONS``.
 
@@ -130,7 +139,7 @@ def group_by_section(items: list[dict]) -> list[dict]:
             matched = [item for item in remaining if subtag in item["tags"]]
             remaining = [item for item in remaining if subtag not in item["tags"]]
             if matched:
-                groups.append({"title": SUBSECTION_TITLES[subtag], "cells": matched})
+                groups.append({"title": _subsection_title(subtag), "cells": matched})
         if remaining:
             # Headings must nest consistently, so once a section has
             # sub-headings its leftover cells need one too.
