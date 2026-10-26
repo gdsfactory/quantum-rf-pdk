@@ -4,11 +4,36 @@ import importlib
 import sys
 from itertools import product
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import gdsfactory as gf
 import pytest
 
 from qpdk.tech import LAYER
+
+
+def test_planar_recipe_keeps_the_calibrated_mesh_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    monkeypatch.syspath_prepend(str(scripts))
+    recipe = importlib.import_module("readout_assembly")
+    point = {name: values[0] for name, values in recipe.GRID.items()}
+    result = recipe.geometry(point, recipe.SETTINGS, 8)
+    generated = SimpleNamespace(mesh_stats={"tetrahedra": 1_500_000})
+    sim = Mock(mesh_sheets=Mock(return_value=generated))
+    assert result.mesh is not None
+    result.mesh(sim)
+    options = sim.mesh_sheets.call_args.kwargs
+    assert options["num_threads"] == result.mesh_inputs["mesh_processes"] == 1
+    assert options["edge_transition"] == pytest.approx(
+        result.mesh_inputs["edge_transition_um"]
+    )
+    assert options["far_mesh"] == pytest.approx(108.0)
+    generated.mesh_stats["tetrahedra"] = 2_100_001
+    with pytest.raises(ValueError, match="tetrahedron budget"):
+        result.mesh(sim)
 
 
 @pytest.mark.parametrize("flip", [False, True])
