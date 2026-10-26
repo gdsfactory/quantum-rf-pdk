@@ -309,7 +309,7 @@ fetch-gfp $version="latest":
 # GFP_REQUIRED=1: gdsfactoryplus and its v2 API must be present (no silent skips).
 # The SDK comes from the `gdsfactoryplus` extra, whose wheels are cp312-only,
 # hence Python 3.12. The `gfp` binary still ships only in the VS Code
-# extension: GFP_BIN, else a previous fetch-gfp's env.sh, else fetch-gfp now.
+# extension: GFP_BIN, else the version matching the installed SDK.
 # `--python 3.12` recreates .venv if it was on another interpreter.
 # The gfp-marked tests live in the three files listed below; naming them
 # explicitly avoids collecting the whole repo under the minimal gfp extras.
@@ -321,11 +321,9 @@ test-gfp *args:
     #!/usr/bin/env bash
     set -euo pipefail
     uv sync --python 3.12 --extra gdsfactoryplus --group dev
-    if [[ -z "${GFP_BIN:-}" && -f build/gfp-vsix/env.sh ]]; then
-        source build/gfp-vsix/env.sh
-    fi
     if [[ -z "${GFP_BIN:-}" || ! -x "${GFP_BIN}" ]]; then
-        just fetch-gfp
+        sdk_version=$(uv run --no-sync python -c 'from importlib.metadata import version; print(version("gdsfactoryplus"))')
+        just fetch-gfp "$sdk_version"
         source build/gfp-vsix/env.sh
     fi
     GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
