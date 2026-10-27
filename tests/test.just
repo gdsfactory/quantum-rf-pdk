@@ -114,6 +114,7 @@ test-hfss *args: check-lfs
 [group('test')]
 [positional-arguments]
 test-palace *args: check-lfs
+    mkdir -p build
     uv run --locked --python 3.12 --no-default-groups --extra models --group palace --group test pytest -m palace tests/models --basetemp=build/palace-tests --durations=0 "$@"
 
 # Download the public GDSFactory+ VS Code extension, or accept a local VSIX
