@@ -59,6 +59,15 @@ the analytical helpers used to design them. Install them with
 
 .. autofunction:: qpdk.models.{{ func_name }}
 
+{%             for symbol in model_symbols.get(func_name, []) %}
+.. figure:: {{ symbol }}
+   :alt: GDSFactory+ schematic symbol for {{ func_name }}
+   :class: qpdk-symbol
+
+   Schematic symbol drawn by GDSFactory+ for :func:`qpdk.models.{{ func_name }}`.
+
+{%             endfor %}
+
 {%             if func_name in sax_models and func_name not in skip_plots %}
 .. plot::
    :caption: :func:`qpdk.models.{{ func_name }}` S-parameters for :math:`f\in[1,10]\,\text{GHz}`.

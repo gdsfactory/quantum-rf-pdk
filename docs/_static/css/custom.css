@@ -232,3 +232,10 @@ div.admonition.note {
     transform: none;
   }
 }
+
+/* Schematic symbols are drawn on a 100-unit grid; give them a readable size. */
+.bd-content figure img.qpdk-symbol {
+  width: 12rem;
+  max-width: 100%;
+  height: auto;
+}
