@@ -85,6 +85,28 @@ def test_distinct_cells_and_boundaries(
     assert not duplicate["passed"]
 
 
+def test_all_interpolation_cells_can_be_required(
+    incomplete_study: tuple[Any, Path, Path],
+) -> None:
+    curator, _, _ = incomplete_study
+    grid = {"a": list(map(float, range(10))), "b": list(map(float, range(10)))}
+    diagonal = [(i + 0.5, i + 0.5) for i in range(9)]
+    remaining = [(a + 0.5, b + 0.5) for a in range(9) for b in range(9) if a != b]
+    interior = diagonal + remaining[:55]
+    boundaries = [(0.0, 0.5), (9.0, 0.5), (0.5, 0.0), (0.5, 9.0)]
+    rows = [
+        {"anchor": f"dense-held-{i}", "point": {"a": a, "b": b}}
+        for i, (a, b) in enumerate(interior + boundaries)
+    ]
+    assert curator._coverage(grid, rows)["passed"]
+    assert not curator._coverage(grid, rows, require_all=True)["passed"]
+    rows += [
+        {"anchor": f"dense-held-extra-{i}", "point": {"a": a, "b": b}}
+        for i, (a, b) in enumerate(remaining[55:])
+    ]
+    assert curator._coverage(grid, rows, require_all=True)["passed"]
+
+
 @pytest.fixture
 def complete_study(incomplete_study: tuple[Any, Path, Path]) -> tuple[Any, Path, Path]:
     curator, study, calibration = incomplete_study

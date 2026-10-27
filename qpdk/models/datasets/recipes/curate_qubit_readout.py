@@ -105,7 +105,10 @@ def _records(campaign: Path, recipe: str) -> list[dict[str, Any]]:
 
 
 def _coverage(
-    grid: dict[str, list[float]], rows: list[dict[str, Any]]
+    grid: dict[str, list[float]],
+    rows: list[dict[str, Any]],
+    *,
+    require_all: bool = False,
 ) -> dict[str, Any]:
     """Count distinct interior cells and both boundaries of every grid axis."""
     cells = set()
@@ -140,7 +143,7 @@ def _coverage(
         "total_interior_cells": total,
         "tested_cell_indices": [list(cell) for cell in sorted(cells)],
         "boundaries_tested": [list(boundary) for boundary in sorted(boundaries)],
-        "passed": len(cells) >= min(64, total)
+        "passed": len(cells) >= (total if require_all else min(64, total))
         and len(boundaries) == 2 * len(grid)
         and all_intervals,
     }
@@ -380,7 +383,13 @@ def verify(
             ),
         })
     study_rows = [r for r in study_rows if r["control"] != "lower-order"]
-    report["held_out_coverage"] = _coverage(target, study_rows)
+    report["held_out_coverage"] = _coverage(
+        target,
+        study_rows,
+        require_all=plan.get("reference_coverage_target", {}).get(
+            "all_cells_required_for_publication", False
+        ),
+    )
     controls = {
         (r["anchor"], r["control"]): r
         for r in calibration_rows + study_rows
