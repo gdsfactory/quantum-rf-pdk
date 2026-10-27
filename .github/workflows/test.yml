@@ -24,32 +24,32 @@ jobs:
       - parallel:
           - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
           - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - parallel:
           - uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9 # v2.7.0
             with:
               version: "min"
               project: .github/julia
+          # The openvaf-r hook lints the Verilog-A models. The upstream builds from
+          # fides link LLVM statically, so they only need glibc 2.39 or newer.
+          - name: Install OpenVAF-Reloaded
+            env:
+              OPENVAF_BUILD: osdi_0.5_20260820-7-gde9c640b
+              OPENVAF_SHA256: c0f1a5b7df8a0d00a16938a7d469612d2b7a6204da00b419af6dc855430e8484
+            run: |
+              curl --fail --silent --show-error --location --output "$RUNNER_TEMP/openvaf-r.tar.gz" \
+                "https://fides.fe.uni-lj.si/openvaf/download/openvaf-reloaded-${OPENVAF_BUILD}-linux_x64.tar.gz"
+              echo "${OPENVAF_SHA256}  ${RUNNER_TEMP}/openvaf-r.tar.gz" | sha256sum --check
+              mkdir "$RUNNER_TEMP/openvaf-r"
+              tar -xzf "$RUNNER_TEMP/openvaf-r.tar.gz" -C "$RUNNER_TEMP/openvaf-r"
+              echo "$RUNNER_TEMP/openvaf-r" >> "$GITHUB_PATH"
+      - parallel:
           # Pyrefly needs the project extras, including the Python 3.12 SDK wheels.
           - run: uv sync --all-extras --group palace --no-install-project --python 3.12
-      - name: Cache Julia depot for the Julia hooks
-        uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
-      # The check-schematic-sources hook needs the `gfp` binary, which ships
-      # only in the VS Code extension.
-      - name: Fetch gfp binary
-        run: just fetch-gfp
-      # The openvaf-r hook lints the Verilog-A models. The upstream builds from
-      # fides link LLVM statically, so they only need glibc 2.39 or newer.
-      - name: Install OpenVAF-Reloaded
-        env:
-          OPENVAF_BUILD: osdi_0.5_20260820-7-gde9c640b
-          OPENVAF_SHA256: c0f1a5b7df8a0d00a16938a7d469612d2b7a6204da00b419af6dc855430e8484
-        run: |
-          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/openvaf-r.tar.gz" \
-            "https://fides.fe.uni-lj.si/openvaf/download/openvaf-reloaded-${OPENVAF_BUILD}-linux_x64.tar.gz"
-          echo "${OPENVAF_SHA256}  ${RUNNER_TEMP}/openvaf-r.tar.gz" | sha256sum --check
-          mkdir "$RUNNER_TEMP/openvaf-r"
-          tar -xzf "$RUNNER_TEMP/openvaf-r.tar.gz" -C "$RUNNER_TEMP/openvaf-r"
-          echo "$RUNNER_TEMP/openvaf-r" >> "$GITHUB_PATH"
+          - name: Cache Julia depot for the Julia hooks
+            uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+          # The check-schematic-sources hook needs the `gfp` binary, which ships
+          # only in the VS Code extension.
+          - name: Fetch gfp binary
+            run: just fetch-gfp
       # lychee's pre-commit hook installs its own binary via cargo-binstall,
       # which needs the token to avoid 403 rate limiting from api.github.com.
       - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
@@ -96,13 +96,14 @@ jobs:
         with:
           lfs: true
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - name: Install gmsh's native libraries
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install --yes libglu1-mesa
+      - parallel:
+          - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+            with:
+              python-version: ${{ matrix.python-version }}
+          - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+          - name: Install gmsh's native libraries
+            if: matrix.os == 'ubuntu-latest'
+            run: sudo apt-get update && sudo apt-get install --yes libglu1-mesa
       - name: Test with pytest
         env:
           COVERAGE_FILE: .coverage.${{ matrix.python-version }}
@@ -188,12 +189,13 @@ jobs:
         with:
           lfs: true
           persist-credentials: false
-      - name: Install uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with:
-          # The gdsfactoryplus wheels are cp312-only.
-          python-version: "3.12"
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      - parallel:
+          - name: Install uv
+            uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+            with:
+              # The gdsfactoryplus wheels are cp312-only.
+              python-version: "3.12"
+          - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Test GDSFactory+
         run: just test-gfp
   test-gdsfactoryplus-result:
@@ -391,6 +393,8 @@ jobs:
         with:
           persist-credentials: false
       - name: Install Elmer FEM
+        id: elmer-setup
+        background: true # runs alongside the Python setup below
         run: |
           sudo apt-get update
           sudo apt-get install --yes software-properties-common
@@ -456,6 +460,8 @@ jobs:
           )
           if plots < 2:
               raise SystemExit("Saved Elmer notebook is missing a plot")
+      - name: Wait for Elmer FEM
+        wait: elmer-setup
       - name: Execute the Elmer notebook
         run: uv run --no-sync jupytext --execute --to ipynb --set-kernel python3 --output /tmp/qpdk-elmer-ci.ipynb notebooks/elmer_capacitance_interdigital.ipynb
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -480,16 +486,17 @@ jobs:
         with:
           lfs: true
           persist-credentials: false
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with:
-          python-version: "3.12"
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-        with:
-          just-version: "1.59.0"
-      - name: Install mesh libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes libglu1-mesa
+      - parallel:
+          - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+            with:
+              python-version: "3.12"
+          - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+            with:
+              just-version: "1.59.0"
+          - name: Install mesh libraries
+            run: |
+              sudo apt-get update
+              sudo apt-get install --yes libglu1-mesa
       - name: Test Palace datasets
         env:
           COVERAGE_FILE: .coverage.palace
@@ -524,6 +531,8 @@ jobs:
           persist-credentials: false
           lfs: true
       - name: Install VACASK
+        id: vacask-setup
+        background: true # runs alongside the Python setup below
         run: |
           sudo apt-get update
           sudo apt-get install --yes binutils libklu2 libopenblas0
@@ -539,8 +548,6 @@ jobs:
             echo "SIM_OPENVAF=${prefix}/bin/openvaf-r"
           } >> "$GITHUB_ENV"
           echo "${prefix}/bin" >> "$GITHUB_PATH"
-      - name: Check VACASK
-        run: vacask -h
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: "3.12"
@@ -548,6 +555,10 @@ jobs:
         run: |
           uv sync --locked --python 3.12 --no-dev --group test --extra models
           uv pip install jupytext nbconvert ipykernel
+      - name: Wait for VACASK
+        wait: vacask-setup
+      - name: Check VACASK
+        run: vacask -h
       - name: Run the VACASK tests
         run: uv run --no-sync pytest tests/test_vacask.py -m vacask
       - name: Execute the VACASK notebooks
