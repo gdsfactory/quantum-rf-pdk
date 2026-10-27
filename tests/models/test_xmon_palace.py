@@ -9,6 +9,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+import sax
+from sax.models.rf import tee
 
 from qpdk.models.datasets import (
     Dataset,
@@ -172,3 +174,49 @@ def test_internal_island_model_over_the_full_grid(data: Dataset) -> None:
     assert bool(jnp.all(jnp.isfinite(reflection)))
     np.testing.assert_allclose(jnp.abs(reflection), 1, atol=1e-11)
     assert jnp.isnan(model(arm_scale=1.3)["readout", "readout"]).all()
+
+
+@pytest.mark.parametrize(
+    ("inductance", "junction_capacitance"), [(10e-9, 0.0), (15e-9, 2e-15)]
+)
+def test_feedline_notches_match_native_capacitances(
+    data: Dataset, inductance: float, junction_capacitance: float
+) -> None:
+    """Every native geometry has the expected junction-loaded feedline notch."""
+    grid = data.grid("maxwell_capacitance", allow_missing=False)
+    model = junction_model(
+        data,
+        junction=("island", None),
+        inductance=inductance,
+        junction_capacitance=junction_capacitance,
+        exposed_ports=("readout",),
+    )
+    circuit, _ = sax.circuit(
+        {
+            "instances": {"qubit": "qubit", "tee": "tee"},
+            "connections": {"qubit,readout": "tee,o3"},
+            "ports": {"o1": "tee,o1", "o2": "tee,o2"},
+        },
+        models={"qubit": model, "tee": tee},
+    )
+    points = jnp.asarray(list(product(*grid.coords)))
+    capacitance = jnp.asarray(grid.values).reshape(-1, 2, 2)[:, 0, 0]
+    frequencies = 1 / (
+        2 * jnp.pi * jnp.sqrt(inductance * (capacitance + junction_capacitance))
+    )
+
+    def evaluate(point: jax.Array, frequency: jax.Array) -> sax.SDict:
+        return circuit(
+            f=frequency * jnp.asarray([0.95, 1.0, 1.05]),
+            qubit=dict(zip(grid.axis_names, point, strict=True)),
+        )
+
+    response = jax.jit(jax.vmap(evaluate))(points, frequencies)
+    transmission = jnp.abs(response["o2", "o1"])
+    reflection = jnp.abs(response["o1", "o1"])
+    assert transmission.shape == (270, 3)
+    assert bool(jnp.all(jnp.isfinite(transmission)))
+    assert bool(jnp.all(jnp.argmin(transmission, axis=-1) == 1))
+    np.testing.assert_allclose(transmission[:, 1], 0, atol=1e-9)
+    np.testing.assert_allclose(transmission**2 + reflection**2, 1, atol=1e-11)
+    np.testing.assert_allclose(response["o1", "o2"], response["o2", "o1"], atol=1e-11)
