@@ -1,6 +1,7 @@
 cff-version: 1.2.0
 type: software
 title: "QPDK: Superconducting Quantum Process Design Kit"
+doi: 10.5281/zenodo.23698129
 message: >-
   If you use QPDK in research, please cite the Zenodo record for the release
   you used. Use the concept DOI when referring to the project as a whole.

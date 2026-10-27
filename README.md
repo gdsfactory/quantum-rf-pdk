@@ -9,6 +9,7 @@
 [![PDF Docs](https://img.shields.io/badge/%F0%9F%93%84_PDF-Docs-blue?style=flat&logo=adobeacrobatreader)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD)
 [![PyPI - Version](https://img.shields.io/pypi/v/qpdk?color=blue)](https://pypi.org/project/qpdk/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698129.svg)](https://doi.org/10.5281/zenodo.23698129)
 [![MIT](https://img.shields.io/github/license/gdsfactory/quantum-rf-pdk)](https://choosealicense.com/licenses/mit/)
 [![Docs](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/quantum-rf-pdk/)
 [![Tests](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml/badge.svg)](https://github.com/gdsfactory/quantum-rf-pdk/actions/workflows/test.yml)
@@ -285,8 +286,9 @@ quantum-rf-pdk/
 
 ## Citing QPDK
 
-If you use QPDK in research, please cite the Zenodo record for the release you used. Use the concept DOI when referring
-to QPDK as a project without a specific version. Citation metadata is in [CITATION.cff](CITATION.cff). See the
+If you use QPDK in research, please cite the Zenodo record for the release you used. Use the
+[concept DOI](https://doi.org/10.5281/zenodo.23698129) when referring to QPDK as a project without a specific version.
+Citation metadata is in [CITATION.cff](CITATION.cff). See the
 [authorship policy](docs/contributing.md#authorship-and-credit) for how citation authors are selected.
 
 ## Contributing
