@@ -1,0 +1,34 @@
+info:
+  n_squares: 10790
+  total_wire_length: 21580
+  vacuum_gap: 0.05
+name: drum_lc_resonator_R7p5_Srim_NT71_TL300_ICSmeander_induc_3d6c9c4e
+ports:
+  o1:
+    center:
+    - -170
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 199
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  coupling_gap: 6
+  coupling_pad_size: 20
+  cross_section: cpw
+  inductor_cross_section: meander_inductor_cross_section
+  margin: 10
+  n_turns: 71
+  radius: 7.5
+  support: rim
+  turn_length: 300

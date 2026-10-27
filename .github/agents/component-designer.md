@@ -114,6 +114,8 @@ ______________________________________________________________________
 | `AB_VIA`   | (10, 1) | Airbridge landing pads           |
 | `JJ_AREA`  | (20, 0) | Josephson junction area          |
 | `JJ_PATCH` | (20, 1) | Junction patch                   |
+| `VG_TOP`   | (40, 0) | Vacuum-gap top electrode         |
+| `VG_SAC`   | (40, 1) | Vacuum-gap sacrificial layer     |
 | `IND`      | (30, 0) | Indium bumps                     |
 | `TSV`      | (31, 0) | Through-silicon vias             |
 

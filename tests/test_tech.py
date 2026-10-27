@@ -36,6 +36,8 @@ _EXPECTED_GEOMETRY_UM: dict[str, tuple[float, float]] = {
     "JosephsonJunction": (0.07, 0.0),  # 70 nm AlOx/Al film
     "TSV": (500, -500),
     "IndiumBump": (10, 0.2),
+    "VacuumGap_Top": (0.1, 0.25),  # 100 nm Al membrane 50 nm above M1
+    "VacuumGap_Post": (0.05, 0.2),
 }
 
 # Levels unique to the flip-chip stack (the rest are shared with LAYER_STACK).
