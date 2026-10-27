@@ -16,7 +16,7 @@ Use differential_capacitance(lookup(...)) for the equal/opposite charge mode,
 then E_C/h = e**2/(2*h*(C_diff+C_junction)). This allows the common mode to float.
 The two island SAX ports reference chip ground, not each other.
 
-Preview with ``uv run --script qpdk/models/datasets/data/double_pad_transmon.py --dry-run``.
+Preview with ``uv run --script qpdk/models/datasets/recipes/double_pad_transmon.py --dry-run``.
 Edit GRID and SETTINGS to define a new sweep; validate representative meshes first.
 Generate disjoint grids with ``--shard``/``--shards`` and merge with repeated
 ``--merge-shards`` arguments only after every shard succeeds.

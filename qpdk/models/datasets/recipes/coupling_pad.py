@@ -17,7 +17,7 @@ Load with capacitance_model(path): o1/o2 are the two metal pads relative to the
 frame. This retains both ground branches. A scalar-only circuit may use
 -C[0,1] only when its ground branches are supplied separately without overlap.
 
-Preview with ``uv run --script qpdk/models/datasets/data/coupling_pad.py --dry-run``.
+Preview with ``uv run --script qpdk/models/datasets/recipes/coupling_pad.py --dry-run``.
 Edit GRID and SETTINGS to define a new sweep; validate representative meshes first.
 Generate disjoint grids with ``--shard``/``--shards`` and merge with repeated
 ``--merge-shards`` arguments only after every shard succeeds.

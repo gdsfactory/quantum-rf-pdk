@@ -39,7 +39,7 @@ Below a 150 µm island size, contact, flake and gate-tip dimensions scale with
 the island. The gate feed stays at least 0.4 × ``island_size`` from the centre
 and moves right when needed to preserve its hBN landing clearance.
 
-Preview with ``uv run --script qpdk/models/datasets/data/gatemon.py --dry-run``.
+Preview with ``uv run --script qpdk/models/datasets/recipes/gatemon.py --dry-run``.
 Edit GRID and SETTINGS to define a new sweep; validate representative meshes
 first, with attention to the CPW slots and gate landing.
 Generate disjoint grids with ``--shard``/``--shards`` and merge with repeated

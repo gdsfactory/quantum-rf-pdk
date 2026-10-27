@@ -9,7 +9,7 @@ import pytest
 @pytest.mark.parametrize("index", [0, -1])
 def test_flipmon_stack_electrodes(index: int, monkeypatch: pytest.MonkeyPatch) -> None:
     pytest.importorskip("gsim")
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     recipe = runpy.run_path(str(scripts / "flipmon.py"))["RECIPE"]
     point = {name: values[index] for name, values in recipe.grid.items()}

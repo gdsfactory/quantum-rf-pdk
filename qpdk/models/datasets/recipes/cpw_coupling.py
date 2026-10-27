@@ -8,7 +8,7 @@
 # ///
 """Generate symmetric edge-coupled CPW capacitance with meshwell and Palace.
 
-Run ``uv run --script qpdk/models/datasets/data/cpw_coupling.py --help`` from a checkout.
+Run ``uv run --script qpdk/models/datasets/recipes/cpw_coupling.py --help`` from a checkout.
 Edit GRID and SETTINGS to define the experiment. Both traces have the same
 width and outer slot width. ``--topology as-drawn`` retains the ground strip
 between separated CPW slots, matching ``coupler_straight``. The default

@@ -19,7 +19,7 @@ silicon chips are 300 um thick. Opposing metal faces are separated by gap.
 Alignment moves only the top chip's circular pad; the finite ground frames
 remain fixed. The Josephson junction is open and omitted.
 
-Preview with ``uv run --script qpdk/models/datasets/data/flipmon.py --dry-run``.
+Preview with ``uv run --script qpdk/models/datasets/recipes/flipmon.py --dry-run``.
 Edit GRID and SETTINGS to define a new sweep; validate representative meshes first.
 Generate disjoint grids with ``--shard``/``--shards`` and merge with repeated
 ``--merge-shards`` arguments only after every shard succeeds.

@@ -16,7 +16,7 @@ from qpdk.tech import LAYER
 def test_planar_recipe_keeps_the_calibrated_mesh_inputs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     recipe = importlib.import_module("readout_assembly")
     point = {name: values[0] for name, values in recipe.GRID.items()}
@@ -39,7 +39,7 @@ def test_planar_recipe_keeps_the_calibrated_mesh_inputs(
 @pytest.mark.parametrize("flip", [False, True])
 def test_readout_corners(flip: bool, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "gsim.common", None)
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     helper = importlib.import_module("_readout")
     settings = importlib.import_module("_experiment").Settings()
@@ -62,7 +62,7 @@ def test_readout_corners(flip: bool, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_invalid_geometry_and_terminal_selection(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     helper = importlib.import_module("_readout")
     settings = importlib.import_module("_experiment").Settings()

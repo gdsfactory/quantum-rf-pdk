@@ -19,7 +19,7 @@ def test_custom_mesh_controls_solver_and_completion(
     mesh_fails: bool,
     terminal_order: tuple[str, ...],
 ) -> None:
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     helper = importlib.import_module("_palace")
     sim = Mock()

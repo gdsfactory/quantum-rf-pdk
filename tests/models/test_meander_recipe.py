@@ -10,7 +10,7 @@ from qpdk.tech import LAYER
 
 @pytest.mark.parametrize("turns", ["3", "5", "7"])
 def test_one_winding_terminal(turns: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     recipe = runpy.run_path(str(scripts / "meander_ground_capacitance.py"))["RECIPE"]
     point = {name: values[0] for name, values in recipe.grid.items()} | {

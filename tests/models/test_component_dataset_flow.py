@@ -21,7 +21,7 @@ from qpdk.tech import LAYER
 
 @pytest.fixture
 def experiment(monkeypatch: pytest.MonkeyPatch):
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     return importlib.import_module("_experiment")
 
