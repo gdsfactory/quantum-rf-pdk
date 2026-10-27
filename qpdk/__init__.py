@@ -36,6 +36,7 @@ SAX_MODEL_ALIASES = {
     "resonator_half_wave_bend_start": "resonator_half_wave",
     "resonator_half_wave_bend_end": "resonator_half_wave",
     "resonator_half_wave_bend_both": "resonator_half_wave",
+    "josephson_junction_array_compact": "josephson_junction_array",
 }
 
 

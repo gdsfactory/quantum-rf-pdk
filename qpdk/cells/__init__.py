@@ -20,6 +20,7 @@ from .derived import *
 from .fluxonium import *
 from .inductor import *
 from .junction import *
+from .junction_array import *
 from .launcher import *
 from .resonator import *
 from .resonator_sections import *

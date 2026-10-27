@@ -1,0 +1,45 @@
+info:
+  array_inductance_nH: 314.479
+  chain_length: 19.995
+  critical_current_nA: 45
+  island_area: 0.6
+  island_perimeter: 4.6
+  junction_area: 0.5
+  junction_inductance_nH: 7.313
+  layout_style: dolan
+  n_junctions: 43
+  total_junction_area: 21.5
+name: josephson_junction_array_NJ43_JA0p5_IL0p3_IW2_P0p465_LS_fc5bf21e
+ports:
+  o1:
+    center:
+    - -1.15
+    - 0
+    layer: JJ_AREA
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 2
+  o2:
+    center:
+    - 21.145
+    - 0
+    layer: JJ_AREA
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 2
+settings:
+  critical_current_density: 0.09
+  fold_spacing: 4
+  island_length: 0.3
+  island_width: 2
+  junction_area: 0.5
+  layer_etch: M1_ETCH
+  layer_junction: JJ_AREA
+  layer_patch: JJ_PATCH
+  layout_style: dolan
+  lead_length: 1
+  n_folds: 0
+  n_junctions: 43
+  pitch: 0.465
