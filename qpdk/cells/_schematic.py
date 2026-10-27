@@ -523,7 +523,7 @@ double_pad_transmon_with_bbox_schematic = schematic(
     ports=_TRANSMON,
     models=[
         sax_model(
-            name="double_pad_transmon_with_bbox",
+            name="boxed_transmon_fem",
             module="qpdk.models.qubit",
             port_order=["left_pad", "right_pad"],
         )

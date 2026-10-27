@@ -128,7 +128,7 @@ def double_pad_transmon_capacitance(
 
 def double_pad_transmon_fem_model(
     *, inductance: float, junction_capacitance: float = 0.0
-) -> sax.Model:
+) -> sax.SDictModel:
     """Build a linearized transmon circuit from the stored two-pad Palace matrix.
 
     Supply the Josephson inductance in H and additional junction capacitance
@@ -149,6 +149,49 @@ def double_pad_transmon_fem_model(
         junction=("left_pad", "right_pad"),
         inductance=inductance,
         junction_capacitance=junction_capacitance,
+    )
+
+
+@cache
+def _boxed_transmon_model() -> sax.SDictModel:
+    """Load the pad matrix once, outside traced circuit evaluation."""
+    return double_pad_transmon_fem_model(inductance=7e-9)
+
+
+@jit(inline=True)
+def boxed_transmon_fem(
+    f: ArrayLike = DEFAULT_FREQUENCY,
+    pad_size: tuple[ArrayLike, ArrayLike] = (250.0, 400.0),
+    pad_gap: ArrayLike = 15.0,
+    bbox_extension: ArrayLike = 200.0,
+    inductance_nh: ArrayLike = 7.0,
+    junction_capacitance_ff: ArrayLike = 0.0,
+    z_ref: ArrayLike = 50.0,
+) -> sax.SDict:
+    """Evaluate the finite-ground pad matrix using boxed-transmon layout settings.
+
+    Dimensions are in um, Josephson inductance in nH and additional junction
+    capacitance in fF. Both pad ports reference a 300 um wide ground frame.
+    All mutual and ground capacitances are retained. Geometry outside the
+    stored grid returns NaN. Supports JIT, vmap and grad.
+
+    The extraction omits junction metal, readout and packaging. This is a
+    linearized circuit, excluding the nonlinear spectrum and distributed modes.
+
+    Returns:
+        Two-port scattering matrix referenced to ``z_ref`` in ohms.
+    """
+    with jax.ensure_compile_time_eval():
+        model = _boxed_transmon_model()
+    return model(
+        f=f,
+        pad_width=pad_size[0],
+        pad_height=pad_size[1],
+        pad_gap=pad_gap,
+        ground_clearance=bbox_extension,
+        inductance=jnp.asarray(inductance_nh) * 1e-9,
+        junction_capacitance=jnp.asarray(junction_capacitance_ff) * 1e-15,
+        z_ref=z_ref,
     )
 
 
