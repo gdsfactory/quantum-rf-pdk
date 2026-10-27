@@ -270,6 +270,8 @@ def lc_resonator_coupled(
                            "LC resonator"
 
     Where :math:`L_\text{c}` and :math:`C_\text{c}` are the coupling inductance and capacitance, respectively.
+    A zero coupling inductance disables its branch. If both coupling values
+    are zero, the coupling network is open.
 
     Args:
         f: Array of frequency points in Hz.
@@ -295,10 +297,12 @@ def lc_resonator_coupled(
         ground_capacitance=ground_capacitance,
     )
 
-    # Combined coupling admittance (parallel Cc and Lc)
-    y_coupling = 1j * omega * coupling_capacitance + 1.0 / (
-        1j * omega * coupling_inductance + 1e-25
+    coupling_l = jnp.asarray(coupling_inductance)
+    # Keep the disabled branch finite during differentiation.
+    inverse_l = jnp.where(
+        coupling_l == 0, 0.0, 1.0 / jnp.where(coupling_l == 0, 1.0, coupling_l)
     )
+    y_coupling = 1j * omega * coupling_capacitance + inverse_l / (1j * omega)
     z_coupling = 1.0 / (y_coupling + 1e-25)
 
     instances: dict[str, sax.SType] = {
