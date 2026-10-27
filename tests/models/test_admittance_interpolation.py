@@ -19,6 +19,7 @@ from qpdk.models.datasets import (
     sweep,
 )
 from qpdk.models.datasets.generate import write
+from qpdk.models.generic import lc_resonator
 from qpdk.models.junction import josephson_junction
 
 PORTS = ("readout", "left", "right")
@@ -89,10 +90,12 @@ def _matrix(response: dict) -> jax.Array:
     )
 
 
-def _close_junction(scattering: jax.Array, frequency: jax.Array) -> jax.Array:
-    """Connect a passive 7 nH junction with 5 fF across the two arm ports."""
+def _close_junction(
+    scattering: jax.Array, frequency: jax.Array, inductance: float = 7e-9
+) -> jax.Array:
+    """Close the two arm ports with a signed junction inductance and 5 fF."""
     ω = 2 * jnp.pi * frequency
-    branch = 1 / (1j * ω * 7e-9) + 1j * ω * 5e-15
+    branch = 1 / (1j * ω * inductance) + 1j * ω * 5e-15
     junction = _scattering(branch[..., None, None] * jnp.array([[1, -1], [-1, 1]]))
     inward = jnp.linalg.solve(
         jnp.eye(2) - junction @ scattering[..., 1:, 1:],
@@ -208,6 +211,60 @@ def test_junction_loading_through_a_sax_circuit(data: Dataset) -> None:
     assert abs(float(derivative)) > 1e6
     difference = (reflection(7.000001e-9) - reflection(6.999999e-9)) / 2e-15
     np.testing.assert_allclose(derivative, difference, rtol=1e-4)
+
+
+@pytest.mark.parametrize("inductance_nh", [7.0, -7.0])
+def test_signed_operating_point_through_sax(
+    data: Dataset, inductance_nh: float
+) -> None:
+    """The junction's signed curvature remains a numeric, jittable circuit input."""
+
+    def junction(
+        f: jax.Array | float = 1e9, inductance_nh: jax.Array | float = -7.0
+    ) -> sax.SDict:
+        return lc_resonator(
+            f=f,
+            inductance=inductance_nh * 1e-9,
+            capacitance=5e-15,
+            grounded=False,
+        )
+
+    network = s_parameters_model(data, interpolation="admittance")
+    circuit, _ = sax.circuit(
+        {
+            "instances": {"device": "network", "junction": "junction"},
+            "connections": {
+                "device,left": "junction,o1",
+                "device,right": "junction,o2",
+            },
+            "ports": {"readout": "device,readout"},
+        },
+        models={"network": network, "junction": junction},
+        ignore_impossible_connections=False,
+    )
+    frequency = jnp.linspace(1.5e9, 13e9, 1001)
+    response = jax.jit(circuit)(f=frequency, junction={"inductance_nh": inductance_nh})
+    expected = _close_junction(
+        _matrix(network(f=frequency)), frequency, inductance=inductance_nh * 1e-9
+    )
+    actual = response["readout", "readout"]
+    assert bool(jnp.all(jnp.isfinite(actual)))
+    np.testing.assert_allclose(actual, expected, atol=1e-8)
+    np.testing.assert_allclose(jnp.abs(actual), 1, atol=1e-8)
+
+    def reflection(inductance: jax.Array | float) -> jax.Array:
+        return jnp.imag(
+            circuit(f=8.123e9, junction={"inductance_nh": inductance})[
+                "readout", "readout"
+            ]
+        )
+
+    derivative = jax.jit(jax.grad(reflection))(inductance_nh)
+    difference = (
+        reflection(inductance_nh + 1e-4) - reflection(inductance_nh - 1e-4)
+    ) / 2e-4
+    assert jnp.isfinite(derivative)
+    np.testing.assert_allclose(derivative, difference, rtol=1e-4, atol=1e-8)
 
 
 def test_admittance_interpolation_retains_physical_loss(

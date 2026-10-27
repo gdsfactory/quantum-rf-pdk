@@ -447,3 +447,11 @@ critical current and bias set the operating-point Josephson inductance. Set its
 capacitance to the additional junction capacitance and choose its shunt resistance
 explicitly. The FEM network already contains the arm fields. Omitting an internal port
 applies a matched load and changes the circuit's damping.
+
+The unimon's half-flux operating point has a negative Josephson curvature
+:cite:`hyyppaUnimonQubit2022`. Represent a signed small-signal inductance with a
+floating ``lc_resonator`` branch. Keep ``grounded=False`` fixed inside a branch factory
+and expose numeric inductance and capacitance settings to SAX. The full circuit must
+still have a stable operating point. The zero-voltage current-biased
+``josephson_junction`` model selects the positive-curvature branch and should not be
+given a negative critical current to mimic this bias.
