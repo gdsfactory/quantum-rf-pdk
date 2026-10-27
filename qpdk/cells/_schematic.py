@@ -12,8 +12,12 @@ if TYPE_CHECKING:
     from typing import Literal
 
 __all__ = [
+    "bend_circular_all_angle_schematic",
     "bend_circular_schematic",
+    "bend_euler_all_angle_schematic",
+    "bend_euler_schematic",
     "bend_s_schematic",
+    "coupler_ring_schematic",
     "coupler_straight_schematic",
     "double_pad_transmon_schematic",
     "double_pad_transmon_with_bbox_schematic",
@@ -26,8 +30,10 @@ __all__ = [
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
+    "nxn_schematic",
     "open_2_port_schematic",
     "open_schematic",
+    "plate_capacitor_schematic",
     "quarter_wave_resonator_coupled_schematic",
     "resonator_coupled_schematic",
     "resonator_half_wave_schematic",
@@ -37,9 +43,12 @@ __all__ = [
     "sax_model",
     "schematic",
     "short_schematic",
+    "straight_all_angle_schematic",
     "straight_open_schematic",
     "straight_schematic",
     "straight_shorted_schematic",
+    "taper_cross_section_schematic",
+    "tee_schematic",
     "unimon_coupled_schematic",
 ]
 
@@ -330,6 +339,7 @@ bend_circular_schematic = schematic(
     symbol="bend_circular",
     tags=["waveguides"],
     ports=_BEND,
+    models=[sax_model("bend_circular", "qpdk.models.waveguides", ["o1", "o2"])],
 )
 
 bend_s_schematic = schematic(
@@ -534,6 +544,7 @@ meander_inductor_schematic = schematic(
     symbol="meander_inductor",
     tags=["inductors"],
     ports=_2PORT,
+    models=[sax_model("meander_inductor", "qpdk.models.inductor", ["o1", "o2"])],
 )
 
 lumped_element_resonator_schematic = schematic(
@@ -563,4 +574,97 @@ launcher_schematic = schematic(
             port_order=["waveport", "o1"],
         )
     ],
+)
+
+
+bend_euler_schematic = schematic(
+    symbol="bend_euler",
+    tags=["waveguides"],
+    ports=_BEND,
+    models=[sax_model("bend_euler", "qpdk.models.waveguides", ["o1", "o2"])],
+)
+
+
+bend_circular_all_angle_schematic = schematic(
+    symbol="bend_circular_all_angle",
+    tags=["waveguides"],
+    ports=_BEND,
+    models=[
+        sax_model("bend_circular_all_angle", "qpdk.models.waveguides", ["o1", "o2"])
+    ],
+)
+
+
+bend_euler_all_angle_schematic = schematic(
+    symbol="bend_euler_all_angle",
+    tags=["waveguides"],
+    ports=_BEND,
+    models=[sax_model("bend_euler_all_angle", "qpdk.models.waveguides", ["o1", "o2"])],
+)
+
+
+straight_all_angle_schematic = schematic(
+    symbol="straight_all_angle",
+    tags=["waveguides"],
+    ports=_2PORT,
+    models=[sax_model("straight_all_angle", "qpdk.models.waveguides", ["o1", "o2"])],
+)
+
+
+taper_cross_section_schematic = schematic(
+    symbol="taper_cross_section",
+    tags=["waveguides"],
+    ports=_2PORT,
+    models=[sax_model("taper_cross_section", "qpdk.models.waveguides", ["o1", "o2"])],
+)
+
+
+coupler_ring_schematic = schematic(
+    symbol="coupler_ring",
+    tags=["waveguides"],
+    ports=_COUPLER_STRAIGHT,
+    models=[
+        sax_model("coupler_ring", "qpdk.models.couplers", ["o1", "o2", "o3", "o4"])
+    ],
+)
+
+
+plate_capacitor_schematic = schematic(
+    symbol="plate_capacitor",
+    tags=["capacitors", "couplers"],
+    ports=_2PORT,
+    models=[sax_model("plate_capacitor", "qpdk.models.capacitor", ["o1", "o2"])],
+)
+
+
+def nxn_schematic(
+    west: int = 1,
+    east: int = 1,
+    north: int = 1,
+    south: int = 1,
+    **_kwargs: Any,
+) -> DSchematic:
+    """Describe the junction's variable port count without building geometry."""
+    sides = ["left"] * west + ["top"] * north + ["right"] * east + ["bottom"] * south
+    ports = [
+        {"name": f"o{i}", "side": side, "type": "photonic"}
+        for i, side in enumerate(sides, start=1)
+    ]
+    return _make_schematic(
+        "nxn",
+        ["waveguides"],
+        ports,
+        [sax_model("nxn", "qpdk.models.waveguides", [port["name"] for port in ports])],
+    )
+
+
+tee_schematic = schematic(
+    symbol="tee",
+    tags=["waveguides"],
+    ports=[
+        {"name": "o1", "side": "left", "type": "photonic"},
+        {"name": "o2", "side": "top", "type": "photonic"},
+        {"name": "o3", "side": "right", "type": "photonic"},
+    ],
+    models=[sax_model("tee", "qpdk.models.generic", ["o1", "o2", "o3"])],
 )
