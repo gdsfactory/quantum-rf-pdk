@@ -411,7 +411,7 @@ The repository uses extensive pre-commit hooks Including, but not limited to:
 - `actionlint`: GitHub Actions validation
 - `uv-lock`: Lock file validation
 - `openvaf-r`: Verilog-A lint, compiling each `.va` model with OpenVAF-Reloaded (`--dry-run --deny warnings`). Needs
-  `openvaf-r` on `PATH` or the `OPENVAF` environment variable set to it; CI installs the release binary
+  `openvaf-r` on `PATH` or the `OPENVAF` environment variable set to it; CI installs a pinned upstream build
 
 ## Common Pitfalls and Troubleshooting
 

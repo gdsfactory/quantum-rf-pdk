@@ -13,8 +13,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   pre-commit:
-    # Pinned for the openvaf-r release binary, see Install OpenVAF-Reloaded.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
       PREK_SKIP: matlab-diagnostics,matlab-format,matlab-quickfix  # No license
       # Runner CPUs vary; build pkgimages for the official x86_64 targets so the
@@ -38,21 +37,19 @@ jobs:
       # only in the VS Code extension.
       - name: Fetch gfp binary
         run: just fetch-gfp
-      # The openvaf-r hook lints the Verilog-A models. The Linux release links
-      # against libLLVM 18 and glibc 2.39, which is why the job pins Ubuntu 24.04.
+      # The openvaf-r hook lints the Verilog-A models. The upstream builds from
+      # fides link LLVM statically, so they only need glibc 2.39 or newer.
       - name: Install OpenVAF-Reloaded
         env:
-          OPENVAF_VERSION: v24.0.2mob
-          OPENVAF_SHA256: b12b7b1726d103e18c2588c3a1f91f8475cf03df8a3bde14d919797d221e3110
+          OPENVAF_BUILD: osdi_0.5_20260820-7-gde9c640b
+          OPENVAF_SHA256: c0f1a5b7df8a0d00a16938a7d469612d2b7a6204da00b419af6dc855430e8484
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes libllvm18
-          archive="openvaf-r-${OPENVAF_VERSION}-linux-x86_64"
-          curl --fail --silent --show-error --location --output /tmp/openvaf-r.tar.gz \
-            "https://github.com/OpenVAF/OpenVAF-Reloaded/releases/download/${OPENVAF_VERSION}/${archive}.tar.gz"
-          echo "${OPENVAF_SHA256}  /tmp/openvaf-r.tar.gz" | sha256sum --check
-          tar -xzf /tmp/openvaf-r.tar.gz -C /opt
-          echo "/opt/${archive}/bin" >> "$GITHUB_PATH"
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/openvaf-r.tar.gz" \
+            "https://fides.fe.uni-lj.si/openvaf/download/openvaf-reloaded-${OPENVAF_BUILD}-linux_x64.tar.gz"
+          echo "${OPENVAF_SHA256}  ${RUNNER_TEMP}/openvaf-r.tar.gz" | sha256sum --check
+          mkdir "$RUNNER_TEMP/openvaf-r"
+          tar -xzf "$RUNNER_TEMP/openvaf-r.tar.gz" -C "$RUNNER_TEMP/openvaf-r"
+          echo "$RUNNER_TEMP/openvaf-r" >> "$GITHUB_PATH"
       # lychee's pre-commit hook installs its own binary via cargo-binstall,
       # which needs the token to avoid 403 rate limiting from api.github.com.
       - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
