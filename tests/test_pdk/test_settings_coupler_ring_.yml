@@ -1,6 +1,6 @@
 info:
   radius: 100
-name: coupler_ring_gdsfactorypcomponentspcouplerspcoupler_rin_11dc32cb
+name: coupler_ring_LX20_G16_CScpw_Bbend_circular
 ports:
   o1:
     center:
@@ -43,4 +43,3 @@ settings:
   cross_section: cpw
   gap: 16
   length_x: 20
-  straight: straight

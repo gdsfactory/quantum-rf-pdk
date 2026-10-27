@@ -3,7 +3,7 @@
 from functools import partial
 
 import gdsfactory as gf
-from gdsfactory.typings import CrossSectionSpec, Ints, LayerSpec, Size
+from gdsfactory.typings import ComponentSpec, CrossSectionSpec, Ints, LayerSpec, Size
 from kfactory import VInstance
 from klayout.db import DCplxTrans
 
@@ -12,6 +12,7 @@ from qpdk.cells._schematic import (
     bend_circular_schematic,
     bend_euler_schematic,
     bend_s_schematic,
+    coupler_ring_schematic,
     coupler_straight_schematic,
     nxn_schematic,
     open_2_port_schematic,
@@ -453,14 +454,28 @@ def coupler_straight(
     return component
 
 
-coupler_ring = partial(
-    gf.c.coupler_ring,
-    cross_section="cpw",
-    length_x=20,
-    bend=bend_circular,
-    straight=straight,
-    gap=16,
-)
+@gf.cell(tags=["waveguides", "couplers"], schematic_function=coupler_ring_schematic)
+def coupler_ring(
+    length_x: float = 20,
+    gap: float = 16,
+    cross_section: CrossSectionSpec = "cpw",
+    bend: ComponentSpec = bend_circular,
+) -> gf.Component:
+    """Return a ring coupler fed by a straight bus.
+
+    Args:
+        length_x: Straight coupling length in μm.
+        gap: Edge-to-edge conductor gap in μm.
+        cross_section: Cross-section specification.
+        bend: Component used for the ring bends.
+    """
+    return gf.c.coupler_ring(
+        length_x=length_x,
+        gap=gap,
+        cross_section=cross_section,
+        bend=bend,
+        straight=straight,
+    )
 
 
 @gf.vcell(tags=["waveguides"])

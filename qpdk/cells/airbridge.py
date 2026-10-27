@@ -14,13 +14,14 @@ from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
 
 from qpdk import tech
+from qpdk.cells._schematic import airbridge_schematic
 from qpdk.tech import LAYER
 
 if TYPE_CHECKING:
     from qpdk.utils import PortConfig
 
 
-@gf.cell(tags=["interconnects"])
+@gf.cell(tags=["interconnects"], schematic_function=airbridge_schematic)
 def airbridge(
     bridge_length: float = 30.0,
     bridge_width: float = 8.0,

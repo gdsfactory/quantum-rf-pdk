@@ -9,10 +9,11 @@ import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec, Port, Size
 
+from qpdk.cells._schematic import snspd_schematic
 from qpdk.tech import LAYER
 
 
-@gf.cell(tags=["detectors"])
+@gf.cell(tags=["detectors"], schematic_function=snspd_schematic)
 def snspd(
     wire_width: float = 0.2,
     wire_pitch: float = 0.6,
