@@ -1,8 +1,8 @@
 PYTEST_COMMAND := "uv run --extra models --extra comsol --extra delta --extra graphics --extra hfss --extra qutip --group dev pytest -n auto --dist loadgroup"
 
 # Check if Git LFS is available and pull LFS files
-[private]
 [group('test')]
+[private]
 check-lfs:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -69,15 +69,15 @@ check-lfs:
     fi
 
 # Shared pytest invocation for internal callers passing pre-split argument strings (ensures LFS data first)
-[private]
 [group('test')]
+[private]
 _pytest *args: check-lfs
     {{ PYTEST_COMMAND }} {{ args }}
 
 # Run the full test suite in parallel using pytest
 # Uses positional arguments so quoted args survive, e.g. `just test -k "some name"`
-[positional-arguments]
 [group('test')]
+[positional-arguments]
 test *args: check-lfs
     {{ PYTEST_COMMAND }} "$@"
 
@@ -111,8 +111,8 @@ test-hfss *args: check-lfs
     uv run --all-extras --group dev pytest -m hfss {{ args }}
 
 # Run Palace dataset setup, result-reader and solver tests
-[positional-arguments]
 [group('test')]
+[positional-arguments]
 test-palace *args: check-lfs
     uv run --locked --python 3.12 --no-default-groups --extra models --group palace --group test pytest -m palace tests/models --basetemp=build/palace-tests --durations=0 "$@"
 
