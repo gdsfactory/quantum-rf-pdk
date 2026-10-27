@@ -8,6 +8,8 @@ exclude = [
   "http://127.0.0.1",
   "http://localhost",
   "0.0.0.0",
+  # Binder launches can exceed the link check timeout.
+  "^https:\\/\\/mybinder\\.org/v2/gh/gdsfactory/quantum-rf-pdk/HEAD/?$",
   # example domains
   "example.com",
   "example.org",
