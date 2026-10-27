@@ -279,6 +279,12 @@ repos:
         entry: julia --startup-file=no --project=.github/julia .github/julia/lint.jl
         language: system
         files: \.jl$|(^|/)JuliaLint\.toml$
+      - id: openvaf-r
+        priority: 10
+        name: Lint Verilog-A models with OpenVAF-Reloaded
+        entry: ./.github/check-verilog-a.sh
+        language: script
+        files: \.va$
       - id: just-fmt
         priority: 10
         name: Format justfiles

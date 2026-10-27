@@ -13,7 +13,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
+    # Pinned for the openvaf-r release binary, see Install OpenVAF-Reloaded.
+    runs-on: ubuntu-24.04
     env:
       PREK_SKIP: matlab-diagnostics,matlab-format,matlab-quickfix  # No license
       # Runner CPUs vary; build pkgimages for the official x86_64 targets so the
@@ -37,6 +38,21 @@ jobs:
       # only in the VS Code extension.
       - name: Fetch gfp binary
         run: just fetch-gfp
+      # The openvaf-r hook lints the Verilog-A models. The Linux release links
+      # against libLLVM 18 and glibc 2.39, which is why the job pins Ubuntu 24.04.
+      - name: Install OpenVAF-Reloaded
+        env:
+          OPENVAF_VERSION: v24.0.2mob
+          OPENVAF_SHA256: b12b7b1726d103e18c2588c3a1f91f8475cf03df8a3bde14d919797d221e3110
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libllvm18
+          archive="openvaf-r-${OPENVAF_VERSION}-linux-x86_64"
+          curl --fail --silent --show-error --location --output /tmp/openvaf-r.tar.gz \
+            "https://github.com/OpenVAF/OpenVAF-Reloaded/releases/download/${OPENVAF_VERSION}/${archive}.tar.gz"
+          echo "${OPENVAF_SHA256}  /tmp/openvaf-r.tar.gz" | sha256sum --check
+          tar -xzf /tmp/openvaf-r.tar.gz -C /opt
+          echo "/opt/${archive}/bin" >> "$GITHUB_PATH"
       # lychee's pre-commit hook installs its own binary via cargo-binstall,
       # which needs the token to avoid 403 rate limiting from api.github.com.
       - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
