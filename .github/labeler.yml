@@ -107,6 +107,8 @@ resonators:
           - any-glob-to-any-file:
               - 'qpdk/cells/resonator.py'
               - 'qpdk/models/resonator.py'
+              - 'qpdk/cells/vortex.py'
+              - 'qpdk/models/vortex.py'
 samples:
   - any:
       - changed-files:

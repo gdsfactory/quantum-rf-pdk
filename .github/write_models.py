@@ -58,7 +58,7 @@ sax_categories = [
         "resonators",
         "Resonators",
         "Quarter- and half-wave transmission-line resonators and their coupled variants.",
-        ("qpdk.models.resonator",),
+        ("qpdk.models.resonator", "qpdk.models.vortex"),
     ),
     Category(
         "couplers",
