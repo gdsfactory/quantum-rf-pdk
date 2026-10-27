@@ -32,7 +32,7 @@ from qpdk.tech import LAYER
 
 GRID = {
     "pad_width": [200.0, 250.0, 300.0],
-    "ground_clearance": [100.0, 150.0, 200.0, 250.0, 300.0],
+    "ground_clearance": [100.0, 125.0, 150.0, 175.0, 200.0, 250.0, 300.0],
     "coupling_gap": [5.0, 7.5, 10.0, 15.0, 20.0, 27.5, 35.0],
     "paddle_length": [100.0, 150.0, 200.0, 297.0, 394.0],
 }
