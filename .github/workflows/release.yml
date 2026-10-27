@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
 concurrency:
   group: release
   cancel-in-progress: false
@@ -34,7 +36,13 @@ jobs:
           TAG: ${{ steps.get_version.outputs.tag }}
           VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG"; then
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            if [[ "$GITHUB_REF_NAME" != "$TAG" ]]; then
+              echo "Tag $GITHUB_REF_NAME does not match pyproject.toml version $VERSION" >&2
+              exit 1
+            fi
+            echo "new_tag=true" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code --tags origin "refs/tags/$TAG"; then
             echo "Tag $TAG already exists. No new release will be created."
             echo "new_tag=false" >> "$GITHUB_OUTPUT"
           else
@@ -52,7 +60,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/build.yml
   release_environment:
-    needs: check_and_tag
+    needs: [check_and_tag, build]
     if: needs.check_and_tag.outputs.new_tag_created == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -60,6 +68,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
       - name: Generate SBOM
         run: |
           uv run --all-extras --no-extra gdsfactoryplus --with cyclonedx-bom cyclonedx-py environment --pyproject pyproject.toml --output-format JSON --output-file sbom.json
@@ -87,6 +97,7 @@ jobs:
             gh release create "$TAG" \
               --title "$TAG" \
               --generate-notes \
+              --verify-tag \
               sbom.json
           fi
   release_pypi:
