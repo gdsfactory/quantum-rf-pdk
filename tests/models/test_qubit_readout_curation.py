@@ -949,3 +949,60 @@ def test_superseded_extra_failure_does_not_waive_native_task_count(
             references=[extra],
             output=tmp_path / "rejected",
         )
+
+
+@pytest.mark.parametrize("source", ["reference", "production"])
+def test_negative_residual_cannot_hide_behind_a_valid_sample(
+    complete_study: tuple[Any, Path, Path],
+    tmp_path: Path,
+    source: str,
+) -> None:
+    curator, study, calibration = complete_study
+    label = "held-1" if source == "reference" else "production"
+    path = study / "results/job" / label / "data"
+    data = Dataset(path)
+    frame = (
+        data
+        .scan()
+        .collect()
+        .with_columns(
+            pl
+            .when(
+                (pl.col("quantity") == "solver_relative_residual")
+                & (pl.col("size") <= 0.5)
+            )
+            .then(pl.lit(-1e-12, dtype=pl.Float64))
+            .otherwise(pl.col("value"))
+            .alias("value")
+        )
+    )
+    write(path, data.metadata, frame)
+    output = tmp_path / "rejected"
+    with pytest.raises(ValueError, match=r"residual|missing|complete"):
+        curator.verify(study, calibration, "xmon_readout", output=output)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("source", ["reference", "production"])
+@pytest.mark.parametrize("residual", [0.0, 1e-9])
+def test_residual_range_includes_zero_and_the_tolerance(
+    complete_study: tuple[Any, Path, Path], source: str, residual: float
+) -> None:
+    curator, study, calibration = complete_study
+    label = "held-1" if source == "reference" else "production"
+    path = study / "results/job" / label / "data"
+    data = Dataset(path)
+    frame = (
+        data
+        .scan()
+        .collect()
+        .with_columns(
+            pl
+            .when(pl.col("quantity") == "solver_relative_residual")
+            .then(residual)
+            .otherwise(pl.col("value"))
+            .alias("value")
+        )
+    )
+    write(path, data.metadata, frame)
+    assert curator.verify(study, calibration, "xmon_readout")["passed"]

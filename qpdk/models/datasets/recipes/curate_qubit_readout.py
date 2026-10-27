@@ -83,11 +83,16 @@ def _records(campaign: Path, recipe: str) -> list[dict[str, Any]]:
                             "Diagnostic settings differ from its Parquet provenance"
                         )
                     row["source"]["provenance"] = data.metadata.provenance
-                    residual = data.grid(
+                    residuals = data.grid(
                         "solver_relative_residual", allow_missing=False
-                    ).values.max()
-                    if residual > row["settings"]["tolerance"]:
-                        raise ValueError("A reference exceeds its residual tolerance")
+                    ).values
+                    if (
+                        residuals.min() < 0
+                        or residuals.max() > row["settings"]["tolerance"]
+                    ):
+                        raise ValueError(
+                            "A reference has an invalid residual or exceeds its tolerance"
+                        )
                     matrix = data.grid(
                         "maxwell_capacitance", allow_missing=False
                     ).values.reshape(len(data.metadata.terminals), -1)
@@ -574,13 +579,15 @@ def verify(
             to_grid(frame, metadata, quantity.name, allow_missing=False)
         grid = to_grid(frame, metadata, "maxwell_capacitance", allow_missing=False)
         check_maxwell(grid.values)
-        if (
-            frame.filter(pl.col("quantity") == "solver_relative_residual")[
-                "value"
-            ].max()
-            > metadata.provenance["settings"]["tolerance"]
-        ):
-            raise ValueError("A production solve exceeds its residual tolerance")
+        residuals = frame.filter(pl.col("quantity") == "solver_relative_residual")[
+            "value"
+        ]
+        if not residuals.is_between(
+            0, metadata.provenance["settings"]["tolerance"]
+        ).all():
+            raise ValueError(
+                "A production solve has an invalid residual or exceeds its tolerance"
+            )
         lookup = GridInterpolator(grid)
         references = [
             r for r in calibration_rows if r["control"] != "candidate"
