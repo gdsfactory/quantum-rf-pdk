@@ -111,7 +111,7 @@ def _coverage(
         "interior_cells_tested": len(cells),
         "total_interior_cells": total,
         "tested_cell_indices": [list(cell) for cell in sorted(cells)],
-        "boundaries_tested": sorted(boundaries),
+        "boundaries_tested": [list(boundary) for boundary in sorted(boundaries)],
         "passed": len(cells) >= min(64, total)
         and len(boundaries) == 2 * len(grid)
         and all_intervals,
