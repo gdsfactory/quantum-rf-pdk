@@ -29,6 +29,8 @@ def test_gfp_component_simulation(
 ) -> None:
     name = "xmon_readout"
     sax_sim = import_gfp_module("gdsfactoryplus.sim.sax")
+    if reflection and getattr(sax_sim, "_MIN_PORTS", 1) > 1:
+        pytest.xfail("This GFP SDK requires two external ports for SAX simulation")
     qubit_settings = {
         "inductance_nh": 12.0,
         "junction_capacitance_ff": 1.5,
