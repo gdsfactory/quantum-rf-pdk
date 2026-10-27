@@ -32,6 +32,8 @@ instances:
     info: {}
     settings:
       bbox_extension: 200
+      inductance_nh: 7
+      junction_capacitance_ff: 0
       junction_displacement: null
       junction_spec: squid_junction
       layer_etch: M1_ETCH

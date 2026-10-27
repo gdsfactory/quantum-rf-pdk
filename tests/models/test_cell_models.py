@@ -32,7 +32,7 @@ def test_cell_model_has_one_jittable_port_contract(
     descriptor = info["models"][0]
     module = importlib.import_module(descriptor["module"])
     model = getattr(module, descriptor["qualname"])
-    assert model is models[name] is PDK.models[name]
+    assert model is models[descriptor["name"]] is PDK.models[name]
     assert set(descriptor["port_order"]) == ports
 
     frequencies = jnp.linspace(4e9, 8e9, 5)
