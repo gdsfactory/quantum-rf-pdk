@@ -54,6 +54,11 @@ LayerViews:
     layer_in_name: true
     color: "#4A90E2"
     hatch_pattern: cross-hatched
+  NM_DRAW:
+    layer: [26, 0]
+    layer_in_name: true
+    color: "#D4A017"
+    hatch_pattern: left-hatched
   IND:
     layer: [30, 0]
     layer_in_name: true

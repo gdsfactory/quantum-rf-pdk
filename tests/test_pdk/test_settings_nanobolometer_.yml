@@ -1,0 +1,60 @@
+info:
+  absorber_squares: 7.407
+  absorber_volume: 0.004
+  covered_volume: 0.002
+  extension_volume: 0.002
+  link_cross_section: 0.004
+  link_length: 0.25
+  probe_junction_area: 0.014
+  reservoir_volume: 0.004
+name: nanobolometer_AL1_AW0p135_NMT0p03_CO0p3_EL0p2_LW0p3_LL5_9203877c
+ports:
+  e1:
+    center:
+    - 9.735
+    - -4
+    layer: M1_DRAW
+    name: e1
+    orientation: 0
+    port_type: electrical
+    width: 4
+  e2:
+    center:
+    - 9.735
+    - 4
+    layer: M1_DRAW
+    name: e2
+    orientation: 0
+    port_type: electrical
+    width: 4
+  o1:
+    center:
+    - -25
+    - 0.65
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+settings:
+  absorber_length: 1
+  absorber_width: 0.135
+  contact_overlap: 0.3
+  cpw_length: 20
+  cross_section: cpw
+  extension_length: 0.2
+  landing_size: 2
+  layer_etch: M1_ETCH
+  layer_lead: JJ_AREA
+  layer_metal: M1_DRAW
+  layer_normal_metal: NM_DRAW
+  layer_patch: JJ_PATCH
+  lead_length: 5
+  lead_width: 0.3
+  normal_metal_thickness: 0.03
+  pad_size: 4
+  pad_spacing: 4
+  probe_positions:
+  - -0.25
+  - 0.25
+  probe_width: 0.1

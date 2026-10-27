@@ -205,6 +205,23 @@
   <source>25/0@1</source>
  </properties>
  <properties>
+  <frame-color>#d4a017</frame-color>
+  <fill-color>#d4a017</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I4</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>NM_DRAW 26/0</name>
+  <source>26/0@1</source>
+ </properties>
+ <properties>
   <frame-color>#65f69c</frame-color>
   <fill-color>#65f69c</fill-color>
   <frame-brightness>0</frame-brightness>

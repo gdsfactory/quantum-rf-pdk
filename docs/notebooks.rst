@@ -164,6 +164,18 @@ Microwave components as linear, frequency-dependent scattering matrices, impleme
 
         :bdg-secondary-line:`SAX` :bdg-primary:`models`
 
+    .. grid-item-card:: Nanobolometer thermal model
+        :link: notebooks/nanobolometer_thermal_model
+        :link-type: doc
+        :class-card: notebook-card
+
+        Two-reservoir hot-electron relaxation predicted from the bolometer layout,
+        checked against two measured devices.
+
+        +++
+
+        :bdg-secondary-line:`qpdk` :bdg-secondary-line:`JAX` :bdg-primary:`models`
+
     .. grid-item-card:: Monte Carlo fabrication tolerance
         :link: notebooks/monte_carlo_fabrication_tolerance
         :link-type: doc
@@ -695,6 +707,10 @@ Every notebook at a glance; the **Extras** column links back to :ref:`notebook-e
     - - :doc:`notebooks/resonator_frequency_model`
       - S-parameter models
       - SAX
+      - ``models``
+    - - :doc:`notebooks/nanobolometer_thermal_model`
+      - Thermal models
+      - qpdk, JAX
       - ``models``
     - - :doc:`notebooks/monte_carlo_fabrication_tolerance`
       - S-parameter models

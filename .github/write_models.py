@@ -85,6 +85,12 @@ sax_categories = [
         ("qpdk.models.waveguides",),
     ),
     Category(
+        "bolometers",
+        "Bolometers",
+        "Normal-metal hot-electron nanobolometers and calorimeters.",
+        ("qpdk.models.bolometer",),
+    ),
+    Category(
         "generic",
         "Generic circuit elements",
         "Opens, shorts, series and shunt elements and ideal LC resonators.",
@@ -112,6 +118,12 @@ helper_categories = [
         "Perturbation theory",
         "Transmon frequency and anharmonicity, dispersive shifts, Purcell decay, linewidths and dephasing.",
         ("qpdk.models.perturbation",),
+    ),
+    Category(
+        "thermal",
+        "Hot-electron thermal response",
+        "Heat capacities, thermal conductances and relaxation modes of normal-metal bolometers.",
+        ("qpdk.models.bolometer",),
     ),
     Category(
         "component-helpers",
