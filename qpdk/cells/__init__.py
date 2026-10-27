@@ -22,6 +22,7 @@ from .gatemon import *
 from .inductor import *
 from .junction import *
 from .launcher import *
+from .qubit_readout import *
 from .resonator import *
 from .resonator_sections import *
 from .snspd import *

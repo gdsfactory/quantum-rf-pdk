@@ -1,0 +1,20 @@
+info:
+  qubit_type: transmon
+name: xmon_readout_AS1_GW10_CG5_PL60_IN10_JCF0
+ports:
+  readout:
+    center:
+    - -147
+    - 0
+    layer: M1_DRAW
+    name: readout
+    orientation: 180
+    port_type: optical
+    width: 10
+settings:
+  arm_scale: 1
+  coupling_gap: 5
+  gap_width: 10
+  inductance_nh: 10
+  junction_capacitance_ff: 0
+  paddle_length: 60

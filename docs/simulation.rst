@@ -411,6 +411,18 @@ gap. Its nominal point is explicit rather than inferred from the middle grid coo
 Pocket clearance is sampled more densely below 200 um, where initial held-out checks
 found the largest paddle-to-ground errors.
 
+The ``xmon_readout`` layout cell exposes only the paddle's ``readout`` pin. Its SAX
+adapter retains the full local matrix and closes the internal island through a
+linearized junction. Connect this pin directly to the distributed readout line, without
+an extra coupling capacitor. Set ``inductance_nh`` in nH and ``junction_capacitance_ff``
+in fF on the layout to specify the junction. The dataset omits the junction metal and
+distributed line and package fields. This model predicts the harmonic response, not the
+nonlinear transition spectrum.
+
+GDSFactory+ can simulate this block as a branch of a readout circuit. Standalone
+reflection sweeps also require a GFP runtime and Python SDK with one-port SAX support.
+Older versions reject the single ``readout`` pin during simulation preflight.
+
 Once a local dataset has passed numerical validation, ``junction_model`` can keep its
 qubit electrodes internal and expose just the readout pin:
 

@@ -1,0 +1,45 @@
+instances:
+  plate_capacitor_single:
+    component: plate_capacitor_single
+    info: {}
+    settings:
+      cross_section: cpw
+      etch_bbox_margin: 2
+      etch_layer: M1_ETCH
+      layer_metal: M1_DRAW
+      length: 60
+      width: 20
+  xmon_transmon:
+    component: xmon_transmon
+    info:
+      qubit_type: xmon
+    settings:
+      arm_lengths:
+      - 160
+      - 120
+      - 160
+      - 120
+      arm_width:
+      - 30
+      - 20
+      - 30
+      - 20
+      gap_width: 10
+      junction_displacement: null
+      junction_spec: squid_junction
+      layer_etch: M1_ETCH
+      layer_metal: M1_DRAW
+nets: []
+placements:
+  plate_capacitor_single:
+    mirror: false
+    rotation: 0
+    x: -135
+    y: 0
+  xmon_transmon:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+ports:
+  readout: plate_capacitor_single,o1
