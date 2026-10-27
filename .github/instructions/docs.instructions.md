@@ -35,6 +35,9 @@ to be mergeable**, so treat a change that can break the build as blocking.
 
 - New public API should be reachable from the docs. Check that a new cell or model shows up through the templates in
   `docs/templates/` and the generators in `.github/write_cells.py` / `.github/write_models.py`.
+- The PCells page (`docs/templates/cells.rst.j2`) is grouped into sections by cell `tags`, configured by `SECTIONS` and
+  `SUBSECTION_TITLES` in `.github/write_cells.py`. Keep heading levels consistent when editing the template: section
+  `-`, subsection `~`, and cell `^` under a subsection or `~` directly under a section.
 - Adding or removing a notebook requires an update to `docs/notebooks.rst`.
 - `docs/index.md`, `docs/changelog.md` and `docs/make_commands.md` use include/literalinclude directives and are
   excluded from mdformat and markdownlint — do not propose reformatting them.

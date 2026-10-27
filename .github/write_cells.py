@@ -3,10 +3,12 @@
 # ruff: file-ignore[jinja2-autoescape-false, print]
 
 import base64
+import functools
 import inspect
 import traceback
 from pathlib import Path
 
+import gdsfactory as gf
 import kwasm.embed
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -36,6 +38,35 @@ png_dir = PATH.docs / "_generated" / "cells"
 
 skip = {}
 
+# Sections of the PCells page, in display order.  Each cell is listed once,
+# under the first section whose tag it carries; its other tags are shown as
+# badges.  ``subsections`` are tags that get their own sub-heading inside the
+# section, again first match wins.  Cells carrying none of the section tags end
+# up under "Other components" and the script prints a warning.
+SECTIONS: list[dict] = [
+    {"tag": "qubits", "title": "Qubits", "subsections": ["transmons"]},
+    {"tag": "resonators", "title": "Resonators", "subsections": []},
+    {"tag": "junctions", "title": "Josephson Junctions", "subsections": []},
+    {"tag": "couplers", "title": "Couplers", "subsections": []},
+    {"tag": "capacitors", "title": "Capacitors", "subsections": []},
+    {"tag": "inductors", "title": "Inductors", "subsections": []},
+    {"tag": "detectors", "title": "Detectors", "subsections": []},
+    {
+        "tag": "interconnects",
+        "title": "Interconnects",
+        "subsections": ["3d-integration"],
+    },
+    {"tag": "terminations", "title": "Terminations", "subsections": []},
+    {"tag": "waveguides", "title": "Waveguides", "subsections": ["bend"]},
+    {"tag": "chip", "title": "Chip", "subsections": []},
+]
+SUBSECTION_TITLES = {
+    "transmons": "Transmons",
+    "3d-integration": "3D Integration",
+    "bend": "Bends",
+}
+OTHER_SECTION = {"tag": "other", "title": "Other Components", "subsections": []}
+
 skip_plot: set[str] = {"transform_component"}
 skip_settings: set[str] = set()
 
@@ -48,6 +79,80 @@ cells = {
     )
 }
 samples = qpdk.get_sample_functions()
+
+# ``@gf.cell(tags=...)`` stores the tags on the kfactory wrapper, not on the
+# function the PDK hands out, so map the undecorated function back to them.
+_tags_by_function = {
+    id(wrapped._f_orig): sorted(wrapped.tags)
+    for factories in (gf.kcl.factories, gf.kcl.virtual_factories)
+    for wrapped in factories._all
+}
+
+
+def cell_tags(factory) -> list[str]:
+    """Return the tags of a cell, following ``functools.partial`` to its base cell.
+
+    Returns:
+        Sorted list of tags, empty if the cell has none.
+    """
+    while isinstance(factory, functools.partial):
+        factory = factory.func
+    return _tags_by_function.get(id(inspect.unwrap(factory)), [])
+
+
+def _subsection_title(tag: str) -> str:
+    """Return the heading for a subsection tag, title-casing tags missing a title.
+
+    Returns:
+        Heading text such as ``"Transmons"`` or ``"Flip Chip"``.
+    """
+    return SUBSECTION_TITLES.get(tag) or tag.replace("-", " ").title()
+
+
+def group_by_section(items: list[dict]) -> list[dict]:
+    """Group cell items into the sections and subsections defined in ``SECTIONS``.
+
+    Returns:
+        Non-empty sections, each with its ``groups``: a list of
+        ``{"title", "cells"}`` where a ``None`` title means items listed directly
+        under the section heading.
+    """
+    sections = [*SECTIONS, OTHER_SECTION]
+    buckets: dict[str, list[dict]] = {section["tag"]: [] for section in sections}
+    for item in items:
+        tag = next(
+            (s["tag"] for s in SECTIONS if s["tag"] in item["tags"]),
+            OTHER_SECTION["tag"],
+        )
+        if tag == OTHER_SECTION["tag"]:
+            print(f"WARNING: cell {item['name']!r} has no section tag: {item['tags']}")
+        buckets[tag].append(item)
+
+    grouped = []
+    for section in sections:
+        section_items = buckets[section["tag"]]
+        if not section_items:
+            continue
+        groups = []
+        remaining = section_items
+        for subtag in section["subsections"]:
+            matched = [item for item in remaining if subtag in item["tags"]]
+            remaining = [item for item in remaining if subtag not in item["tags"]]
+            if matched:
+                groups.append({"title": _subsection_title(subtag), "cells": matched})
+        if remaining:
+            # Headings must nest consistently, so once a section has
+            # sub-headings its leftover cells need one too.
+            title = f"Other {section['title']}" if groups else None
+            groups.append({"title": title, "cells": remaining})
+        grouped.append({
+            **section,
+            "anchor": f"cells-{section['tag']}",
+            "cells": section_items,
+            "groups": groups,
+        })
+    return grouped
+
 
 # Set up Jinja2 environment
 # Note: autoescape is False because we're generating RST, not HTML
@@ -130,10 +235,15 @@ for name in sorted(cells.keys()):
     sig = inspect.signature(cells[name])
     kwargs = get_kwargs(sig)
     has_gds = name not in skip_plot and _write_gds(name)
-    cells_items.append({"name": name, "kwargs": kwargs, "has_gds": has_gds})
+    cells_items.append({
+        "name": name,
+        "kwargs": kwargs,
+        "has_gds": has_gds,
+        "tags": cell_tags(cells[name]),
+    })
 
 template = env.get_template("cells.rst.j2")
-rendered = template.render(items=cells_items, skip_plot=skip_plot)
+rendered = template.render(sections=group_by_section(cells_items), skip_plot=skip_plot)
 
 Path(filepath_cells).write_text(rendered, encoding="utf-8")
 

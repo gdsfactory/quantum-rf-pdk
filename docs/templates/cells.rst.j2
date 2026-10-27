@@ -4,15 +4,35 @@
 PCells
 ======
 
-Gallery
--------
+Components are grouped by their ``tags``. Each component is listed once, under
+its main category; the badges under each entry show all of its tags.
+
+.. only:: html
+
+   .. grid:: 2 3 3 4
+      :gutter: 2
+
+{% for section in sections %}
+      .. grid-item-card:: {{ section.title }}
+         :link: {{ section.anchor }}
+         :link-type: ref
+         :text-align: center
+
+         {{ section.cells | length }} component{{ 's' if section.cells | length != 1 }}
+
+{% endfor %}
+{% for section in sections %}
+.. _{{ section.anchor }}:
+
+{{ section.title }}
+{{ '-' * (section.title | length) }}
 
 .. grid:: 1 2 2 3
    :gutter: 2
    :class-container: gallery-grid
 
-{% for item in items %}
-{%     if item.name not in skip_plot %}
+{%     for item in section.cells %}
+{%         if item.name not in skip_plot %}
    .. grid-item-card:: {{ item.name }}
       :link: #qpdk.cells.{{ item.name }}
       :text-align: center
@@ -27,19 +47,29 @@ Gallery
          c.draw_ports()
          c.plot()
 
-{%     endif %}
-{% endfor %}
+{%         endif %}
+{%     endfor %}
+{%     for group in section.groups %}
+{%         if group.title %}
+{{ group.title }}
+{{ '~' * (group.title | length) }}
 
-API Reference
--------------
-
-{% for item in items %}
+{%         endif %}
+{%         set item_underline = '^' if group.title else '~' %}
+{%         for item in group.cells %}
 {{ item.name }}
-{{ '^' * (item.name | length) }}
+{{ item_underline * (item.name | length) }}
+{%             if item.tags %}
+
+.. only:: html
+
+   {% for tag in item.tags %}:bdg-secondary-line:`{{ tag }}` {% endfor %}
+
+{%             endif %}
 
 .. autofunction:: qpdk.cells.{{ item.name }}
-{%     if item.name not in skip_plot %}
-{%         if item.has_gds %}
+{%             if item.name not in skip_plot %}
+{%                 if item.has_gds %}
 
 .. tab-set::
 
@@ -54,7 +84,7 @@ API Reference
 
          <iframe src="kwasm/viewer.html?url=gds/{{ item.name }}.gds" loading="lazy" width="100%" height="400" style="border:none"></iframe>
 
-{%         else %}
+{%                 else %}
 
 .. plot::
 
@@ -64,8 +94,10 @@ API Reference
    c = cells.{{ item.name }}({{ item.kwargs }}).copy()
    c.draw_ports()
    c.plot()
-{%         endif %}
-{%     endif %}
+{%                 endif %}
+{%             endif %}
+{%         endfor %}
+{%     endfor %}
 {% endfor %}
 
 References
