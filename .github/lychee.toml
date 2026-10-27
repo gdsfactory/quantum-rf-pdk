@@ -30,6 +30,7 @@ exclude = [
   "\\$RESOLVED_VERSION",
   # shell variables in workflow download URLs
   "\\$%7BVACASK_VERSION%7D",
+  "\\$%7BOPENVAF_BUILD%7D",
   # pyansys broken parsed URLs
   "https://.*\\.pyansys\\.com.*/n",
   "https://.*\\.pyansys\\.com.*//n",
