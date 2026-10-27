@@ -4,8 +4,8 @@
 
 This is **qpdk**, a Python superconducting microwave Process Design Kit (PDK) built on
 [gdsfactory](https://gdsfactory.github.io/gdsfactory/) for designing quantum devices and circuits — transmons,
-resonators, couplers, airbridges, SNSPDs, fluxoniums, unimons. It targets Python 3.12–3.14, uses `uv` as the package
-manager, `just` as the task runner, and `prek` (a parallel pre-commit runner) for linting.
+resonators, couplers, airbridges, SNSPDs, fluxoniums, unimons, gatemons. It targets Python 3.12–3.14, uses `uv` as the
+package manager, `just` as the task runner, and `prek` (a parallel pre-commit runner) for linting.
 
 `AGENTS.md` at the repository root is the fuller contributor guide, including the coding-agent behavioural rules. This
 file is the review-oriented summary; the detail for individual areas lives in the path-specific files listed below.

@@ -30,8 +30,8 @@ in minutes.
 
 ## Key Features
 
-- **Rich component library** — Transmons, fluxonium, unimon qubits, CPW resonators, interdigital capacitors, SQUID
-  junctions, launchers, bump bonds, TSVs, and more.
+- **Rich component library** — Transmons, fluxonium, unimon and gatemon qubits, CPW resonators, interdigital capacitors,
+  SQUID junctions, launchers, bump bonds, TSVs, and more.
 - **Parametric & composable** — Combine Python functions (`@gf.cell`) into hierarchical designs or define full chips in
   YAML.
 - **Analytical circuit models** — Fast, differentiable S-parameter simulations powered by
@@ -99,6 +99,17 @@ A four-flipmon test chip demonstrating flip-chip qubit integration with coupled 
 capacitor inputs, probeline routing, and flux lines — shown here with ground-plane filling and chip edges.
 
 ![Flipmon Test Chip](docs/_static/images/flipmon_test_chip.png)
+
+### Gatemon Test Chip
+
+A two-gatemon test chip after Riechert et al. (2025): each gatemon sits at the input end of a half-wave meander
+resonator between two series coupling capacitors, with its gate electrode routed to a dedicated launcher. Shown here
+with ground-plane filling and chip edges. Both independent readout channels target the reported device A frequency of
+5.056 GHz using QPDK's analytical CPW and capacitor models, including the nominal island load with its Josephson
+junction open. The physical lengths and capacitor dimensions are design estimates, and the qubit coupling still needs
+electromagnetic calibration.
+
+![Gatemon Test Chip](docs/_static/images/gatemon_test_chip.png)
 
 ### Resonator Test Chip
 

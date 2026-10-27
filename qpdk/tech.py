@@ -25,6 +25,7 @@ from gdsfactory.typings import (
     LayerSpec,
     RoutingStrategies,
 )
+from kfactory.routing.generic import ManhattanRoute
 
 from qpdk.config import PATH
 from qpdk.helper import denest_layerviews_to_layer_tuples
@@ -52,6 +53,12 @@ class LayerMapQPDK(LayerMap):
     # Junctions
     JJ_AREA: Layer = (20, 0)  # Optional bridge/overlap definition
     JJ_PATCH: Layer = (20, 1)
+
+    # Hybrid junction contacts, insulated gate and transferred materials
+    CNT_CONTACT: Layer = (21, 0)  # Nb/Au contact evaporation
+    TOP_GATE: Layer = (22, 0)  # Local Al gate, separate from its M1 feed
+    HBN: Layer = (23, 0)  # Transferred dielectric footprint
+    CNT: Layer = (24, 0)  # Nanotube placement trace, not an etched metal wire
 
     # Nanowire
     NbTiN: Layer = (25, 0)
@@ -97,6 +104,11 @@ material_properties: dict[str, dict[str, float]] = {
     "AlOx/Al": {"relative_permittivity": float("inf")},
     "TiN": {"relative_permittivity": float("inf")},
     "In": {"relative_permittivity": float("inf")},
+    "Au": {"relative_permittivity": float("inf")},
+    "Al": {"relative_permittivity": float("inf")},
+    "SiO2": {"relative_permittivity": 3.9},
+    # Out-of-plane static value, https://arxiv.org/abs/2201.05826.
+    "hBN": {"relative_permittivity": 3.4},
 }
 
 NON_METADATA_LAYERS = {
@@ -108,6 +120,10 @@ NON_METADATA_LAYERS = {
     LAYER.AB_VIA,
     LAYER.JJ_AREA,
     LAYER.JJ_PATCH,
+    LAYER.CNT_CONTACT,
+    LAYER.TOP_GATE,
+    LAYER.HBN,
+    LAYER.CNT,
     LAYER.IND,
     LAYER.TSV,
     LAYER.DICE,
@@ -225,6 +241,95 @@ def get_layer_stack() -> LayerStack:
 LAYER_STACK = get_layer_stack()
 
 
+def get_gatemon_layer_stack(hbn_thickness: float = 0.03) -> LayerStack:
+    """Return a planar approximation of the nanotube gatemon fabrication stack.
+
+    Film thicknesses follow the device A recipe in Appendix I of
+    :cite:`riechertCarbonNanotubeGatemon2025`. Heights are in µm, with zero
+    at the oxide surface. The hBN thickness defaults to a nominal 30 nm;
+    use the measured flake thickness for a particular device.
+
+    The nanotube placement trace is deliberately not extruded as PEC metal.
+    Its weak link belongs in the circuit model. The Al reconnection patches
+    bridge the contact and M1 heights. Flake sag and conformal metal step
+    coverage need a dedicated mesh for quantitative local electrostatics.
+    The scalar hBN permittivity approximates the out-of-plane response.
+
+    Args:
+        hbn_thickness: Measured dielectric thickness in µm.
+
+    Raises:
+        ValueError: If the dielectric thickness is not positive.
+    """
+    if hbn_thickness <= 0:
+        raise ValueError("hbn_thickness must be positive")
+    return LayerStack(
+        layers={
+            "Substrate": LAYER_STACK.layers["Substrate"].model_copy(
+                deep=True, update={"zmin": -500.15}
+            ),
+            "Oxide": LayerLevel(
+                layer=L.SIM_AREA,
+                thickness=0.15,
+                zmin=-0.15,
+                material="SiO2",
+                mesh_order=3,
+            ),
+            "M1": LAYER_STACK.layers["M1"].model_copy(
+                deep=True, update={"thickness": 0.155}
+            ),
+            "ContactNb": LayerLevel(
+                layer=L.CNT_CONTACT,
+                thickness=0.035,
+                zmin=0,
+                material="Nb",
+                mesh_order=1,
+            ),
+            "ContactAu": LayerLevel(
+                layer=L.CNT_CONTACT,
+                thickness=0.01,
+                zmin=0.035,
+                material="Au",
+                mesh_order=1,
+            ),
+            "hBN": LayerLevel(
+                layer=L.HBN,
+                thickness=hbn_thickness,
+                zmin=0.045,
+                material="hBN",
+                mesh_order=2,
+            ),
+            "TopGate": LayerLevel(
+                layer=L.TOP_GATE,
+                thickness=0.1,
+                zmin=0.045 + hbn_thickness,
+                material="Al",
+                mesh_order=1,
+            ),
+            "Reconnection": LayerLevel(
+                layer=L.JJ_PATCH,
+                thickness=0.1,
+                zmin=0.045,
+                material="Al",
+                mesh_order=1,
+            ),
+            "Vacuum": LAYER_STACK.layers["Vacuum"].model_copy(
+                deep=True, update={"zmin": 0}
+            ),
+        }
+    )
+
+
+LAYER_STACK_GATEMON = get_gatemon_layer_stack()
+LAYER_STACK_GATEMON_NO_VACUUM = LayerStack(
+    layers={
+        name: level
+        for name, level in LAYER_STACK_GATEMON.layers.items()
+        if name != "Vacuum"
+    }
+)
+
+
 def get_layer_material_properties(
     layer_name: str, layer_stack: LayerStack | None = None
 ) -> dict[str, float]:
@@ -263,6 +368,8 @@ LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
     ("M1_DRAW", "IND", "M2_DRAW"),
     ("M1_DRAW", "AB_DRAW", "M1_DRAW"),
     ("M2_DRAW", "AB_DRAW", "M2_DRAW"),
+    ("M1_DRAW", "JJ_PATCH", "CNT_CONTACT"),
+    ("M1_DRAW", "TOP_GATE"),
 ]
 
 
@@ -617,6 +724,31 @@ route_bundle_sbend = route_bundle_sbend_cpw = partial(
     bend_s=partial(_route_component, "bend_s", allow_min_radius_violation=True),
 )
 
+
+def _route_single_cpw(
+    component: gf.Component,
+    ports1: Sequence[gf.Port],
+    ports2: Sequence[gf.Port],
+    cross_section: CrossSectionSpec = cpw,
+    **settings: Any,
+) -> list[ManhattanRoute]:
+    """Place each explicit CPW path without the bundle router's fanout detours."""
+    if "waypoints" in settings:
+        settings["waypoints"] = [tuple(point) for point in settings["waypoints"]]
+    return [
+        gf.routing.route_single(
+            component,
+            start,
+            finish,
+            cross_section=cross_section,
+            bend="bend_circular",
+            straight="straight",
+            **settings,
+        )
+        for start, finish in zip(ports1, ports2, strict=True)
+    ]
+
+
 routing_strategies: RoutingStrategies = {
     "route_bundle": route_bundle,
     "route_bundle_cpw": route_bundle_cpw,
@@ -624,6 +756,7 @@ routing_strategies: RoutingStrategies = {
     "route_bundle_all_angle_cpw": route_bundle_all_angle_cpw,
     "route_bundle_sbend": route_bundle_sbend,
     "route_bundle_sbend_cpw": route_bundle_sbend_cpw,
+    "route_single_cpw": _route_single_cpw,
 }
 
 if __name__ == "__main__":

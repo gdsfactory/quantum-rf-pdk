@@ -158,7 +158,17 @@ relative_files = true
 exclude_lines = ["if __name__ == .__main__.", "pragma: no cover"]
 
 [tool.elvis]
-short-layers = [[1, 0], [25, 0], [31, 0], [2, 0], [30, 0], [10, 0]]
+short-layers = [
+  [1, 0],
+  [25, 0],
+  [31, 0],
+  [2, 0],
+  [30, 0],
+  [10, 0],
+  [21, 0],
+  [22, 0],
+  [20, 1]
+]
 connected-layers = [
   [[1, 0], [31, 0]],
   [[31, 0], [2, 0]],
@@ -166,6 +176,10 @@ connected-layers = [
   [[30, 0], [2, 0]],
   [[1, 0], [10, 0]],
   [[2, 0], [10, 0]],
+  [[1, 0], [22, 0]],
+  [[1, 0], [20, 1]],
+  [[21, 0], [20, 1]],
+  [[22, 0], [20, 1]],
 ]
 
 [tool.elvis.equivalent-ports]
@@ -194,7 +208,7 @@ name = "qpdk"
 # (not part of the v2 settings schema; the "Make default" sidebar action
 # also writes this key). Selects the default library chips in the GF+ sidebar.
 [tool.gdsfactoryplus.sidebar]
-default_libraries = ["qpdk"]
+default_libraries = ["qpdk", "__project__:qpdk/samples"]
 
 # qpdk has no via_stack cell; tells the v2 Livewire router not to expect vias.
 [tool.gdsfactoryplus.livewire]

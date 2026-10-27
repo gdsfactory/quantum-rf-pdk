@@ -16,8 +16,11 @@ from qpdk.tech import (
     LAYER_STACK,
     LAYER_STACK_FLIP_CHIP,
     LAYER_STACK_FLIP_CHIP_NO_VACUUM,
+    LAYER_STACK_GATEMON,
+    LAYER_STACK_GATEMON_NO_VACUUM,
     LAYER_STACK_NO_VACUUM,
     _route_component,
+    get_gatemon_layer_stack,
     get_layer_material_properties,
     material_properties,
 )
@@ -74,7 +77,9 @@ def test_layer_stack_geometry(
 
 
 @pytest.mark.parametrize(
-    "layer_stack", [LAYER_STACK, LAYER_STACK_FLIP_CHIP], ids=["default", "flip_chip"]
+    "layer_stack",
+    [LAYER_STACK, LAYER_STACK_FLIP_CHIP, LAYER_STACK_GATEMON],
+    ids=["default", "flip_chip", "gatemon"],
 )
 def test_every_layer_material_has_properties(layer_stack: LayerStack) -> None:
     """Every level's material resolves to its ``material_properties`` entry."""
@@ -108,8 +113,17 @@ def _derived_layer_operations(spec: object) -> list[str]:
         LAYER_STACK_NO_VACUUM,
         LAYER_STACK_FLIP_CHIP,
         LAYER_STACK_FLIP_CHIP_NO_VACUUM,
+        LAYER_STACK_GATEMON,
+        LAYER_STACK_GATEMON_NO_VACUUM,
     ],
-    ids=["default", "no_vacuum", "flip_chip", "flip_chip_no_vacuum"],
+    ids=[
+        "default",
+        "no_vacuum",
+        "flip_chip",
+        "flip_chip_no_vacuum",
+        "gatemon",
+        "gatemon_no_vacuum",
+    ],
 )
 def test_layer_stack_loads_in_3d_viewer(layer_stack: LayerStack) -> None:
     """Derived layers use operation names the GDSFactory+ 3D viewer can parse."""
@@ -124,6 +138,31 @@ def test_layer_material_properties_rejects_unknown_material() -> None:
     stack.layers["Substrate"].material = "unobtainium"
     with pytest.raises(KeyError, match="unobtainium"):
         get_layer_material_properties("Substrate", stack)
+
+
+def test_gatemon_stack_isolates_gate_from_contacts() -> None:
+    """HBN separates the two contact films from the gate, with no PEC tube."""
+    stack = get_gatemon_layer_stack(hbn_thickness=0.04)
+    layers = stack.layers
+    assert layers["ContactNb"].thickness == pytest.approx(0.035)
+    assert layers["ContactAu"].thickness == pytest.approx(0.01)
+    assert layers["TopGate"].thickness == pytest.approx(0.1)
+    assert layers["Reconnection"].thickness == pytest.approx(0.1)
+    assert layers["ContactNb"].bounds[1] == pytest.approx(layers["ContactAu"].zmin)
+    assert layers["ContactAu"].bounds[1] == pytest.approx(layers["hBN"].zmin)
+    assert layers["hBN"].thickness == pytest.approx(0.04)
+    assert layers["hBN"].bounds[1] == pytest.approx(layers["TopGate"].zmin)
+    assert layers["Oxide"].bounds[1] == pytest.approx(layers["M1"].zmin)
+    assert layers["Substrate"].bounds[1] == pytest.approx(layers["Oxide"].zmin)
+    assert "JosephsonJunction" not in layers
+    assert "CNT" not in layers
+    assert LAYER_STACK.layers["M1"].thickness == pytest.approx(0.2)
+    assert LAYER_STACK_GATEMON.layers["hBN"].thickness == pytest.approx(0.03)
+
+
+def test_gatemon_stack_rejects_missing_dielectric() -> None:
+    with pytest.raises(ValueError, match="positive"):
+        get_gatemon_layer_stack(hbn_thickness=0)
 
 
 @pytest.mark.parametrize(

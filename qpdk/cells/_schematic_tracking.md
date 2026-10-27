@@ -12,6 +12,7 @@ This file tracks the status of schematic symbols for PDK cells.
 | half_circle_coupler | ❌     | \_3PORT (needs icon)                       |
 | fluxonium           | ❌     | TBD                                        |
 | unimon              | ❌     | TBD                                        |
+| gatemon             | ❌     | TBD                                        |
 | snspd               | ❌     | TBD                                        |
 | inductor            | ❌     | TBD                                        |
 | capacitor           | ❌     | TBD                                        |

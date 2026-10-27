@@ -11,6 +11,7 @@ import gdsfactory as gf
 from gdsfactory.cross_section import get_cross_sections
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
+from gdsfactory.read.from_yaml_template import cell_from_yaml_template
 from gdsfactory.typings import ComponentFactory
 
 import qpdk.samples
@@ -61,6 +62,13 @@ else:
     _models = _add_sax_model_aliases(_models)
 
 _cells = get_cells(cells)
+_cells.update({
+    sample_name: cell_from_yaml_template(
+        sample_path, name=sample_name, routing_strategies=routing_strategies
+    )
+    for sample_path in PATH.samples.glob("*.pic.yml")
+    if (sample_name := sample_path.name.removesuffix(".pic.yml")) not in _cells
+})
 _cross_sections = get_cross_sections(tech)
 
 

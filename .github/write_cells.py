@@ -259,6 +259,13 @@ for name in sorted(samples.keys()):
     samples_items.append({"name": name, "kwargs": kwargs, "import_path": import_path})
 
 template = env.get_template("samples.rst.j2")
-rendered = template.render(items=samples_items, skip_plot=skip_plot)
+schematic_samples = [
+    path.name.removesuffix(".pic.yml")
+    for path in sorted(PATH.samples.glob("*.pic.yml"))
+    if not path.with_name(path.name.removesuffix(".pic.yml") + ".py").exists()
+]
+rendered = template.render(
+    items=samples_items, skip_plot=skip_plot, schematic_samples=schematic_samples
+)
 
 Path(filepath_samples).write_text(rendered, encoding="utf-8")

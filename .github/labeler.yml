@@ -96,10 +96,12 @@ qubits:
           - any-glob-to-any-file:
               - 'qpdk/cells/transmon.py'
               - 'qpdk/cells/fluxonium.py'
+              - 'qpdk/cells/gatemon.py'
               - 'qpdk/cells/unimon.py'
               - 'qpdk/cells/derived/**/*'
               - 'qpdk/models/qubit.py'
               - 'qpdk/models/unimon.py'
+              - 'qpdk/models/gatemon.py'
               - 'qpdk/models/perturbation.py'
 resonators:
   - any:
