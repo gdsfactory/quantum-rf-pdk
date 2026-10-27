@@ -17,6 +17,8 @@ from klayout.db import DCplxTrans, Region
 from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
     double_pad_transmon_with_bbox_schematic,
+    flipmon_schematic,
+    xmon_transmon_schematic,
 )
 from qpdk.cells.bump import indium_bump
 from qpdk.cells.junction import squid_junction, squid_junction_long
@@ -235,7 +237,9 @@ def double_pad_transmon_with_bbox(
 
 
 @gf.cell(
-    check_instances=CheckInstances.IGNORE, tags=["qubits", "transmons", "flip-chip"]
+    check_instances=CheckInstances.IGNORE,
+    tags=["qubits", "transmons", "flip-chip"],
+    schematic_function=flipmon_schematic,
 )
 def flipmon(
     inner_circle_radius: float = 60.0,
@@ -445,7 +449,11 @@ def flipmon_with_bbox(
     return c
 
 
-@gf.cell(check_instances=CheckInstances.IGNORE, tags=["qubits", "transmons"])
+@gf.cell(
+    check_instances=CheckInstances.IGNORE,
+    tags=["qubits", "transmons"],
+    schematic_function=xmon_transmon_schematic,
+)
 def xmon_transmon(
     arm_width: tuple[float, float, float, float] = (30.0, 20.0, 30.0, 20.0),
     arm_lengths: tuple[float, float, float, float] = (160.0, 120.0, 160.0, 120.0),

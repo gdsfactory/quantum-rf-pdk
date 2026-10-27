@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from typing import Literal
 
 __all__ = [
+    "airbridge_schematic",
     "bend_circular_all_angle_schematic",
     "bend_circular_schematic",
     "bend_euler_all_angle_schematic",
@@ -21,10 +22,13 @@ __all__ = [
     "coupler_straight_schematic",
     "double_pad_transmon_schematic",
     "double_pad_transmon_with_bbox_schematic",
+    "flipmon_schematic",
     "fluxonium_schematic",
     "fluxonium_with_bbox_schematic",
     "gatemon_coupler_schematic",
     "gatemon_schematic",
+    "half_circle_coupler_schematic",
+    "indium_bump_schematic",
     "interdigital_capacitor_schematic",
     "josephson_junction_schematic",
     "launcher_schematic",
@@ -34,6 +38,7 @@ __all__ = [
     "open_2_port_schematic",
     "open_schematic",
     "plate_capacitor_schematic",
+    "plate_capacitor_single_schematic",
     "quarter_wave_resonator_coupled_schematic",
     "resonator_coupled_schematic",
     "resonator_half_wave_schematic",
@@ -43,13 +48,19 @@ __all__ = [
     "sax_model",
     "schematic",
     "short_schematic",
+    "snspd_schematic",
+    "squid_junction_schematic",
     "straight_all_angle_schematic",
     "straight_open_schematic",
     "straight_schematic",
     "straight_shorted_schematic",
     "taper_cross_section_schematic",
     "tee_schematic",
+    "tsv_schematic",
+    "unimon_arm_schematic",
     "unimon_coupled_schematic",
+    "unimon_schematic",
+    "xmon_transmon_schematic",
 ]
 
 # ---------------------------------------------------------------------------
@@ -115,6 +126,37 @@ _JUNCTION = [
 _UNIMON_COUPLED = [
     {"name": "coupling_o3", "side": "left", "type": "photonic"},
 ]
+
+# Ring coupler: the through line runs left to right, both ring ends point up.
+_COUPLER_RING = [
+    {"name": "o1", "side": "left", "type": "photonic"},
+    {"name": "o2", "side": "top", "type": "photonic"},
+    {"name": "o3", "side": "top", "type": "photonic"},
+    {"name": "o4", "side": "right", "type": "photonic"},
+]
+
+# Xmon transmon: one arm per side, matching the layout port orientations.
+_XMON = [
+    {"name": "top_arm", "side": "top", "type": "photonic"},
+    {"name": "right_arm", "side": "right", "type": "photonic"},
+    {"name": "bottom_arm", "side": "bottom", "type": "photonic"},
+    {"name": "left_arm", "side": "left", "type": "photonic"},
+]
+
+# SQUID loop terminals. Each junction contributes one axial and one lateral
+# terminal, so the four wide ends sit one per side as in the layout cell.
+_SQUID = [
+    {"name": "left_left_wide", "side": "bottom", "type": "photonic"},
+    {"name": "left_right_wide", "side": "left", "type": "photonic"},
+    {"name": "right_left_wide", "side": "top", "type": "photonic"},
+    {"name": "right_right_wide", "side": "right", "type": "photonic"},
+]
+
+_SNSPD = [
+    {"name": "e1", "side": "left", "type": "electric"},
+    {"name": "e2", "side": "right", "type": "electric"},
+]
+
 
 # ---------------------------------------------------------------------------
 # Schematic builder
@@ -281,7 +323,7 @@ open_schematic = schematic(
 )
 
 open_2_port_schematic = schematic(
-    symbol="open",
+    symbol="open_2_port",
     tags=["terminations"],
     ports=[
         {"name": "o1", "side": "right", "type": "photonic"},
@@ -560,6 +602,81 @@ lumped_element_resonator_schematic = schematic(
     ],
 )
 
+plate_capacitor_single_schematic = schematic(
+    symbol="plate_capacitor_single",
+    tags=["capacitors"],
+    ports=_1PORT,
+)
+
+half_circle_coupler_schematic = schematic(
+    symbol="half_circle_coupler",
+    tags=["capacitors", "couplers"],
+    ports=[{"name": "o3", "side": "bottom", "type": "photonic"}],
+)
+
+snspd_schematic = schematic(
+    symbol="snspd",
+    tags=["detectors"],
+    ports=_SNSPD,
+)
+
+squid_junction_schematic = schematic(
+    symbol="squid_junction",
+    tags=["junctions"],
+    ports=_SQUID,
+)
+
+xmon_transmon_schematic = schematic(
+    symbol="xmon_transmon",
+    tags=["qubits", "transmons"],
+    ports=_XMON,
+)
+
+flipmon_schematic = schematic(
+    symbol="flipmon",
+    tags=["qubits", "transmons"],
+    ports=[{"name": "outer_ring_outside", "side": "right", "type": "photonic"}],
+)
+
+# The unimon's arm ends are placement markers, so the bare qubit has no circuit
+# boundary of its own. Use ``unimon_coupled`` to connect it in a schematic.
+unimon_schematic = schematic(
+    symbol="unimon",
+    tags=["qubits"],
+    ports=[],
+)
+
+unimon_arm_schematic = schematic(
+    symbol="resonator_quarter_wave",
+    tags=["qubits", "resonators"],
+    ports=_2PORT,
+)
+
+# The two pads are the terminals; the CPW passes underneath on the placement
+# ports. Drawn horizontally to read as a two-terminal element, even though the
+# layout cell stands the bridge across the CPW.
+airbridge_schematic = schematic(
+    symbol="airbridge",
+    tags=["airbridges", "interconnects"],
+    ports=[
+        {"name": "e1", "side": "left", "type": "electric"},
+        {"name": "e2", "side": "right", "type": "electric"},
+    ],
+)
+
+# A via only carries a placement marker, so its symbol is artwork without ports.
+tsv_schematic = schematic(
+    symbol="tsv",
+    tags=["interconnects"],
+    ports=[],
+)
+
+indium_bump_schematic = schematic(
+    symbol="indium_bump",
+    tags=["interconnects"],
+    ports=[],
+)
+
 launcher_schematic = schematic(
     symbol="launcher",
     tags=["waveguides", "interconnects"],
@@ -621,8 +738,8 @@ taper_cross_section_schematic = schematic(
 
 coupler_ring_schematic = schematic(
     symbol="coupler_ring",
-    tags=["waveguides"],
-    ports=_COUPLER_STRAIGHT,
+    tags=["waveguides", "couplers"],
+    ports=_COUPLER_RING,
     models=[
         sax_model("coupler_ring", "qpdk.models.couplers", ["o1", "o2", "o3", "o4"])
     ],

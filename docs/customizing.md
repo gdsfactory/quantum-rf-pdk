@@ -195,6 +195,10 @@ Schematic metadata is available through `gf.kcl.factories[name].get_schematic()`
 needed. Keep the model and schematic descriptor aligned when changing a cell's circuit ports. Placement markers are not
 circuit ports. Partial cell factories inherit the base schematic and bind any model settings they preset.
 
+Packaged artwork lives in `qpdk/symbols/<symbol>.svg` and reaches GDSFactory+ through `display.symbol`. Draw on a canvas
+of 100 units per grid cell, with leads ending on the canvas edge where each port sits, and the aspect ratio follows the
+port box derived from the declared sides. Without a matching file the editor renders the layout geometry instead.
+
 ## Pruning
 
 These parts describe the generic QPDK process. Remove or replace them:

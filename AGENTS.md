@@ -244,6 +244,33 @@ When adding new quantum device components:
 1. Ensure the component works with the netlist extraction system
 1. Document the quantum device physics and design parameters
 
+## Schematic Symbols
+
+Cells can carry a schematic for GDSFactory+ / Mosaic, and its artwork is hand drawn. Wire it up with
+`schematic_function=` on the `@gf.cell` decorator (helpers in `qpdk/cells/_schematic.py`), then add
+`qpdk/symbols/<symbol>.svg` and point `display.symbol` at it. `tests/test_schematic.py` checks the geometry below, so a
+malformed symbol fails the suite instead of quietly rendering as an empty box.
+
+- **Canvas**: 100 units per grid cell. Take the viewBox from the port box GDSFactory+ computes, `max(1, left, right)` by
+  `max(1, top, bottom)` cells, plus one cell when the two counts on an axis differ in parity and the result is even. Two
+  ports on the left and one on the right is `100x300`, not a square.
+- **Ports sit on the canvas edge**: GDSFactory+ spreads each side's ports over its slots and drops the dot at
+  `(slot - 0.5) * 100`, so odd counts centre and even counts hug the corners. Start or end a stroke exactly on every one
+  of those anchors. Do not guess them, since a 3-slot side puts its single port in the middle slot.
+- **Placement markers stay out**: `port_type="placement"` says where a neighbour goes, so it never becomes a schematic
+  port. Cells that only have placement ports (tsv, indium bump, the bare unimon) get artwork with no ports at all.
+- **Ink**: one `<style>` block per file, `.s` for strokes (`fill:none`, `stroke:#3c3c3c`, width 4, round caps and
+  joins), `.f` for a 25 percent fill, `.t` for 18px bold labels, and all three flipped to `#cccccc` inside
+  `@media (prefers-color-scheme:dark)` for the editor's dark canvas. Never set `color-scheme` or a background on the
+  root, the artwork has to stay transparent over whatever canvas embeds it.
+- **Vocabulary**: a waveguide is a stroke, or a rounded rect when it is a distributed section. A capacitor is two
+  plates, an interdigital capacitor is two combs with interleaved teeth. A Josephson junction is a cross drawn over the
+  conductor, a SQUID is a loop carrying one cross per junction, a qubit is its island shape with a cross at the
+  junction, and a resonator names its length (`λ/4`, `λ/2`) in `.t`. When the layout has a recognisable silhouette,
+  follow it: the XMON as a cross of arms, the half circle coupler as an arc hugging the meander it couples to.
+- **Leads have to land**: a stroke that stops short of a port reads as a broken connection, and the tests only see the
+  canvas edge, so check that the inner end of each lead meets the glyph as well.
+
 ## Models and Simulation
 
 The `qpdk/models/` directory contains S-parameter and circuit models for quantum RF components:

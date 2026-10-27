@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import math
 import re
 from functools import partial
 from importlib.resources import files
@@ -172,6 +173,117 @@ def test_schematics_use_packaged_symbols() -> None:
         p.name for p in files("qpdk.symbols").iterdir() if p.name.endswith(".svg")
     }
     assert referenced == packaged
+
+
+def _spread_ports(count: int, size: int) -> list[int]:
+    """Mirror ``spread-ports`` in Mosaic: place ``count`` ports in ``size`` slots."""
+    if count == 0:
+        return []
+    if size <= count:
+        return list(range(1, count + 1))
+    half = count // 2
+    first = list(range(1, half + 1))
+    second = list(range(size - half + 1, size + 1))
+    return [*first, (size + 1) // 2, *second] if count % 2 else [*first, *second]
+
+
+def _symbol_anchors(ports: list[dict]) -> set[tuple[float, float]]:
+    """Canvas position of every port anchor in a symbol drawn at 100 units per cell."""
+    width, height = _mosaic_box(ports)
+    anchors: set[tuple[float, float]] = set()
+    for side in _SIDES:
+        slots = _spread_ports(
+            sum(port["side"] == side for port in ports),
+            height if side in {"left", "right"} else width,
+        )
+        for slot in slots:
+            offset = (slot - 0.5) * 100
+            anchors.add(
+                {
+                    "left": (0.0, offset),
+                    "right": (width * 100.0, offset),
+                    "top": (offset, 0.0),
+                    "bottom": (offset, height * 100.0),
+                }[side]
+            )
+    return anchors
+
+
+# Argument count per SVG path command, used to walk from one endpoint to the next.
+_PATH_ARGUMENTS = {
+    "m": 2,
+    "l": 2,
+    "h": 1,
+    "v": 1,
+    "c": 6,
+    "s": 4,
+    "q": 4,
+    "t": 2,
+    "a": 7,
+}
+_PATH_TOKEN = re.compile(r"[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+
+
+def _path_endpoints(d: str) -> set[tuple[float, float]]:
+    """Return the absolute endpoint of every command in one SVG path string."""
+    tokens = _PATH_TOKEN.findall(d)
+    points: set[tuple[float, float]] = set()
+    current = (0.0, 0.0)
+    subpath_start = current
+    command, relative = "m", False
+    index = 0
+    while index < len(tokens):
+        if tokens[index].isalpha():
+            command, relative = tokens[index].lower(), tokens[index].islower()
+            index += 1
+            if command == "z":
+                current = subpath_start
+                points.add(current)
+                continue
+        count = _PATH_ARGUMENTS[command]
+        args = [float(token) for token in tokens[index : index + count]]
+        index += count
+        x, y = current
+        match command:
+            case "h":
+                x = x + args[0] if relative else args[0]
+            case "v":
+                y = y + args[0] if relative else args[0]
+            case "m" | "l" | "t":
+                x, y = (x + args[0], y + args[1]) if relative else (args[0], args[1])
+            case "c" | "s" | "q" | "a":
+                x, y = (
+                    (x + args[-2], y + args[-1]) if relative else (args[-2], args[-1])
+                )
+        current = (x, y)
+        if command == "m":
+            subpath_start = current
+        points.add(current)
+    return points
+
+
+def test_symbol_artwork_leads_reach_every_port() -> None:
+    """Start or end a stroke on the anchor GDSFactory+ draws each port at.
+
+    The artwork is decorative, but a lead that stops short of the port reads as
+    a broken connection in the schematic editor.
+    """
+    checked = 0
+    for name, schematic in _pdk_schematics().items():
+        if "display" not in schematic.info:
+            continue
+        package, resource = _info(schematic, "display")["symbol"].split(":")
+        svg = (files(package) / resource).read_text()
+        endpoints: set[tuple[float, float]] = set()
+        for d in re.findall(r'<path[^>]*\sd="([^"]+)"', svg):
+            endpoints |= _path_endpoints(d)
+        for anchor in _symbol_anchors(_info(schematic, "ports")):
+            assert any(math.dist(anchor, endpoint) < 1e-6 for endpoint in endpoints), (
+                f"{name}: no lead at port anchor {anchor}"
+            )
+        checked += 1
+
+    assert checked > 0
 
 
 def test_simulation_cells_have_sax_models() -> None:

@@ -7,7 +7,10 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec, LayerSpec
 from klayout.db import DCplxTrans
 
-from qpdk.cells._schematic import josephson_junction_schematic
+from qpdk.cells._schematic import (
+    josephson_junction_schematic,
+    squid_junction_schematic,
+)
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
     LAYER,
@@ -212,7 +215,8 @@ def josephson_junction(
 @gf.cell(
     tags=[
         "junctions",
-    ]
+    ],
+    schematic_function=josephson_junction_schematic,
 )
 def josephson_junction_long(**kwargs) -> Component:
     """Josephson junction with wide_straight_length=12.
@@ -223,7 +227,7 @@ def josephson_junction_long(**kwargs) -> Component:
     return josephson_junction(wide_straight_length=12, **kwargs)
 
 
-@gf.cell(tags=["junctions"])
+@gf.cell(tags=["junctions"], schematic_function=squid_junction_schematic)
 def squid_junction_long(**kwargs) -> Component:
     """SQUID junction with josephson_junction_long.
 
@@ -233,7 +237,7 @@ def squid_junction_long(**kwargs) -> Component:
     return squid_junction(junction_spec=josephson_junction_long, **kwargs)
 
 
-@gf.cell(tags=["junctions"])
+@gf.cell(tags=["junctions"], schematic_function=squid_junction_schematic)
 def squid_junction(
     junction_spec: ComponentSpec = josephson_junction,
     loop_area: float = 4,
