@@ -3,6 +3,7 @@
 import hashlib
 import importlib
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -341,3 +342,115 @@ def test_cli_report(complete_study: tuple[Any, Path, Path], tmp_path: Path) -> N
     path = tmp_path / "report.json"
     curator.main(study, calibration, "xmon_readout", report=path)
     assert json.loads(path.read_text())["passed"]
+
+
+@pytest.fixture
+def refined_study(
+    complete_study: tuple[Any, Path, Path], tmp_path: Path
+) -> tuple[Any, Path, Path, Path]:
+    curator, original, calibration = complete_study
+    refined = tmp_path / "refined"
+    shutil.copytree(original, refined)
+    path = refined / "source/plan.json"
+    plan = json.loads(path.read_text())
+    plan["jobs"][0]["tasks"] = [
+        t for t in plan["jobs"][0]["tasks"] if t["mode"] == "control"
+    ]
+    summary = refined / "results/job/summary.json"
+    summary.write_text(
+        json.dumps([
+            r for r in json.loads(summary.read_text()) if r["mode"] == "control"
+        ])
+    )
+    plan["reused_production"] = [
+        {
+            "recipe": "xmon_readout",
+            "campaign": original.name,
+            "job": "job",
+            "label": "production",
+        }
+    ]
+    path.write_text(json.dumps(plan))
+    (refined / "source/source-sha256.json").write_text(
+        json.dumps({"plan.json": hashlib.sha256(path.read_bytes()).hexdigest()})
+    )
+    return curator, refined, calibration, original
+
+
+def test_publish_multiple_campaigns(
+    refined_study: tuple[Any, Path, Path, Path], tmp_path: Path
+) -> None:
+    curator, refined, calibration, original = refined_study
+    output = tmp_path / "published"
+    report = curator.verify(
+        refined, calibration, "xmon_readout", references=[original], output=output
+    )
+    assert report["passed"]
+    assert len(report["numerical"]) == 15
+    assert len(report["interpolation"]) == 21
+    assert report["sources"][0]["campaign"] == original.name
+    assert {r["source"]["campaign"] for r in report["interpolation"]} == {
+        original.name,
+        calibration.name,
+        refined.name,
+    }
+    assert Dataset(output).metadata.provenance["validation"] == report
+
+
+def test_missing_reused_campaign_cannot_publish(
+    refined_study: tuple[Any, Path, Path, Path], tmp_path: Path
+) -> None:
+    curator, refined, calibration, original = refined_study
+    report = curator.verify(refined, calibration, "xmon_readout")
+    assert report["pending"] == [f"{original.name}/job/production"]
+    with pytest.raises(ValueError, match="incomplete"):
+        curator.verify(refined, calibration, "xmon_readout", output=tmp_path / "out")
+
+
+def test_reused_campaign_source_is_checked(
+    refined_study: tuple[Any, Path, Path, Path],
+) -> None:
+    curator, refined, calibration, original = refined_study
+    path = original / "source/plan.json"
+    path.write_text(path.read_text() + "\n")
+    with pytest.raises(ValueError, match="Frozen source changed"):
+        curator.verify(refined, calibration, "xmon_readout", references=[original])
+
+
+def test_pending_intermediate_reference_cannot_publish(
+    refined_study: tuple[Any, Path, Path, Path], tmp_path: Path
+) -> None:
+    curator, refined, calibration, original = refined_study
+    path = original / "results/job/summary.json"
+    rows = json.loads(path.read_text())
+    path.write_text(json.dumps(rows[:-1]))
+    report = curator.verify(refined, calibration, "xmon_readout", references=[original])
+    assert not report["passed"]
+    assert report["pending"] == [f"{original.name}/job/held-2"]
+    with pytest.raises(ValueError, match="incomplete"):
+        curator.verify(
+            refined,
+            calibration,
+            "xmon_readout",
+            references=[original],
+            output=tmp_path / "out",
+        )
+
+
+@pytest.mark.parametrize("problem", ["duplicate", "ambiguous"])
+def test_reused_campaign_identity_is_unique(
+    refined_study: tuple[Any, Path, Path, Path], tmp_path: Path, problem: str
+) -> None:
+    curator, refined, calibration, original = refined_study
+    references = [original]
+    if problem == "duplicate":
+        path = refined / "source/plan.json"
+        plan = json.loads(path.read_text())
+        plan["reused_production"] *= 2
+        path.write_text(json.dumps(plan))
+    else:
+        other = tmp_path / "other" / original.name
+        shutil.copytree(original, other)
+        references.append(other)
+    with pytest.raises(ValueError, match=r"unique source|more than once"):
+        curator.verify(refined, calibration, "xmon_readout", references=references)

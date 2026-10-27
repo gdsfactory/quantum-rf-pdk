@@ -11,7 +11,9 @@ The frozen campaign plan identifies every production shard and reference solve.
 Source hashes, per-shard metadata and the raw reference matrices travel inside
 Parquet metadata. A missing or failed task cannot publish a dataset. Reusing a
 production shard preserves its original provenance rather than relabelling it
-as a new solve. Preview reports remain operational JSON, outside the dataset.
+as a new solve. Pass earlier refinement directories with repeated ``--references``
+options so their independent checks remain part of admission. Preview reports
+remain operational JSON, outside the dataset.
 """
 
 import hashlib
@@ -119,9 +121,21 @@ def _coverage(
 
 
 def verify(
-    study: Path, calibration: Path, recipe: str, *, output: Path | None = None
+    study: Path,
+    calibration: Path,
+    recipe: str,
+    *,
+    references: list[Path] | None = None,
+    output: Path | None = None,
 ) -> dict[str, Any]:
     """Check a complete frozen study and optionally publish its validated grid.
+
+    Args:
+        study: Final campaign containing the target grid and reused shard list.
+        calibration: Campaign with independent mesh, order and domain controls.
+        recipe: Local qubit extraction recipe.
+        references: Earlier refinement campaigns whose raw evidence must be retained.
+        output: Destination for the admitted Parquet dataset, or preview only.
 
     Returns:
         Progress and accuracy evidence, including all raw reference matrices.
@@ -142,8 +156,16 @@ def verify(
         "interpolation": [],
         "passed": False,
     }
+    campaigns = list(dict.fromkeys((study, calibration, *(references or []))))
+    if len({c.name for c in campaigns}) != len(campaigns):
+        raise ValueError("Campaign names must identify a unique source directory")
+    reuse = [r for r in plan.get("reused_production", []) if r["recipe"] == recipe]
+    reuse_keys = {(r["campaign"], r["job"], r["label"]) for r in reuse}
+    if len(reuse_keys) != len(reuse):
+        raise ValueError("A reused production shard is listed more than once")
+    found_reuse = set()
     parts = []
-    for campaign in (study, calibration):
+    for campaign in campaigns:
         campaign_plan = json.loads((campaign / "source/plan.json").read_text())
         manifest = campaign / "source/source-sha256.json"
         for filename, expected in json.loads(manifest.read_text()).items():
@@ -154,7 +176,6 @@ def verify(
                 != expected
             ):
                 raise ValueError(f"Frozen source changed: {filename}")
-        reuse = [r for r in plan.get("reused_production", []) if r["recipe"] == recipe]
         for index, job in enumerate(campaign_plan["jobs"]):
             folder = campaign / "results" / job["name"]
             path = folder / "summary.json"
@@ -166,11 +187,13 @@ def verify(
             for task in job["tasks"]:
                 if task["recipe"] != recipe:
                     continue
-                relevant = campaign == study or any(
-                    r["campaign"] == campaign.name
-                    and r["job"] == job["name"]
-                    and r["label"] == task["label"]
-                    for r in reuse
+                identity = (campaign.name, job["name"], task["label"])
+                if identity in reuse_keys:
+                    found_reuse.add(identity)
+                relevant = (
+                    campaign == study
+                    or task["mode"] == "control"
+                    or identity in reuse_keys
                 )
                 if not relevant:
                     continue
@@ -179,7 +202,11 @@ def verify(
                 if row is None:
                     report["pending"].append(label)
                 elif row["status"] != "ok":
-                    report["failed"].append({"label": label, "error": row.get("error")})
+                    if task["mode"] == "production":
+                        report["failed"].append({
+                            "label": label,
+                            "error": row.get("error"),
+                        })
                 elif task["mode"] == "production":
                     dataset = Dataset(folder / task["label"] / "data")
                     receipt = campaign / f"submission-{index}.json"
@@ -199,13 +226,20 @@ def verify(
                         },
                     })
                     parts.append(dataset)
+    for identity in sorted(reuse_keys - found_reuse):
+        report["pending"].append("/".join(identity))
     expected_parts = sum(
         t["recipe"] == recipe and t["mode"] == "production"
         for j in plan["jobs"]
         for t in j["tasks"]
     ) + sum(r["recipe"] == recipe for r in plan.get("reused_production", []))
     calibration_records = _records(calibration, recipe)
-    study_records = _records(study, recipe)
+    study_records = [
+        row
+        for campaign in campaigns
+        if campaign != calibration
+        for row in _records(campaign, recipe)
+    ]
     calibration_rows = [
         r
         for r in calibration_records
@@ -221,7 +255,7 @@ def verify(
     }
     report["held_out_coverage"] = _coverage(target, study_rows)
     report["superseded_failures"] = []
-    for row in calibration_records:
+    for row in calibration_records + study_records:
         if row["recipe"] != recipe or row["status"] == "ok":
             continue
         replacement = next(
@@ -429,9 +463,10 @@ def main(
     recipe: str,
     output: Path | None = None,
     report: Path | None = None,
+    references: list[Path] | None = None,
 ) -> None:
     """Preview frozen campaign verification or publish a validated dataset."""
-    result = verify(study, calibration, recipe, output=output)
+    result = verify(study, calibration, recipe, references=references, output=output)
     if report is not None:
         report.write_text(json.dumps(result, indent=2) + "\n")
     logger.info(
