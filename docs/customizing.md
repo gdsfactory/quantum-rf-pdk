@@ -146,7 +146,7 @@ Check the cells you keep against your rules. For hosted DRC, set `[tool.gdsfacto
 your own rule deck.
 
 The FEM datasets in `qpdk/models/datasets/` were simulated on the QPDK stack. The analytical models follow your stack,
-but these datasets do not. Regenerate them with the scripts in `qpdk/models/datasets/data/`, or treat the models that
+but these datasets do not. Regenerate them with the scripts in `qpdk/models/datasets/recipes/`, or treat the models that
 use them as approximate.
 
 (cell-library)=
@@ -264,6 +264,7 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | `qpdk/tech.py`                                         | Both  | Keep your values. Take new QPDK definitions      |
 | `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
 | `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
+| `qpdk/models/datasets/recipes/`                        | QPDK  | Take QPDK                                        |
 | QPDK modules in `qpdk/cells/`                          | QPDK  | Merge. New QPDK cells usually merge cleanly      |
 | `qpdk/__init__.py`                                     | Both  | Keep model discovery and Python cell precedence  |
 | Your cell modules, override modules, and test chips    | Fork  | QPDK never changes them                          |

@@ -27,7 +27,7 @@ Use ``s_parameters_model(path, n_turns="5")`` to interpolate the complex
 matrix in frequency and geometry. Turn count is a discrete selection.
 The equipotential diagnostic remains in ``meander_ground_capacitance.py``.
 
-Preview with ``uv run --script qpdk/models/datasets/data/meander_inductor.py --dry-run``.
+Preview with ``uv run --script qpdk/models/datasets/recipes/meander_inductor.py --dry-run``.
 Check mesh, element order, domain and held-out frequencies before generating
 the full grid. Each geometry solves the whole frequency sweep once.
 """

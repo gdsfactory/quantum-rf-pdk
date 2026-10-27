@@ -104,6 +104,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - `qpdk/`: Core Python package containing quantum device components and PDK configuration
 - `qpdk/cells/`: Device cell, or gdsfactory component, definitions (transmons, resonators, couplers, etc.)
 - `qpdk/models/`: S-parameter and circuit models for quantum RF components
+- `qpdk/models/datasets/`: Dataset schema, storage and lookup. `data/` holds the Parquet datasets, `recipes/` the
+  standalone Palace experiment scripts and their shared helpers
 - `qpdk/klayout/`: KLayout technology files and layer definitions
 - `qpdk/tech.py`: Layer stack and main technology cross sections etc.
 - `tests/`: Test suite using pytest

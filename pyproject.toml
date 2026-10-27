@@ -252,7 +252,7 @@ project-excludes = [
   "docs/**",
   "build/**",
   "dist/**",
-  "qpdk/models/datasets/data/*.py",
+  "qpdk/models/datasets/recipes/*.py",
   "*.egg-info/**",
   ".venv/**",
 ]
@@ -269,7 +269,7 @@ deprecated = "error"
 [tool.pytest]
 addopts = [
   "--tb=short",
-  "--ignore=qpdk/models/datasets/data",
+  "--ignore=qpdk/models/datasets/recipes",
   "-m",
   "not palace and not vacask and not hfss and not gfp"
 ]
@@ -488,13 +488,13 @@ sax = { git = "https://github.com/gdsfactory/sax.git", rev = "de4a5b71eddbadc4b8
 
 [tool.uv.build-backend]
 wheel-exclude = [
-  "qpdk/models/datasets/data/*.py",
-  "qpdk/models/datasets/data/*.sh"
+  "qpdk/models/datasets/recipes/*.py",
+  "qpdk/models/datasets/recipes/*.sh"
 ]
 module-root = ""
 source-exclude = [
-  "qpdk/models/datasets/data/*.py",
-  "qpdk/models/datasets/data/*.sh",
+  "qpdk/models/datasets/recipes/*.py",
+  "qpdk/models/datasets/recipes/*.sh",
   "tests/**",
   "docs/**"
 ]

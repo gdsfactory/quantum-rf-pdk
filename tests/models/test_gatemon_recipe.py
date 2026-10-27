@@ -10,7 +10,7 @@ import pytest
 from qpdk.cells import gatemon
 from qpdk.tech import LAYER
 
-SCRIPTS = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+SCRIPTS = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
 
 
 @pytest.fixture

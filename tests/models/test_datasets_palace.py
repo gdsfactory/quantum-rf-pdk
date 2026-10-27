@@ -57,7 +57,7 @@ def test_stacked_extraction_and_cache_inputs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
 ) -> None:
     """Solve thick stacked electrodes and invalidate changed heights and dielectrics."""
-    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(source))
     experiment = importlib.import_module("_experiment")
     settings = experiment.Settings(
@@ -143,7 +143,7 @@ def test_fractional_cross_section_conductors_belong_to_domain_mesh(
     """Detached boundary edges make the Palace mesh reader crash."""
     import gmsh  # ruff: ignore[import-outside-top-level]
 
-    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(source))
     generator = runpy.run_path(str(source / "cpw_coupling.py"))
     settings = generator["SETTINGS"]
@@ -205,7 +205,7 @@ def test_cpw_cross_section_normalization_depth(
     One process keeps both depths on the same mesh: multithreaded Gmsh meshing
     is not reproducible. Identical meshes give identical solves.
     """
-    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(source))
     generator = runpy.run_path(str(source / "cpw_coupling.py"))
     runtime = {
@@ -238,7 +238,7 @@ def test_changing_ground_strip_resolution_invalidates_cached_mesh(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
 ) -> None:
     """Changing the feature resolution must solve a new mesh at the same point."""
-    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    source = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(source))
     generator = runpy.run_path(str(source / "cpw_coupling.py"))
     helper = runpy.run_path(str(source / "_palace.py"))
@@ -279,11 +279,12 @@ def test_container_runtime_configuration(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.syspath_prepend(
-        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data")
+        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes")
     )
     helper = runpy.run_path(
         str(
-            Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data/_palace.py"
+            Path(__file__).resolve().parents[2]
+            / "qpdk/models/datasets/recipes/_palace.py"
         )
     )
     image = tmp_path / "palace.sif"
@@ -303,12 +304,12 @@ def test_interpolation_against_fresh_palace(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
 ) -> None:
     monkeypatch.syspath_prepend(
-        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data")
+        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes")
     )
     generator = runpy.run_path(
         str(
             Path(__file__).resolve().parents[2]
-            / "qpdk/models/datasets/data/plate_capacitor.py"
+            / "qpdk/models/datasets/recipes/plate_capacitor.py"
         )
     )
     generate = generator["generate"]
@@ -350,11 +351,11 @@ def test_editing_grid_reuses_completed_solves(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, palace_processes: int
 ) -> None:
     monkeypatch.syspath_prepend(
-        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data")
+        str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes")
     )
     original = (
         Path(__file__).resolve().parents[2]
-        / "qpdk/models/datasets/data/plate_capacitor.py"
+        / "qpdk/models/datasets/recipes/plate_capacitor.py"
     )
     source = original.read_text(encoding="utf-8")
     copied = tmp_path / "plate_capacitor.py"

@@ -8,7 +8,7 @@
 # ///
 """Generate Maxwell capacitance data with gsim and Palace.
 
-Run ``uv run --script qpdk/models/datasets/data/plate_capacitor.py --help`` from a checkout.
+Run ``uv run --script qpdk/models/datasets/recipes/plate_capacitor.py --help`` from a checkout.
 Edit GRID and SETTINGS to define your experiment. The electrodes are perfect
 conductor sheets on silicon with a separate coplanar ground frame. Mesh and
 domain sensitivity must be checked before relying on small differences.

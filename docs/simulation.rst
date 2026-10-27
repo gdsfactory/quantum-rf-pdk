@@ -95,7 +95,7 @@ top electrodes between two silicon chips. The returned model accepts ``chip_gap`
 ``flipmon_ideal_bond_model(inductance=10e-9)`` joins the inner and top electrodes with
 an ideal wire and adds a linearized Josephson junction. This reduction omits finite bump
 fields and inductance. The generation recipe is
-``qpdk/models/datasets/data/flipmon.py``.
+``qpdk/models/datasets/recipes/flipmon.py``.
 
 ``double_pad_transmon_capacitance`` looks up the differential pad capacitance in F,
 including the two pad-to-ground branches. With junction capacitance :math:`C_\text{J}`,
@@ -104,7 +104,7 @@ Hz. For a linearized circuit, create ``double_pad_transmon_fem_model(inductance=
 junction_capacitance=2e-15)`` and pass geometry dimensions in um to the returned SAX
 model. Both ports reference the coupon's finite ground frame. The dataset omits the
 readout, package and Josephson junction; its recipe is
-``qpdk/models/datasets/data/double_pad_transmon.py``.
+``qpdk/models/datasets/recipes/double_pad_transmon.py``.
 
 ``gatemon_capacitances`` looks up the island's total capacitance :math:`C_\Sigma`, its
 gate capacitance :math:`C_\text{g}` and its readout coupling :math:`C_\text{c}` in F,
@@ -115,7 +115,7 @@ V_\text{g}/2e`. ``gatemon_fem_model(delta_ghz=50.0, transmissions=(0.8,))`` retu
 three-port SAX model (``island``, ``gate``, ``readout``) with the Andreev-bound-state
 junction linearized between the island and ground. The readout port is an open CPW
 segment, so do not add its self-capacitance to a distributed resonator. The recipe is
-``qpdk/models/datasets/data/gatemon.py``; it is an electrostatic solve because the
+``qpdk/models/datasets/recipes/gatemon.py``; it is an electrostatic solve because the
 device is lumped and :math:`E_\text{J}` is gate-tuned rather than fixed by the geometry.
 The current recipe includes only M1 sheets. It omits the Nb/Au contacts, local top gate,
 hBN and thermal oxide, so its gate capacitance describes the M1 feed's coupling to the
@@ -236,7 +236,7 @@ a local frequency sweep before interpreting their heights.
 frequency ``f`` in Hz. The whole readout conductor shares one potential, and feedline
 reference cuts are open. This dataset requires RF validation before replacing a
 distributed resonator circuit. Its recipe is
-``qpdk/models/datasets/data/flipmon_readout_assembly.py``.
+``qpdk/models/datasets/recipes/flipmon_readout_assembly.py``.
 
 ``transmon_readout_coupon_model()`` creates a 4-port static SAX coupon model. Pass
 ``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
@@ -244,7 +244,7 @@ frequency ``f`` in Hz. The whole readout conductor shares one potential, and fee
 reference cuts are open. Sampled feedline gaps of 14 to 20 um retain the ground strip
 between the coupled lines. This dataset requires RF validation before replacing a
 distributed resonator circuit. Its recipe is
-``qpdk/models/datasets/data/readout_assembly.py``.
+``qpdk/models/datasets/recipes/readout_assembly.py``.
 
 ``qpdk.cells.plate_capacitor`` combines two ``plate_capacitor_single`` pads with an
 optional vertical offset. It includes the finite ground frame used by the
@@ -259,7 +259,7 @@ n_turns=3)`` returns the winding-to-ground capacitance in F from 54 Palace extra
 Dimensions are in um; turn counts 3, 5 and 7 are separate variants. Both winding ends
 share one potential, so this lookup does not determine differential parasitics,
 inductance or self-resonance. The generation recipe is
-``qpdk/models/datasets/data/meander_ground_capacitance.py``.
+``qpdk/models/datasets/recipes/meander_ground_capacitance.py``.
 
 ``meander_inductor_fullwave_model(n_turns=5)`` creates a two-port SAX model from 243
 Palace frequency sweeps. The returned model accepts ``f`` from 0.5 to 20 GHz in Hz,
@@ -267,7 +267,7 @@ Palace frequency sweeps. The returned model accepts ``f`` from 0.5 to 20 GHz in 
 2 to 8 um. Turn counts 3, 5 and 7 are separate variants. Omitted geometry arguments use
 the middle stored coordinates, and values outside the grid return NaN. Its ports are the
 winding ends, with 50 ohm reference impedance and no de-embedding. The generation recipe
-is ``qpdk/models/datasets/data/meander_inductor.py``.
+is ``qpdk/models/datasets/recipes/meander_inductor.py``.
 
 The full-wave coupon includes the finite ground frame and a fixed kinetic sheet
 inductance of 0.4 pH per square. It omits material loss and allows radiation through the
@@ -303,23 +303,23 @@ Generating Palace datasets
 
 The bundled ``plate_capacitor_palace`` and ``cpw_coupling_palace`` datasets contain real
 Palace electrostatic extractions. Their standalone scripts in
-``qpdk/models/datasets/data/`` define the grid, settings, metadata and solver function.
-Inline dependencies select the Python 3.12 environment required by gsim; generation
-scripts are excluded from the installed package.
+``qpdk/models/datasets/recipes/`` define the grid, settings, metadata and solver
+function. Inline dependencies select the Python 3.12 environment required by gsim;
+generation scripts are excluded from the installed package.
 
 Preview or run the bundled 27-point sweep from a checkout:
 
 ::
 
-    uv run --script qpdk/models/datasets/data/plate_capacitor.py --dry-run
-    uv run --script qpdk/models/datasets/data/plate_capacitor.py --processes 4
-    uv run --script qpdk/models/datasets/data/plate_capacitor.py --sif /path/to/palace.sif
+    uv run --script qpdk/models/datasets/recipes/plate_capacitor.py --dry-run
+    uv run --script qpdk/models/datasets/recipes/plate_capacitor.py --processes 4
+    uv run --script qpdk/models/datasets/recipes/plate_capacitor.py --sif /path/to/palace.sif
 
-Copy the script beside the original in ``qpdk/models/datasets/data/`` and edit ``GRID``
-and ``SETTINGS`` for another experiment. Meshwell meshes labelled conductor sheets and
-the surrounding air and silicon volumes. The shared experiment helper uses gsim to write
-the Palace configuration, run ``ElectrostaticSim`` and load capacitance matrices. Lookup
-models need none of these simulation dependencies.
+Copy the script beside the original in ``qpdk/models/datasets/recipes/`` and edit
+``GRID`` and ``SETTINGS`` for another experiment. Meshwell meshes labelled conductor
+sheets and the surrounding air and silicon volumes. The shared experiment helper uses
+gsim to write the Palace configuration, run ``ElectrostaticSim`` and load capacitance
+matrices. Lookup models need none of these simulation dependencies.
 
 Each geometry retains its inputs, mesh, config, solver log and results under
 ``--workdir``. Rerunning reuses matching completed solves. Extend the grid while
@@ -366,8 +366,8 @@ For the smaller CPW development grid, use two workers with the generic Slurm hel
 
 ::
 
-    generator=qpdk/models/datasets/data/cpw_coupling.py
-    sbatch --array=0-1 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
+    generator=qpdk/models/datasets/recipes/cpw_coupling.py
+    sbatch --array=0-1 --cpus-per-task=4 qpdk/models/datasets/recipes/slurm_array.sh "$generator" build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
     shards=()
     for i in {0..1}; do shards+=(--merge-shards "build/cpw-shards/shard-$i"); done
     uv run --script "$generator" "${shards[@]}" --output build/datasets/cpw_coupling_palace

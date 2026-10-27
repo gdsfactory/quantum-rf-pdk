@@ -14,7 +14,7 @@ from qpdk.tech import LAYER, material_properties
 
 @pytest.fixture
 def recipe(monkeypatch: pytest.MonkeyPatch):
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     return importlib.import_module("meander_inductor")
 

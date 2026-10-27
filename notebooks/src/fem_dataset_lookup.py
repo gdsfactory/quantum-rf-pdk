@@ -175,10 +175,10 @@ dataset.table.head(8)
 # %% [markdown]
 # ## Define a generation script
 #
-# `qpdk/models/datasets/data/plate_capacitor.py` is a complete experiment: its `GRID`, `SETTINGS`,
+# `qpdk/models/datasets/recipes/plate_capacitor.py` is a complete experiment: its `GRID`, `SETTINGS`,
 # metadata and `solve` function describe what to extract. Its inline dependencies
 # let `uv run --script` create the Python 3.12 environment required by gsim.
-# Copy the script beside the original in `qpdk/models/datasets/data/` and edit it for another dataset.
+# Copy the script beside the original in `qpdk/models/datasets/recipes/` and edit it for another dataset.
 #
 # Meshing runs on the host, including when Palace uses `--sif`. Gmsh needs its native
 # libraries there; on Linux this includes `libGLU.so.1`. The container needs
@@ -187,10 +187,10 @@ dataset.table.head(8)
 # Preview the full sweep or run it from a checkout:
 #
 # ```bash
-# uv run --script qpdk/models/datasets/data/plate_capacitor.py --dry-run
-# uv run --script qpdk/models/datasets/data/plate_capacitor.py --processes 4
+# uv run --script qpdk/models/datasets/recipes/plate_capacitor.py --dry-run
+# uv run --script qpdk/models/datasets/recipes/plate_capacitor.py --processes 4
 # # A local Palace container:
-# uv run --script qpdk/models/datasets/data/plate_capacitor.py --sif /path/to/palace.sif
+# uv run --script qpdk/models/datasets/recipes/plate_capacitor.py --sif /path/to/palace.sif
 # ```
 #
 # `--processes` sets CPU threads for meshing and MPI ranks for Palace.
@@ -201,7 +201,7 @@ dataset.table.head(8)
 # %%
 small_grid = {"length": [40.0, 80.0], "width": [10.0], "gap": [4.0, 7.0, 10.0]}
 output = Path("build/dataset-example/coarse")
-generator_script = Path("qpdk/models/datasets/data/plate_capacitor.py")
+generator_script = Path("qpdk/models/datasets/recipes/plate_capacitor.py")
 
 # %% [markdown]
 # ## Run a small sweep and inspect its output
@@ -287,8 +287,8 @@ logger.info(
 # longest axis. For the CPW grid:
 #
 # ```bash
-# generator=qpdk/models/datasets/data/cpw_coupling.py
-# sbatch --array=0-1 --cpus-per-task=4 qpdk/models/datasets/data/slurm_array.sh "$generator" \
+# generator=qpdk/models/datasets/recipes/cpw_coupling.py
+# sbatch --array=0-1 --cpus-per-task=4 qpdk/models/datasets/recipes/slurm_array.sh "$generator" \
 #   build/cpw-shards build/cpw-runs --sif /path/to/palace.sif
 # # After every task succeeds, pass each shard as a repeated option:
 # shards=()
@@ -304,7 +304,7 @@ logger.info(
 # concurrently if each has its own four-core allocation:
 #
 # ```bash
-# generator=qpdk/models/datasets/data/cpw_coupling.py
+# generator=qpdk/models/datasets/recipes/cpw_coupling.py
 # export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 # shards=()
 # for i in {0..1}; do
@@ -571,7 +571,7 @@ pl.DataFrame(rows)
 # %% [markdown]
 # ## Symmetric CPW coupling: a three-dimensional dataset
 #
-# `qpdk/models/datasets/data/cpw_coupling.py` follows the same workflow, sweeping trace width,
+# `qpdk/models/datasets/recipes/cpw_coupling.py` follows the same workflow, sweeping trace width,
 # outer CPW slot width and the gap between two identical traces. The inner gap
 # is fully etched; there is no ground strip between the traces. Both conductors
 # and the outer ground rails define a two-dimensional transverse Palace mesh,
@@ -579,9 +579,9 @@ pl.DataFrame(rows)
 # capacitances are in F for that depth. The lookup has three geometry axes.
 #
 # ```bash
-# uv run --script qpdk/models/datasets/data/cpw_coupling.py --dry-run
-# uv run --script qpdk/models/datasets/data/cpw_coupling.py --sif /path/to/palace.sif
-# uv run --script qpdk/models/datasets/data/cpw_coupling.py --topology as-drawn --sif /path/to/palace.sif
+# uv run --script qpdk/models/datasets/recipes/cpw_coupling.py --dry-run
+# uv run --script qpdk/models/datasets/recipes/cpw_coupling.py --sif /path/to/palace.sif
+# uv run --script qpdk/models/datasets/recipes/cpw_coupling.py --topology as-drawn --sif /path/to/palace.sif
 # ```
 #
 # The generator refines every geometry until each raw Maxwell entry changes by

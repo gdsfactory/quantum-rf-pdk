@@ -20,7 +20,7 @@ Look up the common-mode capacitance with
 ``qpdk.models.meander_inductor_ground_capacitance(n_turns=5, turn_length=150,
 wire_width=1.5, wire_gap=3)``. The returned value is in F.
 
-Preview with ``uv run --script qpdk/models/datasets/data/meander_ground_capacitance.py --dry-run``.
+Preview with ``uv run --script qpdk/models/datasets/recipes/meander_ground_capacitance.py --dry-run``.
 Edit GRID and SETTINGS to define a new sweep; validate representative meshes first.
 Generate disjoint grids with ``--shard``/``--shards`` and merge with repeated
 ``--merge-shards`` arguments only after every shard succeeds.

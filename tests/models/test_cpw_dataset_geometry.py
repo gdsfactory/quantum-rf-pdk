@@ -12,7 +12,7 @@ from qpdk.tech import LAYER, coplanar_waveguide
 EXPERIMENT = runpy.run_path(
     str(
         Path(__file__).resolve().parents[2]
-        / "qpdk/models/datasets/data/cpw_coupling.py"
+        / "qpdk/models/datasets/recipes/cpw_coupling.py"
     )
 )
 
