@@ -1,0 +1,65 @@
+info:
+  line_length: 20009.99
+  meander_depths:
+  - 967.92
+  - 967.92
+  - 967.92
+name: braided_giant_atoms_CL160_160_SL6550_PS1000_CG8_PW10_AL_7639fa6c
+ports:
+  junction_a:
+    center:
+    - 1000
+    - 258
+    layer: JJ_AREA
+    name: junction_a
+    orientation: 270
+    port_type: placement
+    width: 33.446
+  junction_b:
+    center:
+    - 2000
+    - -1033.92
+    layer: JJ_AREA
+    name: junction_b
+    orientation: 90
+    port_type: placement
+    width: 33.446
+  o1:
+    center:
+    - -180
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 3180
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  airbridges: true
+  arm_length: 200
+  arm_width: 10
+  bend_radius: 50
+  coupler_gap: 8
+  coupler_lengths:
+  - 160
+  - 160
+  cross_section: cpw
+  end_length: 100
+  gap_width: 10
+  island_extension: 50
+  island_width: 30
+  junction_spec: squid_junction
+  layer_etch: M1_ETCH
+  layer_metal: M1_DRAW
+  meander_pitch: 120
+  pad_width: 10
+  point_spacing: 1000
+  segment_length: 6550

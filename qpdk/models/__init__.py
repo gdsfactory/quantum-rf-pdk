@@ -56,6 +56,10 @@ from qpdk.models.generic import (
     short_2_port,
     shunt_admittance,
 )
+from qpdk.models.giant_atom import (
+    giant_atom_decay_rate_and_lamb_shift,
+    giant_atom_transmon,
+)
 from qpdk.models.perturbation import (
     dispersive_shift,
     dispersive_shift_to_coupling,
@@ -181,6 +185,8 @@ __all__ = [
     "fluxonium_with_bbox",
     "fluxonium_with_resonator",
     "gamma_0_load",
+    "giant_atom_decay_rate_and_lamb_shift",
+    "giant_atom_transmon",
     "impedance",
     "indium_bump",
     "inductor",

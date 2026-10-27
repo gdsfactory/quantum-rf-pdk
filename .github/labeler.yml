@@ -97,9 +97,11 @@ qubits:
               - 'qpdk/cells/transmon.py'
               - 'qpdk/cells/fluxonium.py'
               - 'qpdk/cells/unimon.py'
+              - 'qpdk/cells/giant_atom.py'
               - 'qpdk/cells/derived/**/*'
               - 'qpdk/models/qubit.py'
               - 'qpdk/models/unimon.py'
+              - 'qpdk/models/giant_atom.py'
               - 'qpdk/models/perturbation.py'
 resonators:
   - any:
