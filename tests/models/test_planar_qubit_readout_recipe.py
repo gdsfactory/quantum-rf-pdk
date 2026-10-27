@@ -13,7 +13,7 @@ from qpdk.tech import LAYER
 
 @pytest.mark.parametrize("name", ["double_pad_readout", "xmon_readout"])
 def test_complete_geometry_grid(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     module = importlib.import_module(name)
     recipe = module.RECIPE
@@ -46,7 +46,7 @@ def test_complete_geometry_grid(name: str, monkeypatch: pytest.MonkeyPatch) -> N
 
 @pytest.mark.parametrize("name", ["double_pad_readout", "xmon_readout"])
 def test_invalid_geometry(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     recipe = importlib.import_module(name).RECIPE
     point = {key: values[1] for key, values in recipe.grid.items()}
@@ -57,7 +57,7 @@ def test_invalid_geometry(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_nominal_transmon_matches_assembly_electrodes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     recipe = importlib.import_module("double_pad_readout").RECIPE
     select_metal = importlib.import_module("_readout").select_metal

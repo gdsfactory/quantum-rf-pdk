@@ -26,7 +26,7 @@ from qpdk.models.datasets.generate import write
 def incomplete_study(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> tuple[Any, Path, Path]:
-    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/data"
+    scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
     curator = importlib.import_module("curate_qubit_readout")
     study, calibration = tmp_path / "study", tmp_path / "calibration"
