@@ -496,6 +496,26 @@ def test_reject_bad_control(
         row["status"] = "failed"
         row["error"] = "Deliberate test failure"
     path.write_text(json.dumps(rows))
+    if problem != "failed":
+        plan_path = calibration / "source/plan.json"
+        plan = json.loads(plan_path.read_text())
+        plan["jobs"][0]["tasks"][2] = {
+            k: v for k, v in row.items() if k not in {"status", "maxwell_F"}
+        }
+        plan_path.write_text(json.dumps(plan))
+        (calibration / "source/source-sha256.json").write_text(
+            json.dumps({
+                "plan.json": hashlib.sha256(plan_path.read_bytes()).hexdigest()
+            })
+        )
+        data_path = path.parent / row["label"] / "data"
+        data = Dataset(data_path)
+        metadata = data.metadata.model_copy(
+            update={
+                "provenance": data.metadata.provenance | {"settings": row["settings"]}
+            }
+        )
+        write(data_path, metadata, data.scan().collect())
     output = tmp_path / "rejected"
     with pytest.raises(
         ValueError, match=r"identical geometry|unrelated solver|must refine|incomplete"
@@ -621,3 +641,311 @@ def test_reused_campaign_identity_is_unique(
         references.append(other)
     with pytest.raises(ValueError, match=r"unique source|more than once"):
         curator.verify(refined, calibration, "xmon_readout", references=references)
+
+
+@pytest.fixture
+def additional_control_study(
+    complete_study: tuple[Any, Path, Path], tmp_path: Path
+) -> tuple[Any, Path, Path, Path]:
+    curator, study, calibration = complete_study
+    extra = tmp_path / "extra"
+    original = Dataset(study / "results/job/production/data")
+    settings = original.metadata.provenance["settings"]
+    tasks = []
+    rows = []
+    for control, change, size in (
+        ("same-mesh", {}, 0.375),
+        ("fine-h", {"near_mesh": 0.7, "far_mesh": 8.0}, 0.375),
+        ("hp4", {"order": 4}, 0.375),
+        ("fine-h", {"near_mesh": 0.7, "far_mesh": 8.0}, 0.625),
+    ):
+        task = {
+            "recipe": "xmon_readout",
+            "mode": "control",
+            "label": f"extra-{len(tasks)}",
+            "anchor": "extra-control",
+            "control": control,
+            "point": {"size": size},
+            "settings": settings | change,
+        }
+        metadata = original.metadata.model_copy(
+            update={
+                "provenance": original.metadata.provenance
+                | {"settings": task["settings"]}
+            }
+        )
+
+        def solve(size: float) -> dict:
+            return {
+                "maxwell_capacitance": jnp.array([
+                    [80.0 + size, -2.0],
+                    [-2.0, 10.0 + size],
+                ])
+                * 1e-15,
+                "solver_relative_residual": 1e-12,
+            }
+
+        write(
+            extra / "results/job" / task["label"] / "data",
+            metadata,
+            sweep(metadata, solve, {"size": [size]}),
+        )
+        tasks.append(task)
+        rows.append(
+            task
+            | {
+                "status": "ok",
+                "maxwell_F": solve(size)["maxwell_capacitance"].tolist(),
+            }
+        )
+    (extra / "source").mkdir()
+    (extra / "results/job/summary.json").write_text(json.dumps(rows))
+    (extra / "submission-0.json").write_text(json.dumps({"stdout": "456\n"}))
+    extra_plan = {"jobs": [{"name": "job", "tasks": tasks}]}
+    study_plan = json.loads((study / "source/plan.json").read_text())
+    study_plan["required_additional_numerical"] = {
+        "campaign": extra.name,
+        "checks": ["same-mesh-vs-fine-h", "same-mesh-vs-p4"],
+        "all_native_tasks_required": 4,
+    }
+    for campaign, plan in ((study, study_plan), (extra, extra_plan)):
+        path = campaign / "source/plan.json"
+        path.write_text(json.dumps(plan))
+        (campaign / "source/source-sha256.json").write_text(
+            json.dumps({"plan.json": hashlib.sha256(path.read_bytes()).hexdigest()})
+        )
+    return curator, study, calibration, extra
+
+
+def test_additional_native_controls_are_required_and_preserved(
+    additional_control_study: tuple[Any, Path, Path, Path], tmp_path: Path
+) -> None:
+    curator, study, calibration, extra = additional_control_study
+    output = tmp_path / "published"
+    report = curator.verify(
+        study, calibration, "xmon_readout", references=[extra], output=output
+    )
+    assert report["passed"]
+    assert len(report["numerical"]) == 15
+    assert len(report["additional_numerical"]) == 2
+    for check in report["additional_numerical"]:
+        assert check["passed"]
+        assert check["candidate_source"]["job_id"] == "456"
+        assert check["reference_source"]["provenance"]
+        assert check["candidate_maxwell_F"] == check["reference_maxwell_F"]
+    assert Dataset(output).metadata.provenance["validation"] == report
+
+
+@pytest.mark.parametrize(
+    "problem", ["campaign", "candidate", "reference", "unpaired", "failed"]
+)
+def test_incomplete_additional_controls_cannot_publish(
+    additional_control_study: tuple[Any, Path, Path, Path], tmp_path: Path, problem: str
+) -> None:
+    curator, study, calibration, extra = additional_control_study
+    references = [extra]
+    if problem == "campaign":
+        references = []
+    else:
+        path = extra / "results/job/summary.json"
+        rows = json.loads(path.read_text())
+        match problem:
+            case "candidate":
+                rows.pop(0)
+            case "reference":
+                rows.pop(1)
+            case "unpaired":
+                rows.pop(-1)
+            case "failed":
+                rows[-1] |= {"status": "failed", "error": "Native solver failed"}
+        path.write_text(json.dumps(rows))
+    report = curator.verify(study, calibration, "xmon_readout", references=references)
+    assert not report["passed"]
+    output = tmp_path / "rejected"
+    with pytest.raises(ValueError, match="incomplete"):
+        curator.verify(
+            study, calibration, "xmon_readout", references=references, output=output
+        )
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "count",
+        "empty",
+        "unknown",
+        "duplicate",
+        "candidate",
+        "ambiguous",
+        "coarser",
+        "physics",
+        "accuracy",
+        "summary",
+    ],
+)
+def test_invalid_additional_controls_cannot_publish(
+    additional_control_study: tuple[Any, Path, Path, Path], tmp_path: Path, problem: str
+) -> None:
+    curator, study, calibration, extra = additional_control_study
+    path = extra / "results/job/summary.json"
+    rows = json.loads(path.read_text())
+    study_plan = json.loads((study / "source/plan.json").read_text())
+    extra_plan = json.loads((extra / "source/plan.json").read_text())
+    match problem:
+        case "count":
+            study_plan["required_additional_numerical"]["all_native_tasks_required"] = 3
+        case "empty":
+            study_plan["required_additional_numerical"]["checks"] = []
+        case "unknown":
+            study_plan["required_additional_numerical"]["checks"] = ["same-mesh-vs-p2"]
+        case "duplicate":
+            study_plan["required_additional_numerical"]["checks"] *= 2
+        case "candidate":
+            rows[0]["settings"]["near_mesh"] = 0.9
+        case "ambiguous":
+            rows[-1]["point"] = rows[1]["point"]
+        case "coarser":
+            rows[2]["settings"]["order"] = 2
+        case "physics":
+            pass
+        case "accuracy":
+            pass
+        case "summary":
+            rows[2]["settings"]["order"] = 2
+    if problem in {"candidate", "ambiguous", "coarser", "physics", "accuracy"}:
+        index = {
+            "candidate": 0,
+            "ambiguous": 3,
+            "coarser": 2,
+            "physics": 2,
+            "accuracy": 2,
+        }[problem]
+        row = rows[index]
+        data_path = path.parent / row["label"] / "data"
+        data = Dataset(data_path)
+        provenance = data.metadata.provenance | {"settings": row["settings"]}
+        frame = (
+            data
+            .scan()
+            .collect()
+            .with_columns(pl.lit(row["point"]["size"]).alias("size"))
+        )
+        if problem == "physics":
+            provenance["runtime_sha256"] = "a_different_solver"
+        elif problem == "accuracy":
+            frame = frame.with_columns(
+                pl
+                .when(pl.col("quantity") == "maxwell_capacitance")
+                .then(pl.col("value") * 1.2)
+                .otherwise(pl.col("value"))
+                .alias("value")
+            )
+        write(
+            data_path,
+            data.metadata.model_copy(update={"provenance": provenance}),
+            frame,
+        )
+        row["maxwell_F"] = (
+            Dataset(data_path).grid("maxwell_capacitance").values.reshape(2, 2).tolist()
+        )
+        extra_plan["jobs"][0]["tasks"][index] = {
+            k: v for k, v in row.items() if k not in {"status", "maxwell_F"}
+        }
+    path.write_text(json.dumps(rows))
+    for campaign, plan in ((study, study_plan), (extra, extra_plan)):
+        plan_path = campaign / "source/plan.json"
+        plan_path.write_text(json.dumps(plan))
+        (campaign / "source/source-sha256.json").write_text(
+            json.dumps({
+                "plan.json": hashlib.sha256(plan_path.read_bytes()).hexdigest()
+            })
+        )
+    output = tmp_path / "rejected"
+    with pytest.raises(
+        ValueError,
+        match=r"Additional|additional|must refine|provenance differs|incomplete|frozen task",
+    ):
+        curator.verify(
+            study, calibration, "xmon_readout", references=[extra], output=output
+        )
+    assert not output.exists()
+
+
+def test_additional_reference_can_come_from_an_earlier_campaign(
+    additional_control_study: tuple[Any, Path, Path, Path], tmp_path: Path
+) -> None:
+    curator, study, calibration, extra = additional_control_study
+    extra_path = extra / "results/job/summary.json"
+    rows = json.loads(extra_path.read_text())
+    moved = rows.pop(1)
+    extra_path.write_text(json.dumps(rows))
+    study_path = study / "results/job/summary.json"
+    study_rows = [*json.loads(study_path.read_text()), moved]
+    study_path.write_text(json.dumps(study_rows))
+    shutil.move(extra_path.parent / moved["label"], study_path.parent / moved["label"])
+    for campaign in (study, extra):
+        path = campaign / "source/plan.json"
+        plan = json.loads(path.read_text())
+        tasks = plan["jobs"][0]["tasks"]
+        if campaign == study:
+            tasks.append({
+                k: v for k, v in moved.items() if k not in {"status", "maxwell_F"}
+            })
+            plan["required_additional_numerical"]["all_native_tasks_required"] = 3
+        else:
+            tasks.pop(1)
+        path.write_text(json.dumps(plan))
+        (campaign / "source/source-sha256.json").write_text(
+            json.dumps({"plan.json": hashlib.sha256(path.read_bytes()).hexdigest()})
+        )
+    report = curator.verify(
+        study,
+        calibration,
+        "xmon_readout",
+        references=[extra],
+        output=tmp_path / "published",
+    )
+    assert report["passed"]
+    check = report["additional_numerical"][0]
+    assert check["candidate_source"]["campaign"] == extra.name
+    assert check["reference_source"]["campaign"] == study.name
+
+
+def test_superseded_extra_failure_does_not_waive_native_task_count(
+    additional_control_study: tuple[Any, Path, Path, Path], tmp_path: Path
+) -> None:
+    curator, study, calibration, extra = additional_control_study
+    extra_path = extra / "results/job/summary.json"
+    rows = json.loads(extra_path.read_text())
+    replacement = rows[-1] | {"label": "replacement"}
+    rows[-1] |= {"status": "failed", "error": "Native solver failed"}
+    extra_path.write_text(json.dumps(rows))
+    study_path = study / "results/job/summary.json"
+    study_path.write_text(
+        json.dumps([*json.loads(study_path.read_text()), replacement])
+    )
+    shutil.copytree(
+        extra_path.parent / rows[-1]["label"], study_path.parent / "replacement"
+    )
+    path = study / "source/plan.json"
+    plan = json.loads(path.read_text())
+    plan["jobs"][0]["tasks"].append({
+        k: v for k, v in replacement.items() if k not in {"status", "maxwell_F"}
+    })
+    path.write_text(json.dumps(plan))
+    (study / "source/source-sha256.json").write_text(
+        json.dumps({"plan.json": hashlib.sha256(path.read_bytes()).hexdigest()})
+    )
+    report = curator.verify(study, calibration, "xmon_readout", references=[extra])
+    assert not report["failed"]
+    assert len(report["superseded_failures"]) == 1
+    assert not report["passed"]
+    with pytest.raises(ValueError, match="incomplete"):
+        curator.verify(
+            study,
+            calibration,
+            "xmon_readout",
+            references=[extra],
+            output=tmp_path / "rejected",
+        )

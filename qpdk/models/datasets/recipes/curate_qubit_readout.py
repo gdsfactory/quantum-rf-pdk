@@ -17,7 +17,8 @@ remain operational JSON, outside the dataset.
 
 Lower-order probes are retained as negative controls. They need a same-mesh
 comparison with the calibrated production profile and cannot replace refinement
-references or held-out coverage.
+references or held-out coverage. Additional numerical pairs required by the
+campaign plan must also complete and pass before publication.
 """
 
 import hashlib
@@ -59,10 +60,7 @@ def _records(campaign: Path, recipe: str) -> list[dict[str, Any]]:
                 row = {**task, **saved}
                 if row["recipe"] != recipe:
                     continue
-                if {task.get("control"), row.get("control")} & {
-                    "lower-order",
-                    "same-mesh",
-                } and (
+                if "control" in {task["mode"], row["mode"]} and (
                     any(
                         row.get(key) != task.get(key)
                         for key in ("mode", "control", "anchor", "point")
@@ -80,10 +78,7 @@ def _records(campaign: Path, recipe: str) -> list[dict[str, Any]]:
                         raise ValueError(
                             "Synthetic references cannot validate FEM data"
                         )
-                    if (
-                        row["control"] in {"lower-order", "same-mesh"}
-                        and data.metadata.provenance["settings"] != row["settings"]
-                    ):
+                    if data.metadata.provenance["settings"] != row["settings"]:
                         raise ValueError(
                             "Diagnostic settings differ from its Parquet provenance"
                         )
@@ -146,6 +141,61 @@ def _coverage(
         "passed": len(cells) >= (total if require_all else min(64, total))
         and len(boundaries) == 2 * len(grid)
         and all_intervals,
+    }
+
+
+def _numerical_comparison(
+    candidate: dict[str, Any],
+    row: dict[str, Any],
+    terminals: tuple[str, ...],
+    junction: tuple[str, str | None],
+    stable: tuple[str, ...],
+) -> dict[str, Any]:
+    """Compare identical geometry with one independently refined solver setting."""
+    control = row["control"]
+    if row["point"] != candidate["point"]:
+        raise ValueError("Numerical controls must use the identical geometry")
+    changed = {
+        key
+        for key in candidate["settings"]
+        if candidate["settings"][key] != row["settings"][key]
+    }
+    allowed = {
+        "fine-h": {"near_mesh", "far_mesh"},
+        "hp4": {"order"},
+        "domain": {"domain_pad"},
+    }[control]
+    if not changed or not changed <= allowed:
+        raise ValueError("Numerical control changes unrelated solver settings")
+    if (
+        control == "fine-h"
+        and any(row["settings"][key] >= candidate["settings"][key] for key in changed)
+    ) or (
+        control != "fine-h"
+        and any(row["settings"][key] <= candidate["settings"][key] for key in changed)
+    ):
+        raise ValueError("Numerical control must refine the candidate")
+    if any(
+        candidate["source"]["provenance"][key] != row["source"]["provenance"][key]
+        for key in stable
+        if key != "settings"
+    ):
+        raise ValueError("Numerical control physics or solver provenance differs")
+    return {
+        "control": control,
+        "point": row["point"],
+        "candidate_source": candidate["source"],
+        "reference_source": row["source"],
+        "candidate_settings": candidate["settings"],
+        "reference_settings": row["settings"],
+        "candidate_maxwell_F": candidate["maxwell_F"],
+        "reference_maxwell_F": row["maxwell_F"],
+        **compare_capacitances(
+            candidate["maxwell_F"],
+            row["maxwell_F"],
+            terminals=terminals,
+            junction=junction,
+        ),
     }
 
 
@@ -395,54 +445,98 @@ def verify(
         for r in calibration_rows + study_rows
         if r["anchor"] in candidates and r["control"] in {"fine-h", "hp4", "domain"}
     }
-    for (anchor, control), row in controls.items():
+    for (anchor, _control), row in controls.items():
         candidate = candidates[anchor]
-        if row["point"] != candidate["point"]:
-            raise ValueError("Numerical controls must use the identical geometry")
-        changed = {
-            key
-            for key in candidate["settings"]
-            if candidate["settings"][key] != row["settings"][key]
-        }
-        allowed = {
-            "fine-h": {"near_mesh", "far_mesh"},
-            "hp4": {"order"},
-            "domain": {"domain_pad"},
-        }[control]
-        if not changed or not changed <= allowed:
-            raise ValueError("Numerical control changes unrelated solver settings")
-        if (
-            control == "fine-h"
-            and any(
-                row["settings"][key] >= candidate["settings"][key] for key in changed
-            )
-        ) or (
-            control != "fine-h"
-            and any(
-                row["settings"][key] <= candidate["settings"][key] for key in changed
-            )
-        ):
-            raise ValueError("Numerical control must refine the candidate")
         report["numerical"].append({
             "anchor": anchor,
-            "control": control,
-            "point": row["point"],
-            "candidate_source": candidate["source"],
-            "reference_source": row["source"],
-            "candidate_settings": candidate["settings"],
-            "reference_settings": row["settings"],
-            "candidate_maxwell_F": candidate["maxwell_F"],
-            "reference_maxwell_F": row["maxwell_F"],
-            **compare_capacitances(
-                candidate["maxwell_F"],
-                row["maxwell_F"],
-                terminals=terminals,
-                junction=junction,
-            ),
+            **_numerical_comparison(candidate, row, terminals, junction, stable),
         })
     numerical_complete = len(candidates) == 5 and set(controls) == set(
         product(candidates, ("fine-h", "hp4", "domain"))
     )
+    report["additional_numerical"] = []
+    additional_complete = True
+    if "required_additional_numerical" in plan:
+        requirement = plan["required_additional_numerical"]
+        if not isinstance(requirement, dict) or set(requirement) != {
+            "campaign",
+            "checks",
+            "all_native_tasks_required",
+        }:
+            raise ValueError("Invalid additional numerical control requirement")
+        check_controls = {
+            "same-mesh-vs-fine-h": "fine-h",
+            "same-mesh-vs-p4": "hp4",
+        }
+        checks = requirement["checks"]
+        count = requirement["all_native_tasks_required"]
+        if (
+            not checks
+            or len(checks) != len(set(checks))
+            or not set(checks) <= check_controls.keys()
+            or type(count) is not int
+            or count <= 0
+        ):
+            raise ValueError("Invalid additional numerical control requirement")
+        campaign = next(
+            (c for c in campaigns if c.name == requirement["campaign"]), None
+        )
+        if campaign is None:
+            report["pending"].append(requirement["campaign"])
+            additional_complete = False
+        else:
+            campaign_plan = json.loads((campaign / "source/plan.json").read_text())
+            tasks = [
+                t
+                for job in campaign_plan["jobs"]
+                for t in job["tasks"]
+                if t["recipe"] == recipe and t["mode"] == "control"
+            ]
+            planned_candidates = [t for t in tasks if t["control"] == "same-mesh"]
+            if len(tasks) != count or len(planned_candidates) != 1:
+                raise ValueError(
+                    "Additional campaign needs its exact native task count and one candidate"
+                )
+            records = calibration_records + study_records
+            completed = [
+                r
+                for r in records
+                if r["source"]["campaign"] == campaign.name
+                and r["mode"] == "control"
+                and r["status"] == "ok"
+            ]
+            additional_complete = len(completed) == count
+            matching = [r for r in completed if r["control"] == "same-mesh"]
+            if matching:
+                candidate = matching[0]
+                if not any(
+                    candidate["settings"] == r["settings"] for r in candidates.values()
+                ):
+                    raise ValueError(
+                        "Additional candidate must use the calibrated production settings"
+                    )
+                for name in checks:
+                    matching = [
+                        r
+                        for r in records
+                        if r["mode"] == "control"
+                        and r["control"] == check_controls[name]
+                        and r["point"] == candidate["point"]
+                    ]
+                    if len(matching) > 1:
+                        raise ValueError("Additional numerical reference is ambiguous")
+                    if not matching or matching[0]["status"] != "ok":
+                        report["pending"].append(f"{campaign.name}/{name}")
+                        additional_complete = False
+                        continue
+                    report["additional_numerical"].append({
+                        "name": name,
+                        **_numerical_comparison(
+                            candidate, matching[0], terminals, junction, stable
+                        ),
+                    })
+            else:
+                additional_complete = False
     if len(parts) == expected_parts:
         metadata = parts[0].metadata
         for dataset in parts:
@@ -515,10 +609,16 @@ def verify(
             })
         report["passed"] = (
             numerical_complete
+            and additional_complete
             and report["held_out_coverage"]["passed"]
             and not report["pending"]
             and not report["failed"]
-            and all(r["passed"] for r in report["numerical"] + report["interpolation"])
+            and all(
+                r["passed"]
+                for r in report["numerical"]
+                + report["additional_numerical"]
+                + report["interpolation"]
+            )
         )
         if output is not None and report["passed"]:
             provenance = {
