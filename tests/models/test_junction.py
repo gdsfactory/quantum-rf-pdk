@@ -10,9 +10,14 @@ import pytest
 from hypothesis import given, settings
 
 from qpdk.models.constants import Φ_0
-from qpdk.models.junction import josephson_junction, squid_junction
+from qpdk.models.junction import (
+    josephson_junction,
+    squid_junction,
+    squid_termination,
+)
+from qpdk.models.waveguides import straight_shorted
 
-from .base import TwoPortModelTestSuite
+from .base import OnePortModelTestSuite, TwoPortModelTestSuite
 
 MAX_EXAMPLES = 20
 
@@ -63,6 +68,34 @@ class TestJosephsonJunction(TwoPortModelTestSuite):
         assert jnp.all(jnp.isfinite(s11)), (
             "Should produce finite S-parameters even near critical current"
         )
+
+
+def _series_impedance_from_s11(s11: jax.Array, z0: float = 50.0) -> jax.Array:
+    """Invert the series-element relation ``S11 = Z / (Z + 2 Z0)``."""
+    return 2 * z0 * s11 / (1 - s11)
+
+
+@pytest.mark.parametrize("ic", [0.5e-6, 1e-6, 10e-6])
+def test_josephson_junction_impedance_is_referenced_to_50_ohm(ic: float) -> None:
+    """In the lossless, capacitance-free limit the junction is a pure ``jωL_J`` in series."""
+    f = jnp.array([4e9, 6e9, 8e9])
+    s = josephson_junction(f=f, ic=ic, capacitance=1e-24, resistance=1e18)
+    z = _series_impedance_from_s11(s["o1", "o1"])
+    expected = 1j * 2 * jnp.pi * f * Φ_0 / (2 * jnp.pi * ic)
+    assert jnp.allclose(z, expected, rtol=1e-4), (z, expected)
+    assert jnp.allclose(
+        jnp.abs(s["o1", "o1"]) ** 2 + jnp.abs(s["o1", "o2"]) ** 2, 1.0, atol=1e-9
+    )
+
+
+def test_squid_junction_impedance_is_referenced_to_50_ohm() -> None:
+    """A symmetric SQUID at zero flux is ``jωΦ_0 / (2π I_c,tot)`` in series."""
+    f = jnp.array([4e9, 6e9, 8e9])
+    ic_tot = 4.8e-6
+    s = squid_junction(f=f, ic_tot=ic_tot, flux=0.0, capacitance=1e-24, resistance=1e18)
+    z = _series_impedance_from_s11(s["o1", "o1"])
+    expected = 1j * 2 * jnp.pi * f * Φ_0 / (2 * jnp.pi * ic_tot)
+    assert jnp.allclose(z, expected, rtol=1e-4), (z, expected)
 
 
 @final
@@ -180,3 +213,45 @@ def test_squid_junction_overbias_warning_hypothesis(
         y = jitted(phi_arr, ibias)
 
     assert jnp.isfinite(y).all()
+
+
+@final
+class TestSQUIDTermination(OnePortModelTestSuite):
+    """Tests for the squid_termination one-port model."""
+
+    model_function = squid_termination
+
+    @staticmethod
+    def test_lossless_limit_reflects_fully() -> None:
+        """Without the shunt resistance the termination is purely reactive."""
+        f = jnp.linspace(4e9, 8e9, 11)
+        s11 = squid_termination(f=f, resistance=1e18)["o1", "o1"]
+        assert jnp.allclose(jnp.abs(s11), 1.0, atol=1e-9)
+
+    @staticmethod
+    def test_large_critical_current_is_a_short() -> None:
+        """As ``I_c`` grows the SQUID vanishes, leaving a shorted lead."""
+        f = jnp.linspace(4e9, 8e9, 11)
+        s_squid = squid_termination(f=f, length=50.0, ic_tot=1.0, capacitance=0.0)
+        s_short = straight_shorted(f=f, length=50.0)
+        assert jnp.allclose(s_squid["o1", "o1"], s_short["o1", "o1"], atol=1e-6)
+
+    @staticmethod
+    def test_zero_length_matches_squid_inductance() -> None:
+        """With no lead, the input impedance is the SQUID inductance ``jωL_s``."""
+        f = jnp.array([4e9, 6e9, 8e9])
+        ic_tot = 4.8e-6
+        s11 = squid_termination(
+            f=f, length=0.0, ic_tot=ic_tot, capacitance=1e-24, resistance=1e18
+        )["o1", "o1"]
+        z = 50.0 * (1 + s11) / (1 - s11)
+        expected = 1j * 2 * jnp.pi * f * Φ_0 / (2 * jnp.pi * ic_tot)
+        assert jnp.allclose(z, expected, rtol=1e-4), (z, expected)
+
+    @staticmethod
+    def test_flux_changes_reflection_phase() -> None:
+        """Flux raises the SQUID inductance and so shifts the reflection phase."""
+        f = jnp.array([6e9])
+        s_0 = squid_termination(f=f, flux=0.0)["o1", "o1"]
+        s_03 = squid_termination(f=f, flux=0.3 * Φ_0)["o1", "o1"]
+        assert not jnp.allclose(jnp.angle(s_0), jnp.angle(s_03), atol=1e-3)

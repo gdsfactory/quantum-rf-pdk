@@ -21,6 +21,7 @@ from .fluxonium import *
 from .inductor import *
 from .junction import *
 from .launcher import *
+from .parametric_amplifier import *
 from .resonator import *
 from .resonator_sections import *
 from .snspd import *

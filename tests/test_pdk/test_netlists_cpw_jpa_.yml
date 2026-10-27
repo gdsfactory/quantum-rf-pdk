@@ -1,0 +1,76 @@
+instances:
+  interdigital_capacitor:
+    component: interdigital_capacitor
+    info: {}
+    settings:
+      cross_section: cpw
+      etch_bbox_margin: 2
+      etch_layer: M1_ETCH
+      finger_gap: 2
+      finger_length: 50
+      fingers: 8
+      half: false
+      layer_metal: M1_DRAW
+      thickness: 5
+  resonator:
+    component: resonator
+    info:
+      cross_section_name: coplanar_waveguide
+      length: 4670
+      resonator_type: quarter_wave
+    settings:
+      bend_spec: bend_circular
+      cross_section: cpw
+      end_with_bend: false
+      length: 4670
+      meanders: 6
+      open_end: false
+      open_start: false
+      start_with_bend: false
+  squid_termination:
+    component: squid_termination
+    info:
+      junction_gap: 10.005
+      length: 10
+      loop_area: 4
+      pocket_width: 22
+    settings:
+      cross_section: cpw
+      junction_spec: Fsquid_junction_Mqpdkpcellspjunction_SJSFjosephson_junction_Mqpdkpcellspjunction_SJOD1p8_WSL4_NSL0p5_TL4
+      length: 10
+  straight_shorted:
+    component: straight_shorted
+    info: {}
+    settings:
+      cross_section: cpw
+      length: 200
+      npoints: 2
+nets:
+- p1: interdigital_capacitor,o2
+  p2: resonator,o1
+- p1: resonator,o2
+  p2: squid_termination,o1
+placements:
+  interdigital_capacitor:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 0
+  resonator:
+    mirror: false
+    rotation: 0
+    x: 33
+    y: 0
+  squid_termination:
+    mirror: false
+    rotation: 0
+    x: 430.919
+    y: -1200
+  straight_shorted:
+    mirror: false
+    rotation: 90
+    x: 450.921
+    y: -1416
+ports:
+  o1: interdigital_capacitor,o1
+  o2: straight_shorted,o1

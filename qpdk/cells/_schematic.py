@@ -31,6 +31,7 @@ __all__ = [
     "sax_model",
     "schematic",
     "short_schematic",
+    "squid_termination_schematic",
     "straight_open_schematic",
     "straight_schematic",
     "straight_shorted_schematic",
@@ -314,6 +315,19 @@ straight_shorted_schematic = schematic(
         sax_model(
             name="straight_shorted",
             module="qpdk.models.waveguides",
+            port_order=["o1"],
+        )
+    ],
+)
+
+squid_termination_schematic = schematic(
+    symbol="squid_termination",
+    tags=["junctions", "terminations"],
+    ports=_1PORT,
+    models=[
+        sax_model(
+            name="squid_termination",
+            module="qpdk.models.junction",
             port_order=["o1"],
         )
     ],
