@@ -228,6 +228,12 @@ repos:
         args: [--fix, --config=.github/.stylelintrc.yaml]
         additional_dependencies:
           - stylelint@17.11.0
+  - repo: https://github.com/simple-icons/svglint
+    rev: v4.2.1
+    hooks:
+      - id: svglint
+        priority: 10
+        args: [--config, .github/.svglintrc.mjs]
   - repo: https://github.com/sco1/pre-commit-matlab
     rev: v1.2.0
     hooks:
