@@ -15,7 +15,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_CACHE_DIR=${HOME}/.cache/uv
 
 # Install pinned just from the prebuilt rust-just wheel (kept for interactive use)
-RUN uv tool install rust-just==1.58.0
+RUN uv tool install rust-just==1.59.0
 
 RUN adduser --disabled-password \
     --gecos "Default user" \
