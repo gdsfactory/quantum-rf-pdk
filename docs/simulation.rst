@@ -388,11 +388,13 @@ domain and off-grid references are stored in the Parquet provenance, under
 
 ``double_pad_readout.py`` and ``xmon_readout.py`` define new local coupling experiments.
 They keep the qubit and a separate coupling paddle, ending at the paddle's CPW pin. They
-vary the qubit geometry, coupling gap and paddle length. The proposed grids and mesh
-settings are provisional; no validated table for either experiment is bundled yet. The
-full local Maxwell matrix includes both coupling and capacitances to ground. The
-distributed readout line starts outside this boundary, so its capacitance is counted
-once. A full-resonator electrostatic coupon cannot replace this local block.
+vary the qubit geometry, coupling gap and paddle length. The candidate grids contain 525
+double-pad and 270 Xmon geometries. Their meshes pass independent h/p/domain checks at
+five geometries each. Held-out interpolation checks remain pending, and no validated
+table for either experiment is bundled yet. The full local Maxwell matrix includes both
+coupling and capacitances to ground. The distributed readout line starts outside this
+boundary, so its capacitance is counted once. A full-resonator electrostatic coupon
+cannot replace this local block.
 
 The double-pad grid includes the default assembly's 394 um paddle and 35 um coupling
 gap. Its nominal point is explicit rather than inferred from the middle grid coordinate.

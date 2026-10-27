@@ -16,7 +16,8 @@ is open in the solve and connects the island to reference ground in the model.
 No distributed CPW enters this coupon. Its full two-node Maxwell matrix can
 be used with junction_model(junction=("island", None), exposed_ports=("readout",)).
 The inductor and junction capacitance are explicit additional circuit inputs.
-Mesh settings are provisional until independent numerical controls pass.
+The candidate mesh passes independent h/p/domain checks at five geometries.
+The refined grid still requires held-out interpolation checks before publication.
 Preview with --dry-run before generating a new grid.
 """
 
@@ -32,10 +33,10 @@ from qpdk.tech import LAYER
 GRID = {
     "arm_scale": [0.8, 1.0, 1.2],
     "gap_width": [8.0, 10.0, 12.0],
-    "coupling_gap": [3.0, 5.0, 10.0],
-    "paddle_length": [30.0, 60.0, 90.0],
+    "coupling_gap": [3.0, 4.0, 5.0, 7.5, 10.0],
+    "paddle_length": [30.0, 37.5, 45.0, 60.0, 75.0, 90.0],
 }
-SETTINGS = Settings(near_mesh=1.0, far_mesh=60.0, domain_pad=1200.0, order=3)
+SETTINGS = Settings(near_mesh=0.7, far_mesh=48.0, domain_pad=1200.0, order=3)
 
 
 def geometry(point: dict[str, float], settings: Settings, _processes: int) -> Geometry:

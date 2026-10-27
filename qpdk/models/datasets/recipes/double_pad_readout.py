@@ -16,8 +16,9 @@ inside this local boundary. Connect the external CPW at the paddle's port.
 The junction is open and omitted. Use junction_model with explicit Josephson
 inductance and additional junction capacitance. With exposed_ports=("readout",)
 the two islands carry no external current. They must not have matched loads.
-Mesh settings are provisional until independent h/p/domain and held-out
-references pass. Preview with --dry-run before generating a new grid.
+The candidate mesh passes independent h/p/domain checks at five geometries.
+The refined grid still requires held-out interpolation checks before publication.
+Preview with --dry-run before generating a new grid.
 """
 
 from pathlib import Path
@@ -31,11 +32,11 @@ from qpdk.tech import LAYER
 
 GRID = {
     "pad_width": [200.0, 250.0, 300.0],
-    "ground_clearance": [100.0, 200.0, 300.0],
-    "coupling_gap": [5.0, 10.0, 20.0, 35.0],
-    "paddle_length": [100.0, 200.0, 394.0],
+    "ground_clearance": [100.0, 150.0, 200.0, 250.0, 300.0],
+    "coupling_gap": [5.0, 7.5, 10.0, 15.0, 20.0, 27.5, 35.0],
+    "paddle_length": [100.0, 150.0, 200.0, 297.0, 394.0],
 }
-SETTINGS = Settings(near_mesh=1.5, far_mesh=75.0, domain_pad=1600.0, order=3)
+SETTINGS = Settings(near_mesh=1.05, far_mesh=60.0, domain_pad=1600.0, order=3)
 
 
 def geometry(point: dict[str, float], settings: Settings, _processes: int) -> Geometry:
