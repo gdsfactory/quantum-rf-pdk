@@ -212,6 +212,151 @@ def complete_study(incomplete_study: tuple[Any, Path, Path]) -> tuple[Any, Path,
     return curator, study, calibration
 
 
+@pytest.fixture
+def diagnostic_study(complete_study: tuple[Any, Path, Path]) -> tuple[Any, Path, Path]:
+    curator, study, calibration = complete_study
+    folder = study / "results/job"
+    rows = json.loads((folder / "summary.json").read_text())
+    template = rows[2]
+    data = Dataset(folder / template["label"] / "data")
+    tasks = []
+    for control, order, scale in (("same-mesh", 3, 1.0), ("lower-order", 2, 1.2)):
+        task = {
+            "recipe": "xmon_readout",
+            "mode": "control",
+            "label": f"diagnostic-{control}",
+            "anchor": "diagnostic",
+            "control": control,
+            "point": template["point"],
+            "settings": rows[0]["settings"] | {"order": order},
+        }
+        metadata = data.metadata.model_copy(
+            update={
+                "provenance": data.metadata.provenance | {"settings": task["settings"]}
+            }
+        )
+        frame = (
+            data
+            .scan()
+            .collect()
+            .with_columns(
+                pl
+                .when(pl.col("quantity") == "maxwell_capacitance")
+                .then(pl.col("value") * scale)
+                .otherwise(pl.col("value"))
+                .alias("value")
+            )
+        )
+        path = folder / task["label"] / "data"
+        write(path, metadata, frame)
+        matrix = Dataset(path).grid("maxwell_capacitance").values.reshape(2, 2)
+        rows.append(task | {"status": "ok", "maxwell_F": matrix.tolist()})
+        tasks.append(task)
+    plan_file = study / "source/plan.json"
+    plan = json.loads(plan_file.read_text())
+    plan["jobs"][0]["tasks"].extend(tasks)
+    plan_file.write_text(json.dumps(plan))
+    (study / "source/source-sha256.json").write_text(
+        json.dumps({"plan.json": hashlib.sha256(plan_file.read_bytes()).hexdigest()})
+    )
+    (folder / "summary.json").write_text(json.dumps(rows))
+    return curator, study, calibration
+
+
+def test_negative_control_is_retained_without_replacing_refinements(
+    diagnostic_study: tuple[Any, Path, Path], tmp_path: Path
+) -> None:
+    curator, study, calibration = diagnostic_study
+    output = tmp_path / "published"
+    report = curator.verify(study, calibration, "xmon_readout", output=output)
+    assert report["passed"]
+    assert len(report["numerical"]) == 15
+    diagnostic = report["diagnostic_controls"][0]
+    assert not diagnostic["passed"]
+    assert not diagnostic["used_for_admission"]
+    assert diagnostic["candidate_maxwell_F"] != diagnostic["diagnostic_maxwell_F"]
+    assert "diagnostic-lower-order" not in {r["label"] for r in report["interpolation"]}
+    validation = Dataset(output).metadata.provenance["validation"]
+    assert validation["diagnostic_controls"] == report["diagnostic_controls"]
+
+
+@pytest.mark.parametrize(
+    "problem", ["order", "mesh", "candidate", "coverage", "failed"]
+)
+def test_bad_negative_controls_cannot_publish(
+    diagnostic_study: tuple[Any, Path, Path], tmp_path: Path, problem: str
+) -> None:
+    curator, study, calibration = diagnostic_study
+    path = study / "results/job/summary.json"
+    rows = json.loads(path.read_text())
+    match problem:
+        case "order":
+            rows[-1]["settings"]["order"] = 4
+        case "mesh":
+            rows[-1]["settings"]["near_mesh"] *= 0.7
+        case "candidate":
+            rows.pop(-2)
+        case "coverage":
+            rows[-1]["anchor"] = "dense-held-diagnostic"
+        case "failed":
+            rows[-1]["status"] = "failed"
+    path.write_text(json.dumps(rows))
+    if problem in {"order", "mesh", "coverage"}:
+        plan_file = study / "source/plan.json"
+        plan = json.loads(plan_file.read_text())
+        plan["jobs"][0]["tasks"][-1] |= {
+            key: rows[-1][key] for key in ("settings", "anchor")
+        }
+        plan_file.write_text(json.dumps(plan))
+        (study / "source/source-sha256.json").write_text(
+            json.dumps({
+                "plan.json": hashlib.sha256(plan_file.read_bytes()).hexdigest()
+            })
+        )
+        data_path = path.parent / rows[-1]["label"] / "data"
+        data = Dataset(data_path)
+        metadata = data.metadata.model_copy(
+            update={
+                "provenance": data.metadata.provenance
+                | {"settings": rows[-1]["settings"]}
+            }
+        )
+        write(data_path, metadata, data.scan().collect())
+    output = tmp_path / "rejected"
+    with pytest.raises(ValueError, match=r"diagnostic|Diagnostic|incomplete"):
+        curator.verify(study, calibration, "xmon_readout", output=output)
+    assert not output.exists()
+
+
+def test_diagnostic_role_must_match_the_frozen_plan(
+    diagnostic_study: tuple[Any, Path, Path],
+) -> None:
+    curator, study, calibration = diagnostic_study
+    path = study / "results/job/summary.json"
+    rows = json.loads(path.read_text())
+    rows[2]["control"] = "lower-order"
+    path.write_text(json.dumps(rows))
+    with pytest.raises(ValueError, match="frozen task"):
+        curator.verify(study, calibration, "xmon_readout")
+
+
+def test_diagnostic_plan_can_use_recorded_solver_defaults(
+    diagnostic_study: tuple[Any, Path, Path],
+) -> None:
+    curator, study, calibration = diagnostic_study
+    path = study / "source/plan.json"
+    plan = json.loads(path.read_text())
+    for task in plan["jobs"][0]["tasks"][-2:]:
+        del task["settings"]["tolerance"]
+    path.write_text(json.dumps(plan))
+    (study / "source/source-sha256.json").write_text(
+        json.dumps({"plan.json": hashlib.sha256(path.read_bytes()).hexdigest()})
+    )
+    report = curator.verify(study, calibration, "xmon_readout")
+    assert report["passed"]
+    assert not report["diagnostic_controls"][0]["passed"]
+
+
 def test_publish_preserves_evidence(
     complete_study: tuple[Any, Path, Path], tmp_path: Path
 ) -> None:

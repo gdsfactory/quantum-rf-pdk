@@ -14,6 +14,10 @@ production shard preserves its original provenance rather than relabelling it
 as a new solve. Pass earlier refinement directories with repeated ``--references``
 options so their independent checks remain part of admission. Preview reports
 remain operational JSON, outside the dataset.
+
+Lower-order probes are retained as negative controls. They need a same-mesh
+comparison with the calibrated production profile and cannot replace refinement
+references or held-out coverage.
 """
 
 import hashlib
@@ -51,15 +55,37 @@ def _records(campaign: Path, recipe: str) -> list[dict[str, Any]]:
                 "source_manifest_sha256": manifest_hash,
             }
             for saved in json.loads(path.read_text()):
-                row = {**tasks[saved["label"]], **saved}
+                task = tasks[saved["label"]]
+                row = {**task, **saved}
                 if row["recipe"] != recipe:
                     continue
+                if {task.get("control"), row.get("control")} & {
+                    "lower-order",
+                    "same-mesh",
+                } and (
+                    any(
+                        row.get(key) != task.get(key)
+                        for key in ("mode", "control", "anchor", "point")
+                    )
+                    or any(
+                        row["settings"].get(key) != value
+                        for key, value in task["settings"].items()
+                    )
+                ):
+                    raise ValueError("Diagnostic summary differs from its frozen task")
                 row["source"] = dict(origin)
                 if row["status"] == "ok" and row["mode"] == "control":
                     data = Dataset(path.parent / row["label"] / "data")
                     if data.metadata.synthetic:
                         raise ValueError(
                             "Synthetic references cannot validate FEM data"
+                        )
+                    if (
+                        row["control"] in {"lower-order", "same-mesh"}
+                        and data.metadata.provenance["settings"] != row["settings"]
+                    ):
+                        raise ValueError(
+                            "Diagnostic settings differ from its Parquet provenance"
                         )
                     row["source"]["provenance"] = data.metadata.provenance
                     residual = data.grid(
@@ -145,6 +171,16 @@ def verify(
     """
     plan = json.loads((study / "source/plan.json").read_text())
     target = plan["grids"][recipe]
+    stable = (
+        "settings",
+        "runtime_sha256",
+        "versions",
+        "gsim_revision",
+        "qpdk_geometry_revision",
+        "reference_planes",
+        "junction",
+        "scope",
+    )
     report: dict[str, Any] = {
         "recipe": recipe,
         "rtol": 0.02,
@@ -253,7 +289,6 @@ def verify(
     candidates = {
         r["anchor"]: r for r in calibration_rows if r["control"] == "candidate"
     }
-    report["held_out_coverage"] = _coverage(target, study_rows)
     report["superseded_failures"] = []
     for row in calibration_records + study_records:
         if row["recipe"] != recipe or row["status"] == "ok":
@@ -284,6 +319,68 @@ def verify(
         if recipe == "double_pad_readout"
         else ("island", None)
     )
+    report["diagnostic_controls"] = []
+    for row in study_rows:
+        if row["control"] != "lower-order":
+            continue
+        if row["anchor"].startswith("dense-held-"):
+            raise ValueError("Diagnostic pairs cannot claim held-out coverage")
+        candidate = next(
+            (
+                r
+                for r in study_rows
+                if r["control"] == "same-mesh"
+                and r["anchor"] == row["anchor"]
+                and r["point"] == row["point"]
+            ),
+            None,
+        )
+        if candidate is None:
+            raise ValueError("Lower-order diagnostic needs its same-mesh candidate")
+        if not any(candidate["settings"] == r["settings"] for r in candidates.values()):
+            raise ValueError(
+                "Diagnostic candidate must use the calibrated production settings"
+            )
+        if any(
+            candidate["source"]["provenance"][key] != row["source"]["provenance"][key]
+            for key in stable
+            if key != "settings"
+        ):
+            raise ValueError(
+                "Diagnostic physics or solver provenance differs from candidate"
+            )
+        changed = {
+            key
+            for key in candidate["settings"]
+            if candidate["settings"][key] != row["settings"][key]
+        }
+        if (
+            changed != {"order"}
+            or row["settings"]["order"] >= candidate["settings"]["order"]
+        ):
+            raise ValueError(
+                "Lower-order diagnostic must only decrease polynomial order"
+            )
+        report["diagnostic_controls"].append({
+            "label": row["label"],
+            "point": row["point"],
+            "candidate_source": candidate["source"],
+            "diagnostic_source": row["source"],
+            "candidate_settings": candidate["settings"],
+            "diagnostic_settings": row["settings"],
+            "candidate_maxwell_F": candidate["maxwell_F"],
+            "diagnostic_maxwell_F": row["maxwell_F"],
+            "used_for_admission": False,
+            "reason": "A lower polynomial order is a negative control, not a refinement reference.",
+            **compare_capacitances(
+                candidate["maxwell_F"],
+                row["maxwell_F"],
+                terminals=terminals,
+                junction=junction,
+            ),
+        })
+    study_rows = [r for r in study_rows if r["control"] != "lower-order"]
+    report["held_out_coverage"] = _coverage(target, study_rows)
     controls = {
         (r["anchor"], r["control"]): r
         for r in calibration_rows + study_rows
@@ -339,16 +436,6 @@ def verify(
     )
     if len(parts) == expected_parts:
         metadata = parts[0].metadata
-        stable = (
-            "settings",
-            "runtime_sha256",
-            "versions",
-            "gsim_revision",
-            "qpdk_geometry_revision",
-            "reference_planes",
-            "junction",
-            "scope",
-        )
         for dataset in parts:
             a, b = metadata, dataset.metadata
             if (a.axes, a.terminals, a.quantities, a.reference_ground) != (
