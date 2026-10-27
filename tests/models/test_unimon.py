@@ -10,7 +10,6 @@ from hypothesis import given, settings
 from numpy.testing import assert_allclose
 
 import qpdk
-import qpdk.models.unimon as unimon_module
 from qpdk.models.constants import Φ_0, h
 from qpdk.models.unimon import (
     el_to_arm_inductance,
@@ -267,7 +266,7 @@ def test_closed_unimon_with_lossless_arms_conserves_power(
         reflection = -jnp.exp(-4j * jnp.pi * f * length * 1e-6 / 1.2e8)
         return {("o1", "o1"): reflection}
 
-    monkeypatch.setattr(unimon_module, "straight_shorted", lossless_arm)
+    monkeypatch.setattr("qpdk.models.unimon.straight_shorted", lossless_arm)
     model = jax.jit(lambda f: unimon_coupled(f=f))
     response = model(jnp.linspace(1e9, 12e9, 2001))["coupling_o3", "coupling_o3"]
     assert_allclose(jnp.abs(response), 1.0, atol=1e-11)
