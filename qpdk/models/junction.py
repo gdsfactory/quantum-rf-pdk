@@ -6,9 +6,9 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import sax
+from sax.models.rf import impedance
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0
-from qpdk.models.generic import series_impedance
 from qpdk.models.jit import jit
 
 
@@ -76,7 +76,7 @@ def josephson_junction(
     # Total admittance
     Y_JJ = Y_R + Y_C + Y_L
 
-    return series_impedance(f=f, z=1 / Y_JJ)
+    return impedance(f=f, z=1 / Y_JJ)
 
 
 @jit(inline=True)
@@ -141,7 +141,7 @@ def squid_junction(
     # Total SQUID admittance
     Y_SQUID = Y_R + Y_C + Y_L
 
-    return series_impedance(f=f, z=1 / Y_SQUID)
+    return impedance(f=f, z=1 / Y_SQUID)
 
 
 if __name__ == "__main__":
