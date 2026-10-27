@@ -388,13 +388,23 @@ domain and off-grid references are stored in the Parquet provenance, under
 
 ``double_pad_readout.py`` and ``xmon_readout.py`` define new local coupling experiments.
 They keep the qubit and a separate coupling paddle, ending at the paddle's CPW pin. They
-vary the qubit geometry, coupling gap and paddle length. The candidate grids contain 735
-double-pad and 270 Xmon geometries. Their meshes pass independent h/p/domain checks at
-five geometries each. Held-out interpolation checks remain pending, and no validated
-table for either experiment is bundled yet. The full local Maxwell matrix includes both
-coupling and capacitances to ground. The distributed readout line starts outside this
-boundary, so its capacitance is counted once. A full-resonator electrostatic coupon
-cannot replace this local block.
+vary the qubit geometry, coupling gap and paddle length. The bundled
+``xmon_readout_palace`` table contains 270 native Palace geometries. It passes 15
+independent mesh, element-order and domain comparisons at five geometries, plus 135
+direct-solve reference comparisons covering all 80 interpolation cells and both ends of
+every axis. Matrix entries, ground capacitances and qubit charge capacitances with
+grounded and floating readout are checked separately at 2 percent plus 0.01 fF. The
+direct matrices, settings, sources and checks are embedded in its Parquet metadata. The
+735-point double-pad candidate still awaits complete production and interpolation
+checks. The full local Maxwell matrix includes both coupling and capacitances to ground.
+The distributed readout line starts outside this boundary, so its capacitance is counted
+once. A full-resonator electrostatic coupon cannot replace this local block.
+
+The Xmon dataset models an equipotential island and paddle on silicon. It omits
+distributed arm modes and the junction, which the circuit supplies separately. For
+example, ``junction_model("xmon_readout_palace", junction=("island", None),
+inductance=12e-9, exposed_ports=("readout",))`` keeps the island internal and exposes
+only the physical paddle pin. The inductance is an explicit operating-point input.
 
 The double-pad grid includes the default assembly's 394 um paddle and 35 um coupling
 gap. Its nominal point is explicit rather than inferred from the middle grid coordinate.
