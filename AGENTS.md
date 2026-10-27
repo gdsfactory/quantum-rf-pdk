@@ -252,7 +252,8 @@ Cells can carry a schematic for GDSFactory+ / Mosaic, and its artwork is hand dr
 `schematic_function=` on the `@gf.cell` decorator (helpers in `qpdk/cells/_schematic.py`), then add
 `qpdk/symbols/<symbol>.svg` and point `display.symbol` at it. `tests/test_schematic.py` checks the geometry below and
 the `svglint` pre-commit hook (`.github/.svglintrc.mjs`) checks the ink rules, so a malformed symbol fails instead of
-quietly rendering as an empty box.
+quietly rendering as an empty box. The models page shows the artwork next to every SAX model a schematic lists under
+`models` (`.github/write_models.py`), so wiring the model entry is all it takes to document the symbol.
 
 - **Canvas**: 100 units per grid cell. Take the viewBox from the port box GDSFactory+ computes, `max(1, left, right)` by
   `max(1, top, bottom)` cells, plus one cell when the two counts on an axis differ in parity and the result is even. Two
