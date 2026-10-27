@@ -430,3 +430,12 @@ interpolates frequency and continuous geometry axes together and returns NaN out
 stored domain. Discrete variants are selected when loading. Complex linear interpolation
 can introduce apparent loss between sample points, so check withheld frequencies near
 resonances before choosing the frequency spacing.
+
+For a weakly coupled qubit, ``s_parameters_model(path, interpolation="admittance")``
+interpolates normalized admittance and converts back to scattering at the original
+reference planes. With fixed positive real port impedances, this preserves losslessness
+between lossless samples and retains physical dissipation in lossy samples. It avoids
+the artificial damping that complex S interpolation can introduce after internal ports
+are connected to a junction. Admittance must be finite and smooth throughout each cell.
+Check independent frequencies and loaded resonances before choosing this representation,
+since an admittance pole between samples can still invalidate interpolation.

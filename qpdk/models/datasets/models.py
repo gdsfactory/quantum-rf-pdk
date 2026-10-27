@@ -1,6 +1,8 @@
 """Generic SAX models from stored N-port scattering or Maxwell matrices."""
 
+from dataclasses import replace
 from pathlib import Path
+from typing import Literal
 
 import jax.numpy as jnp
 import sax
@@ -19,6 +21,7 @@ def s_parameters_model(
     quantity: str = "s_parameters",
     *,
     frequency_axis: str = "frequency",
+    interpolation: Literal["scattering", "admittance"] = "scattering",
     **variants: str,
 ) -> sax.SDictModel:
     """Load stored N-port S-parameters and return a jittable SAX lookup.
@@ -27,14 +30,24 @@ def s_parameters_model(
     are passed by name; discrete variants are fixed when creating the model.
     Terminals become port names. Reference impedances and planes are those of
     the stored simulation, without renormalization. Out-of-domain values are
-    NaN. Multilinear interpolation does not enforce losslessness between points.
+    NaN. The default ``interpolation="scattering"`` interpolates complex
+    S-parameters, which can introduce artificial loss between lossless samples.
+    ``interpolation="admittance"`` instead interpolates the normalized
+    admittance ``(I + S)^{-1} (I - S)`` and converts back to scattering.
+    For fixed positive real reference impedances, this preserves passivity
+    and losslessness of exact samples, without removing their physical loss.
+    It requires finite, smooth admittance throughout each interpolation cell.
+    Admittance poles need a different representation or a restricted domain.
+    Independent frequency and geometry holdouts remain necessary, especially
+    for narrow resonances after the internal ports are connected to a junction.
     Unspecified geometry axes use their middle stored coordinates.
 
     Returns:
         SAX model with the dataset terminal names.
 
     Raises:
-        ValueError: If the quantity or frequency axis has the wrong convention.
+        ValueError: If the conventions or interpolation mode are invalid, or a
+            stored sample has no finite admittance representation.
     """
     data = dataset if isinstance(dataset, Dataset) else Dataset(dataset)
     grid = data.grid(quantity, allow_missing=False, **variants)
@@ -42,6 +55,17 @@ def s_parameters_model(
         raise ValueError("Expected complex S-parameters")
     if not any(axis.name == frequency_axis and axis.unit == "Hz" for axis in grid.axes):
         raise ValueError("The frequency axis must be present and in Hz")
+    if interpolation not in {"scattering", "admittance"}:
+        raise ValueError("Interpolation must be 'scattering' or 'admittance'")
+    identity = jnp.eye(len(grid.terminals))
+    if interpolation == "admittance":
+        values = jnp.asarray(grid.values)
+        normalized = jnp.linalg.solve(identity + values, identity - values)
+        if not bool(jnp.all(jnp.isfinite(normalized))):
+            raise ValueError(
+                "Stored S-parameters have no finite admittance representation"
+            )
+        grid = replace(grid, values=normalized)
     lookup = GridInterpolator(grid)
     defaults = {
         name: float(values[len(values) // 2])
@@ -51,6 +75,8 @@ def s_parameters_model(
 
     def model(f: ArrayLike = DEFAULT_FREQUENCY, **params: ArrayLike) -> sax.SDict:
         values = lookup(**{**defaults, frequency_axis: f, **params})
+        if interpolation == "admittance":
+            values = jnp.linalg.solve(identity + values, identity - values)
         return {
             (a, b): values[..., i, j]
             for i, a in enumerate(grid.terminals)
