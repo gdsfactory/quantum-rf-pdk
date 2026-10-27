@@ -54,6 +54,18 @@ just --list
 - Run formatting/linting hooks: `just run-pre`
 - Build docs (optional but encouraged when docs change): `just docs`
 
+## Authorship and credit
+
+QPDK citation authors are people who have made substantial contributions to the software. These can include design,
+implementation, scientific models, validation, documentation, and active project direction. We use the
+[JOSS authorship guidance](https://joss.readthedocs.io/en/latest/submitting.html#authorship) as a reference. Commit
+counts alone do not determine authorship, and hosting, funding, or general supervision alone do not qualify.
+
+The citation author list is maintained in `CITATION.cff` and reviewed before releases as contributions evolve.
+Substantial contributors should be included with their agreement. Smaller contributions are credited through the
+[GitHub contributor history](https://github.com/gdsfactory/quantum-rf-pdk/graphs/contributors) and acknowledgments where
+appropriate. Authorship of a future paper is assessed separately for that work.
+
 ## AI usage policy
 
 We encourage using AI tools to accelerate your workflow—for example, prototyping components and layouts, generating

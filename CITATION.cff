@@ -1,0 +1,52 @@
+cff-version: 1.2.0
+type: software
+title: "QPDK: Superconducting Quantum Process Design Kit"
+message: >-
+  If you use QPDK in research, please cite the Zenodo record for the release
+  you used. Use the concept DOI when referring to the project as a whole.
+  See the README for citation guidance.
+abstract: >-
+  QPDK is an open-source process design kit for superconducting quantum RF
+  circuits, built on gdsfactory. It provides parametric layout components
+  including qubits, Josephson junctions, resonators, capacitors, and couplers,
+  with coplanar waveguide routing, layer stacks, and KLayout technology files.
+  Analytical circuit models use SAX and JAX for differentiable S-parameter
+  simulation. Test-chip examples, finite element datasets, and worked
+  notebooks connect layout design to circuit, quantum, and electromagnetic
+  simulation, parameter extraction, and optimization.
+authors:
+  - family-names: Savola
+    given-names: Niko
+    affiliation: GDSFactory
+    email: niko@gdsfactory.com
+    orcid: https://orcid.org/0000-0002-8036-4984
+    alias: nikosavola
+    website: https://github.com/nikosavola
+contact:
+  - family-names: Savola
+    given-names: Niko
+    email: niko@gdsfactory.com
+url: https://gdsfactory.github.io/quantum-rf-pdk/
+repository-code: https://github.com/gdsfactory/quantum-rf-pdk
+repository-artifact: https://pypi.org/project/qpdk/
+license: MIT
+license-url: https://github.com/gdsfactory/quantum-rf-pdk/blob/main/LICENSE
+keywords:
+  - superconducting quantum circuits
+  - quantum computing
+  - process design kit
+  - electronic design automation
+  - microwave engineering
+  - parametric layout
+  - coplanar waveguides
+  - Josephson junctions
+  - circuit simulation
+  - S-parameters
+  - electromagnetic simulation
+  - finite element method
+  - differentiable simulation
+  - Python
+  - gdsfactory
+  - SAX
+  - JAX
+  - KLayout

@@ -283,6 +283,12 @@ quantum-rf-pdk/
 - [QPDK documentation (PDF)](https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf)
 - [gdsfactory documentation](https://gdsfactory.github.io/gdsfactory/)
 
+## Citing QPDK
+
+If you use QPDK in research, please cite the Zenodo record for the release you used. Use the concept DOI when referring
+to QPDK as a project without a specific version. Citation metadata is in [CITATION.cff](CITATION.cff). See the
+[authorship policy](docs/contributing.md#authorship-and-credit) for how citation authors are selected.
+
 ## Contributing
 
 We welcome contributions of all sizes: new components, improved models, bug fixes, documentation, and notebook

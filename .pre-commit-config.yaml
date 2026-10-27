@@ -6,6 +6,11 @@ exclude: ^uv\.lock$
 # 40: Global structure checks (end-of-file-fixer).
 # 50: Global whitespace cleanup.
 repos:
+  - repo: https://github.com/citation-file-format/cffconvert
+    rev: 054bda51dbe278b3e86f27c890e3f3ac877d616c
+    hooks:
+      - id: validate-cff
+        priority: 10
   - repo: https://github.com/doplaydo/pdk-ci-workflow-public
     rev: beed3d142da6b51042b0933f401febf9ebb9c582
     hooks:

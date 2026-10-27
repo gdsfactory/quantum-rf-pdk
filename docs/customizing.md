@@ -77,19 +77,20 @@ merge QPDK into.
 The places below contain the QPDK name. Change all of them in **one commit** and change nothing else in it. Later merges
 then conflict here in a known way, and the diff of this commit is your checklist.
 
-| What                | Where                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| Package directory   | `qpdk/`, and every `import qpdk` / `from qpdk` (`git grep -l qpdk`: most of the repo)  |
-| Name and version    | `[project]` in `pyproject.toml`, `__version__` in `qpdk/__init__.py`, `[tool.tbump]`   |
-| Tooling paths       | `pyproject.toml`: coverage `source`, pytest `testpaths`, ruff per-file ignores         |
-| GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries      |
-| Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                       |
-| PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py` |
-| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`   |
-| KLayout install     | `src` and `dest` in `qpdk/install_tech.py`                                             |
-| Docs                | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                 |
-| Workflows           | `test.yml` (`--cov=qpdk`, imports)                                                     |
-| Repo metadata       | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`  |
+| What                | Where                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| Package directory   | `qpdk/`, and every `import qpdk` / `from qpdk` (`git grep -l qpdk`: most of the repo)      |
+| Name and version    | `[project]` in `pyproject.toml`, `__version__` in `qpdk/__init__.py`, `[tool.tbump]`       |
+| Tooling paths       | `pyproject.toml`: coverage `source`, pytest `testpaths`, ruff per-file ignores             |
+| GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries          |
+| Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                           |
+| PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py`     |
+| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`       |
+| KLayout install     | `src` and `dest` in `qpdk/install_tech.py`                                                 |
+| Docs                | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                     |
+| Workflows           | `test.yml` (`--cov=qpdk`, imports)                                                         |
+| Repo metadata       | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`      |
+| Citation metadata   | `CITATION.cff`: title, authors, ORCIDs, repository and documentation URLs, DOI identifiers |
 
 The `justfile` reads the package name from `pdk := env('pdk', 'qpdk')`. Set `pdk=<your_pdk>` in `.env` or change the
 default. Only the `install-tech` and `show` recipes read this variable.
@@ -260,6 +261,7 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | Path                                                   | Owner | On merge                                         |
 | ------------------------------------------------------ | ----- | ------------------------------------------------ |
 | [Identity files](#identity-rename), version            | Fork  | Keep your names. Take the other QPDK changes     |
+| `CITATION.cff`                                         | Fork  | Use your authors and your own Zenodo DOI series  |
 | `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork  | Keep yours. Add QPDK layers you want, regenerate |
 | `qpdk/tech.py`                                         | Both  | Keep your values. Take new QPDK definitions      |
 | `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
