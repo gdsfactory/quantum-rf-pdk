@@ -279,13 +279,13 @@ repos:
         entry: julia --startup-file=no --project=.github/julia .github/julia/lint.jl
         language: system
         files: \.jl$|(^|/)JuliaLint\.toml$
-      # - id: just-fmt
-      #   priority: 10
-      #   name: Format justfiles
-      #   entry: just --fmt --unstable
-      #   language: system
-      #   files: (^|/)justfile$|\.just$
-      #   pass_filenames: false
+      - id: just-fmt
+        priority: 10
+        name: Format justfiles
+        # --fmt only rewrites the justfile it is given, so format imports too.
+        entry: bash -c 'for f in "$@"; do just --fmt --justfile "$f"; done' --
+        language: system
+        files: (^|/)justfile$|\.just$
       - id: convert-notebooks
         priority: 10
         name: Convert jupytext notebooks

@@ -1,14 +1,12 @@
-set dotenv-load := true
+set minimum-version := '1.55.0'
+set default-list
+set dotenv-load
 
 pdk := env('pdk', 'qpdk')
 cpus := num_cpus()
 
 import 'tests/test.just'
 import 'docs/docs.just'
-
-# List available commands
-default:
-    @just --list
 
 # Download Git LFS data (FEM datasets and model test references)
 [group('setup')]
@@ -26,8 +24,8 @@ install-data:
 
 # Download Git LFS data (FEM datasets and model test references)
 [group('setup')]
-[windows]
 [script('powershell.exe')]
+[windows]
 install-data:
     git lfs version 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) {
@@ -60,8 +58,8 @@ clean:
 # Clean up all build, test, coverage and Python artifacts
 [confirm]
 [group('setup')]
-[windows]
 [script('powershell.exe')]
+[windows]
 clean:
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue dist, build, *.egg-info, docs/_build, docs/notebooks, .hypothesis, .pytest_cache, .ruff_cache
     Get-ChildItem -Recurse -Directory -Filter __pycache__ -ErrorAction SilentlyContinue |
@@ -138,7 +136,7 @@ show component_name="":
                         return
 
                 # 2. Feed fresh list in background (unbuffered)
-                list_cmd = ["uv", "run", "python", "-u", "-c", "from {{pdk}} import PDK; print('\\n'.join(sorted(PDK.cells.keys())))"]
+                list_cmd = ["uv", "run", "python", "-u", "-c", "from {{ pdk }} import PDK; print('\\n'.join(sorted(PDK.cells.keys())))"]
                 fresh_process = subprocess.Popen(list_cmd, stdout=subprocess.PIPE, text=True, stderr=subprocess.DEVNULL)
                 new_cells = []
                 if fresh_process.stdout:

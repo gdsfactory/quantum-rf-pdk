@@ -5,27 +5,27 @@
 docs_config_dir := replace(justfile_directory(), '\', '/') / "build/docs-config"
 
 # Write cell outputs into documentation notebooks
-[private]
 [group('docs')]
+[private]
 write-cells:
     @uv run --group docs .github/write_cells.py
 
 # Write model outputs into documentation notebooks
-[private]
 [group('docs')]
+[private]
 write-models:
     @uv run --extra models --group docs .github/write_models.py
 
 # Write Justfile help output to documentation
-[private]
 [group('docs')]
-[working-directory: 'docs']
+[private]
+[working-directory('docs')]
 write-justfile-help:
     @just --list --color never > justfile_help.txt
 
 # Convert jupytext scripts from notebooks/src to ipynb format in notebooks
-[private]
 [group('docs')]
+[private]
 convert-notebooks:
     @./.github/convert-notebooks.sh notebooks/src/*.py
 
@@ -127,8 +127,8 @@ build-doc-figures: fetch-docs-fonts
             stale.unlink()
 
 # Copy all sample scripts and notebooks to use as documentation
-[private]
 [group('docs')]
+[private]
 copy-sample-notebooks: build-doc-figures
     @mkdir -p docs/notebooks/
     # Copy all source files from notebooks/src
@@ -144,8 +144,8 @@ copy-sample-notebooks: build-doc-figures
     done
 
 # Write the IPython configuration and matplotlib styles for the documentation build
-[private]
 [group('docs')]
+[private]
 docs-config:
     @mkdir -p {{ quote(docs_config_dir / "ipython/profile_default") }} {{ quote(docs_config_dir / "matplotlib/stylelib") }}
     @cp docs/ipython_config.py {{ quote(docs_config_dir / "ipython/profile_default") }}
@@ -158,8 +158,8 @@ docs-config:
 docs-fonts-dir := "build/docs-fonts"
 
 # Download the pinned docs fonts into build/docs-fonts/ (stamp-cached).
-[private]
 [group('docs')]
+[private]
 [script('uv', 'run', '--script')]
 fetch-docs-fonts:
     import hashlib, io, shutil, urllib.request, zipfile
@@ -241,17 +241,18 @@ fetch-docs-fonts:
         STAMP.write_text(VERSION, encoding="utf-8")
 
 # Shared prerequisites for building documentation (runs in parallel)
-[private]
-[parallel]
 [group('docs')]
+[parallel]
+[private]
 docs-prerequisites: write-cells write-models write-justfile-help copy-sample-notebooks
 
 # Build documentation with the given Sphinx builder into docs/_build/<builder>
-[private]
+[env('IPYTHONDIR', docs_config_dir / "ipython")]
+[env('MPLCONFIGDIR', docs_config_dir / "matplotlib")]
 [group('docs')]
+[private]
 _sphinx builder: check-lfs docs-prerequisites docs-config
-    @IPYTHONDIR={{ quote(docs_config_dir / "ipython") }} MPLCONFIGDIR={{ quote(docs_config_dir / "matplotlib") }} \
-    uv run --group docs sphinx-build -b {{ builder }} docs docs/_build/{{ builder }}
+    @uv run --group docs sphinx-build -b {{ builder }} docs docs/_build/{{ builder }}
 
 # Build the HTML documentation
 [group('docs')]
