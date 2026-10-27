@@ -110,6 +110,12 @@ test-models-force: (_pytest "-s tests/models/test_models_regression.py --force-r
 test-hfss *args: check-lfs
     uv run --all-extras --group dev pytest -m hfss {{ args }}
 
+# Run Palace dataset setup, result-reader and solver tests
+[positional-arguments]
+[group('test')]
+test-palace *args: check-lfs
+    uv run --locked --python 3.12 --no-default-groups --extra models --group palace --group test pytest -m palace tests/models --basetemp=build/palace-tests --durations=0 "$@"
+
 # Download the public GDSFactory+ VS Code extension, or accept a local VSIX
 # path as the argument, and extract its bundled `gfp` binary into
 # build/gfp-vsix/. The Python SDK comes from PyPI (the `gdsfactoryplus` extra);

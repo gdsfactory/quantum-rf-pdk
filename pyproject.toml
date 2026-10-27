@@ -284,7 +284,7 @@ filterwarnings = [
 markers = [
   "gfp: mark test as requiring GDSFactory+ (gdsfactoryplus)",
   "hfss: mark test as requiring HFSS",
-  "palace: require the Palace experiment dependencies and a real solver",
+  "palace: require the Palace experiment dependencies, including real solver tests",
   "skip_windows: skip test on Windows",
   "vacask: require the external VACASK circuit simulator",
 ]
