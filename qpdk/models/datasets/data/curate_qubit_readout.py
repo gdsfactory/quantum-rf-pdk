@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.12,<3.15"
 # dependencies = [
-#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git@a93c7641c5c234ab87c0497c91a02bbf9baf47dd",
 #   "typer>=0.24,<1",
 # ]
 # ///
@@ -16,7 +16,7 @@ as a new solve. Preview reports remain operational JSON, outside the dataset.
 
 import hashlib
 import json
-from itertools import product
+from itertools import pairwise, product
 from math import prod
 from pathlib import Path
 from typing import Any
@@ -74,6 +74,48 @@ def _records(campaign: Path, recipe: str) -> list[dict[str, Any]]:
                         )
                 records.append(row)
     return records
+
+
+def _coverage(
+    grid: dict[str, list[float]], rows: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Count distinct interior cells and both boundaries of every grid axis."""
+    cells = set()
+    boundaries = set()
+    for row in rows:
+        if not row["anchor"].startswith("dense-held-"):
+            continue
+        point = row["point"]
+        cell = []
+        for name, coords in grid.items():
+            if point[name] in {coords[0], coords[-1]}:
+                boundaries.add((name, point[name]))
+            interval = next(
+                (
+                    i
+                    for i, (lo, hi) in enumerate(pairwise(coords))
+                    if lo < point[name] < hi
+                ),
+                None,
+            )
+            if interval is not None:
+                cell.append(interval)
+        if len(cell) == len(grid):
+            cells.add(tuple(cell))
+    total = prod(len(coords) - 1 for coords in grid.values())
+    all_intervals = all(
+        set(range(len(coords) - 1)) <= {cell[axis] for cell in cells}
+        for axis, coords in enumerate(grid.values())
+    )
+    return {
+        "interior_cells_tested": len(cells),
+        "total_interior_cells": total,
+        "tested_cell_indices": [list(cell) for cell in sorted(cells)],
+        "boundaries_tested": sorted(boundaries),
+        "passed": len(cells) >= min(64, total)
+        and len(boundaries) == 2 * len(grid)
+        and all_intervals,
+    }
 
 
 def verify(
@@ -177,6 +219,7 @@ def verify(
     candidates = {
         r["anchor"]: r for r in calibration_rows if r["control"] == "candidate"
     }
+    report["held_out_coverage"] = _coverage(target, study_rows)
     report["superseded_failures"] = []
     for row in calibration_records:
         if row["recipe"] != recipe or row["status"] == "ok":
@@ -342,6 +385,7 @@ def verify(
             })
         report["passed"] = (
             numerical_complete
+            and report["held_out_coverage"]["passed"]
             and not report["pending"]
             and not report["failed"]
             and all(r["passed"] for r in report["numerical"] + report["interpolation"])
