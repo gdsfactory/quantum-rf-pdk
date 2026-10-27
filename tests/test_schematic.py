@@ -13,7 +13,7 @@ import pytest
 from gdsfactory.typings import ComponentFactory
 from kfactory.schematic import DSchematic, Port
 
-from qpdk import PDK, SAX_MODEL_ALIASES
+from qpdk import PDK, SAX_MODEL_ALIASES, _get_cell_schematic
 from qpdk.cells import (
     bend_circular,
     bend_s,
@@ -49,7 +49,7 @@ from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
     straight_schematic,
 )
-from qpdk.models import models as sax_models, pdk_models
+from qpdk.models import models as sax_models
 
 if TYPE_CHECKING:
     from kfactory.schematic import TSchematic
@@ -61,17 +61,8 @@ def _info(schematic: TSchematic[Any], key: str) -> Any:
 
 
 def _get_schematic(cell: Any) -> TSchematic[Any] | None:
-    settings = {}
-    if isinstance(cell, partial):
-        settings = cell.keywords
-        cell = cell.func
-    try:
-        factory = gf.kcl.factories[cell.__name__]
-    except (AttributeError, KeyError):
-        return None
-    if not factory.schematic_driven():
-        return None
-    return factory.get_schematic(**settings)
+    function = cell.func if isinstance(cell, partial) else cell
+    return _get_cell_schematic(function.__name__, cell)
 
 
 def test_schematic_functions():
@@ -321,12 +312,19 @@ def test_registered_models_expose_their_layout_ports(cell_name: str) -> None:
     assert model_ports == layout_ports
 
 
-def test_pdk_registers_the_supported_models() -> None:
-    """Registration uses the supported models without replacing their callables."""
-    assert PDK.models.keys() == pdk_models.keys() | SAX_MODEL_ALIASES.keys()
-    for name, model in pdk_models.items():
-        assert PDK.models[name] is model
-        assert model is sax_models[name]
+def test_pdk_registration_follows_model_declarations() -> None:
+    """Every registered layout model has a schematic declaring its boundary."""
+    for name in PDK.cells.keys() & PDK.models.keys():
+        schematic = _get_schematic(PDK.cells[name])
+        assert schematic is not None, name
+        descriptors = _info(schematic, "models")
+        assert any(descriptor["language"] == "sax" for descriptor in descriptors), name
+
+
+def test_analytical_models_without_a_layout_remain_registered() -> None:
+    """Generic circuit primitives remain available without a layout declaration."""
+    for name in sax_models.keys() - PDK.cells.keys():
+        assert PDK.models[name] is sax_models[name]
 
 
 def test_interdigital_capacitor_keeps_its_model_boundary() -> None:
@@ -349,7 +347,6 @@ def test_interdigital_capacitor_keeps_its_model_boundary() -> None:
 def test_sax_model_aliases(alias: str, model_name: str) -> None:
     """Resolve aliased cells to the intended registered model."""
     assert PDK.models is not None
-    assert alias not in sax_models
     assert model_name in sax_models
     assert alias in PDK.cells
     assert PDK.models[alias] is PDK.models[model_name]
@@ -371,3 +368,21 @@ def test_test_chip_does_not_declare_a_whole_chip_model() -> None:
     assert schematic is not None
 
     assert _info(schematic, "models") == []
+
+
+@pytest.mark.parametrize(
+    ("west", "east", "north", "south"), [(2, 1, 0, 1), (0, 2, 1, 0)]
+)
+def test_nxn_schematic_follows_the_layout_port_count(
+    west: int, east: int, north: int, south: int
+) -> None:
+    """Junction schematics follow the requested number and sides of the ports."""
+    settings = dict(west=west, east=east, north=north, south=south)
+    layout = PDK.cells["nxn"](**settings)
+    schematic = gf.kcl.factories["nxn"].get_schematic(**settings)
+
+    assert set(schematic.ports) == {port.name for port in layout.ports}
+    for name, port in schematic.ports.items():
+        assert isinstance(port, Port)
+        assert port.orientation == pytest.approx(layout.ports[name].orientation)
+    assert _info(schematic, "models")[0]["port_order"] == list(schematic.ports)

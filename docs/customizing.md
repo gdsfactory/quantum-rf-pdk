@@ -178,18 +178,22 @@ files.
 
 Before you remove a cell, check which cells import it, for example with `git grep -n "import.*\bjosephson_junction\b"`.
 
-SAX models are also matched to cells by name. `pdk_models` in `qpdk/models/__init__.py` explicitly registers the
-supported models. Analytical helpers and models without a matching layout boundary remain available through their
-modules and the full `models` catalog. Adding a public analytical function does not register it in the PDK. Cell models
-use the layout's circuit port names. Placement markers are not circuit ports.
+PDK model registration is derived from the SAX descriptors in each cell's schematic. Declare the model once with
+`sax_model(...)` in `qpdk/cells/_schematic.py` and pass the schematic through `@gf.cell(schematic_function=...)`. The
+PDK imports that model directly and derives aliases from the declaration. `SAX_MODEL_ALIASES` in `qpdk/__init__.py`
+reports these aliases and is no longer a list to maintain.
 
-Declare schematic metadata with `@gf.cell(schematic_function=...)`. It is available through
-`gf.kcl.factories[name].get_schematic()`, so no separate attachment call is needed. Keep the model and schematic
-descriptor aligned when changing a cell's circuit ports.
+Virtual cells and partial aliases use a matching `<cell_name>_schematic` declaration in `qpdk/cells/_schematic.py`,
+since `gf.vcell` and partial factories cannot accept `schematic_function`. Discovery reads that declaration without
+constructing the layout. Define the SAX descriptor there just as for a regular cell.
 
-`SAX_MODEL_ALIASES` in `qpdk/__init__.py` lets some cells use another cell's model. Each target must be registered in
-`pdk_models`. If you remove a model that an alias points to, `import qpdk` fails with a `KeyError`. If you remove a cell
-that has an alias, remove the alias too.
+Analytical models without a same-named layout are registered as circuit primitives. Other cell models stay in the full
+`qpdk.models.models` catalog until their schematic declares a SAX binding. Existing supported registrations are
+preserved.
+
+Schematic metadata is available through `gf.kcl.factories[name].get_schematic()`, so no separate attachment call is
+needed. Keep the model and schematic descriptor aligned when changing a cell's circuit ports. Placement markers are not
+circuit ports. Partial cell factories inherit the base schematic and bind any model settings they preset.
 
 ## Pruning
 
@@ -255,10 +259,9 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork  | Keep yours. Add QPDK layers you want, regenerate |
 | `qpdk/tech.py`                                         | Both  | Keep your values. Take new QPDK definitions      |
 | `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
-| PDK model registry in `qpdk/models/__init__.py`        | Both  | Preserve fork models and matching descriptors    |
 | `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
 | QPDK modules in `qpdk/cells/`                          | QPDK  | Merge. New QPDK cells usually merge cleanly      |
-| `qpdk/__init__.py`                                     | Both  | Keep Python cells ahead of YAML sample fallbacks |
+| `qpdk/__init__.py`                                     | Both  | Keep model discovery and Python cell precedence  |
 | Your cell modules, override modules, and test chips    | Fork  | QPDK never changes them                          |
 | `qpdk/samples/`, `notebooks/`                          | Both  | Keep removed files removed. Take QPDK for others |
 | `tests/gds_ref/`, `tests/test_pdk/`, model `.npz` refs | Fork  | Never merge. Keep yours, then regenerate         |

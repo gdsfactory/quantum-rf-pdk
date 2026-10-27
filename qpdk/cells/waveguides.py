@@ -10,14 +10,17 @@ from klayout.db import DCplxTrans
 from qpdk import tech
 from qpdk.cells._schematic import (
     bend_circular_schematic,
+    bend_euler_schematic,
     bend_s_schematic,
     coupler_straight_schematic,
+    nxn_schematic,
     open_2_port_schematic,
     open_schematic,
     short_schematic,
     straight_open_schematic,
     straight_schematic,
     straight_shorted_schematic,
+    tee_schematic,
 )
 from qpdk.logger import logger
 from qpdk.tech import get_etch_section
@@ -226,7 +229,7 @@ def straight_double_open(
     return c
 
 
-@gf.cell(tags=["waveguides"])
+@gf.cell(tags=["waveguides"], schematic_function=nxn_schematic)  # pyrefly: ignore[bad-argument-type]
 def nxn(
     xsize: float = 10.0,
     ysize: float = 10.0,
@@ -267,7 +270,7 @@ def nxn(
     )
 
 
-@gf.cell(tags=["waveguides"])
+@gf.cell(tags=["waveguides"], schematic_function=tee_schematic)
 def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     """Returns a three-way tee waveguide.
 
@@ -310,7 +313,7 @@ def tee(cross_section: CrossSectionSpec = "cpw") -> gf.Component:
     return c
 
 
-@gf.cell(tags=["waveguides", "bend", "euler"])
+@gf.cell(tags=["waveguides", "bend", "euler"], schematic_function=bend_euler_schematic)
 def bend_euler(
     angle: float = 90.0,
     p: float = 0.5,
