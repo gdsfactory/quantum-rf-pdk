@@ -6,8 +6,6 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.palace
-
 CHECK = runpy.run_path(
     str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes/_palace.py")
 )["solver_diagnostics"]
