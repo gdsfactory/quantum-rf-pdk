@@ -1,6 +1,9 @@
 """Admission checks for the local Xmon island and readout paddle."""
 
+import runpy
+from dataclasses import asdict
 from itertools import product
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
@@ -57,6 +60,29 @@ def test_shipped_grid_and_solver_diagnostics(data: Dataset) -> None:
     )
     residual = jnp.asarray(data.grid("solver_relative_residual").values)
     assert bool(jnp.all(jnp.isfinite(residual) & (residual >= 0) & (residual <= 1e-9)))
+
+
+def test_recipe_reproduces_the_admitted_conventions(
+    data: Dataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Default geometry axes and solver inputs must describe the shipped table."""
+    directory = Path(__file__).parents[2] / "qpdk/models/datasets/recipes"
+    monkeypatch.syspath_prepend(str(directory))
+    module = runpy.run_path(str(directory / "xmon_readout.py"))
+    grid = data.grid("maxwell_capacitance", allow_missing=False)
+    assert module["GRID"] == {
+        name: values.tolist()
+        for name, values in zip(grid.axis_names, grid.coords, strict=True)
+    }
+    assert asdict(module["SETTINGS"]) == data.metadata.provenance["settings"]
+    assert module["RECIPE"].terminals == data.metadata.terminals
+    assert module["RECIPE"].reference_ground == data.metadata.reference_ground
+    assert {axis.name: axis.unit for axis in grid.axes} == {
+        "arm_scale": "1",
+        "gap_width": "um",
+        "coupling_gap": "um",
+        "paddle_length": "um",
+    }
 
 
 def test_independent_mesh_order_and_domain_references(data: Dataset) -> None:

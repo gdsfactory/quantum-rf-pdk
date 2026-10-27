@@ -16,8 +16,8 @@ is open in the solve and connects the island to reference ground in the model.
 No distributed CPW enters this coupon. Its full two-node Maxwell matrix can
 be used with junction_model(junction=("island", None), exposed_ports=("readout",)).
 The inductor and junction capacitance are explicit additional circuit inputs.
-The candidate mesh passes independent h/p/domain checks at five geometries.
-The refined grid still requires held-out interpolation checks before publication.
+The shipped table passes independent h/p/domain checks at five geometries and
+held-out checks across the refined grid. Fresh output needs its own validation.
 Preview with --dry-run before generating a new grid.
 """
 
