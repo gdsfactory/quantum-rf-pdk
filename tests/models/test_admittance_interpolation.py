@@ -6,7 +6,9 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+import sax
 
+from qpdk.models.constants import Φ_0
 from qpdk.models.datasets import (
     Axis,
     Dataset,
@@ -17,6 +19,7 @@ from qpdk.models.datasets import (
     sweep,
 )
 from qpdk.models.datasets.generate import write
+from qpdk.models.junction import josephson_junction
 
 PORTS = ("readout", "left", "right")
 
@@ -150,6 +153,61 @@ def test_roundtrip_geometry_gradient_and_domain(data: Dataset) -> None:
     assert jax.jit(jax.vmap(reflection))(jnp.array([1.2, 1.8])).shape == (2,)
     assert jnp.isnan(model(f=16e9)["readout", "readout"])
     assert jnp.isnan(reflection(2.1))
+
+
+def test_junction_loading_through_a_sax_circuit(data: Dataset) -> None:
+    """Connect both internal arm ports instead of terminating them in 50 ohms."""
+    network = s_parameters_model(data, interpolation="admittance")
+    circuit, _ = sax.circuit(
+        {
+            "instances": {
+                "device": {"component": "network"},
+                "junction": {
+                    "component": "junction",
+                    "settings": {
+                        "ic": Φ_0 / (2 * jnp.pi * 7e-9),
+                        "capacitance": 5e-15,
+                        "resistance": jnp.inf,
+                    },
+                },
+            },
+            "connections": {
+                "device,left": "junction,left_wide",
+                "device,right": "junction,right_wide",
+            },
+            "ports": {"readout": "device,readout"},
+        },
+        models={"network": network, "junction": josephson_junction},
+        ignore_impossible_connections=False,
+    )
+    frequency = jnp.linspace(11.0637e9, 11.0678e9, 4001)
+    actual = jax.jit(circuit)(f=frequency, device={"coupling_ff": 1.0})
+    assert set(actual) == {("readout", "readout")}
+    expected = _close_junction(
+        _matrix(network(f=frequency, coupling_ff=1.0)), frequency
+    )
+    np.testing.assert_allclose(actual["readout", "readout"], expected, atol=1e-8)
+    np.testing.assert_allclose(jnp.abs(actual["readout", "readout"]), 1, atol=1e-8)
+    lossy = circuit(
+        f=frequency, device={"coupling_ff": 1.0}, junction={"resistance": 1e8}
+    )["readout", "readout"]
+    assert float(jnp.max(jnp.abs(lossy))) <= 1 + 1e-8
+    assert float(jnp.min(jnp.abs(lossy))) < 0.99
+
+    def reflection(inductance: jax.Array | float) -> jax.Array:
+        return jnp.imag(
+            circuit(
+                f=11.0657e9,
+                device={"coupling_ff": 1.0},
+                junction={"ic": Φ_0 / (2 * jnp.pi * inductance)},
+            )["readout", "readout"]
+        )
+
+    derivative = jax.jit(jax.grad(reflection))(7e-9)
+    assert jnp.isfinite(derivative)
+    assert abs(float(derivative)) > 1e6
+    difference = (reflection(7.000001e-9) - reflection(6.999999e-9)) / 2e-15
+    np.testing.assert_allclose(derivative, difference, rtol=1e-4)
 
 
 def test_admittance_interpolation_retains_physical_loss(

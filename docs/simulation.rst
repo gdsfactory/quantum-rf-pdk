@@ -439,3 +439,11 @@ the artificial damping that complex S interpolation can introduce after internal
 are connected to a junction. Admittance must be finite and smooth throughout each cell.
 Check independent frequencies and loaded resonances before choosing this representation,
 since an admittance pole between samples can still invalidate interpolation.
+
+Connect every internal junction terminal explicitly when building the SAX circuit. For
+two ground-referenced arm terminals, connect them to the two ports of
+``qpdk.models.junction.josephson_junction`` and expose only the readout terminal. Its
+critical current and bias set the operating-point Josephson inductance. Set its
+capacitance to the additional junction capacitance and choose its shunt resistance
+explicitly. The FEM network already contains the arm fields. Omitting an internal port
+applies a matched load and changes the circuit's damping.
