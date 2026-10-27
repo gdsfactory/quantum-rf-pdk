@@ -197,6 +197,7 @@ def test_interrupted_sweep_resumes_only_unfinished_geometry(
     assert data.grid("s_parameters", allow_missing=False).values.shape == (2, 2, 1, 1)
 
 
+@pytest.mark.palace
 @pytest.mark.parametrize("ports", [1, 3, 5])
 def test_native_matrix_order_and_quality(
     driven, ports: int, monkeypatch: pytest.MonkeyPatch, tmp_path: Path

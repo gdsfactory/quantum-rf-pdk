@@ -91,6 +91,7 @@ def test_invalid_winding(recipe, point: dict[str, float | str]) -> None:
         )
 
 
+@pytest.mark.palace
 def test_lossless_materials_and_mesh_budget(
     recipe, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

@@ -91,7 +91,9 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install --yes libglu1-mesa
       - name: Test with pytest
-        run: just test ${{ matrix.os == 'ubuntu-latest' && '--cov=qpdk --cov-report=html --cov-report=xml' || '' }} --junitxml=junit.xml -o junit_family=legacy
+        env:
+          COVERAGE_FILE: .coverage.${{ matrix.python-version }}
+        run: just test ${{ matrix.os == 'ubuntu-latest' && '--cov --cov-report=html --cov-report=xml' || '' }} --junitxml=junit.xml -o junit_family=legacy
       # `!cancelled()` so test results still upload when pytest fails, which
       # is exactly when the failed-test report is useful.
       - name: Upload test results to Codecov
@@ -101,12 +103,14 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
           fail_ci_if_error: false
-      - name: Upload coverage XML
+      - name: Upload coverage data
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-xml-${{ matrix.python-version }}
-          path: coverage.xml
+          name: coverage-data-${{ matrix.python-version }}
+          path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
       - name: Generate coverage badge
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
         run: uv run --group dev --group github genbadge coverage -i coverage.xml -o htmlcov/coverage.svg
@@ -117,18 +121,25 @@ jobs:
           name: coverage-report-${{ matrix.python-version }}
           path: htmlcov
   upload-coverage:
-    needs: test-code
-    if: ${{ !cancelled() && needs.test-code.result == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    needs: [test-code, test-palace]
+    if: ${{ !cancelled() && needs.test-code.result == 'success' && needs.test-palace.result == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       code-quality: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: coverage-xml-*
+          pattern: coverage-data-*
           merge-multiple: true
+      - name: Combine coverage data
+        run: |
+          uv run --only-group test coverage combine
+          uv run --only-group test coverage xml
       - parallel:
           - name: Upload code coverage to GitHub
             uses: actions/upload-code-coverage@d8e329117199404bba6fc81efe8093dc7c015e34 # v1.4.2
@@ -140,6 +151,7 @@ jobs:
           - name: Upload coverage to Codecov
             uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
             with:
+              files: coverage.xml
               token: ${{ secrets.CODECOV_TOKEN }}
               fail_ci_if_error: false
   test-code-result:
@@ -460,24 +472,24 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: "3.12"
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+        with:
+          just-version: "1.59.0"
       - name: Install mesh libraries
         run: |
           sudo apt-get update
           sudo apt-get install --yes libglu1-mesa
-      - name: Install Palace experiment dependencies
-        run: uv sync --locked --python 3.12 --no-dev --extra models --group palace --group test
-      - name: Test dataset flow with native result readers
-        run: uv run --no-sync pytest tests/models/test_driven_dataset_flow.py tests/models/test_meander_fullwave_recipe.py --cov=qpdk --cov-report=xml:build/palace-dataset-coverage.xml
-      - name: Run real Palace tests
-        run: |
-          mkdir -p build
-          uv run --no-sync pytest -m palace tests/models --basetemp=build/palace-tests --durations=0
-      - name: Upload native dataset coverage
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+      - name: Test Palace datasets
+        env:
+          COVERAGE_FILE: .coverage.palace
+        run: just test-palace --cov --cov-report=
+      - name: Upload coverage data
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          files: build/palace-dataset-coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+          name: coverage-data-palace
+          path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
