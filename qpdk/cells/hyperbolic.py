@@ -37,6 +37,12 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec
 from klayout import db as kdb
 
+from qpdk.cells._schematic import (
+    hyperbolic_cpw_path_schematic,
+    hyperbolic_edge_resonator_schematic,
+    hyperbolic_lattice_schematic,
+    hyperbolic_vertex_coupler_schematic,
+)
 from qpdk.cells.launcher import launcher
 from qpdk.hyperbolic import hyperbolic_tiling
 from qpdk.tech import get_etch_section
@@ -72,7 +78,11 @@ def _vertex_coupler_port_offsets(
     return out
 
 
-@gf.cell(tags=["couplers", "capacitors"])
+# pyrefly: ignore[bad-argument-type]
+@gf.cell(
+    tags=["couplers", "capacitors"],
+    schematic_function=hyperbolic_vertex_coupler_schematic,
+)
 def hyperbolic_vertex_coupler(
     q: int = 3,
     rotation: float = 0.0,
@@ -176,7 +186,7 @@ def hyperbolic_vertex_coupler(
     return c
 
 
-@gf.cell
+@gf.cell(tags=["waveguides"], schematic_function=hyperbolic_cpw_path_schematic)  # pyrefly: ignore[bad-argument-type]
 def hyperbolic_cpw_path(
     points: tuple[tuple[float, float], ...] = ((0.0, 0.0), (100.0, 0.0)),
     radius: float = 100.0,
@@ -402,7 +412,7 @@ def _meander_points(
     return capped((lo + hi) / 2)
 
 
-@gf.cell(tags=["resonators"])
+@gf.cell(tags=["resonators"], schematic_function=hyperbolic_edge_resonator_schematic)
 def hyperbolic_edge_resonator(
     length: float = 4000.0,
     end: tuple[float, float] = (1000.0, 0.0),
@@ -538,7 +548,11 @@ def _clip_to_bisector(
     return mid + (apex - mid) * side_mid / (side_mid - side_apex)
 
 
-@gf.cell(tags=["resonators", "lattices", "chips"])
+# pyrefly: ignore[bad-argument-type]
+@gf.cell(
+    tags=["resonators", "lattices", "chips"],
+    schematic_function=hyperbolic_lattice_schematic,
+)
 def hyperbolic_lattice(
     p: int = 7,
     q: int = 3,

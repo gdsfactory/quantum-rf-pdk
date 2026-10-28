@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import math
 from importlib.resources import files
 from typing import TYPE_CHECKING, Any
 
 from kfactory.schematic import DSchematic
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
     from typing import Literal
 
 __all__ = [
@@ -28,6 +29,10 @@ __all__ = [
     "gatemon_coupler_schematic",
     "gatemon_schematic",
     "half_circle_coupler_schematic",
+    "hyperbolic_cpw_path_schematic",
+    "hyperbolic_edge_resonator_schematic",
+    "hyperbolic_lattice_schematic",
+    "hyperbolic_vertex_coupler_schematic",
     "indium_bump_schematic",
     "interdigital_capacitor_schematic",
     "josephson_junction_schematic",
@@ -785,3 +790,89 @@ tee_schematic = schematic(
     ],
     models=[sax_model("tee", "qpdk.models.generic", ["o1", "o2", "o3"])],
 )
+
+
+def hyperbolic_vertex_coupler_schematic(
+    q: int = 3, rotation: float = 0.0, **_kwargs: Any
+) -> DSchematic:
+    """Put each of the ``q`` pins on the side its layout port faces."""
+    sides = ("right", "top", "left", "bottom")
+    by_side: dict[str, list[tuple[float, str]]] = {side: [] for side in sides}
+    for k in range(q):
+        angle = (rotation + 360 * k / q) % 360
+        side = sides[round(angle / 90) % 4]
+        # Same-side ports run top-to-bottom on the left and right, left-to-right
+        # on the top and bottom.
+        key = {
+            "right": -math.sin(math.radians(angle)),
+            "left": -math.sin(math.radians(angle)),
+            "top": math.cos(math.radians(angle)),
+            "bottom": math.cos(math.radians(angle)),
+        }[side]
+        by_side[side].append((key, f"o{k + 1}"))
+    ports = [
+        {"name": name, "side": side, "type": "photonic"}
+        for side in sides
+        for _, name in sorted(by_side[side])
+    ]
+    names = [f"o{k + 1}" for k in range(q)]
+    return _make_schematic(
+        "hyperbolic_vertex_coupler",
+        ["couplers", "capacitors"],
+        ports,
+        [sax_model("hyperbolic_vertex_coupler", "qpdk.models.hyperbolic", names)],
+    )
+
+
+hyperbolic_edge_resonator_schematic = schematic(
+    symbol="hyperbolic_edge_resonator",
+    tags=["resonators"],
+    ports=_2PORT,
+    models=[
+        sax_model("hyperbolic_edge_resonator", "qpdk.models.hyperbolic", ["o1", "o2"])
+    ],
+)
+
+
+def hyperbolic_cpw_path_schematic(
+    *, shorted: bool = False, **_kwargs: Any
+) -> DSchematic:
+    """Expose only ``o1`` when the far end is shorted, as the layout does."""
+    ports = _1PORT if shorted else _2PORT
+    return _make_schematic(
+        "hyperbolic_cpw_path",
+        ["waveguides"],
+        ports,
+        [
+            sax_model(
+                "hyperbolic_cpw_path",
+                "qpdk.models.hyperbolic",
+                [port["name"] for port in ports],
+            )
+        ],
+    )
+
+
+def hyperbolic_lattice_schematic(
+    probe_pins: Sequence[int] = (11, 0), **_kwargs: Any
+) -> DSchematic:
+    """Declare the lattice model so the circuit is not expanded into SAX.
+
+    A SAX circuit of the whole lattice is too large to compile, so the
+    nodal-analysis model is the simulation boundary. Probe ports alternate
+    between the left and right sides.
+
+    Returns:
+        Schematic with one port per probe pin.
+    """
+    names = [f"o{n + 1}" for n in range(len(probe_pins))]
+    ports = [
+        {"name": name, "side": ("left", "right")[n % 2], "type": "photonic"}
+        for n, name in enumerate(names)
+    ]
+    return _make_schematic(
+        "hyperbolic_lattice",
+        ["resonators", "lattices"],
+        ports,
+        [sax_model("hyperbolic_lattice", "qpdk.models.hyperbolic", names)],
+    )
