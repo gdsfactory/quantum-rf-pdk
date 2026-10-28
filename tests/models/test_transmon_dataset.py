@@ -21,7 +21,17 @@ def test_grid_and_reference_values() -> None:
     assert grid.values.shape == (3, 3, 5, 3, 2, 2)
     check_maxwell(grid.values)
     lookup = GridInterpolator(grid)
-    samples = data.metadata.provenance["validation"]["samples"]
+    validation = data.metadata.provenance["validation"]
+    assert validation["passed"]
+    assert validation["admission_status"] == "validated_bare_electrostatic_model"
+    assert validation["coverage"]["passed"]
+    assert validation["coverage"]["interior_cells_tested"] == 32
+    assert len(validation["coverage"]["strict_faces"]) == 8
+    assert all(
+        axis.validated == (float(coords[0]), float(coords[-1]))
+        for axis, coords in zip(grid.axes, grid.coords, strict=True)
+    )
+    samples = data.metadata.provenance["previous_validation"]["samples"]
     assert len(samples) == 10
     assert {sample["reference_settings"]["order"] for sample in samples} == {3, 4}
     for sample in samples:
