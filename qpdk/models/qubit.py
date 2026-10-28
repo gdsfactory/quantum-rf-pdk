@@ -37,6 +37,7 @@ from qpdk.models.datasets import (
     differential_capacitance,
     junction_model,
 )
+from qpdk.models.datasets.models import _matches_layer
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
 from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
@@ -160,20 +161,6 @@ def double_pad_transmon_fem_model(
 def _boxed_transmon_model() -> sax.SDictModel:
     """Load the pad matrix once, outside traced circuit evaluation."""
     return double_pad_transmon_fem_model(inductance=7e-9)
-
-
-def _matches_layer(
-    value: LayerSpec | ArrayLike, index: int, pair: tuple[int, int], name: str
-) -> jax.Array:
-    """Distinguish static layer names, layout indices and GDS pairs."""
-    if isinstance(value, str):
-        return jnp.asarray(value == name)
-    array = jnp.asarray(value)
-    if array.ndim == 0:
-        return array == index
-    if array.shape == (2,):
-        return jnp.all(array == jnp.asarray(pair))
-    return jnp.asarray(False)
 
 
 def boxed_transmon_fem(

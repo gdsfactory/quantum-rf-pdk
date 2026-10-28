@@ -2,8 +2,10 @@
 
 from pathlib import Path
 
+import jax
 import jax.numpy as jnp
 import sax
+from gdsfactory.typings import LayerSpec
 from jax.typing import ArrayLike
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
@@ -12,6 +14,20 @@ from qpdk.models.datasets.interpolation import GridInterpolator
 from qpdk.models.datasets.metadata import QuantityKind
 from qpdk.models.datasets.table import Dataset
 from qpdk.models.jit import jit
+
+
+def _matches_layer(
+    value: LayerSpec | ArrayLike, index: int, pair: tuple[int, int], name: str
+) -> jax.Array:
+    """Distinguish static layer names, layout indices and GDS pairs."""
+    if isinstance(value, str):
+        return jnp.asarray(value == name)
+    array = jnp.asarray(value)
+    if array.ndim == 0:
+        return array == index
+    if array.shape == (2,):
+        return jnp.all(array == jnp.asarray(pair))
+    return jnp.asarray(False)
 
 
 def s_parameters_model(
@@ -74,6 +90,7 @@ def capacitance_model(
     dataset ground. This model includes terminal-to-ground capacitances and
     mutual branches, with no distributed propagation or inductance.
     Unspecified geometry axes use their middle stored coordinates.
+    Nonfinite or nonpositive reference impedances return NaN.
 
     Returns:
         SAX model with the dataset terminal names.
@@ -102,6 +119,8 @@ def capacitance_model(
         admittance = 2j * jnp.pi * jnp.asarray(f)[..., None, None] * capacitance
         normalized = jnp.asarray(z_ref)[..., None, None] * admittance
         values = jnp.linalg.solve(identity + normalized, identity - normalized)
+        valid = jnp.isfinite(jnp.asarray(z_ref)) & (jnp.asarray(z_ref) > 0)
+        values = jnp.where(valid[..., None, None], values, jnp.nan)
         return {
             (a, b): values[..., i, j]
             for i, a in enumerate(grid.terminals)
@@ -216,6 +235,8 @@ def junction_model(
             (jnp.asarray(f) > 0)
             & (jnp.asarray(inductance) > 0)
             & (jnp.asarray(junction_capacitance) >= 0)
+            & jnp.isfinite(jnp.asarray(z_ref))
+            & (jnp.asarray(z_ref) > 0)
         )
         values = jnp.where(valid[..., None, None], values, jnp.nan)
         return {
