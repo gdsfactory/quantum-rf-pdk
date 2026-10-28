@@ -141,7 +141,8 @@ def junction_model(
     Every dataset terminal must appear exactly once. This applies
     :math:`B^{\text{T}} C B`, with :math:`B` mapping group voltages to electrodes,
     and retains capacitance to ground. The wires add no field or inductance.
-    All SAX ports reference dataset ground, and frequency is in Hz.
+    All SAX ports reference dataset ground, and frequency is in Hz. The common
+    reference impedance ``z_ref`` must be finite and positive, in ohms.
 
     Args:
         dataset: Dataset or path containing real Maxwell capacitance matrices in F.
@@ -216,6 +217,8 @@ def junction_model(
             (jnp.asarray(f) > 0)
             & (jnp.asarray(inductance) > 0)
             & (jnp.asarray(junction_capacitance) >= 0)
+            & jnp.isfinite(jnp.asarray(z_ref))
+            & (jnp.asarray(z_ref) > 0)
         )
         values = jnp.where(valid[..., None, None], values, jnp.nan)
         return {

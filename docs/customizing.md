@@ -184,6 +184,11 @@ PDK model registration is derived from the SAX descriptors in each cell's schema
 PDK imports that model directly and derives aliases from the declaration. `SAX_MODEL_ALIASES` in `qpdk/__init__.py`
 reports these aliases and is no longer a list to maintain.
 
+`flipmon_with_bbox` binds the one-port `flipmon_with_bbox_fem` adapter in `qpdk/models/flipmon.py`. It uses the
+finite-bump `flipmon_bonded_palace` table with both chip ground frames, and keeps the bonded island internal. The
+unboxed `flipmon` has a different ground boundary and does not inherit this binding. Forks that change the ring, moats,
+materials or ground-frame size need matching FEM data.
+
 Virtual cells and partial aliases use a matching `<cell_name>_schematic` declaration in `qpdk/cells/_schematic.py`,
 since `gf.vcell` and partial factories cannot accept `schematic_function`. Discovery reads that declaration without
 constructing the layout. Define the SAX descriptor there just as for a regular cell.

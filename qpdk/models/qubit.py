@@ -56,6 +56,36 @@ def flipmon_unbonded_model() -> sax.Model:
     return capacitance_model("flipmon_unbonded_palace")
 
 
+def flipmon_bonded_model(
+    *, inductance: float, junction_capacitance: float = 0.0
+) -> sax.SDictModel:
+    """Add a linearized junction to the finite-bump bare flipmon dataset.
+
+    The two ports are ``island`` and ``ring``, referenced to both chip grounds.
+    The island includes the inner disk, top pad and 15 um bump as one conductor.
+    Supply Josephson inductance in H and extra junction capacitance in F.
+    The returned JAX model accepts ``chip_gap``, ``alignment``, ``inner_radius``
+    and ``top_radius`` in um, ``f`` in Hz and ``z_ref`` in ohms.
+
+    The geometry has two 300 um silicon chips, 0.2 um metal, an outer ring
+    of radius 110 um and width 60 um, and two 800 um square ground frames.
+    It retains the bump's electrostatic field but omits its inductance,
+    readout paddles, routes and nonlinear qubit spectra. Explicitly open an
+    unused island port rather than accepting SAX's implicit matched load.
+    Use a local readout block when adding a capacitive coupling paddle.
+
+    Returns:
+        Jittable two-port model with dimensions outside the dataset returning NaN.
+    """
+    return junction_model(
+        "flipmon_bonded_palace",
+        junction=("island", "ring"),
+        inductance=inductance,
+        junction_capacitance=junction_capacitance,
+        bond="physical_bump",
+    )
+
+
 def flipmon_ideal_bond_model(
     *, inductance: float, junction_capacitance: float = 0.0
 ) -> sax.Model:

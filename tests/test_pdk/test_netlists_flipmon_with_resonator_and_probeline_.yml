@@ -31,7 +31,11 @@ instances:
     component: flipmon_with_bbox
     info: {}
     settings:
+      alignment: 0
+      chip_gap: 10
+      inductance_nh: 7
       inner_circle_radius: 60
+      junction_capacitance_ff: 0
       junction_displacement: null
       junction_position_rotation: 180
       junction_spec: squid_junction_long

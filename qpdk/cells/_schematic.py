@@ -23,6 +23,7 @@ __all__ = [
     "double_pad_transmon_schematic",
     "double_pad_transmon_with_bbox_schematic",
     "flipmon_schematic",
+    "flipmon_with_bbox_schematic",
     "fluxonium_schematic",
     "fluxonium_with_bbox_schematic",
     "gatemon_coupler_schematic",
@@ -636,6 +637,19 @@ flipmon_schematic = schematic(
     symbol="flipmon",
     tags=["qubits", "transmons"],
     ports=[{"name": "outer_ring_outside", "side": "right", "type": "photonic"}],
+)
+
+flipmon_with_bbox_schematic = schematic(
+    symbol="flipmon",
+    tags=["qubits", "transmons", "flip-chip"],
+    ports=[{"name": "outer_ring_outside", "side": "right", "type": "photonic"}],
+    models=[
+        sax_model(
+            "flipmon_with_bbox_fem",
+            "qpdk.models.flipmon",
+            ["outer_ring_outside"],
+        )
+    ],
 )
 
 # The unimon's arm ends are placement markers, so the bare qubit has no circuit

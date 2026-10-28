@@ -97,6 +97,29 @@ an ideal wire and adds a linearized Josephson junction. This reduction omits fin
 fields and inductance. The generation recipe is
 ``qpdk/models/datasets/recipes/flipmon.py``.
 
+``flipmon_bonded_model(inductance=10e-9)`` instead uses the finite 15 um bump and the
+two chip ground frames in ``flipmon_bonded_palace``. Its ``island`` and ``ring`` ports
+share the ground reference. The model accepts ``chip_gap``, ``alignment``,
+``inner_radius`` and ``top_radius`` in um, and optional extra ``junction_capacitance``
+in F. Explicitly open an unused island port. Omitting it from a SAX circuit would apply
+a matched load. This bare block excludes a readout paddle, routes, bump inductance and
+nonlinear spectra. Its boundary differs from both the unbonded coupon and a local
+readout block, so do not add those capacitances together. Generate the geometry with
+``qpdk/models/datasets/recipes/flipmon_bonded.py``.
+
+The boxed ``flipmon_with_bbox`` layout binds this FEM circuit through a one-port adapter
+named ``flipmon_with_bbox_fem``. Only ``outer_ring_outside`` is external. The bonded
+island has zero injected current internally. Layout settings expose ``chip_gap``,
+``alignment``, ``inductance_nh`` and ``junction_capacitance_ff``. Alignment moves the
+top pad and its moat together, leaving the bump and bottom mask fixed. Chip gap changes
+the circuit model, while the 3D viewer uses its selected PDK stack. The adapter assumes
+the standard layers, ring dimensions and ground clearances. Unsupported ring dimensions,
+clearances or geometry outside the dataset return NaN.
+
+Reflection sweeps require a GDSFactory+ runtime that supports one external port and
+excludes placement markers from the circuit boundary. Older runtimes that require two
+ports can use this model in a two-port tee circuit instead.
+
 ``double_pad_transmon_capacitance`` looks up the differential pad capacitance in F,
 including the two pad-to-ground branches. With junction capacitance :math:`C_\text{J}`,
 the charging frequency is :math:`E_\text{C}/h = e^2/[2h(C_\text{diff}+C_\text{J})]` in
