@@ -26,7 +26,7 @@
 #
 # Gdsfactory recommends `component.to_3d()` followed by `scene.show()`:
 # https://gdsfactory.github.io/gdsfactory/notebooks/03_layer_stack/#3d-rendering
-# QPDK's default stack supplies a background substrate and hides vacuum.
+# QPDK's default preview supplies ground and substrate within the layout bounds.
 
 # %%
 import gdsfactory as gf

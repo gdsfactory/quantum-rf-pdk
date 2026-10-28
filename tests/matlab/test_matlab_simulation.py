@@ -10,6 +10,7 @@ from qpdk.simulation.matlab import (
     component_to_terminal_polygons,
     interdigital_capacitor_fem_geometry,
 )
+from qpdk.tech import LAYER_STACK
 
 
 def test_idc_fem_geometry_matches_layout_ports() -> None:
@@ -19,7 +20,7 @@ def test_idc_fem_geometry_matches_layout_ports() -> None:
     )
     combs, bbox, thickness, eps_substrate, eps_vacuum = (
         interdigital_capacitor_fem_geometry(
-            PDK, fingers=4, finger_length=20.0, finger_gap=2.0, finger_width=5.0
+            LAYER_STACK, fingers=4, finger_length=20.0, finger_gap=2.0, finger_width=5.0
         )
     )
 

@@ -135,7 +135,7 @@ NON_METADATA_LAYERS = {
 
 @cache
 def get_layer_stack() -> LayerStack:
-    """Returns a LayerStack corresponding to the PDK.
+    """Return the physical layer stack for simulations.
 
     The stack roughly corresponds to that of :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
     """
@@ -328,6 +328,32 @@ LAYER_STACK_GATEMON_NO_VACUUM = LayerStack(
         if name != "Vacuum"
     }
 )
+
+
+def get_layer_stack_3d() -> LayerStack:
+    """Return a mask preview with ground bounded by the layout extent.
+
+    Includes the gatemon contact, dielectric and gate films at their nominal
+    process heights. Use the physical process stacks for simulations and for
+    viewing already prepared positive metal geometry.
+    """
+    stack = LAYER_STACK.model_copy(deep=True)
+    stack.layers["M1_ground"] = stack.layers["M1_ground"].model_copy(
+        update={
+            "layer": LogicalLayer(layer=L.M1_ETCH),
+            "derived_layer": None,
+            "background": True,
+            "background_exclude_layers": [L.M1_ETCH, L.M1_DRAW],
+        }
+    )
+    stack.layers.update({
+        name: LAYER_STACK_GATEMON.layers[name].model_copy(deep=True)
+        for name in ("ContactNb", "ContactAu", "hBN", "TopGate", "Reconnection")
+    })
+    return stack
+
+
+LAYER_STACK_3D = get_layer_stack_3d()
 
 
 def get_layer_material_properties(

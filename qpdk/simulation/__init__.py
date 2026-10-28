@@ -6,8 +6,8 @@ QPDK-specific inputs for :mod:`gplugins.comsol`.
 
 **Ansys AEDT (HFSS, Q3D Extractor, Q2D):** use :mod:`gplugins.ansys` directly.
 Activate QPDK first (``qpdk.PDK.activate()``); importing :mod:`qpdk` does not.
-The gplugins classes then pick up :data:`~qpdk.tech.LAYER_STACK` from the active
-PDK; pass
+Pass ``layer_stack=qpdk.tech.LAYER_STACK`` explicitly. The PDK default is a
+mask preview with an implicit ground plane, not a simulation stack. Also pass
 ``material_properties=qpdk.tech.material_properties`` to use QPDK's material
 table instead of the gplugins default:
 
@@ -69,11 +69,13 @@ Example:
     >>> from qpdk import PDK
     >>> from qpdk.cells import resonator
     >>> from qpdk.simulation.layout import prepare_metal_layout
-    >>> from qpdk.tech import material_properties
+    >>> from qpdk.tech import LAYER_STACK, material_properties
     >>> PDK.activate()
     >>> comp = prepare_metal_layout(resonator(length=4000, meanders=4))
     >>> hfss_app = Hfss(project="resonator_sim", solution_type="Eigenmode")
-    >>> hfss_sim = HFSS(hfss_app, material_properties=material_properties)
+    >>> hfss_sim = HFSS(
+    ...     hfss_app, layer_stack=LAYER_STACK, material_properties=material_properties
+    ... )
     >>> hfss_sim.import_component(comp)
 
 References:

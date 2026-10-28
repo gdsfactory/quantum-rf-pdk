@@ -133,7 +133,12 @@ from meshwell.resolution import ConstantInField
 from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.config import PATH
-from qpdk.tech import LAYER, get_layer_material_properties, material_properties
+from qpdk.tech import (
+    LAYER,
+    LAYER_STACK,
+    get_layer_material_properties,
+    material_properties,
+)
 
 PDK.activate()
 
@@ -323,8 +328,8 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 # %% [markdown]
 # ## Layer Stack and Materials
 #
-# We start from `PDK.layer_stack`, which the Palace capacitor optimization notebook
-# also uses. We retain the three levels needed here, including the derived `M1` rule.
+# We use the physical `LAYER_STACK`, as does the Palace capacitor optimization
+# notebook. We retain the three levels needed here: metal, substrate and vacuum.
 # The PDK specifies the Nb film thickness and every material. We only truncate the
 # substrate and vacuum heights to $60\,\text{μm}$ and $40\,\text{μm}$ for this finite
 # simulation domain; the full PDK values are printed below. The vacuum starts at the
@@ -341,7 +346,7 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 SUBSTRATE_DOMAIN_UM = 60.0
 VACUUM_DOMAIN_UM = 40.0
 
-layer_stack = PDK.get_layer_stack().model_copy(deep=True)
+layer_stack = LAYER_STACK.model_copy(deep=True)
 layer_stack.layers = {
     name: layer_stack.layers[name] for name in ("M1", "Substrate", "Vacuum")
 }
@@ -359,7 +364,7 @@ for name, level in layer_stack.layers.items():
     ]
     print(
         f"  {name:>9}: z = {level.zmin:+.2f} … {level.zmin + level.thickness:+.2f} µm "
-        f"({PDK.get_layer_stack().layers[name].thickness:g} µm), "
+        f"({LAYER_STACK.layers[name].thickness:g} µm), "
         f"material = {level.material}, εr = {epsilon_r:g}"
     )
 

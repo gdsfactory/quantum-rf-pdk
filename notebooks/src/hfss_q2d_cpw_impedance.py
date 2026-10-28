@@ -168,7 +168,7 @@ print(f"Design name: {q2d.design_name}")
 # %%
 
 # Create the Q2D simulation
-q2d_sim = Q2D(q2d, material_properties=material_properties)
+q2d_sim = Q2D(q2d, layer_stack=LAYER_STACK, material_properties=material_properties)
 
 # Create the 2D cross-section geometry
 xs_width, xs_gap = get_cpw_dimensions(cross_section)

@@ -80,7 +80,7 @@ from qpdk import PDK
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.cells.waveguides import straight
 from qpdk.config import PATH
-from qpdk.tech import LAYER, material_properties
+from qpdk.tech import LAYER, LAYER_STACK, material_properties
 
 # %% [markdown]
 # ## Simulation Layout Setup
@@ -217,7 +217,7 @@ def _setup_palace_simulation(
 
     # Palace simulation configuration
     return {
-        "layer_stack": PDK.layer_stack,
+        "layer_stack": LAYER_STACK,
         "material_spec": material_properties,
         "simulation_folder": simulation_folder,
         "solver_config": {

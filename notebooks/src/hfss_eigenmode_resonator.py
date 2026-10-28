@@ -99,7 +99,7 @@ from qpdk.cells.resonator import resonator
 from qpdk.config import PATH
 from qpdk.models.resonator import resonator_frequency
 from qpdk.simulation.layout import prepare_metal_layout
-from qpdk.tech import coplanar_waveguide, material_properties
+from qpdk.tech import LAYER_STACK, coplanar_waveguide, material_properties
 
 PDK.activate()
 
@@ -219,7 +219,7 @@ print(f"Solution type: {hfss.solution_type}")
 res_component = prepare_metal_layout(res_component, margin_draw=200)
 
 # Initialize the HFSS simulation
-hfss_sim = HFSS(hfss, material_properties=material_properties)
+hfss_sim = HFSS(hfss, layer_stack=LAYER_STACK, material_properties=material_properties)
 
 # Import the component geometry using native GDS import (raises on failure)
 hfss_sim.import_component(res_component, import_as_sheets=True)

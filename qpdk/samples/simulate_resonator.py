@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.12,<3.15"
+# dependencies = [
+#   "qpdk[graphics] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
+# ]
+# ///
+
 # ---
 # jupyter:
 #   jupytext:
@@ -22,7 +29,7 @@ from qpdk.cells.airbridge import cpw_with_airbridges
 from qpdk.cells.launcher import launcher
 from qpdk.cells.resonator import resonator_coupled
 from qpdk.config import PATH
-from qpdk.tech import LAYER, route_bundle_sbend_cpw
+from qpdk.tech import LAYER, LAYER_STACK, route_bundle_sbend_cpw
 
 # %% [markdown]
 # ## System geometry
@@ -95,7 +102,7 @@ if __name__ == "__main__":
     to_stl(
         c,
         PATH.simulation / "resonator_simulations.stl",
-        layer_stack=PDK.layer_stack,
+        layer_stack=LAYER_STACK,
         hull_invalid_polygons=True,
     )
 
@@ -111,7 +118,7 @@ if __name__ == "__main__":
     #
     # results = run_scattering_simulation_palace(
     #     c,
-    #     layer_stack=PDK.layer_stack,
+    #     layer_stack=LAYER_STACK,
     #     material_spec=material_spec,
     #     only_one_port=True,
     #     driven_settings={

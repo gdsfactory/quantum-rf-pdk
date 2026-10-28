@@ -25,6 +25,7 @@ from qpdk.tech import (
     LAYER,
     LAYER_CONNECTIVITY,
     LAYER_STACK,
+    LAYER_STACK_3D,
     LAYER_VIEWS,
     routing_strategies,
 )
@@ -136,7 +137,7 @@ def get_pdk() -> Pdk:
         cells=_cells,
         cross_sections=_cross_sections,
         layers=LAYER,
-        layer_stack=LAYER_STACK,
+        layer_stack=LAYER_STACK_3D,
         layer_views=LAYER_VIEWS,
         models=_models,
         routing_strategies=routing_strategies,
@@ -174,6 +175,7 @@ def get_sample_functions() -> dict[str, ComponentFactory]:
 __all__ = [
     "LAYER",
     "LAYER_STACK",
+    "LAYER_STACK_3D",
     "LAYER_VIEWS",
     "PATH",
     "SAX_MODEL_ALIASES",

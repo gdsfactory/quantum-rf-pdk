@@ -456,7 +456,9 @@ def test_hfss_import_and_draw(tmp_path: Path, ansys_install_path: Path):
         project_dir,
         label="Hfss",
     ) as hfss_app:
-        hfss_sim = HFSS(hfss_app, material_properties=material_properties)
+        hfss_sim = HFSS(
+            hfss_app, layer_stack=LAYER_STACK, material_properties=material_properties
+        )
         # The helpers run against a real session here: the draw below is what proves
         # they left it alive, and the assertion catches a PyAEDT that renamed the
         # attribute the logger keeps the desktop in (the stub tests cannot).
@@ -496,7 +498,9 @@ def test_hfss_eigenmode_setup(tmp_path: Path, ansys_install_path: Path):
         project_dir,
         label="Hfss",
     ) as hfss_app:
-        hfss_sim = HFSS(hfss_app, material_properties=material_properties)
+        hfss_sim = HFSS(
+            hfss_app, layer_stack=LAYER_STACK, material_properties=material_properties
+        )
         _run_with_timeout(
             lambda: hfss_sim.import_component(comp), label="HFSS.import_component"
         )
@@ -548,7 +552,9 @@ def test_q3d_import_and_net_assignment(tmp_path: Path, ansys_install_path: Path)
         project_dir,
         label="Q3d",
     ) as q3d_app:
-        q3d_sim = Q3D(q3d_app, material_properties=material_properties)
+        q3d_sim = Q3D(
+            q3d_app, layer_stack=LAYER_STACK, material_properties=material_properties
+        )
         conductor_objects = _run_with_timeout(
             lambda: q3d_sim.import_component(comp), label="Q3D.import_component"
         )
@@ -586,7 +592,9 @@ def test_q2d_cpw_from_qpdk_cross_section(tmp_path: Path, ansys_install_path: Pat
         project_dir,
         label="Q2d",
     ) as q2d_app:
-        q2d_sim = Q2D(q2d_app, material_properties=material_properties)
+        q2d_sim = Q2D(
+            q2d_app, layer_stack=LAYER_STACK, material_properties=material_properties
+        )
         result = _run_with_timeout(
             lambda: q2d_sim.create_2d_cpw(
                 *get_cpw_dimensions(cross_section),

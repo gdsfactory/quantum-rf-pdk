@@ -121,8 +121,10 @@ What a foundry PDK usually changes in `qpdk/tech.py`:
 
 - **`LayerMapQPDK`**: the GDS layer numbers and any extra mask layers. Keep the non-fabrication layers (`SIM_AREA`,
   `SIM_ONLY`, `LABEL_*`, `WG`, `ERROR_PATH`). Cells, routing, and simulation use them.
-- **`get_layer_stack()`**: thicknesses, `zmin`, and materials, for example Al instead of Nb. Keep the level names `M1`,
-  `Substrate`, and `Vacuum`. The CPW models and `LAYER_STACK_NO_VACUUM` look them up by name.
+- **`get_layer_stack()`**: physical simulation thicknesses, `zmin`, and materials, for example Al instead of Nb. Keep
+  the level names `M1`, `Substrate`, and `Vacuum`. The CPW models and `LAYER_STACK_NO_VACUUM` look them up by name.
+- **`get_layer_stack_3d()`**: the PDK's default mask preview. It copies the physical stack, adds ground across the
+  layout bounds and includes the gatemon contact, hBN, gate and reconnection films.
 - **`get_gatemon_layer_stack()`**: the separate hybrid process with thermal oxide, Nb/Au contacts, hBN and an Al top
   gate. Set the hBN thickness from your measured flake. `CNT` records a transferred nanotube's position and is not a
   metal mask or a PEC extrusion. `CNT_CONTACT`, `TOP_GATE` and `JJ_PATCH` define the conductors, and `HBN` records the
@@ -132,11 +134,16 @@ What a foundry PDK usually changes in `qpdk/tech.py`:
 - **Cross-sections** such as `coplanar_waveguide`: default width, gap, and bend radius for 50 Ω on your substrate.
 - **`routing_strategies`**: the default cross-sections for routing.
 
-The default layer stack also drives gdsfactory and GDSFactory+ 3D views. Background substrates use the layout bounds.
-Drawn metal renders directly, while ground extraction uses `SIM_AREA` and excludes the draw and etch masks. These metal
-regions are disjoint and preserve additive priority. Ground is not a background level, so viewing prepared solver
-geometry does not fill its intentional gaps. `SIM_AREA` is hidden in the layer views so vacuum does not obscure the
-device, while background substrates remain visible. Keep these rules in step when changing the process.
+The PDK default, `LAYER_STACK_3D`, drives gdsfactory and GDSFactory+ 3D views. Background substrates and ground use the
+layout bounds without requiring `SIM_AREA`. Drawn metal renders directly, while the ground excludes both draw and etch
+masks so the two metal regions stay disjoint and additive metal takes priority. The preview combines the base Nb process
+with nominal gatemon films for visibility, rather than defining a fabrication process. `SIM_AREA` is hidden in the layer
+views so vacuum does not obscure the device.
+
+Simulation code must pass a physical stack explicitly: `LAYER_STACK`, `LAYER_STACK_FLIP_CHIP` or `LAYER_STACK_GATEMON`,
+or their variants without vacuum. These stacks retain their physical process dimensions and use `SIM_AREA` for ground
+extraction. Also pass a physical stack when viewing already prepared positive metal geometry so the preview's implicit
+ground does not fill its gaps.
 
 For standalone 3D viewing, run `uv run --extra graphics python qpdk/samples/sample_to_3d.py`. The sample uses
 gdsfactory's `component.to_3d()` and `scene.show()` to open a trimesh window. The same call embeds the view in Jupyter.
@@ -268,7 +275,7 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
 | `qpdk/models/datasets/recipes/`                        | QPDK  | Take QPDK                                        |
 | QPDK modules in `qpdk/cells/`                          | QPDK  | Merge. New QPDK cells usually merge cleanly      |
-| `qpdk/__init__.py`                                     | Both  | Keep model discovery and Python cell precedence  |
+| `qpdk/__init__.py`                                     | Both  | Keep discovery, cell precedence and 3D previews  |
 | Your cell modules, override modules, and test chips    | Fork  | QPDK never changes them                          |
 | `qpdk/samples/`, `notebooks/`                          | Both  | Keep removed files removed. Take QPDK for others |
 | `tests/gds_ref/`, `tests/test_pdk/`, model `.npz` refs | Fork  | Never merge. Keep yours, then regenerate         |
