@@ -41,6 +41,7 @@ from qpdk.models.cpw import (
     propagation_constant,
     transmission_line_s_params,
 )
+from qpdk.models.flipmon import flipmon_with_bbox_fem
 from qpdk.models.gatemon import (
     andreev_bound_state_energies,
     gatemon,
@@ -95,6 +96,7 @@ from qpdk.models.qubit import (
     ej_to_inductance,
     el_to_inductance,
     flipmon,
+    flipmon_bonded_model,
     flipmon_ideal_bond_model,
     flipmon_readout_coupon_model,
     flipmon_unbonded_model,
@@ -190,10 +192,12 @@ __all__ = [
     "electrical_short",
     "electrical_short_2_port",
     "flipmon",
+    "flipmon_bonded_model",
     "flipmon_ideal_bond_model",
     "flipmon_readout_coupon_model",
     "flipmon_unbonded_model",
     "flipmon_with_bbox",
+    "flipmon_with_bbox_fem",
     "flipmon_with_resonator",
     "fluxonium",
     "fluxonium_coupled",

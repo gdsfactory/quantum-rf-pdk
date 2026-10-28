@@ -18,6 +18,7 @@ from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
     double_pad_transmon_with_bbox_schematic,
     flipmon_schematic,
+    flipmon_with_bbox_schematic,
     xmon_transmon_schematic,
 )
 from qpdk.cells.bump import indium_bump
@@ -376,7 +377,10 @@ def flipmon(
     return c
 
 
-@gf.cell(tags=["qubits", "transmons", "flip-chip"])
+@gf.cell(
+    tags=["qubits", "transmons", "flip-chip"],
+    schematic_function=flipmon_with_bbox_schematic,
+)
 def flipmon_with_bbox(
     inner_circle_radius: float = 60.0,
     outer_ring_radius: float = 110.0,
@@ -391,6 +395,10 @@ def flipmon_with_bbox(
     m1_etch_extension_gap: float = 30.0,
     m2_etch_extension_gap: float = 40.0,
     junction_position_rotation: float = 0.0,
+    chip_gap: float = 10.0,
+    alignment: float = 0.0,
+    inductance_nh: float = 7.0,
+    junction_capacitance_ff: float = 0.0,
 ) -> Component:
     """Creates a circular transmon qubit with `flipmon` geometry and a circular etched bounding box.
 
@@ -412,12 +420,26 @@ def flipmon_with_bbox(
         m2_etch_extension_gap: Radius extension length for the M2 etch bounding box in μm.
         junction_position_rotation: Rotation in degrees about the ring center,
             relocating the junction around the ring.
+        chip_gap: Metal-to-metal chip separation in um for the FEM model. This
+            leaves the GDS footprint unchanged. The 3D viewer uses the PDK stack.
+        alignment: Horizontal shift of the top pad and its moat in um.
+        inductance_nh: Linearized Josephson inductance in nH.
+        junction_capacitance_ff: Additional junction capacitance in fF.
 
     Returns:
         Component: A gdsfactory component with the flipmon geometry and etched box.
+
+    Raises:
+        ValueError: If the chip gap, junction inputs or bump landing are invalid.
     """
+    if not (chip_gap > 0 and inductance_nh > 0 and junction_capacitance_ff >= 0):
+        raise ValueError(
+            "Require positive chip gap and inductance, and nonnegative junction capacitance"
+        )
+    if abs(alignment) + 7.5 >= top_circle_radius:
+        raise ValueError("The bump must land inside the shifted top pad")
     c = gf.Component()
-    flipmon_ref = c << flipmon(
+    device = flipmon(
         inner_circle_radius=inner_circle_radius,
         outer_ring_radius=outer_ring_radius,
         outer_ring_width=outer_ring_width,
@@ -428,6 +450,15 @@ def flipmon_with_bbox(
         layer_metal=layer_metal,
         layer_metal_top=layer_metal_top,
     )
+    if alignment:
+        top_layer = gf.get_layer_tuple(layer_metal_top)
+        c.add_ref(
+            device.extract([layer for layer in device.layers if layer != top_layer])
+        )
+        c.add_ref(device.extract([top_layer])).dmovex(alignment)
+        c.flatten()
+    else:
+        c.add_ref(device)
     m1_bbox_radius = outer_ring_radius + outer_ring_width / 2 + m1_etch_extension_gap
     m2_bbox_radius = top_circle_radius + m2_etch_extension_gap
 
@@ -435,17 +466,21 @@ def flipmon_with_bbox(
         (layer_etch, layer_metal, m1_bbox_radius),
         (layer_etch_top, layer_metal_top, m2_bbox_radius),
     ]:
+        etch_shape = gf.Component()
+        etch_shape.add_ref(
+            gf.components.circle(radius=bbox_radius, layer=etch_l)
+        ).dmovex(alignment if draw_l == layer_metal_top else 0)
         _subtract_draw_from_etch(
             component=c,
-            etch_shape=gf.components.circle(
-                radius=bbox_radius,
-                layer=etch_l,
-            ),
+            etch_shape=etch_shape,
             etch_layer=etch_l,
             draw_layer=draw_l,
         )
 
-    c.add_ports(flipmon_ref.ports)
+    c.add_ports(device.ports)
+    c.add_polygon(
+        [(-400, -400), (400, -400), (400, 400), (-400, 400)], layer=LAYER.SIM_AREA
+    )
     return c
 
 
