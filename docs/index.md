@@ -32,6 +32,7 @@ It includes the README.md but skips SVG badges which cannot be rendered in LaTeX
 
 cells
 models
+layer_stack
 ```
 
 ```{toctree}
