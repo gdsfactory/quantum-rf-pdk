@@ -3,7 +3,6 @@
 # dependencies = [
 #   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git",
 #   "typer>=0.24,<1",
-#   "gsim @ git+https://github.com/nikosavola/gsim.git@946c3973b6311f0a4a3cf3bd601336ad7a186dfb",
 # ]
 # ///
 """Qualify retained bare double-pad production and independent native references.
@@ -39,9 +38,9 @@ from qpdk.models.datasets.recipes._double_pad_geometry import (
     check_config,
     check_geometry,
 )
-from qpdk.models.datasets.recipes._palace import solver_diagnostics
 from qpdk.models.datasets.validation import (
     compare_capacitances,
+    static_solver_diagnostics,
     validate_native_capacitances,
 )
 
@@ -309,7 +308,7 @@ def _native_run(
         for name in ("solver_relative_residual", "solver_iterations")
     }
     if legacy or log.exists():
-        quality = solver_diagnostics(
+        quality = static_solver_diagnostics(
             log.read_text(encoding="utf-8"),
             terminals=2,
             tolerance=settings["tolerance"],

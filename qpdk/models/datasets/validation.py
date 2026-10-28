@@ -1,5 +1,6 @@
 """Independent accuracy checks for electrostatic qubit datasets."""
 
+import re
 from collections.abc import Mapping, Sequence
 from math import isfinite
 from typing import TYPE_CHECKING, Any
@@ -18,6 +19,70 @@ from qpdk.models.datasets.table import to_grid, validate
 
 if TYPE_CHECKING:
     from qpdk.models.datasets.metadata import DatasetMetadata
+
+
+def static_solver_diagnostics(
+    log: str, *, terminals: int, tolerance: float
+) -> dict[str, float]:
+    """Check retained Palace static-solve logs without loading a solver backend.
+
+    Residual ratios assume zero initial guesses, enforced by the caller's native
+    config checks. Auxiliary estimator solves do not describe terminal convergence.
+
+    Returns:
+        Worst terminal final/initial residual ratio and iteration count.
+
+    Raises:
+        RuntimeError: If terminal solves are missing or fail the requested tolerance.
+    """
+    cleaned = (
+        "\n".join(
+            re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", line).strip()
+            for line in log.splitlines()
+        )
+        + "\n"
+    )
+    blocks = re.split(
+        r"^It \d+/\d+:\s+Index\s*=\s*(\d+)[^\n]*\n",
+        cleaned,
+        flags=re.MULTILINE,
+    )
+    metrics = []
+    for index, block in zip(blocks[1::2], blocks[2::2], strict=True):
+        field_log = block.split("Updating solution error estimates", 1)[0]
+        iterations = re.findall(r"solver converged in (\d+) iterations?\b", field_log)
+        try:
+            residuals = [
+                float(value)
+                for value in re.findall(r"KSP residual norm (\S+)", field_log)
+            ]
+        except ValueError as error:
+            raise RuntimeError("Missing solver convergence in Palace log") from error
+        if (
+            re.search(
+                r"did not converge|failed to converge|diverged",
+                field_log,
+                re.IGNORECASE,
+            )
+            or len(iterations) != 1
+            or len(residuals) < 2
+            or not all(isfinite(value) and value >= 0 for value in residuals)
+            or residuals[0] <= 0
+        ):
+            raise RuntimeError("Missing solver convergence in Palace log")
+        ratio = residuals[-1] / residuals[0]
+        if not isfinite(ratio):
+            raise RuntimeError("Missing solver convergence in Palace log")
+        metrics.append((int(index), int(iterations[0]), ratio))
+    if [index for index, _, _ in metrics] != list(range(1, terminals + 1)):
+        raise RuntimeError("Missing terminal solves in Palace log")
+    ratio = max(ratio for _, _, ratio in metrics)
+    if ratio > tolerance * 1.00001:
+        raise RuntimeError(f"Solver residual {ratio:g} exceeds tolerance {tolerance:g}")
+    return {
+        "solver_relative_residual": ratio,
+        "solver_iterations": float(max(iterations for _, iterations, _ in metrics)),
+    }
 
 
 def compare_capacitances(
