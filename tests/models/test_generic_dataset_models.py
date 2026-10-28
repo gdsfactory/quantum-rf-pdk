@@ -79,6 +79,16 @@ def test_lumped_capacitance_ports(ports: int, tmp_path: Path) -> None:
     for key in result:
         np.testing.assert_allclose(composed[key], result[key], atol=1e-12)
 
+    references = jnp.asarray([50.0, 0.0, -50.0, jnp.inf, jnp.nan, 75.0])
+    batched = jax.jit(model)(f=5e9, width=6.0, z_ref=references)
+    normalized = 2j * jnp.pi * 5e9 * references[jnp.asarray([0, 5])] * 6e-15
+    reflection = (1 - normalized) / (1 + normalized)
+    for (a, b), value in batched.items():
+        assert bool(jnp.isnan(value[1:5]).all())
+        np.testing.assert_allclose(
+            value[jnp.asarray([0, 5])], reflection if a == b else 0, atol=1e-12
+        )
+
 
 def test_stored_three_port_scattering(tmp_path: Path) -> None:
     terminals = ("left", "right", "monitor")

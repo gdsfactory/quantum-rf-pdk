@@ -111,6 +111,7 @@ from qpdk.models.qubit import (
     transmon_with_resonator,
     xmon_transmon,
 )
+from qpdk.models.qubit_readout import xmon_readout
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator,
@@ -269,6 +270,7 @@ __all__ = [
     "unimon_energies",
     "unimon_frequency_and_anharmonicity",
     "unimon_hamiltonian",
+    "xmon_readout",
     "xmon_transmon",
 ]
 

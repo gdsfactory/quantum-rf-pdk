@@ -77,19 +77,20 @@ merge QPDK into.
 The places below contain the QPDK name. Change all of them in **one commit** and change nothing else in it. Later merges
 then conflict here in a known way, and the diff of this commit is your checklist.
 
-| What                | Where                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| Package directory   | `qpdk/`, and every `import qpdk` / `from qpdk` (`git grep -l qpdk`: most of the repo)  |
-| Name and version    | `[project]` in `pyproject.toml`, `__version__` in `qpdk/__init__.py`, `[tool.tbump]`   |
-| Tooling paths       | `pyproject.toml`: coverage `source`, pytest `testpaths`, ruff per-file ignores         |
-| GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries      |
-| Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                       |
-| PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py` |
-| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`   |
-| KLayout install     | `src` and `dest` in `qpdk/install_tech.py`                                             |
-| Docs                | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                 |
-| Workflows           | `test.yml` (`--cov=qpdk`, imports)                                                     |
-| Repo metadata       | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`  |
+| What                 | Where                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| Package directory    | `qpdk/`, and every `import qpdk` / `from qpdk` (`git grep -l qpdk`: most of the repo)  |
+| Name and version     | `[project]` in `pyproject.toml`, `__version__` in `qpdk/__init__.py`, `[tool.tbump]`   |
+| Tooling paths        | `pyproject.toml`: coverage `source`, pytest `testpaths`, ruff per-file ignores         |
+| GDSFactory+ project  | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries      |
+| Layer map class      | `LayerMapQPDK` in `qpdk/tech.py`                                                       |
+| PDK object           | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py` |
+| Qubit model metadata | `qpdk/cells/qubit_readout.py`: SAX module paths in schematic metadata                  |
+| KLayout technology   | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`   |
+| KLayout install      | `src` and `dest` in `qpdk/install_tech.py`                                             |
+| Docs                 | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                 |
+| Workflows            | `test.yml` (`--cov=qpdk`, imports)                                                     |
+| Repo metadata        | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`  |
 
 The `justfile` reads the package name from `pdk := env('pdk', 'qpdk')`. Set `pdk=<your_pdk>` in `.env` or change the
 default. Only the `install-tech` and `show` recipes read this variable.
@@ -183,6 +184,9 @@ PDK model registration is derived from the SAX descriptors in each cell's schema
 PDK imports that model directly and derives aliases from the declaration. `SAX_MODEL_ALIASES` in `qpdk/__init__.py`
 reports these aliases and is no longer a list to maintain.
 
+The Xmon readout cell declares its SAX model in `qpdk/cells/qubit_readout.py`. Keep the local electrode geometry, model
+boundary and extracted capacitance table together when adapting it to another process.
+
 Virtual cells and partial aliases use a matching `<cell_name>_schematic` declaration in `qpdk/cells/_schematic.py`,
 since `gf.vcell` and partial factories cannot accept `schematic_function`. Discovery reads that declaration without
 constructing the layout. Define the SAX descriptor there just as for a regular cell.
@@ -263,6 +267,7 @@ Each path belongs to your fork, to QPDK, or to both. The table shows what to do 
 | `qpdk/layers.yaml`, `qpdk/klayout/`                    | Fork  | Keep yours. Add QPDK layers you want, regenerate |
 | `qpdk/tech.py`                                         | Both  | Keep your values. Take new QPDK definitions      |
 | `qpdk/models/` (except datasets)                       | QPDK  | Take QPDK                                        |
+| `qpdk/cells/qubit_readout.py`                          | QPDK  | Take models and layout boundaries together       |
 | `qpdk/models/datasets/data/`                           | QPDK  | Take QPDK, unless you regenerated it             |
 | `qpdk/models/datasets/recipes/`                        | QPDK  | Take QPDK                                        |
 | QPDK modules in `qpdk/cells/`                          | QPDK  | Merge. New QPDK cells usually merge cleanly      |
