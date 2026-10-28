@@ -1,4 +1,4 @@
-"""The default process stack supports both rendering and physical extraction."""
+"""Mask previews and physical simulation geometry use separate stacks."""
 
 import runpy
 from io import BytesIO
@@ -15,7 +15,7 @@ from klayout.db import Box, Region
 from qpdk import PDK, cells
 from qpdk.samples.sample_to_3d import sample_to_3d
 from qpdk.simulation.layout import prepare_metal_layout
-from qpdk.tech import LAYER, LAYER_STACK, LAYER_STACK_FLIP_CHIP
+from qpdk.tech import LAYER, LAYER_STACK, LAYER_STACK_3D, LAYER_STACK_FLIP_CHIP
 
 
 @pytest.mark.parametrize("metal", ["M1", "M2"])
@@ -87,12 +87,46 @@ def test_ordinary_layout_has_a_3d_preview(factory: ComponentFactory) -> None:
     assert not any(name.startswith("Vacuum_") for name in scene.geometry)
 
 
+@pytest.mark.parametrize("with_sim_area", [False, True])
+def test_default_preview_preserves_additive_priority(with_sim_area: bool) -> None:
+    component = gf.Component()
+    drawn = Region(Box(2000, 2000, 12000, 12000))
+    etched = Region(Box(0, 0, 8000, 8000))
+    component.shapes(gf.get_layer(LAYER.M1_DRAW)).insert(drawn)
+    component.shapes(gf.get_layer(LAYER.M1_ETCH)).insert(etched)
+    if with_sim_area:
+        component.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(
+            Box(-1000, -1000, 15000, 15000)
+        )
+    before = component.get_polygons()
+    expected_ground = Region(component.ibbox()) - (etched | drawn)
+
+    scene = component.to_3d()
+    for prefix, expected in (("M1", drawn), ("M1_ground", expected_ground)):
+        volume = sum(
+            mesh.volume
+            for name, mesh in scene.geometry.items()
+            if name.rsplit("_", 1)[0] == prefix
+        )
+        assert volume / LAYER_STACK_3D.layers[prefix].thickness == pytest.approx(
+            expected.area() * component.kcl.dbu**2
+        )
+    assert component.get_polygons() == before
+
+
+def test_gatemon_preview_renders_hybrid_films() -> None:
+    component = cells.gatemon()
+    scene = component.to_3d()
+    for name in ("ContactNb", "ContactAu", "hBN", "TopGate", "Reconnection"):
+        assert any(key.startswith(f"{name}_") for key in scene.geometry), name
+
+
 def test_prepared_solver_geometry_keeps_its_gaps() -> None:
     """3D viewing does not fill the etch gaps of an already inverted mask."""
     component = prepare_metal_layout(cells.straight(), margin_draw=10)
     metal = component.get_region(LAYER.M1_DRAW)
     assert metal.area() < Region(component.ibbox()).area()
-    scene = component.to_3d()
+    scene = component.to_3d(layer_stack=LAYER_STACK)
     volume = sum(
         mesh.volume for name, mesh in scene.geometry.items() if name.startswith("M1_")
     )

@@ -564,8 +564,8 @@ end
 % ### Geometry and layer stack from qpdk
 %
 % `qpdk.simulation.matlab.interdigital_capacitor_fem_geometry` returns the two metal outlines in
-% port order, the layout bounds, and material values from the PDK layer stack. The IDC has no local
-% etch box so its combs remain separate conductors.
+% port order, the layout bounds, and material values from the physical layer stack. The IDC has no
+% local etch box so its combs remain separate conductors.
 %
 % The grounded frame and the domain outline are plain rectangles around the capacitor bounding box.
 % They are drawn in MATLAB with the same offsets that the Elmer notebook uses.
@@ -573,15 +573,16 @@ end
 % %%
 idc_code = strjoin([
     "from qpdk.simulation.matlab import interdigital_capacitor_fem_geometry"
+    "from qpdk.tech import LAYER_STACK"
     "combs, bbox, metal_thickness, eps_substrate, eps_vacuum = interdigital_capacitor_fem_geometry("
-    "    PDK, fingers=int(fingers), finger_length=finger_length, finger_gap=finger_gap,"
+    "    LAYER_STACK, fingers=int(fingers), finger_length=finger_length, finger_gap=finger_gap,"
     "    finger_width=finger_width)"
     ], newline);
 
 if has_pde
     [py_combs, py_bbox, metal_thickness, eps_substrate, eps_vacuum] = pyrun(idc_code, ...
         ["combs", "bbox", "metal_thickness", "eps_substrate", "eps_vacuum"], ...
-        PDK=PDK, fingers=int32(4), finger_length=20.0, finger_gap=2.0, finger_width=5.0);
+        fingers=int32(4), finger_length=20.0, finger_gap=2.0, finger_width=5.0);
     comb_xy = cellfun(@double, cell(py_combs), 'UniformOutput', false);
     idc_bbox = double(py_bbox);
     metal_thickness = double(metal_thickness);

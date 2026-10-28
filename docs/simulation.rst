@@ -33,11 +33,12 @@ For new components, attach the compact model through ``schematic_function`` and 
 *************************
 
 QPDK does not wrap Ansys AEDT. Use :mod:`gplugins.ansys` (installed by the ``hfss``
-extra) directly: its ``HFSS``, ``Q3D`` and ``Q2D`` classes default to the active PDK's
-layer stack, which is QPDK's :data:`~qpdk.tech.LAYER_STACK` once QPDK is active. Pass
-``material_properties=qpdk.tech.material_properties`` to use QPDK's material table, and
-prepare components with :func:`~qpdk.simulation.layout.prepare_metal_layout`. The HFSS
-notebooks show the full workflow.
+extra) directly. Pass ``layer_stack=qpdk.tech.LAYER_STACK`` explicitly to its ``HFSS``,
+``Q3D`` and ``Q2D`` classes. The PDK default is :data:`~qpdk.tech.LAYER_STACK_3D`, which
+adds an implicit ground plane for mask previews and must not be used for simulations.
+Pass ``material_properties=qpdk.tech.material_properties`` to use QPDK's material table,
+and prepare components with :func:`~qpdk.simulation.layout.prepare_metal_layout`. The
+HFSS notebooks show the full workflow.
 
 ********
  VACASK

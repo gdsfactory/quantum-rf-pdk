@@ -2,7 +2,7 @@
 
 import gdsfactory as gf
 import numpy as np
-from gdsfactory.pdk import Pdk
+from gdsfactory.technology import LayerStack
 
 from qpdk.cells.capacitor import interdigital_capacitor
 from qpdk.tech import LAYER, material_properties
@@ -31,7 +31,7 @@ def component_to_terminal_polygons(
 
 
 def interdigital_capacitor_fem_geometry(
-    pdk: Pdk,
+    layer_stack: LayerStack,
     *,
     fingers: int,
     finger_length: float,
@@ -47,7 +47,7 @@ def interdigital_capacitor_fem_geometry(
         etch_layer=None,
     )
     box = idc.dbbox()
-    stack = pdk.get_layer_stack().layers
+    stack = layer_stack.layers
     eps_r = {
         name: props["relative_permittivity"]
         for name, props in material_properties.items()

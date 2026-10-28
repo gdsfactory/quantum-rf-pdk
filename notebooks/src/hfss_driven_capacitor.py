@@ -96,7 +96,7 @@ from qpdk.config import PATH
 from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.cpw import cpw_ep_r_from_cross_section
 from qpdk.simulation.layout import prepare_metal_layout
-from qpdk.tech import coplanar_waveguide, material_properties
+from qpdk.tech import LAYER_STACK, coplanar_waveguide, material_properties
 
 PDK.activate()
 
@@ -246,7 +246,7 @@ print(f"Solution type: {hfss.solution_type}")
 prepared_component = prepare_metal_layout(idc_component, margin_draw=50)
 
 # Initialize the HFSS simulation
-hfss_sim = HFSS(hfss, material_properties=material_properties)
+hfss_sim = HFSS(hfss, layer_stack=LAYER_STACK, material_properties=material_properties)
 
 # Import the component geometry using native GDS import (raises on failure)
 hfss_sim.import_component(prepared_component, import_as_sheets=True)
@@ -575,7 +575,7 @@ detach_desktop_logging(q3d)
 q3d.modeler.model_units = "um"
 
 # Initialize the Q3D simulation
-q3d_sim = Q3D(q3d, material_properties=material_properties)
+q3d_sim = Q3D(q3d, layer_stack=LAYER_STACK, material_properties=material_properties)
 
 print(f"Q3D project created: {q3d.project_file}")
 print(f"Design name: {q3d.design_name}")

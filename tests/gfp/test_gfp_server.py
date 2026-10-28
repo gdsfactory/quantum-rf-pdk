@@ -87,6 +87,11 @@ def test_gfp_loads_layer_stack(tmp_path: Path) -> None:
             stack = json.loads(base64.b64decode(result["layerstack_b64"]))
             assert stack["layers"]["M1"]
             assert stack["layers"]["Substrate"]["background"] is True
+            ground = stack["layers"]["M1_ground"]
+            assert ground["background"] is True
+            assert ground["background_exclude_layers"] == [[1, 1], [1, 0]]
+            for name in ("ContactNb", "ContactAu", "hBN", "TopGate", "Reconnection"):
+                assert stack["layers"][name]
         finally:
             timeout.cancel()
             server.terminate()

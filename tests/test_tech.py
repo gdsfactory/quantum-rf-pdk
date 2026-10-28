@@ -14,6 +14,7 @@ from qpdk.cells import waveguides as waveguide_cells
 from qpdk.models import waveguides as waveguide_models
 from qpdk.tech import (
     LAYER_STACK,
+    LAYER_STACK_3D,
     LAYER_STACK_FLIP_CHIP,
     LAYER_STACK_FLIP_CHIP_NO_VACUUM,
     LAYER_STACK_GATEMON,
@@ -22,6 +23,7 @@ from qpdk.tech import (
     _route_component,
     get_gatemon_layer_stack,
     get_layer_material_properties,
+    get_layer_stack_3d,
     material_properties,
 )
 
@@ -78,8 +80,8 @@ def test_layer_stack_geometry(
 
 @pytest.mark.parametrize(
     "layer_stack",
-    [LAYER_STACK, LAYER_STACK_FLIP_CHIP, LAYER_STACK_GATEMON],
-    ids=["default", "flip_chip", "gatemon"],
+    [LAYER_STACK, LAYER_STACK_FLIP_CHIP, LAYER_STACK_GATEMON, LAYER_STACK_3D],
+    ids=["default", "flip_chip", "gatemon", "preview"],
 )
 def test_every_layer_material_has_properties(layer_stack: LayerStack) -> None:
     """Every level's material resolves to its ``material_properties`` entry."""
@@ -115,6 +117,7 @@ def _derived_layer_operations(spec: object) -> list[str]:
         LAYER_STACK_FLIP_CHIP_NO_VACUUM,
         LAYER_STACK_GATEMON,
         LAYER_STACK_GATEMON_NO_VACUUM,
+        LAYER_STACK_3D,
     ],
     ids=[
         "default",
@@ -123,6 +126,7 @@ def _derived_layer_operations(spec: object) -> list[str]:
         "flip_chip_no_vacuum",
         "gatemon",
         "gatemon_no_vacuum",
+        "preview",
     ],
 )
 def test_layer_stack_loads_in_3d_viewer(layer_stack: LayerStack) -> None:
@@ -138,6 +142,15 @@ def test_layer_material_properties_rejects_unknown_material() -> None:
     stack.layers["Substrate"].material = "unobtainium"
     with pytest.raises(KeyError, match="unobtainium"):
         get_layer_material_properties("Substrate", stack)
+
+
+def test_preview_stack_does_not_modify_simulation_stacks() -> None:
+    stack = get_layer_stack_3d()
+    stack.layers["M1"].thickness = 1
+    stack.layers["hBN"].thickness = 1
+    assert LAYER_STACK.layers["M1"].thickness == pytest.approx(0.2)
+    assert LAYER_STACK_GATEMON.layers["hBN"].thickness == pytest.approx(0.03)
+    assert not LAYER_STACK.layers["M1_ground"].background
 
 
 def test_gatemon_stack_isolates_gate_from_contacts() -> None:
