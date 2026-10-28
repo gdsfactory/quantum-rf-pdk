@@ -35,8 +35,8 @@ from qpdk.simulation import (
     to_fem_regions,
     to_flip_chip_regions,
     to_tsv_regions,
-    tsv_stack,
     trial as worker,
+    tsv_stack,
 )
 from qpdk.simulation.palace_run import (
     _slurm_mpi_launcher,
@@ -1570,7 +1570,7 @@ def _tsv_layout() -> gf.Component:
     c.add_ports(ref.ports)
     # Enlarge only across the line: the CPW ends must reach the SIM_AREA edge,
     # otherwise the metal beyond them would short the signal to ground.
-    c.kdb_cell.shapes(LAYER.SIM_AREA).insert(c.bbox().enlarged(0, 50))
+    c.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(c.bbox().enlarged(0, 50))
     return c
 
 
@@ -1605,17 +1605,23 @@ def test_to_tsv_regions_requires_sim_area():
 
 def test_to_tsv_regions_requires_backside_metal():
     component = gf.Component()
-    component.kdb_cell.shapes(LAYER.SIM_AREA).insert(kdb.DBox(0, 0, 100, 100))
-    component.kdb_cell.shapes(LAYER.M1_ETCH).insert(kdb.DBox(40, 40, 60, 60))
+    component.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(
+        kdb.DBox(0, 0, 100, 100)
+    )
+    component.kdb_cell.shapes(gf.get_layer(LAYER.M1_ETCH)).insert(
+        kdb.DBox(40, 40, 60, 60)
+    )
     with pytest.raises(ValueError, match="metal level MB"):
         to_tsv_regions(component)
 
 
 def test_to_tsv_regions_requires_tsvs():
     component = gf.Component()
-    component.kdb_cell.shapes(LAYER.SIM_AREA).insert(kdb.DBox(0, 0, 100, 100))
+    component.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(
+        kdb.DBox(0, 0, 100, 100)
+    )
     for layer in (LAYER.M1_ETCH, LAYER.MB_ETCH):
-        component.kdb_cell.shapes(layer).insert(kdb.DBox(40, 40, 60, 60))
+        component.kdb_cell.shapes(gf.get_layer(layer)).insert(kdb.DBox(40, 40, 60, 60))
     with pytest.raises(ValueError, match="no TSVs"):
         to_tsv_regions(component)
 

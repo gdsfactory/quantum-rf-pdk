@@ -9,7 +9,7 @@ dependency group on Python 3.12. Functions that need it import it lazily.
 from __future__ import annotations
 
 from collections.abc import Collection
-from typing import Any
+from typing import Any, Literal
 
 import gdsfactory as gf
 import klayout.db as kdb
@@ -530,7 +530,9 @@ def tsv_stack(
     silicon = material_properties["Si"]
     h = substrate_thickness
     stack = LayerStack(pdk_name="qpdk")
-    for name, zmin, thickness, material, layer_type in [
+    layers: list[
+        tuple[str, float, float, str, Literal["conductor", "dielectric", "via"]]
+    ] = [
         (
             "VACUUM_BOTTOM",
             -h - vacuum_thickness,
@@ -543,7 +545,8 @@ def tsv_stack(
         ("TSV", -h, h, "qpdk-tsv-lining", "via"),
         ("M1", 0.0, 0, "qpdk-niobium", "conductor"),
         ("VACUUM", 0.0, vacuum_thickness, "vacuum", "dielectric"),
-    ]:
+    ]
+    for name, zmin, thickness, material, layer_type in layers:
         stack.layers[name] = Layer(
             name=name,
             gds_layer=TSV_FEM_LAYERS[name],

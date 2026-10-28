@@ -95,6 +95,7 @@ import io
 import json
 import os
 from pathlib import Path
+from typing import Any, Literal
 
 import gdsfactory as gf
 import klayout.db as kdb
@@ -237,7 +238,7 @@ STUB_LENGTH = 10.0  # µm
 
 
 @gf.cell
-def sim_component(**params: float) -> gf.Component:
+def sim_component(**params: Any) -> gf.Component:
     """TSV transition with CPW leads, etch stubs and a simulation area."""
     c = gf.Component()
     dut = c << tsv_transition_double_sided(**params)
@@ -253,8 +254,8 @@ def sim_component(**params: float) -> gf.Component:
     ):
         half = port.width / 2 + 6.0  # signal plus the 6 µm gaps
         x0, x1 = sorted((port.x, port.x + sign * STUB_LENGTH))
-        c.kdb_cell.shapes(etch).insert(kdb.DBox(x0, -half, x1, half))
-    c.kdb_cell.shapes(LAYER.SIM_AREA).insert(c.bbox().enlarged(100, 100))
+        c.kdb_cell.shapes(gf.get_layer(etch)).insert(kdb.DBox(x0, -half, x1, half))
+    c.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(c.bbox().enlarged(100, 100))
     return c
 
 
@@ -322,7 +323,10 @@ F_MIN, F_MAX = 1e9, 12e9  # Hz
 
 
 def build_simulation(
-    params: dict[str, float], sim_dir: Path, *, preset: str = "coarse"
+    params: dict[str, float],
+    sim_dir: Path,
+    *,
+    preset: Literal["coarse", "default", "fine"] = "coarse",
 ) -> DrivenSim:
     """Build, mesh and write a driven simulation of one transition geometry.
 

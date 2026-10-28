@@ -10,6 +10,8 @@ as ``M1``, so the backside mask is the mirror image of the drawn ``MB`` layers.
 
 from __future__ import annotations
 
+from typing import cast
+
 import gdsfactory as gf
 import numpy as np
 from gdsfactory.component import Component
@@ -138,7 +140,7 @@ def _add_tapered_pad(
     # The pad ends in a closing gap, so it has no external port. Flatten it (and
     # the gap) so their instance ports cannot coincide with those of the pad on
     # the other side of the substrate.
-    add_etch_gap(c, pad.ports["o2"], pad_xs).flatten()
+    cast(gf.ComponentReference, add_etch_gap(c, pad.ports["o2"], pad_xs)).flatten()
     pad.flatten()
     return taper.ports["o1"]
 
@@ -259,7 +261,7 @@ def tsv_transition(
     backside_pad = c << straight(length=pad_length, cross_section=backside_pad_xs)
     backside_pad.move((-pad_length / 2, 0))
     for p in backside_pad.ports:
-        add_etch_gap(c, p, backside_pad_xs).flatten()
+        cast(gf.ComponentReference, add_etch_gap(c, p, backside_pad_xs)).flatten()
     # The pad is only reached through the TSVs, so it contributes polygons but
     # no ports (which would otherwise overlap the frontside taper port).
     backside_pad.flatten()
