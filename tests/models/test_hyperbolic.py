@@ -11,6 +11,7 @@ against those eigenfrequencies through a probe.
 
 from typing import ClassVar, final
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -26,6 +27,7 @@ from qpdk.models.hyperbolic import (
     hyperbolic_lattice,
     hyperbolic_vertex_coupler,
     hyperbolic_vertex_coupler_capacitances,
+    tight_binding_hamiltonian,
 )
 from qpdk.models.waveguides import straight
 
@@ -92,6 +94,63 @@ def test_lattice_rejects_bad_probe_pins(probe_pins: tuple[int, ...]) -> None:
     """Probe pins must be distinct, in range and non-empty."""
     with pytest.raises(ValueError, match="probe_pins"):
         hyperbolic_lattice(f=jnp.array([16e9]), probe_pins=probe_pins)
+
+
+def test_tight_binding_flat_band_is_lowest() -> None:
+    r"""With :math:`t < 0` the flat band sits at :math:`\omega_0 - 2|t|`, below the rest."""
+    tiling = hyperbolic_tiling(7, 3, 1)
+    t, onsite = -0.1, 8.0
+    energies = jnp.linalg.eigvalsh(
+        tight_binding_hamiltonian(tiling.line_graph_adjacency, t, onsite)
+    )
+    n_flat = tiling.num_edges - tiling.num_vertices
+    assert energies[0] == pytest.approx(onsite - 2 * abs(t))
+    assert energies[n_flat - 1] == pytest.approx(energies[0])
+    assert energies[n_flat] > energies[0] + 1e-6
+
+
+def test_lattice_jits_over_frequency_and_lengths() -> None:
+    """Continuous arguments may be traced; the result matches eager evaluation."""
+    f = jnp.linspace(F_MIN, F_MAX, 5)
+
+    @jax.jit
+    def s21(f: jax.Array, length: jax.Array) -> jax.Array:
+        return hyperbolic_lattice(f=f, resonator_length=length)["o2", "o1"]
+
+    np.testing.assert_allclose(
+        s21(f, RESONATOR_LENGTH),
+        hyperbolic_lattice(f=f, resonator_length=RESONATOR_LENGTH)["o2", "o1"],
+        atol=1e-9,
+    )
+
+
+def test_lattice_in_sax_circuit_with_array_settings() -> None:
+    """SAX passes instance settings as arrays; structural ones must still work."""
+    circuit, _ = sax.circuit(
+        netlist={
+            "instances": {
+                "lattice": {
+                    "component": "hyperbolic_lattice",
+                    "settings": {"p": 7, "q": 3, "shells": 1, "probe_pins": [11, 0]},
+                }
+            },
+            "ports": {"o1": "lattice,o1", "o2": "lattice,o2"},
+        },
+        models={"hyperbolic_lattice": hyperbolic_lattice},
+    )
+    f = jnp.linspace(F_MIN, F_MAX, 3)
+    s = circuit(
+        f=f,
+        lattice={
+            "p": jnp.array(7),
+            "q": jnp.array(3),
+            "shells": jnp.array(1),
+            "probe_pins": jnp.array([11, 0]),
+        },
+    )
+    np.testing.assert_allclose(
+        s["o2", "o1"], hyperbolic_lattice(f=f)["o2", "o1"], atol=1e-9
+    )
 
 
 def _nodal_susceptance(f: float) -> np.ndarray:

@@ -5,11 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from qpdk.hyperbolic import (
-    central_polygon_radius,
-    hyperbolic_tiling,
-    tight_binding_hamiltonian,
-)
+from qpdk.hyperbolic import central_polygon_radius, hyperbolic_tiling
 
 
 @pytest.mark.parametrize(
@@ -80,18 +76,15 @@ def test_line_graph_neighbours() -> None:
     np.testing.assert_array_equal(a_l, a_l.T)
 
 
-def test_tight_binding_flat_band_is_lowest() -> None:
-    r"""With :math:`t < 0` the flat band sits at :math:`\omega_0 - 2|t|`, below the rest."""
+def test_edge_faces() -> None:
+    """Interior edges border two faces and boundary edges one."""
     tiling = hyperbolic_tiling(7, 3, 1)
-    t, onsite = -0.1, 8.0
-    energies = np.linalg.eigvalsh(
-        tight_binding_hamiltonian(tiling.line_graph_adjacency, t, onsite)
-    )
-    assert energies[0] == pytest.approx(onsite - 2 * abs(t))
-    assert energies[tiling.num_edges - tiling.num_vertices - 1] == pytest.approx(
-        energies[0]
-    )
-    assert energies[tiling.num_edges - tiling.num_vertices] > energies[0] + 1e-6
+    counts = np.array([len(faces) for faces in tiling.edge_faces])
+    assert set(counts.tolist()) == {1, 2}
+    for e, faces in enumerate(tiling.edge_faces):
+        i, j = tiling.edges[e]
+        for face in faces:
+            assert {i, j} <= set(tiling.faces[face])
 
 
 def test_distance_weighted_adjacency() -> None:

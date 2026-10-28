@@ -1,7 +1,9 @@
 r"""Hyperbolic {p,q} tilings of the Poincaré disk for resonator lattices.
 
-Pure :mod:`numpy` geometry shared by the hyperbolic lattice cells in
+Geometry shared by the hyperbolic lattice cells in
 :mod:`qpdk.cells.hyperbolic` and the SAX models in :mod:`qpdk.models.hyperbolic`.
+It uses :mod:`numpy` rather than :mod:`jax.numpy` because the cells must import
+without the ``models`` extra.
 
 A *flake* is a central regular :math:`p`-gon plus ``shells`` rings of
 polygons. Shell :math:`n` holds every polygon that shares an edge with shell
@@ -31,7 +33,6 @@ __all__ = [
     "central_polygon_radius",
     "geodesic_tangent_angle",
     "hyperbolic_tiling",
-    "tight_binding_hamiltonian",
 ]
 
 _KEY_DECIMALS = 9
@@ -63,30 +64,24 @@ def central_polygon_radius(p: int, q: int) -> float:
     )
 
 
+def _to_origin(z: np.ndarray | complex, a: complex) -> np.ndarray | complex:
+    r"""Möbius isometry :math:`z \mapsto (z - a)/(1 - \bar a z)` sending ``a`` to 0."""
+    return (z - a) / (1 - np.conj(a) * z)
+
+
 def _reflect(z: np.ndarray, a: complex, b: complex) -> np.ndarray:
-    """Reflect points ``z`` across the Poincaré geodesic through ``a`` and ``b``."""
-    cross = a.real * b.imag - a.imag * b.real
-    if abs(cross) < 1e-12:
-        # Geodesic is a diameter: plain mirror across the line through 0.
-        u = (b - a) / abs(b - a)
-        return u * np.conj(z / u)
-    # Circle orthogonal to the unit circle through a, b and the inverse of a.
-    a_inv = a / abs(a) ** 2
-    ax, ay, bx, by, cx, cy = a.real, a.imag, b.real, b.imag, a_inv.real, a_inv.imag
-    d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
-    ux = (
-        (ax**2 + ay**2) * (by - cy)
-        + (bx**2 + by**2) * (cy - ay)
-        + (cx**2 + cy**2) * (ay - by)
-    ) / d
-    uy = (
-        (ax**2 + ay**2) * (cx - bx)
-        + (bx**2 + by**2) * (ax - cx)
-        + (cx**2 + cy**2) * (bx - ax)
-    ) / d
-    center = complex(ux, uy)
-    radius_sq = abs(a - center) ** 2
-    return center + radius_sq / np.conj(z - center)
+    """Reflect points ``z`` across the Poincaré geodesic through ``a`` and ``b``.
+
+    The isometry :func:`_to_origin` maps the geodesic to a diameter, where
+    the reflection is a plain mirror, and its inverse maps the result back.
+
+    Returns:
+        The reflected points.
+    """
+    u = complex(_to_origin(b, a))
+    u /= abs(u)
+    w = u * u * np.conj(_to_origin(z, a))
+    return np.asarray(_to_origin(w, -a))
 
 
 def geodesic_tangent_angle(a: complex, b: complex) -> float:
@@ -100,7 +95,7 @@ def geodesic_tangent_angle(a: complex, b: complex) -> float:
     Returns:
         Angle in radians.
     """
-    return float(np.angle((b - a) / (1 - np.conj(a) * b)))
+    return float(np.angle(_to_origin(b, a)))
 
 
 def _key(z: complex) -> tuple[float, float]:
@@ -180,6 +175,16 @@ class HyperbolicTiling:
         for k, (i, j) in enumerate(self.edges):
             out[i].append(k)
             out[j].append(k)
+        return tuple(tuple(v) for v in out)
+
+    @cached_property
+    def edge_faces(self) -> tuple[tuple[int, ...], ...]:
+        """Faces on each edge: two inside the flake, one on its boundary."""
+        index = {(i, j): k for k, (i, j) in enumerate(self.edges.tolist())}
+        out: list[list[int]] = [[] for _ in range(self.num_edges)]
+        for f, face in enumerate(self.faces):
+            for i, j in zip(face, face[1:] + face[:1], strict=True):
+                out[index[min(i, j), max(i, j)]].append(f)
         return tuple(tuple(v) for v in out)
 
     @cached_property
@@ -318,26 +323,3 @@ def hyperbolic_tiling(p: int = 7, q: int = 3, shells: int = 1) -> HyperbolicTili
         faces=tuple(faces),
         face_shells=tuple(face_shells),
     )
-
-
-def tight_binding_hamiltonian(
-    adjacency: np.ndarray, t: float, onsite: float = 0.0
-) -> np.ndarray:
-    r"""Tight-binding Hamiltonian :math:`H = \omega_0 I - t A`.
-
-    Follows the sign convention of Kollár et al.
-    :cite:`kollarHyperbolicLatticesCircuit2019`, Eq. (1). Capacitively
-    coupled CPW resonators have :math:`t < 0`, so on a line graph (whose
-    adjacency spectrum is bounded below by :math:`-2`) the flat band sits at
-    the bottom, :math:`\omega_0 + 2t = \omega_0 - 2|t|`.
-
-    Args:
-        adjacency: Symmetric (weighted) adjacency matrix.
-        t: Hopping rate.
-        onsite: On-site energy :math:`\omega_0`.
-
-    Returns:
-        The Hamiltonian matrix.
-    """
-    a = np.asarray(adjacency, dtype=float)
-    return onsite * np.eye(len(a)) - t * a

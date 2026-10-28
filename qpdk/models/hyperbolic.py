@@ -13,7 +13,7 @@ ends oscillate in phase, the lattice obeys
 
 on the line graph of the tiling, so the spectrum is
 :math:`\omega_0 - t\,\lambda(A_\text{L})` with a flat band at
-:math:`\omega_0 - 2|t|` (see :func:`qpdk.hyperbolic.tight_binding_hamiltonian`).
+:math:`\omega_0 - 2|t|` (see :func:`tight_binding_hamiltonian`).
 
 :func:`hyperbolic_lattice` does not use the tight-binding approximation: it
 solves the full circuit of transmission lines, couplers and boundary stubs.
@@ -31,7 +31,7 @@ from qpdk.hyperbolic import hyperbolic_tiling
 from qpdk.models.capacitor import plate_capacitor_capacitance_analytical
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.cpw import cpw_ep_r_from_cross_section, cpw_z0_from_cross_section
-from qpdk.models.waveguides import straight
+from qpdk.models.waveguides import straight, straight_shorted
 
 _BATCH_SIZE = 32  # frequencies solved at once by the lattice model
 
@@ -40,7 +40,45 @@ __all__ = [
     "hyperbolic_lattice",
     "hyperbolic_vertex_coupler",
     "hyperbolic_vertex_coupler_capacitances",
+    "tight_binding_hamiltonian",
 ]
+
+
+def tight_binding_hamiltonian(
+    adjacency: jax.typing.ArrayLike, t: float, onsite: float = 0.0
+) -> jax.Array:
+    r"""Tight-binding Hamiltonian :math:`H = \omega_0 I - t A`.
+
+    Follows the sign convention of Kollár et al.
+    :cite:`kollarHyperbolicLatticesCircuit2019`, Eq. (1). Capacitively
+    coupled CPW resonators have :math:`t < 0`, so on a line graph (whose
+    adjacency spectrum is bounded below by :math:`-2`) the flat band sits at
+    the bottom, :math:`\omega_0 + 2t = \omega_0 - 2|t|`.
+
+    Args:
+        adjacency: Symmetric (weighted) adjacency matrix, e.g.
+            :attr:`qpdk.hyperbolic.HyperbolicTiling.line_graph_adjacency`.
+        t: Hopping rate.
+        onsite: On-site energy :math:`\omega_0`.
+
+    Returns:
+        The Hamiltonian matrix.
+    """
+    a = jnp.asarray(adjacency, dtype=float)
+    return onsite * jnp.eye(a.shape[-1]) - t * a
+
+
+def _cayley(x: jax.Array) -> jax.Array:
+    r"""Cayley transform :math:`(I + X)^{-1}(I - X)` over the last two axes.
+
+    It is its own inverse and converts between S-parameters and normalised
+    admittance: :math:`Z_0 Y = \mathcal{C}(S)` and :math:`S = \mathcal{C}(Z_0 Y)`.
+
+    Returns:
+        The transformed matrices.
+    """
+    eye = jnp.eye(x.shape[-1])
+    return jnp.linalg.solve(eye + x, eye - x)
 
 
 def hyperbolic_vertex_coupler_capacitances(
@@ -122,6 +160,7 @@ def hyperbolic_vertex_coupler(
     Returns:
         S-parameters with ports ``o1`` … ``oq``.
     """
+    q = int(q)  # pyrefly: ignore[unnecessary-type-conversion]
     f_arr = jnp.asarray(f)
     c_c, c_g = hyperbolic_vertex_coupler_capacitances(
         q, pin_radius, pin_gap, ground_gap, cross_section
@@ -129,9 +168,7 @@ def hyperbolic_vertex_coupler(
     capacitance = _coupler_capacitance_matrix(q, c_c, c_g)
     z0 = cpw_z0_from_cross_section(cross_section, f_arr)[..., None, None]
     z0_y = 1j * 2 * jnp.pi * f_arr[..., None, None] * capacitance * z0
-    eye = jnp.eye(q)
-    # S = (I - Z0 Y)(I + Z0 Y)^-1; both factors commute, so solve from the left.
-    s = jnp.linalg.solve(eye + z0_y, eye - z0_y)
+    s = _cayley(z0_y)
     names = [f"o{k + 1}" for k in range(q)]
     return {(names[i], names[j]): s[..., i, j] for i in range(q) for j in range(q)}
 
@@ -159,31 +196,13 @@ def hyperbolic_edge_resonator(
     return straight(f=f, length=length, cross_section=cross_section)
 
 
-def _one_port_admittance(s11: jnp.ndarray, z0: jnp.ndarray) -> jnp.ndarray:
-    """Input admittance of a one-port with reflection ``s11`` referenced to ``z0``."""
-    return (1 - s11) / ((1 + s11) * z0)
-
-
-def _two_port_admittance(s: sax.SDict, z0: jnp.ndarray) -> jnp.ndarray:
-    """Admittance matrix ``(..., 2, 2)`` of a two-port referenced to ``z0``."""
-    matrix = jnp.stack(
-        [
-            jnp.stack([s["o1", "o1"], s["o1", "o2"]], -1),
-            jnp.stack([s["o2", "o1"], s["o2", "o2"]], -1),
-        ],
-        -2,
-    )
-    eye = jnp.eye(2)
-    return jnp.linalg.solve(eye + matrix, eye - matrix) / z0[..., None, None]
-
-
 def hyperbolic_lattice(
     *,
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     p: int = 7,
     q: int = 3,
     shells: int = 1,
-    resonator_length: float = 7500.0,
+    resonator_length: sax.FloatArrayLike = 7500.0,
     stub_length: float = 400.0,
     probe_pins: tuple[int, ...] = (11, 0),
     pin_radius: float = 40.0,
@@ -235,9 +254,16 @@ def hyperbolic_lattice(
     Returns:
         S-parameters between the probe ports.
 
+    The structural arguments ``p``, ``q``, ``shells`` and ``probe_pins`` fix
+    the circuit topology, so they are converted to Python integers and must
+    be concrete; all other arguments may be traced by :func:`jax.jit`.
+
     Raises:
         ValueError: If ``probe_pins`` is empty, repeats a pin or is out of range.
     """
+    # SAX passes settings as JAX arrays, which are unhashable.
+    p, q, shells = int(p), int(q), int(shells)  # pyrefly: ignore[unnecessary-type-conversion]
+    probe_pins = tuple(int(k) for k in np.ravel(probe_pins))
     tiling = hyperbolic_tiling(p, q, shells)
     free = tiling.free_pins
     if not probe_pins:
@@ -275,15 +301,14 @@ def hyperbolic_lattice(
     ]
     stubs = position[[v * q + k for v, k in free if v * q + k not in probes]]
 
-    line = _two_port_admittance(
-        straight(f=f_arr, length=resonator_length, cross_section=cross_section), z0
+    # Element admittances from their S-matrices, Z0 Y = C(S).
+    s_line, line_ports = sax.sdense(
+        straight(f=f_arr, length=resonator_length, cross_section=cross_section)
     )
-    stub = straight(f=f_arr, length=stub_length, cross_section=cross_section)
-    # A short (reflection -1) behind a matched line of transmission S21.
-    s_in = stub["o1", "o1"] - stub["o1", "o2"] * stub["o2", "o1"] / (
-        1 + stub["o2", "o2"]
-    )
-    y_stub = _one_port_admittance(s_in, z0)
+    order_line = [line_ports["o1"], line_ports["o2"]]
+    line = _cayley(s_line[..., order_line, :][..., order_line]) / z0[..., None, None]
+    s_stub = straight_shorted(f=f_arr, length=stub_length, cross_section=cross_section)
+    y_stub = _cayley(s_stub["o1", "o1"][..., None, None])[..., 0, 0] / z0
 
     def solve_one(args: tuple[jax.Array, ...]) -> jax.Array:
         """Probe S-matrix at one frequency; mapped so memory stays O(N²)."""
@@ -296,8 +321,7 @@ def hyperbolic_lattice(
         y_ports = y[:n_p, :n_p] - y[:n_p, n_p:] @ jnp.linalg.solve(
             y[n_p:, n_p:], y[n_p:, :n_p]
         )
-        eye = jnp.eye(n_p)
-        return jnp.linalg.solve(eye + z0_k * y_ports, eye - z0_k * y_ports)
+        return _cayley(z0_k * y_ports)
 
     s = jax.lax.map(
         solve_one, (2 * jnp.pi * f_arr, line, y_stub, z0), batch_size=_BATCH_SIZE

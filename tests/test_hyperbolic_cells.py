@@ -101,10 +101,8 @@ def test_edge_resonator_too_long_raises() -> None:
         hyperbolic_edge_resonator(length=50_000.0)
     with pytest.raises(ValueError, match="cannot fit"):
         hyperbolic_edge_resonator(length=500.0)
-    with pytest.raises(ValueError, match="pitch"):
-        hyperbolic_edge_resonator(pitch=40.0, bend_radius=25.0)
     with pytest.raises(ValueError, match="too close"):
-        hyperbolic_edge_resonator(length=200.0, end=(120.0, 0.0))
+        hyperbolic_edge_resonator(length=200.0, end=(140.0, 0.0))
 
 
 def test_edge_resonator_rejects_concave_region() -> None:

@@ -1,6 +1,6 @@
 info:
   length: 4000
-name: hyperbolic_edge_resonator_L4000_E1000_0_SA0_EA0_RNone_B_054d9ed4
+name: hyperbolic_edge_resonator_L4000_E1000_0_SA0_EA0_RNone_B_949dd17e
 ports:
   o1:
     center:
@@ -21,14 +21,13 @@ ports:
     port_type: optical
     width: 10
 settings:
-  bend_radius: 25
+  bend_radius: 30
   cross_section: cpw
   end:
   - 1000
   - 0
   end_angle: 0
-  end_straight: 60
+  end_straight: 70
   length: 4000
   margin: 25
-  pitch: 60
   start_angle: 0

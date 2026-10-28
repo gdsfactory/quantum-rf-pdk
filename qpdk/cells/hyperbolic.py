@@ -28,7 +28,8 @@ from __future__ import annotations
 import math
 import operator
 from collections.abc import Sequence
-from itertools import pairwise, starmap
+from functools import partial
+from itertools import starmap
 
 import gdsfactory as gf
 import numpy as np
@@ -48,48 +49,14 @@ __all__ = [
 
 _GRID = 1e-3  # µm, the database unit
 
-
-_SAGITTA = 0.01  # µm, maximum deviation of polygonised arcs
-
-
-def _arc(radius: float, angle: float, **kwargs: float) -> gf.Path:
-    """Circular arc polygonised to within :data:`_SAGITTA` of the true curve."""
-    step = 2 * math.degrees(math.acos(1 - _SAGITTA / radius))
-    return gf.path.arc(
-        radius=radius,
-        angle=angle,
-        npoints=max(2, math.ceil(abs(angle) / step) + 1),
-        **kwargs,
-    )
-
-
-def _snap(x: float) -> float:
-    """Round ``x`` to the layout grid."""
-    return round(x / _GRID) * _GRID
+# The arcs of bend_circular in the other resonators.
+_arc = partial(gf.path.arc, angular_step=4)
 
 
 def _unit(angle_deg: float) -> np.ndarray:
     """Unit vector at ``angle_deg`` degrees."""
     a = math.radians(angle_deg)
     return np.array([math.cos(a), math.sin(a)])
-
-
-def _strip(start: np.ndarray, end: np.ndarray, width: float) -> kdb.DPolygon:
-    """Rectangle of ``width`` centred on the segment ``start``–``end``."""
-    d = end - start
-    n = np.array([-d[1], d[0]]) / np.linalg.norm(d) * width / 2
-    pts = [start + n, end + n, end - n, start - n]
-    return kdb.DPolygon(list(starmap(kdb.DPoint, pts)))
-
-
-def _disk(radius: float, npoints: int = 128) -> kdb.DPolygon:
-    """Disk of ``radius`` centred on the origin."""
-    return kdb.DPolygon.ellipse(kdb.DBox(-radius, -radius, radius, radius), npoints)
-
-
-def _insert(c: Component, layer: tuple[int, int], region: kdb.Region) -> None:
-    """Insert ``region`` into ``c`` on ``layer``."""
-    c.kdb_cell.shapes(c.kcl.layer(*layer)).insert(region)
 
 
 def _vertex_coupler_port_offsets(
@@ -100,7 +67,7 @@ def _vertex_coupler_port_offsets(
     out = []
     for k in range(q):
         d = _unit(rotation + 360 * k / q) * reach
-        out.append((_snap(d[0]), _snap(d[1])))
+        out.append((gf.snap.snap_to_grid(d[0]), gf.snap.snap_to_grid(d[1])))
     return out
 
 
@@ -138,7 +105,6 @@ def hyperbolic_vertex_coupler(
     Pin ``k`` points along ``rotation + 360 k / q`` degrees. Its port sits at
     the end of the lead, snapped to the 1 nm grid, and faces away from the
     disk centre along the snapped direction (generally not Manhattan).
-    The SAX model is :func:`qpdk.models.hyperbolic.hyperbolic_vertex_coupler`.
 
     Args:
         q: Number of pins (edges meeting at the vertex).
@@ -168,22 +134,31 @@ def hyperbolic_vertex_coupler(
             f"narrower ({pin_chord:.1f} µm) than the lead ({width} µm)."
         )
 
+    def strip(end: np.ndarray, length: float, width: float) -> kdb.Region:
+        """Flat-ended strip of ``width`` from ``end`` back towards the centre."""
+        start = end * (1 - length / np.linalg.norm(end))
+        path = kdb.DPath([kdb.DPoint(*start), kdb.DPoint(*end)], width)
+        return kdb.Region(path.polygon().to_itype(_GRID))
+
+    def disk(radius: float) -> kdb.Region:
+        box = kdb.DBox(2 * radius, 2 * radius)
+        return kdb.Region(kdb.DPolygon.ellipse(box, 128).to_itype(_GRID))
+
     c = Component()
-    dbu = c.kcl.dbu
-    metal = kdb.Region(_disk(pin_radius).to_itype(dbu))
+    metal = disk(pin_radius)
     for k in range(q):
-        d = _unit(rotation + 360 * (k + 0.5) / q)
-        metal -= kdb.Region(
-            _strip(np.zeros(2), d * 2 * pin_radius, pin_gap).to_itype(dbu)
+        metal -= strip(
+            _unit(rotation + 360 * (k + 0.5) / q) * 2 * pin_radius,
+            2 * pin_radius,
+            pin_gap,
         )
-    clearance = kdb.Region(_disk(pin_radius + ground_gap).to_itype(dbu))
+    clearance = disk(pin_radius + ground_gap)
     offsets = _vertex_coupler_port_offsets(q, rotation, pin_radius, lead_length)
     for k, (x, y) in enumerate(offsets):
         end = np.array([x, y])
-        d = end / np.linalg.norm(end)
-        start = d * (pin_radius - width)
-        metal += kdb.Region(_strip(start, end, width).to_itype(dbu))
-        clearance += kdb.Region(_strip(start, end, width + 2 * gap).to_itype(dbu))
+        reach = float(np.linalg.norm(end)) - pin_radius + width
+        metal += strip(end, reach, width)
+        clearance += strip(end, reach, width + 2 * gap)
         c.add_port(
             name=f"o{k + 1}",
             center=(x, y),
@@ -191,61 +166,25 @@ def hyperbolic_vertex_coupler(
             cross_section=xs,
         )
     metal.merge()
-    _insert(c, LAYER.M1_DRAW, metal)
-    _insert(c, LAYER.M1_ETCH, (clearance - metal).merged())
+    c.add_polygon(metal, layer=LAYER.M1_DRAW)
+    c.add_polygon((clearance - metal).merged(), layer=LAYER.M1_ETCH)
     c.info["q"] = q
     return c
 
 
-def _half_planes(polygon: np.ndarray) -> list[tuple[np.ndarray, float]]:
-    """Outward normals ``n`` and offsets ``b`` with ``n·x <= b`` inside.
+def _reach(region: kdb.Region, origin: np.ndarray, direction: np.ndarray) -> float:
+    """Distance from ``origin`` along ``direction`` to the edge of ``region``.
 
     Returns:
-        One ``(n, b)`` pair per polygon side.
-
-    Raises:
-        ValueError: If the polygon is not convex.
+        The distance in µm, or ``0`` if ``origin`` lies outside ``region``.
     """
-    edges = np.roll(polygon, -1, axis=0) - polygon
-    turns = edges[:, 0] * np.roll(edges[:, 1], -1) - edges[:, 1] * np.roll(
-        edges[:, 0], -1
-    )
-    if not (np.all(turns >= -1e-9) or np.all(turns <= 1e-9)):
-        raise ValueError("region must be a convex polygon.")
-    area = 0.5 * np.sum(
-        polygon[:, 0] * np.roll(polygon[:, 1], -1)
-        - np.roll(polygon[:, 0], -1) * polygon[:, 1]
-    )
-    sign = 1.0 if area > 0 else -1.0
-    out = []
-    for a, b in zip(polygon, np.roll(polygon, -1, axis=0), strict=True):
-        d = (b - a) * sign
-        n = np.array([d[1], -d[0]]) / np.linalg.norm(d)
-        out.append((n, float(n @ a)))
-    return out
-
-
-def _reach(
-    planes: list[tuple[np.ndarray, float]],
-    origin: np.ndarray,
-    direction: np.ndarray,
-    margin: float,
-) -> float:
-    """Distance from ``origin`` along ``direction`` to the shrunk polygon edge.
-
-    Returns:
-        The distance in µm, or ``0`` if ``origin`` lies outside the polygon
-        shrunk by ``margin``.
-    """
-    t_max = math.inf
-    for n, b in planes:
-        slack = b - margin - n @ origin
-        if slack < 0:
-            return 0.0
-        rate = n @ direction
-        if rate > 1e-12:
-            t_max = min(t_max, slack / rate)
-    return t_max
+    box = region.bbox()
+    far = origin + direction * (box.width() + box.height()) * _GRID
+    ray = kdb.DEdge(kdb.DPoint(*origin), kdb.DPoint(*far)).to_itype(_GRID)
+    for piece in kdb.Edges([ray]).inside_part(region).each():
+        if piece.p1.distance(ray.p1) <= 1:
+            return piece.length() * _GRID
+    return 0.0
 
 
 def _turn(a: np.ndarray, b: np.ndarray) -> float:
@@ -254,14 +193,46 @@ def _turn(a: np.ndarray, b: np.ndarray) -> float:
     return math.acos(max(-1.0, min(1.0, cos)))
 
 
+def _corners(
+    points: np.ndarray, radius: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Headings, signed turns and straight lengths of ``points`` with rounded corners.
+
+    Returns:
+        Heading of the first segment in degrees, the turn at every corner in
+        degrees and the straight left of every segment between the arcs.
+    """
+    seg = np.diff(points, axis=0)
+    heading = np.degrees(np.arctan2(seg[:, 1], seg[:, 0]))
+    turns = (np.diff(heading) + 180) % 360 - 180
+    cut = radius * np.tan(np.radians(np.abs(turns)) / 2)
+    straights = np.linalg.norm(seg, axis=1) - np.r_[0, cut] - np.r_[cut, 0]
+    return heading[0], turns, straights
+
+
 def _smoothed_length(points: np.ndarray, radius: float) -> float:
     """Length of ``points`` after rounding every corner with a circular arc."""
-    seg = np.diff(points, axis=0)
-    length = float(np.linalg.norm(seg, axis=1).sum())
-    for a, b in pairwise(seg):
-        theta = _turn(a, b)
-        length -= 2 * radius * math.tan(theta / 2) - radius * theta
-    return length
+    _, turns, straights = _corners(points, radius)
+    return float(straights.sum() + radius * np.radians(np.abs(turns)).sum())
+
+
+def _rounded_path(points: np.ndarray, radius: float) -> gf.Path:
+    """Path along ``points`` with every corner rounded by an arc of ``radius``.
+
+    Unlike :func:`gdsfactory.path.smooth`, corners may abut with no straight
+    between them, so two quarter turns ``2 radius`` apart form one U-turn.
+
+    Returns:
+        The path, starting at ``points[0]``.
+    """
+    heading, turns, straights = _corners(points, radius)
+    path = gf.Path()
+    for k, straight in enumerate(straights):
+        if straight > 1e-6:
+            path.append(gf.path.straight(length=straight))
+        if k < len(turns) and abs(turns[k]) > 1e-9:
+            path.append(_arc(radius=radius, angle=turns[k]))
+    return path.rotate(float(heading)).move(tuple(points[0]))
 
 
 def _meander_points(
@@ -270,27 +241,28 @@ def _meander_points(
     end: np.ndarray,
     start_dir: np.ndarray,
     end_dir: np.ndarray,
-    planes: list[tuple[np.ndarray, float]],
+    region: kdb.Region,
     bend_radius: float,
-    pitch: float,
-    margin: float,
     end_straight: float,
 ) -> np.ndarray:
     """Waypoints of a serpentine of smoothed ``length`` from the origin to ``end``.
 
     The path leaves the origin along ``start_dir``, runs a serpentine with
     legs perpendicular to the axis between the two lead ends and enters
-    ``end`` along ``end_dir``. Legs alternate sides and are clipped to the
-    convex region ``planes`` shrunk by ``margin``; a common height cap is
-    found by bisection so the smoothed path has the requested length.
+    ``end`` along ``end_dir``. Neighbouring legs are ``2 bend_radius`` apart,
+    so they join in U-turns like the meanders of
+    :func:`~qpdk.cells.resonator.resonator`. Legs alternate sides and are
+    clipped to the convex ``region``; a common height cap is found by
+    bisection so the smoothed path has the requested length.
 
     Returns:
-        Waypoints, shape ``(N, 2)``, for :func:`gdsfactory.path.smooth`.
+        Waypoints, shape ``(N, 2)``, for :func:`_rounded_path`.
 
     Raises:
         ValueError: If the region cannot hold a path of this length.
     """
     r = bend_radius
+    pitch = 2 * r
     p1 = start_dir * end_straight
     q1 = end - end_dir * end_straight
     axis = q1 - p1
@@ -343,8 +315,8 @@ def _meander_points(
                 caps.append(
                     side
                     * min(
-                        _reach(planes, p1 + ux * us[j], uy * side, margin),
-                        _reach(planes, p1 + ux * us[j + 1], uy * side, margin),
+                        _reach(region, p1 + ux * us[j], uy * side),
+                        _reach(region, p1 + ux * us[j + 1], uy * side),
                     )
                 )
             if all(abs(y) >= 2 * r + 1e-3 for y in caps):
@@ -362,7 +334,7 @@ def _meander_points(
         room = 0.0 if best is None else best[0]
         raise ValueError(
             f"Region holds at most {room:.0f} µm of meander, need {length} µm; "
-            "enlarge the region (e.g. a larger disk_radius) or reduce the pitch."
+            "enlarge the region (e.g. a larger disk_radius) or reduce the bend radius."
         )
     _, us, caps = best
 
@@ -373,7 +345,7 @@ def _meander_points(
     lo, hi = 2 * r + 1e-3, max(abs(y) for y in caps)
     if _smoothed_length(capped(lo), r) > length:
         raise ValueError(
-            f"Cannot shorten the meander to length={length} µm with pitch={pitch} µm."
+            f"Cannot shorten the meander to length={length} µm with bend_radius={r} µm."
         )
     for _ in range(80):
         mid = (lo + hi) / 2
@@ -391,10 +363,9 @@ def hyperbolic_edge_resonator(
     start_angle: float = 0.0,
     end_angle: float = 0.0,
     region: Sequence[tuple[float, float]] | None = None,
-    bend_radius: float = 25.0,
-    pitch: float = 60.0,
+    bend_radius: float = 30.0,
     margin: float = 25.0,
-    end_straight: float = 60.0,
+    end_straight: float = 70.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> Component:
     r"""Return a meandered CPW resonator of exact length between two points.
@@ -403,15 +374,15 @@ def hyperbolic_edge_resonator(
     ``start_angle`` and ends at port ``o2`` at ``end`` travelling along
     ``end_angle``, so both ends can meet couplers at arbitrary angles. In
     between it meanders with legs perpendicular to the line between its two
-    end straights, alternating sides and staying at least ``margin`` from
-    the edges of the convex ``region``. The leg height is solved so the
+    end straights, ``2 bend_radius`` apart and joined by U-turns as in
+    :func:`~qpdk.cells.resonator.resonator`, alternating sides and staying at
+    least ``margin`` from the edges of the convex ``region``. The leg height is solved so the
     centreline length equals ``length``; ``info["length"]`` holds the
     extruded length.
 
     Both ends are left as plain CPW ends: in
     :func:`hyperbolic_lattice` they connect galvanically to coupler pins,
-    which set the open-end boundary condition. The SAX model is
-    :func:`qpdk.models.hyperbolic.hyperbolic_edge_resonator`.
+    which set the open-end boundary condition.
 
     Args:
         length: Centreline length in µm.
@@ -420,8 +391,8 @@ def hyperbolic_edge_resonator(
         end_angle: Travel direction at ``o2`` in degrees.
         region: Convex polygon the meander must stay inside, relative to
             ``o1``. Defaults to a square with ``o1`` and ``end`` on a diagonal.
-        bend_radius: Radius of the meander bends in µm.
-        pitch: Spacing of the meander legs in µm.
+        bend_radius: Radius of the meander bends in µm; the legs are twice
+            this apart.
         margin: Minimum distance from the centreline to the ``region`` edge in µm.
         end_straight: Straight run at each end before the first bend in µm.
         cross_section: CPW cross-section.
@@ -432,10 +403,6 @@ def hyperbolic_edge_resonator(
     Raises:
         ValueError: If ``region`` cannot hold a resonator of this length.
     """
-    if pitch <= 2 * bend_radius:
-        raise ValueError(
-            f"pitch ({pitch} µm) must exceed twice bend_radius ({bend_radius} µm)."
-        )
     end_xy = np.asarray(end, dtype=float)
     if region is None:
         mid = end_xy / 2
@@ -443,7 +410,10 @@ def hyperbolic_edge_resonator(
         poly = np.array([[0.0, 0.0], mid + half, end_xy, mid - half])
     else:
         poly = np.asarray(region, dtype=float)
-    planes = _half_planes(poly)
+    polygon = kdb.DPolygon(list(starmap(kdb.DPoint, poly))).to_itype(_GRID)
+    if not polygon.is_convex():
+        raise ValueError("region must be a convex polygon.")
+    inner = kdb.Region(polygon).sized(-round(margin / _GRID))
 
     def build(target: float) -> gf.Path:
         pts = _meander_points(
@@ -451,13 +421,11 @@ def hyperbolic_edge_resonator(
             end=end_xy,
             start_dir=_unit(start_angle),
             end_dir=_unit(end_angle),
-            planes=planes,
+            region=inner,
             bend_radius=bend_radius,
-            pitch=pitch,
-            margin=margin,
             end_straight=end_straight,
         )
-        return gf.path.smooth(pts, radius=bend_radius, bend=_arc)
+        return _rounded_path(pts, bend_radius)
 
     # Arcs are polygonised, so correct the analytic length once.
     path = build(length)
@@ -478,18 +446,6 @@ def hyperbolic_edge_resonator(
     )
     c.info["length"] = path.length()
     return c
-
-
-def _edge_faces(faces: Sequence[Sequence[int]], i: int, j: int) -> list[int]:
-    """Indices of the faces that contain the edge between vertices ``i`` and ``j``."""
-    out = []
-    for f, face in enumerate(faces):
-        n = len(face)
-        for k in range(n):
-            if {face[k], face[(k + 1) % n]} == {i, j}:
-                out.append(f)
-                break
-    return out
 
 
 def _far(edge: Sequence[int], v: int) -> int:
@@ -542,8 +498,7 @@ def hyperbolic_lattice(
     pin_gap: float = 4.0,
     ground_gap: float = 6.0,
     lead_length: float = 20.0,
-    bend_radius: float = 25.0,
-    pitch: float = 60.0,
+    bend_radius: float = 30.0,
     margin: float = 25.0,
     boundary_apex: float = 0.6,
     feed_length: float = 1000.0,
@@ -557,8 +512,7 @@ def hyperbolic_lattice(
     :cite:`kollarHyperbolicLatticesCircuit2019`. The line between two pin
     rims is ``resonator_length`` long, so the couplers' leads count towards
     it. In full-wave operation the lattice realises line-graph tight binding
-    with :math:`t < 0` and a flat band at :math:`\omega_0 - 2|t|`; see
-    :func:`qpdk.models.hyperbolic.hyperbolic_lattice` for the circuit model.
+    with :math:`t < 0` and a flat band at :math:`\omega_0 - 2|t|`.
 
     Free coupler pins on the boundary get a shorted CPW stub of
     ``stub_length`` (a :math:`\lambda/4` resonator far above the band), so
@@ -594,8 +548,7 @@ def hyperbolic_lattice(
         pin_gap: Coupler radial gap in µm.
         ground_gap: Coupler ground clearance in µm.
         lead_length: Coupler lead length in µm.
-        bend_radius: Meander bend radius in µm.
-        pitch: Meander leg spacing in µm.
+        bend_radius: Meander bend radius in µm; the legs are twice this apart.
         margin: Minimum distance from a resonator centreline to its region edge in µm.
         boundary_apex: Scale of the mirrored outer apex of boundary edges.
         feed_length: Straight run from a probe pin before turning to its launcher in µm.
@@ -620,7 +573,7 @@ def hyperbolic_lattice(
 
     c = Component()
     centres = [
-        np.array([_snap(z.real * disk_radius), _snap(z.imag * disk_radius)])
+        np.array(gf.snap.snap_to_grid([z.real * disk_radius, z.imag * disk_radius]))
         for z in tiling.vertices
     ]
     couplers = []
@@ -644,7 +597,7 @@ def hyperbolic_lattice(
 
     edge_length = resonator_length - 2 * lead_length
     edges = tiling.edges.tolist()
-    edge_faces = [_edge_faces(tiling.faces, i, j) for i, j in edges]
+    edge_faces = tiling.edge_faces
     boundary_at: dict[int, list[int]] = {}
     for e, (i, j) in enumerate(edges):
         if len(edge_faces[e]) == 1:
@@ -691,7 +644,6 @@ def hyperbolic_lattice(
                     for x, y in region
                 ),
                 bend_radius=bend_radius,
-                pitch=pitch,
                 margin=margin,
                 end_straight=2 * bend_radius + 10,
                 cross_section=cross_section,
@@ -717,10 +669,10 @@ def hyperbolic_lattice(
         radius = xs.radius or 100.0
         corner = start + d * feed_length
         tip = corner + m * 3 * radius
-        tip = np.array([_snap(tip[0]), _snap(tip[1])])
+        tip = np.array(gf.snap.snap_to_grid(tip))
         lead_in = start + d * 2 * radius
         points = [start, lead_in, tip - m * 2 * radius, tip]
-        feed = gf.path.smooth(np.array(points), radius=radius, bend=_arc)
+        feed = _rounded_path(np.array(points), radius)
         ref = c << gf.path.extrude(feed, cross_section=cross_section)
         ref.flatten()
         pad = c << launcher(cross_section_small=cross_section)

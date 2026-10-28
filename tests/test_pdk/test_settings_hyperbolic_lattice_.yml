@@ -1,7 +1,7 @@
 info:
   num_couplers: 35
   num_resonators: 42
-name: hyperbolic_lattice_P7_Q3_S1_DR6000_RL7500_SL400_PP11_0__bd170c16
+name: hyperbolic_lattice_P7_Q3_S1_DR6000_RL7500_SL400_PP11_0__c666162c
 ports:
   o1:
     center:
@@ -22,7 +22,7 @@ ports:
     port_type: optical
     width: 200
 settings:
-  bend_radius: 25
+  bend_radius: 30
   boundary_apex: 0.6
   cross_section: cpw
   disk_radius: 6000
@@ -33,7 +33,6 @@ settings:
   p: 7
   pin_gap: 4
   pin_radius: 40
-  pitch: 60
   probe_pins:
   - 11
   - 0
