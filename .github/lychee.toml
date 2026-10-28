@@ -42,6 +42,9 @@ exclude = [
   "pypi\\.org/project/qpdk/",
   # Generated PDF can be unavailable while GitHub Pages deploys it
   "https://gdsfactory.github.io/quantum-rf-pdk/qpdk.pdf",
+  # Docs figure SVGs are compiled from docs/figures/*.typ by `just build-doc-figures`, not committed
+  # (slashes escaped so lychee does not check this line)
+  "^file:\\/\\/.*\\/docs\\/notebooks\\/figures\\/[^\\/]+\\.svg$",
   # VS Code Marketplace gallery API (POST-only; rejects lychee's GET with 405)
   "https://marketplace.visualstudio.com/_apis/public/gallery.*"
 ]
