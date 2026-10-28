@@ -12,6 +12,7 @@ from kfactory import LayerEnum
 from sax.models.rf import electrical_open
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
+from qpdk.models.datasets.models import _matches_layer
 from qpdk.models.qubit import flipmon_bonded_model
 from qpdk.tech import LAYER
 
@@ -34,20 +35,6 @@ def _flipmon_fem_circuit() -> sax.SDictModel:
         ignore_impossible_connections=False,
     )
     return model
-
-
-def _matches_layer(
-    value: LayerSpec | ArrayLike, index: int, pair: tuple[int, int], name: str
-) -> jax.Array:
-    """Normalize static names and distinguish layer indices from GDS pairs."""
-    if isinstance(value, str):
-        return jnp.asarray(value == name)
-    array = jnp.asarray(value)
-    if array.ndim == 0:
-        return array == index
-    if array.shape == (2,):
-        return jnp.all(array == jnp.asarray(pair))
-    return jnp.asarray(False)
 
 
 def flipmon_with_bbox_fem(
