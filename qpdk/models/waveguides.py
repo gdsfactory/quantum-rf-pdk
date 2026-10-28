@@ -59,18 +59,7 @@ def straight(
     width, gap = get_cpw_dimensions(cross_section)
     h, t, ep_r, tand = get_cpw_substrate_params()
 
-    if conductor_backed:
-        f = jnp.asarray(f)
-        ep_eff, z0 = cpw_parameters(width, gap, tand=0.0, conductor_backed=True)
-        gamma = propagation_constant(f.ravel(), ep_eff.real, tand=tand, ep_r=ep_r)
-        s11, s21 = transmission_line_s_params(gamma, z0, jnp.asarray(length) * 1e-6)
-        return sax.reciprocal({
-            ("o1", "o1"): s11.reshape(f.shape),
-            ("o1", "o2"): s21.reshape(f.shape),
-            ("o2", "o2"): s11.reshape(f.shape),
-        })
-
-    return _sax_coplanar_waveguide(
+    s_cpw = _sax_coplanar_waveguide(
         f=f,
         length=length,
         width=width,
@@ -80,6 +69,21 @@ def straight(
         ep_r=ep_r,
         tand=tand,
     )
+
+    # sax may pass ``conductor_backed`` as a traced array inside jitted circuits,
+    # so select between both results instead of branching in Python.
+    f = jnp.asarray(f)
+    ep_eff, z0 = cpw_parameters(width, gap, tand=0.0, conductor_backed=True)
+    gamma = propagation_constant(f.ravel(), ep_eff.real, tand=tand, ep_r=ep_r)
+    s11, s21 = transmission_line_s_params(gamma, z0, jnp.asarray(length) * 1e-6)
+    s_cb = sax.reciprocal({
+        ("o1", "o1"): s11.reshape(f.shape),
+        ("o1", "o2"): s21.reshape(f.shape),
+        ("o2", "o2"): s11.reshape(f.shape),
+    })
+
+    backed = jnp.asarray(conductor_backed, dtype=bool)
+    return {k: jnp.where(backed, s_cb[k], s_cpw[k]) for k in s_cpw}
 
 
 def straight_all_angle(
