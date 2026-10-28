@@ -1,17 +1,22 @@
 """Bare Xmon capacitance and a grounded junction share one four-arm node."""
 
 from functools import cache
+from typing import cast
 
 import jax
 import jax.numpy as jnp
 import sax
+from gdsfactory.typings import LayerSpec
 from jax.typing import ArrayLike
+from kfactory import LayerEnum
 from sax.models.rf import electrical_open, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.datasets import Dataset, capacitance_model
+from qpdk.models.datasets.models import _matches_layer
 from qpdk.models.generic import shunt_admittance
 from qpdk.models.jit import jit
+from qpdk.tech import LAYER
 
 
 @jit(inline=True)
@@ -75,7 +80,6 @@ def _xmon_fem_circuit() -> tuple[sax.SDictModel, tuple[float, float]]:
     return circuit, scale_domain
 
 
-@jit(inline=True)
 def xmon_fem(
     f: ArrayLike = DEFAULT_FREQUENCY,
     arm_width: tuple[float, float, float, float] | jax.Array = (30.0, 20.0, 30.0, 20.0),
@@ -89,12 +93,17 @@ def xmon_fem(
     inductance_nh: ArrayLike = 7.0,
     junction_capacitance_ff: ArrayLike = 0.0,
     z_ref: ArrayLike = 50.0,
+    layer_metal: LayerSpec | ArrayLike = LAYER.M1_DRAW,
+    layer_etch: LayerSpec | ArrayLike = LAYER.M1_ETCH,
 ) -> sax.SDict:
     """Four galvanic arm ports on one bare equipotential Xmon island.
 
     Arm lengths scale uniformly from (160,120,160,120) um and widths stay
     (30,20,30,20) um. Unsupported arm shapes or out-of-grid dimensions return
-    NaN. Frequency is positive in Hz, inductance in nH and additional junction capacitance
+    NaN. Unsupported metal or etch layers also return NaN. The model assumes
+    the standard QPDK materials. Layer names may be Python literals. External
+    JIT arguments must use numeric indices or GDS pairs, or close over static
+    names. Frequency is positive in Hz, inductance in nH and additional junction capacitance
     in fF. All arm ports use the same real reference impedance in ohms.
 
     The FEM block includes a 300 um ground frame outside the etched moat. It
@@ -109,13 +118,19 @@ def xmon_fem(
     lengths = jnp.asarray(arm_lengths)
     widths = jnp.asarray(arm_width)
     scale = lengths / jnp.asarray([160.0, 120.0, 160.0, 120.0])
-    supported = jnp.all(jnp.isclose(scale, scale[0], rtol=0, atol=1e-12))
+    supported = _matches_layer(
+        layer_metal, int(cast(LayerEnum, LAYER.M1_DRAW)), (1, 0), "M1_DRAW"
+    ) & _matches_layer(
+        layer_etch, int(cast(LayerEnum, LAYER.M1_ETCH)), (1, 1), "M1_ETCH"
+    )
+    supported &= jnp.all(jnp.isclose(scale, scale[0], rtol=0, atol=1e-12))
     supported &= jnp.all(
         jnp.isclose(widths, jnp.asarray([30.0, 20.0, 30.0, 20.0]), rtol=0, atol=1e-12)
     )
     supported &= (jnp.asarray(inductance_nh) > 0) & (
         jnp.asarray(junction_capacitance_ff) >= 0
     )
+    supported &= jnp.isfinite(jnp.asarray(z_ref))
     supported &= (jnp.asarray(z_ref) > 0) & (jnp.asarray(f) > 0)
     with jax.ensure_compile_time_eval():
         model, (scale_min, scale_max) = _xmon_fem_circuit()

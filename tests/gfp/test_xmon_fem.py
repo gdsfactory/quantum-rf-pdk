@@ -1,6 +1,7 @@
 """The packaged Xmon FEM model agrees across GFP's simulation paths."""
 
 import json
+from functools import partial
 from pathlib import Path
 
 import gdsfactory as gf
@@ -8,18 +9,33 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 from conftest import import_gfp_module
+from gdsfactory.typings import LayerSpec
 
 from qpdk import PDK, cells
 from qpdk.models.xmon import xmon_fem
+from qpdk.tech import LAYER
 
 sax_sim = import_gfp_module("gdsfactoryplus.sim.sax")
 _SETTINGS = {"inductance_nh": 12.0, "junction_capacitance_ff": 1.5}
+_LAYERS: tuple[tuple[LayerSpec, LayerSpec, bool], ...] = (
+    (LAYER.M1_DRAW, LAYER.M1_ETCH, True),
+    ("M1_DRAW", "M1_ETCH", True),
+    ((1, 0), (1, 1), True),
+    ((77, 0), LAYER.M1_ETCH, False),
+    (LAYER.M1_DRAW, (77, 0), False),
+    ("M2_DRAW", LAYER.M1_ETCH, False),
+    (LAYER.M1_DRAW, "M2_ETCH", False),
+)
 
 
 @gf.cell
-def _xmon_fem_network() -> gf.Component:
+def _xmon_fem_network(layer_case: int = 0) -> gf.Component:
     c = gf.Component()
-    qubit = c.add_ref(cells.xmon_transmon(**_SETTINGS), name="qubit")
+    metal, etch, _ = _LAYERS[layer_case]
+    qubit = c.add_ref(
+        cells.xmon_transmon(layer_metal=metal, layer_etch=etch, **_SETTINGS),
+        name="qubit",
+    )
     for port in qubit.ports:
         if port.port_type != "placement":
             c.add_port(port.name, port=port)
@@ -28,13 +44,23 @@ def _xmon_fem_network() -> gf.Component:
 
 @pytest.mark.gfp
 @pytest.mark.parametrize("source", ["component", "mosaic", "layout"])
+@pytest.mark.parametrize(
+    "layer_case",
+    range(len(_LAYERS)),
+    ids=["enum", "name", "pair", "metal77", "etch77", "wrong-metal", "wrong-etch"],
+)
 def test_xmon_fem_simulation(
-    source: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    source: str, layer_case: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     PDK.activate()
-    monkeypatch.setitem(PDK.cells, "xmon_fem_network", _xmon_fem_network)
-    network = _xmon_fem_network()
+    monkeypatch.setitem(
+        PDK.cells, "xmon_fem_network", partial(_xmon_fem_network, layer_case=layer_case)
+    )
+    network = _xmon_fem_network(layer_case)
     qubit = next(iter(network.insts))
+    _, _, supported = _LAYERS[layer_case]
+    if layer_case in {3, 4}:
+        assert network.get_polygons(by="tuple")[77, 0]
     box = qubit.cell.dbbox()
     centre = qubit.dbbox().center()
     local = box.center()
@@ -84,7 +110,7 @@ def test_xmon_fem_simulation(
             "port_type": "optical",
         }
     path = tmp_path / "xmon_fem.gsch"
-    path.write_text(json.dumps(document))
+    path.write_text(json.dumps(document), encoding="utf-8")
     (tmp_path / "models.nyanlib").write_text(
         json.dumps({
             f"models:{factory}": {
@@ -92,7 +118,8 @@ def test_xmon_fem_simulation(
                 "type": "ckt",
                 "tags": ["qpdk"],
             }
-        })
+        }),
+        encoding="utf-8",
     )
     sweep = dict(
         wl_min=299792458e6 / 8e9,
@@ -119,5 +146,8 @@ def test_xmon_fem_simulation(
     for (a, b), value in expected.items():
         entry = result["sdict"][f"{a},{b}"]
         actual = jnp.asarray(entry["real"]) + 1j * jnp.asarray(entry["imag"])
-        assert bool(jnp.isfinite(actual).all())
-        np.testing.assert_allclose(actual, value, rtol=1e-6, atol=1e-6)
+        if supported:
+            assert bool(jnp.isfinite(actual).all())
+            np.testing.assert_allclose(actual, value, rtol=1e-6, atol=1e-6)
+        else:
+            assert bool(jnp.isnan(actual).all())

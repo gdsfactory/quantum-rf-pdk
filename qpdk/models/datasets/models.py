@@ -2,8 +2,10 @@
 
 from pathlib import Path
 
+import jax
 import jax.numpy as jnp
 import sax
+from gdsfactory.typings import LayerSpec
 from jax.typing import ArrayLike
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
@@ -12,6 +14,20 @@ from qpdk.models.datasets.interpolation import GridInterpolator
 from qpdk.models.datasets.metadata import QuantityKind
 from qpdk.models.datasets.table import Dataset
 from qpdk.models.jit import jit
+
+
+def _matches_layer(
+    value: LayerSpec | ArrayLike, index: int, pair: tuple[int, int], name: str
+) -> jax.Array:
+    """Distinguish static layer names, layout indices and GDS pairs."""
+    if isinstance(value, str):
+        return jnp.asarray(value == name)
+    array = jnp.asarray(value)
+    if array.ndim == 0:
+        return array == index
+    if array.shape == (2,):
+        return jnp.all(array == jnp.asarray(pair))
+    return jnp.asarray(False)
 
 
 def s_parameters_model(

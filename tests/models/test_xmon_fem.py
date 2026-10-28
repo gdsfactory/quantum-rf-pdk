@@ -5,12 +5,14 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 import sax
+from gdsfactory.typings import LayerSpec
 from jax.typing import ArrayLike
 from sax.models.rf import electrical_open
 
 from qpdk import PDK
 from qpdk.models.datasets import Dataset, GridInterpolator
 from qpdk.models.xmon import xmon_fem
+from qpdk.tech import LAYER
 
 ARMS = ("top_arm", "right_arm", "bottom_arm", "left_arm")
 
@@ -118,6 +120,10 @@ def test_geometry_derivative_vmap_and_junction_batch() -> None:
         {"inductance_nh": 0.0},
         {"junction_capacitance_ff": -1.0},
         {"z_ref": -1.0},
+        {"layer_metal": (77, 0)},
+        {"layer_etch": (77, 0)},
+        {"layer_metal": 77},
+        {"layer_etch": [1, 0, 0]},
     ],
 )
 def test_unsupported_dimensions_and_circuit_values_return_nan(settings: dict) -> None:
@@ -168,3 +174,53 @@ def test_uniform_arm_scale_derivative() -> None:
     difference = (response(1.03001) - response(1.02999)) / 0.00002
     assert abs(float(derivative)) > 1e-8
     np.testing.assert_allclose(derivative, difference, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    ("metal", "etch"),
+    [
+        (LAYER.M1_DRAW, LAYER.M1_ETCH),
+        (1, 47),
+        ((1, 0), (1, 1)),
+        ([1, 0], [1, 1]),
+        ("M1_DRAW", "M1_ETCH"),
+    ],
+)
+def test_supported_layers_preserve_qualified_response(
+    metal: LayerSpec | ArrayLike, etch: LayerSpec | ArrayLike
+) -> None:
+    f = jnp.asarray([3e9, 5e9, 8e9])
+    expected = xmon_fem(f=f)
+    actual = jax.jit(
+        lambda frequency: xmon_fem(f=frequency, layer_metal=metal, layer_etch=etch)
+    )(f)
+    for ports, value in expected.items():
+        assert bool(jnp.isfinite(actual[ports]).all())
+        np.testing.assert_allclose(actual[ports], value, rtol=0, atol=1e-14)
+
+
+def test_dynamic_layers_preserve_junction_derivative() -> None:
+    f = jnp.asarray([3e9, 5e9, 8e9])
+    compiled = jax.jit(xmon_fem)
+    good = compiled(
+        f=f, layer_metal=jnp.asarray([1.0, 0.0]), layer_etch=jnp.asarray(47.0)
+    )
+    bad = compiled(
+        f=f, layer_metal=jnp.asarray([77.0, 0.0]), layer_etch=jnp.asarray(47.0)
+    )
+    assert all(bool(jnp.isfinite(value).all()) for value in good.values())
+    assert all(bool(jnp.isnan(value).all()) for value in bad.values())
+
+    def response(inductance: float, metal: jax.Array) -> jax.Array:
+        return xmon_fem(f=5e9, inductance_nh=inductance, layer_metal=metal)[
+            "left_arm", "left_arm"
+        ].real
+
+    derivative = jax.jit(jax.grad(response))(7.0, jnp.asarray([1.0, 0.0]))
+    expected = jax.grad(
+        lambda inductance: (
+            xmon_fem(f=5e9, inductance_nh=inductance)["left_arm", "left_arm"].real
+        )
+    )(7.0)
+    assert bool(jnp.isfinite(derivative))
+    np.testing.assert_allclose(derivative, expected, rtol=0, atol=1e-14)
