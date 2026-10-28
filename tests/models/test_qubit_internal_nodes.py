@@ -125,6 +125,21 @@ def test_grounded_junction_and_external_port_order(coupled_qubit: Dataset) -> No
     )
 
 
+@pytest.mark.parametrize("external", [None, ("readout",)])
+@pytest.mark.parametrize("z_ref", [0.0, -50.0, jnp.inf, jnp.nan])
+def test_invalid_reference_impedance(
+    coupled_qubit: Dataset, external: tuple[str, ...] | None, z_ref: float
+) -> None:
+    model = junction_model(
+        coupled_qubit,
+        junction=("island", None),
+        inductance=10e-9,
+        exposed_ports=external,
+    )
+    result = jax.jit(model)(f=jnp.asarray([2e9, 5e9]), z_ref=z_ref)
+    assert all(bool(jnp.isnan(value).all()) for value in result.values())
+
+
 @pytest.mark.parametrize("ports", [(), ("missing",), ("readout", "readout")])
 def test_bad_external_ports(coupled_qubit: Dataset, ports: tuple[str, ...]) -> None:
     with pytest.raises(ValueError, match="Exposed ports"):

@@ -1,6 +1,7 @@
 """Native Xmon capacitances reach the external readout circuit and GFP."""
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +16,7 @@ from sax.models.rf import tee
 
 from qpdk import PDK, cells
 from qpdk.models import qubit_readout as model_module
-from qpdk.models.datasets import Dataset, GridInterpolator
+from qpdk.models.datasets import Dataset, GridInterpolator, junction_model
 
 
 @pytest.mark.gfp
@@ -264,3 +265,52 @@ def test_xmon_geometry_derivative_and_domain() -> None:
         )["readout", "readout"]
     )(jnp.asarray([10.0, 12.0]), jnp.asarray([1.5, 2.5]))
     np.testing.assert_allclose(batched, expected, rtol=1e-12, atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    "factory", [cells.xmon_readout, model_module.xmon_readout], ids=["cell", "model"]
+)
+@pytest.mark.parametrize("argument", ["layer_metal", "layer_etch", "layer"])
+def test_layer_arguments_are_rejected(
+    factory: Callable[..., object], argument: str
+) -> None:
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        factory(**{argument: (77, 0)})
+
+
+@pytest.mark.parametrize("generic", [False, True], ids=["adapter", "junction"])
+@pytest.mark.parametrize("z_ref", [0.0, -50.0, jnp.inf, jnp.nan])
+def test_invalid_reference_impedance(generic: bool, z_ref: float) -> None:
+    model = (
+        junction_model(
+            "xmon_readout_palace",
+            junction=("island", None),
+            inductance=10e-9,
+            exposed_ports=("readout",),
+        )
+        if generic
+        else model_module.xmon_readout
+    )
+    result = jax.jit(model)(f=jnp.asarray([3e9, 5e9, 8e9]), z_ref=z_ref)
+    assert set(result) == {("readout", "readout")}
+    assert bool(jnp.isnan(result["readout", "readout"]).all())
+
+
+def test_positive_batched_references_match_native_admittance() -> None:
+    matrix = GridInterpolator(
+        Dataset("xmon_readout_palace").grid("maxwell_capacitance")
+    )(arm_scale=1.0, gap_width=10.0, coupling_gap=7.5, paddle_length=60.0)
+    frequency = jnp.asarray([3e9, 5e9, 8e9])
+    references = jnp.asarray([50.0, 75.0])[:, None]
+    omega = 2 * jnp.pi * frequency
+    admittance = 1j * omega[:, None, None] * matrix
+    effective = admittance[:, 1, 1] - admittance[:, 1, 0] * admittance[:, 0, 1] / (
+        admittance[:, 0, 0] + 1 / (1j * omega * 10e-9)
+    )
+    expected = (1 - references * effective) / (1 + references * effective)
+    actual = jax.jit(model_module.xmon_readout)(
+        f=frequency[None, :], z_ref=references, coupling_gap=7.5
+    )["readout", "readout"]
+    assert actual.shape == (2, 3)
+    assert bool(jnp.isfinite(actual).all())
+    np.testing.assert_allclose(actual, expected, rtol=1e-10, atol=1e-12)
