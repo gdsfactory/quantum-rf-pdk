@@ -1,6 +1,6 @@
 #import "@preview/cetz:0.4.2"
 #import "style.typ": (
-  blue, body-font, dark-blue, heading-font, ink, light-blue, muted, paper, rule,
+  blue, body-font, heading-font, ink, muted, paper, rule,
   slate,
 )
 
@@ -8,7 +8,26 @@
 #set text(font: body-font, fill: ink)
 #show math.equation: set text(font: "Fira Math")
 
-#let copper = rgb("#a95a20")
+// Layer colours from qpdk/klayout/layers.lyp, so the figure reads like the
+// layout in KLayout. Each derived ground plane takes its drawn layer's colour.
+// Substrates, oxide and vacuum keep the neutral docs palette instead of the
+// SIM_AREA green.
+#let m1-fill = rgb("#acf1ea") // M1_DRAW
+#let m1-frame = rgb("#4dccbd") // M1_ETCH
+#let m2-fill = rgb("#ffa9a4") // M2_DRAW
+#let m2-frame = rgb("#fe5f55") // M2_ETCH
+#let ab = rgb("#fea82f") // AB_DRAW
+#let ab-via = rgb("#febb5d") // AB_VIA
+#let jj = rgb("#c4b7cb") // JJ_AREA
+#let jj-patch = rgb("#947da1") // JJ_PATCH
+#let contact = rgb("#f3cf8e") // CNT_CONTACT
+#let contact-au = contact.darken(25%) // same layer, shaded apart
+#let top-gate = rgb("#a9bee8") // TOP_GATE
+#let hbn = rgb("#b8d9a4") // HBN
+#let cnt = rgb("#fe5f55") // CNT
+#let nbtin = rgb("#4a90e2") // NbTiN
+#let ind = rgb("#65f69c") // IND
+#let tsv = rgb("#e637bf") // TSV
 
 // Cross-sections of the QPDK layer stacks. Not to scale: the main panel draws
 // `LAYER_STACK` plus the `LAYER_STACK_FLIP_CHIP` top chip with the thin films at
@@ -84,14 +103,14 @@
   )
 
   // TSV through the substrate under the left ground plane.
-  rect((1.85, 7.6), (2.35, z0), fill: slate, stroke: none)
+  rect((1.85, 7.6), (2.35, z0), fill: tsv, stroke: none)
   break-band(9.35, 1.85, 2.35)
 
   // CPW: ground, slot, signal, slot, ground. The slots are M1_ETCH.
   let m1 = z(200)
-  rect((x0, z0), (3.5, m1), fill: blue, stroke: none)
-  rect((4.0, z0), (5.0, m1), fill: light-blue, stroke: 0.5pt + dark-blue)
-  rect((5.5, z0), (7.2, m1), fill: blue, stroke: none)
+  rect((x0, z0), (3.5, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
+  rect((4.0, z0), (5.0, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
+  rect((5.5, z0), (7.2, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
   for (a, b) in ((3.5, 4.0), (5.0, 5.5)) {
     line((a, z0 - 0.18), (b, z0 - 0.18), stroke: 0.6pt + muted, mark: (
       start: ">",
@@ -103,16 +122,16 @@
   content((4.5, z0 - 0.45), small[M1_ETCH (1/1) slots], anchor: "center")
 
   // Airbridge over the signal line, landing on both grounds through vias.
-  rect((2.75, m1), (3.15, z(300)), fill: dark-blue, stroke: none)
-  rect((5.85, m1), (6.25, z(300)), fill: dark-blue, stroke: none)
-  rect((2.75, z(300)), (6.25, z(500)), fill: dark-blue, stroke: none)
+  rect((2.75, m1), (3.15, z(300)), fill: ab-via, stroke: none)
+  rect((5.85, m1), (6.25, z(300)), fill: ab-via, stroke: none)
+  rect((2.75, z(300)), (6.25, z(500)), fill: ab, stroke: none)
 
   // Josephson junction bridging a gap between two M1 electrodes.
-  rect((7.65, z0), (8.35, m1), fill: blue, stroke: none)
-  rect((7.05, z0), (7.8, z(70)), fill: copper, stroke: none)
+  rect((7.65, z0), (8.35, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
+  rect((7.05, z0), (7.8, z(70)), fill: jj, stroke: none)
 
   // NbTiN nanowire film: 15 nm, drawn slightly thicker to stay visible.
-  rect((8.8, z0), (9.7, z0 + 0.07), fill: ink, stroke: none)
+  rect((8.8, z0), (9.7, z0 + 0.07), fill: nbtin, stroke: none)
 
   // Flip-chip top chip (LAYER_STACK_FLIP_CHIP): M2 faces down at z = 10 µm,
   // carried by a second substrate. The indium bump joins the M1 and M2 pads.
@@ -120,11 +139,11 @@
   let m2 = zt + 0.5
   rect((6.6, m2), (x1, top), fill: paper, stroke: 0.7pt + rule)
   break-band(14.9, 6.6, x1)
-  rect((6.6, zt), (9.75, m2), fill: blue, stroke: none)
-  rect((10.1, zt), (x1, m2), fill: light-blue, stroke: 0.5pt + dark-blue)
+  rect((6.6, zt), (9.75, m2), fill: m2-fill, stroke: 0.5pt + m2-frame)
+  rect((10.1, zt), (x1, m2), fill: m2-fill, stroke: 0.5pt + m2-frame)
   content((9.88, zt - 0.2), small[M2_ETCH (2/1)], anchor: "north-east")
-  rect((10.1, z0), (11.5, m1), fill: blue, stroke: none)
-  rect((10.35, m1), (11.25, zt), fill: rule, stroke: 0.7pt + slate)
+  rect((10.1, z0), (11.5, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
+  rect((10.35, m1), (11.25, zt), fill: ind, stroke: 0.5pt + ind.darken(35%))
   break-band(12.6, 10.35, 11.25)
 
   // z axis markers.
@@ -168,7 +187,7 @@
   rect((gx0, g(-150)), (gx1, g(0)), fill: rule, stroke: none)
   // Nanotube between the contacts: not extruded, shown for orientation.
   line((14.6, g(0) + 0.03), (17.1, g(0) + 0.03), stroke: (
-    paint: ink,
+    paint: cnt,
     thickness: 0.8pt,
     dash: "dotted",
   ))
@@ -178,22 +197,22 @@
     anchor: "center",
   )
   for (cx0, cx1) in ((14.2, 15.0), (16.7, 17.5)) {
-    rect((cx0, g(0)), (cx1, g(35)), fill: dark-blue, stroke: none)
-    rect((cx0, g(35)), (cx1, g(45)), fill: copper, stroke: none)
+    rect((cx0, g(0)), (cx1, g(35)), fill: contact, stroke: none)
+    rect((cx0, g(35)), (cx1, g(45)), fill: contact-au, stroke: none)
   }
   for (rx0, rx1) in ((13.6, 14.6), (17.1, 18.1)) {
-    rect((rx0, g(45)), (rx1, g(145)), fill: slate, stroke: none)
+    rect((rx0, g(45)), (rx1, g(145)), fill: jj-patch, stroke: none)
   }
   for (mx0, mx1) in ((gx0, 13.85), (17.85, gx1)) {
     rect(
       (mx0, g(0)),
       (mx1, g(155)),
-      fill: light-blue,
-      stroke: 0.5pt + dark-blue,
+      fill: m1-fill,
+      stroke: 0.5pt + m1-frame,
     )
   }
-  rect((14.85, g(45)), (16.85, g(75)), fill: paper, stroke: 0.6pt + slate)
-  rect((15.35, g(75)), (16.35, g(175)), fill: slate, stroke: none)
+  rect((14.85, g(45)), (16.85, g(75)), fill: hbn, stroke: none)
+  rect((15.35, g(75)), (16.35, g(175)), fill: top-gate, stroke: none)
 
   // Numbered callouts tie each drawn level to the legend.
   let callout(n, at, label-at) = {
@@ -230,37 +249,37 @@
   let level(fill, stroke, name, spec, gds) = (fill, stroke, name, spec, gds)
   let base = (
     level(
-      blue,
-      none,
+      m1-fill,
+      m1-frame,
       [M1_ground],
       [Nb · 200 nm · $z$ 0],
       [derived from SIM_AREA],
     ),
-    level(light-blue, dark-blue, [M1], [Nb · 200 nm · $z$ 0], [M1_DRAW (1/0)]),
+    level(m1-fill, m1-frame, [M1], [Nb · 200 nm · $z$ 0], [M1_DRAW (1/0)]),
     level(
-      dark-blue,
+      ab-via,
       none,
       [Airbridge_Via],
       [Nb · 100 nm · $z$ 200 nm],
       [AB_VIA (10/1)],
     ),
     level(
-      dark-blue,
+      ab,
       none,
       [Airbridge],
       [Nb · 200 nm · $z$ 300 nm],
       [AB_DRAW (10/0)],
     ),
     level(
-      copper,
+      jj,
       none,
       [JosephsonJunction],
       [AlOx/Al · 70 nm · $z$ 0],
       [JJ_AREA (20/0)],
     ),
-    level(ink, none, [NbTiN], [NbTiN · 15 nm · $z$ 0], [NbTiN (25/0)]),
-    level(rule, slate, [IndiumBump], [In · 10 µm · $z$ 200 nm], [IND (30/0)]),
-    level(slate, none, [TSV], [TiN · 500 µm · $z$ −500 µm], [TSV (31/0)]),
+    level(nbtin, none, [NbTiN], [NbTiN · 15 nm · $z$ 0], [NbTiN (25/0)]),
+    level(ind, ind.darken(35%), [IndiumBump], [In · 10 µm · $z$ 200 nm], [IND (30/0)]),
+    level(tsv, none, [TSV], [TiN · 500 µm · $z$ −500 µm], [TSV (31/0)]),
     level(
       paper,
       rule,
@@ -278,15 +297,15 @@
   )
   let flip-chip = (
     level(
-      light-blue,
-      dark-blue,
+      m2-fill,
+      m2-frame,
       [M2],
       [Nb · 200 nm · $z$ 10 µm],
       [M2_DRAW (2/0)],
     ),
     level(
-      blue,
-      none,
+      m2-fill,
+      m2-frame,
       [M2_ground],
       [Nb · 200 nm · $z$ 10 µm],
       [derived from SIM_AREA],
@@ -308,29 +327,29 @@
       [SIM_AREA (98/0)],
     ),
     level(
-      dark-blue,
+      contact,
       none,
       [ContactNb],
       [Nb · 35 nm · $z$ 0],
       [CNT_CONTACT (21/0)],
     ),
     level(
-      copper,
+      contact-au,
       none,
       [ContactAu],
       [Au · 10 nm · $z$ 35 nm],
       [CNT_CONTACT (21/0)],
     ),
     level(
-      paper,
-      slate,
+      hbn,
+      none,
       [hBN],
       [hBN · 30 nm (default) · $z$ 45 nm],
       [HBN (23/0)],
     ),
-    level(slate, none, [TopGate], [Al · 100 nm · $z$ 75 nm], [TOP_GATE (22/0)]),
+    level(top-gate, none, [TopGate], [Al · 100 nm · $z$ 75 nm], [TOP_GATE (22/0)]),
     level(
-      slate,
+      jj-patch,
       none,
       [Reconnection],
       [Al · 100 nm · $z$ 45 nm],
