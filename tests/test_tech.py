@@ -153,6 +153,14 @@ def test_preview_stack_does_not_modify_simulation_stacks() -> None:
     assert not LAYER_STACK.layers["M1_ground"].background
 
 
+def test_preview_junction_patches_use_the_base_datum() -> None:
+    assert (
+        LAYER_STACK_3D.layers["Reconnection"].zmin
+        == LAYER_STACK.layers["JosephsonJunction"].zmin
+    )
+    assert LAYER_STACK_GATEMON.layers["Reconnection"].zmin == pytest.approx(0.045)
+
+
 def test_gatemon_stack_isolates_gate_from_contacts() -> None:
     """HBN separates the two contact films from the gate, with no PEC tube."""
     stack = get_gatemon_layer_stack(hbn_thickness=0.04)

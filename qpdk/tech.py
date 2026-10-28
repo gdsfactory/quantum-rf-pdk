@@ -334,8 +334,10 @@ def get_layer_stack_3d() -> LayerStack:
     """Return a mask preview with ground bounded by the layout extent.
 
     Includes the gatemon contact, dielectric and gate films at their nominal
-    process heights. Use the physical process stacks for simulations and for
-    viewing already prepared positive metal geometry.
+    process heights. The ground is an unconditional blanket film, even without
+    an M1 etch mask. It can cover lower films and fill additive-only gaps.
+    Use a physical process stack for those devices, simulations and already
+    prepared positive metal geometry.
     """
     stack = LAYER_STACK.model_copy(deep=True)
     stack.layers["M1_ground"] = stack.layers["M1_ground"].model_copy(
@@ -350,6 +352,8 @@ def get_layer_stack_3d() -> LayerStack:
         name: LAYER_STACK_GATEMON.layers[name].model_copy(deep=True)
         for name in ("ContactNb", "ContactAu", "hBN", "TopGate", "Reconnection")
     })
+    # JJ_PATCH is shared by base-process junctions and gatemon contacts.
+    stack.layers["Reconnection"].zmin = stack.layers["JosephsonJunction"].zmin
     return stack
 
 
