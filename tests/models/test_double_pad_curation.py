@@ -483,6 +483,20 @@ def test_raw_proof_corruption(packet: dict, damage: str) -> None:
         check_packet(packet)
 
 
+@pytest.mark.parametrize(
+    "diagnostic", ["solver_iterations", "solver_relative_residual"]
+)
+def test_native_log_must_agree_with_retained_diagnostics(
+    packet: dict, diagnostic: str
+) -> None:
+    """A converged log cannot silently replace a different retained table value."""
+    packet["values"][diagnostic] = [3.0 if diagnostic == "solver_iterations" else 2e-10]
+    with pytest.raises(
+        ValueError, match=f"Native {diagnostic} diagnostic differs from Parquet"
+    ):
+        check_packet(packet)
+
+
 def test_only_documented_recovery_can_override_setup_order(packet: dict) -> None:
     packet["settings"]["order"] = 5
     packet["provenance"]["helper_sha256"] = curator.RECOVERY_HELPER
@@ -533,6 +547,80 @@ def test_task_quantity_gates(table: tuple, damage: str) -> None:
             )
     with jax.enable_x64(), pytest.raises(ValueError, match=r"Native|Dataset"):
         validate_native_capacitances(frame, meta, curator.GRID, {}, tolerance=1e-9)
+
+
+@pytest.mark.parametrize(
+    "damage", ["picofarads", "missing_diagnostic", "complex_matrix"]
+)
+def test_native_quantity_metadata_corruption_is_rejected_after_storage(
+    table: tuple, tmp_path: Path, damage: str
+) -> None:
+    """Retained static evidence needs real SI quantities and every diagnostic."""
+    frame, meta = table
+    if damage == "missing_diagnostic":
+        meta = meta.model_copy(
+            update={
+                "quantities": tuple(
+                    q for q in meta.quantities if q.name != "solver_iterations"
+                )
+            }
+        )
+        frame = frame.filter(pl.col("quantity") != "solver_iterations")
+        message = "quantities or diagnostics are missing"
+    else:
+        meta = meta.model_copy(
+            update={
+                "quantities": tuple(
+                    q.model_copy(
+                        update={"unit": "pF"}
+                        if damage == "picofarads"
+                        else {"complex": True}
+                    )
+                    if q.name == "maxwell_capacitance"
+                    else q
+                    for q in meta.quantities
+                )
+            }
+        )
+        selected = pl.col("quantity") == "maxwell_capacitance"
+        if damage == "picofarads":
+            frame = frame.with_columns(
+                pl
+                .when(selected)
+                .then(pl.lit("pF"))
+                .otherwise(pl.col("unit"))
+                .alias("unit"),
+                pl
+                .when(selected)
+                .then(pl.col("value") * 1e12)
+                .otherwise(pl.col("value"))
+                .alias("value"),
+            )
+        else:
+            frame = frame.with_columns(
+                pl
+                .when(selected)
+                .then(0.0)
+                .otherwise(pl.col("value_imag"))
+                .alias("value_imag")
+            )
+        message = (
+            "must be stored in 'F'"
+            if damage == "picofarads"
+            else "quantity kinds or units differ"
+        )
+    frame.write_parquet(
+        tmp_path / "part-0000.parquet", metadata={METADATA_KEY: meta.to_json()}
+    )
+    if damage == "picofarads":
+        with pytest.raises(ValueError, match=message):
+            Dataset(tmp_path)
+        return
+    retained = Dataset(tmp_path)
+    with jax.enable_x64(), pytest.raises(ValueError, match=message):
+        validate_native_capacitances(
+            retained.table, retained.metadata, curator.GRID, {}, tolerance=1e-9
+        )
 
 
 @pytest.fixture
@@ -1040,6 +1128,31 @@ def test_complete_collectors_and_export_roundtrip(
         report["production"][0]["native"][0]["evidence_kind"]
         == "procedural_backend_stub_not_FEM"
     )
+
+
+def test_successful_reference_summary_cannot_replace_missing_native_artifact(
+    complete_campaign: dict, tmp_path: Path
+) -> None:
+    """A retained success summary cannot qualify a face whose Parquet is missing."""
+    faces = complete_campaign["roots"][3]
+    task = complete_campaign["tasks"][2][-1]
+    part = faces / "results/references" / task["label"] / "data/part-0000.parquet"
+    part.unlink()
+    preview = curator.verify(*complete_campaign["roots"])
+    assert not preview["passed"]
+    assert any(f"{faces.name}/{task['label']}" in item for item in preview["pending"])
+    evidence = next(
+        row
+        for row in preview["references"]
+        if row["campaign"] == str(faces) and row["task"]["label"] == task["label"]
+    )
+    assert evidence["raw_summary"]["status"] == "ok"
+    assert str(part.parent) in evidence["error"]
+    assert not evidence.get("passed", False)
+    output = tmp_path / "missing-native-rejected"
+    with pytest.raises(ValueError, match="qualification is incomplete or failed"):
+        curator.verify(*complete_campaign["roots"], output=output)
+    assert not output.exists()
 
 
 @pytest.mark.parametrize(
