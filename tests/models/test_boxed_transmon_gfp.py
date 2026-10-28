@@ -1,6 +1,7 @@
 """Boxed-transmon circuit settings reach all three GFP simulation sources."""
 
 import json
+from functools import partial
 from pathlib import Path
 
 import gdsfactory as gf
@@ -8,16 +9,25 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 from conftest import import_gfp_module
+from gdsfactory.typings import LayerSpec
 
 from qpdk import PDK
 from qpdk.cells import double_pad_transmon_with_bbox
 from qpdk.models import boxed_transmon_fem
+from qpdk.tech import LAYER
 
 
 @pytest.mark.gfp
 @pytest.mark.parametrize("source", ["component", "schematic", "layout"])
+@pytest.mark.parametrize(
+    "layers",
+    [{}, {"layer_metal": (77, 0)}, {"layer_etch": (77, 1)}],
+)
 def test_boxed_transmon_simulation(
-    source: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    source: str,
+    layers: dict[str, tuple[int, int]],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     sdk = import_gfp_module("gdsfactoryplus.sim.sax")
     settings = dict(
@@ -27,17 +37,27 @@ def test_boxed_transmon_simulation(
         inductance_nh=12.0,
         junction_capacitance_ff=1.5,
     )
-    component = double_pad_transmon_with_bbox(**settings)
+    component = double_pad_transmon_with_bbox(**settings, **layers)
 
     @gf.cell
-    def boxed_network() -> gf.Component:
+    def boxed_network(
+        layer_metal: LayerSpec = LAYER.M1_DRAW,
+        layer_etch: LayerSpec = LAYER.M1_ETCH,
+    ) -> gf.Component:
         result = gf.Component()
-        qubit = result.add_ref(component, name="qubit")
+        qubit = result.add_ref(
+            double_pad_transmon_with_bbox(**{
+                **settings,
+                "layer_metal": layer_metal,
+                "layer_etch": layer_etch,
+            }),
+            name="qubit",
+        )
         for name in ("left_pad", "right_pad"):
             result.add_port(name, port=qubit.ports[name])
         return result
 
-    monkeypatch.setitem(PDK.cells, "boxed_network", boxed_network)
+    monkeypatch.setitem(PDK.cells, "boxed_network", partial(boxed_network, **layers))
     sweep = dict(
         wl_min=299792458e6 / 10e9, wl_max=299792458e6 / 1e9, wl_num=101, sweep_axis="f"
     )
@@ -110,7 +130,12 @@ def test_boxed_transmon_simulation(
         else:
             result = sdk.simulate_layout_sax(str(path), "qpdk.PDK", **sweep)
     frequencies = 299792458e6 / jnp.asarray(result["wavelengths"])
-    expected = boxed_transmon_fem(f=frequencies, **settings)
+    expected = boxed_transmon_fem(
+        f=frequencies,
+        **settings,
+        layer_metal=layers.get("layer_metal", LAYER.M1_DRAW),
+        layer_etch=layers.get("layer_etch", LAYER.M1_ETCH),
+    )
     assert set(result["sdict"]) == {f"{a},{b}" for a, b in expected}
     for (a, b), reference in expected.items():
         entry = result["sdict"][f"{a},{b}"]

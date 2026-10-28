@@ -19,11 +19,14 @@ References:
 
 import math
 from functools import cache
+from typing import cast
 
 import jax
 import jax.numpy as jnp
 import sax
+from gdsfactory.typings import LayerSpec
 from jax.typing import ArrayLike
+from kfactory import LayerEnum
 from sax.models.rf import capacitor, electrical_short, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
@@ -37,6 +40,7 @@ from qpdk.models.datasets import (
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
 from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
+from qpdk.tech import LAYER
 
 
 def flipmon_unbonded_model() -> sax.Model:
@@ -158,7 +162,20 @@ def _boxed_transmon_model() -> sax.SDictModel:
     return double_pad_transmon_fem_model(inductance=7e-9)
 
 
-@jit(inline=True)
+def _matches_layer(
+    value: LayerSpec | ArrayLike, index: int, pair: tuple[int, int], name: str
+) -> jax.Array:
+    """Distinguish static layer names, layout indices and GDS pairs."""
+    if isinstance(value, str):
+        return jnp.asarray(value == name)
+    array = jnp.asarray(value)
+    if array.ndim == 0:
+        return array == index
+    if array.shape == (2,):
+        return jnp.all(array == jnp.asarray(pair))
+    return jnp.asarray(False)
+
+
 def boxed_transmon_fem(
     f: ArrayLike = DEFAULT_FREQUENCY,
     pad_size: tuple[ArrayLike, ArrayLike] = (250.0, 400.0),
@@ -167,13 +184,18 @@ def boxed_transmon_fem(
     inductance_nh: ArrayLike = 7.0,
     junction_capacitance_ff: ArrayLike = 0.0,
     z_ref: ArrayLike = 50.0,
+    layer_metal: LayerSpec | ArrayLike = LAYER.M1_DRAW,
+    layer_etch: LayerSpec | ArrayLike = LAYER.M1_ETCH,
 ) -> sax.SDict:
     """Evaluate the finite-ground pad matrix using boxed-transmon layout settings.
 
     Dimensions are in um, Josephson inductance in nH and additional junction
     capacitance in fF. Both pad ports reference a 300 um wide ground frame.
     All mutual and ground capacitances are retained. Geometry outside the
-    stored grid returns NaN. Supports JIT, vmap and grad.
+    stored grid or unsupported metal/etch layers returns NaN. The model assumes
+    the standard QPDK materials. Layer names may be Python literals. External
+    JIT arguments must use numeric indices or GDS pairs, or close over static
+    names. Supports JIT, vmap and grad.
 
     The extraction omits junction metal, readout and packaging. This is a
     linearized circuit, excluding the nonlinear spectrum and distributed modes.
@@ -183,7 +205,12 @@ def boxed_transmon_fem(
     """
     with jax.ensure_compile_time_eval():
         model = _boxed_transmon_model()
-    return model(
+    supported = _matches_layer(
+        layer_metal, int(cast(LayerEnum, LAYER.M1_DRAW)), (1, 0), "M1_DRAW"
+    ) & _matches_layer(
+        layer_etch, int(cast(LayerEnum, LAYER.M1_ETCH)), (1, 1), "M1_ETCH"
+    )
+    result = model(
         f=f,
         pad_width=pad_size[0],
         pad_height=pad_size[1],
@@ -193,6 +220,9 @@ def boxed_transmon_fem(
         junction_capacitance=jnp.asarray(junction_capacitance_ff) * 1e-15,
         z_ref=z_ref,
     )
+    return {
+        ports: jnp.where(supported, values, jnp.nan) for ports, values in result.items()
+    }
 
 
 @jit(inline=True)

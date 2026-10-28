@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+from gdsfactory.typings import LayerSpec
 
 from qpdk import PDK, SAX_MODEL_ALIASES, _get_cell_schematic
 from qpdk.cells import double_pad_transmon_with_bbox
@@ -13,6 +14,7 @@ from qpdk.models import (
     double_pad_transmon_fem_model,
 )
 from qpdk.models.datasets import Dataset, GridInterpolator, check_maxwell
+from qpdk.tech import LAYER
 
 
 def test_grid_and_reference_values() -> None:
@@ -178,3 +180,41 @@ def test_boxed_model_geometry_and_junction_derivatives() -> None:
     assert not jnp.isclose(values[0], values[1])
     assert jnp.isnan(response(149.0, 8.0))
     assert jnp.isnan(response(200.0, -1.0))
+
+
+@pytest.mark.parametrize(
+    ("metal", "etch", "supported"),
+    [
+        (LAYER.M1_DRAW, LAYER.M1_ETCH, True),
+        ((1, 0), (1, 1), True),
+        ("M1_DRAW", "M1_ETCH", True),
+        ((77, 0), (1, 1), False),
+        ((1, 0), (77, 1), False),
+        ("M2_DRAW", "M1_ETCH", False),
+        ((1, 0), "M2_ETCH", False),
+    ],
+)
+def test_boxed_model_rejects_unsupported_process_layers(
+    metal: LayerSpec, etch: LayerSpec, supported: bool
+) -> None:
+    f = jnp.asarray([1e9, 5e9, 10e9])
+    expected = boxed_transmon_fem(f=f)
+    actual = jax.jit(
+        lambda frequency: boxed_transmon_fem(
+            f=frequency, layer_metal=metal, layer_etch=etch
+        )
+    )(f)
+    for ports, values in actual.items():
+        if supported:
+            np.testing.assert_allclose(values, expected[ports], rtol=1e-12, atol=0)
+        else:
+            assert jnp.all(jnp.isnan(values))
+
+
+def test_boxed_process_layers_can_be_traced() -> None:
+    model = jax.jit(boxed_transmon_fem)
+    for metal in (LAYER.M1_DRAW, jnp.asarray([1, 0])):
+        supported = model(f=5e9, layer_metal=metal)
+        assert all(jnp.isfinite(value) for value in supported.values())
+    unsupported = model(f=5e9, layer_metal=jnp.asarray([77, 0]))
+    assert all(jnp.isnan(value) for value in unsupported.values())
