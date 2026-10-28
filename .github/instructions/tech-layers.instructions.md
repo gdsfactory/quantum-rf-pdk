@@ -34,6 +34,9 @@ structure but cannot catch a mismatched datatype.
   levels that should be disjoint, superconductor properties matching the named material).
 - `[tool.elvis]` in `pyproject.toml` lists `short-layers` and `connected-layers` for LVS. Adding a conductive layer
   usually means updating those too — flag when it is missed.
+- The docs cross-section `docs/figures/layer-stack.typ` (shown on `docs/layer_stack.md`) lists every `LAYER_STACK` level
+  with its material, thickness, `zmin` and GDS layer, copied by hand. Flag a change that adds, removes or alters a level
+  without updating that figure.
 
 ## Cross sections
 
