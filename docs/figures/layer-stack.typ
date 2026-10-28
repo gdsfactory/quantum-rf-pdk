@@ -1,7 +1,6 @@
 #import "@preview/cetz:0.4.2"
 #import "style.typ": (
-  blue, body-font, heading-font, ink, muted, paper, rule,
-  slate,
+  blue, body-font, heading-font, ink, muted, paper, rule, slate,
 )
 
 #set page(width: 190mm, height: 178mm, margin: 3mm, fill: white)
@@ -278,7 +277,13 @@
       [JJ_AREA (20/0)],
     ),
     level(nbtin, none, [NbTiN], [NbTiN · 15 nm · $z$ 0], [NbTiN (25/0)]),
-    level(ind, ind.darken(35%), [IndiumBump], [In · 10 µm · $z$ 200 nm], [IND (30/0)]),
+    level(
+      ind,
+      ind.darken(35%),
+      [IndiumBump],
+      [In · 10 µm · $z$ 200 nm],
+      [IND (30/0)],
+    ),
     level(tsv, none, [TSV], [TiN · 500 µm · $z$ −500 µm], [TSV (31/0)]),
     level(
       paper,
@@ -347,7 +352,13 @@
       [hBN · 30 nm (default) · $z$ 45 nm],
       [HBN (23/0)],
     ),
-    level(top-gate, none, [TopGate], [Al · 100 nm · $z$ 75 nm], [TOP_GATE (22/0)]),
+    level(
+      top-gate,
+      none,
+      [TopGate],
+      [Al · 100 nm · $z$ 75 nm],
+      [TOP_GATE (22/0)],
+    ),
     level(
       jj-patch,
       none,
