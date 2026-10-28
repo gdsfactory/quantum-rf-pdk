@@ -106,6 +106,20 @@ model. Both ports reference the coupon's finite ground frame. The dataset omits 
 readout, package and Josephson junction; its recipe is
 ``qpdk/models/datasets/recipes/double_pad_transmon.py``.
 
+The default ``xmon_transmon`` cell uses the qualified ``xmon_palace`` table. Its four
+arm ports share one island capacitance and one explicit grounded junction. Arm lengths
+scale uniformly from (160, 120, 160, 120) um, while widths remain (30, 20, 30, 20) um.
+The table covers arm scales from 0.8 to 1.2 and etched gaps from 8 to 12 um. Unsupported
+shapes return NaN. Unused arm ports need explicit open terminations in SAX circuits.
+
+The table contains 25 production geometries, mesh, order and domain controls at four
+anchors, and 20 held-out solves covering every interpolation cell and both faces of each
+axis. Their raw matrices, diagnostics, source fingerprints and geometry checks are
+embedded in the Parquet metadata. The recipe is ``qpdk/models/datasets/recipes/xmon.py``
+and the verifier is ``python -m qpdk.models.datasets.recipes.curate_xmon``. This is a
+bare island within a finite ground frame. Readout paddles, distributed arms, packaging
+and nonlinear transition frequencies remain outside the model.
+
 ``gatemon_capacitances`` looks up the island's total capacitance :math:`C_\Sigma`, its
 gate capacitance :math:`C_\text{g}` and its readout coupling :math:`C_\text{c}` in F,
 from ``island_size``, ``pocket_gap``, ``pocket_gap_top`` and ``gate_tip_gap`` in um.

@@ -630,6 +630,13 @@ xmon_transmon_schematic = schematic(
     symbol="xmon_transmon",
     tags=["qubits", "transmons"],
     ports=_XMON,
+    models=[
+        sax_model(
+            "xmon_fem",
+            "qpdk.models.xmon",
+            ["top_arm", "right_arm", "bottom_arm", "left_arm"],
+        )
+    ],
 )
 
 flipmon_schematic = schematic(

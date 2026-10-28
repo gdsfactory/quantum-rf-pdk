@@ -462,6 +462,8 @@ def xmon_transmon(
     junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
+    inductance_nh: float = 7.0,
+    junction_capacitance_ff: float = 0.0,
 ) -> Component:
     r"""Creates an Xmon style transmon qubit with cross-shaped geometry.
 
@@ -502,10 +504,19 @@ def xmon_transmon(
             rotation in degrees, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_etch: Layer for the etched regions.
+        inductance_nh: Positive linearized junction inductance in nH.
+        junction_capacitance_ff: Additional junction capacitance in fF.
 
     Returns:
         Component: A gdsfactory component with the Xmon transmon geometry.
+
+    Raises:
+        ValueError: If the junction circuit parameters are nonphysical.
     """
+    if inductance_nh <= 0 or junction_capacitance_ff < 0:
+        raise ValueError(
+            "Require positive inductance and nonnegative junction capacitance"
+        )
     c = Component()
 
     arm_width_top, arm_width_right, arm_width_bottom, arm_width_left = arm_width
