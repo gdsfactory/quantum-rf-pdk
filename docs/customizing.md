@@ -140,10 +140,17 @@ masks so the two metal regions stay disjoint and additive metal takes priority. 
 with nominal gatemon films for visibility, rather than defining a fabrication process. `SIM_AREA` is hidden in the layer
 views so vacuum does not obscure the device.
 
+The preview assumes a blanket Nb ground plane even when the component has no M1 etch mask. This can cover lower films
+such as an NbTiN nanowire or a junction, and fills the gaps of additive-only capacitors. The current renderer cannot
+make the background conditional on mask presence. For those devices, use `component.to_3d(layer_stack=LAYER_STACK)` to
+view the physical stack without the assumed ground plane. The shared `JJ_PATCH` layer uses the base junction height in
+the preview, while `LAYER_STACK_GATEMON` retains its physical contact height.
+
 Simulation code must pass a physical stack explicitly: `LAYER_STACK`, `LAYER_STACK_FLIP_CHIP` or `LAYER_STACK_GATEMON`,
-or their variants without vacuum. These stacks retain their physical process dimensions and use `SIM_AREA` for ground
-extraction. Also pass a physical stack when viewing already prepared positive metal geometry so the preview's implicit
-ground does not fill its gaps.
+or their variants without vacuum. These stacks retain their physical process dimensions. The base and flip-chip stacks
+use `SIM_AREA` for ground extraction. The gatemon stack expects positive metal geometry from
+`qpdk.simulation.layout.prepare_metal_layout`. Also pass a physical stack when viewing already prepared positive metal
+geometry so the preview's implicit ground does not fill its gaps.
 
 For standalone 3D viewing, run `uv run --extra graphics python qpdk/samples/sample_to_3d.py`. The sample uses
 gdsfactory's `component.to_3d()` and `scene.show()` to open a trimesh window. The same call embeds the view in Jupyter.
