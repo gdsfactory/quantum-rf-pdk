@@ -98,13 +98,11 @@ def test_native_launch_uses_mpi_without_wrapper_flags(
     monkeypatch.setenv("PALACE_EXECUTABLE", "/unselected/palace")
 
     def launch(command, **kwargs):
-        assert command == [
-            str(mpi) if bundled_mpi else "mpirun",
-            "-np",
-            str(processes),
-            str(executable),
-            "config.json",
-        ]
+        if bundled_mpi:
+            assert Path(command[0]).samefile(mpi)
+        else:
+            assert command[0] == "mpirun"
+        assert command[1:] == ["-np", str(processes), str(executable), "config.json"]
         assert kwargs["env"]["OMP_NUM_THREADS"] == "1"
         assert kwargs["env"]["PALACE_EXECUTABLE"] == "/unselected/palace"
         assert kwargs["cwd"] == tmp_path
@@ -195,7 +193,8 @@ def test_discovery_binds_only_matching_libraries(
             assert environment.get("LD_LIBRARY_PATH") == prior_libraries
             assert environment["PATH"] == "/user/bin"
         if native:
-            assert command == [str(mpi), "-np", "5", str(executable), "config.json"]
+            assert Path(command[0]).samefile(mpi)
+            assert command[1:] == ["-np", "5", str(executable), "config.json"]
             assert environment["OMP_NUM_THREADS"] == "1"
         else:
             assert command == [
