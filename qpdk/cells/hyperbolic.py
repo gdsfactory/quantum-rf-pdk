@@ -39,9 +39,10 @@ from klayout import db as kdb
 
 from qpdk.cells.launcher import launcher
 from qpdk.hyperbolic import hyperbolic_tiling
-from qpdk.tech import LAYER, get_etch_section
+from qpdk.tech import get_etch_section
 
 __all__ = [
+    "hyperbolic_cpw_path",
     "hyperbolic_edge_resonator",
     "hyperbolic_lattice",
     "hyperbolic_vertex_coupler",
@@ -128,10 +129,13 @@ def hyperbolic_vertex_coupler(
     width, gap = xs.width, etch.width
     # Lead must land on its pin: chord across the pin at the rim > lead width.
     pin_chord = 2 * pin_radius * math.sin(math.pi / q) - pin_gap
-    if pin_chord <= width:
+    # Leads overlap the disk by ``width``; their inner ends must stay apart.
+    inner_chord = 2 * (pin_radius - width) * math.sin(math.pi / q) - pin_gap
+    if min(pin_chord, inner_chord) <= width:
         raise ValueError(
             f"Pins of a {q}-pin coupler with pin_radius={pin_radius} µm are "
-            f"narrower ({pin_chord:.1f} µm) than the lead ({width} µm)."
+            f"narrower ({min(pin_chord, inner_chord):.1f} µm) than the lead "
+            f"({width} µm)."
         )
 
     def strip(end: np.ndarray, length: float, width: float) -> kdb.Region:
@@ -166,9 +170,51 @@ def hyperbolic_vertex_coupler(
             cross_section=xs,
         )
     metal.merge()
-    c.add_polygon(metal, layer=LAYER.M1_DRAW)
-    c.add_polygon((clearance - metal).merged(), layer=LAYER.M1_ETCH)
+    c.add_polygon(metal, layer=xs.layer)
+    c.add_polygon((clearance - metal).merged(), layer=etch.layer)
     c.info["q"] = q
+    return c
+
+
+@gf.cell
+def hyperbolic_cpw_path(
+    points: tuple[tuple[float, float], ...] = ((0.0, 0.0), (100.0, 0.0)),
+    radius: float = 100.0,
+    shorted: bool = False,
+    cross_section: CrossSectionSpec = "cpw",
+) -> Component:
+    """CPW along ``points`` with rounded corners, ports at the first and last point.
+
+    :func:`hyperbolic_lattice` uses it for the boundary stubs and probe
+    feeds. The direction is baked into the cell so it can be placed off-axis
+    without an off-grid rotation. With ``shorted`` the far end is a short like
+    :func:`~qpdk.cells.waveguides.straight_shorted` and ``o2`` only marks it.
+
+    Args:
+        points: Waypoints in µm; consecutive segments must leave room for the arcs.
+        radius: Corner radius in µm.
+        shorted: Short the far end instead of leaving a port there.
+        cross_section: CPW cross-section.
+
+    Returns:
+        Component with ports ``o1`` (start) and ``o2`` (end).
+    """
+    pts = np.asarray(points, dtype=float)
+    c = Component()
+    path = _rounded_path(pts, radius)
+    ref = c << gf.path.extrude(path, cross_section=cross_section, all_angle=False)
+    ref.flatten()
+    xs = gf.get_cross_section(cross_section)
+    for name, (a, b) in (("o1", (pts[1], pts[0])), ("o2", (pts[-2], pts[-1]))):
+        d = b - a
+        c.add_port(
+            name=name,
+            center=(float(b[0]), float(b[1])),
+            orientation=math.degrees(math.atan2(d[1], d[0])),
+            cross_section=xs,
+            port_type="placement" if shorted and name == "o2" else "optical",
+        )
+    c.info["length"] = path.length()
     return c
 
 
@@ -414,6 +460,13 @@ def hyperbolic_edge_resonator(
     if not polygon.is_convex():
         raise ValueError("region must be a convex polygon.")
     inner = kdb.Region(polygon).sized(-round(margin / _GRID))
+    axis = [
+        _unit(start_angle) * end_straight,
+        end_xy - _unit(end_angle) * end_straight,
+    ]
+    ray = kdb.DEdge(*starmap(kdb.DPoint, axis)).to_itype(_GRID)
+    if not kdb.Edges([ray]).outside_part(kdb.Region(polygon)).is_empty():
+        raise ValueError("The path between the end straights leaves region.")
 
     def build(target: float) -> gf.Path:
         pts = _meander_points(
@@ -512,7 +565,9 @@ def hyperbolic_lattice(
     :cite:`kollarHyperbolicLatticesCircuit2019`. The line between two pin
     rims is ``resonator_length`` long, so the couplers' leads count towards
     it. In full-wave operation the lattice realises line-graph tight binding
-    with :math:`t < 0` and a flat band at :math:`\omega_0 - 2|t|`.
+    with :math:`t < 0` and a flat band at :math:`\omega_0 - 2|t|`; for
+    :math:`q > 3` only approximately, since the coupler disk couples only
+    neighbouring pins.
 
     Free coupler pins on the boundary get a shorted CPW stub of
     ``stub_length`` (a :math:`\lambda/4` resonator far above the band), so
@@ -530,10 +585,8 @@ def hyperbolic_lattice(
     ``p`` need a larger ``disk_radius`` (two shells of {7,3} fit at
     12000 µm), and the default ``probe_pins`` need at least 12 free pins.
 
-    The stubs and probe feeds are drawn as flat polygons, so the extracted
-    netlist shows the free pins as open. Use
-    :func:`qpdk.models.hyperbolic.hyperbolic_lattice` to simulate the lattice
-    instead of the netlist.
+    Simulate the lattice with :func:`qpdk.models.hyperbolic.hyperbolic_lattice`;
+    a SAX circuit built from the netlist is too large to compile.
 
     Args:
         p: Polygon side count of the tiling.
@@ -660,9 +713,14 @@ def hyperbolic_lattice(
         start = np.array(port.center)
         d = _unit(port.orientation)
         if (v, k) not in probe_index:
-            stub = gf.Path(np.array([start, start + d * (stub_length - lead_length)]))
-            ref = c << gf.path.extrude(stub, cross_section=cross_section)
-            ref.flatten()
+            tip = d * (stub_length - lead_length)
+            ref = c << hyperbolic_cpw_path(
+                points=((0.0, 0.0), (round(tip[0], 3), round(tip[1], 3))),
+                shorted=True,
+                cross_section=cross_section,
+            )
+            ref.name = f"stub{v}_{k}"
+            ref.dmove(tuple(start))
             continue
         heading = round(port.orientation / 90) * 90
         m = _unit(heading)
@@ -672,9 +730,16 @@ def hyperbolic_lattice(
         tip = np.array(gf.snap.snap_to_grid(tip))
         lead_in = start + d * 2 * radius
         points = [start, lead_in, tip - m * 2 * radius, tip]
-        feed = _rounded_path(np.array(points), radius)
-        ref = c << gf.path.extrude(feed, cross_section=cross_section)
-        ref.flatten()
+        ref = c << hyperbolic_cpw_path(
+            points=tuple(
+                (round(float(x - start[0]), 3), round(float(y - start[1]), 3))
+                for x, y in points
+            ),
+            radius=radius,
+            cross_section=cross_section,
+        )
+        ref.name = f"feed{probe_index[v, k] + 1}"
+        ref.dmove(tuple(start))
         pad = c << launcher(cross_section_small=cross_section)
         pad.name = f"launcher{probe_index[v, k] + 1}"
         pad.drotate(heading + 180)

@@ -13,7 +13,9 @@ ends oscillate in phase, the lattice obeys
 
 on the line graph of the tiling, so the spectrum is
 :math:`\omega_0 - t\,\lambda(A_\text{L})` with a flat band at
-:math:`\omega_0 - 2|t|` (see :func:`tight_binding_hamiltonian`).
+:math:`\omega_0 - 2|t|` (see :func:`tight_binding_hamiltonian`). This needs
+every pair of resonators at a coupler to be coupled equally, which the
+disk coupler does exactly only for :math:`q \le 3`.
 
 :func:`hyperbolic_lattice` does not use the tight-binding approximation: it
 solves the full circuit of transmission lines, couplers and boundary stubs.
@@ -36,6 +38,7 @@ from qpdk.models.waveguides import straight, straight_shorted
 _BATCH_SIZE = 32  # frequencies solved at once by the lattice model
 
 __all__ = [
+    "hyperbolic_cpw_path",
     "hyperbolic_edge_resonator",
     "hyperbolic_lattice",
     "hyperbolic_vertex_coupler",
@@ -98,7 +101,8 @@ def hyperbolic_vertex_coupler_capacitances(
     ``pin_radius / 2`` with :func:`~qpdk.models.capacitor.plate_capacitor_capacitance_analytical`,
     and each sector's arc as a pad of the same width facing the ground plane.
     Only neighbouring sectors are coupled; for :math:`q > 3` the weaker
-    coupling across the disk is neglected.
+    coupling across the disk is neglected, so the hopping between edges is
+    not uniform and the line-graph picture holds only approximately.
 
     Returns:
         ``(C_c, C_g)`` in farads: coupling between neighbouring pins and
@@ -119,8 +123,8 @@ def _coupler_capacitance_matrix(
     q: int, c_c: jax.Array | float, c_g: jax.Array | float
 ) -> jax.Array:
     """Maxwell capacitance matrix of ``q`` pins on a ring."""
+    # For q = 2 both gaps lie between the same two pins, so they add up.
     neighbours = jnp.roll(jnp.eye(q), 1, axis=1) + jnp.roll(jnp.eye(q), -1, axis=1)
-    neighbours = jnp.minimum(neighbours, 1.0)  # q = 2 would double count
     return (c_g + c_c * neighbours.sum(axis=1)) * jnp.eye(q) - c_c * neighbours
 
 
@@ -131,7 +135,7 @@ def hyperbolic_vertex_coupler(
     pin_radius: float = 40.0,
     pin_gap: float = 4.0,
     ground_gap: float = 6.0,
-    lead_length: float = 20.0,  # ruff: ignore[unused-function-argument]
+    lead_length: float = 20.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     r"""S-parameters of a ``q``-pin capacitive vertex coupler.
@@ -146,6 +150,8 @@ def hyperbolic_vertex_coupler(
 
     referenced to the CPW impedance :math:`Z_0` of ``cross_section`` so the
     pins connect directly to :func:`~qpdk.models.waveguides.straight` lines.
+    The matched leads then multiply :math:`S_{ij}` by their transmission
+    :math:`t^2`, moving the reference planes to the layout ports.
 
     Args:
         f: Frequency in Hz.
@@ -153,8 +159,7 @@ def hyperbolic_vertex_coupler(
         pin_radius: Radius of the metal disk in µm.
         pin_gap: Width of the radial gaps between pins in µm.
         ground_gap: Clearance between the disk and the ground plane in µm.
-        lead_length: Length of the CPW leads in the layout in µm. The leads
-            are short and matched, so the model ignores them.
+        lead_length: Length of the CPW lead on each pin in µm.
         cross_section: Cross-section of the leads.
 
     Returns:
@@ -168,9 +173,46 @@ def hyperbolic_vertex_coupler(
     capacitance = _coupler_capacitance_matrix(q, c_c, c_g)
     z0 = cpw_z0_from_cross_section(cross_section, f_arr)[..., None, None]
     z0_y = 1j * 2 * jnp.pi * f_arr[..., None, None] * capacitance * z0
-    s = _cayley(z0_y)
+    t = straight(f=f_arr, length=lead_length, cross_section=cross_section)["o2", "o1"]
+    s = _cayley(z0_y) * (t**2)[..., None, None]
     names = [f"o{k + 1}" for k in range(q)]
     return {(names[i], names[j]): s[..., i, j] for i in range(q) for j in range(q)}
+
+
+def hyperbolic_cpw_path(
+    *,
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    points: tuple[tuple[float, float], ...] = ((0.0, 0.0), (100.0, 0.0)),
+    radius: float = 100.0,
+    shorted: bool = False,
+    cross_section: CrossSectionSpec = "cpw",
+) -> sax.SDict:
+    r"""S-parameters of :func:`qpdk.cells.hyperbolic.hyperbolic_cpw_path`.
+
+    A straight CPW of the centreline length: the polyline length minus
+    :math:`2r\tan(\theta/2) - r\theta` at every corner turning by
+    :math:`\theta`.
+
+    Args:
+        f: Frequency in Hz.
+        points: Waypoints in µm.
+        radius: Corner radius in µm.
+        shorted: Short the far end, leaving only port ``o1``.
+        cross_section: CPW cross-section.
+
+    Returns:
+        S-parameters with ports ``o1`` and, unless ``shorted``, ``o2``.
+    """
+    pts = np.asarray(points, dtype=float)
+    seg = np.diff(pts, axis=0)
+    heading = np.arctan2(seg[:, 1], seg[:, 0])
+    turns = np.abs((np.diff(heading) + np.pi) % (2 * np.pi) - np.pi)
+    length = float(
+        np.linalg.norm(seg, axis=1).sum()
+        - (2 * radius * np.tan(turns / 2) - radius * turns).sum()
+    )
+    model = straight_shorted if shorted else straight
+    return model(f=f, length=length, cross_section=cross_section)
 
 
 def hyperbolic_edge_resonator(
@@ -208,6 +250,7 @@ def hyperbolic_lattice(
     pin_radius: float = 40.0,
     pin_gap: float = 4.0,
     ground_gap: float = 6.0,
+    lead_length: float = 20.0,
     cross_section: CrossSectionSpec = "cpw",
 ) -> sax.SDict:
     r"""Circuit model of a Kollár-type hyperbolic lattice of edge resonators.
@@ -249,6 +292,10 @@ def hyperbolic_lattice(
         pin_radius: Coupler disk radius in µm.
         pin_gap: Coupler radial gap in µm.
         ground_gap: Coupler ground clearance in µm.
+        lead_length: Coupler lead length in µm. It is part of
+            ``resonator_length`` and ``stub_length``, and moves the probe
+            reference planes to the end of the probe pins' leads, like
+            :func:`hyperbolic_vertex_coupler`.
         cross_section: CPW cross-section of resonators, stubs and probes.
 
     Returns:
@@ -276,7 +323,7 @@ def hyperbolic_lattice(
         )
 
     f_in = jnp.asarray(f, dtype=float)
-    f_arr = jnp.atleast_1d(f_in)
+    f_arr = jnp.ravel(f_in)
     z0 = cpw_z0_from_cross_section(cross_section, f_arr)
 
     # Pin k of coupler v is node v * q + k, renumbered so the probes come first.
@@ -326,6 +373,8 @@ def hyperbolic_lattice(
     s = jax.lax.map(
         solve_one, (2 * jnp.pi * f_arr, line, y_stub, z0), batch_size=_BATCH_SIZE
     )
+    t = straight(f=f_arr, length=lead_length, cross_section=cross_section)["o2", "o1"]
+    s = s * (t**2)[:, None, None]
     s = s.reshape(*f_in.shape, len(probes), len(probes))
     names = [f"o{n + 1}" for n in range(len(probes))]
     return {

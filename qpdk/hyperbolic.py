@@ -103,6 +103,16 @@ def _key(z: complex) -> tuple[float, float]:
     return (round(z.real, _KEY_DECIMALS), round(z.imag, _KEY_DECIMALS))
 
 
+def _readonly(a: np.ndarray) -> np.ndarray:
+    """Mark ``a`` read-only; tilings are cached and shared between callers.
+
+    Returns:
+        ``a`` itself.
+    """
+    a.flags.writeable = False
+    return a
+
+
 @dataclass(frozen=True)
 class HyperbolicTiling:
     """Finite flake of a {p,q} tiling in the unit Poincaré disk.
@@ -125,6 +135,11 @@ class HyperbolicTiling:
     faces: tuple[tuple[int, ...], ...] = field(repr=False)
     face_shells: tuple[int, ...] = field(repr=False)
 
+    def __post_init__(self) -> None:
+        """Freeze the arrays, since :func:`hyperbolic_tiling` shares instances."""
+        _readonly(self.vertices)
+        _readonly(self.edges)
+
     @property
     def num_vertices(self) -> int:
         """Number of vertices ``V``."""
@@ -141,18 +156,18 @@ class HyperbolicTiling:
         b = np.zeros((self.num_vertices, self.num_edges), dtype=int)
         b[self.edges[:, 0], np.arange(self.num_edges)] = 1
         b[self.edges[:, 1], np.arange(self.num_edges)] = 1
-        return b
+        return _readonly(b)
 
     @cached_property
     def adjacency(self) -> np.ndarray:
         """Vertex adjacency matrix of the layout graph, shape ``(V, V)``."""
         b = self.incidence
-        return b @ b.T - np.diag(self.degree)
+        return _readonly(b @ b.T - np.diag(self.degree))
 
     @cached_property
     def degree(self) -> np.ndarray:
         """Number of flake edges at each vertex, shape ``(V,)``."""
-        return self.incidence.sum(axis=1)
+        return _readonly(self.incidence.sum(axis=1))
 
     @cached_property
     def line_graph_adjacency(self) -> np.ndarray:
@@ -161,12 +176,12 @@ class HyperbolicTiling:
         Two edge resonators are neighbours when they share a vertex coupler.
         """
         b = self.incidence
-        return b.T @ b - 2 * np.eye(self.num_edges, dtype=int)
+        return _readonly(b.T @ b - 2 * np.eye(self.num_edges, dtype=int))
 
     @cached_property
     def boundary_vertices(self) -> np.ndarray:
         """Indices of vertices with fewer than ``q`` flake edges."""
-        return np.flatnonzero(self.degree < self.q)
+        return _readonly(np.flatnonzero(self.degree < self.q))
 
     @cached_property
     def neighbors(self) -> tuple[tuple[int, ...], ...]:
@@ -191,7 +206,7 @@ class HyperbolicTiling:
     def edge_lengths(self) -> np.ndarray:
         """Euclidean chord length of each edge in the unit disk, shape ``(E,)``."""
         z = self.vertices
-        return np.abs(z[self.edges[:, 1]] - z[self.edges[:, 0]])
+        return _readonly(np.abs(z[self.edges[:, 1]] - z[self.edges[:, 0]]))
 
     @cached_property
     def pins(self) -> tuple[tuple[float, tuple[int, ...]], ...]:

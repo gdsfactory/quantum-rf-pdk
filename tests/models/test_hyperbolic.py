@@ -18,11 +18,18 @@ import pytest
 import sax
 from scipy.signal import find_peaks
 
+from qpdk.cells.hyperbolic import hyperbolic_cpw_path as cpw_path_cell
 from qpdk.hyperbolic import hyperbolic_tiling
 from qpdk.models.constants import c_0
-from qpdk.models.cpw import cpw_parameters, get_cpw_dimensions
+from qpdk.models.cpw import (
+    cpw_parameters,
+    cpw_z0_from_cross_section,
+    get_cpw_dimensions,
+)
 from qpdk.models.generic import electrical_short
 from qpdk.models.hyperbolic import (
+    _cayley,
+    hyperbolic_cpw_path,
     hyperbolic_edge_resonator,
     hyperbolic_lattice,
     hyperbolic_vertex_coupler,
@@ -35,6 +42,7 @@ from .base import BaseModelTestSuite
 
 RESONATOR_LENGTH = 7500.0
 STUB_LENGTH = 400.0
+LEAD_LENGTH = 20.0
 # Window around the full-wave mode of the default resonators (bare 16.24 GHz,
 # pulled down by the coupler capacitance), clear of the open-line poles.
 F_MIN, F_MAX = 15.5e9, 16.0e9
@@ -71,6 +79,49 @@ def test_coupler_capacitances_positive() -> None:
     assert c_g > 0
     c_c_big, _ = hyperbolic_vertex_coupler_capacitances(pin_radius=80.0)
     assert c_c_big > c_c
+
+
+def test_two_pin_coupler_counts_both_gaps() -> None:
+    """With ``q=2`` both radial gaps lie between the same two pins."""
+    c_c, c_g = hyperbolic_vertex_coupler_capacitances(q=2)
+    s = hyperbolic_vertex_coupler(f=5e9, q=2, lead_length=0.0)
+    z0_y = 1j * 2 * np.pi * 5e9 * cpw_z0_from_cross_section("cpw", 5e9)
+    expected = _cayley(
+        z0_y * jnp.array([[c_g + 2 * c_c, -2 * c_c], [-2 * c_c, c_g + 2 * c_c]])
+    )
+    np.testing.assert_allclose(s["o2", "o1"], expected[1, 0], rtol=1e-9)
+
+
+def test_coupler_leads_shift_reference_planes() -> None:
+    """The leads multiply every S-parameter by the lead transmission squared."""
+    f = jnp.array([5e9, 16e9])
+    bare = hyperbolic_vertex_coupler(f=f, lead_length=0.0)
+    t = straight(f=f, length=20.0)["o2", "o1"]
+    with_leads = hyperbolic_vertex_coupler(f=f, lead_length=20.0)
+    np.testing.assert_allclose(with_leads["o2", "o1"], bare["o2", "o1"] * t**2)
+
+
+def test_cpw_path_model_matches_layout_length() -> None:
+    """The path model is a straight of the layout's rounded centreline length."""
+    points = ((0.0, 0.0), (300.0, 0.0), (500.0, 400.0), (500.0, 900.0))
+    length = cpw_path_cell(points=points, radius=100.0).info["length"]
+    f = jnp.array([5e9, 16e9])
+    s = hyperbolic_cpw_path(f=f, points=points, radius=100.0)
+    np.testing.assert_allclose(
+        s["o2", "o1"], straight(f=f, length=length)["o2", "o1"], rtol=1e-4
+    )
+    shorted = hyperbolic_cpw_path(f=f, points=points[:2], shorted=True)
+    assert set(shorted) == {("o1", "o1")}
+
+
+def test_lattice_keeps_frequency_shape() -> None:
+    """A 2D frequency grid returns S-parameters of the same shape."""
+    f = jnp.linspace(F_MIN, F_MAX, 6).reshape(2, 3)
+    s = hyperbolic_lattice(f=f)
+    assert s["o2", "o1"].shape == (2, 3)
+    np.testing.assert_allclose(
+        s["o2", "o1"].ravel(), hyperbolic_lattice(f=f.ravel())["o2", "o1"]
+    )
 
 
 @pytest.mark.parametrize("q", [3, 4, 5])
@@ -269,8 +320,9 @@ def _sax_netlist_lattice(f: jnp.ndarray, probe_pins: tuple[int, ...]) -> sax.SDi
     """
     tiling = hyperbolic_tiling(7, 3, 1)
     free = tiling.free_pins
-    line = straight(f=f, length=RESONATOR_LENGTH)
-    stub = straight(f=f, length=STUB_LENGTH)
+    # The coupler models include their leads, as in the layout.
+    line = straight(f=f, length=RESONATOR_LENGTH - 2 * LEAD_LENGTH)
+    stub = straight(f=f, length=STUB_LENGTH - LEAD_LENGTH)
     instances: dict[str, sax.SType] = {
         f"c{v}": hyperbolic_vertex_coupler(f=f) for v in range(tiling.num_vertices)
     }

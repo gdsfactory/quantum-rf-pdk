@@ -1,0 +1,31 @@
+info:
+  length: 100
+name: hyperbolic_cpw_path_P0_0_100_0_R100_SFalse_CScpw
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 100
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  cross_section: cpw
+  points:
+  - - 0
+    - 0
+  - - 100
+    - 0
+  radius: 100
+  shorted: false

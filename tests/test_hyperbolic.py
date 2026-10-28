@@ -95,3 +95,11 @@ def test_distance_weighted_adjacency() -> None:
     assert a[0, 1] == pytest.approx(1.0)
     assert a.max() > 1.0
     np.testing.assert_array_equal(a > 0, tiling.adjacency > 0)
+
+
+def test_cached_tiling_is_read_only() -> None:
+    """Tilings are cached and shared, so their arrays cannot be modified."""
+    tiling = hyperbolic_tiling(7, 3, 1)
+    for a in (tiling.vertices, tiling.edges, tiling.incidence, tiling.adjacency):
+        with pytest.raises(ValueError, match="read-only"):
+            a[0] = 0

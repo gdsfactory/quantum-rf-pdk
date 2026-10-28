@@ -419,6 +419,40 @@ instances:
       pin_radius: 40
       q: 3
       rotation: -94.286
+  feed1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 1300
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -200
+        - 0
+      - - -1100
+        - 0
+      - - -1300
+        - 0
+      radius: 100
+      shorted: false
+  feed2:
+    component: hyperbolic_cpw_path
+    info:
+      length: 1297.457
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 194.464
+        - -46.73
+      - - 1072.321
+        - -233.651
+      - - 1272.321
+        - -233.651
+      radius: 100
+      shorted: false
   launcher1:
     component: launcher
     info: {}
@@ -1443,6 +1477,253 @@ instances:
       - - 187.532
         - 769.306
       start_angle: 145.714
+  stub10_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 160.955
+        - 344.229
+      radius: 100
+      shorted: true
+  stub12_2:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 299.783
+        - 233.517
+      radius: 100
+      shorted: true
+  stub13_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 84.556
+        - 370.473
+      radius: 100
+      shorted: true
+  stub14_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -168.777
+        - 340.462
+      radius: 100
+      shorted: true
+  stub16_2:
+    component: hyperbolic_cpw_path
+    info:
+      length: 379.999
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -236.924
+        - 297.097
+      radius: 100
+      shorted: true
+  stub17_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -371.414
+        - 80.32
+      radius: 100
+      shorted: true
+  stub19_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 4.338
+        - 379.975
+      radius: 100
+      shorted: true
+  stub20_2:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -294.368
+        - -240.307
+      radius: 100
+      shorted: true
+  stub22_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -294.368
+        - 240.307
+      radius: 100
+      shorted: true
+  stub25_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -371.414
+        - -80.32
+      radius: 100
+      shorted: true
+  stub26_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 379.999
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -236.924
+        - -297.097
+      radius: 100
+      shorted: true
+  stub27_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 4.338
+        - -379.975
+      radius: 100
+      shorted: true
+  stub28_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -168.777
+        - -340.462
+      radius: 100
+      shorted: true
+  stub29_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 84.556
+        - -370.473
+      radius: 100
+      shorted: true
+  stub30_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 299.783
+        - -233.517
+      radius: 100
+      shorted: true
+  stub32_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 160.955
+        - -344.229
+      radius: 100
+      shorted: true
+  stub33_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 342.368
+        - -164.876
+      radius: 100
+      shorted: true
+  stub34_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 369.482
+        - 88.787
+      radius: 100
+      shorted: true
+  stub9_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 342.368
+        - 164.876
+      radius: 100
+      shorted: true
 nets:
 - p1: c0,o1
   p2: r0,o1
@@ -1494,14 +1775,20 @@ nets:
   p2: r41,o1
 - p1: c8,o1
   p2: r7,o2
+- p1: c8,o2
+  p2: feed2,o1
 - p1: c8,o3
   p2: r8,o1
 - p1: c9,o1
   p2: r8,o2
+- p1: c9,o2
+  p2: stub9_1,o1
 - p1: c9,o3
   p2: r9,o1
 - p1: c10,o1
   p2: r9,o2
+- p1: c10,o2
+  p2: stub10_1,o1
 - p1: c10,o3
   p2: r10,o1
 - p1: c11,o1
@@ -1514,12 +1801,18 @@ nets:
   p2: r13,o1
 - p1: c12,o2
   p2: r17,o2
+- p1: c12,o3
+  p2: stub12_2,o1
 - p1: c13,o1
   p2: r13,o2
+- p1: c13,o2
+  p2: stub13_1,o1
 - p1: c13,o3
   p2: r14,o1
 - p1: c14,o1
   p2: r14,o2
+- p1: c14,o2
+  p2: stub14_1,o1
 - p1: c14,o3
   p2: r15,o1
 - p1: c15,o1
@@ -1532,8 +1825,12 @@ nets:
   p2: r18,o1
 - p1: c16,o2
   p2: r22,o1
+- p1: c16,o3
+  p2: stub16_2,o1
 - p1: c17,o1
   p2: r18,o2
+- p1: c17,o2
+  p2: stub17_1,o1
 - p1: c17,o3
   p2: r19,o1
 - p1: c18,o1
@@ -1544,12 +1841,16 @@ nets:
   p2: r20,o2
 - p1: c19,o1
   p2: r21,o2
+- p1: c19,o2
+  p2: stub19_1,o1
 - p1: c19,o3
   p2: r22,o2
 - p1: c20,o1
   p2: r23,o1
 - p1: c20,o2
   p2: r27,o1
+- p1: c20,o3
+  p2: stub20_2,o1
 - p1: c21,o1
   p2: r23,o2
 - p1: c21,o2
@@ -1558,10 +1859,14 @@ nets:
   p2: r24,o2
 - p1: c22,o1
   p2: r25,o2
+- p1: c22,o2
+  p2: stub22_1,o1
 - p1: c22,o3
   p2: r26,o1
 - p1: c23,o1
   p2: r26,o2
+- p1: c23,o2
+  p2: feed1,o1
 - p1: c23,o3
   p2: r27,o2
 - p1: c24,o1
@@ -1572,26 +1877,38 @@ nets:
   p2: r33,o1
 - p1: c25,o1
   p2: r29,o2
+- p1: c25,o2
+  p2: stub25_1,o1
 - p1: c25,o3
   p2: r30,o1
 - p1: c26,o1
   p2: r30,o2
+- p1: c26,o2
+  p2: stub26_1,o1
 - p1: c26,o3
   p2: r31,o1
 - p1: c27,o1
   p2: r31,o2
+- p1: c27,o2
+  p2: stub27_1,o1
 - p1: c27,o3
   p2: r32,o2
 - p1: c28,o1
   p2: r33,o2
+- p1: c28,o2
+  p2: stub28_1,o1
 - p1: c28,o3
   p2: r34,o1
 - p1: c29,o1
   p2: r34,o2
+- p1: c29,o2
+  p2: stub29_1,o1
 - p1: c29,o3
   p2: r35,o1
 - p1: c30,o1
   p2: r35,o2
+- p1: c30,o2
+  p2: stub30_1,o1
 - p1: c30,o3
   p2: r36,o1
 - p1: c31,o1
@@ -1602,16 +1919,26 @@ nets:
   p2: r37,o2
 - p1: c32,o1
   p2: r38,o2
+- p1: c32,o2
+  p2: stub32_1,o1
 - p1: c32,o3
   p2: r39,o1
 - p1: c33,o1
   p2: r39,o2
+- p1: c33,o2
+  p2: stub33_1,o1
 - p1: c33,o3
   p2: r40,o1
 - p1: c34,o1
   p2: r40,o2
+- p1: c34,o2
+  p2: stub34_1,o1
 - p1: c34,o3
   p2: r41,o2
+- p1: feed1,o2
+  p2: launcher1,o1
+- p1: feed2,o2
+  p2: launcher2,o1
 placements:
   c0:
     mirror: false
@@ -1788,6 +2115,16 @@ placements:
     rotation: 0
     x: 3751.576
     y: 1806.664
+  feed1:
+    mirror: false
+    rotation: 0
+    x: -4223.936
+    y: 0
+  feed2:
+    mirror: false
+    rotation: 0
+    x: 3909.085
+    y: 864.889
   launcher1:
     mirror: false
     rotation: 0
@@ -2008,6 +2345,101 @@ placements:
     rotation: 0
     x: 3702.002
     y: 1840.463
+  stub10_1:
+    mirror: false
+    rotation: 0
+    x: 3113.472
+    y: 2516.996
+  stub12_2:
+    mirror: false
+    rotation: 0
+    x: 1761.077
+    y: 3595.495
+  stub13_1:
+    mirror: false
+    rotation: 0
+    x: 939.914
+    y: 4118.033
+  stub14_1:
+    mirror: false
+    rotation: 0
+    x: -26.649
+    y: 4003.532
+  stub16_2:
+    mirror: false
+    rotation: 0
+    x: -2633.58
+    y: 3302.406
+  stub17_1:
+    mirror: false
+    rotation: 0
+    x: -3146.702
+    y: 2475.326
+  stub19_1:
+    mirror: false
+    rotation: 0
+    x: -1713.058
+    y: 3618.62
+  stub20_2:
+    mirror: false
+    rotation: 0
+    x: -3897.225
+    y: -916.851
+  stub22_1:
+    mirror: false
+    rotation: 0
+    x: -3897.225
+    y: 916.851
+  stub25_1:
+    mirror: false
+    rotation: 0
+    x: -3146.702
+    y: -2475.326
+  stub26_1:
+    mirror: false
+    rotation: 0
+    x: -2633.58
+    y: -3302.406
+  stub27_1:
+    mirror: false
+    rotation: 0
+    x: -1713.058
+    y: -3618.62
+  stub28_1:
+    mirror: false
+    rotation: 0
+    x: -26.649
+    y: -4003.532
+  stub29_1:
+    mirror: false
+    rotation: 0
+    x: 939.914
+    y: -4118.033
+  stub30_1:
+    mirror: false
+    rotation: 0
+    x: 1761.077
+    y: -3595.495
+  stub32_1:
+    mirror: false
+    rotation: 0
+    x: 3113.472
+    y: -2516.996
+  stub33_1:
+    mirror: false
+    rotation: 0
+    x: 3805.634
+    y: -1832.697
+  stub34_1:
+    mirror: false
+    rotation: 0
+    x: 3909.085
+    y: -864.889
+  stub9_1:
+    mirror: false
+    rotation: 0
+    x: 3805.634
+    y: 1832.697
 ports:
   o1: launcher1,waveport
   o2: launcher2,waveport

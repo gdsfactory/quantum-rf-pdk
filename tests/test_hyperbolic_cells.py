@@ -50,6 +50,20 @@ def test_vertex_coupler_rejects_narrow_pins() -> None:
         hyperbolic_vertex_coupler(q=12, pin_radius=15.0)
     with pytest.raises(ValueError, match="at least 2"):
         hyperbolic_vertex_coupler(q=1)
+    with pytest.raises(ValueError, match="narrower"):
+        # Wide enough at the rim, but the leads would meet near the centre.
+        hyperbolic_vertex_coupler(q=3, pin_radius=10.0)
+
+
+def test_vertex_coupler_uses_cross_section_layers() -> None:
+    """Metal goes on the cross-section's conductor layer, not a fixed one."""
+    c = hyperbolic_vertex_coupler(
+        pin_radius=5.0, pin_gap=0.5, cross_section="superinductor_cross_section"
+    )
+    nbtin = c.kdb_cell.shapes(c.kcl.layer(*LAYER.NbTiN))
+    m1 = c.kdb_cell.shapes(c.kcl.layer(*LAYER.M1_DRAW))
+    assert not nbtin.is_empty()
+    assert m1.is_empty()
 
 
 @pytest.mark.parametrize(
@@ -95,6 +109,16 @@ def test_edge_resonator_stays_in_region() -> None:
     assert outside.is_empty()
 
 
+def test_edge_resonator_outside_region_raises() -> None:
+    """A path that would run outside ``region`` is rejected, even when straight."""
+    with pytest.raises(ValueError, match="leaves region"):
+        hyperbolic_edge_resonator(
+            length=1000.0,
+            end=(1000.0, 0.0),
+            region=((0.0, 100.0), (1000.0, 100.0), (1000.0, 500.0), (0.0, 500.0)),
+        )
+
+
 def test_edge_resonator_too_long_raises() -> None:
     """A resonator that does not fit its region is an error."""
     with pytest.raises(ValueError, match="Region holds at most"):
@@ -128,6 +152,27 @@ def test_lattice_instances(lattice) -> None:
     for inst in lattice.insts:
         if inst.name.startswith("r"):
             assert inst.cell.info["length"] == pytest.approx(7460.0, abs=0.05)
+    n_stubs = len(tiling.free_pins) - 2
+    assert sum(n.startswith("stub") for n in names) == n_stubs
+    assert sum(n.startswith("feed") for n in names) == 2
+
+
+def test_lattice_stubs_and_feeds_are_connected(lattice) -> None:
+    """Stubs and probe feeds are instances whose ports meet the free pins."""
+    tiling = hyperbolic_tiling(7, 3, 1)
+    insts = {inst.name: inst for inst in lattice.insts}
+    free = tiling.free_pins
+    feeds = {free[11]: insts["feed1"], free[0]: insts["feed2"]}
+    for v, k in free:
+        pin = insts[f"c{v}"].ports[f"o{k + 1}"]
+        ref = feeds.get((v, k), insts.get(f"stub{v}_{k}"))
+        assert ref is not None
+        assert np.allclose(ref.ports["o1"].center, pin.center, atol=1e-3)
+    for n in (1, 2):
+        launcher = insts[f"launcher{n}"].ports["o1"]
+        assert np.allclose(
+            insts[f"feed{n}"].ports["o2"].center, launcher.center, atol=1e-3
+        )
 
 
 def test_lattice_wiring_matches_tiling(lattice) -> None:
