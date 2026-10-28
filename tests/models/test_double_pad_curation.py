@@ -1147,7 +1147,8 @@ def test_successful_reference_summary_cannot_replace_missing_native_artifact(
         if row["campaign"] == str(faces) and row["task"]["label"] == task["label"]
     )
     assert evidence["raw_summary"]["status"] == "ok"
-    assert str(part.parent) in evidence["error"]
+    assert "No dataset" in evidence["error"]
+    assert task["label"] in evidence["error"]
     assert not evidence.get("passed", False)
     output = tmp_path / "missing-native-rejected"
     with pytest.raises(ValueError, match="qualification is incomplete or failed"):
