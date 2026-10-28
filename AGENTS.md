@@ -167,9 +167,10 @@ All PRs must pass:
 
 1. **Follow quantum device design patterns**: This PDK is specifically for superconducting quantum circuits
 1. **Maintain layer stack consistency**: All layer definitions must match between `qpdk/layers.yaml` and `qpdk/tech.py`
-1. **Keep the layer stack figure current**: When a level is added to, removed from, or changed in `LAYER_STACK`
-   (`get_layer_stack()` in `qpdk/tech.py`), update the cross-section in `docs/figures/layer-stack.typ` and the notes in
-   `docs/layer_stack.md` to match. Its values are copied by hand, so nothing else catches the drift.
+1. **Keep the layer stack figure current**: When a level is added to, removed from, or changed in `LAYER_STACK`,
+   `LAYER_STACK_FLIP_CHIP` or `get_gatemon_layer_stack()` in `qpdk/tech.py`, or a new stack is added, update the
+   cross-section in `docs/figures/layer-stack.typ` and the notes in `docs/layer_stack.md` to match. Its values are
+   copied by hand, so nothing else catches the drift.
 1. **Use regression testing**: New components should have regression tests for both settings and netlists, the files are
    generated automatically with `just test-gds-force`
 1. **Prefer Justfile commands**: Use `just` commands instead of direct tool invocation if possible
