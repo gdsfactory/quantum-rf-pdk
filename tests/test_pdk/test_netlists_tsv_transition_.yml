@@ -9,7 +9,7 @@ instances:
       route_info_weight: 100
     settings:
       cross_section1: cpw
-      cross_section2: xs_519f776d
+      cross_section2: xs_e598f36f
       exclude_layers: null
       length: 100
       linear: true
