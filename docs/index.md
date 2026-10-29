@@ -32,7 +32,6 @@ It includes the README.md but skips SVG badges which cannot be rendered in LaTeX
 
 cells
 models
-layer_stack
 ```
 
 ```{toctree}
@@ -54,6 +53,12 @@ notebooks
 :hidden:
 
 simulation
+```
+
+```{toctree}
+:hidden:
+
+layer_stack
 ```
 
 ```{toctree}
