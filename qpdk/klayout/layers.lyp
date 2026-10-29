@@ -84,6 +84,74 @@
    <name>M2_ETCH 2/1</name>
    <source>2/1@1</source>
   </group-members>
+  <group-members>
+   <frame-color>#c9b6f2</frame-color>
+   <fill-color>#c9b6f2</fill-color>
+   <frame-brightness>0</frame-brightness>
+   <fill-brightness>0</fill-brightness>
+   <dither-pattern>I5</dither-pattern>
+   <line-style/>
+   <valid>true</valid>
+   <visible>true</visible>
+   <transparent>false</transparent>
+   <width>1</width>
+   <marked>false</marked>
+   <xfill>false</xfill>
+   <animation>0</animation>
+   <name>MB_DRAW 3/0</name>
+   <source>3/0@1</source>
+  </group-members>
+  <group-members>
+   <frame-color>#8e6fd8</frame-color>
+   <fill-color>#8e6fd8</fill-color>
+   <frame-brightness>0</frame-brightness>
+   <fill-brightness>0</fill-brightness>
+   <dither-pattern>I2</dither-pattern>
+   <line-style/>
+   <valid>true</valid>
+   <visible>true</visible>
+   <transparent>false</transparent>
+   <width>1</width>
+   <marked>false</marked>
+   <xfill>false</xfill>
+   <animation>0</animation>
+   <name>MB_ETCH 3/1</name>
+   <source>3/1@1</source>
+  </group-members>
+  <group-members>
+   <frame-color>#f5dc83</frame-color>
+   <fill-color>#f5dc83</fill-color>
+   <frame-brightness>0</frame-brightness>
+   <fill-brightness>0</fill-brightness>
+   <dither-pattern>I5</dither-pattern>
+   <line-style/>
+   <valid>true</valid>
+   <visible>true</visible>
+   <transparent>false</transparent>
+   <width>1</width>
+   <marked>false</marked>
+   <xfill>false</xfill>
+   <animation>0</animation>
+   <name>MB2_DRAW 4/0</name>
+   <source>4/0@1</source>
+  </group-members>
+  <group-members>
+   <frame-color>#c9a227</frame-color>
+   <fill-color>#c9a227</fill-color>
+   <frame-brightness>0</frame-brightness>
+   <fill-brightness>0</fill-brightness>
+   <dither-pattern>I2</dither-pattern>
+   <line-style/>
+   <valid>true</valid>
+   <visible>true</visible>
+   <transparent>false</transparent>
+   <width>1</width>
+   <marked>false</marked>
+   <xfill>false</xfill>
+   <animation>0</animation>
+   <name>MB2_ETCH 4/1</name>
+   <source>4/1@1</source>
+  </group-members>
  </properties>
  <properties>
   <frame-color/>
@@ -322,6 +390,23 @@
   <animation>0</animation>
   <name>TSV 31/0</name>
   <source>31/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#f28ad9</frame-color>
+  <fill-color>#f28ad9</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I2</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>TSV2 32/0</name>
+  <source>32/0@1</source>
  </properties>
  <properties>
   <frame-color>#ff0000</frame-color>

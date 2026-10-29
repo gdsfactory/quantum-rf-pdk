@@ -47,7 +47,11 @@ build-doc-figures: fetch-docs-fonts
     from fontTools import subset
     from fontTools.ttLib import TTFont
 
-    sources = {p.stem: p for p in Path("docs/figures").glob("*.typ") if p.stem != "style"}
+    # style.typ and _*.typ are modules the figures import, not figures.
+    sources = {
+        p.stem: p for p in Path("docs/figures").glob("*.typ")
+        if p.stem != "style" and not p.stem.startswith("_")
+    }
     output_dir = Path("notebooks/figures")
     output_dir.mkdir(parents=True, exist_ok=True)
     fonts_dir = Path("build/docs-fonts")

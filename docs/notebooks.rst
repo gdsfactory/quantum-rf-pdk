@@ -360,6 +360,18 @@ models miss
 
         :bdg-secondary-line:`Palace` :bdg-secondary-line:`Slurm` :bdg-primary:`optimization`
 
+    .. grid-item-card:: Palace TSV transition
+        :link: notebooks/palace_tsv_transition
+        :link-type: doc
+        :class-card: notebook-card
+
+        Through-silicon-via CPW transition with backside metal, a conductor-backed CPW
+        seed, and optional Palace-driven taper optimization.
+
+        +++
+
+        :bdg-secondary-line:`Palace` :bdg-secondary-line:`gsim` :bdg-primary:`optimization`
+
     .. grid-item-card:: More FEM and FDTD in gsim
         :link: https://gdsfactory.github.io/gsim/
         :class-card: notebook-card notebook-card-external

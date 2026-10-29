@@ -125,7 +125,8 @@ What a foundry PDK usually changes in `qpdk/tech.py`:
 - **`get_layer_stack()`**: physical simulation thicknesses, `zmin`, and materials, for example Al instead of Nb. Keep
   the level names `M1`, `Substrate`, and `Vacuum`. The CPW models and `LAYER_STACK_NO_VACUUM` look them up by name.
 - **`get_layer_stack_3d()`**: the PDK's default mask preview. It copies the physical stack, adds ground across the
-  layout bounds and includes the gatemon contact, hBN, gate and reconnection films.
+  layout bounds and includes the gatemon contact, hBN, gate and reconnection films, plus the drawn `M2`, `MB`, `MB2` and
+  `TSV2` shapes of the other chip faces.
 - **`get_gatemon_layer_stack()`**: the separate hybrid process with thermal oxide, Nb/Au contacts, hBN and an Al top
   gate. Set the hBN thickness from your measured flake. `CNT` records a transferred nanotube's position and is not a
   metal mask or a PEC extrusion. `CNT_CONTACT`, `TOP_GATE` and `JJ_PATCH` define the conductors, and `HBN` records the

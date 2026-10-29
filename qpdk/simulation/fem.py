@@ -9,21 +9,24 @@ dependency group on Python 3.12. Functions that need it import it lazily.
 from __future__ import annotations
 
 from collections.abc import Collection
-from typing import Any
+from typing import Any, Literal
 
 import gdsfactory as gf
 import klayout.db as kdb
 from kfactory.layer import LayerEnum
 
-from qpdk.tech import LAYER, NON_METADATA_LAYERS, material_properties
+from qpdk.tech import CHIP_LAYERS, LAYER, NON_METADATA_LAYERS, Chip, material_properties
 
 __all__ = [
     "FEM_LAYERS",
     "FLIP_CHIP_FEM_LAYERS",
+    "TSV_FEM_LAYERS",
     "flip_chip_stack",
     "single_chip_stack",
     "to_fem_regions",
     "to_flip_chip_regions",
+    "to_tsv_regions",
+    "tsv_stack",
 ]
 
 # Layer numbering understood by gsim's Palace and Meep workflows: dielectric
@@ -388,6 +391,197 @@ def flip_chip_stack(
         # via to a 2-D PEC sheet at its base, which no longer bridges the
         # two conductor planes.
         "qpdk-indium": {"conductivity": 1.16e7},
+        "vacuum": MATERIALS_DB["vacuum"].to_dict(),
+    }
+    return stack
+
+
+# Layer numbering for single-chip models with metal on both faces joined by
+# through-silicon vias: M1 on the front face, MB on the back face, and the
+# vias through the substrate between them. The numbers continue the
+# simulation-only block after FLIP_CHIP_FEM_LAYERS. For the flip-chip top chip
+# (``to_tsv_regions(..., chip="top")``) M1 holds its front metal M2 and MB its
+# backside metal MB2.
+TSV_FEM_LAYERS = {
+    "VACUUM_BOTTOM": (108, 0),  # air below the chip
+    "MB": (109, 0),  # backside metal (zero-thickness PEC)
+    "SUBSTRATE": (110, 0),  # silicon
+    "TSV": (111, 0),  # through-silicon vias (conductive)
+    "M1": (112, 0),  # front-side metal (zero-thickness PEC)
+    "VACUUM": (113, 0),  # air above the chip
+}
+
+
+def _conductor_region(
+    component: gf.Component,
+    sim_region: kdb.Region,
+    etch: tuple[int, int],
+    draw: tuple[int, int],
+    name: str,
+) -> kdb.Region:
+    """Return ``SIM_AREA - ETCH + DRAW`` for one metal level.
+
+    Raises:
+        ValueError: If the level has neither etch nor draw shapes, which the
+            subtractive convention would turn into a solid metal plane.
+    """
+    layout = component.kdb_cell.layout()
+    etch_region = kdb.Region(component.kdb_cell.begin_shapes_rec(layout.layer(*etch)))
+    draw_region = kdb.Region(component.kdb_cell.begin_shapes_rec(layout.layer(*draw)))
+    if etch_region.is_empty() and draw_region.is_empty():
+        msg = (
+            f"metal level {name} has neither etch nor draw shapes;"
+            " the subtractive convention would make it a solid plane"
+        )
+        raise ValueError(msg)
+    return ((sim_region - etch_region) | (draw_region & sim_region)).merged()
+
+
+def _metal_name(draw: tuple[int, int]) -> str:
+    """Metal level name of a ``*_DRAW`` layer, e.g. ``MB`` for ``MB_DRAW``."""
+    return str(draw).removesuffix("_DRAW")
+
+
+def to_tsv_regions(component: gf.Component, chip: Chip = "bottom") -> gf.Component:
+    """Convert a double-sided qpdk layout into explicit TSV FEM regions.
+
+    The front (M1) and back (MB) metal levels both follow the subtractive
+    convention of :func:`to_fem_regions` (conductor is
+    ``SIM_AREA - (ETCH - DRAW)``, per ``LAYER_STACK_BACKSIDE``), and the
+    ``TSV`` layer is copied to its own region. Backside shapes are drawn in
+    the front-side frame, as in :func:`~qpdk.cells.tsv.tsv_transition_double_sided`,
+    so no mirroring is applied. The regions land on the layer numbering of
+    :data:`TSV_FEM_LAYERS`. With ``chip="top"`` the flip-chip top chip is
+    converted instead, reading M2, MB2 and TSV2 into the same regions.
+
+    Args:
+        component: Layout with a ``SIM_AREA`` layer, front and back metal and
+            TSV shapes of ``chip``, plus simulation ports.
+        chip: Chip to convert, ``"bottom"`` or ``"top"``, see
+            :data:`~qpdk.tech.CHIP_LAYERS`.
+
+    Returns:
+        Component carrying the TSV regions plus the input ports.
+
+    Raises:
+        ValueError: If the component carries no ``SIM_AREA`` shapes, a metal
+            level has neither etch nor draw shapes, or there are no TSVs
+            inside the simulation area to connect the two faces.
+    """
+    layout = component.kdb_cell.layout()
+    sim_region = kdb.Region(
+        component.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.SIM_AREA))
+    )
+    if sim_region.is_empty():
+        msg = "no SIM_AREA layer in the component; the FEM model would be empty"
+        raise ValueError(msg)
+
+    layers = CHIP_LAYERS[chip]
+    m1_region = _conductor_region(
+        component,
+        sim_region,
+        layers.front_etch,
+        layers.front_draw,
+        _metal_name(layers.front_draw),
+    )
+    mb_region = _conductor_region(
+        component,
+        sim_region,
+        layers.back_etch,
+        layers.back_draw,
+        _metal_name(layers.back_draw),
+    )
+    tsv_region = (
+        kdb.Region(component.kdb_cell.begin_shapes_rec(layout.layer(*layers.tsv)))
+        & sim_region
+    ).merged()
+    if tsv_region.is_empty():
+        msg = "no TSVs in the simulation area; the two faces would not connect"
+        raise ValueError(msg)
+
+    regions = gf.Component()
+    rl = regions.kdb_cell.layout()
+    for name, region in [
+        ("VACUUM_BOTTOM", sim_region),
+        ("MB", mb_region),
+        ("SUBSTRATE", sim_region),
+        ("TSV", tsv_region),
+        ("M1", m1_region),
+        ("VACUUM", sim_region),
+    ]:
+        regions.kdb_cell.shapes(rl.layer(*TSV_FEM_LAYERS[name])).insert(region)
+    for port in component.ports:
+        regions.add_port(name=port.name, port=port)
+    return regions
+
+
+def tsv_stack(
+    substrate_thickness: float = 200.0,
+    vacuum_thickness: float = 500.0,
+    tsv_conductivity: float = 1.0e6,
+) -> Any:
+    """Return a gsim layer stack for a chip with metal on both faces.
+
+    The front metal M1 sits at ``z = 0`` on top of the silicon and the
+    backside metal MB at ``z = -substrate_thickness`` below it; both become
+    perfect electric conductors. The TSVs are conductive vias spanning the
+    full substrate. Air fills ``vacuum_thickness`` above and below the chip.
+
+    The default substrate thickness follows the 200 µm TSV depth of
+    :cite:`mallekFabricationSuperconductingThroughsilicon2021`.
+
+    Args:
+        substrate_thickness: Silicon thickness (TSV depth) in μm.
+        vacuum_thickness: Air height above and below the chip in μm.
+        tsv_conductivity: Normal-state conductivity of the via lining in
+            S/m. The lining is superconducting at operating temperature;
+            any finite value large enough to make the via a good conductor
+            works here. Without a conductivity gsim degrades the via to a
+            2-D PEC sheet at its base, which no longer bridges the faces.
+
+    Returns:
+        A ``gsim.common.stack.LayerStack`` (requires gsim from the ``models``
+        extra).
+    """
+    from gsim.common.stack import Layer, LayerStack
+    from gsim.common.stack.materials import MATERIALS_DB
+
+    silicon = material_properties["Si"]
+    h = substrate_thickness
+    stack = LayerStack(pdk_name="qpdk")
+    layers: list[
+        tuple[str, float, float, str, Literal["conductor", "dielectric", "via"]]
+    ] = [
+        (
+            "VACUUM_BOTTOM",
+            -h - vacuum_thickness,
+            vacuum_thickness,
+            "vacuum",
+            "dielectric",
+        ),
+        ("MB", -h, 0, "qpdk-niobium", "conductor"),
+        ("SUBSTRATE", -h, h, "qpdk-silicon", "dielectric"),
+        ("TSV", -h, h, "qpdk-tsv-lining", "via"),
+        ("M1", 0.0, 0, "qpdk-niobium", "conductor"),
+        ("VACUUM", 0.0, vacuum_thickness, "vacuum", "dielectric"),
+    ]
+    for name, zmin, thickness, material, layer_type in layers:
+        stack.layers[name] = Layer(
+            name=name,
+            gds_layer=TSV_FEM_LAYERS[name],
+            zmin=zmin,
+            zmax=zmin + thickness,
+            thickness=thickness,
+            material=material,
+            layer_type=layer_type,
+        )
+    stack.materials = {
+        "qpdk-silicon": {
+            "permittivity": silicon["relative_permittivity"],
+            "loss_tangent": silicon["loss_tangent"],
+        },
+        "qpdk-niobium": {"permittivity": 1.0},
+        "qpdk-tsv-lining": {"conductivity": tsv_conductivity},
         "vacuum": MATERIALS_DB["vacuum"].to_dict(),
     }
     return stack

@@ -19,11 +19,12 @@ import gdsfactory as gf
 import klayout.db as kdb
 import pytest
 
-from qpdk.cells import coupler_straight, flipmon_with_bbox
+from qpdk.cells import coupler_straight, flipmon_with_bbox, tsv_transition_double_sided
 from qpdk.simulation import (
     FEM_LAYERS,
     FLIP_CHIP_FEM_LAYERS,
     RAY_PORT,
+    TSV_FEM_LAYERS,
     SlurmCluster,
     SlurmJobError,
     cluster as cluster_module,
@@ -33,7 +34,9 @@ from qpdk.simulation import (
     study as study_module,
     to_fem_regions,
     to_flip_chip_regions,
+    to_tsv_regions,
     trial as worker,
+    tsv_stack,
 )
 from qpdk.simulation.palace_run import (
     _slurm_mpi_launcher,
@@ -43,7 +46,7 @@ from qpdk.simulation.palace_run import (
     verify_port_connectivity,
 )
 from qpdk.simulation.trial import _summarise, main as run_trial, result_path
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, Chip
 
 
 def _sim_layout() -> gf.Component:
@@ -233,10 +236,19 @@ def test_to_fem_regions_rejects_fully_etched_area():
         to_fem_regions(component)
 
 
-def test_fem_layers_do_not_collide_with_mask_layers():
-    """FEM regions must not land on real mask layers (M1_DRAW is (1,0) ...)."""
+@pytest.mark.parametrize(
+    "fem_layers",
+    [
+        pytest.param(FEM_LAYERS, id="single_chip"),
+        pytest.param(FLIP_CHIP_FEM_LAYERS, id="flip_chip"),
+        pytest.param(TSV_FEM_LAYERS, id="tsv"),
+    ],
+)
+def test_fem_layers_do_not_collide_with_mask_layers(fem_layers):
+    """FEM regions must not land on real mask layers."""
     mask_layers = {tuple(layer) for layer in LAYER.__members__.values()}
-    for name, layer in {**FEM_LAYERS, **FLIP_CHIP_FEM_LAYERS}.items():
+    assert mask_layers, "no mask layers found; the check would be vacuous"
+    for name, layer in fem_layers.items():
         assert layer not in mask_layers, f"{name} collides with a mask layer"
 
 
@@ -1549,3 +1561,94 @@ def test_runners_import_without_optuna(tmp_path, monkeypatch):
             n_trials=1,
             max_in_flight=1,
         )
+
+
+@gf.cell
+def _tsv_layout(chip: Chip = "bottom") -> gf.Component:
+    c = gf.Component()
+    ref = c << tsv_transition_double_sided(chip=chip)
+    c.add_ports(ref.ports)
+    # Enlarge only across the line: the CPW ends must reach the SIM_AREA edge,
+    # otherwise the metal beyond them would short the signal to ground.
+    c.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(c.bbox().enlarged(0, 50))
+    return c
+
+
+def _tsv_regions(c: gf.Component) -> dict[str, kdb.Region]:
+    layout = c.kdb_cell.layout()
+    return {
+        name: kdb.Region(
+            c.kdb_cell.begin_shapes_rec(layout.layer(*TSV_FEM_LAYERS[name]))
+        ).merged()
+        for name in ("M1", "MB", "TSV")
+    }
+
+
+@pytest.mark.parametrize("chip", ["bottom", "top"])
+def test_to_tsv_regions_topology(chip: Chip):
+    c = to_tsv_regions(_tsv_layout(chip), chip=chip)
+
+    assert sorted(p.name for p in c.ports) == ["o1", "o2"]
+    regions = _tsv_regions(c)
+    # Each face is a ground plane plus the isolated signal pad/taper.
+    assert len(regions["M1"]) == 2
+    assert len(regions["MB"]) == 2
+    # Every TSV must land on conductor of both faces to connect them.
+    assert not regions["TSV"].is_empty()
+    assert (regions["TSV"] - regions["M1"]).is_empty()
+    assert (regions["TSV"] - regions["MB"]).is_empty()
+
+
+def test_to_tsv_regions_requires_sim_area():
+    with pytest.raises(ValueError, match="no SIM_AREA"):
+        to_tsv_regions(tsv_transition_double_sided())
+
+
+def test_to_tsv_regions_requires_backside_metal():
+    component = gf.Component()
+    component.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(
+        kdb.DBox(0, 0, 100, 100)
+    )
+    component.kdb_cell.shapes(gf.get_layer(LAYER.M1_ETCH)).insert(
+        kdb.DBox(40, 40, 60, 60)
+    )
+    with pytest.raises(ValueError, match="metal level MB"):
+        to_tsv_regions(component)
+
+
+def test_to_tsv_regions_reads_only_its_chip():
+    # A top-chip layout has no bottom-chip metal, so converting the wrong chip
+    # must fail instead of silently returning solid planes.
+    with pytest.raises(ValueError, match="metal level M1"):
+        to_tsv_regions(_tsv_layout("top"))
+
+
+def test_to_tsv_regions_requires_tsvs():
+    component = gf.Component()
+    component.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(
+        kdb.DBox(0, 0, 100, 100)
+    )
+    for layer in (LAYER.M1_ETCH, LAYER.MB_ETCH):
+        component.kdb_cell.shapes(gf.get_layer(layer)).insert(kdb.DBox(40, 40, 60, 60))
+    with pytest.raises(ValueError, match="no TSVs"):
+        to_tsv_regions(component)
+
+
+def test_tsv_stack_matches_conventions():
+    _require_gsim()
+
+    stack = tsv_stack(substrate_thickness=200.0, vacuum_thickness=300.0)
+    assert stack.layers["M1"].zmin == pytest.approx(0.0)
+    assert stack.layers["MB"].zmin == pytest.approx(-200.0)
+    assert stack.layers["SUBSTRATE"].zmin == pytest.approx(-200.0)
+    assert stack.layers["SUBSTRATE"].zmax == pytest.approx(0.0)
+    assert stack.layers["VACUUM"].zmax == pytest.approx(300.0)
+    assert stack.layers["VACUUM_BOTTOM"].zmin == pytest.approx(-500.0)
+    # The TSV must be a real volume through the whole substrate; a
+    # zero-height via would degrade to a PEC sheet and connect nothing.
+    assert stack.layers["TSV"].layer_type == "via"
+    assert stack.layers["TSV"].zmin == pytest.approx(-200.0)
+    assert stack.layers["TSV"].zmax == pytest.approx(0.0)
+    stack.validate_stack()
+    assert stack.materials["qpdk-tsv-lining"]["conductivity"] > 0.0
+    assert stack.materials["qpdk-silicon"]["permittivity"] == pytest.approx(11.45)
