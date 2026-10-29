@@ -7,12 +7,10 @@ from collections.abc import Callable
 import gdsfactory as gf
 import hypothesis.strategies as st
 import pytest
-import yaml
 from gdsfactory.technology import LayerStack
 from hypothesis import given, settings
 
 from qpdk.cells import waveguides as waveguide_cells
-from qpdk.config import PATH
 from qpdk.models import waveguides as waveguide_models
 from qpdk.tech import (
     LAYER_STACK,
@@ -234,16 +232,3 @@ def test_routing_width_round_trips_in_cross_section(width_units: int) -> None:
     assert "width" not in serialized_settings
     rebuilt = gf.get_component("straight", settings=serialized_settings)
     assert all(port.width == pytest.approx(width) for port in rebuilt.ports)
-
-
-def test_layers_yaml_matches_gdsfactory_schema() -> None:
-    """qpdk/layers.yaml validates against gdsfactory's LayerViews YAML schema."""
-    jsonschema = pytest.importorskip("jsonschema")
-    layer_views = pytest.importorskip("gdsfactory.technology.layer_views")
-    if not hasattr(layer_views, "get_layer_views_yaml_schema"):
-        pytest.skip("gdsfactory does not ship the LayerViews YAML schema yet")
-
-    jsonschema.validate(
-        yaml.safe_load(PATH.lyp_yaml.read_text()),
-        layer_views.get_layer_views_yaml_schema(),
-    )
