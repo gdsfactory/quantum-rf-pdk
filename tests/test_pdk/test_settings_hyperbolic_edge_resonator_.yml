@@ -1,0 +1,33 @@
+info:
+  length: 4000
+name: hyperbolic_edge_resonator_L4000_E1000_0_SA0_EA0_RNone_B_949dd17e
+ports:
+  o1:
+    center:
+    - 0
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 1000
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  bend_radius: 30
+  cross_section: cpw
+  end:
+  - 1000
+  - 0
+  end_angle: 0
+  end_straight: 70
+  length: 4000
+  margin: 25
+  start_angle: 0
