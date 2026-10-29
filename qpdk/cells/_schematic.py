@@ -816,8 +816,14 @@ def hyperbolic_vertex_coupler_schematic(
         for _, name in sorted(by_side[side])
     ]
     names = [f"o{k + 1}" for k in range(q)]
+    # The artwork is drawn for the default three-pin layout; any other pin
+    # arrangement falls back to the layout geometry.
+    default = [("o1", "right"), ("o2", "top"), ("o3", "bottom")]
+    symbol = "hyperbolic_vertex_coupler"
+    if [(p["name"], p["side"]) for p in ports] != default:
+        symbol += f"_q{q}"
     return _make_schematic(
-        "hyperbolic_vertex_coupler",
+        symbol,
         ["couplers", "capacitors"],
         ports,
         [sax_model("hyperbolic_vertex_coupler", "qpdk.models.hyperbolic", names)],
@@ -840,7 +846,7 @@ def hyperbolic_cpw_path_schematic(
     """Expose only ``o1`` when the far end is shorted, as the layout does."""
     ports = _1PORT if shorted else _2PORT
     return _make_schematic(
-        "hyperbolic_cpw_path",
+        "straight_shorted" if shorted else "hyperbolic_cpw_path",
         ["waveguides"],
         ports,
         [
@@ -858,9 +864,10 @@ def hyperbolic_lattice_schematic(
 ) -> DSchematic:
     """Declare the lattice model so the circuit is not expanded into SAX.
 
-    A SAX circuit of the whole lattice is too large to compile, so the
-    nodal-analysis model is the simulation boundary. Probe ports alternate
-    between the left and right sides.
+    A SAX circuit of the whole lattice is slow and memory-hungry to compile,
+    so the nodal-analysis model is the simulation boundary. Probe ports
+    alternate between the left and right sides; the artwork is drawn for two
+    probes, and other counts fall back to the layout geometry.
 
     Returns:
         Schematic with one port per probe pin.
@@ -870,8 +877,11 @@ def hyperbolic_lattice_schematic(
         {"name": name, "side": ("left", "right")[n % 2], "type": "photonic"}
         for n, name in enumerate(names)
     ]
+    symbol = (
+        "hyperbolic_lattice" if len(names) == 2 else f"hyperbolic_lattice_{len(names)}"
+    )
     return _make_schematic(
-        "hyperbolic_lattice",
+        symbol,
         ["resonators", "lattices"],
         ports,
         [sax_model("hyperbolic_lattice", "qpdk.models.hyperbolic", names)],
