@@ -12,6 +12,7 @@ from qpdk.models.datasets import (
     DatasetMetadata,
     Quantity,
     QuantityKind,
+    capacitance_model,
     junction_model,
 )
 from qpdk.models.datasets.capacitance import differential_capacitance
@@ -127,6 +128,46 @@ def test_junction_model_bonds_electrodes_without_dropping_ground(
                 inductance=1e-8,
                 terminal_groups=(("inner", "top"), ("ring",)),
             )
+
+
+@pytest.mark.parametrize("z_ref", [0.0, -50.0, jnp.inf, jnp.nan])
+@pytest.mark.parametrize("with_junction", [False, True])
+def test_fem_models_reject_invalid_reference_impedances(
+    z_ref: float, with_junction: bool, tmp_path: Path
+) -> None:
+    metadata = DatasetMetadata(
+        name="impedance-algebra",
+        synthetic=True,
+        axes=(Axis(name="gap", unit="um"),),
+        terminals=("a", "b"),
+        quantities=(
+            Quantity(
+                name="maxwell_capacitance",
+                kind=QuantityKind.MAXWELL_CAPACITANCE,
+                unit="F",
+            ),
+        ),
+    )
+    data = write(
+        tmp_path,
+        metadata,
+        sweep(
+            metadata,
+            lambda gap: {
+                "maxwell_capacitance": jnp.asarray([[8.0, -2.0], [-2.0, 5.0]])
+                * gap
+                * 1e-15
+            },
+            {"gap": [1.0, 2.0]},
+        ),
+    )
+    model = (
+        junction_model(data, junction=("a", "b"), inductance=7e-9)
+        if with_junction
+        else capacitance_model(data)
+    )
+    result = jax.jit(model)(f=jnp.asarray([3e9, 5e9]), z_ref=z_ref)
+    assert all(jnp.all(jnp.isnan(value)) for value in result.values())
 
 
 @pytest.mark.parametrize(

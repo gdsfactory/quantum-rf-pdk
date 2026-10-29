@@ -202,6 +202,10 @@ PDK model registration is derived from the SAX descriptors in each cell's schema
 PDK imports that model directly and derives aliases from the declaration. `SAX_MODEL_ALIASES` in `qpdk/__init__.py`
 reports these aliases and is no longer a list to maintain.
 
+The boxed double-pad transmon declares `boxed_transmon_fem` and forwards its pad dimensions, ground clearance and
+junction circuit settings to the stored QPDK capacitance matrix. A fork with another process needs a matching extraction
+or a replacement model declaration.
+
 Virtual cells and partial aliases use a matching `<cell_name>_schematic` declaration in `qpdk/cells/_schematic.py`,
 since `gf.vcell` and partial factories cannot accept `schematic_function`. Discovery reads that declaration without
 constructing the layout. Define the SAX descriptor there just as for a regular cell.

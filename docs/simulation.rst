@@ -221,6 +221,16 @@ model. Both ports reference the coupon's finite ground frame. The dataset omits 
 readout, package and Josephson junction; its recipe is
 ``qpdk/models/datasets/recipes/double_pad_transmon.py``.
 
+The ``double_pad_transmon_with_bbox`` layout declares ``boxed_transmon_fem`` as its SAX
+model. Its ``pad_size``, ``pad_gap`` and ``bbox_extension`` select the stored matrix.
+Set ``inductance_nh`` and ``junction_capacitance_ff`` on the layout to specify the
+linearized junction separately. The default pad geometry has about 89 fF differential
+capacitance, excluding the junction. The extraction assumes a 300 um wide surrounding
+ground frame and omits the junction metal, readout and packaging. It does not predict
+nonlinear transitions or distributed modes. The direct analytical
+``double_pad_transmon_with_bbox`` function in ``qpdk.models`` remains available with its
+explicit lumped capacitance argument.
+
 ``gatemon_capacitances`` looks up the island's total capacitance :math:`C_\Sigma`, its
 gate capacitance :math:`C_\text{g}` and its readout coupling :math:`C_\text{c}` in F,
 from ``island_size``, ``pocket_gap``, ``pocket_gap_top`` and ``gate_tip_gap`` in um.

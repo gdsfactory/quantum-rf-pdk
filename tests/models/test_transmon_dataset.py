@@ -3,9 +3,18 @@
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pytest
+from gdsfactory.typings import LayerSpec
 
-from qpdk.models import double_pad_transmon_capacitance, double_pad_transmon_fem_model
+from qpdk import PDK, SAX_MODEL_ALIASES, _get_cell_schematic
+from qpdk.cells import double_pad_transmon_with_bbox
+from qpdk.models import (
+    boxed_transmon_fem,
+    double_pad_transmon_capacitance,
+    double_pad_transmon_fem_model,
+)
 from qpdk.models.datasets import Dataset, GridInterpolator, check_maxwell
+from qpdk.tech import LAYER
 
 
 def test_grid_and_reference_values() -> None:
@@ -14,7 +23,17 @@ def test_grid_and_reference_values() -> None:
     assert grid.values.shape == (3, 3, 5, 3, 2, 2)
     check_maxwell(grid.values)
     lookup = GridInterpolator(grid)
-    samples = data.metadata.provenance["validation"]["samples"]
+    validation = data.metadata.provenance["validation"]
+    assert validation["passed"]
+    assert validation["admission_status"] == "validated_bare_electrostatic_model"
+    assert validation["coverage"]["passed"]
+    assert validation["coverage"]["interior_cells_tested"] == 32
+    assert len(validation["coverage"]["strict_faces"]) == 8
+    assert all(
+        axis.validated == (float(coords[0]), float(coords[-1]))
+        for axis, coords in zip(grid.axes, grid.coords, strict=True)
+    )
+    samples = data.metadata.provenance["previous_validation"]["samples"]
     assert len(samples) == 10
     assert {sample["reference_settings"]["order"] for sample in samples} == {3, 4}
     for sample in samples:
@@ -74,3 +93,128 @@ def test_linearized_junction_and_all_traces() -> None:
     np.testing.assert_allclose(
         scattering @ scattering.conj().swapaxes(-1, -2), identity, atol=1e-12
     )
+
+
+@pytest.mark.parametrize(
+    ("pad_size", "pad_gap", "clearance", "inductance_nh", "junction_capacitance_ff"),
+    [((250.0, 400.0), 15.0, 200.0, 7.0, 0.0), ((200.0, 325.0), 12.5, 150.0, 10.0, 2.0)],
+)
+def test_boxed_layout_uses_native_matrix(
+    pad_size: tuple[float, float],
+    pad_gap: float,
+    clearance: float,
+    inductance_nh: float,
+    junction_capacitance_ff: float,
+) -> None:
+    settings = dict(
+        pad_size=pad_size,
+        pad_gap=pad_gap,
+        bbox_extension=clearance,
+        inductance_nh=inductance_nh,
+        junction_capacitance_ff=junction_capacitance_ff,
+    )
+    component = double_pad_transmon_with_bbox(**settings)
+    for key, value in settings.items():
+        assert component.settings[key] == value
+    schematic = _get_cell_schematic(
+        "double_pad_transmon_with_bbox", double_pad_transmon_with_bbox
+    )
+    assert schematic is not None
+    assert schematic.info["models"][0]["name"] == "boxed_transmon_fem"
+    assert SAX_MODEL_ALIASES["double_pad_transmon_with_bbox"] == "boxed_transmon_fem"
+    model = PDK.models["double_pad_transmon_with_bbox"]
+    assert model is boxed_transmon_fem
+    frequencies = jnp.asarray([1e9, 5e9, 10e9])
+    actual = jax.jit(model)(f=frequencies, z_ref=75.0, **settings)
+    scattering = jnp.stack(
+        [
+            jnp.stack([actual[a, b] for b in ("left_pad", "right_pad")], -1)
+            for a in ("left_pad", "right_pad")
+        ],
+        -2,
+    )
+    identity = jnp.broadcast_to(jnp.eye(2), scattering.shape)
+    admittance = jnp.linalg.solve(identity + scattering, identity - scattering) / 75.0
+    matrix = GridInterpolator(
+        Dataset("double_pad_transmon_palace").grid("maxwell_capacitance")
+    )(
+        pad_width=pad_size[0],
+        pad_height=pad_size[1],
+        pad_gap=pad_gap,
+        ground_clearance=clearance,
+    )
+    omega = 2 * jnp.pi * frequencies
+    branch = (
+        1 / (1j * omega * inductance_nh * 1e-9)
+        + 1j * omega * junction_capacitance_ff * 1e-15
+    )
+    expected = 1j * omega[:, None, None] * matrix + branch[:, None, None] * jnp.asarray([
+        [1, -1],
+        [-1, 1],
+    ])
+    np.testing.assert_allclose(admittance, expected, rtol=1e-10, atol=1e-15)
+
+
+def test_boxed_model_geometry_and_junction_derivatives() -> None:
+    def response(width: float, inductance: float) -> jax.Array:
+        return (
+            jnp.abs(
+                boxed_transmon_fem(
+                    f=5e9, pad_size=(width, 325.0), inductance_nh=inductance
+                )["left_pad", "right_pad"]
+            )
+            ** 2
+        )
+
+    gradients = jax.jit(jax.grad(response, argnums=(0, 1)))(200.0, 8.0)
+    for i, step in enumerate((0.01, 0.001)):
+        before, after = [200.0, 8.0], [200.0, 8.0]
+        before[i] -= step
+        after[i] += step
+        expected = (response(*after) - response(*before)) / (2 * step)
+        np.testing.assert_allclose(gradients[i], expected, rtol=1e-5, atol=1e-12)
+    values = jax.jit(jax.vmap(response, in_axes=(0, None)))(
+        jnp.asarray([200.0, 300.0]), 8.0
+    )
+    assert jnp.all(jnp.isfinite(values))
+    assert not jnp.isclose(values[0], values[1])
+    assert jnp.isnan(response(149.0, 8.0))
+    assert jnp.isnan(response(200.0, -1.0))
+
+
+@pytest.mark.parametrize(
+    ("metal", "etch", "supported"),
+    [
+        (LAYER.M1_DRAW, LAYER.M1_ETCH, True),
+        ((1, 0), (1, 1), True),
+        ("M1_DRAW", "M1_ETCH", True),
+        ((77, 0), (1, 1), False),
+        ((1, 0), (77, 1), False),
+        ("M2_DRAW", "M1_ETCH", False),
+        ((1, 0), "M2_ETCH", False),
+    ],
+)
+def test_boxed_model_rejects_unsupported_process_layers(
+    metal: LayerSpec, etch: LayerSpec, supported: bool
+) -> None:
+    f = jnp.asarray([1e9, 5e9, 10e9])
+    expected = boxed_transmon_fem(f=f)
+    actual = jax.jit(
+        lambda frequency: boxed_transmon_fem(
+            f=frequency, layer_metal=metal, layer_etch=etch
+        )
+    )(f)
+    for ports, values in actual.items():
+        if supported:
+            np.testing.assert_allclose(values, expected[ports], rtol=1e-12, atol=0)
+        else:
+            assert jnp.all(jnp.isnan(values))
+
+
+def test_boxed_process_layers_can_be_traced() -> None:
+    model = jax.jit(boxed_transmon_fem)
+    for metal in (LAYER.M1_DRAW, jnp.asarray([1, 0])):
+        supported = model(f=5e9, layer_metal=metal)
+        assert all(jnp.isfinite(value) for value in supported.values())
+    unsupported = model(f=5e9, layer_metal=jnp.asarray([77, 0]))
+    assert all(jnp.isnan(value) for value in unsupported.values())

@@ -1,5 +1,5 @@
 info: {}
-name: double_pad_transmon_with_bbox_BE200_PS250_400_PG15_JSsq_c3fdad3b
+name: double_pad_transmon_with_bbox_BE200_PS250_400_PG15_JSsq_b02c3a0f
 ports:
   junction:
     center:
@@ -48,6 +48,8 @@ ports:
     width: 400
 settings:
   bbox_extension: 200
+  inductance_nh: 7
+  junction_capacitance_ff: 0
   junction_spec: squid_junction
   layer_etch: M1_ETCH
   layer_metal: M1_DRAW

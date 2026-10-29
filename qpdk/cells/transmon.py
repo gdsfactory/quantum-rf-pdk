@@ -181,6 +181,8 @@ def double_pad_transmon_with_bbox(
     junction_displacement: DCplxTrans | float | None = None,
     layer_metal: LayerSpec = LAYER.M1_DRAW,
     layer_etch: LayerSpec = LAYER.M1_ETCH,
+    inductance_nh: float = 7.0,
+    junction_capacitance_ff: float = 0.0,
 ) -> Component:
     """Creates a double capacitor pad transmon qubit with Josephson junction and an etched bounding box.
 
@@ -195,10 +197,19 @@ def double_pad_transmon_with_bbox(
             rotation in degrees, to apply to the junction.
         layer_metal: Layer for the metal pads.
         layer_etch: Layer for the etched bounding box.
+        inductance_nh: Josephson inductance for the linearized circuit, in nH.
+        junction_capacitance_ff: Additional junction capacitance, in fF.
 
     Returns:
         Component: A gdsfactory component with the transmon geometry and etched box.
+
+    Raises:
+        ValueError: If the junction circuit parameters are not physical.
     """
+    if inductance_nh <= 0 or junction_capacitance_ff < 0:
+        raise ValueError(
+            "Inductance must be positive and junction capacitance nonnegative"
+        )
     c = gf.Component()
     double_pad_ref = c << double_pad_transmon(
         pad_size=pad_size,

@@ -82,6 +82,7 @@ from qpdk.models.perturbation import (
     resonator_linewidth_from_q,
 )
 from qpdk.models.qubit import (
+    boxed_transmon_fem,
     coupling_strength_to_capacitance,
     double_island_transmon,
     double_island_transmon_with_bbox,
@@ -161,6 +162,7 @@ __all__ = [
     "bend_euler",
     "bend_euler_all_angle",
     "bend_s",
+    "boxed_transmon_fem",
     "capacitor",
     "coupler_ring",
     "coupler_straight",

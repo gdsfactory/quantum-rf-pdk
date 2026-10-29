@@ -19,11 +19,14 @@ References:
 
 import math
 from functools import cache
+from typing import cast
 
 import jax
 import jax.numpy as jnp
 import sax
+from gdsfactory.typings import LayerSpec
 from jax.typing import ArrayLike
+from kfactory import LayerEnum
 from sax.models.rf import capacitor, electrical_short, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, e, h
@@ -34,9 +37,11 @@ from qpdk.models.datasets import (
     differential_capacitance,
     junction_model,
 )
+from qpdk.models.datasets.models import _matches_layer
 from qpdk.models.generic import lc_resonator, lc_resonator_coupled
 from qpdk.models.jit import jit
 from qpdk.models.waveguides import straight_shorted
+from qpdk.tech import LAYER
 
 
 def flipmon_unbonded_model() -> sax.Model:
@@ -128,7 +133,7 @@ def double_pad_transmon_capacitance(
 
 def double_pad_transmon_fem_model(
     *, inductance: float, junction_capacitance: float = 0.0
-) -> sax.Model:
+) -> sax.SDictModel:
     """Build a linearized transmon circuit from the stored two-pad Palace matrix.
 
     Supply the Josephson inductance in H and additional junction capacitance
@@ -150,6 +155,61 @@ def double_pad_transmon_fem_model(
         inductance=inductance,
         junction_capacitance=junction_capacitance,
     )
+
+
+@cache
+def _boxed_transmon_model() -> sax.SDictModel:
+    """Load the pad matrix once, outside traced circuit evaluation."""
+    return double_pad_transmon_fem_model(inductance=7e-9)
+
+
+def boxed_transmon_fem(
+    f: ArrayLike = DEFAULT_FREQUENCY,
+    pad_size: tuple[ArrayLike, ArrayLike] = (250.0, 400.0),
+    pad_gap: ArrayLike = 15.0,
+    bbox_extension: ArrayLike = 200.0,
+    inductance_nh: ArrayLike = 7.0,
+    junction_capacitance_ff: ArrayLike = 0.0,
+    z_ref: ArrayLike = 50.0,
+    layer_metal: LayerSpec | ArrayLike = LAYER.M1_DRAW,
+    layer_etch: LayerSpec | ArrayLike = LAYER.M1_ETCH,
+) -> sax.SDict:
+    """Evaluate the finite-ground pad matrix using boxed-transmon layout settings.
+
+    Dimensions are in um, Josephson inductance in nH and additional junction
+    capacitance in fF. Both pad ports reference a 300 um wide ground frame.
+    All mutual and ground capacitances are retained. Geometry outside the
+    stored grid or unsupported metal/etch layers returns NaN. The model assumes
+    the standard QPDK materials. Layer names may be Python literals. External
+    JIT arguments must use numeric indices or GDS pairs, or close over static
+    names. Supports JIT, vmap and grad.
+
+    The extraction omits junction metal, readout and packaging. This is a
+    linearized circuit, excluding the nonlinear spectrum and distributed modes.
+
+    Returns:
+        Two-port scattering matrix referenced to ``z_ref`` in ohms.
+    """
+    with jax.ensure_compile_time_eval():
+        model = _boxed_transmon_model()
+    supported = _matches_layer(
+        layer_metal, int(cast(LayerEnum, LAYER.M1_DRAW)), (1, 0), "M1_DRAW"
+    ) & _matches_layer(
+        layer_etch, int(cast(LayerEnum, LAYER.M1_ETCH)), (1, 1), "M1_ETCH"
+    )
+    result = model(
+        f=f,
+        pad_width=pad_size[0],
+        pad_height=pad_size[1],
+        pad_gap=pad_gap,
+        ground_clearance=bbox_extension,
+        inductance=jnp.asarray(inductance_nh) * 1e-9,
+        junction_capacitance=jnp.asarray(junction_capacitance_ff) * 1e-15,
+        z_ref=z_ref,
+    )
+    return {
+        ports: jnp.where(supported, values, jnp.nan) for ports, values in result.items()
+    }
 
 
 @jit(inline=True)

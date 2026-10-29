@@ -17,10 +17,26 @@ from qpdk.cells.derived.transmon_with_resonator_and_probeline import (
 from qpdk.cells.snspd import snspd
 from qpdk.cells.transmon import (
     double_pad_transmon,
+    double_pad_transmon_with_bbox,
     flipmon,
     flipmon_with_bbox,
     xmon_transmon,
 )
+
+
+@pytest.mark.parametrize(
+    ("inductance_nh", "junction_capacitance_ff"),
+    [(0.0, 0.0), (-7.0, 0.0), (7.0, -1.0)],
+)
+def test_boxed_transmon_invalid_junction(
+    inductance_nh: float, junction_capacitance_ff: float
+) -> None:
+    """Reject circuit settings that cannot describe a stable junction."""
+    with pytest.raises(ValueError, match="Inductance must be positive"):
+        double_pad_transmon_with_bbox(
+            inductance_nh=inductance_nh,
+            junction_capacitance_ff=junction_capacitance_ff,
+        )
 
 
 class TestInterdigitalCapacitorValidation:

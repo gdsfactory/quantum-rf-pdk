@@ -318,7 +318,7 @@ fetch-gfp $version="latest":
 # hence Python 3.12. The `gfp` binary still ships only in the VS Code
 # extension: GFP_BIN, else the version matching the installed SDK.
 # `--python 3.12` recreates .venv if it was on another interpreter.
-# The gfp-marked tests live in the three files listed below; naming them
+# The gfp-marked tests live in the files listed below; naming them
 # explicitly avoids collecting the whole repo under the minimal gfp extras.
 # --dist loadgroup keeps the server tests (xdist_group "gfp-server", which
 # share one gfp serve process and the repo's build/ dir) on a single worker.
@@ -334,7 +334,7 @@ test-gfp *args:
         source build/gfp-vsix/env.sh
     fi
     GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
-        tests/gfp/test_gfp_lvs.py tests/gfp/test_gfp_sax.py tests/gfp/test_gfp_server.py "$@"
+        tests/gfp/test_gfp_lvs.py tests/gfp/test_gfp_sax.py tests/gfp/test_gfp_server.py tests/models/test_boxed_transmon_gfp.py "$@"
 
 # Run VACASK simulation tests (requires VACASK, see qpdk/simulation/vacask.py)
 [group('test')]
