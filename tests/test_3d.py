@@ -8,14 +8,22 @@ from pathlib import Path
 import gdsfactory as gf
 import pytest
 import trimesh
-from gdsfactory.technology import LayerStack
+from gdsfactory.technology import LayerStack, LogicalLayer
 from gdsfactory.typings import ComponentFactory
 from klayout.db import Box, Region
 
 from qpdk import PDK, cells
 from qpdk.samples.sample_to_3d import sample_to_3d
 from qpdk.simulation.layout import prepare_metal_layout
-from qpdk.tech import LAYER, LAYER_STACK, LAYER_STACK_3D, LAYER_STACK_FLIP_CHIP
+from qpdk.tech import (
+    CHIP_LAYERS,
+    LAYER,
+    LAYER_STACK,
+    LAYER_STACK_3D,
+    LAYER_STACK_FLIP_CHIP,
+    LAYER_STACK_FLIP_CHIP_BACKSIDE_NO_VACUUM,
+    Chip,
+)
 
 
 @pytest.mark.parametrize("metal", ["M1", "M2"])
@@ -166,3 +174,32 @@ def test_standalone_sample_camera_contains_the_chip(
     distances = [dist(eye, vertex) for vertex in scene.bounding_box.vertices]
     assert 0 < scene.camera.z_near < min(distances)
     assert scene.camera.z_far > max(distances)
+
+
+@pytest.mark.parametrize("chip", ["bottom", "top"])
+def test_tsv_transition_previews_both_faces(chip: Chip) -> None:
+    """The default preview renders a TSV and the drawn metal on both chip faces."""
+    layers = CHIP_LAYERS[chip]
+    scene = cells.tsv_transition(chip=chip).to_3d()
+    names = {
+        level.name
+        for level in LAYER_STACK_3D.layers.values()
+        if isinstance(level.layer, LogicalLayer)
+        and level.layer.layer in {layers.front_draw, layers.back_draw, layers.tsv}
+    }
+    assert len(names) == 3
+    for name in names:
+        assert any(key.rsplit("_", 1)[0] == name for key in scene.geometry), name
+
+
+def test_flip_chip_backside_stack_renders_backside_ground() -> None:
+    """With SIM_AREA, the physical stack fills both backside ground planes."""
+    component = gf.Component()
+    for chip in ("bottom", "top"):
+        component << cells.tsv_transition(chip=chip)
+    component.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(
+        component.ibbox().enlarged(50_000)
+    )
+    scene = component.to_3d(layer_stack=LAYER_STACK_FLIP_CHIP_BACKSIDE_NO_VACUUM)
+    for name in ("MB", "MB2", "TSV", "TSV2", "M1_ground", "M2_ground"):
+        assert any(key.rsplit("_", 1)[0] == name for key in scene.geometry), name

@@ -15,7 +15,7 @@ import gdsfactory as gf
 import klayout.db as kdb
 from kfactory.layer import LayerEnum
 
-from qpdk.tech import LAYER, NON_METADATA_LAYERS, material_properties
+from qpdk.tech import CHIP_LAYERS, LAYER, NON_METADATA_LAYERS, Chip, material_properties
 
 __all__ = [
     "FEM_LAYERS",
@@ -399,7 +399,9 @@ def flip_chip_stack(
 # Layer numbering for single-chip models with metal on both faces joined by
 # through-silicon vias: M1 on the front face, MB on the back face, and the
 # vias through the substrate between them. The numbers continue the
-# simulation-only block after FLIP_CHIP_FEM_LAYERS.
+# simulation-only block after FLIP_CHIP_FEM_LAYERS. For the flip-chip top chip
+# (``to_tsv_regions(..., chip="top")``) M1 holds its front metal M2 and MB its
+# backside metal MB2.
 TSV_FEM_LAYERS = {
     "VACUUM_BOTTOM": (108, 0),  # air below the chip
     "MB": (109, 0),  # backside metal (zero-thickness PEC)
@@ -435,7 +437,12 @@ def _conductor_region(
     return ((sim_region - etch_region) | (draw_region & sim_region)).merged()
 
 
-def to_tsv_regions(component: gf.Component) -> gf.Component:
+def _metal_name(draw: tuple[int, int]) -> str:
+    """Metal level name of a ``*_DRAW`` layer, e.g. ``MB`` for ``MB_DRAW``."""
+    return str(draw).removesuffix("_DRAW")
+
+
+def to_tsv_regions(component: gf.Component, chip: Chip = "bottom") -> gf.Component:
     """Convert a double-sided qpdk layout into explicit TSV FEM regions.
 
     The front (M1) and back (MB) metal levels both follow the subtractive
@@ -444,11 +451,14 @@ def to_tsv_regions(component: gf.Component) -> gf.Component:
     ``TSV`` layer is copied to its own region. Backside shapes are drawn in
     the front-side frame, as in :func:`~qpdk.cells.tsv.tsv_transition_double_sided`,
     so no mirroring is applied. The regions land on the layer numbering of
-    :data:`TSV_FEM_LAYERS`.
+    :data:`TSV_FEM_LAYERS`. With ``chip="top"`` the flip-chip top chip is
+    converted instead, reading M2, MB2 and TSV2 into the same regions.
 
     Args:
-        component: Layout with a ``SIM_AREA`` layer, M1 and MB metal and
-            ``TSV`` shapes, plus simulation ports.
+        component: Layout with a ``SIM_AREA`` layer, front and back metal and
+            TSV shapes of ``chip``, plus simulation ports.
+        chip: Chip to convert, ``"bottom"`` or ``"top"``, see
+            :data:`~qpdk.tech.CHIP_LAYERS`.
 
     Returns:
         Component carrying the TSV regions plus the input ports.
@@ -466,14 +476,23 @@ def to_tsv_regions(component: gf.Component) -> gf.Component:
         msg = "no SIM_AREA layer in the component; the FEM model would be empty"
         raise ValueError(msg)
 
+    layers = CHIP_LAYERS[chip]
     m1_region = _conductor_region(
-        component, sim_region, LAYER.M1_ETCH, LAYER.M1_DRAW, "M1"
+        component,
+        sim_region,
+        layers.front_etch,
+        layers.front_draw,
+        _metal_name(layers.front_draw),
     )
     mb_region = _conductor_region(
-        component, sim_region, LAYER.MB_ETCH, LAYER.MB_DRAW, "MB"
+        component,
+        sim_region,
+        layers.back_etch,
+        layers.back_draw,
+        _metal_name(layers.back_draw),
     )
     tsv_region = (
-        kdb.Region(component.kdb_cell.begin_shapes_rec(layout.layer(*LAYER.TSV)))
+        kdb.Region(component.kdb_cell.begin_shapes_rec(layout.layer(*layers.tsv)))
         & sim_region
     ).merged()
     if tsv_region.is_empty():

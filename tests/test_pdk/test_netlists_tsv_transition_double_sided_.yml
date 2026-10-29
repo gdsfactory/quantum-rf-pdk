@@ -9,7 +9,7 @@ instances:
       route_info_weight: 100
     settings:
       cross_section1: cpw
-      cross_section2: xs_fd8b2868
+      cross_section2: xs_519f776d
       exclude_layers: null
       length: 100
       linear: true
@@ -25,7 +25,7 @@ instances:
       route_info_weight: 100
     settings:
       cross_section1: cpw_backside
-      cross_section2: xs_3ea0ed69
+      cross_section2: xs_20887e5d
       exclude_layers: null
       length: 100
       linear: true
@@ -35,9 +35,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -45,9 +43,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -55,9 +51,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -65,9 +59,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -75,9 +67,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -85,9 +75,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -95,9 +83,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -105,9 +91,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -115,9 +99,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10
@@ -125,9 +107,7 @@ instances:
     component: tsv
     info: {}
     settings:
-      layer: TSV
-      layer_pad_bottom: MB_DRAW
-      layer_pad_top: M1_DRAW
+      chip: bottom
       length: 20
       pad_margin: 2
       width: 10

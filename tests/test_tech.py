@@ -15,7 +15,11 @@ from qpdk.models import waveguides as waveguide_models
 from qpdk.tech import (
     LAYER_STACK,
     LAYER_STACK_3D,
+    LAYER_STACK_BACKSIDE,
+    LAYER_STACK_BACKSIDE_NO_VACUUM,
     LAYER_STACK_FLIP_CHIP,
+    LAYER_STACK_FLIP_CHIP_BACKSIDE,
+    LAYER_STACK_FLIP_CHIP_BACKSIDE_NO_VACUUM,
     LAYER_STACK_FLIP_CHIP_NO_VACUUM,
     LAYER_STACK_GATEMON,
     LAYER_STACK_GATEMON_NO_VACUUM,
@@ -50,6 +54,19 @@ _FLIP_CHIP_EXTRA_GEOMETRY_UM: dict[str, tuple[float, float]] = {
     "Substrate_top": (500, 10.2),
 }
 
+# Backside metal and vacuum under the bottom chip.
+_BACKSIDE_EXTRA_GEOMETRY_UM: dict[str, tuple[float, float]] = {
+    "MB": (0.2, -500.2),
+    "Vacuum_bottom": (500, -1000.2),
+}
+
+# The top chip's vias, backside metal and vacuum above it.
+_TOP_BACKSIDE_EXTRA_GEOMETRY_UM: dict[str, tuple[float, float]] = {
+    "TSV2": (500, 10.2),
+    "MB2": (0.2, 510.2),
+    "Vacuum_top": (500, 510.4),
+}
+
 
 @pytest.mark.parametrize(
     ("layer_stack", "expected"),
@@ -59,8 +76,21 @@ _FLIP_CHIP_EXTRA_GEOMETRY_UM: dict[str, tuple[float, float]] = {
             LAYER_STACK_FLIP_CHIP,
             {**_EXPECTED_GEOMETRY_UM, **_FLIP_CHIP_EXTRA_GEOMETRY_UM},
         ),
+        (
+            LAYER_STACK_BACKSIDE,
+            {**_EXPECTED_GEOMETRY_UM, **_BACKSIDE_EXTRA_GEOMETRY_UM},
+        ),
+        (
+            LAYER_STACK_FLIP_CHIP_BACKSIDE,
+            {
+                **_EXPECTED_GEOMETRY_UM,
+                **_FLIP_CHIP_EXTRA_GEOMETRY_UM,
+                **_BACKSIDE_EXTRA_GEOMETRY_UM,
+                **_TOP_BACKSIDE_EXTRA_GEOMETRY_UM,
+            },
+        ),
     ],
-    ids=["default", "flip_chip"],
+    ids=["default", "flip_chip", "backside", "flip_chip_backside"],
 )
 def test_layer_stack_geometry(
     layer_stack: LayerStack, expected: dict[str, tuple[float, float]]
@@ -80,8 +110,22 @@ def test_layer_stack_geometry(
 
 @pytest.mark.parametrize(
     "layer_stack",
-    [LAYER_STACK, LAYER_STACK_FLIP_CHIP, LAYER_STACK_GATEMON, LAYER_STACK_3D],
-    ids=["default", "flip_chip", "gatemon", "preview"],
+    [
+        LAYER_STACK,
+        LAYER_STACK_FLIP_CHIP,
+        LAYER_STACK_BACKSIDE,
+        LAYER_STACK_FLIP_CHIP_BACKSIDE,
+        LAYER_STACK_GATEMON,
+        LAYER_STACK_3D,
+    ],
+    ids=[
+        "default",
+        "flip_chip",
+        "backside",
+        "flip_chip_backside",
+        "gatemon",
+        "preview",
+    ],
 )
 def test_every_layer_material_has_properties(layer_stack: LayerStack) -> None:
     """Every level's material resolves to its ``material_properties`` entry."""
@@ -115,6 +159,10 @@ def _derived_layer_operations(spec: object) -> list[str]:
         LAYER_STACK_NO_VACUUM,
         LAYER_STACK_FLIP_CHIP,
         LAYER_STACK_FLIP_CHIP_NO_VACUUM,
+        LAYER_STACK_BACKSIDE,
+        LAYER_STACK_BACKSIDE_NO_VACUUM,
+        LAYER_STACK_FLIP_CHIP_BACKSIDE,
+        LAYER_STACK_FLIP_CHIP_BACKSIDE_NO_VACUUM,
         LAYER_STACK_GATEMON,
         LAYER_STACK_GATEMON_NO_VACUUM,
         LAYER_STACK_3D,
@@ -124,6 +172,10 @@ def _derived_layer_operations(spec: object) -> list[str]:
         "no_vacuum",
         "flip_chip",
         "flip_chip_no_vacuum",
+        "backside",
+        "backside_no_vacuum",
+        "flip_chip_backside",
+        "flip_chip_backside_no_vacuum",
         "gatemon",
         "gatemon_no_vacuum",
         "preview",

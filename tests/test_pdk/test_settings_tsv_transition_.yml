@@ -1,5 +1,5 @@
 info: {}
-name: tsv_transition_CScpw_TL100_PW40_PG24_PL30_VW10_VL20_VPM_491796d4
+name: tsv_transition_CSNone_TL100_PW40_PG24_PL30_VW10_VL20_VP_2b35eba2
 ports:
   backside:
     center:
@@ -20,7 +20,7 @@ ports:
     port_type: optical
     width: 10
 settings:
-  cross_section: cpw
+  chip: bottom
   ground_via_distance: 15
   ground_via_pitch: 30
   n_ground_vias_per_side: 4

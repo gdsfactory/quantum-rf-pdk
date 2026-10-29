@@ -1,5 +1,5 @@
 info: {}
-name: tsv_transition_double_sided_CScpw_CSBcpw_backside_TL100_2cc60500
+name: tsv_transition_double_sided_CSNone_CSBNone_TL100_TLB100_c3406ec8
 ports:
   o1:
     center:
@@ -20,8 +20,7 @@ ports:
     port_type: optical
     width: 10
 settings:
-  cross_section: cpw
-  cross_section_backside: cpw_backside
+  chip: bottom
   ground_via_distance: 15
   ground_via_pitch: 30
   n_ground_vias_per_side: 4

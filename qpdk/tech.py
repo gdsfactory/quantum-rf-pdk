@@ -3,8 +3,9 @@
 # ruff: file-ignore[print]
 
 from collections.abc import Callable, Generator, Sequence
+from dataclasses import dataclass
 from functools import cache, partial, wraps
-from typing import Any
+from typing import Any, Literal
 
 import gdsfactory as gf
 from gdsfactory.cross_section import (
@@ -50,6 +51,10 @@ class LayerMapQPDK(LayerMap):
     MB_DRAW: Layer = (3, 0)
     MB_ETCH: Layer = (3, 1)
 
+    # Backside metal of the flip-chip top chip, connected to M2 through TSV2
+    MB2_DRAW: Layer = (4, 0)
+    MB2_ETCH: Layer = (4, 1)
+
     # Airbridges
     AB_DRAW: Layer = (10, 0)  # Bridge metal
     AB_VIA: Layer = (10, 1)  # Landing pads / contacts
@@ -70,6 +75,7 @@ class LayerMapQPDK(LayerMap):
     # Packaging / 3D integration / backside / misc.
     IND: Layer = (30, 0)
     TSV: Layer = (31, 0)  # Throughs / vias / backside features
+    TSV2: Layer = (32, 0)  # Through-silicon vias in the flip-chip top chip
     DICE: Layer = (70, 0)  # Dicing lanes
 
     # Alignment / admin
@@ -122,6 +128,8 @@ NON_METADATA_LAYERS = {
     LAYER.M2_ETCH,
     LAYER.MB_DRAW,
     LAYER.MB_ETCH,
+    LAYER.MB2_DRAW,
+    LAYER.MB2_ETCH,
     LAYER.AB_DRAW,
     LAYER.AB_VIA,
     LAYER.JJ_AREA,
@@ -132,6 +140,7 @@ NON_METADATA_LAYERS = {
     LAYER.CNT,
     LAYER.IND,
     LAYER.TSV,
+    LAYER.TSV2,
     LAYER.DICE,
     LAYER.ALN_TOP,
     LAYER.ALN_BOT,
@@ -340,7 +349,8 @@ def get_layer_stack_3d() -> LayerStack:
     """Return a mask preview with ground bounded by the layout extent.
 
     Includes the gatemon contact, dielectric and gate films at their nominal
-    process heights. The ground is an unconditional blanket film, even without
+    process heights, and the drawn M2, MB, MB2 and TSV2 shapes of the flip-chip
+    and backside faces. The ground is an unconditional blanket film, even without
     an M1 etch mask. It can cover lower films and fill additive-only gaps.
     Use a physical process stack for those devices, simulations and already
     prepared positive metal geometry.
@@ -360,10 +370,17 @@ def get_layer_stack_3d() -> LayerStack:
     })
     # JJ_PATCH is shared by base-process junctions and gatemon contacts.
     stack.layers["Reconnection"].zmin = stack.layers["JosephsonJunction"].zmin
+    # The other chip faces preview only their drawn metal: a blanket ground
+    # there would appear under every layout, flip-chip or not.
+    physical = LAYER_STACK_FLIP_CHIP_BACKSIDE.layers
+    stack.layers.update({
+        name: physical[name].model_copy(deep=True) for name in ("M2", "TSV2")
+    })
+    for name, draw in (("MB", L.MB_DRAW), ("MB2", L.MB2_DRAW)):
+        stack.layers[name] = physical[name].model_copy(
+            update={"layer": LogicalLayer(layer=draw), "derived_layer": None}
+        )
     return stack
-
-
-LAYER_STACK_3D = get_layer_stack_3d()
 
 
 def get_layer_material_properties(
@@ -402,6 +419,7 @@ LAYER_VIEWS = gf.technology.LayerViews(PATH.lyp)
 LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
     ("M1_DRAW", "TSV", "M2_DRAW"),
     ("M1_DRAW", "TSV", "MB_DRAW"),
+    ("M2_DRAW", "TSV2", "MB2_DRAW"),
     ("M1_DRAW", "IND", "M2_DRAW"),
     ("M1_DRAW", "AB_DRAW", "M1_DRAW"),
     ("M2_DRAW", "AB_DRAW", "M2_DRAW"),
@@ -458,45 +476,91 @@ LAYER_STACK_FLIP_CHIP_NO_VACUUM = LayerStack(
 )
 
 
-LAYER_STACK_BACKSIDE = LayerStack(
-    layers={
-        **LAYER_STACK.layers,
-        # Backside (side B) metal on the bottom face of the substrate, see
-        # :cite:`mallekFabricationSuperconductingThroughsilicon2021`
-        "MB": LayerLevel(
-            name="MB",
-            layer=DerivedLayer(
-                layer1=LogicalLayer(layer=L.SIM_AREA),
-                layer2=DerivedLayer(
-                    layer1=LogicalLayer(layer=L.MB_ETCH),
-                    layer2=LogicalLayer(layer=L.MB_DRAW),
-                    operation="-",
-                ),
-                operation="-",
+def _backside_metal_level(
+    name: str, draw: Layer, etch: Layer, zmin: float
+) -> LayerLevel:
+    """Ground-plane style backside metal: ``SIM_AREA - (ETCH - DRAW)``."""
+    return LayerLevel(
+        name=name,
+        layer=DerivedLayer(
+            layer1=LogicalLayer(layer=L.SIM_AREA),
+            layer2=DerivedLayer(
+                layer1=LogicalLayer(layer=etch),
+                layer2=LogicalLayer(layer=draw),
+                operation="not",
             ),
-            derived_layer=LogicalLayer(layer=L.MB_DRAW),
-            thickness=0.2,
-            zmin=-500.2,  # bottom of substrate
-            material="Nb",
-            mesh_order=1,
+            operation="not",
         ),
-        "Vacuum_bottom": LayerLevel(
-            name="Vacuum_bottom",
+        derived_layer=LogicalLayer(layer=draw),
+        thickness=0.2,
+        zmin=zmin,
+        material="Nb",
+        mesh_order=1,
+    )
+
+
+def _without_vacuum(stack: LayerStack) -> LayerStack:
+    """Copy of ``stack`` without its vacuum levels, for solvers that add their own."""
+    return LayerStack(
+        layers={
+            name: level
+            for name, level in stack.layers.items()
+            if not name.startswith("Vacuum")
+        }
+    )
+
+
+# Backside (side B) metal on the bottom face of the substrate, see
+# :cite:`mallekFabricationSuperconductingThroughsilicon2021`
+_BACKSIDE_LEVELS = {
+    "MB": _backside_metal_level("MB", L.MB_DRAW, L.MB_ETCH, zmin=-500.2),
+    "Vacuum_bottom": LayerLevel(
+        name="Vacuum_bottom",
+        layer=L.SIM_AREA,
+        thickness=500,  # 500 microns of vacuum below backside metal
+        zmin=-1000.2,
+        material="vacuum",
+        mesh_order=99,
+    ),
+}
+
+LAYER_STACK_BACKSIDE = LayerStack(layers={**LAYER_STACK.layers, **_BACKSIDE_LEVELS})
+LAYER_STACK_BACKSIDE_NO_VACUUM = _without_vacuum(LAYER_STACK_BACKSIDE)
+
+# Both chips of the flip-chip assembly with metal on both faces: the bottom
+# chip as in LAYER_STACK_BACKSIDE, and the top chip mirrored about the gap,
+# with TSV2 through Substrate_top joining M2 to MB2 on its outer face.
+_TOP_CHIP_OUTER_FACE = 10.2 + 500  # M2 film plus Substrate_top
+LAYER_STACK_FLIP_CHIP_BACKSIDE = LayerStack(
+    layers={
+        **LAYER_STACK_FLIP_CHIP.layers,
+        **_BACKSIDE_LEVELS,
+        "TSV2": LayerLevel(
+            name="TSV2",
+            layer=L.TSV2,
+            thickness=500,  # full top substrate thickness
+            zmin=10.2,  # from M2 up through Substrate_top
+            material="TiN",
+            mesh_order=3,
+        ),
+        "MB2": _backside_metal_level(
+            "MB2", L.MB2_DRAW, L.MB2_ETCH, zmin=_TOP_CHIP_OUTER_FACE
+        ),
+        "Vacuum_top": LayerLevel(
+            name="Vacuum_top",
             layer=L.SIM_AREA,
-            thickness=500,  # 500 microns of vacuum below backside metal
-            zmin=-1000.2,
+            thickness=500,  # 500 microns of vacuum above the top chip
+            zmin=_TOP_CHIP_OUTER_FACE + 0.2,
             material="vacuum",
             mesh_order=99,
         ),
     }
 )
-LAYER_STACK_BACKSIDE_NO_VACUUM = LayerStack(
-    layers={
-        name: level
-        for name, level in LAYER_STACK_BACKSIDE.layers.items()
-        if not name.startswith("Vacuum")
-    }
+LAYER_STACK_FLIP_CHIP_BACKSIDE_NO_VACUUM = _without_vacuum(
+    LAYER_STACK_FLIP_CHIP_BACKSIDE
 )
+
+LAYER_STACK_3D = get_layer_stack_3d()
 
 ############################
 # Cross-sections functions
@@ -677,6 +741,78 @@ def coplanar_waveguide_backside() -> CrossSection:
 
 
 cpw_backside = coplanar_waveguide_backside
+
+
+@xsection
+def coplanar_waveguide_top() -> CrossSection:
+    """Return a coplanar waveguide cross-section on the flip-chip top chip metal.
+
+    Same default dimensions as :func:`coplanar_waveguide`, drawn on ``M2_DRAW`` and
+    ``M2_ETCH``.
+    """
+    return coplanar_waveguide(waveguide_layer=LAYER.M2_DRAW, etch_layer=LAYER.M2_ETCH)
+
+
+cpw_top = coplanar_waveguide_top
+
+
+@xsection
+def coplanar_waveguide_top_backside() -> CrossSection:
+    """Return a coplanar waveguide cross-section on the top chip backside metal.
+
+    Same default dimensions as :func:`coplanar_waveguide`, drawn on ``MB2_DRAW`` and
+    ``MB2_ETCH``. Connects to ``M2`` through ``TSV2``, see :data:`CHIP_LAYERS`.
+    """
+    return coplanar_waveguide(waveguide_layer=LAYER.MB2_DRAW, etch_layer=LAYER.MB2_ETCH)
+
+
+cpw_top_backside = coplanar_waveguide_top_backside
+
+
+@dataclass(frozen=True)
+class ChipLayers:
+    """Layers of one chip that carries metal on both faces.
+
+    The front face looks into the flip-chip gap (``M1`` on the bottom chip,
+    ``M2`` on the top chip) and the back face is the outer face of the
+    substrate. The TSV layer runs through the substrate between them.
+    Backside geometry is drawn in the same top-down frame as the front face.
+    """
+
+    front_draw: Layer
+    front_etch: Layer
+    back_draw: Layer
+    back_etch: Layer
+    tsv: Layer
+    front_cross_section: str
+    back_cross_section: str
+
+
+Chip = Literal["bottom", "top"]
+
+#: Per-chip layers for TSV cells and simulations, indexed by their ``chip``
+#: argument. ``"bottom"`` is the (single or flip-chip) base chip, ``"top"`` the
+#: flip-chip top chip of :data:`LAYER_STACK_FLIP_CHIP_BACKSIDE`.
+CHIP_LAYERS: dict[Chip, ChipLayers] = {
+    "bottom": ChipLayers(
+        front_draw=LAYER.M1_DRAW,
+        front_etch=LAYER.M1_ETCH,
+        back_draw=LAYER.MB_DRAW,
+        back_etch=LAYER.MB_ETCH,
+        tsv=LAYER.TSV,
+        front_cross_section="cpw",
+        back_cross_section="cpw_backside",
+    ),
+    "top": ChipLayers(
+        front_draw=LAYER.M2_DRAW,
+        front_etch=LAYER.M2_ETCH,
+        back_draw=LAYER.MB2_DRAW,
+        back_etch=LAYER.MB2_ETCH,
+        tsv=LAYER.TSV2,
+        front_cross_section="cpw_top",
+        back_cross_section="cpw_top_backside",
+    ),
+}
 
 
 @xsection

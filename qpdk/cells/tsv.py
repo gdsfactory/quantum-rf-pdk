@@ -6,6 +6,11 @@ The geometry follows the superconducting TSVs of
 the front-side metal (side A, ``M1``) to the backside metal (side B, ``MB``).
 Backside geometry is drawn in the same (front-side, top-down) coordinate frame
 as ``M1``, so the backside mask is the mirror image of the drawn ``MB`` layers.
+
+Every cell takes a ``chip`` argument. ``"bottom"`` (default) is the base chip
+above; ``"top"`` puts the via through the flip-chip top chip instead, joining
+``M2`` to its backside metal ``MB2`` through ``TSV2``. The layers of each chip
+come from :data:`~qpdk.tech.CHIP_LAYERS`.
 """
 
 from __future__ import annotations
@@ -15,11 +20,11 @@ from typing import cast
 import gdsfactory as gf
 import numpy as np
 from gdsfactory.component import Component
-from gdsfactory.typings import CrossSectionSpec, LayerSpec
+from gdsfactory.typings import CrossSectionSpec
 
 from qpdk.cells._schematic import tsv_schematic
 from qpdk.cells.waveguides import add_etch_gap, straight, taper_cross_section
-from qpdk.tech import LAYER, coplanar_waveguide, get_etch_section
+from qpdk.tech import CHIP_LAYERS, Chip, coplanar_waveguide, get_etch_section
 
 
 def _stadium_points(width: float, length: float, n: int = 32) -> np.ndarray:
@@ -37,9 +42,7 @@ def tsv(
     width: float = 10.0,
     length: float = 20.0,
     pad_margin: float = 2.0,
-    layer: LayerSpec = LAYER.TSV,
-    layer_pad_top: LayerSpec | None = LAYER.M1_DRAW,
-    layer_pad_bottom: LayerSpec | None = LAYER.MB_DRAW,
+    chip: Chip = "bottom",
 ) -> Component:
     r"""Creates a slot-shaped superconducting through-silicon via (TSV).
 
@@ -52,6 +55,10 @@ def tsv(
     ``pad_margin``, so the via stays covered by metal even when placed next to
     an etched gap.
 
+    With ``chip="top"`` the via runs through the flip-chip top chip, on
+    ``TSV2`` with pads on ``M2`` and ``MB2``, see
+    :data:`~qpdk.tech.LAYER_STACK_FLIP_CHIP_BACKSIDE`.
+
     .. svgbob::
 
          .-----------.
@@ -62,9 +69,8 @@ def tsv(
         width: Via width (short axis, along y) in µm.
         length: Via length (long axis, along x) in µm.
         pad_margin: Landing-pad enclosure of the via on each metal layer in µm.
-        layer: Layer of the via.
-        layer_pad_top: Front-side landing pad layer. ``None`` omits the pad.
-        layer_pad_bottom: Backside landing pad layer. ``None`` omits the pad.
+            ``0`` omits the pads.
+        chip: Chip the via goes through, ``"bottom"`` or ``"top"``.
 
     Returns:
         A gdsfactory Component representing the TSV.
@@ -75,10 +81,11 @@ def tsv(
     if length < width:
         msg = f"TSV length ({length}) must be at least its width ({width})."
         raise ValueError(msg)
+    layers = CHIP_LAYERS[chip]
     c = Component()
-    c.add_polygon(_stadium_points(width, length), layer=layer)
-    for pad_layer in (layer_pad_top, layer_pad_bottom):
-        if pad_layer is not None and pad_margin > 0:
+    c.add_polygon(_stadium_points(width, length), layer=layers.tsv)
+    if pad_margin > 0:
+        for pad_layer in (layers.front_draw, layers.back_draw):
             c.add_polygon(
                 _stadium_points(width + 2 * pad_margin, length + 2 * pad_margin),
                 layer=pad_layer,
@@ -87,7 +94,7 @@ def tsv(
         name="center",
         center=(0, 0),
         orientation=0,
-        layer=layer,
+        layer=layers.tsv,
         width=width,
         port_type="placement",
     )
@@ -158,6 +165,7 @@ def _add_transition_vias(
     n_ground_vias_per_side: int,
     ground_via_pitch: float,
     ground_via_distance: float,
+    chip: Chip,
 ) -> None:
     """Add the signal TSVs inside the pad and the ground-stitching TSVs around it."""
     signal_span = (n_signal_vias - 1) * signal_via_pitch + via_width
@@ -177,7 +185,7 @@ def _add_transition_vias(
         )
         raise ValueError(msg)
 
-    via = tsv(width=via_width, length=via_length, pad_margin=via_pad_margin)
+    via = tsv(width=via_width, length=via_length, pad_margin=via_pad_margin, chip=chip)
     for y in (np.arange(n_signal_vias) - (n_signal_vias - 1) / 2) * signal_via_pitch:
         (c << via).move((0, float(y)))
 
@@ -192,7 +200,7 @@ def _add_transition_vias(
 
 @gf.cell(tags=["interconnects", "3d-integration", "waveguides"])
 def tsv_transition(
-    cross_section: CrossSectionSpec = "cpw",
+    cross_section: CrossSectionSpec | None = None,
     taper_length: float = 100.0,
     pad_width: float = 40.0,
     pad_gap: float = 24.0,
@@ -205,6 +213,7 @@ def tsv_transition(
     n_ground_vias_per_side: int = 4,
     ground_via_pitch: float = 30.0,
     ground_via_distance: float = 15.0,
+    chip: Chip = "bottom",
 ) -> Component:
     r"""Front-side CPW tapered into a TSV landing pad.
 
@@ -213,7 +222,9 @@ def tsv_transition(
     ``2 * n_ground_vias_per_side`` TSVs stitching the front and back ground
     planes. On the backside, the signal TSVs land on an isolated ``MB`` pad of
     the same size, clear of the backside ground by ``pad_gap``. Connect other
-    backside structures at the ``backside`` placement port.
+    backside structures at the ``backside`` placement port. With
+    ``chip="top"`` the same transition is built on the flip-chip top chip,
+    from ``M2`` to ``MB2``.
 
     The defaults follow the transition of
     :cite:`mallekFabricationSuperconductingThroughsilicon2021`, Fig. 6: two
@@ -234,6 +245,7 @@ def tsv_transition(
 
     Args:
         cross_section: Front-side CPW cross-section at the ``o1`` port.
+            ``None`` uses the front cross-section of ``chip``.
         taper_length: Length of the linear taper from the CPW to the pad in µm.
         pad_width: Centre-conductor width of the pad in µm.
         pad_gap: Gap between the pad and ground in µm.
@@ -247,17 +259,27 @@ def tsv_transition(
         ground_via_pitch: Centre-to-centre pitch of the ground TSVs (along x) in µm.
         ground_via_distance: Distance from the ground-plane edge to the ground
             TSV centres in µm.
+        chip: Chip the TSVs go through, ``"bottom"`` or ``"top"``.
 
     Returns:
         Component with the CPW port ``o1`` and the ``backside`` placement port
         at the signal TSVs.
     """
+    layers = CHIP_LAYERS[chip]
     c = Component()
     port = _add_tapered_pad(
-        c, cross_section, pad_width, pad_gap, pad_length, taper_length, mirror=False
+        c,
+        cross_section or layers.front_cross_section,
+        pad_width,
+        pad_gap,
+        pad_length,
+        taper_length,
+        mirror=False,
     )
     # Isolated backside landing pad for the signal TSVs
-    backside_pad_xs = _cpw_pad_cross_section("cpw_backside", pad_width, pad_gap)
+    backside_pad_xs = _cpw_pad_cross_section(
+        layers.back_cross_section, pad_width, pad_gap
+    )
     backside_pad = c << straight(length=pad_length, cross_section=backside_pad_xs)
     backside_pad.move((-pad_length / 2, 0))
     for p in backside_pad.ports:
@@ -278,13 +300,14 @@ def tsv_transition(
         n_ground_vias_per_side,
         ground_via_pitch,
         ground_via_distance,
+        chip,
     )
     c.add_port(name="o1", port=port)
     c.add_port(
         name="backside",
         center=(0, 0),
         orientation=0,
-        layer=LAYER.MB_DRAW,
+        layer=layers.back_draw,
         width=pad_width,
         port_type="placement",
     )
@@ -293,8 +316,8 @@ def tsv_transition(
 
 @gf.cell(tags=["interconnects", "3d-integration", "waveguides"])
 def tsv_transition_double_sided(
-    cross_section: CrossSectionSpec = "cpw",
-    cross_section_backside: CrossSectionSpec = "cpw_backside",
+    cross_section: CrossSectionSpec | None = None,
+    cross_section_backside: CrossSectionSpec | None = None,
     taper_length: float = 100.0,
     taper_length_backside: float = 100.0,
     pad_width: float = 40.0,
@@ -308,6 +331,7 @@ def tsv_transition_double_sided(
     n_ground_vias_per_side: int = 4,
     ground_via_pitch: float = 30.0,
     ground_via_distance: float = 15.0,
+    chip: Chip = "bottom",
 ) -> Component:
     r"""CPW transition from the front side to the backside through TSVs.
 
@@ -321,6 +345,8 @@ def tsv_transition_double_sided(
     Simulate it with :data:`~qpdk.tech.LAYER_STACK_BACKSIDE`; the backside
     metal also turns every CPW on the chip into a conductor-backed CPW, see
     the ``conductor_backed`` option of :func:`~qpdk.models.cpw_parameters`.
+    With ``chip="top"`` it runs from ``M2`` to ``MB2`` through the flip-chip
+    top chip instead, see :data:`~qpdk.tech.LAYER_STACK_FLIP_CHIP_BACKSIDE`.
 
     .. svgbob::
 
@@ -331,8 +357,10 @@ def tsv_transition_double_sided(
                ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 
     Args:
-        cross_section: Front-side CPW cross-section at ``o1``.
-        cross_section_backside: Backside CPW cross-section at ``o2``.
+        cross_section: Front-side CPW cross-section at ``o1``. ``None`` uses
+            the front cross-section of ``chip``.
+        cross_section_backside: Backside CPW cross-section at ``o2``. ``None``
+            uses the back cross-section of ``chip``.
         taper_length: Length of the front-side taper in µm.
         taper_length_backside: Length of the backside taper in µm.
         pad_width: Centre-conductor width of both pads in µm.
@@ -347,17 +375,25 @@ def tsv_transition_double_sided(
         ground_via_pitch: Centre-to-centre pitch of the ground TSVs (along x) in µm.
         ground_via_distance: Distance from the ground-plane edge to the ground
             TSV centres in µm.
+        chip: Chip the TSVs go through, ``"bottom"`` or ``"top"``.
 
     Returns:
         Component with the front-side port ``o1`` and the backside port ``o2``.
     """
+    layers = CHIP_LAYERS[chip]
     c = Component()
     port_front = _add_tapered_pad(
-        c, cross_section, pad_width, pad_gap, pad_length, taper_length, mirror=False
+        c,
+        cross_section or layers.front_cross_section,
+        pad_width,
+        pad_gap,
+        pad_length,
+        taper_length,
+        mirror=False,
     )
     port_back = _add_tapered_pad(
         c,
-        cross_section_backside,
+        cross_section_backside or layers.back_cross_section,
         pad_width,
         pad_gap,
         pad_length,
@@ -377,6 +413,7 @@ def tsv_transition_double_sided(
         n_ground_vias_per_side,
         ground_via_pitch,
         ground_via_distance,
+        chip,
     )
     c.add_port(name="o1", port=port_front)
     c.add_port(name="o2", port=port_back)

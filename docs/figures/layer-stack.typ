@@ -1,53 +1,394 @@
 #import "@preview/cetz:0.4.2"
-#import "style.typ": (
-  blue, body-font, heading-font, ink, muted, paper, rule, slate,
-)
+#import "style.typ": blue, body-font, heading-font, ink, muted, paper, rule
+#import "_layers.typ": layer-color, layer-frame, layer-label
 
-#set page(width: 190mm, height: 218mm, margin: 3mm, fill: white)
+#set page(width: 190mm, height: auto, margin: 3mm, fill: white)
 #set text(font: body-font, fill: ink)
 #show math.equation: set text(font: "Fira Math")
 
-// Layer colours from qpdk/klayout/layers.lyp, so the figure reads like the
-// layout in KLayout. Each derived ground plane takes its drawn layer's colour.
-// Substrates, oxide and vacuum keep the neutral docs palette instead of the
-// SIM_AREA green.
-#let m1-fill = rgb("#acf1ea") // M1_DRAW
-#let m1-frame = rgb("#4dccbd") // M1_ETCH
-#let m2-fill = rgb("#ffa9a4") // M2_DRAW
-#let m2-frame = rgb("#fe5f55") // M2_ETCH
-#let ab = rgb("#fea82f") // AB_DRAW
-#let ab-via = rgb("#febb5d") // AB_VIA
-#let jj = rgb("#c4b7cb") // JJ_AREA
-#let jj-patch = rgb("#947da1") // JJ_PATCH
-#let contact = rgb("#f3cf8e") // CNT_CONTACT
-#let contact-au = contact.darken(25%) // same layer, shaded apart
-#let top-gate = rgb("#a9bee8") // TOP_GATE
-#let hbn = rgb("#b8d9a4") // HBN
-#let cnt = rgb("#fe5f55") // CNT
-#let nbtin = rgb("#4a90e2") // NbTiN
-#let ind = rgb("#65f69c") // IND
-#let tsv = rgb("#e637bf") // TSV
-#let mb-fill = rgb("#c9b6f2") // MB_DRAW
-#let mb-frame = rgb("#8e6fd8") // MB_ETCH
+// Cross-sections of the QPDK layer stacks, not to scale. Every number, colour
+// and GDS layer comes from data: the levels from layer-stack.yaml (checked
+// against qpdk/tech.py by tests/test_layer_stack_figure.py) and the colours
+// from qpdk/layers.yaml. To add a level, add it to tech.py and the YAML, then
+// draw it below with `slab` (or `slotted` for an etched metal) and give it a
+// `callout`. The legend and its numbering follow on their own.
 
-// Cross-sections of the QPDK layer stacks. Not to scale: the main panel draws
-// `LAYER_STACK` plus the `LAYER_STACK_FLIP_CHIP` top chip and the
-// `LAYER_STACK_BACKSIDE` metal with the thin films at 1 cm = 400 nm, while the
-// 500 µm substrates, the vacuum and the 10 µm indium bump are shortened behind
-// break marks. The right panel draws the
-// `LAYER_STACK_GATEMON` films at 1 cm = 50 nm.
+// ── Data ─────────────────────────────────────────────────────────────────────
+
+#let stacks = yaml("layer-stack.yaml").stacks
+
+// Legend columns, each a list of stacks from top to bottom. Legend numbers run
+// through the columns in this order.
+#let legend-columns = (
+  ("LAYER_STACK", "LAYER_STACK_FLIP_CHIP"),
+  (
+    "LAYER_STACK_BACKSIDE",
+    "LAYER_STACK_FLIP_CHIP_BACKSIDE",
+    "LAYER_STACK_GATEMON",
+  ),
+)
+#for name in stacks.keys() {
+  assert(
+    name in legend-columns.flatten(),
+    message: name + " has no legend column",
+  )
+}
+
+// Legend number of each listed level, by level name.
+#let numbers = {
+  let out = (:)
+  for name in legend-columns.flatten() {
+    for level in stacks.at(name).levels.keys() {
+      out.insert(level, out.len() + 1)
+    }
+  }
+  out
+}
+
+// Level `name` as `stack` defines it: its own levels and reuses first, then
+// the stacks it extends. Returns the YAML entry plus its name.
+#let find-level(stack, name) = {
+  let entry = stacks.at(stack)
+  for group in ("levels", "reuses") {
+    let levels = entry.at(group, default: (:))
+    if name in levels { return levels.at(name) + (name: name) }
+  }
+  for parent in entry.at("extends", default: ()) {
+    let found = find-level(parent, name)
+    if found != none { return found }
+  }
+  none
+}
+#let level(stack, name) = {
+  let found = find-level(stack, name)
+  assert(found != none, message: name + " is not a level of " + stack)
+  found
+}
+
+// ── Styling and text ─────────────────────────────────────────────────────────
+
+#let dashed = (paint: muted, thickness: 0.6pt, dash: "dashed")
+// Neutral looks for levels drawn on SIM_AREA, instead of its hidden green.
+#let looks = (
+  substrate: (fill: paper, stroke: 0.7pt + rule),
+  vacuum: (fill: white, stroke: dashed),
+  oxide: (fill: rule, stroke: none),
+)
+#let look(lv) = {
+  let color = lv.at("color", default: lv.layer)
+  if color in looks { return looks.at(color) }
+  let shade = lv.at("shade", default: 0) * 1%
+  (
+    fill: layer-color(color).darken(shade),
+    stroke: 0.5pt + layer-frame(color).darken(shade),
+  )
+}
+
+#let small(body) = text(size: 6.5pt, fill: muted, body)
+#let minus(s) = s.replace("-", "−")
+// 0.2 → "200 nm", -500.2 → "−500.2 µm"
+#let length(um) = if um != 0 and calc.abs(um) < 1 {
+  minus(str(calc.round(um * 1000))) + " nm"
+} else { minus(str(calc.round(um, digits: 1))) + " µm" }
+#let formulas = (SiO2: [SiO#sub[2]])
+#let material(name) = formulas.at(name, default: name)
+#let spec(lv) = {
+  let note = lv.at("note", default: none)
+  let thickness = length(lv.thickness) + if note != none { " (" + note + ")" }
+  let z = if lv.zmin == 0 { "0" } else { length(lv.zmin) }
+  let source = if lv.at("derived", default: false) {
+    "derived from " + lv.layer
+  } else { layer-label(lv.layer) }
+  [#material(lv.material) · #thickness · $z$ #z · #source]
+}
+
+// ── Broken z axis ────────────────────────────────────────────────────────────
+
+// Maps z (µm) to canvas y (cm) piecewise, so nanometre films and 500 µm
+// substrates share one panel. Segments are (z-from, z-to, height), plus
+// `true` for a shortened segment, which slabs crossing it mark with a break.
+// The point `z` lands on canvas height `y`.
+#let broken-axis(segments, z: 0, y: 0) = {
+  let starts = segments
+    .map(s => s.at(2))
+    .fold((0,), (acc, h) => acc + (acc.last() + h,))
+  let raw(v) = {
+    for (i, s) in segments.enumerate() {
+      let (a, b, h) = s.slice(0, 3)
+      if v <= b or i == segments.len() - 1 {
+        return starts.at(i) + (calc.clamp(v, a, b) - a) / (b - a) * h
+      }
+    }
+  }
+  let offset = y - raw(z)
+  (
+    y: v => offset + raw(v),
+    breaks: segments
+      .enumerate()
+      .filter(((i, s)) => s.len() > 3 and s.at(3))
+      .map(((i, s)) => offset + starts.at(i) + s.at(2) / 2),
+  )
+}
+
+// ── Drawing helpers ──────────────────────────────────────────────────────────
+
+#let min-film = 0.06 // thinnest drawn film, cm, so 15 nm stays visible
+
+// Canvas (bottom, top) of a level on an axis.
+#let span(ax, lv) = {
+  let lo = (ax.y)(lv.zmin)
+  (lo, calc.max((ax.y)(lv.zmin + lv.thickness), lo + min-film))
+}
+
+#let break-band(y, from, to) = {
+  import cetz.draw: *
+  rect((from, y - 0.13), (to, y + 0.13), fill: white, stroke: none)
+  let steps = calc.max(1, int((to - from) / 0.3))
+  for dy in (-0.13, 0.13) {
+    line(
+      ..range(steps + 1).map(i => (
+        from + i * (to - from) / steps,
+        y + dy + if calc.even(i) { 0.05 } else { -0.05 },
+      )),
+      stroke: 0.6pt + muted,
+    )
+  }
+}
+
+// A level drawn between x = from and to, broken where the axis is shortened.
+#let slab(ax, lv, from, to) = {
+  import cetz.draw: *
+  let (lo, hi) = span(ax, lv)
+  rect((from, lo), (to, hi), ..look(lv))
+  for y in ax.breaks.filter(y => lo < y and y < hi) { break-band(y, from, to) }
+}
+
+// An etched metal: the level between from and to, cut by `gaps` (x pairs).
+#let slotted(ax, lv, from, to, gaps) = {
+  let edges = (from, ..gaps.flatten(), to)
+  for i in range(0, edges.len(), step: 2) {
+    slab(ax, lv, edges.at(i), edges.at(i + 1))
+  }
+}
+
+// Width arrows across each gap at height y, with a label centred under them.
+#let gap-label(gaps, y, label) = {
+  import cetz.draw: *
+  for (a, b) in gaps {
+    line((a, y), (b, y), stroke: 0.6pt + muted, mark: (
+      start: ">",
+      end: ">",
+      size: 0.08,
+      fill: muted,
+    ))
+  }
+  let mid = (gaps.first().first() + gaps.last().last()) / 2
+  content((mid, y - 0.27), small(label), anchor: "center")
+}
+
+#let badge(at, n) = {
+  import cetz.draw: *
+  circle(at, radius: 0.17, fill: white, stroke: 0.6pt + ink)
+  content(at, text(size: 6.5pt, weight: "bold", str(n)), anchor: "center")
+}
+
+// Ties a drawn level to its legend number: a leader from (x, y) on the level,
+// by default its middle, to the numbered badge at `to`, by default in place.
+#let callout(ax, lv, x, y: auto, to: auto) = {
+  import cetz.draw: *
+  let (lo, hi) = span(ax, lv)
+  let at = (x, if y == auto { (lo + hi) / 2 } else { y })
+  let label-at = if to == auto { at } else { to }
+  line(at, label-at, stroke: 0.5pt + muted)
+  badge(label-at, numbers.at(lv.name))
+}
+
+// A z marker on the panel edge at x, labelled with z itself.
+#let tick(ax, z, x, side: "left") = {
+  import cetz.draw: *
+  let y = (ax.y)(z)
+  let label = small(if z == 0 [$z = 0$] else { length(z) })
+  let (dx, anchor) = if side == "left" { (-0.15, "east") } else {
+    (0.15, "west")
+  }
+  line((x, y), (x + dx, y), stroke: 0.6pt + muted)
+  content((x + 1.3 * dx, y), label, anchor: anchor)
+}
+
+#let panel-heading(at, body) = cetz.draw.content(
+  at,
+  text(size: 7pt, font: heading-font, weight: "bold", body),
+  anchor: "center",
+)
+
+// ── Figure ───────────────────────────────────────────────────────────────────
+
 #cetz.canvas(length: 1cm, {
   import cetz.draw: *
 
-  let nm = 1 / 400
-  let z0 = 11.2
-  let z(v) = z0 + v * nm
+  // Main panel: both chips of LAYER_STACK_FLIP_CHIP_BACKSIDE, which holds
+  // every level of the base, flip-chip and backside stacks. Films at
+  // 1 cm = 400 nm; substrates, vacuum and the indium bump are shortened.
+  let main = "LAYER_STACK_FLIP_CHIP_BACKSIDE"
+  let lv(name) = level(main, name)
+  let ax = broken-axis((
+    (-1000.2, -500.2, 1.6, true), // Vacuum_bottom
+    (-500.2, -500, 0.5), // MB
+    (-500, 0, 3.0, true), // Substrate
+    (0, 0.5, 1.25), // bottom-chip films
+    (0.5, 10, 2.4, true), // indium bump gap
+    (10, 10.2, 0.5), // M2
+    (10.2, 510.2, 1.8, true), // Substrate_top
+    (510.2, 510.4, 0.5), // MB2
+    (510.4, 1010.4, 1.6, true), // Vacuum_top
+  ))
   let x0 = 1.3
   let x1 = 11.8
-  let top = 15.45
+  let chip-x = 6.6 // left edge of the top chip
+  let row1 = (ax.y)(0.5) + 0.35 // callout rows above the bottom-chip films
+  let row2 = row1 + 0.45
 
+  // Bottom chip, from the vacuum down. The vacuum spans the gap under the top
+  // chip too; the top chip is drawn over it.
+  slab(ax, lv("Vacuum"), x0, x1)
+  slab(ax, lv("Vacuum_bottom"), x0, x1)
+  slotted(ax, lv("MB"), x0, x1, ((3.5, 4.0), (5.0, 5.5)))
+  gap-label(
+    ((3.5, 4.0), (5.0, 5.5)),
+    (ax.y)(-500.2) - 0.2,
+    [MB_ETCH (3/1) slots],
+  )
+  slab(ax, lv("Substrate"), x0, x1)
   content(
-    (0.5, 16.55),
+    (6.4, (ax.y)(-150)),
+    text(size: 10pt, fill: muted, [Substrate: Si, $ε_upright(r) = 11.45$]),
+    anchor: "center",
+  )
+  slab(ax, lv("TSV"), 1.85, 2.35)
+
+  // CPW on M1: ground, slot, signal, slot, ground.
+  slotted(ax, lv("M1"), x0, 7.2, ((3.5, 4.0), (5.0, 5.5)))
+  gap-label(((3.5, 4.0), (5.0, 5.5)), (ax.y)(0) - 0.18, [M1_ETCH (1/1) slots])
+  // Airbridge over the signal line, landing on both grounds through vias.
+  for (a, b) in ((2.75, 3.15), (5.85, 6.25)) {
+    slab(ax, lv("Airbridge_Via"), a, b)
+  }
+  slab(ax, lv("Airbridge"), 2.75, 6.25)
+  // Josephson junction bridging a gap between two M1 electrodes.
+  slab(ax, lv("M1"), 7.65, 8.35)
+  slab(ax, lv("JosephsonJunction"), 7.05, 7.8)
+  slab(ax, lv("NbTiN"), 8.8, 9.7)
+  // Indium bump from an M1 pad to the M2 pad above.
+  slab(ax, lv("M1"), 10.1, 11.5)
+  slab(ax, lv("IndiumBump"), 10.35, 11.25)
+
+  // Top chip: M2 faces down at 10 µm, TSV2 runs up through Substrate_top to
+  // MB2 on its outer face, under Vacuum_top.
+  slotted(ax, lv("M2"), chip-x, x1, ((9.75, 10.1),))
+  content((9.88, (ax.y)(10) - 0.2), small[M2_ETCH (2/1)], anchor: "north-east")
+  slab(ax, lv("Substrate_top"), chip-x, x1)
+  slab(ax, lv("TSV2"), 7.3, 7.8)
+  slotted(ax, lv("MB2"), chip-x, x1, ((8.3, 8.8), (9.8, 10.3)))
+  slab(ax, lv("Vacuum_top"), chip-x, x1)
+  gap-label(
+    ((8.3, 8.8), (9.8, 10.3)),
+    (ax.y)(510.4) + 0.5,
+    [MB2_ETCH (4/1) slots],
+  )
+
+  for z in (0, 0.2, -500, -500.2) { tick(ax, z, x0) }
+  for z in (10, 10.2, 510.2, 510.4) { tick(ax, z, x1, side: "right") }
+
+  let vacuum-y = (ax.y)(350)
+  content(
+    (x0 + 0.25, vacuum-y),
+    text(size: 8pt, fill: muted, [Vacuum]),
+    anchor: "west",
+  )
+  callout(ax, lv("Vacuum"), 3.0, y: vacuum-y)
+  callout(ax, lv("M1_ground"), 1.9, to: (1.9, row1))
+  callout(ax, lv("M1"), 4.5, to: (4.5, row1))
+  callout(ax, lv("Airbridge_Via"), 6.05, to: (6.6, row1))
+  callout(ax, lv("Airbridge"), 3.6, to: (3.6, row2))
+  callout(ax, lv("JosephsonJunction"), 7.3, to: (7.3, row1))
+  callout(ax, lv("NbTiN"), 9.25, to: (9.25, row1))
+  callout(ax, lv("IndiumBump"), 10.35, y: row1, to: (9.85, row1))
+  let substrate-y = (ax.y)(-420)
+  callout(ax, lv("TSV"), 2.1, y: substrate-y, to: (2.75, substrate-y))
+  callout(ax, lv("Substrate"), 9.6, y: substrate-y)
+  let mb-label = (ax.y)(-500.2) - 0.4
+  callout(ax, lv("MB"), 7.5, to: (7.5, mb-label))
+  callout(ax, lv("Vacuum_bottom"), 9.6, y: (ax.y)(-900))
+  let top-row = (ax.y)(110)
+  callout(ax, lv("M2_ground"), 8.4, to: (8.4, top-row))
+  callout(ax, lv("M2"), 10.9, to: (10.9, top-row))
+  let top-substrate-y = (ax.y)(430)
+  callout(ax, lv("TSV2"), 7.55, y: top-substrate-y, to: (8.2, top-substrate-y))
+  callout(ax, lv("Substrate_top"), 9.6, y: top-substrate-y)
+  callout(ax, lv("MB2"), 7.0, to: (7.0, (ax.y)(510.4) + 0.45))
+  callout(ax, lv("Vacuum_top"), 11.1, y: (ax.y)(900))
+
+  // Gatemon panel: z = 0 is the oxide surface, films at 1 cm = 50 nm.
+  let gm = "LAYER_STACK_GATEMON"
+  let lv(name) = level(gm, name)
+  let ag = broken-axis(
+    (
+      (-500.15, -0.15, 0.6, true), // Substrate
+      (-0.15, 0.2, 7.0), // oxide and films
+      (0.2, 500, 0.7, true), // Vacuum
+    ),
+    y: (ax.y)(0),
+  )
+  let gx0 = 13.3
+  let gx1 = 18.4
+  let gx = (gx0 + gx1) / 2
+  let film-row = (ag.y)(0.19)
+  panel-heading((gx, (ag.y)(500) + 0.6), [Gatemon films])
+  content(
+    (gx, (ag.y)(500) + 0.25),
+    small[$z = 0$ at the oxide surface],
+    anchor: "center",
+  )
+
+  slab(ag, lv("Vacuum"), gx0, gx1)
+  slab(ag, lv("Substrate"), gx0, gx1)
+  slab(ag, lv("Oxide"), gx0, gx1)
+  // Nanotube between the contacts: not extruded, shown for orientation.
+  let surface = (ag.y)(0)
+  line((14.6, surface + 0.03), (17.1, surface + 0.03), stroke: (
+    paint: layer-color("CNT"),
+    thickness: 0.8pt,
+    dash: "dotted",
+  ))
+  content(
+    (15.85, surface - 0.25),
+    small[nanotube (not extruded)],
+    anchor: "center",
+  )
+  for (a, b) in ((14.2, 15.0), (16.7, 17.5)) {
+    slab(ag, lv("ContactNb"), a, b)
+    slab(ag, lv("ContactAu"), a, b)
+  }
+  for (a, b) in ((13.6, 14.6), (17.1, 18.1)) {
+    slab(ag, lv("Reconnection"), a, b)
+  }
+  for (a, b) in ((gx0, 13.85), (17.85, gx1)) { slab(ag, lv("M1"), a, b) }
+  slab(ag, lv("hBN"), 14.85, 16.85)
+  slab(ag, lv("TopGate"), 15.35, 16.35)
+
+  let oxide-row = (ag.y)(-0.065)
+  callout(ag, lv("M1"), 13.6, to: (13.6, film-row))
+  callout(ag, lv("Oxide"), 15.85, y: (ag.y)(-0.11))
+  callout(ag, lv("ContactNb"), 14.35, to: (14.35, oxide-row))
+  callout(ag, lv("ContactAu"), 17.35, to: (17.35, oxide-row))
+  callout(ag, lv("hBN"), 16.6, to: (16.95, film-row))
+  callout(ag, lv("TopGate"), 15.85)
+  callout(ag, lv("Reconnection"), 17.6, to: (17.6, film-row))
+
+  // Title, above the taller panel.
+  let top = calc.max((ax.y)(1010.4), (ag.y)(500) + 0.6) + 0.7
+  content(
+    (0.5, top + 0.45),
     text(
       size: 8pt,
       font: heading-font,
@@ -58,7 +399,7 @@
     anchor: "west",
   )
   content(
-    (0.5, 16.1),
+    (0.5, top),
     text(
       size: 8pt,
       fill: muted,
@@ -67,391 +408,41 @@
     anchor: "west",
   )
 
-  let break-band(y, from, to) = {
-    rect((from, y - 0.13), (to, y + 0.13), fill: white, stroke: none)
-    let steps = calc.max(1, int((to - from) / 0.3))
-    let zig(dy) = line(
-      ..range(steps + 1).map(i => (
-        from + i * (to - from) / steps,
-        y + dy + (if calc.even(i) { 0.05 } else { -0.05 }),
-      )),
-      stroke: 0.6pt + muted,
-    )
-    zig(-0.13)
-    zig(0.13)
-  }
-
-  let small(body) = text(size: 6.5pt, fill: muted, body)
-
-  // Vacuum above the metal and the silicon substrate below it.
-  rect(
-    (x0, z(200)),
-    (x1, top),
-    fill: white,
-    stroke: (paint: muted, thickness: 0.6pt, dash: "dashed"),
-  )
-  break-band(14.45, x0, 6.6)
-  content(
-    (x0 + 0.25, 15.05),
-    text(size: 8pt, fill: muted, [Vacuum]),
-    anchor: "west",
-  )
-  rect((x0, 7.6), (x1, z0), fill: paper, stroke: 0.7pt + rule)
-  break-band(9.35, x0, x1)
-  content(
-    (6.4, 10.25),
-    text(size: 10pt, fill: muted, [Substrate: Si, $ε_upright(r) = 11.45$]),
-    anchor: "center",
-  )
-
-  // TSV through the substrate under the left ground plane.
-  rect((1.85, 7.6), (2.35, z0), fill: tsv, stroke: none)
-  break-band(9.35, 1.85, 2.35)
-
-  // LAYER_STACK_BACKSIDE: backside CPW on the bottom face of the substrate,
-  // with MB_ETCH slots, the TSV landing on its ground, and vacuum below.
-  let mb = 7.6 - 200 * nm
-  rect(
-    (x0, mb),
-    (x1, 5.9),
-    fill: white,
-    stroke: (paint: muted, thickness: 0.6pt, dash: "dashed"),
-  )
-  break-band(6.4, 8.1, x1)
-  for (a, b) in ((x0, 3.5), (4.0, 5.0), (5.5, x1)) {
-    rect((a, mb), (b, 7.6), fill: mb-fill, stroke: 0.5pt + mb-frame)
-  }
-  content((4.5, mb - 0.2), small[MB_ETCH (3/1) slots], anchor: "north")
-
-  // CPW: ground, slot, signal, slot, ground. The slots are M1_ETCH.
-  let m1 = z(200)
-  rect((x0, z0), (3.5, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
-  rect((4.0, z0), (5.0, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
-  rect((5.5, z0), (7.2, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
-  for (a, b) in ((3.5, 4.0), (5.0, 5.5)) {
-    line((a, z0 - 0.18), (b, z0 - 0.18), stroke: 0.6pt + muted, mark: (
-      start: ">",
-      end: ">",
-      size: 0.08,
-      fill: muted,
-    ))
-  }
-  content((4.5, z0 - 0.45), small[M1_ETCH (1/1) slots], anchor: "center")
-
-  // Airbridge over the signal line, landing on both grounds through vias.
-  rect((2.75, m1), (3.15, z(300)), fill: ab-via, stroke: none)
-  rect((5.85, m1), (6.25, z(300)), fill: ab-via, stroke: none)
-  rect((2.75, z(300)), (6.25, z(500)), fill: ab, stroke: none)
-
-  // Josephson junction bridging a gap between two M1 electrodes.
-  rect((7.65, z0), (8.35, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
-  rect((7.05, z0), (7.8, z(70)), fill: jj, stroke: none)
-
-  // NbTiN nanowire film: 15 nm, drawn slightly thicker to stay visible.
-  rect((8.8, z0), (9.7, z0 + 0.07), fill: nbtin, stroke: none)
-
-  // Flip-chip top chip (LAYER_STACK_FLIP_CHIP): M2 faces down at z = 10 µm,
-  // carried by a second substrate. The indium bump joins the M1 and M2 pads.
-  let zt = 13.6
-  let m2 = zt + 0.5
-  rect((6.6, m2), (x1, top), fill: paper, stroke: 0.7pt + rule)
-  break-band(14.9, 6.6, x1)
-  rect((6.6, zt), (9.75, m2), fill: m2-fill, stroke: 0.5pt + m2-frame)
-  rect((10.1, zt), (x1, m2), fill: m2-fill, stroke: 0.5pt + m2-frame)
-  content((9.88, zt - 0.2), small[M2_ETCH (2/1)], anchor: "north-east")
-  rect((10.1, z0), (11.5, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
-  rect((10.35, m1), (11.25, zt), fill: ind, stroke: 0.5pt + ind.darken(35%))
-  break-band(12.6, 10.35, 11.25)
-
-  // z axis markers.
-  let tick(y, label, side: "left") = {
-    if side == "left" {
-      line((x0 - 0.15, y), (x0, y), stroke: 0.6pt + muted)
-      content((x0 - 0.2, y), small(label), anchor: "east")
-    } else {
-      line((x1, y), (x1 + 0.15, y), stroke: 0.6pt + muted)
-      content((x1 + 0.2, y), small(label), anchor: "west")
-    }
-  }
-  tick(z0, [$z = 0$])
-  tick(m1 + 0.06, [200 nm])
-  tick(7.6, [−500 µm])
-  tick(mb - 0.06, [−500.2 µm])
-  tick(zt, [10 µm], side: "right")
-  tick(m2, [10.2 µm], side: "right")
-
-  // Gatemon panel: z = 0 is the oxide surface, 1 cm = 50 nm.
-  let gx0 = 13.3
-  let gx1 = 18.4
-  let g(v) = z0 + v / 50
-  content(
-    ((gx0 + gx1) / 2, 15.25),
-    text(size: 7pt, font: heading-font, weight: "bold", [Gatemon films]),
-    anchor: "center",
-  )
-  content(
-    ((gx0 + gx1) / 2, 14.9),
-    small[$z = 0$ at the oxide surface],
-    anchor: "center",
-  )
-  rect(
-    (gx0, g(0)),
-    (gx1, 14.65),
-    fill: white,
-    stroke: (paint: muted, thickness: 0.6pt, dash: "dashed"),
-  )
-  rect((gx0, 7.6), (gx1, g(-150)), fill: paper, stroke: 0.7pt + rule)
-  break-band(7.9, gx0, gx1)
-  rect((gx0, g(-150)), (gx1, g(0)), fill: rule, stroke: none)
-  // Nanotube between the contacts: not extruded, shown for orientation.
-  line((14.6, g(0) + 0.03), (17.1, g(0) + 0.03), stroke: (
-    paint: cnt,
-    thickness: 0.8pt,
-    dash: "dotted",
-  ))
-  content(
-    (15.85, g(0) - 0.25),
-    small[nanotube (not extruded)],
-    anchor: "center",
-  )
-  for (cx0, cx1) in ((14.2, 15.0), (16.7, 17.5)) {
-    rect((cx0, g(0)), (cx1, g(35)), fill: contact, stroke: none)
-    rect((cx0, g(35)), (cx1, g(45)), fill: contact-au, stroke: none)
-  }
-  for (rx0, rx1) in ((13.6, 14.6), (17.1, 18.1)) {
-    rect((rx0, g(45)), (rx1, g(145)), fill: jj-patch, stroke: none)
-  }
-  for (mx0, mx1) in ((gx0, 13.85), (17.85, gx1)) {
-    rect(
-      (mx0, g(0)),
-      (mx1, g(155)),
-      fill: m1-fill,
-      stroke: 0.5pt + m1-frame,
-    )
-  }
-  rect((14.85, g(45)), (16.85, g(75)), fill: hbn, stroke: none)
-  rect((15.35, g(75)), (16.35, g(175)), fill: top-gate, stroke: none)
-
-  // Numbered callouts tie each drawn level to the legend.
-  let callout(n, at, label-at) = {
-    line(at, label-at, stroke: 0.5pt + muted)
-    circle(label-at, radius: 0.17, fill: white, stroke: 0.6pt + ink)
-    content(
-      label-at,
-      text(size: 6.5pt, weight: "bold", str(n)),
-      anchor: "center",
-    )
-  }
-  callout(1, (1.9, z(100)), (1.9, 12.6))
-  callout(2, (4.5, z(100)), (4.5, 12.6))
-  callout(3, (6.05, z(250)), (6.6, 12.6))
-  callout(4, (3.6, z(450)), (3.6, 13.2))
-  callout(5, (7.3, z(35)), (7.3, 12.6))
-  callout(6, (9.25, z0 + 0.035), (9.25, 12.6))
-  callout(7, (10.35, 12.1), (9.85, 12.1))
-  callout(8, (2.1, 8.2), (2.75, 8.2))
-  callout(9, (9.0, 8.2), (9.6, 8.2))
-  callout(10, (3.1, 15.05), (3.1, 15.05))
-  callout(11, (10.9, zt + 0.25), (10.9, 14.4))
-  callout(12, (8.0, zt + 0.25), (8.0, 14.4))
-  callout(13, (9.4, 15.22), (9.4, 15.22))
-  callout(2, (13.6, g(120)), (13.6, 14.3))
-  callout(14, (15.85, g(-80)), (15.85, g(-80)))
-  callout(15, (14.35, g(17)), (14.35, 9.9))
-  callout(16, (17.35, g(40)), (17.35, 9.9))
-  callout(17, (16.6, g(60)), (16.95, 14.3))
-  callout(18, (15.85, g(125)), (15.85, g(125)))
-  callout(19, (17.6, g(110)), (17.6, 14.3))
-  callout(20, (7.5, mb + 0.25), (7.5, 6.65))
-  callout(21, (9.6, 6.1), (9.6, 6.1))
-
-  // Legend, grouped by stack.
-  let level(fill, stroke, name, spec, gds) = (fill, stroke, name, spec, gds)
-  let base = (
-    level(
-      m1-fill,
-      m1-frame,
-      [M1_ground],
-      [Nb · 200 nm · $z$ 0],
-      [derived from SIM_AREA],
-    ),
-    level(m1-fill, m1-frame, [M1], [Nb · 200 nm · $z$ 0], [M1_DRAW (1/0)]),
-    level(
-      ab-via,
-      none,
-      [Airbridge_Via],
-      [Nb · 100 nm · $z$ 200 nm],
-      [AB_VIA (10/1)],
-    ),
-    level(
-      ab,
-      none,
-      [Airbridge],
-      [Nb · 200 nm · $z$ 300 nm],
-      [AB_DRAW (10/0)],
-    ),
-    level(
-      jj,
-      none,
-      [JosephsonJunction],
-      [AlOx/Al · 70 nm · $z$ 0],
-      [JJ_AREA (20/0)],
-    ),
-    level(nbtin, none, [NbTiN], [NbTiN · 15 nm · $z$ 0], [NbTiN (25/0)]),
-    level(
-      ind,
-      ind.darken(35%),
-      [IndiumBump],
-      [In · 10 µm · $z$ 200 nm],
-      [IND (30/0)],
-    ),
-    level(tsv, none, [TSV], [TiN · 500 µm · $z$ −500 µm], [TSV (31/0)]),
-    level(
-      paper,
-      rule,
-      [Substrate],
-      [Si · 500 µm · $z$ −500 µm],
-      [SIM_AREA (98/0)],
-    ),
-    level(
-      white,
-      muted,
-      [Vacuum],
-      [vacuum · 500 µm · $z$ 200 nm],
-      [SIM_AREA (98/0)],
-    ),
-  )
-  let flip-chip = (
-    level(
-      m2-fill,
-      m2-frame,
-      [M2],
-      [Nb · 200 nm · $z$ 10 µm],
-      [M2_DRAW (2/0)],
-    ),
-    level(
-      m2-fill,
-      m2-frame,
-      [M2_ground],
-      [Nb · 200 nm · $z$ 10 µm],
-      [derived from SIM_AREA],
-    ),
-    level(
-      paper,
-      rule,
-      [Substrate_top],
-      [Si · 500 µm · $z$ 10.2 µm],
-      [SIM_AREA (98/0)],
-    ),
-  )
-  let gatemon = (
-    level(
-      rule,
-      none,
-      [Oxide],
-      [SiO#sub[2] · 150 nm · $z$ −150 nm],
-      [SIM_AREA (98/0)],
-    ),
-    level(
-      contact,
-      none,
-      [ContactNb],
-      [Nb · 35 nm · $z$ 0],
-      [CNT_CONTACT (21/0)],
-    ),
-    level(
-      contact-au,
-      none,
-      [ContactAu],
-      [Au · 10 nm · $z$ 35 nm],
-      [CNT_CONTACT (21/0)],
-    ),
-    level(
-      hbn,
-      none,
-      [hBN],
-      [hBN · 30 nm (default) · $z$ 45 nm],
-      [HBN (23/0)],
-    ),
-    level(
-      top-gate,
-      none,
-      [TopGate],
-      [Al · 100 nm · $z$ 75 nm],
-      [TOP_GATE (22/0)],
-    ),
-    level(
-      jj-patch,
-      none,
-      [Reconnection],
-      [Al · 100 nm · $z$ 45 nm],
-      [JJ_PATCH (20/1)],
-    ),
-  )
-
-  let backside = (
-    level(
-      mb-fill,
-      mb-frame,
-      [MB],
-      [Nb · 200 nm · $z$ −500.2 µm],
-      [derived from SIM_AREA],
-    ),
-    level(
-      white,
-      muted,
-      [Vacuum_bottom],
-      [vacuum · 500 µm · $z$ −1000.2 µm],
-      [SIM_AREA (98/0)],
-    ),
-  )
-
+  // Legend: one group per stack, flowing down each column.
   let row-h = 0.7
-  let heading(x, y, body) = content(
-    (x, y),
-    text(size: 7pt, font: heading-font, weight: "bold", fill: blue, body),
-    anchor: "west",
-  )
-  let row(x, y, n, entry) = {
-    let (fill, stroke, name, spec, gds) = entry
-    circle((x + 0.17, y), radius: 0.17, fill: white, stroke: 0.6pt + ink)
-    content(
-      (x + 0.17, y),
-      text(size: 6.5pt, weight: "bold", str(n)),
-      anchor: "center",
-    )
-    rect(
-      (x + 0.52, y - 0.17),
-      (x + 0.92, y + 0.17),
-      fill: fill,
-      stroke: if stroke == none { none } else { 0.6pt + stroke },
-    )
+  let legend-row(x, y, lv) = {
+    badge((x + 0.17, y), numbers.at(lv.name))
+    rect((x + 0.52, y - 0.17), (x + 0.92, y + 0.17), ..look(lv))
     content(
       (x + 1.12, y + 0.14),
-      text(size: 7.5pt, font: heading-font, weight: "bold", name),
+      text(size: 7.5pt, font: heading-font, weight: "bold", lv.name),
       anchor: "west",
     )
-    content((x + 1.12, y - 0.18), small[#spec · #gds], anchor: "west")
+    content((x + 1.12, y - 0.18), small(spec(lv)), anchor: "west")
   }
-
-  let ly = 5.15
-  heading(0.5, ly, [LAYER_STACK (base process, all stacks)])
-  for (i, entry) in base.enumerate() {
-    row(0.5, ly - 0.55 - i * row-h, i + 1, entry)
-  }
-  let cx = 9.9
-  heading(cx, ly, [LAYER_STACK_FLIP_CHIP adds the top chip])
-  for (i, entry) in flip-chip.enumerate() {
-    row(cx, ly - 0.55 - i * row-h, i + 11, entry)
-  }
-  let gy = ly - 0.55 - 3 * row-h - 0.15
-  heading(cx, gy, [LAYER_STACK_GATEMON adds (M1 is 155 nm thick here)])
-  for (i, entry) in gatemon.enumerate() {
-    row(cx, gy - 0.55 - i * row-h, i + 14, entry)
-  }
-  let by = ly - 0.55 - 10 * row-h - 0.15
-  heading(0.5, by, [LAYER_STACK_BACKSIDE adds the backside])
-  for (i, entry) in backside.enumerate() {
-    row(0.5, by - 0.55 - i * row-h, i + 20, entry)
+  let legend-top = (ax.y)(-1000.2) - 0.6
+  for (column, names) in legend-columns.enumerate() {
+    let x = 0.5 + column * 9.4
+    let y = legend-top
+    for name in names {
+      let entry = stacks.at(name)
+      content(
+        (x, y),
+        text(
+          size: 7pt,
+          font: heading-font,
+          weight: "bold",
+          fill: blue,
+          name + " " + entry.title,
+        ),
+        anchor: "west",
+      )
+      y -= 0.55
+      for level-name in entry.levels.keys() {
+        legend-row(x, y, level(name, level-name))
+        y -= row-h
+      }
+      y -= 0.15
+    }
   }
 })

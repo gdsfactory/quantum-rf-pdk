@@ -1,0 +1,62 @@
+# Levels drawn and listed by layer-stack.typ, one entry per stack in qpdk/tech.py.
+# tests/test_layer_stack_figure.py checks every value against qpdk.tech, so a
+# stack change that is not mirrored here fails CI.
+#
+# Each stack lists only the levels it adds to the stacks it `extends`.
+# `reuses` holds levels that share a name, and so a legend number, with a level
+# listed under another stack but carry their own values here. Lengths are in µm.
+#
+# Per level:
+#   layer    GDS layer the level is drawn from (a qpdk/layers.yaml entry).
+#   derived  true when the level is a DerivedLayer built from `layer`.
+#   color    layers.yaml entry that colours it, defaulting to `layer`, or one
+#            of the neutral looks `substrate`, `vacuum` and `oxide`.
+#   shade    optional darkening in percent, to tell same-layer levels apart.
+#   note     optional remark printed after the thickness.
+stacks:
+  LAYER_STACK:
+    title: (base process, all stacks)
+    levels:
+      M1_ground: {material: Nb, thickness: 0.2, zmin: 0, layer: SIM_AREA, derived: true, color: M1_DRAW}
+      M1: {material: Nb, thickness: 0.2, zmin: 0, layer: M1_DRAW}
+      Airbridge_Via: {material: Nb, thickness: 0.1, zmin: 0.2, layer: AB_VIA}
+      Airbridge: {material: Nb, thickness: 0.2, zmin: 0.3, layer: AB_DRAW}
+      JosephsonJunction: {material: AlOx/Al, thickness: 0.07, zmin: 0, layer: JJ_AREA}
+      NbTiN: {material: NbTiN, thickness: 0.015, zmin: 0, layer: NbTiN}
+      IndiumBump: {material: In, thickness: 10, zmin: 0.2, layer: IND}
+      TSV: {material: TiN, thickness: 500, zmin: -500, layer: TSV}
+      Substrate: {material: Si, thickness: 500, zmin: -500, layer: SIM_AREA, color: substrate}
+      Vacuum: {material: vacuum, thickness: 500, zmin: 0.2, layer: SIM_AREA, color: vacuum}
+  LAYER_STACK_FLIP_CHIP:
+    title: adds the top chip
+    extends: [LAYER_STACK]
+    levels:
+      M2: {material: Nb, thickness: 0.2, zmin: 10, layer: M2_DRAW}
+      M2_ground: {material: Nb, thickness: 0.2, zmin: 10, layer: SIM_AREA, derived: true, color: M2_DRAW}
+      Substrate_top: {material: Si, thickness: 500, zmin: 10.2, layer: SIM_AREA, color: substrate}
+  LAYER_STACK_BACKSIDE:
+    title: adds the bottom-chip backside
+    extends: [LAYER_STACK]
+    levels:
+      MB: {material: Nb, thickness: 0.2, zmin: -500.2, layer: SIM_AREA, derived: true, color: MB_DRAW}
+      Vacuum_bottom: {material: vacuum, thickness: 500, zmin: -1000.2, layer: SIM_AREA, color: vacuum}
+  LAYER_STACK_FLIP_CHIP_BACKSIDE:
+    title: adds the top-chip backside
+    extends: [LAYER_STACK_FLIP_CHIP, LAYER_STACK_BACKSIDE]
+    levels:
+      TSV2: {material: TiN, thickness: 500, zmin: 10.2, layer: TSV2}
+      MB2: {material: Nb, thickness: 0.2, zmin: 510.2, layer: SIM_AREA, derived: true, color: MB2_DRAW}
+      Vacuum_top: {material: vacuum, thickness: 500, zmin: 510.4, layer: SIM_AREA, color: vacuum}
+  LAYER_STACK_GATEMON:
+    title: (standalone; M1 is 155 nm thick here)
+    levels:
+      Oxide: {material: SiO2, thickness: 0.15, zmin: -0.15, layer: SIM_AREA, color: oxide}
+      ContactNb: {material: Nb, thickness: 0.035, zmin: 0, layer: CNT_CONTACT}
+      ContactAu: {material: Au, thickness: 0.01, zmin: 0.035, layer: CNT_CONTACT, shade: 25}
+      hBN: {material: hBN, thickness: 0.03, zmin: 0.045, layer: HBN, note: default}
+      TopGate: {material: Al, thickness: 0.1, zmin: 0.075, layer: TOP_GATE}
+      Reconnection: {material: Al, thickness: 0.1, zmin: 0.045, layer: JJ_PATCH}
+    reuses:
+      M1: {material: Nb, thickness: 0.155, zmin: 0, layer: M1_DRAW}
+      Substrate: {material: Si, thickness: 500, zmin: -500.15, layer: SIM_AREA, color: substrate}
+      Vacuum: {material: vacuum, thickness: 500, zmin: 0, layer: SIM_AREA, color: vacuum}

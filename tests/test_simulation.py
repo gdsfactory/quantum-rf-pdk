@@ -46,7 +46,7 @@ from qpdk.simulation.palace_run import (
     verify_port_connectivity,
 )
 from qpdk.simulation.trial import _summarise, main as run_trial, result_path
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, Chip
 
 
 def _sim_layout() -> gf.Component:
@@ -1564,9 +1564,9 @@ def test_runners_import_without_optuna(tmp_path, monkeypatch):
 
 
 @gf.cell
-def _tsv_layout() -> gf.Component:
+def _tsv_layout(chip: Chip = "bottom") -> gf.Component:
     c = gf.Component()
-    ref = c << tsv_transition_double_sided()
+    ref = c << tsv_transition_double_sided(chip=chip)
     c.add_ports(ref.ports)
     # Enlarge only across the line: the CPW ends must reach the SIM_AREA edge,
     # otherwise the metal beyond them would short the signal to ground.
@@ -1584,8 +1584,9 @@ def _tsv_regions(c: gf.Component) -> dict[str, kdb.Region]:
     }
 
 
-def test_to_tsv_regions_topology():
-    c = to_tsv_regions(_tsv_layout())
+@pytest.mark.parametrize("chip", ["bottom", "top"])
+def test_to_tsv_regions_topology(chip: Chip):
+    c = to_tsv_regions(_tsv_layout(chip), chip=chip)
 
     assert sorted(p.name for p in c.ports) == ["o1", "o2"]
     regions = _tsv_regions(c)
@@ -1613,6 +1614,13 @@ def test_to_tsv_regions_requires_backside_metal():
     )
     with pytest.raises(ValueError, match="metal level MB"):
         to_tsv_regions(component)
+
+
+def test_to_tsv_regions_reads_only_its_chip():
+    # A top-chip layout has no bottom-chip metal, so converting the wrong chip
+    # must fail instead of silently returning solid planes.
+    with pytest.raises(ValueError, match="metal level M1"):
+        to_tsv_regions(_tsv_layout("top"))
 
 
 def test_to_tsv_regions_requires_tsvs():
