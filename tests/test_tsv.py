@@ -1,5 +1,6 @@
 """Tests for the chip-aware through-silicon via cells."""
 
+import json
 from collections.abc import Callable
 
 import gdsfactory as gf
@@ -8,7 +9,13 @@ import pytest
 from gdsfactory.technology import LayerLevel, LogicalLayer
 
 from qpdk import PDK
-from qpdk.cells import tsv, tsv_transition, tsv_transition_double_sided
+from qpdk.cells import (
+    bump_transition,
+    tsv,
+    tsv_transition,
+    tsv_transition_double_sided,
+)
+from qpdk.models import models
 from qpdk.tech import (
     CHIP_LAYERS,
     LAYER_CONNECTIVITY,
@@ -89,3 +96,31 @@ def test_chip_cross_sections_use_chip_layers(chip: Chip) -> None:
         (layers.back_cross_section, layers.back_draw),
     ):
         assert gf.get_layer(gf.get_cross_section(name).layer) == gf.get_layer(draw)
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [tsv_transition, tsv_transition_double_sided, bump_transition],
+    ids=lambda f: f.__name__,
+)
+def test_transition_tapers_resolve_after_serialization(
+    cell: Callable[..., gf.Component],
+) -> None:
+    """Taper cross-sections survive a JSON round trip, as GDSFactory+ sends them.
+
+    An unregistered ``CrossSection`` is recorded as an ``xs_<hash>`` name that
+    the ``taper_cross_section`` model cannot look up.
+    """
+    netlist = json.loads(json.dumps(cell().get_netlist(), default=str))
+    tapers = [
+        inst["settings"]
+        for inst in netlist["instances"].values()
+        if inst["component"] == "taper_cross_section"
+    ]
+    assert tapers
+    for settings in tapers:
+        models["taper_cross_section"](
+            length=settings["length"],
+            cross_section1=settings["cross_section1"],
+            cross_section2=settings["cross_section2"],
+        )

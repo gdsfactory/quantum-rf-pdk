@@ -27,7 +27,7 @@ from qpdk.cells._schematic import (
     tsv_transition_double_sided_schematic,
 )
 from qpdk.cells.waveguides import add_etch_gap, straight, taper_cross_section
-from qpdk.tech import CHIP_LAYERS, Chip, coplanar_waveguide, get_etch_section
+from qpdk.tech import CHIP_LAYERS, Chip, get_etch_section
 
 
 def _stadium_points(width: float, length: float, n: int = 32) -> np.ndarray:
@@ -106,16 +106,26 @@ def tsv(
 
 def _cpw_pad_cross_section(
     cross_section: CrossSectionSpec, width: float, gap: float
-) -> gf.CrossSection:
-    """CPW cross-section with the layers of ``cross_section`` and a new width and gap."""
+) -> CrossSectionSpec:
+    """CPW cross-section with the layers of ``cross_section`` and a new width and gap.
+
+    Returns:
+        A spec of the registered ``coplanar_waveguide`` rather than a
+        ``CrossSection`` object, so that netlists record it by name and settings
+        and circuit models (e.g. ``taper_cross_section``) can resolve it after
+        serialization.
+    """
     xs = gf.get_cross_section(cross_section)
-    return coplanar_waveguide(
-        width=width,
-        gap=gap,
-        waveguide_layer=xs.layer,
-        etch_layer=get_etch_section(xs).layer,
-        radius=None,
-    )
+    return {
+        "cross_section": "coplanar_waveguide",
+        "settings": {
+            "width": width,
+            "gap": gap,
+            "waveguide_layer": gf.get_layer_name(xs.layer),
+            "etch_layer": gf.get_layer_name(get_etch_section(xs).layer),
+            "radius": None,
+        },
+    }
 
 
 def _add_tapered_pad(
