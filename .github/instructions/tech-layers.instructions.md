@@ -35,8 +35,9 @@ structure but cannot catch a mismatched datatype.
 - `[tool.elvis]` in `pyproject.toml` lists `short-layers` and `connected-layers` for LVS. Adding a conductive layer
   usually means updating those too — flag when it is missed.
 - The docs cross-section `docs/figures/layer-stack.typ` (shown on `docs/layer_stack.md`) lists every level of
-  `LAYER_STACK`, `LAYER_STACK_FLIP_CHIP` and `get_gatemon_layer_stack()` with its material, thickness, `zmin` and GDS
-  layer, copied by hand. Flag a change that adds, removes or alters a level without updating that figure.
+  `LAYER_STACK`, `LAYER_STACK_FLIP_CHIP`, `LAYER_STACK_BACKSIDE` and `get_gatemon_layer_stack()` with its material,
+  thickness, `zmin` and GDS layer, copied by hand. Flag a change that adds, removes or alters a level without updating
+  that figure.
 
 ## Cross sections
 

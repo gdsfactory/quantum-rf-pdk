@@ -3,7 +3,7 @@
   blue, body-font, heading-font, ink, muted, paper, rule, slate,
 )
 
-#set page(width: 190mm, height: 178mm, margin: 3mm, fill: white)
+#set page(width: 190mm, height: 218mm, margin: 3mm, fill: white)
 #set text(font: body-font, fill: ink)
 #show math.equation: set text(font: "Fira Math")
 
@@ -27,11 +27,14 @@
 #let nbtin = rgb("#4a90e2") // NbTiN
 #let ind = rgb("#65f69c") // IND
 #let tsv = rgb("#e637bf") // TSV
+#let mb-fill = rgb("#c9b6f2") // MB_DRAW
+#let mb-frame = rgb("#8e6fd8") // MB_ETCH
 
 // Cross-sections of the QPDK layer stacks. Not to scale: the main panel draws
-// `LAYER_STACK` plus the `LAYER_STACK_FLIP_CHIP` top chip with the thin films at
-// 1 cm = 400 nm, while the 500 µm substrates, the vacuum and the 10 µm indium
-// bump are shortened behind break marks. The right panel draws the
+// `LAYER_STACK` plus the `LAYER_STACK_FLIP_CHIP` top chip and the
+// `LAYER_STACK_BACKSIDE` metal with the thin films at 1 cm = 400 nm, while the
+// 500 µm substrates, the vacuum and the 10 µm indium bump are shortened behind
+// break marks. The right panel draws the
 // `LAYER_STACK_GATEMON` films at 1 cm = 50 nm.
 #cetz.canvas(length: 1cm, {
   import cetz.draw: *
@@ -105,6 +108,21 @@
   rect((1.85, 7.6), (2.35, z0), fill: tsv, stroke: none)
   break-band(9.35, 1.85, 2.35)
 
+  // LAYER_STACK_BACKSIDE: backside CPW on the bottom face of the substrate,
+  // with MB_ETCH slots, the TSV landing on its ground, and vacuum below.
+  let mb = 7.6 - 200 * nm
+  rect(
+    (x0, mb),
+    (x1, 5.9),
+    fill: white,
+    stroke: (paint: muted, thickness: 0.6pt, dash: "dashed"),
+  )
+  break-band(6.4, 8.1, x1)
+  for (a, b) in ((x0, 3.5), (4.0, 5.0), (5.5, x1)) {
+    rect((a, mb), (b, 7.6), fill: mb-fill, stroke: 0.5pt + mb-frame)
+  }
+  content((4.5, mb - 0.2), small[MB_ETCH (3/1) slots], anchor: "north")
+
   // CPW: ground, slot, signal, slot, ground. The slots are M1_ETCH.
   let m1 = z(200)
   rect((x0, z0), (3.5, m1), fill: m1-fill, stroke: 0.5pt + m1-frame)
@@ -158,6 +176,7 @@
   tick(z0, [$z = 0$])
   tick(m1 + 0.06, [200 nm])
   tick(7.6, [−500 µm])
+  tick(mb - 0.06, [−500.2 µm])
   tick(zt, [10 µm], side: "right")
   tick(m2, [10.2 µm], side: "right")
 
@@ -243,6 +262,8 @@
   callout(17, (16.6, g(60)), (16.95, 14.3))
   callout(18, (15.85, g(125)), (15.85, g(125)))
   callout(19, (17.6, g(110)), (17.6, 14.3))
+  callout(20, (7.5, mb + 0.25), (7.5, 6.65))
+  callout(21, (9.6, 6.1), (9.6, 6.1))
 
   // Legend, grouped by stack.
   let level(fill, stroke, name, spec, gds) = (fill, stroke, name, spec, gds)
@@ -368,6 +389,23 @@
     ),
   )
 
+  let backside = (
+    level(
+      mb-fill,
+      mb-frame,
+      [MB],
+      [Nb · 200 nm · $z$ −500.2 µm],
+      [derived from SIM_AREA],
+    ),
+    level(
+      white,
+      muted,
+      [Vacuum_bottom],
+      [vacuum · 500 µm · $z$ −1000.2 µm],
+      [SIM_AREA (98/0)],
+    ),
+  )
+
   let row-h = 0.7
   let heading(x, y, body) = content(
     (x, y),
@@ -396,7 +434,7 @@
     content((x + 1.12, y - 0.18), small[#spec · #gds], anchor: "west")
   }
 
-  let ly = 6.95
+  let ly = 5.15
   heading(0.5, ly, [LAYER_STACK (base process, all stacks)])
   for (i, entry) in base.enumerate() {
     row(0.5, ly - 0.55 - i * row-h, i + 1, entry)
@@ -410,5 +448,10 @@
   heading(cx, gy, [LAYER_STACK_GATEMON adds (M1 is 155 nm thick here)])
   for (i, entry) in gatemon.enumerate() {
     row(cx, gy - 0.55 - i * row-h, i + 14, entry)
+  }
+  let by = ly - 0.55 - 10 * row-h - 0.15
+  heading(0.5, by, [LAYER_STACK_BACKSIDE adds the backside])
+  for (i, entry) in backside.enumerate() {
+    row(0.5, by - 0.55 - i * row-h, i + 20, entry)
   }
 })
