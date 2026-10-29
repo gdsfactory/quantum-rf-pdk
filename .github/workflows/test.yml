@@ -393,7 +393,7 @@ jobs:
             /tmp/matlab_script.log
           if-no-files-found: warn
   # Docs skip solver notebooks, so exercise this one in its own job.
-  test-elmer-notebook:
+  test-elmer:
     timeout-minutes: 60
     runs-on: ubuntu-24.04
     env:
