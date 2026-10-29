@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added `bump_transition` (M1 to M2 CPW transition through indium bumps) and `indium_bump_array` cells, schematic
+  symbols for both TSV and bump transitions, and a TSV flip-chip test-chip sample with both GDSFactory+ schematic views.
+
 ### Changed
 
 - The PDK default layer stack is now an approximate 3D mask preview. Simulation code must pass `qpdk.tech.LAYER_STACK`,

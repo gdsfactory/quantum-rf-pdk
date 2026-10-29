@@ -112,6 +112,15 @@ electromagnetic calibration.
 
 ![Gatemon Test Chip](docs/_static/images/gatemon_test_chip.png)
 
+### TSV Flip-Chip Test Chip
+
+Two mirrored CPW lines that use every metal layer of a flip-chip stack. Each line runs from a launcher on M1 through a
+TSV down to a backside (MB) underpass, back up to M1, across an indium-bump transition to the top chip (M2), through a
+top-chip TSV to a meander on the top chip's backside (MB2), and back out the same way to a second launcher. Indium bump
+arrays tie the two chips' ground planes together.
+
+![TSV Flip-Chip Test Chip](docs/_static/images/tsv_flip_chip_test_chip.png)
+
 ### Resonator Test Chip
 
 A 16-resonator characterization chip with systematically varied CPW widths and gaps across two probelines. Ideal for
