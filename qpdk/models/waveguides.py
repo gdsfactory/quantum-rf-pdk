@@ -344,40 +344,110 @@ def airbridge(
     return shunt_admittance(f=f, y=Y_bridge)
 
 
+def _two_port_with_insertion_loss(
+    s: sax.SDict, loss_db: sax.FloatArrayLike
+) -> sax.SDict:
+    r"""Scale the transmission terms of a two-port by a constant insertion loss.
+
+    Multiplies :math:`S_{21}` and :math:`S_{12}` by :math:`10^{-\text{IL}/20}`
+    and leaves the reflections unchanged, so the element absorbs a fraction
+    :math:`1 - 10^{-\text{IL}/10}` of the transmitted power independent of
+    frequency.
+
+    Args:
+        s: Two-port S-parameters dictionary.
+        loss_db: Insertion loss in dB.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with the scaled transmission.
+    """
+    a = 10 ** (-jnp.asarray(loss_db) / 20)
+    return {k: v * a if k[0] != k[1] else v for k, v in s.items()}
+
+
 def tsv(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     via_height: float = 1000.0,
+    loss_db: sax.FloatArrayLike = 4e-5,
 ) -> sax.SDict:
-    """S-parameter model for a through-silicon via (TSV), wrapped to :func:`~straight`.
+    r"""S-parameter model for a through-silicon via (TSV), wrapped to :func:`~straight`.
 
-    TODO: add a constant loss channel for TSVs.
+    The via is a :func:`~straight` of length ``via_height`` followed by a
+    constant, frequency-independent insertion loss ``loss_db`` per signal
+    transition.
+
+    No cryogenic :math:`S_{21}` measurement of a single superconducting TSV
+    has been published, so the default is an upper bound derived from
+    resonators interrupted by TSV transitions at single-photon power and mK
+    temperatures. Mallek *et al.* :cite:`mallekFabricationSuperconductingThroughsilicon2021`
+    find no dependence of :math:`Q_\text{i}` (about :math:`10^5` to
+    :math:`2.4 \times 10^5`, Fig. 7) on where the transition sits along a
+    :math:`\lambda/4` resonator. Taking the spread as the TSV contribution to
+    the inverse internal quality factor bounds it at
+    :math:`\delta_\text{TSV} \lesssim 1/10^5 - 1/(2.4 \times 10^5) \approx 6 \times 10^{-6}`.
+    The best TSV-terminated resonators of Grigoras *et al.*
+    :cite:`grigorasQubitcompatibleSubstratesSuperconducting2022`
+    (:math:`Q_\text{i} \approx 2 \times 10^5`) agree with this, and TSVs used as
+    capacitors reach :math:`Q_\text{diel} \approx 7.5 \times 10^5`
+    :cite:`hazardCharacterizationSuperconductingThroughsilicon2023`.
+    A lumped element adding :math:`\delta` to :math:`1/Q_\text{i}` of a
+    :math:`\lambda/4` resonator absorbs a power fraction
+    :math:`a = \delta\,\beta\ell = \delta\,\pi/2` per pass, i.e.
+    :math:`a \lesssim 9 \times 10^{-6}` and
+    :math:`\text{IL} = 10 \log_{10}(e)\,a \approx 4 \times 10^{-5}\,\text{dB}`.
+    Weak spots in the TSV liner drop some resonators to
+    :math:`Q_\text{i} \approx 10^4` :cite:`grigorasQubitcompatibleSubstratesSuperconducting2022`,
+    about :math:`7 \times 10^{-4}\,\text{dB}`, which is a reasonable pessimistic corner.
+
+    A single signal TSV is also a significant impedance discontinuity
+    :cite:`mallekFabricationSuperconductingThroughsilicon2021`, which this
+    model does not include.
 
     Args:
         f: Array of frequency points in Hz
         via_height: Physical height (length) of the TSV in µm.
+        loss_db: Insertion loss per TSV transition in dB. Must be non-negative,
+            a negative value gives gain.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=via_height)
+    return _two_port_with_insertion_loss(straight(f=f, length=via_height), loss_db)
 
 
 def indium_bump(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     bump_height: float = 10.0,
+    loss_db: sax.FloatArrayLike = 1e-6,
 ) -> sax.SDict:
-    """S-parameter model for an indium bump, wrapped to :func:`~straight`.
+    r"""S-parameter model for an indium bump, wrapped to :func:`~straight`.
 
-    TODO: add a constant loss channel for indium bumps.
+    The bump is a :func:`~straight` of length ``bump_height`` followed by a
+    constant, frequency-independent insertion loss ``loss_db`` per signal
+    transition.
+
+    The default comes from Richard *et al.* :cite:`richardAccurateGapControl2026`,
+    who put 1 to 6 indium transitions in series in the centre conductor of
+    :math:`\lambda/4` CPW resonators (low photon number, 15 mK) and bound the
+    contribution of each transition to :math:`1/Q_\text{i}` at
+    :math:`\delta_\text{In} < 10^{-7}`. A lumped element adding :math:`\delta`
+    to :math:`1/Q_\text{i}` absorbs a power fraction :math:`a = \delta\,\pi/2`
+    per pass, i.e. :math:`a < 1.6 \times 10^{-7}` and
+    :math:`\text{IL} = 10 \log_{10}(e)\,a < 7 \times 10^{-7}\,\text{dB}`,
+    rounded up to :math:`10^{-6}\,\text{dB}`. Indium bump seams also leave
+    stripline cavities at single-photon :math:`Q > 3 \times 10^8`
+    :cite:`leiHighCoherenceSuperconducting2020`.
 
     Args:
         f: Array of frequency points in Hz
         bump_height: Physical height (length) of the indium bump in µm.
+        loss_db: Insertion loss per indium bump transition in dB. Must be
+            non-negative, a negative value gives gain.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return straight(f=f, length=bump_height)
+    return _two_port_with_insertion_loss(straight(f=f, length=bump_height), loss_db)
 
 
 def bend_circular(

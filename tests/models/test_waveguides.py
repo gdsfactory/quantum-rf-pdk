@@ -219,6 +219,50 @@ class TestIndiumBump(TwoPortModelTestSuite):
         return {"bump_height": 10.0}
 
 
+@pytest.mark.parametrize(
+    ("model", "length_kwarg"),
+    [(tsv, "via_height"), (indium_bump, "bump_height")],
+)
+@given(loss_db=st.floats(min_value=0.0, max_value=3.0))
+@settings(max_examples=MAX_EXAMPLES, deadline=None)
+def test_vertical_interconnect_insertion_loss(model, length_kwarg, loss_db) -> None:
+    """``loss_db`` scales the transmission by the requested dB and leaves reflections."""
+    f = jnp.linspace(4e9, 8e9, 5)
+    lossless = model(f=f, **{length_kwarg: 50.0}, loss_db=0.0)
+    lossy = model(f=f, **{length_kwarg: 50.0}, loss_db=loss_db)
+
+    a = 10 ** (-loss_db / 20)
+    for k in (("o1", "o2"), ("o2", "o1")):
+        assert_allclose(lossy[k], a * lossless[k], rtol=1e-6)
+    for k in (("o1", "o1"), ("o2", "o2")):
+        assert_allclose(lossy[k], lossless[k], rtol=1e-6)
+
+
+@pytest.mark.parametrize(
+    ("model", "length_kwarg"),
+    [(tsv, "via_height"), (indium_bump, "bump_height")],
+)
+def test_vertical_interconnect_lossy_is_passive_and_jit_safe(
+    model, length_kwarg
+) -> None:
+    """A traced ``loss_db`` stays passive and reciprocal, and matches the eager result."""
+    f = jnp.linspace(4e9, 8e9, 5)
+    eager = model(f=f, **{length_kwarg: 50.0}, loss_db=1.0)
+    traced = jax.jit(lambda loss: model(f=f, **{length_kwarg: 50.0}, loss_db=loss))(1.0)
+
+    s = jnp.stack(
+        [
+            jnp.stack([traced["o1", "o1"], traced["o1", "o2"]], axis=-1),
+            jnp.stack([traced["o2", "o1"], traced["o2", "o2"]], axis=-1),
+        ],
+        axis=-2,
+    )
+    assert_array_less(jnp.linalg.svd(s, compute_uv=False), 1.0)
+    assert_allclose(traced["o1", "o2"], traced["o2", "o1"], rtol=1e-6)
+    for k in eager:
+        assert_allclose(traced[k], eager[k], rtol=1e-6, atol=1e-12)
+
+
 @final
 class TestBendCircular(TwoPortModelTestSuite):
     """Tests for bend_circular model."""
