@@ -1,0 +1,35 @@
+info: {}
+name: bump_transition_CScpw_CSTcpw_top_TL100_TLT100_PW40_PG24_c86da9b1
+ports:
+  o1:
+    center:
+    - -115
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 115
+    - 0
+    layer: M2_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  bump_diameter: 15
+  cross_section: cpw
+  cross_section_top: cpw_top
+  ground_bump_distance: 15
+  ground_bump_pitch: 30
+  n_ground_bumps_per_side: 4
+  n_signal_bumps: 2
+  pad_gap: 24
+  pad_length: 30
+  pad_width: 40
+  signal_bump_pitch: 20
+  taper_length: 100
+  taper_length_top: 100

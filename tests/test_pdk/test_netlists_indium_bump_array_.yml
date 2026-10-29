@@ -1,0 +1,19 @@
+instances:
+  indium_bump:
+    array:
+      column_pitch: 200
+      columns: 4
+      row_pitch: 200
+      rows: 4
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+nets: []
+placements:
+  indium_bump:
+    mirror: false
+    rotation: 0
+    x: -300
+    y: -300
+ports: {}

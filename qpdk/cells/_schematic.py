@@ -18,6 +18,7 @@ __all__ = [
     "bend_euler_all_angle_schematic",
     "bend_euler_schematic",
     "bend_s_schematic",
+    "bump_transition_schematic",
     "coupler_ring_schematic",
     "coupler_straight_schematic",
     "double_pad_transmon_schematic",
@@ -57,6 +58,7 @@ __all__ = [
     "taper_cross_section_schematic",
     "tee_schematic",
     "tsv_schematic",
+    "tsv_transition_double_sided_schematic",
     "unimon_arm_schematic",
     "unimon_coupled_schematic",
     "unimon_schematic",
@@ -675,6 +677,20 @@ indium_bump_schematic = schematic(
     symbol="indium_bump",
     tags=["interconnects"],
     ports=[],
+)
+
+# Through-chip and chip-to-chip CPW transitions: two-port interconnects whose
+# ports sit on different metal layers.
+tsv_transition_double_sided_schematic = schematic(
+    symbol="tsv_transition_double_sided",
+    tags=["interconnects", "waveguides"],
+    ports=_2PORT,
+)
+
+bump_transition_schematic = schematic(
+    symbol="bump_transition",
+    tags=["interconnects", "waveguides"],
+    ports=_2PORT,
 )
 
 launcher_schematic = schematic(

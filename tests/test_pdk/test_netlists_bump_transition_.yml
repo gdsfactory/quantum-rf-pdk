@@ -1,0 +1,148 @@
+instances:
+  indium_bump:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump10:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump2:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump3:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump4:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump5:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump6:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump7:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump8:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  indium_bump9:
+    component: indium_bump
+    info: {}
+    settings:
+      diameter: 15
+  taper_cross_section:
+    component: taper_cross_section
+    info:
+      route_info_coplanar_waveguide_top_length: 100
+      route_info_coplanar_waveguide_top_taper_length: 100
+      route_info_length: 100
+      route_info_type: coplanar_waveguide_top
+      route_info_weight: 100
+    settings:
+      cross_section1: cpw_top
+      cross_section2: xs_98ae5947
+      exclude_layers: null
+      length: 100
+      linear: true
+      npoints: 100
+      width_type: sine
+  taper_cross_section2:
+    component: taper_cross_section
+    info:
+      route_info_coplanar_waveguide_length: 100
+      route_info_coplanar_waveguide_taper_length: 100
+      route_info_length: 100
+      route_info_type: coplanar_waveguide
+      route_info_weight: 100
+    settings:
+      cross_section1: cpw
+      cross_section2: xs_519f776d
+      exclude_layers: null
+      length: 100
+      linear: true
+      npoints: 100
+      width_type: sine
+nets: []
+placements:
+  indium_bump:
+    mirror: false
+    rotation: 0
+    x: -15
+    y: -59
+  indium_bump10:
+    mirror: false
+    rotation: 0
+    x: 45
+    y: 59
+  indium_bump2:
+    mirror: false
+    rotation: 0
+    x: -15
+    y: 59
+  indium_bump3:
+    mirror: false
+    rotation: 0
+    x: -45
+    y: -59
+  indium_bump4:
+    mirror: false
+    rotation: 0
+    x: -45
+    y: 59
+  indium_bump5:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: -10
+  indium_bump6:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 10
+  indium_bump7:
+    mirror: false
+    rotation: 0
+    x: 15
+    y: -59
+  indium_bump8:
+    mirror: false
+    rotation: 0
+    x: 15
+    y: 59
+  indium_bump9:
+    mirror: false
+    rotation: 0
+    x: 45
+    y: -59
+  taper_cross_section:
+    mirror: false
+    rotation: 180
+    x: 115
+    y: 0
+  taper_cross_section2:
+    mirror: false
+    rotation: 0
+    x: -115
+    y: 0
+ports:
+  o1: taper_cross_section2,o1
+  o2: taper_cross_section,o1

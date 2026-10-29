@@ -1,0 +1,8 @@
+info: {}
+name: indium_bump_array_C4_R4_P200_D15
+ports: {}
+settings:
+  columns: 4
+  diameter: 15
+  pitch: 200
+  rows: 4

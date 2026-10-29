@@ -22,7 +22,10 @@ import numpy as np
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec
 
-from qpdk.cells._schematic import tsv_schematic
+from qpdk.cells._schematic import (
+    tsv_schematic,
+    tsv_transition_double_sided_schematic,
+)
 from qpdk.cells.waveguides import add_etch_gap, straight, taper_cross_section
 from qpdk.tech import CHIP_LAYERS, Chip, coplanar_waveguide, get_etch_section
 
@@ -314,7 +317,10 @@ def tsv_transition(
     return c
 
 
-@gf.cell(tags=["interconnects", "3d-integration", "waveguides"])
+@gf.cell(
+    tags=["interconnects", "3d-integration", "waveguides"],
+    schematic_function=tsv_transition_double_sided_schematic,
+)
 def tsv_transition_double_sided(
     cross_section: CrossSectionSpec | None = None,
     cross_section_backside: CrossSectionSpec | None = None,
