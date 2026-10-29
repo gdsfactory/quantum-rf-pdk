@@ -48,7 +48,9 @@ __all__ = [
 
 
 def tight_binding_hamiltonian(
-    adjacency: jax.typing.ArrayLike, t: float, onsite: float = 0.0
+    adjacency: jax.typing.ArrayLike,
+    t: jax.typing.ArrayLike,
+    onsite: jax.typing.ArrayLike = 0.0,
 ) -> jax.Array:
     r"""Tight-binding Hamiltonian :math:`H = \omega_0 I - t A`.
 
@@ -65,17 +67,49 @@ def tight_binding_hamiltonian(
         onsite: On-site energy :math:`\omega_0`.
 
     Returns:
-        The Hamiltonian matrix.
+        The Hamiltonian matrix, real symmetric and in the units of ``t`` and
+        ``onsite``.
+
+    Notes:
+        The matrix is a plain JAX array, so it goes straight into QuTiP as a
+        single-excitation operator on ``N`` sites, with the optional JAX
+        backend if installed. Install ``qpdk[models,qutip]``.
+        ``isherm=True`` keeps the Hermiticity check static under JIT.
+
+    Example:
+        Spectrum of the one-shell {7,3} edge-resonator lattice in QuTiP:
+
+        .. code-block:: python
+
+            import qutip as qt
+            import qutip_jax  # optional; registers dtype="jax"
+
+            from qpdk.hyperbolic import hyperbolic_tiling
+
+            tiling = hyperbolic_tiling(7, 3, shells=1)
+            h = tight_binding_hamiltonian(
+                tiling.line_graph_adjacency, t=-0.1, onsite=7.5
+            )
+            H = qt.Qobj(h, dtype="jax", isherm=True)  # or qt.Qobj(np.asarray(h))
+            energies, states = H.eigenstates()
+            # The flat band sits at onsite + 2 t = 7.3, E - V = 7 times.
+
+        With ``t`` and ``onsite`` in GHz, use ``2 * jnp.pi * H`` with times
+        in ns for :func:`qutip.sesolve` or :func:`qutip.mesolve`.
     """
     a = jnp.asarray(adjacency, dtype=float)
-    return onsite * jnp.eye(a.shape[-1]) - t * a
+    return jnp.asarray(onsite) * jnp.eye(a.shape[-1]) - jnp.asarray(t) * a
 
 
 def _cayley(x: jax.Array) -> jax.Array:
     r"""Cayley transform :math:`(I + X)^{-1}(I - X)` over the last two axes.
 
     It is its own inverse and converts between S-parameters and normalised
-    admittance: :math:`Z_0 Y = \mathcal{C}(S)` and :math:`S = \mathcal{C}(Z_0 Y)`.
+    admittance: :math:`Z_0 Y = \mathcal{C}(S)` and :math:`S = \mathcal{C}(Z_0 Y)`
+    for ports of equal reference impedance :math:`Z_0`. This is the matrix
+    form of the S-to-Z/Y conversion in :cite:`m.pozarMicrowaveEngineering2012`,
+    Sec. 4.3, written for :math:`Y = Z^{-1}`; :math:`I + X` and :math:`I - X`
+    commute, so the order of the product does not matter.
 
     Returns:
         The transformed matrices.
@@ -269,15 +303,53 @@ def hyperbolic_lattice(
       ``probe_pins``. Their reference plane is the coupler pin, so the feed
       lines and launchers of the layout are not included.
 
+    One vertex of the {7,3} circuit, with three edge resonators meeting at
+    a coupler; resonator ends at the flake boundary end on a stub or a probe:
+
+    .. mermaid::
+
+        flowchart LR
+            R1["edge resonator<br/>straight, resonator_length"] --- P1(("pin 1"))
+            R2["edge resonator"] --- P2(("pin 2"))
+            P3(("pin 3")) --- B["boundary: shorted stub,<br/>or probe port o1, o2, ..."]
+            subgraph V["vertex coupler, Maxwell matrix C"]
+                P1 ---|"C_c"| P2
+                P2 ---|"C_c"| P3
+                P3 ---|"C_c"| P1
+            end
+            V ---|"C_g from every pin"| G["ground"]
+
     The circuit is solved exactly by nodal analysis rather than with
-    :func:`sax.evaluate_circuit_fg`, whose JIT compilation does not scale to
-    a lattice of this size. Each element's S-matrix is converted to an
-    admittance matrix referenced to the CPW impedance :math:`Z_0`, the
-    elements are stamped into the nodal admittance matrix :math:`Y` with one
-    node per coupler pin, the nodes without a probe are eliminated by a
-    Schur complement and the result is converted back to
+    :func:`sax.evaluate_circuit_fg`, which handles the circuit too but takes
+    far longer to compile and needs far more memory at this size:
+
+    .. mermaid::
+
+        flowchart TD
+            T["hyperbolic_tiling(p, q, shells)"] --> L["lines: S to Y with Cayley,<br/>Z0 Y = C(S)"]
+            T --> C["couplers: Y = jωC"]
+            T --> B["stubs: S to Y"]
+            L --> Y["nodal admittance matrix Y,<br/>one node per coupler pin"]
+            C --> Y
+            B --> Y
+            Y --> K["Kron reduction onto probe nodes,<br/>Yp = Ypp - Ypi Yii⁻¹ Yip"]
+            K --> S["S = C(Z0 Yp), times lead transmission t²"]
+
+    Each element's S-matrix is converted to an admittance matrix referenced
+    to the CPW impedance :math:`Z_0` (:func:`_cayley`), the elements are
+    stamped into the nodal admittance matrix :math:`Y` with one node per
+    coupler pin, the nodes without a probe are eliminated by a Schur
+    complement (Kron reduction :cite:`dorflerKronReductionGraphs2013`) and
+    the result is converted back to
     :math:`S = (I - Z_0 Y_\text{p})(I + Z_0 Y_\text{p})^{-1}`. This is the
-    same S-matrix SAX produces for the netlist.
+    same S-matrix SAX produces for the netlist. Frequencies are solved in
+    batches with :func:`jax.lax.map`, so memory stays :math:`O(N^2)` in the
+    number of coupler pins.
+
+    The model is a leaf model: gdsfactoryplus calls it directly instead of
+    expanding the layout into resonators and couplers. It is also
+    :func:`jax.jit`-compatible with the structural arguments below held
+    static.
 
     Args:
         f: Frequency in Hz.

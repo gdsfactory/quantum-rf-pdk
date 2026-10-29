@@ -7,6 +7,7 @@ modeled component boundary, such as ``quarter_wave_resonator_coupled``.
 
 from __future__ import annotations
 
+import inspect
 import json
 from functools import cache
 from pathlib import Path
@@ -234,3 +235,44 @@ def test_metadata_resolved_models_model_their_layout_ports() -> None:
         "josephson_junction",
         "unimon_coupled",
     } <= resolved
+
+
+@pytest.mark.gfp
+@pytest.mark.parametrize(
+    "cell",
+    [
+        "hyperbolic_vertex_coupler",
+        "hyperbolic_edge_resonator",
+        "hyperbolic_cpw_path",
+        "hyperbolic_lattice",
+    ],
+)
+def test_hyperbolic_component_sax_simulation(cell: str) -> None:
+    """Simulate each hyperbolic cell the way gdsfactoryplus does from its card.
+
+    The lattice is a leaf model, so gdsfactoryplus must call its nodal-analysis
+    model rather than expand the layout, and the sweep must match calling the
+    model directly with the cell's build settings.
+    """
+    result = sax_sim.simulate_component_sax(
+        f"qpdk.cells.hyperbolic.{cell}",
+        "qpdk.PDK",
+        wl_min=_SPEED_OF_LIGHT_UM_PER_S / _F_MAX_HZ,
+        wl_max=_SPEED_OF_LIGHT_UM_PER_S / _F_MIN_HZ,
+        wl_num=3,
+        sweep_axis="f",
+    )
+    frequencies = _SPEED_OF_LIGHT_UM_PER_S / jnp.asarray(result["wavelengths"])
+    model = PDK.models[cell]
+    accepted = inspect.signature(model).parameters
+    settings = {
+        k: v for k, v in dict(PDK.cells[cell]().settings).items() if k in accepted
+    }
+    expected = model(f=frequencies, **settings)
+
+    sdict = result["sdict"]
+    assert {tuple(key.split(",")) for key in sdict} == set(expected)
+    for key, value in expected.items():
+        entry = sdict[f"{key[0]},{key[1]}"]
+        actual = jnp.asarray(entry["real"]) + 1j * jnp.asarray(entry["imag"])
+        np.testing.assert_allclose(actual, value, rtol=1e-6, atol=1e-9)
