@@ -137,6 +137,7 @@ from qpdk.models.waveguides import (
     bend_euler,
     bend_euler_all_angle,
     bend_s,
+    bump_transition,
     indium_bump,
     launcher,
     nxn,
@@ -150,6 +151,7 @@ from qpdk.models.waveguides import (
     taper_cross_section,
     tee,
     tsv,
+    tsv_transition_double_sided,
 )
 
 __all__ = [
@@ -162,6 +164,7 @@ __all__ = [
     "bend_euler",
     "bend_euler_all_angle",
     "bend_s",
+    "bump_transition",
     "capacitor",
     "cbcpw_parameters",
     "coupler_ring",
@@ -267,6 +270,7 @@ __all__ = [
     "transmon_readout_coupon_model",
     "transmon_with_resonator",
     "tsv",
+    "tsv_transition_double_sided",
     "unimon_coupled",
     "unimon_energies",
     "unimon_frequency_and_anharmonicity",

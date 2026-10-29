@@ -21,7 +21,7 @@ from qpdk.models.cpw import (
 )
 from qpdk.models.generic import shunt_admittance, tee
 from qpdk.models.jit import jit
-from qpdk.tech import coplanar_waveguide, launcher_cross_section_big
+from qpdk.tech import CHIP_LAYERS, Chip, coplanar_waveguide, launcher_cross_section_big
 
 
 def straight(
@@ -534,7 +534,7 @@ def taper_cross_section(
     length: sax.Float = 10,
     cross_section1: CrossSectionSpec = "cpw",
     cross_section2: CrossSectionSpec = "cpw",
-    npoints: int = 100,
+    npoints: int | jax.Array = 100,
 ) -> sax.SDict:
     """S-parameter model for a cross-section taper using linear interpolation.
 
@@ -550,7 +550,8 @@ def taper_cross_section(
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    npoints = max(npoints, 1)
+    # SAX passes numeric instance settings as arrays; the segment count is static.
+    npoints = max(int(npoints), 1)
     w1, g1 = get_cpw_dimensions(cross_section1)
     w2, g2 = get_cpw_dimensions(cross_section2)
 
@@ -622,3 +623,172 @@ def launcher(
         "o1": "taper,o2",
     }
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
+
+
+_PAD_TAPER_SEGMENTS = 20
+
+
+def _cpw_section(
+    f: jax.Array, length: sax.Float, width: sax.Float, gap: sax.Float
+) -> sax.SDict:
+    """Straight CPW from its dimensions, which may be traced under JIT."""
+    h, t, ep_r, tand = get_cpw_substrate_params()
+    return _sax_coplanar_waveguide(
+        f=f,
+        length=length,
+        width=width,
+        gap=gap,
+        thickness=t,
+        substrate_thickness=h,
+        ep_r=ep_r,
+        tand=tand,
+    )
+
+
+def _cpw_taper(
+    f: jax.Array,
+    length: sax.Float,
+    start: tuple[sax.Float, sax.Float],
+    stop: tuple[sax.Float, sax.Float],
+) -> sax.SDict:
+    """Linear taper between two ``(width, gap)`` pairs, which may be traced."""
+    n = _PAD_TAPER_SEGMENTS
+    widths = jnp.linspace(start[0], stop[0], n)
+    gaps = jnp.linspace(start[1], stop[1], n)
+    instances = {
+        f"s{i}": _cpw_section(f, length / n, widths[i], gaps[i]) for i in range(n)
+    }
+    connections = {f"s{i},o2": f"s{i + 1},o1" for i in range(n - 1)}
+    ports = {"o1": "s0,o1", "o2": f"s{n - 1},o2"}
+    return sax.backends.evaluate_circuit_fg((connections, ports), instances)
+
+
+def _pad_via_pad(
+    f: sax.FloatArrayLike,
+    cross_section1: CrossSectionSpec,
+    cross_section2: CrossSectionSpec,
+    taper_length1: sax.Float,
+    taper_length2: sax.Float,
+    pad_width: sax.Float,
+    pad_gap: sax.Float,
+    pad_length: sax.Float,
+    via: sax.SDict,
+) -> sax.SDict:
+    """Cascade taper, half pad, vertical interconnect, half pad and taper.
+
+    The layout pads are joined only through the vias or bumps, so their netlist
+    has no path between the two ports; this gives the transitions one. The pad
+    sections are built from their dimensions rather than a cross-section, so
+    the numeric settings may be JAX tracers.
+
+    Returns:
+        sax.SDict: S-parameters between the two outer ports.
+    """
+    f = jnp.asarray(f)
+    pad = (pad_width, pad_gap)
+    instances: dict[str, sax.SType] = {
+        "taper1": _cpw_taper(f, taper_length1, get_cpw_dimensions(cross_section1), pad),
+        "pad1": _cpw_section(f, pad_length / 2, *pad),
+        "via": via,
+        "pad2": _cpw_section(f, pad_length / 2, *pad),
+        "taper2": _cpw_taper(f, taper_length2, pad, get_cpw_dimensions(cross_section2)),
+    }
+    connections = {
+        "taper1,o2": "pad1,o1",
+        "pad1,o2": "via,o1",
+        "via,o2": "pad2,o1",
+        "pad2,o2": "taper2,o1",
+    }
+    ports = {"o1": "taper1,o1", "o2": "taper2,o2"}
+    return sax.backends.evaluate_circuit_fg((connections, ports), instances)
+
+
+def tsv_transition_double_sided(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    cross_section: CrossSectionSpec | None = None,
+    cross_section_backside: CrossSectionSpec | None = None,
+    taper_length: sax.Float = 100.0,
+    taper_length_backside: sax.Float = 100.0,
+    pad_width: sax.Float = 40.0,
+    pad_gap: sax.Float = 24.0,
+    pad_length: sax.Float = 30.0,
+    chip: Chip = "bottom",
+    via_height: float = 1000.0,
+) -> sax.SDict:
+    """S-parameter model for a CPW transition through the substrate.
+
+    Port ``o1`` is on the front face and ``o2`` on the backside. The via array
+    is the :func:`~tsv` model, so this inherits its approximations.
+
+    Args:
+        f: Array of frequency points in Hz
+        cross_section: Front-face CPW. Defaults to the chip's front cross-section.
+        cross_section_backside: Backside CPW. Defaults to the chip's backside
+            cross-section.
+        taper_length: Length of the front-face taper in µm.
+        taper_length_backside: Length of the backside taper in µm.
+        pad_width: Signal width of the pads in µm.
+        pad_gap: Gap of the pads in µm.
+        pad_length: Length of each pad in µm.
+        chip: Chip the transition sits on.
+        via_height: Height of the TSVs in µm, passed to :func:`~tsv`.
+
+    Returns:
+        sax.SDict: S-parameters dictionary
+    """
+    layers = CHIP_LAYERS[chip]
+    return _pad_via_pad(
+        f,
+        cross_section or layers.front_cross_section,
+        cross_section_backside or layers.back_cross_section,
+        taper_length,
+        taper_length_backside,
+        pad_width,
+        pad_gap,
+        pad_length,
+        tsv(f=f, via_height=via_height),
+    )
+
+
+def bump_transition(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    cross_section: CrossSectionSpec = "cpw",
+    cross_section_top: CrossSectionSpec = "cpw_top",
+    taper_length: sax.Float = 100.0,
+    taper_length_top: sax.Float = 100.0,
+    pad_width: sax.Float = 40.0,
+    pad_gap: sax.Float = 24.0,
+    pad_length: sax.Float = 30.0,
+    bump_height: float = 10.0,
+) -> sax.SDict:
+    """S-parameter model for a CPW transition through indium bumps.
+
+    Port ``o1`` is on the bottom chip and ``o2`` on the flip-chip top chip. The
+    bump array is the :func:`~indium_bump` model, so this inherits its
+    approximations.
+
+    Args:
+        f: Array of frequency points in Hz
+        cross_section: Bottom-chip CPW.
+        cross_section_top: Top-chip CPW.
+        taper_length: Length of the bottom-chip taper in µm.
+        taper_length_top: Length of the top-chip taper in µm.
+        pad_width: Signal width of the pads in µm.
+        pad_gap: Gap of the pads in µm.
+        pad_length: Length of each pad in µm.
+        bump_height: Height of the bumps in µm, passed to :func:`~indium_bump`.
+
+    Returns:
+        sax.SDict: S-parameters dictionary
+    """
+    return _pad_via_pad(
+        f,
+        cross_section,
+        cross_section_top,
+        taper_length,
+        taper_length_top,
+        pad_width,
+        pad_gap,
+        pad_length,
+        indium_bump(f=f, bump_height=bump_height),
+    )

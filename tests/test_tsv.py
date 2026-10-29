@@ -2,12 +2,19 @@
 
 import json
 from collections.abc import Callable
+from pathlib import Path
 
 import gdsfactory as gf
+import jax
+import jax.numpy as jnp
 import klayout.db as kdb
+import numpy as np
 import pytest
+import sax
+from gdsfactory.read import from_yaml
 from gdsfactory.technology import LayerLevel, LogicalLayer
 
+import qpdk
 from qpdk import PDK
 from qpdk.cells import (
     bump_transition,
@@ -124,3 +131,33 @@ def test_transition_tapers_resolve_after_serialization(
             cross_section1=settings["cross_section1"],
             cross_section2=settings["cross_section2"],
         )
+
+
+def test_flip_chip_sample_sweeps_through_sax() -> None:
+    """Both of the sample's lines transmit through a jitted SAX circuit.
+
+    GDSFactory+ builds the circuit from a JSON netlist and passes numeric
+    settings as arrays, and ``jax.jit`` traces them all, so the transition
+    models must not turn them into Python ints or cross-sections. The
+    transition cells' own netlists have no path between their ports, so they
+    need their own models.
+    """
+    sample = Path(qpdk.__file__).parent / "samples" / "tsv_flip_chip_test_chip.pic.yml"
+    netlist = json.loads(json.dumps(from_yaml(sample).get_netlist(), default=str))
+    with jax.enable_x64():
+        circuit, _ = sax.circuit(netlist, models=models)
+        s = sax.sdict(jax.jit(circuit)(f=jnp.linspace(4e9, 8e9, 3)))
+    np.testing.assert_allclose(jnp.abs(s["o1", "o2"]), 1.0, atol=1e-3)
+    np.testing.assert_allclose(jnp.abs(s["o3", "o4"]), 1.0, atol=1e-3)
+
+
+def test_taper_accepts_array_npoints() -> None:
+    """SAX hands ``npoints`` over as a float array, not an int."""
+    f = jnp.linspace(4e9, 8e9, 3)
+    kwargs = {
+        "f": f,
+        "cross_section2": {"cross_section": "cpw", "settings": {"width": 20}},
+    }
+    expected = models["taper_cross_section"](**kwargs, npoints=7)
+    actual = models["taper_cross_section"](**kwargs, npoints=jnp.asarray(7.0))
+    np.testing.assert_allclose(actual["o1", "o2"], expected["o1", "o2"])

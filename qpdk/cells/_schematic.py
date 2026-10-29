@@ -685,12 +685,16 @@ tsv_transition_double_sided_schematic = schematic(
     symbol="tsv_transition_double_sided",
     tags=["interconnects", "waveguides"],
     ports=_2PORT,
+    models=[
+        sax_model("tsv_transition_double_sided", "qpdk.models.waveguides", ["o1", "o2"])
+    ],
 )
 
 bump_transition_schematic = schematic(
     symbol="bump_transition",
     tags=["interconnects", "waveguides"],
     ports=_2PORT,
+    models=[sax_model("bump_transition", "qpdk.models.waveguides", ["o1", "o2"])],
 )
 
 launcher_schematic = schematic(
