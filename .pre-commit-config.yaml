@@ -141,6 +141,13 @@ repos:
         files: ^\.github/zenodo/metadata(\.schema)?\.json$
         pass_filenames: false
         priority: 10
+      - id: check-jsonschema
+        name: Validate qpdk/layers.yaml against gdsfactory's LayerViews schema
+        args:
+          - --schemafile
+          - https://raw.githubusercontent.com/gdsfactory/gdsfactory/main/gdsfactory/technology/layer_views.schema.json
+        files: ^qpdk/layers\.yaml$
+        priority: 10
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.12.18
     hooks:
