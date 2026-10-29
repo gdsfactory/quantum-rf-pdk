@@ -146,7 +146,7 @@ def test_flip_chip_sample_sweeps_through_sax() -> None:
     netlist = json.loads(json.dumps(from_yaml(sample).get_netlist(), default=str))
     with jax.enable_x64():
         circuit, _ = sax.circuit(netlist, models=models)
-        s = sax.sdict(jax.jit(circuit)(f=jnp.linspace(4e9, 8e9, 3)))
+        s = jax.jit(circuit)(f=jnp.linspace(4e9, 8e9, 3))
     np.testing.assert_allclose(jnp.abs(s["o1", "o2"]), 1.0, atol=1e-3)
     np.testing.assert_allclose(jnp.abs(s["o3", "o4"]), 1.0, atol=1e-3)
 

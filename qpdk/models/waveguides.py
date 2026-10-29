@@ -629,7 +629,10 @@ _PAD_TAPER_SEGMENTS = 20
 
 
 def _cpw_section(
-    f: jax.Array, length: sax.Float, width: sax.Float, gap: sax.Float
+    f: jax.Array,
+    length: sax.FloatLike,
+    width: sax.FloatArrayLike,
+    gap: sax.FloatArrayLike,
 ) -> sax.SDict:
     """Straight CPW from its dimensions, which may be traced under JIT."""
     h, t, ep_r, tand = get_cpw_substrate_params()
@@ -655,7 +658,7 @@ def _cpw_taper(
     n = _PAD_TAPER_SEGMENTS
     widths = jnp.linspace(start[0], stop[0], n)
     gaps = jnp.linspace(start[1], stop[1], n)
-    instances = {
+    instances: dict[str, sax.SType] = {
         f"s{i}": _cpw_section(f, length / n, widths[i], gaps[i]) for i in range(n)
     }
     connections = {f"s{i},o2": f"s{i + 1},o1" for i in range(n - 1)}
