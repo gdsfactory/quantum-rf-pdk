@@ -13,7 +13,7 @@ from gdsfactory.typings import Layer, LayerSpec
 from klayout.db import DCplxTrans, Region
 
 from qpdk.logger import logger
-from qpdk.tech import LAYER, NON_METADATA_LAYERS
+from qpdk.tech import CHIP_LAYERS, LAYER, NON_METADATA_LAYERS
 
 if TYPE_CHECKING:
     from gdsfactory.typings import Position
@@ -264,10 +264,23 @@ def subtract_draw_from_etch(
     component.absorb(component.add_ref(result))
 
 
+#: ``(draw, etch)`` layer pairs of every metal level: the front and back face
+#: of each chip in :data:`~qpdk.tech.CHIP_LAYERS` (M1, MB, M2 and MB2).
+METAL_LAYER_PAIRS: tuple[tuple[Layer, Layer], ...] = tuple(
+    pair
+    for layers in CHIP_LAYERS.values()
+    for pair in (
+        (layers.front_draw, layers.front_etch),
+        (layers.back_draw, layers.back_etch),
+    )
+)
+
+
 def apply_additive_metals(component: Component) -> Component:
     """Apply additive metal layers and remove them.
 
     Removes additive metal layers from etch layers, leading to a negative mask.
+    This is applied to every metal level in :data:`METAL_LAYER_PAIRS`.
 
     TODO: Implement without flattening. Maybe with a KLayout dataprep script?
 
@@ -277,10 +290,7 @@ def apply_additive_metals(component: Component) -> Component:
     Returns:
         Component with additive metals applied.
     """
-    for additive, etch in (
-        (LAYER.M1_DRAW, LAYER.M1_ETCH),
-        (LAYER.M2_DRAW, LAYER.M2_ETCH),
-    ):
+    for additive, etch in METAL_LAYER_PAIRS:
         component_etch_only = gf.boolean(
             A=component,
             B=component,
@@ -300,7 +310,8 @@ def invert_mask_polarity(component: Component) -> Component:
 
     Converts DRAW layers to ETCH layers by subtracting the DRAW layer from the
     component's bounding box, and similarly converts ETCH layers to DRAW layers.
-    This is applied to M1 and M2 layers. All other layers are copied intact.
+    This is applied to every metal level in :data:`METAL_LAYER_PAIRS` (M1,
+    MB, M2 and MB2). All other layers are copied intact.
 
     Args:
         component: The component to invert.
@@ -315,10 +326,7 @@ def invert_mask_polarity(component: Component) -> Component:
 
     affected_layers: set[int] = set()
 
-    for additive, etch in (
-        (LAYER.M1_DRAW, LAYER.M1_ETCH),
-        (LAYER.M2_DRAW, LAYER.M2_ETCH),
-    ):
+    for additive, etch in METAL_LAYER_PAIRS:
         # Determine the layer indices in the layout object
         add_layer_index = component.kcl.layer(*additive)
         etch_layer_index = component.kcl.layer(*etch)
