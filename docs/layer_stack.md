@@ -34,6 +34,7 @@ Notes:
   and adds the contact, hBN, top gate and reconnection films. The hBN thickness is a parameter (30 nm by default) and
   the top gate sits on it. The nanotube itself is not extruded.
 - `LAYER_STACK_3D` is the base stack plus the gatemon films, with `Reconnection` moved to the junction height. It also
-  previews the drawn `M2`, `MB`, `MB2` and `TSV2` shapes, but not their ground planes, which would otherwise appear
-  under every layout. View a flip-chip or backside design with its physical stack for those.
+  previews the `M2`, `MB`, `MB2` and `TSV2` faces. Their ground planes and the top chip's substrate appear only inside
+  the `SUBSTRATE` (bottom chip) and `SUBSTRATE_TOP` (top chip) die footprints, so they do not appear under every layout.
+  Both substrates are marked translucent with `info["opacity"]`.
 - The material properties, such as relative permittivity and loss tangent, are in `qpdk.tech.material_properties`.

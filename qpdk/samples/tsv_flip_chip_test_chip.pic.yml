@@ -38,6 +38,7 @@ instances:
         - 10000
       width: 100
       layer: M1_ETCH
+      footprint_layer: SUBSTRATE
   chip_edge_top:
     component: chip_edge
     settings:
@@ -46,6 +47,7 @@ instances:
         - 6000
       width: 100
       layer: M2_ETCH
+      footprint_layer: SUBSTRATE_TOP
   launcher_in_a:
     component: launcher
     settings: {}

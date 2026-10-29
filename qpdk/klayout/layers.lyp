@@ -477,6 +477,40 @@
   <source>90/0@1</source>
  </properties>
  <properties>
+  <frame-color>#a0a0a0</frame-color>
+  <fill-color>#a0a0a0</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I1</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>SUBSTRATE 95/0</name>
+  <source>95/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#c8c8c8</frame-color>
+  <fill-color>#c8c8c8</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I1</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width/>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>SUBSTRATE_TOP 96/0</name>
+  <source>96/0@1</source>
+ </properties>
+ <properties>
   <frame-color/>
   <fill-color/>
   <frame-brightness>0</frame-brightness>

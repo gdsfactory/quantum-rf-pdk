@@ -368,7 +368,8 @@
         10000
       ],
       "width": 100,
-      "layer": "M1_ETCH"
+      "layer": "M1_ETCH",
+      "footprint_layer": "SUBSTRATE"
     },
     "x": 10,
     "y": 9,
@@ -390,7 +391,7 @@
       0
     ],
     "template": "Bottom chip edge",
-    "texture_key": "qpdk.cells.chip.chip_edge_5d617103"
+    "texture_key": "qpdk.cells.chip.chip_edge_e0463d4f"
   },
   "chip_edge_top": {
     "type": "ckt",
@@ -403,7 +404,8 @@
         6000
       ],
       "width": 100,
-      "layer": "M2_ETCH"
+      "layer": "M2_ETCH",
+      "footprint_layer": "SUBSTRATE_TOP"
     },
     "x": 30,
     "y": 9,
@@ -425,7 +427,7 @@
       0
     ],
     "template": "Top chip edge",
-    "texture_key": "qpdk.cells.chip.chip_edge_1ea1fbee"
+    "texture_key": "qpdk.cells.chip.chip_edge_78769ecc"
   },
   "launcher_in_a": {
     "type": "ckt",

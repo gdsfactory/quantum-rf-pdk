@@ -88,6 +88,10 @@ class LayerMapQPDK(LayerMap):
 
     TEXT: Layer = (90, 0)  # Mask text / version labels
 
+    # Die footprints for 3D previews: the bottom chip and the flip-chip top chip
+    SUBSTRATE: Layer = (95, 0)
+    SUBSTRATE_TOP: Layer = (96, 0)
+
     # labels for gdsfactory
     LABEL_SETTINGS: Layer = (100, 0)
     LABEL_INSTANCE: Layer = (101, 0)
@@ -345,13 +349,32 @@ LAYER_STACK_GATEMON_NO_VACUUM = LayerStack(
 )
 
 
+def _footprint_minus(
+    footprint: Layer, etch: Layer, draw: Layer, operation: Literal["or", "not"]
+) -> DerivedLayer:
+    """Ground plane inside a die footprint: ``footprint - (etch <operation> draw)``."""
+    return DerivedLayer(
+        layer1=LogicalLayer(layer=footprint),
+        layer2=DerivedLayer(
+            layer1=LogicalLayer(layer=etch),
+            layer2=LogicalLayer(layer=draw),
+            operation=operation,
+        ),
+        operation="not",
+    )
+
+
 def get_layer_stack_3d() -> LayerStack:
     """Return a mask preview with ground bounded by the layout extent.
 
     Includes the gatemon contact, dielectric and gate films at their nominal
-    process heights, and the drawn M2, MB, MB2 and TSV2 shapes of the flip-chip
-    and backside faces. The ground is an unconditional blanket film, even without
-    an M1 etch mask. It can cover lower films and fill additive-only gaps.
+    process heights. The flip-chip and backside faces follow the die footprints:
+    ``SUBSTRATE_TOP`` gives the top chip's substrate and its M2 and MB2 ground
+    planes, and ``SUBSTRATE`` gives the bottom chip's MB ground plane. Without a
+    footprint, only the drawn M2, MB, MB2 and TSV2 shapes render. The bottom
+    substrate and M1 ground follow the layout bounds. The M1 ground is an
+    unconditional blanket film, even without an M1 etch mask. It can cover
+    lower films and fill additive-only gaps.
     Use a physical process stack for those devices, simulations and already
     prepared positive metal geometry.
     """
@@ -370,15 +393,41 @@ def get_layer_stack_3d() -> LayerStack:
     })
     # JJ_PATCH is shared by base-process junctions and gatemon contacts.
     stack.layers["Reconnection"].zmin = stack.layers["JosephsonJunction"].zmin
-    # The other chip faces preview only their drawn metal: a blanket ground
-    # there would appear under every layout, flip-chip or not.
+    # The other chip faces render inside the die footprints, so layouts that
+    # draw neither SUBSTRATE nor SUBSTRATE_TOP show only their drawn metal there.
+    # The bottom substrate keeps the layout bounds, like the M1 ground.
+    # ``info["opacity"]`` keeps vias inside the dies visible in renderers that
+    # support it and is ignored elsewhere.
+    translucent = {"opacity": 0.3}
+    stack.layers["Substrate"] = stack.layers["Substrate"].model_copy(
+        update={"layer": LogicalLayer(layer=L.SUBSTRATE), "info": dict(translucent)}
+    )
     physical = LAYER_STACK_FLIP_CHIP_BACKSIDE.layers
     stack.layers.update({
         name: physical[name].model_copy(deep=True) for name in ("M2", "TSV2")
     })
-    for name, draw in (("MB", L.MB_DRAW), ("MB2", L.MB2_DRAW)):
+    stack.layers["Substrate_top"] = physical["Substrate_top"].model_copy(
+        update={
+            "layer": LogicalLayer(layer=L.SUBSTRATE_TOP),
+            "background": False,
+            "info": dict(translucent),
+        }
+    )
+    stack.layers["M2_ground"] = physical["M2_ground"].model_copy(
+        update={"layer": _footprint_minus(L.SUBSTRATE_TOP, L.M2_ETCH, L.M2_DRAW, "or")}
+    )
+    for name, footprint, draw, etch in (
+        ("MB", L.SUBSTRATE, L.MB_DRAW, L.MB_ETCH),
+        ("MB2", L.SUBSTRATE_TOP, L.MB2_DRAW, L.MB2_ETCH),
+    ):
         stack.layers[name] = physical[name].model_copy(
-            update={"layer": LogicalLayer(layer=draw), "derived_layer": None}
+            update={
+                "layer": DerivedLayer(
+                    layer1=_footprint_minus(footprint, etch, draw, "not"),
+                    layer2=LogicalLayer(layer=draw),
+                    operation="or",
+                )
+            }
         )
     return stack
 
