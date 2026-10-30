@@ -130,6 +130,14 @@ from qpdk.models.resonator import (
 from qpdk.models.resonator_sections import (
     resonator_meander,
 )
+from qpdk.models.ssh import (
+    ssh_band_edges,
+    ssh_bands,
+    ssh_chain_spectrum,
+    ssh_circuit_band_edges,
+    ssh_parameters,
+    ssh_resonator_chain,
+)
 from qpdk.models.unimon import (
     el_to_arm_inductance,
     unimon_coupled,
@@ -266,6 +274,12 @@ __all__ = [
     "shunt_admittance",
     "shunted_transmon",
     "squid_junction",
+    "ssh_band_edges",
+    "ssh_bands",
+    "ssh_chain_spectrum",
+    "ssh_circuit_band_edges",
+    "ssh_parameters",
+    "ssh_resonator_chain",
     "straight",
     "straight_all_angle",
     "straight_double_open",

@@ -26,6 +26,7 @@ from .launcher import *
 from .resonator import *
 from .resonator_sections import *
 from .snspd import *
+from .ssh import *
 from .transmon import *
 from .tsv import *
 from .unimon import *
