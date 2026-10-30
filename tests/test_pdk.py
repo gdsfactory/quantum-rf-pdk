@@ -49,6 +49,7 @@ skip_test = {
     # Registered for schematic-editor lookup; sample behavior is tested separately.
     "flipmon_test_chip",
     "gatemon_test_chip",
+    "tsv_flip_chip_test_chip",
     "qubit_test_chip",
     "resonator_test_chip_python",
     "resonator_test_chip_yaml",

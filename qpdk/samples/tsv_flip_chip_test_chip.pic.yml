@@ -1,0 +1,444 @@
+# yaml-language-server: $schema=../../build/schemas/tsv_flip_chip_test_chip.json
+instances:
+  bump_in_a:
+    component: bump_transition
+    settings: {}
+  bump_in_b:
+    component: bump_transition
+    settings: {}
+  bump_out_a:
+    component: bump_transition
+    settings: {}
+  bump_out_b:
+    component: bump_transition
+    settings: {}
+  bumps_center:
+    component: indium_bump_array
+    settings:
+      columns: 29
+      rows: 7
+      pitch: 200
+  bumps_north:
+    component: indium_bump_array
+    settings:
+      columns: 29
+      rows: 7
+      pitch: 200
+  bumps_south:
+    component: indium_bump_array
+    settings:
+      columns: 29
+      rows: 7
+      pitch: 200
+  chip_edge_bottom:
+    component: chip_edge
+    settings:
+      size:
+        - 10000
+        - 10000
+      width: 100
+      layer: M1_ETCH
+      footprint_layer: SUBSTRATE
+  chip_edge_top:
+    component: chip_edge
+    settings:
+      size:
+        - 6000
+        - 6000
+      width: 100
+      layer: M2_ETCH
+      footprint_layer: SUBSTRATE_TOP
+  launcher_in_a:
+    component: launcher
+    settings: {}
+  launcher_in_b:
+    component: launcher
+    settings: {}
+  launcher_out_a:
+    component: launcher
+    settings: {}
+  launcher_out_b:
+    component: launcher
+    settings: {}
+  tsv_in_down_a:
+    component: tsv_transition_double_sided
+    settings: {}
+  tsv_in_down_b:
+    component: tsv_transition_double_sided
+    settings: {}
+  tsv_in_up_a:
+    component: tsv_transition_double_sided
+    settings: {}
+  tsv_in_up_b:
+    component: tsv_transition_double_sided
+    settings: {}
+  tsv_out_down_a:
+    component: tsv_transition_double_sided
+    settings: {}
+  tsv_out_down_b:
+    component: tsv_transition_double_sided
+    settings: {}
+  tsv_out_up_a:
+    component: tsv_transition_double_sided
+    settings: {}
+  tsv_out_up_b:
+    component: tsv_transition_double_sided
+    settings: {}
+  tsv_top_in_a:
+    component: tsv_transition_double_sided
+    settings:
+      chip: top
+  tsv_top_in_b:
+    component: tsv_transition_double_sided
+    settings:
+      chip: top
+  tsv_top_out_a:
+    component: tsv_transition_double_sided
+    settings:
+      chip: top
+  tsv_top_out_b:
+    component: tsv_transition_double_sided
+    settings:
+      chip: top
+routes:
+  bottom_in_a:
+    links:
+      tsv_in_up_a,o1: bump_in_a,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw
+  bottom_in_b:
+    links:
+      tsv_in_up_b,o1: bump_in_b,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw
+  bottom_out_a:
+    links:
+      bump_out_a,o1: tsv_out_down_a,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw
+  bottom_out_b:
+    links:
+      bump_out_b,o1: tsv_out_down_b,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw
+  feed_in_a:
+    links:
+      launcher_in_a,o1: tsv_in_down_a,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw
+  feed_in_b:
+    links:
+      launcher_in_b,o1: tsv_in_down_b,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw
+  feed_out_a:
+    links:
+      tsv_out_up_a,o1: launcher_out_a,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw
+  feed_out_b:
+    links:
+      tsv_out_up_b,o1: launcher_out_b,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw
+  top_backside_a:
+    links:
+      tsv_top_in_a,o2: tsv_top_out_a,o2
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_top_backside
+      waypoints:
+        - - -1800
+          - 1000
+        - - -1800
+          - 1600
+        - - -1400
+          - 1600
+        - - -1400
+          - 1000
+        - - -1000
+          - 1000
+        - - -1000
+          - 1600
+        - - -600
+          - 1600
+        - - -600
+          - 1000
+        - - -200
+          - 1000
+        - - -200
+          - 1600
+        - - 200
+          - 1600
+        - - 200
+          - 1000
+        - - 600
+          - 1000
+        - - 600
+          - 1600
+        - - 1000
+          - 1600
+        - - 1000
+          - 1000
+        - - 1400
+          - 1000
+        - - 1400
+          - 1600
+        - - 1800
+          - 1600
+        - - 1800
+          - 1000
+  top_backside_b:
+    links:
+      tsv_top_in_b,o2: tsv_top_out_b,o2
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_top_backside
+      waypoints:
+        - - -1800
+          - -1000
+        - - -1800
+          - -1600
+        - - -1400
+          - -1600
+        - - -1400
+          - -1000
+        - - -1000
+          - -1000
+        - - -1000
+          - -1600
+        - - -600
+          - -1600
+        - - -600
+          - -1000
+        - - -200
+          - -1000
+        - - -200
+          - -1600
+        - - 200
+          - -1600
+        - - 200
+          - -1000
+        - - 600
+          - -1000
+        - - 600
+          - -1600
+        - - 1000
+          - -1600
+        - - 1000
+          - -1000
+        - - 1400
+          - -1000
+        - - 1400
+          - -1600
+        - - 1800
+          - -1600
+        - - 1800
+          - -1000
+  top_in_a:
+    links:
+      bump_in_a,o2: tsv_top_in_a,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_top
+  top_in_b:
+    links:
+      bump_in_b,o2: tsv_top_in_b,o1
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_top
+  top_out_a:
+    links:
+      tsv_top_out_a,o1: bump_out_a,o2
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_top
+  top_out_b:
+    links:
+      tsv_top_out_b,o1: bump_out_b,o2
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_top
+  underpass_in_a:
+    links:
+      tsv_in_down_a,o2: tsv_in_up_a,o2
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_backside
+      waypoints:
+        - - -3800
+          - 1000
+        - - -3800
+          - 1400
+        - - -3600
+          - 1400
+        - - -3600
+          - 1000
+  underpass_in_b:
+    links:
+      tsv_in_down_b,o2: tsv_in_up_b,o2
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_backside
+      waypoints:
+        - - -3800
+          - -1000
+        - - -3800
+          - -1400
+        - - -3600
+          - -1400
+        - - -3600
+          - -1000
+  underpass_out_a:
+    links:
+      tsv_out_down_a,o2: tsv_out_up_a,o2
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_backside
+      waypoints:
+        - - 3600
+          - 1000
+        - - 3600
+          - 1400
+        - - 3800
+          - 1400
+        - - 3800
+          - 1000
+  underpass_out_b:
+    links:
+      tsv_out_down_b,o2: tsv_out_up_b,o2
+    routing_strategy: route_single_cpw
+    settings:
+      auto_taper: false
+      cross_section: cpw_backside
+      waypoints:
+        - - 3600
+          - -1000
+        - - 3600
+          - -1400
+        - - 3800
+          - -1400
+        - - 3800
+          - -1000
+nets: []
+ports:
+  o1: launcher_in_a,waveport
+  o2: launcher_out_a,waveport
+  o3: launcher_in_b,waveport
+  o4: launcher_out_b,waveport
+placements:
+  bump_in_a:
+    x: -2750
+    y: 1000
+  bump_in_b:
+    x: -2750
+    y: -1000
+  bump_out_a:
+    x: 2750
+    y: 1000
+    rotation: 180
+  bump_out_b:
+    x: 2750
+    y: -1000
+    rotation: 180
+  bumps_center:
+    x: 0
+    y: 0
+  bumps_north:
+    x: 0
+    y: 2100
+  bumps_south:
+    x: 0
+    y: -2100
+  chip_edge_bottom:
+    x: -5000
+    y: -5000
+  chip_edge_top:
+    x: -3000
+    y: -3000
+  launcher_in_a:
+    x: -4900
+    y: 1000
+  launcher_in_b:
+    x: -4900
+    y: -1000
+  launcher_out_a:
+    x: 4900
+    y: 1000
+    rotation: 180
+  launcher_out_b:
+    x: 4900
+    y: -1000
+    rotation: 180
+  tsv_in_down_a:
+    x: -4100
+    y: 1000
+  tsv_in_down_b:
+    x: -4100
+    y: -1000
+  tsv_in_up_a:
+    x: -3300
+    y: 1000
+    rotation: 180
+  tsv_in_up_b:
+    x: -3300
+    y: -1000
+    rotation: 180
+  tsv_out_down_a:
+    x: 3300
+    y: 1000
+  tsv_out_down_b:
+    x: 3300
+    y: -1000
+  tsv_out_up_a:
+    x: 4100
+    y: 1000
+    rotation: 180
+  tsv_out_up_b:
+    x: 4100
+    y: -1000
+    rotation: 180
+  tsv_top_in_a:
+    x: -2200
+    y: 1000
+  tsv_top_in_b:
+    x: -2200
+    y: -1000
+  tsv_top_out_a:
+    x: 2200
+    y: 1000
+    rotation: 180
+  tsv_top_out_b:
+    x: 2200
+    y: -1000
+    rotation: 180
+info:
+  description: Two CPW lines routed continuously across both chips of a flip-chip
+    stack. Each line dives through the bottom chip to its backside metal (MB) and
+    back, crosses the flip-chip gap to the top chip (M2) through indium bumps,
+    meanders on the top-chip backside (MB2) through TSVs, and returns the same way.

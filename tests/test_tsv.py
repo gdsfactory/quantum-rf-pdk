@@ -1,14 +1,28 @@
 """Tests for the chip-aware through-silicon via cells."""
 
+import json
 from collections.abc import Callable
+from pathlib import Path
 
 import gdsfactory as gf
+import jax
+import jax.numpy as jnp
 import klayout.db as kdb
+import numpy as np
 import pytest
+import sax
+from gdsfactory.read import from_yaml
 from gdsfactory.technology import LayerLevel, LogicalLayer
 
+import qpdk
 from qpdk import PDK
-from qpdk.cells import tsv, tsv_transition, tsv_transition_double_sided
+from qpdk.cells import (
+    bump_transition,
+    tsv,
+    tsv_transition,
+    tsv_transition_double_sided,
+)
+from qpdk.models import models
 from qpdk.tech import (
     CHIP_LAYERS,
     LAYER_CONNECTIVITY,
@@ -89,3 +103,71 @@ def test_chip_cross_sections_use_chip_layers(chip: Chip) -> None:
         (layers.back_cross_section, layers.back_draw),
     ):
         assert gf.get_layer(gf.get_cross_section(name).layer) == gf.get_layer(draw)
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [tsv_transition, tsv_transition_double_sided, bump_transition],
+    ids=lambda f: f.__name__,
+)
+def test_transition_tapers_resolve_after_serialization(
+    cell: Callable[..., gf.Component],
+) -> None:
+    """Taper cross-sections survive a JSON round trip, as GDSFactory+ sends them.
+
+    An unregistered ``CrossSection`` is recorded as an ``xs_<hash>`` name that
+    the ``taper_cross_section`` model cannot look up.
+    """
+    netlist = json.loads(json.dumps(cell().get_netlist(), default=str))
+    tapers = [
+        inst["settings"]
+        for inst in netlist["instances"].values()
+        if inst["component"] == "taper_cross_section"
+    ]
+    assert tapers
+    for settings in tapers:
+        models["taper_cross_section"](
+            length=settings["length"],
+            cross_section1=settings["cross_section1"],
+            cross_section2=settings["cross_section2"],
+        )
+
+
+def test_flip_chip_sample_sweeps_through_sax() -> None:
+    """Both of the sample's lines transmit through a jitted SAX circuit.
+
+    GDSFactory+ builds the circuit from a JSON netlist and passes numeric
+    settings as arrays, and ``jax.jit`` traces them all, so the transition
+    models must not turn them into Python ints or cross-sections. The
+    transition cells' own netlists have no path between their ports, so they
+    need their own models.
+    """
+    sample = Path(qpdk.__file__).parent / "samples" / "tsv_flip_chip_test_chip.pic.yml"
+    netlist = json.loads(json.dumps(from_yaml(sample).get_netlist(), default=str))
+    with jax.enable_x64():
+        circuit, _ = sax.circuit(netlist, models=models)
+        s = jax.jit(circuit)(f=jnp.linspace(4e9, 8e9, 3))
+    np.testing.assert_allclose(jnp.abs(s["o1", "o2"]), 1.0, atol=1e-3)
+    np.testing.assert_allclose(jnp.abs(s["o3", "o4"]), 1.0, atol=1e-3)
+
+
+def test_taper_accepts_array_npoints() -> None:
+    """SAX hands ``npoints`` over as a float array, not an int."""
+    f = jnp.linspace(4e9, 8e9, 3)
+    kwargs = {
+        "f": f,
+        "cross_section2": {"cross_section": "cpw", "settings": {"width": 20}},
+    }
+    expected = models["taper_cross_section"](**kwargs, npoints=7)
+    actual = models["taper_cross_section"](**kwargs, npoints=jnp.asarray(7.0))
+    np.testing.assert_allclose(actual["o1", "o2"], expected["o1", "o2"])
+
+
+def test_bump_transition_has_single_signal_bump() -> None:
+    """One indium bump joins the two pads, as in the published indium transition."""
+    c = bump_transition()
+    bumps = _region(c, qpdk.tech.LAYER.IND)
+    assert bumps.count() == 1
+    for pad_layer in ("M1_DRAW", "M2_DRAW"):
+        pad = _region(c, getattr(qpdk.tech.LAYER, pad_layer))
+        assert (bumps - pad).is_empty(), f"bump overhangs the {pad_layer} pad"

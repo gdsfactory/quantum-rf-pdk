@@ -9,7 +9,14 @@ instances:
       route_info_weight: 100
     settings:
       cross_section1: cpw
-      cross_section2: xs_519f776d
+      cross_section2:
+        cross_section: coplanar_waveguide
+        settings:
+          etch_layer: M1_ETCH
+          gap: 24
+          radius: null
+          waveguide_layer: M1_DRAW
+          width: 40
       exclude_layers: null
       length: 100
       linear: true

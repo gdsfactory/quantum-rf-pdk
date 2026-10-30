@@ -140,6 +140,16 @@ LayerViews:
     layer_in_name: true
     color: "gray"
     hatch_pattern: checkerboard 2px
+  SUBSTRATE:
+    layer: [95, 0]
+    layer_in_name: true
+    color: "#A0A0A0"
+    hatch_pattern: hollow
+  SUBSTRATE_TOP:
+    layer: [96, 0]
+    layer_in_name: true
+    color: "#C8C8C8"
+    hatch_pattern: hollow
   gdsfactory:
     group_members:
       LABEL_SETTINGS:

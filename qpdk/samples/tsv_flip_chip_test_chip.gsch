@@ -1,0 +1,2624 @@
+{
+  "bump_in_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.bump.bump_transition",
+    "name": "bump_in_a",
+    "nets": {
+      "o1": "bottom_in_a",
+      "o2": "top_in_a"
+    },
+    "x": 14,
+    "y": 2,
+    "bbox_width": 50,
+    "bbox_height": 42,
+    "bbox_xmin": -25,
+    "bbox_ymin": -21,
+    "irl_x": -2750,
+    "irl_y": -1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -25,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 25,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top",
+        "layer": [
+          2,
+          0
+        ],
+        "layer_name": "M2_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "Bump M1→M2 A",
+    "texture_key": "qpdk.cells.bump.bump_transition_00597a9d"
+  },
+  "bump_in_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.bump.bump_transition",
+    "name": "bump_in_b",
+    "nets": {
+      "o1": "bottom_in_b",
+      "o2": "top_in_b"
+    },
+    "x": 14,
+    "y": 16,
+    "bbox_width": 50,
+    "bbox_height": 42,
+    "bbox_xmin": -25,
+    "bbox_ymin": -21,
+    "irl_x": -2750,
+    "irl_y": 1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -25,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 25,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top",
+        "layer": [
+          2,
+          0
+        ],
+        "layer_name": "M2_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "Bump M1→M2 B",
+    "texture_key": "qpdk.cells.bump.bump_transition_00597a9d"
+  },
+  "bump_out_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.bump.bump_transition",
+    "name": "bump_out_a",
+    "nets": {
+      "o1": "bottom_out_a",
+      "o2": "top_out_a"
+    },
+    "orientation": 180,
+    "x": 26,
+    "y": 2,
+    "bbox_width": 50,
+    "bbox_height": 42,
+    "bbox_xmin": -25,
+    "bbox_ymin": -21,
+    "irl_x": 2750,
+    "irl_y": -1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -25,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 25,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top",
+        "layer": [
+          2,
+          0
+        ],
+        "layer_name": "M2_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "Bump M2→M1 A",
+    "texture_key": "qpdk.cells.bump.bump_transition_00597a9d"
+  },
+  "bump_out_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.bump.bump_transition",
+    "name": "bump_out_b",
+    "nets": {
+      "o1": "bottom_out_b",
+      "o2": "top_out_b"
+    },
+    "orientation": 180,
+    "x": 26,
+    "y": 16,
+    "bbox_width": 50,
+    "bbox_height": 42,
+    "bbox_xmin": -25,
+    "bbox_ymin": -21,
+    "irl_x": 2750,
+    "irl_y": 1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -25,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 25,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top",
+        "layer": [
+          2,
+          0
+        ],
+        "layer_name": "M2_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "Bump M2→M1 B",
+    "texture_key": "qpdk.cells.bump.bump_transition_00597a9d"
+  },
+  "bumps_center": {
+    "type": "ckt",
+    "model": "qpdk.cells.bump.indium_bump_array",
+    "name": "bumps_center",
+    "nets": {},
+    "props": {
+      "columns": 29,
+      "rows": 7,
+      "pitch": 200
+    },
+    "x": 19,
+    "y": 9,
+    "bbox_width": 5615,
+    "bbox_height": 1215,
+    "bbox_xmin": -2807.5,
+    "bbox_ymin": -607.5,
+    "irl_x": 0,
+    "irl_y": 0,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "Ground bumps C",
+    "texture_key": "qpdk.cells.bump.indium_bump_array_44a314c7"
+  },
+  "bumps_north": {
+    "type": "ckt",
+    "model": "qpdk.cells.bump.indium_bump_array",
+    "name": "bumps_north",
+    "nets": {},
+    "props": {
+      "columns": 29,
+      "rows": 7,
+      "pitch": 200
+    },
+    "x": 19,
+    "y": -4,
+    "bbox_width": 5615,
+    "bbox_height": 1215,
+    "bbox_xmin": -2807.5,
+    "bbox_ymin": -607.5,
+    "irl_x": 0,
+    "irl_y": -2100,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "Ground bumps N",
+    "texture_key": "qpdk.cells.bump.indium_bump_array_44a314c7"
+  },
+  "bumps_south": {
+    "type": "ckt",
+    "model": "qpdk.cells.bump.indium_bump_array",
+    "name": "bumps_south",
+    "nets": {},
+    "props": {
+      "columns": 29,
+      "rows": 7,
+      "pitch": 200
+    },
+    "x": 19,
+    "y": 23,
+    "bbox_width": 5615,
+    "bbox_height": 1215,
+    "bbox_xmin": -2807.5,
+    "bbox_ymin": -607.5,
+    "irl_x": 0,
+    "irl_y": 2100,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "Ground bumps S",
+    "texture_key": "qpdk.cells.bump.indium_bump_array_44a314c7"
+  },
+  "chip_edge_bottom": {
+    "type": "ckt",
+    "model": "qpdk.cells.chip.chip_edge",
+    "name": "chip_edge_bottom",
+    "nets": {},
+    "props": {
+      "size": [
+        10000,
+        10000
+      ],
+      "width": 100,
+      "layer": "M1_ETCH",
+      "footprint_layer": "SUBSTRATE"
+    },
+    "x": 10,
+    "y": 9,
+    "bbox_width": 10000,
+    "bbox_height": 10000,
+    "bbox_xmin": 0,
+    "bbox_ymin": 0,
+    "irl_x": 0,
+    "irl_y": 0,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "Bottom chip edge",
+    "texture_key": "qpdk.cells.chip.chip_edge_e0463d4f"
+  },
+  "chip_edge_top": {
+    "type": "ckt",
+    "model": "qpdk.cells.chip.chip_edge",
+    "name": "chip_edge_top",
+    "nets": {},
+    "props": {
+      "size": [
+        6000,
+        6000
+      ],
+      "width": 100,
+      "layer": "M2_ETCH",
+      "footprint_layer": "SUBSTRATE_TOP"
+    },
+    "x": 30,
+    "y": 9,
+    "bbox_width": 6000,
+    "bbox_height": 6000,
+    "bbox_xmin": 0,
+    "bbox_ymin": 0,
+    "irl_x": 0,
+    "irl_y": 0,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "Top chip edge",
+    "texture_key": "qpdk.cells.chip.chip_edge_78769ecc"
+  },
+  "launcher_in_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "launcher_in_a",
+    "nets": {
+      "o1": "feed_in_a",
+      "waveport": "port_net_o1"
+    },
+    "x": 2,
+    "y": 2,
+    "bbox_width": 300,
+    "bbox_height": 420,
+    "bbox_xmin": 0,
+    "bbox_ymin": -210,
+    "irl_x": -4750,
+    "irl_y": -1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": 150,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "waveport",
+        "irl_rx": -150,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 200,
+        "cross_section": "launcher_cross_section_big",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "RF in A",
+    "texture_key": "qpdk.cells.launcher.launcher_00597a9d"
+  },
+  "launcher_in_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "launcher_in_b",
+    "nets": {
+      "o1": "feed_in_b",
+      "waveport": "port_net_o3"
+    },
+    "x": 2,
+    "y": 16,
+    "bbox_width": 300,
+    "bbox_height": 420,
+    "bbox_xmin": 0,
+    "bbox_ymin": -210,
+    "irl_x": -4750,
+    "irl_y": 1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": 150,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "waveport",
+        "irl_rx": -150,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 200,
+        "cross_section": "launcher_cross_section_big",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "RF in B",
+    "texture_key": "qpdk.cells.launcher.launcher_00597a9d"
+  },
+  "launcher_out_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "launcher_out_a",
+    "nets": {
+      "o1": "feed_out_a",
+      "waveport": "port_net_o2"
+    },
+    "orientation": 180,
+    "x": 38,
+    "y": 2,
+    "bbox_width": 300,
+    "bbox_height": 420,
+    "bbox_xmin": 0,
+    "bbox_ymin": -210,
+    "irl_x": 4750,
+    "irl_y": -1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": 150,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "waveport",
+        "irl_rx": -150,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 200,
+        "cross_section": "launcher_cross_section_big",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "RF out A",
+    "texture_key": "qpdk.cells.launcher.launcher_00597a9d"
+  },
+  "launcher_out_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.launcher.launcher",
+    "name": "launcher_out_b",
+    "nets": {
+      "o1": "feed_out_b",
+      "waveport": "port_net_o4"
+    },
+    "orientation": 180,
+    "x": 38,
+    "y": 16,
+    "bbox_width": 300,
+    "bbox_height": 420,
+    "bbox_xmin": 0,
+    "bbox_ymin": -210,
+    "irl_x": 4750,
+    "irl_y": 1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": 150,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "waveport",
+        "irl_rx": -150,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 200,
+        "cross_section": "launcher_cross_section_big",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "RF out B",
+    "texture_key": "qpdk.cells.launcher.launcher_00597a9d"
+  },
+  "tsv_in_down_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_in_down_a",
+    "nets": {
+      "o1": "feed_in_a",
+      "o2": "underpass_in_a"
+    },
+    "x": 6,
+    "y": 2,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": -4100,
+    "irl_y": -1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_backside",
+        "layer": [
+          3,
+          0
+        ],
+        "layer_name": "MB_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "TSV M1→MB A",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_00597a9d"
+  },
+  "tsv_in_down_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_in_down_b",
+    "nets": {
+      "o1": "feed_in_b",
+      "o2": "underpass_in_b"
+    },
+    "x": 6,
+    "y": 16,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": -4100,
+    "irl_y": 1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_backside",
+        "layer": [
+          3,
+          0
+        ],
+        "layer_name": "MB_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "TSV M1→MB B",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_00597a9d"
+  },
+  "tsv_in_up_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_in_up_a",
+    "nets": {
+      "o1": "bottom_in_a",
+      "o2": "underpass_in_a"
+    },
+    "orientation": 180,
+    "x": 10,
+    "y": 2,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": -3300,
+    "irl_y": -1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_backside",
+        "layer": [
+          3,
+          0
+        ],
+        "layer_name": "MB_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "TSV MB→M1 A",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_00597a9d"
+  },
+  "tsv_in_up_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_in_up_b",
+    "nets": {
+      "o1": "bottom_in_b",
+      "o2": "underpass_in_b"
+    },
+    "orientation": 180,
+    "x": 10,
+    "y": 16,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": -3300,
+    "irl_y": 1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_backside",
+        "layer": [
+          3,
+          0
+        ],
+        "layer_name": "MB_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "TSV MB→M1 B",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_00597a9d"
+  },
+  "tsv_out_down_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_out_down_a",
+    "nets": {
+      "o1": "bottom_out_a",
+      "o2": "underpass_out_a"
+    },
+    "x": 30,
+    "y": 2,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": 3300,
+    "irl_y": -1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_backside",
+        "layer": [
+          3,
+          0
+        ],
+        "layer_name": "MB_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "TSV M1→MB A",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_00597a9d"
+  },
+  "tsv_out_down_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_out_down_b",
+    "nets": {
+      "o1": "bottom_out_b",
+      "o2": "underpass_out_b"
+    },
+    "x": 30,
+    "y": 16,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": 3300,
+    "irl_y": 1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_backside",
+        "layer": [
+          3,
+          0
+        ],
+        "layer_name": "MB_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "TSV M1→MB B",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_00597a9d"
+  },
+  "tsv_out_up_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_out_up_a",
+    "nets": {
+      "o1": "feed_out_a",
+      "o2": "underpass_out_a"
+    },
+    "orientation": 180,
+    "x": 34,
+    "y": 2,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": 4100,
+    "irl_y": -1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_backside",
+        "layer": [
+          3,
+          0
+        ],
+        "layer_name": "MB_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "TSV MB→M1 A",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_00597a9d"
+  },
+  "tsv_out_up_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_out_up_b",
+    "nets": {
+      "o1": "feed_out_b",
+      "o2": "underpass_out_b"
+    },
+    "orientation": 180,
+    "x": 34,
+    "y": 16,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": 4100,
+    "irl_y": 1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_backside",
+        "layer": [
+          3,
+          0
+        ],
+        "layer_name": "MB_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "TSV MB→M1 B",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_00597a9d"
+  },
+  "tsv_top_in_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_top_in_a",
+    "nets": {
+      "o1": "top_in_a",
+      "o2": "top_backside_a"
+    },
+    "props": {
+      "chip": "top"
+    },
+    "x": 18,
+    "y": 2,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": -2200,
+    "irl_y": -1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top",
+        "layer": [
+          2,
+          0
+        ],
+        "layer_name": "M2_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top_backside",
+        "layer": [
+          4,
+          0
+        ],
+        "layer_name": "MB2_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "TSV M2→MB2 A",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_f29febf6"
+  },
+  "tsv_top_in_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_top_in_b",
+    "nets": {
+      "o1": "top_in_b",
+      "o2": "top_backside_b"
+    },
+    "props": {
+      "chip": "top"
+    },
+    "x": 18,
+    "y": 16,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": -2200,
+    "irl_y": 1000,
+    "irl_orientation": 0,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top",
+        "layer": [
+          2,
+          0
+        ],
+        "layer_name": "M2_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top_backside",
+        "layer": [
+          4,
+          0
+        ],
+        "layer_name": "MB2_DRAW"
+      }
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "template": "TSV M2→MB2 B",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_f29febf6"
+  },
+  "tsv_top_out_a": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_top_out_a",
+    "nets": {
+      "o1": "top_out_a",
+      "o2": "top_backside_a"
+    },
+    "props": {
+      "chip": "top"
+    },
+    "orientation": 180,
+    "x": 22,
+    "y": 2,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": 2200,
+    "irl_y": -1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top",
+        "layer": [
+          2,
+          0
+        ],
+        "layer_name": "M2_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top_backside",
+        "layer": [
+          4,
+          0
+        ],
+        "layer_name": "MB2_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "TSV MB2→M2 A",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_f29febf6"
+  },
+  "tsv_top_out_b": {
+    "type": "ckt",
+    "model": "qpdk.cells.tsv.tsv_transition_double_sided",
+    "name": "tsv_top_out_b",
+    "nets": {
+      "o1": "top_out_b",
+      "o2": "top_backside_b"
+    },
+    "props": {
+      "chip": "top"
+    },
+    "orientation": 180,
+    "x": 22,
+    "y": 16,
+    "bbox_width": 230,
+    "bbox_height": 132,
+    "bbox_xmin": -115,
+    "bbox_ymin": -66,
+    "irl_x": 2200,
+    "irl_y": 1000,
+    "irl_orientation": 180,
+    "irl_flip": false,
+    "ports": [
+      {
+        "name": "o1",
+        "irl_rx": -115,
+        "irl_ry": 0,
+        "orientation": 180,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top",
+        "layer": [
+          2,
+          0
+        ],
+        "layer_name": "M2_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 115,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide_top_backside",
+        "layer": [
+          4,
+          0
+        ],
+        "layer_name": "MB2_DRAW"
+      }
+    ],
+    "transform": [
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      0
+    ],
+    "template": "TSV MB2→M2 B",
+    "texture_key": "qpdk.cells.tsv.tsv_transition_double_sided_f29febf6"
+  },
+  "o1": {
+    "type": "port",
+    "name": "o1",
+    "x": 1,
+    "y": 3,
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "nets": {
+      "P": "port_net_o1"
+    },
+    "attached_port": {
+      "component_id": "launcher_in_a",
+      "port_name": "waveport"
+    },
+    "irl_x": -4850,
+    "irl_y": -1000,
+    "port_type": "optical",
+    "nature": "photonic"
+  },
+  "o2": {
+    "type": "port",
+    "name": "o2",
+    "x": 41,
+    "y": 3,
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "nets": {
+      "P": "port_net_o2"
+    },
+    "attached_port": {
+      "component_id": "launcher_out_a",
+      "port_name": "waveport"
+    },
+    "irl_x": 4850,
+    "irl_y": -1000,
+    "port_type": "optical",
+    "nature": "photonic"
+  },
+  "o3": {
+    "type": "port",
+    "name": "o3",
+    "x": 1,
+    "y": 17,
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "nets": {
+      "P": "port_net_o3"
+    },
+    "attached_port": {
+      "component_id": "launcher_in_b",
+      "port_name": "waveport"
+    },
+    "irl_x": -4850,
+    "irl_y": 1000,
+    "port_type": "optical",
+    "nature": "photonic"
+  },
+  "o4": {
+    "type": "port",
+    "name": "o4",
+    "x": 41,
+    "y": 17,
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "nets": {
+      "P": "port_net_o4"
+    },
+    "attached_port": {
+      "component_id": "launcher_out_b",
+      "port_name": "waveport"
+    },
+    "irl_x": 4850,
+    "irl_y": 1000,
+    "port_type": "optical",
+    "nature": "photonic"
+  },
+  "note_a": {
+    "type": "text",
+    "name": "note_a",
+    "x": 2,
+    "y": 6,
+    "template": "A: M1 → MB → M1 → M2 → MB2 → M2 → M1 → MB → M1",
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  "note_b": {
+    "type": "text",
+    "name": "note_b",
+    "x": 2,
+    "y": 20,
+    "template": "B: mirror of A about the chip axis",
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  "bottom_in_a": {
+    "type": "polyline",
+    "name": "bottom_in_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_in_up_a",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "bump_in_a",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        -3185,
+        -1000
+      ],
+      [
+        -2775,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "bottom_in_b": {
+    "type": "polyline",
+    "name": "bottom_in_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_in_up_b",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "bump_in_b",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        -3185,
+        1000
+      ],
+      [
+        -2775,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "bottom_out_a": {
+    "type": "polyline",
+    "name": "bottom_out_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "bump_out_a",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "tsv_out_down_a",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        2775,
+        -1000
+      ],
+      [
+        3185,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "bottom_out_b": {
+    "type": "polyline",
+    "name": "bottom_out_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "bump_out_b",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "tsv_out_down_b",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        2775,
+        1000
+      ],
+      [
+        3185,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "feed_in_a": {
+    "type": "polyline",
+    "name": "feed_in_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "launcher_in_a",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "tsv_in_down_a",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        -4600,
+        -1000
+      ],
+      [
+        -4215,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "feed_in_b": {
+    "type": "polyline",
+    "name": "feed_in_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "launcher_in_b",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "tsv_in_down_b",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        -4600,
+        1000
+      ],
+      [
+        -4215,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "feed_out_a": {
+    "type": "polyline",
+    "name": "feed_out_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_out_up_a",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "launcher_out_a",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        4215,
+        -1000
+      ],
+      [
+        4600,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "feed_out_b": {
+    "type": "polyline",
+    "name": "feed_out_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_out_up_b",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "launcher_out_b",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        4215,
+        1000
+      ],
+      [
+        4600,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide",
+    "layer": "M1_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "top_backside_a": {
+    "type": "polyline",
+    "name": "top_backside_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_top_in_a",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "tsv_top_out_a",
+        "port_name": "o2"
+      }
+    },
+    "vertices": [
+      [
+        -2085,
+        -1000
+      ],
+      [
+        -1800,
+        -1000
+      ],
+      [
+        -1800,
+        -1600
+      ],
+      [
+        -1400,
+        -1600
+      ],
+      [
+        -1400,
+        -1000
+      ],
+      [
+        -1000,
+        -1000
+      ],
+      [
+        -1000,
+        -1600
+      ],
+      [
+        -600,
+        -1600
+      ],
+      [
+        -600,
+        -1000
+      ],
+      [
+        -200,
+        -1000
+      ],
+      [
+        -200,
+        -1600
+      ],
+      [
+        200,
+        -1600
+      ],
+      [
+        200,
+        -1000
+      ],
+      [
+        600,
+        -1000
+      ],
+      [
+        600,
+        -1600
+      ],
+      [
+        1000,
+        -1600
+      ],
+      [
+        1000,
+        -1000
+      ],
+      [
+        1400,
+        -1000
+      ],
+      [
+        1400,
+        -1600
+      ],
+      [
+        1800,
+        -1600
+      ],
+      [
+        1800,
+        -1000
+      ],
+      [
+        2085,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_top_backside",
+    "layer": "MB2_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "top_backside_b": {
+    "type": "polyline",
+    "name": "top_backside_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_top_in_b",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "tsv_top_out_b",
+        "port_name": "o2"
+      }
+    },
+    "vertices": [
+      [
+        -2085,
+        1000
+      ],
+      [
+        -1800,
+        1000
+      ],
+      [
+        -1800,
+        1600
+      ],
+      [
+        -1400,
+        1600
+      ],
+      [
+        -1400,
+        1000
+      ],
+      [
+        -1000,
+        1000
+      ],
+      [
+        -1000,
+        1600
+      ],
+      [
+        -600,
+        1600
+      ],
+      [
+        -600,
+        1000
+      ],
+      [
+        -200,
+        1000
+      ],
+      [
+        -200,
+        1600
+      ],
+      [
+        200,
+        1600
+      ],
+      [
+        200,
+        1000
+      ],
+      [
+        600,
+        1000
+      ],
+      [
+        600,
+        1600
+      ],
+      [
+        1000,
+        1600
+      ],
+      [
+        1000,
+        1000
+      ],
+      [
+        1400,
+        1000
+      ],
+      [
+        1400,
+        1600
+      ],
+      [
+        1800,
+        1600
+      ],
+      [
+        1800,
+        1000
+      ],
+      [
+        2085,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_top_backside",
+    "layer": "MB2_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "top_in_a": {
+    "type": "polyline",
+    "name": "top_in_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "bump_in_a",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "tsv_top_in_a",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        -2725,
+        -1000
+      ],
+      [
+        -2315,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_top",
+    "layer": "M2_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "top_in_b": {
+    "type": "polyline",
+    "name": "top_in_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "bump_in_b",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "tsv_top_in_b",
+        "port_name": "o1"
+      }
+    },
+    "vertices": [
+      [
+        -2725,
+        1000
+      ],
+      [
+        -2315,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_top",
+    "layer": "M2_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "top_out_a": {
+    "type": "polyline",
+    "name": "top_out_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_top_out_a",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "bump_out_a",
+        "port_name": "o2"
+      }
+    },
+    "vertices": [
+      [
+        2315,
+        -1000
+      ],
+      [
+        2725,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_top",
+    "layer": "M2_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "top_out_b": {
+    "type": "polyline",
+    "name": "top_out_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_top_out_b",
+        "port_name": "o1"
+      },
+      "finish": {
+        "component_id": "bump_out_b",
+        "port_name": "o2"
+      }
+    },
+    "vertices": [
+      [
+        2315,
+        1000
+      ],
+      [
+        2725,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_top",
+    "layer": "M2_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "underpass_in_a": {
+    "type": "polyline",
+    "name": "underpass_in_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_in_down_a",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "tsv_in_up_a",
+        "port_name": "o2"
+      }
+    },
+    "vertices": [
+      [
+        -3985,
+        -1000
+      ],
+      [
+        -3800,
+        -1000
+      ],
+      [
+        -3800,
+        -1400
+      ],
+      [
+        -3600,
+        -1400
+      ],
+      [
+        -3600,
+        -1000
+      ],
+      [
+        -3415,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_backside",
+    "layer": "MB_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "underpass_in_b": {
+    "type": "polyline",
+    "name": "underpass_in_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_in_down_b",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "tsv_in_up_b",
+        "port_name": "o2"
+      }
+    },
+    "vertices": [
+      [
+        -3985,
+        1000
+      ],
+      [
+        -3800,
+        1000
+      ],
+      [
+        -3800,
+        1400
+      ],
+      [
+        -3600,
+        1400
+      ],
+      [
+        -3600,
+        1000
+      ],
+      [
+        -3415,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_backside",
+    "layer": "MB_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "underpass_out_a": {
+    "type": "polyline",
+    "name": "underpass_out_a",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_out_down_a",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "tsv_out_up_a",
+        "port_name": "o2"
+      }
+    },
+    "vertices": [
+      [
+        3415,
+        -1000
+      ],
+      [
+        3600,
+        -1000
+      ],
+      [
+        3600,
+        -1400
+      ],
+      [
+        3800,
+        -1400
+      ],
+      [
+        3800,
+        -1000
+      ],
+      [
+        3985,
+        -1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_backside",
+    "layer": "MB_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "underpass_out_b": {
+    "type": "polyline",
+    "name": "underpass_out_b",
+    "x": 0,
+    "y": 0,
+    "terminals": {
+      "start": {
+        "component_id": "tsv_out_down_b",
+        "port_name": "o2"
+      },
+      "finish": {
+        "component_id": "tsv_out_up_b",
+        "port_name": "o2"
+      }
+    },
+    "vertices": [
+      [
+        3415,
+        1000
+      ],
+      [
+        3600,
+        1000
+      ],
+      [
+        3600,
+        1400
+      ],
+      [
+        3800,
+        1400
+      ],
+      [
+        3800,
+        1000
+      ],
+      [
+        3985,
+        1000
+      ]
+    ],
+    "cross_section": "coplanar_waveguide_backside",
+    "layer": "MB_DRAW",
+    "width": 10,
+    "radius": 100,
+    "bend_type": "circular"
+  },
+  "wire_bottom_in_a": {
+    "type": "wire",
+    "name": "wire_bottom_in_a",
+    "x": 12,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "bottom_in_a",
+    "variant": "hv"
+  },
+  "wire_bottom_in_b": {
+    "type": "wire",
+    "name": "wire_bottom_in_b",
+    "x": 12,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "bottom_in_b",
+    "variant": "hv"
+  },
+  "wire_bottom_out_a": {
+    "type": "wire",
+    "name": "wire_bottom_out_a",
+    "x": 28,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "bottom_out_a",
+    "variant": "hv"
+  },
+  "wire_bottom_out_b": {
+    "type": "wire",
+    "name": "wire_bottom_out_b",
+    "x": 28,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "bottom_out_b",
+    "variant": "hv"
+  },
+  "wire_feed_in_a": {
+    "type": "wire",
+    "name": "wire_feed_in_a",
+    "x": 4,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "feed_in_a",
+    "variant": "hv"
+  },
+  "wire_feed_in_b": {
+    "type": "wire",
+    "name": "wire_feed_in_b",
+    "x": 4,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "feed_in_b",
+    "variant": "hv"
+  },
+  "wire_feed_out_a": {
+    "type": "wire",
+    "name": "wire_feed_out_a",
+    "x": 36,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "feed_out_a",
+    "variant": "hv"
+  },
+  "wire_feed_out_b": {
+    "type": "wire",
+    "name": "wire_feed_out_b",
+    "x": 36,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "feed_out_b",
+    "variant": "hv"
+  },
+  "wire_top_backside_a": {
+    "type": "wire",
+    "name": "wire_top_backside_a",
+    "x": 20,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "top_backside_a",
+    "variant": "hv"
+  },
+  "wire_top_backside_b": {
+    "type": "wire",
+    "name": "wire_top_backside_b",
+    "x": 20,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "top_backside_b",
+    "variant": "hv"
+  },
+  "wire_top_in_a": {
+    "type": "wire",
+    "name": "wire_top_in_a",
+    "x": 16,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "top_in_a",
+    "variant": "hv"
+  },
+  "wire_top_in_b": {
+    "type": "wire",
+    "name": "wire_top_in_b",
+    "x": 16,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "top_in_b",
+    "variant": "hv"
+  },
+  "wire_top_out_a": {
+    "type": "wire",
+    "name": "wire_top_out_a",
+    "x": 24,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "top_out_a",
+    "variant": "hv"
+  },
+  "wire_top_out_b": {
+    "type": "wire",
+    "name": "wire_top_out_b",
+    "x": 24,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "top_out_b",
+    "variant": "hv"
+  },
+  "wire_underpass_in_a": {
+    "type": "wire",
+    "name": "wire_underpass_in_a",
+    "x": 8,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "underpass_in_a",
+    "variant": "hv"
+  },
+  "wire_underpass_in_b": {
+    "type": "wire",
+    "name": "wire_underpass_in_b",
+    "x": 8,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "underpass_in_b",
+    "variant": "hv"
+  },
+  "wire_underpass_out_a": {
+    "type": "wire",
+    "name": "wire_underpass_out_a",
+    "x": 32,
+    "y": 3,
+    "rx": 2,
+    "ry": 0,
+    "net": "underpass_out_a",
+    "variant": "hv"
+  },
+  "wire_underpass_out_b": {
+    "type": "wire",
+    "name": "wire_underpass_out_b",
+    "x": 32,
+    "y": 17,
+    "rx": 2,
+    "ry": 0,
+    "net": "underpass_out_b",
+    "variant": "hv"
+  },
+  "wire_port_net_o1": {
+    "type": "wire",
+    "name": "wire_port_net_o1",
+    "x": 1,
+    "y": 3,
+    "rx": 1,
+    "ry": 0,
+    "net": "port_net_o1",
+    "variant": "hv"
+  },
+  "wire_port_net_o2": {
+    "type": "wire",
+    "name": "wire_port_net_o2",
+    "x": 40,
+    "y": 3,
+    "rx": 1,
+    "ry": 0,
+    "net": "port_net_o2",
+    "variant": "hv"
+  },
+  "wire_port_net_o3": {
+    "type": "wire",
+    "name": "wire_port_net_o3",
+    "x": 1,
+    "y": 17,
+    "rx": 1,
+    "ry": 0,
+    "net": "port_net_o3",
+    "variant": "hv"
+  },
+  "wire_port_net_o4": {
+    "type": "wire",
+    "name": "wire_port_net_o4",
+    "x": 40,
+    "y": 17,
+    "rx": 1,
+    "ry": 0,
+    "net": "port_net_o4",
+    "variant": "hv"
+  }
+}

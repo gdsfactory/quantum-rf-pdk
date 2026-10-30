@@ -121,12 +121,13 @@ and keep only your changes.
 What a foundry PDK usually changes in `qpdk/tech.py`:
 
 - **`LayerMapQPDK`**: the GDS layer numbers and any extra mask layers. Keep the non-fabrication layers (`SIM_AREA`,
-  `SIM_ONLY`, `LABEL_*`, `WG`, `ERROR_PATH`). Cells, routing, and simulation use them.
+  `SIM_ONLY`, `SUBSTRATE`, `SUBSTRATE_TOP`, `LABEL_*`, `WG`, `ERROR_PATH`). Cells, routing, simulation, and the 3D
+  preview use them.
 - **`get_layer_stack()`**: physical simulation thicknesses, `zmin`, and materials, for example Al instead of Nb. Keep
   the level names `M1`, `Substrate`, and `Vacuum`. The CPW models and `LAYER_STACK_NO_VACUUM` look them up by name.
 - **`get_layer_stack_3d()`**: the PDK's default mask preview. It copies the physical stack, adds ground across the
-  layout bounds and includes the gatemon contact, hBN, gate and reconnection films, plus the drawn `M2`, `MB`, `MB2` and
-  `TSV2` shapes of the other chip faces.
+  layout bounds and includes the gatemon contact, hBN, gate and reconnection films, plus the `M2`, `MB`, `MB2` and
+  `TSV2` faces of the other chips, bounded by the `SUBSTRATE` and `SUBSTRATE_TOP` die footprints.
 - **`get_gatemon_layer_stack()`**: the separate hybrid process with thermal oxide, Nb/Au contacts, hBN and an Al top
   gate. Set the hBN thickness from your measured flake. `CNT` records a transferred nanotube's position and is not a
   metal mask or a PEC extrusion. `CNT_CONTACT`, `TOP_GATE` and `JJ_PATCH` define the conductors, and `HBN` records the
@@ -141,6 +142,12 @@ layout bounds without requiring `SIM_AREA`. Drawn metal renders directly, while 
 masks so the two metal regions stay disjoint and additive metal takes priority. The preview combines the base Nb process
 with nominal gatemon films for visibility, rather than defining a fabrication process. `SIM_AREA` is hidden in the layer
 views so vacuum does not obscure the device.
+
+The other chip faces render only inside the die footprints. Draw `SUBSTRATE_TOP` over the flip-chip top chip to get its
+substrate and its `M2` and `MB2` ground planes, and `SUBSTRATE` over the bottom chip to get its `MB` backside ground.
+`chip_edge(footprint_layer=...)` draws either one. Without a footprint, those faces show only their drawn metal, so
+single-chip layouts are unaffected. The bottom substrate follows the layout bounds, like the `M1` ground. Both
+substrates set `info["opacity"]` so viewers that support it keep the TSVs visible through the silicon.
 
 The preview assumes a blanket Nb ground plane even when the component has no M1 etch mask. This can cover lower films
 such as an NbTiN nanowire or a junction, and fills the gaps of additive-only capacitors. The current renderer cannot

@@ -184,8 +184,12 @@ def test_tsv_transition_previews_both_faces(chip: Chip) -> None:
     names = {
         level.name
         for level in LAYER_STACK_3D.layers.values()
-        if isinstance(level.layer, LogicalLayer)
-        and level.layer.layer in {layers.front_draw, layers.back_draw, layers.tsv}
+        if (
+            level.layer.layer
+            if isinstance(level.layer, LogicalLayer)
+            else level.derived_layer and level.derived_layer.layer
+        )
+        in {layers.front_draw, layers.back_draw, layers.tsv}
     }
     assert len(names) == 3
     for name in names:
@@ -203,3 +207,40 @@ def test_flip_chip_backside_stack_renders_backside_ground() -> None:
     scene = component.to_3d(layer_stack=LAYER_STACK_FLIP_CHIP_BACKSIDE_NO_VACUUM)
     for name in ("MB", "MB2", "TSV", "TSV2", "M1_ground", "M2_ground"):
         assert any(key.rsplit("_", 1)[0] == name for key in scene.geometry), name
+
+
+def test_die_footprints_bound_the_other_chip_faces() -> None:
+    """``SUBSTRATE_TOP`` and ``SUBSTRATE`` place each chip's substrate and ground planes."""
+    component = gf.Component()
+    component << cells.chip_edge(
+        size=(1000, 1000), width=20, footprint_layer="SUBSTRATE"
+    )
+    top = component << cells.chip_edge(
+        size=(400, 400), width=20, layer="M2_ETCH", footprint_layer="SUBSTRATE_TOP"
+    )
+    top.move((300, 300))
+    scene = component.to_3d()
+    for name in ("Substrate", "Substrate_top", "M2_ground", "MB", "MB2"):
+        meshes = [
+            mesh
+            for key, mesh in scene.geometry.items()
+            if key.rsplit("_", 1)[0] == name
+        ]
+        assert meshes, name
+        (xmin, ymin, _), (xmax, ymax, _) = trimesh.util.concatenate(meshes).bounds
+        expected = (
+            (0, 0, 1000, 1000) if name in {"Substrate", "MB"} else (300, 300, 700, 700)
+        )
+        if name == "M2_ground":  # inside the etched chip-edge frame
+            expected = (320, 320, 680, 680)
+        assert (xmin, ymin, xmax, ymax) == pytest.approx(expected), name
+    for name in ("Substrate", "Substrate_top"):
+        assert LAYER_STACK_3D.layers[name].info["opacity"] == pytest.approx(0.3)
+
+
+def test_preview_omits_other_chip_ground_without_footprints() -> None:
+    """Without die footprints, only drawn metal renders on the other chip faces."""
+    scene = cells.tsv_transition(chip="top").to_3d()
+    names = {key.rsplit("_", 1)[0] for key in scene.geometry}
+    assert "Substrate_top" not in names
+    assert "M2_ground" not in names

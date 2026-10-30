@@ -1,4 +1,4 @@
-"""Keep the gatemon's schematic pins and physical routes consistent."""
+"""Keep sample schematic pins and physical routes consistent."""
 
 import json
 import math
@@ -11,7 +11,9 @@ import pytest
 import yaml
 from kfactory.schematic import DSchematic
 
-SAMPLE = Path(__file__).parents[1] / "qpdk/samples/gatemon_test_chip"
+SAMPLE_DIR = Path(__file__).parents[1] / "qpdk/samples"
+# Sample stem -> number of distinct nets wired in the Mosaic view.
+SAMPLES = {"gatemon_test_chip": 22, "tsv_flip_chip_test_chip": 22}
 
 
 def _pin(device: dict, name: str) -> tuple[float, float]:
@@ -38,8 +40,9 @@ def _pin(device: dict, name: str) -> tuple[float, float]:
     )
 
 
-def test_mosaic_wires_reach_all_declared_pins() -> None:
-    document = json.loads(SAMPLE.with_suffix(".gsch").read_text())
+@pytest.mark.parametrize("stem", SAMPLES)
+def test_mosaic_wires_reach_all_declared_pins(stem: str) -> None:
+    document = json.loads((SAMPLE_DIR / f"{stem}.gsch").read_text())
     pins = defaultdict(set)
     graph = defaultdict(lambda: defaultdict(set))
     for entry in document.values():
@@ -54,7 +57,7 @@ def test_mosaic_wires_reach_all_declared_pins() -> None:
             assert start[0] == finish[0] or start[1] == finish[1]
             graph[entry["net"]][start].add(finish)
             graph[entry["net"]][finish].add(start)
-    assert len(pins) == 22
+    assert len(pins) == SAMPLES[stem]
     for net, endpoints in pins.items():
         assert len(endpoints) == 2, net
         visited = set()
@@ -67,10 +70,11 @@ def test_mosaic_wires_reach_all_declared_pins() -> None:
         assert endpoints <= visited, net
 
 
-def test_livewire_routes_and_ports_match_layout() -> None:
-    document = json.loads(SAMPLE.with_suffix(".gsch").read_text())
-    netlist = yaml.safe_load(SAMPLE.with_suffix(".pic.yml").read_text())
-    layout = gf.get_component("gatemon_test_chip")
+@pytest.mark.parametrize("stem", SAMPLES)
+def test_livewire_routes_and_ports_match_layout(stem: str) -> None:
+    document = json.loads((SAMPLE_DIR / f"{stem}.gsch").read_text())
+    netlist = yaml.safe_load((SAMPLE_DIR / f"{stem}.pic.yml").read_text())
+    layout = gf.get_component(stem)
     for name, spec in netlist["instances"].items():
         cell = gf.get_component(spec["component"], **spec["settings"])
         bbox = cell.dbbox()
