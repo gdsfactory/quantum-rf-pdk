@@ -9,8 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
-- Added `bump_transition` (M1 to M2 CPW transition through indium bumps) and `indium_bump_array` cells, schematic
-  symbols for both TSV and bump transitions, and a TSV flip-chip test-chip sample with both GDSFactory+ schematic views.
+- Added `bump_transition` (M1 to M2 CPW transition through a single indium bump, after the published indium transitions)
+  and `indium_bump_array` cells, schematic symbols for both TSV and bump transitions, and a TSV flip-chip test-chip
+  sample with both GDSFactory+ schematic views.
 - Added the `SUBSTRATE` and `SUBSTRATE_TOP` die-footprint layers and `chip_edge(footprint_layer=...)`. The 3D preview
   draws the top chip's substrate and the `M2`, `MB` and `MB2` ground planes inside them, with translucent substrates.
 

@@ -93,54 +93,55 @@ def indium_bump_array(
 def bump_transition(
     cross_section: CrossSectionSpec = "cpw",
     cross_section_top: CrossSectionSpec = "cpw_top",
-    taper_length: float = 100.0,
-    taper_length_top: float = 100.0,
-    pad_width: float = 40.0,
-    pad_gap: float = 24.0,
+    taper_length: float = 10.0,
+    taper_length_top: float = 10.0,
+    pad_width: float = 30.0,
+    pad_gap: float = 6.0,
     pad_length: float = 30.0,
     bump_diameter: float = 15.0,
-    n_signal_bumps: int = 2,
-    signal_bump_pitch: float = 20.0,
-    n_ground_bumps_per_side: int = 4,
+    n_ground_bumps_per_side: int = 0,
     ground_bump_pitch: float = 30.0,
     ground_bump_distance: float = 15.0,
 ) -> Component:
-    r"""CPW transition between the two chips of a flip-chip stack through indium bumps.
+    r"""CPW transition between the two chips of a flip-chip stack through one indium bump.
 
-    A bottom-chip CPW (``o1``, on ``M1``) tapers into a pad, the signal crosses
-    the flip-chip gap through ``n_signal_bumps`` parallel indium bumps, and a
-    top-chip CPW (``o2``, on ``M2``) tapers out of an identical pad in the
-    opposite direction. ``2 * n_ground_bumps_per_side`` bumps tie the ground
-    planes of the two chips together around the pad. This is the flip-chip
-    counterpart of :func:`~qpdk.cells.tsv.tsv_transition_double_sided`, with
-    bumps in place of vias, see
-    :cite:`rosenberg3DIntegratedSuperconducting2017`.
+    Follows the indium transition of :cite:`richardAccurateGapControl2026`
+    (Fig. A5b) and the bump-interrupted resonators of
+    :cite:`rosenberg3DIntegratedSuperconducting2017` (Fig. 4b): the CPW is
+    routed from one chip to the other with the centre conductor kept
+    galvanically continuous through a *single* indium bump. The bottom-chip CPW
+    (``o1``, on ``M1``) widens over a short jog into a closed pad, and the
+    top-chip CPW (``o2``, on ``M2``) leaves an identical pad in the opposite
+    direction. The defaults use a 15 µm bump on 30 µm square pads, the landing
+    pad size :cite:`foxenQubitCompatibleSuperconducting2017` found sufficient
+    for 15 µm indium pillars at ±2 µm bonder alignment.
+
+    In those works the ground planes are tied together by a field of bumps
+    across the whole chip rather than by bumps dedicated to each transition, so
+    place an :func:`indium_bump_array` alongside. ``n_ground_bumps_per_side``
+    optionally adds ground bumps next to the pads.
 
     Both chips are drawn in the same (bottom-chip, top-down) coordinate frame,
-    so the pads overlap and the bumps land on both.
+    so the pads overlap and the bump lands on both.
 
     .. svgbob::
 
-         bottom (M1)              top (M2)
-               ______________________
-        o1 ── /      (o)            \ ── o2
-              \      (o)            /
-               ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-              (o)  (o)  (o)  (o)    <- ground bumps
+         bottom (M1)      top (M2)
+                 _________
+        o1 ─────/   (o)   \───── o2
+                \_________/
 
     Args:
         cross_section: Bottom-chip CPW cross-section at ``o1``.
         cross_section_top: Top-chip CPW cross-section at ``o2``.
-        taper_length: Length of the bottom-chip taper in µm.
-        taper_length_top: Length of the top-chip taper in µm.
+        taper_length: Length of the bottom-chip jog from the CPW into the pad in µm.
+        taper_length_top: Length of the top-chip jog from the pad into the CPW in µm.
         pad_width: Centre-conductor width of both pads in µm.
         pad_gap: Gap between the pads and ground in µm.
         pad_length: Length of the pads along the propagation direction in µm.
         bump_diameter: Indium bump diameter in µm.
-        n_signal_bumps: Number of parallel signal bumps in the pad.
-        signal_bump_pitch: Centre-to-centre pitch of the signal bumps (along y)
-            in µm.
-        n_ground_bumps_per_side: Number of ground bumps on each side of the pads.
+        n_ground_bumps_per_side: Number of optional ground bumps on each side of
+            the pads.
         ground_bump_pitch: Centre-to-centre pitch of the ground bumps (along x)
             in µm.
         ground_bump_distance: Distance from the ground-plane edge to the ground
@@ -150,17 +151,16 @@ def bump_transition(
         Component with the bottom-chip port ``o1`` and the top-chip port ``o2``.
 
     Raises:
-        ValueError: If the signal bumps do not fit in the pad, or the ground
-            bumps reach into the CPW gap.
+        ValueError: If the bump does not fit in the pad, or the ground bumps
+            reach into the CPW gap.
     """
-    signal_span = (n_signal_bumps - 1) * signal_bump_pitch + bump_diameter
-    if signal_span > pad_width or bump_diameter > pad_length:
+    if bump_diameter > min(pad_width, pad_length):
         msg = (
-            f"{n_signal_bumps} signal bump(s) of {bump_diameter} µm at pitch "
-            f"{signal_bump_pitch} µm do not fit in a {pad_length}x{pad_width} µm pad."
+            f"A {bump_diameter} µm bump does not fit in a "
+            f"{pad_length}x{pad_width} µm pad."
         )
         raise ValueError(msg)
-    if ground_bump_distance < bump_diameter / 2:
+    if n_ground_bumps_per_side and ground_bump_distance < bump_diameter / 2:
         msg = (
             f"ground_bump_distance={ground_bump_distance} µm puts the ground bumps "
             "into the CPW gap."
@@ -182,8 +182,7 @@ def bump_transition(
     )
 
     bump = indium_bump(diameter=bump_diameter)
-    for y in (np.arange(n_signal_bumps) - (n_signal_bumps - 1) / 2) * signal_bump_pitch:
-        (c << bump).move((0, float(y)))
+    c << bump
     y_ground = pad_width / 2 + pad_gap + ground_bump_distance
     xs = (
         np.arange(n_ground_bumps_per_side) - (n_ground_bumps_per_side - 1) / 2

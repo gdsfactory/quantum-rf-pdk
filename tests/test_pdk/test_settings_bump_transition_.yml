@@ -1,9 +1,9 @@
 info: {}
-name: bump_transition_CScpw_CSTcpw_top_TL100_TLT100_PW40_PG24_c86da9b1
+name: bump_transition_CScpw_CSTcpw_top_TL10_TLT10_PW30_PG6_PL_46a3cdbe
 ports:
   o1:
     center:
-    - -115
+    - -25
     - 0
     layer: M1_DRAW
     name: o1
@@ -12,7 +12,7 @@ ports:
     width: 10
   o2:
     center:
-    - 115
+    - 25
     - 0
     layer: M2_DRAW
     name: o2
@@ -25,11 +25,9 @@ settings:
   cross_section_top: cpw_top
   ground_bump_distance: 15
   ground_bump_pitch: 30
-  n_ground_bumps_per_side: 4
-  n_signal_bumps: 2
-  pad_gap: 24
+  n_ground_bumps_per_side: 0
+  pad_gap: 6
   pad_length: 30
-  pad_width: 40
-  signal_bump_pitch: 20
-  taper_length: 100
-  taper_length_top: 100
+  pad_width: 30
+  taper_length: 10
+  taper_length_top: 10

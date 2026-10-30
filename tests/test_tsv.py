@@ -161,3 +161,13 @@ def test_taper_accepts_array_npoints() -> None:
     expected = models["taper_cross_section"](**kwargs, npoints=7)
     actual = models["taper_cross_section"](**kwargs, npoints=jnp.asarray(7.0))
     np.testing.assert_allclose(actual["o1", "o2"], expected["o1", "o2"])
+
+
+def test_bump_transition_has_single_signal_bump() -> None:
+    """One indium bump joins the two pads, as in the published indium transition."""
+    c = bump_transition()
+    bumps = _region(c, qpdk.tech.LAYER.IND)
+    assert bumps.count() == 1
+    for pad_layer in ("M1_DRAW", "M2_DRAW"):
+        pad = _region(c, getattr(qpdk.tech.LAYER, pad_layer))
+        assert (bumps - pad).is_empty(), f"bump overhangs the {pad_layer} pad"

@@ -827,29 +827,29 @@ def bump_transition(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     cross_section: CrossSectionSpec = "cpw",
     cross_section_top: CrossSectionSpec = "cpw_top",
-    taper_length: sax.Float = 100.0,
-    taper_length_top: sax.Float = 100.0,
-    pad_width: sax.Float = 40.0,
-    pad_gap: sax.Float = 24.0,
+    taper_length: sax.Float = 10.0,
+    taper_length_top: sax.Float = 10.0,
+    pad_width: sax.Float = 30.0,
+    pad_gap: sax.Float = 6.0,
     pad_length: sax.Float = 30.0,
     bump_height: float = 10.0,
 ) -> sax.SDict:
-    """S-parameter model for a CPW transition through indium bumps.
+    """S-parameter model for a CPW transition through a single indium bump.
 
-    Port ``o1`` is on the bottom chip and ``o2`` on the flip-chip top chip. The
-    bump array is the :func:`~indium_bump` model, so this inherits its
-    approximations.
+    Port ``o1`` is on the bottom chip and ``o2`` on the flip-chip top chip, see
+    :func:`~qpdk.cells.bump.bump_transition` for the geometry. The bump is the
+    :func:`~indium_bump` model, so this inherits its approximations.
 
     Args:
         f: Array of frequency points in Hz
         cross_section: Bottom-chip CPW.
         cross_section_top: Top-chip CPW.
-        taper_length: Length of the bottom-chip taper in µm.
-        taper_length_top: Length of the top-chip taper in µm.
+        taper_length: Length of the bottom-chip jog into the pad in µm.
+        taper_length_top: Length of the top-chip jog out of the pad in µm.
         pad_width: Signal width of the pads in µm.
         pad_gap: Gap of the pads in µm.
         pad_length: Length of each pad in µm.
-        bump_height: Height of the bumps in µm, passed to :func:`~indium_bump`.
+        bump_height: Height of the bump in µm, passed to :func:`~indium_bump`.
 
     Returns:
         sax.SDict: S-parameters dictionary

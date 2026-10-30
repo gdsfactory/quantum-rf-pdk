@@ -9,10 +9,10 @@
     },
     "x": 14,
     "y": 2,
-    "bbox_width": 230,
-    "bbox_height": 133,
-    "bbox_xmin": -115,
-    "bbox_ymin": -66.5,
+    "bbox_width": 50,
+    "bbox_height": 42,
+    "bbox_xmin": -25,
+    "bbox_ymin": -21,
     "irl_x": -2750,
     "irl_y": -1000,
     "irl_orientation": 0,
@@ -20,7 +20,7 @@
     "ports": [
       {
         "name": "o1",
-        "irl_rx": -115,
+        "irl_rx": -25,
         "irl_ry": 0,
         "orientation": 180,
         "bendRadii": [
@@ -37,7 +37,7 @@
       },
       {
         "name": "o2",
-        "irl_rx": 115,
+        "irl_rx": 25,
         "irl_ry": 0,
         "orientation": 0,
         "bendRadii": [
@@ -74,10 +74,10 @@
     },
     "x": 14,
     "y": 16,
-    "bbox_width": 230,
-    "bbox_height": 133,
-    "bbox_xmin": -115,
-    "bbox_ymin": -66.5,
+    "bbox_width": 50,
+    "bbox_height": 42,
+    "bbox_xmin": -25,
+    "bbox_ymin": -21,
     "irl_x": -2750,
     "irl_y": 1000,
     "irl_orientation": 0,
@@ -85,7 +85,7 @@
     "ports": [
       {
         "name": "o1",
-        "irl_rx": -115,
+        "irl_rx": -25,
         "irl_ry": 0,
         "orientation": 180,
         "bendRadii": [
@@ -102,7 +102,7 @@
       },
       {
         "name": "o2",
-        "irl_rx": 115,
+        "irl_rx": 25,
         "irl_ry": 0,
         "orientation": 0,
         "bendRadii": [
@@ -140,10 +140,10 @@
     "orientation": 180,
     "x": 26,
     "y": 2,
-    "bbox_width": 230,
-    "bbox_height": 133,
-    "bbox_xmin": -115,
-    "bbox_ymin": -66.5,
+    "bbox_width": 50,
+    "bbox_height": 42,
+    "bbox_xmin": -25,
+    "bbox_ymin": -21,
     "irl_x": 2750,
     "irl_y": -1000,
     "irl_orientation": 180,
@@ -151,7 +151,7 @@
     "ports": [
       {
         "name": "o1",
-        "irl_rx": -115,
+        "irl_rx": -25,
         "irl_ry": 0,
         "orientation": 180,
         "bendRadii": [
@@ -168,7 +168,7 @@
       },
       {
         "name": "o2",
-        "irl_rx": 115,
+        "irl_rx": 25,
         "irl_ry": 0,
         "orientation": 0,
         "bendRadii": [
@@ -206,10 +206,10 @@
     "orientation": 180,
     "x": 26,
     "y": 16,
-    "bbox_width": 230,
-    "bbox_height": 133,
-    "bbox_xmin": -115,
-    "bbox_ymin": -66.5,
+    "bbox_width": 50,
+    "bbox_height": 42,
+    "bbox_xmin": -25,
+    "bbox_ymin": -21,
     "irl_x": 2750,
     "irl_y": 1000,
     "irl_orientation": 180,
@@ -217,7 +217,7 @@
     "ports": [
       {
         "name": "o1",
-        "irl_rx": -115,
+        "irl_rx": -25,
         "irl_ry": 0,
         "orientation": 180,
         "bendRadii": [
@@ -234,7 +234,7 @@
       },
       {
         "name": "o2",
-        "irl_rx": 115,
+        "irl_rx": 25,
         "irl_ry": 0,
         "orientation": 0,
         "bendRadii": [
@@ -1640,7 +1640,7 @@
         -1000
       ],
       [
-        -2865,
+        -2775,
         -1000
       ]
     ],
@@ -1671,7 +1671,7 @@
         1000
       ],
       [
-        -2865,
+        -2775,
         1000
       ]
     ],
@@ -1698,7 +1698,7 @@
     },
     "vertices": [
       [
-        2865,
+        2775,
         -1000
       ],
       [
@@ -1729,7 +1729,7 @@
     },
     "vertices": [
       [
-        2865,
+        2775,
         1000
       ],
       [
@@ -2106,7 +2106,7 @@
     },
     "vertices": [
       [
-        -2635,
+        -2725,
         -1000
       ],
       [
@@ -2137,7 +2137,7 @@
     },
     "vertices": [
       [
-        -2635,
+        -2725,
         1000
       ],
       [
@@ -2172,7 +2172,7 @@
         -1000
       ],
       [
-        2635,
+        2725,
         -1000
       ]
     ],
@@ -2203,7 +2203,7 @@
         1000
       ],
       [
-        2635,
+        2725,
         1000
       ]
     ],
