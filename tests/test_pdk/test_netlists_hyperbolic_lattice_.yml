@@ -1,0 +1,2445 @@
+instances:
+  c0:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 120
+  c1:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -68.571
+  c10:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -55.06
+  c11:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -8.571
+  c12:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 157.917
+  c13:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -42.857
+  c14:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -3.631
+  c15:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 42.857
+  c16:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -111.429
+  c17:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 47.797
+  c18:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 94.286
+  c19:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -30.655
+  c2:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -17.143
+  c20:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -20.774
+  c21:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 145.714
+  c22:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 20.774
+  c23:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 60
+  c24:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 77.143
+  c25:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 72.203
+  c26:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 111.429
+  c27:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 150.655
+  c28:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 123.631
+  c29:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 162.857
+  c3:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 34.286
+  c30:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -157.917
+  c31:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -111.429
+  c32:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 175.06
+  c33:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -145.714
+  c34:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -106.488
+  c4:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 85.714
+  c5:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 137.143
+  c6:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -171.429
+  c7:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: 60
+  c8:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -133.512
+  c9:
+    component: hyperbolic_vertex_coupler
+    info:
+      q: 3
+    settings:
+      cross_section: cpw
+      ground_gap: 6
+      lead_length: 20
+      pin_gap: 4
+      pin_radius: 40
+      q: 3
+      rotation: -94.286
+  feed1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 1300
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -200
+        - 0
+      - - -1100
+        - 0
+      - - -1300
+        - 0
+      radius: 100
+      shorted: false
+  feed2:
+    component: hyperbolic_cpw_path
+    info:
+      length: 1297.457
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 194.464
+        - -46.73
+      - - 1072.321
+        - -233.651
+      - - 1272.321
+        - -233.651
+      radius: 100
+      shorted: false
+  launcher1:
+    component: launcher
+    info: {}
+    settings:
+      cross_section_big: launcher_cross_section_big
+      cross_section_small: cpw
+      straight_length: 200
+      taper_length: 100
+  launcher2:
+    component: launcher
+    info: {}
+    settings:
+      cross_section_big: launcher_cross_section_big
+      cross_section_small: cpw
+      straight_length: 200
+      taper_length: 100
+  r0:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -627.476
+      - 1302.966
+      end_angle: 471.428
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 30
+        - -51.962
+      - - -1774.456
+        - -51.962
+      - - -649.396
+        - 1358.818
+      - - 912.087
+        - 1241.809
+      start_angle: 120
+  r1:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -1409.925
+      - 321.806
+      end_angle: 522.857
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 59.33
+        - -8.943
+      - - -1065.73
+        - -1419.723
+      - - -1467.259
+        - 339.491
+      - - -402.209
+        - 1487.354
+      start_angle: 171.428
+  r10:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -977.341
+      - 30.98
+      end_angle: 531.428
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 59.777
+        - 5.167
+      - - -341.738
+        - -1163.706
+      - - -1036.671
+        - 39.923
+      - - -465.996
+        - 730.794
+      start_angle: 184.94
+  r11:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 791.732
+      - 992.8
+      end_angle: 411.429
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -37.409
+        - -46.91
+      - - 1524.074
+        - -163.919
+      - - 829.141
+        - 1039.71
+      - - -498.948
+        - 1449.387
+      start_angle: 51.429
+  r12:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 1269.838
+      - 0
+      end_angle: 360
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -60
+        - 0
+      - - 822.087
+        - 1293.771
+      - - 1329.838
+        - 0
+      - - 822.087
+        - -1293.771
+      start_angle: 0
+  r13:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -687.599
+      - 437.546
+      end_angle: 497.143
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 55.598
+        - -22.557
+      - - -994.624
+        - -674.104
+      - - -731.582
+        - 478.356
+      - - 20.689
+        - 791.563
+      start_angle: 157.917
+  r14:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -809.349
+      - -95.877
+      end_angle: 536.369
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 57.334
+        - 17.685
+      - - -205.708
+        - -1134.775
+      - - -869.229
+        - -92.077
+      - - -484.543
+        - 626.273
+      start_angle: 197.143
+  r15:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -633.583
+      - -744.801
+      end_angle: 222.857
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 33.231
+        - 49.957
+      - - 696.752
+        - -992.741
+      - - -677.566
+        - -785.611
+      - - -861.901
+        - 91.311
+      start_angle: 236.368
+  r16:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -282.566
+      - 1238.001
+      end_angle: 462.857
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 13.351
+        - -58.496
+      - - 1078.401
+        - 1089.367
+      - - -295.917
+        - 1296.497
+      - - -1444.265
+        - 513.584
+      start_angle: 102.857
+  r17:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -247.683
+      - 945.944
+      end_angle: 457.917
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 21.92
+        - -55.852
+      - - -1306.169
+        - 353.825
+      - - -255.947
+        - 1005.372
+      - - 568.482
+        - 654.248
+      start_angle: 111.428
+  r18:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -429.662
+      - -692.554
+      end_angle: 227.797
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 21.92
+        - 55.852
+      - - 758.946
+        - -868.35
+      - - -469.967
+        - -737
+      - - -791.748
+        - 11.644
+      start_angle: 248.572
+  r19:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 187.275
+      - -959.731
+      end_angle: 274.286
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -18.339
+        - 57.129
+      - - 1210.574
+        - -74.221
+      - - 191.759
+        - -1019.563
+      - - -608.777
+        - -616.929
+      start_angle: 287.797
+  r2:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -1130.672
+      - -901.681
+      end_angle: 214.286
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 43.983
+        - 40.81
+      - - 445.512
+        - -1718.404
+      - - -1180.246
+        - -935.48
+      - - -1413.633
+        - 612.89
+      start_angle: 222.857
+  r20:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -1144.086
+      - 550.962
+      end_angle: 514.286
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 54.058
+        - -26.033
+      - - -179.329
+        - 1522.337
+      - - -1198.144
+        - 576.995
+      - - -1302.022
+        - -808.957
+      start_angle: 154.286
+  r21:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -893.997
+      - 396.14
+      end_angle: 509.345
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 57.334
+        - -17.685
+      - - -1091.014
+        - -800.598
+      - - -945.612
+        - 426.732
+      - - -157.069
+        - 852.375
+      start_angle: 162.857
+  r22:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 770.797
+      - 264.781
+      end_angle: 389.345
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -59.33
+        - -8.943
+      - - 677.696
+        - -933.145
+      - - 823.098
+        - 294.185
+      - - 164.828
+        - 774.488
+      start_angle: 8.572
+  r23:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 867.113
+      - -451.964
+      end_angle: 325.714
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -56.099
+        - 21.281
+      - - 812.809
+        - 900.189
+      - - 916.687
+        - -485.763
+      - - 102.77
+        - -860.611
+      start_angle: 339.226
+  r24:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -1144.086
+      - -550.962
+      end_angle: 205.714
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 54.058
+        - 26.033
+      - - -1302.022
+        - 808.957
+      - - -1198.144
+        - -576.995
+      - - -179.329
+        - -1522.337
+      start_angle: 205.714
+  r25:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -867.113
+      - -451.964
+      end_angle: 200.774
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 49.574
+        - 33.799
+      - - -54.304
+        - -1352.153
+      - - -923.212
+        - -473.245
+      - - -764.343
+        - 408.647
+      start_angle: 214.286
+  r26:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -273.57
+      - -767.722
+      end_angle: 240
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 9.62
+        - 59.224
+      - - 878.528
+        - -819.684
+      - - -303.57
+        - -819.684
+      - - -776.321
+        - -155.969
+      start_angle: 260.774
+  r27:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -273.57
+      - 767.722
+      end_angle: 480
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 9.62
+        - -59.224
+      - - 878.528
+        - 819.684
+      - - -303.57
+        - 819.684
+      - - -776.321
+        - 155.969
+      start_angle: 99.226
+  r28:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -282.566
+      - -1238.001
+      end_angle: 257.143
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 13.351
+        - 58.496
+      - - -1444.265
+        - -513.584
+      - - -295.917
+        - -1296.497
+      - - 1078.401
+        - -1089.367
+      start_angle: 257.143
+  r29:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -187.275
+      - -959.731
+      end_angle: 252.203
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 4.484
+        - 59.832
+      - - 1023.299
+        - -885.51
+      - - -205.614
+        - -1016.86
+      - - -796.052
+        - -342.802
+      start_angle: 265.714
+  r3:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 0
+      - -1446.184
+      end_angle: 265.714
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -4.484
+        - 59.832
+      - - 1621.274
+        - -723.092
+      - - -4.484
+        - -1506.016
+      - - -1360.564
+        - -723.092
+      start_angle: 274.286
+  r30:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 429.662
+      - -692.554
+      end_angle: 291.428
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -40.305
+        - 44.446
+      - - 1188.608
+        - 175.796
+      - - 451.582
+        - -748.406
+      - - -362.086
+        - -704.198
+      start_angle: 312.203
+  r31:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 770.797
+      - -264.781
+      end_angle: 330.655
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -59.33
+        - 8.943
+      - - 677.696
+        - 933.145
+      - - 823.098
+        - -294.185
+      - - 164.828
+        - -774.488
+      start_angle: 351.428
+  r32:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -893.997
+      - -396.14
+      end_angle: 210.655
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 57.334
+        - 17.685
+      - - -1091.014
+        - 800.598
+      - - -945.612
+        - -426.732
+      - - -157.069
+        - -852.375
+      start_angle: 197.143
+  r33:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 633.583
+      - -744.801
+      end_angle: 303.632
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -43.983
+        - 40.81
+      - - 1330.335
+        - 247.94
+      - - 666.814
+        - -794.758
+      - - -228.318
+        - -836.112
+      start_angle: 317.143
+  r34:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 809.349
+      - -95.877
+      end_angle: 342.857
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -59.88
+        - -3.8
+      - - 603.641
+        - 1038.898
+      - - 866.683
+        - -113.562
+      - - 324.806
+        - -722.15
+      start_angle: 3.631
+  r35:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 687.599
+      - 437.546
+      end_angle: 382.083
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -43.983
+        - -40.81
+      - - -307.025
+        - 1111.65
+      - - 743.197
+        - 460.103
+      - - 708.288
+        - -354.017
+      start_angle: 42.857
+  r36:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 247.683
+      - 945.944
+      end_angle: 428.572
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -8.264
+        - -59.428
+      - - -1058.486
+        - 592.119
+      - - 269.603
+        - 1001.796
+      - - 816.165
+        - 291.696
+      start_angle: 82.083
+  r37:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 791.732
+      - -992.8
+      end_angle: 308.571
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -37.409
+        - 46.91
+      - - -498.948
+        - -1449.387
+      - - 829.141
+        - -1039.71
+      - - 1524.074
+        - 163.919
+      start_angle: 308.571
+  r38:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 977.341
+      - 30.98
+      end_angle: 355.06
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -59.33
+        - -8.943
+      - - 635.603
+        - 1194.686
+      - - 1037.118
+        - 25.813
+      - - 511.345
+        - -699.814
+      start_angle: 8.572
+  r39:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 579.581
+      - 572.996
+      end_angle: 394.286
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -34.363
+        - -49.185
+      - - -435.878
+        - 1119.688
+      - - 629.155
+        - 606.795
+      - - 767.113
+        - -196.31
+      start_angle: 55.06
+  r4:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 1130.672
+      - -901.681
+      end_angle: 317.143
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -49.574
+        - 33.799
+      - - 1576.184
+        - 816.723
+      - - 1174.655
+        - -942.491
+      - - -282.961
+        - -1514.571
+      start_angle: 325.714
+  r40:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 86.625
+      - 810.391
+      end_angle: 433.512
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 4.484
+        - -59.832
+      - - -1060.549
+        - 453.061
+      - - 103.654
+        - 867.924
+      - - 718.393
+        - 333.035
+      start_angle: 94.286
+  r41:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 585.142
+      - -783.432
+      end_angle: 313.512
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -30
+        - 51.962
+      - - -537.751
+        - -1241.809
+      - - 626.452
+        - -826.946
+      - - 865.955
+        - 36.542
+      start_angle: 300
+  r5:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 1409.925
+      - 321.806
+      end_angle: 368.572
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -57.334
+        - -17.685
+      - - 344.195
+        - 1741.529
+      - - 1469.255
+        - 330.749
+      - - 1007.716
+        - -1165.548
+      start_angle: 17.143
+  r6:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -627.476
+      - -1302.966
+      end_angle: 248.572
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 30
+        - 51.962
+      - - -1774.456
+        - 51.962
+      - - -649.396
+        - -1358.818
+      - - 912.087
+        - -1241.809
+      start_angle: 240
+  r7:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - 585.142
+      - 783.432
+      end_angle: 406.488
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - -30
+        - -51.962
+      - - -537.751
+        - 1241.809
+      - - 626.452
+        - 826.946
+      - - 865.955
+        - -36.542
+      start_angle: 60
+  r8:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -86.625
+      - 810.391
+      end_angle: 445.714
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 17.029
+        - -57.533
+      - - -1147.174
+        - 357.33
+      - - -82.141
+        - 870.223
+      - - 631.768
+        - 477.356
+      start_angle: 106.488
+  r9:
+    component: hyperbolic_edge_resonator
+    info:
+      length: 7460
+    settings:
+      bend_radius: 30
+      cross_section: cpw
+      end:
+      - -579.581
+      - 572.996
+      end_angle: 484.94
+      end_straight: 70
+      length: 7460
+      margin: 25
+      region:
+      - - 49.574
+        - -33.799
+      - - -1015.459
+        - -546.692
+      - - -613.944
+        - 622.181
+      - - 187.532
+        - 769.306
+      start_angle: 145.714
+  stub10_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 160.955
+        - 344.229
+      radius: 100
+      shorted: true
+  stub12_2:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 299.783
+        - 233.517
+      radius: 100
+      shorted: true
+  stub13_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 84.556
+        - 370.473
+      radius: 100
+      shorted: true
+  stub14_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -168.777
+        - 340.462
+      radius: 100
+      shorted: true
+  stub16_2:
+    component: hyperbolic_cpw_path
+    info:
+      length: 379.999
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -236.924
+        - 297.097
+      radius: 100
+      shorted: true
+  stub17_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -371.414
+        - 80.32
+      radius: 100
+      shorted: true
+  stub19_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 4.338
+        - 379.975
+      radius: 100
+      shorted: true
+  stub20_2:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -294.368
+        - -240.307
+      radius: 100
+      shorted: true
+  stub22_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -294.368
+        - 240.307
+      radius: 100
+      shorted: true
+  stub25_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -371.414
+        - -80.32
+      radius: 100
+      shorted: true
+  stub26_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 379.999
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -236.924
+        - -297.097
+      radius: 100
+      shorted: true
+  stub27_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 4.338
+        - -379.975
+      radius: 100
+      shorted: true
+  stub28_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - -168.777
+        - -340.462
+      radius: 100
+      shorted: true
+  stub29_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 84.556
+        - -370.473
+      radius: 100
+      shorted: true
+  stub30_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 299.783
+        - -233.517
+      radius: 100
+      shorted: true
+  stub32_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 160.955
+        - -344.229
+      radius: 100
+      shorted: true
+  stub33_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 342.368
+        - -164.876
+      radius: 100
+      shorted: true
+  stub34_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 369.482
+        - 88.787
+      radius: 100
+      shorted: true
+  stub9_1:
+    component: hyperbolic_cpw_path
+    info:
+      length: 380
+    settings:
+      cross_section: cpw
+      points:
+      - - 0
+        - 0
+      - - 342.368
+        - 164.876
+      radius: 100
+      shorted: true
+nets:
+- p1: c0,o1
+  p2: r0,o1
+- p1: c0,o2
+  p2: r6,o1
+- p1: c0,o3
+  p2: r12,o1
+- p1: c1,o1
+  p2: r0,o2
+- p1: c1,o2
+  p2: r11,o1
+- p1: c1,o3
+  p2: r1,o1
+- p1: c2,o1
+  p2: r1,o2
+- p1: c2,o2
+  p2: r16,o1
+- p1: c2,o3
+  p2: r2,o1
+- p1: c3,o1
+  p2: r2,o2
+- p1: c3,o2
+  p2: r20,o1
+- p1: c3,o3
+  p2: r3,o1
+- p1: c4,o1
+  p2: r3,o2
+- p1: c4,o2
+  p2: r24,o1
+- p1: c4,o3
+  p2: r4,o1
+- p1: c5,o1
+  p2: r4,o2
+- p1: c5,o2
+  p2: r28,o1
+- p1: c5,o3
+  p2: r5,o1
+- p1: c6,o1
+  p2: r5,o2
+- p1: c6,o2
+  p2: r37,o1
+- p1: c6,o3
+  p2: r6,o2
+- p1: c7,o1
+  p2: r7,o1
+- p1: c7,o2
+  p2: r12,o2
+- p1: c7,o3
+  p2: r41,o1
+- p1: c8,o1
+  p2: r7,o2
+- p1: c8,o2
+  p2: feed2,o1
+- p1: c8,o3
+  p2: r8,o1
+- p1: c9,o1
+  p2: r8,o2
+- p1: c9,o2
+  p2: stub9_1,o1
+- p1: c9,o3
+  p2: r9,o1
+- p1: c10,o1
+  p2: r9,o2
+- p1: c10,o2
+  p2: stub10_1,o1
+- p1: c10,o3
+  p2: r10,o1
+- p1: c11,o1
+  p2: r10,o2
+- p1: c11,o2
+  p2: r17,o1
+- p1: c11,o3
+  p2: r11,o2
+- p1: c12,o1
+  p2: r13,o1
+- p1: c12,o2
+  p2: r17,o2
+- p1: c12,o3
+  p2: stub12_2,o1
+- p1: c13,o1
+  p2: r13,o2
+- p1: c13,o2
+  p2: stub13_1,o1
+- p1: c13,o3
+  p2: r14,o1
+- p1: c14,o1
+  p2: r14,o2
+- p1: c14,o2
+  p2: stub14_1,o1
+- p1: c14,o3
+  p2: r15,o1
+- p1: c15,o1
+  p2: r15,o2
+- p1: c15,o2
+  p2: r21,o1
+- p1: c15,o3
+  p2: r16,o2
+- p1: c16,o1
+  p2: r18,o1
+- p1: c16,o2
+  p2: r22,o1
+- p1: c16,o3
+  p2: stub16_2,o1
+- p1: c17,o1
+  p2: r18,o2
+- p1: c17,o2
+  p2: stub17_1,o1
+- p1: c17,o3
+  p2: r19,o1
+- p1: c18,o1
+  p2: r19,o2
+- p1: c18,o2
+  p2: r25,o1
+- p1: c18,o3
+  p2: r20,o2
+- p1: c19,o1
+  p2: r21,o2
+- p1: c19,o2
+  p2: stub19_1,o1
+- p1: c19,o3
+  p2: r22,o2
+- p1: c20,o1
+  p2: r23,o1
+- p1: c20,o2
+  p2: r27,o1
+- p1: c20,o3
+  p2: stub20_2,o1
+- p1: c21,o1
+  p2: r23,o2
+- p1: c21,o2
+  p2: r29,o1
+- p1: c21,o3
+  p2: r24,o2
+- p1: c22,o1
+  p2: r25,o2
+- p1: c22,o2
+  p2: stub22_1,o1
+- p1: c22,o3
+  p2: r26,o1
+- p1: c23,o1
+  p2: r26,o2
+- p1: c23,o2
+  p2: feed1,o1
+- p1: c23,o3
+  p2: r27,o2
+- p1: c24,o1
+  p2: r28,o2
+- p1: c24,o2
+  p2: r32,o1
+- p1: c24,o3
+  p2: r33,o1
+- p1: c25,o1
+  p2: r29,o2
+- p1: c25,o2
+  p2: stub25_1,o1
+- p1: c25,o3
+  p2: r30,o1
+- p1: c26,o1
+  p2: r30,o2
+- p1: c26,o2
+  p2: stub26_1,o1
+- p1: c26,o3
+  p2: r31,o1
+- p1: c27,o1
+  p2: r31,o2
+- p1: c27,o2
+  p2: stub27_1,o1
+- p1: c27,o3
+  p2: r32,o2
+- p1: c28,o1
+  p2: r33,o2
+- p1: c28,o2
+  p2: stub28_1,o1
+- p1: c28,o3
+  p2: r34,o1
+- p1: c29,o1
+  p2: r34,o2
+- p1: c29,o2
+  p2: stub29_1,o1
+- p1: c29,o3
+  p2: r35,o1
+- p1: c30,o1
+  p2: r35,o2
+- p1: c30,o2
+  p2: stub30_1,o1
+- p1: c30,o3
+  p2: r36,o1
+- p1: c31,o1
+  p2: r36,o2
+- p1: c31,o2
+  p2: r38,o1
+- p1: c31,o3
+  p2: r37,o2
+- p1: c32,o1
+  p2: r38,o2
+- p1: c32,o2
+  p2: stub32_1,o1
+- p1: c32,o3
+  p2: r39,o1
+- p1: c33,o1
+  p2: r39,o2
+- p1: c33,o2
+  p2: stub33_1,o1
+- p1: c33,o3
+  p2: r40,o1
+- p1: c34,o1
+  p2: r40,o2
+- p1: c34,o2
+  p2: stub34_1,o1
+- p1: c34,o3
+  p2: r41,o2
+- p1: feed1,o2
+  p2: launcher1,o1
+- p1: feed2,o2
+  p2: launcher2,o1
+placements:
+  c0:
+    mirror: false
+    rotation: 0
+    x: 1804.456
+    y: 0
+  c1:
+    mirror: false
+    rotation: 0
+    x: 1125.06
+    y: 1410.78
+  c10:
+    mirror: false
+    rotation: 0
+    x: 3088.058
+    y: 2462.644
+  c11:
+    mirror: false
+    rotation: 0
+    x: 1991.61
+    y: 2497.4
+  c12:
+    mirror: false
+    rotation: 0
+    x: 1713.743
+    y: 3558.624
+  c13:
+    mirror: false
+    rotation: 0
+    x: 926.563
+    y: 4059.537
+  c14:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: 3949.775
+  c15:
+    mirror: false
+    rotation: 0
+    x: -710.797
+    y: 3114.207
+  c16:
+    mirror: false
+    rotation: 0
+    x: -2596.171
+    y: 3255.496
+  c17:
+    mirror: false
+    rotation: 0
+    x: -3088.058
+    y: 2462.644
+  c18:
+    mirror: false
+    rotation: 0
+    x: -2877.96
+    y: 1385.952
+  c19:
+    mirror: false
+    rotation: 0
+    x: -1713.743
+    y: 3558.624
+  c2:
+    mirror: false
+    rotation: 0
+    x: -401.529
+    y: 1759.214
+  c20:
+    mirror: false
+    rotation: 0
+    x: -3850.746
+    y: -878.908
+  c21:
+    mirror: false
+    rotation: 0
+    x: -2877.96
+    y: -1385.952
+  c22:
+    mirror: false
+    rotation: 0
+    x: -3850.746
+    y: 878.908
+  c23:
+    mirror: false
+    rotation: 0
+    x: -4163.936
+    y: 0
+  c24:
+    mirror: false
+    rotation: 0
+    x: -710.797
+    y: -3114.207
+  c25:
+    mirror: false
+    rotation: 0
+    x: -3088.058
+    y: -2462.644
+  c26:
+    mirror: false
+    rotation: 0
+    x: -2596.171
+    y: -3255.496
+  c27:
+    mirror: false
+    rotation: 0
+    x: -1713.743
+    y: -3558.624
+  c28:
+    mirror: false
+    rotation: 0
+    x: 0
+    y: -3949.775
+  c29:
+    mirror: false
+    rotation: 0
+    x: 926.563
+    y: -4059.537
+  c3:
+    mirror: false
+    rotation: 0
+    x: -1625.758
+    y: 782.924
+  c30:
+    mirror: false
+    rotation: 0
+    x: 1713.743
+    y: -3558.624
+  c31:
+    mirror: false
+    rotation: 0
+    x: 1991.61
+    y: -2497.4
+  c32:
+    mirror: false
+    rotation: 0
+    x: 3088.058
+    y: -2462.644
+  c33:
+    mirror: false
+    rotation: 0
+    x: 3751.576
+    y: -1806.664
+  c34:
+    mirror: false
+    rotation: 0
+    x: 3850.746
+    y: -878.908
+  c4:
+    mirror: false
+    rotation: 0
+    x: -1625.758
+    y: -782.924
+  c5:
+    mirror: false
+    rotation: 0
+    x: -401.529
+    y: -1759.214
+  c6:
+    mirror: false
+    rotation: 0
+    x: 1125.06
+    y: -1410.78
+  c7:
+    mirror: false
+    rotation: 0
+    x: 3194.294
+    y: 0
+  c8:
+    mirror: false
+    rotation: 0
+    x: 3850.746
+    y: 878.908
+  c9:
+    mirror: false
+    rotation: 0
+    x: 3751.576
+    y: 1806.664
+  feed1:
+    mirror: false
+    rotation: 0
+    x: -4223.936
+    y: 0
+  feed2:
+    mirror: false
+    rotation: 0
+    x: 3909.085
+    y: 864.889
+  launcher1:
+    mirror: false
+    rotation: 0
+    x: -5823.936
+    y: 0
+  launcher2:
+    mirror: false
+    rotation: 180
+    x: 5481.406
+    y: 631.238
+  r0:
+    mirror: false
+    rotation: 0
+    x: 1774.456
+    y: 51.962
+  r1:
+    mirror: false
+    rotation: 0
+    x: 1065.73
+    y: 1419.723
+  r10:
+    mirror: false
+    rotation: 0
+    x: 3028.281
+    y: 2457.477
+  r11:
+    mirror: false
+    rotation: 0
+    x: 1162.469
+    y: 1457.69
+  r12:
+    mirror: false
+    rotation: 0
+    x: 1864.456
+    y: 0
+  r13:
+    mirror: false
+    rotation: 0
+    x: 1658.145
+    y: 3581.181
+  r14:
+    mirror: false
+    rotation: 0
+    x: 869.229
+    y: 4041.852
+  r15:
+    mirror: false
+    rotation: 0
+    x: -33.231
+    y: 3899.818
+  r16:
+    mirror: false
+    rotation: 0
+    x: -414.88
+    y: 1817.71
+  r17:
+    mirror: false
+    rotation: 0
+    x: 1969.69
+    y: 2553.252
+  r18:
+    mirror: false
+    rotation: 0
+    x: -2618.091
+    y: 3199.644
+  r19:
+    mirror: false
+    rotation: 0
+    x: -3069.719
+    y: 2405.515
+  r2:
+    mirror: false
+    rotation: 0
+    x: -445.512
+    y: 1718.404
+  r20:
+    mirror: false
+    rotation: 0
+    x: -1679.816
+    y: 808.957
+  r21:
+    mirror: false
+    rotation: 0
+    x: -768.131
+    y: 3131.892
+  r22:
+    mirror: false
+    rotation: 0
+    x: -2536.841
+    y: 3264.439
+  r23:
+    mirror: false
+    rotation: 0
+    x: -3794.647
+    y: -900.189
+  r24:
+    mirror: false
+    rotation: 0
+    x: -1679.816
+    y: -808.957
+  r25:
+    mirror: false
+    rotation: 0
+    x: -2927.534
+    y: 1352.153
+  r26:
+    mirror: false
+    rotation: 0
+    x: -3860.366
+    y: 819.684
+  r27:
+    mirror: false
+    rotation: 0
+    x: -3860.366
+    y: -819.684
+  r28:
+    mirror: false
+    rotation: 0
+    x: -414.88
+    y: -1817.71
+  r29:
+    mirror: false
+    rotation: 0
+    x: -2882.444
+    y: -1445.784
+  r3:
+    mirror: false
+    rotation: 0
+    x: -1621.274
+    y: 723.092
+  r30:
+    mirror: false
+    rotation: 0
+    x: -3047.753
+    y: -2507.09
+  r31:
+    mirror: false
+    rotation: 0
+    x: -2536.841
+    y: -3264.439
+  r32:
+    mirror: false
+    rotation: 0
+    x: -768.131
+    y: -3131.892
+  r33:
+    mirror: false
+    rotation: 0
+    x: -666.814
+    y: -3155.017
+  r34:
+    mirror: false
+    rotation: 0
+    x: 59.88
+    y: -3945.975
+  r35:
+    mirror: false
+    rotation: 0
+    x: 970.546
+    y: -4018.727
+  r36:
+    mirror: false
+    rotation: 0
+    x: 1722.007
+    y: -3499.196
+  r37:
+    mirror: false
+    rotation: 0
+    x: 1162.469
+    y: -1457.69
+  r38:
+    mirror: false
+    rotation: 0
+    x: 2050.94
+    y: -2488.457
+  r39:
+    mirror: false
+    rotation: 0
+    x: 3122.421
+    y: -2413.459
+  r4:
+    mirror: false
+    rotation: 0
+    x: -1576.184
+    y: -816.723
+  r40:
+    mirror: false
+    rotation: 0
+    x: 3747.092
+    y: -1746.832
+  r41:
+    mirror: false
+    rotation: 0
+    x: 3224.294
+    y: -51.962
+  r5:
+    mirror: false
+    rotation: 0
+    x: -344.195
+    y: -1741.529
+  r6:
+    mirror: false
+    rotation: 0
+    x: 1774.456
+    y: -51.962
+  r7:
+    mirror: false
+    rotation: 0
+    x: 3224.294
+    y: 51.962
+  r8:
+    mirror: false
+    rotation: 0
+    x: 3833.717
+    y: 936.441
+  r9:
+    mirror: false
+    rotation: 0
+    x: 3702.002
+    y: 1840.463
+  stub10_1:
+    mirror: false
+    rotation: 0
+    x: 3113.472
+    y: 2516.996
+  stub12_2:
+    mirror: false
+    rotation: 0
+    x: 1761.077
+    y: 3595.495
+  stub13_1:
+    mirror: false
+    rotation: 0
+    x: 939.914
+    y: 4118.033
+  stub14_1:
+    mirror: false
+    rotation: 0
+    x: -26.649
+    y: 4003.532
+  stub16_2:
+    mirror: false
+    rotation: 0
+    x: -2633.58
+    y: 3302.406
+  stub17_1:
+    mirror: false
+    rotation: 0
+    x: -3146.702
+    y: 2475.326
+  stub19_1:
+    mirror: false
+    rotation: 0
+    x: -1713.058
+    y: 3618.62
+  stub20_2:
+    mirror: false
+    rotation: 0
+    x: -3897.225
+    y: -916.851
+  stub22_1:
+    mirror: false
+    rotation: 0
+    x: -3897.225
+    y: 916.851
+  stub25_1:
+    mirror: false
+    rotation: 0
+    x: -3146.702
+    y: -2475.326
+  stub26_1:
+    mirror: false
+    rotation: 0
+    x: -2633.58
+    y: -3302.406
+  stub27_1:
+    mirror: false
+    rotation: 0
+    x: -1713.058
+    y: -3618.62
+  stub28_1:
+    mirror: false
+    rotation: 0
+    x: -26.649
+    y: -4003.532
+  stub29_1:
+    mirror: false
+    rotation: 0
+    x: 939.914
+    y: -4118.033
+  stub30_1:
+    mirror: false
+    rotation: 0
+    x: 1761.077
+    y: -3595.495
+  stub32_1:
+    mirror: false
+    rotation: 0
+    x: 3113.472
+    y: -2516.996
+  stub33_1:
+    mirror: false
+    rotation: 0
+    x: 3805.634
+    y: -1832.697
+  stub34_1:
+    mirror: false
+    rotation: 0
+    x: 3909.085
+    y: -864.889
+  stub9_1:
+    mirror: false
+    rotation: 0
+    x: 3805.634
+    y: 1832.697
+ports:
+  o1: launcher1,waveport
+  o2: launcher2,waveport
