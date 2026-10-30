@@ -382,17 +382,17 @@ placements:
     x: -3000
     y: -3000
   launcher_in_a:
-    x: -4850
+    x: -4900
     y: 1000
   launcher_in_b:
-    x: -4850
+    x: -4900
     y: -1000
   launcher_out_a:
-    x: 4850
+    x: 4900
     y: 1000
     rotation: 180
   launcher_out_b:
-    x: 4850
+    x: 4900
     y: -1000
     rotation: 180
   tsv_in_down_a:

@@ -443,7 +443,7 @@
     "bbox_height": 420,
     "bbox_xmin": 0,
     "bbox_ymin": -210,
-    "irl_x": -4700,
+    "irl_x": -4750,
     "irl_y": -1000,
     "irl_orientation": 0,
     "irl_flip": false,
@@ -508,7 +508,7 @@
     "bbox_height": 420,
     "bbox_xmin": 0,
     "bbox_ymin": -210,
-    "irl_x": -4700,
+    "irl_x": -4750,
     "irl_y": 1000,
     "irl_orientation": 0,
     "irl_flip": false,
@@ -574,7 +574,7 @@
     "bbox_height": 420,
     "bbox_xmin": 0,
     "bbox_ymin": -210,
-    "irl_x": 4700,
+    "irl_x": 4750,
     "irl_y": -1000,
     "irl_orientation": 180,
     "irl_flip": false,
@@ -640,7 +640,7 @@
     "bbox_height": 420,
     "bbox_xmin": 0,
     "bbox_ymin": -210,
-    "irl_x": 4700,
+    "irl_x": 4750,
     "irl_y": 1000,
     "irl_orientation": 180,
     "irl_flip": false,
@@ -1760,7 +1760,7 @@
     },
     "vertices": [
       [
-        -4550,
+        -4600,
         -1000
       ],
       [
@@ -1791,7 +1791,7 @@
     },
     "vertices": [
       [
-        -4550,
+        -4600,
         1000
       ],
       [
@@ -1826,7 +1826,7 @@
         -1000
       ],
       [
-        4550,
+        4600,
         -1000
       ]
     ],
@@ -1857,7 +1857,7 @@
         1000
       ],
       [
-        4550,
+        4600,
         1000
       ]
     ],
