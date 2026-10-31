@@ -18,7 +18,7 @@ abstract: >-
 authors:
   - family-names: Savola
     given-names: Niko
-    affiliation: GDSFactory
+    affiliation: "GDSFactory; Aalto University"
     email: niko@gdsfactory.com
     orcid: https://orcid.org/0000-0002-8036-4984
     alias: nikosavola
