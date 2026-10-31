@@ -6,6 +6,7 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
+from qpdk.cells._schematic import nanowire_resonator_schematic
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.waveguides import straight
 from qpdk.tech import LAYER, MeanderCornerStyle, get_etch_section
@@ -17,7 +18,9 @@ NANOWIRE_WIDTH_RANGE = (0.05, 1.0)
 """Allowed nanowire width range in µm."""
 
 
-@gf.cell(tags=["resonators", "inductors"])
+@gf.cell(
+    tags=["resonators", "inductors"], schematic_function=nanowire_resonator_schematic
+)
 def nanowire_resonator(
     wire_width: float = 0.1,
     wire_length: float = 40.0,
