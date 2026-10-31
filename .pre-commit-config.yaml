@@ -133,6 +133,13 @@ repos:
         priority: 10
       - id: check-dependabot
         priority: 10
+      - id: check-jsonschema
+        name: Validate qpdk/layers.yaml against gdsfactory's LayerViews schema
+        priority: 10
+        files: ^qpdk/layers\.yaml$
+        args:
+          - --schemafile
+          - https://raw.githubusercontent.com/gdsfactory/gdsfactory/main/gdsfactory/technology/layer_views.schema.json
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.12.18
     hooks:
