@@ -545,3 +545,28 @@ interpolates frequency and continuous geometry axes together and returns NaN out
 stored domain. Discrete variants are selected when loading. Complex linear interpolation
 can introduce apparent loss between sample points, so check withheld frequencies near
 resonances before choosing the frequency spacing.
+
+For a weakly coupled qubit, ``s_parameters_model(path, interpolation="admittance")``
+interpolates normalized admittance and converts back to scattering at the original
+reference planes. With fixed positive real port impedances, this preserves losslessness
+between lossless samples and retains physical dissipation in lossy samples. It avoids
+the artificial damping that complex S interpolation can introduce after internal ports
+are connected to a junction. Admittance must be finite and smooth throughout each cell.
+Check independent frequencies and loaded resonances before choosing this representation,
+since an admittance pole between samples can still invalidate interpolation.
+
+Connect every internal junction terminal explicitly when building the SAX circuit. For
+two ground-referenced arm terminals, connect them to the two ports of
+``qpdk.models.junction.josephson_junction`` and expose only the readout terminal. Its
+critical current and bias set the operating-point Josephson inductance. Set its
+capacitance to the additional junction capacitance and choose its shunt resistance
+explicitly. The FEM network already contains the arm fields. Omitting an internal port
+applies a matched load and changes the circuit's damping.
+
+The unimon's half-flux operating point has a negative Josephson curvature
+:cite:`hyyppaUnimonQubit2022`. Represent a signed small-signal inductance with a
+floating ``lc_resonator`` branch. Keep ``grounded=False`` fixed inside a branch factory
+and expose numeric inductance and capacitance settings to SAX. The full circuit must
+still have a stable operating point. The zero-voltage current-biased
+``josephson_junction`` model selects the positive-curvature branch and should not be
+given a negative critical current to mimic this bias.
