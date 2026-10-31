@@ -179,13 +179,7 @@ class TestLCResonatorCoupled(TwoPortModelTestSuite):
 
     @staticmethod
     def test_with_capacitance_only() -> None:
-        """Test coupled resonator with only coupling capacitance.
-
-        Note: When coupling_inductance=0, the inductor acts as a short (Z=0),
-        which effectively bypasses the coupling network. This test now checks
-        that the model executes correctly and maintains passivity, rather than
-        expecting a change from the base resonator.
-        """
+        """Keep capacitive coupling when the inductive branch is disabled."""
         f = jnp.linspace(1e9, 30e9, 100)
         result = lc_resonator_coupled(
             f=f, coupling_capacitance=10e-15, coupling_inductance=0.0
