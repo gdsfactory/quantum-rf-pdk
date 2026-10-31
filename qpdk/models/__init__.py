@@ -51,6 +51,7 @@ from qpdk.models.cpw import (
 )
 from qpdk.models.esr import (
     esr_lc_resonator,
+    esr_lc_resonator_parameters,
     esr_mode_volume,
     thin_strip_magnetic_field,
 )
@@ -207,6 +208,7 @@ __all__ = [
     "electrical_short",
     "electrical_short_2_port",
     "esr_lc_resonator",
+    "esr_lc_resonator_parameters",
     "esr_mode_volume",
     "flipmon",
     "flipmon_ideal_bond_model",
@@ -316,6 +318,9 @@ def _is_sax_model(obj: object) -> bool:
         if hasattr(ret, "__name__") and ret.__name__ == "tuple":
             return False
         if str(ret).startswith("tuple") or str(ret).startswith("Tuple"):
+            return False
+        # Parameter helpers return dict[str, ...]; an SDict is keyed by port pairs
+        if str(ret).startswith("dict[str,"):
             return False
 
     # Check if return type is sax.SType or sax.SDict

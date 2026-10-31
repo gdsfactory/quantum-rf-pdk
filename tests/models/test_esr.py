@@ -44,20 +44,22 @@ def test_model_jits_over_geometry() -> None:
     """The model jits with the geometry and coupling as traced arguments."""
 
     @jax.jit
-    def s21(wire_width: float, wire_length: float, cc: float) -> jax.Array:
+    def s21(wire_width: float, wire_length: float, cc: float, cg: float) -> jax.Array:
         return esr_lc_resonator(
             f=jnp.array([6e9, 7e9]),
             wire_width=wire_width,
             wire_length=wire_length,
             coupling_capacitance=cc,
+            ground_capacitance=cg,
         )["o1", "o2"]
 
-    jitted = s21(2.0, 300.0, 5e-15)
+    jitted = s21(2.0, 300.0, 5e-15, 50e-15)
     eager = esr_lc_resonator(
         f=jnp.array([6e9, 7e9]),
         wire_width=2.0,
         wire_length=300.0,
         coupling_capacitance=5e-15,
+        ground_capacitance=50e-15,
     )["o1", "o2"]
     assert_allclose(jitted, eager, rtol=1e-12)
 
@@ -68,13 +70,17 @@ def test_model_jits_over_geometry() -> None:
         {},
         {"wire_width": 0.1, "wire_length": 10.0, "fingers": 20},
         {"wire_width": 1.0, "wire_length": 200.0, "coupling_capacitance": 1e-14},
+        {"ground_capacitance": 20e-15, "coupling_capacitance": 2e-14},
     ],
 )
 def test_resonance_and_coupling_q(kwargs: dict) -> None:
-    """The |S21| dip sits at 1/(2π√(L(C + C_c))) and its width gives Q_c."""
+    """The |S21| dip sits at 1/(2π√(L C_eff)) and its width gives Q_c."""
     p = esr_lc_resonator_parameters(**kwargs)
-    c_total = p["capacitance"] + p["coupling_capacitance"]
-    f_lc = 1 / (2 * π * jnp.sqrt(p["inductance"] * c_total))
+    c_c, c_g = p["coupling_capacitance"], p["ground_capacitance"]
+    # C in parallel with C_g in series with (C_g + C_c).
+    c_eff = p["capacitance"] + 1 / (1 / c_g + 1 / (c_g + c_c))
+    assert_allclose(p["effective_capacitance"], c_eff, rtol=1e-12)
+    f_lc = 1 / (2 * π * jnp.sqrt(p["inductance"] * c_eff))
     assert_allclose(p["resonance_frequency"], f_lc, rtol=1e-12)
 
     span = 5 / p["coupling_quality_factor"]
@@ -85,6 +91,40 @@ def test_resonance_and_coupling_q(kwargs: dict) -> None:
     # Lossless notch: 1 - |S21|^2 is a Lorentzian with FWHM f_r / Q_c.
     dip = f[1 - s21**2 > 0.5]
     assert_allclose(f_lc / (dip[-1] - dip[0]), p["coupling_quality_factor"], rtol=1e-2)
+
+
+def test_floating_resonator_needs_ground_capacitance() -> None:
+    """Without C_g the floating LC has no return path and leaves S21 flat."""
+    p = esr_lc_resonator_parameters(ground_capacitance=0.0)
+    assert jnp.isinf(p["coupling_quality_factor"])
+    f = jnp.linspace(6e9, 8e9, 2001)
+    s21 = jnp.abs(esr_lc_resonator(f=f, ground_capacitance=0.0)["o1", "o2"])
+    assert_allclose(s21, 1.0, atol=1e-9)
+
+
+def test_singular_limits_are_finite() -> None:
+    """DC, C_c = 0 and the bare-LC frequency give finite S; the notch reflects."""
+    p = esr_lc_resonator_parameters()
+    f_bare = 1 / (2 * π * jnp.sqrt(p["inductance"] * p["capacitance"]))
+    f = jnp.array([0.0, f_bare, p["resonance_frequency"]])
+    s = esr_lc_resonator(f=f)
+    assert_allclose(s["o1", "o2"][0], 1.0)
+    assert_allclose(s["o1", "o1"][0], 0.0)
+    assert jnp.all(jnp.isfinite(s["o1", "o2"]))
+    assert_allclose(s["o1", "o1"][2], -1.0, atol=1e-6)
+    assert_allclose(s["o1", "o2"][2], 0.0, atol=1e-6)
+
+    s = esr_lc_resonator(f=f, coupling_capacitance=0.0)
+    assert_allclose(s["o1", "o2"], 1.0)
+    assert_allclose(s["o1", "o1"], 0.0)
+
+    # The safe-value substitution also keeps the gradient finite at DC.
+    grad = jax.grad(
+        lambda c: jnp.sum(
+            jnp.abs(esr_lc_resonator(f=f, coupling_capacitance=c)["o1", "o2"])
+        )
+    )(8.5e-15)
+    assert jnp.isfinite(grad)
 
 
 def test_bienfait_design_values() -> None:
@@ -105,7 +145,7 @@ def test_ranjan_wire_squares() -> None:
 
 
 def test_default_q_c_matches_ranjan_qext() -> None:
-    """The 4 fF default gives Q_c of order 3e4, Ranjan's Q_ext.
+    """The 8.5 fF default gives Q_c of order 3e4, Ranjan's Q_ext.
 
     The default is a chosen parameter, not the coupling of the default layout.
     """
@@ -216,6 +256,8 @@ def test_strip_field_symmetry(width: float, height: float, x: float) -> None:
         ({"fingers": 1}, "fingers"),
         ({"coupling_gap": 0.0}, "coupling_gap"),
         ({"wire_width": 5.0, "finger_length": 4.0}, "finger_length"),
+        ({"wire_width": 5.0, "finger_thickness": 4.0}, "finger_thickness"),
+        ({"wire_length": 851.0}, "span"),
         ({"feedline_length": 100.0}, "feedline_length"),
         ({"fingers": 7, "finger_gap": 50.001, "finger_thickness": 49.999}, "0.002"),
     ],

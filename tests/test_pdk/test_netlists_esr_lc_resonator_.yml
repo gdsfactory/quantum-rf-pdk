@@ -9,7 +9,6 @@ instances:
       finger_gap: 50
       finger_length: 800
       fingers: 12
-      half: false
       layer_metal: M1_DRAW
       thickness: 50
   straight:
@@ -30,7 +29,7 @@ placements:
   interdigital_capacitor:
     mirror: false
     rotation: 270
-    x: -340
+    x: -50
     y: -580
   straight:
     mirror: false
