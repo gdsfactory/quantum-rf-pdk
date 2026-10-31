@@ -160,6 +160,7 @@ from qpdk.models.waveguides import (
     tsv,
     tsv_transition_double_sided,
 )
+from qpdk.models.xmon import xmon_fem
 
 __all__ = [
     "DEFAULT_FREQUENCY",
@@ -287,6 +288,7 @@ __all__ = [
     "unimon_energies",
     "unimon_frequency_and_anharmonicity",
     "unimon_hamiltonian",
+    "xmon_fem",
     "xmon_transmon",
 ]
 

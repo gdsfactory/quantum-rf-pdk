@@ -2,8 +2,10 @@
 
 from pathlib import Path
 
+import jax
 import jax.numpy as jnp
 import sax
+from gdsfactory.typings import LayerSpec
 from jax.typing import ArrayLike
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
@@ -12,6 +14,20 @@ from qpdk.models.datasets.interpolation import GridInterpolator
 from qpdk.models.datasets.metadata import QuantityKind
 from qpdk.models.datasets.table import Dataset
 from qpdk.models.jit import jit
+
+
+def _matches_layer(
+    value: LayerSpec | ArrayLike, index: int, pair: tuple[int, int], name: str
+) -> jax.Array:
+    """Distinguish static layer names, layout indices and GDS pairs."""
+    if isinstance(value, str):
+        return jnp.asarray(value == name)
+    array = jnp.asarray(value)
+    if array.ndim == 0:
+        return array == index
+    if array.shape == (2,):
+        return jnp.all(array == jnp.asarray(pair))
+    return jnp.asarray(False)
 
 
 def s_parameters_model(
@@ -69,7 +85,8 @@ def capacitance_model(
     r"""Return a lumped N-port SAX model from a Maxwell capacitance dataset.
 
     Continuous geometry axes are passed by name; discrete variants are fixed
-    here. ``f`` is in Hz and ``z_ref`` is a common real port impedance in ohms.
+    here. ``f`` is in Hz and ``z_ref`` is a common finite positive port impedance
+    in ohms. Invalid reference impedances return NaN.
     The admittance is :math:`Y = j 2 \pi f C`; all terminals reference the
     dataset ground. This model includes terminal-to-ground capacitances and
     mutual branches, with no distributed propagation or inductance.
@@ -102,6 +119,8 @@ def capacitance_model(
         admittance = 2j * jnp.pi * jnp.asarray(f)[..., None, None] * capacitance
         normalized = jnp.asarray(z_ref)[..., None, None] * admittance
         values = jnp.linalg.solve(identity + normalized, identity - normalized)
+        valid = jnp.isfinite(jnp.asarray(z_ref)) & (jnp.asarray(z_ref) > 0)
+        values = jnp.where(valid[..., None, None], values, jnp.nan)
         return {
             (a, b): values[..., i, j]
             for i, a in enumerate(grid.terminals)
@@ -143,6 +162,7 @@ def junction_model(
     :math:`B^{\text{T}} C B`, with :math:`B` mapping group voltages to electrodes,
     and retains capacitance to ground. The wires add no field or inductance.
     All SAX ports reference dataset ground, and frequency is in Hz.
+    Reference impedance ``z_ref`` must be finite and positive, in ohms.
 
     Use ``None`` for the junction's second terminal to connect it to reference
     ground. ``exposed_ports`` selects the external circuit terminals. Other
@@ -241,6 +261,8 @@ def junction_model(
             (jnp.asarray(f) > 0)
             & (jnp.asarray(inductance) > 0)
             & (jnp.asarray(junction_capacitance) >= 0)
+            & jnp.isfinite(jnp.asarray(z_ref))
+            & (jnp.asarray(z_ref) > 0)
         )
         values = jnp.where(valid[..., None, None], values, jnp.nan)
         return {

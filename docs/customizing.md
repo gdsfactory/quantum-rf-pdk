@@ -218,6 +218,10 @@ Analytical models without a same-named layout are registered as circuit primitiv
 `qpdk.models.models` catalog until their schematic declares a SAX binding. Existing supported registrations are
 preserved.
 
+The four-arm `xmon_transmon` descriptor selects `xmon_fem` from `qpdk/models/xmon.py`, which loads the bare
+`xmon_palace` capacitance table. Its supported arm ratios, fixed widths and finite ground frame belong to that dataset's
+physical scope. Forks that change those shapes need to regenerate the table and update the adapter together.
+
 Schematic metadata is available through `gf.kcl.factories[name].get_schematic()`, so no separate attachment call is
 needed. Keep the model and schematic descriptor aligned when changing a cell's circuit ports. Placement markers are not
 circuit ports. Partial cell factories inherit the base schematic and bind any model settings they preset.
