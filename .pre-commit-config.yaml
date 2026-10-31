@@ -133,6 +133,12 @@ repos:
         priority: 10
       - id: check-dependabot
         priority: 10
+      - id: check-jsonschema
+        name: Validate Zenodo metadata
+        args: [--schemafile, .github/zenodo/metadata.schema.json, .github/zenodo/metadata.json]
+        files: ^\.github/zenodo/metadata(\.schema)?\.json$
+        pass_filenames: false
+        priority: 10
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.12.18
     hooks:
