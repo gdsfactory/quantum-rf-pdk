@@ -40,6 +40,7 @@ __all__ = [
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
+    "nanowire_resonator_schematic",
     "nxn_schematic",
     "open_2_port_schematic",
     "open_schematic",
@@ -604,6 +605,19 @@ lumped_element_resonator_schematic = schematic(
         sax_model(
             name="lumped_element_resonator",
             module="qpdk.models.inductor",
+            port_order=["o1", "o2"],
+        )
+    ],
+)
+
+nanowire_resonator_schematic = schematic(
+    symbol="nanowire_resonator",
+    tags=["resonators", "inductors"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="nanowire_resonator",
+            module="qpdk.models.nanowire",
             port_order=["o1", "o2"],
         )
     ],
