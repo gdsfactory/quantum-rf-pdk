@@ -750,6 +750,24 @@ MEANDER_SQUARES_CONVENTIONS: dict[str, str] = {
 """Short description of the corner rule behind ``n_squares_drawn`` per style."""
 
 
+def _math_for(*values: Any) -> Any:
+    """Return :mod:`jax.numpy` if any value is a JAX array or tracer, else :mod:`math`.
+
+    Keeps the meander helpers importable without JAX, which is optional, while
+    letting the SAX models trace and differentiate them.
+    """
+    if any(type(v).__module__.startswith("jax") for v in values):
+        import jax.numpy as jnp  # ruff: ignore[import-outside-top-level]  # jax is an optional dependency
+
+        return jnp
+    return math
+
+
+def _is_concrete(*values: Any) -> bool:
+    """Whether all values are plain Python numbers, so they can be validated."""
+    return all(isinstance(v, int | float) for v in values)
+
+
 def meander_round_radius(
     wire_width: float, wire_gap: float, radius: float | None = None
 ) -> float:
@@ -770,7 +788,9 @@ def meander_round_radius(
     pitch = wire_width + wire_gap
     if radius is None:
         return pitch / 2
-    if not wire_width / 2 < radius <= pitch / 2:
+    if _is_concrete(wire_width, wire_gap, radius) and not (
+        wire_width / 2 < radius <= pitch / 2
+    ):
         raise ValueError(
             f"radius must satisfy wire_width/2 < radius <= pitch/2 "
             f"({wire_width / 2} < radius <= {pitch / 2}), got {radius}"
@@ -800,8 +820,9 @@ def optimal_hairpin_tip_x(wire_width: float, pitch: float) -> float:
     Returns:
         :math:`x_\text{tip}` in µm, measured from the slit tip.
     """
+    m = _math_for(wire_width, pitch)
     a = (pitch + wire_width) / 2
-    return -2 * a / math.pi * math.log(math.sin(math.pi * wire_width / (2 * a)))
+    return -2 * a / math.pi * m.log(m.sin(math.pi * wire_width / (2 * a)))
 
 
 def meander_n_squares_drawn(
@@ -848,6 +869,7 @@ def meander_n_squares_drawn(
     Raises:
         ValueError: If ``corner_style`` is unknown, or the geometry does not fit.
     """
+    m = _math_for(turn_length, wire_width, wire_gap, radius)
     n_bends = max(0, n_turns - 1)
     pitch = wire_width + wire_gap
     centreline = n_turns * turn_length + n_bends * wire_gap
@@ -859,7 +881,7 @@ def meander_n_squares_drawn(
         case "round":
             r = meander_round_radius(wire_width, wire_gap, radius)
             straight = n_turns * turn_length + n_bends * (wire_gap - 4 * r)
-            arc = (math.pi / 2) / math.log((2 * r + wire_width) / (2 * r - wire_width))
+            arc = (math.pi / 2) / m.log((2 * r + wire_width) / (2 * r - wire_width))
             return straight / wire_width + 2 * n_bends * arc
         case "optimal":
             arm = optimal_hairpin_arm_length(turn_length, wire_width, pitch)
@@ -895,7 +917,7 @@ def optimal_hairpin_arm_length(
     arm = turn_length / 2 - tip - (pitch + wire_width)
     # The contour starts at x = -pitch; keep one extra width of margin because
     # the drawn contour tip sits slightly beyond the analytic one.
-    if arm < pitch + wire_width:
+    if _is_concrete(arm) and arm < pitch + wire_width:
         min_length = 2 * (tip + 2 * (pitch + wire_width))
         raise ValueError(
             f"turn_length={turn_length} is too short for optimal corners; "

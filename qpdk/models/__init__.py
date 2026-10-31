@@ -27,6 +27,7 @@ from qpdk.models.inductor import (
 from qpdk.models.junction import josephson_junction, squid_junction
 from qpdk.models.nanowire import (
     grounded_pad_capacitance_analytical,
+    nanowire_pad_capacitances_analytical,
     nanowire_resonator,
 )
 
@@ -227,12 +228,12 @@ __all__ = [
     "gatemon_josephson_energy",
     "gatemon_potential",
     "gatemon_supercurrent",
+    "grounded_pad_capacitance_analytical",
     "hyperbolic_cpw_path",
     "hyperbolic_edge_resonator",
     "hyperbolic_lattice",
     "hyperbolic_vertex_coupler",
     "hyperbolic_vertex_coupler_capacitances",
-    "grounded_pad_capacitance_analytical",
     "impedance",
     "indium_bump",
     "inductor",
@@ -251,6 +252,7 @@ __all__ = [
     "microstrip_thickness_correction",
     "microstrip_z0",
     "models",
+    "nanowire_pad_capacitances_analytical",
     "nanowire_resonator",
     "nxn",
     "open",
