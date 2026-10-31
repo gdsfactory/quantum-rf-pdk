@@ -17,6 +17,7 @@ from .bump import *
 from .capacitor import *
 from .chip import *
 from .derived import *
+from .esr import *
 from .fluxonium import *
 from .gatemon import *
 from .hyperbolic import *

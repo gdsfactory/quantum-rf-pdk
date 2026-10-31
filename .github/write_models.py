@@ -81,8 +81,8 @@ sax_categories = [
     Category(
         "lumped",
         "Capacitors and inductors",
-        "Interdigital and plate capacitors, meander inductors and lumped-element resonators.",
-        ("qpdk.models.capacitor", "qpdk.models.inductor"),
+        "Interdigital and plate capacitors, meander inductors and lumped-element resonators, including the ESR LC resonator.",
+        ("qpdk.models.capacitor", "qpdk.models.inductor", "qpdk.models.esr"),
     ),
     Category(
         "junctions",
@@ -129,7 +129,12 @@ helper_categories = [
         "component-helpers",
         "Component helpers",
         "Closed-form estimates for resonators, couplers and inductors.",
-        ("qpdk.models.resonator", "qpdk.models.couplers", "qpdk.models.inductor"),
+        (
+            "qpdk.models.resonator",
+            "qpdk.models.couplers",
+            "qpdk.models.inductor",
+            "qpdk.models.esr",
+        ),
     ),
 ]
 

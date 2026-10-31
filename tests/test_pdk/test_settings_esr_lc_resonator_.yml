@@ -1,0 +1,34 @@
+info:
+  mode_volume: 71674.631
+  wire_squares: 146
+name: esr_lc_resonator_WW5_WL730_F12_FL800_FG50_FT50_CG50_GG5_b0af2c82
+ports:
+  o1:
+    center:
+    - -1000
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 1000
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  coupling_gap: 50
+  cross_section: cpw
+  feedline_length: 2000
+  finger_gap: 50
+  finger_length: 800
+  finger_thickness: 50
+  fingers: 12
+  ground_gap: 50
+  wire_length: 730
+  wire_width: 5
