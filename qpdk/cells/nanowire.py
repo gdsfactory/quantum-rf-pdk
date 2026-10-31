@@ -23,6 +23,7 @@ def nanowire_resonator(
     wire_length: float = 40.0,
     n_turns: int = 1,
     wire_gap: float | None = None,
+    lead_length: float | None = None,
     corner_style: MeanderCornerStyle = "sharp",
     radius: float | None = None,
     pad_width: float = 300.0,
@@ -55,10 +56,13 @@ def nanowire_resonator(
 
     The wire is straight for ``n_turns=1``, or a :func:`meander_inductor` with
     vertical runs of length ``wire_length`` otherwise, so ``n_turns`` must be odd
-    for the wire to end on the opposite pad. ``info["n_squares"]`` is the drawn
-    square count between the pad edges from
-    :func:`qpdk.tech.meander_n_squares_drawn`; the ``contact_overlap`` stubs under
-    the pads are not counted.
+    for the wire to end on the opposite pad. The meander sits ``lead_length``
+    away from both pads and joins each pad through one straight lead from its
+    end run, so the wire contacts each pad once and the U-turns stay clear of
+    the metal. ``info["n_squares"]`` is the drawn square count between the pad
+    edges: :func:`qpdk.tech.meander_n_squares_drawn` for the meander plus
+    ``lead_length / wire_width`` for each lead. The ``contact_overlap`` stubs
+    under the pads are not counted.
 
     Design references for the nanowire geometry and its kinetic inductance are
     :cite:`joshiStrongKineticinductanceKerr2022,maleevaCircuitQuantumElectrodynamics2018`.
@@ -66,10 +70,13 @@ def nanowire_resonator(
 
     Args:
         wire_width: Nanowire width in µm, between 0.05 and 1.
-        wire_length: Length of each nanowire run in µm, which is also the gap
-            between the two pads.
+        wire_length: Length of each nanowire run in µm. The gap between the
+            pads is ``wire_length + 2 * lead_length``.
         n_turns: Number of nanowire runs (odd). 1 gives a straight wire.
         wire_gap: Gap between adjacent runs in µm. Defaults to ``wire_width``.
+        lead_length: Length of the straight leads between the meander and each
+            pad in µm, which is also the clearance between the U-turns and the
+            pads. Defaults to ``wire_gap``.
         corner_style: Corner style of a meandered wire, see
             :func:`meander_inductor`.
         radius: Centreline radius for ``"round"`` corners in µm.
@@ -109,7 +116,10 @@ def nanowire_resonator(
         "pad_ground_gap": pad_ground_gap,
         "coupling_gap": coupling_gap,
         "contact_overlap": contact_overlap,
+        "lead_length": lead_length,
     }.items():
+        if value is None:
+            continue
         if value <= 0:
             raise ValueError(f"{name} must be positive, got {value}")
     if contact_overlap > pad_height:
@@ -131,6 +141,7 @@ def nanowire_resonator(
 
     wire_xs = gf.cross_section.cross_section(width=wire_width, layer=wire_layer)
     wire_gap = wire_width if wire_gap is None else wire_gap
+    lead_length = wire_gap if lead_length is None else lead_length
     wire = meander_inductor(
         n_turns=n_turns,
         turn_length=wire_length,
@@ -153,7 +164,8 @@ def nanowire_resonator(
 
     pad_top = -centre_width / 2 - coupling_gap
     pad_bottom = pad_top - pad_height
-    ground_pad_top = pad_bottom - wire_length
+    pad_separation = wire_length + 2 * lead_length
+    ground_pad_top = pad_bottom - pad_separation
     ground_pad_bottom = ground_pad_top - pad_height
 
     add_rect(
@@ -169,21 +181,26 @@ def nanowire_resonator(
 
     wire_ref = c << wire
     wire_ref.rotate(90)
-    wire_ref.dcenter = (0, pad_bottom - wire_length / 2)
+    y_mid = pad_bottom - pad_separation / 2
+    wire_ref.dcenter = (0, y_mid)
+    # Only the two end runs reach the pads, through leads that end
+    # contact_overlap inside the metal.
     for port in wire_ref.ports:
         x, y = port.dcenter
-        inward = 1 if y > pad_bottom - wire_length / 2 else -1
+        outward = 1 if y > y_mid else -1
+        y_end = y + outward * (lead_length + contact_overlap)
         add_rect(
             c,
             wire_layer,
             x_center=x,
             width=wire_width,
-            y0=min(y, y + inward * contact_overlap),
-            y1=max(y, y + inward * contact_overlap),
+            y0=min(y, y_end),
+            y1=max(y, y_end),
         )
 
     c.add_ports(feed.ports)
-    c.info["n_squares"] = wire.info["n_squares_drawn"]
+    c.info["n_squares"] = wire.info["n_squares_drawn"] + 2 * lead_length / wire_width
     c.info["n_squares_convention"] = wire.info["n_squares_convention"]
     c.info["wire_gap"] = wire_gap
+    c.info["lead_length"] = lead_length
     return c

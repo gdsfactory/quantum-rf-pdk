@@ -97,9 +97,9 @@ def test_straight_wire_is_length_over_width() -> None:
 
 
 def test_nanowire_resonator_straight_squares() -> None:
-    """The straight nanowire reports wire_length / wire_width squares."""
+    """The straight nanowire counts wire_length / wire_width plus its two leads."""
     c = nanowire_resonator(wire_width=0.2, wire_length=30.0)
-    assert c.info["n_squares"] == pytest.approx(150.0)
+    assert c.info["n_squares"] == pytest.approx(152.0)
 
 
 def test_sharp_corner_convention() -> None:

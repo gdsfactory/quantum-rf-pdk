@@ -1,8 +1,9 @@
 info:
-  n_squares: 400
+  lead_length: 0.1
+  n_squares: 402
   n_squares_convention: 'Hagedorn-Hall: a w x w sharp 90 deg corner counts 0.559 squares'
   wire_gap: 0.1
-name: nanowire_resonator_WW0p1_WL40_NT1_WGNone_CSsharp_RNone__151690cf
+name: nanowire_resonator_WW0p1_WL40_NT1_WGNone_LLNone_CSsharp_a512230f
 ports:
   o1:
     center:
