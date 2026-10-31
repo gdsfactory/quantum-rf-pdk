@@ -1,6 +1,7 @@
 """Custom native meshes preserve extraction failure and cache behavior."""
 
 import importlib
+import json
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -25,6 +26,29 @@ def test_custom_mesh_controls_solver_and_completion(
     sim = Mock()
     sim.terminals = [SimpleNamespace(name=name) for name in terminal_order]
     constructor = Mock(return_value=sim)
+    launch = Mock()
+    monkeypatch.setattr(helper, "_run_palace", launch, raising=False)
+
+    def configure_solver(
+        *,
+        order: int,
+        tolerance: float,
+        max_iterations: int,
+        preconditioner: str,
+        solver_type: str,
+    ) -> None:
+        assert (order, tolerance, max_iterations) == (2, 1e-9, 1000)
+        assert solver_type == "Default"
+        assert preconditioner == "BoomerAMG"
+
+    sim.set_solver.side_effect = configure_solver
+
+    def write_config() -> Path:
+        path = sim.set_output_dir.call_args.args[0] / "config.json"
+        path.write_text(json.dumps({"Solver": {"Linear": {"InitialGuess": True}}}))
+        return path
+
+    sim.write_config.side_effect = write_config
     matrix = jnp.array([[3.0, -1.0], [-1.0, 3.0]]) * 1e-15
     gsim = ModuleType("gsim")
     palace = ModuleType("gsim.palace")
@@ -87,7 +111,13 @@ def test_custom_mesh_controls_solver_and_completion(
             np.testing.assert_allclose(result["maxwell_capacitance"], matrix)
         assert len(list(tmp_path.rglob("complete.json"))) == 1
         constructor.assert_called_once()
-        sim.run_local.assert_called_once()
+        launch.assert_called_once()
+        assert (
+            json.loads(next(tmp_path.rglob("config.json")).read_text())["Solver"][
+                "Linear"
+            ]["InitialGuess"]
+            is False
+        )
         sim.reset_mock()
         kwargs["terminal_ports"] = {"b": "o2", "a": "o1"}
         sim.terminals.reverse()
