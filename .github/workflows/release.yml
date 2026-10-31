@@ -5,6 +5,8 @@ on:
       - main
     tags:
       - 'v*'
+permissions:
+  contents: read
 concurrency:
   group: release
   cancel-in-progress: false
@@ -100,6 +102,16 @@ jobs:
               --verify-tag \
               sbom.json
           fi
+  zenodo_metadata:
+    permissions:
+      contents: read
+    needs: [check_and_tag, release_environment]
+    if: needs.check_and_tag.outputs.new_tag_created == 'true'
+    uses: ./.github/workflows/zenodo-metadata.yml
+    with:
+      tag: ${{ needs.check_and_tag.outputs.tag }}
+    secrets:
+      ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
   release_pypi:
     needs: [check_and_tag, build]
     if: needs.check_and_tag.outputs.new_tag_created == 'true'
@@ -114,6 +126,6 @@ jobs:
         with:
           name: dist
           path: dist
-      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: dist
