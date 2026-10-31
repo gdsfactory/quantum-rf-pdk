@@ -1,0 +1,81 @@
+{
+  "$schema": "./metadata.schema.json",
+  "concept_id": "23698129",
+  "anchor_record_id": "23698130",
+  "repository": "https://github.com/gdsfactory/quantum-rf-pdk",
+  "affiliations": {
+    "0000-0002-8036-4984": [
+      {"name": "GDSFactory"},
+      {"id": "020hwjq30", "name": "Aalto University"}
+    ]
+  },
+  "contact_orcid": "0000-0002-8036-4984",
+  "contributors": [
+    {
+      "person_or_org": {
+        "type": "personal",
+        "given_name": "Joaquin",
+        "family_name": "Matres",
+        "identifiers": [{"scheme": "orcid", "identifier": "0009-0001-1601-6109"}]
+      },
+      "role": {"id": "supervisor"},
+      "affiliations": [{"name": "GDSFactory"}]
+    },
+    {
+      "person_or_org": {
+        "type": "personal",
+        "given_name": "Vahid",
+        "family_name": "Ansari",
+        "identifiers": [{"scheme": "orcid", "identifier": "0000-0002-4020-0627"}]
+      },
+      "role": {"id": "other"},
+      "affiliations": [{"name": "GDSFactory"}]
+    }
+  ],
+  "languages": [{"id": "eng"}],
+  "additional_titles": [
+    {
+      "title": "QPDK: Suprajohtavien kvanttipiirien prosessisuunnittelupaketti",
+      "type": {"id": "translated-title"},
+      "lang": {"id": "fin"}
+    }
+  ],
+  "additional_descriptions": [
+    {
+      "type": {"id": "abstract"},
+      "lang": {"id": "fin"},
+      "description": "QPDK on avoimen lähdekoodin prosessisuunnittelupaketti suprajohtaville kvantti- ja mikroaaltopiireille. Se perustuu gdsfactoryyn ja sisältää parametrisia kvanttipiirikomponentteja, kuten kubitteja, Josephson-liitoksia, resonaattoreita ja kytkimiä. Pakettiin kuuluu myös piirimallinnusta, sähkömagneettisen simuloinnin aineistoja ja esimerkkejä suunnittelusta ja simuloinnista."
+    }
+  ],
+  "subjects": [
+    "superconducting qubits",
+    "quantum circuit design",
+    "quantum hardware",
+    "process design kits",
+    "coplanar waveguides",
+    "microwave resonators",
+    "Josephson junctions",
+    "finite element analysis",
+    "electromagnetic simulation",
+    "scattering parameters",
+    "differentiable simulation",
+    "GDSII",
+    "open source software"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://gdsfactory.github.io/quantum-rf-pdk/",
+      "scheme": "url",
+      "relation_type": {"id": "isdocumentedby"}
+    },
+    {
+      "identifier": "https://pypi.org/project/qpdk/",
+      "scheme": "url",
+      "relation_type": {"id": "issupplementedby"}
+    }
+  ],
+  "custom_fields": {
+    "code:programmingLanguage": [{"id": "python"}],
+    "code:codeRepository": "https://github.com/gdsfactory/quantum-rf-pdk"
+  }
+}
