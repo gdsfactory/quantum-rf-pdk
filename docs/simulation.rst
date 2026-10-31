@@ -491,6 +491,73 @@ Supply your scheduler's partition and resource options to ``sbatch``. Merging ch
 matching provenance, successful results and exact coverage before publishing. Keep the
 experiment, runtime and array size fixed when resuming.
 
+Qubit capacitance boundaries
+----------------------------
+
+The stored double-pad transmon matrix describes two floating islands and a finite
+coplanar ground frame. The flipmon matrix describes three unbonded electrodes between
+two silicon chips. Its ideal-bond reduction preserves capacitance but omits finite-bump
+fields. Neither table includes a readout coupler. Their independent mesh, element-order,
+domain and off-grid references are stored in the Parquet provenance, under
+``Dataset(name).metadata.provenance["validation"]``.
+
+``double_pad_readout.py`` and ``xmon_readout.py`` define new local coupling experiments.
+They keep the qubit and a separate coupling paddle, ending at the paddle's CPW pin. They
+vary the qubit geometry, coupling gap and paddle length. The bundled
+``xmon_readout_palace`` table contains 270 native Palace geometries. It passes 15
+independent mesh, element-order and domain comparisons at five geometries, plus 135
+direct-solve reference comparisons covering all 80 interpolation cells and both ends of
+every axis. Matrix entries, ground capacitances and qubit charge capacitances with
+grounded and floating readout are checked separately at 2 percent plus 0.01 fF. The
+direct matrices, settings, sources and checks are embedded in its Parquet metadata. The
+735-point double-pad candidate still awaits complete production and interpolation
+checks. The full local Maxwell matrix includes both coupling and capacitances to ground.
+The distributed readout line starts outside this boundary, so its capacitance is counted
+once. A full-resonator electrostatic coupon cannot replace this local block.
+
+The Xmon dataset models an equipotential island and paddle on silicon. It omits
+distributed arm modes and the junction, which the circuit supplies separately. For
+example, ``junction_model("xmon_readout_palace", junction=("island", None),
+inductance=12e-9, exposed_ports=("readout",))`` keeps the island internal and exposes
+only the physical paddle pin. The inductance is an explicit operating-point input.
+
+The double-pad grid includes the default assembly's 394 um paddle and 35 um coupling
+gap. Its nominal point is explicit rather than inferred from the middle grid coordinate.
+Pocket clearance is sampled more densely below 200 um, where initial held-out checks
+found the largest paddle-to-ground errors.
+
+Once a local dataset has passed numerical validation, ``junction_model`` can keep its
+qubit electrodes internal and expose just the readout pin:
+
+.. code-block:: python
+
+    from qpdk.models.datasets import junction_model
+
+    model = junction_model(
+        "build/datasets/double_pad_readout_palace",
+        junction=("left_pad", "right_pad"),
+        inductance=10e-9,
+        junction_capacitance=2e-15,
+        exposed_ports=("readout",),
+    )
+
+Internal electrodes have zero injected current. They are not omitted SAX ports with
+implicit matched loads. For an Xmon, the four arms share one island potential, and
+``junction=("island", None)`` connects the junction to reference ground. These are
+small-signal Josephson inductances, not nonlinear qubit transition models. Josephson
+energy, operating flux and additional junction capacitance remain explicit circuit
+inputs. The nonlinear Hamiltonian uses the same capacitance network with the chosen
+physical boundary conditions :cite:`voolIntroductionQuantumElectromagnetic2017`.
+
+Fluxonium and unimon need additional inductive and distributed validation. A connected
+fluxonium meander is a DC short in an electrostatic solve; assigning separate pad
+potentials requires an explicit cut or a distributed winding model. A unimon's grounded
+CPW arms have a position-dependent mode voltage, so a static total capacitance cannot
+determine its charging energy or coupling by itself
+:cite:`hyyppaUnimonQubit2022,tuohinoMultimodePhysicsUnimon2024`. The qubit and readout
+reference planes, arm modes and film inductance must agree before such a model is
+registered for layout or schematic simulation.
+
 .. automodule:: qpdk.models.datasets
 
 .. automodule:: qpdk.models.datasets.metadata
@@ -545,3 +612,10 @@ interpolates frequency and continuous geometry axes together and returns NaN out
 stored domain. Discrete variants are selected when loading. Complex linear interpolation
 can introduce apparent loss between sample points, so check withheld frequencies near
 resonances before choosing the frequency spacing.
+
+************
+ References
+************
+
+.. bibliography::
+    :filter: docname in docnames
