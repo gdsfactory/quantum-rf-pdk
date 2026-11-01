@@ -9,6 +9,9 @@ updates:
     ignore:
       - dependency-name: "doplaydo/*"
       - dependency-name: "jupyter-book"
+      # trimesh's OpenGL viewer does not support pyglet 2.
+      - dependency-name: "pyglet"
+        versions: [">=2"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
