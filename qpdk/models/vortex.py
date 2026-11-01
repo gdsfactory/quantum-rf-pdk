@@ -122,6 +122,23 @@ def _cascade(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
+def _is_concrete(*values: object) -> bool:
+    """Return whether none of ``values`` is traced, so they can be validated."""
+    return not any(isinstance(v, jax.core.Tracer) for v in values)
+
+
+def _segments(npoints: int | jax.Array) -> int:
+    """Return ``npoints`` as a segment count, which must be concrete.
+
+    Raises:
+        ValueError: If ``npoints`` is less than one.
+    """
+    n = int(npoints)
+    if n < 1:
+        raise ValueError(f"npoints must be at least 1, got {npoints}.")
+    return n
+
+
 def _neck_sections(
     cross_section: CrossSectionSpec,
     taper_length: float,
@@ -137,16 +154,16 @@ def _neck_sections(
         ValueError: If the strip does not fit inside the window.
     """
     width, gap = get_cpw_dimensions(cross_section)
-    if not 0 < neck_width < width:
+    if _is_concrete(neck_width) and not 0 < neck_width < width:
         raise ValueError(
             f"Need 0 < neck_width < CPW width, got {neck_width} and {width}."
         )
-    if window_width < width + 2 * gap:
+    if _is_concrete(window_width) and window_width < width + 2 * gap:
         raise ValueError(
             f"window_width ({window_width}) must be at least the CPW footprint "
             f"({width + 2 * gap})."
         )
-    npoints = max(int(npoints), 1)
+    npoints = _segments(npoints)
     taper = [
         (taper_length / npoints, w, (window_width - w) / 2)
         for w in _taper_widths(width, neck_width, npoints, taper_shape)
@@ -161,9 +178,22 @@ def _bulge_sections(
     taper_length: float,
     npoints: int | jax.Array,
 ) -> list[tuple[float, float, float]]:
-    """Return the CPW sections of the bulge, with a constant gap."""
+    """Return the CPW sections of the bulge, with a constant gap.
+
+    Raises:
+        ValueError: If the bulge has no width or a negative length.
+    """
     width, gap = get_cpw_dimensions(cross_section)
-    npoints = max(int(npoints), 1)
+    if _is_concrete(bulge_width) and not bulge_width > 0:
+        raise ValueError(f"bulge_width must be positive, got {bulge_width}.")
+    if _is_concrete(bulge_length, taper_length) and (
+        bulge_length < 0 or taper_length < 0
+    ):
+        raise ValueError(
+            "bulge_length and taper_length must not be negative, got "
+            f"{bulge_length} and {taper_length}."
+        )
+    npoints = _segments(npoints)
     widths = _taper_widths(width, bulge_width, npoints, "linear")
     taper_in = [(taper_length / npoints, w, gap) for w in widths]
     taper_out = [(taper_length / npoints, w, gap) for w in reversed(widths)]
@@ -198,7 +228,8 @@ def neck_termination(
         neck_width: Width of the neck in µm.
         neck_length: Length of the neck in µm.
         window_width: Width of the etched window across the line in µm.
-        npoints: Number of segments the taper is divided into.
+        npoints: Number of segments the taper is divided into. Must be
+            concrete (not traced); float arrays are truncated to ``int``.
 
     Returns:
         sax.SDict: One-port S-parameters with port ``o1``.
@@ -241,7 +272,8 @@ def cpw_bulge(
         bulge_width: Width of the widened centre conductor in µm.
         bulge_length: Length of the full-width section in µm.
         taper_length: Length of each linear taper in µm.
-        npoints: Number of segments each taper is divided into.
+        npoints: Number of segments each taper is divided into. Must be
+            concrete (not traced); float arrays are truncated to ``int``.
 
     Returns:
         sax.SDict: Two-port S-parameters with ports ``o1`` and ``o2``.
@@ -333,7 +365,7 @@ def resonator_half_wave_bulge(
         ValueError: If a concrete ``length`` is shorter than the bulge.
     """
     side_length = (length - bulge_length - 2 * taper_length) / 2
-    if isinstance(side_length, int | float) and side_length <= 0:
+    if _is_concrete(side_length) and side_length <= 0:
         raise ValueError(
             f"length ({length}) must exceed the bulge length "
             f"({bulge_length + 2 * taper_length})."

@@ -3,6 +3,7 @@
 import inspect
 from typing import final
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -127,6 +128,43 @@ class TestPhysics:
         """Geometries the layout cell refuses are refused by the model too."""
         with pytest.raises(ValueError, match=match):
             neck_termination(f=jnp.array([5e9]), **kwargs)
+
+    @staticmethod
+    def test_half_wave_too_short_array_raises() -> None:
+        """The length check also holds when SAX passes ``length`` as an array."""
+        with pytest.raises(ValueError, match="must exceed the bulge length"):
+            resonator_half_wave_bulge(
+                f=jnp.array([5e9]),
+                length=jnp.asarray(50.0),  # pyrefly: ignore[bad-argument-type]  # SAX passes arrays
+            )
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        ("kwargs", "match"),
+        [
+            ({"bulge_width": 0}, "bulge_width must be positive"),
+            ({"bulge_length": -1}, "must not be negative"),
+            ({"taper_length": -1}, "must not be negative"),
+            ({"npoints": 0}, "npoints must be at least 1"),
+        ],
+    )
+    def test_bulge_invalid_raises(kwargs: dict, match: str) -> None:
+        """Geometries without a physical bulge are refused."""
+        with pytest.raises(ValueError, match=match):
+            cpw_bulge(f=jnp.array([5e9]), **kwargs)
+
+    @staticmethod
+    def test_jit_over_traced_geometry() -> None:
+        """Validation does not branch on traced settings, so the models jit."""
+        f = jnp.array([5e9])
+        neck = jax.jit(lambda w: neck_termination(f=f, neck_width=w)["o1", "o1"])
+        bulge = jax.jit(lambda w: cpw_bulge(f=f, bulge_width=w)["o2", "o1"])
+        np.testing.assert_allclose(
+            neck(jnp.asarray(2.0)), neck_termination(f=f)["o1", "o1"], rtol=1e-12
+        )
+        np.testing.assert_allclose(
+            bulge(jnp.asarray(25.0)), cpw_bulge(f=f)["o2", "o1"], rtol=1e-12
+        )
 
     @staticmethod
     def test_bulge_raises_half_wave_resonance() -> None:
