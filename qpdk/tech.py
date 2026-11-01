@@ -766,6 +766,63 @@ def _is_concrete(*values: Any) -> bool:
     return all(isinstance(v, int | float) for v in values)
 
 
+NANOWIRE_WIDTH_RANGE = (0.05, 1.0)
+"""Allowed nanowire width range in µm."""
+
+
+def validate_nanowire_layout(
+    wire_width: float,
+    n_turns: int,
+    wire_gap: float,
+    pad_width: float,
+    pad_ground_gap: float,
+    feedline_length: float | None = None,
+) -> None:
+    """Check that a nanowire resonator layout can be drawn.
+
+    Shared by :func:`qpdk.cells.nanowire_resonator` and its SAX model so both
+    reject the same settings. Traced values are skipped, as they cannot be
+    compared under JIT.
+
+    Args:
+        wire_width: Nanowire width in µm.
+        n_turns: Number of nanowire runs.
+        wire_gap: Gap between runs in µm.
+        pad_width: Pad size along the feedline in µm.
+        pad_ground_gap: Gap between the pads and the side grounds in µm.
+        feedline_length: Length of the feedline in µm. ``None`` skips the
+            feedline check.
+
+    Raises:
+        ValueError: If the wire width is out of range, ``n_turns`` is even or
+            not positive, the meander is wider than the pads, or the feedline is
+            shorter than the ground window.
+    """
+    w_min, w_max = NANOWIRE_WIDTH_RANGE
+    if _is_concrete(wire_width) and not w_min <= wire_width <= w_max:
+        raise ValueError(
+            f"wire_width must be between {w_min} and {w_max} µm, got {wire_width}"
+        )
+    if n_turns < 1 or n_turns % 2 == 0:
+        raise ValueError(
+            f"n_turns must be a positive odd number so the wire ends on the "
+            f"opposite pad, got {n_turns}"
+        )
+    wire_extent = n_turns * wire_width + (n_turns - 1) * wire_gap
+    if _is_concrete(wire_extent, pad_width) and wire_extent > pad_width:
+        raise ValueError(
+            f"The meander is {wire_extent} µm wide, more than pad_width={pad_width}"
+        )
+    if feedline_length is None:
+        return
+    window_width = pad_width + 2 * pad_ground_gap
+    if _is_concrete(feedline_length, window_width) and feedline_length < window_width:
+        raise ValueError(
+            f"feedline_length={feedline_length} must be at least "
+            f"pad_width + 2 * pad_ground_gap = {window_width}"
+        )
+
+
 def meander_round_radius(
     wire_width: float, wire_gap: float, radius: float | None = None
 ) -> float:
@@ -882,6 +939,8 @@ def meander_n_squares_drawn(
             arc = (math.pi / 2) / m.log((2 * r + wire_width) / (2 * r - wire_width))
             return straight / wire_width + 2 * n_bends * arc
         case "optimal":
+            if n_bends == 0:
+                return turn_length / wire_width
             arm = optimal_hairpin_arm_length(turn_length, wire_width, pitch)
             hairpin = 2 * arm / wire_width + 2 * (pitch + wire_width) * math.log(2) / (
                 math.pi * wire_width

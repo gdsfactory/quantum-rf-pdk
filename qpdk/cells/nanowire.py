@@ -9,13 +9,15 @@ from gdsfactory.typings import CrossSectionSpec, LayerSpec
 from qpdk.cells._schematic import nanowire_resonator_schematic
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.waveguides import straight
-from qpdk.tech import LAYER, MeanderCornerStyle, get_etch_section
+from qpdk.tech import (
+    LAYER,
+    MeanderCornerStyle,
+    get_etch_section,
+    validate_nanowire_layout,
+)
 from qpdk.utils import add_rect
 
 __all__ = ["nanowire_resonator"]
-
-NANOWIRE_WIDTH_RANGE = (0.05, 1.0)
-"""Allowed nanowire width range in µm."""
 
 
 @gf.cell(
@@ -102,16 +104,6 @@ def nanowire_resonator(
             not positive, a length is not positive, or the wire does not fit
             between the pads or the feedline is too short.
     """
-    w_min, w_max = NANOWIRE_WIDTH_RANGE
-    if not w_min <= wire_width <= w_max:
-        raise ValueError(
-            f"wire_width must be between {w_min} and {w_max} µm, got {wire_width}"
-        )
-    if n_turns < 1 or n_turns % 2 == 0:
-        raise ValueError(
-            f"n_turns must be a positive odd number so the wire ends on the "
-            f"opposite pad, got {n_turns}"
-        )
     for name, value in {
         "wire_length": wire_length,
         "pad_width": pad_width,
@@ -136,14 +128,11 @@ def nanowire_resonator(
     centre_width = xs.width
 
     window_width = pad_width + 2 * pad_ground_gap
-    if feedline_length < window_width:
-        raise ValueError(
-            f"feedline_length={feedline_length} must be at least "
-            f"pad_width + 2 * pad_ground_gap = {window_width}"
-        )
-
     wire_xs = gf.cross_section.cross_section(width=wire_width, layer=wire_layer)
     wire_gap = wire_width if wire_gap is None else wire_gap
+    validate_nanowire_layout(
+        wire_width, n_turns, wire_gap, pad_width, pad_ground_gap, feedline_length
+    )
     lead_length = wire_gap if lead_length is None else lead_length
     wire = meander_inductor(
         n_turns=n_turns,
@@ -154,12 +143,6 @@ def nanowire_resonator(
         corner_style=corner_style,
         radius=radius,
     )
-    wire_extent = n_turns * wire_width + (n_turns - 1) * wire_gap
-    if wire_extent > pad_width:
-        raise ValueError(
-            f"The meander is {wire_extent} µm wide, more than pad_width={pad_width}"
-        )
-
     c = Component()
 
     feed = c << straight(length=feedline_length, cross_section=cross_section)

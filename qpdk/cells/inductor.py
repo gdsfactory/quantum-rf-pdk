@@ -135,6 +135,12 @@ def meander_inductor(
         case "sharp":
             _draw_sharp_meander(c, n_turns, turn_length, wire_width, pitch, layer)
         case "chamfer":
+            cut = (2 - sqrt(2)) * wire_width
+            if n_turns > 1 and turn_length < cut:
+                raise ValueError(
+                    f"turn_length={turn_length} is too short for chamfered corners; "
+                    f"need at least {cut:.4g}"
+                )
             _draw_chamfer_meander(c, n_turns, turn_length, wire_width, pitch, layer)
         case "round":
             r = meander_round_radius(wire_width, wire_gap, radius)

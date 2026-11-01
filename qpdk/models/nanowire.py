@@ -16,7 +16,11 @@ from qpdk.models.cpw import (
 from qpdk.models.inductor import meander_inductor_inductance_analytical
 from qpdk.models.math import capacitance_per_length_conformal
 from qpdk.models.waveguides import straight
-from qpdk.tech import MeanderCornerStyle, meander_n_squares_drawn
+from qpdk.tech import (
+    MeanderCornerStyle,
+    meander_n_squares_drawn,
+    validate_nanowire_layout,
+)
 
 __all__ = [
     "grounded_pad_capacitance_analytical",
@@ -251,6 +255,9 @@ def nanowire_resonator_parameters(
       couples to it at a single point, its midpoint.
     * Losses are not modelled: the internal quality factor is infinite.
 
+    Settings the cell rejects raise :class:`ValueError` through
+    :func:`~qpdk.tech.validate_nanowire_layout`.
+
     Args:
         wire_width: Nanowire width in µm.
         wire_length: Length of each nanowire run in µm.
@@ -280,15 +287,9 @@ def nanowire_resonator_parameters(
         ``geometric_inductance``, ``inductance`` (H), ``capacitance`` (F),
         ``coupling_capacitance`` (F), ``z0`` (Ω), ``resonance_frequency`` (Hz)
         and ``coupling_quality_factor``.
-
-    Raises:
-        ValueError: If ``n_turns`` is not a positive odd number.
     """
-    if n_turns < 1 or n_turns % 2 == 0:
-        raise ValueError(
-            f"n_turns must be a positive odd number, as in the cell, got {n_turns}"
-        )
     wire_gap = wire_width if wire_gap is None else wire_gap
+    validate_nanowire_layout(wire_width, n_turns, wire_gap, pad_width, pad_ground_gap)
     lead_length = wire_gap if lead_length is None else lead_length
     n_squares = (
         meander_n_squares_drawn(
@@ -386,6 +387,9 @@ def nanowire_resonator(
     Design references for the nanowire are
     :cite:`joshiStrongKineticinductanceKerr2022,maleevaCircuitQuantumElectrodynamics2018`.
 
+    Settings the cell rejects raise :class:`ValueError` through
+    :func:`~qpdk.tech.validate_nanowire_layout`.
+
     Args:
         f: Array of frequency points in Hz.
         wire_width: Nanowire width in µm.
@@ -411,6 +415,14 @@ def nanowire_resonator(
     Returns:
         sax.SDict: S-parameters with ports ``o1`` and ``o2``.
     """
+    validate_nanowire_layout(
+        wire_width,
+        n_turns,
+        wire_width if wire_gap is None else wire_gap,
+        pad_width,
+        pad_ground_gap,
+        feedline_length,
+    )
     p = nanowire_resonator_parameters(
         wire_width=wire_width,
         wire_length=wire_length,

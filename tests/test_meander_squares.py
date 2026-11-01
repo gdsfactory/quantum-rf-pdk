@@ -173,11 +173,12 @@ def test_chamfer_corner_value_from_fem() -> None:
         ({"corner_style": "round", "radius": 0.4}, "radius"),
         ({"corner_style": "round", "radius": 1.5}, "radius"),
         ({"corner_style": "optimal", "turn_length": 4.0}, "optimal"),
+        ({"corner_style": "chamfer", "turn_length": 0.5}, "chamfer"),
         ({"corner_style": "bevel"}, "corner_style"),
     ],
 )
 def test_invalid_corner_arguments(kwargs: dict, match: str) -> None:
-    """Out-of-range radii, too-short optimal runs and unknown styles raise."""
+    """Out-of-range radii, too-short corner runs and unknown styles raise."""
     kwargs = {
         "n_turns": 3,
         "turn_length": 14.0,
@@ -187,6 +188,19 @@ def test_invalid_corner_arguments(kwargs: dict, match: str) -> None:
     } | kwargs
     with pytest.raises(ValueError, match=match):
         meander_inductor(**kwargs)
+
+
+@pytest.mark.parametrize("corner_style", ["sharp", "chamfer", "round", "optimal"])
+def test_single_run_ignores_corner_style(corner_style: str) -> None:
+    """A single run has no corners, so even a short one is a straight wire."""
+    c = meander_inductor(
+        n_turns=1,
+        turn_length=0.5,
+        cross_section=_wire_xs(1.0),
+        add_etch=False,
+        corner_style=corner_style,
+    )
+    assert c.info["n_squares_drawn"] == pytest.approx(0.5)
 
 
 @pytest.mark.parametrize(

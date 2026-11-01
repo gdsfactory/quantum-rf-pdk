@@ -95,11 +95,26 @@ def test_grounded_pad_reduces_to_cross_ratio_modulus() -> None:
     )
 
 
-@pytest.mark.parametrize("n_turns", [0, 2])
-def test_parameters_reject_even_turns(n_turns: int) -> None:
-    """The model accepts the same odd turn counts as the cell."""
-    with pytest.raises(ValueError, match="n_turns"):
-        nanowire_resonator_parameters(n_turns=n_turns)
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"n_turns": 0}, "n_turns"),
+        ({"n_turns": 2}, "n_turns"),
+        ({"wire_width": 0.02}, "wire_width"),
+        ({"wire_width": 2.0}, "wire_width"),
+        ({"wire_width": 1.0, "pad_width": 0.5}, "pad_width"),
+        ({"feedline_length": 100.0}, "feedline_length"),
+    ],
+)
+def test_model_rejects_what_cell_rejects(kwargs: dict, match: str) -> None:
+    """The model rejects the same settings as the cell."""
+    with pytest.raises(ValueError, match=match):
+        nanowire_resonator_cell(**kwargs)
+    with pytest.raises(ValueError, match=match):
+        nanowire_resonator(**kwargs)
+    if "feedline_length" not in kwargs:
+        with pytest.raises(ValueError, match=match):
+            nanowire_resonator_parameters(**kwargs)
 
 
 # Method-of-moments extraction of the drawn 3D pads (pad, ground pad, side
