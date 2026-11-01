@@ -1,7 +1,7 @@
 # Note, to download from ghcr.io you may need to authenticate with docker login, e.g.
 #     echo $(gh auth token) | docker login ghcr.io -u "$(gh api user | jq -r .login)" --password-stdin
 
-FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim@sha256:ca9f1a036df3ab14905132452f7c01ec17119fe8c75af450e5daa5acc35a30ec
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim@sha256:e586c1c65b7071aec78f02c5587c76c5011159cd76b3d6f1255f40e48e850abc
 
 # Create user for binder
 ARG NB_USER=notebook-user
