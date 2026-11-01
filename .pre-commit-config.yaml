@@ -90,9 +90,11 @@ repos:
     hooks:
       - id: tombi-format
         priority: 10
-        exclude: \.github/lychee\.toml$
+        # Julia's Pkg rewrites its Manifest with expanded arrays; leave it alone.
+        exclude: \.github/lychee\.toml$|notebooks/data/josephsoncircuits_twpa/julia/Manifest\.toml$
       - id: tombi-lint
         priority: 20
+        exclude: \.github/lychee\.toml$|notebooks/data/josephsoncircuits_twpa/julia/Manifest\.toml$
   - repo: https://github.com/aristanetworks/j2lint.git
     rev: v1.2.0
     hooks:
