@@ -122,9 +122,11 @@ class TestPhysics:
             ({"neck_width": 10}, "neck_width < CPW width"),
             ({"neck_width": 0}, "neck_width < CPW width"),
             ({"window_width": 15}, "CPW footprint"),
+            ({"taper_length": 0}, "must be positive"),
+            ({"neck_length": -1}, "must be positive"),
         ],
     )
-    def test_neck_outside_window_raises(kwargs: dict, match: str) -> None:
+    def test_neck_invalid_raises(kwargs: dict, match: str) -> None:
         """Geometries the layout cell refuses are refused by the model too."""
         with pytest.raises(ValueError, match=match):
             neck_termination(f=jnp.array([5e9]), **kwargs)
@@ -142,9 +144,10 @@ class TestPhysics:
     @pytest.mark.parametrize(
         ("kwargs", "match"),
         [
-            ({"bulge_width": 0}, "bulge_width must be positive"),
-            ({"bulge_length": -1}, "must not be negative"),
-            ({"taper_length": -1}, "must not be negative"),
+            ({"bulge_width": 0}, "must exceed the CPW width"),
+            ({"bulge_width": 10}, "must exceed the CPW width"),
+            ({"bulge_length": 0}, "must be positive"),
+            ({"taper_length": -1}, "must be positive"),
             ({"npoints": 0}, "npoints must be at least 1"),
         ],
     )
@@ -165,6 +168,13 @@ class TestPhysics:
         np.testing.assert_allclose(
             bulge(jnp.asarray(25.0)), cpw_bulge(f=f)["o2", "o1"], rtol=1e-12
         )
+
+    @staticmethod
+    def test_traced_npoints_raises() -> None:
+        """A traced section count is refused with a hint to make it static."""
+        f = jnp.array([5e9])
+        with pytest.raises(ValueError, match="static argument"):
+            jax.jit(lambda n: neck_termination(f=f, npoints=n)["o1", "o1"])(10)
 
     @staticmethod
     def test_bulge_raises_half_wave_resonance() -> None:

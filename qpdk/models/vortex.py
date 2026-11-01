@@ -131,8 +131,13 @@ def _segments(npoints: int | jax.Array) -> int:
     """Return ``npoints`` as a segment count, which must be concrete.
 
     Raises:
-        ValueError: If ``npoints`` is less than one.
+        ValueError: If ``npoints`` is traced or less than one.
     """
+    if isinstance(npoints, jax.core.Tracer):
+        raise ValueError(
+            "npoints sets the number of sections and cannot be traced; "
+            "pass it as a static argument (e.g. jax.jit(..., static_argnames=...))."
+        )
     n = int(npoints)
     if n < 1:
         raise ValueError(f"npoints must be at least 1, got {npoints}.")
@@ -151,9 +156,17 @@ def _neck_sections(
     """Return the CPW sections of the taper and neck inside the window.
 
     Raises:
-        ValueError: If the strip does not fit inside the window.
+        ValueError: If a length is not positive or the strip does not fit
+            inside the window.
     """
     width, gap = get_cpw_dimensions(cross_section)
+    if _is_concrete(taper_length, neck_length) and not (
+        taper_length > 0 and neck_length > 0
+    ):
+        raise ValueError(
+            "taper_length and neck_length must be positive, got "
+            f"{taper_length} and {neck_length}."
+        )
     if _is_concrete(neck_width) and not 0 < neck_width < width:
         raise ValueError(
             f"Need 0 < neck_width < CPW width, got {neck_width} and {width}."
@@ -181,16 +194,19 @@ def _bulge_sections(
     """Return the CPW sections of the bulge, with a constant gap.
 
     Raises:
-        ValueError: If the bulge has no width or a negative length.
+        ValueError: If the bulge is not wider than the CPW or a length is not
+            positive.
     """
     width, gap = get_cpw_dimensions(cross_section)
-    if _is_concrete(bulge_width) and not bulge_width > 0:
-        raise ValueError(f"bulge_width must be positive, got {bulge_width}.")
-    if _is_concrete(bulge_length, taper_length) and (
-        bulge_length < 0 or taper_length < 0
+    if _is_concrete(bulge_width) and not bulge_width > width:
+        raise ValueError(
+            f"bulge_width ({bulge_width}) must exceed the CPW width ({width})."
+        )
+    if _is_concrete(bulge_length, taper_length) and not (
+        bulge_length > 0 and taper_length > 0
     ):
         raise ValueError(
-            "bulge_length and taper_length must not be negative, got "
+            "bulge_length and taper_length must be positive, got "
             f"{bulge_length} and {taper_length}."
         )
     npoints = _segments(npoints)

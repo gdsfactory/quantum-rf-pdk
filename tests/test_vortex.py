@@ -23,6 +23,11 @@ def _region(component: gf.Component, layer: tuple[int, int]) -> gf.kdb.Region:
     return gf.kdb.Region(component.begin_shapes_rec(gf.get_layer(layer))).merged()
 
 
+def _um(component: gf.Component, value: float) -> int:
+    """Convert ``value`` in µm to database units of ``component``."""
+    return round(value / component.kcl.dbu)
+
+
 def _ground_frame(component: gf.Component) -> gf.kdb.Region:
     """Ground fill around the cell, open on the port side (x < 0).
 
@@ -33,8 +38,9 @@ def _ground_frame(component: gf.Component) -> gf.kdb.Region:
         Box region extending 50 µm past the cell on the other three sides.
     """
     box = component.ibbox()
+    pad = _um(component, 50)
     return gf.kdb.Region(
-        gf.kdb.Box(box.left, box.bottom - 50_000, box.right + 50_000, box.top + 50_000)
+        gf.kdb.Box(box.left, box.bottom - pad, box.right + pad, box.top + pad)
     )
 
 
@@ -102,8 +108,9 @@ class TestNeckTermination:
         draw = _region(c, LAYER.M1_DRAW)
         right = etch.bbox().right
         # Cut a 1 µm slot across the conductor just inside the far wall.
+        span = _um(c, 1000)
         slot = gf.kdb.Region(
-            gf.kdb.Box(right - 2000, -1_000_000, right - 1000, 1_000_000)
+            gf.kdb.Box(right - _um(c, 2), -span, right - _um(c, 1), span)
         )
         frame = _ground_frame(c)
         metal = ((frame - etch) + (draw - slot)).merged()
@@ -114,28 +121,31 @@ class TestNeckTermination:
         """The conductor at the far end of the window has the neck width."""
         c = neck_termination(neck_width=3, trap_hole_rows=0)
         draw = _region(c, LAYER.M1_DRAW)
-        x = round((c.info["window_length"] - 1) * 1000)
-        probe = draw & gf.kdb.Region(gf.kdb.Box(x, -100_000, x + 10, 100_000))
-        assert probe.bbox().height() == pytest.approx(3000, abs=2)
+        x = _um(c, c.info["window_length"] - 1)
+        span = _um(c, 100)
+        probe = draw & gf.kdb.Region(gf.kdb.Box(x, -span, x + 10, span))
+        assert probe.bbox().height() == pytest.approx(_um(c, 3), abs=2)
 
     @staticmethod
     def test_hole_ring_surrounds_window() -> None:
         """Holes flank both long sides and the far end, never the CPW or window."""
-        c = neck_termination()
+        offset_um = 6
+        c = neck_termination(trap_hole_offset=offset_um)
         bare = neck_termination(trap_hole_rows=0)
         window = _region(bare, LAYER.M1_ETCH)
         holes = _region(c, LAYER.M1_ETCH) - window
         box = window.bbox()
-        offset = 6000  # trap_hole_offset in dbu
+        offset = _um(c, offset_um)
+        band = _um(c, 40)
         # No hole cuts into the window, the CPW feed or its gaps.
         assert (holes & window.sized(offset - 1)).is_empty()
         # Nothing on the port side of the window.
         assert holes.bbox().left >= box.left
         # Holes exist above, below and beyond the window.
         bands = {
-            "top": gf.kdb.Box(box.left, box.top, box.right, box.top + 40_000),
-            "bottom": gf.kdb.Box(box.left, box.bottom - 40_000, box.right, box.bottom),
-            "end": gf.kdb.Box(box.right, box.bottom, box.right + 40_000, box.top),
+            "top": gf.kdb.Box(box.left, box.top, box.right, box.top + band),
+            "bottom": gf.kdb.Box(box.left, box.bottom - band, box.right, box.bottom),
+            "end": gf.kdb.Box(box.right, box.bottom, box.right + band, box.top),
         }
         for name, band in bands.items():
             assert not (holes & gf.kdb.Region(band)).is_empty(), name
@@ -150,17 +160,22 @@ class TestNeckTermination:
             neck_termination(trap_hole_rows=0), LAYER.M1_ETCH
         )
         # Growing each hole by half the neck width merges neighbours.
-        neck = round(c.info["neck_width"] * 1000)
+        neck = _um(c, c.info["neck_width"])
         assert holes.sized(neck // 2).merged().count() < holes.count() / 10
 
     @staticmethod
     def test_keepout_column_is_hole_free() -> None:
         """No hole sits in the column where the neck current enters the ground."""
-        c = neck_termination(trap_hole_keepout=30)
+        keepout = 30
+        c = neck_termination(trap_hole_keepout=keepout)
         holes = _region(c, LAYER.M1_ETCH) - _region(
             neck_termination(trap_hole_rows=0), LAYER.M1_ETCH
         )
-        column = gf.kdb.Region(gf.kdb.Box(425_000, -15_000, 500_000, 15_000))
+        window_end = _um(c, c.info["window_length"])
+        half = _um(c, keepout / 2)
+        column = gf.kdb.Region(
+            gf.kdb.Box(window_end, -half, window_end + _um(c, 75), half)
+        )
         assert (holes & column).is_empty()
 
     @staticmethod
