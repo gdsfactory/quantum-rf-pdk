@@ -5260,11 +5260,11 @@ wheels = [
 
 [[package]]
 name = "pyglet"
-version = "1.5.31"
+version = "2.1.19"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f7/c0/59130a7edbcc8f84e35870b00a712538ca05415ff02d17181277b8ef8f05/pyglet-1.5.31.zip", hash = "sha256:a5e422b4c27b0fc99e92103bf493109cca5c18143583b868b3b4631a98ae9417", size = 6900712, upload-time = "2024-12-24T07:10:58.022Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/2a/683a5e2421287c7eaa8dd06866b19f56f372271bf820dcd342936c59b166/pyglet-2.1.19.tar.gz", hash = "sha256:77fae024df940c60917ba604bab9b7e26306d66734186634b698c708cdd9f4be", size = 3915885, upload-time = "2026-10-11T23:34:01.248Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e2/43/46aa0ab49f2f5145d201780c7595cf0c305fb4fb5d00d6639792a3d0e770/pyglet-1.5.31-py3-none-any.whl", hash = "sha256:f68413564bbec380e4815898fef0fb7a4a494dc3f8718bfbf28ce2a802634c88", size = 1143660, upload-time = "2024-12-24T07:10:50.769Z" },
+    { url = "https://files.pythonhosted.org/packages/75/f7/e5c199eb9c5cb3aae817f9102ba6c64f0c82fd4eb69a5d13dc0b1bc98ec0/pyglet-2.1.19-py3-none-any.whl", hash = "sha256:5ba6e8cb0b5ac56a284e43ab411e2bbd504191c32a765abdbd6a6c4b7f1ca317", size = 1039437, upload-time = "2026-10-11T23:33:58.548Z" },
 ]
 
 [[package]]
@@ -5763,7 +5763,7 @@ requires-dist = [
     { name = "polars", marker = "extra == 'hfss'", specifier = ">=2,<3" },
     { name = "polars", marker = "extra == 'models'", specifier = ">=2,<3" },
     { name = "pyaedt", extras = ["graphics"], marker = "extra == 'hfss'", specifier = ">=0.15.0" },
-    { name = "pyglet", marker = "extra == 'graphics'", specifier = "<2" },
+    { name = "pyglet", marker = "extra == 'graphics'", specifier = "<3" },
     { name = "pymablock", marker = "extra == 'pymablock'", specifier = ">=2.2.1" },
     { name = "qutip-jax", marker = "extra == 'qutip'", specifier = ">=0.1.1" },
     { name = "qutip-qip", marker = "extra == 'qutip'", specifier = ">=0.4.1" },
