@@ -1167,7 +1167,7 @@
     "name": "note_res_p600",
     "x": 6,
     "y": 13,
-    "template": "+600 \u00b5m",
+    "template": "+600 µm",
     "transform": [
       1,
       0,
@@ -1182,7 +1182,7 @@
     "name": "note_res_m300",
     "x": 14,
     "y": 13,
-    "template": "-300 \u00b5m",
+    "template": "-300 µm",
     "transform": [
       1,
       0,
@@ -1197,7 +1197,7 @@
     "name": "note_res_p300",
     "x": 22,
     "y": 13,
-    "template": "+300 \u00b5m",
+    "template": "+300 µm",
     "transform": [
       1,
       0,
@@ -1212,7 +1212,22 @@
     "name": "note_res_0",
     "x": 30,
     "y": 13,
-    "template": "0 \u00b5m",
+    "template": "0 µm",
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  "note_paper": {
+    "type": "text",
+    "name": "note_paper",
+    "x": 2,
+    "y": 4,
+    "template": "After Fig. 1a of Shulga et al., Phys. Rev. Lett. 137, 116001 (2026): https://doi.org/10.1103/4zw3-hm6t (arXiv:2512.00790)",
     "transform": [
       1,
       0,
