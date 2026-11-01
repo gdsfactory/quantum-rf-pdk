@@ -205,6 +205,13 @@ All PRs must pass:
    that break jitting, e.g. control flow that depends on traced values (`if`/`for`/`while` on array values), in-place
    array mutation, or data-dependent shapes. Use `jnp` operations and `jax.lax` control flow (`lax.cond`, `lax.scan`,
    `lax.fori_loop`) instead, and double-check that the finished model actually jits.
+1. **Expect SAX settings as arrays**: SAX circuits (and the GDSFactory+ simulation pane) pass every numeric instance
+   setting to a model as a JAX float array, so `npoints=10` arrives as `Array(10.)`. Python that needs a plain number,
+   such as `range(npoints)`, list indexing, or a segment count, then fails with "Only integer scalar arrays can be
+   converted to a scalar index". Convert structural settings with `int(...)` before use (see `taper_cross_section`).
+   Validation must not be skipped for arrays (`isinstance(x, int | float)` is false for them); skip it only for traced
+   values (`isinstance(x, jax.core.Tracer)`). Test the model with its numeric defaults wrapped in
+   `jnp.asarray(float(...))`.
 1. **Manage bibliography entries cleanly**: When editing the `bibliography.bib` file, ensure that if a reference
    contains a valid `doi` field, it should **not** include a `url` or `urldate` field to avoid redundant citation
    information.

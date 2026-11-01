@@ -137,6 +137,12 @@ from qpdk.models.unimon import (
     unimon_frequency_and_anharmonicity,
     unimon_hamiltonian,
 )
+from qpdk.models.vortex import (
+    cpw_bulge,
+    neck_termination,
+    resonator_half_wave_bulge,
+    resonator_quarter_wave_neck,
+)
 from qpdk.models.waveguides import (
     airbridge,
     bend_circular,
@@ -177,6 +183,7 @@ __all__ = [
     "coupler_ring",
     "coupler_straight",
     "coupling_strength_to_capacitance",
+    "cpw_bulge",
     "cpw_cpw_coupling_capacitance",
     "cpw_epsilon_eff",
     "cpw_parameters",
@@ -246,6 +253,7 @@ __all__ = [
     "microstrip_thickness_correction",
     "microstrip_z0",
     "models",
+    "neck_termination",
     "nxn",
     "open",
     "open_2_port",
@@ -260,9 +268,11 @@ __all__ = [
     "resonator_coupled",
     "resonator_frequency",
     "resonator_half_wave",
+    "resonator_half_wave_bulge",
     "resonator_linewidth_from_q",
     "resonator_meander",
     "resonator_quarter_wave",
+    "resonator_quarter_wave_neck",
     "series_impedance",
     "short",
     "short_2_port",

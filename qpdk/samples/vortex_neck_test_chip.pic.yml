@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=../../build/schemas/vortex_neck_test_chip.json
+instances:
+  launcher_west:
+    component: launcher
+    settings: {}
+  launcher_east:
+    component: launcher
+    settings: {}
+  res_p600:
+    component: resonator_coupled
+    settings:
+      length: 4600
+  neck_p600:
+    component: neck_termination
+    settings: {}
+  res_m300:
+    component: resonator_coupled
+    settings:
+      length: 3700
+  neck_m300:
+    component: neck_termination
+    settings: {}
+  res_p300:
+    component: resonator_coupled
+    settings:
+      length: 4300
+  neck_p300:
+    component: neck_termination
+    settings: {}
+  res_0:
+    component: resonator_coupled
+    settings:
+      length: 4000
+  neck_0:
+    component: neck_termination
+    settings: {}
+routes:
+  feed_res_p600:
+    links:
+      launcher_west,o1: res_p600,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  feed_res_m300:
+    links:
+      res_p600,coupling_o2: res_m300,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  feed_res_p300:
+    links:
+      res_m300,coupling_o2: res_p300,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  feed_res_0:
+    links:
+      res_p300,coupling_o2: res_0,coupling_o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  feed_out:
+    links:
+      res_0,coupling_o2: launcher_east,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  lead_res_p600:
+    links:
+      res_p600,resonator_o2: neck_p600,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  lead_res_m300:
+    links:
+      res_m300,resonator_o2: neck_m300,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  lead_res_p300:
+    links:
+      res_p300,resonator_o2: neck_p300,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+  lead_res_0:
+    links:
+      res_0,resonator_o2: neck_0,o1
+    routing_strategy: route_bundle_cpw
+    settings:
+      auto_taper: false
+ports:
+  o1: launcher_west,waveport
+  o2: launcher_east,waveport
+placements:
+  launcher_west:
+    x: 0
+    y: 0
+  launcher_east:
+    x: 4600
+    y: 0
+    rotation: 180
+  res_p600:
+    x: 1006.0
+    y: -30.0
+  neck_p600:
+    x: 1543.919
+    y: -2200
+    rotation: -90
+  res_m300:
+    x: 1706.0
+    y: 30.0
+    mirror: true
+  neck_m300:
+    x: 2115.347
+    y: 2200
+    rotation: 90
+  res_p300:
+    x: 2606.0
+    y: -30.0
+  neck_p300:
+    x: 3101.061
+    y: -2200
+    rotation: -90
+  res_0:
+    x: 3306.0
+    y: 30.0
+    mirror: true
+  neck_0:
+    x: 3758.204
+    y: 2200
+    rotation: 90

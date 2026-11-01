@@ -18,6 +18,7 @@ from qpdk import PDK, SAX_MODEL_ALIASES, _get_cell_schematic
 from qpdk.cells import (
     bend_circular,
     bend_s,
+    cpw_bulge,
     double_pad_transmon,
     double_pad_transmon_with_bbox,
     fluxonium,
@@ -28,6 +29,7 @@ from qpdk.cells import (
     launcher,
     lumped_element_resonator,
     meander_inductor,
+    neck_termination,
     open as open_cell,
     quarter_wave_resonator_coupled,
     resonator,
@@ -36,10 +38,12 @@ from qpdk.cells import (
     resonator_half_wave_bend_both,
     resonator_half_wave_bend_end,
     resonator_half_wave_bend_start,
+    resonator_half_wave_bulge,
     resonator_quarter_wave,
     resonator_quarter_wave_bend_both,
     resonator_quarter_wave_bend_end,
     resonator_quarter_wave_bend_start,
+    resonator_quarter_wave_neck,
     short as short_cell,
     straight,
     straight_open,
@@ -320,6 +324,10 @@ def test_simulation_cells_have_sax_models() -> None:
             {"left_wide", "right_wide"},
         ),
         unimon_coupled: ("qpdk.models.unimon", {"coupling_o3"}),
+        neck_termination: ("qpdk.models.vortex", {"o1"}),
+        cpw_bulge: ("qpdk.models.vortex", {"o1", "o2"}),
+        resonator_quarter_wave_neck: ("qpdk.models.vortex", {"o1"}),
+        resonator_half_wave_bulge: ("qpdk.models.vortex", {"o1", "o2"}),
     }
 
     for cell, (module, ports) in expected.items():

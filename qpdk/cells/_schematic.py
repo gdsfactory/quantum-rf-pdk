@@ -22,6 +22,7 @@ __all__ = [
     "bump_transition_schematic",
     "coupler_ring_schematic",
     "coupler_straight_schematic",
+    "cpw_bulge_schematic",
     "double_pad_transmon_schematic",
     "double_pad_transmon_with_bbox_schematic",
     "flipmon_schematic",
@@ -40,6 +41,7 @@ __all__ = [
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
+    "neck_termination_schematic",
     "nxn_schematic",
     "open_2_port_schematic",
     "open_schematic",
@@ -47,8 +49,10 @@ __all__ = [
     "plate_capacitor_single_schematic",
     "quarter_wave_resonator_coupled_schematic",
     "resonator_coupled_schematic",
+    "resonator_half_wave_bulge_schematic",
     "resonator_half_wave_schematic",
     "resonator_meander_schematic",
+    "resonator_quarter_wave_neck_schematic",
     "resonator_quarter_wave_schematic",
     "resonator_schematic",
     "sax_model",
@@ -438,6 +442,61 @@ resonator_quarter_wave_schematic = schematic(
         sax_model(
             name="resonator_quarter_wave",
             module="qpdk.models.resonator",
+            port_order=["o1", "o2"],
+        )
+    ],
+)
+
+
+# Vortex-trapping geometries: the neck and bulge reuse the plain line artwork.
+
+neck_termination_schematic = schematic(
+    symbol="straight_shorted",
+    tags=["resonators", "waveguides", "terminations"],
+    ports=_1PORT,
+    models=[
+        sax_model(
+            name="neck_termination",
+            module="qpdk.models.vortex",
+            port_order=["o1"],
+        )
+    ],
+)
+
+cpw_bulge_schematic = schematic(
+    symbol="straight",
+    tags=["waveguides"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="cpw_bulge",
+            module="qpdk.models.vortex",
+            port_order=["o1", "o2"],
+        )
+    ],
+)
+
+resonator_quarter_wave_neck_schematic = schematic(
+    symbol="straight_shorted",
+    tags=["resonators"],
+    ports=_1PORT,
+    models=[
+        sax_model(
+            name="resonator_quarter_wave_neck",
+            module="qpdk.models.vortex",
+            port_order=["o1"],
+        )
+    ],
+)
+
+resonator_half_wave_bulge_schematic = schematic(
+    symbol="resonator_half_wave",
+    tags=["resonators"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="resonator_half_wave_bulge",
+            module="qpdk.models.vortex",
             port_order=["o1", "o2"],
         )
     ],
