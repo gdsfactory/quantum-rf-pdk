@@ -25,6 +25,12 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 
+from qpdk.cells._schematic import (
+    cpw_bulge_schematic,
+    neck_termination_schematic,
+    resonator_half_wave_bulge_schematic,
+    resonator_quarter_wave_neck_schematic,
+)
 from qpdk.cells.resonator import resonator
 from qpdk.cells.waveguides import bend_circular, straight, taper_cross_section
 from qpdk.logger import logger
@@ -88,7 +94,9 @@ def _cpw_dimensions(cross_section: CrossSectionSpec) -> tuple[gf.CrossSection, f
     return xs, get_etch_section(xs).width
 
 
-@gf.cell(tags=["resonators", "waveguides"])
+@gf.cell(
+    tags=["resonators", "waveguides"], schematic_function=neck_termination_schematic
+)
 def neck_termination(
     cross_section: CrossSectionSpec = "cpw",
     taper_length: float = 100.0,
@@ -314,7 +322,7 @@ def neck_termination(
     return c
 
 
-@gf.cell(tags=["waveguides"])
+@gf.cell(tags=["waveguides"], schematic_function=cpw_bulge_schematic)
 def cpw_bulge(
     cross_section: CrossSectionSpec = "cpw",
     bulge_width: float = 25.0,
@@ -410,7 +418,7 @@ def cpw_bulge(
     return c
 
 
-@gf.cell(tags=["resonators"])
+@gf.cell(tags=["resonators"], schematic_function=resonator_quarter_wave_neck_schematic)
 def resonator_quarter_wave_neck(
     length: float = 4000.0,
     meanders: int = 6,
@@ -495,7 +503,7 @@ def resonator_quarter_wave_neck(
     return c
 
 
-@gf.cell(tags=["resonators"])
+@gf.cell(tags=["resonators"], schematic_function=resonator_half_wave_bulge_schematic)
 def resonator_half_wave_bulge(
     length: float = 8000.0,
     meanders: int = 6,

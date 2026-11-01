@@ -13,30 +13,61 @@ from kfactory.schematic import DSchematic
 
 SAMPLE_DIR = Path(__file__).parents[1] / "qpdk/samples"
 # Sample stem -> number of distinct nets wired in the Mosaic view.
-SAMPLES = {"gatemon_test_chip": 22, "tsv_flip_chip_test_chip": 22}
+SAMPLES = {
+    "gatemon_test_chip": 22,
+    "tsv_flip_chip_test_chip": 22,
+    "vortex_neck_test_chip": 11,
+}
+
+
+def _slots(count: int, size: int) -> list[int]:
+    """Mirror ``spread-ports`` in Mosaic: place ``count`` ports in ``size`` slots."""
+    if size <= count:
+        return list(range(1, count + 1))
+    half = count // 2
+    middle = [(size + 1) // 2] if count % 2 else []
+    return [*range(1, half + 1), *middle, *range(size - half + 1, size + 1)]
 
 
 def _pin(device: dict, name: str) -> tuple[float, float]:
+    """Grid position of a pin; a symbol cell spans two grid units."""
     if device["type"] == "port":
-        local = (0, 0)
+        local, mid = (0, 0), (0, 0)
     else:
         factory = gf.kcl.factories[device["model"].rsplit(".", 1)[-1]]
         schematic = factory.get_schematic()
         assert isinstance(schematic, DSchematic)
         ports = schematic.info["ports"]
         assert isinstance(ports, list)
+        sides = [port["side"] for port in ports if isinstance(port, dict)]
+        n = {side: sides.count(side) for side in ("left", "right", "top", "bottom")}
+        # Box size in cells, as ``port-perimeter`` sizes it.
+        height = max(1, n["left"], n["right"])
+        height += n["left"] % 2 != n["right"] % 2 and height % 2 == 0
+        width = max(1, n["top"], n["bottom"])
+        width += n["top"] % 2 != n["bottom"] % 2 and width % 2 == 0
         port = next(
             port for port in ports if isinstance(port, dict) and port["name"] == name
         )
         side = port["side"]
         assert isinstance(side, str)
-        local = {"left": (0, 1), "right": (2, 1), "top": (1, 0), "bottom": (1, 2)}[side]
+        same_side = [
+            p["name"] for p in ports if isinstance(p, dict) and p["side"] == side
+        ]
+        size = height if side in {"left", "right"} else width
+        slot = 2 * _slots(len(same_side), size)[same_side.index(name)] - 1
+        local = {
+            "left": (0, slot),
+            "right": (2 * width, slot),
+            "top": (slot, 0),
+            "bottom": (slot, 2 * height),
+        }[side]
+        mid = (width, height)
     a, b, c, d, e, f = device["transform"]
-    mid = 0 if device["type"] == "port" else 1
-    x, y = local[0] - mid, local[1] - mid
+    x, y = local[0] - mid[0], local[1] - mid[1]
     return (
-        device["x"] + a * x + c * y + e + mid,
-        device["y"] + b * x + d * y + f + mid,
+        device["x"] + a * x + c * y + e + mid[0],
+        device["y"] + b * x + d * y + f + mid[1],
     )
 
 
