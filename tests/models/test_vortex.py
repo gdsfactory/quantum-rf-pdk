@@ -173,7 +173,7 @@ class TestPhysics:
     def test_traced_npoints_raises() -> None:
         """A traced section count is refused with a hint to make it static."""
         f = jnp.array([5e9])
-        with pytest.raises(ValueError, match="static argument"):
+        with pytest.raises(TypeError, match="static argument"):
             jax.jit(lambda n: neck_termination(f=f, npoints=n)["o1", "o1"])(10)
 
     @staticmethod

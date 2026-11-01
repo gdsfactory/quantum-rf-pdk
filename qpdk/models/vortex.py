@@ -131,10 +131,11 @@ def _segments(npoints: int | jax.Array) -> int:
     """Return ``npoints`` as a segment count, which must be concrete.
 
     Raises:
-        ValueError: If ``npoints`` is traced or less than one.
+        TypeError: If ``npoints`` is traced.
+        ValueError: If ``npoints`` is less than one.
     """
     if isinstance(npoints, jax.core.Tracer):
-        raise ValueError(
+        raise TypeError(
             "npoints sets the number of sections and cannot be traced; "
             "pass it as a static argument (e.g. jax.jit(..., static_argnames=...))."
         )
