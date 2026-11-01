@@ -34,8 +34,7 @@ from sax.models.rf import electrical_short
 
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.cpw import (
-    cpw_epsilon_eff,
-    cpw_thickness_correction,
+    cpw_parameters,
     get_cpw_dimensions,
     get_cpw_substrate_params,
     propagation_constant,
@@ -59,8 +58,10 @@ def _taper_widths(
 ) -> list[float]:
     """Return strip widths at the centres of ``npoints`` equal taper segments.
 
-    The widths stay Python floats, so the geometry is static under
-    :func:`jax.jit`.
+    Unlike :func:`~qpdk.models.waveguides.taper_cross_section`, which samples
+    the end points, this samples segment centres and supports the
+    raised-cosine profile drawn by the cell. ``npoints`` must be concrete; SAX passes
+    instance settings as float arrays, so callers convert it with ``int``.
     """
     widths = []
     for i in range(npoints):
@@ -73,16 +74,15 @@ def _taper_widths(
 def _cpw_line(
     f: sax.FloatArrayLike, width: float, gap: float
 ) -> tuple[jax.Array, jax.Array]:
-    """Return the propagation constant (1/m) and impedance (Ω) of a CPW.
+    r"""Return the propagation constant (1/m) and impedance (Ω) of a CPW.
 
-    Uses the same PDK layer stack and formulae as
-    :func:`~qpdk.models.waveguides.straight`.
+    Takes :math:`\varepsilon_\text{eff}` and :math:`Z_0` from
+    :func:`~qpdk.models.cpw.cpw_parameters` and adds dielectric loss as
+    :func:`~qpdk.models.waveguides.straight` does.
     """
-    h, t, ep_r, tand = get_cpw_substrate_params()
-    w_m, s_m = width * 1e-6, gap * 1e-6
-    ep_eff = cpw_epsilon_eff(w_m, s_m, h * 1e-6, ep_r)
-    ep_eff_t, z0 = cpw_thickness_correction(w_m, s_m, t * 1e-6, ep_eff)
-    gamma = propagation_constant(jnp.asarray(f), ep_eff_t, tand=tand, ep_r=ep_r)
+    _, _, ep_r, tand = get_cpw_substrate_params()
+    ep_eff, z0 = cpw_parameters(width, gap, tand=0.0)
+    gamma = propagation_constant(jnp.asarray(f), ep_eff.real, tand=tand, ep_r=ep_r)
     return gamma, z0
 
 
@@ -93,9 +93,13 @@ def _cascade(
 ) -> sax.SDict:
     """Cascade CPW sections given as ``(length, width, gap)`` tuples in µm.
 
-    :func:`~qpdk.models.waveguides.straight` references each line to its own
-    characteristic impedance, which hides the reflection at an impedance
-    step. Here every section is referenced to the impedance of
+    :func:`~qpdk.models.waveguides.straight`, and hence
+    :func:`~qpdk.models.waveguides.taper_cross_section` and
+    :func:`~qpdk.models.waveguides.straight_shorted`, reference each line to
+    its own characteristic impedance, which hides the reflection at an
+    impedance step. Built from those, the default neck resonator would sit at
+    the frequency of a plain shorted CPW of the same length (6.87 GHz instead
+    of 5.80 GHz), losing the neck inductance. Here every section is referenced to the impedance of
     ``cross_section``, so the cascade includes the steps between sections
     and a section of ``cross_section`` itself matches ``straight``.
 
@@ -125,7 +129,7 @@ def _neck_sections(
     neck_width: float,
     neck_length: float,
     window_width: float,
-    npoints: int,
+    npoints: int | jax.Array,
 ) -> list[tuple[float, float, float]]:
     """Return the CPW sections of the taper and neck inside the window.
 
@@ -142,7 +146,7 @@ def _neck_sections(
             f"window_width ({window_width}) must be at least the CPW footprint "
             f"({width + 2 * gap})."
         )
-    npoints = max(npoints, 1)
+    npoints = max(int(npoints), 1)
     taper = [
         (taper_length / npoints, w, (window_width - w) / 2)
         for w in _taper_widths(width, neck_width, npoints, taper_shape)
@@ -155,11 +159,11 @@ def _bulge_sections(
     bulge_width: float,
     bulge_length: float,
     taper_length: float,
-    npoints: int,
+    npoints: int | jax.Array,
 ) -> list[tuple[float, float, float]]:
     """Return the CPW sections of the bulge, with a constant gap."""
     width, gap = get_cpw_dimensions(cross_section)
-    npoints = max(npoints, 1)
+    npoints = max(int(npoints), 1)
     widths = _taper_widths(width, bulge_width, npoints, "linear")
     taper_in = [(taper_length / npoints, w, gap) for w in widths]
     taper_out = [(taper_length / npoints, w, gap) for w in reversed(widths)]
@@ -174,7 +178,7 @@ def neck_termination(
     neck_width: float = 2.0,
     neck_length: float = 325.0,
     window_width: float = 380.0,
-    npoints: int = 10,
+    npoints: int | jax.Array = 10,
 ) -> sax.SDict:
     r"""S-parameter model for a CPW shorted through a taper and a narrow neck.
 
@@ -223,7 +227,7 @@ def cpw_bulge(
     bulge_width: float = 25.0,
     bulge_length: float = 50.0,
     taper_length: float = 20.0,
-    npoints: int = 5,
+    npoints: int | jax.Array = 5,
 ) -> sax.SDict:
     r"""S-parameter model for a CPW with a locally widened centre conductor.
 
@@ -260,7 +264,7 @@ def resonator_quarter_wave_neck(
     neck_width: float = 2.0,
     neck_length: float = 325.0,
     window_width: float = 380.0,
-    npoints: int = 10,
+    npoints: int | jax.Array = 10,
 ) -> sax.SDict:
     """S-parameter model for a quarter-wave resonator grounded through a neck.
 
@@ -306,7 +310,7 @@ def resonator_half_wave_bulge(
     bulge_width: float = 25.0,
     bulge_length: float = 50.0,
     taper_length: float = 20.0,
-    npoints: int = 5,
+    npoints: int | jax.Array = 5,
 ) -> sax.SDict:
     """S-parameter model for a half-wave resonator with a central bulge.
 

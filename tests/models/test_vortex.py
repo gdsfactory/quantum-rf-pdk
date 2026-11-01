@@ -1,5 +1,6 @@
 """Tests for :mod:`qpdk.models.vortex`."""
 
+import inspect
 from typing import final
 
 import jax.numpy as jnp
@@ -151,3 +152,28 @@ class TestPhysics:
         f_plain = open_open_resonance(straight(f=jnp.asarray(f), length=8000))
         f_bulge = open_open_resonance(resonator_half_wave_bulge(f=jnp.asarray(f)))
         assert f_plain < f_bulge < 1.01 * f_plain
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        neck_termination,
+        cpw_bulge,
+        resonator_quarter_wave_neck,
+        resonator_half_wave_bulge,
+    ],
+)
+def test_settings_as_float_arrays(model) -> None:
+    """Accept numeric settings as float arrays, the way SAX circuits pass them."""
+    f = jnp.array([5e9, 7e9])
+    defaults = {
+        k: v.default
+        for k, v in inspect.signature(model).parameters.items()
+        if k != "f" and isinstance(v.default, int | float)
+    }
+    assert "npoints" in defaults
+    as_arrays = {k: jnp.asarray(float(v)) for k, v in defaults.items()}
+    expected = model(f=f)
+    actual = model(f=f, **as_arrays)
+    for key in expected:
+        np.testing.assert_allclose(actual[key], expected[key], rtol=1e-12)
