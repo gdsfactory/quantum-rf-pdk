@@ -1,97 +1,117 @@
-{% extends "base_component.rst.j2" %}
-
-{% block title %}
 .. meta::
    :description: Example QPDK scripts that assemble components into full chip layouts.
 
 Samples
 =======
 
-Gallery
--------
+Samples are grouped by what they demonstrate. Schematic samples ship as a
+GDSFactory+ schematic and a YAML layout instead of a Python script.
+
+.. only:: html
+
+   .. grid:: 2 3 3 4
+      :gutter: 2
+
+{% for section in sections %}
+      .. grid-item-card:: {{ section.title }}
+         :link: {{ section.anchor }}
+         :link-type: ref
+         :text-align: center
+
+         {{ section.samples | length }} sample{{ 's' if section.samples | length != 1 }}
+
+{% endfor %}
+{% macro plot_code(item, indent) -%}
+{%     if item.schematic -%}
+{{ indent }}import gdsfactory as gf
+{{ indent }}from qpdk import PDK
+
+{{ indent }}PDK.activate()
+{{ indent }}c = gf.get_component("{{ item.name }}").copy()
+{%     else -%}
+{{ indent }}import {{ item.import_path }}
+{{ indent }}from qpdk import PDK
+
+{{ indent }}PDK.activate()
+{{ indent }}c = {{ item.name }}({{ item.kwargs }}).copy()
+{%     endif -%}
+{{ indent }}c.draw_ports()
+{{ indent }}c.plot()
+{%- endmacro %}
+{% for section in sections %}
+.. _{{ section.anchor }}:
+
+{{ section.title }}
+{{ '-' * (section.title | length) }}
+{%     if section.description %}
+
+{{ section.description }}
+{%     endif %}
 
 .. grid:: 1 2 2 3
    :gutter: 2
    :class-container: gallery-grid
 
-{% for item in items %}
-{%     if item.name not in skip_plot %}
-   .. grid-item-card:: {{ item.name.rpartition(".")[2] }}
-      :link: #{{ item.name }}
-      :text-align: center
-      :class-card: gallery-card
-
-      .. plot::
-
-         import {{ item.import_path }}
-         from qpdk import PDK
-
-         PDK.activate()
-         c = {{ item.name }}({{ item.kwargs }}).copy()
-         c.draw_ports()
-         c.plot()
-
-{%     endif %}
-{% endfor %}
-{% for name in schematic_samples %}
-   .. grid-item-card:: {{ name }}
-      :link: {{ name }}
+{%     for item in section.samples %}
+{%         if item.name not in skip_plot %}
+   .. grid-item-card:: {{ item.short_name }}
+{%-            if item.schematic %}
+      :link: {{ item.name }}
       :link-type: ref
+{%-            else %}
+      :link: #{{ item.name }}
+{%-            endif %}
       :text-align: center
       :class-card: gallery-card
 
       .. plot::
 
-         import gdsfactory as gf
-         from qpdk import PDK
+{{ plot_code(item, "         ") }}
+{%         endif %}
+{%     endfor %}
+{%     for item in section.samples %}
+{%         if item.schematic %}
+.. _{{ item.name }}:
 
-         PDK.activate()
-         c = gf.get_component("{{ name }}").copy()
-         c.draw_ports()
-         c.plot()
+{%         endif %}
+{{ item.name }}
+{{ '~' * (item.name | length) }}
 
-{% endfor %}
-{% if schematic_samples %}
-Schematic samples
------------------
+{%         if item.schematic %}
+Open the :download:`GDSFactory+ schematic <../qpdk/samples/{{ item.name }}.gsch>` or
+load the :download:`YAML layout <../qpdk/samples/{{ item.name }}.pic.yml>` with
+``gf.get_component("{{ item.name }}")`` after activating QPDK.
+{%         else %}
+.. autofunction:: {{ item.name }}
+{%         endif %}
+{%         if item.name not in skip_plot %}
+{%             if item.has_gds %}
 
-{% for name in schematic_samples %}
-.. _{{ name }}:
+.. tab-set::
 
-{{ name }}
-{{ '^' * (name | length) }}
+   .. tab-item:: Static
 
-Open the :download:`GDSFactory+ schematic <../qpdk/samples/{{ name }}.gsch>` or
-load the :download:`YAML layout <../qpdk/samples/{{ name }}.pic.yml>` with
-``gf.get_component("{{ name }}")`` after activating QPDK.
+      .. image:: _generated/samples/{{ item.short_name }}.png
+         :alt: {{ item.short_name }}
+
+   .. tab-item:: Dynamic
+
+      .. raw:: html
+
+         <iframe src="kwasm/viewer.html?url=gds/samples/{{ item.short_name }}.gds" loading="lazy" width="100%" height="400" style="border:none"></iframe>
+
+{%             else %}
 
 .. plot::
 
-   import gdsfactory as gf
-   from qpdk import PDK
-
-   PDK.activate()
-   c = gf.get_component("{{ name }}").copy()
-   c.draw_ports()
-   c.plot()
-
+{{ plot_code(item, "   ") }}
+{%             endif %}
+{%         endif %}
+{%     endfor %}
 {% endfor %}
-{% endif %}
 
-API Reference
--------------
-{% endblock %}
+References
+----------
 
-{% block autofunction_path scoped -%}
-{{ item.name }}
-{%- endblock %}
-
-{% block plot_section scoped %}
-  import {{ item.import_path }}
-  from qpdk import PDK
-
-  PDK.activate()
-  c = {{ item.name }}({{ item.kwargs }}).copy()
-  c.draw_ports()
-  c.plot()
-{% endblock %}
+.. bibliography::
+   :filter: docname in docnames
