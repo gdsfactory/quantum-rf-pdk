@@ -104,19 +104,8 @@ def nanowire_resonator(
             not positive, a length is not positive, or the wire does not fit
             between the pads or the feedline is too short.
     """
-    for name, value in {
-        "wire_length": wire_length,
-        "pad_width": pad_width,
-        "pad_height": pad_height,
-        "pad_ground_gap": pad_ground_gap,
-        "coupling_gap": coupling_gap,
-        "contact_overlap": contact_overlap,
-        "lead_length": lead_length,
-    }.items():
-        if value is None:
-            continue
-        if value <= 0:
-            raise ValueError(f"{name} must be positive, got {value}")
+    if contact_overlap <= 0:
+        raise ValueError(f"contact_overlap must be positive, got {contact_overlap}")
     if contact_overlap > pad_height:
         raise ValueError(
             f"contact_overlap={contact_overlap} must not exceed pad_height={pad_height}"
@@ -130,10 +119,19 @@ def nanowire_resonator(
     window_width = pad_width + 2 * pad_ground_gap
     wire_xs = gf.cross_section.cross_section(width=wire_width, layer=wire_layer)
     wire_gap = wire_width if wire_gap is None else wire_gap
-    validate_nanowire_layout(
-        wire_width, n_turns, wire_gap, pad_width, pad_ground_gap, feedline_length
-    )
     lead_length = wire_gap if lead_length is None else lead_length
+    validate_nanowire_layout(
+        wire_width=wire_width,
+        n_turns=n_turns,
+        wire_gap=wire_gap,
+        wire_length=wire_length,
+        lead_length=lead_length,
+        pad_width=pad_width,
+        pad_height=pad_height,
+        pad_ground_gap=pad_ground_gap,
+        coupling_gap=coupling_gap,
+        feedline_length=feedline_length,
+    )
     wire = meander_inductor(
         n_turns=n_turns,
         turn_length=wire_length,

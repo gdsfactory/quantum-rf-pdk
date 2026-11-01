@@ -141,7 +141,8 @@ def nanowire_pad_capacitances_analytical(
 
           C_\text{c} = \frac{\ell}{2} \bigl(C_\text{pad} + C_\text{centre} - C_\text{ground}\bigr),
 
-      exact for the three-electrode line. Each :math:`C_X` is a two-electrode
+      an approximation to the three-electrode mutual capacitance, within
+      the method-of-moments band given below. Each :math:`C_X` is a two-electrode
       capacitance with the modulus of
       :func:`grounded_pad_capacitance_analytical`.
     * The pad-to-ground capacitance is the pad against the ground pad alone,
@@ -289,8 +290,18 @@ def nanowire_resonator_parameters(
         and ``coupling_quality_factor``.
     """
     wire_gap = wire_width if wire_gap is None else wire_gap
-    validate_nanowire_layout(wire_width, n_turns, wire_gap, pad_width, pad_ground_gap)
     lead_length = wire_gap if lead_length is None else lead_length
+    validate_nanowire_layout(
+        wire_width=wire_width,
+        n_turns=n_turns,
+        wire_gap=wire_gap,
+        wire_length=wire_length,
+        lead_length=lead_length,
+        pad_width=pad_width,
+        pad_height=pad_height,
+        pad_ground_gap=pad_ground_gap,
+        coupling_gap=coupling_gap,
+    )
     n_squares = (
         meander_n_squares_drawn(
             n_turns, wire_length, wire_width, wire_gap, corner_style, radius
@@ -415,13 +426,18 @@ def nanowire_resonator(
     Returns:
         sax.SDict: S-parameters with ports ``o1`` and ``o2``.
     """
+    gap = wire_width if wire_gap is None else wire_gap
     validate_nanowire_layout(
-        wire_width,
-        n_turns,
-        wire_width if wire_gap is None else wire_gap,
-        pad_width,
-        pad_ground_gap,
-        feedline_length,
+        wire_width=wire_width,
+        n_turns=n_turns,
+        wire_gap=gap,
+        wire_length=wire_length,
+        lead_length=gap if lead_length is None else lead_length,
+        pad_width=pad_width,
+        pad_height=pad_height,
+        pad_ground_gap=pad_ground_gap,
+        coupling_gap=coupling_gap,
+        feedline_length=feedline_length,
     )
     p = nanowire_resonator_parameters(
         wire_width=wire_width,

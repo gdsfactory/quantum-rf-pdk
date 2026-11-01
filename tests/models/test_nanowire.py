@@ -5,6 +5,7 @@ from typing import final, get_args, override
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
@@ -104,6 +105,19 @@ def test_grounded_pad_reduces_to_cross_ratio_modulus() -> None:
         ({"wire_width": 2.0}, "wire_width"),
         ({"wire_width": 1.0, "pad_width": 0.5}, "pad_width"),
         ({"feedline_length": 100.0}, "feedline_length"),
+        ({"feedline_length": 0.0}, "feedline_length"),
+        ({"n_turns": 3, "wire_gap": -0.05}, "wire_gap"),
+        *(
+            ({name: value}, name)
+            for name in [
+                "wire_length",
+                "lead_length",
+                "pad_height",
+                "pad_ground_gap",
+                "coupling_gap",
+            ]
+            for value in [0.0, -1.0]
+        ),
     ],
 )
 def test_model_rejects_what_cell_rejects(kwargs: dict, match: str) -> None:
@@ -115,6 +129,13 @@ def test_model_rejects_what_cell_rejects(kwargs: dict, match: str) -> None:
     if "feedline_length" not in kwargs:
         with pytest.raises(ValueError, match=match):
             nanowire_resonator_parameters(**kwargs)
+
+
+@pytest.mark.parametrize("value", [jnp.asarray(2.0), np.float32(2.0)])
+def test_model_validates_concrete_array_scalars(value: jax.typing.ArrayLike) -> None:
+    """Concrete 0-d arrays are validated, only tracers skip the checks."""
+    with pytest.raises(ValueError, match="wire_width"):
+        nanowire_resonator_parameters(wire_width=value)  # pyrefly: ignore[bad-argument-type]
 
 
 # Method-of-moments extraction of the drawn 3D pads (pad, ground pad, side
