@@ -1,6 +1,7 @@
 """Generic Models."""
 
 import jax.numpy as jnp
+import numpy as np
 import sax
 from matplotlib import pyplot as plt
 from sax.models.rf import (
@@ -18,6 +19,7 @@ from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.jit import jit
 
 __all__ = [
+    "abcd_to_sdict",
     "admittance",
     "capacitor",
     "electrical_open",
@@ -107,6 +109,63 @@ def shunt_admittance(
         ("o2", "o2"): s11,
         ("o1", "o2"): s21,
         ("o2", "o1"): s21,
+    }
+    return sdict
+
+
+_IDENTITY_ABCD = np.eye(2)
+"""ABCD matrix of a through connection."""
+
+
+@jit
+def abcd_to_sdict(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,  # ruff: ignore[unused-function-argument]
+    abcd: sax.ComplexArrayLike = _IDENTITY_ABCD,
+    z0: sax.ComplexLike = 50.0,
+) -> sax.SDict:
+    r"""Two-port S-parameters of a network given by its ABCD (transmission) matrix.
+
+    Converts
+
+    .. math::
+
+        \mathbf{T} = \begin{pmatrix} A & B \\ C & D \end{pmatrix}
+
+    to S-parameters referenced to :math:`Z_0` at both ports, following
+    :cite:`m.pozarMicrowaveEngineering2012` (Ch. 4, Table 4.2):
+
+    .. math::
+
+        \begin{aligned}
+        S_{11} &= \frac{A + B/Z_0 - C Z_0 - D}{\Delta}, &
+        S_{12} &= \frac{2 (AD - BC)}{\Delta}, \\
+        S_{21} &= \frac{2}{\Delta}, &
+        S_{22} &= \frac{-A + B/Z_0 - C Z_0 + D}{\Delta},
+        \end{aligned}
+        \qquad \Delta = A + B/Z_0 + C Z_0 + D.
+
+    ABCD matrices of cascaded two-ports multiply, so a network built from
+    series and shunt elements can be cascaded with ``@`` (or
+    :func:`jax.numpy.matmul`) and converted once.
+
+    Args:
+        f: Array of frequency points in Hz. Unused: the frequency dependence is
+            carried by ``abcd``. Kept so the function is a SAX model.
+        abcd: ABCD matrices with shape ``(..., 2, 2)``. The leading axes, for
+            example a frequency axis, are kept in the S-parameters.
+        z0: Reference impedance :math:`Z_0` of both ports in Ohms.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports o1 and o2.
+    """
+    t = jnp.asarray(abcd)
+    a, b, c, d = t[..., 0, 0], t[..., 0, 1], t[..., 1, 0], t[..., 1, 1]
+    denominator = a + b / z0 + c * z0 + d
+    sdict: sax.SDict = {
+        ("o1", "o1"): (a + b / z0 - c * z0 - d) / denominator,
+        ("o1", "o2"): 2 * (a * d - b * c) / denominator,
+        ("o2", "o1"): 2 / denominator,
+        ("o2", "o2"): (-a + b / z0 - c * z0 + d) / denominator,
     }
     return sdict
 

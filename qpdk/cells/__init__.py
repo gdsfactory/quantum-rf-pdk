@@ -23,6 +23,7 @@ from .gatemon import *
 from .hyperbolic import *
 from .inductor import *
 from .junction import *
+from .junction_array import *
 from .launcher import *
 from .nanowire import *
 from .resonator import *

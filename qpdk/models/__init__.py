@@ -24,7 +24,11 @@ from qpdk.models.inductor import (
     meander_inductor_ground_capacitance,
     meander_inductor_inductance_analytical,
 )
-from qpdk.models.junction import josephson_junction, squid_junction
+from qpdk.models.junction import (
+    josephson_junction,
+    josephson_junction_array,
+    squid_junction,
+)
 from qpdk.models.nanowire import (
     grounded_pad_capacitance_analytical,
     nanowire_pad_capacitances_analytical,
@@ -75,6 +79,7 @@ from qpdk.models.gatemon import (
     gatemon_supercurrent,
 )
 from qpdk.models.generic import (
+    abcd_to_sdict,
     admittance,
     capacitor,
     electrical_open,
@@ -180,6 +185,7 @@ from qpdk.models.waveguides import (
 
 __all__ = [
     "DEFAULT_FREQUENCY",
+    "abcd_to_sdict",
     "admittance",
     "airbridge",
     "andreev_bound_state_energies",
@@ -255,6 +261,7 @@ __all__ = [
     "inductor",
     "interdigital_capacitor",
     "josephson_junction",
+    "josephson_junction_array",
     "launcher",
     "lc_resonator",
     "lc_resonator_coupled",

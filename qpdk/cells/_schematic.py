@@ -38,6 +38,7 @@ __all__ = [
     "hyperbolic_vertex_coupler_schematic",
     "indium_bump_schematic",
     "interdigital_capacitor_schematic",
+    "josephson_junction_array_schematic",
     "josephson_junction_schematic",
     "launcher_schematic",
     "lumped_element_resonator_schematic",
@@ -633,6 +634,19 @@ josephson_junction_schematic = schematic(
             name="josephson_junction",
             module="qpdk.models.junction",
             port_order=["left_wide", "right_wide"],
+        )
+    ],
+)
+
+josephson_junction_array_schematic = schematic(
+    symbol="josephson_junction_array",
+    tags=["junctions", "inductors"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="josephson_junction_array",
+            module="qpdk.models.junction",
+            port_order=["o1", "o2"],
         )
     ],
 )
