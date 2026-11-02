@@ -196,7 +196,7 @@ repos:
       - id: sphinx-lint
         priority: 10
   - repo: https://github.com/typstyle-rs/pre-commit-typstyle
-    rev: v0.15.1
+    rev: v0.15.2
     hooks:
       - id: typstyle
         priority: 20
