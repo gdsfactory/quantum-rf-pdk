@@ -25,6 +25,7 @@ __all__ = [
     "cpw_bulge_schematic",
     "double_pad_transmon_schematic",
     "double_pad_transmon_with_bbox_schematic",
+    "esr_lc_resonator_schematic",
     "flipmon_schematic",
     "fluxonium_schematic",
     "fluxonium_with_bbox_schematic",
@@ -666,6 +667,13 @@ lumped_element_resonator_schematic = schematic(
             port_order=["o1", "o2"],
         )
     ],
+)
+
+esr_lc_resonator_schematic = schematic(
+    symbol="esr_lc_resonator",
+    tags=["resonators", "inductors", "capacitors"],
+    ports=_2PORT,
+    models=[sax_model("esr_lc_resonator", "qpdk.models.esr", ["o1", "o2"])],
 )
 
 plate_capacitor_single_schematic = schematic(
