@@ -5,7 +5,7 @@
 from collections.abc import Callable, Generator, Sequence
 from dataclasses import dataclass
 from functools import cache, partial, wraps
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import gdsfactory as gf
 from gdsfactory.cross_section import (
@@ -638,10 +638,8 @@ def xsection(func: Callable[..., CrossSection]) -> Callable[..., CrossSection]:
         cross_section = func(**kwargs)
         if cross_section.name in _cross_section_default_names:
             # Pydantic private attributes stay writable on frozen models (gdsfactory
-            # does the same); pyrefly treats every field of a frozen model as read-only.
-            cross_section._name = _cross_section_default_names[  # pyrefly: ignore[read-only]
-                cross_section.name
-            ]
+            # does the same).
+            cross_section._name = _cross_section_default_names[cross_section.name]
         return cross_section
 
     cross_sections[func.__name__] = decorated_cross_section
@@ -967,11 +965,26 @@ def _route_component(
     width: float | None = None,
     cross_section: CrossSectionSpec = cpw,
     **settings: Any,
-) -> gf.Component | gf.ComponentAllAngle:
+) -> gf.Component:
     """Build a routing cell with width owned by its cross-section."""
     return gf.get_cell(component)(
         cross_section=_route_cross_section(cross_section, width),
         **settings,
+    )
+
+
+def _route_all_angle_component(
+    component: str,
+    width: float | None = None,
+    cross_section: CrossSectionSpec = cpw,
+    **settings: Any,
+) -> gf.ComponentAllAngle:
+    """Build an all-angle routing cell with width owned by its cross-section."""
+    return cast(
+        gf.ComponentAllAngle,
+        _route_component(
+            component, width=width, cross_section=cross_section, **settings
+        ),
     )
 
 
@@ -989,11 +1002,11 @@ route_bundle_all_angle = route_bundle_all_angle_cpw = partial(
     cross_section="coplanar_waveguide",
     separation=3,
     bend=partial(
-        _route_component,
+        _route_all_angle_component,
         "bend_circular_all_angle",
         allow_min_radius_violation=True,
     ),
-    straight=partial(_route_component, "straight_all_angle"),
+    straight=partial(_route_all_angle_component, "straight_all_angle"),
 )
 route_bundle_sbend = route_bundle_sbend_cpw = partial(
     gf.routing.route_bundle_sbend,
