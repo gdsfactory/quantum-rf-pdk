@@ -171,11 +171,11 @@ def get_layer_stack() -> LayerStack:
     """Return the physical layer stack for simulations.
 
     The stack roughly corresponds to that of :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
-    The vacuum gap of suspended drum capacitors follows
-    :cite:`teufelCircuitCavityElectromechanics2011`.
+    The vacuum gap and membrane thickness of suspended drum capacitors follow
+    :cite:`pirkkalainenSqueezingQuantumNoise2015`.
     """
     m1_thickness = 200e-9 * 1e6
-    vacuum_gap = 50e-9 * 1e6  # between the top of M1 and the VG_TOP membrane
+    vacuum_gap = 70e-9 * 1e6  # between the top of M1 and the VG_TOP membrane
     return LayerStack(
         layers={
             # Base metal film (e.g., 200 nm of Nb)
@@ -246,13 +246,13 @@ def get_layer_stack() -> LayerStack:
                 zmin=200e-9 * 1e6,  # stacked above M1
                 material="Nb",
             ),
-            # Suspended Al membrane of a vacuum-gap capacitor, one vacuum gap
-            # above M1 :cite:`cicakLowlossSuperconductingResonant2010`.
+            # Suspended 120 nm Al membrane of a vacuum-gap capacitor, one vacuum
+            # gap above M1 :cite:`pirkkalainenSqueezingQuantumNoise2015`.
             # The gap is the distance between the top of M1 and this level.
             "VacuumGap_Top": LayerLevel(
                 name="VacuumGap_Top",
                 layer=L.VG_TOP,
-                thickness=100e-9 * 1e6,
+                thickness=120e-9 * 1e6,
                 zmin=m1_thickness + vacuum_gap,  # top of M1 + vacuum gap
                 material="Al",
             ),
@@ -471,6 +471,7 @@ def get_layer_stack_3d() -> LayerStack:
             }
         )
     return stack
+
 
 def get_vacuum_gap(layer_stack: LayerStack | None = None) -> float:
     """Returns the vacuum gap of suspended vacuum-gap capacitors in µm.

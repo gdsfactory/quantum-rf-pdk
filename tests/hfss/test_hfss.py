@@ -402,7 +402,7 @@ def test_layer_stack_gds_mapping():
     assert set(solids) == set(sheets) == {1, 10, 20, 25, 30, 31, 40, 98}
     assert solids[98] == pytest.approx((-500.0, 500.0))
     assert solids[10] == pytest.approx((0.2, 0.3))
-    assert solids[40] == pytest.approx((0.2, 0.15))
+    assert solids[40] == pytest.approx((0.2, 0.19))
     # As HFSS.import_component(import_as_sheets=True) maps it: the conductors
     # become sheets, the substrate keeps its thickness.
     assert sheets[98] == pytest.approx((-500.0, 500.0))

@@ -1,11 +1,16 @@
 r"""Suspended vacuum-gap (drum) capacitor and drum LC resonator models.
 
-A drum is a parallel-plate capacitor whose top electrode is a thin membrane
-suspended a vacuum gap :math:`d` above a bottom electrode
-:cite:`cicakLowlossSuperconductingResonant2010`. Shunting it with an inductor
-gives an LC resonator whose frequency depends on the membrane position, which
-is the circuit electromechanics setup of
-:cite:`teufelCircuitCavityElectromechanics2011`.
+A drum is a parallel-plate capacitor whose top electrode is a thin aluminium
+membrane suspended a vacuum gap :math:`d` above a bottom electrode
+:cite:`cicakLowlossSuperconductingResonant2010`. Shunting it with a meander
+inductor gives an LC resonator whose frequency depends on the membrane
+position :cite:`teufelCircuitCavityElectromechanics2011`.
+
+The defaults follow the single-drum device of
+:cite:`pirkkalainenSqueezingQuantumNoise2015` (Aalto University): a 15 µm
+diameter, 120 nm thick Al drum 70 nm above its bottom electrode, at the end of
+a meander inductor of about 14 nH, with about 16 fF of other circuit
+capacitance, a 6.90 GHz cavity and a 13.03 MHz drum mode.
 
 The gap :math:`d` and the membrane thickness :math:`t` are layer-stack
 parameters, read from the ``VacuumGap_Top`` level by default
@@ -45,11 +50,27 @@ DRUM_THICKNESS: float = LAYER_STACK.layers["VacuumGap_Top"].thickness
 DRUM_DENSITY: float = get_layer_material_properties("VacuumGap_Top")["density"]
 """Default membrane mass density in kg/m³, from the ``VacuumGap_Top`` material."""
 
-DRUM_MECHANICAL_FREQUENCY: float = 10.69e6
+DRUM_MECHANICAL_FREQUENCY: float = 13.032e6
 """Default fundamental drum-mode frequency in Hz.
 
-This is the design value of :cite:`teufelCircuitCavityElectromechanics2011`.
+This is the measured value of :cite:`pirkkalainenSqueezingQuantumNoise2015`.
 It depends on the film stress, which no formula here fixes, so it is an input.
+"""
+
+DRUM_PARASITIC_CAPACITANCE: float = 16e-15
+"""Default capacitance in F in parallel with the drum.
+
+The EM-simulated value C ≈ 16 fF of
+:cite:`pirkkalainenSqueezingQuantumNoise2015`, the resonator capacitance other
+than the drum. It is a property of that layout, not of this PDK's meander.
+"""
+
+DRUM_INDUCTOR_TURNS: int = 75
+"""Default number of meander runs.
+
+With 300 µm runs of the default meander cross-section and 0.4 pH/□ this gives
+an analytical inductance of about 14 nH, the EM-simulated value of
+:cite:`pirkkalainenSqueezingQuantumNoise2015`.
 """
 
 
@@ -75,8 +96,8 @@ def vacuum_gap_capacitance_analytical(
     where :math:`f` switches the fringing term on (1) or off (0).
 
     Assumptions: zero-thickness plates of equal radius in vacuum, no ground
-    plane nearby. For a 15 µm diameter drum with a 50 nm gap the fringing term
-    adds 1.7 %. The :func:`~qpdk.cells.drum.vacuum_gap_capacitor` cell draws a
+    plane nearby. For a 15 µm diameter drum with a 70 nm gap the fringing term
+    adds 2.2 %. The :func:`~qpdk.cells.drum.vacuum_gap_capacitor` cell draws a
     membrane larger than the bottom electrode, with a grounded ring a few µm
     away, so this term is only an estimate of the fringing there.
 
@@ -115,14 +136,22 @@ def drum_effective_mass(
     :cite:`teufelCircuitCavityElectromechanics2011`. For its 15 µm diameter,
     100 nm thick Al drum the disc mass is 47.7 pg, close to the quoted
     :math:`m \approx 50\,\text{pg}`, and it gives :math:`x_\text{zp} = 4.06\,\text{fm}`
-    at 10.69 MHz, matching the quoted 4.1 fm. The paper gives no separate
-    mode-shape factor.
+    at 10.69 MHz, matching the quoted 4.1 fm.
 
-    A clamped-membrane mode shape would change both :math:`m_\text{eff}` and
+    For the default 120 nm drum of :cite:`pirkkalainenSqueezingQuantumNoise2015`
+    the disc mass is 57.3 pg and :math:`x_\text{zp} = 3.4\,\text{fm}` at
+    13.03 MHz, against the quoted :math:`x_\text{zp} \sim 5\,\text{fm}`. That
+    paper does not state its effective-mass convention, so neither value of
+    :math:`\mu` is fixed by it.
+
+    A clamped-membrane mode shape changes both :math:`m_\text{eff}` and
     :math:`\partial C/\partial x`. That correction is not part of the cited
-    model; ``mass_factor`` only scales the mass. For the fundamental
-    :math:`J_0` mode of a clamped circular membrane it would lower
-    :math:`g_0` by about 17 %.
+    model; ``mass_factor`` only scales the mass. Referred to the centre
+    displacement, the fundamental :math:`J_0(j_{0,1} r/a)` mode of a clamped
+    circular membrane has :math:`\mu = J_1(j_{0,1})^2 \approx 0.27`, which
+    gives 6.5 fm for the default drum. Use it only together with a
+    mode-weighted :math:`\partial C/\partial x`, see
+    :func:`drum_electromechanical_coupling`.
 
     Args:
         radius: Drum radius :math:`a` in µm.
@@ -183,6 +212,15 @@ def drum_electromechanical_coupling(
 
     where :math:`\eta` is the fraction of the total resonator capacitance that
     the drum provides.
+
+    This treats the whole membrane as a rigid plate. With the clamped edge,
+    only the centre moves fully, so the parallel-plate
+    :math:`\partial C/\partial x` overestimates :math:`g_0` by about a factor
+    of two :cite:`cattiauxLinearCouplingMicrowave2020`. For the default drum
+    the parallel-plate :math:`\varepsilon_0 \pi a^2/d^2` is 319 nF/m, against
+    the :math:`\partial C_\text{g}/\partial x \sim 120\,\text{nF/m}` quoted by
+    :cite:`pirkkalainenSqueezingQuantumNoise2015`. Scale ``participation`` if
+    a mode-weighted value is known.
 
     Args:
         resonance_frequency: Resonance frequency :math:`\omega_\text{c}/2\pi` in Hz.
@@ -275,20 +313,25 @@ def drum_lc_resonator(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
     radius: float = 7.5,
     gap: float = VACUUM_GAP,
-    n_turns: int = 71,
+    n_turns: int = DRUM_INDUCTOR_TURNS,
     turn_length: float = 300.0,
     inductor_cross_section: CrossSectionSpec = "meander_inductor_cross_section",
     sheet_inductance: float = 0.4e-12,
     coupling_capacitance: float = 1e-15,
-    parasitic_capacitance: float = 0.0,
+    parasitic_capacitance: float = DRUM_PARASITIC_CAPACITANCE,
 ) -> sax.SDict:
     r"""Drum LC resonator side-coupled to a feedline, SAX model.
 
     A meander inductor :math:`L` is shunted by the drum capacitance
-    :math:`C_\text{d}` (plus an optional parasitic :math:`C_\text{p}`) and
-    coupled to the feedline through :math:`C_\text{c}`, as in
-    :cite:`teufelCircuitCavityElectromechanics2011` but with capacitive instead
-    of inductive coupling:
+    :math:`C_\text{d}` (plus a parasitic :math:`C_\text{p}`) and coupled to
+    the feedline through :math:`C_\text{c}`, as in
+    :cite:`pirkkalainenSqueezingQuantumNoise2015`. The drum sits at the open end
+    of the meander, and the resonator couples capacitively to a transmission
+    line as in :cite:`ockeloenkorppiLowNoiseAmplificationFrequency2016`. Here it
+    hangs off a single feedline, which
+    :cite:`mercierdelepinayRealizationDirectionalAmplification2019` also uses
+    for readout. :cite:`teufelCircuitCavityElectromechanics2011` coupled
+    inductively instead:
 
     .. svgbob::
 
@@ -314,14 +357,20 @@ def drum_lc_resonator(
     and :math:`L` from :func:`~qpdk.models.inductor.meander_inductor_inductance_analytical`.
     Losses are neglected.
 
+    With :math:`L = 14\,\text{nH}` and :math:`C = 16\,\text{fF}` from
+    :cite:`pirkkalainenSqueezingQuantumNoise2015` and the parallel-plate drum
+    capacitance of 22.3 fF, :math:`1/(2\pi\sqrt{L(C + C_\text{d})})` is
+    6.87 GHz, against the measured 6.90 GHz.
+
     Limits of this lumped model:
 
-    - The meander's own capacitance to ground is not included. With a drum of
-      only some tens of fF it can be of the same order as :math:`C_\text{d}`,
-      which lowers :math:`\omega_\text{r}` and the participation
+    - The meander's own capacitance to ground is not computed. The default
+      ``parasitic_capacitance`` is the 16 fF of
+      :cite:`pirkkalainenSqueezingQuantumNoise2015`, which belongs to that
+      layout. It lowers :math:`\omega_\text{r}` and the participation
       :math:`\eta` of :func:`drum_electromechanical_coupling`. Pass an
-      extracted value as ``parasitic_capacitance``.
-    - The default meander is about 21 mm of wire, which is not short compared
+      extracted value for any other layout.
+    - The default meander is about 23 mm of wire, which is not short compared
       with the wavelength at the resonance. Distributed effects are neglected.
     - ``coupling_capacitance`` is an input. It is not derived from the
       coupling pad of :func:`~qpdk.cells.drum.drum_lc_resonator`.
@@ -340,7 +389,8 @@ def drum_lc_resonator(
         coupling_capacitance: Coupling capacitance :math:`C_\text{c}` to the
             feedline in F.
         parasitic_capacitance: Extra capacitance :math:`C_\text{p}` in parallel
-            with the drum in F.
+            with the drum in F. Defaults to the 16 fF of
+            :cite:`pirkkalainenSqueezingQuantumNoise2015`.
 
     Returns:
         sax.SDict: S-parameters dictionary with ports o1 and o2.

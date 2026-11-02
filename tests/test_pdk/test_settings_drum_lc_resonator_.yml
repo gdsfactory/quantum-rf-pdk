@@ -1,8 +1,8 @@
 info:
-  n_squares: 10790
-  total_wire_length: 21580
-  vacuum_gap: 0.05
-name: drum_lc_resonator_R7p5_Srim_NT71_TL300_ICSmeander_induc_3d6c9c4e
+  n_squares: 11398
+  total_wire_length: 22796
+  vacuum_gap: 0.07
+name: drum_lc_resonator_R7p5_Srim_NT75_TL300_ICSmeander_induc_db70d2c8
 ports:
   o1:
     center:
@@ -28,7 +28,7 @@ settings:
   cross_section: cpw
   inductor_cross_section: meander_inductor_cross_section
   margin: 10
-  n_turns: 71
+  n_turns: 75
   radius: 7.5
   support: rim
   turn_length: 300

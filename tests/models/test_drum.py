@@ -9,7 +9,10 @@ from hypothesis import given, settings, strategies as st
 
 from qpdk.models.constants import ε_0, π
 from qpdk.models.drum import (
+    DRUM_INDUCTOR_TURNS,
     DRUM_MECHANICAL_FREQUENCY,
+    DRUM_PARASITIC_CAPACITANCE,
+    DRUM_THICKNESS,
     VACUUM_GAP,
     drum_effective_mass,
     drum_electromechanical_coupling,
@@ -49,9 +52,11 @@ class TestDrumLCResonator(TwoPortModelTestSuite):
 
 
 def test_default_gap_comes_from_layer_stack() -> None:
-    """The default gap is the 50 nm VacuumGap level of the layer stack."""
-    assert get_vacuum_gap() == pytest.approx(0.05)
-    assert pytest.approx(0.05) == VACUUM_GAP
+    """The stack gives the 70 nm gap and 120 nm drum of Pirkkalainen et al."""
+    assert get_vacuum_gap() == pytest.approx(0.07)
+    assert pytest.approx(0.07) == VACUUM_GAP
+    assert pytest.approx(0.12) == DRUM_THICKNESS
+    assert pytest.approx(13.032e6) == DRUM_MECHANICAL_FREQUENCY
 
 
 def test_get_vacuum_gap_rejects_bad_stacks() -> None:
@@ -66,11 +71,30 @@ def test_get_vacuum_gap_rejects_bad_stacks() -> None:
 
 
 def test_parallel_plate_capacitance() -> None:
-    """Without fringing, C = ε0 π a² / d for the 15 µm drum at 50 nm."""
-    capacitance = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.05, fringing=0)
-    expected = ε_0 * π * (7.5e-6) ** 2 / 50e-9
+    """Without fringing, C = ε0 π a² / d for the 15 µm drum at 70 nm."""
+    capacitance = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.07, fringing=0)
+    expected = ε_0 * π * (7.5e-6) ** 2 / 70e-9
     assert float(capacitance) == pytest.approx(expected, rel=1e-12)
-    assert float(capacitance) == pytest.approx(31.29e-15, rel=1e-3)
+    assert float(capacitance) == pytest.approx(22.35e-15, rel=1e-3)
+
+
+def test_pirkkalainen_lc_design_values() -> None:
+    """L ≈ 14 nH, C ≈ 16 fF and the drum resonate near the measured 6.90 GHz."""
+    drum = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.07, fringing=0)
+    frequency = 1 / (2 * π * jnp.sqrt(14e-9 * (16e-15 + drum)))
+    assert float(frequency) == pytest.approx(6.9004e9, rel=0.01)
+
+
+def test_default_meander_matches_pirkkalainen_inductance() -> None:
+    """The default meander gives about the 14 nH of Pirkkalainen et al."""
+    inductance = meander_inductor_inductance_analytical(
+        n_turns=DRUM_INDUCTOR_TURNS,
+        turn_length=300.0,
+        wire_width=2.0,
+        wire_gap=4.0,
+        sheet_inductance=0.4e-12,
+    )
+    assert float(inductance) == pytest.approx(14e-9, rel=0.02)
 
 
 @given(
@@ -106,9 +130,9 @@ def test_coupling_scales_with_participation() -> None:
 
 def test_teufel_zero_point_motion() -> None:
     """The 15 µm, 100 nm Al disc gives x_zp ≈ 4.1 fm at 10.69 MHz."""
-    mass = drum_effective_mass(radius=7.5)
+    mass = drum_effective_mass(radius=7.5, thickness=0.1)
     assert float(mass) == pytest.approx(47.7e-15, rel=1e-3)
-    x_zp = drum_zero_point_motion(mass, DRUM_MECHANICAL_FREQUENCY)
+    x_zp = drum_zero_point_motion(mass, 10.69e6)
     assert float(x_zp) == pytest.approx(4.1e-15, rel=0.02)
 
 
@@ -123,15 +147,18 @@ def test_single_photon_coupling_is_product() -> None:
 
 
 def test_resonator_dip_at_lc_frequency() -> None:
-    """The hanger transmission vanishes at 1/(2π √(L (C_d + C_c)))."""
+    """The hanger transmission vanishes at 1/(2π √(L (C_d + C_p + C_c)))."""
     inductance = meander_inductor_inductance_analytical(
-        n_turns=71,
+        n_turns=DRUM_INDUCTOR_TURNS,
         turn_length=300.0,
         wire_width=2.0,
         wire_gap=4.0,
         sheet_inductance=0.4e-12,
     )
-    capacitance = vacuum_gap_capacitance_analytical(radius=7.5, gap=VACUUM_GAP)
+    capacitance = (
+        vacuum_gap_capacitance_analytical(radius=7.5, gap=VACUUM_GAP)
+        + DRUM_PARASITIC_CAPACITANCE
+    )
     f_r = 1 / (2 * π * jnp.sqrt(inductance * (capacitance + 1e-15)))
     f = jnp.array([0.9, 1.0, 1.1]) * f_r
     s21 = jnp.abs(drum_lc_resonator(f=f)["o2", "o1"])
@@ -140,7 +167,9 @@ def test_resonator_dip_at_lc_frequency() -> None:
     assert float(s21[2]) > 0.99
 
 
-def _dip_frequency(gap: float = VACUUM_GAP, parasitic: float = 0.0) -> float:
+def _dip_frequency(
+    gap: float = VACUUM_GAP, parasitic: float = DRUM_PARASITIC_CAPACITANCE
+) -> float:
     """Return the frequency of the |S21| minimum of the drum resonator."""
     f = jnp.linspace(2e9, 12e9, 20001)
     s21 = jnp.abs(
@@ -151,15 +180,15 @@ def _dip_frequency(gap: float = VACUUM_GAP, parasitic: float = 0.0) -> float:
 
 def test_smaller_gap_lowers_resonance() -> None:
     """A smaller gap raises the drum capacitance and lowers the resonance."""
-    c_wide = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.06)
-    c_narrow = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.04)
+    c_wide = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.08)
+    c_narrow = vacuum_gap_capacitance_analytical(radius=7.5, gap=0.06)
     assert float(c_narrow) > float(c_wide)
-    assert _dip_frequency(gap=0.04) < _dip_frequency(gap=0.06)
+    assert _dip_frequency(gap=0.06) < _dip_frequency(gap=0.08)
 
 
 def test_parasitic_capacitance_lowers_resonance() -> None:
     """Parasitic capacitance in parallel with the drum lowers the resonance."""
-    assert _dip_frequency(parasitic=30e-15) < _dip_frequency()
+    assert _dip_frequency(parasitic=30e-15) < _dip_frequency(parasitic=0.0)
 
 
 def test_helpers_jit_and_differentiate() -> None:

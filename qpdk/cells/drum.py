@@ -1,8 +1,10 @@
 r"""Suspended vacuum-gap (drum) capacitor and drum LC resonator cells.
 
 The drum is a parallel-plate capacitor whose top electrode is an aluminium
-membrane suspended a vacuum gap above a bottom electrode in ``M1``
-:cite:`cicakLowlossSuperconductingResonant2010,teufelCircuitCavityElectromechanics2011`.
+membrane suspended a vacuum gap above a circular bottom electrode in ``M1``
+:cite:`cicakLowlossSuperconductingResonant2010,mercierdelepinayRealizationDirectionalAmplification2019`.
+The default 15 µm drum and the resonator layout follow the Aalto University
+device of :cite:`pirkkalainenSqueezingQuantumNoise2015`.
 The membrane is drawn on ``VG_TOP`` and the sacrificial layer that holds it up
 during fabrication on ``VG_SAC``. Wherever ``VG_TOP`` lies outside ``VG_SAC``
 the membrane lands on ``M1`` and is clamped there.
@@ -73,11 +75,17 @@ def vacuum_gap_capacitor(
     A circular bottom electrode of radius :math:`a` in ``M1`` sits under an
     aluminium membrane on ``VG_TOP``, separated by the vacuum gap :math:`d` of
     the layer stack, after
-    :cite:`cicakLowlossSuperconductingResonant2010,teufelCircuitCavityElectromechanics2011`.
+    :cite:`cicakLowlossSuperconductingResonant2010,pirkkalainenSqueezingQuantumNoise2015`.
     The membrane is clamped onto an ``M1`` ring around the electrode, either
     along its whole edge (``support="rim"``) or through ``n_legs`` radial legs
     (``support="legs"``). ``VG_SAC`` marks the sacrificial layer under the
     suspended part.
+
+    In the Aalto process the membrane is evaporated on a sacrificial
+    amorphous-silicon layer that is etched away to release it
+    :cite:`mercierdelepinayRealizationDirectionalAmplification2019`. Here the
+    membrane lands on ``M1``, since the layer stack measures the gap from the
+    top of ``M1``.
 
     .. svgbob::
 
@@ -196,7 +204,7 @@ def vacuum_gap_capacitor(
 def drum_lc_resonator(
     radius: float = 7.5,
     support: Literal["rim", "legs"] = "rim",
-    n_turns: int = 71,
+    n_turns: int = 75,
     turn_length: float = 300.0,
     inductor_cross_section: CrossSectionSpec = "meander_inductor_cross_section",
     coupling_gap: float = 6.0,
@@ -207,12 +215,13 @@ def drum_lc_resonator(
     r"""Creates a drum LC resonator side-coupled to a CPW feedline.
 
     A meander inductor is shunted to ground by a
-    :func:`vacuum_gap_capacitor`, forming the mechanically compliant LC
-    circuit of :cite:`teufelCircuitCavityElectromechanics2011`. Unlike that
-    device, which couples inductively, the resonator here couples capacitively
-    to the feedline through a pad at ``coupling_gap`` from the centre
-    conductor. The bottom electrode is the hot node and the membrane is
-    grounded through the drum ring.
+    :func:`vacuum_gap_capacitor` at its open end, forming the mechanically
+    compliant LC circuit of :cite:`pirkkalainenSqueezingQuantumNoise2015`. The
+    resonator couples capacitively to the feedline through a pad at
+    ``coupling_gap`` from the centre conductor, after the capacitively coupled
+    drum cavities of :cite:`ockeloenkorppiLowNoiseAmplificationFrequency2016`.
+    The bottom electrode is the hot node and the membrane is grounded through
+    the drum ring.
 
     .. svgbob::
 
@@ -227,14 +236,16 @@ def drum_lc_resonator(
     kept intact except for a notch around the pad. The notch leaves
     ``coupling_gap`` of clearance to the ground on the sides of the pad.
 
-    The resonance is :math:`\omega_\text{r} = 1/\sqrt{L (C_\text{d} + C_\text{c})}`
+    The resonance is :math:`\omega_\text{r} = 1/\sqrt{L (C_\text{d} + C_\text{p} + C_\text{c})}`
     in the lumped model, see :func:`qpdk.models.drum.drum_lc_resonator`, which
     also lists what that model leaves out.
 
     Args:
         radius: Drum bottom-electrode radius in µm.
         support: How the drum membrane is held, ``"rim"`` or ``"legs"``.
-        n_turns: Number of meander inductor runs. Must be odd.
+        n_turns: Number of meander inductor runs. Must be odd. The default
+            gives about 14 nH, the inductance of
+            :cite:`pirkkalainenSqueezingQuantumNoise2015`.
         turn_length: Length of each meander run in µm.
         inductor_cross_section: Cross-section of the meander wire, the drum
             leads and the internal wiring.

@@ -1,6 +1,6 @@
 info:
   overlap_area: 176.715
-  vacuum_gap: 0.05
+  vacuum_gap: 0.07
 name: vacuum_gap_capacitor_R7p5_Srim_EG2_RW3_NL4_LW2_CSmeande_4af975da
 ports:
   o1:
