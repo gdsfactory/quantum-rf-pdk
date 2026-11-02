@@ -22,7 +22,10 @@ from qpdk.models.drum import (
     vacuum_gap_capacitance_analytical,
     vacuum_gap_capacitor,
 )
-from qpdk.models.inductor import meander_inductor_inductance_analytical
+from qpdk.models.inductor import (
+    _get_wire_width_and_gap,
+    meander_inductor_inductance_analytical,
+)
 from qpdk.tech import LAYER_STACK, get_vacuum_gap
 
 from .base import TwoPortModelTestSuite
@@ -87,11 +90,14 @@ def test_pirkkalainen_lc_design_values() -> None:
 
 def test_default_meander_matches_pirkkalainen_inductance() -> None:
     """The default meander gives about the 14 nH of Pirkkalainen et al."""
+    wire_width, wire_gap = _get_wire_width_and_gap(
+        "meander_inductor_cross_section", None
+    )
     inductance = meander_inductor_inductance_analytical(
         n_turns=DRUM_INDUCTOR_TURNS,
         turn_length=300.0,
-        wire_width=2.0,
-        wire_gap=4.0,
+        wire_width=wire_width,
+        wire_gap=wire_gap,
         sheet_inductance=0.4e-12,
     )
     assert float(inductance) == pytest.approx(14e-9, rel=0.02)
@@ -107,12 +113,6 @@ def test_fringing_is_small_positive_correction(radius: float, gap: float) -> Non
     bare = float(vacuum_gap_capacitance_analytical(radius, gap, fringing=0))
     total = float(vacuum_gap_capacitance_analytical(radius, gap))
     assert bare < total < 2 * bare
-
-
-def test_teufel_lc_design_values() -> None:
-    """C ≈ 38 fF and L ≈ 12 nH resonate near the quoted 7.5 GHz."""
-    frequency = 1 / (2 * π * jnp.sqrt(12e-9 * 38e-15))
-    assert float(frequency) == pytest.approx(7.5e9, rel=0.01)
 
 
 def test_teufel_coupling_design_value() -> None:

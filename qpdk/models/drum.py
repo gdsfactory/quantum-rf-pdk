@@ -12,6 +12,14 @@ diameter, 120 nm thick Al drum 70 nm above its bottom electrode, at the end of
 a meander inductor of about 14 nH, with about 16 fF of other circuit
 capacitance, a 6.90 GHz cavity and a 13.03 MHz drum mode.
 
+That device is on quartz (relative permittivity about 4). Its authors note that
+silicon or sapphire roughly doubles the stray capacitance, so the 16 fF default
+underestimates :math:`C_\text{p}` on this PDK's silicon substrate. The
+mechanical defaults are the paper's values for its 15 µm membrane. The
+membrane drawn by :func:`qpdk.cells.drum.vacuum_gap_capacitor` spans
+:math:`2(a + \text{etch\_gap})`, 19 µm for the default cell, so its mechanics
+differ; pass the membrane radius to :func:`drum_effective_mass`.
+
 The gap :math:`d` and the membrane thickness :math:`t` are layer-stack
 parameters, read from the ``VacuumGap_Top`` level by default
 (see :func:`qpdk.tech.get_vacuum_gap`).
@@ -24,6 +32,8 @@ Assumptions shared by every function in this module:
 - Displacements are small, :math:`x \ll d`.
 - Electrostatic softening, Casimir forces and every nonlinear term are
   neglected.
+- The Pirkkalainen et al. circuit values (16 fF, 14 nH) are taken from a quartz
+  substrate and are not rescaled to silicon.
 """
 
 import jax
@@ -86,7 +96,7 @@ def vacuum_gap_capacitance_analytical(
     :cite:`cicakLowlossSuperconductingResonant2010,teufelCircuitCavityElectromechanics2011`.
     The fringing correction is Kirchhoff's asymptotic result for two coaxial
     circular plates of radius :math:`a` at separation :math:`d \ll a`, as given in
-    :cite:`norgrenCapacitanceCircularParallel2009` (eq. 38 of the preprint):
+    :cite:`norgrenCapacitanceCircularParallel2009`:
 
     .. math::
 
@@ -221,6 +231,11 @@ def drum_electromechanical_coupling(
     the :math:`\partial C_\text{g}/\partial x \sim 120\,\text{nF/m}` quoted by
     :cite:`pirkkalainenSqueezingQuantumNoise2015`. Scale ``participation`` if
     a mode-weighted value is known.
+
+    The default :math:`\eta = 1` is the limit in which the drum provides all
+    of the resonator capacitance, as for Teufel et al. For the default
+    :func:`drum_lc_resonator` the drum gives 22.9 fF of 39.9 fF, so
+    :math:`\eta \approx 0.57`; pass it explicitly.
 
     Args:
         resonance_frequency: Resonance frequency :math:`\omega_\text{c}/2\pi` in Hz.

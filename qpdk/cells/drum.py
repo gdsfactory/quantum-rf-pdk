@@ -87,6 +87,12 @@ def vacuum_gap_capacitor(
     membrane lands on ``M1``, since the layer stack measures the gap from the
     top of ``M1``.
 
+    The suspended part spans the electrode plus the etched gap to the ring,
+    a diameter of :math:`2(a + \text{etch\_gap})`. With the defaults that is
+    19 µm over a 15 µm electrode, so the mechanics of the drawn membrane are
+    not those of the 15 µm drum of
+    :cite:`pirkkalainenSqueezingQuantumNoise2015`.
+
     .. svgbob::
 
               .-----------.  ring + membrane (o2)
@@ -238,7 +244,10 @@ def drum_lc_resonator(
 
     The resonance is :math:`\omega_\text{r} = 1/\sqrt{L (C_\text{d} + C_\text{p} + C_\text{c})}`
     in the lumped model, see :func:`qpdk.models.drum.drum_lc_resonator`, which
-    also lists what that model leaves out.
+    also lists what that model leaves out. The default meander is about 23 mm
+    of wire, longer than the guided wavelength near 7 GHz on silicon, so this
+    layout is not a lumped inductor there and its real resonances differ from
+    that model. Simulate the layout before relying on its frequency.
 
     Args:
         radius: Drum bottom-electrode radius in µm.
