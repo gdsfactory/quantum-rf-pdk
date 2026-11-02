@@ -9,6 +9,7 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, LayerSpec
 
+from qpdk.cells._coupling import mark_coupling_regions
 from qpdk.cells._schematic import (
     half_circle_coupler_schematic,
     interdigital_capacitor_schematic,
@@ -471,6 +472,7 @@ def plate_capacitor(
         component.add_polygon(polygon.to_dtype(dbu), layer=LAYER.M1_DRAW)
     for polygon in (inner - electrodes).each():
         component.add_polygon(polygon.to_dtype(dbu), layer=LAYER.M1_ETCH)
+    mark_coupling_regions(component, first, second, gap=gap)
     return component
 
 

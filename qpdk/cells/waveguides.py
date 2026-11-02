@@ -8,6 +8,7 @@ from kfactory import VInstance
 from klayout.db import DCplxTrans
 
 from qpdk import tech
+from qpdk.cells._coupling import mark_coupling_regions
 from qpdk.cells._schematic import (
     bend_circular_schematic,
     bend_euler_schematic,
@@ -451,6 +452,7 @@ def coupler_straight(
     component.add_ports(lower.ports, prefix="lower_")
     component.add_ports(upper.ports, prefix="upper_")
     component.auto_rename_ports()
+    mark_coupling_regions(component, lower, upper, gap=gap)
     return component
 
 

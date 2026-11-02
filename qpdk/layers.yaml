@@ -179,6 +179,11 @@ LayerViews:
         color: "#535353"
         visible: false
         hatch_pattern: 22.5 degree down
+      COUPLING:
+        layer: [103, 0]
+        layer_in_name: true
+        color: "magenta"
+        hatch_pattern: hollow
       ERROR_PATH:
         layer: [1000, 0]
         layer_in_name: true
