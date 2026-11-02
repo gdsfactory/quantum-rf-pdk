@@ -25,6 +25,11 @@ from qpdk.models.inductor import (
     meander_inductor_inductance_analytical,
 )
 from qpdk.models.junction import josephson_junction, squid_junction
+from qpdk.models.nanowire import (
+    grounded_pad_capacitance_analytical,
+    nanowire_pad_capacitances_analytical,
+    nanowire_resonator,
+)
 
 sax.set_port_naming_strategy("optical")
 
@@ -239,6 +244,7 @@ __all__ = [
     "gatemon_josephson_energy",
     "gatemon_potential",
     "gatemon_supercurrent",
+    "grounded_pad_capacitance_analytical",
     "hyperbolic_cpw_path",
     "hyperbolic_edge_resonator",
     "hyperbolic_lattice",
@@ -262,6 +268,8 @@ __all__ = [
     "microstrip_thickness_correction",
     "microstrip_z0",
     "models",
+    "nanowire_pad_capacitances_analytical",
+    "nanowire_resonator",
     "neck_termination",
     "nxn",
     "open",

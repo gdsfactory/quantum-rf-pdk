@@ -81,8 +81,13 @@ sax_categories = [
     Category(
         "lumped",
         "Capacitors and inductors",
-        "Interdigital and plate capacitors, meander inductors and lumped-element resonators, including the ESR LC resonator.",
-        ("qpdk.models.capacitor", "qpdk.models.inductor", "qpdk.models.esr"),
+        "Interdigital and plate capacitors, meander inductors and lumped-element and nanowire resonators, including the ESR LC resonator.",
+        (
+            "qpdk.models.capacitor",
+            "qpdk.models.inductor",
+            "qpdk.models.esr",
+            "qpdk.models.nanowire",
+        ),
     ),
     Category(
         "junctions",
@@ -134,6 +139,7 @@ helper_categories = [
             "qpdk.models.couplers",
             "qpdk.models.inductor",
             "qpdk.models.esr",
+            "qpdk.models.nanowire",
         ),
     ),
 ]

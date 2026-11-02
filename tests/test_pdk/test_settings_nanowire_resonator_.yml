@@ -1,0 +1,38 @@
+info:
+  lead_length: 0.1
+  n_squares: 402
+  n_squares_convention: 'Hagedorn-Hall: a w x w sharp 90 deg corner counts 0.559 squares'
+  wire_gap: 0.1
+name: nanowire_resonator_WW0p1_WL40_NT1_WGNone_LLNone_CSsharp_a512230f
+ports:
+  o1:
+    center:
+    - -250
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 10
+  o2:
+    center:
+    - 250
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 10
+settings:
+  contact_overlap: 2
+  corner_style: sharp
+  coupling_gap: 4
+  cross_section: cpw
+  feedline_length: 500
+  n_turns: 1
+  pad_ground_gap: 50
+  pad_height: 150
+  pad_width: 300
+  wire_layer: NbTiN
+  wire_length: 40
+  wire_width: 0.1

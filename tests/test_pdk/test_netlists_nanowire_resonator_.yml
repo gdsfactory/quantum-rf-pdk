@@ -1,0 +1,47 @@
+instances:
+  meander_inductor:
+    component: meander_inductor
+    info:
+      cross_section_name: xs_635d278b
+      n_squares: 400
+      n_squares_convention: 'Hagedorn-Hall: a w x w sharp 90 deg corner counts 0.559
+        squares'
+      n_squares_drawn: 400
+      total_wire_length: 40
+    settings:
+      add_etch: false
+      corner_style: sharp
+      cross_section: xs_635d278b
+      etch_bbox_margin: 2
+      n_turns: 1
+      radius: null
+      turn_length: 40
+      wire_gap: 0.1
+  straight:
+    component: straight
+    info:
+      length: 500
+      route_info_coplanar_waveguide_length: 500
+      route_info_length: 500
+      route_info_type: coplanar_waveguide
+      route_info_weight: 500
+      width: 10
+    settings:
+      cross_section: cpw
+      length: 500
+      npoints: 2
+nets: []
+placements:
+  meander_inductor:
+    mirror: false
+    rotation: 90
+    x: 0
+    y: -179.1
+  straight:
+    mirror: false
+    rotation: 0
+    x: -250
+    y: 0
+ports:
+  o1: straight,o1
+  o2: straight,o2

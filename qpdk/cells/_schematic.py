@@ -42,6 +42,7 @@ __all__ = [
     "launcher_schematic",
     "lumped_element_resonator_schematic",
     "meander_inductor_schematic",
+    "nanowire_resonator_schematic",
     "neck_termination_schematic",
     "nxn_schematic",
     "open_2_port_schematic",
@@ -674,6 +675,19 @@ esr_lc_resonator_schematic = schematic(
     tags=["resonators", "inductors", "capacitors"],
     ports=_2PORT,
     models=[sax_model("esr_lc_resonator", "qpdk.models.esr", ["o1", "o2"])],
+)
+
+nanowire_resonator_schematic = schematic(
+    symbol="nanowire_resonator",
+    tags=["resonators", "inductors"],
+    ports=_2PORT,
+    models=[
+        sax_model(
+            name="nanowire_resonator",
+            module="qpdk.models.nanowire",
+            port_order=["o1", "o2"],
+        )
+    ],
 )
 
 plate_capacitor_single_schematic = schematic(
