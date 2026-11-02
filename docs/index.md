@@ -59,6 +59,7 @@ simulation
 :hidden:
 
 layer_stack
+design_rules
 ```
 
 ```{toctree}

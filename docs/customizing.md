@@ -165,9 +165,10 @@ For standalone 3D viewing, run `uv run --extra graphics python qpdk/samples/samp
 gdsfactory's `component.to_3d()` and `scene.show()` to open a trimesh window. The same call embeds the view in Jupyter.
 The sample scales the camera clipping range with the scene size so micrometre chip coordinates stay visible.
 
-QPDK has no table of design rules. Minimum widths and gaps are default parameter values in the cross-sections and cells.
-Check the cells you keep against your rules. For hosted DRC, set `[tool.gdsfactoryplus.project]` `identifier` in
-`pyproject.toml` to your own GDSFactory+ project, whose PDK selects the rule deck.
+The design rules, their per-profile thresholds and the intent layers coupled cells emit are in {doc}`design_rules`. The
+numbers follow what the cells draw, so when your process differs, change the cross-sections and cells and that page
+together. For hosted DRC, keep `[tool.gdsfactoryplus.project]` `identifier` pointing at a project whose deck you
+control, and pick a rule profile with `[tool.gdsfactoryplus.drc] process`.
 
 The FEM datasets in `qpdk/models/datasets/` were simulated on the QPDK stack. The analytical models follow your stack,
 but these datasets do not. Regenerate them with the scripts in `qpdk/models/datasets/recipes/`, or treat the models that
