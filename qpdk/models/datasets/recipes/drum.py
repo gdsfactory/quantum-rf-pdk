@@ -1,7 +1,7 @@
 # /// script
 # requires-python = "~=3.12.0"
 # dependencies = [
-#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git@af8a7397624dd10bab5e3c0f696574f289a95e29",
+#   "qpdk[models] @ git+https://github.com/gdsfactory/quantum-rf-pdk.git@df7a82183721f645033c71bfbde47e61b8af0c4e",
 #   "typer>=0.24,<1",
 #   "gsim[meshwell] @ git+https://github.com/nikosavola/gsim.git@946c3973b6311f0a4a3cf3bd601336ad7a186dfb",
 # ]
