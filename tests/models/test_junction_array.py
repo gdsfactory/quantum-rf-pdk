@@ -15,8 +15,13 @@ from scipy.optimize import brentq
 
 from qpdk import PDK
 from qpdk.models.constants import Φ_0
-from qpdk.models.generic import series_impedance, shunt_admittance
-from qpdk.models.junction import _abcd_power, josephson_junction_array
+from qpdk.models.generic import shunt_admittance
+from qpdk.models.junction import (
+    _abcd_power,
+    _rcsj_admittance,
+    josephson_junction,
+    josephson_junction_array,
+)
 
 from .base import TwoPortModelTestSuite
 
@@ -25,13 +30,20 @@ C_J = 40e-15
 IC = Φ_0 / (2 * jnp.pi * L_J)
 
 
-def _rcsj_impedance(
-    f: jax.Array, ic: float, capacitance: float, resistance: float, ib: float = 0.0
-) -> jax.Array:
-    """Impedance of the linearised RCSJ element of ``josephson_junction``."""
-    ω = 2 * jnp.pi * f
-    l_j = Φ_0 / (2 * jnp.pi * ic * jnp.sqrt(1 - (ib / ic) ** 2))
-    return 1 / (1 / resistance + 1j * ω * capacitance + 1 / (1j * ω * l_j))
+def _junction(
+    f: sax.FloatArrayLike = 5e9,
+    ic: float = IC,
+    capacitance: float = C_J,
+    resistance: float = 1e5,
+    ib: float = 0.0,
+) -> sax.SDict:
+    """The ``josephson_junction`` model with ports ``o1`` and ``o2``."""
+    return sax.rename_ports(
+        josephson_junction(
+            f=f, ic=ic, capacitance=capacitance, resistance=resistance, ib=ib
+        ),
+        {"left_wide": "o1", "right_wide": "o2"},
+    )
 
 
 def _abcd_b(s: sax.SDict, z0: float = 50.0) -> jax.Array:
@@ -73,7 +85,7 @@ def test_single_junction_limit(kwargs: dict) -> None:
     """N = 1 is one RCSJ junction in series, referenced to 50 Ω."""
     f = jnp.linspace(1e9, 20e9, 41)
     s_array = josephson_junction_array(f=f, n_junctions=1, **kwargs)
-    s_single = series_impedance(f=f, z=_rcsj_impedance(f, **kwargs))
+    s_single = _junction(f=f, **kwargs)
     for key, value in s_single.items():
         assert_allclose(s_array[key], value, rtol=1e-10, atol=1e-12)
 
@@ -84,7 +96,6 @@ def test_matches_sax_netlist(n_junctions: int) -> None:
     f = jnp.linspace(1e9, 25e9, 31)
     c_g = 2e-15
     resistance = 1e5
-    z_j = _rcsj_impedance(f, IC, C_J, resistance)
 
     instances = {f"j{i}": "junction" for i in range(n_junctions)}
     instances |= {f"g{i}": "island" for i in range(n_junctions - 1)}
@@ -99,7 +110,7 @@ def test_matches_sax_netlist(n_junctions: int) -> None:
             "ports": {"o1": "j0,o1", "o2": f"j{n_junctions - 1},o2"},
         },
         models={
-            "junction": partial(series_impedance, z=z_j),
+            "junction": partial(_junction, resistance=resistance),
             "island": partial(shunt_admittance, y=2j * jnp.pi * f * c_g),
         },
     )
@@ -222,7 +233,7 @@ def test_reciprocity_of_long_cascade() -> None:
     ABCD entries stay bounded.
     """
     f = jnp.linspace(1e9, 15e9, 29)
-    z_j = _rcsj_impedance(f, IC, C_J, jnp.inf)
+    z_j = 1 / _rcsj_admittance(f, IC, C_J, jnp.inf, 0.0)
     y_g = 2j * jnp.pi * f * 0.04e-15
     t_cell = jnp.stack(
         [

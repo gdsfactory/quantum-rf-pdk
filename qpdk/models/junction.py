@@ -9,6 +9,7 @@ import sax
 from sax.models.rf import impedance
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0
+from qpdk.models.generic import abcd_to_sdict
 from qpdk.models.jit import jit
 
 
@@ -25,6 +26,37 @@ def _warn_if_overbiased(ib: float, ic: float) -> None:
             RuntimeWarning,
             stacklevel=0,
         )
+
+
+def _rcsj_admittance(
+    f: sax.FloatArrayLike,
+    ic: sax.Float,
+    capacitance: sax.Float,
+    resistance: sax.Float,
+    ib: sax.Float,
+) -> jax.Array:
+    r"""Admittance of the linearised RCSJ element, warning if ``|ib| >= ic``.
+
+    Returns:
+        The admittance :math:`1/R + j\omega C + 1/(j\omega L_J)` in Siemens.
+    """
+    jax.debug.callback(_warn_if_overbiased, ib, ic)
+
+    ω = 2 * jnp.pi * jnp.asarray(f)
+
+    # Bias-dependent phase factor
+    # jnp.clip ensures we don't get NaNs during compilation tracing or slightly overbiased states
+    cos_Φ_0 = jnp.sqrt(jnp.clip(1.0 - (ib / ic) ** 2, min=1e-10))
+
+    # Josephson inductance
+    Lⱼ = Φ_0 / (2 * jnp.pi * ic * cos_Φ_0)
+
+    # Admittances (parallel RCSJ)
+    Y_R = 1 / resistance
+    Y_C = 1j * ω * capacitance
+    Y_L = 1 / (1j * ω * Lⱼ)
+
+    return Y_R + Y_C + Y_L
 
 
 @jit(inline=True)
@@ -57,24 +89,7 @@ def josephson_junction(
     Returns:
         sax.SDict: S-parameters dictionary with ports left_wide and right_wide
     """
-    jax.debug.callback(_warn_if_overbiased, ib, ic)
-
-    ω = 2 * jnp.pi * jnp.asarray(f)
-
-    # Bias-dependent phase factor
-    # jnp.clip ensures we don't get NaNs during compilation tracing or slightly overbiased states
-    cos_Φ_0 = jnp.sqrt(jnp.clip(1.0 - (ib / ic) ** 2, min=1e-10))
-
-    # Josephson inductance
-    Lⱼ = Φ_0 / (2 * jnp.pi * ic * cos_Φ_0)
-
-    # Admittances (parallel RCSJ)
-    Y_R = 1 / resistance
-    Y_C = 1j * ω * capacitance
-    Y_L = 1 / (1j * ω * Lⱼ)
-
-    # Total admittance
-    Y_JJ = Y_R + Y_C + Y_L
+    Y_JJ = _rcsj_admittance(f, ic, capacitance, resistance, ib)
 
     return sax.rename_ports(
         impedance(f=f, z=1 / Y_JJ), {"o1": "left_wide", "o2": "right_wide"}
@@ -173,30 +188,6 @@ def _abcd_power(t: jax.Array, n: jax.Array) -> jax.Array:
     return result
 
 
-def _abcd_to_sdict(abcd: jax.Array, z0: sax.Float) -> sax.SDict:
-    """Convert a batch of reciprocal ABCD matrices to a two-port S-parameter dictionary.
-
-    See :cite:`m.pozarMicrowaveEngineering2012` (Ch. 4, Table 4.2). The network is
-    assumed reciprocal, :math:`AD - BC = 1`, so :math:`S_{12} = S_{21}` exactly
-    instead of carrying the round-off of a long cascade into the determinant.
-
-    Returns:
-        The S-parameter dictionary with ports ``o1`` and ``o2``.
-    """
-    a, b, c, d = abcd[..., 0, 0], abcd[..., 0, 1], abcd[..., 1, 0], abcd[..., 1, 1]
-    denominator = a + b / z0 + c * z0 + d
-    s11 = (a + b / z0 - c * z0 - d) / denominator
-    s22 = (-a + b / z0 - c * z0 + d) / denominator
-    s21 = 2 / denominator
-    s12 = s21
-    return {
-        ("o1", "o1"): s11,
-        ("o1", "o2"): s12,
-        ("o2", "o1"): s21,
-        ("o2", "o2"): s22,
-    }
-
-
 @jit(inline=True)
 def _josephson_junction_array(
     *,
@@ -215,14 +206,9 @@ def _josephson_junction_array(
         The S-parameter dictionary, NaN where ``n`` is out of range.
     """
     in_range = (n >= 1) & (n < 2**_ABCD_POWER_BITS)
-    jax.debug.callback(_warn_if_overbiased, ib, ic)
 
-    ω = 2 * jnp.pi * jnp.asarray(f)
-    cos_Φ_0 = jnp.sqrt(jnp.clip(1.0 - (ib / ic) ** 2, min=1e-10))
-    Lⱼ = Φ_0 / (2 * jnp.pi * ic * cos_Φ_0)
-    Y_JJ = 1 / resistance + 1j * ω * capacitance + 1 / (1j * ω * Lⱼ)
-    Z_JJ = 1 / Y_JJ
-    Y_g = 1j * ω * ground_capacitance * jnp.ones_like(Z_JJ)
+    Z_JJ = 1 / _rcsj_admittance(f, ic, capacitance, resistance, ib)
+    Y_g = 2j * jnp.pi * jnp.asarray(f) * ground_capacitance * jnp.ones_like(Z_JJ)
 
     one = jnp.ones_like(Z_JJ)
     zero = jnp.zeros_like(Z_JJ)
@@ -238,7 +224,11 @@ def _josephson_junction_array(
     )
     abcd = _abcd_matmul(_abcd_power(t_cell, n - 1), t_junction)
     abcd = jnp.where(in_range, abcd, jnp.nan)
-    return _abcd_to_sdict(abcd, z0)
+    sdict = abcd_to_sdict(f=f, abcd=abcd, z0=z0)
+    # Every cell has AD - BC = 1, so the chain is reciprocal. Setting S12 = S21
+    # keeps the round-off of a long cascade out of the determinant.
+    sdict["o1", "o2"] = sdict["o2", "o1"]
+    return sdict
 
 
 def josephson_junction_array(

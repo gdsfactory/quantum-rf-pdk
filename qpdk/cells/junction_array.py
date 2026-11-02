@@ -20,30 +20,10 @@ __all__ = ["josephson_junction_array", "josephson_junction_array_compact"]
 LayoutStyle = Literal["dolan", "manhattan"]
 
 _DBU = gf.kcl.dbu
+"""Database unit in µm."""
 # Not qpdk.models.constants: importing qpdk.models pulls in jax, which the
 # cells must not need.
 _Φ_0 = scipy.constants.physical_constants["mag. flux quantum"][0]
-"""Database unit in µm."""
-
-
-def _rectangle(x0: float, x1: float, y0: float, y1: float) -> kdb.DPolygon:
-    """Axis-aligned rectangle spanning the given x and y ranges."""
-    return kdb.DPolygon(kdb.DBox(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)))
-
-
-def _dolan_island(island_length: float, island_width: float) -> list[kdb.DPolygon]:
-    """Island of a Dolan chain, centred at the origin, chain along +x.
-
-    End islands are drawn as interior islands. The leads are added separately.
-
-    Returns:
-        The island polygons.
-    """
-    return [
-        _rectangle(
-            -island_length / 2, island_length / 2, -island_width / 2, island_width / 2
-        )
-    ]
 
 
 def _manhattan_island(
@@ -71,8 +51,13 @@ def _manhattan_island(
     """
     half_axis = pitch / math.sqrt(2)  # centre to junction, along the bar axis
     polygons = [
-        _rectangle(
-            -island_length / 2, island_length / 2, -island_width / 2, island_width / 2
+        kdb.DPolygon(
+            kdb.DBox(
+                -island_length / 2,
+                -island_width / 2,
+                island_length / 2,
+                island_width / 2,
+            )
         )
     ]
     # In the bar frame the +u finger points towards the next junction for even
@@ -80,20 +65,24 @@ def _manhattan_island(
     # For odd islands (-45°) the same holds after the rotation.
     if not last:
         polygons.append(
-            _rectangle(
-                island_length / 2,
-                half_axis + tip_width / 2,
-                -tip_width / 2,
-                tip_width / 2,
+            kdb.DPolygon(
+                kdb.DBox(
+                    island_length / 2,
+                    -tip_width / 2,
+                    half_axis + tip_width / 2,
+                    tip_width / 2,
+                )
             )
         )
     if not first:
         polygons.append(
-            _rectangle(
-                -half_axis - tip_width / 2,
-                -island_length / 2,
-                -tip_width / 2,
-                tip_width / 2,
+            kdb.DPolygon(
+                kdb.DBox(
+                    -half_axis - tip_width / 2,
+                    -tip_width / 2,
+                    -island_length / 2,
+                    tip_width / 2,
+                )
             )
         )
     angle = 45.0 if index % 2 == 0 else -45.0
@@ -147,12 +136,6 @@ def _check_island_contacts(islands: list[kdb.Region], *, junction_area: float) -
             "Islands that are not neighbours in the chain overlap: increase "
             "pitch or fold_spacing, or reduce island_length or island_width"
         )
-
-
-def _junctions_per_row(n_junctions: int, n_rows: int) -> list[int]:
-    """Split ``n_junctions`` over ``n_rows`` rows, earlier rows taking the remainder."""
-    base, extra = divmod(n_junctions, n_rows)
-    return [base + (1 if row < extra else 0) for row in range(n_rows)]
 
 
 @gf.cell(
@@ -291,7 +274,17 @@ def josephson_junction_array(
 
     def island(index: int, *, first: bool, last: bool) -> list[kdb.DPolygon]:
         if layout_style == "dolan":
-            return _dolan_island(island_length, island_width)
+            # End islands are drawn as interior islands; the leads are added below.
+            return [
+                kdb.DPolygon(
+                    kdb.DBox(
+                        -island_length / 2,
+                        -island_width / 2,
+                        island_length / 2,
+                        island_width / 2,
+                    )
+                )
+            ]
         return _manhattan_island(
             index, pitch, island_length, island_width, tip_width, first=first, last=last
         )
@@ -324,7 +317,10 @@ def josephson_junction_array(
     # Polygons of each island, for the contact check below.
     island_polygons: list[list[kdb.DPolygon]] = [[] for _ in range(n_junctions + 1)]
 
-    for row, n_row in enumerate(_junctions_per_row(n_junctions, n_rows)):
+    # Split the junctions over the rows, earlier rows taking the remainder.
+    base, extra = divmod(n_junctions, n_rows)
+    junctions_per_row = [base + (1 if row < extra else 0) for row in range(n_rows)]
+    for row, n_row in enumerate(junctions_per_row):
         direction = 1 if row % 2 == 0 else -1
         y = -row * fold_spacing
         # Odd rows run in -x: mirror about the y axis (mirror about x, then 180°).
@@ -348,15 +344,17 @@ def josephson_junction_array(
                 outward = -1 if is_first else 1
                 x_island = local * pitch
                 x_outer = x_island + outward * (island_half_extent + lead_length)
-                lead = _rectangle(
-                    x_island, x_outer, -island_width / 2, island_width / 2
+                lead = kdb.DPolygon(
+                    kdb.DBox(x_island, -island_width / 2, x_outer, island_width / 2)
                 )
                 island_polygons[global_index].append(mirror * lead)
-                patch = _rectangle(
-                    x_outer - outward * lead_length,
-                    x_outer + outward * lead_length / 4,
-                    -island_width / 2 - lead_length / 4,
-                    island_width / 2 + lead_length / 4,
+                patch = kdb.DPolygon(
+                    kdb.DBox(
+                        x_outer - outward * lead_length,
+                        -island_width / 2 - lead_length / 4,
+                        x_outer + outward * lead_length / 4,
+                        island_width / 2 + lead_length / 4,
+                    )
                 )
                 patches.append(mirror * patch)
                 x_port = x_start + direction * x_outer
@@ -365,11 +363,13 @@ def josephson_junction_array(
         x_end = x_start + direction * n_row * pitch
         if row < n_rows - 1:
             island_polygons[island_index + n_row].append(
-                _rectangle(
-                    x_end - connector_width / 2,
-                    x_end + connector_width / 2,
-                    y,
-                    y - fold_spacing,
+                kdb.DPolygon(
+                    kdb.DBox(
+                        x_end - connector_width / 2,
+                        y - fold_spacing,
+                        x_end + connector_width / 2,
+                        y,
+                    )
                 )
             )
         island_index += n_row

@@ -9,12 +9,16 @@ import pytest
 import sax
 from hypothesis import assume, given, settings
 from numpy.testing import assert_allclose, assert_array_less
+from sax.models.rf import transmission_line_s_params
 
 from qpdk.models.generic import (
+    abcd_to_sdict,
     lc_resonator,
     lc_resonator_coupled,
     open as open_model,
+    series_impedance,
     short as short_model,
+    shunt_admittance,
 )
 
 from .base import TwoPortModelTestSuite
@@ -37,6 +41,69 @@ def test_ideal_one_port_termination(
 
     assert set(result) == {("o1", "o1")}
     assert_allclose(result["o1", "o1"], expected_gamma)
+
+
+def _abcd(
+    a: jnp.ndarray, b: jnp.ndarray, c: jnp.ndarray, d: jnp.ndarray
+) -> jnp.ndarray:
+    """Stack ABCD entries into matrices with shape ``(..., 2, 2)``."""
+    return jnp.stack([jnp.stack([a, b], axis=-1), jnp.stack([c, d], axis=-1)], axis=-2)
+
+
+FREQUENCIES = jnp.linspace(1e9, 20e9, 11)
+ONES = jnp.ones_like(FREQUENCIES, dtype=complex)
+ZEROS = jnp.zeros_like(ONES)
+
+
+@pytest.mark.parametrize("z0", [50.0, 75.0])
+def test_abcd_to_sdict_series_impedance(z0: float) -> None:
+    """A series impedance, T = [[1, Z], [0, 1]], matches ``series_impedance``."""
+    z = 10.0 + 2j * jnp.pi * FREQUENCIES * 1e-9
+    result = abcd_to_sdict(abcd=_abcd(ONES, z, ZEROS, ONES), z0=z0)
+    expected = series_impedance(z=z, z0=z0)
+    for key, value in expected.items():
+        assert_allclose(result[key], value, rtol=1e-12)
+
+
+@pytest.mark.parametrize("z0", [50.0, 75.0])
+def test_abcd_to_sdict_shunt_admittance(z0: float) -> None:
+    """A shunt admittance, T = [[1, 0], [Y, 1]], matches ``shunt_admittance``."""
+    y = 1e-3 + 2j * jnp.pi * FREQUENCIES * 100e-15
+    result = abcd_to_sdict(abcd=_abcd(ONES, ZEROS, y, ONES), z0=z0)
+    expected = shunt_admittance(y=y, z0=z0)
+    for key, value in expected.items():
+        assert_allclose(result[key], value, rtol=1e-12)
+
+
+def test_abcd_to_sdict_transmission_line() -> None:
+    """A mismatched lossy line matches ``sax.models.rf.transmission_line_s_params``."""
+    gamma = 0.5 + 2j * jnp.pi * FREQUENCIES / 1.2e8
+    z_line, length, z_ref = 30.0, 2e-3, 50.0
+    theta = gamma * length
+    abcd = _abcd(
+        jnp.cosh(theta),
+        z_line * jnp.sinh(theta),
+        jnp.sinh(theta) / z_line,
+        jnp.cosh(theta),
+    )
+    result = abcd_to_sdict(abcd=abcd, z0=z_ref)
+    s11, s21 = transmission_line_s_params(gamma, z_line, length, z_ref)
+    for key, value in {
+        ("o1", "o1"): s11,
+        ("o2", "o2"): s11,
+        ("o1", "o2"): s21,
+        ("o2", "o1"): s21,
+    }.items():
+        assert_allclose(result[key], value, rtol=1e-12)
+
+
+def test_abcd_to_sdict_non_reciprocal() -> None:
+    """S12 carries the determinant AD - BC, so a non-reciprocal T gives S12 != S21."""
+    result = abcd_to_sdict(abcd=jnp.asarray([[1.0, 0.0], [0.0, 2.0]]), z0=50.0)
+    assert_allclose(result["o2", "o1"], 2 / 3)
+    assert_allclose(result["o1", "o2"], 4 / 3)
+    assert_allclose(result["o1", "o1"], -1 / 3)
+    assert_allclose(result["o2", "o2"], 1 / 3)
 
 
 @final

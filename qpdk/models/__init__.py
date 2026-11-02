@@ -79,6 +79,7 @@ from qpdk.models.gatemon import (
     gatemon_supercurrent,
 )
 from qpdk.models.generic import (
+    abcd_to_sdict,
     admittance,
     capacitor,
     electrical_open,
@@ -184,6 +185,7 @@ from qpdk.models.waveguides import (
 
 __all__ = [
     "DEFAULT_FREQUENCY",
+    "abcd_to_sdict",
     "admittance",
     "airbridge",
     "andreev_bound_state_energies",
