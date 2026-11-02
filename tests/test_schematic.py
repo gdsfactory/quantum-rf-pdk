@@ -21,6 +21,7 @@ from qpdk.cells import (
     cpw_bulge,
     double_pad_transmon,
     double_pad_transmon_with_bbox,
+    drum_lc_resonator,
     fluxonium,
     fluxonium_with_bbox,
     interdigital_capacitor,
@@ -51,6 +52,7 @@ from qpdk.cells import (
     straight_open,
     straight_shorted,
     unimon_coupled,
+    vacuum_gap_capacitor,
 )
 from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
@@ -98,6 +100,8 @@ def test_schematic_functions():
         josephson_junction,
         unimon_coupled,
         meander_inductor,
+        vacuum_gap_capacitor,
+        drum_lc_resonator,
     ]
 
     for cell in cells:
@@ -303,6 +307,8 @@ def test_simulation_cells_have_sax_models() -> None:
         bend_s: ("qpdk.models.waveguides", {"o1", "o2"}),
         launcher: ("qpdk.models.waveguides", {"waveport", "o1"}),
         lumped_element_resonator: ("qpdk.models.inductor", {"o1", "o2"}),
+        vacuum_gap_capacitor: ("qpdk.models.drum", {"o1", "o2"}),
+        drum_lc_resonator: ("qpdk.models.drum", {"o1", "o2"}),
         resonator: ("qpdk.models.resonator", {"o1", "o2"}),
         resonator_half_wave: ("qpdk.models.resonator", {"o1", "o2"}),
         resonator_quarter_wave: ("qpdk.models.resonator", {"o1", "o2"}),

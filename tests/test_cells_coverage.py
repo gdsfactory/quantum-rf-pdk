@@ -180,7 +180,7 @@ class TestVacuumGapCapacitorValidation:
     def test_unknown_support_raises() -> None:
         """Test that an unknown support style raises ValueError."""
         with pytest.raises(ValueError, match="support must be"):
-            vacuum_gap_capacitor(support="posts")  # pyrefly: ignore[bad-argument-type]
+            vacuum_gap_capacitor(support="posts")
 
     @staticmethod
     def test_leg_on_lead_slot_raises() -> None:

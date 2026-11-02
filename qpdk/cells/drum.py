@@ -24,6 +24,10 @@ from gdsfactory.typings import CrossSectionSpec, LayerSpec
 from kfactory import kdb
 from klayout.db import Region
 
+from qpdk.cells._schematic import (
+    drum_lc_resonator_schematic,
+    vacuum_gap_capacitor_schematic,
+)
 from qpdk.cells.inductor import meander_inductor
 from qpdk.cells.waveguides import straight
 from qpdk.tech import (
@@ -60,7 +64,7 @@ def _layer_region(component: Component, layer: LayerSpec) -> Region:
     ).merged()
 
 
-@gf.cell(tags=["capacitors"])
+@gf.cell(tags=["capacitors"], schematic_function=vacuum_gap_capacitor_schematic)
 def vacuum_gap_capacitor(
     radius: float = 7.5,
     support: Literal["rim", "legs"] = "rim",
@@ -206,7 +210,10 @@ def vacuum_gap_capacitor(
     return c
 
 
-@gf.cell(tags=["resonators", "capacitors", "inductors", "couplers"])
+@gf.cell(
+    tags=["resonators", "capacitors", "inductors", "couplers"],
+    schematic_function=drum_lc_resonator_schematic,
+)
 def drum_lc_resonator(
     radius: float = 7.5,
     support: Literal["rim", "legs"] = "rim",

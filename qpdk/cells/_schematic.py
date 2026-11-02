@@ -25,6 +25,7 @@ __all__ = [
     "cpw_bulge_schematic",
     "double_pad_transmon_schematic",
     "double_pad_transmon_with_bbox_schematic",
+    "drum_lc_resonator_schematic",
     "esr_lc_resonator_schematic",
     "flipmon_schematic",
     "fluxonium_schematic",
@@ -75,6 +76,7 @@ __all__ = [
     "unimon_arm_schematic",
     "unimon_coupled_schematic",
     "unimon_schematic",
+    "vacuum_gap_capacitor_schematic",
     "xmon_transmon_schematic",
 ]
 
@@ -718,6 +720,19 @@ nanowire_resonator_schematic = schematic(
     ],
 )
 
+vacuum_gap_capacitor_schematic = schematic(
+    symbol="vacuum_gap_capacitor",
+    tags=["capacitors"],
+    ports=_2PORT,
+    models=[sax_model("vacuum_gap_capacitor", "qpdk.models.drum", ["o1", "o2"])],
+)
+
+drum_lc_resonator_schematic = schematic(
+    symbol="drum_lc_resonator",
+    tags=["resonators", "capacitors", "inductors", "couplers"],
+    ports=_2PORT,
+    models=[sax_model("drum_lc_resonator", "qpdk.models.drum", ["o1", "o2"])],
+)
 plate_capacitor_single_schematic = schematic(
     symbol="plate_capacitor_single",
     tags=["capacitors"],
