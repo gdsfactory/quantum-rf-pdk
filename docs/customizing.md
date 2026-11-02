@@ -77,21 +77,21 @@ merge QPDK into.
 The places below contain the QPDK name. Change all of them in **one commit** and change nothing else in it. Later merges
 then conflict here in a known way, and the diff of this commit is your checklist.
 
-| What                | Where                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| Package directory   | `qpdk/`, and every `import qpdk` / `from qpdk` (`git grep -l qpdk`: most of the repo)      |
-| Name and version    | `[project]` in `pyproject.toml`, `__version__` in `qpdk/__init__.py`, `[tool.tbump]`       |
-| Tooling paths       | `pyproject.toml`: coverage `source`, pytest `testpaths`, ruff per-file ignores             |
-| GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar` libraries          |
-| Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                           |
-| PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py`     |
-| FEM stacks          | `pdk_name="qpdk"` in `qpdk/simulation/fem.py`                                              |
-| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`       |
-| KLayout install     | `src` and `dest` in `qpdk/install_tech.py`                                                 |
-| Docs                | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                     |
-| Workflows           | `test.yml` (`--cov=qpdk`, imports)                                                         |
-| Repo metadata       | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`      |
-| Citation metadata   | `CITATION.cff`, `.github/zenodo/metadata.json`: author, ORCIDs, affiliations, URLs and DOI |
+| What                | Where                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| Package directory   | `qpdk/`, and every `import qpdk` / `from qpdk` (`git grep -l qpdk`: most of the repo)         |
+| Name and version    | `[project]` in `pyproject.toml`, `__version__` in `qpdk/__init__.py`, `[tool.tbump]`          |
+| Tooling paths       | `pyproject.toml`: coverage `source`, pytest `testpaths`, ruff per-file ignores                |
+| GDSFactory+ project | `pyproject.toml`: `[tool.gdsfactoryplus]` `name`, `pdk.name`, `sidebar`, `project.identifier` |
+| Layer map class     | `LayerMapQPDK` in `qpdk/tech.py`                                                              |
+| PDK object          | `name="qpdk"` in `get_pdk()`, and the `QPdk` / `_QPdkMeta` classes, `qpdk/__init__.py`        |
+| FEM stacks          | `pdk_name="qpdk"` in `qpdk/simulation/fem.py`                                                 |
+| KLayout technology  | `<name>` in `qpdk/klayout/tech.lyt`, `KLayoutTechnology(name=...)` in `qpdk/tech.py`          |
+| KLayout install     | `src` and `dest` in `qpdk/install_tech.py`                                                    |
+| Docs                | `docs/conf.py`: `project`, logos, URLs, and badges in README and index                        |
+| Workflows           | `test.yml` (`--cov=qpdk`, imports)                                                            |
+| Repo metadata       | Repository URLs in `.github/` (issue templates, release drafter, lychee), `AGENTS.md`         |
+| Citation metadata   | `CITATION.cff`, `.github/zenodo/metadata.json`: author, ORCIDs, affiliations, URLs and DOI    |
 
 The `justfile` reads the package name from `pdk := env('pdk', 'qpdk')`. Set `pdk=<your_pdk>` in `.env` or change the
 default. Only the `install-tech` and `show` recipes read this variable.
@@ -166,8 +166,8 @@ gdsfactory's `component.to_3d()` and `scene.show()` to open a trimesh window. Th
 The sample scales the camera clipping range with the scene size so micrometre chip coordinates stay visible.
 
 QPDK has no table of design rules. Minimum widths and gaps are default parameter values in the cross-sections and cells.
-Check the cells you keep against your rules. For hosted DRC, set `[tool.gdsfactoryplus.drc] pdk` in `pyproject.toml` to
-your own rule deck.
+Check the cells you keep against your rules. For hosted DRC, set `[tool.gdsfactoryplus.project]` `identifier` in
+`pyproject.toml` to your own GDSFactory+ project, whose PDK selects the rule deck.
 
 The FEM datasets in `qpdk/models/datasets/` were simulated on the QPDK stack. The analytical models follow your stack,
 but these datasets do not. Regenerate them with the scripts in `qpdk/models/datasets/recipes/`, or treat the models that
