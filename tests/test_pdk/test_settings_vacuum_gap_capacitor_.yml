@@ -1,0 +1,31 @@
+info:
+  overlap_area: 176.715
+  vacuum_gap: 0.05
+name: vacuum_gap_capacitor_R7p5_Srim_EG2_RW3_NL4_LW2_CSmeande_4af975da
+ports:
+  o1:
+    center:
+    - -14.5
+    - 0
+    layer: M1_DRAW
+    name: o1
+    orientation: 180
+    port_type: optical
+    width: 2
+  o2:
+    center:
+    - 14.5
+    - 0
+    layer: M1_DRAW
+    name: o2
+    orientation: 0
+    port_type: optical
+    width: 2
+settings:
+  cross_section: meander_inductor_cross_section
+  etch_gap: 2
+  leg_width: 2
+  n_legs: 4
+  radius: 7.5
+  rim_width: 3
+  support: rim

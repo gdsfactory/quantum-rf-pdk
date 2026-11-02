@@ -61,6 +61,10 @@ class LayerMapQPDK(LayerMap):
     AB_DRAW: Layer = (10, 0)  # Bridge metal
     AB_VIA: Layer = (10, 1)  # Landing pads / contacts
 
+    # Suspended vacuum-gap capacitors (drums)
+    VG_TOP: Layer = (40, 0)  # Suspended top electrode (membrane)
+    VG_SAC: Layer = (40, 1)  # Sacrificial layer / release region
+
     # Junctions
     JJ_AREA: Layer = (20, 0)  # Optional bridge/overlap definition
     JJ_PATCH: Layer = (20, 1)
@@ -123,10 +127,11 @@ material_properties: dict[str, dict[str, float]] = {
     # Loss tangent from `checchinMeasurementLowTemperatureLoss2022`
     "Si": {"relative_permittivity": 11.45, "loss_tangent": 2.7e-6},
     "AlOx/Al": {"relative_permittivity": float("inf")},
+    # Room-temperature mass density of bulk aluminium in kg/m³
+    "Al": {"relative_permittivity": float("inf"), "density": 2700.0},
     "TiN": {"relative_permittivity": float("inf")},
     "In": {"relative_permittivity": float("inf")},
     "Au": {"relative_permittivity": float("inf")},
-    "Al": {"relative_permittivity": float("inf")},
     "SiO2": {"relative_permittivity": 3.9},
     # Out-of-plane static value, https://arxiv.org/abs/2201.05826.
     "hBN": {"relative_permittivity": 3.4},
@@ -143,6 +148,8 @@ NON_METADATA_LAYERS = {
     LAYER.MB2_ETCH,
     LAYER.AB_DRAW,
     LAYER.AB_VIA,
+    LAYER.VG_TOP,
+    LAYER.VG_SAC,
     LAYER.JJ_AREA,
     LAYER.JJ_PATCH,
     LAYER.CNT_CONTACT,
@@ -164,7 +171,11 @@ def get_layer_stack() -> LayerStack:
     """Return the physical layer stack for simulations.
 
     The stack roughly corresponds to that of :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
+    The vacuum gap of suspended drum capacitors follows
+    :cite:`teufelCircuitCavityElectromechanics2011`.
     """
+    m1_thickness = 200e-9 * 1e6
+    vacuum_gap = 50e-9 * 1e6  # between the top of M1 and the VG_TOP membrane
     return LayerStack(
         layers={
             # Base metal film (e.g., 200 nm of Nb)
@@ -234,6 +245,29 @@ def get_layer_stack() -> LayerStack:
                 thickness=100e-9 * 1e6,
                 zmin=200e-9 * 1e6,  # stacked above M1
                 material="Nb",
+            ),
+            # Suspended Al membrane of a vacuum-gap capacitor, one vacuum gap
+            # above M1 :cite:`cicakLowlossSuperconductingResonant2010`.
+            # The gap is the distance between the top of M1 and this level.
+            "VacuumGap_Top": LayerLevel(
+                name="VacuumGap_Top",
+                layer=L.VG_TOP,
+                thickness=100e-9 * 1e6,
+                zmin=m1_thickness + vacuum_gap,  # top of M1 + vacuum gap
+                material="Al",
+            ),
+            # Posts where the membrane lands on M1 outside the release region
+            "VacuumGap_Post": LayerLevel(
+                name="VacuumGap_Post",
+                layer=DerivedLayer(
+                    layer1=LogicalLayer(layer=L.VG_TOP),
+                    layer2=LogicalLayer(layer=L.VG_SAC),
+                    operation="not",
+                ),
+                derived_layer=LogicalLayer(layer=L.VG_TOP),
+                thickness=vacuum_gap,
+                zmin=m1_thickness,  # stacked above M1
+                material="Al",
             ),
             # JJ_AREA can be exported as a thin film if you use it in EM
             "JosephsonJunction": LayerLevel(
@@ -437,6 +471,32 @@ def get_layer_stack_3d() -> LayerStack:
             }
         )
     return stack
+
+def get_vacuum_gap(layer_stack: LayerStack | None = None) -> float:
+    """Returns the vacuum gap of suspended vacuum-gap capacitors in µm.
+
+    The gap is a layer-stack parameter: the distance between the top of the
+    ``M1`` film and the bottom of the ``VacuumGap_Top`` membrane.
+
+    Args:
+        layer_stack: Layer stack to read. Defaults to ``LAYER_STACK``.
+
+    Raises:
+        ValueError: If the stack lacks the ``M1`` or ``VacuumGap_Top`` level,
+            or the membrane does not sit above the top of ``M1``.
+    """
+    stack = layer_stack or LAYER_STACK
+    try:
+        m1 = stack.layers["M1"]
+        top = stack.layers["VacuumGap_Top"]
+    except KeyError as err:
+        raise ValueError(f"Layer stack has no {err} level") from err
+    gap = round(top.zmin - (m1.zmin + m1.thickness), 9)
+    if gap <= 0:
+        raise ValueError(
+            f"VacuumGap_Top must sit above the top of M1, got a gap of {gap} µm"
+        )
+    return gap
 
 
 def get_layer_material_properties(

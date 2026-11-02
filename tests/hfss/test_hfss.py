@@ -386,7 +386,8 @@ def test_layer_stack_gds_mapping():
     """QPDK's stack maps to one AEDT import box per GDS layer number.
 
     Vacuum shares SIM_AREA (98) with Substrate and is skipped, and the
-    contiguous Airbridge and Airbridge_Via spans merge on layer 10.
+    contiguous Airbridge and Airbridge_Via spans merge on layer 10, as do
+    VacuumGap_Post and VacuumGap_Top on layer 40.
     """
     conductors = {
         name
@@ -398,9 +399,10 @@ def test_layer_stack_gds_mapping():
         LAYER_STACK, thickness_override=0.0, override_materials=conductors
     )
 
-    assert set(solids) == set(sheets) == {1, 10, 20, 25, 30, 31, 98}
+    assert set(solids) == set(sheets) == {1, 10, 20, 25, 30, 31, 40, 98}
     assert solids[98] == pytest.approx((-500.0, 500.0))
     assert solids[10] == pytest.approx((0.2, 0.3))
+    assert solids[40] == pytest.approx((0.2, 0.15))
     # As HFSS.import_component(import_as_sheets=True) maps it: the conductors
     # become sheets, the substrate keeps its thickness.
     assert sheets[98] == pytest.approx((-500.0, 500.0))

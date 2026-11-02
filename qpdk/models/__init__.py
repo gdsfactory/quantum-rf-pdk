@@ -79,6 +79,15 @@ from qpdk.models.gatemon import (
     gatemon_potential,
     gatemon_supercurrent,
 )
+from qpdk.models.drum import (
+    drum_effective_mass,
+    drum_electromechanical_coupling,
+    drum_lc_resonator,
+    drum_single_photon_coupling,
+    drum_zero_point_motion,
+    vacuum_gap_capacitance_analytical,
+    vacuum_gap_capacitor,
+)
 from qpdk.models.generic import (
     abcd_to_sdict,
     admittance,
@@ -218,6 +227,11 @@ __all__ = [
     "double_pad_transmon_fem_model",
     "double_pad_transmon_with_bbox",
     "double_pad_transmon_with_resonator",
+    "drum_effective_mass",
+    "drum_electromechanical_coupling",
+    "drum_lc_resonator",
+    "drum_single_photon_coupling",
+    "drum_zero_point_motion",
     "ec_to_capacitance",
     "ej_ec_to_frequency_and_anharmonicity",
     "ej_to_inductance",
@@ -324,6 +338,8 @@ __all__ = [
     "unimon_energies",
     "unimon_frequency_and_anharmonicity",
     "unimon_hamiltonian",
+    "vacuum_gap_capacitance_analytical",
+    "vacuum_gap_capacitor",
     "xmon_transmon",
 ]
 
