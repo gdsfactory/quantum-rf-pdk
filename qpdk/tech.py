@@ -105,6 +105,11 @@ class LayerMapQPDK(LayerMap):
     # Marker layer for waveguides
     WG: Layer = (102, 0)
 
+    # Declared near-field coupling region, emitted by cells that couple two
+    # nets on purpose. The design-profile DRC rules waive crosstalk warnings
+    # inside it and strip it before tapeout.
+    COUPLING: Layer = (103, 0)
+
     # Error marker layer (used by gdsfactory to highlight routing/DRC errors)
     ERROR_PATH: Layer = (1000, 0)
 

@@ -22,6 +22,7 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 from kfactory import kdb
 from kfactory.conf import CheckInstances
 
+from qpdk.cells._coupling import mark_coupling_regions
 from qpdk.cells._schematic import (
     unimon_arm_schematic,
     unimon_coupled_schematic,
@@ -415,6 +416,8 @@ def unimon_coupled(
         if port.name == "anchor":
             continue  # anchor was used for alignment, not an external port
         c.add_port(f"coupling_{port.name}", port=port)
+
+    mark_coupling_regions(c, unimon_ref, coupler, gap=coupling_gap)
 
     c.info += unimon_ref.cell.info
     c.info["coupling_gap"] = coupling_gap

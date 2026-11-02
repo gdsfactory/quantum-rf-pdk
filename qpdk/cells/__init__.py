@@ -11,6 +11,7 @@ from qpdk.samples.resonator_test_chip_yaml import (
     resonator_test_chip_yaml as resonator_test_chip_yaml,
 )
 
+from ._coupling import *
 from ._schematic import *
 from .airbridge import *
 from .bump import *
