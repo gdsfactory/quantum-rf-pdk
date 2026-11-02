@@ -233,7 +233,7 @@ repos:
         priority: 20
         args: [--fix, --config=.github/.stylelintrc.yaml]
         additional_dependencies:
-          - stylelint@17.11.0
+          - stylelint@17.16.0
   - repo: https://github.com/simple-icons/svglint
     rev: v4.2.1
     hooks:
