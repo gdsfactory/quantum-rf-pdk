@@ -198,8 +198,11 @@ name = "qpdk"
 ignore = ["notebooks/**", "docs/notebooks/**"]
 
 [tool.gdsfactoryplus.drc]
-pdk = "quantum_rf"
 timeout = 300
+
+[tool.gdsfactoryplus.project]
+# The portal project's PDK selects the DRC rule deck.
+identifier = "qpdk"
 
 [tool.gdsfactoryplus.sim.x]
 max = 15  # 15GHz
