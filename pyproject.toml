@@ -485,6 +485,9 @@ tag_template = "v{new_version}"
 [tool.tbump.version]
 current = "0.4.2"
 
+[tool.tombi.format.rules]
+line-width = 88
+
 [tool.tombi.schema]
 strict = false
 
