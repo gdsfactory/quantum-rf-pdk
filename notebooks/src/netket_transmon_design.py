@@ -129,6 +129,7 @@ if "google.colab" in sys.modules:
 import time
 from dataclasses import dataclass
 from functools import partial
+from typing import Any
 
 import flax.linen as nn
 import jax
@@ -627,7 +628,7 @@ plt.show()
 # ## Vacuum Rabi Oscillations with TDVP
 #
 # NetKet also evolves states in time.  The experimental
-# [`nkx.TDVP`](https://netket.readthedocs.io/en/latest/api/_generated/experimental/driver/netket.experimental.TDVP.html)
+# [`nkx.TDVP`](https://netket.readthedocs.io/en/latest/api/_generated/experimental/dynamics/netket.experimental.TDVP.html)
 # driver integrates the time-dependent variational principle
 # {cite:p}`carleoSolvingQuantumManybody2017`: at every step it solves
 # $S\,\dot{\theta} = -\mathrm{i}\,F$ for the parameter velocities, with
@@ -695,6 +696,7 @@ tdvp = nkx.TDVP(
     variational_state=vs_rabi,
     ode_solver=nkx.dynamics.RK4(dt=0.005),
     # log ψ is the parameter itself, so the ansatz is holomorphic
+    # pyrefly: ignore[bad-argument-type]  # NetKet accepts a QGT constructor here
     qgt=partial(nk.optimizer.qgt.QGTJacobianDense, holomorphic=True),
 )
 tdvp_log = nk.logging.RuntimeLog()
@@ -1218,7 +1220,7 @@ class ChargeGaussianNet(nn.Module):
     n_cut: int
     precision: tuple[tuple[float, ...], ...]
     hidden: int = 16
-    param_dtype: type = float
+    param_dtype: Any = float
 
     @nn.compact
     def __call__(self, x):
@@ -1248,7 +1250,7 @@ class ChargeHopRule(nk.sampler.rules.MetropolisRule):
     strongly correlated chain almost always rejects.
     """
 
-    def transition(self, sampler, machine, parameters, state, key, σ):
+    def transition(self, sampler, machine, params, sampler_state, key, σ):
         """Return one proposed move per chain; out-of-range moves stay put."""
         key_site, key_step, key_kind = jax.random.split(key, 3)
         n_chains, n_sites = σ.shape
