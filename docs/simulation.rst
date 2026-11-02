@@ -317,6 +317,20 @@ in ``qpdk/models/datasets/recipes/``.
       - ``width``, ``cpw_gap``, and ``gap`` or ``ground_strip_width``
       - Interpolates logarithmically once a ground strip is present.
         ``coupler_straight`` uses the same lookup
+    - - ``drum_capacitances()``
+      - ``drum_lc_resonator_palace``
+      - Coupling :math:`C_\text{c}`, parasitic :math:`C_\text{p}` and drum
+        :math:`C_\text{d}` in F, from 54 electrostatic solves
+      - ``coupling_gap``, ``coupling_pad_size``, ``radius``, ``turn_length``
+      - The other cell arguments are fixed at their defaults, including 75 meander runs.
+        Values outside the grid return NaN
+    - - ``drum_lc_resonator_fem_model()``
+      - ``drum_lc_resonator_palace``
+      - Two-port lumped SAX model with the extracted capacitances in place of the
+        analytical ones
+      - same as above, plus ``gap`` and ``sheet_inductance``
+      - The extracted :math:`C_\text{d}` replaces the analytical value at the stack gap,
+        so ``gap`` still moves only the analytical parallel-plate term
 
 ``flipmon_ideal_bond_model`` and ``double_pad_transmon_fem_model`` build on
 :func:`~qpdk.models.datasets.junction_model`, which documents the circuit convention.
@@ -388,6 +402,38 @@ isolated :math:`f_{01}` near 4.447 GHz for the nominal charging energy, and repr
 the paper's quantum-dot parity transitions needs its extended Hamiltonian
 :cite:`riechertCarbonNanotubeGatemon2025`. Broad sweeps can miss the maxima of narrow
 resonances, so use a local frequency sweep before interpreting their heights.
+
+Drum LC resonator
+=================
+
+``drum_capacitances`` returns the coupling :math:`C_\text{c}`, the parasitic
+:math:`C_\text{p}` and the drum capacitance :math:`C_\text{d}` of a
+``drum_lc_resonator`` layout in F, from ``coupling_gap``, ``coupling_pad_size``,
+``radius`` and ``turn_length`` in um. ``drum_lc_resonator_fem_model()`` returns the
+lumped SAX model with these values in place of its ``coupling_capacitance`` and
+``parasitic_capacitance`` inputs. The extracted :math:`C_\text{d}` replaces the
+analytical one at the stack gap, and the ``gap`` argument still tunes the analytical
+parallel-plate term. The ``drum_lc_resonator_palace`` dataset is not generated yet;
+until it is, both functions return NaN and warn once.
+
+The recipe ``qpdk/models/datasets/recipes/drum.py`` is a 3D electrostatic solve of the
+whole cell with its feedline in a finite coplanar ground. Its terminals are the node
+(pad, wiring and bottom electrode), the ``VG_TOP`` membrane one vacuum gap above it, the
+feedline cut open beyond the ports, and five blocks of meander runs separated by 1 um
+slits. Weighting the Maxwell matrix with the node at 1, the membrane and feed at 0 and
+each meander block at its mean position along the wire gives :math:`C_\text{c}` and
+:math:`C_\text{d}` from the feed and membrane charge and :math:`C_\text{p}` from the
+remaining energy. The full matrix is stored so other weightings can be applied. A 2D
+sheet solve cannot hold the membrane, so the recipe is 3D. Conductors are zero-thickness
+sheets by default; ``conductors="solid"`` extrudes M1 and the membrane. A gmsh box field
+sets 0.07 um elements in the 70 nm gap, with 1 um near-metal and 60 um far-field sizes,
+600 um padding and third-order basis functions as starting guesses.
+
+Run ``uv run --script qpdk/models/datasets/recipes/drum.py convergence`` before the
+54-point grid to compare gap and near-metal mesh, element order, padding and conductor
+model at the default geometry. The linear voltage profile is a lumped approximation: the
+default meander is about 23 mm of wire, longer than the guided wavelength near 7 GHz, so
+the driven meander recipe is the reference for its distributed response.
 
 Generating Palace datasets
 ==========================

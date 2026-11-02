@@ -281,8 +281,19 @@ def stack_geometry(
     dielectrics: list[dict],
     settings: Settings,
     processes: int,
+    planar_conductors: bool = False,
 ) -> Geometry:
-    """Assign disconnected electrodes to extraction layers in a finite gsim stack."""
+    """Assign disconnected electrodes to extraction layers in a finite gsim stack.
+
+    With ``planar_conductors`` every electrode is a zero-thickness sheet at its
+    bottom z instead of a solid between bottom and top.
+
+    Returns:
+        The extraction component, domain bounds and gsim mesh callback.
+
+    Raises:
+        ValueError: If an electrode is empty or has ``top <= bottom``.
+    """
     component = gf.Component()
     layers = {}
     # gsim selects terminals by layer, so disconnected electrodes need separate layers.
@@ -335,7 +346,7 @@ def stack_geometry(
         refined_mesh_size=settings.near_mesh,
         max_mesh_size=settings.far_mesh,
         margin=0,
-        planar_conductors=False,
+        planar_conductors=planar_conductors,
         threads=processes,
         surface_threads=1,
         verbose=True,
