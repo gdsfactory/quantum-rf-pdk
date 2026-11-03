@@ -362,12 +362,13 @@ def squid_termination(
     This is the termination of a flux-driven :math:`\lambda/4` Josephson
     parametric amplifier (JPA): a CPW lead of ``length``, then the
     :func:`~qpdk.models.junction.squid_junction` admittance in series with an
-    ideal short. It models the :func:`~qpdk.cells.squid_termination` cell. The flux-tunable SQUID inductance
+    ideal short. It models the :func:`~qpdk.cells.squid_termination` cell.
+    The flux-tunable SQUID inductance
     :math:`L_\text{s}(\Phi) = \Phi_0 / (2 \pi I_\text{c,tot} |\cos(\pi \Phi / \Phi_0)|)`
     pulls the resonance below :math:`\omega_{\lambda/4}`
     :cite:`yamamotoFluxdrivenJosephsonParametric2008`.
 
-    The loop geometric inductance is neglected, which holds for
+    The model neglects the loop geometric inductance, which is valid for
     :math:`\beta_\text{L} = 2 L_\text{loop} I_\text{c} / \Phi_0 \lesssim 0.1`.
     The default :math:`I_\text{c,tot} = 2 \times 2.4\,\text{µA}` follows the
     low-:math:`\beta_\text{L}` WMI devices :cite:`pogorzalekHystereticFluxResponse2017`.

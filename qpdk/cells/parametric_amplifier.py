@@ -1,11 +1,11 @@
 r"""Flux-driven Josephson parametric amplifier (JPA) components.
 
-A flux-driven JPA is a :math:`\lambda/4` CPW resonator whose open end is
-capacitively coupled to a single feed line, used in reflection, and whose
-far end is shorted to ground through a DC SQUID. The SQUID inductance
-:math:`L_\text{s}(\Phi)` tunes the resonance. A pump at twice the signal
-frequency, applied through a separate CPW line that is shorted to ground next
-to the SQUID loop, modulates :math:`\Phi` and gives three-wave mixing gain.
+A flux-driven JPA is a :math:`\lambda/4` CPW resonator used in reflection:
+its open end is capacitively coupled to a single feed line and its far end is
+shorted to ground through a DC SQUID. The SQUID inductance
+:math:`L_\text{s}(\Phi)` tunes the resonance. A separate CPW line, shorted to
+ground next to the SQUID loop, carries a pump at twice the signal frequency;
+the pump modulates :math:`\Phi` and gives three-wave mixing gain.
 
 References:
     - :cite:`yamamotoFluxdrivenJosephsonParametric2008`
@@ -59,9 +59,9 @@ def squid_termination(
     the ground plane. The SQUID bridges the pocket, so the centre conductor
     reaches ground only through the SQUID, as in the flux-driven JPA of
     :cite:`yamamotoFluxdrivenJosephsonParametric2008`. The pocket length
-    follows from the SQUID: its edges run through the centres of the
-    ``JJ_PATCH`` contact patches, so each patch lands half on the lead and
-    half on the ground plane.
+    follows from the SQUID: the pocket edges run through the centres of the
+    ``JJ_PATCH`` contact patches, so the lead-side patches land half on the
+    lead and the ground-side patches half on the ground plane.
 
     .. svgbob::
 
@@ -114,7 +114,7 @@ def squid_termination(
     ):
         raise ValueError(
             "The lead-side JJ_PATCH contacts of junction_spec extend beyond the "
-            f"centre conductor width ({xs.width} µm) and would not all reach it."
+            f"centre conductor width ({xs.width} µm), so some would float."
         )
     lead_contact_x = sum(lead_side) / len(lead_side)
     junction_gap = gf.snap.snap_to_grid(
@@ -170,9 +170,9 @@ def cpw_jpa(
     mutual inductance :math:`M`
     :cite:`yamamotoFluxdrivenJosephsonParametric2008,linJosephsonParametricPhaselocked2014`.
     The pump-to-loop distance is not reported in these sources, so ``pump_gap``
-    and ``pump_offset`` are design variables, and :math:`M` has to be extracted
-    by EM simulation. The SAX models do not include :math:`M`. The static flux
-    bias comes from an off-chip coil.
+    and ``pump_offset`` are design variables. The SAX models do not include
+    :math:`M`; it has to be extracted by EM simulation. The static flux bias
+    comes from an off-chip coil.
 
     With the SQUID inductance :math:`L_\text{s}` the resonance is
     :cite:`yamamotoFluxdrivenJosephsonParametric2008`:

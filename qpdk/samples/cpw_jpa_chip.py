@@ -9,8 +9,8 @@ r"""Flux-driven CPW JPA chip with signal and pump launchers.
 
 A flux-driven :math:`\lambda/4` CPW Josephson parametric amplifier following
 :cite:`yamamotoFluxdrivenJosephsonParametric2008`: an interdigital capacitor
-couples the signal into a meandered quarter-wave line that is shorted to ground
-through a DC SQUID, and a shorted CPW pump line next to the SQUID loop
+couples the signal into a meandered :math:`\lambda/4` line that is shorted to
+ground through a DC SQUID, and a shorted CPW pump line next to the SQUID loop
 modulates the flux. The static flux bias comes from an off-chip coil. The
 coupling and critical current follow the WMI devices of
 :cite:`pogorzalekHystereticFluxResponse2017`.
