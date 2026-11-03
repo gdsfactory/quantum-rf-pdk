@@ -67,8 +67,8 @@
 # + \omega_\text{r}\, a_\text{r}^\dagger a_\text{r}
 # + g\,(a_\text{t} + a_\text{t}^\dagger)(a_\text{r} + a_\text{r}^\dagger),
 # ```
-# we extract $\chi$ from the dressed eigenenergies $E_{ij}$ (where $i$ is the
-# qubit state and $j$ the photon number):
+# We extract $\chi$ from its dressed eigenenergies $E_{ij}$, where $i$ is the
+# qubit state and $j$ the photon number:
 # ```{math}
 # :label: eq:dispersive-shift-definition-scq
 # \chi = (E_{11} - E_{10}) - (E_{01} - E_{00}).
@@ -279,7 +279,7 @@ display(
 
 # %% [markdown]
 # The scQubits result agrees well with the analytical perturbation-theory
-# formula when using the effective coupling $g_{01} = g \langle 0|\hat{n}|1\rangle$.
+# formula evaluated at the effective coupling $g_{01} = g \langle 0|\hat{n}|1\rangle$.
 # Residual differences reflect higher-order corrections and the contribution of
 # higher transmon levels beyond the leading $g^2/\Delta$ terms.
 
@@ -422,15 +422,16 @@ plt.show()
 # ```
 # where $E_L = (\Phi_0/2\pi)^2 / L_s$. Modern **"heavy" fluxoniums**
 # {cite:p}`zhang_universal_2021` add a large shunting capacitor ($E_J \gtrsim 10 E_C$),
-# exponentially suppressing tunneling between potential wells and reaching multi-millisecond $T_1$.
+# which exponentially suppresses tunneling between the potential wells and
+# reaches multi-millisecond $T_1$.
 #
 # Key advantages:
 # 1. **Massive anharmonicity** — $|\alpha/\omega_{01}| \gg 1$ at the $\Phi_0/2$
 #    sweet spot, suppressing leakage {cite:p}`nguyen_blueprint_2019`.
-# 2. **Protection** — Built-in protection against both charge and flux noise.
+# 2. **Noise protection** — built in against both charge and flux noise.
 #
-# Detuning to typical resonators ($\sim 7$ GHz) is large, making dispersive readout
-# challenging {cite:p}`zhu_circuit_2013`.
+# The detuning from typical readout resonators ($\sim 7$ GHz) is large, which
+# makes dispersive readout challenging {cite:p}`zhu_circuit_2013`.
 
 # %% [markdown]
 # ### Fluxonium Spectrum
@@ -474,8 +475,8 @@ E_L = {EL_flx:.3f}\,\mathrm{{GHz}} \\
 
 # %% [markdown]
 # The fluxonium anharmonicity is **much larger** than a
-# transmon's ($\sim E_C \approx 200$ MHz).  This is a direct consequence
-# of the double-well potential created by the competition between the
+# transmon's ($\sim E_C \approx 200$ MHz).  This gap follows directly from
+# the double-well potential created by the competition between the
 # cosine and quadratic terms in {eq}`eq:fluxonium-hamiltonian`.
 # While many fluxoniums are designed for low frequencies (tens of MHz),
 # here we analyze a design operating in the GHz range for direct
@@ -577,25 +578,25 @@ g = {g_flx:.1f}\,\mathrm{{GHz}} \\
 #
 # Alternatively, to avoid qubit heating while ensuring high-fidelity readout,
 # modern heavy fluxoniums use a **plasmon-assisted readout** scheme
-# {cite:p}`zhang_universal_2021`. In this approach, a fast $\pi$-pulse transfers
-# the computational $|e\rangle$ state population to a higher-energy "plasmon" state
-# (e.g., $|f\rangle$ or $|h\rangle$) prior to measurement. Because these higher states
-# are much closer to the resonator frequency, their dispersive interaction is
-# significantly stronger, providing a large measurement signal while keeping the
-# fundamental qubit states protected from resonator-induced decoherence during normal operation.
+# {cite:p}`zhang_universal_2021`. A fast $\pi$-pulse transfers the population of
+# the computational $|e\rangle$ state to a higher-energy "plasmon" state
+# (e.g., $|f\rangle$ or $|h\rangle$) before measurement. Because these higher states
+# lie much closer to the resonator frequency, their dispersive interaction is
+# much stronger and gives a large measurement signal; the computational states
+# stay protected from resonator-induced decoherence during normal operation.
 
 # %% [markdown]
 # ## Part III — Transmon vs. Fluxonium Comparison
 #
-# The table below highlights the key physical differences between the
+# The table below lists the key physical differences between the
 # two qubit modalities, computed with the parameters used above.
 #
-# **Two-Qubit Gating Advantage:** While transmons face speed limits due to weak
-# anharmonicity, heavy fluxoniums can achieve much faster entangling gates without
-# leaving the computational subspace. By coupling two fluxoniums via a tunable
-# inductive coupler, strong $XX$ interaction strengths (-35 to 75 MHz) can be
-# achieved while suppressing unwanted static $ZZ$ coupling to under 100 Hz,
-# maintaining high-fidelity single-qubit operations {cite:p}`zhang_tunable_2024`.
+# **Two-Qubit Gating Advantage:** Weak anharmonicity limits transmon gate speed,
+# whereas heavy fluxoniums can run much faster entangling gates without
+# leaving the computational subspace. A tunable inductive coupler between two
+# fluxoniums reaches $XX$ interaction strengths of -35 to 75 MHz while
+# suppressing the unwanted static $ZZ$ coupling to under 100 Hz, which preserves
+# high-fidelity single-qubit operations {cite:p}`zhang_tunable_2024`.
 
 # %%
 comparison_data = [
@@ -908,8 +909,8 @@ Q_\text{{ext}} = {Q_ext:,} \\
 # %% [markdown]
 # ### Fluxonium Design
 #
-# Designing a fluxonium requires numerical diagonalization (via scQubits) since
-# transition frequencies depend complexly on $E_J$, $E_C$, $E_L$, and flux.
+# Designing a fluxonium requires numerical diagonalization (via scQubits), because
+# its transition frequencies have no simple closed form in $E_J$, $E_C$, $E_L$, and flux.
 #
 # 1. **Numerical sweep**: Map $\omega_{01}$ and $\alpha$ vs. $E_L$ and $E_J$.
 # 2. **Circuit mapping**: Convert energies to $L_s$, $L_J$, and $C_\Sigma$.
