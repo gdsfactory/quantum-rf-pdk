@@ -24,10 +24,10 @@
 # $\Delta x = \lambda/4$ each qubit decouples from the waveguide at the design
 # frequency while the two qubits remain coupled through it.
 #
-# Launchers on both ends give access to the transmission $S_{21}$. The
-# frequency-dependent decay rate of one giant atom is modelled by
+# Launchers on both ends give access to the transmission $S_{21}$.
 # {func}`qpdk.models.giant_atom.giant_atom_transmon` and
-# {func}`qpdk.models.giant_atom.giant_atom_decay_rate_and_lamb_shift`.
+# {func}`qpdk.models.giant_atom.giant_atom_decay_rate_and_lamb_shift` model
+# the frequency-dependent decay rate of one giant atom.
 
 # %%
 import gdsfactory as gf

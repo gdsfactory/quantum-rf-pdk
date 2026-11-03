@@ -3,7 +3,7 @@ r"""Giant-atom transmons coupled to a CPW at several points.
 A giant atom couples to a waveguide at points spaced by a distance comparable
 to the wavelength :cite:`kockumDesigningFrequencydependentRelaxation2014`.
 These cells draw a grounded transmon whose island reaches a coplanar
-waveguide through :math:`K` coupling arms. The waveguide between neighbouring
+waveguide (CPW) through :math:`K` coupling arms. The waveguide between neighbouring
 coupling points is meandered to the requested length, after the devices of
 :cite:`kannanWaveguideQuantumElectrodynamics2020` and
 :cite:`vadirajEngineeringLevelStructure2021`.
@@ -378,7 +378,7 @@ def giant_atom_transmon(
     which the giant atoms of :cite:`kannanWaveguideQuantumElectrodynamics2020`
     decouple from the waveguide.
 
-    For a rough coupling capacitance :math:`C_k` of each pad for
+    To estimate the coupling capacitance :math:`C_k` of each pad for
     :func:`~qpdk.models.giant_atom.giant_atom_transmon`, call
     :func:`~qpdk.models.couplers.cpw_cpw_coupling_capacitance` with ``f``,
     ``length=coupler_lengths[k]``, ``gap=coupler_gap`` and
@@ -478,9 +478,9 @@ def braided_giant_atoms(
     waveguide, ordered :math:`x_{\text{a}1} < x_{\text{b}1} < x_{\text{a}2} <
     x_{\text{b}2}` with equal waveguide length ``segment_length`` between
     neighbouring points :cite:`kannanWaveguideQuantumElectrodynamics2020`.
-    Qubit a sits above the waveguide and qubit b below. The arms of qubit b
-    are lengthened past the meander that lies between its coupling points;
-    with the defaults that meander is about :math:`1\,\text{mm}` deep, so
+    Qubit a sits above the waveguide and qubit b below. The cell lengthens
+    the arms of qubit b past the meander between its coupling points; with
+    the defaults that meander is about :math:`1\,\text{mm}` deep, so
     qubit b has :math:`1\,\text{mm}` arms and a :math:`2.1\,\text{mm}`
     island. A larger ``point_spacing`` gives shallower meanders and shorter
     arms. The island geometry, and so its capacitance, is not matched to the

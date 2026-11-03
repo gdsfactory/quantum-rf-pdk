@@ -1,7 +1,7 @@
 r"""Giant-atom transmon models.
 
-A giant atom couples to a waveguide at several points that are spaced by a
-distance comparable to the wavelength :cite:`kockumDesigningFrequencydependentRelaxation2014`.
+A giant atom couples to a waveguide at several points spaced by a distance
+comparable to the wavelength :cite:`kockumDesigningFrequencydependentRelaxation2014`.
 Interference between the coupling points makes the decay rate and the Lamb
 shift depend on frequency, as demonstrated with transmons by
 :cite:`kannanWaveguideQuantumElectrodynamics2020` and
@@ -90,7 +90,7 @@ def giant_atom_transmon(
 
     where :math:`\tau_{jk}` is the travel time between points :math:`j` and
     :math:`k`, and :math:`\gamma_k` is the decay rate of point :math:`k` alone.
-    The transmission therefore shows a dip of width :math:`\Gamma`, see
+    The transmission therefore shows a dip of width :math:`\Gamma`; see
     :func:`giant_atom_decay_rate_and_lamb_shift`.
 
     With a single coupling point the model is a small atom side-coupled to
