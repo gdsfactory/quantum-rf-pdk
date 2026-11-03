@@ -106,11 +106,12 @@ The process is defined in two files, and they must agree:
 - `qpdk/layers.yaml`: layer names, GDS numbers, and how KLayout draws them.
 - `qpdk/tech.py`: everything else.
 
+`layers.yaml` starts with a `yaml-language-server` modeline that points at gdsfactory's LayerViews schema. Editors with
+YAML language support (e.g. the VS Code YAML extension) use it to autocomplete keys and flag typos; the
+`check-jsonschema` pre-commit hook validates the file against the same schema whenever it changes.
+
 `tests/test_pdk.py::test_yaml_matches_layers` fails if the two files have different layer names or `(layer, datatype)`
-pairs. `layers.yaml` starts with a `yaml-language-server` modeline pointing at gdsfactory's LayerViews schema, so
-editors with YAML language support (e.g. the VS Code YAML extension) autocomplete its keys and flag typos, and the
-`check-jsonschema` pre-commit hook validates it on every commit. After you edit `layers.yaml`, regenerate the KLayout
-files and commit them too:
+pairs. After you edit `layers.yaml`, regenerate the KLayout files and commit them too:
 
 ```bash
 uv run python qpdk/tech.py   # rewrites qpdk/klayout/layers.lyp and tech.lyt
