@@ -1,5 +1,6 @@
 """Tests for the flux-driven CPW JPA cells and their SAX hierarchy."""
 
+from functools import partial
 from itertools import pairwise
 
 import gdsfactory as gf
@@ -14,7 +15,7 @@ from qpdk.models.capacitor import interdigital_capacitor_capacitance_analytical
 from qpdk.models.constants import Φ_0, c_0
 from qpdk.models.cpw import cpw_ep_r_from_cross_section, cpw_parameters
 from qpdk.samples.cpw_jpa_chip import cpw_jpa_chip
-from qpdk.tech import LAYER
+from qpdk.tech import LAYER, coplanar_waveguide, get_etch_section
 
 IC_TOT = 4.8e-6
 
@@ -53,18 +54,51 @@ def test_squid_wider_than_the_lead_is_rejected() -> None:
         squid_termination(junction_spec=squid_junction)
 
 
-def test_pump_sits_offset_below_the_squid() -> None:
-    """The pump short ends ``pump_gap`` below the pocket, ``pump_offset`` aside."""
-    pump_length, pump_gap, pump_offset = 200.0, 5.0, 5.0
+def _asymmetric_squid() -> gf.Component:
+    """Return a SQUID stand-in whose lead-side contacts are unevenly spaced.
+
+    The contacts are drawn at -45° so that they line up along x once
+    :func:`squid_termination` rotates the SQUID by 45°.
+    """
+    c = gf.Component()
+    patches = gf.Component()
+    for x in (-6.0, -1.0, 3.5):
+        patches.add_ref(
+            gf.c.rectangle(size=(1.0, 1.0), layer=LAYER.JJ_PATCH, centered=True)
+        ).dmove((x, 0.0))
+    c.add_ref(patches).drotate(-45)
+    return c
+
+
+def test_floating_contact_is_rejected() -> None:
+    """A contact that misses both the lead and the ground plane is caught."""
+    with pytest.raises(ValueError, match="wholly over the etched pocket"):
+        squid_termination(junction_spec=_asymmetric_squid)
+
+
+def test_pump_runs_past_the_ground_side_of_the_squid() -> None:
+    """The pump slot is ``pump_gap`` past the SQUID, its short ``pump_offset`` up."""
+    pump_length, pump_gap, pump_offset = 200.0, 2.0, 20.0
     c = cpw_jpa(pump_length=pump_length, pump_gap=pump_gap, pump_offset=pump_offset)
     termination = next(i for i in c.insts if i.cell.name.startswith("squid_term"))
     squid = termination.ports["squid"]
-    pocket_width = termination.cell.info["pocket_width"]
-    assert c.ports["o2"].dx == pytest.approx(squid.dx + pump_offset, abs=1e-3)
+    xs = gf.get_cross_section("cpw")
+    pump_slot_x = c.ports["o2"].dx - xs.width / 2 - get_etch_section(xs).width
+    assert pump_slot_x == pytest.approx(termination.dxmax + pump_gap, abs=1e-3)
     assert c.ports["o2"].dy == pytest.approx(
-        squid.dy - pocket_width / 2 - pump_gap - pump_length, abs=1e-3
+        squid.dy + pump_offset - pump_length, abs=1e-3
     )
     assert c.ports["o2"].orientation == pytest.approx(270)
+
+
+def test_cross_section_reaches_every_child() -> None:
+    """A custom cross-section is used by the capacitor and termination too."""
+    xs = partial(coplanar_waveguide, width=12.0, gap=7.0)
+    c = cpw_jpa(cross_section=xs)
+    width = gf.get_cross_section(xs).width
+    for name in ("interdigital_capacitor", "squid_termination"):
+        instance = next(i for i in c.insts if i.cell.name.startswith(name))
+        assert instance.ports["o1"].dwidth == pytest.approx(width)
 
 
 def test_length_must_exceed_the_termination_lead() -> None:

@@ -83,8 +83,9 @@ def squid_termination(
         ``squid`` placement port at the SQUID centre.
 
     Raises:
-        ValueError: If the SQUID has no ``JJ_PATCH`` contacts on one side, or
-            its lead-side contacts overhang the centre conductor.
+        ValueError: If the SQUID has no ``JJ_PATCH`` contacts on one side,
+            its lead-side contacts overhang the centre conductor, or a contact
+            lies wholly over the pocket.
     """
     c = Component()
     xs = gf.get_cross_section(cross_section)
@@ -120,7 +121,19 @@ def squid_termination(
     junction_gap = gf.snap.snap_to_grid(
         sum(ground_side) / len(ground_side) - lead_contact_x
     )
-    squid_ref.dmove((length - lead_contact_x, 0.0))
+    shift = length - lead_contact_x
+    squid_ref.dmove((shift, 0.0))
+    if any(
+        box.left + shift >= length
+        if box.center().x < 0
+        else box.right + shift <= length + junction_gap
+        for box in boxes
+    ):
+        raise ValueError(
+            "A JJ_PATCH contact of junction_spec lies wholly over the etched "
+            "pocket, so it would float. Its contacts must be symmetric enough "
+            "that every patch reaches the lead or the ground plane."
+        )
 
     pocket = gf.c.rectangle(size=(junction_gap, pocket_width), layer=etch_section.layer)
     pocket_ref = c << pocket
@@ -155,18 +168,21 @@ def cpw_jpa(
     ),
     termination_spec: ComponentSpec = squid_termination,
     pump_length: float = 200.0,
-    pump_gap: float = 5.0,
-    pump_offset: float = 5.0,
+    pump_gap: float = 2.0,
+    pump_offset: float = 20.0,
 ) -> Component:
     r"""Flux-driven :math:`\lambda/4` CPW Josephson parametric amplifier.
 
     The signal port ``o1`` couples through ``coupling_capacitor_spec`` into a
     meandered :math:`\lambda/4` resonator. The resonator ends in
     ``termination_spec``, which shorts it to ground through a DC SQUID. The
-    pump line ``o2`` is a shorted CPW whose short sits ``pump_gap`` from the
-    SQUID pocket on the side away from the meander. The pump current returns
-    through the ground plane past the SQUID loop and couples to it through a
-    mutual inductance :math:`M`
+    pump line ``o2`` is a shorted CPW that runs perpendicular to the
+    resonator, past the ground side of the SQUID, as in the WMI devices of
+    :cite:`pogorzalekHystereticFluxResponse2017`. Only a ``pump_gap`` wide
+    strip of ground plane separates the pump slot from the ground-side SQUID
+    contacts, and the short sits ``pump_offset`` beyond the SQUID. The pump
+    current and its return through that strip couple to the SQUID loop
+    through a mutual inductance :math:`M`
     :cite:`yamamotoFluxdrivenJosephsonParametric2008,linJosephsonParametricPhaselocked2014`.
     The pump-to-loop distance is not reported in these sources, so ``pump_gap``
     and ``pump_offset`` are design variables. The SAX models do not include
@@ -198,12 +214,11 @@ def cpw_jpa(
                      │  meander     │
         o1 ──║║──────┘  λ/4 line    │
             Cc                      │
-                     ┌──────────────┘
-                     └──────── X  ground
-                               ╷
-                               ╵ pump short
-                               │
-                               o2
+                     ┌──────────────┘   ┬ pump short
+                     └──────── X  ║ │
+                                  ║ │
+                                  ║ │
+                                    o2
 
     Args:
         length: Realized :math:`\lambda/4` line length in µm, from the
@@ -211,17 +226,18 @@ def cpw_jpa(
             termination's CPW lead.
         meanders: Number of meander sections.
         bend_spec: Specification for the meander bends.
-        cross_section: Cross-section of the resonator and the pump line.
+        cross_section: Cross-section of the resonator, the pump line, the
+            coupling capacitor and the termination lead.
         coupling_capacitor_spec: Two-port coupling capacitor between ``o1``
             and the open end of the resonator.
         termination_spec: One-port SQUID termination, see
             :func:`squid_termination`. It must provide a ``squid`` port and
             the ``length``, ``pocket_width`` and ``loop_area`` info entries.
         pump_length: Length of the pump CPW line in µm.
-        pump_gap: Ground-plane distance in µm between the pump short and the
-            edge of the SQUID pocket.
-        pump_offset: Lateral offset in µm of the pump line axis from the SQUID
-            centre, along the resonator line.
+        pump_gap: Width in µm of the ground-plane strip between the
+            ground-side SQUID contacts and the pump line slot.
+        pump_offset: Distance in µm from the SQUID centre to the pump short,
+            along the pump line, so the pump runs past the whole SQUID.
 
     Returns:
         Component: The JPA with signal port ``o1`` and pump port ``o2``.
@@ -232,7 +248,7 @@ def cpw_jpa(
     c = Component()
     xs = gf.get_cross_section(cross_section)
 
-    termination = gf.get_component(termination_spec)
+    termination = gf.get_component(termination_spec, cross_section=cross_section)
     resonator_length = length - termination.info["length"]
     if resonator_length <= 0:
         raise ValueError(
@@ -240,7 +256,9 @@ def cpw_jpa(
             f"({termination.info['length']})."
         )
 
-    capacitor_ref = c << gf.get_component(coupling_capacitor_spec)
+    capacitor_ref = c << gf.get_component(
+        coupling_capacitor_spec, cross_section=cross_section
+    )
     resonator_ref = c << resonator(
         length=resonator_length,
         meanders=meanders,
@@ -254,16 +272,15 @@ def cpw_jpa(
     resonator_ref.connect("o1", capacitor_ref.ports["o2"])
     termination_ref.connect("o1", resonator_ref.ports["o2"])
 
-    # The pump approaches the pocket from the side away from the meander,
-    # which lies above the termination.
+    # The pump runs up past the ground side of the SQUID, perpendicular to
+    # the resonator, from below the termination; the meander lies above.
     squid_port = termination_ref.ports["squid"]
+    pump_axis_x = (
+        termination_ref.dxmax + pump_gap + get_etch_section(xs).width + xs.width / 2
+    )
     pump_ref = c << straight_shorted(length=pump_length, cross_section=cross_section)
     pump_ref.dcplx_trans = kdb.DCplxTrans(
-        1,
-        90,
-        False,
-        squid_port.dx + pump_offset,
-        squid_port.dy - termination.info["pocket_width"] / 2 - pump_gap,
+        1, 90, False, pump_axis_x, squid_port.dy + pump_offset
     ) * kdb.DCplxTrans(-pump_length, 0)
 
     c.add_port("o1", port=capacitor_ref.ports["o1"])

@@ -9,7 +9,6 @@ instances:
       finger_gap: 2
       finger_length: 50
       fingers: 8
-      half: false
       layer_metal: M1_DRAW
       thickness: 5
   resonator:
@@ -69,8 +68,8 @@ placements:
   straight_shorted:
     mirror: false
     rotation: 90
-    x: 450.921
-    y: -1416
+    x: 468.573
+    y: -1380
 ports:
   o1: interdigital_capacitor,o1
   o2: straight_shorted,o1
