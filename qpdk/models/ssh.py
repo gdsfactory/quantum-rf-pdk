@@ -1,8 +1,9 @@
 r"""Su-Schrieffer-Heeger (SSH) coupled-resonator chain models.
 
-A chain of :math:`N` unit cells, each holding two lumped LC resonators (sites
-A and B) with alternating intra-cell and inter-cell coupling capacitances,
-realises the photonic SSH model of :cite:`kimQuantumElectrodynamicsTopological2021`.
+A chain of :math:`N` unit cells realises the photonic SSH model of
+:cite:`kimQuantumElectrodynamicsTopological2021`. Each cell holds two lumped
+LC resonators (sites A and B), and the coupling capacitances alternate between
+an intra-cell and an inter-cell value.
 
 The circuit maps to the SSH Hamiltonian in the weak-coupling limit
 (:cite:`kimQuantumElectrodynamicsTopological2021`, App. B, Eq. (B1)):
@@ -26,8 +27,8 @@ Assumptions of the ideal SSH mapping, as stated in
 
 - Rotating-wave approximation.
 - Weak coupling, :math:`C_v, C_w \ll C_\Sigma` and
-  :math:`|M_v|, |M_w| \ll L_0`. This drops the :math:`k`-dependence of the
-  on-site frequency :math:`\omega_0(k)`. That dependence breaks chiral
+  :math:`|M_v|, |M_w| \ll L_0`. This limit drops the :math:`k`-dependence of
+  the on-site frequency :math:`\omega_0(k)`. That dependence breaks chiral
   symmetry and shifts the circuit bands from the ideal ones by a relative
   amount of order :math:`(C_v + C_w)^2 / C_\Sigma^2`.
 - Nearest-neighbour coupling only.
@@ -321,10 +322,11 @@ def ssh_resonator_chain(
 
     The defaults are the test-structure values of
     :cite:`kimQuantumElectrodynamicsTopological2021` (App. C, trivial phase),
-    except for ``n_cells``, which matches the layout cell (the paper uses 8). Swap ``intra_cell_capacitance`` and
-    ``inter_cell_capacitance`` for the topological phase.
+    except for ``n_cells``, which matches the layout cell (the paper uses 8).
+    Swap ``intra_cell_capacitance`` and ``inter_cell_capacitance`` for the
+    topological phase.
 
-    An end site lacks one coupling capacitor of the bulk sites. Setting
+    An end site has one coupling capacitor fewer than a bulk site. Setting
     ``port_capacitance`` equal to that missing capacitor (``inter_cell_capacitance``,
     the default) gives the end sites the same total capacitance
     :math:`C_\Sigma` as the bulk, so the edge modes stay at :math:`\omega_0`.

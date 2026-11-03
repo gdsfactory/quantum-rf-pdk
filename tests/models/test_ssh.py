@@ -266,6 +266,6 @@ class TestSSHResonatorChainValidation:
         ],
     )
     def test_invalid(kwargs: dict) -> None:
-        """Out-of-range cell counts and taps are rejected."""
+        """Invalid cell counts and tap sites raise ValueError."""
         with pytest.raises(ValueError, match=r"n_cells|tap_sites"):
             ssh_resonator_chain(**kwargs)

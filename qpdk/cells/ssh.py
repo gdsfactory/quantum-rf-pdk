@@ -80,8 +80,8 @@ def ssh_resonator_chain(
         tap_sites: Indices of the sites with a tap, from 0 to :math:`2N-1`
             ordered :math:`(1,\text{A}), (1,\text{B}), \ldots`.
         tap_length: Length of the line from a site to its tap capacitor in µm.
-        port_length: Length of the line from each port capacitor to the
-            ports in µm.
+        port_length: Length of the line from each end site to its port
+            capacitor in µm.
         resonator_taper_length: Length of the taper from the line to the
             resonator cross-section in µm.
         cross_section: Cross-section of the line and the capacitor ports.
