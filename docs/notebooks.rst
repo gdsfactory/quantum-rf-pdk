@@ -453,12 +453,14 @@ coupling strengths that feed back into the layout
         :link-type: doc
         :class-card: notebook-card
 
-        Exact diagonalization and variational methods, converted to layout dimensions.
+        Exact diagonalization, VMC, TDVP and a custom Flax network for transmons,
+        junction arrays, unimons and gatemons, fed back into the SAX models. Includes
+        an optional TPU section.
 
         +++
 
-        :bdg-secondary-line:`NetKet` :bdg-secondary-line:`JAX` :bdg-primary:`models`
-        :bdg-primary:`netket`
+        :bdg-secondary-line:`NetKet` :bdg-secondary-line:`JAX` :bdg-secondary-line:`Flax`
+        :bdg-primary:`models` :bdg-primary:`netket`
 
 .. _notebooks-pulse:
 

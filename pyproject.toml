@@ -439,6 +439,12 @@ combine-as-imports = true
   "print",
   "module-import-not-at-top-of-file"
 ]
+# Colab install cell, and NetKet's MetropolisRule.transition signature
+"notebooks/src/netket_transmon_design.py" = [
+  "subprocess-without-shell-equals-true",
+  "no-self-use",
+  "unused-method-argument"
+]
 "qpdk/cells/__init__.py" = ["undefined-local-with-import-star"]
 "qpdk/models/__init__.py" = ["undefined-local-with-import-star"]
 "qpdk/**/__init__.py" = [
