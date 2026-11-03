@@ -39,9 +39,9 @@
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# This notebook demonstrates how to use
+# This notebook uses
 # [qutip-qip](https://qutip-qip.readthedocs.io/)
-# {cite:p}`liBoshlomQutipqipPulselevel2022` to perform
+# {cite:p}`liBoshlomQutipqipPulselevel2022` for
 # **pulse-level simulations** of superconducting transmon qubits.
 # It bridges the gap between the Hamiltonian-level design covered in the
 # companion notebooks
@@ -50,14 +50,14 @@
 # and the actual control pulses that drive quantum gates on hardware.
 #
 # We use [qutip-jax](https://qutip-jax.readthedocs.io/) as the JAX backend
-# for QuTiP, leveraging the existing JAX integration in qpdk.
+# for QuTiP, using the existing JAX integration in qpdk.
 #
 # ## Why Pulse-Level Simulation?
 #
 # Ideal quantum gate models assume instantaneous, perfect operations.
 # In practice, gates on superconducting qubits are realised by shaped
 # microwave pulses applied over tens to hundreds of nanoseconds.
-# Pulse-level simulation captures the actual time dynamics of the system,
+# Pulse-level simulation captures the time dynamics of the system,
 # including:
 #
 # - **Leakage** to non-computational states (the third level of the transmon)
@@ -69,7 +69,7 @@
 #
 # ![A shaped microwave pulse drives the zero-to-one transition but may also cause leakage to the second excited state](figures/pulse-leakage.svg)
 #
-# For some recent examples of `qutip` pulse-level simulation in the context of superconducting
+# For recent examples of `qutip` pulse-level simulation of superconducting
 # qubits, see {cite:p}`salmenkiviMitigationCoherentErrors2023a,anderssonPulselevelSimulationsFermionicsimulation2024`.
 
 # %% tags=["hide-input", "hide-output"]
@@ -137,8 +137,8 @@ plt.show()
 # ### Step 2: Parameter Extraction
 #
 # Changing the `arm_width` and `arm_length` in the layout modifies $E_\text{C}$.
-# For a transmon, the Josephson energy $E_\text{J}$ is determined by the critical
-# current of the junction.
+# For a transmon, the junction's critical current sets the Josephson energy
+# $E_\text{J}$.
 #
 # Below we see how a change in $E_\text{C}$ (e.g., from making the pads larger)
 # affects the qubit frequency $\omega_\text{q}$ and anharmonicity $\alpha$.
@@ -226,8 +226,8 @@ plt.show()
 # %% [markdown]
 # ## Bell State Preparation
 #
-# Entanglement between two qubits is realized via a CNOT gate. In this
-# processor, the CNOT is implemented using **Cross-Resonance (CR)** pulses.
+# A CNOT gate entangles the two qubits. In this processor,
+# **Cross-Resonance (CR)** pulses implement the CNOT.
 # The efficiency of the CR interaction depends on the frequency detuning
 # $\Delta = \omega_{\text{q},1} - \omega_{\text{q},2}$, which is set by the junction
 # sizing in the layout.
@@ -310,8 +310,7 @@ plt.show()
 # %% [markdown]
 # ## Summary: The Design Cycle
 #
-# This notebook demonstrated the connection between physical layout and
-# pulse-level performance:
+# This notebook connected physical layout to pulse-level performance:
 #
 # 1. **Layout (qpdk)**: Geometric parameters (pad size, gap) determine $C_\Sigma$ and $L_\text{J}$.
 # 2. **Hamiltonian (qpdk.models)**: Parameters $E_\text{C}, E_\text{J}$ set $\omega_\text{q}$ and $\alpha$.
@@ -319,7 +318,7 @@ plt.show()
 # 4. **Iterate**: If leakage is too high ($|2\rangle$ population), we go back to
 #    step 1 and increase $E_\text{C}$ in the layout.
 #
-# For more details on parameter extraction, see the companion notebooks
+# For more details on parameter extraction, see the companion notebook
 # on [scQubits parameter calculation](scqubits_parameter_calculation).
 
 # %% [markdown]

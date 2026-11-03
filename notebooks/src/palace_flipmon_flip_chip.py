@@ -37,9 +37,9 @@
 # - The **top chip** (metal level M2, flipped so its metal faces down) carries
 #   the top circle, galvanically connected to the inner pad through a central
 #   indium bump.
-# - The qubit island is the inner pad + top circle node, and the shunt
+# - The qubit island is the inner pad + top circle node. The shunt
 #   capacitance is the vacuum gap between the top circle and the outer ring,
-#   the junction's counter-electrode.
+#   which is the junction's counter-electrode.
 #
 # The workflow runs from layout to a qubit mode and its field:
 #
@@ -232,11 +232,11 @@ for name, (lnum, ldt) in FLIP_CHIP_FEM_LAYERS.items():
     )
 
 # %% [markdown]
-# The region counts are the circuit topology made visible: M1 splits into the
-# ground plane, the isolated outer ring and the isolated inner circle, M2 into
-# the top ground plane and the isolated top circle, and the five bumps each
-# overlap conductor on both chips, so they connect what they must connect.
-# The one at the center joins the inner circle to the top circle (the qubit
+# The region counts are the circuit topology made visible. M1 splits into the
+# ground plane, the isolated outer ring and the isolated inner circle; M2 into
+# the top ground plane and the isolated top circle. Each of the five bumps
+# overlaps conductor on both chips, so they connect what they must connect:
+# the one at the center joins the inner circle to the top circle (the qubit
 # island); the four at the corners join the ground planes.
 
 # %%
@@ -260,9 +260,9 @@ assert (bumps - m2).is_empty(), "a bump does not land on the top-chip metal"
 # %% [markdown]
 # ## Analytical qubit estimate
 #
-# Before meshing anything, the vacuum-gap capacitor gives a first estimate of
-# the qubit frequency. Treating the top circle and the outer ring as parallel
-# plates across the inter-chip gap $g$, the overlapping area is the
+# The vacuum-gap capacitor gives a first estimate of the qubit frequency
+# before any mesh is built. Treat the top circle and the outer ring as
+# parallel plates across the inter-chip gap $g$; the overlapping area is the
 # annulus between the ring's inner edge (radius 80 µm) and the top circle's
 # edge (radius 110 µm):
 #
@@ -446,11 +446,11 @@ logger.info(
 # %% [markdown]
 # ### Comparison with Li et al.
 #
-# The Palace frequency is the linearised LC mode. We estimate the transmon
+# The Palace frequency is the linearized LC mode. We estimate the transmon
 # transition by subtracting $E_\text{C}/h$, with
 # $E_\text{C}=e^2/(2C_\Sigma)$ and
 # $C_\Sigma=[(2\pi f_\text{lin})^2 L_\text{J}]^{-1}$.
-# This is a scale check, not a fitted junction model.
+# The subtraction is a scale check, not a fitted junction model.
 
 # %%
 f_q = float(eig_f_ghz[0])
@@ -665,9 +665,9 @@ else:
 # Its vacuum-gap participation is lower than the paper's FEM value, which is
 # useful evidence that the unspecified pad geometry still matters.
 #
-# The mesh sections, field slices and participation plot use the saved Palace solution. A
-# surface-loss model and a device-specific junction are needed to compare
-# lifetimes.
+# The mesh sections, field slices and participation plot use the saved Palace
+# solution. A surface-loss model and a device-specific junction are needed to
+# compare lifetimes.
 
 # %% [markdown]
 # ## References

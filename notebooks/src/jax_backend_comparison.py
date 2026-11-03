@@ -22,8 +22,8 @@
 # from Parquet files in `notebooks/data/jax_backend_comparison/`. Documentation CI
 # executes the analysis and renders the plots; no GPU or live benchmark is needed.
 # The sweeps cover 100 to 30 million frequency points.
-# Each curve identifies its hardware and precision. These are different machines,
-# so the plot compares complete systems, with a CPU baseline for each machine.
+# Each curve identifies its hardware and precision. The runs come from different
+# machines, so the plot compares complete systems, with a CPU baseline for each machine.
 #
 # ## Recording measurements
 #
@@ -39,7 +39,7 @@
 # 10 µm, gap 6 µm). SAX's pure-JAX `filipsson_gunnar` solver runs on every device;
 # the default KLU solver's FFI kernels are CPU-only. For each sweep size it warms
 # up `jax.jit`, checks output precision and device, then times ten evaluations,
-# synchronizing the entire output with `jax.block_until_ready` on each call.
+# synchronising the entire output with `jax.block_until_ready` on each call.
 #
 # ```bash
 # QPDK_REQUIRE_GPU=1 uv run --extra models --with "jax[cuda12]" \
@@ -59,7 +59,7 @@
 # Parquet stores typed nested records: one machine run per file, with all raw
 # repetitions, workload settings, software versions, errors, and real/imaginary
 # CPU reference arrays. Commit these files through Git LFS. Notebook outputs are
-# stripped; changing plot styling only requires rerendering this analysis.
+# stripped; changing plot styling requires only rerendering this analysis.
 # See the {ref}`extras reference <notebook-extras>` for the model dependencies.
 
 # %% tags=["hide-input", "hide-output"]
@@ -238,7 +238,7 @@ for name, (t0, c) in fits.items():
 # model is flat below $N^\ast$ and has slope 1 above it. Hardware and precision
 # are shown for every curve; the CPU rows are the baselines for their own machines.
 # Points show measured medians. Error bars span the 25th to 75th percentiles
-# of the repetitions, while dashed lines show the overhead fit.
+# of the repetitions.
 #
 # The lower panel compares each accelerator with the CPU on its own machine at
 # matching precision. Values above 1 mean the GPU is faster. These ratios use

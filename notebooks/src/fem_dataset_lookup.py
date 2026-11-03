@@ -72,8 +72,8 @@
 # The bundled data comes from Palace electrostatic solves of the actual QPDK
 # metal polygons, including their short leads, as perfect conductor sheets on
 # silicon. A separate coplanar ground frame surrounds the device. The geometry
-# and mesh settings travel with the data. It covers lengths 40–120 µm, widths
-# 5–20 µm and gaps 4–10 µm; these results apply to that geometry and stack.
+# and mesh settings travel with the data. The dataset covers lengths 40–120 µm,
+# widths 5–20 µm and gaps 4–10 µm; these results apply to that geometry and stack.
 #
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -513,8 +513,8 @@ ax.legend()
 plt.show()
 
 # %% [markdown]
-# The lookup is differentiable, so the gap can be tuned by gradient descent
-# towards a target transmission.
+# The lookup is differentiable, so gradient descent can tune the gap towards a
+# target transmission.
 
 # %%
 d_s21_d_gap = jax.jit(
@@ -612,8 +612,8 @@ logger.info(f"CPW grid: {cpw_grid.values.shape}; domain: {cpw_lookup.domain}")
 # Trace mismatch and comparison with conformal mapping provide independent flags.
 # A flagged result needs investigation, even when its linear solve converged.
 # Copy the CPW experiment beside the original, keep only flagged geometries in
-# `GRID` or `GROUND_GRID`, and rerun with `--min-refinements 2`. This continues
-# past an early small change. Use `--topology as-drawn` for the ground-strip grid.
+# `GRID` or `GROUND_GRID`, and rerun with `--min-refinements 2`. That option
+# continues past an early small change. Use `--topology as-drawn` for the ground-strip grid.
 # Keep the same `--workdir` and execution options to reuse matching completed
 # solves. `--mesh-tolerance` and `--max-refinements` control
 # the acceptance target and computation budget.

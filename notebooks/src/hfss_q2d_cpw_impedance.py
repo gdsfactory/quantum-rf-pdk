@@ -45,7 +45,7 @@
 #
 # The Q2D solver computes per-unit-length RLGC parameters from the
 # cross-sectional geometry, from which the characteristic impedance
-# can be obtained as a function of frequency.  We compare the
+# follows as a function of frequency.  We compare the
 # full-wave Q2D result against the analytical conformal-mapping estimate
 # from {py:func}`~qpdk.models.cpw_parameters`.
 #
@@ -210,7 +210,7 @@ display(Image(filename=str(q2d_img_path)))
 # ## Configure Q2D Analysis
 #
 # Set up the solution with a frequency sweep from 1 GHz to 10 GHz to compute
-# the characteristic impedance across the frequency range.
+# the characteristic impedance across that range.
 
 # %%
 # Create setup

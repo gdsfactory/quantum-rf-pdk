@@ -30,9 +30,8 @@
 # slot-shaped vias etched through the silicon, a CPW that tapers up to a pad
 # large enough to land **two signal TSVs in parallel**, and a ring of
 # **ground TSVs** stitching the front and back ground planes around it. A
-# single narrow via on its own is a large impedance discontinuity; the
-# parallel signal vias, the pad and the ground ring together are what keep
-# the reflection small.
+# single narrow via is a large impedance discontinuity; the parallel signal
+# vias, the pad and the ground ring together keep the reflection small.
 #
 # ````{only} html
 # ```{mermaid}
@@ -70,7 +69,7 @@
 # ::::
 #
 # ```{note}
-# The saved Palace seed response is embedded below. The optimizer is optional
+# The saved Palace seed response is embedded below. The optimiser is optional
 # because each evaluation needs another 3-D solve.
 # ```
 
@@ -403,9 +402,9 @@ assert pec_z == {"M1_pec": 0.0, "MB_pec": -SUBSTRATE_THICKNESS}, pec_z
 # image. {func}`~qpdk.simulation.palace_run.solve` launches it with
 # ``QPDK_SOLVER_CORES`` MPI ranks, and gsim reads the S-parameters back.
 #
-# From the two-port S-matrix, $|S_{11}|$ is the figure of merit and the
-# reflection also gives the input impedance the transition presents to the
-# front-side 50 Ω line,
+# $|S_{11}|$ from the two-port S-matrix is the figure of merit; the
+# reflection also gives the input impedance that the transition presents to
+# the front-side 50 Ω line,
 #
 # ```{math}
 # Z_\text{in} = Z_0 \frac{1 + S_{11}}{1 - S_{11}} .
@@ -445,8 +444,8 @@ def plot_sparams(f: np.ndarray, s11: np.ndarray, s21: np.ndarray) -> None:
 #
 # Palace solved the seed geometry with first-order elements on a mesh refined
 # to 2 µm near the metal, using 17 frequency samples and a 0.3% adaptive
-# tolerance. The table is the first excitation of its `port-S.csv`. This is a
-# seed result; the optimization loop below has not been run.
+# tolerance. The table is the first excitation of its `port-S.csv`. It is a
+# seed result; the optimisation loop below has not been run.
 
 # %% tags=["hide-input"]
 SAVED_PORT_S_CSV = """\
@@ -498,7 +497,7 @@ logger.info(
 # ## Optimising the transition for 50 Ω
 #
 # The paper tunes the transition shape to minimise reflections. The loop
-# below does the same with Palace in the loop: each evaluation builds a
+# below does the same with Palace: each evaluation builds a
 # geometry, meshes it, solves it, and scores it by the worst in-band
 # reflection,
 #

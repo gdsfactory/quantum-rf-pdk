@@ -199,7 +199,7 @@ HFSS_CONFIG = {
 # 4. Run simulation and extract S-parameters
 #
 # ```{note}
-# This code requires Ansys HFSS. The structure below shows the complete workflow.
+# This code requires Ansys HFSS.
 # ```
 
 # %%
@@ -239,7 +239,7 @@ print(f"Solution type: {hfss.solution_type}")
 # ## Build Interdigital Capacitor Geometry
 #
 # Import the gdsfactory component geometry into HFSS using native GDS import.
-# This uses {py:meth}`~ansys.aedt.core.hfss.Hfss.import_gds_3d` which automatically handles 3D layer mapping.
+# The import uses {py:meth}`~ansys.aedt.core.hfss.Hfss.import_gds_3d`, which handles the 3D layer mapping automatically.
 
 # %%
 # Prepare component for export
@@ -312,8 +312,8 @@ for port in prepared_component.ports:
 # %% [markdown]
 # ## Configure Driven Modal Analysis
 #
-# Set up the solution with frequency sweep to compute S-parameters
-# across the desired frequency range.
+# Set up the solution with a frequency sweep to compute S-parameters
+# across the frequency range.
 
 # %%
 # Create driven modal setup
@@ -354,7 +354,7 @@ print(f"  - Number of points: {HFSS_CONFIG['sweep_points']}")
 # %% [markdown]
 # ## Run Simulation
 #
-# Execute the driven modal analysis with frequency sweep.
+# Execute the driven modal analysis with the frequency sweep.
 
 # %%
 print("Starting driven modal analysis...")
@@ -461,7 +461,7 @@ display(Image(filename=str(hfss_field_img_path)))
 # shunt parasitic capacitances to ground ($C_{1\text{g}}$ and $C_{2\text{g}}$) that skew the
 # $S_{21}$ magnitude.
 #
-# The robust way to extract mutual capacitance is using Y-parameters (Admittance), see {cite:p}`m.pozarMicrowaveEngineering2012`.
+# The robust way to extract the mutual capacitance is through the Y-parameters (admittance), see {cite:p}`m.pozarMicrowaveEngineering2012`.
 # In a Pi-network model, the mutual admittance $Y_{12}$ isolates the series element:
 #
 # $$ Y_{12} = -j\omega C_{12} $$
@@ -541,10 +541,10 @@ print("HFSS session closed and temporary files cleaned up")
 # - **Q3D Extractor**: Quasi-static solve → direct capacitance matrix
 # - **Analytical**: Conformal mapping model (no simulation)
 #
-# Q3D is particularly well suited for parasitic capacitance extraction because
-# it directly solves the electrostatic (or quasi-static) problem, which is
-# faster and more accurate at low frequencies than extracting capacitance from
-# full-wave S-parameters.
+# Q3D suits parasitic capacitance extraction because it solves the
+# electrostatic (or quasi-static) problem directly, which is faster and more
+# accurate at low frequencies than extracting capacitance from full-wave
+# S-parameters.
 #
 # **References:**
 # - Q3D Extractor: https://aedt.docs.pyansys.com/version/stable/API/_autosummary/ansys.aedt.core.q3d.Q3d.html
@@ -715,9 +715,9 @@ print("Q3D session closed and temporary files cleaned up")
 # ## Comparison: Analytical vs HFSS vs Q3D
 #
 # Compare the capacitance values obtained from all three methods.
-# The analytical model provides a quick estimate, the HFSS driven modal
-# simulation gives the full-wave result, and Q3D Extractor provides
-# a direct quasi-static capacitance extraction.
+# The analytical model gives a quick estimate, the HFSS driven modal
+# simulation gives the full-wave result, and Q3D Extractor extracts the
+# capacitance directly from a quasi-static solve.
 
 # %%
 print("\n" + "=" * 58)
@@ -746,7 +746,7 @@ print("=" * 58)
 # %% [markdown]
 # ## Summary
 #
-# This notebook demonstrated three approaches for characterizing an interdigital
+# This notebook demonstrated three ways to characterize an interdigital
 # capacitor:
 #
 # 1. **Analytical Estimate**: Using the conformal mapping model for interdigital
@@ -768,7 +768,7 @@ print("=" * 58)
 #   parasitic extraction at low frequencies
 # - HFSS driven modal captures frequency-dependent effects (parasitic
 #   inductance, radiation) that Q3D's quasi-static approach does not
-# - The analytical model provides a useful sanity check for both simulations
+# - The analytical model is a useful sanity check for both simulations
 # - All three methods should agree well at low frequencies where the structure
 #   is electrically small
 #

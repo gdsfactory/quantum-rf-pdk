@@ -35,16 +35,16 @@
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# This notebook demonstrates how to use
+# This notebook uses
 # [pymablock](https://pymablock.readthedocs.io/) {cite:p}`arayaDayPymablockAlgorithmPackage2025`
 # to compute the **dispersive shift** of a readout resonator coupled
-# to a transmon qubit, and how to translate the resulting Hamiltonian
-# parameters into physical layout parameters using **qpdk**.
+# to a transmon qubit, then translates the resulting Hamiltonian
+# parameters into physical layout parameters with **qpdk**.
 #
 # ## Background
 #
 # In circuit quantum electrodynamics (cQED), the state of a transmon qubit is
-# typically measured via the *dispersive readout* technique
+# typically measured by *dispersive readout*
 # {cite:p}`blaisCircuitQuantumElectrodynamics2021`.  The qubit is detuned from
 # a readout resonator, and the qubit-state-dependent frequency shift of the
 # resonator—the **dispersive shift** $\chi$—allows non-destructive measurement
@@ -257,8 +257,7 @@ print(
 # ## Dispersive Shift vs. Coupling Strength
 #
 # We now sweep the coupling strength $g$ to see how the dispersive shift
-# depends on it.  The quadratic dependence $\chi \propto g^2$ is clearly
-# visible.
+# depends on it.  The quadratic dependence $\chi \propto g^2$ is visible.
 
 # %%
 g_sweep = jnp.linspace(0.01, 0.3, 200)
@@ -414,7 +413,7 @@ f_\text{{r}} = {f_resonator_achieved / 1e9:.3f}\,\text{{GHz}}
 # %% [markdown]
 # ## Readout System Design Considerations
 #
-# A complete readout design also requires considering the resonator
+# A complete readout design must also consider the resonator
 # linewidth $\kappa$, the Purcell decay rate, and the measurement-induced
 # dephasing.
 

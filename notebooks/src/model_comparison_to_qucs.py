@@ -153,8 +153,8 @@ for suite in test_suites:
 # %% [markdown]
 # ## Summary
 #
-# The plots above show comparisons between qpdk models (dashed lines) and Qucs-S
-# reference simulations (solid lines) for various passive components:
+# The plots above compare qpdk models (dashed lines) with Qucs-S reference
+# simulations (solid lines) for various passive components:
 #
 # - **Left plot**: Polar representation showing S-parameters in the complex plane
 # - **Right plot**: Magnitude (in dB) and phase (in radians) versus frequency

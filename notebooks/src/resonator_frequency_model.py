@@ -35,7 +35,7 @@
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# This example demonstrates estimating resonance frequencies of superconducting microwave resonators using Jax.
+# This example estimates resonance frequencies of superconducting microwave resonators with JAX.
 
 # %% tags=["hide-input", "hide-output"]
 import sys
@@ -77,8 +77,8 @@ from qpdk.tech import coplanar_waveguide
 # %% [markdown]
 # ## Probelines weakly coupled to $\lambda/4$ resonator
 #
-# Creates a probelines weakly coupled to a quarter-wave resonator.
-# The resonance frequency is first estimated using the `resonator_frequency` function and then compared to the frequency in the coupled case.
+# Creates a probeline weakly coupled to a quarter-wave resonator.
+# We first estimate the resonance frequency with the `resonator_frequency` function and then compare it with the resonance of the coupled circuit.
 #
 # ![Capacitively coupled quarter-wave resonator with a shorted far end](figures/quarter-wave-resonator.svg)
 
@@ -137,10 +137,10 @@ def _mark_resonance_frequency(x_value: float | jax.Array, color: str, label: str
     )
 
 
-_mark_resonance_frequency(res_freq, "red", "Predicted resonance Frequency")
+_mark_resonance_frequency(res_freq, "red", "Predicted resonance frequency")
 actual_freq = frequencies[jnp.argmin(abs(S["in", "out"]))]
 logger.info(f"Coupled resonance frequency: {float(actual_freq) / 1e9} GHz")
-_mark_resonance_frequency(actual_freq, "green", "Coupled resonance Frequency")
+_mark_resonance_frequency(actual_freq, "green", "Coupled resonance frequency")
 
 plt.legend()
 
@@ -149,7 +149,7 @@ plt.legend()
 # ## Optimizer for given resonance frequency
 #
 # Find the resonator length that gives a desired resonance frequency using an optimizer.
-# Here we use Optax and JAX's automatic differentiation. Instead of evaluating the entire frequency band in every iteration, we can simply minimize the transmission $|S_{21}|^2$ exactly at the target frequency. JAX automatically computes the analytical gradient of the transmission with respect to the resonator length, making the optimization remarkably fast and precise.
+# Here we use Optax and JAX's automatic differentiation. Instead of evaluating the entire frequency band in every iteration, we minimize the transmission $|S_{21}|^2$ at the target frequency only. JAX computes the analytical gradient of the transmission with respect to the resonator length, which makes the optimization fast and precise.
 
 # %%
 TARGET_FREQUENCY = 6e9  # Target resonance frequency in Hz
@@ -242,7 +242,7 @@ plt.close()
 plt.plot(verification_frequencies / 1e9, abs(optimal_S["in", "out"]) ** 2)
 plt.xlabel("f [GHz]")
 plt.ylabel("$S_{21}$")
-_mark_resonance_frequency(optimal_freq_val, "blue", "Optimized resonance Frequency")
-_mark_resonance_frequency(TARGET_FREQUENCY, "orange", "Target resonance Frequency")
+_mark_resonance_frequency(optimal_freq_val, "blue", "Optimized resonance frequency")
+_mark_resonance_frequency(TARGET_FREQUENCY, "orange", "Target resonance frequency")
 plt.legend()
 plt.show()

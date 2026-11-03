@@ -195,7 +195,8 @@ Microwave components as linear, frequency-dependent scattering matrices, impleme
 
         SAX circuit evaluation on CPU, CUDA, and Apple Silicon (MPS), with matching
         precision baselines and accuracy checks. Recorded runs from both machines share
-        a scaling plot rendered from Parquet records in CI. Recording requires the corresponding hardware.
+        a scaling plot rendered from Parquet records in CI. Recording requires the
+        corresponding hardware.
 
         +++
 
@@ -395,9 +396,9 @@ models miss
     :doc:`notebooks/comsol_qubit_capacitance` are published with the outputs of a real
     solver run stored in the notebook. Those stored figures and numbers are the
     artifact: the pages are not re-executed here, so what you see is the recorded run.
-    The two COMSOL notebooks additionally run without a license, skipping the solver
-    cells and reporting how to supply exported results, so their code can be read and
-    executed up to the point where a license is needed.
+    The two COMSOL notebooks also run without a license, skipping the solver cells and
+    reporting how to supply exported results, so their code can be read and executed up
+    to the point where a license is needed.
 
 .. _notebooks-hamiltonian:
 
@@ -520,7 +521,7 @@ without finite differences.
  Harmonic-balance circuit simulation
 *************************************
 
-SPICE-class simulators with harmonic balance (HB) find the periodic steady state of a
+SPICE-class simulators with harmonic balance find the periodic steady state of a
 nonlinear circuit under a strong drive and, with a small-signal analysis around that
 state, the frequency conversion between sidebands. This is what parametric amplifiers
 need.
@@ -550,8 +551,8 @@ need.
 The pages retain saved executions for documentation builds. The JPA companions need the
 external `VACASK <https://codeberg.org/arpadbuermen/VACASK>`_ simulator, which runs as a
 separate program on the Verilog-A junction and SQUID models shipped with qpdk. qpdk does
-not import or link VACASK, which is what keeps it outside the AGPL's combined work rule
-under the maintainer's reading in `VACASK issue #161
+not import or link VACASK, which keeps it outside the AGPL's combined work rule under
+the maintainer's reading in `VACASK issue #161
 <https://codeberg.org/arpadbuermen/VACASK/issues/161>`_.
 
 **********************
@@ -584,9 +585,10 @@ Driving qpdk from outside Python, for teams whose primary tooling lives elsewher
     ``resonator_frequency``, inverse design with ``fzero``, and a parametric chip variant
     grid summarised in a MATLAB ``table``. It then exports SAX models as Touchstone files
     with ``sax.write_sdict_touchstone`` and consumes them from MATLAB's `RF Toolbox
-    <https://se.mathworks.com/help/rf/index.html>`_ as ``sparameters``/``nport`` boxes —
-    Smith charts, cascades in a ``circuit``, rational fitting and transient response, and
-    back into SAX with ``sax.read_sdict_touchstone``.
+    <https://se.mathworks.com/help/rf/index.html>`_ as ``sparameters``/``nport`` boxes:
+    Smith charts, cascades in a ``circuit``, rational fitting and transient response.
+    Finally it reads the Touchstone files back into SAX with
+    ``sax.read_sdict_touchstone``.
 
     Those sections need the RF Toolbox and skip themselves when it is unavailable or when
     ``QPDK_SKIP_RF_TOOLBOX`` is set; the rendered page shows a saved execution that had
@@ -699,8 +701,8 @@ them as globs.
 
     - A CUDA build of JAX or experimental ``jax-mps`` is needed only to record new
       measurements for :doc:`notebooks/jax_backend_comparison`. The notebook itself
-      renders saved Parquet records without a GPU. Installing a new MPS environment
-      requires SAX to allow the JAX 0.11 version required by the plugin.
+      renders saved Parquet records without a GPU. A new MPS environment needs a SAX
+      release that allows the JAX 0.11 version the plugin requires.
     - MATLAB and `jupyter-matlab-proxy
       <https://github.com/mathworks/jupyter-matlab-proxy>`_, needed by
       :doc:`notebooks/matlab_integration`, are not Python packages managed by ``qpdk``.
