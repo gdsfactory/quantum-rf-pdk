@@ -1,7 +1,7 @@
 r"""Microwave-to-optical quantum transducer models.
 
-This module provides S-parameter and analytical models for
-superconducting-to-optical quantum transducers.
+S-parameter and analytical models for superconducting-to-optical quantum
+transducers.
 
 Two principal transduction mechanisms are modelled:
 
@@ -76,10 +76,10 @@ def transduction_efficiency(
         \eta = \frac{4\,\eta_{\mathrm{ext,m}}\,\eta_{\mathrm{ext,o}}\,\mathcal{C}}
                {(1 + \mathcal{C})^2}
 
-    where :math:`\mathcal{C}` is the cooperativity and the extraction
-    efficiencies are :math:`\eta_{\mathrm{ext}} = \kappa_\mathrm{ext}/\kappa`.
+    where :math:`\mathcal{C}` is the cooperativity and the external
+    coupling efficiencies are :math:`\eta_{\mathrm{ext}} = \kappa_\mathrm{ext}/\kappa`.
 
-    At :math:`\mathcal{C} = 1` (impedance matching) this reduces to
+    At :math:`\mathcal{C} = 1` (impedance matching) the efficiency reduces to
     :math:`\eta = \eta_{\mathrm{ext,m}}\,\eta_{\mathrm{ext,o}}`.
 
     Args:
@@ -225,7 +225,7 @@ def electro_optic_transducer(
 ) -> sax.SDict:
     r"""S-parameter model for the MW side of a cavity electro-optic transducer.
 
-    The microwave resonator is modelled as a lumped LC circuit whose
+    The microwave (MW) resonator is modelled as a lumped LC circuit whose
     resonance frequency is :math:`\omega_m = 1/\sqrt{LC}`.  The
     electro-optic coupling to the optical modes appears as an effective
     frequency-dependent admittance loading the MW resonator.
@@ -234,7 +234,7 @@ def electro_optic_transducer(
     an additional dissipation channel on the MW mode with an effective
     rate :math:`\Gamma_{\mathrm{eo}} = 4|g|^2/\kappa_o`
     :cite:`lauksTransducerCoupling2020`.
-    This is modelled as a resistive load in parallel with the LC
+    This channel is modelled as a resistive load in parallel with the LC
     resonator via a coupling capacitor.
 
     .. svgbob::
@@ -263,14 +263,10 @@ def electro_optic_transducer(
     # Effective EO-induced loss rate on the MW mode
     gamma_eo = 4.0 * eo_coupling_rate**2 / kappa_opt  # Hz
 
-    # Model as an LC resonator loaded by an effective resistance
-    # R_eo = 1/(2π C_mw Γ_eo) represents the additional dissipation
-    # For the SAX circuit we include it as a conductance in the resonator
-    # by increasing the effective MW linewidth
-    # We model the effective resistive loading as a small capacitive loss
-    # by adding a lossy capacitor element
+    # The EO-induced loss is applied to the S-parameters after the circuit
+    # is evaluated (see below).
 
-    # Build circuit: feedline coupling cap → LC resonator with effective loss
+    # Build circuit: feedline coupling cap → LC resonator
     instances: dict[str, sax.SType] = {
         "coupling_cap": capacitor(f=f_arr, capacitance=coupling_capacitance),
         "mw_resonator": lc_resonator(
@@ -336,7 +332,7 @@ def piezo_optomechanical_transducer(
 ) -> sax.SDict:
     r"""S-parameter model for a piezo-optomechanical quantum transducer.
 
-    Models the microwave side of a transducer where:
+    Models the microwave (MW) side of a transducer where:
 
     1. A superconducting qubit or MW resonator couples piezoelectrically
        to a mechanical mode with rate :math:`g_{\mathrm{pe}}`.
@@ -359,8 +355,8 @@ def piezo_optomechanical_transducer(
         \Gamma_{\mathrm{eff}} = \frac{4\,g_{\mathrm{pe}}^2}{\kappa_m}
         \cdot \frac{4\,G_{\mathrm{om}}^2}{\kappa_m\,\kappa_o}
 
-    This is modelled as a grounded LC resonator (the MW mode) coupled
-    to the feedline via a capacitor, with the piezo/OM chain adding
+    The MW mode is modelled as a grounded LC resonator coupled to the
+    feedline via a capacitor, with the piezo-optomechanical chain adding
     effective loss.
 
     Args:

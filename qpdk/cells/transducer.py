@@ -1,8 +1,8 @@
 r"""Microwave-to-optical quantum transducer layout components.
 
-This module provides layout components for the microwave side of
-superconducting-to-optical quantum transducers.  Two dominant physical
-mechanisms for microwave-to-optical transduction exist in the literature:
+Layout components for the microwave side of superconducting-to-optical
+quantum transducers.  Two dominant physical mechanisms for
+microwave-to-optical transduction exist in the literature:
 
 1. **Cavity electro-optic (CEO) transduction** – a microwave LC resonator
    is capacitively coupled to optical modes in a material with a
@@ -15,10 +15,9 @@ mechanisms for microwave-to-optical transduction exist in the literature:
    :cite:`mirhosseiniQuantumTransductionOptical2020,delaneyNondestructiveOpticalReadout2022`.
 
 The layout components in this module represent the **microwave side** of
-these hybrid transducer systems – i.e. the structures that would be
-fabricated on a superconducting chip and subsequently integrated with an
-optical or piezoelectric chip via flip-chip bonding, wire bonding, or
-coaxial cable.
+these hybrid transducer systems – i.e. the structures fabricated on a
+superconducting chip and then integrated with an optical or piezoelectric
+chip via flip-chip bonding, wire bonding, or coaxial cable.
 
 References:
     - :cite:`mirhosseiniQuantumTransductionOptical2020`
@@ -55,18 +54,17 @@ def electro_optic_transducer(
     r"""Microwave LC resonator for cavity electro-optic transduction.
 
     Creates the microwave side of a cavity electro-optic
-    microwave-to-optical quantum transducer (CEO-MOQT).  The layout
-    consists of:
+    microwave-to-optical quantum transducer.  The layout consists of:
 
     * A lumped-element LC resonator (meander inductor in parallel with a
       plate capacitor) whose resonance frequency matches the target
       microwave transition, typically :math:`\omega_m / 2\pi \sim 5\text{--}8\;\text{GHz}`.
-    * A coupling capacitor pad pair placed adjacent to the LC resonator.
-      This pad is intended for capacitive coupling to a photonic chip
-      carrying optical ring resonators in thin-film lithium niobate (TFLN).
+    * A pair of coupling capacitor pads next to the LC resonator, for
+      capacitive coupling to a photonic chip carrying optical ring
+      resonators in thin-film lithium niobate (TFLN).
     * CPW feedline connections for external microwave drive and readout.
 
-    The transduction process relies on the :math:`\chi^{(2)}`
+    Transduction relies on the :math:`\chi^{(2)}`
     nonlinearity of TFLN to mediate energy exchange between the
     microwave LC mode and two hybridised optical modes separated by the
     microwave frequency :math:`\omega_m`.
