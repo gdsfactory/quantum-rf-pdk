@@ -343,11 +343,11 @@ short_close_view.plot(show_labels=False, show_ruler=False)
 # %% [markdown]
 # ## From etch layers to simulation regions
 #
-# qpdk draws metal subtractively, a volumetric solver needs explicit conductor
-# and dielectric bodies, and {func}`~qpdk.simulation.to_fem_regions` converts
-# between the two with ``SIM_AREA - (M1_ETCH - M1_DRAW)``. The conversion, and
-# what it does to an additive shape sitting inside an etched gap, is worked
-# through with a picture in {ref}`subtractive-to-positive`.
+# qpdk draws metal subtractively, but a volumetric solver needs explicit
+# conductor and dielectric bodies; {func}`~qpdk.simulation.to_fem_regions`
+# converts between the two with ``SIM_AREA - (M1_ETCH - M1_DRAW)``.
+# {ref}`subtractive-to-positive` works through the conversion with a picture,
+# including what it does to an additive shape sitting inside an etched gap.
 
 # %%
 etched = to_fem_regions(component)
@@ -408,8 +408,8 @@ etched.plot()
 # %% [markdown]
 # ## Analytical resonator estimate
 #
-# Before meshing anything, the CPW cross-section model gives a first estimate
-# of the readout frequency. A quarter-wave resonator of length $L$
+# The CPW cross-section model gives a first estimate of the readout frequency
+# before any mesh is built. A quarter-wave resonator of length $L$
 # resonates at $f_\text{r} = v_\text{p} / 4L$ with phase velocity
 # $v_\text{p} = c_0 / \sqrt{\varepsilon_{\text{eff}}}$, where
 # $\varepsilon_{\text{eff}}$ comes from the conformal-mapping CPW model
@@ -541,7 +541,7 @@ logger.info(f"Finite-thickness PDK estimate: {pdk_analytical_freq / 1e9:.4f} GHz
 # config_path.write_text(json.dumps(config, indent=2))
 # ```
 #
-# A few points worth noting:
+# Four details of this setup:
 #
 # - The substrate carries the qpdk microwave-silicon loss tangent
 #   ($\tan\delta = 2.7 \times 10^{-6}$
@@ -577,7 +577,7 @@ logger.info(f"Finite-thickness PDK estimate: {pdk_analytical_freq / 1e9:.4f} GHz
 #
 # Palace writes one row per mode to `output/palace/eig.csv`: mode index, the
 # real and imaginary parts of the eigenfrequency in GHz, and the quality
-# factor. Two companion tables make mode identification quantitative,
+# factor. Two companion tables make mode identification quantitative:
 # `output/palace/port-EPR.csv` for the energy-participation ratio of each
 # lumped port in each mode and `output/palace/port-Q.csv` for the external
 # quality factor per port. The solved rows are embedded below so the analysis
@@ -587,9 +587,9 @@ logger.info(f"Finite-thickness PDK estimate: {pdk_analytical_freq / 1e9:.4f} GHz
 # ## Results: eigenmodes versus the analytical estimate
 #
 # The meander, feed coupling section, and qubit-side route form a single
-# quarter-wave line with a 7020 µm routed length. Identify the qubit-like mode
-# set by the junction inductance and pad capacitance, and the dressed readout
-# resonance near the analytical estimate among the returned modes.
+# quarter-wave line with a 7020 µm routed length. Among the returned modes,
+# identify the qubit-like mode set by the junction inductance and pad
+# capacitance, and the dressed readout resonance near the analytical estimate.
 # Frequencies and separations below refer to the linearized eigenproblem.
 
 # %% tags=["hide-input"]
@@ -619,8 +619,8 @@ for m, f_re, q, p1, qe in zip(
 # 2. **Junction participation**: `port-EPR.csv` reports the fraction
 #    $p_{m,\text{J}}$ of each mode's energy stored in the junction port
 #    {cite:p}`minevEnergyParticipationQuantization2021`. The qubit-like mode
-#    carries by far the largest participation, while a resonator-like mode
-#    keeps most of its inductive energy in the CPW trace, much less.
+#    carries by far the largest participation; a resonator-like mode keeps
+#    most of its inductive energy in the CPW trace and participates much less.
 # 3. **Port dissipation**: `port-Q.csv` gives the external quality factor of
 #    each mode through the 50 Ω probeline ports. The readout resonance couples
 #    to the feedline and gets a finite $Q_{\text{ext}}$ (with both feed
@@ -630,7 +630,7 @@ for m, f_re, q, p1, qe in zip(
 #    alone would give $Q_{\text{diel}} \approx 1 / (p_{\text{diel}} \tan\delta)$
 #    with $\tan\delta = 2.7 \times 10^{-6}$.
 #
-# No single feature is sufficient on its own: a heavily feed-coupled spurious
+# No single feature suffices: a heavily feed-coupled spurious
 # mode can have the lowest Q of the spectrum without being the readout
 # resonance. Participation-based identification is the standard in
 # quantitative qubit design: the same EPRs that label the modes also turn the
@@ -798,8 +798,8 @@ plt.close(fig)
 # comparison. These controls do not isolate every contribution.
 #
 # The stored port-EPR values are signed. Mode identification uses their
-# magnitudes as diagnostics. This does not establish a normalized energy
-# budget for Hamiltonian extraction.
+# magnitudes as diagnostics. Those magnitudes do not establish a normalized
+# energy budget for Hamiltonian extraction.
 #
 # Magnitude alone is not enough either: a higher harmonic can have a larger
 # junction participation. The qubit mode is the lowest one above the stated
@@ -837,7 +837,7 @@ logger.info(
 # sample their electric-field magnitude 1 µm above the metal plane at model
 # coordinate $z=501$ µm. The qubit view zooms in on the pads; the readout view
 # shows the full meander. [Palace's visualization guide](https://awslabs.github.io/palace/stable/guide/postprocessing/#visualization-field-spaces-and-interface-values)
-# explains that tangential field is continuous across tetrahedra but the
+# explains that the tangential field is continuous across tetrahedra but the
 # normal component can jump, leaving triangular seams in a planar cut.
 # We clip the low values and smooth the display over 0.4 µm near the
 # pads and 1.0 µm across the meander. Frequencies and participations use the
@@ -954,9 +954,9 @@ else:
 # ## Summary
 #
 # A qpdk layout goes to a full-wave eigenmode spectrum with no commercial
-# solver license. Larger qubit pads, a longer probeline and a larger domain
-# retain a nearby qubit/readout pair by retuning the junction inductance.
-# Junction participation, feed-port coupling and the saved
+# solver license. With larger qubit pads, a longer probeline and a larger
+# domain, retuning the junction inductance retains a nearby qubit/readout
+# pair. Junction participation, feed-port coupling and the saved
 # electric fields distinguish the two. The CPW estimate gives a starting
 # length; the Palace solve checks the adjusted layout.
 #

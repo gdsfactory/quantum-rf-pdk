@@ -18,10 +18,10 @@
 # ::::{admonition} Required extras
 # :class: tip
 #
-# Needs the `comsol` extra (`uv sync --extra comsol`), which installs `gplugins[comsol]` and
-# `MPh`. The layout, plotting, and result helpers come from gplugins, so every cell needs the extra.
+# This notebook needs the `comsol` extra (`uv sync --extra comsol`), which installs `gplugins[comsol]`
+# and `MPh`. The layout, plotting, and result helpers come from gplugins, so every cell needs the extra.
 # COMSOL, its license, the RF Module, and the Design Module CAD kernel that `ProjectToFaces` needs
-# are separate. See the {ref}`extras reference <notebook-extras>`.
+# must be installed separately. See the {ref}`extras reference <notebook-extras>`.
 # ::::
 #
 # The shortest path from a QPDK layout to a driven COMSOL result: build a coupled quarter-wave
@@ -33,8 +33,8 @@
 #
 # A QPDK {py:func}`~qpdk.cells.quarter_wave_resonator_coupled`: a meandering coplanar-waveguide (CPW)
 # resonator beside a straight feedline, the standard hanger geometry for reading out superconducting
-# qubits {cite:p}`gopplCoplanarWaveguideResonators2008a`, whose resonance is one of the degrees of
-# freedom circuit QED reads a qubit through {cite:p}`blaisCircuitQuantumElectrodynamics2021`. The end
+# qubits {cite:p}`gopplCoplanarWaveguideResonators2008a`. Its resonance is one of the degrees of
+# freedom through which circuit QED reads a qubit {cite:p}`blaisCircuitQuantumElectrodynamics2021`. The end
 # nearest the feedline is **open** and the far end **shorted**, so the line resonates at an odd
 # multiple of $\lambda/4$ {cite:p}`m.pozarMicrowaveEngineering2012`, and the coupling capacitor loads
 # the feedline into a **notch** in $|S_{21}|$.
@@ -46,7 +46,7 @@
 #
 # The saved outputs come from a licensed run on one mesh. Only the frequencies COMSOL actually
 # solved are independent results; the rest of the sweep is a rational fit, so the curve locates the
-# notch but does not resolve it. PEC metal carries no conductor loss or kinetic inductance, nothing
+# notch but does not resolve it. PEC metal carries no conductor loss or kinetic inductance. Nothing
 # here is shown to be mesh independent, and a fresh run on another mesh or enclosure will not
 # reproduce these numbers exactly.
 # ::::
@@ -215,7 +215,7 @@ DRIVEN_MODEL_MPH = "comsol_cpw_resonator_driven.mph"
 #
 # The resonator is built with an explicit CPW cross-section, since the centre width and gap are
 # reused when describing the ports. Both feeds are extended with straight CPW so the ports land on
-# clean cross sections.
+# clean cross-sections.
 
 # %%
 cross_section = coplanar_waveguide(width=CPW_WIDTH_UM, gap=CPW_GAP_UM)
@@ -290,7 +290,7 @@ plt.show()
 # supplies the field export. The substrate thickness and the silicon permittivity are not set here: they
 # come from the `Substrate` level of the PDK layer stack and its material in `qpdk.tech.material_properties`,
 # the same numbers the analytical CPW model uses. The metal is a zero-thickness sheet, so the M1 film
-# thickness does not enter. Only the air height is a choice of this simulation domain.
+# thickness does not enter. The air height is the only choice made for this simulation domain.
 #
 # The step below is off by default. Run it on a licensed machine to build, mesh, solve, save an
 # `.mph`, write the curve CSV, and export the field.
@@ -456,7 +456,7 @@ else:
 # %% [markdown]
 # ## Saved S21 curve
 #
-# The curve below reads an export from the licensed step or a saved run. Its line is the adaptive
+# The curve below comes from an export of the licensed step or a saved run. Its line is the adaptive
 # sweep's rational fit: most rows are interpolation between the frequencies COMSOL actually solved,
 # so the curve locates the notch but does not resolve it. The run that produced it was more
 # controlled than a fresh single solve, and a rerun on another mesh or machine will differ in detail.
@@ -508,9 +508,9 @@ else:
 #
 # `emw.normE` on a cut plane 1 µm above the metal, from a direct solve at the fitted minimum. The export's header names
 # the frequency the field was solved at, so the title says which solution it shows. The amplitude
-# follows the solver's drive normalization, so the colour scale gives relative shape rather than a
+# follows the solver's drive normalisation, so the colour scale gives relative shape rather than a
 # field strength at a stated input power. The figure crops to the coupling section, the meander, and
-# the feedline, and for display only draws a fixed-stride subset of the cropped nodes.
+# the feedline, and, for display only, draws a fixed-stride subset of the cropped nodes.
 
 # %%
 field_path = result_file(RESULTS_DIR, DRIVEN_FIELD_TXT)
@@ -537,8 +537,8 @@ else:
 #
 # A scripted path from a QPDK layout through a sheet model to a driven $S_{21}$ notch and a field map,
 # all on one mesh. The notch depth comes from the coupling plus whatever loss the model carries, and
-# PEC adds no conductor or dielectric loss. This is a demonstration of the workflow, not a converged
-# model or a device prediction.
+# PEC adds no conductor or dielectric loss. This notebook demonstrates the workflow; it is not a
+# converged model or a device prediction.
 #
 # ### Next steps
 #

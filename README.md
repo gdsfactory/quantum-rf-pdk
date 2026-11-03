@@ -79,7 +79,7 @@ QPDK ships with a broad set of ready-to-use superconducting circuit components. 
 
 ## Sample Test Chips
 
-QPDK includes some complete, tapeout-ready test chip examples that demonstrate real-world design workflows.
+QPDK includes complete, tapeout-ready test chip examples that demonstrate real-world design workflows.
 
 ### Qubit Test Chip
 
@@ -124,7 +124,7 @@ arrays tie the two chips' ground planes together.
 ### Resonator Test Chip
 
 A 16-resonator characterization chip with systematically varied CPW widths and gaps across two probelines. Ideal for
-extracting loss tangents and kinetic inductance. Also check
+extracting loss tangents and kinetic inductance. See also
 [the notebook demonstrating network model simulations and fabrication tolerance Monte Carlo](https://gdsfactory.github.io/quantum-rf-pdk/notebooks/monte_carlo_fabrication_tolerance.html).
 
 ![Resonator Test Chip](docs/_static/images/resonator_test_chip.png)
@@ -228,8 +228,8 @@ walks through exploring and simulating a resonator with QPDK step by step.
 
 ## Installation
 
-We recommend using [`uv`](https://astral.sh/uv/) for package management. [`just`](https://github.com/casey/just) is used
-for project-specific recipes.
+We recommend [`uv`](https://astral.sh/uv/) for package management and use [`just`](https://github.com/casey/just) for
+project-specific recipes.
 
 ### Installation for Users
 
@@ -245,7 +245,7 @@ Or with pip:
 pip install qpdk
 ```
 
-Optional dependencies for the analytical models and simulation tools (SAX, scqubits, JAX) can be installed with:
+Install the optional dependencies for the analytical models and simulation tools (SAX, scqubits, JAX) with:
 
 ```bash
 uv pip install "qpdk[models]"
@@ -266,11 +266,11 @@ python -m qpdk.install_tech
 ```
 
 > [!NOTE]
-> After installation, restart KLayout to ensure the new technology appears.
+> After installation, restart KLayout so the new technology appears.
 
 ### Installation for Contributors
 
-For contributors, please follow the [installation and development workflow instructions](docs/contributing.md).
+Follow the [installation and development workflow instructions](docs/contributing.md).
 
 ## Project Structure
 

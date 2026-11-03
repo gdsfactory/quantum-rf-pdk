@@ -37,7 +37,7 @@
 #
 # $$I=I_\text{c}\sin\varphi+\frac{\Phi_0}{2\pi R}\dot\varphi+\frac{\Phi_0 C_\text{J}}{2\pi}\ddot\varphi.$$
 #
-# The circuit follows the resonantly phase-matched JTWPA example distributed with JosephsonCircuits.jl {cite:p}`pengFloquetModeTravelingWaveParametric2022`. It has 2047 junctions. Each has $I_\text{c}=3.4\,\text{µA}$ and $C_\text{J}=55\,\text{fF}$. Ground capacitance is 45 fF per cell, halved at each end. A loaded cell replaces 30 fF of that capacitance with a 30 fF coupling capacitor to a 2.8153 pF / 170 pH parallel resonator at 7.275 GHz. The pump is 3.7 µA peak Norton current at 7.12 GHz, just below that resonance. Half that current is incident at the matched port. Its available power is $Z_0 I_\text{N}^2/8=85.56\,\text{pW}$, or -70.68 dBm {cite:p}`m.pozarMicrowaveEngineering2012`.
+# The circuit follows the resonantly phase-matched JTWPA example distributed with JosephsonCircuits.jl {cite:p}`pengFloquetModeTravelingWaveParametric2022`. It has 2047 junctions. Each has $I_\text{c}=3.4\,\text{µA}$ and $C_\text{J}=55\,\text{fF}$. Ground capacitance is 45 fF per cell, halved at each end. A loaded cell replaces 30 fF of that capacitance with a 30 fF coupling capacitor to a 2.8153 pF / 170 pH parallel resonator at 7.275 GHz. The pump is 3.7 µA peak Norton current at 7.12 GHz, just below that resonance. Half that current is incident at the matched port. The pump's available power is $Z_0 I_\text{N}^2/8=85.56\,\text{pW}$, or -70.68 dBm {cite:p}`m.pozarMicrowaveEngineering2012`.
 #
 # ![Josephson ladder with ground capacitors and optional coupled LC resonators](figures/twpa-ladder.svg)
 #

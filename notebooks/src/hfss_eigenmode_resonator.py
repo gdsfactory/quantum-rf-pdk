@@ -171,8 +171,7 @@ EIGENMODE_CONFIG = {
 # 5. Run the simulation and extract results
 #
 # ```{note}
-# This code requires Ansys HFSS to be installed. The example below shows
-# the structure of a complete simulation workflow.
+# This code requires Ansys HFSS to be installed.
 # ```
 # %%
 # Example HFSS eigenmode simulation workflow
@@ -211,8 +210,8 @@ print(f"Solution type: {hfss.solution_type}")
 # ## Build CPW Geometry in HFSS
 #
 # Import the gdsfactory component geometry into HFSS using native GDS import.
-# This uses {py:meth}`~ansys.aedt.core.hfss.Hfss.import_gds_3d` which automatically handles 3D layer mapping
-# based on the QPDK LayerStack.
+# The import uses {py:meth}`~ansys.aedt.core.hfss.Hfss.import_gds_3d`, which handles the 3D layer mapping
+# automatically based on the QPDK LayerStack.
 
 # %%
 # Prepare component for export
@@ -414,7 +413,7 @@ print("HFSS session closed and temporary files cleaned up")
 #    comparison with analytical models
 #
 # **Key Points for Superconducting Resonators:**
-# - Use PerfectE (PEC) boundaries for superconducting metals at cryogenic temps
+# - Use PerfectE (PEC) boundaries for superconducting metals at cryogenic temperatures
 # - Silicon substrate with εᵣ ≈ 11.45 significantly affects resonance frequency
 # - Q-factors from eigenmode analysis represent unloaded Q (internal losses only)
 # - Coupling to external circuits reduces measured Q (loaded Q)

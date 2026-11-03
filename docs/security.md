@@ -8,8 +8,8 @@ We provide security fixes for the latest released version of this project. Older
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-If you discover a security vulnerability, we ask that you disclose it responsibly by contacting the maintainers
-privately using one of the following methods:
+If you discover a security vulnerability, please disclose it responsibly by contacting the maintainers privately through
+one of the following methods:
 
 ### GitHub Security Advisories (preferred)
 
@@ -19,13 +19,13 @@ Use GitHub's private vulnerability reporting feature to submit a report directly
 1. Click **"Report a vulnerability"**.
 1. Fill in the details of the vulnerability and submit.
 
-This keeps the report confidential while allowing the maintainers to assess and address the issue before any public
+Private reporting keeps the report confidential and lets the maintainers assess and address the issue before any public
 disclosure.
 
 ### Direct Contact
 
-If you prefer, you may contact the maintainers directly via the email addresses listed in the project's
-[PyPI page](https://pypi.org/project/qpdk/) or in `pyproject.toml`
+You can also contact the maintainers directly via the email addresses listed on the project's
+[PyPI page](https://pypi.org/project/qpdk/) or in `pyproject.toml`.
 
 ## What to Include
 
@@ -44,8 +44,7 @@ To help us triage your report quickly, please include:
 
 ## Scope
 
-This project is a process design kit (PDK) for superconducting quantum RF devices. Security concerns most likely to be
-relevant include:
+This project is a process design kit (PDK) for superconducting quantum RF devices. Likely security concerns include:
 
 - Supply chain issues in dependencies.
 - Sensitive fabrication or device parameters inadvertently exposed.
@@ -53,5 +52,5 @@ relevant include:
 
 ## Disclosure Policy
 
-We follow a coordinated disclosure model. We ask that you give us a reasonable amount of time to address a vulnerability
-before any public disclosure. We will work with you to agree on a disclosure timeline.
+We follow a coordinated disclosure model. Please give us a reasonable amount of time to address a vulnerability before
+any public disclosure. We will work with you to agree on a disclosure timeline.

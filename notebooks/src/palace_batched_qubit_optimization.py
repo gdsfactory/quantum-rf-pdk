@@ -26,7 +26,7 @@
 # participation. The study keeps frequency error, quality factor, and pad area
 # as separate Pareto objectives.
 #
-# Following {cite:p}`Savola2023`, the included dielectric loss gives
+# The dielectric loss model follows {cite:p}`Savola2023`:
 #
 # $$
 # Q_\text{diel}=\left(\sum_i p_i\tan\delta_i\right)^{-1},
@@ -35,7 +35,7 @@
 #
 # The electromagnetic mode needs an anharmonic correction to estimate the
 # 0-1 transition. $T_1$ is a derived check; its $1/f$ factor would otherwise
-# favor low frequencies even when the field loss is unchanged.
+# favour low frequencies even when the field loss is unchanged.
 #
 # ::::{admonition} Required extras
 # :class: tip
@@ -148,8 +148,8 @@ if "ipykernel" in sys.modules:
 # %% [markdown]
 # ## The device and its knobs
 #
-# The {func}`~qpdk.cells.double_pad_transmon_with_bbox` has two pads and a
-# junction across their gap. We vary:
+# The {func}`~qpdk.cells.double_pad_transmon_with_bbox` cell has two pads and
+# a junction across their gap. We vary:
 #
 # - pad width, along the junction axis;
 # - pad height, perpendicular to it;
@@ -668,7 +668,7 @@ cluster = SlurmCluster(
 # - {class}`~qpdk.simulation.study.SlurmRunner` submits one job per trial.
 # - {class}`~qpdk.simulation.study.RayRunner` uses a reserved Ray allocation.
 #
-# The runner serializes this notebook's `evaluate_layout` function for each
+# The runner serialises this notebook's `evaluate_layout` function for each
 # worker. `max_in_flight` limits concurrent solves.
 
 # %%
@@ -761,8 +761,8 @@ def make_runner() -> SlurmRunner | RayRunner:
 #
 # The recorded bulk screen solves one isolated qubit mode with order-2
 # elements, a 0.35 µm conductor mesh and a 10 nH junction. Linear-solver and
-# eigenmode tolerances are both $10^{-5}$. Separate finer, order and domain
-# checks below test the near-target layouts.
+# eigenmode tolerances are both $10^{-5}$. Separate finer-mesh, element-order
+# and domain checks below test the near-target layouts.
 
 # %% tags=["hide-input"]
 # Palace sweep results, embedded so the analysis runs without the solver:
@@ -947,7 +947,7 @@ logger.info(f"{len(trials)} successful trials")
 # %% [markdown]
 # ### Quality factor across the geometry sweep
 #
-# These plots show bulk-silicon $Q$ against each layout parameter. Color
+# These plots show bulk-silicon $Q$ against each layout parameter. Colour
 # marks distance from the target frequency. The narrow $Q$ axis makes small
 # differences visible; the absolute scale appears in the labels.
 
@@ -1113,7 +1113,7 @@ plt.close(fig)
 # ### Frequency and relaxation time
 #
 # The median-$Q$ line isolates the $1/f_\text{lin}$ factor in
-# $T_1\approx Q/(2\pi f_\text{lin})$. Color shows each trial's actual $Q$.
+# $T_1\approx Q/(2\pi f_\text{lin})$. Colour shows each trial's actual $Q$.
 
 # %%
 fig, ax = plt.subplots(figsize=(6.4, 3.8))
@@ -1146,9 +1146,9 @@ plt.close(fig)
 # %% [markdown]
 # ### Screened geometry and finer checks
 #
-# The screen keeps candidates near the target frequency, then favors a small
+# The screen keeps candidates near the target frequency, then favours a small
 # footprint among those with similar bulk-silicon $Q$. Candidate frequencies
-# are checked on finer meshes before selecting a layout.
+# are checked on finer meshes before a layout is selected.
 
 # %%
 on_target = trials[
@@ -1257,9 +1257,10 @@ checks.loc[
 # %% [markdown]
 # Selection uses the finest order-3 result for each checked layout and
 # requires every saved frequency check to stay inside the target band.
-# This supports screening at that band, not a converged mask specification
-# or an absolute lifetime prediction. Small differences in bulk-silicon
-# quality factor should not be read as resolved device-loss improvements.
+# That selection supports screening at that band, not a converged mask
+# specification or an absolute lifetime prediction. Small differences in
+# bulk-silicon quality factor should not be read as resolved device-loss
+# improvements.
 
 # %%
 SELECTION_MESH_UM = 0.18

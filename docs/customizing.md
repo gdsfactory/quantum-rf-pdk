@@ -205,7 +205,7 @@ files.
 
 Before you remove a cell, check which cells import it, for example with `git grep -n "import.*\bjosephson_junction\b"`.
 
-PDK model registration is derived from the SAX descriptors in each cell's schematic. Declare the model once with
+The PDK derives model registration from the SAX descriptors in each cell's schematic. Declare the model once with
 `sax_model(...)` in `qpdk/cells/_schematic.py` and pass the schematic through `@gf.cell(schematic_function=...)`. The
 PDK imports that model directly and derives aliases from the declaration. `SAX_MODEL_ALIASES` in `qpdk/__init__.py`
 reports these aliases and is no longer a list to maintain.
@@ -223,8 +223,8 @@ needed. Keep the model and schematic descriptor aligned when changing a cell's c
 circuit ports. Partial cell factories inherit the base schematic and bind any model settings they preset.
 
 Packaged artwork lives in `qpdk/symbols/<symbol>.svg` and reaches GDSFactory+ through `display.symbol`. Draw on a canvas
-of 100 units per grid cell, with leads ending on the canvas edge where each port sits, and the aspect ratio follows the
-port box derived from the declared sides. Without a matching file the editor renders the layout geometry instead.
+of 100 units per grid cell, with leads ending on the canvas edge where each port sits. The aspect ratio follows the port
+box derived from the declared sides. Without a matching file the editor renders the layout geometry instead.
 
 ## Pruning
 
@@ -282,7 +282,7 @@ Look for renamed cells and changed defaults.
 
 ### Ownership map
 
-Each path belongs to your fork, to QPDK, or to both. The table shows what to do when it conflicts.
+Each path belongs to your fork, to QPDK, or to both. The table shows what to do when a path conflicts.
 
 | Path                                                   | Owner | On merge                                         |
 | ------------------------------------------------------ | ----- | ------------------------------------------------ |

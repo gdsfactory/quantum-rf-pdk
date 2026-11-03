@@ -396,14 +396,14 @@ show_plot()
 # three-wave mixing.
 #
 # We treat the symmetric SQUID as one junction with
-# $I_\text{c,tot}\cos(\pi\Phi/\Phi_0)$. This neglects loop inductance, valid
-# for $\beta_L=2L_\text{loop}I_\text{c}/\Phi_0\ll1$
+# $I_\text{c,tot}\cos(\pi\Phi/\Phi_0)$. This one-junction model neglects loop
+# inductance, which is valid for $\beta_L=2L_\text{loop}I_\text{c}/\Phi_0\ll1$
 # {cite:p}`tescheDcSQUIDNoise1977`. The flux is the third terminal voltage in
 # units of $\Phi_0$.
 #
 # ### Lumped flux-pumped JPA
 #
-# The Kerr circuit with the junction replaced by a SQUID
+# This is the Kerr circuit with the junction replaced by a SQUID
 # ($I_\text{c,tot}=2$ µA). Its inductance
 # $L_\text{S}(\Phi)=\Phi_0/(2\pi I_\text{c,tot}|\cos\pi\Phi/\Phi_0|)$ tunes the
 # resonance. A flux pump $\Phi_\text{p}\cos\omega_\text{p}t$ around the bias
@@ -529,9 +529,9 @@ show_plot()
 #
 # ## Compression
 #
-# A two-tone `hb` run gives the large-signal gain. HB solves the full nonlinear
-# periodic steady state for a finite drive. This is not `hbac`, which assumes an
-# infinitesimal signal. Here the signal sits 5 MHz above $f_\text{p}/2$, the
+# A two-tone `hb` run gives the large-signal gain. Unlike `hbac`, which assumes
+# an infinitesimal signal, HB solves the full nonlinear periodic steady state
+# for a finite drive. Here the signal sits 5 MHz above $f_\text{p}/2$, the
 # pump is 0.011 $\Phi_0$, and the current is swept from 1 pA to 30 nA. The input
 # power is $P=(I_\text{s}R/2)^2/(2R)$. Saturation in SQUID JPAs is mostly set
 # by the Kerr shift rather than by pump depletion
@@ -583,8 +583,8 @@ show_plot()
 #   conductance is noiseless.
 # - **Threshold and stability.** `hbac` linearizes around the pumped state
 #   whether or not that state is stable. A flux-pumped JPA has a parametric
-#   threshold. There the pump-induced frequency modulation reaches the
-#   resonator linewidth. Above it the gain formula diverges and the reported
+#   threshold, where the pump-induced frequency modulation reaches the
+#   resonator linewidth; above it the gain formula diverges and the reported
 #   gain is not physical. The threshold quoted here is the single-mode
 #   estimate from an unpumped AC sweep, not a stability analysis of the
 #   pumped state.

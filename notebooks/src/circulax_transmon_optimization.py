@@ -41,9 +41,8 @@
 # superconducting transmon qubit circuits.
 #
 # Circulax formulates circuits as Differential Algebraic Equations (DAEs) and
-# provides automatic differentiation through its solvers, enabling
-# gradient-based inverse design of quantum circuit parameters directly from
-# physical layout dimensions.
+# differentiates through its solvers, enabling gradient-based inverse design
+# of quantum circuit parameters directly from physical layout dimensions.
 #
 # ## Overview
 #
@@ -138,8 +137,8 @@ PDK.activate()
 #
 # where $\varphi = 2\pi\Phi/\Phi_0$ is the dimensionless
 # gauge-invariant phase, with $\Phi$ the junction flux (integral of
-# voltage). In Circulax, this is implemented as a custom component that
-# returns current contributions (flow equations) and flux storage terms
+# voltage). In Circulax, a custom component implements this relation,
+# returning current contributions (flow equations) and flux storage terms
 # (charge equations).
 
 # %%
@@ -364,12 +363,12 @@ models = {
 # ### 1.5 Computing the DC Operating Point
 #
 # Before running harmonic balance, we find the DC operating point of the
-# circuit (all time derivatives zero). This serves as the initial guess for
-# the HB solver.
+# circuit (all time derivatives zero). This operating point serves as the
+# initial guess for the HB solver.
 
 # %% [markdown]
 # `compile_circuit` turns the netlist into a callable :class:`~circulax.circuit.Circuit`.
-# Compiling **once**, outside any `jax.jit`/`jax.grad` boundary, is what makes the
+# Compiling **once**, outside any `jax.jit`/`jax.grad` boundary, makes the
 # rest of this notebook differentiable: the circuit topology (and the integer index
 # arrays derived from it) stays static, while component values are swapped in
 # functionally through the `params=` argument of each analysis.
@@ -433,7 +432,7 @@ for k in range(min(5, len(V_harmonics))):
 #
 # where $E_\text{J} = \Phi_0 I_\text{c}/(2\pi)$ and $E_\text{C} = e^2/(2C_\Sigma)$.
 # These closed-form estimates assume a purely sinusoidal current-phase
-# relation, so the junction's 2nd harmonic is set to zero for this workflow
+# relation, so this workflow sets the junction's 2nd harmonic to zero
 # ($E_{\text{J}2}/E_{\text{J}1} = 0$ in `layout_to_circuit_params`). The component
 # does support a nonzero ratio $r$
 # {cite:p}`willschObservationJosephsonHarmonics2024`, but at leading order such
@@ -665,7 +664,7 @@ plt.show()
 # We model two adjacent transmon qubits coupled through a parasitic mutual
 # capacitance $C_\text{m}$
 # {cite:p}`krantzQuantumEngineersGuide2019,voolIntroductionQuantumElectromagnetic2017`.
-# A voltage pulse is applied to qubit 1, and we observe the induced response on
+# We apply a voltage pulse to qubit 1 and observe the induced response on
 # qubit 2 (crosstalk).
 #
 # The circuit topology:

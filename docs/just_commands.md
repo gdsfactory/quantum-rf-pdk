@@ -4,7 +4,7 @@ The repository includes a `justfile` with convenient commands for common develop
 
 ### Available Commands
 
-To see the list of available commands at any time, run:
+To list the available commands, run:
 
 ```bash
 just --list

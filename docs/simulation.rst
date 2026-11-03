@@ -171,7 +171,7 @@ cold-network and subprocess checks also use the release. The TWPA notebook,
  COMSOL
 ********
 
-COMSOL models are built with :mod:`gplugins.comsol` directly: its ``COMSOL`` class
+Build COMSOL models with :mod:`gplugins.comsol` directly: its ``COMSOL`` class
 subclasses :class:`mph.Model`, holds the layout, and chains the sheet or metal builder,
 the RF or electrostatic study, and the mesh helpers. Plotting and result helpers live in
 ``gplugins.comsol.plotting`` and ``gplugins.comsol.results``.
@@ -295,14 +295,18 @@ a lumped 5.4 fF branch to the island. Its third layout port references the islan
 across the etched gap, without adding metal there. The schematic wires this port to the
 gatemon's ``readout`` terminal. The ``gatemon_island`` model adds a grounded Josephson
 inductance, a 49.1 fF island shunt, a 20 fF island-to-gate capacitance and a 35 fF
-gate-to-ground capacitance. Each contact overlaps the top gate by 18 µm². The nominal 30
-nm hBN with relative permittivity 3.4 gives about 18 fF per contact in a parallel-plate
-estimate. The gate capacitances include this overlap and the M1 feed's contribution. The
-island shunt retains the 260 MHz charging-energy target including both mutual
-capacitances. These are nominal hybrid estimates that still need measured flake
-thickness and full-stack extraction. The complete schematic simulation includes the
-qubit's loading and gate-tuned readout response. It uses a linearized junction, so it
-does not predict the nonlinear qubit spectrum or decoherence.
+gate-to-ground capacitance.
+
+Each contact overlaps the top gate by 18 µm². The nominal 30 nm hBN with relative
+permittivity 3.4 gives about 18 fF per contact in a parallel-plate estimate. The gate
+capacitances include this overlap and the M1 feed's contribution. The island shunt
+retains the 260 MHz charging-energy target including both mutual capacitances. These are
+nominal hybrid estimates that still need measured flake thickness and full-stack
+extraction.
+
+The complete schematic simulation includes the qubit's loading and gate-tuned readout
+response. It uses a linearized junction, so it does not predict the nonlinear qubit
+spectrum or decoherence.
 
 The nonlinear ABS Hamiltonian uses the short-junction, even-parity approximation, with
 channel transmissions supplied as inputs. Reproducing the paper's quantum-dot parity
@@ -339,8 +343,8 @@ and default junction. That quantum transition is distinct from the linear oscill
 resonance plotted by SAX.
 
 An ideal RF short at each gate launcher's external reference plane retains the
-intervening gate CPW in the layout source, so this differs from grounding the island
-model's gate terminal directly. The matched six-port circuit is a device
+intervening gate CPW in the layout source, so the result differs from grounding the
+island model's gate terminal directly. The matched six-port circuit is a device
 characterization, not the complete bias network used in the paper. Power sent to a
 matched gate port reduces RF transmission, and the CPW model also includes the
 substrate's dielectric loss. Broad sweeps can miss the maxima of narrow resonances; use
@@ -349,7 +353,7 @@ a local frequency sweep before interpreting their heights.
 ``flipmon_readout_coupon_model()`` creates a 5-port static SAX coupon model. Pass
 ``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
 frequency ``f`` in Hz. The whole readout conductor shares one potential, and feedline
-reference cuts are open. This dataset requires RF validation before replacing a
+reference cuts are open. This dataset requires RF validation before it can replace a
 distributed resonator circuit. Its recipe is
 ``qpdk/models/datasets/recipes/flipmon_readout_assembly.py``.
 
@@ -357,14 +361,14 @@ distributed resonator circuit. Its recipe is
 ``pad_length``, ``pad_offset``, ``feedline_gap`` and ``coupling_length`` in um, and
 frequency ``f`` in Hz. The whole readout conductor shares one potential, and feedline
 reference cuts are open. Sampled feedline gaps of 14 to 20 um retain the ground strip
-between the coupled lines. This dataset requires RF validation before replacing a
+between the coupled lines. This dataset requires RF validation before it can replace a
 distributed resonator circuit. Its recipe is
 ``qpdk/models/datasets/recipes/readout_assembly.py``.
 
 ``qpdk.cells.plate_capacitor`` combines two ``plate_capacitor_single`` pads with an
 optional vertical offset. It includes the finite ground frame used by the
 ``coupling_pad_palace`` dataset. Its matching SAX model is registered as
-``qpdk.models.plate_capacitor`` and retains both pad-to-ground branches as well as the
+``qpdk.models.plate_capacitor`` and retains both pad-to-ground branches and the
 coupling. The generation recipe uses this same layout cell. The closed-form
 approximation without ground branches remains available as
 ``qpdk.models.plate_capacitor_analytical``.
@@ -453,27 +457,29 @@ it to select refinement candidates. The CPW script also refines every geometry u
 raw matrix entries change by at most ``--mesh-tolerance`` (default 1%) and the identical
 traces agree within 1%. It stores ``mesh_relative_change``, ``mesh_refinement_level``
 and the accepted ``mesh_near_size`` / ``mesh_far_size`` in SI units. Exhausting
-``--max-refinements`` blocks publication. This measures mesh sensitivity; compare larger
-domains separately. Check interpolation with held-out geometries separately. The
-notebook demonstrates a lazy diagnostic scan and outlier flag. The plate example has a
-separate ground frame. The CPW example is a uniform slice of two identical traces with
-outer ground rails, sweeping trace width, outer slot width and inter-trace gap. Use
-Palace 0.17 or newer for its two-dimensional transverse mesh. ``Model.Lc`` sets the
-implicit depth to ``slice_length_um``, so the stored capacitances remain in F. Divide by
-the depth in meters for capacitance per length. Select ``--topology as-drawn`` to retain
-the ground strip of width ``max(gap - 2 * cpw_gap, 0)`` left between the component's CPW
-etch masks. This produces ``cpw_coupling_ground_strip_palace``, used by
-``coupler_straight`` and the default distributed model. The default ``fully-etched``
-experiment produces ``cpw_coupling_palace`` for comparison with the unshielded
-analytical ECCPW formula. The two geometries agree when the CPW slots touch or overlap.
-Above that gap, their difference measures the shielding from the intervening ground
-strip. The grounded sweep uses ``ground_strip_width = gap - 2 * cpw_gap`` as its third
-axis, with logarithmic sampling from 0.01 to 248 µm. The CPW models interpolate
-coordinates and capacitance magnitudes logarithmically in this regime and use the fully
-etched grid where the slots touch or overlap. Positive strips narrower than the sampled
-minimum return NaN. ``cpw_coupling_model()`` converts its capacitance lookup into a
-jittable four-port quasi-TEM SAX model; see the notebook for geometry heatmaps and
-S-parameters.
+``--max-refinements`` blocks publication. This refinement measures mesh sensitivity
+only; check larger domains and held-out-geometry interpolation separately. The notebook
+demonstrates a lazy diagnostic scan and outlier flag.
+
+The plate example has a separate ground frame. The CPW example is a uniform slice of two
+identical traces with outer ground rails, sweeping trace width, outer slot width and
+inter-trace gap. Use Palace 0.17 or newer for its two-dimensional transverse mesh.
+``Model.Lc`` sets the implicit depth to ``slice_length_um``, so the stored capacitances
+remain in F. Divide by the depth in meters for capacitance per length.
+
+Select ``--topology as-drawn`` to retain the ground strip of width ``max(gap - 2 *
+cpw_gap, 0)`` left between the component's CPW etch masks. This topology produces
+``cpw_coupling_ground_strip_palace``, used by ``coupler_straight`` and the default
+distributed model. The default ``fully-etched`` experiment produces
+``cpw_coupling_palace`` for comparison with the unshielded analytical ECCPW formula. The
+two geometries agree when the CPW slots touch or overlap. Above that gap, their
+difference measures the shielding from the intervening ground strip. The grounded sweep
+uses ``ground_strip_width = gap - 2 * cpw_gap`` as its third axis, with logarithmic
+sampling from 0.01 to 248 µm. The CPW models interpolate coordinates and capacitance
+magnitudes logarithmically in this regime and use the fully etched grid where the slots
+touch or overlap. Positive strips narrower than the sampled minimum return NaN.
+``cpw_coupling_model()`` converts its capacitance lookup into a jittable four-port
+quasi-TEM SAX model; see the notebook for geometry heatmaps and S-parameters.
 
 Both scripts support disjoint rectangular shards with ``--shard INDEX --shards COUNT``.
 Use separate output and work directories for each worker, then merge after all succeed.
@@ -542,6 +548,6 @@ nonreciprocal media, set ``reciprocal=False`` in the recipe.
 
 Load the results with ``s_parameters_model(path, **variants)``. The returned SAX model
 interpolates frequency and continuous geometry axes together and returns NaN outside the
-stored domain. Discrete variants are selected when loading. Complex linear interpolation
-can introduce apparent loss between sample points, so check withheld frequencies near
+stored domain. Select discrete variants when loading. Complex linear interpolation can
+introduce apparent loss between sample points, so check withheld frequencies near
 resonances before choosing the frequency spacing.

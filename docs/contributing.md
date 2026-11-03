@@ -20,9 +20,9 @@ This project uses [uv](https://github.com/astral-sh/uv) for Python package manag
 Clone the repository and install the development dependencies:
 
 > [!IMPORTANT]
-> [Git LFS](https://git-lfs.github.com/) must be installed **before** cloning. This repository uses Git LFS to track
-> binary and large data files (e.g., CSV files in `tests/models/data/`). Without Git LFS, the clone will fail or those
-> files will not be downloaded correctly.
+> Install [Git LFS](https://git-lfs.github.com/) **before** cloning. This repository uses Git LFS to track binary and
+> large data files (e.g., CSV files in `tests/models/data/`). Without Git LFS, the clone will fail or those files will
+> not be downloaded correctly.
 
 ```bash
 git clone https://github.com/gdsfactory/quantum-rf-pdk.git
@@ -32,18 +32,18 @@ just install
 
 ### KLayout Technology Installation
 
-For contributors, you can install the technology files directly from the repository:
+Install the technology files directly from the repository:
 
 ```bash
 just install-tech
 ```
 
 > [!NOTE]
-> After installation, restart KLayout to ensure the new technology appears.
+> After installation, restart KLayout so the new technology appears.
 
 ## Development workflow
 
-Check out the commands for testing and building documentation with:
+List the commands for testing and building documentation with:
 
 ```bash
 just --list
@@ -56,15 +56,15 @@ just --list
 
 ## Authorship and credit
 
-QPDK citation authors are people who have made substantial contributions to the software. These can include design,
-implementation, scientific models, validation, documentation, and active project direction. We use the
+QPDK citation authors are people who have made substantial contributions to the software. Such contributions can include
+design, implementation, scientific models, validation, documentation, and active project direction. We use the
 [JOSS authorship guidance](https://joss.readthedocs.io/en/latest/submitting.html#authorship) as a reference. Commit
 counts alone do not determine authorship, and hosting, funding, or general supervision alone do not qualify.
 
-The citation author list is maintained in `CITATION.cff` and reviewed before releases as contributions evolve.
-Substantial contributors should be included with their agreement. Smaller contributions are credited through the
+We maintain the citation author list in `CITATION.cff` and review it before releases as contributions evolve.
+Substantial contributors should be included with their agreement. We credit smaller contributions through the
 [GitHub contributor history](https://github.com/gdsfactory/quantum-rf-pdk/graphs/contributors) and acknowledgments where
-appropriate. Authorship of a future paper is assessed separately for that work.
+appropriate. We assess authorship of a future paper separately for that work.
 
 ## AI usage policy
 

@@ -51,9 +51,9 @@
 # `gplugins` converts it to a Maxwell matrix, with negative off-diagonal entries, in
 # `ElectrostaticResults`.
 #
-# The reported number comes from a mesh-convergence study. The geometry, the layer stack
-# and the simulation domain are held fixed, the mesh is refined over five factors, and
-# the finest mesh supplies the final value. A separate lateral-pad comparison checks how
+# The reported number comes from a mesh-convergence study. We hold the geometry, the
+# layer stack and the simulation domain fixed, refine the mesh over five factors, and
+# take the final value from the finest mesh. A separate lateral-pad comparison checks how
 # much that value depends on the outer boundary of the finite domain.
 #
 # The saved output uses cubic elements and a 0.5 % refinement check. When
@@ -84,9 +84,10 @@
 #
 # ![Pi network with a series mutual capacitance and a shunt capacitance to ground at each port, and how the Maxwell matrix and the admittance relate to it](figures/capacitor-pi-network.svg)
 #
-# This is a 3D FEM result only. It is **not benchmarked against an analytic IDC model**,
-# and no analytic formula is evaluated here. The check below compares the last two
-# mesh results; their difference is not a bound on absolute model error.
+# The reported value is a 3D FEM result only. It is **not benchmarked against an
+# analytic IDC model**, and no analytic formula is evaluated here. The check below
+# compares the last two mesh results; their difference is not a bound on absolute
+# model error.
 
 # %% [markdown]
 # ## Setup and Imports
@@ -330,7 +331,7 @@ print(f"Terminals: {[port.name for port in component.ports]}")
 #
 # We use the physical `LAYER_STACK`, as does the Palace capacitor optimization
 # notebook. We retain the three levels needed here: metal, substrate and vacuum.
-# The PDK specifies the Nb film thickness and every material. We only truncate the
+# The PDK specifies the Nb film thickness and every material. We truncate only the
 # substrate and vacuum heights to $60\,\text{μm}$ and $40\,\text{μm}$ for this finite
 # simulation domain; the full PDK values are printed below. The vacuum starts at the
 # substrate surface to fill the gaps beside
@@ -604,8 +605,8 @@ print(
 # The upper panel shows mutual and terminal-to-ground capacitances. The lower panel
 # shows the largest relative change among those three quantities from the previous
 # pass. The last two changes must stay below `CONVERGENCE_TOLERANCE` (0.5 % in the
-# saved run). This is a refinement check, not an absolute error bound; independent
-# remeshes need not change the result monotonically.
+# saved run). The tolerance is a refinement check, not an absolute error bound;
+# independent remeshes need not change the result monotonically.
 
 # %%
 if IS_CI:
@@ -685,9 +686,9 @@ else:
 # result from the final pass.
 #
 # Changing the pad also changes the mesh, so the difference mixes the domain effect with
-# a discretization effect. This is a sensitivity check between two finite domains: it is
-# **not** a proof that the 90 μm boundary is converged to an infinite domain, and it says
-# nothing about vertical truncation or absolute accuracy.
+# a discretization effect. The comparison is a sensitivity check between two finite
+# domains: it is **not** a proof that the 90 μm boundary is converged to an infinite
+# domain, and it says nothing about vertical truncation or absolute accuracy.
 
 # %%
 narrow: MeshSolve | None = None

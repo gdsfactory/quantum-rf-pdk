@@ -25,7 +25,7 @@
 #
 # This tutorial walks the path end to end: build a QPDK double-pad
 # transmon, copy it without the Josephson junction layers, extract the metal layout, run a stationary
-# **Electrostatics** solve on a COMSOL sheet model, and read the capacitance and the potential and field the
+# **Electrostatics** solve on a COMSOL sheet model, and read the capacitance, potential, and field the
 # solve stores. The figures are **saved cell outputs** of licensed solves; without a license the COMSOL cells
 # are skipped and the result cells say so.
 #
@@ -37,8 +37,8 @@
 # model cannot represent the junction overlap or its barrier, so the extraction uses an **EM-only copy** with
 # the junction layers removed: the SQUID loop and its leads are absent from the solved geometry.
 #
-# The solve adds **Electrostatics**, not electromagnetic waves, and returns `es.C11`, the driven pad's
-# capacitance to the grounded rest of the chip, plus `es.intWe`, which agree through
+# The solve adds **Electrostatics**, not electromagnetic waves. It returns `es.C11`, the driven pad's
+# capacitance to the grounded rest of the chip, and `es.intWe`, the stored energy; the two agree through
 # $2 W_\text{e} / V^2 = C_{11}$ {cite:p}`m.pozarMicrowaveEngineering2012`. It is a **quasi-static extraction**,
 # with no Josephson inductance and no resonance solved.
 #
@@ -241,14 +241,14 @@ plt.show()
 # mesh with absolute element sizes in micrometres, so the near-metal resolution does not move with the
 # domain.
 #
-# The silicon thickness and permittivity are read from the `Substrate` level of the PDK layer stack and its
+# The substrate thickness and silicon permittivity are read from the `Substrate` level of the PDK layer stack and its
 # material in `qpdk.tech.material_properties`, so they match every other QPDK simulation. The metal is a
 # zero-thickness sheet, so the M1 film thickness does not enter. The air height and lateral margin only size
 # the simulation domain.
 #
 # `RUN_COMSOL` is `False` by default, so a documentation build without a license skips all of this and the
 # result cells below read saved exports instead. Set it to `True` on a licensed machine to solve and export.
-# The constants are the configuration the saved exports were produced at.
+# The constants below are the configuration at which the saved exports were produced.
 
 # %%
 RUN_COMSOL = False
@@ -510,9 +510,9 @@ else:
 # ## Limitations and next steps
 #
 # The solve is electrostatic and the EM-only copy omits the SQUID loop and its leads, so $C_{11}$ is a
-# **one-terminal** capacitance to the grounded chip rather than the two-pad charging capacitance, and it is
+# **one-terminal** capacitance to the grounded chip rather than the two-pad differential capacitance, and it is
 # not a transmon eigenfrequency or $f_{01}$. The finite zero-charge outer walls of the box act at any mesh,
-# so the value is not a converged or validated device number. The natural next step is the full two-pad
+# so the value is not a converged or validated device number. The next step is the full two-pad
 # capacitance matrix feeding the QPDK Hamiltonian workflow
 # ({doc}`/notebooks/scqubits_parameter_calculation`).
 #

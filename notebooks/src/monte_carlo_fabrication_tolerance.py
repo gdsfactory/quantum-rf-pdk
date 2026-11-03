@@ -247,9 +247,9 @@ plt.show(block=False)
 # %% [markdown]
 # # Monte Carlo Fabrication Tolerance Analysis
 #
-# In superconducting quantum chip fabrication, the CPW centre-conductor width
-# and gap to the ground plane are subject to process variations introduced during
-# lithography and etching.  Even sub-micrometre deviations from the nominal
+# In superconducting quantum chip fabrication, lithography and etching introduce
+# process variations in the CPW centre-conductor width and gap to the ground
+# plane.  Even sub-micrometre deviations from the nominal
 # geometry change the characteristic impedance $Z_0$, effective
 # permittivity $\varepsilon_{\text{eff}}$, and — most critically — the
 # resonance frequencies of the on-chip resonators.
@@ -270,18 +270,17 @@ plt.show(block=False)
 # %% [markdown]
 # ## CPW impedance sensitivity
 #
-# Before running the Monte Carlo simulation it is instructive to see how
-# $Z_0$ and $\varepsilon_{\text{eff}}$ depend on the CPW
-# dimensions.
+# Before running the Monte Carlo simulation, look at how $Z_0$ and
+# $\varepsilon_{\text{eff}}$ depend on the CPW dimensions.
 #
-# ![CPW cross-section showing center width and slot gaps](figures/cpw-cross-section.svg)
+# ![CPW cross-section showing centre width and slot gaps](figures/cpw-cross-section.svg)
 #
 # .. note::
 #    The characteristic impedance and effective permittivity have a small
 #    imaginary part due to the substrate loss tangent
 #    ($\tan \delta \approx 2.7 \times 10^{-6}$ for high-resistivity silicon
 #    at mK temperatures {cite:p}`checchinMeasurementLowTemperatureLoss2022`).
-#    In the sensitivity plots below, we only display the **real part** of
+#    In the sensitivity plots below, we display only the **real part** of
 #    these quantities.
 
 # %%
@@ -373,12 +372,12 @@ rng = np.random.default_rng(42)
 #    this, use `ray.init(num_cpus=8)`.
 # 2. **Cores per Worker:** In the `@ray.remote(num_cpus=1)` decorators below, you can specify
 #    `num_cpus=1` (default). If your simulation uses heavy internal multi-threading,
-#    increasing this (e.g., `num_cpus=2`) will reduce the number of simultaneous
-#    workers to avoid over-subscribing the CPU.
+#    increasing it (e.g., `num_cpus=2`) reduces the number of simultaneous
+#    workers and avoids over-subscribing the CPU.
 # 3. **GPU Allocation:** If using GPUs, you can specify `num_gpus=0.2` to allow
 #    5 workers to share a single GPU.
-# 4. **Overall Workers:** The number of concurrent workers is automatically
-#    calculated as `Total CPUs / Cores per Worker`.
+# 4. **Overall Workers:** Ray computes the number of concurrent workers as
+#    `Total CPUs / Cores per Worker`.
 
 # %% tags=["hide-output"]
 if not ray.is_initialized():
@@ -642,7 +641,7 @@ display_dataframe(df_stats)
 # Local effects such as proximity-dependent etching cause each resonator to
 # experience a **different** random perturbation.  We model this by assigning
 # each resonator instance an independent cross-section perturbation.
-# Routing sections (straights and bends connecting resonators) are kept at
+# We keep routing sections (straights and bends connecting resonators) at
 # nominal dimensions to isolate the effect of per-resonator geometry variation.
 
 

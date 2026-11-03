@@ -37,9 +37,9 @@
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# This example demonstrates using [Optuna](https://optuna.readthedocs.io/en/stable/index.html) to optimize an interdigital capacitor
-# to achieve a target capacitance of 40 fF. The optimization is constrained to
-# use exactly 5 interdigital fingers.
+# This example uses [Optuna](https://optuna.readthedocs.io/en/stable/index.html) to optimize an interdigital capacitor
+# for a target capacitance of 40 fF. The optimization is constrained to
+# exactly 5 interdigital fingers.
 #
 # :::{mermaid}
 # :alt: Optuna suggests the finger geometry, Palace solves its capacitance, and the result is scored against 40 fF before the next trial.
@@ -292,7 +292,7 @@ def _run_capacitive_simulation(
 # %% [markdown]
 #
 # This section is not run in the documentation because Palace
-# requires an installation and the optimization may take time.
+# requires a local installation and the optimization may take time.
 #
 # ```python
 #
