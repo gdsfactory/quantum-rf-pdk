@@ -27,6 +27,7 @@ from .junction import *
 from .junction_array import *
 from .launcher import *
 from .nanowire import *
+from .parametric_amplifier import *
 from .resonator import *
 from .resonator_sections import *
 from .snspd import *
