@@ -21,9 +21,9 @@
 %
 % # Call qpdk from MATLAB
 %
-% This notebook calls `qpdk` (and through it, `gdsfactory`) **directly from MATLAB** using MATLAB's
-% built-in Python interface (`py.module.function(...)`); see [Ways to Call Python from
-% MATLAB][call-python-from-matlab].
+% This notebook demonstrates calling `qpdk` (and through it, `gdsfactory`) **directly from MATLAB**
+% using MATLAB's built-in Python interface (`py.module.function(...)`); see [Ways to Call Python
+% from MATLAB][call-python-from-matlab].
 %
 % [call-python-from-matlab]:
 % https://se.mathworks.com/help/matlab/matlab_external/ways-to-call-python-from-matlab.html
@@ -62,10 +62,10 @@
 %
 % - **Optional:** the [RF Toolbox](https://se.mathworks.com/help/rf/index.html) for the
 %   S-parameter examples. The introductory layout and frequency examples run on base MATLAB. The RF
-%   sections detect the toolbox at runtime and skip themselves if it is missing. Setting
-%   `QPDK_SKIP_RF_TOOLBOX=1` skips them unconditionally; the CI job does this because the free
-%   MATLAB licence granted to open-source GitHub projects does not necessarily include the RF
-%   Toolbox:
+%   sections detect the toolbox at runtime and skip themselves if it is missing, and setting
+%   `QPDK_SKIP_RF_TOOLBOX=1` skips them unconditionally — which is what the CI job does,
+%   because the free MATLAB licence granted to open-source GitHub projects does not
+%   necessarily include the RF Toolbox:
 %
 %   ```bash
 %   export QPDK_SKIP_RF_TOOLBOX=1
@@ -279,10 +279,10 @@ disp(T);
 %
 % ### Export two SAX models to Touchstone
 %
-% Two exports, both driven from MATLAB. MATLAB builds the frequency grid with `linspace` and pushes
-% it into Python with `py.numpy.asarray`, so the *same* vector evaluates the model and labels the
-% Touchstone file — `write_sdict_touchstone` rejects a mismatch rather than silently misaligning the
-% sweep.
+% Two exports, both driven from MATLAB. The frequency grid is built with `linspace` in MATLAB and
+% pushed into Python with `py.numpy.asarray`, so the *same* vector is used to evaluate the model and
+% to label the Touchstone file — `write_sdict_touchstone` rejects a mismatch rather than silently
+% misaligning the sweep.
 %
 % - A coplanar-waveguide `straight`, at 1 mm and 2 mm, is a two-port: `.s2p`.
 %
@@ -823,8 +823,8 @@ end
 %
 % ## Joint design targets with the Optimization Toolbox
 %
-% `lsqnonlin` from the [Optimization Toolbox](https://se.mathworks.com/help/optim/index.html) finds
-% a transmon and resonator design that meets four targets: qubit frequency $\omega_\text{q}$,
+% The [Optimization Toolbox](https://se.mathworks.com/help/optim/index.html) uses `lsqnonlin` to
+% find a transmon and resonator design that meets four targets: qubit frequency $\omega_\text{q}$,
 % anharmonicity $\alpha$, resonator frequency $f_\text{r}$ and dispersive shift $|\chi|$. The four
 % unknowns are $E_\text{J}$, $E_\text{C}$, the coupling $g$ and the resonator length.
 %
@@ -1055,7 +1055,7 @@ end
 % ## Layout variants with the Parallel Computing Toolbox
 %
 % The [Parallel Computing Toolbox](https://se.mathworks.com/help/parallel-computing/index.html)
-% provides `parfor` for independent layout builds. `parfor` spreads the GDS builds from the
+% provides `parfor` for independent layout builds. It spreads the GDS builds from the
 % parametric-variants section over a pool of worker processes.
 %
 % Each worker runs its own MATLAB with its own Python, so the interpreter has to be selected and the
