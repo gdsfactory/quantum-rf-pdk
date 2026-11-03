@@ -35,41 +35,44 @@
 # See the {ref}`extras reference <notebook-extras>` for what each extra installs.
 # ::::
 #
-# This notebook demonstrates how to use
+# This notebook uses
 # [NetKet](https://netket.readthedocs.io/) {cite:p}`netket3:2022,netket2:2019`
-# to numerically analyse the transmon qubit Hamiltonian for superconducting
-# qubit design, and how to translate the resulting quantum parameters into
+# to analyse the transmon qubit Hamiltonian numerically for superconducting
+# qubit design, and translates the resulting quantum parameters into
 # physical layout parameters using **qpdk**.
 #
-# Every section starts from a qpdk layout cell, takes its circuit parameters
-# from an existing qpdk model, and hands NetKet a Hamiltonian built from them:
+# NetKet is a JAX-based library for many-body quantum physics that provides
+# exact diagonalisation and variational solvers for custom Hamiltonians.
+# For superconducting qubit design, it computes energy spectra, charge
+# dispersion, and coupling parameters directly from the microscopic circuit
+# Hamiltonian.
+#
+# Each section takes its circuit parameters from a qpdk layout cell or an
+# existing qpdk model, and hands NetKet a Hamiltonian built from them.  Where
+# qpdk has no model for a parameter yet, we say so and use a design choice or
+# the model's default:
 #
 # - a **double-pad transmon**, with $E_\text{C}$ from the Palace capacitance
-#   lookup of its pads, solved by exact diagonalisation, by a hand-written
-#   variational loop, and by NetKet's own VMC driver;
+#   lookup of its pads and $E_\text{J}$ as a design choice, solved by exact diagonalisation, by a hand-written
+#   variational loop, and by NetKet's own variational Monte Carlo (VMC) driver;
 # - the **transmon–resonator** system, including its real-time dynamics with
 #   NetKet's experimental time-dependent variational principle (TDVP);
 # - a **Josephson junction array**, a many-body problem whose Hilbert space
 #   grows exponentially with its length, solved with Monte Carlo VMC and a
 #   custom Flax network, and fed back into the array's SAX model;
 # - the **unimon** and **gatemon**, whose existing qpdk Hamiltonians become
-#   NetKet operators with one call.
-#
-# NetKet is a JAX-based library for many-body quantum physics that provides
-# exact diagonalisation and variational solvers for custom Hamiltonians.
-# For superconducting qubit design, it serves as a flexible numerical
-# tool for computing energy spectra, charge dispersion, and coupling
-# parameters directly from the microscopic circuit Hamiltonian.
+#   NetKet operators with one call; the gatemon takes $E_\text{C}$ from its
+#   cell, and the unimon uses its model's default energies.
 #
 # ## Background
 #
 # The transmon qubit {cite:p}`kochChargeinsensitiveQubitDesign2007a` is an
 # anharmonic oscillator formed by shunting a Josephson junction with a large
-# capacitance.  Its Hamiltonian in the charge basis reads:
+# capacitance.
 #
 # ![Transmon circuit with a Josephson junction shunted by capacitance, setting EJ and EC](figures/transmon-energy.svg)
 #
-# The shunt capacitance sets $E_\text{C}$, while the junction critical current sets $E_\text{J}$.
+# The shunt capacitance sets $E_\text{C}$, while the junction critical current sets $E_\text{J}$.  The transmon Hamiltonian in the charge basis reads:
 #
 # ```{math}
 # :label: eq:transmon-hamiltonian-netket
@@ -111,7 +114,7 @@ if "google.colab" in sys.modules:
     ])
     # On a Colab TPU runtime, installing qpdk replaces the TPU build of JAX
     # with the CPU one, so put the TPU runtime library back at the same JAX
-    # version, and run NetKet in single precision, which TPUs compute natively.
+    # version.
     if os.environ.get("TPU_ACCELERATOR_TYPE") or os.environ.get("COLAB_TPU_ADDR"):
         from importlib.metadata import version
 
@@ -123,7 +126,6 @@ if "google.colab" in sys.modules:
             "-q",
             f"jax[tpu]=={version('jax')}",
         ])
-        os.environ["NETKET_ENABLE_X64"] = "0"
 
 # %% tags=["hide-input", "hide-output"]
 import time
@@ -193,7 +195,7 @@ from qpdk.models.unimon import unimon_frequency_and_anharmonicity, unimon_hamilt
 # We then construct the transmon Hamiltonian as a matrix in the truncated charge
 # basis and wrap it in a NetKet
 # [`LocalOperator`](https://netket.readthedocs.io/en/latest/api/operator.html#netket.operator.LocalOperator),
-# which can then be passed to NetKet's exact-diagonalisation routines.
+# ready for NetKet's exact-diagonalisation routines.
 
 # %%
 transmon_cell = double_pad_transmon()
@@ -205,6 +207,9 @@ C_pads = float(
         pad_gap=transmon_cell.settings["pad_gap"],
     )
 )
+if not np.isfinite(C_pads):
+    msg = f"Pad size {transmon_cell.settings['pad_size']} is outside the capacitance lookup grid"
+    raise ValueError(msg)
 # The lookup excludes the junction; add its capacitance for your process here.
 C_junction = 0.0
 
@@ -271,26 +276,22 @@ f_{{12}} = {f12:.4f}\,\text{{GHz}} \\
 #
 # While exact diagonalisation works for this small Hilbert space, larger
 # systems require variational methods. Here we demonstrate a simple
-# Variational Monte Carlo (VMC) approach using JAX and Flax, computing
-# the energy by summing over all basis states.
+# Variational Monte Carlo (VMC) approach using JAX and Flax.  Here the
+# energy is summed over all basis states rather than sampled.
 #
-# This case is trivial to diagonalize exactly, but looking at something
-# more complex cannot always be done exactly due to the exponential
-# growth of the Hilbert space.
-#
-# We define a simple feedforward neural network using Flax to serve
-# as our variational ansatz for the ground state wavefunction.
+# We define a feedforward network in Flax as the variational
+# ansatz for the ground-state wavefunction.
 # The network takes the charge configuration
 # as input and outputs the logarithm of the wavefunction amplitude (log-psi).
 # We then compute the energy expectation value by summing over all charge states,
-# and use JAX's automatic differentiation to compute gradients for optimization.
+# and use JAX's automatic differentiation to compute gradients for optimisation.
 #
-# For the network architecture, we use a compact multilayer perceptron
+# The network is a compact multilayer perceptron
 # {cite:p}`rosenblattPerceptronProbabilisticModel1958` preceded by a
 # sinusoidal input encoding at geometrically spaced frequencies.  This
 # encoding lifts the one-dimensional Fock-state index into a
 # higher-dimensional feature space of sines and cosines, enabling the
-# subsequent :math:`\tanh`-activated hidden layers to approximate the
+# subsequent $\tanh$-activated hidden layers to approximate the
 # smooth, Gaussian-like ground-state wavefunction much more efficiently
 # than piecewise-linear activations such as Leaky ReLU.
 #
@@ -402,9 +403,9 @@ E_{{0, \text{{variational}}}} = {e_gs_variational:.6f}\,\text{{GHz}} \\
 # The loop above is what NetKet automates.  A variational state wraps any
 # Flax module, so the same `VariationalTransmon` network plugs straight into
 # [`nk.vqs.FullSumState`](https://netket.readthedocs.io/en/latest/api/_generated/vqs/netket.vqs.FullSumState.html),
-# which still sums over every basis state, and
+# which still sums over every basis state.
 # [`nk.driver.VMC`](https://netket.readthedocs.io/en/latest/api/_generated/driver/netket.driver.VMC.html)
-# runs the optimisation and logs the energy.  For larger systems the only
+# then runs the optimisation and logs the energy.  For larger systems the only
 # change is to swap the full-summation state for a Monte Carlo
 # [`MCState`](https://netket.readthedocs.io/en/latest/api/_generated/vqs/netket.vqs.MCState.html)
 # with a sampler, as in the junction-array section below.
@@ -482,11 +483,10 @@ fig.tight_layout()
 plt.show()
 
 # %% [markdown]
-# The plots demonstrate how the energy levels become increasingly flat with
-# respect to the offset charge $n_\text{g}$ as the ratio $E_\text{J}/E_\text{C}$ grows.  In the
-# transmon regime ($E_\text{J}/E_\text{C} \gtrsim 50$), the charge dispersion is
-# exponentially suppressed, making the qubit insensitive to charge noise—a
-# key design advantage {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
+# The energy levels flatten with respect to the offset charge $n_\text{g}$ as
+# the ratio $E_\text{J}/E_\text{C}$ grows.  At $E_\text{J}/E_\text{C} \gtrsim 50$, well
+# inside the transmon regime, the charge dispersion is exponentially
+# suppressed {cite:p}`kochChargeinsensitiveQubitDesign2007a`.
 
 # %% [markdown]
 # ## Transmon–Resonator Coupling
@@ -581,8 +581,9 @@ g = {g_val * 1e3:.0f}\,\text{{MHz}}, \quad
 # %% [markdown]
 # ## Dispersive Shift vs. Coupling Strength
 #
-# We sweep the coupling strength $g$ to observe the quadratic scaling of
-# the dispersive shift in the dispersive regime ($g \ll |\Delta|$).
+# We sweep the coupling strength $g$ and compare the dispersive shift with
+# its quadratic scaling, which holds only while $g \ll |\Delta|$; compare the
+# upper end of the sweep with the detuning $\Delta$ printed above.
 
 # %%
 g_sweep = jnp.linspace(0.01, 0.25, 20)
@@ -644,9 +645,9 @@ plt.show()
 # [`LogStateVector`](https://netket.readthedocs.io/en/latest/api/_generated/models/netket.models.LogStateVector.html),
 # one complex parameter $\log\psi(\sigma)$ per basis state, so we can check
 # TDVP against direct exponentiation.  Two caveats come with the log
-# parametrisation: no amplitude may pass through zero, which is why we detune
-# (on resonance the qubit amplitude $\cos(2\pi g t)$ hits zero and the
-# evolution diverges), and every unoccupied state needs a small finite
+# parametrisation.  First, no amplitude may pass through zero, which is why we
+# detune: on resonance the qubit amplitude $\cos(2\pi g t)$ hits zero and the
+# evolution diverges.  Second, every unoccupied state needs a small finite
 # amplitude to start from.  Swap in any other Flax network and the same driver
 # evolves it.
 
@@ -756,7 +757,7 @@ plt.show()
 #
 # ![Design targets give the coupling g, which gives the circuit parameters, which give the layout geometry](figures/qubit-design-workflow.svg)
 #
-# ### Step 1–3: From target $\chi$ to coupling $g$
+# ### Steps 1–3: From target $\chi$ to coupling $g$
 
 # %%
 # Design targets
@@ -798,6 +799,7 @@ E_\text{{C}} = {EC_design:.3f}\,\text{{GHz}} \\
 # circuit parameters:
 # - Total qubit capacitance $C_\Sigma$ from $E_\text{C}$ via `ec_to_capacitance`
 # - Josephson inductance $L_\text{J}$ from $E_\text{J}$ via `ej_to_inductance`
+# - Resonator length for $\omega_\text{r}$ via `resonator_frequency`, and the resonator capacitance $C_\text{r}$ from the CPW impedance and phase velocity
 # - Coupling capacitance $C_\text{c}$ from $g$ via `coupling_strength_to_capacitance`
 
 # %%
@@ -880,7 +882,7 @@ f_\text{{r}} = {f_resonator_achieved / 1e9:.3f}\,\text{{GHz}}
 # %% [markdown]
 # ## Readout System Design Considerations
 #
-# A complete readout design also requires considering the resonator
+# A complete readout design must also account for the resonator
 # linewidth $\kappa$, the Purcell decay rate, and the measurement-induced
 # dephasing.
 
@@ -920,7 +922,7 @@ Q_\text{{ext}} = {Q_ext:,} \\
 )
 
 # %% [markdown]
-# ## QPDK Layout Components
+# ## qpdk Layout Components
 #
 # The design parameters computed above map directly to physical layout
 # cells in qpdk.  Below we show two transmon geometries that can be
@@ -928,9 +930,9 @@ Q_\text{{ext}} = {Q_ext:,} \\
 # transmon**.
 #
 # Each cell exposes design parameters (pad dimensions, gap widths,
-# junction dimensions) that determine the Hamiltonian parameters
-# $E_\text{J}$, $E_\text{C}$, and $g$ through their effect on the capacitance and
-# Josephson energy of the circuit.
+# junction dimensions) that set the circuit's capacitances and Josephson
+# energy, and through them the Hamiltonian parameters
+# $E_\text{J}$, $E_\text{C}$, and $g$.
 
 # %%
 c_dpt = double_pad_transmon()
@@ -993,16 +995,20 @@ display_dataframe(df)
 # ## Josephson Junction Arrays: a Many-Body Problem
 #
 # A transmon has one degree of freedom, so exact diagonalisation is all it
-# needs.  A chain of $N$ junctions, such as the superinductor of a fluxonium,
+# needs.  A chain of $N$ junctions, such as the superinductor of a fluxonium
+# {cite:p}`manucharyan_fluxonium_2009,maslukMicrowaveCharacterizationJosephson2012`,
 # has one per island, and the Hilbert space grows as $(2n_\text{cut}+1)^{N-1}$.
 # For the 43-junction
-# {func}`~qpdk.cells.josephson_junction_array` cell that is $11^{42}$ states,
+# {func}`~qpdk.cells.josephson_junction_array` cell with $n_\text{cut} = 8$
+# that is $17^{42}$ states,
 # far beyond diagonalisation.  This is where NetKet's Monte Carlo variational
-# methods earn their place.
+# methods earn their place {cite:p}`carleoSolvingQuantumManybody2017`.
 #
 # With both ends of the chain held at zero phase, the islands
 # $i = 1, \dots, N-1$ carry Cooper-pair numbers $\hat{n}_i$ and phases
-# $\hat{\varphi}_i$, and
+# $\hat{\varphi}_i$.  Quantising the circuit node by node
+# {cite:p}`voolIntroductionQuantumElectromagnetic2017` gives the standard
+# Josephson-array Hamiltonian {cite:p}`fazioQuantumPhaseTransitions2001`
 #
 # ```{math}
 # :label: eq:jja-hamiltonian-netket
@@ -1013,9 +1019,10 @@ display_dataframe(df)
 # ```
 #
 # with $\hat{\varphi}_0 = \hat{\varphi}_N = 0$ and the tridiagonal capacitance
-# matrix $C_{ii} = 2 C_\text{J} + C_\text{g}$, $C_{i,i\pm1} = -C_\text{J}$.
+# matrix $C_{ii} = 2 C_\text{J} + C_\text{g}$, $C_{i,i\pm1} = -C_\text{J}$
+# {cite:p}`maslukMicrowaveCharacterizationJosephson2012`.
 # Because $C_\text{g} \ll C_\text{J}$, $\mathbf{C}^{-1}$ is dense: every island
-# talks to every other one through the charging term.  $\cos(\hat{\varphi}_j -
+# talks to every other one through the charging term.  Each $\cos(\hat{\varphi}_j -
 # \hat{\varphi}_{j-1})$ moves one Cooper pair between neighbouring islands.
 #
 # The helper below reads $N$, the junction area and $I_\text{c}$ straight from
@@ -1124,12 +1131,11 @@ def linear_modes(problem: JunctionArrayProblem, cos_mean=1.0):
     """Normal-mode frequencies and Gaussian ground state of the linearised array.
 
     Linearising ``-E_J cos δφ`` around each junction's ``<cos δφ>`` gives
-    ``H = nᵀ E_C n + ½ φᵀ B φ`` with ``B = Dᵀ diag(E_J <cos>) D``.  Returns the
-    mode frequencies in GHz and the charge-space precision matrix ``K`` of the
-    ground state ``ψ(n) ∝ exp(-½ nᵀ K n)``.
+    ``H = nᵀ E_C n + ½ φᵀ B φ`` with ``B = Dᵀ diag(E_J <cos>) D``.
 
     Returns:
-        Mode frequencies in GHz and the charge-space precision matrix ``K``.
+        Mode frequencies in GHz and the charge-space precision matrix ``K`` of
+        the ground state ``ψ(n) ∝ exp(-½ nᵀ K n)``.
     """
     stiffness = (
         problem.incidence.T
@@ -1191,8 +1197,8 @@ display(
 # with two parts:
 #
 # - a Gaussian $-\tfrac{1}{2}\boldsymbol{n}^\mathsf{T} \mathbf{K} \boldsymbol{n}$
-#   whose precision matrix $\mathbf{K}$ starts at the exact ground state of the
-#   linearised circuit, the one `linear_modes` returns, so the
+#   whose precision matrix $\mathbf{K}$ starts from the value `linear_modes`
+#   returns, the exact ground state of the linearised circuit, so the
 #   optimisation begins from the physics the SAX model already contains;
 # - a one-hidden-layer network that learns the anharmonic correction, starting
 #   from zero.
@@ -1202,13 +1208,15 @@ display(
 # diverges.
 #
 # [`MCState`](https://netket.readthedocs.io/en/latest/api/_generated/vqs/netket.vqs.MCState.html)
-# draws configurations with a Metropolis sampler.  We give it a custom
+# draws configurations with a Metropolis sampler
+# {cite:p}`metropolisEquationStateCalculations1953`.  We give it a custom
 # transition rule, `ChargeHopRule`, that proposes the moves the junctions
 # themselves make: one Cooper pair onto or off an island, or across to the
 # next one.
 # [`VMC_SR`](https://netket.readthedocs.io/en/latest/api/_generated/driver/netket.driver.VMC_SR.html)
-# preconditions the gradient with stochastic reconfiguration, and for more
-# parameters than samples it switches to the kernel (NTK) form automatically
+# preconditions the gradient with stochastic reconfiguration
+# {cite:p}`sorellaGreenFunctionMonte1998`, and for more
+# parameters than samples it switches to the neural-tangent-kernel (NTK) form automatically
 # {cite:p}`netket3:2022`.  We first check it against the exact energy of the
 # four-junction array.
 
@@ -1251,15 +1259,22 @@ class ChargeHopRule(nk.sampler.rules.MetropolisRule):
     """
 
     def transition(self, sampler, machine, params, sampler_state, key, σ):
-        """Return one proposed move per chain; out-of-range moves stay put."""
+        """Return one proposed move per chain; out-of-range moves stay put.
+
+        The kind of move is drawn first and then a site uniformly among those
+        it can act on, so every move and its reverse are equally likely and
+        the Metropolis acceptance needs no proposal correction.
+        """
         key_site, key_step, key_kind = jax.random.split(key, 3)
         n_chains, n_sites = σ.shape
         rows = jnp.arange(n_chains)
-        sites = jax.random.randint(key_site, (n_chains,), 0, n_sites)
+        hop = jax.random.bernoulli(key_kind, 0.5, (n_chains,)) & (n_sites > 1)
+        # N islands take on or lose a pair, N - 1 bonds pass one along
+        n_targets = jnp.where(hop, max(n_sites - 1, 1), n_sites)
+        sites = jax.random.randint(key_site, (n_chains,), 0, n_targets)
         steps = jax.random.choice(key_step, jnp.array([-1, 1]), (n_chains,)).astype(
             σ.dtype
         )
-        hop = jax.random.bernoulli(key_kind, 0.5, (n_chains,)) & (sites < n_sites - 1)
         σ_new = σ.at[rows, sites].add(steps)
         σ_new = σ_new.at[rows, jnp.minimum(sites + 1, n_sites - 1)].add(-steps * hop)
         # Proposals that leave the truncated charge range stay put
@@ -1277,14 +1292,25 @@ def run_array_vmc(
     hidden: int = 16,
     learning_rate: float = 0.01,
     seed: int = 0,
+    param_dtype: Any = None,
 ):
-    """Optimise ``ChargeGaussianNet`` with VMC_SR and return the state and log."""
+    """Optimise ``ChargeGaussianNet`` with VMC_SR and return the state and log.
+
+    ``param_dtype`` defaults to float32 on a TPU, which computes it natively,
+    and float64 elsewhere.  It has to be set here: importing qpdk's SAX models
+    turns on JAX's float64 mode for the whole session.
+
+    Returns:
+        The optimised variational state and the run log.
+    """
+    if param_dtype is None:
+        param_dtype = jnp.float32 if jax.default_backend() == "tpu" else jnp.float64
     _, precision = linear_modes(problem)
     model = ChargeGaussianNet(
         n_cut=problem.n_cut,
         precision=tuple(map(tuple, precision.tolist())),
         hidden=hidden,
-        param_dtype=jnp.result_type(float),  # float32 unless x64 is enabled
+        param_dtype=param_dtype,
     )
     sampler = nk.sampler.MetropolisSampler(
         problem.hilbert,
@@ -1373,9 +1399,9 @@ E_0^\text{{VMC}} = {e_array_vmc.mean.real:.2f} \pm {e_array_vmc.error_of_mean:.2
 # The optimisation starts from the harmonic ground state, and most of the
 # work is already done there: the Gaussian alone captures the bulk of the
 # energy, and the network and the tuned $K$ lower it by a further fraction of
-# a GHz.  Lacking ED at this size, that drop and the four-junction comparison
+# a GHz.  Without exact diagonalisation at this size, that drop and the four-junction comparison
 # above are the evidence the ansatz is adequate.
-# $\langle\cos\delta\hat{\varphi}\rangle$
+# The expectation value $\langle\cos\delta\hat{\varphi}\rangle$
 # is nearly uniform along the chain, so we feed its average into the SAX
 # model below.
 #
@@ -1437,7 +1463,7 @@ L_\text{{array}} = {array_cell.info["array_inductance_nH"]:.0f}\,\text{{nH}}
 )
 
 # %% [markdown]
-# The dotted lines are the first renormalised normal modes of the chain with
+# The dotted lines are the first three renormalised normal modes of the chain with
 # grounded ends, from `linear_modes`.  Between 50 Ω ports the chain is
 # loaded, so the $|S_{21}|$ features sit near, not exactly on, these lines.
 #
@@ -1452,19 +1478,19 @@ L_\text{{array}} = {array_cell.info["array_inductance_nH"]:.0f}\,\text{{nH}}
 # 1. Open the notebook in Colab with the button at the top of the page.
 # 2. Choose **Runtime → Change runtime type**, select a **TPU** hardware
 #    accelerator (`v2-8` or `v5e-1` on the free tier) and save.
-# 3. Run all cells.  The install cell detects the TPU, reinstalls the TPU
-#    build of JAX that matches qpdk's pinned version, and switches NetKet to
-#    single precision with `NETKET_ENABLE_X64=0` before NetKet is imported.
+# 3. Run all cells.  The install cell detects the TPU and reinstalls the TPU
+#    build of JAX that matches qpdk's pinned version.
 #
 # TPUs are available on Colab's **free tier**, but not guaranteed: access
 # depends on demand and on your recent usage, and sessions are time-limited.
-# If no TPU is available, pick a GPU or keep the CPU runtime; the cell below
-# then runs a short version of the same calculation.
+# If no TPU is available, a GPU runtime runs the same full calculation; on
+# the CPU runtime the cell below runs a short version of it.
 #
-# TPUs compute in single precision, which is why the install cell disables
-# float64.  The rest of the notebook still runs in that mode, but its numbers
-# can differ from the documentation in the last few digits.  The TPU path has
-# not been verified by the qpdk continuous integration, which only has CPUs.
+# TPUs compute natively in single precision, so on a TPU `run_array_vmc`
+# switches the network parameters to float32.  The rest of the notebook keeps
+# float64, which the resonator optimisation and the exact diagonalisations
+# need.  qpdk's continuous integration only has CPUs, so it does not test the
+# TPU path.
 # ::::
 #
 # On a TPU the same driver can afford far more samples and a wider network,
@@ -1524,8 +1550,8 @@ def netket_frequency_and_anharmonicity(operator) -> tuple[float, float]:
 # For the **gatemon**, $C_\Sigma$ comes from the Palace capacitance lookup
 # {func}`~qpdk.models.gatemon.gatemon_capacitances` evaluated at the default
 # {func}`~qpdk.cells.gatemon` cell's dimensions, and the junction is the
-# model's default carbon-nanotube weak link.  The **unimon** has no
-# layout-to-$E_\text{C}$, $E_\text{L}$ model in qpdk yet, so it uses the
+# model's default carbon-nanotube weak link.  qpdk has no model yet that maps
+# the **unimon** layout to $E_\text{C}$ and $E_\text{L}$, so it uses the
 # model's default energies.
 
 # %%
@@ -1537,6 +1563,9 @@ C_sigma_gatemon, _, _ = gatemon_capacitances(
     pocket_gap_top=gatemon_settings["pocket_gap_top"],
     gate_tip_gap=gatemon_settings["gate_tip_gap"],
 )
+if not np.isfinite(C_sigma_gatemon):
+    msg = "Gatemon dimensions are outside the capacitance lookup grid"
+    raise ValueError(msg)
 EC_gatemon = float(e**2 / (2 * C_sigma_gatemon) / h / 1e9)
 
 qubit_checks = {
