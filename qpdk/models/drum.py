@@ -146,7 +146,7 @@ def drum_effective_mass(
         m_\text{eff} = \mu\,\rho \pi a^2 t
 
     With the default :math:`\mu = 1` the effective mass is the full disc mass.
-    This is the uniform-plate (piston) picture behind
+    This choice is the uniform-plate (piston) picture behind
     :math:`G = -\omega_\text{c}/(2d)` in
     :cite:`teufelCircuitCavityElectromechanics2011`. For its 15 µm diameter,
     100 nm thick Al drum the disc mass is 47.7 pg, close to the quoted
@@ -156,8 +156,8 @@ def drum_effective_mass(
     For the default 120 nm drum of :cite:`pirkkalainenSqueezingQuantumNoise2015`
     the disc mass is 57.3 pg and :math:`x_\text{zp} = 3.4\,\text{fm}` at
     13.03 MHz, against the quoted :math:`x_\text{zp} \sim 5\,\text{fm}`. That
-    paper does not state its effective-mass convention, so neither value of
-    :math:`\mu` is fixed by it.
+    paper does not state its effective-mass convention, so it does not fix
+    :math:`\mu`.
 
     A clamped-membrane mode shape changes both :math:`m_\text{eff}` and
     :math:`\partial C/\partial x`. That correction is not part of the cited
@@ -228,7 +228,7 @@ def drum_electromechanical_coupling(
     where :math:`\eta` is the fraction of the total resonator capacitance that
     the drum provides.
 
-    This treats the whole membrane as a rigid plate. With the clamped edge,
+    This expression treats the whole membrane as a rigid plate. With the clamped edge,
     only the centre moves fully, so the parallel-plate
     :math:`\partial C/\partial x` overestimates :math:`g_0` by about a factor
     of two :cite:`cattiauxLinearCouplingMicrowave2020`. For the default drum
@@ -351,7 +351,7 @@ def drum_lc_resonator(
     hangs off a single feedline, which
     :cite:`mercierdelepinayRealizationDirectionalAmplification2019` also uses
     for readout. :cite:`teufelCircuitCavityElectromechanics2011` coupled
-    inductively instead:
+    inductively instead.
 
     .. svgbob::
 
@@ -607,7 +607,7 @@ def drum_lc_resonator_fem_model(
     The returned model takes ``f`` in Hz, the four layout dimensions of
     :func:`drum_capacitances` in µm, ``gap`` in µm and ``sheet_inductance`` in
     H/□. The meander has the dataset's 75 runs. It returns NaN until the
-    dataset exists or outside its grid. The lumped-model limits of
+    dataset exists, and outside the dataset's grid. The lumped-model limits of
     :func:`drum_lc_resonator` still apply: the default meander is electrically
     long at its resonance.
 

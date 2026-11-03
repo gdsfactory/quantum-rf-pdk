@@ -11,9 +11,9 @@ r"""Coupling and parasitic capacitance of the drum LC resonator.
 A Palace electrostatic solve of the full default
 :func:`~qpdk.cells.drum_lc_resonator` layout, with its feedline, in a finite
 coplanar ground. It supplies the two capacitances the lumped model
-:func:`qpdk.models.drum.drum_lc_resonator` takes as inputs, the coupling
+:func:`qpdk.models.drum.drum_lc_resonator` takes as inputs: the coupling
 :math:`C_\text{c}` to the feedline and the parasitic :math:`C_\text{p}` in
-parallel with the drum, and checks the drum capacitance :math:`C_\text{d}`.
+parallel with the drum. It also checks the drum capacitance :math:`C_\text{d}`.
 
 Terminals
     ``node`` is the coupling pad, its wiring and the drum bottom electrode.
@@ -43,7 +43,7 @@ Vacuum gap
     disc at the ``VacuumGap_Top`` height without its landing posts. That is
     exact for every node quantity: the Maxwell column of an excited node has all
     other conductors at zero, as the real membrane is through its posts and the
-    ring. Only ``C[membrane, membrane]`` misses the post. The suspended part
+    ring. Only ``C[membrane, membrane]`` misses the posts. The suspended part
     of the membrane also covers the electrode lead in the ring slot, so the
     extracted :math:`C_\text{d}` includes that strip, which the analytical
     model leaves out.

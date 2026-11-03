@@ -474,7 +474,7 @@ def get_layer_stack_3d() -> LayerStack:
 
 
 def get_vacuum_gap(layer_stack: LayerStack | None = None) -> float:
-    """Returns the vacuum gap of suspended vacuum-gap capacitors in µm.
+    """Return the vacuum gap of suspended vacuum-gap capacitors in µm.
 
     The gap is a layer-stack parameter: the distance between the top of the
     ``M1`` film and the bottom of the ``VacuumGap_Top`` membrane.

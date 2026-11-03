@@ -406,11 +406,11 @@ resonances, so use a local frequency sweep before interpreting their heights.
 Drum LC resonator
 =================
 
-``drum_capacitances`` returns the coupling :math:`C_\text{c}`, the parasitic
+``drum_capacitances`` returns, in F, the coupling :math:`C_\text{c}`, the parasitic
 :math:`C_\text{p}` and the drum capacitance :math:`C_\text{d}` of a
-``drum_lc_resonator`` layout in F, from ``coupling_gap``, ``coupling_pad_size``,
-``radius`` and ``turn_length`` in um. ``drum_lc_resonator_fem_model()`` returns the
-lumped SAX model with these values in place of its ``coupling_capacitance`` and
+``drum_lc_resonator`` layout, from ``coupling_gap``, ``coupling_pad_size``, ``radius``
+and ``turn_length`` in um. ``drum_lc_resonator_fem_model()`` returns the lumped SAX
+model with these values in place of its ``coupling_capacitance`` and
 ``parasitic_capacitance`` inputs. The extracted :math:`C_\text{d}` replaces the
 analytical one at the stack gap, and the ``gap`` argument still tunes the analytical
 parallel-plate term. The ``drum_lc_resonator_palace`` dataset is not generated yet;
@@ -420,14 +420,14 @@ The recipe ``qpdk/models/datasets/recipes/drum.py`` is a 3D electrostatic solve 
 whole cell with its feedline in a finite coplanar ground. Its terminals are the node
 (pad, wiring and bottom electrode), the ``VG_TOP`` membrane one vacuum gap above it, the
 feedline cut open beyond the ports, and five blocks of meander runs separated by 1 um
-slits. Weighting the Maxwell matrix with the node at 1, the membrane and feed at 0 and
-each meander block at its mean position along the wire gives :math:`C_\text{c}` and
-:math:`C_\text{d}` from the feed and membrane charge and :math:`C_\text{p}` from the
-remaining energy. The full matrix is stored so other weightings can be applied. A 2D
+slits. The recipe weights the Maxwell matrix with the node at 1, the membrane and feed
+at 0 and each meander block at its mean position along the wire: the feed and membrane
+charges give :math:`C_\text{c}` and :math:`C_\text{d}`, and the remaining energy gives
+:math:`C_\text{p}`. The full matrix is stored so other weightings can be applied. A 2D
 sheet solve cannot hold the membrane, so the recipe is 3D. Conductors are zero-thickness
 sheets by default; ``conductors="solid"`` extrudes M1 and the membrane. A gmsh box field
-sets 0.07 um elements in the 70 nm gap, with 1 um near-metal and 60 um far-field sizes,
-600 um padding and third-order basis functions as starting guesses.
+sets 0.07 um elements in the 70 nm gap. The 1 um near-metal and 60 um far-field sizes,
+600 um padding and third-order basis functions are starting guesses.
 
 Run ``uv run --script qpdk/models/datasets/recipes/drum.py convergence`` before the
 54-point grid to compare gap and near-metal mesh, element order, padding and conductor
