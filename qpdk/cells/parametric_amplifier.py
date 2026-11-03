@@ -144,7 +144,6 @@ def squid_termination(
     return c
 
 
-
 @gf.cell(check_instances=CheckInstances.IGNORE, tags=["resonators", "junctions"])
 def cpw_jpa(
     length: float = 4680.0,
