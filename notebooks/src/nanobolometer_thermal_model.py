@@ -100,8 +100,8 @@ nanocalorimeter().plot()
 # %% [markdown]
 # ## Predictions against two measured devices
 #
-# The inputs come from the papers alone. Where a paper is silent, the values are
-# choices, listed here so they can be challenged:
+# The inputs come from the papers. Where a paper is silent, the value is a
+# choice, listed here so it can be challenged:
 #
 # - **Aalto device** {cite:p}`gunyhoZeptojouleCalorimetry2026,girardCryogenicSensorEnabling2023`.
 #   All uncovered AuPd (the $1\,\text{µm}$ absorber plus eight $0.3\,\text{µm}$ SNS
@@ -204,7 +204,7 @@ plt.show()
 #   $150\,\text{µs}$ only near $T_\text{e} \approx 64\,\text{mK}$, which the paper does
 #   not report, so the agreement is not a test.
 # - **Calorimeter.** The dominant mode is again the electron-phonon time, about eight
-#   times faster than measured (the paper's own heat-capacity excess). The layout
+#   times faster than measured (the heat-capacity excess the paper itself reports). The layout
 #   reservoir adds a picosecond mode of weight 0.04, not a slow tail of weight 0.018.
 #
 # A bare Wiedemann-Franz link to drawn normal metal therefore cannot produce either
@@ -214,6 +214,6 @@ plt.show()
 # internal material reservoir such as weakly coupled grains
 # {cite:p}`wangDynamicThermalRelaxation2026`, or substrate and TLS heat capacity.
 # The model exposes the material reservoir as an optional third node,
-# `material_heat_capacity`, off by default. The cell's `contact_overlap` and
-# `extension_length` parameters allow drawing a design of experiments that varies
-# the covered volume, which would tell these hypotheses apart.
+# `material_heat_capacity`, off by default. A design of experiments over the cell's
+# `contact_overlap` and `extension_length` would vary the covered volume and tell
+# these hypotheses apart.

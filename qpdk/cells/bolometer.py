@@ -9,8 +9,8 @@ crossing the wire on ``JJ_AREA`` form normal-metal-insulator-superconductor
 :cite:`gasparinettiFastElectronThermometry2015`, they are each wired to an
 isolated pad.
 
-The layout cannot tell the transparent NS contacts of the leads from the
-oxidised NIS probe junctions apart. Both are Al on ``JJ_AREA`` overlapping
+The layout cannot tell the transparent NS contacts of the leads apart from
+the oxidised NIS probe junctions. Both are Al on ``JJ_AREA`` overlapping
 ``NM_DRAW``, and the oxidation step is set by the process, not the drawing.
 
 Normal metal beneath and beyond the leads is drawn explicitly. Its volume is
@@ -99,8 +99,8 @@ def nanobolometer(
     :math:`1\,\text{µm}` absorber and a :math:`30\,\text{nm}` film. Those papers
     do not report the wire width. The :math:`135\,\text{nm}` default is chosen to
     reproduce the volume :math:`V_0 \approx (240\,\text{nm})^3` of
-    :cite:`goveniusDetectionZeptojouleMicrowave2016`. Their SNS thermometer islands are not drawn; NIS
-    probes stand in for them.
+    :cite:`goveniusDetectionZeptojouleMicrowave2016`. The SNS thermometer
+    islands of those devices are not drawn; NIS probes stand in for them.
 
     .. svgbob::
 
@@ -116,8 +116,8 @@ def nanobolometer(
                             ground
 
     The normal metal extends ``contact_overlap`` under each lead and
-    ``extension_length`` beyond it. That metal is a second electron reservoir
-    thermally linked to the absorber, which sets the layout-resolved time
+    ``extension_length`` beyond it. That metal is a second electron reservoir,
+    thermally linked to the absorber, that sets the layout-resolved time
     constants of :func:`qpdk.models.bolometer.nanobolometer_thermal_modes`.
 
     Args:

@@ -17,8 +17,8 @@ capacity and electron-phonon conductance
 
 so a single reservoir relaxes with
 :math:`\tau = C / G_\text{e-ph} = \gamma / (5 \Sigma T^3)`, independent of
-:math:`V`. Heat flows along the normal metal as given by the Wiedemann-Franz law,
-:math:`G = \mathcal{L}_0 T / R`. Andreev reflection blocks subgap heat
+:math:`V`. Along the normal metal, heat flows with the Wiedemann-Franz
+conductance :math:`G = \mathcal{L}_0 T / R`. Andreev reflection blocks subgap heat
 transport into clean NS contacts, leaving only a quasiparticle leak suppressed
 roughly as :math:`e^{-\Delta / k_\text{B} T}` :cite:`bardeenTheoryThermalConductivity1959`.
 
@@ -48,9 +48,8 @@ coupled only to the absorber electrons stands in for an internal material heat
 capacity, as proposed by :cite:`goveniusDetectionZeptojouleMicrowave2016` and
 :cite:`wangDynamicThermalRelaxation2026`. It is off by default.
 
-Proximity suppression of the heat flow under the leads is not modelled. Phonon
-temperature gradients and the tunnel contacts of the thermometer are also
-neglected.
+The model neglects proximity suppression of the heat flow under the leads,
+phonon temperature gradients and the tunnel contacts of the thermometer.
 
 Default material parameters are those of AuPd nanowires in
 :cite:`goveniusDetectionZeptojouleMicrowave2016` and
@@ -350,9 +349,9 @@ def nanobolometer_thermal_modes(
       conductance :math:`(\kappa_\text{s} / \kappa_\text{n}) \mathcal{L}_0 T /
       R_\text{lead}`.
 
-    With ``material_heat_capacity`` set, a third reservoir coupled only to the
-    absorber electrons through ``material_conductance`` is added. Its modes are
-    found numerically with :func:`thermal_relaxation_modes`.
+    With ``material_heat_capacity`` set, the model adds a third reservoir,
+    coupled only to the absorber electrons through ``material_conductance``, and
+    finds the modes numerically with :func:`thermal_relaxation_modes`.
 
     Args:
         absorber_length: Absorber length :math:`l` between the leads in µm.
@@ -432,7 +431,7 @@ def nanobolometer(
     :math:`R = \rho\, l / (w\, t)` from the input line to ground, so
     :math:`S_{11} = (R - Z_0) / (R + Z_0)`. The superconducting leads are
     treated as lossless shorts, and the reactance of the nanowire is
-    neglected. That holds while its kinetic and geometric inductance is small
+    neglected, which holds while its kinetic and geometric inductance is small
     compared with :math:`R / \omega`. Impedance matching of a direct-input
     nanobolometer to its line follows :cite:`kokkoniemiNanobolometerUltralowNoise2019`.
 
