@@ -39,11 +39,11 @@
 # See the {ref}`extras reference <notebook-extras>` for what each qpdk extra installs.
 # ::::
 #
-# This notebook builds a compact CPW resonator coupled to a feedline from
-# QPDK cells, converts the etch layer to conductor geometry, and runs a
+# From QPDK cells, this notebook builds a compact CPW resonator coupled to a
+# feedline, converts the etch layer to conductor geometry, and runs a
 # [Palace](https://awslabs.github.io/palace/) driven simulation to extract the
-# S-parameters around the resonance near 7.78 GHz. The loaded quality factor is
-# estimated from the S21 dip, and the electric field is plotted at resonance.
+# S-parameters around the resonance near 7.78 GHz. It then estimates the loaded
+# quality factor from the S21 dip and plots the electric field at resonance.
 #
 # Palace is an open-source 3D finite-element electromagnetic solver supporting
 # eigenmode, driven (S-parameter), and electrostatic simulations.
@@ -252,8 +252,8 @@ sim.set_driven(fmin=7.75e9, fmax=7.8e9, num_points=300, save_fields_at=[7.78e9])
 # %% [markdown]
 # ## Mesh and run
 #
-# The mesh is generated locally with gmsh; the solve itself runs on the GDSFactory+
-# cloud. `check_cache=True` reuses a finished job with the same inputs.
+# gmsh generates the mesh locally; the solve itself runs on the GDSFactory+ cloud.
+# `check_cache=True` reuses a finished job with the same inputs.
 
 # %%
 sim.set_output_dir("./sim_qpdk_resonator")
@@ -273,9 +273,9 @@ results.plot_interactive(phase=True)
 # %% [markdown]
 # ## Resonance and quality factor
 #
-# The resonance is the S21 minimum. The loaded quality factor $Q_L = f_0 / \Delta f$
-# is first estimated from the half-depth bandwidth $\Delta f$ of the dip, then refined
-# by fitting a Lorentzian to $|S_{21}|$:
+# The resonance is the S21 minimum. The cell below first estimates the loaded quality
+# factor $Q_L = f_0 / \Delta f$ from the half-depth bandwidth $\Delta f$ of the dip,
+# then refines it by fitting a Lorentzian to $|S_{21}|$:
 #
 # $$
 # |S_{21}(f)| = b - \frac{d}{1 + \left(2 Q_L (f - f_0) / f_0\right)^2},
@@ -349,8 +349,9 @@ else:
 # %% [markdown]
 # ## Field at resonance
 #
-# Palace saves the fields for the last excited port. The volume solution is sliced at
-# the conductor plane and interpolated onto a regular grid for a top view of $|E|$.
+# Palace saves the fields for the last excited port. The cell below slices the volume
+# solution at the conductor plane and interpolates it onto a regular grid for a top
+# view of $|E|$.
 
 # %%
 import matplotlib.pyplot as plt
