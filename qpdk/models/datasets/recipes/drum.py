@@ -61,9 +61,9 @@ Sheets or solids
 Mesh
     ``near_mesh`` refines along every conductor edge. A gmsh box field forces
     ``DRUM_MESH`` inside the vacuum gap under the membrane, growing to the far
-    size over ``DRUM_MESH_TRANSITION``. The gap field is nearly uniform, so one
-    layer of cubic elements across it should suffice; the convergence study
-    checks half and twice that size.
+    size over ``DRUM_MESH_TRANSITION``. The gap is 70 nm, so every setting here
+    gets one element across it and ``DRUM_MESH`` only sets the in-plane size;
+    the convergence study checks half and twice that size.
 
 Preview with ``uv run --script qpdk/models/datasets/recipes/drum.py --dry-run``.
 ``uv run --script qpdk/models/datasets/recipes/drum.py convergence --dry-run``
@@ -112,8 +112,10 @@ NOMINAL = {
 """Default :func:`~qpdk.cells.drum_lc_resonator` geometry."""
 SETTINGS = Settings(near_mesh=1.0, far_mesh=60.0, domain_pad=600.0, order=3)
 N_TURNS = DRUM_INDUCTOR_TURNS
-SEGMENTS = 5
-"""Meander blocks; the linear-profile weights then miss the continuum by ~1%."""
+SEGMENTS = 17
+"""Meander blocks. The block midpoint weights are a staircase approximation of
+the linear profile: C_c rises 0.33 % from 13 to 17 blocks, so it is still ~0.7 %
+under the continuum, while C_p and C_d barely move."""
 TERMINALS = (
     "node",
     "membrane",
@@ -125,8 +127,10 @@ GROUND_MARGIN = 300.0
 CUT = 1.0
 """Width of the etched slits that split the meander into terminals, in µm."""
 CONDUCTORS: Literal["sheet", "solid"] = "sheet"
-DRUM_MESH = 0.07
-"""Element size inside the vacuum gap, in µm (one element across the 70 nm gap)."""
+DRUM_MESH = 0.14
+"""Element size in the gap box field, in µm. The 70 nm gap holds one element
+at any of these sizes, so this sets the in-plane size; 0.14 matches 0.07 to
+0.1 % on every capacitance at an eighth of the mesh cost."""
 DRUM_MESH_TRANSITION = 2.0
 """Distance over which the gap size relaxes to the far size, in µm."""
 
@@ -424,7 +428,7 @@ RECIPE = Recipe(
     description="Default QPDK drum LC resonator with feedline, vacuum-gap membrane and segmented meander in a finite coplanar ground.",
     reference_ground="coplanar_chip_ground",
     provenance={
-        "recipe_version": 1,
+        "recipe_version": 2,
         "issue": 1047,
         "n_turns": N_TURNS,
         "terminal_weights": terminal_weights(),
@@ -443,8 +447,7 @@ RECIPE = Recipe(
 
 CONVERGENCE: dict[str, tuple[dict, dict]] = {
     "nominal": ({}, {}),
-    "drum_mesh_0.14": ({}, {"drum_mesh": 0.14}),
-    "drum_mesh_0.035": ({}, {"drum_mesh": 0.035}),
+    "drum_mesh_0.07": ({}, {"drum_mesh": 0.07}),
     "near_mesh_2": ({"near_mesh": 2.0}, {}),
     "near_mesh_0.5": ({"near_mesh": 0.5}, {}),
     "order_2": ({"order": 2}, {}),

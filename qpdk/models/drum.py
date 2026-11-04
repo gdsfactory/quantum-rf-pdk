@@ -564,9 +564,10 @@ def drum_capacitances(
     - :math:`C_\text{d}`, the drum capacitance at the stack's vacuum gap,
       including fringing and the electrode lead under the membrane.
 
-    Until the bundled dataset ``drum_lc_resonator_palace`` has been generated,
-    every value is NaN and a warning is issued once. Dimensions outside the
-    stored grid also return NaN. Supports JIT, vmap and grad.
+    The bundled dataset ``drum_lc_resonator_palace`` holds the 54 solved
+    geometries; without it every value is NaN and a warning is issued once.
+    Dimensions outside the stored grid also return NaN. Supports JIT, vmap and
+    grad.
 
     Args:
         coupling_gap: Gap between the coupling pad and the feedline in µm.

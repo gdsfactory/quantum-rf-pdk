@@ -56,10 +56,16 @@ class TestDrumRecipe:
 
     @staticmethod
     def test_weights(module: dict) -> None:
-        assert module["segment_runs"]() == [0, 15, 30, 45, 60, 75]
+        runs = module["segment_runs"]()
+        assert runs[0] == 0
+        assert runs[-1] == module["N_TURNS"]
+        assert len(runs) == module["SEGMENTS"] + 1
         weights = module["terminal_weights"]()
         assert weights[:3] == [1.0, 0.0, 0.0]
-        assert weights[3:] == pytest.approx([0.1, 0.3, 0.5, 0.7, 0.9])
+        midpoints = [
+            (a + b) / 2 / module["N_TURNS"] for a, b in itertools.pairwise(runs)
+        ]
+        assert weights[3:] == pytest.approx(midpoints)
         assert module["RECIPE"].provenance["terminal_weights"] == weights
 
     @staticmethod

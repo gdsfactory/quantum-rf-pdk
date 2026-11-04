@@ -85,6 +85,8 @@ def generate(
     processes: int = 4,
     container_binary: str = "palace-x86_64.bin",
     settings: Settings | None = None,
+    chunk: int | None = None,
+    chunks: int = 1,
 ) -> Dataset:
     """Run the existing resumable Palace extraction and Parquet writer."""
     from _palace import (  # ruff: ignore[import-outside-top-level]
@@ -137,7 +139,19 @@ def generate(
         provenance=provenance,
     )
 
-    def solve(**point: float | str) -> dict:
+    # A shard can only split the longest axis, so let a job take every n-th
+    # point of the whole product instead; the merge checks coverage either way.
+    axes = list(grid)
+    points = [tuple(point) for point in product(*(grid[name] for name in axes))]
+    keep = (
+        {points[i] for i in range(chunk, len(points), chunks)}
+        if chunk is not None
+        else set(points)
+    )
+
+    def solve(**point: float | str) -> dict | None:
+        if tuple(point[name] for name in axes) not in keep:
+            return None
         geometry = recipe.geometry(point, settings, processes)
         if tuple(geometry.terminal_ports) != recipe.terminals:
             raise ValueError("Geometry terminal order differs from the recipe")
@@ -186,7 +200,20 @@ def generate(
             "mutual_capacitance": maxwell_to_mutual(result["maxwell_capacitance"]),
         }
 
-    result = write(output, metadata, sweep(metadata, solve, grid, recipe.variants))
+    frame = sweep(metadata, solve, grid, recipe.variants)
+    if chunk is not None:
+        import polars as pl  # ruff: ignore[import-outside-top-level]
+
+        if recipe.variants:
+            raise ValueError("Chunked runs need a recipe without variants")
+        kept = [
+            hashlib.sha256(
+                f"{metadata.name}:{dict(zip(axes, point, strict=True))}".encode()
+            ).hexdigest()[:16]
+            for point in keep
+        ]
+        frame = frame.filter(pl.col("run_id").is_in(kept))
+    result = write(output, metadata, frame)
     for selection in product(*recipe.variants.values()):
         result.grid(
             "maxwell_capacitance",
@@ -210,6 +237,8 @@ def run_cli(recipe: Recipe) -> None:
         sif: Path | None = None,
         processes: Annotated[int, typer.Option(min=1)] = 4,
         container_binary: str = "palace-x86_64.bin",
+        chunk: Annotated[int | None, typer.Option(min=0)] = None,
+        chunks: Annotated[int, typer.Option(min=1)] = 1,
     ) -> None:
         """Preview, generate or merge this component dataset."""
         if executable is not None and sif is not None:
@@ -221,6 +250,8 @@ def run_cli(recipe: Recipe) -> None:
             return
         grid = partition_grid(recipe.grid, shard=shard, shards=shards)
         count = prod(map(len, grid.values())) * prod(map(len, recipe.variants.values()))
+        if chunk is not None:
+            count = -(-count // chunks)
         logger.info(
             f"{recipe.name}: {count} points; grid={grid}; settings={recipe.settings}"
         )
@@ -234,6 +265,8 @@ def run_cli(recipe: Recipe) -> None:
                 sif=sif,
                 processes=processes,
                 container_binary=container_binary,
+                chunk=chunk,
+                chunks=chunks,
             )
 
     typer.run(main)
