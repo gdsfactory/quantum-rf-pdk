@@ -2,9 +2,11 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from contextlib import ExitStack
 from functools import partial
 from queue import SimpleQueue
 from typing import ClassVar, final, override
+from unittest.mock import patch
 
 import jax.numpy as jnp
 import polars as pl
@@ -23,6 +25,9 @@ from qpdk.models.waveguides import straight
 from qpdk.tech import coplanar_waveguide
 
 TEST_DATA_PATH = PATH.tests / "models" / "data"
+
+# (h [µm], t [µm], ε_r, tan δ) of the Qucs-S ``SUBST`` in ``dut.sch``
+QUCS_CPW_SUBSTRATE = (500.0, 0.2, 11.7, 0.0)
 
 NUMERIC_TOLERANCES = {
     "rtol": 1 / 100,
@@ -383,9 +388,6 @@ class TestInductorCompareToQucs(BaseCompareToQucs):
         return inductor
 
 
-@pytest.mark.skip(
-    reason="Model Z0 differs slightly from Qucs-S: |S11| is about half the reference and S21 phase drifts"
-)
 @final
 class TestCPWCompareToQucs(BaseCompareToQucs):
     """Test suite for comparing coplanar waveguide (CPW) S-parameter models to Qucs-S results."""
@@ -397,7 +399,8 @@ class TestCPWCompareToQucs(BaseCompareToQucs):
     @override
     def get_model_function(self) -> Callable[..., sax.SType]:
         cross_section = coplanar_waveguide()
-        z0 = cpw_z0_from_cross_section(cross_section)
+        with self._qucs_substrate():
+            z0 = cpw_z0_from_cross_section(cross_section)
 
         def straight_50_ohm(f: jnp.ndarray, length: float) -> sax.SDict:
             """Renormalise ``straight`` from its own Z0 to the 50 Ω Qucs-S ports.
@@ -408,7 +411,8 @@ class TestCPWCompareToQucs(BaseCompareToQucs):
             Returns:
                 S-parameters referenced to 50 Ω.
             """
-            s = straight(f=f, length=length, cross_section=cross_section)
+            with self._qucs_substrate():
+                s = straight(f=f, length=length, cross_section=cross_section)
             s_matrix = jnp.stack(
                 [
                     jnp.stack([s["o1", "o1"], s["o1", "o2"]], axis=-1),
@@ -431,6 +435,24 @@ class TestCPWCompareToQucs(BaseCompareToQucs):
             }
 
         return straight_50_ohm
+
+    @staticmethod
+    def _qucs_substrate() -> ExitStack:
+        r"""Use the Qucs-S ``SUBST`` (see ``dut.sch``) instead of the PDK substrate.
+
+        The reference was simulated with :math:`\varepsilon_\text{r} = 11.7` and no
+        loss, whereas the PDK substrate has :math:`\varepsilon_\text{r} = 11.45`.
+
+        Returns:
+            Context manager patching the substrate parameters.
+        """
+        stack = ExitStack()
+        for target in (
+            "qpdk.models.waveguides.get_cpw_substrate_params",
+            "qpdk.models.cpw.get_cpw_substrate_params",
+        ):
+            stack.enter_context(patch(target, return_value=QUCS_CPW_SUBSTRATE))
+        return stack
 
 
 @final
