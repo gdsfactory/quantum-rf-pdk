@@ -45,10 +45,11 @@ c.InteractiveShellApp.exec_lines = [  # ruff: ignore[undefined-name]
     "plt.style.use('qpdk')",
     # Monkey-patch Axes.set_title so figure titles use Outfit (bold) to match
     # the Sphinx documentation heading font (see docs/_static/css/custom.css).
+    # Outfit has no Greek glyphs, so Inter supplies characters such as Ω.
     "import matplotlib.axes as _ma; _orig_title = _ma.Axes.set_title",
     (
         "def _qpdk_title(self, *args, **kwargs):\n"
-        "    kwargs.setdefault('fontfamily', 'Outfit')\n"
+        "    kwargs.setdefault('fontfamily', ['Outfit', 'Inter'])\n"
         "    kwargs.setdefault('fontweight', 'bold')\n"
         "    return _orig_title(self, *args, **kwargs)"
     ),

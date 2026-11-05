@@ -53,10 +53,11 @@ PDK.activate()
 
 # Monkey-patch Axes.set_title to use Outfit (bold) for figure titles,
 # matching the Sphinx heading font (see docs/_static/css/custom.css).
+# Outfit has no Greek glyphs, so Inter supplies characters such as Ω.
 import matplotlib.axes as _ma
 _orig_title = _ma.Axes.set_title
 def _qpdk_title(self, *args, **kwargs):
-    kwargs.setdefault('fontfamily', 'Outfit')
+    kwargs.setdefault('fontfamily', ['Outfit', 'Inter'])
     kwargs.setdefault('fontweight', 'bold')
     return _orig_title(self, *args, **kwargs)
 _ma.Axes.set_title = _qpdk_title
