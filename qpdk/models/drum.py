@@ -379,8 +379,11 @@ def drum_lc_resonator(
 
     With :math:`L = 14\,\text{nH}` and :math:`C = 16\,\text{fF}` from
     :cite:`pirkkalainenSqueezingQuantumNoise2015` and the parallel-plate drum
-    capacitance of 22.3 fF, :math:`1/(2\pi\sqrt{L(C + C_\text{d})})` is
-    6.87 GHz, against the measured 6.90 GHz.
+    capacitance of 22.3 fF, the tank alone sits at
+    :math:`1/(2\pi\sqrt{L(C + C_\text{d})}) = 6.87\,\text{GHz}`, against the
+    measured 6.90 GHz. The transmission zero also loads the coupling
+    capacitance, and the 1 fF default is not the paper's value, so the zero
+    of the default model is 6.71 GHz.
 
     Limits of this lumped model:
 
@@ -390,8 +393,8 @@ def drum_lc_resonator(
       layout. It lowers :math:`\omega_\text{r}` and the participation
       :math:`\eta` of :func:`drum_electromechanical_coupling`. Pass an
       extracted value for any other layout.
-    - The default meander is about 23 mm of wire, which is not short compared
-      with the wavelength at the resonance. Distributed effects are neglected.
+    - The default meander is about 23 mm of wire, a substantial fraction of a
+      guided wavelength at the resonance. Distributed effects are neglected.
     - ``coupling_capacitance`` is an input. It is not derived from the
       coupling pad of :func:`~qpdk.cells.drum.drum_lc_resonator`.
 
@@ -563,6 +566,12 @@ def drum_capacitances(
       wiring and meander, weighted by the meander's linear voltage profile,
     - :math:`C_\text{d}`, the drum capacitance at the stack's vacuum gap,
       including fringing and the electrode lead under the membrane.
+
+    At the default point the meander blocks give 3.3 fF of the 5.1 fF coupling
+    and the pad 1.8 fF, so the assumed voltage profile matters as much as the
+    pad. A larger ``coupling_pad_size`` also moves the meander farther from the
+    feedline, so :math:`C_\text{c}` is not monotonic in the pad size: 10 µm,
+    20 µm and 40 µm give 6.17 fF, 5.05 fF and 5.10 fF at the other defaults.
 
     The bundled dataset ``drum_lc_resonator_palace`` holds the 54 solved
     geometries; without it every value is NaN and a warning is issued once.

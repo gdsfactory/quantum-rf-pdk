@@ -430,7 +430,9 @@ zero-thickness sheets by default; ``conductors="solid"`` extrudes M1 and the mem
 gmsh box field sets 0.14 um elements in the plane of the 70 nm gap. The 1 um near-metal
 and 60 um far-field sizes, 600 um padding and third-order basis functions are the
 published settings. At the default geometry the solve gives 5.05 fF, 82.46 fF and 26.82
-fF.
+fF. With the analytical meander those values put the lumped transmission zero near 4.0
+GHz, below the 6.7 GHz that the analytical defaults predict with the paper's 16 fF
+parasitic.
 
 The embedded convergence study compares that setting with a 0.07 um gap mesh, a 2 um
 near-metal mesh, fourth-order elements and a 1200 um domain, all at the default geometry
@@ -449,8 +451,9 @@ gap axis on an exponentially decaying coupling, and by at most 3.3 % in
 
 Run ``uv run --script qpdk/models/datasets/recipes/drum.py convergence`` to reproduce
 the study at the default geometry. The linear voltage profile is a lumped approximation:
-the default meander is about 23 mm of wire, longer than the guided wavelength near 7
-GHz, so the driven meander recipe is the reference for its distributed response.
+the default meander is about 23 mm of wire, a substantial fraction of a guided
+wavelength near 7 GHz, so the driven meander recipe is the reference for its distributed
+response.
 
 Generating Palace datasets
 ==========================
