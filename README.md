@@ -121,6 +121,11 @@ arrays tie the two chips' ground planes together.
 
 ![TSV Flip-Chip Test Chip](docs/_static/images/tsv_flip_chip_test_chip.png)
 
+A 3D cut-away through one of the lines, rendered with `to_3d()` and translucent substrates, shows the TSVs through both
+chips and the top chip with its MB2 meander on the backside.
+
+![TSV Flip-Chip Test Chip 3D view](docs/_static/images/tsv_flip_chip_test_chip_3d.png)
+
 ### Resonator Test Chip
 
 A 16-resonator characterization chip with systematically varied CPW widths and gaps across two probelines. Ideal for
