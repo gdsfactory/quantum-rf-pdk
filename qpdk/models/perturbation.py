@@ -15,13 +15,14 @@ is:
 
 .. math::
 
-    \mathcal{H} = -\omega_\text{t}\, a_\text{t}^\dagger a_\text{t}
+    \mathcal{H} = \omega_\text{t}\, a_\text{t}^\dagger a_\text{t}
     + \frac{\alpha}{2}\, a_\text{t}^{\dagger 2} a_\text{t}^2
     + \omega_\text{r}\, a_\text{r}^\dagger a_\text{r}
-    - g\,(a_\text{t}^\dagger - a_\text{t})(a_\text{r}^\dagger - a_\text{r})
+    + g\,(a_\text{t}^\dagger + a_\text{t})(a_\text{r}^\dagger + a_\text{r})
 
 where :math:`\omega_\text{t}` is the transmon frequency, :math:`\omega_\text{r}` the resonator
-frequency, :math:`\alpha` the anharmonicity, and :math:`g` the coupling strength.
+frequency, :math:`\alpha` the anharmonicity (negative for a transmon,
+:math:`\alpha \approx -E_\text{C}`), and :math:`g` the coupling strength.
 
 References:
     - :cite:`arayaDayPymablockAlgorithmPackage2025`
@@ -54,10 +55,10 @@ def transmon_resonator_hamiltonian() -> tuple[
     .. math::
 
         \begin{aligned}
-        H_0 &= -\omega_\text{t}\, a_\text{t}^\dagger a_\text{t}
+        H_0 &= \omega_\text{t}\, a_\text{t}^\dagger a_\text{t}
               + \frac{\alpha}{2}\, a_\text{t}^{\dagger 2} a_\text{t}^2
               + \omega_\text{r}\, a_\text{r}^\dagger a_\text{r} \\
-        H_\text{p} &= -g\,(a_\text{t}^\dagger - a_\text{t})(a_\text{r}^\dagger - a_\text{r})
+        H_\text{p} &= g\,(a_\text{t}^\dagger + a_\text{t})(a_\text{r}^\dagger + a_\text{r})
         \end{aligned}
 
     Returns:
@@ -67,20 +68,20 @@ def transmon_resonator_hamiltonian() -> tuple[
     Example:
         >>> H_0, H_p, (omega_t, omega_r, alpha, g) = transmon_resonator_hamiltonian()
     """
-    omega_t, omega_r, alpha, g = sympy.symbols(
-        r"\omega_{t} \omega_{r} \alpha g", real=True, positive=True
+    omega_t, omega_r, g = sympy.symbols(
+        r"\omega_{t} \omega_{r} g", real=True, positive=True
     )
+    (alpha,) = sympy.symbols(r"\alpha", real=True, seq=True)
 
     a_t, a_r = BosonOp("a_t"), BosonOp("a_r")
 
     H_0 = (
-        -omega_t * Dagger(a_t) * a_t
+        omega_t * Dagger(a_t) * a_t
         + omega_r * Dagger(a_r) * a_r
         + alpha * Dagger(a_t) ** 2 * a_t**2 / 2
     )
 
-    # sympy's `sympify_return` wrapper hides `Expr.__sub__` from type checkers.
-    H_p = -g * sympy.Add(Dagger(a_t), -a_t) * sympy.Add(Dagger(a_r), -a_r)
+    H_p = g * sympy.Add(Dagger(a_t), a_t) * sympy.Add(Dagger(a_r), a_r)
 
     return H_0, H_p, (omega_t, omega_r, alpha, g)
 
@@ -101,33 +102,37 @@ def dispersive_shift(
 
     .. math::
 
-        \chi = \frac{2g^2}{\Delta - \alpha}
-             - \frac{2g^2}{\Delta}
-             - \frac{2g^2}{\omega_\text{t} + \omega_\text{r} + \alpha}
+        \chi = \frac{2g^2}{\Delta}
+             - \frac{2g^2}{\Delta + \alpha}
              + \frac{2g^2}{\omega_\text{t} + \omega_\text{r}}
+             - \frac{2g^2}{\omega_\text{t} + \omega_\text{r} + \alpha}
 
-    where :math:`\Delta = \omega_\text{t} - \omega_\text{r}`.  The first two terms give
+    where :math:`\Delta = \omega_\text{t} - \omega_\text{r}` and
+    :math:`\chi = (E_{11} - E_{10}) - (E_{01} - E_{00})`.  The first two terms give
     the rotating-wave-approximation (RWA) contribution
 
     .. math::
 
-        \chi_\text{RWA} = \frac{2 \alpha g^2}{\Delta(\Delta - \alpha)}
+        \chi_\text{RWA} = \frac{2 \alpha g^2}{\Delta(\Delta + \alpha)}
 
     and the last two are corrections from the counter-rotating terms.
+    For a transmon (:math:`\alpha < 0`) dispersive below the resonator
+    (:math:`\Delta < 0`, :math:`|\Delta| > |\alpha|`), :math:`\chi` is negative.
 
     All parameters are in GHz, and the returned value is also in GHz.
 
     Args:
         ω_t_ghz: Transmon frequency in GHz.
         ω_r_ghz: Resonator frequency in GHz.
-        α_ghz: Transmon anharmonicity in GHz (positive value).
+        α_ghz: Transmon anharmonicity in GHz (negative for a transmon,
+            :math:`\alpha \approx -E_\text{C}`).
         g_ghz: Coupling strength in GHz.
 
     Returns:
         Dispersive shift :math:`\chi` in GHz.
 
     Example:
-        >>> χ = dispersive_shift(5.0, 7.0, 0.2, 0.1)
+        >>> χ = dispersive_shift(5.0, 7.0, -0.2, 0.1)
         >>> print(f"χ = {χ * 1e3:.2f} MHz")
     """
     ω_t_ghz, ω_r_ghz, α_ghz, g_ghz = (
@@ -140,10 +145,10 @@ def dispersive_shift(
 
     # Full expression including counter-rotating terms
     return (
-        2 * g_ghz**2 / (Δ - α_ghz)
-        - 2 * g_ghz**2 / Δ
-        - 2 * g_ghz**2 / (ω_t_ghz + ω_r_ghz + α_ghz)
+        2 * g_ghz**2 / Δ
+        - 2 * g_ghz**2 / (Δ + α_ghz)
         + 2 * g_ghz**2 / (ω_t_ghz + ω_r_ghz)
+        - 2 * g_ghz**2 / (ω_t_ghz + ω_r_ghz + α_ghz)
     )
 
 
@@ -163,7 +168,7 @@ def dispersive_shift_to_coupling(
 
     .. math::
 
-        g \approx \sqrt{\frac{-\chi\,\Delta\,(\Delta - \alpha)}{2\alpha}}
+        g \approx \sqrt{\frac{\chi\,\Delta\,(\Delta + \alpha)}{2\alpha}}
 
     where :math:`\Delta = \omega_\text{t} - \omega_\text{r}`.
 
@@ -180,16 +185,14 @@ def dispersive_shift_to_coupling(
         χ_ghz: Target dispersive shift in GHz (typically negative).
         ω_t_ghz: Transmon frequency in GHz.
         ω_r_ghz: Resonator frequency in GHz.
-        α_ghz: Transmon anharmonicity in GHz (positive value;
-            the physical anharmonicity of a transmon is negative, but
-            following the Hamiltonian convention used throughout this
-            module, :math:`\alpha` is taken as positive).
+        α_ghz: Transmon anharmonicity in GHz (negative for a transmon,
+            :math:`\alpha \approx -E_\text{C}`).
 
     Returns:
         Coupling strength :math:`g` in GHz.
 
     Example:
-        >>> g = dispersive_shift_to_coupling(-0.001, 5.0, 7.0, 0.2)
+        >>> g = dispersive_shift_to_coupling(-0.001, 5.0, 7.0, -0.2)
         >>> print(f"g = {g * 1e3:.1f} MHz")
     """
     χ_ghz, ω_t_ghz, ω_r_ghz, α_ghz = (
@@ -199,7 +202,7 @@ def dispersive_shift_to_coupling(
         jnp.asarray(α_ghz),
     )
     Δ = ω_t_ghz - ω_r_ghz
-    g_squared = -χ_ghz * Δ * (Δ - α_ghz) / (2 * α_ghz)
+    g_squared = χ_ghz * Δ * (Δ + α_ghz) / (2 * α_ghz)
     return jnp.sqrt(jnp.abs(g_squared))
 
 
@@ -216,13 +219,8 @@ def ej_ec_to_frequency_and_anharmonicity(
 
         \begin{aligned}
         \omega_\text{q} &\approx \sqrt{8 E_\text{J} E_\text{C}} - E_\text{C} \\
-        \alpha &\approx E_\text{C}
+        \alpha &\approx -E_\text{C}
         \end{aligned}
-
-    Note:
-        The physical anharmonicity of a transmon is *negative*
-        (:math:`\alpha = -E_\text{C}`), but the Hamiltonian convention used
-        in this module and in pymablock takes :math:`\alpha` as positive.
 
     Args:
         ej_ghz: Josephson energy in GHz.
@@ -236,7 +234,7 @@ def ej_ec_to_frequency_and_anharmonicity(
         >>> print(f"ω_q = {ω_q:.2f} GHz, α = {α:.1f} GHz")
     """
     ej_ghz, ec_ghz = jnp.asarray(ej_ghz), jnp.asarray(ec_ghz)
-    return jnp.sqrt(8 * ej_ghz * ec_ghz) - ec_ghz, ec_ghz
+    return jnp.sqrt(8 * ej_ghz * ec_ghz) - ec_ghz, -ec_ghz
 
 
 @jit(inline=True)

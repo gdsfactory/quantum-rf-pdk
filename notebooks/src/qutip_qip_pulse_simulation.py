@@ -162,9 +162,9 @@ for ec in ec_values:
 
 # %% [markdown]
 # **Design Trade-off:**
-# - **Larger pads (Lower $E_\text{C}$)**: Reduces $\alpha$, which requires longer
+# - **Larger pads (Lower $E_\text{C}$)**: Reduces $|\alpha|$, which requires longer
 #   pulses to avoid leakage to $|2\rangle$ (slower gates).
-# - **Smaller pads (Higher $E_\text{C}$)**: Increases $\alpha$, allowing faster
+# - **Smaller pads (Higher $E_\text{C}$)**: Increases $|\alpha|$, allowing faster
 #   gates, but makes the qubit more sensitive to charge noise.
 
 # %% [markdown]
@@ -176,11 +176,11 @@ for ec in ec_values:
 
 # %%
 # Using parameters extracted from layout (EC = 0.3 GHz, EJ = 15 GHz)
-# QuTiP-QIP SCQubits expects negative anharmonicity for transmons,
-# while the qpdk perturbation model returns positive values by convention.
+# Both QuTiP-QIP SCQubits and the qpdk perturbation model use a negative
+# anharmonicity for transmons.
 wq0, a0 = ej_ec_to_frequency_and_anharmonicity(EJ_val, 0.3)
 wq = [float(wq0), float(wq0) - 0.1]
-alpha = [-float(a0), -float(a0)]
+alpha = [float(a0), float(a0)]
 
 g_coupling = 0.1
 wr = 6.5

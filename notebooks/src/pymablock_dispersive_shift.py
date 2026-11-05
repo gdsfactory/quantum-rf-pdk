@@ -59,12 +59,13 @@
 # reads:
 # ```{math}
 # :label: eq:transmon-resonator-hamiltonian
-# \mathcal{H} = -\omega_\text{t}\, a_\text{t}^\dagger a_\text{t}
+# \mathcal{H} = \omega_\text{t}\, a_\text{t}^\dagger a_\text{t}
 # + \frac{\alpha}{2}\, a_\text{t}^{\dagger 2} a_\text{t}^{2}
 # + \omega_\text{r}\, a_\text{r}^\dagger a_\text{r}
-# - g\,(a_\text{t}^\dagger - a_\text{t})(a_\text{r}^\dagger - a_\text{r}),
+# + g\,(a_\text{t}^\dagger + a_\text{t})(a_\text{r}^\dagger + a_\text{r}),
 # ```
-# where $\omega_\text{t}$ is the transmon frequency, $\alpha$ its anharmonicity,
+# where $\omega_\text{t}$ is the transmon frequency, $\alpha$ its anharmonicity
+# ($\alpha \approx -E_\text{C} < 0$ for a transmon),
 # $\omega_\text{r}$ the resonator frequency, and $g$ the coupling strength.
 #
 # Treating $g$ as a perturbative parameter, **pymablock** computes the
@@ -189,10 +190,10 @@ display_eq(r"\chi", chi_sym)
 # The full expression (including counter-rotating terms) is:
 # ```{math}
 # :label: eq:dispersive-shift-full
-# \chi = \frac{2g^2}{-\alpha + \omega_\text{r} + \omega_\text{t}}
-#      + \frac{2g^2}{-\alpha - \omega_\text{r} + \omega_\text{t}}
-#      - \frac{2g^2}{-\omega_\text{r} + \omega_\text{t}}
-#      + \frac{2g^2}{-\omega_\text{r} - \omega_\text{t}}
+# \chi = \frac{2g^2}{\omega_\text{t} - \omega_\text{r}}
+#      - \frac{2g^2}{\omega_\text{t} - \omega_\text{r} + \alpha}
+#      + \frac{2g^2}{\omega_\text{t} + \omega_\text{r}}
+#      - \frac{2g^2}{\omega_\text{t} + \omega_\text{r} + \alpha}
 # ```
 
 # %% [markdown]
@@ -203,7 +204,7 @@ display_eq(r"\chi", chi_sym)
 # which fully determine the transmon frequency and anharmonicity in the
 # transmon regime ($E_\text{J} \gg E_\text{C}$):
 # ```{math}
-# \omega_\text{t} \approx \sqrt{8 E_\text{J} E_\text{C}} - E_\text{C}, \qquad \alpha \approx E_\text{C}
+# \omega_\text{t} \approx \sqrt{8 E_\text{J} E_\text{C}} - E_\text{C}, \qquad \alpha \approx -E_\text{C}
 # ```
 
 # %%
@@ -222,7 +223,7 @@ display(
 E_\text{{J}} = {EJ:.1f}\,\text{{GHz}}, \quad
 E_\text{{C}} = {EC:.1f}\,\text{{GHz}} \\
 \omega_\text{{t}} = \sqrt{{8 E_\text{{J}} E_\text{{C}}}} - E_\text{{C}} = {omega_t_val:.3f}\,\text{{GHz}} \\
-\alpha \approx E_\text{{C}} = {alpha_val:.1f}\,\text{{GHz}} \\
+\alpha \approx -E_\text{{C}} = {alpha_val:.1f}\,\text{{GHz}} \\
 \omega_\text{{r}} = {omega_r_val:.1f}\,\text{{GHz}} \\
 g = {g_val:.1f}\,\text{{GHz}} \\
 \Delta = \omega_\text{{t}} - \omega_\text{{r}} = {omega_t_val - omega_r_val:.3f}\,\text{{GHz}}
