@@ -13,7 +13,9 @@
 #   #5b6472 -> #c5cbd5  muted ink (ticks)
 #   #dcdfe4 -> #586272  rules (spines, grid)
 
-font.family: sans-serif
+# The generic sans-serif family resolves to a single font (Inter), so glyphs Inter lacks,
+# such as ∠ (U+2220), get no fallback. DejaVu Sans ships with matplotlib and fills them.
+font.family: sans-serif, DejaVu Sans
 font.sans-serif: Inter, DejaVu Sans, Helvetica, Arial, sans-serif
 font.monospace: Code New Roman, DejaVu Sans Mono, Courier New, Courier, monospace
 
