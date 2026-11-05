@@ -159,6 +159,13 @@ documentation. Click a title to open the full notebook.
 | Block-diagonalized dispersive shift with Pymablock | Circulax JAX gradients to target f and anharmonicity |
 |       ![Pymablock dispersive shift][img-pmb]       |    ![Circulax optimization convergence][img-clx]     |
 
+### Parametric Amplifiers
+
+| [Traveling-Wave Parametric Amplifier][nb-twpa]  |           [Flux-Pumped JPA][nb-jpa]            |
+| :---------------------------------------------: | :--------------------------------------------: |
+| 2047-junction TWPA gain in JosephsonCircuits.jl | VACASK harmonic balance vs. single-mode theory |
+|     ![TWPA signal and idler gain][img-twpa]     |       ![VACASK JPA signal gain][img-jpa]       |
+
 ### Electromagnetic Field Solvers
 
 |     [COMSOL Resonator][nb-cres]     |     [HFSS Eigenmode][nb-hfss]     |    [Elmer Capacitance][nb-elmer]    |
@@ -327,17 +334,21 @@ QPDK is released under the [MIT License](LICENSE).
 [img-cres]: docs/_static/images/sim_comsol_resonator_field.webp
 [img-elmer]: docs/_static/images/sim_elmer_idc_convergence.svg
 [img-hfss]: docs/_static/images/hfss_eigenmode_resonator_field.jpg
+[img-jpa]: docs/_static/images/sim_vacask_jpa_gain.svg
 [img-mc]: docs/_static/images/sim_monte_carlo_frequency_spread.svg
 [img-pmb]: docs/_static/images/sim_pymablock_dispersive_shift.svg
 [img-qutip]: docs/_static/images/sim_qutip_x_gate.svg
 [img-s21]: docs/_static/images/sim_resonator_chip_transmission.svg
 [img-scq]: docs/_static/images/sim_scqubits_flux_spectrum.svg
+[img-twpa]: docs/_static/images/sim_josephsoncircuits_twpa_gain.svg
 [nb-clx]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/circulax_transmon_optimization.html
 [nb-cqub]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/comsol_qubit_capacitance.html
 [nb-cres]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/comsol_cpw_resonator.html
 [nb-elmer]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/elmer_capacitance_interdigital.html
 [nb-hfss]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/hfss_eigenmode_resonator.html
+[nb-jpa]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/vacask_lumped_parametric_amplifier.html
 [nb-mc]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/monte_carlo_fabrication_tolerance.html
 [nb-pmb]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/pymablock_dispersive_shift.html
 [nb-qutip]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/qutip_qip_pulse_simulation.html
 [nb-scq]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/scqubits_parameter_calculation.html
+[nb-twpa]: https://gdsfactory.github.io/quantum-rf-pdk/notebooks/josephsoncircuits_twpa.html
