@@ -3,6 +3,8 @@
 import math
 
 import hypothesis.strategies as st
+import jax.numpy as jnp
+import pytest
 from hypothesis import assume, given, settings
 
 from qpdk.models.perturbation import (
@@ -25,7 +27,7 @@ class TestEjEcToFrequencyAndAnharmonicity:
         omega_q, alpha = ej_ec_to_frequency_and_anharmonicity(20.0, 0.2)
         expected_f_q = math.sqrt(8 * 20.0 * 0.2) - 0.2
         assert math.isclose(omega_q, expected_f_q, rel_tol=1e-10)
-        assert math.isclose(alpha, 0.2)
+        assert math.isclose(alpha, -0.2)
 
     @staticmethod
     def test_frequency_increases_with_ej() -> None:
@@ -41,16 +43,43 @@ class TestDispersiveShift:
     @staticmethod
     def test_sign_for_negative_detuning() -> None:
         """Test sign convention for ω_t < ω_r (typical case)."""
-        chi = dispersive_shift(5.0, 7.0, 0.2, 0.1)
-        # For negative detuning (ω_t < ω_r), χ should be positive
-        # since the dominant term has Δ < 0 and α > 0
-        assert chi > 0
+        chi = dispersive_shift(5.0, 7.0, -0.2, 0.1)
+        # For a transmon (α < 0) below the resonator (Δ < 0, |Δ| > |α|),
+        # the dominant term 2αg² / (Δ(Δ + α)) is negative
+        assert chi < 0
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        ("omega_t", "omega_r", "alpha"),
+        [(5.457, 7.0, -0.2), (5.0, 7.0, -0.3), (6.0, 4.5, -0.25)],
+    )
+    def test_matches_exact_diagonalization(
+        omega_t: float, omega_r: float, alpha: float
+    ) -> None:
+        """χ should match exact diagonalization of the Hamiltonian in the module docstring."""
+        g, n = 0.01, 8
+        b = jnp.diag(jnp.sqrt(jnp.arange(1, n, dtype=float)), 1)
+        eye = jnp.eye(n)
+        h_t = omega_t * b.T @ b + alpha / 2 * b.T @ b.T @ b @ b
+        h = (
+            jnp.kron(h_t, eye)
+            + jnp.kron(eye, omega_r * b.T @ b)
+            + g * jnp.kron(b + b.T, b + b.T)
+        )
+        energies, vectors = jnp.linalg.eigh(h)
+
+        def dressed(i: int, j: int) -> float:
+            return float(energies[jnp.argmax(jnp.abs(vectors[i * n + j, :]))])
+
+        chi_exact = dressed(1, 1) - dressed(1, 0) - dressed(0, 1) + dressed(0, 0)
+        chi = float(dispersive_shift(omega_t, omega_r, alpha, g))
+        assert math.isclose(chi, chi_exact, rel_tol=1e-2)
 
     @staticmethod
     def test_quadratic_in_g() -> None:
         """Dispersive shift should scale as g²."""
-        chi1 = dispersive_shift(5.0, 7.0, 0.2, 0.1)
-        chi2 = dispersive_shift(5.0, 7.0, 0.2, 0.2)
+        chi1 = dispersive_shift(5.0, 7.0, -0.2, 0.1)
+        chi2 = dispersive_shift(5.0, 7.0, -0.2, 0.2)
         # χ ∝ g², so chi2/chi1 ≈ 4
         ratio = chi2 / chi1
         assert math.isclose(ratio, 4.0, rel_tol=1e-10)
@@ -58,7 +87,7 @@ class TestDispersiveShift:
     @staticmethod
     def test_zero_coupling() -> None:
         """Zero coupling should give zero dispersive shift."""
-        chi = dispersive_shift(5.0, 7.0, 0.2, 0.0)
+        chi = dispersive_shift(5.0, 7.0, -0.2, 0.0)
         assert math.isclose(chi, 0.0, abs_tol=1e-15)
 
     @staticmethod
@@ -70,9 +99,9 @@ class TestDispersiveShift:
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_finite_result(g: float, omega_t: float, omega_r: float) -> None:
         """Result should be finite for non-degenerate parameters."""
-        # Avoid resonance (omega_t = omega_r) and omega_t + omega_r = alpha
+        # Avoid resonance (omega_t = omega_r) and omega_t + alpha = omega_r
         assume(not (abs(omega_t - omega_r) < 0.1 or abs(omega_t - omega_r - 0.2) < 0.1))
-        chi = dispersive_shift(omega_t, omega_r, 0.2, g)
+        chi = dispersive_shift(omega_t, omega_r, -0.2, g)
         assert math.isfinite(chi)
 
 
@@ -82,13 +111,13 @@ class TestDispersiveShiftToCoupling:
     @staticmethod
     def test_round_trip() -> None:
         """Converting g→χ→g should return the original g."""
-        omega_t, omega_r, alpha = 5.0, 7.0, 0.2
+        omega_t, omega_r, alpha = 5.0, 7.0, -0.2
         g_original = 0.08
 
         # Compute χ from g using only the dominant RWA term
         # (matching the inversion formula used in dispersive_shift_to_coupling)
         delta = omega_t - omega_r
-        chi_rwa = 2 * g_original**2 * alpha / (delta * (delta - alpha))
+        chi_rwa = 2 * g_original**2 * alpha / (delta * (delta + alpha))
 
         g_recovered = dispersive_shift_to_coupling(chi_rwa, omega_t, omega_r, alpha)
         assert math.isclose(g_recovered, g_original, rel_tol=1e-8)
@@ -96,7 +125,7 @@ class TestDispersiveShiftToCoupling:
     @staticmethod
     def test_positive_result() -> None:
         """Coupling should always be positive."""
-        g = dispersive_shift_to_coupling(-0.001, 5.0, 7.0, 0.2)
+        g = dispersive_shift_to_coupling(-0.001, 5.0, 7.0, -0.2)
         assert g > 0
 
 

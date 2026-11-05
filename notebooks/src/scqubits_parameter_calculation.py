@@ -221,16 +221,23 @@ display(
 # :label: eq:coupling-term-scq
 # \mathcal{H}_\text{int} = g\, n_\text{t}\, (a_\text{r} + a_\text{r}^\dagger),
 # ```
-# where $n_\text{t} \propto (a_\text{t} - a_\text{t}^\dagger)/(2i)$ is the transmon charge operator.
-# This charge-coupling form is equivalent to {eq}`eq:transmon-resonator-hamiltonian-scq`
-# when working in the transmon energy eigenbasis.
+# where $n_\text{t}$ is the transmon charge operator.
+# This charge-coupling form reduces to {eq}`eq:transmon-resonator-hamiltonian-scq`
+# when working in the transmon energy eigenbasis, but with a different normalization:
+# $g$ in {eq}`eq:transmon-resonator-hamiltonian-scq` couples $|0\rangle \leftrightarrow |1\rangle$
+# with unit matrix element, whereas here the matrix element is
+# $|\langle 0|n_\text{t}|1\rangle| \approx (E_\text{J}/8E_\text{C})^{1/4}/\sqrt{2}$.
+# To compare like with like, we pass $g / |\langle 0|n_\text{t}|1\rangle|$ to scQubits.
 #
 # The dressed states are identified by their maximum overlap with the
 # corresponding bare states $|i_\text{t}, j_\text{r}\rangle$.
 
 # %%
+n01 = float(abs(transmon.matrixelement_table("n_operator", evals_count=2)[0, 1]))
+display(Math(rf"|\langle 0|n_\text{{t}}|1\rangle| = {n01:.4f}"))
+
 interaction = scq.InteractionTerm(
-    g_strength=g_val,
+    g_strength=g_val / n01,
     operator_list=[
         (0, transmon.n_operator),  # (subsystem_index, operator)
         (1, resonator.annihilation_operator() + resonator.creation_operator()),
@@ -280,17 +287,22 @@ display(
 )
 
 # %% [markdown]
-# The scQubits result agrees well with the analytical perturbation-theory
-# formula; any residual difference reflects higher-order corrections beyond
-# the leading $g^2/\Delta$ term.
+# Sign and order of magnitude agree.  scQubits gives a roughly 30 % larger $|\chi|$,
+# which is not a higher-order correction in $g$: the analytical formula treats the transmon
+# as a Kerr oscillator, whose charge matrix elements obey
+# $|\langle 1|n_\text{t}|2\rangle| / |\langle 0|n_\text{t}|1\rangle| = \sqrt{2}$.
+# The full transmon has a somewhat smaller ratio at this $E_\text{J}/E_\text{C}$, and
+# since $\chi$ results from a near-cancellation of the $|0\rangle\leftrightarrow|1\rangle$ and
+# $|1\rangle\leftrightarrow|2\rangle$ contributions, this small mismatch shows up
+# amplified in $\chi$.
 
 # %% [markdown]
 # ## Dispersive Shift vs. Coupling Strength
 #
 # We sweep the coupling strength $g$ to compare the scQubits numerical result
-# against the analytical formula.  The two approaches agree in the dispersive
-# regime ($g \ll |\Delta|$) and diverge as the system approaches the
-# resonance condition.
+# against the analytical formula.  Both scale as $g^2$ in the dispersive regime
+# ($g \ll |\Delta|$), with the constant relative offset discussed above, and
+# diverge as the system approaches the resonance condition.
 #
 # From the quantum model, we can extract physical parameters relevant for PDK design.
 #
@@ -320,7 +332,7 @@ def chi_scqubits_at_g(g: float) -> float:
         [transmon, resonator],
         interaction_list=[
             scq.InteractionTerm(
-                g_strength=g,
+                g_strength=g / n01,
                 operator_list=[(0, transmon.n_operator), (1, _a_plus_adag)],
             )
         ],

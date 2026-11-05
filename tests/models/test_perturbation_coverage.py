@@ -35,12 +35,14 @@ class TestTransmonResonatorHamiltonian:
         assert str(g) == "g"
 
     @staticmethod
-    def test_symbols_are_positive_real() -> None:
-        """Test that all symbols are declared positive and real."""
-        _, _, symbols = transmon_resonator_hamiltonian()
-        for s in symbols:
+    def test_symbols_are_real() -> None:
+        """Test that all symbols are real and all but the anharmonicity positive."""
+        omega_t, omega_r, alpha, g = transmon_resonator_hamiltonian()[2]
+        for s in (omega_t, omega_r, g):
             assert s.assumptions0["positive"]
             assert s.assumptions0["real"]
+        assert alpha.assumptions0["real"]
+        assert "positive" not in alpha.assumptions0
 
     @staticmethod
     def test_h0_is_nontrivial() -> None:
@@ -71,7 +73,7 @@ class TestDispersiveShiftRoundTrip:
         g_in = 0.1  # GHz
         omega_t = 5.0
         omega_r = 7.0
-        alpha = 0.2
+        alpha = -0.2
 
         chi = dispersive_shift(omega_t, omega_r, alpha, g_in)
         g_out = dispersive_shift_to_coupling(chi, omega_t, omega_r, alpha)
@@ -83,17 +85,17 @@ class TestDispersiveShiftRoundTrip:
 
     @staticmethod
     def test_dispersive_shift_sign() -> None:
-        """Test that chi is positive when omega_t < omega_r (negative detuning)."""
-        chi = dispersive_shift(5.0, 7.0, 0.2, 0.1)
-        # With negative Delta and positive alpha, the dominant RWA term
-        # 2g^2*alpha / (Delta*(Delta-alpha)) is positive
-        assert float(chi) > 0
+        """Test that chi is negative when omega_t < omega_r (negative detuning)."""
+        chi = dispersive_shift(5.0, 7.0, -0.2, 0.1)
+        # With negative Delta and negative alpha, the dominant RWA term
+        # 2g^2*alpha / (Delta*(Delta+alpha)) is negative
+        assert float(chi) < 0
 
     @staticmethod
     def test_array_input() -> None:
         """Test that dispersive_shift works with array inputs."""
         omega_t = jnp.array([4.0, 5.0, 6.0])
-        chi = dispersive_shift(omega_t, 7.0, 0.2, 0.1)
+        chi = dispersive_shift(omega_t, 7.0, -0.2, 0.1)
         assert chi.shape == (3,)
 
 
@@ -107,13 +109,13 @@ class TestEjEcConversion:
         omega_q, alpha = ej_ec_to_frequency_and_anharmonicity(ej, ec)
         # omega_q = sqrt(8 * 20 * 0.2) - 0.2 = sqrt(32) - 0.2 ≈ 5.46 GHz
         assert_allclose(float(omega_q), jnp.sqrt(8 * ej * ec) - ec, rtol=1e-6)
-        assert_allclose(float(alpha), ec, rtol=1e-6)
+        assert_allclose(float(alpha), -ec, rtol=1e-6)
 
     @staticmethod
-    def test_alpha_equals_ec() -> None:
-        """Test that anharmonicity equals charging energy."""
+    def test_alpha_equals_minus_ec() -> None:
+        """Test that anharmonicity equals minus the charging energy."""
         _, alpha = ej_ec_to_frequency_and_anharmonicity(15.0, 0.3)
-        assert_allclose(float(alpha), 0.3)
+        assert_allclose(float(alpha), -0.3)
 
 
 class TestPurcellDecayRate:
