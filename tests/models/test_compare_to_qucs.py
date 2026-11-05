@@ -2,9 +2,11 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from contextlib import ExitStack
 from functools import partial
 from queue import SimpleQueue
 from typing import ClassVar, final, override
+from unittest.mock import patch
 
 import jax.numpy as jnp
 import polars as pl
@@ -17,11 +19,15 @@ from pydantic import BaseModel, ConfigDict
 
 from qpdk.config import PATH
 from qpdk.models.couplers import coupler_straight
+from qpdk.models.cpw import cpw_z0_from_cross_section
 from qpdk.models.generic import capacitor, inductor, lc_resonator
 from qpdk.models.waveguides import straight
 from qpdk.tech import coplanar_waveguide
 
 TEST_DATA_PATH = PATH.tests / "models" / "data"
+
+# (h [µm], t [µm], ε_r, tan δ) of the Qucs-S ``SUBST`` in ``dut.sch``
+QUCS_CPW_SUBSTRATE = (500.0, 0.2, 11.7, 0.0)
 
 NUMERIC_TOLERANCES = {
     "rtol": 1 / 100,
@@ -382,7 +388,6 @@ class TestInductorCompareToQucs(BaseCompareToQucs):
         return inductor
 
 
-@pytest.mark.skip(reason="S11 does not match at all and S22 has some discrepancies")
 @final
 class TestCPWCompareToQucs(BaseCompareToQucs):
     """Test suite for comparing coplanar waveguide (CPW) S-parameter models to Qucs-S results."""
@@ -390,14 +395,64 @@ class TestCPWCompareToQucs(BaseCompareToQucs):
     component_name = "Coplanar waveguide"
     csv_filename = "cpw_w10_s_6_l10mm.csv"
     parameters = frozenset({ModelParameter(name="length", value=10000.0, unit=1e-6)})
-    skip_values: ClassVar[list[str]] = ["S11"]
 
     @override
     def get_model_function(self) -> Callable[..., sax.SType]:
-        return partial(
-            straight,
-            cross_section=coplanar_waveguide(),
-        )
+        cross_section = coplanar_waveguide()
+        with self._qucs_substrate():
+            z0 = cpw_z0_from_cross_section(cross_section)
+
+        def straight_50_ohm(f: jnp.ndarray, length: float) -> sax.SDict:
+            """Renormalise ``straight`` from its own Z0 to the 50 Ω Qucs-S ports.
+
+            ``straight`` is referenced to the line's characteristic impedance, so
+            its S11 is exactly zero and its phase is meaningless float noise.
+
+            Returns:
+                S-parameters referenced to 50 Ω.
+            """
+            with self._qucs_substrate():
+                s = straight(f=f, length=length, cross_section=cross_section)
+            s_matrix = jnp.stack(
+                [
+                    jnp.stack([s["o1", "o1"], s["o1", "o2"]], axis=-1),
+                    jnp.stack([s["o2", "o1"], s["o2", "o2"]], axis=-1),
+                ],
+                axis=-2,
+            )
+            # S' = (S - Γ I)(I - Γ S)^-1 for equal real port impedances
+            gamma = (50.0 - z0) / (50.0 + z0)
+            eye = jnp.eye(2)
+            s_50 = jnp.linalg.solve(
+                jnp.swapaxes(eye - gamma * s_matrix, -1, -2),
+                jnp.swapaxes(s_matrix - gamma * eye, -1, -2),
+            )
+            s_50 = jnp.swapaxes(s_50, -1, -2)
+            return {
+                (f"o{i + 1}", f"o{j + 1}"): s_50[..., i, j]
+                for i in range(2)
+                for j in range(2)
+            }
+
+        return straight_50_ohm
+
+    @staticmethod
+    def _qucs_substrate() -> ExitStack:
+        r"""Use the Qucs-S ``SUBST`` (see ``dut.sch``) instead of the PDK substrate.
+
+        The reference was simulated with :math:`\varepsilon_\text{r} = 11.7` and no
+        loss, whereas the PDK substrate has :math:`\varepsilon_\text{r} = 11.45`.
+
+        Returns:
+            Context manager patching the substrate parameters.
+        """
+        stack = ExitStack()
+        for target in (
+            "qpdk.models.waveguides.get_cpw_substrate_params",
+            "qpdk.models.cpw.get_cpw_substrate_params",
+        ):
+            stack.enter_context(patch(target, return_value=QUCS_CPW_SUBSTRATE))
+        return stack
 
 
 @final
