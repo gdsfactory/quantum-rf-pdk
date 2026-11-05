@@ -245,7 +245,7 @@ plt.tight_layout()
 plt.show(block=False)
 
 # %% [markdown]
-# # Monte Carlo Fabrication Tolerance Analysis
+# ## Monte Carlo analysis
 #
 # In superconducting quantum chip fabrication, lithography and etching introduce
 # process variations in the CPW centre-conductor width and gap to the ground

@@ -94,7 +94,7 @@ res_freq = resonator_frequency(
 )
 logger.info(f"Resonance frequency (quarter-wave): {res_freq / 1e9} GHz")
 
-circuit, info = sax.circuit(
+circuit, _ = sax.circuit(
     netlist={
         "instances": {
             "R1": "quarter_wave_resonator",
@@ -115,7 +115,6 @@ circuit, info = sax.circuit(
 
 frequencies = jnp.linspace(1e9, 10e9, 5001)
 S = circuit(f=frequencies, length=4000.0)
-logger.info(info)
 plt.plot(frequencies / 1e9, abs(S["in", "out"]) ** 2)
 plt.xlabel("f [GHz]")
 plt.ylabel("$S_{21}$")
@@ -143,6 +142,7 @@ logger.info(f"Coupled resonance frequency: {float(actual_freq) / 1e9} GHz")
 _mark_resonance_frequency(actual_freq, "green", "Coupled resonance frequency")
 
 plt.legend()
+plt.show()
 
 
 # %% [markdown]
