@@ -124,7 +124,7 @@ arrays tie the two chips' ground planes together.
 A 3D cut-away through one of the lines, rendered with `to_3d()` and translucent substrates, shows the TSVs through both
 chips and the top chip with its MB2 meander on the backside.
 
-![TSV Flip-Chip Test Chip 3D view](docs/_static/images/tsv_flip_chip_test_chip_3d.png)
+![TSV Flip-Chip Test Chip 3D view](docs/_static/images/tsv_flip_chip_test_chip_3d.webp)
 
 ### Resonator Test Chip
 
