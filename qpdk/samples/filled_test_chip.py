@@ -9,7 +9,6 @@
 # ---
 
 # %% tags=["hide-input", "hide-output"]
-from functools import partial
 from pathlib import Path
 
 import gdsfactory as gf
@@ -110,9 +109,15 @@ def filled_qubit_test_chip(
 
 
 # %%
-filled_flipmon_test_chip = partial(
-    filled_qubit_test_chip, Path(__file__).parent / "flipmon_test_chip.pic.yml"
-)
+def filled_flipmon_test_chip() -> gf.Component:
+    """Returns the flipmon test chip filled with magnetic vortex trapping rectangles.
+
+    The flipmon qubit design follows :cite:`liVacuumgapTransmonQubits2021`, and the
+    test chip layout is the sample from
+    :cite:`tuokkolaMethodsAchieveNearmillisecond2025`.
+    """
+    return filled_qubit_test_chip(Path(__file__).parent / "flipmon_test_chip.pic.yml")
+
 
 # %% [markdown]
 # ## Filled Gatemon Test Chip Function
@@ -122,9 +127,13 @@ filled_flipmon_test_chip = partial(
 
 
 # %%
-filled_gatemon_test_chip = partial(
-    filled_qubit_test_chip, Path(__file__).parent / "gatemon_test_chip.pic.yml"
-)
+def filled_gatemon_test_chip() -> gf.Component:
+    """Returns the two-gatemon test chip filled with magnetic vortex trapping rectangles.
+
+    Roughly corresponds to the chip layout in :cite:`riechertCarbonNanotubeGatemon2025`.
+    """
+    return filled_qubit_test_chip(Path(__file__).parent / "gatemon_test_chip.pic.yml")
+
 
 # %% [markdown]
 # ## Examples
