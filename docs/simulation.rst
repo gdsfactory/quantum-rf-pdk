@@ -317,6 +317,20 @@ in ``qpdk/models/datasets/recipes/``.
       - ``width``, ``cpw_gap``, and ``gap`` or ``ground_strip_width``
       - Interpolates logarithmically once a ground strip is present.
         ``coupler_straight`` uses the same lookup
+    - - ``drum_capacitances()``
+      - ``drum_lc_resonator_palace``
+      - Coupling :math:`C_\text{c}`, parasitic :math:`C_\text{p}` and drum
+        :math:`C_\text{d}` in F, from 54 electrostatic solves
+      - ``coupling_gap``, ``coupling_pad_size``, ``radius``, ``turn_length``
+      - The other cell arguments are fixed at their defaults, including 75 meander runs.
+        Values outside the grid return NaN
+    - - ``drum_lc_resonator_fem_model()``
+      - ``drum_lc_resonator_palace``
+      - Two-port lumped SAX model with the extracted capacitances in place of the
+        analytical ones
+      - same as above, plus ``gap`` and ``sheet_inductance``
+      - The extracted :math:`C_\text{d}` replaces the analytical value at the stack gap,
+        so ``gap`` still moves only the analytical parallel-plate term
 
 ``flipmon_ideal_bond_model`` and ``double_pad_transmon_fem_model`` build on
 :func:`~qpdk.models.datasets.junction_model`, which documents the circuit convention.
@@ -388,6 +402,58 @@ isolated :math:`f_{01}` near 4.447 GHz for the nominal charging energy, and repr
 the paper's quantum-dot parity transitions needs its extended Hamiltonian
 :cite:`riechertCarbonNanotubeGatemon2025`. Broad sweeps can miss the maxima of narrow
 resonances, so use a local frequency sweep before interpreting their heights.
+
+Drum LC resonator
+=================
+
+``drum_capacitances`` returns, in F, the coupling :math:`C_\text{c}`, the parasitic
+:math:`C_\text{p}` and the drum capacitance :math:`C_\text{d}` of a
+``drum_lc_resonator`` layout, from ``coupling_gap``, ``coupling_pad_size``, ``radius``
+and ``turn_length`` in um. ``drum_lc_resonator_fem_model()`` returns the lumped SAX
+model with these values in place of its ``coupling_capacitance`` and
+``parasitic_capacitance`` inputs. The extracted :math:`C_\text{d}` replaces the
+analytical one at the stack gap, and the ``gap`` argument still tunes the analytical
+parallel-plate term. The bundled ``drum_lc_resonator_palace`` dataset holds 54 Palace
+solves over ``coupling_gap``, ``coupling_pad_size``, ``radius`` and ``turn_length``, and
+both functions interpolate it.
+
+The recipe ``qpdk/models/datasets/recipes/drum.py`` is a 3D electrostatic solve of the
+whole cell with its feedline in a finite coplanar ground. Its terminals are the node
+(pad, wiring and bottom electrode), the ``VG_TOP`` membrane one vacuum gap above it, the
+feedline cut open beyond the ports, and seventeen blocks of meander runs separated by 1
+um slits. The recipe weights the Maxwell matrix with the node at 1, the membrane and
+feed at 0 and each meander block at its mean position along the wire: the feed and
+membrane charges give :math:`C_\text{c}` and :math:`C_\text{d}`, and the remaining
+energy gives :math:`C_\text{p}`. The full matrix is stored so other weightings can be
+applied. A 2D sheet solve cannot hold the membrane, so the recipe is 3D. Conductors are
+zero-thickness sheets by default; ``conductors="solid"`` extrudes M1 and the membrane. A
+gmsh box field sets 0.14 um elements in the plane of the 70 nm gap. The 1 um near-metal
+and 60 um far-field sizes, 600 um padding and third-order basis functions are the
+published settings. At the default geometry the solve gives 5.05 fF, 82.46 fF and 26.82
+fF. With the analytical meander those values put the lumped transmission zero near 4.0
+GHz, below the 6.7 GHz that the analytical defaults predict with the paper's 16 fF
+parasitic.
+
+The embedded convergence study compares that setting with a 0.07 um gap mesh, a 2 um
+near-metal mesh, fourth-order elements and a 1200 um domain, all at the default geometry
+and the published segmentation. The coupling moves by 0.05 %, 1.33 %, 0.55 % and less
+than 0.01 % respectively, inside the 2 % tolerance, and the parasitics by at most 0.73
+%, inside their 1 % tolerance. The segmentation is the largest approximation: block
+midpoint weights form a staircase of the linear voltage profile, :math:`C_\text{c}`
+rises 1.92 % from five blocks to nine and 0.33 % from thirteen to seventeen, so the
+published seventeen still sit about 0.7 % under the continuous profile while the other
+quantities stay within 0.1 %. Solid conductors are a different model rather than a
+refinement, and they move :math:`C_\text{d}` by -6.4 %, a difference a 0.14 um mesh
+cannot resolve through a 120 nm membrane. Three holdout solves at off-grid points
+interpolate high by 4.6 to 5.1 % in :math:`C_\text{c}`, the chord error of a doubling
+gap axis on an exponentially decaying coupling, and by at most 3.3 % in
+:math:`C_\text{d}`.
+
+Run ``uv run --script qpdk/models/datasets/recipes/drum.py convergence`` to reproduce
+the study at the default geometry. The linear voltage profile is a lumped approximation:
+the default meander is about 23 mm of wire, a substantial fraction of a guided
+wavelength near 7 GHz, so the driven meander recipe is the reference for its distributed
+response.
 
 Generating Palace datasets
 ==========================

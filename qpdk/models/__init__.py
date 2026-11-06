@@ -59,6 +59,18 @@ from qpdk.models.cpw import (
     propagation_constant,
     transmission_line_s_params,
 )
+from qpdk.models.drum import (
+    drum_capacitance_reduction,
+    drum_capacitances,
+    drum_effective_mass,
+    drum_electromechanical_coupling,
+    drum_lc_resonator,
+    drum_lc_resonator_fem_model,
+    drum_single_photon_coupling,
+    drum_zero_point_motion,
+    vacuum_gap_capacitance_analytical,
+    vacuum_gap_capacitor,
+)
 from qpdk.models.esr import (
     esr_lc_resonator,
     esr_lc_resonator_parameters,
@@ -218,6 +230,14 @@ __all__ = [
     "double_pad_transmon_fem_model",
     "double_pad_transmon_with_bbox",
     "double_pad_transmon_with_resonator",
+    "drum_capacitance_reduction",
+    "drum_capacitances",
+    "drum_effective_mass",
+    "drum_electromechanical_coupling",
+    "drum_lc_resonator",
+    "drum_lc_resonator_fem_model",
+    "drum_single_photon_coupling",
+    "drum_zero_point_motion",
     "ec_to_capacitance",
     "ej_ec_to_frequency_and_anharmonicity",
     "ej_to_inductance",
@@ -324,6 +344,8 @@ __all__ = [
     "unimon_energies",
     "unimon_frequency_and_anharmonicity",
     "unimon_hamiltonian",
+    "vacuum_gap_capacitance_analytical",
+    "vacuum_gap_capacitor",
     "xmon_transmon",
 ]
 

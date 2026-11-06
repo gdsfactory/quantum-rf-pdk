@@ -27,6 +27,8 @@ stacks:
       TSV: {material: TiN, thickness: 500, zmin: -500, layer: TSV}
       Substrate: {material: Si, thickness: 500, zmin: -500, layer: SIM_AREA, color: substrate}
       Vacuum: {material: vacuum, thickness: 500, zmin: 0.2, layer: SIM_AREA, color: vacuum}
+      VacuumGap_Post: {material: Al, thickness: 0.07, zmin: 0.2, layer: VG_TOP, derived: true, shade: 25}
+      VacuumGap_Top: {material: Al, thickness: 0.12, zmin: 0.27, layer: VG_TOP}
   LAYER_STACK_FLIP_CHIP:
     title: adds the top chip
     extends: [LAYER_STACK]
