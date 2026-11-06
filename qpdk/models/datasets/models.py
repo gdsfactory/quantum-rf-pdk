@@ -115,10 +115,11 @@ def capacitance_model(
 def junction_model(
     dataset: Dataset | Path | str,
     *,
-    junction: tuple[str, str],
+    junction: tuple[str, str | None],
     inductance: float,
     junction_capacitance: float = 0.0,
     terminal_groups: tuple[tuple[str, ...], ...] | None = None,
+    exposed_ports: tuple[str, ...] | None = None,
     **variants: str,
 ) -> sax.SDictModel:
     r"""Build a small-signal circuit from electrode capacitances and one junction.
@@ -143,12 +144,21 @@ def junction_model(
     and retains capacitance to ground. The wires add no field or inductance.
     All SAX ports reference dataset ground, and frequency is in Hz.
 
+    Use ``None`` for the junction's second terminal to connect it to reference
+    ground. ``exposed_ports`` selects the external circuit terminals. Other
+    electrodes remain internal with zero injected current, rather than being
+    terminated by SAX's implicit matched loads. This lets a local qubit and
+    coupling paddle expose only its readout pin without damping the islands.
+    The dataset must end at that pin; a distributed resonator remains outside
+    this boundary.
+
     Args:
         dataset: Dataset or path containing real Maxwell capacitance matrices in F.
         junction: Names of the two ports connected by the junction, after grouping.
         inductance: Positive small-signal Josephson inductance in H.
         junction_capacitance: Additional parallel junction capacitance in F.
         terminal_groups: Electrodes to connect together; defaults to separate ports.
+        exposed_ports: External ports in order; defaults to every grouped terminal.
         **variants: Discrete dataset selections.
 
     Returns:
@@ -177,8 +187,20 @@ def junction_model(
             "Terminal groups must partition every dataset terminal exactly once"
         )
     ports = tuple(group[0] for group in groups)
-    if len(set(junction)) != 2 or not set(junction) <= set(ports):
-        raise ValueError("The junction must name two distinct grouped ports")
+    if (
+        junction[0] not in ports
+        or junction[1] == junction[0]
+        or (junction[1] is not None and junction[1] not in ports)
+    ):
+        raise ValueError("The junction must name distinct grouped ports or ground")
+    external = ports if exposed_ports is None else exposed_ports
+    if (
+        not external
+        or len(set(external)) != len(external)
+        or not set(external) <= set(ports)
+    ):
+        raise ValueError("Exposed ports must be a nonempty selection of grouped ports")
+    indices = jnp.asarray([ports.index(name) for name in external])
     connection = jnp.asarray([
         [float(name in group) for group in groups] for name in grid.terminals
     ])
@@ -188,6 +210,7 @@ def junction_model(
     branch = d[:, None] * d[None, :]
     lookup = GridInterpolator(grid)
     identity = jnp.eye(len(ports))
+    loads = jnp.diag(jnp.asarray([float(name in external) for name in ports]))
     defaults = {
         name: float(values[len(values) // 2])
         for name, values in zip(grid.axis_names, grid.coords, strict=True)
@@ -211,7 +234,9 @@ def junction_model(
             + y_junction[..., None, None] * branch
         )
         normalized = jnp.asarray(z_ref)[..., None, None] * admittance
-        values = jnp.linalg.solve(identity + normalized, identity - normalized)
+        # Only external ports have reference loads; internal nodes obey KCL.
+        response = jnp.linalg.solve(normalized + loads, identity[:, indices])
+        values = 2 * response[..., indices, :] - jnp.eye(len(external))
         valid = (
             (jnp.asarray(f) > 0)
             & (jnp.asarray(inductance) > 0)
@@ -220,8 +245,8 @@ def junction_model(
         values = jnp.where(valid[..., None, None], values, jnp.nan)
         return {
             (a, b): values[..., i, j]
-            for i, a in enumerate(ports)
-            for j, b in enumerate(ports)
+            for i, a in enumerate(external)
+            for j, b in enumerate(external)
         }
 
     sax.replace_kwargs(
