@@ -15,7 +15,6 @@ from gdsfactory.read import from_yaml
 from gdsfactory.technology import LayerLevel, LogicalLayer
 
 import qpdk
-from qpdk import PDK
 from qpdk.cells import (
     bump_transition,
     tsv,
@@ -30,7 +29,7 @@ from qpdk.tech import (
     Chip,
 )
 
-PDK.activate()
+qpdk.PDK.activate()
 
 TSV_CELLS = [tsv, tsv_transition, tsv_transition_double_sided]
 CHIPS: list[Chip] = list(CHIP_LAYERS)

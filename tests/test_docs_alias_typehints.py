@@ -20,7 +20,6 @@ import pytest
 
 import qpdk.cells
 import qpdk.models
-from qpdk.models import airbridge, cpw_cpw_coupling_capacitance
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "docs" / "_ext"))
 
@@ -49,7 +48,7 @@ def _simplified(func: Callable[..., Any], aliases: Any) -> dict[str, str]:
 
 def test_sax_model_annotations_collapse_to_aliases(aliases: Any) -> None:
     """A SAX model's parameters render as the sax aliases they were written as."""
-    assert _simplified(airbridge, aliases) == {
+    assert _simplified(qpdk.models.airbridge, aliases) == {
         "f": "~sax.FloatArrayLike",
         "cpw_width": "~sax.Float",
         "bridge_width": "~sax.Float",
@@ -61,7 +60,7 @@ def test_sax_model_annotations_collapse_to_aliases(aliases: Any) -> None:
 
 def test_reordered_union_members_still_fold(aliases: Any) -> None:
     """``float | ArrayLike`` is flattened by Python but still folds back."""
-    simplified = _simplified(cpw_cpw_coupling_capacitance, aliases)
+    simplified = _simplified(qpdk.models.cpw_cpw_coupling_capacitance, aliases)
     assert simplified["length"] == "~jax.typing.ArrayLike"
     assert simplified["gap"] == "~jax.typing.ArrayLike"
 

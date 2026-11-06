@@ -22,7 +22,6 @@
 # %%
 
 import gdsfactory as gf
-import numpy as np
 from gdsfactory.export import to_stl
 
 from qpdk.cells.airbridge import cpw_with_airbridges
@@ -106,12 +105,6 @@ if __name__ == "__main__":
         hull_invalid_polygons=True,
     )
 
-    material_spec = {
-        "Si": {"relative_permittivity": 11.45},
-        "Nb": {"relative_permittivity": np.inf},
-        "vacuum": {"relative_permittivity": 1},
-    }
-
     # TODO implement running simulations here
 
     # from gplugins.palace import run_scattering_simulation_palace
@@ -119,7 +112,6 @@ if __name__ == "__main__":
     # results = run_scattering_simulation_palace(
     #     c,
     #     layer_stack=LAYER_STACK,
-    #     material_spec=material_spec,
     #     only_one_port=True,
     #     driven_settings={
     #         "MinFreq": 0.1,
