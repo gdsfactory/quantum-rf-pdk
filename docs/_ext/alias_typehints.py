@@ -1,12 +1,10 @@
 """Render library type aliases instead of their fully-expanded definitions.
 
 Most of the public API is annotated with aliases such as :obj:`sax.Float`,
-:obj:`sax.FloatArrayLike` or :obj:`gdsfactory.typings.CrossSectionSpec`.  None of
-the annotated modules use ``from __future__ import annotations``, so by the time
-autodoc sees them the aliases have already been evaluated into the
-:py:obj:`~typing.Annotated` / union objects they stand for.  ``autodoc_type_aliases``
-only rewrites *string* annotations, so it never fires, and a single
-``sax.Float`` parameter renders in the docs as::
+:obj:`sax.FloatArrayLike` or :obj:`gdsfactory.typings.CrossSectionSpec`.  Modules
+without ``from __future__ import annotations`` have already evaluated the aliases
+into the :py:obj:`~typing.Annotated` / union objects they stand for by the time
+autodoc sees them, so a single ``sax.Float`` parameter renders in the docs as::
 
     Annotated[
         float | floating,
@@ -22,11 +20,21 @@ the same function autodoc uses, which yields an exact expansion → alias lookup
 table that stays correct as the upstream aliases change.
 
 The rewrite happens on ``autodoc-process-signature`` at a priority above
-``sphinx.ext.autodoc.typehints.record_typehints`` (500), so the shortened text is
+``sphinx.ext.autodoc.typehints.record_typehints`` (500), so the short names are
 what ends up in ``current_document.autodoc_annotations`` and therefore what
 ``autodoc_typehints = "description"`` renders into the parameter list.  The alias
 names are emitted fully qualified so intersphinx turns them into links;
 ``python_use_unqualified_type_names`` shortens the displayed text again.
+
+Two related repairs also live here, because both are about turning rendered type
+text into working links:
+
+- ``alias_typehints_qualify`` rewrites names that Sphinx cannot evaluate and that
+  upstream inventories store under a different qualified name (for example
+  ``optuna.Study``, which optuna documents as ``optuna.study.Study``).
+- ``py:class`` references to aliases that upstream inventories register as
+  ``py:data`` (sax and numpy aliases are data, not classes) are retyped before
+  intersphinx sees them, which otherwise ignores the entry.
 """
 
 from __future__ import annotations
@@ -36,17 +44,19 @@ import inspect
 import re
 from typing import TYPE_CHECKING, Any
 
+from sphinx.ext.intersphinx import InventoryAdapter
 from sphinx.util import logging
 from sphinx.util.typing import stringify_annotation
 
 if TYPE_CHECKING:
     from sphinx.application import Sphinx
+    from sphinx.environment import BuildEnvironment
     from sphinx.ext.autodoc import Options
 
 logger = logging.getLogger(__name__)
 
 #: Modules whose public names are scanned for type aliases.
-DEFAULT_ALIAS_MODULES = ("sax", "gdsfactory.typings", "jax.typing")
+DEFAULT_ALIAS_MODULES = ("sax", "gdsfactory.typings", "jax.typing", "numpy.typing")
 
 #: An expansion is only worth replacing if it is actually longer and composite.
 _MIN_GAIN = 4
@@ -204,6 +214,24 @@ def simplify(annotation: str, aliases: AliasTable) -> str:
     return _collapse_annotated(annotation)
 
 
+def _qualify(annotation: str, names: dict[str, str]) -> str:
+    """Replace bare type names with the names the reference docs are keyed by.
+
+    Only whole names are replaced, so ``Vector3`` is untouched by a ``Vector``
+    entry and an already qualified name is not rewritten again.
+
+    Returns:
+        The annotation with each known whole name replaced.
+    """
+    for name, qualified in sorted(
+        names.items(), key=lambda item: len(item[0]), reverse=True
+    ):
+        annotation = re.sub(
+            rf"(?<![\w.]){re.escape(name)}(?![.\w])", qualified, annotation
+        )
+    return annotation
+
+
 def _rewrite_recorded_typehints(
     app: Sphinx,
     _objtype: str,
@@ -220,12 +248,33 @@ def _rewrite_recorded_typehints(
     recorded = app.env.current_document.autodoc_annotations.get(name)
     if not recorded:
         return
+    names = dict(app.config.alias_typehints_qualify)
     for param, annotation in recorded.items():
-        recorded[param] = simplify(annotation, aliases)
+        recorded[param] = _qualify(simplify(annotation, aliases), names)
+
+
+def _resolve_data_alias(
+    _app: Sphinx,
+    env: BuildEnvironment,
+    node: Any,
+    _contnode: Any,
+) -> None:
+    """Retarget a class reference to an alias documented as a data item."""
+    if node.get("refdomain") != "py" or node.get("reftype") != "class":
+        return
+    inventory = InventoryAdapter(env).main_inventory
+    target = node.get("reftarget")
+    is_class = target in inventory.get("py:class", {}) or target in inventory.get(
+        "py:exc", {}
+    )
+    if target in inventory.get("py:data", {}) and not is_class:
+        # Intersphinx only looks in the inventory objtypes that match the
+        # reference, and a data alias is invisible to a class reference.
+        node["reftype"] = "data"
 
 
 def _init_alias_map(app: Sphinx) -> None:
-    """Build the alias table once, before anything is documented."""
+    """Build the alias table once, before any object is documented."""
     app._alias_typehints_map = _build_alias_map(
         tuple(app.config.alias_typehints_modules)
     )
@@ -240,7 +289,10 @@ def setup(app: Sphinx) -> dict[str, Any]:
     app.add_config_value(
         "alias_typehints_modules", list(DEFAULT_ALIAS_MODULES), "env", types=(list,)
     )
+    app.add_config_value("alias_typehints_qualify", {}, "env", types=(dict,))
     app.connect("builder-inited", _init_alias_map)
     # Priority above record_typehints (500) so we see, and replace, what it recorded.
     app.connect("autodoc-process-signature", _rewrite_recorded_typehints, priority=900)
+    # Before intersphinx (500) so it resolves the retyped reference.
+    app.connect("missing-reference", _resolve_data_alias, priority=400)
     return {"version": "1.0", "parallel_read_safe": True}

@@ -98,7 +98,27 @@ intersphinx_mapping = {
     "jax": ("https://docs.jax.dev/en/latest/", None),
     "gdsfactory": ("https://gdsfactory.github.io/gdsfactory/", None),
     "sax": ("https://gdsfactory.github.io/sax/", None),
+    "optuna": ("https://optuna.readthedocs.io/en/stable/", None),
+    "scikit-rf": ("https://scikit-rf.readthedocs.io/en/latest/", None),
     "pyaedt": ("https://aedt.docs.pyansys.com/version/stable/", None),
+}
+
+# Names Sphinx cannot evaluate (the types are imported only under
+# ``TYPE_CHECKING``) and that upstream inventories key by a different qualified
+# name.  Bare typing names are here too, because one unevaluable annotation
+# leaves a whole signature as raw strings, where they appear unqualified.
+alias_typehints_qualify = {
+    "Any": "typing.Any",
+    "ArrayLike": "numpy.typing.ArrayLike",
+    "numpy._typing.ArrayLike": "numpy.typing.ArrayLike",
+    "Callable": "collections.abc.Callable",
+    "Mapping": "collections.abc.Mapping",
+    "Sequence": "collections.abc.Sequence",
+    "Path": "pathlib.Path",
+    "np.ndarray": "numpy.ndarray",
+    "VectorFitting": "skrf.vectorFitting.VectorFitting",
+    "optuna.Study": "optuna.study.Study",
+    "optuna.Trial": "optuna.trial.Trial",
 }
 
 # -- MyST configuration ------------------------------------------------------
@@ -253,9 +273,6 @@ autodoc_type_aliases = {
     "LayerSpec": "LayerSpec",
     "SDict": "sax.SDict",
     "sax.SDict": "sax.SDict",
-    "sax.FloatArrayLike": "FloatArrayLike",
-    "jax.typing.ArrayLike": "ArrayLike",
-    "ArrayLike": "ArrayLike",
     "gt.CrossSectionSpec": "CrossSectionSpec",
     "gt.LayerSpec": "LayerSpec",
     "gt.ComponentSpec": "ComponentSpec",
@@ -267,7 +284,6 @@ autodoc_type_aliases = {
     "gt.Coordinate": "Coordinate",
     "gt.Coordinates": "Coordinates",
     "gt.Layer": "Layer",
-    "FloatArrayLike": "FloatArrayLike",
     "sax.Float": "float",
     "Float": "float",
     "sax.SType": "SType",

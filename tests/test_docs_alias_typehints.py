@@ -13,6 +13,7 @@ import inspect
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -87,3 +88,45 @@ def test_leftover_annotated_metadata_is_dropped() -> None:
     """Validator metadata from aliases we do not know about is still stripped."""
     text = "~typing.Annotated[str, ~pydantic.PlainValidator(func=~sax.val_port)]"
     assert alias_typehints._collapse_annotated(text) == "str"
+
+
+def test_qualify_only_rewrites_whole_names() -> None:
+    """Names are qualified once, and dotted names are left alone."""
+    names = {
+        "Callable": "collections.abc.Callable",
+        "ArrayLike": "numpy.typing.ArrayLike",
+        "optuna.Study": "optuna.study.Study",
+    }
+    assert alias_typehints._qualify("Callable[[ArrayLike], None]", names) == (
+        "collections.abc.Callable[[numpy.typing.ArrayLike], None]"
+    )
+    assert (
+        alias_typehints._qualify(
+            "~collections.abc.Callable | ~jax.typing.ArrayLike", names
+        )
+        == "~collections.abc.Callable | ~jax.typing.ArrayLike"
+    )
+    assert alias_typehints._qualify("optuna.Study", names) == "optuna.study.Study"
+
+
+def test_data_alias_reference_is_retyped() -> None:
+    """A class reference to a data alias is retyped for intersphinx."""
+    env = SimpleNamespace(
+        intersphinx_cache={},
+        intersphinx_inventory={"py:data": {"sax.SDictModel": object()}},
+        intersphinx_named_inventory={},
+    )
+    node = {"refdomain": "py", "reftype": "class", "reftarget": "sax.SDictModel"}
+    assert alias_typehints._resolve_data_alias(None, env, node, None) is None
+    assert node["reftype"] == "data"
+
+
+def test_other_references_keep_their_type() -> None:
+    """References to real classes are left for the other resolvers."""
+    node = {
+        "refdomain": "py",
+        "reftype": "class",
+        "reftarget": "gdsfactory.Component",
+    }
+    alias_typehints._resolve_data_alias(None, SimpleNamespace(), node, None)
+    assert node["reftype"] == "class"
