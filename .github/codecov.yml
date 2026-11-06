@@ -1,0 +1,11 @@
+# Report coverage without gating: these statuses stay green so a small drop,
+# or a line of defensively unreachable code, does not turn a branch red.
+# Upload failures still surface as their own failing status.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
