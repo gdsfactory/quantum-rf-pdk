@@ -8,7 +8,7 @@ applyTo: "tests/**"
 
 - Tests run in parallel with `pytest-xdist` (`-n auto`). Flag anything order-dependent: shared module-level mutable
   state, reliance on another test having run, or writes to a fixed path outside `tmp_path`.
-- The suite runs on Python 3.12–3.14 across Ubuntu, macOS and Windows. Flag hard-coded POSIX paths, `/tmp`, shell
+- The suite runs on Python 3.12–3.15 across Ubuntu, macOS and Windows. Flag hard-coded POSIX paths, `/tmp`, shell
   invocations, or line-ending assumptions. Use `pathlib` (ruff `PTH` is enabled) and the `skip_windows` marker when a
   test genuinely cannot run there.
 - Use the registered markers rather than inventing new ones: `gfp` (needs GDSFactory+), `hfss` (needs HFSS),
