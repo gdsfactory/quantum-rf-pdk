@@ -173,6 +173,35 @@ div.admonition.note {
 }
 
 /* ---------------------------------------------------------------------------
+ * Grouped tables
+ * A table that names its stub once and leaves the cells below blank (the DRC
+ * rule table groups checks by layer that way) needs the blanks to read as a
+ * continuation, not as missing data. Shade the stub column and draw a rule
+ * where a new group starts.
+ * ------------------------------------------------------------------------- */
+.bd-content table:has(td:first-child p:empty) td:first-child {
+  background: var(--pst-color-surface);
+  font-weight: 600;
+}
+.bd-content
+  table:has(td:first-child p:empty)
+  tr:not(:has(td:first-child p:empty))
+  > td {
+  border-top: 2px solid var(--pst-color-border);
+}
+
+/* Layer swatch drawn by the `layer` role, coloured from qpdk/layers.yaml. */
+.bd-content .qpdk-layer-swatch {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.4em;
+  border: 1px solid var(--pst-color-border);
+  border-radius: 2px;
+  vertical-align: -0.05em;
+}
+
+/* ---------------------------------------------------------------------------
  * Gallery view
  * ------------------------------------------------------------------------- */
 .gallery-card .sd-card-body p.plot-directive {
