@@ -11,7 +11,11 @@ concurrency:
 permissions: {}
 jobs:
   badges:
+    # A called workflow cannot be granted more than the caller allows, and the
+    # call is rejected at startup rather than downgraded.
     permissions:
       contents: write
+      issues: read
+      pull-requests: read
     uses: doplaydo/pdk-ci-workflow-public/.github/workflows/update_badges.yml@main # zizmor: ignore[unpinned-uses]
     secrets: inherit # zizmor: ignore[secrets-inherit]
