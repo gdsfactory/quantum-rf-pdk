@@ -8,17 +8,14 @@ from typing import ClassVar, final
 
 from qpdk.singleton import SingletonMeta
 
-module = pathlib.Path(__file__).parent.absolute()
-repo = module.parent
-
 
 @final
 @dataclass
 class Path(metaclass=SingletonMeta):
     """Creates object for referencing paths in repository."""
 
-    module: ClassVar[pathlib.Path] = module
-    repo: ClassVar[pathlib.Path] = repo
+    module: ClassVar[pathlib.Path] = pathlib.Path(__file__).parent.absolute()
+    repo: ClassVar[pathlib.Path] = module.parent
     build: ClassVar[pathlib.Path] = repo / "build"
     docs: ClassVar[pathlib.Path] = repo / "docs"
     gds: ClassVar[pathlib.Path] = build / "gds"

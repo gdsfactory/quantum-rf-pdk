@@ -118,10 +118,9 @@ def meander_inductor(
     # Infer etch parameters and spacing from cross section
     try:
         etch_section = get_etch_section(xs)
-        etch_layer = etch_section.layer
     except ValueError:
         etch_section = None
-        etch_layer = None
+    etch_layer = etch_section.layer if etch_section is not None else None
 
     # Same rule as the SAX model: explicit gap wins, else 2x etch width,
     # else the wire width when there is no etch section
