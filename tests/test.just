@@ -334,7 +334,8 @@ test-gfp *args:
         source build/gfp-vsix/env.sh
     fi
     GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
-        tests/gfp/test_gfp_lvs.py tests/gfp/test_gfp_sax.py tests/gfp/test_gfp_server.py "$@"
+        tests/gfp/test_gfp_lvs.py tests/gfp/test_gfp_sax.py tests/gfp/test_gfp_server.py \
+        tests/gfp/test_xmon_fem.py "$@"
 
 # Run VACASK simulation tests (requires VACASK, see qpdk/simulation/vacask.py)
 [group('test')]
