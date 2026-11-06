@@ -36,7 +36,7 @@ import jax
 import jax.numpy as jnp
 import sax
 from jax.typing import ArrayLike
-from sax.models.rf import capacitor, tee
+from sax.models.rf import capacitor, electrical_open, tee
 
 from qpdk.models.constants import DEFAULT_FREQUENCY, Φ_0, h
 from qpdk.models.generic import lc_resonator
@@ -176,6 +176,8 @@ def unimon_coupled(
     The unimon is modeled as a closed system of two shorted quarter-wave CPW
     resonators connected by a Josephson junction. Interaction with the qubit
     is provided via a single coupling capacitor connected to one of the arms.
+    The other junction-side node carries no external current. An explicit
+    open boundary prevents SAX from attaching an implicit matched load.
 
     .. svgbob::
 
@@ -207,10 +209,12 @@ def unimon_coupled(
             junction_inductance=junction_inductance,
         ),
         "coupling_cap": capacitor(f=f, capacitance=coupling_capacitance),
+        "internal_open": electrical_open(f=f),
     }
 
     connections = {
         "coupling_cap,o2": "unimon,o1",
+        "unimon,o2": "internal_open,o1",
     }
 
     ports = {
