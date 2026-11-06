@@ -23,7 +23,9 @@ from qpdk.models.datasets.generate import merge, partition_grid
 def driven(monkeypatch: pytest.MonkeyPatch):
     scripts = Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes"
     monkeypatch.syspath_prepend(str(scripts))
-    return importlib.import_module("_driven")
+    module = importlib.import_module("_driven")
+    monkeypatch.setattr(module, "_run_palace", Mock())
+    return module
 
 
 @pytest.mark.parametrize(
@@ -130,7 +132,7 @@ def test_full_sweep_shards_and_resume(
             workdir=tmp_path / "runs",
         )
     assert prepare.call_count == 4
-    assert prepare.return_value.run_local.call_count == 4
+    assert driven._run_palace.call_count == 4
     data = merge(
         paths,
         tmp_path / "merged",
@@ -166,7 +168,7 @@ def test_interrupted_sweep_resumes_only_unfinished_geometry(
     driven, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     sim = Mock()
-    sim.run_local.side_effect = [None, RuntimeError("solver interrupted"), None]
+    driven._run_palace.side_effect = [None, RuntimeError("solver interrupted"), None]
     prepare = Mock(return_value=sim)
     recipe = driven.Recipe(
         name="interrupted-fixture",
