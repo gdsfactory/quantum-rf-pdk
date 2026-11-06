@@ -58,8 +58,7 @@ simulation
 ```{toctree}
 :hidden:
 
-layer_stack
-design_rules
+process
 ```
 
 ```{toctree}
