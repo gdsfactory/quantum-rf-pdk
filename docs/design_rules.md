@@ -30,29 +30,31 @@ directly:
 
 ## Rules
 
-| Rule       | Check                                                         | Default |
-| ---------- | ------------------------------------------------------------- | ------- |
-| M1.W.1     | minimum effective M1 width                                    | 2.0 µm  |
-| M1.S.1     | minimum M1 metal spacing (etch slot width)                    | 2.0 µm  |
-| M2.W.1     | minimum effective top-chip front metal width                  | 2.0 µm  |
-| M2.S.1     | minimum top-chip front metal spacing                          | 2.0 µm  |
-| MB.W.1     | minimum bottom-chip backside metal width                      | 2.0 µm  |
-| MB.S.1     | minimum bottom-chip backside metal spacing                    | 2.0 µm  |
-| MB2.W.1    | minimum top-chip backside metal width                         | 2.0 µm  |
-| MB2.S.1    | minimum top-chip backside metal spacing                       | 2.0 µm  |
-| NBTHIN.W.1 | minimum NbTiN nanowire width                                  | 0.04 µm |
-| NBTHIN.S.1 | minimum NbTiN spacing                                         | 0.09 µm |
-| JJ.W.1     | minimum `JJ_AREA` width                                       | 0.09 µm |
-| JJ.O.1     | `JJ_PATCH` contact overlap along the junction                 | 0.3 µm  |
-| AB.E.1     | `AB_VIA` enclosed by effective M1                             | 1.0 µm  |
-| AB.O.1     | `AB_VIA` landing pad touches the `AB_DRAW` bridge             | contact |
-| AB.C.1     | `AB_VIA` must not land on a CPW centre conductor              | none    |
-| TSV.E.1    | TSV enclosed by landing metal on both faces                   | 2.0 µm  |
-| IND.E.1    | indium bump enclosed by landing metal on both chips           | 5.0 µm  |
-| DICE.K.1   | no drawn metal, via, bump or bridge inside the `DICE` frame   | none    |
-| ALN.E.1    | a die frame needs `ALN_TOP` and `ALN_BOT` marks               | present |
-| RF.C.1     | unrelated signal lines run closer than the crosstalk distance | 20.0 µm |
-| RF.C.2     | a `COUPLING` region covers a real conductor gap               | none    |
+Each check sits under the layer it measures. The layer is named once, and a blank cell means the same layer.
+
+| Layer                              | Rule         | Check                                                | Default |
+| ---------------------------------- | ------------ | ---------------------------------------------------- | ------- |
+| {layer}`M1`                        | `M1.W.1`     | minimum effective width                              | 2.0 µm  |
+|                                    | `M1.S.1`     | minimum metal spacing (etch slot width)              | 2.0 µm  |
+| {layer}`M2`                        | `M2.W.1`     | minimum effective top-chip front metal width         | 2.0 µm  |
+|                                    | `M2.S.1`     | minimum top-chip front metal spacing                 | 2.0 µm  |
+| {layer}`MB`                        | `MB.W.1`     | minimum bottom-chip backside metal width             | 2.0 µm  |
+|                                    | `MB.S.1`     | minimum bottom-chip backside metal spacing           | 2.0 µm  |
+| {layer}`MB2`                       | `MB2.W.1`    | minimum top-chip backside metal width                | 2.0 µm  |
+|                                    | `MB2.S.1`    | minimum top-chip backside metal spacing              | 2.0 µm  |
+| {layer}`NbTiN`                     | `NBTHIN.W.1` | minimum nanowire width                               | 0.04 µm |
+|                                    | `NBTHIN.S.1` | minimum spacing                                      | 0.09 µm |
+| {layer}`JJ_AREA`                   | `JJ.W.1`     | minimum width                                        | 0.09 µm |
+| {layer}`JJ_PATCH`                  | `JJ.O.1`     | contact overlap along the junction                   | 0.3 µm  |
+| {layer}`AB_VIA`                    | `AB.E.1`     | enclosed by effective M1                             | 1.0 µm  |
+|                                    | `AB.O.1`     | landing pad touches the `AB_DRAW` bridge             | contact |
+|                                    | `AB.C.1`     | must not land on a CPW centre conductor              | none    |
+| {layer}`TSV`                       | `TSV.E.1`    | enclosed by landing metal on both faces              | 2.0 µm  |
+| {layer}`IND`                       | `IND.E.1`    | indium bump enclosed by landing metal on both chips  | 5.0 µm  |
+| {layer}`DICE`                      | `DICE.K.1`   | no drawn metal, via, bump or bridge inside the frame | none    |
+| {layer}`ALN_TOP`, {layer}`ALN_BOT` | `ALN.E.1`    | a die frame needs both `ALN` marks                   | present |
+| {layer}`WG`                        | `RF.C.1`     | unrelated nets closer than the crosstalk distance    | 20.0 µm |
+| {layer}`COUPLING`                  | `RF.C.2`     | covers a real conductor gap                          | none    |
 
 Two notes on the junction rules. `JJ_PATCH` is shared with the gatemon process, where it is the Al reconnection film on
 a nanotube and has no junction below it, so `JJ.O.1` ignores patches that touch the gatemon layers. The overlap is
