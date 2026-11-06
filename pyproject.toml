@@ -82,7 +82,7 @@ dev = [{ include-group = "lint" }, { include-group = "test" }]
 docs = [
   "jinja2",
   "jupytext",
-  "kwasm",
+  "kwasm>=0.3.3",
   "linkify-it-py",
   "matplotlib",
   "myst-nb>=1.0",
