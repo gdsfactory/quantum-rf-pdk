@@ -32,6 +32,7 @@ extensions = [
     "sphinx_llm.txt",
     # local, see docs/_ext/
     "alias_typehints",
+    "klayout_links",
     "qpdk_layer_chips",
     "qpdk_source_fixes",
     "qpdk_theme_figures",
