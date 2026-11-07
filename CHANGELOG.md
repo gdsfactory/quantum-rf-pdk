@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-07
+
 ### Added
 
 - Added `bump_transition` (M1 to M2 CPW transition through a single indium bump, after the published indium transitions)
@@ -14,11 +16,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   sample with both GDSFactory+ schematic views.
 - Added the `SUBSTRATE` and `SUBSTRATE_TOP` die-footprint layers and `chip_edge(footprint_layer=...)`. The 3D preview
   draws the top chip's substrate and the `M2`, `MB` and `MB2` ground planes inside them, with translucent substrates.
+- Added vortex-trapping neck terminations and bulge resonator cells and models.
+- Added the Josephson junction array cell, its chain model and the fluxonium array inductor.
+- Added meander corner styles and `nanowire_resonator`.
+- Added the ESR LC resonator cell and model.
+- Added the Kollár hyperbolic lattice of edge resonators.
+- Added superconducting TSV CPW transitions with backside metal and a Palace simulation workflow.
+- Added a flip-chip sample chip routed through TSVs and indium bumps, and literature-based constant loss in the TSV and
+  indium bump models.
+- Added the vacuum-gap drum capacitor and drum LC resonator with a Palace capacitance dataset.
+- Added the `COUPLING` intent layer, a flux-driven CPW JPA layout example and a design-rule guide.
 
 ### Changed
 
 - The PDK default layer stack is now an approximate 3D mask preview. Simulation code must pass `qpdk.tech.LAYER_STACK`,
   `LAYER_STACK_FLIP_CHIP` or `LAYER_STACK_GATEMON` explicitly instead of relying on the active PDK's default.
+- Referenced the gdsfactory LayerViews JSON Schema from `layers.yaml`.
+- Grouped the DRC rule table by layer with layer swatches and added a Process landing page for the layer stack and
+  design rules.
+- Linked type annotations and KLayout types in the API docs to their upstream documentation.
+- Expanded the NetKet notebook to build Hamiltonians from layouts, and gave the Samples page static and dynamic views
+  with categories.
+
+### Fixed
+
+- Fixed the CPW Qucs-S comparison to use 50 Ω ports and the Qucs substrate.
+- Used the α = −E_C convention and fixed the sign of `dispersive_shift`.
+- Required `kwasm>=0.3.3` so the Dynamic docs viewer renders.
+- Fixed the Update Badges workflow startup failure and made Codecov coverage statuses informational.
+- Removed the unused imports and variables CodeQL flagged.
 
 ## [0.4.2] - 2026-10-27
 
