@@ -5,10 +5,12 @@
 import base64
 import functools
 import inspect
+import json
 import traceback
 from pathlib import Path
 
 import gdsfactory as gf
+import kwasm.cli
 import kwasm.embed
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -273,17 +275,36 @@ def _setup_kwasm_viewer() -> None:
     """Create the kwasm viewer HTML and GDS output directory.
 
     The QPDK layer properties are embedded in the viewer so the Dynamic tab
-    shows the same layer names and colours as KLayout and GDSFactory+.
+    shows the same layer names and colours as KLayout and GDSFactory+. The
+    active PDK's layer stack is embedded too, so the viewer's 3D mode has
+    something to extrude.
+
+    Raises:
+        RuntimeError: If the kwasm viewer template no longer has the
+            ``Kwasm.mount`` call the layer stack is injected before.
     """
     for directory in (gds_dir, png_dir, sample_gds_dir, sample_png_dir):
         directory.mkdir(parents=True, exist_ok=True)
     viewer_path = kwasm_dir / "viewer.html"
+    layerstack_path = kwasm_dir / "layerstack.json"
     lyp_b64 = base64.b64encode(PATH.lyp.read_bytes()).decode("ascii")
     template = kwasm.embed._read_artifacts()
     template = template.replace("KWASM_GDS_B64", "")
     template = template.replace("KWASM_LYP_B64", lyp_b64)
     template = template.replace("KWASM_LYRDB_B64", "")
     template = template.replace("KWASM_NETLIST_B64", "")
+    # The legacy template has no layer stack slot, so set the option
+    # ``Kwasm.mount`` reads right before the viewer is mounted.
+    kwasm.cli.export_layerstack("qpdk", output=str(layerstack_path))
+    layerstack = json.loads(layerstack_path.read_text(encoding="utf-8"))
+    mount = "window.viewer = Kwasm.mount("
+    if template.count(mount) != 1:
+        msg = f"kwasm viewer template no longer contains {mount!r} exactly once"
+        raise RuntimeError(msg)
+    template = template.replace(
+        mount,
+        f"options.layerstack = {kwasm.embed._json_script(layerstack)};\n  {mount}",
+    )
     viewer_path.write_text(template, encoding="utf-8")
 
 
