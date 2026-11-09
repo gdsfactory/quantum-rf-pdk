@@ -10,7 +10,9 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import os
 import shutil
+import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -32,12 +34,24 @@ def runtime(
     """Resolve a runtime, recording its content hash rather than its host path."""
     if executable is not None and sif is not None:
         raise ValueError("Choose an executable or a container, not both")
+    library_dir = None
     if executable is None and sif is None:
-        from gsim.palace.runtime import resolve_palace_binary
+        from gsim.palace.runtime import (
+            resolve_palace_binary,
+            resolve_palace_library_dir,
+        )
 
         executable = resolve_palace_binary()
         if executable is None:
             raise FileNotFoundError("No Palace runtime; pass --executable or --sif")
+        resolved_libraries = resolve_palace_library_dir()
+        # The two SDK resolvers can select different installations.
+        if (
+            resolved_libraries is not None
+            and executable.resolve().parent
+            == resolved_libraries.resolve().parent / "bin"
+        ):
+            library_dir = resolved_libraries.resolve()
     selected = sif if sif is not None else executable
     with selected.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
@@ -46,6 +60,7 @@ def runtime(
         "palace_sif_path": sif.resolve() if sif else None,
         "use_apptainer": sif is not None,
         "container_binary": binary if sif else None,
+        **({"palace_library_dir": library_dir} if library_dir is not None else {}),
     }, {"runtime_sha256": digest, "container_binary": binary if sif else None}
 
 
@@ -177,19 +192,17 @@ def extract(
             order=order,
             tolerance=tolerance,
             max_iterations=1000,
+            solver_type="Default",
             preconditioner="BoomerAMG",
-            initial_guess=False,
         )
         sim.set_electrostatic(save_fields=len(terminals) if save_fields else 0)
-        sim.write_config()
+        path = sim.write_config()
+        config = json.loads(path.read_text())
+        # Residual ratios need zero starts for every terminal, across gsim versions.
+        config["Solver"]["Linear"]["InitialGuess"] = False
+        path.write_text(json.dumps(config, indent=2), encoding="utf-8")
         shutil.rmtree(run / "output", ignore_errors=True)
-        sim.run_local(
-            **execution,
-            num_processes=processes,
-            num_threads=1,
-            verbose=True,
-            log_path=run / "solver.log",
-        )
+        _run_palace(execution, run, processes)
     quality = diagnostics(run, terminals=len(terminals), tolerance=tolerance)
     matrices = load_capacitance(run, terminal_names=terminals)
     check_maxwell(matrices.maxwell)
@@ -197,6 +210,77 @@ def extract(
         raise ValueError(f"Inconsistent Palace results in {run}: {problems}")
     complete.write_text(json.dumps({"terminals": terminals}), encoding="utf-8")
     return {"maxwell_capacitance": matrices.maxwell, **quality}
+
+
+def _run_palace(execution: dict, run: Path, processes: int) -> None:
+    """Keep the selected binary, MPI ranks and failed solver output explicit."""
+    environment = None
+    if execution["use_apptainer"]:
+        command = [
+            "apptainer",
+            "exec",
+            "--cleanenv",
+            "--env",
+            "OMP_NUM_THREADS=1",
+            str(execution["palace_sif_path"]),
+            "mpirun",
+            "--oversubscribe",
+            "-np",
+            str(processes),
+            execution["container_binary"],
+            "config.json",
+        ]
+    else:
+        executable = Path(execution["palace_executable"])
+        environment = os.environ.copy()
+        if library_dir := execution.get("palace_library_dir"):
+            prior = environment.get("LD_LIBRARY_PATH", "")
+            environment["LD_LIBRARY_PATH"] = (
+                f"{library_dir}{os.pathsep}{prior}" if prior else str(library_dir)
+            )
+            if shutil.which("mpirun", path=str(executable.parent)):
+                prior = environment.get("PATH", "")
+                environment["PATH"] = (
+                    f"{executable.parent}{os.pathsep}{prior}"
+                    if prior
+                    else str(executable.parent)
+                )
+        with executable.open("rb") as stream:
+            header = stream.read(4)
+        # The Palace script accepts MPI flags; the native executable does not.
+        if header in {
+            b"\x7fELF",
+            b"\xfe\xed\xfa\xce",
+            b"\xce\xfa\xed\xfe",
+            b"\xfe\xed\xfa\xcf",
+            b"\xcf\xfa\xed\xfe",
+            b"\xca\xfe\xba\xbe",
+            b"\xbe\xba\xfe\xca",
+            b"\xca\xfe\xba\xbf",
+            b"\xbf\xba\xfe\xca",
+        }:
+            launcher = shutil.which("mpirun", path=str(executable.parent)) or "mpirun"
+            command = [launcher, "-np", str(processes), str(executable), "config.json"]
+            environment["OMP_NUM_THREADS"] = "1"
+        else:
+            command = [
+                str(executable),
+                "-np",
+                str(processes),
+                "-nt",
+                "1",
+                "config.json",
+            ]
+    logger.info(f"Running Palace in {run}")
+    with (run / "solver.log").open("w", encoding="utf-8") as log:
+        subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+            command,
+            cwd=run,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            check=True,
+            env=environment,
+        )
 
 
 def diagnostics(run: Path, *, terminals: int, tolerance: float) -> dict[str, float]:
