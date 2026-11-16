@@ -39,3 +39,6 @@ jobs:
           # as github-actions[bot]. Leave allowed_non_write_users unset: it
           # strips gh's token.
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # The action skips any non-human trigger unless it is listed here.
+          # Dependabot is the only bot opening PRs in this repository.
+          allowed_bots: "dependabot[bot]"
