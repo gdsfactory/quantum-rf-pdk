@@ -15,6 +15,10 @@ jobs:
   build-docs-pdf:
     runs-on: ubuntu-latest
     name: Build PDF docs
+    # uv otherwise picks the runner's python3, which is 3.14 now, and the
+    # locked netket 3.21 cannot import there. The pages workflow pins 3.12 too.
+    env:
+      UV_PYTHON: "3.12"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

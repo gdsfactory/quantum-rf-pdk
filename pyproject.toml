@@ -42,7 +42,7 @@ documentation = "https://gdsfactory.github.io/quantum-rf-pdk/"
 repository = "https://github.com/gdsfactory/quantum-rf-pdk/"
 
 [project.optional-dependencies]
-circulax = ["circulax>=0.2.3", "optax"]
+circulax = ["circulax>=0.2.7", "optax"]
 # 2.2.0 is the expected first gplugins release shipping gplugins.comsol (no
 # 2.1.x release has it). Match the bound to the actual release before merging.
 comsol = ["gplugins[comsol]>=2.2.0"]
@@ -102,7 +102,7 @@ docs = [
   { include-group = "docs-models" },
 ]
 docs-models = [
-  "circulax>=0.2.3",
+  "circulax>=0.2.7",
   "flax",
   "gplugins[meshwell]~=2.1.0",
   "jaxellip",
