@@ -541,7 +541,7 @@ LAYER_CONNECTIVITY: Sequence[ConnectivitySpec] = [
     ("M1_DRAW", "AB_DRAW", "M1_DRAW"),
     ("M2_DRAW", "AB_DRAW", "M2_DRAW"),
     ("M1_DRAW", "JJ_PATCH", "CNT_CONTACT"),
-    ("M1_DRAW", "TOP_GATE"),
+    ("M1_DRAW", "TOP_GATE", "M1_DRAW"),
 ]
 
 
