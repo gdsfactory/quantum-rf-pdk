@@ -129,6 +129,7 @@ stubs = [
   "pandas-stubs",
   "pyarrow-stubs",
   "scipy-stubs",
+  "types-docutils~=0.22.0",
   "types-pyyaml",
   "types-shapely",
   "types-tqdm"

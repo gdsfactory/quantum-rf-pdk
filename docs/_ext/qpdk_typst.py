@@ -114,7 +114,11 @@ class _TypstDropWidgetOutputs(SphinxPostTransform):
         for bundle in list(self.document.findall(nodes.container)):
             if bundle.get("nb_element") != "mime_bundle":
                 continue
-            mime_types = {child.get("mime_type") for child in bundle.children}
+            mime_types = {
+                child.get("mime_type")
+                for child in bundle.children
+                if isinstance(child, nodes.Element)
+            }
             # Only drop bundles whose sole fallback is the stale text repr; a
             # widget with an HTML or image fallback still has real output.
             if mime_types == {_WIDGET_MIME, "text/plain"}:
