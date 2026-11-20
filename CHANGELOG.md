@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- The `qpdk` KLayout technology loads again. The `M1_DRAW`/`TOP_GATE` connection is now a three-layer spec, and
+  `tech.lyt` is regenerated so it also carries the `TSV2` back-chip connection.
+
 ## [0.4.3] - 2026-11-07
 
 ### Added
