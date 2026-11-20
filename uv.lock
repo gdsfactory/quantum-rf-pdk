@@ -5635,6 +5635,7 @@ dev = [
     { name = "pytest-regressions" },
     { name = "pytest-xdist" },
     { name = "scipy-stubs" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5711,6 +5712,7 @@ lint = [
     { name = "prek" },
     { name = "pyarrow-stubs" },
     { name = "scipy-stubs" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5722,6 +5724,7 @@ stubs = [
     { name = "pandas-stubs" },
     { name = "pyarrow-stubs" },
     { name = "scipy-stubs" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5795,6 +5798,7 @@ dev = [
     { name = "pytest-regressions" },
     { name = "pytest-xdist" },
     { name = "scipy-stubs" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5869,6 +5873,7 @@ lint = [
     { name = "prek" },
     { name = "pyarrow-stubs" },
     { name = "scipy-stubs" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5878,6 +5883,7 @@ stubs = [
     { name = "pandas-stubs" },
     { name = "pyarrow-stubs" },
     { name = "scipy-stubs" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -7473,6 +7479,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/37/78/fda3361b56efc27944f24225f6ecd13d96d6fcfe37bd0eb34e2f4c63f9fc/typer-0.27.0.tar.gz", hash = "sha256:629bd12ea5d13a17148125d9a264f949eb171fb3f120f9b04d85873cab054fa5", size = 203430, upload-time = "2026-07-15T19:21:07.007Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/40/03/26a383c9e58c213199d1aad1c3d353cfc22d4444ec6d2c0bf8ad02523843/typer-0.27.0-py3-none-any.whl", hash = "sha256:6f4b27631e47f077871b7dc30e933ec0131c1390fbe0e387ea5574b5bac9ccf1", size = 122716, upload-time = "2026-07-15T19:21:05.553Z" },
+]
+
+[[package]]
+name = "types-jsonschema"
+version = "4.26.0.20261006"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "referencing" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/d2/1f742605f5a6d39f993134885b8de41c98af606871d3ebddaf3e776bd1eb/types_jsonschema-4.26.0.20261006.tar.gz", hash = "sha256:3eb7db61b6819d40addfdaac7173e749071a7d4a9a4394f0c844598ec84b2500", size = 16843, upload-time = "2026-10-06T08:16:07.318Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/a0/4f2e3c0dc3d5cad958006f2e0307065cc8fe4fbf0393ff0b69d55ee9bbe5/types_jsonschema-4.26.0.20261006-py3-none-any.whl", hash = "sha256:29301f4e65e3928540cdf5e23ad716e38bb0c0b416a48dada213edd3d70206ec", size = 16113, upload-time = "2026-10-06T08:16:06.355Z" },
 ]
 
 [[package]]
