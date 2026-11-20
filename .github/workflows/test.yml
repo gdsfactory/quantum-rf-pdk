@@ -163,6 +163,12 @@ jobs:
           uv run --only-group test coverage combine
           uv run --only-group test coverage xml
       - parallel:
+          - name: Upload combined coverage report
+            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            with:
+              name: coverage-xml
+              path: coverage.xml
+              if-no-files-found: error
           - name: Upload code coverage to GitHub
             uses: actions/upload-code-coverage@2b21a77928be8d5168c2b9581a67f2adbebacc52 # v1.4.4
             with:
@@ -229,11 +235,10 @@ jobs:
             exit 1
           fi
   code-coverage:
+    needs: upload-coverage
     permissions:
-      contents: write
-      pull-requests: write
-    uses: doplaydo/pdk-ci-workflow-public/.github/workflows/test_coverage.yml@main # zizmor: ignore[unpinned-uses]
-    secrets: inherit # zizmor: ignore[secrets-inherit]
+      contents: read
+    uses: doplaydo/pdk-ci-workflow-public/.github/workflows/test_coverage.yml@a18b8f7e67f15602c2a2513b36ed96c9de66fed8
   model-coverage:
     permissions:
       contents: write
