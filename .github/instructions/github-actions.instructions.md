@@ -23,7 +23,7 @@ formatted by `yamlfmt` (`.github/.yamlfmt.yaml`) and linted by `yamllint --stric
 
 ## Correctness
 
-- Keep the Python version matrix in sync with `requires-python` in `pyproject.toml` (3.12–3.14) and with the
+- Keep the Python version matrix in sync with `requires-python` in `pyproject.toml` (3.12–3.15) and with the
   `get-python-versions.yml` reusable workflow — do not hard-code a version list that will drift.
 - Add a `timeout-minutes` to new jobs; a hung simulation or docs build should not burn an hour.
 - `concurrency` with `cancel-in-progress` belongs on PR-triggered workflows, not on release or publish workflows.
