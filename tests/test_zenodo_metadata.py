@@ -129,15 +129,21 @@ def test_updater_edits_existing_record_and_checks_public_result(
             assert if_match == "1"
         if method == "PUT":
             state["record"] = data
+        if calls.count(("GET", "/api/records/123")) == 1 and path == "/api/records/123":
+            stale = copy.deepcopy(state["record"])
+            stale["metadata"]["version"] = "v1.2.2"
+            return stale
         return state["record"]
 
     monkeypatch.setattr(zenodo, "request_json", request)
+    monkeypatch.setattr(zenodo.time, "sleep", lambda _: None)
     zenodo.update("https://zenodo.org", original, "test-token", CONFIG, dry_run=False)
     assert calls == [
         ("GET", "/api/records/123/draft"),
         ("POST", "/api/records/123/draft"),
         ("PUT", "/api/records/123/draft"),
         ("POST", "/api/records/123/draft/actions/publish"),
+        ("GET", "/api/records/123"),
         ("GET", "/api/records/123"),
     ]
     assert state["record"]["pids"] == original["pids"]
@@ -271,6 +277,28 @@ def test_supervisor_orcid_updates_existing_contributor() -> None:
     assert updated["metadata"]["contributors"][1]["person_or_org"]["identifiers"] == [
         {"scheme": "other", "identifier": "existing"},
         {"scheme": "orcid", "identifier": "0009-0001-1601-6109"},
+    ]
+    assert zenodo.apply_metadata(updated, CONFIG) == updated
+
+
+def test_existing_affiliations_are_enriched() -> None:
+    enriched = zenodo.apply_metadata(record(), CONFIG)
+    creator = enriched["metadata"]["creators"][0]
+    creator["affiliations"][1].pop("id")
+    contact, supervisor, _ = enriched["metadata"]["contributors"]
+    contact["affiliations"][1].pop("id")
+    supervisor["affiliations"] = [{"name": "Other affiliation"}]
+
+    updated = zenodo.apply_metadata(enriched, CONFIG)
+    assert updated["metadata"]["creators"][0]["affiliations"][1] == {
+        "name": "Aalto University",
+        "id": "020hwjq30",
+    }
+    contact, supervisor, _ = updated["metadata"]["contributors"]
+    assert contact["affiliations"] == updated["metadata"]["creators"][0]["affiliations"]
+    assert supervisor["affiliations"] == [
+        {"name": "Other affiliation"},
+        {"name": "GDSFactory"},
     ]
     assert zenodo.apply_metadata(updated, CONFIG) == updated
 

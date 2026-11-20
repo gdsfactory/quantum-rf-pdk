@@ -14,6 +14,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
@@ -66,9 +67,8 @@ def orcid_of(person: dict[str, Any]) -> str:
 
 def same_contributor(left: dict[str, Any], right: dict[str, Any]) -> bool:
     """Match contributors by ORCID when available, otherwise by name and role."""
-    if not left.get("role", {}).get("id") or left.get("role", {}).get(
-        "id"
-    ) != right.get("role", {}).get("id"):
+    role = left.get("role", {}).get("id")
+    if not role or role != right.get("role", {}).get("id"):
         return False
     left_orcid, right_orcid = orcid_of(left), orcid_of(right)
     if left_orcid and right_orcid:
@@ -82,7 +82,7 @@ def same_contributor(left: dict[str, Any], right: dict[str, Any]) -> bool:
         family = person.get("family_name", "").strip()
         return f"{family}, {given}".casefold() if given and family else ""
 
-    return bool(name(left)) and name(left) == name(right)
+    return bool(left_name := name(left)) and left_name == name(right)
 
 
 def matches_release(record: dict[str, Any], tag: str, config: dict[str, Any]) -> bool:
@@ -115,22 +115,59 @@ def find_record(base: str, tag: str, config: dict[str, Any]) -> dict[str, Any] |
         page += 1
 
 
+def merge_affiliations(person: dict[str, Any], entries: list[dict[str, Any]]) -> None:
+    """Fill in affiliations and upgrade name-only entries when a ROR is available."""
+    if not entries:
+        return
+    affiliations = person.setdefault("affiliations", [])
+    for entry in entries:
+        ror = entry.get("id")
+        if ror and any(item.get("id") == ror for item in affiliations):
+            continue
+        name = entry.get("name", "").casefold()
+        match = next(
+            (
+                item
+                for item in affiliations
+                if name
+                and item.get("name", "").casefold() == name
+                and (not ror or not item.get("id"))
+            ),
+            None,
+        )
+        if match is None:
+            affiliations.append(copy.deepcopy(entry))
+        elif ror:
+            match["id"] = ror
+
+
+def merge_entries(
+    existing: list[dict[str, Any]],
+    entries: Iterable[dict[str, Any]],
+    key: Callable[[dict[str, Any]], object],
+    *,
+    text_field: str | None = None,
+) -> None:
+    """Add missing entries and reject conflicting translations."""
+    for entry in entries:
+        entry_key = key(entry)
+        matches = [item for item in existing if key(item) == entry_key]
+        if not matches:
+            existing.append(copy.deepcopy(entry))
+        elif text_field and all(
+            item.get(text_field) != entry[text_field] for item in matches
+        ):
+            raise ValueError(
+                f"A different {text_field} already exists for the same type and language"
+            )
+
+
 def apply_metadata(record: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """Add curated fields while keeping the existing citation and unrelated metadata."""
     result = copy.deepcopy(record)
     metadata = result["metadata"]
     for creator in metadata["creators"]:
-        orcid = orcid_of(creator)
-        if orcid not in config["affiliations"]:
-            continue
-        affiliations = creator.setdefault("affiliations", [])
-        for entry in config["affiliations"][orcid]:
-            if not any(
-                (entry.get("id") and item.get("id") == entry["id"])
-                or item.get("name", "").casefold() == entry.get("name", "").casefold()
-                for item in affiliations
-            ):
-                affiliations.append(entry)
+        merge_affiliations(creator, config["affiliations"].get(orcid_of(creator), []))
 
     contact = next(
         (c for c in metadata["creators"] if orcid_of(c) == config["contact_orcid"]),
@@ -139,18 +176,12 @@ def apply_metadata(record: dict[str, Any], config: dict[str, Any]) -> dict[str, 
     if contact is None:
         raise ValueError("The contact ORCID is not a creator in this release")
     contributors = metadata.setdefault("contributors", [])
-    if not any(
-        orcid_of(c) == config["contact_orcid"]
-        and c.get("role", {}).get("id") == "contactperson"
-        for c in contributors
-    ):
-        contributors.append({
-            "person_or_org": copy.deepcopy(contact["person_or_org"]),
-            "role": {"id": "contactperson"},
-            "affiliations": copy.deepcopy(contact.get("affiliations", [])),
-        })
-
-    for entry in config.get("contributors", []):
+    contact_entry: dict[str, Any] = {
+        "person_or_org": contact["person_or_org"],
+        "role": {"id": "contactperson"},
+        "affiliations": contact.get("affiliations", []),
+    }
+    for entry in [contact_entry, *config.get("contributors", [])]:
         if not same_contributor(entry, entry):
             raise ValueError("Configured contributors need a name or ORCID and role")
         existing = next(
@@ -158,68 +189,47 @@ def apply_metadata(record: dict[str, Any], config: dict[str, Any]) -> dict[str, 
         )
         if existing is None:
             contributors.append(copy.deepcopy(entry))
-        elif not orcid_of(existing) and orcid_of(entry):
+            continue
+        if not orcid_of(existing) and (orcid := orcid_of(entry)):
             identifiers = existing["person_or_org"].setdefault("identifiers", [])
-            identifiers.extend(copy.deepcopy(entry["person_or_org"]["identifiers"]))
+            identifiers.append({"scheme": "orcid", "identifier": orcid})
+        merge_affiliations(existing, entry.get("affiliations", []))
 
-    languages = metadata.setdefault("languages", [])
-    for entry in config["languages"]:
-        if not any(item.get("id") == entry["id"] for item in languages):
-            languages.append(entry)
-    titles = metadata.setdefault("additional_titles", [])
-    for entry in config["additional_titles"]:
-        matches = [
-            item
-            for item in titles
-            if item.get("type", {}).get("id") == entry["type"]["id"]
-            and item.get("lang", {}).get("id") == entry["lang"]["id"]
-        ]
-        if not matches:
-            titles.append(entry)
-        elif not any(item.get("title") == entry["title"] for item in matches):
-            raise ValueError(
-                "A different title already exists for the same type and language"
-            )
-    subjects = metadata.setdefault("subjects", [])
-    for name in config["subjects"]:
-        if not any(
-            item.get("subject", "").casefold() == name.casefold() for item in subjects
-        ):
-            subjects.append({"subject": name})
-    descriptions = metadata.setdefault("additional_descriptions", [])
-    for entry in config["additional_descriptions"]:
-        matches = [
-            item
-            for item in descriptions
-            if item.get("type", {}).get("id") == entry["type"]["id"]
-            and item.get("lang", {}).get("id") == entry["lang"]["id"]
-        ]
-        if not matches:
-            descriptions.append(entry)
-        elif not any(
-            item.get("description") == entry["description"] for item in matches
-        ):
-            raise ValueError(
-                "A different description already exists for the same type and language"
-            )
-    relations = metadata.setdefault("related_identifiers", [])
-    for entry in config["related_identifiers"]:
-        if not any(
-            item.get("identifier") == entry["identifier"]
-            and item.get("relation_type", {}).get("id") == entry["relation_type"]["id"]
-            for item in relations
-        ):
-            relations.append(entry)
+    merge_entries(
+        metadata.setdefault("languages", []),
+        config["languages"],
+        lambda item: item.get("id"),
+    )
+    merge_entries(
+        metadata.setdefault("subjects", []),
+        ({"subject": name} for name in config["subjects"]),
+        lambda item: item.get("subject", "").casefold(),
+    )
+    merge_entries(
+        metadata.setdefault("related_identifiers", []),
+        config["related_identifiers"],
+        lambda item: (item.get("identifier"), item.get("relation_type", {}).get("id")),
+    )
+    for field, text_field in (
+        ("additional_titles", "title"),
+        ("additional_descriptions", "description"),
+    ):
+        merge_entries(
+            metadata.setdefault(field, []),
+            config[field],
+            lambda item: (
+                item.get("type", {}).get("id"),
+                item.get("lang", {}).get("id"),
+            ),
+            text_field=text_field,
+        )
     custom_fields = result.setdefault("custom_fields", {})
     for key, value in config["custom_fields"].items():
         if key == "code:programmingLanguage":
-            existing = custom_fields.setdefault(key, [])
-            for entry in value:
-                if not any(item.get("id") == entry["id"] for item in existing):
-                    existing.append(entry)
-        elif key not in custom_fields:
-            custom_fields[key] = value
-        elif custom_fields[key] != value:
+            merge_entries(
+                custom_fields.setdefault(key, []), value, lambda item: item.get("id")
+            )
+        elif custom_fields.setdefault(key, value) != value:
             raise ValueError(f"Existing {key} differs from the configured value")
     return result
 
@@ -307,7 +317,7 @@ def update(
     for attempt in range(12):
         current = request_json(base, record_path)
         if (
-            current.get("parent", {}).get("id") == config["concept_id"]
+            matches_release(current, tag, config)
             and apply_metadata(current, config) == current
         ):
             LOG.info("Verified metadata for record %s", record["id"])

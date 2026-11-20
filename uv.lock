@@ -5636,6 +5636,7 @@ dev = [
     { name = "pytest-xdist" },
     { name = "scipy-stubs" },
     { name = "types-docutils" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5713,6 +5714,7 @@ lint = [
     { name = "pyarrow-stubs" },
     { name = "scipy-stubs" },
     { name = "types-docutils" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5725,6 +5727,7 @@ stubs = [
     { name = "pyarrow-stubs" },
     { name = "scipy-stubs" },
     { name = "types-docutils" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5799,6 +5802,7 @@ dev = [
     { name = "pytest-xdist" },
     { name = "scipy-stubs" },
     { name = "types-docutils", specifier = "~=0.22.0" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5874,6 +5878,7 @@ lint = [
     { name = "pyarrow-stubs" },
     { name = "scipy-stubs" },
     { name = "types-docutils", specifier = "~=0.22.0" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -5884,6 +5889,7 @@ stubs = [
     { name = "pyarrow-stubs" },
     { name = "scipy-stubs" },
     { name = "types-docutils", specifier = "~=0.22.0" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
     { name = "types-shapely" },
     { name = "types-tqdm" },
@@ -7488,6 +7494,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e5/8f/30e02b59a9aad81eacd3d02fab5365257e89fde56e7acf44a4128f5f80aa/types_docutils-0.22.3.20260724.tar.gz", hash = "sha256:0223ce87f9b8331a5a3a7c7832e828033d289da6b878a0dcfbc74c30ec58850e", size = 57883, upload-time = "2026-07-24T04:58:36.388Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/1a/898fbb98680dbd5eb7ac8e9cbaf39cf234d329a45d89d04faaf33d7d8008/types_docutils-0.22.3.20260724-py3-none-any.whl", hash = "sha256:45e2fe584608671aa648784c4f805d08a36cd69eb2bd542e60522140c46dc89c", size = 91986, upload-time = "2026-07-24T04:58:35.368Z" },
+]
+
+[[package]]
+name = "types-jsonschema"
+version = "4.26.0.20261006"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "referencing" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/d2/1f742605f5a6d39f993134885b8de41c98af606871d3ebddaf3e776bd1eb/types_jsonschema-4.26.0.20261006.tar.gz", hash = "sha256:3eb7db61b6819d40addfdaac7173e749071a7d4a9a4394f0c844598ec84b2500", size = 16843, upload-time = "2026-10-06T08:16:07.318Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/a0/4f2e3c0dc3d5cad958006f2e0307065cc8fe4fbf0393ff0b69d55ee9bbe5/types_jsonschema-4.26.0.20261006-py3-none-any.whl", hash = "sha256:29301f4e65e3928540cdf5e23ad716e38bb0c0b416a48dada213edd3d70206ec", size = 16113, upload-time = "2026-10-06T08:16:06.355Z" },
 ]
 
 [[package]]
