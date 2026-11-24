@@ -83,7 +83,7 @@ from scipy.signal import find_peaks
 from tqdm.auto import tqdm
 
 from qpdk import PATH, PDK
-from qpdk.helper import display_dataframe
+from qpdk.helper import display_dataframe, get_circuit_netlist
 from qpdk.models import models
 from qpdk.models.cpw import cpw_parameters
 from qpdk.tech import coplanar_waveguide
@@ -136,13 +136,14 @@ chip.plot()
 # %% [markdown]
 # ## Extract the netlist
 #
-# `Component.get_netlist()` returns a dictionary with `instances`,
-# `nets`, `ports`, and `placements`.  SAX understands this format directly.
+# `get_circuit_netlist(chip)` returns `Component.get_netlist()` without
+# placement ports: a dictionary with `instances`, `nets`, `ports`, and
+# `placements`.  SAX understands this format directly.
 
 # %%
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    netlist = chip.get_netlist()
+    netlist = get_circuit_netlist(chip)
 
 print("Instances:")
 for name, inst in netlist["instances"].items():
