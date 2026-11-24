@@ -1,8 +1,9 @@
 r"""Add Palace domain-energy output and run meshed directories with MPI.
 
 gsim already provides single-node ``run_local()`` and Palace text-result
-loading. This module covers Slurm multi-node MPI, domain-energy output, and
-port-connectivity checks. The latter two could move to gsim later.
+loading. This module covers Slurm multi-node MPI, domain-energy output,
+port-connectivity checks and junction-port alignment. The domain-energy output
+and connectivity checks could move to gsim later.
 """
 
 from __future__ import annotations
@@ -17,11 +18,18 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
+import gdsfactory as gf
+import klayout.db as kdb
+
+from qpdk.simulation.fem import FEM_LAYERS
+
 __all__ = [
     "add_domain_energy_postprocessing",
+    "align_junction_port",
     "domain_loss_tangents",
     "palace_command",
     "solve",
+    "verify_lumped_port_sheet",
     "verify_port_connectivity",
 ]
 
@@ -68,6 +76,144 @@ def add_domain_energy_postprocessing(sim_dir: Path) -> list[int]:
     ]
     config_path.write_text(json.dumps(config, indent=2))
     return attributes
+
+
+def _conductor(regions: gf.Component) -> kdb.Region:
+    """Return the merged positive metal of a converted layout."""
+    layer = regions.kdb_cell.layout().layer(*FEM_LAYERS["SUPERCONDUCTOR"])
+    return kdb.Region(regions.kdb_cell.begin_shapes_rec(layer)).merged()
+
+
+def _along_x(orientation: float) -> bool:
+    """Return whether gsim lays an in-plane lumped port sheet along x."""
+    angle = orientation % 360
+    return not (45 <= angle < 135 or 225 <= angle < 315)
+
+
+def verify_lumped_port_sheet(regions: gf.Component, port: str, length: float) -> None:
+    """Check that an in-plane lumped port sheet bridges two conductors.
+
+    gsim draws an in-plane lumped port as a sheet centred on the port,
+    ``length`` along its orientation and the port width across it. The sheet
+    has to end on two separate conductors without covering either. A sheet
+    that runs over the pads removes PEC coverage from the overlap in the mesh,
+    and a sheet that misses a pad drives nothing. Palace solves both without
+    complaint, and the junction mode it returns no longer tracks the junction
+    inductance.
+
+    Args:
+        regions: Positive-metal layout from :func:`~qpdk.simulation.to_fem_regions`.
+        port: Name of the port the sheet is built on.
+        length: Sheet extent along the port orientation in µm, as passed to
+            gsim's ``add_port``.
+
+    Raises:
+        ValueError: If the sheet overlaps conductor by more than one database
+            unit at either end or does not touch exactly two separate
+            conductors.
+    """
+    p = regions.ports[port]
+    half_length, half_width = length / 2, p.width / 2
+    along_x = _along_x(p.orientation)
+    if not along_x:
+        half_length, half_width = half_width, half_length
+    x, y = p.dcenter
+    box = kdb.DBox(
+        x - half_length, y - half_width, x + half_length, y + half_width
+    ).to_itype(regions.kcl.dbu)
+    sheet = kdb.Region(box)
+    metal = _conductor(regions)
+    # Snapping the centre and ends to the grid can put an end one dbu onto a pad.
+    core = kdb.Region(box.enlarged(kdb.Vector(-1, 0) if along_x else kdb.Vector(0, -1)))
+    if not (core & metal).is_empty():
+        msg = (
+            f"lumped port {port!r} sheet ({length} µm long) overlaps conductor, "
+            "so the mesh loses PEC coverage under it"
+        )
+        raise ValueError(msg)
+    touched = metal.interacting(sheet.sized(1)).count()
+    if touched != 2:
+        msg = (
+            f"lumped port {port!r} sheet ({length} µm long) touches {touched} "
+            "conductor(s) instead of bridging two"
+        )
+        raise ValueError(msg)
+
+
+def align_junction_port(regions: gf.Component, port: str = "junction") -> float:
+    """Turn a junction placement marker into a lumped port across the pad gap.
+
+    A qubit cell's ``junction`` port is a placement marker pointing along the
+    junction wire, perpendicular to the pad-to-pad axis. A lumped port has to
+    bridge pad to pad, so this rotates the port by 90°, measures the gap from
+    the conductor along the rotated axis and moves the port to the midpoint of
+    the gap on that axis, snapped to the database grid. Its offset
+    perpendicular to that axis and its width are kept. Pass the returned
+    length to gsim's ``add_port``. The length is stored in the port's
+    ``info["lumped_port_length"]``, and a repeat call returns it unchanged.
+
+    This holds for the two-pad transmons, such as
+    :func:`~qpdk.cells.double_pad_transmon_with_bbox`. The ``xmon_transmon``
+    and ``unimon`` markers already point across their junction gap, so the
+    rotated sheet fails the check and this raises.
+
+    Args:
+        regions: Positive-metal layout from :func:`~qpdk.simulation.to_fem_regions`.
+            Its port is modified in place.
+        port: Name of the junction placement port.
+
+    Returns:
+        The gap between the pads along the rotated port, in µm.
+
+    Raises:
+        ValueError: If the port is not axis-aligned, does not sit in a gap
+            between conductors along its rotated axis, or the resulting sheet
+            fails :func:`verify_lumped_port_sheet`.
+    """
+    p = regions.ports[port]
+    if "lumped_port_length" in p.info:
+        length = float(p.info["lumped_port_length"])
+        verify_lumped_port_sheet(regions, port, length)
+        return length
+    if p.orientation % 90:
+        msg = (
+            f"port {port!r} is at {p.orientation:g}°, but must be axis-aligned "
+            "because gsim snaps an in-plane lumped port sheet to the x or y axis"
+        )
+        raise ValueError(msg)
+    p.orientation = (p.orientation + 90.0) % 360.0
+    along_x = _along_x(p.orientation)
+    dbu = regions.kcl.dbu
+    x, y = (round(v / dbu) for v in p.dcenter)
+    half_width = round(p.width / dbu / 2)
+    metal = _conductor(regions)
+    bounds = metal.bbox()
+
+    def _strip(lo: int, hi: int) -> kdb.Region:
+        """Return the conductor under a port-wide strip from ``lo`` to ``hi``."""
+        if along_x:
+            return metal & kdb.Region(kdb.Box(lo, y - half_width, hi, y + half_width))
+        return metal & kdb.Region(kdb.Box(x - half_width, lo, x + half_width, hi))
+
+    if along_x:
+        below, above = _strip(bounds.left, x), _strip(x, bounds.right)
+    else:
+        below, above = _strip(bounds.bottom, y), _strip(y, bounds.top)
+    msg = (
+        f"port {port!r} does not sit in a gap between conductors along its rotated axis"
+    )
+    if below.is_empty() or above.is_empty():
+        raise ValueError(msg)
+    start = below.bbox().right if along_x else below.bbox().top
+    end = above.bbox().left if along_x else above.bbox().bottom
+    if end <= start:
+        raise ValueError(msg)
+    mid = (start + end) / 2 * dbu
+    p.dcenter = (mid, y * dbu) if along_x else (x * dbu, mid)
+    length = (end - start) * dbu
+    verify_lumped_port_sheet(regions, port, length)
+    p.info["lumped_port_length"] = length
+    return length
 
 
 def verify_port_connectivity(sim_dir: Path) -> dict[str, int]:

@@ -108,6 +108,11 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "TSV_FEM_LAYERS": ("qpdk.simulation.fem", "TSV_FEM_LAYERS"),
     "to_tsv_regions": ("qpdk.simulation.fem", "to_tsv_regions"),
     "tsv_stack": ("qpdk.simulation.fem", "tsv_stack"),
+    "align_junction_port": ("qpdk.simulation.palace_run", "align_junction_port"),
+    "verify_lumped_port_sheet": (
+        "qpdk.simulation.palace_run",
+        "verify_lumped_port_sheet",
+    ),
     "Netlist": ("qpdk.simulation.vacask", "Netlist"),
     "RawFile": ("qpdk.simulation.vacask", "RawFile"),
     "RawPlot": ("qpdk.simulation.vacask", "RawPlot"),
@@ -133,6 +138,7 @@ __all__ = [
     "SlurmRunner",
     "Vacask",
     "VacaskError",
+    "align_junction_port",
     "cpw_tline_params",
     "flip_chip_stack",
     "format_value",
@@ -144,6 +150,7 @@ __all__ = [
     "tsv_stack",
     "vector_fit",
     "vector_fit_subckt",
+    "verify_lumped_port_sheet",
 ]
 
 

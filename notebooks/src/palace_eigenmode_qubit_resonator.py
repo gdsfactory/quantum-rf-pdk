@@ -122,7 +122,7 @@ from qpdk.config import PATH
 from qpdk.models.constants import c_0
 from qpdk.models.cpw import cpw_epsilon_eff, cpw_parameters, get_cpw_dimensions
 from qpdk.models.resonator import resonator_frequency
-from qpdk.simulation import FEM_LAYERS, to_fem_regions
+from qpdk.simulation import FEM_LAYERS, align_junction_port, to_fem_regions
 from qpdk.tech import LAYER, material_properties
 
 PDK.activate()
@@ -194,7 +194,6 @@ GROUND_MARGIN = 500.0  # µm
 PROBELINE_EXTENSION = 1000.0  # µm per end
 JUNCTION_INDUCTANCE = 2.515e-08  # H
 JUNCTION_PORT_WIDTH = 2.0  # µm
-JUNCTION_PORT_LENGTH = QUBIT_PAD_GAP
 NEAR_MESH = 0.55  # µm
 ELEMENT_ORDER = 3
 COUPLER_WIDTH = 10.0  # µm
@@ -380,28 +379,12 @@ assert len({readout, feed, pad1, pad2}) == 4, (
     "the readout must stay separate from the feed and both qubit pads"
 )
 
-# The cell's ``junction`` port is a *placement* marker: it points along the
-# junction wire, which the transmon cells build perpendicular to the pad-to-pad
-# axis (``left_pad_inner`` and ``right_pad_inner`` face each other across the
-# gap, while the junction port sits at the gap centre at 90° to them). A lumped
-# port has to bridge pad to pad, so rotate by that 90°. Deriving it this way
-# rather than hard-coding an angle keeps it correct for any ``qubit_rotation``.
-etched.ports["junction"].orientation = (
-    etched.ports["junction"].orientation + 90.0
-) % 360.0
-
-junction_sheet = kdb.Region(
-    kdb.DBox(
-        -JUNCTION_PORT_WIDTH / 2,
-        -JUNCTION_PORT_LENGTH / 2,
-        JUNCTION_PORT_WIDTH / 2,
-        JUNCTION_PORT_LENGTH / 2,
-    ).to_itype(etched.kcl.dbu)
-)
-assert (junction_sheet & metal).is_empty(), "junction sheet overlaps pad metal"
-assert len(metal.interacting(junction_sheet.sized(1))) == 2, (
-    "junction sheet must touch both pad edges"
-)
+# The cell's ``junction`` port is a *placement* marker along the junction wire,
+# at 90° to the pad-to-pad axis. ``align_junction_port`` rotates it to bridge
+# the pads, sizes the lumped-port sheet to the measured gap, and raises if the
+# sheet overlaps metal or misses a pad. Its return value is the only junction
+# port length passed to gsim below.
+JUNCTION_PORT_LENGTH = align_junction_port(etched)
 
 etched.plot()
 
@@ -470,6 +453,9 @@ logger.info(f"Finite-thickness PDK estimate: {pdk_analytical_freq / 1e9:.4f} GHz
 # | 15 | 2 | 6.324632 | 4.189368 | 0.9950 |
 #
 # The overlapping sheet's weakly participating branch is not used for tuning.
+# {func}`~qpdk.simulation.palace_run.verify_lumped_port_sheet` rejects it
+# before meshing, and {func}`~qpdk.simulation.palace_run.align_junction_port`,
+# used above, builds the exact-gap sheet with that check applied.
 # The setup uses an exact-gap sheet and a narrow 2 µm electrical width,
 # independent of the junction's wider layout-placement marker. The readout
 # moves by only 0.20 MHz in this off-resonant control, so this port issue is
@@ -506,8 +492,10 @@ logger.info(f"Finite-thickness PDK estimate: {pdk_analytical_freq / 1e9:.4f} GHz
 # # resistance=0 overrides the R = 50 Ω that gsim's default
 # # port impedance would emit: the linearized junction is purely reactive, so
 # # it shifts the qubit-like mode but adds no dissipation. The narrow sheet
-# # joins the pad edges across the 15 µm gap. Its electrical width is separate
-# # from the wider junction placement marker in the layout cell.
+# # joins the pad edges across the gap measured by align_junction_port; check
+# # a hand-picked length with verify_lumped_port_sheet instead. The sheet's
+# # electrical width is separate from the wider junction placement marker in
+# # the layout cell.
 # sim.add_port(
 #     "junction",
 #     layer="SUPERCONDUCTOR",

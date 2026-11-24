@@ -119,6 +119,17 @@ generic runner keeps trials in flight and sends that callable to Slurm or Ray wo
 gsim provides single-node local execution and text-result loading; these helpers add
 multi-node MPI launching, domain-energy requests and port-connectivity checks.
 
+A two-pad transmon's ``junction`` port is a placement marker along the junction wire,
+not a lumped port. :func:`~qpdk.simulation.palace_run.align_junction_port` turns it 90°
+to bridge the pads, sizes the sheet to the measured pad gap and returns the length for
+gsim's ``add_port``. It applies
+:func:`~qpdk.simulation.palace_run.verify_lumped_port_sheet`, which raises when a sheet
+overlaps metal or does not reach both pads. Pass a hand-specified port length to
+:func:`~qpdk.simulation.palace_run.verify_lumped_port_sheet` before meshing, because
+:func:`~qpdk.simulation.palace_run.solve` does not check it. A sheet over the pads still
+solves, but in :doc:`notebooks/palace_eigenmode_qubit_resonator` it moves the junction
+mode at a fixed 10 nH from 6.32 to 2.24 GHz.
+
 .. automodule:: qpdk.simulation.palace_run
     :members:
     :show-inheritance:
