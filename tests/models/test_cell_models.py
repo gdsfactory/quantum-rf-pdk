@@ -12,6 +12,7 @@ import pytest
 
 from qpdk import PDK
 from qpdk.models import models
+from qpdk.models.inductor import lumped_element_resonator
 
 
 @pytest.mark.parametrize(
@@ -40,3 +41,16 @@ def test_cell_model_has_one_jittable_port_contract(
         jax.jit(lambda f: model(f=f, **settings))(frequencies)
     )
     assert set(actual) == {(p1, p2) for p1 in ports for p2 in ports}
+
+
+def test_lumped_element_resonator_rejects_traced_grounded() -> None:
+    """``grounded`` selects the circuit topology and must be fixed when tracing."""
+
+    @jax.jit
+    def response(f: jax.Array, grounded: jax.Array) -> dict:
+        return lumped_element_resonator(f=f, grounded=grounded)
+
+    with pytest.raises(
+        jax.errors.ConcretizationTypeError, match="grounded must be fixed"
+    ):
+        response(jnp.asarray([5e9]), jnp.asarray(False))

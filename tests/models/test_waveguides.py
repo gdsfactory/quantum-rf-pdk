@@ -416,8 +416,8 @@ class TestNxN:
             assert len(ports) == n, f"Expected {n} ports, got {len(ports)}"
 
     @staticmethod
-    def test_jit_with_fixed_array_port_counts() -> None:
-        """Sweep frequency with the scalar counts supplied by an editor."""
+    def test_jit_frequency_sweep_with_concrete_scalar_port_counts() -> None:
+        """Sweep frequency with the concrete scalar counts supplied by an editor."""
         west, east, north, south = (jnp.asarray(n) for n in (2.0, 1.0, 1.0, 0.0))
 
         @jax.jit
@@ -430,6 +430,45 @@ class TestNxN:
         assert actual.keys() == expected.keys()
         for pair in expected:
             assert_allclose(actual[pair], expected[pair])
+
+    @staticmethod
+    def test_concrete_integer_valued_counts_are_accepted() -> None:
+        """Whole-number scalars bind to the same static port count as ints."""
+        f = jnp.asarray([1e9])
+        expected = nxn(f=f, west=2, east=1, north=1, south=0)
+
+        for count in (2, 2.0, jnp.asarray(2.0), jnp.asarray(2)):
+            actual = nxn(f=f, west=count, east=1, north=1, south=0)
+            assert actual.keys() == expected.keys()
+
+    @staticmethod
+    def test_non_whole_number_counts_are_rejected() -> None:
+        """Fractional or NaN counts must not be silently truncated."""
+        f = jnp.asarray([1e9])
+        for count in (2.5, jnp.asarray(2.5), float("nan"), jnp.asarray(float("nan"))):
+            with pytest.raises(ValueError, match="whole number"):
+                nxn(f=f, west=count)
+
+    @staticmethod
+    def test_non_scalar_counts_are_rejected() -> None:
+        """A count must be a scalar, not a one-element array."""
+        f = jnp.asarray([1e9])
+        with pytest.raises(ValueError, match="scalar"):
+            nxn(f=f, west=jnp.asarray([2.0]))
+
+    @staticmethod
+    def test_traced_port_count_is_rejected() -> None:
+        """A count that depends on a traced value cannot fix the topology."""
+        f = jnp.asarray([1e9])
+
+        @jax.jit
+        def sweep(f: jax.Array, west: jax.Array) -> dict:
+            return nxn(f=f, west=west)
+
+        with pytest.raises(
+            jax.errors.ConcretizationTypeError, match="west count must be fixed"
+        ):
+            sweep(f, jnp.asarray(2.0))
 
     @staticmethod
     def test_passivity() -> None:

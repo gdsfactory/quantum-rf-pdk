@@ -41,6 +41,18 @@ _COUPLING_MODEL_BOUNDARIES = {
     "quarter_wave_resonator_coupled",
 }
 
+# Known one-port cells that cannot run a sweep on older GDSFactory+ SDKs.
+_ONE_PORT_CELLS = frozenset({
+    "neck_termination",
+    "open",
+    "resonator_quarter_wave_neck",
+    "short",
+    "squid_termination",
+    "straight_open",
+    "straight_shorted",
+    "unimon_coupled",
+})
+
 
 @pytest.mark.gfp
 @pytest.mark.parametrize(
@@ -283,11 +295,20 @@ def test_hyperbolic_component_sax_simulation(cell: str) -> None:
 def test_registered_layout_models_compile_from_layout(
     cell_name: str, tmp_path: Path
 ) -> None:
-    """Evaluate each registered layout model using GFP's extracted netlist."""
+    """Evaluate each registered layout model using GFP's extracted netlist.
+
+    Released GDSFactory+ SDKs sweep only circuits with at least two external
+    ports, so the eight registered one-port terminations cannot complete the
+    UI sweep there. For those the test still requires the extracted netlist to
+    resolve the cell's own model and the model to return a finite reflection.
+    Every other cell, and every cell under an SDK that accepts one port, must
+    match the full port-pair sweep.
+    """
     PDK.activate()
+    cell = PDK.cells[cell_name]()
     ports = {
         port.name: port.port_type
-        for port in PDK.cells[cell_name]().ports
+        for port in cell.ports
         if port.port_type != "placement"
     }
     assert ports, f"{cell_name} registers a model with no circuit ports"
@@ -325,14 +346,30 @@ def test_registered_layout_models_compile_from_layout(
             wl_num=3,
             sweep_axis="f",
         )
-    except sax_sim.EmptyCircuitError as exc:
-        if len(ports) != 1 or "exposes 1 port(s)" not in str(exc):
+    except sax_sim.EmptyCircuitError:
+        if (
+            len(ports) != 1
+            or cell_name not in _ONE_PORT_CELLS
+            or getattr(sax_sim, "_MIN_PORTS", 1) < 2
+        ):
             raise
-        # Released SDKs can resolve a one-port layout before rejecting the sweep.
         info = sax_sim.inspect_layout_sax_models(str(schematic), "qpdk.PDK")
-        assert info["required_models"], info
+        assert cell_name in info["resolved_models"], info
         assert not info["missing_models"], info
-        pytest.skip("This GDSFactory+ SDK requires two external sweep ports")
+
+        model = PDK.models[cell_name]
+        accepted = inspect.signature(model).parameters
+        settings = {
+            key: value for key, value in dict(cell.settings).items() if key in accepted
+        }
+        reflection = model(f=jnp.asarray([5e9]), **settings)
+        assert set(reflection) == {(port, port) for port in ports}
+        for values in reflection.values():
+            assert jnp.isfinite(values).all(), cell_name
+        pytest.skip(
+            f"{cell_name} exposes one port; this GDSFactory+ SDK needs two "
+            "external ports to run an S-parameter sweep"
+        )
 
     assert len(result["wavelengths"]) == 3
     traces = result["sdict"]
