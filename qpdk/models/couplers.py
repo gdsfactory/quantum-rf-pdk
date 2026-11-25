@@ -356,8 +356,8 @@ def cpw_cpw_coupling_capacitance(
 
 def coupler_straight(
     f: ArrayLike = DEFAULT_FREQUENCY,
-    length: int | float = 10,
-    gap: int | float = 16,
+    length: int | float | jax.Array = 10,
+    gap: int | float | jax.Array = 16,
     cross_section: CrossSectionSpec = "cpw",
     cross_section_non_resonator: CrossSectionSpec | None = None,
     resonator_offset: float = 0.0,
