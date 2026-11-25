@@ -78,6 +78,34 @@ Example for this PDK:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+### Check the Boundary That Failed
+
+For a bug fix, start with the issue's failing input and the entry point that exposed it. Where you can, show that the
+same check fails before the fix and passes after it. When a failure recurs, record the smallest test or review rule that
+would have caught it.
+
+- **Layout to simulation.** Exercise the public path from a representative PCell through its netlist or FEM geometry to
+  the consumer. For SAX, build and evaluate the circuit with `PDK.models` and compare the circuit ports with the
+  intended electrical ports. For a lumped FEM port, check the sheet against the extracted conductors, including the
+  intended contact at each end and clearance from metal across the gap.
+- **Physics comparisons.** Write down the sign convention, units, reference impedance, and material or solver settings
+  that matter to the comparison. Match them on both sides before changing the model or its reference data. For a change
+  to a formula, check an independent result such as exact diagonalization or a known limiting case.
+- **Generated artifacts.** Open the generated output in the tool that reads it. Load a regenerated `.lyt` in KLayout and
+  check its connectivity against the source. For docs viewer or renderer changes, exercise the affected 2D or 3D mode in
+  a browser or inspect the rendered figure with the pinned fonts.
+- **Required CI checks.** Trace artifact names and dependencies from producer to consumer. Check the reusable workflow's
+  permission requirements and the exact check name in the `main` ruleset. Verify that the check is emitted for
+  same-repository PRs, fork PRs, and the merge queue when the workflow applies to those events.
+
+## Writing Prose
+
+Use the principles from [SciWrite](https://github.com/labarba/sciwrite) or a similar scientific writing guide when
+drafting and reviewing comments, docstrings, documentation, and notebook prose. Lead with the main point, use direct
+verbs and consistent technical terms, and cut words that add no information. Keep comments focused on the reason for a
+choice. In docstrings and documentation, explain assumptions, units, and limits where they affect how readers use the
+code or interpret results. Preserve the meaning and strength of technical claims when editing.
+
 ## Code Standards
 
 ### Required Before Each Commit
@@ -89,7 +117,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ### Development Flow
 
 - **Install dependencies**: `just install` (uses `uv sync --all-extras`)
-- **Test**: `just test` (runs `uv run pytest -n auto` with parallel execution)
+- **Test**: `just test` (runs the default pytest suite in parallel with its test extras)
 - **Test GDS components**: `just test-gds` (runs only GDS regression tests in `tests/test_pdk.py`)
 - **Regenerate GDS regression tests**: `just test-gds-force` (regenerates reference GDS files)
 - **Test with fail-fast**: `just test-gds-fail-fast` (stops at first test failure for debugging)
@@ -145,23 +173,22 @@ The repository uses several automated workflows:
 - **test.yml**: Runs on every PR and push to main. Executes pre-commit hooks and pytest test suite
 - **pages.yml**: Builds HTML and PDF documentation, deploys to GitHub Pages on push to main
 - **build.yml**: Builds Python package distribution files
-- **release.yml**: Publishes to PyPI when a version tag (e.g., `v0.0.3`) is pushed
+- **release.yml**: Tags new versions on `main` and publishes releases to PyPI and GitHub
 
 ### Automated Checks
 
 All PRs must pass:
 
 1. Pre-commit hooks (linting, formatting, type checking, etc.)
-1. Full test suite (203+ tests including regression tests)
+1. Test suite, including regression tests and the applicable integration jobs
 1. Documentation build (both HTML and PDF must build successfully)
 
 ### Release Process
 
-1. Bump the version with `uv version --bump patch` The version should be updated in `pyproject.toml`,
-   `qpdk/__init__.py`, and `README.md`
-1. Create and push a version tag. For example: `git tag v0.0.X && git push origin v0.0.X`
-1. GitHub Actions automatically builds and publishes to PyPI
-1. Draft release is automatically published on GitHub
+1. Bump the version in `pyproject.toml` with `uv version` and update `qpdk/__init__.py` to match. Add the version's
+   entry to `CHANGELOG.md` in the same change.
+1. Merge the release PR to `main`. The release workflow creates the `v<version>` tag, publishes the package to PyPI, and
+   publishes the GitHub release.
 
 ## Key Guidelines
 
@@ -330,7 +357,8 @@ for examples of:
   notebook uses `.m` (see `notebooks/src/matlab_integration.m`) and the Julia-kernel notebook uses `.jl` (see
   `notebooks/src/josephsoncircuits_twpa.jl`). The PEP 723 and Colab cells below apply to Python notebooks only
 
-- **Conversion**: Run `just convert-notebooks` or `./.github/convert-notebooks.sh` to convert source files to `.ipynb`
+- **Conversion**: Run `just convert-notebooks` for the Python notebooks, or pass specific `.py`, `.m` or `.jl` sources
+  to `./.github/convert-notebooks.sh` to update their `.ipynb` files.
 
 - **Pre-commit hook**: Notebooks are automatically converted when `.py`, `.m` or `.jl` files in `notebooks/src/` are
   modified
@@ -342,10 +370,9 @@ for examples of:
   `# %% [raw] tags=["remove-cell"]` cell, so it can be run with `uv run --script`. Update its `dependencies` whenever
   the Colab install cell changes
 
-- **Documentation**: Converted notebooks are copied to `docs/notebooks/` during documentation build. Notebooks that
-  require external tooling (HFSS, MATLAB) or a GPU are listed in `docs/precalculated_notebooks.txt`, which feeds
-  `nb_execution_excludepatterns` in `docs/conf.py` and the copy step in `docs/docs.just` so the docs build does not try
-  to execute them
+- **Documentation**: The docs build copies the jupytext sources into `docs/notebooks/` and executes them. For notebooks
+  listed in `docs/precalculated_notebooks.txt`, it copies the committed `.ipynb` with its outputs and skips execution.
+  Update those outputs after changing a calculation they show.
 
 - **Julia notebook**: `josephsoncircuits_twpa` runs on a Julia 1.12 kernel with the environment in
   `notebooks/data/josephsoncircuits_twpa/julia/`, and reaches QPDK through PythonCall using the checkout's `.venv`. The

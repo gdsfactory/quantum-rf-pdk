@@ -85,7 +85,7 @@ tests/                  pytest suite
   gfp/                  GDSFactory+ integration tests
   precommit/            Tests for repo pre-commit scripts
 docs/                   Sphinx documentation source
-notebooks/src/          Jupytext notebook sources (.py percent format, .m for MATLAB)
+notebooks/src/          Jupytext notebook sources (.py, .m for MATLAB, .jl for Julia)
 pyproject.toml          Metadata, dependencies, ruff/pyrefly/pytest/interrogate config
 justfile                Task runner recipes
 .pre-commit-config.yaml Pre-commit hook definitions
@@ -100,10 +100,13 @@ Comment on these in roughly this order, and stay quiet about the rest:
    mask are the failures that reach silicon. They outrank every style concern here.
 1. **Breaking changes to the public surface.** Renamed cells, renamed ports, changed port types, changed cross-section
    defaults, or changed layer numbers break user designs and stored netlists. Always call them out explicitly.
-1. **Regression references.** A component or model change should come with regenerated references; a reference diff
-   should come with a code change that explains it. Mismatches in either direction are worth a comment.
+1. **Regression references.** Check that a change to recorded geometry, settings, netlists, or model output comes with
+   updated references. Flag reference changes that the PR does not explain.
 1. **Missing tests** for new public behaviour.
 1. **Missing or wrong docstrings** on new public API — `interrogate` fails CI at anything under 100% coverage.
+1. **Prose that affects use or interpretation.** Follow the writing principles in `AGENTS.md`. Flag changed comments,
+   docstrings, notebook prose, or docs that leave an important assumption, unit, or limit unclear. Focus on issues that
+   could change how a reader uses the code or interprets the results.
 1. **Security**, per the rules in the path-specific files.
 1. **Modernization**, per `python.instructions.md`: idioms the supported Python range already allows, and a
    `# TODO(Python 3.X): <feature> - <what to change>` marker on workarounds a newer Python would delete.

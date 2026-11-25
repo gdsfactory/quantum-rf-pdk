@@ -70,7 +70,7 @@ them.
 
 ## Tests that must accompany a cell change
 
-- New or changed cells need regenerated GDS regression references: `just test-gds-force`, with the resulting files in
-  `tests/gds_ref/` and the settings/netlist YAML under `tests/test_pdk/` committed in the same PR.
-- If reference YAML or GDS files changed, verify the diff is a plausible consequence of the code change. A settings diff
-  with no corresponding code change — or a code change with no reference diff — is a red flag worth a comment.
+- Add references for new cells and regenerate affected references with `just test-gds-force` when geometry, settings, or
+  netlists change. Commit the resulting GDS files in `tests/gds_ref/` and YAML files in `tests/test_pdk/` in the same
+  PR.
+- If reference YAML or GDS files changed, check that the PR explains the difference.
