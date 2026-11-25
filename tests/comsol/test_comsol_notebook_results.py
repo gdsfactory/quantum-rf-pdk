@@ -14,6 +14,7 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from gplugins.comsol.results import (
@@ -347,3 +348,47 @@ def test_field_readback_plots_when_the_export_exists(tmp_path: Path) -> None:
     exec(cell, namespace)  # ruff: ignore[exec-builtin]
 
     assert [axes.contours for axes in pyplot.axes] == [1, 1]
+
+
+def test_cpw_field_plot_fills_the_view_corners(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Window corners outside the hull of the cropped nodes still get a colour."""
+    cell = _cell_with(_source(CPW_NOTEBOOK), "def draw_cut_plane_field(")
+    # A diamond of nodes inside the window plus a coarse frame outside it, the
+    # way a graded mesh leaves few nodes near the window corners.
+    angles = np.linspace(0.0, 2.0 * np.pi, 16, endpoint=False)
+    inner = np.column_stack((np.cos(angles), np.sin(angles)))
+    frame = np.array([[-3.0, -3.0], [3.0, -3.0], [3.0, 3.0], [-3.0, 3.0]])
+    xy = np.vstack(([[0.0, 0.0]], inner, frame))
+    field = np.column_stack((xy, np.zeros(len(xy)), np.exp(-np.hypot(*xy.T))))
+    # An unevaluated node outside the window, which COMSOL exports as NaN.
+    field = np.vstack((field, [2.5, 0.0, 0.0, np.nan]))
+    export = tmp_path / "field.txt"
+    np.savetxt(export, field, header="% COMSOL field export", comments="")
+    monkeypatch.setattr(plt, "show", lambda: None)
+    namespace: dict[str, Any] = {
+        "Path": Path,
+        "np": np,
+        "mtri": mtri,
+        "LogNorm": LogNorm,
+        "plt": plt,
+    }
+    exec(cell, namespace)  # ruff: ignore[exec-builtin]
+
+    before = set(plt.get_fignums())
+    namespace["draw_cut_plane_field"](
+        export, "Resonator field", view_um=(-1.5, 1.5, -1.5, 1.5)
+    )
+    fig = plt.figure(next(iter(set(plt.get_fignums()) - before)))
+    try:
+        ax = fig.axes[0]
+        assert ax.get_xlim() == (-1.5, 1.5)
+        assert ax.get_ylim() == (-1.5, 1.5)
+        filled = [
+            path for collection in ax.collections for path in collection.get_paths()
+        ]
+        for corner in [(-1.4, -1.4), (1.4, -1.4), (1.4, 1.4), (-1.4, 1.4)]:
+            assert any(path.contains_point(corner) for path in filled), corner
+    finally:
+        plt.close(fig)
