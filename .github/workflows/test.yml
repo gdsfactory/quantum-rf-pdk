@@ -144,13 +144,14 @@ jobs:
           path: htmlcov
   upload-coverage:
     needs: [test-code, test-palace]
-    if: ${{ !cancelled() && needs.test-code.result == 'success' && needs.test-palace.result == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ !cancelled() && needs.test-code.result == 'success' && needs.test-palace.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      code-quality: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           prune-cache: true
@@ -162,13 +163,27 @@ jobs:
         run: |
           uv run --only-group test coverage combine
           uv run --only-group test coverage xml
+      - name: Upload combined coverage report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: error
+  publish-coverage:
+    needs: upload-coverage
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      code-quality: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-xml
       - parallel:
-          - name: Upload combined coverage report
-            uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-            with:
-              name: coverage-xml
-              path: coverage.xml
-              if-no-files-found: error
           - name: Upload code coverage to GitHub
             uses: actions/upload-code-coverage@2b21a77928be8d5168c2b9581a67f2adbebacc52 # v1.4.4
             with:
