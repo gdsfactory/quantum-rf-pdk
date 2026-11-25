@@ -11,16 +11,19 @@
   },
   "probeline_cap1_to_qubit1": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "probeline_cap1_to_qubit1",
     "name": "probeline_cap1_to_qubit1",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "input_cap1",
-        "port": "o2"
+        "component_id": "input_cap1",
+        "port_name": "o2"
       },
       "finish": {
-        "device": "qubit1",
-        "port": "coupling_o1"
+        "component_id": "qubit1",
+        "port_name": "coupling_o1"
       }
     },
     "net": "net7",
@@ -28,33 +31,61 @@
     "cross_section": "coplanar_waveguide",
     "width": 10,
     "layer": "M1_DRAW",
-    "waypoints": [
-      [818.0, 400.0],
-      [1151.5, 400.0],
-      [1151.5, 399.0],
-      [1485.0, 399.0]
+    "vertices": [
+      [
+        818.0,
+        -400.0
+      ],
+      [
+        1151.5,
+        -400.0
+      ],
+      [
+        1151.5,
+        -399.0
+      ],
+      [
+        1485.0,
+        -399.0
+      ]
     ],
     "sbend_segments": {
       "1": {
         "factory": "bend_s",
-        "size": [333.5, -1.0]
+        "size": [
+          333.5,
+          -1.0
+        ]
       }
     }
   },
   "probeline_qubit1_to_qubit2": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "probeline_qubit1_to_qubit2",
     "name": "probeline_qubit1_to_qubit2",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "qubit1",
-        "port": "coupling_o2"
+        "component_id": "qubit1",
+        "port_name": "coupling_o2"
       },
       "finish": {
-        "device": "qubit2",
-        "port": "coupling_o1"
+        "component_id": "qubit2",
+        "port_name": "coupling_o1"
       }
     },
+    "vertices": [
+      [
+        2285.0,
+        -399.0
+      ],
+      [
+        2715.0,
+        -399.0
+      ]
+    ],
     "net": "net10",
     "radius": 100,
     "cross_section": "coplanar_waveguide",
@@ -128,16 +159,19 @@
   },
   "probeline_qubit2_to_qubit3": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "probeline_qubit2_to_qubit3",
     "name": "probeline_qubit2_to_qubit3",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "qubit2",
-        "port": "coupling_o2"
+        "component_id": "qubit2",
+        "port_name": "coupling_o2"
       },
       "finish": {
-        "device": "qubit3",
-        "port": "coupling_o2"
+        "component_id": "qubit3",
+        "port_name": "coupling_o2"
       }
     },
     "net": "net11",
@@ -145,11 +179,23 @@
     "cross_section": "coplanar_waveguide",
     "width": 10,
     "layer": "M1_DRAW",
-    "waypoints": [
-      [3515.0, 399.0],
-      [3700.0, 399.0],
-      [3700.0, -401.421],
-      [3515.0, -401.421]
+    "vertices": [
+      [
+        3515.0,
+        -399.0
+      ],
+      [
+        3615.0,
+        -399.0
+      ],
+      [
+        3615.0,
+        401.421
+      ],
+      [
+        3515.0,
+        401.421
+      ]
     ]
   },
   "qubit3": {
@@ -345,16 +391,19 @@
   },
   "probeline_qubit3_to_qubit4": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "probeline_qubit3_to_qubit4",
     "name": "probeline_qubit3_to_qubit4",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "qubit3",
-        "port": "coupling_o1"
+        "component_id": "qubit3",
+        "port_name": "coupling_o1"
       },
       "finish": {
-        "device": "qubit4",
-        "port": "coupling_o2"
+        "component_id": "qubit4",
+        "port_name": "coupling_o2"
       }
     },
     "net": "net12",
@@ -362,16 +411,31 @@
     "cross_section": "coplanar_waveguide",
     "width": 10,
     "layer": "M1_DRAW",
-    "waypoints": [
-      [2715.0, -401.421],
-      [2500.0, -401.421],
-      [2500.0, -402.351],
-      [2285.0, -402.351]
+    "vertices": [
+      [
+        2715.0,
+        401.421
+      ],
+      [
+        2500.0,
+        401.421
+      ],
+      [
+        2500.0,
+        402.351
+      ],
+      [
+        2285.0,
+        402.351
+      ]
     ],
     "sbend_segments": {
       "1": {
         "factory": "bend_s",
-        "size": [-215.0, -0.93]
+        "size": [
+          -215.0,
+          -0.93
+        ]
       }
     }
   },
@@ -435,18 +499,31 @@
   },
   "probeline_output": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "probeline_output",
     "name": "probeline_output",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "input_cap2",
-        "port": "o1"
+        "component_id": "input_cap2",
+        "port_name": "o1"
       },
       "finish": {
-        "device": "launcher_out",
-        "port": "o1"
+        "component_id": "launcher_out",
+        "port_name": "o1"
       }
     },
+    "vertices": [
+      [
+        782.0,
+        400.0
+      ],
+      [
+        300.0,
+        400.0
+      ]
+    ],
     "net": "net9",
     "radius": 100,
     "cross_section": "coplanar_waveguide",
@@ -581,18 +658,31 @@
   },
   "flux_line_top": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "flux_line_top",
     "name": "flux_line_top",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "tee_top",
-        "port": "o2"
+        "component_id": "tee_top",
+        "port_name": "o2"
       },
       "finish": {
-        "device": "launcher_top",
-        "port": "o1"
+        "component_id": "launcher_top",
+        "port_name": "o1"
       }
     },
+    "vertices": [
+      [
+        3000.0,
+        -1786.0
+      ],
+      [
+        3000.0,
+        -2700.0
+      ]
+    ],
     "net": "net6",
     "radius": 100,
     "cross_section": "coplanar_waveguide",
@@ -798,16 +888,19 @@
   },
   "probeline_qubit4_to_cap2": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "probeline_qubit4_to_cap2",
     "name": "probeline_qubit4_to_cap2",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "qubit4",
-        "port": "coupling_o1"
+        "component_id": "qubit4",
+        "port_name": "coupling_o1"
       },
       "finish": {
-        "device": "input_cap2",
-        "port": "o2"
+        "component_id": "input_cap2",
+        "port_name": "o2"
       }
     },
     "net": "net13",
@@ -815,16 +908,31 @@
     "cross_section": "coplanar_waveguide",
     "width": 10,
     "layer": "M1_DRAW",
-    "waypoints": [
-      [1485.0, -402.351],
-      [1151.5, -402.351],
-      [1151.5, -400.0],
-      [818.0, -400.0]
+    "vertices": [
+      [
+        1485.0,
+        402.351
+      ],
+      [
+        1151.5,
+        402.351
+      ],
+      [
+        1151.5,
+        400.0
+      ],
+      [
+        818.0,
+        400.0
+      ]
     ],
     "sbend_segments": {
       "1": {
         "factory": "bend_s",
-        "size": [-333.5, 2.351]
+        "size": [
+          -333.5,
+          2.351
+        ]
       }
     }
   },
@@ -998,18 +1106,31 @@
   },
   "probeline_input": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "probeline_input",
     "name": "probeline_input",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "launcher_in",
-        "port": "o1"
+        "component_id": "launcher_in",
+        "port_name": "o1"
       },
       "finish": {
-        "device": "input_cap1",
-        "port": "o1"
+        "component_id": "input_cap1",
+        "port_name": "o1"
       }
     },
+    "vertices": [
+      [
+        300.0,
+        -400.0
+      ],
+      [
+        782.0,
+        -400.0
+      ]
+    ],
     "net": "net8",
     "radius": 100,
     "cross_section": "coplanar_waveguide",
@@ -1300,18 +1421,31 @@
   },
   "flux_line_bot": {
     "type": "polyline",
+    "bend_type": "circular",
     "id": "flux_line_bot",
     "name": "flux_line_bot",
+    "x": 0,
+    "y": 0,
     "terminals": {
       "start": {
-        "device": "tee_bot",
-        "port": "o2"
+        "component_id": "tee_bot",
+        "port_name": "o2"
       },
       "finish": {
-        "device": "launcher_bot",
-        "port": "o1"
+        "component_id": "launcher_bot",
+        "port_name": "o1"
       }
     },
+    "vertices": [
+      [
+        3000.0,
+        1786.0
+      ],
+      [
+        3000.0,
+        2700.0
+      ]
+    ],
     "net": "net5",
     "radius": 100,
     "cross_section": "coplanar_waveguide",

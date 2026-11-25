@@ -6,7 +6,7 @@
     "name": "tee_top",
     "type": "ckt",
     "bbox_width": 22,
-    "irl_x": 685.323018939491,
+    "irl_x": 3000.0,
     "bbox_height": 22,
     "nets": {
       "o1": "net10",
@@ -69,7 +69,7 @@
     "irl_flip": false,
     "x": 8,
     "texture_key": "qpdk.cells.waveguides.tee_00597a9d",
-    "irl_y": 649.56614341537,
+    "irl_y": -1775.0,
     "model": "qpdk.cells.waveguides.tee"
   },
   "input_cap1": {
@@ -80,7 +80,7 @@
     "name": "input_cap1",
     "type": "ckt",
     "bbox_width": 36,
-    "irl_x": -1503.0440800740605,
+    "irl_x": 800.0,
     "bbox_height": 30,
     "nets": {
       "o1": "net2",
@@ -123,7 +123,7 @@
     "irl_flip": false,
     "x": 4,
     "texture_key": "qpdk.cells.capacitor.interdigital_capacitor_00597a9d",
-    "irl_y": 1841.0659038961953,
+    "irl_y": -400.0,
     "model": "qpdk.cells.capacitor.interdigital_capacitor"
   },
   "qubit3": {
@@ -141,7 +141,7 @@
     "name": "qubit3",
     "type": "ckt",
     "bbox_width": 1410.939,
-    "irl_x": 1179.3456816476646,
+    "irl_x": 3309.5305,
     "bbox_height": 1694.5,
     "nets": {
       "coupling_o1": "W4",
@@ -221,7 +221,7 @@
     "x": 10,
     "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_fa424824",
     "mirror": true,
-    "irl_y": 3301.040703693508,
+    "irl_y": 1237.671,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "probeline_coupling_length": 400,
@@ -247,7 +247,7 @@
     "orientation": 180,
     "type": "ckt",
     "bbox_width": 16,
-    "irl_x": 666.323018939491,
+    "irl_x": 2981.0,
     "bbox_height": 22,
     "nets": {
       "o2": "net4",
@@ -291,7 +291,7 @@
     "irl_flip": true,
     "x": 6,
     "texture_key": "qpdk.cells.waveguides.straight_open_00597a9d",
-    "irl_y": 649.56614341537,
+    "irl_y": -1775.0,
     "model": "qpdk.cells.waveguides.straight_open"
   },
   "qubit4": {
@@ -310,7 +310,7 @@
     "name": "qubit4",
     "type": "ckt",
     "bbox_width": 1410.939,
-    "irl_x": -382.5513813235367,
+    "irl_x": 2079.5305,
     "bbox_height": 1694.5,
     "nets": {
       "coupling_o1": "net7",
@@ -390,7 +390,7 @@
     "x": 6,
     "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_034eab1e",
     "mirror": true,
-    "irl_y": 3301.040703693508,
+    "irl_y": 1238.601,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "resonator_length": 4800,
@@ -405,7 +405,7 @@
     "name": "launcher_in",
     "type": "ckt",
     "bbox_width": 300,
-    "irl_x": -1924.3108313627586,
+    "irl_x": 150.0,
     "bbox_height": 420,
     "nets": {
       "waveport": "o1",
@@ -450,7 +450,7 @@
     "irl_flip": false,
     "x": 2,
     "texture_key": "qpdk.cells.launcher.launcher_00597a9d",
-    "irl_y": 1841.0659038961953,
+    "irl_y": -400.0,
     "model": "qpdk.cells.launcher.launcher"
   },
   "qubit2": {
@@ -460,7 +460,7 @@
     "name": "qubit2",
     "type": "ckt",
     "bbox_width": 1410.939,
-    "irl_x": 1179.3456816476646,
+    "irl_x": 3309.5305,
     "bbox_height": 1694.5,
     "nets": {
       "coupling_o1": "W3",
@@ -539,7 +539,7 @@
     "irl_flip": false,
     "x": 10,
     "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_1e12ca23",
-    "irl_y": 1004.8159038961953,
+    "irl_y": -1235.25,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "probeline_coupling_length": 400,
@@ -555,7 +555,7 @@
     "name": "input_cap2",
     "type": "ckt",
     "bbox_width": 36,
-    "irl_x": -1504.4020688725475,
+    "irl_x": 800.0,
     "bbox_height": 30,
     "nets": {
       "o1": "net3",
@@ -597,7 +597,7 @@
     ],
     "x": 4,
     "texture_key": "qpdk.cells.capacitor.interdigital_capacitor_00597a9d",
-    "irl_y": 2464.790703693508,
+    "irl_y": 400.0,
     "model": "qpdk.cells.capacitor.interdigital_capacitor"
   },
   "launcher_top": {
@@ -617,7 +617,7 @@
     "orientation": -90,
     "type": "ckt",
     "bbox_width": 300,
-    "irl_x": 685.323018939491,
+    "irl_x": 3000.0,
     "bbox_height": 420,
     "nets": {
       "waveport": "net16",
@@ -661,7 +661,7 @@
     ],
     "x": 8,
     "texture_key": "qpdk.cells.launcher.launcher_00597a9d",
-    "irl_y": -343.75841095602556,
+    "irl_y": -2850.0,
     "model": "qpdk.cells.launcher.launcher"
   },
   "tee_top_straight_2": {
@@ -671,7 +671,7 @@
     "name": "tee_top_straight_2",
     "type": "ckt",
     "bbox_width": 16,
-    "irl_x": 704.323018939491,
+    "irl_x": 3019.0,
     "bbox_height": 22,
     "nets": {
       "o1": "net20",
@@ -714,7 +714,7 @@
     ],
     "x": 10,
     "texture_key": "qpdk.cells.waveguides.straight_open_00597a9d",
-    "irl_y": 649.56614341537,
+    "irl_y": -1775.0,
     "model": "qpdk.cells.waveguides.straight_open"
   },
   "qubit1": {
@@ -725,7 +725,7 @@
     "name": "qubit1",
     "type": "ckt",
     "bbox_width": 1410.939,
-    "irl_x": -380.71063793551707,
+    "irl_x": 2079.5305,
     "bbox_height": 1694.5,
     "nets": {
       "junction": "net5",
@@ -804,7 +804,7 @@
     "irl_flip": false,
     "x": 6,
     "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_0286f4f7",
-    "irl_y": 1004.8159038961953,
+    "irl_y": -1235.25,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "resonator_length": 5000,
@@ -820,13 +820,13 @@
     },
     "width": 200,
     "type": "port",
-    "irl_x": -2184.434534951683,
+    "irl_x": 0,
     "nature": "photonic",
     "nets": {
       "P": "o1"
     },
     "x": 2,
-    "irl_y": -238.4853201382955,
+    "irl_y": -400,
     "port_type": "optical"
   },
   "o2": {
@@ -842,7 +842,9 @@
       "component_id": "launcher_out",
       "port_name": "waveport"
     },
-    "nature": "photonic"
+    "nature": "photonic",
+    "irl_x": 0,
+    "irl_y": 400
   },
   "launcher_out": {
     "y": 4,
@@ -851,7 +853,7 @@
     "name": "launcher_out",
     "type": "ckt",
     "bbox_width": 300,
-    "irl_x": -1924.3108313627586,
+    "irl_x": 150.0,
     "bbox_height": 420,
     "nets": {
       "waveport": "o2",
@@ -895,7 +897,7 @@
     ],
     "x": 2,
     "texture_key": "qpdk.cells.launcher.launcher_00597a9d",
-    "irl_y": 2464.790703693508,
+    "irl_y": 400.0,
     "model": "qpdk.cells.launcher.launcher"
   },
   "qubit_test_chip:W1": {
@@ -942,12 +944,12 @@
     "y": 7,
     "vertices": [
       [
-        685.322998046875,
-        -193.75840759277344
+        3000.0,
+        -2700.0
       ],
       [
-        685.322998046875,
-        638.566162109375
+        3000.0,
+        -1786.0
       ]
     ],
     "terminals": {
@@ -966,7 +968,8 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "bend_type": "circular"
   },
   "group_1": {
     "x": 0,
@@ -997,7 +1000,7 @@
     "name": "tee_bot",
     "type": "ckt",
     "bbox_width": 22,
-    "irl_x": 686.3645773975319,
+    "irl_x": 3000.0,
     "bbox_height": 22,
     "nets": {
       "o1": "net15",
@@ -1059,7 +1062,7 @@
     ],
     "x": 8,
     "texture_key": "qpdk.cells.waveguides.tee_00597a9d",
-    "irl_y": 3737.8090296774317,
+    "irl_y": 1775.0,
     "model": "qpdk.cells.waveguides.tee"
   },
   "tee_bot_straight_1": {
@@ -1078,7 +1081,7 @@
     "name": "tee_bot_straight_1",
     "type": "ckt",
     "bbox_width": 16,
-    "irl_x": 705.3645773975319,
+    "irl_x": 3019.0,
     "bbox_height": 22,
     "nets": {
       "o2": "net9",
@@ -1122,7 +1125,7 @@
     "irl_flip": true,
     "x": 6,
     "texture_key": "qpdk.cells.waveguides.straight_open_00597a9d",
-    "irl_y": 3737.8090296774317,
+    "irl_y": 1775.0,
     "model": "qpdk.cells.waveguides.straight_open"
   },
   "launcher_bot": {
@@ -1141,7 +1144,7 @@
     "name": "launcher_bot",
     "type": "ckt",
     "bbox_width": 300,
-    "irl_x": 686.3652331846866,
+    "irl_x": 3000.0,
     "bbox_height": 420,
     "nets": {
       "o1": "net18",
@@ -1185,7 +1188,7 @@
     ],
     "x": 8,
     "texture_key": "qpdk.cells.launcher.launcher_00597a9d",
-    "irl_y": 4731.049643292969,
+    "irl_y": 2850.0,
     "model": "qpdk.cells.launcher.launcher"
   },
   "tee_bot_straight_2": {
@@ -1204,7 +1207,7 @@
     "name": "tee_bot_straight_2",
     "type": "ckt",
     "bbox_width": 16,
-    "irl_x": 667.3645773975319,
+    "irl_x": 2981.0,
     "bbox_height": 22,
     "nets": {
       "o1": "net23",
@@ -1247,19 +1250,19 @@
     ],
     "x": 10,
     "texture_key": "qpdk.cells.waveguides.straight_open_00597a9d",
-    "irl_y": 3737.8090296774317,
+    "irl_y": 1775.0,
     "model": "qpdk.cells.waveguides.straight_open"
   },
   "poly_2": {
     "y": 11,
     "vertices": [
       [
-        686.365234375,
-        4581.0498046875
+        3000.0,
+        2700.0
       ],
       [
-        686.3645629882812,
-        3748.80908203125
+        3000.0,
+        1786.0
       ]
     ],
     "terminals": {
@@ -1278,7 +1281,8 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "bend_type": "circular"
   },
   "group_2": {
     "x": 0,
@@ -1296,12 +1300,12 @@
     "y": 5,
     "vertices": [
       [
-        -1774.310791015625,
-        1841.06591796875
+        300.0,
+        -400.0
       ],
       [
-        -1521.0440673828125,
-        1841.06591796875
+        782.0,
+        -400.0
       ]
     ],
     "terminals": {
@@ -1320,18 +1324,19 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "bend_type": "circular"
   },
   "poly_4": {
     "y": 0,
     "vertices": [
       [
-        -1774.310791015625,
-        2464.790771484375
+        300.0,
+        400.0
       ],
       [
-        -1522.402099609375,
-        2464.790771484375
+        782.0,
+        400.0
       ]
     ],
     "terminals": {
@@ -1350,18 +1355,27 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "bend_type": "circular"
   },
   "poly_5": {
     "y": 9,
     "vertices": [
       [
-        -1485.0440673828125,
-        1841.06591796875
+        818.0,
+        -400.0
       ],
       [
-        -975.2411499023438,
-        1841.06591796875
+        1151.5,
+        -400.0
+      ],
+      [
+        1151.5,
+        -399.0
+      ],
+      [
+        1485.0,
+        -399.0
       ]
     ],
     "terminals": {
@@ -1380,18 +1394,28 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "sbend_segments": {
+      "1": {
+        "factory": "bend_s",
+        "size": [
+          333.5,
+          -1.0
+        ]
+      }
+    },
+    "bend_type": "circular"
   },
   "poly_6": {
     "y": 8,
     "vertices": [
       [
-        -175.2411346435547,
-        1841.06591796875
+        2285.0,
+        -399.0
       ],
       [
-        584.815185546875,
-        1841.06591796875
+        2715.0,
+        -399.0
       ]
     ],
     "terminals": {
@@ -1410,7 +1434,8 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "bend_type": "circular"
   },
   "group_3": {
     "x": 0,
@@ -1426,20 +1451,20 @@
     "y": 3,
     "vertices": [
       [
-        984.815185546875,
-        2464.790771484375
+        3115.0,
+        401.421
       ],
       [
-        1112.9373779296875,
-        2464.790771484375
+        3215.0,
+        401.421
       ],
       [
-        1112.9373779296875,
-        1841.06591796875
+        3215.0,
+        -399.0
       ],
       [
-        984.815185546875,
-        1841.06591796875
+        3115.0,
+        -399.0
       ]
     ],
     "terminals": {
@@ -1458,18 +1483,27 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "bend_type": "circular"
   },
   "poly_11": {
     "y": 2,
     "vertices": [
       [
-        -1486.402099609375,
-        2464.790771484375
+        818.0,
+        400.0
       ],
       [
-        -977.0819091796875,
-        2464.790771484375
+        1151.5,
+        400.0
+      ],
+      [
+        1151.5,
+        402.351
+      ],
+      [
+        1485.0,
+        402.351
       ]
     ],
     "terminals": {
@@ -1485,21 +1519,39 @@
     "name": "poly_11",
     "width": 10,
     "type": "polyline",
-    "radius": 11,
+    "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "sbend_segments": {
+      "1": {
+        "factory": "bend_s",
+        "size": [
+          -333.5,
+          2.351
+        ]
+      }
+    },
+    "bend_type": "circular"
   },
   "poly_12": {
     "y": 6,
     "vertices": [
       [
-        -177.08187866210938,
-        2464.790771484375
+        2285.0,
+        402.351
       ],
       [
-        584.815185546875,
-        2464.790771484375
+        2500.0,
+        402.351
+      ],
+      [
+        2500.0,
+        401.421
+      ],
+      [
+        2715.0,
+        401.421
       ]
     ],
     "terminals": {
@@ -1518,6 +1570,16 @@
     "radius": 100,
     "cross_section": "coplanar_waveguide",
     "layer": "M1_DRAW",
-    "x": 0
+    "x": 0,
+    "sbend_segments": {
+      "1": {
+        "factory": "bend_s",
+        "size": [
+          -215.0,
+          -0.93
+        ]
+      }
+    },
+    "bend_type": "circular"
   }
 }
