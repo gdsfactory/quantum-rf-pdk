@@ -324,7 +324,7 @@ def lumped_element_resonator(
     n_turns: int = 15,
     sheet_inductance: float = 0.4e-12,
     cross_section: CrossSectionSpec = "meander_inductor_cross_section",
-    grounded: bool = False,
+    grounded: bool | jax.Array = False,
 ) -> sax.SDict:
     r"""Lumped-element LC resonator SAX model.
 
@@ -389,9 +389,11 @@ def lumped_element_resonator(
         sheet_inductance=sheet_inductance,
     )
 
+    # GF+ passes model settings as JAX scalars; the jitted resonator keeps
+    # `grounded` as a static argument.
     return lc_resonator(
         f=f_arr,
         capacitance=capacitance,
         inductance=inductance,
-        grounded=grounded,
+        grounded=bool(grounded),
     )

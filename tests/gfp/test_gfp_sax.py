@@ -276,3 +276,68 @@ def test_hyperbolic_component_sax_simulation(cell: str) -> None:
         entry = sdict[f"{key[0]},{key[1]}"]
         actual = jnp.asarray(entry["real"]) + 1j * jnp.asarray(entry["imag"])
         np.testing.assert_allclose(actual, value, rtol=1e-6, atol=1e-9)
+
+
+@pytest.mark.gfp
+@pytest.mark.parametrize("cell_name", sorted(PDK.cells.keys() & PDK.models.keys()))
+def test_registered_layout_models_compile_from_layout(
+    cell_name: str, tmp_path: Path
+) -> None:
+    """Evaluate each registered layout model using GFP's extracted netlist."""
+    PDK.activate()
+    ports = {
+        port.name: port.port_type
+        for port in PDK.cells[cell_name]().ports
+        if port.port_type != "placement"
+    }
+    assert ports, f"{cell_name} registers a model with no circuit ports"
+
+    document: dict[str, Any] = {
+        "cell": {
+            "type": "ckt",
+            "name": "cell",
+            "model": f"qpdk.cells.{cell_name}",
+            "x": 0,
+            "y": 0,
+            "props": {},
+        }
+    }
+    for name, port_type in ports.items():
+        document[f"port_{name}"] = {
+            "type": "port",
+            "name": name,
+            "x": 0,
+            "y": 0,
+            "port_type": port_type,
+            "attached_port": {"component_id": "cell", "port_name": name},
+        }
+
+    # The wrapper's name must differ from the model name during extraction.
+    schematic = tmp_path / f"wrap_{cell_name}.gsch"
+    schematic.write_text(json.dumps(document))
+
+    try:
+        result = sax_sim.simulate_layout_sax(
+            str(schematic),
+            "qpdk.PDK",
+            wl_min=_SPEED_OF_LIGHT_UM_PER_S / _F_MAX_HZ,
+            wl_max=_SPEED_OF_LIGHT_UM_PER_S / _F_MIN_HZ,
+            wl_num=3,
+            sweep_axis="f",
+        )
+    except sax_sim.EmptyCircuitError as exc:
+        if len(ports) != 1 or "exposes 1 port(s)" not in str(exc):
+            raise
+        # Released SDKs can resolve a one-port layout before rejecting the sweep.
+        info = sax_sim.inspect_layout_sax_models(str(schematic), "qpdk.PDK")
+        assert info["required_models"], info
+        assert not info["missing_models"], info
+        pytest.skip("This GDSFactory+ SDK requires two external sweep ports")
+
+    assert len(result["wavelengths"]) == 3
+    traces = result["sdict"]
+    assert set(traces) == {f"{left},{right}" for left in ports for right in ports}
+    for pair, entry in traces.items():
+        values = jnp.asarray([entry["real"], entry["imag"]])
+        assert values.shape == (2, 3), pair
+        assert jnp.isfinite(values).all(), pair

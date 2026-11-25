@@ -416,6 +416,22 @@ class TestNxN:
             assert len(ports) == n, f"Expected {n} ports, got {len(ports)}"
 
     @staticmethod
+    def test_jit_with_fixed_array_port_counts() -> None:
+        """Sweep frequency with the scalar counts supplied by an editor."""
+        west, east, north, south = (jnp.asarray(n) for n in (2.0, 1.0, 1.0, 0.0))
+
+        @jax.jit
+        def sweep(f: jax.Array) -> dict:
+            return nxn(f=f, west=west, east=east, north=north, south=south)
+
+        f = jnp.asarray([4e9, 7e9, 10e9])
+        actual = sweep(f)
+        expected = nxn(f=f, west=2, east=1, north=1, south=0)
+        assert actual.keys() == expected.keys()
+        for pair in expected:
+            assert_allclose(actual[pair], expected[pair])
+
+    @staticmethod
     def test_passivity() -> None:
         """Test that nxn model is passive."""
         f = jnp.linspace(1e9, 10e9, 10)
