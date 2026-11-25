@@ -51,7 +51,7 @@
     ],
     "irl_flip": false,
     "x": 6,
-    "texture_key": "qpdk.cells.waveguides.bend_s_0b896fad",
+    "texture_key": "qpdk.cells.waveguides.bend_s_baa51cc9",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.bend_s",
     "props": {
@@ -602,7 +602,7 @@
     ],
     "irl_flip": false,
     "x": 6,
-    "texture_key": "qpdk.cells.waveguides.bend_s_0b896fad",
+    "texture_key": "qpdk.cells.waveguides.bend_s_baa51cc9",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.bend_s",
     "props": {
@@ -667,7 +667,7 @@
     ],
     "irl_flip": false,
     "x": 20,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -931,7 +931,7 @@
     ],
     "irl_flip": false,
     "x": 10,
-    "texture_key": "qpdk.cells.waveguides.straight_d1154dd7",
+    "texture_key": "qpdk.cells.waveguides.straight_f4fdf532",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -992,7 +992,7 @@
     ],
     "irl_flip": false,
     "x": 70,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -1137,7 +1137,7 @@
     ],
     "irl_flip": false,
     "x": 70,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -1282,7 +1282,7 @@
     ],
     "irl_flip": false,
     "x": 50,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -1343,7 +1343,7 @@
     ],
     "irl_flip": false,
     "x": 80,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -1404,7 +1404,7 @@
     ],
     "irl_flip": false,
     "x": 90,
-    "texture_key": "qpdk.cells.waveguides.straight_7d4d24d9",
+    "texture_key": "qpdk.cells.waveguides.straight_0d6840f4",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -1465,7 +1465,7 @@
     ],
     "irl_flip": false,
     "x": 40,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -1526,7 +1526,7 @@
     ],
     "irl_flip": false,
     "x": 94,
-    "texture_key": "qpdk.cells.waveguides.bend_s_5330e729",
+    "texture_key": "qpdk.cells.waveguides.bend_s_86bc29c5",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.bend_s",
     "props": {
@@ -1929,7 +1929,7 @@
     ],
     "irl_flip": false,
     "x": 40,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -1990,7 +1990,7 @@
     ],
     "irl_flip": false,
     "x": 60,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -2051,7 +2051,7 @@
     ],
     "irl_flip": false,
     "x": 90,
-    "texture_key": "qpdk.cells.waveguides.straight_7d4d24d9",
+    "texture_key": "qpdk.cells.waveguides.straight_0d6840f4",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -2112,7 +2112,7 @@
     ],
     "irl_flip": false,
     "x": 50,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -2284,7 +2284,7 @@
     ],
     "irl_flip": false,
     "x": 20,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -2345,7 +2345,7 @@
     ],
     "irl_flip": false,
     "x": 30,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -2468,7 +2468,7 @@
     ],
     "irl_flip": false,
     "x": 30,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -2564,7 +2564,7 @@
     ],
     "irl_flip": false,
     "x": 10,
-    "texture_key": "qpdk.cells.waveguides.straight_d1154dd7",
+    "texture_key": "qpdk.cells.waveguides.straight_f4fdf532",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -2625,7 +2625,7 @@
     ],
     "irl_flip": false,
     "x": 80,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -2686,7 +2686,7 @@
     ],
     "irl_flip": false,
     "x": 60,
-    "texture_key": "qpdk.cells.waveguides.straight_ab180b23",
+    "texture_key": "qpdk.cells.waveguides.straight_3e3cd878",
     "irl_y": -1000,
     "model": "qpdk.cells.waveguides.straight",
     "props": {
@@ -3001,7 +3001,7 @@
     ],
     "irl_flip": false,
     "x": 94,
-    "texture_key": "qpdk.cells.waveguides.bend_s_5330e729",
+    "texture_key": "qpdk.cells.waveguides.bend_s_86bc29c5",
     "irl_y": 0,
     "model": "qpdk.cells.waveguides.bend_s",
     "props": {
