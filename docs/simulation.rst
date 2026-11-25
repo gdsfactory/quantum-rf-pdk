@@ -16,6 +16,13 @@ depth.
 Coupled resonators declare their own models so the coupling is preserved. Chip
 assemblies remain unmodeled and expand to these boundaries and other modeled primitives.
 
+The transmon and flipmon readout assemblies load a distributed CPW circuit with
+capacitances from the nominal Palace electrostatic coupons. The loads use the 16 µm
+feedline gap and 800 µm coupling length from those coupons, even when the distributed
+coupling section has a different length. The model supports the nominal CPW geometry.
+Its small-signal resonances are circuit predictions that still need comparison with
+driven FEM, eigenmode simulations, or measurements.
+
 For new components, attach the compact model through ``schematic_function`` and keep its
 ``port_order`` consistent with the layout ports.
 

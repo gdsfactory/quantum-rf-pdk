@@ -24,7 +24,7 @@ from qpdk.models import (
 from qpdk.models.couplers import coupler_straight
 from qpdk.models.cpw import cpw_z0_from_cross_section
 from qpdk.models.datasets import Dataset, Grid
-from qpdk.models.readout_assembly import _COUPON_GEOMETRY
+from qpdk.models.readout_assembly import _COUPONS
 from qpdk.models.waveguides import straight
 
 _FREQUENCIES = jnp.asarray([1e9, 4.67e9, 6.7e9, 10.2e9, 14.53e9, 18.7e9])
@@ -181,5 +181,5 @@ def test_drawn_span_matches_nominal_coupon_span(
 ) -> None:
     """The drawn route plus coupling span equals the model's coupon span."""
     cell = PDK.cells[cell_name](probeline_coupling_length=coupling_length)
-    _, span, _, _ = _COUPON_GEOMETRY[kind]
+    span = _COUPONS[kind].span
     assert _drawn_span(cell) == pytest.approx(span, abs=1e-3)

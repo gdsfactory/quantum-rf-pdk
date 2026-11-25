@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import partial
+from pathlib import Path
 
+import gdsfactory as gf
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
 import sax
+import yaml
+from gdsfactory.cross_section import CrossSection
 from kfactory.serialization import clean_value
 
 from qpdk import PDK
@@ -18,9 +22,11 @@ from qpdk.models.readout_assembly import (
     flipmon_with_resonator_and_probeline,
     transmon_with_resonator_and_probeline,
 )
+from qpdk.tech import LAYER
 
 _FREQUENCIES = jnp.linspace(3e9, 12e9, 301)
 _NOTCH_FREQUENCIES = jnp.linspace(10e9, 14e9, 401)
+_TEST_CHIP = Path(__file__).parents[2] / "qpdk/samples/qubit_test_chip.pic.yml"
 
 _READOUT_PORTS = ("coupling_o1", "coupling_o2")
 # SAX sdict keys are (input, output), so this tuple is also the S21 key.
@@ -122,6 +128,31 @@ _REGISTRATIONS = [
         flipmon_with_resonator_and_probeline,
         id="flipmon",
     ),
+]
+
+
+def _equivalent_cross_section_object() -> CrossSection:
+    """Return the nominal CPW geometry with a non-default cross-section name."""
+    return gf.cross_section.cross_section(
+        width=10,
+        layer=LAYER.M1_DRAW,
+        radius=100,
+        radius_min=11,
+        sections=(
+            gf.Section(width=6, offset=8, layer=LAYER.M1_ETCH, name="etch_offset_pos"),
+            gf.Section(width=6, offset=-8, layer=LAYER.M1_ETCH, name="etch_offset_neg"),
+            gf.Section(width=10, layer=LAYER.WG, name="waveguide"),
+        ),
+    )
+
+
+_CROSS_SECTION_FORMS = [
+    pytest.param("cpw", id="name"),
+    pytest.param({"cross_section": "cpw"}, id="dict"),
+    pytest.param(
+        {"cross_section": "coplanar_waveguide", "settings": {}}, id="alias-settings"
+    ),
+    pytest.param(_equivalent_cross_section_object(), id="object"),
 ]
 
 _BASELINE: dict[str, float | bool | str] = {
@@ -258,6 +289,64 @@ def test_nominal_layout_settings_are_accepted(
     _assert_close(model(f=_FREQUENCIES), model(f=_FREQUENCIES, **settings))
 
 
+@pytest.mark.parametrize("model", _MODELS)
+@pytest.mark.parametrize("cross_section", _CROSS_SECTION_FORMS)
+def test_equivalent_cross_section_forms_match_nominal(
+    model: Callable[..., sax.SDict], cross_section: object
+) -> None:
+    """Equivalent cross-section spec forms resolve to the same nominal CPW."""
+    _assert_close(
+        model(f=_FREQUENCIES),
+        model(f=_FREQUENCIES, resonator_cross_section=cross_section),
+    )
+
+
+@pytest.mark.parametrize("model", _MODELS)
+@pytest.mark.parametrize(
+    ("setting", "value"),
+    [("radius", 200.0), ("width", 20.0)],
+    ids=["radius", "width"],
+)
+def test_nonnominal_cross_section_is_rejected(
+    model: Callable[..., sax.SDict], setting: str, value: float
+) -> None:
+    """A drawing-changing cross-section geometry raises before evaluation."""
+    cross_section = {"cross_section": "cpw", "settings": {setting: value}}
+    with pytest.raises(ValueError, match="nominal CPW"):
+        model(f=_FREQUENCIES, resonator_cross_section=cross_section)
+
+
+def test_rejected_cross_section_leaves_the_active_pdk() -> None:
+    other_pdk = gf.Pdk(name="readout-validation")
+    previous = gf.get_active_pdk()
+    other_pdk.activate()
+    try:
+        with pytest.raises(ValueError, match="nominal CPW"):
+            transmon_with_resonator_and_probeline(
+                resonator_cross_section={
+                    "cross_section": "cpw",
+                    "settings": {"radius": 200.0},
+                }
+            )
+        assert gf.get_active_pdk() is other_pdk
+    finally:
+        previous.activate()
+
+
+@pytest.mark.parametrize("model", _MODELS)
+def test_equivalent_cross_section_is_jittable(
+    model: Callable[..., sax.SDict],
+) -> None:
+    """An equivalent dict spec resolves at trace time and compiles."""
+    cross_section = {"cross_section": "cpw", "settings": {"width": 10}}
+
+    @jax.jit
+    def evaluate() -> sax.SDict:
+        return model(f=_FREQUENCIES, resonator_cross_section=cross_section)
+
+    _assert_close(jax.block_until_ready(evaluate()), model(f=_FREQUENCIES))
+
+
 @pytest.mark.parametrize(
     ("model", "setting", "value", "match"), _NONNOMINAL_LAYOUT_SETTINGS
 )
@@ -392,3 +481,22 @@ def test_resonator_length_shifts_the_notch(
     assert longer_index < nominal_index, "longer resonator must lower the notch"
     shift = float(_NOTCH_FREQUENCIES[nominal_index] - _NOTCH_FREQUENCIES[longer_index])
     assert 0.1e9 < shift < 1.0e9, f"notch shifted by {shift / 1e9:.3f} GHz"
+
+
+@pytest.mark.parametrize(
+    ("instance", "center_ghz"),
+    [("qubit1", 5.80), ("qubit2", 6.54), ("qubit3", 6.96), ("qubit4", 6.00)],
+)
+def test_qubit_test_chip_readout_notches(instance: str, center_ghz: float) -> None:
+    settings = yaml.safe_load(_TEST_CHIP.read_text())["instances"][instance]["settings"]
+    frequencies = jnp.linspace(center_ghz - 0.05, center_ghz + 0.05, 1001) * 1e9
+    response = transmon_with_resonator_and_probeline(
+        f=frequencies,
+        resonator_length=settings["resonator_length"],
+        resonator_open_end=settings.get("resonator_open_end", True),
+        probeline_coupling_length=settings.get("probeline_coupling_length"),
+    )
+    transmission = jnp.abs(response[_READOUT_PORTS])
+    minimum = int(jnp.argmin(transmission))
+    assert 0 < minimum < frequencies.size - 1
+    assert float(transmission[minimum]) < 0.9

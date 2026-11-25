@@ -11,10 +11,34 @@ import inspect
 from collections.abc import Callable
 from typing import Any
 
+import jax.numpy as jnp
+import numpy as np
 import pytest
+from kfactory.serialization import clean_value
 
 from qpdk import PDK
 from qpdk.models import models as sax_models
+from qpdk.models.readout_assembly import (
+    _NOMINAL_MEANDER_START,
+    _coupon_for,
+    _nominal_plate_string,
+)
+
+# The readout models keep ``None`` sentinels for settings whose concrete
+# default follows the selected qubit coupon.
+_READOUT_MODELS = {
+    "transmon_with_resonator_and_probeline",
+    "double_pad_transmon_with_resonator_and_probeline",
+    "flipmon_with_resonator_and_probeline",
+}
+
+_READOUT_SENTINELS = frozenset({
+    "resonator_meander_start",
+    "coupler",
+    "coupler_offset",
+    "coupler_port",
+    "qubit_rotation",
+})
 
 
 def _model_for(component: str) -> Callable[..., Any]:
@@ -51,8 +75,40 @@ def _comparable_default(parameter: str, value: Any) -> Any:
             name.startswith("cross_section") and default is not None
         ):
             return PDK.get_cross_section(default).model_dump(exclude_none=True)
+        case "coupler", default:
+            return clean_value(default)
         case _:
             return value
+
+
+def _readout_semantic_default(component: str, parameter: str) -> Any:
+    """Resolve a readout sentinel through the coupon's modeled values."""
+    coupon = _coupon_for(_default(_model_for(component), "qubit"))
+    match parameter:
+        case "resonator_meander_start":
+            return _NOMINAL_MEANDER_START
+        case "coupler":
+            return _nominal_plate_string(coupon)
+        case "coupler_offset":
+            return coupon.plate_offset
+        case "coupler_port":
+            return coupon.coupler_port
+        case "qubit_rotation":
+            return coupon.rotation
+        case _:
+            raise KeyError(parameter)
+
+
+def _model_default(component: str, parameter: str) -> Any:
+    """Return the model default, resolving readout sentinels semantically."""
+    value = _default(_model_for(component), parameter)
+    if (
+        value is None
+        and parameter in _READOUT_SENTINELS
+        and component in _READOUT_MODELS
+    ):
+        value = _readout_semantic_default(component, parameter)
+    return _comparable_default(parameter, value)
 
 
 def _shared_default_id(shared_default: tuple[str, str]) -> str:
@@ -70,10 +126,28 @@ def test_layout_model_default_alignment(shared_default: tuple[str, str]) -> None
     layout_default = _comparable_default(
         parameter, _default(PDK.cells[component], parameter)
     )
-    model_default = _comparable_default(
-        parameter, _default(_model_for(component), parameter)
-    )
+    model_default = _model_default(component, parameter)
     assert model_default == layout_default, (
         f"{component}.{parameter}: model default {model_default!r} does not match "
         f"layout default {layout_default!r}"
     )
+
+
+@pytest.mark.parametrize("component", sorted(_READOUT_MODELS))
+def test_readout_omitted_sentinel_matches_explicit_layout_value(
+    component: str,
+) -> None:
+    """Omitting a readout sentinel behaves like passing the layout default."""
+    model = _model_for(component)
+    layout_parameters = inspect.signature(PDK.cells[component]).parameters
+    explicit = {
+        parameter: layout_parameters[parameter].default
+        for parameter in _READOUT_SENTINELS
+        if parameter in layout_parameters
+    }
+    frequency = jnp.asarray((5e9,))
+    omitted = model(f=frequency)
+    given = model(f=frequency, **explicit)
+    assert set(omitted) == set(given)
+    for key in omitted:
+        np.testing.assert_array_equal(omitted[key], given[key])
