@@ -166,6 +166,7 @@
     },
     "props": {
       "resonator_length": 4600,
+      "resonator_open_end": false,
       "resonator_meanders": 3
     },
     "x": 14.744,
@@ -512,7 +513,8 @@
       "coupling_o2": "net10"
     },
     "props": {
-      "resonator_length": 5000
+      "resonator_length": 5000,
+      "resonator_open_end": false
     },
     "x": 9.067,
     "y": 5.038,
@@ -1094,6 +1096,7 @@
     },
     "props": {
       "resonator_length": 4800,
+      "resonator_open_end": false,
       "resonator_meanders": 3
     },
     "x": 14.744,
@@ -1172,7 +1175,8 @@
       "coupling_o2": "net12"
     },
     "props": {
-      "resonator_length": 4400
+      "resonator_length": 4400,
+      "resonator_open_end": false
     },
     "x": 9.067,
     "y": -5.053,

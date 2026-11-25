@@ -148,6 +148,10 @@ from qpdk.models.qubit import (
     transmon_with_resonator,
     xmon_transmon,
 )
+from qpdk.models.readout_assembly import (
+    flipmon_with_resonator_and_probeline,
+    transmon_with_resonator_and_probeline,
+)
 from qpdk.models.resonator import (
     quarter_wave_resonator_coupled,
     resonator,
@@ -255,6 +259,7 @@ __all__ = [
     "flipmon_unbonded_model",
     "flipmon_with_bbox",
     "flipmon_with_resonator",
+    "flipmon_with_resonator_and_probeline",
     "fluxonium",
     "fluxonium_coupled",
     "fluxonium_with_bbox",
@@ -338,6 +343,7 @@ __all__ = [
     "transmon_coupled",
     "transmon_readout_coupon_model",
     "transmon_with_resonator",
+    "transmon_with_resonator_and_probeline",
     "tsv",
     "tsv_transition_double_sided",
     "unimon_coupled",

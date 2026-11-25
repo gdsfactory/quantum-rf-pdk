@@ -25,9 +25,11 @@ __all__ = [
     "cpw_bulge_schematic",
     "double_pad_transmon_schematic",
     "double_pad_transmon_with_bbox_schematic",
+    "double_pad_transmon_with_resonator_and_probeline_schematic",
     "drum_lc_resonator_schematic",
     "esr_lc_resonator_schematic",
     "flipmon_schematic",
+    "flipmon_with_resonator_and_probeline_schematic",
     "fluxonium_schematic",
     "fluxonium_with_bbox_schematic",
     "gatemon_coupler_schematic",
@@ -71,6 +73,7 @@ __all__ = [
     "straight_shorted_schematic",
     "taper_cross_section_schematic",
     "tee_schematic",
+    "transmon_with_resonator_and_probeline_schematic",
     "tsv_schematic",
     "tsv_transition_double_sided_schematic",
     "unimon_arm_schematic",
@@ -131,6 +134,13 @@ _BEND = [
 _TRANSMON = [
     {"name": "left_pad", "side": "left", "type": "photonic"},
     {"name": "right_pad", "side": "right", "type": "photonic"},
+]
+
+# Qubit-resonator-probeline assembly. Only the probeline coupling line leaves
+# the cell; the junction and resonator end are placement markers.
+_READOUT_ASSEMBLY = [
+    {"name": "coupling_o1", "side": "left", "type": "photonic"},
+    {"name": "coupling_o2", "side": "right", "type": "photonic"},
 ]
 
 # Josephson junction
@@ -767,6 +777,46 @@ flipmon_schematic = schematic(
     symbol="flipmon",
     tags=["qubits", "transmons"],
     ports=[{"name": "outer_ring_outside", "side": "right", "type": "photonic"}],
+)
+
+transmon_with_resonator_and_probeline_schematic = schematic(
+    symbol="transmon_with_resonator_and_probeline",
+    tags=["qubits", "transmons", "resonators", "couplers"],
+    ports=_READOUT_ASSEMBLY,
+    models=[
+        sax_model(
+            name="transmon_with_resonator_and_probeline",
+            module="qpdk.models.readout_assembly",
+            port_order=["coupling_o1", "coupling_o2"],
+        )
+    ],
+)
+
+double_pad_transmon_with_resonator_and_probeline_schematic = schematic(
+    symbol="double_pad_transmon_with_resonator_and_probeline",
+    tags=["qubits", "transmons", "resonators", "couplers"],
+    ports=_READOUT_ASSEMBLY,
+    models=[
+        sax_model(
+            name="double_pad_transmon_with_resonator_and_probeline",
+            module="qpdk.models.readout_assembly",
+            qualname="transmon_with_resonator_and_probeline",
+            port_order=["coupling_o1", "coupling_o2"],
+        )
+    ],
+)
+
+flipmon_with_resonator_and_probeline_schematic = schematic(
+    symbol="flipmon_with_resonator_and_probeline",
+    tags=["qubits", "transmons", "resonators", "couplers"],
+    ports=_READOUT_ASSEMBLY,
+    models=[
+        sax_model(
+            name="flipmon_with_resonator_and_probeline",
+            module="qpdk.models.readout_assembly",
+            port_order=["coupling_o1", "coupling_o2"],
+        )
+    ],
 )
 
 # The unimon's arm ends are placement markers, so the bare qubit has no circuit

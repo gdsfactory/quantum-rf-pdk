@@ -3,7 +3,7 @@
 import json
 import math
 from collections import defaultdict
-from itertools import pairwise
+from itertools import pairwise, starmap
 from pathlib import Path
 
 import gdsfactory as gf
@@ -63,7 +63,7 @@ def _pin(device: dict, name: str) -> tuple[float, float]:
             "bottom": (slot, 2 * height),
         }[side]
         mid = (width, height)
-    a, b, c, d, e, f = device["transform"]
+    a, b, c, d, e, f = device.get("transform", (1, 0, 0, 1, 0, 0))
     x, y = local[0] - mid[0], local[1] - mid[1]
     return (
         device["x"] + a * x + c * y + e + mid[0],
@@ -71,34 +71,51 @@ def _pin(device: dict, name: str) -> tuple[float, float]:
     )
 
 
-@pytest.mark.parametrize("stem", SAMPLES)
-def test_mosaic_wires_reach_all_declared_pins(stem: str) -> None:
+@pytest.mark.parametrize(
+    ("stem", "net_count"), [*SAMPLES.items(), ("qubit_test_chip", 15)]
+)
+def test_mosaic_wires_reach_all_declared_pins(stem: str, net_count: int) -> None:
     document = json.loads((SAMPLE_DIR / f"{stem}.gsch").read_text())
-    pins = defaultdict(set)
+    pins = defaultdict(list)
     graph = defaultdict(lambda: defaultdict(set))
     for entry in document.values():
         assert isinstance(entry["name"], str)
         assert all(math.isfinite(entry[key]) for key in ("x", "y"))
         if entry["type"] in {"ckt", "port"}:
             for name, net in entry.get("nets", {}).items():
-                pins[net].add(_pin(entry, name))
+                pins[net].append((entry, name))
         elif entry["type"] == "wire":
             start = (entry["x"], entry["y"])
             finish = (entry["x"] + entry["rx"], entry["y"] + entry["ry"])
-            assert start[0] == finish[0] or start[1] == finish[1]
-            graph[entry["net"]][start].add(finish)
-            graph[entry["net"]][finish].add(start)
-    assert len(pins) == SAMPLES[stem]
-    for net, endpoints in pins.items():
-        assert len(endpoints) == 2, net
+            match entry.get("variant"):
+                case "hv":
+                    points = (start, (finish[0], start[1]), finish)
+                case "vh":
+                    points = (start, (start[0], finish[1]), finish)
+                case _:
+                    assert start[0] == finish[0] or start[1] == finish[1]
+                    points = (start, finish)
+            for left, right in pairwise(points):
+                graph[entry["net"]][left].add(right)
+                graph[entry["net"]][right].add(left)
+    # Single-pin nets are hidden pins or open terminations; a wired net still
+    # needs both of its declared pins.
+    assert set(graph) <= set(pins), "a wire refers to an undeclared net"
+    connected_pins = {
+        net: ports for net, ports in pins.items() if len(ports) > 1 or net in graph
+    }
+    assert len(connected_pins) == net_count
+    for net, ports in connected_pins.items():
+        assert len(ports) == 2, net
+        start, finish = starmap(_pin, ports)
         visited = set()
-        pending = [next(iter(endpoints))]
+        pending = [start]
         while pending:
             point = pending.pop()
             if point not in visited:
                 visited.add(point)
                 pending.extend(graph[net][point] - visited)
-        assert endpoints <= visited, net
+        assert finish in visited, net
 
 
 @pytest.mark.parametrize("stem", SAMPLES)

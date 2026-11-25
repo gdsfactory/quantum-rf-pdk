@@ -10,6 +10,7 @@ from gdsfactory.component import Component
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 from klayout.db import DCplxTrans
 
+from qpdk.cells._schematic import transmon_with_resonator_and_probeline_schematic
 from qpdk.cells.capacitor import plate_capacitor_single
 from qpdk.cells.resonator import (
     resonator_quarter_wave_bend_start,
@@ -182,7 +183,10 @@ def _transmon_with_resonator_base(
     return c
 
 
-@gf.cell(tags=["qubits", "transmons", "resonators", "couplers"])
+@gf.cell(
+    tags=["qubits", "transmons", "resonators", "couplers"],
+    schematic_function=transmon_with_resonator_and_probeline_schematic,
+)
 def transmon_with_resonator_and_probeline(
     qubit: ComponentSpec = "double_pad_transmon_with_bbox",
     resonator: ComponentSpec = partial(

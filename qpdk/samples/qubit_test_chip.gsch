@@ -219,14 +219,15 @@
     ],
     "irl_flip": true,
     "x": 10,
-    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_f7df2c89",
+    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_fa424824",
     "mirror": true,
     "irl_y": 3301.040703693508,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "probeline_coupling_length": 400,
-      "resonator_length": 3600,
-      "resonator_meanders": 3
+      "resonator_length": 4250,
+      "resonator_meanders": 3,
+      "resonator_open_end": false
     }
   },
   "tee_top_straight_1": {
@@ -387,12 +388,13 @@
     ],
     "irl_flip": true,
     "x": 6,
-    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_410935c5",
+    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_034eab1e",
     "mirror": true,
     "irl_y": 3301.040703693508,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
-      "resonator_length": 4800
+      "resonator_length": 4800,
+      "resonator_open_end": false
     }
   },
   "launcher_in": {
@@ -452,7 +454,7 @@
     "model": "qpdk.cells.launcher.launcher"
   },
   "qubit2": {
-    "y": 0,
+    "y": 1,
     "bbox_xmin": -1010.939,
     "bbox_ymin": -1237,
     "name": "qubit2",
@@ -536,13 +538,14 @@
     ],
     "irl_flip": false,
     "x": 10,
-    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_7a7b2bea",
+    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_1e12ca23",
     "irl_y": 1004.8159038961953,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
       "probeline_coupling_length": 400,
       "resonator_length": 4600,
-      "resonator_meanders": 3
+      "resonator_meanders": 3,
+      "resonator_open_end": false
     }
   },
   "input_cap2": {
@@ -715,7 +718,7 @@
     "model": "qpdk.cells.waveguides.straight_open"
   },
   "qubit1": {
-    "y": 0,
+    "y": 1,
     "bbox_xmin": -1010.939,
     "irl_orientation": 0,
     "bbox_ymin": -1237,
@@ -800,11 +803,12 @@
     ],
     "irl_flip": false,
     "x": 6,
-    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_4116eb3e",
+    "texture_key": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline_0286f4f7",
     "irl_y": 1004.8159038961953,
     "model": "qpdk.cells.derived.transmon_with_resonator_and_probeline.transmon_with_resonator_and_probeline",
     "props": {
-      "resonator_length": 5000
+      "resonator_length": 5000,
+      "resonator_open_end": false
     }
   },
   "o1": {
