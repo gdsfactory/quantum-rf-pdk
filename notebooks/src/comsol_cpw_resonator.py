@@ -92,15 +92,14 @@ import matplotlib.pyplot as plt
 import mph
 import numpy as np
 from gplugins.comsol import COMSOL
-from gplugins.comsol.plotting import draw_layout_polygons
+from gplugins.comsol.plotting import draw_cut_plane_field, draw_layout_polygons
 from gplugins.comsol.results import (
     explain_missing_results,
     exported_frequency_ghz,
     requested_frequency_grid,
     result_file,
 )
-from matplotlib import axes as mpl_axes, font_manager, tri as mtri
-from matplotlib.colors import LogNorm
+from matplotlib import axes as mpl_axes, font_manager
 
 from qpdk import PDK
 from qpdk.cells.resonator import quarter_wave_resonator_coupled
@@ -511,83 +510,8 @@ else:
 # the frequency the field was solved at, so the title says which solution it shows. The amplitude
 # follows the solver's drive normalisation, so the colour scale gives relative shape rather than a
 # field strength at a stated input power. The figure crops to the coupling section, the meander, and
-# the feedline. The export holds field values at mesh nodes, not the mesh, so the plot triangulates all
-# nodes on the cut plane and only then crops: triangulating the cropped nodes alone leaves the window
-# corners outside their convex hull, and those corners would draw blank.
-
-
-# %% tags=["hide-input"]
-def draw_cut_plane_field(
-    file: Path,
-    title: str,
-    *,
-    view_um: tuple[float, float, float, float],
-    contour_levels: int = 30,
-) -> None:
-    """Draw a cropped ``emw.normE`` map from a COMSOL cut-plane export.
-
-    The colour limits are the 1st and 99th percentiles of the positive field
-    inside ``view_um``, on a logarithmic scale.
-
-    Args:
-        file: A ``emw.normE`` export on the cut plane, columns x, y, z, E.
-        title: Figure title.
-        view_um: ``(xmin, xmax, ymin, ymax)`` crop window, in µm.
-        contour_levels: Number of contour levels.
-
-    Raises:
-        ValueError: If the crop window holds no node with a positive field.
-    """
-    field = np.loadtxt(file, comments="%")
-    # COMSOL writes NaN where it cannot evaluate the expression; the
-    # triangulation spans the whole plane, so drop those nodes up front.
-    field = field[np.isfinite(field[:, 3])]
-    x, y, e = field[:, 0], field[:, 1], field[:, 3]
-    xmin, xmax, ymin, ymax = view_um
-    inside = (x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax)
-    positive = e[inside & (e > 0.0)]
-    if positive.size == 0:
-        raise ValueError(f"No positive field values inside {view_um} to draw")
-    color_min, color_max = (float(value) for value in np.percentile(positive, [1, 99]))
-    if color_max <= color_min:
-        color_max = color_min * 10.0
-
-    # Triangles wholly outside the window only cost drawing time.
-    triangulation = mtri.Triangulation(x, y)
-    corner_x = x[triangulation.triangles]
-    corner_y = y[triangulation.triangles]
-    triangulation.set_mask(
-        (corner_x.max(axis=1) < xmin)
-        | (corner_x.min(axis=1) > xmax)
-        | (corner_y.max(axis=1) < ymin)
-        | (corner_y.min(axis=1) > ymax)
-    )
-    print(
-        f"Field nodes: {inside.sum()} of {e.size} inside the view, all "
-        f"{e.size} triangulated; 1st to 99th percentile {color_min:.3g} to "
-        f"{color_max:.3g} V/m"
-    )
-
-    fig, ax = plt.subplots(figsize=(7, 5))
-    # Zero and below-range nodes take the lowest colour instead of a gap.
-    contour = ax.tricontourf(
-        triangulation,
-        np.maximum(e, color_min),
-        levels=np.geomspace(color_min, color_max, contour_levels),
-        norm=LogNorm(vmin=color_min, vmax=color_max),
-        cmap="inferno",
-        extend="both",
-    )
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
-    ax.set_aspect("equal")
-    ax.set_xlabel("x (µm)")
-    ax.set_ylabel("y (µm)")
-    ax.set_title(title)
-    fig.colorbar(contour, ax=ax, label=r"$|\mathbf{E}|$ (V/m)")
-    plt.tight_layout()
-    plt.show()
-
+# the feedline. The export holds field values at mesh nodes, not the mesh, so the plot triangulates the
+# nodes around the window as well as inside it; the cropped nodes alone would leave the window corners blank.
 
 # %%
 field_path = result_file(RESULTS_DIR, DRIVEN_FIELD_TXT)
