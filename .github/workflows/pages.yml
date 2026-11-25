@@ -106,6 +106,19 @@ jobs:
         with:
           name: github-pages-with-pdf
           path: combined
+      # The artifact list API can lag the upload by a few seconds, and
+      # deploy-pages looks the artifact up once without retrying.
+      - name: Wait for the Pages artifact to be listed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 1 30); do
+            count=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?name=github-pages-with-pdf" --jq '.total_count')
+            if [ "$count" != "0" ]; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::github-pages-with-pdf is still not listed after 150 s"
+          exit 1
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
