@@ -81,11 +81,15 @@ the analytical helpers used to design them. Install them with
 
    for (pout, pin), sij in s_model.items():
       if pout >= pin:
-          plt.plot(
-              freq_ghz,
-              20 * jnp.log10(jnp.abs(jnp.broadcast_to(sij, freq.shape))),
-              label=f"S[{pout}, {pin}]"
-          )
+          mag_db = 20 * jnp.log10(jnp.abs(jnp.broadcast_to(sij, freq.shape)))
+          # Hide float64 round-off: ~1e-15 dB ripple on |S| = 1 and
+          # ~-320 dB residue on |S| = 0 would otherwise fill the axes.
+          mag_db = jnp.round(mag_db, 12)
+          mag_db = jnp.where(mag_db < -200, jnp.nan, mag_db)
+          label = f"S[{pout}, {pin}]"
+          if jnp.all(jnp.isnan(mag_db)):
+              label += " < -200 dB"
+          plt.plot(freq_ghz, mag_db, label=label)
    plt.xlabel("Frequency [GHz]", fontsize=12)
    plt.ylabel("Magnitude [dB]", fontsize=12)
    plt.grid(True)
