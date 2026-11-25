@@ -151,6 +151,22 @@
     },
     "ports": [
       {
+        "name": "junction",
+        "irl_rx": 305.4694999999999,
+        "irl_ry": -389.75,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "electrical",
+        "width": 33.446,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
         "name": "coupling_o1",
         "irl_rx": -594.5305000000001,
         "irl_ry": 836.25,
@@ -176,6 +192,22 @@
           100
         ],
         "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 810.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
         "width": 10,
         "cross_section": "coplanar_waveguide",
         "layer": [
@@ -238,6 +270,22 @@
           0
         ],
         "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 2,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
       }
     ],
     "irl_flip": true,
@@ -272,6 +320,22 @@
     },
     "ports": [
       {
+        "name": "junction",
+        "irl_rx": 305.4694999999999,
+        "irl_ry": -389.75,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "electrical",
+        "width": 33.446,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
         "name": "coupling_o1",
         "irl_rx": -594.5305000000001,
         "irl_ry": 836.25,
@@ -297,6 +361,22 @@
           100
         ],
         "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 810.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
         "width": 10,
         "cross_section": "coplanar_waveguide",
         "layer": [
@@ -390,6 +470,22 @@
     },
     "ports": [
       {
+        "name": "junction",
+        "irl_rx": 305.4694999999999,
+        "irl_ry": -389.75,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "electrical",
+        "width": 33.446,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
         "name": "coupling_o1",
         "irl_rx": -594.5305000000001,
         "irl_ry": 836.25,
@@ -415,6 +511,22 @@
           100
         ],
         "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 810.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
         "width": 10,
         "cross_section": "coplanar_waveguide",
         "layer": [
@@ -582,6 +694,22 @@
           0
         ],
         "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 2,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
       }
     ],
     "x": 10,
@@ -606,6 +734,22 @@
       "coupling_o2": "W3"
     },
     "ports": [
+      {
+        "name": "junction",
+        "irl_rx": 305.4694999999999,
+        "irl_ry": -389.75,
+        "orientation": 180,
+        "bendRadii": [
+          5
+        ],
+        "port_type": "electrical",
+        "width": 33.446,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
       {
         "name": "coupling_o1",
         "irl_rx": -594.5305000000001,
@@ -632,6 +776,22 @@
           100
         ],
         "port_type": "optical",
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -594.5305000000001,
+        "irl_ry": 810.25,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
         "width": 10,
         "cross_section": "coplanar_waveguide",
         "layer": [
@@ -782,7 +942,16 @@
   },
   "poly_1": {
     "y": 7,
-    "vertices": [],
+    "vertices": [
+      [
+        3000.0,
+        -2700.0
+      ],
+      [
+        3000.0,
+        -1786.0
+      ]
+    ],
     "terminals": {
       "start": {
         "component_id": "launcher_top",
@@ -935,6 +1104,22 @@
           0
         ],
         "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 2,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
       }
     ],
     "irl_flip": true,
@@ -1045,6 +1230,22 @@
           0
         ],
         "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o2",
+        "irl_rx": 2,
+        "irl_ry": 0,
+        "orientation": 0,
+        "bendRadii": [
+          100
+        ],
+        "width": 10,
+        "cross_section": "coplanar_waveguide",
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
       }
     ],
     "x": 10,
@@ -1054,7 +1255,16 @@
   },
   "poly_2": {
     "y": 11,
-    "vertices": [],
+    "vertices": [
+      [
+        3000.0,
+        2700.0
+      ],
+      [
+        3000.0,
+        1786.0
+      ]
+    ],
     "terminals": {
       "start": {
         "component_id": "launcher_bot",
@@ -1088,7 +1298,16 @@
   },
   "poly_3": {
     "y": 5,
-    "vertices": [],
+    "vertices": [
+      [
+        300.0,
+        -400.0
+      ],
+      [
+        782.0,
+        -400.0
+      ]
+    ],
     "terminals": {
       "start": {
         "component_id": "launcher_in",
@@ -1110,7 +1329,16 @@
   },
   "poly_4": {
     "y": 0,
-    "vertices": [],
+    "vertices": [
+      [
+        300.0,
+        400.0
+      ],
+      [
+        782.0,
+        400.0
+      ]
+    ],
     "terminals": {
       "start": {
         "component_id": "launcher_out",
@@ -1180,7 +1408,16 @@
   },
   "poly_6": {
     "y": 8,
-    "vertices": [],
+    "vertices": [
+      [
+        2285.0,
+        -399.0
+      ],
+      [
+        2715.0,
+        -399.0
+      ]
+    ],
     "terminals": {
       "start": {
         "component_id": "qubit1",

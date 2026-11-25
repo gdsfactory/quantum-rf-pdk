@@ -223,6 +223,19 @@
     "bbox_ymin": -1237.0,
     "ports": [
       {
+        "name": "junction",
+        "irl_rx": 420.4695,
+        "irl_ry": -600.916,
+        "orientation": 0.0,
+        "port_type": "placement",
+        "width": 43.912,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
         "name": "coupling_o1",
         "irl_rx": -479.5305,
         "irl_ry": 692.5,
@@ -241,6 +254,19 @@
         "irl_ry": 692.5,
         "orientation": 0.0,
         "port_type": "optical",
+        "width": 10.0,
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -479.5305,
+        "irl_ry": 666.5,
+        "orientation": 0.0,
+        "port_type": "placement",
         "width": 10.0,
         "layer": [
           1,
@@ -575,6 +601,19 @@
     "bbox_ymin": -1237.0,
     "ports": [
       {
+        "name": "junction",
+        "irl_rx": 420.4695,
+        "irl_ry": -600.916,
+        "orientation": 0.0,
+        "port_type": "placement",
+        "width": 43.912,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
         "name": "coupling_o1",
         "irl_rx": -479.5305,
         "irl_ry": 692.5,
@@ -593,6 +632,19 @@
         "irl_ry": 692.5,
         "orientation": 0.0,
         "port_type": "optical",
+        "width": 10.0,
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -479.5305,
+        "irl_ry": 666.5,
+        "orientation": 0.0,
+        "port_type": "placement",
         "width": 10.0,
         "layer": [
           1,
@@ -1176,6 +1228,19 @@
     "bbox_ymin": -1237.0,
     "ports": [
       {
+        "name": "junction",
+        "irl_rx": 420.4695,
+        "irl_ry": -600.916,
+        "orientation": 0.0,
+        "port_type": "placement",
+        "width": 43.912,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
         "name": "coupling_o1",
         "irl_rx": -479.5305,
         "irl_ry": 692.5,
@@ -1194,6 +1259,19 @@
         "irl_ry": 692.5,
         "orientation": 0.0,
         "port_type": "optical",
+        "width": 10.0,
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -479.5305,
+        "irl_ry": 666.5,
+        "orientation": 0.0,
+        "port_type": "placement",
         "width": 10.0,
         "layer": [
           1,
@@ -1229,6 +1307,19 @@
     "bbox_ymin": -1237.0,
     "ports": [
       {
+        "name": "junction",
+        "irl_rx": 420.4695,
+        "irl_ry": -600.916,
+        "orientation": 0.0,
+        "port_type": "placement",
+        "width": 43.912,
+        "layer": [
+          20,
+          0
+        ],
+        "layer_name": "JJ_AREA"
+      },
+      {
         "name": "coupling_o1",
         "irl_rx": -479.5305,
         "irl_ry": 692.5,
@@ -1247,6 +1338,19 @@
         "irl_ry": 692.5,
         "orientation": 0.0,
         "port_type": "optical",
+        "width": 10.0,
+        "layer": [
+          1,
+          0
+        ],
+        "layer_name": "M1_DRAW"
+      },
+      {
+        "name": "o1",
+        "irl_rx": -479.5305,
+        "irl_ry": 666.5,
+        "orientation": 0.0,
+        "port_type": "placement",
         "width": 10.0,
         "layer": [
           1,

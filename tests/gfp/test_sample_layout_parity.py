@@ -10,7 +10,6 @@ and then only by zero-area marker artifacts such as labels.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
 from pathlib import Path
 
 import gdsfactory as gf
@@ -31,21 +30,6 @@ _SAMPLE_STEMS = tuple(
 )
 _POSITION_TOLERANCE_UM = 1e-6
 _FABRICATION_LAYERS = {tuple(layer) for layer in NON_METADATA_LAYERS}
-
-
-@pytest.fixture(autouse=True)
-def _restore_layout_cache() -> Iterator[None]:
-    """GFP renames existing top cells during layout extraction."""
-    before = {cell.cell_index(): cell.name for cell in gf.kcl.layout.each_cell()}
-    yield
-    for index, name in before.items():
-        cell = gf.kcl.layout.cell(index)
-        if cell is None or cell.name == name:
-            continue
-        replacement = gf.kcl.layout.cell(name)
-        if replacement is not None:
-            replacement.name = gf.kcl.layout.unique_cell_name(f"{name}_gfp_test")
-        cell.name = name
 
 
 def _layer_tuples(cell: gf.Component) -> set[tuple[int, int]]:
@@ -102,15 +86,21 @@ def test_sample_layout_matches_pic_yml(stem: str) -> None:
     for key, route in json.loads(schematic.read_text()).items():
         if route["type"] != "polyline":
             continue
+        assert "vertices" in route, (
+            f"{stem}: route {key} has no native vertices, and Livewire ignores "
+            "the legacy waypoints format"
+        )
         vertices = route["vertices"]
+        assert len(vertices) >= 2, (
+            f"{stem}: route {key} needs its two endpoint vertices, got {vertices}"
+        )
         for side, index in (("start", 0), ("finish", -1)):
             terminal = route["terminals"][side]
             instance = fallback.insts[terminal["component_id"]]
             port = instance.ports[terminal["port_name"]]
-            if vertices:
-                assert vertices[index] == pytest.approx(
-                    (port.x, -port.y), abs=fallback.kcl.dbu, rel=0
-                ), (stem, key, side)
+            assert vertices[index] == pytest.approx(
+                (port.x, -port.y), abs=fallback.kcl.dbu, rel=0
+            ), (stem, key, side)
 
     for layer in sorted(_layer_tuples(cell) | _layer_tuples(fallback)):
         actual = gf.kdb.Region(cell.begin_shapes_rec(cell.kcl.layout.layer(*layer)))
