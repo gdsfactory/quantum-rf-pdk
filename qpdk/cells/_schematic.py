@@ -771,12 +771,27 @@ xmon_transmon_schematic = schematic(
     symbol="xmon_transmon",
     tags=["qubits", "transmons"],
     ports=_XMON,
+    models=[
+        sax_model(
+            name="xmon_transmon",
+            module="qpdk.models.qubit",
+            port_order=["top_arm", "right_arm", "bottom_arm", "left_arm"],
+        )
+    ],
 )
 
+# Both flipmon layout variants share one lumped model of their geometry.
 flipmon_schematic = schematic(
     symbol="flipmon",
     tags=["qubits", "transmons"],
     ports=[{"name": "outer_ring_outside", "side": "right", "type": "photonic"}],
+    models=[
+        sax_model(
+            name="flipmon_cell",
+            module="qpdk.models.qubit",
+            port_order=["outer_ring_outside"],
+        )
+    ],
 )
 
 transmon_with_resonator_and_probeline_schematic = schematic(

@@ -43,6 +43,8 @@ _COUPLING_MODEL_BOUNDARIES = {
 
 # Known one-port cells that cannot run a sweep on older GDSFactory+ SDKs.
 _ONE_PORT_CELLS = frozenset({
+    "flipmon",
+    "flipmon_with_bbox",
     "neck_termination",
     "open",
     "resonator_quarter_wave_neck",
@@ -298,7 +300,7 @@ def test_registered_layout_models_compile_from_layout(
     """Evaluate each registered layout model using GFP's extracted netlist.
 
     Released GDSFactory+ SDKs sweep only circuits with at least two external
-    ports, so the eight registered one-port terminations cannot complete the
+    ports, so the registered one-port terminations cannot complete the
     UI sweep there. For those the test still requires the extracted netlist to
     resolve the cell's own model and the model to return a finite reflection.
     Every other cell, and every cell under an SDK that accepts one port, must

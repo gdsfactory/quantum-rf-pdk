@@ -22,6 +22,8 @@ from qpdk.cells import (
     double_pad_transmon,
     double_pad_transmon_with_bbox,
     drum_lc_resonator,
+    flipmon,
+    flipmon_with_bbox,
     fluxonium,
     fluxonium_with_bbox,
     interdigital_capacitor,
@@ -53,6 +55,7 @@ from qpdk.cells import (
     straight_shorted,
     unimon_coupled,
     vacuum_gap_capacitor,
+    xmon_transmon,
 )
 from qpdk.cells._schematic import (
     double_pad_transmon_schematic,
@@ -324,6 +327,12 @@ def test_simulation_cells_have_sax_models() -> None:
         double_pad_transmon_with_bbox: (
             "qpdk.models.qubit",
             {"left_pad", "right_pad"},
+        ),
+        flipmon: ("qpdk.models.qubit", {"outer_ring_outside"}),
+        flipmon_with_bbox: ("qpdk.models.qubit", {"outer_ring_outside"}),
+        xmon_transmon: (
+            "qpdk.models.qubit",
+            {"top_arm", "right_arm", "bottom_arm", "left_arm"},
         ),
         fluxonium: ("qpdk.models.qubit", {"left_pad", "right_pad"}),
         fluxonium_with_bbox: ("qpdk.models.qubit", {"left_pad", "right_pad"}),

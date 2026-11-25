@@ -11,6 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - The `qpdk` KLayout technology loads again. The `M1_DRAW`/`TOP_GATE` connection is now a three-layer spec, and
   `tech.lyt` is regenerated so it also carries the `TSV2` back-chip connection.
+- `flipmon`, `flipmon_with_bbox` and `xmon_transmon` now bind their SAX models through their schematics, so they are
+  registered in `PDK.models`. Both flipmon cells use the new `flipmon_cell` model, which exposes `outer_ring_outside`
+  and terminates the inner island with its own capacitance to ground. Its defaults come from the
+  `flipmon_unbonded_palace` dataset with an ideal bond. The generic `flipmon` and `flipmon_with_bbox` models are
+  unchanged. **Breaking:** the `xmon_transmon` model exposes its four arm ports joined at the island instead of
+  `o1`/`o2`.
+- `double_pad_transmon_with_bbox` is now its own model instead of an alias of `double_pad_transmon`. Its defaults come
+  from the `double_pad_transmon_palace` dataset at the cell's default geometry: 51.4 fF between the pads and 75.1 fF
+  from each pad to ground, instead of 100 fF and no ground capacitance.
 
 ## [0.4.3] - 2026-11-07
 
