@@ -39,7 +39,8 @@ def test_cpw_impedance(width: float) -> None: ...
 - **Never accept a regenerated reference as a fix for a failing test without an explanation.** Ask what physically or
   geometrically changed. A reference diff that is larger than the code change suggests an unintended side effect (these
   files also legitimately shift on a gdsfactory version bump — that reason should be stated explicitly).
-- Conversely, a component or model change with no reference diff at all usually means the new code path is untested.
+- If a change should affect recorded geometry, settings, netlists, or model outputs and the references stay the same,
+  check whether the regression tests exercise that path.
 
 ## Coverage
 

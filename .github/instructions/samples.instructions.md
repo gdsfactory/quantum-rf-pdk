@@ -33,8 +33,8 @@ anywhere else in the package.
 
 - A sample may exist in three linked forms: a Python script, a `.pic.yml` layout netlist, and a `.gsch` schematic. The
   `check-schematic-sources` pre-commit hook converts the `.gsch` and asserts it matches its `.pic.yml` fallback.
-- **When one of the pair changes, the other must change with it.** A `.pic.yml` edited alone (or vice versa) fails the
-  hook. Flag it.
+- If a change affects the circuit described by the pair, update both files. A drawing-only schematic edit can leave the
+  `.pic.yml` unchanged if the converted circuit still matches.
 - `.pic.yml` files are excluded from the `check-yaml` hook, so a syntax error there will not be caught until the test
   suite runs. Read new YAML carefully: instance names, port references, and routing settings.
 - Instance and port names in the netlist must match the cell definitions in `qpdk/cells/`. A renamed port in a cell is a

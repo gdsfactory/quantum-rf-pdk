@@ -8,8 +8,8 @@ QPDK does not wrap Ansys AEDT. The HFSS notebooks and `tests/hfss/` use `gplugin
 directly, with `qpdk.simulation.layout.prepare_metal_layout` for geometry and `qpdk.tech.material_properties` passed as
 `material_properties`. Fix generic AEDT behaviour in gplugins, not here, and do not add QPDK subclasses, re-exports or
 default-wrappers around gplugins classes. `qpdk/simulation/` holds the shared layout preparation and the COMSOL and
-MATLAB helpers. None of the solver code runs in normal CI — the `hfss` pytest marker gates the AEDT tests and
-`just test-hfss` needs a licensed local install — so review has to carry more weight than usual here.
+MATLAB helpers. CI runs dedicated MATLAB, Elmer, Palace, and VACASK jobs. The default pytest suite excludes the `hfss`
+marker, and `just test-hfss` needs a licensed local AEDT install.
 
 ## What to check
 

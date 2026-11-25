@@ -14,7 +14,8 @@ to be mergeable**, so treat a change that can break the build as blocking.
 - RST is formatted by `docstrfmt` and linted by `sphinx-lint`.
 - Links are checked by `lychee` (`.github/lychee.toml`). A new external link must be reachable and stable; if it is
   inherently flaky or rejects automated requests, it belongs in the `exclude` list with a comment explaining why.
-- Use the RST `:math:` role for math, not `$...$`.
+- Use the RST `:math:` role for inline math in RST. In MyST Markdown, use `$...$` for inline math and a `{math}` block
+  for displayed equations.
 - Set non-variables upright, per ISO 80000-2: italic for variables only, `\text{}` for units (`\,\text{GHz}`,
   `\,\text{fF}`, `\,\text{µm}`) and for subscripts/superscripts that name a thing rather than index one (`E_\text{J}`,
   `\omega_\text{r}`, `Q_\text{ext}`, `\kappa_\text{Purcell}`). Numeric and mathematical indices stay italic (`S_{21}`,

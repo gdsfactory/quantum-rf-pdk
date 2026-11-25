@@ -21,8 +21,8 @@ applyTo: "pyproject.toml,uv.lock,Dockerfile,.pre-commit-config.yaml"
   on its own.
 - `gdsfactory` is pinned with a compatible-release specifier (`~=`). Bumping it commonly shifts GDS regression
   references — check the PR regenerates them and says so.
-- Version numbers are checked by the `check-version-sync` hook: `pyproject.toml`, `qpdk/__init__.py` and `README.md`
-  must agree. Use `uv version --bump patch` rather than editing by hand.
+- For a release, use `uv version` to bump `pyproject.toml`, match it in `qpdk/__init__.py`, and add the version to
+  `CHANGELOG.md`. The `check-version-sync` and `check-changelog-version` hooks check these files.
 - `check-pyproject-sections` from `pdk-ci-workflow-public` enforces the shared PDK section layout — do not reorder or
   drop sections such as `[tool.gdsfactoryplus]`.
 - Prefer widening a constraint over pinning exactly; prefer an upper bound only where a known incompatibility exists,
