@@ -1,19 +1,22 @@
-"""Independent numerical regression for the readout assembly models.
+"""Reference check for the readout assembly FEM load and termination.
 
-Rebuild the qubit load from the raw FEM Maxwell matrix, solve the coupled
-island/readout circuit, terminate the CPW coupler with an independently solved
-scattering connection, and compare the public model two-port S matrix.
+The FEM-to-admittance reduction, the nodal island solve and the load
+termination are independent. The reference reuses QPDK's distributed CPW
+straight and coupler primitives and its characteristic impedance.
 """
 
 from collections.abc import Callable
+from typing import Literal
 
 import jax.numpy as jnp
 import numpy as np
 import pytest
 import sax
+from gdsfactory.component import Component
 from numpy.typing import NDArray
 from scipy.interpolate import RegularGridInterpolator
 
+from qpdk import PDK
 from qpdk.models import (
     flipmon_with_resonator_and_probeline,
     transmon_with_resonator_and_probeline,
@@ -21,6 +24,7 @@ from qpdk.models import (
 from qpdk.models.couplers import coupler_straight
 from qpdk.models.cpw import cpw_z0_from_cross_section
 from qpdk.models.datasets import Dataset, Grid
+from qpdk.models.readout_assembly import _COUPON_GEOMETRY
 from qpdk.models.waveguides import straight
 
 _FREQUENCIES = jnp.asarray([1e9, 4.67e9, 6.7e9, 10.2e9, 14.53e9, 18.7e9])
@@ -43,6 +47,10 @@ _KINDS = (
         (58.0, 10.0, 1900.0795478),
     ),
 )
+_LAYOUTS: tuple[tuple[str, Literal["double_pad", "flipmon"]], ...] = (
+    ("double_pad_transmon_with_resonator_and_probeline", "double_pad"),
+    ("flipmon_with_resonator_and_probeline", "flipmon"),
+)
 
 
 def _reference(
@@ -52,11 +60,21 @@ def _reference(
     pad: tuple[float, float, float],
     coupling_length: float,
     open_end: bool,
+    junction_capacitance: float,
 ) -> NDArray[np.complex128]:
-    """Build the expected two-port S matrix from the raw coupon matrix.
+    """Build the expected S matrix from the raw coupon matrix.
 
-    The coupon interpolation always uses the nominal 16 um gap and 800 um
+    The coupon interpolation uses the fixed nominal 16 um gap and 800 um
     coupling length; only the distributed coupler gets the requested length.
+
+    Args:
+        f: Frequency in Hz.
+        grid: Raw Maxwell capacitance grid for the coupon.
+        n_terminals: Number of coupon terminals before bonding.
+        pad: Pad length, pad offset and nominal route plus coupling span in um.
+        coupling_length: Distributed coupling length in um.
+        open_end: Open the meander far end when true, short it when false.
+        junction_capacitance: Junction capacitance in F.
 
     Returns:
         The two-port S matrix with shape ``(frequency, response, excitation)``.
@@ -78,7 +96,11 @@ def _reference(
     omega = 2 * np.pi * f
     drive = np.array([1.0, -1.0, 0.0])
     y = 1j * omega[:, None, None] * ycap
-    y += np.outer(drive, drive) / (1j * omega[:, None, None] * 7e-9)
+    # The junction capacitance shunts the same island pair as the inductance.
+    y += np.outer(drive, drive) * (
+        1 / (1j * omega[:, None, None] * 7e-9)
+        + 1j * omega[:, None, None] * junction_capacitance
+    )
     # Islands are internal; drive the readout electrode at one volt.
     islands = np.linalg.solve(y[:, :2, :2], -y[:, :2, 2, None])
     current = (y[:, 2:3, :2] @ islands)[:, 0, 0] + y[:, 2, 2]
@@ -105,27 +127,36 @@ def _reference(
     return np.asarray(expected, dtype=np.complex128)
 
 
+def _drawn_span(cell: Component) -> float:
+    """Return the route plus coupling span drawn in a readout cell."""
+    meander = next(inst for inst in cell.insts if "resonator_type" in inst.cell.info)
+    return float(cell.info["length"]) - float(meander.cell.info["length"])
+
+
 @pytest.mark.parametrize(
-    ("coupling_length", "open_end"),
-    [(800.0, True), (400.0, False)],
-    ids=["800-open", "400-short"],
+    ("coupling_length", "open_end", "junction_capacitance"),
+    [(800.0, True, 0.0), (400.0, False, 0.0), (800.0, True, 3e-15)],
+    ids=["800-open", "400-short", "800-open-junction-capacitance"],
 )
 @pytest.mark.parametrize(
     ("model", "dataset", "terminals", "pad"), _KINDS, ids=["transmon", "flipmon"]
 )
-def test_readout_assembly_matches_independent_reference(
+def test_fem_load_and_termination_match_public_model(
     model: Callable[..., sax.SDict],
     dataset: str,
     terminals: tuple[str, ...],
     pad: tuple[float, float, float],
     coupling_length: float,
     open_end: bool,
+    junction_capacitance: float,
 ) -> None:
-    """The public S matrix equals a reference built from the raw coupon matrix."""
+    """The independent FEM load solve and termination match the public model."""
     grid = Dataset(dataset).grid("maxwell_capacitance")
     assert tuple(grid.terminals) == terminals
     f = np.asarray(_FREQUENCIES, dtype=float)
-    expected = _reference(f, grid, len(terminals), pad, coupling_length, open_end)
+    expected = _reference(
+        f, grid, len(terminals), pad, coupling_length, open_end, junction_capacitance
+    )
 
     result = model(
         f=_FREQUENCIES,
@@ -133,8 +164,22 @@ def test_readout_assembly_matches_independent_reference(
         probeline_coupling_length=coupling_length,
         probeline_coupling_gap=16.0,
         resonator_open_end=open_end,
+        junction_capacitance=junction_capacitance,
     )
     actual = np.stack(
         [np.asarray(result[p, q]) for p in _READOUT for q in _READOUT], axis=-1
     ).reshape(-1, 2, 2)
     np.testing.assert_allclose(actual, expected, rtol=1e-9, atol=1e-9)
+
+
+@pytest.mark.parametrize("coupling_length", [400.0, 800.0], ids=["400", "800"])
+@pytest.mark.parametrize(("cell_name", "kind"), _LAYOUTS, ids=["double-pad", "flipmon"])
+def test_drawn_span_matches_nominal_coupon_span(
+    cell_name: str,
+    kind: Literal["double_pad", "flipmon"],
+    coupling_length: float,
+) -> None:
+    """The drawn route plus coupling span equals the model's coupon span."""
+    cell = PDK.cells[cell_name](probeline_coupling_length=coupling_length)
+    _, span, _, _ = _COUPON_GEOMETRY[kind]
+    assert _drawn_span(cell) == pytest.approx(span, abs=1e-3)

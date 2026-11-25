@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from functools import partial
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
 import sax
+from kfactory.serialization import clean_value
 
 from qpdk import PDK
+from qpdk.cells import plate_capacitor_single
 from qpdk.models.readout_assembly import (
     flipmon_with_resonator_and_probeline,
     transmon_with_resonator_and_probeline,
@@ -18,7 +21,6 @@ from qpdk.models.readout_assembly import (
 
 _FREQUENCIES = jnp.linspace(3e9, 12e9, 301)
 _NOTCH_FREQUENCIES = jnp.linspace(10e9, 14e9, 401)
-_SERIALIZED_FLIPMON = "Fflipmon_with_bbox_Mqpdkpcellsptransmon_SJPR180"
 
 _READOUT_PORTS = ("coupling_o1", "coupling_o2")
 # SAX sdict keys are (input, output), so this tuple is also the S21 key.
@@ -29,9 +31,79 @@ _MODELS = [
     pytest.param(flipmon_with_resonator_and_probeline, id="flipmon"),
 ]
 
-_LAYOUT_MODELS = [
+_LAYOUT_SETTINGS = [
+    pytest.param(
+        transmon_with_resonator_and_probeline,
+        {
+            "resonator_meander_start": (-900.0, -1200.0),
+            "coupler_offset": (-45.0, 0.0),
+            "coupler": partial(plate_capacitor_single, width=20, length=394),
+            "coupler_port": "left_pad",
+            "qubit_rotation": 90.0,
+        },
+        id="transmon",
+    ),
+    pytest.param(
+        flipmon_with_resonator_and_probeline,
+        {
+            "resonator_meander_start": (-900.0, -1200.0),
+            "coupler_offset": (-10.0, 0.0),
+            "coupler": partial(plate_capacitor_single, width=10, length=58),
+            "coupler_port": "outer_ring_outside",
+            "qubit_rotation": -90.0,
+        },
+        id="flipmon",
+    ),
+]
+
+_NOMINAL_OFFSETS = [
     pytest.param(transmon_with_resonator_and_probeline, (-45.0, 0.0), id="transmon"),
     pytest.param(flipmon_with_resonator_and_probeline, (-10.0, 0.0), id="flipmon"),
+]
+
+_NONNOMINAL_LAYOUT_SETTINGS = [
+    pytest.param(
+        transmon_with_resonator_and_probeline,
+        "coupler",
+        clean_value(partial(plate_capacitor_single, width=20, length=400)),
+        "coupler|nominal",
+        id="transmon-coupler",
+    ),
+    pytest.param(
+        transmon_with_resonator_and_probeline,
+        "coupler_port",
+        "right_pad",
+        "coupler_port|nominal",
+        id="transmon-coupler-port",
+    ),
+    pytest.param(
+        transmon_with_resonator_and_probeline,
+        "qubit_rotation",
+        0.0,
+        "qubit_rotation|nominal",
+        id="transmon-qubit-rotation",
+    ),
+    pytest.param(
+        flipmon_with_resonator_and_probeline,
+        "coupler",
+        clean_value(partial(plate_capacitor_single, width=10, length=60)),
+        "coupler|nominal",
+        id="flipmon-coupler",
+    ),
+    pytest.param(
+        flipmon_with_resonator_and_probeline,
+        "coupler_port",
+        "inner_ring_near_junction",
+        "coupler_port|nominal",
+        id="flipmon-coupler-port",
+    ),
+    pytest.param(
+        flipmon_with_resonator_and_probeline,
+        "qubit_rotation",
+        0.0,
+        "qubit_rotation|nominal",
+        id="flipmon-qubit-rotation",
+    ),
 ]
 
 _REGISTRATIONS = [
@@ -178,18 +250,26 @@ def test_physical_settings_change_the_response(
         )
 
 
-@pytest.mark.parametrize(("model", "coupler_offset"), _LAYOUT_MODELS)
+@pytest.mark.parametrize(("model", "settings"), _LAYOUT_SETTINGS)
 def test_nominal_layout_settings_are_accepted(
-    model: Callable[..., sax.SDict], coupler_offset: tuple[float, float]
+    model: Callable[..., sax.SDict], settings: dict[str, object]
 ) -> None:
     """Explicit nominal layout settings match the default model call."""
-    nominal = model(f=_FREQUENCIES)
-    accepted = model(
-        f=_FREQUENCIES,
-        resonator_meander_start=jnp.asarray((-900.0, -1200.0)),
-        coupler_offset=jnp.asarray(coupler_offset),
-    )
-    _assert_close(nominal, accepted)
+    _assert_close(model(f=_FREQUENCIES), model(f=_FREQUENCIES, **settings))
+
+
+@pytest.mark.parametrize(
+    ("model", "setting", "value", "match"), _NONNOMINAL_LAYOUT_SETTINGS
+)
+def test_nonnominal_layout_setting_is_rejected(
+    model: Callable[..., sax.SDict],
+    setting: str,
+    value: object,
+    match: str,
+) -> None:
+    """A changed coupling plate, plate port or rotation is rejected."""
+    with pytest.raises(ValueError, match=match):
+        model(f=_FREQUENCIES, **{setting: value})
 
 
 @pytest.mark.parametrize("model", _MODELS)
@@ -211,7 +291,7 @@ def test_nonnominal_setting_is_rejected(
         model(f=_FREQUENCIES, **{setting: jnp.asarray(value)})
 
 
-@pytest.mark.parametrize(("model", "coupler_offset"), _LAYOUT_MODELS)
+@pytest.mark.parametrize(("model", "coupler_offset"), _NOMINAL_OFFSETS)
 def test_nonnominal_coupler_offset_is_rejected(
     model: Callable[..., sax.SDict], coupler_offset: tuple[float, float]
 ) -> None:
@@ -221,20 +301,37 @@ def test_nonnominal_coupler_offset_is_rejected(
 
 
 @pytest.mark.parametrize("model", _MODELS)
-def test_jit_masks_invalid_coupling_length(
+def test_jit_reports_invalid_coupling_length(
     model: Callable[..., sax.SDict],
 ) -> None:
-    """A traced invalid length yields NaN rather than a plausible response."""
+    """A traced invalid length raises from the host callback with a diagnostic."""
 
     @jax.jit
     def evaluate(coupling_length: jnp.ndarray) -> sax.SDict:
         return model(f=_FREQUENCIES, probeline_coupling_length=coupling_length)
 
-    valid = _s_matrix(evaluate(jnp.asarray(400.0)))
-    invalid = _s_matrix(evaluate(jnp.asarray(1000.0)))
+    with pytest.raises(RuntimeError, match="probeline_coupling_length"):
+        jax.block_until_ready(evaluate(jnp.asarray(1000.0)))
 
+    valid = _s_matrix(jax.block_until_ready(evaluate(jnp.asarray(400.0))))
     assert bool(jnp.isfinite(valid).all())
-    assert bool(jnp.isnan(invalid).all())
+
+
+@pytest.mark.parametrize("model", _MODELS)
+def test_vector_of_valid_lengths_matches_scalar_calls(
+    model: Callable[..., sax.SDict],
+) -> None:
+    """A vector of valid lengths is evaluated element by element."""
+    frequencies = jnp.asarray(5e9)
+    lengths = jnp.asarray([5000.0, 5200.0])
+    vector = model(f=frequencies, resonator_length=lengths)
+
+    for index, length in enumerate(lengths):
+        scalar = model(f=frequencies, resonator_length=length)
+        for key in _READOUT_KEYS:
+            np.testing.assert_allclose(
+                vector[key][index], scalar[key], rtol=1e-6, atol=1e-9
+            )
 
 
 @pytest.mark.parametrize("model", _MODELS)
@@ -265,10 +362,9 @@ def test_dc_is_exact_through_line_and_matches_5_ghz(
 
 
 def test_serialized_flipmon_matches_named_flipmon() -> None:
-    """The serialized cell setting selects the same qubit as the flipmon boundary."""
-    serialized = transmon_with_resonator_and_probeline(
-        f=_FREQUENCIES, qubit=_SERIALIZED_FLIPMON
-    )
+    """The live layout cell's serialized qubit selects the flipmon coupon."""
+    live_qubit = PDK.cells["flipmon_with_resonator_and_probeline"]().settings["qubit"]
+    serialized = transmon_with_resonator_and_probeline(f=_FREQUENCIES, qubit=live_qubit)
     named = flipmon_with_resonator_and_probeline(f=_FREQUENCIES)
     double_pad = transmon_with_resonator_and_probeline(f=_FREQUENCIES)
 

@@ -17,7 +17,9 @@ a 394 um by 20 um coupling plate offset 45 um for the double-pad, and a 58 um by
 10 um plate offset 10 um for the flipmon. The coupon lookup always uses a 16 um
 feedline gap and the nominal 800 um coupling length, even when the distributed
 coupling length is 400 um, which keeps it inside the sampled 500 um to 800 um
-domain. The nominal route plus coupling spans are 1742.5795478 um and
+domain. ``probeline_coupling_gap`` changes the distributed coupler only; over
+16 um to 20 um the measured coupling changes by about 0.005 fF. The nominal
+route plus coupling spans are 1742.5795478 um and
 1900.0795478 um. The load keeps the island-to-island, island-to-readout and
 island-to-ground capacitances. It drops the readout and feedline ground
 capacitances and the readout-to-feedline mutual branch because the distributed
@@ -28,9 +30,10 @@ a 7 nH Josephson inductance joins the islands.
 The model is linear and small-signal, with no driven FEM or measurement
 calibration. It uses nominal qubit geometry at run time. Custom qubit geometry
 needs another model, and a nonnominal route span needs an explicit
-``route_and_coupler_length``. The optional ``resonator_meander_start`` and
-``coupler_offset`` settings are checked against the shipped layout, so a
-concrete nonnominal value raises. An implicit span accepts only positive
+``route_and_coupler_length``. The optional ``resonator_meander_start``,
+``coupler_offset``, ``coupler``, ``coupler_port`` and ``qubit_rotation``
+settings are checked against the shipped layout, so a concrete nonnominal value
+raises. An implicit span accepts only positive
 coupling lengths up to 800 um; a longer coupling needs an explicit span. At
 zero frequency the probeline is an ideal through line, with zero reflection and
 unit transmission.
@@ -38,14 +41,18 @@ unit transmission.
 
 from collections.abc import Sequence
 from functools import cache, partial
-from typing import Literal
+from typing import Any, Literal
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import sax
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 from jax.typing import ArrayLike
+from kfactory.serialization import clean_value
 
+from qpdk.cells.capacitor import plate_capacitor_single
+from qpdk.cells.transmon import flipmon_with_bbox
 from qpdk.models.constants import DEFAULT_FREQUENCY
 from qpdk.models.couplers import coupler_straight
 from qpdk.models.cpw import cpw_z0_from_cross_section
@@ -85,9 +92,29 @@ _COUPON_GROUPS: dict[_QubitKind, tuple[tuple[str, ...], ...]] = {
 }
 
 _DOUBLE_PAD_NAMES = frozenset({"double_pad_transmon_with_bbox"})
+_NOMINAL_COUPLER: dict[_QubitKind, partial[Any]] = {
+    "double_pad": partial(
+        plate_capacitor_single, width=20.0, length=_COUPON_GEOMETRY["double_pad"][2]
+    ),
+    "flipmon": partial(
+        plate_capacitor_single, width=10.0, length=_COUPON_GEOMETRY["flipmon"][2]
+    ),
+}
+_NOMINAL_COUPLER_STRING: dict[_QubitKind, str] = {
+    "double_pad": clean_value(_NOMINAL_COUPLER["double_pad"]),
+    "flipmon": clean_value(_NOMINAL_COUPLER["flipmon"]),
+}
+_NOMINAL_COUPLER_PORT: dict[_QubitKind, str] = {
+    "double_pad": "left_pad",
+    "flipmon": "outer_ring_outside",
+}
+_NOMINAL_QUBIT_ROTATION: dict[_QubitKind, float] = {
+    "double_pad": 90.0,
+    "flipmon": -90.0,
+}
 _FLIPMON_NAMES = frozenset({
     "flipmon_with_bbox",
-    "Fflipmon_with_bbox_Mqpdkpcellsptransmon_SJPR180",
+    clean_value(partial(flipmon_with_bbox, **_FLIPMON_JUNCTION_SETTING)),
 })
 
 
@@ -150,54 +177,133 @@ def _layout_setting_matches(
     return jnp.all(actual == jnp.asarray(nominal, dtype=float))
 
 
-def _format_layout_setting(value: _LayoutSetting) -> str:
-    """Format a layout setting for an eager validation error."""
+def _plate_values_match(width: object, length: object, kind: _QubitKind) -> jax.Array:
+    """Return whether a coupling plate has the nominal width and length."""
+    nominal = _NOMINAL_COUPLER[kind].keywords
+    try:
+        width = jnp.asarray(width, dtype=float)
+        length = jnp.asarray(length, dtype=float)
+    except (TypeError, ValueError):
+        return jnp.asarray(False)
+    return jnp.all(width == nominal["width"]) & jnp.all(length == nominal["length"])
+
+
+def _coupler_matches(value: ComponentSpec | None, kind: _QubitKind) -> jax.Array:
+    """Return whether an optional coupling plate matches the nominal partial."""
     if value is None:
-        return "None"
-    return f"({', '.join(f'{v:.4g}' for v in jnp.asarray(value).ravel().tolist())})"
+        return jnp.asarray(True)
+    nominal = _NOMINAL_COUPLER[kind]
+    if isinstance(value, partial):
+        if (
+            value.func is not nominal.func
+            or value.args
+            or set(value.keywords) != {"width", "length"}
+        ):
+            return jnp.asarray(False)
+        return _plate_values_match(
+            value.keywords["width"], value.keywords["length"], kind
+        )
+    if isinstance(value, dict):
+        function = value.get("function") or value.get("component")
+        module = value.get("module")
+        settings = value.get("settings")
+        if (
+            function != nominal.func.__name__
+            or (module is not None and module != nominal.func.__module__)
+            or not isinstance(settings, dict)
+            or set(settings) != {"width", "length"}
+        ):
+            return jnp.asarray(False)
+        return _plate_values_match(settings["width"], settings["length"], kind)
+    if isinstance(value, str):
+        return jnp.asarray(value == _NOMINAL_COUPLER_STRING[kind])
+    try:
+        return jnp.asarray(clean_value(value) == _NOMINAL_COUPLER_STRING[kind])
+    except (TypeError, ValueError):
+        return jnp.asarray(False)
 
 
-def _validate_layout_and_lengths(
+def _port_matches(value: str | None, nominal: str) -> jax.Array:
+    """Return whether an optional coupler port matches the nominal port."""
+    if value is None:
+        return jnp.asarray(True)
+    return jnp.asarray(isinstance(value, str) and value == nominal)
+
+
+def _rotation_matches(value: ArrayLike | None, nominal: float) -> jax.Array:
+    """Return whether an optional qubit rotation matches the nominal angle."""
+    if value is None:
+        return jnp.asarray(True)
+    return jnp.all(jnp.asarray(value, dtype=float) == nominal)
+
+
+@cache
+def _invalid_message(kind: _QubitKind) -> str:
+    """Return the shared eager and JIT diagnostic for a nonnominal assembly."""
+    plate = _NOMINAL_COUPLER[kind].keywords
+    return (
+        "This model supports only the nominal shipped readout assembly: "
+        f"resonator_meander_start {_NOMINAL_MEANDER_START}, "
+        f"coupler_offset {_NOMINAL_PLATE_OFFSET[kind]}, "
+        f"coupler_port {_NOMINAL_COUPLER_PORT[kind]!r}, "
+        f"qubit_rotation {_NOMINAL_QUBIT_ROTATION[kind]:g}, "
+        f"coupler plate width {plate['width']:g} um and length "
+        f"{plate['length']:g} um, positive route and meander sections, and "
+        "probeline_coupling_length at most 800 um unless "
+        "route_and_coupler_length is explicit."
+    )
+
+
+def _check_valid(valid: jax.Array, message: str) -> jax.Array:
+    """Return the reduced validity flag, raising on a nonnominal assembly."""
+    valid = jnp.all(valid)
+    if not isinstance(valid, jax.core.Tracer):
+        if not bool(valid):
+            raise ValueError(message)
+        return valid
+
+    def _raise(flag: ArrayLike) -> None:
+        """Raise when the callback flag marks every batched element invalid."""
+        flag = np.asarray(flag)
+        if bool(np.all(flag)):
+            raise ValueError(message)
+
+    def _invalid() -> jax.Array:
+        """Report a nonnominal assembly on the host from the invalid cond branch."""
+        jax.debug.callback(_raise, ~valid)
+        return jnp.asarray(0)
+
+    jax.lax.cond(valid, lambda: jnp.asarray(0), _invalid)
+    return valid
+
+
+def _validate_layout(
     *,
     kind: _QubitKind,
     resonator_meander_start: _LayoutSetting,
     coupler_offset: _LayoutSetting,
+    coupler: ComponentSpec | None,
+    coupler_port: str | None,
+    qubit_rotation: ArrayLike | None,
     resonator_length: jax.Array,
     coupling_length: jax.Array,
     span: jax.Array,
     explicit_span: bool,
 ) -> jax.Array:
-    """Return whether the call is inside the nominal geometry with positive sections."""
-    # Traced invalid input returns False so the response can be masked with NaN.
-    valid = _layout_setting_matches(
-        resonator_meander_start, _NOMINAL_MEANDER_START
-    ) & _layout_setting_matches(coupler_offset, _NOMINAL_PLATE_OFFSET[kind])
+    """Return the validity flag, raising for a nonnominal assembly."""
     valid = (
-        valid
+        _layout_setting_matches(resonator_meander_start, _NOMINAL_MEANDER_START)
+        & _layout_setting_matches(coupler_offset, _NOMINAL_PLATE_OFFSET[kind])
+        & _coupler_matches(coupler, kind)
+        & _port_matches(coupler_port, _NOMINAL_COUPLER_PORT[kind])
+        & _rotation_matches(qubit_rotation, _NOMINAL_QUBIT_ROTATION[kind])
         & (coupling_length > 0)
         & (span > coupling_length)
         & (resonator_length > span)
     )
     if not explicit_span:
         valid = valid & (coupling_length <= _NOMINAL_COUPLING_LENGTH_UM)
-    if isinstance(valid, jax.core.Tracer):
-        return valid
-    if not bool(valid):
-        raise ValueError(
-            "This model covers the nominal shipped readout assemblies only. "
-            f"resonator_meander_start must be {_NOMINAL_MEANDER_START} um and "
-            f"coupler_offset must be {_NOMINAL_PLATE_OFFSET[kind]} um for the "
-            f"{kind} qubit. Without an explicit route_and_coupler_length, "
-            "probeline_coupling_length must be positive and at most "
-            f"{_NOMINAL_COUPLING_LENGTH_UM:.0f} um. The route and meander must "
-            "also be positive. Got "
-            f"resonator_meander_start={_format_layout_setting(resonator_meander_start)}, "
-            f"coupler_offset={_format_layout_setting(coupler_offset)}, "
-            f"resonator_length={float(resonator_length):.4g} um, "
-            f"probeline_coupling_length={float(coupling_length):.4g} um and "
-            f"span={float(span):.4g} um."
-        )
-    return jnp.asarray(True)
+    return _check_valid(valid, _invalid_message(kind))
 
 
 @cache
@@ -264,18 +370,21 @@ def transmon_with_resonator_and_probeline(
     junction_capacitance: ArrayLike = 0.0,
     resonator_meander_start: _LayoutSetting = None,
     coupler_offset: _LayoutSetting = None,
+    coupler: ComponentSpec | None = None,
+    coupler_port: str | None = None,
+    qubit_rotation: ArrayLike | None = None,
 ) -> sax.SDict:
     """Return the two-port probeline response of the readout assembly.
 
     ``qubit`` selects the nominal coupon. The shipped flipmon artifacts pass the
-    saved ``"Fflipmon_with_bbox_Mqpdkpcellsptransmon_SJPR180"`` string or a
-    ``flipmon_with_bbox`` callable. The double-pad cell passes
-    ``"double_pad_transmon_with_bbox"``. Other factories raise.
+    saved serialized ``flipmon_with_bbox`` partial or callable. The double-pad
+    cell passes ``"double_pad_transmon_with_bbox"``. Other factories raise.
 
     Args:
         f: Frequency in Hz. Zero returns the exact through-line response.
         resonator_length: Total length in um, including the route and coupling span.
-        probeline_coupling_gap: Coupler gap in um.
+        probeline_coupling_gap: Coupler gap in um. It changes the distributed
+            coupler only; the coupon lookup stays at 16 um.
         probeline_coupling_length: Coupling length in um. None uses 800 um. Without
             an explicit ``route_and_coupler_length`` it must be positive and at most
             800 um.
@@ -293,6 +402,13 @@ def transmon_with_resonator_and_probeline(
         coupler_offset: Coupling plate offset (x, y) in um. None skips the check,
             for model-only calls. A concrete value must be ``(-45, 0)`` for the
             double-pad or ``(-10, 0)`` for the flipmon.
+        coupler: Coupling plate spec. None skips the check, for model-only calls.
+            A concrete value must be the nominal plate partial, 20 um by 394 um for
+            the double-pad or 10 um by 58 um for the flipmon.
+        coupler_port: Qubit port the plate attaches to. None skips the check. A
+            concrete value must be ``"left_pad"`` or ``"outer_ring_outside"``.
+        qubit_rotation: Qubit rotation in degrees. None skips the check. A concrete
+            value must be ``90`` for the double-pad or ``-90`` for the flipmon.
 
     Returns:
         Two-port S-parameters at ``coupling_o1`` and ``coupling_o2``.
@@ -302,11 +418,12 @@ def transmon_with_resonator_and_probeline(
     with jax.ensure_compile_time_eval():
         capacitances = _coupon_capacitances(kind)
 
+    resonator_length = jnp.asarray(resonator_length, dtype=float)
     f = jnp.asarray(f, dtype=float)
+    f = jnp.broadcast_to(f, jnp.broadcast_shapes(f.shape, resonator_length.shape))
     # The isolated resonator solves singular at DC, so evaluate there at the
     # default frequency and select the exact through-line response at the end.
     f_eval = jnp.where(f == 0, DEFAULT_FREQUENCY, f)
-    resonator_length = jnp.asarray(resonator_length, dtype=float)
     coupling_length = jnp.asarray(
         _NOMINAL_COUPLING_LENGTH_UM
         if probeline_coupling_length is None
@@ -319,10 +436,13 @@ def transmon_with_resonator_and_probeline(
         dtype=float,
     )
     gap = jnp.asarray(probeline_coupling_gap, dtype=float)
-    valid = _validate_layout_and_lengths(
+    valid = _validate_layout(
         kind=kind,
         resonator_meander_start=resonator_meander_start,
         coupler_offset=coupler_offset,
+        coupler=coupler,
+        coupler_port=coupler_port,
+        qubit_rotation=qubit_rotation,
         resonator_length=resonator_length,
         coupling_length=coupling_length,
         span=span,
@@ -400,6 +520,9 @@ def flipmon_with_resonator_and_probeline(
     junction_capacitance: ArrayLike = 0.0,
     resonator_meander_start: _LayoutSetting = None,
     coupler_offset: _LayoutSetting = None,
+    coupler: ComponentSpec | None = None,
+    coupler_port: str | None = None,
+    qubit_rotation: ArrayLike | None = None,
 ) -> sax.SDict:
     """Return the flipmon readout assembly. See :func:`transmon_with_resonator_and_probeline`."""
     return transmon_with_resonator_and_probeline(
@@ -416,4 +539,7 @@ def flipmon_with_resonator_and_probeline(
         junction_capacitance=junction_capacitance,
         resonator_meander_start=resonator_meander_start,
         coupler_offset=coupler_offset,
+        coupler=coupler,
+        coupler_port=coupler_port,
+        qubit_rotation=qubit_rotation,
     )
