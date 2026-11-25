@@ -84,19 +84,13 @@ def _comparable_default(parameter: str, value: Any) -> Any:
 def _readout_semantic_default(component: str, parameter: str) -> Any:
     """Resolve a readout sentinel through the coupon's modeled values."""
     coupon = _coupon_for(_default(_model_for(component), "qubit"))
-    match parameter:
-        case "resonator_meander_start":
-            return _NOMINAL_MEANDER_START
-        case "coupler":
-            return _nominal_plate_string(coupon)
-        case "coupler_offset":
-            return coupon.plate_offset
-        case "coupler_port":
-            return coupon.coupler_port
-        case "qubit_rotation":
-            return coupon.rotation
-        case _:
-            raise KeyError(parameter)
+    return {
+        "resonator_meander_start": _NOMINAL_MEANDER_START,
+        "coupler": _nominal_plate_string(coupon),
+        "coupler_offset": coupon.plate_offset,
+        "coupler_port": coupon.coupler_port,
+        "qubit_rotation": coupon.rotation,
+    }[parameter]
 
 
 def _model_default(component: str, parameter: str) -> Any:
