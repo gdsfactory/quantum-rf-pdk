@@ -716,6 +716,7 @@
   },
   "feed_res_p600": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "feed_res_p600",
     "x": 0,
     "y": 1,
@@ -746,6 +747,7 @@
   },
   "feed_res_m300": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "feed_res_m300",
     "x": 0,
     "y": 2,
@@ -776,6 +778,7 @@
   },
   "feed_res_p300": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "feed_res_p300",
     "x": 0,
     "y": 3,
@@ -806,6 +809,7 @@
   },
   "feed_res_0": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "feed_res_0",
     "x": 0,
     "y": 4,
@@ -836,6 +840,7 @@
   },
   "feed_out": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "feed_out",
     "x": 0,
     "y": 5,
@@ -866,6 +871,7 @@
   },
   "lead_res_p600": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "lead_res_p600",
     "x": 0,
     "y": 6,
@@ -900,6 +906,7 @@
   },
   "lead_res_m300": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "lead_res_m300",
     "x": 0,
     "y": 7,
@@ -934,6 +941,7 @@
   },
   "lead_res_p300": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "lead_res_p300",
     "x": 0,
     "y": 8,
@@ -968,6 +976,7 @@
   },
   "lead_res_0": {
     "type": "polyline",
+    "bend_type": "circular",
     "name": "lead_res_0",
     "x": 0,
     "y": 9,

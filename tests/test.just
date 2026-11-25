@@ -335,7 +335,7 @@ test-gfp *args:
     fi
     GFP_REQUIRED=1 uv run --no-sync pytest -m gfp -n auto --dist loadgroup \
         tests/gfp/test_gfp_lvs.py tests/gfp/test_gfp_sax.py tests/gfp/test_gfp_server.py \
-        tests/gfp/test_qubit_readout_chips.py "$@"
+        tests/gfp/test_qubit_readout_chips.py tests/gfp/test_sample_layout_parity.py "$@"
 
 # Run VACASK simulation tests (requires VACASK, see qpdk/simulation/vacask.py)
 [group('test')]
