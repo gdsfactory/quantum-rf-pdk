@@ -22,20 +22,24 @@ instances:
     component: flipmon_with_resonator_and_probeline
     settings:
       resonator_length: 5000
+      resonator_open_end: false
   qubit2:
     component: flipmon_with_resonator_and_probeline
     settings:
       resonator_length: 4800
+      resonator_open_end: false
       resonator_meanders: 3
   qubit3:
     component: flipmon_with_resonator_and_probeline
     settings:
       resonator_length: 4600
+      resonator_open_end: false
       resonator_meanders: 3
   qubit4:
     component: flipmon_with_resonator_and_probeline
     settings:
       resonator_length: 4400
+      resonator_open_end: false
   tee_bot:
     component: tee
     settings: {}

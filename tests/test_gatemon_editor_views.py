@@ -98,11 +98,11 @@ def test_mosaic_wires_reach_all_declared_pins(stem: str, net_count: int) -> None
             for left, right in pairwise(points):
                 graph[entry["net"]][left].add(right)
                 graph[entry["net"]][right].add(left)
-    # The legacy sample assigns nets to hidden pins and open terminations.
+    # Single-pin nets are hidden pins or open terminations; a wired net still
+    # needs both of its declared pins.
+    assert set(graph) <= set(pins), "a wire refers to an undeclared net"
     connected_pins = {
-        net: ports
-        for net, ports in pins.items()
-        if stem != "qubit_test_chip" or len(ports) > 1
+        net: ports for net, ports in pins.items() if len(ports) > 1 or net in graph
     }
     assert len(connected_pins) == net_count
     for net, ports in connected_pins.items():

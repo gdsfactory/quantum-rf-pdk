@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
@@ -26,7 +27,7 @@ from qpdk.tech import LAYER
 
 _FREQUENCIES = jnp.linspace(3e9, 12e9, 301)
 _NOTCH_FREQUENCIES = jnp.linspace(10e9, 14e9, 401)
-_TEST_CHIP = Path(__file__).parents[2] / "qpdk/samples/qubit_test_chip.pic.yml"
+_SAMPLE_DIR = Path(__file__).parents[2] / "qpdk/samples"
 
 _READOUT_PORTS = ("coupling_o1", "coupling_o2")
 # SAX sdict keys are (input, output), so this tuple is also the S21 key.
@@ -424,6 +425,67 @@ def test_vector_of_valid_lengths_matches_scalar_calls(
 
 
 @pytest.mark.parametrize("model", _MODELS)
+@pytest.mark.parametrize(
+    ("frequency_values", "length_values"),
+    [((4e9, 5e9), (5000.0, 5200.0)), ((4e9,), (5000.0, 5200.0))],
+    ids=["paired", "singleton"],
+)
+def test_compatible_sweeps_broadcast_elementwise(
+    model: Callable[..., sax.SDict],
+    frequency_values: tuple[float, ...],
+    length_values: tuple[float, ...],
+) -> None:
+    """Compatible frequency and length vectors pair elementwise."""
+    frequencies = jnp.asarray(frequency_values)
+    lengths = jnp.asarray(length_values)
+    vector = model(f=frequencies, resonator_length=lengths)
+
+    pairs = zip(*jnp.broadcast_arrays(frequencies, lengths), strict=True)
+    for index, (frequency, length) in enumerate(pairs):
+        scalar = model(f=frequency, resonator_length=length)
+        for key in _READOUT_KEYS:
+            np.testing.assert_allclose(
+                vector[key][index], scalar[key], rtol=1e-6, atol=1e-9
+            )
+
+
+@pytest.mark.parametrize("model", _MODELS)
+def test_mismatched_length_vectors_are_rejected(
+    model: Callable[..., sax.SDict],
+) -> None:
+    """A frequency vector and a length vector must have equal length."""
+    with pytest.raises(
+        ValueError, match=r"f shape \(2,\) and resonator_length shape \(3,\)"
+    ):
+        model(
+            f=jnp.asarray((4e9, 5e9)),
+            resonator_length=jnp.asarray((5000.0, 5100.0, 5200.0)),
+        )
+
+
+@pytest.mark.parametrize("model", _MODELS)
+@pytest.mark.parametrize(
+    ("setting", "value", "shape"),
+    [
+        ("f", jnp.asarray([[4e9, 5e9]]), "(1, 2)"),
+        ("resonator_length", jnp.asarray([[5000.0], [5200.0]]), "(2, 1)"),
+    ],
+    ids=["frequency", "length"],
+)
+def test_multidimensional_sweeps_are_rejected(
+    model: Callable[..., sax.SDict],
+    setting: str,
+    value: jnp.ndarray,
+    shape: str,
+) -> None:
+    """A 2D sweep has no elementwise pairing and raises with its shape."""
+    kwargs = {"f": jnp.asarray(5e9)}
+    kwargs[setting] = value
+    with pytest.raises(ValueError, match=rf"{setting} shape {re.escape(shape)}"):
+        model(**kwargs)
+
+
+@pytest.mark.parametrize("model", _MODELS)
 def test_explicit_span_allows_coupling_above_implicit_limit(
     model: Callable[..., sax.SDict],
 ) -> None:
@@ -484,13 +546,34 @@ def test_resonator_length_shifts_the_notch(
 
 
 @pytest.mark.parametrize(
-    ("instance", "center_ghz"),
-    [("qubit1", 5.80), ("qubit2", 6.54), ("qubit3", 6.96), ("qubit4", 6.00)],
+    ("stem", "model", "centers_ghz"),
+    [
+        pytest.param(
+            "qubit_test_chip",
+            transmon_with_resonator_and_probeline,
+            (5.80, 6.54, 6.96, 6.00),
+            id="transmon",
+        ),
+        pytest.param(
+            "flipmon_test_chip",
+            flipmon_with_resonator_and_probeline,
+            (5.96, 6.22, 6.49, 6.78),
+            id="flipmon",
+        ),
+    ],
 )
-def test_qubit_test_chip_readout_notches(instance: str, center_ghz: float) -> None:
-    settings = yaml.safe_load(_TEST_CHIP.read_text())["instances"][instance]["settings"]
+@pytest.mark.parametrize("index", range(4))
+def test_readout_chip_notches(
+    stem: str,
+    model: Callable[..., sax.SDict],
+    centers_ghz: tuple[float, ...],
+    index: int,
+) -> None:
+    document = yaml.safe_load((_SAMPLE_DIR / f"{stem}.pic.yml").read_text())
+    settings = document["instances"][f"qubit{index + 1}"]["settings"]
+    center_ghz = centers_ghz[index]
     frequencies = jnp.linspace(center_ghz - 0.05, center_ghz + 0.05, 1001) * 1e9
-    response = transmon_with_resonator_and_probeline(
+    response = model(
         f=frequencies,
         resonator_length=settings["resonator_length"],
         resonator_open_end=settings.get("resonator_open_end", True),

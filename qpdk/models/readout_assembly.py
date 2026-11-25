@@ -10,7 +10,8 @@ The qubit load comes from the nominal coupon dataset of the shipped chips. It
 keeps the island-to-island, island-to-readout and island-to-ground
 capacitances. The distributed sections already account for the readout and
 feedline ground terms and their mutual capacitance. The load also omits the
-tiny feedline-to-island branches. A 7 nH Josephson inductance joins the islands.
+tiny feedline-to-island branches. A Josephson inductance joins the islands and
+defaults to 7 nH.
 
 The model uses the shipped qubit geometry and accepts only the nominal CPW
 cross-section. Its capacitances come from electrostatic FEM. The small-signal
@@ -19,6 +20,7 @@ the probeline is an ideal through line.
 """
 
 from collections.abc import Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 from functools import cache, partial
 from typing import Literal
@@ -76,8 +78,12 @@ def transmon_with_resonator_and_probeline(
     cell passes ``"double_pad_transmon_with_bbox"``. Other factories raise.
 
     Args:
-        f: Frequency in Hz. Zero returns the exact through-line response.
+        f: Frequency in Hz, scalar or 1D. Zero returns the exact through-line
+            response.
         resonator_length: Total length in um, including the route and coupling span.
+            Scalars and 1D arrays broadcast elementwise. Multidimensional arrays
+            and incompatible vectors raise before evaluation. To sweep a frequency
+            range at each of several lengths, use separate calls or ``vmap``.
         probeline_coupling_gap: Coupler gap in um. It changes the distributed
             coupler only; the coupon lookup stays at 16 um.
         probeline_coupling_length: Coupling length in um. None uses 800 um. Without
@@ -101,8 +107,10 @@ def transmon_with_resonator_and_probeline(
             for model-only calls. A concrete value must be ``(-45, 0)`` for the
             double-pad or ``(-10, 0)`` for the flipmon.
         coupler: Coupling plate spec. None skips the check, for model-only calls.
-            A concrete value must be the nominal plate partial, 20 um by 394 um for
-            the double-pad or 10 um by 58 um for the flipmon.
+            A partial or mapping value carries only ``width`` and ``length``, since
+            any extra plate setting would draw a different coupon. It must give a
+            20 um by 394 um plate for the double-pad or 10 um by 58 um for the
+            flipmon.
         coupler_port: Qubit port the plate attaches to. None skips the check. A
             concrete value must be ``"left_pad"`` or ``"outer_ring_outside"``.
         qubit_rotation: Qubit rotation in degrees. None skips the check. A concrete
@@ -111,14 +119,13 @@ def transmon_with_resonator_and_probeline(
     Returns:
         Two-port S-parameters at ``coupling_o1`` and ``coupling_o2``.
     """
+    resonator_length = jnp.asarray(resonator_length, dtype=float)
+    f = _broadcast_frequency(jnp.asarray(f, dtype=float), resonator_length)
+
     _validate_cross_section(resonator_cross_section)
     coupon = _coupon_for(qubit)
     with jax.ensure_compile_time_eval():
         capacitances = _coupon_capacitances(coupon)
-
-    resonator_length = jnp.asarray(resonator_length, dtype=float)
-    f = jnp.asarray(f, dtype=float)
-    f = jnp.broadcast_to(f, jnp.broadcast_shapes(f.shape, resonator_length.shape))
     # The isolated resonator solves singular at DC, so evaluate there at the
     # default frequency and select the exact through-line response at the end.
     f_eval = jnp.where(f == 0, DEFAULT_FREQUENCY, f)
@@ -390,6 +397,7 @@ def _coupler_matches(value: ComponentSpec | None, coupon: _Coupon) -> jax.Array:
             return jnp.asarray(serialized == _nominal_plate_string(coupon))
         except (TypeError, ValueError):
             return jnp.asarray(False)
+    # Extra plate settings would draw geometry outside the coupon.
     if not isinstance(settings, dict) or set(settings) != {"width", "length"}:
         return jnp.asarray(False)
     try:
@@ -437,6 +445,20 @@ def _check_valid(valid: jax.Array, message: str) -> jax.Array:
 
     jax.lax.cond(valid, lambda: jnp.asarray(0), _invalid)
     return valid
+
+
+def _broadcast_frequency(f: jax.Array, resonator_length: jax.Array) -> jax.Array:
+    """Broadcast frequency with length over one axis for SAX."""
+    if f.ndim <= 1 and resonator_length.ndim <= 1:
+        with suppress(ValueError):
+            return jnp.broadcast_to(
+                f, jnp.broadcast_shapes(f.shape, resonator_length.shape)
+            )
+    raise ValueError(
+        "f and resonator_length must be broadcast-compatible scalars or 1D arrays. "
+        f"Got f shape {f.shape} and resonator_length shape {resonator_length.shape}. "
+        "Sweep length with separate calls or vmap."
+    )
 
 
 def _validate_cross_section(cross_section: CrossSectionSpec) -> None:
