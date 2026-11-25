@@ -19,7 +19,13 @@ import gdsfactory as gf
 import klayout.db as kdb
 import pytest
 
-from qpdk.cells import coupler_straight, flipmon_with_bbox, tsv_transition_double_sided
+from qpdk.cells import (
+    coupler_straight,
+    double_pad_transmon_with_bbox,
+    flipmon_with_bbox,
+    tsv_transition_double_sided,
+    xmon_transmon,
+)
 from qpdk.simulation import (
     FEM_LAYERS,
     FLIP_CHIP_FEM_LAYERS,
@@ -41,8 +47,10 @@ from qpdk.simulation import (
 from qpdk.simulation.palace_run import (
     _slurm_mpi_launcher,
     add_domain_energy_postprocessing,
+    align_junction_port,
     domain_loss_tangents,
     palace_command,
+    verify_lumped_port_sheet,
     verify_port_connectivity,
 )
 from qpdk.simulation.trial import _summarise, main as run_trial, result_path
@@ -783,6 +791,179 @@ def test_verify_port_connectivity_reports_missing_conductors(tmp_path):
     sim_dir = _write_config(tmp_path, {"LumpedPort": [{"Index": 1}]})
     with pytest.raises(ValueError, match="no PEC conductor"):
         verify_port_connectivity(sim_dir)
+
+
+PAD_GAP = 15.0  # µm
+
+
+@gf.cell
+def _qubit_layout(
+    qubit: str, rotation: float, origin: tuple[float, float]
+) -> gf.Component:
+    """Place a qubit cell rotated and moved inside a simulation area."""
+    c = gf.Component()
+    ref = c << (
+        double_pad_transmon_with_bbox(pad_gap=PAD_GAP)
+        if qubit == "double_pad_transmon_with_bbox"
+        else xmon_transmon()
+    )
+    ref.drotate(rotation)
+    ref.dmove(origin)
+    c.add_ports(ref.ports)
+    c.kdb_cell.shapes(gf.get_layer(LAYER.SIM_AREA)).insert(c.bbox().enlarged(50, 50))
+    return c
+
+
+def _qubit_regions(
+    rotation: float = 0,
+    origin: tuple[float, float] = (0, 0),
+    qubit: str = "double_pad_transmon_with_bbox",
+) -> gf.Component:
+    """Return a converted qubit with its junction placement port."""
+    return to_fem_regions(_qubit_layout(qubit, rotation, origin))
+
+
+@pytest.mark.parametrize("rotation", [0, 90, 180, 270])
+@pytest.mark.parametrize("origin", [(0, 0), (123.4, -56.7)])
+def test_align_junction_port_bridges_the_pad_gap(rotation, origin):
+    regions = _qubit_regions(rotation, origin)
+    marker = regions.ports["junction"].orientation
+
+    assert align_junction_port(regions) == pytest.approx(PAD_GAP)
+    assert regions.ports["junction"].orientation == pytest.approx((marker + 90) % 360)
+    assert regions.ports["junction"].dcenter == pytest.approx(origin)
+
+
+def test_align_junction_port_recentres_an_offset_marker():
+    regions = _qubit_regions()
+    regions.ports["junction"].dcenter = (3.0, 0.0)
+
+    assert align_junction_port(regions) == pytest.approx(PAD_GAP)
+    assert regions.ports["junction"].dcenter == pytest.approx((0.0, 0.0))
+
+
+def test_align_junction_port_bridges_an_odd_dbu_gap():
+    """An odd-dbu gap gets a sheet one dbu longer, centred on the grid."""
+    regions = _qubit_regions()
+    layer = regions.kdb_cell.layout().layer(*FEM_LAYERS["SUPERCONDUCTOR"])
+    regions.kdb_cell.shapes(layer).insert(kdb.DBox(-7.5, -1, -7.499, 1))
+
+    assert align_junction_port(regions) == pytest.approx(PAD_GAP)
+    assert regions.ports["junction"].dcenter == pytest.approx((0.001, 0.0))
+
+
+def test_align_junction_port_is_idempotent():
+    regions = _qubit_regions()
+    length = align_junction_port(regions)
+    orientation = regions.ports["junction"].orientation
+
+    assert align_junction_port(regions) == length
+    assert regions.ports["junction"].orientation == orientation
+
+
+@pytest.mark.parametrize("orientation", [30, 45])
+def test_align_junction_port_rejects_a_non_cardinal_port(orientation):
+    regions = _qubit_regions()
+    regions.ports["junction"].orientation = orientation
+
+    with pytest.raises(ValueError, match="must be axis-aligned"):
+        align_junction_port(regions)
+
+
+def test_align_junction_port_rejects_a_marker_across_the_gap():
+    """The Xmon marker already points across its gap to ground."""
+    regions = _qubit_regions(qubit="xmon_transmon")
+
+    marker = regions.ports["junction"]
+    orientation, center = marker.orientation, marker.dcenter
+
+    with pytest.raises(ValueError, match="does not sit in a gap"):
+        align_junction_port(regions)
+    assert marker.orientation == orientation
+    assert marker.dcenter == center
+    assert "lumped_port_length" not in marker.info
+
+
+def test_verify_lumped_port_sheet_rejects_a_sheet_over_the_pads():
+    regions = _qubit_regions()
+    align_junction_port(regions)
+
+    with pytest.raises(ValueError, match="overlaps conductor"):
+        verify_lumped_port_sheet(regions, "junction", 25.0)
+
+
+def test_verify_lumped_port_sheet_rejects_a_sheet_short_of_a_pad():
+    regions = _qubit_regions()
+    align_junction_port(regions)
+
+    with pytest.raises(ValueError, match="does not run from one conductor"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP - 1)
+
+
+def test_verify_lumped_port_sheet_rejects_a_one_dbu_gap():
+    regions = _qubit_regions()
+    align_junction_port(regions)
+
+    with pytest.raises(ValueError, match="does not run from one conductor"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP - 0.002)
+
+
+def test_verify_lumped_port_sheet_rejects_two_conductors_at_one_end():
+    """Two separate conductors at the same end do not make a bridge."""
+    regions = _qubit_regions()
+    align_junction_port(regions)
+    p = regions.ports["junction"]
+    assert p.orientation % 180 == 0
+    end = -(PAD_GAP - 1) / 2
+    w = p.width / 2
+    layer = regions.kdb_cell.layout().layer(*FEM_LAYERS["SUPERCONDUCTOR"])
+    for lo, hi in ((-w, -w / 4), (w / 4, w)):
+        regions.kdb_cell.shapes(layer).insert(kdb.DBox(end - 0.2, lo, end, hi))
+
+    with pytest.raises(ValueError, match="does not run from one conductor"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP - 1)
+
+
+def test_verify_lumped_port_sheet_rejects_a_third_conductor():
+    """A second conductor at one end makes the sheet bridge three."""
+    regions = _qubit_regions()
+    align_junction_port(regions)
+    p = regions.ports["junction"]
+    assert p.orientation % 180 == 0
+    end = -(PAD_GAP - 1) / 2
+    w = p.width / 2
+    layer = regions.kdb_cell.layout().layer(*FEM_LAYERS["SUPERCONDUCTOR"])
+    for lo, hi in ((-w, -w / 4), (w / 4, w)):
+        regions.kdb_cell.shapes(layer).insert(kdb.DBox(end - 0.2, lo, end, hi))
+    regions.kdb_cell.shapes(layer).insert(kdb.DBox(-end, -w, -end + 0.2, w))
+
+    with pytest.raises(ValueError, match="does not run from one conductor"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP - 1)
+
+
+def test_align_junction_port_rejects_a_different_width_on_repeat():
+    regions = _qubit_regions()
+    align_junction_port(regions, width=2.0)
+
+    with pytest.raises(ValueError, match="aligned for a 2 µm wide"):
+        align_junction_port(regions, width=0.5)
+
+
+def test_verify_lumped_port_sheet_rejects_a_non_cardinal_port():
+    regions = _qubit_regions()
+    align_junction_port(regions)
+    regions.ports["junction"].orientation = 45
+
+    with pytest.raises(ValueError, match="must be axis-aligned"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP)
+
+
+def test_verify_lumped_port_sheet_rejects_the_unrotated_marker():
+    """The placement marker points along the wire, so its sheet lies across the pads."""
+    regions = _qubit_regions()
+
+    with pytest.raises(ValueError, match="overlaps conductor"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP)
 
 
 def test_palace_command_uses_the_native_launcher(monkeypatch):
