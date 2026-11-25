@@ -2,6 +2,7 @@
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import sax
 from gdsfactory.typings import CrossSectionSpec, Size
 from sax.models.rf import (
@@ -243,18 +244,36 @@ def straight_double_open(
     return sax.backends.evaluate_circuit_fg((connections, ports), instances)
 
 
-@jit(static_argnames=["west", "east", "north", "south"])
+def _port_count(value: int | float | jax.Array, side: str) -> int:
+    """Validate one side's static port count."""
+    count = jax.core.concrete_or_error(
+        np.asarray,
+        value,
+        f"nxn {side} count must be fixed when tracing; "
+        "the number of ports is part of the circuit topology.",
+    )
+    if count.ndim != 0:
+        raise ValueError(f"nxn {side} count must be a scalar, got shape {count.shape}.")
+    number = count.item()
+    if not isinstance(number, (int, float)) or not float(number).is_integer():
+        raise ValueError(f"nxn {side} count must be a whole number, got {number!r}.")
+    return int(number)
+
+
 def nxn(
     f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
-    west: int = 1,
-    east: int = 1,
-    north: int = 1,
-    south: int = 1,
+    west: int | float | jax.Array = 1,
+    east: int | float | jax.Array = 1,
+    north: int | float | jax.Array = 1,
+    south: int | float | jax.Array = 1,
 ) -> sax.SDict:
     """NxN junction model using tee components.
 
     This model creates an N-port divider/combiner by chaining 3-port tee
     junctions. All ports are connected to a single node.
+
+    The counts fix the number of ports, which is part of the circuit topology,
+    so they must be concrete when the model is traced.
 
     Args:
         f: Array of frequency points in Hz.
@@ -267,13 +286,27 @@ def nxn(
         sax.SDict: S-parameters dictionary with ports o1, o2, ..., oN.
 
     Raises:
-        ValueError: If total number of ports is not positive.
+        ValueError: If the total port count is not positive or a count is not
+            a whole-number scalar.
     """
-    f = jnp.asarray(f)
-    n_ports = west + east + north + south
-
+    # gdsfactoryplus passes the counts as JAX scalars, which cannot be static
+    # jit arguments. Counts decide the topology, so they must be concrete.
+    n_ports = (
+        _port_count(west, "west")
+        + _port_count(east, "east")
+        + _port_count(north, "north")
+        + _port_count(south, "south")
+    )
     if n_ports <= 0:
         raise ValueError("Total number of ports must be positive.")
+    return _nxn(f=f, n_ports=n_ports)
+
+
+@jit(static_argnames=["n_ports"])
+def _nxn(f: sax.FloatArrayLike, n_ports: int) -> sax.SDict:
+    """Build the tee chain for a fixed port count."""
+    f = jnp.asarray(f)
+
     if n_ports == 1:
         return electrical_open(f=f)
     if n_ports == 2:

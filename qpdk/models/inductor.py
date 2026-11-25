@@ -324,7 +324,7 @@ def lumped_element_resonator(
     n_turns: int = 15,
     sheet_inductance: float = 0.4e-12,
     cross_section: CrossSectionSpec = "meander_inductor_cross_section",
-    grounded: bool = False,
+    grounded: bool | jax.Array = False,
 ) -> sax.SDict:
     r"""Lumped-element LC resonator SAX model.
 
@@ -358,7 +358,8 @@ def lumped_element_resonator(
         sheet_inductance: Sheet inductance per square in H/□.
         cross_section: Cross-section specification. Used for substrate
             permittivity and to determine inductor wire width and gap.
-        grounded: If True, one port of the resonator is grounded.
+        grounded: If True, one port of the resonator is grounded. The flag
+            selects the circuit topology, so it must be fixed when tracing.
 
     Returns:
         sax.SDict: S-parameters dictionary with ports o1 and o2.
@@ -389,6 +390,16 @@ def lumped_element_resonator(
         sheet_inductance=sheet_inductance,
     )
 
+    # GF+ passes model settings as JAX scalars; the flag selects the circuit
+    # topology, so it cannot be traced.
+    grounded = bool(
+        jax.core.concrete_or_error(
+            bool,
+            grounded,
+            "lumped_element_resonator grounded must be fixed when tracing; "
+            "it selects between two circuits.",
+        )
+    )
     return lc_resonator(
         f=f_arr,
         capacitance=capacitance,
