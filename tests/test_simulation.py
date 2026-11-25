@@ -843,12 +843,13 @@ def test_align_junction_port_recentres_an_offset_marker():
 
 
 def test_align_junction_port_bridges_an_odd_dbu_gap():
-    """A gap with its midpoint on a half dbu still passes the overlap check."""
+    """An odd-dbu gap gets a sheet one dbu longer, centred on the grid."""
     regions = _qubit_regions()
     layer = regions.kdb_cell.layout().layer(*FEM_LAYERS["SUPERCONDUCTOR"])
     regions.kdb_cell.shapes(layer).insert(kdb.DBox(-7.5, -1, -7.499, 1))
 
-    assert align_junction_port(regions) == pytest.approx(PAD_GAP - 0.001)
+    assert align_junction_port(regions) == pytest.approx(PAD_GAP)
+    assert regions.ports["junction"].dcenter == pytest.approx((0.001, 0.0))
 
 
 def test_align_junction_port_is_idempotent():
@@ -873,8 +874,14 @@ def test_align_junction_port_rejects_a_marker_across_the_gap():
     """The Xmon marker already points across its gap to ground."""
     regions = _qubit_regions(qubit="xmon_transmon")
 
+    marker = regions.ports["junction"]
+    orientation, center = marker.orientation, marker.dcenter
+
     with pytest.raises(ValueError, match="does not sit in a gap"):
         align_junction_port(regions)
+    assert marker.orientation == orientation
+    assert marker.dcenter == center
+    assert "lumped_port_length" not in marker.info
 
 
 def test_verify_lumped_port_sheet_rejects_a_sheet_over_the_pads():
@@ -889,8 +896,66 @@ def test_verify_lumped_port_sheet_rejects_a_sheet_short_of_a_pad():
     regions = _qubit_regions()
     align_junction_port(regions)
 
-    with pytest.raises(ValueError, match="touches 0 conductor"):
+    with pytest.raises(ValueError, match="does not run from one conductor"):
         verify_lumped_port_sheet(regions, "junction", PAD_GAP - 1)
+
+
+def test_verify_lumped_port_sheet_rejects_a_one_dbu_gap():
+    regions = _qubit_regions()
+    align_junction_port(regions)
+
+    with pytest.raises(ValueError, match="does not run from one conductor"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP - 0.002)
+
+
+def test_verify_lumped_port_sheet_rejects_two_conductors_at_one_end():
+    """Two separate conductors at the same end do not make a bridge."""
+    regions = _qubit_regions()
+    align_junction_port(regions)
+    p = regions.ports["junction"]
+    assert p.orientation % 180 == 0
+    end = -(PAD_GAP - 1) / 2
+    w = p.width / 2
+    layer = regions.kdb_cell.layout().layer(*FEM_LAYERS["SUPERCONDUCTOR"])
+    for lo, hi in ((-w, -w / 4), (w / 4, w)):
+        regions.kdb_cell.shapes(layer).insert(kdb.DBox(end - 0.2, lo, end, hi))
+
+    with pytest.raises(ValueError, match="does not run from one conductor"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP - 1)
+
+
+def test_verify_lumped_port_sheet_rejects_a_third_conductor():
+    """A second conductor at one end makes the sheet bridge three."""
+    regions = _qubit_regions()
+    align_junction_port(regions)
+    p = regions.ports["junction"]
+    assert p.orientation % 180 == 0
+    end = -(PAD_GAP - 1) / 2
+    w = p.width / 2
+    layer = regions.kdb_cell.layout().layer(*FEM_LAYERS["SUPERCONDUCTOR"])
+    for lo, hi in ((-w, -w / 4), (w / 4, w)):
+        regions.kdb_cell.shapes(layer).insert(kdb.DBox(end - 0.2, lo, end, hi))
+    regions.kdb_cell.shapes(layer).insert(kdb.DBox(-end, -w, -end + 0.2, w))
+
+    with pytest.raises(ValueError, match="does not run from one conductor"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP - 1)
+
+
+def test_align_junction_port_rejects_a_different_width_on_repeat():
+    regions = _qubit_regions()
+    align_junction_port(regions, width=2.0)
+
+    with pytest.raises(ValueError, match="aligned for a 2 µm wide"):
+        align_junction_port(regions, width=0.5)
+
+
+def test_verify_lumped_port_sheet_rejects_a_non_cardinal_port():
+    regions = _qubit_regions()
+    align_junction_port(regions)
+    regions.ports["junction"].orientation = 45
+
+    with pytest.raises(ValueError, match="must be axis-aligned"):
+        verify_lumped_port_sheet(regions, "junction", PAD_GAP)
 
 
 def test_verify_lumped_port_sheet_rejects_the_unrotated_marker():

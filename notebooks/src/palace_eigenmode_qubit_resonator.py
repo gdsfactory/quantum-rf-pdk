@@ -384,7 +384,7 @@ assert len({readout, feed, pad1, pad2}) == 4, (
 # the pads, sizes the lumped-port sheet to the measured gap, and raises if the
 # sheet overlaps metal or misses a pad. Its return value is the only junction
 # port length passed to gsim below.
-JUNCTION_PORT_LENGTH = align_junction_port(etched)
+JUNCTION_PORT_LENGTH = align_junction_port(etched, width=JUNCTION_PORT_WIDTH)
 
 etched.plot()
 
