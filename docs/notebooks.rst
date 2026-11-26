@@ -373,6 +373,20 @@ models miss
 
         :bdg-secondary-line:`Palace` :bdg-secondary-line:`gsim` :bdg-primary:`optimization`
 
+    .. grid-item-card:: Palace driven coupled resonator
+        :link: notebooks/palace_driven_resonator
+        :link-type: doc
+        :class-card: notebook-card
+
+        Driven S\ :sub:`21` sweep of a side-coupled quarter-wave CPW resonator on
+        sapphire, with the loaded Q from the 3 dB bandwidth and a Lorentzian fit. The
+        solve runs on the GDSFactory+ cloud and needs an account.
+
+        +++
+
+        :bdg-secondary-line:`Palace` :bdg-secondary-line:`gsim` :bdg-primary:`models`
+        :bdg-warning:`GDSFactory+ account`
+
     .. grid-item-card:: More FEM and FDTD in gsim
         :link: https://gdsfactory.github.io/gsim/
         :class-card: notebook-card notebook-card-external
@@ -782,6 +796,11 @@ Every notebook at a glance; the **Extras** column links back to :ref:`notebook-e
       - FEM electromagnetics
       - COMSOL, MPh
       - ``comsol``
+    - - :doc:`notebooks/palace_driven_resonator`
+      - FEM electromagnetics
+      - Palace, gsim
+      - ``models`` (+ ``gsim`` from the ``palace`` dependency group; GDSFactory+ account
+        for the solve)
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
