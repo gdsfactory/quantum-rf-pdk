@@ -163,7 +163,10 @@ SUBSTRATE_THICKNESS = 500.0  # µm
 VACUUM_THICKNESS = 500.0  # µm
 
 sapphire = MATERIALS_DB["sapphire"].to_dict()
-eps_in_plane, _, eps_normal = sapphire["permittivity"]
+permittivity = sapphire["permittivity"]
+if not isinstance(permittivity, (list, tuple)):
+    raise TypeError("expected a tensor permittivity for sapphire")
+eps_in_plane, _, eps_normal = (float(e) for e in permittivity)
 eps_substrate = float(np.sqrt(eps_in_plane * eps_normal))
 
 cpw_width, cpw_gap = get_cpw_dimensions("cpw")
@@ -486,7 +489,10 @@ if RUN_CLOUD:
     # The cloud client returns the parsed S-parameters; the downloaded run
     # folder (with the field output) is the newest sim-data-* under cloud/.
     sparams = parsed if isinstance(parsed, SParams) else load_sparams(parsed)
-    results = max((SIM_DIR / "cloud").glob("sim-data-*"), key=lambda p: p.stat().st_mtime) / "output"
+    results = (
+        max((SIM_DIR / "cloud").glob("sim-data-*"), key=lambda p: p.stat().st_mtime)
+        / "output"
+    )
     sparams.save_npz(S_PARAMS_FILE)
 elif S_PARAMS_FILE.is_file():
     sparams = SParams.from_file(S_PARAMS_FILE)
@@ -590,9 +596,11 @@ def fit_dip(f: np.ndarray, power: np.ndarray) -> tuple[float, float, float, floa
         bounds=([f.min(), 1.0, 0.0, 0.0], [f.max(), 1e9, 1.0, 2.0]),
         x_scale=[f_r / q0, q0, 0.1, 0.1],
     )
-    return tuple(float(p) for p in popt)
+    f_r_fit, q_fit, depth, baseline_fit = (float(p) for p in popt)
+    return f_r_fit, q_fit, depth, baseline_fit
 
 
+f_fit = q_fit = float("nan")
 if sparams is not None:
     freq = np.asarray(sparams.freq)  # GHz
     s21 = np.asarray(sparams.s21.complex)
