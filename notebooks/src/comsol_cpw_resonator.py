@@ -510,7 +510,8 @@ else:
 # the frequency the field was solved at, so the title says which solution it shows. The amplitude
 # follows the solver's drive normalisation, so the colour scale gives relative shape rather than a
 # field strength at a stated input power. The figure crops to the coupling section, the meander, and
-# the feedline, and, for display only, draws a fixed-stride subset of the cropped nodes.
+# the feedline. The export holds field values at mesh nodes, not the mesh, so the plot triangulates the
+# nodes around the window as well as inside it; the cropped nodes alone would leave the window corners blank.
 
 # %%
 field_path = result_file(RESULTS_DIR, DRIVEN_FIELD_TXT)
@@ -524,7 +525,6 @@ else:
         if field_frequency_ghz is not None
         else "Driven $|\\mathbf{E}|$ at z = 1 µm",
         view_um=FIELD_VIEW_UM,
-        stride=4,
         contour_levels=30,
     )
 
