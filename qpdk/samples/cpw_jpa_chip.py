@@ -82,6 +82,7 @@ if __name__ == "__main__":
     import sax
 
     from qpdk import PATH, PDK, logger
+    from qpdk.helper import get_circuit_netlist
     from qpdk.models import models
     from qpdk.models.constants import Φ_0
 
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     logger.info(f"Wrote {gds_path}")
 
     # The SQUID flux is an instance override of the JPA's termination model.
-    circuit, _ = sax.circuit(chip.get_netlist(recursive=True), models=models)
+    circuit, _ = sax.circuit(get_circuit_netlist(chip, recursive=True), models=models)
     f = jnp.linspace(5.5e9, 6.5e9, 20001)
     for flux in (0.0, 0.2, 0.3, 0.4):
         s11 = circuit(f=f, jpa={"squid_termination": {"flux": flux * Φ_0}})["o1", "o1"]

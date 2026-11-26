@@ -326,6 +326,7 @@ The `qpdk/models/` directory contains S-parameter and circuit models for quantum
 - **Model structure**: Each model typically provides functions that return S-parameters or network parameters as
   functions of frequency
 - **Integration with components**: Models can be linked to layout components through the netlist system
+- **Circuits from layout**: Build SAX circuits with `qpdk.helper.get_circuit_netlist`, which drops placement ports
 
 ### SAX Port Terminations
 

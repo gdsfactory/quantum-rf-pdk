@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     import polars as pl
 
 from gdsfactory import Component, ComponentAllAngle, LayerEnum, get_component
+from gdsfactory.get_netlist import SmartPortMatcher
 from gdsfactory.technology import LayerViews
 from gdsfactory.typings import ComponentAllAngleSpec, ComponentSpec, Layer
 
@@ -271,3 +272,32 @@ def display_dataframe(df: pd.DataFrame | pl.DataFrame) -> None:
             return pdf.to_latex(index=False, escape=False)
 
     display(_DualFormatTable())
+
+
+class _CircuitPortMatcher(SmartPortMatcher):
+    """Match ports like gdsfactory, but never ``port_type="placement"`` markers."""
+
+    def __call__(self, port1: Any, port2: Any) -> bool:
+        """Return False if either port is a placement marker."""
+        if "placement" in {port1.port_type, port2.port_type}:
+            return False
+        return super().__call__(port1, port2)
+
+
+def get_circuit_netlist(
+    component: Component | ComponentAllAngle, **kwargs: Any
+) -> dict[str, Any]:
+    """Return a component netlist without placement ports, ready for ``sax.circuit``.
+
+    Placement ports only mark where a neighbour goes, so the SAX models do not
+    have them. :meth:`~gdsfactory.Component.get_netlist` exports them as
+    circuit ports and nets, which makes ``sax.circuit`` fail.
+
+    Args:
+        component: Component to extract the netlist from.
+        **kwargs: Passed to :meth:`~gdsfactory.Component.get_netlist`.
+
+    Returns:
+        The netlist, without placement ports in ``ports`` or ``nets``.
+    """
+    return component.get_netlist(port_matcher=_CircuitPortMatcher(), **kwargs)
