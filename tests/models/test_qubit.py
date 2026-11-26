@@ -5,6 +5,7 @@ from typing import ClassVar, final
 import hypothesis.strategies as st
 import jax.numpy as jnp
 import pytest
+import sax
 from hypothesis import given, settings
 from numpy.testing import assert_allclose, assert_array_less
 
@@ -16,10 +17,14 @@ from qpdk.models.qubit import (
     double_island_transmon_with_bbox,
     double_island_transmon_with_resonator,
     double_pad_transmon,
+    double_pad_transmon_fem_model,
+    double_pad_transmon_with_bbox,
     ec_to_capacitance,
     ej_to_inductance,
     el_to_inductance,
     flipmon,
+    flipmon_cell,
+    flipmon_ideal_bond_model,
     flipmon_with_bbox,
     flipmon_with_resonator,
     fluxonium,
@@ -31,7 +36,11 @@ from qpdk.models.qubit import (
     xmon_transmon,
 )
 
-from .base import TwoPortModelTestSuite
+from .base import (
+    FourPortModelTestSuite,
+    OnePortModelTestSuite,
+    TwoPortModelTestSuite,
+)
 
 # Ensure PDK is activated for tests that require it (e.g., qubit_with_resonator)
 qpdk.PDK.activate()
@@ -277,11 +286,111 @@ class TestFlipmonWithBbox(TwoPortModelTestSuite):
     model_function = staticmethod(flipmon_with_bbox)
 
 
+def _susceptance_zero(f: jnp.ndarray, susceptance: jnp.ndarray) -> float:
+    """Return the single frequency where the susceptance rises through zero."""
+    (crossings,) = jnp.nonzero((susceptance[:-1] < 0) & (susceptance[1:] >= 0))
+    assert crossings.size == 1
+    i = int(crossings[0])
+    return float(
+        f[i]
+        - susceptance[i] * (f[i + 1] - f[i]) / (susceptance[i + 1] - susceptance[i])
+    )
+
+
 @final
-class TestXmonTransmon(TwoPortModelTestSuite):
+class TestFlipmonCell(OnePortModelTestSuite):
+    """Tests for the lumped flipmon layout cell model."""
+
+    model_function = staticmethod(flipmon_cell)
+    expected_ports: ClassVar[set[str]] = {"outer_ring_outside"}
+
+    def test_reflection_phase_varies(self) -> None:
+        """Both islands reach ground, so the port does not see a bare open."""
+        f = jnp.linspace(3e9, 9e9, 201)
+        s11 = self._call_model(f=f)["outer_ring_outside", "outer_ring_outside"]
+
+        assert_allclose(jnp.abs(s11), 1.0, atol=1e-9)
+        assert float(jnp.ptp(jnp.unwrap(jnp.angle(s11)))) > 1.0
+
+    def test_resonance_matches_ideal_bond_dataset(self) -> None:
+        """The defaults reproduce the ideal-bond dataset mode at the cell geometry."""
+        inductance = 7e-9
+        f = jnp.linspace(5e9, 7.5e9, 25001)
+        s11 = self._call_model(f=f, inductance=inductance)[
+            "outer_ring_outside", "outer_ring_outside"
+        ]
+        lumped = _susceptance_zero(f, jnp.imag((1 - s11) / (50.0 * (1 + s11))))
+
+        result = sax.sdict(
+            flipmon_ideal_bond_model(inductance=inductance)(
+                f=f, chip_gap=12.5, alignment=0.0, inner_radius=60.0, top_radius=110.0
+            )
+        )
+        ports = ("inner_pad", "outer_ring")
+        s = jnp.stack([jnp.stack([result[a, b] for b in ports], -1) for a in ports], -2)
+        identity = jnp.eye(2)
+        y = jnp.linalg.solve(identity + s, identity - s) / 50.0
+        # The inner island has no port of its own, so leave it unloaded.
+        y_ring = y[:, 1, 1] - y[:, 1, 0] * y[:, 0, 1] / y[:, 0, 0]
+        dataset = _susceptance_zero(f, jnp.imag(y_ring))
+
+        assert lumped == pytest.approx(dataset, rel=1e-3)
+
+
+@final
+class TestDoublePadTransmonWithBbox(TwoPortModelTestSuite):
+    """Tests for the lumped double_pad_transmon_with_bbox cell model."""
+
+    model_function = staticmethod(double_pad_transmon_with_bbox)
+    expected_ports: ClassVar[set[str]] = {"left_pad", "right_pad"}
+
+    def test_resonance_matches_dataset(self) -> None:
+        """The defaults reproduce the Palace dataset mode at the cell geometry."""
+        inductance = 7e-9
+        f = jnp.linspace(4e9, 8e9, 40001)
+        ports = ("left_pad", "right_pad")
+
+        def right_pad_susceptance(result: sax.SDict) -> jnp.ndarray:
+            s = jnp.stack(
+                [jnp.stack([result[a, b] for b in ports], -1) for a in ports], -2
+            )
+            identity = jnp.eye(2)
+            y = jnp.linalg.solve(identity + s, identity - s) / 50.0
+            # Leave the left pad unloaded and look in from the right pad.
+            return jnp.imag(y[:, 1, 1] - y[:, 1, 0] * y[:, 0, 1] / y[:, 0, 0])
+
+        lumped = _susceptance_zero(
+            f, right_pad_susceptance(self._call_model(f=f, inductance=inductance))
+        )
+        dataset = _susceptance_zero(
+            f,
+            right_pad_susceptance(
+                sax.sdict(
+                    double_pad_transmon_fem_model(inductance=inductance)(
+                        f=f,
+                        pad_width=250.0,
+                        pad_height=400.0,
+                        pad_gap=15.0,
+                        ground_clearance=200.0,
+                    )
+                )
+            ),
+        )
+
+        assert lumped == pytest.approx(dataset, rel=1e-3)
+
+
+@final
+class TestXmonTransmon(FourPortModelTestSuite):
     """Tests for xmon_transmon wrapper."""
 
     model_function = staticmethod(xmon_transmon)
+    expected_ports: ClassVar[set[str]] = {
+        "top_arm",
+        "right_arm",
+        "bottom_arm",
+        "left_arm",
+    }
 
 
 @final

@@ -20,8 +20,6 @@ KNOWN_MISSING_MODELS = {
     "plate_capacitor_single": "#299",
     "transmon_with_resonator_and_probeline": "#299",
 }
-# Cells whose circuit ports are on no instance, tracked by an open issue.
-KNOWN_PORTLESS = {"flipmon": "#1173", "xmon_transmon": "#1173"}
 # Cells whose circuit fails to build or evaluate although every model exists.
 EVALUATION_FAILURES = {
     "hyperbolic_lattice": (
@@ -57,7 +55,6 @@ def _missing_models(netlist: dict) -> set[str]:
 
 
 def _mark_unsimulatable(
-    name: str,
     cell: gf.Component | gf.ComponentAllAngle,
     netlist: dict,
     request: pytest.FixtureRequest,
@@ -72,10 +69,7 @@ def _mark_unsimulatable(
     if not netlist["ports"]:
         if all(p.port_type == "placement" for p in cell.ports):
             pytest.skip("cell has no circuit ports by design (only placement ports)")
-        reason = "cell's circuit ports are on no instance, so its netlist has none"
-        if name not in KNOWN_PORTLESS:
-            pytest.fail(reason)
-        pytest.skip(f"{reason} ({KNOWN_PORTLESS[name]})")
+        pytest.fail("cell's circuit ports are on no instance, so its netlist has none")
     missing = _missing_models(netlist)
     unregistered = sorted(missing & qpdk_models.keys())
     absent = sorted(missing - qpdk_models.keys())
@@ -112,7 +106,7 @@ def test_cell_builds_sax_circuit(name: str, request: pytest.FixtureRequest) -> N
     elif name not in PDK.models:
         # A leaf cell is simulated through its wrapper, which needs its model.
         netlist = own if own["instances"] else get_circuit_netlist(_wrapper(cell))
-        _mark_unsimulatable(name, cell, netlist, request)
+        _mark_unsimulatable(cell, netlist, request)
         netlists.append(netlist)
 
     if name in EVALUATION_FAILURES:

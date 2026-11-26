@@ -34,9 +34,9 @@ from qpdk.models.datasets import (
     differential_capacitance,
     junction_model,
 )
-from qpdk.models.generic import lc_resonator, lc_resonator_coupled
+from qpdk.models.generic import lc_resonator, lc_resonator_coupled, shunt_admittance
 from qpdk.models.jit import jit
-from qpdk.models.waveguides import straight_shorted
+from qpdk.models.waveguides import nxn, straight_shorted
 
 
 def flipmon_unbonded_model() -> sax.Model:
@@ -442,6 +442,77 @@ def flipmon(
         inductance=inductance,
         ground_capacitance=ground_capacitance,
     )
+
+
+@jit(inline=True)
+def flipmon_cell(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: sax.FloatArrayLike = 53.1e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+    ring_ground_capacitance: sax.FloatArrayLike = 94.4e-15,
+    inner_ground_capacitance: sax.FloatArrayLike = 69.6e-15,
+) -> sax.SDict:
+    r"""Lumped model of the :func:`~qpdk.cells.flipmon` layout cell.
+
+    The outer ring is the only circuit port of the layout cell, so it is
+    exposed as ``outer_ring_outside``. The junction inductance and the direct
+    pad-to-pad capacitance join the ring to the inner island, and each island
+    has its own capacitance to ground. The inner island ends in its capacitor
+    to ground.
+
+    .. svgbob::
+
+                             ┌──C──┐
+        outer_ring_outside ──┼──L──┼──┐
+                             │        │
+                          C_g,ring  C_g,inner
+                             │        │
+                            GND      GND
+
+    The mode capacitance across the junction is
+    :math:`C + C_\text{g,ring} C_\text{g,inner} / (C_\text{g,ring} + C_\text{g,inner})`,
+    so ``capacitance`` is the direct pad-to-pad capacitance, not :math:`C_\Sigma`.
+    The islands are asymmetric, so the two ground capacitances differ.
+
+    The defaults reduce the ``flipmon_unbonded_palace`` Maxwell matrix with
+    the inner and top pads joined by an ideal bond (see
+    :func:`flipmon_ideal_bond_model`) at the cell's default inner radius of
+    :math:`60\,\text{µm}` and top radius of :math:`110\,\text{µm}`, with no
+    alignment offset. The cell has no chip gap, so the reduction uses a chosen
+    operating point of :math:`12.5\,\text{µm}`. That is not the
+    :math:`\approx 10\,\text{µm}` of the flip-chip layer stack, where the
+    values are about 59 / 69 / 96 fF. The defaults only describe the default
+    geometry and do not follow the cell's settings. The dataset is an unbonded
+    coupon with an ideal bond. It is not validated as a bonded flipmon.
+
+    Args:
+        f: Array of frequency points in Hz.
+        capacitance: Direct pad-to-pad capacitance :math:`C` in Farads.
+        inductance: Josephson inductance :math:`L_\text{J}` in Henries.
+        ring_ground_capacitance: Capacitance of the outer ring to ground
+            :math:`C_\text{g,ring}` in Farads.
+        inner_ground_capacitance: Capacitance of the bonded inner island to
+            ground :math:`C_\text{g,inner}` in Farads.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with port outer_ring_outside.
+    """
+    omega = 2 * jnp.pi * jnp.asarray(f)
+    instances: dict[str, sax.SType] = {
+        "ring_ground": shunt_admittance(f=f, y=1j * omega * ring_ground_capacitance),
+        "qubit": double_island_transmon(
+            f=f, capacitance=capacitance, inductance=inductance
+        ),
+        "inner_ground": capacitor(f=f, capacitance=inner_ground_capacitance),
+        "ground": electrical_short(f=f),
+    }
+    connections = {
+        "ring_ground,o2": "qubit,o1",
+        "qubit,o2": "inner_ground,o1",
+        "inner_ground,o2": "ground,o1",
+    }
+    ports = {"outer_ring_outside": "ring_ground,o1"}
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 @jit(inline=True)
@@ -869,16 +940,31 @@ def xmon_transmon(
 ) -> sax.SDict:
     """LC resonator model for an Xmon style transmon qubit.
 
-    An Xmon transmon is typically shunted, so this model wraps :func:`shunted_transmon`.
+    An Xmon transmon is typically shunted, so this model wraps
+    :func:`shunted_transmon`. The four arms of the layout cell are one island,
+    so ``top_arm``, ``right_arm``, ``bottom_arm`` and ``left_arm`` all join the
+    floating port of the resonator.
 
     Returns:
-        sax.SDict: S-parameters dictionary.
+        sax.SDict: S-parameters dictionary with ports top_arm, right_arm,
+        bottom_arm and left_arm.
     """
-    return shunted_transmon(
-        f=f,
-        capacitance=capacitance,
-        inductance=inductance,
-    )
+    instances: dict[str, sax.SType] = {
+        "qubit": shunted_transmon(
+            f=f,
+            capacitance=capacitance,
+            inductance=inductance,
+        ),
+        "island": nxn(f=f, west=2, east=1, north=1, south=1),
+    }
+    connections = {"island,o5": "qubit,o1"}
+    ports = {
+        "top_arm": "island,o1",
+        "right_arm": "island,o2",
+        "bottom_arm": "island,o3",
+        "left_arm": "island,o4",
+    }
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 @jit(inline=True)
@@ -907,8 +993,36 @@ def double_pad_transmon(
     )
 
 
+@jit(inline=True)
+def double_pad_transmon_with_bbox(
+    f: sax.FloatArrayLike = DEFAULT_FREQUENCY,
+    capacitance: sax.FloatArrayLike = 51.4e-15,
+    inductance: sax.FloatArrayLike = 7e-9,
+    ground_capacitance: sax.FloatArrayLike = 75.1e-15,
+) -> sax.SDict:
+    r"""Lumped model of the :func:`~qpdk.cells.double_pad_transmon_with_bbox` cell.
+
+    The :func:`double_pad_transmon` circuit, with defaults for the cell's own
+    geometry. ``capacitance`` is the direct pad-to-pad capacitance and
+    ``ground_capacitance`` is each pad's capacitance :math:`C_\text{g}` to the
+    surrounding ground. The defaults reduce the ``double_pad_transmon_palace``
+    dataset at the cell defaults: 250 µm × 400 µm pads, a 15 µm pad gap and a
+    200 µm ground clearance. Both pads see the same ground capacitance there.
+    The defaults only describe that geometry and do not follow the cell's
+    settings.
+
+    Returns:
+        sax.SDict: S-parameters dictionary with ports left_pad and right_pad.
+    """
+    return double_pad_transmon(
+        f=f,
+        capacitance=capacitance,
+        inductance=inductance,
+        ground_capacitance=ground_capacitance,
+    )
+
+
 # Aliases for backward compatibility or to match cell naming
-double_pad_transmon_with_bbox = double_pad_transmon
 double_pad_transmon_with_resonator = double_island_transmon_with_resonator
 
 

@@ -378,7 +378,10 @@ def flipmon(
     return c
 
 
-@gf.cell(tags=["qubits", "transmons", "flip-chip"])
+@gf.cell(
+    tags=["qubits", "transmons", "flip-chip"],
+    schematic_function=flipmon_schematic,
+)
 def flipmon_with_bbox(
     inner_circle_radius: float = 60.0,
     outer_ring_radius: float = 110.0,
