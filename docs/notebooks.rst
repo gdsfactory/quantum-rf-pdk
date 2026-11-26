@@ -799,7 +799,8 @@ Every notebook at a glance; the **Extras** column links back to :ref:`notebook-e
     - - :doc:`notebooks/palace_driven_resonator`
       - FEM electromagnetics
       - Palace, gsim
-      - ``models`` (+ ``gsim`` from the ``palace`` dependency group; GDSFactory+ account for the solve)
+      - ``models`` (+ ``gsim`` from the ``palace`` dependency group; GDSFactory+ account
+        for the solve)
     - - :doc:`notebooks/optimize_capacitor_optuna`
       - FEM optimization
       - Optuna, Palace
