@@ -18,3 +18,4 @@ palace_eigenmode_qubit_resonator
 palace_flipmon_flip_chip
 palace_batched_qubit_optimization
 palace_tsv_transition
+palace_driven_resonator
