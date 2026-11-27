@@ -1,11 +1,10 @@
 """Reject incomplete electrostatic solves before publishing dataset rows."""
 
 import runpy
+import sys
 from pathlib import Path
 
 import pytest
-
-pytestmark = pytest.mark.palace
 
 CHECK = runpy.run_path(
     str(Path(__file__).resolve().parents[2] / "qpdk/models/datasets/recipes/_palace.py")
@@ -38,10 +37,19 @@ CG solver converged in 25 iterations
 
 def test_worst_terminal_and_estimator_solve_is_separate() -> None:
     result = CHECK(
-        terminal(1) + terminal(2, final="2.4e-07"), terminals=2, tolerance=1e-9
+        "\x1b[31m" + terminal(1) + terminal(2, final="2.4e-07") + "\x1b[0m",
+        terminals=2,
+        tolerance=1e-9,
     )
     assert result["solver_relative_residual"] == pytest.approx(8e-10)
     assert result["solver_iterations"] == 25
+
+
+def test_metrics_do_not_require_optional_gsim_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(sys.modules, "gsim.palace.results", None)
+    assert CHECK(terminal(1), terminals=1, tolerance=1e-9)["solver_iterations"] == 25
 
 
 @pytest.mark.parametrize(
@@ -55,6 +63,32 @@ def test_worst_terminal_and_estimator_solve_is_separate() -> None:
         (terminal(1) + terminal(2, final="nan"), "Missing solver convergence"),
         (terminal(1) + terminal(2, initial="inf"), "Missing solver convergence"),
         (terminal(1) + terminal(2, initial="0"), "Missing solver convergence"),
+        (terminal(1) + terminal(2, final="-1"), "Missing solver convergence"),
+        (terminal(1) + terminal(2, final="invalid"), "Missing solver convergence"),
+        (
+            terminal(1) + terminal(2, initial="1e-320", final="1"),
+            "Missing solver convergence",
+        ),
+        (
+            terminal(1) + terminal(2).replace("25 KSP residual norm 1.5e-07\n", ""),
+            "Missing solver convergence",
+        ),
+        (
+            terminal(1)
+            + terminal(2).replace(
+                "GMRES solver converged in 25 iterations",
+                "GMRES solver did NOT converge\nGMRES solver converged in 25 iterations",
+            ),
+            "Missing solver convergence",
+        ),
+        (
+            terminal(1)
+            + terminal(2).replace(
+                "Updating solution error estimates",
+                "GMRES solver converged in 1 iteration\nUpdating solution error estimates",
+            ),
+            "Missing solver convergence",
+        ),
     ],
 )
 def test_incomplete_or_unconverged_terminal_is_rejected(log: str, message: str) -> None:
