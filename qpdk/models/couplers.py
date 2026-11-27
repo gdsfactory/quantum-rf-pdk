@@ -3,6 +3,7 @@
 from dataclasses import replace
 from functools import cache
 from pathlib import Path
+from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -525,6 +526,10 @@ def coupler_ring(
     straight_length, bend_length = _ring_access_lengths(
         cross_section, radius, length_extension
     )
+    # ``bend_circular`` only forwards its length to ``straight``, which accepts
+    # arrays; the ``float`` annotation is narrower than what it handles at
+    # runtime (including traced values), so cast for the type checker only.
+    bend_length_float = cast("float", bend_length)
 
     instances: dict[str, sax.SType] = {
         "coupled": coupler_straight(
@@ -537,10 +542,10 @@ def coupler_ring(
             f=f, length=straight_length, cross_section=cross_section
         ),
         "upper_left": bend_circular(
-            f=f, length=bend_length, cross_section=cross_section
+            f=f, length=bend_length_float, cross_section=cross_section
         ),
         "upper_right": bend_circular(
-            f=f, length=bend_length, cross_section=cross_section
+            f=f, length=bend_length_float, cross_section=cross_section
         ),
     }
     connections = {

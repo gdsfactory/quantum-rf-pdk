@@ -1,6 +1,6 @@
 """Tests for qpdk.models.couplers module."""
 
-from typing import final
+from typing import final, override
 
 import gdsfactory as gf
 import jax
@@ -200,6 +200,7 @@ class TestCouplerRingNonDefaultGeometry(FourPortModelTestSuite):
 
     model_function = coupler_ring
 
+    @override
     @staticmethod
     def get_model_kwargs() -> dict:
         """Use a smaller radius and a custom extension."""
