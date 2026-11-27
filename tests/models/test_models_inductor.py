@@ -8,7 +8,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 import sax
-from hypothesis import HealthCheck, assume, given, settings, strategies as st
+from hypothesis import HealthCheck, assume, example, given, settings, strategies as st
 
 from qpdk import PDK
 from qpdk.cells.inductor import meander_inductor as meander_inductor_cell
@@ -117,6 +117,37 @@ class TestMeanderInductorInductanceAnalytical:
         actual_diff = float(L2) - float(L1)
         assert actual_diff == pytest.approx(expected_diff, rel=1e-5)
 
+    # Why adding one turn can lower L (parity effect of the formula):
+    # for long fingers the geometric part scales as (mu_0 l / 2 pi) ln(l) times
+    # N - 2 (N-1) + 2 (N-2) - ... which is 1 for odd N and 0 for even N. An odd
+    # meander has one unpaired finger whose ln(l) self term is not cancelled by
+    # a neighbour, so going from odd N to N + 1 can drop L when the kinetic part
+    # is small. Numerical scan of the legal domain below (turn_length > 20 * pitch,
+    # sheet inductance >= 1 pH/sq): odd N -> N + 1 dips by up to 14.73 % (N = 3,
+    # turn_length = 1000, wire_width = 10, wire_gap = 1, sheet = 1e-12), whereas
+    # even N -> N + 1 and N -> N + 2 never dip. Hence strict monotonicity is
+    # tested for N -> N + 2 and for even N -> N + 1, and the odd N -> N + 1 dip
+    # is only bounded.
+    ODD_TO_NEXT_MAX_DIP = 0.15
+
+    @staticmethod
+    def _inductance(
+        n_turns: int,
+        turn_length: float,
+        wire_width: float,
+        wire_gap: float,
+        sheet_inductance: float,
+    ) -> float:
+        return float(
+            meander_inductor_inductance_analytical(
+                n_turns=n_turns,
+                turn_length=turn_length,
+                wire_width=wire_width,
+                wire_gap=wire_gap,
+                sheet_inductance=sheet_inductance,
+            )
+        )
+
     @staticmethod
     @given(
         n_turns=st.integers(min_value=2, max_value=100),
@@ -124,6 +155,20 @@ class TestMeanderInductorInductanceAnalytical:
         wire_width=st.floats(min_value=1.0, max_value=10.0),
         wire_gap=st.floats(min_value=1.0, max_value=5.0),
         sheet_inductance=st.floats(min_value=1e-12, max_value=1e-9),
+    )
+    @example(
+        n_turns=3,
+        turn_length=282.0,
+        wire_width=7.0,
+        wire_gap=1.0,
+        sheet_inductance=1e-12,
+    )
+    @example(
+        n_turns=3,
+        turn_length=1000.0,
+        wire_width=10.0,
+        wire_gap=1.0,
+        sheet_inductance=1e-12,
     )
     @settings(max_examples=MAX_EXAMPLES, deadline=None)
     def test_inductance_approx_monotonic_with_n_turns(
@@ -133,29 +178,31 @@ class TestMeanderInductorInductanceAnalytical:
         wire_gap: float,
         sheet_inductance: float,
     ) -> None:
-        """Adding more turns should generally increase the total inductance."""
+        """Adding a turn increases L, except for a bounded odd-to-even dip.
+
+        Regression test for the intermittent failure with ``n_turns=3,
+        turn_length=282, wire_width=7, wire_gap=1`` (2.008 % dip from 3 to 4
+        turns). See the comment above for the physical reason.
+        """
         pitch = wire_width + wire_gap
         # Analytical formulas are valid when fingers are long compared to pitch.
         assume(turn_length > 20 * pitch)
-        L_base = meander_inductor_inductance_analytical(
-            n_turns=n_turns,
-            turn_length=turn_length,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
-            sheet_inductance=sheet_inductance,
+        geometry = (turn_length, wire_width, wire_gap, sheet_inductance)
+        L_n = TestMeanderInductorInductanceAnalytical._inductance(n_turns, *geometry)
+        L_next = TestMeanderInductorInductanceAnalytical._inductance(
+            n_turns + 1, *geometry
         )
-        L_more = meander_inductor_inductance_analytical(
-            n_turns=n_turns + 1,
-            turn_length=turn_length,
-            wire_width=wire_width,
-            wire_gap=wire_gap,
-            sheet_inductance=sheet_inductance,
+        L_next2 = TestMeanderInductorInductanceAnalytical._inductance(
+            n_turns + 2, *geometry
         )
-        L_base_f = float(L_base)
-        L_more_f = float(L_more)
-        # We check for approximate monotonicity. In some extreme regimes allowed by the
-        # assume constraints, geometric mutual inductance suppression can cause a small dip.
-        assert L_more_f == pytest.approx(L_base_f, rel=2e-2) or L_more_f > L_base_f
+
+        # Same-parity step: never dips (tiny slack for floating-point rounding).
+        assert L_next2 >= L_n * (1 - 1e-9)
+        if n_turns % 2 == 0:
+            assert L_next >= L_n * (1 - 1e-9)
+        else:
+            max_dip = TestMeanderInductorInductanceAnalytical.ODD_TO_NEXT_MAX_DIP
+            assert L_next >= L_n * (1 - max_dip)
 
     @staticmethod
     @given(
