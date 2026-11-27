@@ -310,6 +310,7 @@ def _versions() -> dict[str, str | None]:
 
 
 def _polygons(component: gf.Component) -> list[list[list[float]]]:
+    """Return the M1_DRAW polygons of a component as point lists in um."""
     layer = gf.get_layer_tuple(LAYER.M1_DRAW)
     return [
         polygon.tolist() for polygon in component.get_polygons_points(by="tuple")[layer]
@@ -691,12 +692,18 @@ WORK = Annotated[Path, typer.Option(help="Run directory.")]
 
 
 def _q(q: int) -> int:
+    """Return ``q`` if it is a supported pin count.
+
+    Raises:
+        typer.BadParameter: If ``q`` is not in ``QS``.
+    """
     if q not in QS:
         raise typer.BadParameter(f"q must be one of {QS}")
     return q
 
 
 def _status(job: Job, workdir: Path) -> str:
+    """Return ``complete``, ``submitted`` or ``pending`` from the files of a run."""
     run = workdir / job.key
     if (run / "complete.json").is_file():
         return "complete"
@@ -720,6 +727,11 @@ def _plan(jobs: list[Job], workdir: Path) -> None:
 
 
 def _execute(jobs: list[Job], workdir: Path, retry_failed: bool) -> None:
+    """Submit the jobs to the cloud in batches and print a summary.
+
+    Raises:
+        typer.Exit: With code 1 if any job failed.
+    """
     from _cloud import GsimBackend
 
     report = run_batches(

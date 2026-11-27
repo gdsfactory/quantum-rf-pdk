@@ -261,10 +261,12 @@ def prepare_sim(
 
 
 def _read_json(path: Path) -> dict[str, Any]:
+    """Return the JSON object stored in a UTF-8 file."""
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> None:
+    """Store a mapping as indented JSON in a UTF-8 file, replacing the file."""
     path.write_text(json.dumps(value, indent=2), encoding="utf-8")
 
 
