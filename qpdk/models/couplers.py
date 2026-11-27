@@ -3,6 +3,7 @@
 from dataclasses import replace
 from functools import cache
 from pathlib import Path
+from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -28,7 +29,7 @@ from qpdk.models.math import (
     ellipk_ratio,
     epsilon_eff,
 )
-from qpdk.models.waveguides import straight
+from qpdk.models.waveguides import bend_circular, straight
 
 
 @jit(inline=True)
@@ -435,15 +436,77 @@ def coupler_straight(
     return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
+def _ring_access_lengths(
+    cross_section: CrossSectionSpec,
+    radius: float | ArrayLike | None = None,
+    length_extension: float | ArrayLike | None = None,
+) -> tuple[jax.Array, jax.Array]:
+    """Return the uncoupled length on each side of the coupled section of the ring.
+
+    The values follow the layout of :func:`~qpdk.cells.waveguides.coupler_ring`:
+    the lower straight is ``length_extension`` (default ``3 + radius``) and the
+    upper circular bend has the arc length ``π * radius / 2``. The bend radius
+    is raised to the minimum radius of the cross-section, as the layout bend
+    does. The straight keeps the requested radius.
+
+    Args:
+        cross_section: The cross-section of the CPW.
+        radius: Bend radius in µm. ``None`` uses the cross-section radius.
+        length_extension: Lower straight length in µm. ``None`` uses
+            ``3 + radius``.
+
+    Returns:
+        ``(straight_length, bend_length)`` in µm.
+
+    Raises:
+        ValueError: If neither ``radius`` nor the cross-section defines a radius.
+    """
+    # TODO(Python 3.15): `lazy from qpdk import PDK` (PEP 810) at module scope breaks the cycle.
+    from qpdk import PDK  # ruff: ignore[import-outside-top-level]
+
+    PDK.activate()
+    xs = PDK.get_cross_section(cross_section)
+    if radius is None:
+        radius = xs.radius
+    if radius is None:
+        raise ValueError(
+            f"Cross-section '{xs.name}' has no radius; pass `radius` explicitly."
+        )
+    if length_extension is None:
+        length_extension = 3.0 + radius
+    bend_radius = (
+        radius if xs.radius_min is None else jnp.maximum(radius, xs.radius_min)
+    )
+    return jnp.asarray(length_extension), jnp.pi * jnp.asarray(bend_radius) / 2
+
+
 def coupler_ring(
     f: ArrayLike = DEFAULT_FREQUENCY,
     length_x: int | float = 20.0,
     gap: int | float = 16,
     cross_section: CrossSectionSpec = "cpw",
+    radius: int | float | jax.Array | None = None,
+    length_extension: int | float | jax.Array | None = None,
 ) -> sax.SDict:
     """S-parameter model for two coupled coplanar waveguides in a ring configuration.
 
-    The implementation is the same as straight coupler for now.
+    The coupled section is the :func:`coupler_straight` model, whose
+    coupling capacitance is that of straight, parallel lines. The access
+    paths of :func:`~qpdk.cells.waveguides.coupler_ring` are added as uncoupled
+    CPW sections of the same cross-section, so each path has the electrical
+    length of the layout:
+
+    - Lower path (``o1`` to ``o4``): two straights of ``length_extension``,
+      one on each side of the coupled section, i.e.
+      ``2 * length_extension + length_x`` in total.
+    - Upper path (``o2`` to ``o3``): two 90° circular bends of radius
+      ``radius`` and length ``π * radius / 2``, i.e. ``π * radius + length_x``
+      in total. A radius below the cross-section's minimum bend radius is
+      raised to it, as the layout bend does.
+
+    The curvature of the upper coupled region is not captured, and the layout
+    bend is assumed circular (the cell default). The tee junction and the
+    discontinuities at the transitions are ideal.
 
     TODO: Fetch coupling capacitance from a curved simulation library.
 
@@ -452,11 +515,52 @@ def coupler_ring(
         length_x: Physical length of coupling section in µm
         gap: Gap between the coupled waveguides in µm
         cross_section: The cross-section of the CPW.
+        radius: Bend radius in µm. ``None`` uses the cross-section radius.
+        length_extension: Straight length on each side of the lower coupled
+            section in µm. ``None`` uses ``3 + radius`` as the layout does.
 
     Returns:
         sax.SDict: S-parameters dictionary
     """
-    return coupler_straight(f=f, length=length_x, gap=gap, cross_section=cross_section)
+    f = jnp.asarray(f)
+    straight_length, bend_length = _ring_access_lengths(
+        cross_section, radius, length_extension
+    )
+    # ``bend_circular`` only forwards its length to ``straight``, which accepts
+    # arrays; the ``float`` annotation is narrower than what it handles at
+    # runtime (including traced values), so cast for the type checker only.
+    bend_length_float = cast("float", bend_length)
+
+    instances: dict[str, sax.SType] = {
+        "coupled": coupler_straight(
+            f=f, length=length_x, gap=gap, cross_section=cross_section
+        ),
+        "lower_left": straight(
+            f=f, length=straight_length, cross_section=cross_section
+        ),
+        "lower_right": straight(
+            f=f, length=straight_length, cross_section=cross_section
+        ),
+        "upper_left": bend_circular(
+            f=f, length=bend_length_float, cross_section=cross_section
+        ),
+        "upper_right": bend_circular(
+            f=f, length=bend_length_float, cross_section=cross_section
+        ),
+    }
+    connections = {
+        "lower_left,o2": "coupled,o1",
+        "upper_left,o2": "coupled,o2",
+        "upper_right,o1": "coupled,o3",
+        "lower_right,o1": "coupled,o4",
+    }
+    ports = {
+        "o1": "lower_left,o1",
+        "o2": "upper_left,o1",
+        "o3": "upper_right,o2",
+        "o4": "lower_right,o2",
+    }
+    return sax.evaluate_circuit_fg((connections, ports), instances)
 
 
 if __name__ == "__main__":
