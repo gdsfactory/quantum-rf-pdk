@@ -3,6 +3,7 @@
 from typing import ClassVar, final
 
 import hypothesis.strategies as st
+import jax
 import jax.numpy as jnp
 import pytest
 from hypothesis import given, settings
@@ -17,6 +18,7 @@ from qpdk.models.unimon import (
     unimon_frequency_and_anharmonicity,
     unimon_hamiltonian,
 )
+from qpdk.models.waveguides import straight_shorted
 
 from .base import OnePortModelTestSuite
 
@@ -231,3 +233,40 @@ class TestUnimonCoupledSAX(OnePortModelTestSuite):
         assert not jnp.allclose(s11_weak, s11_strong, atol=1e-3), (
             "Different coupling capacitances should produce different S-parameters"
         )
+
+
+@pytest.mark.parametrize(
+    ("junction_inductance", "coupling_capacitance"),
+    [(-7e-9, 10e-15), (9e-9, 20e-15)],
+)
+def test_internal_node_has_zero_injected_current(
+    junction_inductance: float, coupling_capacitance: float
+) -> None:
+    f = jnp.linspace(1.4e9, 11.9e9, 211)
+    omega = 2 * jnp.pi * f
+    arm_reflection = straight_shorted(f=f, length=3000)["o1", "o1"]
+    arm = (1 - arm_reflection) / (50 * (1 + arm_reflection))
+    junction = 1j * omega * 5e-15 + 1 / (1j * omega * junction_inductance)
+    qubit = arm + junction - junction**2 / (arm + junction)
+    coupling = 1j * omega * coupling_capacitance
+    admittance = coupling * qubit / (coupling + qubit)
+    expected = (1 - 50 * admittance) / (1 + 50 * admittance)
+    actual = jax.jit(unimon_coupled)(
+        f=f,
+        junction_inductance=junction_inductance,
+        coupling_capacitance=coupling_capacitance,
+    )["coupling_o3", "coupling_o3"]
+    assert_allclose(actual, expected, atol=1e-11, rtol=1e-10)
+
+
+def test_closed_unimon_with_lossless_arms_conserves_power(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def lossless_arm(f: jax.Array, length: float, **_settings: str) -> dict:
+        reflection = -jnp.exp(-4j * jnp.pi * f * length * 1e-6 / 1.2e8)
+        return {("o1", "o1"): reflection}
+
+    monkeypatch.setattr("qpdk.models.unimon.straight_shorted", lossless_arm)
+    model = jax.jit(lambda f: unimon_coupled(f=f))
+    response = model(jnp.linspace(1e9, 12e9, 2001))["coupling_o3", "coupling_o3"]
+    assert_allclose(jnp.abs(response), 1.0, atol=1e-11)
