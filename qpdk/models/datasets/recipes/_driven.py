@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Annotated, Any, cast
 
 import numpy as np
 import typer
-from _palace import fingerprint, runtime
+from _palace import _run_palace, fingerprint, runtime
 
 from qpdk import PDK, logger
 from qpdk.models.datasets import Axis, Dataset, DatasetMetadata, Quantity, QuantityKind
@@ -242,14 +242,8 @@ def generate(
         if not complete.exists():
             run.mkdir(parents=True, exist_ok=True)
             (run / "inputs.json").write_text(json.dumps(inputs, indent=2))
-            sim = recipe.prepare(point, run, processes)
-            sim.run_local(
-                **execution,
-                num_processes=processes,
-                num_threads=1,
-                verbose=True,
-                log_path=run / "solver.log",
-            )
+            recipe.prepare(point, run, processes)
+            _run_palace(execution, run, processes)
         matrix = response(
             run, recipe.terminals, recipe.frequencies, reciprocal=recipe.reciprocal
         )
